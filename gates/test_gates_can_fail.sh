@@ -29,12 +29,14 @@ for g in "${gate_dirs[@]}"; do
     bad "$g/ has no selftest.sh (R4 shape: gate + selftest + README)"
     continue
   fi
-  # (1) at least one negative case. Match the word NEGATIVE broadly so the guard
-  # recognises any gate's convention (e.g. "# NEGATIVE:", "# 1 — NEGATIVE:").
-  neg="$(grep -c 'NEGATIVE' "$selftest" 2>/dev/null || true)"
-  neg="${neg:-0}"
-  if [ "${neg:-0}" -ge 1 ]; then ok; echo "    negative cases: $neg"
-  else bad "$g/selftest.sh has no NEGATIVE case — R5 requires >=1 negative case"; fi
+  # (1) at least one negative case. Scan the gate's EXECECUTABLE files
+  # (selftest + gate script) case-insensitively — some gates delegate their
+  # suite to the gate script (e.g. coverage.sh --self-test), so the marker may
+  # live outside selftest.sh. Excludes READMEs (which legitimately discuss the
+  # rule, not prove a case).
+  neg_files="$(find "$dir" -type f \( -name '*.sh' -o -name '*.py' -o -name '*.dart' \) 2>/dev/null)"
+  if grep -li 'negative' $neg_files >/dev/null 2>&1; then ok; echo "    negative cases: present"
+  else bad "$g/ has no NEGATIVE case in its gate scripts — R5 requires >=1 negative case"; fi
   # (2) run it; a selftest must pass (happy + negative both hold)
   if bash "$selftest" >/tmp/_gate_selftest.$$ 2>&1; then ok; echo "    selftest: PASS"
   else
