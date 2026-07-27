@@ -673,3 +673,70 @@ Cost, stated plainly: this is the second time §11's "gates read state" bill has
 come due — first for freeze widths, now for emission. The macOS dogfood is what
 forces it, which is the argument for dogfooding at all. Better to pay it on our
 own app than on a client's.
+
+## 17. Kit consumption, the payment gate, and the deployer
+
+### Kit stays private → vendor at a pinned SHA
+
+Confirmed decision. `app-box-scaffolder` and `app-box-reviewer` are **neither
+ported nor shimmed**: the kit's gate tooling is vendored into app_box at a
+recorded upstream SHA. A port means re-proving 628 assertions and maintaining
+two implementations that will drift; a shim needs the buyer to reach a private
+repo. Vendoring gives the buyer a working copy with no private dependency and
+one authoring site upstream.
+
+**The freshness check must be real** or vendoring rots silently: compare the
+vendored SHA against upstream and fail on divergence, asserted with
+`git status --porcelain` semantics — not a hand-bumped version string. If the
+kit is ever published, this collapses back to a shim and the vendoring is
+deleted, not maintained.
+
+### The payment gate sits at `app-box-builder`
+
+Free: **designer and prototype.** Paid: **builder** — scaffolding against real
+kits (data, auth, notifications) — **and bundle** (build + deploy).
+
+This is the right inflection. The prototype is genuinely useful standing alone,
+costs us nothing (inference is BYO-key), and is the best demonstration the
+product has. Someone who uses the free designer forever and hand-builds is a
+funnel, not a leak.
+
+**Constraint: the licence check is a precondition, not a gate.** It runs
+*before* the phase and fails with an unmistakable licence message. It must
+never be implemented as a check inside a correctness gate — a gate that can go
+red for payment reasons teaches people to distrust red, and that is the one
+thing this architecture cannot afford.
+
+### `app-box-deployer` — integrate, the work is already done
+
+`stacked_kit_deploy` is **pure Dart and standalone** (*"no flutter, stacked, or
+stacked_kit dependency"*), registry `phase: stable`, `topology: standalone`:
+
+| target | status |
+|---|---|
+| `fastlane-android` / `fastlane-ios` | **wired** |
+| `shorebird-release` / `shorebird-patch` | **wired** |
+| `cloudflare-pages` | **wired** |
+| `vercel` | **stub — throws `UnimplementedError`** |
+
+It already has `bin/stacked_kit_deploy.dart` and a `doctor(config)` preflight.
+
+**The property that makes it the right integration** is the `KitProcessRunner`
+port: external CLIs are invoked through it, so `ScriptedProcessRunner` asserts
+every command shape **with no toolchain in CI**. A deploy stage normally cannot
+be self-tested — no credentials, no signing identity, no shorebird install.
+This one can, which is exactly the flutter-crew stage contract (one module +
+`--self-test` + JSON emit) applied to the phase that could least afford to skip
+it.
+
+Caveats, stated: registry says `hasSkill: false`, so `app-box-deployer` would
+be its first phase skill; `doctor()` is preflight, not an assertion, so the
+gate still has to check a *value*; and **vercel must not be advertised** while
+it throws.
+
+### The tension deploy introduces
+
+Every other gate in the FSM is a **read-only assertion**. Deploying is a
+**write to the outside world**, and the most irreversible act in the pipeline —
+an App Store submission cannot be rolled back by re-running a stage. So deploy
+cannot simply be gate number six.

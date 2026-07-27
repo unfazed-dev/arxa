@@ -32,3 +32,4 @@ exist in the producer; the frozen contract keeps 37 flat HTML files. See
 `dep_hash` keyed on mtime, a self-test asserting the defective value, an
 asset check that verified strings instead of resolving paths, a drift check
 guarded on a file the htmx producer does not have. Every one was green.
+| 8 | [competitors-and-pricing.md](competitors-and-pricing.md) | FlutterFlow / Adalo / Lovable / Cursor pricing, the per-seat backlash, and why BYO-key is a structural cost advantage rather than a discount. |
