@@ -163,7 +163,11 @@ if [ "$NEGATIVE" = 1 ]; then
 $MUTATIONS
 EOF
     [ "$HIT" = 1 ] || UNMAPPED="$UNMAPPED${UNMAPPED:+; }$LBL"
-  done < <(printf '%s\n' "$BASE" | sed -n 's/^  ok   //p')
+    # Skipped checks are scanned too — a check that always skips is unproven
+    # AND unmapped, which is the quietest way for one to rot. Safe to scan
+    # here because the driver refuses to start without node_modules, so the
+    # render section's own skip line cannot appear in a baseline.
+  done < <(printf '%s\n' "$BASE" | sed -n 's/^  ok   //p; s/^  skip  //p')
   [ -z "$UNMAPPED" ] || {
     echo "checks with no mutation — they would be reported proven without ever being tested: $UNMAPPED" >&2
     exit 65; }
@@ -173,6 +177,12 @@ EOF
     [ -n "${NAME:-}" ] || continue
     WANT_OK=0
     case "$WANT" in ok:*) WANT_OK=1; WANT="${WANT#ok:}" ;; esac
+    # A check the baseline skipped cannot be proven here, and pretending
+    # otherwise is the whole failure mode. Say skip and move on.
+    if printf '%s\n' "$BASE" | grep -qF "  skip  $WANT"; then
+      printf '  skip  %s — "%s" does not apply to this artifact\n' "$NAME" "$WANT"
+      continue
+    fi
     OUT="$(SELFTEST_MUTATION="$NAME" "$SK/selftest.sh" "$SRC" 2>&1)"
     if [ "$WANT_OK" = 1 ]; then
       printf '%s\n' "$OUT" | grep -qF "ok   $WANT" \
@@ -347,16 +357,22 @@ done
 # clone would get. A generic `build/` ignore once swallowed three surfaces out
 # of a commit that reported 58 files and looked complete; every gate stayed
 # green because no gate ever asked git. This one asks.
-OUT="$(
-  cd "$SRC" 2>/dev/null && git rev-parse --show-toplevel >/dev/null 2>&1 || {
-    echo "not a git work tree — a tree git cannot reproduce cannot be certified"
-    exit 1; }
-  git -C "$SRC" ls-files -z . | tr '\0' '\n' | LC_ALL=C sort > "$WORK/tracked.txt"
-  ( cd "$ART" && find . -type f | sed 's|^\./||' ) | LC_ALL=C sort \
-    | comm -23 - "$WORK/tracked.txt"
-)"
-[ -z "$OUT" ]
-check $? "every artifact file is tracked by git" "$(printf '%s' "$OUT" | tr '\n' ' ')"
+#
+# Two branches, because "untracked file inside a repo" is the defect and "not
+# in a repo at all" is not one — an ejected app and a scratch prototype have
+# no git to disagree with. Reported as a visible skip, never a silent pass.
+TRACKLBL="every artifact file is tracked by git"
+if ( cd "$SRC" && git rev-parse --show-toplevel >/dev/null 2>&1 ); then
+  OUT="$(
+    git -C "$SRC" ls-files -z . | tr '\0' '\n' | LC_ALL=C sort > "$WORK/tracked.txt"
+    ( cd "$ART" && find . -type f | sed 's|^\./||' ) | LC_ALL=C sort \
+      | comm -23 - "$WORK/tracked.txt"
+  )"
+  [ -z "$OUT" ]
+  check $? "$TRACKLBL" "$(printf '%s' "$OUT" | tr '\n' ' ')"
+else
+  printf '  skip  %s — not a git work tree; nothing to be inconsistent with\n' "$TRACKLBL"
+fi
 
 echo
 echo "== render (skipped unless Node deps are installed) =="
