@@ -1,9 +1,14 @@
 {
   "version": "1.0.0",
   "targets": ["macos"],
-  "viewports": { "mobile": 390, "tablet": 744, "desktop": 1280 },
+  "viewports": {
+    "mobile":  { "width": 390,  "height": 844 },
+    "tablet":  { "width": 744,  "height": 1133 },
+    "desktop": { "width": 1280, "height": 800 }
+  },
   "viewportClasses": { "compactMax": 599, "mediumMax": 839 },
   "prototypeServer": { "host": "127.0.0.1", "port": 0 },
   "kit": { "repo": "", "sha": "" },
-  "escalationLimit": 3
+  "escalationLimit": 3,
+  "dependencyMode": "vendored"
 }

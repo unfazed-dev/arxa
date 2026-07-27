@@ -78,6 +78,18 @@ from urllib.parse import quote
 TOOL = Path(__file__).resolve()
 FIXTURE_APP = TOOL.parent / "fixtures" / "app"
 CLOCK = TOOL.parent / "frozen_clock.mjs"
+REPO = TOOL.parents[3]  # tools/vendor/emit_htmx/emit_htmx.py → repo root
+
+# Mobile viewport is config-driven (R3: config/app-box.config.json viewports.mobile),
+# not the 390×844 literal. Fallback only if config is absent/unreadable.
+def _cfg_viewport():
+    try:
+        d = json.loads((REPO / "config" / "app-box.config.json").read_text())
+        v = d["viewports"]["mobile"]
+        return int(v["width"]), int(v["height"])
+    except Exception:
+        return 390, 844
+VW, VH = _cfg_viewport()
 
 # The screen-content root inside the htmx stage's iPhone frame: everything
 # outside it (stage, toolbar, phone hardware, brand strip) is chrome by
@@ -343,7 +355,7 @@ def emit(app, check=False, server_env=None):
             browser = pw.chromium.launch()
 
             def fresh_page():
-                pg = browser.new_page(viewport={"width": 390, "height": 844})
+                pg = browser.new_page(viewport={"width": VW, "height": VH})
                 msgs = []
                 pg.on("console", lambda m: msgs.append(m.text) if m.type == "error" else None)
                 pg.on("pageerror", lambda e: msgs.append(str(e)))

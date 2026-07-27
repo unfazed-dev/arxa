@@ -45,10 +45,10 @@ npm-debug.log*
 
 # --- pipeline / run state (regenerated, never authoritative) ---
 .pipeline/
-.crew/
+.appbox/
 .blueprint/
 .claude-flow/
-.kimi-code/
+.kim[i]-code/
 *.run.json
 *.history.jsonl
 

@@ -1,0 +1,39 @@
+<Callout id="header" tone="info">
+# app-box-builder — Per-Skill Playbook
+
+`app-box-builder` · status: **active**
+
+**Role (one line):** fill the extension-point View/ViewModel bodies in an emitted target by composing the adaptive primitive layer once.
+
+**Scope of this document:** lets a human OR an LLM drive the build phase without reading the skill source. Folded from `SKILL.md`.
+
+## Table of contents
+
+0. Header & TOC · 1. Overview & role · 2. Inputs · 3. Procedure · 4. Outputs · 5. Rules · 6. References
+
+</Callout>
+
+### Overview & role
+
+The blueprint emits two things this role relies on: the **adaptive primitive layer** (`lib/ui/primitives.dart`, generated) — `AdaptiveScaffold`, `AdaptiveButton`, `AdaptiveCard`, `AdaptiveTextField`, `AdaptiveSegmented`, `AdaptiveProgress`, each reading `currentStrategy()` — and empty View/ViewModel **stubs** (`@appbox-extension-point`). This role fills the stubs by composing the primitives once from `breakdown.json`. A view never branches on platform; the same breakdown yields the same widget code (freeze + replay).
+
+### Inputs
+
+- `.blueprint/<source>/breakdown.json` — `pages[].components[].primitives[]`, the widget inventory per screen.
+- The emitted target: extension-point files carry `@appbox-extension-point`; `lib/ui/primitives.dart` is generated — read it for the available widgets.
+
+### Procedure
+
+For each `<Screen>View` + `<Screen>ViewModel`: match the page by screen id; map each breakdown primitive to the matching `Adaptive*` widget (`action.button`→`AdaptiveButton`, `surface.card`→`AdaptiveCard`, `input.text-field`→`AdaptiveTextField`, `action.segmented`→`AdaptiveSegmented`, `feedback.spinner`→`AdaptiveProgress`, the page scaffold→`AdaptiveScaffold`). Data-viz (`data.chart`, `display.stat`) is platform-identical — paint it with `CustomPainter`. Scrolling list rows use `AdaptiveCard(lite: true)` (Flutter-drawn even under glass; platform views jank in long lists); reserve real platform views for static surfaces. Style is automatic (primitives read `AppTokens`); populate content + interactions from the ViewModel; async → `setBusy`/`setError`; Ports locator-injected. If the design needs a primitive the layer lacks, add it to `lib/ui/primitives.dart` (generated, with all three family branches) — never hand-roll a native widget inside a view.
+
+### Outputs
+
+Filled `*_view.dart` / `*_viewmodel.dart` composing the primitive layer. Run `arch_guard` → must PASS before handoff to the tester.
+
+### Rules
+
+Compose, don't branch: no `switch(currentStrategy())` in a view; no raw `LiquidGlass*`/`Shad*`/`AndroidView` in a view — those belong only in `primitives.dart`. Native is real on both mobile platforms (glass + expressive). Gestures (swipe-to-delete, long-press menu, pull-to-refresh, scroll-snap) are shared Flutter, native where the idiom differs. Don't touch generated-layer files (`AUTO-GENERATED` marker) except `primitives.dart` when adding a primitive. Determinism: freeze filled Views/ViewModels into `.blueprint/<source>/built/` and replay; drift → gated diff, not silent rebuild.
+
+<!-- kb:begin -->
+### References
+<!-- kb:end -->

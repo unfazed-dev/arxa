@@ -1,9 +1,9 @@
 ---
-name: lint
+name: app-box-lint
 description: Use to health-check the app-box knowledge base — catch contradictions, stale claims, dead links, orphan pages, and docs that disagree with shipped code/catalogs. Run before a session handoff, after a behavior change, or on "lint the docs", "check knowledge consistency", "is the wiki still true?". Pairs with skills/refresh (which keeps one catalog current).
 ---
 
-# fc-lint — keep the knowledge base honest
+# app-box-lint — keep the knowledge base honest
 
 ## Core principle
 
@@ -17,7 +17,7 @@ See `docs/KNOWLEDGE.md` for the source-of-truth hierarchy this skill enforces.
 
 ## Procedure
 
-1. **Mechanical pass.** `python skills/lint/lint_kb.py`
+1. **Mechanical pass.** `python skills/app-box-lint/lint_kb.py`
    - Flags: docs missing from `docs/index.md`, dead `.md` links, orphan pages, half-wired
      supersede pointers, unresolved memory `[[wikilinks]]`. Exit 1 = at least one ERROR.
    - Fix ERRORs before continuing (usually: add the page to `index.md`, or fix the link).

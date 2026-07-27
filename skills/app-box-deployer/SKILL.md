@@ -1,5 +1,5 @@
 ---
-name: deployer
+name: app-box-deployer
 description: Use when shipping a appbox-built Flutter target to stores (fastlane: TestFlight/App Store + Play internal/production) and/or pushing an OTA Dart patch (shorebird). Trigger on "deploy", "ship to TestFlight", "release to Play", "push an OTA patch", "hotfix".
 ---
 

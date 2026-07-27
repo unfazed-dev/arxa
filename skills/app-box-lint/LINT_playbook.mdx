@@ -1,0 +1,39 @@
+<Callout id="header" tone="info">
+# app-box-lint — Per-Skill Playbook
+
+`app-box-lint` · status: **active**
+
+**Role (one line):** health-check the knowledge base — catch contradictions, stale claims, dead links, orphan pages, and docs that disagree with shipped code/catalogs.
+
+**Scope of this document:** lets a human OR an LLM run a docs-consistency pass without reading the skill source. Folded from `SKILL.md`.
+
+## Table of contents
+
+0. Header & TOC · 1. Overview & role · 2. Inputs · 3. Procedure · 4. Outputs · 5. Rules · 6. References
+
+</Callout>
+
+### Overview & role
+
+The expensive failure isn't a missing doc — it's a confidently wrong one. A single un-caught contradiction propagates into memory, handoffs, and changelogs while contradicting the catalog's own rules, and costs a round-trip. Lint exists to catch that class of rot: a mechanical pass (a script, cheap, deterministic) and a semantic pass (you, reading — judgment the script can't do). Run both.
+
+### Inputs
+
+- The knowledge base: `docs/` (prose), catalogs (`*.json`, enforced runtime truth), cross-session memory, and the relevant code comments.
+- The source-of-truth hierarchy (`docs/KNOWLEDGE.md` or equivalent).
+
+### Procedure
+
+Mechanical pass — run `python skills/app-box-lint/lint_kb.py`: flags docs missing from the index, dead `.md` links, orphan pages, half-wired supersede pointers, unresolved memory wikilinks; exit 1 = at least one error; fix errors before continuing. Semantic pass — for each topic touched recently (read the last few changelog entries), cross-check the claim across all layers (catalogs ↔ docs ↔ memory ↔ code comment) and find disagreement. Resolve per the hierarchy: the lower layer is the bug; fix the doc/memory to match the catalog/code, never the reverse unless primary-source-verified. Record it: append a changelog entry; when a claim is superseded, leave a one-line `⚠️ SUPERSEDED by (y)` pointer and write the new entry — append-only, never rewrite history.
+
+### Outputs
+
+A green mechanical pass plus a list of semantic corrections applied (each with a changelog entry). Note gaps the lint can't fix: a concept lacking a page, a plan whose status is unverified, a catalog that may be stale.
+
+### Rules
+
+Don't trust memory or a doc over a catalog/code — catalogs enforce, prose lags; on conflict the prose is wrong. Don't rewrite the changelog — supersede with a pointer + new entry. Don't fix only the file you noticed — a wrong claim usually lives in 2-3 places; grep the assertion across all layers and fix every copy. Don't skip the semantic pass because the script went green. Keep `lint_kb.py`'s self-test green when you change it.
+
+<!-- kb:begin -->
+### References
+<!-- kb:end -->

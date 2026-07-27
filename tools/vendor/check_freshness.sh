@@ -16,6 +16,7 @@ LOCK="${1:-$ROOT/tools/vendor/VENDOR.lock}"
 drift=0; unreachable=0; fresh=0
 while IFS='|' read -r name repo path sha date; do
   [ -z "$name" ] && continue
+  case "$name" in '#'*) continue ;; esac   # comment lines (e.g. the Baselines section)
   if [ ! -d "$repo/.git" ] && ! git -C "$repo" rev-parse --git-dir >/dev/null 2>&1; then
     echo "UNREACHABLE  $name  (repo $repo missing) — freshness NOT verified"
     unreachable=$((unreachable + 1)); continue

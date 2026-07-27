@@ -6,13 +6,13 @@ a blueprint package (`manifest.json` + `templates/`) and writes its templates
 into a target Flutter project with write-on-diff semantics:
 
   - generated layer   — factory-owned. Overwritten on-diff (clean replay for
-                        crew-built). Never hand-edited.
+                        appbox-built). Never hand-edited.
   - extension points  — emitted ONCE as a stub, NEVER overwritten. Where the
                         operator/builder's business logic + widget bodies live.
                         Written only if ABSENT on target.
 
-Gating (ADR-0002 #3 — byte-identical scoped to crew-built):
-  - crew-built target (.crew/manifest.json present) → generated layer replays
+Gating (ADR-0002 #3 — byte-identical scoped to appbox-built):
+  - appbox-built target (.appbox/manifest.json present) → generated layer replays
     freely; extension points preserved. Stamp refreshed.
   - new-app (no pubspec yet) → greenfield: write everything; stamp written.
   - arbitrary existing target → best-effort: DRY-RUN by default; pass --apply to
@@ -53,18 +53,18 @@ def _is_binary(rel):
     return rel.lower().endswith(_BINARY_EXT)
 
 
-def _detect_crew(target_dir):
+def _detect_appbox(target_dir):
     try:
-        from detect_crew_project import detect
+        from detect_appbox_project import detect
         return detect(target_dir)
     except Exception:
-        p = os.path.join(target_dir, ".crew", "manifest.json")
+        p = os.path.join(target_dir, ".appbox", "manifest.json")
         if not os.path.exists(p):
-            return {"isCrew": False}
+            return {"isAppbox": False}
         try:
-            return {"isCrew": True, "manifest": json.loads(_read(p))}
+            return {"isAppbox": True, "manifest": json.loads(_read(p))}
         except Exception:
-            return {"isCrew": False}
+            return {"isAppbox": False}
 
 
 def _write(path, content):
@@ -230,7 +230,7 @@ def _stamp_native_names(target_dir, display_name, report):
     (replay_ok or apply) so an arbitrary existing target in dry-run is untouched.
     ponytail: regex-replace the one field per platform; no plist/manifest parser
     dep. Add a real plist parser if we ever need structured Info.plist edits.
-    On a crew-replay a hand-edited label IS reasserted -- use --app-name to set a
+    On a appbox-replay a hand-edited label IS reasserted -- use --app-name to set a
     different name rather than hand-editing these manifests.
     """
     if not display_name:
@@ -289,7 +289,7 @@ _EXPRESSIVE_KT = r'''package __PKG__
 // Flutter PlatformView. Leaf primitives only (button/segmented/progress) — a
 // platform view cannot host Flutter children, so composite primitives (cards,
 // inputs) stay Flutter Material 3. Callbacks ride a per-view MethodChannel
-// "crew/expressive/$viewId" (matches lib/ui/primitives.dart).
+// "appbox/expressive/$viewId" (matches lib/ui/primitives.dart).
 import android.content.Context
 import android.graphics.BitmapFactory
 import androidx.compose.foundation.BorderStroke
@@ -396,7 +396,7 @@ private class ExpressiveView(
     creationParams: Map<String, Any?>,
 ) : PlatformView {
     private val composeView = ComposeView(context)
-    private val channel = MethodChannel(messenger, "crew/expressive/$viewId")
+    private val channel = MethodChannel(messenger, "appbox/expressive/$viewId")
 
     // creationParams are immutable post-creation, so the live params live in a
     // SnapshotStateMap — mutations (via the `update` MethodChannel call from Dart's
@@ -833,7 +833,7 @@ class MainActivity : FlutterFragmentActivity() {
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         flutterEngine.platformViewsController.registry.registerViewFactory(
-            "crew/expressive",
+            "appbox/expressive",
             ExpressiveViewFactory(this, flutterEngine.dartExecutor.binaryMessenger),
         )
     }
@@ -916,11 +916,11 @@ def _ensure_android_expressive_compose(target_dir, platforms, report):
     gradle = os.path.join(app, "build.gradle.kts")
     if os.path.exists(gradle):
         g = _read(gradle)
-        if "crew:compose-embed" not in g:
+        if "appbox:compose-embed" not in g:
             g = re.sub(r'(id\("dev\.flutter\.flutter-gradle-plugin"\)\s*\n)',
                        r'\1    id("org.jetbrains.kotlin.plugin.compose")\n', g, count=1)
             g += (
-                "\n// crew:compose-embed — true Android Material 3 Expressive via Jetpack\n"
+                "\n// appbox:compose-embed — true Android Material 3 Expressive via Jetpack\n"
                 "// Compose, embedded as a Flutter PlatformView (see ExpressivePlatformView.kt).\n"
                 "android {\n"
                 "    // material3 1.5.0-alpha (Compose 1.12.x) requires compileSdk 37.\n"
@@ -968,16 +968,16 @@ def emit(blueprint_dir, target_dir, apply=False, adopt=False,
     gen_set = set(manifest.get("generatedLayer", []))
     ext_set = set(manifest.get("extensionPoints", []))
 
-    crew = _detect_crew(target_dir)
-    is_crew = bool(crew.get("isCrew"))
+    appbox = _detect_appbox(target_dir)
+    is_appbox = bool(appbox.get("isAppbox"))
     is_new = not os.path.exists(os.path.join(target_dir, "pubspec.yaml"))
 
     # gating: when may generated files overwrite without --apply?
-    replay_ok = is_crew or is_new
-    stamp = is_new or is_crew or adopt
+    replay_ok = is_appbox or is_new
+    stamp = is_new or is_appbox or adopt
 
     report = {
-        "target": target_dir, "isCrew": is_crew, "isNewApp": is_new,
+        "target": target_dir, "isAppbox": is_appbox, "isNewApp": is_new,
         "replay": replay_ok, "applied": apply,
         "written": [], "skipped_identical": [], "preserved_extension": [],
         "blocked_dryrun": [], "stamped": False,
@@ -1035,9 +1035,9 @@ def emit(blueprint_dir, target_dir, apply=False, adopt=False,
         _stamp_native_names(target_dir, manifest.get("displayName"), report)
         _ensure_android_expressive_compose(target_dir, manifest.get("platforms"), report)
 
-    # crew stamp
+    # appbox stamp
     if stamp and (replay_ok or apply or is_new):
-        stamp_dir = os.path.join(target_dir, ".crew")
+        stamp_dir = os.path.join(target_dir, ".appbox")
         os.makedirs(stamp_dir, exist_ok=True)
         stamp_obj = {
             "factoryVersion": manifest.get("factoryVersion"),
@@ -1084,7 +1084,7 @@ def main(argv):
     if out:
         _write(out, json.dumps(r, indent=2, sort_keys=True) + "\n")
 
-    mode = "crew-replay" if r["isCrew"] else ("new-app" if r["isNewApp"] else "arbitrary")
+    mode = "appbox-replay" if r["isAppbox"] else ("new-app" if r["isNewApp"] else "arbitrary")
     print(f"emit → {target_dir}  [mode={mode} applied={r['applied']}]")
     print(f"  written={len(r['written'])} identical={len(r['skipped_identical'])} "
           f"preserved(ext)={len(r['preserved_extension'])} "

@@ -9,7 +9,7 @@
 #
 # Operates on a tree of stacked_kit surfaces. Default target = the stacked_kit
 # monorepo itself (ROOT). Set KIT_APP=<dir> for CONSUMER mode — any authentic
-# stacked_kit app (path-deps a kit + @StackedApp), e.g. this repo's own p2/.
+# stacked_kit app (path-deps a kit + @StackedApp), e.g. this repo's own sample-app/.
 # With KIT_APP unset, running from a cwd OUTSIDE the kit tree is refused
 # (phantom-state guard — keeps state from silently splitting into the kit);
 # escape hatches: KIT_PIPELINE_STATE_DIR=<dir> or KIT_MONOREPO=1.
@@ -19,7 +19,7 @@
 # enforce_design.dart (surface quality), and review_checklist.sh (cwd app tree)
 # remain. Every per-phase gate still delegates to a REAL gate.
 #
-# State lives in .kit/state/ under the target (gitignored): phase.json (the FSM),
+# State lives in pipeline/state/ under the target (gitignored): phase.json (the FSM),
 # runs.jsonl (append-only per-invocation run records), golden_audit.jsonl (deliberate
 # golden accepts), checkpoints.jsonl (Commit Checkpoints). bash 3.2-safe (python3 for
 # JSON, no assoc arrays / mapfile / readlink -f). Deliberately no `set -e` — a failed
@@ -43,7 +43,7 @@
 #   pipeline.sh selftest                      # exercise the FSM on a temp state
 #
 # Every gate/advance/review/touch/golden invocation appends one JSON line to
-# .kit/state/runs.jsonl: {run_id, ts, phase, action, result, duration_ms,
+# pipeline/state/runs.jsonl: {run_id, ts, phase, action, result, duration_ms,
 # failing_signature?} — the Input Tuple-era audit stream (ADR 0009).
 #
 # Gate delegation (override via env, e.g. PIPELINE_DESIGN_GATE=...):
@@ -63,31 +63,36 @@
 #             "skill must render fixture first", never a gate FAIL. Not a phase:
 #             advance is unaffected.)
 set -uo pipefail
-ROOT="$(cd "$(dirname "$0")/.." && pwd)"            # stacked_kit/ — where the gate SCRIPTS live
-APP="${KIT_APP:-$ROOT}"                              # tree to operate on (default: the monorepo)
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"            # app-box repo root — where gates/config live
+SELF="$(cd "$(dirname "$0")" && pwd)/$(basename "$0")"   # absolute path to this script (selftest re-invokes)
+CONFIG="$ROOT/config/app-box.config.json"           # R3: configurable values live here, never inline
+# cfg <python-subscript>: read a value from CONFIG, empty on missing/unreadable.
+cfg(){ python3 -c "import json;d=json.load(open('$CONFIG'));print(d$1)" 2>/dev/null || true; }
+APP="${KIT_APP:-$ROOT}"                              # tree to operate on (default: the repo)
 CONSUMER=0; [ "$APP" != "$ROOT" ] && CONSUMER=1      # consumer-app mode?
-# Phantom-state guard: with KIT_APP unset, state defaults into the kit monorepo
-# ($ROOT/.kit/state). Invoked from a cwd OUTSIDE the kit tree (e.g. an app's root,
-# forgetting KIT_APP=$PWD) that silently manufactures a split state inside the kit —
-# the 2026-07-17 phantom (.kit/state created empty under stacked_kit/). Fail loud
-# instead. Escape hatches: set KIT_PIPELINE_STATE_DIR explicitly, or KIT_MONOREPO=1
-# to confirm you really mean the kit itself. (cwd inside the kit tree = plausible
-# monorepo intent, allowed.)
+# Phantom-state guard: with KIT_APP unset, state defaults into the repo
+# ($ROOT/pipeline/state). Invoked from a cwd OUTSIDE the repo tree (e.g. an app's root,
+# forgetting KIT_APP=$PWD) that silently manufactures a split state inside the repo —
+# the split-state phantom. Fail loud instead. Escape hatches: set
+# KIT_PIPELINE_STATE_DIR explicitly, or KIT_MONOREPO=1 to confirm you really mean the
+# repo itself. (cwd inside the repo tree = plausible intent, allowed.)
 if [ -z "${KIT_APP:-}" ] && [ -z "${KIT_PIPELINE_STATE_DIR:-}" ] && [ "${KIT_MONOREPO:-0}" != "1" ]; then
   case "$(pwd)/" in
-    "$ROOT/"*) : ;;  # standing inside the kit — fine
-    *) echo "FAIL: KIT_APP is unset and cwd is outside the kit monorepo — state would land in $ROOT/.kit/state (split-brain)." >&2
+    "$ROOT/"*) : ;;  # standing inside the repo — fine
+    *) echo "FAIL: KIT_APP is unset and cwd is outside the repo — state would land in $ROOT/pipeline/state (split-brain)." >&2
        echo "     consumer mode:  KIT_APP=\$PWD $0 $*" >&2
-       echo "     kit monorepo:   cd $ROOT first, or prefix KIT_MONOREPO=1" >&2
+       echo "     repo mode:      cd $ROOT first, or prefix KIT_MONOREPO=1" >&2
        exit 2;;
   esac
 fi
 cd "$APP"                                            # operate in-target (gates are cwd/target-based)
-STATE_DIR="${KIT_PIPELINE_STATE_DIR:-$APP/.kit/state}"
+STATE_DIR="${KIT_PIPELINE_STATE_DIR:-$APP/pipeline/state}"
 STATE="$STATE_DIR/phase.json"
-ESC_LIMIT="${KIT_PIPELINE_REVIEW_ESCALATION:-3}"
+# escalation limit is config-driven (config/app-box.config.json escalationLimit); env wins.
+ESC_LIMIT="${KIT_PIPELINE_REVIEW_ESCALATION:-$(cfg "['escalationLimit']")}"
+ESC_LIMIT="${ESC_LIMIT:-3}"                          # fallback if config absent
 
-DESIGN_GATE="${PIPELINE_DESIGN_GATE:-skills/kit-designer/scripts/enforce_design.dart}"
+DESIGN_GATE="${PIPELINE_DESIGN_GATE:-tools/vendor/enforce_design/enforce_design.dart}"
 SCAFFOLD_GATE_A="${PIPELINE_SCAFFOLD_GATE_A:-skills/kit-scaffolder/scripts/scaffold_gate.sh}"
 SCAFFOLD_GATE_B="${PIPELINE_SCAFFOLD_GATE_B:-tools/gate.sh}"
 REVIEW_GATE_A="${PIPELINE_REVIEW_GATE_A:-tools/gate.sh}"
@@ -106,7 +111,7 @@ SCAFFOLD_GATE_C="${PIPELINE_BRANDING_GATE:-$BRANDING_GATE_DEFAULT}"
 # docs/plans/shell-structure-transformation.md). App-only — at the monorepo
 # root there are no app shells, so it no-ops there (same inverse as the
 # branding gate).
-SHELL_STRUCTURE_GATE_DEFAULT="tools/shell_structure_gate.sh"
+SHELL_STRUCTURE_GATE_DEFAULT="tools/vendor/shell_structure/shell_structure_gate.sh"
 [ "$CONSUMER" = 0 ] && SHELL_STRUCTURE_GATE_DEFAULT="pass"
 SCAFFOLD_GATE_D="${PIPELINE_SHELL_STRUCTURE_GATE:-$SHELL_STRUCTURE_GATE_DEFAULT}"
 
@@ -116,7 +121,7 @@ SCAFFOLD_GATE_D="${PIPELINE_SHELL_STRUCTURE_GATE:-$SHELL_STRUCTURE_GATE_DEFAULT}
 # shells that exist; nothing before E asked whether the design was BUILT — so an
 # app could freeze 46 surfaces, scaffold 1, and pass every gate. App-only, same
 # inverse as D.
-SCAFFOLD_COVERAGE_GATE_DEFAULT="tools/scaffold_coverage_gate.sh"
+SCAFFOLD_COVERAGE_GATE_DEFAULT="tools/vendor/scaffold_coverage/scaffold_coverage_gate.sh"
 [ "$CONSUMER" = 0 ] && SCAFFOLD_COVERAGE_GATE_DEFAULT="pass"
 SCAFFOLD_GATE_E="${PIPELINE_SCAFFOLD_COVERAGE_GATE:-$SCAFFOLD_COVERAGE_GATE_DEFAULT}"
 
@@ -124,7 +129,7 @@ SCAFFOLD_GATE_E="${PIPELINE_SCAFFOLD_COVERAGE_GATE:-$SCAFFOLD_COVERAGE_GATE_DEFA
 # design/ SSOT (shape / token vocab / exclusion coverage / headless render).
 # App-only — at the monorepo root there is no app design dir, so it no-ops
 # there (same inverse as the branding gate).
-PROTO_GATE_DEFAULT="tools/freeze_design.sh"
+PROTO_GATE_DEFAULT="tools/vendor/freeze/freeze_design.sh"
 [ "$CONSUMER" = 0 ] && PROTO_GATE_DEFAULT="pass"
 PROTO_GATE="${PIPELINE_PROTOTYPE_GATE:-$PROTO_GATE_DEFAULT}"
 
@@ -175,7 +180,7 @@ hist(){ local ts; ts=$(now); python3 -c "import json;d=json.load(open('$STATE'))
 # EPOCHREALTIME and macOS `date` has no %N.
 ms_now(){ python3 -c 'import time;print(int(time.time()*1000))'; }
 
-# record_run(): append one JSON line to .kit/state/runs.jsonl — the per-invocation
+# record_run(): append one JSON line to pipeline/state/runs.jsonl — the per-invocation
 # audit stream (ADR 0009 "comprehensive pipeline state"). The path derives from
 # STATE's directory, so hermetic selftests (STATE in a tmp dir) never touch a real
 # tree. Args pass through argv (never string-interpolated into the Python source),
@@ -454,7 +459,7 @@ do_touch(){
 # this — never automatic, because a script cannot judge tree contents. Gate-green
 # checkpoints are the norm (current phase gate passed, review approved, or the Golden
 # Gate passed); mid-phase checkpoints are allowed but recorded gate_green=false.
-# Appends one JSON line to .kit/state/checkpoints.jsonl {run_id, ts, phase,
+# Appends one JSON line to pipeline/state/checkpoints.jsonl {run_id, ts, phase,
 # gate_green, sha, message} + the usual run record. git identity comes from the
 # repo's own config. Exit 0 on success or clean tree; exit 1 outside a git work
 # tree or on commit failure.
@@ -519,7 +524,7 @@ do_done(){ require_state; done_ok && { [ -n "$(git status --porcelain 2>/dev/nul
 # reviewer-driven, audit-trailed; NEVER automatic). Replaces $KIT_GOLDEN_DIR
 # with $KIT_FIXTURE_DIR/actual (a full tree replace, so files deleted by the
 # skill don't linger as false "unexpected file" drift), then appends
-# {ts, who: reviewer, fixture} to .kit/state/golden_audit.jsonl plus a run
+# {ts, who: reviewer, fixture} to pipeline/state/golden_audit.jsonl plus a run
 # record to runs.jsonl.
 do_golden(){
   require_state
@@ -681,7 +686,7 @@ selftest(){
   if [ -n "${KIT_APP:-}" ] || [ -n "${KIT_PIPELINE_STATE_DIR:-}" ] || [ -n "${KIT_MONOREPO:-}" ]; then
     echo "note: re-running selftest with KIT_APP/KIT_PIPELINE_STATE_DIR/KIT_MONOREPO scrubbed (hermetic monorepo mode)" >&2
     cd "$ROOT" || exit 1
-    exec env -u KIT_APP -u KIT_PIPELINE_STATE_DIR -u KIT_MONOREPO bash "$ROOT/tools/pipeline.sh" selftest
+    exec env -u KIT_APP -u KIT_PIPELINE_STATE_DIR -u KIT_MONOREPO bash "$SELF" selftest
   fi
   local TMP; TMP="$(mktemp -d)"; STATE="$TMP/phase.json"; STATE_DIR="$TMP"; local P=0 F=0
   # hermetic stub gates (deterministic exit 0) — exercises do_gate delegation + FSM, not the real gates
@@ -778,16 +783,16 @@ selftest(){
   # so the result is a property of this script and not of its caller.
   # consumer mode (subprocess): KIT_APP retargets state under the app + drops gate.sh
   local C; C="$(mktemp -d)"
-  env -u KIT_PIPELINE_STATE_DIR -u KIT_MONOREPO KIT_APP="$C" bash "$ROOT/tools/pipeline.sh" init >/dev/null 2>&1
-  chk "$([ -f "$C/.kit/state/phase.json" ] && echo 1 || echo 0)" 1 "consumer mode writes state under KIT_APP"
+  env -u KIT_PIPELINE_STATE_DIR -u KIT_MONOREPO KIT_APP="$C" bash "$SELF" init >/dev/null 2>&1
+  chk "$([ -f "$C/pipeline/state/phase.json" ] && echo 1 || echo 0)" 1 "consumer mode writes state under KIT_APP"
   rm -rf "$C"
   # phantom-state guard (subprocess): from a cwd OUTSIDE the kit tree with no
   # KIT_APP, init must be refused (exit 2) and leave no split state in the kit;
   # an explicit KIT_PIPELINE_STATE_DIR override is the sanctioned way through.
   local O; O="$(mktemp -d)"
-  ( cd "$O" && env -u KIT_APP -u KIT_PIPELINE_STATE_DIR -u KIT_MONOREPO bash "$ROOT/tools/pipeline.sh" init ) >/dev/null 2>&1; chk "$?" 2 "phantom-state guard refuses init outside the kit without KIT_APP"
-  chk "$([ -f "$ROOT/.kit/state/phase.json" ] && echo 1 || echo 0)" 0 "guard left no phantom state in the kit monorepo"
-  ( cd "$O" && env -u KIT_APP -u KIT_MONOREPO KIT_PIPELINE_STATE_DIR="$O/s" bash "$ROOT/tools/pipeline.sh" init ) >/dev/null 2>&1; chk "$?" 0 "explicit KIT_PIPELINE_STATE_DIR override passes the guard"
+  ( cd "$O" && env -u KIT_APP -u KIT_PIPELINE_STATE_DIR -u KIT_MONOREPO bash "$SELF" init ) >/dev/null 2>&1; chk "$?" 2 "phantom-state guard refuses init outside the kit without KIT_APP"
+  chk "$([ -f "$ROOT/pipeline/state/phase.json" ] && echo 1 || echo 0)" 0 "guard left no phantom state in the kit monorepo"
+  ( cd "$O" && env -u KIT_APP -u KIT_MONOREPO KIT_PIPELINE_STATE_DIR="$O/s" bash "$SELF" init ) >/dev/null 2>&1; chk "$?" 0 "explicit KIT_PIPELINE_STATE_DIR override passes the guard"
   chk "$([ -f "$O/s/phase.json" ] && echo 1 || echo 0)" 1 "the override actually placed state at KIT_PIPELINE_STATE_DIR (not a vacuous pass)"
   rm -rf "$O"
   # non-UI slice exemption (teeth): a FAILING design gate is bypassed by
@@ -831,14 +836,14 @@ selftest(){
   rm -rf "$NP"
   # prototype gate no-ops at the monorepo root (pass sentinel — app-only gate)
   local M; M="$(mktemp -d)"
-  ( cd "$ROOT" && KIT_MONOREPO=1 KIT_PIPELINE_STATE_DIR="$M" bash tools/pipeline.sh init >/dev/null 2>&1 && KIT_MONOREPO=1 KIT_PIPELINE_STATE_DIR="$M" bash tools/pipeline.sh gate prototype >/dev/null 2>&1 )
+  ( cd "$ROOT" && KIT_MONOREPO=1 KIT_PIPELINE_STATE_DIR="$M" bash "$SELF" init >/dev/null 2>&1 && KIT_MONOREPO=1 KIT_PIPELINE_STATE_DIR="$M" bash "$SELF" gate prototype >/dev/null 2>&1 )
   chk "$?" 0 "prototype gate no-ops (pass) at the monorepo root"
   grep -q '"status": "passed"' "$M/phase.json"; chk "$?" 0 "monorepo prototype pass recorded"
   rm -rf "$M"
   # ---- run records + the Golden Gate (reproducibility) + golden --accept ----
   # A dedicated tmp state; the real tools/region_diff.sh runs (via REPRO_GATE
   # default) against tmp fixture/golden trees. runs.jsonl lands next to STATE
-  # (record_run derives the dir), so the repo's own .kit/state is untouched.
+  # (record_run derives the dir), so the repo's own pipeline/state is untouched.
   local G; G="$(mktemp -d)"; STATE="$G/phase.json"
   DESIGN_GATE="$TMP/stub.sh" SCAFFOLD_GATE_A="$TMP/stub.sh" SCAFFOLD_GATE_B="$TMP/stub.sh" REVIEW_GATE_A="$TMP/stub.sh" REVIEW_GATE_B="$TMP/stub.sh"
   init_state >/dev/null
@@ -884,34 +889,34 @@ selftest(){
   local K; K="$(mktemp -d)"
   git -C "$K" init -q -b main >/dev/null 2>&1; git -C "$K" config user.email t@t.t; git -C "$K" config user.name t
   echo base > "$K/a.txt"; git -C "$K" add -A; git -C "$K" commit -qm base
-  local KG="KIT_APP=$K KIT_PIPELINE_STATE_DIR=$K/.kit/state PIPELINE_PROTOTYPE_GATE=$TMP/stub.sh PIPELINE_DESIGN_GATE=$TMP/stub.sh PIPELINE_SCAFFOLD_GATE_A=$TMP/stub.sh PIPELINE_SCAFFOLD_GATE_B=$TMP/stub.sh PIPELINE_BRANDING_GATE=$TMP/stub.sh PIPELINE_REVIEW_GATE_A=$TMP/stub.sh PIPELINE_REVIEW_GATE_B=$TMP/stub.sh"
-  env $KG bash "$ROOT/tools/pipeline.sh" init >/dev/null 2>&1
-  env $KG bash "$ROOT/tools/pipeline.sh" gate prototype >/dev/null 2>&1
-  env $KG bash "$ROOT/tools/pipeline.sh" gate prototype --approve w >/dev/null 2>&1
-  env $KG bash "$ROOT/tools/pipeline.sh" advance >/dev/null 2>&1
-  env $KG bash "$ROOT/tools/pipeline.sh" gate design >/dev/null 2>&1
-  env $KG bash "$ROOT/tools/pipeline.sh" checkpoint >/dev/null 2>&1; chk "$?" 0 "checkpoint on clean tree exits 0 (nothing to checkpoint)"
+  local KG="KIT_APP=$K KIT_PIPELINE_STATE_DIR=$K/pipeline/state PIPELINE_PROTOTYPE_GATE=$TMP/stub.sh PIPELINE_DESIGN_GATE=$TMP/stub.sh PIPELINE_SCAFFOLD_GATE_A=$TMP/stub.sh PIPELINE_SCAFFOLD_GATE_B=$TMP/stub.sh PIPELINE_BRANDING_GATE=$TMP/stub.sh PIPELINE_REVIEW_GATE_A=$TMP/stub.sh PIPELINE_REVIEW_GATE_B=$TMP/stub.sh"
+  env $KG bash "$SELF" init >/dev/null 2>&1
+  env $KG bash "$SELF" gate prototype >/dev/null 2>&1
+  env $KG bash "$SELF" gate prototype --approve w >/dev/null 2>&1
+  env $KG bash "$SELF" advance >/dev/null 2>&1
+  env $KG bash "$SELF" gate design >/dev/null 2>&1
+  env $KG bash "$SELF" checkpoint >/dev/null 2>&1; chk "$?" 0 "checkpoint on clean tree exits 0 (nothing to checkpoint)"
   echo dirty > "$K/b.txt"
-  env $KG bash "$ROOT/tools/pipeline.sh" checkpoint wave-boundary >/dev/null 2>&1; chk "$?" 0 "checkpoint commits dirty tree"
+  env $KG bash "$SELF" checkpoint wave-boundary >/dev/null 2>&1; chk "$?" 0 "checkpoint commits dirty tree"
   git -C "$K" log --oneline -1 | grep -q "checkpoint \[design\] — wave-boundary"; chk "$?" 0 "commit message carries phase + note"
-  grep -q '"gate_green": true' "$K/.kit/state/checkpoints.jsonl"; chk "$?" 0 "ledger records gate_green=true (design gate passed)"
-  grep -q "$(git -C "$K" rev-parse --short HEAD)" "$K/.kit/state/checkpoints.jsonl"; chk "$?" 0 "ledger sha matches HEAD"
-  env $KG bash "$ROOT/tools/pipeline.sh" checkpoint >/dev/null 2>&1; chk "$?" 0 "checkpoint is idempotent on clean tree"
+  grep -q '"gate_green": true' "$K/pipeline/state/checkpoints.jsonl"; chk "$?" 0 "ledger records gate_green=true (design gate passed)"
+  grep -q "$(git -C "$K" rev-parse --short HEAD)" "$K/pipeline/state/checkpoints.jsonl"; chk "$?" 0 "ledger sha matches HEAD"
+  env $KG bash "$SELF" checkpoint >/dev/null 2>&1; chk "$?" 0 "checkpoint is idempotent on clean tree"
   # mid-phase checkpoint (no gate green): commits, warns, records gate_green=false
   local K2; K2="$(mktemp -d)"
   git -C "$K2" init -q -b main >/dev/null 2>&1; git -C "$K2" config user.email t@t.t; git -C "$K2" config user.name t
   echo base > "$K2/a.txt"; git -C "$K2" add -A; git -C "$K2" commit -qm base
-  local KH="KIT_APP=$K2 KIT_PIPELINE_STATE_DIR=$K2/.kit/state"
-  env $KH bash "$ROOT/tools/pipeline.sh" init >/dev/null 2>&1
+  local KH="KIT_APP=$K2 KIT_PIPELINE_STATE_DIR=$K2/pipeline/state"
+  env $KH bash "$SELF" init >/dev/null 2>&1
   echo wip > "$K2/b.txt"
   local out
-  out=$(env $KH bash "$ROOT/tools/pipeline.sh" checkpoint wip-note 2>&1); chk "$?" 0 "mid-phase checkpoint commits (no gate green)"
+  out=$(env $KH bash "$SELF" checkpoint wip-note 2>&1); chk "$?" 0 "mid-phase checkpoint commits (no gate green)"
   printf '%s' "$out" | grep -q "gate_green=false"; chk "$?" 0 "mid-phase checkpoint warns gate_green=false"
-  grep -q '"gate_green": false' "$K2/.kit/state/checkpoints.jsonl"; chk "$?" 0 "ledger records gate_green=false"
+  grep -q '"gate_green": false' "$K2/pipeline/state/checkpoints.jsonl"; chk "$?" 0 "ledger records gate_green=false"
   # outside a git work tree → exit 1
   local K3; K3="$(mktemp -d)"
-  env KIT_APP="$K3" KIT_PIPELINE_STATE_DIR="$K3/.kit/state" bash "$ROOT/tools/pipeline.sh" init >/dev/null 2>&1
-  ( env KIT_APP="$K3" KIT_PIPELINE_STATE_DIR="$K3/.kit/state" bash "$ROOT/tools/pipeline.sh" checkpoint ) >/dev/null 2>&1; chk "$?" 1 "checkpoint outside git exits 1"
+  env KIT_APP="$K3" KIT_PIPELINE_STATE_DIR="$K3/pipeline/state" bash "$SELF" init >/dev/null 2>&1
+  ( env KIT_APP="$K3" KIT_PIPELINE_STATE_DIR="$K3/pipeline/state" bash "$SELF" checkpoint ) >/dev/null 2>&1; chk "$?" 1 "checkpoint outside git exits 1"
   # REGRESSION — advance must exit 0 on SUCCESS with a CLEAN tree.
   # do_advance ended with a bare `[ -n "$(git status --porcelain)" ] && echo …`,
   # which made that test the function's exit status: clean tree → test false →
@@ -920,36 +925,36 @@ selftest(){
   # loop only worked while work was uncommitted. The dirty-tree case below is
   # structurally blind to it (the echo runs, so the status is 0) — this is its
   # mirror, in its own tree so it can't perturb the phase sequence below.
-  # .kit/ is gitignored here exactly as a real consumer app does it (p2 ignores
-  # .kit/state). Without that, every gate/advance write dirties the tree — and a
+  # pipeline/state/ is gitignored here exactly as a real consumer app does it (sample-app ignores
+  # pipeline/state). Without that, every gate/advance write dirties the tree — and a
   # `checkpoint` does NOT fix it, because checkpoint commits and THEN appends to
-  # .kit/state/checkpoints.jsonl, re-dirtying the tree. A dirty tree sends advance
+  # pipeline/state/checkpoints.jsonl, re-dirtying the tree. A dirty tree sends advance
   # down the echo path, where it returns 0 even when broken, so the assertion
   # below would pass vacuously and test nothing. (Observed: the first draft of
   # this case did exactly that.)
   local K4; K4="$(mktemp -d)"
   git -C "$K4" init -q -b main >/dev/null 2>&1; git -C "$K4" config user.email t@t.t; git -C "$K4" config user.name t
-  printf '.kit/\n' > "$K4/.gitignore"
+  printf 'pipeline/state/\n' > "$K4/.gitignore"
   echo base > "$K4/a.txt"; git -C "$K4" add -A; git -C "$K4" commit -qm base
-  local KC="KIT_APP=$K4 KIT_PIPELINE_STATE_DIR=$K4/.kit/state PIPELINE_PROTOTYPE_GATE=$TMP/stub.sh PIPELINE_DESIGN_GATE=$TMP/stub.sh"
-  env $KC bash "$ROOT/tools/pipeline.sh" init >/dev/null 2>&1
-  env $KC bash "$ROOT/tools/pipeline.sh" gate prototype >/dev/null 2>&1
-  env $KC bash "$ROOT/tools/pipeline.sh" gate prototype --approve w >/dev/null 2>&1
+  local KC="KIT_APP=$K4 KIT_PIPELINE_STATE_DIR=$K4/pipeline/state PIPELINE_PROTOTYPE_GATE=$TMP/stub.sh PIPELINE_DESIGN_GATE=$TMP/stub.sh"
+  env $KC bash "$SELF" init >/dev/null 2>&1
+  env $KC bash "$SELF" gate prototype >/dev/null 2>&1
+  env $KC bash "$SELF" gate prototype --approve w >/dev/null 2>&1
   git -C "$K4" status --porcelain | grep -q .; chk "$?" 1 "precondition: tree is clean before the clean-tree advance"
-  out=$(env $KC bash "$ROOT/tools/pipeline.sh" advance 2>&1); chk "$?" 0 "advance exits 0 on a CLEAN tree (regression: returned 1 on success)"
+  out=$(env $KC bash "$SELF" advance 2>&1); chk "$?" 0 "advance exits 0 on a CLEAN tree (regression: returned 1 on success)"
   printf '%s' "$out" | grep -q "checkpoint suggested"; chk "$?" 1 "no checkpoint suggestion on a clean tree"
   # advance proposes a checkpoint on a dirty tree; done warns the same way
   echo more > "$K/c.txt"
-  out=$(env $KG bash "$ROOT/tools/pipeline.sh" advance 2>&1); chk "$?" 0 "advance still succeeds"
+  out=$(env $KG bash "$SELF" advance 2>&1); chk "$?" 0 "advance still succeeds"
   printf '%s' "$out" | grep -q "checkpoint suggested"; chk "$?" 0 "advance proposes a checkpoint on dirty tree"
-  env $KG bash "$ROOT/tools/pipeline.sh" gate scaffold >/dev/null 2>&1
-  env $KG bash "$ROOT/tools/pipeline.sh" advance >/dev/null 2>&1
-  env $KG bash "$ROOT/tools/pipeline.sh" gate review >/dev/null 2>&1
-  env $KG bash "$ROOT/tools/pipeline.sh" review approve >/dev/null 2>&1
+  env $KG bash "$SELF" gate scaffold >/dev/null 2>&1
+  env $KG bash "$SELF" advance >/dev/null 2>&1
+  env $KG bash "$SELF" gate review >/dev/null 2>&1
+  env $KG bash "$SELF" review approve >/dev/null 2>&1
   echo tail > "$K/d.txt"
-  out=$(env $KG bash "$ROOT/tools/pipeline.sh" done 2>&1); chk "$?" 0 "done succeeds when approved"
+  out=$(env $KG bash "$SELF" done 2>&1); chk "$?" 0 "done succeeds when approved"
   printf '%s' "$out" | grep -q "WARN: done-eligible with uncommitted work"; chk "$?" 0 "done warns on uncommitted work"
-  out=$(env $KG bash "$ROOT/tools/pipeline.sh" status 2>&1)
+  out=$(env $KG bash "$SELF" status 2>&1)
   printf '%s' "$out" | grep -q "ckpt"; chk "$?" 0 "status shows the last checkpoint"
   rm -rf "$K" "$K2" "$K3"
   # ---- freeze tool (the real prototype gate script) — hermetic via FREEZE_RENDER=skip ----
@@ -982,7 +987,7 @@ EOF
   FREEZE_RENDER=skip bash "$ROOT/tools/freeze_design.sh" "$FD/app" >/dev/null 2>&1; chk "$?" 1 "freeze fails on missing kit token vocab"
   mkdesign "$FD/app"
   echo '<div class="tweaks-panel">x</div>' >> "$FD/app/design/surfaces/train_shell_home_view.html"
-  FREEZE_RENDER=skip bash "$ROOT/tools/freeze_design.sh" "$FD/app" >/dev/null 2>&1; chk "$?" 1 "freeze fails on uncovered huashu chrome (tweaks-panel)"
+  FREEZE_RENDER=skip bash "$ROOT/tools/freeze_design.sh" "$FD/app" >/dev/null 2>&1; chk "$?" 1 "freeze fails on uncovered app-box-design chrome (tweaks-panel)"
   echo '{"globs":[],"selectors":[".tweaks-panel"]}' > "$FD/app/design/exclusions.json"
   FREEZE_RENDER=skip bash "$ROOT/tools/freeze_design.sh" "$FD/app" >/dev/null 2>&1; chk "$?" 0 "freeze passes when chrome is excluded (D6)"
   rm -rf "$FD"
@@ -992,8 +997,8 @@ EOF
   local LP; LP="$(mktemp -d)"
   printf '#!/usr/bin/env bash\necho stub-ok; exit 0\n' > "$LP/stub.sh"; chmod +x "$LP/stub.sh"
   local LG="KIT_MONOREPO=1 KIT_PIPELINE_STATE_DIR=$LP PROTO_GATE=$LP/stub.sh DESIGN_GATE=$LP/stub.sh SCAFFOLD_GATE_A=$LP/stub.sh SCAFFOLD_GATE_B=$LP/stub.sh SCAFFOLD_GATE_C=$LP/stub.sh SCAFFOLD_GATE_D=$LP/stub.sh REVIEW_GATE_A=$LP/stub.sh REVIEW_GATE_B=$LP/stub.sh"
-  env $LG bash "$ROOT/tools/pipeline.sh" init >/dev/null 2>&1
-  out=$(env $LG bash "$ROOT/tools/pipeline.sh" loop --max 3 2>&1); chk "$?" 4 "loop w/ unapproved Human Gate 1 exits 4 (not silent 1)"
+  env $LG bash "$SELF" init >/dev/null 2>&1
+  out=$(env $LG bash "$SELF" loop --max 3 2>&1); chk "$?" 4 "loop w/ unapproved Human Gate 1 exits 4 (not silent 1)"
   printf '%s' "$out" | grep -q "LAST CRITIQUE"; chk "$?" 0 "blocked-advance escalation carries LAST CRITIQUE payload"
   printf '%s' "$out" | grep -q "Human Gate 1"; chk "$?" 0 "escalation payload surfaces the Human-Gate-1 refusal"
   grep -q "loop ESCALATE (advance blocked)" "$LP/phase.json"; chk "$?" 0 "history records the blocked-advance escalation"

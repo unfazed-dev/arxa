@@ -2,7 +2,7 @@
   "_generated_from": "project_seed.json",
   "projects": [
     {
-      "id": "p1",
+      "id": "proj-1",
       "name": "Ledgerly",
       "client": "Ada Okafor",
       "stage": "build",
@@ -15,7 +15,7 @@
       "health": "red"
     },
     {
-      "id": "p2",
+      "id": "proj-2",
       "name": "Harbour Freight",
       "client": "Vantage Logistics",
       "stage": "ship",
@@ -29,7 +29,7 @@
       "health": "green"
     },
     {
-      "id": "p3",
+      "id": "proj-3",
       "name": "Coastline Clinic",
       "client": "Dr. M. Reyes",
       "stage": "design",

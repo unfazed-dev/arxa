@@ -8,7 +8,7 @@ only id + variant + motion; this script turns those into the 3 mappings.
 
 Determinism: identical inputs → identical maps.json (dict-sorted JSON, no clocks).
 
-Resolver policy (see docs/plans/flutter-crew-per-platform-fallback.md):
+Resolver policy (see docs/plans/app-box-per-platform-fallback.md):
     stack = "flutter"  (one Flutter codebase; each platform owns its fallback)
     ios:     glass("motion.glass-blur" ∈ motion) → GlassContainer(UiKitView), bridge=platformView
              else CUPERTINO widget (flutter-widgets.json `ios`), bridge=pureFlutter
@@ -199,7 +199,7 @@ def _iter_primitives(primitives_doc):
 
 
 def _self_test():
-    """Behaviour tests for _resolve — the native-primitive decision (the crew's
+    """Behaviour tests for _resolve — the native-primitive decision (the appbox's
     core value: iOS glass / Android expressive / web shadcn, NO approximation).
     Locks down the bridge assignment per platform + motion, not just 'same bytes'."""
     cat = {"map": {"action.button": {"symbol": "CupertinoButton",

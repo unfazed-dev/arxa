@@ -168,7 +168,7 @@ test_capscan(){
   # pubspec runtime dep is a signal; dev_dependencies do not ship
   s=$(mkapp cs-pub); printf 'dependencies:\n  video_player: ^2.9.0\ndev_dependencies:\n  just_audio: ^0.10.0\n' > "$s/pubspec.yaml"
   o=$(cap "$s"); has "exit:1" "$o" && has "FAIL: video playback" "$o" && ! has "FAIL: audio playback" "$o" && ok "runtime dep fails, dev_dependency ignored" || bad "pubspec signal wrong: $o"
-  # doc comments are not usage (the p2 workout_detail placeholder case)
+  # doc comments are not usage (the sample-app workout_detail placeholder case)
   s=$(mkapp cs-comment); printf '/// playback placeholder — VideoPlayerService is a phase-2A stub.\nclass X {}\n' > "$s/lib/a.dart"
   o=$(cap "$s"); has "exit:0" "$o" && ok "comment-only mention is not usage" || bad "comment mention should pass: $o"
   # native signal: iOS background-audio mode without a Dart signal still fails
@@ -292,7 +292,7 @@ test_translate(){
   # subdirectory of it. Since the 2026-07-26 extraction this repo stands alone and
   # its parent is just a workspace folder with no design/ in it — so the real-app
   # leg is SKIPPED unless an app is named. Point $KIT_APP at a consumer to run it:
-  #   KIT_APP=/path/to/p2 tools/test_gates.sh -g translate
+  #   KIT_APP=/path/to/sample-app tools/test_gates.sh -g translate
   # Skipping is deliberate: a standalone library repo has no real app, and failing
   # would report a missing consumer as a translator defect. The hermetic self-test
   # above still covers the transform, the golden, drift, and the legs.

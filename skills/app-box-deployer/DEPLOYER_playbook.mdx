@@ -1,0 +1,39 @@
+<Callout id="header" tone="info">
+# app-box-deployer — Per-Skill Playbook
+
+`app-box-deployer` · status: **active**
+
+**Role (one line):** ship an appbox-built Flutter target to stores (fastlane) and/or push an OTA Dart patch (shorebird).
+
+**Scope of this document:** lets a human OR an LLM drive the deploy phase without reading the skill source. Folded from `SKILL.md`.
+
+## Table of contents
+
+0. Header & TOC · 1. Overview & role · 2. Inputs · 3. Procedure · 4. Outputs · 5. Rules · 6. References
+
+</Callout>
+
+### Overview & role
+
+fastlane + shorebird are existing CLIs; this role drives them with a recipe. The Fastfile + `shorebird.yaml` are operator-owned extension points — signing, bundle id, and app ids are project secrets the pipeline never holds.
+
+### Inputs
+
+- A released target (reviewer-green) at `<target>/`.
+- Operator-owned signing (`match`), bundle id, team, store keys, shorebird app id — never committed.
+
+### Procedure
+
+Stores — fastlane (gym + match + deliver/supply): once per project, `fastlane init` in `<target>/ios` + `<target>/android`; operator fills signing. Beta lane `fastlane beta`: iOS `gym`→`match`→`upload_to_testflight`; Android `flutter build appbundle`→`upload_to_play_store(track: internal)`. Release lane `fastlane release`: store metadata (`deliver`/`supply`) + production track. OTA — shorebird: once, `shorebird init` → `shorebird.yaml`; patch with `shorebird release patch` after a Dart-only fix (catches the 80% logic-bug case without a store round-trip). Boundary: shorebird patches Dart only (bug fixes, not features); native changes → fastlane full release.
+
+### Outputs
+
+A shipped build (store track) and/or a shorebird patch version. Deploy is the only outward-facing pipeline action — confirm with the operator before pushing.
+
+### Rules
+
+Never commit secrets — `.env`, signing, store keys are operator-owned, gitignored. Release is gated on QC green + manifest hash match; don't ship a drifted target. The pipeline stamps `0.1.0+1` in the generated pubspec; the operator bumps per release.
+
+<!-- kb:begin -->
+### References
+<!-- kb:end -->

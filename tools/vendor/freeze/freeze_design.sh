@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # freeze_design.sh — the PROTOTYPE gate (ADR-0010): validate + freeze an app's
-# design/ SSOT produced by an external huashu-design session. The deterministic
+# design/ SSOT produced by an external app-box-design session. The deterministic
 # half of Human Gate 1; the human half is `pipeline.sh gate prototype --approve`.
 #
 # The design dir is <app-root>/design/ by default (grill D2) — anchored to the
@@ -15,7 +15,7 @@
 #   design/
 #     tokens.json             DTCG tokens carrying the kit vocabulary (checked below)
 #     design-system.md        the frozen design-system doc
-#     exclusions.json         D6: {"globs": [...], "selectors": [...]} — huashu
+#     exclusions.json         D6: {"globs": [...], "selectors": [...]} — app-box-design
 #                             harness chrome (TweaksPanel, device frames, fake
 #                             status bars) that must NEVER scaffold into kit UI
 #     direction-approved.md   gate file: the approved design direction
@@ -30,7 +30,7 @@
 #   1. shape     — every required file present
 #   2. vocab     — tokens.json parses (DTCG $type/$value) and carries the kit
 #                  token paths the translator maps onto kit_colors.dart
-#   3. exclusions— huashu chrome signatures found in surfaces are each covered
+#   3. exclusions— app-box-design chrome signatures found in surfaces are each covered
 #                  by an exclusions glob/selector (uncovered = would scaffold)
 #   4. structure  — structure.json's shell/surface map resolves: every declared
 #                   surface has a file, every file is claimed by exactly one
@@ -58,6 +58,11 @@ case "$DESIGN_REL" in
 esac
 DESIGN="$APP/$DESIGN_REL"
 EVIDENCE="$APP/.kit/state/prototype/evidence"
+# viewport dimensions are config-driven (R3: config/app-box.config.json viewports.mobile),
+# not the 390×844 literal. Falls back only if config is absent.
+GATE_ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
+VWVH="$(python3 -c "import json;d=json.load(open('$GATE_ROOT/config/app-box.config.json'));v=d['viewports']['mobile'];print(v['width'],v['height'])" 2>/dev/null || echo "390 844")"
+VW="${VWVH%% *}"; VH="${VWVH##* }"
 F=0
 fail(){ echo "FAIL: $1" >&2; F=$((F+1)); }
 ok(){ echo "  ✓ $1"; }
@@ -66,7 +71,7 @@ ok(){ echo "  ✓ $1"; }
 if [ ! -d "$DESIGN" ]; then
   echo "FAIL: no design dir at $DESIGN" >&2
   echo "     the design SSOT must live at <project-root>/$DESIGN_REL (grill D2) —" >&2
-  echo "     point the huashu-design session's output there, then re-run." >&2
+  echo "     point the app-box-design session's output there, then re-run." >&2
   exit 1
 fi
 
@@ -104,7 +109,7 @@ print(f"  ✓ vocab: {len(REQUIRED)} kit token paths present (DTCG)")
 PY
 [ $? -ne 0 ] && F=$((F+1))
 
-# ---- 3. exclusions (D6): huashu chrome must be named, never scaffolded ----
+# ---- 3. exclusions (D6): app-box-design chrome must be named, never scaffolded ----
 python3 - "$DESIGN" <<'PY'
 import json,re,sys,glob,fnmatch,os
 design=sys.argv[1]
@@ -113,7 +118,7 @@ except Exception as e: print(f"FAIL: exclusions: exclusions.json does not parse 
 globs=ex.get("globs",[]); selectors=ex.get("selectors",[])
 if not isinstance(globs,list) or not isinstance(selectors,list):
     print("FAIL: exclusions: exclusions.json needs {\"globs\": [...], \"selectors\": [...]}",file=sys.stderr); sys.exit(1)
-# huashu harness chrome signatures — the stuff that is NOT product UI (D6):
+# app-box-design harness chrome signatures — the stuff that is NOT product UI (D6):
 # tweak panels, device/phone frames, fake iOS status bars (9:41 is the tell),
 # browser-chrome mockups.
 SIGS=[r"tweak", r"device[-_ ]?frame", r"phone[-_ ]?frame", r"(?:iphone|android)[-_ ]?frame",
@@ -129,7 +134,7 @@ for html in sorted(glob.glob(os.path.join(design,"surfaces","*.html"))):
             if any(fnmatch.fnmatch(rel,g) or fnmatch.fnmatch(os.path.basename(html),g) for g in globs) \
                or any(c and c in core(line) for c in sel_cores): covered+=1
             else: uncovered.append(f"{rel}:{i} /{sig}/")
-for u in uncovered: print(f"FAIL: exclusions: huashu chrome present but not excluded — {u} (add to exclusions.json)",file=sys.stderr)
+for u in uncovered: print(f"FAIL: exclusions: app-box-design chrome present but not excluded — {u} (add to exclusions.json)",file=sys.stderr)
 if uncovered: sys.exit(1)
 print(f"  ✓ exclusions: {covered} chrome reference(s) covered by exclusions.json (D6)")
 PY
@@ -224,9 +229,9 @@ else
   mkdir -p "$EVIDENCE"
   RENDER_RC=""
   if command -v uv >/dev/null 2>&1; then
-    uv run --with playwright python - "$DESIGN" "$EVIDENCE" <<'PY'
+    uv run --with playwright python - "$DESIGN" "$EVIDENCE" "$VW" "$VH" <<'PY'
 import sys,threading,functools,http.server,socketserver,os,glob
-design,evidence=sys.argv[1],sys.argv[2]
+design,evidence,vw,vh=sys.argv[1],sys.argv[2],sys.argv[3],sys.argv[4]
 class Q(http.server.SimpleHTTPRequestHandler):
     def log_message(self,*a): pass
 srv=socketserver.ThreadingTCPServer(("127.0.0.1",0),functools.partial(Q,directory=design))
@@ -236,7 +241,7 @@ from playwright.sync_api import sync_playwright
 errors=[]
 with sync_playwright() as pw:
     b=pw.chromium.launch()
-    pg=b.new_page(viewport={"width":390,"height":844})
+    pg=b.new_page(viewport={"width":int(vw),"height":int(vh)})
     for html in sorted(glob.glob(os.path.join(design,"surfaces","*.html"))):
         name=os.path.splitext(os.path.basename(html))[0]
         msgs=[]
@@ -254,9 +259,9 @@ sys.exit(1 if errors else 0)
 PY
     RENDER_RC=$?
   elif python3 -c "import playwright" 2>/dev/null; then
-    python3 - "$DESIGN" "$EVIDENCE" <<'PY'
+    python3 - "$DESIGN" "$EVIDENCE" "$VW" "$VH" <<'PY'
 import sys,threading,functools,http.server,socketserver,os,glob
-design,evidence=sys.argv[1],sys.argv[2]
+design,evidence,vw,vh=sys.argv[1],sys.argv[2],sys.argv[3],sys.argv[4]
 class Q(http.server.SimpleHTTPRequestHandler):
     def log_message(self,*a): pass
 srv=socketserver.ThreadingTCPServer(("127.0.0.1",0),functools.partial(Q,directory=design))
@@ -266,7 +271,7 @@ from playwright.sync_api import sync_playwright
 errors=[]
 with sync_playwright() as pw:
     b=pw.chromium.launch()
-    pg=b.new_page(viewport={"width":390,"height":844})
+    pg=b.new_page(viewport={"width":int(vw),"height":int(vh)})
     for html in sorted(glob.glob(os.path.join(design,"surfaces","*.html"))):
         name=os.path.splitext(os.path.basename(html))[0]
         msgs=[]

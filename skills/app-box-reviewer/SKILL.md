@@ -1,5 +1,5 @@
 ---
-name: review
+name: app-box-reviewer
 description: Use as the QC gate before a appbox-built target is released — runs the deterministic contract validator (arch_guard) + the over-engineering review (ponytail-review), checks the manifest hash, and emits a green/red verdict. Trigger on "review the app", "QC", "is it ready", "gate before release".
 ---
 
@@ -10,9 +10,9 @@ Two independent reviewers, both must be green. This role WIRES existing tools;
 it builds nothing.
 
 ## Gate (run in order, stop on red)
-1. **Contract** — `python3 "$FC/stages/arch_guard.py" <target>` (ADR-0003;
-   `$FC` = app-box plugin root — on this install `~/Developer/factory/app-box`).
-   Exit 0 required. Violations → builder re-emits.
+1. **Contract** — `python3 "tools/vendor/stages/arch_guard.py" <target>` (ADR-0003;
+   resolved relative to the app-box repo root). Exit 0 required. Violations
+   → builder re-emits. (arch_guard is a forward reference — not yet vendored.)
 2. **Code economy** — `/ponytail-review` on the diff (built extension points +
    any generated-layer drift). Flags: reinvented stdlib, unneeded deps,
    speculative abstractions, dead flexibility. Each finding → builder cuts it.

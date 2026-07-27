@@ -9,7 +9,7 @@ emit_htmx|/Volumes/developer_ssd/Developer/totem_labs/stacked_kit|tools/emit_htm
 emit_playground|/Volumes/developer_ssd/Developer/totem_labs/stacked_kit|tools/emit_playground|78cb78f61d49b397f43bc1240ba050991dc941f4|2026-07-27
 kit_registry|/Volumes/developer_ssd/Developer/totem_labs/stacked_kit|tools/kit_registry|4f95edea0628d45add155ed9ca778dd3807d873c|2026-07-27
 gen_playbook|/Volumes/developer_ssd/Developer/totem_labs/stacked_kit|tools/gen_playbook.py|d961a9ee0ca3464fc039e19bd681829dedb1ee82|2026-07-27
-skill_designer|/Volumes/developer_ssd/Developer/factory/flutter-crew|skills/designer|88afbf0336d88c67ac211071b82b54d2e3be2008|2026-07-27
+# skill_designer: DROPPED (plan 03 A1) — superseded by P01's skills/app-box-designer/
 skill_builder|/Volumes/developer_ssd/Developer/factory/flutter-crew|skills/builder|687cd1aaaaab3272b0b6ad3c5698f757a59706b3|2026-07-27
 skill_deployer|/Volumes/developer_ssd/Developer/factory/flutter-crew|skills/deployer|7c4aa9d08d481ed03e24af460ce6275c6032e0ba|2026-07-27
 skill_review|/Volumes/developer_ssd/Developer/factory/flutter-crew|skills/review|7c4aa9d08d481ed03e24af460ce6275c6032e0ba|2026-07-27
@@ -24,3 +24,16 @@ stage_map_all|/Volumes/developer_ssd/Developer/factory/flutter-crew|stages/map_a
 stage_run_pipeline|/Volumes/developer_ssd/Developer/factory/flutter-crew|stages/run_pipeline.py|55250753ecc6b686896bfc45c019e350db632349|2026-07-27
 stage_init|/Volumes/developer_ssd/Developer/factory/flutter-crew|stages/init.py|5a5a1ae66b4a64631eb4e0c5d61663abbe5533d5|2026-07-27
 enforce_design|/Volumes/developer_ssd/Developer/totem_labs/stacked_kit|skills/kit-designer/scripts/enforce_design.dart|562b78b0c3904bb5e5e19ee0d4ccf6e657753724|2026-07-27
+# Baselines (plan 03.8) — pass counts captured on copy. A later drop is a regression.
+#   lint_conventions.selftest.sh        : 6 passed, 0 failed
+#   check_freshness.selftest.sh         : 2 passed, 0 failed
+#   gen_playbook/playbook_markers.selftest.sh : 6 passed, 0 failed
+#   scaffold_coverage_gate --self-test  : 23 passed, 0 failed
+#   emit_structure --self-test          : 16 passed, 0 failed
+#   emit_htmx --self-test (EMIT_RENDER=skip) : 28 checks, ALL GREEN
+#   emit_playground --self-test (EMIT_RENDER=skip) : 2 checks, ALL GREEN (browser scenarios skipped)
+#   pipeline.sh selftest               : 97 passed, 8 failed (8 = render-backend exit 127: playwright/uv unavailable, env-blocked not logic)
+# Env-blocked (need the full upstream tree, not the vendored subset):
+#   shell_structure_gate --self-test    : fixtures dir not vendored
+#   test_gates.sh                       : needs kit-scaffolder/, payments/, gen_playbook module
+#   test_memory.sh                      : needs the stacked_kit memory system

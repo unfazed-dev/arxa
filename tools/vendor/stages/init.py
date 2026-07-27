@@ -19,7 +19,7 @@ write" (ADR-0008 Update 2026-06-25):
             defaulted the rest): bundleId, appVersion, platforms, minOs,
             backend.provider, capabilities (all OFF). `[enter]` accepts the shown
             default; `--yes` accepts every default (CI/agent). NEVER asks for
-            secrets — points at `crew set secret`.
+            secrets — points at `appbox set secret`.
   validate  the merged config against schemas/flutter_crew.config.schema.json.
   write     flutter_crew.config.json at the target root (tracked — not .blueprint/).
 
@@ -141,7 +141,7 @@ def _detect_origin(html_text):
 # walk would need to resolve $ref aliases AND descend color scale-groups (e.g.
 # color.brand.0/700), which a light pre-build parse can't do soundly — that's the
 # transform_tokens stage's job, and it runs at BUILD, not init. The operator sets
-# primaryColor via `crew set branding.primaryColor` (validated against the schema's
+# primaryColor via `appbox set branding.primaryColor` (validated against the schema's
 # ^#hex pattern); the schema defaults themeMode so branding is never required.
 
 
@@ -309,7 +309,7 @@ def run(design_path, *, target=None, platforms=None, yes=False, dry_run=False,
         base["platforms"] = [p.strip() for p in platforms.split(",") if p.strip()]
     if confidence == "low":
         print(f"[init] ⚠ could not detect form factor from '{design_path}'; "
-              f"defaulting to 'mobile' (override via `crew set design.formFactor`).",
+              f"defaulting to 'mobile' (override via `appbox set design.formFactor`).",
               file=sys.stderr)
 
     # ── ask ──
@@ -330,7 +330,7 @@ def run(design_path, *, target=None, platforms=None, yes=False, dry_run=False,
     if res["designerNeeded"] and not as_json:
         print(f"[init] ℹ Designer will need to author: {', '.join(res['author'])} "
               f"(targets demand form factors the fed design doesn't cover). "
-              f"Record per-factor provenance via `crew set design.formFactors.<f> <path|generate>`.",
+              f"Record per-factor provenance via `appbox set design.formFactors.<f> <path|generate>`.",
               file=sys.stderr)
 
     # ── validate ──
@@ -359,7 +359,7 @@ def run(design_path, *, target=None, platforms=None, yes=False, dry_run=False,
         print(f"[init] ✓ wrote {out_path}")
         print(f"[init]   form factor: {base.get('design', {}).get('formFactor')} "
               f"(confidence: {confidence})")
-        print(f"[init]   secrets stay in env — use `crew set secret <KEY>` for those.")
+        print(f"[init]   secrets stay in env — use `appbox set secret <KEY>` for those.")
     return 0
 
 

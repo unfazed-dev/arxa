@@ -94,7 +94,7 @@ if [ "${1:-}" = "--self-test" ]; then
   o=$(bash "$SELF" "$T/a" 2>&1); chk "$?" 0 "absent manifest is WARN not FAIL"
   need "$o" "WARN" "absent manifest warns"
   # S6: shell with view+viewmodel+design-system.md but NO widgets/ and NO
-  # *_chrome.dart → FAIL. This is the p2 train_shell shape that passed every gate
+  # *_chrome.dart → FAIL. This is the sample-app train_shell shape that passed every gate
   # while tablet/desktop imported their row out of the mobile view file.
   mkdir -p "$T/w/lib/ui/views/train_shell"; printf 'name: appw\n' > "$T/w/pubspec.yaml"
   printf '{"selfContained": ["train_shell"], "notes": ""}' > "$T/w/lib/ui/views/.shell-structure.json"
@@ -327,7 +327,7 @@ done < <(find "$APP/lib" -name '*_repository.dart' -not -path '*/.*' 2>/dev/null
 # whose OWN source resolves locator<Y>() needs Y registered too. Generic by
 # construction: resolves each registered Kit* class to its kit source through
 # .dart_tool/package_config.json, so it covers every kit service rather than a
-# hardcoded pair. Found because p2 registered KitNotificationService without
+# hardcoded pair. Found because sample-app registered KitNotificationService without
 # SnackbarService (KitNotificationService:94 does locator<SnackbarService>()),
 # which throws on Android and on any iOS call passing actionLabel.
 # Degrades to WARN — never a silent pass — when python3 or package_config is
@@ -747,7 +747,7 @@ for s in $SHELLS; do
       # own View class is using it as one layout — the documented
       # "wide tiers centre the phone column" idiom
       # (showcase_notes_create_account_view.tablet.dart). Cherry-picking any
-      # OTHER symbol out of a variant is the real defect (p2's
+      # OTHER symbol out of a variant is the real defect (sample-app's
       # TrainingLibraryRow), and still fails below.
       imp="$(printf '%s' "$l" | sed -E "s/.*'([^']*)'.*/\1/")"
       target="$(dirname "$vf")/$(basename "$imp")"

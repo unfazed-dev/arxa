@@ -292,7 +292,7 @@ def _emit(tree, spec_key):
     # mapping. Skipped silently if no alias block — legacy designs keep working as-is.
     alias_lines = _emit_aliases(tree, spec_key)
     if alias_lines:
-        lines.append(s["group"]("crew.aliases"))
+        lines.append(s["group"]("appbox.aliases"))
         lines.extend(alias_lines)
     # canonical-baseline layer: the primitives library hardcodes the 14 names in
     # _CANON_BASELINE; a design that defines none of them (minimal/empty-token
@@ -309,7 +309,7 @@ def _emit(tree, spec_key):
     base_lines = [_line(spec_key, s["indent"], name, "color", hexv)
                   for name, hexv in _CANON_BASELINE.items() if name not in existing]
     if base_lines:
-        lines.append(s["group"]("crew.baseline"))
+        lines.append(s["group"]("appbox.baseline"))
         lines.extend(base_lines)
     lines.extend(s["footer"])
     return "\n".join(lines) + "\n"
@@ -317,9 +317,9 @@ def _emit(tree, spec_key):
 
 # the $extensions key a design authors its alias mapping under. The canonical name
 # is `com.fluttercrew.aliases` (design-agnostic — never atlet-specific). The legacy
-# `com.atlet.crew.aliases` is read as a fallback so older authored designs keep working.
+# `com.atlet.appbox.aliases` is read as a fallback so older authored designs keep working.
 _ALIAS_EXT = "com.fluttercrew.aliases"
-_ALIAS_EXT_LEGACY = "com.atlet.crew.aliases"
+_ALIAS_EXT_LEGACY = "com.atlet.appbox.aliases"
 
 
 def _resolve_alias_ref(tree, ref):

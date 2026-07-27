@@ -595,7 +595,7 @@ def _wcag_contrast(h1, h2):
 
 
 # Generic icon-name → (Material rounded, SF Symbol) — native-vocabulary glyphs the
-# crew is allowed to render on native controls (NOT brand graphics). The design's
+# appbox is allowed to render on native controls (NOT brand graphics). The design's
 # `<Icon name="…"/>` keeps its name as a node prop (Icon is a switch, not expanded),
 # so a button wrapping one renders as a native AdaptiveIconButton with the mapped glyph.
 _ICON = {
@@ -1655,7 +1655,7 @@ def _text(node, sess):
 
 
 # 1ch ≈ the advance width of '0' in the body face. ~7px is the practical average for the
-# 14–17px sans body copy the crew ships; the exact per-face value is a phase-2 refinement.
+# 14–17px sans body copy the appbox ships; the exact per-face value is a phase-2 refinement.
 _CH_PX = 7.0
 
 
@@ -1986,7 +1986,7 @@ def tpl_vm_stub(name, snake):
     when the existing stub is still the empty default (never clobbers hand-written logic)."""
     return f'''// FACTORY EXTENSION POINT — hand-edit freely; the factory regenerates ONLY the
 // `.gen.dart` base (the countdown state machine), never this file once you add logic.
-// @crew-extension-point: presentation/{snake}_viewmodel
+// @appbox-extension-point: presentation/{snake}_viewmodel
 import '{snake}_viewmodel.gen.dart';
 
 class {name}ViewModel extends {name}ViewModelBase {{
@@ -2031,7 +2031,7 @@ def tpl_vm_overlays_stub(name, snake):
     no-arg ctor — overlay screens have no route-arg record)."""
     return f'''// FACTORY EXTENSION POINT — hand-edit freely; the factory regenerates ONLY the
 // `.gen.dart` base (the overlay-state flags), never this file once you add logic.
-// @crew-extension-point: presentation/{snake}_viewmodel
+// @appbox-extension-point: presentation/{snake}_viewmodel
 import '{snake}_viewmodel.gen.dart';
 
 class {name}ViewModel extends {name}ViewModelBase {{
@@ -2229,7 +2229,7 @@ def tpl_vm_home_stub(name, snake):
     — Dart statics aren't inherited, so it lives on the subclass, not the base."""
     return f'''// FACTORY EXTENSION POINT — hand-edit freely; the factory regenerates ONLY the
 // `.gen.dart` base (the stubbed home members), never this file once you add logic.
-// @crew-extension-point: presentation/{snake}_viewmodel
+// @appbox-extension-point: presentation/{snake}_viewmodel
 import '{snake}_viewmodel.gen.dart';
 
 class {name}ViewModel extends {name}ViewModelBase {{
@@ -2254,7 +2254,7 @@ class {name}ViewModel extends {name}ViewModelBase {{
 # it actually references), NOT a hardcoded atlet list — a foreign design's
 # DonutChart/PulseRing/kDonutChartValues are declared just as atlet's StatBars/
 # kStatBarsValues are. Force-written ONLY when home_assets.dart is absent (the
-# @crew-extension-point guard: a hand-authored one is sacrosanct once the operator
+# @appbox-extension-point guard: a hand-authored one is sacrosanct once the operator
 # adds real painters).
 _HOME_ASSETS_SHELL_WIDGETS = ("RiseIn", "StatsCarousel", "DashedLine")
 # Known framework/library types the home view calls but does NOT own — these are
@@ -2398,7 +2398,7 @@ def tpl_home_assets_stub(symbols):
     body = "".join(cls_decls + const_decls)
     return (
         "// FACTORY EXTENSION POINT — hand-edit freely; the factory will NOT overwrite this\n"
-        "// file once you add real chart painters. @crew-extension-point: presentation/home_assets\n"
+        "// file once you add real chart painters. @appbox-extension-point: presentation/home_assets\n"
         "//\n"
         "// The bespoke home chart widgets + data constants the generated home_view.dart imports.\n"
         "// These are the generation FRONTIER (no CSS→CustomPainter codegen): the operator authors\n"
@@ -2423,7 +2423,7 @@ def tpl_vm_splash_base(name, snake, next_pascal, smoke_autologin=True, home_rout
     in as `next_pascal` (e.g. "Signin" → replaceWithSigninView). The hand-editable
     {name}ViewModel extends this (tpl_vm_splash_stub).
 
-    This fixes the stuck-at-100% bug: the prior frozen @crew-extension-point stub
+    This fixes the stuck-at-100% bug: the prior frozen @appbox-extension-point stub
     had no runStartupLogic, so _startup_method returned None, so build_view
     emitted no onViewModelReady, so the transition never fired — same class of
     bug that hit welcome/home (fixed by generating their VMs from the SSOT).
@@ -2498,7 +2498,7 @@ def tpl_vm_splash_stub(name, snake):
     stub from a prior buggy run."""
     return f'''// FACTORY EXTENSION POINT — hand-edit freely; the factory regenerates ONLY the
 // `.gen.dart` base (the splash startup state machine), never this file once you
-// add logic. @crew-extension-point: presentation/{snake}_viewmodel
+// add logic. @appbox-extension-point: presentation/{snake}_viewmodel
 import '{snake}_viewmodel.gen.dart';
 
 class {name}ViewModel extends {name}ViewModelBase {{
@@ -2570,7 +2570,7 @@ def _spec_providers(spec):
 def tpl_vm_auth(name, snake, oauth=(), field_type="email", home_route="homeShellView"):
     """The GENERATED auth ViewModel (ADR-0013): a single CONCRETE VM, no extension seam.
     Auth logic comes from the design SSOT (email-OTP + provider sign-in), so it is
-    regenerated every run and is NOT a hand-edit point — the frozen @crew-extension-point
+    regenerated every run and is NOT a hand-edit point — the frozen @appbox-extension-point
     hatch is removed for auth screens (user directive: zero hand-authored target code).
     The submit field's controller + validity gate are DERIVED from `field_type` (the
     design's captured input[type]) via _AUTH_FIELD_TYPES — no atlet literals, any design.
@@ -2715,7 +2715,7 @@ class {name}ViewModel extends BaseViewModel {{
 def tpl_vm_welcome(name, snake, home_route="homeShellView"):
     """The GENERATED welcome-interstitial VM: a brief greeting pulse, then routes to
     Home. CAPTURED from the design (auth.jsx WelcomeView: `setTimeout(onDone, 1400)`),
-    not a guess. Replaces the frozen @crew-extension-point stub (user directive: zero
+    not a guess. Replaces the frozen @appbox-extension-point stub (user directive: zero
     hand-authored target code; the interstitial must actually advance to Home).
     ponytail: hold value inlined from the design; per-design welcome-timing capture
     (like splash's kSplashHoldMs) is a noted follow-up."""
@@ -3043,7 +3043,7 @@ class _OtpBoxesState extends State<_OtpBoxes> {{
 def stub_is_default(text):
     """A VM stub with no hand-written behavior → safe to upgrade to `extends …Base`.
     Heuristic: carries the extension-point marker and declares no methods/fields."""
-    if "@crew-extension-point" not in text:
+    if "@appbox-extension-point" not in text:
         return False
     body = re.search(r"class\s+\w+ViewModel\b.*?\{(.*)\}", text, re.S)
     inner = (body.group(1) if body else "").strip()

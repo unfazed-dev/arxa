@@ -19,7 +19,7 @@ Two template layers (ADR-0002 "Generated layer" / "Extension point"):
   - extension    — emitted ONCE as a stable stub, never rewritten; where the
                    operator/builder puts business logic + widget bodies (one
                    View + ViewModel per screen). First line marker:
-                   `FACTORY EXTENSION POINT` + `@crew-extension-point: <id>`.
+                   `FACTORY EXTENSION POINT` + `@appbox-extension-point: <id>`.
 
 Determinism: pure string templating, sorted keys, no wall-clock (timestamp via
 --generated). Same breakdown + same tokens + same factory-version ⇒ same bytes.
@@ -618,7 +618,7 @@ const Map<String, List<String>> _kProviderPlatforms = __PROVIDER_PLATFORMS__;
 /// these — they are written ONCE and never branch on platform themselves.
 ///
 /// `expressive` renders TRUE Android Material 3 Expressive via Jetpack Compose,
-/// embedded as a Flutter PlatformView (_ExpressiveView → AndroidView 'crew/
+/// embedded as a Flutter PlatformView (_ExpressiveView → AndroidView 'appbox/
 /// expressive'; the Kotlin side ExpressivePlatformView.kt is emitted by emit.py,
 /// not the snapshot golden). Compose-embed renders the LEAF primitives —
 /// the expand button, the segmented toggle, the progress indicator — as true
@@ -2253,7 +2253,7 @@ Future<int?> showAdaptiveActions(
 /// Hosts a TRUE Android Material 3 Expressive primitive (Jetpack Compose) via a
 /// Flutter PlatformView. Leaf widgets only — see the file header. The Kotlin side
 /// (ExpressivePlatformView.kt, emitted by emit.py) renders `params['kind']`
-/// and calls back over MethodChannel 'crew/expressive/$id'. Only ever built on
+/// and calls back over MethodChannel 'appbox/expressive/$id'. Only ever built on
 /// Android (the expressive strategy is Android-only), but compiles everywhere.
 class _ExpressiveView extends StatefulWidget {
   const _ExpressiveView({
@@ -2314,7 +2314,7 @@ class _ExpressiveViewState extends State<_ExpressiveView> {
       width: w ?? double.infinity,
       height: widget.height,
       child: AndroidView(
-        viewType: 'crew/expressive',
+        viewType: 'appbox/expressive',
         creationParams: widget.params,
         creationParamsCodec: const StandardMessageCodec(),
         // Claim touches eagerly so the embedded Compose view receives taps even
@@ -2324,7 +2324,7 @@ class _ExpressiveViewState extends State<_ExpressiveView> {
           Factory<OneSequenceGestureRecognizer>(EagerGestureRecognizer.new),
         },
         onPlatformViewCreated: (id) {
-          _channel = MethodChannel('crew/expressive/$id')
+          _channel = MethodChannel('appbox/expressive/$id')
             ..setMethodCallHandler((call) async {
               if (call.method == 'onMeasured') {
                 final a = call.arguments;
@@ -2759,7 +2759,7 @@ def _tpl_view(screen: dict) -> str:
     snake = _snake(screen["id"])
     name = screen.get("name") or cls
     return f"""{EXT_MARKER}
-// @crew-extension-point: presentation/{snake}_view
+// @appbox-extension-point: presentation/{snake}_view
 import 'package:flutter/material.dart';
 import 'package:stacked/stacked.dart';
 
@@ -2798,7 +2798,7 @@ def _tpl_viewmodel(screen: dict) -> str:
             "implement RouteGuard before this screen is reachable."
         )
     return f"""{EXT_MARKER}
-// @crew-extension-point: presentation/{snake}_viewmodel
+// @appbox-extension-point: presentation/{snake}_viewmodel
 import 'package:stacked/stacked.dart';
 
 class {cls}ViewModel extends BaseViewModel {{{guard_note}
@@ -2889,7 +2889,7 @@ Templates v{TEMPLATES_VERSION} · factory {FACTORY_VERSION} · platforms: {', '.
 
 ## Determinism
 Generated layer = byte-identical per (design, factory-version). Extension
-points carry `@crew-extension-point` markers; `emit.py` never overwrites them.
+points carry `@appbox-extension-point` markers; `emit.py` never overwrites them.
 Identity across platforms lives in the Token layer (`lib/app_tokens.dart`),
 NOT in the widgets — each platform is intentionally native-distinct.
 """

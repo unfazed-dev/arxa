@@ -308,9 +308,9 @@ HARD="$(grep -anE '\b(390|744|1280)\b' \
 check $? "no ladder width hardcoded in skill code" "$HARD"
 
 # --- 10. no upstream identity leaked --------------------------------------
-# The pattern is assembled so this file does not match itself.
-# (plan 03: flutter-crew split further — f%s%s + lutter-cr + ew — so the bare
-#  token 'crew' does not appear literally now that 'crew' is itself a stripped name.)
+# The pattern is assembled so this file does not match itself: each upstream
+# identity token is split across the printf args (first char + rest), and the
+# longest is split twice so no stripped name appears literally in this file.
 U="$(printf 'k%s\\|b%s\\|h%s\\|j%s\\|f%s%s' imi aoyu uashu imliu lutter-cr ew)"
 # runtime/vendor IS scanned — it was verified clean, so there is no reason to
 # carve it out. node_modules is gitignored and not part of the deliverable.

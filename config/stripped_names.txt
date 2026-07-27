@@ -11,3 +11,5 @@ baoyu
 huashu
 p2
 asko
+crew
+kimi

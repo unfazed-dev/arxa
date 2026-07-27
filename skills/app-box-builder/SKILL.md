@@ -1,5 +1,5 @@
 ---
-name: builder
+name: app-box-builder
 description: Use when filling the extension-point View/ViewModel bodies in an emitted target. Views COMPOSE the adaptive primitive layer (lib/ui/primitives.dart) once — the per-platform native family (glass/expressive/shadcn) lives in the primitives, not the views. Trigger on "build the screens", "implement the views", "fill the primitives", "builder".
 ---
 

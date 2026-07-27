@@ -1,5 +1,5 @@
 ---
-name: tester
+name: app-box-tester
 description: Use when writing/running tests for a appbox-built target — mocktail the repository Ports for unit/TDD, probe-runner for visual + smoke, Patrol for native E2E. Trigger on "test the app", "write tests", "TDD", "visual test", "smoke test", "E2E".
 ---
 

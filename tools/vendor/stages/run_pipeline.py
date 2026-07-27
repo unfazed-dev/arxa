@@ -398,7 +398,7 @@ def main(argv):
                                      "auto-detected beside the design if omitted)")
     ap.add_argument("--generated", default="2026-06-20T00:00:00Z")
     ap.add_argument("--config", default=os.path.join(ROOT, "flutter_crew.config.json"),
-                    help="config json with `platforms` (default: shipped crew config)")
+                    help="config json with `platforms` (default: shipped appbox config)")
     ap.add_argument("--platforms", help="comma list, e.g. ios,android (beats --config)")
     args = ap.parse_args(argv[1:])
 
@@ -487,7 +487,7 @@ def main(argv):
         else:
             _run("extract_tokens.py", os.path.abspath(design), tokens_out)
         # blueprint orientation doc — part of the flow: regenerated every run,
-        # emitted by the same named view /flutter-crew:viz blueprint hosts.
+        # emitted by the same named view /app-box:viz blueprint hosts.
         _run("viz.py", work, "--view", "blueprint", "--report")
         print(f"\nDONE (deterministic, no LLM) → {work}")
     else:

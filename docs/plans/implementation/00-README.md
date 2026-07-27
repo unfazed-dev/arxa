@@ -113,12 +113,12 @@ moment it lands. Everything downstream of `02` can proceed simultaneously.
 |---|---|---|
 | 01 designer | | ☐ |
 | 02 repo skeleton | app-box | ☑ |
-| 03 vendor tooling | | ☐ |
+| 03 vendor tooling | app-box | ☑ |
 | 04 gates | | ☐ |
 | 05 structure + registry | | ☐ |
 | 06 targets in state | | ☐ |
 | 07 CRUD + delete | | ☐ |
-| 08 desktop app | | ☐ |
+| 08 desktop app | app-box | ☑ |
 | 09 prototype runtime | | ☐ |
 | 10 intake | | ☐ |
 | 11 deployer | | ☐ |

@@ -5,7 +5,7 @@
 # shell/surface map, and shell_structure_gate.sh (SCAFFOLD_GATE_D) validates the
 # SHAPE of whatever shells exist in lib/ui/views/. Neither compares the two. So
 # an app could freeze 46 surfaces, scaffold one, and pass every gate — which is
-# exactly the state p2 was in when this gate was written.
+# exactly the state sample-app was in when this gate was written.
 #
 # Contract: lib/ui/views/.shell-structure.json gains a "surfaces" map.
 #
@@ -18,7 +18,7 @@
 #
 # WHY A DECLARED MAP AND NOT A DERIVED ONE. There is no rule that turns a frozen
 # surface id into a directory name. Measured across the two real scaffolded
-# corpora: p2 maps train_shell_training_library_view -> training_library/, while
+# corpora: sample-app maps train_shell_training_library_view -> training_library/, while
 # design/new-flutter maps the same surface -> library/, and maps
 # train_shell_today_view -> home/. 40 of 46 surfaces disagree under any
 # strip-prefix rule. The directory name is a scaffolder DECISION, so it is
@@ -46,14 +46,21 @@
 # $KIT_DESIGN_DIR selects the producer folder (default: design).
 set -uo pipefail
 
+# form-factor set is config-driven (R3): the keys of config/app-box.config.json
+# viewports (mobile/tablet/desktop), not a hardcoded five-file list. Plans 05/06
+# consume the same derivation.
+GATE_ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
+FACTORS="$(python3 -c "import json;d=json.load(open('$GATE_ROOT/config/app-box.config.json'));print(' '.join(d['viewports'].keys()))" 2>/dev/null || echo "mobile tablet desktop")"
+
 run_gate_for(){
   local APP="$1"
   APP="$(cd "$APP" 2>/dev/null && pwd)" || { echo "FAIL: app root not found: $1" >&2; return 2; }
   local DESIGN_REL="${KIT_DESIGN_DIR:-design}"
-  python3 - "$APP" "$DESIGN_REL" <<'PY'
+  python3 - "$APP" "$DESIGN_REL" "$FACTORS" <<'PY'
 import json,os,sys,glob
 
-app,rel=sys.argv[1],sys.argv[2]
+app,rel,factors=sys.argv[1],sys.argv[2],sys.argv[3]
+FACTORS=factors.split()
 views=os.path.join(app,"lib","ui","views")
 manifest=os.path.join(views,".shell-structure.json")
 structure=os.path.join(app,rel,"structure.json")
@@ -141,8 +148,7 @@ for shell in sorted(adopted):
         if not os.path.isdir(base):
             fail(f"shell '{shell}': surface '{s}' maps to '{d}/' which does not exist under "
                  f"lib/ui/views/{shell}/"); F+=1; continue
-        need=[f"{d}_view.dart",f"{d}_view.mobile.dart",f"{d}_view.tablet.dart",
-              f"{d}_view.desktop.dart",f"{d}_viewmodel.dart"]
+        need=[f"{d}_view.dart"]+[f"{d}_view.{f}.dart" for f in FACTORS]+[f"{d}_viewmodel.dart"]
         gone=[n for n in need if not os.path.isfile(os.path.join(base,n))]
         if gone:
             fail(f"shell '{shell}': lib/ui/views/{shell}/{d}/ is missing {', '.join(gone)} — "
@@ -192,7 +198,7 @@ EOF
     printf '%s' "$man" > "$a/lib/ui/views/.shell-structure.json"
     local d; for d in "$@"; do
       mkdir -p "$a/lib/ui/views/train_shell/$d"
-      local f; for f in _view.dart _view.mobile.dart _view.tablet.dart _view.desktop.dart _viewmodel.dart; do
+      local f; for f in _view.dart $(printf '_view.%s.dart ' $FACTORS) _viewmodel.dart; do
         : > "$a/lib/ui/views/train_shell/$d/$d$f"
       done
     done
@@ -207,7 +213,7 @@ EOF
   o=$(run "$T/a"); chk "$?" 0 "fully covered adopted shell PASSES"
   need "$o" "2/2 frozen surfaces scaffolded" "good twin reports full coverage"
 
-  # ---- C1: a frozen surface left unmapped (the p2 defect)
+  # ---- C1: a frozen surface left unmapped (the sample-app defect)
   plant "$T/a" '{"selfContained":["train_shell"],"surfaces":{"train_shell":{"train_shell_library_view":"library"}}}' library
   o=$(run "$T/a"); chk "$?" 1 "unmapped frozen surface FAILS"
   need "$o" "is not mapped" "names the unmapped surface"
