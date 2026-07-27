@@ -864,3 +864,48 @@ Every decision above is settled. Sequencing for the agents:
 
 **Two things are blocked and should not be discovered late:** payments and auth
 providers are stubs (`stub-inventory.md`), and app_box needs both for itself.
+Remediation plan and the three test tiers: `stub-remediation.md`.
+
+## 22. Intake — yes, and it is a phase, not a step
+
+**Recommendation: build it, make it optional, and put it before design.**
+
+An `app-box-intake` phase turns a client conversation into
+`docs/design/brief.md` plus a **seeded `registry.json`** that
+`app-box-designer` consumes. Three reasons it earns phase status rather than
+being a wizard screen:
+
+1. **It has a consumable output.** The brief and the registry seed are inputs
+   to the next phase, which is the definition of a phase here.
+2. **It is the only output a non-technical client can validate.** Nobody
+   reviews `structure.json`; anyone can read a brief and say "that's wrong."
+   That makes it the cheapest place in the whole pipeline to be wrong.
+3. **It enables a gate that does not otherwise exist:** *every registry entry
+   traces to something the brief asked for.* Today features appear because
+   someone thought of them. Traceability is a real assertion that can fail.
+
+**Optional, genuinely.** A hand-written brief is valid input, and Michelle will
+skip intake on her first run (`journeys.md` J1). Making it mandatory would put
+a questionnaire between her and the showcase app, which is the one thing that
+earns her trust.
+
+### The guardrail that makes it worth having
+
+> **Intake elicits; it does not generate.**
+
+A phase that *writes* the brief produces confident fiction — requirements
+nobody asked for, stated with the same authority as ones they did. Intake asks
+and records. Where it must infer, it **marks the inference** explicitly, the
+same way `gen_playbook.py` emits `TODO(prose)` for narrative it has no source
+for, and the same way the htmx experiment's authoring agent flagged the empty
+copy it invented rather than smoothing it over.
+
+The brief is the client's words. That is the entire value; a generated brief
+has none.
+
+### Build-order placement
+
+Slot it at **step 6.5** — after the designer exists (it feeds the designer) and
+alongside the macOS dogfood, which is the first brief it will actually produce.
+The `verification` field and advertise-gate from `stub-remediation.md` slot in
+at **step 0**, since they make every later step honest by default.

@@ -19,11 +19,17 @@ must have.
 ## 1. Personas
 
 Full treatment in `architecture.md` §1. In short: **P1** client-intake, **P2**
-autonomous-build, **P3** red-gate recovery, **P4** ship, **P5** the buyer —
-a solo dev or a small agency who is not the founder and has no context.
+**Evan**, founder of Totem Labs, operating in four modes (intake,
+autonomous build, red-gate recovery, ship) — and **Michelle**, indie iOS +
+Android developer, the buyer.
 
-P5 is the one this brief must serve without explanation. Every surface should
-be legible to someone who has never read any of these documents.
+Michelle is the one this brief must serve **without explanation**: no context,
+twenty minutes, evaluating against FlutterFlow. Every surface should be legible
+to someone who has read none of these documents. Where the two conflict,
+Michelle wins the first ten minutes and Evan wins everything after.
+
+Full treatment in [personas.md](personas.md), journeys in
+[journeys.md](journeys.md), diagrams in [flows.md](flows.md).
 
 ---
 
