@@ -1,23 +1,36 @@
 # freeze
 
-The FREEZE / PROTOTYPE gate. Asserts the frozen design inputs are present AND
-that every surface renders clean at **every active viewport**
-(`config/app-box.config.json` viewports — the active ladder widths).
+The FREEZE / PROTOTYPE gate. Asserts the frozen design inputs are present, the
+design-approval stamp is valid, and every surface renders clean at **every
+derived viewport** — the width set implied by `--targets` via
+`pipeline/state/targets.derivation.json` (6.4). Widths come ONLY from
+`config/app-box.config.json`; there are no viewport literals in the gate.
 
 Split out of the vendored `freeze_design.sh` (plan 03) along the render/structure
-seam: freeze owns *inputs + render*; the structure gate owns the shell/surface
-map. Findings route through `gates/_common/sarif.sh`.
+seam: freeze owns *inputs + render + approval*; the structure gate owns the
+shell/surface map. Findings route through `gates/_common/sarif.sh`.
 
 ## Asserts
 
 1. **shape** — `tokens.json`, `design-system.md`, `exclusions.json`,
    `direction-approved.md`, `brand-spec.md`, `structure.json`, `surfaces/*.html`
-2. **vocab** — `tokens.json` parses as DTCG and carries the kit token paths
-3. **exclusions** — harness chrome signatures in surfaces are covered by
+2. **approval (6.7)** — if `design/approval.lock` exists, the current targets +
+   frozen-input hash must match the stamped ones; otherwise the approval is
+   STALE and the gate fails loudly. `--approve` mints/refreshes the stamp.
+3. **vocab** — `tokens.json` parses as DTCG and carries the kit token paths
+4. **exclusions** — harness chrome signatures in surfaces are covered by
    `exclusions.json` (uncovered chrome would scaffold into kit UI)
-4. **render** — headless Chromium loads every surface at every config viewport
+5. **render** — headless Chromium loads every surface at every **derived** width
    with zero console/page errors; screenshots land under
    `.kit/state/prototype/evidence/`
+
+## Targets (6.2 / 6.3)
+
+`targets` live in **pipeline state** (6.2). Gate + golden runs pass them
+**explicitly** via `--targets` (6.3) so the snapshot is deterministic — ambient
+state in a reproducibility run is the stale-green defect. With no `--targets`,
+the gate reads them from pipeline state (the live SSOT). An unknown target, or
+no targets at all, fails loudly.
 
 ## Does not assert
 
@@ -28,11 +41,12 @@ map. Findings route through `gates/_common/sarif.sh`.
 ## Run
 
 ```sh
-freeze.sh [app-root]                       # 0 pass / 1 FAIL / 2 env
-KIT_DESIGN_DIR=design/new freeze.sh        # producer folder (app-root-relative)
-FREEZE_RENDER=skip freeze.sh …             # hermetic/non-browser runs
-FREEZE_VIEWPORTS=mobile freeze.sh …        # restrict active widths (CI/test)
-bash freeze/selftest.sh                    # R5: happy + NEGATIVE cases
+freeze.sh --targets macos [app-root]            # 0 pass / 1 FAIL / 2 env
+freeze.sh --targets ios,android,web             # 3 derived widths
+freeze.sh --targets macos --approve [app-root]  # mint/refresh approval.lock (6.7)
+KIT_DESIGN_DIR=design/new freeze.sh …           # producer folder (app-root-relative)
+FREEZE_RENDER=skip freeze.sh …                  # hermetic/non-browser runs
+bash freeze/selftest.sh                         # R5: happy + NEGATIVE cases
 ```
 
 ## 4.3 — console-handler fix

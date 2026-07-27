@@ -2,8 +2,18 @@
 # freeze.sh — the FREEZE / PROTOTYPE gate (plan 04.1): the render half of the
 # vendored freeze_design.sh, after the structure checks were split out to the
 # structure gate's own folder. Asserts the frozen inputs are present AND that
-# every surface renders clean at every active ladder width (every viewport in
-# config/app-box.config.json).
+# every surface renders clean at every DERIVED width — the viewport set implied
+# by --targets via pipeline/state/targets.derivation.json (6.4). Widths come
+# ONLY from config/app-box.config.json (R3); there are no viewport literals here.
+#
+# Targets (6.2/6.3): pass --targets ios,android explicitly for a deterministic
+# gate/golden run; with no flag, targets are read from pipeline state (the live
+# SSOT). An unknown target, or no targets at all, fails loudly.
+#
+# Design-approval invalidation (6.7): `--approve` mints design/approval.lock
+# stamping the current targets + a hash of the frozen inputs. A later run
+# re-checks it; if targets or inputs changed since approval the gate FAILS
+# loudly (the frozen design no longer covers the deliverable).
 #
 # Required shape, inside <app>/$KIT_DESIGN_DIR (default: design):
 #   tokens.json             DTCG tokens carrying the kit vocabulary
@@ -32,16 +42,38 @@
 # handler is registered on a FRESH page per surface (4.3): handlers can never
 # accumulate across surfaces, so each error is reported exactly once.
 #
-# Usage: freeze.sh [app-root]   (0 pass / 1 FAIL / 2 env)
+# Usage: freeze.sh [--targets ios,android] [--approve] [app-root]   (0 pass / 1 FAIL / 2 env)
+# --targets      explicit target set (6.3); absent => read from pipeline state (6.2)
+# --approve      mint/refresh design/approval.lock against the current targets+inputs (6.7)
 # $KIT_DESIGN_DIR selects the producer folder (default: design), app-root-relative.
 set -uo pipefail
 
 GATE_COMMON="$(cd "$(dirname "$0")/../_common" && pwd)"
 # shellcheck source=../_common/sarif.sh
 source "$GATE_COMMON/sarif.sh"
+# shellcheck source=../_common/state_reader.sh
+source "$GATE_COMMON/state_reader.sh"
+# state_reader.sh enables `set -e`; gates run WITHOUT it (a failed check is a
+# recorded status, not an abort — see pipeline.sh). Re-assert the gate's mode.
+set -uo pipefail
+set +e
 
-APP="${1:-$PWD}"
-APP="$(cd "$APP" 2>/dev/null && pwd)" || { echo "FAIL: app root not found: ${1:-$PWD}" >&2; exit 2; }
+# ---- args: --targets (explicit, 6.3) / --approve (mint approval stamp, 6.7) --
+# Targets live in STATE for a live run (6.2); gate + golden runs pass them
+# explicitly so the snapshot is deterministic — ambient state in a
+# reproducibility run is the stale-green defect (6.3).
+APPBOX_TARGETS=""
+APPROVE=0
+APP="$PWD"
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --targets) APPBOX_TARGETS="$2"; shift 2 ;;
+    --approve) APPROVE=1; shift ;;
+    --*) echo "FAIL: unknown flag: $1" >&2; exit 2 ;;
+    *) APP="$1"; shift ;;
+  esac
+done
+APP="$(cd "$APP" 2>/dev/null && pwd)" || { echo "FAIL: app root not found" >&2; exit 2; }
 DESIGN_REL="${KIT_DESIGN_DIR:-design}"
 case "$DESIGN_REL" in
   /*) echo "FAIL: KIT_DESIGN_DIR must be relative to the app root, got: $DESIGN_REL" >&2; exit 2 ;;
@@ -50,6 +82,46 @@ DESIGN="$APP/$DESIGN_REL"
 EVIDENCE="$APP/.kit/state/prototype/evidence"
 GATE_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 CONFIG="$GATE_ROOT/config/app-box.config.json"
+DERIVATION="$GATE_ROOT/pipeline/state/targets.derivation.json"
+
+# resolve targets: explicit flag, else ambient pipeline state (6.2)
+if [ -z "$APPBOX_TARGETS" ]; then
+  APPBOX_TARGETS="$(state_targets 2>/dev/null | paste -sd ',' -)"
+fi
+if [ -z "$APPBOX_TARGETS" ]; then
+  echo "FAIL: no --targets given and no targets in pipeline state — pass --targets explicitly (6.3); a reproducibility run that reads ambient state is the stale-green defect" >&2
+  exit 1
+fi
+
+# derive the ordered viewport set (names) for these targets from the derivation
+# table + config. Widths come ONLY from config (R3); never literals here.
+DERIVED_VPS="$(python3 - "$APPBOX_TARGETS" "$DERIVATION" "$CONFIG" <<'PY'
+import json,sys
+targets=[t for t in sys.argv[1].split(',') if t]
+tbl=json.load(open(sys.argv[2]))["targets"]
+cfg_vps=json.load(open(sys.argv[3]))["viewports"]
+unknown=[t for t in targets if t not in tbl]
+if unknown:
+    print(f"FAIL: unknown target(s): {', '.join(unknown)} — add an entry to pipeline/state/targets.derivation.json"); sys.exit(1)
+def vps_of(t, seen=None):
+    seen=seen or set()
+    if t in seen: return []
+    seen.add(t)
+    e=tbl[t]; out=list(e.get("viewports",[]))
+    if e.get("inherits"): out=vps_of(e["inherits"],seen)+out
+    return out
+union=[]
+for t in targets:
+    for v in vps_of(t):
+        if v not in union: union.append(v)
+ordered=[v for v in cfg_vps if v in union]   # config order; unknown names dropped
+print(" ".join(ordered))
+PY
+)" || true
+case "$DERIVED_VPS" in
+  FAIL:*) echo "$DERIVED_VPS" >&2; exit 1 ;;
+esac
+[ -z "$DERIVED_VPS" ] && { echo "FAIL: could not derive viewports from targets ($APPBOX_TARGETS)" >&2; exit 1; }
 
 F=0
 fail(){ echo "FAIL: $1" >&2; F=$((F+1)); sarif_result "freeze" "error" "$DESIGN_REL" "$1"; }
@@ -72,6 +144,46 @@ else
   fail "shape: no surfaces — $DESIGN_REL/surfaces/*.html missing"
 fi
 [ "$F" -gt 0 ] && { echo "freeze: FAIL ($F shape check(s))" >&2; exit 1; }
+
+# ---- 1b. design-approval invalidation (6.7) --------------------------------
+# The approval stamp records the targets + a hash of the frozen inputs it was
+# minted against. Adding a target after approval changes the deliverable's
+# width set, so the approval MUST go stale, loudly. This block VALIDATES an
+# existing stamp; `--approve` mints it at the END of the gate, only after every
+# check has passed (a broken design cannot be approved).
+APPROVAL_LOCK="$DESIGN/approval.lock"
+LOCK_HASH="$(python3 - "$DESIGN" "$APPBOX_TARGETS" <<'PY'
+import sys,hashlib,glob,os
+design,targets=sys.argv[1],sys.argv[2]
+h=hashlib.sha256()
+h.update(",".join(sorted(t for t in targets.split(',') if t)).encode())
+for f in ("tokens.json","design-system.md","exclusions.json",
+          "direction-approved.md","brand-spec.md","structure.json"):
+    p=os.path.join(design,f)
+    h.update(f.encode()); h.update(open(p,"rb").read() if os.path.isfile(p) else b"")
+for s in sorted(glob.glob(os.path.join(design,"surfaces","*.html"))):
+    h.update(open(s,"rb").read())
+print(h.hexdigest())
+PY
+)"
+if [ -f "$APPROVAL_LOCK" ]; then
+  stale="$(python3 - "$APPROVAL_LOCK" "$APPBOX_TARGETS" "$LOCK_HASH" <<'PY'
+import json,sys
+lock=json.load(open(sys.argv[1])); cur=set(t for t in sys.argv[2].split(',') if t)
+if set(lock.get("targets",[]))!=cur:
+    print(f"targets changed since approval (approved {lock.get('targets')}; now {sorted(cur)})")
+elif lock.get("inputsHash")!=sys.argv[3]:
+    print("frozen inputs changed since approval (re-mint with --approve)")
+PY
+)"
+  if [ -n "$stale" ]; then
+    fail "approval STALE — $stale; the frozen design no longer covers the deliverable. Re-approve: freeze.sh --targets $APPBOX_TARGETS --approve"
+  else
+    ok "approval: $DESIGN_REL/approval.lock valid (targets=$APPBOX_TARGETS)"
+  fi
+else
+  echo "  (approval: no $DESIGN_REL/approval.lock — run 'freeze.sh --targets $APPBOX_TARGETS --approve' to mint the stamp)"
+fi
 
 # ---- 2. vocab (tokens.json carries the kit token paths) ----
 pyout="$(python3 - "$DESIGN/tokens.json" 2>&1 <<'PY'
@@ -142,27 +254,24 @@ fails="$(printf '%s\n' "$pyout" | grep '^FAIL:' || true)"
 # ---- 4. render (headless Chromium; skip via FREEZE_RENDER=skip) ----
 # Fresh page per (surface, viewport): the console/pageerror handler is registered
 # on each new page, so it can never accumulate across surfaces — each error is
-# reported exactly once (4.3).
+# reported exactly once (4.3). Viewports rendered = the DERIVED set for these
+# targets (6.4); widths come ONLY from config (R3), never literals.
 if [ "${FREEZE_RENDER:-}" = skip ]; then
   echo "  (render pass SKIPPED — FREEZE_RENDER=skip; hermetic/non-browser runs only)"
+  echo "  (derived widths for targets [$APPBOX_TARGETS]: $DERIVED_VPS)"
 else
   mkdir -p "$EVIDENCE"
   RENDER_RC=""
   if command -v uv >/dev/null 2>&1; then
-    uv run --with playwright python - "$DESIGN" "$EVIDENCE" "$CONFIG" <<'PY'
+    uv run --with playwright python - "$DESIGN" "$EVIDENCE" "$CONFIG" "$DERIVED_VPS" <<'PY'
 import sys,threading,functools,http.server,socketserver,os,glob,json
-design,evidence,config=sys.argv[1],sys.argv[2],sys.argv[3]
-try:
-    all_vps=json.load(open(config))["viewports"]
-except Exception:
-    all_vps={"mobile":{"width":390,"height":844}}
-# FREEZE_VIEWPORTS (config-driven, R3): restrict the active widths rendered —
-# default is every config viewport ("every active ladder width"); a CI/hermetic
-# run may narrow it, e.g. FREEZE_VIEWPORTS=mobile. Unknown names are dropped.
-want=os.environ.get("FREEZE_VIEWPORTS","").split()
-viewports=[(n,all_vps[n]["width"],all_vps[n]["height"]) for n in all_vps if not want or n in want]
+design,evidence,config,derived=sys.argv[1],sys.argv[2],sys.argv[3],sys.argv[4]
+all_vps=json.load(open(config))["viewports"]
+# only the derived viewport set for these targets (6.4); unknown names dropped.
+want=set(derived.split())
+viewports=[(n,all_vps[n]["width"],all_vps[n]["height"]) for n in all_vps if n in want]
 if not viewports:
-    print(f"FAIL: render: FREEZE_VIEWPORTS={os.environ.get('FREEZE_VIEWPORTS')} matched no config viewport"); sys.exit(1)
+    print(f"FAIL: render: derived viewports [{derived}] matched no config viewport"); sys.exit(1)
 class Q(http.server.SimpleHTTPRequestHandler):
     def log_message(self,*a): pass
 srv=socketserver.ThreadingTCPServer(("127.0.0.1",0),functools.partial(Q,directory=design))
@@ -189,7 +298,7 @@ with sync_playwright() as pw:
     b.close()
 srv.shutdown()
 for e in errors: print(f"FAIL: render: console/page error — {e}")
-print(f"  render: {len(surfaces)*len(viewports)} surface/viewport render(s), {len(errors)} error(s)")
+print(f"  render: {len(surfaces)*len(viewports)} surface/viewport render(s) across {len(viewports)} derived width(s), {len(errors)} error(s)")
 sys.exit(1 if errors else 0)
 PY
     RENDER_RC=$?
@@ -205,5 +314,23 @@ PY
 fi
 
 [ "$F" -gt 0 ] && { echo "freeze: FAIL ($F check group(s))" >&2; exit 1; }
+
+# ---- mint the approval stamp only once every check has passed (6.7) --------
+# `--approve` is the human action that records "this frozen design is approved
+# for THESE targets." It cannot stamp a design that fails freeze, so it runs
+# after all checks pass. A later normal run re-validates the stamp (block 1b).
+if [ "$APPROVE" = 1 ]; then
+  python3 - "$APPROVAL_LOCK" "$APPBOX_TARGETS" "$LOCK_HASH" <<'PY'
+import json,sys,datetime
+json.dump({"targets":sorted(t for t in sys.argv[2].split(',') if t),
+           "inputsHash":sys.argv[3],
+           "approvedAt":datetime.datetime.now(datetime.timezone.utc).isoformat()},
+          open(sys.argv[1],"w"),indent=2)
+PY
+  ok "approval: stamped $DESIGN_REL/approval.lock (targets=$APPBOX_TARGETS, inputsHash=${LOCK_HASH:0:12}…)"
+  echo "freeze: APPROVED — $DESIGN_REL stamped (all checks passed)."
+  exit 0
+fi
+
 echo "freeze: PASS — $DESIGN_REL is frozen SSOT material."
 exit 0

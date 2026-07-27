@@ -1,0 +1,106 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "pipeline/state/targets.derivation.json",
+  "title": "app_box target derivation table",
+  "description": "DATA, not code (R3; architecture §11). One entry per platform target -> the viewports it implies + the platform ceremonies the scaffold must emit. Adding a target is a data edit: append an entry here, nothing in gate code changes. Viewport NAMES reference config/app-box.config.json viewports (the widths live there, NEVER here). Ceremony 'checks' are path/key specs the coverage gate (C5) asserts against the app root; absence fails the gate naming the missing file (6.8). 'inherits' pulls a parent's viewports AND ceremonies before this entry's own.",
+  "type": "object",
+  "required": ["targets"],
+  "additionalProperties": false,
+  "properties": {
+    "targets": {
+      "type": "object",
+      "description": "target id -> { viewports:[name...], ceremonies:[...], inherits?:id }. Every target an operator may pass to --targets MUST have an entry here; an unknown target fails derivation loudly.",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["viewports", "ceremonies"],
+        "additionalProperties": false,
+        "properties": {
+          "viewports": { "type": "array", "items": { "type": "string" }, "description": "viewport names this target implies; resolved against config viewports for widths" },
+          "ceremonies": {
+            "type": "array",
+            "description": "platform files/keys the scaffold must emit for this target",
+            "items": {
+              "type": "object",
+              "required": ["id", "desc", "checks"],
+              "additionalProperties": false,
+              "properties": {
+                "id":   { "type": "string", "description": "stable ceremony identifier (gate messages cite this)" },
+                "desc": { "type": "string" },
+                "checks": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": ["path"],
+                    "additionalProperties": false,
+                    "properties": {
+                      "path": { "type": "string", "description": "file path relative to the app root" },
+                      "key":  { "type": "string", "description": "if present, the file must contain this token (plist key, XML key, manifest member)" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "inherits": { "type": "string", "description": "pull this target's viewports+ceremonies before own (e.g. pwa inherits web)" }
+        }
+      }
+    }
+  },
+  "targets": {
+    "ios": {
+      "viewports": ["mobile", "tablet"],
+      "ceremonies": [
+        { "id": "ios.local_network",
+          "desc": "iOS local-network usage description + Bonjour services (NSLocalNetworkUsageDescription / NSBonjourServices)",
+          "checks": [
+            { "path": "ios/Runner/Info.plist", "key": "NSLocalNetworkUsageDescription" },
+            { "path": "ios/Runner/Info.plist", "key": "NSBonjourServices" }
+          ] }
+      ]
+    },
+    "android": {
+      "viewports": ["mobile", "tablet"],
+      "ceremonies": [
+        { "id": "android.adaptive_icons",
+          "desc": "adaptive launcher icon definition",
+          "checks": [ { "path": "android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml" } ] },
+        { "id": "android.splash",
+          "desc": "splash / launch background",
+          "checks": [ { "path": "android/app/src/main/res/drawable/launch_background.xml" } ] }
+      ]
+    },
+    "web": {
+      "viewports": ["mobile", "tablet", "desktop"],
+      "ceremonies": [
+        { "id": "web.index",
+          "desc": "web entry document",
+          "checks": [ { "path": "web/index.html" } ] }
+      ]
+    },
+    "pwa": {
+      "inherits": "web",
+      "viewports": [],
+      "ceremonies": [
+        { "id": "pwa.manifest",
+          "desc": "PWA web manifest",
+          "checks": [ { "path": "web/manifest.json" } ] },
+        { "id": "pwa.service_worker",
+          "desc": "service worker (offline shell)",
+          "checks": [ { "path": "web/sw.js" } ] }
+      ]
+    },
+    "macos": {
+      "viewports": ["desktop"],
+      "ceremonies": [
+        { "id": "macos.keychain_sharing",
+          "desc": "Keychain Sharing entitlement in BOTH DebugProfile and Release (flutter_secure_storage; an App Group declared but omitted here is the silent -34018 write failure)",
+          "checks": [
+            { "path": "macos/Runner/DebugProfile.entitlements", "key": "keychain-access-groups" },
+            { "path": "macos/Runner/Release.entitlements", "key": "keychain-access-groups" }
+          ] }
+      ]
+    },
+    "linux":   { "viewports": ["desktop"], "ceremonies": [] },
+    "windows": { "viewports": ["desktop"], "ceremonies": [] }
+  }
+}

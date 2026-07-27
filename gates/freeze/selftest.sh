@@ -3,6 +3,8 @@
 # Happy path AND >=1 negative case. Plants a defect and asserts the gate exits 1
 # and names the offending file. The render negative also proves 4.3: one console
 # error across several surfaces is reported EXACTLY once (no handler accumulation).
+# Plan 06 adds: --targets drives derived widths (6.4), and the design-approval
+# stamp goes stale when targets change after approval (6.7).
 set -uo pipefail
 GATE="$(cd "$(dirname "$0")" && pwd)/freeze.sh"
 pass=0; failc=0
@@ -24,29 +26,58 @@ mkshape(){ printf '# Design System\n' > "$DESIGN/design-system.md"
   printf '{"globs":["surfaces/*"],"selectors":[]}\n' > "$DESIGN/exclusions.json"
   printf '# Direction\napproved\n' > "$DESIGN/direction-approved.md"
   printf '# Brand\n' > "$DESIGN/brand-spec.md"; }
+structure(){ printf '{"tabRoots":{},"screens":%s}\n' "$1" > "$DESIGN/structure.json"; }
 
 # ---- HAPPY: shape + vocab + exclusions pass (render skipped for a fast green) ----
 mktokens; mkshape
-printf '{"tabRoots":{},"screens":[{"id":"a","shell":"x","surface":"x_a"}]}\n' > "$DESIGN/structure.json"
+structure '[{"id":"a","shell":"x","surface":"x_a"}]'
 plant x_a
-o="$(FREEZE_RENDER=skip bash "$GATE" "$T" 2>&1)"; chk "$?" 0 "happy: valid frozen inputs pass"
+o="$(FREEZE_RENDER=skip bash "$GATE" --targets macos "$T" 2>&1)"; chk "$?" 0 "happy: valid frozen inputs pass"
 need "$o" "freeze: PASS" "happy prints PASS"
+need "$o" "derived widths for targets [macos]: desktop" "happy reports the derived width set"
+
+# ---- 6.4 derived-width derivation proofs (skip render; widths come from config) ----
+o="$(FREEZE_RENDER=skip bash "$GATE" --targets ios,android "$T" 2>&1)"; chk "$?" 0 "ios,android derives"
+need "$o" "derived widths for targets [ios,android]: mobile tablet" "ios,android -> 2 widths"
+o="$(FREEZE_RENDER=skip bash "$GATE" --targets ios,android,web "$T" 2>&1)"; need "$o" "mobile tablet desktop" "ios,android,web -> 3 widths"
 
 # ---- NEGATIVE: a required frozen input is missing ----------------------------
 # NEGATIVE: tokens.json removed -> gate exits 1 and names the missing file.
 rm "$DESIGN/tokens.json"
-o="$(FREEZE_RENDER=skip bash "$GATE" "$T" 2>&1)"; chk "$?" 1 "negative: missing tokens.json fails"
+o="$(FREEZE_RENDER=skip bash "$GATE" --targets macos "$T" 2>&1)"; chk "$?" 1 "negative: missing tokens.json fails"
 need "$o" "tokens.json missing" "negative names the missing file"
 mktokens  # restore
 
-# ---- NEGATIVE (4.3 proof): one console error across 4 surfaces, single viewport,
-# reported EXACTLY once. A shared page with accumulating handlers would report it
-# once per surface already visited (~4x); fresh-page-per-surface reports it once.
-printf '{"tabRoots":{},"screens":[{"id":"a","shell":"x","surface":"x_a"},{"id":"b","shell":"x","surface":"x_b"},{"id":"c","shell":"x","surface":"x_c"},{"id":"d","shell":"x","surface":"x_d"}]}\n' > "$DESIGN/structure.json"
+# ---- NEGATIVE (6.3): no --targets and no targets in state -> fails loudly ----
+printf '{"phase":"intake"}\n' > "$T/empty.state.json"   # no targets key
+o="$(APPBOX_STATE="$T/empty.state.json" FREEZE_RENDER=skip bash "$GATE" "$T" 2>&1)"; chk "$?" 1 "negative: no targets fails loudly"
+need "$o" "no --targets given" "names the missing explicit-targets requirement"
+
+# ---- NEGATIVE: unknown target fails loudly ----------------------------------
+o="$(FREEZE_RENDER=skip bash "$GATE" --targets zxspectrum "$T" 2>&1)"; chk "$?" 1 "negative: unknown target fails"
+need "$o" "unknown target" "names the unknown target"
+
+# ---- NEGATIVE (4.3 proof): one console error across 4 surfaces, single derived
+# width (desktop, from --targets macos), reported EXACTLY once. A shared page
+# with accumulating handlers would report it once per surface already visited
+# (~4x); fresh-page-per-surface reports it once.
+structure '[{"id":"a","shell":"x","surface":"x_a"},{"id":"b","shell":"x","surface":"x_b"},{"id":"c","shell":"x","surface":"x_c"},{"id":"d","shell":"x","surface":"x_d"}]'
 plant x_a; plant x_b '<script>console.error("THE_ONE_ERROR")</script>x_b'; plant x_c; plant x_d
-o="$(FREEZE_VIEWPORTS=mobile bash "$GATE" "$T" 2>&1)"; chk "$?" 1 "negative: a console error fails the render"
+o="$(bash "$GATE" --targets macos "$T" 2>&1)"; chk "$?" 1 "negative: a console error fails the render"
 need "$o" "THE_ONE_ERROR" "negative names the console error"
-need "$o" "render: 4 surface/viewport render(s), 1 error(s)" "4.3: error reported exactly once across 4 surfaces (no accumulation)"
+need "$o" "render: 4 surface/viewport render(s) across 1 derived width(s), 1 error(s)" "4.3: error reported exactly once across 4 surfaces (no accumulation)"
+
+# ---- 6.7 approval invalidation proof ----------------------------------------
+# approve at macos, re-run macos (valid), then change targets -> STALE, loudly.
+o="$(FREEZE_RENDER=skip bash "$GATE" --targets macos --approve "$T" 2>&1)"; chk "$?" 0 "approve mints the stamp"
+need "$o" "freeze: APPROVED" "approve prints APPROVED"
+[ -f "$DESIGN/approval.lock" ] && pass=$((pass+1)) || { failc=$((failc+1)); echo "  FAIL: approval.lock not written"; }
+o="$(FREEZE_RENDER=skip bash "$GATE" --targets macos "$T" 2>&1)"; chk "$?" 0 "same targets after approval: valid"
+need "$o" "approval.lock valid" "valid stamp is acknowledged"
+# adding a target after approval must invalidate the token (6.7 / done-when #5)
+o="$(FREEZE_RENDER=skip bash "$GATE" --targets macos,ios "$T" 2>&1)"; chk "$?" 1 "changed targets after approval: STALE"
+need "$o" "approval STALE" "stale approval fails loudly"
+need "$o" "targets changed since approval" "names the reason (targets changed)"
 
 echo "freeze selftest: $pass passed, $failc failed"
 [ "$failc" -eq 0 ] && exit 0 || exit 1
