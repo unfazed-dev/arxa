@@ -96,15 +96,30 @@ node ../../skills/app-box-designer/runtime/shoot.mjs http://localhost:4319/ --ar
 `--artifact .` is what makes `shoot.mjs` read the pinned ladder. Without it you
 get all three rungs.
 
+`agents/record-asset.mjs` also writes `_d_meta.json`; it was run against a copy
+of this artifact to confirm it **merges** rather than rebuilds, so `ladder` and
+`targets` survive. Re-check that if the tool changes — a silently dropped pin
+puts the rung count back to three without anything failing.
+
+Every `hx-post` in the markup is routed in `app.routes.js`. This is worth
+checking after any edit: the htmx config sets `{"[45]..": {swap: false}}`, so an
+unrouted POST returns 404 and the button simply does nothing rather than
+erroring. `grep -rho 'hx-post="[^"]*"' ui` against the `POST` rows catches it.
+
 ## Known gaps
 
 - **`structure.json` is not emitted.** `emit_structure` regex-scrapes
   `const P2_REGISTRY` out of `jsx/app.jsx` and never opens a JSON file, so it
   cannot read this registry yet. That rewire is plan 05's job; this registry
   already carries every field the emitter extracts.
-- **Fixtures are illustrative.** The seeds describe a plausible project
-  (Ledgerly) so the surfaces have something honest to render. The kit list
-  reflects `stub-inventory.md`'s real 5-of-23 finding.
+- **Fixtures are illustrative, with one exception.** The seeds describe a
+  plausible project (Ledgerly) so the surfaces have something to render. The
+  **kit and target seeds are not illustrative** — they were read from
+  [`docs/research/stub-inventory.md`](../../docs/research/stub-inventory.md):
+  23 kits, 14 `stable`, and the real holes are payments (Stripe and PayPal both
+  throw), auth (Apple and Google sign-in throw), maps, and `VercelTarget`.
+  `settings.kits` is the surface whose whole job is honesty, so inventing its
+  contents would have been the one unacceptable place to do it.
 - **POST handlers refresh rather than mutate.** The gates re-render; they do
   not persist an approval. Approval *state* belongs to pipeline state, not to
   the prototype.

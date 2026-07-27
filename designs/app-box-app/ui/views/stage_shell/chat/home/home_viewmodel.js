@@ -14,3 +14,7 @@ export const page = (c, h) => {
     ...transcript(),
   });
 };
+
+// The prototype re-renders; it does not persist. Approval and build state
+// belong to pipeline state, not to a design artifact pretending to hold them.
+export const submit = (c, h) => h.refresh(c);

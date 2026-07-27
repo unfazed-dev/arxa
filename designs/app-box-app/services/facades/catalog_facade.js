@@ -4,10 +4,10 @@ import * as kits from '../repositories/kit_repository.js';
 import * as devices from '../repositories/device_repository.js';
 import * as targets from '../repositories/target_repository.js';
 
-// total/wired come from the seed, not from counting the rows on screen: this
-// surface deliberately lists only the kits that are NOT fully wired, so
-// counting them would report 5 of 5 and mislead exactly the buyer it exists
-// to be honest with.
-export const kitList = () => ({ kits: kits.kits(), total: kits.total(), wired: kits.wired() });
+// Phase counts and stub findings are two separate axes and neither is derived
+// from the other: a kit can be phase `stable` and still ship a provider that
+// throws (auth, deploy). Deriving one from the other produces a number that
+// silently stops matching the rows.
+export const kitList = () => ({ kits: kits.kits(), total: kits.total(), phases: kits.phases() });
 export const deviceList = () => ({ devices: devices.devices() });
 export const targetList = () => ({ targets: targets.targets() });

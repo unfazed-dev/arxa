@@ -1,37 +1,80 @@
 {
   "_generated_from": "kit_seed.json",
   "total": 23,
-  "wired": 18,
+  "phases": [
+    [
+      "stable",
+      14
+    ],
+    [
+      "native-first",
+      3
+    ],
+    [
+      "native-first-partial",
+      5
+    ],
+    [
+      "integration only",
+      1
+    ]
+  ],
   "kits": [
-    {
-      "name": "stacked_kit_notifications",
-      "area": "Push",
-      "status": "partial",
-      "note": "Android channels wired; the APNs entitlement is still manual"
-    },
     {
       "name": "stacked_kit_payments",
       "area": "Payments",
+      "phase": "native-first",
       "status": "stubbed",
-      "note": "the Stripe provider throws UnimplementedError"
+      "note": "Stripe and PayPal both throw UnimplementedError \u2014 Apple Pay is the only wired path"
     },
     {
-      "name": "stacked_kit_analytics",
-      "area": "Analytics",
+      "name": "stacked_kit_auth",
+      "area": "Auth",
+      "phase": "stable",
       "status": "stubbed",
-      "note": "no provider is implemented"
+      "note": "Apple and Google sign-in throw; SeedAuthBackend is a stub"
     },
     {
       "name": "stacked_kit_maps",
       "area": "Maps",
-      "status": "partial",
-      "note": "iOS only \u2014 no Android map view"
+      "phase": "native-first-partial",
+      "status": "stubbed",
+      "note": "OpenStreetMap and Mapbox providers both throw"
     },
     {
-      "name": "stacked_kit_search",
-      "area": "Search",
+      "name": "stacked_kit_notifications",
+      "area": "Push",
+      "phase": "native-first-partial",
       "status": "partial",
-      "note": "local index only; no remote backend"
+      "note": "no throwing provider; the phase itself is incomplete"
+    },
+    {
+      "name": "stacked_kit_documents",
+      "area": "Documents",
+      "phase": "native-first-partial",
+      "status": "partial",
+      "note": "no throwing provider; the phase itself is incomplete"
+    },
+    {
+      "name": "stacked_kit_bluetooth",
+      "area": "Bluetooth",
+      "phase": "native-first-partial",
+      "status": "partial",
+      "note": "no throwing provider; the phase itself is incomplete"
+    },
+    {
+      "name": "stacked_kit_security",
+      "area": "Security",
+      "phase": "native-first-partial",
+      "status": "partial",
+      "note": "no throwing provider; the phase itself is incomplete"
+    },
+    {
+      "name": "stacked_kit_deploy",
+      "area": "Deploy",
+      "phase": "stable",
+      "status": "partial",
+      "note": "VercelTarget throws; fastlane, shorebird and Cloudflare Pages are wired"
     }
   ]
 }

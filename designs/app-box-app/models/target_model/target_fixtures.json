@@ -26,8 +26,15 @@
       "id": "pages",
       "name": "Cloudflare Pages",
       "via": "wrangler",
+      "ready": true,
+      "note": "wired, but web is not in this project\u2019s targets"
+    },
+    {
+      "id": "vercel",
+      "name": "Vercel",
+      "via": "VercelTarget",
       "ready": false,
-      "note": "web is not in this project\u2019s targets"
+      "note": "the deploy kit\u2019s Vercel target throws \u2014 never offered"
     }
   ]
 }

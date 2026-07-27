@@ -7,4 +7,4 @@ const data = () => readFixture('../../models/kit_model/kit_fixtures.json');
 
 export const kits = () => data().kits;
 export const total = () => data().total;
-export const wired = () => data().wired;
+export const phases = () => data().phases;

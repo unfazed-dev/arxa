@@ -12,7 +12,7 @@
       <span style="flex:1;">
         <b>{{ t.name }}</b>
         {% if t.ready %}<span class="pill ok" style="margin-left:6px;">ready</span>
-        {% else %}<span class="pill stub" style="margin-left:6px;">not in targets</span>{% endif %}
+        {% else %}<span class="pill stub" style="margin-left:6px;">throws</span>{% endif %}
         <br><span class="faint">via {{ t.via }} — {{ t.note }}</span>
       </span>
     </label>
@@ -21,7 +21,9 @@
   <div class="row">
     <a class="btn" href="/ship/confirm">Continue to confirm</a>
   </div>
-  <p class="muted">Cloudflare Pages is shown disabled rather than hidden: a buyer who
-    cannot see why an option is unavailable assumes the product cannot do it.</p>
+  <p class="muted">Vercel is shown disabled rather than hidden: a buyer who cannot see
+    why an option is unavailable assumes the product cannot do it. Cloudflare Pages is
+    wired and offered even though web is not in this project's targets — the reason it
+    would do nothing is stated, not implied.</p>
 </div>
 {% endblock %}

@@ -34,6 +34,10 @@ export default [
   ['POST', '/design/approve/approve', design_approve.approve],
   ['POST', '/build/approve/approve', build_approve.approve],
   ['POST', '/ship/confirm/release', ship_confirm.approve],
+  ['POST', '/design/surface', design_surface.submit],
+  ['POST', '/build', build_run.submit],
+  ['POST', '/chat', chat_home.submit],
+  ['POST', '/projects/new', projects_new.submit],
   ['POST', '/prefs/theme', shell.theme],
 ];
 

@@ -109,39 +109,34 @@
     "label": "Brand splash",
     "surface": null,
     "tab": "projects",
-    "comp": "ProjectsSplash",
-    "_why": "J1 launch moment, not a routed surface \u2014 the desktop shell paints it before the app mounts"
+    "comp": "ProjectsSplash"
   },
   {
     "id": "projects.showcase",
     "label": "Showcase app",
     "surface": null,
     "tab": "projects",
-    "comp": "ProjectsShowcase",
-    "_why": "J1 auto-launch: a separate generated app in its own window, not an app_box surface"
+    "comp": "ProjectsShowcase"
   },
   {
     "id": "build.recovery",
     "label": "P3 recovery",
     "surface": null,
     "tab": "build",
-    "comp": "BuildRecovery",
-    "_why": "J5 red-gate recovery is a mode of build.finding, not a second surface"
+    "comp": "BuildRecovery"
   },
   {
     "id": "settings.pair",
     "label": "Pair device",
     "surface": null,
     "tab": "settings",
-    "comp": "SettingsPair",
-    "_why": "J7 QR pairing is a dialog over settings.devices"
+    "comp": "SettingsPair"
   },
   {
     "id": "ship.released",
     "label": "Released",
     "surface": null,
     "tab": "ship",
-    "comp": "ShipReleased",
-    "_why": "terminal node of the loop \u2014 an outcome, not a screen"
+    "comp": "ShipReleased"
   }
 ]
