@@ -14,6 +14,7 @@ Read in this order.
 | 4 | [headtohead-train-shell.md](headtohead-train-shell.md) | flutter-crew vs stacked_kit on a real p2 surface. The translator captured **7 of 112 nodes** because the JSX was branch-matrixed on `role × state × params.branch`. |
 | 5 | [htmx-producer-test.md](htmx-producer-test.md) | Controlled experiment: can the FSM build a bespoke app from an htmx prototype? **73/73, identical to the JSX control.** Also the `emit_htmx` asset bug and the three verification layers that all missed it. |
 | 6 | [web-research-drift.md](web-research-drift.md) | Industry practice on generated artifacts and drift. The `git diff --exit-code` untracked-file gotcha; spec-driven development's "authority is convention, not enforcement" failure. |
+| 7 | [remote-control-and-chat.md](remote-control-and-chat.md) | iOS companion, QR pairing and the LLM chat surface. **Viewing the prototype on a phone needs no app at all** — the htmx producer is already an HTTP server. MCP transports, the QR-relay attack, and the iOS local-network ceremony. |
 
 ## The three findings that shaped the design
 
