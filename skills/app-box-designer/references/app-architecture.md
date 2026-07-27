@@ -47,6 +47,11 @@ One entry per surface. This is the SSOT for what the app contains.
 | `comp` | yes | component name for the scaffolder |
 | `roles` | no | audience gate; absent = everyone |
 
+No other keys. The reference producer also carries a `phase` key on every entry;
+**nothing downstream consumes it**, so it is deliberately not part of this
+contract. Do not add speculative keys — a key nothing reads is a key nothing
+validates.
+
 ### `surface: null` **is** the exclusion
 
 There is no separate exclusions file and there must never be one. A surface that

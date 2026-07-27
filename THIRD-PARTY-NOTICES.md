@@ -51,14 +51,30 @@ historical reference.
 
 ## `skills/app-box-designer/runtime/vendor/`
 
-Client libraries served to prototypes, vendored and SRI-pinned. See
-[`skills/app-box-designer/runtime/vendor/SRI.md`](skills/app-box-designer/runtime/vendor/SRI.md)
-for the pinned hashes.
+Client libraries served to prototypes, vendored and SRI-pinned. Packages and
+versions below are read from
+[`runtime/vendor/manifest.json`](skills/app-box-designer/runtime/vendor/manifest.json),
+which also carries the SRI hashes.
 
-| library | licence |
-|---|---|
-| htmx (`htmx.min.js`) and extensions (`head-support.js`, `preload.min.js`, `sse.js`, `client-side-templates.js`) | Zero-Clause BSD |
-| mustache.js (`mustache.min.js`) | MIT |
+| file | package | version |
+|---|---|---|
+| `htmx.min.js` | `htmx.org` | 2.0.10 |
+| `preload.min.js` | `htmx-ext-preload` | 2.1.2 |
+| `head-support.js` | `htmx-ext-head-support` | 2.0.5 |
+| `sse.js` | `htmx-ext-sse` | 2.2.4 |
+| `client-side-templates.js` | `htmx-ext-client-side-templates` | 2.0.2 |
+| `mustache.min.js` | `mustache` | 4.2.0 |
+
+**Licence terms are those published by each package at the pinned version.** The
+vendored files are minified bundles carrying no licence header, so the terms
+cannot be read from the artifacts on disk. Before any distribution, resolve them
+from the registry rather than from memory:
+
+```sh
+cd skills/app-box-designer/runtime/vendor
+python3 -c "import json;[print(e['package'], e['version']) for e in json.load(open('manifest.json'))]" \
+  | while read -r p v; do echo "$p@$v: $(npm view "$p@$v" license 2>/dev/null)"; done
+```
 
 ---
 
@@ -67,8 +83,12 @@ for the pinned hashes.
 Installed from npm at setup, not vendored. See
 `skills/app-box-designer/runtime/package.json`.
 
-| package | licence |
-|---|---|
-| `hono`, `@hono/node-server` | MIT |
-| `nunjucks` | BSD-2-Clause |
-| `playwright` (dev only) | Apache-2.0 |
+Licences below were **read from each installed package's `package.json`** on
+2026-07-27, not recalled:
+
+| package | version | licence |
+|---|---|---|
+| `hono` | 4.12.31 | MIT |
+| `@hono/node-server` | 2.0.11 | MIT |
+| `nunjucks` | 3.2.4 | BSD-2-Clause |
+| `playwright` (dev only) | 1.61.1 | Apache-2.0 |

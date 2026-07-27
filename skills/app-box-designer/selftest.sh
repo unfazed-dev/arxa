@@ -138,8 +138,10 @@ check $? "no ladder width hardcoded in skill code" "$HARD"
 # --- 10. no upstream identity leaked --------------------------------------
 # The pattern is assembled so this file does not match itself.
 U="$(printf 'k%s\\|b%s\\|h%s\\|j%s\\|f%s' imi aoyu uashu imliu lutter-crew)"
+# runtime/vendor IS scanned — it was verified clean, so there is no reason to
+# carve it out. node_modules is gitignored and not part of the deliverable.
 LEFT="$(grep -rlIi "$U" "$SKILL" --exclude=LICENSE --exclude=selftest.sh \
-        --exclude-dir=vendor --exclude-dir=node_modules 2>/dev/null || true)"
+        --exclude-dir=node_modules 2>/dev/null || true)"
 [ -z "$LEFT" ]
 check $? "no upstream references outside LICENSE" "$LEFT"
 

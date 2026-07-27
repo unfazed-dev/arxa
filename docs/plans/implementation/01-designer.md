@@ -1,6 +1,6 @@
 # 01 — `app-box-designer`
 
-**STATUS: COMPLETE** — executed 2026-07-27. All 16 steps done, selftest 14/14 with a demonstrated negative for every check. Five amendments to the plan are recorded at the bottom; each one was a defect in the plan, not a deviation from it.
+**STATUS: COMPLETE** — executed 2026-07-27. All 15 steps done, selftest 14/14 with a demonstrated negative for every check. Five amendments to the plan are recorded at the bottom; each one was a defect in the plan, not a deviation from it.
 
 **Goal.** A complete, standalone htmx design skill that produces prototypes the
 FSM can freeze — carrying the viewport ladder, surface identity and registry
@@ -126,8 +126,12 @@ whose fonts 404.
 4. `~/.agents/skills/app-box-designer` resolves to the repo copy.
 5. `selftest.sh` passes, **including a negative case**: remove one `surfaceId`
    and assert the selftest exits `1` naming that viewmodel (R5).
-6. A human can invoke the skill and produce a prototype whose `registry.json`
-   an unmodified `emit_structure` could read.
+6. ~~A human can invoke the skill and produce a prototype whose `registry.json`
+   an unmodified `emit_structure` could read.~~ **UNSATISFIABLE AS WRITTEN —
+   see Amendment A6.** The unmodified emitter cannot read a JSON registry in
+   any form. Replaced by: the starter's `registry.json` carries every field
+   the emitter extracts (`id`/`tab`/`comp`/`surface`) plus `tabRoots`, so
+   plan 05's rewire is a read-path change and nothing else.
 
 ## Do not
 
@@ -219,3 +223,40 @@ dependencies installed and exits non-zero.
   `shoot.mjs` accepts `--rungs`/`$APP_BOX_LADDER`/`_d_meta.json`; nothing yet
   computes that list from a project's targets. **That is plan 06's job** —
   until it lands, the rung list is passed by hand.
+
+### A6 — Done-when #6 was unsatisfiable by construction
+
+The criterion asked that an **unmodified** `emit_structure` be able to read the
+prototype's `registry.json`. It cannot — for any producer, including p2's.
+
+Measured, by reading `stacked_kit/tools/emit_structure/emit_structure.py`:
+
+- it regex-scrapes `const P2_REGISTRY = [...]` out of **`jsx/app.jsx`** as text
+  (`_entries()`, line 56; `app_jsx` resolved at line 85);
+- failing that, it globs **`surfaces/*.html`** and derives `id`/`comp` from
+  filenames;
+- it **never opens a JSON file**, and it requires a `surfaces/` directory.
+
+So no `registry.json` this skill emits — however well formed — can satisfy that
+sentence. The criterion described the fix, not the current state. Confirmed by
+running it against the starter: `FAIL: …/surfaces/ missing — not a design root`.
+
+**This is the wiring job already identified in `architecture.md` §14** and it
+belongs to **plan 05**, not here. What plan 01 *can* guarantee, and now does:
+
+| the emitter extracts | the starter's registry carries |
+|---|---|
+| `id` | ✅ |
+| `tab` | ✅ |
+| `comp` | ✅ |
+| `surface` (incl. `null`) | ✅ — and `surface: null` is the exclusion |
+| `tabRoots` | ✅ exported from `app.routes.js` |
+
+so plan 05's change is a **read path** — JSON instead of a regex over JSX — with
+no schema negotiation.
+
+**Note for plan 05:** p2's registry also carries `label` (42/42), `phase`
+(42/42) and `roles` (28/42). The emitter reads none of them. `label` and `roles`
+are in this skill's contract; **`phase` is deliberately not** — nothing
+downstream consumes it. If plan 05 finds a consumer, add it there rather than
+retrofitting it into every producer.
