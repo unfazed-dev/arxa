@@ -1,0 +1,39 @@
+<Callout id="header" tone="info">
+# app-box-intake — Per-Skill Playbook
+
+`app-box-intake` · status: **active**
+
+**Role (one line):** turn a client conversation into `docs/design/brief.md` plus a seeded `docs/design/registry.json` — by eliciting, never by generating.
+
+**Scope of this document:** lets a human OR an LLM (or the desktop wizard) drive the intake engine without reading the skill source. Folded from `SKILL.md`.
+
+## Table of contents
+
+0. Header & TOC · 1. Overview & role · 2. Inputs · 3. Procedure · 4. Outputs · 5. Rules · 6. References
+
+</Callout>
+
+### Overview & role
+
+Intake elicits; it does not generate (architecture §22). A phase that *writes* the brief produces confident fiction — requirements nobody asked for, stated with the authority of ones they did. Intake asks and records; where it must infer, it marks the inference explicitly. The brief is the client's words, and that is its only value. This is the single engine both the headless phase and the desktop wizard drive — one engine, so the two front ends cannot disagree. Optional: a hand-written brief is valid input, and a first-run buyer skips intake and still reaches the showcase app.
+
+### Inputs
+
+- **Either** an answers document (JSON conforming to `skills/app-box-intake/intake.schema.json`): one object per field (`product`, `audience`, `appMustDo`, `existingSystems`, `targets`, `brand`, `constraints`, `outOfScope`, `surfaces`), each carrying `value` + `provenance` (`client` | `founder` | `inferred`).
+- **Or** a hand-written `brief.md` (plan 10.7) — the ideal case, already the client's words.
+
+### Procedure
+
+Elicit the field set with the client or founder; capture verbatim, rephrase nothing; where the client was silent, mark the field `inferred` with a placeholder (never an invented value). Author the answers document; each named surface is `{id, label, tab, provenance}` with `id` = `<tab>.<short>` — do not set `comp` or `surface`. Emit: `python skills/app-box-intake/intake.py emit --answers <f>` writes `brief.md` (every `inferred` field visibly marked) and `registry.json` (one entry per surface, `surface` null, `comp` derived). Validate-only while authoring: `intake.py validate <f>`. Hand-written brief: `intake.py seed --brief docs/design/brief.md` derives the registry seed from the brief's surface table without rewriting a word; a brief with no table yields an empty seed (not an error). Outputs default under `docs/design/`, overridable via `--brief-out` / `--registry-out` or `INTAKE_BRIEF_OUT` / `INTAKE_REGISTRY_OUT`. Invalid input writes nothing.
+
+### Outputs
+
+`docs/design/brief.md` (provenance-marked; `inferred` fields flagged) and `docs/design/registry.json` (keys exactly `{id, label, tab, comp, surface}`, `surface` null everywhere). These are the inputs to `app-box-designer`; the traceability gate (plan 10.6, `gates/`) then asserts every registry entry traces to a brief requirement.
+
+### Rules
+
+Elicit, do not generate — no views, viewmodels, routes, copy, or layouts; that is the next phase. Provenance is the whole contract: there is no fourth value, and "guessed"/"assumed"/"default" are all `inferred`. Never record a `client` field the client did not state — that manufactures authority the brief does not have. Never bind a `surface` — intake names; design binds, and a non-null seed surface means intake did design's job. Keep `intake.py --self-test` green when you change the engine; it is the proof the guardrail holds (negatively: no invented entries, every surface null, every inference marked).
+
+<!-- kb:begin -->
+### References
+<!-- kb:end -->

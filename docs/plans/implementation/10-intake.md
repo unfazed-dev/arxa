@@ -32,11 +32,11 @@ unavoidable, **mark it** — the same discipline as the playbook generator's
       three things the app must do, existing systems, **targets**, brand,
       constraints, out-of-scope. Every field records **who supplied it**:
       `client`, `founder`, or `inferred`.
-- [ ] **10.2** Implement the engine in `skills/app-box-intake/` — questions,
+- [x] **10.2** Implement the engine in `skills/app-box-intake/` — questions,
       validation, and artefact emission. **No UI code here.**
-- [ ] **10.3** Emit `docs/design/brief.md` from the schema, with every
+- [x] **10.3** Emit `docs/design/brief.md` from the schema, with every
       `inferred` field visibly marked in the output.
-- [ ] **10.4** Emit the **seeded `registry.json`** — ids, tabs, comps, and
+- [x] **10.4** Emit the **seeded `registry.json`** — ids, tabs, comps, and
       `surface: null` for anything named but not yet designed.
 - [ ] **10.5** Build the wizard surfaces in the desktop app over the same
       engine. Resumable, skippable, and **never blocking**: Michelle skips it
@@ -44,7 +44,7 @@ unavoidable, **mark it** — the same discipline as the playbook generator's
 - [ ] **10.6** Add the traceability gate: **every registry entry traces to a
       brief requirement.** An entry with no trace is a FAIL naming the entry.
       This is the assertion intake exists to enable.
-- [ ] **10.7** Accept a hand-written brief as valid input. Intake is optional;
+- [x] **10.7** Accept a hand-written brief as valid input. Intake is optional;
       the gate in 10.6 runs either way.
 
 ## Done-when

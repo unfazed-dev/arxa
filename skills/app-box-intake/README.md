@@ -1,1 +1,1 @@
-The intake skill (plan 10). An optional phase that ELICITS requirements and NEVER generates. Belongs: the intake SKILL.md and its runtime. Does not belong: design or code generation.
+The intake skill (plan 10). An optional phase that elicits a brief and seeds the registry.json the designer consumes. Belongs: the elicitation engine (intake.py), its answers schema, and artefact emission. Does not belong: design or code generation, the desktop wizard UI (app/), or the traceability gate (gates/).
