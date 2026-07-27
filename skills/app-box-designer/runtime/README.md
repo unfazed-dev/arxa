@@ -6,10 +6,32 @@ are pure MVVM content (ADR-0005) — templates, viewmodels, fixtures, assets.
 ## Commands
 
 ```sh
-node runtime/serve.mjs <artifact-dir> [--port 4319]   # run an artifact
+node runtime/serve.mjs <artifact-dir|design-name> [--port 4319] [--host 127.0.0.1] [--json]
 node runtime/lint.mjs  <artifact-dir>                 # zero-custom-client-JS check
 node runtime/vendor/fetch.mjs                         # (re)vendor htmx + extensions
 ```
+
+`serve` takes a path **or** a bare design name — `app-box-app` resolves to
+`designs/app-box-app` — because anything offering "preview this prototype" has
+a name, not a path.
+
+It binds **127.0.0.1**. A prototype is unreleased client work and has no
+business on the wifi; `--host 0.0.0.0` is still there for previewing on a
+phone, and says so on stdout when you use it.
+
+For a caller that spawns it (a UI preview button, a script):
+
+```sh
+node runtime/serve.mjs app-box-app --port 0 --json
+# {"url":"http://127.0.0.1:52953/","port":52953,"host":"127.0.0.1","pid":40311,"artifact":"/…/designs/app-box-app"}
+```
+
+`--port 0` takes any free port, so nothing collides when several prototypes run
+at once, and `--json` prints one line **after the socket is listening** — read
+it and the server is up, not merely spawned. The `port` reported is the one the
+OS actually bound. Failures go to stderr as plain text and exit non-zero
+(`69` port in use, `66` no such artifact, `64` bad usage); stdout stays empty,
+so a parsed ready-record is never ambiguous.
 
 New artifacts start by copying `examples/hello-hda/` — it is the reference
 implementation of everything below.

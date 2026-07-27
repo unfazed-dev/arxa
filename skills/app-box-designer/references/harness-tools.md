@@ -52,6 +52,20 @@ Then reference `http://localhost:4319/…` (routes come from the artifact's
 Fragment swaps, POSTs, and boosted navigation, so a static server silently
 degrades the artifact.
 
+The target may also be a bare design name (`app-box-app` → `designs/app-box-app`).
+When something else spawns the server — a UI preview button, a script serving
+several prototypes at once — use the machine-readable form instead of guessing
+a port:
+
+```sh
+node <skill>/runtime/serve.mjs <project> --port 0 --json
+# {"url":"http://127.0.0.1:52953/","port":52953,…}  ← printed once it is LISTENING
+```
+
+Read that one line and you have the URL to hand to `shoot.mjs` or a browser.
+Errors go to stderr and exit non-zero, so a caller can tell a dead server from
+a live one — it could not before. The server binds loopback only.
+
 ## Screenshots & vision
 
 The screenshot-verify loop is the **default** verify path, not an optional
