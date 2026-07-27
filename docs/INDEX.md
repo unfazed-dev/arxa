@@ -92,10 +92,59 @@ Copy from these. **Do not rewrite what already exists.**
 
 ---
 
-## 6. 🔴 Open decisions — NOT settled, do not guess
+## 6. Decisions
+
+### ✅ O1 — how scaffolded apps get their kit dependencies — **SETTLED: scoped vendoring**
+
+Scaffolded apps depended on ~39 **private** `stacked_kit` git packages, which
+no buyer can pull. Resolved by **vendoring only the kits an app actually uses**,
+derived from targets + selected capabilities.
+
+Measured: the whole kit is **578 files / 57,537 lines / 2.3 MB** of `lib/`
+source — **≈1.7 MB** excluding `showcase_app`, against a 4.2–4.6 MB
+hello-world Flutter binary. The bloat objection does not survive measurement.
+
+**Rejected — a licence-gated private pub registry** (`unpub` + `unpub_auth`,
+`dart pub token add`). Technically real and commercially standard, but the
+buyer's shipped app stops resolving dependencies when her licence lapses. That
+is runtime lock-in — the incumbent's one-way-export trap in a different costume
+— and it contradicts journey J10 and Michelle's second trust condition.
+**Rejected — gating app_box to kit-holders**, which deletes the buyer persona.
+
+**`dependencyMode` is a config value from day one** — see O3.
+
+### ✅ O3 — publishing the kit — **deferred, and non-breaking whenever it happens**
+
+Publishing is a **config flip plus a migration command**, not a
+re-architecture, because `config/app-box.config.json` carries
+`dependencyMode: "vendored" | "hosted"` from the start.
+
+| on publish | outcome |
+|---|---|
+| already-delivered apps | **keep working untouched** — vendored code has no external dependency |
+| new apps | `dependencyMode: "hosted"`, ordinary version constraints |
+| the two populations | coexist indefinitely; no forced migration |
+| scoping logic (which kits does this app need) | **carries over unchanged** |
+| pinning discipline | SHA-pinning becomes version-pinning — `pubspec.lock` does it natively |
+| freshness check | becomes `pub outdated` — cheaper |
+| the copy step and path-dep rewriting | the only work discarded |
+| tooling vendoring (§17) | collapses to a shim, deleted rather than maintained |
+
+**The ordering is asymmetric and favours vendoring first.** Vendored → hosted is
+non-breaking. Registry → hosted is not: apps built against a registry need
+migration and break on licence lapse in the meantime.
+
+**Vendoring survives publication as an explicit mode**, because it is what makes
+"take your code and leave" bulletproof. It becomes a feature, not legacy.
+
+**Concrete reason not to publish yet, independent of strategy:** per
+`research/stub-inventory.md`, Stripe, PayPal, both auth providers, both map
+providers and Vercel all throw `UnimplementedError`. Publishing 21 packages in
+that state buys a bad first impression and immediate semver obligations on an
+API that is not stable.
+
+### 🔴 O2 — still open
 
 | # | question | why it blocks |
 |---|---|---|
-| **O1** | **Scaffolded apps depend on ~39 private `stacked_kit` git packages. Michelle cannot pull them.** Publish to pub.dev? Vendor per app? Gate app_box to kit-holders? | Every app app_box produces fails to build for any buyer without repo access. This is the single largest product risk on the board |
 | O2 | Licence model and price point | `research/competitors-and-pricing.md` has the comparables; no number chosen |
-| O3 | Whether the kit is ever published | collapses O1 and turns vendoring into a shim (§17) |

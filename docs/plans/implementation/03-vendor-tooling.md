@@ -62,6 +62,34 @@ signal.
 - [ ] **3.8** Run every copied suite. Record the pass count in `VENDOR.lock` as
       the baseline. Any later drop is a regression.
 
+## Scoped app-dependency vendoring (O1)
+
+Separate from tooling vendoring above: this is how a **scaffolded app** gets its
+kit packages, since the kit is private and no buyer can pull it.
+
+- [ ] **3.9** Add `dependencyMode: "vendored" | "hosted"` to
+      `config/app-box.config.json`, defaulting to `vendored`. **Every kit
+      reference in a generated `pubspec.yaml` goes through this switch.** No
+      code branches on the kit being private — it branches on the config value.
+      This is what makes publishing a config flip rather than a rewrite.
+- [ ] **3.10** Derive the kit set **per app** from targets + selected
+      capabilities. Do not vendor all 21. Reuse the §11 derivation pattern; a
+      phone-only app with no maps gets no `stacked_kit_maps`.
+- [ ] **3.11** In `vendored` mode, copy the derived kits into
+      `<app>/packages/` and emit **path deps between them**. This also removes a
+      live fragility: the kit's internal `path: ../sibling` deps currently
+      resolve to a SHA, which is why `stacked_kit_data from git is forbidden`
+      bites. Vendored path deps are the layout pub actually wants — verify this
+      resolves cleanly before proceeding.
+- [ ] **3.12** In `hosted` mode, emit ordinary version constraints. Implement it
+      now even though it is unusable until the kit is published — an untested
+      branch is not a migration path.
+- [ ] **3.13** Write `tools/migrate_dependency_mode.sh`: converts an existing app
+      between modes — delete `packages/`, rewrite `pubspec.yaml`, re-resolve.
+      Idempotent, and guarded on the **desired end state**.
+- [ ] **3.14** Record the vendored kit SHA in the app's own lock so
+      `check_freshness.sh` covers app deps as well as tooling.
+
 ## Done-when
 
 1. `tools/vendor/VENDOR.lock` lists every vendored item with a real SHA.
@@ -71,6 +99,13 @@ signal.
    allowed files.
 4. Copied suites pass at or above the recorded baseline.
 5. `pipeline.sh` runs end to end against a fixture with no absolute paths.
+6. A scaffolded app in `vendored` mode **builds with no network and no access to
+   the kit repository** — that is the whole point; prove it on a clean machine.
+7. The derived kit set is **smaller than 21** for an app that does not use every
+   capability. If it is always 21, the derivation is not working.
+8. `migrate_dependency_mode.sh` round-trips: `vendored → hosted → vendored`
+   leaves the app byte-identical. (Assert the `hosted` leg against a local
+   fixture registry until the kit is published.)
 
 ## Do not
 
