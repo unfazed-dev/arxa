@@ -88,7 +88,7 @@ ship.
 ## Verifying
 
 ```sh
-../../skills/app-box-designer/selftest.sh .          # 14/14
+../../skills/app-box-designer/selftest.sh .          # 15/15
 node ../../skills/app-box-designer/runtime/lint.mjs .
 node ../../skills/app-box-designer/runtime/shoot.mjs http://localhost:4319/ --artifact .
 ```

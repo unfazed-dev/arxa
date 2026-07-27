@@ -106,6 +106,35 @@ Fixed with a scoped negation (`!designs/*/ui/views/**/build/`), verified both
 ways: the surface tab is now visible to git, and `build/app.apk` and
 `runtime/build/` are still ignored.
 
+**`lint.mjs` only banned double-quoted attributes.** The rules were
+`/hx-(vals|headers)\s*=\s*"js:/` and `/hx-trigger\s*=\s*"[^"]*\[/` — quote-style
+specific. The `hx-vals='{"action":"run"}'` added by this fix is the tree's first
+single-quoted htmx attribute (it has to be: the value contains double quotes),
+and it makes the gap reachable — `hx-vals='js:…'` would have walked past a ban
+the docs describe as absolute. Widened to `['"]` and proved with a probe file
+that now fails the lint.
+
 Worth stating plainly: nothing in the toolchain compares *what git has* against
 *what was rendered*. The 29 green renders in the previous commit were true of a
 tree that did not exist in the repository.
+
+## 6. How the fix was verified
+
+Everything below ran against a tree extracted from the commit
+(`git archive HEAD | tar -x`), not the working directory — the §5 lesson
+applied to its own fix. 63 files in the commit, 63 on disk.
+
+- **18 browser assertions** (Playwright, 1280 × 832, the artifact's only rung):
+  each gate swaps in place with no navigation, the 422 form comes back carrying
+  its error *and* the name already typed, an unacknowledged release is stopped
+  by native validation before a request is issued, Run/Stop swap the build
+  panel both ways, `/build` serves at all, and the chat textarea is emptied by
+  the swap rather than by script. Zero console errors, zero failed requests.
+- **selftest 15/15**, negative mode exits 1, lint clean, **29 renders** across
+  all 14 surfaces and every brief-named state, **7 `hx-post` targets, 0
+  unrouted**.
+
+Two failures during this pass were my test's fault, not the artifact's, and are
+recorded because both looked exactly like product bugs: `button[type=submit]`
+matched the shell's theme control before the form under test, and `/build`
+defaults to `red`, a state that deliberately offers no button.

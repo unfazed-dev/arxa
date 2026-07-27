@@ -14,8 +14,12 @@ const rules = [
   // Inert JSON data blocks (e.g. inert data) are data, not custom JS.
   { re: /<script(?![^>]*src="\/assets\/vendor\/)(?![^>]*type="application\/json")[^>]*>/i, msg: 'non-vendor <script> tag' },
   { re: /\bhx-on[:\s=]/i, msg: 'hx-on handler' },
-  { re: /\bhx-(vals|headers)\s*=\s*"js:/i, msg: 'js:-prefixed attribute' },
-  { re: /\bhx-trigger\s*=\s*"[^"]*\[/i, msg: '[expr] trigger filter' },
+  // Both quote styles. These matched only `"…` until an artifact wrote its
+  // hx-vals JSON in single quotes — legal HTML, and necessary when the value
+  // contains double quotes. `hx-vals='js:…'` would then have walked straight
+  // past a ban that reads as absolute.
+  { re: /\bhx-(vals|headers)\s*=\s*['"]js:/i, msg: 'js:-prefixed attribute' },
+  { re: /\bhx-trigger\s*=\s*['"][^'"]*\[/i, msg: '[expr] trigger filter' },
 ];
 
 const walk = (d) =>
