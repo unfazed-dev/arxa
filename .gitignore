@@ -42,6 +42,7 @@ npm-debug.log*
 .crew/
 .blueprint/
 .claude-flow/
+.kimi-code/
 *.run.json
 *.history.jsonl
 
