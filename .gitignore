@@ -6,7 +6,10 @@
 build/
 *.dill
 *.lock.bak
-pubspec.lock          # app is an application, but the kit deps are SHA-pinned; regenerate
+# pubspec.lock is deliberately NOT ignored — app_box is an application, and its
+# whole thesis is reproducibility. The kit arrives as ~39 git deps pinned to a
+# commit SHA; an unlocked resolve is exactly the ambient-state defect the
+# research documents (see docs/research/spine-findings.md).
 .flutter-plugins
 .flutter-plugins-dependencies
 generated_plugin_registrant.dart
