@@ -104,12 +104,59 @@ servers, the combined registry eats the context window. One approach in the
 wild is an MCP proxy filtering tool exposure with local embeddings. app_box is
 especially exposed here because the pipeline itself wants to be a tool surface.
 
-**❄️ Gap in the research: BYO-key credential storage.** The search did not
-surface a settled pattern for desktop (OS keychain vs encrypted local config vs
-proxy relay). MCP pushes credentials to the transport layer as bearer
-tokens/headers, and OAuth 2.1 with a backend relay appeared for remote servers.
-For a *paid* product this is a real open question — flagging it as unresolved
-rather than guessing.
+## 🔥 BYO-key credential storage — CLOSED
+
+Previously flagged unresolved. Researched; the answer is settled, and the
+threat model is the part that makes it obvious.
+
+**Reframe first: for BYO-key, you are not hiding the key from the user.** It is
+*their* key. The Keychain protects secrets at rest but does not make a key
+secret from the person operating the machine — and it does not need to. The
+real threats are **other apps and other users on that machine**, backup and
+sync leakage, and accidental disclosure through logs, crash reports and screen
+sharing. Design against those.
+
+**The decision: OS vault, never hand-rolled crypto.** `flutter_secure_storage`
+(Keychain on macOS/iOS, DPAPI-backed on Windows). Electron's equivalent is
+`safeStorage`. An encrypted config file is a *fallback*, and only if its
+encryption key itself lives in the vault — a file encrypted with a key stored
+beside it is theatre.
+
+### macOS pitfalls that will cost a day each if unknown
+
+| pitfall | symptom | fix |
+|---|---|---|
+| Keychain Sharing capability missing | `-34018 errSecMissingEntitlement` | add to **both** `macos/Runner/DebugProfile.entitlements` *and* `Release.entitlements` |
+| App Group not in `keychain-access-groups` | **writes silently succeed and store nothing** | add `$(AppIdentifierPrefix)<group>` |
+| Signed + notarized build with hardened runtime | **reads silently return `null`** — works in `flutter run --release`, fails after notarisation | the code signature identity is part of the keychain ACL; **test against a signed, notarised build** |
+| Plugin-side Darwin bug (reported on v10.0.0) | `-34018` *despite* correct entitlements | check the patched release before burning hours on entitlement permutations |
+| Wrong accessibility class | silent read failure on autostart | default is `unlocked`; an app that starts before interaction needs `first_unlock` |
+
+**Two of these fail silently and green.** A write that stores nothing and a
+read that returns null after notarisation are exactly the stale-green shape
+this project keeps finding. The check must be: write, restart, read back, **in
+a notarised build** — not "the call did not throw."
+
+### Linux: be honest in the UI
+
+There is no single standard vault. Electron's `safeStorage` can fall back to
+`basic_text` when no keyring is detected — obfuscation, not encryption. Detect
+the backend at runtime and **say which tier is active**: *"stored in the macOS
+Keychain"* vs *"encrypted file — no system keyring detected."* For a paid
+product handling credentials with real billing consequences, that disclosure is
+both a security and an honesty requirement.
+
+### Handling rules
+
+- Load the key, use it, drop it — minimise residency in memory.
+- Vault holds the key only. Chat history and settings go in the normal store;
+  secure storage is not a database.
+- Never log it, never include it in crash reports or telemetry.
+
+**And it is a third platform-conditional ceremony.** Keychain Sharing
+entitlements in two files are turned on by `--targets macos`, exactly as
+`NSLocalNetworkUsageDescription` is turned on by `--targets ios`. Three
+independent instances now support §11's derivation model.
 
 ## How this lands on the human gates
 

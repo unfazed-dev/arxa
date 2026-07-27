@@ -584,6 +584,8 @@ starts applying to htmx. Per `docs/research/web-research-drift.md`, assert it
 with `git status --porcelain`, not `git diff` — a producer that *adds* a
 surface is the expected case, and `git diff` cannot see new files.
 
+### (see §15 for the companion that drives all of this)
+
 ### Why this also explains the translation result
 
 The JSX producer put role logic in **conditionals** —
@@ -593,3 +595,53 @@ declares the same thing as **data**: `"roles":["felix"]` in the registry.
 Declared variation survives a language change; branched rendering does not. The
 registry is not merely convenient here — it is *why* this producer is
 translatable at all.
+
+## 15. The iOS companion — remote control, with the prototype as a mode
+
+**Decision (supersedes the research doc's "ship zero-install first"):** the
+prototype is reached **through the app_box iOS app**, not a bare Safari URL.
+The companion is the remote control; serving the prototype is something it
+*commands the desktop to do*. Rationale: the app is needed for control
+regardless, and one surface that both drives the pipeline and shows its output
+beats two surfaces with different capabilities. A plain LAN URL stays available
+as a fallback for handing a client a link — it is simply not the primary path.
+
+### The loop
+
+1. Companion pairs to the desktop by QR — LAN-local, TLS-key fingerprint
+   pinned from the QR payload (see `docs/research/remote-control-and-chat.md`).
+2. From the companion: **Serve prototype**. The desktop starts the htmx
+   producer's `server.js` and returns the URL over the paired channel.
+3. The companion opens it **fullscreen in a WebView** — at true device width,
+   which is why this doubles as real-device design review.
+4. A **floating, draggable FAB** rides above the WebView: app_box controls,
+   stop server, back to the companion.
+
+### What the FAB must not do
+
+**It must not lie about server state.** If the desktop process dies, the
+WebView keeps showing the last render — a stale page that looks live. Demoing a
+dead server to a client is the failure mode this feature invents. So the FAB
+carries the connection state as its own affordance (live / reconnecting /
+dead), driven by the paired channel's heartbeat, **not** by whether the WebView
+last painted successfully.
+
+Secondary constraints:
+
+- It occludes the prototype by definition — needs an edge-dock/minimised state,
+  and must never park over the phone's home indicator.
+- Gesture capture is scoped to the FAB; the WebView owns every other touch, or
+  the prototype stops being usable.
+- A WebView is a platform view. The safe-area handling that bit every
+  `UIHostingController` surface in p2 applies here — verify insets rather than
+  assuming.
+
+### Credentials
+
+Settled — see the research doc. OS vault (`flutter_secure_storage`), never
+hand-rolled crypto; encrypted-file fallback only where no vault exists, and
+only if its key lives in the vault; the UI states which tier is active. The
+verification standard is **write → restart → read back, in a signed and
+notarised build**, because two of the known macOS failure modes (App Group
+missing from `keychain-access-groups`, hardened runtime after notarisation)
+fail *silently and green*.
