@@ -28,29 +28,29 @@ No gate imports a sibling. Shared logic lives in `gates/_common/` only.
 
 ## Steps
 
-- [ ] **4.1** Split the vendored monolith scripts into the folders above. Where
+- [x] **4.1** Split the vendored monolith scripts into the folders above. Where
       one script asserts several things (`freeze_design.sh` carries render *and*
       structure checks), split along the seam and move structure to
       `gates/structure/`.
-- [ ] **4.2** Route every gate's findings through `gates/_common/`'s SARIF
+- [x] **4.2** Route every gate's findings through `gates/_common/`'s SARIF
       emitter. One transport for the GUI, the companion and a CI log.
       Human-readable output stays, but SARIF is the machine contract.
-- [ ] **4.3** **Fix the console-handler accumulation bug** carried in from
+- [x] **4.3** **Fix the console-handler accumulation bug** carried in from
       `freeze_design.sh`: `pg.on("console", …)` is registered **inside the loop
       on a shared page**, so handlers accumulate and each error is reported once
       per surface already visited — inflating counts ~4×. Register once, or use
       a fresh page per surface.
-- [ ] **4.4** **Fix the silent-skip in coverage**: it currently reports
+- [x] **4.4** **Fix the silent-skip in coverage**: it currently reports
       `coverage N/A` when design state is missing, and exits 0. A gate that
       cannot find its input must **fail**, not pass quietly.
-- [ ] **4.5** Give every gate a `selftest.sh` with **both** cases. The negative
+- [x] **4.5** Give every gate a `selftest.sh` with **both** cases. The negative
       case plants a specific defect and asserts exit `1` **and** that the output
       names the offending file. A selftest proving only the happy path is
       rejected (R5).
-- [ ] **4.6** Write `gates/run_all.sh`: runs each gate in dependency order,
+- [x] **4.6** Write `gates/run_all.sh`: runs each gate in dependency order,
       aggregates SARIF, exits non-zero if any gate failed. It **orchestrates**;
       it contains no assertions of its own.
-- [ ] **4.7** Add a meta-test `gates/test_gates_can_fail.sh`: for every folder
+- [x] **4.7** Add a meta-test `gates/test_gates_can_fail.sh`: for every folder
       under `gates/`, assert a `selftest` exists and that it contains at least
       one negative case. This is the guard against R5 eroding.
 

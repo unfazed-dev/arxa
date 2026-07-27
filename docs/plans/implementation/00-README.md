@@ -114,7 +114,7 @@ moment it lands. Everything downstream of `02` can proceed simultaneously.
 | 01 designer | | ☐ |
 | 02 repo skeleton | app-box | ☑ |
 | 03 vendor tooling | app-box | ☑ |
-| 04 gates | | ☐ |
+| 04 gates | app-box | ☑ |
 | 05 structure + registry | | ☐ |
 | 06 targets in state | | ☐ |
 | 07 CRUD + delete | | ☐ |
@@ -123,5 +123,5 @@ moment it lands. Everything downstream of `02` can proceed simultaneously.
 | 10 intake | | ☐ |
 | 11 deployer | | ☐ |
 | 12 companion | | ☐ |
-| 13 verification tiers | | ☐ |
+| 13 verification tiers | app-box | ☑ |
 | 14 dogfood | | ☐ |

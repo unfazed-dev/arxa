@@ -20,7 +20,7 @@ build/
 .flutter-plugins-dependencies
 generated_plugin_registrant.dart
 *.g.dart.bak
-coverage/
+/coverage/
 
 # --- macOS desktop (the dogfood target) ---
 macos/Flutter/ephemeral/
