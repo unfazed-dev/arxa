@@ -28,9 +28,18 @@ const walk = (d) =>
     return statSync(p).isDirectory() ? walk(p) : [p];
   });
 
+// Comments are not shipped behaviour. Every rule above is a pure selector —
+// none of them reads an opt-out marker — so stripping comments before matching
+// costs nothing and closes a real hole in both directions: a Nunjucks comment
+// explaining WHY `hx-on:` is banned used to FAIL the artifact that obeyed the
+// ban (documenting a rule must not be able to break the build), and a
+// commented-out <script> is not a script.
+const uncommented = (s) =>
+  s.replace(/<!--[\s\S]*?-->/g, '').replace(/\{#[\s\S]*?#\}/g, '');
+
 const findings = [];
 for (const file of walk(dir).filter((f) => f.endsWith('.html'))) {
-  const text = readFileSync(file, 'utf8');
+  const text = uncommented(readFileSync(file, 'utf8'));
   for (const { re, msg } of rules) {
     if (re.test(text)) findings.push(`${file}: ${msg}`);
   }

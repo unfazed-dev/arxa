@@ -132,3 +132,7 @@ Allowed: the vendored libraries above. Banned anywhere in artifact templates:
 `<script>` tags that don't point at `/assets/vendor/`, `hx-on:*`, `js:`-prefixed
 attributes, `[expr]` trigger filters. `node runtime/lint.mjs` enforces it;
 `allowEval:false` is the runtime backstop.
+
+Comments (`<!-- -->`, `{# #}`) are stripped before matching, so writing down
+*why* a rule exists cannot break the build — and a commented-out `<script>` is
+not a script. Every rule is a pure selector; none reads an opt-out marker.

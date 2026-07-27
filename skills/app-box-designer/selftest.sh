@@ -2,13 +2,18 @@
 # app-box-designer selftest.
 #
 # Scaffolds a throwaway producer from the starter and asserts the structural
-# contract holds. Every check must be able to FAIL — run with --negative to
-# prove it (that mode breaks the fixture on purpose and expects a non-zero
-# exit).
+# contract holds.
+#
+# A check that has never been observed failing is not a check, it is a line
+# that runs. `--negative` proves each one: it re-runs the whole selftest once
+# per mutation in MUTATIONS below and requires the named check to flip. It used
+# to break exactly one thing (surfaceId) and settle for "something failed",
+# which left every other check unproven — and unproven is how this skill
+# shipped four green results about the wrong thing.
 #
 #   ./selftest.sh                        # the starter; expect exit 0
 #   ./selftest.sh <artifact-dir>         # a real artifact; expect exit 0
-#   ./selftest.sh [<dir>] --negative     # break one surfaceId; expect exit 1
+#   ./selftest.sh [<dir>] --negative     # prove every check can fail
 #
 set -uo pipefail
 
@@ -32,10 +37,71 @@ else
 fi
 printf 'artifact: %s\n\n' "$SRC"
 
+# One deliberate break per check, and the check that must catch it. An `ok:`
+# row is the inverse: the break must leave that check PASSING — that is the
+# regression guard for the linter reading comments.
+MUTATIONS='
+registry-key|registry parses with required keys
+exclusions-file|no exclusions.json
+surface-id|every viewmodel declares surfaceId
+orphan-id|every surfaceId joins a registry entry
+uncovered-entry|every buildable registry entry has a surface
+empty-tabroots|app.routes.js exports a non-empty tabRoots
+repo-import|no viewmodel imports a repository directly
+fixture-provenance|fixtures record their seed provenance
+ladder-doc|references/viewport-ladder.md exists
+ladder-config|runtime/ladder.json exists
+ladder-drift|ladder.json and viewport-ladder.md agree
+ladder-hardcode|no ladder width hardcoded in skill code
+upstream-leak|no upstream references outside LICENSE
+full-reload|no mutation answers with a full reload
+client-js|zero-custom-client-JS lint
+commented-js|ok:zero-custom-client-JS lint
+'
+
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
 ART="$WORK/artifact"
 cp -R "$SRC" "$ART"
+
+mutate() {
+  # Four checks assert on the SKILL, not the artifact. Editing the real skill
+  # to test the real skill is how a "test" becomes an outage, so those refuse
+  # to run unless the driver has already stood up a throwaway copy.
+  case "$1" in
+    ladder-*|upstream-leak)
+      [ "${SELFTEST_SKILL_COPY:-0}" = 1 ] || {
+        printf 'refusing %s: it edits the skill itself; --negative runs it against a copy\n' "$1" >&2
+        exit 64; } ;;
+  esac
+  VM="$(find "$ART/ui/views" -name '*_viewmodel.js' | sort | head -1)"
+  HTML="$(find "$ART/ui" -name '*_view.html' | sort | head -1)"
+  FIX="$(ls "$ART"/models/*/*_fixtures.json 2>/dev/null | head -1)"
+  REGJ="$ART/models/screens_model/registry.json"
+  case "$1" in
+    registry-key)       node -e 'const fs=require("fs"),f=process.argv[1],r=JSON.parse(fs.readFileSync(f));delete r[0].label;fs.writeFileSync(f,JSON.stringify(r,null,2))' "$REGJ" ;;
+    exclusions-file)    : > "$ART/exclusions.json" ;;
+    surface-id)         perl -ni -e 'print unless /export const surfaceId/' "$VM" ;;
+    orphan-id)          node -e 'const fs=require("fs"),f=process.argv[1];fs.writeFileSync(f,fs.readFileSync(f,"utf8").replace(/(surfaceId\s*=\s*["\x27])[^"\x27]+/,"$1zzz.nope"))' "$VM" ;;
+    uncovered-entry)    node -e 'const fs=require("fs"),f=process.argv[1],r=JSON.parse(fs.readFileSync(f));r.push({id:"zzz.ghost",label:"Ghost",surface:"ghost_view",tab:"main",comp:"Ghost"});fs.writeFileSync(f,JSON.stringify(r,null,2))' "$REGJ" ;;
+    empty-tabroots)     node -e 'const fs=require("fs"),f=process.argv[1];fs.writeFileSync(f,fs.readFileSync(f,"utf8").replace(/export const tabRoots\s*=\s*\{[^}]*\}/,"export const tabRoots = {}"))' "$ART/app.routes.js" ;;
+    # A real import would also break the module graph and prove less; that
+    # check is a text scan, so the honest break is text.
+    repo-import)        printf '// reaches services/repositories/x.js directly\n' >> "$VM" ;;
+    fixture-provenance) perl -ni -e 'print unless /_generated_from/' "$FIX" ;;
+    ladder-doc)         rm -f "$SKILL/references/viewport-ladder.md" ;;
+    ladder-config)      rm -f "$SKILL/runtime/ladder.json" ;;
+    ladder-drift)       node -e 'const fs=require("fs"),f=process.argv[1],j=JSON.parse(fs.readFileSync(f));j.rungs.compact.width+=1;fs.writeFileSync(f,JSON.stringify(j,null,2))' "$SKILL/runtime/ladder.json" ;;
+    ladder-hardcode)    printf 'const _probe = 390;\n' >> "$SKILL/runtime/console-check.mjs" ;;
+    upstream-leak)      printf 'k%s\n' imi > "$SKILL/LEAK.md" ;;
+    full-reload)        printf 'export const _probe = (c, h) => h.refresh(c);\n' >> "$VM" ;;
+    client-js)          printf '<div hx-on:click="alert(1)"></div>\n' >> "$HTML" ;;
+    commented-js)       printf '{# hx-on:click is banned here — ADR-0002 #}\n' >> "$HTML" ;;
+    *) printf 'unknown mutation: %s\n' "$1" >&2; exit 64 ;;
+  esac
+  printf 'mutation: %s\n\n' "$1"
+}
+[ -n "${SELFTEST_MUTATION:-}" ] && mutate "$SELFTEST_MUTATION"
 
 PASS=0; FAIL=0
 ok()   { PASS=$((PASS+1)); printf '  ok   %s\n' "$1"; }
@@ -43,11 +109,52 @@ bad()  { FAIL=$((FAIL+1)); printf '  FAIL %s\n' "$1"; }
 check(){ if [ "$1" = 0 ]; then ok "$2"; else bad "$2${3:+ — $3}"; fi; }
 
 if [ "$NEGATIVE" = 1 ]; then
-  # Break whichever artifact was given, not a filename only the starter has.
-  VICTIM="$(find "$ART/ui/views" -name '*_viewmodel.js' | sort | head -1)"
-  [ -n "$VICTIM" ] || { echo "negative mode: no viewmodel to break" >&2; exit 64; }
-  echo "negative mode: removing surfaceId from ${VICTIM#"$ART/"}"
-  perl -ni -e "print unless /export const surfaceId/" "$VICTIM"
+  # Some mutations target the skill, so the runs happen against a throwaway
+  # copy of it — BASH_SOURCE means the copy resolves its own $SKILL with no
+  # override to keep in sync. node_modules is symlinked back, read-only.
+  [ -d "$SKILL/runtime/node_modules" ] || {
+    echo "negative mode needs runtime/node_modules — the lint mutations cannot be proven without it" >&2
+    exit 64; }
+  SK="$WORK/skill"
+  mkdir -p "$SK"
+  tar -cf - -C "$SKILL" --exclude node_modules . | tar -xf - -C "$SK"
+  ln -s "$SKILL/runtime/node_modules" "$SK/runtime/node_modules"
+
+  # A check that is ALREADY failing gets "proven" by every mutation, including
+  # the ones that do not touch it — the free pass is the same shape as the bug
+  # this mode exists to find, so the baseline must be green first. (It was not:
+  # the starter's theme flip tripped the no-full-reload check, and every run
+  # below would have reported that check as proven without doing anything.)
+  BASE="$("$SK/selftest.sh" "$SRC" 2>&1)"
+  if ! printf '%s\n' "$BASE" | grep -qF 'failed 0'; then
+    echo "baseline is not green — mutations cannot prove anything against it:" >&2
+    printf '%s\n' "$BASE" | grep -F '  FAIL' >&2
+    exit 65
+  fi
+
+  echo "== falsifiability: one full run per mutation =="
+  while IFS='|' read -r NAME WANT; do
+    [ -n "${NAME:-}" ] || continue
+    WANT_OK=0
+    case "$WANT" in ok:*) WANT_OK=1; WANT="${WANT#ok:}" ;; esac
+    OUT="$(SELFTEST_MUTATION="$NAME" SELFTEST_SKILL_COPY=1 "$SK/selftest.sh" "$SRC" 2>&1)"
+    if [ "$WANT_OK" = 1 ]; then
+      printf '%s\n' "$OUT" | grep -qF "ok   $WANT" \
+        && ok "$NAME leaves \"$WANT\" passing" \
+        || bad "$NAME broke \"$WANT\" — a comment is not behaviour"
+    else
+      printf '%s\n' "$OUT" | grep -qF "FAIL $WANT" \
+        && ok "\"$WANT\" catches $NAME" \
+        || bad "\"$WANT\" did NOT fail under $NAME — the check cannot detect it"
+    fi
+  done <<EOF
+$MUTATIONS
+EOF
+
+  echo
+  echo "proven $PASS, unproven $FAIL"
+  [ "$FAIL" -eq 0 ]
+  exit
 fi
 
 echo "== structure =="
@@ -192,10 +299,4 @@ fi
 
 echo
 echo "passed $PASS, failed $FAIL"
-if [ "$NEGATIVE" = 1 ]; then
-  if [ "$FAIL" -gt 0 ]; then
-    echo "negative case OK: the broken fixture was caught"; exit 1
-  fi
-  echo "NEGATIVE CASE DID NOT FAIL — the checks cannot detect a missing surfaceId"; exit 2
-fi
 [ "$FAIL" -eq 0 ]

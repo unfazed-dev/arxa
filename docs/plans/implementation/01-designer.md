@@ -205,9 +205,9 @@ dependencies installed and exits non-zero.
 
 | | result |
 |---|---|
-| `selftest.sh` | **14/14 pass**, exit 0 |
-| `selftest.sh --negative` | exit 1, names `timer_viewmodel.js` in **two** independent checks |
-| every other check's negative | proved by hand: rung on a boundary, doc/config drift, removed `ladder-exempt:` marker, 404 route, unknown rung |
+| `selftest.sh` | **15/15 pass**, exit 0 — starter and `designs/app-box-app` |
+| `selftest.sh --negative` | **16/16 proven**, exit 0 — one deliberate break per check, each required to flip *that* check, plus one inverse case (a comment naming a banned attribute must NOT trip the linter) |
+| every other check's negative | was "proved by hand"; now mechanical — the mutation table in `selftest.sh` is the record. A red baseline aborts with exit 65 instead of handing every mutation a free pass, which is how the starter's own unexempted theme flip surfaced |
 | `doctor.mjs` with nothing installed | exit 1, names all 6 missing pieces and the two commands that fix them |
 | starter served + rendered | 200 at **compact / medium / expanded**, 0 console errors, 0 failed requests, no horizontal overflow |
 | the data spine | facade → repository → fixture → view renders end to end (screenshot read back) |
