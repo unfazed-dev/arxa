@@ -43,13 +43,13 @@ disable the gate that catches a surface whose fonts 404.
 - [ ] **9.4** Expose fixture reads as a host function from Dart into the engine,
       replacing Node's `fs`. The viewmodels' `readFixture` contract stays
       identical.
-- [ ] **9.5** Serve `surfaces/`, `assets/` and the design-system CSS from the
+- [x] **9.5** Serve `surfaces/`, `assets/` and the design-system CSS from the
       Dart server, with correct MIME types. Asset paths are **relative to the
       surfaces directory** — a prefix bug here previously 404'd every font and
       video while three verification layers reported success.
 - [ ] **9.6** Emit a **heartbeat** on the paired channel while serving. Plan 12's
       FAB depends on channel state, never on whether a WebView painted.
-- [ ] **9.7** Implement stop-server cleanly: release the port, kill the engine
+- [x] **9.7** Implement stop-server cleanly: release the port, kill the engine
       isolate, and report stopped over the channel.
 - [ ] **9.8** Keep a **Node fallback path** behind a config flag for local
       development, so a developer with Node can run the producer natively and
