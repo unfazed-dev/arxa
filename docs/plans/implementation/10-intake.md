@@ -28,7 +28,7 @@ unavoidable, **mark it** — the same discipline as the playbook generator's
 
 ## Steps
 
-- [ ] **10.1** Define the intake schema in `pipeline/state/`: audience, the
+- [x] **10.1** Define the intake schema in `pipeline/state/`: audience, the
       three things the app must do, existing systems, **targets**, brand,
       constraints, out-of-scope. Every field records **who supplied it**:
       `client`, `founder`, or `inferred`.
@@ -38,10 +38,10 @@ unavoidable, **mark it** — the same discipline as the playbook generator's
       `inferred` field visibly marked in the output.
 - [x] **10.4** Emit the **seeded `registry.json`** — ids, tabs, comps, and
       `surface: null` for anything named but not yet designed.
-- [ ] **10.5** Build the wizard surfaces in the desktop app over the same
+- [x] **10.5** Build the wizard surfaces in the desktop app over the same
       engine. Resumable, skippable, and **never blocking**: Michelle skips it
       entirely on first run and still reaches the showcase app.
-- [ ] **10.6** Add the traceability gate: **every registry entry traces to a
+- [x] **10.6** Add the traceability gate: **every registry entry traces to a
       brief requirement.** An entry with no trace is a FAIL naming the entry.
       This is the assertion intake exists to enable.
 - [x] **10.7** Accept a hand-written brief as valid input. Intake is optional;

@@ -71,4 +71,8 @@ class ConfigService {
   String get prototypeRuntime => _section('prototype')['runtime'] as String;
   String get prototypeHost => _section('prototype')['host'] as String;
   int get prototypePort => _section('prototype')['port'] as int;
+
+  // intake (10) — elicitation engine driven headless via the ProcessRunner seam
+  String get intakeCommand => _section('intake')['command'] as String;
+  String get intakeScript => _section('intake')['script'] as String;
 }

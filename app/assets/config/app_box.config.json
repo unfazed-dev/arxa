@@ -37,5 +37,10 @@
     "runtime": "embedded",
     "host": "127.0.0.1",
     "port": 0
+  },
+  "intake": {
+    "_comment": "10 — the app shells out to the elicitation engine (skills/app-box-intake/intake.py) via the same ProcessRunner seam as PipelineRunnerService. The wizard (10.5) and the headless phase drive ONE engine — if the two fronts can disagree, plan 10 has failed (DW1: byte-identical output). Intake elicits; it never generates (§22).",
+    "command": "python3",
+    "script": "skills/app-box-intake/intake.py"
   }
 }

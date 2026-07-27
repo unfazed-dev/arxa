@@ -26,6 +26,7 @@ import '../services/auth_harness_service.dart';
 import '../services/config_service.dart';
 import '../services/credential_service.dart';
 import '../services/gate_service.dart';
+import '../services/intake_runner_service.dart';
 import '../services/kit_inventory_service.dart';
 import '../services/launch_service.dart';
 import '../services/licence_service.dart';
@@ -65,6 +66,7 @@ Future<void> setupLocator(
   locator.registerLazySingleton(() => KitInventoryService());
   locator.registerLazySingleton(() => ProjectsService());
   locator.registerLazySingleton(() => PipelineRunnerService());
+  locator.registerLazySingleton(() => IntakeRunnerService());
   locator.registerLazySingleton(() => AuthHarnessService());
   locator.registerLazySingleton(() => LaunchService());
   locator.registerLazySingleton(() => McpRegistry());

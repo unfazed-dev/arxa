@@ -120,7 +120,7 @@ moment it lands. Everything downstream of `02` can proceed simultaneously.
 | 07 CRUD + delete | app-box | ☑ |
 | 08 desktop app | app-box | ☑ |
 | 09 prototype runtime | app-box | ☑ |
-| 10 intake | | ☐ |
+| 10 intake | app-box | ☑ |
 | 11 deployer | | ☑ |
 | 12 companion | | ☐ |
 | 13 verification tiers | app-box | ☑ |

@@ -7,6 +7,7 @@ import 'package:app_box/services/licence_service.dart';
 import 'package:app_box/services/launch_service.dart';
 import 'package:app_box/services/mcp/mcp_registry.dart';
 import 'package:app_box/services/pipeline_runner_service.dart';
+import 'package:app_box/services/intake_runner_service.dart';
 import 'package:app_box/services/projects_service.dart';
 import 'package:app_box/ui/bottom_sheets/notice/notice_sheet.dart';
 import 'package:app_box/ui/dialogs/info_alert/info_alert_dialog.dart';
@@ -18,6 +19,7 @@ import 'package:app_box/ui/views/chat/chat_home/chat_home_view.dart';
 import 'package:app_box/ui/views/design/design_approve/design_approve_view.dart';
 import 'package:app_box/ui/views/design/design_directions/design_directions_view.dart';
 import 'package:app_box/ui/views/design/design_surface/design_surface_view.dart';
+import 'package:app_box/ui/views/intake/intake_wizard/intake_wizard_view.dart';
 import 'package:app_box/ui/views/projects/projects_home/projects_home_view.dart';
 import 'package:app_box/ui/views/projects/projects_new/projects_new_view.dart';
 import 'package:app_box/ui/views/settings/settings_credentials/settings_credentials_view.dart';
@@ -44,6 +46,8 @@ import 'package:ui_library/ui_library.dart';
       // projects
       AdaptiveRoute(page: ProjectsHomeView, path: 'projects', initial: true),
       AdaptiveRoute(page: ProjectsNewView, path: 'projects/new'),
+      // intake (10.5) — the wizard drives the ONE elicitation engine
+      AdaptiveRoute(page: IntakeWizardView, path: 'intake/wizard'),
       // design (gate 1 = design.approve)
       AdaptiveRoute(page: DesignDirectionsView, path: 'design'),
       AdaptiveRoute(page: DesignSurfaceView, path: 'design/surface'),
@@ -96,6 +100,7 @@ import 'package:ui_library/ui_library.dart';
     LazySingleton(classType: KitInventoryService),
     LazySingleton(classType: ProjectsService),
     LazySingleton(classType: PipelineRunnerService),
+    LazySingleton(classType: IntakeRunnerService),
     LazySingleton(classType: AuthHarnessService),
     LazySingleton(classType: LaunchService),
     LazySingleton(classType: McpRegistry),
