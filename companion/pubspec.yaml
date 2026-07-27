@@ -1,0 +1,28 @@
+name: app_box_companion
+description: "app_box iOS companion — remote control with the prototype as a mode."
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.12.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  # The prototype surface — a fullscreen WebView at true device width. The FAB
+  # rides above it; the WebView owns every touch that is not the FAB (§15).
+  webview_flutter: ^4.10.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    # R3: every project-varying value (heartbeat cadence, reconnect attempts,
+    # dead threshold, the Bonjour service type) comes from this bundled config,
+    # never from a code literal. Mirrors the desktop app's config pattern.
+    - assets/config/
