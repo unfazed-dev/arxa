@@ -79,6 +79,13 @@ dependencies:
   talker_flutter: ^5.1.17
   # Credential storage — macOS Keychain (8.6). Never hand-rolled crypto.
   flutter_secure_storage: ^10.3.1
+  # Path manipulation (dart:io helpers) — shared with the rest of the kit.
+  path: ^1.9.0
+  # Embedded JS engine for the prototype runtime (plan 09). JavaScriptCore on
+  # Apple platforms (a system framework — zero added bytes), QuickJS elsewhere
+  # (~1 MB). Runs the designer's viewmodels unchanged; only the routing layer
+  # is replaced by Dart's HttpServer.
+  flutter_js: ^0.8.1
 
 # dependency_overrides: the vendored m3e forks (fab/split_button/toolbar/
 # navigation_rail) live under ui_library/vendor and must resolve to those forks,
@@ -108,3 +115,7 @@ flutter:
   assets:
     - assets/seed/
     - assets/config/
+    # Prototype runtime (plan 09): nunjucks browser bundle + the dispatch
+    # harness. Loaded into the flutter_js engine at serve time. The per-design
+    # viewmodel bundle is produced at freeze time by tools/bundle_viewmodels.js.
+    - assets/prototype_runtime/

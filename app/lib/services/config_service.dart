@@ -66,4 +66,9 @@ class ConfigService {
   // licence (8.12)
   String get licencePreconditionMessage =>
       _section('licence')['preconditionMessage'] as String;
+
+  // prototype (09) — embedded htmx prototype server
+  String get prototypeRuntime => _section('prototype')['runtime'] as String;
+  String get prototypeHost => _section('prototype')['host'] as String;
+  int get prototypePort => _section('prototype')['port'] as int;
 }

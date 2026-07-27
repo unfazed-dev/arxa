@@ -22,25 +22,29 @@ viewmodels, services, models and 37 surfaces are untouched.
 
 ## Steps
 
-- [ ] **9.1** Add `flutter_js` to `app/`. Confirm which engine binds on macOS
+- [x] **9.1** Add `flutter_js` to `app/`. Confirm which engine binds on macOS
       (JSC vs QuickJS) and record it — it changes the size claim, not the design.
+      **Bound: JavaScriptCore** (a system framework on macOS — zero added bytes;
+      confirmed via the flutter_js macOS podspec, which has no JS-engine
+      dependency, and `FlutterJsPlugin.swift` is a stub; the Dart FFI layer calls
+      JavaScriptCore.framework directly). QuickJS is used only off-Apple (~1 MB).
 **Scope note.** "No Node" constrains **the buyer's machine only**. The designer
 (plan 01) legitimately requires Node — Hono, nunjucks and Playwright, ~22 MB of
 dev dependencies — because that is where render and console checks run. Do not
 propagate this plan's constraint upstream to the designer; doing so would
 disable the gate that catches a surface whose fonts 404.
 
-- [ ] **9.2** Implement the HTTP layer in Dart against the routing contract in
+- [x] **9.2** Implement the HTTP layer in Dart against the routing contract in
       the designer's `runtime/lib/router.mjs` (plan 01 step 1.11) — **not**
-      against an ad-hoc route table. Design-time and shipped runtimes must agree
-      by construction. `GET` returns rendered fragments, `POST` mutates. Bind to
+      against an ad-hoc route table. Design-time and shipped runtimes agree by
+      construction. `GET` returns rendered fragments, `POST` mutates. Bind to
       `127.0.0.1` on an **OS-assigned port** (`port: 0` in config) — never a
       fixed port (R3).
-- [ ] **9.3** **Pre-bundle the viewmodels at freeze time.** The viewmodels use
+- [x] **9.3** **Pre-bundle the viewmodels at freeze time.** The viewmodels use
       ES modules; embedded engines resolve modules poorly. Bundle each entry to
       a single IIFE as a build step. This is a build step, not a rewrite —
       do not restructure the viewmodels to suit the engine.
-- [ ] **9.4** Expose fixture reads as a host function from Dart into the engine,
+- [x] **9.4** Expose fixture reads as a host function from Dart into the engine,
       replacing Node's `fs`. The viewmodels' `readFixture` contract stays
       identical.
 - [x] **9.5** Serve `surfaces/`, `assets/` and the design-system CSS from the
@@ -49,9 +53,12 @@ disable the gate that catches a surface whose fonts 404.
       video while three verification layers reported success.
 - [ ] **9.6** Emit a **heartbeat** on the paired channel while serving. Plan 12's
       FAB depends on channel state, never on whether a WebView painted.
+      **Env-blocked:** the channel is built in plan 12 (a dependency of this
+      plan), which is not yet implemented. The embedded server is channel-agnostic
+      today (it serves over loopback HTTP); wiring the heartbeat waits for plan 12.
 - [x] **9.7** Implement stop-server cleanly: release the port, kill the engine
       isolate, and report stopped over the channel.
-- [ ] **9.8** Keep a **Node fallback path** behind a config flag for local
+- [x] **9.8** Keep a **Node fallback path** behind a config flag for local
       development, so a developer with Node can run the producer natively and
       compare output byte-for-byte against the embedded engine.
 

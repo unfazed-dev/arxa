@@ -31,5 +31,11 @@
   "licence": {
     "_comment": "8.12 — licence check is a PRECONDITION (runs before builder), not a gate. Nothing goes red for money.",
     "preconditionMessage": "A valid app_box licence is required to build. Add a licence in Settings → Credentials."
+  },
+  "prototype": {
+    "_comment": "09 — the embedded prototype server. 'runtime' selects the engine: 'embedded' (Dart HttpServer + flutter_js / JavaScriptCore, no Node on PATH) or 'node' (dev-only, spawns the designer's serve.mjs for byte-for-byte comparison). host/port match prototypeServer in the repo-level config.",
+    "runtime": "embedded",
+    "host": "127.0.0.1",
+    "port": 0
   }
 }

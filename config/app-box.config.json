@@ -8,6 +8,7 @@
   },
   "viewportClasses": { "compactMax": 599, "mediumMax": 839 },
   "prototypeServer": { "host": "127.0.0.1", "port": 0 },
+  "prototypeRuntime": "embedded",
   "kit": { "repo": "", "sha": "" },
   "escalationLimit": 3,
   "dependencyMode": "vendored"

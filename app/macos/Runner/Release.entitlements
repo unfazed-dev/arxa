@@ -6,6 +6,13 @@
 	<true/>
 	<key>com.apple.security.network.client</key>
 	<true/>
+	<!-- 09 — the embedded prototype server binds a loopback socket in-process,
+	     and flutter_js runs JavaScriptCore whose JIT needs allow-jit. Both
+	     match the DebugProfile entitlements so dev and release agree. -->
+	<key>com.apple.security.network.server</key>
+	<true/>
+	<key>com.apple.security.cs.allow-jit</key>
+	<true/>
 	<!-- Keychain Sharing (flutter_secure_storage). No App Group configured, so the
 	     empty array uses the default keychain — the documented setup. An App Group
 	     declared but omitted here is the -34018 errSecMissingEntitlement /
