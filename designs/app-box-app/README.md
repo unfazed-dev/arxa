@@ -106,6 +106,16 @@ checking after any edit: the htmx config sets `{"[45]..": {swap: false}}`, so an
 unrouted POST returns 404 and the button simply does nothing rather than
 erroring. `grep -rho 'hx-post="[^"]*"' ui` against the `POST` rows catches it.
 
+Every mutation answers with a **Named Fragment** — `{% macro %}` in the view,
+rendered as `view.html#macro`, swapped into an `hx-target` — and writes to the
+session *before* it renders, so the swap and a later reload cannot disagree.
+Two answer `422` instead (an unacknowledged release, a project with no client);
+the head config maps 422 to `swap: true` for exactly that. The one deliberate
+full reload is the theme flip, marked `refresh-exempt:` and enforced by
+selftest check 11. See
+[`docs/research/htmx-conformance-audit.md`](../../docs/research/htmx-conformance-audit.md)
+for why that check exists.
+
 ## Known gaps
 
 - **`structure.json` is not emitted.** `emit_structure` regex-scrapes
@@ -120,6 +130,13 @@ erroring. `grep -rho 'hx-post="[^"]*"' ui` against the `POST` rows catches it.
   throw), auth (Apple and Google sign-in throw), maps, and `VercelTarget`.
   `settings.kits` is the surface whose whole job is honesty, so inventing its
   contents would have been the one unacceptable place to do it.
-- **POST handlers refresh rather than mutate.** The gates re-render; they do
-  not persist an approval. Approval *state* belongs to pipeline state, not to
-  the prototype.
+- **Session-scoped state, deliberately.** Gates, the build state and sent chat
+  messages persist in the session so a swap and a later reload agree. They do
+  not persist further: approval *state* belongs to pipeline state, not to a
+  design artifact pretending to hold it. Restarting the server forgets it all.
+- **`projects.new` does not create a project.** A valid submit hands the
+  browser to the list, which is the seeded one. Inventing a row for whatever
+  you typed would be a lie on the way into an app about not lying.
+- **No `hx-get` or `hx-trigger` anywhere.** Nothing here polls or lazy-loads,
+  and boosted links cover navigation, so neither has a job. That is an absence
+  with a reason, not a gap to fill.

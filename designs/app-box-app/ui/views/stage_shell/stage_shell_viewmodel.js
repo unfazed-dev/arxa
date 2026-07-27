@@ -16,5 +16,8 @@ export const theme = async (c, h) => {
   const body = await c.req.parseBody();
   const t = THEMES.includes(body.theme) ? body.theme : 'system';
   h.setPrefs(c, { theme: t });
+  // refresh-exempt: the theme is a `data-theme` attribute on #app, which sits
+  // outside every swap target — no fragment can reach it. This is the one
+  // reload in the artifact, and helpers.mjs names it as the escape hatch.
   return h.refresh(c);
 };

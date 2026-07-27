@@ -3,22 +3,29 @@
 {% block heading %}New project{% endblock %}
 {% block sub %}Name it, brand it, and choose what it ships to.{% endblock %}
 {% block states %}{% include "ui/widgets/_states.html" %}{% endblock %}
-{% block surface %}
-<div class="col">
-  <form hx-post="/projects/new" hx-swap="none">
+
+{# Named Fragment. A failed submit answers 422 with this same form re-rendered
+   in its error state — the head config maps 422 to swap:true precisely so a
+   rejected form can come back carrying its own errors, without the page
+   reloading and without a line of client JS. #}
+{% macro form(c) %}
+<div id="newform" class="col">
+  <form hx-post="/projects/new"
+        hx-target="#newform" hx-swap="outerHTML"
+        hx-disabled-elt="find button[type=submit]">
     <div class="field">
       <label for="pname">Project name</label>
-      <input id="pname" name="name" type="text" value="{% if state != 'form' %}Ledgerly{% endif %}"
+      <input id="pname" name="name" type="text" value="{{ c.name if c.name else '' }}"
              placeholder="Ledgerly">
       <span class="hint">Used for the bundle identifier. Changing it later renames the app.</span>
     </div>
 
-    <div class="field {% if state == 'error' %}invalid{% endif %}">
+    <div class="field {% if c.state == 'error' %}invalid{% endif %}">
       <label for="pclient">Client</label>
       <input id="pclient" name="client" type="text"
-             value="{% if state == 'error' %}{% elif state == 'validating' %}Ada Okafor{% endif %}"
-             {% if state == 'error' %}aria-invalid="true" aria-describedby="cerr"{% endif %}>
-      {% if state == 'error' %}
+             value="{% if c.state == 'validating' %}Ada Okafor{% endif %}"
+             {% if c.state == 'error' %}aria-invalid="true" aria-describedby="cerr"{% endif %}>
+      {% if c.state == 'error' %}
       <span class="err" id="cerr">A client is required — the brief, the licence and the
         signing account all hang off it.</span>
       {% endif %}
@@ -40,7 +47,7 @@
     </fieldset>
 
     <div class="row">
-      {% if state == 'validating' %}
+      {% if c.state == 'validating' %}
       <button class="btn" type="submit" disabled>Checking…</button>
       <span class="pill running">resolving 39 kit deps at pinned SHAs</span>
       {% else %}
@@ -50,4 +57,6 @@
     </div>
   </form>
 </div>
-{% endblock %}
+{% endmacro %}
+
+{% block surface %}{{ form(c) }}{% endblock %}

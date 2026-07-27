@@ -1,0 +1,43 @@
+{% extends "ui/views/stage_shell/stage_shell_view.html" %}
+{% block title %}Approve the build — app_box{% endblock %}
+{% block heading %}Approve the build{% endblock %}
+{% block sub %}Human gate 2 of 3.{% endblock %}
+{% block states %}{% include "ui/widgets/_states.html" %}{% endblock %}
+
+{# Named Fragment — the page renders it, and so does the POST that passes it. #}
+{% macro gate(c) %}
+<div id="gate" class="gate {{ 'done' if c.state == 'approved' else '' }}">
+  <div class="gate-inner">
+    <p class="gate-eyebrow">
+      {% if c.state == 'approved' %}Gate 2 · approved by you{% else %}Gate 2 · your decision{% endif %}
+    </p>
+    <h2>Accept this build as releasable?</h2>
+    <p class="muted">Every gate asserted and passed. Passing gates is evidence the build
+      is sound; it is not permission to ship it.</p>
+
+    <div class="triple">
+      <div><dt>Gates</dt><dd>7 of 7 green</dd></div>
+      <div><dt>Kit</dt><dd>4f95ede</dd></div>
+      <div><dt>Stubs</dt><dd>0 reachable from this app</dd></div>
+    </div>
+
+    {% if c.state == 'approved' %}
+      <p class="row"><span class="pill ok">approved by you</span></p>
+      <p class="gate-note">Ship is now reachable. Gate 3 is separate and stricter.</p>
+    {% else %}
+      <div class="row">
+        <button class="btn btn-gate"
+                hx-post="/build/approve/approve"
+                hx-target="#gate" hx-swap="outerHTML"
+                hx-disabled-elt="this">
+          Accept build
+        </button>
+        <a class="btn ghost" href="/build">Back to build</a>
+      </div>
+      <p class="gate-note">No agent can pass this gate.</p>
+    {% endif %}
+  </div>
+</div>
+{% endmacro %}
+
+{% block surface %}{{ gate(c) }}{% endblock %}

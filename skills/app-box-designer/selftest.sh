@@ -164,6 +164,22 @@ LEFT="$(grep -rlIi "$U" "$SKILL" --exclude=LICENSE --exclude=selftest.sh \
 [ -z "$LEFT" ]
 check $? "no upstream references outside LICENSE" "$LEFT"
 
+# --- 11. mutations answer with a swap, not a full page reload --------------
+# `h.refresh` sets HX-Refresh: true — the browser reloads. A POST answered that
+# way is a form post wearing htmx's coat: same reload, but now it needs JS to
+# work at all, and under the standard responseHandling a 4xx fails silently.
+# Every other check here is a prohibition; nothing else notices an artifact
+# that carries htmx and uses none of it. A line may opt out with a
+# `refresh-exempt:` marker stating why a swap cannot do the job (the theme flip
+# is the real one: body/#app attributes are outside any swap target).
+RELOAD="$(find "$ART/ui" -name '*_viewmodel.js' -exec awk '
+  FNR == 1        { ok = -99 }
+  /refresh-exempt:/ { ok = FNR }
+  /h\.refresh\(/  { if (FNR - ok > 4) print FILENAME ":" FNR ": " $0 }
+' {} + 2>/dev/null || true)"
+[ -z "$RELOAD" ]
+check $? "no mutation answers with a full reload" "$RELOAD"
+
 echo
 echo "== render (skipped unless Node deps are installed) =="
 if [ -d "$SKILL/runtime/node_modules" ]; then

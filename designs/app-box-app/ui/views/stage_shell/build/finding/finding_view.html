@@ -1,0 +1,33 @@
+{% extends "ui/views/stage_shell/stage_shell_view.html" %}
+{% block title %}Finding — app_box{% endblock %}
+{% block heading %}Finding{% endblock %}
+{% block sub %}What failed, where, which rule, and what would change.{% endblock %}
+{% block surface %}
+<div class="col-wide stack">
+  <div class="card finding">
+    <div class="row wrap" style="margin-bottom:8px;">
+      <span class="pill bad">red</span>
+      <span class="pill plain mono">{{ finding.rule }}</span>
+      <span class="faint mono">{{ finding.check }}</span>
+    </div>
+    <h2>{{ finding.says }}</h2>
+    <p class="loc"><b>{{ finding.file }}</b>:{{ finding.line }}</p>
+    <p class="muted">{{ finding.why }}</p>
+  </div>
+
+  <div>
+    <h2>What would change</h2>
+    <div class="diff">
+      <div class="del">- {{ finding.del }}</div>
+      <div class="add">+ {{ finding.add }}</div>
+    </div>
+  </div>
+
+  <div class="row">
+    <button class="btn" hx-post="/build" hx-swap="none">Apply and re-run</button>
+    <a class="btn ghost" href="/build">Back to build</a>
+  </div>
+  <p class="muted">Applying edits the scaffolded app and re-runs every gate — not just
+    this one. A fix that breaks a different check is still a red build.</p>
+</div>
+{% endblock %}

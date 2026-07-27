@@ -3,11 +3,16 @@
 {% block heading %}Approve the design{% endblock %}
 {% block sub %}Human gate 1 of 3.{% endblock %}
 {% block states %}{% include "ui/widgets/_states.html" %}{% endblock %}
-{% block surface %}
-<div class="gate {{ 'done' if state == 'approved' else '' }}">
+
+{# The gate is a Named Fragment: the whole page renders it, and so does the
+   POST that passes it. One definition, two entry points — the alternative is
+   answering the POST with a full reload, which is a form post wearing htmx's
+   coat. #}
+{% macro gate(c) %}
+<div id="gate" class="gate {{ 'done' if c.state == 'approved' else '' }}">
   <div class="gate-inner">
     <p class="gate-eyebrow">
-      {% if state == 'approved' %}Gate 1 · approved by you{% else %}Gate 1 · your decision{% endif %}
+      {% if c.state == 'approved' %}Gate 1 · approved by you{% else %}Gate 1 · your decision{% endif %}
     </p>
     <h2>Freeze direction B as the design of record?</h2>
     <p class="muted">The freeze reads six inputs and emits the structure the scaffolder
@@ -19,13 +24,16 @@
       <div><dt>Rung</dt><dd>expanded · 1280</dd></div>
     </div>
 
-    {% if state == 'approved' %}
-      <p class="row"><span class="pill ok">approved 14:02 today</span></p>
+    {% if c.state == 'approved' %}
+      <p class="row"><span class="pill ok">approved by you</span></p>
       <p class="gate-note">app_box cannot mint this approval, and did not.
         Re-running the stage does not re-grant it.</p>
     {% else %}
       <div class="row">
-        <button class="btn btn-gate" hx-post="/design/approve/approve" hx-swap="none">
+        <button class="btn btn-gate"
+                hx-post="/design/approve/approve"
+                hx-target="#gate" hx-swap="outerHTML"
+                hx-disabled-elt="this">
           Approve design
         </button>
         <a class="btn ghost" href="/design">Back to directions</a>
@@ -34,4 +42,6 @@
     {% endif %}
   </div>
 </div>
-{% endblock %}
+{% endmacro %}
+
+{% block surface %}{{ gate(c) }}{% endblock %}

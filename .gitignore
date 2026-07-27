@@ -4,6 +4,12 @@
 .pub-cache/
 .pub/
 build/
+# `build/` above means build OUTPUT. A design artifact can legitimately own a
+# surface tab named "build" — and one does: this pattern silently swallowed
+# build.run, build.finding and build.approve out of a commit that reported 58
+# files and looked complete. Nothing failed; the tree on disk rendered green
+# while the tree in git could not serve /build at all.
+!designs/*/ui/views/**/build/
 *.dill
 *.lock.bak
 # pubspec.lock is deliberately NOT ignored — app_box is an application, and its
