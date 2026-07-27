@@ -530,3 +530,66 @@ and it is why extending the contract here does not repeat that failure.
    architecture means a wrong boundary there is now a wrong boundary
    everywhere. That argues for the mapping being explicit and gated, not
    inferred.
+
+## 14. The hybrid — already authored, simply not wired
+
+*Answering: can the designer author structure while the emitter still derives
+it, without recreating two-writers-one-artifact?*
+
+Yes, and the corpus already does it. `design/new-htmx/models/screens_model/`
+`registry.json` is a **42-entry list whose keys are exactly what
+`emit_structure` regexes out of `P2_REGISTRY`**:
+
+```json
+{"id":"train.library","label":"Training Library","tab":"train",
+ "comp":"TrainLibrary","surface":"train_shell_training_library_view",
+ "phase":"Belong"}
+{"id":"train.home", ..., "surface": null}
+{"id":"train.programme", ..., "roles":["felix"]}
+```
+
+Its own header says *"ported verbatim from `jsx/app.jsx`"*. It is read in anger
+by `screens_repository.js` and `navigation_facade.js`.
+
+**`emit_structure` never looks at it.** It searches for `jsx/app.jsx`, finds
+none, and falls back to filename inference — which is why `new-htmx` emits
+`registry: null` and `tabRoots: {}`, and why 42 registry entries become 37
+frozen screens (the 5 carrying `surface: null`, e.g. `train.home`, vanish
+silently instead of being declared exclusions).
+
+### The three-layer split that keeps the gate real
+
+| layer | artifact | writer |
+|---|---|---|
+| **authored** | `models/screens_model/registry.json` — ids, tabs, comps, surface bindings, role gating | the designer |
+| **derived** | `ui/views/**` pairs + `app.routes.js` — structure and nav edges | the producer's code |
+| **generated** | `structure.json` = *f*(registry, tree, `surfaces/`) | `emit_structure`, never a human |
+
+This is a genuine hybrid *because the authored layer is a different shape from
+the generated one* — a declarative id table, not screen records. That is the
+discriminator. Had the designer written `structure.json` directly, the artifact
+would have two writers and regenerate-and-diff would have nothing to compare
+against. Here it stays a pure function of two inputs, neither of which is
+itself.
+
+### The fix is small, and it turns the gate on
+
+`emit_structure` gains a second registry source: no `jsx/`, so read
+`models/screens_model/registry.json` — **no regex needed, it is already JSON**.
+`tabRoots` still needs an htmx source (JSX declares `P2_TAB_ROOTS`); either
+`app.routes.js` exports one or a sibling `tab_roots.json` declares it.
+
+Consequence: the drift check currently guarded on `[ -f "$DESIGN/jsx/app.jsx" ]`
+starts applying to htmx. Per `docs/research/web-research-drift.md`, assert it
+with `git status --porcelain`, not `git diff` — a producer that *adds* a
+surface is the expected case, and `git diff` cannot see new files.
+
+### Why this also explains the translation result
+
+The JSX producer put role logic in **conditionals** —
+`if (role === 'leo') return <TrainHomeLeo/>`, plus `params.branch` matrices —
+which is why its translation captured 7 of 112 nodes. The htmx producer
+declares the same thing as **data**: `"roles":["felix"]` in the registry.
+Declared variation survives a language change; branched rendering does not. The
+registry is not merely convenient here — it is *why* this producer is
+translatable at all.
