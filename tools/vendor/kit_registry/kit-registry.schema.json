@@ -1,0 +1,64 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "stacked_kit capability registry (SSOT)",
+  "description": "Single source of truth for capability->kit routing and each kit's typed export vocabularies. The two markdown routing tables (skills/_kit-system.md §4 and kit_matrix.md §2/§3) become GENERATED views of this file (write-on-diff + fixity --check); the fragile hand-maintained precedence rule between them is retired. translate_design validates every translation-map.json '.kit' token against the typed `provides` vocabularies here (widget | service.method | motion:preset [+ KitMotionSpec.variant]). MANUAL fields (hand-authored routing): dir, package, capabilities, backing, topology, phase, playbook, hasSkill. GENERATED/GATED fields: provides.* (barrel-derived; kit_registry.py check-vocab asserts every symbol exists in the kit's source so provides cannot drift or reference fiction).",
+  "type": "object",
+  "required": ["version", "kits"],
+  "additionalProperties": false,
+  "properties": {
+    "version": { "type": "integer" },
+    "kits": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["dir", "package", "capabilities", "topology", "playbook", "hasSkill", "provides"],
+        "additionalProperties": false,
+        "properties": {
+          "dir": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+          "package": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+          "capabilities": { "type": "array", "items": { "type": "string" } },
+          "backing": { "type": "string" },
+          "topology": { "enum": ["standalone", "core-coupled", "ui-tier", "core", "app-integration"] },
+          "phase": { "type": "string" },
+          "playbook": { "type": "string" },
+          "hasSkill": { "type": "boolean" },
+          "provides": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "Typed export vocabularies (closed kit Slot vocabularies). Empty {} = pending generation via `kit_registry.py gen-vocab`.",
+            "properties": {
+              "widgets": {
+                "type": "array",
+                "items": { "type": "string", "pattern": "^Kit[A-Za-z0-9]+$" },
+                "description": "Exported Kit* widget classes."
+              },
+              "services": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["name", "methods"],
+                  "additionalProperties": false,
+                  "properties": {
+                    "name": { "type": "string", "pattern": "^Kit[A-Za-z0-9]+$" },
+                    "methods": { "type": "array", "items": { "type": "string" } }
+                  }
+                },
+                "description": "Exported Kit* service classes with their callable method vocabulary."
+              },
+              "motion_presets": {
+                "type": "array",
+                "items": { "type": "string" },
+                "description": "Closed motion-preset vocabulary (sealed flags in translate_design.py, e.g. 'rise-in')."
+              },
+              "motion_specs": {
+                "type": "array",
+                "items": { "type": "string" },
+                "description": "KitMotionSpec named variants (e.g. 'standard')."
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

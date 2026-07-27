@@ -1,0 +1,4 @@
+body { margin: 0; background: var(--fixture-paper); color: var(--fixture-ink); font-family: sans-serif; }
+.fixture-card { margin: 16px; padding: 16px; border: 1px solid var(--fixture-ink); border-radius: 12px; }
+.t-hud { font-size: 10px; opacity: 0.5; }
+.toolbar { font-size: 12px; }

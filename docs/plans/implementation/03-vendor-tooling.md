@@ -29,13 +29,13 @@ signal.
 
 ## Steps
 
-- [ ] **3.1** Copy each source above into `tools/vendor/<name>/`, preserving its
+- [x] **3.1** Copy each source above into `tools/vendor/<name>/`, preserving its
       internal structure. Do not edit logic in this step — copy first, rename
       second, so a diff against upstream stays meaningful.
-- [ ] **3.2** Write `tools/vendor/VENDOR.lock`: one row per vendored item with
+- [x] **3.2** Write `tools/vendor/VENDOR.lock`: one row per vendored item with
       **source repo, path, upstream commit SHA, and copy date**. This file is
       the freshness oracle.
-- [ ] **3.3** Write `tools/vendor/check_freshness.sh`: for each row, compare the
+- [x] **3.3** Write `tools/vendor/check_freshness.sh`: for each row, compare the
       recorded SHA against the upstream repo's current SHA for that path. Report
       drift per item. **It must fail loudly, not warn** — a stale vendor copy
       that reports "ok" is the exact stale-green pattern this project documents.

@@ -1,0 +1,5 @@
+[
+  { "id": "fixture.one", "label": "Fixture Home", "surface": "fixture_shell_home_view", "tab": "fixture", "phase": "Fixture", "comp": "FixtureHome" },
+  { "id": "fixture.two", "label": "Fixture Detail", "surface": "fixture_shell_detail_view", "tab": "fixture", "phase": "Fixture", "comp": "FixtureDetail" },
+  { "id": "fixture.hidden", "label": "Fixture Hidden", "surface": null, "tab": "fixture", "phase": "Fixture", "comp": "FixtureHidden" }
+]

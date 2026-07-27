@@ -1,0 +1,5 @@
+/* fixture fonts — exercises the url(/assets/...) CSS rewrite */
+@font-face {
+  font-family: 'FixtureSans';
+  src: url(/assets/fonts/fixture-400.woff2) format('woff2');
+}

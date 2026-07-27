@@ -1,0 +1,6 @@
+:root {
+  --fixture-ink: #221f1a;
+  --fixture-paper: #faf7f2;
+}
+/* tweak-panel chrome tokens would live here — a freeze check-3 signature word
+   inside a comment; stripped before inlining, so it never reaches surfaces. */

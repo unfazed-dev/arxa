@@ -1,0 +1,5 @@
+/* fixture tokens */
+:root {
+  --fixture-ink: #123456;
+  --sans: system-ui, sans-serif;
+}

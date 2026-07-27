@@ -1,0 +1,424 @@
+{
+  "version": 1,
+  "kits": [
+    {
+      "dir": "core",
+      "package": "stacked_kit_core",
+      "capabilities": [
+        "MVVM plumbing",
+        "error/theme services",
+        "design tokens",
+        "locator",
+        "input formatters",
+        "KitGlyphs",
+        "KitPlatform"
+      ],
+      "backing": "stacked, stacked_services, stacked_shared",
+      "topology": "core",
+      "phase": "stable",
+      "playbook": "core/core_playbook.mdx",
+      "hasSkill": false,
+      "provides": {}
+    },
+    {
+      "dir": "ui_library",
+      "package": "ui_library",
+      "capabilities": [
+        "Kit* adaptive port widgets",
+        "KitNative* widgets",
+        "UI-coupled services (navigation / sheet / notifications toast)"
+      ],
+      "backing": "core + vendored cupertino_native/m3e forks",
+      "topology": "ui-tier",
+      "phase": "stable",
+      "playbook": "ui_library/ui_library_playbook.mdx",
+      "hasSkill": false,
+      "provides": {
+        "widgets": [
+          "KitAnimatedTabStack",
+          "KitBottomNavScaffold",
+          "KitChip",
+          "KitChipCarousel",
+          "KitDirectionalTabTransition",
+          "KitDrawer",
+          "KitExtendBodyFabLift",
+          "KitFabMorph",
+          "KitFrostedSurface",
+          "KitGlassCard",
+          "KitImage",
+          "KitLazyIndexedStack",
+          "KitListSection",
+          "KitListTile",
+          "KitNativeAppBar",
+          "KitNativeButton",
+          "KitNativeChromeGate",
+          "KitNativeFab",
+          "KitNativeFabMenu",
+          "KitNativeIconButton",
+          "KitNativeInputBar",
+          "KitNativeLoadingIndicator",
+          "KitNativeNavigationRail",
+          "KitNativePopupMenu",
+          "KitNativeProgress",
+          "KitNativeRangeSlider",
+          "KitNativeSearchBar",
+          "KitNativeSegmentedControl",
+          "KitNativeSlider",
+          "KitNativeSliverAppBar",
+          "KitNativeSplitButton",
+          "KitNativeSwitch",
+          "KitNativeTabBar",
+          "KitNativeTextField",
+          "KitNativeToolbar",
+          "KitScrollEdgeEffect",
+          "KitScrollOcclusionGate",
+          "KitStreamBuilder",
+          "KitTabSwitchTransition"
+        ],
+        "services": [
+          {
+            "name": "KitNotificationService",
+            "methods": [
+              "show"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "dir": "state",
+      "package": "stacked_kit_state",
+      "capabilities": [
+        "async state vocabulary (idle/loading/error)",
+        "retry policy",
+        "persistence"
+      ],
+      "backing": "pure Dart",
+      "topology": "standalone",
+      "phase": "stable",
+      "playbook": "state/state_playbook.mdx",
+      "hasSkill": false,
+      "provides": {}
+    },
+    {
+      "dir": "data",
+      "package": "stacked_kit_data",
+      "capabilities": [
+        "repositories",
+        "schema descriptors",
+        "seed/Supabase/Appwrite backends",
+        "canonical IDs",
+        "codecs",
+        "seeder"
+      ],
+      "backing": "core + ui_library",
+      "topology": "core-coupled",
+      "phase": "stable",
+      "playbook": "data/data_playbook.mdx",
+      "hasSkill": false,
+      "provides": {}
+    },
+    {
+      "dir": "auth",
+      "package": "stacked_kit_auth",
+      "capabilities": [
+        "email/OAuth auth seam",
+        "typed AuthResult",
+        "session stream"
+      ],
+      "backing": "in-memory default backend",
+      "topology": "standalone",
+      "phase": "stable",
+      "playbook": "auth/auth_playbook.mdx",
+      "hasSkill": false,
+      "provides": {
+        "widgets": [
+          "KitCan"
+        ]
+      }
+    },
+    {
+      "dir": "forms",
+      "package": "stacked_kit_forms",
+      "capabilities": [
+        "form field state",
+        "sync/async validation",
+        "KitFieldController",
+        "error messages"
+      ],
+      "backing": "stacked (ChangeNotifier; no rxdart)",
+      "topology": "standalone",
+      "phase": "stable",
+      "playbook": "forms/forms_playbook.mdx",
+      "hasSkill": false,
+      "provides": {}
+    },
+    {
+      "dir": "permissions",
+      "package": "stacked_kit_permissions",
+      "capabilities": [
+        "OS permissions (camera/location/...)",
+        "typed permission + status"
+      ],
+      "backing": "permission_handler",
+      "topology": "standalone",
+      "phase": "native-first",
+      "playbook": "permissions/permissions_playbook.mdx",
+      "hasSkill": false,
+      "provides": {}
+    },
+    {
+      "dir": "media",
+      "package": "stacked_kit_media",
+      "capabilities": [
+        "camera/photos",
+        "audio record",
+        "audio+video playback"
+      ],
+      "backing": "record, just_audio, image_picker",
+      "topology": "standalone",
+      "phase": "native-first",
+      "playbook": "media/media_playbook.mdx",
+      "hasSkill": false,
+      "provides": {}
+    },
+    {
+      "dir": "documents",
+      "package": "stacked_kit_documents",
+      "capabilities": [
+        "doc pick",
+        "scan (stub)",
+        "OCR (stub)",
+        "PDF"
+      ],
+      "backing": "scan/OCR stubbed (phase 2)",
+      "topology": "standalone",
+      "phase": "native-first-partial",
+      "playbook": "documents/documents_playbook.mdx",
+      "hasSkill": false,
+      "provides": {}
+    },
+    {
+      "dir": "notifications",
+      "package": "stacked_kit_notifications",
+      "capabilities": [
+        "device push/local notifications",
+        "tokens",
+        "badge"
+      ],
+      "backing": "flutter_local_notifications (push/outbound stubbed)",
+      "topology": "standalone",
+      "phase": "native-first-partial",
+      "playbook": "notifications/notifications_playbook.mdx",
+      "hasSkill": false,
+      "provides": {}
+    },
+    {
+      "dir": "analytics",
+      "package": "stacked_kit_analytics",
+      "capabilities": [
+        "analytics event fan-out"
+      ],
+      "backing": "debug-console default",
+      "topology": "standalone",
+      "phase": "stable",
+      "playbook": "analytics/analytics_playbook.mdx",
+      "hasSkill": false,
+      "provides": {}
+    },
+    {
+      "dir": "payments",
+      "package": "stacked_kit_payments",
+      "capabilities": [
+        "Apple Pay",
+        "Google Pay"
+      ],
+      "backing": "pay (provider port)",
+      "topology": "standalone",
+      "phase": "native-first",
+      "playbook": "payments/payments_playbook.mdx",
+      "hasSkill": false,
+      "provides": {
+        "widgets": [
+          "KitPayButton"
+        ]
+      }
+    },
+    {
+      "dir": "maps",
+      "package": "stacked_kit_maps",
+      "capabilities": [
+        "native maps",
+        "KitMapView"
+      ],
+      "backing": "google/apple maps; OSM/Mapbox stub",
+      "topology": "standalone",
+      "phase": "native-first-partial",
+      "playbook": "maps/maps_playbook.mdx",
+      "hasSkill": false,
+      "provides": {
+        "widgets": [
+          "KitMapView"
+        ]
+      }
+    },
+    {
+      "dir": "deploy",
+      "package": "stacked_kit_deploy",
+      "capabilities": [
+        "release automation (fastlane/shorebird/CF Pages)"
+      ],
+      "backing": "pure-Dart dev tooling",
+      "topology": "standalone",
+      "phase": "stable",
+      "playbook": "deploy/deploy_playbook.mdx",
+      "hasSkill": false,
+      "provides": {}
+    },
+    {
+      "dir": "haptics",
+      "package": "stacked_kit_haptics",
+      "capabilities": [
+        "haptic feedback"
+      ],
+      "backing": "haptic_feedback",
+      "topology": "standalone",
+      "phase": "stable",
+      "playbook": "haptics/haptics_playbook.mdx",
+      "hasSkill": false,
+      "provides": {}
+    },
+    {
+      "dir": "bluetooth",
+      "package": "stacked_kit_bluetooth",
+      "capabilities": [
+        "bluetooth adapter state",
+        "BLE scan/GATT (stub)"
+      ],
+      "backing": "flutter_blue_plus",
+      "topology": "standalone",
+      "phase": "native-first-partial",
+      "playbook": "bluetooth/bluetooth_playbook.mdx",
+      "hasSkill": false,
+      "provides": {}
+    },
+    {
+      "dir": "wifi",
+      "package": "stacked_kit_wifi",
+      "capabilities": [
+        "Wi-Fi state",
+        "network info",
+        "settings escort"
+      ],
+      "backing": "connectivity_plus",
+      "topology": "standalone",
+      "phase": "stable",
+      "playbook": "wifi/wifi_playbook.mdx",
+      "hasSkill": false,
+      "provides": {}
+    },
+    {
+      "dir": "support",
+      "package": "stacked_kit_support",
+      "capabilities": [
+        "in-app support",
+        "feedback + Talker export",
+        "submission sinks"
+      ],
+      "backing": "feedback, talker_flutter",
+      "topology": "standalone",
+      "phase": "stable",
+      "playbook": "support/support_playbook.mdx",
+      "hasSkill": false,
+      "provides": {}
+    },
+    {
+      "dir": "security",
+      "package": "stacked_kit_security",
+      "capabilities": [
+        "biometrics",
+        "secure storage",
+        "crypto",
+        "app-lock",
+        "device integrity (stub)"
+      ],
+      "backing": "local_auth, cryptography",
+      "topology": "standalone",
+      "phase": "native-first-partial",
+      "playbook": "security/security_playbook.mdx",
+      "hasSkill": false,
+      "provides": {}
+    },
+    {
+      "dir": "compliance",
+      "package": "stacked_kit_compliance",
+      "capabilities": [
+        "ToS/privacy/EULA",
+        "consent gates",
+        "OSS licenses"
+      ],
+      "backing": "zero deps",
+      "topology": "standalone",
+      "phase": "stable",
+      "playbook": "compliance/compliance_playbook.mdx",
+      "hasSkill": false,
+      "provides": {}
+    },
+    {
+      "dir": "branding",
+      "package": "branding",
+      "capabilities": [
+        "app icons",
+        "native/in-Flutter splash",
+        "brand colors (codegen)",
+        "BrandSplash"
+      ],
+      "backing": "flutter_launcher_icons, flutter_native_splash (dev deps)",
+      "topology": "standalone",
+      "phase": "stable",
+      "playbook": "branding/branding_playbook.mdx",
+      "hasSkill": false,
+      "provides": {}
+    },
+    {
+      "dir": "motion",
+      "package": "stacked_kit_motion",
+      "capabilities": [
+        "entrance/exit choreography",
+        "gesture drivers",
+        "motion scopes",
+        "KitWake"
+      ],
+      "backing": "pure Dart",
+      "topology": "standalone",
+      "phase": "stable",
+      "playbook": "motion/motion_playbook.mdx",
+      "hasSkill": false,
+      "provides": {
+        "motion_presets": [
+          "rise-in"
+        ],
+        "motion_specs": [
+          "standard"
+        ],
+        "widgets": [
+          "KitMotionScope",
+          "KitWake"
+        ]
+      }
+    },
+    {
+      "dir": "showcase_app",
+      "package": "stacked_kit_showcase_app",
+      "capabilities": [
+        "integration surface / reference app (proves every kit)"
+      ],
+      "backing": "every kit (integration surface)",
+      "topology": "app-integration",
+      "phase": "n/a",
+      "playbook": "showcase_app/showcase_app_playbook.mdx",
+      "hasSkill": false,
+      "provides": {}
+    }
+  ]
+}

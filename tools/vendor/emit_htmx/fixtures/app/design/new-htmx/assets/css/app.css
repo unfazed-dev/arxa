@@ -1,0 +1,3 @@
+/* fixture app css — the tweak signature below must never reach a surface */
+.fx-title { color: var(--fixture-ink); }
+.fx-copy { font-family: var(--sans); }

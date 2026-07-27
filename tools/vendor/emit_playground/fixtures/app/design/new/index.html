@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>emit_playground fixture playground</title>
+<link rel="icon" href="assets/icon.svg">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<div class="stage">
+  <div class="toolbar">fixture toolbar chrome (outside .phone-screen — never extracted)</div>
+  <div class="phone-wrap"><div class="phone"><div class="phone-band">
+    <div class="phone-screen">
+      <div class="t-hud">fixture HUD chrome (excluded via exclusions.json)</div>
+      <div id="screen"></div>
+    </div>
+  </div></div></div>
+</div>
+<script>
+// jsx-less stand-in for the React+Babel playground: same contract
+// (window.P2.registry / window.P2.roles, ?role=&screen= routing).
+window.P2 = {
+  roles: {
+    felix: { tabs: ['train', 'shop'] },
+    leo:   { tabs: ['train', 'studio'] },
+  },
+  registry: [
+    { id: 'train.home',  tab: 'train',  roles: ['felix'], surface: 'fixture_home_view' },
+    { id: 'train.draft', tab: 'train',  roles: ['felix'], surface: null },
+    { id: 'studio.dash', tab: 'studio', surface: 'fixture_studio_view' },
+  ],
+};
+const SCREENS = {
+  'train.home':  '<div class="fixture-card"><img src="assets/icon.svg" alt="icon" width="24" height="24"><h1>Fixture Home</h1></div>',
+  'train.draft': '<div class="fixture-card"><h1>Fixture Draft</h1></div>',
+  'studio.dash': '<div class="fixture-card"><h1>Fixture Studio</h1></div>',
+};
+const q = new URLSearchParams(location.search);
+document.getElementById('screen').innerHTML =
+  SCREENS[q.get('screen') || 'train.home'] || '<div>missing screen</div>';
+</script>
+</body>
+</html>

@@ -1,0 +1,4 @@
+{
+  "globs": [],
+  "selectors": [".phone", ".status-bar", ".statusbar", ".t-hud", ".dyn-island", ".home-ind"]
+}
