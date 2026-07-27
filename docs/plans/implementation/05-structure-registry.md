@@ -24,14 +24,14 @@ plan supplies the second source.
 
 ## Steps
 
-- [ ] **5.1** Add a second registry source to `tools/emit_structure`: when there
+- [x] **5.1** Add a second registry source to `tools/emit_structure`: when there
       is no JSX entry point, read `models/screens_model/registry.json`.
       **No regex — it is already JSON.**
-- [ ] **5.2** Source `tabRoots` for htmx producers from `app.routes.js`'s
+- [x] **5.2** Source `tabRoots` for htmx producers from `app.routes.js`'s
       exported tab-root map (plan 01 step 1.9 makes the designer emit it). A
       producer with no `tabRoots` **fails** — an empty object must no longer
       pass vacuously.
-- [ ] **5.3** Join surfaces to viewmodels on the **declared `surfaceId`**, not
+- [x] **5.3** Join surfaces to viewmodels on the **declared `surfaceId`**, not
       on filename similarity. Measured, a `(tab, short)` join resolves only
       **21 of 37**; the residual is lexical (`giftcards`↔`gift_cards`,
       `productedit`↔`product_edit`) plus genuinely semantic cases
@@ -39,16 +39,16 @@ plan supplies the second source.
       **Do not write a normalizer.** It would close ~13 and leave the semantic
       ones failing silently. A missing `surfaceId` is a **hard failure** naming
       the viewmodel.
-- [ ] **5.4** Remove the `jsx/app.jsx` guard so the drift check runs for every
+- [x] **5.4** Remove the `jsx/app.jsx` guard so the drift check runs for every
       producer that has a registry.
-- [ ] **5.5** Implement the drift assertion in `gates/structure/` as
+- [x] **5.5** Implement the drift assertion in `gates/structure/` as
       **regenerate-and-compare**, using `git status --porcelain` semantics.
       `git diff --exit-code` **cannot see new files**, and a producer that adds
       a surface is the expected case.
-- [ ] **5.6** Preserve exclusion semantics: `surface: null` **is** the
+- [x] **5.6** Preserve exclusion semantics: `surface: null` **is** the
       exclusion. Do not add a parallel exclusions list — two ways to express one
       fact is the drift this architecture exists to prevent.
-- [ ] **5.7** Emit into `structure.json`, per screen: `id`, `tab`, `comp`,
+- [x] **5.7** Emit into `structure.json`, per screen: `id`, `tab`, `comp`,
       `shell`, `surface`, plus the resolved `viewmodel` path and its declared
       repository/facade dependencies. The shell mapping is a **pure rename
       table** — measured, `tab → shell` has zero fan-out — so derive it, do not

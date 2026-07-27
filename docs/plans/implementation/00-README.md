@@ -115,13 +115,13 @@ moment it lands. Everything downstream of `02` can proceed simultaneously.
 | 02 repo skeleton | app-box | ☑ |
 | 03 vendor tooling | app-box | ☑ |
 | 04 gates | app-box | ☑ |
-| 05 structure + registry | | ☐ |
-| 06 targets in state | | ☐ |
-| 07 CRUD + delete | | ☐ |
+| 05 structure + registry | app-box | ☑ |
+| 06 targets in state | app-box | ☑ |
+| 07 CRUD + delete | app-box | ☑ |
 | 08 desktop app | app-box | ☑ |
 | 09 prototype runtime | | ☐ |
 | 10 intake | | ☐ |
-| 11 deployer | | ☐ |
+| 11 deployer | | ☑ |
 | 12 companion | | ☐ |
 | 13 verification tiers | app-box | ☑ |
 | 14 dogfood | | ☐ |
