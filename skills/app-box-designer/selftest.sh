@@ -65,14 +65,17 @@ ART="$WORK/artifact"
 cp -R "$SRC" "$ART"
 
 mutate() {
-  # Four checks assert on the SKILL, not the artifact. Editing the real skill
-  # to test the real skill is how a "test" becomes an outage, so those refuse
-  # to run unless the driver has already stood up a throwaway copy.
+  # Four checks assert on the SKILL, not the artifact, and their mutations
+  # `rm -f` real files. Editing the skill to test the skill is how a test
+  # becomes an outage, so the guard is that $SKILL is demonstrably a throwaway
+  # copy — an env flag the caller sets would just be the same trust, moved.
   case "$1" in
     ladder-*|upstream-leak)
-      [ "${SELFTEST_SKILL_COPY:-0}" = 1 ] || {
-        printf 'refusing %s: it edits the skill itself; --negative runs it against a copy\n' "$1" >&2
-        exit 64; } ;;
+      case "$SKILL" in
+        /tmp/*|/var/folders/*|/private/var/folders/*|/private/tmp/*) ;;
+        *) printf 'refusing %s: it deletes files under %s; --negative runs it against a temp copy\n' "$1" "$SKILL" >&2
+           exit 64 ;;
+      esac ;;
   esac
   VM="$(find "$ART/ui/views" -name '*_viewmodel.js' | sort | head -1)"
   HTML="$(find "$ART/ui" -name '*_view.html' | sort | head -1)"
@@ -132,12 +135,31 @@ if [ "$NEGATIVE" = 1 ]; then
     exit 65
   fi
 
+  # Nothing joins the table to the checks, so adding a 16th check tomorrow
+  # would still print "proven, unproven 0" — an untested check counted as
+  # tested, which is the exact shape of the defect this mode exists to kill.
+  # Every label the baseline reported must be claimed by some row.
+  UNMAPPED=""
+  while IFS= read -r LBL; do
+    HIT=0
+    while IFS='|' read -r _ W; do
+      [ -n "${W:-}" ] || continue
+      case "$LBL" in "${W#ok:}"*) HIT=1 ;; esac
+    done <<EOF
+$MUTATIONS
+EOF
+    [ "$HIT" = 1 ] || UNMAPPED="$UNMAPPED${UNMAPPED:+; }$LBL"
+  done < <(printf '%s\n' "$BASE" | sed -n 's/^  ok   //p')
+  [ -z "$UNMAPPED" ] || {
+    echo "checks with no mutation — they would be reported proven without ever being tested: $UNMAPPED" >&2
+    exit 65; }
+
   echo "== falsifiability: one full run per mutation =="
   while IFS='|' read -r NAME WANT; do
     [ -n "${NAME:-}" ] || continue
     WANT_OK=0
     case "$WANT" in ok:*) WANT_OK=1; WANT="${WANT#ok:}" ;; esac
-    OUT="$(SELFTEST_MUTATION="$NAME" SELFTEST_SKILL_COPY=1 "$SK/selftest.sh" "$SRC" 2>&1)"
+    OUT="$(SELFTEST_MUTATION="$NAME" "$SK/selftest.sh" "$SRC" 2>&1)"
     if [ "$WANT_OK" = 1 ]; then
       printf '%s\n' "$OUT" | grep -qF "ok   $WANT" \
         && ok "$NAME leaves \"$WANT\" passing" \
@@ -263,7 +285,9 @@ check $? "no ladder width hardcoded in skill code" "$HARD"
 
 # --- 10. no upstream identity leaked --------------------------------------
 # The pattern is assembled so this file does not match itself.
-U="$(printf 'k%s\\|b%s\\|h%s\\|j%s\\|f%s' imi aoyu uashu imliu lutter-crew)"
+# (plan 03: flutter-crew split further — f%s%s + lutter-cr + ew — so the bare
+#  token 'crew' does not appear literally now that 'crew' is itself a stripped name.)
+U="$(printf 'k%s\\|b%s\\|h%s\\|j%s\\|f%s%s' imi aoyu uashu imliu lutter-cr ew)"
 # runtime/vendor IS scanned — it was verified clean, so there is no reason to
 # carve it out. node_modules is gitignored and not part of the deliverable.
 LEFT="$(grep -rlIi "$U" "$SKILL" --exclude=LICENSE --exclude=selftest.sh \

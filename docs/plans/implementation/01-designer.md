@@ -206,7 +206,7 @@ dependencies installed and exits non-zero.
 | | result |
 |---|---|
 | `selftest.sh` | **15/15 pass**, exit 0 — starter and `designs/app-box-app` |
-| `selftest.sh --negative` | **16/16 proven**, exit 0 — one deliberate break per check, each required to flip *that* check, plus one inverse case (a comment naming a banned attribute must NOT trip the linter) |
+| `selftest.sh --negative` | **16/16 proven**, exit 0 on both the starter and `designs/app-box-app` — one deliberate break per check, each required to flip *that* check, plus one inverse case (a comment naming a banned attribute must NOT trip the linter). A check with no mutation aborts the run (exit 65) rather than being counted proven |
 | every other check's negative | was "proved by hand"; now mechanical — the mutation table in `selftest.sh` is the record. A red baseline aborts with exit 65 instead of handing every mutation a free pass, which is how the starter's own unexempted theme flip surfaced |
 | `doctor.mjs` with nothing installed | exit 1, names all 6 missing pieces and the two commands that fix them |
 | starter served + rendered | 200 at **compact / medium / expanded**, 0 console errors, 0 failed requests, no horizontal overflow |
