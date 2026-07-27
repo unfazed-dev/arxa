@@ -1,0 +1,13 @@
+{
+  "_generated_from": "greeting_seed.json",
+  "greetings": [
+    {
+      "id": "g1",
+      "text": "Hello"
+    },
+    {
+      "id": "g2",
+      "text": "Good morning"
+    }
+  ]
+}

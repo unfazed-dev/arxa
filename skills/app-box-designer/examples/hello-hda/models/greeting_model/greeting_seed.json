@@ -1,0 +1,13 @@
+{
+  "_note": "Seed is the SSOT. Edit this, then regenerate the fixture. Never hand-edit *_fixtures.json.",
+  "greetings": [
+    {
+      "id": "g1",
+      "text": "Hello"
+    },
+    {
+      "id": "g2",
+      "text": "Good morning"
+    }
+  ]
+}

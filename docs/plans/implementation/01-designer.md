@@ -1,5 +1,7 @@
 # 01 — `app-box-designer`
 
+**STATUS: COMPLETE** — executed 2026-07-27. All 16 steps done, selftest 14/14 with a demonstrated negative for every check. Five amendments to the plan are recorded at the bottom; each one was a defect in the plan, not a deviation from it.
+
 **Goal.** A complete, standalone htmx design skill that produces prototypes the
 FSM can freeze — carrying the viewport ladder, surface identity and registry
 conventions the upstream lineage does not have.
@@ -34,26 +36,26 @@ whose fonts 404.
 
 ## Steps
 
-- [ ] **1.1** Copy the skill into the repo as the SSOT:
+- [x] **1.1** Copy the skill into the repo as the SSOT:
       `app-box/skills/app-box-designer/`. Exclude `.git/`, `runtime/node_modules/`,
       `agents/vendor/`, `agents/gen-pptx/`.
-- [ ] **1.2** Create `THIRD-PARTY-NOTICES.md` at repo root containing the
+- [x] **1.2** Create `THIRD-PARTY-NOTICES.md` at repo root containing the
       upstream MIT licence text and `Copyright (c) 2026 Jim Liu 宝玉` **verbatim**.
       This is a legal condition (`00-README.md` R2 exception 1). Keep the copied
       `LICENSE` file in the skill folder too.
-- [ ] **1.3** Delete the non-app-design built-in skills:
+- [x] **1.3** Delete the non-app-design built-in skills:
       `export-as-pptx-editable`, `export-as-pptx-screenshots`, `make-a-deck`,
       `make-a-doc`, `read-pdf`, `save-as-pdf`, `speaker-notes`,
       `handoff-to-kimi-code`, `productionize`.
       *(`make-a-deck` is where the misleading `1280`-as-slide-width references
       came from — see `../architecture.md` §12.)*
-- [ ] **1.4** Keep and retain: `create-design-system`, `use-design-system`,
+- [x] **1.4** Keep and retain: `create-design-system`, `use-design-system`,
       `design-system-authoring-guide`, `design-system-preview`,
       `design-components`, `frontend-design`, `hi-fi-design`,
       `interactive-prototype`, `mobile-prototype`, `wireframe`,
       `import-from-figma`, `import-from-html`, `import-from-github`,
       `generate-images`.
-- [ ] **1.5** **Strip upstream references** (R2). Grep and rewrite every
+- [x] **1.5** **Strip upstream references** (R2). Grep and rewrite every
       operational mention of `kimi-design`, `kimi-design-htmx`, `kimi code`,
       `baoyu`, `huashu`, `K3`, `p2` in: `SKILL.md`, `CONTEXT.md`,
       `system-prompt.md`, `DESIGN-ARCHITECTURE.md`, `built-in-skills/*.md`,
@@ -61,20 +63,20 @@ whose fonts 404.
       `app-box-designer` in frontmatter `name:` and all cross-links.
       **Verify with:** `grep -ril 'kimi\|baoyu\|huashu' skills/app-box-designer
       --exclude=LICENSE --exclude=THIRD-PARTY-NOTICES.md` → must return nothing.
-- [ ] **1.6** Rewrite `SKILL.md` frontmatter `description:` for app_box's
+- [x] **1.6** Rewrite `SKILL.md` frontmatter `description:` for app_box's
       trigger surface. It must say the skill produces an **app prototype whose
       structure the app_box pipeline consumes** — not decks, not docs.
-- [ ] **1.7** **Add the viewport ladder.** New file
+- [x] **1.7** **Add the viewport ladder.** New file
       `references/viewport-ladder.md`, doctrine sourced from
       `kimi-design-flutter/references/layout-archetypes.md`. Content:
       freeze widths **390 / 744 / 1280**, sitting *inside* the MD3 window size
       classes (boundaries 600 / 840), never on a boundary. Which widths apply is
       **derived from targets** (§11) and read from config — never hardcoded (R3).
-- [ ] **1.8** Update `mobile-prototype.md`, `hi-fi-design.md` and
+- [x] **1.8** Update `mobile-prototype.md`, `hi-fi-design.md` and
       `interactive-prototype.md` to author at **every width in the active
       ladder**, not just phone. This is the gap the lineage cannot supply
       (§12) — measured: zero breakpoint doctrine in 46 upstream doc files.
-- [ ] **1.9** **Add the app-architecture contract.** New file
+- [x] **1.9** **Add the app-architecture contract.** New file
       `references/app-architecture.md` documenting the authored layer (§14):
       - `models/screens_model/registry.json` — `{id, tab, comp, surface, label}`
         plus optional `roles`; `surface: null` **is** the exclusion, so no
@@ -83,10 +85,10 @@ whose fonts 404.
       - `services/{repositories,facades}/`, `models/<x>_model/*_fixtures.json`;
       - **every viewmodel declares `export const surfaceId = '<id>';`**
       - `app.routes.js` exports the route table **and** `tabRoots`.
-- [ ] **1.10** Fold `DESIGN-ARCHITECTURE.md` (87 lines, already the upstream
+- [x] **1.10** Fold `DESIGN-ARCHITECTURE.md` (87 lines, already the upstream
       "spine architecture contract") into the above rather than replacing it.
       Keep its structure; add the app_box-specific layers.
-- [ ] **1.11** **Keep the skill's own `runtime/` — do not adopt p2's
+- [x] **1.11** **Keep the skill's own `runtime/` — do not adopt p2's
       `server.js`.** These diverged: the skill ships a factored Hono runtime
       (`runtime/lib/{router,state,templates,helpers,timers}.mjs`, `serve.mjs`,
       `eject.mjs`, `console-check.mjs`, `lint.mjs`) while p2 hand-rolled a plain
@@ -99,18 +101,18 @@ whose fonts 404.
       `services/{repositories,facades}` split, `models/<x>_model/*_fixtures.json`,
       and the `registry.json` convention. **Strip all p2 domain content**
       (training, seasons, buddies) — keep the skeleton, delete the subject.
-- [ ] **1.11b** Do **not** vendor `runtime/node_modules`. Record the dependency
+- [x] **1.11b** Do **not** vendor `runtime/node_modules`. Record the dependency
       set in `runtime/package.json` and install at setup. Add a `doctor` check
       that names Node and Playwright when missing, rather than failing obscurely
       inside a render.
-- [ ] **1.12** Add `built-in-skills/declare-structure.md`: how to author
+- [x] **1.12** Add `built-in-skills/declare-structure.md`: how to author
       `registry.json` and `surfaceId` while designing, so structure is never
       back-filled.
-- [ ] **1.13** Symlink into the harness skills dir:
+- [x] **1.13** Symlink into the harness skills dir:
       `ln -s <repo>/skills/app-box-designer ~/.agents/skills/app-box-designer`.
       The repo is the SSOT; the symlink is the consumer. Confirm with
       `readlink ~/.agents/skills/app-box-designer`.
-- [ ] **1.14** Write `skills/app-box-designer/selftest.sh`: scaffold a
+- [x] **1.14** Write `skills/app-box-designer/selftest.sh`: scaffold a
       two-surface throwaway producer from the starter, assert the registry
       parses, every viewmodel declares a `surfaceId`, `tabRoots` is non-empty,
       and each surface renders at every ladder width without console errors.
@@ -132,3 +134,88 @@ whose fonts 404.
 - Do not clean-room rewrite. It is MIT; forking is permitted and §19 settled it.
 - Do not copy `agents/gen-pptx/` or any deck/PPTX machinery.
 - Do not hardcode 390/744/1280 anywhere in code — they are config values.
+
+---
+
+## Amendments made during execution
+
+The plan was wrong in five places. Each was fixed and the fix is recorded here
+so plan 14 (dogfood) inherits the corrected contract, not the written one.
+
+### A1 — three built-in skills were unlisted
+
+`built-in-skills/` holds **26** files. Step 1.3 deletes 9 and step 1.4 keeps 14
+— that accounts for 23. Unlisted: `save-as-standalone-html.md`,
+`send-to-figma.md`, `something-cool.md`.
+
+Applied the plan's own principle (keep app-design, drop deck/showcase):
+**kept** `save-as-standalone-html` (an artifact export path) and `send-to-figma`
+(symmetric with `import-from-figma`, which 1.4 keeps); **deleted**
+`something-cool` (a showcase skill, same family as `make-a-deck`).
+
+### A2 — deleting `productionize.md` orphaned a tool the plan keeps
+
+Step 1.3 deletes `productionize.md`; step 1.11 explicitly keeps
+`runtime/eject.mjs`, which `productionize.md` documents. Deleting the doc while
+shipping the tool left six dangling references. **`productionize.md` was
+restored.** Ejecting a prototype into a self-contained Hono app is also directly
+useful for app_box's "take your code and leave" position.
+
+### A3 — the lineage ADRs had nowhere to go
+
+`docs/adr/0006-parity-port-rebase-drop.md` and `0007-full-fork-from-kimi-design.md`
+are entirely about the upstream lineage, so they cannot survive R2 inside the
+skill — but they are genuine decision records. Moved to
+`docs/research/upstream-lineage/`, where R2 exception 3 permits historical
+citation. Load-bearing citations in the skill were repointed to **ADR-0002**
+(zero-custom-client-JS boundary), which is the actual reason those capabilities
+are absent. `starter-partials/deck/` followed `make-a-deck` out.
+
+### A4 — a blind strip cannot rewrite prose
+
+Regex substitution across 31 files produced grammatical wreckage in exactly the
+files that matter most (`SKILL.md` frontmatter, `system-prompt.md` header,
+`references/kimi.md`'s harness table, whose contents were harness-specific tool
+names). **`SKILL.md` and `references/harness-tools.md` were rewritten by hand**;
+`system-prompt.md` was repaired in place. `references/kimi.md` →
+`references/harness-tools.md`, restated capability-first because app_box is
+harness-agnostic.
+
+Also: `// kimitail:` survived the strip (no word boundary after `kimi`) →
+`// tradeoff:`.
+
+### A5 — the documented screenshot command does not work on a fresh install
+
+`npx playwright screenshot` needs `chrome-headless-shell`, which
+`playwright install chromium` does not fetch. The plan's verify loop would have
+failed on every new machine.
+
+Added **`runtime/shoot.mjs`** — uses the Playwright API, loops the *active*
+ladder, and additionally fails on console errors, failed requests, 4xx/5xx and
+horizontal overflow. Widths come from **`runtime/ladder.json`**; callers pass
+rung *names*. Added `runtime/check_ladder.mjs` (config↔doctrine drift check, no
+rung on a boundary) and `runtime/doctor.mjs` (step 1.11b), which runs with zero
+dependencies installed and exits non-zero.
+
+## What was verified, not assumed
+
+| | result |
+|---|---|
+| `selftest.sh` | **14/14 pass**, exit 0 |
+| `selftest.sh --negative` | exit 1, names `timer_viewmodel.js` in **two** independent checks |
+| every other check's negative | proved by hand: rung on a boundary, doc/config drift, removed `ladder-exempt:` marker, 404 route, unknown rung |
+| `doctor.mjs` with nothing installed | exit 1, names all 6 missing pieces and the two commands that fix them |
+| starter served + rendered | 200 at **compact / medium / expanded**, 0 console errors, 0 failed requests, no horizontal overflow |
+| the data spine | facade → repository → fixture → view renders end to end (screenshot read back) |
+| `lint.mjs` | clean — zero custom client-side JS |
+| `console-check.mjs` | clean |
+| upstream identity | `grep -rlIi 'kimi|baoyu|huashu|jimliu|flutter-crew'` returns **nothing** outside `LICENSE` |
+
+## Known gaps
+
+- **`send-to-figma.md` is untested** — it needs a Figma MCP server that is not
+  configured here. It fails with a clear message when the tools are absent.
+- **The `--targets` → active-rungs derivation is documented, not implemented.**
+  `shoot.mjs` accepts `--rungs`/`$APP_BOX_LADDER`/`_d_meta.json`; nothing yet
+  computes that list from a project's targets. **That is plan 06's job** —
+  until it lands, the rung list is passed by hand.

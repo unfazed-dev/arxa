@@ -1,0 +1,27 @@
+{% extends "ui/views/main_shell/main_shell_view.html" %}
+{% block title %}Home — hello-hda{% endblock %}
+{% block surface %}
+<h1>Home</h1>
+<p>Boosted navigation, server-rendered state, zero custom client-side JS.</p>
+
+{# Context comes from a facade, which composes repositories, which read
+   fixtures generated from a seed. The view never touches data directly. #}
+<ul class="greetings">
+  {% for g in greetings %}<li>{{ g.text }}</li>{% endfor %}
+</ul>
+<p class="muted">{{ count }} greeting(s) from <code>greeting_facade</code>.</p>
+
+<p><a class="btn" href="/timer">Go to the timer →</a></p>
+
+<form hx-post="/prefs/accent" hx-swap="none">
+  <label>Accent
+    <select name="accent">
+      <option value="blueviolet">Iris</option>
+      <option value="teal">Lagoon</option>
+      <option value="tomato">Signal</option>
+    </select>
+  </label>
+  <button type="submit">Apply</button>
+</form>
+<p class="row"><span class="swatch"></span> Current accent: <code>{{ prefs.accent or 'blueviolet' }}</code></p>
+{% endblock %}

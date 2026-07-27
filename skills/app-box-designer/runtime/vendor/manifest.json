@@ -1,0 +1,38 @@
+[
+  {
+    "file": "htmx.min.js",
+    "package": "htmx.org",
+    "version": "2.0.10",
+    "integrity": "sha384-H5SrcfygHmAuTDZphMHqBJLc3FhssKjG7w/CeCpFReSfwBWDTKpkzPP8c+cLsK+V"
+  },
+  {
+    "file": "preload.min.js",
+    "package": "htmx-ext-preload",
+    "version": "2.1.2",
+    "integrity": "sha384-PRIcY6hH1Y5784C76/Y8SqLyTanY9rnI3B8F3+hKZFNED55hsEqMJyqWhp95lgfk"
+  },
+  {
+    "file": "head-support.js",
+    "package": "htmx-ext-head-support",
+    "version": "2.0.5",
+    "integrity": "sha384-cvMqHzjCJsOHgGuyB3sWXaUSv/Krm0BdzjuI1rtkjCbL1l1oHJx+cHyVRJhyuEz0"
+  },
+  {
+    "file": "sse.js",
+    "package": "htmx-ext-sse",
+    "version": "2.2.4",
+    "integrity": "sha384-A986SAtodyH8eg8x8irJnYUk7i9inVQqYigD6qZ9evobksGNIXfeFvDwLSHcp31N"
+  },
+  {
+    "file": "client-side-templates.js",
+    "package": "htmx-ext-client-side-templates",
+    "version": "2.0.2",
+    "integrity": "sha384-sKX0kzraJJEV0VPe2cmrjHqjTVhEGPVxHhCCa4YCRcYphgn2YTwHZMOeP16FTXPG"
+  },
+  {
+    "file": "mustache.min.js",
+    "package": "mustache",
+    "version": "4.2.0",
+    "integrity": "sha384-WASZCYHGuIg0bwkJEH65mhmbKS1x4/VKI2bzElPKmL5B3e0UaH45nIdqOm+BUuRA"
+  }
+]

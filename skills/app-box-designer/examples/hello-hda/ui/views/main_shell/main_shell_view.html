@@ -1,0 +1,11 @@
+{% extends "ui/common/base.html" %}
+{% block content %}
+<nav class="shell-nav">
+  <strong>hello-hda</strong>
+  <a href="/">Home</a>
+  <a href="/timer" preload>Timer</a>
+</nav>
+<main class="shell-main">
+  {% block surface %}{% endblock %}
+</main>
+{% endblock %}

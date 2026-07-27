@@ -1,0 +1,19 @@
+{% extends "ui/views/main_shell/main_shell_view.html" %}
+{% block title %}Timer — hello-hda{% endblock %}
+{% block surface %}
+<h1>Rest timer</h1>
+<p>The server holds the deadline; the page polls once a second. No JS written.</p>
+{{ tick(c) }}
+<p class="row">
+  <button hx-post="/timer/extend" hx-target="#timer" hx-swap="outerHTML">+15s</button>
+  <button hx-post="/timer/skip" hx-target="#timer" hx-swap="outerHTML">Skip</button>
+</p>
+{% endblock %}
+
+{% macro tick(c) %}
+{% if c.remaining and c.remaining > 0 %}
+<div id="timer" class="timer" hx-get="/timer/tick" hx-trigger="load delay:1s" hx-swap="outerHTML">{{ c.remaining }}s</div>
+{% else %}
+<div id="timer" class="timer done">Done — nice set.</div>
+{% endif %}
+{% endmacro %}

@@ -1,0 +1,39 @@
+#!/usr/bin/env node
+// Zero-custom-client-JS lint (ADR-0002). Usage: node lint.mjs <artifact-dir>
+// Scans artifact templates; viewmodels (.js) are server code and not in scope.
+import { readdirSync, readFileSync, statSync } from 'node:fs';
+import path from 'node:path';
+
+const dir = process.argv[2] ? path.resolve(process.argv[2]) : null;
+if (!dir) {
+  console.error('Usage: node lint.mjs <artifact-dir>');
+  process.exit(2);
+}
+
+const rules = [
+  // Inert JSON data blocks (e.g. inert data) are data, not custom JS.
+  { re: /<script(?![^>]*src="\/assets\/vendor\/)(?![^>]*type="application\/json")[^>]*>/i, msg: 'non-vendor <script> tag' },
+  { re: /\bhx-on[:\s=]/i, msg: 'hx-on handler' },
+  { re: /\bhx-(vals|headers)\s*=\s*"js:/i, msg: 'js:-prefixed attribute' },
+  { re: /\bhx-trigger\s*=\s*"[^"]*\[/i, msg: '[expr] trigger filter' },
+];
+
+const walk = (d) =>
+  readdirSync(d).flatMap((f) => {
+    const p = path.join(d, f);
+    return statSync(p).isDirectory() ? walk(p) : [p];
+  });
+
+const findings = [];
+for (const file of walk(dir).filter((f) => f.endsWith('.html'))) {
+  const text = readFileSync(file, 'utf8');
+  for (const { re, msg } of rules) {
+    if (re.test(text)) findings.push(`${file}: ${msg}`);
+  }
+}
+
+if (findings.length) {
+  console.error(`client-JS lint failed:\n${findings.join('\n')}`);
+  process.exit(1);
+}
+console.log(`lint clean: no custom client-side JS in ${dir}`);

@@ -1,0 +1,127 @@
+{# ============================================================================
+   android.html — Android (Material 3) device frame, Nunjucks partial
+   Pure HTML+CSS port of app-box-designer's starter-components/android-frame.jsx.
+   Zero JavaScript. Styles live in frames.css (copy it to assets/css/).
+
+   Usage — copy frames/ into your artifact (e.g. ui/widgets/frames/), then
+   import and wrap your screen content with a call block; the macro takes the
+   context bag `c` (runtime convention) and reads `c.frame`:
+
+       {% import "ui/widgets/frames/android.html" as android %}
+       {% call android.device(c) %}
+         {{ android.list_item({ leading: "A", headline: "Ada Lovelace",
+                               supporting: "Online now" }) }}
+       {% endcall %}
+
+   c.frame options (all optional):
+     width    412      device width in px        height  892   device height
+     dark     false    dark frame/status/gesture bar (the app bar keeps the
+                       light M3 surface, exactly like the React source)
+     time     "9:30"   status-bar clock
+     title    unset    when set, renders the top app bar
+     large    false    with title: large M3 headline variant
+     keyboard false    when true, renders the Gboard keyboard
+
+   Slot: screen content lands in `<div class="frame-screen">` (scrolls).
+   Without a call block, `{{ android.device(c) }}` renders the frame with an
+   empty, marked screen slot you can paste markup into directly.
+
+   Named Fragment bonus: h.render(c, "ui/widgets/frames/android.html#device")
+   renders the bare frame straight from a viewmodel.
+
+   Composing macros: status_bar(f) · app_bar(f) · list_item(item) ·
+   nav_bar(f) (gesture pill) · keyboard(f).
+   item = { headline, supporting?, leading? (text for the primary circle) }.
+   ============================================================================ #}
+
+{% macro device(c) %}
+{% set f = c.frame or {} %}
+<div class="android-device{% if f.dark %} android-device--dark{% endif %}" style="--md-w: {{ f.width or 412 }}px; --md-h: {{ f.height or 892 }}px;">
+  {{ status_bar(f) }}
+  {% if f.title is defined %}{{ app_bar(f) }}{% endif %}
+  <div class="frame-screen android-device__screen">
+    {%- if caller %}{{ caller() }}{% else %}<!-- SLOT: screen content goes here (see this file's header comment for the call-block usage) -->{% endif %}
+  </div>
+  {% if f.keyboard %}{{ keyboard(f) }}{% endif %}
+  {{ nav_bar(f) }}
+</div>
+{% endmacro %}
+
+{% macro status_bar(f) %}
+<div class="android-status">
+  <div class="android-status__time-box">
+    <span class="android-status__time">{{ f.time or "9:30" }}</span>
+  </div>
+  <div class="android-status__camera" aria-hidden="true"></div>
+  <div class="android-status__icons" aria-hidden="true">
+    <span class="android-status__icons-pair">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+        <path d="M8 13.3L.67 5.97a10.37 10.37 0 0114.66 0L8 13.3z"/>
+      </svg>
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+        <path d="M14.67 14.67V1.33L1.33 14.67h13.34z"/>
+      </svg>
+    </span>
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+      <rect x="3.75" y="2" width="8.5" height="13" rx="1.5"/>
+      <rect x="5.5" y="0.9" width="5" height="2" rx="0.5"/>
+    </svg>
+  </div>
+</div>
+{% endmacro %}
+
+{% macro app_bar(f) %}
+<div class="android-appbar">
+  <div class="android-appbar__row">
+    <span class="android-appbar__icon" aria-hidden="true"><span class="android-appbar__icon-dot"></span></span>
+    {% if f.large %}<span class="android-appbar__spacer"></span>
+    {% else %}<span class="android-appbar__title">{{ f.title }}</span>{% endif %}
+    <span class="android-appbar__icon" aria-hidden="true"><span class="android-appbar__icon-dot"></span></span>
+  </div>
+  {% if f.large %}<div class="android-appbar__large-title">{{ f.title }}</div>{% endif %}
+</div>
+{% endmacro %}
+
+{% macro list_item(item) %}
+<div class="android-list-item">
+  {% if item.leading %}<span class="android-list-item__leading" aria-hidden="true">{{ item.leading }}</span>{% endif %}
+  <div class="android-list-item__text">
+    <div class="android-list-item__headline">{{ item.headline }}</div>
+    {% if item.supporting %}<div class="android-list-item__supporting">{{ item.supporting }}</div>{% endif %}
+  </div>
+</div>
+{% endmacro %}
+
+{% macro nav_bar(f) %}
+<div class="android-nav" aria-hidden="true">
+  <span class="android-nav__pill"></span>
+</div>
+{% endmacro %}
+
+{% macro keyboard(f) %}
+<div class="android-kb" aria-hidden="true">
+  <div class="android-kb__navbar-spacer"></div>
+  <div class="android-kb__rows">
+    <div class="android-kb__row">
+      {% for k in ["q", "w", "e", "r", "t", "y", "u", "i", "o", "p"] %}<span class="android-kb__key">{{ k }}</span>{% endfor %}
+    </div>
+    <div class="android-kb__row android-kb__row--inset">
+      {% for k in ["a", "s", "d", "f", "g", "h", "j", "k", "l"] %}<span class="android-kb__key">{{ k }}</span>{% endfor %}
+    </div>
+    <div class="android-kb__row">
+      <span class="android-kb__key android-kb__key--variant"></span>
+      <span class="android-kb__row3">
+        {% for k in ["z", "x", "c", "v", "b", "n", "m"] %}<span class="android-kb__key">{{ k }}</span>{% endfor %}
+      </span>
+      <span class="android-kb__key android-kb__key--variant"></span>
+    </div>
+    <div class="android-kb__row">
+      <span class="android-kb__key android-kb__key--symbol">?123</span>
+      <span class="android-kb__key android-kb__key--variant">,</span>
+      <span class="android-kb__key android-kb__key--space"></span>
+      <span class="android-kb__key android-kb__key--variant">.</span>
+      <span class="android-kb__key android-kb__key--return"></span>
+    </div>
+  </div>
+</div>
+{% endmacro %}

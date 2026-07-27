@@ -1,0 +1,19 @@
+:root { color-scheme: light dark; }
+* { box-sizing: border-box; }
+body { margin: 0; font-family: ui-sans-serif, system-ui, sans-serif; }
+#app { min-height: 100dvh; display: flex; flex-direction: column; }
+.shell-nav { display: flex; gap: 1rem; align-items: center; padding: .75rem 1rem; border-bottom: 1px solid color-mix(in oklab, currentColor 15%, transparent); }
+.shell-nav a { color: var(--accent); text-decoration: none; font-weight: 600; }
+.shell-main { padding: 2rem 1rem; max-width: 42rem; }
+h1 { font-size: 1.8rem; margin: 0 0 .5rem; }
+.btn, button { background: var(--accent); color: #fff; border: 0; border-radius: .5rem; padding: .5rem .9rem; font: inherit; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-block; }
+.row { display: flex; gap: .5rem; align-items: center; }
+form { display: flex; gap: .5rem; align-items: end; margin: 1rem 0; }
+select { font: inherit; padding: .35rem .5rem; }
+.swatch { display: inline-block; width: .9em; height: .9em; border-radius: 50%; background: var(--accent); }
+.timer { font-size: 4rem; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--accent); }
+.timer.done { font-size: 1.6rem; color: seagreen; }
+@media (prefers-reduced-motion: no-preference) {
+  .htmx-added { animation: kdh-fade-in .25s ease-out; }
+  @keyframes kdh-fade-in { from { opacity: 0; } }
+}

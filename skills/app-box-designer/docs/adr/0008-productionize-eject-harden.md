@@ -1,0 +1,3 @@
+# Productionize = eject + harden, keep the Repository seam
+
+The Productionize command transforms an Artifact into a self-contained production-grade Hono app: own package.json, Runtime inlined, MVVM structure preserved, env-based config, baseline tests, README/deploy notes. The data layer stays behind the Repository seam — fixtures keep working; each Repository is the documented swap point for a real DB. Auth and DB provisioning are deliberately not generated (product decisions a design skill shouldn't guess). Considered and rejected: eject-only (no tests/config/deploy story — "production ready" in name only), full backend generation (schema + auth + deploy — a second product hiding inside a design skill).

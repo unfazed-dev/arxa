@@ -32,6 +32,17 @@ recorded. If your plan is ambiguous, stop and report — do not choose.
 
 ---
 
+## 2b. Delivered
+
+| plan | what exists now |
+|---|---|
+| [01 — designer](plans/implementation/01-designer.md) | `skills/app-box-designer/` — 17 built-in skills, the viewport ladder (`runtime/ladder.json` + `references/viewport-ladder.md`), the authored-layer contract (`references/app-architecture.md`), `built-in-skills/declare-structure.md`, and a 14-check selftest with a negative case. Five plan defects found and recorded in the plan's Amendments section. |
+
+**Open gap carried into plan 06:** nothing yet derives the active rung list from
+a project's `--targets`. The ladder is passed by hand until it lands.
+
+---
+
 ## 3. Plans — the decisions
 
 | doc | contents |
@@ -82,7 +93,8 @@ Copy from these. **Do not rewrite what already exists.**
 
 | path | what to take |
 |---|---|
-| `~/.agents/skills/kimi-design-htmx` | **MIT** — the designer fork base. 168 non-vendor files |
+| `skills/app-box-designer/` | ✅ **DELIVERED** (plan 01). The design stage, in this repo. Symlinked to `~/.agents/skills/app-box-designer`. Run `./selftest.sh` and `node runtime/doctor.mjs` |
+| `~/.agents/skills/kimi-design-htmx` | the fork base — **already forked; do not re-copy** |
 | `~/.agents/skills/kimi-design-flutter` | viewport archetypes (390/744) — doctrine only |
 | `/Volumes/developer_ssd/Developer/totem_labs/stacked_kit/tools` | `pipeline.sh` 1018, gates, `emit_*`, `kit_registry` |
 | `…/stacked_kit/showcase_app` | 124 Dart files / 8,626 lines — the desktop app base |

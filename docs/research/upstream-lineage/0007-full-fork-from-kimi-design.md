@@ -1,0 +1,3 @@
+# Full fork from kimi-design, including agents
+
+kimi-design-htmx is a full fork — its own copies of every doc and every agent, zero runtime coupling to kimi-design's continued existence (the user overrode the reference-the-heavy-agents recommendation; duplicated drift was accepted as the price of self-containment). Provenance: Anthropic Claude Design → JimLiu/baoyu-design (MIT) → kimi-design → kimi-design-htmx; the MIT LICENSE is carried forward. The SKILL.md description is scoped to htmx/no-JS intent so activation doesn't fight kimi-design for generic design requests. Considered and rejected: fork-docs-reference-agents (couples every export flow to a sibling skill's path), thin layer (fragile, and the two skills' triggers collide).
