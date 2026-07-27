@@ -10,18 +10,42 @@ Split out of the vendored `freeze_design.sh` (plan 03) along the render/structur
 seam: freeze owns *inputs + render + approval*; the structure gate owns the
 shell/surface map. Findings route through `gates/_common/sarif.sh`.
 
+## Two producer contracts (the producer-shape seam, dogfood P14 finding #1)
+
+The gate branches on producer shape, detected by `app.routes.js` at the design
+root (htmx) vs `surfaces/*.html` + `tokens.json` (stacked_kit):
+
+- **stacked_kit producer** — frozen inputs `tokens.json`, `design-system.md`,
+  `exclusions.json`, `direction-approved.md`, `brand-spec.md`, `structure.json`,
+  `surfaces/*.html`. Rendered as files (each `surfaces/*.html` opened directly)
+  via `uv run --with playwright`.
+- **htmx producer (app-box-designer)** — frozen inputs `app.routes.js`,
+  `structure.json`, the registry it points at, and `ui/views/**/*_view.html`.
+  The views are Jinja templates, so they are **served by the designer's Node
+  prototype server** (`skills/app-box-designer/runtime/serve.mjs`, loopback,
+  OS-assigned port) and rendered via the runtime's Playwright
+  (`render_htmx.mjs`). P09: the designer legitimately requires Node, so a
+  dev-time gate MAY use it. Vocab/exclusions are N/A (no `tokens.json`); the
+  clean-render check is the htmx analog.
+
+Both paths preserve the **4.3 fix**: a fresh page per (surface/route, viewport),
+so the console/page-error handler can never accumulate — each error is reported
+exactly once.
+
 ## Asserts
 
-1. **shape** — `tokens.json`, `design-system.md`, `exclusions.json`,
-   `direction-approved.md`, `brand-spec.md`, `structure.json`, `surfaces/*.html`
+1. **shape** — per producer (see above)
 2. **approval (6.7)** — if `design/approval.lock` exists, the current targets +
    frozen-input hash must match the stamped ones; otherwise the approval is
-   STALE and the gate fails loudly. `--approve` mints/refreshes the stamp.
-3. **vocab** — `tokens.json` parses as DTCG and carries the kit token paths
-4. **exclusions** — harness chrome signatures in surfaces are covered by
-   `exclusions.json` (uncovered chrome would scaffold into kit UI)
-5. **render** — headless Chromium loads every surface at every **derived** width
-   with zero console/page errors; screenshots land under
+   STALE and the gate fails loudly. `--approve` mints/refreshes the stamp. The
+   input hash covers each producer's own frozen set.
+3. **vocab** — [stacked_kit] `tokens.json` parses as DTCG and carries the kit
+   token paths
+4. **exclusions** — [stacked_kit] harness chrome signatures in surfaces are
+   covered by `exclusions.json`
+5. **render** — headless Chromium loads every surface (stacked_kit: each
+   `surfaces/*.html`; htmx: each GET route from `app.routes.js`) at every
+   **derived** width with zero console/page errors; screenshots land under
    `.kit/state/prototype/evidence/`
 
 ## Targets (6.2 / 6.3)

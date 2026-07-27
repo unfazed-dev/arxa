@@ -10,8 +10,9 @@ GATE="$(cd "$(dirname "$0")" && pwd)/freeze.sh"
 pass=0; failc=0
 chk(){ [ "$1" = "$2" ] && pass=$((pass+1)) || { failc=$((failc+1)); echo "  FAIL: expected exit [$2] got [$1] — $3"; }; }
 need(){ case "$1" in *"$2"*) pass=$((pass+1));; *) failc=$((failc+1)); echo "  FAIL: output should mention [$2] — $3";; esac; }
+avoid(){ case "$1" in *"$2"*) failc=$((failc+1)); echo "  FAIL: output should NOT mention [$2] — $3";; *) pass=$((pass+1));; esac; }
 
-T="$(mktemp -d)"; trap 'rm -rf "$T"' EXIT
+T="$(mktemp -d)"; trap 'rm -rf "$T" ${TH:+"$TH"} ${THR:+"$THR"}' EXIT
 DESIGN="$T/design"
 mkdir -p "$DESIGN/surfaces"
 
@@ -78,6 +79,63 @@ need "$o" "approval.lock valid" "valid stamp is acknowledged"
 o="$(FREEZE_RENDER=skip bash "$GATE" --targets macos,ios "$T" 2>&1)"; chk "$?" 1 "changed targets after approval: STALE"
 need "$o" "approval STALE" "stale approval fails loudly"
 need "$o" "targets changed since approval" "names the reason (targets changed)"
+
+# ---- htmx producer: shape detection + htmx shape contract (skip render) ----
+# Producer-shape seam (dogfood P14 #1): an app-box-designer design (app.routes.js
+# + registry + ui/views) is detected as htmx and must NOT need tokens.json /
+# exclusions.json / surfaces/*.html (the stacked_kit contract).
+TH="$(mktemp -d)"
+mkdir -p "$TH/design/ui/views/stage_shell/projects/home"
+printf 'export default [\n  ["GET","/",{}],\n];\n' > "$TH/design/app.routes.js"
+printf '{"registry":"registry.json","tabRoots":{"projects":"/"},"screens":[{"id":"projects.home","tab":"projects","comp":"Home","shell":"stage_shell","surface":"stage_shell_projects_home_view"}]}\n' > "$TH/design/structure.json"
+printf '[{"id":"projects.home","surface":"stage_shell_projects_home_view","tab":"projects","comp":"Home"}]\n' > "$TH/design/registry.json"
+printf '<html><body>home</body></html>\n' > "$TH/design/ui/views/stage_shell/projects/home/home_view.html"
+o="$(FREEZE_RENDER=skip bash "$GATE" --targets macos "$TH" 2>&1)"; chk "$?" 0 "htmx: valid frozen inputs pass (no tokens/exclusions needed)"
+need "$o" "htmx producer (app.routes.js present)" "htmx producer detected"
+avoid "$o" "tokens.json missing" "htmx must NOT require tokens.json"
+need "$o" "vocab/exclusions: N/A for the htmx producer" "htmx skips vocab/exclusions"
+
+# ---- htmx NEGATIVE: a required htmx input is missing ------------------------
+rm "$TH/design/structure.json"
+o="$(FREEZE_RENDER=skip bash "$GATE" --targets macos "$TH" 2>&1)"; chk "$?" 1 "htmx negative: missing structure.json fails"
+need "$o" "structure.json missing" "names the missing htmx input"
+
+# ---- htmx render exact-count proof (4.3 on the htmx path; needs Node) -------
+# Two GET routes served by the designer server, one plants a single console.error.
+# render_htmx.mjs uses a fresh page per route, so the error is reported EXACTLY
+# once across the 2x1 render matrix — the 4.3 no-accumulation invariant, proven
+# on the htmx producer. Skipped (not failed) when Node is absent: the htmx render
+# is a Node operation by design (P09).
+if command -v node >/dev/null 2>&1; then
+  THR="$(mktemp -d)"
+  mkdir -p "$THR/design/ui/views/sh/a" "$THR/design/ui/views/sh/b"
+  # *_view.html templates satisfy the htmx shape check; the viewmodels below
+  # return HTML directly via c.html() so the planted error needs no nunjucks setup.
+  printf '<html><body>a</body></html>\n' > "$THR/design/ui/views/sh/a/a_view.html"
+  printf '<html><body>b</body></html>\n' > "$THR/design/ui/views/sh/b/b_view.html"
+  cat > "$THR/design/app.routes.js" <<'EOF'
+import * as a from './ui/views/sh/a/a_viewmodel.js';
+import * as b from './ui/views/sh/b/b_viewmodel.js';
+export default [ ['GET','/a',a.page], ['GET','/b',b.page] ];
+EOF
+  cat > "$THR/design/ui/views/sh/a/a_viewmodel.js" <<'EOF'
+export const page = (c) => c.html('<html><body>a</body></html>');
+EOF
+  cat > "$THR/design/ui/views/sh/b/b_viewmodel.js" <<'EOF'
+export const page = (c) => c.html('<html><body><script>console.error("THE_ONE_ERROR")</script>b</body></html>');
+EOF
+  printf '{"registry":"registry.json","tabRoots":{},"screens":[{"id":"a","shell":"sh","surface":"sh_a_view"},{"id":"b","shell":"sh","surface":"sh_b_view"}]}\n' > "$THR/design/structure.json"
+  printf '[{"id":"a","surface":"sh_a_view","tab":"sh","comp":"A"},{"id":"b","surface":"sh_b_view","tab":"sh","comp":"B"}]\n' > "$THR/design/registry.json"
+  o="$(bash "$GATE" --targets macos "$THR" 2>&1)"; chk "$?" 1 "htmx render: a console error fails the render"
+  need "$o" "THE_ONE_ERROR" "htmx render names the console error"
+  need "$o" "render: 2 route/viewport render(s) across 1 derived width(s), 1 error(s)" "htmx 4.3: one error across two routes reported exactly once"
+  # clean variant passes
+  printf 'export const page = (c) => c.html(%s);\n' "'<html><body>b</body></html>'" > "$THR/design/ui/views/sh/b/b_viewmodel.js"
+  o="$(bash "$GATE" --targets macos "$THR" 2>&1)"; chk "$?" 0 "htmx render: clean routes pass"
+  need "$o" "0 error(s)" "htmx render reports zero errors when clean"
+else
+  echo "  (skip: htmx render exact-count case — node not on PATH)"
+fi
 
 echo "freeze selftest: $pass passed, $failc failed"
 [ "$failc" -eq 0 ] && exit 0 || exit 1

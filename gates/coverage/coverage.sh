@@ -25,6 +25,12 @@
 # recorded, not guessed — the same finding that produced structure.json, one
 # layer downstream.
 #
+# Producer shape (dogfood P14 finding #1): app.routes.js at the design root =>
+# htmx producer. The htmx producer IS the authored layer; its Flutter scaffold is
+# downstream of the scaffolder and not yet present, so coverage DERIVES + REPORTS
+# the target form-factor set the scaffold will require and DEFERS the scaffold/
+# ceremony checks (C4 incremental). Missing structure.json still fails (4.4).
+#
 # Targets drive coverage (plan 06):
 #   C1 coverage  — every frozen surface of an ADOPTED shell is mapped, and the
 #                  mapped dir carries EXACTLY the derived form-factor set (6.5):
@@ -84,11 +90,17 @@ run_gate_for(){
   local APP="$1"
   APP="$(cd "$APP" 2>/dev/null && pwd)" || { echo "FAIL: app root not found: $1" >&2; sarif_result "coverage" "error" "$1" "app root not found"; return 2; }
   local DESIGN_REL="${KIT_DESIGN_DIR:-design}"
+  local DESIGN="$APP/$DESIGN_REL"
+  # producer shape (the producer-shape seam, dogfood P14 finding #1): app.routes.js
+  # at the design root => htmx producer (app-box-designer). The stacked_kit
+  # producer carries surfaces/*.html + tokens.json and has no app.routes.js.
+  local PRODUCER=stacked_kit
+  [ -f "$DESIGN/app.routes.js" ] && PRODUCER=htmx
   local pyout rc fails
-  pyout="$(python3 - "$APP" "$DESIGN_REL" "$APPBOX_TARGETS" "$DERIVATION" "$CONFIG" 2>&1 <<'PY'
+  pyout="$(python3 - "$APP" "$DESIGN_REL" "$APPBOX_TARGETS" "$DERIVATION" "$CONFIG" "$PRODUCER" 2>&1 <<'PY'
 import json,os,sys,glob
 
-app,rel,targets_csv,derivation_path,config_path=sys.argv[1],sys.argv[2],sys.argv[3],sys.argv[4],sys.argv[5]
+app,rel,targets_csv,derivation_path,config_path,producer=sys.argv[1],sys.argv[2],sys.argv[3],sys.argv[4],sys.argv[5],sys.argv[6]
 
 # ---- derive the form-factor set + ceremonies for these targets (6.1/6.5/6.8)
 targets=[t for t in targets_csv.split(',') if t]
@@ -145,6 +157,23 @@ for s in st.get("screens",[]):
         frozen.setdefault(s["shell"],set()).add(s["surface"])
 if not frozen:
     fail(f"{rel}/structure.json declares no surfaces — nothing to cover"); sys.exit(1)
+
+# ---- htmx producer: derive + report the form-factor set; defer scaffold checks
+# The htmx producer IS the authored layer; its Flutter scaffold is downstream of
+# the scaffolder and does not exist yet (dogfood P14 honest-bar #2). So the
+# scaffold/ceremony checks (C1-C5 over lib/ui/views) have nothing to assert here
+# — coverage derives the form-factor set the scaffold WILL require and defers the
+# rest (C4 incremental: a shell not yet scaffolded is reported, never silently
+# green). The derivation itself is identical to the stacked_kit path.
+if producer=="htmx":
+    n=sum(len(v) for v in frozen.values())
+    files_per=1+len(FACTORS)+1   # _view.dart + one _view.<factor>.dart per derived viewport + _viewmodel.dart
+    ok(f"htmx producer — {n} frozen surface(s) across {len(frozen)} shell(s)")
+    print(f"  coverage: targets [{','.join(targets)}] -> form factors [{', '.join(FACTORS) or 'none'}] "
+          f"-> {files_per} file(s)/surface when the Flutter scaffold is emitted")
+    print(f"  coverage: no Flutter scaffold layer for this htmx producer yet — "
+          f"scaffold/ceremony checks deferred (C4 incremental); {rel}/structure.json verified")
+    sys.exit(0)
 
 mf={}
 if os.path.isfile(manifest):
@@ -425,6 +454,26 @@ EOF
   plant "$T/a" "$FULL" macos library stats
   o=$(run "$T/a" zxspectrum); chk "$?" 1 "unknown target FAILS"
   need "$o" "unknown target" "names the unknown target"
+
+  # ---- htmx producer: derive form-factor set, defer scaffold (seam) --------
+  # app.routes.js at the design root => htmx producer. coverage derives the
+  # target form-factor set and defers scaffold/ceremony checks (no Flutter layer
+  # for an htmx design). 4.4 still applies: missing structure.json fails loudly.
+  rm -rf "$T/h"; mkdir -p "$T/h/design/htmx"
+  printf 'export default [["GET","/",{}]];\n' > "$T/h/design/htmx/app.routes.js"
+  printf '{"registry":"registry.json","tabRoots":{},"screens":[{"id":"a","shell":"sh","surface":"sh_a_view"}]}\n' > "$T/h/design/htmx/structure.json"
+  printf '[{"id":"a","surface":"sh_a_view","tab":"sh","comp":"A"}]\n' > "$T/h/design/htmx/registry.json"
+  o=$( KIT_DESIGN_DIR=design/htmx APPBOX_TARGETS=macos run_gate_for "$T/h" 2>&1 ); chk "$?" 0 "htmx macos: derives set, passes (no scaffold)"
+  need "$o" "htmx producer — 1 frozen surface" "htmx reports the frozen surface count"
+  need "$o" "form factors [desktop]" "htmx derives desktop for macos"
+  need "$o" "3 file(s)/surface" "htmx reports the macos 3-file requirement"
+  o=$( KIT_DESIGN_DIR=design/htmx APPBOX_TARGETS=ios,android run_gate_for "$T/h" 2>&1 ); chk "$?" 0 "htmx ios,android: derives mobile+tablet"
+  need "$o" "form factors [mobile, tablet]" "htmx derives mobile+tablet for ios,android"
+  need "$o" "4 file(s)/surface" "htmx reports the 4-file mobile+tablet requirement"
+  rm -rf "$T/h2"; mkdir -p "$T/h2/design/htmx"   # htmx signal, no structure.json
+  printf 'export default [["GET","/",{}]];\n' > "$T/h2/design/htmx/app.routes.js"
+  o=$( KIT_DESIGN_DIR=design/htmx APPBOX_TARGETS=macos run_gate_for "$T/h2" 2>&1 ); chk "$?" 1 "htmx: missing structure.json FAILS (4.4)"
+  need "$o" "structure.json not found" "names the missing input"
 
   echo
   echo "scaffold_coverage_gate self-test: passed=$P failed=$Fc"

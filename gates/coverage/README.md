@@ -7,6 +7,21 @@ frozen surface of an adopted shell must be scaffolded with the **target-derived
 form-factor set**, and every active target's **platform ceremonies** must be
 present. Findings route through `gates/_common/sarif.sh`.
 
+## Two producer contracts (the producer-shape seam, dogfood P14 finding #1)
+
+Branches on producer shape, detected by `app.routes.js` at the design root
+(htmx) vs `surfaces/*.html` + `tokens.json` (stacked_kit):
+
+- **stacked_kit producer** — full scaffold checks (C1–C5 below) over
+  `lib/ui/views/.shell-structure.json` + the platform ceremonies.
+- **htmx producer (app-box-designer)** — the producer IS the authored layer; its
+  Flutter scaffold is downstream of the scaffolder and not yet present. So
+  coverage **derives and reports** the target form-factor set the scaffold WILL
+  require (e.g. `macos` → desktop → 3 files/surface) and **defers** the
+  scaffold/ceremony checks (C4 incremental: a not-yet-scaffolded shell is
+  reported, never silently green). Missing `structure.json` still fails loudly
+  (4.4). Enforcement of the file set resumes once a scaffold exists.
+
 ## Targets drive coverage (plan 06)
 
 `targets` live in **pipeline state** (6.2); gate + golden runs pass them

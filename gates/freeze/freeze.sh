@@ -15,27 +15,33 @@
 # re-checks it; if targets or inputs changed since approval the gate FAILS
 # loudly (the frozen design no longer covers the deliverable).
 #
-# Required shape, inside <app>/$KIT_DESIGN_DIR (default: design):
-#   tokens.json             DTCG tokens carrying the kit vocabulary
-#   design-system.md        the frozen design-system doc
-#   exclusions.json         {"globs":[...],"selectors":[...]} — harness chrome
-#                           that must NEVER scaffold into kit UI
-#   direction-approved.md   gate file: the approved design direction
-#   brand-spec.md           gate file: brand tokens/spec in prose
-#   structure.json          the shell/surface map (resolution is structure's job;
-#                           freeze only asserts it is present as a frozen input)
-#   surfaces/*.html         the frozen hi-fi surfaces (>=1)
+# Required shape, inside <app>/$KIT_DESIGN_DIR (default: design). TWO producer
+# contracts share this gate (the producer-shape seam, dogfood P14 finding #1),
+# detected by app.routes.js at the design root (htmx) vs surfaces/*.html+tokens
+# (stacked_kit):
+#
+#   stacked_kit producer:
+#     tokens.json design-system.md exclusions.json direction-approved.md
+#     brand-spec.md structure.json surfaces/*.html (>=1)
+#
+#   htmx producer (app-box-designer):
+#     app.routes.js structure.json models/screens_model/registry.json
+#     ui/views/**/*_view.html (>=1) — Jinja templates served dynamically
 #
 # Checks (cheapest first, all must pass):
-#   1. shape      — every required file present
-#   2. vocab      — tokens.json parses (DTCG $type/$value) and carries the kit
-#                   token paths the translator maps onto the palette
-#   3. exclusions — harness chrome signatures found in surfaces are each covered
-#                   by an exclusions glob/selector (uncovered = would scaffold)
-#   4. render     — headless Chromium: every surface loads with zero console /
-#                   page errors at EVERY config viewport; screenshots land under
-#                   .kit/state/prototype/evidence/. Backend cascade:
-#                   `uv run --with playwright` -> python playwright module;
+#   1. shape      — every required input present (per producer)
+#   2. vocab      — [stacked_kit] tokens.json parses (DTCG $type/$value) and
+#                   carries the kit token paths. N/A for htmx (no tokens.json).
+#   3. exclusions — [stacked_kit] harness chrome in surfaces is covered by an
+#                   exclusions entry. N/A for htmx.
+#   4. render     — headless Chromium: every surface (stacked_kit: each
+#                   surfaces/*.html file; htmx: each GET route from app.routes.js)
+#                   loads with zero console / page errors at EVERY config viewport;
+#                   screenshots land under .kit/state/prototype/evidence/. The
+#                   htmx render is served by the designer's Node prototype server
+#                   (serve.mjs, loopback, OS-assigned port) and rendered via the
+#                   runtime's Playwright (render_htmx.mjs); P09: gates MAY use Node.
+#                   stacked_kit render backend: `uv run --with playwright`.
 #                   FREEZE_RENDER=skip skips render for hermetic non-browser runs.
 #
 # Findings route through gates/_common/sarif.sh (4.2). The console/page-error
@@ -133,15 +139,49 @@ if [ ! -d "$DESIGN" ]; then
   exit 1
 fi
 
-# ---- 1. shape ----
-for f in tokens.json design-system.md exclusions.json direction-approved.md brand-spec.md structure.json; do
-  if [ -f "$DESIGN/$f" ]; then ok "shape: $f"; else fail "shape: $DESIGN_REL/$f missing (see the prototype freeze contract)"; fi
-done
-SURFACES="$(ls "$DESIGN"/surfaces/*.html 2>/dev/null)"
-if [ -n "$SURFACES" ]; then
-  ok "shape: $(printf '%s\n' "$SURFACES" | wc -l | tr -d ' ') surface(s) under $DESIGN_REL/surfaces/"
+# ---- 0b. producer shape (the producer-shape seam, dogfood P14 finding #1) ----
+# Two producer contracts share this gate:
+#   stacked_kit: surfaces/*.html + tokens.json + 4 docs (the vendored origin)
+#   htmx:        app.routes.js + registry.json + ui/views/**/*_view.html, served
+#                dynamically by the designer's Node prototype server (serve.mjs).
+# Detection mirrors serve.mjs itself: app.routes.js at the design root is the
+# htmx signal. The htmx render goes through the designer server (its views are
+# Jinja templates, not standalone files); stacked_kit renders files directly.
+if [ -f "$DESIGN/app.routes.js" ]; then
+  PRODUCER=htmx
+  ok "shape: htmx producer (app.routes.js present) — render via the designer Node server"
 else
-  fail "shape: no surfaces — $DESIGN_REL/surfaces/*.html missing"
+  PRODUCER=stacked_kit
+fi
+
+# ---- 1. shape (per producer) ----
+if [ "$PRODUCER" = htmx ]; then
+  # htmx frozen inputs: the route map, the shell/surface map, the registry SSOT,
+  # and the view templates. No tokens.json/exclusions/docs — those stacked_kit
+  # artifacts have no htmx analog; the htmx "clean render" check (step 4) replaces
+  # vocab/exclusions.
+  for f in app.routes.js structure.json; do
+    if [ -f "$DESIGN/$f" ]; then ok "shape: $f"; else fail "shape: $DESIGN_REL/$f missing (htmx producer)"; fi
+  done
+  # the registry path is recorded in structure.json; fall back to the designer default
+  REG_REL="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("registry") or "models/screens_model/registry.json")' "$DESIGN/structure.json" 2>/dev/null || echo models/screens_model/registry.json)"
+  if [ -f "$DESIGN/$REG_REL" ]; then ok "shape: $REG_REL"; else fail "shape: $DESIGN_REL/$REG_REL missing (registry SSOT for the screen model)"; fi
+  VIEWS_COUNT="$(find "$DESIGN/ui/views" -type f -name '*_view.html' 2>/dev/null | wc -l | tr -d ' ')"
+  if [ "${VIEWS_COUNT:-0}" -gt 0 ] 2>/dev/null; then
+    ok "shape: $VIEWS_COUNT view template(s) under $DESIGN_REL/ui/views/"
+  else
+    fail "shape: no view templates — $DESIGN_REL/ui/views/**/*_view.html missing"
+  fi
+else
+  for f in tokens.json design-system.md exclusions.json direction-approved.md brand-spec.md structure.json; do
+    if [ -f "$DESIGN/$f" ]; then ok "shape: $f"; else fail "shape: $DESIGN_REL/$f missing (see the prototype freeze contract)"; fi
+  done
+  SURFACES="$(ls "$DESIGN"/surfaces/*.html 2>/dev/null)"
+  if [ -n "$SURFACES" ]; then
+    ok "shape: $(printf '%s\n' "$SURFACES" | wc -l | tr -d ' ') surface(s) under $DESIGN_REL/surfaces/"
+  else
+    fail "shape: no surfaces — $DESIGN_REL/surfaces/*.html missing"
+  fi
 fi
 [ "$F" -gt 0 ] && { echo "freeze: FAIL ($F shape check(s))" >&2; exit 1; }
 
@@ -152,17 +192,29 @@ fi
 # existing stamp; `--approve` mints it at the END of the gate, only after every
 # check has passed (a broken design cannot be approved).
 APPROVAL_LOCK="$DESIGN/approval.lock"
-LOCK_HASH="$(python3 - "$DESIGN" "$APPBOX_TARGETS" <<'PY'
-import sys,hashlib,glob,os
-design,targets=sys.argv[1],sys.argv[2]
+LOCK_HASH="$(python3 - "$DESIGN" "$APPBOX_TARGETS" "$PRODUCER" <<'PY'
+import sys,hashlib,glob,os,json
+design,targets,producer=sys.argv[1],sys.argv[2],sys.argv[3]
 h=hashlib.sha256()
 h.update(",".join(sorted(t for t in targets.split(',') if t)).encode())
-for f in ("tokens.json","design-system.md","exclusions.json",
-          "direction-approved.md","brand-spec.md","structure.json"):
-    p=os.path.join(design,f)
-    h.update(f.encode()); h.update(open(p,"rb").read() if os.path.isfile(p) else b"")
-for s in sorted(glob.glob(os.path.join(design,"surfaces","*.html"))):
-    h.update(open(s,"rb").read())
+if producer=="htmx":
+    # the htmx frozen inputs: route map + structure + the registry it points at
+    # + every view template under ui/views. The registry path lives in
+    # structure.json's "registry" field (designer default if absent).
+    reg="models/screens_model/registry.json"
+    try: reg=json.load(open(os.path.join(design,"structure.json"))).get("registry") or reg
+    except Exception: pass
+    for f in ("app.routes.js","structure.json",reg):
+        p=os.path.join(design,f); h.update(f.encode()); h.update(open(p,"rb").read() if os.path.isfile(p) else b"")
+    for v in sorted(glob.glob(os.path.join(design,"ui","views","**","*_view.html"),recursive=True)):
+        h.update(open(v,"rb").read())
+else:
+    for f in ("tokens.json","design-system.md","exclusions.json",
+              "direction-approved.md","brand-spec.md","structure.json"):
+        p=os.path.join(design,f)
+        h.update(f.encode()); h.update(open(p,"rb").read() if os.path.isfile(p) else b"")
+    for s in sorted(glob.glob(os.path.join(design,"surfaces","*.html"))):
+        h.update(open(s,"rb").read())
 print(h.hexdigest())
 PY
 )"
@@ -184,6 +236,12 @@ PY
 else
   echo "  (approval: no $DESIGN_REL/approval.lock — run 'freeze.sh --targets $APPBOX_TARGETS --approve' to mint the stamp)"
 fi
+
+# ---- 2/3. vocab + exclusions (stacked_kit only) ----
+# These frozen artifacts belong to the stacked_kit producer. The htmx producer
+# has no tokens.json/exclusions.json — its "clean vocab" is the rendered-routes
+# check in step 4 (every route loads with zero console/page errors).
+if [ "$PRODUCER" = stacked_kit ]; then
 
 # ---- 2. vocab (tokens.json carries the kit token paths) ----
 pyout="$(python3 - "$DESIGN/tokens.json" 2>&1 <<'PY'
@@ -249,6 +307,10 @@ printf '%s\n' "$pyout"
 fails="$(printf '%s\n' "$pyout" | grep '^FAIL:' || true)"
 [ -n "$fails" ] && printf '%s\n' "$fails" | while IFS= read -r fl; do sarif_result "freeze" "error" "$DESIGN_REL/exclusions.json" "$fl"; done
 [ "$rc" -ne 0 ] && F=$((F+1))
+
+else
+  ok "vocab/exclusions: N/A for the htmx producer (no tokens.json/exclusions.json; the render check in step 4 is the htmx analog)"
+fi
 [ "$F" -gt 0 ] && { echo "freeze: FAIL ($F check group(s))" >&2; exit 1; }
 
 # ---- 4. render (headless Chromium; skip via FREEZE_RENDER=skip) ----
@@ -261,6 +323,46 @@ if [ "${FREEZE_RENDER:-}" = skip ]; then
   echo "  (derived widths for targets [$APPBOX_TARGETS]: $DERIVED_VPS)"
 else
   mkdir -p "$EVIDENCE"
+  if [ "$PRODUCER" = htmx ]; then
+    # htmx render: the views are Jinja templates served by the designer's Node
+    # prototype server (serve.mjs), so they cannot be opened as files. Render
+    # every GET route at every derived width via the runtime's Playwright, with
+    # the console/page-error count asserted exact (4.3 — fresh page per route is
+    # preserved structurally in render_htmx.mjs).
+    if ! command -v node >/dev/null 2>&1; then
+      echo "freeze: ERROR (exit 2) — htmx render needs Node (the designer runtime), not found on PATH" >&2
+      echo "  the htmx producer is served and rendered by Node; install Node, or FREEZE_RENDER=skip for a hermetic run" >&2
+      exit 2
+    fi
+    RUNTIME="$GATE_ROOT/skills/app-box-designer/runtime"
+    SERVE_MJS="$RUNTIME/serve.mjs"
+    RENDER_DRIVER="$(cd "$(dirname "$0")" && pwd)/render_htmx.mjs"
+    VPS_JSON="$(python3 - "$CONFIG" "$DERIVED_VPS" <<'PY'
+import json,sys
+cfg=json.load(open(sys.argv[1]))["viewports"]; want=set(sys.argv[2].split())
+print(json.dumps([{"name":n,"width":v["width"],"height":v["height"]} for n,v in cfg.items() if n in want]))
+PY
+)"
+    _td="$(mktemp -d)"
+    node "$SERVE_MJS" "$DESIGN" --port 0 --host 127.0.0.1 --json >"$_td/ready" 2>"$_td/err" &
+    _serve_pid=$!
+    _base=""
+    for _ in $(seq 1 120); do
+      grep -q '"port"' "$_td/ready" 2>/dev/null && { _base="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["url"])' "$_td/ready")"; break; }
+      kill -0 "$_serve_pid" 2>/dev/null || break
+      sleep 0.1
+    done
+    if [ -z "$_base" ]; then
+      echo "FAIL: render: designer server did not start — $(cat "$_td/err" 2>/dev/null)" >&2
+      sarif_result "freeze" "error" "$DESIGN_REL/app.routes.js" "designer server did not start"
+      F=$((F+1))
+    else
+      node "$RENDER_DRIVER" "$DESIGN" "$_base" "$EVIDENCE" "$VPS_JSON" "$RUNTIME" || F=$((F+1))
+    fi
+    kill "$_serve_pid" >/dev/null 2>&1 || true
+    wait "$_serve_pid" 2>/dev/null || true
+    rm -rf "$_td"
+  else
   RENDER_RC=""
   if command -v uv >/dev/null 2>&1; then
     uv run --with playwright python - "$DESIGN" "$EVIDENCE" "$CONFIG" "$DERIVED_VPS" <<'PY'
@@ -311,6 +413,7 @@ PY
     exit 2
   fi
   [ "$RENDER_RC" -ne 0 ] && F=$((F+1))
+  fi
 fi
 
 [ "$F" -gt 0 ] && { echo "freeze: FAIL ($F check group(s))" >&2; exit 1; }
