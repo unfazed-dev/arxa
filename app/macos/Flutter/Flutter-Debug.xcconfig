@@ -1,0 +1,8 @@
+#include "ephemeral/Flutter-Generated.xcconfig"
+
+// Local dogfood builds run unsigned (no Apple development team in this env).
+// The Keychain Sharing entitlement (Runner/*.entitlements) requires signing, so
+// disable code-signing enforcement for local builds. To produce a signed +
+// notarised build (done-when #2), set DEVELOPMENT_TEAM in Xcode and remove this
+// line — the entitlements are already in place for the signed path.
+CODE_SIGNING_ALLOWED=NO
