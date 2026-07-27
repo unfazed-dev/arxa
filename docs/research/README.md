@@ -15,7 +15,8 @@ Read in this order.
 | 5 | [htmx-producer-test.md](htmx-producer-test.md) | Controlled experiment: can the FSM build a bespoke app from an htmx prototype? **73/73, identical to the JSX control.** Also the `emit_htmx` asset bug and the three verification layers that all missed it. |
 | 6 | [web-research-drift.md](web-research-drift.md) | Industry practice on generated artifacts and drift. The `git diff --exit-code` untracked-file gotcha; spec-driven development's "authority is convention, not enforcement" failure. |
 | 7 | [remote-control-and-chat.md](remote-control-and-chat.md) | iOS companion, QR pairing, BYO-key credential storage, and the LLM chat surface. MCP transports, the QR-relay attack, and the macOS Keychain failure modes that go silently green. |
-| 8 | [competitors-and-pricing.md](competitors-and-pricing.md) | FlutterFlow / Adalo / Lovable / Cursor pricing, the per-seat backlash, and why BYO-key is a structural cost advantage rather than a discount. |
+| 8 | [competitors-and-pricing.md](competitors-and-pricing.md) | FlutterFlow / Adalo / Lovable / Cursor pricing, the per-seat backlash, and why BYO-key is a structural cost advantage rather than a discount. Shorebird and Codemagic tiers. |
+| 9 | [stub-inventory.md](stub-inventory.md) | What is wired versus what throws. **Stripe and PayPal are both stubs**, so the payment gate has no foundation in the kit yet; auth providers likewise. |
 
 ## The three findings that shaped the design
 

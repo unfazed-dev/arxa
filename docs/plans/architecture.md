@@ -734,9 +734,133 @@ be its first phase skill; `doctor()` is preflight, not an assertion, so the
 gate still has to check a *value*; and **vercel must not be advertised** while
 it throws.
 
-### The tension deploy introduces
+### The tension deploy introduces — resolved
 
 Every other gate in the FSM is a **read-only assertion**. Deploying is a
 **write to the outside world**, and the most irreversible act in the pipeline —
 an App Store submission cannot be rolled back by re-running a stage. So deploy
 cannot simply be gate number six.
+
+**Decision: deploy is a third human gate, and the strictest.** It names the
+**target, the version and the account**, and requires the person to confirm
+that exact triple. The two existing gates protect *quality*; this one protects
+against shipping the right build to the wrong place. An agent may prepare and
+run `doctor()` preflight, reach the gate, and stop — never mint the token.
+Same rule as §12, applied where the blast radius is largest.
+
+**Blocked on product work, not pipeline work:** `stub-inventory.md` found both
+Stripe and PayPal providers throw `UnimplementedError('phase-later')`, and
+Apple Pay is the only wired path. The payment gate's *placement* stands; its
+*implementation* has no foundation in the kit yet.
+
+## 18. Where features are CRUD'd
+
+**At the prototype — on `registry.json` and the `ui/views/**` pair. Never on
+scaffolded Dart.** This is forced by §14: the registry is the authored source,
+`structure.json` is generated from it, and the scaffold is generated from that.
+Editing Dart directly creates a second writer and the drift check dies.
+
+This holds for every surface that can edit a feature — the desktop GUI, the
+chat, the companion. **They all write the registry, not the code.**
+
+| op | mechanism | state |
+|---|---|---|
+| **Create** | registry entry + `ui/views/<tab>/<short>/` pair + surface HTML → freeze → scaffold emits | works today |
+| **Read** | the registry *is* the feature list | works today |
+| **Update (content)** | edit the view/viewmodel pair, re-freeze | works today |
+| **Update (rename)** | ⚠️ downstream this is delete + create | **`id` must be a stable key, never reused.** A rename is a new id plus an explicit migration, or the old scaffold orphans silently |
+| **Delete** | 🔴 **the real gap** | see below |
+
+### Delete is the hole
+
+**The pipeline only writes.** The coverage gate catches a surface claimed by no
+screen; it does not catch the reverse — a **scaffolded view directory whose
+registry entry was deleted**. That orphan keeps compiling, keeps passing, and
+keeps shipping.
+
+Two things are needed:
+
+1. **An orphan assertion**: a scaffolded view dir with no registry entry is a
+   FAIL, symmetrical with the existing coverage check.
+2. **A delete path in the fixer** — and it is the one fixer operation that must
+   sit behind a human confirm, because deleting code the person may still want
+   is not recoverable by re-running a stage.
+
+Prior art warns here: a fixer that deletes before it writes once left p2 with
+no `app.locator.dart`. Guard idempotence on the *desired end state*, never on
+"was this touched."
+
+## 19. `app-box-designer` is a fork, not a clean-room rewrite
+
+**New evidence changes this decision.** `kimi-design-htmx` ships:
+
+```
+LICENSE → MIT License, Copyright (c) 2026 Jim Liu 宝玉
+```
+
+That is baoyu, and the lineage is exactly the intended one:
+**baoyu-design → kimi-design → kimi-design-htmx**. MIT permits derivative works
+provided the licence and copyright notice are retained.
+
+**So a clean-room rewrite is not legally required.** The earlier call was made
+before the licence was checked. Clean-room buys independence from a licence
+that is already maximally permissive — while costing a full reimplementation
+and forfeiting the ability to merge upstream improvements.
+
+**Recommendation: fork under MIT with attribution.** If independence is still
+wanted for product reasons, that is a legitimate choice — but it should be made
+knowing it is a *preference*, not a constraint.
+
+### It already contains the "design architecture template"
+
+The original scope asked for a design architecture file/folder template.
+`kimi-design-htmx` ships **`DESIGN-ARCHITECTURE.md` v1.0.0**, described in its
+own history as the *"shared spine realized for htmx/HDA"* and referenced as the
+*"spine architecture contract"*, plus `CONTEXT.md` (vocabulary) and
+`docs/adr/0001–0008` (port decisions). **Do not rebuild this.**
+
+### What the port must add
+
+The lineage cannot supply these (§12): the **viewport ladder** (390/744/1280,
+borrowed from `kimi-design-flutter`'s archetypes), **`export const surfaceId`**
+declarations, a **`tabRoots` source**, and the **`registry.json` convention**
+`emit_structure` can read.
+
+Of the 28 `built-in-skills/`, app_box needs the app-design subset —
+`hi-fi-design`, `interactive-prototype`, `mobile-prototype`, `wireframe`,
+`create-design-system`, `use-design-system`, `design-components`,
+`import-from-figma`. The deck and PPTX skills are not app design and are where
+the misleading `1280` "desktop" hits came from.
+
+## 20. Playbooks — generate them, don't write them
+
+The kit already solves this: `tools/gen_playbook.py` generates a playbook per
+kit and emits `<!-- TODO(prose): … -->` for any narrative section with no
+source, while `tools/test_memory.sh` **asserts the marker count is zero** for a
+rich README.
+
+That is the discipline to copy wholesale: **a generator that marks its own gaps
+and a test that counts them.** app_box gets one playbook per phase skill —
+designer, scaffolder, reviewer, builder, deployer — generated from the same
+source the skill reads, never hand-authored, with the same zero-`TODO(prose)`
+assertion in its suite.
+
+## 21. Grill closed — build order
+
+Every decision above is settled. Sequencing for the agents:
+
+| # | work | why here |
+|---|---|---|
+| 1 | **Fork `kimi-design-htmx` → `app-box-designer`** (MIT, attributed); add the viewport ladder, `surfaceId`, `tabRoots` | nothing downstream can be dogfooded without it |
+| 2 | **`emit_structure` reads `registry.json`** when there is no `jsx/` | turns on a drift check currently impossible for htmx (§14) |
+| 3 | **Gates read targets from state** — freeze widths (§11) and form-factor emission (§16); assert with `git status --porcelain` | the bill §11 and §16 both defer |
+| 4 | **Orphan assertion + guarded delete path** (§18) | CRUD is incomplete without it |
+| 5 | **Vendor kit tooling at a pinned SHA** + freshness check (§17) | app_box cannot ship against a private repo |
+| 6 | **Dogfood: prototype app_box's own macOS app** from `design-brief.md` | `--targets macos` → one viewport, the cleanest first exercise |
+| 7 | **Desktop app**: chat (MCP, stdio + HTTP), credentials (OS vault), the three gates | the product |
+| 8 | **`app-box-deployer`** over `stacked_kit_deploy` | wired already; gate 3 |
+| 9 | **Companion app** — QR pairing, prototype WebView, state-bearing FAB (§15) | after the desktop exists to control |
+| 10 | **Payments** — implement Stripe in the kit, or route licensing outside it | blocked; product work, not pipeline work |
+
+**Two things are blocked and should not be discovered late:** payments and auth
+providers are stubs (`stub-inventory.md`), and app_box needs both for itself.

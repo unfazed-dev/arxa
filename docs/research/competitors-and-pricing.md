@@ -39,13 +39,41 @@ in the user's own repo, gated by tests they can read. Worth making explicit in
 positioning, because it is the thing the incumbent cannot copy without
 abandoning its own lock-in.
 
-## ❄️ Gap
+## The deploy-tool tiers (gap now closed)
 
-Current authoritative **Shorebird** and **Codemagic** tiers did not surface —
-returned figures came from third-party directories (Capterra, AlternativeTo)
-that may lag. Check `shorebird.dev/pricing` and `codemagic.io/pricing` directly
-before quoting them anywhere. Not a blocker: app_box *invokes* those tools with
-the user's own account rather than reselling them.
+Previously flagged unresolved. Both matter because `app-box-deployer` invokes
+them **with the user's own account** — app_box never resells them, so these are
+costs the buyer already carries or chooses.
+
+**Shorebird** (code push / OTA patching) — free tier for getting started;
+paid plans metered on **patch installs**, with the pricing model itself being
+the interesting part:
+
+- **Monthly**: overage billing is *optional and off by default*; spending
+  limits are set in the console. Credits historically **did not roll over**
+  between months.
+- **Annual**: the whole year's patch allowance is **credited upfront on day
+  one**, usable whenever — what you pay upfront is the total, no surprise
+  charges. The non-rollover problem on monthly plans is why annual exists.
+
+**Codemagic** (CI/CD) — free tier of build minutes per month, then per-minute
+or per-user team billing, **no minimum contract**, cancel anytime, pay only for
+used minutes. Higher tiers offer **unlimited build minutes** on macOS (Apple
+Silicon), Linux and Windows. **Enterprise starts around $12,000**, and is
+purchasable through AWS or Google Cloud Marketplace. Free accounts for
+teachers, students and non-profits. Machine lineup includes macOS M2 and M4,
+with M4 Max reserved for annual/Enterprise — **M2 is the entry machine, not the
+top one**.
+
+*Independently checked around 2026-07-19; vendor tiers move. Re-verify at
+`shorebird.dev/pricing` and `codemagic.io/pricing` before quoting in anything
+customer-facing.*
+
+**The design lesson worth stealing:** Shorebird's annual plan solves a real
+customer grievance (expiring credits) by changing *when* the allowance lands,
+not by discounting. For app_box's own licence, that is a better lever than
+price — a flat annual with everything granted upfront reads as generous and
+costs nothing extra, given BYO-key means we carry no marginal inference cost.
 
 Sources: [FlutterFlow pricing](https://www.flutterflow.io/pricing),
 [Adalo pricing](https://www.adalo.com/pricing),
