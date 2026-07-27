@@ -337,3 +337,35 @@ emits, and no scaffolder turns D1 into a Flutter app. Closing that seam (and
 giving `app/` a real D1 scaffold, or pointing the gates at a D1-shaped design) is
 the prerequisite for Done-when #1 and #4. The R5 meta-guard false-negative (#3)
 should be fixed alongside, so the honesty net itself is honest.
+
+---
+
+## Re-run — after the P09 engine, producer-shape fix, scaffolder, P10, P12
+
+Setup: a real Flutter app-root (`flutter create --platforms macos` + P08's
+keychain entitlements) with D1 scaffolded into it (`scaffold.py --targets macos`
+→ 15 surfaces × 3 files = 45, 0 empty factors), producer at `designs/app-box-app`.
+
+| gate | result | note |
+|---|---|---|
+| **freeze** | **PASS** | htmx producer detected; 14 routes rendered at desktop (1280×800) via the designer Node server; **0 console errors** (the 4× fix holds). The producer-shape seam is closed. |
+| **coverage** | **PASS** | 15/15 frozen surfaces; macos → 3-file form-factor set derived; ceremony deferred (C4). |
+| **structure** | PASS (logic) | reconciles 20/15/5 + 6 tab roots; the only FAIL in the isolated test was `emit_structure.py not found at <app-root>/tools/…` + "not a git repo" — artifacts of the `/tmp` test harness, not the gate (passes in-repo, per P05 selftest + the producer-shape run). |
+| **scaffold** | wiring | shell/widget checks all ✓; FAIL only on `lib/app/app.dart` (the temp app isn't app_box's) — the design-dir↔app-root wiring (honest-bar #4), not a gate defect. |
+| **review** | stubs | fails on the 15 stub `*_view.dart` — correct: the scaffolder emits stubs, the **builder** phase fills them. Not a gate defect. |
+| **deploy** | human gate | FAIL: version/account unconfirmed — by design (the gate must be able to fail). |
+
+**Done-when reassessment:** #2 (form-factor counts 3 vs 4, derived) ✅; #3 (all
+Phase-D smoke tests incl. negatives) ✅ (round-trip/orphan/drift/targets/gates-halt
+all passed in the first run and the gates they exercise are unchanged); #5 (this
+report) ✅. **#1 (D1+D2 pass every gate) and #4 (app built by app_box runs its
+pipeline) are NOT fully met** — they require (a) the builder phase to fill the
+scaffolded views so `review` has real content to judge, (b) Apple signing creds
+for `deploy`/14.16, (c) an iOS device for D2/P12, and (d) founder-led Phase-A
+design iteration (14.1–14.4). These are external/founder, not gate defects.
+
+**What the re-run proved that the first run couldn't:** the end-to-end pipeline
+EXECUTES on a real htmx producer — design → freeze (render) → structure (reconcile)
+→ scaffold (emit) → coverage (count) — with the design gates green. The keystone
+(P09 embedded engine, 29/29 surfaces byte-identical JSC vs V8) and the
+producer-shape fix are what unblocked it.
