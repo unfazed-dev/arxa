@@ -49,42 +49,33 @@ while IFS= read -r _f; do [ -n "$_f" ] && FILES+=("$_f"); done < <(
 
 is_text() { grep -qI '' "$1" 2>/dev/null; }
 
+# Batched matching: pattern files give ONE grep per file per rule, not one per
+# line per name (the per-line form timed out scanning the vendored tree).
+_TMP="$(mktemp -d)"; trap 'rm -rf "$_TMP"' EXIT
+printf '%s\n' "${STRIPPED[@]}" > "$_TMP/strip.pat"
+printf '%s\n' "${ABSPFX[@]}"   > "$_TMP/abs.pat"
+
 # Rules (a), (c), (d) over content + (d) over path.
 for f in "${FILES[@]}"; do
   [ -f "$f" ] || continue
-  # (d) stripped name in PATH (as a whole token / path segment)
-  for n in "${STRIPPED[@]}"; do
-    if grep -qwF -- "$n" <<<"$f"; then
-      fail "$f" "stripped upstream name '$n' in path (R2)"
-    fi
-  done
+  # (d) stripped name in PATH (whole token)
+  _hit="$(grep -owF -f "$_TMP/strip.pat" <<<"$f" | head -1)"
+  [ -n "$_hit" ] && fail "$f" "stripped upstream name '$_hit' in path (R2)"
   is_text "$f" || continue
   outside_config=1
   case "$f" in config/*) outside_config=0 ;; esac
-  while IFS= read -r line; do
-    # Documentation comments may mention the rules. (a)/(c) are code-behaviour
-    # rules and skip comments; the identity rule (d) still applies to comments
-    # because R2 covers doc cross-links and log strings too.
-    if [[ "$line" =~ ^[[:space:]]*# ]]; then
-      for n in "${STRIPPED[@]}"; do
-        grep -qwF -- "$n" <<<"$line" && fail "$f" "stripped upstream name '$n' in content (R2)"
-      done
-      continue
+  # (d) stripped name in CONTENT (whole file — R2 covers comments & log strings)
+  _hit="$(grep -owF -f "$_TMP/strip.pat" "$f" 2>/dev/null | head -1)"
+  [ -n "$_hit" ] && fail "$f" "stripped upstream name '$_hit' in content (R2)"
+  # (a) + (c) on non-comment lines only (docs may reference the rules they enforce)
+  if [ "$outside_config" -eq 1 ]; then
+    if grep -vE '^[[:space:]]*#' "$f" 2>/dev/null | grep -qF -f "$_TMP/abs.pat"; then
+      fail "$f" "absolute path literal (R3: read from config)"
     fi
-    # (a) absolute project path literal, outside config/
-    if [ "$outside_config" -eq 1 ]; then
-      for p in "${ABSPFX[@]}"; do
-        case "$line" in *"$p"*) fail "$f" "absolute path literal '$p' (R3: read from config)" ;; esac
-      done
-    fi
-    # (c) git diff --exit-code for a regeneration assertion
-    case "$line" in *"git diff --exit-code"*)
-      fail "$f" "git diff --exit-code cannot see untracked files; use git status --porcelain (R5)" ;; esac
-    # (d) stripped name in content
-    for n in "${STRIPPED[@]}"; do
-      grep -qwF -- "$n" <<<"$line" && fail "$f" "stripped upstream name '$n' in content (R2)"
-    done
-  done < "$f"
+  fi
+  if grep -vE '^[[:space:]]*#' "$f" 2>/dev/null | grep -qF 'git diff --exit-code'; then
+    fail "$f" "git diff --exit-code cannot see untracked files; use git status --porcelain (R5)"
+  fi
 done
 
 # Rule (b) gate imports sibling gate — gate scripts only, _common exempt.
