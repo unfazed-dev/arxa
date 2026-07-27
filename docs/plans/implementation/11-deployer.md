@@ -25,23 +25,23 @@ credentials, no signing identity, no shorebird install. This one can.
 
 ## Steps
 
-- [ ] **11.1** Wire `skills/app-box-deployer/` over the vendored deploy kit.
+- [x] **11.1** Wire `skills/app-box-deployer/` over the vendored deploy kit.
       Registry says `hasSkill: false` for every kit — this is the first phase
       skill of its kind, so there is no in-kit prior art to copy. Follow the
       stage contract: one module, a self-test, JSON emit.
-- [ ] **11.2** Surface only targets whose `verification` tier permits it
+- [x] **11.2** Surface only targets whose `verification` tier permits it
       (plan 13). **Do not advertise `vercel`** while it throws.
-- [ ] **11.3** Run `doctor(config)` as preflight. It is **not** the gate —
+- [x] **11.3** Run `doctor(config)` as preflight. It is **not** the gate —
       preflight reports readiness; the gate must assert a **value**.
-- [ ] **11.4** Implement **gate 3** in `gates/deploy/`. It names **target,
+- [x] **11.4** Implement **gate 3** in `gates/deploy/`. It names **target,
       version and account** and requires the person to confirm that exact
       triple. Every other gate is a read-only assertion; this one writes to the
       world and cannot be undone by re-running a stage.
-- [ ] **11.5** An agent may prepare, preflight, reach the gate and **stop**. It
+- [x] **11.5** An agent may prepare, preflight, reach the gate and **stop**. It
       can never mint the token. Assert this in the selftest.
-- [ ] **11.6** Record every deploy in the ledger: target, version, account,
+- [x] **11.6** Record every deploy in the ledger: target, version, account,
       approving person, timestamp, resulting artefact id.
-- [ ] **11.7** Use the scripted process runner in tests so the whole deploy path
+- [x] **11.7** Use the scripted process runner in tests so the whole deploy path
       is exercised without credentials.
 
 ## Done-when

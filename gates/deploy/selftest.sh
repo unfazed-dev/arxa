@@ -25,6 +25,13 @@ mkstate '{"phase":"deploy","targets":["macos"],"approvalTokens":{"deploy":{"vers
 o="$(APPBOX_STATE="$T/state.json" bash "$GATE" 2>&1)"; chk "$?" 1 "negative: missing account fails"
 need "$o" "deploy.account" "negative names the missing confirmation"
 
+# ---- NEGATIVE: the release version is not confirmed --------------------------
+# NEGATIVE: deploy.version is unset -> exit 1, naming deploy.version.
+# (Done-when #3: prove the negative for EACH of target / version / account.)
+mkstate '{"phase":"deploy","targets":["macos"],"approvalTokens":{"deploy":{"account":"totem-labs"}}}'
+o="$(APPBOX_STATE="$T/state.json" bash "$GATE" 2>&1)"; chk "$?" 1 "negative: missing version fails"
+need "$o" "deploy.version" "negative names the missing version"
+
 # ---- NEGATIVE: no build target set ------------------------------------------
 # NEGATIVE: state.targets is empty -> exit 1, naming the target.
 mkstate '{"phase":"deploy","targets":[],"approvalTokens":{"deploy":{"version":"1.2.3","account":"totem-labs"}}}'

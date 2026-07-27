@@ -3,7 +3,7 @@
 
 `app-box-deployer` · status: **active**
 
-**Role (one line):** ship an appbox-built Flutter target to stores (fastlane) and/or push an OTA Dart patch (shorebird).
+**Role (one line):** ship an appbox-built target to stores (fastlane), push an OTA Dart patch (shorebird), and/or deploy a web build to Cloudflare Pages — all behind the strictest human gate.
 
 **Scope of this document:** lets a human OR an LLM drive the deploy phase without reading the skill source. Folded from `SKILL.md`.
 
@@ -15,25 +15,47 @@
 
 ### Overview & role
 
-fastlane + shorebird are existing CLIs; this role drives them with a recipe. The Fastfile + `shorebird.yaml` are operator-owned extension points — signing, bundle id, and app ids are project secrets the pipeline never holds.
+fastlane, shorebird and wrangler are existing CLIs; this role drives them with a recipe. The Fastfile, `shorebird.yaml` and Pages project are operator-owned extension points — signing, bundle id, app ids and the Pages project name are project secrets the pipeline never holds. The mechanics live in `deploy.py` (this directory): every external CLI runs through a `ProcessRunner` port, so `deploy.py --self-test` asserts each command shape under a scripted runner with no toolchain, no credentials and no signing identity.
+
+**Targets — wired vs stubbed (honest):**
+
+| target | status |
+|---|---|
+| `fastlane-ios` / `fastlane-android` | wired |
+| `shorebird-release` / `shorebird-patch` | wired |
+| `cloudflare-pages` | wired |
+| `vercel` | **stub — throws `UnimplementedError`; never offered** |
+
+Only wired targets are surfaced to an operator. `vercel` is excluded here and `gates/advertise` independently rejects any offer of a stub-tier provider.
 
 ### Inputs
 
 - A released target (reviewer-green) at `<target>/`.
-- Operator-owned signing (`match`), bundle id, team, store keys, shorebird app id — never committed.
+- Operator-owned signing (`match`), bundle id, team, store keys, shorebird app id, Cloudflare Pages project/token — never committed.
+- The confirmed deploy triple in pipeline state (`approvalTokens.deploy`: version + account), asserted by `gates/deploy`.
 
 ### Procedure
 
-Stores — fastlane (gym + match + deliver/supply): once per project, `fastlane init` in `<target>/ios` + `<target>/android`; operator fills signing. Beta lane `fastlane beta`: iOS `gym`→`match`→`upload_to_testflight`; Android `flutter build appbundle`→`upload_to_play_store(track: internal)`. Release lane `fastlane release`: store metadata (`deliver`/`supply`) + production track. OTA — shorebird: once, `shorebird init` → `shorebird.yaml`; patch with `shorebird release patch` after a Dart-only fix (catches the 80% logic-bug case without a store round-trip). Boundary: shorebird patches Dart only (bug fixes, not features); native changes → fastlane full release.
+**Stores — fastlane (gym + match + deliver/supply):** once per project, `fastlane init` in `<target>/ios` + `<target>/android`; operator fills signing. Beta lane `fastlane beta`: iOS `gym`→`match`→`upload_to_testflight`; Android `flutter build appbundle`→`upload_to_play_store(track: internal)`. Release lane `fastlane release`: store metadata (`deliver`/`supply`) + production track.
+
+**OTA — shorebird:** once, `shorebird init` → `shorebird.yaml`; patch with `shorebird release patch` after a Dart-only fix (catches the 80% logic-bug case without a store round-trip). Boundary: shorebird patches Dart only (bug fixes, not features); native changes → fastlane full release.
+
+**Web — Cloudflare Pages:** once, `wrangler pages project create <name>` (operator-owned); deploy with `wrangler pages deploy <dir> --project-name <name>`, which returns a deployment URL.
+
+**The gate.** Deploy is the third human gate and the strictest — it is a write to the outside world that cannot be undone by re-running a stage. `gates/deploy` names target + version + account and requires a person to confirm that exact triple. Run `doctor` as preflight (it reports readiness; it is NOT the gate). An agent may prepare, preflight, reach the gate and stop — it never mints the approval token. `deploy.py deploy` requires that approval as an argument and halts without it, recording a `halted` ledger row.
 
 ### Outputs
 
-A shipped build (store track) and/or a shorebird patch version. Deploy is the only outward-facing pipeline action — confirm with the operator before pushing.
+A shipped build (store track), a shorebird patch version, and/or a Cloudflare Pages deployment URL. Every attempt — shipped or halted — is recorded in the deploy ledger (`pipeline/state/deploy-ledger.json`, overridable via `APPBOX_DEPLOY_LEDGER`): target, version, account, approving person, timestamp, resulting artefact id. Deploy is the only outward-facing pipeline action — confirm with the operator before pushing.
 
 ### Rules
 
-Never commit secrets — `.env`, signing, store keys are operator-owned, gitignored. Release is gated on QC green + manifest hash match; don't ship a drifted target. The pipeline stamps `0.1.0+1` in the generated pubspec; the operator bumps per release.
+Never commit secrets — `.env`, signing, store keys, the Cloudflare token are operator-owned, gitignored. Release is gated on QC green + manifest hash match; don't ship a drifted target. The pipeline stamps `0.1.0+1` in the generated pubspec; the operator bumps per release. A stub target (`vercel`) is never offered even if an approval is somehow supplied.
 
 <!-- kb:begin -->
 ### References
+- `skills/app-box-deployer/deploy.py` — the mechanics + `--self-test` (scripted runner, no credentials).
+- `gates/deploy/` — the deploy gate; `selftest.sh` proves the negative for each of target / version / account (R5).
+- `tools/verification/tier1.py` — the same `ProcessRunner` / `ScriptedRunner` seam, applied to payments + auth.
+- `docs/plans/architecture.md` §17 — kit consumption, the deployer, and why deploy is a third human gate.
 <!-- kb:end -->

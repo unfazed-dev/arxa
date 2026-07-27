@@ -1,1 +1,1 @@
-The deployer skill (plan 11). Drives the deploy phase. Belongs: deploy logic. Does not belong: build or review.
+The deployer skill (plan 11). Drives the deploy phase — stores (fastlane), OTA patches (shorebird) and web (Cloudflare Pages) — behind the gates/deploy human gate. Belongs: deploy mechanics + the deploy ledger. Does not belong: build or review.
