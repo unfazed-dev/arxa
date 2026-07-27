@@ -23,6 +23,7 @@ gates/<name>/
 
 | folder | asserts |
 |---|---|
+| `intake/` | every registry surface traces to an intake answer and vice versa — no orphans either way (plan 10.6) |
 | `freeze/` | the 6 frozen inputs are present and every surface renders clean at every active viewport |
 | `structure/` | `structure.json` resolves, is in sync with the authored registry, no orphans either way |
 | `scaffold/` | shell/widget/overlay boundaries (self-contained shells, services placement, peer registration) |
