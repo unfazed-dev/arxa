@@ -8,6 +8,8 @@ are pure MVVM content (ADR-0005) — templates, viewmodels, fixtures, assets.
 ```sh
 node runtime/serve.mjs <artifact-dir|design-name> [--port 4319] [--host 127.0.0.1] [--json]
 node runtime/lint.mjs  <artifact-dir>                 # zero-custom-client-JS check
+node runtime/check_wiring.mjs <artifact-dir> <property>
+#   fragments | mutations-posted | urls-resolve | targets-exist
 node runtime/vendor/fetch.mjs                         # (re)vendor htmx + extensions
 ```
 

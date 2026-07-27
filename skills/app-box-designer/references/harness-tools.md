@@ -110,6 +110,14 @@ that visual review was skipped**.
 - **Structure:** `node <skill>/selftest.sh`-style checks — the registry parses,
   every viewmodel declares a `surfaceId`, `tabRoots` is non-empty. See
   [`app-architecture.md`](app-architecture.md).
+- **Wiring:** `node <skill>/runtime/check_wiring.mjs <artifact> <property>`
+  (`fragments`, `mutations-posted`, `urls-resolve`, `targets-exist`). These are
+  the only checks that assert the artifact **does** something — every other one
+  bans something, and a ban passes on an artifact that does nothing at all.
+- **Falsifiability:** `<skill>/selftest.sh <artifact> --negative` re-runs the
+  whole suite once per deliberate break and requires each check to catch its
+  own. Run it after adding a check; a check with no mutation aborts the run
+  rather than being counted as proven.
 - **Thorough or directed checks:** spawn the read-only verification subagent
   with the prompt in `agents/fork-verifier-agent.md`. Its verdict is
   `done` / `needs_work` only and it never edits.

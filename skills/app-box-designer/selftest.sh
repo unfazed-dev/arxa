@@ -55,8 +55,14 @@ ladder-drift|ladder.json and viewport-ladder.md agree
 ladder-hardcode|no ladder width hardcoded in skill code
 upstream-leak|no upstream references outside LICENSE
 full-reload|no mutation answers with a full reload
+fragment-typo|every rendered fragment exists as a macro
+orphan-post|every mutation route is reachable from markup
+dead-url|every static URL in markup resolves to a route
+dangling-target|every hx-target names an element that exists
+untracked-file|every artifact file is tracked by git
 client-js|zero-custom-client-JS lint
 commented-js|ok:zero-custom-client-JS lint
+broken-route|every GET route answers 200
 '
 
 WORK="$(mktemp -d)"
@@ -100,6 +106,14 @@ mutate() {
     full-reload)        printf 'export const _probe = (c, h) => h.refresh(c);\n' >> "$VM" ;;
     client-js)          printf '<div hx-on:click="alert(1)"></div>\n' >> "$HTML" ;;
     commented-js)       printf '{# hx-on:click is banned here — ADR-0002 #}\n' >> "$HTML" ;;
+    # The wiring mutations each cut ONE strand of a join, which is the only
+    # way to tell a join from a pair of independent greps.
+    fragment-typo)      node -e 'const fs=require("fs");for(const f of process.argv.slice(1)){const s=fs.readFileSync(f,"utf8");if(/\{%\s*macro\s+\w+\s*\(/.test(s)){fs.writeFileSync(f,s.replace(/(\{%\s*macro\s+)(\w+)/,"$1$2zz"));break}}' $(find "$ART/ui" -name '*.html' | sort) ;;
+    orphan-post)        node -e 'const fs=require("fs");for(const f of process.argv.slice(1)){const s=fs.readFileSync(f,"utf8");if(/hx-post="/.test(s)){fs.writeFileSync(f,s.replace(/hx-post="[^"]*"/,""));break}}' $(find "$ART/ui" -name '*.html' | sort) ;;
+    dead-url)           node -e 'const fs=require("fs");for(const f of process.argv.slice(1)){const s=fs.readFileSync(f,"utf8");const r=/href="\/(?!assets\/|_ds\/)[^"{]*"/;if(r.test(s)){fs.writeFileSync(f,s.replace(r,String.raw`href="/zzz-nope"`));break}}' $(find "$ART/ui" -name '*.html' | sort) ;;
+    dangling-target)    node -e 'const fs=require("fs");for(const f of process.argv.slice(1)){const s=fs.readFileSync(f,"utf8");if(/hx-target="#/.test(s)){fs.writeFileSync(f,s.replace(/hx-target="#[^"]*"/,String.raw`hx-target="#zznope"`));break}}' $(find "$ART/ui" -name '*.html' | sort) ;;
+    untracked-file)     printf 'stray\n' > "$ART/ui/stray.txt" ;;
+    broken-route)       node -e 'const fs=require("fs"),f=process.argv[1];fs.writeFileSync(f,fs.readFileSync(f,"utf8").replace(/\[\s*.GET.\s*,\s*(.[^\x27"]+.)\s*,[^\]]+\]/,"[\x27GET\x27, $1, () => { throw new Error(\x27mutation\x27); }]"))' "$ART/app.routes.js" ;;
     *) printf 'unknown mutation: %s\n' "$1" >&2; exit 64 ;;
   esac
   printf 'mutation: %s\n\n' "$1"
@@ -311,11 +325,61 @@ RELOAD="$(find "$ART/ui" -name '*_viewmodel.js' -exec awk '
 [ -z "$RELOAD" ]
 check $? "no mutation answers with a full reload" "$RELOAD"
 
+# --- 12-15. wiring: the artifact must DO something, not merely avoid things --
+# Everything above is a prohibition, and a prohibition passes vacuously on an
+# empty artifact — strip every hx- attribute and the old suite still swept
+# clean. These four are joins (markup against routes, viewmodels against
+# templates); a join cannot pass when one side is missing.
+for P in fragments mutations-posted urls-resolve targets-exist; do
+  case "$P" in
+    fragments)        LBL="every rendered fragment exists as a macro" ;;
+    mutations-posted) LBL="every mutation route is reachable from markup" ;;
+    urls-resolve)     LBL="every static URL in markup resolves to a route" ;;
+    targets-exist)    LBL="every hx-target names an element that exists" ;;
+  esac
+  OUT="$(node "$SKILL/runtime/check_wiring.mjs" "$ART" "$P" 2>&1 >/dev/null)"
+  check $? "$LBL" "$OUT"
+done
+
+# --- 16. the tree the gates read is the tree git has ------------------------
+# Every check above runs on the WORKING TREE. That is right — work in progress
+# has to be checkable — but it means a green suite says nothing about what a
+# clone would get. A generic `build/` ignore once swallowed three surfaces out
+# of a commit that reported 58 files and looked complete; every gate stayed
+# green because no gate ever asked git. This one asks.
+OUT="$(
+  cd "$SRC" 2>/dev/null && git rev-parse --show-toplevel >/dev/null 2>&1 || {
+    echo "not a git work tree — a tree git cannot reproduce cannot be certified"
+    exit 1; }
+  git -C "$SRC" ls-files -z . | tr '\0' '\n' | LC_ALL=C sort > "$WORK/tracked.txt"
+  ( cd "$ART" && find . -type f | sed 's|^\./||' ) | LC_ALL=C sort \
+    | comm -23 - "$WORK/tracked.txt"
+)"
+[ -z "$OUT" ]
+check $? "every artifact file is tracked by git" "$(printf '%s' "$OUT" | tr '\n' ' ')"
+
 echo
 echo "== render (skipped unless Node deps are installed) =="
 if [ -d "$SKILL/runtime/node_modules" ]; then
   node "$SKILL/runtime/lint.mjs" "$ART" >/dev/null 2>&1
   check $? "zero-custom-client-JS lint"
+
+  # The static joins above prove the wiring is consistent; this proves it runs.
+  # A handler that throws is a 500 no amount of grepping will find.
+  OUT="$(cd "$SKILL/runtime" && node --input-type=module -e '
+const { createArtifactApp } = await import("./lib/router.mjs");
+const { readFileSync } = await import("node:fs");
+const dir = process.argv[1];
+const app = await createArtifactApp(dir);
+let bad = 0;
+for (const m of readFileSync(dir + "/app.routes.js", "utf8")
+       .matchAll(/\[\s*.GET.\s*,\s*.([^\x27"]+)./g)) {
+  const res = await app.request(m[1]);
+  if (res.status !== 200) { console.error(`GET ${m[1]} -> ${res.status}`); bad++; }
+}
+process.exit(bad ? 1 : 0);
+' "$ART" 2>&1)"
+  check $? "every GET route answers 200" "$OUT"
 else
   echo "  skip  runtime/node_modules absent — run: (cd $SKILL/runtime && npm install)"
   echo "        a skipped check is NOT a pass; the render gate is unverified"
