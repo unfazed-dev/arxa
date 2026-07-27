@@ -1,0 +1,9 @@
+{# The state switcher is a DESIGNER affordance, not product chrome: it makes
+   every state named in the brief reachable and reviewable without a fork.
+   Dashed border marks it as scaffolding that does not ship. #}
+<nav class="states" aria-label="Surface states">
+  <b>State</b>
+  {% for s in states %}
+  <a href="{{ base }}?state={{ s }}" {% if s == state %}aria-current="true"{% endif %}>{{ s }}</a>
+  {% endfor %}
+</nav>

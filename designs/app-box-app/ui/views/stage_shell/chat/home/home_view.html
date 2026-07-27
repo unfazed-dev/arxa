@@ -1,0 +1,45 @@
+{% extends "ui/views/stage_shell/stage_shell_view.html" %}
+{% block title %}Chat — app_box{% endblock %}
+{% block heading %}Chat{% endblock %}
+{% block sub %}Talk about the app. Changes land as edits you can see, never as claims.{% endblock %}
+{% block states %}{% include "ui/widgets/_states.html" %}{% endblock %}
+{% block surface %}
+<div class="col-wide stack">
+  <div class="msgs">
+    {% for m in messages %}
+      {% if m.kind == 'tool' %}
+        {% if state == 'tool-call' or not loop.last %}
+        <div class="msg"><span class="who"></span><div class="tool">{{ m.body }}</div></div>
+        {% endif %}
+      {% else %}
+      <div class="msg">
+        <span class="who">{{ 'you' if m.who == 'you' else 'app_box' }}</span>
+        <div><p>{{ m.body }}</p></div>
+      </div>
+      {% endif %}
+    {% endfor %}
+
+    {% if state == 'streaming' %}
+    <div class="msg">
+      <span class="who">app_box</span>
+      <div><p>Regenerating the list surface now — grouping by week is a view change,
+        so the registry entry and the surfaceId both stay<span class="caret"></span></p></div>
+    </div>
+    {% endif %}
+  </div>
+
+  <form class="col" hx-post="/chat" hx-swap="none">
+    <div class="field">
+      <label for="say" class="hint">Message</label>
+      <textarea id="say" name="body" rows="3"
+                placeholder="Describe what should change…"></textarea>
+    </div>
+    <div class="row">
+      <button class="btn" type="submit" {% if state == 'streaming' %}disabled{% endif %}>
+        {{ 'Working…' if state == 'streaming' else 'Send' }}
+      </button>
+      {% if state == 'streaming' %}<span class="pill running">streaming</span>{% endif %}
+    </div>
+  </form>
+</div>
+{% endblock %}

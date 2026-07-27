@@ -1,0 +1,147 @@
+[
+  {
+    "id": "stage.shell",
+    "label": "Stage shell",
+    "surface": "stage_shell_view",
+    "tab": "stage",
+    "comp": "StageShell"
+  },
+  {
+    "id": "projects.home",
+    "label": "Projects",
+    "surface": "stage_shell_projects_home_view",
+    "tab": "projects",
+    "comp": "ProjectsHome"
+  },
+  {
+    "id": "projects.new",
+    "label": "New project",
+    "surface": "stage_shell_projects_new_view",
+    "tab": "projects",
+    "comp": "ProjectsNew"
+  },
+  {
+    "id": "design.directions",
+    "label": "Directions",
+    "surface": "stage_shell_design_directions_view",
+    "tab": "design",
+    "comp": "DesignDirections"
+  },
+  {
+    "id": "design.surface",
+    "label": "Surface preview",
+    "surface": "stage_shell_design_surface_view",
+    "tab": "design",
+    "comp": "DesignSurface"
+  },
+  {
+    "id": "design.approve",
+    "label": "Approve design",
+    "surface": "stage_shell_design_approve_view",
+    "tab": "design",
+    "comp": "DesignApprove"
+  },
+  {
+    "id": "build.run",
+    "label": "Build",
+    "surface": "stage_shell_build_run_view",
+    "tab": "build",
+    "comp": "BuildRun"
+  },
+  {
+    "id": "build.finding",
+    "label": "Finding",
+    "surface": "stage_shell_build_finding_view",
+    "tab": "build",
+    "comp": "BuildFinding"
+  },
+  {
+    "id": "build.approve",
+    "label": "Approve build",
+    "surface": "stage_shell_build_approve_view",
+    "tab": "build",
+    "comp": "BuildApprove"
+  },
+  {
+    "id": "ship.targets",
+    "label": "Targets",
+    "surface": "stage_shell_ship_targets_view",
+    "tab": "ship",
+    "comp": "ShipTargets"
+  },
+  {
+    "id": "ship.confirm",
+    "label": "Confirm release",
+    "surface": "stage_shell_ship_confirm_view",
+    "tab": "ship",
+    "comp": "ShipConfirm"
+  },
+  {
+    "id": "chat.home",
+    "label": "Chat",
+    "surface": "stage_shell_chat_home_view",
+    "tab": "chat",
+    "comp": "ChatHome"
+  },
+  {
+    "id": "settings.credentials",
+    "label": "Credentials",
+    "surface": "stage_shell_settings_credentials_view",
+    "tab": "settings",
+    "comp": "SettingsCredentials"
+  },
+  {
+    "id": "settings.devices",
+    "label": "Devices",
+    "surface": "stage_shell_settings_devices_view",
+    "tab": "settings",
+    "comp": "SettingsDevices"
+  },
+  {
+    "id": "settings.kits",
+    "label": "Kits",
+    "surface": "stage_shell_settings_kits_view",
+    "tab": "settings",
+    "comp": "SettingsKits"
+  },
+  {
+    "id": "projects.splash",
+    "label": "Brand splash",
+    "surface": null,
+    "tab": "projects",
+    "comp": "ProjectsSplash",
+    "_why": "J1 launch moment, not a routed surface \u2014 the desktop shell paints it before the app mounts"
+  },
+  {
+    "id": "projects.showcase",
+    "label": "Showcase app",
+    "surface": null,
+    "tab": "projects",
+    "comp": "ProjectsShowcase",
+    "_why": "J1 auto-launch: a separate generated app in its own window, not an app_box surface"
+  },
+  {
+    "id": "build.recovery",
+    "label": "P3 recovery",
+    "surface": null,
+    "tab": "build",
+    "comp": "BuildRecovery",
+    "_why": "J5 red-gate recovery is a mode of build.finding, not a second surface"
+  },
+  {
+    "id": "settings.pair",
+    "label": "Pair device",
+    "surface": null,
+    "tab": "settings",
+    "comp": "SettingsPair",
+    "_why": "J7 QR pairing is a dialog over settings.devices"
+  },
+  {
+    "id": "ship.released",
+    "label": "Released",
+    "surface": null,
+    "tab": "ship",
+    "comp": "ShipReleased",
+    "_why": "terminal node of the loop \u2014 an outcome, not a screen"
+  }
+]

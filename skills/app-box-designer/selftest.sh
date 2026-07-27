@@ -6,19 +6,36 @@
 # prove it (that mode breaks the fixture on purpose and expects a non-zero
 # exit).
 #
-#   ./selftest.sh              # positive: expect exit 0
-#   ./selftest.sh --negative   # break one surfaceId; expect exit 1 naming it
+#   ./selftest.sh                        # the starter; expect exit 0
+#   ./selftest.sh <artifact-dir>         # a real artifact; expect exit 0
+#   ./selftest.sh [<dir>] --negative     # break one surfaceId; expect exit 1
 #
 set -uo pipefail
 
 SKILL="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 NEGATIVE=0
-[ "${1:-}" = "--negative" ] && NEGATIVE=1
+SRC=""
+for a in "$@"; do
+  case "$a" in
+    --negative) NEGATIVE=1 ;;
+    -*) printf 'unknown flag: %s\n' "$a" >&2; exit 64 ;;
+    *)  SRC="$a" ;;
+  esac
+done
+# Default to the starter. A path that does not exist is a FAILURE, never a
+# silent fallback — greening the starter while the caller named an artifact is
+# exactly the false pass this file exists to prevent.
+if [ -n "$SRC" ]; then
+  [ -d "$SRC" ] || { printf 'no such artifact dir: %s\n' "$SRC" >&2; exit 64; }
+else
+  SRC="$SKILL/examples/hello-hda"
+fi
+printf 'artifact: %s\n\n' "$SRC"
 
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
 ART="$WORK/artifact"
-cp -R "$SKILL/examples/hello-hda" "$ART"
+cp -R "$SRC" "$ART"
 
 PASS=0; FAIL=0
 ok()   { PASS=$((PASS+1)); printf '  ok   %s\n' "$1"; }
@@ -26,9 +43,11 @@ bad()  { FAIL=$((FAIL+1)); printf '  FAIL %s\n' "$1"; }
 check(){ if [ "$1" = 0 ]; then ok "$2"; else bad "$2${3:+ — $3}"; fi; }
 
 if [ "$NEGATIVE" = 1 ]; then
-  echo "negative mode: removing surfaceId from timer_viewmodel.js"
-  perl -ni -e "print unless /export const surfaceId/" \
-    "$ART/ui/views/main_shell/timer/timer_viewmodel.js"
+  # Break whichever artifact was given, not a filename only the starter has.
+  VICTIM="$(find "$ART/ui/views" -name '*_viewmodel.js' | sort | head -1)"
+  [ -n "$VICTIM" ] || { echo "negative mode: no viewmodel to break" >&2; exit 64; }
+  echo "negative mode: removing surfaceId from ${VICTIM#"$ART/"}"
+  perl -ni -e "print unless /export const surfaceId/" "$VICTIM"
 fi
 
 echo "== structure =="

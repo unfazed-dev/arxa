@@ -1,0 +1,53 @@
+{% extends "ui/views/stage_shell/stage_shell_view.html" %}
+{% block title %}New project — app_box{% endblock %}
+{% block heading %}New project{% endblock %}
+{% block sub %}Name it, brand it, and choose what it ships to.{% endblock %}
+{% block states %}{% include "ui/widgets/_states.html" %}{% endblock %}
+{% block surface %}
+<div class="col">
+  <form hx-post="/projects/new" hx-swap="none">
+    <div class="field">
+      <label for="pname">Project name</label>
+      <input id="pname" name="name" type="text" value="{% if state != 'form' %}Ledgerly{% endif %}"
+             placeholder="Ledgerly">
+      <span class="hint">Used for the bundle identifier. Changing it later renames the app.</span>
+    </div>
+
+    <div class="field {% if state == 'error' %}invalid{% endif %}">
+      <label for="pclient">Client</label>
+      <input id="pclient" name="client" type="text"
+             value="{% if state == 'error' %}{% elif state == 'validating' %}Ada Okafor{% endif %}"
+             {% if state == 'error' %}aria-invalid="true" aria-describedby="cerr"{% endif %}>
+      {% if state == 'error' %}
+      <span class="err" id="cerr">A client is required — the brief, the licence and the
+        signing account all hang off it.</span>
+      {% endif %}
+    </div>
+
+    <fieldset class="field">
+      <label>Targets</label>
+      <span class="hint">Platforms only. The viewport ladder is derived from these,
+        never chosen — macOS alone means one rung and three layout files.</span>
+      <div class="choices">
+        {% for t in [['ios','iOS','compact + medium'],['android','Android','compact + medium'],
+                     ['macos','macOS','expanded'],['web','Web','all three rungs']] %}
+        <label class="choice">
+          <input type="checkbox" name="targets" value="{{ t[0] }}" {% if t[0] == 'ios' %}checked{% endif %}>
+          <span><b>{{ t[1] }}</b><br><span class="faint">{{ t[2] }}</span></span>
+        </label>
+        {% endfor %}
+      </div>
+    </fieldset>
+
+    <div class="row">
+      {% if state == 'validating' %}
+      <button class="btn" type="submit" disabled>Checking…</button>
+      <span class="pill running">resolving 39 kit deps at pinned SHAs</span>
+      {% else %}
+      <button class="btn" type="submit">Create project</button>
+      <a class="btn ghost" href="/">Cancel</a>
+      {% endif %}
+    </div>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,32 @@
+{% extends "ui/views/stage_shell/stage_shell_view.html" %}
+{% block title %}Kits — app_box{% endblock %}
+{% block heading %}Kits{% endblock %}
+{% block sub %}What is actually wired, and what would throw if you picked it.{% endblock %}
+{% block surface %}
+<div class="col-wide stack">
+  <p class="muted">{{ wired }} of {{ total }} kits are fully wired. The {{ total - wired }} that
+    are not are listed below — labelled here rather than discovered at build time.
+    A buyer who picks Stripe and meets <code>UnimplementedError</code> during the build
+    has been misled.</p>
+  <table>
+    <caption class="faint" style="text-align:left; padding:0 12px 8px; font-size:var(--step--1);">
+      Not fully wired ({{ total - wired }} of {{ total }})
+    </caption>
+    <thead><tr><th>Kit</th><th>Area</th><th>Status</th><th>Note</th></tr></thead>
+    <tbody>
+      {% for k in kits %}
+      <tr>
+        <td class="mono">{{ k.name }}</td>
+        <td class="muted">{{ k.area }}</td>
+        <td>
+          {% if k.status == 'wired' %}<span class="pill ok">wired</span>
+          {% elif k.status == 'partial' %}<span class="pill part">partial</span>
+          {% else %}<span class="pill stub">stubbed</span>{% endif %}
+        </td>
+        <td class="muted">{{ k.note or '—' }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

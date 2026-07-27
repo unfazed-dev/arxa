@@ -1,0 +1,37 @@
+{
+  "_note": "Seed is the SSOT. Edit this, then regenerate the fixture. Never hand-edit *_fixtures.json.",
+  "total": 23,
+  "wired": 18,
+  "kits": [
+    {
+      "name": "stacked_kit_notifications",
+      "area": "Push",
+      "status": "partial",
+      "note": "Android channels wired; the APNs entitlement is still manual"
+    },
+    {
+      "name": "stacked_kit_payments",
+      "area": "Payments",
+      "status": "stubbed",
+      "note": "the Stripe provider throws UnimplementedError"
+    },
+    {
+      "name": "stacked_kit_analytics",
+      "area": "Analytics",
+      "status": "stubbed",
+      "note": "no provider is implemented"
+    },
+    {
+      "name": "stacked_kit_maps",
+      "area": "Maps",
+      "status": "partial",
+      "note": "iOS only \u2014 no Android map view"
+    },
+    {
+      "name": "stacked_kit_search",
+      "area": "Search",
+      "status": "partial",
+      "note": "local index only; no remote backend"
+    }
+  ]
+}

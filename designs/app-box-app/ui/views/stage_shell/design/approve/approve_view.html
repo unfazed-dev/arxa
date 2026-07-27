@@ -1,0 +1,37 @@
+{% extends "ui/views/stage_shell/stage_shell_view.html" %}
+{% block title %}Approve the design — app_box{% endblock %}
+{% block heading %}Approve the design{% endblock %}
+{% block sub %}Human gate 1 of 3.{% endblock %}
+{% block states %}{% include "ui/widgets/_states.html" %}{% endblock %}
+{% block surface %}
+<div class="gate {{ 'done' if state == 'approved' else '' }}">
+  <div class="gate-inner">
+    <p class="gate-eyebrow">
+      {% if state == 'approved' %}Gate 1 · approved by you{% else %}Gate 1 · your decision{% endif %}
+    </p>
+    <h2>Freeze direction B as the design of record?</h2>
+    <p class="muted">The freeze reads six inputs and emits the structure the scaffolder
+      builds against. Everything after this point is derived from what you approve here.</p>
+
+    <div class="triple">
+      <div><dt>Direction</dt><dd>B — Utility</dd></div>
+      <div><dt>Surfaces</dt><dd>14 buildable · 5 excluded</dd></div>
+      <div><dt>Rung</dt><dd>expanded · 1280</dd></div>
+    </div>
+
+    {% if state == 'approved' %}
+      <p class="row"><span class="pill ok">approved 14:02 today</span></p>
+      <p class="gate-note">app_box cannot mint this approval, and did not.
+        Re-running the stage does not re-grant it.</p>
+    {% else %}
+      <div class="row">
+        <button class="btn btn-gate" hx-post="/design/approve/approve" hx-swap="none">
+          Approve design
+        </button>
+        <a class="btn ghost" href="/design">Back to directions</a>
+      </div>
+      <p class="gate-note">No agent can pass this gate. Nothing is scaffolded until you do.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

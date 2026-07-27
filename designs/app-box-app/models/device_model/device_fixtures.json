@@ -1,0 +1,19 @@
+{
+  "_generated_from": "device_seed.json",
+  "devices": [
+    {
+      "id": "d1",
+      "name": "Evan \u2014 iPhone 15 Pro",
+      "os": "iOS 18.2",
+      "paired": "3 days ago",
+      "now": true
+    },
+    {
+      "id": "d2",
+      "name": "Studio iPad",
+      "os": "iPadOS 18.1",
+      "paired": "2 weeks ago",
+      "now": false
+    }
+  ]
+}

@@ -1,0 +1,44 @@
+{
+  "_note": "Seed is the SSOT. Edit this, then regenerate the fixture. Never hand-edit *_fixtures.json.",
+  "projects": [
+    {
+      "id": "p1",
+      "name": "Ledgerly",
+      "client": "Ada Okafor",
+      "stage": "build",
+      "targets": [
+        "ios",
+        "android"
+      ],
+      "surfaces": 22,
+      "updated": "11 minutes ago",
+      "health": "red"
+    },
+    {
+      "id": "p2",
+      "name": "Harbour Freight",
+      "client": "Vantage Logistics",
+      "stage": "ship",
+      "targets": [
+        "ios",
+        "android",
+        "web"
+      ],
+      "surfaces": 31,
+      "updated": "2 hours ago",
+      "health": "green"
+    },
+    {
+      "id": "p3",
+      "name": "Coastline Clinic",
+      "client": "Dr. M. Reyes",
+      "stage": "design",
+      "targets": [
+        "ios"
+      ],
+      "surfaces": 14,
+      "updated": "yesterday",
+      "health": "pending"
+    }
+  ]
+}
