@@ -39,6 +39,7 @@ while IFS= read -r _f; do [ -n "$_f" ] && FILES+=("$_f"); done < <(
   | grep -vE '(^|/)LICENSE(\.|$)' \
   | grep -vE '^config/stripped_names\.txt$' \
   | grep -vE '^config/forbidden_abs_prefixes\.txt$' \
+  | grep -vE '^tools/vendor/VENDOR\.lock$' \
   | grep -vE '^tools/lint_conventions\.sh$' \
   | grep -vE '^tools/lint_conventions\.selftest\.sh$' \
   | grep -vE '^\.git/' \
