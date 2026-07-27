@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Productionize (ADR-0008): eject an artifact into a self-contained Hono app.
 // Usage: node runtime/eject.mjs <artifact-dir> <out-dir>
-import { cpSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -24,10 +24,60 @@ const name =
 cpSync(artifact, out, { recursive: true });
 
 // 2. The Runtime, inlined (source only — no node_modules, no dev fetch tooling).
-for (const p of ['serve.mjs', 'lint.mjs', 'console-check.mjs', 'lib', 'vendor']) {
+for (const p of ['serve.mjs', 'lint.mjs', 'console-check.mjs', 'lib']) {
   cpSync(path.join(runtimeDir, p), path.join(out, 'runtime', p), { recursive: true });
 }
-rmSync(path.join(out, 'runtime', 'vendor', 'fetch.mjs'), { force: true });
+
+// 2b. Vendored libraries — only the ones this artifact actually loads.
+//
+// `vendor/` is the ALLOWLIST: the menu of libraries an artifact may enable. It
+// is not the set any given artifact uses. Copying it wholesale shipped
+// mustache.min.js and client-side-templates.js into every ejected app — a
+// client-side template engine inside a stack whose stated boundary is zero
+// client-side JavaScript, and one CONTEXT.md already calls out as inverting
+// the architecture. The allowlist stays complete in the skill; the delivered
+// tarball carries what the markup asks for.
+const vendorDir = path.join(runtimeDir, 'vendor');
+const htmlUnder = (d) =>
+  readdirSync(d, { withFileTypes: true }).flatMap((e) => {
+    const p = path.join(d, e.name);
+    if (e.isDirectory()) return htmlUnder(p);
+    return p.endsWith('.html') ? [p] : [];
+  });
+
+const wanted = new Set();
+for (const file of htmlUnder(artifact)) {
+  for (const m of readFileSync(file, 'utf8').matchAll(/\/assets\/vendor\/([\w.-]+\.js)/g)) {
+    wanted.add(m[1]);
+  }
+}
+
+// Both guards fail the eject rather than shipping. Emitting an app with an
+// empty vendor/ would turn this trim into an outage, and the symptom — every
+// interaction inert, nothing in the console — is the exact failure this stack
+// is worst at surfacing.
+const available = new Set(readdirSync(vendorDir).filter((f) => f.endsWith('.js')));
+const missing = [...wanted].filter((f) => !available.has(f));
+if (missing.length) {
+  console.error(`markup loads libraries that are not vendored: ${missing.join(', ')}`);
+  process.exit(1);
+}
+if (!wanted.has('htmx.min.js')) {
+  console.error('no artifact HTML loads /assets/vendor/htmx.min.js — refusing to eject');
+  process.exit(1);
+}
+
+mkdirSync(path.join(out, 'runtime', 'vendor'), { recursive: true });
+for (const f of wanted) cpSync(path.join(vendorDir, f), path.join(out, 'runtime', 'vendor', f));
+
+// Provenance travels with the copy: the same file/package/version/integrity
+// rows, narrowed to what shipped. SRI.md and fetch.mjs stay behind — they
+// document re-vendoring, which an ejected app cannot do.
+const manifest = JSON.parse(readFileSync(path.join(vendorDir, 'manifest.json'), 'utf8'));
+writeFileSync(
+  path.join(out, 'runtime', 'vendor', 'manifest.json'),
+  JSON.stringify(manifest.filter((e) => wanted.has(e.file)), null, 2) + '\n',
+);
 
 // 3. package.json — deps inherited from the runtime's own manifest.
 const runtimePkg = JSON.parse(readFileSync(path.join(runtimeDir, 'package.json'), 'utf8'));
