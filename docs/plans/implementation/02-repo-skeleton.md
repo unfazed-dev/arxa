@@ -41,9 +41,9 @@ app-box/
 
 ## Steps
 
-- [ ] **2.1** Create the tree above. Every leaf gets a `README.md` stating what
+- [x] **2.1** Create the tree above. Every leaf gets a `README.md` stating what
       belongs in it and what does not — one paragraph, no filler.
-- [ ] **2.2** Write `config/app-box.config.json` with **every** value that any
+- [x] **2.2** Write `config/app-box.config.json` with **every** value that any
       later plan would otherwise inline:
       ```json
       {
@@ -57,21 +57,21 @@ app-box/
       }
       ```
       `port: 0` means OS-assigned — never a fixed port.
-- [ ] **2.3** Write `pipeline/state/` — the state schema and a reader.
+- [x] **2.3** Write `pipeline/state/` — the state schema and a reader.
       State carries at minimum: current phase, `targets`, approval tokens,
       design hash, kit SHA. **Targets live here, not in flags** (§11).
-- [ ] **2.4** Write `gates/_common/` with: state reader, porcelain-diff helper
+- [x] **2.4** Write `gates/_common/` with: state reader, porcelain-diff helper
       (`git status --porcelain`, never `git diff`), SARIF emitter, and the
       pass/fail reporter. Every gate uses these; no gate reimplements them.
-- [ ] **2.5** Write `gates/README.md` codifying R4 and R5: one folder per gate,
+- [x] **2.5** Write `gates/README.md` codifying R4 and R5: one folder per gate,
       each with its own selftest including a negative case, no gate imports a
       sibling, shared logic moves to `_common`.
-- [ ] **2.6** Add a repo-level lint script `tools/lint_conventions.sh` that
+- [x] **2.6** Add a repo-level lint script `tools/lint_conventions.sh` that
       **fails** on: absolute paths outside `config/`, a gate importing a sibling
       gate, `git diff --exit-code` used for a regeneration assertion, and any
       of the stripped upstream names (R2) outside `THIRD-PARTY-NOTICES.md`,
       `LICENSE` and `docs/research/`.
-- [ ] **2.7** Wire `tools/lint_conventions.sh` into the repo's own test entry
+- [x] **2.7** Wire `tools/lint_conventions.sh` into the repo's own test entry
       point so a violation cannot merge.
 
 ## Done-when

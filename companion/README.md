@@ -1,0 +1,1 @@
+The iOS companion (plan 12). Owns the prototype view; the FAB carries channel state. Belongs: the iOS app and its prototype-view surface. Does not belong: pipeline orchestration, which stays server-side in pipeline/.

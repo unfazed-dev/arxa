@@ -1,0 +1,1 @@
+The macOS desktop app (plan 08). A chromed Stacked MVVM app forked from stacked_kit's showcase_app so chrome, theming and seed data are copied, not written. Belongs: lib/{app,extensions,services,ui}, main.dart, macos/, pubspec. Does not belong: pipeline logic — the app shells out to the vendored pipeline, it never reimplements it in Dart.

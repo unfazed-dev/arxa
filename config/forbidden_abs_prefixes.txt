@@ -1,0 +1,8 @@
+# Absolute-path prefixes that must not be hardcoded into shipped code (R3).
+# A literal project/source-tree path (the developer's machine) is a violation;
+# such values come from config, never from a literal. Read by
+# tools/lint_conventions.sh. One prefix per line; '#'-lines are comments.
+# NOTE: /home/ is intentionally absent — it collides with the "/home" web route
+# used by the designer's view paths. macOS home paths are /Users/, which is here.
+/Volumes/
+/Users/

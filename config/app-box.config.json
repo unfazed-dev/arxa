@@ -1,0 +1,9 @@
+{
+  "version": "1.0.0",
+  "targets": ["macos"],
+  "viewports": { "mobile": 390, "tablet": 744, "desktop": 1280 },
+  "viewportClasses": { "compactMax": 599, "mediumMax": 839 },
+  "prototypeServer": { "host": "127.0.0.1", "port": 0 },
+  "kit": { "repo": "", "sha": "" },
+  "escalationLimit": 3
+}

@@ -1,0 +1,13 @@
+# Upstream identity names that must NOT survive into shipped code/tooling (R2).
+# One name per line. Lines beginning with '#' are comments.
+# Read by tools/lint_conventions.sh. Matched as whole tokens (grep -wF).
+# `stacked_kit` is intentionally ABSENT: where it names a real runtime
+# dependency of a scaffolded app it is retained (R2 exception 2).
+# Plan 03 appends the tool-identity fragments (crew, kimi) after renaming.
+flutter-crew
+kimi-design-htmx
+kimi-design
+baoyu
+huashu
+p2
+asko

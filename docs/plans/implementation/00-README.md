@@ -112,7 +112,7 @@ moment it lands. Everything downstream of `02` can proceed simultaneously.
 | plan | owner | done |
 |---|---|---|
 | 01 designer | | ☐ |
-| 02 repo skeleton | | ☐ |
+| 02 repo skeleton | app-box | ☑ |
 | 03 vendor tooling | | ☐ |
 | 04 gates | | ☐ |
 | 05 structure + registry | | ☐ |

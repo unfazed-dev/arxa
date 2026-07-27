@@ -1,0 +1,7 @@
+{
+  "phase": "intake",
+  "targets": ["macos"],
+  "approvalTokens": {},
+  "designHash": "",
+  "kitSha": ""
+}

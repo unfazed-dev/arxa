@@ -1,0 +1,33 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "pipeline/state/state.schema.json",
+  "title": "app_box pipeline state",
+  "description": "The single source of truth for a run. Targets live here in state, never in CLI flags (architecture §11). Approval tokens are minted only by a human at a gate — never by an agent.",
+  "type": "object",
+  "required": ["phase", "targets", "approvalTokens", "designHash", "kitSha"],
+  "additionalProperties": false,
+  "properties": {
+    "phase": {
+      "type": "string",
+      "description": "Current FSM phase: intake | design | review | scaffold | build | deploy."
+    },
+    "targets": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Platforms targeted, e.g. [\"macos\"]. Platform-only; viewports derive (§11)."
+    },
+    "approvalTokens": {
+      "type": "object",
+      "description": "One key per human gate that has been passed. Absent = not approved.",
+      "additionalProperties": { "type": "string" }
+    },
+    "designHash": {
+      "type": "string",
+      "description": "Hash of the frozen design inputs. Changes here invalidate downstream artifacts."
+    },
+    "kitSha": {
+      "type": "string",
+      "description": "The vendored kit SHA this run is pinned to."
+    }
+  }
+}
