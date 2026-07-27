@@ -645,3 +645,31 @@ verification standard is **write → restart → read back, in a signed and
 notarised build**, because two of the known macOS failure modes (App Group
 missing from `keychain-access-groups`, hardened runtime after notarisation)
 fail *silently and green*.
+
+### Subscription vs API key
+
+Two different problems: a static API key never expires; an OAuth subscription
+token has refresh, expiry and remote revocation.
+
+**Decision: shell out to an already-authenticated harness CLI where one is
+present; hold tokens only for the standalone case.** Owning a refresh loop for
+two vendors is permanent maintenance, and the only user who needs it is the
+buyer with no harness installed. This also keeps the harness-plugin path
+credential-free — app_box never sees a token it does not have to store.
+
+## 16. Form-factor emission follows targets
+
+**Decision: a macOS-only app emits three files** — `_view.dart`,
+`_view.desktop.dart`, `_viewmodel.dart` — not five, and
+`scaffold_coverage_gate.sh` reads targets from state to require exactly the
+derived set.
+
+The rejected alternative was emitting empty `.mobile`/`.tablet` files to
+satisfy the current unconditional five-file counter. That is the stale-green
+pattern in its purest form: a file that exists, passes the check, and is never
+rendered. **A gate that cannot fail for the right reason is not a gate.**
+
+Cost, stated plainly: this is the second time §11's "gates read state" bill has
+come due — first for freeze widths, now for emission. The macOS dogfood is what
+forces it, which is the argument for dogfooding at all. Better to pay it on our
+own app than on a client's.
