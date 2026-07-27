@@ -22,6 +22,19 @@
           "phase": { "type": "string" },
           "playbook": { "type": "string" },
           "hasSkill": { "type": "boolean" },
+          "providers": {
+            "type": "array",
+            "description": "External-service providers whose verification tier gates whether a surface may offer them. verification is EVIDENCE — set only by a tier suite (tools/verification/), never hand-edited; gates/advertise cross-checks it against the evidence ledger. stub = no suite has run.",
+            "items": {
+              "type": "object",
+              "required": ["name", "verification"],
+              "additionalProperties": false,
+              "properties": {
+                "name": { "type": "string" },
+                "verification": { "enum": ["stub", "port-tested", "sim-verified", "device-verified"] }
+              }
+            }
+          },
           "provides": {
             "type": "object",
             "additionalProperties": false,

@@ -1,0 +1,16 @@
+{
+  "surfaces": [
+    {
+      "name": "settings.kits",
+      "offers": [],
+      "_note": "informational honesty surface: lists every provider and labels stubs as stubs. It OFFERS nothing actionable — a stub is displayed, never offered."
+    },
+    {
+      "name": "showcase.seed",
+      "offers": [
+        { "kit": "auth", "provider": "SeedAuthBackend", "tier": "port-tested" }
+      ],
+      "_note": "the seeded-data story the product promises; SeedAuthBackend needs no device and no external account."
+    }
+  ]
+}

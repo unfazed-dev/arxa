@@ -135,7 +135,21 @@
         "widgets": [
           "KitCan"
         ]
-      }
+      },
+      "providers": [
+        {
+          "name": "SeedAuthBackend",
+          "verification": "port-tested"
+        },
+        {
+          "name": "Apple SignIn",
+          "verification": "port-tested"
+        },
+        {
+          "name": "Google SignIn",
+          "verification": "port-tested"
+        }
+      ]
     },
     {
       "dir": "forms",
@@ -242,7 +256,21 @@
         "widgets": [
           "KitPayButton"
         ]
-      }
+      },
+      "providers": [
+        {
+          "name": "Stripe",
+          "verification": "port-tested"
+        },
+        {
+          "name": "PayPal",
+          "verification": "port-tested"
+        },
+        {
+          "name": "Apple Pay",
+          "verification": "stub"
+        }
+      ]
     },
     {
       "dir": "maps",
@@ -260,7 +288,17 @@
         "widgets": [
           "KitMapView"
         ]
-      }
+      },
+      "providers": [
+        {
+          "name": "OpenStreetMap",
+          "verification": "stub"
+        },
+        {
+          "name": "Mapbox",
+          "verification": "stub"
+        }
+      ]
     },
     {
       "dir": "deploy",
@@ -273,7 +311,13 @@
       "phase": "stable",
       "playbook": "deploy/deploy_playbook.mdx",
       "hasSkill": false,
-      "provides": {}
+      "provides": {},
+      "providers": [
+        {
+          "name": "Vercel",
+          "verification": "stub"
+        }
+      ]
     },
     {
       "dir": "haptics",
