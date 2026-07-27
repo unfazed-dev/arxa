@@ -13,6 +13,9 @@ bash tools/lint_conventions.sh || rc=1
 echo "== lint selftest (R5) =="
 bash tools/lint_conventions.selftest.sh || rc=1
 
+echo "== crud selftest (feature CRUD + round-trip) =="
+bash tools/crud/selftest.sh || rc=1
+
 # Gate suites register below as they land (plan 04+):
 # bash gates/run_all.sh || rc=1
 
