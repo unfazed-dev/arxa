@@ -1,0 +1,56 @@
+# --- Flutter / Dart ---
+.dart_tool/
+.packages
+.pub-cache/
+.pub/
+build/
+*.dill
+*.lock.bak
+pubspec.lock          # app is an application, but the kit deps are SHA-pinned; regenerate
+.flutter-plugins
+.flutter-plugins-dependencies
+generated_plugin_registrant.dart
+*.g.dart.bak
+coverage/
+
+# --- macOS desktop (the dogfood target) ---
+macos/Flutter/ephemeral/
+macos/Pods/
+macos/.symlinks/
+**/xcuserdata/
+*.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist
+
+# --- Python tooling (pipeline / emitters) ---
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+
+# --- Node (htmx producer runtime) ---
+node_modules/
+npm-debug.log*
+.npm/
+
+# --- pipeline / run state (regenerated, never authoritative) ---
+.pipeline/
+.crew/
+.blueprint/
+.claude-flow/
+*.run.json
+*.history.jsonl
+
+# --- audit + scratch (one canonical file per run, never accumulated) ---
+.audit/
+scratch/
+*.tmp
+
+# --- OS / editor ---
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/settings.json
+*.swp
