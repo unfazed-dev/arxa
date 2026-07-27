@@ -24,10 +24,18 @@ viewmodels, services, models and 37 surfaces are untouched.
 
 - [ ] **9.1** Add `flutter_js` to `app/`. Confirm which engine binds on macOS
       (JSC vs QuickJS) and record it — it changes the size claim, not the design.
-- [ ] **9.2** Implement the HTTP layer in Dart: routes from `app.routes.js`'s
-      exported table, `GET` returning rendered fragments, `POST` for mutations.
-      Bind to `127.0.0.1` on an **OS-assigned port** (`port: 0` in config) —
-      never a fixed port (R3).
+**Scope note.** "No Node" constrains **the buyer's machine only**. The designer
+(plan 01) legitimately requires Node — Hono, nunjucks and Playwright, ~22 MB of
+dev dependencies — because that is where render and console checks run. Do not
+propagate this plan's constraint upstream to the designer; doing so would
+disable the gate that catches a surface whose fonts 404.
+
+- [ ] **9.2** Implement the HTTP layer in Dart against the routing contract in
+      the designer's `runtime/lib/router.mjs` (plan 01 step 1.11) — **not**
+      against an ad-hoc route table. Design-time and shipped runtimes must agree
+      by construction. `GET` returns rendered fragments, `POST` mutates. Bind to
+      `127.0.0.1` on an **OS-assigned port** (`port: 0` in config) — never a
+      fixed port (R3).
 - [ ] **9.3** **Pre-bundle the viewmodels at freeze time.** The viewmodels use
       ES modules; embedded engines resolve modules poorly. Bundle each entry to
       a single IIFE as a build step. This is a build step, not a rewrite —

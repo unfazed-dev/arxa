@@ -8,6 +8,22 @@ conventions the upstream lineage does not have.
 
 **Priority: highest.** The founder begins designing the moment this lands.
 
+## ⚠️ The designer REQUIRES Node. That is correct and intended.
+
+Do not confuse this with plan 09. Three different surfaces:
+
+| surface | Node? | runs on | size |
+|---|---|---|---|
+| **this skill, at design time** | **yes** | the designer's machine, inside a harness | **22 MB `node_modules`**, dev-only |
+| the desktop app serving a prototype (plan 09) | **no** | the buyer's machine | ~1 MB `flutter_js` |
+| a bundled JS runtime binary | rejected | — | ~90 MB |
+
+`runtime/` needs `hono`, `@hono/node-server`, `nunjucks`, and `playwright`
+(dev) for the render and console checks. **Plan 09's "no Node on `PATH`"
+constrains the buyer's machine only — never this one.** Stripping Node from the
+designer would break the render gate, which is the check that catches a surface
+whose fonts 404.
+
 ## Source
 
 | take | from | notes |
@@ -70,11 +86,23 @@ conventions the upstream lineage does not have.
 - [ ] **1.10** Fold `DESIGN-ARCHITECTURE.md` (87 lines, already the upstream
       "spine architecture contract") into the above rather than replacing it.
       Keep its structure; add the app_box-specific layers.
-- [ ] **1.11** Replace `starter-partials/` chassis with a starter that emits the
-      structure in 1.9. Use `p2/design/new-htmx` as the reference implementation
-      — copy its `server.js`, `harness.js`, `app.routes.js` shape and the
-      `services/{repositories,facades}` split. **Strip all p2 domain content**
-      (training, seasons, buddies): keep the skeleton, delete the subject matter.
+- [ ] **1.11** **Keep the skill's own `runtime/` — do not adopt p2's
+      `server.js`.** These diverged: the skill ships a factored Hono runtime
+      (`runtime/lib/{router,state,templates,helpers,timers}.mjs`, `serve.mjs`,
+      `eject.mjs`, `console-check.mjs`, `lint.mjs`) while p2 hand-rolled a plain
+      `server.js` on nunjucks alone. The skill's is better factored and is what
+      the render/console checks target.
+      **`runtime/lib/router.mjs` is therefore the routing contract of record**,
+      and plan 09's Dart server implements *that* contract — so the design-time
+      and shipped runtimes agree by construction rather than by luck.
+      Take from `p2/design/new-htmx` only the **application-layer shape**:
+      `services/{repositories,facades}` split, `models/<x>_model/*_fixtures.json`,
+      and the `registry.json` convention. **Strip all p2 domain content**
+      (training, seasons, buddies) — keep the skeleton, delete the subject.
+- [ ] **1.11b** Do **not** vendor `runtime/node_modules`. Record the dependency
+      set in `runtime/package.json` and install at setup. Add a `doctor` check
+      that names Node and Playwright when missing, rather than failing obscurely
+      inside a render.
 - [ ] **1.12** Add `built-in-skills/declare-structure.md`: how to author
       `registry.json` and `surfaceId` while designing, so structure is never
       back-filled.
