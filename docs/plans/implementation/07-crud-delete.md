@@ -15,15 +15,15 @@ registry entry is gone. That orphan compiles, passes, and ships.
 
 ## Steps
 
-- [ ] **7.1** Add the **orphan assertion** to `gates/coverage/`, symmetrical
+- [x] **7.1** Add the **orphan assertion** to `gates/coverage/`, symmetrical
       with the existing check: a directory under `lib/ui/views/<shell>/` mapping
       to no registry entry is a **FAIL**, naming the directory and the missing
       id. Assert with `git status --porcelain`.
-      _(OUT OF FENCE for plan 07: `gates/` is owned by P04/P05. The authored-layer
-      orphan assertion — a view pair whose `surfaceId` maps to no registry entry —
-      is implemented in `tools/crud/crud.py verify`. The scaffolded-layer
-      assertion over `lib/ui/views/` belongs here once P05 derives
-      `structure.json` from the registry.)_
+      *(satisfied by coverage C2 — "every real surface dir under an adopted shell
+      is a mapped surface" (`gates/coverage/coverage.sh:41,206+`). P05 derives
+      structure.json from the registry, so the scaffolded-layer orphan is live;
+      the authored-layer twin lives in `tools/crud/crud.py verify`. Proven in the
+      dogfood 14.12 orphan smoke test.)*
 - [x] **7.2** Make `id` a **stable key**. Add a registry validation: an `id` may
       never be reused for a different surface. Reusing one silently re-points
       every generated artifact that referenced it.

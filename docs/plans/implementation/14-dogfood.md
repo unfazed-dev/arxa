@@ -29,13 +29,20 @@ viewport, another implying two, and the form-factor emission following each.
 
 ## Phase B — freeze
 
-- [ ] **14.5** Freeze D1. Expect the six inputs plus a `structure.json`
+- [x] **14.5** Freeze D1. Expect the six inputs plus a `structure.json`
       generated from the authored registry — **not** filename-inferred.
+      *(verified run_all: freeze PASS on D1; structure.json is registry-derived
+      via the viewmodel's exported surfaceId, byte-stable — dogfood 14.5 PASS.)*
 - [ ] **14.6** Confirm the freeze renders D1 at **one** width and D2 at **two**,
       from targets alone.
-- [ ] **14.7** Confirm no surface reports a console error, and that the error
+      *(D1 MET — macos → desktop only, rendered at 1280×800 (1 width) from
+      targets. D2 NOT MET — needs the companion design (Phase A 14.4) + P12.)*
+- [x] **14.7** Confirm no surface reports a console error, and that the error
       count is **exact** — the reporting bug that inflated counts ~4× is fixed
       in plan 04.
+      *(verified run_all: 14 D1 routes rendered @ desktop, **0 console errors**;
+      the 4× inflation fix is runtime-proven by freeze selftest 4.3 — 1 planted
+      error across 4 surfaces reported exactly once.)*
 
 ## Phase C — scaffold and review
 

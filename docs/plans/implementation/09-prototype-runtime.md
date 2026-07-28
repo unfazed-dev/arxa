@@ -51,11 +51,13 @@ disable the gate that catches a surface whose fonts 404.
       Dart server, with correct MIME types. Asset paths are **relative to the
       surfaces directory** — a prefix bug here previously 404'd every font and
       video while three verification layers reported success.
-- [ ] **9.6** Emit a **heartbeat** on the paired channel while serving. Plan 12's
+- [x] **9.6** Emit a **heartbeat** on the paired channel while serving. Plan 12's
       FAB depends on channel state, never on whether a WebView painted.
-      **Env-blocked:** the channel is built in plan 12 (a dependency of this
-      plan), which is not yet implemented. The embedded server is channel-agnostic
-      today (it serves over loopback HTTP); wiring the heartbeat waits for plan 12.
+      *(the paired-channel heartbeat is built in P12: `PrototypeChannelService`
+      (`companion/lib/channel/prototype_channel_service.dart`) heartbeats the
+      prototype URL and emits live/reconnecting/dead — the state the FAB carries
+      (12.9). Tested in `prototype_channel_service_test.dart` +
+      `fab_dead_while_render_persists_test.dart`.)*
 - [x] **9.7** Implement stop-server cleanly: release the port, kill the engine
       isolate, and report stopped over the channel.
 - [x] **9.8** Keep a **Node fallback path** behind a config flag for local

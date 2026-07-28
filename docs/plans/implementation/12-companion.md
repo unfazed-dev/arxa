@@ -42,12 +42,15 @@ Design: §15. Research:
       pending→confirm gate that carries deviceName for the human dialog. Pure
       state machine with injected clock — fully unit-tested. The confirm-dialog
       UI + the rotation Timer wiring are the device layer, env-blocked.)*
-- [ ] **12.5** Keep pairing **LAN-local with no cloud relay**. The relay is what
+- [x] **12.5** Keep pairing **LAN-local with no cloud relay**. The relay is what
       creates the phishing shape; its absence is a security property, not an
       omission. **Do not add a relay for convenience** without redoing this
       analysis.
-      *(honoured by design — no relay introduced; no pairing surface yet to
-      carry it.)*
+      *(honoured by design — the pairing module (`companion/lib/pairing/`) is
+      LAN-local end to end: `QrPayload` carries the LAN host/port, the cert pin
+      binds the connection to the desktop's local key, and no relay/relay-server
+      code exists anywhere in the pairing or channel paths. The nonce lifecycle
+      (12.4) is what makes "no relay" safe rather than merely unfeatured.)*
 - [x] **12.6** Implement remote pipeline control: run phases, view findings
       (SARIF), and **reach but never pass** the three gates from the phone.
       A phone approval by the person **is** a valid approval; an agent's is not.
