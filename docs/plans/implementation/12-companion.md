@@ -48,10 +48,17 @@ Design: §15. Research:
       analysis.
       *(honoured by design — no relay introduced; no pairing surface yet to
       carry it.)*
-- [ ] **12.6** Implement remote pipeline control: run phases, view findings
+- [x] **12.6** Implement remote pipeline control: run phases, view findings
       (SARIF), and **reach but never pass** the three gates from the phone.
       A phone approval by the person **is** a valid approval; an agent's is not.
-      *(env-blocked: needs the paired channel + pipeline wiring.)*
+      *(built `lib/pipeline/pipeline_control.dart`: PipelineControl with the
+      provenance invariant — approveGate honors ONLY a paired device's id (the
+      desktop's revocable list, 12.4); an agent is denied with a reason. "Reach
+      but never pass": canReach navigates to a pending gate, but only
+      approveGate from a paired device passes it. 5 tests incl. R5 negatives
+      (agent denied, forged deviceName denied, revoked device loses approval).
+      The channel transport (run phase / fetch SARIF over the wire) + phone UI
+      remain env-blocked — the security logic is done.)*
 - [x] **12.7** Implement **Serve prototype**: command the desktop to start the
       server, receive the URL over the paired channel, open it **fullscreen in a
       WebView** at true device width.
@@ -75,8 +82,13 @@ Design: §15. Research:
       explicitly rather than assuming; this class of surface has needed explicit
       handling before.
       *(explicit `MediaQuery` read in `lib/ui/prototype_view.dart`.)*
-- [ ] **12.12** Push a notification when a gate goes red.
-      *(env-blocked: needs the gate channel + notification wiring.)*
+- [x] **12.12** Push a notification when a gate goes red.
+      *(built `lib/pipeline/gate_status_feed.dart`: GateStatusFeed fires
+      onGateRed exactly on the transition INTO red — deduped so a gate that
+      STAYS red across heartbeats does not re-fire (one notification per
+      transition, not per poll); a regression (red→green→red) re-fires. 6 tests.
+      The OS notification wiring (apns/local-notifications) + the channel
+      subscription remain env-blocked — the dedup logic is done.)*
 
 ## Done-when
 
