@@ -25,7 +25,11 @@
 # Usage: run_all.sh [app-root]
 #   APPBOX_STATE        pipeline state file for the deploy gate
 #   GATES_SARIF_OUT     where to write the combined SARIF doc (default: <app>/.kit/state/gates.sarif)
-#   KIT_DESIGN_DIR      producer design folder (passed through to freeze/structure/coverage)
+#   KIT_DESIGN_DIR      producer design folder, RELATIVE TO THE APP ROOT (the
+#                       gates that consume it reject an absolute path). If unset,
+#                       run_all derives it: $APP/design if present, else the
+#                       single design under $REPO_ROOT/designs/ (refused when
+#                       there are several — pick one explicitly).
 set -uo pipefail
 GATES_DIR="$(cd "$(dirname "$0")" && pwd)"
 GATE_COMMON="$GATES_DIR/_common"
@@ -36,7 +40,37 @@ APP="${1:-$PWD}"
 APP="$(cd "$APP" 2>/dev/null && pwd)" || { echo "run_all: app root not found: ${1:-$PWD}" >&2; exit 2; }
 REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 SARIF_OUT="${GATES_SARIF_OUT:-$APP/.kit/state/gates.sarif}"
-export KIT_DESIGN_DIR="${KIT_DESIGN_DIR:-design}"
+
+# --- design dir resolution ----------------------------------------------------
+# The gates take KIT_DESIGN_DIR *relative to the app root* (four of them reject
+# an absolute path outright). The old default was a bare `design`, which is only
+# correct when the design sits inside the app. In this repo the app is <root>/app
+# and the design is <root>/designs/<name>, so the default resolved to
+# app/design — a directory that does not exist — and intake, freeze, structure
+# and coverage all failed on "input missing". Six red gates from one wrong
+# default is exactly the kind of noise a suite stops being trusted for.
+#
+# So: derive it, PRINT what was derived, and refuse to guess when the answer is
+# ambiguous. An explicit KIT_DESIGN_DIR always wins.
+if [ -z "${KIT_DESIGN_DIR:-}" ]; then
+  if [ -d "$APP/design" ]; then
+    KIT_DESIGN_DIR="design"                       # design lives inside the app
+  elif [ -d "$REPO_ROOT/designs" ]; then
+    _designs=()
+    for _d in "$REPO_ROOT"/designs/*/; do [ -d "$_d" ] && _designs+=("$(basename "$_d")"); done
+    case "${#_designs[@]}" in
+      1) KIT_DESIGN_DIR="$(python3 -c 'import os,sys;print(os.path.relpath(sys.argv[1],sys.argv[2]))' \
+              "$REPO_ROOT/designs/${_designs[0]}" "$APP")" ;;
+      0) echo "run_all: $REPO_ROOT/designs exists but is empty — set KIT_DESIGN_DIR to the producer folder" >&2; exit 2 ;;
+      *) echo "run_all: $REPO_ROOT/designs holds ${#_designs[@]} designs (${_designs[*]}) — set KIT_DESIGN_DIR to pick one" >&2; exit 2 ;;
+    esac
+  else
+    echo "run_all: no design found (looked for $APP/design and $REPO_ROOT/designs/*) — set KIT_DESIGN_DIR" >&2
+    exit 2
+  fi
+  printf 'run_all: derived KIT_DESIGN_DIR=%s (relative to %s)\n' "$KIT_DESIGN_DIR" "$APP"
+fi
+export KIT_DESIGN_DIR
 
 AGG="$(mktemp)"; trap 'rm -f "$AGG"' EXIT
 fails=0; n_a=0; passed=0; declare -a RESULTS
