@@ -1,5 +1,11 @@
 # Merge `companion/` into `app/` — one Flutter project, two runners
 
+> **SUPERSEDED 2026-07-28** by [`consolidate-one-app-plus-daemon.md`](consolidate-one-app-plus-daemon.md).
+> The "merge companion into app/" direction was replaced by a fresh stacked
+> web-template shell + daemon with full parity across web/macOS/iOS/Android.
+> This document remains for its security-property list and the mine-and-delete
+> discipline, both of which the new plan carries over.
+
 **Status:** recommended, **not started**. Blocked on plan 14 Phase A (D2).
 **Raised by:** the founder — *"why do we need 2 separate apps when they can both
 be developed under one stacked flutter app — that is the point of flutter"*.

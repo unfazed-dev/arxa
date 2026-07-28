@@ -47,6 +47,14 @@ recorded. If your plan is ambiguous, stop and report — do not choose.
 **Open gap carried into plan 06:** nothing yet derives the active rung list from
 a project's `--targets`. The ladder is passed by hand until it lands.
 
+## 2c. Consolidation — one app + daemon (2026-07-28)
+
+| doc | contents |
+|---|---|
+| [plans/consolidate-one-app-plus-daemon.md](plans/consolidate-one-app-plus-daemon.md) | **the shape going forward:** one Stacked app (`appbox/`, web/macOS/iOS/Android) + `appboxd/` daemon; full parity; target detection; provenance-bound approvals; self-host remote (no Totem Cloud); licence-only, pay at first deploy. Supersedes `merge-companion-into-one-flutter-project.md`, amends §17 |
+| [design/story-map.json](design/story-map.json) · [design/brief.md](design/brief.md) · [design/story_map.html](design/story_map.html) | the consolidated app's story map — 8 epics, 17 surfaces, 47 stories, R1 Dogfood / R2 Anywhere / R3 Delight. Feeds `app-box-designer` directly |
+| [moodboards/](moodboards/) | design references: `builder-and-pipeline.md`, `ai-builders-and-flows-canvas.md`, `companion-and-macos-polish.md` + `shots/` — produced by `skills/app-box-moodboarder/` (story-mapper → moodboarder → designer; `intake.moodboard` surface) |
+
 ---
 
 ## 3. Plans — the decisions

@@ -1,0 +1,494 @@
+{
+  "project": "app-box",
+  "releases": [
+    {
+      "name": "R1 Dogfood",
+      "description": "app-box designs, builds and ships itself; Michelle's 20-minute evaluation"
+    },
+    {
+      "name": "R2 Anywhere",
+      "description": "reach the daemon from anywhere (self-host tailnet); visual review depth"
+    },
+    {
+      "name": "R3 Delight",
+      "description": "polish and moat-widening"
+    }
+  ],
+  "epics": [
+    {
+      "name": "Intake & Story Mapping",
+      "features": [
+        {
+          "name": "Mapping",
+          "stories": [
+            {
+              "name": "Evan turns a client brief into an Epic-Feature-Story map in one sitting",
+              "priority": "must",
+              "release": "R1 Dogfood"
+            },
+            {
+              "name": "Surface count + kit-coverage estimate within an hour of signing, to quote honestly",
+              "priority": "must",
+              "release": "R1 Dogfood"
+            },
+            {
+              "name": "A non-technical client can read and correct the story map (HTML)",
+              "priority": "should",
+              "release": "R1 Dogfood"
+            },
+            {
+              "name": "Stories carry EARS-style acceptance criteria gates can check",
+              "priority": "could",
+              "release": "R3 Delight"
+            }
+          ]
+        },
+        {
+          "name": "Brief",
+          "stories": [
+            {
+              "name": "brief.md surface table feeds the designer; every registry surface traces to a story",
+              "priority": "must",
+              "release": "R1 Dogfood"
+            },
+            {
+              "name": "Registry seeded from the brief without rewriting",
+              "priority": "must",
+              "release": "R1 Dogfood"
+            }
+          ]
+        },
+        {
+          "name": "Moodboard",
+          "stories": [
+            {
+              "name": "Given the story map, the moodboard orchestrator fans out per-epic reference-gathering prompts and curates real apps to steal from",
+              "priority": "must",
+              "release": "R1 Dogfood"
+            },
+            {
+              "name": "Each reference's key screens are captured (probe-runner) and saved with semantic filenames (ref__screen.png)",
+              "priority": "must",
+              "release": "R1 Dogfood"
+            },
+            {
+              "name": "The moodboard assembles as a browsable doc linking references and shots to the epics they inform; every embedded shot verified on disk",
+              "priority": "must",
+              "release": "R1 Dogfood"
+            },
+            {
+              "name": "The design stage receives the moodboard alongside the brief and consults it before authoring",
+              "priority": "should",
+              "release": "R1 Dogfood"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Design & Freeze",
+      "features": [
+        {
+          "name": "Prototype",
+          "stories": [
+            {
+              "name": "Brief to clickable htmx prototype in under 10 minutes, carrying structure not pixels",
+              "priority": "must",
+              "release": "R1 Dogfood"
+            },
+            {
+              "name": "Every surface designed at 390/744/1280 from targets alone (literal parity)",
+              "priority": "must",
+              "release": "R1 Dogfood"
+            },
+            {
+              "name": "Target selection labels buildability on this machine (requires macOS)",
+              "priority": "must",
+              "release": "R1 Dogfood"
+            }
+          ]
+        },
+        {
+          "name": "Chat",
+          "stories": [
+            {
+              "name": "Select a screen, chat exclusively in its context; all other screens dim",
+              "priority": "must",
+              "release": "R1 Dogfood"
+            },
+            {
+              "name": "Selection is a removable context chip: this surfaceId's spec, never the whole app",
+              "priority": "must",
+              "release": "R1 Dogfood"
+            },
+            {
+              "name": "Hard tool-gating: only this screen's tools exposed (edit-layout, restyle, adjust-states, regenerate)",
+              "priority": "must",
+              "release": "R1 Dogfood"
+            },
+            {
+              "name": "Text/token tweaks apply instantly, no model round-trip",
+              "priority": "should",
+              "release": "R1 Dogfood"
+            },
+            {
+              "name": "Each message checkpoints this screen only; one-tap revert, rendered before/after",
+              "priority": "must",
+              "release": "R1 Dogfood"
+            },
+            {
+              "name": "Stale-selection guard: prototype changed since selection triggers re-sync or warn",
+              "priority": "should",
+              "release": "R1 Dogfood"
+            },
+            {
+              "name": "Shared token/nav edit offers 'affects N screens, apply to all?' (nobody ships this)",
+              "priority": "could",
+              "release": "R2 Anywhere"
+            }
+          ]
+        },
+        {
+          "name": "Freeze",
+          "stories": [
+            {
+              "name": "Hash-locked freeze; approval bound to the design hash; post-approval change goes stale loudly",
+              "priority": "must",
+              "release": "R1 Dogfood"
+            },
+            {
+              "name": "Drift report + brief-to-surface-to-code traceability",
+              "priority": "must",
+              "release": "R1 Dogfood"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Build & Gates",
+      "features": [
+        {
+          "name": "Loop",
+          "stories": [
+            {
+              "name": "Start a build, walk away; stops on red, ESC_LIMIT=3",
+              "priority": "must",
+              "release": "R1 Dogfood"
+            },
+            {
+              "name": "Per-surface evidence report (screen to tests to code), not one giant diff",
+              "priority": "must",
+              "release": "R1 Dogfood"
+            },
+            {
+              "name": "SARIF findings pinned to file/line with reproduce command",
+              "priority": "must",
+              "release": "R1 Dogfood"
+            }
+          ]
+        },
+        {
+          "name": "Gates",
+          "stories": [
+            {
+              "name": "Three gates an agent can reach but never pass; approval = human + any authenticated shell, provenance-bound (shell, device/node identity, confirm method, timestamp, hash)",
+              "priority": "must",
+              "release": "R1 Dogfood"
+            },
+            {
+              "name": "Approve/reject from phone push with biometric confirm",
+              "priority": "must",
+              "release": "R1 Dogfood"
+            },
+            {
+              "name": "Pre-submission checklist gate (crashes/permissions, where generated apps die)",
+              "priority": "should",
+              "release": "R1 Dogfood"
+            }
+          ]
+        },
+        {
+          "name": "Visual",
+          "stories": [
+            {
+              "name": "probe-runner design-vs-built gates: pixel (SSIM), skeleton, colour (deltaE) against the frozen golden",
+              "priority": "must",
+              "release": "R1 Dogfood"
+            },
+            {
+              "name": "Smoke per target: app boots, first screen renders, no crash",
+              "priority": "must",
+              "release": "R1 Dogfood"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Flows Canvas",
+      "features": [
+        {
+          "name": "Canvas",
+          "stories": [
+            {
+              "name": "app-box auto-captures screenshots of design + built app per surface (probe-runner)",
+              "priority": "must",
+              "release": "R2 Anywhere"
+            },
+            {
+              "name": "Flows on a canvas: living captures, connections truth-derived from real navigation",
+              "priority": "must",
+              "release": "R2 Anywhere"
+            },
+            {
+              "name": "Replayable named flows for gate reviews; zoom-semantic canvas keyed to story-map sections",
+              "priority": "should",
+              "release": "R2 Anywhere"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Ship & Deploy",
+      "features": [
+        {
+          "name": "Deploy",
+          "stories": [
+            {
+              "name": "Per-platform builds from one codebase; unbuildable targets hard-block as a named precondition, never a red gate",
+              "priority": "must",
+              "release": "R1 Dogfood"
+            },
+            {
+              "name": "Payment gate at first deploy: licence required to ship; everything before it free",
+              "priority": "must",
+              "release": "R1 Dogfood"
+            },
+            {
+              "name": "Export-always: ordinary Stacked MVVM in my own repo, no export tier",
+              "priority": "must",
+              "release": "R1 Dogfood"
+            },
+            {
+              "name": "Guided store submission (most-cited unmet gap in every builder)",
+              "priority": "should",
+              "release": "R2 Anywhere"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Access & Devices",
+      "features": [
+        {
+          "name": "Pairing",
+          "stories": [
+            {
+              "name": "One-scan QR pairing (host/port/nonce/key fingerprint); relayed QR fails the pin",
+              "priority": "must",
+              "release": "R1 Dogfood"
+            },
+            {
+              "name": "Device list with last-seen + revoke; revoke drops the session immediately",
+              "priority": "must",
+              "release": "R1 Dogfood"
+            },
+            {
+              "name": "LAN-only by default, no cloud relay; an agent can never mint an approval",
+              "priority": "must",
+              "release": "R1 Dogfood"
+            }
+          ]
+        },
+        {
+          "name": "Notifications",
+          "stories": [
+            {
+              "name": "Push when a gate goes red (deduped per transition), deep-link into the gate card",
+              "priority": "must",
+              "release": "R1 Dogfood"
+            },
+            {
+              "name": "Actionable notification: approve/reject without opening the app",
+              "priority": "should",
+              "release": "R1 Dogfood"
+            }
+          ]
+        },
+        {
+          "name": "Remote",
+          "stories": [
+            {
+              "name": "Self-host tailnet (compose file) or hosted Tailscale; pre-auth key in the QR; approvals bind to WireGuard node identity",
+              "priority": "should",
+              "release": "R2 Anywhere"
+            },
+            {
+              "name": "Private mesh CA gives trusted HTTPS origins over the mesh (arxa ADR-0036 pattern)",
+              "priority": "should",
+              "release": "R2 Anywhere"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "First Run & Showcase",
+      "features": [
+        {
+          "name": "Showcase",
+          "stories": [
+            {
+              "name": "Showcase app launches on install, automatically; quality visible in minute one",
+              "priority": "must",
+              "release": "R1 Dogfood"
+            },
+            {
+              "name": "First project to working prototype in 20 minutes or less, no docs (timed; over 20 is a finding)",
+              "priority": "must",
+              "release": "R1 Dogfood"
+            }
+          ]
+        },
+        {
+          "name": "Honesty",
+          "stories": [
+            {
+              "name": "Stubs labelled before you build against them; kit availability honest",
+              "priority": "must",
+              "release": "R1 Dogfood"
+            },
+            {
+              "name": "Credential tier stated on screen (stored in the macOS Keychain)",
+              "priority": "must",
+              "release": "R1 Dogfood"
+            },
+            {
+              "name": "Empty states carry wording, not blank surfaces",
+              "priority": "should",
+              "release": "R1 Dogfood"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Workspace",
+      "features": [
+        {
+          "name": "Projects",
+          "stories": [
+            {
+              "name": "Multi-project management; registry CRUD; add/delete feature yields byte-identical round-trip",
+              "priority": "must",
+              "release": "R1 Dogfood"
+            }
+          ]
+        },
+        {
+          "name": "Settings",
+          "stories": [
+            {
+              "name": "BYO key in OS vault, never logged; no inference metering, cost is yours and visible",
+              "priority": "must",
+              "release": "R1 Dogfood"
+            },
+            {
+              "name": "Flat licence, never per-seat; pay at first deploy",
+              "priority": "must",
+              "release": "R1 Dogfood"
+            },
+            {
+              "name": "Kit vendoring from targets + capabilities; dependencyMode config from day one",
+              "priority": "should",
+              "release": "R1 Dogfood"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Website",
+      "features": [
+        {
+          "name": "Site",
+          "stories": [
+            {
+              "name": "A visitor gets app-box in 30 seconds: gated pipeline, own-your-code export, pay-at-deploy",
+              "priority": "must",
+              "release": "R2 Anywhere"
+            },
+            {
+              "name": "The three human gates are the headline, shown not told (recorded gate flow)",
+              "priority": "should",
+              "release": "R2 Anywhere"
+            },
+            {
+              "name": "Pricing page: flat licence, never per-seat, BYO key, pay at first deploy (the anti-credit-rage page)",
+              "priority": "must",
+              "release": "R2 Anywhere"
+            }
+          ]
+        },
+        {
+          "name": "Docs",
+          "stories": [
+            {
+              "name": "Docs portal publishes the knowledge base (architecture, plans, research, skills) with search",
+              "priority": "must",
+              "release": "R1 Dogfood"
+            },
+            {
+              "name": "Getting-started mirrors Michelle's 20 minutes: install, showcase, first prototype",
+              "priority": "must",
+              "release": "R1 Dogfood"
+            },
+            {
+              "name": "Public honesty page: what is wired, what throws, what is roadmap",
+              "priority": "should",
+              "release": "R2 Anywhere"
+            }
+          ]
+        },
+        {
+          "name": "Showcase",
+          "stories": [
+            {
+              "name": "Recorded walkthroughs and design-vs-built comparisons (probe-runner captures) prove quality before install",
+              "priority": "should",
+              "release": "R2 Anywhere"
+            },
+            {
+              "name": "Demo videos per persona journey (Evan's modes, Michelle's 20 minutes)",
+              "priority": "should",
+              "release": "R2 Anywhere"
+            }
+          ]
+        },
+        {
+          "name": "Download",
+          "stories": [
+            {
+              "name": "Download per platform: macOS dmg, daemon CLI for Windows/Linux, mobile apps, with the honest build matrix",
+              "priority": "must",
+              "release": "R2 Anywhere"
+            },
+            {
+              "name": "Licence purchase and activation, pay-at-deploy explained before checkout",
+              "priority": "must",
+              "release": "R2 Anywhere"
+            },
+            {
+              "name": "Changelog and release notes per version",
+              "priority": "should",
+              "release": "R2 Anywhere"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
