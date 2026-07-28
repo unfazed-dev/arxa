@@ -188,6 +188,38 @@ class {comp}ViewModel extends BaseViewModel {{}}
 """
 
 
+def design_system_doc(screen, factors):
+    """The design-system.md every surface dir must carry (the review gate's
+    design_system_doc check). STRUCTURE ONLY — the builder fills the real intent
+    (palette/type/spacing/motion/forbidden). The slot existing is the gate's
+    contract; the content is the builder's job, same split as the view stubs."""
+    return f"""# design-system — {screen['surface']}
+
+> app-box-scaffolder: STRUCTURE ONLY. The builder (plan 08) fills the real intent.
+
+- **surface:** `{screen['surface']}`  ({screen['id']})
+- **shell:**  {screen['shell']}
+- **derived form factors:** {', '.join(factors) if factors else '(none)'}
+
+## Palette
+<!-- builder: KitColors.* tokens this surface uses -->
+
+## Type
+<!-- builder: KitTypography.* roles -->
+
+## Spacing
+<!-- builder: spacing tokens (no ad-hoc SizedBox gaps) -->
+
+## Motion
+<!-- builder: KitMotion.* curves/durations -->
+
+## Forbidden
+- `Icons.*` (use `KitGlyphs.*`)
+- ad-hoc `Color(0x…)` (use `KitColors.*`)
+- stock `ElevatedButton`/`FilledButton`/`TextButton` CTAs (use `KitNativeButton`)
+"""
+
+
 # ----------------------------------------------------------------- manifest
 def build_manifest(frozen, factors, targets):
     """The .shell-structure.json the coverage gate reads: selfContained shells
@@ -202,6 +234,11 @@ def build_manifest(frozen, factors, targets):
     return {
         "selfContained": shells,
         "surfaces": by_shell,
+        # the DERIVED form-factor set (§16): macos -> [desktop], never the full
+        # mobile+tablet+desktop. The review gate (form_factor_files) reads this to
+        # expect exactly these factor files — not the legacy 5-file set. §16/P14-14.8.
+        "factors": factors,
+        "targets": targets,
         "notes": (
             "scaffolded by app-box-scaffolder from a frozen structure.json; "
             f"targets=[{','.join(targets)}] -> form factors [{fl}]; "
@@ -305,6 +342,8 @@ def scaffold(design_root, app_root, targets, derivation_path, config_path, check
                 stub_factor(s, f, targets))
         open(os.path.join(base, f"{d}_viewmodel.dart"), "w").write(
             stub_viewmodel(s))
+        open(os.path.join(base, "design-system.md"), "w").write(
+            design_system_doc(s, factors))
         written += 1
 
     manifest = build_manifest(frozen, factors, targets)
@@ -459,9 +498,11 @@ def _self_test():
         chk((base / "projects_home_view.mobile.dart").is_file(), "ios,android: mobile factor exists")
         chk((base / "projects_home_view.tablet.dart").is_file(), "ios,android: tablet factor exists")
         chk(not (base / "projects_home_view.desktop.dart").exists(), "ios,android: no desktop factor")
-        # 4 files: base + mobile + tablet + viewmodel
+        # 5 files: base + mobile + tablet + viewmodel + design-system.md (the
+        # review gate's design_system_doc carrier; STRUCTURE ONLY, builder fills)
         got = sorted(p.name for p in base.iterdir())
-        chk(len(got) == 4, f"ios,android: 4 files/surface (got {got})")
+        chk(len(got) == 5, f"ios,android: 5 files/surface (got {got})")
+        chk((base / "design-system.md").is_file(), "design-system.md emitted per surface")
 
         # 3. web -> [mobile, tablet, desktop] -> 5 files/surface.
         chk(derive_factors(["web"], str(DERIVATION), str(CONFIG))

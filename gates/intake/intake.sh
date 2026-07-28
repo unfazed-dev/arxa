@@ -48,6 +48,7 @@ SELF_TEST=0
 ANSWERS=""
 REGISTRY=""
 BRIEF=""
+APP="${KIT_APP:-$PWD}"
 while [ $# -gt 0 ]; do
   case "$1" in
     --self-test) SELF_TEST=1; shift ;;
@@ -55,27 +56,43 @@ while [ $# -gt 0 ]; do
     --registry)  REGISTRY="$2"; shift 2 ;;
     --brief)     BRIEF="$2"; shift 2 ;;
     --*)         echo "FAIL: unknown flag: $1" >&2; exit 2 ;;
-    *)           echo "FAIL: unexpected argument: $1" >&2; exit 2 ;;
+    *)           APP="$1"; shift ;;   # positional app-root (like freeze/structure)
   esac
 done
 
 # ----------------------------------------------------------------- path resolve
-# answers: explicit flag, env, or pipeline state intake slot.
+# app-root + KIT_DESIGN_DIR select the producer folder (same idiom as every other
+# gate). The registry lives where structure.json says (designer default
+# models/screens_model/registry.json) — NEVER the legacy docs/design/ path.
+APP="$(cd "$APP" 2>/dev/null && pwd)" || { echo "FAIL: intake: app root not found: $APP" >&2; exit 2; }
+DESIGN_REL="${KIT_DESIGN_DIR:-design}"
+case "$DESIGN_REL" in
+  /*) echo "FAIL: KIT_DESIGN_DIR must be relative to the app root, got: $DESIGN_REL" >&2; exit 2 ;;
+esac
+DESIGN="$APP/$DESIGN_REL"
+ROOT="$(git rev-parse --show-toplevel 2>/dev/null || echo "$APP")"
+
+# answers: explicit flag, env, or pipeline state intake slot (pipeline-wide).
 if [ -z "$ANSWERS" ]; then
   if [ -n "${APPBOX_INTAKE:-}" ] && [ -f "${APPBOX_INTAKE}" ]; then
     ANSWERS="$APPBOX_INTAKE"
-  else
-    ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
-    if [ -f "$ROOT/pipeline/state/run.intake.json" ]; then
-      ANSWERS="$ROOT/pipeline/state/run.intake.json"
-    elif [ -f "$ROOT/pipeline/state/default.intake.json" ]; then
-      ANSWERS="$ROOT/pipeline/state/default.intake.json"
-    fi
+  elif [ -f "$ROOT/pipeline/state/run.intake.json" ]; then
+    ANSWERS="$ROOT/pipeline/state/run.intake.json"
+  elif [ -f "$ROOT/pipeline/state/default.intake.json" ]; then
+    ANSWERS="$ROOT/pipeline/state/default.intake.json"
   fi
 fi
 
-[ -z "$REGISTRY" ] && REGISTRY="$GATE_ROOT/docs/design/registry.json"
-[ -z "$BRIEF" ]    && BRIEF="$GATE_ROOT/docs/design/brief.md"
+# registry: structure.json's "registry" field (default models/screens_model/registry.json)
+if [ -z "$REGISTRY" ]; then
+  REG_REL="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("registry") or "models/screens_model/registry.json")' "$DESIGN/structure.json" 2>/dev/null || echo models/screens_model/registry.json)"
+  REGISTRY="$DESIGN/$REG_REL"
+fi
+# brief: design-local first, then the repo's authored brief (docs/design/brief.md)
+if [ -z "$BRIEF" ]; then
+  BRIEF="$DESIGN/brief.md"
+  [ -f "$BRIEF" ] || BRIEF="$ROOT/docs/design/brief.md"
+fi
 
 run_gate(){
   python3 - "$ANSWERS" "$REGISTRY" "$BRIEF" 2>&1 <<'PY'

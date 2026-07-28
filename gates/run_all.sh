@@ -4,7 +4,8 @@
 # non-zero if any gate failed. It ORCHESTRATES: it contains no assertions of its
 # own — every pass/fail verdict belongs to a gate.
 #
-# Dependency order: freeze -> structure -> scaffold -> coverage -> review -> deploy.
+# Dependency order: intake -> freeze -> structure -> scaffold -> coverage -> review -> deploy.
+#   intake    every registry surface traces to a brief/answers (traceability)
 #   freeze    the frozen inputs exist and surfaces render clean
 #   structure the shell/surface map resolves and is in sync
 #   scaffold  shell/widget/overlay boundaries hold
@@ -101,6 +102,9 @@ for c in d.get("checks",[]):
 
 printf 'run_all: gates over %s\n' "$APP"
 
+# intake first: traceability is a PRE-condition — every registry surface must
+# trace to a brief/answers before anything is frozen. (10.6)
+run_bash_gate   intake    "$GATES_DIR/intake/intake.sh"    "$APP"
 run_bash_gate   freeze    "$GATES_DIR/freeze/freeze.sh"    "$APP"
 run_bash_gate   structure "$GATES_DIR/structure/structure.sh" "$APP"
 run_bash_gate   scaffold  "$GATES_DIR/scaffold/scaffold.sh"  "$APP"

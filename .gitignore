@@ -47,6 +47,7 @@ npm-debug.log*
 .pipeline/
 .appbox/
 .blueprint/
+.kit/          # gate SARIF + per-run state (run_all writes .kit/state/gates.sarif)
 .claude-flow/
 .kim[i]-code/
 *.run.json

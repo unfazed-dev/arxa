@@ -119,20 +119,26 @@ One `stage_shell` with tabs, matching the htmx producer's own convention.
 
 | id | tab | surface | states to design |
 |---|---|---|---|
+| `stage.shell` | stage | `stage_shell_view` | nav rail · tabs · gate badge |
 | `projects.home` | projects | `stage_shell_projects_home_view` | empty · list · loading |
 | `projects.new` | projects | `stage_shell_projects_new_view` | form · validating · error |
+| `projects.splash` | projects | _null_ | first-run · onboarding |
+| `projects.showcase` | projects | _null_ | the dogfood — app_box shows itself |
 | `design.directions` | design | `stage_shell_design_directions_view` | 3-up · one approved |
 | `design.surface` | design | `stage_shell_design_surface_view` | live preview · stale |
 | `design.approve` | design | `stage_shell_design_approve_view` | **gate 1** — pending · approved |
 | `build.run` | build | `stage_shell_build_run_view` | idle · running · green · **red** |
 | `build.finding` | build | `stage_shell_build_finding_view` | file · line · rule · fix |
 | `build.approve` | build | `stage_shell_build_approve_view` | **gate 2** |
+| `build.recovery` | build | _null_ | red-gate · diagnose · fix · re-run |
 | `ship.targets` | ship | `stage_shell_ship_targets_view` | fastlane · shorebird · CF Pages |
 | `ship.confirm` | ship | `stage_shell_ship_confirm_view` | **gate 3** — the triple |
+| `ship.released` | ship | _null_ | shipped · version · rollback |
 | `chat.home` | chat | `stage_shell_chat_home_view` | idle · streaming · tool-call |
 | `settings.credentials` | settings | `stage_shell_settings_credentials_view` | vault tier stated |
 | `settings.devices` | settings | `stage_shell_settings_devices_view` | paired · revoke |
 | `settings.kits` | settings | `stage_shell_settings_kits_view` | wired vs **stubbed** |
+| `settings.pair` | settings | _null_ | QR pair · fingerprint · device name |
 
 `settings.kits` earns its place from `stub-inventory.md`: 5 of 23 kits are
 partial and several providers throw. A buyer who picks Stripe and discovers

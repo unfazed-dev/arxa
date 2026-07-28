@@ -35,5 +35,28 @@ o="$(dart "$GATE" "$SURF/home_view.dart" 2>&1)"; chk "$?" 1 "negative: hardcoded
 need "$o" "Color(0xFF112233)" "negative names the offending color literal"
 need "$o" "no_hardcoded_colors" "negative names the failed check"
 
+# ---- §16 derivation: a manifest-declared factor set is the expected file set --
+# A .shell-structure.json with factors=[desktop] means a 3-file set (view +
+# _view.desktop.dart + viewmodel), NOT the legacy 5-file mobile+tablet+desktop.
+MAC="$T/lib/ui/views"; mkdir -p "$MAC"
+printf '{"selfContained":["m"],"surfaces":{"m":{"m_d_view":"d"}},"factors":["desktop"],"targets":["macos"]}\n' \
+  > "$MAC/.shell-structure.json"
+DS="$MAC/m/d"; mkdir -p "$DS"
+printf 'class DView {}\n'            > "$DS/d_view.dart"
+printf 'class DViewDesktop {}\n'     > "$DS/d_view.desktop.dart"
+printf 'class DViewModel {}\n'       > "$DS/d_viewmodel.dart"
+printf '## Palette\nkcPrimaryColor\n\n## Forbidden\nIcons.*\n' > "$DS/design-system.md"
+o="$(dart "$GATE" "$DS/d_view.dart" 2>&1)"; chk "$?" 0 "§16: manifest factors=[desktop], desktop file present -> 3-file set PASSES"
+need "$o" "derived factors desktop" "§16 pass cites the derived set + manifest"
+
+# NEGATIVE: a manifest declares factors=[desktop] but the desktop file is missing
+# -> form_factor_files FAILS naming the missing _view.desktop.dart (NOT demanding
+# the legacy mobile/tablet the derivation correctly omits).
+rm "$DS/d_view.desktop.dart"
+o="$(dart "$GATE" "$DS/d_view.dart" 2>&1)"; chk "$?" 1 "§16 negative: declared desktop factor missing -> FAILS"
+need "$o" "d_view.desktop.dart" "§16 negative names the missing derived factor file"
+need "$o" "form_factor_files" "§16 negative names the failed check"
+need "$o" "3-file set" "§16 negative explains macos is a 3-file set, not 5"
+
 echo "review selftest: $pass passed, $failc failed"
 [ "$failc" -eq 0 ] && exit 0 || exit 1

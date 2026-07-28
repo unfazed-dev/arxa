@@ -564,7 +564,15 @@ CheckResult checkNoCrossShellImports(String src, String path) {
       'and models may be shared');
 }
 
-/// Check 5: for a view shell file, the 4 sibling form-factor files exist.
+/// Check 5: for a view shell file, the sibling form-factor files exist.
+///
+/// §16 derivation: the expected factor set is DERIVED from targets (macos →
+/// [desktop], 3 files), never the legacy full mobile+tablet+desktop (5 files).
+/// The scaffolder records the derived set as `factors` in the nearest
+/// `.shell-structure.json` (under lib/ui/views/). When that manifest is present
+/// we expect exactly its factors; when absent (hand-built apps, fixtures,
+/// pre-§16 trees) we fall back to the legacy 5-file set so nothing that passed
+/// before now fails.
 CheckResult checkFormFactorFiles(String viewShellPath) {
   final file = File(viewShellPath);
   if (!file.existsSync()) {
@@ -579,21 +587,56 @@ CheckResult checkFormFactorFiles(String viewShellPath) {
     return CheckResult('form_factor_files', true,
         'not a *_view.dart shell — sibling check skipped');
   }
-  final expected = [
+  final manifestFactors = _derivedFactorsFromManifest(viewShellPath);
+  // No manifest → legacy 5-file expectation (mobile + tablet + desktop).
+  final factors = manifestFactors ?? const ['mobile', 'tablet', 'desktop'];
+  final expected = <String>[
     '${base}_view.dart',
-    '${base}_view.mobile.dart',
-    '${base}_view.tablet.dart',
-    '${base}_view.desktop.dart',
+    for (final f in factors) '${base}_view.$f.dart',
     '${base}_viewmodel.dart',
   ];
   final missing = expected.where((p) => !File(p).existsSync()).toList();
   if (missing.isEmpty) {
-    return CheckResult('form_factor_files', true,
-        'all 5 form-factor files present');
+    final src = manifestFactors != null
+        ? 'derived factors ${manifestFactors.join(", ")} (§16) per .shell-structure.json'
+        : 'all form-factor files present (legacy 5-file set)';
+    return CheckResult('form_factor_files', true, src);
   }
+  final because = manifestFactors != null
+      ? 'targets derive form factors [${manifestFactors.join(", ")}] per '
+          '.shell-structure.json (§16) — a macos target is a 3-file set, not 5. '
+          'See stacked-patterns.md / architecture §16.'
+      : 'Every surface is a 5-file set (view + mobile + tablet + desktop + '
+          'viewmodel). See stacked-patterns.md.';
   return CheckResult('form_factor_files', false,
-      'missing form-factor file(s): $missing. Every surface is a 5-file set '
-      '(view + mobile + tablet + desktop + viewmodel). See stacked-patterns.md.');
+      'missing form-factor file(s): $missing. $because');
+}
+
+/// Walk up from a view file to find the nearest `.shell-structure.json` (the
+/// scaffolder writes it under lib/ui/views/) and return its declared `factors`.
+/// Returns null when no manifest is reachable — caller falls back to legacy.
+List<String>? _derivedFactorsFromManifest(String viewPath) {
+  var dir = File(viewPath).parent;
+  for (var i = 0; i < 16 && dir.path.isNotEmpty; i++) {
+    final candidate = File('${dir.path}/.shell-structure.json');
+    if (candidate.existsSync()) {
+      try {
+        final doc = jsonDecode(candidate.readAsStringSync());
+        if (doc is Map<String, dynamic> && doc['factors'] is List) {
+          final fs = (doc['factors'] as List)
+              .map((e) => e.toString())
+              .where((s) => s.isNotEmpty)
+              .toList();
+          return fs;
+        }
+        return null; // manifest present but no `factors` field → legacy
+      } catch (_) {
+        return null;
+      }
+    }
+    dir = dir.parent;
+  }
+  return null;
 }
 
 /// Check 6: design-system.md exists in the surface directory (mandatory).
