@@ -1,0 +1,25 @@
+# Copy or source this file before invoking probe-runner scripts.
+
+# Where all stills, videos, json dumps, and pcaps go.
+export PROBE_RUNNER_OUTDIR=/tmp/probe-runner
+
+# Default web browser for the web_*.py scripts: chrome | safari
+export PROBE_RUNNER_BROWSER=chrome
+
+# Chrome remote-debugging port — change only if 9222 is taken.
+export PROBE_RUNNER_CHROME_CDP_PORT=9222
+
+# Chrome user-data dir — keeps the inspected profile clean.
+export PROBE_RUNNER_CHROME_USER_DATA_DIR=/tmp/probe-runner-chrome
+
+# iOS sim default — boots this device if you call `ios_*` without --udid.
+# Find names with: xcrun simctl list devices
+export PROBE_RUNNER_IOS_DEVICE="iPhone 15"
+
+# Android emu default — adb -s <serial> uses this if unset and only one
+# emulator is attached.
+# export PROBE_RUNNER_ADB_SERIAL=emulator-5554
+
+# Flutter VM-service URL — populated by `flutter_attach.py --auto`.
+# Leave commented; the script writes it to $PROBE_RUNNER_OUTDIR/flutter.url.
+# export PROBE_RUNNER_FLUTTER_VM=ws://127.0.0.1:64321/<auth>/ws

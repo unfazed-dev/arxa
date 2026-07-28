@@ -58,5 +58,27 @@ need "$o" "d_view.desktop.dart" "§16 negative names the missing derived factor 
 need "$o" "form_factor_files" "§16 negative names the failed check"
 need "$o" "3-file set" "§16 negative explains macos is a 3-file set, not 5"
 
+# ---- §16 derivation: web's 3-factor manifest -> the full 5-file set ---------
+# factors=[mobile,tablet,desktop] (web) must require all three factor files,
+# same total as the legacy set but via derivation, not the fallback.
+WEB="$T/lib/ui/views_web"; mkdir -p "$WEB"
+printf '{"selfContained":["m"],"surfaces":{"m":{"m_w_view":"w"}},"factors":["mobile","tablet","desktop"],"targets":["web"]}\n' \
+  > "$WEB/.shell-structure.json"
+WS="$WEB/m/w"; mkdir -p "$WS"
+printf 'class WView {}\n'            > "$WS/w_view.dart"
+printf 'class WViewMobile {}\n'      > "$WS/w_view.mobile.dart"
+printf 'class WViewTablet {}\n'      > "$WS/w_view.tablet.dart"
+printf 'class WViewDesktop {}\n'     > "$WS/w_view.desktop.dart"
+printf 'class WViewModel {}\n'       > "$WS/w_viewmodel.dart"
+printf '## Palette\nkcPrimaryColor\n\n## Forbidden\nIcons.*\n' > "$WS/design-system.md"
+o="$(dart "$GATE" "$WS/w_view.dart" 2>&1)"; chk "$?" 0 "§16: web manifest factors=[mobile,tablet,desktop], all present -> 5-file set PASSES"
+need "$o" "derived factors mobile, tablet, desktop" "§16 web pass cites the derived set"
+
+# NEGATIVE: web manifest but the tablet factor file is missing -> FAILS naming it.
+rm "$WS/w_view.tablet.dart"
+o="$(dart "$GATE" "$WS/w_view.dart" 2>&1)"; chk "$?" 1 "§16 negative: web declared tablet factor missing -> FAILS"
+need "$o" "w_view.tablet.dart" "§16 web negative names the missing derived factor file"
+need "$o" "form_factor_files" "§16 web negative names the failed check"
+
 echo "review selftest: $pass passed, $failc failed"
 [ "$failc" -eq 0 ] && exit 0 || exit 1

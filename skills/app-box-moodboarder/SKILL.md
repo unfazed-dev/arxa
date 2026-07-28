@@ -79,7 +79,7 @@ not to moodboarding.
 | `web_tokens` *(optional)* | computed palette/type/radii/shadows → `tokens.json` beside the shot — upgrades "picture to eyeball" to "tokens to steal" |
 
 ```bash
-PROBE=~/.claude/skills/probe-runner/scripts    # vendored into app-box per O1; shell-out, no import dep
+PROBE=tools/vendor/probe-runner/scripts        # resolves to the vendored copy (O1); shell-out, no import dep
 python3 $PROBE/web_open.py <url>                # navigate (Chrome/CDP); web_shot.py takes NO --url
 python3 $PROBE/web_shot.py --out <path.png>     # capture the open page; safaridriver when no Chrome
 ```

@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1280, initial-scale=1">
+<title>scroll-motion fixture: late-built scroll height (SPA hydration race)</title>
+<style>
+  /* Deterministic stand-in for an SPA that builds its tall scrollable page +
+     installs its scroll-scrub motion AFTER an async tick (hydration / GSAP load).
+     At t<BUILD_MS the document is exactly one viewport tall, so
+     documentElement.scrollHeight === innerHeight and web_anim's range is 0:0.
+     This is the REAL cause of the live "empty scroll range 0:0" deaths on
+     ashley/razorpay/detroit (measured 2026-05-30): web_anim navigated + detected
+     before the page was ready, not because the sites lack scroll motion.
+     Hypothesised web_anim failure (no readiness wait): bails immediately.
+     After a readiness wait: certifies tx(linear) like native-scrub. */
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 1280px; background: #fff; font-family: Arial, sans-serif; }
+  #mover { position: fixed; left: 100px; top: 200px; width: 200px; height: 200px;
+           background: #0f3460; will-change: transform, opacity; }
+</style>
+</head>
+<body>
+  <div id="mover"></div>
+<script>
+  var BUILD_MS = 6000;            // hydration delay before the page becomes scrollable
+                                  // (exceeds web_anim's current post-navigate wait, which
+                                  // absorbs a ~1.2s local build; real SPAs build post-`load`
+                                  // over the network and lose this race)
+  var mover = document.getElementById('mover');
+  function apply() {
+    var maxS = document.documentElement.scrollHeight - innerHeight;
+    var p = maxS > 0 ? Math.min(1, Math.max(0, window.scrollY / maxS)) : 0;
+    mover.style.transform = 'translateX(' + (-600 * p) + 'px)';
+    mover.style.opacity = (1 - 0.8 * p).toFixed(4);
+  }
+  setTimeout(function () {
+    var sp = document.createElement('div');
+    sp.id = 'spacer'; sp.style.height = '3000px';
+    document.body.appendChild(sp);          // page becomes scrollable only now
+    addEventListener('scroll', apply, { passive: true });
+    apply();
+  }, BUILD_MS);
+</script>
+</body>
+</html>

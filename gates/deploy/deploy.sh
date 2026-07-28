@@ -5,6 +5,11 @@
 # full release mechanics; this gate only owns the confirmation contract, so the
 # pipeline cannot ship a build whose target/version/account is unset.
 #
+# PRECONDITION (consolidation decision 11, amending architecture §17): a valid
+# licence must be confirmed BEFORE the deploy phase runs — the paywall sits at
+# first deploy; everything before it is free. Verified by licence.sh (the
+# check, not the store: config/env licence state, no payment provider).
+#
 # Reads pipeline state through gates/_common/state_reader.sh (APPBOX_STATE
 # selects the state file; defaults to pipeline/state/run.state.json then
 # default.state.json). Findings route through gates/_common/sarif.sh (4.2).
@@ -20,6 +25,16 @@ source "$GATE_COMMON/sarif.sh"
 # state_reader.sh enables `set -e`; this gate reports failures via exit codes,
 # not by aborting, so restore the non-errexit discipline this gate was written for.
 set +e
+
+# Licence precondition FIRST — named and legible, before any gate check runs.
+# An unlicensed deploy halts here (exit 1) with activation instructions; it is
+# never reported as a gate finding (a gate that goes red for payment reasons
+# teaches people to distrust red — §17's own constraint).
+GATE_DIR="$(cd "$(dirname "$0")" && pwd)"
+if ! bash "$GATE_DIR/licence.sh"; then
+  echo "deploy: HALTED — licence precondition not met (see above)." >&2
+  exit 1
+fi
 
 STATE="$(state_file)"
 [ -f "$STATE" ] || { echo "FAIL: deploy: no pipeline state at $STATE — a gate that cannot find its input never passes quietly" >&2; sarif_result "deploy" "error" "$STATE" "no pipeline state"; exit 1; }

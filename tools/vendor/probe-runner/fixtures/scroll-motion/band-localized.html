@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1280, initial-scale=1">
+<title>scroll-motion fixture: band-localized motion (ScrollTrigger start/end)</title>
+<style>
+  /* Deterministic stand-in for a ScrollTrigger whose motion is confined to a
+     narrow scroll band (start:"top center", end:"+=1000") on a long page — the
+     common awwwards pattern. The mover is static outside [B0,B1] and animates
+     only inside it. A coarse UNIFORM global sweep lands ~1 sample in the band, so
+     channel_active_range() trims to <4 points and web_anim reports
+     "no resolvable active range at this sampling (try more --steps)".
+     This is the measured Ashley failure for 21/60 channels (2026-05-30).
+     Hypothesised web_anim failure (single coarse global sweep): uncertified.
+     After two-pass band re-sampling: certifies tx(linear) inside [B0,B1]. */
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 1280px; background: #fff; font-family: Arial, sans-serif; }
+  #spacer { height: 13000px; }                 /* long page, like ashley (12550) */
+  #mover  { position: fixed; left: 100px; top: 200px; width: 200px; height: 200px;
+            background: #533483; will-change: transform; }
+</style>
+</head>
+<body>
+  <div id="mover"></div>
+  <div id="spacer"></div>
+<script>
+  var B0 = 5000, B1 = 5400;        // motion confined to this 400px band (under coarse
+                                   // global sampling: ~0-1 samples land inside it)
+  var mover = document.getElementById('mover');
+  function apply() {
+    var p = Math.min(1, Math.max(0, (window.scrollY - B0) / (B1 - B0)));
+    mover.style.transform = 'translateX(' + (-600 * p) + 'px)';
+  }
+  addEventListener('scroll', apply, { passive: true });
+  apply();
+</script>
+</body>
+</html>

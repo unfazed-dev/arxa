@@ -1,0 +1,22 @@
+{
+  "schema": "probe-substrate/1",
+  "url": "https://kasane-keyboard.com/craftanddesign",
+  "regions": [
+    {
+      "node_id": 251,
+      "kind": "canvas",
+      "role": "image",
+      "bbox": {
+        "x": 0.0,
+        "y": 2739.0,
+        "w": 1440.0,
+        "h": 913.0
+      },
+      "z": 78
+    }
+  ],
+  "n_regions": 1,
+  "kinds": {
+    "canvas": 1
+  }
+}

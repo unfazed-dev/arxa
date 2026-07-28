@@ -1,0 +1,18 @@
+# Public enrollment door ONLY. Let's Encrypt TLS terminates here and proxies
+# to headscale's coordination endpoint. Nothing else is ever public — app
+# surfaces are mesh-only, reached over the tailnet with mesh-CA certs.
+
+{$HEADSCALE_DOMAIN} {
+	tls {$ACME_EMAIL}
+
+	# headscale speaks gRPC + HTTP on one port; Caddy passes both through.
+	reverse_proxy headscale:8080
+
+	# The door is for enrollment, not browsing.
+	header {
+		X-Content-Type-Options nosniff
+		X-Frame-Options DENY
+		Referrer-Policy no-referrer
+		-Server
+	}
+}

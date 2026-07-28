@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>interaction-state static-negative fixture</title>
+<style>
+  html, body { margin: 0; background: #ffffff; font-family: sans-serif; }
+  a, .link { cursor: pointer; color: #1a0dab; display: block; width: 320px; height: 28px; }
+  .block { width: 480px; height: 80px; background: #f0f0f0; margin: 10px 0; }
+</style>
+</head>
+<body>
+  <!-- cursor:pointer everywhere, but NO event listeners and NO :hover reveal:
+       hover/click sweeps must reveal ~0 new structure (the discriminator). -->
+  <nav>
+    <a href="#a">one</a>
+    <a href="#b">two</a>
+    <a href="#c">three</a>
+    <span class="link">four</span>
+    <span class="link">five</span>
+  </nav>
+  <div class="block"></div>
+  <div class="block"></div>
+  <div class="block"></div>
+  <div class="block"></div>
+</body>
+</html>

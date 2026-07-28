@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>interaction-state fixture</title>
+<style>
+  html, body { margin: 0; background: #ffffff; font-family: sans-serif; }
+  #opener { width: 120px; height: 40px; }
+  #panel { display: none; }
+  #panel.open { display: block; }
+  .item { width: 300px; height: 60px; background: #eeeeee; margin: 8px; }
+</style>
+</head>
+<body>
+  <button id="opener" aria-haspopup="true" aria-expanded="false">menu</button>
+  <div id="panel" role="menu">
+    <div class="item"></div>
+    <div class="item"></div>
+    <div class="item"></div>
+  </div>
+  <script>
+    const b = document.getElementById('opener');
+    const p = document.getElementById('panel');
+    b.addEventListener('click', () => {
+      const open = p.classList.toggle('open');
+      b.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+  </script>
+</body>
+</html>

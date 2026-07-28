@@ -577,9 +577,31 @@ def _self_test():
         chk(len(got) == 5, f"ios,android: 5 files/surface (got {got})")
         chk((base / "design-system.md").is_file(), "design-system.md emitted per surface")
 
-        # 3. web -> [mobile, tablet, desktop] -> 5 files/surface.
+        # 3. web -> [mobile, tablet, desktop] -> 5 dart files/surface.
         chk(derive_factors(["web"], str(DERIVATION), str(CONFIG))
             == ["mobile", "tablet", "desktop"], "web derives [mobile, tablet, desktop]")
+        app3 = tmp / "app3"
+        rc = scaffold(str(des), str(app3), ["web"], str(DERIVATION), str(CONFIG))
+        chk(rc == 0, "web scaffold emits (exit 0)")
+        base = app3 / "lib" / "ui" / "views" / "stage_shell" / "projects_home"
+        for f in ("mobile", "tablet", "desktop"):
+            chk((base / f"projects_home_view.{f}.dart").is_file(), f"web: {f} factor exists")
+        got = sorted(p.name for p in base.iterdir())
+        chk(len(got) == 6, f"web: 6 files/surface incl. design-system.md (got {got})")
+        mf3 = json.load(open(app3 / "lib" / "ui" / "views" / ".shell-structure.json"))
+        chk(mf3["factors"] == ["mobile", "tablet", "desktop"],
+            "web manifest records the 3-factor set (review gate reads this)")
+
+        # 3b. android alone -> [mobile, tablet] -> the same 4-file set as ios.
+        chk(derive_factors(["android"], str(DERIVATION), str(CONFIG))
+            == ["mobile", "tablet"], "android alone derives [mobile, tablet], no desktop")
+        app3b = tmp / "app3b"
+        rc = scaffold(str(des), str(app3b), ["android"], str(DERIVATION), str(CONFIG))
+        chk(rc == 0, "android scaffold emits (exit 0)")
+        base = app3b / "lib" / "ui" / "views" / "stage_shell" / "projects_home"
+        chk((base / "projects_home_view.mobile.dart").is_file(), "android: mobile factor exists")
+        chk((base / "projects_home_view.tablet.dart").is_file(), "android: tablet factor exists")
+        chk(not (base / "projects_home_view.desktop.dart").exists(), "android: no desktop factor")
 
         # 4. NEGATIVE (R5): missing structure.json -> FAIL naming it.
         empty = tmp / "empty"; empty.mkdir()

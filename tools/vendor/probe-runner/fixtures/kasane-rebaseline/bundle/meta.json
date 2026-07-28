@@ -1,0 +1,15 @@
+{
+  "url": "https://kasane-keyboard.com/craftanddesign",
+  "viewport": {
+    "w": 1440,
+    "h": 913,
+    "dpr": 2
+  },
+  "page": {
+    "w": 1440,
+    "h": 36130
+  },
+  "dpr": 2,
+  "schema": "probe-skeleton/2",
+  "timestamp": "2026-06-01T23:46:34Z"
+}

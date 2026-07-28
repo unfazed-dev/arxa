@@ -1,0 +1,41 @@
+{
+  "normalization_check": {
+    "dpr2_eff_dpr": 2,
+    "dpr2_raw_maxW_device": 2560,
+    "dpr2_normalized_maxW_css": 1280.0,
+    "dpr1_eff_dpr": 1.0,
+    "dpr1_raw_maxW_device": 2560,
+    "dpr1_normalized_maxW_css": 2560.0,
+    "expected_css_maxW": 1200,
+    "PASS_dpr2": false,
+    "PASS_dpr1": false
+  },
+  "noise_floor_dpr2_vs_dpr2": {
+    "matched": 26,
+    "of": 26,
+    "max_pos_err": 0.0,
+    "p95_pos_err": 0.0,
+    "max_size_err": 0.0,
+    "min_iou": 1.0,
+    "zrank": 1.0,
+    "tree": 1.0,
+    "top_pos": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ]
+  },
+  "cross_dpr_floor_dpr2_vs_dpr1": {
+    "matched": 0,
+    "of": 26,
+    "max_pos_err": 0.0,
+    "p95_pos_err": 0,
+    "max_size_err": 0.0,
+    "min_iou": 1.0,
+    "zrank": 1.0,
+    "tree": 1.0,
+    "top_pos": []
+  }
+}

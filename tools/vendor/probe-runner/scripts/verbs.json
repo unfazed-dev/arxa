@@ -1,0 +1,104 @@
+{
+  "schema_version": 1,
+  "_comment": "Source-of-truth routing manifest for pr-decide.py. 12 intents x 6 targets. Every 'script' must exist on disk (enforced by test_pr_decide.py drift check). A null 'script' means the target has no dedicated verb for that intent — the 'notes' field points at the alternative (usually the tree-dump/poll verb). Args use '<placeholder>' form; never executed by the resolver.",
+  "intents": ["tap", "type", "screenshot", "uitree", "eval", "find", "scroll", "record", "animate", "launch", "quit", "wait"],
+  "targets": ["ios", "adb", "web", "macos", "flutter", "safari"],
+  "routes": {
+    "tap": {
+      "ios":     {"script": "ios_tap.py",   "args": ["<x>", "<y>"],                                   "fallback": "flutter_tap.py --target ios (for a Flutter widget)", "notes": "idb ui tap; coordinates in LOGICAL POINTS by default (not screenshot pixels) \u2014 pass --space pixels|norm to convert. A press --duration (default 0.1s) is applied so the tap actuates Flutter gesture recognizers; a 0-duration tap silently no-ops on Flutter views."},
+      "adb":     {"script": "adb_tap.py",   "args": ["<x>", "<y>"],                                   "fallback": "flutter_tap.py --target adb (for a Flutter widget)", "notes": "adb shell input tap; device px. If the screen is locked the event is invisible — send KEYCODE_WAKEUP first."},
+      "web":     {"script": "web_click.py", "args": ["<selector>"],                                  "fallback": "web_eval.py \"document.querySelector('<sel>').click()\"", "notes": "CSS selector. --browser chrome|safari|auto (default auto)."},
+      "macos":   {"script": "click.py",     "args": ["<owner>", "<x>", "<y>"],                        "fallback": "ax_click.py --owner <owner> --id <ax-id>", "notes": "owner is POSITIONAL (click.py Code 100 200). Flags: --abs --double --triple --right --hold <ms>. Element-by-id via ax_click.py needs no coords."},
+      "flutter": {"script": "flutter_tap.py","args": ["--target", "ios|adb", "--key", "<K>"],         "fallback": "rc=2 on macos/web -> flutter_semantics.py enable, then web_dom.py --selector flt-semantics + web_click.py (web) OR ax_tree.py + click.py (macos). The rc=2 JSON carries a ready 'fallback_commands' array.", "notes": "HONEST-GAP on --target macos|web: the Flutter inspector RPC exposes size but NOT transform-to-root, so absolute tap coords can't be synthesised. ios|adb dispatch the physical tap (rc=0; rc=3 if the inner tap subprocess fails). Locate by --key, --type, or --text."},
+      "safari":  {"script": "web_click.py", "args": ["--browser", "safari", "<selector>"],           "fallback": "web_eval.py --browser safari \"document.querySelector('<sel>').click()\"", "notes": "selenium find_element(By.CSS_SELECTOR).click()."}
+    },
+    "type": {
+      "ios":     {"script": "ios_type.py",         "args": ["<text>"],                                "fallback": "flutter_set_text.py --target ios (for a FLUTTER text field)", "notes": "idb ui text. For a FLUTTER field use flutter_set_text instead — ios_type injects into the IME and does NOT fire Flutter onChanged (a form validity gate then never enables)."},
+      "adb":     {"script": "adb_type.py",         "args": ["<text>"],                                "fallback": "flutter_set_text.py --target adb (for a FLUTTER text field)", "notes": "adb shell input text — ASCII only; spaces auto-encoded to %s. For a FLUTTER field use flutter_set_text (fires onChanged + formatters + validation)."},
+      "web":     {"script": "web_type.py",         "args": ["<selector>", "<text>"],                  "fallback": "web_eval.py \"document.querySelector('<sel>').value='<text>'\" (then dispatch input/change)", "notes": "--browser chrome|safari|auto."},
+      "macos":   {"script": "type_text.py",        "args": ["<owner>", "<text>"],                     "fallback": null, "notes": "--paste for Unicode (pasteboard + Cmd-V). Refuses with a clear message if macOS Secure Input is active."},
+      "flutter": {"script": "flutter_set_text.py", "args": ["--text", "<T>", "--target", "ios|adb"],  "fallback": null, "notes": "Canonical Flutter text verb. Routes through EditableTextState.updateEditingValue over the VM eval channel — fires formatters + validation + onChanged (the marionette_flutter technique). Locate by --type (EditableText/TextField/CupertinoTextField/wrapper), --key, or --focused (currently-focused field). --target required when two devices run (avoids caching the wrong VM URL). NOT adb_type/ios_type."},
+      "safari":  {"script": "web_type.py",         "args": ["--browser", "safari", "<selector>", "<text>"], "fallback": null, "notes": "selenium send_keys."}
+    },
+    "screenshot": {
+      "ios":     {"script": "ios_shot.py",     "args": [],                                  "fallback": "flutter_shot.py --allow-device-fallback", "notes": "xcrun simctl io booted screenshot."},
+      "adb":     {"script": "adb_shot.py",     "args": [],                                  "fallback": "flutter_shot.py --allow-device-fallback", "notes": "adb exec-out screencap -p (exec-out avoids CRLF corruption)."},
+      "web":     {"script": "web_shot.py",     "args": ["--full"],                          "fallback": "shot.py (the Chrome window)", "notes": "Flags: --full, --element '<selector>', --out. --browser chrome|safari|auto."},
+      "macos":   {"script": "shot.py",         "args": ["<owner>"],                         "fallback": "multishot.py (frame burst) / region.py", "notes": "ScreenCaptureKit preferred (lazy import), falls back to the screencapture CLI. Flags: --full --all-displays --cursor --no-shadow --out. TCC preflight (rc=3 if Screen Recording denied)."},
+      "flutter": {"script": "flutter_shot.py", "args": ["--allow-device-fallback"],         "fallback": "device simctl/adb (ios/adb) OR shot.py <owner> (macos) OR web_shot.py --full (web)", "notes": "VM capture = the Flutter scene only (no platform chrome). --allow-device-fallback adds chrome and tags 'source' in the JSON. rc=2 if VM empty and no fallback applies."},
+      "safari":  {"script": "web_shot.py",     "args": ["--browser", "safari", "--full"],   "fallback": "screencapture of the Safari window", "notes": "selenium get_screenshot_as_png."}
+    },
+    "uitree": {
+      "ios":     {"script": "ios_ui_tree.py",  "args": [],                                  "fallback": "flutter_tree.py --kind widget (for a Flutter app)", "notes": "idb ui describe-all — accessibility tree, AX frames in logical points."},
+      "adb":     {"script": "adb_ui_tree.py",  "args": [],                                  "fallback": "flutter_tree.py --kind widget (for a Flutter app)", "notes": "uiautomator dump, parsed to JSON; bounds in DEVICE px (no dpr derivation needed). Conflicts with running Accessibility Services."},
+      "web":     {"script": "web_dom.py",      "args": ["--selector", "<sel>"],             "fallback": "web_a11y.py (Chrome-only a11y tree)", "notes": "DOMSnapshot (whole doc if no --selector). --browser chrome|safari|auto."},
+      "macos":   {"script": "ax_tree.py",      "args": ["<owner>"],                         "fallback": "flutter_tree.py --kind widget (for a Flutter desktop app)", "notes": "Quartz accessibility tree. Flags: --pid, --max-depth (default 8). rc=2 if pyobjc is missing."},
+      "flutter": {"script": "flutter_tree.py", "args": ["--kind", "widget"],                "fallback": "flutter_skeleton.py (structured per-element bboxes) / flutter_semantics.py", "notes": "--kind widget|widget-full|render|layer|semantics (default widget). NOTE: --kind render returns a TEXT dump, NOT bboxes — for structured screen rects use flutter_skeleton (probe-skeleton/2 schema, reads localToGlobal + size)."},
+      "safari":  {"script": "web_dom.py",      "args": ["--browser", "safari", "--selector", "<sel>"], "fallback": null, "notes": "selenium page_source/outerHTML. web_a11y is NOT supported on Safari (dies rc=2)."}
+    },
+    "eval": {
+      "ios":     {"script": null, "args": [], "fallback": null, "notes": "Native iOS has NO JS/Dart eval. Introspect with ios_ui_tree.py instead."},
+      "adb":     {"script": null, "args": [], "fallback": null, "notes": "Native Android has NO JS/Dart eval. Introspect with adb_ui_tree.py instead. (For a webview use web_eval.py via adb_cdp.py forward.)"},
+      "web":     {"script": "web_eval.py",     "args": ["<js>"],            "fallback": null, "notes": "CDP Runtime.evaluate. --await sets awaitPromise:true (resolves async). Shares _web_eval transport resolver: --browser/--url/--android/--ios/--cdp-port/--serial."},
+      "macos":   {"script": null, "args": [], "fallback": null, "notes": "No JS eval on a native macOS app. Dioxus/Tauri webview -> console.py (needs the debug-probe template). AX text -> ax_text.py."},
+      "flutter": {"script": "flutter_eval.py", "args": ["<dart-expr>"],     "fallback": null, "notes": "Dart expression evaluated against the root library over the VM service. Flutter type symbols (WidgetsBinding, Element, RenderBox, EditableTextState) resolve; private cross-library fields (_viewModel) do NOT."},
+      "safari":  {"script": "web_eval.py",     "args": ["--browser", "safari", "--url", "<url>", "<js>"], "fallback": null, "notes": "GOTCHA: --await is ACCEPTED but SYNCHRONOUS on WebDriver (no awaitPromise) — a promise-returning expression will NOT be awaited. Requires --url (a fresh WebDriver session starts blank)."}
+    },
+    "find": {
+      "ios":     {"script": null, "args": [], "fallback": null, "notes": "No dedicated find verb. Element rects come from ios_ui_tree.py (idb AX frames = logical-point bboxes). For a Flutter widget use flutter_find.py --target ios."},
+      "adb":     {"script": null, "args": [], "fallback": null, "notes": "No dedicated find verb. Element rects come from adb_ui_tree.py (uiautomator bounds, device px). For a Flutter widget use flutter_find.py --target adb."},
+      "web":     {"script": null, "args": [], "fallback": null, "notes": "No dedicated find verb. Use web_dom.py --selector '<sel>' (outerHTML) + web_eval.py \"document.querySelector('<sel>').getBoundingClientRect()\" for the rect."},
+      "macos":   {"script": "find_window.py", "args": ["<owner>"], "fallback": "ax_tree.py <owner> (element position+size)", "notes": "find_window is WINDOW-level only (--all lists multiples, --index N picks one). For ELEMENT rects, ax_tree.py nodes carry position+size; ax_click.py/ax_text.py look elements up by --id/--label."},
+      "flutter": {"script": "flutter_find.py", "args": ["--key", "<K>"], "fallback": "flutter_inspect.py (filtered subtree + rects + optional --golden) / flutter_skeleton.py (every RenderBox rect)", "notes": "Locate by --key, --type, or --text (>=1 required). Returns DiagnosticsNode matches {count, matches[]} — NOT screen rects. For actual screen rects use flutter_inspect or flutter_skeleton (localToGlobal + size)."},
+      "safari":  {"script": null, "args": [], "fallback": null, "notes": "No dedicated find verb. web_dom.py --browser safari --selector '<sel>' + web_eval.py getBoundingClientRect."}
+    },
+    "scroll": {
+      "ios":     {"script": "ios_swipe.py",  "args": ["<x1>", "<y1>", "<x2>", "<y2>"],           "fallback": "flutter_anim.py (scroll-scrub for a Flutter list)", "notes": "idb ui swipe. --duration <s> (default 0.3)."},
+      "adb":     {"script": "adb_swipe.py",  "args": ["<x1>", "<y1>", "<x2>", "<y2>"],           "fallback": null, "notes": "adb shell input swipe. --duration-ms (default 300). If the screen is locked the swipe is invisible — send KEYCODE_WAKEUP first."},
+      "web":     {"script": "web_scroll.py", "args": ["--selector", "<sel>"],                    "fallback": "web_eval.py \"window.scrollBy(<dx>,<dy>)\"", "notes": "--selector scrollIntoViews the element; --by DX,DY scrolls the viewport. --browser chrome|safari|auto."},
+      "macos":   {"script": "scroll.py",     "args": ["<owner>", "<dx>", "<dy>"],                "fallback": "gesture.py / drag.py", "notes": "Quartz CGEventCreateScrollWheelEvent. --at X Y sets the pointer; --abs for absolute coords."},
+      "flutter": {"script": null, "args": [], "fallback": "flutter_anim.py / flutter_eval.py (drive ScrollableState.position.jumpTo)", "notes": "No dedicated scroll verb. For certified scroll-scrubbed animation use flutter_anim; for a one-shot scroll use flutter_eval with a scroll expression."},
+      "safari":  {"script": "web_scroll.py", "args": ["--browser", "safari", "--selector", "<sel>"], "fallback": null, "notes": "selenium execute_script."}
+    },
+    "record": {
+      "ios":     {"script": "ios_record.py", "args": ["--seconds", "<N>"],                       "fallback": "flutter_flipbook.py --target ios (records + recovers motion)", "notes": "xcrun simctl io booted recordVideo. --start/--stop for background mode (pid file)."},
+      "adb":     {"script": "adb_record.py", "args": ["--seconds", "<N>"],                        "fallback": "flutter_flipbook.py --target adb (records + recovers motion)", "notes": "adb shell screenrecord + pull. No audio; <=180s per clip."},
+      "web":     {"script": "web_record.py", "args": ["--seconds", "<N>"],                        "fallback": null, "notes": "CDP Page.startScreencast -> mjpeg -> ffmpeg mp4. --scroll (Chrome-only page sweep) dies if no ffmpeg / 0 frames."},
+      "macos":   {"script": "record.py",     "args": ["<owner>", "--seconds", "<N>"],             "fallback": "multishot.py (frame burst)", "notes": "ScreenCaptureKit/screencapture + ffmpeg. Flags: --start/--stop (background, pid file) --full --clicks --audio --cursor --ffmpeg --out. TCC preflight (rc=3)."},
+      "flutter": {"script": null, "args": [], "fallback": "flutter_flipbook.py --target ios|adb", "notes": "No dedicated record verb. flutter_flipbook records via simctl/adb screenrecord AND recovers the motion law. For a plain video use the device ios_record/adb_record."},
+      "safari":  {"script": "web_record.py", "args": ["--browser", "safari", "--seconds", "<N>"], "fallback": "record.py (the Safari window)", "notes": "macOS screencapture of the Safari window (--scroll not supported)."}
+    },
+    "animate": {
+      "ios":     {"script": null, "args": [], "fallback": null, "notes": "No native scroll-scrubbed anim cert. ios_flipbook.py recovers TIME/EVENT motion (menu open, entrance) from a recording."},
+      "adb":     {"script": "web_anim.py",    "args": ["--android", "--url", "<url>"],            "fallback": "adb_flipbook.py (time/event motion)", "notes": "Emulator Chrome/WebView over adb-forwarded CDP (suppresses the Origin header that on-device Chrome 403-rejects)."},
+      "web":     {"script": "web_anim.py",    "args": ["--selector", "<sel>"],                    "fallback": "web_flipbook.py (time/event motion)", "notes": "Certifies prop=f(scrollY). Flags: --range lo:hi --steps 40 --settle 1500 --tol 2.0 --detect-only. ALWAYS pair with web_eval first (element anchors + smooth-scroll config + computed transition/animation). --browser/--url/--android/--ios transport flags."},
+      "macos":   {"script": null, "args": [], "fallback": null, "notes": "No native anim cert. For a Dioxus/Tauri webview use web_anim.py over the webview CDP transport."},
+      "flutter": {"script": "flutter_anim.py","args": ["--type", "<T>"],                          "fallback": "flutter_flipbook.py (time/event motion)", "notes": "Certifies prop=f(scrollY) via ScrollableState.position.jumpTo + RenderObject.getTransformTo(null) over the VM service. Flags: --key/--text/--range lo:hi --steps 24 --settle 600. --self-test verifies the core offline. Verified end-to-end against Flutter 3.44 macOS."},
+      "safari":  {"script": "web_anim.py",    "args": ["--browser", "safari", "--url", "<url>"],  "fallback": null, "notes": "WebDriver transport. --ios --url <url> drives Mobile Safari on a booted sim."}
+    },
+    "launch": {
+      "ios":     {"script": "ios_boot.py", "args": ["<device>"],                                 "fallback": "ios_safari.py --url <url> (Mobile Safari)", "notes": "simctl boot. ios_boot flags: --shutdown --erase --booted. Then ios_app.py launch <bundle_id> [-- arg...]."},
+      "adb":     {"script": "adb_boot.py", "args": ["boot", "<avd>"],                            "fallback": "adb_cdp.py forward (drive a webview)", "notes": "adb_boot.py boot <avd> [--wipe]. rc=1 if the emulator exits within 3s (surfaces FATAL log lines); warns on arm32 AVDs on arm64 hosts (use arm64-v8a). Then adb_app.py launch <pkg[/.Activity]>."},
+      "web":     {"script": "web_launch.py","args": [],                                          "fallback": "web_launch.py --browser safari", "notes": "web_launch.py [--url <url>] starts Chrome with --remote-debugging-port. Then web_open.py <url>. --browser chrome|safari."},
+      "macos":   {"script": null, "args": [], "fallback": null, "notes": "macOS apps launch natively (open -a <App>). No boot verb — use focus.py / reposition.py once running."},
+      "flutter": {"script": "flutter_attach.py", "args": ["--auto", "--source", "ios|adb"],     "fallback": null, "notes": "Flutter apps MUST be launched EXTERNALLY via `flutter run --debug --disable-service-auth-codes` (cold-launch via flutter build + simctl/adb produces an app with NO VM service). Then flutter_attach.py caches the VM URL (--tail <log> / --auto --source ios|adb|host). Capture the URL ONCE per launch; hot-restart changes the port."},
+      "safari":  {"script": "web_launch.py","args": ["--browser", "safari"],                     "fallback": null, "notes": "Run `safaridriver --enable` once. Then web_open.py --browser safari <url>."}
+    },
+    "quit": {
+      "ios":     {"script": "ios_app.py",  "args": ["terminate", "<bundle_id>"],                "fallback": "ios_boot.py --shutdown (whole sim)", "notes": "simctl terminate <bundle_id>."},
+      "adb":     {"script": "adb_app.py",  "args": ["force-stop", "<pkg>"],                      "fallback": "adb_boot.py kill (whole emulator)", "notes": "am force-stop <pkg>. adb_boot.py kill runs `adb emu kill`."},
+      "web":     {"script": null, "args": [], "fallback": null, "notes": "No dedicated verb. Close a tab via CDP Target.closeTarget, or pkill 'Google Chrome'."},
+      "macos":   {"script": null, "args": [], "fallback": null, "notes": "No dedicated verb. osascript -e 'quit app \"<App>\"' / pkill / window_state.py."},
+      "flutter": {"script": null, "args": [], "fallback": null, "notes": "No Flutter quit verb. Terminate via the host: ios_app.py terminate <bundle_id> / adb_app.py force-stop <pkg>."},
+      "safari":  {"script": null, "args": [], "fallback": null, "notes": "No dedicated verb. handle.quit() runs inside the web_* verbs at session end; or pkill safaridriver."}
+    },
+    "wait": {
+      "ios":     {"script": null, "args": [], "fallback": null, "notes": "No native wait verb. Poll ios_ui_tree.py. For a Flutter app use flutter_inspect.py --golden (pixdiff SSIM wait)."},
+      "adb":     {"script": null, "args": [], "fallback": null, "notes": "No native wait verb. Poll adb_ui_tree.py."},
+      "web":     {"script": null, "args": [], "fallback": null, "notes": "No native wait verb. Poll web_eval.py (document.querySelector) / web_dom.py."},
+      "macos":   {"script": "wait_window.py", "args": ["<owner>"],                "fallback": "wait_pixel.py <owner> --rect x,y,w,h (wait for a region to change)", "notes": "wait_window.py: --state appear|disappear --timeout 30 --interval 0.25. wait_pixel.py: --rect x,y,w,h --timeout 10 --threshold <bytes>. rc=124 on timeout (the GNU timeout deadline convention)."},
+      "flutter": {"script": null, "args": [], "fallback": null, "notes": "No native wait verb. Poll flutter_find.py / flutter_eval.py. flutter_inspect.py --golden does a pixdiff-SSIM wait."},
+      "safari":  {"script": null, "args": [], "fallback": null, "notes": "No native wait verb. Poll web_eval.py --browser safari."}
+    }
+  }
+}

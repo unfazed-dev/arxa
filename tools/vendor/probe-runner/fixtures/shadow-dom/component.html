@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>shadow-dom token fixture</title>
+<style>
+  html, body { margin: 0; background: #ffffff; }
+  x-card { display: block; }               /* host must be block so the shadow panel has area */
+  /* light DOM carries NO #123456, NO radius 13, NO size 29 — the shadow root does */
+</style>
+</head>
+<body>
+  <x-card></x-card>
+  <script>
+    class XCard extends HTMLElement {
+      constructor() {
+        super();
+        const root = this.attachShadow({ mode: 'open' });
+        root.innerHTML = `
+          <style>
+            .panel {
+              width: 100vw; height: 600px;
+              background: rgb(18, 52, 86);           /* #123456 — shadow-only bg */
+              border-top-left-radius: 13px;          /* shadow-only radius */
+              color: rgb(200, 40, 90);
+              font-family: 'ShadowSans';
+              font-size: 29px;                       /* shadow-only type size */
+              font-weight: 700;
+            }
+          </style>
+          <div class="panel">x</div>`;
+      }
+    }
+    customElements.define('x-card', XCard);
+  </script>
+</body>
+</html>

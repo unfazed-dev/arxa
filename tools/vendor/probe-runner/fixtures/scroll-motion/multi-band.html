@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1280, initial-scale=1">
+<title>scroll-motion fixture: multi-mover distinct narrow bands (multi-mover dilution)</title>
+<style>
+  /* Reproduces Ashley's 21/60 "no resolvable active range" class at MULTI-MOVER
+     scale: many movers, each animating only inside its own narrow band at a
+     DISTINCT offset, then holding. A single coarse global sweep lands ~0-1
+     samples per band; P0's GLOBAL second sweep buckets the union and the shared
+     per-band budget dilutes each narrow band -> still <4 in-band samples -> still
+     uncertified. concentrate_bands (per-channel) gives each band its own budget
+     -> all certify. Each ease is STANDARD (linear) so post-fix certification is
+     the proof; the failure is sampling, not the ease. */
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 1280px; background: #fff; font-family: Arial, sans-serif; }
+  #spacer { height: 14000px; }                 /* long page, ashley-scale */
+  .mv { position: fixed; left: 80px; width: 120px; height: 120px;
+        background: #2b2d42; will-change: transform; }
+</style>
+</head>
+<body>
+  <div class="mv" id="m0" style="top:40px"></div>
+  <div class="mv" id="m1" style="top:180px"></div>
+  <div class="mv" id="m2" style="top:320px"></div>
+  <div class="mv" id="m3" style="top:460px"></div>
+  <div class="mv" id="m4" style="top:600px"></div>
+  <div class="mv" id="m5" style="top:740px"></div>
+  <div id="spacer"></div>
+<script>
+  // 6 movers; band i = [b0, b0+W] at a distinct offset; linear rise then hold.
+  // amplitudes differ so each channel's own peak differs (tests per-channel peak).
+  // W=200: narrow enough that the coarse sweep's global per-band budget (~8 over a
+  // ~1200px padded neighborhood) lands <4 samples in any single band -> none
+  // certify under current code (AMBER). concentrate_bands gives each band its own
+  // dense budget -> >=4 in-band -> certify (GREEN).
+  var W = 200;
+  var BANDS = [
+    {el:'m0', b0:1500,  amp:300},
+    {el:'m1', b0:3300,  amp:-260},
+    {el:'m2', b0:5200,  amp:340},
+    {el:'m3', b0:7400,  amp:-300},
+    {el:'m4', b0:9600,  amp:280},
+    {el:'m5', b0:11800, amp:-320},
+  ].map(function(d){ d.node = document.getElementById(d.el); return d; });
+  function apply() {
+    var y = window.scrollY;
+    for (var i = 0; i < BANDS.length; i++) {
+      var d = BANDS[i];
+      var p = Math.min(1, Math.max(0, (y - d.b0) / W));   // linear in-band, holds at 1
+      d.node.style.transform = 'translateX(' + (d.amp * p) + 'px)';
+    }
+  }
+  addEventListener('scroll', apply, { passive: true });
+  apply();
+</script>
+</body>
+</html>

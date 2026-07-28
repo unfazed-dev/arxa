@@ -41,6 +41,10 @@ need "$o" "derived widths for targets [macos]: desktop" "happy reports the deriv
 o="$(FREEZE_RENDER=skip bash "$GATE" --targets ios,android "$T" 2>&1)"; chk "$?" 0 "ios,android derives"
 need "$o" "derived widths for targets [ios,android]: mobile tablet" "ios,android -> 2 widths"
 o="$(FREEZE_RENDER=skip bash "$GATE" --targets ios,android,web "$T" 2>&1)"; need "$o" "mobile tablet desktop" "ios,android,web -> 3 widths"
+o="$(FREEZE_RENDER=skip bash "$GATE" --targets web "$T" 2>&1)"; chk "$?" 0 "web alone derives"
+need "$o" "derived widths for targets [web]: mobile tablet desktop" "web alone -> all 3 widths (§11)"
+o="$(FREEZE_RENDER=skip bash "$GATE" --targets android "$T" 2>&1)"; chk "$?" 0 "android alone derives"
+need "$o" "derived widths for targets [android]: mobile tablet" "android alone -> 2 widths, no desktop (§11)"
 
 # ---- NEGATIVE: a required frozen input is missing ----------------------------
 # NEGATIVE: tokens.json removed -> gate exits 1 and names the missing file.

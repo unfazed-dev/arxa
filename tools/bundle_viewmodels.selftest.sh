@@ -10,7 +10,7 @@ set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$HERE/.." && pwd)"
 BUNDLER="$HERE/bundle_viewmodels.js"
-DESIGN="$ROOT/designs/app-box-app"
+DESIGN="$ROOT/designs/appbox"
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
@@ -19,7 +19,7 @@ ok()   { echo "  ok   $1"; pass=$((pass+1)); }
 bad()  { echo "  FAIL $1"; fail=$((fail+1)); }
 
 echo "== happy path: bundle the reference design =="
-node "$BUNDLER" app-box-app --out "$TMP/happy" >/dev/null
+node "$BUNDLER" appbox --out "$TMP/happy" >/dev/null
 if node -e "
   globalThis.__readFileSync = () => '';
   const c = require('fs').readFileSync('$TMP/happy/artifact.bundle.js','utf8');

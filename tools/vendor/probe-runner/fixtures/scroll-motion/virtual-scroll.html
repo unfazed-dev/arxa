@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1280, initial-scale=1">
+<title>scroll-motion fixture: virtualized scroll (Lenis/ScrollSmoother/Locomotive class)</title>
+<style>
+  /* Deterministic stand-in for a VIRTUALIZED smooth-scroll library (Locomotive v4
+     / GSAP ScrollSmoother / wrapper-mode Lenis): the document is NOT natively
+     scrollable. body is overflow-hidden at viewport height; a JS progress value
+     driven by wheel events transforms #content. window.scrollY stays 0 and
+     documentElement.scrollHeight === innerHeight.
+     Hypothesised web_anim failure: max_scroll = scrollH - innerH = 0, so the verb
+     bails with "page may not scroll" before it ever discovers the mover — even
+     though the SAME f(progress) motion is on the page. This is the real G7/G8
+     boundary the §C canary never measured. */
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 1280px; height: 100vh; overflow: hidden; background: #fff;
+               font-family: Arial, sans-serif; }
+  #content { position: relative; height: 3000px; will-change: transform; }
+  #mover   { position: absolute; left: 100px; top: 200px; width: 200px; height: 200px;
+             background: #533483; will-change: transform, opacity; }
+</style>
+</head>
+<body>
+  <div id="content"><div id="mover"></div></div>
+<script>
+  // Virtualized progress: native scroll is dead; wheel drives an internal value.
+  // The library's own scrollTo would move `prog`; window.scrollTo does NOT.
+  var content = document.getElementById('content');
+  var mover = document.getElementById('mover');
+  var VIRT_MAX = 2000;            // virtual scroll distance
+  var prog = 0;                   // virtual scroll position in px
+  function apply() {
+    var p = Math.min(1, Math.max(0, prog / VIRT_MAX));
+    content.style.transform = 'translateY(' + (-VIRT_MAX * p) + 'px)';
+    mover.style.transform = 'translateX(' + (-600 * p) + 'px)';
+    mover.style.opacity = (1 - 0.8 * p).toFixed(4);
+  }
+  addEventListener('wheel', function (e) {
+    e.preventDefault();
+    prog = Math.min(VIRT_MAX, Math.max(0, prog + e.deltaY));
+    apply();
+  }, { passive: false });
+  // Expose the library's programmatic API the way Lenis/ScrollSmoother do.
+  window.__virtualScrollTo = function (y) { prog = Math.min(VIRT_MAX, Math.max(0, y)); apply(); };
+  apply();
+</script>
+</body>
+</html>

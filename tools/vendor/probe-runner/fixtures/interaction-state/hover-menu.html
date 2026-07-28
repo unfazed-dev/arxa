@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>interaction-state hover/non-ARIA fixture</title>
+<style>
+  html, body { margin: 0; background: #ffffff; font-family: sans-serif; }
+  nav { display: flex; gap: 16px; padding: 12px; }
+  /* (1) pure-CSS :hover dropdown — no ARIA, no JS listener */
+  .menu { position: relative; width: 120px; height: 40px; cursor: pointer; background: #f2f2f2; }
+  .menu .dropdown { display: none; position: absolute; top: 40px; left: 0; }
+  .menu:hover .dropdown { display: block; }
+  .menu .dropdown .d-item { width: 220px; height: 48px; background: #e3e3e3; margin: 4px 0; }
+  /* (2) JS mouseenter menu — no ARIA */
+  #jsmenu { width: 140px; height: 40px; cursor: pointer; background: #f2f2f2; }
+  #jspanel { display: none; }
+  #jspanel.open { display: block; }
+  #jspanel .j-item { width: 260px; height: 56px; background: #d9d9d9; margin: 6px 0; }
+  /* (3) div onclick no-ARIA toggler */
+  #clicker { width: 160px; height: 40px; cursor: pointer; background: #f2f2f2; }
+  #clickpanel { display: none; }
+  #clickpanel.open { display: block; }
+  #clickpanel .c-item { width: 300px; height: 40px; background: #cfcfcf; margin: 8px 0; }
+</style>
+</head>
+<body>
+  <nav>
+    <div class="menu">
+      <span>hover-css</span>
+      <div class="dropdown">
+        <div class="d-item"></div>
+        <div class="d-item"></div>
+        <div class="d-item"></div>
+      </div>
+    </div>
+    <div id="jsmenu"><span>hover-js</span></div>
+    <div id="clicker"><span>click-noaria</span></div>
+  </nav>
+  <div id="jspanel">
+    <div class="j-item"></div>
+    <div class="j-item"></div>
+    <div class="j-item"></div>
+  </div>
+  <div id="clickpanel">
+    <div class="c-item"></div>
+    <div class="c-item"></div>
+    <div class="c-item"></div>
+    <div class="c-item"></div>
+  </div>
+  <script>
+    // (2) JS mouseenter listener — no ARIA attribute anywhere
+    const jm = document.getElementById('jsmenu');
+    const jp = document.getElementById('jspanel');
+    jm.addEventListener('mouseenter', () => jp.classList.add('open'));
+    jm.addEventListener('mouseleave', () => jp.classList.remove('open'));
+    // (3) div onclick listener — no ARIA
+    const ck = document.getElementById('clicker');
+    const cp = document.getElementById('clickpanel');
+    ck.addEventListener('click', () => cp.classList.toggle('open'));
+  </script>
+</body>
+</html>

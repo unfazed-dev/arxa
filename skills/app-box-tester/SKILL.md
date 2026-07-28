@@ -30,8 +30,8 @@ expect(await viewModel.load(), [sample]);
 |-------|------|--------|
 | unit | `flutter_test` + **mocktail** | VM logic, Port contracts (Ports mocked) |
 | widget | `flutter_test` | a View renders given a VM state |
-| smoke | **probe-runner** (`/probe-runner`, Flutter target) | app boots, first screen renders, no crash |
-| visual | **probe-runner** (screencapture) | pixel diff vs the source `design/*.html` |
+| smoke | **probe-runner** (`tools/vendor/probe-runner`, Flutter target) | app boots, first screen renders, no crash |
+| visual | **probe-runner** (`tools/vendor/probe-runner`, screencapture) | pixel diff vs the source `design/*.html` |
 | E2E | **Patrol** (native) | real taps/scrolls across screens on ios/android |
 
 ## Rules

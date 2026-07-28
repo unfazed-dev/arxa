@@ -1,0 +1,107 @@
+[
+ {
+  "name": "h1#0#tx",
+  "anchor": 415.0,
+  "easing": "ease-out",
+  "cubic_bezier": [
+   0.0,
+   0.0,
+   0.58,
+   1.0
+  ],
+  "amplitude": -663.076,
+  "axis": "x",
+  "window": [
+   165.0,
+   1194.0
+  ],
+  "klass": "scroll",
+  "source": "web_anim",
+  "rms": 0.0181,
+  "anchor_x": 395.0
+ },
+ {
+  "name": "h1#0#op",
+  "anchor": 415.0,
+  "easing": "ease-out",
+  "cubic_bezier": [
+   0.0,
+   0.0,
+   0.58,
+   1.0
+  ],
+  "amplitude": -0.768,
+  "axis": "opacity",
+  "window": [
+   165.0,
+   1194.0
+  ],
+  "klass": "scroll",
+  "source": "web_anim",
+  "rms": 0.0184,
+  "anchor_x": 395.0
+ },
+ {
+  "name": "h1#1#tx",
+  "anchor": 415.0,
+  "easing": "ease-out",
+  "cubic_bezier": [
+   0.0,
+   0.0,
+   0.58,
+   1.0
+  ],
+  "amplitude": 663.076,
+  "axis": "x",
+  "window": [
+   165.0,
+   1194.0
+  ],
+  "klass": "scroll",
+  "source": "web_anim",
+  "rms": 0.0181,
+  "anchor_x": 1053.0
+ },
+ {
+  "name": "h1#1#op",
+  "anchor": 415.0,
+  "easing": "ease-out",
+  "cubic_bezier": [
+   0.0,
+   0.0,
+   0.58,
+   1.0
+  ],
+  "amplitude": -0.768,
+  "axis": "opacity",
+  "window": [
+   165.0,
+   1194.0
+  ],
+  "klass": "scroll",
+  "source": "web_anim",
+  "rms": 0.0184,
+  "anchor_x": 1053.0
+ },
+ {
+  "name": "menu.reveal#op",
+  "anchor": 74.0,
+  "easing": "cubic-bezier(0.76,0,0.24,1)",
+  "cubic_bezier": [
+   0.76,
+   0.0,
+   0.24,
+   1.0
+  ],
+  "amplitude": 1.0,
+  "axis": "opacity",
+  "window": [
+   0.0,
+   1.0
+  ],
+  "klass": "time",
+  "source": "waapi_getAnimations",
+  "rms": 0.0,
+  "anchor_x": 1307.0
+ }
+]

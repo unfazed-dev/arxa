@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>substrate parent fixture</title>
+<style>
+  html, body { margin: 0; background: #ffffff; font-family: sans-serif; }
+  canvas, video, iframe, img { display: block; margin: 8px; border: 0; }
+</style>
+</head>
+<body>
+  <!-- G5: canvas (un-reproducible WebGL/2D substrate) -->
+  <canvas id="cv" width="200" height="120"></canvas>
+  <!-- G9: video-bg substrate -->
+  <video id="vd" width="200" height="120" muted playsinline></video>
+  <!-- contrast: a plain <img> (data-uri so it always lays out) must NOT be flagged -->
+  <img id="im" width="200" height="120" alt=""
+       src="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==">
+  <!-- G11: SAME-origin iframe (relative -> parent's own port) -> CAPTURED, not flagged -->
+  <iframe id="so" width="200" height="120" src="child.html"></iframe>
+  <!-- G11: SAME-site, cross-ORIGIN iframe (127.0.0.1, different PORT) -> CAPTURED, not flagged.
+       Empirically: same-site cross-origin shares the renderer process; its document IS
+       in the snapshot (contentDocumentIndex present). Harness fills __SAMESITE_SRC__. -->
+  <iframe id="xo" width="200" height="120" src="__SAMESITE_SRC__"></iframe>
+  <!-- G11: CROSS-site iframe (localhost = different registrable name than 127.0.0.1)
+       -> out-of-process OOPIF, document NOT captured (contentDocumentIndex ABSENT) -> FLAGGED.
+       Harness fills __XSITE_SRC__. -->
+  <iframe id="xs" width="200" height="120" src="__XSITE_SRC__"></iframe>
+  <script>
+    // paint the canvas so it is unmistakably a live 2D context (not just attrs).
+    var c = document.getElementById('cv').getContext('2d');
+    c.fillStyle = '#123456'; c.fillRect(0, 0, 200, 120);
+  </script>
+</body>
+</html>

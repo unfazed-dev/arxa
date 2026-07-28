@@ -390,6 +390,24 @@ EOF
   need "$o" "form factors [mobile, tablet]" "ios,android derives mobile+tablet"
   avoid "$o" "_view.desktop.dart" "ios,android must NOT demand desktop"
 
+  # ---- 6.5 proof: --targets web -> mobile+tablet+desktop -> FIVE files -----
+  plant "$T/a" "$FULL" web library stats
+  o=$(run "$T/a" web); chk "$?" 0 "web: 5-file mobile+tablet+desktop set PASSES"
+  need "$o" "form factors [mobile, tablet, desktop]" "web derives all three factors (§11)"
+  need "$o" "2/2 frozen surfaces scaffolded" "web reports full coverage of the 5-file set"
+
+  # ---- NEGATIVE (6.5): web but a derived factor file is missing ------------
+  plant "$T/a" "$FULL" web library stats
+  rm "$T/a/lib/ui/views/train_shell/stats/stats_view.desktop.dart"
+  o=$(run "$T/a" web); chk "$?" 1 "web: missing desktop factor FAILS"
+  need "$o" "stats_view.desktop.dart" "names the missing derived factor"
+
+  # ---- 6.5 proof: --targets android alone -> same 4-file set as ios --------
+  plant "$T/a" "$FULL" android library stats
+  o=$(run "$T/a" android); chk "$?" 0 "android alone: 4-file mobile+tablet set PASSES"
+  need "$o" "form factors [mobile, tablet]" "android derives mobile+tablet, no desktop"
+  avoid "$o" "_view.desktop.dart" "android must NOT demand desktop"
+
   # ---- NEGATIVE (6.6): an UNWANTED empty .mobile file must not satisfy ----
   # the counter. macos (desktop only) with a stray .mobile present still passes
   # (its absence is not a failure) — but removing the required .desktop must
@@ -444,6 +462,20 @@ EOF
   o=$(run "$T/a" macos); chk "$?" 1 "macos: entitlement lacks keychain-access-groups key FAILS"
   need "$o" "Release.entitlements" "names the offending ceremony file"
   need "$o" "keychain-access-groups" "names the missing key"
+
+  # ---- 6.8 proof: android ceremonies fire from --targets android alone -----
+  plant "$T/a" "$FULL" android library stats  # ceremonies_of builds adaptive icons + splash
+  o=$(run "$T/a" android); chk "$?" 0 "android: all ceremonies present PASSES"
+  rm "$T/a/android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml"
+  o=$(run "$T/a" android); chk "$?" 1 "android: missing adaptive-icon ceremony FAILS"
+  need "$o" "ic_launcher.xml missing" "names the missing ceremony file"
+
+  # ---- 6.8 proof: web ceremony fires from --targets web alone ---------------
+  plant "$T/a" "$FULL" web library stats      # ceremonies_of builds web/index.html
+  o=$(run "$T/a" web); chk "$?" 0 "web: index.html ceremony present PASSES"
+  rm "$T/a/web/index.html"
+  o=$(run "$T/a" web); chk "$?" 1 "web: missing index.html ceremony FAILS"
+  need "$o" "web/index.html missing" "names the missing ceremony file"
 
   # ---- 4.4: missing structure.json MUST fail (was: silent N/A exit 0) ------
   rm -rf "$T/b"; mkdir -p "$T/b/lib/ui/views"

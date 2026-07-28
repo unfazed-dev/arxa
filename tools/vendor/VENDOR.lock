@@ -37,3 +37,4 @@ enforce_design|/Volumes/developer_ssd/Developer/totem_labs/stacked_kit|skills/ki
 #   shell_structure_gate --self-test    : fixtures dir not vendored
 #   test_gates.sh                       : needs kit-scaffolder/, payments/, gen_playbook module
 #   test_memory.sh                      : needs the stacked_kit memory system
+probe_runner|/Users/unfazed-mac/.agents/skills.shared/probe-runner|.|b514c0f4c5fe6397b2c40612475435859937537a|2026-07-28

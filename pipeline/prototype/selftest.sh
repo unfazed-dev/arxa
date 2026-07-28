@@ -13,7 +13,7 @@ set -uo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 SERVE="$HERE/serve.py"
 ROOT="$(cd "$HERE/../.." && pwd)"
-DESIGN="app-box-app"
+DESIGN="appbox"
 DESIGN_DIR="$ROOT/designs/$DESIGN"
 
 pass=0; failc=0

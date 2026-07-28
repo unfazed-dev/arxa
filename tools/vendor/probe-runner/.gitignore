@@ -1,0 +1,45 @@
+# Research probes: track scripts + README + manifest; ignore only the captures.
+research/capture-gap-probes/out/
+
+# Python noise
+__pycache__/
+*.pyc
+
+# Test/harness scratch dirs (pytest tmp basetemp, web_anim native-flipbook temp)
+pytest-of-*/
+natfb-*/
+fixtures/consent/_out.json
+fixtures/component/_out.json
+fixtures/transition/_out.json
+fixtures/css_style/_sk.json
+fixtures/css_style/_tokens.json
+fixtures/css_style/_bundle/
+fixtures/theme/_sk.json
+fixtures/theme/_tokens.json
+fixtures/theme/_bundle/
+fixtures/pseudo-state/_sk.json
+fixtures/pseudo-state/_tokens.json
+fixtures/pseudo-state/_bundle/
+fixtures/responsive/_sk.json
+fixtures/responsive/_tokens.json
+fixtures/responsive/_bundle/
+fixtures/keyframes/_sk.json
+fixtures/keyframes/_tokens.json
+fixtures/keyframes/_bundle/
+fixtures/reduced-motion/_sk.json
+fixtures/reduced-motion/_tokens.json
+fixtures/reduced-motion/_bundle/
+fixtures/form-state/_sk.json
+fixtures/form-state/_tokens.json
+fixtures/form-state/_bundle/
+fixtures/container-query/_sk.json
+fixtures/container-query/_tokens.json
+fixtures/container-query/_bundle/
+fixtures/site/_out/
+fixtures/site/routes/
+fixtures/site/_sk.json
+fixtures/site/_tok.json
+
+# Tooling caches
+.pytest_cache/
+.DS_Store

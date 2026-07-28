@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1280, initial-scale=1">
+<title>skeleton_diff calibration fixture</title>
+<style>
+  /* deterministic, content-independent: fixed-px geometry, system font,
+     no webfonts, no images, no async. Two captures of THIS page must be
+     pixel-identical at the same dpr; cross-dpr text sub-px drift is the
+     real CSS-px noise floor skeleton_diff must tolerate. */
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 1280px; height: 1600px; background: #ffffff;
+               font-family: Arial, Helvetica, sans-serif; }
+  .box { position: absolute; }
+  #hero   { left: 40px;  top: 40px;   width: 1200px; height: 360px; background: #1a1a2e; }
+  #card-a { left: 40px;  top: 440px;  width: 384px;  height: 300px; background: #16213e; }
+  #card-b { left: 448px; top: 440px;  width: 384px;  height: 300px; background: #0f3460; }
+  #card-c { left: 856px; top: 440px;  width: 384px;  height: 300px; background: #533483; }
+  #footer { left: 40px;  top: 780px;  width: 1200px; height: 120px; background: #1a1a2e; }
+  /* text nodes: explicit px font-size, fixed positions */
+  .t  { position: absolute; color: #ffffff; }
+  #h1 { left: 80px;  top: 120px;  font-size: 64px;  font-weight: 700; }
+  #h2 { left: 80px;  top: 220px;  font-size: 28px;  font-weight: 400; }
+  #lbl-a { left: 64px;  top: 480px; font-size: 20px; font-weight: 600; }
+  #lbl-b { left: 472px; top: 480px; font-size: 20px; font-weight: 600; }
+  #lbl-c { left: 880px; top: 480px; font-size: 20px; font-weight: 600; }
+  #p-a { left: 64px;  top: 520px; width: 336px; font-size: 15px; line-height: 22px; }
+  #p-b { left: 472px; top: 520px; width: 336px; font-size: 15px; line-height: 22px; }
+  #p-c { left: 880px; top: 520px; width: 336px; font-size: 15px; line-height: 22px; }
+  #foot-txt { left: 80px; top: 820px; font-size: 16px; font-weight: 400; }
+</style>
+</head>
+<body>
+  <div class="box" id="hero">
+    <span class="t" id="h1">Calibration Surface</span>
+    <span class="t" id="h2">Deterministic geometry for self-diff floor</span>
+  </div>
+  <div class="box" id="card-a">
+    <span class="t" id="lbl-a">Panel One</span>
+    <div class="t" id="p-a">Fixed pixel layout with no images or webfonts so two captures render identically.</div>
+  </div>
+  <div class="box" id="card-b">
+    <span class="t" id="lbl-b">Panel Two</span>
+    <div class="t" id="p-b">Center coordinates and box sizes are integer pixels at every device ratio.</div>
+  </div>
+  <div class="box" id="card-c">
+    <span class="t" id="lbl-c">Panel Three</span>
+    <div class="t" id="p-c">Text nodes carry explicit font-size to expose cross-dpr hinting drift.</div>
+  </div>
+  <div class="box" id="footer">
+    <span class="t" id="foot-txt">Static footer band for tree and z-order agreement checks.</span>
+  </div>
+</body>
+</html>

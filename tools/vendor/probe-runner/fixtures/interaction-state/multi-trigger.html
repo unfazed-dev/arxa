@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>multi-trigger interaction fixture</title>
+<style>
+  html, body { margin: 0; background: #ffffff; font-family: sans-serif; }
+  button { display: block; width: 120px; height: 36px; margin: 6px; }
+  .panel { display: none; }
+  .panel.open { display: block; }
+  .itemA { width: 280px; height: 50px; background: #dddddd; margin: 6px; }
+  .itemB { width: 320px; height: 70px; background: #cccccc; margin: 6px; }
+</style>
+</head>
+<body>
+  <button id="openA" aria-haspopup="true" aria-expanded="false">menu A</button>
+  <button id="openB" aria-haspopup="true" aria-expanded="false">menu B</button>
+  <div id="panelA" class="panel" role="menu">
+    <div class="itemA"></div><div class="itemA"></div><div class="itemA"></div>
+  </div>
+  <div id="panelB" class="panel" role="menu">
+    <div class="itemB"></div><div class="itemB"></div>
+  </div>
+  <script>
+    // ONE-WAY open: clicking opens and NEVER closes (simulates outside-click /
+    // Escape-only menus). This is the case the per-trigger re-baseline fix exists
+    // for: panel A stays open, so a single shared REST baseline would re-count A's
+    // nodes when measuring B. With per-trigger re-baselining, B's diff excludes
+    // A's already-open nodes.
+    function oneWayOpen(btn, panel) {
+      btn.addEventListener('click', () => {
+        panel.classList.add('open');
+        btn.setAttribute('aria-expanded', 'true');
+      });
+    }
+    oneWayOpen(document.getElementById('openA'), document.getElementById('panelA'));
+    oneWayOpen(document.getElementById('openB'), document.getElementById('panelB'));
+  </script>
+</body>
+</html>
