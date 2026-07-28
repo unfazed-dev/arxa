@@ -4,7 +4,8 @@
 # non-zero if any gate failed. It ORCHESTRATES: it contains no assertions of its
 # own — every pass/fail verdict belongs to a gate.
 #
-# Dependency order: intake -> freeze -> structure -> scaffold -> coverage -> review -> deploy.
+# Dependency order: intake -> freeze -> structure -> scaffold -> coverage -> review
+#                   -> native_deps -> deploy.
 #   intake    every registry surface traces to a brief/answers (traceability)
 #   freeze    the frozen inputs exist and surfaces render clean
 #   structure the shell/surface map resolves and is in sync
@@ -110,6 +111,9 @@ run_bash_gate   structure "$GATES_DIR/structure/structure.sh" "$APP"
 run_bash_gate   scaffold  "$GATES_DIR/scaffold/scaffold.sh"  "$APP"
 run_bash_gate   coverage  "$GATES_DIR/coverage/coverage.sh"  "$APP"
 VIEWS="$APP/lib/ui/views" run_review_gate
+# native_deps before deploy: whether the app's plugins can still be built for
+# each declared target is a PRE-condition of shipping to those targets.
+run_bash_gate   native_deps "$GATES_DIR/native_deps/native_deps.sh" "$APP"
 run_bash_gate   deploy    "$GATES_DIR/deploy/deploy.sh"
 
 # ---- aggregate SARIF into one document ----------------------------------------

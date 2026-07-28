@@ -43,6 +43,17 @@ directory name is a scaffolder **decision** (coverage refuses to guess it);
 here it is `<tab>_<short>` from the registry id (the stable key, §18),
 recorded so the gate can check it.
 
+**You do not choose dependencies.** `scaffold.py` never reads or writes a
+`pubspec.yaml`; the dependency set arrives from the kit and the app template.
+That means a dependency which cannot be built for a declared target is not
+something you can prevent here — it is caught over the assembled app by
+[`gates/native_deps`](../../gates/native_deps/README.md), which asserts that
+every plugin is packaged for each target's native toolchain (today: Swift
+Package Manager on Apple platforms, where Flutter 3.44 warns that an
+unmigrated plugin "will become an error in a future version"). If that gate
+fires on an app you scaffolded, the remedy is in its README — do not silence it
+by dropping a target.
+
 You do **not** produce: widget bodies, business logic, routes, platform
 ceremony files (entitlements, Info.plist — those are the deployer/builder's
 concern), or anything that is design. Every emitted file is a **minimal valid

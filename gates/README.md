@@ -29,6 +29,7 @@ gates/<name>/
 | `scaffold/` | shell/widget/overlay boundaries (self-contained shells, services placement, peer registration) |
 | `coverage/` | every frozen surface of an adopted shell is scaffolded with the target-derived form-factor set |
 | `review/` | the design judge — pure-Dart static analyzer over the scaffolded views |
+| `native_deps/` | every plugin dependency is packaged for each declared target's toolchain — today, Swift Package Manager on Apple platforms |
 | `deploy/` | build target + version + releasing account are confirmed in pipeline state |
 
 ## R5 — every gate must be able to fail
