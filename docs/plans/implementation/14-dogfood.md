@@ -19,7 +19,7 @@ viewport, another implying two, and the form-factor emission following each.
 ## Phase A — design (founder-led, starts the moment plan 01 lands)
 
 - [ ] **14.1** Run `app-box-designer` against
-      [`../../design/brief.md`](../../design/brief.md) to produce **D1**: 14
+      [`../../design/app-box-persona-design-brief.md`](../../design/app-box-persona-design-brief.md) to produce **D1**: 14
       surfaces, states per the brief, authored at the desktop width.
 - [ ] **14.2** Author `registry.json` and a `surfaceId` in every viewmodel while
       designing — **never back-filled**.

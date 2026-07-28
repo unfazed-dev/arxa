@@ -33,8 +33,8 @@ is step 8.2 and is the one real cost of this base.
 - [x] **8.6** Implement credential storage on `flutter_secure_storage`. **Never
       hand-rolled crypto.** State the active tier in the UI — *"stored in the
       macOS Keychain"*.
-- [x] **8.7** Build the surfaces from [`../../design/brief.md`](../../design/brief.md)
-      §4 — the 14-surface inventory with its states. `settings.kits` must render
+- [x] **8.7** Build the surfaces from [`../../design/app-box-persona-design-brief.md`](../../design/app-box-persona-design-brief.md)
+      §10 — the 20-surface inventory with its states. `settings.kits` must render
       **wired vs stubbed honestly**; a buyer who picks a stubbed provider and
       meets `UnimplementedError` at build time has been misled.
 - [x] **8.8** The app **shells out** to the vendored pipeline through a

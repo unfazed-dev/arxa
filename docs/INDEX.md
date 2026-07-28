@@ -25,10 +25,16 @@ recorded. If your plan is ambiguous, stop and report — do not choose.
 
 | doc | contents |
 |---|---|
-| [design/personas.md](design/personas.md) | **Evan** (founder, 4 modes) and **Michelle** (indie iOS+Android dev, the buyer) |
-| [design/journeys.md](design/journeys.md) | J0 intake → J10 evaluate-and-leave |
-| [design/flows.md](design/flows.md) | 4 mermaid diagrams: pipeline+gates, truth layers, target derivation, test tiers |
-| [design/brief.md](design/brief.md) | the 14-surface inventory that seeds `registry.json` |
+| [design/README.md](design/README.md) | index, reading order, standing notes (canonical language, citation rules) |
+| [design/personas.md](design/personas.md) | **Evan** (founder, 4 modes) and **Michelle** (indie iOS+Android dev, the buyer) — proto-personas with JTBD, frustrations, design-must-get-right |
+| [design/app-box-persona-design-brief.md](design/app-box-persona-design-brief.md) | handoff brief: actor model, cross-cutting constraints (three gates, credential tiers, stub honesty, viewport derivation), pinned-vs-open, the 20-surface inventory that seeds `registry.json` |
+| [design/app-box-design-generation-brief.md](design/app-box-design-generation-brief.md) | design-generation program: viewport ladder, foundation prompt, per-mode/persona stage prompts, coverage check — for driving `app-box-designer` |
+| [design/journeys/evan-founder-journey.md](design/journeys/evan-founder-journey.md) | Evan: full pipeline journey (intake → design → freeze → build → ship → remote → CRUD) |
+| [design/journeys/michelle-buyer-journey.md](design/journeys/michelle-buyer-journey.md) | Michelle: 20-minute evaluation (install → showcase → first project → build → evaluate-and-leave) |
+| [design/flows/README.md](design/flows/README.md) | flow-library layout, flow-doc template, conventions |
+| [design/flows/research-findings.md](design/flows/research-findings.md) | graded [V]/[A]/[U] synthesis from `docs/research/` — the evidence behind the flows |
+| [design/flows/evan-founder/_index.md](design/flows/evan-founder/_index.md) | Evan's 15 flows across 6 tab-group shells |
+| [design/flows/michelle-buyer/_index.md](design/flows/michelle-buyer/_index.md) | Michelle's 6 flows across 5 tab-group shells |
 
 ---
 
