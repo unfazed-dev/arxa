@@ -1,0 +1,29 @@
+{% extends "ui/views/stage_shell/stage_shell_view.html" %}
+{% block title %}Targets — app_box{% endblock %}
+{% block heading %}Targets{% endblock %}
+{% block sub %}Where this build can go. A target that would throw is never offered.{% endblock %}
+{% block surface %}
+<div class="col-wide stack">
+  <div class="choices">
+    {% for t in targets %}
+    <label class="choice {{ '' if t.ready else 'off' }}">
+      <input type="radio" name="target" value="{{ t.id }}"
+             {% if t.id == 'appstore' %}checked{% endif %} {% if not t.ready %}disabled{% endif %}>
+      <span style="flex:1;">
+        <b>{{ t.name }}</b>
+        {% if t.ready %}<span class="pill ok" style="margin-left:6px;">ready</span>
+        {% else %}<span class="pill stub" style="margin-left:6px;">throws</span>{% endif %}
+        <br><span class="faint">via {{ t.via }} — {{ t.note }}</span>
+      </span>
+    </label>
+    {% endfor %}
+  </div>
+  <div class="row">
+    <a class="btn" href="/ship/confirm">Continue to confirm</a>
+  </div>
+  <p class="muted">Vercel is shown disabled rather than hidden: a buyer who cannot see
+    why an option is unavailable assumes the product cannot do it. Cloudflare Pages is
+    wired and offered even though web is not in this project's targets — the reason it
+    would do nothing is stated, not implied.</p>
+</div>
+{% endblock %}

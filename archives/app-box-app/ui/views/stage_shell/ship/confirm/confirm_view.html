@@ -1,0 +1,52 @@
+{% extends "ui/views/stage_shell/stage_shell_view.html" %}
+{% block title %}Confirm the release — app_box{% endblock %}
+{% block heading %}Confirm the release{% endblock %}
+{% block sub %}Human gate 3 of 3 — the only one that writes to the outside world.{% endblock %}
+{% block states %}{% include "ui/widgets/_states.html" %}{% endblock %}
+
+{# Named Fragment — the page renders it, and so does the POST that passes it. #}
+{% macro gate(c) %}
+<div id="gate" class="gate {{ 'done' if c.state == 'confirmed' else '' }}">
+  <div class="gate-inner">
+    <p class="gate-eyebrow">
+      {% if c.state == 'confirmed' %}Gate 3 · released by you{% else %}Gate 3 · irreversible{% endif %}
+    </p>
+    <h2>Release to the App Store?</h2>
+    <p class="muted">Every other gate is a read-only assertion. This one publishes, and
+      re-running the stage will not undo it. Read all three lines before you confirm.</p>
+
+    <div class="triple">
+      <div><dt>Target</dt><dd>{{ c.release.target }}</dd></div>
+      <div><dt>Version</dt><dd>{{ c.release.version }}</dd></div>
+      <div><dt>Account</dt><dd>{{ c.release.account }}</dd></div>
+    </div>
+
+    {% if c.state == 'confirmed' %}
+      <p class="row"><span class="pill ok">submitted — build 218 in review</span></p>
+      <p class="gate-note">Nothing in app_box can recall this. Withdrawal happens in
+        App Store Connect.</p>
+    {% else %}
+      {# The checkbox is `required`, and reportValidityOfForms is on in the head
+         config — htmx runs native constraint validation before it will issue
+         this request, so an unread gate never reaches the server. #}
+      <form hx-post="/ship/confirm/release"
+            hx-target="#gate" hx-swap="outerHTML"
+            hx-disabled-elt="find button[type=submit]">
+        <label class="choice" style="margin-bottom:12px;">
+          <input type="checkbox" name="ack" required>
+          <span>I have read the target, the version and the account above, and they are
+            the ones I intend to release.</span>
+        </label>
+        <div class="row">
+          <button class="btn btn-gate" type="submit">Release {{ c.release.version }}</button>
+          <a class="btn ghost" href="/ship">Back to targets</a>
+        </div>
+      </form>
+      <p class="gate-note">No agent can pass this gate, and no path reaches released
+        without it.</p>
+    {% endif %}
+  </div>
+</div>
+{% endmacro %}
+
+{% block surface %}{{ gate(c) }}{% endblock %}

@@ -1,0 +1,84 @@
+{
+  "_note": "Seed is the SSOT. Edit this, then regenerate the fixture. Never hand-edit *_fixtures.json.",
+  "stages": [
+    {
+      "id": "projects",
+      "n": "01",
+      "label": "Projects",
+      "done": true
+    },
+    {
+      "id": "design",
+      "n": "02",
+      "label": "Design",
+      "done": true,
+      "gate": "design.approve"
+    },
+    {
+      "id": "build",
+      "n": "03",
+      "label": "Build",
+      "done": false,
+      "gate": "build.approve",
+      "health": "red"
+    },
+    {
+      "id": "ship",
+      "n": "04",
+      "label": "Ship",
+      "done": false,
+      "gate": "ship.confirm"
+    }
+  ],
+  "log": [
+    {
+      "t": "14:02:11",
+      "k": "i",
+      "m": "freeze \u2014 6 inputs, sha 9f21ac4"
+    },
+    {
+      "t": "14:02:14",
+      "k": "g",
+      "m": "render gate      PASS   14/14 surfaces at expanded"
+    },
+    {
+      "t": "14:02:19",
+      "k": "g",
+      "m": "structure gate   PASS   14 buildable, 5 excluded"
+    },
+    {
+      "t": "14:02:41",
+      "k": "i",
+      "m": "scaffold \u2014 stacked_kit @ 4f95ede, 39 git deps"
+    },
+    {
+      "t": "14:03:08",
+      "k": "g",
+      "m": "analyze          PASS   0 issues"
+    },
+    {
+      "t": "14:03:52",
+      "k": "r",
+      "m": "review_checklist FAIL   1 finding \u2014 check 1d"
+    }
+  ],
+  "findings": [
+    {
+      "id": "f1",
+      "rule": "kit-ui-library-first",
+      "check": "review_checklist.sh 1d",
+      "file": "lib/ui/views/orders/orders_view.dart",
+      "line": 64,
+      "says": "A tab bar was hand-rolled where the kit already ships one.",
+      "why": "Hand-rolled chrome drifts from the kit on every kit upgrade, and the iOS scroll-edge behaviour is not reproduced.",
+      "del": "      bottomNavigationBar: BottomNavigationBar(",
+      "add": "      bottomNavigationBar: KitTabBar(",
+      "sev": "red"
+    }
+  ],
+  "release": {
+    "target": "App Store Connect",
+    "version": "1.4.0 (218)",
+    "account": "Totem Labs LLC \u2014 8JX92QK4M7"
+  }
+}

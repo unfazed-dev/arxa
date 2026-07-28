@@ -1,0 +1,48 @@
+{% extends "ui/views/stage_shell/stage_shell_view.html" %}
+{% block title %}Surface preview — app_box{% endblock %}
+{% block heading %}Surface preview{% endblock %}
+{% block sub %}The prototype as it actually renders, at the rung this project ships.{% endblock %}
+{% block states %}{% include "ui/widgets/_states.html" %}{% endblock %}
+
+{# Named Fragment: Re-render swaps this panel in place. #}
+{% macro panel(c) %}
+<div id="preview" class="col-wide stack">
+  <div class="spread">
+    <div class="row wrap">
+      <span class="pill plain mono">orders.home</span>
+      <span class="faint">expanded · 1280 × 832</span>
+    </div>
+    {% if c.state == 'stale' %}
+      <span class="pill gate">stale — 3 edits since this render</span>
+    {% else %}
+      <span class="pill ok">live</span>
+    {% endif %}
+  </div>
+
+  {# The frame reports the CHANNEL, never "did it look rendered" (brief §5.2). #}
+  <div class="viewport {{ 'stale' if c.state == 'stale' else '' }}">
+    <div class="empty" style="padding:0;">
+      <img class="mark" src="/assets/images/app-box-icon.svg" alt="">
+      <p class="faint mono">served from the prototype runtime on :4319</p>
+    </div>
+  </div>
+
+  {% if c.state == 'stale' %}
+  <div class="card">
+    <div class="spread">
+      <div>
+        <b>This image is older than the prototype.</b>
+        <p class="muted" style="margin:2px 0 0;">Re-render before you judge it. A stale
+          frame that looks fine is the most expensive kind of pass.</p>
+      </div>
+      <button class="btn"
+              hx-post="/design/surface"
+              hx-target="#preview" hx-swap="outerHTML"
+              hx-disabled-elt="this">Re-render</button>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endmacro %}
+
+{% block surface %}{{ panel(c) }}{% endblock %}
