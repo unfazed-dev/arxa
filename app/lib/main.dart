@@ -20,7 +20,7 @@ Future<void> main() async {
   setPathUrlStrategy();
   await setupLocator(stackedRouter: kitPlatformRouter);
   // App boot (stacked_kit_data seed backend + fake auth) happens in
-  // ShowcaseStartupViewModel.runStartupLogic() — the canonical Stacked startup flow.
+  // StartupViewModel.runStartupLogic() — the canonical Stacked startup flow.
   // Restore the persisted ThemeMode (defaults to `system`) and sync the status
   // bar before the first frame. KitThemeService owns ThemeMode + system UI.
   await locator<KitThemeService>().initialize();

@@ -24,8 +24,8 @@
     ]
   },
   "launch": {
-    "_comment": "8.13 / J1 — auto-launch the showcase app on first install so Michelle sees output quality before typing anything.",
-    "autoLaunchShowcase": true,
+    "_comment": "8.13 / J1 — auto-launch the bundled demo project on first install so Michelle sees output quality before typing anything. The marker is stored as a vault FLAG (app_box.flag.*), never as a credential: routing it through storeApiKey made a fresh install report 'BYO key — stored in the macOS Keychain' having stored nothing.",
+    "autoLaunchDemo": true,
     "firstRunKey": "app_box.first_run_done"
   },
   "licence": {

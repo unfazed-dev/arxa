@@ -1,4 +1,4 @@
-// Regression guard: the showcase is a STANDALONE app, so its asset constants
+// Regression guard: app_box is a STANDALONE app, so its asset constants
 // must be plain keys ('assets/seed/...'). The 'packages/app_box/'
 // prefix is only valid when a host app bundles this package as a dependency —
 // with the prefixed keys the standalone app white-screens at boot

@@ -59,8 +59,7 @@ class ConfigService {
       .toList();
 
   // launch (8.13)
-  bool get autoLaunchShowcase =>
-      _section('launch')['autoLaunchShowcase'] as bool;
+  bool get autoLaunchDemo => _section('launch')['autoLaunchDemo'] as bool;
   String get firstRunKey => _section('launch')['firstRunKey'] as String;
 
   // licence (8.12)

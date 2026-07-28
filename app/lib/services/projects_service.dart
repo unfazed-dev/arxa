@@ -11,8 +11,8 @@ class AppBoxProject {
 }
 
 /// 8.7 — the projects facade. Re-applies the Repository → Facade → ViewModel
-/// skeleton the showcase demonstrated with Notes, now for app_box's own domain.
-/// (The skeleton is the point of this base; notes was only the example.)
+/// skeleton the kit exemplar demonstrated, now for app_box’s own domain.
+/// (The skeleton is the point of this base; the exemplar’s domain was only an example.)
 ///
 /// In-memory for now; the repository swap seam (seed/supabase/appwrite) from
 /// stacked_kit_data is where a real backend plugs in with no viewmodel change.

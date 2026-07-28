@@ -3,14 +3,14 @@ import 'package:app_box/ui/common/ui_helpers.dart';
 import 'package:flutter/material.dart';
 import 'package:stacked/stacked.dart';
 
-import 'showcase_unknown_viewmodel.dart';
+import 'unknown_viewmodel.dart';
 
-class ShowcaseUnknownViewMobile
-    extends ViewModelWidget<ShowcaseUnknownViewModel> {
-  const ShowcaseUnknownViewMobile({super.key});
+class UnknownViewTablet
+    extends ViewModelWidget<UnknownViewModel> {
+  const UnknownViewTablet({super.key});
 
   @override
-  Widget build(BuildContext context, ShowcaseUnknownViewModel viewModel) {
+  Widget build(BuildContext context, UnknownViewModel viewModel) {
     return const Scaffold(
       backgroundColor: kcBackgroundColor,
       body: Center(

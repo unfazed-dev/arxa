@@ -6,7 +6,7 @@ import 'app_shell_viewmodel.dart';
 /// The app_box root shell — a desktop sidebar (NavigationRail) over a nested
 /// router outlet that hosts the 14 product surfaces (brief §4). The dogfood
 /// target is macOS desktop, so this is a sidebar layout, not the mobile tab bar
-/// the showcase carried. Six sections map to the brief's tabs.
+/// the kit exemplar carried. Six sections map to the brief’s tabs.
 class AppShellView extends StackedView<AppShellViewModel> {
   const AppShellView({super.key});
 

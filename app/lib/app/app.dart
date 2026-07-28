@@ -27,8 +27,8 @@ import 'package:app_box/ui/views/settings/settings_devices/settings_devices_view
 import 'package:app_box/ui/views/settings/settings_kits/settings_kits_view.dart';
 import 'package:app_box/ui/views/ship/ship_confirm/ship_confirm_view.dart';
 import 'package:app_box/ui/views/ship/ship_targets/ship_targets_view.dart';
-import 'package:app_box/ui/views/showcase_startup/showcase_startup_view.dart';
-import 'package:app_box/ui/views/showcase_unknown/showcase_unknown_view.dart';
+import 'package:app_box/ui/views/startup/startup_view.dart';
+import 'package:app_box/ui/views/unknown/unknown_view.dart';
 import 'package:stacked/stacked_annotations.dart';
 import 'package:stacked_services/stacked_services.dart';
 import 'package:talker_flutter/talker_flutter.dart';
@@ -40,7 +40,7 @@ import 'package:ui_library/ui_library.dart';
   routes: [
     // Boot splash → AppShellView, the desktop sidebar host for the 14 product
     // surfaces (brief §4). The dogfood target is macOS desktop.
-    AdaptiveRoute(page: ShowcaseStartupView, initial: true),
+    AdaptiveRoute(page: StartupView, initial: true),
 
     AdaptiveRoute(page: AppShellView, path: '/', children: [
       // projects
@@ -68,9 +68,9 @@ import 'package:ui_library/ui_library.dart';
     ]),
 
     // @stacked-route
-    AdaptiveRoute(page: ShowcaseUnknownView, path: '/404'),
+    AdaptiveRoute(page: UnknownView, path: '/404'),
 
-    /// When none of the above routes match, redirect to ShowcaseUnknownView
+    /// When none of the above routes match, redirect to UnknownView
     RedirectRoute(path: '*', redirectTo: '/404'),
   ],
   dependencies: [

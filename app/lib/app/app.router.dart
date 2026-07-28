@@ -30,8 +30,8 @@ import '../ui/views/settings/settings_devices/settings_devices_view.dart'
 import '../ui/views/settings/settings_kits/settings_kits_view.dart' as _i18;
 import '../ui/views/ship/ship_confirm/ship_confirm_view.dart' as _i14;
 import '../ui/views/ship/ship_targets/ship_targets_view.dart' as _i13;
-import '../ui/views/showcase_startup/showcase_startup_view.dart' as _i1;
-import '../ui/views/showcase_unknown/showcase_unknown_view.dart' as _i3;
+import '../ui/views/startup/startup_view.dart' as _i1;
+import '../ui/views/unknown/unknown_view.dart' as _i3;
 
 final stackedRouter =
     StackedRouterWeb(navigatorKey: _i19.StackedService.navigatorKey);
@@ -42,12 +42,12 @@ class StackedRouterWeb extends _i20.RootStackRouter {
 
   @override
   final Map<String, _i20.PageFactory> pagesMap = {
-    ShowcaseStartupViewRoute.name: (routeData) {
-      final args = routeData.argsAs<ShowcaseStartupViewArgs>(
-          orElse: () => const ShowcaseStartupViewArgs());
+    StartupViewRoute.name: (routeData) {
+      final args = routeData.argsAs<StartupViewArgs>(
+          orElse: () => const StartupViewArgs());
       return _i20.AdaptivePage<dynamic>(
         routeData: routeData,
-        child: _i1.ShowcaseStartupView(key: args.key),
+        child: _i1.StartupView(key: args.key),
         opaque: true,
       );
     },
@@ -60,12 +60,12 @@ class StackedRouterWeb extends _i20.RootStackRouter {
         opaque: true,
       );
     },
-    ShowcaseUnknownViewRoute.name: (routeData) {
-      final args = routeData.argsAs<ShowcaseUnknownViewArgs>(
-          orElse: () => const ShowcaseUnknownViewArgs());
+    UnknownViewRoute.name: (routeData) {
+      final args = routeData.argsAs<UnknownViewArgs>(
+          orElse: () => const UnknownViewArgs());
       return _i20.AdaptivePage<dynamic>(
         routeData: routeData,
-        child: _i3.ShowcaseUnknownView(key: args.key),
+        child: _i3.UnknownView(key: args.key),
         opaque: true,
       );
     },
@@ -209,7 +209,7 @@ class StackedRouterWeb extends _i20.RootStackRouter {
   @override
   List<_i20.RouteConfig> get routes => [
         _i20.RouteConfig(
-          ShowcaseStartupViewRoute.name,
+          StartupViewRoute.name,
           path: '/',
         ),
         _i20.RouteConfig(
@@ -301,7 +301,7 @@ class StackedRouterWeb extends _i20.RootStackRouter {
           ],
         ),
         _i20.RouteConfig(
-          ShowcaseUnknownViewRoute.name,
+          UnknownViewRoute.name,
           path: '/404',
         ),
         _i20.RouteConfig(
@@ -314,27 +314,26 @@ class StackedRouterWeb extends _i20.RootStackRouter {
 }
 
 /// generated route for
-/// [_i1.ShowcaseStartupView]
-class ShowcaseStartupViewRoute
-    extends _i20.PageRouteInfo<ShowcaseStartupViewArgs> {
-  ShowcaseStartupViewRoute({_i22.Key? key})
+/// [_i1.StartupView]
+class StartupViewRoute extends _i20.PageRouteInfo<StartupViewArgs> {
+  StartupViewRoute({_i22.Key? key})
       : super(
-          ShowcaseStartupViewRoute.name,
+          StartupViewRoute.name,
           path: '/',
-          args: ShowcaseStartupViewArgs(key: key),
+          args: StartupViewArgs(key: key),
         );
 
-  static const String name = 'ShowcaseStartupView';
+  static const String name = 'StartupView';
 }
 
-class ShowcaseStartupViewArgs {
-  const ShowcaseStartupViewArgs({this.key});
+class StartupViewArgs {
+  const StartupViewArgs({this.key});
 
   final _i22.Key? key;
 
   @override
   String toString() {
-    return 'ShowcaseStartupViewArgs{key: $key}';
+    return 'StartupViewArgs{key: $key}';
   }
 }
 
@@ -366,27 +365,26 @@ class AppShellViewArgs {
 }
 
 /// generated route for
-/// [_i3.ShowcaseUnknownView]
-class ShowcaseUnknownViewRoute
-    extends _i20.PageRouteInfo<ShowcaseUnknownViewArgs> {
-  ShowcaseUnknownViewRoute({_i22.Key? key})
+/// [_i3.UnknownView]
+class UnknownViewRoute extends _i20.PageRouteInfo<UnknownViewArgs> {
+  UnknownViewRoute({_i22.Key? key})
       : super(
-          ShowcaseUnknownViewRoute.name,
+          UnknownViewRoute.name,
           path: '/404',
-          args: ShowcaseUnknownViewArgs(key: key),
+          args: UnknownViewArgs(key: key),
         );
 
-  static const String name = 'ShowcaseUnknownView';
+  static const String name = 'UnknownView';
 }
 
-class ShowcaseUnknownViewArgs {
-  const ShowcaseUnknownViewArgs({this.key});
+class UnknownViewArgs {
+  const UnknownViewArgs({this.key});
 
   final _i22.Key? key;
 
   @override
   String toString() {
-    return 'ShowcaseUnknownViewArgs{key: $key}';
+    return 'UnknownViewArgs{key: $key}';
   }
 }
 
@@ -754,12 +752,12 @@ class SettingsKitsViewArgs {
 }
 
 extension RouterStateExtension on _i19.RouterService {
-  Future<dynamic> navigateToShowcaseStartupView({
+  Future<dynamic> navigateToStartupView({
     _i22.Key? key,
     void Function(_i20.NavigationFailure)? onFailure,
   }) async {
     return navigateTo(
-      ShowcaseStartupViewRoute(
+      StartupViewRoute(
         key: key,
       ),
       onFailure: onFailure,
@@ -778,12 +776,12 @@ extension RouterStateExtension on _i19.RouterService {
     );
   }
 
-  Future<dynamic> navigateToShowcaseUnknownView({
+  Future<dynamic> navigateToUnknownView({
     _i22.Key? key,
     void Function(_i20.NavigationFailure)? onFailure,
   }) async {
     return navigateTo(
-      ShowcaseUnknownViewRoute(
+      UnknownViewRoute(
         key: key,
       ),
       onFailure: onFailure,
@@ -970,12 +968,12 @@ extension RouterStateExtension on _i19.RouterService {
     );
   }
 
-  Future<dynamic> replaceWithShowcaseStartupView({
+  Future<dynamic> replaceWithStartupView({
     _i22.Key? key,
     void Function(_i20.NavigationFailure)? onFailure,
   }) async {
     return replaceWith(
-      ShowcaseStartupViewRoute(
+      StartupViewRoute(
         key: key,
       ),
       onFailure: onFailure,
@@ -994,12 +992,12 @@ extension RouterStateExtension on _i19.RouterService {
     );
   }
 
-  Future<dynamic> replaceWithShowcaseUnknownView({
+  Future<dynamic> replaceWithUnknownView({
     _i22.Key? key,
     void Function(_i20.NavigationFailure)? onFailure,
   }) async {
     return replaceWith(
-      ShowcaseUnknownViewRoute(
+      UnknownViewRoute(
         key: key,
       ),
       onFailure: onFailure,
