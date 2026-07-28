@@ -369,3 +369,59 @@ EXECUTES on a real htmx producer — design → freeze (render) → structure (r
 → scaffold (emit) → coverage (count) — with the design gates green. The keystone
 (P09 embedded engine, 29/29 surfaces byte-identical JSC vs V8) and the
 producer-shape fix are what unblocked it.
+
+---
+
+## Re-run 2 — after the builder phase + intake wiring (2026-07-28)
+
+The prior re-run left two gates red on D1 that traced to **gate defects, not the
+design**: (a) `review` failed all 15 stubs because `form_factor_files` hardcoded a
+legacy 5-file set conflicting with §16 (macos → 3 files), and (b) `scaffold` went
+N/A/FAIL because the scaffolder emitted no shell-level `design-system.md` (S4) or
+`*_chrome.dart` (S6). Both fixed this session; `intake` was also wired into
+`run_all` (KIT_DESIGN_DIR registry path) and the brief's surface inventory
+completed (6 surfaces the designer had authored but the table omitted) → 20/20
+trace.
+
+Setup: `scaffold.py --app-root <non-hidden temp> --targets macos` (15 surfaces ×
+3 files + per-surface + shell-level design-system.md + chrome) with a minimal
+`pubspec.yaml` (the dogfood target must be a real Flutter project for the
+scaffold gate's package-name read).
+
+| gate | result | note |
+|---|---|---|
+| **intake** | **PASS** | 20 registry surfaces trace to the brief surface table (no orphans either way). Newly wired into run_all. |
+| **freeze** | **PASS** | htmx producer; 14 routes @ desktop; 0 console errors. |
+| **structure** | **PASS** | in-sync; 20/15/5 + 6 tab roots. |
+| **scaffold** | **PASS** | S1 15 views+viewmodel; S4 shell design-system.md (Palette+KitColors); S6 stage_shell_chrome.dart. |
+| **coverage** | **PASS** | 15/15 frozen surfaces; macos → 3-file set derived. |
+| **review** | **PASS** | **15/15 stubs** — form_factor_files is now §16-derivation-aware (reads `.shell-structure.json` factors); design-system.md present per surface. |
+| **deploy** | **FAIL (human gate 3)** | version/account unconfirmed — by design, the strictest gate halts for human release approval. |
+
+**Totals: 6 passed, 1 failed (the human gate), 0 N/A.** Every automatable design +
+build gate is green on D1. The single FAIL is deploy, which exists to halt until a
+human confirms the release — it is the gate working, not a defect.
+
+> Caveat (honest): the scaffolded D1 views are **stubs** the builder phase will
+> fill with real content. They pass `review` because review enforces the *kit
+> contract* (KitGlyphs/KitColors/KitNativeButton/theme/form-factors/design-doc) —
+> which the stubs satisfy by construction — not because they implement the surface
+> UX. A real D1 build (done-when #4) needs the builder to populate the stub bodies.
+
+### Done-when scorecard (updated)
+
+| # | criterion | status |
+|---|---|---|
+| 1 | D1 and D2 both pass every gate | **D1 MET** (6/7 automatable gates; deploy is the human gate). **D2 NOT MET** — needs P12 (iOS device) + companion design. |
+| 2 | Form-factor counts differ (3 vs 4), derived | **MET** — observable on the real D1 scaffold: macos → 3 files/surface, derived from targets. |
+| 3 | All Phase D smoke tests pass, incl. negatives | **MET** — 14.11–14.15 (round-trip/orphan/drift/targets/gates-halt) unchanged by this session's work; the gates they exercise still name offenders. |
+| 4 | app_box's macOS app, built by app_box, runs its pipeline | **PARTIAL** — the scaffolded D1 passes every design/build gate, but views are stubs (builder fills) and deploy awaits human approval. A running app needs the builder bodies + signing. |
+| 5 | Written report: gate counts, Michelle timing, interventions | **MET (this report)** — Michelle timing N/A (14.19: needs a clean machine). |
+
+### Remaining (external / founder, not gate defects)
+
+- **14.16 / 14.19**: notarised build + clean machine — Apple Developer ID (creds).
+- **14.18 / D2 / P12**: iOS device for companion pair/serve/kill + D2 design.
+- **14.1–14.4**: founder-led Phase A design iteration.
+- **Builder bodies**: fill the 15 scaffolded stub views with real UX (turns the
+  stub-PASS into a content-PASS for done-when #4).
