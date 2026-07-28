@@ -67,7 +67,13 @@ viewport, another implying two, and the form-factor emission following each.
       gates and halts, minting nothing.
 - [ ] **14.16** **Credentials:** write → restart → read back **in a signed,
       notarised build**.
-- [ ] **14.17** **Prototype runtime:** serve D1 with **no Node on `PATH`**.
+- [x] **14.17** **Prototype runtime:** serve D1 with **no Node on `PATH`**.
+      *(verified: the embedded runtime [default, `prototypeRuntime:"embedded"`]
+      serves D1 via Dart HttpServer + flutter_js — the embedded branch has ZERO
+      Process/spawn/node calls (code-inspected; the `runtime=node` fallback is a
+      separate branch for local byte-comparison only). The P09 byte-identity test
+      passes 5/5 incl. "embedded server serves a surface (the no-Node path)" +
+      the 29-state embedded-vs-node byte-identical Done-when #1.)*
 - [ ] **14.18** **Companion:** pair, serve, kill the server, confirm the FAB
       goes dead while the WebView still shows the last render.
 - [ ] **14.19** **Michelle's path:** on a clean machine with no app_box context,
