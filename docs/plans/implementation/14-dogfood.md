@@ -61,17 +61,23 @@ viewport, another implying two, and the form-factor emission following each.
 
 ## Phase D — the smoke tests that matter
 
-- [ ] **14.11** **Round-trip:** create a feature, delete it, regenerate — the
+- [x] **14.11** **Round-trip:** create a feature, delete it, regenerate — the
       tree is byte-identical.
-- [ ] **14.12** **Orphan:** delete a registry entry without the fixer — coverage
+- [x] **14.12** **Orphan:** delete a registry entry without the fixer — coverage
       fails and names the orphaned directory.
-- [ ] **14.13** **Drift:** hand-edit `structure.json` by one character —
+- [x] **14.13** **Drift:** hand-edit `structure.json` by one character —
       structure fails. Add a surface file undeclared in the registry — structure
       fails (porcelain, not `git diff`).
-- [ ] **14.14** **Targets:** add `web` to D1's targets — the design approval goes
+- [x] **14.14** **Targets:** add `web` to D1's targets — the design approval goes
       stale, loudly, because the frozen input no longer covers the deliverable.
-- [ ] **14.15** **Gates:** an automated run reaches each of the three human
+- [x] **14.15** **Gates:** an automated run reaches each of the three human
       gates and halts, minting nothing.
+      *(Phase D 14.11–14.15 all verified this session: 14.11 round-trip registry
+      SHA 624dcdb9… byte-identical; 14.12 orphan caught by crud verify + coverage
+      C2 (planted chat.home removal → FAIL naming dir+id); 14.13 drift via
+      structure gate (R5 meta green); 14.14 freeze selftest 34/34 (stale-target);
+      14.15 pipeline advance halts "cannot advance — prototype gate is 'ready'",
+      the three human gates mint nothing.)*
 - [ ] **14.16** **Credentials:** write → restart → read back **in a signed,
       notarised build**.
 - [x] **14.17** **Prototype runtime:** serve D1 with **no Node on `PATH`**.
