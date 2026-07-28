@@ -60,8 +60,9 @@ Upstream adoption is always the best fix — check for a newer release first, an
 open/upvote the plugin's migration issue.
 
 When upstream is stale, vendor the plugin and add SwiftPM support yourself. The
-worked example is `third_party/flutter_js` (see its `PROVENANCE.md`); the shape
-is:
+shape (proven once against `flutter_js`, then reverted as premature while the
+CocoaPods fallback still builds — this is the recipe to re-apply the day Flutter
+enforces the warning) is:
 
 1. Copy the package into `third_party/<name>/`, dropping only non-code bulk
    (examples, docs, media). **Keep every platform directory the pubspec still
@@ -76,10 +77,9 @@ is:
 4. Re-point the podspec's `s.source_files` at the moved sources so **CocoaPods
    and SwiftPM compile the same files**.
 5. Depend on it by `path:` and record upstream version + SHA-256 + the exact
-   delta in `PROVENANCE.md`.
-
-Keep `lib/` byte-identical to upstream. A packaging fork is cheap; a behavioural
-fork is a permanent obligation.
+   delta in a `PROVENANCE.md` beside the fork. **Keep `lib/` byte-identical to
+   upstream** — a packaging fork is cheap; a behavioural fork is a permanent
+   obligation.
 
 Reference: [Swift Package Manager for plugin
 authors](https://docs.flutter.dev/packages-and-plugins/swift-package-manager/for-plugin-authors).

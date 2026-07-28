@@ -86,15 +86,13 @@ dependencies:
   # (~1 MB). Runs the designer's viewmodels unchanged; only the routing layer
   # is replaced by Dart's HttpServer.
   #
-  # VENDORED FORK of pub.dev flutter_js 0.8.7 — see
-  # ../third_party/flutter_js/PROVENANCE.md. Upstream has not adopted Swift
-  # Package Manager (pub.dev tags it `is:darwin-legacy-native-build`), and
-  # Flutter 3.44 turns SPM on by default, so every build warned that flutter_js
-  # "does not support Swift Package Manager … will become an error in a future
-  # version of Flutter". The fork adds a macOS Package.swift and nothing else;
-  # `lib/` is byte-identical to upstream, so runtime behaviour is unchanged.
-  flutter_js:
-    path: ../third_party/flutter_js
+  # Upstream has not adopted Swift Package Manager, so Flutter 3.44 warns this
+  # plugin "does not support Swift Package Manager … will become an error in a
+  # future version". Today it builds via the CocoaPods fallback, and the
+  # native_deps gate tracks the migration debt (WARN, not FAIL). Vendoring a
+  # fork to silence the warning was premature — the gate makes it optional. The
+  # day Flutter enforces it, re-vendor per gates/native_deps/README.md.
+  flutter_js: ^0.8.1
 
 # dependency_overrides: the vendored m3e forks (fab/split_button/toolbar/
 # navigation_rail) live under ui_library/vendor and must resolve to those forks,

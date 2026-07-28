@@ -65,13 +65,12 @@ When D2 exists, the merge is roughly a day, in this order:
 
 1. **`flutter create --platforms=ios .`** inside `app/`. Verify the iOS runner
    builds *before* moving a single file.
-   **Expect one known failure here:** the vendored `third_party/flutter_js` fork
-   has a `Package.swift` for **macOS only**. The first iOS build will warn that
-   `flutter_js` does not support Swift Package Manager, and iOS is the harder
-   migration — its plugin is Objective-C, so it needs
-   `ios/flutter_js/Sources/flutter_js/include/flutter_js/` with the public
-   headers moved. Budget for it; see
-   `third_party/flutter_js/PROVENANCE.md` → "Known gap".
+   **Expect one known warning here:** `flutter_js` (hosted) has not adopted
+   Swift Package Manager, so the first iOS build warns about it just as macOS
+   does today. It builds via the CocoaPods fallback, and `gates/native_deps`
+   tracks the debt. iOS is the harder migration — its plugin is Objective-C,
+   needing `ios/flutter_js/Sources/flutter_js/include/flutter_js/` with the
+   public headers moved; the recipe is in `gates/native_deps/README.md`.
 2. **Port the iOS ceremony** from `companion/ios/Runner/Info.plist` —
    `NSLocalNetworkUsageDescription`, `NSBonjourServices` (`_appbox._tcp`),
    `NSCameraUsageDescription`. Without these, discovery dies with
