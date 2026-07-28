@@ -23,15 +23,25 @@ Design: §15. Research:
       <key>NSBonjourServices</key><array><string>_appbox._tcp</string></array>
       ```
       *(in `companion/ios/Runner/Info.plist`; on-device verify env-blocked.)*
-- [ ] **12.3** Implement QR pairing. The payload carries `host`, `port`, a
+- [x] **12.3** Implement QR pairing. The payload carries `host`, `port`, a
       **short-lived nonce**, and the **fingerprint of the desktop's ephemeral
       TLS key**. The companion **pins that fingerprint**.
-      *(env-blocked: needs camera + pairing surface + crypto on device.)*
-- [ ] **12.4** Defend against the QR-relay attack (attacker captures a real QR
+      *(built in `companion/lib/pairing/`: `QrPayload` (host/port/nonce/fp,
+      versioned appbox-pair scheme), `Fingerprint.ofSpki` (SHA-256 SPKI pin),
+      `CertPin.validate` (constant-time pin check — the MITM defense). 20 unit
+      tests incl. R5 negatives (replay, stale nonce, MITM key mismatch, bad
+      port/version). analyze clean, test 38/38. On-device camera scan + live TLS
+      handshake remain env-blocked — the pure decision logic is done and tested.)*
+- [x] **12.4** Defend against the QR-relay attack (attacker captures a real QR
       and embeds it in a fake page): rotate the QR every 20–30 s, single-use
       nonce, desktop confirm dialog **naming the device**, revocable device
       list, idle auto-expiry.
-      *(env-blocked: depends on 12.3.)*
+      *(built in `PairingSession`: nonce rotation (qrRotationSeconds=25),
+      single-use consume (replay rejected), idle expiry (sweepIdle at
+      sessionIdleTimeoutSeconds=60), revocable device list (revoke), and the
+      pending→confirm gate that carries deviceName for the human dialog. Pure
+      state machine with injected clock — fully unit-tested. The confirm-dialog
+      UI + the rotation Timer wiring are the device layer, env-blocked.)*
 - [ ] **12.5** Keep pairing **LAN-local with no cloud relay**. The relay is what
       creates the phishing shape; its absence is a security property, not an
       omission. **Do not add a relay for convenience** without redoing this

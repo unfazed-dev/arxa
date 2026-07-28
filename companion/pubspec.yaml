@@ -13,6 +13,10 @@ dependencies:
   # The prototype surface — a fullscreen WebView at true device width. The FAB
   # rides above it; the WebView owns every touch that is not the FAB (§15).
   webview_flutter: ^4.10.0
+  # SHA-256 for the pairing fingerprint (12.3 — the desktop's ephemeral TLS key
+  # fingerprint the companion pins). The canonical Dart hashing lib; never
+  # hand-rolled. Matches the desktop app's crypto usage.
+  crypto: ^3.0.6
 
 dev_dependencies:
   flutter_test:
