@@ -106,7 +106,12 @@ for pkg in cfg.get("packages", []):
                 break
         if has_pod or has_spm:
             print("\t".join([pkg.get("name", "?"), pdir, "pod" if has_pod else "-", "spm" if has_spm else "-"]))
-        break
+            break
+        # Only stop once a directory actually yielded native sources. A plugin
+        # can ship an EMPTY <plat>/ alongside a populated federated darwin/ —
+        # sign_in_with_apple does exactly that. Breaking on mere directory
+        # existence made it invisible to this scan, which would have hidden it
+        # from the missing-SwiftPM set entirely.
 PY
 }
 
@@ -115,7 +120,9 @@ spm_resolved(){
   local app="$1" plat="$2"
   local gen="$app/$plat/Flutter/ephemeral/Packages/FlutterGeneratedPluginSwiftPackage/Package.swift"
   [ -f "$gen" ] || return 1
-  sed -n 's/.*\.package(name: "\([^"]*\)".*/\1/p' "$gen" | sort -u
+  # FlutterFramework is Flutter's own SPM product, not a dependency of the app —
+  # it appears in every generated manifest and is not a plugin to be migrated.
+  sed -n 's/.*\.package(name: "\([^"]*\)".*/\1/p' "$gen" | grep -vx 'FlutterFramework' | sort -u
 }
 
 check_target(){
@@ -198,6 +205,11 @@ check_target(){
 
 run_gate(){
   local app="${1:-$PWD}" targets_csv="${2:-}"
+  # Reset the verdict accumulators at entry. The selftest calls run_gate many
+  # times in one process; without this a later case inherits an earlier one's
+  # verdict, and since the R5 meta-test only asserts the suite passes, that
+  # would read as green.
+  fail=0; warned=0
   local targets
   if [ -n "$targets_csv" ]; then
     targets="$(printf '%s' "$targets_csv" | tr ',' '\n' | grep . )"
@@ -359,8 +371,10 @@ main(){
     esac
   done
   run_gate "${app:-$PWD}" "$targets"
-  local rc=$?
-  sarif_flush >/dev/null 2>&1 || true
-  exit $rc
+  # No sarif_flush here: like every other bash gate, this one only APPENDS
+  # result lines to $SARIF_RESULTS_FILE via sarif_result. run_all.sh sets that
+  # variable per gate, concatenates the lines, and flushes one combined
+  # document — aggregation is the orchestrator's job, not a gate's (R4).
+  exit $?
 }
 main "$@"
