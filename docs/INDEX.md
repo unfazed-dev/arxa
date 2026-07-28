@@ -100,6 +100,7 @@ Copy from these. **Do not rewrite what already exists.**
 | path | what to take |
 |---|---|
 | `skills/app-box-designer/` | ✅ **DELIVERED** (plan 01). The design stage, in this repo. Symlinked to `~/.agents/skills/app-box-designer`. Run `./selftest.sh` and `node runtime/doctor.mjs` |
+| `skills/app-box-story-mapper/` | ✅ **DELIVERED** (MIT adaptation). Pre-design elicitation: Epic→Feature→Story map → `docs/design/brief.md` + `story-map.json` + `story_map.html`, feeding `app-box-designer` directly (intake bypassed; the brief's surface table is the 10.7 traceability source). Run `python3 scripts/generate_story_map.py --self-test` |
 | `~/.agents/skills/kimi-design-htmx` | the fork base — **already forked; do not re-copy** |
 | `~/.agents/skills/kimi-design-flutter` | viewport archetypes (390/744) — doctrine only |
 | `/Volumes/developer_ssd/Developer/totem_labs/stacked_kit/tools` | `pipeline.sh` 1018, gates, `emit_*`, `kit_registry` |

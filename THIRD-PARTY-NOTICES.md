@@ -92,3 +92,43 @@ Licences below were **read from each installed package's `package.json`** on
 | `@hono/node-server` | 2.0.11 | MIT |
 | `nunjucks` | 3.2.4 | BSD-2-Clause |
 | `playwright` (dev only) | 1.61.1 | Apache-2.0 |
+
+---
+
+## `skills/app-box-story-mapper`
+
+`skills/app-box-story-mapper` is an MIT-licensed story-mapping skill, adapted
+for app_box. The upstream copyright notice and permission notice are reproduced
+here in full, as the licence requires. The same `LICENSE.txt` file is also
+retained inside `skills/app-box-story-mapper/`.
+
+> MIT License
+>
+> Copyright (c) 2026
+>
+> Permission is hereby granted, free of charge, to any person obtaining a copy
+> of this software and associated documentation files (the "Software"), to deal
+> in the Software without restriction, including without limitation the rights
+> to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+> copies of the Software, and to permit persons to whom the Software is
+> furnished to do so, subject to the following conditions:
+>
+> The above copyright notice and this permission notice shall be included in all
+> copies or substantial portions of the Software.
+>
+> THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+> IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+> FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+> AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+> LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+> OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+> SOFTWARE.
+
+**What was changed in the adaptation.** The skill was renamed
+(`story-map-builder` → `app-box-story-mapper`) and scoped into the pipeline as
+the pre-design elicitation step feeding `app-box-designer` directly.
+`generate_story_map.py` gained `--data-out`, `--brief-out` and `--self-test`:
+the brief emission (Epic → tab, Feature → surface, all-`wont` → out-of-scope,
+per-surface MoSCoW/release rollups as table columns) produces the surface table
+`gates/intake` (plan 10.7) traces against. The HTML story map and all original
+features are unchanged.

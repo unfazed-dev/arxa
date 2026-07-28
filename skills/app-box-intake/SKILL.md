@@ -31,7 +31,10 @@ Two artefacts, both written by the engine (`intake.py`):
    entry per surface the client named, with keys `{id, label, tab, comp,
    surface}`. `surface` is **always `null`** — intake names what the client
    asked for; design binds a surface to each. `comp` is derived by convention
-   (`shop.cart` → `ShopCart`), never authored.
+   (`shop.cart` → `ShopCart`), never authored. A hand-written brief whose
+   surface table carries `priority` / `release` columns (e.g. from
+   `app-box-story-mapper`) passes them through as optional sibling metadata —
+   additive, never woven into the four canon keys.
 
 You do **not** produce: views, viewmodels, routes, copy, layouts, component
 libraries, or anything that is design. That is the next phase. If you find

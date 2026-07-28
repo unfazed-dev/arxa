@@ -301,13 +301,22 @@ def seed_from_brief(md: str) -> list[dict]:
             continue
         tab, _short = m.group(1), m.group(2)
         label = cells[header_idx["label"]].strip() if "label" in header_idx and header_idx["label"] < len(cells) else _cap(_short)
-        seed.append({
+        entry = {
             "id": sid,
             "label": label or _cap(_short),
             "tab": tab,
             "comp": derive_comp(sid),
             "surface": None,
-        })
+        }
+        # additive sibling metadata (DESIGN-ARCHITECTURE: never woven into the
+        # four required fields): optional columns pass through when present —
+        # app-box-story-mapper emits `priority` / `release` rollups this way.
+        for opt in ("priority", "release"):
+            if opt in header_idx and header_idx[opt] < len(cells):
+                val = cells[header_idx[opt]].strip()
+                if val:
+                    entry[opt] = val
+        seed.append(entry)
     # de-dup keeping first, preserving order
     seen: set[str] = set()
     deduped = []
@@ -488,6 +497,13 @@ def _self_test() -> None:
         mixed = "| id | tab |\n|---|---|\n| `shop.cart` | shop |\n| not-an-id | x |\n"
         s2 = seed_from_brief(mixed)
         assert [e["id"] for e in s2] == ["shop.cart"], f"bad id row not skipped: {s2}"
+
+        # 13b. optional priority/release columns pass through as sibling
+        #      metadata; absent columns change nothing (see 11).
+        prio = "| id | label | priority | release |\n|---|---|---|---|\n| `shop.cart` | Cart | must | Release 1 |\n"
+        s3 = seed_from_brief(prio)
+        assert s3[0].get("priority") == "must" and s3[0].get("release") == "Release 1", s3[0]
+        assert s3[0]["comp"] == "ShopCart" and s3[0]["surface"] is None, "additive metadata must not touch the canon"
 
         # 14. emit writes both artefacts and returns 0; invalid input writes
         #     nothing and returns 1 (no partial artefacts on failure).
