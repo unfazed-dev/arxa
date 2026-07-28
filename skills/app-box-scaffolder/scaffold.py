@@ -220,6 +220,58 @@ def design_system_doc(screen, factors):
 """
 
 
+def _pascal(snake):
+    """stage_shell -> StageShell (the shell's class-name convention)."""
+    return "".join(_cap(p) for p in snake.split("_"))
+
+
+def shell_design_system_doc(shell):
+    """The shell-level design-system.md the scaffold gate (S4) requires at
+    views/<shell>/design-system.md: a '## Palette' heading + a kit color
+    reference (kc*/KitColors). STRUCTURE ONLY — the builder fills real intent.
+    The per-surface docs (design_system_doc) carry the surface-level slot; this
+    is the shell-wide one."""
+    return f"""# design-system — {shell} (shell)
+
+> app-box-scaffolder: STRUCTURE ONLY. The builder (plan 08) fills the real intent.
+
+## Palette
+- `KitColors` — the shell's palette source (builder: name the kc* tokens)
+
+## Type
+<!-- builder: KitTypography.* roles -->
+
+## Spacing
+<!-- builder: spacing tokens (no ad-hoc SizedBox gaps) -->
+
+## Motion
+<!-- builder: KitMotion.* curves/durations -->
+
+## Forbidden
+- `Icons.*` (use `KitGlyphs.*`)
+- ad-hoc `Color(0x…)` (use `KitColors.*`)
+- stock CTA buttons (use `KitNativeButton`)
+"""
+
+
+def shell_chrome(shell):
+    """The *_chrome.dart every self-contained shell owns (scaffold gate S6 — a
+    shell owns its widgets/chrome). STRUCTURE ONLY — the builder fills the real
+    nav rail / tab bar / gate-badge layout."""
+    comp = _pascal(shell)  # stage_shell -> StageShell
+    return f"""// app-box-scaffolder: shell chrome skeleton. STRUCTURE ONLY — builder fills this.
+//   shell:  {shell}
+//   The chrome is the shell's persistent frame (nav rail / tabs / gate badge).
+//   S6 (scaffold gate) requires every self-contained shell to own a chrome or a
+//   widgets/ home; this stub satisfies ownership. The builder wires the layout.
+import 'package:flutter/material.dart';
+
+class {comp}Chrome {{
+  const {comp}Chrome();
+}}
+"""
+
+
 # ----------------------------------------------------------------- manifest
 def build_manifest(frozen, factors, targets):
     """The .shell-structure.json the coverage gate reads: selfContained shells
@@ -345,6 +397,18 @@ def scaffold(design_root, app_root, targets, derivation_path, config_path, check
         open(os.path.join(base, "design-system.md"), "w").write(
             design_system_doc(s, factors))
         written += 1
+
+    # shell-level structure: each self-contained shell owns a design-system.md
+    # (scaffold gate S4: ## Palette + KitColors) + a *_chrome.dart (S6). These
+    # live at views/<shell>/ (the shell root); coverage ignores them (it counts
+    # surface SUBDIRS, not shell-root files).
+    for sh in sorted({s["shell"] for s in frozen}):
+        sh_dir = os.path.join(views, sh)
+        os.makedirs(sh_dir, exist_ok=True)
+        open(os.path.join(sh_dir, "design-system.md"), "w").write(
+            shell_design_system_doc(sh))
+        open(os.path.join(sh_dir, f"{sh}_chrome.dart"), "w").write(
+            shell_chrome(sh))
 
     manifest = build_manifest(frozen, factors, targets)
     os.makedirs(views, exist_ok=True)
@@ -487,6 +551,15 @@ def _self_test():
         chk(mf["surfaces"]["stage_shell"]["stage_shell_projects_home_view"] == "projects_home",
             "manifest records the surface->dir decision")
         chk(len(mf["surfaces"]["stage_shell"]) == 3, "manifest maps exactly the 3 frozen surfaces")
+        # shell-level structure: each self-contained shell owns a design-system.md
+        # (scaffold gate S4: ## Palette + KitColors) + a *_chrome.dart (S6).
+        sh = app1 / "lib" / "ui" / "views" / "stage_shell"
+        chk((sh / "design-system.md").is_file(), "shell-level design-system.md emitted")
+        ds = (sh / "design-system.md").read_text(encoding="utf-8")
+        chk("## Palette" in ds and "KitColors" in ds,
+            "shell design-system.md carries Palette heading + KitColors (S4)")
+        chk((sh / "stage_shell_chrome.dart").is_file(),
+            "shell *_chrome.dart emitted (S6)")
 
         # 2. ios,android -> [mobile, tablet] -> 4 files/surface, no desktop.
         chk(derive_factors(["ios", "android"], str(DERIVATION), str(CONFIG))

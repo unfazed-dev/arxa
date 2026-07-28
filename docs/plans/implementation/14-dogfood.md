@@ -43,12 +43,13 @@ viewport, another implying two, and the form-factor emission following each.
       *(verified: scaffolder emits base + desktop + viewmodel = 3 for macos; the
       review gate's form_factor_files is now §16-derivation-aware and ENFORCES
       the 3-file set, rejecting the legacy 5-file demand — commit 31653b5.)*
-- [ ] **14.9** Run every gate. Record the pass count.
+- [x] **14.9** Run every gate. Record the pass count.
       *(ran run_all on scaffolded D1 — recorded: intake ✓ freeze ✓ structure ✓
-      coverage ✓ review ✓ (15/15 stubs) · scaffold N/A (app-root has no pubspec.yaml
-      yet — the dogfood target must be a real Flutter project for the shell/chrome
-      checks) · deploy FAIL (human gate 3: version/account unconfirmed). 5 PASS /
-      1 N/A / 1 FAIL.)*
+      scaffold ✓ coverage ✓ review ✓ (15/15 stubs) · deploy FAIL (human gate 3:
+      version/account unconfirmed — by design, the strictest gate halts for human
+      release approval). 6 PASS / 1 FAIL (the human gate). The scaffold gate
+      needed two shell-level emissions the scaffolder now makes: a shell-root
+      design-system.md (S4) + a *_chrome.dart (S6).)*
 - [ ] **14.10** Scaffold D2. Expect **four** files per surface.
 
 ## Phase D — the smoke tests that matter
