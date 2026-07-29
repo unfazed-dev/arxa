@@ -1,0 +1,230 @@
+{
+  "run": {
+    "id": "design-07",
+    "number": 7,
+    "project": "app-box",
+    "brief": "companion app — approve builds from anywhere",
+    "started": "Yesterday 14:02",
+    "elapsed": "21m 05s",
+    "state": "frozen",
+    "stateLabel": "Frozen — manifest frz_9c41e2",
+    "policy": { "rungs": [390, 744, 1280], "kitCoverage": 96 }
+  },
+  "line": [
+    { "id": "brief", "kind": "stage", "label": "Brief", "state": "green" },
+    { "id": "moodboard", "kind": "stage", "label": "Moodboard", "state": "green" },
+    { "id": "prototype", "kind": "stage", "label": "Prototype", "state": "green", "href": "/design" },
+    { "id": "refine", "kind": "stage", "label": "Refine", "state": "green", "href": "/design/chat" },
+    { "id": "design.approval", "kind": "gate", "label": "Approval", "state": "approved", "href": "/design/freeze" },
+    { "id": "freeze", "kind": "stage", "label": "Freeze", "state": "green", "href": "/design/freeze" }
+  ],
+  "screens": [
+    {
+      "id": "intake.mapping", "label": "Story Mapping", "epic": "Intake & Story Mapping",
+      "state": "frozen", "wire": "split", "kit": 96,
+      "summary": "Epic → Feature → Story map with MoSCoW lanes and release swimlanes — 42 stories in one sitting",
+      "summaryPlain": "The story map: epics, features and stories sorted must/could/won't, in release lanes — 42 stories mapped in one sitting",
+      "rungs": [{ "rung": "compact", "width": 390 }, { "rung": "medium", "width": 744 }, { "rung": "expanded", "width": 1280 }]
+    },
+    {
+      "id": "intake.brief", "label": "Design Brief", "epic": "Intake & Story Mapping",
+      "state": "frozen", "wire": "stack", "kit": 98,
+      "summary": "The brief as a living doc — the surface inventory feeds the registry without rewriting",
+      "summaryPlain": "The brief as a readable document — its screen list seeds the app registry without retyping",
+      "rungs": [{ "rung": "compact", "width": 390 }, { "rung": "medium", "width": 744 }, { "rung": "expanded", "width": 1280 }]
+    },
+    {
+      "id": "intake.moodboard", "label": "Moodboard", "epic": "Intake & Story Mapping",
+      "state": "frozen", "wire": "grid", "kit": 92,
+      "summary": "Curated references and captured shots per epic — every embedded shot verified on disk",
+      "summaryPlain": "Reference apps to steal from, with real screenshots per theme — every picture checked to exist on disk",
+      "rungs": [{ "rung": "compact", "width": 390 }, { "rung": "medium", "width": 744 }, { "rung": "expanded", "width": 1280 }]
+    },
+    {
+      "id": "design.prototype", "label": "Prototype", "epic": "Design & Freeze",
+      "state": "frozen", "wire": "split", "kit": 100,
+      "summary": "Artboards at 390/744/1280 from targets alone — literal parity, structure not pixels",
+      "summaryPlain": "Every screen shown at phone, tablet and desktop size — same structure everywhere, no pixel-pushing",
+      "rungs": [{ "rung": "compact", "width": 390 }, { "rung": "medium", "width": 744 }, { "rung": "expanded", "width": 1280 }]
+    },
+    {
+      "id": "design.chat", "label": "Screen Chat", "epic": "Design & Freeze",
+      "state": "frozen", "wire": "split", "kit": 97,
+      "summary": "One screen in focus, the rest dim — scoped tools, a checkpoint per message",
+      "summaryPlain": "Chat about one screen at a time while the rest fade back — every change saved with one-tap undo",
+      "rungs": [{ "rung": "compact", "width": 390 }, { "rung": "medium", "width": 744 }, { "rung": "expanded", "width": 1280 }]
+    },
+    {
+      "id": "design.freeze", "label": "Freeze & Trace", "epic": "Design & Freeze",
+      "state": "frozen", "wire": "stack", "kit": 95,
+      "summary": "Hash-locked freeze — the approval binds to the design hash; post-approval change goes stale loudly",
+      "summaryPlain": "Lock the approved design — your approval signs this exact version; any later change is flagged clearly",
+      "rungs": [{ "rung": "compact", "width": 390 }, { "rung": "medium", "width": 744 }, { "rung": "expanded", "width": 1280 }]
+    },
+    {
+      "id": "build.loop", "label": "Build Monitor", "epic": "Build & Gates",
+      "state": "frozen", "wire": "split", "kit": 99,
+      "summary": "Narrative rail + one artifact large — the run is a conversation you can interrupt",
+      "summaryPlain": "A feed of what the build is doing plus one big detail view — you can ask questions or stop it any time",
+      "rungs": [{ "rung": "compact", "width": 390 }, { "rung": "medium", "width": 744 }, { "rung": "expanded", "width": 1280 }]
+    },
+    {
+      "id": "build.gates", "label": "Gates", "epic": "Build & Gates",
+      "state": "frozen", "wire": "stack", "kit": 96,
+      "summary": "The three human gates as a triage queue — reachable by agents, passable only by you",
+      "summaryPlain": "The three decisions only you can make, queued like an inbox — the agent brings them to you, never takes them",
+      "rungs": [{ "rung": "compact", "width": 390 }, { "rung": "medium", "width": 744 }, { "rung": "expanded", "width": 1280 }]
+    },
+    {
+      "id": "build.visual", "label": "Visual Fidelity", "epic": "Build & Gates",
+      "state": "frozen", "wire": "split", "kit": 94,
+      "summary": "Design-vs-built probes per surface — SSIM, skeleton, ΔE against the frozen golden",
+      "summaryPlain": "Each built screen compared pixel-by-pixel with the design you approved — structure, layout and colour",
+      "rungs": [{ "rung": "compact", "width": 390 }, { "rung": "medium", "width": 744 }, { "rung": "expanded", "width": 1280 }]
+    },
+    {
+      "id": "access.pairing", "label": "Pairing & Devices", "epic": "Access & Devices",
+      "state": "frozen", "wire": "stack", "kit": 93,
+      "summary": "One-scan QR pairing, device list with revoke — LAN-only by default, no cloud relay",
+      "summaryPlain": "Pair a device by scanning one code, see and revoke paired devices — local network only by default",
+      "rungs": [{ "rung": "compact", "width": 390 }, { "rung": "medium", "width": 744 }, { "rung": "expanded", "width": 1280 }]
+    },
+    {
+      "id": "access.notifications", "label": "Notifications", "epic": "Access & Devices",
+      "state": "frozen", "wire": "stack", "kit": 91,
+      "summary": "Push on red gate, deep-linked into the gate card — approve from the lock screen",
+      "summaryPlain": "A push message when a decision is needed, opening straight to that decision — approve from your lock screen",
+      "rungs": [{ "rung": "compact", "width": 390 }, { "rung": "medium", "width": 744 }, { "rung": "expanded", "width": 1280 }]
+    }
+  ],
+  "manifest": {
+    "id": "frz_9c41e2",
+    "goldens": 33,
+    "surfaces": 11,
+    "rungs": "390 / 744 / 1280",
+    "hash": "sha256:9c41…e2b7",
+    "frozenAt": "Yesterday 16:42",
+    "structure": "structure.json locked — a post-freeze authored edit fails the drift check",
+    "structurePlain": "the approved structure is locked — anything built later that drifts from it stops the run and shows you",
+    "provenance": {
+      "by": "Evan", "shell": "macOS shell", "device": "studio-mac (node m4-mini)",
+      "method": "Touch ID", "at": "Yesterday 16:42", "hash": "g8f3…a1c4"
+    }
+  },
+  "trace": [
+    { "at": "14:02", "who": "agent", "text": "Brief traced — 22 surfaces from story-map.json; every registry id backed by a story.", "textPlain": "Brief checked — 22 screens come from the story map; every screen traces back to a user story." },
+    { "at": "14:09", "who": "agent", "text": "Moodboard consulted — 4 boards, 61 reference shots verified on disk before authoring.", "textPlain": "Moodboards reviewed — 4 collections, 61 reference screenshots, all confirmed real before designing." },
+    { "at": "14:31", "who": "agent", "text": "Prototype composed — 11 surfaces × 3 rungs from targets alone; structure carried, not pixels.", "textPlain": "Prototype built — 11 screens, each at phone, tablet and desktop size; the layout structure is what matters, not decoration." },
+    { "at": "15:58", "who": "you", "text": "Screen chat on build.loop — 4 checkpoints; gate cards calmed, compact bar docked.", "textPlain": "You refined the build screen in chat — 4 saved changes; calmer decision cards, better phone layout." },
+    { "at": "16:42", "who": "you", "text": "Design approval signed — Touch ID · studio-mac · g8f3…a1c4. The signed look is the frozen one.", "textPlain": "You approved the design — signed with Touch ID on studio-mac. What you approved is exactly what gets locked." },
+    { "at": "16:42", "who": "agent", "text": "Freeze minted — manifest frz_9c41e2 · 33 goldens hashed · structure.json locked.", "textPlain": "Design locked — all 33 approved snapshots fingerprinted and recorded; the structure is now the reference." },
+    { "at": "09:12", "who": "agent", "text": "Drift check — 33/33 goldens match the manifest. Clean.", "textPlain": "Drift check — all 33 snapshots still match the approved design. Nothing has moved." }
+  ],
+  "traceability": [
+    { "surface": "intake.mapping", "story": "Evan turns a client brief into an Epic-Feature-Story map in one sitting", "code": "app/lib/ui/views/intake/mapping_view.dart", "files": 4 },
+    { "surface": "design.prototype", "story": "Every surface designed at 390/744/1280 from targets alone (literal parity)", "code": "app/lib/ui/views/design/prototype_view.dart", "files": 4 },
+    { "surface": "design.chat", "story": "Select a screen, chat exclusively in its context; all other screens dim", "code": "app/lib/ui/views/design/chat_view.dart", "files": 4 },
+    { "surface": "build.loop", "story": "Start a build, walk away; stops on red, ESC_LIMIT=3", "code": "app/lib/ui/views/build/loop_view.dart", "files": 4 },
+    { "surface": "build.gates", "story": "Three gates an agent can reach but never pass; approval is provenance-bound", "code": "app/lib/ui/views/build/gates_view.dart", "files": 4 },
+    { "surface": "access.pairing", "story": "One-scan QR pairing; a relayed QR fails the pin", "code": "app/lib/ui/views/access/pairing_view.dart", "files": 4 },
+    { "surface": "ship.deploy", "story": "Payment gate at first deploy: licence required to ship; everything before it free", "code": "app/lib/ui/views/ship/deploy_view.dart", "files": 4 }
+  ],
+  "drift": {
+    "checked": "today 09:12",
+    "matched": "33/33",
+    "clean": true,
+    "history": [
+      {
+        "at": "today 08:47", "state": "resolved",
+        "text": "design.chat compact shot changed after approval (checkpoint cp-5) — flagged stale loudly; re-approved and re-frozen 08:52",
+        "textPlain": "the phone-size shot of the chat screen changed after you approved it — the design was marked out-of-date until you approved the change at 08:52",
+        "hash": "d41f…7b2c"
+      }
+    ]
+  },
+  "chatThreads": {
+    "build.loop": [
+      { "at": "15:52", "from": "user", "text": "The gate cards feel loud — pending shouts. Can it breathe?" },
+      { "at": "15:53", "from": "agent", "text": "Softened — pending now sits on 12% accent with a hairline border; approve stays solid ink. Checkpoint cp-3 below, one tap reverts.", "textPlain": "Made it calmer — the waiting state is now a soft tint instead of a loud fill; the approve button stays bold. Saved as cp-3 below, one tap undoes it.", "cp": "cp-3" },
+      { "at": "16:04", "from": "user", "text": "Compact rung: the stage bar covers the canvas CTA." },
+      { "at": "16:05", "from": "agent", "text": "Docked — under 600px the bar pins to the viewport edge and the canvas pads for it. cp-4.", "textPlain": "Fixed — on phone-size screens the toolbar pins to the screen edge instead of floating over the content. Saved as cp-4.", "cp": "cp-4" }
+    ]
+  },
+  "checkpoints": {
+    "build.loop": [
+      { "id": "cp-1", "n": 1, "at": "15:41", "summary": "initial composition — rail + canvas + FAB", "summaryPlain": "first layout — side feed, big detail view, floating action button" },
+      { "id": "cp-2", "n": 2, "at": "15:49", "summary": "rail density pass — type badges, thread counts", "summaryPlain": "tidied the feed — clearer labels, follow-up counts" },
+      { "id": "cp-3", "n": 3, "at": "15:53", "summary": "calmer gate cards — soft pending, solid approve", "summaryPlain": "calmer decision cards — soft waiting state, bold approve", "before": "pending: solid accent fill", "after": "pending: 12% tint + hairline" },
+      { "id": "cp-4", "n": 4, "at": "16:05", "summary": "compact stage bar docks to the viewport", "summaryPlain": "phone layout: the toolbar pins to the screen edge", "before": "bar floats over the canvas CTA", "after": "bar docks to the viewport edge" }
+    ]
+  },
+  "chatReplies": [
+    {
+      "match": ["calm", "loud", "soft", "quiet", "shout"],
+      "text": "Calmed it — pending drops to 12% accent with a hairline border; approve stays solid ink. Checkpointed below; one tap reverts.",
+      "textPlain": "Made it calmer — the waiting state is now a soft tint instead of a loud fill; the approve button stays bold. Saved below, one tap undoes it.",
+      "checkpoint": "calmer pending state — soft tint, solid approve",
+      "checkpointPlain": "calmer waiting state — soft tint, bold approve",
+      "before": "pending: solid accent fill", "after": "pending: 12% tint + hairline"
+    },
+    {
+      "match": ["accent", "colour", "color", "cyan", "violet", "theme", "token"],
+      "text": "Token tweak — --accent is a design token, so the shots re-render instantly with no model round-trip. Checkpointed below.",
+      "textPlain": "Quick colour change — the accent is a shared setting, so the snapshots update right away without re-generating. Saved below.",
+      "checkpoint": "accent token pass on this screen's shots",
+      "checkpointPlain": "accent colour pass on this screen's snapshots",
+      "before": "accent: inherited default", "after": "accent: token pinned on this surface"
+    },
+    {
+      "match": ["compact", "phone", "small", "390", "mobile"],
+      "text": "Compact pass — under 600px the zones stack canvas-first and the bar docks to the viewport edge. Checkpointed below.",
+      "textPlain": "Phone-size pass — on narrow screens the preview sits on top and the toolbar pins to the screen edge. Saved below.",
+      "checkpoint": "compact rung — stacked zones, docked bar",
+      "checkpointPlain": "phone-size layout — stacked zones, pinned toolbar",
+      "before": "bar floats over content", "after": "bar docks to the viewport edge"
+    },
+    {
+      "match": ["frozen", "freeze", "locked", "stale", "drift"],
+      "text": "This screen is frozen under frz_9c41e2 — edits land as checkpoints and flag its goldens stale until you re-approve. The trace lives on the freeze surface.",
+      "textPlain": "This screen is part of the approved design — changes are saved as checkpoints and marked as drift until you approve them again. The freeze screen shows the full history.",
+      "link": { "href": "/design/freeze", "label": "open freeze & trace →" }
+    },
+    {
+      "match": ["kit", "coverage", "primitive", "component"],
+      "text": "Kit coverage 96% across the 11 surfaces — the bespoke remainder is the flows-canvas zoom and the gate triage gestures.",
+      "textPlain": "96% of these screens can be built from ready-made parts — the custom work is the flows-canvas zoom and the gate swipe gestures."
+    }
+  ],
+  "chatFallback": {
+    "text": "Scoped to {label} — ask for a layout, style or state change, or name a rung (390/744/1280). Only this screen's tools are live here.",
+    "textPlain": "We're working on {label} only — ask for a layout, style or colour change, or a phone/tablet/desktop tweak. Nothing else in the app is in scope here."
+  },
+  "protoReplies": [
+    {
+      "match": ["rung", "size", "390", "744", "1280", "resize", "responsive", "breakpoint"],
+      "text": "Three rungs from targets alone — 390/744/1280, literal parity. The shots above are the frozen goldens; the built app is probed against them later.",
+      "textPlain": "Each screen is designed at three sizes — phone, tablet, desktop. These snapshots are the approved reference; the built app is compared against them later."
+    },
+    {
+      "match": ["kit", "coverage", "primitive", "component"],
+      "text": "This surface is {kit}% kit — the adaptive primitive layer carries it; the bespoke slice is noted in the structure.",
+      "textPlain": "This screen is {kit}% ready-made parts — only a small custom slice remains, noted in the structure."
+    },
+    {
+      "match": ["frozen", "freeze", "locked", "stale", "drift", "approval", "approve"],
+      "text": "Frozen under manifest frz_9c41e2 — approved Yesterday 16:42 via Touch ID on studio-mac. Post-approval change goes stale loudly on the freeze surface.",
+      "textPlain": "Locked into the approved design — you approved it yesterday with Touch ID. Any change after that is flagged clearly on the freeze screen.",
+      "link": { "href": "/design/freeze", "label": "open freeze & trace →" }
+    },
+    {
+      "match": ["chat", "refine", "edit", "change", "tweak"],
+      "text": "Refinement happens in screen chat — scoped to this surface, a checkpoint per message, one-tap revert.",
+      "textPlain": "Changes happen in the chat screen — focused on this one surface, every change saved with one-tap undo.",
+      "link": { "href": "/design/chat?screen={id}", "label": "refine this screen →" }
+    }
+  ],
+  "protoFallback": {
+    "text": "{label} — {summary} Frozen at 390/744/1280, kit coverage {kit}%. Ask about the rungs, the kit, or the freeze.",
+    "textPlain": "{label} — {summary} Designed at phone, tablet and desktop size. Ask about the sizes, the parts, or the approval."
+  }
+}

@@ -1,0 +1,85 @@
+{# Shared intake macros — thin per-tab wrappers over ui/common/rail.html,
+   plus intake's own stage bar (the scoped follow-up thread; stage bars stay
+   per-tab). Imported by the three intake views as `sh`. Route prefix is
+   c.base (/intake, /intake/brief, /intake/moodboard). #}
+{% import "ui/common/rail.html" as rail %}
+
+{# Rail top bar: surface state + facts left, rail actions right — the filter
+   re-frames the canvas (release swimlane / board). The brief has no filter.
+   (`or []`: fragment renders re-execute page blocks with an empty context —
+   .concat on undefined would throw there.) #}
+{% macro railBar(c, oob) %}
+{% if c.filter %}
+{% set summary %}{% for o in c.filter.options %}{% if c.filter.active == o.id %}{{ o.label }}{% endif %}{% endfor %}{% endset %}
+{{ rail.railBar(c, oob, {
+  eyebrow: 'intake · ' + c.surface,
+  state: c.railTitle,
+  facts: (c.railFacts or []).concat(['reading level ' + c.jargonLevel]),
+  filter: {
+    summaryAria: 'Filter the canvas', summaryTitle: 'Filter the canvas',
+    summary: summary,
+    target: '#canvas', swap: 'innerHTML', url: c.base + '/filter?' + c.filter.param + '=',
+    active: c.filter.active, options: c.filter.options
+  }
+}) }}
+{% else %}
+{{ rail.railBar(c, oob, {
+  eyebrow: 'intake · ' + c.surface,
+  state: c.railTitle,
+  facts: (c.railFacts or []).concat(['reading level ' + c.jargonLevel])
+}) }}
+{% endif %}
+{% endmacro %}
+
+{% macro railList(c, oob) %}{{ rail.railList(c, oob, c.base + '/artifact') }}{% endmacro %}
+
+{# Composer: pill, leading + (suggestions), trailing send. #}
+{% macro composer(c, oob) %}
+{{ rail.composer(c, oob, {
+  action: c.base + '/messages',
+  suggestions: c.suggestions,
+  placeholder: 'Ask about the intake…', ariaLabel: 'Message the intake agent'
+}) }}
+{% endmacro %}
+
+{# The stage bar: FAB → floating toolbar for the canvas artifact. Intake has
+   no stage controls — the bar is the scoped follow-up thread. #}
+{% macro stageBar(c, oob) %}
+<div class="stage-bar-wrap" id="stage-bar" {% if oob %}hx-swap-oob="outerHTML"{% endif %}>
+  {% if c.barOpen %}
+  <div class="stage-bar stage-bar-{{ c.bar.kind }}">
+    {% if c.thread.length %}
+    <div class="bar-thread" aria-label="Conversation about this {{ c.bar.kind }}">
+      {% for e in c.thread %}
+        {% if e.kind == 'user' %}
+        <p class="bt-msg bt-user">{{ e.text }}</p>
+        {% else %}
+        <p class="bt-msg bt-agent">{{ e.text }}
+          {%- if e.link %} <a class="bt-link" href="{{ c.base }}/artifact/{{ e.link }}"
+             hx-get="{{ c.base }}/artifact/{{ e.link }}" hx-target="#canvas" hx-swap="innerHTML" hx-push-url="false">on canvas →</a>{% endif %}
+        </p>
+        {% endif %}
+      {% endfor %}
+    </div>
+    {% endif %}
+    <form class="bar-chat" method="post" action="{{ c.base }}/artifact/{{ c.activeArtifact }}/messages"
+          hx-post="{{ c.base }}/artifact/{{ c.activeArtifact }}/messages" hx-target="#stage-bar" hx-swap="outerHTML">
+      <input type="text" name="text" placeholder="Follow up on this {{ c.bar.kind }}…" aria-label="Follow up on this {{ c.bar.kind }}" autofocus>
+      <button type="submit" class="composer-send" aria-label="Send">↑</button>
+    </form>
+    <span class="bar-row">
+      <span class="bar-hint">{{ c.bar.hint }}</span>
+      <span class="bar-actions">
+        <a class="ico-btn" href="{{ c.base }}/bar/{{ c.activeArtifact }}?state=fab"
+           hx-get="{{ c.base }}/bar/{{ c.activeArtifact }}?state=fab" hx-target="#stage-bar" hx-swap="outerHTML"
+           aria-label="Close the toolbar" title="Close">×</a>
+      </span>
+    </span>
+  </div>
+  {% else %}
+  <a class="fab" href="{{ c.base }}/bar/{{ c.activeArtifact }}?state=open"
+     hx-get="{{ c.base }}/bar/{{ c.activeArtifact }}?state=open" hx-target="#stage-bar" hx-swap="outerHTML"
+     aria-label="Follow-ups for this view" title="Follow up on this view">?</a>
+  {% endif %}
+</div>
+{% endmacro %}

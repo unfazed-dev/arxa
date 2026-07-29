@@ -34,3 +34,10 @@ exist in the producer; the frozen contract keeps 37 flat HTML files. See
 `dep_hash` keyed on mtime, a self-test asserting the defective value, an
 asset check that verified strings instead of resolving paths, a drift check
 guarded on a file the htmx producer does not have. Every one was green.
+
+## Later additions (reading-research, not measured findings)
+
+| doc | what it's for |
+|---|---|
+| [flutter-genui.md](flutter-genui.md) | Docs digest (2026-07-28) for the GenUI design direction: package status, A2UI architecture, the appboxd-as-A2UI-server fit, custom-catalog consequences. |
+| [sim-embed.md](sim-embed.md) | Live iOS/Android display in the canvas (2026-07-29): literal embedding impossible, capture→redisplay pattern, v1 polling-screenshots / v1.5 Android gRPC / v2 iOS ScreenCaptureKit, with local measurements. |

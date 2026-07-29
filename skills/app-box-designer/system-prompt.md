@@ -60,7 +60,7 @@ The MVVM tree (an Artifact is pure content — templates, viewmodels, fixtures, 
 └── assets/{css,fonts,images,media}/      # served at /assets/
 ```
 
-Every `base.html` carries the boilerplate head — the vendored htmx + extension script tags (the only `<script>` tags allowed anywhere in an artifact) and the enforcement meta config:
+Every `base.html` carries the boilerplate head — the vendored htmx + extension script tags plus the deferred `canvas.js` island tag (the only `<script>` tags allowed anywhere in an artifact; canvas.js is the ADR-0002 amendment's single first-party exception, pan/zoom for the design canvas) and the enforcement meta config:
 
 ```html
 <meta name="htmx-config" content='{"allowEval":false,"allowScriptTags":false,
@@ -75,7 +75,7 @@ Body: `<body hx-boost="true" hx-sync="this:replace" hx-ext="head-support,preload
 
 The swap unit is the **Named Fragment** — a macro inside the surface's own view file, renderable alone via `view.html#macroName` for `HX-Request` swaps. Shared cross-surface fragments are `_name.html` partials under `ui/widgets|dialogs|bottomsheets/`, pulled in with `{% include %}`.
 
-**The no-JS contract.** Banned anywhere in artifact templates: `<script>` tags that don't point at `/assets/vendor/`, `hx-on:*`, `js:`-prefixed attributes, `[expr]` trigger filters. `node <skill>/runtime/lint.mjs <artifact-dir>` enforces it mechanically; `allowEval:false` is the runtime backstop. Interactivity comes from htmx attributes and server round-trips, never from script. For motion, use the `starter-partials/motion.css` recipes (htmx swap-lifecycle transitions, view transitions, popovers) — don't hand-roll a timeline engine.
+**The no-JS contract.** Banned anywhere in artifact templates: `<script>` tags that don't point at `/assets/vendor/`, `hx-on:*`, `js:`-prefixed attributes, `[expr]` trigger filters. `node <skill>/runtime/lint.mjs <artifact-dir>` enforces it mechanically; `allowEval:false` is the runtime backstop. The one first-party exception: `assets/vendor/canvas.js` — the design-canvas pan/zoom island from `runtime/vendor/` (ADR-0002 amendment); no other first-party script, ever. Interactivity otherwise comes from htmx attributes and server round-trips, never from script. For motion, use the `starter-partials/motion.css` recipes (htmx swap-lifecycle transitions, view transitions, popovers) — don't hand-roll a timeline engine.
 
 **State Playbook.** The server is the single truth; the DOM is a projection. URL = shareable state; cookies = small prefs (theme, accent, role); session store = multi-step flows; OOB swaps = fan-out; load-polling = timers (the server holds the deadline). Theme/accent changes POST to a prefs endpoint answered with `HX-Refresh`, and CSS vars render on an in-body `#app` wrapper — never on `<body>`/`<html>` attributes, which don't update under boosted swaps. Define design tokens as CSS variables and render the themed values on `#app`; light/dark becomes a server-rendered attribute flip with no client code.
 

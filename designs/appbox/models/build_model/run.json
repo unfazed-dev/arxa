@@ -1,0 +1,556 @@
+{
+  "run": {
+    "id": "run-47",
+    "number": 47,
+    "project": "Petal & Stem",
+    "brief": "florist ordering app — ios + macos",
+    "started": "09:14",
+    "elapsed": "34m 12s",
+    "state": "paused",
+    "stateLabel": "Paused — build acceptance is yours",
+    "channel": "live",
+    "policy": {
+      "stopOnRed": true,
+      "escLimit": 3
+    }
+  },
+  "stages": [
+    {
+      "id": "intake",
+      "n": 1,
+      "label": "Intake",
+      "kind": "auto",
+      "state": "green",
+      "duration": "3m 48s",
+      "durationSec": 228,
+      "summary": "42 stories mapped from the client brief · MoSCoW applied",
+      "summaryPlain": "42 user stories mapped from the client brief, must/could/won't sorted",
+      "detail": "Story map signed off in the same sitting. 11 surfaces estimated with kit coverage 96%.",
+      "detailPlain": "Story map signed off in the same sitting. 11 screens estimated; 96% can be built from ready-made parts."
+    },
+    {
+      "id": "design",
+      "n": 2,
+      "label": "Design",
+      "kind": "auto",
+      "state": "green",
+      "duration": "21m 05s",
+      "durationSec": 1265,
+      "summary": "11 surfaces × 3 rungs · 33 shots frozen",
+      "summaryPlain": "11 screens, each checked at phone, tablet and desktop size — 33 snapshots locked",
+      "detail": "Prototype composed from the adaptive primitive layer; every surface shot at compact, medium, expanded.",
+      "detailPlain": "Every screen was built once and photographed at all three sizes for approval."
+    },
+    {
+      "id": "freeze",
+      "n": 3,
+      "label": "Freeze",
+      "kind": "auto",
+      "state": "green",
+      "duration": "12s",
+      "durationSec": 12,
+      "summary": "Manifest frz_9c41e2 · 33 goldens hashed",
+      "summaryBalanced": "33 goldens locked (manifest frz_9c41e2)",
+      "summaryPlain": "All 33 approved design snapshots are locked in",
+      "detail": "Structure.json locked. Any authored-layer edit after this point fails the drift check.",
+      "detailPlain": "The approved design is now the reference. If anything built later drifts from it, the run stops and shows you."
+    },
+    {
+      "id": "scaffold",
+      "n": 4,
+      "label": "Scaffold",
+      "kind": "auto",
+      "state": "green",
+      "duration": "2m 10s",
+      "durationSec": 130,
+      "summary": "44 files · 11 surfaces × 4 per ios target",
+      "summaryPlain": "44 files created — 4 for each of the 11 iPhone screens",
+      "detail": "View/ViewModel extension points emitted per surface; nothing empty.",
+      "detailPlain": "Every screen got its code, its logic, its tests and its sample data — nothing left empty."
+    },
+    {
+      "id": "coverage",
+      "n": 5,
+      "label": "Coverage",
+      "kind": "auto",
+      "state": "recovered",
+      "duration": "6m 33s",
+      "durationSec": 393,
+      "summary": "Red on attempt 1 — 3 findings · green on attempt 2",
+      "summaryPlain": "Failed the first check with 3 findings — fixed itself on the second try",
+      "detail": "Stop-on-red held the run; the fixer rewrote the authored layer and re-ran the gate. Bounded by ESC_LIMIT 3.",
+      "detailPlain": "The run stopped itself at the first failure, fixed the code, and tried again. It gives up after 3 automatic attempts and asks you instead.",
+      "attempts": [
+        {
+          "n": 1,
+          "state": "red",
+          "note": "3 SARIF findings — see the findings card",
+          "notePlain": "3 check failures — see the findings card"
+        },
+        {
+          "n": 2,
+          "state": "green",
+          "note": "fix applied to order.cart authored layer, gate re-run",
+          "notePlain": "fix applied to the order.cart screen code, checks re-run"
+        }
+      ]
+    },
+    {
+      "id": "review",
+      "n": 6,
+      "label": "Review",
+      "kind": "auto",
+      "state": "green",
+      "duration": "1m 54s",
+      "durationSec": 114,
+      "summary": "arch_guard clean · ponytail-review 0 findings",
+      "summaryBalanced": "arch_guard + ponytail-review both clean",
+      "summaryPlain": "Contract checks and code review both clean",
+      "detail": "Contract validator passed; over-engineering review found nothing to cut.",
+      "detailPlain": "The structure matches what was approved, and a simplicity review found nothing to remove."
+    },
+    {
+      "id": "deploy",
+      "n": 7,
+      "label": "Deploy",
+      "kind": "auto",
+      "state": "queued",
+      "duration": "—",
+      "durationSec": 0,
+      "summary": "Waits on build acceptance · ship.confirm gates release",
+      "summaryPlain": "Waiting for your build approval · a second approval confirms release",
+      "detail": "TestFlight upload and release notes are staged; nothing moves until a human confirms ship.",
+      "detailPlain": "The app-store upload and release notes are ready; nothing ships until you say so."
+    }
+  ],
+  "humanGates": [
+    {
+      "id": "design.approval",
+      "label": "Design approval",
+      "state": "approved",
+      "context": "11 surfaces, 33 frozen shots — the look the client signed for",
+      "provenance": {
+        "by": "Evan",
+        "shell": "macOS shell",
+        "device": "studio-mac (node m4-mini)",
+        "method": "Touch ID",
+        "at": "Yesterday 16:42",
+        "hash": "g8f3…a1c4"
+      }
+    },
+    {
+      "id": "build.acceptance",
+      "label": "Build acceptance",
+      "state": "pending",
+      "context": "Run #47 reached the end of the automated line — coverage recovered, review clean. Accepting unlocks the deploy stage; rejecting sends it back with your note.",
+      "provenance": null
+    },
+    {
+      "id": "ship.confirm",
+      "label": "Ship confirm",
+      "state": "queued",
+      "context": "TestFlight upload + release notes. Reachable after build acceptance.",
+      "provenance": null
+    }
+  ],
+  "findings": [
+    {
+      "id": "f-01",
+      "gate": "coverage",
+      "check": "structure/surface-files",
+      "severity": "error",
+      "file": "app/lib/ui/views/order/cart_view.dart",
+      "line": 1,
+      "expected": "4 files for ios target (view, viewmodel, test, fixture)",
+      "expectedPlain": "every screen needs 4 files for iPhone (screen, logic, tests, sample data)",
+      "actual": "3 — viewmodel test missing",
+      "actualPlain": "3 found — the logic test is missing",
+      "reproduce": "./gates/coverage/run.sh --surface order.cart --target ios",
+      "fingerprint": "fp_7d2c…e91a",
+      "state": "fixed in attempt 2",
+      "note": "MEM-A: this check fails this way when the scaffolder emits but the story map marks the surface test-optional — the gate disagrees.",
+      "notePlain": "This happens when the scaffolder creates the files but the story map says tests are optional — the two disagree."
+    },
+    {
+      "id": "f-02",
+      "gate": "coverage",
+      "check": "tests/viewmodel-presence",
+      "severity": "error",
+      "file": "app/test/ui/views/order/cart_viewmodel_test.dart",
+      "line": 1,
+      "expected": "≥ 1 mocktail test per viewmodel",
+      "expectedPlain": "at least one automated test per screen-logic file",
+      "actual": "0 tests found",
+      "actualPlain": "none found",
+      "reproduce": "./gates/coverage/run.sh --check tests --surface order.cart",
+      "fingerprint": "fp_41aa…0b7d",
+      "state": "fixed in attempt 2",
+      "note": "Same root cause as f-01 — one authored-layer fix closed both.",
+      "notePlain": "Same root cause as the first finding — one fix closed both."
+    },
+    {
+      "id": "f-03",
+      "gate": "coverage",
+      "check": "visual/probe-deltaE",
+      "severity": "warning",
+      "file": "designs/frozen/order.cart/expanded.png",
+      "line": 0,
+      "expected": "ΔE ≤ 2.0 against the frozen golden",
+      "expectedBalanced": "colour match ≥ 95/100 (ΔE ≤ 2.0) against the frozen golden",
+      "expectedPlain": "should look nearly identical to the design you approved — 95/100 or better",
+      "actual": "ΔE 4.8 on the CartSummary card — muted text token drift",
+      "actualBalanced": "88/100 (ΔE 4.8) on the CartSummary card — muted text token drift",
+      "actualPlain": "noticeably different — 88/100 on the CartSummary card. A muted text colour only worked in light mode",
+      "reproduce": "./tools/verification/probe_run.sh --surface order.cart --rung expanded",
+      "fingerprint": "fp_b8e0…c3f2",
+      "state": "fixed in attempt 2",
+      "note": "Token --muted resolved against light theme only; freeze now pins both themes.",
+      "notePlain": "A text colour was only checked in light mode; the freeze now pins both light and dark."
+    }
+  ],
+  "evidence": [
+    {
+      "surface": "catalog.home",
+      "tests": "5/5",
+      "files": 4,
+      "probe": {
+        "ssim": "0.977",
+        "skeleton": "match",
+        "deltaE": "1.4"
+      },
+      "state": "pass",
+      "viewports": [
+        "mobile",
+        "tablet",
+        "desktop"
+      ]
+    },
+    {
+      "surface": "order.cart",
+      "tests": "6/6",
+      "files": 4,
+      "probe": {
+        "ssim": "0.982",
+        "skeleton": "match",
+        "deltaE": "1.1"
+      },
+      "state": "pass",
+      "viewports": [
+        "mobile",
+        "tablet",
+        "desktop"
+      ]
+    },
+    {
+      "surface": "order.checkout",
+      "tests": "4/4",
+      "files": 4,
+      "probe": {
+        "ssim": "0.971",
+        "skeleton": "match",
+        "deltaE": "1.8"
+      },
+      "state": "pass",
+      "viewports": [
+        "mobile",
+        "tablet",
+        "desktop"
+      ]
+    },
+    {
+      "surface": "order.confirmation",
+      "tests": "3/3",
+      "files": 4,
+      "probe": {
+        "ssim": "0.965",
+        "skeleton": "1 node fixed",
+        "deltaE": "2.2"
+      },
+      "state": "watch",
+      "viewports": [
+        "mobile",
+        "tablet"
+      ]
+    }
+  ],
+  "narrative": [
+    {
+      "id": "n-01",
+      "at": "09:14",
+      "text": "Run #47 on the line — Petal & Stem, florist ordering for ios + macos. Stop-on-red is on, escalation limit 3.",
+      "textPlain": "Run #47 is on the line — Petal & Stem, a florist ordering app for iPhone and Mac. The run stops itself at the first failure; up to 3 automatic fix attempts.",
+      "artifact": null
+    },
+    {
+      "id": "n-02",
+      "at": "09:18",
+      "text": "Stage 1/7 intake green in 3m 48s — 42 stories mapped from the brief, MoSCoW applied.",
+      "textPlain": "Stage 1/7 intake done in 3m 48s — 42 user stories mapped from the brief, sorted must/could/won't.",
+      "artifact": "stage/intake"
+    },
+    {
+      "id": "n-03",
+      "at": "09:39",
+      "text": "Stage 2/7 design green in 21m 05s — 11 surfaces × 3 rungs, 33 shots frozen.",
+      "textPlain": "Stage 2/7 design done in 21m 05s — 11 screens, 33 size snapshots locked.",
+      "artifact": "stage/design"
+    },
+    {
+      "id": "n-04",
+      "at": "16:42",
+      "text": "Design approval passed — Evan, Touch ID on studio-mac. The signed look is now the frozen one.",
+      "artifact": "gate/design.approval"
+    },
+    {
+      "id": "n-05",
+      "at": "09:41",
+      "text": "Stage 3/7 freeze green in 12s — manifest frz_9c41e2, 33 goldens hashed.",
+      "textBalanced": "Stage 3/7 freeze green in 12s — 33 goldens locked (manifest frz_9c41e2).",
+      "textPlain": "Stage 3/7 freeze done in 12s — all 33 approved design snapshots are locked in.",
+      "artifact": "stage/freeze"
+    },
+    {
+      "id": "n-06",
+      "at": "09:43",
+      "text": "Stage 4/7 scaffold green in 2m 10s — 44 files, 11 surfaces × 4 per ios target.",
+      "textPlain": "Stage 4/7 scaffold done in 2m 10s — 44 files created for the 11 iPhone screens.",
+      "artifact": "stage/scaffold"
+    },
+    {
+      "id": "n-07",
+      "at": "09:50",
+      "text": "Stage 5/7 coverage red on attempt 1 — 3 findings, run held by stop-on-red.",
+      "textPlain": "Stage 5/7 coverage failed its first check — 3 findings; the run stopped itself.",
+      "artifact": "findings/coverage",
+      "tone": "fail"
+    },
+    {
+      "id": "n-08",
+      "at": "09:57",
+      "text": "Coverage recovered on attempt 2 — the fixer rewrote the order.cart authored layer and re-ran the gate.",
+      "textPlain": "Coverage recovered on the second try — the order.cart screen code was rewritten and the checks re-run.",
+      "artifact": "stage/coverage",
+      "tone": "warn"
+    },
+    {
+      "id": "n-09",
+      "at": "09:59",
+      "text": "Stage 6/7 review green in 1m 54s — arch_guard clean, ponytail-review 0 findings.",
+      "textBalanced": "Stage 6/7 review green in 1m 54s — arch_guard + ponytail-review both clean.",
+      "textPlain": "Stage 6/7 review done in 1m 54s — contract checks and code review both clean.",
+      "artifact": "stage/review"
+    },
+    {
+      "id": "n-10",
+      "at": "10:00",
+      "text": "Surface evidence in — 4 surfaces probed against their frozen goldens, all within ΔE 2.2.",
+      "textBalanced": "Surface evidence in — 4 screens compared with their goldens, all ≥ 94/100 (ΔE ≤ 2.2).",
+      "textPlain": "Surface evidence in — all 4 screens look nearly identical to the designs you approved (94/100 or better).",
+      "artifact": "evidence/surfaces"
+    },
+    {
+      "id": "n-11",
+      "at": "10:01",
+      "text": "For the record: design took two-thirds of the automated line. Stage durations on the canvas.",
+      "artifact": "chart/durations"
+    },
+    {
+      "id": "n-12",
+      "at": "10:02",
+      "text": "Build acceptance is yours. The automated line is done — deploy is staged behind your call.",
+      "textPlain": "Build approval is yours. Everything automatic is done — shipping waits for your call.",
+      "artifact": "gate/build.acceptance",
+      "tone": "action"
+    }
+  ],
+  "replies": [
+    {
+      "match": [
+        "fail",
+        "finding",
+        "coverage",
+        "red",
+        "wrong"
+      ],
+      "text": "Coverage went red on attempt 1 — three SARIF findings, all pinned to order.cart. Reproduce commands are on the findings card; one authored-layer fix closed all three in attempt 2.",
+      "textPlain": "Coverage failed its first check — three findings, all pinned to the order.cart screen. The exact command to re-run each check is on the findings card; one fix closed all three on the second try.",
+      "artifact": "findings/coverage"
+    },
+    {
+      "match": [
+        "gate",
+        "accept",
+        "approv",
+        "reject",
+        "deploy",
+        "ship",
+        "release"
+      ],
+      "text": "Build acceptance is the only gate still pending — an agent can reach it, never pass it. Your call unlocks deploy; provenance is minted on the paired device at confirm time.",
+      "textPlain": "Build approval is the only decision left — the agent can bring it to you, never take it. Approving unlocks shipping; your approval is signed with Touch ID on your paired device and stamped onto this exact build.",
+      "artifact": "gate/build.acceptance"
+    },
+    {
+      "match": [
+        "long",
+        "time",
+        "duration",
+        "chart",
+        "slow",
+        "fast"
+      ],
+      "text": "Design took 21m 05s — two-thirds of the 34-minute line. The chart puts every stage side by side.",
+      "artifact": "chart/durations"
+    },
+    {
+      "match": [
+        "log",
+        "everything",
+        "history",
+        "raw"
+      ],
+      "text": "Full run log on the canvas — every stage, gate and attempt in order.",
+      "textPlain": "The full run log is on the canvas — every stage, decision and retry in order.",
+      "artifact": "log/full"
+    },
+    {
+      "match": [
+        "evidence",
+        "visual",
+        "probe",
+        "golden",
+        "screenshot"
+      ],
+      "text": "Four surfaces probed against their frozen goldens — SSIM, skeleton and ΔE per surface, all passing. order.confirmation is on watch at ΔE 2.2.",
+      "textBalanced": "Four screens compared with their goldens — SSIM, skeleton and colour match per screen, all passing. order.confirmation is on watch at 94/100 (ΔE 2.2).",
+      "textPlain": "All four screens were compared pixel-by-pixel with the designs you approved — three are near-identical. order.confirmation is being watched at 94/100, just under the 95 bar.",
+      "artifact": "evidence/surfaces"
+    }
+  ],
+  "replyFallback": {
+    "text": "Run #47 is paused at build acceptance. Ask about the findings, the timings, the evidence — or take the gate.",
+    "textPlain": "Run #47 is waiting for your build approval. Ask about the findings, the timings, the screenshots — or take the decision.",
+    "artifact": null
+  },
+  "findingsByGate": {
+    "coverage": [
+      {
+        "id": "f-01",
+        "gate": "coverage",
+        "check": "structure/surface-files",
+        "severity": "error",
+        "file": "app/lib/ui/views/order/cart_view.dart",
+        "line": 1,
+        "expected": "4 files for ios target (view, viewmodel, test, fixture)",
+        "expectedPlain": "every screen needs 4 files for iPhone (screen, logic, tests, sample data)",
+        "actual": "3 — viewmodel test missing",
+        "actualPlain": "3 found — the logic test is missing",
+        "reproduce": "./gates/coverage/run.sh --surface order.cart --target ios",
+        "fingerprint": "fp_7d2c…e91a",
+        "state": "fixed in attempt 2",
+        "note": "MEM-A: this check fails this way when the scaffolder emits but the story map marks the surface test-optional — the gate disagrees.",
+        "notePlain": "This happens when the scaffolder creates the files but the story map says tests are optional — the two disagree."
+      },
+      {
+        "id": "f-02",
+        "gate": "coverage",
+        "check": "tests/viewmodel-presence",
+        "severity": "error",
+        "file": "app/test/ui/views/order/cart_viewmodel_test.dart",
+        "line": 1,
+        "expected": "≥ 1 mocktail test per viewmodel",
+        "expectedPlain": "at least one automated test per screen-logic file",
+        "actual": "0 tests found",
+        "actualPlain": "none found",
+        "reproduce": "./gates/coverage/run.sh --check tests --surface order.cart",
+        "fingerprint": "fp_41aa…0b7d",
+        "state": "fixed in attempt 2",
+        "note": "Same root cause as f-01 — one authored-layer fix closed both.",
+        "notePlain": "Same root cause as the first finding — one fix closed both."
+      },
+      {
+        "id": "f-03",
+        "gate": "coverage",
+        "check": "visual/probe-deltaE",
+        "severity": "warning",
+        "file": "designs/frozen/order.cart/expanded.png",
+        "line": 0,
+        "expected": "ΔE ≤ 2.0 against the frozen golden",
+        "expectedBalanced": "colour match ≥ 95/100 (ΔE ≤ 2.0) against the frozen golden",
+        "expectedPlain": "should look nearly identical to the design you approved — 95/100 or better",
+        "actual": "ΔE 4.8 on the CartSummary card — muted text token drift",
+        "actualBalanced": "88/100 (ΔE 4.8) on the CartSummary card — muted text token drift",
+        "actualPlain": "noticeably different — 88/100 on the CartSummary card. A muted text colour only worked in light mode",
+        "reproduce": "./tools/verification/probe_run.sh --surface order.cart --rung expanded",
+        "fingerprint": "fp_b8e0…c3f2",
+        "state": "fixed in attempt 2",
+        "note": "Token --muted resolved against light theme only; freeze now pins both themes.",
+        "notePlain": "A text colour was only checked in light mode; the freeze now pins both light and dark."
+      }
+    ]
+  },
+  "chart": {
+    "maxDuration": {
+      "id": "design",
+      "n": 2,
+      "label": "Design",
+      "kind": "auto",
+      "state": "green",
+      "duration": "21m 05s",
+      "durationSec": 1265,
+      "summary": "11 surfaces × 3 rungs · 33 shots frozen",
+      "summaryPlain": "11 screens, each checked at phone, tablet and desktop size — 33 snapshots locked",
+      "detail": "Prototype composed from the adaptive primitive layer; every surface shot at compact, medium, expanded.",
+      "detailPlain": "Every screen was built once and photographed at all three sizes for approval."
+    },
+    "bars": [
+      {
+        "id": "intake",
+        "label": "Intake",
+        "duration": "3m 48s",
+        "pct": 18,
+        "state": "green"
+      },
+      {
+        "id": "design",
+        "label": "Design",
+        "duration": "21m 05s",
+        "pct": 100,
+        "state": "green"
+      },
+      {
+        "id": "freeze",
+        "label": "Freeze",
+        "duration": "12s",
+        "pct": 2,
+        "state": "green"
+      },
+      {
+        "id": "scaffold",
+        "label": "Scaffold",
+        "duration": "2m 10s",
+        "pct": 10,
+        "state": "green"
+      },
+      {
+        "id": "coverage",
+        "label": "Coverage",
+        "duration": "6m 33s",
+        "pct": 31,
+        "state": "recovered"
+      },
+      {
+        "id": "review",
+        "label": "Review",
+        "duration": "1m 54s",
+        "pct": 9,
+        "state": "green"
+      }
+    ]
+  },
+  "counts": {
+    "findings": 3,
+    "gatesPending": 1,
+    "stagesGreen": 5
+  }
+}

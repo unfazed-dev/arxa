@@ -109,6 +109,52 @@ pattern as kit vendoring, O1); the daemon shells out to its scripts. Core
 verbs run on Linux/Windows; desktop capture is macOS-gated — compatible with
 daemon-anywhere.
 
+## Design direction (picked 2026-07-28)
+
+The `native` variant won the build.loop bake-off — and the follow-up verdict
+on it: still too dense. Dashboards are out; **GenUI-style conversation-driven
+composition** is in — surfaces render contextual cards/charts on demand
+instead of presenting everything at once. Consequences:
+
+- The appbox primitives layer (`appbox/lib/ui/primitives.dart`) grows a
+  **genui kit**: a catalog of composable components (cards, charts, gate
+  prompts, stage timelines) that a conversation/surface layer renders on
+  demand — aligned with Flutter's `genui` package where its surface/catalog
+  model fits the local-daemon architecture (no cloud LLM dependency).
+  Evidence: [../research/flutter-genui.md](../research/flutter-genui.md).
+- Typography: Lexend family. Palettes: warm light + warm dark, per the
+  `docs/moodboards/` genui-calm-warm board.
+
+**Kit candidate — `kit_genui` (stacked_kit).** genui renders UI but is not
+an agent: getting *any* LLM to reliably emit valid A2UI JSON is the reusable
+hard part, so the bridge is **integrated into the kit itself**, not a
+separate product. One kit family, two layers — the split exists only
+because appboxd is pure Dart (dart:io, no Flutter) and is where the LLM
+call lives in the A2UI topology:
+
+- `genui_bridge` — **pure Dart, zero Flutter imports**, the importable core:
+  - One abstraction: `ChatStream` — `Stream<String> complete(messages,
+    {schema})`. Adapters per provider (Anthropic / OpenAI / Gemini / local
+    OpenAI-compatible: Ollama, llama.cpp) are thin HTTP; nothing names a
+    provider outside config. Model- AND provider-agnostic.
+  - Reliability does NOT depend on a provider's structured-output mode
+    (those differ and move). Core is: catalog JSON schemas in the system
+    prompt → streamed parse → **validate every A2UI message against the
+    catalog schema → bounded repair loop** (re-ask with the validation
+    error, n≤2) → only valid messages leave the bridge. Provider-native
+    modes (tool-use, responseSchema) are optional adapter accelerations
+    behind the same interface.
+  - Emits genui's four verbs (`createSurface`, `updateComponents`,
+    `updateDataModel`, `deleteSurface`); pinned against the experimental
+    0.x API with one adapter seam for renames.
+  - Consumers: appboxd (server-side A2UI producer) and any Dart/Flutter
+    app doing client-side BYO-key.
+- `kit_genui` — the Flutter layer on top of the bridge: the reusable
+  catalog widgets the basic catalog lacks (charts, markdown text, form
+  cards), warm Lexend theming hooks, `Surface` host scaffolding. App-domain
+  items (build-stage card, gate prompt, deploy status) stay in appbox —
+  the kit carries only what a second app would reuse verbatim.
+
 ## Dogfood sequencing
 
 1. `stacked create app appbox --template=web --platforms=web,macos,ios,android`
@@ -146,3 +192,9 @@ the product's UI lives and how clients reach the daemon**, nothing else.
 - The stacked shell's emitted structure vs the scaffolder's expectations
   (locator/router vs emitted surfaces) needs one reconciliation pass when the
   shell exists.
+- appbox macOS entitlements lack `com.apple.security.network.client` — add to
+  both `macos/Runner/*.entitlements` the day appboxd is reached over HTTP,
+  localhost included (genui spike finding, 2026-07-29).
+- `genui` pulls ~65–70 transitive packages incl. unused media plugins;
+  shedding them needs a genui fork/PR — accept for now, revisit if web bundle
+  size matters (spike finding).

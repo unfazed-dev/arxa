@@ -3,7 +3,8 @@ name: app-box-designer
 description: >-
   Design an application prototype whose structure the app_box pipeline
   consumes — server-rendered htmx + CSS with zero custom client-side
-  JavaScript, in a genuine MVVM structure: app screens, shells, tabs,
+  JavaScript (one named island exception: canvas.js, pan/zoom for the
+  design canvas), in a genuine MVVM structure: app screens, shells, tabs,
   dashboards, interactive prototypes and wireframes, authored at every
   viewport in the active ladder. Use when the user asks to design, mock up,
   prototype, wireframe or visualize an application, product screen or user
@@ -15,7 +16,9 @@ description: >-
 # app-box-designer
 
 The design stage of the app_box pipeline. Every artifact is a Hono + htmx MVVM
-app with **zero custom client-side JavaScript** — the same structure the
+app with **zero custom client-side JavaScript** — one named island exception:
+`canvas.js`, the dependency-free pan/zoom module for the design canvas
+(ADR-0002 amendment) — the same structure the
 scaffolder later emits as Flutter, which is why the prototype can carry
 structure rather than pixels.
 

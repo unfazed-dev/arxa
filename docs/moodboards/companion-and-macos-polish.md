@@ -191,3 +191,5 @@
 8. **Human-confirms-new-device**: freshly paired phones can view but not approve until vouched by an existing trusted device or the Mac shell (Tailscale device approval).
 9. **Menu-bar-first macOS shell**: live pipeline status, next-gate preview, inline actions; full window is optional; command bar for "approve / retry / open preview" (Expo Orbit + Raycast + Cron).
 10. **Ambient awareness surfaces**: iOS/Android home-screen widget + lock-screen/Live Activity showing pipeline state (building / gate red / idle) so the decision finds the founder, not vice versa (Datadog widgets + Raycast iOS Action Button).
+
+

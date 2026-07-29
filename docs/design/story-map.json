@@ -405,6 +405,16 @@
               "name": "Kit vendoring from targets + capabilities; dependencyMode config from day one",
               "priority": "should",
               "release": "R1 Dogfood"
+            },
+            {
+              "name": "Appearance prefs per device: warm light/dark theme + brand accent picker (cyan/violet/blue/ember from the logo)",
+              "priority": "should",
+              "release": "R1 Dogfood"
+            },
+            {
+              "name": "Language level plain/balanced/technical — every user-facing string written three ways; visual metrics render as X/100 match scores (ΔE 2.0 = 95/100 pass bar), technical level keeps raw values",
+              "priority": "must",
+              "release": "R1 Dogfood"
             }
           ]
         }

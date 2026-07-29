@@ -1,0 +1,82 @@
+/* ---------- design viewer: rungs mode + the floating filmstrip ----------
+   The shared screen stage (ui/common/design_viewer.html). This file owns:
+     rungs — one screen at every authored width, side by side
+     strip — the single-mode filmstrip as a floating card over the stage
+   The rest of single mode (.dv-*, .device chrome) lives in app.css. */
+
+/* the rungs row is a pan area, same zero-JS idiom as .dv-stage: oversized
+   frames scroll on both axes; every rung keeps its real device size (w × h
+   inline from deviceChrome), top-aligned, caption under each */
+.dv-rungs {
+  display: flex; gap: 1.2rem; align-items: flex-start;
+  overflow: auto; flex: 1; min-height: 32rem;
+  padding: .4rem;
+}
+.dv-rung {
+  flex: none; margin: 0;
+  display: flex; flex-direction: column; gap: .45rem;
+}
+.dv-rung .device { flex: none; }
+
+/* the zoom island's target: assets/vendor/canvas.js (the ADR-0002 amendment's
+   one sanctioned script) scales this wrapper on pinch (ctrl+wheel) and pans
+   the scroll container on drag. transform-origin 0 0 keeps the scroll-
+   anchored zoom math exact; the wrapper's layout position never changes
+   under scale, so native overflow pan keeps working at any zoom */
+.dv-stage .dv-zoom { margin: auto; transform-origin: 0 0; }
+.dv-rungs .dv-zoom {
+  display: flex; gap: 1.2rem; align-items: flex-start;
+  transform-origin: 0 0;
+}
+.dv-stage:active, .dv-rungs:active { cursor: grabbing; }
+.dv-rung-cap {
+  display: flex; gap: .5rem; align-items: baseline;
+  font-size: .72rem; color: var(--tx-2); padding: 0 .2rem;
+}
+.dv-rung-cap strong { color: var(--tx); }
+.dv-rung-cap code { margin-left: auto; font-size: .64rem; }
+
+@media (max-width: 599px) {
+  .dv-rungs { min-height: 26rem; }
+}
+
+/* ---------- the filmstrip: a floating card over the stage, no scrollbar ----------
+   Single mode only (rungs has no strip). The strip leaves the flow and
+   floats over the stage's left edge, vertically centered, as a self-contained
+   card in the rail's chrome tokens (app.css .rail: --radius / 1px --border /
+   --shadow-1); the card bg is var(--bg) — the layering .msg cards use inside
+   the rail, so it reads on every stage bg in both themes.
+   Anchored to .dv-body, NOT inside .dv-stage: the stage is the overflow:auto
+   pan area, so anything absolute in it scrolls away with the content and can
+   be clipped. No .dv-* / .artifact ancestor between the two hides overflow.
+   The strip's own box IS the card, so it captures no pointer events outside
+   itself (thumb iframes already have pointer-events:none in app.css); links
+   and htmx swaps are untouched. z-index lifts it above .device
+   (position:relative) and its z-index:2 chrome, which follow it in tree order.
+   Scrollbars are hidden here (scrollbar-width:none + webkit display:none) —
+   an explicit exception, for this component only, to the app-wide "scrollbars
+   blend" rule in app.css. Internal vertical scroll still works on overflow. */
+.dv-body { position: relative; }
+.dv-strip-float {
+  position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+  z-index: 5;
+  width: 10.2rem;                 /* .5rem card padding around the 9.2rem strip */
+  max-height: calc(100% - .4rem);
+  padding: .5rem;
+  background: var(--bg);
+  border: 1px solid var(--border); border-radius: var(--radius);
+  box-shadow: var(--shadow-1);
+  scrollbar-width: none;
+}
+.dv-strip-float::-webkit-scrollbar { display: none; }
+
+/* compact: the strip docks as a floating pill centered over the stage's
+   bottom edge — same chrome tokens, horizontal scroll, still no scrollbar */
+@media (max-width: 599px) {
+  .dv-strip-float {
+    left: 50%; top: auto; bottom: 0; transform: translateX(-50%);
+    width: auto; max-width: calc(100% - .4rem); max-height: none;
+    padding: .45rem .5rem;
+    border-radius: 999px;
+  }
+}

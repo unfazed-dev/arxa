@@ -1,5 +1,13 @@
 :root { color-scheme: light dark; }
 * { box-sizing: border-box; }
+/* Scrollbars must blend into ANY theme: transparent track, thumb tinted from
+   the theme ink (var(--tx)) with currentColor only as fallback — one consistent
+   tint across containers whose local text colors differ (rails, chips, code).
+   Never leave UA-default scrollbar chrome. */
+* { scrollbar-width: thin; scrollbar-color: color-mix(in oklab, var(--tx, currentColor) 22%, transparent) transparent; }
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: color-mix(in oklab, var(--tx, currentColor) 22%, transparent); border-radius: 999px; }
 body { margin: 0; font-family: ui-sans-serif, system-ui, sans-serif; }
 #app { min-height: 100dvh; display: flex; flex-direction: column; }
 .shell-nav { display: flex; gap: 1rem; align-items: center; padding: .75rem 1rem; border-bottom: 1px solid color-mix(in oklab, currentColor 15%, transparent); }

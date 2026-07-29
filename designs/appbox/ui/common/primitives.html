@@ -1,0 +1,15 @@
+{# Shared micro-primitives — the status pill and the card type badge, used by
+   the rail, the canvas artifacts, and the freeze/trace views across tabs.
+   See DESIGN-ARCHITECTURE.md "Shared components (views)". #}
+
+{% macro statusPill(state) %}
+<span class="status-pill status-{{ state }}">
+  <span class="status-dot"></span>{{ state }}
+</span>
+{% endmacro %}
+
+{# The badge label defaults to the type; card kinds whose chip shows domain
+   text (design artboards show the epic) pass it explicitly. #}
+{% macro typeBadge(type, label) %}
+<span class="type-badge tb-{{ type }}">{{ label or type }}</span>
+{% endmacro %}

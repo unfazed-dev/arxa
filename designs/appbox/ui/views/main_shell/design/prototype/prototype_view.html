@@ -1,0 +1,150 @@
+{% extends "ui/views/main_shell/main_shell_view.html" %}
+{% import "ui/common/primitives.html" as prim %}
+{% import "ui/common/rail.html" as rail %}
+{% import "ui/common/timeline.html" as tl %}
+{% import "ui/common/design_viewer.html" as dv %}
+{% block title %}appbox — Prototype{% endblock %}
+{% block main_class %}shell-main-loop{% endblock %}
+
+{# ---------- Named Fragments (renderable alone via prototype_view.html#macro) ----------
+   Rail chrome, card shell, timeline and the status pill live in ui/common/*;
+   the macros below are the design tab's parameterization. The stage bar and
+   the artboard canvas stay here — they are this surface's own. #}
+
+{# ---------- The design line: brief → moodboard → prototype → refine → approval → freeze ---------- #}
+
+{% macro timeline(c, oob) %}{{ tl.timeline(c, oob, 'Design progress') }}{% endmacro %}
+
+{# ---------- The rail: run bar + one card per artboard ---------- #}
+
+{% macro railBar(c, oob) %}
+{{ rail.railBar(c, oob, {
+  eyebrow: 'design run #' + c.run.number + ' · ' + c.run.brief,
+  state: c.run.stateLabel,
+  facts: [c.counts.screens + ' surfaces', c.counts.shots + ' shots', c.run.rungsLabel],
+  filter: {
+    summaryAria: 'Filter artboards by epic', summaryTitle: 'Filter artboards',
+    summary: c.filter if c.filter != 'all' else 'all epics',
+    target: '#rail-list', swap: 'outerHTML', url: '/design/rail?epic=', active: c.filter,
+    options: [{id: 'all', label: 'all epics'}].concat(c.epics)
+  }
+}) }}
+{% endmacro %}
+
+{# An artboard card: the common card shell with the screen's data mapped in —
+   epic chip, rung/kit detail, screen-scoped CTAs, label where a narrative
+   card would put the time. #}
+{% macro screenCard(c, s) %}
+{{ rail.msg(c, {
+  from: 'agent', active: s.active, text: s.summary, at: s.label, artifact: s.id,
+  card: {type: 'screen', label: s.epic, state: s.card.state, threadCount: s.card.threadCount, detail: s.card.detail}
+}, '/design/screen', 'Ask a follow-up about this artboard', 'on this artboard') }}
+{% endmacro %}
+
+{% macro railList(c, oob) %}
+<div class="rail-list" id="rail-list" {% if oob %}hx-swap-oob="outerHTML"{% endif %}>
+  {% for s in c.screens %}
+  {{ screenCard(c, s) }}
+  {% endfor %}
+</div>
+{% endmacro %}
+
+{# ---------- The canvas: one artboard in the shared screen stage ----------
+   The triptych is the viewer's rungs mode — live renders, not wireframes. #}
+
+{% macro viewerSwap(c) %}{{ dv.designViewer(c.viewer) }}{% endmacro %}
+
+{% macro canvasArtifact(c) %}
+<article class="artifact screen-artifact evidence-artifact">
+  <header class="artifact-head">
+    <span class="eyebrow">artboard · {{ c.screen.epic }}</span>
+    {{ prim.statusPill(c.screen.state) }}
+  </header>
+  <h2 class="display">{{ c.screen.label }}</h2>
+  <p class="artifact-lede">{{ c.screen.summary }}</p>
+  {{ dv.designViewer(c.viewer) }}
+  <p class="artifact-foot muted">{{ c.t.protoFoot }} · kit coverage {{ c.screen.kit }}%</p>
+</article>
+{% endmacro %}
+
+{# ---------- The stage bar: FAB → floating toolbar for the artboard ---------- #}
+
+{% macro stageBar(c, oob) %}
+<div class="stage-bar-wrap" id="stage-bar" {% if oob %}hx-swap-oob="outerHTML"{% endif %}>
+  {% if c.barOpen %}
+  <div class="stage-bar stage-bar-screen">
+    {% if c.thread.length %}
+    <div class="bar-thread" aria-label="Conversation about this artboard">
+      {% for e in c.thread %}
+        {% if e.kind == 'user' %}
+        <p class="bt-msg bt-user">{{ e.text }}</p>
+        {% else %}
+        <p class="bt-msg bt-agent">{{ e.text }}
+          {%- if e.link %} <a class="bt-link" href="{{ e.link.href }}">{{ e.link.label }}</a>{% endif %}
+        </p>
+        {% endif %}
+      {% endfor %}
+    </div>
+    {% endif %}
+    <form class="bar-chat" method="post" action="/design/screen/{{ c.screen.id }}/messages"
+          hx-post="/design/screen/{{ c.screen.id }}/messages" hx-target="#stage-bar" hx-swap="outerHTML">
+      <input type="text" name="text" placeholder="Follow up on {{ c.screen.label }}…" aria-label="Follow up on {{ c.screen.label }}" autofocus>
+      <button type="submit" class="composer-send" aria-label="Send">↑</button>
+    </form>
+    <span class="bar-row">
+      <span class="bar-hint">{{ c.t.barHintScreen }}</span>
+      <span class="bar-actions">
+        <a class="ico-btn" href="/design/bar/{{ c.screen.id }}?state=fab"
+           hx-get="/design/bar/{{ c.screen.id }}?state=fab" hx-target="#stage-bar" hx-swap="outerHTML"
+           aria-label="Close the toolbar" title="Close">×</a>
+      </span>
+    </span>
+  </div>
+  {% else %}
+  <a class="fab" href="/design/bar/{{ c.screen.id }}?state=open"
+     hx-get="/design/bar/{{ c.screen.id }}?state=open" hx-target="#stage-bar" hx-swap="outerHTML"
+     aria-label="Follow-ups for this artboard" title="Follow up on this artboard">?</a>
+  {% endif %}
+</div>
+{% endmacro %}
+
+{# ---------- Fragment responses ---------- #}
+
+{% macro canvasSwap(c) %}
+{{ canvasArtifact(c) }}
+{{ railList(c, true) }}
+{{ stageBar(c, true) }}
+{% endmacro %}
+
+{% macro filterSwap(c) %}
+{{ railList(c, false) }}
+{{ railBar(c, true) }}
+{% endmacro %}
+
+{% macro barSwap(c) %}
+{{ stageBar(c, false) }}
+{% endmacro %}
+
+{% macro scopedSwap(c) %}
+{{ stageBar(c, false) }}
+{{ railList(c, true) }}
+{% endmacro %}
+
+{# ---------- Page ---------- #}
+
+{% block timeline %}
+{{ timeline(c, false) }}
+{% endblock %}
+
+{% block surface %}
+<div class="loop-zones">
+  <aside class="rail" aria-label="Artboards">
+    {{ railBar(c, false) }}
+    {{ railList(c, false) }}
+  </aside>
+  <section class="canvas" id="canvas" aria-live="polite">
+    {{ canvasArtifact(c) }}
+  </section>
+  {{ stageBar(c, false) }}
+</div>
+{% endblock %}

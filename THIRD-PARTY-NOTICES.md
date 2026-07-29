@@ -95,6 +95,16 @@ Licences below were **read from each installed package's `package.json`** on
 
 ---
 
+## Lexend fonts (`designs/appbox/assets/fonts/`)
+
+The Lexend superfamily (Lexend, Lexend Giga, Lexend Deca) by Thomas Jockin /
+Font Bureau, vendored as woff2 from fonts.gstatic.com on 2026-07-28. Published
+under the **SIL Open Font License 1.1** — free to use, embed, and redistribute.
+License text: https://openfontlicense.org. Per-file inventory:
+`designs/appbox/assets/fonts/FONTS.md`.
+
+---
+
 ## `skills/app-box-story-mapper`
 
 `skills/app-box-story-mapper` is an MIT-licensed story-mapping skill, adapted

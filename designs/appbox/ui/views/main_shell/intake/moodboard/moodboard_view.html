@@ -1,0 +1,120 @@
+{% extends "ui/views/main_shell/main_shell_view.html" %}
+{% import "ui/views/main_shell/intake/_shared.html" as sh %}
+{% block title %}appbox — Moodboard{% endblock %}
+{% block main_class %}shell-main-loop{% endblock %}
+
+{# ---------- Canvas artifacts ---------- #}
+
+{% macro gradeChip(g) %}
+<span class="grade grade-{{ g }}">{{ '🔥 current' if g == 'hot' else '🌡️ established' }}</span>
+{% endmacro %}
+
+{# The gallery: boards as sections, shots as cards linked to the detail. #}
+{% macro galleryCanvas(c, a) %}
+<article class="artifact gallery-artifact">
+  <header class="artifact-head">
+    <span class="eyebrow">moodboard{% if c.filter.active != 'all' %} · {{ c.filter.active }}{% endif %}</span>
+    <span class="chip">{{ a.boards | length }} board{{ 's' if a.boards | length != 1 }} · curated {{ a.curated }}</span>
+  </header>
+  <h2 class="display">{{ a.headline }}</h2>
+  <p class="artifact-lede">{{ a.lede }}</p>
+  <p class="artifact-detail muted">{{ a.provenance }}</p>
+  {% for b in a.boards %}
+  <section class="board">
+    <header class="board-head">
+      <h3 class="board-title">{{ b.title }}</h3>
+      <span class="chip">informs {{ b.informs }}</span>
+    </header>
+    <p class="board-slice muted">{{ b.slice }} · <code>{{ b.file }}</code></p>
+    <div class="shot-grid">
+      {% for r in b.references %}
+      <a class="shot-card" href="{{ c.base }}/artifact/shot/{{ r.shot.id }}"
+         hx-get="{{ c.base }}/artifact/shot/{{ r.shot.id }}" hx-target="#canvas" hx-swap="innerHTML" hx-push-url="false">
+        <img src="{{ r.shot.src }}" alt="{{ r.name }} — {{ r.shot.caption }}" loading="lazy">
+        <span class="shot-meta">
+          <strong>{{ r.name }}</strong>
+          {{ gradeChip(r.grade) }}
+        </span>
+      </a>
+      {% endfor %}
+    </div>
+  </section>
+  {% endfor %}
+</article>
+{% endmacro %}
+
+{# One capture, large: the shot, what to steal, why it suits app-box. #}
+{% macro shotCanvas(c, a) %}
+<article class="artifact shot-artifact">
+  <header class="artifact-head">
+    <span class="eyebrow">{{ a.board.title }}</span>
+    {{ gradeChip(a.reference.grade) }}
+  </header>
+  <h2 class="display">{{ a.reference.name }}</h2>
+  <p class="artifact-detail muted"><a href="{{ a.reference.url }}" rel="noreferrer">{{ a.reference.url }}</a></p>
+  <img class="shot-full" src="{{ a.shot.src }}" alt="{{ a.reference.name }} — {{ a.shot.caption }}">
+  <p class="artifact-detail muted">{{ a.shot.caption }}</p>
+  <p class="fact-label">{{ c.t.shotSteal }}</p>
+  <p class="artifact-detail">{{ a.reference.steal }}</p>
+  <p class="fact-label">{{ c.t.shotWhy }}</p>
+  <p class="artifact-detail">{{ a.reference.why }}</p>
+  <p class="artifact-foot">
+    <a href="{{ c.base }}/artifact/{{ a.backRef }}"
+       hx-get="{{ c.base }}/artifact/{{ a.backRef }}" hx-target="#canvas" hx-swap="innerHTML" hx-push-url="false">← back to the board</a>
+  </p>
+</article>
+{% endmacro %}
+
+{% macro canvasArtifact(c) %}
+{% set a = c.artifact %}
+{% if a.kind == 'shot' %}{{ shotCanvas(c, a) }}
+{% else %}{{ galleryCanvas(c, a) }}
+{% endif %}
+{% endmacro %}
+
+{# ---------- Fragment responses ---------- #}
+
+{% macro canvasSwap(c) %}
+{{ canvasArtifact(c) }}
+{{ sh.railList(c, true) }}
+{{ sh.stageBar(c, true) }}
+{% endmacro %}
+
+{% macro messageSwap(c) %}
+{{ canvasArtifact(c) }}
+{{ sh.railList(c, true) }}
+{{ sh.composer(c, true) }}
+{{ sh.stageBar(c, true) }}
+{% endmacro %}
+
+{% macro filterSwap(c) %}
+{{ canvasArtifact(c) }}
+{{ sh.railBar(c, true) }}
+{{ sh.railList(c, true) }}
+{{ sh.stageBar(c, true) }}
+{% endmacro %}
+
+{% macro barSwap(c) %}
+{{ sh.stageBar(c, false) }}
+{% endmacro %}
+
+{% macro scopedSwap(c) %}
+{{ sh.stageBar(c, false) }}
+{{ sh.railList(c, true) }}
+{% endmacro %}
+
+{# ---------- Page ---------- #}
+
+{% block surface %}
+<div class="loop-zones">
+  <aside class="rail" aria-label="Agent narrative">
+    {{ sh.railBar(c, false) }}
+    {{ sh.railList(c, false) }}
+    {{ sh.composer(c, false) }}
+  </aside>
+  <section class="canvas" id="canvas" aria-live="polite">
+    {{ canvasArtifact(c) }}
+  </section>
+  {{ sh.stageBar(c, false) }}
+</div>
+{% endblock %}

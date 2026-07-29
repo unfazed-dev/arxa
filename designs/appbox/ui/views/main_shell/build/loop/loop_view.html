@@ -1,0 +1,385 @@
+{% extends "ui/views/main_shell/main_shell_view.html" %}
+{% import "ui/common/primitives.html" as prim %}
+{% import "ui/common/rail.html" as rail %}
+{% import "ui/common/timeline.html" as tl %}
+{% import "ui/common/design_viewer.html" as dv %}
+{% block title %}appbox — Build Monitor{% endblock %}
+{% block main_class %}shell-main-loop{% endblock %}
+
+{# ---------- Named Fragments (renderable alone via loop_view.html#macro) ----------
+   The rail chrome (top bar, card shell, list, composer), the shell timeline,
+   and the status pill / type badge live in ui/common/*. The macros below are
+   build's parameterization of them; the stage bar and the canvas artifacts
+   stay here — they are build's own. #}
+
+{# Rail top bar: run state + facts on the left, rail actions on the right —
+   filter the narrative by card type, pause/resume the whole line. #}
+{% macro railBar(c, oob) %}
+{{ rail.railBar(c, oob, {
+  eyebrow: 'run #' + c.run.number + ' · ' + c.run.brief,
+  state: c.run.stateLabel,
+  facts: ['started ' + c.run.started,
+          'elapsed ' + c.run.elapsed,
+          c.t.railStopOnRed + ' ' + ('on' if c.run.policy.stopOnRed else 'off'),
+          c.t.railEsc + ' ' + c.run.policy.escLimit],
+  filter: {
+    summaryAria: 'Filter cards by type', summaryTitle: 'Filter cards',
+    summary: {'all': 'all', 'stage': 'stages', 'gate': 'gates', 'findings': 'findings', 'evidence': 'evidence', 'note': 'notes'}[c.filter],
+    target: '#rail-list', swap: 'outerHTML', url: '/build/rail?type=', active: c.filter,
+    options: [{id: 'all', label: 'all'}, {id: 'stage', label: 'stages'}, {id: 'gate', label: 'gates'},
+              {id: 'findings', label: 'findings'}, {id: 'evidence', label: 'evidence'}, {id: 'note', label: 'notes'}]
+  },
+  control: {
+    action: '/build/run/control',
+    value: 'resume' if c.run.pausedByYou else 'pause',
+    title: 'Resume the run' if c.run.pausedByYou else 'Pause the run',
+    glyph: '→' if c.run.pausedByYou else '‖'
+  }
+}) }}
+{% endmacro %}
+
+{% macro railList(c, oob) %}{{ rail.railList(c, oob, '/build/artifact') }}{% endmacro %}
+
+{# Composer: pill, leading + (suggestions), trailing send. #}
+{% macro composer(c, oob) %}
+{{ rail.composer(c, oob, {
+  action: '/build/messages',
+  suggestions: [{value: 'Why did coverage fail on attempt 1?', label: 'Why did coverage fail?'},
+                {value: 'How long did each stage take?', label: 'Stage timings'},
+                {value: 'Show the full log', label: 'Full log'}],
+  placeholder: 'Ask the run…', ariaLabel: 'Message the build agent'
+}) }}
+{% endmacro %}
+
+{# ---------- The shell timeline: the whole line, current highlighted ---------- #}
+
+{% macro timeline(c, oob) %}{{ tl.timeline(c, oob, 'Pipeline progress', '/build') }}{% endmacro %}
+
+{# ---------- The stage bar: FAB → floating toolbar for the canvas artifact ---------- #}
+
+{% macro stageBar(c, oob) %}
+<div class="stage-bar-wrap" id="stage-bar" {% if oob %}hx-swap-oob="outerHTML"{% endif %}>
+  {% if c.barOpen %}
+  {% if c.bar.kind == 'evidence' and not c.barMode %}
+  {# Smart FAB: this canvas does two things — talk about the evidence, or
+     inspect the designs. Pick one; the other is a tap away. #}
+  <div class="stage-bar stage-bar-choose">
+    <span class="bar-hint">This canvas has a thread and the live designs.</span>
+    <span class="bar-actions">
+      <a class="btn-approve" href="/build/bar/{{ c.activeArtifact }}?state=open&mode=thread"
+         hx-get="/build/bar/{{ c.activeArtifact }}?state=open&mode=thread" hx-target="#stage-bar" hx-swap="outerHTML">thread — ask &amp; act</a>
+      <a class="ghost btn-like" href="/build/bar/{{ c.activeArtifact }}?state=fab"
+         hx-get="/build/bar/{{ c.activeArtifact }}?state=fab" hx-target="#stage-bar" hx-swap="outerHTML">review the designs above</a>
+      <a class="ico-btn" href="/build/bar/{{ c.activeArtifact }}?state=fab"
+         hx-get="/build/bar/{{ c.activeArtifact }}?state=fab" hx-target="#stage-bar" hx-swap="outerHTML"
+         aria-label="Close" title="Close">×</a>
+    </span>
+  </div>
+  {% else %}
+  <div class="stage-bar stage-bar-{{ c.bar.kind }}">
+    {% if c.thread.length %}
+    <div class="bar-thread" aria-label="Conversation about this {{ c.bar.kind }}">
+      {% for e in c.thread %}
+        {% if e.kind == 'user' %}
+        <p class="bt-msg bt-user">{{ e.text }}</p>
+        {% elif e.kind == 'event' %}
+        <p class="bt-event">{{ e.text }}</p>
+        {% else %}
+        <p class="bt-msg bt-agent">{{ e.text }}
+          {%- if e.link %} <a class="bt-link" href="/build/artifact/{{ e.link }}"
+             hx-get="/build/artifact/{{ e.link }}" hx-target="#canvas" hx-swap="innerHTML" hx-push-url="false">on canvas →</a>{% endif %}
+        </p>
+        {% if e.action and e.action.open %}
+        <form class="bt-action" method="post" action="/build/gates/decide"
+              hx-post="/build/gates/decide" hx-target="#canvas" hx-swap="innerHTML">
+          <input type="hidden" name="gate" value="{{ e.action.gate }}">
+          <input type="hidden" name="decision" value="{{ e.action.decision }}">
+          <button type="submit" class="{{ 'btn-approve' if e.action.decision == 'approved' else 'btn-reject ghost' }}">{{ e.action.label }}</button>
+        </form>
+        {% elif e.action %}
+        <span class="bt-action-done" title="Decided">{{ e.action.label }} ✓</span>
+        {% endif %}
+        {% endif %}
+      {% endfor %}
+    </div>
+    {% endif %}
+    <form class="bar-chat" method="post" action="/build/artifact/{{ c.activeArtifact }}/messages"
+          hx-post="/build/artifact/{{ c.activeArtifact }}/messages" hx-target="#stage-bar" hx-swap="outerHTML">
+      <input type="text" name="text" placeholder="Follow up on this {{ c.bar.kind }}…" aria-label="Follow up on this {{ c.bar.kind }}" autofocus>
+      <button type="submit" class="composer-send" aria-label="Send">↑</button>
+    </form>
+    <span class="bar-row">
+      <span class="bar-hint">{{ c.bar.hint }}</span>
+      <span class="bar-actions">
+        {% if c.bar.resumable %}
+        <form method="post" action="/build/stages/{{ c.bar.stageId }}/control"
+              hx-post="/build/stages/{{ c.bar.stageId }}/control" hx-target="#canvas" hx-swap="innerHTML">
+          <button type="submit" name="action" value="resume" class="ghost">→ resume</button>
+        </form>
+        {% endif %}
+        {% if c.bar.pauseable %}
+        <form method="post" action="/build/stages/{{ c.bar.stageId }}/control"
+              hx-post="/build/stages/{{ c.bar.stageId }}/control" hx-target="#canvas" hx-swap="innerHTML">
+          <button type="submit" name="action" value="pause" class="ghost">‖ pause</button>
+        </form>
+        {% endif %}
+        {% if c.bar.cancelable %}
+        <form method="post" action="/build/stages/{{ c.bar.stageId }}/control"
+              hx-post="/build/stages/{{ c.bar.stageId }}/control" hx-target="#canvas" hx-swap="innerHTML">
+          <button type="submit" name="action" value="cancel" class="ghost">× cancel</button>
+        </form>
+        {% endif %}
+        <a class="ico-btn" href="/build/bar/{{ c.activeArtifact }}?state=fab"
+           hx-get="/build/bar/{{ c.activeArtifact }}?state=fab" hx-target="#stage-bar" hx-swap="outerHTML"
+           aria-label="Close the toolbar" title="Close">×</a>
+      </span>
+    </span>
+  </div>
+  {% endif %}
+  {% else %}
+  <a class="fab" href="/build/bar/{{ c.activeArtifact }}?state=open"
+     hx-get="/build/bar/{{ c.activeArtifact }}?state=open" hx-target="#stage-bar" hx-swap="outerHTML"
+     aria-label="Follow-ups and actions for this view" title="Follow up · pause · cancel">?</a>
+  {% endif %}
+</div>
+{% endmacro %}
+
+{# ---------- Canvas artifacts: one thing at a time, large ---------- #}
+
+{% macro gateCanvas(c, gate) %}
+<article class="artifact gate-artifact gate-{{ gate.state }}">
+  <header class="artifact-head">
+    <span class="eyebrow">human gate</span>
+    {{ prim.statusPill(gate.state) }}
+  </header>
+  <h2 class="display">{{ gate.label }}</h2>
+  <p class="artifact-lede">{{ gate.context }}</p>
+
+  {% if gate.state == 'pending' %}
+  <form class="gate-actions" id="gate-actions" method="post" action="/build/gates/decide"
+        hx-post="/build/gates/decide" hx-target="#canvas" hx-swap="innerHTML">
+    <input type="hidden" name="gate" value="{{ gate.id }}">
+    <input type="text" name="note" class="gate-note-input" placeholder="Note for the record — optional, ships with a reject">
+    <span class="gate-buttons">
+      <button type="submit" name="decision" value="approved" class="btn-approve">Approve</button>
+      <button type="submit" name="decision" value="rejected" class="btn-reject ghost">Reject</button>
+      <span class="htmx-indicator muted">minting provenance…</span>
+    </span>
+  </form>
+  <p class="artifact-foot muted">{{ c.t.gateFoot }}</p>
+  {% elif gate.provenance %}
+  <dl class="provenance">
+    <div><dt>decided by</dt><dd>{{ gate.provenance.by }} · {{ gate.provenance.shell }}</dd></div>
+    <div><dt>device</dt><dd>{{ gate.provenance.device }}</dd></div>
+    <div><dt>confirm</dt><dd>{{ gate.provenance.method }} · {{ gate.provenance.at }}</dd></div>
+    <div><dt>content hash</dt><dd><code>{{ gate.provenance.hash }}</code></dd></div>
+  </dl>
+  {% if gate.note %}<p class="gate-note">Your note: {{ gate.note }}</p>{% endif %}
+  {% else %}
+  <p class="artifact-foot muted">Not yet reachable — the pipeline hasn't earned this gate.</p>
+  {% endif %}
+</article>
+{% endmacro %}
+
+{% macro stageCanvas(c, s, total) %}
+<article class="artifact stage-artifact stage-state-{{ s.state }}">
+  <header class="artifact-head">
+    <span class="eyebrow">stage {{ s.n }} of {{ total }} · automated</span>
+    {{ prim.statusPill(s.state) }}
+  </header>
+  <h2 class="display">{{ s.label }}</h2>
+  <p class="big-metric">{{ s.duration }}<span class="big-metric-label">on the line</span></p>
+  <p class="artifact-lede">{{ s.summary }}</p>
+  <p class="artifact-detail muted">{{ s.detail }}</p>
+  {% if s.attempts %}
+  <ol class="attempts">
+    {% for a in s.attempts %}
+    <li class="attempt attempt-{{ a.state }}">
+      <span class="attempt-n">attempt {{ a.n }} of {{ c.run.policy.escLimit }}</span>
+      {{ prim.statusPill(a.state) }}
+      <span class="muted">{{ a.note }}</span>
+    </li>
+    {% endfor %}
+  </ol>
+  {% endif %}
+  {% if s.state == 'recovered' %}
+  <p class="artifact-foot">
+    <a href="/build/artifact/findings/coverage"
+       hx-get="/build/artifact/findings/coverage" hx-target="#canvas" hx-swap="innerHTML" hx-push-url="false">See the 3 findings from attempt 1 →</a>
+  </p>
+  {% endif %}
+</article>
+{% endmacro %}
+
+{% macro findingsCanvas(c, a) %}
+<article class="artifact findings-artifact">
+  <header class="artifact-head">
+    <span class="eyebrow">findings · {{ a.gate }} gate · attempt 1 → red</span>
+    <span class="chip">{{ a.list | length }} findings · all fixed in attempt 2</span>
+  </header>
+  <h2 class="display">{{ c.t.findingsHeadline }}</h2>
+  <p class="artifact-lede">{{ c.t.findingsLede }}</p>
+  <div class="finding-list">
+    {% for f in a.list %}
+    <article class="finding finding-{{ f.severity }}">
+      <header class="finding-head">
+        <span class="sev sev-{{ f.severity }}">{{ f.severity }}</span>
+        <code class="finding-loc">{{ f.file }}:{{ f.line }}</code>
+        <span class="finding-check muted">{{ f.check }}</span>
+      </header>
+      <dl class="finding-body">
+        <div><dt>expected</dt><dd>{{ f.expected }}</dd></div>
+        <div><dt>actual</dt><dd>{{ f.actual }}</dd></div>
+      </dl>
+      <p class="reproduce"><span class="fact-label">reproduce</span><code>{{ f.reproduce }}</code></p>
+      <footer class="finding-foot">
+        <span class="chip">{{ f.state }}</span>
+        <span class="muted">fingerprint <code>{{ f.fingerprint }}</code></span>
+      </footer>
+      <p class="finding-note muted">{{ f.note }}</p>
+    </article>
+    {% endfor %}
+  </div>
+</article>
+{% endmacro %}
+
+{% macro chartCanvas(c, chart) %}
+<article class="artifact chart-artifact">
+  <header class="artifact-head">
+    <span class="eyebrow">stage durations · run #{{ c.run.number }}</span>
+  </header>
+  <h2 class="display">Design took two-thirds of the line</h2>
+  <p class="artifact-lede">{{ chart.maxDuration.duration }} of {{ c.run.elapsed }} elapsed — every other stage came in under seven minutes.</p>
+  <div class="bars" role="img" aria-label="Bar chart of stage durations; design longest at {{ chart.maxDuration.duration }}">
+    {% for b in chart.bars %}
+    <div class="bar-row">
+      <span class="bar-label">{{ b.label }}</span>
+      <span class="bar-track"><span class="bar bar-{{ b.state }}" style="--pct: {{ b.pct }}"></span></span>
+      <span class="bar-value">{{ b.duration }}</span>
+    </div>
+    {% endfor %}
+  </div>
+  <p class="chart-note muted"><span class="legend-swatch"></span>{{ c.t.chartNote }}</p>
+</article>
+{% endmacro %}
+
+{% macro logCanvas(c, messages) %}
+<article class="artifact log-artifact">
+  <header class="artifact-head">
+    <span class="eyebrow">{{ c.t.logEyebrow }} · run #{{ c.run.number }}</span>
+    <span class="chip">{{ c.run.elapsed }} elapsed</span>
+  </header>
+  <h2 class="display">The whole line, in order</h2>
+  <div class="log-lines">
+    {% for m in messages %}
+    <p class="log-line log-{{ m.from }} {{ 'log-tone-' + m.tone if m.tone }}">
+      <span class="log-time">{{ m.at }}</span>
+      <span class="log-who">{{ 'you' if m.from == 'user' else 'agent' }}</span>
+      <span class="log-text">{{ m.text }}</span>
+    </p>
+    {% endfor %}
+  </div>
+</article>
+{% endmacro %}
+
+{% macro viewerSwap(c) %}{{ dv.designViewer(c.viewer) }}{% endmacro %}
+
+{% macro evidenceCanvas(c, evidence) %}
+<article class="artifact evidence-artifact">
+  <header class="artifact-head">
+    <span class="eyebrow">{{ c.t.evidenceEyebrow }}</span>
+  </header>
+  <h2 class="display">{{ c.t.evidenceHeadline }}</h2>
+  <p class="artifact-lede">{{ c.t.evidenceLede }}</p>
+  {% if c.viewer %}{{ dv.designViewer(c.viewer) }}{% endif %}
+</article>
+{% endmacro %}
+
+{% macro canvasArtifact(c) %}
+{% set a = c.artifact %}
+{% if a.kind == 'gate' %}{{ gateCanvas(c, a.gate) }}
+{% elif a.kind == 'stage' %}{{ stageCanvas(c, a.stage, a.stageCount) }}
+{% elif a.kind == 'findings' %}{{ findingsCanvas(c, a) }}
+{% elif a.kind == 'chart' %}{{ chartCanvas(c, a.chart) }}
+{% elif a.kind == 'log' %}{{ logCanvas(c, a.messages) }}
+{% elif a.kind == 'evidence' %}{{ evidenceCanvas(c, a.evidence) }}
+{% endif %}
+{% endmacro %}
+
+{# ---------- Fragment responses ----------
+   The canvas swap always re-marks the rail's active card and refreshes the
+   stage bar (it is scoped to the artifact). Gate decisions and stage controls
+   also refresh the shell timeline; a decision adds a toast. #}
+{% macro canvasSwap(c) %}
+{{ canvasArtifact(c) }}
+{{ railList(c, true) }}
+{{ stageBar(c, true) }}
+{% endmacro %}
+
+{% macro messageSwap(c) %}
+{{ canvasArtifact(c) }}
+{{ railList(c, true) }}
+{{ composer(c, true) }}
+{{ stageBar(c, true) }}
+{% endmacro %}
+
+{% macro decisionSwap(c) %}
+{{ canvasArtifact(c) }}
+{{ railList(c, true) }}
+{{ timeline(c, true) }}
+{{ stageBar(c, true) }}
+{# htmx unwraps the OOB carrier for beforeend — the toast must be nested #}
+<div hx-swap-oob="beforeend:#toasts"><div class="toast" id="toast-decision">{{ c.run.stateLabel }}</div></div>
+{% endmacro %}
+
+{% macro controlSwap(c) %}
+{{ canvasArtifact(c) }}
+{{ railList(c, true) }}
+{{ timeline(c, true) }}
+{{ stageBar(c, true) }}
+{% endmacro %}
+
+{% macro filterSwap(c) %}
+{{ railList(c, false) }}
+{{ railBar(c, true) }}
+{% endmacro %}
+
+{% macro runSwap(c) %}
+{{ railBar(c, false) }}
+{{ railList(c, true) }}
+<div hx-swap-oob="beforeend:#toasts"><div class="toast" id="toast-run">{{ c.run.stateLabel }}</div></div>
+{% endmacro %}
+
+{% macro barSwap(c) %}
+{{ stageBar(c, false) }}
+{% endmacro %}
+
+{% macro scopedSwap(c) %}
+{{ stageBar(c, false) }}
+{{ railList(c, true) }}
+{% if c.opFired %}
+{# a typed op changed the stage — refresh the canvas and timeline too #}
+<div hx-swap-oob="innerHTML:#canvas">{{ canvasArtifact(c) }}</div>
+{{ timeline(c, true) }}
+{% endif %}
+{% endmacro %}
+
+{# ---------- Page ---------- #}
+
+{% block timeline %}
+{{ timeline(c, false) }}
+{% endblock %}
+
+{% block surface %}
+<div class="loop-zones">
+  <aside class="rail" aria-label="Agent narrative">
+    {{ railBar(c, false) }}
+    {{ railList(c, false) }}
+    {{ composer(c, false) }}
+  </aside>
+  <section class="canvas" id="canvas" aria-live="polite">
+    {{ canvasArtifact(c) }}
+  </section>
+  {{ stageBar(c, false) }}
+</div>
+{% endblock %}

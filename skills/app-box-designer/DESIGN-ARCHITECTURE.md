@@ -52,6 +52,15 @@ A ViewModel is its own artifact, not a section of a View. `*_viewmodel.js` co-lo
 
 A ViewModel never renders a template string itself and never touches a repository — both are boundary violations.
 
+## Shared components (views)
+
+A UI pattern that appears on two surfaces is extracted, never copied. The moment a second surface needs a rail, a card, a timeline bar, a shell nav, a composer, a viewer — it moves to a shared partial under `ui/common/` as a parameterized macro, and both surfaces call it. Three near-identical implementations of the same widget is the most expensive drift this medium allows: each copy silently diverges (the rail that pauses differently, the scrollbar that tints differently) and the scaffold downstream inherits the divergence.
+
+- `ui/common/` owns cross-surface macros: shell chrome (nav, timeline), the rail (top bar, card shell, composer), the design viewer, primitives.
+- Per-surface views keep only what is genuinely theirs: the card's domain content, the canvas artifact's body.
+- Parameters travel through the macro's context (e.g. a `base` path prefix); session state stays namespaced per tab in the facade.
+- The same rule applies to CSS: shared component styles live in the artifact's main stylesheet, not duplicated across per-surface CSS files. Scrollbars always blend (transparent track, theme-ink thumb) — see the starter's `app.css`.
+
 ## Motion vocabulary
 
 No JS animation engine exists in this medium. Motion is realized entirely as CSS transitions/animations driven by htmx's swap-lifecycle classes and native browser primitives (View Transitions, Popover, `<details>`). Motion is the one channel that survives the pipeline freeze gate untouched — tokens and vocabulary below live in-artifact and are not subject to freeze.

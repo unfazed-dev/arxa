@@ -1,0 +1,126 @@
+{% extends "ui/views/main_shell/main_shell_view.html" %}
+{% import "ui/common/primitives.html" as prim %}
+{% import "ui/common/timeline.html" as tl %}
+{% block title %}appbox — Freeze & Trace{% endblock %}
+
+{# ---------- Named Fragments (renderable alone via freeze_view.html#macro) ----------
+   Timeline and the status pill come from ui/common/*; the manifest, trace,
+   traceability and drift cards stay here — they are freeze's own. #}
+
+{% macro timeline(c, oob) %}{{ tl.timeline(c, oob, 'Design progress') }}{% endmacro %}
+
+{# ---------- The manifest: what is locked, who signed it ---------- #}
+
+{% macro manifestCard(c) %}
+<article class="artifact freeze-manifest">
+  <header class="artifact-head">
+    <span class="eyebrow">freeze manifest · {{ c.manifest.id }}</span>
+    {{ prim.statusPill('frozen') }}
+  </header>
+  <h2 class="display">Frozen — {{ c.manifest.id }}</h2>
+  <p class="artifact-lede">{{ c.t.freezeLede }}</p>
+  <p class="big-metric">{{ c.manifest.goldens }}<span class="big-metric-label">goldens · {{ c.manifest.surfaces }} surfaces · {{ c.manifest.rungs }}</span></p>
+  <div class="evidence-chain">
+    <span class="fact"><span class="fact-label">manifest</span><code>{{ c.manifest.hash }}</code></span>
+    <span class="fact"><span class="fact-label">frozen</span>{{ c.manifest.frozenAt }}</span>
+  </div>
+  <dl class="provenance">
+    <div><dt>approved by</dt><dd>{{ c.manifest.provenance.by }} · {{ c.manifest.provenance.shell }}</dd></div>
+    <div><dt>device</dt><dd>{{ c.manifest.provenance.device }}</dd></div>
+    <div><dt>confirm</dt><dd>{{ c.manifest.provenance.method }} · {{ c.manifest.provenance.at }}</dd></div>
+    <div><dt>content hash</dt><dd><code>{{ c.manifest.provenance.hash }}</code></dd></div>
+  </dl>
+  <p class="artifact-foot muted">{{ c.manifest.structure }}</p>
+</article>
+{% endmacro %}
+
+{# ---------- The trace: approvals and provenance, in order ---------- #}
+
+{% macro traceCard(c) %}
+<article class="artifact">
+  <header class="artifact-head">
+    <span class="eyebrow">{{ c.t.traceEyebrow }}</span>
+  </header>
+  <div class="log-lines">
+    {% for e in c.trace %}
+    <p class="log-line log-{{ 'user' if e.who == 'you' else 'agent' }}">
+      <span class="log-time">{{ e.at }}</span>
+      <span class="log-who">{{ e.who }}</span>
+      <span class="log-text">{{ e.text }}</span>
+    </p>
+    {% endfor %}
+  </div>
+</article>
+{% endmacro %}
+
+{# ---------- Traceability: brief story → surface → code ---------- #}
+
+{% macro traceabilityCard(c) %}
+<article class="artifact">
+  <header class="artifact-head">
+    <span class="eyebrow">{{ c.t.traceabilityEyebrow }}</span>
+    <span class="chip">{{ c.traceability | length }} traced</span>
+  </header>
+  <div class="trace-rows">
+    {% for r in c.traceability %}
+    <div class="trace-row">
+      <code class="trace-surface">{{ r.surface }}</code>
+      <span class="trace-story">{{ r.story }}</span>
+      <span class="trace-code"><code>{{ r.code }}</code> <span class="muted">· {{ r.files }} files</span></span>
+    </div>
+    {% endfor %}
+  </div>
+</article>
+{% endmacro %}
+
+{# ---------- Drift: the loud stale guard ---------- #}
+
+{% macro driftCard(c, oob) %}
+<article class="artifact" id="drift" {% if oob %}hx-swap-oob="outerHTML"{% endif %}>
+  <header class="artifact-head">
+    <span class="eyebrow">drift report · checked {{ c.drift.checked }}</span>
+    {{ prim.statusPill('pass' if c.drift.clean else 'red') }}
+  </header>
+  <h2 class="display">{{ c.drift.matched }} goldens match</h2>
+  <p class="artifact-lede">{{ c.t.driftLede }}</p>
+  {% for h in c.drift.history %}
+  <div class="finding finding-warning">
+    <header class="finding-head">
+      <span class="sev sev-warning">{{ h.state }}</span>
+      <span class="finding-check muted">{{ h.at }}</span>
+    </header>
+    <p class="finding-note">{{ h.text }}</p>
+    <footer class="finding-foot">
+      <span class="muted">re-frozen hash <code>{{ h.hash }}</code></span>
+    </footer>
+  </div>
+  {% endfor %}
+  <form method="post" action="/design/freeze/recheck"
+        hx-post="/design/freeze/recheck" hx-target="#drift" hx-swap="outerHTML">
+    <button type="submit" class="ghost">↻ re-run drift check</button>
+    <span class="htmx-indicator muted">hashing goldens…</span>
+  </form>
+</article>
+{% endmacro %}
+
+{# ---------- Fragment responses ---------- #}
+
+{% macro driftSwap(c) %}
+{{ driftCard(c, false) }}
+<div hx-swap-oob="beforeend:#toasts"><div class="toast" id="toast-drift">{{ c.toast }}</div></div>
+{% endmacro %}
+
+{# ---------- Page ---------- #}
+
+{% block timeline %}
+{{ timeline(c, false) }}
+{% endblock %}
+
+{% block surface %}
+<div class="freeze-stack">
+  {{ manifestCard(c) }}
+  {{ traceCard(c) }}
+  {{ traceabilityCard(c) }}
+  {{ driftCard(c, false) }}
+</div>
+{% endblock %}

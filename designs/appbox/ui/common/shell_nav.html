@@ -1,0 +1,22 @@
+{# The shell's top nav — brand, tab strip, daemon channel, theme toggle.
+   One nav for every surface in main_shell; extracted from
+   main_shell_view.html so the chrome has a single home. #}
+{% macro shellNav(activeTab, prefs) %}
+<nav class="shell-nav">
+  <a class="shell-brand" href="/">appbox</a>
+  <span class="shell-tabs">
+    <a class="shell-tab {{ 'is-active' if activeTab == 'intake' }}" href="/intake">Intake</a>
+    <a class="shell-tab {{ 'is-active' if activeTab == 'design' }}" href="/design">Design</a>
+    <a class="shell-tab {{ 'is-active' if activeTab == 'build' }}" href="/build">Build</a>
+    <a class="shell-tab {{ 'is-active' if activeTab == 'index' }}" href="/">Surfaces</a>
+    <a class="shell-tab {{ 'is-active' if activeTab == 'workspace' }}" href="/workspace">Settings</a>
+  </span>
+  <span class="shell-nav-spacer"></span>
+  <span class="channel" title="daemon channel">
+    <span class="channel-dot"></span><span class="channel-label">daemon live</span>
+  </span>
+  <form method="post" action="/prefs/theme" hx-post="/prefs/theme" hx-swap="none">
+    <button type="submit" class="ghost">{{ 'Light' if (prefs.theme or 'light') == 'dark' else 'Dark' }}</button>
+  </form>
+</nav>
+{% endmacro %}

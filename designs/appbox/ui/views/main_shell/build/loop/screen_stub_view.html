@@ -1,0 +1,76 @@
+<!doctype html>
+{# Stand-in render of a client design screen, served as the iframe document
+   on the evidence canvas. In the shipped app this src is the designer
+   artifact the daemon serves; here it is an honest labelled stub. #}
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ surface }} · {{ vp }}</title>
+  <link rel="stylesheet" href="/assets/css/app.css">
+</head>
+<body class="stub-body">
+<div id="app" data-theme="{{ theme }}" data-accent="cyan">
+  <div class="stub-screen" style="max-width: {{ width }}px">
+    <header class="stub-nav">
+      {% if kind in ['home', 'cart', 'checkout', 'confirmation'] %}
+      <span class="stub-brand">Petal &amp; Stem</span>
+      {% else %}
+      <span class="stub-brand">appbox</span>
+      {% endif %}
+      {% if kind == 'home' %}<span class="stub-nav-links">Shop · Occasions · About</span>{% endif %}
+      {% if kind == 'cart' %}<span class="stub-nav-links">Your cart</span>{% endif %}
+      {% if kind == 'checkout' %}<span class="stub-nav-links">Checkout</span>{% endif %}
+      {% if kind == 'confirmation' %}<span class="stub-nav-links">Order #PS-1042</span>{% endif %}
+      {% if kind not in ['home', 'cart', 'checkout', 'confirmation'] %}<span class="stub-nav-links">{{ kind | capitalize }}</span>{% endif %}
+    </header>
+
+    {% if kind == 'home' %}
+    <section class="stub-hero">
+      <h1>Fresh stems, same day</h1>
+      <p>Hand-tied in the studio this morning.</p>
+    </section>
+    <section class="stub-grid">
+      {% for i in [1, 2, 3, 4, 5, 6] %}
+      <article class="stub-card"><span class="stub-thumb"></span><b>Bouquet {{ i }}</b><span class="stub-price">$4{{ i }}</span></article>
+      {% endfor %}
+    </section>
+    {% elif kind == 'cart' %}
+    <section class="stub-rows">
+      {% for i in [1, 2, 3] %}
+      <div class="stub-row"><span class="stub-thumb sm"></span><span class="stub-row-name">Bouquet {{ i }}</span><span class="stub-price">$4{{ i }}</span></div>
+      {% endfor %}
+    </section>
+    <footer class="stub-summary"><span>Total</span><b>$136</b></footer>
+    {% elif kind == 'checkout' %}
+    <section class="stub-form">
+      {% for f in ['Delivery address', 'Delivery date', 'Card for the occasion', 'Payment'] %}
+      <div class="stub-field"><label>{{ f }}</label><span class="stub-input"></span></div>
+      {% endfor %}
+      <button class="stub-cta">Place order</button>
+    </section>
+    {% elif kind == 'confirmation' %}
+    <section class="stub-hero center">
+      <span class="stub-check">✓</span>
+      <h1>Order placed</h1>
+      <p>Bouquets arrive Thursday before noon.</p>
+    </section>
+    {% else %}
+    {# Generic fallback: any surface without a bespoke stub renders an honest
+       labelled placeholder — nav carries the name, a few blocks stand in. #}
+    <section class="stub-hero">
+      <h1>{{ kind | capitalize }}</h1>
+      <p>Design preview — the shipped render takes this frame.</p>
+    </section>
+    <section class="stub-rows">
+      {% for i in [1, 2, 3] %}
+      <div class="stub-row"><span class="stub-thumb sm"></span><span class="stub-row-name">{{ kind }} block {{ i }}</span></div>
+      {% endfor %}
+    </section>
+    {% endif %}
+
+    <span class="stub-tag">{{ surface }} · {{ vp }} · design preview</span>
+  </div>
+</div>
+</body>
+</html>

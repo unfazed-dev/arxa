@@ -1,0 +1,140 @@
+/* intake.css — intake.* surfaces: story map grid, brief document, moodboard
+   gallery. Builds on app.css tokens + the loop zones; nothing here restyles
+   shared chrome. Linked per-page via head-support (see _integration_intake.md). */
+
+/* ---------- rail card type badges (intake kinds) ---------- */
+.tb-map, .tb-gallery { color: var(--accent); background: var(--accent-soft); }
+.tb-story, .tb-shot { color: var(--ok); background: var(--ok-soft); }
+.tb-doc, .tb-surfaces { color: var(--tx-2); background: var(--bg-2); box-shadow: inset 0 0 0 1px var(--border); }
+
+/* ---------- MoSCoW priority chips ---------- */
+.pri-chip {
+  font-family: 'Lexend Deca', 'Lexend', sans-serif;
+  font-size: .62rem; font-weight: 500; letter-spacing: .08em; text-transform: uppercase;
+  padding: .14rem .55rem; border-radius: 999px; white-space: nowrap;
+}
+.pri-must { color: var(--accent); background: var(--accent-soft); }
+.pri-should { color: var(--amber); background: var(--amber-soft); }
+.pri-could { color: var(--tx-2); background: var(--bg-2); box-shadow: inset 0 0 0 1px var(--border); }
+
+/* ---------- intake.mapping: the story map ---------- */
+.map-legend { display: flex; gap: .4rem; flex-wrap: wrap; }
+.swimlane { margin-top: 1.6rem; }
+.swimlane-head { display: flex; gap: .6rem; align-items: baseline; flex-wrap: wrap; }
+.swimlane-title { margin: 0; color: var(--tx); font-size: 1.05rem; }
+.swimlane-desc { font-size: .8rem; }
+.map-grid {
+  margin-top: .8rem;
+  display: grid; gap: .8rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+  align-items: start;
+}
+.map-epic {
+  display: flex; flex-direction: column; gap: .55rem;
+  padding: .75rem .8rem; border-radius: var(--radius);
+  background: var(--bg-2); border: 1px solid var(--border);
+}
+.map-epic-name {
+  margin: 0; font-size: .82rem; font-weight: 600; color: var(--tx);
+}
+.map-feature { display: flex; flex-direction: column; gap: .35rem; }
+.map-feature-name {
+  font-family: 'Lexend Deca', 'Lexend', sans-serif;
+  font-size: .62rem; font-weight: 500; letter-spacing: .09em; text-transform: uppercase;
+  color: var(--tx-2);
+}
+.story-card {
+  display: flex; gap: .5rem; align-items: flex-start; justify-content: space-between;
+  padding: .5rem .6rem; border-radius: var(--radius-s);
+  background: var(--bg); border: 1px solid var(--border);
+  color: var(--tx); text-decoration: none; font-size: .8rem; line-height: 1.4;
+}
+.story-card:hover { border-color: var(--accent); filter: none; }
+.story-card.pri-must { border-left: 3px solid var(--accent); }
+.story-card.pri-should { border-left: 3px solid var(--amber); }
+.story-card.pri-could { border-left: 3px solid var(--border); }
+.story-text { min-width: 0; }
+
+/* one story, large */
+.story-artifact .display { max-width: 30ch; }
+.trace-list {
+  list-style: none; margin: .3rem 0 0; padding: 0;
+  display: flex; gap: .45rem; flex-wrap: wrap;
+}
+.trace-list li {
+  padding: .3rem .65rem; border-radius: 999px;
+  background: var(--bg-2); box-shadow: inset 0 0 0 1px var(--border);
+}
+
+/* ---------- intake.brief: the document ---------- */
+.doc-section { margin-top: 1.6rem; display: flex; flex-direction: column; gap: .6rem; }
+.doc-section h3 { margin: 0; color: var(--tx); font-size: 1rem; }
+.doc-release { display: flex; flex-direction: column; gap: .15rem; }
+.doc-release-name { font-weight: 600; display: flex; gap: .5rem; align-items: center; }
+.doc-epic { border: 1px solid var(--border); border-radius: var(--radius-s); background: var(--bg-2); }
+.doc-epic summary {
+  cursor: pointer; padding: .6rem .8rem; font-weight: 500; font-size: .9rem;
+  list-style: none;
+}
+.doc-epic summary::before { content: '▸ '; color: var(--tx-3); }
+.doc-epic[open] summary::before { content: '▾ '; }
+.doc-epic summary::-webkit-details-marker { display: none; }
+.doc-epic-body { padding: 0 .8rem .7rem; display: flex; flex-direction: column; gap: .6rem; }
+.doc-feature { display: flex; flex-direction: column; gap: .3rem; }
+.doc-stories { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .3rem; }
+.doc-stories li { display: flex; gap: .5rem; align-items: baseline; font-size: .84rem; }
+.doc-story-text { min-width: 0; flex: 1; }
+
+.inv-table { border-collapse: collapse; width: 100%; font-size: .84rem; }
+.inv-table th {
+  text-align: left; padding: .45rem .6rem;
+  font-family: 'Lexend Deca', 'Lexend', sans-serif;
+  font-size: .62rem; font-weight: 500; letter-spacing: .09em; text-transform: uppercase;
+  color: var(--tx-2); border-bottom: 1px solid var(--border);
+}
+.inv-table td { padding: .45rem .6rem; border-bottom: 1px solid var(--border); vertical-align: baseline; }
+.inv-table tr:last-child td { border-bottom: 0; }
+
+/* ---------- intake.moodboard: the gallery ---------- */
+.board { margin-top: 1.6rem; }
+.board-head { display: flex; gap: .6rem; align-items: baseline; flex-wrap: wrap; }
+.board-title { margin: 0; color: var(--tx); font-size: 1.05rem; }
+.board-slice { font-size: .8rem; margin-top: .2rem; }
+.shot-grid {
+  margin-top: .8rem;
+  display: grid; gap: .8rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+}
+.shot-card {
+  display: flex; flex-direction: column; gap: .5rem;
+  padding: .6rem; border-radius: var(--radius);
+  background: var(--bg-2); border: 1px solid var(--border);
+  color: var(--tx); text-decoration: none;
+}
+.shot-card:hover { border-color: var(--accent); filter: none; }
+.shot-card img {
+  width: 100%; aspect-ratio: 16 / 10; object-fit: cover; object-position: top;
+  border-radius: var(--radius-s); border: 1px solid var(--border);
+}
+.shot-meta { display: flex; gap: .5rem; align-items: center; justify-content: space-between; font-size: .84rem; }
+.grade { font-size: .72rem; color: var(--tx-2); white-space: nowrap; }
+.shot-full {
+  width: 100%; border-radius: var(--radius);
+  border: 1px solid var(--border); background: var(--bg-2);
+}
+
+/* ---------- rungs ---------- */
+@media (max-width: 839px) {
+  .map-grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr)); }
+  .shot-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 599px) {
+  .shot-grid { grid-template-columns: 1fr; }
+  .doc-stories li { flex-wrap: wrap; }
+  .inv-table th:nth-child(3), .inv-table td:nth-child(3) { display: none; }
+}
+
+/* ---------- motion: disclose for the brief's epics (reduced-motion gated) ---------- */
+@media (prefers-reduced-motion: no-preference) {
+  .doc-epic[open] .doc-epic-body { animation: ab-disclose var(--motion-med) var(--motion-ease); }
+}

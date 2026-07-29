@@ -1,0 +1,129 @@
+{% extends "ui/views/main_shell/main_shell_view.html" %}
+{% import "ui/views/main_shell/intake/_shared.html" as sh %}
+{% block title %}appbox — Story Mapping{% endblock %}
+{% block main_class %}shell-main-loop{% endblock %}
+
+{# ---------- Canvas artifacts ---------- #}
+
+{% macro storyCard(c, s) %}
+<a class="story-card pri-{{ s.priority }}" href="{{ c.base }}/artifact/story/{{ s.id }}"
+   hx-get="{{ c.base }}/artifact/story/{{ s.id }}" hx-target="#canvas" hx-swap="innerHTML" hx-push-url="false">
+  <span class="story-text">{{ s.name }}</span>
+  <span class="pri-chip pri-{{ s.priority }}">{{ s.priority }}</span>
+</a>
+{% endmacro %}
+
+{# The map: release swimlanes, epics as columns, stories as cards. #}
+{% macro mapCanvas(c, a) %}
+<article class="artifact map-artifact">
+  <header class="artifact-head">
+    <span class="eyebrow">story map{% if c.filter.active != 'all' %} · {{ c.filter.active }}{% endif %}</span>
+    <span class="chip">{{ a.counts.stories }} stories · {{ a.counts.epics }} epics · {{ a.counts.features }} features</span>
+  </header>
+  <h2 class="display">{{ a.headline }}</h2>
+  <p class="artifact-lede">{{ a.lede }}</p>
+  <p class="map-legend">
+    <span class="pri-chip pri-must">must · {{ a.counts.must }}</span>
+    <span class="pri-chip pri-should">should · {{ a.counts.should }}</span>
+    <span class="pri-chip pri-could">could · {{ a.counts.could }}</span>
+  </p>
+  {% for lane in a.lanes %}
+  <section class="swimlane">
+    <header class="swimlane-head">
+      <h3 class="swimlane-title">{{ lane.release.name }}</h3>
+      <span class="chip">{{ lane.release.stories }} stories</span>
+      <span class="swimlane-desc muted">{{ lane.release.description }}</span>
+    </header>
+    <div class="map-grid">
+      {% for epic in lane.epics %}
+      <div class="map-epic">
+        <h4 class="map-epic-name">{{ epic.name }}</h4>
+        {% for f in epic.features %}
+        <div class="map-feature">
+          <span class="map-feature-name">{{ f.name }}</span>
+          {% for s in f.stories %}{{ storyCard(c, s) }}{% endfor %}
+        </div>
+        {% endfor %}
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+  {% endfor %}
+</article>
+{% endmacro %}
+
+{# One story, large: priority, release, and its trace to registry surfaces. #}
+{% macro storyCanvas(c, s) %}
+<article class="artifact story-artifact">
+  <header class="artifact-head">
+    <span class="eyebrow">story · {{ s.epic }} / {{ s.feature }}</span>
+    <span class="pri-chip pri-{{ s.priority }}">{{ s.priority }}</span>
+  </header>
+  <h2 class="display">{{ s.name }}</h2>
+  <p class="artifact-lede"><span class="chip">{{ s.release }}</span></p>
+  {% if s.surfaces.length %}
+  <p class="fact-label">{{ c.t.storyTrace }}</p>
+  <ul class="trace-list">
+    {% for sid in s.surfaces %}<li><code class="surface-id">{{ sid }}</code></li>{% endfor %}
+  </ul>
+  {% endif %}
+  <p class="artifact-foot">
+    <a href="{{ c.base }}/artifact/map/full"
+       hx-get="{{ c.base }}/artifact/map/full" hx-target="#canvas" hx-swap="innerHTML" hx-push-url="false">← back to the map</a>
+  </p>
+</article>
+{% endmacro %}
+
+{% macro canvasArtifact(c) %}
+{% set a = c.artifact %}
+{% if a.kind == 'story' %}{{ storyCanvas(c, a.story) }}
+{% else %}{{ mapCanvas(c, a) }}
+{% endif %}
+{% endmacro %}
+
+{# ---------- Fragment responses ---------- #}
+
+{% macro canvasSwap(c) %}
+{{ canvasArtifact(c) }}
+{{ sh.railList(c, true) }}
+{{ sh.stageBar(c, true) }}
+{% endmacro %}
+
+{% macro messageSwap(c) %}
+{{ canvasArtifact(c) }}
+{{ sh.railList(c, true) }}
+{{ sh.composer(c, true) }}
+{{ sh.stageBar(c, true) }}
+{% endmacro %}
+
+{% macro filterSwap(c) %}
+{{ canvasArtifact(c) }}
+{{ sh.railBar(c, true) }}
+{{ sh.railList(c, true) }}
+{{ sh.stageBar(c, true) }}
+{% endmacro %}
+
+{% macro barSwap(c) %}
+{{ sh.stageBar(c, false) }}
+{% endmacro %}
+
+{% macro scopedSwap(c) %}
+{{ sh.stageBar(c, false) }}
+{{ sh.railList(c, true) }}
+{% endmacro %}
+
+{# ---------- Page ---------- #}
+
+{% block surface %}
+<div class="loop-zones">
+  <aside class="rail" aria-label="Agent narrative">
+    {{ sh.railBar(c, false) }}
+    {{ sh.railList(c, false) }}
+    {{ sh.composer(c, false) }}
+  </aside>
+  <section class="canvas" id="canvas" aria-live="polite">
+    {{ canvasArtifact(c) }}
+  </section>
+  {{ sh.stageBar(c, false) }}
+</div>
+{% endblock %}

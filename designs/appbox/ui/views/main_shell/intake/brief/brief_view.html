@@ -1,0 +1,143 @@
+{% extends "ui/views/main_shell/main_shell_view.html" %}
+{% import "ui/views/main_shell/intake/_shared.html" as sh %}
+{% block title %}appbox — Design Brief{% endblock %}
+{% block main_class %}shell-main-loop{% endblock %}
+
+{# ---------- Canvas artifacts ---------- #}
+
+{# The surface inventory table — standalone artifact and the brief's last section. #}
+{% macro inventory(c, surfaces) %}
+<table class="inv-table">
+  <thead>
+    <tr><th>id</th><th>label</th><th>priority</th><th>release</th></tr>
+  </thead>
+  <tbody>
+    {% for s in surfaces %}
+    <tr>
+      <td><code class="surface-id">{{ s.id }}</code></td>
+      <td>{{ s.label }}</td>
+      <td><span class="pri-chip pri-{{ s.priority }}">{{ s.priority }}</span></td>
+      <td><span class="chip">{{ s.release }}</span></td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endmacro %}
+
+{# The whole brief, rendered as the generated document. #}
+{% macro docCanvas(c, a) %}
+<article class="artifact doc-artifact">
+  <header class="artifact-head">
+    <span class="eyebrow">design brief · generated</span>
+    <span class="chip">{{ a.brief.surfaces | length }} surfaces traced</span>
+  </header>
+  <h2 class="display">{{ a.brief.title }}</h2>
+  <p class="artifact-detail muted">{{ a.brief.provenance }}</p>
+  <p class="artifact-lede">{{ a.lede }}</p>
+
+  <section class="doc-section">
+    <h3>Releases</h3>
+    {% for r in a.releases %}
+    <div class="doc-release">
+      <span class="doc-release-name">{{ r.name }} <span class="chip">{{ r.stories }} stories</span></span>
+      <p class="muted">{{ r.description }}</p>
+    </div>
+    {% endfor %}
+  </section>
+
+  <section class="doc-section">
+    <h3>The things the app must do</h3>
+    {% for e in a.epics %}
+    <details class="doc-epic">
+      <summary>{{ e.name }} <span class="muted">· {{ e.features | length }} features · {{ e.storyCount }} stories</span></summary>
+      <div class="doc-epic-body">
+        {% for f in e.features %}
+        <div class="doc-feature">
+          <span class="map-feature-name">{{ f.name }}</span>
+          <ul class="doc-stories">
+            {% for s in f.stories %}
+            <li>
+              <span class="pri-chip pri-{{ s.priority }}">{{ s.priority }}</span>
+              <span class="doc-story-text">{{ s.name }}</span>
+              <span class="chip">{{ s.release }}</span>
+            </li>
+            {% endfor %}
+          </ul>
+        </div>
+        {% endfor %}
+      </div>
+    </details>
+    {% endfor %}
+  </section>
+
+  <section class="doc-section">
+    <h3>Surface inventory</h3>
+    <p class="muted">{{ a.brief.surfaceNote }}</p>
+    {{ inventory(c, a.brief.surfaces) }}
+  </section>
+</article>
+{% endmacro %}
+
+{# The inventory on its own — the table the designer consumes. #}
+{% macro surfacesCanvas(c, a) %}
+<article class="artifact surfaces-artifact">
+  <header class="artifact-head">
+    <span class="eyebrow">surface inventory · registry seed</span>
+    <span class="chip">{{ a.surfaces | length }} surfaces</span>
+  </header>
+  <h2 class="display">{{ a.headline }}</h2>
+  <p class="artifact-lede">{{ a.lede }}</p>
+  {{ inventory(c, a.surfaces) }}
+  <p class="artifact-foot">
+    <a href="{{ c.base }}/artifact/doc/full"
+       hx-get="{{ c.base }}/artifact/doc/full" hx-target="#canvas" hx-swap="innerHTML" hx-push-url="false">← back to the brief</a>
+  </p>
+</article>
+{% endmacro %}
+
+{% macro canvasArtifact(c) %}
+{% set a = c.artifact %}
+{% if a.kind == 'surfaces' %}{{ surfacesCanvas(c, a) }}
+{% else %}{{ docCanvas(c, a) }}
+{% endif %}
+{% endmacro %}
+
+{# ---------- Fragment responses ---------- #}
+
+{% macro canvasSwap(c) %}
+{{ canvasArtifact(c) }}
+{{ sh.railList(c, true) }}
+{{ sh.stageBar(c, true) }}
+{% endmacro %}
+
+{% macro messageSwap(c) %}
+{{ canvasArtifact(c) }}
+{{ sh.railList(c, true) }}
+{{ sh.composer(c, true) }}
+{{ sh.stageBar(c, true) }}
+{% endmacro %}
+
+{% macro barSwap(c) %}
+{{ sh.stageBar(c, false) }}
+{% endmacro %}
+
+{% macro scopedSwap(c) %}
+{{ sh.stageBar(c, false) }}
+{{ sh.railList(c, true) }}
+{% endmacro %}
+
+{# ---------- Page ---------- #}
+
+{% block surface %}
+<div class="loop-zones">
+  <aside class="rail" aria-label="Agent narrative">
+    {{ sh.railBar(c, false) }}
+    {{ sh.railList(c, false) }}
+    {{ sh.composer(c, false) }}
+  </aside>
+  <section class="canvas" id="canvas" aria-live="polite">
+    {{ canvasArtifact(c) }}
+  </section>
+  {{ sh.stageBar(c, false) }}
+</div>
+{% endblock %}

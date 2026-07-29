@@ -139,6 +139,8 @@ app-box
 - [must/R1 Dogfood] BYO key in OS vault, never logged; no inference metering, cost is yours and visible
 - [must/R1 Dogfood] Flat licence, never per-seat; pay at first deploy
 - [should/R1 Dogfood] Kit vendoring from targets + capabilities; dependencyMode config from day one
+- [should/R1 Dogfood] Appearance prefs per device: warm light/dark theme + brand accent picker (cyan/violet/blue/ember from the logo)
+- [must/R1 Dogfood] Language level plain/balanced/technical — every user-facing string written three ways; visual metrics render as X/100 match scores (ΔE 2.0 = 95/100 pass bar), technical level keeps raw values
 
 ### Website
 

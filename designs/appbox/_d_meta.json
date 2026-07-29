@@ -11,8 +11,44 @@
           "status": "needs-review"
         }
       ]
+    },
+    "build-loop-directions": {
+      "versions": [
+        {
+          "path": "assets/variant-comparison.html",
+          "createdAt": "2026-07-28T13:20:11.003Z",
+          "status": "needs-review"
+        }
+      ]
+    },
+    "build.loop": {
+      "versions": [
+        {
+          "path": "ui/views/main_shell/build/loop/loop_view.html",
+          "createdAt": "2026-07-28T22:34:52.249Z",
+          "status": "needs-review"
+        }
+      ]
+    },
+    "workspace.settings": {
+      "versions": [
+        {
+          "path": "ui/views/workspace_shell/settings/settings_view.html",
+          "createdAt": "2026-07-28T22:34:52.275Z",
+          "status": "needs-review"
+        }
+      ]
+    },
+    "build-loop-batch2": {
+      "versions": [
+        {
+          "path": "assets/variant-comparison-2.html",
+          "createdAt": "2026-07-28T22:34:52.297Z",
+          "status": "approved"
+        }
+      ]
     }
   },
   "createdAt": "2026-07-28T12:30:25.956Z",
-  "updatedAt": "2026-07-28T12:30:25.956Z"
+  "updatedAt": "2026-07-28T22:34:52.298Z"
 }
