@@ -6,26 +6,29 @@ import * as brief from './brief/brief_viewmodel.js';
 import * as moodboard from './moodboard/moodboard_viewmodel.js';
 
 export default [
-  // intake.mapping — Story Mapping (the intake tab root)
+  // intake.mapping — Story Mapping (the intake tab root IS the chat interview)
   ['GET', '/intake', mapping.page],
-  ['GET', '/intake/filter', mapping.filter],
   ['GET', '/intake/artifact/:kind/:id', mapping.artifact],
-  ['GET', '/intake/bar/:kind/:id', mapping.bar],
-  ['POST', '/intake/artifact/:kind/:id/messages', mapping.askArtifact],
+  ['GET', '/intake/close', mapping.close],
+  ['GET', '/intake/rail', mapping.rail],
   ['POST', '/intake/messages', mapping.sendMessage],
+  ['POST', '/intake/depth', mapping.depth],
+  ['POST', '/intake/answer', mapping.answer],
+  ['POST', '/intake/skip', mapping.skip],
+  ['GET', '/intake/edit', mapping.edit],
+  ['POST', '/intake/approve', mapping.approve],
 
   // intake.brief — Design Brief
   ['GET', '/intake/brief', brief.page],
   ['GET', '/intake/brief/artifact/:kind/:id', brief.artifact],
-  ['GET', '/intake/brief/bar/:kind/:id', brief.bar],
-  ['POST', '/intake/brief/artifact/:kind/:id/messages', brief.askArtifact],
+  ['GET', '/intake/brief/close', brief.close],
+  ['GET', '/intake/brief/rail', brief.rail],
   ['POST', '/intake/brief/messages', brief.sendMessage],
 
   // intake.moodboard — Moodboard
   ['GET', '/intake/moodboard', moodboard.page],
-  ['GET', '/intake/moodboard/filter', moodboard.filter],
   ['GET', '/intake/moodboard/artifact/:kind/:id', moodboard.artifact],
-  ['GET', '/intake/moodboard/bar/:kind/:id', moodboard.bar],
-  ['POST', '/intake/moodboard/artifact/:kind/:id/messages', moodboard.askArtifact],
+  ['GET', '/intake/moodboard/close', moodboard.close],
+  ['GET', '/intake/moodboard/rail', moodboard.rail],
   ['POST', '/intake/moodboard/messages', moodboard.sendMessage],
 ];

@@ -273,6 +273,68 @@
       ]
     }
   ],
+  "commits": [
+    {
+      "hash": "9c41e2a",
+      "message": "chore(intake): story map approved — 42 stories, MoSCoW applied",
+      "at": "09:18",
+      "state": "green"
+    },
+    {
+      "hash": "f0b77c1",
+      "message": "chore(design): 11 surfaces frozen, 33 goldens hashed (frz_9c41e2)",
+      "at": "09:41",
+      "state": "green"
+    },
+    {
+      "hash": "3d5a8e0",
+      "message": "chore(build): scaffold 44 files — 11 surfaces × 4 per ios target",
+      "at": "09:43",
+      "state": "green"
+    },
+    {
+      "hash": "7e2c91b",
+      "message": "fix(build): order.cart authored layer — coverage attempt 2 green",
+      "at": "09:57",
+      "state": "green"
+    },
+    {
+      "hash": "b8e04f2",
+      "message": "chore(build): review clean — arch_guard, ponytail-review 0 findings",
+      "at": "09:59",
+      "state": "green"
+    }
+  ],
+  "files": [
+    {
+      "path": "app/lib/ui/views/order/cart_view.dart",
+      "status": "changed"
+    },
+    {
+      "path": "app/test/ui/views/order/cart_viewmodel_test.dart",
+      "status": "new"
+    },
+    {
+      "path": "app/lib/ui/views/catalog/home_view.dart",
+      "status": "new"
+    },
+    {
+      "path": "app/lib/ui/views/order/checkout_view.dart",
+      "status": "new"
+    },
+    {
+      "path": "app/lib/ui/views/order/confirmation_view.dart",
+      "status": "new"
+    },
+    {
+      "path": "designs/frozen/order.cart/expanded.png",
+      "status": "frozen"
+    },
+    {
+      "path": "docs/structure.json",
+      "status": "frozen"
+    }
+  ],
   "narrative": [
     {
       "id": "n-01",

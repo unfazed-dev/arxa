@@ -2,8 +2,7 @@
 {% import "ui/common/shell_nav.html" as shellNav %}
 {% block title %}appbox{% endblock %}
 {% block content %}
-{{ shellNav.shellNav(activeTab, prefs) }}
-{% block timeline %}{% endblock %}
+{{ shellNav.shellNav(activeTab, prefs, project) }}
 <main class="shell-main {% block main_class %}{% endblock %}">
   {% block surface %}
   <h1 class="display">Design index</h1>
@@ -29,4 +28,5 @@
   {% endfor %}
   {% endblock %}
 </main>
+<footer id="bottom-bar">{% block bottombar %}{% endblock %}</footer>
 {% endblock %}

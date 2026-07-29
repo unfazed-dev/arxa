@@ -1,148 +1,247 @@
 {% extends "ui/views/main_shell/main_shell_view.html" %}
 {% import "ui/common/primitives.html" as prim %}
-{% import "ui/common/rail.html" as rail %}
 {% import "ui/common/timeline.html" as tl %}
 {% import "ui/common/design_viewer.html" as dv %}
+{% import "ui/common/chat_stage.html" as cs %}
+{% import "ui/common/rail_views.html" as mv %}
 {% block title %}appbox — Build Monitor{% endblock %}
 {% block main_class %}shell-main-loop{% endblock %}
 
-{# ---------- Named Fragments (renderable alone via loop_view.html#macro) ----------
-   The rail chrome (top bar, card shell, list, composer), the shell timeline,
-   and the status pill / type badge live in ui/common/*. The macros below are
-   build's parameterization of them; the stage bar and the canvas artifacts
-   stay here — they are build's own. #}
+{# ---------- Build loop, chat-centric ----------
+   The run thread IS the chat: stage / evidence / chart / gate cards stream
+   into the chat stage — centered when nothing is open, docked right when an
+   artifact is on the canvas. Gate decisions are chat acts: Approve/Reject
+   buttons inline on the gate card, and "reject with note" pins the gate as a
+   composer context chip (the next message is the note + the rejection).
+   The left multi-view rail carries run controls, the thread filter, the
+   artifact index, and the seeded commits/files views. #}
 
-{# Rail top bar: run state + facts on the left, rail actions on the right —
-   filter the narrative by card type, pause/resume the whole line. #}
-{% macro railBar(c, oob) %}
-{{ rail.railBar(c, oob, {
-  eyebrow: 'run #' + c.run.number + ' · ' + c.run.brief,
-  state: c.run.stateLabel,
-  facts: ['started ' + c.run.started,
-          'elapsed ' + c.run.elapsed,
-          c.t.railStopOnRed + ' ' + ('on' if c.run.policy.stopOnRed else 'off'),
-          c.t.railEsc + ' ' + c.run.policy.escLimit],
-  filter: {
-    summaryAria: 'Filter cards by type', summaryTitle: 'Filter cards',
-    summary: {'all': 'all', 'stage': 'stages', 'gate': 'gates', 'findings': 'findings', 'evidence': 'evidence', 'note': 'notes'}[c.filter],
-    target: '#rail-list', swap: 'outerHTML', url: '/build/rail?type=', active: c.filter,
-    options: [{id: 'all', label: 'all'}, {id: 'stage', label: 'stages'}, {id: 'gate', label: 'gates'},
-              {id: 'findings', label: 'findings'}, {id: 'evidence', label: 'evidence'}, {id: 'note', label: 'notes'}]
-  },
-  control: {
-    action: '/build/run/control',
-    value: 'resume' if c.run.pausedByYou else 'pause',
-    title: 'Resume the run' if c.run.pausedByYou else 'Pause the run',
-    glyph: '→' if c.run.pausedByYou else '‖'
-  }
-}) }}
-{% endmacro %}
+{# ---------- the chat: thread cards + composer (inside cs.wrap) ---------- #}
 
-{% macro railList(c, oob) %}{{ rail.railList(c, oob, '/build/artifact') }}{% endmacro %}
-
-{# Composer: pill, leading + (suggestions), trailing send. #}
-{% macro composer(c, oob) %}
-{{ rail.composer(c, oob, {
-  action: '/build/messages',
-  suggestions: [{value: 'Why did coverage fail on attempt 1?', label: 'Why did coverage fail?'},
-                {value: 'How long did each stage take?', label: 'Stage timings'},
-                {value: 'Show the full log', label: 'Full log'}],
-  placeholder: 'Ask the run…', ariaLabel: 'Message the build agent'
-}) }}
-{% endmacro %}
-
-{# ---------- The shell timeline: the whole line, current highlighted ---------- #}
-
-{% macro timeline(c, oob) %}{{ tl.timeline(c, oob, 'Pipeline progress', '/build') }}{% endmacro %}
-
-{# ---------- The stage bar: FAB → floating toolbar for the canvas artifact ---------- #}
-
-{% macro stageBar(c, oob) %}
-<div class="stage-bar-wrap" id="stage-bar" {% if oob %}hx-swap-oob="outerHTML"{% endif %}>
-  {% if c.barOpen %}
-  {% if c.bar.kind == 'evidence' and not c.barMode %}
-  {# Smart FAB: this canvas does two things — talk about the evidence, or
-     inspect the designs. Pick one; the other is a tap away. #}
-  <div class="stage-bar stage-bar-choose">
-    <span class="bar-hint">This canvas has a thread and the live designs.</span>
-    <span class="bar-actions">
-      <a class="btn-approve" href="/build/bar/{{ c.activeArtifact }}?state=open&mode=thread"
-         hx-get="/build/bar/{{ c.activeArtifact }}?state=open&mode=thread" hx-target="#stage-bar" hx-swap="outerHTML">thread — ask &amp; act</a>
-      <a class="ghost btn-like" href="/build/bar/{{ c.activeArtifact }}?state=fab"
-         hx-get="/build/bar/{{ c.activeArtifact }}?state=fab" hx-target="#stage-bar" hx-swap="outerHTML">review the designs above</a>
-      <a class="ico-btn" href="/build/bar/{{ c.activeArtifact }}?state=fab"
-         hx-get="/build/bar/{{ c.activeArtifact }}?state=fab" hx-target="#stage-bar" hx-swap="outerHTML"
-         aria-label="Close" title="Close">×</a>
-    </span>
-  </div>
-  {% else %}
-  <div class="stage-bar stage-bar-{{ c.bar.kind }}">
-    {% if c.thread.length %}
-    <div class="bar-thread" aria-label="Conversation about this {{ c.bar.kind }}">
-      {% for e in c.thread %}
-        {% if e.kind == 'user' %}
-        <p class="bt-msg bt-user">{{ e.text }}</p>
-        {% elif e.kind == 'event' %}
-        <p class="bt-event">{{ e.text }}</p>
-        {% else %}
-        <p class="bt-msg bt-agent">{{ e.text }}
-          {%- if e.link %} <a class="bt-link" href="/build/artifact/{{ e.link }}"
-             hx-get="/build/artifact/{{ e.link }}" hx-target="#canvas" hx-swap="innerHTML" hx-push-url="false">on canvas →</a>{% endif %}
-        </p>
-        {% if e.action and e.action.open %}
-        <form class="bt-action" method="post" action="/build/gates/decide"
-              hx-post="/build/gates/decide" hx-target="#canvas" hx-swap="innerHTML">
-          <input type="hidden" name="gate" value="{{ e.action.gate }}">
-          <input type="hidden" name="decision" value="{{ e.action.decision }}">
-          <button type="submit" class="{{ 'btn-approve' if e.action.decision == 'approved' else 'btn-reject ghost' }}">{{ e.action.label }}</button>
-        </form>
-        {% elif e.action %}
-        <span class="bt-action-done" title="Decided">{{ e.action.label }} ✓</span>
-        {% endif %}
-        {% endif %}
-      {% endfor %}
-    </div>
-    {% endif %}
-    <form class="bar-chat" method="post" action="/build/artifact/{{ c.activeArtifact }}/messages"
-          hx-post="/build/artifact/{{ c.activeArtifact }}/messages" hx-target="#stage-bar" hx-swap="outerHTML">
-      <input type="text" name="text" placeholder="Follow up on this {{ c.bar.kind }}…" aria-label="Follow up on this {{ c.bar.kind }}" autofocus>
-      <button type="submit" class="composer-send" aria-label="Send">↑</button>
+{# One thread card. Pending gates get inline quick-replies; every artifact
+   card keeps the "view on canvas →" CTA that docks the chat. #}
+{% macro msgCard(c, m) %}
+{% if m.from == 'user' %}
+<div class="msg msg-user">
+  <span class="msg-text">{{ m.text }}</span>
+</div>
+{% else %}
+<div class="msg msg-agent {{ 'is-active' if m.active }} {{ 'msg-tone-' + m.tone if m.tone }}">
+  <header class="msg-meta">
+    {{ prim.typeBadge(m.card.type, m.card.label) }}
+    {% if m.card.state %}{{ prim.statusPill(m.card.state) }}{% endif %}
+  </header>
+  <span class="msg-text">{{ m.text }}</span>
+  {% if m.card.detail %}<span class="msg-detail">{{ m.card.detail }}</span>{% endif %}
+  {% if m.card.type == 'gate' and m.card.state == 'pending' %}
+  <span class="gate-quick">
+    <form method="post" action="/build/gates/decide"
+          hx-post="/build/gates/decide" hx-target="#stage-layout" hx-swap="outerHTML">
+      <input type="hidden" name="gate" value="{{ m.card.gateId }}">
+      <button type="submit" name="decision" value="approved" class="btn-approve">Approve</button>
+      <button type="submit" name="decision" value="rejected" class="btn-reject ghost">Reject</button>
     </form>
-    <span class="bar-row">
-      <span class="bar-hint">{{ c.bar.hint }}</span>
-      <span class="bar-actions">
-        {% if c.bar.resumable %}
-        <form method="post" action="/build/stages/{{ c.bar.stageId }}/control"
-              hx-post="/build/stages/{{ c.bar.stageId }}/control" hx-target="#canvas" hx-swap="innerHTML">
-          <button type="submit" name="action" value="resume" class="ghost">→ resume</button>
-        </form>
-        {% endif %}
-        {% if c.bar.pauseable %}
-        <form method="post" action="/build/stages/{{ c.bar.stageId }}/control"
-              hx-post="/build/stages/{{ c.bar.stageId }}/control" hx-target="#canvas" hx-swap="innerHTML">
-          <button type="submit" name="action" value="pause" class="ghost">‖ pause</button>
-        </form>
-        {% endif %}
-        {% if c.bar.cancelable %}
-        <form method="post" action="/build/stages/{{ c.bar.stageId }}/control"
-              hx-post="/build/stages/{{ c.bar.stageId }}/control" hx-target="#canvas" hx-swap="innerHTML">
-          <button type="submit" name="action" value="cancel" class="ghost">× cancel</button>
-        </form>
-        {% endif %}
-        <a class="ico-btn" href="/build/bar/{{ c.activeArtifact }}?state=fab"
-           hx-get="/build/bar/{{ c.activeArtifact }}?state=fab" hx-target="#stage-bar" hx-swap="outerHTML"
-           aria-label="Close the toolbar" title="Close">×</a>
-      </span>
-    </span>
-  </div>
+    <a class="cta-ghost" href="/build/chips/pin?ref=gate/{{ m.card.gateId }}"
+       hx-get="/build/chips/pin?ref=gate/{{ m.card.gateId }}" hx-target="#stage-layout" hx-swap="outerHTML" hx-push-url="false"
+       title="Pin this gate above the composer — your next message is the note and the rejection">reject with note ↩</a>
+  </span>
   {% endif %}
-  {% else %}
-  <a class="fab" href="/build/bar/{{ c.activeArtifact }}?state=open"
-     hx-get="/build/bar/{{ c.activeArtifact }}?state=open" hx-target="#stage-bar" hx-swap="outerHTML"
-     aria-label="Follow-ups and actions for this view" title="Follow up · pause · cancel">?</a>
+  <footer class="msg-foot">
+    {% if m.artifact %}
+    <span class="msg-cta">
+      <a class="cta-main" href="/build/artifact/{{ m.artifact }}"
+         hx-get="/build/artifact/{{ m.artifact }}" hx-target="#stage-layout" hx-swap="outerHTML" hx-push-url="false">
+        {{ 'on canvas ●' if m.active else 'view on canvas →' }}</a>
+    </span>
+    {% endif %}
+    <span class="msg-time">{{ m.at }}</span>
+  </footer>
+</div>
+{% endif %}
+{% endmacro %}
+
+{% macro chatThread(c) %}
+<div class="rail-list chat-thread" id="chat-thread">
+  {% for m in c.messages | reverse %}
+  {{ msgCard(c, m) }}
+  {% endfor %}
+</div>
+{% endmacro %}
+
+{# The single input path. With a gate chip pinned, this is the note input —
+   the placeholder says so and the suggestion sends the rejection. #}
+{% macro composer(c) %}
+<form class="composer" id="composer" method="post" action="/build/messages"
+      hx-post="/build/messages" hx-target="#stage-layout" hx-swap="outerHTML">
+  <details class="composer-plus">
+    <summary aria-label="Suggestions">+</summary>
+    <span class="composer-sugs">
+      {% if c.noteGate %}
+      <button type="submit" name="preset" value="Not this build — see my note.">Send the note &amp; reject</button>
+      {% else %}
+      <button type="submit" name="preset" value="Why did coverage fail on attempt 1?">Why did coverage fail?</button>
+      <button type="submit" name="preset" value="How long did each stage take?">Stage timings</button>
+      <button type="submit" name="preset" value="Show the full log">Full log</button>
+      {% endif %}
+    </span>
+  </details>
+  <textarea name="text" rows="1"
+            placeholder="{{ 'Note for the record — it ships with the reject' if c.noteGate else 'Ask the run…' }}"
+            aria-label="{{ 'Note for the record' if c.noteGate else 'Message the build agent' }}"></textarea>
+  <button type="submit" class="composer-send" aria-label="Send">↑</button>
+</form>
+{% endmacro %}
+
+{# ---------- the stage: chat + optional canvas artifact ---------- #}
+
+{% macro stageLayout(c, oob) %}
+<div class="stage-layout {{ 'is-docked' if c.artifactOpen else 'is-centered' }}" id="stage-layout" {% if oob %}hx-swap-oob="outerHTML"{% endif %}>
+  {% call cs.wrap({ eyebrow: 'run #' + c.run.number + ' · ' + c.run.brief, docked: c.artifactOpen, chips: c.chips, collapseHref: '/build/close' }) %}
+  {{ chatThread(c) }}
+  {{ composer(c) }}
+  {% endcall %}
+  {% if c.artifactOpen %}
+  <section class="canvas" id="canvas" aria-live="polite">
+    {{ canvasArtifact(c) }}
+  </section>
   {% endif %}
 </div>
 {% endmacro %}
+
+{# ---------- the left multi-view rail ---------- #}
+
+{% macro runView(c) %}
+<div class="rail-view run-view">
+  <header class="rail-view-head">
+    <span class="eyebrow">run #{{ c.run.number }} · {{ c.run.brief }}</span>
+    <strong class="rail-state">{{ c.run.stateLabel }}</strong>
+    <span class="rail-facts">
+      <span>started {{ c.run.started }}</span>
+      <span>elapsed {{ c.run.elapsed }}</span>
+      <span>{{ c.t.railStopOnRed }} {{ 'on' if c.run.policy.stopOnRed else 'off' }}</span>
+      <span>{{ c.t.railEsc }} {{ c.run.policy.escLimit }}</span>
+    </span>
+  </header>
+  <form class="run-controls" method="post" action="/build/run/control"
+        hx-post="/build/run/control" hx-target="#left-rail" hx-swap="outerHTML">
+    {% if c.run.pausedByYou %}
+    <button type="submit" name="action" value="resume" class="btn-approve">→ resume the run</button>
+    {% else %}
+    <button type="submit" name="action" value="pause" class="ghost">‖ pause the run</button>
+    {% endif %}
+  </form>
+  <ol class="run-stages">
+    {% for s in c.stages %}
+    <li class="run-stage">
+      <span class="run-stage-main">
+        <span class="run-stage-label">{{ s.n }}. {{ s.label }}</span>
+        {{ prim.statusPill(s.state) }}
+      </span>
+      {% if s.state in ['active', 'queued', 'held'] %}
+      <span class="run-stage-acts">
+        {% if s.state == 'held' %}
+        <form method="post" action="/build/stages/{{ s.id }}/control"
+              hx-post="/build/stages/{{ s.id }}/control" hx-target="#stage-layout" hx-swap="outerHTML">
+          <button type="submit" name="action" value="resume" class="ico-btn" title="Resume {{ s.label }}" aria-label="Resume {{ s.label }}">→</button>
+        </form>
+        {% else %}
+        <form method="post" action="/build/stages/{{ s.id }}/control"
+              hx-post="/build/stages/{{ s.id }}/control" hx-target="#stage-layout" hx-swap="outerHTML">
+          <button type="submit" name="action" value="pause" class="ico-btn" title="Pause {{ s.label }}" aria-label="Pause {{ s.label }}">‖</button>
+        </form>
+        {% endif %}
+        <form method="post" action="/build/stages/{{ s.id }}/control"
+              hx-post="/build/stages/{{ s.id }}/control" hx-target="#stage-layout" hx-swap="outerHTML">
+          <button type="submit" name="action" value="cancel" class="ico-btn" title="Cancel {{ s.label }}" aria-label="Cancel {{ s.label }}">×</button>
+        </form>
+      </span>
+      {% endif %}
+    </li>
+    {% endfor %}
+  </ol>
+</div>
+{% endmacro %}
+
+{% macro threadView(c) %}
+<div class="rail-view thread-view">
+  <p class="rail-view-note muted">Filter the run thread by card type.</p>
+  <nav class="thread-filter" aria-label="Filter cards by type">
+    {% for o in [{id: 'all', label: 'all'}, {id: 'stage', label: 'stages'}, {id: 'gate', label: 'gates'}, {id: 'findings', label: 'findings'}, {id: 'evidence', label: 'evidence'}, {id: 'note', label: 'notes'}] %}
+    <a class="filter-item {{ 'is-active' if c.filter == o.id }}"
+       href="/build/rail?type={{ o.id }}"
+       hx-get="/build/rail?type={{ o.id }}" hx-target="#left-rail" hx-swap="outerHTML" hx-push-url="false">{{ o.label }}</a>
+    {% endfor %}
+  </nav>
+</div>
+{% endmacro %}
+
+{% macro artifactsView(c) %}
+<div class="rail-view artifacts-view">
+  <ul class="artifact-index">
+    {% for a in c.artifacts %}
+    <li>
+      <a class="artifact-index-link {{ 'is-active' if c.activeArtifact == a.ref }}"
+         href="/build/artifact/{{ a.ref }}"
+         hx-get="/build/artifact/{{ a.ref }}" hx-target="#stage-layout" hx-swap="outerHTML" hx-push-url="false">
+        {{ prim.typeBadge(a.kind) }}
+        <span class="artifact-index-label">{{ a.label }}</span>
+        {% if a.state %}{{ prim.statusPill(a.state) }}{% endif %}
+      </a>
+    </li>
+    {% endfor %}
+  </ul>
+</div>
+{% endmacro %}
+
+{% macro commitsView(c) %}
+<div class="rail-view commits-view">
+  <p class="rail-view-note muted">The pipeline auto-commits at each gate/stage. Seeded — real git wiring lands in a later stage.</p>
+  <ol class="commit-list">
+    {% for cm in c.commits | reverse %}
+    <li class="commit">
+      <span class="commit-head"><code class="commit-hash">{{ cm.hash }}</code><span class="msg-time">{{ cm.at }}</span></span>
+      <span class="commit-msg">{{ cm.message }}</span>
+    </li>
+    {% endfor %}
+  </ol>
+</div>
+{% endmacro %}
+
+{% macro filesView(c) %}
+<div class="rail-view files-view">
+  <p class="rail-view-note muted">Files this run touched. Seeded — the live project tree lands in a later stage.</p>
+  <ul class="file-list">
+    {% for f in c.files %}
+    <li class="file-row">
+      <code class="file-path">{{ f.path }}</code>
+      <span class="chip file-status-{{ f.status }}">{{ f.status }}</span>
+    </li>
+    {% endfor %}
+  </ul>
+</div>
+{% endmacro %}
+
+{% macro railViewBody(c) %}
+{% if c.railView == 'thread' %}{{ threadView(c) }}
+{% elif c.railView == 'artifacts' %}{{ artifactsView(c) }}
+{% elif c.railView == 'commits' %}{{ commitsView(c) }}
+{% elif c.railView == 'files' %}{{ filesView(c) }}
+{% else %}{{ runView(c) }}
+{% endif %}
+{% endmacro %}
+
+{% macro leftRail(c, oob) %}
+<div id="left-rail" {% if oob %}hx-swap-oob="outerHTML"{% endif %}>
+  {% call mv.frame({ side: 'left', label: c.railView, views: c.railViews }) %}
+  {{ railViewBody(c) }}
+  {% endcall %}
+</div>
+{% endmacro %}
+
+{# ---------- the shell timeline: the whole line, current highlighted ----------
+   Bottom-bar resident and read-only (no base → inert items). #}
+
+{% macro timeline(c, oob) %}{{ tl.timeline(c, oob, 'Pipeline progress') }}{% endmacro %}
 
 {# ---------- Canvas artifacts: one thing at a time, large ---------- #}
 
@@ -156,16 +255,17 @@
   <p class="artifact-lede">{{ gate.context }}</p>
 
   {% if gate.state == 'pending' %}
-  <form class="gate-actions" id="gate-actions" method="post" action="/build/gates/decide"
-        hx-post="/build/gates/decide" hx-target="#canvas" hx-swap="innerHTML">
-    <input type="hidden" name="gate" value="{{ gate.id }}">
-    <input type="text" name="note" class="gate-note-input" placeholder="Note for the record — optional, ships with a reject">
-    <span class="gate-buttons">
+  <div class="gate-actions" id="gate-actions">
+    <form class="gate-buttons" method="post" action="/build/gates/decide"
+          hx-post="/build/gates/decide" hx-target="#stage-layout" hx-swap="outerHTML">
+      <input type="hidden" name="gate" value="{{ gate.id }}">
       <button type="submit" name="decision" value="approved" class="btn-approve">Approve</button>
       <button type="submit" name="decision" value="rejected" class="btn-reject ghost">Reject</button>
       <span class="htmx-indicator muted">minting provenance…</span>
-    </span>
-  </form>
+    </form>
+    <a class="cta-ghost" href="/build/chips/pin?ref=gate/{{ gate.id }}"
+       hx-get="/build/chips/pin?ref=gate/{{ gate.id }}" hx-target="#stage-layout" hx-swap="outerHTML" hx-push-url="false">reject with a note — pin the gate, write it in the chat ↩</a>
+  </div>
   <p class="artifact-foot muted">{{ c.t.gateFoot }}</p>
   {% elif gate.provenance %}
   <dl class="provenance">
@@ -205,7 +305,7 @@
   {% if s.state == 'recovered' %}
   <p class="artifact-foot">
     <a href="/build/artifact/findings/coverage"
-       hx-get="/build/artifact/findings/coverage" hx-target="#canvas" hx-swap="innerHTML" hx-push-url="false">See the 3 findings from attempt 1 →</a>
+       hx-get="/build/artifact/findings/coverage" hx-target="#stage-layout" hx-swap="outerHTML" hx-push-url="false">See the 3 findings from attempt 1 →</a>
   </p>
   {% endif %}
 </article>
@@ -307,79 +407,62 @@
 {% endmacro %}
 
 {# ---------- Fragment responses ----------
-   The canvas swap always re-marks the rail's active card and refreshes the
-   stage bar (it is scoped to the artifact). Gate decisions and stage controls
-   also refresh the shell timeline; a decision adds a toast. #}
-{% macro canvasSwap(c) %}
-{{ canvasArtifact(c) }}
-{{ railList(c, true) }}
-{{ stageBar(c, true) }}
+   The stage (#stage-layout) is the swap unit for everything that touches the
+   chat or the canvas; the left rail re-renders OOB alongside it. Actions
+   initiated inside the rail target #left-rail and refresh the stage OOB.
+   Decisions and stage controls also refresh the bottom-bar timeline. #}
+{% macro stageSwap(c) %}
+{{ stageLayout(c, false) }}
+{{ leftRail(c, true) }}
 {% endmacro %}
 
 {% macro messageSwap(c) %}
-{{ canvasArtifact(c) }}
-{{ railList(c, true) }}
-{{ composer(c, true) }}
-{{ stageBar(c, true) }}
+{{ stageLayout(c, false) }}
+{{ leftRail(c, true) }}
+{% if c.opFired %}
+{# a typed op changed the stage — refresh the timeline too #}
+{{ timeline(c, true) }}
+{% endif %}
 {% endmacro %}
 
 {% macro decisionSwap(c) %}
-{{ canvasArtifact(c) }}
-{{ railList(c, true) }}
+{{ stageLayout(c, false) }}
+{{ leftRail(c, true) }}
 {{ timeline(c, true) }}
-{{ stageBar(c, true) }}
 {# htmx unwraps the OOB carrier for beforeend — the toast must be nested #}
 <div hx-swap-oob="beforeend:#toasts"><div class="toast" id="toast-decision">{{ c.run.stateLabel }}</div></div>
 {% endmacro %}
 
 {% macro controlSwap(c) %}
-{{ canvasArtifact(c) }}
-{{ railList(c, true) }}
+{{ stageLayout(c, false) }}
+{{ leftRail(c, true) }}
 {{ timeline(c, true) }}
-{{ stageBar(c, true) }}
 {% endmacro %}
 
 {% macro filterSwap(c) %}
-{{ railList(c, false) }}
-{{ railBar(c, true) }}
+{{ leftRail(c, false) }}
+{{ stageLayout(c, true) }}
+{% endmacro %}
+
+{% macro railViewSwap(c) %}
+{{ leftRail(c, false) }}
 {% endmacro %}
 
 {% macro runSwap(c) %}
-{{ railBar(c, false) }}
-{{ railList(c, true) }}
+{{ leftRail(c, false) }}
+{{ stageLayout(c, true) }}
 <div hx-swap-oob="beforeend:#toasts"><div class="toast" id="toast-run">{{ c.run.stateLabel }}</div></div>
-{% endmacro %}
-
-{% macro barSwap(c) %}
-{{ stageBar(c, false) }}
-{% endmacro %}
-
-{% macro scopedSwap(c) %}
-{{ stageBar(c, false) }}
-{{ railList(c, true) }}
-{% if c.opFired %}
-{# a typed op changed the stage — refresh the canvas and timeline too #}
-<div hx-swap-oob="innerHTML:#canvas">{{ canvasArtifact(c) }}</div>
-{{ timeline(c, true) }}
-{% endif %}
 {% endmacro %}
 
 {# ---------- Page ---------- #}
 
-{% block timeline %}
+{% block bottombar %}
 {{ timeline(c, false) }}
 {% endblock %}
 
 {% block surface %}
-<div class="loop-zones">
-  <aside class="rail" aria-label="Agent narrative">
-    {{ railBar(c, false) }}
-    {{ railList(c, false) }}
-    {{ composer(c, false) }}
-  </aside>
-  <section class="canvas" id="canvas" aria-live="polite">
-    {{ canvasArtifact(c) }}
-  </section>
-  {{ stageBar(c, false) }}
+<div class="loop-layout">
+  {{ leftRail(c, false) }}
+  {{ stageLayout(c, false) }}
 </div>
 {% endblock %}

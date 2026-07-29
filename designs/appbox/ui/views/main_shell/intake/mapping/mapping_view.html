@@ -5,19 +5,43 @@
 
 {# ---------- Canvas artifacts ---------- #}
 
+{# Live status dot per story, fed by the seeded pipeline statuses. #}
+{% macro statusDot(s) %}
+<span class="status-dot st-{{ s.status }}" title="{{ s.status }}" aria-label="status: {{ s.status }}"></span>
+{% endmacro %}
+
 {% macro storyCard(c, s) %}
 <a class="story-card pri-{{ s.priority }}" href="{{ c.base }}/artifact/story/{{ s.id }}"
-   hx-get="{{ c.base }}/artifact/story/{{ s.id }}" hx-target="#canvas" hx-swap="innerHTML" hx-push-url="false">
+   hx-get="{{ c.base }}/artifact/story/{{ s.id }}" hx-target="#stage-layout" hx-swap="outerHTML" hx-push-url="false">
+  {{ statusDot(s) }}
   <span class="story-text">{{ s.name }}</span>
   <span class="pri-chip pri-{{ s.priority }}">{{ s.priority }}</span>
 </a>
 {% endmacro %}
 
-{# The map: release swimlanes, epics as columns, stories as cards. #}
+{% macro rollupChip(r) %}
+<span class="chip">{{ r.done }}/{{ r.total }} done{% if r.active %} · {{ r.active }} active{% endif %}{% if r.blocked %} · {{ r.blocked }} blocked{% endif %}</span>
+{% endmacro %}
+
+{# Approval state on the map artifact: the gate chip, and the versioned
+   re-approval badge when answers moved after approval. #}
+{% macro approvalBadge(c) %}
+{% if c.approval.stale %}
+<span class="rv-badge rv-warn">changed since approval — v{{ c.approval.currentVersion }} awaits re-approval</span>
+{% elif c.approval.approved %}
+<span class="rv-badge rv-ok">approved · v{{ c.approval.approvedVersion }}</span>
+{% else %}
+<span class="rv-badge">not approved — design stays locked</span>
+{% endif %}
+{% endmacro %}
+
+{# The live map: release swimlanes, epics as horizontally scrolling columns,
+   stories as cards with live status dots; rollups per epic and per lane. #}
 {% macro mapCanvas(c, a) %}
 <article class="artifact map-artifact">
   <header class="artifact-head">
-    <span class="eyebrow">story map{% if c.filter.active != 'all' %} · {{ c.filter.active }}{% endif %}</span>
+    <span class="eyebrow">live story map</span>
+    {{ approvalBadge(c) }}
     <span class="chip">{{ a.counts.stories }} stories · {{ a.counts.epics }} epics · {{ a.counts.features }} features</span>
   </header>
   <h2 class="display">{{ a.headline }}</h2>
@@ -26,18 +50,25 @@
     <span class="pri-chip pri-must">must · {{ a.counts.must }}</span>
     <span class="pri-chip pri-should">should · {{ a.counts.should }}</span>
     <span class="pri-chip pri-could">could · {{ a.counts.could }}</span>
+    <span class="map-legend-dots">
+      <span class="status-dot st-done"></span> done
+      <span class="status-dot st-in-progress"></span> in progress
+      <span class="status-dot st-blocked"></span> blocked
+      <span class="status-dot st-pending"></span> pending
+    </span>
   </p>
   {% for lane in a.lanes %}
   <section class="swimlane">
     <header class="swimlane-head">
       <h3 class="swimlane-title">{{ lane.release.name }}</h3>
-      <span class="chip">{{ lane.release.stories }} stories</span>
+      {{ rollupChip(lane.release.rollup) }}
       <span class="swimlane-desc muted">{{ lane.release.description }}</span>
     </header>
     <div class="map-grid">
       {% for epic in lane.epics %}
       <div class="map-epic">
         <h4 class="map-epic-name">{{ epic.name }}</h4>
+        {{ rollupChip(epic.rollup) }}
         {% for f in epic.features %}
         <div class="map-feature">
           <span class="map-feature-name">{{ f.name }}</span>
@@ -52,11 +83,12 @@
 </article>
 {% endmacro %}
 
-{# One story, large: priority, release, and its trace to registry surfaces. #}
+{# One story, large: status, priority, release, and its trace to surfaces. #}
 {% macro storyCanvas(c, s) %}
 <article class="artifact story-artifact">
   <header class="artifact-head">
     <span class="eyebrow">story · {{ s.epic }} / {{ s.feature }}</span>
+    <span class="story-status">{{ statusDot(s) }} {{ s.status }}</span>
     <span class="pri-chip pri-{{ s.priority }}">{{ s.priority }}</span>
   </header>
   <h2 class="display">{{ s.name }}</h2>
@@ -69,7 +101,7 @@
   {% endif %}
   <p class="artifact-foot">
     <a href="{{ c.base }}/artifact/map/full"
-       hx-get="{{ c.base }}/artifact/map/full" hx-target="#canvas" hx-swap="innerHTML" hx-push-url="false">← back to the map</a>
+       hx-get="{{ c.base }}/artifact/map/full" hx-target="#stage-layout" hx-swap="outerHTML" hx-push-url="false">← back to the map</a>
   </p>
 </article>
 {% endmacro %}
@@ -81,49 +113,41 @@
 {% endif %}
 {% endmacro %}
 
+{# The stage: canvas (when an artifact is open) + the chat stage, inside the
+   container every affordance targets. #}
+{% macro stageLayout(c) %}
+<div id="stage-layout" class="{{ 'is-docked' if c.docked }}">
+  {% if c.docked %}
+  <section class="canvas" id="canvas" aria-live="polite">
+    {{ canvasArtifact(c) }}
+  </section>
+  {% endif %}
+  {{ sh.chatStage(c) }}
+</div>
+{% endmacro %}
+
 {# ---------- Fragment responses ---------- #}
 
-{% macro canvasSwap(c) %}
-{{ canvasArtifact(c) }}
-{{ sh.railList(c, true) }}
-{{ sh.stageBar(c, true) }}
+{# Every stage interaction (messages, answers, skips, depth, approve, artifact
+   open/close, chip unpin) re-renders the whole stage; the timeline rides
+   along out-of-band since interview progress moves it too. #}
+{% macro stageSwap(c) %}
+{{ stageLayout(c) }}
+{{ sh.timeline(c, true) }}
 {% endmacro %}
 
-{% macro messageSwap(c) %}
-{{ canvasArtifact(c) }}
-{{ sh.railList(c, true) }}
-{{ sh.composer(c, true) }}
-{{ sh.stageBar(c, true) }}
-{% endmacro %}
-
-{% macro filterSwap(c) %}
-{{ canvasArtifact(c) }}
-{{ sh.railBar(c, true) }}
-{{ sh.railList(c, true) }}
-{{ sh.stageBar(c, true) }}
-{% endmacro %}
-
-{% macro barSwap(c) %}
-{{ sh.stageBar(c, false) }}
-{% endmacro %}
-
-{% macro scopedSwap(c) %}
-{{ sh.stageBar(c, false) }}
-{{ sh.railList(c, true) }}
+{# Rail view switching swaps only the rail body (mv.frame's own target). #}
+{% macro railSwap(c) %}
+{{ sh.railBody(c) }}
 {% endmacro %}
 
 {# ---------- Page ---------- #}
 
+{% block bottombar %}{{ sh.timeline(c, false) }}{% endblock %}
+
 {% block surface %}
-<div class="loop-zones">
-  <aside class="rail" aria-label="Agent narrative">
-    {{ sh.railBar(c, false) }}
-    {{ sh.railList(c, false) }}
-    {{ sh.composer(c, false) }}
-  </aside>
-  <section class="canvas" id="canvas" aria-live="polite">
-    {{ canvasArtifact(c) }}
-  </section>
-  {{ sh.stageBar(c, false) }}
+<div class="intake-zones">
+  {{ sh.railFrame(c) }}
+  {{ stageLayout(c) }}
 </div>
 {% endblock %}

@@ -1,0 +1,169 @@
+{# Design-tab shared stage (DRAFT-ALL + refine-via-chat contract): the left
+   multi-view rail (screens / artifacts / files), the chat stage with context
+   chips, and the design thread with per-screen checkpoints. Macro-only file —
+   importing it from a fragment render never emits stray markup.
+   Assumes ui/common/chat_stage.html's cs.wrap({ eyebrow, docked, collapseHref })
+   + cs.ctxStrip(strip) via call/caller (nunjucks — rail_views.html already
+   relies on caller). #}
+{% import "ui/common/primitives.html" as prim %}
+{% import "ui/common/rail.html" as rail %}
+{% import "ui/common/rail_views.html" as mv %}
+{% import "ui/common/chat_stage.html" as cs %}
+
+{# ---------- the chat stage: thread + composer inside the shared wrap ----------
+   The composer is local (rail.composer targets #canvas): every design-stage
+   swap — composer, context toggle, revert — targets the one container the
+   chat and the canvas share, #stage-layout. #}
+
+{% macro composer(c) %}
+<form class="composer" id="composer" method="post" action="{{ c.composerAction }}"
+      hx-post="{{ c.composerAction }}" hx-target="#stage-layout" hx-swap="outerHTML">
+  <details class="composer-plus">
+    <summary aria-label="Design tools">+</summary>
+    <span class="composer-sugs">
+      {% for s in c.suggestions %}
+      <button type="submit" name="preset" value="{{ s.value or s }}">{{ s.label or s }}</button>
+      {% endfor %}
+    </span>
+  </details>
+  <textarea name="text" rows="1" placeholder="{{ c.placeholder }}" aria-label="{{ c.placeholder }}"></textarea>
+  <button type="submit" class="composer-send" aria-label="Send">↑</button>
+</form>
+{% endmacro %}
+
+{% macro checkpointCard(e) %}
+<div class="checkpoint {{ 'is-reverted' if e.reverted }}">
+  <header class="cp-head">
+    <span class="fact-label">checkpoint {{ e.id }} · {{ e.screen }}</span>
+    <span class="muted">{{ e.summary }}</span>
+    <span class="msg-time">{{ e.at }}</span>
+  </header>
+  {% if e.before %}
+  <div class="cp-diff">
+    <span class="fact"><span class="fact-label">before</span>{{ e.before }}</span>
+    <span class="fact"><span class="fact-label">after</span>{{ e.after }}</span>
+  </div>
+  {% endif %}
+  {% if e.reverted %}
+  <span class="bt-action-done" title="Reverted">reverted ✓</span>
+  {% else %}
+  <form class="cp-revert" method="post" action="/design/chat/screen/{{ e.screen }}/revert/{{ e.id }}"
+        hx-post="/design/chat/screen/{{ e.screen }}/revert/{{ e.id }}" hx-target="#stage-layout" hx-swap="outerHTML">
+    <button type="submit" class="ghost">↩ revert to {{ e.id }}</button>
+  </form>
+  {% endif %}
+</div>
+{% endmacro %}
+
+{% macro thread(c) %}
+<div class="chat-thread" aria-live="polite">
+  {% for m in c.thread %}
+    {% if m.kind == 'event' %}
+    <p class="bt-event">{{ m.text }}</p>
+    {% elif m.from == 'user' %}
+    <p class="bt-msg bt-user">{{ m.text }}</p>
+    {% else %}
+    <p class="bt-msg bt-agent">{{ m.text }}
+      {%- if m.link %} <a class="bt-link" href="{{ m.link.href }}">{{ m.link.label }}</a>{% endif %}
+    </p>
+    {% for e in m.cps %}{{ checkpointCard(e) }}{% endfor %}
+    {% endif %}
+  {% endfor %}
+  {% if not c.drafted %}
+  <p class="bt-msg bt-agent">{{ c.draft.offer }}</p>
+  {% endif %}
+</div>
+{% endmacro %}
+
+{% macro chatStage(c) %}
+{% call cs.wrap({ eyebrow: c.stageEyebrow, docked: c.docked, collapseHref: c.collapseHref }) %}
+  {{ thread(c) }}
+  {{ cs.ctxStrip(c.strip) }}
+  <p class="ctx-note muted">{{ c.t.ctxNote }}</p>
+  {{ composer(c) }}
+{% endcall %}
+{% endmacro %}
+
+{# ---------- the left rail: one multi-view rail, screens / artifacts / files ---------- #}
+
+{% macro railBar(c, oob) %}
+{{ rail.railBar(c, oob, {
+  eyebrow: 'design run #' + c.run.number + ' · ' + c.run.brief,
+  state: c.run.stateLabel,
+  facts: [c.counts.screens + ' surfaces', c.counts.shots + ' shots', c.run.rungsLabel],
+  filter: {
+    summaryAria: 'Filter screens by epic', summaryTitle: 'Filter screens',
+    summary: c.filter if c.filter != 'all' else 'all epics',
+    target: '#rail-list', swap: 'outerHTML', url: '/design/rail?epic=', active: c.filter,
+    options: [{id: 'all', label: 'all epics'}].concat(c.epics)
+  }
+}) }}
+{% endmacro %}
+
+{# A screen card: epic chip, checkpoint count, status pill — and the context
+   pin as the only CTA (refinement happens in the chat, never per-screen). #}
+{% macro screenCard(c, s) %}
+<div class="msg msg-agent {{ 'is-active msg-ctx ctx-' + s.tone if s.inContext }}">
+  <header class="msg-meta">
+    {{ prim.typeBadge('screen', s.epic) }}
+    {% if s.card.threadCount %}<span class="thread-badge" title="{{ s.card.threadCount }} checkpoint{{ 's' if s.card.threadCount != 1 }} on this screen">×{{ s.card.threadCount }}</span>{% endif %}
+    {{ prim.statusPill(s.card.state) }}
+  </header>
+  <span class="msg-text">{{ s.summary }}</span>
+  <span class="msg-detail">{{ s.card.detail }}</span>
+  <footer class="msg-foot">
+    <span class="msg-cta">
+      <a class="cta-main" href="/design/chat/context/{{ s.id }}?state=toggle"
+         hx-get="/design/chat/context/{{ s.id }}?state=toggle" hx-target="#stage-layout" hx-swap="outerHTML" hx-push-url="false">
+        {{ 'in context ✓' if s.inContext else 'pin to context ⊕' }}</a>
+    </span>
+    <span class="msg-time">{{ s.label }}</span>
+  </footer>
+</div>
+{% endmacro %}
+
+{% macro screenList(c, oob) %}
+<div class="rail-list" id="rail-list" {% if oob %}hx-swap-oob="outerHTML"{% endif %}>
+  {% for s in c.screens %}
+  {{ screenCard(c, s) }}
+  {% endfor %}
+</div>
+{% endmacro %}
+
+{# The active rail view's body — /design/rail/:view hx-swaps this into
+   #rail-left-body (the id rail_views.frame owns). #}
+{% macro railBody(c) %}
+{% if c.railView == 'artifacts' %}
+<div class="rail-list" id="rail-list">
+  {% for a in c.artifacts %}
+  <a class="msg msg-agent rail-row" href="{{ a.href }}">
+    <header class="msg-meta">{{ prim.typeBadge(a.kind) }}</header>
+    <span class="msg-text">{{ a.label }}</span>
+    <span class="msg-detail">{{ a.detail }}</span>
+  </a>
+  {% endfor %}
+</div>
+{% elif c.railView == 'files' %}
+<div class="rail-list" id="rail-list">
+  {% for f in c.files %}
+  <div class="msg msg-agent rail-row">
+    <span class="msg-text"><code>{{ f.path }}</code></span>
+    <span class="msg-detail">{{ f.detail }}</span>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+{{ railBar(c, false) }}
+{{ screenList(c, false) }}
+{% endif %}
+{% endmacro %}
+
+{% macro railLeft(c) %}
+{% call mv.frame({ side: 'left', label: c.railView, views: [
+  { id: 'screens', glyph: '▦', label: 'Screens', href: '/design/rail/screens', active: c.railView == 'screens' },
+  { id: 'artifacts', glyph: '❖', label: 'Artifacts', href: '/design/rail/artifacts', active: c.railView == 'artifacts' },
+  { id: 'files', glyph: '≡', label: 'Files', href: '/design/rail/files', active: c.railView == 'files' }
+] }) %}
+  {{ railBody(c) }}
+{% endcall %}
+{% endmacro %}

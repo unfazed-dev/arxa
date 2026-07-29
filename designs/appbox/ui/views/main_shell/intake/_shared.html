@@ -1,85 +1,184 @@
-{# Shared intake macros — thin per-tab wrappers over ui/common/rail.html,
-   plus intake's own stage bar (the scoped follow-up thread; stage bars stay
-   per-tab). Imported by the three intake views as `sh`. Route prefix is
-   c.base (/intake, /intake/brief, /intake/moodboard). #}
-{% import "ui/common/rail.html" as rail %}
+{# Shared intake macros — the Chat-Centric Layout applied to the intake tab:
+   left multi-view rail (mv.frame: thread / artifacts / files), the chat stage
+   (cs.wrap) centered until an artifact docks it right, the canvas artifact a
+   sibling inside #stage-layout, and the read-only timeline in the bottom bar.
+   The stage-bar FAB follow-up pattern is retired — follow-ups are plain chat
+   carrying the open artifact as a context chip (chip removeHref closes it).
 
-{# Rail top bar: surface state + facts left, rail actions right — the filter
-   re-frames the canvas (release swimlane / board). The brief has no filter.
-   (`or []`: fragment renders re-execute page blocks with an empty context —
-   .concat on undefined would throw there.) #}
-{% macro railBar(c, oob) %}
-{% if c.filter %}
-{% set summary %}{% for o in c.filter.options %}{% if c.filter.active == o.id %}{{ o.label }}{% endif %}{% endfor %}{% endset %}
-{{ rail.railBar(c, oob, {
-  eyebrow: 'intake · ' + c.surface,
-  state: c.railTitle,
-  facts: (c.railFacts or []).concat(['reading level ' + c.jargonLevel]),
-  filter: {
-    summaryAria: 'Filter the canvas', summaryTitle: 'Filter the canvas',
-    summary: summary,
-    target: '#canvas', swap: 'innerHTML', url: c.base + '/filter?' + c.filter.param + '=',
-    active: c.filter.active, options: c.filter.options
-  }
-}) }}
+   Assumed call/caller for cs.wrap + mv.frame — both shared components ship
+   caller() bodies; the fallback would be cs.open(spec)/cs.close().
+
+   Local composer + message macros: rail.composer / rail.msg hardcode
+   hx-target="#canvas", which only exists while docked — the chat-stage
+   contract targets #stage-layout (outerHTML) so centered chats keep working.
+   Same classes, so app.css/chat.css styling applies unchanged. #}
+{% import "ui/common/chat_stage.html" as cs %}
+{% import "ui/common/rail_views.html" as mv %}
+{% import "ui/common/timeline.html" as tl %}
+
+{# The bottom-bar timeline: read-only stage line, intake item current. #}
+{% macro timeline(c, oob) %}{{ tl.timeline(c, oob, 'Intake progress') }}{% endmacro %}
+
+{# ---------- the interview: horizontal question carousel ---------- #}
+
+{# One question card. current/editing carry the answer form (a text field
+   inside a chat card — it IS chat input), suggestion chips and skip;
+   answered/skipped show their state with a revisit affordance. #}
+{% macro qCard(c, q) %}
+<div class="q-card is-{{ q.state }}">
+  <p class="q-text">{{ q.text }}</p>
+  {% if q.state == 'current' or q.state == 'editing' %}
+  <form class="q-form" method="post" action="{{ c.base }}/answer"
+        hx-post="{{ c.base }}/answer" hx-target="#stage-layout" hx-swap="outerHTML">
+    <input type="hidden" name="q" value="{{ q.id }}">
+    <input type="text" name="text" value="{{ q.answer or '' }}" placeholder="Your answer…" aria-label="Answer: {{ q.text }}">
+    <button type="submit" class="composer-send" aria-label="Send this answer">↑</button>
+  </form>
+  {% if q.suggestions.length %}
+  <span class="q-sugs">
+    {% for s in q.suggestions %}
+    <form method="post" action="{{ c.base }}/answer" hx-post="{{ c.base }}/answer" hx-target="#stage-layout" hx-swap="outerHTML">
+      <input type="hidden" name="q" value="{{ q.id }}">
+      <button type="submit" name="text" value="{{ s }}">{{ s }}</button>
+    </form>
+    {% endfor %}
+  </span>
+  {% endif %}
+  <form class="q-skip" method="post" action="{{ c.base }}/skip"
+        hx-post="{{ c.base }}/skip" hx-target="#stage-layout" hx-swap="outerHTML">
+    <input type="hidden" name="q" value="{{ q.id }}">
+    <button type="submit" aria-label="Skip this question">skip →</button>
+  </form>
+  {% elif q.state == 'answered' %}
+  <p class="q-answer">{{ q.answer }}</p>
+  <a class="q-edit" href="{{ c.base }}/edit?q={{ q.id }}"
+     hx-get="{{ c.base }}/edit?q={{ q.id }}" hx-target="#stage-layout" hx-swap="outerHTML" hx-push-url="false">edit</a>
+  {% elif q.state == 'skipped' %}
+  <p class="q-answer muted">skipped</p>
+  <a class="q-edit" href="{{ c.base }}/edit?q={{ q.id }}"
+     hx-get="{{ c.base }}/edit?q={{ q.id }}" hx-target="#stage-layout" hx-swap="outerHTML" hx-push-url="false">answer anyway</a>
+  {% else %}
+  <p class="q-answer muted">up next</p>
+  {% endif %}
+</div>
+{% endmacro %}
+
+{% macro qCarousel(c, car) %}
+<div class="q-carousel" aria-label="Interview questions — {{ car.bank }} bank">
+  {% for q in car.questions %}{{ qCard(c, q) }}{% endfor %}
+</div>
+{% endmacro %}
+
+{# ---------- the chat thread ---------- #}
+
+{% macro chatMsg(c, m) %}
+{% if m.from == 'user' %}
+<div class="msg msg-user">
+  <span class="msg-text">{{ m.text }}</span>
+</div>
 {% else %}
-{{ rail.railBar(c, oob, {
-  eyebrow: 'intake · ' + c.surface,
-  state: c.railTitle,
-  facts: (c.railFacts or []).concat(['reading level ' + c.jargonLevel])
-}) }}
+<div class="msg msg-agent">
+  <span class="msg-text">{{ m.text }}</span>
+  {% if m.quickReplies %}
+  <span class="q-replies">
+    {% for r in m.quickReplies %}
+    <form method="post" action="{{ r.action }}" hx-post="{{ r.action }}" hx-target="#stage-layout" hx-swap="outerHTML">
+      <button type="submit" class="qr-chip" name="{{ r.name }}" value="{{ r.value }}">{{ r.label }}</button>
+    </form>
+    {% endfor %}
+  </span>
+  {% endif %}
+  {% if m.carousel %}{{ qCarousel(c, m.carousel) }}{% endif %}
+  {% if m.artifactRef or m.nextHref %}
+  <span class="msg-cta">
+    {% if m.artifactRef %}
+    <a class="cta-main" href="{{ c.base }}/artifact/{{ m.artifactRef }}"
+       hx-get="{{ c.base }}/artifact/{{ m.artifactRef }}" hx-target="#stage-layout" hx-swap="outerHTML" hx-push-url="false">{{ m.artifactLabel }}</a>
+    {% endif %}
+    {% if m.nextHref %}<a class="cta-ghost" href="{{ m.nextHref }}">{{ m.nextLabel }}</a>{% endif %}
+  </span>
+  {% endif %}
+</div>
 {% endif %}
 {% endmacro %}
 
-{% macro railList(c, oob) %}{{ rail.railList(c, oob, c.base + '/artifact') }}{% endmacro %}
-
-{# Composer: pill, leading + (suggestions), trailing send. #}
-{% macro composer(c, oob) %}
-{{ rail.composer(c, oob, {
-  action: c.base + '/messages',
-  suggestions: c.suggestions,
-  placeholder: 'Ask about the intake…', ariaLabel: 'Message the intake agent'
-}) }}
+{% macro chatThread(c) %}
+<div class="chat-thread" aria-live="polite">
+  {% for m in c.chat %}{{ chatMsg(c, m) }}{% endfor %}
+</div>
 {% endmacro %}
 
-{# The stage bar: FAB → floating toolbar for the canvas artifact. Intake has
-   no stage controls — the bar is the scoped follow-up thread. #}
-{% macro stageBar(c, oob) %}
-<div class="stage-bar-wrap" id="stage-bar" {% if oob %}hx-swap-oob="outerHTML"{% endif %}>
-  {% if c.barOpen %}
-  <div class="stage-bar stage-bar-{{ c.bar.kind }}">
-    {% if c.thread.length %}
-    <div class="bar-thread" aria-label="Conversation about this {{ c.bar.kind }}">
-      {% for e in c.thread %}
-        {% if e.kind == 'user' %}
-        <p class="bt-msg bt-user">{{ e.text }}</p>
-        {% else %}
-        <p class="bt-msg bt-agent">{{ e.text }}
-          {%- if e.link %} <a class="bt-link" href="{{ c.base }}/artifact/{{ e.link }}"
-             hx-get="{{ c.base }}/artifact/{{ e.link }}" hx-target="#canvas" hx-swap="innerHTML" hx-push-url="false">on canvas →</a>{% endif %}
-        </p>
-        {% endif %}
+{# Composer: pill, leading + (suggestions), trailing send — rail.composer's
+   markup with the chat-stage target. #}
+{% macro composer(c) %}
+<form class="composer" id="composer" method="post" action="{{ c.base }}/messages"
+      hx-post="{{ c.base }}/messages" hx-target="#stage-layout" hx-swap="outerHTML">
+  <details class="composer-plus">
+    <summary aria-label="Suggestions">+</summary>
+    <span class="composer-sugs">
+      {% for s in c.suggestions %}
+      <button type="submit" name="preset" value="{{ s }}">{{ s }}</button>
       {% endfor %}
-    </div>
+    </span>
+  </details>
+  <textarea name="text" rows="1" placeholder="Message the intake agent…" aria-label="Message the intake agent"></textarea>
+  <button type="submit" class="composer-send" aria-label="Send">↑</button>
+</form>
+{% endmacro %}
+
+{# The chat stage proper — each view wraps it in its own #stage-layout so the
+   canvas artifact markup stays surface-local. #}
+{% macro chatStage(c) %}
+{% call cs.wrap({ eyebrow: c.eyebrow, docked: c.docked, chips: c.chips, collapseHref: c.collapseHref }) %}
+  {{ chatThread(c) }}
+  {{ composer(c) }}
+{% endcall %}
+{% endmacro %}
+
+{# ---------- the left multi-view rail ---------- #}
+
+{% macro railBody(c) %}
+{% if c.railView == 'artifacts' %}
+<div class="rv-list">
+  {% for a in c.railBody.artifacts %}
+  <a class="rv-card" href="{{ c.base }}/artifact/{{ a.ref }}"
+     hx-get="{{ c.base }}/artifact/{{ a.ref }}" hx-target="#stage-layout" hx-swap="outerHTML" hx-push-url="false">
+    <span class="rv-title">{{ a.title }}</span>
+    <span class="rv-detail muted">{{ a.detail }}</span>
+    {% if a.badges.length %}
+    <span class="rv-badges">
+      {% for b in a.badges %}<span class="rv-badge rv-{{ b.tone }}">{{ b.label }}</span>{% endfor %}
+    </span>
     {% endif %}
-    <form class="bar-chat" method="post" action="{{ c.base }}/artifact/{{ c.activeArtifact }}/messages"
-          hx-post="{{ c.base }}/artifact/{{ c.activeArtifact }}/messages" hx-target="#stage-bar" hx-swap="outerHTML">
-      <input type="text" name="text" placeholder="Follow up on this {{ c.bar.kind }}…" aria-label="Follow up on this {{ c.bar.kind }}" autofocus>
-      <button type="submit" class="composer-send" aria-label="Send">↑</button>
-    </form>
-    <span class="bar-row">
-      <span class="bar-hint">{{ c.bar.hint }}</span>
-      <span class="bar-actions">
-        <a class="ico-btn" href="{{ c.base }}/bar/{{ c.activeArtifact }}?state=fab"
-           hx-get="{{ c.base }}/bar/{{ c.activeArtifact }}?state=fab" hx-target="#stage-bar" hx-swap="outerHTML"
-           aria-label="Close the toolbar" title="Close">×</a>
-      </span>
+  </a>
+  {% endfor %}
+</div>
+{% elif c.railView == 'files' %}
+<ul class="rv-files">
+  {% for f in c.railBody.files %}
+  <li><code class="rv-path">{{ f.path }}</code><span class="file-badge fb-{{ f.badge }}">{{ f.badge }}</span></li>
+  {% endfor %}
+</ul>
+{% else %}
+<div class="rv-list">
+  {% for m in c.railBody.thread | reverse %}
+  <div class="rv-card is-static">
+    <span class="msg-text">{{ m.text }}</span>
+    <span class="rv-foot">
+      {% if m.artifact %}
+      <a class="cta-ghost" href="{{ c.base }}/artifact/{{ m.artifact }}"
+         hx-get="{{ c.base }}/artifact/{{ m.artifact }}" hx-target="#stage-layout" hx-swap="outerHTML" hx-push-url="false">{{ m.artifactLabel }} →</a>
+      {% endif %}
+      <span class="msg-time">{{ m.at }}</span>
     </span>
   </div>
-  {% else %}
-  <a class="fab" href="{{ c.base }}/bar/{{ c.activeArtifact }}?state=open"
-     hx-get="{{ c.base }}/bar/{{ c.activeArtifact }}?state=open" hx-target="#stage-bar" hx-swap="outerHTML"
-     aria-label="Follow-ups for this view" title="Follow up on this view">?</a>
-  {% endif %}
+  {% endfor %}
 </div>
+{% endif %}
+{% endmacro %}
+
+{% macro railFrame(c) %}
+{% call mv.frame({ side: 'left', label: c.railLabel, views: c.railViews }) %}
+  {{ railBody(c) }}
+{% endcall %}
 {% endmacro %}

@@ -25,3 +25,10 @@ export const shot = (id) => {
 export const narrative = (surface) => data().narrative[surface] ?? [];
 export const replies = () => data().replies;
 export const replyFallback = () => data().replyFallback;
+export const questionBanks = () => data().questionBanks;
+// Live-map display data: pipeline status per story id, and the generated
+// file list for the files rail view. Absent keys read as 'pending'.
+export const statuses = () => data().statuses ?? {};
+export const files = () => data().files ?? [];
+// Initial interview state; the facade clones it into the session.
+export const initialState = () => data().state;

@@ -2,7 +2,7 @@
   "run": {
     "id": "design-07",
     "number": 7,
-    "project": "app-box",
+    "project": "Petal & Stem",
     "brief": "companion app — approve builds from anywhere",
     "started": "Yesterday 14:02",
     "elapsed": "21m 05s",
@@ -182,13 +182,13 @@
     },
     {
       "id": "design.chat",
-      "label": "Screen Chat",
+      "label": "Design Chat",
       "epic": "Design & Freeze",
       "state": "frozen",
       "wire": "split",
       "kit": 97,
-      "summary": "One screen in focus, the rest dim — scoped tools, a checkpoint per message",
-      "summaryPlain": "Chat about one screen at a time while the rest fade back — every change saved with one-tap undo",
+      "summary": "Pinned screens as removable context chips — the chat refines exactly those, outlined on the canvas",
+      "summaryPlain": "Pin the screens you're working on as chips — the chat changes only those, and they stay outlined on the canvas",
       "rungs": [
         {
           "rung": "compact",
@@ -391,6 +391,81 @@
       ]
     }
   ],
+  "draft": {
+    "offer": "Story map approved — 11 surfaces, every one traced to a story. I can draft them all in one pass: 11 artboards on the canvas at 390/744/1280, real device sizes. After that we refine here, with the screens you pin as context.",
+    "offerPlain": "The story map is approved — 11 screens. I can sketch them all at once onto the canvas at phone, tablet and desktop size. After that we polish them here, one message at a time.",
+    "chip": "draft all 11 surfaces",
+    "done": "All 11 surfaces drafted — 33 shots across 390/744/1280. Pin a screen as context (artboard pin or filmstrip thumb) and it gets a colored outline here and on the canvas; only pinned screens' tools are live.",
+    "donePlain": "All 11 screens are on the canvas, each at phone, tablet and desktop size. Tap a screen — on the canvas or in the filmstrip — to pin it here; your changes only ever touch the pinned screens."
+  },
+  "approval": {
+    "state": "approved",
+    "chip": "approve the manifest",
+    "lede": "Approval signs manifest frz_9c41e2 — sha256:9c41…e2b7 — and unlocks the Build stage. An agent can bring it to you; only you can sign it.",
+    "ledePlain": "Approving signs this exact design and lets the build start. The agent can ask — only you can approve.",
+    "approvedNote": "Approved by Evan · Touch ID · studio-mac · Yesterday 16:42 — build unlocked.",
+    "approvedNotePlain": "You approved this design yesterday (Touch ID, studio-mac) — the build is unlocked.",
+    "pendingNote": "Not approved yet — the Build stage stays locked until you sign.",
+    "pendingNotePlain": "Not approved yet — the build can't start until you approve it.",
+    "confirm": "Manifest frz_9c41e2 approved — sha256:9c41…e2b7 signed, provenance recorded. The Build stage is unlocked.",
+    "confirmPlain": "Approved — this exact design is signed and recorded. The build can start."
+  },
+  "noContext": {
+    "text": "Nothing pinned — pin a screen first (artboard pin or filmstrip thumb); your message then scopes to exactly those screens. Tools stay dark until context exists.",
+    "textPlain": "Pin a screen first — tap one on the canvas or in the filmstrip. Your changes only ever touch the pinned screens."
+  },
+  "artifacts": [
+    {
+      "id": "manifest",
+      "label": "Freeze manifest",
+      "kind": "manifest",
+      "detail": "frz_9c41e2 · 33 goldens · sha256:9c41…e2b7",
+      "href": "/design/freeze"
+    },
+    {
+      "id": "structure",
+      "label": "structure.json",
+      "kind": "spec",
+      "detail": "locked at freeze — the drift check compares against it",
+      "href": "/design/freeze"
+    },
+    {
+      "id": "story-map",
+      "label": "Story map",
+      "kind": "brief",
+      "detail": "42 stories · MoSCoW lanes · the draft source",
+      "href": "/intake"
+    },
+    {
+      "id": "goldens",
+      "label": "Goldens",
+      "kind": "shots",
+      "detail": "33 frozen shots · 11 surfaces × 3 rungs",
+      "href": "/design"
+    }
+  ],
+  "files": [
+    {
+      "path": "docs/design/story-map.json",
+      "detail": "approved story map — the draft source"
+    },
+    {
+      "path": "designs/appbox/models/design_model/seed.json",
+      "detail": "authored design seed"
+    },
+    {
+      "path": "designs/appbox/models/design_model/run.json",
+      "detail": "generated fixture — 11 surfaces, 33 shots"
+    },
+    {
+      "path": "app/structure.json",
+      "detail": "locked structure — the drift reference"
+    },
+    {
+      "path": "app/goldens/",
+      "detail": "33 frozen goldens, hashed at freeze"
+    }
+  ],
   "manifest": {
     "id": "frz_9c41e2",
     "goldens": 33,
@@ -468,7 +543,7 @@
     },
     {
       "surface": "design.chat",
-      "story": "Select a screen, chat exclusively in its context; all other screens dim",
+      "story": "Pin multiple screens as chat context (removable chips); in-context screens outlined side-by-side at real device sizes",
       "code": "app/lib/ui/views/design/chat_view.dart",
       "files": 4
     },
@@ -511,34 +586,42 @@
       }
     ]
   },
-  "chatThreads": {
-    "build.loop": [
-      {
-        "at": "15:52",
-        "from": "user",
-        "text": "The gate cards feel loud — pending shouts. Can it breathe?"
-      },
-      {
-        "at": "15:53",
-        "from": "agent",
-        "text": "Softened — pending now sits on 12% accent with a hairline border; approve stays solid ink. Checkpoint cp-3 below, one tap reverts.",
-        "textPlain": "Made it calmer — the waiting state is now a soft tint instead of a loud fill; the approve button stays bold. Saved as cp-3 below, one tap undoes it.",
-        "cp": "cp-3"
-      },
-      {
-        "at": "16:04",
-        "from": "user",
-        "text": "Compact rung: the stage bar covers the canvas CTA."
-      },
-      {
-        "at": "16:05",
-        "from": "agent",
-        "text": "Docked — under 600px the bar pins to the viewport edge and the canvas pads for it. cp-4.",
-        "textPlain": "Fixed — on phone-size screens the toolbar pins to the screen edge instead of floating over the content. Saved as cp-4.",
-        "cp": "cp-4"
-      }
-    ]
-  },
+  "designThread": [
+    {
+      "at": "15:52",
+      "from": "user",
+      "text": "The gate cards feel loud — pending shouts. Can it breathe?"
+    },
+    {
+      "at": "15:53",
+      "from": "agent",
+      "text": "Softened — pending now sits on 12% accent with a hairline border; approve stays solid ink. Checkpoint cp-3 below, one tap reverts.",
+      "textPlain": "Made it calmer — the waiting state is now a soft tint instead of a loud fill; the approve button stays bold. Saved as cp-3 below, one tap undoes it.",
+      "cps": [
+        {
+          "screen": "build.loop",
+          "cp": "cp-3"
+        }
+      ]
+    },
+    {
+      "at": "16:04",
+      "from": "user",
+      "text": "Compact rung: the stage bar covers the canvas CTA."
+    },
+    {
+      "at": "16:05",
+      "from": "agent",
+      "text": "Docked — under 600px the bar pins to the viewport edge and the canvas pads for it. cp-4.",
+      "textPlain": "Fixed — on phone-size screens the toolbar pins to the screen edge instead of floating over the content. Saved as cp-4.",
+      "cps": [
+        {
+          "screen": "build.loop",
+          "cp": "cp-4"
+        }
+      ]
+    }
+  ],
   "checkpoints": {
     "build.loop": [
       {
@@ -576,6 +659,20 @@
     ]
   },
   "chatReplies": [
+    {
+      "match": [
+        "approve",
+        "manifest",
+        "sign",
+        "unlock"
+      ],
+      "text": "The manifest approval is the human gate — it signs frz_9c41e2 and unlocks the Build stage. The approval card lives on the freeze surface; its quick-reply signs it.",
+      "textPlain": "Approving the manifest is your call — it locks this exact design and lets the build start. Do it from the freeze screen.",
+      "link": {
+        "href": "/design/freeze",
+        "label": "open freeze & trace →"
+      }
+    },
     {
       "match": [
         "calm",
@@ -650,70 +747,8 @@
     }
   ],
   "chatFallback": {
-    "text": "Scoped to {label} — ask for a layout, style or state change, or name a rung (390/744/1280). Only this screen's tools are live here.",
+    "text": "Scoped to {label} — ask for a layout, style or state change, or name a rung (390/744/1280). Only the pinned screens' tools are live here.",
     "textPlain": "We're working on {label} only — ask for a layout, style or colour change, or a phone/tablet/desktop tweak. Nothing else in the app is in scope here."
-  },
-  "protoReplies": [
-    {
-      "match": [
-        "rung",
-        "size",
-        "390",
-        "744",
-        "1280",
-        "resize",
-        "responsive",
-        "breakpoint"
-      ],
-      "text": "Three rungs from targets alone — 390/744/1280, literal parity. The shots above are the frozen goldens; the built app is probed against them later.",
-      "textPlain": "Each screen is designed at three sizes — phone, tablet, desktop. These snapshots are the approved reference; the built app is compared against them later."
-    },
-    {
-      "match": [
-        "kit",
-        "coverage",
-        "primitive",
-        "component"
-      ],
-      "text": "This surface is {kit}% kit — the adaptive primitive layer carries it; the bespoke slice is noted in the structure.",
-      "textPlain": "This screen is {kit}% ready-made parts — only a small custom slice remains, noted in the structure."
-    },
-    {
-      "match": [
-        "frozen",
-        "freeze",
-        "locked",
-        "stale",
-        "drift",
-        "approval",
-        "approve"
-      ],
-      "text": "Frozen under manifest frz_9c41e2 — approved Yesterday 16:42 via Touch ID on studio-mac. Post-approval change goes stale loudly on the freeze surface.",
-      "textPlain": "Locked into the approved design — you approved it yesterday with Touch ID. Any change after that is flagged clearly on the freeze screen.",
-      "link": {
-        "href": "/design/freeze",
-        "label": "open freeze & trace →"
-      }
-    },
-    {
-      "match": [
-        "chat",
-        "refine",
-        "edit",
-        "change",
-        "tweak"
-      ],
-      "text": "Refinement happens in screen chat — scoped to this surface, a checkpoint per message, one-tap revert.",
-      "textPlain": "Changes happen in the chat screen — focused on this one surface, every change saved with one-tap undo.",
-      "link": {
-        "href": "/design/chat?screen={id}",
-        "label": "refine this screen →"
-      }
-    }
-  ],
-  "protoFallback": {
-    "text": "{label} — {summary} Frozen at 390/744/1280, kit coverage {kit}%. Ask about the rungs, the kit, or the freeze.",
-    "textPlain": "{label} — {summary} Designed at phone, tablet and desktop size. Ask about the sizes, the parts, or the approval."
   },
   "epics": [
     "Intake & Story Mapping",

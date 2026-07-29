@@ -1,9 +1,44 @@
-{# The shell's top nav — brand, tab strip, daemon channel, theme toggle.
-   One nav for every surface in main_shell; extracted from
-   main_shell_view.html so the chrome has a single home. #}
-{% macro shellNav(activeTab, prefs) %}
+{# The shell's chrome — one macro emits all of it:
+   · the appbar (drawer button, brand, project cluster, tab strip, daemon
+     channel, theme toggle, overflow menu)
+   · compact: bottom tab bar + staggered-action FAB
+   · medium: collapsible floating left rail dock (the drawer's docked form)
+   · expanded: rail mount points tab views populate
+   Rung visibility is pure CSS (shell.css, compact <600 / medium 600–839 /
+   expanded ≥840); every open/close is <details> — zero client JS.
+   project = { name, savedLabel }; absent → no project cluster (backward
+   compatible with shellNav(activeTab, prefs)). #}
+{% macro shellNav(activeTab, prefs, project) %}
+{% set tabNames = { intake: 'intake', design: 'design', build: 'build', index: 'surfaces', workspace: 'settings' } %}
 <nav class="shell-nav">
+  <details class="shell-drawer shell-chrome-touch">
+    <summary class="ico-btn" aria-label="Open navigation">☰</summary>
+    <div class="drawer-panel" role="menu">
+      <a class="drawer-tab {{ 'is-active' if activeTab == 'intake' }}" href="/intake"><span class="drawer-ico" aria-hidden="true">✎</span>Intake</a>
+      <a class="drawer-tab {{ 'is-active' if activeTab == 'design' }}" href="/design"><span class="drawer-ico" aria-hidden="true">◧</span>Design</a>
+      <a class="drawer-tab {{ 'is-active' if activeTab == 'build' }}" href="/build"><span class="drawer-ico" aria-hidden="true">⬢</span>Build</a>
+      <a class="drawer-tab {{ 'is-active' if activeTab == 'index' }}" href="/"><span class="drawer-ico" aria-hidden="true">▦</span>Surfaces</a>
+      <a class="drawer-tab {{ 'is-active' if activeTab == 'workspace' }}" href="/workspace"><span class="drawer-ico" aria-hidden="true">⚙</span>Settings</a>
+      <div class="drawer-row">
+        <span class="channel" title="daemon channel">
+          <span class="channel-dot"></span><span class="channel-label">daemon live</span>
+        </span>
+      </div>
+      <div class="drawer-row">
+        <form method="post" action="/prefs/theme" hx-post="/prefs/theme" hx-swap="none">
+          <button type="submit" class="ghost">{{ 'Light' if (prefs.theme or 'light') == 'dark' else 'Dark' }} theme</button>
+        </form>
+      </div>
+    </div>
+  </details>
   <a class="shell-brand" href="/">appbox</a>
+  {% if project %}
+  <a class="shell-project" href="/" title="Project — back to the dashboard">
+    <span class="shell-project-name">{{ project.name }}</span>
+    <span class="shell-project-tab">{{ tabNames[activeTab] or activeTab }}</span>
+    {% if project.savedLabel %}<span class="shell-project-saved">{{ project.savedLabel }}</span>{% endif %}
+  </a>
+  {% endif %}
   <span class="shell-tabs">
     <a class="shell-tab {{ 'is-active' if activeTab == 'intake' }}" href="/intake">Intake</a>
     <a class="shell-tab {{ 'is-active' if activeTab == 'design' }}" href="/design">Design</a>
@@ -18,5 +53,55 @@
   <form method="post" action="/prefs/theme" hx-post="/prefs/theme" hx-swap="none">
     <button type="submit" class="ghost">{{ 'Light' if (prefs.theme or 'light') == 'dark' else 'Dark' }}</button>
   </form>
+  <details class="shell-overflow shell-chrome-touch">
+    <summary class="ico-btn" aria-label="More actions">⋮</summary>
+    <div class="overflow-menu" role="menu">
+      <a class="overflow-item" href="/intake">New project</a>
+      <a class="overflow-item" href="/">Pair device</a>
+      <a class="overflow-item" href="/workspace">Settings</a>
+    </div>
+  </details>
 </nav>
+
+{# compact: primary nav leaves the appbar and becomes the bottom tab bar #}
+<nav class="bottom-tabs" aria-label="Primary">
+  <a class="bottom-tab {{ 'is-active' if activeTab == 'intake' }}" href="/intake"><span class="bt-ico" aria-hidden="true">✎</span><span class="bt-label">Intake</span></a>
+  <a class="bottom-tab {{ 'is-active' if activeTab == 'design' }}" href="/design"><span class="bt-ico" aria-hidden="true">◧</span><span class="bt-label">Design</span></a>
+  <a class="bottom-tab {{ 'is-active' if activeTab == 'build' }}" href="/build"><span class="bt-ico" aria-hidden="true">⬢</span><span class="bt-label">Build</span></a>
+  <a class="bottom-tab {{ 'is-active' if activeTab == 'index' }}" href="/"><span class="bt-ico" aria-hidden="true">▦</span><span class="bt-label">Surfaces</span></a>
+  <a class="bottom-tab {{ 'is-active' if activeTab == 'workspace' }}" href="/workspace"><span class="bt-ico" aria-hidden="true">⚙</span><span class="bt-label">Settings</span></a>
+</nav>
+
+{# compact + medium: staggered-action FAB, pure <details> #}
+<details class="fab-menu">
+  <summary class="fab" aria-label="Quick actions">+</summary>
+  <div class="fab-actions" role="menu">
+    <a class="fab-action" href="/intake">New project</a>
+    <a class="fab-action" href="/">Pair device</a>
+    <a class="fab-action" href="/workspace">Settings</a>
+  </div>
+</details>
+
+{# medium: the drawer's docked form — slim icon strip, expands on tap #}
+<details class="rail-dock">
+  <summary class="rail-dock-strip" aria-label="Open navigation rail">
+    <span class="rd-ico {{ 'is-active' if activeTab == 'intake' }}" aria-hidden="true">✎</span>
+    <span class="rd-ico {{ 'is-active' if activeTab == 'design' }}" aria-hidden="true">◧</span>
+    <span class="rd-ico {{ 'is-active' if activeTab == 'build' }}" aria-hidden="true">⬢</span>
+    <span class="rd-ico {{ 'is-active' if activeTab == 'index' }}" aria-hidden="true">▦</span>
+    <span class="rd-ico {{ 'is-active' if activeTab == 'workspace' }}" aria-hidden="true">⚙</span>
+  </summary>
+  <div class="rail-dock-panel" role="menu">
+    <a class="drawer-tab {{ 'is-active' if activeTab == 'intake' }}" href="/intake"><span class="drawer-ico" aria-hidden="true">✎</span>Intake</a>
+    <a class="drawer-tab {{ 'is-active' if activeTab == 'design' }}" href="/design"><span class="drawer-ico" aria-hidden="true">◧</span>Design</a>
+    <a class="drawer-tab {{ 'is-active' if activeTab == 'build' }}" href="/build"><span class="drawer-ico" aria-hidden="true">⬢</span>Build</a>
+    <a class="drawer-tab {{ 'is-active' if activeTab == 'index' }}" href="/"><span class="drawer-ico" aria-hidden="true">▦</span>Surfaces</a>
+    <a class="drawer-tab {{ 'is-active' if activeTab == 'workspace' }}" href="/workspace"><span class="drawer-ico" aria-hidden="true">⚙</span>Settings</a>
+  </div>
+</details>
+
+{# expanded: rail mount points — tab views populate these (openable/closeable
+   chrome ships with the content they mount) #}
+<div id="rail-left-mount" class="rail-mount"></div>
+<div id="rail-right-mount" class="rail-mount"></div>
 {% endmacro %}

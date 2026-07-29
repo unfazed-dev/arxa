@@ -13,7 +13,8 @@
 {% macro galleryCanvas(c, a) %}
 <article class="artifact gallery-artifact">
   <header class="artifact-head">
-    <span class="eyebrow">moodboard{% if c.filter.active != 'all' %} · {{ c.filter.active }}{% endif %}</span>
+    <span class="eyebrow">moodboard</span>
+    {% if c.approval.stale %}<span class="rv-badge rv-warn">changed since approval</span>{% endif %}
     <span class="chip">{{ a.boards | length }} board{{ 's' if a.boards | length != 1 }} · curated {{ a.curated }}</span>
   </header>
   <h2 class="display">{{ a.headline }}</h2>
@@ -29,7 +30,7 @@
     <div class="shot-grid">
       {% for r in b.references %}
       <a class="shot-card" href="{{ c.base }}/artifact/shot/{{ r.shot.id }}"
-         hx-get="{{ c.base }}/artifact/shot/{{ r.shot.id }}" hx-target="#canvas" hx-swap="innerHTML" hx-push-url="false">
+         hx-get="{{ c.base }}/artifact/shot/{{ r.shot.id }}" hx-target="#stage-layout" hx-swap="outerHTML" hx-push-url="false">
         <img src="{{ r.shot.src }}" alt="{{ r.name }} — {{ r.shot.caption }}" loading="lazy">
         <span class="shot-meta">
           <strong>{{ r.name }}</strong>
@@ -60,7 +61,7 @@
   <p class="artifact-detail">{{ a.reference.why }}</p>
   <p class="artifact-foot">
     <a href="{{ c.base }}/artifact/{{ a.backRef }}"
-       hx-get="{{ c.base }}/artifact/{{ a.backRef }}" hx-target="#canvas" hx-swap="innerHTML" hx-push-url="false">← back to the board</a>
+       hx-get="{{ c.base }}/artifact/{{ a.backRef }}" hx-target="#stage-layout" hx-swap="outerHTML" hx-push-url="false">← back to the board</a>
   </p>
 </article>
 {% endmacro %}
@@ -72,49 +73,35 @@
 {% endif %}
 {% endmacro %}
 
+{% macro stageLayout(c) %}
+<div id="stage-layout" class="{{ 'is-docked' if c.docked }}">
+  {% if c.docked %}
+  <section class="canvas" id="canvas" aria-live="polite">
+    {{ canvasArtifact(c) }}
+  </section>
+  {% endif %}
+  {{ sh.chatStage(c) }}
+</div>
+{% endmacro %}
+
 {# ---------- Fragment responses ---------- #}
 
-{% macro canvasSwap(c) %}
-{{ canvasArtifact(c) }}
-{{ sh.railList(c, true) }}
-{{ sh.stageBar(c, true) }}
+{% macro stageSwap(c) %}
+{{ stageLayout(c) }}
+{{ sh.timeline(c, true) }}
 {% endmacro %}
 
-{% macro messageSwap(c) %}
-{{ canvasArtifact(c) }}
-{{ sh.railList(c, true) }}
-{{ sh.composer(c, true) }}
-{{ sh.stageBar(c, true) }}
-{% endmacro %}
-
-{% macro filterSwap(c) %}
-{{ canvasArtifact(c) }}
-{{ sh.railBar(c, true) }}
-{{ sh.railList(c, true) }}
-{{ sh.stageBar(c, true) }}
-{% endmacro %}
-
-{% macro barSwap(c) %}
-{{ sh.stageBar(c, false) }}
-{% endmacro %}
-
-{% macro scopedSwap(c) %}
-{{ sh.stageBar(c, false) }}
-{{ sh.railList(c, true) }}
+{% macro railSwap(c) %}
+{{ sh.railBody(c) }}
 {% endmacro %}
 
 {# ---------- Page ---------- #}
 
+{% block bottombar %}{{ sh.timeline(c, false) }}{% endblock %}
+
 {% block surface %}
-<div class="loop-zones">
-  <aside class="rail" aria-label="Agent narrative">
-    {{ sh.railBar(c, false) }}
-    {{ sh.railList(c, false) }}
-    {{ sh.composer(c, false) }}
-  </aside>
-  <section class="canvas" id="canvas" aria-live="polite">
-    {{ canvasArtifact(c) }}
-  </section>
-  {{ sh.stageBar(c, false) }}
+<div class="intake-zones">
+  {{ sh.railFrame(c) }}
+  {{ stageLayout(c) }}
 </div>
 {% endblock %}

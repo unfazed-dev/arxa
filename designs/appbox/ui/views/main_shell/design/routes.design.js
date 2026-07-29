@@ -6,21 +6,26 @@ import * as chat from './chat/chat_viewmodel.js';
 import * as freeze from './freeze/freeze_viewmodel.js';
 
 export default [
-  // design.prototype — the design prototype viewer (tab root: /design)
+  // design.prototype — the design stage (tab root: /design)
   ['GET', '/design', prototype.page],
   ['GET', '/design/rail', prototype.rail],
-  ['GET', '/design/screen/:id', prototype.screen],
+  ['GET', '/design/rail/:view', prototype.railView],
   ['GET', '/design/viewer', prototype.viewer],
-  ['GET', '/design/bar/:id', prototype.bar],
-  ['POST', '/design/screen/:id/messages', prototype.askScreen],
+  ['GET', '/design/screen/:id', prototype.screen],
 
-  // design.chat — per-screen conversation thread
+  // design.chat — the one design chat; context chips replace per-screen pages
   ['GET', '/design/chat', chat.page],
+  ['POST', '/design/chat/messages', chat.send],
+  ['GET', '/design/chat/context/:id', chat.context],
+  ['GET', '/design/chat/close', chat.close],
   ['GET', '/design/chat/screen/:id', chat.select],
   ['POST', '/design/chat/screen/:id/messages', chat.send],
   ['POST', '/design/chat/screen/:id/revert/:cp', chat.revert],
 
-  // design.freeze — freeze & trace
+  // design.freeze — freeze & trace + the manifest approval gate
   ['GET', '/design/freeze', freeze.page],
+  ['POST', '/design/freeze/messages', freeze.send],
   ['POST', '/design/freeze/recheck', freeze.recheck],
+  ['GET', '/design/freeze/context/:id', freeze.context],
+  ['GET', '/design/freeze/close', freeze.close],
 ];

@@ -1,13 +1,36 @@
 {% extends "ui/views/main_shell/main_shell_view.html" %}
 {% import "ui/common/primitives.html" as prim %}
 {% import "ui/common/timeline.html" as tl %}
+{% import "ui/views/main_shell/design/_shared.html" as sh %}
 {% block title %}appbox — Freeze & Trace{% endblock %}
+{% block main_class %}shell-main-loop{% endblock %}
 
 {# ---------- Named Fragments (renderable alone via freeze_view.html#macro) ----------
-   Timeline and the status pill come from ui/common/*; the manifest, trace,
-   traceability and drift cards stay here — they are freeze's own. #}
+   Same stage pattern as the prototype surface: chat docked beside the
+   artifact canvas (manifest + approval + trace). The approval card is the
+   human gate — the chat quick-reply "approve the manifest" signs it. #}
 
 {% macro timeline(c, oob) %}{{ tl.timeline(c, oob, 'Design progress') }}{% endmacro %}
+
+{# ---------- The approval card: the human gate that unlocks Build ---------- #}
+
+{% macro approvalCard(c) %}
+<article class="artifact approval-card {{ 'is-approved' if c.approval.approved }}" id="approval">
+  <header class="artifact-head">
+    <span class="eyebrow">design approval · the human gate</span>
+    {{ prim.statusPill('approved' if c.approval.approved else 'pending') }}
+  </header>
+  <h2 class="display">{{ 'Build unlocked' if c.approval.approved else 'Approve the frozen manifest' }}</h2>
+  <p class="artifact-lede">{{ c.approval.lede }}</p>
+  <p class="approval-note">{{ c.approval.note }}</p>
+  {% if not c.approval.approved %}
+  <form method="post" action="/design/freeze/messages"
+        hx-post="/design/freeze/messages" hx-target="#stage-layout" hx-swap="outerHTML">
+    <button type="submit" name="preset" value="approve" class="cta-main">approve the manifest</button>
+  </form>
+  {% endif %}
+</article>
+{% endmacro %}
 
 {# ---------- The manifest: what is locked, who signed it ---------- #}
 
@@ -105,6 +128,25 @@
 
 {# ---------- Fragment responses ---------- #}
 
+{% macro freezeCanvas(c) %}
+<section class="canvas freeze-canvas" id="design-canvas" aria-live="polite">
+  <div class="freeze-stack">
+    {{ approvalCard(c) }}
+    {{ manifestCard(c) }}
+    {{ traceCard(c) }}
+    {{ traceabilityCard(c) }}
+    {{ driftCard(c, false) }}
+  </div>
+</section>
+{% endmacro %}
+
+{% macro stageSwap(c) %}
+<div class="stage-layout {{ 'is-docked' if c.docked }}" id="stage-layout">
+  {{ sh.chatStage(c) }}
+  {{ freezeCanvas(c) }}
+</div>
+{% endmacro %}
+
 {% macro driftSwap(c) %}
 {{ driftCard(c, false) }}
 <div hx-swap-oob="beforeend:#toasts"><div class="toast" id="toast-drift">{{ c.toast }}</div></div>
@@ -112,15 +154,13 @@
 
 {# ---------- Page ---------- #}
 
-{% block timeline %}
+{% block bottombar %}
 {{ timeline(c, false) }}
 {% endblock %}
 
 {% block surface %}
-<div class="freeze-stack">
-  {{ manifestCard(c) }}
-  {{ traceCard(c) }}
-  {{ traceabilityCard(c) }}
-  {{ driftCard(c, false) }}
+<div class="loop-zones stage-zones">
+  {{ sh.railLeft(c) }}
+  {{ stageSwap(c) }}
 </div>
 {% endblock %}

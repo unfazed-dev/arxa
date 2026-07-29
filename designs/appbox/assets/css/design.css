@@ -1,35 +1,28 @@
 /* design.css — design-tab surfaces (prototype / chat / freeze).
-   Reuses app.css idioms (rail, canvas, msg, bar-thread, provenance, log-lines,
-   evidence, finding, toast); only surface-specific styles live here. */
+   Reuses app.css idioms (rail, canvas, msg, provenance, log-lines, evidence,
+   finding, toast) and the stage chrome from chat.css/rail.css; only
+   surface-specific styles live here. Context tones: chat.css owns the shared
+   palette (cyan/violet/olive/amber), viewer.css extends it (blue/ember) —
+   one hue per pinned screen, shared by chips, outlines, thumbs and cards. */
 
 /* ---------- shared: screen type badge ---------- */
 .tb-screen { color: var(--accent); background: var(--accent-soft); }
 
-/* ---------- chat: the dimmed surface strip ---------- */
-.chat-strip { gap: .4rem; }
-a.strip-card { text-decoration: none; color: inherit; }
-a.strip-card:hover { border-color: var(--tx-3); }
-.strip-card.is-dim { opacity: .42; }
-.strip-card.is-dim:hover { opacity: .8; }
+/* ---------- the stage shell: multi-view rail + #stage-layout ----------
+   #stage-layout's flex base and .is-docked canvas behaviour come from
+   build.css (the shared stage contract); chat.css's caller contract adds
+   position:relative so the docked chat can float. */
+.stage-zones #stage-layout { position: relative; }
 
-/* chat canvas: thread + context chip + checkpoints */
-.chat-artifact .chat-thread {
+/* the design canvases scroll like any .canvas */
+.design-canvas, .freeze-canvas { overflow: auto; }
+
+/* ---------- the design thread (inside the chat stage) ---------- */
+.chat-thread {
   display: flex; flex-direction: column; gap: .55rem;
-  max-height: 46dvh; overflow-y: auto; padding: .1rem;
+  padding: .1rem;
 }
-.ctx-row { display: flex; gap: .6rem; align-items: center; flex-wrap: wrap; }
-.ctx-chip {
-  display: inline-flex; gap: .5rem; align-items: center;
-  padding: .3rem .45rem .3rem .7rem; border-radius: 999px;
-  background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent);
-}
-.ctx-x {
-  width: 1.25rem; height: 1.25rem; border-radius: 50%;
-  display: inline-grid; place-items: center;
-  color: var(--accent); text-decoration: none; font-size: .8rem; line-height: 1;
-}
-.ctx-x:hover { background: var(--accent); color: var(--on-accent, #FFFCF0); }
-.ctx-note { font-size: .76rem; }
+.ctx-note { font-size: .76rem; margin: 0; }
 
 .checkpoint {
   align-self: stretch;
@@ -44,10 +37,30 @@ a.strip-card:hover { border-color: var(--tx-3); }
 .cp-revert { margin: 0; }
 .cp-revert button { padding: .3rem .75rem; font-size: .76rem; }
 
+/* ---------- the left rail: screens / artifacts / files views ---------- */
+a.rail-row { text-decoration: none; color: inherit; }
+a.rail-row:hover { border-color: var(--tx-3); }
+.rail-row code { overflow-wrap: anywhere; }
+/* a pinned screen's rail card carries its context tone (same hue as the
+   canvas outline and the chat chip) */
+.msg-ctx { border-color: var(--ctx); }
+.msg-ctx .cta-main { color: var(--ctx); box-shadow: inset 0 0 0 1px var(--ctx); }
+
 /* ---------- freeze: stacked single column ---------- */
 .freeze-stack { display: flex; flex-direction: column; gap: 2.2rem; }
 .freeze-stack .artifact { margin: 0; max-width: none; }
 .freeze-manifest .big-metric { font-size: clamp(2rem, 4.5vw, 3.2rem); }
+
+/* the approval card — the human gate that unlocks Build */
+.approval-card .display { margin-bottom: .2rem; }
+.approval-note { font-size: .88rem; color: var(--tx-2); }
+.approval-card.is-approved .approval-note { color: var(--ok); }
+.approval-card form { margin: 0; }
+.approval-card .cta-main {
+  display: inline-block; padding: .55rem 1.2rem; border: 0; border-radius: 999px;
+  background: var(--accent); color: var(--on-accent, #FFFCF0); font-weight: 600;
+  cursor: pointer;
+}
 
 .trace-rows { display: flex; flex-direction: column; }
 .trace-row {
@@ -61,17 +74,6 @@ a.strip-card:hover { border-color: var(--tx-3); }
 .trace-story { color: var(--tx-2); }
 .trace-code code { overflow-wrap: anywhere; }
 
-/* ---------- rungs ---------- */
-@media (max-width: 839px) {
-  .shot-compact .shot-frame  { width: 5.6rem; }
-  .shot-medium .shot-frame   { width: 8.6rem; }
-  .shot-expanded .shot-frame { width: 12.4rem; }
-}
 @media (max-width: 599px) {
-  .shots { flex-direction: column; align-items: flex-start; }
-  .shot-expanded .shot-frame { width: 100%; max-width: 15.2rem; }
-  .chat-artifact .chat-thread { max-height: none; }
   .trace-row { grid-template-columns: 1fr; gap: .2rem; }
-  .chat-strip { flex-direction: row; flex-wrap: nowrap; overflow-x: auto; max-height: none; }
-  .strip-card { flex: 0 0 12.5rem; }
 }

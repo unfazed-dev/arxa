@@ -40,6 +40,67 @@
   .dv-rungs { min-height: 26rem; }
 }
 
+/* ---------- board mode: every screen as an artboard (draft-all canvas) ----------
+   Same zero-JS pan idiom as .dv-rungs: the board is an overflow:auto pan area,
+   .dv-zoom is the canvas.js island's scale target. One row per artboard, its
+   rungs side by side at real device sizes; artboards never shrink. */
+.dv-board {
+  overflow: auto; flex: 1; min-height: 32rem;
+  padding: .4rem;
+  /* clear the floating filmstrip (10.2rem wide at left:0) so every
+     artboard's left-edge pin stays clickable */
+  padding-left: 11rem;
+}
+.dv-board .dv-zoom {
+  display: flex; flex-direction: column; gap: 2.2rem; align-items: flex-start;
+  width: max-content;
+  transform-origin: 0 0;
+}
+.dv-board:active { cursor: grabbing; }
+.dv-artboard {
+  flex: none; margin: 0;
+  display: flex; flex-direction: column; gap: .55rem;
+  padding: .7rem .8rem;
+  border-radius: var(--radius);
+  outline: 2px solid transparent; outline-offset: 4px;
+}
+.dv-artboard.is-dim { opacity: .45; }
+.dv-artboard.is-dim:hover { opacity: .8; }
+.dv-artboard.in-ctx { outline-color: var(--ctx); background: var(--bg); }
+.dv-ab-chrome {
+  display: flex; gap: .6rem; align-items: center;
+  font-size: .78rem; color: var(--tx-2);
+}
+.dv-ab-label code { font-size: .68rem; }
+.dv-ab-chrome .status-pill { margin-left: auto; }
+.dv-ab-rungs { display: flex; gap: 1.2rem; align-items: flex-start; }
+.dv-pin { color: var(--tx-3); text-decoration: none; font-size: .85rem; }
+.dv-pin:hover { color: var(--tx); }
+.dv-pin.on { color: var(--ctx); }
+
+/* ---------- context tones: chip ⇄ outline ⇄ thumb share one hue ----------
+   chat.css owns the shared palette (cyan/violet/olive/amber, with --ctx-soft
+   for the chips). The design facade's TONES extends it with blue/ember so 11
+   screens collide less; the extensions live here with both tokens. */
+.ctx-blue   { --ctx: #3473DF; --ctx-soft: rgba(52, 115, 223, .12); }
+.ctx-ember  { --ctx: #BC5215; --ctx-soft: rgba(188, 82, 21, .09); }
+#app[data-theme="dark"] .ctx-blue   { --ctx: #7FA5F0; --ctx-soft: rgba(127, 165, 240, .18); }
+#app[data-theme="dark"] .ctx-ember  { --ctx: #DA702C; --ctx-soft: rgba(218, 112, 44, .13); }
+
+.ctx-tag {
+  font-size: .68rem; padding: .08rem .5rem; border-radius: 999px;
+  color: var(--ctx); box-shadow: inset 0 0 0 1px var(--ctx);
+}
+
+/* context-picker thumbs: the pinned screen carries its chip tone */
+.dv-thumb.in-ctx .dv-thumb-clip { border-color: var(--ctx); box-shadow: 0 0 0 1.5px var(--ctx); }
+.dv-thumb.is-dim { opacity: .55; }
+.dv-thumb.is-dim:hover { opacity: .85; }
+
+@media (max-width: 599px) {
+  .dv-board { min-height: 26rem; }
+}
+
 /* ---------- the filmstrip: a floating card over the stage, no scrollbar ----------
    Single mode only (rungs has no strip). The strip leaves the flow and
    floats over the stage's left edge, vertically centered, as a self-contained

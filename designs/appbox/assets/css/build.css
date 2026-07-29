@@ -1,0 +1,110 @@
+/* ---------- build.loop: chat-centric layout ----------
+   The run thread is the chat (centered ⇄ docked right), the canvas holds the
+   open artifact, and the left multi-view rail carries run controls, the
+   thread filter, the artifact index, and the seeded commits/files views.
+   Shared chrome (.msg, .composer, .filter-item, .canvas, .artifact, …) lives
+   in app.css; chat_stage / rail_views component styles live in chat.css /
+   rail.css. Only build-specific selectors live here. */
+
+/* the two regions: left rail + chat stage (auto track: the rail's
+   CSS-resize pushes the stage instead of sliding under it) */
+.loop-layout {
+  display: grid; grid-template-columns: auto minmax(0, 1fr);
+  gap: 1rem; padding: 1rem;
+  height: calc(100dvh - var(--nav-h) - var(--tl-h));
+}
+#left-rail { min-height: 0; display: flex; flex-direction: column; }
+#left-rail > * { flex: 1; min-height: 0; }
+
+/* chat + canvas; centered vs docked is the chat_stage component's business —
+   build only sizes the canvas half when an artifact is open */
+#stage-layout { position: relative; min-width: 0; min-height: 0; display: flex; gap: 1rem; }
+#stage-layout.is-docked .canvas { flex: 1; min-width: 0; overflow-y: auto; }
+
+/* gate quick-replies inline on a pending-gate thread card */
+.gate-quick { display: flex; gap: .6rem; align-items: center; flex-wrap: wrap; }
+.gate-quick form { display: flex; gap: .45rem; }
+.gate-quick button { padding: .35rem .9rem; font-size: .78rem; }
+
+/* ---------- left rail views ---------- */
+.rail-view {
+  flex: 1; min-height: 0; overflow-y: auto;
+  display: flex; flex-direction: column; gap: .8rem;
+  padding: .8rem;
+}
+.rail-view-head { display: flex; flex-direction: column; gap: .28rem; }
+.rail-view-note { font-size: .76rem; margin: 0; }
+
+/* run view: whole-line control + per-stage rows with pause/resume/cancel */
+.run-controls { display: flex; }
+.run-controls button { width: 100%; }
+.run-stages {
+  list-style: none; margin: 0; padding: 0;
+  display: flex; flex-direction: column;
+}
+.run-stage {
+  display: flex; gap: .5rem; align-items: center; justify-content: space-between;
+  padding: .5rem .1rem; border-bottom: 1px solid var(--border);
+}
+.run-stage:last-child { border-bottom: 0; }
+.run-stage-main { display: flex; gap: .5rem; align-items: center; min-width: 0; }
+.run-stage-label { font-size: .84rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.run-stage-acts { display: flex; gap: .25rem; flex: none; }
+.run-stage-acts form { display: inline; }
+
+/* thread view: the card-type filter (items reuse .filter-item from app.css) */
+.thread-filter { display: flex; flex-direction: column; gap: .15rem; }
+
+/* artifacts view: everything openable, in pipeline order */
+.artifact-index {
+  list-style: none; margin: 0; padding: 0;
+  display: flex; flex-direction: column; gap: .15rem;
+}
+.artifact-index-link {
+  display: flex; gap: .5rem; align-items: center;
+  padding: .45rem .55rem; border-radius: 10px;
+  color: var(--tx); text-decoration: none; font-size: .84rem;
+}
+.artifact-index-link:hover { background: var(--bg-2); }
+.artifact-index-link.is-active { background: var(--accent-soft); }
+.artifact-index-label { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* commits view (seeded) */
+.commit-list {
+  list-style: none; margin: 0; padding: 0;
+  display: flex; flex-direction: column;
+}
+.commit {
+  display: flex; flex-direction: column; gap: .2rem;
+  padding: .55rem .1rem; border-bottom: 1px solid var(--border);
+}
+.commit:last-child { border-bottom: 0; }
+.commit-head { display: flex; gap: .5rem; align-items: baseline; justify-content: space-between; }
+.commit-hash { font-size: .76rem; color: var(--accent); }
+.commit-msg { font-size: .82rem; }
+
+/* files view (seeded) */
+.file-list {
+  list-style: none; margin: 0; padding: 0;
+  display: flex; flex-direction: column;
+}
+.file-row {
+  display: flex; gap: .55rem; align-items: center; justify-content: space-between;
+  padding: .45rem .1rem; border-bottom: 1px solid var(--border);
+}
+.file-row:last-child { border-bottom: 0; }
+.file-path { font-size: .76rem; overflow-wrap: anywhere; }
+.file-status-new { color: var(--ok); }
+.file-status-changed { color: var(--amber); }
+.file-status-frozen { color: var(--tx-2); }
+
+/* ---------- compact: rail above, stage below ---------- */
+@media (max-width: 900px) {
+  .loop-layout { grid-template-columns: 220px minmax(0, 1fr); gap: .75rem; padding: .75rem; }
+}
+@media (max-width: 640px) {
+  .loop-layout { display: flex; flex-direction: column; height: auto; gap: .75rem; padding: .75rem; }
+  #left-rail { flex: none; max-height: 40dvh; }
+  #stage-layout { flex-direction: column-reverse; }
+  #stage-layout.is-docked .canvas { overflow: visible; }
+}

@@ -1,0 +1,14 @@
+{% extends "ui/common/base.html" %}
+{% block title %}appbox{% endblock %}
+
+{% block content %}
+{# Chromeless splash — auto-advances to /auth. The meta refresh sits in the
+   body because base.html exposes no head block; browsers honour it anywhere.
+   Prototype-appropriate, zero JS. #}
+<meta http-equiv="refresh" content="2;url=/auth">
+<main class="splash">
+  <span class="splash-brand">appbox</span>
+  <p class="splash-tagline">{{ tagline }}</p>
+  <span class="splash-shimmer" role="progressbar" aria-label="Connecting to the appbox daemon"></span>
+</main>
+{% endblock %}

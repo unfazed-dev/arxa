@@ -14,3 +14,6 @@ export const narrative = () => data().narrative;
 export const replies = () => data().replies;
 export const replyFallback = () => data().replyFallback;
 export const counts = () => data().counts;
+// Seeded rail-view data — the real git wiring is a later stage.
+export const commits = () => data().commits;
+export const files = () => data().files;

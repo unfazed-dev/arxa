@@ -1,141 +1,30 @@
 {% extends "ui/views/main_shell/main_shell_view.html" %}
-{% import "ui/common/primitives.html" as prim %}
-{% import "ui/common/rail.html" as rail %}
 {% import "ui/common/timeline.html" as tl %}
-{% block title %}appbox — Screen Chat{% endblock %}
+{% import "ui/views/main_shell/design/prototype/prototype_view.html" as pv %}
+{% block title %}appbox — Design Chat{% endblock %}
 {% block main_class %}shell-main-loop{% endblock %}
 
-{# ---------- Named Fragments (renderable alone via chat_view.html#macro) ----------
-   Timeline, status pill and the composer come from ui/common/*; the surface
-   strip rail and the scoped-thread canvas stay here — they are chat's own. #}
+{# ---------- The retired Screen Chat surface, re-skinned ----------
+   Per-screen serial chat is gone: refinement happens in the one design chat
+   with pinned screens as context chips. This page keeps the /design/chat
+   route working on the new stage layout; ?screen=<id> deep-links a pin,
+   ?screen=none clears the context. Fragments the chat routes render live in
+   prototype_view.html (stageSwap) — the stage is identical, only the
+   timeline's current item differs. #}
 
-{% macro timeline(c, oob) %}{{ tl.timeline(c, oob, 'Design progress') }}{% endmacro %}
-
-{# ---------- The rail: every surface, dimmed except the one in context ---------- #}
-
-{% macro railList(c, oob) %}
-<div class="rail-list chat-strip" id="rail-list" {% if oob %}hx-swap-oob="outerHTML"{% endif %}>
-  {% for s in c.screens %}
-  <a class="msg msg-agent strip-card {{ 'is-active' if s.active }} {{ 'is-dim' if c.screen and not s.active }}"
-     href="/design/chat/screen/{{ s.id }}"
-     hx-get="/design/chat/screen/{{ s.id }}" hx-target="#canvas" hx-swap="innerHTML" hx-push-url="false">
-    <header class="msg-meta">
-      <span class="type-badge tb-screen">{{ s.epic }}</span>
-      {{ prim.statusPill(s.state) }}
-    </header>
-    <span class="msg-text">{{ s.label }}</span>
-    <span class="msg-detail">{{ s.id }}</span>
-  </a>
-  {% endfor %}
-</div>
-{% endmacro %}
-
-{# ---------- The canvas: the scoped thread, checkpoints, composer ---------- #}
-
-{% macro checkpointCard(c, cp) %}
-<div class="checkpoint {{ 'is-reverted' if cp.reverted }}">
-  <header class="cp-head">
-    <span class="fact-label">checkpoint {{ cp.id }}</span>
-    <span class="muted">{{ cp.summary }}</span>
-    <span class="msg-time">{{ cp.at }}</span>
-  </header>
-  {% if cp.before %}
-  <div class="cp-diff">
-    <span class="fact"><span class="fact-label">before</span>{{ cp.before }}</span>
-    <span class="fact"><span class="fact-label">after</span>{{ cp.after }}</span>
-  </div>
-  {% endif %}
-  {% if cp.reverted %}
-  <span class="bt-action-done" title="Reverted">reverted ✓</span>
-  {% else %}
-  <form class="cp-revert" method="post" action="/design/chat/screen/{{ c.screen.id }}/revert/{{ cp.id }}"
-        hx-post="/design/chat/screen/{{ c.screen.id }}/revert/{{ cp.id }}" hx-target="#canvas" hx-swap="innerHTML">
-    <button type="submit" class="ghost">↩ revert to {{ cp.id }}</button>
-  </form>
-  {% endif %}
-</div>
-{% endmacro %}
-
-{% macro chatCanvas(c) %}
-{% if c.screen %}
-<article class="artifact chat-artifact">
-  <header class="artifact-head">
-    <span class="eyebrow">screen chat</span>
-    {{ prim.statusPill(c.screen.state) }}
-  </header>
-  <h2 class="display">{{ c.t.chatHeadline }}</h2>
-  <p class="artifact-lede">{{ c.t.chatLede }}</p>
-  <p class="ctx-row">
-    <span class="ctx-chip" title="{{ c.t.ctxChipNote }}">
-      <code>{{ c.screen.id }}</code>
-      <a class="ctx-x" href="/design/chat?screen=none" aria-label="Remove this screen from context" title="Remove context">×</a>
-    </span>
-    <span class="muted ctx-note">{{ c.t.ctxChipNote }}</span>
-  </p>
-  <div class="chat-thread" aria-live="polite">
-    {% for m in c.thread %}
-      {% if m.kind == 'event' %}
-      <p class="bt-event">{{ m.text }}</p>
-      {% elif m.from == 'user' %}
-      <p class="bt-msg bt-user">{{ m.text }}</p>
-      {% else %}
-      <p class="bt-msg bt-agent">{{ m.text }}</p>
-      {% if m.checkpoint %}{{ checkpointCard(c, m.checkpoint) }}{% endif %}
-      {% endif %}
-    {% endfor %}
-  </div>
-  {{ rail.composer(c, false, {
-    action: '/design/chat/screen/' + c.screen.id + '/messages',
-    suggestions: [{value: 'edit-layout: stack the rail under the canvas on compact', label: 'edit-layout'},
-                  {value: 'restyle: make the pending state calmer', label: 'restyle'},
-                  {value: 'adjust-states: accent token on this screen', label: 'adjust-states'},
-                  {value: 'regenerate the compact 390 shot', label: 'regenerate'}],
-    placeholder: 'Refine ' + c.screen.label + '…', ariaLabel: 'Message about ' + c.screen.label,
-    plusAria: 'Scoped tools'
-  }) }}
-  <p class="artifact-foot muted">{{ c.t.staleNote }}</p>
-</article>
-{% else %}
-<article class="artifact">
-  <header class="artifact-head">
-    <span class="eyebrow">screen chat</span>
-  </header>
-  <h2 class="display">{{ c.t.chatHeadline }}</h2>
-  <p class="artifact-lede">{{ c.t.chatLede }}</p>
-  <p class="artifact-foot muted">{{ c.t.pickPrompt }}</p>
-</article>
-{% endif %}
-{% endmacro %}
-
-{# ---------- Fragment responses ---------- #}
-
-{% macro selectSwap(c) %}
-{{ chatCanvas(c) }}
-{{ railList(c, true) }}
-{% endmacro %}
-
-{% macro messageSwap(c) %}
-{{ chatCanvas(c) }}
-{% endmacro %}
+{% macro stageSwap(c) %}{{ pv.stageSwap(c) }}{% endmacro %}
 
 {% macro revertSwap(c) %}
-{{ chatCanvas(c) }}
+{{ pv.stageSwap(c) }}
 <div hx-swap-oob="beforeend:#toasts"><div class="toast" id="toast-revert">Checkpoint reverted — the screen is back, the record stays</div></div>
 {% endmacro %}
 
-{# ---------- Page ---------- #}
-
-{% block timeline %}
-{{ timeline(c, false) }}
+{% block bottombar %}
+{{ tl.timeline(c, false, 'Design progress') }}
 {% endblock %}
 
 {% block surface %}
-<div class="loop-zones">
-  <aside class="rail" aria-label="Surfaces">
-    {{ railList(c, false) }}
-  </aside>
-  <section class="canvas" id="canvas" aria-live="polite">
-    {{ chatCanvas(c) }}
-  </section>
+<div class="loop-zones stage-zones">
+  {{ pv.surfaceBody(c) }}
 </div>
 {% endblock %}

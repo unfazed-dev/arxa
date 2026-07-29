@@ -1,8 +1,10 @@
-{# The shell timeline: the whole line at a glance, current item highlighted.
+{# The shell timeline, now living in the shell's bottom bar (#bottom-bar):
+   the whole line at a glance, current item highlighted.
    Items carry { kind, state, label, ref, href? } and c.timeline.currentId is
    compared against ref. With `base` (build), each item loads its artifact
    onto the canvas via htmx; without it (design), authored hrefs navigate
-   plainly and href-less items render inert. `label` is the aria-label. #}
+   plainly and href-less items render inert — the bottom-bar stage timeline
+   uses this inert form. `label` is the aria-label. #}
 {% macro timeline(c, oob, label, base) %}
 <ol class="timeline" id="timeline" aria-label="{{ label }}" {% if oob %}hx-swap-oob="outerHTML"{% endif %}>
   {% for i in c.timeline.items %}

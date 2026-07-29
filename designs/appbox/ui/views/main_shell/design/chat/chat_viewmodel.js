@@ -4,24 +4,34 @@ import * as facade from '../../../../../services/facades/design_facade.js';
 
 const VIEW = 'ui/views/main_shell/design/chat/chat_view.html';
 
-// ?screen=<id> deep-links a scoped thread (the prototype's "refine this
-// screen →" link); ?screen=none removes the context chip.
+// The retired Screen Chat surface, re-skinned onto the stage layout.
+// ?screen=<id> pins a context chip; ?screen=none clears the context.
 export const page = (c, h) =>
-  h.render(c, VIEW, { activeTab: 'design', ...facade.chatContext(h.session(c).data, c.req.query('screen') ?? null, h.prefs(c)) });
+  h.render(c, VIEW, { activeTab: 'design', ...facade.stageContext(h.session(c).data, { line: 'refine', pin: c.req.query('screen') ?? null }, h.prefs(c)) });
 
-// Picking a surface swaps the canvas to its thread and re-dims the strip.
+// Filmstrip thumb / artboard pin / rail card: toggle a screen's context chip
+// (?state=toggle|on|off) — one swap re-renders chat chips + canvas outlines.
+export const context = (c, h) =>
+  h.render(c, `${VIEW}#stageSwap`, facade.toggleContext(h.session(c).data, c.req.param('id'), c.req.query('state') ?? 'toggle', h.prefs(c)));
+
+// Legacy per-screen pick: now pins the chip and swaps the stage.
 export const select = (c, h) =>
-  h.render(c, `${VIEW}#selectSwap`, facade.selectScreen(h.session(c).data, c.req.param('id'), h.prefs(c)));
+  h.render(c, `${VIEW}#stageSwap`, facade.toggleContext(h.session(c).data, c.req.param('id'), 'on', h.prefs(c)));
 
-// The composer: append the user's message and a scoped reply; the reply may
-// mint a checkpoint for this screen only.
+// The single composer path: 'draft-all' accepts the one-pass draft, 'approve'
+// signs the manifest, anything else refines the pinned screens. The legacy
+// per-screen route pins its screen first.
 export const send = async (c, h) => {
   const form = await h.form(c);
   const text = String(form.preset || form.text || '').trim();
   if (!text) return h.noContent(c);
-  return h.render(c, `${VIEW}#messageSwap`, facade.sendChat(h.session(c).data, c.req.param('id'), text, h.prefs(c)));
+  return h.render(c, `${VIEW}#stageSwap`, facade.sendChat(h.session(c).data, text, h.prefs(c), c.req.param('id') ?? null));
 };
 
-// One-tap revert of a checkpoint on this screen.
+// The close act on the docked chat: unpin all screens, recenter the chat.
+export const close = (c, h) =>
+  h.render(c, `${VIEW}#stageSwap`, facade.closeChat(h.session(c).data, {}, h.prefs(c)));
+
+// One-tap revert of a checkpoint on a screen.
 export const revert = (c, h) =>
   h.render(c, `${VIEW}#revertSwap`, facade.revertCheckpoint(h.session(c).data, c.req.param('id'), c.req.param('cp'), h.prefs(c)));

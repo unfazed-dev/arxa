@@ -1,0 +1,68 @@
+{# The chat stage, shared across every stage tab (story-map "Chat-Centric
+   Layout"): the chat is the centerpiece — a centered column when no artifact
+   is open (is-centered), the SAME markup re-classed into a floating right
+   rail when one is (is-docked). The caller owns the outer #stage-layout
+   container and renders thread + composer inside cs.wrap; these macros
+   provide the shell, the header and the context chips.
+   Macro-only file, like rail.html.
+
+   spec (shared by head/wrap):
+     eyebrow      — the stage line, e.g. "intake · interview"
+     chips: [{id, label, tone?, removeHref?}] — pinned conversation context
+                    rendered in the head (build's gate/artifact refs); tone is
+                    one of cyan/olive/amber/violet, cycling by index when
+                    absent; removeHref adds the × unpin action
+     docked       — true when an artifact is open (wrap only)
+     collapseHref — route that closes the artifact and recenters the chat;
+                    rendered whenever the chat is docked (the close act)
+
+   The ctxStrip macro is the OTHER context shape: pinned SCREENS as a
+   horizontal filmstrip of live thumbs, placed by the caller directly over
+   the composer (never in the head). items: [{id, label, tone, src,
+   removeHref?}] — src iframes the screen's stub render.
+
+   NOTE on Esc-to-close: the locked contract's hidden anchor used
+   hx-trigger="keyup[key=='Escape'] from:body" — the zero-JS lint
+   (runtime/lint.mjs) bans [expr] trigger filters outright, so the anchor is
+   dropped. Close paths that survive: the × collapse affordance and each
+   chip's ×. Revisit only if the lint gains an allow-list. #}
+
+{% macro head(spec) %}
+{% set tones = ['cyan', 'olive', 'amber', 'violet'] %}
+<header class="chat-head">
+  <span class="eyebrow">{{ spec.eyebrow }}</span>
+  {% if spec.chips %}
+  <span class="ctx-row chat-ctx">
+    {% for chip in spec.chips %}
+    <span class="ctx-chip ctx-{{ chip.tone or tones[loop.index0 % 4] }}"><code>{{ chip.id }}</code><span class="ctx-label">{{ chip.label }}</span>{% if chip.removeHref %}<a class="ctx-x" href="{{ chip.removeHref }}" hx-get="{{ chip.removeHref }}" hx-target="#stage-layout" hx-swap="outerHTML" hx-push-url="false" aria-label="Remove {{ chip.label }} from context">×</a>{% endif %}</span>
+    {% endfor %}
+  </span>
+  {% endif %}
+  {% if spec.docked and spec.collapseHref %}
+  <a class="chat-collapse" href="{{ spec.collapseHref }}" hx-get="{{ spec.collapseHref }}" hx-target="#stage-layout" hx-swap="outerHTML" hx-push-url="false" title="Close the artifact, recenter the chat" aria-label="Close the artifact, recenter the chat">×</a>
+  {% endif %}
+</header>
+{% endmacro %}
+
+{# The context filmstrip: pinned screens as live thumbs in a horizontal
+   scroll, rendered directly over the composer by the caller. #}
+{% macro ctxStrip(items) %}
+{% if items and items.length %}
+<div class="cs-strip" aria-label="Screens in context">
+  {% for s in items %}
+  <span class="dv-thumb cs-thumb ctx-{{ s.tone }}">
+    <span class="dv-thumb-clip"><iframe src="{{ s.src }}" scrolling="no" tabindex="-1" title="{{ s.label }}"></iframe></span>
+    <span class="dv-thumb-label"><code>{{ s.id }}</code>{% if s.removeHref %}<a class="ctx-x" href="{{ s.removeHref }}" hx-get="{{ s.removeHref }}" hx-target="#stage-layout" hx-swap="outerHTML" hx-push-url="false" aria-label="Remove {{ s.label }} from context">×</a>{% endif %}</span>
+  </span>
+  {% endfor %}
+</div>
+{% endif %}
+{% endmacro %}
+
+{# Wrap with call/caller: {% call cs.wrap(spec) %}thread + composer{% endcall %} #}
+{% macro wrap(spec) %}
+<section id="chat-stage" class="chat-stage {{ 'is-docked' if spec.docked else 'is-centered' }}">
+  {{ head(spec) }}
+  {{ caller() }}
+</section>
+{% endmacro %}

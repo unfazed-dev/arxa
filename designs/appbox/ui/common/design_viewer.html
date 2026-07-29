@@ -1,10 +1,14 @@
 {# ---------- Shared screen stage: live iframe + toolbar + device chrome + filmstrip ----------
-   One component, two modes:
+   One component, three modes:
      single — one screen at one authored viewport, filmstrip floating over the stage
      rungs  — the same screen at every authored width side by side, no strip
+     board  — every screen as an artboard with its rungs side by side at real
+              device sizes (the design tab's draft-all canvas); the filmstrip
+              floats as the CONTEXT PICKER
    Canon markup: the build evidence canvas. Any tab that can name screens
    with authored viewports renders this; every parameter travels in v:
-     v.screens  [{ id, label?, state?, chips? [{text,title}], viewports }]
+     v.screens  [{ id, label?, state?, chips? [{text,title}], viewports,
+                  inContext?, dim?, tone? }]
      v.active   id of the screen on stage (validated by the facade;
                 unset falls back to the first screen)
      v.vp       current viewport key (falls back to the screen's first)
@@ -13,8 +17,14 @@
      v.base     route prefix for viewer actions — toolbar and strip GET it
                 with screen/vp/bg/os/mode params, swap #design-viewer
      v.stubBase iframe src prefix — the served design render per screen
-     v.mode     'single' | 'rungs' (default single)
-     v.strip    filmstrip in single mode (default on; rungs never has one)
+     v.mode     'single' | 'rungs' | 'board' (default single)
+     v.strip    filmstrip in single/board mode (default on; rungs never has one)
+     v.contextBase — present only where screens can pin as chat context
+                (design tab): strip thumbs and artboard pins GET
+                {contextBase}{id}?state=toggle and swap #stage-layout, and the
+                toolbar's mode group gains 'board'. Screens in context render
+                with a .ctx-<tone> outline + an "in context" tag; s.dim artboards
+                fade back.
    A viewport entry is a key ('mobile'|'tablet'|'desktop') or an authored
    object { vp, width, height?, rung?, note?, shot? } — the design tab's rungs
    pass through as-is. Wiring: ui/common/_integration_viewer.md. #}
@@ -42,6 +52,68 @@
 {% endif %}
 {% endmacro %}
 
+{# The filmstrip. With v.contextBase it is the context picker: a thumb toggles
+   the screen's chat-context chip (in-context thumbs carry the chip's tone);
+   without it, a thumb puts its screen on stage (legacy single mode). Score
+   badges (s.chips) render in both shapes. #}
+{% macro filmstrip(v, active, vp, bg, os, mode) %}
+<div class="dv-strip dv-strip-float">
+  {% for s in v.screens %}
+  {% if v.contextBase %}
+  <a class="dv-thumb {{ 'in-ctx ctx-' + s.tone if s.inContext }} {{ 'is-dim' if s.dim }}"
+     href="{{ v.contextBase }}{{ s.id }}?state=toggle"
+     hx-get="{{ v.contextBase }}{{ s.id }}?state=toggle" hx-target="#stage-layout" hx-swap="outerHTML"
+     title="{{ s.id }} — {{ 'remove from chat context' if s.inContext else 'pin as chat context' }}">
+  {% else %}
+  <a class="dv-thumb {{ 'on' if s.id == active }}" href="{{ v.base }}?screen={{ s.id }}&vp={{ vp }}&bg={{ bg }}&os={{ os }}&mode={{ mode }}"
+     hx-get="{{ v.base }}?screen={{ s.id }}&vp={{ vp }}&bg={{ bg }}&os={{ os }}&mode={{ mode }}"
+     hx-target="#design-viewer" hx-swap="outerHTML"
+     title="{{ s.id }}">
+  {% endif %}
+    <span class="dv-thumb-clip"><iframe src="{{ v.stubBase }}{{ s.id }}?vp=mobile" scrolling="no" tabindex="-1" title=""></iframe></span>
+    <span class="dv-thumb-label">{{ s.label or s.id }}{% if s.state %} {{ prim.statusPill(s.state) }}{% endif %}</span>
+    {% if s.chips %}
+    <span class="dv-thumb-score">
+      {% for chip in s.chips %}<span class="probe-chip" title="{{ chip.title }}">{{ chip.text }}</span>{% endfor %}
+    </span>
+    {% endif %}
+  </a>
+  {% endfor %}
+</div>
+{% endmacro %}
+
+{# One artboard on the board: pin toggle + label + in-context tag chrome, the
+   rungs side by side at real device sizes underneath. #}
+{% macro artboard(v, s, os) %}
+{% set VP_SIZES = {'mobile': [390, 844], 'tablet': [744, 1133], 'desktop': [1280, 800]} %}
+<figure class="dv-artboard {{ 'in-ctx ctx-' + s.tone if s.inContext }} {{ 'is-dim' if s.dim }}" id="dv-ab-{{ s.id }}">
+  <header class="dv-ab-chrome">
+    <a class="dv-pin {{ 'on' if s.inContext }}" href="{{ v.contextBase }}{{ s.id }}?state=toggle"
+       hx-get="{{ v.contextBase }}{{ s.id }}?state=toggle" hx-target="#stage-layout" hx-swap="outerHTML"
+       aria-label="{{ 'Remove ' + s.id + ' from chat context' if s.inContext else 'Pin ' + s.id + ' as chat context' }}"
+       title="{{ 'Remove from chat context' if s.inContext else 'Pin as chat context' }}">{{ '●' if s.inContext else '○' }}</a>
+    <span class="dv-ab-label"><strong>{{ s.label or s.id }}</strong> <code>{{ s.id }}</code></span>
+    {% if s.inContext %}<span class="ctx-tag">in context</span>{% endif %}
+    {% if s.state %}{{ prim.statusPill(s.state) }}{% endif %}
+  </header>
+  <div class="dv-ab-rungs">
+    {% for e in s.viewports %}
+    {% set key = e.vp or e %}
+    {% set w = e.width or VP_SIZES[key][0] %}
+    {% set h = e.height or VP_SIZES[key][1] %}
+    <figure class="dv-rung">
+      {{ deviceChrome(v, s.id, key, w, h, os) }}
+      <figcaption class="dv-rung-cap">
+        <span><strong>{{ w }}×{{ h }}</strong> · {{ e.rung or key }}</span>
+        {% if e.note %}<span class="muted">{{ e.note }}</span>{% endif %}
+        {% if e.shot %}<code>{{ e.shot }}</code>{% endif %}
+      </figcaption>
+    </figure>
+    {% endfor %}
+  </div>
+</figure>
+{% endmacro %}
+
 {% macro designViewer(v) %}
 {% set VP_SIZES = {'mobile': [390, 844], 'tablet': [744, 1133], 'desktop': [1280, 800]} %}
 {% set mode = v.mode or 'single' %}
@@ -49,6 +121,8 @@
 {% set bg = v.bg or 'canvas' %}
 {% set active = v.active or v.screens[0].id %}
 {% set strip = v.strip if v.strip is defined else true %}
+{% set modes = ['single', 'rungs', 'board'] if v.contextBase else ['single', 'rungs'] %}
+{% set modeTitles = {'single': 'One screen at one authored viewport', 'rungs': 'The same screen at every authored width', 'board': 'Every screen as an artboard — the draft-all canvas'} %}
 {# nunjucks has no namespace and selectattr can't compare to a value, so the
    one screen whose id matches renders the stage (ids are unique). Facades
    pass a validated active — build's viewerFor already falls back to the
@@ -86,11 +160,11 @@
       {% endfor %}
     </span>
     <span class="dv-group" role="group" aria-label="Stage mode">
-      {% for m in ['single', 'rungs'] %}
+      {% for m in modes %}
       <a class="dv-chip {{ 'on' if m == mode }}" href="{{ v.base }}?screen={{ active }}&vp={{ vp }}&bg={{ bg }}&os={{ os }}&mode={{ m }}"
          hx-get="{{ v.base }}?screen={{ active }}&vp={{ vp }}&bg={{ bg }}&os={{ os }}&mode={{ m }}"
          hx-target="#design-viewer" hx-swap="outerHTML"
-         title="{{ 'One screen at one authored viewport' if m == 'single' else 'The same screen at every authored width' }}">{{ m }}</a>
+         title="{{ modeTitles[m] }}">{{ m }}</a>
       {% endfor %}
     </span>
     <span class="dv-sim" title="Run this screen in a live iOS/Android simulator inside appbox. Desktop hosts only — the mechanism is being researched; this chip is the design contract.">▶ sim · desktop only</span>
@@ -113,26 +187,20 @@
     {% endfor %}
     </div>
   </div>
+  {% elif mode == 'board' %}
+  <div class="dv-body">
+    {% if strip %}{{ filmstrip(v, active, vp, bg, os, mode) }}{% endif %}
+    <div class="dv-board">
+      <div class="dv-zoom">
+        {% for s in v.screens %}
+        {{ artboard(v, s, os) }}
+        {% endfor %}
+      </div>
+    </div>
+  </div>
   {% else %}
   <div class="dv-body">
-    {% if strip %}
-    <div class="dv-strip dv-strip-float">
-      {% for s in v.screens %}
-      <a class="dv-thumb {{ 'on' if s.id == active }}" href="{{ v.base }}?screen={{ s.id }}&vp={{ vp }}&bg={{ bg }}&os={{ os }}&mode={{ mode }}"
-         hx-get="{{ v.base }}?screen={{ s.id }}&vp={{ vp }}&bg={{ bg }}&os={{ os }}&mode={{ mode }}"
-         hx-target="#design-viewer" hx-swap="outerHTML"
-         title="{{ s.id }}">
-        <span class="dv-thumb-clip"><iframe src="{{ v.stubBase }}{{ s.id }}?vp=mobile" scrolling="no" tabindex="-1" title=""></iframe></span>
-        <span class="dv-thumb-label">{{ s.label or s.id }}{% if s.state %} {{ prim.statusPill(s.state) }}{% endif %}</span>
-        {% if s.chips %}
-        <span class="dv-thumb-score">
-          {% for chip in s.chips %}<span class="probe-chip" title="{{ chip.title }}">{{ chip.text }}</span>{% endfor %}
-        </span>
-        {% endif %}
-      </a>
-      {% endfor %}
-    </div>
-    {% endif %}
+    {% if strip %}{{ filmstrip(v, active, vp, bg, os, mode) }}{% endif %}
     <div class="dv-stage">
       <div class="dv-zoom">
       {% for e in screen.viewports %}{% if (e.vp or e) == vp %}

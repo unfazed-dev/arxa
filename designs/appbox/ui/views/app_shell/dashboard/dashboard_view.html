@@ -1,0 +1,119 @@
+{% extends "ui/views/main_shell/main_shell_view.html" %}
+{% block title %}appbox — Dashboard{% endblock %}
+
+{% block surface %}
+<span class="eyebrow">app</span>
+<div class="dash-head">
+  <div>
+    <h1 class="display">Good to see you, {{ account.name }}</h1>
+    <p class="muted">{{ gateCount }} gate{{ 's' if gateCount != 1 }} need{{ 's' if gateCount == 1 }} you · {{ projects.length }} projects on this tailnet</p>
+  </div>
+  {# Pair-a-device entry point — opens the QR modal (pure <details>, no JS).
+     The open summary becomes the scrim: clicking anywhere outside closes. #}
+  <details class="modal">
+    <summary class="modal-trigger"><span class="modal-open-label">Pair a device</span><span class="modal-close-label" aria-hidden="true">×</span></summary>
+    <div class="modal-card pair-modal" role="dialog" aria-modal="true" aria-label="Pair a device">
+      <h2>Pair a device</h2>
+      <p class="muted">Scan with the phone or tablet you want to approve gates from.</p>
+      <div class="qr" role="img" aria-label="Prototype QR placeholder — decorative, not scannable" style="--qr-n: {{ pairingModal.qr.length }}">
+        {% for row in pairingModal.qr %}{% for cell in row %}<span class="qr-c {{ 'on' if cell == '1' }}"></span>{% endfor %}{% endfor %}
+      </div>
+      <p class="pair-code"><code>{{ pairingModal.code }}</code></p>
+      <p class="pair-expiry">{{ pairingModal.expiresLabel }}</p>
+      <p class="pair-fingerprint muted"><code>{{ pairingModal.fingerprint }}</code></p>
+    </div>
+  </details>
+</div>
+
+{# Needs-you strip — pending human gates across projects, quick actions seeded. #}
+<section class="dash-section" aria-labelledby="needs-h">
+  <h2 id="needs-h">Needs you</h2>
+  {% if gates.length %}
+  <div class="gates-strip" role="list">
+    {% for g in gates %}
+    <article class="gate-card" role="listitem">
+      <div class="gate-card-head">
+        <span class="chip gate-stage gate-stage-{{ g.stage }}">{{ g.stage }}</span>
+        <span class="gate-waiting">{{ g.waiting }}</span>
+      </div>
+      <h3>{{ g.gate }}</h3>
+      <p class="gate-project">{{ g.project }}</p>
+      <p class="gate-summary muted">{{ g.summary }}</p>
+      <form class="gate-actions" method="post" action="/dashboard/gates/decide">
+        <input type="hidden" name="gate" value="{{ g.id }}">
+        <button type="submit" name="decision" value="approve">Approve</button>
+        <button type="submit" name="decision" value="reject" class="ghost">Reject</button>
+      </form>
+    </article>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="dash-empty muted">Nothing needs you — every gate is decided. New gates land here the moment a run goes red or a stage finishes.</p>
+  {% endif %}
+</section>
+
+{# Project grid — name, targets, stage, last activity, open into intake. #}
+<section class="dash-section" aria-labelledby="proj-h">
+  <h2 id="proj-h">Projects</h2>
+  <div class="proj-grid">
+    {% for p in projects %}
+    <article class="proj-card">
+      <div class="proj-card-head">
+        <h3>{{ p.name }}</h3>
+        <span class="chip proj-stage proj-stage-{{ p.stage }}">{{ p.stageLabel }}</span>
+      </div>
+      <p class="proj-targets">
+        {% for t in p.targets %}<span class="chip">{{ t }}</span>{% endfor %}
+      </p>
+      <div class="proj-card-foot">
+        <span class="proj-saved muted">{{ p.lastSaved }}</span>
+        <a class="proj-open" href="/intake">open →</a>
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+</section>
+
+{# Analytics trio — CSS bar charts, no JS. #}
+<section class="dash-section" aria-labelledby="stats-h">
+  <h2 id="stats-h">This week</h2>
+  <div class="stat-trio">
+    {% for key in ['runs', 'stageTime', 'gateLatency'] %}
+    {% set s = stats[key] %}
+    <article class="stat-card">
+      <p class="stat-label muted">{{ s.label }}</p>
+      <p class="stat-total">{{ s.total }} <span class="stat-unit">{{ s.unit }}</span></p>
+      <div class="bars" role="img" aria-label="{{ s.label }}: {% for b in s.bars %}{{ b.label }} {{ b.value }}{{ ', ' if not loop.last }}{% endfor %}">
+        {% for b in s.bars %}<span class="bar" style="--h: {{ b.height }}%" title="{{ b.label }}: {{ b.value }}"></span>{% endfor %}
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+</section>
+
+{# New project — a GenUI wizard in chat style. Repo connect is deferred to
+   the first gate; the note says so. POST creates a seeded row → /intake. #}
+<section class="dash-section" aria-labelledby="wizard-h">
+  <h2 id="wizard-h">New project</h2>
+  <div class="wizard">
+    <p class="wizard-agent">{{ wizard.prompt }}</p>
+    <form class="wizard-form" method="post" action="/dashboard/projects">
+      <label class="auth-label" for="wizard-name">Project name</label>
+      <input id="wizard-name" type="text" name="name" placeholder="e.g. Foxglove" autocomplete="off">
+      <fieldset class="wizard-targets">
+        <legend class="auth-label">Targets</legend>
+        {% for t in wizard.targets %}
+        <label class="wizard-chip">
+          <input type="checkbox" name="targets" value="{{ t }}" {{ 'checked' if t == 'web' }}>
+          <span>{{ t }}</span>
+        </label>
+        {% endfor %}
+      </fieldset>
+      <div class="wizard-foot">
+        <p class="wizard-note muted">{{ wizard.note }}</p>
+        <button type="submit">Create project</button>
+      </div>
+    </form>
+  </div>
+</section>
+{% endblock %}

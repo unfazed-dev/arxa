@@ -29,6 +29,7 @@
 <article class="artifact doc-artifact">
   <header class="artifact-head">
     <span class="eyebrow">design brief · generated</span>
+    {% if c.approval.stale %}<span class="rv-badge rv-warn">changed since approval</span>{% endif %}
     <span class="chip">{{ a.brief.surfaces | length }} surfaces traced</span>
   </header>
   <h2 class="display">{{ a.brief.title }}</h2>
@@ -90,7 +91,7 @@
   {{ inventory(c, a.surfaces) }}
   <p class="artifact-foot">
     <a href="{{ c.base }}/artifact/doc/full"
-       hx-get="{{ c.base }}/artifact/doc/full" hx-target="#canvas" hx-swap="innerHTML" hx-push-url="false">← back to the brief</a>
+       hx-get="{{ c.base }}/artifact/doc/full" hx-target="#stage-layout" hx-swap="outerHTML" hx-push-url="false">← back to the brief</a>
   </p>
 </article>
 {% endmacro %}
@@ -102,42 +103,35 @@
 {% endif %}
 {% endmacro %}
 
+{% macro stageLayout(c) %}
+<div id="stage-layout" class="{{ 'is-docked' if c.docked }}">
+  {% if c.docked %}
+  <section class="canvas" id="canvas" aria-live="polite">
+    {{ canvasArtifact(c) }}
+  </section>
+  {% endif %}
+  {{ sh.chatStage(c) }}
+</div>
+{% endmacro %}
+
 {# ---------- Fragment responses ---------- #}
 
-{% macro canvasSwap(c) %}
-{{ canvasArtifact(c) }}
-{{ sh.railList(c, true) }}
-{{ sh.stageBar(c, true) }}
+{% macro stageSwap(c) %}
+{{ stageLayout(c) }}
+{{ sh.timeline(c, true) }}
 {% endmacro %}
 
-{% macro messageSwap(c) %}
-{{ canvasArtifact(c) }}
-{{ sh.railList(c, true) }}
-{{ sh.composer(c, true) }}
-{{ sh.stageBar(c, true) }}
-{% endmacro %}
-
-{% macro barSwap(c) %}
-{{ sh.stageBar(c, false) }}
-{% endmacro %}
-
-{% macro scopedSwap(c) %}
-{{ sh.stageBar(c, false) }}
-{{ sh.railList(c, true) }}
+{% macro railSwap(c) %}
+{{ sh.railBody(c) }}
 {% endmacro %}
 
 {# ---------- Page ---------- #}
 
+{% block bottombar %}{{ sh.timeline(c, false) }}{% endblock %}
+
 {% block surface %}
-<div class="loop-zones">
-  <aside class="rail" aria-label="Agent narrative">
-    {{ sh.railBar(c, false) }}
-    {{ sh.railList(c, false) }}
-    {{ sh.composer(c, false) }}
-  </aside>
-  <section class="canvas" id="canvas" aria-live="polite">
-    {{ canvasArtifact(c) }}
-  </section>
-  {{ sh.stageBar(c, false) }}
+<div class="intake-zones">
+  {{ sh.railFrame(c) }}
+  {{ stageLayout(c) }}
 </div>
 {% endblock %}

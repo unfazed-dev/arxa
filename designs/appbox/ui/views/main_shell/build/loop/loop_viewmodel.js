@@ -8,17 +8,28 @@ const STUB_VIEW = 'ui/views/main_shell/build/loop/screen_stub_view.html';
 export const page = (c, h) =>
   h.render(c, VIEW, { activeTab: 'build', ...facade.loopContext(h.session(c).data, c.req.query('artifact') ?? null, h.prefs(c)) });
 
-// Clicking a narrative message swaps the canvas to that artifact.
-// ?bar=open also opens the stage bar (the "ask ↩" card action); the bar's
-// open state lives in the session (barOpenFor) so it survives swaps.
+// Clicking a thread card (or a rail artifact row) opens the artifact
+// center-stage and docks the chat right.
 export const artifact = (c, h) => {
   const ref = `${c.req.param('kind')}/${c.req.param('id')}`;
-  if (c.req.query('bar') === 'open') h.session(c).data.barOpenFor = ref;
-  return h.render(c, `${VIEW}#canvasSwap`, facade.showArtifact(h.session(c).data, ref, h.prefs(c)));
+  return h.render(c, `${VIEW}#stageSwap`, facade.showArtifact(h.session(c).data, ref, h.prefs(c)));
 };
 
-// The composer: append the user's message and a simulated agent reply;
-// the reply may pull a new artifact onto the canvas.
+// Closing the artifact (the context chip's ×) centers the chat again.
+export const closeArtifact = (c, h) =>
+  h.render(c, `${VIEW}#stageSwap`, facade.closeArtifact(h.session(c).data, h.prefs(c)));
+
+// Gate context chips: "reject with note" pins the gate above the composer;
+// the chip's × unpins it.
+export const pinChip = (c, h) =>
+  h.render(c, `${VIEW}#stageSwap`, facade.pinChip(h.session(c).data, c.req.query('ref'), h.prefs(c)));
+
+export const unpinChip = (c, h) =>
+  h.render(c, `${VIEW}#stageSwap`, facade.unpinChip(h.session(c).data, c.req.query('ref'), h.prefs(c)));
+
+// The composer: append the user's message and a simulated agent reply.
+// With a gate chip pinned, the facade treats the message as the reject
+// note + decision (single input path — no separate note field).
 export const sendMessage = async (c, h) => {
   const form = await h.form(c);
   const text = String(form.preset || form.text || '').trim();
@@ -31,27 +42,29 @@ export const decide = async (c, h) => {
   return h.render(c, `${VIEW}#decisionSwap`, facade.decide(h.session(c).data, form.gate, form.decision, form.note, h.prefs(c)));
 };
 
-// Rail top-bar filter: ?type=stage|gate|findings|evidence|note|all.
+// Left rail: ?view=run|thread|artifacts|commits|files switches the rail's
+// view; ?type=stage|gate|findings|evidence|note|all filters the chat thread.
 export const rail = (c, h) => {
+  const view = c.req.query('view');
+  if (view) return h.render(c, `${VIEW}#railViewSwap`, facade.setRailView(h.session(c).data, view, h.prefs(c)));
   h.session(c).data.railFilter = c.req.query('type') ?? 'all';
   return h.render(c, `${VIEW}#filterSwap`, facade.loopContext(h.session(c).data, null, h.prefs(c)));
 };
 
-// Rail top-bar run control: pause | resume.
+// Run control (run view): pause | resume the whole line.
 export const runControl = async (c, h) => {
   const form = await h.form(c);
   return h.render(c, `${VIEW}#runSwap`, facade.runControl(h.session(c).data, String(form.action), h.prefs(c)));
 };
 
-// Stage bar toggle: ?state=open renders the toolbar, ?state=fab the button.
-// Evidence canvases carry a chooser first (?mode=thread|review) — the canvas
-// has two things to do (talk / inspect designs) and the FAB picks one.
+// Legacy stage-bar route — the FAB pattern is retired. state=open keeps the
+// artifact open center-stage; state=fab closes it (chat centers).
 export const bar = (c, h) => {
   const ref = `${c.req.param('kind')}/${c.req.param('id')}`;
-  const state = c.req.query('state');
-  h.session(c).data.barOpenFor = state === 'fab' ? null : ref;
-  h.session(c).data.barMode = state === 'fab' ? null : c.req.query('mode') ?? null;
-  return h.render(c, `${VIEW}#barSwap`, facade.loopContext(h.session(c).data, ref, h.prefs(c)));
+  const ctx = c.req.query('state') === 'fab'
+    ? facade.closeArtifact(h.session(c).data, h.prefs(c))
+    : facade.showArtifact(h.session(c).data, ref, h.prefs(c));
+  return h.render(c, `${VIEW}#stageSwap`, ctx);
 };
 
 // The design viewer on the evidence canvas: toolbar and filmstrip acts swap
@@ -67,16 +80,17 @@ export const evidenceViewer = (c, h) =>
 export const screenStub = (c, h) =>
   h.render(c, STUB_VIEW, facade.screenStub(c.req.param('surface'), c.req.query('vp'), h.prefs(c)));
 
-// Stage-bar follow-up: artifact-scoped thread, bar stays open.
+// Legacy per-canvas follow-up — now an ordinary chat message with the
+// artifact open as the context chip.
 export const askArtifact = async (c, h) => {
   const form = await h.form(c);
   const text = String(form.text || '').trim();
   if (!text) return h.noContent(c);
   const ref = `${c.req.param('kind')}/${c.req.param('id')}`;
-  return h.render(c, `${VIEW}#scopedSwap`, facade.askArtifact(h.session(c).data, ref, text, h.prefs(c)));
+  return h.render(c, `${VIEW}#messageSwap`, facade.askArtifact(h.session(c).data, ref, text, h.prefs(c)));
 };
 
-// Stage-bar stage control: pause | resume | cancel one stage.
+// Stage control (run view): pause | resume | cancel one stage.
 export const stageControl = async (c, h) => {
   const form = await h.form(c);
   return h.render(c, `${VIEW}#controlSwap`, facade.stageControl(h.session(c).data, c.req.param('id'), String(form.action), h.prefs(c)));

@@ -1,32 +1,44 @@
 [
-  { "id": "main.shell",      "label": "Main Shell",      "surface": "main_shell_view",      "tab": "main",      "comp": "MainShell" },
-  { "id": "access.shell",    "label": "Access Shell",    "surface": "access_shell_view",    "tab": "access",    "comp": "AccessShell" },
-  { "id": "workspace.shell", "label": "Workspace Shell", "surface": "workspace_shell_view", "tab": "workspace", "comp": "WorkspaceShell" },
-  { "id": "first.shell",     "label": "First Shell",     "surface": "first_shell_view",     "tab": "first",     "comp": "FirstShell" },
+  { "id": "app.access",        "label": "Access",       "surface": "main_shell_app_access_view",        "tab": "app",       "comp": "AppAccess" },
+  { "id": "app.dashboard",     "label": "Dashboard",    "surface": "main_shell_app_dashboard_view",     "tab": "app",       "comp": "AppDashboard" },
+  { "id": "app.projects",      "label": "Projects",     "surface": "main_shell_app_projects_view",      "tab": "app",       "comp": "AppProjects" },
+  { "id": "app.pairing",       "label": "Pairing",      "surface": "main_shell_app_pairing_view",       "tab": "app",       "comp": "AppPairing" },
+  { "id": "app.notifications", "label": "Notifications", "surface": "main_shell_app_notifications_view", "tab": "app",      "comp": "AppNotifications" },
+  { "id": "app.remote",        "label": "Remote",       "surface": "main_shell_app_remote_view",        "tab": "app",       "comp": "AppRemote" },
 
-  { "id": "intake.mapping",   "label": "Story Mapping",     "surface": "main_shell_intake_mapping_view",   "tab": "intake",    "comp": "IntakeMapping" },
-  { "id": "intake.brief",     "label": "Design Brief",      "surface": "main_shell_intake_brief_view",     "tab": "intake",    "comp": "IntakeBrief" },
-  { "id": "intake.moodboard", "label": "Moodboard",         "surface": "main_shell_intake_moodboard_view", "tab": "intake",    "comp": "IntakeMoodboard" },
+  { "id": "intake.interview", "label": "Interview", "surface": "main_shell_intake_interview_view", "tab": "intake", "comp": "IntakeInterview" },
+  { "id": "intake.mapping",   "label": "Mapping",   "surface": "main_shell_intake_mapping_view",   "tab": "intake", "comp": "IntakeMapping" },
+  { "id": "intake.live",      "label": "Live Map",  "surface": "main_shell_intake_live_view",      "tab": "intake", "comp": "IntakeLive" },
+  { "id": "intake.brief",     "label": "Brief",     "surface": "main_shell_intake_brief_view",     "tab": "intake", "comp": "IntakeBrief" },
+  { "id": "intake.moodboard", "label": "Moodboard", "surface": "main_shell_intake_moodboard_view", "tab": "intake", "comp": "IntakeMoodboard" },
 
-  { "id": "design.prototype", "label": "Prototype",         "surface": "main_shell_design_prototype_view", "tab": "design",    "comp": "DesignPrototype" },
-  { "id": "design.chat",      "label": "Screen Chat",       "surface": "main_shell_design_chat_view",      "tab": "design",    "comp": "DesignChat" },
-  { "id": "design.freeze",    "label": "Freeze & Trace",    "surface": "main_shell_design_freeze_view",    "tab": "design",    "comp": "DesignFreeze" },
+  { "id": "design.prototype", "label": "Prototype", "surface": "main_shell_design_prototype_view", "tab": "design", "comp": "DesignPrototype" },
+  { "id": "design.chat",      "label": "Chat",      "surface": "main_shell_design_chat_view",      "tab": "design", "comp": "DesignChat" },
+  { "id": "design.freeze",    "label": "Freeze",    "surface": "main_shell_design_freeze_view",    "tab": "design", "comp": "DesignFreeze" },
 
-  { "id": "build.loop",       "label": "Build Monitor",     "surface": "main_shell_build_loop_view",       "tab": "build",     "comp": "BuildLoop" },
-  { "id": "build.gates",      "label": "Gates",             "surface": "main_shell_build_gates_view",      "tab": "build",     "comp": "BuildGates" },
-  { "id": "build.visual",     "label": "Visual Fidelity",   "surface": "main_shell_build_visual_view",     "tab": "build",     "comp": "BuildVisual" },
+  { "id": "chat.chat2",  "label": "Chat Stage", "surface": "main_shell_chat_chat2_view",  "tab": "chat", "comp": "ChatChat2" },
+  { "id": "chat.rails",  "label": "Rails",      "surface": "main_shell_chat_rails_view",  "tab": "chat", "comp": "ChatRails" },
+  { "id": "chat.bottom", "label": "Bottom Bar", "surface": "main_shell_chat_bottom_view", "tab": "chat", "comp": "ChatBottom" },
 
-  { "id": "flows.canvas",     "label": "Flows Canvas",      "surface": "main_shell_flows_canvas_view",     "tab": "flows",     "comp": "FlowsCanvas" },
+  { "id": "build.loop",   "label": "Loop",   "surface": "main_shell_build_loop_view",   "tab": "build", "comp": "BuildLoop" },
+  { "id": "build.gates",  "label": "Gates",  "surface": "main_shell_build_gates_view",  "tab": "build", "comp": "BuildGates" },
+  { "id": "build.visual", "label": "Visual", "surface": "main_shell_build_visual_view", "tab": "build", "comp": "BuildVisual" },
 
-  { "id": "ship.deploy",      "label": "Ship & Deploy",     "surface": "main_shell_ship_deploy_view",      "tab": "ship",      "comp": "ShipDeploy" },
+  { "id": "source.git",   "label": "Git",   "surface": "main_shell_source_git_view",   "tab": "source", "comp": "SourceGit" },
+  { "id": "source.files", "label": "Files", "surface": "main_shell_source_files_view", "tab": "source", "comp": "SourceFiles" },
 
-  { "id": "access.pairing",       "label": "Pairing & Devices", "surface": "access_shell_pairing_view",       "tab": "access", "comp": "AccessPairing" },
-  { "id": "access.notifications", "label": "Notifications",     "surface": "access_shell_notifications_view", "tab": "access", "comp": "AccessNotifications" },
-  { "id": "access.remote",        "label": "Remote Access",     "surface": "access_shell_remote_view",        "tab": "access", "comp": "AccessRemote" },
+  { "id": "flows.canvas", "label": "Canvas", "surface": "main_shell_flows_canvas_view", "tab": "flows", "comp": "FlowsCanvas" },
 
-  { "id": "first.showcase", "label": "Showcase",        "surface": "first_shell_showcase_view", "tab": "first", "comp": "FirstShowcase" },
-  { "id": "first.honesty",  "label": "Honesty & Stubs", "surface": "first_shell_honesty_view",  "tab": "first", "comp": "FirstHonesty" },
+  { "id": "ship.deploy", "label": "Deploy", "surface": "main_shell_ship_deploy_view", "tab": "ship", "comp": "ShipDeploy" },
 
-  { "id": "workspace.projects", "label": "Projects", "surface": "workspace_shell_projects_view", "tab": "workspace", "comp": "WorkspaceProjects" },
-  { "id": "workspace.settings", "label": "Settings", "surface": "workspace_shell_settings_view", "tab": "workspace", "comp": "WorkspaceSettings" }
+  { "id": "first.showcase", "label": "Showcase", "surface": "main_shell_first_showcase_view", "tab": "first", "comp": "FirstShowcase" },
+  { "id": "first.honesty",  "label": "Honesty",  "surface": "main_shell_first_honesty_view",  "tab": "first", "comp": "FirstHonesty" },
+
+  { "id": "workspace.projects2", "label": "Projects", "surface": "main_shell_workspace_projects2_view", "tab": "workspace", "comp": "WorkspaceProjects2" },
+  { "id": "workspace.settings",  "label": "Settings", "surface": "main_shell_workspace_settings_view",  "tab": "workspace", "comp": "WorkspaceSettings" },
+
+  { "id": "website.site",      "label": "Site",     "surface": "main_shell_website_site_view",      "tab": "website", "comp": "WebsiteSite" },
+  { "id": "website.docs",      "label": "Docs",     "surface": "main_shell_website_docs_view",      "tab": "website", "comp": "WebsiteDocs" },
+  { "id": "website.showcase2", "label": "Showcase", "surface": "main_shell_website_showcase2_view", "tab": "website", "comp": "WebsiteShowcase2" },
+  { "id": "website.download",  "label": "Download", "surface": "main_shell_website_download_view",  "tab": "website", "comp": "WebsiteDownload" }
 ]

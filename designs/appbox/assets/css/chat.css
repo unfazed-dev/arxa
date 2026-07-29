@@ -1,0 +1,130 @@
+/* chat.css — the chat stage (story-map "Chat-Centric Layout").
+   One component, two states, switched server-side by a class on #chat-stage:
+     is-centered — no artifact open: centered column, vertically centered in
+                   the stage; the composer hugs the thread, the whole block
+                   centers (margin: auto) so short threads never top-pin.
+     is-docked   — artifact open: the same markup floats as a right rail,
+                   a card with the rail aesthetic (border/radius/shadow-2),
+                   composer pinned to its bottom.
+   Widths live in tokens so a future view-transition (globalViewTransitions
+   is on in base.html) animates between states smoothly.
+   Caller contract: #stage-layout is a flex column with position:relative;
+   the thread uses .chat-thread, the composer comes from rail.composer. */
+
+.chat-stage {
+  --chat-w: 45rem;       /* ~720px centered column */
+  --chat-w-dock: 22.5rem; /* ~360px docked rail */
+  display: flex; flex-direction: column; gap: .5rem; min-height: 0;
+  view-transition-name: chat-stage;
+}
+
+.chat-stage.is-centered {
+  width: min(100% - 2rem, var(--chat-w));
+  margin: auto; /* centers both axes in the flex #stage-layout */
+  /* #stage-layout is a full-height flex column (the caller contract) and the
+     canvas sibling is flex:1 — without this the centered chat shrinks to its
+     head and the thread collapses. flex:none keeps it content-sized;
+     max-height hands any overflow to the thread's own scroll. */
+  flex: none; max-height: 100%;
+}
+/* centered WITH a canvas sibling (after the close act): share the column —
+   cap the chat so the artifact keeps a usable, scrollable pane */
+#stage-layout:has(> .canvas) .chat-stage.is-centered { max-height: 60%; }
+
+/* docked: #stage-layout flips to a row and the chat becomes its in-flow
+   right column — the canvas is a real sibling, so the chat's CSS-resize
+   pushes it (never overlaps), the same way the left rail's auto grid
+   track does. Same flush extents as the .mv-rail — both rails one height. */
+#stage-layout.is-docked { flex-direction: row; }
+
+.chat-stage.is-docked {
+  order: 2; flex: none; /* after the canvas in the row */
+  width: var(--chat-w-dock);
+  min-width: var(--chat-w-dock);
+  max-width: calc(var(--chat-w-dock) * 1.6);
+  padding: .7rem .9rem .9rem;
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: var(--radius); box-shadow: var(--shadow-2);
+  /* pure-CSS resize handle, same idiom as .mv-rail: rtl flips the native
+     handle onto the inner (left) edge, children reset to ltr */
+  resize: horizontal; overflow: hidden;
+  direction: rtl;
+}
+.chat-stage.is-docked > * { direction: ltr; }
+/* docked: the thread takes the spare height, the composer pins to the bottom;
+   centered: the thread stays content-sized so the block centers as one */
+.chat-stage .chat-thread { min-height: 0; overflow-y: auto; }
+.chat-stage.is-docked .chat-thread { flex: 1 1 auto; }
+
+/* ---------- chat head: eyebrow + context chips + collapse ---------- */
+.chat-head { display: flex; align-items: center; gap: .6rem .9rem; flex-wrap: wrap; }
+.chat-ctx { flex: 1 1 auto; }
+.chat-collapse {
+  flex: none; margin-left: auto;
+  width: 1.8rem; height: 1.8rem; border-radius: 50%;
+  display: inline-grid; place-items: center;
+  color: var(--tx-2); text-decoration: none; font-size: .8rem; line-height: 1;
+}
+.chat-collapse:hover { background: var(--accent-soft); color: var(--accent); }
+
+/* ---------- context chips: one tone per pinned artifact, cycling ---------- */
+/* Base chip layout lives HERE (chat.css owns chips); the tones below win
+   inside the chat head. */
+.ctx-chip {
+  display: inline-flex; gap: .5rem; align-items: center;
+  padding: .3rem .45rem .3rem .7rem; border-radius: 999px;
+  background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent);
+}
+.ctx-x {
+  width: 1.25rem; height: 1.25rem; border-radius: 50%;
+  display: inline-grid; place-items: center;
+  color: var(--accent); text-decoration: none; font-size: .8rem; line-height: 1;
+}
+.ctx-chip code { font-size: .76rem; }
+.ctx-chip .ctx-label { font-size: .76rem; color: var(--tx-2); }
+
+.chat-head .ctx-chip {
+  background: var(--ctx-soft, var(--accent-soft));
+  box-shadow: inset 0 0 0 1px var(--ctx, var(--accent));
+}
+.chat-head .ctx-x { color: var(--ctx, var(--accent)); }
+.chat-head .ctx-x:hover { background: var(--ctx, var(--accent)); color: var(--on-accent, #FFFCF0); }
+
+.ctx-cyan   { --ctx: #0C87A8; --ctx-soft: rgba(12, 135, 168, .12); }
+.ctx-olive  { --ctx: #66800B; --ctx-soft: rgba(102, 128, 11, .11); }
+.ctx-amber, .ctx-gate { --ctx: #AD8301; --ctx-soft: rgba(173, 131, 1, .11); }
+.ctx-violet { --ctx: #4E28D5; --ctx-soft: rgba(78, 40, 213, .10); }
+#app[data-theme="dark"] .ctx-cyan   { --ctx: #45D5F5; --ctx-soft: rgba(69, 213, 245, .16); }
+#app[data-theme="dark"] .ctx-olive  { --ctx: #879A39; --ctx-soft: rgba(135, 154, 57, .15); }
+#app[data-theme="dark"] .ctx-amber,
+#app[data-theme="dark"] .ctx-gate   { --ctx: #D0A215; --ctx-soft: rgba(208, 162, 21, .14); }
+#app[data-theme="dark"] .ctx-violet { --ctx: #9A82F0; --ctx-soft: rgba(154, 130, 240, .18); }
+
+/* ---------- context filmstrip: pinned screens as thumbs, over the composer ----------
+   Reuses the viewer's .dv-thumb chrome (app.css) at its compact scale; the
+   strip layout itself lives here so any chat can render it. Each thumb carries
+   its screen's ctx tone; the × removes the pin. */
+.cs-strip {
+  display: flex; gap: .6rem; align-items: flex-start; flex: none;
+  overflow-x: auto; scrollbar-width: none;
+  padding: .2rem .2rem .3rem;
+}
+.cs-strip::-webkit-scrollbar { display: none; }
+.cs-strip .dv-thumb { width: 5.6rem; }
+.cs-strip .dv-thumb-clip {
+  height: 7.2rem;
+  border-color: var(--ctx, var(--border));
+  box-shadow: 0 0 0 1.5px var(--ctx, transparent);
+}
+.cs-strip .dv-thumb-clip iframe { transform: scale(.221); }
+.cs-thumb .ctx-x { color: var(--ctx, var(--accent)); flex: none; text-decoration: none; }
+.cs-thumb .ctx-x:hover { background: var(--ctx, var(--accent)); color: var(--on-accent, #FFFCF0); }
+
+/* below expanded the docked chat leaves the row and overlays the stage as a
+   full-width card instead — no handle, no squeeze on the canvas */
+@media (max-width: 839px) {
+  .chat-stage.is-docked {
+    position: absolute; inset-block: 0; inset-inline: 1rem;
+    width: auto; min-width: 0; max-width: none; resize: none;
+  }
+}

@@ -1,0 +1,243 @@
+/* appbox · shell chrome — appbar, drawer, bottom tab bar, staggered FAB,
+   rail dock, rail mounts, bottom bar + timeline.
+   Rung visibility is pure CSS: compact <600 / medium 600–839 / expanded ≥840
+   (the ladder's window size classes; rung NAMES are the contract, the px here
+   are the class boundaries, never freeze widths). All open/close is <details>.
+   Tokens, motion vocabulary and keyframes (ab-disclose) come from app.css. */
+
+#app { --tabbar-h: 3.6rem; }
+
+/* ---------- appbar ---------- */
+.shell-nav {
+  position: sticky; top: 0; z-index: 10;
+  height: var(--nav-h);
+  display: flex; gap: .9rem; align-items: center;
+  padding: 0 1.1rem;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--bg) 82%, transparent);
+  -webkit-backdrop-filter: saturate(1.4) blur(14px);
+  backdrop-filter: saturate(1.4) blur(14px);
+}
+.shell-brand {
+  font-family: 'Lexend Giga', 'Lexend', sans-serif; font-weight: 400;
+  letter-spacing: .01em; color: var(--tx); text-decoration: none;
+}
+.shell-tabs { display: flex; gap: .25rem; }
+.shell-tab {
+  padding: .3rem .75rem; border-radius: 999px;
+  color: var(--tx-2); text-decoration: none; font-weight: 500; font-size: .84rem;
+}
+.shell-tab.is-active { color: var(--tx); background: var(--bg-2); box-shadow: inset 0 0 0 1px var(--border); }
+.shell-nav-spacer { flex: 1; }
+.channel { display: flex; gap: .45rem; align-items: center; font-size: .78rem; color: var(--tx-2); }
+.channel-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 0 3px var(--ok-soft); }
+.shell-main { width: 100%; max-width: 56rem; margin: 0 auto; padding: 2rem 1.1rem 3rem; flex: 1; }
+/* stage tabs (intake/design/build) run full-bleed — the chat centerpiece,
+   docked rails and canvas need the whole width; shell.css must repeat this
+   because it loads after app.css and would otherwise cap them at 56rem */
+.shell-main-loop { max-width: none; padding: 0; }
+
+/* circular icon button — shell / rail bar / stage bar chrome */
+.ico-btn {
+  width: 2rem; height: 2rem; padding: 0; border-radius: 50%;
+  display: inline-grid; place-items: center;
+  background: transparent; color: var(--tx-2);
+  box-shadow: inset 0 0 0 1px var(--border);
+  font-size: .85rem; line-height: 1; text-decoration: none; cursor: pointer;
+}
+.ico-btn:hover { color: var(--tx); filter: none; box-shadow: inset 0 0 0 1px var(--tx-3); }
+
+/* project info cluster — only rendered when a project context exists */
+.shell-project {
+  display: flex; gap: .5rem; align-items: baseline; min-width: 0;
+  padding: .3rem .75rem; border-radius: 999px;
+  color: var(--tx); text-decoration: none; font-size: .84rem;
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+.shell-project:hover { box-shadow: inset 0 0 0 1px var(--tx-3); }
+.shell-project-name { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.shell-project-tab { color: var(--accent); font-weight: 500; }
+.shell-project-tab::before { content: '· '; color: var(--tx-3); }
+.shell-project-saved { color: var(--tx-2); font-size: .76rem; white-space: nowrap; }
+.shell-project-saved::before { content: '· '; color: var(--tx-3); }
+
+/* ---------- touch chrome: hidden on expanded, shown by rung below ---------- */
+.shell-chrome-touch, .bottom-tabs, .fab-menu, .rail-dock { display: none; }
+
+/* drawer + overflow: details-based floating panels hanging off the appbar */
+.shell-drawer, .shell-overflow { position: relative; }
+.shell-chrome-touch summary { list-style: none; }
+.shell-chrome-touch summary::-webkit-details-marker { display: none; }
+.drawer-panel, .overflow-menu {
+  position: absolute; top: calc(100% + 1rem); z-index: 14;
+  display: none; flex-direction: column; gap: .15rem;
+  padding: .4rem;
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 14px; box-shadow: var(--shadow-2);
+}
+.drawer-panel { left: 0; min-width: 12rem; }
+.overflow-menu { right: 0; min-width: 9.5rem; }
+.shell-drawer[open] .drawer-panel, .shell-overflow[open] .overflow-menu { display: flex; }
+.drawer-tab, .overflow-item {
+  display: flex; gap: .6rem; align-items: center;
+  padding: .42rem .7rem; border-radius: 8px;
+  font-size: .84rem; color: var(--tx); text-decoration: none;
+}
+.drawer-tab:hover, .overflow-item:hover { background: var(--bg-2); }
+.drawer-tab.is-active { background: var(--accent-soft); color: var(--accent); font-weight: 500; }
+.drawer-ico { width: 1.1rem; text-align: center; color: var(--tx-2); }
+.drawer-tab.is-active .drawer-ico { color: var(--accent); }
+.drawer-row {
+  display: flex; align-items: center; padding: .42rem .7rem;
+  border-top: 1px solid var(--border); margin-top: .15rem;
+}
+.drawer-row form { display: inline; }
+
+/* ---------- compact: bottom tab bar ---------- */
+.bottom-tabs {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 11;
+  height: var(--tabbar-h);
+  display: none; align-items: stretch; justify-content: space-around;
+  border-top: 1px solid var(--border);
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  -webkit-backdrop-filter: saturate(1.4) blur(14px);
+  backdrop-filter: saturate(1.4) blur(14px);
+}
+.bottom-tab {
+  flex: 1; display: flex; flex-direction: column; gap: .12rem;
+  align-items: center; justify-content: center;
+  color: var(--tx-2); text-decoration: none;
+}
+.bt-ico { font-size: 1rem; line-height: 1; }
+.bt-label {
+  font-family: 'Lexend Deca', 'Lexend', sans-serif;
+  font-size: .58rem; letter-spacing: .07em; text-transform: uppercase;
+}
+.bottom-tab.is-active { color: var(--accent); }
+.bottom-tab.is-active .bt-label { font-weight: 500; }
+
+/* ---------- compact + medium: staggered-action FAB ---------- */
+.fab-menu {
+  position: fixed; right: 1.1rem; bottom: 1.1rem; z-index: 12;
+  display: none; flex-direction: column; align-items: flex-end;
+}
+.fab-menu summary { list-style: none; order: 1; }
+.fab-menu summary::-webkit-details-marker { display: none; }
+.fab-menu .fab { cursor: pointer; user-select: none; }
+.fab-menu[open] .fab { transform: rotate(45deg); }
+.fab-actions {
+  display: none; flex-direction: column; gap: .45rem; align-items: flex-end;
+  margin-bottom: .7rem;
+}
+.fab-menu[open] .fab-actions { display: flex; }
+.fab-action {
+  padding: .42rem .9rem; border-radius: 999px;
+  background: var(--bg); border: 1px solid var(--border);
+  box-shadow: var(--shadow-2);
+  color: var(--tx); text-decoration: none; font-size: .82rem; font-weight: 500;
+  white-space: nowrap;
+}
+.fab-action:hover { color: var(--accent); box-shadow: var(--shadow-2), inset 0 0 0 1px var(--accent); }
+
+/* ---------- medium: floating left rail dock (the drawer, docked) ---------- */
+.rail-dock {
+  position: fixed; left: .8rem; top: 50%; transform: translateY(-50%); z-index: 12;
+  display: none; align-items: flex-start;
+}
+.rail-dock summary { list-style: none; }
+.rail-dock summary::-webkit-details-marker { display: none; }
+.rail-dock-strip {
+  display: flex; flex-direction: column; gap: .15rem;
+  padding: .35rem; cursor: pointer;
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 999px; box-shadow: var(--shadow-2);
+}
+.rd-ico {
+  width: 1.9rem; height: 1.9rem; display: grid; place-items: center;
+  border-radius: 50%; color: var(--tx-2); font-size: .85rem;
+}
+.rd-ico.is-active { color: var(--accent); background: var(--accent-soft); }
+.rail-dock-panel {
+  display: none; flex-direction: column; gap: .15rem;
+  min-width: 10.5rem; margin-left: .45rem; padding: .4rem;
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 14px; box-shadow: var(--shadow-2);
+}
+.rail-dock[open] .rail-dock-panel { display: flex; }
+
+/* ---------- expanded: rail mount points, populated by tab views ---------- */
+.rail-mount { position: fixed; top: calc(var(--nav-h) + .8rem); bottom: calc(var(--tl-h) + .8rem); z-index: 8; }
+#rail-left-mount { left: .8rem; }
+#rail-right-mount { right: .8rem; }
+
+/* ---------- bottom bar: the stage timeline's home ---------- */
+#bottom-bar {
+  position: sticky; bottom: 0; z-index: 9;
+  border-top: 1px solid var(--border);
+  background: color-mix(in srgb, var(--bg) 82%, transparent);
+  -webkit-backdrop-filter: saturate(1.4) blur(14px);
+  backdrop-filter: saturate(1.4) blur(14px);
+}
+#bottom-bar:empty { display: none; }
+.timeline {
+  height: var(--tl-h); margin: 0; padding: 0 1.1rem; list-style: none;
+  display: flex; align-items: center;
+  overflow-x: auto;
+}
+.tl-item { display: flex; align-items: center; flex: 1 0 auto; min-width: 0; }
+.tl-item::after {
+  content: ''; flex: 1; min-width: .8rem; height: 2px; margin: 0 .45rem;
+  background: var(--border); border-radius: 1px;
+}
+.tl-item:last-child { flex: 0 0 auto; }
+.tl-item:last-child::after { display: none; }
+.tl-link {
+  display: flex; align-items: center; gap: .38rem; flex: none;
+  color: var(--tx-2); text-decoration: none; padding: .3rem .1rem;
+}
+.tl-mark { width: 9px; height: 9px; border-radius: 50%; box-shadow: inset 0 0 0 2px var(--tx-3); flex: none; }
+.tl-gate .tl-mark { border-radius: 2px; transform: rotate(45deg); width: 8px; height: 8px; }
+.tl-state-green .tl-mark, .tl-state-approved .tl-mark, .tl-state-pass .tl-mark { background: var(--ok); box-shadow: none; }
+.tl-state-recovered .tl-mark, .tl-state-watch .tl-mark, .tl-state-held .tl-mark { background: var(--amber); box-shadow: none; }
+.tl-state-active .tl-mark { background: var(--accent); box-shadow: none; } /* pending keeps the base hollow ring — not started reads empty, not lit */
+.tl-state-red .tl-mark, .tl-state-rejected .tl-mark { background: var(--fail); box-shadow: none; }
+.tl-state-cancelled .tl-mark { background: var(--tx-3); box-shadow: none; }
+.tl-label {
+  font-family: 'Lexend Deca', 'Lexend', sans-serif;
+  font-size: .6rem; letter-spacing: .07em; text-transform: uppercase; white-space: nowrap;
+}
+.tl-item.is-current .tl-link { color: var(--tx); }
+.tl-item.is-current .tl-label { font-weight: 500; }
+.tl-item.is-current .tl-mark { box-shadow: 0 0 0 3px var(--accent-soft); }
+
+/* ---------- rungs ---------- */
+/* compact: drawer + overflow in the appbar, bottom tab bar + FAB, no bottom bar */
+@media (max-width: 599px) {
+  .shell-nav { gap: .5rem; padding: 0 .7rem; }
+  .shell-chrome-touch { display: block; }
+  .shell-tabs, .shell-nav > .channel, .shell-nav > form { display: none; }
+  .shell-project-saved { display: none; }
+  .bottom-tabs { display: flex; }
+  .fab-menu { display: flex; bottom: calc(var(--tabbar-h) + 1rem); }
+  .rail-mount, #bottom-bar { display: none; }
+  .shell-main { padding-bottom: calc(var(--tabbar-h) + 3rem); }
+}
+/* medium: same appbar, floating left rail dock + FAB, no bottom tab/bottom bar */
+@media (min-width: 600px) and (max-width: 839px) {
+  .shell-chrome-touch { display: block; }
+  .shell-tabs { display: none; }
+  .rail-dock { display: flex; }
+  .fab-menu { display: flex; }
+  .rail-mount, #bottom-bar { display: none; }
+  .shell-main { padding-left: 4.2rem; }
+}
+
+/* ---------- motion: staggered FAB fan-out + panel disclose ---------- */
+@media (prefers-reduced-motion: no-preference) {
+  .fab-menu[open] .fab-action { animation: ab-disclose var(--motion-med) var(--motion-ease) backwards; }
+  .fab-menu[open] .fab-action:nth-child(1) { animation-delay: 120ms; }
+  .fab-menu[open] .fab-action:nth-child(2) { animation-delay: 60ms; }
+  .shell-drawer[open] .drawer-panel,
+  .shell-overflow[open] .overflow-menu,
+  .rail-dock[open] .rail-dock-panel { animation: ab-disclose var(--motion-med) var(--motion-ease); }
+}

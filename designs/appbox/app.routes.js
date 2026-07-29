@@ -4,6 +4,7 @@ import * as settings from './ui/views/workspace_shell/settings/settings_viewmode
 import * as prefs from './ui/common/prefs_viewmodel.js';
 import intakeRoutes from './ui/views/main_shell/intake/routes.intake.js';
 import designRoutes from './ui/views/main_shell/design/routes.design.js';
+import appRoutes from './ui/views/app_shell/routes.app.js';
 
 // Landing route of each tab. Required and non-empty — the scaffolder
 // cannot derive it, and a tab whose root is unknown gets an invented one.
@@ -13,13 +14,14 @@ export const tabRoots = {
   build: '/build',
   flows: '/flows',
   ship: '/ship',
-  access: '/access',
+  app: '/dashboard',
   workspace: '/workspace',
   first: '/first',
 };
 
 export default [
   ['GET', '/', mainShell.page],
+  ...appRoutes,
   ...intakeRoutes,
   ...designRoutes,
   ['GET', '/build', buildLoop.page],
@@ -33,6 +35,9 @@ export default [
   ['POST', '/build/stages/:id/control', buildLoop.stageControl],
   ['POST', '/build/messages', buildLoop.sendMessage],
   ['POST', '/build/gates/decide', buildLoop.decide],
+  ['GET', '/build/close', buildLoop.closeArtifact],
+  ['GET', '/build/chips/pin', buildLoop.pinChip],
+  ['GET', '/build/chips/unpin', buildLoop.unpinChip],
   ['GET', '/workspace', settings.page],
   ['POST', '/prefs/accent', prefs.setAccent],
   ['POST', '/prefs/theme', prefs.setTheme],

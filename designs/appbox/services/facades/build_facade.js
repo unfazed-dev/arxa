@@ -1,36 +1,46 @@
-// BuildFacade — composes the run fixture with session-scoped state
-// (gate decisions, composer messages, stage controls, per-canvas threads,
-// the artifact on the canvas) into exactly what loop_viewmodel needs.
-// Every string passes through the jargon facade at the reader's level.
+// BuildFacade — composes the run fixture with session-scoped state (gate
+// decisions, chat messages, stage/run controls, the open canvas artifact,
+// context chips, the left rail's active view) into exactly what
+// loop_viewmodel needs. Every string passes through the jargon facade at
+// the reader's level.
+//
+// The run thread IS the chat: narrative cards render in the chat stage,
+// evidence/charts/gates open as center artifacts (chat docks right), and
+// gate notes are chat replies carrying a gate context chip — there is no
+// second input path.
 import * as repo from '../repositories/build_repository.js';
 import * as jargon from './jargon.js';
-
-export const DEFAULT_ARTIFACT = 'gate/build.acceptance';
 
 // Rail filter vocabulary: 'all' shows everything; anything else matches the
 // card type derived from the message's artifact ref ('note' = no artifact).
 export const RAIL_FILTERS = ['all', 'stage', 'gate', 'findings', 'evidence', 'note'];
 
+// Left multi-view rail registry: run controls, thread filter, artifact
+// index, and the seeded commits/files views (real git wiring is a later
+// stage — the views say so).
+export const RAIL_VIEWS = [
+  { id: 'run', glyph: '▶', label: 'run' },
+  { id: 'thread', glyph: '✳', label: 'thread' },
+  { id: 'artifacts', glyph: '◆', label: 'artifacts' },
+  { id: 'commits', glyph: '⎇', label: 'commits' },
+  { id: 'files', glyph: '≡', label: 'files' },
+];
+const RAIL_VIEW_IDS = RAIL_VIEWS.map((v) => v.id);
+
 // Where each human gate sits on the timeline: it docks after this stage.
 const GATE_AFTER = { 'design.approval': 'design', 'build.acceptance': 'review', 'ship.confirm': 'deploy' };
+
+const pushUser = (sessionData, text) => {
+  const extra = (sessionData.extraMessages ??= []);
+  const seq = (sessionData.msgSeq = (sessionData.msgSeq ?? 0) + 1);
+  extra.push({ id: `u-${seq}`, at: 'now', from: 'user', text });
+  return seq;
+};
 
 const narrate = (sessionData, m) => {
   const extra = (sessionData.extraMessages ??= []);
   const seq = (sessionData.msgSeq = (sessionData.msgSeq ?? 0) + 1);
   extra.push({ id: `a-${seq}`, at: 'now', from: 'agent', ...m });
-};
-
-// ---------- per-canvas threads ----------
-// sessionData.threads = { [artifactRef]: [entry] }; entry kinds:
-//   user  — a follow-up asked from the stage bar
-//   agent — the reply (may carry textPlain/textBalanced, link, action chip)
-//   event — a provenance/control act on that canvas (approve, pause, …)
-// The thread is the artifact's conversation AND its history.
-const threadFor = (sessionData, ref) => (sessionData.threads ??= {})[ref] ??= [];
-
-const logThreadEvent = (sessionData, ref, text) => {
-  const thread = threadFor(sessionData, ref);
-  thread.push({ id: `e-${thread.length}`, at: 'now', kind: 'event', text });
 };
 
 const labelForRef = (ref) => {
@@ -94,7 +104,7 @@ function stagesWithDecisions(gates, lv, sessionData) {
           : 'Held — build rejected, back to coverage with your note',
       };
     }
-    // Human stage controls (pause/cancel from the stage bar) win last.
+    // Human stage controls (pause/cancel from the run view) win last.
     const control = sessionData.stageStates?.[s.id];
     if (control) out = { ...out, state: control.state, summary: control.summary };
     return out;
@@ -118,44 +128,42 @@ function runWithState(sessionData, gates) {
   return run;
 }
 
-// The rail card: type (color-coded in the view), lifecycle state, one detail
-// line, and the canvas thread's exchange count — all resolved from the
-// artifact the message points at.
-function cardFor(ref, parts, sessionData) {
-  const threadCount = (sessionData.threads?.[ref] ?? []).filter((e) => e.kind === 'user').length;
-  if (!ref) return { type: 'note', threadCount: 0 };
+// The thread card: type (color-coded in the view), lifecycle state, and one
+// detail line — resolved from the artifact the message points at.
+function cardFor(ref, parts) {
+  if (!ref) return { type: 'note' };
   const [kind, id] = ref.split('/');
   switch (kind) {
     case 'stage': {
       const s = parts.stages.find((x) => x.id === id);
-      if (!s) return { type: 'stage', ref, threadCount };
+      if (!s) return { type: 'stage', ref };
       const when = s.duration && s.duration !== '—' ? s.duration : 'queued';
-      return { type: 'stage', state: s.state, detail: `stage ${s.n} of ${parts.stages.length} · ${when} · automated`, ref, threadCount };
+      return { type: 'stage', state: s.state, detail: `stage ${s.n} of ${parts.stages.length} · ${when} · automated`, ref };
     }
     case 'gate': {
       const g = parts.gates.find((x) => x.id === id);
-      if (!g) return { type: 'gate', ref, threadCount };
+      if (!g) return { type: 'gate', ref };
       const detail = g.state === 'approved' ? `signed ${g.provenance?.at ?? ''}`
         : g.state === 'rejected' ? 'rejected — with your note'
         : g.state === 'pending' ? 'awaiting your decision'
         : 'not yet reachable';
-      return { type: 'gate', state: g.state, detail: `human gate · ${detail}`, ref, threadCount };
+      return { type: 'gate', state: g.state, gateId: g.id, detail: `human gate · ${detail}`, ref };
     }
     case 'findings': {
       const list = parts.findings[id] ?? [];
-      return { type: 'findings', state: 'red', detail: `${list.length} findings · attempt 1 → fixed in attempt 2`, ref, threadCount };
+      return { type: 'findings', state: 'red', detail: `${list.length} findings · attempt 1 → fixed in attempt 2`, ref };
     }
     case 'evidence': {
       const pass = parts.evidence.filter((e) => e.state === 'pass').length;
       const watch = parts.evidence.length - pass;
-      return { type: 'evidence', state: 'pass', detail: `${parts.evidence.length} screens · ${pass} pass${watch ? ` · ${watch} on watch` : ''}`, ref, threadCount };
+      return { type: 'evidence', state: 'pass', detail: `${parts.evidence.length} screens · ${pass} pass${watch ? ` · ${watch} on watch` : ''}`, ref };
     }
     case 'chart':
-      return { type: 'chart', detail: 'every stage, side by side', ref, threadCount };
+      return { type: 'chart', detail: 'every stage, side by side', ref };
     case 'log':
-      return { type: 'log', detail: 'the whole line, in order', ref, threadCount };
+      return { type: 'log', detail: 'the whole line, in order', ref };
     default:
-      return { type: 'note', ref, threadCount };
+      return { type: 'note', ref };
   }
 }
 
@@ -168,7 +176,7 @@ function messagesWithSession(sessionData, activeArtifact, lv, parts, filter) {
     ...m,
     text: m.from === 'user' ? m.text : jargon.pick(m, 'text', lv),
     active: m.artifact === activeArtifact,
-    card: m.from === 'user' ? { type: 'you', threadCount: 0 } : cardFor(m.artifact, parts, sessionData),
+    card: m.from === 'user' ? { type: 'you' } : cardFor(m.artifact, parts),
   }));
   if (filter === 'all') return all;
   return all.filter((m) => m.card.type === filter);
@@ -298,27 +306,11 @@ export const contextFor = (sessionData, ref, lv = 'balanced') => {
   return { artifact, linked, brief };
 };
 
-// The stage bar (FAB → floating toolbar) context for the active artifact.
-function barFor(ref, parts, t) {
-  const [kind, id] = (ref || '').split('/');
-  const bar = { kind, hint: t.barHintLog };
-  if (kind === 'stage') {
-    const s = parts.stages.find((x) => x.id === id);
-    bar.stageId = id;
-    bar.pauseable = Boolean(s && ['active', 'queued'].includes(s.state));
-    bar.resumable = Boolean(s && s.state === 'held');
-    bar.cancelable = Boolean(s && ['active', 'queued', 'held'].includes(s.state));
-    bar.hint = t.barHintStage;
-  } else if (kind === 'gate') bar.hint = t.barHintGate;
-  else if (kind === 'findings') bar.hint = t.barHintFindings;
-  else if (kind === 'evidence') bar.hint = t.barHintEvidence;
-  else if (kind === 'chart') bar.hint = t.barHintChart;
-  return bar;
-}
-
-// The canvas renders ONE artifact at a time; ref is "kind/id".
+// The canvas renders ONE artifact at a time; ref is "kind/id". No ref (or an
+// unknown one) means nothing is open — the chat sits centered.
 function resolveArtifact(ref, { gates, stages, messages, findings, evidence }) {
-  const [kind, id] = (ref || DEFAULT_ARTIFACT).split('/');
+  if (!ref) return null;
+  const [kind, id] = ref.split('/');
   switch (kind) {
     case 'gate': {
       const gate = gates.find((g) => g.id === id);
@@ -342,8 +334,44 @@ function resolveArtifact(ref, { gates, stages, messages, findings, evidence }) {
     case 'evidence':
       return { kind, evidence, ref };
   }
-  if (ref !== DEFAULT_ARTIFACT) return resolveArtifact(DEFAULT_ARTIFACT, { gates, stages, messages, findings, evidence });
-  return { kind: 'log', messages, ref: DEFAULT_ARTIFACT };
+  return null;
+}
+
+// The pinned gate chip: live only while its gate is still decidable.
+const noteGateFor = (sessionData, gates) => {
+  const id = sessionData.gateChip;
+  if (!id) return null;
+  const g = gates.find((x) => x.id === id);
+  return g && g.state === 'pending' ? g : null;
+};
+
+// Composer context chips for cs.wrap: the pinned gate (a reject note is the
+// next chat message) and the open artifact (a follow-up is chat with the
+// artifact in context). Both are removable.
+const chipsFor = (activeArtifact, noteGate) => {
+  const chips = [];
+  if (noteGate) {
+    chips.push({
+      id: `gate/${noteGate.id}`, label: `note for ${noteGate.label.toLowerCase()}`,
+      tone: 'gate', removeHref: `/build/chips/unpin?ref=gate/${noteGate.id}`,
+    });
+  }
+  if (activeArtifact) {
+    chips.push({ id: activeArtifact, label: labelForRef(activeArtifact), removeHref: '/build/close' });
+  }
+  return chips;
+};
+
+// The artifacts rail view: everything openable, in pipeline order.
+function artifactIndex({ gates, stages }) {
+  return [
+    ...gates.map((g) => ({ ref: `gate/${g.id}`, label: g.label, kind: 'gate', state: g.state })),
+    ...stages.map((s) => ({ ref: `stage/${s.id}`, label: s.label, kind: 'stage', state: s.state })),
+    { ref: 'findings/coverage', label: 'Coverage findings', kind: 'findings', state: 'red' },
+    { ref: 'evidence/surfaces', label: 'Surface evidence', kind: 'evidence', state: 'pass' },
+    { ref: 'chart/durations', label: 'Stage durations', kind: 'chart', state: null },
+    { ref: 'log/full', label: 'Full run log', kind: 'log', state: null },
+  ];
 }
 
 export const loopContext = (sessionData = {}, ref = null, prefs = {}) => {
@@ -354,37 +382,35 @@ export const loopContext = (sessionData = {}, ref = null, prefs = {}) => {
   const evidence = evidenceWithLevel(lv);
   const parts = { gates, stages, findings, evidence };
   const t = jargon.t(lv);
-  const activeArtifact = ref ?? sessionData.currentArtifact ?? DEFAULT_ARTIFACT;
+  const activeArtifact = ref ?? sessionData.currentArtifact ?? null;
   const filter = RAIL_FILTERS.includes(sessionData.railFilter) ? sessionData.railFilter : 'all';
   const messages = messagesWithSession(sessionData, activeArtifact, lv, parts, filter);
-  const thread = (sessionData.threads?.[activeArtifact] ?? [])
-    .map((e) => {
-      const out = { ...e, text: e.kind === 'agent' ? jargon.pick(e, 'text', lv) : e.text };
-      // a chip stays live only while its gate is still decidable; after the
-      // act it renders as a historical record, not a button
-      if (out.action) {
-        const g = gates.find((x) => x.id === out.action.gate);
-        out.action = { ...out.action, open: g?.state === 'pending' };
-      }
-      return out;
-    });
+  const artifact = resolveArtifact(activeArtifact, { ...parts, messages });
+  const openRef = artifact ? activeArtifact : null;
+  const railView = RAIL_VIEW_IDS.includes(sessionData.railView) ? sessionData.railView : 'run';
+  const noteGate = noteGateFor(sessionData, gates);
   return {
     run: runWithState(sessionData, gates),
+    project: { name: repo.run().project },
     stages,
     gates,
     counts: repo.counts(),
     messages,
     filter,
     timeline: timeline(parts),
-    bar: barFor(activeArtifact, parts, t),
-    thread,
-    activeArtifact,
-    artifact: resolveArtifact(activeArtifact, { ...parts, messages }),
-    viewer: activeArtifact === 'evidence/surfaces' ? viewerFor(sessionData, evidence) : null,
-    barMode: sessionData.barMode ?? null,
+    activeArtifact: openRef,
+    artifact,
+    artifactOpen: Boolean(artifact),
+    viewer: openRef === 'evidence/surfaces' ? viewerFor(sessionData, evidence) : null,
+    chips: chipsFor(openRef, noteGate),
+    noteGate,
+    railView,
+    railViews: RAIL_VIEWS.map((v) => ({ ...v, href: `/build/rail?view=${v.id}`, active: v.id === railView })),
+    artifacts: artifactIndex(parts),
+    commits: repo.commits(),
+    files: repo.files(),
     t,
     jargonLevel: lv,
-    barOpen: sessionData.barOpenFor === activeArtifact,
   };
 };
 
@@ -393,83 +419,87 @@ export const showArtifact = (sessionData, ref, prefs = {}) => {
   return loopContext(sessionData, ref, prefs);
 };
 
-// The composer round-trip: append the user's message, then a simulated
-// agent reply; the reply may pull a new artifact onto the canvas.
-export const sendMessage = (sessionData, text, prefs = {}) => {
-  const extra = (sessionData.extraMessages ??= []);
-  const seq = (sessionData.msgSeq = (sessionData.msgSeq ?? 0) + 1);
-  extra.push({ id: `u-${seq}`, at: 'now', from: 'user', text });
-
-  const lower = text.toLowerCase();
-  const reply = repo.replies().find((r) => r.match.some((k) => lower.includes(k)))
-    ?? repo.replyFallback();
-  extra.push({
-    id: `a-${seq}`, at: 'now', from: 'agent',
-    text: reply.text, textBalanced: reply.textBalanced, textPlain: reply.textPlain,
-    artifact: reply.artifact, tone: reply.artifact ? 'action' : null,
-  });
-
-  const ref = reply.artifact ?? sessionData.currentArtifact ?? DEFAULT_ARTIFACT;
-  return showArtifact(sessionData, ref, prefs);
+// Closing the artifact centers the chat again.
+export const closeArtifact = (sessionData, prefs = {}) => {
+  delete sessionData.currentArtifact;
+  return loopContext(sessionData, null, prefs);
 };
 
-// ---------- stage bar: scoped threads, typed ops, action chips ----------
+// ---------- context chips (gate note pin / unpin) ----------
 
-// A follow-up asked from the stage bar. Lives in the artifact's OWN thread —
-// never in the run rail (the rail gets one digest line per thread instead).
-// Typed commands fire only reversible ops (pause/cancel/resume) and only on
-// this canvas's stage. Approval intents render as action chips: the thread
-// proposes, the human taps, provenance mints.
-export const askArtifact = (sessionData, ref, text, prefs = {}) => {
+// "Reject with note" pins the gate as a context chip; the composer becomes
+// the note input (single input path) and the next message is the rejection.
+export const pinChip = (sessionData, ref, prefs = {}) => {
+  const [kind, id] = (ref || '').split('/');
+  if (kind === 'gate') {
+    const g = gatesWithDecisions(sessionData).find((x) => x.id === id);
+    if (g?.state === 'pending') sessionData.gateChip = id;
+  }
+  return loopContext(sessionData, null, prefs);
+};
+
+export const unpinChip = (sessionData, ref, prefs = {}) => {
+  const [kind, id] = (ref || '').split('/');
+  if (kind === 'gate' && sessionData.gateChip === id) delete sessionData.gateChip;
+  return loopContext(sessionData, null, prefs);
+};
+
+// Left rail view switching: run / thread / artifacts / commits / files.
+export const setRailView = (sessionData, view, prefs = {}) => {
+  sessionData.railView = RAIL_VIEW_IDS.includes(view) ? view : 'run';
+  return loopContext(sessionData, null, prefs);
+};
+
+// The composer round-trip: append the user's message, then a simulated
+// agent reply; the reply may pull a new artifact onto the canvas.
+// With a gate chip pinned, the message IS the reject note + decision.
+export const sendMessage = (sessionData, text, prefs = {}) => {
   const lv = jargon.level(prefs);
-  const thread = threadFor(sessionData, ref);
-  const first = thread.length === 0;
-  thread.push({ id: `u-${thread.length}`, at: 'now', kind: 'user', text });
-  sessionData.barOpenFor = ref;
 
-  // Rail sync = digest on first contact; the card badge counts from then on.
-  if (first) narrate(sessionData, { text: `Follow-ups started on ${labelForRef(ref)} — thread on the canvas.`, artifact: ref, tone: null });
-
-  const lower = text.toLowerCase();
-
-  // Typed ops — reversible only, scoped to this canvas's stage.
-  const op = typedOp(sessionData, ref, lower, lv);
-  if (op) {
-    if (op.eventText) logThreadEvent(sessionData, ref, op.eventText);
-    thread.push({ id: `a-${thread.length}`, at: 'now', kind: 'agent', text: op.replyText });
-    const ctx = loopContext(sessionData, ref, prefs);
-    ctx.opFired = op.fired;
-    return ctx;
-  }
-
-  // Approval/rejection intent on a pending gate → render the chip.
-  const [kind, id] = ref.split('/');
-  if (kind === 'gate' && /approv|accept|ship|reject|decline/.test(lower)) {
-    const gates = gatesWithDecisions(sessionData);
-    const gate = gates.find((g) => g.id === id);
-    const decision = /reject|decline/.test(lower) ? 'rejected' : 'approved';
+  if (sessionData.gateChip) {
+    const gateId = sessionData.gateChip;
+    delete sessionData.gateChip;
+    const gate = gatesWithDecisions(sessionData).find((g) => g.id === gateId);
     if (gate?.state === 'pending') {
-      thread.push({
-        id: `a-${thread.length}`, at: 'now', kind: 'agent',
-        text: `The word is yours, not mine — the chip below signs ${decision === 'approved' ? 'approval' : 'rejection'} with Touch ID on studio-mac, exactly like the button above.`,
-        textPlain: 'I can bring the decision to you, never take it — tap the chip to sign it with Touch ID, same as the button above.',
-        action: { gate: id, decision, label: `${decision === 'approved' ? 'Approve' : 'Reject'} ${gate.label.toLowerCase()}` },
-      });
-    } else {
-      thread.push({ id: `a-${thread.length}`, at: 'now', kind: 'agent', text: `${gate?.label ?? 'This gate'} is ${gate?.state ?? 'not reachable'} — nothing to decide here.` });
+      pushUser(sessionData, text);
+      return decide(sessionData, gateId, 'rejected', text, prefs);
     }
-    return loopContext(sessionData, ref, prefs);
+    // The gate was decided elsewhere — the stale chip drops, the message
+    // falls through as an ordinary one.
   }
 
-  // Ordinary follow-up: global keyword replies first, then the envelope.
+  pushUser(sessionData, text);
+  const lower = text.toLowerCase();
+  const ref = sessionData.currentArtifact ?? null;
+
+  // Typed run-ops (pause / cancel / resume) scope to the open stage canvas —
+  // the follow-up-with-context-chip replacement for the retired stage bar.
+  if (ref) {
+    const op = typedOp(sessionData, ref, lower, lv);
+    if (op) {
+      narrate(sessionData, { text: op.replyText, artifact: ref, tone: null });
+      const ctx = loopContext(sessionData, ref, prefs);
+      ctx.opFired = op.fired;
+      return ctx;
+    }
+  }
+
   const reply = repo.replies().find((r) => r.match.some((k) => lower.includes(k)))
-    ?? scopedReply(contextFor(sessionData, ref, lv));
-  thread.push({
-    id: `a-${thread.length}`, at: 'now', kind: 'agent',
+    ?? (ref ? scopedReply(contextFor(sessionData, ref, lv)) : repo.replyFallback());
+  narrate(sessionData, {
     text: reply.text, textBalanced: reply.textBalanced, textPlain: reply.textPlain,
-    link: reply.artifact && reply.artifact !== ref ? reply.artifact : null,
+    artifact: reply.artifact ?? null, tone: reply.artifact ? 'action' : null,
   });
-  return loopContext(sessionData, ref, prefs);
+
+  const nextRef = reply.artifact ?? ref;
+  return nextRef ? showArtifact(sessionData, nextRef, prefs) : loopContext(sessionData, null, prefs);
+};
+
+// Legacy stage-bar follow-up route — the FAB is retired. A follow-up is now
+// an ordinary chat message with the artifact open as the context chip.
+export const askArtifact = (sessionData, ref, text, prefs = {}) => {
+  sessionData.currentArtifact = ref;
+  return sendMessage(sessionData, text, prefs);
 };
 
 // The scoped fallback: answer from the canvas's own envelope.
@@ -504,8 +534,8 @@ const opEvent = {
   resume: (label) => `You resumed ${label} — back on the line.`,
 };
 
-// Typed ops from the thread: pause/hold, cancel/stop/kill, resume/continue —
-// only when the stage's current state actually offers the action.
+// Typed ops from the chat: pause/hold, cancel/stop/kill, resume/continue —
+// only when the open stage's current state actually offers the action.
 function typedOp(sessionData, ref, lower, lv) {
   const [kind, id] = ref.split('/');
   if (kind !== 'stage') return null;
@@ -521,27 +551,19 @@ function typedOp(sessionData, ref, lower, lv) {
     : wants === 'cancel' ? ['active', 'queued', 'held'].includes(s.state)
     : s.state === 'held';
   if (!offered) {
-    return { fired: false, eventText: null, replyText: `Nothing to ${wants} — ${s.label} is ${s.state} right now.` };
+    return { fired: false, replyText: `Nothing to ${wants} — ${s.label} is ${s.state} right now.` };
   }
   applyStageControl(sessionData, id, wants);
-  // The act is audit — the rail keeps it even when the thread asked for it.
-  narrate(sessionData, {
-    text: opEvent[wants](s.label),
-    artifact: ref, tone: wants === 'cancel' ? 'fail' : wants === 'pause' ? 'warn' : 'action',
-  });
-  return { fired: true, eventText: opEvent[wants](s.label), replyText: `Done — ${s.label} ${wants === 'cancel' ? 'is off the line' : wants === 'pause' ? 'holds until you resume' : 'is back on the line'}.` };
+  return { fired: true, replyText: `Done — ${s.label} ${wants === 'cancel' ? 'is off the line' : wants === 'pause' ? 'holds until you resume' : 'is back on the line'}.` };
 }
 
-// Stage control from the stage bar: pause holds a stage, resume releases it,
-// cancel takes it off the line. Narrated to the rail AND logged to the
-// stage's thread — the thread is the canvas's history.
+// Stage control from the run view: pause holds a stage, resume releases it,
+// cancel takes it off the line. Narrated to the chat — the thread is the
+// run's history.
 export const stageControl = (sessionData, stageId, action, prefs = {}) => {
   const stage = repo.stages().find((s) => s.id === stageId);
   const label = stage ? stage.label : stageId;
-  if (stage) {
-    applyStageControl(sessionData, stageId, action);
-    logThreadEvent(sessionData, `stage/${stageId}`, opEvent[action]?.(label) ?? `${label} ${action}.`);
-  }
+  if (stage) applyStageControl(sessionData, stageId, action);
   narrate(sessionData, {
     text: opEvent[action]?.(label) ?? `${label} ${action}.`,
     textPlain: action === 'pause' ? `You paused ${label} — it waits until you resume it.`
@@ -550,10 +572,10 @@ export const stageControl = (sessionData, stageId, action, prefs = {}) => {
     artifact: stage ? `stage/${stageId}` : null,
     tone: action === 'cancel' ? 'fail' : action === 'pause' ? 'warn' : 'action',
   });
-  return showArtifact(sessionData, stage ? `stage/${stageId}` : (sessionData.currentArtifact ?? DEFAULT_ARTIFACT), prefs);
+  return showArtifact(sessionData, stage ? `stage/${stageId}` : (sessionData.currentArtifact ?? null), prefs);
 };
 
-// Run control from the rail top bar: pause holds the whole line.
+// Run control from the run view: pause holds the whole line.
 export const runControl = (sessionData, action, prefs = {}) => {
   if (action === 'pause') sessionData.runControl = { paused: true };
   else delete sessionData.runControl;
@@ -570,9 +592,9 @@ export const runControl = (sessionData, action, prefs = {}) => {
   return loopContext(sessionData, null, prefs);
 };
 
-// Gate decision: record it, mint provenance, narrate the consequence — and
-// log the act into the gate's own thread (two-way sync: the thread is the
-// canvas's history, whether the act came from the button or the chip).
+// Gate decision: record it, mint provenance, narrate the consequence to the
+// chat. The note arrives either as the form field (legacy) or — via the
+// pinned gate chip — as the user's chat message itself.
 export const decide = (sessionData, gateId, decision, note, prefs = {}) => {
   const decisions = (sessionData.gateDecisions ??= {});
   decisions[gateId] = {
@@ -583,10 +605,6 @@ export const decide = (sessionData, gateId, decision, note, prefs = {}) => {
   const gate = repo.humanGates().find((g) => g.id === gateId);
   const label = gate ? gate.label.toLowerCase() : gateId;
   const hash = decisions[gateId].hash;
-  logThreadEvent(sessionData, `gate/${gateId}`,
-    decision === 'approved'
-      ? `You approved ${label} — Touch ID · studio-mac · ${hash}`
-      : `You rejected ${label}${note ? ` — "${note}"` : ''} · ${hash}`);
   narrate(sessionData, {
     text: decision === 'approved'
       ? `You approved ${label} — provenance ${hash} minted via Touch ID on studio-mac. Deploy stage unlocked.`

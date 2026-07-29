@@ -1,6 +1,7 @@
 // DesignFacade — composes the design fixture with session-scoped state
-// (the artboard on the canvas, per-screen threads, chat checkpoints, drift
-// rechecks) into exactly what the design viewmodels need.
+// (draft-all acceptance, pinned context chips, the design thread with
+// per-screen checkpoints, manifest approval, drift rechecks) into exactly
+// what the design viewmodels need.
 // Every string passes through the jargon facade at the reader's level;
 // static view copy lives in the COPY table below (same rule as jargon.js).
 import * as repo from '../repositories/design_repository.js';
@@ -12,6 +13,16 @@ export const DEFAULT_SCREEN = 'build.loop';
 // collides with the build/intake surfaces sharing the session.
 export const design = (sessionData) => (sessionData.design ??= {});
 
+// Context chip tones — stable per screen (fixture order), so a chip's colour
+// always matches its canvas outline regardless of pin order. The first four
+// names are chat.css's palette (chips get --ctx AND --ctx-soft there); blue
+// and ember extend it in viewer.css for 11 screens with fewer collisions.
+const TONES = ['cyan', 'violet', 'olive', 'amber', 'blue', 'ember'];
+const toneFor = (id) => {
+  const i = repo.screens().findIndex((s) => s.id === id);
+  return TONES[(i < 0 ? 0 : i) % TONES.length];
+};
+
 // ---------- static view copy, leveled (jargon rule: 3 variants) ----------
 const COPY = {
   protoFoot: {
@@ -19,35 +30,10 @@ const COPY = {
     balanced: 'These snapshots are the frozen goldens — structure, not pixels',
     plain: 'These snapshots are the approved reference — the layout matters, not decoration',
   },
-  barHintScreen: {
-    technical: 'Scoped to this artboard — rungs, kit coverage, freeze state.',
-    balanced: 'Ask about this artboard — rungs, kit, or the freeze.',
-    plain: 'Ask anything about this screen — sizes, parts, or the approval.',
-  },
-  chatHeadline: {
-    technical: 'One surface in context — the rest dim',
-    balanced: 'One screen in context — the rest dim',
-    plain: 'Work on one screen at a time — the rest fade back',
-  },
-  chatLede: {
-    technical: 'Hard tool-gating: edit-layout · restyle · adjust-states · regenerate — nothing outside this surfaceId is reachable.',
-    balanced: 'Only this screen’s tools are live: edit-layout, restyle, adjust-states, regenerate.',
-    plain: 'You can only change this screen here — layout, style, states, or regenerate. Nothing else is in scope.',
-  },
-  ctxChipNote: {
-    technical: 'context: this surfaceId’s spec — never the whole app',
-    balanced: 'context: this screen’s spec — never the whole app',
-    plain: 'the chat only sees this screen — never the whole app',
-  },
-  staleNote: {
-    technical: 'Frozen under frz_9c41e2 — edits land as checkpoints and flag this screen’s goldens stale until re-approval.',
-    balanced: 'This screen is frozen — edits save as checkpoints and flag it as drift until you re-approve.',
-    plain: 'This screen is part of the approved design — changes are saved and marked as drift until you approve them again.',
-  },
-  pickPrompt: {
-    technical: 'Pick a surface — context scopes to its spec, tools gate to its surfaceId.',
-    balanced: 'Pick a screen — the chat scopes to its spec only.',
-    plain: 'Pick a screen on the left — the chat will only work on that one.',
+  ctxNote: {
+    technical: 'context: the pinned surfaceIds’ specs — never the whole app',
+    balanced: 'context: the pinned screens’ specs — never the whole app',
+    plain: 'the chat only sees the pinned screens — never the whole app',
   },
   freezeLede: {
     technical: 'Approval binds to the design hash — a post-approval change goes stale loudly, never silently.',
@@ -93,228 +79,278 @@ const fillReply = (reply, screen) => ({
   after: reply.after ?? null,
 });
 
-// ---------- the design line (shell timeline) ----------
+// ---------- the design line (shell timeline, bottom bar) ----------
 function timeline(currentId) {
   const items = repo.line().map((i) => ({ ...i, ref: i.id }));
   return { items, currentId };
 }
 
-// ---------- prototype surface ----------
+// ---------- pinned context ----------
 
-const threadFor = (d, ref) => (d.threads ??= {})[ref] ??= [];
+const contextIds = (d) => (d.context ?? []).filter((id) => repo.screen(id));
+const pin = (d, id) => {
+  if (repo.screen(id) && !contextIds(d).includes(id)) (d.context ??= []).push(id);
+  d.chatCentered = false; // pinning re-docks a chat the user closed to center
+};
+const unpin = (d, id) => {
+  d.context = contextIds(d).filter((x) => x !== id);
+};
 
-function screenCard(s, d) {
-  const threadCount = (d.threads?.[`screen/${s.id}`] ?? []).filter((e) => e.kind === 'user').length;
-  return {
-    type: 'screen', state: s.state, threadCount,
-    detail: `${s.rungs.length} rungs · kit ${s.kit}% · ${s.wire}`,
-  };
-}
+// The context filmstrip over the composer: one live thumb per pinned screen.
+// base scopes the remove route to the surface being rendered (/design/chat or
+// /design/freeze) so the × swaps THAT surface's stage, never another's.
+const stripFor = (d, base) =>
+  contextIds(d).map((id) => ({
+    id,
+    label: repo.screen(id).label,
+    tone: toneFor(id),
+    src: `/build/screens/${id}?vp=mobile`,
+    removeHref: `${base}/context/${id}?state=off`,
+  }));
+
+const ctxLabel = (d) => contextIds(d).map((id) => repo.screen(id).label).join(' + ') || 'the draft';
 
 // ---------- the shared design viewer (ui/common/design_viewer.html) ----------
-// Artboards render in the same screen stage as the build evidence canvas;
-// default mode is rungs — the 3-width triptych, now as live renders.
+// Board mode (the default once drafted): every screen as an artboard with its
+// rungs side by side at real device sizes; the filmstrip is the context
+// picker. Single/rungs stay for one-screen deep looks.
 const RUNG_VP = { 390: 'mobile', 744: 'tablet', 1280: 'desktop' };
 
-function viewerFor(d, activeId) {
+function viewerFor(d) {
   const v = d.viewer ?? {};
+  const ids = contextIds(d);
   const screens = repo.screens().map((s) => ({
     id: s.id, label: s.label, state: s.state,
+    inContext: ids.includes(s.id),
+    dim: ids.length > 0 && !ids.includes(s.id),
+    tone: toneFor(s.id),
+    chips: [{ text: `${s.kit}%`, title: `kit coverage ${s.kit}% — the adaptive primitive layer carries this much of ${s.id}` }],
     viewports: s.rungs.map((r) => ({ vp: RUNG_VP[r.width] ?? 'mobile', width: r.width, rung: r.rung, note: r.note, shot: r.shot })),
   }));
-  const screen = screens.find((s) => s.id === activeId) ?? screens[0];
-  const authored = screen ? screen.viewports.map((x) => x.vp) : ['mobile'];
+  const active = repo.screen(v.screen) ? v.screen : (ids[0] ?? d.currentScreen ?? DEFAULT_SCREEN);
+  const authored = screens.find((s) => s.id === active)?.viewports.map((x) => x.vp) ?? ['mobile'];
   const vp = authored.includes(v.vp) ? v.vp : authored[0];
   const bg = ['canvas', 'warm', 'slate'].includes(v.bg) ? v.bg : 'canvas';
   const os = ['ios', 'android'].includes(v.os) ? v.os : 'ios';
-  const mode = ['single', 'rungs'].includes(v.mode) ? v.mode : 'rungs';
+  const mode = ['single', 'rungs', 'board'].includes(v.mode) ? v.mode : 'board';
   return {
-    screens, active: screen?.id, vp, bg, os, mode, strip: true,
+    screens, active, vp, bg, os, mode, strip: true,
     base: '/design/viewer', stubBase: '/build/screens/',
+    contextBase: '/design/chat/context/',
   };
 }
 
-// Viewer toolbar/strip act: record the choice, keep the artboard in sync.
+// Viewer toolbar act: record the choice, keep the artboard in sync.
 export const setViewer = (sessionData, query, prefs = {}) => {
   const d = design(sessionData);
   d.viewer = { screen: query.screen, vp: query.vp, bg: query.bg, os: query.os, mode: query.mode };
   if (query.screen && repo.screen(query.screen)) d.currentScreen = query.screen;
-  return protoContext(sessionData, query.screen ?? null, prefs);
+  return stageContext(sessionData, {}, prefs);
 };
 
-export const protoContext = (sessionData = {}, screenId = null, prefs = {}) => {
+// ---------- the design thread (seeded history + session messages) ----------
+
+const allCheckpoints = (d, screenId) =>
+  [...(repo.checkpoints()[screenId] ?? []), ...(d.chatCheckpoints?.[screenId] ?? [])]
+    .map((cp) => ({ ...cp, reverted: (d.reverted ?? []).includes(cp.id) }));
+
+function threadFor(d, lv) {
+  return [...repo.designThread(), ...(d.designThread ?? [])].map((m) => ({
+    ...m,
+    text: m.from === 'user' ? m.text : jargon.pick(m, 'text', lv),
+    link: m.link ?? null,
+    cps: (m.cps ?? [])
+      .map(({ screen, cp }) => {
+        const found = allCheckpoints(d, screen).find((x) => x.id === cp);
+        return found ? { screen, ...found, summary: jargon.pick(found, 'summary', lv) } : null;
+      })
+      .filter(Boolean),
+  }));
+}
+
+// ---------- the stage context (prototype / chat share it) ----------
+
+const REFINE_SUGGESTIONS = [
+  { value: 'edit-layout: stack the rail under the canvas on compact', label: 'edit-layout' },
+  { value: 'restyle: make the pending state calmer', label: 'restyle' },
+  { value: 'adjust-states: accent token on the pinned screens', label: 'adjust-states' },
+  { value: 'regenerate the compact 390 shot', label: 'regenerate' },
+];
+
+function screenCard(s, d) {
+  const checkpoints = (repo.checkpoints()[s.id] ?? []).length + (d.chatCheckpoints?.[s.id] ?? []).length;
+  return {
+    type: 'screen', state: s.state, threadCount: checkpoints,
+    detail: `${s.rungs.length} rungs · kit ${s.kit}% · ${s.wire}`,
+  };
+}
+
+// opts: { line (timeline current id), pin (screenId | 'none'), base (route
+// prefix for the strip × and the close act — the surface being rendered) }
+export const stageContext = (sessionData = {}, opts = {}, prefs = {}) => {
   const lv = jargon.level(prefs);
   const d = design(sessionData);
-  const active = repo.screen(screenId) ? screenId : (d.currentScreen ?? DEFAULT_SCREEN);
+  if (opts.pin === 'none') d.context = [];
+  else if (opts.pin) pin(d, opts.pin);
+  const base = opts.base ?? '/design/chat';
+
+  const drafted = d.drafted === true;
+  const ids = contextIds(d);
   const filter = d.railFilter ?? 'all';
+  const railView = ['screens', 'artifacts', 'files'].includes(d.railView) ? d.railView : 'screens';
   const screens = repo.screens()
     .filter((s) => filter === 'all' || s.epic === filter)
     .map((s) => ({
       ...s,
       summary: jargon.pick(s, 'summary', lv),
-      active: s.id === active,
+      inContext: ids.includes(s.id),
+      tone: toneFor(s.id),
       card: screenCard(s, d),
     }));
-  const screen = repo.screen(active);
-  const thread = (d.threads?.[`screen/${active}`] ?? [])
-    .map((e) => ({ ...e, text: e.kind === 'agent' ? jargon.pick(e, 'text', lv) : e.text }));
   return {
     // rungsLabel precomputed: fragment imports re-execute page blocks with an
     // empty context, and a join filter on undefined throws — plain access is safe.
     run: { ...repo.run(), rungsLabel: repo.run().policy.rungs.join('/') },
+    project: { name: repo.run().project },
     counts: repo.counts(),
     epics: repo.epics(),
     filter,
+    railView,
     screens,
-    screen: { ...screen, summary: jargon.pick(screen, 'summary', lv) },
-    viewer: viewerFor(d, active),
-    thread,
-    barOpen: d.barOpenFor === active,
-    timeline: timeline('prototype'),
+    artifacts: repo.artifacts(),
+    files: repo.files(),
+    drafted,
+    docked: drafted && d.chatCentered !== true,
+    stageEyebrow: 'design chat',
+    composerAction: '/design/chat/messages',
+    strip: stripFor(d, base),
+    collapseHref: `${base}/close`,
+    viewer: viewerFor(d),
+    thread: threadFor(d, lv),
+    draft: { offer: jargon.pick(repo.draft(), 'offer', lv), chip: repo.draft().chip },
+    suggestions: drafted ? REFINE_SUGGESTIONS : [{ value: 'draft-all', label: repo.draft().chip }],
+    placeholder: drafted ? `Refine ${ctxLabel(d)}…` : 'Message the design agent…',
+    timeline: timeline(opts.line ?? 'prototype'),
     t: t(lv),
     jargonLevel: lv,
   };
 };
 
-export const showScreen = (sessionData, screenId, prefs = {}) => {
-  if (repo.screen(screenId)) design(sessionData).currentScreen = screenId;
-  return protoContext(sessionData, screenId, prefs);
+// Context pin toggle from the filmstrip / artboard chrome / rail card.
+// state: 'toggle' | 'on' | 'off'.
+export const toggleContext = (sessionData, screenId, state = 'toggle', prefs = {}) => {
+  const d = design(sessionData);
+  const on = state === 'toggle' ? !contextIds(d).includes(screenId) : state === 'on';
+  if (on) pin(d, screenId); else unpin(d, screenId);
+  if (repo.screen(screenId)) d.currentScreen = screenId;
+  return stageContext(sessionData, {}, prefs);
+};
+
+// The close act on the docked chat: unpin every screen and recenter the
+// chat (d.chatCentered — any later pin re-docks it). Freeze ignores the
+// returned stage context and re-renders from freezeContext instead.
+export const closeChat = (sessionData, opts = {}, prefs = {}) => {
+  const d = design(sessionData);
+  d.context = [];
+  d.chatCentered = true;
+  return stageContext(sessionData, opts, prefs);
 };
 
 export const setRailFilter = (sessionData, filter, prefs = {}) => {
   design(sessionData).railFilter = filter;
-  return protoContext(sessionData, null, prefs);
+  return stageContext(sessionData, {}, prefs);
 };
 
-// Stage-bar follow-up on an artboard: lives in the screen's own thread.
-export const askScreen = (sessionData, screenId, text, prefs = {}) => {
-  const d = design(sessionData);
-  const ref = `screen/${screenId}`;
-  const thread = threadFor(d, ref);
-  thread.push({ id: `u-${thread.length}`, at: 'now', kind: 'user', text });
-  d.barOpenFor = screenId;
-
-  const screen = repo.screen(screenId);
-  const lower = text.toLowerCase();
-  const found = repo.protoReplies().find((r) => r.match.some((k) => lower.includes(k)));
-  const reply = fillReply(found ?? repo.protoFallback(), { ...screen, summary: jargon.pick(screen, 'summary', jargon.level(prefs)) });
-  thread.push({ id: `a-${thread.length}`, at: 'now', kind: 'agent', ...reply });
-  return protoContext(sessionData, screenId, prefs);
+export const setRailView = (sessionData, view, prefs = {}) => {
+  design(sessionData).railView = view;
+  return stageContext(sessionData, {}, prefs);
 };
 
-// ---------- screen chat surface ----------
-
-export const chatContext = (sessionData = {}, screenId = null, prefs = {}) => {
-  const lv = jargon.level(prefs);
+// The single composer path (chat-Centric Layout: no inputs outside the chat).
+// 'draft-all' accepts the one-pass draft; 'approve' signs the manifest; any
+// other text refines the pinned screens and may mint one checkpoint per
+// pinned screen.
+export const sendChat = (sessionData, text, prefs = {}, pinId = null) => {
   const d = design(sessionData);
-  if (screenId === 'none') delete d.chatScreen;
-  else if (repo.screen(screenId)) d.chatScreen = screenId;
-  const active = repo.screen(d.chatScreen) ? d.chatScreen : null;
+  if (pinId) pin(d, pinId);
+  const thread = (d.designThread ??= []);
 
-  const screens = repo.screens().map((s) => ({
-    ...s,
-    summary: jargon.pick(s, 'summary', lv),
-    active: s.id === active,
-  }));
+  if (text === 'draft-all') {
+    thread.push({ at: 'now', from: 'user', text: repo.draft().chip });
+    d.drafted = true;
+    thread.push({ at: 'now', from: 'agent', text: repo.draft().done, textPlain: repo.draft().donePlain });
+    return stageContext(sessionData, {}, prefs);
+  }
+  if (text === 'approve') return approveManifest(sessionData, prefs);
 
-  let thread = [];
-  let checkpoints = [];
-  let screen = null;
-  if (active) {
-    screen = { ...repo.screen(active), summary: jargon.pick(repo.screen(active), 'summary', lv) };
-    const cps = [
-      ...(repo.checkpoints()[active] ?? []),
-      ...(d.chatCheckpoints?.[active] ?? []),
-    ].map((cp) => ({
-      ...cp,
-      summary: jargon.pick(cp, 'summary', lv),
-      reverted: (d.reverted ?? []).includes(cp.id),
-    }));
-    checkpoints = cps;
-    const cpById = Object.fromEntries(cps.map((cp) => [cp.id, cp]));
-    thread = [
-      ...(repo.chatThreads()[active] ?? []),
-      ...(d.chatThreads?.[active] ?? []),
-    ].map((m) => ({
-      ...m,
-      text: m.from === 'user' ? m.text : jargon.pick(m, 'text', lv),
-      checkpoint: m.cp ? cpById[m.cp] ?? null : null,
-    }));
+  thread.push({ at: 'now', from: 'user', text });
+  const ids = contextIds(d);
+  if (!ids.length) {
+    thread.push({ at: 'now', from: 'agent', text: repo.noContext().text, textPlain: repo.noContext().textPlain });
+    return stageContext(sessionData, {}, prefs);
   }
 
-  return {
-    run: repo.run(),
-    screens,
-    screen,
-    thread,
-    checkpoints,
-    timeline: timeline('refine'),
-    t: t(lv),
-    jargonLevel: lv,
-  };
-};
-
-export const selectScreen = (sessionData, screenId, prefs = {}) =>
-  chatContext(sessionData, screenId, prefs);
-
-// Send: append the user's message, then a simulated reply scoped to this
-// screen; a reply carrying a checkpoint mints one (cp-N continues the
-// screen's numbering) and attaches it to the message.
-export const sendChat = (sessionData, screenId, text, prefs = {}) => {
-  const lv = jargon.level(prefs);
-  const d = design(sessionData);
-  d.chatScreen = screenId;
-  const threads = (d.chatThreads ??= {});
-  const thread = threads[screenId] ??= [];
-  thread.push({ at: 'now', from: 'user', text });
-
-  const screen = repo.screen(screenId);
+  const first = repo.screen(ids[0]);
+  const scope = { label: ctxLabel(d), kit: first.kit, id: ids[0], summary: '' };
   const lower = text.toLowerCase();
   const found = repo.chatReplies().find((r) => r.match.some((k) => lower.includes(k)));
-  const reply = fillReply(found ?? repo.chatFallback(), screen);
+  const reply = fillReply(found ?? repo.chatFallback(), scope);
 
-  let cpId = null;
+  // Each message checkpoints the in-context screens only (story map → Chat).
+  let cps = [];
   if (reply.checkpoint) {
-    const cps = (d.chatCheckpoints ??= {});
-    const list = cps[screenId] ??= [];
-    const n = (repo.checkpoints()[screenId] ?? []).length + list.length + 1;
-    cpId = `cp-${n}`;
-    list.push({
-      id: cpId, n, at: 'now',
-      summary: reply.checkpoint,
-      summaryPlain: reply.checkpointPlain ?? reply.checkpoint,
-      before: reply.before, after: reply.after,
+    cps = ids.map((screenId) => {
+      const list = (d.chatCheckpoints ??= {})[screenId] ??= [];
+      const n = (repo.checkpoints()[screenId] ?? []).length + list.length + 1;
+      const cpId = `cp-${n}`;
+      list.push({
+        id: cpId, n, at: 'now',
+        summary: reply.checkpoint,
+        summaryPlain: reply.checkpointPlain ?? reply.checkpoint,
+        before: reply.before, after: reply.after,
+      });
+      return { screen: screenId, cp: cpId };
     });
   }
-  thread.push({ at: 'now', from: 'agent', text: reply.text, textBalanced: reply.textBalanced, textPlain: reply.textPlain, cp: cpId });
-  return chatContext(sessionData, screenId, prefs);
+  thread.push({ at: 'now', from: 'agent', text: reply.text, textBalanced: reply.textBalanced, textPlain: reply.textPlain, link: reply.link, cps });
+  return stageContext(sessionData, {}, prefs);
 };
 
 // One-tap revert: the checkpoint stays rendered as history, flagged reverted,
-// and the act is logged into the thread — the thread is the screen's history.
+// and the act is logged into the thread — the thread is the design's history.
 export const revertCheckpoint = (sessionData, screenId, cpId, prefs = {}) => {
   const d = design(sessionData);
-  const all = [...(repo.checkpoints()[screenId] ?? []), ...(d.chatCheckpoints?.[screenId] ?? [])];
-  const cp = all.find((x) => x.id === cpId);
+  const cp = allCheckpoints(d, screenId).find((x) => x.id === cpId);
   if (cp && !(d.reverted ??= []).includes(cpId)) {
     d.reverted.push(cpId);
-    const threads = (d.chatThreads ??= {});
-    const thread = threads[screenId] ??= [];
-    thread.push({ at: 'now', from: 'agent', kind: 'event', text: `You reverted to ${cpId} — ${cp.summary}. Later checkpoints stay on record.` });
+    (d.designThread ??= []).push({ at: 'now', from: 'agent', kind: 'event', text: `You reverted ${screenId} to ${cpId} — ${cp.summary}. Later checkpoints stay on record.` });
   }
-  return chatContext(sessionData, screenId, prefs);
+  return stageContext(sessionData, {}, prefs);
 };
 
 // ---------- freeze & trace surface ----------
 
 export const freezeContext = (sessionData = {}, prefs = {}) => {
-  const lv = jargon.level(prefs);
+  const stage = stageContext(sessionData, { line: 'freeze', base: '/design/freeze' }, prefs);
+  const lv = stage.jargonLevel;
   const d = design(sessionData);
+  const ap = repo.approval();
+  const approved = d.approved ?? ap.state === 'approved';
   const manifest = { ...repo.manifest(), structure: jargon.pick(repo.manifest(), 'structure', lv) };
   const rechecks = d.driftRechecks ?? 0;
   return {
-    run: repo.run(),
+    ...stage,
+    docked: d.chatCentered !== true,
+    stageEyebrow: 'freeze & trace',
+    composerAction: '/design/freeze/messages',
+    suggestions: [{ value: 'approve', label: ap.chip }, ...REFINE_SUGGESTIONS],
+    placeholder: approved ? 'Ask about the freeze…' : 'Approve or ask about the freeze…',
     manifest,
+    approval: {
+      approved,
+      lede: jargon.pick(ap, 'lede', lv),
+      note: jargon.pick(ap, approved ? 'approvedNote' : 'pendingNote', lv),
+    },
     trace: repo.trace().map((e) => ({ ...e, text: jargon.pick(e, 'text', lv) })),
     traceability: repo.traceability(),
     drift: {
@@ -323,10 +359,18 @@ export const freezeContext = (sessionData = {}, prefs = {}) => {
     },
     rechecks,
     toast: rechecks ? `Drift check #${rechecks + 1} — ${repo.drift().matched} goldens match · clean` : null,
-    timeline: timeline('freeze'),
-    t: t(lv),
-    jargonLevel: lv,
   };
+};
+
+// The human gate: approving the frozen manifest unlocks the Build stage.
+// Idempotent — the act and the confirmation both land in the design thread.
+export const approveManifest = (sessionData, prefs = {}) => {
+  const d = design(sessionData);
+  const thread = (d.designThread ??= []);
+  thread.push({ at: 'now', from: 'user', text: repo.approval().chip });
+  d.approved = true;
+  thread.push({ at: 'now', from: 'agent', text: repo.approval().confirm, textPlain: repo.approval().confirmPlain });
+  return freezeContext(sessionData, prefs);
 };
 
 export const recheckDrift = (sessionData, prefs = {}) => {

@@ -6,17 +6,21 @@ const data = () => readFixture('../../models/screens_model/registry.json');
 
 export const all = () => data();
 
+const byTab = (members) =>
+  [...new Set(members.map((m) => m.tab))].map((tab) => ({
+    tab,
+    surfaces: members.filter((m) => m.tab === tab),
+  }));
+
 export const byShell = () => {
   const shells = data().filter((e) => e.id.endsWith('.shell'));
+  // No shell entries: one implicit shell grouping every surface by tab.
+  if (!shells.length) return [{ id: 'main.shell', label: 'Main Shell', tabs: byTab(data()) }];
   return shells.map((sh) => {
     const prefix = sh.surface.replace(/_view$/, '_');
     const members = data().filter(
       (e) => e.id !== sh.id && e.surface && e.surface.startsWith(prefix),
     );
-    const tabs = [...new Set(members.map((m) => m.tab))].map((tab) => ({
-      tab,
-      surfaces: members.filter((m) => m.tab === tab),
-    }));
-    return { ...sh, tabs };
+    return { ...sh, tabs: byTab(members) };
   });
 };
