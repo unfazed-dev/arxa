@@ -7,14 +7,13 @@
 
    Assumed call/caller for cs.wrap + mv.frame — both shared components ship
    caller() bodies; the fallback would be cs.open(spec)/cs.close().
-
-   Local composer + message macros: rail.composer / rail.msg hardcode
-   hx-target="#canvas", which only exists while docked — the chat-stage
-   contract targets #stage-layout (outerHTML) so centered chats keep working.
-   Same classes, so app.css/chat.css styling applies unchanged. #}
+   The composer is the shared card (ui/common/composer.html) — same markup
+   on every tab; per-surface data (action, placeholder, agent menus)
+   travels in the facade context. #}
 {% import "ui/common/chat_stage.html" as cs %}
 {% import "ui/common/rail_views.html" as mv %}
 {% import "ui/common/timeline.html" as tl %}
+{% import "ui/common/composer.html" as cm %}
 
 {# The bottom-bar timeline: read-only stage line, intake item current. #}
 {% macro timeline(c, oob) %}{{ tl.timeline(c, oob, 'Intake progress') }}{% endmacro %}
@@ -108,30 +107,13 @@
 </div>
 {% endmacro %}
 
-{# Composer: pill, leading + (suggestions), trailing send — rail.composer's
-   markup with the chat-stage target. #}
-{% macro composer(c) %}
-<form class="composer" id="composer" method="post" action="{{ c.base }}/messages"
-      hx-post="{{ c.base }}/messages" hx-target="#stage-layout" hx-swap="outerHTML">
-  <details class="composer-plus">
-    <summary aria-label="Suggestions">+</summary>
-    <span class="composer-sugs">
-      {% for s in c.suggestions %}
-      <button type="submit" name="preset" value="{{ s }}">{{ s }}</button>
-      {% endfor %}
-    </span>
-  </details>
-  <textarea name="text" rows="1" placeholder="Message the intake agent…" aria-label="Message the intake agent"></textarea>
-  <button type="submit" class="composer-send" aria-label="Send">↑</button>
-</form>
-{% endmacro %}
-
 {# The chat stage proper — each view wraps it in its own #stage-layout so the
-   canvas artifact markup stays surface-local. #}
+   canvas artifact markup stays surface-local; the composer is the shared
+   card (ui/common/composer.html). #}
 {% macro chatStage(c) %}
-{% call cs.wrap({ eyebrow: c.eyebrow, docked: c.docked, chips: c.chips, collapseHref: c.collapseHref }) %}
+{% call cs.wrap({ eyebrow: c.eyebrow, docked: c.docked, chips: c.chips, collapseHref: c.collapseHref, bottom: c.threading }) %}
   {{ chatThread(c) }}
-  {{ composer(c) }}
+  {{ cm.field(c) }}
 {% endcall %}
 {% endmacro %}
 

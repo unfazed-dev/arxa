@@ -1,0 +1,79 @@
+{# The composer card — ONE reusable composer for every chat stage
+   (intake / design / build), decomposed from the reference: a borderless
+   textarea over an action bar (+ tools, the LLM model menu, the round
+   send). Pinned context (the screens filmstrip) lives in the TRAY at the
+   top of the card: it auto-expands when something is pinned, and its
+   trigger row collapses it again — the expand/collapse height animation
+   rides #chat-stage's view transition, so it is smooth and reversible.
+   Menus are zero-JS <details> and open UPWARD — the composer sits at the
+   stage floor, so a downward menu would spill past the viewport.
+   Macro-only file, like chat_stage.html.
+
+   spec (travels in c):
+     composerAction — POST target for the message
+     placeholder    — textarea placeholder
+     suggestions    — [{value?, label?} | string], inside the + menu
+     modelMenu      — agent_menus.modelMenuFor(...): { label, options }
+     strip          — [{id, label, tone, src, removeHref}] pinned screens
+                      (design only); the tray renders only when non-empty
+     tray           — { open, toggleHref } the strip tray's collapse state #}
+{% macro field(c) %}
+<form class="composer" id="composer" method="post" action="{{ c.composerAction }}"
+      hx-post="{{ c.composerAction }}" hx-target="#stage-layout" hx-swap="outerHTML">
+  {% if c.strip and c.strip.length %}
+  {# The tray: zero-JS AnimatedContainer. The hidden checkbox flips the
+     grid rows on the SAME element (CSS-Tricks' grid auto-height idiom), so
+     the height transition visibly runs both ways. The hx trigger rides the
+     checkbox's CHANGE event and the route answers 204 — htmx swaps
+     nothing, so nothing replaces the element mid-animation; the route
+     just mirrors the flip server-side (state=toggle) so the collapse
+     survives the next render. #}
+  <input class="cm-tray-cb" type="checkbox" id="cm-tray-cb" {{ 'checked' if c.tray.open }}
+         hx-get="{{ c.tray.toggleHref }}" hx-trigger="change" hx-target="#stage-layout" hx-swap="outerHTML" hx-push-url="false"
+         aria-label="{{ 'Collapse the context strip' if c.tray.open else 'Show the pinned screens' }}">
+  <label class="cm-tray-head" for="cm-tray-cb" title="{{ 'Collapse the context strip' if c.tray.open else 'Show the pinned screens' }}">
+    <span class="cm-tray-title">context · {{ c.strip[0].id }}{{ ' +' + (c.strip.length - 1) if c.strip.length > 1 }}</span>
+    <span class="composer-chev">⌄</span>
+  </label>
+  <div class="cm-tray">
+    <div class="cm-tray-clip">
+      <div class="cs-strip" aria-label="Screens in context">
+        {% for s in c.strip %}
+        <span class="dv-thumb cs-thumb ctx-{{ s.tone }}">
+          <span class="dv-thumb-clip"><iframe src="{{ s.src }}" scrolling="no" tabindex="-1" title="{{ s.label }}"></iframe></span>
+          <span class="dv-thumb-label"><code>{{ s.id }}</code>{% if s.removeHref %}<a class="ctx-x" href="{{ s.removeHref }}" hx-get="{{ s.removeHref }}" hx-target="#stage-layout" hx-swap="outerHTML" hx-push-url="false" aria-label="Remove {{ s.label }} from context">×</a>{% endif %}</span>
+        </span>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+  <textarea name="text" rows="1" placeholder="{{ c.placeholder }}" aria-label="{{ c.placeholder }}"></textarea>
+  <div class="composer-bar">
+    <details class="composer-plus">
+      <summary aria-label="Tools and suggestions">+</summary>
+      <span class="composer-sugs">
+        {% for s in c.suggestions %}
+        <button type="submit" name="preset" value="{{ s.value or s }}">{{ s.label or s }}</button>
+        {% endfor %}
+      </span>
+    </details>
+    <span class="composer-spacer"></span>
+    {% if c.modelMenu %}
+    <details class="composer-model">
+      <summary aria-label="Agent model" title="Agent model">{{ c.modelMenu.label }} <span class="composer-chev">⌄</span></summary>
+      <span class="composer-menu composer-menu-right">
+        {% for o in c.modelMenu.options %}
+        <a class="composer-opt {{ 'on' if o.active }}" href="{{ o.href }}" hx-get="{{ o.href }}" hx-target="#stage-layout" hx-swap="outerHTML" hx-push-url="false">
+          <span class="composer-opt-label">{{ o.label }}</span>
+          <span class="composer-opt-blurb">{{ o.blurb }}</span>
+          {% if o.active %}<span class="composer-opt-check">✓</span>{% endif %}
+        </a>
+        {% endfor %}
+      </span>
+    </details>
+    {% endif %}
+    <button type="submit" class="composer-send" aria-label="Send">↑</button>
+  </div>
+</form>
+{% endmacro %}

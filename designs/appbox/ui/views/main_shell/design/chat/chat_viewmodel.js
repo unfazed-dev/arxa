@@ -32,6 +32,18 @@ export const send = async (c, h) => {
 export const close = (c, h) =>
   h.render(c, `${VIEW}#stageSwap`, facade.closeChat(h.session(c).data, {}, h.prefs(c)));
 
+// Composer agent chrome: the model pick swaps the stage.
+export const model = (c, h) =>
+  h.render(c, `${VIEW}#stageSwap`, facade.setModel(h.session(c).data, c.req.param('id'), {}, h.prefs(c)));
+
+// The tray trigger: persist the collapse state and answer 204 — the
+// checkbox already flipped and animates locally; a swap would replace the
+// element mid-transition and kill the animation.
+export const tray = (c, h) => {
+  facade.setTray(h.session(c).data, c.req.query('state'));
+  return h.noContent(c);
+};
+
 // One-tap revert of a checkpoint on a screen.
 export const revert = (c, h) =>
   h.render(c, `${VIEW}#revertSwap`, facade.revertCheckpoint(h.session(c).data, c.req.param('id'), c.req.param('cp'), h.prefs(c)));

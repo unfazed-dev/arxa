@@ -8,9 +8,8 @@ directory touches shared files.
 - **Shell**: the timeline renders in `{% block bottombar %}` (the bottom bar;
   the old top strip is gone). All three design views fill that block.
 - **Chat stage**: `ui/common/chat_stage.html` (landed) — used as
-  `{% call cs.wrap({ eyebrow, docked, collapseHref }) %}…{% endcall %}` with
-  `{{ cs.ctxStrip(c.strip) }}` rendered by the caller directly over the
-  composer. The strip is the pinned-screens filmstrip:
+  `{% call cs.wrap({ eyebrow, docked, collapseHref, bottom }) %}…{% endcall %}`.
+  The pinned-screens filmstrip rides INSIDE the composer tray (see below):
   `strip: [{ id, label, tone, src, removeHref }]` — `src` iframes the
   screen's stub render; tones come from chat.css's palette
   (`cyan | violet | olive | amber`) plus the design-tab extension in
@@ -22,6 +21,19 @@ directory touches shared files.
   (`d.chatCentered`; any later pin re-docks). The × and close routes are
   scoped to the rendered surface (`/design/chat/*` vs `/design/freeze/*`) so
   a freeze swap never returns the prototype stage.
+- **Composer**: the shared card `ui/common/composer.html` (`cm.field`) —
+  the context tray on top, a borderless textarea, an action bar below
+  (+ suggestions, LLM model menu, send). Model picks hx-get
+  `{base}/model/:id` and mutate `sessionData.agent.model` via
+  services/facades/agent_menus.js. The tray holds the pinned-screens
+  filmstrip: it auto-expands on pin (`d.trayOpen = true` in `pin()`), its
+  head row is a checkbox whose `change` hx-gets `{base}/tray?state=toggle`
+  (answered 204 — the checkbox flips and animates locally; the route only
+  mirrors it), and the height animation is `grid-template-rows: 0fr → 1fr`
+  with a reduced-motion-gated transition — visible both ways. The chat column has two centered
+  positions (spec.bottom): `is-centered` for the empty opener, `is-bottom`
+  once the thread has a user message — growth runs upward, the composer
+  never moves.
 - **Stage container**: `#stage-layout` wraps chat + canvas. Its flex base and
   `.is-docked .canvas` behaviour come from build.css; the design views add
   `is-docked` to the container when an artifact is open.

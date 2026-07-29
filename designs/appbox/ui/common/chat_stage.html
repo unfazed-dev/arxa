@@ -16,10 +16,8 @@
      collapseHref — route that closes the artifact and recenters the chat;
                     rendered whenever the chat is docked (the close act)
 
-   The ctxStrip macro is the OTHER context shape: pinned SCREENS as a
-   horizontal filmstrip of live thumbs, placed by the caller directly over
-   the composer (never in the head). items: [{id, label, tone, src,
-   removeHref?}] — src iframes the screen's stub render.
+   The context filmstrip lives in the composer's tray now
+   (ui/common/composer.html), not here.
 
    NOTE on Esc-to-close: the locked contract's hidden anchor used
    hx-trigger="keyup[key=='Escape'] from:body" — the zero-JS lint
@@ -44,24 +42,13 @@
 </header>
 {% endmacro %}
 
-{# The context filmstrip: pinned screens as live thumbs in a horizontal
-   scroll, rendered directly over the composer by the caller. #}
-{% macro ctxStrip(items) %}
-{% if items and items.length %}
-<div class="cs-strip" aria-label="Screens in context">
-  {% for s in items %}
-  <span class="dv-thumb cs-thumb ctx-{{ s.tone }}">
-    <span class="dv-thumb-clip"><iframe src="{{ s.src }}" scrolling="no" tabindex="-1" title="{{ s.label }}"></iframe></span>
-    <span class="dv-thumb-label"><code>{{ s.id }}</code>{% if s.removeHref %}<a class="ctx-x" href="{{ s.removeHref }}" hx-get="{{ s.removeHref }}" hx-target="#stage-layout" hx-swap="outerHTML" hx-push-url="false" aria-label="Remove {{ s.label }} from context">×</a>{% endif %}</span>
-  </span>
-  {% endfor %}
-</div>
-{% endif %}
-{% endmacro %}
-
-{# Wrap with call/caller: {% call cs.wrap(spec) %}thread + composer{% endcall %} #}
+{# Wrap with call/caller: {% call cs.wrap(spec) %}thread + composer{% endcall %}
+   spec.bottom pins the centered column to the stage floor (the threading
+   state): three position states — is-centered (empty opener), is-bottom
+   (threading), is-docked (artifact open). Class switches ride the global
+   view transitions, so every move animates and reverses seamlessly. #}
 {% macro wrap(spec) %}
-<section id="chat-stage" class="chat-stage {{ 'is-docked' if spec.docked else 'is-centered' }}">
+<section id="chat-stage" class="chat-stage {{ 'is-docked' if spec.docked else ('is-bottom' if spec.bottom else 'is-centered') }}">
   {{ head(spec) }}
   {{ caller() }}
 </section>

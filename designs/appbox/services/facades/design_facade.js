@@ -6,6 +6,7 @@
 // static view copy lives in the COPY table below (same rule as jargon.js).
 import * as repo from '../repositories/design_repository.js';
 import * as jargon from './jargon.js';
+import * as agent from './agent_menus.js';
 
 export const DEFAULT_SCREEN = 'build.loop';
 
@@ -91,6 +92,7 @@ const contextIds = (d) => (d.context ?? []).filter((id) => repo.screen(id));
 const pin = (d, id) => {
   if (repo.screen(id) && !contextIds(d).includes(id)) (d.context ??= []).push(id);
   d.chatCentered = false; // pinning re-docks a chat the user closed to center
+  d.trayOpen = true;      // …and auto-expands the composer's context tray
 };
 const unpin = (d, id) => {
   d.context = contextIds(d).filter((x) => x !== id);
@@ -198,6 +200,7 @@ export const stageContext = (sessionData = {}, opts = {}, prefs = {}) => {
   const ids = contextIds(d);
   const filter = d.railFilter ?? 'all';
   const railView = ['screens', 'artifacts', 'files'].includes(d.railView) ? d.railView : 'screens';
+  const thread = threadFor(d, lv);
   const screens = repo.screens()
     .filter((s) => filter === 'all' || s.epic === filter)
     .map((s) => ({
@@ -221,12 +224,15 @@ export const stageContext = (sessionData = {}, opts = {}, prefs = {}) => {
     files: repo.files(),
     drafted,
     docked: drafted && d.chatCentered !== true,
+    threading: thread.some((m) => m.from === 'user'),
     stageEyebrow: 'design chat',
     composerAction: '/design/chat/messages',
+    modelMenu: agent.modelMenuFor(sessionData, base),
+    tray: { open: d.trayOpen !== false, toggleHref: `${base}/tray?state=toggle` },
     strip: stripFor(d, base),
     collapseHref: `${base}/close`,
     viewer: viewerFor(d),
-    thread: threadFor(d, lv),
+    thread,
     draft: { offer: jargon.pick(repo.draft(), 'offer', lv), chip: repo.draft().chip },
     suggestions: drafted ? REFINE_SUGGESTIONS : [{ value: 'draft-all', label: repo.draft().chip }],
     placeholder: drafted ? `Refine ${ctxLabel(d)}…` : 'Message the design agent…',
@@ -244,6 +250,22 @@ export const toggleContext = (sessionData, screenId, state = 'toggle', prefs = {
   if (on) pin(d, screenId); else unpin(d, screenId);
   if (repo.screen(screenId)) d.currentScreen = screenId;
   return stageContext(sessionData, {}, prefs);
+};
+
+// Composer chrome: pick the agent model, or collapse/expand the context
+// tray. Both mutate session state; callers re-render their own surface
+// context (freeze ignores the returned stage context, same as closeChat).
+export const setModel = (sessionData, id, opts = {}, prefs = {}) => {
+  agent.setModel(sessionData, id);
+  return stageContext(sessionData, opts, prefs);
+};
+
+export const setTray = (sessionData, state, opts = {}, prefs = {}) => {
+  const d = design(sessionData);
+  // the checkbox already flipped locally — mirror it (toggling, never an
+  // absolute state: a stale absolute href would desync on double-click)
+  d.trayOpen = state === 'toggle' ? !(d.trayOpen !== false) : state !== 'off';
+  return stageContext(sessionData, opts, prefs);
 };
 
 // The close act on the docked chat: unpin every screen and recenter the

@@ -19,6 +19,10 @@ export const artifact = (c, h) => {
 export const closeArtifact = (c, h) =>
   h.render(c, `${VIEW}#stageSwap`, facade.closeArtifact(h.session(c).data, h.prefs(c)));
 
+// Composer agent chrome: the model pick swaps the stage.
+export const model = (c, h) =>
+  h.render(c, `${VIEW}#stageSwap`, facade.setModel(h.session(c).data, c.req.param('id'), h.prefs(c)));
+
 // Gate context chips: "reject with note" pins the gate above the composer;
 // the chip's × unpins it.
 export const pinChip = (c, h) =>

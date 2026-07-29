@@ -15,11 +15,13 @@ timeline lives in the bottom bar.
 
 - `ui/common/chat_stage.html` (`cs.wrap`) and `ui/common/rail_views.html`
   (`mv.frame`) are consumed with **call/caller** — both ship `caller()`
-  bodies. The composer and chat messages are intake-local macros in
-  `_shared.html`: `rail.composer` / `rail.msg` hardcode `hx-target="#canvas"`,
-  which only exists while docked — every intake interaction targets
-  `#stage-layout` (outerHTML) instead, the chat-stage component's own
-  contract. Same CSS classes, so app.css/chat.css styling applies unchanged.
+  bodies. The composer is the shared card `ui/common/composer.html`
+  (`cm.field`): a borderless textarea over an action bar (+ suggestions,
+  LLM model menu, send). The model options hx-get `{base}/model/:id`
+  (per-surface routes) and swap `#stage-layout` (outerHTML); the selection
+  lives on the shared `sessionData.agent.model`
+  (services/facades/agent_menus.js). All menus open UPWARD — the composer
+  sits at the stage floor.
 - The stage-bar FAB follow-up thread is retired: follow-ups are plain chat;
   the open artifact rides as a context chip (`removeHref` → `/close`).
 - The timeline macro call sits in `{% block bottombar %}` (the shell's

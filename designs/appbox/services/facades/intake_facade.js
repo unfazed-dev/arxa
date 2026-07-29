@@ -6,6 +6,7 @@
 // Every leveled string passes through jargon.
 import * as repo from '../repositories/intake_repository.js';
 import * as jargon from './jargon.js';
+import * as agent from './agent_menus.js';
 
 export const SURFACES = ['mapping', 'brief', 'moodboard'];
 
@@ -359,17 +360,22 @@ export const context = (sd, surface, ref, prefs = {}) => {
   const activeArtifact = ref ?? s.current[surface] ?? null;
   const docked = !!activeArtifact;
   const rail = railViewFor(sd, surface, base, lv);
+  const chat = chatFor(sd, surface, lv, tt);
   return {
     surface,
     base,
     project: { name: repo.project() },
     eyebrow: { mapping: 'intake · interview', brief: 'intake · brief', moodboard: 'intake · moodboard' }[surface],
+    composerAction: `${base}/messages`,
+    placeholder: 'Message the intake agent…',
+    modelMenu: agent.modelMenuFor(sd, base),
+    threading: chat.some((m) => m.from === 'user'),
     suggestions: {
       mapping: ["What's in R1?", 'Explain MoSCoW', 'Which surfaces trace?'],
       brief: ['How does the brief feed design?', 'Which surfaces trace?'],
       moodboard: ['What should we steal?', 'Which references made the board?'],
     }[surface],
-    chat: chatFor(sd, surface, lv, tt),
+    chat,
     docked,
     artifact: docked ? resolveArtifact(surface, activeArtifact, tt) : null,
     activeArtifact,
@@ -389,6 +395,13 @@ export const context = (sd, surface, ref, prefs = {}) => {
 export const showArtifact = (sd, surface, ref, prefs = {}) => {
   S(sd).current[surface] = ref;
   return context(sd, surface, ref, prefs);
+};
+
+// Composer chrome: pick the agent model (shared session state), then
+// re-render this surface.
+export const setModel = (sd, surface, id, prefs = {}) => {
+  agent.setModel(sd, id);
+  return context(sd, surface, null, prefs);
 };
 
 export const closeArtifact = (sd, surface, prefs = {}) => {

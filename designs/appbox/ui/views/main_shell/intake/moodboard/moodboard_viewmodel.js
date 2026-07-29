@@ -18,6 +18,10 @@ export const artifact = (c, h) => {
 export const close = (c, h) =>
   h.render(c, `${VIEW}#stageSwap`, facade.closeArtifact(h.session(c).data, S, h.prefs(c)));
 
+// Composer agent chrome: the model pick swaps the stage.
+export const model = (c, h) =>
+  h.render(c, `${VIEW}#stageSwap`, facade.setModel(h.session(c).data, S, c.req.param('id'), h.prefs(c)));
+
 // Left rail view switch: ?view=thread|artifacts|files.
 export const rail = (c, h) =>
   h.render(c, `${VIEW}#railSwap`, facade.setRailView(h.session(c).data, S, c.req.query('view'), h.prefs(c)));

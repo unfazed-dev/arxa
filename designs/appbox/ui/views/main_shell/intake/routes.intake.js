@@ -10,6 +10,7 @@ export default [
   ['GET', '/intake', mapping.page],
   ['GET', '/intake/artifact/:kind/:id', mapping.artifact],
   ['GET', '/intake/close', mapping.close],
+  ['GET', '/intake/model/:id', mapping.model],
   ['GET', '/intake/rail', mapping.rail],
   ['POST', '/intake/messages', mapping.sendMessage],
   ['POST', '/intake/depth', mapping.depth],
@@ -22,6 +23,7 @@ export default [
   ['GET', '/intake/brief', brief.page],
   ['GET', '/intake/brief/artifact/:kind/:id', brief.artifact],
   ['GET', '/intake/brief/close', brief.close],
+  ['GET', '/intake/brief/model/:id', brief.model],
   ['GET', '/intake/brief/rail', brief.rail],
   ['POST', '/intake/brief/messages', brief.sendMessage],
 
@@ -29,6 +31,7 @@ export default [
   ['GET', '/intake/moodboard', moodboard.page],
   ['GET', '/intake/moodboard/artifact/:kind/:id', moodboard.artifact],
   ['GET', '/intake/moodboard/close', moodboard.close],
+  ['GET', '/intake/moodboard/model/:id', moodboard.model],
   ['GET', '/intake/moodboard/rail', moodboard.rail],
   ['POST', '/intake/moodboard/messages', moodboard.sendMessage],
 ];

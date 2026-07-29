@@ -10,6 +10,7 @@
 // second input path.
 import * as repo from '../repositories/build_repository.js';
 import * as jargon from './jargon.js';
+import * as agent from './agent_menus.js';
 
 // Rail filter vocabulary: 'all' shows everything; anything else matches the
 // card type derived from the message's artifact ref ('note' = no artifact).
@@ -392,6 +393,9 @@ export const loopContext = (sessionData = {}, ref = null, prefs = {}) => {
   return {
     run: runWithState(sessionData, gates),
     project: { name: repo.run().project },
+    composerAction: '/build/messages',
+    modelMenu: agent.modelMenuFor(sessionData, '/build'),
+    threading: messages.some((m) => m.from === 'user'),
     stages,
     gates,
     counts: repo.counts(),
@@ -404,6 +408,10 @@ export const loopContext = (sessionData = {}, ref = null, prefs = {}) => {
     viewer: openRef === 'evidence/surfaces' ? viewerFor(sessionData, evidence) : null,
     chips: chipsFor(openRef, noteGate),
     noteGate,
+    suggestions: noteGate
+      ? [{ value: 'Not this build — see my note.', label: 'Send the note & reject' }]
+      : ['Why did coverage fail on attempt 1?', 'How long did each stage take?', 'Show the full log'],
+    placeholder: noteGate ? 'Note for the record — it ships with the reject' : 'Ask the run…',
     railView,
     railViews: RAIL_VIEWS.map((v) => ({ ...v, href: `/build/rail?view=${v.id}`, active: v.id === railView })),
     artifacts: artifactIndex(parts),
@@ -417,6 +425,13 @@ export const loopContext = (sessionData = {}, ref = null, prefs = {}) => {
 export const showArtifact = (sessionData, ref, prefs = {}) => {
   sessionData.currentArtifact = ref;
   return loopContext(sessionData, ref, prefs);
+};
+
+// Composer chrome: pick the agent model (shared session state), then
+// re-render the loop stage.
+export const setModel = (sessionData, id, prefs = {}) => {
+  agent.setModel(sessionData, id);
+  return loopContext(sessionData, null, prefs);
 };
 
 // Closing the artifact centers the chat again.

@@ -18,6 +18,8 @@ export default [
   ['POST', '/design/chat/messages', chat.send],
   ['GET', '/design/chat/context/:id', chat.context],
   ['GET', '/design/chat/close', chat.close],
+  ['GET', '/design/chat/model/:id', chat.model],
+  ['GET', '/design/chat/tray', chat.tray],
   ['GET', '/design/chat/screen/:id', chat.select],
   ['POST', '/design/chat/screen/:id/messages', chat.send],
   ['POST', '/design/chat/screen/:id/revert/:cp', chat.revert],
@@ -28,4 +30,6 @@ export default [
   ['POST', '/design/freeze/recheck', freeze.recheck],
   ['GET', '/design/freeze/context/:id', freeze.context],
   ['GET', '/design/freeze/close', freeze.close],
+  ['GET', '/design/freeze/model/:id', freeze.model],
+  ['GET', '/design/freeze/tray', freeze.tray],
 ];

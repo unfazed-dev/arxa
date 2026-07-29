@@ -4,6 +4,7 @@
 {% import "ui/common/design_viewer.html" as dv %}
 {% import "ui/common/chat_stage.html" as cs %}
 {% import "ui/common/rail_views.html" as mv %}
+{% import "ui/common/composer.html" as cm %}
 {% block title %}appbox — Build Monitor{% endblock %}
 {% block main_class %}shell-main-loop{% endblock %}
 
@@ -68,37 +69,14 @@
 </div>
 {% endmacro %}
 
-{# The single input path. With a gate chip pinned, this is the note input —
-   the placeholder says so and the suggestion sends the rejection. #}
-{% macro composer(c) %}
-<form class="composer" id="composer" method="post" action="/build/messages"
-      hx-post="/build/messages" hx-target="#stage-layout" hx-swap="outerHTML">
-  <details class="composer-plus">
-    <summary aria-label="Suggestions">+</summary>
-    <span class="composer-sugs">
-      {% if c.noteGate %}
-      <button type="submit" name="preset" value="Not this build — see my note.">Send the note &amp; reject</button>
-      {% else %}
-      <button type="submit" name="preset" value="Why did coverage fail on attempt 1?">Why did coverage fail?</button>
-      <button type="submit" name="preset" value="How long did each stage take?">Stage timings</button>
-      <button type="submit" name="preset" value="Show the full log">Full log</button>
-      {% endif %}
-    </span>
-  </details>
-  <textarea name="text" rows="1"
-            placeholder="{{ 'Note for the record — it ships with the reject' if c.noteGate else 'Ask the run…' }}"
-            aria-label="{{ 'Note for the record' if c.noteGate else 'Message the build agent' }}"></textarea>
-  <button type="submit" class="composer-send" aria-label="Send">↑</button>
-</form>
-{% endmacro %}
-
-{# ---------- the stage: chat + optional canvas artifact ---------- #}
-
+{# The single input path — the shared composer card. With a gate chip
+   pinned, this is the note input; the facade swaps placeholder +
+   suggestions to say so. #}
 {% macro stageLayout(c, oob) %}
 <div class="stage-layout {{ 'is-docked' if c.artifactOpen else 'is-centered' }}" id="stage-layout" {% if oob %}hx-swap-oob="outerHTML"{% endif %}>
-  {% call cs.wrap({ eyebrow: 'run #' + c.run.number + ' · ' + c.run.brief, docked: c.artifactOpen, chips: c.chips, collapseHref: '/build/close' }) %}
+  {% call cs.wrap({ eyebrow: 'run #' + c.run.number + ' · ' + c.run.brief, docked: c.artifactOpen, chips: c.chips, collapseHref: '/build/close', bottom: c.threading }) %}
   {{ chatThread(c) }}
-  {{ composer(c) }}
+  {{ cm.field(c) }}
   {% endcall %}
   {% if c.artifactOpen %}
   <section class="canvas" id="canvas" aria-live="polite">

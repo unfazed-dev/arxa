@@ -35,3 +35,13 @@ export const close = (c, h) => {
   facade.closeChat(h.session(c).data);
   return h.render(c, `${VIEW}#stageSwap`, facade.freezeContext(h.session(c).data, h.prefs(c)));
 };
+
+// Composer chrome: mutate the shared agent/tray state, re-render freeze.
+export const model = (c, h) => {
+  facade.setModel(h.session(c).data, c.req.param('id'));
+  return h.render(c, `${VIEW}#stageSwap`, facade.freezeContext(h.session(c).data, h.prefs(c)));
+};
+export const tray = (c, h) => {
+  facade.setTray(h.session(c).data, c.req.query('state'));
+  return h.noContent(c); // persist only — the checkbox animates locally
+};

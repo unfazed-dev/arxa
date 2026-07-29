@@ -36,6 +36,7 @@ export default [
   ['POST', '/build/messages', buildLoop.sendMessage],
   ['POST', '/build/gates/decide', buildLoop.decide],
   ['GET', '/build/close', buildLoop.closeArtifact],
+  ['GET', '/build/model/:id', buildLoop.model],
   ['GET', '/build/chips/pin', buildLoop.pinChip],
   ['GET', '/build/chips/unpin', buildLoop.unpinChip],
   ['GET', '/workspace', settings.page],

@@ -2,34 +2,19 @@
    multi-view rail (screens / artifacts / files), the chat stage with context
    chips, and the design thread with per-screen checkpoints. Macro-only file —
    importing it from a fragment render never emits stray markup.
-   Assumes ui/common/chat_stage.html's cs.wrap({ eyebrow, docked, collapseHref })
-   + cs.ctxStrip(strip) via call/caller (nunjucks — rail_views.html already
-   relies on caller). #}
+   Assumes ui/common/chat_stage.html's cs.wrap({ eyebrow, docked, collapseHref,
+   bottom }) via call/caller (nunjucks — rail_views.html already relies on
+   caller); the composer's tray owns the pinned-screens filmstrip. #}
 {% import "ui/common/primitives.html" as prim %}
 {% import "ui/common/rail.html" as rail %}
 {% import "ui/common/rail_views.html" as mv %}
 {% import "ui/common/chat_stage.html" as cs %}
+{% import "ui/common/composer.html" as cm %}
 
 {# ---------- the chat stage: thread + composer inside the shared wrap ----------
-   The composer is local (rail.composer targets #canvas): every design-stage
-   swap — composer, context toggle, revert — targets the one container the
-   chat and the canvas share, #stage-layout. #}
-
-{% macro composer(c) %}
-<form class="composer" id="composer" method="post" action="{{ c.composerAction }}"
-      hx-post="{{ c.composerAction }}" hx-target="#stage-layout" hx-swap="outerHTML">
-  <details class="composer-plus">
-    <summary aria-label="Design tools">+</summary>
-    <span class="composer-sugs">
-      {% for s in c.suggestions %}
-      <button type="submit" name="preset" value="{{ s.value or s }}">{{ s.label or s }}</button>
-      {% endfor %}
-    </span>
-  </details>
-  <textarea name="text" rows="1" placeholder="{{ c.placeholder }}" aria-label="{{ c.placeholder }}"></textarea>
-  <button type="submit" class="composer-send" aria-label="Send">↑</button>
-</form>
-{% endmacro %}
+   The composer is the shared card (ui/common/composer.html): every
+   design-stage swap — composer, context toggle, revert — targets the one
+   container the chat and the canvas share, #stage-layout. #}
 
 {% macro checkpointCard(e) %}
 <div class="checkpoint {{ 'is-reverted' if e.reverted }}">
@@ -76,11 +61,10 @@
 {% endmacro %}
 
 {% macro chatStage(c) %}
-{% call cs.wrap({ eyebrow: c.stageEyebrow, docked: c.docked, collapseHref: c.collapseHref }) %}
+{% call cs.wrap({ eyebrow: c.stageEyebrow, docked: c.docked, collapseHref: c.collapseHref, bottom: c.threading }) %}
   {{ thread(c) }}
-  {{ cs.ctxStrip(c.strip) }}
   <p class="ctx-note muted">{{ c.t.ctxNote }}</p>
-  {{ composer(c) }}
+  {{ cm.field(c) }}
 {% endcall %}
 {% endmacro %}
 
