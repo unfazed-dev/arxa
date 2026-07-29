@@ -1,0 +1,32 @@
+[
+  { "id": "main.shell",      "label": "Main Shell",      "surface": "main_shell_view",      "tab": "main",      "comp": "MainShell" },
+  { "id": "access.shell",    "label": "Access Shell",    "surface": "access_shell_view",    "tab": "access",    "comp": "AccessShell" },
+  { "id": "workspace.shell", "label": "Workspace Shell", "surface": "workspace_shell_view", "tab": "workspace", "comp": "WorkspaceShell" },
+  { "id": "first.shell",     "label": "First Shell",     "surface": "first_shell_view",     "tab": "first",     "comp": "FirstShell" },
+
+  { "id": "intake.mapping",   "label": "Story Mapping",     "surface": "main_shell_intake_mapping_view",   "tab": "intake",    "comp": "IntakeMapping" },
+  { "id": "intake.brief",     "label": "Design Brief",      "surface": "main_shell_intake_brief_view",     "tab": "intake",    "comp": "IntakeBrief" },
+  { "id": "intake.moodboard", "label": "Moodboard",         "surface": "main_shell_intake_moodboard_view", "tab": "intake",    "comp": "IntakeMoodboard" },
+
+  { "id": "design.prototype", "label": "Prototype",         "surface": "main_shell_design_prototype_view", "tab": "design",    "comp": "DesignPrototype" },
+  { "id": "design.chat",      "label": "Screen Chat",       "surface": "main_shell_design_chat_view",      "tab": "design",    "comp": "DesignChat" },
+  { "id": "design.freeze",    "label": "Freeze & Trace",    "surface": "main_shell_design_freeze_view",    "tab": "design",    "comp": "DesignFreeze" },
+
+  { "id": "build.loop",       "label": "Build Monitor",     "surface": "main_shell_build_loop_view",       "tab": "build",     "comp": "BuildLoop" },
+  { "id": "build.gates",      "label": "Gates",             "surface": "main_shell_build_gates_view",      "tab": "build",     "comp": "BuildGates" },
+  { "id": "build.visual",     "label": "Visual Fidelity",   "surface": "main_shell_build_visual_view",     "tab": "build",     "comp": "BuildVisual" },
+
+  { "id": "flows.canvas",     "label": "Flows Canvas",      "surface": "main_shell_flows_canvas_view",     "tab": "flows",     "comp": "FlowsCanvas" },
+
+  { "id": "ship.deploy",      "label": "Ship & Deploy",     "surface": "main_shell_ship_deploy_view",      "tab": "ship",      "comp": "ShipDeploy" },
+
+  { "id": "access.pairing",       "label": "Pairing & Devices", "surface": "access_shell_pairing_view",       "tab": "access", "comp": "AccessPairing" },
+  { "id": "access.notifications", "label": "Notifications",     "surface": "access_shell_notifications_view", "tab": "access", "comp": "AccessNotifications" },
+  { "id": "access.remote",        "label": "Remote Access",     "surface": "access_shell_remote_view",        "tab": "access", "comp": "AccessRemote" },
+
+  { "id": "first.showcase", "label": "Showcase",        "surface": "first_shell_showcase_view", "tab": "first", "comp": "FirstShowcase" },
+  { "id": "first.honesty",  "label": "Honesty & Stubs", "surface": "first_shell_honesty_view",  "tab": "first", "comp": "FirstHonesty" },
+
+  { "id": "workspace.projects", "label": "Projects", "surface": "workspace_shell_projects_view", "tab": "workspace", "comp": "WorkspaceProjects" },
+  { "id": "workspace.settings", "label": "Settings", "surface": "workspace_shell_settings_view", "tab": "workspace", "comp": "WorkspaceSettings" }
+]

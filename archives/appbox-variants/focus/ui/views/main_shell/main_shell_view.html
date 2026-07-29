@@ -1,0 +1,43 @@
+{% extends "ui/common/base.html" %}
+{% block title %}appbox — design index{% endblock %}
+{% block content %}
+<nav class="shell-nav">
+  <a class="shell-brand" href="/">appbox</a>
+  <span class="shell-tabs">
+    <a class="shell-tab {{ 'is-active' if activeTab == 'build' }}" href="/build">Build</a>
+    <a class="shell-tab {{ 'is-active' if activeTab != 'build' }}" href="/">Surfaces</a>
+  </span>
+  <span class="shell-nav-spacer"></span>
+  <span class="channel" title="daemon channel">
+    <span class="channel-dot"></span><span class="channel-label">daemon live</span>
+  </span>
+  <form method="post" action="/prefs/theme" hx-post="/prefs/theme" hx-swap="none">
+    <button type="submit" class="ghost">theme: {{ prefs.theme or 'light' }}</button>
+  </form>
+</nav>
+<main class="shell-main">
+  {% block surface %}
+  <h1>Design index</h1>
+  <p class="muted">The registry rendered as the build tracker. Surfaces appear as they are authored — every one at compact, medium and expanded.</p>
+  {% for shell in shells %}
+  <section class="shell-group">
+    <h2>{{ shell.label }}</h2>
+    {% for tab in shell.tabs %}
+    <div class="tab-group">
+      <h3><code>{{ tab.tab }}</code></h3>
+      <ul class="surface-list">
+        {% for s in tab.surfaces %}
+        <li>
+          <span class="surface-label">{{ s.label }}</span>
+          <code class="surface-id">{{ s.id }}</code>
+          <span class="chip">planned</span>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endfor %}
+  </section>
+  {% endfor %}
+  {% endblock %}
+</main>
+{% endblock %}

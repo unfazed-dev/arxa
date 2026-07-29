@@ -1,0 +1,230 @@
+{
+  "run": {
+    "id": "r20260728-0914",
+    "brief": "Nourish — weekly meal planner for two-parent households",
+    "client": "Hearth & Co.",
+    "daemon": "appboxd 0.9.3",
+    "manifest": "b3f9c1a7e2d4",
+    "started": "09:14:02",
+    "escLimit": 3,
+    "escUsed": 1,
+    "state": "halted",
+    "haltReason": "stop-on-red @ coverage — escalated to build acceptance gate"
+  },
+  "stages": [
+    {
+      "id": "intake",
+      "label": "intake",
+      "kind": "auto",
+      "status": "pass",
+      "duration": "42s",
+      "command": "appbox run intake --brief briefs/nourish.md",
+      "log": [
+        "parsed brief: 4 epics, 11 stories, MoSCoW mapped",
+        "seeded registry.json — 4 surfaces across 1 shell",
+        "brief checksum 8f2c…e91d written to ledger"
+      ]
+    },
+    {
+      "id": "design",
+      "label": "design",
+      "kind": "auto",
+      "status": "pass",
+      "duration": "6m 12s",
+      "command": "appbox run design --registry registry.json",
+      "log": [
+        "prototype emitted: htmx MVVM, 3 rungs per surface",
+        "direction B selected at design approval gate",
+        "design assets frozen to designs/nourish/v2/"
+      ]
+    },
+    {
+      "id": "freeze",
+      "label": "freeze",
+      "kind": "auto",
+      "status": "pass",
+      "duration": "3s",
+      "command": "appbox freeze --design designs/nourish/v2",
+      "log": [
+        "manifest b3f9c1a7e2d4 sealed",
+        "tokens + registry locked; mutation now requires re-freeze"
+      ]
+    },
+    {
+      "id": "scaffold",
+      "label": "scaffold",
+      "kind": "auto",
+      "status": "pass",
+      "duration": "1m 48s",
+      "command": "appbox run scaffold --manifest b3f9c1a7e2d4",
+      "log": [
+        "4 surfaces scaffolded — 14 files, 0 empty bodies",
+        "ports wired: 3 repositories behind facade seam"
+      ]
+    },
+    {
+      "id": "coverage",
+      "label": "coverage",
+      "kind": "auto",
+      "status": "fail",
+      "duration": "2m 03s",
+      "command": "appbox gate coverage --run r20260728-0914",
+      "log": [
+        "widget tests: 17/20 pass across 4 surfaces",
+        "arch guard: 1 forbidden import (port bypass)",
+        "probe-runner: 1 surface over ΔE threshold",
+        "ESC 1/3 — stop-on-red, halting before review"
+      ],
+      "failLine": "ESC 1/3 — stop-on-red, halting before review"
+    },
+    {
+      "id": "review",
+      "label": "review",
+      "kind": "auto",
+      "status": "blocked",
+      "duration": "—",
+      "command": "appbox run review --run r20260728-0914",
+      "log": [
+        "queued — blocked by red coverage gate"
+      ]
+    },
+    {
+      "id": "deploy",
+      "label": "deploy",
+      "kind": "auto",
+      "status": "queued",
+      "duration": "—",
+      "command": "appbox run deploy --target macos,ios",
+      "log": [
+        "queued — awaiting ship confirm gate"
+      ]
+    }
+  ],
+  "gates": [
+    {
+      "id": "gate.design",
+      "label": "design approval",
+      "after": "design",
+      "status": "approved",
+      "actor": "evan",
+      "at": "09:24:11",
+      "note": "direction B, lagoon accent, compact density"
+    },
+    {
+      "id": "gate.build",
+      "label": "build acceptance",
+      "after": "review",
+      "status": "awaiting",
+      "actor": null,
+      "at": null,
+      "note": "reached 09:31 via ESC 1/3 — 2 errors, 1 warning carried from coverage"
+    },
+    {
+      "id": "gate.ship",
+      "label": "ship confirm",
+      "after": "deploy",
+      "status": "locked",
+      "actor": null,
+      "at": null,
+      "note": "unlocks after build acceptance + green deploy dry-run"
+    }
+  ],
+  "findings": [
+    {
+      "id": "F-0041",
+      "gate": "coverage",
+      "severity": "error",
+      "rule": "appbox/coverage-missing-test",
+      "loc": "app/lib/ui/surfaces/plan/week_view.dart:41",
+      "surface": "plan.week",
+      "message": "no widget test covers the empty-week state; golden for WeekView empty slot missing",
+      "occurrences": 1,
+      "reproduce": "appbox gate coverage --run r20260728-0914 --surface plan.week"
+    },
+    {
+      "id": "F-0042",
+      "gate": "coverage",
+      "severity": "error",
+      "rule": "appbox/arch-forbidden-import",
+      "loc": "app/lib/ui/surfaces/pantry/list_view.dart:12",
+      "surface": "pantry.list",
+      "message": "view imports package:http directly; network access must sit behind the pantry repository port",
+      "occurrences": 1,
+      "reproduce": "appbox lint arch --file app/lib/ui/surfaces/pantry/list_view.dart"
+    },
+    {
+      "id": "F-0043",
+      "gate": "coverage",
+      "severity": "warning",
+      "rule": "appbox/visual-delta-e",
+      "loc": "app/lib/ui/surfaces/home/dashboard_view.dart:88",
+      "surface": "home.dashboard",
+      "message": "colour ΔE 4.7 on the kcal ring against frozen design (threshold 3.0)",
+      "occurrences": 2,
+      "reproduce": "appbox probe visual --surface home.dashboard --metric deltaE"
+    }
+  ],
+  "surfaces": [
+    {
+      "id": "home.dashboard",
+      "tests": "6/6",
+      "testsPass": true,
+      "code": "app/lib/ui/surfaces/home/",
+      "visual": {
+        "pixel": "0.8%",
+        "skeleton": "pass",
+        "deltaE": "4.7",
+        "state": "warn"
+      }
+    },
+    {
+      "id": "pantry.list",
+      "tests": "3/4",
+      "testsPass": false,
+      "code": "app/lib/ui/surfaces/pantry/",
+      "visual": {
+        "pixel": "0.3%",
+        "skeleton": "pass",
+        "deltaE": "1.2",
+        "state": "pass"
+      }
+    },
+    {
+      "id": "plan.week",
+      "tests": "3/5",
+      "testsPass": false,
+      "code": "app/lib/ui/surfaces/plan/",
+      "visual": {
+        "pixel": "—",
+        "skeleton": "—",
+        "deltaE": "—",
+        "state": "pending"
+      }
+    },
+    {
+      "id": "shop.list",
+      "tests": "5/5",
+      "testsPass": true,
+      "code": "app/lib/ui/surfaces/shop/",
+      "visual": {
+        "pixel": "0.2%",
+        "skeleton": "pass",
+        "deltaE": "0.9",
+        "state": "pass"
+      }
+    }
+  ],
+  "rollup": {
+    "findingsByGate": {
+      "coverage": {
+        "error": 2,
+        "warning": 1,
+        "total": 3
+      }
+    },
+    "errors": 2,
+    "warnings": 1,
+    "stagesPassed": 4,
+    "stageCount": 7
+  }
+}

@@ -1,0 +1,368 @@
+{
+  "id": "run-0047",
+  "client": "Meridian Clinic",
+  "project": "booking-app",
+  "status": "blocked",
+  "statusLabel": "blocked — awaiting human gate",
+  "startedAt": "2026-07-28T09:41:03Z",
+  "elapsed": "14m 07s",
+  "escLimit": 3,
+  "escUsed": 2,
+  "meta": [
+    {
+      "k": "manifest",
+      "v": "9f3ac21b"
+    },
+    {
+      "k": "structure",
+      "v": "a1e04d7c"
+    },
+    {
+      "k": "daemon",
+      "v": "v0.4.2"
+    },
+    {
+      "k": "branch",
+      "v": "client/meridian"
+    },
+    {
+      "k": "trigger",
+      "v": "cli · evan"
+    }
+  ],
+  "stages": [
+    {
+      "id": "intake",
+      "label": "intake",
+      "state": "done",
+      "duration": "41s",
+      "log": [
+        "09:41:03  brief loaded — meridian-clinic.brief.md (4.2 kb)",
+        "09:41:31  story map seeded — 3 epics, 11 stories",
+        "09:41:44  registry.json seeded — 9 surfaces"
+      ]
+    },
+    {
+      "id": "design",
+      "label": "design",
+      "state": "done",
+      "duration": "3m 12s",
+      "log": [
+        "09:41:45  moodboard composed — builder-and-pipeline",
+        "09:43:10  prototype emitted — 9 surfaces × 3 rungs",
+        "09:44:57  shots verified — 27/27 rungs pass"
+      ]
+    },
+    {
+      "id": "freeze",
+      "label": "freeze",
+      "state": "done",
+      "duration": "12s",
+      "log": [
+        "09:45:02  structure.json frozen — hash a1e04d7c",
+        "09:45:14  trace map written — 9 surfaces → 31 stories"
+      ]
+    },
+    {
+      "id": "scaffold",
+      "label": "scaffold",
+      "state": "done",
+      "duration": "2m 03s",
+      "log": [
+        "09:45:15  47 files emitted across 9 surfaces",
+        "09:46:40  flutter analyze — 0 errors, 2 infos",
+        "09:47:18  coverage gate armed — 31 assertions"
+      ]
+    },
+    {
+      "id": "coverage",
+      "label": "coverage",
+      "state": "red",
+      "duration": "1m 48s",
+      "esc": true,
+      "log": [
+        "09:47:19  structure gate — pass (31/31 files present)",
+        "09:48:02  contract validator — 2 errors raised",
+        "09:48:40  escalate 1/3 — re-emit settings.profile",
+        "09:49:05  escalate 2/3 — contract errors persist",
+        "09:49:07  stop-on-red — carried to review, esc limit 3"
+      ]
+    },
+    {
+      "id": "review",
+      "label": "review",
+      "state": "done",
+      "duration": "56s",
+      "log": [
+        "09:49:08  arch_guard — manifest hash verified",
+        "09:49:41  ponytail-review — 1 warning raised",
+        "09:50:04  verdict drafted — red, 3 findings attached"
+      ]
+    },
+    {
+      "id": "deploy",
+      "label": "deploy",
+      "state": "queued",
+      "duration": "—",
+      "log": []
+    }
+  ],
+  "gates": [
+    {
+      "id": "design.approval",
+      "label": "Design approval",
+      "after": "freeze",
+      "state": "approved",
+      "actor": "evan",
+      "at": "09:58",
+      "note": "Frozen structure signed off — 9 surfaces."
+    },
+    {
+      "id": "build.acceptance",
+      "label": "Build acceptance",
+      "after": "review",
+      "state": "pending",
+      "actor": null,
+      "at": null,
+      "note": "Agent reached this gate with 3 findings. An agent can reach a gate; only a human passes it."
+    },
+    {
+      "id": "ship.confirm",
+      "label": "Ship confirm",
+      "after": "deploy",
+      "state": "unreached",
+      "actor": null,
+      "at": null,
+      "note": null
+    }
+  ],
+  "findings": [
+    {
+      "id": "FND-101",
+      "gate": "build.acceptance",
+      "stage": "coverage",
+      "severity": "error",
+      "rule": "contract/route-mismatch",
+      "file": "app/lib/app.routes.dart",
+      "line": 42,
+      "message": "Surface 'settings.profile' is routed but absent from frozen structure.json.",
+      "reproduce": "appbox gate coverage --run run-0047 --finding FND-101",
+      "seen": "2 runs"
+    },
+    {
+      "id": "FND-102",
+      "gate": "build.acceptance",
+      "stage": "coverage",
+      "severity": "error",
+      "rule": "coverage/missing-viewmodel",
+      "file": "app/lib/ui/views/settings/profile_view.dart",
+      "line": 7,
+      "message": "View references ProfileViewModel; no viewmodel file emitted for the surface.",
+      "reproduce": "appbox gate coverage --run run-0047 --finding FND-102",
+      "seen": "2 runs"
+    },
+    {
+      "id": "FND-103",
+      "gate": "build.acceptance",
+      "stage": "review",
+      "severity": "warning",
+      "rule": "arch/forbidden-import",
+      "file": "app/lib/features/booking/booking_viewmodel.dart",
+      "line": 17,
+      "message": "ViewModel imports a repository directly; compose through the facade.",
+      "reproduce": "appbox review --run run-0047 --rule arch/forbidden-import",
+      "seen": "1 run"
+    }
+  ],
+  "surfaces": [
+    {
+      "id": "booking.calendar",
+      "tests": "14/14",
+      "files": 5,
+      "probe": {
+        "pixel": "99.1%",
+        "skeleton": "98.4%",
+        "deltaE": "1.6"
+      }
+    },
+    {
+      "id": "booking.confirm",
+      "tests": "9/11",
+      "files": 4,
+      "probe": {
+        "pixel": "96.2%",
+        "skeleton": "95.0%",
+        "deltaE": "3.1"
+      },
+      "flag": true
+    },
+    {
+      "id": "settings.profile",
+      "tests": "8/8",
+      "files": 3,
+      "probe": {
+        "pixel": "99.6%",
+        "skeleton": "99.0%",
+        "deltaE": "0.9"
+      }
+    }
+  ],
+  "timeline": [
+    {
+      "kind": "stage",
+      "id": "intake",
+      "label": "intake",
+      "state": "done",
+      "duration": "41s",
+      "log": [
+        "09:41:03  brief loaded — meridian-clinic.brief.md (4.2 kb)",
+        "09:41:31  story map seeded — 3 epics, 11 stories",
+        "09:41:44  registry.json seeded — 9 surfaces"
+      ]
+    },
+    {
+      "kind": "stage",
+      "id": "design",
+      "label": "design",
+      "state": "done",
+      "duration": "3m 12s",
+      "log": [
+        "09:41:45  moodboard composed — builder-and-pipeline",
+        "09:43:10  prototype emitted — 9 surfaces × 3 rungs",
+        "09:44:57  shots verified — 27/27 rungs pass"
+      ]
+    },
+    {
+      "kind": "stage",
+      "id": "freeze",
+      "label": "freeze",
+      "state": "done",
+      "duration": "12s",
+      "log": [
+        "09:45:02  structure.json frozen — hash a1e04d7c",
+        "09:45:14  trace map written — 9 surfaces → 31 stories"
+      ]
+    },
+    {
+      "kind": "gate",
+      "id": "design.approval",
+      "label": "Design approval",
+      "after": "freeze",
+      "state": "approved",
+      "actor": "evan",
+      "at": "09:58",
+      "note": "Frozen structure signed off — 9 surfaces."
+    },
+    {
+      "kind": "stage",
+      "id": "scaffold",
+      "label": "scaffold",
+      "state": "done",
+      "duration": "2m 03s",
+      "log": [
+        "09:45:15  47 files emitted across 9 surfaces",
+        "09:46:40  flutter analyze — 0 errors, 2 infos",
+        "09:47:18  coverage gate armed — 31 assertions"
+      ]
+    },
+    {
+      "kind": "stage",
+      "id": "coverage",
+      "label": "coverage",
+      "state": "red",
+      "duration": "1m 48s",
+      "esc": true,
+      "log": [
+        "09:47:19  structure gate — pass (31/31 files present)",
+        "09:48:02  contract validator — 2 errors raised",
+        "09:48:40  escalate 1/3 — re-emit settings.profile",
+        "09:49:05  escalate 2/3 — contract errors persist",
+        "09:49:07  stop-on-red — carried to review, esc limit 3"
+      ]
+    },
+    {
+      "kind": "stage",
+      "id": "review",
+      "label": "review",
+      "state": "done",
+      "duration": "56s",
+      "log": [
+        "09:49:08  arch_guard — manifest hash verified",
+        "09:49:41  ponytail-review — 1 warning raised",
+        "09:50:04  verdict drafted — red, 3 findings attached"
+      ]
+    },
+    {
+      "kind": "gate",
+      "id": "build.acceptance",
+      "label": "Build acceptance",
+      "after": "review",
+      "state": "pending",
+      "actor": null,
+      "at": null,
+      "note": "Agent reached this gate with 3 findings. An agent can reach a gate; only a human passes it."
+    },
+    {
+      "kind": "stage",
+      "id": "deploy",
+      "label": "deploy",
+      "state": "queued",
+      "duration": "—",
+      "log": []
+    },
+    {
+      "kind": "gate",
+      "id": "ship.confirm",
+      "label": "Ship confirm",
+      "after": "deploy",
+      "state": "unreached",
+      "actor": null,
+      "at": null,
+      "note": null
+    }
+  ],
+  "findingGroups": [
+    {
+      "gate": "build.acceptance",
+      "label": "Build acceptance",
+      "findings": [
+        {
+          "id": "FND-101",
+          "gate": "build.acceptance",
+          "stage": "coverage",
+          "severity": "error",
+          "rule": "contract/route-mismatch",
+          "file": "app/lib/app.routes.dart",
+          "line": 42,
+          "message": "Surface 'settings.profile' is routed but absent from frozen structure.json.",
+          "reproduce": "appbox gate coverage --run run-0047 --finding FND-101",
+          "seen": "2 runs"
+        },
+        {
+          "id": "FND-102",
+          "gate": "build.acceptance",
+          "stage": "coverage",
+          "severity": "error",
+          "rule": "coverage/missing-viewmodel",
+          "file": "app/lib/ui/views/settings/profile_view.dart",
+          "line": 7,
+          "message": "View references ProfileViewModel; no viewmodel file emitted for the surface.",
+          "reproduce": "appbox gate coverage --run run-0047 --finding FND-102",
+          "seen": "2 runs"
+        },
+        {
+          "id": "FND-103",
+          "gate": "build.acceptance",
+          "stage": "review",
+          "severity": "warning",
+          "rule": "arch/forbidden-import",
+          "file": "app/lib/features/booking/booking_viewmodel.dart",
+          "line": 17,
+          "message": "ViewModel imports a repository directly; compose through the facade.",
+          "reproduce": "appbox review --run run-0047 --rule arch/forbidden-import",
+          "seen": "1 run"
+        }
+      ]
+    }
+  ]
+}

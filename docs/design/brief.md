@@ -12,12 +12,55 @@ app-box
 ## Releases
 
 - **R1 Dogfood** — app-box designs, builds and ships itself; Michelle's 20-minute evaluation
-- **R2 Anywhere** — reach the daemon from anywhere (self-host tailnet); visual review depth
+- **R2 Anywhere** — visual review depth; richer remote and notification surface
 - **R3 Delight** — polish and moat-widening
 
 ## The things the app must do
 
+### App Shell & Accounts
+
+#### Access
+
+- [must/R1 Dogfood] Splash screen while the daemon connects, then sign-in (email + Sign in with Apple + Google, seeded accounts) landing on the dashboard; sign-up, sign-out and session-expired states seeded
+
+#### Dashboard
+
+- [must/R1 Dogfood] 'Needs you' strip listing pending gates and failed runs across all projects
+- [must/R1 Dogfood] Project cards grid: name, targets, stage, last activity, thumbnail
+- [must/R1 Dogfood] Pair-a-device entry point on the dashboard opens the safely generated QR pairing modal (short-lived, single-use)
+- [should/R2 Anywhere] Analytics trio: runs/week, stage durations, gate latency
+
+#### Projects
+
+- [must/R1 Dogfood] Project creation is a GenUI wizard generated inline in the chat thread (name + platform targets: iOS/Android/macOS/web)
+- [should/R2 Anywhere] Repo connect (GitHub default, other hosts) deferred to first gate approval; also available in settings
+- [must/R1 Dogfood] Auto-save of every chat action with a saved/saving indicator
+- [must/R1 Dogfood] Appbar shows project name + current stage chip, with click-through to the dashboard/project switcher
+
+#### Pairing
+
+- [must/R1 Dogfood] One-scan QR pairing: single-use short-lived tailnet pre-auth key + host/nonce/key fingerprint; relayed QR fails the pin
+- [must/R1 Dogfood] Device list with last-seen + revoke; revoke drops the session immediately
+- [must/R1 Dogfood] No third-party cloud relay — self-hosted tailnet only; an agent can never mint an approval
+- [must/R1 Dogfood] Phone/tablet auth view is the pairing flow (scan QR or enter code) — no sign-in forms on touch devices; account sign-in lives on desktop
+
+#### Notifications
+
+- [must/R1 Dogfood] Push when a gate goes red (deduped per transition), deep-link into the gate card
+- [should/R1 Dogfood] Actionable notification: approve/reject without opening the app
+
+#### Remote
+
+- [must/R1 Dogfood] Self-host tailnet (compose file) or hosted Tailscale from day one; daemon and apps are tailnet nodes in-process; approvals bind to WireGuard node identity
+- [should/R2 Anywhere] Private mesh CA gives trusted HTTPS origins over the mesh (arxa ADR-0036 pattern)
+
 ### Intake & Story Mapping
+
+#### Interview
+
+- [must/R1 Dogfood] Intake is a chat-native interview: depth choice (simple / normal / advanced — three separate question banks per audience) is the first chat message with 3 buttons
+- [must/R1 Dogfood] Each question is a horizontal-carousel card inline in the conversation: free text + single/multi-choice chips + suggested answers; skippable with a visible skipped state; swipe back to revisit
+- [must/R1 Dogfood] All-at-once generation when the questionnaire completes: brief + story map appear as rail artifacts; the moodboard follows as a suggested next step
 
 #### Mapping
 
@@ -25,6 +68,14 @@ app-box
 - [must/R1 Dogfood] Surface count + kit-coverage estimate within an hour of signing, to quote honestly
 - [should/R1 Dogfood] A non-technical client can read and correct the story map (HTML)
 - [could/R3 Delight] Stories carry EARS-style acceptance criteria gates can check
+- [must/R1 Dogfood] Stage gating: the Design tab stays locked until the story map is approved (human-gate pattern); locked tabs explain why and the chat nudges
+- [should/R2 Anywhere] Post-approval edits produce a new story-map version requiring re-approval; downstream stages get a 'map changed' badge
+
+#### Live Map
+
+- [must/R1 Dogfood] Live story map artifact: epics as horizontally scrolling columns, release swimlanes, story cards with live status dots (pending/in-progress/done/blocked) fed by pipeline state
+- [should/R1 Dogfood] Progress rollups per epic and per release on the live story map
+- [should/R2 Anywhere] Tapping a story opens a detail card center-stage
 
 #### Brief
 
@@ -45,21 +96,41 @@ app-box
 - [must/R1 Dogfood] Brief to clickable htmx prototype in under 10 minutes, carrying structure not pixels
 - [must/R1 Dogfood] Every surface designed at 390/744/1280 from targets alone (literal parity)
 - [must/R1 Dogfood] Target selection labels buildability on this machine (requires macOS)
+- [must/R1 Dogfood] The daemon drafts all screens from the approved story map in one pass; refining happens exclusively in the centered chat
 
 #### Chat
 
-- [must/R1 Dogfood] Select a screen, chat exclusively in its context; all other screens dim
-- [must/R1 Dogfood] Selection is a removable context chip: this surfaceId's spec, never the whole app
-- [must/R1 Dogfood] Hard tool-gating: only this screen's tools exposed (edit-layout, restyle, adjust-states, regenerate)
+- [must/R1 Dogfood] Pin multiple screens as chat context (removable chips); in-context screens render side-by-side (rungs layout) at real device sizes with a colored outline + 'in context' tag; non-context screens stay off-canvas
+- [must/R1 Dogfood] Each pinned screen is a removable context chip carrying its surfaceId's spec, never the whole app
+- [must/R1 Dogfood] Tool-gating scopes to the in-context set: only the pinned screens' tools exposed (edit-layout, restyle, adjust-states, regenerate)
 - [should/R1 Dogfood] Text/token tweaks apply instantly, no model round-trip
-- [must/R1 Dogfood] Each message checkpoints this screen only; one-tap revert, rendered before/after
-- [should/R1 Dogfood] Stale-selection guard: prototype changed since selection triggers re-sync or warn
+- [must/R1 Dogfood] Each message checkpoints the in-context screens only; one-tap revert, rendered before/after
+- [should/R1 Dogfood] Stale-selection guard: prototype changed since the in-context screens were pinned triggers re-sync or warn
 - [could/R2 Anywhere] Shared token/nav edit offers 'affects N screens, apply to all?' (nobody ships this)
+- [must/R1 Dogfood] The floating vertical filmstrip inside the design artifact is the context picker: clicking toggles a screen's in-context state
 
 #### Freeze
 
 - [must/R1 Dogfood] Hash-locked freeze; approval bound to the design hash; post-approval change goes stale loudly
 - [must/R1 Dogfood] Drift report + brief-to-surface-to-code traceability
+- [must/R1 Dogfood] Freeze approval of the frozen manifest is the human gate that unlocks the Build stage
+
+### Chat-Centric Layout
+
+#### Chat Stage
+
+- [must/R1 Dogfood] Chat is the centerpiece in every stage: centered when no artifact is open; slides into a right floating rail when an artifact opens; closes back via X / Esc / collapse handle
+- [must/R1 Dogfood] Single input path: no text inputs outside the chat — gate notes are chat replies carrying a context chip
+
+#### Rails
+
+- [must/R1 Dogfood] One reusable multi-view rail component used on both sides; per-tab view registry (runs / artifacts / commits / files / chat); an icon-button carousel in each rail's own bottom bar switches that rail's view
+- [should/R2 Anywhere] Rails resize via a hover handle on the inner edge only, min = current width, max = 1.5×
+- [must/R1 Dogfood] Adaptive chrome defaults: mobile = app bar (drawer + dropdown menu) + bottom tab bar + staggered-action FAB; tablet = app bar + collapsible floating left rail + FAB; desktop = app bar + bottom bar + both rails openable/closeable — overridable per project in the design brief
+
+#### Bottom Bar
+
+- [must/R1 Dogfood] Bottom bar: read-only stage timeline with proper labels (not clickable; animation kept), project + run state, daemon status + pending-gate dots; the old top stage strip is removed
 
 ### Build & Gates
 
@@ -68,17 +139,33 @@ app-box
 - [must/R1 Dogfood] Start a build, walk away; stops on red, ESC_LIMIT=3
 - [must/R1 Dogfood] Per-surface evidence report (screen to tests to code), not one giant diff
 - [must/R1 Dogfood] SARIF findings pinned to file/line with reproduce command
+- [must/R1 Dogfood] The run thread is the build tab's chat: stage, evidence, chart and gate cards stream in as chat messages; evidence and charts open as center artifacts (chat slides right — see Chat-Centric Layout)
 
 #### Gates
 
 - [must/R1 Dogfood] Three gates an agent can reach but never pass; approval = human + any authenticated shell, provenance-bound (shell, device/node identity, confirm method, timestamp, hash)
 - [must/R1 Dogfood] Approve/reject from phone push with biometric confirm
 - [should/R1 Dogfood] Pre-submission checklist gate (crashes/permissions, where generated apps die)
+- [must/R1 Dogfood] Gate approve/reject buttons live inline on gate chat cards; a reject note is a chat reply with a gate-context chip
+- [must/R1 Dogfood] Build acceptance approval unlocks the deploy stage
 
 #### Visual
 
 - [must/R1 Dogfood] probe-runner design-vs-built gates: pixel (SSIM), skeleton, colour (deltaE) against the frozen golden
 - [must/R1 Dogfood] Smoke per target: app boots, first screen renders, no crash
+
+### Source Control & Files
+
+#### Git
+
+- [must/R1 Dogfood] The pipeline auto-commits at each gate/stage with tab-scoped conventional messages (e.g. chore(intake): ...)
+- [should/R2 Anywhere] Commits rail view: git history with per-commit diff and CI status dots
+- [could/R2 Anywhere] Open-in-editor button (VS Code default, configurable editor) launches the project externally
+- [should/R2 Anywhere] app-box scaffolds each project's git setup: repo init, .gitignore, host connect
+
+#### Files
+
+- [should/R2 Anywhere] Files rail view: read-only generated-project tree with per-file status badges (new/changed/frozen); clicking a file opens its content as a center artifact
 
 ### Flows Canvas
 
@@ -96,24 +183,6 @@ app-box
 - [must/R1 Dogfood] Payment gate at first deploy: licence required to ship; everything before it free
 - [must/R1 Dogfood] Export-always: ordinary Stacked MVVM in my own repo, no export tier
 - [should/R2 Anywhere] Guided store submission (most-cited unmet gap in every builder)
-
-### Access & Devices
-
-#### Pairing
-
-- [must/R1 Dogfood] One-scan QR pairing (host/port/nonce/key fingerprint); relayed QR fails the pin
-- [must/R1 Dogfood] Device list with last-seen + revoke; revoke drops the session immediately
-- [must/R1 Dogfood] LAN-only by default, no cloud relay; an agent can never mint an approval
-
-#### Notifications
-
-- [must/R1 Dogfood] Push when a gate goes red (deduped per transition), deep-link into the gate card
-- [should/R1 Dogfood] Actionable notification: approve/reject without opening the app
-
-#### Remote
-
-- [should/R2 Anywhere] Self-host tailnet (compose file) or hosted Tailscale; pre-auth key in the QR; approvals bind to WireGuard node identity
-- [should/R2 Anywhere] Private mesh CA gives trusted HTTPS origins over the mesh (arxa ADR-0036 pattern)
 
 ### First Run & Showcase
 
@@ -171,23 +240,33 @@ app-box
 
 | id | label | priority | release |
 |----|-------|----------|---------|
+| `app.access` | Access | must | R1 Dogfood |
+| `app.dashboard` | Dashboard | must | R1 Dogfood |
+| `app.projects` | Projects | must | R1 Dogfood |
+| `app.pairing` | Pairing | must | R1 Dogfood |
+| `app.notifications` | Notifications | must | R1 Dogfood |
+| `app.remote` | Remote | must | R1 Dogfood |
+| `intake.interview` | Interview | must | R1 Dogfood |
 | `intake.mapping` | Mapping | must | R1 Dogfood |
+| `intake.live` | Live Map | must | R1 Dogfood |
 | `intake.brief` | Brief | must | R1 Dogfood |
 | `intake.moodboard` | Moodboard | must | R1 Dogfood |
 | `design.prototype` | Prototype | must | R1 Dogfood |
 | `design.chat` | Chat | must | R1 Dogfood |
 | `design.freeze` | Freeze | must | R1 Dogfood |
+| `chat.chat2` | Chat Stage | must | R1 Dogfood |
+| `chat.rails` | Rails | must | R1 Dogfood |
+| `chat.bottom` | Bottom Bar | must | R1 Dogfood |
 | `build.loop` | Loop | must | R1 Dogfood |
 | `build.gates` | Gates | must | R1 Dogfood |
 | `build.visual` | Visual | must | R1 Dogfood |
+| `source.git` | Git | must | R1 Dogfood |
+| `source.files` | Files | should | R2 Anywhere |
 | `flows.canvas` | Canvas | must | R2 Anywhere |
 | `ship.deploy` | Deploy | must | R1 Dogfood |
-| `access.pairing` | Pairing | must | R1 Dogfood |
-| `access.notifications` | Notifications | must | R1 Dogfood |
-| `access.remote` | Remote | should | R2 Anywhere |
 | `first.showcase` | Showcase | must | R1 Dogfood |
 | `first.honesty` | Honesty | must | R1 Dogfood |
-| `workspace.projects` | Projects | must | R1 Dogfood |
+| `workspace.projects2` | Projects | must | R1 Dogfood |
 | `workspace.settings` | Settings | must | R1 Dogfood |
 | `website.site` | Site | must | R2 Anywhere |
 | `website.docs` | Docs | must | R1 Dogfood |

@@ -70,6 +70,29 @@ two jobs.
 The recurring wide-layout mistake is a form whose inputs stretch to 1280px.
 Cap it.
 
+## Default chrome per rung
+
+The archetype table says how *content* composes; this table says which **chrome**
+a surface wears at each rung. These are the shipped defaults — a project's
+design brief may override any cell explicitly ("no FAB", "top tabs everywhere"),
+but silent deviation is a bug, not a choice. State the resolved chrome alongside
+the resolved ladder at session start.
+
+| chrome | compact | medium | expanded |
+|---|---|---|---|
+| app bar | always — title + **drawer action** + **dropdown menu** | same as compact | always — full action row |
+| primary nav | **bottom tab bar** | **floating left rail**, collapsible/expandable | **floating left + right rails**, each openable/closeable |
+| bottom bar | — | — | status/timeline bar |
+| FAB | **staggered action menu**, animated fan-out | same as compact | — |
+
+- The compact/medium drawer carries whatever the expanded left rail carries;
+  the rail is the drawer's docked form, not a second component.
+- Chrome *contents* (which tabs, which rail views, which FAB actions) come from
+  the surface's viewmodel — this contract fixes placement and behaviour, not
+  items.
+- The staggered FAB is the home of contextual actions on touch rungs; on
+  expanded those same actions live in the rails/bottom bar instead.
+
 ## Authoring and verifying at every rung
 
 1. Author the surface at **every active rung** — same `registry.json` entry,

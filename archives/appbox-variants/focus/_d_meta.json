@@ -1,0 +1,36 @@
+{
+  "type": "design",
+  "designSystems": [],
+  "primaryDesignSystem": null,
+  "assets": {
+    "design-index": {
+      "versions": [
+        {
+          "path": "ui/views/main_shell/main_shell_view.html",
+          "createdAt": "2026-07-28T12:30:25.955Z",
+          "status": "needs-review"
+        }
+      ]
+    },
+    "build-loop-directions": {
+      "versions": [
+        {
+          "path": "assets/variant-comparison.html",
+          "createdAt": "2026-07-28T13:20:11.003Z",
+          "status": "needs-review"
+        }
+      ]
+    },
+    "build-loop-focus": {
+      "versions": [
+        {
+          "path": "ui/views/main_shell/build/loop/loop_view.html",
+          "createdAt": "2026-07-28T14:12:03.640Z",
+          "status": "needs-review"
+        }
+      ]
+    }
+  },
+  "createdAt": "2026-07-28T12:30:25.956Z",
+  "updatedAt": "2026-07-28T14:12:03.640Z"
+}
