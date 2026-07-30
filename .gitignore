@@ -47,6 +47,16 @@ npm-debug.log*
 .pipeline/
 .appbox/
 .blueprint/
+# appboxd runtime state — raw memory events (M1: JSONL is git-ignored),
+# scorecard/usage attribution streams, per-run manifests. Runtime state,
+# not source; the tracked curated layer is memory/ at the repo root.
+pipeline/state/memory/
+pipeline/state/scorecard.jsonl
+pipeline/state/usage.jsonl
+pipeline/state/runs/
+# appboxd runtime state (cont.): the offline licence file when it lives in the
+# repo (preferred home is ~/.appbox/licence.json).
+pipeline/state/licence.json
 # .kit/ — gate SARIF + per-run state (run_all writes .kit/state/gates.sarif)
 .kit/
 .claude-flow/

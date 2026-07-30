@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# test/fixtures/kimi — a fake Kimi CLI for engine tests. Emits canned
+# stream-json on stdout, a marker on stderr, and records its argv and the
+# pre-written config.toml so tests can assert the headless contract.
+# Env knobs:
+#   FAKE_KIMI_ARGV_FILE       (required) one arg per line
+#   FAKE_KIMI_CONFIG_CAPTURE  copies $KIMI_CODE_HOME/config.toml here
+#   FAKE_KIMI_EXIT            exit code (default 0)
+#   FAKE_KIMI_NO_USAGE=1      omit the usage line (tokens must parse as null)
+set -u
+printf '%s\n' "$@" > "${FAKE_KIMI_ARGV_FILE:?FAKE_KIMI_ARGV_FILE required}"
+if [ -n "${FAKE_KIMI_CONFIG_CAPTURE:-}" ] && [ -n "${KIMI_CODE_HOME:-}" ]; then
+  cp "$KIMI_CODE_HOME/config.toml" "$FAKE_KIMI_CONFIG_CAPTURE"
+fi
+echo '{"role":"assistant","content":"stage done"}'
+if [ -z "${FAKE_KIMI_NO_USAGE:-}" ]; then
+  echo '{"role":"assistant","content":"with usage","usage":{"input_tokens":123,"output_tokens":45}}'
+fi
+echo '{"role":"meta","type":"session.resume_hint","session_id":"session_fake-1234","command":"kimi -r session_fake-1234"}'
+echo "fake kimi stderr marker" >&2
+exit "${FAKE_KIMI_EXIT:-0}"

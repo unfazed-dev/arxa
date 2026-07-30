@@ -12,10 +12,25 @@ need(){ case "$1" in *"$2"*) pass=$((pass+1));; *) failc=$((failc+1)); echo "  F
 T="$(mktemp -d)"; trap 'rm -rf "$T"' EXIT
 mkstate(){ printf '%s' "$1" > "$T/state.json"; }
 
-# Licensed by default for all cases below; the licence-negative cases clear it.
-export APPBOX_LICENCE_KEY="selftest-licence-key"
-# A config WITHOUT a licence, to isolate the env-based path in negatives.
-NOLIC_CONFIG="$T/nolic.config.json"; printf '%s' '{"version":"1.0.0"}' > "$NOLIC_CONFIG"
+# The §17 licence assertion (licence_assert.sh) runs FIRST and fails closed;
+# this suite exercises the gate's own checks, so it dogfoods through the
+# documented dev bypass (a paid licence_tool fixture lives in
+# licence_assert.selftest.sh). The licence cases below clear it and drive a
+# fixture licence_tool via APPBOX_APPBOXD_DIR instead.
+export APPBOX_DEV_LICENCE=1
+# Keep the suite's memory events out of the real pipeline state.
+export APPBOX_MEMORY_EVENTS="$T/memory/events.jsonl"
+# A fixture appboxd whose licence_tool.dart stub plays the tool contract
+# ({status,tier,expires} JSON on stdout, exit 0 for paid / 1 otherwise).
+STUBD="$T/appboxd"; mkdir -p "$STUBD/bin"
+mkstub(){ cat > "$STUBD/bin/licence_tool.dart" <<DART
+import 'dart:io';
+void main(List<String> args) {
+  stdout.writeln('{"status":"$1","tier":"$1-tier","expires":"2027-01-01"}');
+  exit($2);
+}
+DART
+}
 
 OK='{"phase":"deploy","targets":["macos"],"approvalTokens":{"deploy":{"version":"1.2.3","account":"totem-labs"}}}'
 
@@ -46,22 +61,25 @@ need "$o" "target" "negative names the missing target"
 # ---- NEGATIVE: NO LICENCE — the precondition halts the deploy ---------------
 # NEGATIVE (decision 11, amends §17): unlicensed -> exit 1 BEFORE the gate,
 # naming what is missing and how to activate. A gate that cannot fail is not
-# a gate; a paywall discovered mid-deploy is worse.
+# a gate; a paywall discovered mid-deploy is worse. licence_assert.sh delegates
+# to appboxd's licence_tool — the fixture reports "none".
 mkstate "$OK"
-o="$(env -u APPBOX_LICENCE_KEY APPBOX_CONFIG="$NOLIC_CONFIG" APPBOX_STATE="$T/state.json" bash "$GATE" 2>&1)"
+mkstub none 1
+o="$(env -u APPBOX_DEV_LICENCE APPBOX_APPBOXD_DIR="$STUBD" APPBOX_STATE="$T/state.json" bash "$GATE" 2>&1)"
 chk "$?" 1 "negative: unlicensed deploy halts"
 need "$o" "PRECONDITION NOT MET: licence" "negative names the licence precondition"
-need "$o" "APPBOX_LICENCE_KEY" "negative says how to activate"
+need "$o" "licence_tool" "negative says how to activate"
 need "$o" "HALTED" "negative halts the deploy"
 
-# ---- HAPPY: licence confirmed via config (not env) ---------------------------
-# POSITIVE: licence.key in config/app-box.config.json also satisfies the
-# precondition -> gate proceeds to its normal checks and passes.
-LIC_CONFIG="$T/lic.config.json"; printf '%s' '{"version":"1.0.0","licence":{"key":"flat-licence-key"}}' > "$LIC_CONFIG"
+# ---- HAPPY: licence confirmed paid via licence_tool ---------------------------
+# POSITIVE: a paid verdict from appboxd's licence_tool satisfies the
+# precondition -> gate proceeds to its normal checks and passes. This drives
+# the delegated path directly (no dev bypass).
 mkstate "$OK"
-o="$(env -u APPBOX_LICENCE_KEY APPBOX_CONFIG="$LIC_CONFIG" APPBOX_STATE="$T/state.json" bash "$GATE" 2>&1)"
-chk "$?" 0 "happy: licensed via config proceeds"
-need "$o" "deploy: PASS" "config-licensed deploy passes"
+mkstub paid 0
+o="$(env -u APPBOX_DEV_LICENCE APPBOX_APPBOXD_DIR="$STUBD" APPBOX_STATE="$T/state.json" bash "$GATE" 2>&1)"
+chk "$?" 0 "happy: paid licence proceeds"
+need "$o" "deploy: PASS" "paid deploy passes"
 
 echo "deploy selftest: $pass passed, $failc failed"
 [ "$failc" -eq 0 ] && exit 0 || exit 1

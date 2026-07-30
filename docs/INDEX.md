@@ -66,6 +66,8 @@ a project's `--targets`. The ladder is passed by hand until it lands.
 | doc | contents |
 |---|---|
 | [plans/architecture.md](plans/architecture.md) | §1–22. The spine, targets, structure contract, gates, payment, deployer, CRUD, designer, playbooks, build order, intake |
+| [plans/appbox-engine-llm-fabric.md](plans/appbox-engine-llm-fabric.md) | E1–E4: vault keys, loopback LLM gateway, deterministic stage-runner, model fabric — built 2026-07-30, corrections appended |
+| [plans/appbox-memory-and-payment.md](plans/appbox-memory-and-payment.md) | M1–M2 memory module (appboxd-owned, hybrid write path) + P1–P3 monetization (flat licence, watermark free tier, offline signed licence, cloud parked) |
 | [plans/feature-crud.md](plans/feature-crud.md) | the operational CRUD contract + the round-trip test |
 | [plans/stub-remediation.md](plans/stub-remediation.md) | the three test tiers and the `verification` field |
 | [plans/implementation/](plans/implementation/) | step-by-step build plans |

@@ -144,3 +144,40 @@ i18n launch work (separate approved plan, in progress). Store-metadata locales.
 Per-app (generated-product) runtime routing — produced apps inherit the fabric for
 their own genui features via kit-i18n's directive + the gateway, designed when the
 engine build starts.
+
+## Corrections (2026-07-30 — appended, originals left intact)
+
+Sources: `docs/research/provider-fabric-recheck.md` (official-doc re-verification,
+2026-07-30) and the E1–E4 build itself (kimi CLI 0.29.2 verified live).
+
+- **E3 headless contract corrected.** There is no `--print`, no `--afk`, no
+  `--config`. Headless = `kimi -p "<prompt>" --output-format=stream-json` with a
+  throwaway `KIMI_CODE_HOME/config.toml` (`base_url` + scoped token +
+  `default_permission_mode = "auto"` — `-p` rejects `--auto`/`-y`). Env injection
+  **is** now documented: `KIMI_MODEL_NAME/API_KEY/BASE_URL/PROVIDER_TYPE`.
+  Resume = `-r <session_id>` (alias of `--session`); `-c/--continue` exists.
+  stream-json emits no usage/token lines in 0.29.2 → scorecard tokens are null
+  until the CLI adds them. Exit 75 not found in the binary; kept as a constant.
+- **E4 drift corrections.** grok-4.1-fast **does not exist** (removed from the
+  catalog); grok-4.3 documented (1M ctx, ~$1.25/$2.50). gemini-3.6-flash
+  ($1.50/$7.50, 2026-07-21) supersedes the 3.5-flash note; 3.5-flash-lite GA
+  $0.30/$2.50. Fugu pricing now official: Ultra $5/$30 ($10/$45 >272k), Cyber
+  $6/$36, OpenAI-compat API live, no EU/EEA. z.ai Anthropic-compat bills PAYG
+  **only if the account never bought a Coding Plan**. Anthropic now ships an
+  official OpenAI-compat layer (testing-oriented; `response_format` ignored; no
+  prompt caching). Kimi documents `json_schema` Structured Output — the
+  `json_object_only` param_policy is no longer mandatory for Kimi (kept in the
+  policy set; genui_bridge uses it). Kimi platform rebranded:
+  platform.kimi.ai / platform.kimi.com — keys and balances fully independent.
+- **genui_bridge path fix.** The Kimi-compat note's file is
+  `genui_bridge/lib/src/adapters/openai_chat_stream.dart` (not `lib/src/`).
+  Fixed 2026-07-30: `OpenAIParamPolicy` enum (`fullJsonSchema` default unchanged,
+  `jsonObjectOnly` for Kimi); SSE transport verified incrementally correct with a
+  split-multibyte regression test; no sampling params are sent by either adapter.
+- **Built (2026-07-30).** `config/model-fabric.json` (schema_version 1),
+  `appboxd/lib/fabric.dart`, `appboxd/lib/gateway.dart` (E2: scoped tokens,
+  routing, param_policy, Anthropic↔OpenAI translation, usage.jsonl attribution),
+  `appboxd/lib/engine.dart` (E3: registry from `gates/run_all.sh` order —
+  `pipeline/pipeline.sh` is the stacked_kit FSM and never invokes `gates/*` —
+  headless runner, manifests, scorecard.jsonl). Anthropic URLs are unversioned in
+  the catalog; the gateway appends `/v1/messages`.

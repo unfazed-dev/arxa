@@ -25,6 +25,7 @@ import glob
 import json
 import os
 import re
+import subprocess
 import sys
 import tempfile
 
@@ -365,7 +366,18 @@ def main(argv):
     if os.path.isabs(dd):
         print("FAIL: --design-dir must stay app-root-relative", file=sys.stderr)
         return 1
-    return emit(os.path.abspath(os.path.join(app, dd)), check=check)
+    root = os.path.abspath(os.path.join(app, dd))
+    rc = emit(root, check=check)
+    # Opt-in post-emit hook (P1 provenance/watermark). Off by default — set
+    # APPBOX_WATERMARK=1 to run tools/watermark/watermark.mjs over the emitted
+    # root. Never blocks the emit: hook failure is reported, rc is unchanged.
+    if rc == 0 and not check and os.environ.get("APPBOX_WATERMARK"):
+        hook = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                            "watermark", "watermark.mjs")
+        r = subprocess.run(["node", hook, root], check=False)
+        if r.returncode != 0:
+            print(f"WARN: watermark hook exited {r.returncode}", file=sys.stderr)
+    return rc
 
 
 if __name__ == "__main__":

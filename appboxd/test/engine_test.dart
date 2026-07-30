@@ -1,0 +1,306 @@
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:appboxd/engine.dart';
+import 'package:appboxd/gateway.dart' show TokenMinter;
+import 'package:path/path.dart' as p;
+import 'package:test/test.dart';
+
+/// Walks up from the cwd to the repo root (where pipeline/pipeline.sh
+/// lives), same convention as bin/appboxd.dart.
+String repoRoot() {
+  var root = Directory.current.path;
+  while (!File(p.join(root, 'pipeline', 'pipeline.sh')).existsSync()) {
+    final parent = p.dirname(root);
+    if (parent == root) fail('pipeline/pipeline.sh not found above $root');
+    root = parent;
+  }
+  return root;
+}
+
+void main() {
+  group('stage registry', () {
+    test('reads the real gates/ dir in gates/run_all.sh order', () {
+      final stages = loadStages(repoRoot());
+      // run_all.sh dependency order, then the gates it does not drive.
+      expect(
+        stages.map((s) => s.name).toList(),
+        [
+          'intake',
+          'freeze',
+          'structure',
+          'scaffold',
+          'coverage',
+          'memory',
+          'review',
+          'native_deps',
+          'deploy',
+          'advertise',
+        ],
+      );
+      for (final stage in stages) {
+        expect(stage.tier, isNotEmpty);
+        // Every gate command resolves to a script that exists on disk.
+        expect(File(p.join(repoRoot(), stage.gate[1])).existsSync(), isTrue,
+            reason: '${stage.name}: ${stage.gate}');
+      }
+      // Tiers come from the fabric catalog: intake/review are frontier,
+      // scaffold standard, and unlisted gates fall back to standard.
+      expect(stages.firstWhere((s) => s.name == 'intake').tier, 'frontier');
+      expect(stages.firstWhere((s) => s.name == 'review').tier, 'frontier');
+      expect(stages.firstWhere((s) => s.name == 'scaffold').tier, 'standard');
+    });
+
+    test('missing gates/ dir yields an empty registry', () {
+      expect(loadStages(Directory.systemTemp.path), isEmpty);
+    });
+  });
+
+  group('run manifests', () {
+    late Directory tmp;
+    setUp(() => tmp = Directory.systemTemp.createTempSync('engine-test-'));
+    tearDown(() => tmp.deleteSync(recursive: true));
+
+    test('write/read round-trip preserves every field', () async {
+      final manifest = RunManifest(
+        runId: 'intake-1',
+        stage: 'intake',
+        startedAt: '2026-07-30T00:00:00.000Z',
+        finishedAt: '2026-07-30T00:01:00.000Z',
+        exitCode: 0,
+        retries: 2,
+        sessionId: 'session_abc',
+      );
+      await writeManifest(tmp.path, manifest);
+      final back = await readManifest(tmp.path, 'intake-1');
+      expect(back.toJson(), manifest.toJson());
+      // Null session id survives the round trip too.
+      final noSession = RunManifest(
+        runId: 'review-2',
+        stage: 'review',
+        startedAt: 'a',
+        finishedAt: 'b',
+        exitCode: 1,
+        retries: 0,
+      );
+      await writeManifest(tmp.path, noSession);
+      expect((await readManifest(tmp.path, 'review-2')).sessionId, isNull);
+    });
+  });
+
+  group('scorecard', () {
+    late Directory tmp;
+    setUp(() => tmp = Directory.systemTemp.createTempSync('engine-test-'));
+    tearDown(() => tmp.deleteSync(recursive: true));
+
+    test('appends one JSON line per run', () async {
+      await appendScorecard(tmp.path, {
+        'stage': 'intake',
+        'tier': 'frontier',
+        'provider': null,
+        'model': null,
+        'tokens_in': 123,
+        'tokens_out': 45,
+        'cost': null,
+        'gate_pass': true,
+        'retries': 0,
+      });
+      await appendScorecard(tmp.path, {'stage': 'review', 'gate_pass': false});
+      final lines = await File(
+              p.join(tmp.path, 'pipeline', 'state', 'scorecard.jsonl'))
+          .readAsLines();
+      expect(lines, hasLength(2));
+      final first = jsonDecode(lines[0]) as Map<String, Object?>;
+      expect(first['tokens_in'], 123);
+      expect(first['gate_pass'], isTrue);
+      expect((jsonDecode(lines[1]) as Map)['gate_pass'], isFalse);
+    });
+  });
+
+  group('headless runner (fake kimi on PATH)', () {
+    late Directory tmp;
+    late Engine engine;
+
+    Map<String, String> fakeEnv({Map<String, String>? extra}) => {
+          'PATH':
+              '${p.join(Directory.current.path, 'test', 'fixtures')}:${Platform.environment['PATH']}',
+          'FAKE_KIMI_ARGV_FILE': p.join(tmp.path, 'argv.txt'),
+          'FAKE_KIMI_CONFIG_CAPTURE': p.join(tmp.path, 'config.toml'),
+          ...?extra,
+        };
+
+    setUp(() {
+      tmp = Directory.systemTemp.createTempSync('engine-test-');
+      engine = Engine(
+        repoRoot: tmp.path,
+        stagesOverride: [
+          Stage(
+            name: 'intake',
+            gate: const ['bash', 'gates/intake/intake.sh'],
+            tier: 'frontier',
+          ),
+        ],
+      );
+    });
+    tearDown(() => tmp.deleteSync(recursive: true));
+
+    test('runs print mode, writes manifest + scorecard, keeps stderr',
+        () async {
+      final run = await engine.runStage(
+        'intake',
+        prompt: 'run the intake skill',
+        gatePass: true,
+        environment: fakeEnv(),
+      );
+
+      // The headless contract: -p <prompt> --output-format=stream-json.
+      final argv =
+          await File(p.join(tmp.path, 'argv.txt')).readAsLines();
+      expect(argv, containsAllInOrder(['-p', 'run the intake skill']));
+      expect(argv, contains('--output-format=stream-json'));
+
+      // The CLI was pointed at the loopback gateway via KIMI_CODE_HOME.
+      final config =
+          await File(p.join(tmp.path, 'config.toml')).readAsString();
+      expect(config, contains('base_url = "http://127.0.0.1:8787/llm/v1"'));
+      expect(config, contains('api_key = "appbox-stage-token-TODO"'));
+      expect(config, contains('default_permission_mode = "auto"'));
+
+      // stream-json parsed: session id + usage; stderr not swallowed.
+      expect(run.exitCode, 0);
+      expect(run.retryable, isFalse);
+      expect(run.manifest.sessionId, 'session_fake-1234');
+      expect(run.tokensIn, 123);
+      expect(run.tokensOut, 45);
+      expect(run.stderr, contains('fake kimi stderr marker'));
+
+      // Manifest on disk round-trips what the run returned.
+      final manifest =
+          await readManifest(tmp.path, run.manifest.runId);
+      expect(manifest.toJson(), run.manifest.toJson());
+
+      // Scorecard got exactly one line with the measured tokens.
+      final lines = await File(
+              p.join(tmp.path, 'pipeline', 'state', 'scorecard.jsonl'))
+          .readAsLines();
+      final entry = jsonDecode(lines.single) as Map<String, Object?>;
+      expect(entry['stage'], 'intake');
+      expect(entry['tier'], 'frontier');
+      expect(entry['tokens_in'], 123);
+      expect(entry['tokens_out'], 45);
+      expect(entry['cost'], isNull);
+      expect(entry['gate_pass'], isTrue);
+    });
+
+    test('resume passes -r with the recorded session id', () async {
+      await engine.runStage('intake',
+          prompt: 'first', environment: fakeEnv());
+      await engine.runStage('intake',
+          prompt: 'second', resume: true, environment: fakeEnv());
+      final argv = await File(p.join(tmp.path, 'argv.txt')).readAsLines();
+      expect(argv, containsAllInOrder(['-r', 'session_fake-1234']));
+    });
+
+    test('exit 75 is retryable, other failures are not', () async {
+      final retryable = await engine.runStage('intake',
+          prompt: 'x', environment: fakeEnv(extra: {'FAKE_KIMI_EXIT': '75'}));
+      expect(retryable.exitCode, 75);
+      expect(retryable.retryable, isTrue);
+
+      final failed = await engine.runStage('intake',
+          prompt: 'x', environment: fakeEnv(extra: {'FAKE_KIMI_EXIT': '1'}));
+      expect(failed.exitCode, 1);
+      expect(failed.retryable, isFalse);
+      expect(failed.stderr, contains('fake kimi stderr marker'));
+    });
+
+    test('absent usage stays null — never fabricated', () async {
+      final run = await engine.runStage('intake',
+          prompt: 'x',
+          environment: fakeEnv(extra: {'FAKE_KIMI_NO_USAGE': '1'}));
+      expect(run.tokensIn, isNull);
+      expect(run.tokensOut, isNull);
+      final lines = await File(
+              p.join(tmp.path, 'pipeline', 'state', 'scorecard.jsonl'))
+          .readAsLines();
+      final entry = jsonDecode(lines.single) as Map<String, Object?>;
+      expect(entry['tokens_in'], isNull);
+      expect(entry['tokens_out'], isNull);
+    });
+
+    test('each run appends a stage_run memory event', () async {
+      final run = await engine.runStage(
+        'intake',
+        prompt: 'run the intake skill',
+        gatePass: true,
+        environment: fakeEnv(),
+      );
+
+      final file = File(
+          p.join(tmp.path, 'pipeline', 'state', 'memory', 'events.jsonl'));
+      final lines = await file.readAsLines();
+      expect(lines, hasLength(1));
+      final event = jsonDecode(lines.single) as Map<String, Object?>;
+      expect(DateTime.tryParse(event['ts'] as String), isNotNull);
+      expect(event['kind'], 'stage_run');
+      expect(event['actor'], 'engine');
+      final payload = (event['payload'] as Map).cast<String, Object?>();
+      expect(payload['stage'], 'intake');
+      expect(payload['exit_code'], 0);
+      expect(payload['retries'], 0);
+      expect(payload['session_id'], run.manifest.sessionId);
+      expect(payload['gate_pass'], isTrue);
+    });
+
+    test('gate_pass is omitted from the event when not yet known', () async {
+      await engine.runStage('intake', prompt: 'x', environment: fakeEnv());
+      final file = File(
+          p.join(tmp.path, 'pipeline', 'state', 'memory', 'events.jsonl'));
+      final event =
+          jsonDecode((await file.readAsLines()).single) as Map<String, Object?>;
+      final payload = (event['payload'] as Map).cast<String, Object?>();
+      expect(payload.containsKey('gate_pass'), isFalse);
+    });
+
+    test('unknown stage is an argument error, not a fake run', () {
+      expect(
+        () => engine.runStage('nope',
+            prompt: 'x', environment: fakeEnv()),
+        throwsArgumentError,
+      );
+    });
+
+    test('with a minter, the injected token is scoped to tier + one up',
+        () async {
+      final minter = TokenMinter();
+      final minting = Engine(
+        repoRoot: tmp.path,
+        minter: minter,
+        stagesOverride: [
+          Stage(
+            name: 'build',
+            gate: const ['bash', 'gates/build/build.sh'],
+            tier: 'standard',
+          ),
+        ],
+      );
+      await minting.runStage('build', prompt: 'x', environment: fakeEnv());
+      final config =
+          await File(p.join(tmp.path, 'config.toml')).readAsString();
+      final match = RegExp(r'api_key = "(abx_[0-9a-f]+)"').firstMatch(config);
+      expect(match, isNotNull, reason: 'config.toml carries a minted token');
+      final scope = minter.verify(match!.group(1)!);
+      expect(scope, isNotNull);
+      expect(scope!.consumer, 'pipeline-stage:build');
+      expect(scope.tiers, ['standard', 'frontier']);
+    });
+  });
+
+  group('escalationTiers', () {
+    test('stage tier plus one tier up, clamped at frontier', () {
+      expect(escalationTiers('frontier'), ['frontier']);
+      expect(escalationTiers('standard'), ['standard', 'frontier']);
+      expect(escalationTiers('fast'), ['fast', 'standard']);
+    });
+  });
+}

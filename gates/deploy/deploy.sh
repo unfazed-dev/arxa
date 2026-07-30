@@ -7,8 +7,8 @@
 #
 # PRECONDITION (consolidation decision 11, amending architecture §17): a valid
 # licence must be confirmed BEFORE the deploy phase runs — the paywall sits at
-# first deploy; everything before it is free. Verified by licence.sh (the
-# check, not the store: config/env licence state, no payment provider).
+# first deploy; everything before it is free. Verified by licence_assert.sh
+# (delegates to appboxd's offline licence_tool — P2).
 #
 # Reads pipeline state through gates/_common/state_reader.sh (APPBOX_STATE
 # selects the state file; defaults to pipeline/state/run.state.json then
@@ -31,8 +31,12 @@ set +e
 # never reported as a gate finding (a gate that goes red for payment reasons
 # teaches people to distrust red — §17's own constraint).
 GATE_DIR="$(cd "$(dirname "$0")" && pwd)"
-if ! bash "$GATE_DIR/licence.sh"; then
-  echo "deploy: HALTED — licence precondition not met (see above)." >&2
+# §17 licence assertion FIRST (P1: the deploy gate enforces the licence) —
+# shells out to appboxd's licence_tool and fails CLOSED: no paid verdict,
+# missing tool, or unparseable output all halt the deploy with a purchase
+# message. APPBOX_DEV_LICENCE=1 is the documented dev/dogfood bypass.
+if ! bash "$GATE_DIR/licence_assert.sh"; then
+  echo "deploy: HALTED — §17 licence assertion failed (see above)." >&2
   exit 1
 fi
 

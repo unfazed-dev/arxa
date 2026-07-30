@@ -1,0 +1,118 @@
+{
+  "schema_version": 1,
+  "providers": [
+    {
+      "name": "kimi",
+      "base_url": "https://api.moonshot.ai/v1",
+      "anthropic_url": "https://api.moonshot.ai/anthropic",
+      "protocol": "openai-compat",
+      "key_ref": "kimi",
+      "param_policy": ["omit_temperature", "omit_sampling", "json_object_only"],
+      "notes": "OpenAI-compat; json_schema Structured Output now officially documented (2026-07-30, 'recommended') — the json_object_only param_policy stays in the known set (genui_bridge uses it) but is no longer mandatory for Kimi. Fixed temperature/top_p — omit them or it errors (A). Anthropic-compat /anthropic exists (B)."
+    },
+    {
+      "name": "zai",
+      "base_url": "https://api.z.ai/api/paas/v4",
+      "protocol": "openai-compat",
+      "key_ref": "zai",
+      "param_policy": [],
+      "notes": "OpenAI-compat (api.z.ai/api/paas/v4) is the safe PAYG default. The Anthropic-compat endpoint (api.z.ai/api/anthropic) bills PAYG balance only if the account has never purchased a Coding Plan; once any plan was purchased (even expired) the route needs manual allowlisting — second-class. Engine use needs PAYG keys, not a Coding-Plan subscription."
+    },
+    {
+      "name": "anthropic",
+      "base_url": "https://api.anthropic.com",
+      "protocol": "anthropic-messages",
+      "key_ref": "anthropic",
+      "param_policy": [],
+      "notes": "Messages API native (base_url is unversioned; the gateway appends /v1/messages). An official OpenAI-compat layer now exists at https://api.anthropic.com/v1 (testing-oriented: response_format ignored, no prompt caching, temperature capped at 1) — a real fallback, not the primary route."
+    },
+    {
+      "name": "openai",
+      "base_url": "https://api.openai.com/v1",
+      "protocol": "openai-responses",
+      "key_ref": "openai",
+      "param_policy": ["omit_temperature"],
+      "notes": "Responses-primary, chat/completions live; 5.x reasoning rejects explicit temperature — omit."
+    },
+    {
+      "name": "deepseek",
+      "base_url": "https://api.deepseek.com/v1",
+      "anthropic_url": "https://api.deepseek.com/anthropic",
+      "protocol": "openai-compat",
+      "key_ref": "deepseek",
+      "param_policy": ["omit_sampling", "echo_reasoning_content"],
+      "notes": "OpenAI-format native + first-party /anthropic; thinking default ON, sampling silently ignored; reasoning_content must echo in tool loops or 400 (A)."
+    },
+    {
+      "name": "gemini",
+      "base_url": "https://generativelanguage.googleapis.com/v1beta/openai/",
+      "protocol": "openai-compat",
+      "key_ref": "gemini",
+      "param_policy": [],
+      "notes": "OpenAI-compat endpoint still documented; 3.x prices confirmed against the official pricing page 2026-07-30."
+    },
+    {
+      "name": "xai",
+      "base_url": "https://api.x.ai/v1",
+      "protocol": "openai-compat",
+      "key_ref": "xai",
+      "param_policy": [],
+      "notes": "OpenAI-style; Anthropic SDK deprecated (A)."
+    },
+    {
+      "name": "fugu",
+      "base_url": null,
+      "protocol": "openai-compat",
+      "key_ref": "fugu",
+      "param_policy": [],
+      "optional": true,
+      "notes": "Optional frontier entry. Pricing now official (2026-07-30): Fugu Ultra $5/$30 per 1M ($10/$45 above 272k ctx, cached $0.50); Fugu Cyber $6/$36; base Fugu billed at the underlying model's rate. OpenAI-compatible API live for all three models; per-request cost reporting; not available in EU/EEA. base_url stays null until an endpoint + key exist; pool opt-outs map to catalog config."
+    }
+  ],
+  "tiers": {
+    "frontier": [
+      {"model": "kimi-k3", "provider": "kimi", "price_in": 3, "price_out": 15, "notes": "1M context; reasoning_effort low/high/max"},
+      {"model": "claude-fable-5", "provider": "anthropic", "price_in": 10, "price_out": 50, "notes": "1M context"},
+      {"model": "glm-5.2", "provider": "zai", "price_in": 1.40, "price_out": 4.40, "notes": "1M context"},
+      {"model": "gpt-5.6-sol", "provider": "openai", "price_in": 5, "price_out": 30, "notes": ""},
+      {"model": "gemini-3.1-pro", "provider": "gemini", "price_in": 2, "price_out": 12, "notes": "≤200k prompts; $4/$18 above 200k (confirmed 2026-07-30)"},
+      {"model": "grok-4.5", "provider": "xai", "price_in": 2, "price_out": 6, "notes": "500k context"},
+      {"model": "grok-4.3", "provider": "xai", "price_in": 1.25, "price_out": 2.50, "notes": "1M context; aliases grok-4.3-latest/grok-latest; documented 2026-07 (grok-4.1-fast does not exist — dropped)"},
+      {"model": "deepseek-v4-pro", "provider": "deepseek", "price_in": 0.44, "price_out": 0.87, "notes": ""},
+      {"model": "fugu-ultra", "provider": "fugu", "price_in": 5, "price_out": 30, "notes": "optional; official 2026-07-30 — $10/$45 above 272k ctx, cached $0.50; no EU/EEA"}
+    ],
+    "standard": [
+      {"model": "kimi-k2.7-code", "provider": "kimi", "price_in": 0.95, "price_out": 4, "notes": "thinking always on"},
+      {"model": "claude-sonnet-5", "provider": "anthropic", "price_in": 3, "price_out": 15, "notes": "intro $2/$10 thru 2026-08-31"},
+      {"model": "glm-5", "provider": "zai", "price_in": 1, "price_out": 3.20, "notes": ""},
+      {"model": "glm-4.7", "provider": "zai", "price_in": 0.60, "price_out": 2.20, "notes": ""},
+      {"model": "gpt-5.6-terra", "provider": "openai", "price_in": 2.50, "price_out": 15, "notes": ""},
+      {"model": "gemini-3.5-flash", "provider": "gemini", "price_in": 1.50, "price_out": 9, "notes": "confirmed 2026-07-30; see fast tier's gemini-3.6-flash (same input price, cheaper output)"}
+    ],
+    "fast": [
+      {"model": "kimi-k2.7-code-highspeed", "provider": "kimi", "price_in": null, "price_out": null, "notes": "≈3× quota — real fan-out only"},
+      {"model": "claude-haiku-4.5", "provider": "anthropic", "price_in": 1, "price_out": 5, "notes": ""},
+      {"model": "glm-4.7-flashx", "provider": "zai", "price_in": 0.07, "price_out": 0.40, "notes": ""},
+      {"model": "glm-4.7-flash", "provider": "zai", "price_in": null, "price_out": null, "notes": "free"},
+      {"model": "gpt-5.6-luna", "provider": "openai", "price_in": 1, "price_out": 6, "notes": ""},
+      {"model": "gemini-3.6-flash", "provider": "gemini", "price_in": 1.50, "price_out": 7.50, "notes": "launched 2026-07-21; same input price as 3.5-flash, cheaper output"},
+      {"model": "gemini-3-flash", "provider": "gemini", "price_in": 0.50, "price_out": 3, "notes": "confirmed 2026-07-30; still gemini-3-flash-preview ID"},
+      {"model": "gemini-3.1-flash-lite", "provider": "gemini", "price_in": 0.25, "price_out": 1.50, "notes": "confirmed 2026-07-30; gemini-3.5-flash-lite now GA at $0.30/$2.50"},
+      {"model": "deepseek-v4-flash", "provider": "deepseek", "price_in": 0.14, "price_out": 0.28, "notes": ""}
+    ]
+  },
+  "stages": {
+    "intake": {"tier": "frontier", "notes": "client-facing elicitation judgment (covers story-mapping)"},
+    "design": {"tier": "frontier", "notes": "first-idea-might-be-wrong = Hard band"},
+    "scaffold": {"tier": "standard", "notes": "mostly deterministic scripts; bounded agent part"},
+    "build": {"tier": "standard", "notes": "executes; review stays frontier (Moderate = orchestrator pattern)"},
+    "review": {"tier": "frontier", "notes": "maker/checker split (Fugu): review provider ≠ build provider"},
+    "test": {"tier": "standard", "notes": "probe/golden runs are deterministic anyway"},
+    "gates": {"tier": null, "notes": "deterministic code, no LLM (already true)"}
+  },
+  "escalation": {
+    "rule": "gate fail → re-run that stage one tier up, bounded once (gate-driven, not judge-model)",
+    "bounded": 1,
+    "downgrade": "never silent cross-tier downgrade (documented quality cliff)"
+  }
+}

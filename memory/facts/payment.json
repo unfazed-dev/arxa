@@ -1,0 +1,32 @@
+[
+  {
+    "fact": "P1: charge for the tool, never the output — flat annual licence + perpetual fallback (12 paid months -> keep that version forever). No per-seat, no usage credits (BYO-key = no inference cost to meter). Price point still open (INDEX O2).",
+    "source": "docs/plans/appbox-memory-and-payment.md",
+    "ts": "2026-07-30"
+  },
+  {
+    "fact": "Free tier: full product, watermarked — vault/state encrypted by default + provenance/watermark block in generated outputs. Paid: clean outputs + deployable; the deploy gate enforces the licence.",
+    "source": "docs/plans/appbox-memory-and-payment.md",
+    "ts": "2026-07-30"
+  },
+  {
+    "fact": "Do NOT encrypt emitted source — zero precedent of user acceptance, any local decrypt key is extractable, ransomware optics. The strip-watermark-and-deploy-by-hand bypass is a design constant handled by licence terms, not crypto.",
+    "source": "docs/plans/appbox-memory-and-payment.md",
+    "ts": "2026-07-30"
+  },
+  {
+    "fact": "Encrypt app-box's own sensitive state at rest: LLM-key vault, licence file, memory/analytics store (XChaCha20-Poly1305 / age-class).",
+    "source": "docs/plans/appbox-memory-and-payment.md",
+    "ts": "2026-07-30"
+  },
+  {
+    "fact": "P2: Ed25519-signed licence file (email, expiry, tier), verified fully offline by appboxd. No activation server, no machine limits (unenforceable offline). Online activation is a later, optional layer.",
+    "source": "docs/plans/appbox-memory-and-payment.md",
+    "ts": "2026-07-30"
+  },
+  {
+    "fact": "P3: cloud generation parked, not adopted — Docker-on-VPS generation kills the standalone/BYO-key promise (the Cursor-credit trap). An optional hosted tier for teams is a v2 expansion, decided separately, never a replacement for the local product.",
+    "source": "docs/plans/appbox-memory-and-payment.md",
+    "ts": "2026-07-30"
+  }
+]

@@ -4,20 +4,30 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 
 import 'config.dart';
+import 'gateway.dart';
 import 'phases.dart' as pipeline;
 
-/// Starts the appboxd HTTP server: static web builder UI + /api/ endpoints.
-Future<HttpServer> startServer(AppboxdConfig config, {InternetAddress? address}) async {
+/// Starts the appboxd HTTP server: static web builder UI + /api/ endpoints,
+/// plus the /llm/ loopback gateway (E2) when [gateway] is supplied.
+Future<HttpServer> startServer(AppboxdConfig config,
+    {InternetAddress? address, Gateway? gateway}) async {
   final server = await HttpServer.bind(
     address ?? InternetAddress.loopbackIPv4,
     config.port,
   );
-  server.listen((request) => _handle(config, request));
+  server.listen((request) => _handle(config, request, gateway));
   return server;
 }
 
-Future<void> _handle(AppboxdConfig config, HttpRequest request) async {
+Future<void> _handle(AppboxdConfig config, HttpRequest request, Gateway? gateway) async {
   final path = request.uri.path;
+  if (path.startsWith('/llm/')) {
+    if (gateway == null) {
+      return _json(request, {'error': 'llm gateway not configured'},
+          status: HttpStatus.serviceUnavailable);
+    }
+    return gateway.handle(request);
+  }
   if (path == '/api/health') {
     return _json(request, {
       'status': 'ok',

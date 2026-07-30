@@ -4,13 +4,14 @@
 # non-zero if any gate failed. It ORCHESTRATES: it contains no assertions of its
 # own — every pass/fail verdict belongs to a gate.
 #
-# Dependency order: intake -> freeze -> structure -> scaffold -> coverage -> review
-#                   -> native_deps -> deploy.
+# Dependency order: intake -> freeze -> structure -> scaffold -> coverage -> memory
+#                   -> review -> native_deps -> deploy.
 #   intake    every registry surface traces to a brief/answers (traceability)
 #   freeze    the frozen inputs exist and surfaces render clean
 #   structure the shell/surface map resolves and is in sync
 #   scaffold  shell/widget/overlay boundaries hold
 #   coverage  every frozen surface is scaffolded
+#   memory    the curated memory layer (repo root, not the app root) is clean
 #   review    the design judge over the scaffolded views
 #   deploy    target + version + account confirmed
 #
@@ -144,6 +145,10 @@ run_bash_gate   freeze    "$GATES_DIR/freeze/freeze.sh"    "$APP"
 run_bash_gate   structure "$GATES_DIR/structure/structure.sh" "$APP"
 run_bash_gate   scaffold  "$GATES_DIR/scaffold/scaffold.sh"  "$APP"
 run_bash_gate   coverage  "$GATES_DIR/coverage/coverage.sh"  "$APP"
+# memory sits after the artifact gates and before review: it is a REPO-root
+# gate (memory/ documents the pipeline itself, not one app), so it takes
+# $REPO_ROOT, not $APP like the artifact gates above.
+run_bash_gate   memory    "$GATES_DIR/memory/memory.sh"    "$REPO_ROOT"
 VIEWS="$APP/lib/ui/views" run_review_gate
 # native_deps before deploy: whether the app's plugins can still be built for
 # each declared target is a PRE-condition of shipping to those targets.
