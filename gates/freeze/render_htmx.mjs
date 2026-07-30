@@ -15,26 +15,33 @@
 // resolves the derived viewport list and passes it as JSON. There are no width
 // literals here.
 //
-// 4.3 (exact count) is preserved STRUCTURALLY: a FRESH page per (route, width),
-// with the console/pageerror handler bound to that page only — handlers can never
-// accumulate across routes, so each error is reported exactly once.
+// 4.3 (exact count) is preserved STRUCTURALLY: a FRESH page per (route, width,
+// locale), with the console/pageerror handler bound to that page only — handlers
+// can never accumulate across routes, so each error is reported exactly once.
 //
 // Playwright is imported from the designer runtime's node_modules via
 // createRequire, so this gate's only Node dependency is the runtime itself (P09:
 // the designer legitimately requires Node, so a dev-time gate MAY use it).
 //
-// args: <design-dir> <base-url> <evidence-dir> <viewports-json> <runtime-dir>
+// args: <design-dir> <base-url> <evidence-dir> <viewports-json> <runtime-dir> [locales-csv]
 //   viewports-json: [{"name","width","height"}, ...]  (the derived set, config order)
+//   locales-csv:    "en,pl" — when the design carries l10n/, each route renders
+//                   once per locale, the locale passed as ?lang=<locale> on the
+//                   route URL and stamped on the screenshot name. Empty/absent
+//                   = single render with no ?lang (a pre-i18n design).
 // exit: 0 clean / 1 a route errored / 2 bad args
 import { createRequire } from 'node:module';
 import path from 'node:path';
 import fs from 'node:fs';
 
-const [designDir, baseUrl, evidenceDir, viewportsJson, runtimeDir] = process.argv.slice(2);
+const [designDir, baseUrl, evidenceDir, viewportsJson, runtimeDir, localesCsv] = process.argv.slice(2);
 if (!designDir || !baseUrl || !viewportsJson || !runtimeDir) {
-  console.error('usage: render_htmx.mjs <design-dir> <base-url> <evidence-dir> <viewports-json> <runtime-dir>');
+  console.error('usage: render_htmx.mjs <design-dir> <base-url> <evidence-dir> <viewports-json> <runtime-dir> [locales-csv]');
   process.exit(2);
 }
+// [null] = the no-l10n single render (no ?lang appended).
+const locales = (localesCsv || '').split(',').filter(Boolean);
+const langs = locales.length ? locales : [null];
 const viewports = JSON.parse(viewportsJson);
 if (!viewports.length) {
   console.error('FAIL: render: derived viewports matched no config viewport');
@@ -62,20 +69,25 @@ const browser = await chromium.launch();
 const errors = [];
 for (const { name: vname, width, height } of viewports) {
   for (const route of routes) {
-    const page = await browser.newPage({ viewport: { width, height } });
-    const msgs = []; // fresh per (route, width) — 4.3: handlers cannot accumulate
-    page.on('console', (m) => { if (m.type() === 'error') msgs.push(m.text()); });
-    page.on('pageerror', (e) => msgs.push(String(e)));
-    await page.goto(base + route, { waitUntil: 'load' });
-    await page.waitForTimeout(1200);
-    const slug = route === '/' ? 'root' : route.replace(/^\//, '').replace(/\//g, '__');
-    await page.screenshot({ path: path.join(evidenceDir, `${slug}_${vname}.png`), fullPage: true });
-    for (const m of msgs) errors.push(`${route}@${vname}: ${m}`);
-    await page.close();
-    console.log(`  \u2713 render: ${route} @ ${vname} (${width}x${height}) loaded`);
+    for (const lang of langs) {
+      // Fresh page per (route, width, locale) — 4.3: handlers cannot accumulate.
+      const page = await browser.newPage({ viewport: { width, height } });
+      const msgs = [];
+      page.on('console', (m) => { if (m.type() === 'error') msgs.push(m.text()); });
+      page.on('pageerror', (e) => msgs.push(String(e)));
+      const url = base + route + (lang ? `${route.includes('?') ? '&' : '?'}lang=${encodeURIComponent(lang)}` : '');
+      await page.goto(url, { waitUntil: 'load' });
+      await page.waitForTimeout(1200);
+      const slug = route === '/' ? 'root' : route.replace(/^\//, '').replace(/\//g, '__');
+      const shot = lang ? `${slug}_${vname}_${lang}.png` : `${slug}_${vname}.png`;
+      await page.screenshot({ path: path.join(evidenceDir, shot), fullPage: true });
+      for (const m of msgs) errors.push(`${route}@${vname}${lang ? ` (${lang})` : ''}: ${m}`);
+      await page.close();
+      console.log(`  \u2713 render: ${route} @ ${vname} (${width}x${height})${lang ? ` [${lang}]` : ''} loaded`);
+    }
   }
 }
 await browser.close();
 for (const e of errors) console.log(`FAIL: render: console/page error — ${e}`);
-console.log(`  render: ${routes.length * viewports.length} route/viewport render(s) across ${viewports.length} derived width(s), ${errors.length} error(s)`);
+console.log(`  render: ${routes.length * viewports.length * langs.length} route/viewport render(s) across ${viewports.length} derived width(s)${locales.length ? ` × ${locales.length} locale(s) [${locales.join(',')}]` : ''}, ${errors.length} error(s)`);
 process.exit(errors.length ? 1 : 0);

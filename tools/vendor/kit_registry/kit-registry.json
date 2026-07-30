@@ -452,6 +452,19 @@
       }
     },
     {
+      "dir": "i18n",
+      "package": "stacked_kit_i18n",
+      "capabilities": [
+        "i18n"
+      ],
+      "backing": "flutter_localizations + intl (gen-l10n)",
+      "topology": "standalone",
+      "phase": "stable",
+      "playbook": "i18n/i18n_playbook.mdx",
+      "hasSkill": false,
+      "provides": {}
+    },
+    {
       "dir": "showcase_app",
       "package": "stacked_kit_showcase_app",
       "capabilities": [

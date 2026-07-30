@@ -43,10 +43,16 @@ exactly once.
    token paths
 4. **exclusions** — [stacked_kit] harness chrome signatures in surfaces are
    covered by `exclusions.json`
+4b. **l10n** — [only when `<design>/l10n/` exists] every locale ARB carries
+   exactly the `app_en.arb` template's key set (`@`-prefixed metadata ignored)
+   and, per key, the same `{placeholder}` token set
 5. **render** — headless Chromium loads every surface (stacked_kit: each
    `surfaces/*.html`; htmx: each GET route from `app.routes.js`) at every
    **derived** width with zero console/page errors; screenshots land under
-   `.kit/state/prototype/evidence/`
+   `.kit/state/prototype/evidence/`. When `<design>/l10n/` exists the htmx
+   render adds a locale dimension: each route × viewport × locale (from the
+   `app_*.arb` names, qps-ploc excluded) via `?lang=<locale>` on the route URL,
+   locale stamped on the screenshot name
 
 ## Targets (6.2 / 6.3)
 

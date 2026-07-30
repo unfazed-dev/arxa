@@ -1,5 +1,6 @@
 {
   "@@locale": "qps-ploc",
+  "@_readme": "English source catalog — the SSOT every other locale mirrors key-for-key. Values support {var} interpolation and the ICU plural subset ({count, plural, =0/one/other{…}} — runtime/lib/l10n.mjs).",
   "nav.home": "[!! Hömë ~̷~~̷~ !!]",
   "nav.timer": "[!! Ţïmëř ~̷~~̷~ !!]",
   "home.pageTitle": "[!! Hömë — hëłłö-hðå ~̷~~̷~ !!]",

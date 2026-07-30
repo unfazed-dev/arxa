@@ -1,8 +1,16 @@
 [
   {
+    "id": "app.splash",
+    "label": "Splash",
+    "surface": "app_shell_app_splash_view",
+    "shell": "app",
+    "comp": "AppSplash",
+    "labelKey": "screen.label.app.splash"
+  },
+  {
     "id": "app.access",
     "label": "Access",
-    "surface": "main_shell_app_access_view",
+    "surface": "app_shell_app_access_view",
     "shell": "app",
     "comp": "AppAccess",
     "labelKey": "screen.label.app.access"
@@ -10,7 +18,7 @@
   {
     "id": "app.dashboard",
     "label": "Dashboard",
-    "surface": "main_shell_app_dashboard_view",
+    "surface": "app_shell_app_dashboard_view",
     "shell": "app",
     "comp": "AppDashboard",
     "labelKey": "screen.label.app.dashboard"
@@ -18,7 +26,7 @@
   {
     "id": "app.projects",
     "label": "Projects",
-    "surface": "main_shell_app_projects_view",
+    "surface": null,
     "shell": "app",
     "comp": "AppProjects",
     "labelKey": "screen.label.app.projects"
@@ -26,7 +34,7 @@
   {
     "id": "app.pairing",
     "label": "Pairing",
-    "surface": "main_shell_app_pairing_view",
+    "surface": "app_shell_app_pairing_view",
     "shell": "app",
     "comp": "AppPairing",
     "labelKey": "screen.label.app.pairing"
@@ -34,7 +42,7 @@
   {
     "id": "app.notifications",
     "label": "Notifications",
-    "surface": "main_shell_app_notifications_view",
+    "surface": null,
     "shell": "app",
     "comp": "AppNotifications",
     "labelKey": "screen.label.app.notifications"
@@ -42,7 +50,7 @@
   {
     "id": "app.remote",
     "label": "Remote",
-    "surface": "main_shell_app_remote_view",
+    "surface": null,
     "shell": "app",
     "comp": "AppRemote",
     "labelKey": "screen.label.app.remote"
@@ -50,7 +58,7 @@
   {
     "id": "intake.interview",
     "label": "Interview",
-    "surface": "main_shell_intake_interview_view",
+    "surface": null,
     "shell": "intake",
     "comp": "IntakeInterview",
     "labelKey": "screen.label.intake.interview"
@@ -66,7 +74,7 @@
   {
     "id": "intake.live",
     "label": "Live Map",
-    "surface": "main_shell_intake_live_view",
+    "surface": null,
     "shell": "intake",
     "comp": "IntakeLive",
     "labelKey": "screen.label.intake.live"
@@ -114,7 +122,7 @@
   {
     "id": "chat.chat2",
     "label": "Chat Stage",
-    "surface": "main_shell_chat_chat2_view",
+    "surface": null,
     "shell": "chat",
     "comp": "ChatChat2",
     "labelKey": "screen.label.chat.chat2"
@@ -122,7 +130,7 @@
   {
     "id": "chat.rails",
     "label": "Rails",
-    "surface": "main_shell_chat_rails_view",
+    "surface": null,
     "shell": "chat",
     "comp": "ChatRails",
     "labelKey": "screen.label.chat.rails"
@@ -130,7 +138,7 @@
   {
     "id": "chat.bottom",
     "label": "Bottom Bar",
-    "surface": "main_shell_chat_bottom_view",
+    "surface": null,
     "shell": "chat",
     "comp": "ChatBottom",
     "labelKey": "screen.label.chat.bottom"
@@ -146,7 +154,7 @@
   {
     "id": "build.gates",
     "label": "Gates",
-    "surface": "main_shell_build_gates_view",
+    "surface": null,
     "shell": "build",
     "comp": "BuildGates",
     "labelKey": "screen.label.build.gates"
@@ -154,7 +162,7 @@
   {
     "id": "build.visual",
     "label": "Visual",
-    "surface": "main_shell_build_visual_view",
+    "surface": null,
     "shell": "build",
     "comp": "BuildVisual",
     "labelKey": "screen.label.build.visual"
@@ -162,7 +170,7 @@
   {
     "id": "source.git",
     "label": "Git",
-    "surface": "main_shell_source_git_view",
+    "surface": null,
     "shell": "source",
     "comp": "SourceGit",
     "labelKey": "screen.label.source.git"
@@ -170,7 +178,7 @@
   {
     "id": "source.files",
     "label": "Files",
-    "surface": "main_shell_source_files_view",
+    "surface": null,
     "shell": "source",
     "comp": "SourceFiles",
     "labelKey": "screen.label.source.files"
@@ -178,7 +186,7 @@
   {
     "id": "flows.canvas",
     "label": "Canvas",
-    "surface": "main_shell_flows_canvas_view",
+    "surface": null,
     "shell": "flows",
     "comp": "FlowsCanvas",
     "labelKey": "screen.label.flows.canvas"
@@ -186,7 +194,7 @@
   {
     "id": "ship.deploy",
     "label": "Deploy",
-    "surface": "main_shell_ship_deploy_view",
+    "surface": null,
     "shell": "ship",
     "comp": "ShipDeploy",
     "labelKey": "screen.label.ship.deploy"
@@ -194,7 +202,7 @@
   {
     "id": "first.showcase",
     "label": "Showcase",
-    "surface": "main_shell_first_showcase_view",
+    "surface": null,
     "shell": "first",
     "comp": "FirstShowcase",
     "labelKey": "screen.label.first.showcase"
@@ -202,7 +210,7 @@
   {
     "id": "first.honesty",
     "label": "Honesty",
-    "surface": "main_shell_first_honesty_view",
+    "surface": null,
     "shell": "first",
     "comp": "FirstHonesty",
     "labelKey": "screen.label.first.honesty"
@@ -210,7 +218,7 @@
   {
     "id": "workspace.projects2",
     "label": "Projects",
-    "surface": "main_shell_workspace_projects2_view",
+    "surface": null,
     "shell": "workspace",
     "comp": "WorkspaceProjects2",
     "labelKey": "screen.label.workspace.projects2"
@@ -218,7 +226,7 @@
   {
     "id": "workspace.settings",
     "label": "Settings",
-    "surface": "main_shell_workspace_settings_view",
+    "surface": "workspace_shell_workspace_settings_view",
     "shell": "workspace",
     "comp": "WorkspaceSettings",
     "labelKey": "screen.label.workspace.settings"
@@ -226,7 +234,7 @@
   {
     "id": "website.site",
     "label": "Site",
-    "surface": "main_shell_website_site_view",
+    "surface": null,
     "shell": "website",
     "comp": "WebsiteSite",
     "labelKey": "screen.label.website.site"
@@ -234,7 +242,7 @@
   {
     "id": "website.docs",
     "label": "Docs",
-    "surface": "main_shell_website_docs_view",
+    "surface": null,
     "shell": "website",
     "comp": "WebsiteDocs",
     "labelKey": "screen.label.website.docs"
@@ -242,7 +250,7 @@
   {
     "id": "website.showcase2",
     "label": "Showcase",
-    "surface": "main_shell_website_showcase2_view",
+    "surface": null,
     "shell": "website",
     "comp": "WebsiteShowcase2",
     "labelKey": "screen.label.website.showcase2"
@@ -250,9 +258,17 @@
   {
     "id": "website.download",
     "label": "Download",
-    "surface": "main_shell_website_download_view",
+    "surface": null,
     "shell": "website",
     "comp": "WebsiteDownload",
     "labelKey": "screen.label.website.download"
+  },
+  {
+    "id": "main.chrome",
+    "label": "Main Shell",
+    "surface": "main_shell_main_chrome_view",
+    "shell": "main",
+    "comp": "MainChrome",
+    "labelKey": "shell.main"
   }
 ]

@@ -1,6 +1,8 @@
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:appbox/app/app.locator.dart';
+import 'package:appbox/l10n/app_localizations_en.dart';
+import 'package:appbox/services/l10n_service.dart';
 import 'package:stacked_services/stacked_services.dart';
 // @stacked-import
 
@@ -19,7 +21,17 @@ void registerServices() {
   getAndRegisterRouterService();
   getAndRegisterBottomSheetService();
   getAndRegisterDialogService();
+  getAndRegisterL10nService();
   // @stacked-mock-register
+}
+
+/// English strings without a widget tree — viewmodels read translations from
+/// the L10nService, so tests register it alongside the stacked service mocks.
+L10nService getAndRegisterL10nService() {
+  _removeRegistrationIfExists<L10nService>();
+  final service = L10nService()..l10n = AppLocalizationsEn();
+  locator.registerSingleton<L10nService>(service);
+  return service;
 }
 
 MockRouterService getAndRegisterRouterService() {

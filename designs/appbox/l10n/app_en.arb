@@ -1,11 +1,6 @@
-// English source catalog — the SSOT every other locale mirrors key-for-key.
-// `//` comment lines are stripped by the loader (ARB tooling emits them).
-// Values support {var} interpolation and the ICU plural subset
-// `{count, plural, =0{…} one{…} other{…}}` (runtime/lib/l10n.mjs).
-// Jargon levels: base key = balanced; keyPlain / keyTechnical are the sparse
-// overrides the runtime t() tries first when the jargon pref says so.
 {
   "@@locale": "en",
+  "@_readme": "English source catalog — the SSOT every other locale mirrors key-for-key. Values support {var} interpolation and the ICU plural subset ({count, plural, =0/one/other{…}} — runtime/lib/l10n.mjs). Jargon levels: base key = balanced; keyPlain / keyTechnical are the sparse overrides the runtime t() tries first when the jargon pref says so.",
 
   "lang.label": "Language",
   "lang.name.en": "English",
@@ -39,6 +34,7 @@
   "index.planned": "planned",
   "shell.main": "Main Shell",
 
+  "screen.label.app.splash": "Splash",
   "screen.label.app.access": "Access",
   "screen.label.app.dashboard": "Dashboard",
   "screen.label.app.projects": "Projects",

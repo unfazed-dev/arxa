@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:golden_toolkit/golden_toolkit.dart';
 import 'package:appbox/app/app.locator.dart';
+import 'package:appbox/l10n/app_localizations.dart';
 import 'package:appbox/ui/views/home/home_view.dart';
 
 import '../helpers/test_helpers.dart';
@@ -21,7 +22,13 @@ void main() {
     await tester.pumpWidget(
       const MediaQuery(
         data: MediaQueryData(size: Size(1920, 1080), devicePixelRatio: 1.0),
-        child: MaterialApp(debugShowCheckedModeBanner: false, home: HomeView()),
+        child: MaterialApp(
+          debugShowCheckedModeBanner: false,
+          locale: Locale('en'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: HomeView(),
+        ),
       ),
     );
 

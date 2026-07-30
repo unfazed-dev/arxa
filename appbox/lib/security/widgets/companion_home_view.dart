@@ -1,6 +1,10 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:stacked_kit_i18n/stacked_kit_i18n.dart';
+
+import 'package:appbox/app/app.locator.dart';
+import 'package:appbox/l10n/app_localizations.dart';
 
 import '../channel/prototype_channel_service.dart';
 import '../config/companion_config.dart';
@@ -63,8 +67,9 @@ class _CompanionHomeViewState extends State<CompanionHomeView> {
       };
     }
     final started = await _session.handleReadyLine(payload);
-    if (!started || !mounted) {
-      _show('Not the prototype-ready signal — expected the ready-line payload.');
+    if (!mounted) return;
+    if (!started) {
+      _show(AppLocalizations.of(context).notReadySignal);
       return;
     }
     Navigator.of(context).push(
@@ -84,23 +89,24 @@ class _CompanionHomeViewState extends State<CompanionHomeView> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('app_box companion')),
+      appBar: AppBar(
+        title: Text(l10n.appTitle),
+        actions: const [_LanguageMenu()],
+      ),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.all(20),
           children: [
-            const Text(
-              'Serve a prototype',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+            Text(
+              l10n.servePrototypeTitle,
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 8),
-            const Text(
-              'Paste the desktop ready-line payload (the JSON the prototype '
-              'server prints once it is listening) or a bare LAN URL, then tap '
-              'Serve. The FAB carries the channel state — dead on kill, while '
-              'the WebView keeps the last render.',
-              style: TextStyle(fontSize: 13, color: Colors.black87),
+            Text(
+              l10n.servePrototypeInstructions,
+              style: const TextStyle(fontSize: 13, color: Colors.black87),
             ),
             const SizedBox(height: 16),
             TextField(
@@ -108,9 +114,10 @@ class _CompanionHomeViewState extends State<CompanionHomeView> {
               minLines: 2,
               maxLines: 4,
               autocorrect: false,
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-                labelText: 'Ready-line JSON or URL',
+              decoration: InputDecoration(
+                border: const OutlineInputBorder(),
+                labelText: l10n.readyLineFieldLabel,
+                // Literal payload example — a code sample, not prose.
                 hintText: '{"tag":"app-box-prototype-ready","url":...}',
               ),
             ),
@@ -118,7 +125,7 @@ class _CompanionHomeViewState extends State<CompanionHomeView> {
             FilledButton.icon(
               onPressed: _serve,
               icon: const Icon(Icons.play_arrow),
-              label: const Text('Serve'),
+              label: Text(l10n.serve),
             ),
             const SizedBox(height: 24),
             const _EnvBlockedNote(),
@@ -129,16 +136,37 @@ class _CompanionHomeViewState extends State<CompanionHomeView> {
   }
 }
 
+/// Compact language switch: System (clears the persisted override) or one of
+/// the kit's supported languages (persists an override via [KitI18n]).
+class _LanguageMenu extends StatelessWidget {
+  const _LanguageMenu();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final kitI18n = locator<KitI18n>();
+    return PopupMenuButton<String>(
+      icon: const Icon(Icons.language),
+      tooltip: l10n.languageLabel,
+      onSelected: (tag) => tag == 'system'
+          ? kitI18n.clearOverride()
+          : kitI18n.setLocale(tag),
+      itemBuilder: (context) => [
+        PopupMenuItem(value: 'system', child: Text(l10n.languageSystem)),
+        for (final lang in KitLanguage.supported)
+          PopupMenuItem(value: lang.tag, child: Text(lang.nameNative)),
+      ],
+    );
+  }
+}
+
 class _EnvBlockedNote extends StatelessWidget {
   const _EnvBlockedNote();
   @override
   Widget build(BuildContext context) {
-    return const Text(
-      'QR pairing (12.3), Bonjour discovery (12.2) and on-device gate control '
-      '(12.6) need a signed iOS build on real hardware — env-blocked in this '
-      'run. The heartbeat + FAB channel-state proof does not; see the test '
-      'suite.',
-      style: TextStyle(fontSize: 12, color: Colors.black54),
+    return Text(
+      AppLocalizations.of(context).envBlockedNote,
+      style: const TextStyle(fontSize: 12, color: Colors.black54),
     );
   }
 }

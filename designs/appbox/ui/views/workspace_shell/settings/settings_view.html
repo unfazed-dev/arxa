@@ -1,22 +1,22 @@
 {% extends "ui/views/main_shell/main_shell_view.html" %}
-{% block title %}appbox — Settings{% endblock %}
+{% block title %}{{ t('settings.pageTitle') }}{% endblock %}
 
 {% block surface %}
 <span class="eyebrow">workspace</span>
-<h1 class="display">Settings</h1>
-<p class="muted">Yours on this device only — nothing here changes the pipeline.</p>
+<h1 class="display">{{ t('settings.title') }}</h1>
+<p class="muted">{{ t('settings.lede') }}</p>
 
 <section class="settings-section">
-  <h2>Appearance</h2>
-  <p class="settings-note">Warm paper or warm charcoal. Both are full citizens — every surface is checked in both.</p>
+  <h2>{{ t('settings.appearanceH') }}</h2>
+  <p class="settings-note">{{ t('settings.appearanceNote') }}</p>
   <form method="post" action="/prefs/theme" hx-post="/prefs/theme" hx-swap="none">
-    <button type="submit">{{ icon('sun' if theme == 'dark' else 'moon', {size: 15}) }} Switch to {{ 'light' if theme == 'dark' else 'dark' }}</button>
+    <button type="submit">{{ icon('sun' if theme == 'dark' else 'moon', {size: 15}) }} {{ t('settings.themeTo.light') if theme == 'dark' else t('settings.themeTo.dark') }}</button>
   </form>
 </section>
 
 <section class="settings-section">
-  <h2>Accent</h2>
-  <p class="settings-note">The colour of every action and active marker. Cyan and violet come from the appbox logo; ember is the warm classic.</p>
+  <h2>{{ t('settings.accentH') }}</h2>
+  <p class="settings-note">{{ t('settings.accentNote') }}</p>
   <form class="swatch-row" method="post" action="/prefs/accent" hx-post="/prefs/accent" hx-swap="none">
     {% for s in accents %}
     <button type="submit" name="accent" value="{{ s.id }}" class="swatch {{ 'is-active' if s.id == accent }}">
@@ -27,8 +27,8 @@
 </section>
 
 <section class="settings-section">
-  <h2>Language level</h2>
-  <p class="settings-note">How appbox talks to you. Every message, finding and score is written three ways — pick the one that reads right. The example shows the same check failure at each level.</p>
+  <h2>{{ t('settings.jargonH') }}</h2>
+  <p class="settings-note">{{ t('settings.jargonNote') }}</p>
   <div class="level-row">
     {% for l in levels %}
     <form method="post" action="/prefs/jargon" hx-post="/prefs/jargon" hx-swap="none">

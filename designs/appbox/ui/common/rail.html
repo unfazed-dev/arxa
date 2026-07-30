@@ -73,7 +73,7 @@
     <span class="msg-cta">
       <a class="cta-main" href="{{ base }}/{{ m.artifact }}"
          hx-get="{{ base }}/{{ m.artifact }}" hx-target="#canvas" hx-swap="innerHTML" hx-push-url="false">
-        {% if m.active %}on canvas {{ icon('circle-dot', {size: 12}) }}{% else %}view on canvas {{ icon('arrow-right', {size: 14}) }}{% endif %}</a>
+        {% if m.active %}{{ t('build.onCanvas') }} {{ icon('circle-dot', {size: 12}) }}{% else %}{{ t('build.viewOnCanvas') }} {{ icon('arrow-right', {size: 14}) }}{% endif %}</a>
       <a class="cta-ghost" href="{{ base }}/{{ m.artifact }}?bar=open"
          hx-get="{{ base }}/{{ m.artifact }}?bar=open" hx-target="#canvas" hx-swap="innerHTML" hx-push-url="false"
          title="{{ askTitle }}">ask {{ icon('reply', {size: 14}) }}</a>
@@ -105,7 +105,7 @@
       hx-post="{{ spec.action }}" hx-target="#canvas" hx-swap="innerHTML"
       {% if oob %}hx-swap-oob="outerHTML"{% endif %}>
   <details class="composer-plus">
-    <summary aria-label="{{ spec.plusAria or 'Suggestions' }}">{{ icon('plus', {size: 18}) }}</summary>
+    <summary aria-label="{{ spec.plusAria or t('composer.suggestions') }}">{{ icon('plus', {size: 18}) }}</summary>
     <span class="composer-sugs">
       {% for s in spec.suggestions %}
       <button type="submit" name="preset" value="{{ s.value or s }}">{{ s.label or s }}</button>
@@ -113,6 +113,6 @@
     </span>
   </details>
   <textarea name="text" rows="1" placeholder="{{ spec.placeholder }}" aria-label="{{ spec.ariaLabel }}"></textarea>
-  <button type="submit" class="composer-send" aria-label="Send">{{ icon('arrow-up', {size: 18}) }}</button>
+  <button type="submit" class="composer-send" aria-label="{{ t('composer.send') }}">{{ icon('arrow-up', {size: 18}) }}</button>
 </form>
 {% endmacro %}

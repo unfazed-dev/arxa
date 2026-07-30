@@ -33,6 +33,7 @@
   "index.planned": "planowane",
   "shell.main": "Główna powłoka",
 
+  "screen.label.app.splash": "Ekran powitalny",
   "screen.label.app.access": "Dostęp",
   "screen.label.app.dashboard": "Panel",
   "screen.label.app.projects": "Projekty",

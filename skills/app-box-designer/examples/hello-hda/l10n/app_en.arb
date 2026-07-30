@@ -1,9 +1,6 @@
-// English source catalog — the SSOT every other locale mirrors key-for-key.
-// `//` comment lines are stripped by the loader (ARB tooling emits them).
-// Values support {var} interpolation and the ICU plural subset
-// `{count, plural, =0{…} one{…} other{…}}` (runtime/lib/l10n.mjs).
 {
   "@@locale": "en",
+  "@_readme": "English source catalog — the SSOT every other locale mirrors key-for-key. Values support {var} interpolation and the ICU plural subset ({count, plural, =0/one/other{…}} — runtime/lib/l10n.mjs).",
 
   "nav.home": "Home",
   "nav.timer": "Timer",

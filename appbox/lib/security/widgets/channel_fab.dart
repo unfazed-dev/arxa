@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:appbox/l10n/app_localizations.dart';
+
 import '../channel/channel_state.dart';
 import '../config/companion_config.dart';
 
@@ -97,7 +99,7 @@ class _ChannelFabState extends State<ChannelFab> {
 
   @override
   Widget build(BuildContext context) {
-    final spec = _ChannelSpec.of(widget.state);
+    final spec = _ChannelSpec.of(widget.state, AppLocalizations.of(context));
     return LayoutBuilder(
       builder: (context, constraints) {
         final size = Size(constraints.maxWidth, constraints.maxHeight);
@@ -171,6 +173,7 @@ class _ChannelFabState extends State<ChannelFab> {
   }
 
   Widget _expandedControls(_ChannelSpec spec) {
+    final l10n = AppLocalizations.of(context);
     return Container(
       margin: const EdgeInsets.only(bottom: 8, right: 4),
       padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -181,9 +184,9 @@ class _ChannelFabState extends State<ChannelFab> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _controlButton(Icons.power_settings_new, 'Stop', spec, widget.onStop),
+          _controlButton(Icons.power_settings_new, l10n.channelStop, spec, widget.onStop),
           Container(width: 1, height: 24, color: Colors.white24),
-          _controlButton(Icons.arrow_back, 'Back', spec, widget.onBack),
+          _controlButton(Icons.arrow_back, l10n.channelBack, spec, widget.onBack),
         ],
       ),
     );
@@ -211,20 +214,21 @@ class _ChannelFabState extends State<ChannelFab> {
 
 /// Maps a [ChannelState] to the visual the FAB shows. Kept as a private value
 /// type so the mapping is testable in one place and the widget reads it.
+/// Labels come from [AppLocalizations], so instances are built per-build.
 class _ChannelSpec {
   final Color color;
   final IconData icon;
   final String label;
   const _ChannelSpec({required this.color, required this.icon, required this.label});
 
-  static _ChannelSpec of(ChannelState s) {
+  static _ChannelSpec of(ChannelState s, AppLocalizations l10n) {
     return switch (s) {
-      ChannelState.live => const _ChannelSpec(
-          color: Color(0xFF34C759), icon: Icons.bolt, label: 'live'),
-      ChannelState.reconnecting => const _ChannelSpec(
-          color: Color(0xFFFFCC00), icon: Icons.sync, label: 'reconnecting'),
-      ChannelState.dead => const _ChannelSpec(
-          color: Color(0xFFFF3B30), icon: Icons.warning, label: 'dead'),
+      ChannelState.live => _ChannelSpec(
+          color: const Color(0xFF34C759), icon: Icons.bolt, label: l10n.channelLive),
+      ChannelState.reconnecting => _ChannelSpec(
+          color: const Color(0xFFFFCC00), icon: Icons.sync, label: l10n.channelReconnecting),
+      ChannelState.dead => _ChannelSpec(
+          color: const Color(0xFFFF3B30), icon: Icons.warning, label: l10n.channelDead),
     };
   }
 }

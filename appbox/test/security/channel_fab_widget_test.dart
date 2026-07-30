@@ -1,3 +1,4 @@
+import 'package:appbox/l10n/app_localizations.dart';
 import 'package:appbox/security/channel/channel_state.dart';
 import 'package:appbox/security/widgets/channel_fab.dart';
 import 'package:flutter/material.dart';
@@ -18,6 +19,9 @@ void main() {
   }) async {
     await tester.pumpWidget(
       MaterialApp(
+        locale: const Locale('en'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: SizedBox(
             key: const Key('fab-host'),

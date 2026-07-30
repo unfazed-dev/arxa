@@ -34,10 +34,21 @@
 #                   carries the kit token paths. N/A for htmx (no tokens.json).
 #   3. exclusions — [stacked_kit] harness chrome in surfaces is covered by an
 #                   exclusions entry. N/A for htmx.
+#   3b. l10n      — [only when <design>/l10n/ exists] every locale ARB carries
+#                   exactly the app_en.arb template's key set (@-prefixed
+#                   metadata ignored) AND, per key, the same {placeholder}
+#                   token set. A missing key or a drifted placeholder is a
+#                   runtime lookup crash in the generated app's gen-l10n code.
 #   4. render     — headless Chromium: every surface (stacked_kit: each
 #                   surfaces/*.html file; htmx: each GET route from app.routes.js)
 #                   loads with zero console / page errors at EVERY config viewport;
-#                   screenshots land under .kit/state/prototype/evidence/. The
+#                   screenshots land under .kit/state/prototype/evidence/. When
+#                   <design>/l10n/ exists the htmx render adds a locale
+#                   dimension: each GET route × viewport × locale (derived from
+#                   the app_*.arb names, qps-ploc excluded — pseudolocale is
+#                   tester-side layout stress), the locale passed as
+#                   ?lang=<locale> on the route URL and stamped on the
+#                   screenshot name. The
 #                   htmx render is served by the designer's Node prototype server
 #                   (serve.mjs, loopback, OS-assigned port) and rendered via the
 #                   runtime's Playwright (render_htmx.mjs); P09: gates MAY use Node.
@@ -313,6 +324,51 @@ else
 fi
 [ "$F" -gt 0 ] && { echo "freeze: FAIL ($F check group(s))" >&2; exit 1; }
 
+# ---- 3b. l10n parity (only when the design carries an l10n/ catalog) --------
+# app_en.arb is the template; every other locale ARB (incl. the generated
+# app_qps-ploc.arb) must carry exactly its key set (@-prefixed metadata keys
+# ignored) and, per key, the same {placeholder} token set. A missing key or a
+# drifted placeholder is a runtime lookup crash in the generated app's gen-l10n
+# code — catch it at freeze, not in the built app.
+if [ -d "$DESIGN/l10n" ]; then
+pyout="$(python3 - "$DESIGN/l10n" 2>&1 <<'PY'
+import json,sys,glob,os,re
+l10n=sys.argv[1]
+tmpl_path=os.path.join(l10n,"app_en.arb")
+if not os.path.isfile(tmpl_path):
+    print("FAIL: l10n: app_en.arb (the template catalog) missing under l10n/"); sys.exit(1)
+try: tmpl=json.load(open(tmpl_path))
+except Exception as e: print(f"FAIL: l10n: app_en.arb does not parse — {e}"); sys.exit(1)
+def keys(d): return {k for k in d if not k.startswith("@")}
+def tokens(v): return set(re.findall(r"\{(\w+)\}", v)) if isinstance(v,str) else set()
+tkeys=keys(tmpl)
+bad=False; n=0
+for path in sorted(glob.glob(os.path.join(l10n,"*.arb"))):
+    name=os.path.basename(path)
+    if name=="app_en.arb": continue
+    try: loc=json.load(open(path))
+    except Exception as e: print(f"FAIL: l10n: {name} does not parse — {e}"); bad=True; continue
+    n+=1
+    lkeys=keys(loc)
+    missing=tkeys-lkeys; extra=lkeys-tkeys
+    if missing: print(f"FAIL: l10n: {name} missing key(s): {sorted(missing)}"); bad=True
+    if extra:   print(f"FAIL: l10n: {name} has extra key(s) not in the template: {sorted(extra)}"); bad=True
+    for k in sorted(tkeys & lkeys):
+        tt,lt=tokens(tmpl[k]),tokens(loc[k])
+        if tt!=lt:
+            print(f"FAIL: l10n: {name} key '{k}' placeholder drift — template {sorted(tt)} vs locale {sorted(lt)}"); bad=True
+if bad: sys.exit(1)
+print(f"  ✓ l10n: {n} locale catalog(s) at key + placeholder parity with app_en.arb ({len(tkeys)} keys)")
+PY
+)"
+rc=$?
+printf '%s\n' "$pyout"
+fails="$(printf '%s\n' "$pyout" | grep '^FAIL:' || true)"
+[ -n "$fails" ] && printf '%s\n' "$fails" | while IFS= read -r fl; do sarif_result "freeze" "error" "$DESIGN_REL/l10n" "$fl"; done
+[ "$rc" -ne 0 ] && F=$((F+1))
+fi
+[ "$F" -gt 0 ] && { echo "freeze: FAIL ($F check group(s))" >&2; exit 1; }
+
 # ---- 4. render (headless Chromium; skip via FREEZE_RENDER=skip) ----
 # Fresh page per (surface, viewport): the console/pageerror handler is registered
 # on each new page, so it can never accumulate across surfaces — each error is
@@ -337,6 +393,23 @@ else
     RUNTIME="$GATE_ROOT/skills/app-box-designer/runtime"
     SERVE_MJS="$RUNTIME/serve.mjs"
     RENDER_DRIVER="$(cd "$(dirname "$0")" && pwd)/render_htmx.mjs"
+    # Locale dimension (3b's render half): when the design carries l10n/, every
+    # GET route renders once per locale — derived from the app_*.arb names;
+    # qps-ploc excluded (pseudolocale is tester-side layout stress, not a freeze
+    # render). The driver appends ?lang=<locale> to the route URL and stamps
+    # the locale on the screenshot name. Empty = single render, no ?lang.
+    LOCALES=""
+    if [ -d "$DESIGN/l10n" ]; then
+      LOCALES="$(python3 - "$DESIGN/l10n" <<'PY'
+import glob,os,re,sys
+locs=[]
+for p in sorted(glob.glob(os.path.join(sys.argv[1],"app_*.arb"))):
+    m=re.match(r"app_(.+)\.arb$", os.path.basename(p))
+    if m and not m.group(1).startswith("qps"): locs.append(m.group(1))
+print(",".join(locs))
+PY
+)"
+    fi
     VPS_JSON="$(python3 - "$CONFIG" "$DERIVED_VPS" <<'PY'
 import json,sys
 cfg=json.load(open(sys.argv[1]))["viewports"]; want=set(sys.argv[2].split())
@@ -357,7 +430,7 @@ PY
       sarif_result "freeze" "error" "$DESIGN_REL/app.routes.js" "designer server did not start"
       F=$((F+1))
     else
-      node "$RENDER_DRIVER" "$DESIGN" "$_base" "$EVIDENCE" "$VPS_JSON" "$RUNTIME" || F=$((F+1))
+      node "$RENDER_DRIVER" "$DESIGN" "$_base" "$EVIDENCE" "$VPS_JSON" "$RUNTIME" "$LOCALES" || F=$((F+1))
     fi
     kill "$_serve_pid" >/dev/null 2>&1 || true
     wait "$_serve_pid" 2>/dev/null || true

@@ -38,7 +38,8 @@ quickly" by removing the throw; honest non-availability is the point.
    - iOS: `gym` (build) → `match` (signing) → `upload_to_testflight`.
    - Android: `flutter build appbundle` → `upload_to_play_store(track: internal)`.
 3. **Release lane** — `fastlane release`: store metadata (`deliver`/`supply`) +
-   production track.
+   production track. Store listing copy ships in every launch locale (en + pl)
+   — the metadata locales match the app's ARB set.
 
 ## OTA — shorebird (Dart hotpatch, no store review)
 1. **Once** — `shorebird init` in target → `shorebird.yaml` (extension point; operator app id).

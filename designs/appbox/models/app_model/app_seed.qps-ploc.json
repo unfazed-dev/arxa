@@ -85,7 +85,7 @@
     "runs": {
       "label": "[!! Řüñš ţhïš wëëk ~̷~~̷~ !!]",
       "total": 23,
-      "unit": "[!! řüñš ~̷~~̷~ !!]",
+      "unit": "runs",
       "bars": [
         {
           "label": "[!! Möñ ~̷~~̷~ !!]",
@@ -120,22 +120,22 @@
     "stageTime": {
       "label": "[!! Åvg šţågë ţïmë ~̷~~̷~ !!]",
       "total": 34,
-      "unit": "[!! mïñ ~̷~~̷~ !!]",
+      "unit": "min",
       "bars": [
         {
-          "label": "[!! ïñţåkë ~̷~~̷~ !!]",
+          "label": "intake",
           "value": 18
         },
         {
-          "label": "[!! ðëšïgñ ~̷~~̷~ !!]",
+          "label": "design",
           "value": 42
         },
         {
-          "label": "[!! büïłð ~̷~~̷~ !!]",
+          "label": "build",
           "value": 65
         },
         {
-          "label": "[!! šhïp ~̷~~̷~ !!]",
+          "label": "ship",
           "value": 12
         }
       ]
@@ -143,7 +143,7 @@
     "gateLatency": {
       "label": "[!! Gåţëš wåïţïñg ~̷~~̷~ !!]",
       "total": 3,
-      "unit": "[!! öpëñ ~̷~~̷~ !!]",
+      "unit": "open",
       "bars": [
         {
           "label": "[!! Möñ ~̷~~̷~ !!]",
@@ -177,9 +177,9 @@
     }
   },
   "pairing": {
-    "code": "A7K2-9QXM",
+    "code": "[!! Å7K2-9QXM ~̷~~̷~ !!]",
     "expiresLabel": "[!! šïñgłë-üšë · ëxpïřëš ïñ 10:00 ~̷~~̷~~̷~~̷~ !!]",
-    "fingerprint": "SHA256:7f3a…9c2e · tailnet node appbox-mbpro",
+    "fingerprint": "[!! ŠHÅ256:7f3å…9ç2ë · ţåïłñëţ ñöðë åppböx-mbpřö ~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
     "deviceName": "[!! Ţhïš ïPhöñë ~̷~~̷~ !!]"
   },
   "wizard": {

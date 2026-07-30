@@ -280,12 +280,12 @@ class {comp}Chrome {{
 
 # ----------------------------------------------------------------- l10n
 # The gen-l10n config is a FIXED contract — gates assert it verbatim, so it is
-# a constant, never templated.
+# a constant, never templated. (synthetic-package deliberately absent: the SDK
+# deprecated it — output always lands in the package now.)
 L10N_YAML = """\
 arb-dir: lib/l10n
 template-arb-file: app_en.arb
 output-localization-file: app_localizations.dart
-synthetic-package: false
 nullable-getter: false
 """
 

@@ -34,6 +34,13 @@ expect(await viewModel.load(), [sample]);
 | visual | **probe-runner** (`tools/vendor/probe-runner`, screencapture) | pixel diff vs the source `design/*.html` |
 | E2E | **Patrol** (native) | real taps/scrolls across screens on ios/android |
 
+## i18n (when the target carries `l10n/`)
+- Probes run **per locale**: en + pl, plus `qps-ploc` (pseudolocale) for layout
+  stress — long-accented pseudo-copy is the cheapest truncation/overflow finder.
+- Smoke pattern: switch the locale (KitI18n override), assert the key strings
+  re-render in the new locale.
+- Goldens: at least one reference surface per locale.
+
 ## Rules
 - Tests are **extension points** (factory emits once; operator owns). The
   contract is `arch_guard`'s job — don't duplicate it.

@@ -1,0 +1,36 @@
+{
+  "@@locale": "en",
+  "loading": "Loading ...",
+  "appTitle": "app_box companion",
+  "counterLabel": "Counter is: {count}",
+  "@counterLabel": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "homeDialogTitle": "Stacked Rocks!",
+  "homeDialogDescription": "Give stacked {count} stars on Github",
+  "@homeDialogDescription": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "homeBottomSheetTitle": "Build Great Apps!",
+  "homeBottomSheetDescription": "Stacked is built to help you build better apps. Give us a chance and we'll prove it to you. Check out stacked.filledstacks.com to learn more",
+  "homeGreetingMobile": "Hello, MOBILE UI!",
+  "homeGreetingTablet": "Hello, TABLET UI!",
+  "homeGreetingDesktop": "Hello, DESKTOP UI!",
+  "homeShowDialog": "Show Dialog",
+  "homeShowBottomSheet": "Show Bottom Sheet",
+  "dialogGotIt": "Got it",
+  "unknownPageNotFound": "PAGE NOT FOUND",
+  "servePrototypeTitle": "Serve a prototype",
+  "servePrototypeInstructions": "Paste the desktop ready-line payload (the JSON the prototype server prints once it is listening) or a bare LAN URL, then tap Serve. The FAB carries the channel state — dead on kill, while the WebView keeps the last render.",
+  "readyLineFieldLabel": "Ready-line JSON or URL",
+  "notReadySignal": "Not the prototype-ready signal — expected the ready-line payload.",
+  "envBlockedNote": "QR pairing (12.3), Bonjour discovery (12.2) and on-device gate control (12.6) need a signed iOS build on real hardware — env-blocked in this run. The heartbeat + FAB channel-state proof does not; see the test suite.",
+  "serve": "Serve",
+  "channelLive": "live",
+  "channelReconnecting": "reconnecting",
+  "channelDead": "dead",
+  "channelStop": "Stop",
+  "channelBack": "Back",
+  "languageLabel": "Language",
+  "languageSystem": "System"
+}

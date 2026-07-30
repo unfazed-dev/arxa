@@ -1,4 +1,4 @@
-export const surfaceId = 'main.shell';
+export const surfaceId = 'main.chrome';
 
 import { shellIndexContext } from '../../../services/facades/screens_facade.js';
 

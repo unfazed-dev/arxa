@@ -1,0 +1,343 @@
+{
+  "$schema": "app-box/structure@1",
+  "registry": "models/screens_model/registry.json",
+  "shellRoots": {
+    "intake": "/intake",
+    "design": "/design",
+    "build": "/build",
+    "app": "/dashboard",
+    "workspace": "/workspace"
+  },
+  "screens": [
+    {
+      "id": "app.splash",
+      "shell": "app",
+      "comp": "AppSplash",
+      "shellDir": "app_shell",
+      "surface": "app_shell_app_splash_view",
+      "viewmodel": "ui/views/app_shell/splash/splash_viewmodel.js",
+      "deps": [
+        "services/facades/app_facade.js"
+      ]
+    },
+    {
+      "id": "app.access",
+      "shell": "app",
+      "comp": "AppAccess",
+      "shellDir": "app_shell",
+      "surface": "app_shell_app_access_view",
+      "viewmodel": "ui/views/app_shell/auth/auth_viewmodel.js",
+      "deps": [
+        "services/facades/app_facade.js"
+      ]
+    },
+    {
+      "id": "app.dashboard",
+      "shell": "app",
+      "comp": "AppDashboard",
+      "shellDir": "app_shell",
+      "surface": "app_shell_app_dashboard_view",
+      "viewmodel": "ui/views/app_shell/dashboard/dashboard_viewmodel.js",
+      "deps": [
+        "services/facades/app_facade.js"
+      ]
+    },
+    {
+      "id": "app.projects",
+      "shell": "app",
+      "comp": "AppProjects",
+      "shellDir": "app_shell",
+      "surface": null,
+      "viewmodel": null,
+      "deps": []
+    },
+    {
+      "id": "app.pairing",
+      "shell": "app",
+      "comp": "AppPairing",
+      "shellDir": "app_shell",
+      "surface": "app_shell_app_pairing_view",
+      "viewmodel": "ui/views/app_shell/pairing/pairing_viewmodel.js",
+      "deps": [
+        "services/facades/app_facade.js"
+      ]
+    },
+    {
+      "id": "app.notifications",
+      "shell": "app",
+      "comp": "AppNotifications",
+      "shellDir": "app_shell",
+      "surface": null,
+      "viewmodel": null,
+      "deps": []
+    },
+    {
+      "id": "app.remote",
+      "shell": "app",
+      "comp": "AppRemote",
+      "shellDir": "app_shell",
+      "surface": null,
+      "viewmodel": null,
+      "deps": []
+    },
+    {
+      "id": "intake.interview",
+      "shell": "intake",
+      "comp": "IntakeInterview",
+      "shellDir": "main_shell",
+      "surface": null,
+      "viewmodel": null,
+      "deps": []
+    },
+    {
+      "id": "intake.mapping",
+      "shell": "intake",
+      "comp": "IntakeMapping",
+      "shellDir": "main_shell",
+      "surface": "main_shell_intake_mapping_view",
+      "viewmodel": "ui/views/main_shell/intake/mapping/mapping_viewmodel.js",
+      "deps": [
+        "services/facades/intake_facade.js"
+      ]
+    },
+    {
+      "id": "intake.live",
+      "shell": "intake",
+      "comp": "IntakeLive",
+      "shellDir": "main_shell",
+      "surface": null,
+      "viewmodel": null,
+      "deps": []
+    },
+    {
+      "id": "intake.brief",
+      "shell": "intake",
+      "comp": "IntakeBrief",
+      "shellDir": "main_shell",
+      "surface": "main_shell_intake_brief_view",
+      "viewmodel": "ui/views/main_shell/intake/brief/brief_viewmodel.js",
+      "deps": [
+        "services/facades/intake_facade.js"
+      ]
+    },
+    {
+      "id": "intake.moodboard",
+      "shell": "intake",
+      "comp": "IntakeMoodboard",
+      "shellDir": "main_shell",
+      "surface": "main_shell_intake_moodboard_view",
+      "viewmodel": "ui/views/main_shell/intake/moodboard/moodboard_viewmodel.js",
+      "deps": [
+        "services/facades/intake_facade.js"
+      ]
+    },
+    {
+      "id": "design.prototype",
+      "shell": "design",
+      "comp": "DesignPrototype",
+      "shellDir": "main_shell",
+      "surface": "main_shell_design_prototype_view",
+      "viewmodel": "ui/views/main_shell/design/prototype/prototype_viewmodel.js",
+      "deps": [
+        "services/facades/design_facade.js"
+      ]
+    },
+    {
+      "id": "design.chat",
+      "shell": "design",
+      "comp": "DesignChat",
+      "shellDir": "main_shell",
+      "surface": "main_shell_design_chat_view",
+      "viewmodel": "ui/views/main_shell/design/chat/chat_viewmodel.js",
+      "deps": [
+        "services/facades/design_facade.js"
+      ]
+    },
+    {
+      "id": "design.freeze",
+      "shell": "design",
+      "comp": "DesignFreeze",
+      "shellDir": "main_shell",
+      "surface": "main_shell_design_freeze_view",
+      "viewmodel": "ui/views/main_shell/design/freeze/freeze_viewmodel.js",
+      "deps": [
+        "services/facades/design_facade.js"
+      ]
+    },
+    {
+      "id": "chat.chat2",
+      "shell": "chat",
+      "comp": "ChatChat2",
+      "shellDir": null,
+      "surface": null,
+      "viewmodel": null,
+      "deps": []
+    },
+    {
+      "id": "chat.rails",
+      "shell": "chat",
+      "comp": "ChatRails",
+      "shellDir": null,
+      "surface": null,
+      "viewmodel": null,
+      "deps": []
+    },
+    {
+      "id": "chat.bottom",
+      "shell": "chat",
+      "comp": "ChatBottom",
+      "shellDir": null,
+      "surface": null,
+      "viewmodel": null,
+      "deps": []
+    },
+    {
+      "id": "build.loop",
+      "shell": "build",
+      "comp": "BuildLoop",
+      "shellDir": "main_shell",
+      "surface": "main_shell_build_loop_view",
+      "viewmodel": "ui/views/main_shell/build/loop/loop_viewmodel.js",
+      "deps": [
+        "services/facades/build_facade.js"
+      ]
+    },
+    {
+      "id": "build.gates",
+      "shell": "build",
+      "comp": "BuildGates",
+      "shellDir": "main_shell",
+      "surface": null,
+      "viewmodel": null,
+      "deps": []
+    },
+    {
+      "id": "build.visual",
+      "shell": "build",
+      "comp": "BuildVisual",
+      "shellDir": "main_shell",
+      "surface": null,
+      "viewmodel": null,
+      "deps": []
+    },
+    {
+      "id": "source.git",
+      "shell": "source",
+      "comp": "SourceGit",
+      "shellDir": null,
+      "surface": null,
+      "viewmodel": null,
+      "deps": []
+    },
+    {
+      "id": "source.files",
+      "shell": "source",
+      "comp": "SourceFiles",
+      "shellDir": null,
+      "surface": null,
+      "viewmodel": null,
+      "deps": []
+    },
+    {
+      "id": "flows.canvas",
+      "shell": "flows",
+      "comp": "FlowsCanvas",
+      "shellDir": null,
+      "surface": null,
+      "viewmodel": null,
+      "deps": []
+    },
+    {
+      "id": "ship.deploy",
+      "shell": "ship",
+      "comp": "ShipDeploy",
+      "shellDir": null,
+      "surface": null,
+      "viewmodel": null,
+      "deps": []
+    },
+    {
+      "id": "first.showcase",
+      "shell": "first",
+      "comp": "FirstShowcase",
+      "shellDir": null,
+      "surface": null,
+      "viewmodel": null,
+      "deps": []
+    },
+    {
+      "id": "first.honesty",
+      "shell": "first",
+      "comp": "FirstHonesty",
+      "shellDir": null,
+      "surface": null,
+      "viewmodel": null,
+      "deps": []
+    },
+    {
+      "id": "workspace.projects2",
+      "shell": "workspace",
+      "comp": "WorkspaceProjects2",
+      "shellDir": "workspace_shell",
+      "surface": null,
+      "viewmodel": null,
+      "deps": []
+    },
+    {
+      "id": "workspace.settings",
+      "shell": "workspace",
+      "comp": "WorkspaceSettings",
+      "shellDir": "workspace_shell",
+      "surface": "workspace_shell_workspace_settings_view",
+      "viewmodel": "ui/views/workspace_shell/settings/settings_viewmodel.js",
+      "deps": []
+    },
+    {
+      "id": "website.site",
+      "shell": "website",
+      "comp": "WebsiteSite",
+      "shellDir": null,
+      "surface": null,
+      "viewmodel": null,
+      "deps": []
+    },
+    {
+      "id": "website.docs",
+      "shell": "website",
+      "comp": "WebsiteDocs",
+      "shellDir": null,
+      "surface": null,
+      "viewmodel": null,
+      "deps": []
+    },
+    {
+      "id": "website.showcase2",
+      "shell": "website",
+      "comp": "WebsiteShowcase2",
+      "shellDir": null,
+      "surface": null,
+      "viewmodel": null,
+      "deps": []
+    },
+    {
+      "id": "website.download",
+      "shell": "website",
+      "comp": "WebsiteDownload",
+      "shellDir": null,
+      "surface": null,
+      "viewmodel": null,
+      "deps": []
+    },
+    {
+      "id": "main.chrome",
+      "shell": "main",
+      "comp": "MainChrome",
+      "shellDir": "main_shell",
+      "surface": "main_shell_main_chrome_view",
+      "viewmodel": "ui/views/main_shell/main_shell_viewmodel.js",
+      "deps": [
+        "services/facades/screens_facade.js"
+      ]
+    }
+  ]
+}

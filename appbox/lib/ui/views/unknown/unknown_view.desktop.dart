@@ -1,3 +1,4 @@
+import 'package:appbox/l10n/app_localizations.dart';
 import 'package:appbox/ui/common/app_colors.dart';
 import 'package:appbox/ui/common/ui_helpers.dart';
 import 'package:flutter/material.dart';
@@ -10,13 +11,13 @@ class UnknownViewDesktop extends ViewModelWidget<UnknownViewModel> {
 
   @override
   Widget build(BuildContext context, UnknownViewModel viewModel) {
-    return const Scaffold(
+    return Scaffold(
       backgroundColor: kcBackgroundColor,
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(
+            const Text(
               '404',
               style: TextStyle(
                 color: Colors.white,
@@ -28,8 +29,8 @@ class UnknownViewDesktop extends ViewModelWidget<UnknownViewModel> {
             ),
             verticalSpaceSmall,
             Text(
-              'PAGE NOT FOUND',
-              style: TextStyle(
+              AppLocalizations.of(context).unknownPageNotFound,
+              style: const TextStyle(
                 color: Colors.white,
                 fontSize: 20,
                 letterSpacing: 20.0,

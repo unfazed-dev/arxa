@@ -33,6 +33,9 @@
 //   8. no_cross_shell_imports — view trees stay shell-private: a file under
 //                             /ui/views/<shellA>/ never imports /ui/views/<shellB>/
 //                             (overlay subdirs bottom_sheets|dialogs|snackbars exempt)
+//   9. no_hardcoded_strings — Text('…')/label: '…' literals with 3+ ASCII letters
+//                             in view files → copy comes from the ARB catalogs
+//                             via AppLocalizations (the i18n discipline)
 //
 // Closed blind spots (each has a stress scenario under scripts/tests/):
 //   G1 MaterialApp.router( (navigator2 form)  — caught by kit_theme_used
@@ -210,6 +213,23 @@ final _materialApp = RegExp(r'\bMaterialApp(?:\.router)?\s*\(');
 final _kitGlyphsRef = RegExp(r'\bKitGlyphs\.([a-zA-Z0-9_]+)');
 final _kitColorsRef = RegExp(r'\bKitColors\.([a-zA-Z0-9_]+)');
 final _kitDarkColorsRef = RegExp(r'\bKitDarkColors\.([a-zA-Z0-9_]+)');
+
+// Text('…') / Text("…") and label: '…' / label: "…" — a string literal sitting
+// in a user-visible copy slot. Groups 1/2 hold the literal's contents. The i18n
+// discipline: copy comes from the ARB catalogs via AppLocalizations, never a
+// hardcoded literal in a view.
+final _textOrLabelLiteral = RegExp(
+    r"(?:\bText\(\s*|\blabel\s*:\s*)'((?:\\.|[^'\\])*)'"
+    r'|(?:\bText\(\s*|\blabel\s*:\s*)"((?:\\.|[^"\\])*)"');
+
+// The scaffolder's stub header. Stub files carry placeholder KEYS
+// (Text('projects.home')) that the builder replaces with AppLocalizations
+// lookups, so a STRUCTURE ONLY file is exempt from no_hardcoded_strings.
+final _scaffolderStubHeader =
+    RegExp(r'//\s*app-box-scaffolder:[^\n]*STRUCTURE ONLY');
+
+// Any file under the view tree — no_hardcoded_strings scopes to view files.
+final _viewsTree = RegExp(r'/ui/views/');
 
 // ---------- check results ----------
 
@@ -562,6 +582,67 @@ CheckResult checkNoCrossShellImports(String src, String path) {
       'cross-shell import of ${offenders.join(', ')} — view trees are '
       'shell-private; overlays (bottom_sheets|dialogs|snackbars), services, '
       'and models may be shared');
+}
+
+/// Check 9: no hardcoded user-visible strings. Copy in view files comes from
+/// the ARB catalogs via AppLocalizations.of(context)!.<key> — a Text('…') /
+/// label: '…' literal with 3+ ASCII letters is hardcoded copy that can never be
+/// localized.
+///
+/// THE INVERSE OF THE G4 PATH. Every other per-file check strips string
+/// literals before matching (a token inside a string is not a usage); THIS
+/// check matches INSIDE Text()/label: literals — the literal IS the violation.
+/// It therefore runs on _stripComments only (a commented-out Text('…') is still
+/// not a violation), never on _stripNoise. The two paths stay separate.
+///
+/// Exemptions: scaffolder stub files (the "app-box-scaffolder: … STRUCTURE
+/// ONLY" header — their Text('<arb.key>') placeholders are filled by the
+/// builder); strings that are clearly not copy (see [_isNonCopyLiteral]):
+/// single chars/symbols/digits-only, route paths, asset paths, dotted keys.
+/// A font-family name only reaches this check when placed in a Text()/label:
+/// slot, which is itself a bug — so no fontFamily exemption is needed.
+CheckResult checkNoHardcodedStrings(String src, String path) {
+  if (_isKitInternalOrTest(path)) {
+    return CheckResult(
+        'no_hardcoded_strings', true, 'skipped (kit-internal or test file)');
+  }
+  if (!_viewsTree.hasMatch(path)) {
+    return CheckResult('no_hardcoded_strings', true,
+        'not under /ui/views/ — hardcoded-strings check N/A');
+  }
+  if (_scaffolderStubHeader.hasMatch(src)) {
+    return CheckResult('no_hardcoded_strings', true,
+        'scaffolder stub (STRUCTURE ONLY) — placeholder keys exempt');
+  }
+  final stripped = _stripComments(src);
+  final hits = <String>{};
+  for (final m in _textOrLabelLiteral.allMatches(stripped)) {
+    final s = m.group(1) ?? m.group(2) ?? '';
+    if (_isNonCopyLiteral(s)) continue;
+    hits.add("'$s'");
+  }
+  if (hits.isEmpty) {
+    return CheckResult(
+        'no_hardcoded_strings', true, 'no hardcoded copy literals (Text/label)');
+  }
+  return CheckResult('no_hardcoded_strings', false,
+      'hardcoded user-visible string(s): $hits. Copy comes from the ARB '
+      'catalogs — add the key to l10n/app_en.arb (+ every locale) and read it '
+      'via AppLocalizations.of(context)!.<key>. Hardcoded copy can never be '
+      'localized.');
+}
+
+/// True when a Text()/label: literal is clearly NOT user-visible copy (the
+/// no_hardcoded_strings exemption list).
+bool _isNonCopyLiteral(String s) {
+  // Fewer than 3 ASCII letters: single chars, symbols, digits-only.
+  if (RegExp(r'[A-Za-z]').allMatches(s).length < 3) return true;
+  if (s.startsWith('/')) return true; // route path
+  if (s.contains('/')) return true; // asset path
+  // A dotted single token: an ARB key ('projects.home') or a filename
+  // ('logo.png') — not prose.
+  if (RegExp(r'^[\w.\-]+$').hasMatch(s) && s.contains('.')) return true;
+  return false;
 }
 
 /// Check 5: for a view shell file, the sibling form-factor files exist.
@@ -952,6 +1033,7 @@ List<CheckResult> checkFile(String path) {
     checkNoStockNativeSurface(src, path),
     checkValidDartSyntax(src, path),
     checkNoCrossShellImports(src, path),
+    checkNoHardcodedStrings(src, path),
     // Mirrored from review_checklist.sh so design-phase surfaces stop shipping
     // findings the review gate would raise two phases later (1w2, 1i, 1d).
     checkNoAdhocSpacing(src, path),
@@ -1068,6 +1150,54 @@ Future<int> _runSelfTest() async {
 
   print('enforce_design.dart — self-test\n');
 
+  // The vendored file-fixture tree (scripts/fixtures/, scripts/tests/scenarios/)
+  // is NOT shipped with this repo — gates/review/selftest.sh is the repo-local
+  // R5 harness that covers the same checks end-to-end via the CLI. When the
+  // fixtures are absent the file-fixture sections are skipped (with a note);
+  // the pure (src, path) sections below always run.
+  if (fixturesDir.existsSync()) {
+    _fileFixtureSections(fixturesDir, expect);
+  } else {
+    print('  (fixture tree not shipped — file-fixture sections skipped;');
+    print('   gates/review/selftest.sh is the repo-local R5 harness)');
+  }
+
+  // ---- pure negatives (no fixture files; always run) ----
+
+  // A7: a real kit widget name (KitNativeButton) does NOT trip the check.
+  // Verify the allowlist accepts every known name (no false negatives).
+  for (final name in knownKitNativeWidgets) {
+    final ok = checkNoInventedNativeWidgets(
+        'final x = $name();', 'lib/ui/views/x_view.dart').ok;
+    expect(ok, '4d: $name accepted (in the matrix allowlist)');
+  }
+
+  // A10: a string with delimiters inside must NOT trip the balance check.
+  // (Delimiters inside strings/comments are stripped before counting.)
+  final stringDelim = checkValidDartSyntax(
+      "const s = '{ not a real brace }'; // (nor this)\nclass A {}",
+      'lib/ui/views/x.dart');
+  expect(stringDelim.ok,
+      '4e: delimiters inside strings/comments do NOT trip valid_dart_syntax');
+
+  _selfTestPureSections(expect);
+
+  print('\n--- self-test summary ---');
+  print('  $passCount passed, $failCount failed');
+  if (failCount > 0) {
+    print('  SELF-TEST FAILED — the gate is miscalibrated.');
+    return 1;
+  }
+  print('  SELF-TEST PASSED — gate is calibrated (negatives fail for the right reason).');
+  return 0;
+}
+
+/// The file-fixture self-test sections (1–8, A1–A6, A8–A9, A11–A15, G1–G7),
+/// moved verbatim out of _runSelfTest. They depend on the vendored fixture
+/// tree (scripts/fixtures/ + scripts/tests/scenarios/), which is NOT shipped
+/// with this repo — _runSelfTest calls this only when the tree exists.
+void _fileFixtureSections(
+    Directory fixturesDir, void Function(bool, String) expect) {
   // 1. clean fixture must pass all per-file checks.
   final cleanResults = checkFile('${fixturesDir.path}/clean_surface/clean_view.mobile.dart');
   expect(cleanResults.every((r) => r.ok), 'clean fixture passes all per-file checks');
@@ -1297,14 +1427,6 @@ Future<int> _runSelfTest() async {
   expect(inventedCheck.message.contains('KitNativeCarousel'),
       '4d: failure names KitNativeCarousel (invented)');
 
-  // A7: a real kit widget name (KitNativeButton) does NOT trip the check.
-  // Verify the allowlist accepts every known name (no false negatives).
-  for (final name in knownKitNativeWidgets) {
-    final ok = checkNoInventedNativeWidgets(
-        'final x = $name();', 'lib/ui/views/x_view.dart').ok;
-    expect(ok, '4d: $name accepted (in the matrix allowlist)');
-  }
-
   // ---- 4e: valid_dart_syntax (the R5 false-clean gap, closed) ----
   // A8: clean fixture passes (balanced delimiters).
   final cleanSyntax = cleanResults
@@ -1320,14 +1442,6 @@ Future<int> _runSelfTest() async {
       'truncated fixture fails valid_dart_syntax (R5 false-clean, now caught)');
   expect(truncSyntax.message.contains('unbalanced'),
       '4e: failure names the imbalance');
-
-  // A10: a string with delimiters inside must NOT trip the balance check.
-  // (Delimiters inside strings/comments are stripped before counting.)
-  final stringDelim = checkValidDartSyntax(
-      "const s = '{ not a real brace }'; // (nor this)\nclass A {}",
-      'lib/ui/views/x.dart');
-  expect(stringDelim.ok,
-      '4e: delimiters inside strings/comments do NOT trip valid_dart_syntax');
 
   // ---- 8: no_cross_shell_imports (the S2 locality rule, at design time) ----
   // A scenario fixture's own path has no /ui/views/ segment (the path-shape
@@ -1373,7 +1487,13 @@ Future<int> _runSelfTest() async {
       gate('${scenariosDir.path}/shell_tree/lib/ui/views/train_shell/leaf/overlay_use.dart')
           .every((r) => r.ok),
       '8: gate() on the overlay-exempt fixture is all-OK');
+}
 
+/// Self-test sections 9 (the checks mirrored from review_checklist.sh) and 10
+/// (no_hardcoded_strings). Sources are inline: these are pure (src, path)
+/// functions, so the sections run even when the vendored fixture tree is
+/// absent.
+void _selfTestPureSections(void Function(bool, String) expect) {
   // 9. the checks mirrored from review_checklist.sh (1w2, 1i, 1d).
   //    Sources are inline: these are pure (src, path) functions, so a fixture
   //    file would only add a place for the two gates to drift apart. Every
@@ -1434,14 +1554,69 @@ Future<int> _runSelfTest() async {
   expect(checkLeafAppBar('/// Shells stay bare — no appBar: here.', shell).ok,
       '9c: the contract quoted in a doc comment does not violate itself');
 
-  print('\n--- self-test summary ---');
-  print('  $passCount passed, $failCount failed');
-  if (failCount > 0) {
-    print('  SELF-TEST FAILED — the gate is miscalibrated.');
-    return 1;
-  }
-  print('  SELF-TEST PASSED — gate is calibrated (negatives fail for the right reason).');
-  return 0;
+  // 10. no_hardcoded_strings (the i18n discipline): copy comes from the ARB
+  //     catalogs via AppLocalizations — a Text()/label: literal with 3+ ASCII
+  //     letters in a view file fails, naming the literal. Sources are inline
+  //     (pure (src, path) function, same convention as section 9).
+  const i18nLeaf = 'lib/ui/views/train_shell/home/home_view.mobile.dart';
+
+  // 10a. RED — hardcoded Text('Loading ...') fails, naming the literal.
+  final hardcoded = checkNoHardcodedStrings(
+      "Column(children: [Text('Loading ...'), Text(l10n.loading)]);", i18nLeaf);
+  expect(!hardcoded.ok, '10a: hardcoded Text(\'Loading ...\') fails');
+  expect(hardcoded.message.contains('Loading ...'),
+      '10a: failure names the offending literal');
+
+  // 10b. GREEN — copy resolved via AppLocalizations.of(context)! passes.
+  expect(
+      checkNoHardcodedStrings(
+              'Text(AppLocalizations.of(context)!.loading);', i18nLeaf)
+          .ok,
+      '10b: AppLocalizations.of(context)!.loading passes');
+
+  // 10c. GREEN — a scaffolder stub (STRUCTURE ONLY header) with a placeholder
+  //      key Text('projects.home') is exempt.
+  expect(
+      checkNoHardcodedStrings(
+              '// app-box-scaffolder: surface skeleton. STRUCTURE ONLY — the builder fills this.\n'
+              "Text('projects.home');",
+              i18nLeaf)
+          .ok,
+      '10c: scaffolder stub header exempts STRUCTURE ONLY placeholder keys');
+
+  // 10d. GREEN — the non-copy exemptions: symbols, digits-only, asset paths,
+  //      route paths, dotted keys/filenames.
+  expect(checkNoHardcodedStrings("Text('✓');", i18nLeaf).ok,
+      '10d: a bare symbol is not copy');
+  expect(checkNoHardcodedStrings("Text('42');", i18nLeaf).ok,
+      '10d: digits-only is not copy');
+  expect(checkNoHardcodedStrings("Text('assets/logo.png');", i18nLeaf).ok,
+      '10d: an asset path is not copy');
+  expect(checkNoHardcodedStrings("Text('/settings');", i18nLeaf).ok,
+      '10d: a route path is not copy');
+  expect(checkNoHardcodedStrings("Text('projects.home');", i18nLeaf).ok,
+      '10d: a dotted ARB key is not copy');
+
+  // 10e. label: copy slots fire too; a commented-out Text() does not.
+  expect(
+      !checkNoHardcodedStrings(
+              "InputDecoration(label: 'Search projects');", i18nLeaf)
+          .ok,
+      '10e: hardcoded label: literal fails');
+  expect(
+      checkNoHardcodedStrings(
+              "// Text('Loading ...') — replaced by l10n", i18nLeaf)
+          .ok,
+      '10e: a commented-out Text() literal is not a violation');
+
+  // 10f. non-view files are N/A (not a fail); kit-internal/test allowlisted.
+  expect(checkNoHardcodedStrings("Text('Loading ...');", 'lib/main.dart').ok,
+      '10f: a file outside /ui/views/ is N/A');
+  expect(
+      checkNoHardcodedStrings(
+              "Text('Loading ...');", 'lib/widgets/kit_native_demo.dart')
+          .ok,
+      '10f: kit-internal path (/widgets/kit_*) allowlisted');
 }
 
 // ---------- CLI ----------

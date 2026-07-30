@@ -38,5 +38,18 @@ For each `<Screen>View` + `<Screen>ViewModel`:
 - **Don't touch generated-layer files** (`AUTO-GENERATED` marker) except `primitives.dart` when adding a primitive. Edit `@appbox-extension-point` files freely.
 - **Determinism:** freeze filled Views/ViewModels into `.blueprint/<source>/built/` and replay. Drift → gated diff, not silent rebuild.
 
+## i18n (when the design carries `l10n/`)
+- **Never hardcode a user-visible string.** `Text('…')`/`label: '…'` copy literals in `lib/ui/views/**` fail the review gate's `no_hardcoded_strings` check. Views resolve copy via `AppLocalizations.of(context)!.<key>` (stock gen-l10n; keys come from the design's `app_en.arb` template).
+- **ViewModels are context-free** — they read copy through a tiny app-layer service holding the latest `AppLocalizations`, attached once from the root view's builder:
+  ```dart
+  class L10nService {
+    AppLocalizations? _l10n;
+    AppLocalizations get l10n => _l10n!;
+    void attach(BuildContext context) => _l10n = AppLocalizations.of(context)!;
+  }
+  ```
+- **Capability wiring:** register `KitI18n` + `KitLocaleStore` (stacked_kit_i18n) in the stacked locator, and give the settings surface a language row — System / English / Polski (system locale + persisted override, live switch).
+- **Generative UI:** every generative-UI prompt includes `kitI18n.llmLocaleDirective()` in the system prompt, so generated copy lands in the active locale.
+
 ## Output
 - Filled `*_view.dart` / `*_viewmodel.dart` composing the primitive layer. Run `arch_guard` → must PASS before handoff to tester.

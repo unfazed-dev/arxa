@@ -241,3 +241,10 @@
   .shell-overflow[open] .overflow-menu,
   .rail-dock[open] .rail-dock-panel { animation: ab-disclose var(--motion-med) var(--motion-ease); }
 }
+
+/* ---------- language switcher (bottom bar + overflow menu) ---------- */
+.lang-switcher { display: flex; gap: .9rem; padding: .35rem 1.1rem; justify-content: flex-end; }
+.lang-switcher__link { color: var(--tx-2, var(--tx)); opacity: .65; text-decoration: none; font-size: .8rem; }
+.lang-switcher__link:hover { opacity: 1; }
+.lang-switcher__link[aria-current="true"] { color: var(--accent); opacity: 1; font-weight: 600; }
+.overflow-menu .lang-switcher { border-top: 1px solid var(--border); justify-content: flex-start; }

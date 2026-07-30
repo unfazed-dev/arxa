@@ -2,13 +2,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:appbox/app/app.bottomsheets.dart';
 import 'package:appbox/app/app.locator.dart';
-import 'package:appbox/ui/common/app_strings.dart';
+import 'package:appbox/l10n/app_localizations_en.dart';
 import 'package:appbox/ui/views/home/home_viewmodel.dart';
 
 import '../helpers/test_helpers.dart';
 
 void main() {
   HomeViewModel getModel() => HomeViewModel();
+  final en = AppLocalizationsEn();
 
   group('HomeViewmodelTest -', () {
     setUp(() => registerServices());
@@ -33,8 +34,8 @@ void main() {
           verify(
             bottomSheetService.showCustomSheet(
               variant: BottomSheetType.notice,
-              title: ksHomeBottomSheetTitle,
-              description: ksHomeBottomSheetDescription,
+              title: en.homeBottomSheetTitle,
+              description: en.homeBottomSheetDescription,
             ),
           );
         },

@@ -1,4 +1,4 @@
-export const surfaceId = 'app.access';
+export const surfaceId = 'app.splash';
 
 import * as facade from '../../../../services/facades/app_facade.js';
 

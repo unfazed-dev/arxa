@@ -1,5 +1,5 @@
 {% extends "ui/common/base.html" %}
-{% block title %}appbox — Pair this device{% endblock %}
+{% block title %}{{ t('pair.pageTitle') }}{% endblock %}
 
 {% block content %}
 {# Chromeless pairing — the phone/tablet auth view (compact/medium rungs).
@@ -10,28 +10,28 @@
     <span class="auth-brand">appbox</span>
 
     {% if paired %}
-    <h1 class="display" id="pair-h">This device is paired</h1>
+    <h1 class="display" id="pair-h">{{ t('pair.pairedH') }}</h1>
     <p class="pair-ok"><span class="pair-ok-dot" aria-hidden="true"></span>{{ paired.deviceName }} · {{ paired.at }}</p>
-    <p class="muted">Gate approvals from this device now bind to its tailnet node identity. An agent can never mint one — only you, here.</p>
+    <p class="muted">{{ t('pair.pairedLede') }}</p>
     <p class="pair-fingerprint"><code>{{ host }}</code></p>
     {% else %}
-    <h1 class="display" id="pair-h">Pair this device</h1>
-    <p class="muted">Sign-in lives on the desktop. This device joins your live appbox over the tailnet — scan the QR on the desktop dashboard, or type the code it shows.</p>
+    <h1 class="display" id="pair-h">{{ t('pair.title') }}</h1>
+    <p class="muted">{{ t('pair.intro') }}</p>
 
     <ol class="pair-steps">
-      <li>Open appbox on your desktop.</li>
-      <li>On the dashboard, choose <strong>Pair a device</strong>.</li>
-      <li>Enter the single-use code from the QR card.</li>
+      <li>{{ t('pair.step1') }}</li>
+      <li>{{ t('pair.step2pre') }} <strong>{{ t('pair.title') }}</strong>.</li>
+      <li>{{ t('pair.step3') }}</li>
     </ol>
 
     <form class="auth-form" method="post" action="/pair/confirm">
-      <label class="auth-label" for="pair-code">Pairing code</label>
+      <label class="auth-label" for="pair-code">{{ t('pair.codeLabel') }}</label>
       <input id="pair-code" type="text" name="code" placeholder="A7K2-9QXM" autocomplete="off" autocapitalize="characters" autofocus>
       {% if pairError %}<p class="pair-error" role="alert">{{ icon('circle-alert', {size: 16}) }}<span>{{ pairError }}</span></p>{% endif %}
-      <button type="submit">Pair</button>
+      <button type="submit">{{ t('pair.submit') }}</button>
     </form>
 
-    <p class="auth-foot muted">Single-use · short-lived · relayed codes fail the pin. Host: <code>{{ host }}</code></p>
+    <p class="auth-foot muted">{{ t('pair.foot') }} <code>{{ host }}</code></p>
     {% endif %}
   </section>
 </main>

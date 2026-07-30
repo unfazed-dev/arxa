@@ -80,5 +80,21 @@ o="$(dart "$GATE" "$WS/w_view.dart" 2>&1)"; chk "$?" 1 "§16 negative: web decla
 need "$o" "w_view.tablet.dart" "§16 web negative names the missing derived factor file"
 need "$o" "form_factor_files" "§16 web negative names the failed check"
 
+# ---- i18n: no_hardcoded_strings (copy comes from ARB via AppLocalizations) ----
+# NEGATIVE: a hardcoded Text('Loading ...') in a view file fails, naming the
+# literal and the check.
+plant_clean
+printf 'class HomeView { final t = Text(%s); }\n' "'Loading ...'" > "$SURF/home_view.dart"
+o="$(dart "$GATE" "$SURF/home_view.dart" 2>&1)"; chk "$?" 1 "i18n negative: hardcoded Text literal fails"
+need "$o" "no_hardcoded_strings" "i18n negative names the failed check"
+need "$o" "Loading ..." "i18n negative names the offending literal"
+# GREEN: the same surface with copy resolved via AppLocalizations passes.
+printf 'class HomeView { final t = Text(AppLocalizations.of(context)!.loading); }\n' > "$SURF/home_view.dart"
+o="$(dart "$GATE" "$SURF/home_view.dart" 2>&1)"; chk "$?" 0 "i18n: AppLocalizations copy passes"
+# GREEN: a scaffolder stub (STRUCTURE ONLY header) with a placeholder key passes.
+{ printf '// app-box-scaffolder: surface skeleton. STRUCTURE ONLY — the builder fills this.\n'
+  printf 'class HomeView { final t = Text(%s); }\n' "'projects.home'"; } > "$SURF/home_view.dart"
+o="$(dart "$GATE" "$SURF/home_view.dart" 2>&1)"; chk "$?" 0 "i18n: STRUCTURE ONLY stub with placeholder key passes"
+
 echo "review selftest: $pass passed, $failc failed"
 [ "$failc" -eq 0 ] && exit 0 || exit 1

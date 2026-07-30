@@ -186,6 +186,8 @@ PUBSPEC_DEPS = {
     "drift": "^2.34.0",              # local persistence (all platforms incl. web)
     "drift_flutter": "^0.3.0",       # platform opener (path_provider + web wasm)
     "path_provider": "^2.1.6",
+    "flutter_localizations": {"sdk": "flutter"},  # dict value -> nested `sdk:` entry (see _tpl_pubspec)
+    "intl": "any",              # gen-l10n messages API; SDK-adjacent, zero cost without ARBs
 }
 PUBSPEC_DEV = {
     "build_runner": "^2.15.0",
@@ -2693,6 +2695,16 @@ abstract class BaseSupabaseRepository {{
 """
 
 
+def _dep_line(name: str, spec) -> str:
+    """One pubspec dependency entry. `spec` is a version string for hosted
+    packages; a dict (e.g. {"sdk": "flutter"}) renders as a nested entry —
+    the same shape the literal `flutter: sdk: flutter` above uses."""
+    if isinstance(spec, dict):
+        inner = "\n".join(f"    {sk}: {sv}" for sk, sv in spec.items())
+        return f"  {name}:\n{inner}"
+    return f"  {name}: {spec}"
+
+
 def _tpl_pubspec(app_name: str, source: str, methods=_BACKEND_AUTH_DEFAULT) -> str:
     m = set(methods or ())
     pkgs = dict(PUBSPEC_DEPS)
@@ -2701,7 +2713,7 @@ def _tpl_pubspec(app_name: str, source: str, methods=_BACKEND_AUTH_DEFAULT) -> s
     if "appleOAuth" in m:
         pkgs["sign_in_with_apple"] = "^8.1.0"  # native Apple credential
         pkgs["crypto"] = "^3.0.7"              # sha256 nonce (Apple nonce contract)
-    deps = "\n".join(f"  {k}: {v}" for k, v in sorted(pkgs.items()))
+    deps = "\n".join(_dep_line(k, v) for k, v in sorted(pkgs.items()))
     dev = "\n".join(f"  {k}: {v}" for k, v in sorted(PUBSPEC_DEV.items()))
     return f"""{GEN_MARKER_YAML}
 name: {app_name}
@@ -2724,6 +2736,7 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  generate: true  # gen-l10n on pub get (no-op when the app has no l10n.yaml)
 """
 
 
@@ -3539,7 +3552,20 @@ def _self_test():
     # view trips `depend_on_referenced_packages`.
     assert "flutter_svg" in PUBSPEC_DEPS, \
         "flutter_svg must be a declared pubspec dep (generated code imports it directly)"
-    print("blueprint._self_test: OK (analysis_options excludes cruft; flutter_svg declared)")
+
+    # l10n wiring (unconditional): flutter_localizations as an sdk dep, intl for
+    # the gen-l10n messages API, and `generate: true` so gen-l10n runs on pub get.
+    ps = _tpl_pubspec("selftest_app", "breakdown.json")
+    assert PUBSPEC_DEPS.get("flutter_localizations") == {"sdk": "flutter"}, \
+        "flutter_localizations must be declared as an sdk dep"
+    assert "intl" in PUBSPEC_DEPS, "intl must be a declared pubspec dep"
+    assert "  flutter_localizations:\n    sdk: flutter" in ps, \
+        "pubspec must render flutter_localizations as a nested sdk entry"
+    assert "\n  intl: any\n" in ps, "pubspec must render intl as a hosted dep"
+    assert "\n  generate: true" in ps, \
+        "pubspec flutter: section must set generate: true (gen-l10n on pub get)"
+    print("blueprint._self_test: OK (analysis_options excludes cruft; flutter_svg declared; "
+          "l10n deps + generate: true)")
     return 0
 
 

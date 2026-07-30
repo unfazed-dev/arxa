@@ -99,6 +99,7 @@ Collect the following from the user:
 | Priority per Story | ✅ | must / should / could / wont |
 | Release per Story | ✅ | Which version it belongs to |
 | Release list | ✅ | Version names and descriptions |
+| Locales | ❌ | e.g. `[en, pl]` + the default locale — carried into the brief so the designer knows which ARB catalogs + seed locales to author (defaults to `[en]`) |
 | Story Points (optional) | ❌ | Effort estimate |
 | Story description (optional) | ❌ | Additional details |
 
@@ -197,7 +198,9 @@ flags.
 
 - **`brief.md`** → `app-box-designer` reads it as its requirements source; the
   surface inventory seeds what it authors into `registry.json` (it binds a
-  `surface` to each entry — this skill never binds).
+  `surface` to each entry — this skill never binds). The brief also carries the
+  **locales list** (+ default locale) — the designer authors one ARB catalog
+  per locale (`l10n/app_en.arb` is the template) and seeds copy for each.
 - **`story-map.json`** → the full-fidelity data (priorities, releases, points)
   the designer consults while designing.
 - **`story_map.html`** → the human artifact: show it to the client to confirm

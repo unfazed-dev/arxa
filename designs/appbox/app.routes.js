@@ -8,15 +8,14 @@ import appRoutes from './ui/views/app_shell/routes.app.js';
 
 // Landing route of each shell. Required and non-empty — the scaffolder
 // cannot derive it, and a shell whose root is unknown gets an invented one.
+// Only shells with authored surfaces are listed; declared-but-undesigned
+// shells (flows, ship, first) return here once they have a landing screen.
 export const shellRoots = {
   intake: '/intake',
   design: '/design',
   build: '/build',
-  flows: '/flows',
-  ship: '/ship',
   app: '/dashboard',
   workspace: '/workspace',
-  first: '/first',
 };
 
 export default [

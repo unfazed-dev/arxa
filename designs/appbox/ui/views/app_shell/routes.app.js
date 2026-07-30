@@ -7,7 +7,7 @@ import * as pairing from './pairing/pairing_viewmodel.js';
 import * as dashboard from './dashboard/dashboard_viewmodel.js';
 
 export default [
-  // app.access — splash (auto-advances) + desktop sign-in
+  // app.splash — splash (auto-advances); app.access — desktop sign-in
   ['GET', '/splash', splash.page],
   ['GET', '/auth', auth.page],
   ['POST', '/auth/signin', auth.signIn],

@@ -12,7 +12,9 @@ Emits JSON (`--json`) which `run_all.sh` routes through `gates/_common/sarif.sh`
 ## Asserts (per `*_view.dart`)
 
 no stock `Icons.*`, no hardcoded `Color(0x…)`/`CupertinoColors.*`/`Colors.*`
-literals, no raw `dart:io`/`Platform`, the 5-file form-factor set
+literals, no raw `dart:io`/`Platform`, no hardcoded user-visible strings in
+view files (`Text('…')`/`label: '…'` copy comes from the ARB catalogs via
+AppLocalizations — scaffolder STRUCTURE ONLY stubs exempt), the 5-file form-factor set
 (view + mobile + tablet + desktop + viewmodel) exists, `design-system.md`
 present with palette + forbidden sections, no cross-shell view imports, no
 ad-hoc spacing `SizedBox`, no layout-swapping in shared widgets, and the

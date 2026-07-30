@@ -1,5 +1,5 @@
 {% extends "ui/common/base.html" %}
-{% block title %}appbox — Sign in{% endblock %}
+{% block title %}{{ t('auth.pageTitle') }}{% endblock %}
 
 {% block content %}
 {# Chromeless sign-in — desktop only. Phones/tablets pair instead (see /pair);
@@ -11,12 +11,12 @@
     <p class="muted">{{ auth.lede }}</p>
 
     <form class="auth-form" method="post" action="/auth/signin">
-      <label class="auth-label" for="auth-email">Email</label>
+      <label class="auth-label" for="auth-email">{{ t('auth.email') }}</label>
       <input id="auth-email" type="email" name="email" placeholder="{{ account.email }}" autocomplete="email" autofocus>
-      <button type="submit">Continue</button>
+      <button type="submit">{{ t('auth.continue') }}</button>
     </form>
 
-    <p class="auth-or"><span>or</span></p>
+    <p class="auth-or"><span>{{ t('auth.or') }}</span></p>
 
     {% for p in auth.providers %}
     <form method="post" action="/auth/signin">
@@ -24,7 +24,7 @@
     </form>
     {% endfor %}
 
-    <p class="auth-foot muted">On a phone or tablet? <a href="/pair">Pair this device</a> instead — sign-in lives on the desktop.</p>
+    <p class="auth-foot muted">{{ t('auth.footPre') }} <a href="/pair">{{ t('auth.footLink') }}</a> {{ t('auth.footPost') }}</p>
   </section>
 </main>
 {% endblock %}

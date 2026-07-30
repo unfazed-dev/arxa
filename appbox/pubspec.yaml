@@ -9,6 +9,14 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  # Material/Widgets/Cupertino localizations delegates for MaterialApp.
+  flutter_localizations:
+    sdk: flutter
+  # SDK-pinned via flutter_localizations — never pin.
+  intl: any
+  # Locale machinery kit (KitI18n, persisted locale override).
+  stacked_kit_i18n:
+    path: ../../stacked_kit/i18n
   stacked: ^3.4.0
   stacked_services: ^1.1.0
   url_strategy: ^0.2.0
@@ -31,6 +39,7 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  generate: true
   assets:
     # security/config/companion_config.dart loads this bundled config (R3: no
     # project-varying literals in code).
