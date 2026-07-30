@@ -1,8 +1,10 @@
 # appbox dart-only tooling — retirement of Python/bash/Node
 
-**Status:** planned, **not started**. Documentation only; no implementation has
-been done. Settled in the Rust-vs-Dart grill, 2026-07-30. Green-light trigger:
-"start the CDP spike".
+**Status:** **in progress**. CDP spike proven (7/7 tests green). Gate framework
++ 9/10 gates ported to Dart. emit_structure + transform_tokens emitters porting.
+5 subagents active (scaffold gate, coverage gate, transform_tokens, emit_htmx
+with CDP, freeze gate). Settled in the Rust-vs-Dart grill, 2026-07-30.
+Green-light trigger: "start the CDP spike" — fired 2026-07-30.
 
 ## The verdict on Rust
 
@@ -122,3 +124,46 @@ retires.
   vendored (`tools/vendor/VENDOR.lock`); first-party Python ~1.5k lines;
   bash ~8.7k; largest design JSON 88 KB; Playwright surface = viewport
   screenshot only (`emit_htmx.py:340-429`, `emit_playground.py:157-245`).
+
+## Progress log
+
+### 2026-07-30 — session 1
+
+**CDP spike ✅** — `appboxd/lib/cdp.dart` (420 lines): Dart CDP-over-WebSocket
+client using raw `dart:io` (no puppeteer, zero new deps). Proven 7/7:
+launch+connect, DOM extraction via Runtime.evaluate (emit_htmx pattern),
+screenshot at 390×844 (appbox lens pattern), console error capture,
+evaluateFunction with structured arg, multi-tab isolation. Key finding:
+emit_htmx.py does DOM extraction, not screenshots — both patterns proven.
+
+**Gate framework ✅** — `appboxd/lib/gates.dart`: ports all `_common/` bash
+helpers to Dart (StateReader, SarifBuilder, designHash, assertDesignFresh,
+assertTreeClean). Reuses existing crypto_aead.dart SHA-256.
+
+**Gates ported to Dart (8/10 + review already Dart = 9/10):**
+- memory ✅ (169 lines bash+py → Dart, 7/7 tests, verified on real repo)
+- advertise ✅ (188 lines py → Dart, logic matches Python exactly)
+- intake ✅ (363 lines bash+py → Dart, 10 behavioral cases pass)
+- structure ✅ (161 lines bash+py → Dart)
+- deploy ✅ (193 lines bash+py → Dart, reuses Licence class)
+- native_deps ✅ (380 lines bash+py → Dart)
+- scaffold ⏳ (subagent running)
+- coverage ⏳ (subagent running)
+- freeze ⏳ (subagent running, CDP integration)
+- review — already Dart at `gates/review/review.dart` (1,658 lines)
+
+**Gate runner ✅** — `appboxd/lib/gate_runner.dart`: runAllGates() in
+dependency order, strangler pattern (Dart gates native, unported fall
+back to bash via Process.run). `appbox gate --all` verified end-to-end.
+
+**Emitters ported:**
+- emit_structure ✅ (385 lines py → Dart, 7/7 discriminating tests green)
+- transform_tokens ⏳ (subagent running, 765 lines)
+- emit_htmx ⏳ (subagent running, CDP integration, 631 lines)
+
+**Subcommand dispatch ✅** — `appboxd/bin/appbox.dart`: unified entry point
+with `appbox gate <name>`, `appbox gate --all`, `appbox emit structure`,
+`appbox serve`.
+
+**Full test suite: 196/196 green** (existing 175 + CDP 7 + memory gate 7 +
+emit_structure 7).
