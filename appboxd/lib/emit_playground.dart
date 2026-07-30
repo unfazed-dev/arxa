@@ -178,8 +178,7 @@ Future<void> _serveFile(HttpRequest request, String path) async {
 Future<HttpServer> startStaticServer(String rootDir) async {
   final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
   final rootAbs = p.normalize(rootDir);
-  // ignore: unawaited_futures
-  server.serveRequests((request) async {
+  server.listen((request) async {
     try {
       final reqPath = request.uri.path;
       final rel = p.posix.normalize(

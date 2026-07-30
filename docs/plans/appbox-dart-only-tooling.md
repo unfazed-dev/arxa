@@ -140,30 +140,46 @@ emit_htmx.py does DOM extraction, not screenshots — both patterns proven.
 helpers to Dart (StateReader, SarifBuilder, designHash, assertDesignFresh,
 assertTreeClean). Reuses existing crypto_aead.dart SHA-256.
 
-**Gates ported to Dart (8/10 + review already Dart = 9/10):**
+**Gates ported to Dart — ALL 10 ✅:**
 - memory ✅ (169 lines bash+py → Dart, 7/7 tests, verified on real repo)
 - advertise ✅ (188 lines py → Dart, logic matches Python exactly)
 - intake ✅ (363 lines bash+py → Dart, 10 behavioral cases pass)
 - structure ✅ (161 lines bash+py → Dart)
 - deploy ✅ (193 lines bash+py → Dart, reuses Licence class)
 - native_deps ✅ (380 lines bash+py → Dart)
-- scaffold ⏳ (subagent running)
-- coverage ⏳ (subagent running)
-- freeze ⏳ (subagent running, CDP integration)
+- scaffold ✅ (818 lines bash+py → Dart, 13 checks, differential-tested vs bash)
+- coverage ✅ (538 lines bash+py → Dart, 17 behavioral scenarios verified)
+- freeze ✅ (531 lines bash+py+node → Dart async gate, CDP render + bash fallback,
+  smoke-tested on real design with l10n parity, approval round-trip)
 - review — already Dart at `gates/review/review.dart` (1,658 lines)
 
 **Gate runner ✅** — `appboxd/lib/gate_runner.dart`: runAllGates() in
-dependency order, strangler pattern (Dart gates native, unported fall
-back to bash via Process.run). `appbox gate --all` verified end-to-end.
+dependency order, strangler pattern (9/10 Dart gates active in runner,
+freeze async → bash fallback until runner is made async).
+`appbox gate --all` verified end-to-end.
 
 **Emitters ported:**
 - emit_structure ✅ (385 lines py → Dart, 7/7 discriminating tests green)
-- transform_tokens ⏳ (subagent running, 765 lines)
-- emit_htmx ⏳ (subagent running, CDP integration, 631 lines)
+- transform_tokens ✅ (765 lines py → Dart, 14/14 tests, all helpers ported)
+- emit_htmx ✅ (631 lines py → Dart, Playwright→CDP, 23/23 tests green)
+- emit_playground ✅ (418 lines py → Dart, CDP integration)
+- synthesize ⏳ (subagent running, 537 lines)
+
+**appbox lens ✅** — `appboxd/lib/lens.dart`: visual gate using CDP screenshots.
+captureGolden + compareGolden (byte/pixel/ssim modes). 4/4 tests green.
+Console errors always fail the lens.
 
 **Subcommand dispatch ✅** — `appboxd/bin/appbox.dart`: unified entry point
-with `appbox gate <name>`, `appbox gate --all`, `appbox emit structure`,
-`appbox serve`.
+with `appbox gate <name>`, `appbox gate --all`, `appbox emit structure|htmx|
+transform_tokens`, `appbox serve`.
 
-**Full test suite: 196/196 green** (existing 175 + CDP 7 + memory gate 7 +
-emit_structure 7).
+**Latent bugs caught during porting:**
+- designHash directory basename: `entry.uri.pathSegments.last` returns '' for
+  directories on macOS (trailing slash). Fixed to path-based basename.
+- Same bug in scaffold gate SN/S3 walkers. Fixed.
+
+**Full test suite: 237/237 green** (existing 175 + CDP 7 + memory gate 7 +
+emit_structure 7 + emit_htmx 23 + transform_tokens 14 + lens 4).
+
+**Remaining emitters:** blueprint (3,642 lines), emit (1,100 lines),
+generate_view (3,935 lines) — generation flow, not yet started.
