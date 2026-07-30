@@ -14,12 +14,10 @@ const data = (locale = 'en') => {
 };
 
 export const run = (locale = 'en') => data(locale).run;
-export const line = (locale = 'en') => data(locale).line;
 export const screens = (locale = 'en') => data(locale).screens;
 export const screen = (id, locale = 'en') => data(locale).screens.find((s) => s.id === id);
 export const epics = (locale = 'en') => data(locale).epics;
 export const counts = (locale = 'en') => data(locale).counts;
-export const draft = (locale = 'en') => data(locale).draft;
 export const approval = (locale = 'en') => data(locale).approval;
 export const noContext = (locale = 'en') => data(locale).noContext;
 export const artifacts = (locale = 'en') => data(locale).artifacts;

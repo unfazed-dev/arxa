@@ -17,48 +17,6 @@
       "kitCoverage": 96
     }
   },
-  "line": [
-    {
-      "id": "brief",
-      "kind": "stage",
-      "label": "Brief",
-      "state": "green"
-    },
-    {
-      "id": "moodboard",
-      "kind": "stage",
-      "label": "Moodboard",
-      "state": "green"
-    },
-    {
-      "id": "prototype",
-      "kind": "stage",
-      "label": "Prototyp",
-      "state": "green",
-      "href": "/design"
-    },
-    {
-      "id": "refine",
-      "kind": "stage",
-      "label": "Ulepszanie",
-      "state": "green",
-      "href": "/design/chat"
-    },
-    {
-      "id": "design.approval",
-      "kind": "gate",
-      "label": "Zatwierdzenie",
-      "state": "approved",
-      "href": "/design/freeze"
-    },
-    {
-      "id": "freeze",
-      "kind": "stage",
-      "label": "Zamrożenie",
-      "state": "green",
-      "href": "/design/freeze"
-    }
-  ],
   "screens": [
     {
       "id": "intake.mapping",
@@ -391,13 +349,6 @@
       ]
     }
   ],
-  "draft": {
-    "offer": "Mapa historyjek zatwierdzona — 11 powierzchni, każda prześledzona do historyjki. Mogę naszkicować je wszystkie w jednym przebiegu: 11 plansz na kanwie w 390/744/1280, prawdziwe rozmiary urządzeń. Potem ulepszamy tutaj, z ekranami, które przypniesz jako kontekst.",
-    "offerPlain": "Mapa historyjek jest zatwierdzona — 11 ekranów. Mogę naszkicować je wszystkie naraz na kanwie w rozmiarze telefonu, tabletu i desktopu. Potem polerujemy je tutaj, jedna wiadomość na raz.",
-    "chip": "naszkicuj wszystkie 11 powierzchni",
-    "done": "Wszystkie 11 powierzchni naszkicowanych — 33 ujęcia w 390/744/1280. Przypnij ekran jako kontekst (pinezka na planszy albo miniatura) a dostanie kolorową obwódkę tutaj i na kanwie; tylko narzędzia przypiętych ekranów są aktywne.",
-    "donePlain": "Wszystkie 11 ekranów jest na kanwie, każdy w rozmiarze telefonu, tabletu i desktopu. Dotknij ekranu — na kanwie albo w pasku miniaturek — żeby go tu przypiąć; Twoje zmiany zawsze dotykają tylko przypiętych ekranów."
-  },
   "approval": {
     "state": "approved",
     "chip": "zatwierdź manifest",

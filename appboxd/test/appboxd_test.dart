@@ -26,6 +26,7 @@ void main() {
     File('${fixture.path}/web/index.html')
         .writeAsStringSync('<h1>app-box</h1>');
     File('${fixture.path}/web/app.js').writeAsStringSync('console.log(1);');
+    File('${fixture.path}/web/brief.md').writeAsStringSync('# brief');
     // Pipeline fixture: a fake pipeline.sh that echoes its gate invocation.
     Directory('${fixture.path}/pipeline').createSync();
     File('${fixture.path}/pipeline/pipeline.sh').writeAsStringSync(
@@ -55,6 +56,13 @@ void main() {
     expect(response.statusCode, HttpStatus.ok);
     expect(response.headers.contentType.toString(), contains('javascript'));
     expect(body, 'console.log(1);');
+  });
+
+  test('serves markdown as text/markdown', () async {
+    final (response, body) = await _get(client, port, '/brief.md');
+    expect(response.statusCode, HttpStatus.ok);
+    expect(response.headers.contentType.toString(), contains('text/markdown'));
+    expect(body, '# brief');
   });
 
   test('serves index.html for the root path', () async {

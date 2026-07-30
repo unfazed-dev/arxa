@@ -108,8 +108,8 @@ video.mp-media { width: 100%; background: #000; }
   display: flex; flex-direction: column;
 }
 
-/* bottom bar: the views icon carousel — one button per registered view,
-   scrolls sideways when crowded, its scrollbar never shows */
+/* views bar: the icon carousel — one button per registered view, scrolls
+   sideways when crowded, its scrollbar never shows */
 .panel-frame-bar {
   display: flex; gap: .35rem; align-items: center; flex: none;
   padding: .55rem .7rem; border-top: 1px solid var(--border);

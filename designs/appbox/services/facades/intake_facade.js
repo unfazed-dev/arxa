@@ -161,7 +161,7 @@ function chipLabel(ref, t) {
   }[kind] ?? ref;
 }
 
-// ---------- the bottom-bar timeline (read-only) ----------
+// ---------- the footer-panel timeline (read-only) ----------
 function timelineFor(sd, surface, t, L) {
   const st = interview(sd, L);
   const stale = isStale(st);

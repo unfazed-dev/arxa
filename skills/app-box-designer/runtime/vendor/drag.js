@@ -219,9 +219,11 @@
   // Keyboard undo/redo (Cmd/Ctrl+Z, Shift+Cmd/Ctrl+Z) routed by pointer focus:
   // the stack under the pointer wins — over the chat → chat stack (design
   // changes), over the viewer/canvas → canvas stack (tile moves, pins). Same
-  // stage swap as the icon-button pairs. kimitail: pointer-iframes swallow
-  // hover, so "over the canvas" registers only on chrome/free canvas — good
-  // enough; the buttons cover the rest.
+  // panels swap as the icon-button pairs. The stacks and their routes are
+  // design-shell-only, so the keys engage only there — posting them from
+  // intake/build would swap design markup into another shell's #panels.
+  // kimitail: pointer-iframes swallow hover, so "over the canvas" registers
+  // only on chrome/free canvas — good enough; the buttons cover the rest.
   let pointerStack = 'canvas';
   document.addEventListener('pointerover', (e) => {
     if (e.target.closest?.('.panel-composer')) pointerStack = 'chat';
@@ -230,6 +232,7 @@
   document.addEventListener('keydown', (e) => {
     if (!(e.metaKey || e.ctrlKey) || e.altKey || e.key.toLowerCase() !== 'z') return;
     if (e.target.closest?.('input, textarea, select, [contenteditable]')) return; // native text undo wins while typing
+    if (!location.pathname.startsWith('/design')) return; // undo stacks are design-shell state
     e.preventDefault();
     htmx.ajax('POST', `/design/${e.shiftKey ? 'redo' : 'undo'}/${pointerStack}`,
       { target: '#panels', swap: 'outerHTML' });

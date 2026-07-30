@@ -647,3 +647,7 @@ Dead words and what replaced them. Never reintroduce the left column.
 | companion (app) | **app-box app** | consolidation (2026-07-28): one app + daemon, no separate companion |
 | Totem Cloud | **tailnet** | self-hosted remote only; no third-party relay, no Totem-run cloud |
 | spine (bare) | **Data Spine** | "the spine" meant both the system shape and the artifact's data flow; the artifact one is always *data* spine |
+| bottom bar | **Footer Panel** | panel consolidation (2026-07-30): all chrome is named panels; dead in code (`{% block footer %}`, `#panel-footer`) |
+| left rail | **Activity Panel** | same consolidation; dead in code |
+| right rail | **Composer Panel** | same consolidation; the composer panel is permanent and single-state; dead in code |
+| mainboard | **Main Panel** | proposed during the panel consolidation, renamed before it ever landed |

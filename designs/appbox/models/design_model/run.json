@@ -17,48 +17,6 @@
       "kitCoverage": 96
     }
   },
-  "line": [
-    {
-      "id": "brief",
-      "kind": "stage",
-      "label": "Brief",
-      "state": "green"
-    },
-    {
-      "id": "moodboard",
-      "kind": "stage",
-      "label": "Moodboard",
-      "state": "green"
-    },
-    {
-      "id": "prototype",
-      "kind": "stage",
-      "label": "Prototype",
-      "state": "green",
-      "href": "/design"
-    },
-    {
-      "id": "refine",
-      "kind": "stage",
-      "label": "Refine",
-      "state": "green",
-      "href": "/design/chat"
-    },
-    {
-      "id": "design.approval",
-      "kind": "gate",
-      "label": "Approval",
-      "state": "approved",
-      "href": "/design/freeze"
-    },
-    {
-      "id": "freeze",
-      "kind": "stage",
-      "label": "Freeze",
-      "state": "green",
-      "href": "/design/freeze"
-    }
-  ],
   "screens": [
     {
       "id": "intake.mapping",
@@ -391,13 +349,6 @@
       ]
     }
   ],
-  "draft": {
-    "offer": "Story map approved — 11 surfaces, every one traced to a story. I can draft them all in one pass: 11 artboards on the canvas at 390/744/1280, real device sizes. After that we refine here, with the screens you pin as context.",
-    "offerPlain": "The story map is approved — 11 screens. I can sketch them all at once onto the canvas at phone, tablet and desktop size. After that we polish them here, one message at a time.",
-    "chip": "draft all 11 surfaces",
-    "done": "All 11 surfaces drafted — 33 shots across 390/744/1280. Pin a screen as context (artboard pin or filmstrip thumb) and it gets a colored outline here and on the canvas; only pinned screens' tools are live.",
-    "donePlain": "All 11 screens are on the canvas, each at phone, tablet and desktop size. Tap a screen — on the canvas or in the filmstrip — to pin it here; your changes only ever touch the pinned screens."
-  },
   "approval": {
     "state": "approved",
     "chip": "approve the manifest",

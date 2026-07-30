@@ -125,6 +125,8 @@ ContentType _contentTypeFor(String path) {
       return ContentType('application', 'wasm');
     case '.woff2':
       return ContentType('font', 'woff2');
+    case '.md':
+      return ContentType('text', 'markdown', charset: 'utf-8');
     case '.map':
     case '.txt':
       return ContentType.text;
