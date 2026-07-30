@@ -8,7 +8,9 @@
 import 'dart:io';
 
 import 'package:appboxd/gate_advertise.dart';
+import 'package:appboxd/gate_deploy.dart';
 import 'package:appboxd/gate_memory.dart';
+import 'package:appboxd/gate_native_deps.dart';
 import 'package:appboxd/gates.dart';
 
 /// The gate execution order (matches gates/run_all.sh:148-164).
@@ -94,6 +96,10 @@ GateResult? _tryDartGate(String name, GateContext ctx) {
       return memoryGate(ctx);
     case 'advertise':
       return advertiseGate(ctx);
+    case 'deploy':
+      return deployGate(ctx);
+    case 'native_deps':
+      return nativeDepsGate(ctx);
     // intake and structure ported but commented in runner until tested
     // against the real design root path resolution
     default:
