@@ -106,4 +106,23 @@ void main() {
         await _get(client, port, '/api/phases/bogus/run', method: 'POST');
     expect(response.statusCode, HttpStatus.notFound);
   });
+
+  test('GET /api/memory/briefing returns the markdown briefing', () async {
+    // Fixture state: one scorecard line under the temp repo root.
+    Directory('${fixture.path}/pipeline/state').createSync(recursive: true);
+    File('${fixture.path}/pipeline/state/scorecard.jsonl').writeAsStringSync(
+        '{"stage":"build","tier":"standard","gate_pass":true,"retries":0}\n');
+    final (response, body) = await _get(client, port, '/api/memory/briefing');
+    expect(response.statusCode, HttpStatus.ok);
+    expect(response.headers.contentType.toString(), contains('text/markdown'));
+    expect(body, contains('# app-box operator briefing'));
+    expect(body, contains('build'));
+  });
+
+  test('GET /api/memory/briefing degrades with no pipeline state', () async {
+    final (response, body) = await _get(client, port, '/api/memory/briefing');
+    expect(response.statusCode, HttpStatus.ok);
+    expect(body, contains('# app-box operator briefing'));
+    expect(body, contains('no scorecard data'));
+  });
 }

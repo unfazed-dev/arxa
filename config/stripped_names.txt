@@ -12,4 +12,6 @@ huashu
 p2
 asko
 crew
-kimi
+# `kimi` was removed 2026-07-30: it is now a first-class provider id in
+# config/model-fabric.json and the headless CLI the appboxd engine runs (E3).
+# R2 targets the fork-lineage tool names above, not the provider.

@@ -368,10 +368,11 @@ def main(argv):
         return 1
     root = os.path.abspath(os.path.join(app, dd))
     rc = emit(root, check=check)
-    # Opt-in post-emit hook (P1 provenance/watermark). Off by default — set
-    # APPBOX_WATERMARK=1 to run tools/watermark/watermark.mjs over the emitted
-    # root. Never blocks the emit: hook failure is reported, rc is unchanged.
-    if rc == 0 and not check and os.environ.get("APPBOX_WATERMARK"):
+    # Post-emit hook (P1 provenance/watermark). ON by default — the free tier
+    # ships watermarked provenance; set APPBOX_WATERMARK=0 to opt out (paid
+    # builds get clean provenance via the licence status the hook reads).
+    # Never blocks the emit: hook failure is reported, rc is unchanged.
+    if rc == 0 and not check and os.environ.get("APPBOX_WATERMARK", "1") != "0":
         hook = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
                             "watermark", "watermark.mjs")
         r = subprocess.run(["node", hook, root], check=False)

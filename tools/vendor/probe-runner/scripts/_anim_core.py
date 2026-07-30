@@ -71,8 +71,8 @@ EASINGS = {
 }
 
 
-def _bez(t, p1, p2):
-    return 3 * (1 - t) ** 2 * t * p1 + 3 * (1 - t) * t ** 2 * p2 + t ** 3
+def _bez(t, c1, c2):
+    return 3 * (1 - t) ** 2 * t * c1 + 3 * (1 - t) * t ** 2 * c2 + t ** 3
 
 
 def _bez_y_at_x(x, x1, y1, x2, y2):

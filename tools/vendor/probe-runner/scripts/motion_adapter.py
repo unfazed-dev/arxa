@@ -45,7 +45,7 @@ _REQUIRED_KEYS = (
 
 
 def parse_bezier(s: Optional[str]) -> Optional[list[float]]:
-    """Parse "cubic-bezier(p1,p2,p3,p4)" (spaces tolerated) → [float×4].
+    """Parse "cubic-bezier(x1,y1,x2,y2)" (spaces tolerated) → [float×4].
 
     Returns None for None, empty string, "-", or non-matching input.
     """

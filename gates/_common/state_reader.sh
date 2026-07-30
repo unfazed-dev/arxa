@@ -6,6 +6,8 @@
 #   source "$(dirname "$0")/../_common/state_reader.sh"
 #   state_get phase            # prints a single field
 #   state_targets              # prints the targets array, one per line
+#   state_set designHash <hex> # writes a scalar field (live state only; the
+#                              # tracked seed default.state.json is read-only)
 #
 # State path is configurable via APPBOX_STATE (default: pipeline/state/run.state.json),
 # falling back to pipeline/state/default.state.json when no live run exists.
@@ -35,6 +37,28 @@ if isinstance(val, (list, dict)):
 else:
     print(val)
 ' "$(state_file)" "$field"
+}
+
+# state_set <field> <value> — writes a top-level scalar field into the LIVE
+# state file. The tracked seed (default.state.json) is read-only: when no live
+# run state exists (APPBOX_STATE unset, no run.state.json) this is a no-op
+# returning 1, so callers note-and-skip instead of dirtying the seed.
+state_set() {
+  local field="$1" value="$2" f
+  f="$(state_file)"
+  case "$f" in
+    */default.state.json) return 1 ;;
+  esac
+  python3 -c '
+import json, sys
+path, field, value = sys.argv[1], sys.argv[2], sys.argv[3]
+with open(path) as fh:
+    data = json.load(fh)
+data[field] = value
+with open(path, "w") as fh:
+    json.dump(data, fh, indent=2)
+    fh.write("\n")
+' "$f" "$field" "$value"
 }
 
 # state_targets — prints the targets array, one per line.

@@ -7,10 +7,10 @@ only) MISSES it. Same page, measured three ways to avoid cross-pipeline confusio
   deep  = recursive shadowRoot-descending walk  (true element count incl. shadow)
   raw   = DOMSnapshot nodes                      (what web_skeleton's parse sees)
 deep >> light AND raw ~ deep  => skeleton pierces shadow, tokens is blind => SPLIT proven."""
-import json, sys, time, subprocess, urllib.request
+import json, os, sys, time, subprocess, urllib.request
 from types import SimpleNamespace
 from pathlib import Path
-SCRIPTS = "/Users/unfazed-mac/Developer/artificial_intelligence/skills/probe-runner/scripts"
+SCRIPTS = os.environ.get("PROBE_RUNNER_SCRIPTS", str(Path(__file__).resolve().parents[2] / "scripts"))
 sys.path.insert(0, SCRIPTS)
 OUT = Path(__file__).resolve().parent / "out"; OUT.mkdir(exist_ok=True)
 URL = "https://shoelace.style/"

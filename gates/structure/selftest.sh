@@ -105,5 +105,30 @@ need "$o" "porcelain" "negative cites porcelain"
 git -C "$T" add -A; git -C "$T" commit -qm "declare proj.extra"
 o="$(run)"; chk "$?" 0 "after commit, the added surface passes"
 
+# ---- §6: hash-bound approval -------------------------------------------------
+# Fixture state files via APPBOX_STATE (R5). The hash comes from the canonical
+# helper — the same one freeze writes and the gate re-checks.
+COMMON="$HERE/../_common"
+printf '{"phase":"design","targets":["macos"],"approvalTokens":{},"designHash":"","kitSha":""}\n' > "$T/legacy.state.json"
+
+# LEGACY: an empty designHash fails OPEN (with a note) — nothing was ever bound.
+o="$(APPBOX_STATE="$T/legacy.state.json" run)"; chk "$?" 0 "§6: legacy empty designHash passes"
+need "$o" "designHash: empty" "§6: legacy case notes the unbound design"
+
+# HAPPY: a written hash that matches the tree passes and says so.
+hash_now="$(bash "$COMMON/design_hash.sh" "$D")"
+printf '{"phase":"design","targets":["macos"],"approvalTokens":{},"designHash":"%s","kitSha":""}\n' "$hash_now" > "$T/frozen.state.json"
+o="$(APPBOX_STATE="$T/frozen.state.json" run)"; chk "$?" 0 "§6: matching designHash passes"
+need "$o" "designHash: design matches the frozen hash" "§6: happy path names the match"
+
+# NEGATIVE: edit the design after freeze -> gate goes red naming designHash,
+# before any of its own structure assertions.
+printf '// the design moved after freeze\n' >> "$D/ui/views/stage_shell/proj/new/new_viewmodel.js"
+o="$(APPBOX_STATE="$T/frozen.state.json" run)"; chk "$?" 1 "§6 negative: design moved after freeze fails"
+need "$o" "designHash" "§6 negative names designHash"
+need "$o" "design moved after freeze" "§6 negative says the design moved"
+git -C "$T" checkout -- "$D/ui/views/stage_shell/proj/new/new_viewmodel.js"   # restore
+o="$(APPBOX_STATE="$T/frozen.state.json" run)"; chk "$?" 0 "§6: restored tree passes again"
+
 echo "structure selftest: $pass passed, $failc failed"
 [ "$failc" -eq 0 ] && exit 0 || exit 1

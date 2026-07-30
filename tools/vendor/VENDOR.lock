@@ -33,6 +33,7 @@ enforce_design|/Volumes/developer_ssd/Developer/totem_labs/stacked_kit|skills/ki
 #   emit_htmx --self-test (EMIT_RENDER=skip) : 28 checks, ALL GREEN
 #   emit_playground --self-test (EMIT_RENDER=skip) : 2 checks, ALL GREEN (browser scenarios skipped)
 #   pipeline.sh selftest               : 97 passed, 8 failed (8 = render-backend exit 127: playwright/uv unavailable, env-blocked not logic)
+#   probe-runner ios_entrance --self-test : OK (fade/pop/none classification); R2/R3 vendoring pass 2026-07-30 (12 lint violations fixed, paths parameterized via PROBE_RUNNER_SCRIPTS)
 # Env-blocked (need the full upstream tree, not the vendored subset):
 #   shell_structure_gate --self-test    : fixtures dir not vendored
 #   test_gates.sh                       : needs kit-scaffolder/, payments/, gen_playbook module

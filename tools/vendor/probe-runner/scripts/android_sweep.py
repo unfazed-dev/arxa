@@ -17,7 +17,7 @@ def tree():
     out = run("adb_ui_tree.py").strip()
     return json.load(open(out.splitlines()[-1]))
 
-APP_PKG = "com.example.p2"
+APP_PKG = "com.example.appbox"
 
 def flatten(n, acc=None):
     if acc is None: acc = []

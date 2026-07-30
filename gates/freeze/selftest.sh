@@ -7,6 +7,7 @@
 # stamp goes stale when targets change after approval (6.7).
 set -uo pipefail
 GATE="$(cd "$(dirname "$0")" && pwd)/freeze.sh"
+COMMON="$(cd "$(dirname "$0")/../_common" && pwd)"
 pass=0; failc=0
 chk(){ [ "$1" = "$2" ] && pass=$((pass+1)) || { failc=$((failc+1)); echo "  FAIL: expected exit [$2] got [$1] — $3"; }; }
 need(){ case "$1" in *"$2"*) pass=$((pass+1));; *) failc=$((failc+1)); echo "  FAIL: output should mention [$2] — $3";; esac; }
@@ -36,6 +37,25 @@ plant x_a
 o="$(FREEZE_RENDER=skip bash "$GATE" --targets macos "$T" 2>&1)"; chk "$?" 0 "happy: valid frozen inputs pass"
 need "$o" "freeze: PASS" "happy prints PASS"
 need "$o" "derived widths for targets [macos]: desktop" "happy reports the derived width set"
+
+# ---- §6: a passing freeze records designHash into LIVE pipeline state --------
+# Fixture state via APPBOX_STATE (R5). The tracked seed default.state.json must
+# never be written — with no live state the gate notes-and-skips instead.
+printf '{"phase":"design","targets":["macos"],"approvalTokens":{},"designHash":"","kitSha":""}\n' > "$T/live.state.json"
+o="$(APPBOX_STATE="$T/live.state.json" FREEZE_RENDER=skip bash "$GATE" --targets macos "$T" 2>&1)"; chk "$?" 0 "§6: freeze pass with live state still passes"
+need "$o" "designHash: recorded" "§6: freeze reports the recorded designHash"
+h="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["designHash"])' "$T/live.state.json")"
+[ -n "$h" ] && pass=$((pass+1)) || { failc=$((failc+1)); echo "  FAIL: designHash not written to live state"; }
+want_h="$(bash "$COMMON/design_hash.sh" "$DESIGN")"
+[ "$h" = "$want_h" ] && pass=$((pass+1)) || { failc=$((failc+1)); echo "  FAIL: recorded designHash [$h] != tree hash [$want_h]"; }
+# without a live state the seed stays untouched and the gate notes the skip
+o="$(FREEZE_RENDER=skip bash "$GATE" --targets macos "$T" 2>&1)"; chk "$?" 0 "§6: no live state still passes"
+need "$o" "designHash: no live pipeline state" "§6: notes the skipped write when only the seed exists"
+seed="$(git rev-parse --show-toplevel 2>/dev/null)/pipeline/state/default.state.json"
+if [ -f "$seed" ]; then
+  python3 -c 'import json,sys; assert json.load(open(sys.argv[1]))["designHash"]=="", "seed designHash was written!"' "$seed" \
+    && pass=$((pass+1)) || { failc=$((failc+1)); echo "  FAIL: freeze dirtied the tracked seed default.state.json"; }
+fi
 
 # ---- 6.4 derived-width derivation proofs (skip render; widths come from config) ----
 o="$(FREEZE_RENDER=skip bash "$GATE" --targets ios,android "$T" 2>&1)"; chk "$?" 0 "ios,android derives"

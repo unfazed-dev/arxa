@@ -44,12 +44,20 @@ recorded. If your plan is ambiguous, stop and report — do not choose.
 
 ## 2b. Delivered
 
-| plan | what exists now |
-|---|---|
-| [01 — designer](plans/implementation/01-designer.md) | `skills/app-box-designer/` — 17 built-in skills, the viewport ladder (`runtime/ladder.json` + `references/viewport-ladder.md`), the authored-layer contract (`references/app-architecture.md`), `built-in-skills/declare-structure.md`, and a 14-check selftest with a negative case. Five plan defects found and recorded in the plan's Amendments section. |
+Status map refreshed 2026-07-30 (full audit; the consolidation demolition —
+commit `3460f01` — deleted plan 08's `app/` and plan 12's `companion/`, and
+`appbox/` + `appboxd/` are the shape going forward):
 
-**Open gap carried into plan 06:** nothing yet derives the active rung list from
-a project's `--targets`. The ladder is passed by hand until it lands.
+| state | plans |
+|---|---|
+| ✅ DELIVERED | 01 designer · 02 repo skeleton · 03 vendor tooling · 04 gates (10 gates, selftests + can-fail meta-test) · 05 emit_structure · 06 targets · 07 CRUD · 11 deployer · 13 verification tiers (Tier 1; 2/3 env-blocked) |
+| ⚠️ PARTIAL | 09 prototype runtime (static server + viewmodel bundler; no embedded engine — `prototypeRuntime:"embedded"` is a dead config key) · 10 intake (headless yes; wizard UI died with `app/`) · 12 companion (security modules + tests survive in `appbox/lib/security/`; no on-device pairing yet) · 14 dogfood (D1 design healthy; `appbox/` not yet scaffolded from `designs/appbox/`) |
+| ◻ RESET | 08 desktop app — `appbox/` is the hand-bootstrapped shell, awaiting the design freeze before scaffolding (by doctrine, no app UI before design approval) |
+
+Also landed outside the plan track: `appboxd/` engine + LLM fabric (E1–E4),
+memory module, offline licence + §17 deploy paywall — see
+[plans/appbox-engine-llm-fabric.md](plans/appbox-engine-llm-fabric.md) and
+[plans/appbox-memory-and-payment.md](plans/appbox-memory-and-payment.md).
 
 ## 2c. Consolidation — one app + daemon (2026-07-28)
 

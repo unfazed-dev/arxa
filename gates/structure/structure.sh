@@ -5,6 +5,10 @@
 # along the render/structure seam; rewired to the authored registry (plan 05).
 #
 # Asserts (cheapest first, all must pass):
+#   §6  fresh   — if freeze recorded state.designHash, the design tree must still
+#                 hash to it (gates/_common/assert_design_fresh.sh); a moved
+#                 design fails before any structure check. Legacy empty hash:
+#                 pass with a note.
 #   S0  input   — design/structure.json is present and parses (missing input
 #                 FAILS — a gate that cannot find its input never passes quietly)
 #   S1  drift   — structure.json is regenerated from the authored layer and
@@ -47,6 +51,17 @@ REPO_ROOT="$(cd "$_rr" 2>/dev/null && pwd -P || echo "$_rr")"
 F=0
 fail(){ echo "FAIL: $1" >&2; F=$((F+1)); sarif_result "structure" "error" "$DESIGN_REL/structure.json" "$1"; }
 ok(){ echo "  ✓ $1"; }
+
+# ---- §6: design freshness (hash-bound approval), before any assertion --------
+# Freeze records state.designHash; if the design moved since, this gate fails
+# before looking at structure.json. Fail-open ONLY for a legacy empty hash.
+if ! fresh="$(bash "$GATE_COMMON/assert_design_fresh.sh" "$DESIGN" 2>&1)"; then
+  printf '%s\n' "$fresh"
+  sarif_result "structure" "error" "$DESIGN_REL" "design moved after freeze (designHash mismatch, §6)"
+  echo "structure: FAIL — design moved after freeze (designHash, §6)" >&2
+  exit 1
+fi
+printf '%s\n' "$fresh"
 
 STRUCTURE="$DESIGN/structure.json"
 EMIT="$APP/tools/emit_structure/emit_structure.py"

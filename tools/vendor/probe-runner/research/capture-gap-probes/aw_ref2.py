@@ -5,10 +5,10 @@ known references (absent on awwwards). One Chrome, detection-only + one controll
   astro   -> islands present + DOM-captured
   flutter -> CanvasKit = whole-app canvas, ~zero semantic DOM (extreme G5)
   xorigin -> DOMSnapshot cannot pierce a cross-origin iframe (controlled inject)"""
-import json, sys, time, urllib.request
+import json, os, sys, time, urllib.request
 from types import SimpleNamespace
 from pathlib import Path
-SCRIPTS = "/Users/unfazed-mac/Developer/artificial_intelligence/skills/probe-runner/scripts"
+SCRIPTS = os.environ.get("PROBE_RUNNER_SCRIPTS", str(Path(__file__).resolve().parents[2] / "scripts"))
 sys.path.insert(0, SCRIPTS)
 OUT = Path(__file__).resolve().parent / "out"; OUT.mkdir(exist_ok=True)
 PORT = 9334

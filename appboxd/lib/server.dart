@@ -5,6 +5,7 @@ import 'package:path/path.dart' as p;
 
 import 'config.dart';
 import 'gateway.dart';
+import 'memory_analytics.dart' as memory_analytics;
 import 'phases.dart' as pipeline;
 
 /// Starts the appboxd HTTP server: static web builder UI + /api/ endpoints,
@@ -53,6 +54,17 @@ Future<void> _handle(AppboxdConfig config, HttpRequest request, Gateway? gateway
     final result = await pipeline.runPhase(config.repoRoot, phase);
     return _json(request, result.toJson(),
         status: result.exitCode == 0 ? HttpStatus.ok : HttpStatus.badGateway);
+  }
+  if (path == '/api/memory/briefing') {
+    // M1 operator briefing: read-only rollup over the pipeline JSONL
+    // streams; missing streams degrade to one-line notes inside the
+    // briefing itself, so this is 200 from day zero.
+    final text = await memory_analytics.briefing(config.repoRoot);
+    final response = request.response;
+    response.headers.contentType =
+        ContentType('text', 'markdown', charset: 'utf-8');
+    response.write(text);
+    return response.close();
   }
   if (path.startsWith('/api/')) {
     return _json(request, {'error': 'not found'}, status: HttpStatus.notFound);

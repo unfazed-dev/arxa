@@ -15,6 +15,12 @@
 # re-checks it; if targets or inputs changed since approval the gate FAILS
 # loudly (the frozen design no longer covers the deliverable).
 #
+# Hash-bound approval (§6): on PASS the gate records a sha256 of the whole
+# design tree (gates/_common/design_hash.sh) into state.designHash (live state
+# only — the tracked seed is read-only). The design-consuming gates
+# (structure/scaffold/coverage) re-check it via
+# gates/_common/assert_design_fresh.sh and FAIL if the design moved.
+#
 # Required shape, inside <app>/$KIT_DESIGN_DIR (default: design). TWO producer
 # contracts share this gate (the producer-shape seam, dogfood P14 finding #1),
 # detected by app.routes.js at the design root (htmx) vs surfaces/*.html+tokens
@@ -490,6 +496,19 @@ PY
 fi
 
 [ "$F" -gt 0 ] && { echo "freeze: FAIL ($F check group(s))" >&2; exit 1; }
+
+# ---- §6 hash-bound approval: record the design hash on pass ------------------
+# Every check above passed, so the design as it stands NOW is the approved one.
+# Bind it: sha256 of the whole design tree (gates/_common/design_hash.sh) into
+# state.designHash; structure/scaffold/coverage re-check it and fail if the
+# design moved (§6). Writes only to a LIVE state (APPBOX_STATE / run.state.json)
+# — the tracked seed default.state.json is read-only (state_set refuses it).
+DESIGN_HASH="$(bash "$GATE_COMMON/design_hash.sh" "$DESIGN")"
+if state_set designHash "$DESIGN_HASH"; then
+  ok "designHash: recorded ${DESIGN_HASH:0:12}… in pipeline state (§6 — downstream gates fail if the design moves)"
+else
+  echo "  (designHash: no live pipeline state — hash not recorded; set APPBOX_STATE or create pipeline/state/run.state.json)"
+fi
 
 # ---- mint the approval stamp only once every check has passed (6.7) --------
 # `--approve` is the human action that records "this frozen design is approved

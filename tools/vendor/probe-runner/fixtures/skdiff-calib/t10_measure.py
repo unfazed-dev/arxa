@@ -16,8 +16,9 @@ The signal whose value == 2 (matches the 2560-device-px artifact we divide by)
 is the correct one. js_dpr is expected to read 1 (the bug). Run direct-Python
 against headed Chrome :9222 (NOT ctx sandbox — can't reach the host port).
 """
-import json, sys, time
-sys.path.insert(0, "/Users/unfazed-mac/Developer/artificial_intelligence/skills/probe-runner/scripts")
+import json, os, sys, time
+sys.path.insert(0, os.environ.get("PROBE_RUNNER_SCRIPTS", os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "..", "..", "scripts")))
 import web_skeleton as ws
 from _web_eval import _remote_cdp_eval, navigate
 

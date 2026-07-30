@@ -6,6 +6,8 @@ import 'package:path/path.dart' as p;
 import 'fabric.dart';
 import 'gateway.dart' show TokenMinter;
 import 'memory.dart';
+import 'memory_cache.dart';
+import 'memory_curate.dart';
 import 'process.dart';
 
 /// The deterministic stage-runner (decision E3,
@@ -68,7 +70,7 @@ String? _stageTier(Map<String, String?>? fabricTiers, String name) {
 /// gates/run_all.sh (the gates' orchestrator — pipeline/pipeline.sh is the
 /// stacked_kit FSM and never invokes gates/*): the `run_bash_gate <name>`
 /// call order, with `review` at its `run_review_gate` position, then any
-/// gate dirs run_all does not drive (advertise) appended sorted. Tiers come
+/// gate dirs run_all does not drive appended sorted. Tiers come
 /// from the fabric catalog (E4) via [_stageTier].
 List<Stage> loadStages(String repoRoot) {
   final gatesDir = Directory(p.join(repoRoot, 'gates'));
@@ -147,6 +149,7 @@ class RunManifest {
     required this.exitCode,
     required this.retries,
     this.sessionId,
+    this.cacheHit = false,
   });
 
   factory RunManifest.fromJson(Map<String, Object?> json) => RunManifest(
@@ -157,6 +160,7 @@ class RunManifest {
         exitCode: json['exit_code'] as int,
         retries: json['retries'] as int? ?? 0,
         sessionId: json['session_id'] as String?,
+        cacheHit: json['cache_hit'] as bool? ?? false,
       );
 
   final String runId;
@@ -165,6 +169,10 @@ class RunManifest {
   final String finishedAt;
   final int exitCode;
   final int retries;
+
+  /// True when the run was served from the response cache (M2) — the CLI
+  /// was never spawned, so tokens are null, never fabricated.
+  final bool cacheHit;
 
   /// Kimi CLI session id, from the stream-json `session.resume_hint` line —
   /// what `kimi -r` resumes.
@@ -178,6 +186,7 @@ class RunManifest {
         'exit_code': exitCode,
         'session_id': sessionId,
         'retries': retries,
+        'cache_hit': cacheHit,
       };
 }
 
@@ -287,6 +296,11 @@ class Engine {
   /// scorecard line. With [resume], continues the stage's most recent
   /// recorded session (`-r <session_id>`). [gatePass] is the deterministic
   /// gate's verdict when it has already run, else null.
+  ///
+  /// M2: before spawning, the exact-match response cache (keyed stage,
+  /// model-or-tier, prompt) is consulted — a hit skips the CLI entirely and
+  /// records `cache_hit` on the manifest/scorecard with null tokens (never
+  /// fabricated). Successful runs (exit 0) are cached; failures never are.
   Future<StageRun> runStage(
     String stageName, {
     required String prompt,
@@ -306,75 +320,130 @@ class Engine {
     final runId =
         '${stage.name}-${DateTime.now().toUtc().microsecondsSinceEpoch}';
 
-    final kimiHome = _writeKimiHome(stageToken(stage));
-    try {
-      final result = await _runner.run(
-        kimiCommand,
-        [
-          if (sessionId != null) ...['-r', sessionId],
-          '-p', prompt,
-          '--output-format=stream-json',
-        ],
-        environment: {'KIMI_CODE_HOME': kimiHome.path, ...environment},
-        workingDirectory: repoRoot,
-      );
-      final parsed = _parseStreamJson(result.stdout);
-      final manifest = RunManifest(
-        runId: runId,
-        stage: stage.name,
-        startedAt: startedAt,
-        finishedAt: DateTime.now().toUtc().toIso8601String(),
-        exitCode: result.exitCode,
-        retries: retries,
-        sessionId: parsed.sessionId ?? sessionId,
-      );
-      await writeManifest(repoRoot, manifest);
-      await appendScorecard(repoRoot, {
-        'stage': stage.name,
-        'tier': stage.tier,
-        'provider': provider,
-        'model': model,
-        'tokens_in': parsed.tokensIn,
-        'tokens_out': parsed.tokensOut,
-        // kimitail: pricing lives in the E4 fabric catalog — null until
-        // that wiring lands, never estimated here.
-        'cost': null,
-        'gate_pass': gatePass,
-        'retries': retries,
-      });
-      // M1: the engine is a deterministic writer of raw memory events.
-      // Best-effort — a logging failure warns, never fails the stage run.
+    // M2: the cache key uses the run's model, else the stage's fabric tier
+    // (a tier pins a model per the E4 catalog), else a non-LLM marker.
+    final cache = ResponseCache(repoRoot: repoRoot);
+    final cacheModel = model ?? stage.tier ?? 'none';
+    final cached = cache.get(stage.name, cacheModel, prompt);
+    final cacheHit = cached != null;
+
+    String runStdout;
+    var runStderr = '';
+    var exitCode = 0;
+    String? parsedSessionId;
+    int? tokensIn;
+    int? tokensOut;
+
+    if (cached != null) {
+      runStdout = cached;
+    } else {
+      final kimiHome = _writeKimiHome(stageToken(stage));
       try {
-        await EventLog(p.join(repoRoot, 'pipeline', 'state'))
-            .append(MemoryEvent(
-          kind: MemoryKinds.stageRun,
-          actor: 'engine',
-          payload: {
-            'stage': stage.name,
-            'exit_code': manifest.exitCode,
-            'retries': retries,
-            'session_id': manifest.sessionId,
-            // gate_pass only when the gate verdict is already known.
-            'gate_pass': ?gatePass,
-          },
-        ));
-      } catch (e) {
-        stderr.writeln('engine: WARN memory event append failed: $e');
-      }
-      return StageRun(
-        manifest: manifest,
-        stdout: result.stdout,
-        stderr: result.stderr,
-        tokensIn: parsed.tokensIn,
-        tokensOut: parsed.tokensOut,
-      );
-    } finally {
-      try {
-        kimiHome.deleteSync(recursive: true);
-      } on FileSystemException {
-        // Temp-dir cleanup is best-effort.
+        final result = await _runner.run(
+          kimiCommand,
+          [
+            if (sessionId != null) ...['-r', sessionId],
+            '-p', prompt,
+            '--output-format=stream-json',
+          ],
+          environment: {'KIMI_CODE_HOME': kimiHome.path, ...environment},
+          workingDirectory: repoRoot,
+        );
+        runStdout = result.stdout;
+        runStderr = result.stderr;
+        exitCode = result.exitCode;
+        final parsed = _parseStreamJson(result.stdout);
+        parsedSessionId = parsed.sessionId;
+        tokensIn = parsed.tokensIn;
+        tokensOut = parsed.tokensOut;
+        // Only exit-0 runs are cached; a cache write failure warns,
+        // never fails the stage run.
+        if (result.exitCode == 0) {
+          try {
+            cache.put(stage.name, cacheModel, prompt, result.stdout);
+          } catch (e) {
+            stderr.writeln('engine: WARN response cache put failed: $e');
+          }
+        }
+      } finally {
+        try {
+          kimiHome.deleteSync(recursive: true);
+        } on FileSystemException {
+          // Temp-dir cleanup is best-effort.
+        }
       }
     }
+
+    final manifest = RunManifest(
+      runId: runId,
+      stage: stage.name,
+      startedAt: startedAt,
+      finishedAt: DateTime.now().toUtc().toIso8601String(),
+      exitCode: exitCode,
+      retries: retries,
+      sessionId: parsedSessionId ?? sessionId,
+      cacheHit: cacheHit,
+    );
+    await writeManifest(repoRoot, manifest);
+    await appendScorecard(repoRoot, {
+      'stage': stage.name,
+      'tier': stage.tier,
+      'provider': provider,
+      'model': model,
+      'tokens_in': tokensIn,
+      'tokens_out': tokensOut,
+      // kimitail: pricing lives in the E4 fabric catalog — null until
+      // that wiring lands, never estimated here.
+      'cost': null,
+      'gate_pass': gatePass,
+      'retries': retries,
+      'cache_hit': cacheHit,
+    });
+    // M1: the engine is a deterministic writer of raw memory events.
+    // Best-effort — a logging failure warns, never fails the stage run.
+    try {
+      await EventLog(p.join(repoRoot, 'pipeline', 'state'))
+          .append(MemoryEvent(
+        kind: MemoryKinds.stageRun,
+        actor: 'engine',
+        payload: {
+          'stage': stage.name,
+          'exit_code': manifest.exitCode,
+          'retries': retries,
+          'session_id': manifest.sessionId,
+          'cache_hit': cacheHit,
+          // gate_pass only when the gate verdict is already known.
+          'gate_pass': ?gatePass,
+        },
+      ));
+    } catch (e) {
+      stderr.writeln('engine: WARN memory event append failed: $e');
+    }
+    // M1: an observed gate failure is the sole lesson-write trigger
+    // (memory_curate.dart refuses anything else). Best-effort — a missing
+    // LESSONS.md or other curation failure warns, never fails the run.
+    if (gatePass == false) {
+      try {
+        final firstStderr = runStderr
+            .split('\n')
+            .firstWhere((l) => l.trim().isNotEmpty, orElse: () => '');
+        MemoryCurator(Directory(p.join(repoRoot, 'memory'))).appendLesson(
+          stage.name,
+          'gate ${stage.name} failed (exit $exitCode)'
+          '${firstStderr.isEmpty ? '' : '; stderr: $firstStderr'}',
+          gateFailed: true,
+        );
+      } catch (e) {
+        stderr.writeln('engine: WARN lesson append failed: $e');
+      }
+    }
+    return StageRun(
+      manifest: manifest,
+      stdout: runStdout,
+      stderr: runStderr,
+      tokensIn: tokensIn,
+      tokensOut: tokensOut,
+    );
   }
 
   /// The most recent manifest for [stage] that recorded a resumable

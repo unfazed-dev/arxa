@@ -32,10 +32,10 @@ void main() {
           'scaffold',
           'coverage',
           'memory',
+          'advertise',
           'review',
           'native_deps',
           'deploy',
-          'advertise',
         ],
       );
       for (final stage in stages) {
@@ -268,6 +268,88 @@ void main() {
             prompt: 'x', environment: fakeEnv()),
         throwsArgumentError,
       );
+    });
+
+    group('response cache (M2)', () {
+      File argvFile() => File(p.join(tmp.path, 'argv.txt'));
+
+      test('an identical second run is a cache hit — the CLI is not spawned',
+          () async {
+        final first = await engine.runStage('intake',
+            prompt: 'cache me', environment: fakeEnv());
+        expect(first.manifest.cacheHit, isFalse);
+        expect(first.tokensIn, 123);
+        argvFile().deleteSync();
+
+        final second = await engine.runStage('intake',
+            prompt: 'cache me', environment: fakeEnv());
+        expect(argvFile().existsSync(), isFalse,
+            reason: 'a cache hit must not re-spawn fake kimi');
+        expect(second.manifest.cacheHit, isTrue);
+        expect(second.exitCode, 0);
+        expect(second.stdout, first.stdout);
+        // Tokens are never fabricated for a cached run.
+        expect(second.tokensIn, isNull);
+        expect(second.tokensOut, isNull);
+
+        final lines = await File(
+                p.join(tmp.path, 'pipeline', 'state', 'scorecard.jsonl'))
+            .readAsLines();
+        expect(lines, hasLength(2));
+        final miss = jsonDecode(lines[0]) as Map<String, Object?>;
+        final hit = jsonDecode(lines[1]) as Map<String, Object?>;
+        expect(miss['cache_hit'], isFalse);
+        expect(hit['cache_hit'], isTrue);
+        expect(hit['tokens_in'], isNull);
+      });
+
+      test('failures are never cached', () async {
+        await engine.runStage('intake',
+            prompt: 'flaky',
+            environment: fakeEnv(extra: {'FAKE_KIMI_EXIT': '1'}));
+        argvFile().deleteSync();
+
+        final second = await engine.runStage('intake',
+            prompt: 'flaky', environment: fakeEnv());
+        expect(argvFile().existsSync(), isTrue,
+            reason: 'an exit-1 run must be re-run, not served from cache');
+        expect(second.manifest.cacheHit, isFalse);
+      });
+    });
+
+    group('lesson curation (M1)', () {
+      File lessonsFile() =>
+          File(p.join(tmp.path, 'memory', 'stages', 'intake.LESSONS.md'));
+
+      void seedLessons() {
+        lessonsFile()
+          ..parent.createSync(recursive: true)
+          ..writeAsStringSync('# intake — lessons\n\n## Lessons\n');
+      }
+
+      test('a gate failure appends one lesson line to the stage LESSONS.md',
+          () async {
+        seedLessons();
+        await engine.runStage('intake',
+            prompt: 'x',
+            gatePass: false,
+            environment: fakeEnv(extra: {'FAKE_KIMI_EXIT': '1'}));
+        expect(lessonsFile().readAsLinesSync().last,
+            '- gate intake failed (exit 1); stderr: fake kimi stderr marker');
+      });
+
+      test('a passing gate writes no lesson', () async {
+        seedLessons();
+        await engine.runStage('intake',
+            prompt: 'x', gatePass: true, environment: fakeEnv());
+        expect(lessonsFile().readAsLinesSync(), hasLength(3));
+      });
+
+      test('a missing LESSONS.md warns but never fails the run', () async {
+        final run = await engine.runStage('intake',
+            prompt: 'x', gatePass: false, environment: fakeEnv());
+        expect(run.exitCode, 0);
+      });
     });
 
     test('with a minter, the injected token is scoped to tier + one up',

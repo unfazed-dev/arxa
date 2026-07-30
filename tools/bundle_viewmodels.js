@@ -74,6 +74,11 @@ function transformModule(src, modRelPath) {
       out.push(`${m[1]}const { ${names.join(', ')} } = __req(${JSON.stringify(m[4])});`);
       continue;
     }
+    // import name from '...'  (default import — routes tables use this)
+    if ((m = line.match(/^(\s*)import\s+(\w+)\s+from\s+(['"])([^'"]+)\3\s*;?\s*$/))) {
+      out.push(`${m[1]}const ${m[2]} = __req(${JSON.stringify(m[4])}).default;`);
+      continue;
+    }
     // import '...' (side-effect import)
     if ((m = line.match(/^(\s*)import\s+(['"])([^'"]+)\2\s*;?\s*$/))) {
       out.push(`${m[1]}__req(${JSON.stringify(m[3])});`);
@@ -132,7 +137,7 @@ function bundle(designDir) {
     modules.set(abs, { key, body: transformModule(src, modRelPath) });
 
     const importerDir = path.dirname(abs);
-    const re = /import\s+(?:\*\s+as\s+\w+|\{[^}]*\}|['"])\s*(?:from\s+)?(['"])([^'"]+)\1/g;
+    const re = /import\s+(?:\*\s+as\s+\w+|\{[^}]*\}|\w+|['"])\s*(?:from\s+)?(['"])([^'"]+)\1/g;
     let m;
     while ((m = re.exec(src)) !== null) {
       const spec = m[2];

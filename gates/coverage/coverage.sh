@@ -32,6 +32,10 @@
 # ceremony checks (C4 incremental). Missing structure.json still fails (4.4).
 #
 # Targets drive coverage (plan 06):
+#   §6 fresh   — if freeze recorded state.designHash, the design tree must still
+#                hash to it (gates/_common/assert_design_fresh.sh); a moved
+#                design fails before any coverage check. Legacy empty hash:
+#                pass with a note.
 #   C1 coverage  — every frozen surface of an ADOPTED shell is mapped, and the
 #                  mapped dir carries EXACTLY the derived form-factor set (6.5):
 #                  _view.dart + _view.<viewport>.dart for each viewport the
@@ -96,6 +100,16 @@ run_gate_for(){
   # producer carries surfaces/*.html + tokens.json and has no app.routes.js.
   local PRODUCER=stacked_kit
   [ -f "$DESIGN/app.routes.js" ] && PRODUCER=htmx
+  # ---- §6: design freshness (hash-bound approval), before any assertion ----
+  # Fail-open ONLY for a legacy empty designHash; a written hash that no longer
+  # matches the tree means the design moved after freeze.
+  local fresh
+  if ! fresh="$(bash "$GATE_COMMON/assert_design_fresh.sh" "$DESIGN" 2>&1)"; then
+    printf '%s\n' "$fresh"
+    sarif_result "coverage" "error" "$APP" "design moved after freeze (designHash mismatch, §6)"
+    return 1
+  fi
+  printf '%s\n' "$fresh"
   local pyout rc fails
   pyout="$(python3 - "$APP" "$DESIGN_REL" "$APPBOX_TARGETS" "$DERIVATION" "$CONFIG" "$PRODUCER" 2>&1 <<'PY'
 import json,os,sys,glob

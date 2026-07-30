@@ -12,6 +12,10 @@
 # in yet; the gate never rubber-stamps and never false-fails).
 #
 # Checks (cheapest first, all must pass):
+#   §6 fresh   — if freeze recorded state.designHash, the design tree
+#                ($KIT_DESIGN_DIR, default design/) must still hash to it; a
+#                moved design fails before the shell checks. Legacy empty hash
+#                or no design dir (this gate is app-only): pass with a note.
 #   S0 manifest  — .shell-structure.json parses; every named shell dir exists
 #   SN snackbars — no snackbars/ subdir anywhere under lib/ui
 #                  (P2NotificationService is the transient-feedback port)
@@ -264,6 +268,19 @@ APP="${1:-$PWD}"
 APP="$(cd "$APP" 2>/dev/null && pwd)" || { echo "FAIL: app root not found: ${1:-$PWD}" >&2; exit 2; }
 VIEWS="$APP/lib/ui/views"
 MANIFEST="$VIEWS/.shell-structure.json"
+
+# ---- §6: design freshness (hash-bound approval), before any assertion -------
+# The scaffold derives from the frozen design; if freeze recorded state.
+# designHash and the design tree has moved since, fail before the shell checks.
+# Fail-open ONLY for a legacy empty hash (or no design dir — this gate is
+# app-only and runs fine on a host with no design tree).
+DESIGN="$APP/${KIT_DESIGN_DIR:-design}"
+if ! fresh="$(bash "$GATE_COMMON/assert_design_fresh.sh" "$DESIGN" 2>&1)"; then
+  printf '%s\n' "$fresh"
+  sarif_result "scaffold" "error" "$APP" "design moved after freeze (designHash mismatch, §6)"
+  exit 1
+fi
+printf '%s\n' "$fresh"
 
 F=0
 fail(){ echo "FAIL: $1" >&2; F=$((F+1)); sarif_result "scaffold" "error" "${APP:-}" "$1"; }

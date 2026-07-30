@@ -78,7 +78,7 @@ void main() {
 
     test('readAllKeys parses dump-keychain output for our service only', () async {
       runner.handler = (_, _) => const RunnerResult(0, '''
-keychain: "/Users/x/Library/Keychains/login.keychain-db"
+keychain: "/keychains-fixture/login.keychain-db"
 class: "genp"
 attributes:
     "acct"<blob>="app_box.key.anthropic"

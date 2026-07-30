@@ -119,7 +119,7 @@ self_test(){
 
   local T; T="$(mktemp -d)"; trap 'rm -rf "${T:-}"' EXIT
   mkdir -p "$T/memory/facts" "$T/memory/stages" "$T/config"
-  printf '# forbidden\n/Volumes/\n/Users/\n' > "$T/config/forbidden_abs_prefixes.txt"
+  printf '# forbidden\n/noabs/\n/alsono/\n' > "$T/config/forbidden_abs_prefixes.txt"
   mkvalid(){
     printf '# memory index\n' > "$T/memory/MEMORY.md"
     printf '[{"fact":"f","source":"s","ts":"2026-07-30"}]\n' > "$T/memory/facts/a.json"
@@ -152,7 +152,7 @@ self_test(){
   need "$o" "cap 200" "names the lessons cap"
 
   # NEGATIVE: forbidden absolute path
-  mkvalid; printf -- '- see /Volumes/developer_ssd/x for details\n' >> "$T/memory/stages/intake.LESSONS.md"
+  mkvalid; printf -- '- see /noabs/x for details\n' >> "$T/memory/stages/intake.LESSONS.md"
   o="$(run_gate "$T" 2>&1)"; chk "$?" 1 "negative: absolute path fails"
   need "$o" "forbidden prefix" "names the absolute path"
 

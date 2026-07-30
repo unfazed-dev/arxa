@@ -5,13 +5,14 @@
 # own — every pass/fail verdict belongs to a gate.
 #
 # Dependency order: intake -> freeze -> structure -> scaffold -> coverage -> memory
-#                   -> review -> native_deps -> deploy.
+#                   -> advertise -> review -> native_deps -> deploy.
 #   intake    every registry surface traces to a brief/answers (traceability)
 #   freeze    the frozen inputs exist and surfaces render clean
 #   structure the shell/surface map resolves and is in sync
 #   scaffold  shell/widget/overlay boundaries hold
 #   coverage  every frozen surface is scaffolded
 #   memory    the curated memory layer (repo root, not the app root) is clean
+#   advertise no provider is offered above its evidence tier (repo root scope)
 #   review    the design judge over the scaffolded views
 #   deploy    target + version + account confirmed
 #
@@ -81,11 +82,15 @@ appended=0
 # append_sarif <tmpfile>: a gate's per-run sarif lines -> the aggregate
 append_sarif(){ local t="$1"; [ -s "$t" ] && { cat "$t" >> "$AGG"; appended=1; }; rm -f "$t"; }
 
-# run a bash gate: $1=name, $2=script, rest=args. Captures output, routes SARIF.
+# run a gate: $1=name, $2=script, rest=args. Captures output, routes SARIF.
+# Interpreter follows the extension: .py → python3, everything else → bash.
 run_bash_gate(){
   local name="$1" script="$2"; shift 2
   local gtmp out rc; gtmp="$(mktemp)"; out="$(mktemp)"
-  SARIF_RESULTS_FILE="$gtmp" bash "$script" "$@" >"$out" 2>&1
+  case "$script" in
+    *.py) SARIF_RESULTS_FILE="$gtmp" python3 "$script" "$@" >"$out" 2>&1 ;;
+    *)    SARIF_RESULTS_FILE="$gtmp" bash    "$script" "$@" >"$out" 2>&1 ;;
+  esac
   rc=$?
   append_sarif "$gtmp"
   printf '%s\n' "--- $name -----------------------------------------------------------"
@@ -149,6 +154,9 @@ run_bash_gate   coverage  "$GATES_DIR/coverage/coverage.sh"  "$APP"
 # gate (memory/ documents the pipeline itself, not one app), so it takes
 # $REPO_ROOT, not $APP like the artifact gates above.
 run_bash_gate   memory    "$GATES_DIR/memory/memory.sh"    "$REPO_ROOT"
+# advertise is repo-scoped too (kit-registry + evidence ledger + offers live at
+# the repo root, not in one app): no provider is offered above its evidence tier.
+run_bash_gate   advertise "$GATES_DIR/advertise/advertise.py"
 VIEWS="$APP/lib/ui/views" run_review_gate
 # native_deps before deploy: whether the app's plugins can still be built for
 # each declared target is a PRE-condition of shipping to those targets.

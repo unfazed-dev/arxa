@@ -3,8 +3,9 @@
 fix end-to-end on the headed-retina rig. Not a mock: calls ws._capture_one with
 width set (the exact code path the bug lived in). PASS = widest bbox comes back
 CSS px (~1280), NOT device px (~2560). Also shows what the OLD ÷1 path emitted."""
-import json, sys
-sys.path.insert(0, "/Users/unfazed-mac/Developer/artificial_intelligence/skills/probe-runner/scripts")
+import json, os, sys
+sys.path.insert(0, os.environ.get("PROBE_RUNNER_SCRIPTS", os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "..", "..", "scripts")))
 import web_skeleton as ws
 from _web_eval import _remote_cdp_eval
 

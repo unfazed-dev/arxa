@@ -9,8 +9,9 @@ production ÷dpr normalization is correct. This measures:
   - cross-dpr floor: dpr=2 vs dpr=1 normalized skeletons -> the real CSS-px floor
     that sets the gate.
 """
-import json, sys, time
-sys.path.insert(0, "/Users/unfazed-mac/Developer/artificial_intelligence/skills/probe-runner/scripts")
+import json, os, sys, time
+sys.path.insert(0, os.environ.get("PROBE_RUNNER_SCRIPTS", os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "..", "..", "scripts")))
 import web_skeleton as ws
 import skeleton_diff as sd
 from _web_eval import _remote_cdp_eval, navigate

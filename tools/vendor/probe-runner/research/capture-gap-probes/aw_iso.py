@@ -7,10 +7,10 @@ points — all the SAME pipeline, so deltas are pure acquisition, not pipeline m
   C3 = hydrated, AFTER consent dismiss                   (consent effect = C3 - C2)
 If C3 ~ C2 => overlays COVER the DOM, don't remove it => consent does NOT bite capture
 (advisor's claim). One Chrome; each origin is cold for consent (per-origin cookies)."""
-import json, sys, time, urllib.request
+import json, os, sys, time, urllib.request
 from types import SimpleNamespace
 from pathlib import Path
-SCRIPTS = "/Users/unfazed-mac/Developer/artificial_intelligence/skills/probe-runner/scripts"
+SCRIPTS = os.environ.get("PROBE_RUNNER_SCRIPTS", str(Path(__file__).resolve().parents[2] / "scripts"))
 sys.path.insert(0, SCRIPTS)
 OUT = Path(__file__).resolve().parent / "out"; OUT.mkdir(exist_ok=True)
 PORT = 9334

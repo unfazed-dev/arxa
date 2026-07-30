@@ -80,16 +80,25 @@ not to moodboarding.
 
 ```bash
 PROBE=tools/vendor/probe-runner/scripts        # resolves to the vendored copy (O1); shell-out, no import dep
+
+# Per-slice isolation — MANDATORY when capture slices run in parallel.
+# Every web verb drives CDP targets[0]; one shared Chrome = slices navigate
+# each other's tab mid-capture. probe-runner's own env vars give each slice
+# its own Chrome instance + profile; no hand-rolled CDP needed:
+export PROBE_RUNNER_CHROME_CDP_PORT=93<NN>               # unique per slice (9331, 9332, …)
+export PROBE_RUNNER_CHROME_USER_DATA_DIR=/tmp/probe-mb-<slice-slug>
+
 python3 $PROBE/web_open.py <url>                # navigate (Chrome/CDP); web_shot.py takes NO --url
 python3 $PROBE/web_shot.py --out <path.png>     # capture the open page; safaridriver when no Chrome
 ```
 
-**Capture in your own tab, never the shared first tab.** probe-runner's
-`web_open`/`web_shot` drive CDP `targets[0]`, which races whatever Chrome
-tabs the user has open (first backfill pass captured wrong-tab garbage and
-navigated a user's live tab). The reliable pattern: create a fresh tab via
-CDP `Target.createTarget`, shoot, close it — per shot, with the final
-URL + title logged as provenance (catches wrong-tab captures on readback).
+**Never shoot the user's browser.** probe-runner launches its own Chrome with
+a dedicated `--user-data-dir`, so the user's tabs are only at risk if they run
+personal Chrome with CDP on the same port — the per-slice port above (93xx,
+not 9222) avoids that too. If you must share one Chrome instance instead
+(single-slice run), create a fresh tab via CDP `Target.createTarget`, shoot,
+close it — per shot, with the final URL + title logged as provenance. Never
+blindly reuse `targets[0]` across slices.
 
 - Output: `docs/moodboards/shots/<slice-slug>/<ref-slug>__<screen-slug>.png`
   — lowercase ascii, double-underscore separators, numbered `__2` when one

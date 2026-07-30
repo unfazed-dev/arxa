@@ -3,10 +3,10 @@
 (NOT fixed-2s — don't rebuild G1 in the scanner). Discovers which untested archs appear
 on awwwards: shadow-DOM/web-components, Lottie, Astro-islands, cross-origin iframe,
 Three/Rive/WebGPU. Prints one line/site + /tmp/aw/scan.json. No content persisted."""
-import json, sys, time, urllib.request
+import json, os, sys, time, urllib.request
 from types import SimpleNamespace
 from pathlib import Path
-SCRIPTS = "/Users/unfazed-mac/Developer/artificial_intelligence/skills/probe-runner/scripts"
+SCRIPTS = os.environ.get("PROBE_RUNNER_SCRIPTS", str(Path(__file__).resolve().parents[2] / "scripts"))
 sys.path.insert(0, SCRIPTS)
 PORT = 9334
 URLS = [

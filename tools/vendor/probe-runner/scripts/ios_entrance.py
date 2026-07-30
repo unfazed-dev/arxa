@@ -21,8 +21,8 @@ certifiable signal; a consumer compares that against an emitted contract.
 Observation vs assertion split: this verb emits RAW per-element facts. The
 CONTRACT assertion (e.g. "each RiseIn should fade at ~delayMs; glass leaves
 pop") is the CONSUMER's job — exactly the split every other probe-runner verb
-enforces. See flutter-crew stages/motion_device.py:motion_device_parity for the
-reference consumer that consumes this shape.
+enforces. See the consuming pipeline's stages/motion_device.py:motion_device_parity
+for the reference consumer that consumes this shape.
 
   ios_entrance.py --udid <udid> --bundle <id> [--seconds 6] [--fps 30]
   ios_entrance.py --udid <udid> --bundle <id --select label:WELCOME,label:title

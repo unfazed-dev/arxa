@@ -13,11 +13,11 @@ Advisor constraints folded in:
   #4 skeleton-only verb canary by default; full pipeline only where signal exists
 usage: aw_probe.py URL LABEL PORT
 """
-import json, sys, time, subprocess, urllib.request
+import json, os, sys, time, subprocess, urllib.request
 from types import SimpleNamespace
 from pathlib import Path
 
-SCRIPTS = "/Users/unfazed-mac/Developer/artificial_intelligence/skills/probe-runner/scripts"
+SCRIPTS = os.environ.get("PROBE_RUNNER_SCRIPTS", str(Path(__file__).resolve().parents[2] / "scripts"))
 sys.path.insert(0, SCRIPTS)
 OUTDIR = Path(__file__).resolve().parent / "out"; OUTDIR.mkdir(exist_ok=True)
 
