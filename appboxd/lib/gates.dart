@@ -190,7 +190,10 @@ String designHash(String designDir) {
   void walk(Directory d, String prefix) {
     final entries = d.listSync()..sort((a, b) => a.path.compareTo(b.path));
     for (final entry in entries) {
-      final name = entry.uri.pathSegments.last;
+      // entry.uri.pathSegments.last returns '' for directories on macOS
+      // (Directory URIs carry a trailing slash → empty trailing segment), so
+      // derive the name from the path itself.
+      final name = entry.path.substring(entry.path.lastIndexOf('/') + 1);
       if (entry is Directory) {
         walk(entry, '$prefix$name/');
       } else if (entry is File && !exclude.contains(name)) {

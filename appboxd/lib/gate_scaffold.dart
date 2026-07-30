@@ -542,7 +542,9 @@ void _runS10(String app, void Function(String) ok, void Function(String) warn,
     final arrowRe = RegExp(r'=>\s*([A-Z][A-Za-z0-9_]*)\s*\(');
     final pairs = <(String, String)>[];
     for (final m in memberRe.allMatches(gtext)) {
-      final win = gtext.substring(m.end, m.end + 300);
+      // Python slice gtext[m.end():m.end()+300] silently clamps; Dart does not.
+      final winEnd = m.end + 300;
+      final win = gtext.substring(m.end, winEnd > gtext.length ? gtext.length : winEnd);
       final cm = arrowRe.firstMatch(win);
       if (cm != null) pairs.add((m.group(1)!, cm.group(1)!));
     }
@@ -736,7 +738,7 @@ String _stripComments(String src) {
       i += q.length;
       while (i < n) {
         if (src[i] == '\\' && q.length == 1) {
-          out.write(src.substring(i, i + 2));
+          out.write(src.substring(i, i + 2 > n ? n : i + 2));
           i += 2;
           continue;
         }

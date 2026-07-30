@@ -10,9 +10,11 @@ import 'dart:io';
 import 'package:appboxd/gate_advertise.dart';
 import 'package:appboxd/gate_coverage.dart';
 import 'package:appboxd/gate_deploy.dart';
+import 'package:appboxd/gate_freeze.dart';
 import 'package:appboxd/gate_intake.dart';
 import 'package:appboxd/gate_memory.dart';
 import 'package:appboxd/gate_native_deps.dart';
+import 'package:appboxd/gate_scaffold.dart';
 import 'package:appboxd/gate_structure.dart';
 import 'package:appboxd/gates.dart';
 
@@ -109,7 +111,9 @@ GateResult? _tryDartGate(String name, GateContext ctx) {
       return nativeDepsGate(ctx);
     case 'coverage':
       return coverageGate(ctx);
-    // scaffold, freeze — subagents porting, uncomment when verified
+    case 'scaffold':
+      return scaffoldGate(ctx);
+    // freeze is async (CDP) — handled separately
     default:
       return null; // not yet ported to Dart
   }
