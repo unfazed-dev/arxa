@@ -6,7 +6,7 @@ are pure MVVM content (ADR-0005) — templates, viewmodels, fixtures, assets.
 ## Commands
 
 ```sh
-node runtime/serve.mjs <artifact-dir|design-name> [--port 4319] [--host 127.0.0.1] [--json]
+node runtime/serve.mjs <artifact-dir|design-name> [--port 4319] [--host 127.0.0.1] [--json] [--no-watch]
 node runtime/lint.mjs  <artifact-dir>                 # zero-custom-client-JS check
 node runtime/check_wiring.mjs <artifact-dir> <property>
 #   fragments | mutations-posted | urls-resolve | targets-exist
@@ -36,6 +36,29 @@ OS actually bound. Failures go to stderr as plain text and exit non-zero
 (`69` port in use, `66` no such artifact, `64` bad usage); stdout stays empty,
 so a parsed ready-record is never ambiguous.
 
+**Hot reload + hot restart are on by default.** `serve` runs as a thin
+supervisor around the actual server child: edits anywhere in the artifact
+(templates, l10n, fixtures, routes, assets) or in the runtime's own code
+(`serve.mjs`, `lib/*.mjs`) restart the child on the reported port — no manual
+relaunch, no stale templates. Sessions and server-side timers ride out a
+reload: the outgoing child snapshots them to a per-artifact file under
+`os.tmpdir()` and the incoming child restores them. A child that crashes is
+respawned — unless it crashes 3 times in 10 seconds, in which case the
+supervisor stays down but keeps watching, and the next file change retries.
+Reload/crash messages go to stderr; the stdout ready-record is printed once.
+
+**Ctrl+C stops every instance serving the same artifact**, including ones from
+earlier terminals — instances are tracked as pidfiles under
+`os.tmpdir()/app-box-designer-serve/` (one file per instance, so no shared
+registry and no lock), and a sibling pid is signalled only after `ps` confirms
+it still is a serve.mjs process. **SIGTERM stops only the signalled instance** —
+that is how a UI closing one preview leaves the others running. The ready
+record's `pid` is the supervisor (kill it to stop the server cleanly);
+`workerPid` is the actual server process.
+
+`--no-watch` serves in-process with no watcher and no registry — the ejected
+app's `npm start` uses it; keep it for anything productionized.
+
 New artifacts start by copying `examples/hello-hda/` — it is the reference
 implementation of everything below.
 
@@ -43,6 +66,7 @@ implementation of everything below.
 
 ```
 <artifact>/
+├── serve.mjs                     # `node serve.mjs` — finds the runtime and serves this design
 ├── app.routes.js                 # the URL inventory: [method, path, handler]
 ├── l10n/app_<locale>.arb         # string catalogs (add when i18n; en first)
 ├── models/<domain>_model/…       # shapes + fixtures (add when needed)

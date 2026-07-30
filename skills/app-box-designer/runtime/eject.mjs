@@ -87,7 +87,7 @@ const pkg = {
   private: true,
   type: 'module',
   scripts: {
-    start: 'node runtime/serve.mjs .',
+    start: 'node runtime/serve.mjs . --no-watch',
     test: 'node --test',
     lint: 'node runtime/lint.mjs .',
   },

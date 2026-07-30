@@ -4,6 +4,14 @@
 // key ids by `${session.id}:name` if concurrent sessions ever matter.
 const store = new Map();
 
+// Reload continuity — see snapshotSessions in state.mjs.
+export function snapshotTimers() {
+  return Object.fromEntries(store);
+}
+export function restoreTimers(obj) {
+  for (const [k, v] of Object.entries(obj ?? {})) store.set(k, v);
+}
+
 export const timers = {
   start(id, seconds) {
     store.set(id, { deadline: Date.now() + seconds * 1000 });

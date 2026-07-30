@@ -5,6 +5,15 @@ import { randomUUID } from 'node:crypto';
 // prototype server; the productionize docs name this as a swap point.
 const sessions = new Map();
 
+// Reload continuity (serve.mjs hot reload): the worker snapshots on shutdown
+// and restores on boot, so a code change no longer drops live sessions.
+export function snapshotSessions() {
+  return Object.fromEntries(sessions);
+}
+export function restoreSessions(obj) {
+  for (const [k, v] of Object.entries(obj ?? {})) sessions.set(k, v);
+}
+
 export async function sessionMiddleware(c, next) {
   let sid = getCookie(c)['kdh_sid'];
   if (!sid || !sessions.has(sid)) {
