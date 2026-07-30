@@ -14,6 +14,7 @@ import 'package:appboxd/config.dart';
 import 'package:appboxd/gate_advertise.dart';
 import 'package:appboxd/gate_intake.dart';
 import 'package:appboxd/gate_memory.dart';
+import 'package:appboxd/gate_runner.dart';
 import 'package:appboxd/gates.dart';
 import 'package:appboxd/server.dart' as server;
 
@@ -75,6 +76,12 @@ void _runGate(List<String> args) {
   final gateName = args.first;
   final rest = args.sublist(1);
 
+  // --all runs the full gate suite.
+  if (gateName == '--all' || gateName == 'all') {
+    _runAllGates(rest);
+    return;
+  }
+
   // Parse common flags.
   String? appRoot;
   var check = false;
@@ -133,6 +140,32 @@ void _runGate(List<String> args) {
   }
 
   exit(result.exitCode);
+}
+
+void _runAllGates(List<String> args) {
+  String? repoRoot;
+  String? appRoot;
+  for (var i = 0; i < args.length; i++) {
+    switch (args[i]) {
+      case '--app':
+        appRoot = args[++i];
+        break;
+      case '--repo':
+        repoRoot = args[++i];
+        break;
+    }
+  }
+  repoRoot ??= _findRepoRoot();
+  if (repoRoot == null) {
+    stderr.writeln('appbox gate --all: cannot find repo root');
+    exit(2);
+  }
+  final ctx = GateContext(repoRoot: repoRoot, appRoot: appRoot);
+  final suite = runAllGates(ctx);
+  for (final s in suite.summaries) {
+    print(s);
+  }
+  exit(suite.exitCode);
 }
 
 GateResult _dispatchGate(String name, GateContext ctx) {

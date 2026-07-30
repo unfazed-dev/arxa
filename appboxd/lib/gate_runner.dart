@@ -1,0 +1,139 @@
+// Gate runner — orchestrates all gates in dependency order.
+// Dart port of gates/run_all.sh (178 lines).
+//
+// Strangler pattern: Dart gates run natively; gates not yet ported
+// fall back to the bash gate via Process.run. The fallback shrinks
+// to zero as each gate is ported.
+
+import 'dart:io';
+
+import 'package:appboxd/gate_advertise.dart';
+import 'package:appboxd/gate_memory.dart';
+import 'package:appboxd/gates.dart';
+
+/// The gate execution order (matches gates/run_all.sh:148-164).
+const gateOrder = [
+  'intake',
+  'freeze',
+  'structure',
+  'scaffold',
+  'coverage',
+  'memory',
+  'advertise',
+  'review',
+  'native_deps',
+  'deploy',
+];
+
+/// Result of running the full gate suite.
+class SuiteResult {
+  final int passed;
+  final int failed;
+  final int skipped;
+  final List<String> summaries;
+
+  SuiteResult({
+    required this.passed,
+    required this.failed,
+    required this.skipped,
+    required this.summaries,
+  });
+
+  bool get allPassed => failed == 0;
+  int get exitCode => failed > 0 ? 1 : 0;
+}
+
+/// Run all gates in dependency order.
+/// Dart-portable gates run natively; others fall back to bash.
+SuiteResult runAllGates(GateContext ctx) {
+  var passed = 0, failed = 0, skipped = 0;
+  final summaries = <String>[];
+
+  for (final name in gateOrder) {
+    final result = _runSingleGate(name, ctx);
+
+    if (result == null) {
+      // Gate not available — skip with a note.
+      skipped++;
+      summaries.add('  ⊘ $name: skipped (not yet ported, bash gate unavailable)');
+      continue;
+    }
+
+    summaries.add('  ${result.passed ? "✓" : "✗"} $name: ${result.summary}');
+    for (final d in result.details) {
+      summaries.add('    $d');
+    }
+
+    if (result.passed) {
+      passed++;
+    } else if (result.exitCode == envExit) {
+      skipped++;
+    } else {
+      failed++;
+    }
+  }
+
+  summaries.insert(0, 'appbox gate suite: $passed passed, $failed failed, $skipped skipped');
+  return SuiteResult(passed: passed, failed: failed, skipped: skipped, summaries: summaries);
+}
+
+/// Run a single gate by name. Returns null if the gate is unavailable.
+GateResult? _runSingleGate(String name, GateContext ctx) {
+  // Try Dart gate first.
+  final dartResult = _tryDartGate(name, ctx);
+  if (dartResult != null) return dartResult;
+
+  // Fall back to bash gate (strangler — unported gates still work).
+  return _tryBashGate(name, ctx);
+}
+
+/// Dispatch to a Dart-ported gate. Returns null if not yet ported.
+GateResult? _tryDartGate(String name, GateContext ctx) {
+  switch (name) {
+    case 'memory':
+      return memoryGate(ctx);
+    case 'advertise':
+      return advertiseGate(ctx);
+    // intake and structure ported but commented in runner until tested
+    // against the real design root path resolution
+    default:
+      return null; // not yet ported to Dart
+  }
+}
+
+/// Fall back to the bash gate at gates/<name>/<name>.sh.
+/// Returns null if the bash gate doesn't exist.
+GateResult? _tryBashGate(String name, GateContext ctx) {
+  final extensions = {'intake': '.sh', 'freeze': '.sh', 'structure': '.sh',
+    'scaffold': '.sh', 'coverage': '.sh', 'review': '.dart',
+    'native_deps': '.sh', 'deploy': '.sh'};
+  final ext = extensions[name];
+  if (ext == null) return null;
+
+  final gatePath = '${ctx.repoRoot}/gates/$name/$name$ext';
+  if (!File(gatePath).existsSync()) return null;
+
+  List<String> cmd;
+  if (ext == '.dart') {
+    cmd = ['dart', 'run', gatePath];
+  } else {
+    cmd = ['bash', gatePath];
+  }
+  if (ctx.appRoot != null) cmd.addAll(['--app', ctx.appRoot!]);
+
+  final result = Process.runSync(cmd.first, cmd.sublist(1),
+      workingDirectory: ctx.repoRoot);
+
+  final stdout = (result.stdout as String).trim();
+  final stderr = (result.stderr as String).trim();
+
+  if (result.exitCode == 0) {
+    return GateResult.ok('$name (bash fallback): ${stdout.split('\n').last}');
+  } else if (result.exitCode == 2) {
+    return GateResult.env('$name (bash fallback): env/not-applicable');
+  } else {
+    final msg = stderr.isNotEmpty ? stderr : stdout;
+    return GateResult.fail('$name (bash fallback): ${msg.split('\n').first}',
+        msg.split('\n'));
+  }
+}
