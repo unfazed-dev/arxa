@@ -119,10 +119,11 @@
 {% macro stageSwap(c) %}
 {{ stageLayout(c) }}
 {{ sh.timeline(c, true) }}
+{{ sh.railOob(c) }}
 {% endmacro %}
 
 {% macro railSwap(c) %}
-{{ sh.railBody(c) }}
+{{ sh.railSwap(c) }}
 {% endmacro %}
 
 {# ---------- Page ---------- #}

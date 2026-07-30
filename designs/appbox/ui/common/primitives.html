@@ -4,7 +4,7 @@
 
 {% macro statusPill(state) %}
 <span class="status-pill status-{{ state }}">
-  <span class="status-dot"></span>{{ state }}
+  <span class="status-dot"></span>{{ t('status.name.' ~ state) }}
 </span>
 {% endmacro %}
 

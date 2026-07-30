@@ -2,7 +2,7 @@
 {# Stand-in render of a client design screen, served as the iframe document
    on the evidence canvas. In the shipped app this src is the designer
    artifact the daemon serves; here it is an honest labelled stub. #}
-<html lang="en">
+<html lang="{{ locale }}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -22,7 +22,7 @@
       {% if kind == 'cart' %}<span class="stub-nav-links">Your cart</span>{% endif %}
       {% if kind == 'checkout' %}<span class="stub-nav-links">Checkout</span>{% endif %}
       {% if kind == 'confirmation' %}<span class="stub-nav-links">Order #PS-1042</span>{% endif %}
-      {% if kind not in ['home', 'cart', 'checkout', 'confirmation'] %}<span class="stub-nav-links">{{ kind | capitalize }}</span>{% endif %}
+      {% if kind not in ['home', 'cart', 'checkout', 'confirmation'] %}<span class="stub-nav-links">{{ t('stub.kind.' ~ kind) }}</span>{% endif %}
     </header>
 
     {% if kind == 'home' %}
@@ -59,17 +59,17 @@
     {# Generic fallback: any surface without a bespoke stub renders an honest
        labelled placeholder — nav carries the name, a few blocks stand in. #}
     <section class="stub-hero">
-      <h1>{{ kind | capitalize }}</h1>
-      <p>Design preview — the shipped render takes this frame.</p>
+      <h1>{{ t('stub.kind.' ~ kind) }}</h1>
+      <p>{{ t('stub.previewNote') }}</p>
     </section>
     <section class="stub-rows">
       {% for i in [1, 2, 3] %}
-      <div class="stub-row"><span class="stub-thumb sm"></span><span class="stub-row-name">{{ kind }} block {{ i }}</span></div>
+      <div class="stub-row"><span class="stub-thumb sm"></span><span class="stub-row-name">{{ t('stub.block', {kind: kind, i: i}) }}</span></div>
       {% endfor %}
     </section>
     {% endif %}
 
-    <span class="stub-tag">{{ surface }} · {{ vp }} · design preview</span>
+    <span class="stub-tag">{{ t('stub.tag', {surface: surface, vp: vp}) }}</span>
   </div>
 </div>
 </body>

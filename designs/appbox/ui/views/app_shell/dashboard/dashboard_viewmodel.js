@@ -17,6 +17,6 @@ export const decide = async (c, h) => {
 // GenUI new-project wizard — creates a seeded project row, lands on intake.
 export const createProject = async (c, h) => {
   const form = await h.form(c);
-  facade.createProject(h.session(c).data, String(form.name || ''), form.targets);
+  facade.createProject(h.session(c).data, String(form.name || ''), form.targets, h.t(c));
   return c.redirect('/intake', 303);
 };

@@ -139,7 +139,7 @@
       {% set key = e.vp or e %}
       <a class="dv-chip {{ 'on' if key == vp }}" href="{{ v.base }}?screen={{ active }}&vp={{ key }}&bg={{ bg }}&os={{ os }}&mode={{ mode }}"
          hx-get="{{ v.base }}?screen={{ active }}&vp={{ key }}&bg={{ bg }}&os={{ os }}&mode={{ mode }}"
-         hx-target="#design-viewer" hx-swap="outerHTML">{{ key }}</a>
+         hx-target="#design-viewer" hx-swap="outerHTML">{{ t('viewer.vp.' ~ key) }}</a>
       {% endfor %}
     </span>
     {% if vp == 'mobile' %}
@@ -156,7 +156,7 @@
       {% for b in ['canvas', 'warm', 'slate'] %}
       <a class="dv-chip dv-chip-bg {{ 'on' if b == bg }}" href="{{ v.base }}?screen={{ active }}&vp={{ vp }}&bg={{ b }}&os={{ os }}&mode={{ mode }}"
          hx-get="{{ v.base }}?screen={{ active }}&vp={{ vp }}&bg={{ b }}&os={{ os }}&mode={{ mode }}"
-         hx-target="#design-viewer" hx-swap="outerHTML" title="{{ t('viewer.bgTitle', {bg: b}) }}">{{ b }}</a>
+         hx-target="#design-viewer" hx-swap="outerHTML" title="{{ t('viewer.bgTitle', {bg: b}) }}">{{ t('viewer.bg.' ~ b) }}</a>
       {% endfor %}
     </span>
     <span class="dv-group" role="group" aria-label="{{ t('viewer.stageMode') }}">
@@ -164,7 +164,7 @@
       <a class="dv-chip {{ 'on' if m == mode }}" href="{{ v.base }}?screen={{ active }}&vp={{ vp }}&bg={{ bg }}&os={{ os }}&mode={{ m }}"
          hx-get="{{ v.base }}?screen={{ active }}&vp={{ vp }}&bg={{ bg }}&os={{ os }}&mode={{ m }}"
          hx-target="#design-viewer" hx-swap="outerHTML"
-         title="{{ modeTitles[m] }}">{{ m }}</a>
+         title="{{ modeTitles[m] }}">{{ t('viewer.modeLabel.' ~ m) }}</a>
       {% endfor %}
     </span>
     <span class="dv-sim" title="{{ t('viewer.simTitle') }}">{{ icon('play', {size: 12}) }} {{ t('viewer.sim') }}</span>

@@ -2,8 +2,8 @@
   "run": {
     "id": "design-07",
     "number": 7,
-    "project": "Petal & Stem",
-    "brief": "aplikacja towarzysząca — zatwierdzaj buildy z dowolnego miejsca",
+    "project": "app-box",
+    "brief": "app-box — projektuje, buduje i wydaje się sam",
     "started": "Wczoraj 14:02",
     "elapsed": "21m 05s",
     "state": "frozen",

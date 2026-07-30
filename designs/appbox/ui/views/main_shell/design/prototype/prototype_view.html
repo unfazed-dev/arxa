@@ -36,14 +36,22 @@
 {# The whole stage: chat (fresh chips/thread) + canvas (fresh outlines),
    inside the #stage-layout container. Context toggles, composer sends,
    reverts and chip close buttons all swap #stage-layout outerHTML with this. #}
-{% macro stageSwap(c) %}
+{# The stage markup proper — used by the page AND the fragment. The fragment
+   (stageSwap) adds the rail's out-of-band re-feed; the page must render the
+   stage WITHOUT it (OOB parts are response-only markup). #}
+{% macro stageLayout(c) %}
 <div class="stage-layout {{ 'is-docked' if c.docked }}" id="stage-layout">
   {{ sh.chatStage(c) }}
   {{ canvasBoard(c) }}
 </div>
 {% endmacro %}
 
-{% macro railBody(c) %}{{ sh.railBody(c) }}{% endmacro %}
+{% macro stageSwap(c) %}
+{{ stageLayout(c) }}
+{{ sh.railOob(c) }}
+{% endmacro %}
+
+{% macro railSwap(c) %}{{ sh.railSwap(c) }}{% endmacro %}
 
 {% macro viewerSwap(c) %}{{ dv.designViewer(c.viewer) }}{% endmacro %}
 
@@ -56,7 +64,7 @@
 
 {% macro surfaceBody(c) %}
 {{ sh.railLeft(c) }}
-{{ stageSwap(c) }}
+{{ stageLayout(c) }}
 {% endmacro %}
 
 {% block bottombar %}

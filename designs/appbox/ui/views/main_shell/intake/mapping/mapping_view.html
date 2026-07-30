@@ -7,7 +7,7 @@
 
 {# Live status dot per story, fed by the seeded pipeline statuses. #}
 {% macro statusDot(s) %}
-<span class="status-dot st-{{ s.status }}" title="{{ s.status }}" aria-label="{{ s.status }}"></span>
+<span class="status-dot st-{{ s.status }}" title="{{ t('status.name.' ~ s.status) }}" aria-label="{{ t('status.name.' ~ s.status) }}"></span>
 {% endmacro %}
 
 {% macro storyCard(c, s) %}
@@ -134,11 +134,13 @@
 {% macro stageSwap(c) %}
 {{ stageLayout(c) }}
 {{ sh.timeline(c, true) }}
+{{ sh.railOob(c) }}
 {% endmacro %}
 
-{# Rail view switching swaps only the rail body (mv.frame's own target). #}
+{# Rail view switching swaps the body and refreshes head + bar out-of-band
+   (the rail owns its active-icon/label state). #}
 {% macro railSwap(c) %}
-{{ sh.railBody(c) }}
+{{ sh.railSwap(c) }}
 {% endmacro %}
 
 {# ---------- Page ---------- #}

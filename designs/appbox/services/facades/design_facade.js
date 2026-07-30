@@ -75,7 +75,7 @@ const stripFor = (d, base, L) =>
     removeHref: `${base}/context/${id}?state=off`,
   }));
 
-const ctxLabel = (d, L) => contextIds(d, L).map((id) => repo.screen(id, L).label).join(' + ') || 'the draft';
+const ctxLabel = (d, L, t) => contextIds(d, L).map((id) => repo.screen(id, L).label).join(' + ') || t('design.ctxFallback');
 
 // ---------- the shared design viewer (ui/common/design_viewer.html) ----------
 // Board mode (the default once drafted): every screen as an artboard with its
@@ -83,7 +83,7 @@ const ctxLabel = (d, L) => contextIds(d, L).map((id) => repo.screen(id, L).label
 // picker. Single/rungs stay for one-screen deep looks.
 const RUNG_VP = { 390: 'mobile', 744: 'tablet', 1280: 'desktop' };
 
-function viewerFor(d, L) {
+function viewerFor(d, L, t) {
   const v = d.viewer ?? {};
   const ids = contextIds(d, L);
   const screens = repo.screens(L).map((s) => ({
@@ -91,7 +91,7 @@ function viewerFor(d, L) {
     inContext: ids.includes(s.id),
     dim: ids.length > 0 && !ids.includes(s.id),
     tone: toneFor(s.id, L),
-    chips: [{ text: `${s.kit}%`, title: `kit coverage ${s.kit}% — the adaptive primitive layer carries this much of ${s.id}` }],
+    chips: [{ text: `${s.kit}%`, title: t('design.kitChipTitle', { kit: s.kit, id: s.id }) }],
     viewports: s.rungs.map((r) => ({ vp: RUNG_VP[r.width] ?? 'mobile', width: r.width, rung: r.rung, note: r.note, shot: r.shot })),
   }));
   const active = repo.screen(v.screen, L) ? v.screen : (ids[0] ?? d.currentScreen ?? DEFAULT_SCREEN);
@@ -108,11 +108,11 @@ function viewerFor(d, L) {
 }
 
 // Viewer toolbar act: record the choice, keep the artboard in sync.
-export const setViewer = (sessionData, query, prefs = {}, locale = 'en') => {
+export const setViewer = (sessionData, query, prefs = {}, t = (k) => k, locale = 'en') => {
   const d = design(sessionData);
   d.viewer = { screen: query.screen, vp: query.vp, bg: query.bg, os: query.os, mode: query.mode };
   if (query.screen && repo.screen(query.screen, locale)) d.currentScreen = query.screen;
-  return stageContext(sessionData, {}, prefs, locale);
+  return stageContext(sessionData, {}, prefs, t, locale);
 };
 
 // ---------- the design thread (seeded history + session messages) ----------
@@ -137,24 +137,26 @@ function threadFor(d, lv, L) {
 
 // ---------- the stage context (prototype / chat share it) ----------
 
-const REFINE_SUGGESTIONS = [
-  { value: 'edit-layout: stack the rail under the canvas on compact', label: 'edit-layout' },
-  { value: 'restyle: make the pending state calmer', label: 'restyle' },
-  { value: 'adjust-states: accent token on the pinned screens', label: 'adjust-states' },
-  { value: 'regenerate the compact 390 shot', label: 'regenerate' },
+// Suggestion chips: values are posted back as user text (they render in the
+// thread), so both value and label come from the catalog.
+const refineSuggestions = (t) => [
+  { value: t('design.sug.editLayout.value'), label: t('design.sug.editLayout.label') },
+  { value: t('design.sug.restyle.value'), label: t('design.sug.restyle.label') },
+  { value: t('design.sug.adjustStates.value'), label: t('design.sug.adjustStates.label') },
+  { value: t('design.sug.regenerate.value'), label: t('design.sug.regenerate.label') },
 ];
 
-function screenCard(s, d, L) {
+function screenCard(s, d, L, t) {
   const checkpoints = (repo.checkpoints(L)[s.id] ?? []).length + (d.chatCheckpoints?.[s.id] ?? []).length;
   return {
     type: 'screen', state: s.state, threadCount: checkpoints,
-    detail: `${s.rungs.length} rungs · kit ${s.kit}% · ${s.wire}`,
+    detail: t('design.screenCardDetail', { rungs: s.rungs.length, kit: s.kit, wire: s.wire }),
   };
 }
 
 // opts: { line (timeline current id), pin (screenId | 'none'), base (route
 // prefix for the strip × and the close act — the surface being rendered) }
-export const stageContext = (sessionData = {}, opts = {}, prefs = {}, locale = 'en') => {
+export const stageContext = (sessionData = {}, opts = {}, prefs = {}, t = (k) => k, locale = 'en') => {
   const L = locale;
   const lv = jargon.level(prefs);
   const d = design(sessionData);
@@ -174,7 +176,7 @@ export const stageContext = (sessionData = {}, opts = {}, prefs = {}, locale = '
       summary: jargon.pick(s, 'summary', lv),
       inContext: ids.includes(s.id),
       tone: toneFor(s.id, L),
-      card: screenCard(s, d, L),
+      card: screenCard(s, d, L, t),
     }));
   return {
     // rungsLabel precomputed: fragment imports re-execute page blocks with an
@@ -185,23 +187,29 @@ export const stageContext = (sessionData = {}, opts = {}, prefs = {}, locale = '
     epics: repo.epics(L),
     filter,
     railView,
+    railLabel: t('rail.' + railView),
+    railViews: [
+      { id: 'screens', icon: 'layout-grid' },
+      { id: 'artifacts', icon: 'package' },
+      { id: 'files', icon: 'folder' },
+    ].map((v) => ({ ...v, label: t('rail.' + v.id), href: `/design/rail/${v.id}`, active: v.id === railView })),
     screens,
     artifacts: repo.artifacts(L),
     files: repo.files(L),
     drafted,
     docked: drafted && d.chatCentered !== true,
     threading: thread.some((m) => m.from === 'user'),
-    stageEyebrow: 'design chat',
+    stageEyebrow: t('design.chat.eyebrow'),
     composerAction: '/design/chat/messages',
-    modelMenu: agent.modelMenuFor(sessionData, base),
+    modelMenu: agent.modelMenuFor(sessionData, base, t),
     tray: { open: d.trayOpen !== false, toggleHref: `${base}/tray?state=toggle` },
     strip: stripFor(d, base, L),
     collapseHref: `${base}/close`,
-    viewer: viewerFor(d, L),
+    viewer: viewerFor(d, L, t),
     thread,
     draft: { offer: jargon.pick(repo.draft(L), 'offer', lv), chip: repo.draft(L).chip },
-    suggestions: drafted ? REFINE_SUGGESTIONS : [{ value: 'draft-all', label: repo.draft(L).chip }],
-    placeholder: drafted ? `Refine ${ctxLabel(d, L)}…` : 'Message the design agent…',
+    suggestions: drafted ? refineSuggestions(t) : [{ value: 'draft-all', label: repo.draft(L).chip }],
+    placeholder: drafted ? t('composer.placeholder.refine', { label: ctxLabel(d, L, t) }) : t('composer.placeholder.design'),
     timeline: timeline(opts.line ?? 'prototype', L),
     jargonLevel: lv,
   };
@@ -209,55 +217,55 @@ export const stageContext = (sessionData = {}, opts = {}, prefs = {}, locale = '
 
 // Context pin toggle from the filmstrip / artboard chrome / rail card.
 // state: 'toggle' | 'on' | 'off'.
-export const toggleContext = (sessionData, screenId, state = 'toggle', prefs = {}, locale = 'en') => {
+export const toggleContext = (sessionData, screenId, state = 'toggle', prefs = {}, t = (k) => k, locale = 'en') => {
   const d = design(sessionData);
   const on = state === 'toggle' ? !contextIds(d, locale).includes(screenId) : state === 'on';
   if (on) pin(d, screenId, locale); else unpin(d, screenId, locale);
   if (repo.screen(screenId, locale)) d.currentScreen = screenId;
-  return stageContext(sessionData, {}, prefs, locale);
+  return stageContext(sessionData, {}, prefs, t, locale);
 };
 
 // Composer chrome: pick the agent model, or collapse/expand the context
 // tray. Both mutate session state; callers re-render their own surface
 // context (freeze ignores the returned stage context, same as closeChat).
-export const setModel = (sessionData, id, opts = {}, prefs = {}, locale = 'en') => {
+export const setModel = (sessionData, id, opts = {}, prefs = {}, t = (k) => k, locale = 'en') => {
   agent.setModel(sessionData, id);
-  return stageContext(sessionData, opts, prefs, locale);
+  return stageContext(sessionData, opts, prefs, t, locale);
 };
 
-export const setTray = (sessionData, state, opts = {}, prefs = {}, locale = 'en') => {
+export const setTray = (sessionData, state, opts = {}, prefs = {}, t = (k) => k, locale = 'en') => {
   const d = design(sessionData);
   // the checkbox already flipped locally — mirror it (toggling, never an
   // absolute state: a stale absolute href would desync on double-click)
   d.trayOpen = state === 'toggle' ? !(d.trayOpen !== false) : state !== 'off';
-  return stageContext(sessionData, opts, prefs, locale);
+  return stageContext(sessionData, opts, prefs, t, locale);
 };
 
 // The close act on the docked chat: unpin every screen and recenter the
 // chat (d.chatCentered — any later pin re-docks it). Freeze ignores the
 // returned stage context and re-renders from freezeContext instead.
-export const closeChat = (sessionData, opts = {}, prefs = {}, locale = 'en') => {
+export const closeChat = (sessionData, opts = {}, prefs = {}, t = (k) => k, locale = 'en') => {
   const d = design(sessionData);
   d.context = [];
   d.chatCentered = true;
-  return stageContext(sessionData, opts, prefs, locale);
+  return stageContext(sessionData, opts, prefs, t, locale);
 };
 
-export const setRailFilter = (sessionData, filter, prefs = {}, locale = 'en') => {
+export const setRailFilter = (sessionData, filter, prefs = {}, t = (k) => k, locale = 'en') => {
   design(sessionData).railFilter = filter;
-  return stageContext(sessionData, {}, prefs, locale);
+  return stageContext(sessionData, {}, prefs, t, locale);
 };
 
-export const setRailView = (sessionData, view, prefs = {}, locale = 'en') => {
+export const setRailView = (sessionData, view, prefs = {}, t = (k) => k, locale = 'en') => {
   design(sessionData).railView = view;
-  return stageContext(sessionData, {}, prefs, locale);
+  return stageContext(sessionData, {}, prefs, t, locale);
 };
 
 // The single composer path (chat-Centric Layout: no inputs outside the chat).
 // 'draft-all' accepts the one-pass draft; 'approve' signs the manifest; any
 // other text refines the pinned screens and may mint one checkpoint per
 // pinned screen.
-export const sendChat = (sessionData, text, prefs = {}, pinId = null, locale = 'en') => {
+export const sendChat = (sessionData, text, prefs = {}, pinId = null, t = (k) => k, locale = 'en') => {
   const L = locale;
   const d = design(sessionData);
   if (pinId) pin(d, pinId, L);
@@ -267,19 +275,19 @@ export const sendChat = (sessionData, text, prefs = {}, pinId = null, locale = '
     thread.push({ at: 'now', from: 'user', text: repo.draft(L).chip });
     d.drafted = true;
     thread.push({ at: 'now', from: 'agent', text: repo.draft(L).done, textPlain: repo.draft(L).donePlain });
-    return stageContext(sessionData, {}, prefs, L);
+    return stageContext(sessionData, {}, prefs, t, L);
   }
-  if (text === 'approve') return approveManifest(sessionData, prefs, L);
+  if (text === 'approve') return approveManifest(sessionData, prefs, t, L);
 
   thread.push({ at: 'now', from: 'user', text });
   const ids = contextIds(d, L);
   if (!ids.length) {
     thread.push({ at: 'now', from: 'agent', text: repo.noContext(L).text, textPlain: repo.noContext(L).textPlain });
-    return stageContext(sessionData, {}, prefs, L);
+    return stageContext(sessionData, {}, prefs, t, L);
   }
 
   const first = repo.screen(ids[0], L);
-  const scope = { label: ctxLabel(d, L), kit: first.kit, id: ids[0], summary: '' };
+  const scope = { label: ctxLabel(d, L, t), kit: first.kit, id: ids[0], summary: '' };
   const lower = text.toLowerCase();
   const found = repo.chatReplies(L).find((r) => r.match.some((k) => lower.includes(k)));
   const reply = fillReply(found ?? repo.chatFallback(L), scope);
@@ -301,26 +309,26 @@ export const sendChat = (sessionData, text, prefs = {}, pinId = null, locale = '
     });
   }
   thread.push({ at: 'now', from: 'agent', text: reply.text, textBalanced: reply.textBalanced, textPlain: reply.textPlain, link: reply.link, cps });
-  return stageContext(sessionData, {}, prefs, L);
+  return stageContext(sessionData, {}, prefs, t, L);
 };
 
 // One-tap revert: the checkpoint stays rendered as history, flagged reverted,
 // and the act is logged into the thread — the thread is the design's history.
-export const revertCheckpoint = (sessionData, screenId, cpId, prefs = {}, locale = 'en') => {
+export const revertCheckpoint = (sessionData, screenId, cpId, prefs = {}, t = (k) => k, locale = 'en') => {
   const d = design(sessionData);
   const cp = allCheckpoints(d, screenId, locale).find((x) => x.id === cpId);
   if (cp && !(d.reverted ??= []).includes(cpId)) {
     d.reverted.push(cpId);
-    (d.designThread ??= []).push({ at: 'now', from: 'agent', kind: 'event', text: `You reverted ${screenId} to ${cpId} — ${cp.summary}. Later checkpoints stay on record.` });
+    (d.designThread ??= []).push({ at: 'now', from: 'agent', kind: 'event', text: t('design.revertEvent', { screen: screenId, cp: cpId, summary: cp.summary }) });
   }
-  return stageContext(sessionData, {}, prefs, locale);
+  return stageContext(sessionData, {}, prefs, t, locale);
 };
 
 // ---------- freeze & trace surface ----------
 
-export const freezeContext = (sessionData = {}, prefs = {}, locale = 'en') => {
+export const freezeContext = (sessionData = {}, prefs = {}, t = (k) => k, locale = 'en') => {
   const L = locale;
-  const stage = stageContext(sessionData, { line: 'freeze', base: '/design/freeze' }, prefs, L);
+  const stage = stageContext(sessionData, { line: 'freeze', base: '/design/freeze' }, prefs, t, L);
   const lv = stage.jargonLevel;
   const d = design(sessionData);
   const ap = repo.approval(L);
@@ -330,10 +338,10 @@ export const freezeContext = (sessionData = {}, prefs = {}, locale = 'en') => {
   return {
     ...stage,
     docked: d.chatCentered !== true,
-    stageEyebrow: 'freeze & trace',
+    stageEyebrow: t('design.freeze.eyebrow'),
     composerAction: '/design/freeze/messages',
-    suggestions: [{ value: 'approve', label: ap.chip }, ...REFINE_SUGGESTIONS],
-    placeholder: approved ? 'Ask about the freeze…' : 'Approve or ask about the freeze…',
+    suggestions: [{ value: 'approve', label: ap.chip }, ...refineSuggestions(t)],
+    placeholder: approved ? t('composer.placeholder.freeze') : t('composer.placeholder.freezeApprove'),
     manifest,
     approval: {
       approved,
@@ -347,23 +355,23 @@ export const freezeContext = (sessionData = {}, prefs = {}, locale = 'en') => {
       history: repo.drift(L).history.map((e) => ({ ...e, text: jargon.pick(e, 'text', lv) })),
     },
     rechecks,
-    toast: rechecks ? `Drift check #${rechecks + 1} — ${repo.drift(L).matched} goldens match · clean` : null,
+    toast: rechecks ? t('drift.recheckToast', { n: rechecks + 1, matched: repo.drift(L).matched }) : null,
   };
 };
 
 // The human gate: approving the frozen manifest unlocks the Build stage.
 // Idempotent — the act and the confirmation both land in the design thread.
-export const approveManifest = (sessionData, prefs = {}, locale = 'en') => {
+export const approveManifest = (sessionData, prefs = {}, t = (k) => k, locale = 'en') => {
   const d = design(sessionData);
   const thread = (d.designThread ??= []);
   thread.push({ at: 'now', from: 'user', text: repo.approval(locale).chip });
   d.approved = true;
   thread.push({ at: 'now', from: 'agent', text: repo.approval(locale).confirm, textPlain: repo.approval(locale).confirmPlain });
-  return freezeContext(sessionData, prefs, locale);
+  return freezeContext(sessionData, prefs, t, locale);
 };
 
-export const recheckDrift = (sessionData, prefs = {}, locale = 'en') => {
+export const recheckDrift = (sessionData, prefs = {}, t = (k) => k, locale = 'en') => {
   const d = design(sessionData);
   d.driftRechecks = (d.driftRechecks ?? 0) + 1;
-  return freezeContext(sessionData, prefs, locale);
+  return freezeContext(sessionData, prefs, t, locale);
 };

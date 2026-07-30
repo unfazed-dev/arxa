@@ -2,8 +2,8 @@
   "run": {
     "id": "run-47",
     "number": 47,
-    "project": "Petal & Stem",
-    "brief": "florist ordering app — ios + macos",
+    "project": "app-box",
+    "brief": "companion app — ios + macos",
     "started": "09:14",
     "elapsed": "34m 12s",
     "state": "paused",
@@ -90,8 +90,8 @@
         {
           "n": 2,
           "state": "green",
-          "note": "fix applied to order.cart authored layer, gate re-run",
-          "notePlain": "fix applied to the order.cart screen code, checks re-run"
+          "note": "fix applied to build.loop authored layer, gate re-run",
+          "notePlain": "fix applied to the build.loop screen code, checks re-run"
         }
       ]
     },
@@ -159,13 +159,13 @@
       "gate": "coverage",
       "check": "structure/surface-files",
       "severity": "error",
-      "file": "app/lib/ui/views/order/cart_view.dart",
+      "file": "app/lib/ui/views/build/loop_view.dart",
       "line": 1,
       "expected": "4 files for ios target (view, viewmodel, test, fixture)",
       "expectedPlain": "every screen needs 4 files for iPhone (screen, logic, tests, sample data)",
       "actual": "3 — viewmodel test missing",
       "actualPlain": "3 found — the logic test is missing",
-      "reproduce": "./gates/coverage/run.sh --surface order.cart --target ios",
+      "reproduce": "./gates/coverage/run.sh --surface build.loop --target ios",
       "fingerprint": "fp_7d2c…e91a",
       "state": "fixed in attempt 2",
       "note": "MEM-A: this check fails this way when the scaffolder emits but the story map marks the surface test-optional — the gate disagrees.",
@@ -176,13 +176,13 @@
       "gate": "coverage",
       "check": "tests/viewmodel-presence",
       "severity": "error",
-      "file": "app/test/ui/views/order/cart_viewmodel_test.dart",
+      "file": "app/test/ui/views/build/loop_viewmodel_test.dart",
       "line": 1,
       "expected": "≥ 1 mocktail test per viewmodel",
       "expectedPlain": "at least one automated test per screen-logic file",
       "actual": "0 tests found",
       "actualPlain": "none found",
-      "reproduce": "./gates/coverage/run.sh --check tests --surface order.cart",
+      "reproduce": "./gates/coverage/run.sh --check tests --surface build.loop",
       "fingerprint": "fp_41aa…0b7d",
       "state": "fixed in attempt 2",
       "note": "Same root cause as f-01 — one authored-layer fix closed both.",
@@ -193,15 +193,15 @@
       "gate": "coverage",
       "check": "visual/probe-deltaE",
       "severity": "warning",
-      "file": "designs/frozen/order.cart/expanded.png",
+      "file": "designs/frozen/build.loop/expanded.png",
       "line": 0,
       "expected": "ΔE ≤ 2.0 against the frozen golden",
       "expectedBalanced": "colour match ≥ 95/100 (ΔE ≤ 2.0) against the frozen golden",
       "expectedPlain": "should look nearly identical to the design you approved — 95/100 or better",
-      "actual": "ΔE 4.8 on the CartSummary card — muted text token drift",
-      "actualBalanced": "88/100 (ΔE 4.8) on the CartSummary card — muted text token drift",
-      "actualPlain": "noticeably different — 88/100 on the CartSummary card. A muted text colour only worked in light mode",
-      "reproduce": "./tools/verification/probe_run.sh --surface order.cart --rung expanded",
+      "actual": "ΔE 4.8 on the RunSummary card — muted text token drift",
+      "actualBalanced": "88/100 (ΔE 4.8) on the RunSummary card — muted text token drift",
+      "actualPlain": "noticeably different — 88/100 on the RunSummary card. A muted text colour only worked in light mode",
+      "reproduce": "./tools/verification/probe_run.sh --surface build.loop --rung expanded",
       "fingerprint": "fp_b8e0…c3f2",
       "state": "fixed in attempt 2",
       "note": "Token --muted resolved against light theme only; freeze now pins both themes.",
@@ -210,7 +210,7 @@
   ],
   "evidence": [
     {
-      "surface": "catalog.home",
+      "surface": "intake.mapping",
       "tests": "5/5",
       "files": 4,
       "probe": {
@@ -226,7 +226,7 @@
       ]
     },
     {
-      "surface": "order.cart",
+      "surface": "build.loop",
       "tests": "6/6",
       "files": 4,
       "probe": {
@@ -242,7 +242,7 @@
       ]
     },
     {
-      "surface": "order.checkout",
+      "surface": "design.chat",
       "tests": "4/4",
       "files": 4,
       "probe": {
@@ -258,7 +258,7 @@
       ]
     },
     {
-      "surface": "order.confirmation",
+      "surface": "access.pairing",
       "tests": "3/3",
       "files": 4,
       "probe": {
@@ -294,7 +294,7 @@
     },
     {
       "hash": "7e2c91b",
-      "message": "fix(build): order.cart authored layer — coverage attempt 2 green",
+      "message": "fix(build): build.loop authored layer — coverage attempt 2 green",
       "at": "09:57",
       "state": "green"
     },
@@ -307,27 +307,27 @@
   ],
   "files": [
     {
-      "path": "app/lib/ui/views/order/cart_view.dart",
+      "path": "app/lib/ui/views/build/loop_view.dart",
       "status": "changed"
     },
     {
-      "path": "app/test/ui/views/order/cart_viewmodel_test.dart",
+      "path": "app/test/ui/views/build/loop_viewmodel_test.dart",
       "status": "new"
     },
     {
-      "path": "app/lib/ui/views/catalog/home_view.dart",
+      "path": "app/lib/ui/views/intake/mapping_view.dart",
       "status": "new"
     },
     {
-      "path": "app/lib/ui/views/order/checkout_view.dart",
+      "path": "app/lib/ui/views/design/chat_view.dart",
       "status": "new"
     },
     {
-      "path": "app/lib/ui/views/order/confirmation_view.dart",
+      "path": "app/lib/ui/views/access/pairing_view.dart",
       "status": "new"
     },
     {
-      "path": "designs/frozen/order.cart/expanded.png",
+      "path": "designs/frozen/build.loop/expanded.png",
       "status": "frozen"
     },
     {
@@ -339,8 +339,8 @@
     {
       "id": "n-01",
       "at": "09:14",
-      "text": "Run #47 on the line — Petal & Stem, florist ordering for ios + macos. Stop-on-red is on, escalation limit 3.",
-      "textPlain": "Run #47 is on the line — Petal & Stem, a florist ordering app for iPhone and Mac. The run stops itself at the first failure; up to 3 automatic fix attempts.",
+      "text": "Run #47 on the line — app-box, the R1 dogfood build for ios + macos. Stop-on-red is on, escalation limit 3.",
+      "textPlain": "Run #47 is on the line — app-box, the R1 dogfood build for iPhone and Mac. The run stops itself at the first failure; up to 3 automatic fix attempts.",
       "artifact": null
     },
     {
@@ -389,8 +389,8 @@
     {
       "id": "n-08",
       "at": "09:57",
-      "text": "Coverage recovered on attempt 2 — the fixer rewrote the order.cart authored layer and re-ran the gate.",
-      "textPlain": "Coverage recovered on the second try — the order.cart screen code was rewritten and the checks re-run.",
+      "text": "Coverage recovered on attempt 2 — the fixer rewrote the build.loop authored layer and re-ran the gate.",
+      "textPlain": "Coverage recovered on the second try — the build.loop screen code was rewritten and the checks re-run.",
       "artifact": "stage/coverage",
       "tone": "warn"
     },
@@ -434,8 +434,8 @@
         "red",
         "wrong"
       ],
-      "text": "Coverage went red on attempt 1 — three SARIF findings, all pinned to order.cart. Reproduce commands are on the findings card; one authored-layer fix closed all three in attempt 2.",
-      "textPlain": "Coverage failed its first check — three findings, all pinned to the order.cart screen. The exact command to re-run each check is on the findings card; one fix closed all three on the second try.",
+      "text": "Coverage went red on attempt 1 — three SARIF findings, all pinned to build.loop. Reproduce commands are on the findings card; one authored-layer fix closed all three in attempt 2.",
+      "textPlain": "Coverage failed its first check — three findings, all pinned to the build.loop screen. The exact command to re-run each check is on the findings card; one fix closed all three on the second try.",
       "artifact": "findings/coverage"
     },
     {
@@ -471,8 +471,8 @@
         "history",
         "raw"
       ],
-      "text": "Full run log on the canvas — every stage, gate and attempt in order.",
-      "textPlain": "The full run log is on the canvas — every stage, decision and retry in order.",
+      "text": "Full run log on the canvas — every stage, gate and attempt in sequence.",
+      "textPlain": "The full run log is on the canvas — every stage, decision and retry in sequence.",
       "artifact": "log/full"
     },
     {
@@ -483,9 +483,9 @@
         "golden",
         "screenshot"
       ],
-      "text": "Four surfaces probed against their frozen goldens — SSIM, skeleton and ΔE per surface, all passing. order.confirmation is on watch at ΔE 2.2.",
-      "textBalanced": "Four screens compared with their goldens — SSIM, skeleton and colour match per screen, all passing. order.confirmation is on watch at 94/100 (ΔE 2.2).",
-      "textPlain": "All four screens were compared pixel-by-pixel with the designs you approved — three are near-identical. order.confirmation is being watched at 94/100, just under the 95 bar.",
+      "text": "Four surfaces probed against their frozen goldens — SSIM, skeleton and ΔE per surface, all passing. access.pairing is on watch at ΔE 2.2.",
+      "textBalanced": "Four screens compared with their goldens — SSIM, skeleton and colour match per screen, all passing. access.pairing is on watch at 94/100 (ΔE 2.2).",
+      "textPlain": "All four screens were compared pixel-by-pixel with the designs you approved — three are near-identical. access.pairing is being watched at 94/100, just under the 95 bar.",
       "artifact": "evidence/surfaces"
     }
   ],
@@ -501,13 +501,13 @@
         "gate": "coverage",
         "check": "structure/surface-files",
         "severity": "error",
-        "file": "app/lib/ui/views/order/cart_view.dart",
+        "file": "app/lib/ui/views/build/loop_view.dart",
         "line": 1,
         "expected": "4 files for ios target (view, viewmodel, test, fixture)",
         "expectedPlain": "every screen needs 4 files for iPhone (screen, logic, tests, sample data)",
         "actual": "3 — viewmodel test missing",
         "actualPlain": "3 found — the logic test is missing",
-        "reproduce": "./gates/coverage/run.sh --surface order.cart --target ios",
+        "reproduce": "./gates/coverage/run.sh --surface build.loop --target ios",
         "fingerprint": "fp_7d2c…e91a",
         "state": "fixed in attempt 2",
         "note": "MEM-A: this check fails this way when the scaffolder emits but the story map marks the surface test-optional — the gate disagrees.",
@@ -518,13 +518,13 @@
         "gate": "coverage",
         "check": "tests/viewmodel-presence",
         "severity": "error",
-        "file": "app/test/ui/views/order/cart_viewmodel_test.dart",
+        "file": "app/test/ui/views/build/loop_viewmodel_test.dart",
         "line": 1,
         "expected": "≥ 1 mocktail test per viewmodel",
         "expectedPlain": "at least one automated test per screen-logic file",
         "actual": "0 tests found",
         "actualPlain": "none found",
-        "reproduce": "./gates/coverage/run.sh --check tests --surface order.cart",
+        "reproduce": "./gates/coverage/run.sh --check tests --surface build.loop",
         "fingerprint": "fp_41aa…0b7d",
         "state": "fixed in attempt 2",
         "note": "Same root cause as f-01 — one authored-layer fix closed both.",
@@ -535,15 +535,15 @@
         "gate": "coverage",
         "check": "visual/probe-deltaE",
         "severity": "warning",
-        "file": "designs/frozen/order.cart/expanded.png",
+        "file": "designs/frozen/build.loop/expanded.png",
         "line": 0,
         "expected": "ΔE ≤ 2.0 against the frozen golden",
         "expectedBalanced": "colour match ≥ 95/100 (ΔE ≤ 2.0) against the frozen golden",
         "expectedPlain": "should look nearly identical to the design you approved — 95/100 or better",
-        "actual": "ΔE 4.8 on the CartSummary card — muted text token drift",
-        "actualBalanced": "88/100 (ΔE 4.8) on the CartSummary card — muted text token drift",
-        "actualPlain": "noticeably different — 88/100 on the CartSummary card. A muted text colour only worked in light mode",
-        "reproduce": "./tools/verification/probe_run.sh --surface order.cart --rung expanded",
+        "actual": "ΔE 4.8 on the RunSummary card — muted text token drift",
+        "actualBalanced": "88/100 (ΔE 4.8) on the RunSummary card — muted text token drift",
+        "actualPlain": "noticeably different — 88/100 on the RunSummary card. A muted text colour only worked in light mode",
+        "reproduce": "./tools/verification/probe_run.sh --surface build.loop --rung expanded",
         "fingerprint": "fp_b8e0…c3f2",
         "state": "fixed in attempt 2",
         "note": "Token --muted resolved against light theme only; freeze now pins both themes.",

@@ -10,19 +10,19 @@
   {% for i in c.timeline.items %}
   <li class="tl-item tl-{{ i.kind }} tl-state-{{ i.state }} {{ 'is-current' if c.timeline.currentId == i.ref }}">
     {% if i.href %}
-    <a class="tl-link" href="{{ i.href }}" title="{{ i.label }} · {{ i.state }}">
+    <a class="tl-link" href="{{ i.href }}" title="{{ i.label }}{{ ' · ' ~ t('status.name.' ~ i.state) if i.state }}">
       <span class="tl-mark" aria-hidden="true"></span>
       <span class="tl-label">{{ i.label }}</span>
     </a>
     {% elif base %}
     <a class="tl-link" href="{{ base }}/artifact/{{ i.ref }}"
        hx-get="{{ base }}/artifact/{{ i.ref }}" hx-target="#canvas" hx-swap="innerHTML" hx-push-url="false"
-       title="{{ i.label }} · {{ i.state }}">
+       title="{{ i.label }}{{ ' · ' ~ t('status.name.' ~ i.state) if i.state }}">
       <span class="tl-mark" aria-hidden="true"></span>
       <span class="tl-label">{{ i.label }}</span>
     </a>
     {% else %}
-    <span class="tl-link" title="{{ i.label }} · {{ i.state }}">
+    <span class="tl-link" title="{{ i.label }}{{ ' · ' ~ t('status.name.' ~ i.state) if i.state }}">
       <span class="tl-mark" aria-hidden="true"></span>
       <span class="tl-label">{{ i.label }}</span>
     </span>

@@ -10,7 +10,7 @@ export const page = (c, h) => h.render(c, VIEW, facade.pairingContext(h.session(
 // (renders the confirmation); mismatch → re-render with the error.
 export const confirm = async (c, h) => {
   const form = await h.form(c);
-  const ok = facade.confirmPairing(h.session(c).data, String(form.code || ''), h.locale(c));
+  const ok = facade.confirmPairing(h.session(c).data, String(form.code || ''), h.locale(c), h.t(c));
   if (ok) return c.redirect('/pair', 303);
   return h.render(c, VIEW, facade.pairingContext(h.session(c).data, h.locale(c)), 422);
 };

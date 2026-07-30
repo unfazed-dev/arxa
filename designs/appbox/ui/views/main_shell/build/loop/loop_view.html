@@ -76,7 +76,7 @@
    suggestions to say so. #}
 {% macro stageLayout(c, oob) %}
 <div class="stage-layout {{ 'is-docked' if c.artifactOpen else 'is-centered' }}" id="stage-layout" {% if oob %}hx-swap-oob="outerHTML"{% endif %}>
-  {% call cs.wrap({ eyebrow: 'run #' + c.run.number + ' · ' + c.run.brief, docked: c.artifactOpen, chips: c.chips, collapseHref: '/build/close', bottom: c.threading }) %}
+  {% call cs.wrap({ eyebrow: t('build.runEyebrow', {number: c.run.number, brief: c.run.brief}), docked: c.artifactOpen, chips: c.chips, collapseHref: '/build/close', bottom: c.threading }) %}
   {{ chatThread(c) }}
   {{ cm.field(c) }}
   {% endcall %}
@@ -93,7 +93,7 @@
 {% macro runView(c) %}
 <div class="rail-view run-view">
   <header class="rail-view-head">
-    <span class="eyebrow">run #{{ c.run.number }} · {{ c.run.brief }}</span>
+    <span class="eyebrow">{{ t('build.runEyebrow', {number: c.run.number, brief: c.run.brief}) }}</span>
     <strong class="rail-state">{{ c.run.stateLabel }}</strong>
     <span class="rail-facts">
       <span>{{ t('build.started') }} {{ c.run.started }}</span>
@@ -103,7 +103,7 @@
     </span>
   </header>
   <form class="run-controls" method="post" action="/build/run/control"
-        hx-post="/build/run/control" hx-target="#left-rail" hx-swap="outerHTML">
+        hx-post="/build/run/control" hx-target="#rail-left-body" hx-swap="innerHTML">
     {% if c.run.pausedByYou %}
     <button type="submit" name="action" value="resume" class="btn-approve">{{ icon('play', {size: 14}) }} {{ t('build.resumeRun') }}</button>
     {% else %}
@@ -149,7 +149,7 @@
     {% for o in [{id: 'all', label: t('build.filter.all')}, {id: 'stage', label: t('build.filter.stage')}, {id: 'gate', label: t('build.filter.gate')}, {id: 'findings', label: t('build.filter.findings')}, {id: 'evidence', label: t('build.filter.evidence')}, {id: 'note', label: t('build.filter.note')}] %}
     <a class="filter-item {{ 'is-active' if c.filter == o.id }}"
        href="/build/rail?type={{ o.id }}"
-       hx-get="/build/rail?type={{ o.id }}" hx-target="#left-rail" hx-swap="outerHTML" hx-push-url="false">{{ o.label }}</a>
+       hx-get="/build/rail?type={{ o.id }}" hx-target="#rail-left-body" hx-swap="innerHTML" hx-push-url="false">{{ o.label }}</a>
     {% endfor %}
   </nav>
 </div>
@@ -194,7 +194,7 @@
     {% for f in c.files %}
     <li class="file-row">
       <code class="file-path">{{ f.path }}</code>
-      <span class="chip file-status-{{ f.status }}">{{ f.status }}</span>
+      <span class="chip file-status-{{ f.status }}">{{ t('build.fileStatus.' ~ f.status) }}</span>
     </li>
     {% endfor %}
   </ul>
@@ -210,12 +210,33 @@
 {% endif %}
 {% endmacro %}
 
-{% macro leftRail(c, oob) %}
-<div id="left-rail" {% if oob %}hx-swap-oob="outerHTML"{% endif %}>
-  {% call mv.frame({ side: 'left', label: c.railView, views: c.railViews }) %}
-  {{ railViewBody(c) }}
-  {% endcall %}
-</div>
+{# The rail owns its state: head label + active carousel icon are part macros
+   with their own ids, refreshed out-of-band on every rail-affecting act —
+   the <aside> itself (and the user's resized width) is never replaced. #}
+{% macro railChrome(c) %}
+{{ mv.head({ side: 'left', label: t('rail.' + c.railView), views: c.railViews }, true) }}
+{{ mv.bar({ side: 'left', label: t('rail.' + c.railView), views: c.railViews }, true) }}
+{% endmacro %}
+
+{# Targeted response for acts initiated inside the rail (view switch, thread
+   filter, run control — all target #rail-left-body): new body content plus
+   head + bar out-of-band. #}
+{% macro railTarget(c) %}
+{{ railViewBody(c) }}
+{{ railChrome(c) }}
+{% endmacro %}
+
+{# Stage-driven re-feed: decisions, stage controls and messages change the
+   rail's data — refresh body + head + bar fully out-of-band. #}
+{% macro railOob(c) %}
+{% call mv.body({ side: 'left' }, true) %}{{ railViewBody(c) }}{% endcall %}
+{{ railChrome(c) }}
+{% endmacro %}
+
+{% macro leftRail(c) %}
+{% call mv.frame({ side: 'left', label: t('rail.' + c.railView), views: c.railViews }) %}
+{{ railViewBody(c) }}
+{% endcall %}
 {% endmacro %}
 
 {# ---------- the shell timeline: the whole line, current highlighted ----------
@@ -301,7 +322,7 @@
     {% for f in a.list %}
     <article class="finding finding-{{ f.severity }}">
       <header class="finding-head">
-        <span class="sev sev-{{ f.severity }}">{{ f.severity }}</span>
+        <span class="sev sev-{{ f.severity }}">{{ t('finding.severity.' ~ f.severity) }}</span>
         <code class="finding-loc">{{ f.file }}:{{ f.line }}</code>
         <span class="finding-check muted">{{ f.check }}</span>
       </header>
@@ -386,17 +407,18 @@
 
 {# ---------- Fragment responses ----------
    The stage (#stage-layout) is the swap unit for everything that touches the
-   chat or the canvas; the left rail re-renders OOB alongside it. Actions
-   initiated inside the rail target #left-rail and refresh the stage OOB.
-   Decisions and stage controls also refresh the bottom-bar timeline. #}
+   chat or the canvas; the left rail re-feeds out-of-band alongside it (body
+   + head + bar, never the resized <aside>). Actions initiated inside the
+   rail target #rail-left-body and refresh the stage OOB. Decisions and
+   stage controls also refresh the bottom-bar timeline. #}
 {% macro stageSwap(c) %}
 {{ stageLayout(c, false) }}
-{{ leftRail(c, true) }}
+{{ railOob(c) }}
 {% endmacro %}
 
 {% macro messageSwap(c) %}
 {{ stageLayout(c, false) }}
-{{ leftRail(c, true) }}
+{{ railOob(c) }}
 {% if c.opFired %}
 {# a typed op changed the stage — refresh the timeline too #}
 {{ timeline(c, true) }}
@@ -405,7 +427,7 @@
 
 {% macro decisionSwap(c) %}
 {{ stageLayout(c, false) }}
-{{ leftRail(c, true) }}
+{{ railOob(c) }}
 {{ timeline(c, true) }}
 {# htmx unwraps the OOB carrier for beforeend — the toast must be nested #}
 <div hx-swap-oob="beforeend:#toasts"><div class="toast" id="toast-decision">{{ c.run.stateLabel }}</div></div>
@@ -413,21 +435,21 @@
 
 {% macro controlSwap(c) %}
 {{ stageLayout(c, false) }}
-{{ leftRail(c, true) }}
+{{ railOob(c) }}
 {{ timeline(c, true) }}
 {% endmacro %}
 
 {% macro filterSwap(c) %}
-{{ leftRail(c, false) }}
+{{ railTarget(c) }}
 {{ stageLayout(c, true) }}
 {% endmacro %}
 
 {% macro railViewSwap(c) %}
-{{ leftRail(c, false) }}
+{{ railTarget(c) }}
 {% endmacro %}
 
 {% macro runSwap(c) %}
-{{ leftRail(c, false) }}
+{{ railTarget(c) }}
 {{ stageLayout(c, true) }}
 <div hx-swap-oob="beforeend:#toasts"><div class="toast" id="toast-run">{{ c.run.stateLabel }}</div></div>
 {% endmacro %}
@@ -440,7 +462,7 @@
 
 {% block surface %}
 <div class="loop-layout">
-  {{ leftRail(c, false) }}
+  {{ leftRail(c) }}
   {{ stageLayout(c, false) }}
 </div>
 {% endblock %}

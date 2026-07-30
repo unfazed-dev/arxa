@@ -26,17 +26,12 @@ const approvalFor = (sd, L) => {
 };
 
 // ---------- the interview → chat ----------
-const DEPTH_ECHO = {
-  simple: 'Simple — just the essentials.',
-  normal: 'Normal — the usual depth.',
-  advanced: 'Advanced — ask me everything.',
-};
-
-function carouselFor(st, L) {
+function carouselFor(st, t, L) {
   const bank = repo.questionBanks(L)[st.depth] ?? [];
   const firstOpen = bank.find((q) => !st.answers[q.id]);
   return {
     bank: st.depth,
+    bankLabel: t('intake.bank.' + st.depth),
     questions: bank.map((q) => {
       const a = st.answers[q.id];
       const state = st.editing === q.id ? 'editing'
@@ -53,23 +48,23 @@ function mappingChat(sd, t, L) {
   const msgs = [];
   msgs.push({
     id: 'w', from: 'agent', text: t('welcome'),
-    quickReplies: st.depth ? null : ['simple', 'normal', 'advanced'].map((d) => ({ label: d, action: '/intake/depth', name: 'depth', value: d })),
+    quickReplies: st.depth ? null : ['simple', 'normal', 'advanced'].map((d) => ({ label: t('intake.bank.' + d), action: '/intake/depth', name: 'depth', value: d })),
   });
   if (!st.depth) return msgs;
-  msgs.push({ id: 'u-depth', from: 'user', text: DEPTH_ECHO[st.depth] ?? st.depth });
-  msgs.push({ id: 'carousel', from: 'agent', text: t('carouselIntro'), carousel: carouselFor(st, L) });
+  msgs.push({ id: 'u-depth', from: 'user', text: t('intake.depthEcho.' + st.depth) });
+  msgs.push({ id: 'carousel', from: 'agent', text: t('carouselIntro'), carousel: carouselFor(st, t, L) });
   if (st.generated) {
     const stale = isStale(st);
     msgs.push({
       id: 'gen', from: 'agent', text: t('generated'),
-      artifactRef: 'map/full', artifactLabel: 'open the live story map',
-      nextHref: '/intake/brief', nextLabel: 'read the brief',
+      artifactRef: 'map/full', artifactLabel: t('intake.cta.openStoryMap'),
+      nextHref: '/intake/brief', nextLabel: t('intake.cta.readBrief'),
       quickReplies: !st.approved || stale
-        ? [{ label: stale ? `re-approve the story map (v${st.currentVersion})` : 'approve the story map', action: '/intake/approve', name: 'go', value: 'approve' }]
+        ? [{ label: stale ? t('intake.cta.reapproveMap', { version: st.currentVersion }) : t('intake.cta.approveMap'), action: '/intake/approve', name: 'go', value: 'approve' }]
         : null,
     });
-    msgs.push({ id: 'next', from: 'agent', text: t('moodboardNext'), nextHref: '/intake/moodboard', nextLabel: 'curate the moodboard' });
-    if (st.approved && !stale) msgs.push({ id: 'ok', from: 'agent', text: t('approved'), nextHref: '/design', nextLabel: 'open the Design shell' });
+    msgs.push({ id: 'next', from: 'agent', text: t('moodboardNext'), nextHref: '/intake/moodboard', nextLabel: t('intake.cta.curateMoodboard') });
+    if (st.approved && !stale) msgs.push({ id: 'ok', from: 'agent', text: t('approved'), nextHref: '/design', nextLabel: t('intake.cta.openDesignShell') });
     if (stale) msgs.push({ id: 'stale', from: 'agent', text: t('stale') });
   }
   return msgs;
@@ -86,8 +81,8 @@ function chatFor(sd, surface, lv, t, L) {
   if (surface === 'mapping') return [...mappingChat(sd, t, L), ...extrasFor(sd, surface, lv)];
   const intro = {
     mapping: null,
-    brief: { id: 'intro', from: 'agent', text: t('chatIntroBrief'), artifactRef: 'doc/full', artifactLabel: 'open the brief on the stage' },
-    moodboard: { id: 'intro', from: 'agent', text: t('chatIntroMoodboard'), artifactRef: 'gallery/all', artifactLabel: 'open the gallery on the stage' },
+    brief: { id: 'intro', from: 'agent', text: t('chatIntroBrief'), artifactRef: 'doc/full', artifactLabel: t('intake.cta.openBriefStage') },
+    moodboard: { id: 'intro', from: 'agent', text: t('chatIntroMoodboard'), artifactRef: 'gallery/all', artifactLabel: t('intake.cta.openGalleryStage') },
   }[surface];
   return [intro, ...extrasFor(sd, surface, lv)];
 }
@@ -152,27 +147,27 @@ function resolveArtifact(surface, ref, t, L) {
 }
 
 // Short chip label per artifact ref — the chat-head context chip.
-function chipLabel(ref) {
+function chipLabel(ref, t) {
   const [kind, id] = (ref ?? '').split('/');
   return {
-    map: id === 'priorities' ? 'priorities' : id === 'releases' ? 'releases' : 'story map',
-    story: `story ${id}`, doc: id === 'surfaces' ? 'surface inventory' : 'design brief',
-    gallery: 'moodboard', shot: 'capture',
+    map: id === 'priorities' ? t('intake.chip.priorities') : id === 'releases' ? t('intake.chip.releases') : t('intake.chip.storyMap'),
+    story: t('intake.chip.story', { id }), doc: id === 'surfaces' ? t('intake.chip.surfaceInventory') : t('intake.chip.designBrief'),
+    gallery: t('intake.chip.moodboard'), shot: t('intake.chip.capture'),
   }[kind] ?? ref;
 }
 
 // ---------- the bottom-bar timeline (read-only) ----------
-function timelineFor(sd, surface, L) {
+function timelineFor(sd, surface, t, L) {
   const st = interview(sd, L);
   const stale = isStale(st);
   const unlocked = st.approved && !stale;
   const items = [
-    { id: 'interview', kind: 'stage', label: 'Interview', state: st.depth ? 'green' : 'active' },
-    { id: 'mapping', kind: 'stage', label: 'Story map', state: st.generated ? 'green' : st.depth ? 'active' : 'pending' },
-    { id: 'brief', kind: 'stage', label: 'Brief', state: st.generated ? 'green' : 'pending' },
-    { id: 'moodboard', kind: 'stage', label: 'Moodboard', state: st.generated ? 'active' : 'pending' },
-    { id: 'intake.approval', kind: 'gate', label: 'Approval', state: st.approved ? (stale ? 'held' : 'approved') : st.generated ? 'active' : 'pending' },
-    { id: 'design', kind: 'stage', label: unlocked ? 'Design' : 'Design · locked', state: unlocked ? 'pending' : 'cancelled' },
+    { id: 'interview', kind: 'stage', label: t('screen.label.intake.interview'), state: st.depth ? 'green' : 'active' },
+    { id: 'mapping', kind: 'stage', label: t('intake.timeline.storyMap'), state: st.generated ? 'green' : st.depth ? 'active' : 'pending' },
+    { id: 'brief', kind: 'stage', label: t('screen.label.intake.brief'), state: st.generated ? 'green' : 'pending' },
+    { id: 'moodboard', kind: 'stage', label: t('screen.label.intake.moodboard'), state: st.generated ? 'active' : 'pending' },
+    { id: 'intake.approval', kind: 'gate', label: t('intake.timeline.approval'), state: st.approved ? (stale ? 'held' : 'approved') : st.generated ? 'active' : 'pending' },
+    { id: 'design', kind: 'stage', label: unlocked ? t('tab.design') : t('intake.timeline.lockedSuffix', { label: t('tab.design') }), state: unlocked ? 'pending' : 'cancelled' },
   ];
   // current = the step actively in progress (first 'active'), never a
   // surface being browsed — the line must read as pipeline truth; the shared
@@ -196,36 +191,46 @@ function railViewFor(sd, surface, base, lv, t, L) {
     const c = repo.counts(L);
     const ap = approvalFor(sd, L);
     const mapBadges = [
-      ap.approved && !ap.stale ? { tone: 'ok', label: `approved · v${ap.approvedVersion}` } : null,
-      ap.stale ? { tone: 'warn', label: 'changed since approval' } : null,
+      ap.approved && !ap.stale ? { tone: 'ok', label: t('map.approvedBadge', { version: ap.approvedVersion }) } : null,
+      ap.stale ? { tone: 'warn', label: t('badge.stale') } : null,
     ].filter(Boolean);
     body = {
       artifacts: {
         mapping: [
-          { ref: 'map/full', title: 'Live story map', detail: `${c.stories} stories · ${c.epics} epics · status dots live`, badges: mapBadges },
-          { ref: 'map/priorities', title: 'MoSCoW priorities', detail: `${c.must} must · ${c.should} should · ${c.could} could`, badges: [] },
-          { ref: 'map/releases', title: 'Release swimlanes', detail: repo.releases(L).map((r) => r.name).join(' · '), badges: [] },
+          { ref: 'map/full', title: t('intake.rail.liveStoryMap.title'), detail: t('intake.rail.liveStoryMap.detail', { stories: c.stories, epics: c.epics }), badges: mapBadges },
+          { ref: 'map/priorities', title: t('intake.rail.moscow.title'), detail: t('intake.rail.moscow.detail', { must: c.must, should: c.should, could: c.could }), badges: [] },
+          { ref: 'map/releases', title: t('intake.rail.releases.title'), detail: repo.releases(L).map((r) => r.name).join(' · '), badges: [] },
         ],
         brief: [
-          { ref: 'doc/full', title: 'Design brief', detail: `${repo.brief(L).surfaces.length} surfaces traced · generated`, badges: [] },
-          { ref: 'doc/surfaces', title: 'Surface inventory', detail: 'the table the designer consumes', badges: [] },
+          { ref: 'doc/full', title: t('intake.rail.designBrief.title'), detail: t('intake.rail.designBrief.detail', { count: repo.brief(L).surfaces.length }), badges: [] },
+          { ref: 'doc/surfaces', title: t('intake.rail.surfaceInventory.title'), detail: t('intake.rail.surfaceInventory.detail'), badges: [] },
         ],
         moodboard: [
-          { ref: 'gallery/all', title: 'The moodboard', detail: `${repo.moodboard(L).boards.length} boards · ${repo.moodboard(L).counts.shots} shots`, badges: [] },
-          ...repo.moodboard(L).boards.map((b) => ({ ref: `gallery/${b.id}`, title: b.title, detail: `${b.references.length} references · informs ${b.informs}`, badges: [] })),
+          { ref: 'gallery/all', title: t('intake.rail.moodboard.title'), detail: t('intake.rail.moodboard.detail', { boards: repo.moodboard(L).boards.length, shots: repo.moodboard(L).counts.shots }), badges: [] },
+          ...repo.moodboard(L).boards.map((b) => ({ ref: `gallery/${b.id}`, title: b.title, detail: t('intake.rail.board.detail', { count: b.references.length, informs: b.informs }), badges: [] })),
         ],
       }[surface],
     };
   } else if (active === 'files') {
     body = { files: repo.files(L) };
   } else {
+    // Seeded narrative + this session's own messages — the rail thread is
+    // live, it reacts to what the chat is fed, not a frozen copy.
     body = {
-      thread: repo.narrative(surface, L).map((m) => ({
-        at: m.at,
-        text: jargon.pick(m, 'text', lv),
-        artifact: m.artifact ?? null,
-        artifactLabel: m.artifact ? chipLabel(m.artifact) : null,
-      })),
+      thread: [
+        ...repo.narrative(surface, L).map((m) => ({
+          at: m.at,
+          text: jargon.pick(m, 'text', lv),
+          artifact: m.artifact ?? null,
+          artifactLabel: m.artifact ? chipLabel(m.artifact, t) : null,
+        })),
+        ...extrasFor(sd, surface, lv).map((m) => ({
+          at: t('time.now'),
+          text: m.text,
+          artifact: m.artifactRef ?? null,
+          artifactLabel: m.artifactRef ? m.artifactLabel ?? chipLabel(m.artifactRef, t) : null,
+        })),
+      ],
     };
   }
   return { views, active, label: views.find((v) => v.id === active).label, body };
@@ -247,27 +252,27 @@ export const context = (sd, surface, ref, prefs = {}, t = (k) => k, locale = 'en
     surface,
     base,
     project: { name: repo.project(L) },
-    eyebrow: { mapping: 'intake · interview', brief: 'intake · brief', moodboard: 'intake · moodboard' }[surface],
+    eyebrow: t('intake.eyebrow.' + surface),
     composerAction: `${base}/messages`,
-    placeholder: 'Message the intake agent…',
-    modelMenu: agent.modelMenuFor(sd, base),
+    placeholder: t('composer.placeholder.intake'),
+    modelMenu: agent.modelMenuFor(sd, base, t),
     threading: chat.some((m) => m.from === 'user'),
     suggestions: {
-      mapping: ["What's in R1?", 'Explain MoSCoW', 'Which surfaces trace?'],
-      brief: ['How does the brief feed design?', 'Which surfaces trace?'],
-      moodboard: ['What should we steal?', 'Which references made the board?'],
+      mapping: [t('intake.sug.whatsInR1'), t('intake.sug.explainMoscow'), t('intake.sug.whichSurfaces')],
+      brief: [t('intake.sug.briefFeedsDesign'), t('intake.sug.whichSurfaces')],
+      moodboard: [t('intake.sug.whatToSteal'), t('intake.sug.whichReferences')],
     }[surface],
     chat,
     docked,
     artifact: docked ? resolveArtifact(surface, activeArtifact, t, L) : null,
     activeArtifact,
-    chips: docked ? [{ id: activeArtifact, label: chipLabel(activeArtifact), removeHref: `${base}/close` }] : [],
+    chips: docked ? [{ id: activeArtifact, label: chipLabel(activeArtifact, t), removeHref: `${base}/close` }] : [],
     collapseHref: docked ? `${base}/close` : null,
     railViews: rail.views,
     railView: rail.active,
     railLabel: rail.label,
     railBody: rail.body,
-    timeline: timelineFor(sd, surface, L),
+    timeline: timelineFor(sd, surface, t, L),
     approval: approvalFor(sd, L),
     jargonLevel: lv,
   };
@@ -357,7 +362,7 @@ export const sendMessage = (sd, surface, text, prefs = {}, t = (k) => k, locale 
     id: `a-${seq}`, from: 'agent',
     text: reply.text, textBalanced: reply.textBalanced, textPlain: reply.textPlain,
     artifactRef: reply.artifact ?? null,
-    artifactLabel: reply.artifact ? `open the ${chipLabel(reply.artifact)}` : null,
+    artifactLabel: reply.artifact ? t('intake.cta.openArtifact', { label: chipLabel(reply.artifact, t) }) : null,
   });
   if (reply.artifact) s.current[surface] = reply.artifact;
   return context(sd, surface, null, prefs, t, locale);

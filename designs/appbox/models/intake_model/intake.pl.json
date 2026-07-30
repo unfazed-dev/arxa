@@ -1,5 +1,5 @@
 {
-  "project": "Petal & Stem",
+  "project": "app-box",
   "map": {
     "releases": [
       {
@@ -920,7 +920,7 @@
               },
               {
                 "id": "s-65",
-                "name": "Zakup i aktywacja licencji, płatność przy wdrożeniu wyjaśniona przed kasą",
+                "name": "Zakup i aktywacja licencji, płatność przy wdrożeniu wyjaśniona z wyprzedzeniem",
                 "priority": "must",
                 "release": "R2 Anywhere",
                 "epic": "Witryna",

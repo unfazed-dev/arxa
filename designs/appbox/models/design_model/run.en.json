@@ -2,8 +2,8 @@
   "run": {
     "id": "design-07",
     "number": 7,
-    "project": "Petal & Stem",
-    "brief": "companion app — approve builds from anywhere",
+    "project": "app-box",
+    "brief": "app-box — designs, builds and ships itself",
     "started": "Yesterday 14:02",
     "elapsed": "21m 05s",
     "state": "frozen",

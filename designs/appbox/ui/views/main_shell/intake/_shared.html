@@ -63,7 +63,7 @@
 {% endmacro %}
 
 {% macro qCarousel(c, car) %}
-<div class="q-carousel" aria-label="{{ t('intake.questionsAria', {bank: car.bank}) }}">
+<div class="q-carousel" aria-label="{{ t('intake.questionsAria', {bank: car.bankLabel}) }}">
   {% for q in car.questions %}{{ qCard(c, q) }}{% endfor %}
 </div>
 {% endmacro %}
@@ -163,4 +163,22 @@
 {% call mv.frame({ side: 'left', label: c.railLabel, views: c.railViews }) %}
   {{ railBody(c) }}
 {% endcall %}
+{% endmacro %}
+
+{# Targeted view-switch response (<base>/rail?view= → #rail-left-body): the
+   new body plus head + bar out-of-band, so the label and the active accent
+   icon track the server's rail state. #}
+{% macro railSwap(c) %}
+{{ railBody(c) }}
+{{ mv.head({ side: 'left', label: c.railLabel, views: c.railViews }, true) }}
+{{ mv.bar({ side: 'left', label: c.railLabel, views: c.railViews }, true) }}
+{% endmacro %}
+
+{# Stage-driven re-feed: interview progress, approvals and artifact opens
+   change the rail's data — refresh it out-of-band with the stage. The
+   <aside> itself (and its resized width) is never replaced. #}
+{% macro railOob(c) %}
+{% call mv.body({ side: 'left' }, true) %}{{ railBody(c) }}{% endcall %}
+{{ mv.head({ side: 'left', label: c.railLabel, views: c.railViews }, true) }}
+{{ mv.bar({ side: 'left', label: c.railLabel, views: c.railViews }, true) }}
 {% endmacro %}

@@ -1,5 +1,5 @@
 {
-  "project": "Petal & Stem",
+  "project": "app-box",
   "map": {
     "releases": [
       {
@@ -920,7 +920,7 @@
               },
               {
                 "id": "s-65",
-                "name": "Licence purchase and activation, pay-at-deploy explained before checkout",
+                "name": "Licence purchase and activation, pay-at-deploy explained up front",
                 "priority": "must",
                 "release": "R2 Anywhere",
                 "epic": "Website",

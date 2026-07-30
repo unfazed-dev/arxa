@@ -1,6 +1,6 @@
 {% extends "ui/common/base.html" %}
 {% import "ui/common/shell_nav.html" as shellNav %}
-{% block title %}appbox{% endblock %}
+{% block title %}{{ t('index.pageTitle') }}{% endblock %}
 {% block content %}
 {{ shellNav.shellNav(activeShell, prefs, project) }}
 <main class="shell-main {% block main_class %}{% endblock %}">

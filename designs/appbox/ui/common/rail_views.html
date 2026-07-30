@@ -11,6 +11,12 @@
        …markup for the active view…
      {% endcall %}
 
+   The rail owns and persists its own state: the <aside> (with the user's
+   CSS-resize width) is never replaced — a view switch swaps the body in
+   place and refreshes head + bar out-of-band, so the active icon and the
+   label always track the server's rail state. htmx's global view
+   transitions animate every swap.
+
    spec:
      side         — 'left' | 'right' (drives the id, the resize edge, rtl flip)
      label        — the active view's label, shown in the head
@@ -18,24 +24,43 @@
                     each; icon is a Lucide name for the icon() global, href
                     hx-swaps that view's fragment into #rail-<side>-body
      collapseHref? — when present, a close button hx-swaps the whole rail
-                    (outerHTML) with the collapsed state the server returns #}
+                    (outerHTML) with the collapsed state the server returns
+
+   Part macros (head / body / bar) carry their own ids and an `oob` flag:
+   a view-switch response renders the body content (targeted) plus head and
+   bar with oob=true; a stage-driven re-feed renders body + head + bar all
+   with oob=true. #}
+{% macro head(spec, oob) %}
+<header class="mv-rail-head" id="rail-{{ spec.side }}-head" {% if oob %}hx-swap-oob="outerHTML"{% endif %}>
+  <strong class="mv-rail-label">{{ spec.label }}</strong>
+  {% if spec.collapseHref %}
+  <a class="ico-btn" href="{{ spec.collapseHref }}"
+     hx-get="{{ spec.collapseHref }}" hx-target="#rail-{{ spec.side }}" hx-swap="outerHTML" hx-push-url="false"
+     title="{{ t('railViews.collapse.' ~ spec.side) }}" aria-label="{{ t('railViews.collapse.' ~ spec.side) }}">{{ icon('x', {size: 16}) }}</a>
+  {% endif %}
+</header>
+{% endmacro %}
+
+{% macro body(spec, oob) %}
+<div class="mv-rail-body" id="rail-{{ spec.side }}-body" {% if oob %}hx-swap-oob="outerHTML"{% endif %}>
+  {{ caller() }}
+</div>
+{% endmacro %}
+
+{% macro bar(spec, oob) %}
+<footer class="mv-rail-bar" id="rail-{{ spec.side }}-bar" aria-label="{{ t('railViews.aria.' ~ spec.side) }}" {% if oob %}hx-swap-oob="outerHTML"{% endif %}>
+  {% for v in spec.views %}
+  <a class="mv-icon {{ 'is-active' if v.active }}" href="{{ v.href }}" hx-get="{{ v.href }}" hx-target="#rail-{{ spec.side }}-body" hx-swap="innerHTML" hx-push-url="false" title="{{ v.label }}" aria-label="{{ v.label }}">{{ icon(v.icon, {size: 18}) }}</a>
+  {% endfor %}
+</footer>
+{% endmacro %}
+
 {% macro frame(spec) %}
 <aside class="mv-rail mv-rail-{{ spec.side }}" id="rail-{{ spec.side }}">
-  <header class="mv-rail-head">
-    <strong class="mv-rail-label">{{ spec.label }}</strong>
-    {% if spec.collapseHref %}
-    <a class="ico-btn" href="{{ spec.collapseHref }}"
-       hx-get="{{ spec.collapseHref }}" hx-target="#rail-{{ spec.side }}" hx-swap="outerHTML" hx-push-url="false"
-       title="{{ t('railViews.collapse.' ~ spec.side) }}" aria-label="{{ t('railViews.collapse.' ~ spec.side) }}">{{ icon('x', {size: 16}) }}</a>
-    {% endif %}
-  </header>
+  {{ head(spec, false) }}
   <div class="mv-rail-body" id="rail-{{ spec.side }}-body">
     {{ caller() }}
   </div>
-  <footer class="mv-rail-bar" aria-label="{{ t('railViews.aria.' ~ spec.side) }}">
-    {% for v in spec.views %}
-    <a class="mv-icon {{ 'is-active' if v.active }}" href="{{ v.href }}" hx-get="{{ v.href }}" hx-target="#rail-{{ spec.side }}-body" hx-swap="innerHTML" hx-push-url="false" title="{{ v.label }}" aria-label="{{ v.label }}">{{ icon(v.icon, {size: 18}) }}</a>
-    {% endfor %}
-  </footer>
+  {{ bar(spec, false) }}
 </aside>
 {% endmacro %}

@@ -72,7 +72,7 @@
 
 {% macro railBar(c, oob) %}
 {{ rail.railBar(c, oob, {
-  eyebrow: 'design run #' + c.run.number + ' · ' + c.run.brief,
+  eyebrow: t('design.runEyebrow', {number: c.run.number, brief: c.run.brief}),
   state: c.run.stateLabel,
   facts: [t('surfaces.count', {count: c.counts.screens}), t('design.shotsFact', {count: c.counts.shots}), c.run.rungsLabel],
   filter: {
@@ -145,11 +145,25 @@
 {% endmacro %}
 
 {% macro railLeft(c) %}
-{% call mv.frame({ side: 'left', label: c.railView, views: [
-  { id: 'screens', icon: 'layout-grid', label: t('rail.screens'), href: '/design/rail/screens', active: c.railView == 'screens' },
-  { id: 'artifacts', icon: 'package', label: t('rail.artifacts'), href: '/design/rail/artifacts', active: c.railView == 'artifacts' },
-  { id: 'files', icon: 'folder', label: t('rail.files'), href: '/design/rail/files', active: c.railView == 'files' }
-] }) %}
+{% call mv.frame({ side: 'left', label: c.railLabel, views: c.railViews }) %}
   {{ railBody(c) }}
 {% endcall %}
+{% endmacro %}
+
+{# Targeted view-switch response (/design/rail/:view → #rail-left-body): the
+   new body plus head + bar out-of-band, so the label and the active accent
+   icon track the server's rail state. #}
+{% macro railSwap(c) %}
+{{ railBody(c) }}
+{{ mv.head({ side: 'left', label: c.railLabel, views: c.railViews }, true) }}
+{{ mv.bar({ side: 'left', label: c.railLabel, views: c.railViews }, true) }}
+{% endmacro %}
+
+{# Stage-driven re-feed: any stage act (pin, revert, draft) refreshes the
+   whole rail out-of-band — the rail reacts to the data, never a stale copy.
+   The <aside> itself (and its resized width) is never replaced. #}
+{% macro railOob(c) %}
+{% call mv.body({ side: 'left' }, true) %}{{ railBody(c) }}{% endcall %}
+{{ mv.head({ side: 'left', label: c.railLabel, views: c.railViews }, true) }}
+{{ mv.bar({ side: 'left', label: c.railLabel, views: c.railViews }, true) }}
 {% endmacro %}

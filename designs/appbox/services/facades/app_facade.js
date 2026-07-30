@@ -5,6 +5,13 @@
 // from the request and picks the per-locale fixture, en fallback.
 import * as repo from '../repositories/app_repository.js';
 
+// Catalog lookup with the former en literal as fallback while a key awaits
+// merge into l10n/app_*.arb (same pattern as screens_facade.labelOf).
+const tr = (t, key, vars, fallback) => {
+  const v = t(key, vars);
+  return v == key ? fallback : v;
+};
+
 // ---------- session ----------
 const S = (sd) => (sd.app ??= { user: null, paired: null, pairError: null, decided: {}, extraProjects: [], projSeq: 0 });
 
@@ -29,11 +36,11 @@ export const pairingContext = (sd, locale = 'en') => {
 
 // One-scan pairing: the code from the desktop QR, single-use. A wrong code
 // re-renders the form with the error; a right code pairs and 303s back.
-export const confirmPairing = (sd, code, locale = 'en') => {
+export const confirmPairing = (sd, code, locale = 'en', t = (k) => k) => {
   const s = S(sd);
   const ok = String(code || '').trim().toUpperCase() === repo.pairing(locale).code.toUpperCase();
-  s.pairError = ok ? null : 'That code doesn’t match — check the QR on the desktop and try again.';
-  if (ok) s.paired = { deviceName: repo.pairing(locale).deviceName, at: 'paired just now' };
+  s.pairError = ok ? null : tr(t, 'pair.errorMismatch', null, 'That code doesn’t match — check the QR on the desktop and try again.');
+  if (ok) s.paired = { deviceName: repo.pairing(locale).deviceName, at: tr(t, 'pair.justNow', null, 'paired just now') };
   return ok;
 };
 
@@ -64,16 +71,16 @@ export const decideGate = (sd, id, decision, locale = 'en') => {
 };
 
 // GenUI new-project wizard: name + targets → a seeded project row, 303 to intake.
-export const createProject = (sd, name, targets) => {
+export const createProject = (sd, name, targets, t = (k) => k) => {
   const s = S(sd);
   const seq = (s.projSeq += 1);
   const list = Array.isArray(targets) ? targets : targets ? [targets] : [];
   s.extraProjects.push({
     id: `p-new-${seq}`,
-    name: String(name || '').trim() || `Untitled project ${seq}`,
+    name: String(name || '').trim() || tr(t, 'dash.untitledProject', { n: seq }, `Untitled project ${seq}`),
     targets: list.length ? list : ['web'],
     stage: 'intake',
-    stageLabel: 'Intake · interview',
-    lastSaved: 'saved just now',
+    stageLabel: tr(t, 'dash.stageIntake', null, 'Intake · interview'),
+    lastSaved: tr(t, 'dash.savedJustNow', null, 'saved just now'),
   });
 };

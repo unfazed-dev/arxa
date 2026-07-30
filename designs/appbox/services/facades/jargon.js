@@ -27,35 +27,45 @@ export const scoreDeltaE = (de) => Math.max(0, Math.floor(100 - 2.5 * Number(de)
 export const scoreSsim = (ssim) => Math.round(1000 * Number(ssim)) / 10;
 export const PASS_SCORE = 95; // the human-scale pass bar (ΔE ≤ 2.0)
 
-export const band = (score) =>
-  score >= 99 ? 'identical to the eye'
-  : score >= 95 ? 'near-identical'
-  : score >= 91 ? 'slightly different'
-  : score >= 85 ? 'noticeably different'
-  : 'clearly different';
+// Catalog lookup with the former en literal as fallback while a key awaits
+// merge into l10n/app_*.arb (same pattern as screens_facade.labelOf).
+const tr = (t, key, vars, fallback) => {
+  const v = t(key, vars);
+  return v == key ? fallback : v;
+};
+
+export const band = (score, t = (k) => k) =>
+  score >= 99 ? tr(t, 'band.identical', null, 'identical to the eye')
+  : score >= 95 ? tr(t, 'band.nearIdentical', null, 'near-identical')
+  : score >= 91 ? tr(t, 'band.slightly', null, 'slightly different')
+  : score >= 85 ? tr(t, 'band.noticeably', null, 'noticeably different')
+  : tr(t, 'band.clearly', null, 'clearly different');
 
 // Probe chips per level: plain/balanced lead with the /100 score; technical
 // shows the raw trio. Each chip carries a title with the raw values.
-export const probeChips = (probe, lv) => {
+export const probeChips = (probe, lv, t = (k) => k) => {
   const de = scoreDeltaE(probe.deltaE);
   const ssim = scoreSsim(probe.ssim);
   if (lv === 'technical') {
     return [
-      { text: `SSIM ${probe.ssim}`, title: 'pixel similarity' },
-      { text: `${probe.skeleton}`, title: 'skeleton diff' },
-      { text: `ΔE ${probe.deltaE}`, title: 'colour distance' },
+      { text: `SSIM ${probe.ssim}`, title: tr(t, 'probe.sim', null, 'pixel similarity') },
+      { text: `${probe.skeleton}`, title: tr(t, 'probe.skeleton', null, 'skeleton diff') },
+      { text: `ΔE ${probe.deltaE}`, title: tr(t, 'probe.colour', null, 'colour distance') },
     ];
   }
   const raw = `SSIM ${probe.ssim} · skeleton ${probe.skeleton} · ΔE ${probe.deltaE}`;
+  const layout = probe.skeleton === 'match'
+    ? tr(t, 'probe.layoutExact', null, 'layout exact')
+    : tr(t, 'probe.layout', { state: probe.skeleton }, `layout ${probe.skeleton}`);
   if (lv === 'balanced') {
     return [
-      { text: `${ssim}/100 structure`, title: raw },
-      { text: probe.skeleton === 'match' ? 'layout exact' : `layout ${probe.skeleton}`, title: raw },
-      { text: `${de}/100 colour`, title: raw },
+      { text: tr(t, 'probe.structure', { n: ssim }, `${ssim}/100 structure`), title: raw },
+      { text: layout, title: raw },
+      { text: tr(t, 'probe.colourScore', { n: de }, `${de}/100 colour`), title: raw },
     ];
   }
   return [
-    { text: `${band(de)} · ${de}/100`, title: raw },
-    { text: probe.skeleton === 'match' ? 'layout exact' : `layout ${probe.skeleton}`, title: raw },
+    { text: `${band(de, t)} · ${de}/100`, title: raw },
+    { text: layout, title: raw },
   ];
 };

@@ -2,8 +2,8 @@
   "run": {
     "id": "run-47",
     "number": 47,
-    "project": "Petal & Stem",
-    "brief": "aplikacja do zamawiania kwiatów — ios + macos",
+    "project": "app-box",
+    "brief": "aplikacja towarzysząca — ios + macos",
     "started": "09:14",
     "elapsed": "34m 12s",
     "state": "paused",
@@ -90,8 +90,8 @@
         {
           "n": 2,
           "state": "green",
-          "note": "poprawka zastosowana w warstwie autorskiej order.cart, bramka uruchomiona ponownie",
-          "notePlain": "poprawka zastosowana w kodzie ekranu order.cart, testy uruchomione ponownie"
+          "note": "poprawka zastosowana w warstwie autorskiej build.loop, bramka uruchomiona ponownie",
+          "notePlain": "poprawka zastosowana w kodzie ekranu build.loop, testy uruchomione ponownie"
         }
       ]
     },
@@ -159,13 +159,13 @@
       "gate": "coverage",
       "check": "structure/surface-files",
       "severity": "error",
-      "file": "app/lib/ui/views/order/cart_view.dart",
+      "file": "app/lib/ui/views/build/loop_view.dart",
       "line": 1,
       "expected": "4 pliki na platformę ios (view, viewmodel, test, fixture)",
       "expectedPlain": "każdy ekran potrzebuje 4 plików na iPhone'a (ekran, logika, testy, przykładowe dane)",
       "actual": "3 — brakuje testu viewmodelu",
       "actualPlain": "znaleziono 3 — brakuje testu logiki",
-      "reproduce": "./gates/coverage/run.sh --surface order.cart --target ios",
+      "reproduce": "./gates/coverage/run.sh --surface build.loop --target ios",
       "fingerprint": "fp_7d2c…e91a",
       "state": "naprawione w próbie 2",
       "note": "MEM-A: ta kontrola pada tak, gdy scaffolder emituje pliki, ale mapa historyjek oznacza powierzchnię jako testowo-opcjonalną — bramka się nie zgadza.",
@@ -176,13 +176,13 @@
       "gate": "coverage",
       "check": "tests/viewmodel-presence",
       "severity": "error",
-      "file": "app/test/ui/views/order/cart_viewmodel_test.dart",
+      "file": "app/test/ui/views/build/loop_viewmodel_test.dart",
       "line": 1,
       "expected": "≥ 1 test mocktail na viewmodel",
       "expectedPlain": "co najmniej jeden automatyczny test na plik logiki ekranu",
       "actual": "znaleziono 0 testów",
       "actualPlain": "nie znaleziono żadnego",
-      "reproduce": "./gates/coverage/run.sh --check tests --surface order.cart",
+      "reproduce": "./gates/coverage/run.sh --check tests --surface build.loop",
       "fingerprint": "fp_41aa…0b7d",
       "state": "naprawione w próbie 2",
       "note": "Ta sama przyczyna co f-01 — jedna poprawka warstwy autorskiej zamknęła oba.",
@@ -193,15 +193,15 @@
       "gate": "coverage",
       "check": "visual/probe-deltaE",
       "severity": "warning",
-      "file": "designs/frozen/order.cart/expanded.png",
+      "file": "designs/frozen/build.loop/expanded.png",
       "line": 0,
       "expected": "ΔE ≤ 2.0 względem zamrożonego wzorca",
       "expectedBalanced": "zgodność kolorów ≥ 95/100 (ΔE ≤ 2.0) względem zamrożonego wzorca",
       "expectedPlain": "powinno wyglądać niemal identycznie jak projekt, który zatwierdziłeś — 95/100 albo lepiej",
-      "actual": "ΔE 4.8 na karcie CartSummary — dryf tokenu przygaszonego tekstu",
-      "actualBalanced": "88/100 (ΔE 4.8) na karcie CartSummary — dryf tokenu przygaszonego tekstu",
-      "actualPlain": "wyraźnie różne — 88/100 na karcie CartSummary. Przygaszony kolor tekstu działał tylko w trybie jasnym",
-      "reproduce": "./tools/verification/probe_run.sh --surface order.cart --rung expanded",
+      "actual": "ΔE 4.8 na karcie RunSummary — dryf tokenu przygaszonego tekstu",
+      "actualBalanced": "88/100 (ΔE 4.8) na karcie RunSummary — dryf tokenu przygaszonego tekstu",
+      "actualPlain": "wyraźnie różne — 88/100 na karcie RunSummary. Przygaszony kolor tekstu działał tylko w trybie jasnym",
+      "reproduce": "./tools/verification/probe_run.sh --surface build.loop --rung expanded",
       "fingerprint": "fp_b8e0…c3f2",
       "state": "naprawione w próbie 2",
       "note": "Token --muted rozwiązywał tylko względem jasnego motywu; zamrożenie przypina teraz oba motywy.",
@@ -210,7 +210,7 @@
   ],
   "evidence": [
     {
-      "surface": "catalog.home",
+      "surface": "intake.mapping",
       "tests": "5/5",
       "files": 4,
       "probe": {
@@ -226,7 +226,7 @@
       ]
     },
     {
-      "surface": "order.cart",
+      "surface": "build.loop",
       "tests": "6/6",
       "files": 4,
       "probe": {
@@ -242,7 +242,7 @@
       ]
     },
     {
-      "surface": "order.checkout",
+      "surface": "design.chat",
       "tests": "4/4",
       "files": 4,
       "probe": {
@@ -258,12 +258,12 @@
       ]
     },
     {
-      "surface": "order.confirmation",
+      "surface": "access.pairing",
       "tests": "3/3",
       "files": 4,
       "probe": {
         "ssim": "0.965",
-        "skeleton": "1 node fixed",
+        "skeleton": "1 węzeł naprawiony",
         "deltaE": "2.2"
       },
       "state": "watch",
@@ -294,7 +294,7 @@
     },
     {
       "hash": "7e2c91b",
-      "message": "fix(build): warstwa autorska order.cart — kontrola zielona w próbie 2",
+      "message": "fix(build): warstwa autorska build.loop — kontrola zielona w próbie 2",
       "at": "09:57",
       "state": "green"
     },
@@ -307,27 +307,27 @@
   ],
   "files": [
     {
-      "path": "app/lib/ui/views/order/cart_view.dart",
+      "path": "app/lib/ui/views/build/loop_view.dart",
       "status": "changed"
     },
     {
-      "path": "app/test/ui/views/order/cart_viewmodel_test.dart",
+      "path": "app/test/ui/views/build/loop_viewmodel_test.dart",
       "status": "new"
     },
     {
-      "path": "app/lib/ui/views/catalog/home_view.dart",
+      "path": "app/lib/ui/views/intake/mapping_view.dart",
       "status": "new"
     },
     {
-      "path": "app/lib/ui/views/order/checkout_view.dart",
+      "path": "app/lib/ui/views/design/chat_view.dart",
       "status": "new"
     },
     {
-      "path": "app/lib/ui/views/order/confirmation_view.dart",
+      "path": "app/lib/ui/views/access/pairing_view.dart",
       "status": "new"
     },
     {
-      "path": "designs/frozen/order.cart/expanded.png",
+      "path": "designs/frozen/build.loop/expanded.png",
       "status": "frozen"
     },
     {
@@ -339,8 +339,8 @@
     {
       "id": "n-01",
       "at": "09:14",
-      "text": "Przebieg #47 na linii — Petal & Stem, zamawianie kwiatów na ios + macos. Stop-on-red włączony, limit eskalacji 3.",
-      "textPlain": "Przebieg #47 jest na linii — Petal & Stem, aplikacja do zamawiania kwiatów na iPhone'a i Maca. Przebieg zatrzymuje się sam przy pierwszym błędzie; do 3 automatycznych prób naprawy.",
+      "text": "Przebieg #47 na linii — app-box, build dogfood R1 na ios + macos. Stop-on-red włączony, limit eskalacji 3.",
+      "textPlain": "Przebieg #47 jest na linii — app-box, build dogfood R1 na iPhone'a i Maca. Przebieg zatrzymuje się sam przy pierwszym błędzie; do 3 automatycznych prób naprawy.",
       "artifact": null
     },
     {
@@ -389,8 +389,8 @@
     {
       "id": "n-08",
       "at": "09:57",
-      "text": "Kontrola odzyskana w próbie 2 — naprawiacz przepisał warstwę autorską order.cart i uruchomił bramkę ponownie.",
-      "textPlain": "Kontrola odzyskana za drugim razem — kod ekranu order.cart został przepisany i testy uruchomione ponownie.",
+      "text": "Kontrola odzyskana w próbie 2 — naprawiacz przepisał warstwę autorską build.loop i uruchomił bramkę ponownie.",
+      "textPlain": "Kontrola odzyskana za drugim razem — kod ekranu build.loop został przepisany i testy uruchomione ponownie.",
       "artifact": "stage/coverage",
       "tone": "warn"
     },
@@ -438,8 +438,8 @@
         "kontrol",
         "czerwon"
       ],
-      "text": "Kontrola zrobiła się czerwona w próbie 1 — trzy wyniki SARIF, wszystkie przypięte do order.cart. Komendy odtworzenia są na karcie wyników; jedna poprawka warstwy autorskiej zamknęła wszystkie trzy w próbie 2.",
-      "textPlain": "Kontrola nie przeszła pierwszego testu — trzy wyniki, wszystkie przypięte do ekranu order.cart. Dokładna komenda do ponownego uruchomienia każdego testu jest na karcie wyników; jedna poprawka zamknęła wszystkie trzy za drugim razem.",
+      "text": "Kontrola zrobiła się czerwona w próbie 1 — trzy wyniki SARIF, wszystkie przypięte do build.loop. Komendy odtworzenia są na karcie wyników; jedna poprawka warstwy autorskiej zamknęła wszystkie trzy w próbie 2.",
+      "textPlain": "Kontrola nie przeszła pierwszego testu — trzy wyniki, wszystkie przypięte do ekranu build.loop. Dokładna komenda do ponownego uruchomienia każdego testu jest na karcie wyników; jedna poprawka zamknęła wszystkie trzy za drugim razem.",
       "artifact": "findings/coverage"
     },
     {
@@ -505,9 +505,9 @@
         "zrzut",
         "ekran"
       ],
-      "text": "Cztery powierzchnie sondowane względem zamrożonych wzorców — SSIM, szkielet i ΔE per powierzchnia, wszystkie przechodzą. order.confirmation jest obserwowany przy ΔE 2.2.",
-      "textBalanced": "Cztery ekrany porównane ze wzorcami — SSIM, szkielet i zgodność kolorów per ekran, wszystkie przechodzą. order.confirmation jest obserwowany przy 94/100 (ΔE 2.2).",
-      "textPlain": "Wszystkie cztery ekrany zostały porównane piksel po pikselu z projektami, które zatwierdziłeś — trzy są niemal identyczne. order.confirmation jest obserwowany przy 94/100, tuż pod progiem 95.",
+      "text": "Cztery powierzchnie sondowane względem zamrożonych wzorców — SSIM, szkielet i ΔE per powierzchnia, wszystkie przechodzą. access.pairing jest obserwowany przy ΔE 2.2.",
+      "textBalanced": "Cztery ekrany porównane ze wzorcami — SSIM, szkielet i zgodność kolorów per ekran, wszystkie przechodzą. access.pairing jest obserwowany przy 94/100 (ΔE 2.2).",
+      "textPlain": "Wszystkie cztery ekrany zostały porównane piksel po pikselu z projektami, które zatwierdziłeś — trzy są niemal identyczne. access.pairing jest obserwowany przy 94/100, tuż pod progiem 95.",
       "artifact": "evidence/surfaces"
     }
   ],
@@ -523,13 +523,13 @@
         "gate": "coverage",
         "check": "structure/surface-files",
         "severity": "error",
-        "file": "app/lib/ui/views/order/cart_view.dart",
+        "file": "app/lib/ui/views/build/loop_view.dart",
         "line": 1,
         "expected": "4 pliki na platformę ios (view, viewmodel, test, fixture)",
         "expectedPlain": "każdy ekran potrzebuje 4 plików na iPhone'a (ekran, logika, testy, przykładowe dane)",
         "actual": "3 — brakuje testu viewmodelu",
         "actualPlain": "znaleziono 3 — brakuje testu logiki",
-        "reproduce": "./gates/coverage/run.sh --surface order.cart --target ios",
+        "reproduce": "./gates/coverage/run.sh --surface build.loop --target ios",
         "fingerprint": "fp_7d2c…e91a",
         "state": "naprawione w próbie 2",
         "note": "MEM-A: ta kontrola pada tak, gdy scaffolder emituje pliki, ale mapa historyjek oznacza powierzchnię jako testowo-opcjonalną — bramka się nie zgadza.",
@@ -540,13 +540,13 @@
         "gate": "coverage",
         "check": "tests/viewmodel-presence",
         "severity": "error",
-        "file": "app/test/ui/views/order/cart_viewmodel_test.dart",
+        "file": "app/test/ui/views/build/loop_viewmodel_test.dart",
         "line": 1,
         "expected": "≥ 1 test mocktail na viewmodel",
         "expectedPlain": "co najmniej jeden automatyczny test na plik logiki ekranu",
         "actual": "znaleziono 0 testów",
         "actualPlain": "nie znaleziono żadnego",
-        "reproduce": "./gates/coverage/run.sh --check tests --surface order.cart",
+        "reproduce": "./gates/coverage/run.sh --check tests --surface build.loop",
         "fingerprint": "fp_41aa…0b7d",
         "state": "naprawione w próbie 2",
         "note": "Ta sama przyczyna co f-01 — jedna poprawka warstwy autorskiej zamknęła oba.",
@@ -557,15 +557,15 @@
         "gate": "coverage",
         "check": "visual/probe-deltaE",
         "severity": "warning",
-        "file": "designs/frozen/order.cart/expanded.png",
+        "file": "designs/frozen/build.loop/expanded.png",
         "line": 0,
         "expected": "ΔE ≤ 2.0 względem zamrożonego wzorca",
         "expectedBalanced": "zgodność kolorów ≥ 95/100 (ΔE ≤ 2.0) względem zamrożonego wzorca",
         "expectedPlain": "powinno wyglądać niemal identycznie jak projekt, który zatwierdziłeś — 95/100 albo lepiej",
-        "actual": "ΔE 4.8 na karcie CartSummary — dryf tokenu przygaszonego tekstu",
-        "actualBalanced": "88/100 (ΔE 4.8) na karcie CartSummary — dryf tokenu przygaszonego tekstu",
-        "actualPlain": "wyraźnie różne — 88/100 na karcie CartSummary. Przygaszony kolor tekstu działał tylko w trybie jasnym",
-        "reproduce": "./tools/verification/probe_run.sh --surface order.cart --rung expanded",
+        "actual": "ΔE 4.8 na karcie RunSummary — dryf tokenu przygaszonego tekstu",
+        "actualBalanced": "88/100 (ΔE 4.8) na karcie RunSummary — dryf tokenu przygaszonego tekstu",
+        "actualPlain": "wyraźnie różne — 88/100 na karcie RunSummary. Przygaszony kolor tekstu działał tylko w trybie jasnym",
+        "reproduce": "./tools/verification/probe_run.sh --surface build.loop --rung expanded",
         "fingerprint": "fp_b8e0…c3f2",
         "state": "naprawione w próbie 2",
         "note": "Token --muted rozwiązywał tylko względem jasnego motywu; zamrożenie przypina teraz oba motywy.",

@@ -109,7 +109,7 @@
   {% for h in c.drift.history %}
   <div class="finding finding-warning">
     <header class="finding-head">
-      <span class="sev sev-warning">{{ h.state }}</span>
+      <span class="sev sev-warning">{{ t('status.name.' ~ h.state) }}</span>
       <span class="finding-check muted">{{ h.at }}</span>
     </header>
     <p class="finding-note">{{ h.text }}</p>
@@ -140,11 +140,18 @@
 </section>
 {% endmacro %}
 
-{% macro stageSwap(c) %}
+{# The stage markup proper — the page renders this directly; the fragment
+   (stageSwap) adds the rail's out-of-band re-feed (response-only markup). #}
+{% macro stageLayout(c) %}
 <div class="stage-layout {{ 'is-docked' if c.docked }}" id="stage-layout">
   {{ sh.chatStage(c) }}
   {{ freezeCanvas(c) }}
 </div>
+{% endmacro %}
+
+{% macro stageSwap(c) %}
+{{ stageLayout(c) }}
+{{ sh.railOob(c) }}
 {% endmacro %}
 
 {% macro driftSwap(c) %}
@@ -161,6 +168,6 @@
 {% block surface %}
 <div class="loop-zones stage-zones">
   {{ sh.railLeft(c) }}
-  {{ stageSwap(c) }}
+  {{ stageLayout(c) }}
 </div>
 {% endblock %}

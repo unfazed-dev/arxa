@@ -4,7 +4,7 @@
 {% block title %}{{ t('dash.pageTitle') }}{% endblock %}
 
 {% block surface %}
-<span class="eyebrow">app</span>
+<span class="eyebrow">{{ t('dash.eyebrow') }}</span>
 <div class="dash-head">
   <div>
     <h1 class="display">{{ t('dash.greeting', {name: account.name}) }}</h1>
@@ -32,7 +32,7 @@
     {% for g in gates %}
     <article class="gate-card" role="listitem">
       <div class="gate-card-head">
-        <span class="chip gate-stage gate-stage-{{ g.stage }}">{{ g.stage }}</span>
+        <span class="chip gate-stage gate-stage-{{ g.stage }}">{{ t('stage.name.' ~ g.stage) }}</span>
         <span class="gate-waiting">{{ g.waiting }}</span>
       </div>
       <h3>{{ g.gate }}</h3>
