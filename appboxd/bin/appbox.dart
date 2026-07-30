@@ -11,6 +11,7 @@
 import 'dart:io';
 
 import 'package:appboxd/config.dart';
+import 'package:appboxd/emit_structure.dart';
 import 'package:appboxd/gate_advertise.dart';
 import 'package:appboxd/gate_intake.dart';
 import 'package:appboxd/gate_memory.dart';
@@ -31,6 +32,9 @@ void main(List<String> args) {
   switch (command) {
     case 'gate':
       _runGate(rest);
+      break;
+    case 'emit':
+      _runEmit(rest);
       break;
     case 'serve':
       _runServe(rest);
@@ -192,6 +196,52 @@ GateResult _dispatchGate(String name, GateContext ctx) {
       );
     default:
       return GateResult.env('unknown gate "$name"');
+  }
+}
+
+// ── emit ───────────────────────────────────────────────────────────
+
+void _runEmit(List<String> args) {
+  if (args.isEmpty) {
+    stderr.writeln('appbox emit: missing emitter name');
+    stderr.writeln('  emitters: structure, htmx, playground, transform_tokens');
+    exit(2);
+  }
+
+  final emitter = args.first;
+  final rest = args.sublist(1);
+
+  // Parse common flags.
+  String? appRoot;
+  String? designDir;
+  var check = false;
+
+  for (var i = 0; i < rest.length; i++) {
+    switch (rest[i]) {
+      case '--app':
+        appRoot = rest[++i];
+        break;
+      case '--design-dir':
+        designDir = rest[++i];
+        break;
+      case '--check':
+        check = true;
+        break;
+    }
+  }
+
+  final repoRoot = _findRepoRoot() ?? Directory.current.path;
+  appRoot ??= repoRoot;
+  designDir ??= 'designs/appbox';
+
+  switch (emitter) {
+    case 'structure':
+      exit(emitStructure('$appRoot/$designDir', check: check));
+    default:
+      stderr.writeln('appbox emit: emitter "$emitter" not yet ported to Dart');
+      stderr.writeln('  ported: structure');
+      stderr.writeln('  pending: htmx, playground, transform_tokens, blueprint, generate_view');
+      exit(2);
   }
 }
 
