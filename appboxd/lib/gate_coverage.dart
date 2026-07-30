@@ -205,24 +205,27 @@ GateResult coverageGate(GateContext ctx) {
   }
   final sc = mf['selfContained'];
   final adopted = sc is List ? sc.cast<String>() : <String>[];
-  final smapVal = _truthy(mf['surfaces']) ? mf['surfaces'] : <String, dynamic>{};
+  final Object smapVal =
+      _truthy(mf['surfaces']) ? mf['surfaces'] : const <String, dynamic>{};
   if (smapVal is! Map) {
     fail('.shell-structure.json "surfaces" must be an object of {shell: {surfaceId: dir}}');
     return GateResult.fail('coverage: FAIL ($fails check(s))', details);
   }
-  final smap = (smapVal as Map).cast<String, dynamic>();
+  final smap = smapVal.cast<String, dynamic>();
 
   // ---- C3: a shell you have started building must be declared ----
   final viewsDir = Directory(viewsPath);
-  final viewsListing = viewsDir.existsSync()
-      ? viewsDir
+  final viewsListing = <String>[];
+  if (viewsDir.existsSync()) {
+    viewsListing.addAll(
+      viewsDir
           .listSync()
           .whereType<Directory>()
           .map((d) => d.path.split('/').last)
-          .where((n) => !n.startsWith('.'))
-          .toList()
-        ..sort()
-      : <String>[];
+          .where((n) => !n.startsWith('.')),
+    );
+    viewsListing.sort();
+  }
   for (final shell in viewsListing) {
     if (adopted.contains(shell)) continue;
     final got = _realDirs(viewsPath, shell);
@@ -414,7 +417,7 @@ GateResult coverageGate(GateContext ctx) {
   return (viewports: vps, ceremonies: cers);
 }
 
-/// Real surface dirs under <views>/<shell>: directories that are not dotfiles
+/// Real surface dirs under `<views>/<shell>`: directories that are not dotfiles
 /// and not in the NOT_SURFACE escape list.
 Set<String> _realDirs(String viewsPath, String shell) {
   final d = Directory('$viewsPath/$shell');

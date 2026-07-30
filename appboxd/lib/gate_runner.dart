@@ -8,6 +8,7 @@
 import 'dart:io';
 
 import 'package:appboxd/gate_advertise.dart';
+import 'package:appboxd/gate_coverage.dart';
 import 'package:appboxd/gate_deploy.dart';
 import 'package:appboxd/gate_intake.dart';
 import 'package:appboxd/gate_memory.dart';
@@ -106,7 +107,9 @@ GateResult? _tryDartGate(String name, GateContext ctx) {
       return deployGate(ctx);
     case 'native_deps':
       return nativeDepsGate(ctx);
-    // scaffold, coverage — subagents porting, uncomment when verified
+    case 'coverage':
+      return coverageGate(ctx);
+    // scaffold, freeze — subagents porting, uncomment when verified
     default:
       return null; // not yet ported to Dart
   }
