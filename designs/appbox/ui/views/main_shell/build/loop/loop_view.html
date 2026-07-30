@@ -214,8 +214,8 @@
    with their own ids, refreshed out-of-band on every rail-affecting act —
    the <aside> itself (and the user's resized width) is never replaced. #}
 {% macro railChrome(c) %}
-{{ mv.head({ side: 'left', label: t('rail.' + c.railView), views: c.railViews }, true) }}
-{{ mv.bar({ side: 'left', label: t('rail.' + c.railView), views: c.railViews }, true) }}
+{{ mv.head({ side: 'left', label: t('rail.' + c.railView), views: c.railViews, size: c.railSize, sizeHref: c.railSizeHref }, true) }}
+{{ mv.bar({ side: 'left', label: t('rail.' + c.railView), views: c.railViews, size: c.railSize, sizeHref: c.railSizeHref }, true) }}
 {% endmacro %}
 
 {# Targeted response for acts initiated inside the rail (view switch, thread
@@ -234,10 +234,14 @@
 {% endmacro %}
 
 {% macro leftRail(c) %}
-{% call mv.frame({ side: 'left', label: t('rail.' + c.railView), views: c.railViews }) %}
+{% call mv.frame({ side: 'left', label: t('rail.' + c.railView), views: c.railViews, size: c.railSize, sizeHref: c.railSizeHref }) %}
 {{ railViewBody(c) }}
 {% endcall %}
 {% endmacro %}
+
+{# The width grip's response: the whole rail re-rendered at its new persisted
+   size (the aside is server state now, so replacing it loses nothing). #}
+{% macro railFrameSwap(c) %}{{ leftRail(c) }}{% endmacro %}
 
 {# ---------- the shell timeline: the whole line, current highlighted ----------
    Bottom-bar resident and read-only (no base: inert items). #}

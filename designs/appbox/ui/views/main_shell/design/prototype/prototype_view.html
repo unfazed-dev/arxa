@@ -53,6 +53,10 @@
 
 {% macro railSwap(c) %}{{ sh.railSwap(c) }}{% endmacro %}
 
+{# The width grip's response: the whole rail re-rendered at its new persisted
+   size (the aside is server state now, so replacing it loses nothing). #}
+{% macro railFrameSwap(c) %}{{ sh.railLeft(c) }}{% endmacro %}
+
 {% macro viewerSwap(c) %}{{ dv.designViewer(c.viewer) }}{% endmacro %}
 
 {% macro filterSwap(c) %}

@@ -12,6 +12,10 @@ import * as agent from './agent_menus.js';
 
 export const DEFAULT_SCREEN = 'build.loop';
 
+// Rail width steps, per side — the shell's own persisted rail sizing.
+export const RAIL_SIZES = ['s', 'm', 'l'];
+const railSizeFor = (d, side) => (RAIL_SIZES.includes(d.railSize?.[side]) ? d.railSize[side] : 's');
+
 // All design-tab ephemeral UI state lives behind one namespace so it never
 // collides with the build/intake surfaces sharing the session.
 export const design = (sessionData) => (sessionData.design ??= {});
@@ -188,6 +192,8 @@ export const stageContext = (sessionData = {}, opts = {}, prefs = {}, t = (k) =>
     filter,
     railView,
     railLabel: t('rail.' + railView),
+    railSize: railSizeFor(d, 'left'),
+    railSizeHref: '/design/rail/size/left/',
     railViews: [
       { id: 'screens', icon: 'layout-grid' },
       { id: 'artifacts', icon: 'package' },
@@ -258,6 +264,14 @@ export const setRailFilter = (sessionData, filter, prefs = {}, t = (k) => k, loc
 
 export const setRailView = (sessionData, view, prefs = {}, t = (k) => k, locale = 'en') => {
   design(sessionData).railView = view;
+  return stageContext(sessionData, {}, prefs, t, locale);
+};
+
+// Rail width grip: cycle persisted per side (the shell's own sizing state).
+export const setRailSize = (sessionData, side, size, prefs = {}, t = (k) => k, locale = 'en') => {
+  if (['left', 'right'].includes(side) && RAIL_SIZES.includes(size)) {
+    (design(sessionData).railSize ??= {})[side] = size;
+  }
   return stageContext(sessionData, {}, prefs, t, locale);
 };
 

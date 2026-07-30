@@ -120,6 +120,8 @@
   "settings.accent.violet": "Fiolet — marka",
   "settings.accent.blue": "Niebieski — mieszany",
   "settings.accent.ember": "Ember — ciepły",
+  "settings.languageH": "Język",
+  "settings.languageNote": "Język interfejsu. Przełączenie przeładowuje stronę; wybór jest zapamiętywany na tym urządzeniu.",
   "settings.jargonH": "Poziom języka",
   "settings.jargonNote": "Jak appbox do Ciebie mówi. Każda wiadomość, wynik i ocena są napisane na trzy sposoby — wybierz ten, który dobrze się czyta. Przykład pokazuje ten sam nieudany test na każdym poziomie.",
   "settings.level.plain.label": "Prosty — dla każdego",
@@ -425,6 +427,9 @@
   "railViews.collapse.right": "Zwiń prawą szynę",
   "railViews.aria.left": "widoki lewej szyny",
   "railViews.aria.right": "widoki prawej szyny",
+  "railViews.size.s": "Wąska szyna (domyślna)",
+  "railViews.size.m": "Szyna średniej szerokości",
+  "railViews.size.l": "Szeroka szyna",
 
   "composer.placeholder.intake": "Napisz do agenta wywiadu…",
   "intake.depthEcho.simple": "Prosty — tylko niezbędne.",

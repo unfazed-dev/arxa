@@ -1,26 +1,29 @@
 /* rail.css · the multi-view rail (ui/common/rail_views.html — mv.frame).
    Sibling of the .rail family in app.css: same card shell, same tokens.
-   Width is tunable per shell via --rail-w (min = default, only grows) and
-   --rail-w-max (≈1.5×). Resize is pure CSS: the left rail resizes from its
-   right (inner) edge; the right rail flips its container to rtl so the native
-   handle lands on its left (inner) edge, children reset to ltr. No JS. */
+   Width is SERVER state, not a CSS drag: three steps (s = default min,
+   m ≈ 1.25×, l ≈ 1.5×) rendered as mv-size-* classes from the shell's
+   session (facades keep railSize[side]) and cycled from the rail head's
+   grip — so the width persists across swaps, navigations and reloads,
+   per shell, per side. A CSS resize handle can't persist without client
+   JS, which the artifact contract forbids. The width transition animates
+   the step change; htmx's global view transitions do the rest. */
 
 .mv-rail {
-  --rail-w: 340px;                        /* default = minimum width */
-  --rail-w-max: calc(var(--rail-w) * 1.5);
+  --rail-w: 340px;                        /* s: default = minimum width */
   width: var(--rail-w);
   min-width: var(--rail-w);
-  max-width: var(--rail-w-max);
   display: flex; flex-direction: column; min-height: 0;
   background: var(--bg-2);
   border: 1px solid var(--border); border-radius: var(--radius);
   box-shadow: var(--shadow-1);
-  overflow: hidden;                       /* also enables the resize handle */
-  resize: horizontal;
+  overflow: hidden;
+  transition: width .18s ease;
 }
-/* right rail: handle on the left (inner) edge via the rtl container trick */
-.mv-rail-right { direction: rtl; }
-.mv-rail-right > * { direction: ltr; }
+.mv-size-m { --rail-w: 425px; }           /* ≈1.25× */
+.mv-size-l { --rail-w: 510px; }           /* ≈1.5× — the old drag ceiling */
+
+/* the width grip in the rail head cycles s → m → l → s */
+.mv-size-grip { flex: none; }
 
 /* head: active view label left, collapse affordance right */
 .mv-rail-head {

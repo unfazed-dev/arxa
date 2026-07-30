@@ -183,6 +183,11 @@ const RAIL_VIEWS = [
   { id: 'files', icon: 'folder', label: 'Files' },
 ];
 
+// Rail width steps, per side — one sizing state for the whole intake shell
+// (unlike railView, which is per surface).
+const RAIL_SIZES = ['s', 'm', 'l'];
+const railSizeFor = (sd, side) => (RAIL_SIZES.includes(S(sd).railSize?.[side]) ? S(sd).railSize[side] : 's');
+
 function railViewFor(sd, surface, base, lv, t, L) {
   const active = S(sd).railView[surface] ?? 'thread';
   const views = RAIL_VIEWS.map((v) => ({ ...v, label: t('rail.' + v.id), href: `${base}/rail?view=${v.id}`, active: v.id === active }));
@@ -271,6 +276,8 @@ export const context = (sd, surface, ref, prefs = {}, t = (k) => k, locale = 'en
     railViews: rail.views,
     railView: rail.active,
     railLabel: rail.label,
+    railSize: railSizeFor(sd, 'left'),
+    railSizeHref: `${base}/rail/size/left/`,
     railBody: rail.body,
     timeline: timelineFor(sd, surface, t, L),
     approval: approvalFor(sd, L),
@@ -297,6 +304,14 @@ export const closeArtifact = (sd, surface, prefs = {}, t = (k) => k, locale = 'e
 
 export const setRailView = (sd, surface, view, prefs = {}, t = (k) => k, locale = 'en') => {
   if (RAIL_VIEWS.some((v) => v.id === view)) S(sd).railView[surface] = view;
+  return context(sd, surface, null, prefs, t, locale);
+};
+
+// Rail width grip: one persisted size per side for the whole intake shell.
+export const setRailSize = (sd, surface, side, size, prefs = {}, t = (k) => k, locale = 'en') => {
+  if (['left', 'right'].includes(side) && RAIL_SIZES.includes(size)) {
+    (S(sd).railSize ??= {})[side] = size;
+  }
   return context(sd, surface, null, prefs, t, locale);
 };
 

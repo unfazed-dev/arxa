@@ -12,6 +12,7 @@ export default [
   ['GET', '/intake/close', mapping.close],
   ['GET', '/intake/model/:id', mapping.model],
   ['GET', '/intake/rail', mapping.rail],
+  ['GET', '/intake/rail/size/:side/:size', mapping.railSize],
   ['POST', '/intake/messages', mapping.sendMessage],
   ['POST', '/intake/depth', mapping.depth],
   ['POST', '/intake/answer', mapping.answer],
@@ -25,6 +26,7 @@ export default [
   ['GET', '/intake/brief/close', brief.close],
   ['GET', '/intake/brief/model/:id', brief.model],
   ['GET', '/intake/brief/rail', brief.rail],
+  ['GET', '/intake/brief/rail/size/:side/:size', brief.railSize],
   ['POST', '/intake/brief/messages', brief.sendMessage],
 
   // intake.moodboard — Moodboard
@@ -33,5 +35,6 @@ export default [
   ['GET', '/intake/moodboard/close', moodboard.close],
   ['GET', '/intake/moodboard/model/:id', moodboard.model],
   ['GET', '/intake/moodboard/rail', moodboard.rail],
+  ['GET', '/intake/moodboard/rail/size/:side/:size', moodboard.railSize],
   ['POST', '/intake/moodboard/messages', moodboard.sendMessage],
 ];

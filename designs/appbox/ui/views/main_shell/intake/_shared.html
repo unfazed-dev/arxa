@@ -160,7 +160,7 @@
 {% endmacro %}
 
 {% macro railFrame(c) %}
-{% call mv.frame({ side: 'left', label: c.railLabel, views: c.railViews }) %}
+{% call mv.frame({ side: 'left', label: c.railLabel, views: c.railViews, size: c.railSize, sizeHref: c.railSizeHref }) %}
   {{ railBody(c) }}
 {% endcall %}
 {% endmacro %}
@@ -170,15 +170,15 @@
    icon track the server's rail state. #}
 {% macro railSwap(c) %}
 {{ railBody(c) }}
-{{ mv.head({ side: 'left', label: c.railLabel, views: c.railViews }, true) }}
-{{ mv.bar({ side: 'left', label: c.railLabel, views: c.railViews }, true) }}
+{{ mv.head({ side: 'left', label: c.railLabel, views: c.railViews, size: c.railSize, sizeHref: c.railSizeHref }, true) }}
+{{ mv.bar({ side: 'left', label: c.railLabel, views: c.railViews, size: c.railSize, sizeHref: c.railSizeHref }, true) }}
 {% endmacro %}
 
 {# Stage-driven re-feed: interview progress, approvals and artifact opens
    change the rail's data — refresh it out-of-band with the stage. The
-   <aside> itself (and its resized width) is never replaced. #}
+   <aside> itself (and its persisted width) is never replaced. #}
 {% macro railOob(c) %}
 {% call mv.body({ side: 'left' }, true) %}{{ railBody(c) }}{% endcall %}
-{{ mv.head({ side: 'left', label: c.railLabel, views: c.railViews }, true) }}
-{{ mv.bar({ side: 'left', label: c.railLabel, views: c.railViews }, true) }}
+{{ mv.head({ side: 'left', label: c.railLabel, views: c.railViews, size: c.railSize, sizeHref: c.railSizeHref }, true) }}
+{{ mv.bar({ side: 'left', label: c.railLabel, views: c.railViews, size: c.railSize, sizeHref: c.railSizeHref }, true) }}
 {% endmacro %}

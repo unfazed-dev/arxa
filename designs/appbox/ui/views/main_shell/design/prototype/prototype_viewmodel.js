@@ -22,6 +22,10 @@ export const rail = (c, h) =>
 export const railView = (c, h) =>
   h.render(c, `${VIEW}#railSwap`, facade.setRailView(h.session(c).data, c.req.param('view'), h.prefs(c), h.t(c), h.locale(c)));
 
+// Rail width grip: s/m/l persisted per side, whole-rail re-render.
+export const railSize = (c, h) =>
+  h.render(c, `${VIEW}#railFrameSwap`, facade.setRailSize(h.session(c).data, c.req.param('side'), c.req.param('size'), h.prefs(c), h.t(c), h.locale(c)));
+
 // The shared design viewer: toolbar acts swap just the viewer block.
 export const viewer = (c, h) =>
   h.render(c, `${VIEW}#viewerSwap`, facade.setViewer(h.session(c).data, {

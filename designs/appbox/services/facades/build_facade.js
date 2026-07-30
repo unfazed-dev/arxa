@@ -41,6 +41,10 @@ export const RAIL_VIEWS = [
 ];
 const RAIL_VIEW_IDS = RAIL_VIEWS.map((v) => v.id);
 
+// Rail width steps, per side — the build shell's own persisted rail sizing.
+const RAIL_SIZES = ['s', 'm', 'l'];
+const railSizeFor = (sd, side) => (RAIL_SIZES.includes(B(sd).railSize?.[side]) ? B(sd).railSize[side] : 's');
+
 // Where each human gate sits on the timeline: it docks after this stage.
 const GATE_AFTER = { 'design.approval': 'design', 'build.acceptance': 'review', 'ship.confirm': 'deploy' };
 
@@ -423,6 +427,8 @@ export const loopContext = (sessionData = {}, ref = null, prefs = {}, t = (k) =>
       : [t('build.composer.sugCoverage'), t('build.composer.sugDurations'), t('build.composer.sugLog')],
     placeholder: noteGate ? t('composer.placeholder.buildNote') : t('composer.placeholder.build'),
     railView,
+    railSize: railSizeFor(sessionData, 'left'),
+    railSizeHref: '/build/rail/size/left/',
     railViews: RAIL_VIEWS.map((v) => ({ ...v, label: t('rail.' + v.id), href: `/build/rail?view=${v.id}`, active: v.id === railView })),
     artifacts: artifactIndex(parts, t),
     commits: repo.commits(L),
@@ -477,6 +483,14 @@ export const setRailView = (sessionData, view, prefs = {}, t = (k) => k, locale 
 // Thread filter (thread view): all | stage | gate | findings | evidence | note.
 export const setRailFilter = (sessionData, filter, prefs = {}, t = (k) => k, locale = 'en') => {
   B(sessionData).railFilter = RAIL_FILTERS.includes(filter) ? filter : 'all';
+  return loopContext(sessionData, null, prefs, t, locale);
+};
+
+// Rail width grip: cycle persisted per side (the shell's own sizing state).
+export const setRailSize = (sessionData, side, size, prefs = {}, t = (k) => k, locale = 'en') => {
+  if (['left', 'right'].includes(side) && RAIL_SIZES.includes(size)) {
+    (B(sessionData).railSize ??= {})[side] = size;
+  }
   return loopContext(sessionData, null, prefs, t, locale);
 };
 

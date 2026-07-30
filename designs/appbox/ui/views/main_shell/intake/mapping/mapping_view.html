@@ -143,6 +143,12 @@
 {{ sh.railSwap(c) }}
 {% endmacro %}
 
+{# The width grip's response: the whole rail re-rendered at its new persisted
+   size (the aside is server state now, so replacing it loses nothing). #}
+{% macro railFrameSwap(c) %}
+{{ sh.railFrame(c) }}
+{% endmacro %}
+
 {# ---------- Page ---------- #}
 
 {% block bottombar %}{{ sh.timeline(c, false) }}{% endblock %}

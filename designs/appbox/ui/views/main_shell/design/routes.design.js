@@ -9,6 +9,7 @@ export default [
   // design.prototype — the design stage (shell root: /design)
   ['GET', '/design', prototype.page],
   ['GET', '/design/rail', prototype.rail],
+  ['GET', '/design/rail/size/:side/:size', prototype.railSize],
   ['GET', '/design/rail/:view', prototype.railView],
   ['GET', '/design/viewer', prototype.viewer],
   ['GET', '/design/screen/:id', prototype.screen],

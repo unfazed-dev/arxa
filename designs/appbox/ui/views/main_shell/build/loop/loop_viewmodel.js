@@ -54,6 +54,10 @@ export const rail = (c, h) => {
   return h.render(c, `${VIEW}#filterSwap`, facade.setRailFilter(h.session(c).data, c.req.query('type') ?? 'all', h.prefs(c), h.t(c), h.locale(c)));
 };
 
+// Rail width grip: s/m/l persisted per side, whole-rail re-render.
+export const railSize = (c, h) =>
+  h.render(c, `${VIEW}#railFrameSwap`, facade.setRailSize(h.session(c).data, c.req.param('side'), c.req.param('size'), h.prefs(c), h.t(c), h.locale(c)));
+
 // Run control (run view): pause | resume the whole line.
 export const runControl = async (c, h) => {
   const form = await h.form(c);

@@ -25,6 +25,7 @@ export default [
   ...designRoutes,
   ['GET', '/build', buildLoop.page],
   ['GET', '/build/rail', buildLoop.rail],
+  ['GET', '/build/rail/size/:side/:size', buildLoop.railSize],
   ['POST', '/build/run/control', buildLoop.runControl],
   ['GET', '/build/artifact/:kind/:id', buildLoop.artifact],
   ['GET', '/build/artifact/evidence/surfaces/viewer', buildLoop.evidenceViewer],

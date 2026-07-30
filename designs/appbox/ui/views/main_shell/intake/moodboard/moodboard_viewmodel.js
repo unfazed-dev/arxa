@@ -26,6 +26,10 @@ export const model = (c, h) =>
 export const rail = (c, h) =>
   h.render(c, `${VIEW}#railSwap`, facade.setRailView(h.session(c).data, S, c.req.query('view'), h.prefs(c), h.t(c), h.locale(c)));
 
+// Rail width grip: s/m/l persisted per side for the whole intake shell.
+export const railSize = (c, h) =>
+  h.render(c, `${VIEW}#railFrameSwap`, facade.setRailSize(h.session(c).data, S, c.req.param('side'), c.req.param('size'), h.prefs(c), h.t(c), h.locale(c)));
+
 // The composer: append the user's message and a simulated agent reply.
 export const sendMessage = async (c, h) => {
   const form = await h.form(c);

@@ -27,6 +27,12 @@
 </section>
 
 <section class="settings-section">
+  <h2>{{ t('settings.languageH') }}</h2>
+  <p class="settings-note">{{ t('settings.languageNote') }}</p>
+  {% include "ui/common/_lang_switcher.html" %}
+</section>
+
+<section class="settings-section">
   <h2>{{ t('settings.jargonH') }}</h2>
   <p class="settings-note">{{ t('settings.jargonNote') }}</p>
   <div class="level-row">
