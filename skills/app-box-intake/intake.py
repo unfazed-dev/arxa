@@ -64,6 +64,7 @@ FIELD_TITLES = [
     ("brand", "Brand"),
     ("constraints", "Constraints"),
     ("outOfScope", "Out of scope"),
+    ("layoutTemplate", "Layout template"),
 ]
 
 
@@ -109,6 +110,8 @@ def validate(answers: dict) -> list[str]:
             if key == "targets":
                 if not isinstance(val, list) or not all(isinstance(x, str) for x in val):
                     errs.append(f"{key}: value must be a list of platform strings (§11)")
+            elif key == "layoutTemplate":
+                errs.extend(_validate_layout_template(val))
             elif not isinstance(val, str):
                 errs.append(f"{key}: value must be a string")
 
@@ -149,6 +152,31 @@ def validate(answers: dict) -> list[str]:
             errs.append(f"{where}: duplicate id '{sid}' (ids are permanent — add a new one, do not reuse)")
         seen_ids.add(sid)
 
+    return errs
+
+
+def _validate_layout_template(val) -> list[str]:
+    """Shape-check a layoutTemplate value: {category, archetype, areas per
+    rung, containers}. Membership in the closed lists is the schema's job
+    (intake.schema.json enums against layout_templates.json); here we guard
+    the structure the brief renderer relies on."""
+    errs: list[str] = []
+    if not isinstance(val, dict):
+        return ["layoutTemplate: value must be an object "
+                "{category, archetype, areas, containers} (copied verbatim from layout_templates.json)"]
+    for req in ("category", "archetype", "areas", "containers"):
+        if req not in val:
+            errs.append(f"layoutTemplate: value is missing '{req}'")
+    areas = val.get("areas")
+    if not isinstance(areas, dict):
+        errs.append("layoutTemplate: areas must be an object keyed by rung")
+    else:
+        for rung in ("compact", "medium", "expanded"):
+            rows = areas.get(rung)
+            if not isinstance(rows, list) or not all(isinstance(r, str) for r in rows):
+                errs.append(f"layoutTemplate: areas.{rung} must be a list of grid-template-areas row strings")
+    if not isinstance(val.get("containers"), dict):
+        errs.append("layoutTemplate: containers must be an object (named container -> {type, hints})")
     return errs
 
 
@@ -204,7 +232,9 @@ def _block(title: str, node: dict | None) -> list[str]:
     if prov == "inferred":
         lines.append(INFERRED_MARK)
         lines.append("")
-    if isinstance(val, list):
+    if isinstance(val, dict):
+        lines.extend(_layout_template_lines(val))
+    elif isinstance(val, list):
         if val:
             lines.extend(f"- {item}" for item in val)
         else:
@@ -215,6 +245,43 @@ def _block(title: str, node: dict | None) -> list[str]:
     lines.append(f"_provenance: {prov}_")
     lines.append("")
     return lines
+
+
+def _layout_template_lines(val: dict) -> list[str]:
+    """Render a layoutTemplate value readably: category, archetype, the
+    grid-template-areas per rung of the viewport ladder (compact / medium /
+    expanded), and the named containers with their content hints. The value
+    is passed through verbatim from layout_templates.json — never reworded."""
+    out = [
+        f"- category: {val.get('category')}",
+        f"- archetype: {val.get('archetype')}",
+        "",
+    ]
+    areas = val.get("areas")
+    if isinstance(areas, dict):
+        out.append("Grid template areas per rung (viewport ladder):")
+        out.append("")
+        for rung in ("compact", "medium", "expanded"):
+            rows = areas.get(rung)
+            if not rows:
+                continue
+            out.append(f"{rung}:")
+            out.append("```")
+            out.extend(f'"{row}"' for row in rows)
+            out.append("```")
+            out.append("")
+    containers = val.get("containers")
+    if isinstance(containers, dict) and containers:
+        out.append("Named containers:")
+        out.append("")
+        for name, meta in containers.items():
+            if isinstance(meta, dict):
+                ctype, hints = meta.get("type", ""), meta.get("hints", "")
+                out.append(f"- `{name}` — {ctype}: {hints}" if hints else f"- `{name}` — {ctype}")
+            else:
+                out.append(f"- `{name}` — {meta}")
+        out.append("")
+    return out
 
 
 def emit_brief(answers: dict) -> str:
@@ -522,6 +589,49 @@ def _self_test() -> None:
                         brief_out=str(tmp / "out2" / "brief.md"),
                         registry_out=str(tmp / "out2" / "registry.json")))
         assert rc2 == 1 and not (tmp / "out2").exists(), "invalid input wrote partial artefacts"
+
+        # 15. layoutTemplate: a well-formed pick validates and renders as its
+        #     own brief section, BEFORE the surface inventory table (the
+        #     gate's brief<->registry bijection parses only that table).
+        ans = good_answers()
+        ans["layoutTemplate"] = {
+            "value": {
+                "category": "productivity",
+                "archetype": "list-detail",
+                "areas": {
+                    "compact": ["app-bar", "list", "tab-bar"],
+                    "medium": ["app-bar app-bar app-bar", "nav-rail list detail"],
+                    "expanded": ["app-bar app-bar app-bar", "nav-rail list detail"],
+                },
+                "containers": {
+                    "list": {"type": "content", "hints": "the collection; source of selection"},
+                    "detail": {"type": "content", "hints": "the selected item; a pushed route at compact"},
+                },
+            },
+            "provenance": "client",
+        }
+        assert validate(ans) == [], "well-formed layoutTemplate rejected"
+        brief = emit_brief(ans)
+        assert "## Layout template" in brief, "layout template section missing from brief"
+        lt = brief[brief.index("## Layout template"):brief.index("## Surface inventory")]
+        assert "list-detail" in lt and '"nav-rail list detail"' in lt, "layout template areas not rendered"
+        assert "- `detail` — content:" in lt, "named containers not rendered"
+        assert "_provenance: client_" in lt, "layout template provenance footer missing"
+        # the section carries no markdown table rows -> the surface-table
+        # parsers (gate + seed_from_brief) see nothing new
+        assert not any(l.strip().startswith("|") for l in lt.splitlines()), "layout section leaked table rows"
+
+        # 16. NEGATIVE: layoutTemplate with a non-dict value is rejected
+        bad = good_answers(); bad["layoutTemplate"] = {"value": "feed", "provenance": "client"}
+        e = validate(bad)
+        assert any("layoutTemplate" in x for x in e), f"missed non-dict layoutTemplate: {e}"
+
+        # 17. NEGATIVE: layoutTemplate missing a rung is rejected
+        bad = good_answers()
+        bad["layoutTemplate"] = json.loads(json.dumps(ans["layoutTemplate"]))
+        del bad["layoutTemplate"]["value"]["areas"]["expanded"]
+        e = validate(bad)
+        assert any("expanded" in x for x in e), f"missed missing rung: {e}"
 
     print("self-test: PASS")
 

@@ -22,7 +22,7 @@
    listener that forwards into the stage's zoom. Zoom state resets to 1× when
    htmx swaps the viewer (new element). */
 (() => {
-  const SEL = '.dv-stage, .dv-rungs';
+  const SEL = '.dv-stage, .dv-rungs, .dv-flow-canvas, .dv-proto-stage';
   const clamp = (z) => Math.min(4, Math.max(0.25, z));
 
   // cursor-anchored zoom: scale the wrapper, then re-anchor the scroll so the
@@ -72,6 +72,10 @@
     });
 
     el.addEventListener('pointerdown', (e) => {
+      // .dv-flow-canvas pointer gestures belong to drag.js (tile drag,
+      // marquee, Space/middle pan — the decided Figma mapping); here a plain
+      // left-drag would pan WHILE the tile drags. Wheel-zoom above stays.
+      if (el.matches('.dv-flow-canvas')) return;
       if (e.button !== 0 || e.target.closest('a, iframe, .dv-strip')) return;
       el.setPointerCapture(e.pointerId);
       const sx = e.clientX, sy = e.clientY, sl = el.scrollLeft, st = el.scrollTop;

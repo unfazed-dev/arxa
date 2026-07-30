@@ -1,9 +1,13 @@
-{# The shell timeline, now living in the shell's bottom bar (#bottom-bar):
+<!-- appbox:provenance
+     generator: app-box  licence: free  project: 662368770980
+     Built with app-box (free tier) — https://appbox.dev
+-->
+{# The shell timeline, now living in the shell's footer panel (#panel-footer):
    the whole line at a glance, current item highlighted.
    Items carry { kind, state, label, ref, href? } and c.timeline.currentId is
    compared against ref. With `base` (build), each item loads its artifact
    onto the canvas via htmx; without it (design), authored hrefs navigate
-   plainly and href-less items render inert — the bottom-bar stage timeline
+   plainly and href-less items render inert — the footer-panel stage timeline
    uses this inert form. `label` is the aria-label. #}
 {% macro timeline(c, oob, label, base) %}
 <ol class="timeline" id="timeline" aria-label="{{ label }}" {% if oob %}hx-swap-oob="outerHTML"{% endif %}>
@@ -16,7 +20,7 @@
     </a>
     {% elif base %}
     <a class="tl-link" href="{{ base }}/artifact/{{ i.ref }}"
-       hx-get="{{ base }}/artifact/{{ i.ref }}" hx-target="#canvas" hx-swap="innerHTML" hx-push-url="false"
+       hx-get="{{ base }}/artifact/{{ i.ref }}" hx-target="#mp-content" hx-swap="innerHTML" hx-push-url="false"
        title="{{ i.label }}{{ ' · ' ~ t('status.name.' ~ i.state) if i.state }}">
       <span class="tl-mark" aria-hidden="true"></span>
       <span class="tl-label">{{ i.label }}</span>

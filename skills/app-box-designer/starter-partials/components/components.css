@@ -34,6 +34,59 @@
     sans-serif;
 }
 
+/* ── Auto Layout — the static attribute-keyed layer ───────────────────────
+   Component-library components carry Auto Layout by default (DESIGN-
+   ARCHITECTURE, "Auto Layout"): pure CSS keyed on data-attributes, zero
+   client JS. A container opts in with [data-layout]; its children size per
+   axis with [data-resize-x] / [data-resize-y]; [data-layout-ignore] is the
+   per-child escape hatch. Omit [data-layout] to turn Auto Layout off for an
+   art-directed frame. Spacing values ride the medium's 4/8/12/16/24 scale. */
+[data-layout] {
+  position: relative; /* anchors [data-layout-ignore] children */
+  display: flex;
+}
+[data-layout][data-flow="h"] { flex-direction: row; }    /* the default */
+[data-layout][data-flow="v"] { flex-direction: column; }
+[data-layout][data-wrap] { flex-wrap: wrap; }
+[data-layout][data-clip] { overflow: hidden; }
+
+/* gap: 4|8|12|16|24, or auto → push children apart on the main axis
+   (gap="auto" IS the main-axis alignment — don't combine with data-align-x) */
+[data-layout][data-gap="4"]  { gap: 4px; }
+[data-layout][data-gap="8"]  { gap: 8px; }
+[data-layout][data-gap="12"] { gap: 12px; }
+[data-layout][data-gap="16"] { gap: 16px; }
+[data-layout][data-gap="24"] { gap: 24px; }
+[data-layout][data-gap="auto"] { justify-content: space-between; }
+
+/* padding: same scale */
+[data-layout][data-pad="4"]  { padding: 4px; }
+[data-layout][data-pad="8"]  { padding: 8px; }
+[data-layout][data-pad="12"] { padding: 12px; }
+[data-layout][data-pad="16"] { padding: 16px; }
+[data-layout][data-pad="24"] { padding: 24px; }
+
+/* 9-point alignment: main axis (x) × cross axis (y) */
+[data-layout][data-align-x="start"]  { justify-content: flex-start; }
+[data-layout][data-align-x="center"] { justify-content: center; }
+[data-layout][data-align-x="end"]    { justify-content: flex-end; }
+[data-layout][data-align-y="start"]   { align-items: flex-start; }
+[data-layout][data-align-y="center"]  { align-items: center; }
+[data-layout][data-align-y="end"]     { align-items: flex-end; }
+[data-layout][data-align-y="stretch"] { align-items: stretch; }
+
+/* child resizing, per axis: hug (fit-content) | fill | fixed */
+[data-resize-x="hug"]   { width: fit-content; }
+[data-resize-x="fill"]  { flex-grow: 1; min-width: 0; }
+[data-resize-x="fixed"] { flex-shrink: 0; }
+[data-resize-y="hug"]   { height: fit-content; }
+[data-resize-y="fill"]  { align-self: stretch; }
+[data-resize-y="fixed"] { flex-shrink: 0; }
+
+/* escape hatch: take one child out of the flow, position it by hand inside
+   the (position: relative) [data-layout] parent */
+[data-layout-ignore] { position: absolute; }
+
 /* ── shared primitives: buttons ─────────────────────────────────────────── */
 .btn {
   --btn-bg: var(--accent, #4f46e5);
@@ -691,3 +744,66 @@ a.list-row:hover { background: color-mix(in srgb, currentColor 6%, transparent);
 .empty-state__icon { color: color-mix(in srgb, CanvasText 30%, Canvas); }
 .empty-state__title { margin: 0; font-size: 17px; font-weight: 700; color: CanvasText; }
 .empty-state__body { margin: 0; font-size: 14px; line-height: 1.5; }
+
+/* ── multi-view rail (_rail-views.html) ──────────────────────────────────
+   Width is server state: three steps rendered as mv-size-* from the shell's
+   session (railSize[side]), cycled from the head grip — never a CSS drag,
+   which cannot persist without client JS. */
+.mv-rail {
+  --rail-w: 340px;                        /* s: default = minimum width */
+  width: var(--rail-w);
+  min-width: var(--rail-w);
+  display: flex; flex-direction: column; min-height: 0;
+  background: color-mix(in srgb, CanvasText 4%, Canvas);
+  border: 1px solid color-mix(in srgb, CanvasText 14%, Canvas);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: width .18s ease;
+}
+.mv-size-m { --rail-w: 425px; }           /* ≈1.25× */
+.mv-size-l { --rail-w: 510px; }           /* ≈1.5× */
+.mv-size-grip { flex: none; }
+
+/* head: active view label left, width grip / collapse affordance right */
+.mv-rail-head {
+  display: flex; gap: .6rem; align-items: center; justify-content: space-between;
+  padding: .7rem .9rem;
+  border-bottom: 1px solid color-mix(in srgb, CanvasText 14%, Canvas);
+  flex: none;
+}
+.mv-rail-label { font-weight: 500; font-size: .92rem; min-width: 0; }
+
+/* body: the caller's active-view content scrolls here, never the page */
+.mv-rail-body {
+  flex: 1; min-height: 0; overflow-y: auto;
+  display: flex; flex-direction: column;
+}
+
+/* bottom bar: the icon carousel — one button per registered view, scrolls
+   sideways when crowded, its scrollbar never shows */
+.mv-rail-bar {
+  display: flex; gap: .35rem; align-items: center; flex: none;
+  padding: .55rem .7rem;
+  border-top: 1px solid color-mix(in srgb, CanvasText 14%, Canvas);
+  overflow-x: auto; scrollbar-width: none;
+}
+.mv-rail-bar::-webkit-scrollbar { display: none; }
+.mv-icon {
+  flex: none; width: 2rem; height: 2rem; border-radius: 50%;
+  display: inline-grid; place-items: center;
+  background: transparent; color: color-mix(in srgb, CanvasText 60%, Canvas);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, CanvasText 14%, Canvas);
+  font-size: .85rem; line-height: 1; text-decoration: none;
+}
+.mv-icon:hover { color: CanvasText; box-shadow: inset 0 0 0 1px color-mix(in srgb, CanvasText 35%, Canvas); }
+.mv-icon.is-active {
+  color: var(--accent, LinkText);
+  background: color-mix(in srgb, var(--accent, LinkText) 12%, Canvas);
+  box-shadow: inset 0 0 0 1.5px var(--accent, LinkText);
+}
+
+/* below expanded, the shell's drawer/dock is the rail's undocked form —
+   the in-flow rail would duplicate it and squeeze the stage */
+@media (max-width: 839px) {
+  .mv-rail { display: none; }
+}

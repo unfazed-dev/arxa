@@ -1,3 +1,6 @@
+// appbox:provenance
+// generator: app-box  licence: free  project: 662368770980
+// Built with app-box (free tier) — https://appbox.dev
 export const surfaceId = 'main.chrome';
 
 import { shellIndexContext } from '../../../services/facades/screens_facade.js';

@@ -1,3 +1,7 @@
+<!-- appbox:provenance
+     generator: app-box  licence: free  project: 662368770980
+     Built with app-box (free tier) — https://appbox.dev
+-->
 {# The rail, shared across shells (DESIGN-ARCHITECTURE.md "Shared components
    (views)"): the top bar, the card shell, the list, and the composer.
    Each shell keeps a thin wrapper in its own view that passes its domain data
@@ -72,10 +76,10 @@
     {% if m.artifact %}
     <span class="msg-cta">
       <a class="cta-main" href="{{ base }}/{{ m.artifact }}"
-         hx-get="{{ base }}/{{ m.artifact }}" hx-target="#canvas" hx-swap="innerHTML" hx-push-url="false">
+         hx-get="{{ base }}/{{ m.artifact }}" hx-target="#mp-content" hx-swap="innerHTML" hx-push-url="false">
         {% if m.active %}{{ t('build.onCanvas') }} {{ icon('circle-dot', {size: 12}) }}{% else %}{{ t('build.viewOnCanvas') }} {{ icon('arrow-right', {size: 14}) }}{% endif %}</a>
       <a class="cta-ghost" href="{{ base }}/{{ m.artifact }}?bar=open"
-         hx-get="{{ base }}/{{ m.artifact }}?bar=open" hx-target="#canvas" hx-swap="innerHTML" hx-push-url="false"
+         hx-get="{{ base }}/{{ m.artifact }}?bar=open" hx-target="#mp-content" hx-swap="innerHTML" hx-push-url="false"
          title="{{ askTitle }}">ask {{ icon('reply', {size: 14}) }}</a>
     </span>
     {% endif %}
@@ -102,7 +106,7 @@
            a {value, label} pair posts the value and shows the label. #}
 {% macro composer(c, oob, spec) %}
 <form class="composer" id="composer" method="post" action="{{ spec.action }}"
-      hx-post="{{ spec.action }}" hx-target="#canvas" hx-swap="innerHTML"
+      hx-post="{{ spec.action }}" hx-target="#mp-content" hx-swap="innerHTML"
       {% if oob %}hx-swap-oob="outerHTML"{% endif %}>
   <details class="composer-plus">
     <summary aria-label="{{ spec.plusAria or t('composer.suggestions') }}">{{ icon('plus', {size: 18}) }}</summary>

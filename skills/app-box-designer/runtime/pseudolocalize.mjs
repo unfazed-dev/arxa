@@ -84,28 +84,14 @@ if (existsSync(enArb)) {
 }
 
 // --- per-locale seeds → seed.qps-ploc.json -----------------------------------
-// IDs and _-prefixed metadata stay byte-identical: the ploc seed must hold the
-// same schema and joins as the en seed, only the human text expands.
-// Machine enums (state/priority/gate/…) drive CSS classes and code
-// comparisons, so they must ALSO stay byte-identical. Detection is heuristic —
-// a key allowlist plus a lowercase-token value rule; if a code-compared string
-// ever slips through, add its key to MACHINE_KEYS (the ceiling of this rule).
-const MACHINE_KEYS = new Set([
-  'state', 'status', 'statuses', 'priority', 'gate', 'stage', 'rung', 'wire',
-  'match', 'severity', 'type', 'kind', 'level', 'role', 'theme', 'accent',
-  'lang', 'locale', 'tab', 'shell', 'comp', 'surface', 'labelKey', 'icon',
-  'glyph', 'release', 'target', 'targets', 'platform', 'provider', 'verdict',
-  'band', 'trend', 'direction', 'mode', 'variant',
-]);
-const MACHINE_TOKEN = /^[a-z0-9][a-z0-9_-]*$/;
-
+// IDs, _-prefixed metadata, and enum-typed fields stay byte-identical: the
+// ploc seed must hold the same schema and joins as the en seed, only the
+// human text expands. ENUM_KEYS are identifier fields templates compose into
+// catalog keys (t('status.name.' ~ s.status)) or CSS classes (st-{{ s.status }})
+// — wrapping them breaks the lookup and paints the key literal on screen.
+const ENUM_KEYS = new Set(['id', 'status', 'state', 'severity', 'stage', 'priority', 'kind', 'tone', 'badge', 'from']);
 const plocSeed = (value, key) => {
-  if (typeof value === 'string') {
-    if (key === 'id' || key.startsWith('_') || MACHINE_KEYS.has(key) || MACHINE_TOKEN.test(value)) {
-      return value;
-    }
-    return plocText(value);
-  }
+  if (typeof value === 'string') return ENUM_KEYS.has(key) || key.startsWith('_') ? value : plocText(value);
   if (Array.isArray(value)) return value.map((v) => plocSeed(v, key));
   if (value && typeof value === 'object') {
     return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, plocSeed(v, k)]));

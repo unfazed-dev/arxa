@@ -34,7 +34,8 @@ One entry per surface. This is the SSOT for what the app contains.
   "surface": "train_shell_training_library_view",
   "shell":   "train",
   "comp":    "TrainLibrary",
-  "roles":   ["coach"]
+  "roles":   ["coach"],
+  "route":   "/library"
 }
 ```
 
@@ -46,6 +47,7 @@ One entry per surface. This is the SSOT for what the app contains.
 | `shell` | yes | which shell group this belongs to (the id's first segment) |
 | `comp` | yes | component name for the scaffolder |
 | `roles` | no | audience gate; absent = everyone |
+| `route` | no | the surface's URL path (`/<shell>/<short>` by convention). Absent = derive from id. |
 
 No other keys. The reference producer also carries a `phase` key on every entry;
 **nothing downstream consumes it**, so it is deliberately not part of this
@@ -63,6 +65,22 @@ were silently dropped from the frozen input — **46% of the registry vanished
 with no warning**. Two lists of what exists means one of them is wrong and
 nothing says which. One list, one nullable field, and every check can see the
 whole population.
+
+### `?embed=1` bare render mode
+
+The stub screen renderer (`screen_stub_view.html`) supports `?embed=1`: a
+chromeless render (no nav, no tag, no max-width) for flow-mode tiles. The
+inspect island is conditionally included when `inspect=1` is also present.
+
+### Undo/redo contract
+
+Two server-side session stacks back the undo/redo buttons: `canvas` (artboard
+moves, screen pin/unpin, bulk-pin) and `chat` (design-change messages +
+checkpoints). Each entry is self-reversing — it carries enough data to undo
+and redo in both directions. The `canvas` stack is driven by the floating
+controller's undo/redo pair; the `chat` stack by the composer's. Element-
+context changes write element-scoped checkpoints (before/after on the element,
+element-level revert), independent of both stacks.
 
 ## 2. Surfaces — `ui/views/<shell>/<short>/`
 

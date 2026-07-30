@@ -1,3 +1,6 @@
+// appbox:provenance
+// generator: app-box  licence: free  project: 662368770980
+// Built with app-box (free tier) — https://appbox.dev
 // App-shell routes — splash, auth, pairing, dashboard. Same
 // [method, path, handler] shape as app.routes.js; wire by spreading into
 // its default export next to intakeRoutes/designRoutes.

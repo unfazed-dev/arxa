@@ -46,6 +46,12 @@ unavoidable, **mark it** — the same discipline as the playbook generator's
       This is the assertion intake exists to enable.
 - [x] **10.7** Accept a hand-written brief as valid input. Intake is optional;
       the gate in 10.6 runs either way.
+- [ ] **10.8** Offer the **Layout Template** pick during intake: category from
+      the closed list, then the archetype gallery shown as plain colored boxes
+      with named containers per rung (compact / medium / expanded), one
+      default pre-selected per category (`layout_templates.json`). The choice
+      lands in the answers JSON as `layoutTemplate` and is emitted into the
+      brief; the designer consumes it verbatim.
 
 ## Done-when
 
@@ -56,3 +62,6 @@ unavoidable, **mark it** — the same discipline as the playbook generator's
    and names it.
 4. Skipping intake entirely still reaches a working prototype.
 5. A hand-written brief passes the same gate.
+6. A picked layout template lands in the brief as its own `## Layout template`
+   section, outside the surface inventory table, and the traceability gate
+   still passes.

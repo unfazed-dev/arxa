@@ -1,3 +1,6 @@
+// appbox:provenance
+// generator: app-box  licence: free  project: 662368770980
+// Built with app-box (free tier) — https://appbox.dev
 // Intake routes — same [method, path, handler] shape as app.routes.js.
 // Wire by spreading into the default export of app.routes.js; see
 // _integration_intake.md for the exact patch.
@@ -9,10 +12,10 @@ export default [
   // intake.mapping — Story Mapping (the intake shell root IS the chat interview)
   ['GET', '/intake', mapping.page],
   ['GET', '/intake/artifact/:kind/:id', mapping.artifact],
-  ['GET', '/intake/close', mapping.close],
+  ['GET', '/intake/file', mapping.file],
   ['GET', '/intake/model/:id', mapping.model],
-  ['GET', '/intake/rail', mapping.rail],
-  ['GET', '/intake/rail/size/:side/:size', mapping.railSize],
+  ['GET', '/intake/panel', mapping.panel],
+  ['GET', '/intake/panel/size/:side/:size', mapping.panelSize],
   ['POST', '/intake/messages', mapping.sendMessage],
   ['POST', '/intake/depth', mapping.depth],
   ['POST', '/intake/answer', mapping.answer],
@@ -23,18 +26,18 @@ export default [
   // intake.brief — Design Brief
   ['GET', '/intake/brief', brief.page],
   ['GET', '/intake/brief/artifact/:kind/:id', brief.artifact],
-  ['GET', '/intake/brief/close', brief.close],
+  ['GET', '/intake/brief/file', brief.file],
   ['GET', '/intake/brief/model/:id', brief.model],
-  ['GET', '/intake/brief/rail', brief.rail],
-  ['GET', '/intake/brief/rail/size/:side/:size', brief.railSize],
+  ['GET', '/intake/brief/panel', brief.panel],
+  ['GET', '/intake/brief/panel/size/:side/:size', brief.panelSize],
   ['POST', '/intake/brief/messages', brief.sendMessage],
 
   // intake.moodboard — Moodboard
   ['GET', '/intake/moodboard', moodboard.page],
   ['GET', '/intake/moodboard/artifact/:kind/:id', moodboard.artifact],
-  ['GET', '/intake/moodboard/close', moodboard.close],
+  ['GET', '/intake/moodboard/file', moodboard.file],
   ['GET', '/intake/moodboard/model/:id', moodboard.model],
-  ['GET', '/intake/moodboard/rail', moodboard.rail],
-  ['GET', '/intake/moodboard/rail/size/:side/:size', moodboard.railSize],
+  ['GET', '/intake/moodboard/panel', moodboard.panel],
+  ['GET', '/intake/moodboard/panel/size/:side/:size', moodboard.panelSize],
   ['POST', '/intake/moodboard/messages', moodboard.sendMessage],
 ];

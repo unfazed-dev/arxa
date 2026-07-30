@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 120" width="320" height="120">
+  <rect width="320" height="120" rx="8" fill="#f4f1ea"/>
+  <rect x="20" y="40" width="70" height="40" rx="6" fill="#0C87A8"/>
+  <rect x="125" y="40" width="70" height="40" rx="6" fill="#66800B"/>
+  <rect x="230" y="40" width="70" height="40" rx="6" fill="#AD8301"/>
+  <path d="M90 60h35M195 60h35" stroke="#232326" stroke-width="2" marker-end="url(#a)"/>
+  <defs><marker id="a" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0l10 5-10 5z" fill="#232326"/></marker></defs>
+  <text x="55" y="64" font-family="sans-serif" font-size="12" fill="#fff" text-anchor="middle">intake</text>
+  <text x="160" y="64" font-family="sans-serif" font-size="12" fill="#fff" text-anchor="middle">design</text>
+  <text x="265" y="64" font-family="sans-serif" font-size="12" fill="#fff" text-anchor="middle">build</text>
+</svg>

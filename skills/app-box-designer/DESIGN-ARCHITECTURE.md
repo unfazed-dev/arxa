@@ -69,6 +69,83 @@ Components come first. Before any surface is composed, the design's repeated pat
 - The same rule applies to CSS: shared component styles live in the artifact's main stylesheet, not duplicated across per-surface CSS files. Scrollbars always blend (transparent track, theme-ink thumb) — see the starter's `app.css`.
 - Icons are vocabulary, not pixels: `{{ icon('name') }}` inlines a vendored Lucide glyph server-side (see the runtime contract) — emoji or hand-drawn stand-ins are never shipped as icons.
 
+## Auto Layout
+
+Auto Layout is the medium's default layout discipline for component-library components — the Figma-equivalent property set, emitted as pure static CSS keyed on data-attributes. It needs no client JavaScript and gets none: the whole layer is attribute selectors in `starter-partials/components/components.css`, so the Client-JS-Free rule is untouched.
+
+**Property set.** A container carries: flow (horizontal | vertical), wrap, gap (a spacing value, or `auto` to push children apart), padding, 9-point alignment (main axis × cross axis: start / center / end, plus stretch on the cross axis), and clip. Each child carries a resizing mode per axis: **hug** (size to content), **fill** (take the remaining space), **fixed** (explicit size, never shrinks). Min/max modifiers are design constraints, not layout choices — they live in the component's own class CSS, not in attributes.
+
+**Data-attribute spelling** (the full rule set lives in components.css, under "Auto Layout"):
+
+| Concern | Attribute | Values |
+|---|---|---|
+| opt in | `data-layout` | presence |
+| flow | `data-flow` | `h` (default) \| `v` |
+| wrap / clip | `data-wrap`, `data-clip` | presence |
+| gap | `data-gap` | `4` \| `8` \| `12` \| `16` \| `24` \| `auto` |
+| padding | `data-pad` | `4` \| `8` \| `12` \| `16` \| `24` |
+| alignment | `data-align-x`, `data-align-y` | `start` \| `center` \| `end` (`x`), plus `stretch` (`y`) |
+| child resizing | `data-resize-x`, `data-resize-y` | `hug` \| `fill` \| `fixed` |
+| escape hatch | `data-layout-ignore` | presence |
+
+**Flexbox mapping:**
+
+| Auto Layout | CSS |
+|---|---|
+| flow | `flex-direction: row \| column` |
+| gap | `gap` (`auto` → `justify-content: space-between`) |
+| padding | `padding` |
+| 9-point alignment | `justify-content` (main) / `align-items` (cross) |
+| hug | `width`/`height: fit-content` |
+| fill | `flex-grow: 1` (main) / `align-self: stretch` (cross) |
+| fixed | explicit size + `flex-shrink: 0` |
+| ignore auto layout | `position: absolute` inside the `position: relative` `[data-layout]` parent |
+
+`data-gap="auto"` *is* the main-axis alignment — never combine it with `data-align-x`.
+
+**Default scope — ON vs OFF.** Auto Layout is **default-ON** for every component-library component: buttons, cards, inputs, list rows, navs, modals, forms, toolbars. A macro authored without `data-layout` on its container is a bug in the component-library pass. It is **default-OFF** at the screen/artboard level and wherever layout is art direction rather than relationship:
+
+- top-level surfaces and artboards — they compose the Layout Template's named containers via `grid-template-areas`, not flow;
+- scroll-clipped containers (the clip is the point, not the flow);
+- art-directed / overlap compositions;
+- any frame where more than one child needs the escape hatch — at that point the frame is a positioned composition wearing a flow costume.
+
+**Escape hatch.** One child may ignore Auto Layout: `[data-layout-ignore]` takes it out of the flow (`position: absolute`) inside its `position: relative` `[data-layout]` parent, and the surface positions it by hand. One ignored child is an accent; two is the signal the frame should not have Auto Layout at all.
+
+**Composition rules.** Hug bubbles up, fill pushes down: a container whose children all hug itself hugs; a fill child absorbs the free space its siblings leave — and a fill child forces the parent's axis to fixed, since the parent can no longer size itself from content alone.
+
+**Rule of thumb:** Auto Layout on if the children have a *relationship* (they space, align, and size relative to each other); off if the children have *positions* (each one is deliberately placed).
+
+## Inspect metadata
+
+Every designed element MUST carry inspect metadata, so that both the LLM and the user can read what a thing is and what it does in the design. Inspecting an element (the runtime's inspect island, `?inspect=1` on a stub render) shows a readout built from data-attributes on the element itself — the element is the source of truth, not a side table.
+
+Four attributes, all server-rendered alongside `data-el`:
+
+| attribute | content |
+|---|---|
+| `data-inspect-role` | what it is — the named-container / component role (`nav`, `hero`, `card`, `list row`, `form field`, `button`) |
+| `data-inspect-style` | its key styles in shorthand (`card grid · thumb + name + price`) |
+| `data-inspect-motion` | its motion, from the Motion Vocabulary closed set (`swap` / `traverse` / `spotlight` / `reveal` / `disclose` / `notify` / `pending`) — or `none` |
+| `data-inspect-fn` | its function/behavior — what it does for the user, one clause |
+
+Rules:
+
+- The set is **mandatory on interactive or content-bearing elements** (anything with `data-el`). `data-inspect-motion` may be `none`; the other three never omit.
+- Motion names are **closed** — inventing an eighth name is the same offence as inventing an eighth Motion Vocabulary entry.
+- Keep the text reader-level plain: these strings surface to the user in the inspect readout and to the LLM as element context; write them like the brief, not like CSS.
+- Reference implementation: the appbox design shell's own stub screens (`screen_stub_view.html`) carry the full set.
+
+## Component state
+
+All interactive state is server state. The session holds it, namespaced per shell (`sessionData.<shell>` — the intake/design/build precedent: each shell manages its own data, and two shells never read each other's keys); the facade validates it and exposes it in the context bag; templates render it as classes and attributes. The DOM is never a store.
+
+- **Persisted = round-tripped.** Anything the user expects to keep — the active view, a panel width, a filter, pinned items — lives in the session and re-renders from it on every swap and navigation. CSS/DOM-only affordances (`resize`, `<details open>`, the `:checked` hack, scroll position) are transient: they survive only their element's lifetime, and any `outerHTML` swap or navigation silently resets them. Use them for ephemeral comfort, never for state.
+- **Persisted values are discrete and server-validated** (an enum — `s|m|l` — never a free-form gesture value). A browser gesture like a CSS `resize` drag produces a pixel value a JS-free page cannot report to the server: it adjusts but can never persist. Offer steps instead — a cycling affordance hitting a route (`…/size/<side>/<step>`), the server stores the step, the template renders the state class.
+- **Part macros with OOB chrome.** A component with chrome + content (a rail, a panel, a card with a toolbar) splits into part macros (`head`/`body`/`bar`) carrying their own ids and an `oob` flag. A targeted action's response is the new content (targeted) plus the chrome parts with `hx-swap-oob` — so the label and the active state always track the server — while the owner element itself, which may hold live user state (scroll, a width class), is never replaced. And when an act changes data another component renders, the same response re-feeds that component OOB: no stale copies anywhere.
+- **OOB parts are response-only markup.** The page render calls the layout macro without OOB parts; only fragment responses add them. `hx-swap-oob` does not hide an element on initial render — emit it in the page and the component mounts twice (duplicate ids, phantom layout).
+- State changes animate: the state class carries a CSS transition; content swaps ride the motion vocabulary below.
+
 ## Motion vocabulary
 
 No JS animation engine exists in this medium. Motion is realized entirely as CSS transitions/animations driven by htmx's swap-lifecycle classes and native browser primitives (View Transitions, Popover, `<details>`). Motion is the one channel that survives the pipeline freeze gate untouched — tokens and vocabulary below live in-artifact and are not subject to freeze.

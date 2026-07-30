@@ -1,3 +1,7 @@
+<!-- appbox:provenance
+     generator: app-box  licence: free  project: 662368770980
+     Built with app-box (free tier) — https://appbox.dev
+-->
 {% extends "ui/views/main_shell/main_shell_view.html" %}
 {% import "ui/views/main_shell/intake/_shared.html" as sh %}
 {% block title %}{{ t('intake.moodboard.pageTitle') }}{% endblock %}
@@ -30,7 +34,7 @@
     <div class="shot-grid">
       {% for r in b.references %}
       <a class="shot-card" href="{{ c.base }}/artifact/shot/{{ r.shot.id }}"
-         hx-get="{{ c.base }}/artifact/shot/{{ r.shot.id }}" hx-target="#stage-layout" hx-swap="outerHTML" hx-push-url="false">
+         hx-get="{{ c.base }}/artifact/shot/{{ r.shot.id }}" hx-target="#panels" hx-swap="outerHTML" hx-push-url="false">
         <img src="{{ r.shot.src }}" alt="{{ r.name }} — {{ r.shot.caption }}" loading="lazy">
         <span class="shot-meta">
           <strong>{{ r.name }}</strong>
@@ -61,7 +65,7 @@
   <p class="artifact-detail">{{ a.reference.why }}</p>
   <p class="artifact-foot">
     <a href="{{ c.base }}/artifact/{{ a.backRef }}"
-       hx-get="{{ c.base }}/artifact/{{ a.backRef }}" hx-target="#stage-layout" hx-swap="outerHTML" hx-push-url="false">{{ icon('chevron-left', {size: 14}) }} {{ t('mood.back') }}</a>
+       hx-get="{{ c.base }}/artifact/{{ a.backRef }}" hx-target="#panels" hx-swap="outerHTML" hx-push-url="false">{{ icon('chevron-left', {size: 14}) }} {{ t('mood.back') }}</a>
   </p>
 </article>
 {% endmacro %}
@@ -73,42 +77,45 @@
 {% endif %}
 {% endmacro %}
 
-{% macro stageLayout(c) %}
-<div id="stage-layout" class="{{ 'is-docked' if c.docked }}">
-  {% if c.docked %}
-  <section class="canvas" id="canvas" aria-live="polite">
-    {{ canvasArtifact(c) }}
-  </section>
-  {% endif %}
-  {{ sh.chatStage(c) }}
-</div>
+{# The main panel's content: the open file, else the open artifact, else
+   the empty read state. #}
+{% macro mainContent(c) %}
+{% if c.fileView %}{{ sh.fileView(c) }}
+{% elif c.artifact %}
+<section class="mp-content" id="mp-content" aria-live="polite">
+  {{ canvasArtifact(c) }}
+</section>
+{% else %}{{ sh.mainEmpty() }}
+{% endif %}
+{% endmacro %}
+
+{% macro panels(c) %}
+{% call sh.panels(c) %}{{ mainContent(c) }}{% endcall %}
 {% endmacro %}
 
 {# ---------- Fragment responses ---------- #}
 
-{% macro stageSwap(c) %}
-{{ stageLayout(c) }}
+{% macro panelsSwap(c) %}
+{{ panels(c) }}
 {{ sh.timeline(c, true) }}
-{{ sh.railOob(c) }}
 {% endmacro %}
 
-{% macro railSwap(c) %}
-{{ sh.railSwap(c) }}
+{% macro activitySwap(c) %}
+{{ sh.activitySwap(c) }}
 {% endmacro %}
 
-{# The width grip's response: the whole rail re-rendered at its new persisted
-   size (the aside is server state now, so replacing it loses nothing). #}
-{% macro railFrameSwap(c) %}
-{{ sh.railFrame(c) }}
+{# A file row's response: the main panel renders the file in the mode the
+   server picked from its extension. #}
+{% macro fileSwap(c) %}{{ mainContent(c) }}{% endmacro %}
+
+{# The width grip's response: the whole activity panel re-rendered at its
+   new persisted size (the aside is server state now, replacing it loses nothing). #}
+{% macro activityFrameSwap(c) %}
+{{ sh.activityPanel(c) }}
 {% endmacro %}
 
 {# ---------- Page ---------- #}
 
 {% block bottombar %}{{ sh.timeline(c, false) }}{% endblock %}
 
-{% block surface %}
-<div class="intake-zones">
-  {{ sh.railFrame(c) }}
-  {{ stageLayout(c) }}
-</div>
-{% endblock %}
+{% block surface %}{{ panels(c) }}{% endblock %}

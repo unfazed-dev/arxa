@@ -1,5 +1,8 @@
+// appbox:provenance
+// generator: app-box  licence: free  project: 662368770980
+// Built with app-box (free tier) — https://appbox.dev
 // DesignFacade — composes the design fixture with session-scoped state
-// (draft-all acceptance, pinned context chips, the design thread with
+// (pinned context chips, the design thread with
 // per-screen checkpoints, manifest approval, drift rechecks) into exactly
 // what the design viewmodels need.
 // Leveled fixture strings pass through jargon.pick; static leveled copy
@@ -9,16 +12,17 @@
 import * as repo from '../repositories/design_repository.js';
 import * as jargon from './jargon.js';
 import * as agent from './agent_menus.js';
+import * as fv from './file_views.js';
 
-export const DEFAULT_SCREEN = 'build.loop';
-
-// Rail width steps, per side — the shell's own persisted rail sizing.
-export const RAIL_SIZES = ['s', 'm', 'l'];
-const railSizeFor = (d, side) => (RAIL_SIZES.includes(d.railSize?.[side]) ? d.railSize[side] : 's');
+// Panel width steps, per side — the shell's own persisted panel sizing.
+export const PANEL_SIZES = ['s', 'm', 'l'];
+const panelSizeFor = (d, side) => (PANEL_SIZES.includes(d.panelSize?.[side]) ? d.panelSize[side] : 's');
 
 // All design-tab ephemeral UI state lives behind one namespace so it never
 // collides with the build/intake surfaces sharing the session.
-export const design = (sessionData) => (sessionData.design ??= {});
+// Always drafted: intake hands design a generated design, so the artboard
+// canvas with the docked composer IS the default view — no draft-all gate.
+export const design = (sessionData) => (sessionData.design ??= { drafted: true });
 
 // Context chip tones — stable per screen (fixture order), so a chip's colour
 // always matches its canvas outline regardless of pin order. The first four
@@ -49,10 +53,25 @@ const fillReply = (reply, screen) => ({
   after: reply.after ?? null,
 });
 
-// ---------- the design line (shell timeline, bottom bar) ----------
-function timeline(currentId, L) {
-  const items = repo.line(L).map((i) => ({ ...i, ref: i.id }));
-  return { items, currentId };
+// ---------- the design line (footer panel timeline) ----------
+// The design sub-steps, live: artboards (always green — the shell is always
+// drafted), inspect · fine-tune (refinement state from pins, thread and
+// checkpoints), the approval gate, freeze. Refinement acts move the states;
+// the shared timeline macro highlights the first active item.
+function timeline(d, L, t) {
+  const seededCps = Object.values(repo.checkpoints(L)).flat().length;
+  const chatCps = Object.values(d.chatCheckpoints ?? {}).flat().length;
+  const refined = seededCps + chatCps > 0;
+  const refining = !refined && (contextIds(d, L).length > 0 || (d.designThread ?? []).length > 0);
+  const approved = d.approved ?? repo.approval(L).state === 'approved';
+  const items = [
+    { id: 'artboards', kind: 'stage', label: t('design.timeline.artboards'), state: 'green', href: '/design' },
+    { id: 'refine', kind: 'stage', label: t('design.timeline.refine'), state: refined ? 'green' : refining ? 'active' : 'pending', href: '/design/chat' },
+    { id: 'design.approval', kind: 'gate', label: t('design.timeline.approval'), state: approved ? 'approved' : refined ? 'active' : 'pending', href: '/design/freeze' },
+    { id: 'freeze', kind: 'stage', label: t('design.timeline.freeze'), state: approved ? 'green' : 'pending', href: '/design/freeze' },
+  ];
+  const withRefs = items.map((i) => ({ ...i, ref: i.id }));
+  return { items: withRefs, currentId: (items.find((i) => i.state === 'active') || {}).id ?? null };
 }
 
 // ---------- pinned context ----------
@@ -60,8 +79,7 @@ function timeline(currentId, L) {
 const contextIds = (d, L) => (d.context ?? []).filter((id) => repo.screen(id, L));
 const pin = (d, id, L) => {
   if (repo.screen(id, L) && !contextIds(d, L).includes(id)) (d.context ??= []).push(id);
-  d.chatCentered = false; // pinning re-docks a chat the user closed to center
-  d.trayOpen = true;      // …and auto-expands the composer's context tray
+  d.trayOpen = true; // pinning auto-expands the composer's context tray
 };
 const unpin = (d, id, L) => {
   d.context = contextIds(d, L).filter((x) => x !== id);
@@ -81,41 +99,137 @@ const stripFor = (d, base, L) =>
 
 const ctxLabel = (d, L, t) => contextIds(d, L).map((id) => repo.screen(id, L).label).join(' + ') || t('design.ctxFallback');
 
+// ---------- undo / redo (two session stacks: canvas, chat) ----------
+// Each entry carries enough to reverse itself in both directions, so the same
+// object simply moves between the undo and redo stacks as the user steps back
+// and forth. Canvas stack: artboard moves + screen pin/unpin. Chat stack is
+// wired for design-change checkpoints (contract §6); the reverse for a move is
+// "restore the previous position" (or auto-grid null).
+const pushUndo = (d, stack, entry) => {
+  (d.undoStacks ??= {}); (d.redoStacks ??= {});
+  (d.undoStacks[stack] ??= []).push(entry);
+  d.redoStacks[stack] = [];
+};
+const pushCanvasUndo = (d, entry) => pushUndo(d, 'canvas', entry);
+
+const applyEntry = (d, entry, dir) => {
+  if (entry.type === 'move') {
+    const pos = dir === 'undo' ? entry.from : entry.to;
+    if (pos) (d.artboardLayout ??= {})[entry.screenId] = { ...pos };
+    else delete d.artboardLayout?.[entry.screenId];
+  } else if (entry.type === 'pin' || entry.type === 'unpin') {
+    // A 'pin' entry means a pin happened: undo unpins, redo re-pins. 'unpin' is
+    // the mirror. Membership is toggled directly on d.context (the same array
+    // pin()/unpin() maintain) so canUndo/canRedo stay honest about state.
+    const wantPinned = entry.type === 'pin' ? dir !== 'undo' : dir === 'undo';
+    const has = (d.context ?? []).includes(entry.screenId);
+    if (wantPinned && !has) (d.context ??= []).push(entry.screenId);
+    if (!wantPinned && has) d.context = d.context.filter((x) => x !== entry.screenId);
+  } else if (entry.type === 'chat') {
+    // Undo truncates the thread to the pre-message length and stashes the
+    // removed messages + checkpoints in the entry for redo to re-append.
+    const thread = (d.designThread ??= []);
+    if (dir === 'undo') {
+      entry.removedMsgs = thread.splice(entry.threadLenBefore);
+      entry.removedCps = [];
+      for (const { screen, cp } of entry.checkpointIds) {
+        const list = d.chatCheckpoints?.[screen] ?? [];
+        const found = list.find((x) => x.id === cp);
+        if (found) { entry.removedCps.push({ screen, cp: found }); d.chatCheckpoints[screen] = list.filter((x) => x.id !== cp); }
+      }
+    } else {
+      thread.push(...(entry.removedMsgs ?? []));
+      for (const { screen, cp } of entry.removedCps ?? []) ((d.chatCheckpoints ??= {})[screen] ??= []).push(cp);
+    }
+  }
+};
+
 // ---------- the shared design viewer (ui/common/design_viewer.html) ----------
-// Board mode (the default once drafted): every screen as an artboard with its
-// rungs side by side at real device sizes; the filmstrip is the context
-// picker. Single/rungs stay for one-screen deep looks.
+// One content mode: 'flow' — every screen as a draggable tile grouped by
+// shell (the retired prototype mode's device-chrome preview is gone; the
+// design shell itself plus inspect/fine-tuning replaces it). The mini-rail
+// (screens/controller/actions) + undo/redo + element chips are always
+// produced.
 const RUNG_VP = { 390: 'mobile', 744: 'tablet', 1280: 'desktop' };
 
 function viewerFor(d, L, t) {
   const v = d.viewer ?? {};
   const ids = contextIds(d, L);
-  const screens = repo.screens(L).map((s) => ({
-    id: s.id, label: s.label, state: s.state,
-    inContext: ids.includes(s.id),
-    dim: ids.length > 0 && !ids.includes(s.id),
-    tone: toneFor(s.id, L),
-    chips: [{ text: `${s.kit}%`, title: t('design.kitChipTitle', { kit: s.kit, id: s.id }) }],
-    viewports: s.rungs.map((r) => ({ vp: RUNG_VP[r.width] ?? 'mobile', width: r.width, rung: r.rung, note: r.note, shot: r.shot })),
-  }));
-  const active = repo.screen(v.screen, L) ? v.screen : (ids[0] ?? d.currentScreen ?? DEFAULT_SCREEN);
-  const authored = screens.find((s) => s.id === active)?.viewports.map((x) => x.vp) ?? ['mobile'];
-  const vp = authored.includes(v.vp) ? v.vp : authored[0];
+  const base = '/design/viewer';
+  const contextBase = '/design/chat/context/';
+
+  const screens = repo.screens(L).map((s) => {
+    const viewports = s.rungs.map((r) => ({ vp: RUNG_VP[r.width] ?? 'mobile', width: r.width, rung: r.rung, note: r.note, shot: r.shot }));
+    return {
+      id: s.id, label: s.label, state: s.state,
+      inContext: ids.includes(s.id),
+      dim: ids.length > 0 && !ids.includes(s.id),
+      tone: toneFor(s.id, L),
+      chips: [{ text: `${s.kit}%`, title: t('design.kitChipTitle', { kit: s.kit, id: s.id }) }],
+      viewports,
+      // shell drives flow tile grouping; the fixture has no shell field, so
+      // derive it from the screen id prefix (e.g. "design.chat" → "design").
+      shell: s.shell ?? s.id.split('.')[0],
+      layout: d.artboardLayout?.[s.id] ?? null,
+      primaryWidth: viewports[0]?.width ?? 390,
+    };
+  });
+
   const bg = ['canvas', 'warm', 'slate'].includes(v.bg) ? v.bg : 'canvas';
-  const os = ['ios', 'android'].includes(v.os) ? v.os : 'ios';
-  const mode = ['single', 'rungs', 'board'].includes(v.mode) ? v.mode : 'board';
+  const panel = ['screens', 'controller', 'actions'].includes(v.panel) ? v.panel : 'screens';
+  const inspect = v.inspect === '1';
+
+  // Viewer href builder: current viewer state merged with overrides, empties
+  // dropped — so a controller toggle href only flips the one param it names.
+  const withParams = (over) => {
+    const merged = { bg, inspect: inspect ? '1' : null, ...over };
+    const qs = Object.entries(merged).filter(([, val]) => val != null).map(([k, val]) => `${k}=${val}`).join('&');
+    return qs ? `${base}?${qs}` : base;
+  };
+
+  const rail = {
+    activePanel: panel,
+    screens: screens.map((s) => ({
+      id: s.id, label: s.label, tone: s.tone, inContext: s.inContext, dim: s.dim,
+      src: `/build/screens/${s.id}?vp=mobile&embed=1`,
+      contextHref: `${contextBase}${s.id}?state=toggle`,
+    })),
+    controller: {
+      inspectOn: inspect,
+      inspectHref: withParams({ inspect: inspect ? null : '1' }),
+      bgs: ['canvas', 'warm', 'slate'].map((value) => ({ value, active: value === bg, href: withParams({ bg: value }) })),
+      undo: { can: (d.undoStacks?.canvas?.length ?? 0) > 0, href: '/design/undo/canvas' },
+      redo: { can: (d.redoStacks?.canvas?.length ?? 0) > 0, href: '/design/redo/canvas' },
+    },
+    actions: {
+      selectedCount: 0,            // updated client-side by drag.js marquee
+      bulkPinHref: '/design/chat/context/bulk',
+      simHref: null,               // sim toggle (placeholder)
+    },
+  };
+
   return {
-    screens, active, vp, bg, os, mode, strip: true,
-    base: '/design/viewer', stubBase: '/build/screens/',
-    contextBase: '/design/chat/context/',
+    inspect,
+    screens, bg,
+    strip: true,
+    base, stubBase: '/build/screens/', contextBase,
+    rail,
+    undoRedo: {
+      canvas: { canUndo: (d.undoStacks?.canvas?.length ?? 0) > 0, canRedo: (d.redoStacks?.canvas?.length ?? 0) > 0 },
+      chat:   { canUndo: (d.undoStacks?.chat?.length ?? 0) > 0, canRedo: (d.redoStacks?.chat?.length ?? 0) > 0 },
+    },
+    elements: (d.elementContext ?? []).map((e) => ({ ...e, removeHref: `${contextBase}element/remove?screen=${encodeURIComponent(e.screenId)}&name=${encodeURIComponent(e.name)}` })),
   };
 }
 
-// Viewer toolbar act: record the choice, keep the artboard in sync.
+// Viewer toolbar act: merge the choice into the stored viewer state (not
+// replace — a bg flip that sends only bg must not reset inspect/panel).
+// Undefined query values are dropped so they don't clobber.
 export const setViewer = (sessionData, query, prefs = {}, t = (k) => k, locale = 'en') => {
   const d = design(sessionData);
-  d.viewer = { screen: query.screen, vp: query.vp, bg: query.bg, os: query.os, mode: query.mode };
-  if (query.screen && repo.screen(query.screen, locale)) d.currentScreen = query.screen;
+  const next = {};
+  for (const [k, v] of Object.entries(query)) if (v != null) next[k] = v;
+  d.viewer = { ...d.viewer, ...next };
   return stageContext(sessionData, {}, prefs, t, locale);
 };
 
@@ -167,12 +281,21 @@ export const stageContext = (sessionData = {}, opts = {}, prefs = {}, t = (k) =>
   if (opts.pin === 'none') d.context = [];
   else if (opts.pin) pin(d, opts.pin, L);
   const base = opts.base ?? '/design/chat';
+  // The open file (main panel): ?file=<path> opens, ?file=none closes — the
+  // main panel shows the file until then (pins refine, they don't look).
+  if (opts.file === 'none') d.currentFile = null;
+  else if (opts.file) d.currentFile = opts.file;
+  const fileBase = opts.fileBase ?? '/design';
+  // The panel bar (compact/medium): ?panel= picks the single visible content
+  // panel and sticks; default main.
+  if (['activity', 'main', 'composer'].includes(opts.panel)) d.panel = opts.panel;
 
   const drafted = d.drafted === true;
   const ids = contextIds(d, L);
-  const filter = d.railFilter ?? 'all';
-  const railView = ['screens', 'artifacts', 'files'].includes(d.railView) ? d.railView : 'screens';
+  const filter = d.activityFilter ?? 'all';
+  const activityView = ['screens', 'artifacts', 'files'].includes(d.activityView) ? d.activityView : 'screens';
   const thread = threadFor(d, lv, L);
+  const viewer = viewerFor(d, L, t);
   const screens = repo.screens(L)
     .filter((s) => filter === 'all' || s.epic === filter)
     .map((s) => ({
@@ -190,50 +313,68 @@ export const stageContext = (sessionData = {}, opts = {}, prefs = {}, t = (k) =>
     counts: repo.counts(L),
     epics: repo.epics(L),
     filter,
-    railView,
-    railLabel: t('rail.' + railView),
-    railSize: railSizeFor(d, 'left'),
-    railSizeHref: '/design/rail/size/left/',
-    railViews: [
+    activityView,
+    activityLabel: t('activityView.' + activityView),
+    panelSize: panelSizeFor(d, 'left'),
+    panelSizeHref: '/design/panel/size/left/',
+    panelSizePx: d.panelSizePx?.left ?? null,
+    activityViews: [
       { id: 'screens', icon: 'layout-grid' },
       { id: 'artifacts', icon: 'package' },
       { id: 'files', icon: 'folder' },
-    ].map((v) => ({ ...v, label: t('rail.' + v.id), href: `/design/rail/${v.id}`, active: v.id === railView })),
+    ].map((v) => ({ ...v, label: t('activityView.' + v.id), href: `/design/panel/${v.id}`, active: v.id === activityView })),
     screens,
     artifacts: repo.artifacts(L),
-    files: repo.files(L),
+    files: repo.files(L).map((f) => ({ ...f, ...fv.fileLink(f.path, fileBase) })),
+    fileView: d.currentFile ? fv.fileViewFor(d.currentFile, `${fileBase}?file=none`) : null,
+    panel: d.panel ?? 'main',
     drafted,
-    docked: drafted && d.chatCentered !== true,
     threading: thread.some((m) => m.from === 'user'),
     stageEyebrow: t('design.chat.eyebrow'),
     composerAction: '/design/chat/messages',
     modelMenu: agent.modelMenuFor(sessionData, base, t),
     tray: { open: d.trayOpen !== false, toggleHref: `${base}/tray?state=toggle` },
     strip: stripFor(d, base, L),
-    collapseHref: `${base}/close`,
-    viewer: viewerFor(d, L, t),
+    viewer,
+    // The shared composer reads these at stage level (composer.html: element
+    // chips in the tray, the chat undo/redo pair) — the viewer keeps its own
+    // copies for the mini-rail (contract §1).
+    elements: viewer.elements,
+    undoRedo: viewer.undoRedo,
     thread,
-    draft: { offer: jargon.pick(repo.draft(L), 'offer', lv), chip: repo.draft(L).chip },
-    suggestions: drafted ? refineSuggestions(t) : [{ value: 'draft-all', label: repo.draft(L).chip }],
-    placeholder: drafted ? t('composer.placeholder.refine', { label: ctxLabel(d, L, t) }) : t('composer.placeholder.design'),
-    timeline: timeline(opts.line ?? 'prototype', L),
+    suggestions: refineSuggestions(t),
+    placeholder: t('composer.placeholder.refine', { label: ctxLabel(d, L, t) }),
+    timeline: timeline(d, L, t),
     jargonLevel: lv,
   };
 };
 
-// Context pin toggle from the filmstrip / artboard chrome / rail card.
+// Context pin toggle from the filmstrip / artboard chrome / activity card.
 // state: 'toggle' | 'on' | 'off'.
 export const toggleContext = (sessionData, screenId, state = 'toggle', prefs = {}, t = (k) => k, locale = 'en') => {
   const d = design(sessionData);
-  const on = state === 'toggle' ? !contextIds(d, locale).includes(screenId) : state === 'on';
+  const wasIn = contextIds(d, locale).includes(screenId);
+  const on = state === 'toggle' ? !wasIn : state === 'on';
   if (on) pin(d, screenId, locale); else unpin(d, screenId, locale);
-  if (repo.screen(screenId, locale)) d.currentScreen = screenId;
+  if (on !== wasIn) pushCanvasUndo(d, { type: on ? 'pin' : 'unpin', screenId });
+  return stageContext(sessionData, {}, prefs, t, locale);
+};
+
+// Bulk pin from the marquee selection (drag.js POSTs a comma-separated id list).
+export const bulkPin = (sessionData, idsCsv, prefs = {}, t = (k) => k, locale = 'en') => {
+  const d = design(sessionData);
+  for (const id of idsCsv.split(',').map((s) => s.trim()).filter(Boolean)) {
+    if (repo.screen(id, locale)) {
+      pin(d, id, locale);
+      pushCanvasUndo(d, { type: 'pin', screenId: id });
+    }
+  }
   return stageContext(sessionData, {}, prefs, t, locale);
 };
 
 // Composer chrome: pick the agent model, or collapse/expand the context
 // tray. Both mutate session state; callers re-render their own surface
-// context (freeze ignores the returned stage context, same as closeChat).
+// context (freeze ignores the returned stage context).
 export const setModel = (sessionData, id, opts = {}, prefs = {}, t = (k) => k, locale = 'en') => {
   agent.setModel(sessionData, id);
   return stageContext(sessionData, opts, prefs, t, locale);
@@ -247,56 +388,113 @@ export const setTray = (sessionData, state, opts = {}, prefs = {}, t = (k) => k,
   return stageContext(sessionData, opts, prefs, t, locale);
 };
 
-// The close act on the docked chat: unpin every screen and recenter the
-// chat (d.chatCentered — any later pin re-docks it). Freeze ignores the
-// returned stage context and re-renders from freezeContext instead.
-export const closeChat = (sessionData, opts = {}, prefs = {}, t = (k) => k, locale = 'en') => {
+// A file row in the activity panel: open it in the main panel (the mode is
+// the server's, from the extension).
+export const openFile = (sessionData, path, prefs = {}, t = (k) => k, locale = 'en') =>
+  stageContext(sessionData, { file: path ?? 'none' }, prefs, t, locale);
+
+export const setActivityFilter = (sessionData, filter, prefs = {}, t = (k) => k, locale = 'en') => {
+  design(sessionData).activityFilter = filter;
+  return stageContext(sessionData, {}, prefs, t, locale);
+};
+
+export const setActivityView = (sessionData, view, prefs = {}, t = (k) => k, locale = 'en') => {
+  design(sessionData).activityView = view;
+  return stageContext(sessionData, {}, prefs, t, locale);
+};
+
+// Panel width grip: cycle persisted per side (the shell's own sizing state).
+export const setPanelSize = (sessionData, side, size, prefs = {}, t = (k) => k, locale = 'en') => {
+  if (['left', 'right'].includes(side) && PANEL_SIZES.includes(size)) {
+    (design(sessionData).panelSize ??= {})[side] = size;
+  }
+  return stageContext(sessionData, {}, prefs, t, locale);
+};
+
+// Panel drag handle: px width persisted per side, clamped to a sane band.
+export const setPanelSizePx = (sessionData, side, width, prefs = {}, t = (k) => k, locale = 'en') => {
   const d = design(sessionData);
-  d.context = [];
-  d.chatCentered = true;
-  return stageContext(sessionData, opts, prefs, t, locale);
-};
-
-export const setRailFilter = (sessionData, filter, prefs = {}, t = (k) => k, locale = 'en') => {
-  design(sessionData).railFilter = filter;
+  (d.panelSizePx ??= {})[side] = Math.max(200, Math.min(600, Number(width) || 280));
   return stageContext(sessionData, {}, prefs, t, locale);
 };
 
-export const setRailView = (sessionData, view, prefs = {}, t = (k) => k, locale = 'en') => {
-  design(sessionData).railView = view;
+// Artboard tile drag: persist {x, y} on drop and record a reversible move on
+// the canvas undo stack (prev lets undo restore the prior position / auto-grid).
+export const setArtboardLayout = (sessionData, screenId, x, y, prefs, t, locale) => {
+  const d = design(sessionData);
+  const prev = d.artboardLayout?.[screenId] ? { ...d.artboardLayout[screenId] } : null;
+  (d.artboardLayout ??= {})[screenId] = { x, y };
+  pushCanvasUndo(d, { type: 'move', screenId, from: prev, to: { x, y } });
   return stageContext(sessionData, {}, prefs, t, locale);
 };
 
-// Rail width grip: cycle persisted per side (the shell's own sizing state).
-export const setRailSize = (sessionData, side, size, prefs = {}, t = (k) => k, locale = 'en') => {
-  if (['left', 'right'].includes(side) && RAIL_SIZES.includes(size)) {
-    (design(sessionData).railSize ??= {})[side] = size;
+// Element context chips: independent of screen chips in the composer tray. A
+// pin dedupes on (screenId, name) and auto-opens the tray. These do NOT touch
+// the canvas undo stack — element-scoped checkpoints (contract §6) are a
+// separate slice; this just maintains the tray membership.
+export const pinElement = (sessionData, screenId, name, kind, prefs, t, locale) => {
+  const d = design(sessionData);
+  const el = (d.elementContext ??= []);
+  if (!el.some((e) => e.screenId === screenId && e.name === name)) {
+    el.push({ screenId, name, kind, tone: toneFor(screenId, locale) });
+    d.trayOpen = true;
+  }
+  return stageContext(sessionData, {}, prefs, t, locale);
+};
+
+export const unpinElement = (sessionData, screenId, name, prefs, t, locale) => {
+  const d = design(sessionData);
+  d.elementContext = (d.elementContext ?? []).filter((e) => !(e.screenId === screenId && e.name === name));
+  return stageContext(sessionData, {}, prefs, t, locale);
+};
+
+// Undo / redo walk the two session stacks. Popping an entry, applying its
+// reverse, and re-pushing onto the opposite stack is the whole mechanic — the
+// entry object travels with the user as they step back and forth. The stack
+// param is a URL segment: anything but canvas|chat is a no-op re-render (it
+// must not mint junk stack keys in the session).
+const STACKS = ['canvas', 'chat'];
+export const undo = (sessionData, stack, prefs = {}, t = (k) => k, locale = 'en') => {
+  const d = design(sessionData);
+  if (!STACKS.includes(stack)) return stageContext(sessionData, {}, prefs, t, locale);
+  (d.undoStacks ??= {}); (d.redoStacks ??= {});
+  const entry = (d.undoStacks[stack] ??= []).pop();
+  if (entry) {
+    applyEntry(d, entry, 'undo');
+    (d.redoStacks[stack] ??= []).push(entry);
+  }
+  return stageContext(sessionData, {}, prefs, t, locale);
+};
+
+export const redo = (sessionData, stack, prefs = {}, t = (k) => k, locale = 'en') => {
+  const d = design(sessionData);
+  if (!STACKS.includes(stack)) return stageContext(sessionData, {}, prefs, t, locale);
+  (d.undoStacks ??= {}); (d.redoStacks ??= {});
+  const entry = (d.redoStacks[stack] ??= []).pop();
+  if (entry) {
+    applyEntry(d, entry, 'redo');
+    (d.undoStacks[stack] ??= []).push(entry);
   }
   return stageContext(sessionData, {}, prefs, t, locale);
 };
 
 // The single composer path (chat-Centric Layout: no inputs outside the chat).
-// 'draft-all' accepts the one-pass draft; 'approve' signs the manifest; any
-// other text refines the pinned screens and may mint one checkpoint per
-// pinned screen.
+// 'approve' signs the manifest; any other text refines the pinned screens and
+// may mint one checkpoint per pinned screen.
 export const sendChat = (sessionData, text, prefs = {}, pinId = null, t = (k) => k, locale = 'en') => {
   const L = locale;
   const d = design(sessionData);
   if (pinId) pin(d, pinId, L);
   const thread = (d.designThread ??= []);
 
-  if (text === 'draft-all') {
-    thread.push({ at: 'now', from: 'user', text: repo.draft(L).chip });
-    d.drafted = true;
-    thread.push({ at: 'now', from: 'agent', text: repo.draft(L).done, textPlain: repo.draft(L).donePlain });
-    return stageContext(sessionData, {}, prefs, t, L);
-  }
   if (text === 'approve') return approveManifest(sessionData, prefs, t, L);
 
+  const threadLenBefore = thread.length;
   thread.push({ at: 'now', from: 'user', text });
   const ids = contextIds(d, L);
   if (!ids.length) {
     thread.push({ at: 'now', from: 'agent', text: repo.noContext(L).text, textPlain: repo.noContext(L).textPlain });
+    pushUndo(d, 'chat', { type: 'chat', threadLenBefore, checkpointIds: [] });
     return stageContext(sessionData, {}, prefs, t, L);
   }
 
@@ -323,6 +521,7 @@ export const sendChat = (sessionData, text, prefs = {}, pinId = null, t = (k) =>
     });
   }
   thread.push({ at: 'now', from: 'agent', text: reply.text, textBalanced: reply.textBalanced, textPlain: reply.textPlain, link: reply.link, cps });
+  pushUndo(d, 'chat', { type: 'chat', threadLenBefore, checkpointIds: cps });
   return stageContext(sessionData, {}, prefs, t, L);
 };
 
@@ -340,9 +539,9 @@ export const revertCheckpoint = (sessionData, screenId, cpId, prefs = {}, t = (k
 
 // ---------- freeze & trace surface ----------
 
-export const freezeContext = (sessionData = {}, prefs = {}, t = (k) => k, locale = 'en') => {
+export const freezeContext = (sessionData = {}, prefs = {}, t = (k) => k, locale = 'en', fileArg) => {
   const L = locale;
-  const stage = stageContext(sessionData, { line: 'freeze', base: '/design/freeze' }, prefs, t, L);
+  const stage = stageContext(sessionData, { line: 'freeze', base: '/design/freeze', fileBase: '/design/freeze', file: fileArg }, prefs, t, L);
   const lv = stage.jargonLevel;
   const d = design(sessionData);
   const ap = repo.approval(L);
@@ -351,7 +550,12 @@ export const freezeContext = (sessionData = {}, prefs = {}, t = (k) => k, locale
   const rechecks = d.driftRechecks ?? 0;
   return {
     ...stage,
-    docked: d.chatCentered !== true,
+    // Element chips and the chat undo/redo pair stay off the freeze composer:
+    // their hrefs live under /design/chat + /design/undo and answer with the
+    // prototype stage markup — fine on /design surfaces, a wrong-surface swap
+    // here. Re-enable once those hrefs are base-scoped like the strip's.
+    elements: null,
+    undoRedo: null,
     stageEyebrow: t('design.freeze.eyebrow'),
     composerAction: '/design/freeze/messages',
     suggestions: [{ value: 'approve', label: ap.chip }, ...refineSuggestions(t)],

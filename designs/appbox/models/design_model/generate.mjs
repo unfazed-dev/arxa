@@ -1,3 +1,6 @@
+// appbox:provenance
+// generator: app-box  licence: free  project: 662368770980
+// Built with app-box (free tier) — https://appbox.dev
 // Fixture generator — design_seed.<locale>.json → run.<locale>.json (+
 // run.json as the en alias). The fixture is the denormalized projection a
 // template wants: shot ids minted per rung, per-rung layout notes per wire

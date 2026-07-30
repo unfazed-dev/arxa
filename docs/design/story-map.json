@@ -72,7 +72,7 @@
               "release": "R1 Dogfood"
             },
             {
-              "name": "Appbar shows project name + current stage chip, with click-through to the dashboard/project switcher",
+              "name": "Header panel shows project name + current stage chip, with click-through to the dashboard/project switcher",
               "priority": "must",
               "release": "R1 Dogfood"
             }
@@ -152,7 +152,12 @@
               "release": "R1 Dogfood"
             },
             {
-              "name": "All-at-once generation when the questionnaire completes: brief + story map appear as rail artifacts; the moodboard follows as a suggested next step",
+              "name": "All-at-once generation when the questionnaire completes: brief + story map appear as main panel artifacts; the moodboard follows as a suggested next step",
+              "priority": "must",
+              "release": "R1 Dogfood"
+            },
+            {
+              "name": "Layout template picking is an intake step: app category first (closed list), then one of six archetype galleries (feed, list-detail, supporting-pane, dashboard, hero-scroll, detail-column) shown as plain colored boxes of named containers at full size in the main panel — recorded in the brief, consumed by the designer without rewriting",
               "priority": "must",
               "release": "R1 Dogfood"
             }
@@ -182,7 +187,7 @@
               "release": "R3 Delight"
             },
             {
-              "name": "Stage gating: the Design tab stays locked until the story map is approved (human-gate pattern); locked tabs explain why and the chat nudges",
+              "name": "Stage gating: the Design shell stays locked until the story map is approved (human-gate pattern); locked shells explain why and the chat nudges",
               "priority": "must",
               "release": "R1 Dogfood"
             },
@@ -280,6 +285,11 @@
               "name": "The daemon drafts all screens from the approved story map in one pass; refining happens exclusively in the centered chat",
               "priority": "must",
               "release": "R1 Dogfood"
+            },
+            {
+              "name": "Component-library components are Auto Layout by default (flow, gap, padding, alignment; child hug/fill/fixed emitted as flexbox data-attributes); off by default at artboard level, per-frame opt-out",
+              "priority": "must",
+              "release": "R1 Dogfood"
             }
           ]
         },
@@ -325,6 +335,11 @@
               "name": "The floating vertical filmstrip inside the design artifact is the context picker: clicking toggles a screen's in-context state",
               "priority": "must",
               "release": "R1 Dogfood"
+            },
+            {
+              "name": "Design elements carry inspect metadata (data-inspect-role/-style/-motion/-fn): role, style, motion and function facts read straight from the markup by the inspect pass",
+              "priority": "must",
+              "release": "R1 Dogfood"
             }
           ]
         },
@@ -357,7 +372,7 @@
           "name": "Chat Stage",
           "stories": [
             {
-              "name": "Chat is the centerpiece in every stage: centered when no artifact is open; slides into a right floating rail when an artifact opens; closes back via X / Esc / collapse handle",
+              "name": "Chat is the centerpiece in every stage, living in the composer panel — permanent, single-state, always on the right; the retired two-state chat (centered, sliding into a floating rail) is gone",
               "priority": "must",
               "release": "R1 Dogfood"
             },
@@ -369,30 +384,50 @@
           ]
         },
         {
-          "name": "Rails",
+          "name": "Panels",
           "stories": [
             {
-              "name": "One reusable multi-view rail component used on both sides; per-tab view registry (runs / artifacts / commits / files / chat); an icon-button carousel in each rail's own bottom bar switches that rail's view",
+              "name": "Activity panel (left): navigation and inventory — files, surfaces, runs / artifacts / commits views",
               "priority": "must",
               "release": "R1 Dogfood"
             },
             {
-              "name": "Rails resize via a hover handle on the inner edge only, min = current width, max = 1.5×",
+              "name": "Main panel: the single render destination, an automatic multi-mode viewer — render:code/doc/image/svg/pdf/video for files, art/map/board for stage content",
+              "priority": "must",
+              "release": "R1 Dogfood"
+            },
+            {
+              "name": "Main panel mode selection is fully automatic: the active shell plus the content type select the mode and panel composition — no user toggles, no tabs, no panel picking",
+              "priority": "must",
+              "release": "R1 Dogfood"
+            },
+            {
+              "name": "Composer panel (right): permanent and single-state in every shell",
+              "priority": "must",
+              "release": "R1 Dogfood"
+            },
+            {
+              "name": "Panel bar: on compact and medium rungs a segmented switcher picks the one visible content panel (activity / main / composer); the tabbar (compact) and railbar (medium) switch shells",
+              "priority": "must",
+              "release": "R1 Dogfood"
+            },
+            {
+              "name": "Adaptive chrome defaults: expanded = header panel + activity/main/composer panels + footer panel; compact = header panel + tabbar + panel bar; medium = header panel + railbar + panel bar — overridable per project in the design brief",
+              "priority": "must",
+              "release": "R1 Dogfood"
+            },
+            {
+              "name": "Panels resize via a hover handle on the inner edge only, min = current width, max = 1.5×",
               "priority": "should",
               "release": "R2 Anywhere"
-            },
-            {
-              "name": "Adaptive chrome defaults: mobile = app bar (drawer + dropdown menu) + bottom tab bar + staggered-action FAB; tablet = app bar + collapsible floating left rail + FAB; desktop = app bar + bottom bar + both rails openable/closeable — overridable per project in the design brief",
-              "priority": "must",
-              "release": "R1 Dogfood"
             }
           ]
         },
         {
-          "name": "Bottom Bar",
+          "name": "Footer Panel",
           "stories": [
             {
-              "name": "Bottom bar: read-only stage timeline with proper labels (not clickable; animation kept), project + run state, daemon status + pending-gate dots; the old top stage strip is removed",
+              "name": "Footer panel: read-only stage timeline with proper labels (not clickable; animation kept), project + run state, daemon status + pending-gate dots; in the design shell it also shows the design sub-steps (artboards → inspect · fine-tune → approval → freeze); the old top stage strip is removed",
               "priority": "must",
               "release": "R1 Dogfood"
             }
@@ -422,7 +457,7 @@
               "release": "R1 Dogfood"
             },
             {
-              "name": "The run thread is the build tab's chat: stage, evidence, chart and gate cards stream in as chat messages; evidence and charts open as center artifacts (chat slides right — see Chat-Centric Layout)",
+              "name": "The run thread is the build shell's chat: stage, evidence, chart and gate cards stream in as chat messages; evidence and charts open in the main panel (the composer panel stays put — see Chat-Centric Layout)",
               "priority": "must",
               "release": "R1 Dogfood"
             }
@@ -482,12 +517,12 @@
           "name": "Git",
           "stories": [
             {
-              "name": "The pipeline auto-commits at each gate/stage with tab-scoped conventional messages (e.g. chore(intake): ...)",
+              "name": "The pipeline auto-commits at each gate/stage with shell-scoped conventional messages (e.g. chore(intake): ...)",
               "priority": "must",
               "release": "R1 Dogfood"
             },
             {
-              "name": "Commits rail view: git history with per-commit diff and CI status dots",
+              "name": "Commits view in the activity panel: git history with per-commit diff and CI status dots",
               "priority": "should",
               "release": "R2 Anywhere"
             },
@@ -507,7 +542,7 @@
           "name": "Files",
           "stories": [
             {
-              "name": "Files rail view: read-only generated-project tree with per-file status badges (new/changed/frozen); clicking a file opens its content as a center artifact",
+              "name": "Files view in the activity panel: read-only generated-project tree with per-file status badges (new/changed/frozen); clicking a file opens its content in the main panel",
               "priority": "should",
               "release": "R2 Anywhere"
             }

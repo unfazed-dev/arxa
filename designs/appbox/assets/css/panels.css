@@ -1,0 +1,146 @@
+/* panels.css · the multi-view panel frame (ui/common/panel_views.html —
+   pv.frame): the Activity Panel's chrome. Width is SERVER state, not a CSS
+   drag: three steps (s = default min, m ≈ 1.25×, l ≈ 1.5×) rendered as
+   panel-size-* classes from the shell's session (facades keep
+   panelSize[side]) — so the width persists across swaps, navigations and
+   reloads, per shell, per side. A CSS resize handle can't persist without
+   client JS, which the artifact contract forbids. The width transition
+   animates the step change; htmx's global view transitions do the rest. */
+
+/* ---------- the three content panels (activity / main / composer) ----------
+   One full-bleed row per stage shell; #panels is the htmx swap unit for every
+   stage interaction. The activity panel's width comes from .panel-frame, the
+   composer panel's from .panel-composer — the main panel takes the rest. */
+.panels {
+  display: flex; gap: 1rem; padding: 1rem;
+  height: calc(100dvh - var(--nav-h) - var(--tl-h));
+}
+.panel-main {
+  flex: 1; min-width: 0; min-height: 0;
+  display: flex; flex-direction: column; position: relative;
+}
+.panel-main .mp-content { flex: 1 1 auto; min-height: 0; }
+.mp-empty { align-items: center; justify-content: center; }
+
+/* ---------- the file viewer (render:* modes, server-picked) ---------- */
+.mp-file { gap: .9rem; }
+.mp-file-head {
+  display: flex; gap: .7rem; align-items: center; flex: none; flex-wrap: wrap;
+  padding-bottom: .7rem; border-bottom: 1px solid var(--border);
+}
+.mp-file-path { font-size: .8rem; overflow-wrap: anywhere; }
+.mp-file-back {
+  margin-left: auto; display: inline-flex; gap: .25rem; align-items: center;
+  color: var(--tx-2); text-decoration: none; font-size: .78rem;
+}
+.mp-file-back:hover { color: var(--accent); }
+.mp-code {
+  flex: 1; margin: 0; padding: 1rem; overflow: auto;
+  background: var(--bg-2); border-radius: var(--radius);
+  font-size: .78rem; line-height: 1.55;
+}
+.mp-doc { max-width: 42rem; margin: 0 auto; line-height: 1.65; }
+.mp-doc pre { padding: .8rem; overflow: auto; background: var(--bg-2); border-radius: var(--radius); }
+.mp-media { max-width: 100%; max-height: 100%; margin: auto; border-radius: var(--radius); }
+.mp-svg { background: var(--bg-2); }
+.mp-pdf { width: 100%; min-height: 32rem; border: 0; }
+video.mp-media { width: 100%; background: #000; }
+
+/* file rows in the activity panel */
+.rv-file, .file-link {
+  display: flex; gap: .55rem; align-items: center; justify-content: space-between;
+  color: var(--tx); text-decoration: none; border-radius: var(--radius);
+}
+.rv-file:hover, .file-link:hover { background: var(--bg-2); }
+.rv-file.is-active, .file-link.is-active { box-shadow: inset 0 0 0 1.5px var(--accent); }
+
+/* below expanded the panels come under panel-bar control: one content panel
+   at a time, picked by ?panel= (data-panel on the swap unit) */
+@media (max-width: 839px) {
+  .panels { flex-direction: column; height: auto; }
+  .panel-main .mp-content { overflow: visible; }
+  .panel-frame { width: auto; min-width: 0; }
+  .panels[data-panel="activity"] .panel-main, .panels[data-panel="activity"] .panel-composer { display: none; }
+  .panels[data-panel="main"] .panel-frame, .panels[data-panel="main"] .panel-composer { display: none; }
+  .panels[data-panel="composer"] .panel-frame, .panels[data-panel="composer"] .panel-main { display: none; }
+}
+
+/* ---------- the panel bar (compact/medium segmented switcher) ---------- */
+.panel-bar { display: none; }
+@media (max-width: 839px) {
+  .panel-bar {
+    display: flex; gap: .25rem; flex: none;
+    padding: .2rem; margin: 0 0 .25rem;
+    background: var(--bg-2); border-radius: 999px;
+  }
+  .panel-bar-item {
+    flex: 1; display: flex; gap: .35rem; align-items: center; justify-content: center;
+    padding: .42rem .6rem; border-radius: 999px;
+    color: var(--tx-2); text-decoration: none; font-size: .78rem; white-space: nowrap;
+  }
+  .panel-bar-item.is-active { background: var(--bg); color: var(--tx); box-shadow: var(--shadow-1); }
+}
+
+.panel-frame {
+  --panel-w: 340px;                       /* s: default = minimum width */
+  width: var(--panel-w);
+  min-width: var(--panel-w);
+  display: flex; flex-direction: column; min-height: 0;
+  background: var(--bg-2);
+  border: 1px solid var(--border); border-radius: var(--radius);
+  box-shadow: var(--shadow-1);
+  overflow: hidden;
+  transition: width .18s ease;
+}
+.panel-size-m { --panel-w: 425px; }       /* ≈1.25× */
+.panel-size-l { --panel-w: 510px; }       /* ≈1.5× — the old drag ceiling */
+
+/* head: active view label left, resize handle right */
+.panel-frame-head {
+  display: flex; gap: .6rem; align-items: center; justify-content: space-between;
+  padding: .7rem .9rem; border-bottom: 1px solid var(--border); flex: none;
+}
+.panel-frame-label { font-weight: 500; font-size: .92rem; min-width: 0; }
+
+/* body: the caller's active-view content scrolls here, never the page */
+.panel-frame-body {
+  flex: 1; min-height: 0; overflow-y: auto;
+  display: flex; flex-direction: column;
+}
+
+/* bottom bar: the views icon carousel — one button per registered view,
+   scrolls sideways when crowded, its scrollbar never shows */
+.panel-frame-bar {
+  display: flex; gap: .35rem; align-items: center; flex: none;
+  padding: .55rem .7rem; border-top: 1px solid var(--border);
+  overflow-x: auto; scrollbar-width: none;
+}
+.panel-frame-bar::-webkit-scrollbar { display: none; }
+.pv-icon {
+  flex: none; width: 2rem; height: 2rem; border-radius: 50%;
+  display: inline-grid; place-items: center;
+  background: transparent; color: var(--tx-2);
+  box-shadow: inset 0 0 0 1px var(--border);
+  font-size: .85rem; line-height: 1; text-decoration: none;
+}
+.pv-icon:hover { color: var(--tx); box-shadow: inset 0 0 0 1px var(--tx-3); }
+.pv-icon.is-active {
+  color: var(--accent); background: var(--accent-soft);
+  box-shadow: inset 0 0 0 1.5px var(--accent);
+}
+
+/* below expanded the panel bar picks the single visible content panel (see
+   the .panels[data-panel=…] rules above) — the activity panel is reachable
+   on every rung */
+
+/* ---------- panel drag handle (replaces the s/m/l grip) ---------- */
+.panel-frame-handle {
+  display: inline-flex; align-items: center; gap: .2rem;
+  cursor: col-resize; padding: .15rem .2rem; border-radius: var(--radius);
+  color: var(--tx-3); opacity: 0; transition: opacity .15s;
+}
+.panel-frame-head:hover .panel-frame-handle { opacity: 1; }
+.panel-frame-handle:hover { background: var(--bg-2, rgba(0,0,0,.04)); color: var(--tx); }
+.panel-frame-width {
+  font-size: .64rem; color: var(--tx-2); min-width: 2.5rem; text-align: center;
+}

@@ -1,3 +1,6 @@
+// appbox:provenance
+// generator: app-box  licence: free  project: 662368770980
+// Built with app-box (free tier) — https://appbox.dev
 // Fixture generator — build_seed.<locale>.json → run.<locale>.json (+ run.json
 // as the en alias). The fixture is the denormalized projection a template
 // wants: findings grouped by gate, stage durations as chart-ready

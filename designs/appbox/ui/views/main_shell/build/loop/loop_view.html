@@ -1,26 +1,31 @@
+<!-- appbox:provenance
+     generator: app-box  licence: free  project: 662368770980
+     Built with app-box (free tier) — https://appbox.dev
+-->
 {% extends "ui/views/main_shell/main_shell_view.html" %}
 {% import "ui/common/primitives.html" as prim %}
 {% import "ui/common/timeline.html" as tl %}
 {% import "ui/common/design_viewer.html" as dv %}
-{% import "ui/common/chat_stage.html" as cs %}
-{% import "ui/common/rail_views.html" as mv %}
+{% import "ui/common/composer_panel.html" as cp %}
+{% import "ui/common/main_panel.html" as mp %}
+{% import "ui/common/panel_views.html" as pv %}
 {% import "ui/common/composer.html" as cm %}
 {% block title %}{{ t('build.pageTitle') }}{% endblock %}
 {% block main_class %}shell-main-loop{% endblock %}
 
-{# ---------- Build loop, chat-centric ----------
+{# ---------- Build loop, panel layout ----------
    The run thread IS the chat: stage / evidence / chart / gate cards stream
-   into the chat stage — centered when nothing is open, docked right when an
-   artifact is on the canvas. Gate decisions are chat acts: Approve/Reject
-   buttons inline on the gate card, and "reject with note" pins the gate as a
-   composer context chip (the next message is the note + the rejection).
-   The left multi-view rail carries run controls, the thread filter, the
-   artifact index, and the seeded commits/files views. #}
+   into the composer panel — centered when nothing is open, docked right when
+   an artifact is in the main panel. Gate decisions are chat acts:
+   Approve/Reject buttons inline on the gate card, and "reject with note"
+   pins the gate as a composer context chip (the next message is the note +
+   the rejection). The activity panel carries run controls, the thread
+   filter, the artifact index, and the seeded commits/files views. #}
 
-{# ---------- the chat: thread cards + composer (inside cs.wrap) ---------- #}
+{# ---------- the chat: thread cards + composer (inside cp.frame) ---------- #}
 
 {# One thread card. Pending gates get inline quick-replies; every artifact
-   card keeps the "view on canvas" CTA that docks the chat. #}
+   card keeps the "view in the main panel" CTA that docks the chat. #}
 {% macro msgCard(c, m) %}
 {% if m.from == 'user' %}
 <div class="msg msg-user">
@@ -37,23 +42,23 @@
   {% if m.card.type == 'gate' and m.card.state == 'pending' %}
   <span class="gate-quick">
     <form method="post" action="/build/gates/decide"
-          hx-post="/build/gates/decide" hx-target="#stage-layout" hx-swap="outerHTML">
+          hx-post="/build/gates/decide" hx-target="#panels" hx-swap="outerHTML">
       <input type="hidden" name="gate" value="{{ m.card.gateId }}">
       <button type="submit" name="decision" value="approved" class="btn-approve">{{ t('action.approve') }}</button>
       <button type="submit" name="decision" value="rejected" class="btn-reject ghost">{{ t('action.reject') }}</button>
     </form>
     {{ prim.ctaLink('/build/chips/pin?ref=gate/' + m.card.gateId, t('build.rejectWithNote'), glyph='undo-2', variant='ghost', size=13,
         title=t('build.rejectWithNoteTitle'),
-        hx={target: '#stage-layout'}) }}
+        hx={target: '#panels'}) }}
   </span>
   {% endif %}
   <footer class="msg-foot">
     {% if m.artifact %}
     <span class="msg-cta">
       {% if m.active %}
-      {{ prim.ctaLink('/build/artifact/' + m.artifact, t('build.onCanvas'), glyph='circle-dot', variant='main', size=12, hx={target: '#stage-layout'}) }}
+      {{ prim.ctaLink('/build/artifact/' + m.artifact, t('build.onCanvas'), glyph='circle-dot', variant='main', size=12, hx={target: '#panels'}) }}
       {% else %}
-      {{ prim.ctaLink('/build/artifact/' + m.artifact, t('build.viewOnCanvas'), variant='main', size=13, hx={target: '#stage-layout'}) }}
+      {{ prim.ctaLink('/build/artifact/' + m.artifact, t('build.viewOnCanvas'), variant='main', size=13, hx={target: '#panels'}) }}
       {% endif %}
     </span>
     {% endif %}
@@ -74,21 +79,41 @@
 {# The single input path — the shared composer card. With a gate chip
    pinned, this is the note input; the facade swaps placeholder +
    suggestions to say so. #}
-{% macro stageLayout(c, oob) %}
-<div class="stage-layout {{ 'is-docked' if c.artifactOpen else 'is-centered' }}" id="stage-layout" {% if oob %}hx-swap-oob="outerHTML"{% endif %}>
-  {% call cs.wrap({ eyebrow: t('build.runEyebrow', {number: c.run.number, brief: c.run.brief}), docked: c.artifactOpen, chips: c.chips, collapseHref: '/build/close', bottom: c.threading }) %}
+{% macro composerPanel(c) %}
+{% call cp.frame({ eyebrow: t('build.runEyebrow', {number: c.run.number, brief: c.run.brief}), chips: c.chips }) %}
   {{ chatThread(c) }}
   {{ cm.field(c) }}
-  {% endcall %}
-  {% if c.artifactOpen %}
-  <section class="canvas" id="canvas" aria-live="polite">
-    {{ canvasArtifact(c) }}
-  </section>
-  {% endif %}
+{% endcall %}
+{% endmacro %}
+
+{# The three content panels, one swap unit: every stage interaction
+   re-renders #panels outerHTML (panel widths are server state, so the
+   activity panel rides along without an out-of-band re-feed). The main
+   panel holds the open artifact, or the empty read state. #}
+{# The main panel's content: the open file, else the open artifact, else
+   the empty read state. #}
+{% macro mainContent(c) %}
+{% if c.fileView %}{{ mp.view(c.fileView) }}
+{% elif c.artifact %}
+<section class="mp-content" id="mp-content" aria-live="polite">
+  {{ canvasArtifact(c) }}
+</section>
+{% else %}{{ mp.empty() }}
+{% endif %}
+{% endmacro %}
+
+{% macro panels(c, oob) %}
+<div class="panels" id="panels" data-panel="{{ c.panel }}" {% if oob %}hx-swap-oob="outerHTML"{% endif %}>
+  {{ mp.panelBar(c) }}
+  {{ activityPanel(c) }}
+  <div class="panel-main" id="panel-main">
+    {{ mainContent(c) }}
+  </div>
+  {{ composerPanel(c) }}
 </div>
 {% endmacro %}
 
-{# ---------- the left multi-view rail ---------- #}
+{# ---------- the activity panel ---------- #}
 
 {% macro runView(c) %}
 <div class="rail-view run-view">
@@ -103,7 +128,7 @@
     </span>
   </header>
   <form class="run-controls" method="post" action="/build/run/control"
-        hx-post="/build/run/control" hx-target="#rail-left-body" hx-swap="innerHTML">
+        hx-post="/build/run/control" hx-target="#panel-left-body" hx-swap="innerHTML">
     {% if c.run.pausedByYou %}
     <button type="submit" name="action" value="resume" class="btn-approve">{{ icon('play', {size: 14}) }} {{ t('build.resumeRun') }}</button>
     {% else %}
@@ -121,17 +146,17 @@
       <span class="run-stage-acts">
         {% if s.state == 'held' %}
         <form method="post" action="/build/stages/{{ s.id }}/control"
-              hx-post="/build/stages/{{ s.id }}/control" hx-target="#stage-layout" hx-swap="outerHTML">
+              hx-post="/build/stages/{{ s.id }}/control" hx-target="#panels" hx-swap="outerHTML">
           <button type="submit" name="action" value="resume" class="ico-btn" title="{{ t('build.resumeStage', {label: s.label}) }}" aria-label="{{ t('build.resumeStage', {label: s.label}) }}">{{ icon('play', {size: 14}) }}</button>
         </form>
         {% else %}
         <form method="post" action="/build/stages/{{ s.id }}/control"
-              hx-post="/build/stages/{{ s.id }}/control" hx-target="#stage-layout" hx-swap="outerHTML">
+              hx-post="/build/stages/{{ s.id }}/control" hx-target="#panels" hx-swap="outerHTML">
           <button type="submit" name="action" value="pause" class="ico-btn" title="{{ t('build.pauseStage', {label: s.label}) }}" aria-label="{{ t('build.pauseStage', {label: s.label}) }}">{{ icon('pause', {size: 14}) }}</button>
         </form>
         {% endif %}
         <form method="post" action="/build/stages/{{ s.id }}/control"
-              hx-post="/build/stages/{{ s.id }}/control" hx-target="#stage-layout" hx-swap="outerHTML">
+              hx-post="/build/stages/{{ s.id }}/control" hx-target="#panels" hx-swap="outerHTML">
           <button type="submit" name="action" value="cancel" class="ico-btn" title="{{ t('build.cancelStage', {label: s.label}) }}" aria-label="{{ t('build.cancelStage', {label: s.label}) }}">{{ icon('x', {size: 14}) }}</button>
         </form>
       </span>
@@ -149,7 +174,7 @@
     {% for o in [{id: 'all', label: t('build.filter.all')}, {id: 'stage', label: t('build.filter.stage')}, {id: 'gate', label: t('build.filter.gate')}, {id: 'findings', label: t('build.filter.findings')}, {id: 'evidence', label: t('build.filter.evidence')}, {id: 'note', label: t('build.filter.note')}] %}
     <a class="filter-item {{ 'is-active' if c.filter == o.id }}"
        href="/build/rail?type={{ o.id }}"
-       hx-get="/build/rail?type={{ o.id }}" hx-target="#rail-left-body" hx-swap="innerHTML" hx-push-url="false">{{ o.label }}</a>
+       hx-get="/build/rail?type={{ o.id }}" hx-target="#panel-left-body" hx-swap="innerHTML" hx-push-url="false">{{ o.label }}</a>
     {% endfor %}
   </nav>
 </div>
@@ -162,7 +187,7 @@
     <li>
       <a class="artifact-index-link {{ 'is-active' if c.activeArtifact == a.ref }}"
          href="/build/artifact/{{ a.ref }}"
-         hx-get="/build/artifact/{{ a.ref }}" hx-target="#stage-layout" hx-swap="outerHTML" hx-push-url="false">
+         hx-get="/build/artifact/{{ a.ref }}" hx-target="#panels" hx-swap="outerHTML" hx-push-url="false">
         {{ prim.typeBadge(a.kind) }}
         <span class="artifact-index-label">{{ a.label }}</span>
         {% if a.state %}{{ prim.statusPill(a.state) }}{% endif %}
@@ -193,58 +218,59 @@
   <ul class="file-list">
     {% for f in c.files %}
     <li class="file-row">
+      {% if f.mode %}
+      <a class="file-link {{ 'is-active' if c.fileView and c.fileView.path == f.path }}" href="{{ f.href }}"
+         hx-get="{{ f.get }}" hx-target="#panel-main" hx-swap="innerHTML" hx-push-url="{{ f.href }}">
+        <code class="file-path">{{ f.path }}</code>
+        <span class="chip file-status-{{ f.status }}">{{ t('build.fileStatus.' ~ f.status) }}</span></a>
+      {% else %}
       <code class="file-path">{{ f.path }}</code>
       <span class="chip file-status-{{ f.status }}">{{ t('build.fileStatus.' ~ f.status) }}</span>
+      {% endif %}
     </li>
     {% endfor %}
   </ul>
 </div>
 {% endmacro %}
 
-{% macro railViewBody(c) %}
-{% if c.railView == 'thread' %}{{ threadView(c) }}
-{% elif c.railView == 'artifacts' %}{{ artifactsView(c) }}
-{% elif c.railView == 'commits' %}{{ commitsView(c) }}
-{% elif c.railView == 'files' %}{{ filesView(c) }}
+{% macro activityBody(c) %}
+{% if c.activityView == 'thread' %}{{ threadView(c) }}
+{% elif c.activityView == 'artifacts' %}{{ artifactsView(c) }}
+{% elif c.activityView == 'commits' %}{{ commitsView(c) }}
+{% elif c.activityView == 'files' %}{{ filesView(c) }}
 {% else %}{{ runView(c) }}
 {% endif %}
 {% endmacro %}
 
-{# The rail owns its state: head label + active carousel icon are part macros
-   with their own ids, refreshed out-of-band on every rail-affecting act —
-   the <aside> itself (and the user's resized width) is never replaced. #}
-{% macro railChrome(c) %}
-{{ mv.head({ side: 'left', label: t('rail.' + c.railView), views: c.railViews, size: c.railSize, sizeHref: c.railSizeHref }, true) }}
-{{ mv.bar({ side: 'left', label: t('rail.' + c.railView), views: c.railViews, size: c.railSize, sizeHref: c.railSizeHref }, true) }}
+{# The panel owns its state: head label + active carousel icon are part
+   macros with their own ids, refreshed out-of-band on every panel-affecting
+   act — the <aside> itself (and the user's resized width) is never replaced. #}
+{% macro activityChrome(c) %}
+{{ pv.head({ side: 'left', label: t('activityView.' + c.activityView), views: c.activityViews, size: c.panelSize, sizeHref: c.panelSizeHref }, true) }}
+{{ pv.bar({ side: 'left', label: t('activityView.' + c.activityView), views: c.activityViews, size: c.panelSize, sizeHref: c.panelSizeHref }, true) }}
 {% endmacro %}
 
-{# Targeted response for acts initiated inside the rail (view switch, thread
-   filter, run control — all target #rail-left-body): new body content plus
-   head + bar out-of-band. #}
-{% macro railTarget(c) %}
-{{ railViewBody(c) }}
-{{ railChrome(c) }}
+{# Targeted response for acts initiated inside the panel (view switch,
+   thread filter, run control — all target #panel-left-body): new body
+   content plus head + bar out-of-band. #}
+{% macro activityTarget(c) %}
+{{ activityBody(c) }}
+{{ activityChrome(c) }}
 {% endmacro %}
 
-{# Stage-driven re-feed: decisions, stage controls and messages change the
-   rail's data — refresh body + head + bar fully out-of-band. #}
-{% macro railOob(c) %}
-{% call mv.body({ side: 'left' }, true) %}{{ railViewBody(c) }}{% endcall %}
-{{ railChrome(c) }}
-{% endmacro %}
-
-{% macro leftRail(c) %}
-{% call mv.frame({ side: 'left', label: t('rail.' + c.railView), views: c.railViews, size: c.railSize, sizeHref: c.railSizeHref }) %}
-{{ railViewBody(c) }}
+{% macro activityPanel(c) %}
+{% call pv.frame({ side: 'left', label: t('activityView.' + c.activityView), views: c.activityViews, size: c.panelSize, sizeHref: c.panelSizeHref }) %}
+{{ activityBody(c) }}
 {% endcall %}
 {% endmacro %}
 
-{# The width grip's response: the whole rail re-rendered at its new persisted
-   size (the aside is server state now, so replacing it loses nothing). #}
-{% macro railFrameSwap(c) %}{{ leftRail(c) }}{% endmacro %}
+{# The width grip's response: the whole activity panel re-rendered at its
+   new persisted size (the aside is server state now, replacing it loses
+   nothing). #}
+{% macro activityFrameSwap(c) %}{{ activityPanel(c) }}{% endmacro %}
 
 {# ---------- the shell timeline: the whole line, current highlighted ----------
-   Bottom-bar resident and read-only (no base: inert items). #}
+   Footer-panel resident and read-only (no base: inert items). #}
 
 {% macro timeline(c, oob) %}{{ tl.timeline(c, oob, t('build.timelineLabel')) }}{% endmacro %}
 
@@ -262,13 +288,13 @@
   {% if gate.state == 'pending' %}
   <div class="gate-actions" id="gate-actions">
     <form class="gate-buttons" method="post" action="/build/gates/decide"
-          hx-post="/build/gates/decide" hx-target="#stage-layout" hx-swap="outerHTML">
+          hx-post="/build/gates/decide" hx-target="#panels" hx-swap="outerHTML">
       <input type="hidden" name="gate" value="{{ gate.id }}">
       <button type="submit" name="decision" value="approved" class="btn-approve">{{ t('action.approve') }}</button>
       <button type="submit" name="decision" value="rejected" class="btn-reject ghost">{{ t('action.reject') }}</button>
       <span class="htmx-indicator muted">{{ t('build.minting') }}</span>
     </form>
-    {{ prim.ctaLink('/build/chips/pin?ref=gate/' + gate.id, t('build.rejectWithNoteLong'), glyph='undo-2', variant='ghost', hx={target: '#stage-layout'}) }}
+    {{ prim.ctaLink('/build/chips/pin?ref=gate/' + gate.id, t('build.rejectWithNoteLong'), glyph='undo-2', variant='ghost', hx={target: '#panels'}) }}
   </div>
   <p class="artifact-foot muted">{{ t('gateFoot') }}</p>
   {% elif gate.provenance %}
@@ -308,7 +334,7 @@
   {% endif %}
   {% if s.state == 'recovered' %}
   <p class="artifact-foot">
-    {{ prim.ctaLink('/build/artifact/findings/coverage', t('build.seeFindings'), hx={target: '#stage-layout'}) }}
+    {{ prim.ctaLink('/build/artifact/findings/coverage', t('build.seeFindings'), hx={target: '#panels'}) }}
   </p>
   {% endif %}
 </article>
@@ -410,19 +436,17 @@
 {% endmacro %}
 
 {# ---------- Fragment responses ----------
-   The stage (#stage-layout) is the swap unit for everything that touches the
-   chat or the canvas; the left rail re-feeds out-of-band alongside it (body
-   + head + bar, never the resized <aside>). Actions initiated inside the
-   rail target #rail-left-body and refresh the stage OOB. Decisions and
-   stage controls also refresh the bottom-bar timeline. #}
-{% macro stageSwap(c) %}
-{{ stageLayout(c, false) }}
-{{ railOob(c) }}
+   The panels block (#panels) is the swap unit for everything that touches
+   the chat or the artifact. Actions initiated inside the activity panel
+   target #panel-left-body and refresh the panels OOB where they change the
+   stage (filter, run control). Decisions and stage controls also refresh
+   the footer-panel timeline. #}
+{% macro panelsSwap(c) %}
+{{ panels(c, false) }}
 {% endmacro %}
 
 {% macro messageSwap(c) %}
-{{ stageLayout(c, false) }}
-{{ railOob(c) }}
+{{ panels(c, false) }}
 {% if c.opFired %}
 {# a typed op changed the stage — refresh the timeline too #}
 {{ timeline(c, true) }}
@@ -430,31 +454,33 @@
 {% endmacro %}
 
 {% macro decisionSwap(c) %}
-{{ stageLayout(c, false) }}
-{{ railOob(c) }}
+{{ panels(c, false) }}
 {{ timeline(c, true) }}
 {# htmx unwraps the OOB carrier for beforeend — the toast must be nested #}
 <div hx-swap-oob="beforeend:#toasts"><div class="toast" id="toast-decision">{{ c.run.stateLabel }}</div></div>
 {% endmacro %}
 
 {% macro controlSwap(c) %}
-{{ stageLayout(c, false) }}
-{{ railOob(c) }}
+{{ panels(c, false) }}
 {{ timeline(c, true) }}
 {% endmacro %}
 
 {% macro filterSwap(c) %}
-{{ railTarget(c) }}
-{{ stageLayout(c, true) }}
+{{ activityTarget(c) }}
+{{ panels(c, true) }}
 {% endmacro %}
 
-{% macro railViewSwap(c) %}
-{{ railTarget(c) }}
+{% macro activityViewSwap(c) %}
+{{ activityTarget(c) }}
 {% endmacro %}
+
+{# A file row's response: the main panel renders the file in the mode the
+   server picked from its extension. #}
+{% macro fileSwap(c) %}{{ mainContent(c) }}{% endmacro %}
 
 {% macro runSwap(c) %}
-{{ railTarget(c) }}
-{{ stageLayout(c, true) }}
+{{ activityTarget(c) }}
+{{ panels(c, true) }}
 <div hx-swap-oob="beforeend:#toasts"><div class="toast" id="toast-run">{{ c.run.stateLabel }}</div></div>
 {% endmacro %}
 
@@ -464,9 +490,4 @@
 {{ timeline(c, false) }}
 {% endblock %}
 
-{% block surface %}
-<div class="loop-layout">
-  {{ leftRail(c) }}
-  {{ stageLayout(c, false) }}
-</div>
-{% endblock %}
+{% block surface %}{{ panels(c, false) }}{% endblock %}

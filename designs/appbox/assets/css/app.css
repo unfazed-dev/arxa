@@ -169,19 +169,7 @@ button:active { transform: translateY(1px); }
 }
 .surface-list .chip { margin-left: auto; }
 
-/* ---------- build.loop: the two zones ----------
-   (.shell-main-loop's full-bleed override lives in shell.css, which loads
-   last — duplicating it here would lose the cascade) */
-.loop-zones {
-  position: relative;
-  /* auto track: the rail's CSS-resize grows the track itself, so the canvas
-     is pushed — the rail can never slide under the canvas */
-  display: grid; grid-template-columns: auto minmax(0, 1fr);
-  gap: 1rem; padding: 1rem;
-  height: calc(100dvh - var(--nav-h) - var(--tl-h));
-}
-
-/* ---------- the shell timeline lives in shell.css (bottom bar) ---------- */
+/* ---------- the shell timeline lives in chrome.css (footer panel) ---------- */
 
 /* ---------- the rail: top bar + rich cards + composer ---------- */
 .rail {
@@ -346,8 +334,8 @@ button:active { transform: translateY(1px); }
   font-size: .95rem; line-height: 1;
 }
 
-/* ---------- the canvas: the stage right of the rail, full-bleed ---------- */
-.canvas { overflow-y: auto; padding: 1.2rem 1.4rem; display: flex; flex-direction: column; border-radius: var(--radius); }
+/* ---------- the main panel content: artifact stage, full-bleed ---------- */
+.mp-content { overflow-y: auto; padding: 1.2rem 1.4rem; display: flex; flex-direction: column; border-radius: var(--radius); }
 .artifact {
   width: 100%; max-width: 45rem; margin: auto; /* reading artifacts stay centered in the stage */
   display: flex; flex-direction: column; gap: .9rem;
@@ -639,15 +627,9 @@ button:active { transform: translateY(1px); }
 .htmx-request button { pointer-events: none; }
 
 /* ---------- rungs ---------- */
-/* medium: tighter chrome, same two-zone floating composition (the track
-   stays auto — it follows the rail's width, collapsing when it hides) */
-@media (max-width: 839px) {
-  .loop-zones { gap: .75rem; padding: .75rem; }
-}
-/* compact: zones stack, canvas first; the rail floats as a card below it */
+/* compact: tighter artifact reading; the rail floats as a card below content */
 @media (max-width: 599px) {
-  .loop-zones { display: flex; flex-direction: column; height: auto; gap: 0; padding: 0; }
-  .canvas { order: 1; overflow: visible; padding: 1.2rem 1rem 4.6rem; display: block; }
+  .mp-content { overflow: visible; padding: 1.2rem 1rem 4.6rem; display: block; }
   .rail { order: 2; margin: 0 1rem 1rem; }
   .rail-list { flex: none; max-height: 44dvh; }
   .artifact { gap: .9rem; }
@@ -686,52 +668,6 @@ button:active { transform: translateY(1px); }
   width: 9.2rem; flex: none; overflow-y: auto; min-height: 0;
   display: flex; flex-direction: column; gap: .7rem;
 }
-/* the stage is a pan area: trackpad two-finger scroll / scrollbars — the
-   zero-JS answer to Figma-style panning; oversized frames scroll, centered
-   when they fit. Devices carry their real w×h inline (deviceChrome) — the
-   stage never scales or clamps them */
-.dv-stage { overflow: auto; flex: 1; min-height: 0; display: flex; cursor: grab; }
-.dv-stage .device { margin: auto; }
-.dv-frame {
-  height: 100%; max-width: none; flex: 1;
-  border: 0;
-  background: #fff;
-}
-
-/* device chrome — fake frames around the live render */
-.device {
-  position: relative; display: flex; flex-direction: column; flex: none;
-  border: 3px solid #232326; background: #232326;
-  box-shadow: var(--shadow-2);
-}
-.device-ios, .device-android { border-radius: 2.4rem; overflow: hidden; }
-.device-ios .device-island {
-  position: absolute; top: .55rem; left: 50%; transform: translateX(-50%);
-  width: 5.6rem; height: 1.35rem; border-radius: 999px; background: #0a0a0c; z-index: 2;
-}
-.device-android .device-island {
-  position: absolute; top: .55rem; left: 50%; transform: translateX(-50%);
-  width: .8rem; height: .8rem; border-radius: 50%; background: #0a0a0c; z-index: 2;
-}
-.device-ios .device-home {
-  position: absolute; bottom: .35rem; left: 50%; transform: translateX(-50%);
-  width: 6.4rem; height: .22rem; border-radius: 999px; background: rgba(128,128,128,.55); z-index: 2;
-}
-.device-android .device-home {
-  position: absolute; bottom: .3rem; left: 50%; transform: translateX(-50%);
-  width: 2.4rem; height: .22rem; border-radius: 999px; background: rgba(128,128,128,.55); z-index: 2;
-}
-.device-tablet { border-radius: 1.1rem; overflow: hidden; border-width: .55rem; }
-.device-win { border-radius: .6rem; overflow: hidden; border-width: 0; }
-.device-win .device-titlebar {
-  display: flex; gap: .38rem; align-items: center;
-  padding: .5rem .7rem; background: var(--bg-2); border-bottom: 1px solid var(--border);
-}
-.device-win .device-titlebar i { width: .62rem; height: .62rem; border-radius: 50%; background: var(--tx-3, var(--border)); }
-.device-win .device-titlebar i:first-child { background: #ec6a5e; }
-.device-win .device-titlebar i:nth-child(2) { background: #f4bf4f; }
-.device-win .device-titlebar i:nth-child(3) { background: #61c454; }
-.device .dv-frame { width: 100%; }
 
 /* the sim affordance — desktop hosts only, hidden on compact/medium rungs */
 .dv-sim {

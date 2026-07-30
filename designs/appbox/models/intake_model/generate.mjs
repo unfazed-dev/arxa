@@ -1,3 +1,6 @@
+// appbox:provenance
+// generator: app-box  licence: free  project: 662368770980
+// Built with app-box (free tier) — https://appbox.dev
 // Fixture generator — intake_seed.<locale>.json → intake.<locale>.json (+
 // intake.json as the en alias). The fixture is the denormalized projection a
 // template wants: stories carry stable ids, counts are precomputed (per

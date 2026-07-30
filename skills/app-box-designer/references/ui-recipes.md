@@ -719,6 +719,134 @@ up; never infinite-scroll — no JS.
 
 **Flutter:** KitLazyIndexedStack.
 
+## 19. Multi-view panel (the stateful component)
+
+**Use:** a secondary panel beside the stage that switches between several
+registered views (thread / artifacts / files / runs…) from an icon carousel —
+the Chat-Centric Layout's activity and composer panels. Not primary navigation
+(recipe 3).
+
+This is the reference implementation of the Component-state contract
+(DESIGN-ARCHITECTURE, "Component state"): every piece of panel UI state is
+server session state, namespaced per shell, rendered back as classes — and
+the panel's parts refresh out-of-band so nothing ever shows a stale copy.
+
+**Macro:** partial — `_rail-views.html`. `frame(spec)` wraps a caller body;
+part macros `head` / `body` / `bar` carry their own ids (`#rail-<side>-head|
+-body|-bar`) and an `oob` flag:
+
+```html
+{% call mv.frame({ side: 'left', label: c.railLabel, views: c.railViews,
+                   size: c.railSize, sizeHref: c.railSizeHref }) %}
+  …markup for the active view…
+{% endcall %}
+```
+
+`spec.views`: `[{ id, icon, label, href, active }]` — one carousel button per
+registered view, `href` targets `#rail-<side>-body`. `spec.size` is `'s'|'m'|
+'l'`; `spec.sizeHref` is the size route prefix up to the value (`…/rail/size/
+<side>/`) — the head's grip cycles s → m → l → s and re-renders the whole
+panel. Requires l10n keys `railViews.aria.<side>`, `railViews.collapse.<side>`
+(only with `collapseHref`), `railViews.size.s|m|l`.
+
+**State (facade, per shell, per side):** `railView` (active view id),
+`railSize` (width step enum — discrete and server-validated, never a dragged
+pixel value), plus whatever domain filter the shell owns. All under
+`sessionData.<shell>`; routes `<base>/rail?view=…` and `<base>/rail/size/
+<side>/<step>` mutate and re-render.
+
+**htmx wiring:**
+
+- **view switch** — carousel targets `#rail-<side>-body`; the response is the
+  body content PLUS head and bar rendered with `oob: true`, so the active
+  icon and the head label track the server. The `<aside>` itself (user's
+  scroll, width class) is never replaced.
+- **size grip** — targets the whole aside `outerHTML`; safe because the width
+  is server state (the response re-renders it), unlike a CSS `resize` drag
+  which cannot persist at all.
+- **stage acts** — anything that changes the panel's data (pins, approvals,
+  decisions) re-feeds body + head + bar OOB in the same response.
+- **page render** — emits `frame` only; OOB parts are response-only markup.
+
+**CSS:** `.mv-rail` + `.mv-size-s|m|l` width classes (`transition: width` on
+`--rail-w`); `.mv-icon.is-active` takes the accent ring. Hidden below the
+expanded rung — the shell's drawer/dock is the panel's undocked form there.
+
+**Ladder:** expanded only; medium/compact use the drawer or dock (recipes 3, 5).
+
+**Motion:** `swap` on view switches; width transition on the size step.
+
+**Flutter:** per-shell panel controller (view / size / filter as typed state)
+driving an adaptive panel — no single kit primitive, compose.
+
+## 20. Auto Layout (the attribute layer)
+
+**Use:** the default layout discipline of every component-library component
+(DESIGN-ARCHITECTURE, "Auto Layout"). A container opts in with `data-layout`;
+its children size per axis with `data-resize-x` / `data-resize-y`. The rules
+ship in `starter-partials/components/components.css` ("Auto Layout" block) —
+static attribute selectors, zero client JS. Never hand-write one-off flex
+classes for what the attributes already say; reach for a class only for what
+the attributes deliberately don't cover (colors, radius, min/max constraints).
+
+Canonical button — hugs both axes, icon + label with a gap:
+
+```html
+<button class="btn" data-layout data-gap="8" data-align-y="center"
+        data-resize-x="hug" data-resize-y="hug" type="button"
+        hx-post="{{ a.url }}">
+  {{ icon('check', {size: 16}) }}<span>{{ a.label }}</span>
+</button>
+```
+
+Card in a list — the list flows vertically, each card fills the row and
+flows its own content; the header row uses `data-gap="auto"` to push the
+badge to the far end:
+
+```html
+<ul class="card-list" data-layout data-flow="v" data-gap="8">
+  {% for card in c.cards %}
+  <li class="card" data-layout data-flow="v" data-gap="12" data-pad="16"
+      data-resize-x="fill">
+    <div data-layout data-gap="auto" data-align-y="center">
+      <h3 class="card__title" data-resize-x="hug">{{ card.title }}</h3>
+      <span class="card__badge" data-resize-x="fixed">{{ card.badge }}</span>
+    </div>
+    <p class="card__body">{{ card.body }}</p>
+    <div data-layout data-gap="8" data-align-x="end">
+      <button class="btn btn--ghost" type="button">Dismiss</button>
+      <button class="btn" type="button">Open</button>
+    </div>
+  </li>
+  {% endfor %}
+</ul>
+```
+
+Escape hatch — one child out of the flow (an overlapping badge on the card
+corner); the `[data-layout]` parent is already `position: relative`:
+
+```html
+<span class="card__pin" data-layout-ignore style="top: 8px; right: 8px;">
+  {{ icon('pin', {size: 14}) }}
+</span>
+```
+
+Two ignored children in one frame is the signal to drop `data-layout` from
+that frame entirely — it's an art-directed composition, not a flow.
+
+**htmx:** none — layout is render-time markup; swaps re-render attributes
+from server state like any other attribute.
+
+**Ladder:** attributes are rung-independent; when composition itself changes
+across the ladder, branch in the component's class CSS on the
+window-size-class boundaries, same as every other recipe.
+
+**Motion:** none of its own — children ride whatever motion the component
+already owns.
+
+**Flutter:** Row/Column (flow) + Expanded (fill) / SizedBox (fixed);
+Stack + Positioned for the escape hatch.
+
 ---
 
 ## Naming alignment — recipe → partial → Flutter primitive
@@ -743,3 +871,5 @@ up; never infinite-scroll — no JS.
 | Empty state | `_empty-state.html` | none — compose icon + copy + KitNativeButton |
 | Loading / skeleton | — (motion.css) | KitNativeLoadingIndicator, KitNativeProgress, KitLazyIndexedStack |
 | Pagination / load-more | — (macros) | KitLazyIndexedStack |
+| Multi-view panel | `_rail-views.html` | per-shell panel controller (view/size/filter) + adaptive panel — compose |
+| Auto Layout | — (attribute layer in components.css) | Row/Column + Expanded (fill) / SizedBox (fixed); Stack + Positioned (ignore) |

@@ -112,8 +112,96 @@ _Layer_: Product
 One step of a project's journey from idea to shipped app — intake, design,
 freeze, build, ship — shown to the user as a timeline.
 A user-facing phase of the pipeline; stages lock behind human gates (a locked
-stage explains why) and the bottom bar renders them as a read-only timeline.
+stage explains why) and the footer panel renders them as a read-only timeline.
 _Avoid_: step, tab (a stage is a phase, never a navigation element)
+_Layer_: Product
+
+**Main Panel**:
+The big middle area of the app: everything app-box shows you — a file, a
+design, the story map, a video — appears there, automatically in the right
+form.
+The center chrome region between the activity and composer panels; the single
+render destination for all content, in both the design prototype and the
+shipped app. Fully automatic: the active shell plus the content type select
+the mode and the panel composition — the user has no mode toggles, no tabs,
+no panel picking. Every file made available in app-box (code, text, image,
+svg, pdf, video) renders here, read-only, as does all stage content.
+_Avoid_: mainboard (proposed, renamed before landing), center panel,
+workspace, canvas
+_Layer_: Product
+
+**Main Panel Mode**:
+The form the main panel shows something in — a code view, a document view,
+the art view for design — picked by the app, never by hand.
+The closed mode set: `render:code`, `render:doc`, `render:image`,
+`render:svg`, `render:pdf`, `render:video` for files; `art`, `map`, `board`
+for stage content. Adding a mode means retiring one or getting the founder's
+sign-off — the same rule as Motion Vocabulary.
+_Avoid_: viewer mode (bare), tab
+_Layer_: Product
+
+**Activity Panel**:
+The left strip where you pick what to look at — files, surfaces, tools.
+The left chrome panel hosting navigation and inventory content (files,
+surfaces); one of the three content panels the panel bar switches between on
+compact and medium rungs.
+_Avoid_: left rail, rail (bare), sidebar
+_Layer_: Product
+
+**Composer Panel**:
+The right strip where you talk to the agent — always there, in every stage.
+The permanent right chrome panel hosting the chat composer; single-state in
+every shell (the former two-state right rail is retired).
+_Avoid_: right rail, chat panel (bare)
+_Layer_: Product
+
+**Header Panel**:
+The strip across the top.
+The top chrome panel: product/wordmark zone, stage navigation, environment
+and session indicators.
+_Avoid_: top bar, app bar
+_Layer_: Product
+
+**Footer Panel**:
+The strip across the bottom — the read-only timeline of the project's stages.
+The bottom chrome panel rendering the stage timeline; replaces the retired
+Bottom Bar.
+_Avoid_: bottom bar (retired)
+_Layer_: Product
+
+**Panel Bar**:
+On phone and tablet, the switcher that shows one of the three panels at a
+time.
+The per-shell segmented switcher on compact and medium rungs that picks the
+single visible content panel (activity / main / composer); distinct from the
+tabbar, which switches shells.
+_Avoid_: tabs, tab bar (for panel switching)
+_Layer_: Product
+
+**Tabbar**:
+The bottom switcher on the phone for jumping between the app's sections.
+The mobile bottom shell-switcher component; a chrome component of the compact
+rung, not a navigation concept — Shell remains the grouping word.
+_Avoid_: bottom navigation, tab bar (bare)
+_Layer_: Product
+
+**Railbar**:
+The slim icon strip on the left of the tablet for jumping between sections.
+The tablet left shell-switcher component; the medium-rung counterpart of the
+mobile tabbar.
+_Avoid_: rail (bare), nav rail (as app chrome — it stays a container name)
+_Layer_: Product
+
+**Layout Template**:
+During intake, you pick the rough shape of your app from a few plain colored
+boxes — so the designer starts from structure, not a blank page.
+The intake-chosen whole-app arrangement of named containers per form factor:
+category first (closed list), then one of six archetype galleries (feed,
+list-detail, supporting-pane, dashboard, hero-scroll, detail-column), shown
+in device chrome at full size in a main panel; recorded in the brief and
+consumed by the designer without rewriting. Whole-app level — distinct from
+Archetype, which is per-surface.
+_Avoid_: wireframe, theme, template (bare)
 _Layer_: Product
 
 **Human Gate**:
@@ -513,6 +601,29 @@ surface fitting no archetype is a signal it does two jobs.
 _Avoid_: template, layout pattern (bare)
 _Layer_: Design medium
 
+**Named Container**:
+One labeled box in a layout template — "hero", "feed", "detail" — that the
+designer later fills with real design.
+The closed container vocabulary layout templates are built from (~15:
+app-bar, nav, nav-rail, drawer, fab, sheet, tab-bar, hero, toolbar,
+filter-bar, list, card-grid, feed, detail, supporting-pane, sidebar, footer);
+rendered as plain colored boxes at intake, never styled, so feedback stays on
+structure.
+_Avoid_: slot, region (bare), placeholder
+_Layer_: Design medium
+
+**Auto Layout**:
+Components keep themselves tidy: a button grows with its label, a card
+stretches to fill its row — unless the designer turns it off for that piece.
+The designer's default-on layout mode for component-library components
+(buttons, cards, inputs, list rows, navs, modals, forms, toolbars): the
+Figma-equivalent property set (flow, gap, padding, alignment; child
+hug/fill/fixed) emitted as flexbox data-attributes, zero client JS. Off by
+default at screen/artboard level and for art-directed frames, with a
+per-child escape hatch; the designer or the user may disable it per frame.
+_Avoid_: constraints (as the default), absolute positioning (as the default)
+_Layer_: Design medium
+
 **Motion Vocabulary**:
 The seven named ways things may move — and no eighth without retiring one.
 The closed set of CSS-only motion names (swap, traverse, spotlight, reveal,
@@ -532,7 +643,7 @@ Dead words and what replaced them. Never reintroduce the left column.
 |---|---|---|
 | tab | **Shell** | Shell is THE grouping/navigation unit; the code rename is landing alongside this entry |
 | tab-group / tab-group shell | **Shell** | same retirement; older flow docs still say it |
-| top stage strip | **Bottom Bar** | the read-only stage timeline moved to the bottom bar; the top strip is removed |
+| top stage strip | **Footer Panel** | the read-only stage timeline moved to the bottom strip, which is now the footer panel; the top strip is removed |
 | companion (app) | **app-box app** | consolidation (2026-07-28): one app + daemon, no separate companion |
 | Totem Cloud | **tailnet** | self-hosted remote only; no third-party relay, no Totem-run cloud |
 | spine (bare) | **Data Spine** | "the spine" meant both the system shape and the artifact's data flow; the artifact one is always *data* spine |

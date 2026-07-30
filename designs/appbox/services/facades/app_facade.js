@@ -1,3 +1,6 @@
+// appbox:provenance
+// generator: app-box  licence: free  project: 662368770980
+// Built with app-box (free tier) — https://appbox.dev
 // AppFacade — composes the app-shell fixture (account, projects, gates,
 // analytics, pairing) with session-scoped state (signed-in user, paired
 // device, decided gates, wizard-created projects) into exactly what the
@@ -59,7 +62,7 @@ export const dashboardContext = (sd, locale = 'en') => {
     stats: repo.stats(locale),
     pairingModal: repo.pairing(locale),
     wizard: repo.wizard(locale),
-    // Appbar project info — the shell's shellNav(activeShell, prefs, project)
+    // Header panel project info — the shell's chrome(activeShell, prefs, project)
     // renders name + savedLabel when present.
     project: { name: current.name, savedLabel: current.lastSaved },
   };

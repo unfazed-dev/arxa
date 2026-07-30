@@ -25,7 +25,8 @@ Two artefacts, both written by the engine (`intake.py`):
 
 1. **`docs/design/brief.md`** — one section per elicited field (product,
    audience, the things the app must do, existing systems, targets, brand,
-   constraints, out-of-scope). Every field whose provenance is `inferred` is
+   constraints, out-of-scope, and the layout template when one was picked).
+   Every field whose provenance is `inferred` is
    **visibly marked** in the output — a reader who skims must not miss it.
    The brief also records **`locales`** (e.g. `[en, pl]`) and the **default
    locale** for the project — this drives the i18n capability and the ARB
@@ -66,7 +67,22 @@ authority the brief does not have.
    `id` (`<shell>.<short>`), `label`, `shell`, `provenance`. Do not set `comp` or
    `surface` — the engine derives `comp` and forces `surface: null`.
 
-3. **Emit.**
+3. **Offer the layout template.** After the fields are elicited and before
+   emit, offer the **Layout Template** pick. First the app **category** from
+   the closed list in `layout_templates.json` (ecommerce, social,
+   productivity, dashboard, editorial, landing, custom). Then the **archetype
+   gallery** for that category: the six archetypes (feed, list-detail,
+   supporting-pane, dashboard, hero-scroll, detail-column) shown as **plain
+   colored boxes** with their **named containers**, one per **rung** of the
+   viewport ladder (compact / medium / expanded) — 4–8 options per form
+   factor, with the category's `defaultFor` archetype **pre-selected**. Never
+   style the boxes; feedback must stay on structure. Record the choice in the
+   answers JSON as `layoutTemplate`, copied **verbatim** from
+   `layout_templates.json` (`{category, archetype, areas, containers}` —
+   intake never composes or edits a template). If the client declines, omit
+   the field; do not infer one.
+
+4. **Emit.**
    ```sh
    python skills/app-box-intake/intake.py emit --answers <answers.json>
    ```
@@ -78,7 +94,7 @@ authority the brief does not have.
    `--registry-out`, or the `INTAKE_BRIEF_OUT` / `INTAKE_REGISTRY_OUT` env
    vars). Invalid input writes **nothing** — no partial artefacts.
 
-4. **Or accept a hand-written brief (plan 10.7).** A brief a human wrote is the
+5. **Or accept a hand-written brief (plan 10.7).** A brief a human wrote is the
    ideal case — it is already the client's words. Seed the registry from its
    surface table without rewriting a word:
    ```sh
@@ -87,10 +103,12 @@ authority the brief does not have.
    A brief with no surface table yields an empty seed (the designer authors the
    registry). That is not an error; intake is optional.
 
-5. **Hand off to design.** The brief and the seed are the inputs to
-   `app-box-designer`. The traceability gate (plan 10.6, owned by `gates/`)
-   then asserts every registry entry traces to a brief requirement — the
-   assertion this phase exists to enable.
+6. **Hand off to design.** The brief and the seed are the inputs to
+   `app-box-designer`. The emitted `## Layout template` section is consumed by
+   the designer **verbatim** — structure the designer starts from, never
+   rewritten at design time. The traceability gate (plan 10.6, owned by
+   `gates/`) then asserts every registry entry traces to a brief requirement —
+   the assertion this phase exists to enable.
 
 ## The guardrail, as a test
 

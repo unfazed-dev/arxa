@@ -1,3 +1,7 @@
+<!-- appbox:provenance
+     generator: app-box  licence: free  project: 662368770980
+     Built with app-box (free tier) — https://appbox.dev
+-->
 {% extends "ui/views/main_shell/main_shell_view.html" %}
 {% import "ui/common/timeline.html" as tl %}
 {% import "ui/views/main_shell/design/prototype/prototype_view.html" as pv %}
@@ -6,20 +10,20 @@
 
 {# ---------- design.chat — the one design chat (reference surface) ----------
    Composition, not markup: this surface owns no chrome of its own. The page
-   is main_shell_view's blocks (surface / bottombar); the stage is the shared
-   chat stage (ui/common/chat_stage.html + composer.html) and the design
-   viewer, composed once in prototype_view.html and re-used here — per-screen
-   serial chat is retired, refinement happens here with pinned screens as
-   context chips. What this file adds is ONLY the delta:
-     · stageSwap / revertSwap — the Named Fragments the chat routes render
+   is main_shell_view's blocks (surface / bottombar); the panels are the
+   shared three (activity / main / composer), composed once in
+   prototype_view.html and re-used here — per-screen serial chat is retired,
+   refinement happens here with pinned screens as context chips. What this
+   file adds is ONLY the delta:
+     · panelsSwap / revertSwap — the Named Fragments the chat routes render
        (view.html#macro); the revert path appends a notify toast OOB
      · the bottombar block — the shared timeline on this surface's line
    ?screen=<id> deep-links a pin, ?screen=none clears the context. #}
 
-{% macro stageSwap(c) %}{{ pv.stageSwap(c) }}{% endmacro %}
+{% macro panelsSwap(c) %}{{ pv.panelsSwap(c) }}{% endmacro %}
 
 {% macro revertSwap(c) %}
-{{ pv.stageSwap(c) }}
+{{ pv.panelsSwap(c) }}
 <div hx-swap-oob="beforeend:#toasts"><div class="toast" id="toast-revert">{{ t('design.revertToast') }}</div></div>
 {% endmacro %}
 
@@ -27,8 +31,4 @@
 {{ tl.timeline(c, false, t('design.timelineLabel')) }}
 {% endblock %}
 
-{% block surface %}
-<div class="loop-zones stage-zones">
-  {{ pv.surfaceBody(c) }}
-</div>
-{% endblock %}
+{% block surface %}{{ pv.panels(c) }}{% endblock %}

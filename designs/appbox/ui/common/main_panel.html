@@ -1,0 +1,69 @@
+<!-- appbox:provenance
+     generator: app-box  licence: free  project: 662368770980
+     Built with app-box (free tier) — https://appbox.dev
+-->
+{# The Main Panel (ui/common/main_panel.html): the center chrome region —
+   the single render destination for all content. Fully automatic: the shell
+   plus the content type select the mode; there are no user mode toggles, no
+   tabs. Macro-only file.
+
+   The file viewer: one macro per mode of the closed set — render:code,
+   render:doc, render:image, render:svg, render:pdf, render:video — picked
+   server-side from the file extension (services/facades/file_views.js).
+   f = { path, mode, modeName, lang, body?, html?, src?, backHref }. #}
+
+{# The Panel Bar (compact/medium rungs): the per-shell segmented switcher
+   that picks the single visible content panel. Server-rendered links, state
+   via ?panel= (the facade persists it); plain boosted navigation — zero JS.
+   Distinct from the tabbar, which switches shells. Hidden on expanded. #}
+{% macro panelBar(c) %}
+<nav class="panel-bar" aria-label="{{ t('panelBar.aria') }}">
+  {% for p in [
+    { id: 'activity', icon: 'panel-left', label: t('panelBar.activity') },
+    { id: 'main', icon: 'square', label: t('panelBar.main') },
+    { id: 'composer', icon: 'messages-square', label: t('panelBar.composer') }
+  ] %}
+  <a class="panel-bar-item {{ 'is-active' if c.panel == p.id }}" href="?panel={{ p.id }}"
+     {% if c.panel == p.id %}aria-current="true"{% endif %}>
+    {{ icon(p.icon, {size: 16}) }}<span class="panel-bar-label">{{ p.label }}</span></a>
+  {% endfor %}
+</nav>
+{% endmacro %}
+
+{# Nothing open: the empty read state, rendered inside #panel-main. #}
+{% macro empty() %}
+<section class="mp-content mp-empty" id="mp-content">
+  <p class="muted">{{ t('mainPanel.empty') }}</p>
+</section>
+{% endmacro %}
+
+{% macro renderCode(f) %}<pre class="mp-code"><code class="lang-{{ f.lang }}">{{ f.body }}</code></pre>{% endmacro %}
+
+{% macro renderDoc(f) %}<article class="mp-doc">{{ f.html | safe }}</article>{% endmacro %}
+
+{% macro renderImage(f) %}<img class="mp-media" src="{{ f.src }}" alt="{{ f.path }}">{% endmacro %}
+
+{% macro renderSvg(f) %}<img class="mp-media mp-svg" src="{{ f.src }}" alt="{{ f.path }}">{% endmacro %}
+
+{% macro renderPdf(f) %}<embed class="mp-media mp-pdf" src="{{ f.src }}" type="application/pdf">{% endmacro %}
+
+{% macro renderVideo(f) %}<video class="mp-media" src="{{ f.src }}" controls preload="metadata"></video>{% endmacro %}
+
+{# The open file: head (path, the mode the server picked, the back link to
+   the stage default) + the mode's body. #}
+{% macro view(f) %}
+<section class="mp-content mp-file" id="mp-content" aria-live="polite">
+  <header class="mp-file-head">
+    <code class="mp-file-path">{{ f.path }}</code>
+    <span class="chip">{{ t('mainPanel.mode.' + f.modeName) }}</span>
+    <a class="mp-file-back" href="{{ f.backHref }}">{{ icon('chevron-left', {size: 14}) }} {{ t('mainPanel.back') }}</a>
+  </header>
+  {% if f.mode == 'render:code' %}{{ renderCode(f) }}
+  {% elif f.mode == 'render:doc' %}{{ renderDoc(f) }}
+  {% elif f.mode == 'render:image' %}{{ renderImage(f) }}
+  {% elif f.mode == 'render:svg' %}{{ renderSvg(f) }}
+  {% elif f.mode == 'render:pdf' %}{{ renderPdf(f) }}
+  {% elif f.mode == 'render:video' %}{{ renderVideo(f) }}
+  {% endif %}
+</section>
+{% endmacro %}

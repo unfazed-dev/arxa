@@ -1,0 +1,46 @@
+<!-- appbox:provenance
+     generator: app-box  licence: free  project: 662368770980
+     Built with app-box (free tier) — https://appbox.dev
+-->
+{# The Composer Panel, shared across every stage shell: the permanent right
+   chrome panel hosting the chat with the agent — single-state, always
+   mounted, never closed (the retired two-state chat rail is gone). The
+   caller renders thread + composer card inside cp.frame; these macros
+   provide the panel shell, the header and the context chips.
+   Macro-only file, like rail.html.
+
+   spec (shared by head/frame):
+     eyebrow      — the stage line, e.g. "intake · interview"
+     chips: [{id, label, tone?, removeHref?}] — pinned conversation context
+                    rendered in the head (design's pinned screens, build's
+                    gate refs); tone is one of cyan/olive/amber/violet,
+                    cycling by index when absent; removeHref adds the unpin
+                    (x) action
+
+   The context filmstrip lives in the composer's tray
+   (ui/common/composer.html), not here. #}
+
+{% macro head(spec) %}
+{% set tones = ['cyan', 'olive', 'amber', 'violet'] %}
+<header class="chat-head">
+  <span class="eyebrow">{{ spec.eyebrow }}</span>
+  {% if spec.chips %}
+  <span class="ctx-row chat-ctx">
+    {% for chip in spec.chips %}
+    <span class="ctx-chip ctx-{{ chip.tone or tones[loop.index0 % 4] }}"><code>{{ chip.id }}</code><span class="ctx-label">{{ chip.label }}</span>{% if chip.removeHref %}<a class="ctx-x" href="{{ chip.removeHref }}" hx-get="{{ chip.removeHref }}" hx-target="#panels" hx-swap="outerHTML" hx-push-url="false" aria-label="{{ t('chat.removeChip', {label: chip.label}) }}">{{ icon('x', {size: 12}) }}</a>{% endif %}</span>
+    {% endfor %}
+  </span>
+  {% endif %}
+</header>
+{% endmacro %}
+
+{# Wrap with call/caller: {% call cp.frame(spec) %}thread + composer{% endcall %}
+   spec.bottom is retired with the centered states — the panel is always the
+   right column; the thread grows downward and the composer pins to the
+   panel floor. #}
+{% macro frame(spec) %}
+<aside id="panel-composer" class="panel-composer">
+  {{ head(spec) }}
+  {{ caller() }}
+</aside>
+{% endmacro %}

@@ -1,85 +1,36 @@
-/* chat.css — the chat stage (story-map "Chat-Centric Layout").
-   One component, two states, switched server-side by a class on #chat-stage:
-     is-centered — no artifact open: centered column, vertically centered in
-                   the stage; the composer hugs the thread, the whole block
-                   centers (margin: auto) so short threads never top-pin.
-     is-docked   — artifact open: the same markup floats as a right rail,
-                   a card with the rail aesthetic (border/radius/shadow-2),
-                   composer pinned to its bottom.
-   Widths live in tokens so a future view-transition (globalViewTransitions
-   is on in base.html) animates between states smoothly.
-   Caller contract: #stage-layout is a flex column with position:relative;
-   the thread uses .chat-thread, the composer comes from rail.composer. */
+/* composer.css — the Composer Panel (ui/common/composer_panel.html) + the
+   shared composer card (ui/common/composer.html).
+   Single-state, permanent: the right chrome panel in every shell, always
+   mounted, never closed. The thread takes the spare height, the composer
+   card pins to the panel floor.
+   Caller contract: the panel lives inside .panels (panels.css); the thread
+   uses .chat-thread, the composer card is ui/common/composer.html. */
 
-.chat-stage {
-  --chat-w: 45rem;       /* ~720px centered column */
-  --chat-w-dock: 22.5rem; /* ~360px docked rail */
+.panel-composer {
+  --composer-w: 22.5rem; /* ~360px */
+  flex: none;
+  width: var(--composer-w);
+  min-width: var(--composer-w);
+  max-width: calc(var(--composer-w) * 1.6);
   display: flex; flex-direction: column; gap: .5rem; min-height: 0;
-  view-transition-name: chat-stage;
-}
-
-.chat-stage.is-centered {
-  width: min(100% - 2rem, var(--chat-w));
-  margin: auto; /* centers both axes in the flex #stage-layout */
-  /* #stage-layout is a full-height flex column (the caller contract) and the
-     canvas sibling is flex:1 — without this the centered chat shrinks to its
-     head and the thread collapses. flex:none keeps it content-sized;
-     max-height hands any overflow to the thread's own scroll. */
-  flex: none; max-height: 100%;
-}
-
-/* the other centered position: same column, pinned to the stage floor
-   (flush with the left rail's bottom edge) once the conversation is going.
-   Growth runs UPWARD — margin-top:auto eats the slack — so the composer
-   never moves while messages thread in; past max-height the thread scrolls. */
-.chat-stage.is-bottom {
-  width: min(100% - 2rem, var(--chat-w));
-  margin: auto auto 0;
-  flex: none; max-height: 100%;
-}
-.chat-stage.is-bottom .chat-thread { flex: 1 1 auto; }
-/* centered/bottom WITH a canvas sibling (after the close act): share the
-   column — cap the chat so the artifact keeps a usable, scrollable pane */
-#stage-layout:has(> .canvas) .chat-stage:is(.is-centered, .is-bottom) { max-height: 60%; }
-
-/* docked: #stage-layout flips to a row and the chat becomes its in-flow
-   right column — the canvas is a real sibling, so the chat's CSS-resize
-   pushes it (never overlaps), the same way the left rail's auto grid
-   track does. Same flush extents as the .mv-rail — both rails one height. */
-#stage-layout.is-docked { flex-direction: row; }
-
-.chat-stage.is-docked {
-  order: 2; flex: none; /* after the canvas in the row */
-  width: var(--chat-w-dock);
-  min-width: var(--chat-w-dock);
-  max-width: calc(var(--chat-w-dock) * 1.6);
   padding: .7rem .9rem .9rem;
   background: var(--bg); border: 1px solid var(--border);
   border-radius: var(--radius); box-shadow: var(--shadow-2);
-  /* pure-CSS resize handle, same idiom as .mv-rail: rtl flips the native
+  view-transition-name: panel-composer;
+  /* pure-CSS resize handle, same idiom as .panel-frame: rtl flips the native
      handle onto the inner (left) edge, children reset to ltr */
   resize: horizontal; overflow: hidden;
   direction: rtl;
 }
-.chat-stage.is-docked > * { direction: ltr; }
-/* docked: the thread takes the spare height, the composer pins to the bottom;
-   centered: the thread stays content-sized so the block centers as one */
-.chat-stage .chat-thread { min-height: 0; overflow-y: auto; }
-.chat-stage.is-docked .chat-thread { flex: 1 1 auto; }
+.panel-composer > * { direction: ltr; }
+.panel-composer .chat-thread { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
 
-/* ---------- chat head: eyebrow + context chips + collapse ---------- */
+/* ---------- chat head: eyebrow + context chips ---------- */
 .chat-head { display: flex; align-items: center; gap: .6rem .9rem; flex-wrap: wrap; }
 .chat-ctx { flex: 1 1 auto; }
-.chat-collapse {
-  flex: none; margin-left: auto;
-  width: 1.8rem; height: 1.8rem; border-radius: 50%;
-  display: inline-grid; place-items: center;
-  color: var(--tx-2); text-decoration: none; font-size: .8rem; line-height: 1;
-}
-.chat-collapse:hover { background: var(--accent-soft); color: var(--accent); }
 
 /* ---------- context chips: one tone per pinned artifact, cycling ---------- */
-/* Base chip layout lives HERE (chat.css owns chips); the tones below win
+/* Base chip layout lives HERE (composer.css owns chips); the tones below win
    inside the chat head. */
 .ctx-chip {
   display: inline-flex; gap: .5rem; align-items: center;
@@ -131,11 +82,10 @@
 .cs-thumb .ctx-x { color: var(--ctx, var(--accent)); flex: none; text-decoration: none; }
 .cs-thumb .ctx-x:hover { background: var(--ctx, var(--accent)); color: var(--on-accent, #FFFCF0); }
 
-/* below expanded the docked chat leaves the row and overlays the stage as a
-   full-width card instead — no handle, no squeeze on the canvas */
+/* below expanded the composer is one of the panel bar's three panels:
+   full-width when it's the visible one — no resize handle */
 @media (max-width: 839px) {
-  .chat-stage.is-docked {
-    position: absolute; inset-block: 0; inset-inline: 1rem;
+  .panel-composer {
     width: auto; min-width: 0; max-width: none; resize: none;
   }
 }
@@ -206,7 +156,7 @@ a.composer-opt:hover { background: var(--bg-2); }
    label trigger also hx-gets the toggle route; the swap returns with
    matching :checked state, so persistence never fights the animation.
    Auto-expand on pin renders :checked server-side; that swap animates via
-   #chat-stage's view transition (globalViewTransitions on in base.html).
+   #panel-composer's view transition (globalViewTransitions on in base.html).
    Future tray components reuse .cm-tray/.cm-tray-clip as-is. */
 .cm-tray-cb { position: absolute; opacity: 0; pointer-events: none; }
 .cm-tray-cb:focus-visible ~ .cm-tray-head { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 8px; }
@@ -225,3 +175,17 @@ a.composer-opt:hover { background: var(--bg-2); }
 @media (prefers-reduced-motion: no-preference) {
   .cm-tray { transition: grid-template-rows var(--motion-med) var(--motion-ease); }
 }
+
+/* ---------- element context chips ---------- */
+.cs-el-strip {
+  display: flex; gap: .3rem; flex-wrap: wrap; padding-top: .4rem;
+}
+.cs-el-chip {
+  display: inline-flex; gap: .25rem; align-items: center;
+  padding: .15rem .5rem; border-radius: 999px; font-size: .72rem;
+  background: var(--ctx-soft); color: var(--ctx);
+}
+.cs-el-name { font-size: .68rem; }
+.cs-el-kind { font-size: .6rem; text-transform: uppercase; letter-spacing: .04em; opacity: .6; }
+.cs-el-screen { font-size: .62rem; opacity: .7; }
+.composer-undo-redo { display: inline-flex; gap: .1rem; align-items: center; }

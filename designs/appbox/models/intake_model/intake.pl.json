@@ -1501,6 +1501,18 @@
     {
       "path": "docs/moodboards/shots/linear__features.png",
       "badge": "new"
+    },
+    {
+      "path": "docs/design/flows.svg",
+      "badge": "new"
+    },
+    {
+      "path": "docs/design/brief.pdf",
+      "badge": "new"
+    },
+    {
+      "path": "docs/moodboards/shots/dreamflow__walkthrough.mp4",
+      "badge": "new"
     }
   ],
   "state": {

@@ -1,8 +1,12 @@
+// appbox:provenance
+// generator: app-box  licence: free  project: 662368770980
+// Built with app-box (free tier) — https://appbox.dev
 // IntakeFacade — composes the intake fixture (story map, design brief,
 // moodboard, question banks, live statuses) with session-scoped state (the
-// interview, composer messages, the open artifact, the rail view) into
-// exactly what the three intake viewmodels need. The intake shell root IS a
-// chat: the interview runs in the chat stage, artifacts dock it right.
+// interview, composer messages, the open artifact, the activity panel view)
+// into exactly what the three intake viewmodels need. The intake shell root
+// IS a chat: the interview runs in the composer panel, artifacts dock it
+// right.
 // Leveled fixture strings pass through jargon.pick; static leveled copy
 // lives in l10n/app_*.arb and comes in as the runtime translator `t`
 // (h.t(c) — level and locale already bound). The locale picks the
@@ -10,11 +14,12 @@
 import * as repo from '../repositories/intake_repository.js';
 import * as jargon from './jargon.js';
 import * as agent from './agent_menus.js';
+import * as fv from './file_views.js';
 
 export const SURFACES = ['mapping', 'brief', 'moodboard'];
 
 // ---------- session ----------
-const S = (sd) => (sd.intake ??= { extra: {}, current: {}, railView: {}, msgSeq: 0, interview: null });
+const S = (sd) => (sd.intake ??= { extra: {}, current: {}, activityView: {}, msgSeq: 0, interview: null });
 
 // The interview: seeded from the fixture, then session-owned.
 const interview = (sd, L) => (S(sd).interview ??= JSON.parse(JSON.stringify(repo.initialState(L))));
@@ -176,21 +181,21 @@ function timelineFor(sd, surface, t, L) {
   return { items: withRefs, currentId: (items.find((i) => i.state === 'active') || {}).id ?? null };
 }
 
-// ---------- the left multi-view rail: thread / artifacts / files ----------
-const RAIL_VIEWS = [
+// ---------- the activity panel views: thread / artifacts / files ----------
+const ACTIVITY_VIEWS = [
   { id: 'thread', icon: 'messages-square', label: 'Thread' },
   { id: 'artifacts', icon: 'package', label: 'Artifacts' },
   { id: 'files', icon: 'folder', label: 'Files' },
 ];
 
-// Rail width steps, per side — one sizing state for the whole intake shell
-// (unlike railView, which is per surface).
-const RAIL_SIZES = ['s', 'm', 'l'];
-const railSizeFor = (sd, side) => (RAIL_SIZES.includes(S(sd).railSize?.[side]) ? S(sd).railSize[side] : 's');
+// Panel width steps, per side — one sizing state for the whole intake shell
+// (unlike activityView, which is per surface).
+const PANEL_SIZES = ['s', 'm', 'l'];
+const panelSizeFor = (sd, side) => (PANEL_SIZES.includes(S(sd).panelSize?.[side]) ? S(sd).panelSize[side] : 's');
 
-function railViewFor(sd, surface, base, lv, t, L) {
-  const active = S(sd).railView[surface] ?? 'thread';
-  const views = RAIL_VIEWS.map((v) => ({ ...v, label: t('rail.' + v.id), href: `${base}/rail?view=${v.id}`, active: v.id === active }));
+function activityViewFor(sd, surface, base, lv, t, L) {
+  const active = S(sd).activityView[surface] ?? 'thread';
+  const views = ACTIVITY_VIEWS.map((v) => ({ ...v, label: t('activityView.' + v.id), href: `${base}/panel?view=${v.id}`, active: v.id === active }));
   let body;
   if (active === 'artifacts') {
     const c = repo.counts(L);
@@ -202,25 +207,25 @@ function railViewFor(sd, surface, base, lv, t, L) {
     body = {
       artifacts: {
         mapping: [
-          { ref: 'map/full', title: t('intake.rail.liveStoryMap.title'), detail: t('intake.rail.liveStoryMap.detail', { stories: c.stories, epics: c.epics }), badges: mapBadges },
-          { ref: 'map/priorities', title: t('intake.rail.moscow.title'), detail: t('intake.rail.moscow.detail', { must: c.must, should: c.should, could: c.could }), badges: [] },
-          { ref: 'map/releases', title: t('intake.rail.releases.title'), detail: repo.releases(L).map((r) => r.name).join(' · '), badges: [] },
+          { ref: 'map/full', title: t('intake.activity.liveStoryMap.title'), detail: t('intake.activity.liveStoryMap.detail', { stories: c.stories, epics: c.epics }), badges: mapBadges },
+          { ref: 'map/priorities', title: t('intake.activity.moscow.title'), detail: t('intake.activity.moscow.detail', { must: c.must, should: c.should, could: c.could }), badges: [] },
+          { ref: 'map/releases', title: t('intake.activity.releases.title'), detail: repo.releases(L).map((r) => r.name).join(' · '), badges: [] },
         ],
         brief: [
-          { ref: 'doc/full', title: t('intake.rail.designBrief.title'), detail: t('intake.rail.designBrief.detail', { count: repo.brief(L).surfaces.length }), badges: [] },
-          { ref: 'doc/surfaces', title: t('intake.rail.surfaceInventory.title'), detail: t('intake.rail.surfaceInventory.detail'), badges: [] },
+          { ref: 'doc/full', title: t('intake.activity.designBrief.title'), detail: t('intake.activity.designBrief.detail', { count: repo.brief(L).surfaces.length }), badges: [] },
+          { ref: 'doc/surfaces', title: t('intake.activity.surfaceInventory.title'), detail: t('intake.activity.surfaceInventory.detail'), badges: [] },
         ],
         moodboard: [
-          { ref: 'gallery/all', title: t('intake.rail.moodboard.title'), detail: t('intake.rail.moodboard.detail', { boards: repo.moodboard(L).boards.length, shots: repo.moodboard(L).counts.shots }), badges: [] },
-          ...repo.moodboard(L).boards.map((b) => ({ ref: `gallery/${b.id}`, title: b.title, detail: t('intake.rail.board.detail', { count: b.references.length, informs: b.informs }), badges: [] })),
+          { ref: 'gallery/all', title: t('intake.activity.moodboard.title'), detail: t('intake.activity.moodboard.detail', { boards: repo.moodboard(L).boards.length, shots: repo.moodboard(L).counts.shots }), badges: [] },
+          ...repo.moodboard(L).boards.map((b) => ({ ref: `gallery/${b.id}`, title: b.title, detail: t('intake.activity.board.detail', { count: b.references.length, informs: b.informs }), badges: [] })),
         ],
       }[surface],
     };
   } else if (active === 'files') {
-    body = { files: repo.files(L) };
+    body = { files: repo.files(L).map((f) => ({ ...f, ...fv.fileLink(f.path, base) })) };
   } else {
-    // Seeded narrative + this session's own messages — the rail thread is
-    // live, it reacts to what the chat is fed, not a frozen copy.
+    // Seeded narrative + this session's own messages — the activity thread
+    // is live, it reacts to what the chat is fed, not a frozen copy.
     body = {
       thread: [
         ...repo.narrative(surface, L).map((m) => ({
@@ -244,14 +249,22 @@ function railViewFor(sd, surface, base, lv, t, L) {
 // ---------- context ----------
 const BASE = { mapping: '/intake', brief: '/intake/brief', moodboard: '/intake/moodboard' };
 
-export const context = (sd, surface, ref, prefs = {}, t = (k) => k, locale = 'en') => {
+export const context = (sd, surface, ref, prefs = {}, t = (k) => k, locale = 'en', fileArg, panelArg) => {
   const L = locale;
   const lv = jargon.level(prefs);
   const s = S(sd);
   const base = BASE[surface];
-  const activeArtifact = ref ?? s.current[surface] ?? null;
-  const docked = !!activeArtifact;
-  const rail = railViewFor(sd, surface, base, lv, t, L);
+  // The open file (main panel): ?file=<path> opens, ?file=none closes; an
+  // artifact open always clears it — the main panel shows one thing.
+  if (fileArg === 'none') (s.currentFile ??= {})[surface] = null;
+  else if (fileArg) { (s.currentFile ??= {})[surface] = fileArg; s.current[surface] = null; }
+  const currentFile = s.currentFile?.[surface] ?? null;
+  // The panel bar (compact/medium): ?panel= picks the single visible content
+  // panel and sticks; default main.
+  if (['activity', 'main', 'composer'].includes(panelArg)) s.panel = panelArg;
+  const panel = s.panel ?? 'main';
+  const activeArtifact = currentFile ? null : (ref ?? s.current[surface] ?? null);
+  const activity = activityViewFor(sd, surface, base, lv, t, L);
   const chat = chatFor(sd, surface, lv, t, L);
   return {
     surface,
@@ -268,17 +281,16 @@ export const context = (sd, surface, ref, prefs = {}, t = (k) => k, locale = 'en
       moodboard: [t('intake.sug.whatToSteal'), t('intake.sug.whichReferences')],
     }[surface],
     chat,
-    docked,
-    artifact: docked ? resolveArtifact(surface, activeArtifact, t, L) : null,
+    artifact: activeArtifact ? resolveArtifact(surface, activeArtifact, t, L) : null,
     activeArtifact,
-    chips: docked ? [{ id: activeArtifact, label: chipLabel(activeArtifact, t), removeHref: `${base}/close` }] : [],
-    collapseHref: docked ? `${base}/close` : null,
-    railViews: rail.views,
-    railView: rail.active,
-    railLabel: rail.label,
-    railSize: railSizeFor(sd, 'left'),
-    railSizeHref: `${base}/rail/size/left/`,
-    railBody: rail.body,
+    fileView: currentFile ? fv.fileViewFor(currentFile, `${base}?file=none`) : null,
+    panel,
+    activityViews: activity.views,
+    activityView: activity.active,
+    activityLabel: activity.label,
+    panelSize: panelSizeFor(sd, 'left'),
+    panelSizeHref: `${base}/panel/size/left/`,
+    activityBody: activity.body,
     timeline: timelineFor(sd, surface, t, L),
     approval: approvalFor(sd, L),
     jargonLevel: lv,
@@ -287,8 +299,14 @@ export const context = (sd, surface, ref, prefs = {}, t = (k) => k, locale = 'en
 
 export const showArtifact = (sd, surface, ref, prefs = {}, t = (k) => k, locale = 'en') => {
   S(sd).current[surface] = ref;
+  (S(sd).currentFile ??= {})[surface] = null;
   return context(sd, surface, ref, prefs, t, locale);
 };
+
+// A file row in the activity panel: open it in the main panel (the mode is
+// the server's, from the extension).
+export const openFile = (sd, surface, path, prefs = {}, t = (k) => k, locale = 'en') =>
+  context(sd, surface, null, prefs, t, locale, path ?? 'none');
 
 // Composer chrome: pick the agent model (shared session state), then
 // re-render this surface.
@@ -297,20 +315,15 @@ export const setModel = (sd, surface, id, prefs = {}, t = (k) => k, locale = 'en
   return context(sd, surface, null, prefs, t, locale);
 };
 
-export const closeArtifact = (sd, surface, prefs = {}, t = (k) => k, locale = 'en') => {
-  S(sd).current[surface] = null;
+export const setActivityView = (sd, surface, view, prefs = {}, t = (k) => k, locale = 'en') => {
+  if (ACTIVITY_VIEWS.some((v) => v.id === view)) S(sd).activityView[surface] = view;
   return context(sd, surface, null, prefs, t, locale);
 };
 
-export const setRailView = (sd, surface, view, prefs = {}, t = (k) => k, locale = 'en') => {
-  if (RAIL_VIEWS.some((v) => v.id === view)) S(sd).railView[surface] = view;
-  return context(sd, surface, null, prefs, t, locale);
-};
-
-// Rail width grip: one persisted size per side for the whole intake shell.
-export const setRailSize = (sd, surface, side, size, prefs = {}, t = (k) => k, locale = 'en') => {
-  if (['left', 'right'].includes(side) && RAIL_SIZES.includes(size)) {
-    (S(sd).railSize ??= {})[side] = size;
+// Panel width grip: one persisted size per side for the whole intake shell.
+export const setPanelSize = (sd, surface, side, size, prefs = {}, t = (k) => k, locale = 'en') => {
+  if (['left', 'right'].includes(side) && PANEL_SIZES.includes(size)) {
+    (S(sd).panelSize ??= {})[side] = size;
   }
   return context(sd, surface, null, prefs, t, locale);
 };
@@ -379,6 +392,6 @@ export const sendMessage = (sd, surface, text, prefs = {}, t = (k) => k, locale 
     artifactRef: reply.artifact ?? null,
     artifactLabel: reply.artifact ? t('intake.cta.openArtifact', { label: chipLabel(reply.artifact, t) }) : null,
   });
-  if (reply.artifact) s.current[surface] = reply.artifact;
+  if (reply.artifact) { s.current[surface] = reply.artifact; (s.currentFile ??= {})[surface] = null; }
   return context(sd, surface, null, prefs, t, locale);
 };

@@ -1,14 +1,14 @@
-/* appbox · shell chrome — appbar, drawer, bottom nav, staggered FAB,
-   rail dock, rail mounts, bottom bar + timeline.
+/* appbox · shell chrome — header panel, drawer, tabbar, staggered FAB,
+   railbar, footer panel + timeline.
    Rung visibility is pure CSS: compact <600 / medium 600–839 / expanded ≥840
    (the ladder's window size classes; rung NAMES are the contract, the px here
    are the class boundaries, never freeze widths). All open/close is <details>.
    Tokens, motion vocabulary and keyframes (ab-disclose) come from app.css. */
 
-#app { --bottomnav-h: 3.6rem; }
+#app { --tabbar-h: 3.6rem; }
 
-/* ---------- appbar ---------- */
-.shell-nav {
+/* ---------- header panel ---------- */
+.panel-header {
   position: sticky; top: 0; z-index: 10;
   height: var(--nav-h);
   display: flex; gap: .9rem; align-items: center;
@@ -28,16 +28,16 @@
   color: var(--tx-2); text-decoration: none; font-weight: 500; font-size: .84rem;
 }
 .shell-link.is-active { color: var(--tx); background: var(--bg-2); box-shadow: inset 0 0 0 1px var(--border); }
-.shell-nav-spacer { flex: 1; }
+.panel-header-spacer { flex: 1; }
 .channel { display: flex; gap: .45rem; align-items: center; font-size: .78rem; color: var(--tx-2); }
 .channel-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 0 3px var(--ok-soft); }
 .shell-main { width: 100%; max-width: 56rem; margin: 0 auto; padding: 2rem 1.1rem 3rem; flex: 1; }
-/* stage shells (intake/design/build) run full-bleed — the chat centerpiece,
-   docked rails and canvas need the whole width; shell.css must repeat this
-   because it loads after app.css and would otherwise cap them at 56rem */
+/* stage shells (intake/design/build) run full-bleed — the three content
+   panels need the whole width; chrome.css must repeat this because it loads
+   after app.css and would otherwise cap them at 56rem */
 .shell-main-loop { max-width: none; padding: 0; }
 
-/* circular icon button — shell / rail bar / stage bar chrome */
+/* circular icon button — shell / panel frame / chrome */
 .ico-btn {
   width: 2rem; height: 2rem; padding: 0; border-radius: 50%;
   display: inline-grid; place-items: center;
@@ -62,7 +62,7 @@
 .shell-project-saved::before { content: '· '; color: var(--tx-3); }
 
 /* ---------- touch chrome: hidden on expanded, shown by rung below ---------- */
-.shell-chrome-touch, .bottom-nav, .fab-menu, .rail-dock { display: none; }
+.shell-chrome-touch, .tabbar, .fab-menu, .railbar { display: none; }
 
 /* drawer + overflow: details-based floating panels hanging off the appbar */
 .shell-drawer, .shell-overflow { position: relative; }
@@ -94,27 +94,27 @@
 .drawer-row form { display: inline; }
 
 /* ---------- compact: bottom nav ---------- */
-.bottom-nav {
+.tabbar {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 11;
-  height: var(--bottomnav-h);
+  height: var(--tabbar-h);
   display: none; align-items: stretch; justify-content: space-around;
   border-top: 1px solid var(--border);
   background: color-mix(in srgb, var(--bg) 88%, transparent);
   -webkit-backdrop-filter: saturate(1.4) blur(14px);
   backdrop-filter: saturate(1.4) blur(14px);
 }
-.bottom-nav__link {
+.tabbar__link {
   flex: 1; display: flex; flex-direction: column; gap: .12rem;
   align-items: center; justify-content: center;
   color: var(--tx-2); text-decoration: none;
 }
-.bottom-nav__icon { display: block; }
-.bottom-nav__label {
+.tabbar__icon { display: block; }
+.tabbar__label {
   font-family: 'Lexend Deca', 'Lexend', sans-serif;
   font-size: .58rem; letter-spacing: .07em; text-transform: uppercase;
 }
-.bottom-nav__link.is-active { color: var(--accent); }
-.bottom-nav__link.is-active .bottom-nav__label { font-weight: 500; }
+.tabbar__link.is-active { color: var(--accent); }
+.tabbar__link.is-active .tabbar__label { font-weight: 500; }
 
 /* ---------- compact + medium: staggered-action FAB ---------- */
 .fab-menu {
@@ -139,46 +139,41 @@
 }
 .fab-action:hover { color: var(--accent); box-shadow: var(--shadow-2), inset 0 0 0 1px var(--accent); }
 
-/* ---------- medium: floating left rail dock (the drawer, docked) ---------- */
-.rail-dock {
+/* ---------- medium: the railbar (the drawer, docked) ---------- */
+.railbar {
   position: fixed; left: .8rem; top: 50%; transform: translateY(-50%); z-index: 12;
   display: none; align-items: flex-start;
 }
-.rail-dock summary { list-style: none; }
-.rail-dock summary::-webkit-details-marker { display: none; }
-.rail-dock-strip {
+.railbar summary { list-style: none; }
+.railbar summary::-webkit-details-marker { display: none; }
+.railbar-strip {
   display: flex; flex-direction: column; gap: .15rem;
   padding: .35rem; cursor: pointer;
   background: var(--bg); border: 1px solid var(--border);
   border-radius: 999px; box-shadow: var(--shadow-2);
 }
-.rd-ico {
+.railbar-ico {
   width: 1.9rem; height: 1.9rem; display: grid; place-items: center;
   border-radius: 50%; color: var(--tx-2); font-size: .85rem;
 }
-.rd-ico.is-active { color: var(--accent); background: var(--accent-soft); }
-.rail-dock-panel {
+.railbar-ico.is-active { color: var(--accent); background: var(--accent-soft); }
+.railbar-panel {
   display: none; flex-direction: column; gap: .15rem;
   min-width: 10.5rem; margin-left: .45rem; padding: .4rem;
   background: var(--bg); border: 1px solid var(--border);
   border-radius: 14px; box-shadow: var(--shadow-2);
 }
-.rail-dock[open] .rail-dock-panel { display: flex; }
+.railbar[open] .railbar-panel { display: flex; }
 
-/* ---------- expanded: rail mount points, populated by shell views ---------- */
-.rail-mount { position: fixed; top: calc(var(--nav-h) + .8rem); bottom: calc(var(--tl-h) + .8rem); z-index: 8; }
-#rail-left-mount { left: .8rem; }
-#rail-right-mount { right: .8rem; }
-
-/* ---------- bottom bar: the stage timeline's home ---------- */
-#bottom-bar {
+/* ---------- footer panel: the stage timeline's home ---------- */
+#panel-footer {
   position: sticky; bottom: 0; z-index: 9;
   border-top: 1px solid var(--border);
   background: color-mix(in srgb, var(--bg) 82%, transparent);
   -webkit-backdrop-filter: saturate(1.4) blur(14px);
   backdrop-filter: saturate(1.4) blur(14px);
 }
-#bottom-bar:empty { display: none; }
+#panel-footer:empty { display: none; }
 .timeline {
   height: var(--tl-h); margin: 0; padding: 0 1.1rem; list-style: none;
   display: flex; align-items: center;
@@ -211,24 +206,24 @@
 .tl-item.is-current .tl-mark { box-shadow: 0 0 0 3px var(--accent-soft); }
 
 /* ---------- rungs ---------- */
-/* compact: drawer + overflow in the appbar, bottom nav + FAB, no bottom bar */
+/* compact: drawer + overflow in the header panel, tabbar + FAB, no footer panel */
 @media (max-width: 599px) {
-  .shell-nav { gap: .5rem; padding: 0 .7rem; }
+  .panel-header { gap: .5rem; padding: 0 .7rem; }
   .shell-chrome-touch { display: block; }
-  .shell-links, .shell-nav > .channel, .shell-nav > form { display: none; }
+  .shell-links, .panel-header > .channel, .panel-header > form { display: none; }
   .shell-project-saved { display: none; }
-  .bottom-nav { display: flex; }
-  .fab-menu { display: flex; bottom: calc(var(--bottomnav-h) + 1rem); }
-  .rail-mount, #bottom-bar { display: none; }
-  .shell-main { padding-bottom: calc(var(--bottomnav-h) + 3rem); }
+  .tabbar { display: flex; }
+  .fab-menu { display: flex; bottom: calc(var(--tabbar-h) + 1rem); }
+  #panel-footer { display: none; }
+  .shell-main { padding-bottom: calc(var(--tabbar-h) + 3rem); }
 }
-/* medium: same appbar, floating left rail dock + FAB, no bottom nav/bottom bar */
+/* medium: same header panel, railbar + FAB, no tabbar/footer panel */
 @media (min-width: 600px) and (max-width: 839px) {
   .shell-chrome-touch { display: block; }
   .shell-links { display: none; }
-  .rail-dock { display: flex; }
+  .railbar { display: flex; }
   .fab-menu { display: flex; }
-  .rail-mount, #bottom-bar { display: none; }
+  #panel-footer { display: none; }
   .shell-main { padding-left: 4.2rem; }
 }
 
@@ -239,7 +234,7 @@
   .fab-menu[open] .fab-action:nth-child(2) { animation-delay: 60ms; }
   .shell-drawer[open] .drawer-panel,
   .shell-overflow[open] .overflow-menu,
-  .rail-dock[open] .rail-dock-panel { animation: ab-disclose var(--motion-med) var(--motion-ease); }
+  .railbar[open] .railbar-panel { animation: ab-disclose var(--motion-med) var(--motion-ease); }
 }
 
 /* ---------- language switcher (settings shell view) ---------- */

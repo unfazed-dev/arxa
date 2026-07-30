@@ -5,7 +5,8 @@
     "surface": "app_shell_app_splash_view",
     "shell": "app",
     "comp": "AppSplash",
-    "labelKey": "screen.label.app.splash"
+    "labelKey": "screen.label.app.splash",
+    "route": "/splash"
   },
   {
     "id": "app.access",
@@ -13,7 +14,8 @@
     "surface": "app_shell_app_access_view",
     "shell": "app",
     "comp": "AppAccess",
-    "labelKey": "screen.label.app.access"
+    "labelKey": "screen.label.app.access",
+    "route": "/auth"
   },
   {
     "id": "app.dashboard",
@@ -21,7 +23,8 @@
     "surface": "app_shell_app_dashboard_view",
     "shell": "app",
     "comp": "AppDashboard",
-    "labelKey": "screen.label.app.dashboard"
+    "labelKey": "screen.label.app.dashboard",
+    "route": "/dashboard"
   },
   {
     "id": "app.projects",
@@ -29,7 +32,8 @@
     "surface": null,
     "shell": "app",
     "comp": "AppProjects",
-    "labelKey": "screen.label.app.projects"
+    "labelKey": "screen.label.app.projects",
+    "route": "/projects"
   },
   {
     "id": "app.pairing",
@@ -37,7 +41,8 @@
     "surface": "app_shell_app_pairing_view",
     "shell": "app",
     "comp": "AppPairing",
-    "labelKey": "screen.label.app.pairing"
+    "labelKey": "screen.label.app.pairing",
+    "route": "/pair"
   },
   {
     "id": "app.notifications",
@@ -45,7 +50,8 @@
     "surface": null,
     "shell": "app",
     "comp": "AppNotifications",
-    "labelKey": "screen.label.app.notifications"
+    "labelKey": "screen.label.app.notifications",
+    "route": "/notifications"
   },
   {
     "id": "app.remote",
@@ -53,7 +59,8 @@
     "surface": null,
     "shell": "app",
     "comp": "AppRemote",
-    "labelKey": "screen.label.app.remote"
+    "labelKey": "screen.label.app.remote",
+    "route": "/remote"
   },
   {
     "id": "intake.interview",
@@ -61,7 +68,8 @@
     "surface": null,
     "shell": "intake",
     "comp": "IntakeInterview",
-    "labelKey": "screen.label.intake.interview"
+    "labelKey": "screen.label.intake.interview",
+    "route": "/intake/interview"
   },
   {
     "id": "intake.mapping",
@@ -69,7 +77,8 @@
     "surface": "main_shell_intake_mapping_view",
     "shell": "intake",
     "comp": "IntakeMapping",
-    "labelKey": "screen.label.intake.mapping"
+    "labelKey": "screen.label.intake.mapping",
+    "route": "/intake"
   },
   {
     "id": "intake.live",
@@ -77,7 +86,8 @@
     "surface": null,
     "shell": "intake",
     "comp": "IntakeLive",
-    "labelKey": "screen.label.intake.live"
+    "labelKey": "screen.label.intake.live",
+    "route": "/intake/live"
   },
   {
     "id": "intake.brief",
@@ -85,7 +95,8 @@
     "surface": "main_shell_intake_brief_view",
     "shell": "intake",
     "comp": "IntakeBrief",
-    "labelKey": "screen.label.intake.brief"
+    "labelKey": "screen.label.intake.brief",
+    "route": "/intake/brief"
   },
   {
     "id": "intake.moodboard",
@@ -93,7 +104,8 @@
     "surface": "main_shell_intake_moodboard_view",
     "shell": "intake",
     "comp": "IntakeMoodboard",
-    "labelKey": "screen.label.intake.moodboard"
+    "labelKey": "screen.label.intake.moodboard",
+    "route": "/intake/moodboard"
   },
   {
     "id": "design.prototype",
@@ -101,7 +113,8 @@
     "surface": "main_shell_design_prototype_view",
     "shell": "design",
     "comp": "DesignPrototype",
-    "labelKey": "screen.label.design.prototype"
+    "labelKey": "screen.label.design.prototype",
+    "route": "/design"
   },
   {
     "id": "design.chat",
@@ -109,7 +122,8 @@
     "surface": "main_shell_design_chat_view",
     "shell": "design",
     "comp": "DesignChat",
-    "labelKey": "screen.label.design.chat"
+    "labelKey": "screen.label.design.chat",
+    "route": "/design/chat"
   },
   {
     "id": "design.freeze",
@@ -117,7 +131,8 @@
     "surface": "main_shell_design_freeze_view",
     "shell": "design",
     "comp": "DesignFreeze",
-    "labelKey": "screen.label.design.freeze"
+    "labelKey": "screen.label.design.freeze",
+    "route": "/design/freeze"
   },
   {
     "id": "chat.chat2",
@@ -125,23 +140,26 @@
     "surface": null,
     "shell": "chat",
     "comp": "ChatChat2",
-    "labelKey": "screen.label.chat.chat2"
+    "labelKey": "screen.label.chat.chat2",
+    "route": "/chat/chat2"
   },
   {
-    "id": "chat.rails",
-    "label": "Rails",
+    "id": "shell.composer",
+    "label": "Composer Panel",
     "surface": null,
-    "shell": "chat",
-    "comp": "ChatRails",
-    "labelKey": "screen.label.chat.rails"
+    "shell": "shell",
+    "comp": "ShellComposer",
+    "labelKey": "screen.label.shell.composer",
+    "route": "/shell/composer"
   },
   {
-    "id": "chat.bottom",
-    "label": "Bottom Bar",
+    "id": "shell.footer",
+    "label": "Footer Panel",
     "surface": null,
-    "shell": "chat",
-    "comp": "ChatBottom",
-    "labelKey": "screen.label.chat.bottom"
+    "shell": "shell",
+    "comp": "ShellFooter",
+    "labelKey": "screen.label.shell.footer",
+    "route": "/shell/footer"
   },
   {
     "id": "build.loop",
@@ -149,7 +167,8 @@
     "surface": "main_shell_build_loop_view",
     "shell": "build",
     "comp": "BuildLoop",
-    "labelKey": "screen.label.build.loop"
+    "labelKey": "screen.label.build.loop",
+    "route": "/build"
   },
   {
     "id": "build.gates",
@@ -157,7 +176,8 @@
     "surface": null,
     "shell": "build",
     "comp": "BuildGates",
-    "labelKey": "screen.label.build.gates"
+    "labelKey": "screen.label.build.gates",
+    "route": "/build/gates"
   },
   {
     "id": "build.visual",
@@ -165,7 +185,8 @@
     "surface": null,
     "shell": "build",
     "comp": "BuildVisual",
-    "labelKey": "screen.label.build.visual"
+    "labelKey": "screen.label.build.visual",
+    "route": "/build/visual"
   },
   {
     "id": "source.git",
@@ -173,7 +194,8 @@
     "surface": null,
     "shell": "source",
     "comp": "SourceGit",
-    "labelKey": "screen.label.source.git"
+    "labelKey": "screen.label.source.git",
+    "route": "/source/git"
   },
   {
     "id": "source.files",
@@ -181,7 +203,8 @@
     "surface": null,
     "shell": "source",
     "comp": "SourceFiles",
-    "labelKey": "screen.label.source.files"
+    "labelKey": "screen.label.source.files",
+    "route": "/source/files"
   },
   {
     "id": "flows.canvas",
@@ -189,7 +212,8 @@
     "surface": null,
     "shell": "flows",
     "comp": "FlowsCanvas",
-    "labelKey": "screen.label.flows.canvas"
+    "labelKey": "screen.label.flows.canvas",
+    "route": "/flows/canvas"
   },
   {
     "id": "ship.deploy",
@@ -197,7 +221,8 @@
     "surface": null,
     "shell": "ship",
     "comp": "ShipDeploy",
-    "labelKey": "screen.label.ship.deploy"
+    "labelKey": "screen.label.ship.deploy",
+    "route": "/ship/deploy"
   },
   {
     "id": "first.showcase",
@@ -205,7 +230,8 @@
     "surface": null,
     "shell": "first",
     "comp": "FirstShowcase",
-    "labelKey": "screen.label.first.showcase"
+    "labelKey": "screen.label.first.showcase",
+    "route": "/first/showcase"
   },
   {
     "id": "first.honesty",
@@ -213,7 +239,8 @@
     "surface": null,
     "shell": "first",
     "comp": "FirstHonesty",
-    "labelKey": "screen.label.first.honesty"
+    "labelKey": "screen.label.first.honesty",
+    "route": "/first/honesty"
   },
   {
     "id": "workspace.projects2",
@@ -221,7 +248,8 @@
     "surface": null,
     "shell": "workspace",
     "comp": "WorkspaceProjects2",
-    "labelKey": "screen.label.workspace.projects2"
+    "labelKey": "screen.label.workspace.projects2",
+    "route": "/workspace/projects2"
   },
   {
     "id": "workspace.settings",
@@ -229,7 +257,8 @@
     "surface": "workspace_shell_workspace_settings_view",
     "shell": "workspace",
     "comp": "WorkspaceSettings",
-    "labelKey": "screen.label.workspace.settings"
+    "labelKey": "screen.label.workspace.settings",
+    "route": "/workspace"
   },
   {
     "id": "website.site",
@@ -237,7 +266,8 @@
     "surface": null,
     "shell": "website",
     "comp": "WebsiteSite",
-    "labelKey": "screen.label.website.site"
+    "labelKey": "screen.label.website.site",
+    "route": "/website/site"
   },
   {
     "id": "website.docs",
@@ -245,7 +275,8 @@
     "surface": null,
     "shell": "website",
     "comp": "WebsiteDocs",
-    "labelKey": "screen.label.website.docs"
+    "labelKey": "screen.label.website.docs",
+    "route": "/website/docs"
   },
   {
     "id": "website.showcase2",
@@ -253,7 +284,8 @@
     "surface": null,
     "shell": "website",
     "comp": "WebsiteShowcase2",
-    "labelKey": "screen.label.website.showcase2"
+    "labelKey": "screen.label.website.showcase2",
+    "route": "/website/showcase2"
   },
   {
     "id": "website.download",
@@ -261,7 +293,8 @@
     "surface": null,
     "shell": "website",
     "comp": "WebsiteDownload",
-    "labelKey": "screen.label.website.download"
+    "labelKey": "screen.label.website.download",
+    "route": "/website/download"
   },
   {
     "id": "main.chrome",
@@ -269,6 +302,7 @@
     "surface": "main_shell_main_chrome_view",
     "shell": "main",
     "comp": "MainChrome",
-    "labelKey": "shell.main"
+    "labelKey": "shell.main",
+    "route": "/"
   }
 ]

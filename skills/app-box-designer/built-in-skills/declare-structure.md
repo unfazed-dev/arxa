@@ -18,7 +18,7 @@ For **every** surface you create, in this order:
 1. **Add the registry entry first**, before the directory exists.
    ```json
    { "id": "shop.cart", "label": "Cart", "surface": "shop_shell_cart_view",
-     "shell": "shop", "comp": "ShopCart" }
+     "shell": "shop", "comp": "ShopCart", "route": "/cart" }
    ```
 2. **Create the directory** at `ui/views/<shell>/<short>/`.
 3. **First line of the viewmodel** — before any logic:
@@ -46,6 +46,13 @@ Do **not** delete the entry and do **not** create an exclusions file. The
 registry must describe the whole intended app, including the parts deliberately
 not built — otherwise nothing downstream can tell "not built yet" from
 "never existed", and the difference is a roadmap.
+
+### `route` field
+
+Each registry entry may carry a `route` — the URL path the surface lives at.
+When absent, it is derived as `/<shell>/<short>`. The prototype's viewer uses
+this for prototype-mode navigation (the device chrome iframe opens the focused
+screen's route). State it explicitly when the path is not the convention.
 
 ## Checking yourself
 
@@ -80,6 +87,9 @@ means someone deleted entries instead of nulling them.
 - `surface` is `<shell>_<short>_view` (flattened, e.g. a subgrouped surface is
   `stage_shell_proj_home_view`) — but it is a *value the registry
   states*, not a rule anything infers. State it; never let it be guessed.
+- `route` is the surface's URL path, `/<shell>/<short>` by convention (the app
+  shell's surfaces live at the top level, e.g. `app.cart` → `/cart`). Optional;
+  absent = derived from the id. See the `route` field note above.
 
 ## Do not
 

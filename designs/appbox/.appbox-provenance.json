@@ -1,0 +1,425 @@
+{
+  "tier": "free",
+  "ts": "2026-07-30T15:26:17.235Z",
+  "files": [
+    {
+      "path": "_d_meta.json",
+      "sha256": "d2c4c7fe616ac7511cb6e1c4a43159cf1a543ad6998c5916bffc91c843525f0e",
+      "note": "json: no comment syntax — provenance is this manifest entry"
+    },
+    {
+      "path": "app.routes.js",
+      "sha256": "2481253c7c9775c7c9dc3d792b870e40c8562f290734e4c6e0b8a68234eea1c3"
+    },
+    {
+      "path": "assets/variant-comparison-2.html",
+      "sha256": "8529936c7c602365f5aa16a1a043b8de854b73f22c58311b91ceb4cdaf517e5e"
+    },
+    {
+      "path": "assets/variant-comparison.html",
+      "sha256": "f963ac0559620a3f21fcccc5cb395ec324fe0f17f8329b591fb331fa0a7b59f2"
+    },
+    {
+      "path": "models/app_model/app.en.json",
+      "sha256": "6b8334e2e72eb8893c95f507a0b431b85353d2a909519314331d77deefcd7838",
+      "note": "json: no comment syntax — provenance is this manifest entry"
+    },
+    {
+      "path": "models/app_model/app.json",
+      "sha256": "6b8334e2e72eb8893c95f507a0b431b85353d2a909519314331d77deefcd7838",
+      "note": "json: no comment syntax — provenance is this manifest entry"
+    },
+    {
+      "path": "models/app_model/app.pl.json",
+      "sha256": "38f906ea17016be282e0a48376f79efddfd2a2b0bcdd35459d2355d545e03b06",
+      "note": "json: no comment syntax — provenance is this manifest entry"
+    },
+    {
+      "path": "models/app_model/app.qps-ploc.json",
+      "sha256": "f362993af0e2d979bbf3703df667f5a441c78a010b783e8a132d5eec2f06364a",
+      "note": "json: no comment syntax — provenance is this manifest entry"
+    },
+    {
+      "path": "models/app_model/app_seed.en.json",
+      "sha256": "511b662936734901e0f7fbbaa5a731d6741d9d34b6acd9b5ecdd96d380a1d398",
+      "note": "json: no comment syntax — provenance is this manifest entry"
+    },
+    {
+      "path": "models/app_model/app_seed.pl.json",
+      "sha256": "81a55b9000e7194e7f45fa4cadff887414af0dfac5d155e5c58b71ba09aae2e2",
+      "note": "json: no comment syntax — provenance is this manifest entry"
+    },
+    {
+      "path": "models/app_model/app_seed.qps-ploc.json",
+      "sha256": "b8600ae2395e17db67356e037c1102f00b2ebe33dbd4c9e3bcf85d1babfce402",
+      "note": "json: no comment syntax — provenance is this manifest entry"
+    },
+    {
+      "path": "models/app_model/generate.mjs",
+      "sha256": "8283d97a849e0ca152a00033dcad1fd674dcea2dd6706a21c08506ac1e89795d"
+    },
+    {
+      "path": "models/build_model/build_seed.en.json",
+      "sha256": "4d49d52a06166384e6c23878bc75e77f8830dba51d97f162bfc8863818017ed3",
+      "note": "json: no comment syntax — provenance is this manifest entry"
+    },
+    {
+      "path": "models/build_model/build_seed.pl.json",
+      "sha256": "b368b2e7ca4b5b668a6560bb9a4ff23ac787b4f32e55ca649591a4f9ae1b515a",
+      "note": "json: no comment syntax — provenance is this manifest entry"
+    },
+    {
+      "path": "models/build_model/build_seed.qps-ploc.json",
+      "sha256": "e03f2d94ce0e75194199f6233e51119a2cf809eee9012f89329908dc95a37cbc",
+      "note": "json: no comment syntax — provenance is this manifest entry"
+    },
+    {
+      "path": "models/build_model/generate.mjs",
+      "sha256": "81beb8d05c6ad7903467a7b3b441d2f03f0a90884825a5d3b0f6306d5452e470"
+    },
+    {
+      "path": "models/build_model/run.en.json",
+      "sha256": "fbc11aab0aacf71b93fa2142a07975cc1c5419c8bb7ddbf6b44b5d5e091da5cc",
+      "note": "json: no comment syntax — provenance is this manifest entry"
+    },
+    {
+      "path": "models/build_model/run.json",
+      "sha256": "fbc11aab0aacf71b93fa2142a07975cc1c5419c8bb7ddbf6b44b5d5e091da5cc",
+      "note": "json: no comment syntax — provenance is this manifest entry"
+    },
+    {
+      "path": "models/build_model/run.pl.json",
+      "sha256": "ab467dcb9850410b41ee937a06586242c3c74a3cf4e115f66d0ac7f34467ea73",
+      "note": "json: no comment syntax — provenance is this manifest entry"
+    },
+    {
+      "path": "models/build_model/run.qps-ploc.json",
+      "sha256": "4f7cc0e8c31c0febeba3791829382d39122b8b1e33234317955cb91493a4fa42",
+      "note": "json: no comment syntax — provenance is this manifest entry"
+    },
+    {
+      "path": "models/design_model/design_seed.en.json",
+      "sha256": "bd2a7cdf99c5d76398970f5e9197d15dd821454c822478f343115942a3b8d771",
+      "note": "json: no comment syntax — provenance is this manifest entry"
+    },
+    {
+      "path": "models/design_model/design_seed.pl.json",
+      "sha256": "cad8a0ed75ebff4d03d7ed2fde3c31b794e7bb6d0eb46e6fbd6deaafb6fa3578",
+      "note": "json: no comment syntax — provenance is this manifest entry"
+    },
+    {
+      "path": "models/design_model/design_seed.qps-ploc.json",
+      "sha256": "b88e53e1c7fe8fb36f6bbf87981bfa637e9363d43d975d802eb2c0c12d5643df",
+      "note": "json: no comment syntax — provenance is this manifest entry"
+    },
+    {
+      "path": "models/design_model/generate.mjs",
+      "sha256": "fffed4a13671abed73a5b7fd6dfa185c9ae29cf522f1d902f9b8194551b960bc"
+    },
+    {
+      "path": "models/design_model/run.en.json",
+      "sha256": "fcbc9a3e4b24c6b54ee3d04e4dda48802d3a7bea9e44f9f1fd80bfb63ba07a43",
+      "note": "json: no comment syntax — provenance is this manifest entry"
+    },
+    {
+      "path": "models/design_model/run.json",
+      "sha256": "fcbc9a3e4b24c6b54ee3d04e4dda48802d3a7bea9e44f9f1fd80bfb63ba07a43",
+      "note": "json: no comment syntax — provenance is this manifest entry"
+    },
+    {
+      "path": "models/design_model/run.pl.json",
+      "sha256": "3df15e6f909961c1db3cabb346d55abac2d10a5767c911ddebdd09220b44ec4a",
+      "note": "json: no comment syntax — provenance is this manifest entry"
+    },
+    {
+      "path": "models/design_model/run.qps-ploc.json",
+      "sha256": "04846773bdca3e20eab4f2a171ebc0dfe9f090d820bf29d42863bf4308086887",
+      "note": "json: no comment syntax — provenance is this manifest entry"
+    },
+    {
+      "path": "models/intake_model/generate.mjs",
+      "sha256": "efcfa827f3e02d3af4cff5e6de2c34f6c71d81ea7e9de5b8265018b321e98422"
+    },
+    {
+      "path": "models/intake_model/intake.en.json",
+      "sha256": "c722e9c41cfda5d097022b6b12db1f5cf1dc3be01554d36f4930d9c5e8e3ea9a",
+      "note": "json: no comment syntax — provenance is this manifest entry"
+    },
+    {
+      "path": "models/intake_model/intake.json",
+      "sha256": "c722e9c41cfda5d097022b6b12db1f5cf1dc3be01554d36f4930d9c5e8e3ea9a",
+      "note": "json: no comment syntax — provenance is this manifest entry"
+    },
+    {
+      "path": "models/intake_model/intake.pl.json",
+      "sha256": "bcb4ed9f48f969f480f53828b6932d861c9aa76eb19e7667987fb8b24eec3d28",
+      "note": "json: no comment syntax — provenance is this manifest entry"
+    },
+    {
+      "path": "models/intake_model/intake.qps-ploc.json",
+      "sha256": "8c6cc604a3ebadb97b9a1e0e8806867e3332acd31959f5e4ce9c5eadcf5bf5de",
+      "note": "json: no comment syntax — provenance is this manifest entry"
+    },
+    {
+      "path": "models/intake_model/intake_seed.en.json",
+      "sha256": "b0879f22c3624974eeb6310c3e52d3a0f7d778173c012060494687564f9b6abd",
+      "note": "json: no comment syntax — provenance is this manifest entry"
+    },
+    {
+      "path": "models/intake_model/intake_seed.pl.json",
+      "sha256": "b51bf981780c165dda395d827e80f53d4b2f8e478b7802f750e72fb50c758870",
+      "note": "json: no comment syntax — provenance is this manifest entry"
+    },
+    {
+      "path": "models/intake_model/intake_seed.qps-ploc.json",
+      "sha256": "da25518951a9c676e0a8b38db373ba8908a135f94e341a877f78ff0a1e113243",
+      "note": "json: no comment syntax — provenance is this manifest entry"
+    },
+    {
+      "path": "models/screens_model/registry.json",
+      "sha256": "01e59f14b4da3fcd3749da639f25ac9ebd706c7fdcde59cfcc190e5ec181e1d0",
+      "note": "json: no comment syntax — provenance is this manifest entry"
+    },
+    {
+      "path": "serve.mjs",
+      "sha256": "6eb0dd89f5cd621c5e7dc4780c9d38313583f043e3cbd155f98f5cb17441e921"
+    },
+    {
+      "path": "services/facades/agent_menus.js",
+      "sha256": "95a74707c782087c0167f5937da7304af55bb1bb20a192a06c4c3684ec303180"
+    },
+    {
+      "path": "services/facades/app_facade.js",
+      "sha256": "3192d428b2207ac7e2446c9d779e01bae47f7b325fb4f8262e1e7b166436d6b2"
+    },
+    {
+      "path": "services/facades/build_facade.js",
+      "sha256": "df073933a78992b71fd975db9725c0ff371c98880060c608c17c145d6beb9a07"
+    },
+    {
+      "path": "services/facades/design_facade.js",
+      "sha256": "5d1618007e51872f66e3f72422f382a16e1e6cd49602527a603cd601716634f8"
+    },
+    {
+      "path": "services/facades/intake_facade.js",
+      "sha256": "df8d50bd1955d7af63a306459d4ff74d6169084084d5e3f69d06b5321c89b4c7"
+    },
+    {
+      "path": "services/facades/jargon.js",
+      "sha256": "12e07713c024291a2122f4b8ff7c3ed8ba08245c26e2c3cccde1be8a27bc38d1"
+    },
+    {
+      "path": "services/facades/screens_facade.js",
+      "sha256": "76e0ee5f0cd151d7934683a77ba2bcbb43f7547fe02a1dca88996a5195f3ae5a"
+    },
+    {
+      "path": "services/repositories/app_repository.js",
+      "sha256": "30f3354f610e07fd018530c7a92f733dc956651382f54914b3ee563fde8af8f5"
+    },
+    {
+      "path": "services/repositories/build_repository.js",
+      "sha256": "47543d390fd344e1b99e48ce3b7b4e0f26dd19e0942291565a7f57311d559e4d"
+    },
+    {
+      "path": "services/repositories/design_repository.js",
+      "sha256": "6a3f57ac67641e5a9ce6d28ad1cd0787ab295a0081e5eecc69bc677e521b32b2"
+    },
+    {
+      "path": "services/repositories/fixture_reader.js",
+      "sha256": "8f0f2b61d26e4a4aed4b9d457ad55055eab26fd00ed9b9b01770f0c8de2d4082"
+    },
+    {
+      "path": "services/repositories/intake_repository.js",
+      "sha256": "9a72a81ab3e6109964c68514391887a95682ca517a45509ad3218443dc3cab8c"
+    },
+    {
+      "path": "services/repositories/screens_repository.js",
+      "sha256": "47eeebefc57fcb6acae88c92daac58cee8fddbfc8ad074c9f49355a038ec4d30"
+    },
+    {
+      "path": "structure.json",
+      "sha256": "40d18e0a9234992a02bdabb76b56c59ae75f78e8f98fdbcf3a1d52308e1e56c6",
+      "note": "json: no comment syntax — provenance is this manifest entry"
+    },
+    {
+      "path": "ui/common/_lang_switcher.html",
+      "sha256": "49b388d878881538f785e3588561e00bf0e72e8c20830bab7e1382814fedbfe6"
+    },
+    {
+      "path": "ui/common/base.html",
+      "sha256": "0aaffa6b60c3eaddabdefe5779828ac5b2346a564b36bc4c9fce2c7dcf07dea1"
+    },
+    {
+      "path": "ui/common/chrome.html",
+      "sha256": "689b8721e9f3a6c18bbb331691c2a9319cf8de50576ffaddcf4c4d793c48017f"
+    },
+    {
+      "path": "ui/common/composer.html",
+      "sha256": "aa5e0145d7f72428aa55a49fd6537191599bdfd619da8222bd58fb6635d377db"
+    },
+    {
+      "path": "ui/common/composer_panel.html",
+      "sha256": "3e9ed25e68e64340b4101d93f670df5aa73418896e1472563f7a44dbff0ad330"
+    },
+    {
+      "path": "ui/common/design_viewer.html",
+      "sha256": "18dccd1ef90049817f31a5f04fcc3c1b880c4e0abc33efbdc73785f40731e6c4"
+    },
+    {
+      "path": "ui/common/mini_rail.html",
+      "sha256": "ecc6a3d6953376e7049cc4af4d9af2aa6f4819c417356b887bd0de60849bd1e2"
+    },
+    {
+      "path": "ui/common/modal.html",
+      "sha256": "4138ae5349c8c1614cf5811f47795bfc908ecd50ff9c92d617b4027e34c19ac0"
+    },
+    {
+      "path": "ui/common/panel_views.html",
+      "sha256": "21ca9d3f81fce2d48cca0f4fcd094573a6feba6162e3d9251d4c5d8bd7bcf1f2"
+    },
+    {
+      "path": "ui/common/prefs_viewmodel.js",
+      "sha256": "0481b7839fc3586bddb8a29f1786f2597f1072a0669638bcc2ee6056e2a5997b"
+    },
+    {
+      "path": "ui/common/primitives.html",
+      "sha256": "a9411333caf7d078eeeeca071e38d4bb6941157d257453cae49ab3ccf2619497"
+    },
+    {
+      "path": "ui/common/rail.html",
+      "sha256": "f04e64377c6343d9fd599834bdd036c73b1eb9d1dd0d027c482de8dee6b9e837"
+    },
+    {
+      "path": "ui/common/timeline.html",
+      "sha256": "c865595863e60c82710a64df01ac65754681533e80a444e594580e937e1e4fb3"
+    },
+    {
+      "path": "ui/views/app_shell/auth/auth_view.html",
+      "sha256": "5e49e0dab0d7a4c5ab8d90d90945d3dba38aebc954212e9f36ec9c2346e39231"
+    },
+    {
+      "path": "ui/views/app_shell/auth/auth_viewmodel.js",
+      "sha256": "81f24141a92e90059ac0afab68cfa84aa937271df3dbc3f16f9b52af2e1752b4"
+    },
+    {
+      "path": "ui/views/app_shell/dashboard/dashboard_view.html",
+      "sha256": "a50f879a5a7ad7abf34b5ca72846c7226febf9e818463b632dcc6af68f36d90d"
+    },
+    {
+      "path": "ui/views/app_shell/dashboard/dashboard_viewmodel.js",
+      "sha256": "968d5d20c6ec667f3a7da6a9ccc063e36f19ede59a8faad4056a39b12317e859"
+    },
+    {
+      "path": "ui/views/app_shell/pairing/pairing_view.html",
+      "sha256": "a3fc0d725d7998fa152801f77ccaf346236dd51324282224bb023d2aa68a2a3f"
+    },
+    {
+      "path": "ui/views/app_shell/pairing/pairing_viewmodel.js",
+      "sha256": "f7a4a9dd37e07d77f22ab261c32767a664b135191988563b5eec93e66babecf7"
+    },
+    {
+      "path": "ui/views/app_shell/routes.app.js",
+      "sha256": "8c2d3872604b577a1ee3b92eb32698062270231d15731cac72884762a96974bb"
+    },
+    {
+      "path": "ui/views/app_shell/splash/splash_view.html",
+      "sha256": "774a78490d75af13658dee56a69d09aa322147a2e3af3426fe5044305959cd9f"
+    },
+    {
+      "path": "ui/views/app_shell/splash/splash_viewmodel.js",
+      "sha256": "a29153aeb91ceedaa409c57092ff3e49e1cbc1cb9039f6190800e1552b392634"
+    },
+    {
+      "path": "ui/views/main_shell/build/loop/loop_view.html",
+      "sha256": "615986a498885bb5076e81f5929f3dc4c36b614448b21b488b19ddcf4b8bd1a1"
+    },
+    {
+      "path": "ui/views/main_shell/build/loop/loop_viewmodel.js",
+      "sha256": "ec8eb8c788c2b9079d28e43a8a8b93b0bcf793c7201ef899032db7a4ba6e3427"
+    },
+    {
+      "path": "ui/views/main_shell/build/loop/screen_stub_view.html",
+      "sha256": "68b0088c98d3809edad0193ee80eda9b349a68c27e1f21c75efb158c884f7e7f"
+    },
+    {
+      "path": "ui/views/main_shell/design/_shared.html",
+      "sha256": "c5c5421af21d4c406357ad372f3af5c5b68b45bba98e032a119eb9f261ae83ea"
+    },
+    {
+      "path": "ui/views/main_shell/design/chat/chat_view.html",
+      "sha256": "a0e1cf965afc6bbdde1d00e13652e83515c307c19e55a335ba1c74dc2a50355d"
+    },
+    {
+      "path": "ui/views/main_shell/design/chat/chat_viewmodel.js",
+      "sha256": "3d3b618cd8422e9a394d3de8bb29d90c7d676effa87d7d575f7307f5479e76b2"
+    },
+    {
+      "path": "ui/views/main_shell/design/freeze/freeze_view.html",
+      "sha256": "0dcfb3e03be10c24179967a536c82a2c50f38aadebb383e05beb3c4a6451fa45"
+    },
+    {
+      "path": "ui/views/main_shell/design/freeze/freeze_viewmodel.js",
+      "sha256": "a8414c1521c3c212c9d3c7f90193780160dbc48b9e2f49368282ae67ab5c7a7a"
+    },
+    {
+      "path": "ui/views/main_shell/design/prototype/prototype_view.html",
+      "sha256": "f2621dd977ca5bde8d98b1c46a33a109497ee39405009480f87bf5f9e5d94101"
+    },
+    {
+      "path": "ui/views/main_shell/design/prototype/prototype_viewmodel.js",
+      "sha256": "d658550608cbb798d9f9eb8e1e0ef386bed1709a19382fa7aa59ae80d4a67cd8"
+    },
+    {
+      "path": "ui/views/main_shell/design/routes.design.js",
+      "sha256": "b6617504623ce4b15afbe9fa0fc9ea354f2dd7f69309c45612c0413ecb4596e2"
+    },
+    {
+      "path": "ui/views/main_shell/intake/_shared.html",
+      "sha256": "c246696f69047a0c3a6323a3e517f3ec8243b3aba9b2ec1e4e9f4bd04c8d52b3"
+    },
+    {
+      "path": "ui/views/main_shell/intake/brief/brief_view.html",
+      "sha256": "5c80d53d5e2b281f964a8b66354ec1b753cd729839d942718557318c91dd43ac"
+    },
+    {
+      "path": "ui/views/main_shell/intake/brief/brief_viewmodel.js",
+      "sha256": "e667164383910df8b1c6fee4c43b4fce9839b21f4a2e03af8a3289bf950e1dea"
+    },
+    {
+      "path": "ui/views/main_shell/intake/mapping/mapping_view.html",
+      "sha256": "01324e57190b367b25828a49d5b2a1d84f4b35198401f41b6f7719be18692bdc"
+    },
+    {
+      "path": "ui/views/main_shell/intake/mapping/mapping_viewmodel.js",
+      "sha256": "bff0290a88123b3607a1aa26b771a3aba93c11517ef9b540cc16692a37abdc4c"
+    },
+    {
+      "path": "ui/views/main_shell/intake/moodboard/moodboard_view.html",
+      "sha256": "4d08d76e78e6f4d7f3da95cf029c9c3c34a95c92a0a2ef1c40b26c5cec1152f5"
+    },
+    {
+      "path": "ui/views/main_shell/intake/moodboard/moodboard_viewmodel.js",
+      "sha256": "8d588d58e200ee91306bed6cbcfd73c465e313ca09f59742d28f7a604c829c65"
+    },
+    {
+      "path": "ui/views/main_shell/intake/routes.intake.js",
+      "sha256": "c58283168917624df0d3c3c5c9caafbb714aa0d0de7016c96abd466d462f483c"
+    },
+    {
+      "path": "ui/views/main_shell/main_shell_view.html",
+      "sha256": "e5d9ae0a7e552a3c0edb15e011f8bd562094637b90bf68d9413f26a6a3667f8d"
+    },
+    {
+      "path": "ui/views/main_shell/main_shell_viewmodel.js",
+      "sha256": "1a6ed1eec7648a4a686dc0ccfb0f8820353b741efa8ce64dfea5feef8805db10"
+    },
+    {
+      "path": "ui/views/workspace_shell/settings/settings_view.html",
+      "sha256": "5ff85d35acc5222cf3bb6dce35e55afa091ed7614c14aab796748885cc077e36"
+    },
+    {
+      "path": "ui/views/workspace_shell/settings/settings_viewmodel.js",
+      "sha256": "db9320908c37140986dcac03d57e4cc82a7c7e9c0244cd075f923b4cd1369051"
+    }
+  ]
+}

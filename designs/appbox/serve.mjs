@@ -1,4 +1,7 @@
 #!/usr/bin/env node
+// appbox:provenance
+// generator: app-box  licence: free  project: 662368770980
+// Built with app-box (free tier) — https://appbox.dev
 // Serve this design: `node serve.mjs [--port N] [--host H] [--json] [--no-watch]`
 //
 // Thin wrapper — the actual server is the app-box-designer runtime

@@ -1,87 +1,17 @@
-/* ---------- design viewer: rungs mode + the floating filmstrip ----------
-   The shared screen stage (ui/common/design_viewer.html). This file owns:
-     rungs — one screen at every authored width, side by side
-     strip — the single-mode filmstrip as a floating card over the stage
-   The rest of single mode (.dv-*, .device chrome) lives in app.css. */
-
-/* the rungs row is a pan area, same zero-JS idiom as .dv-stage: oversized
-   frames scroll on both axes; every rung keeps its real device size (w × h
-   inline from deviceChrome), top-aligned, caption under each */
-.dv-rungs {
-  display: flex; gap: 1.2rem; align-items: flex-start;
-  overflow: auto; flex: 1; min-height: 32rem;
-  padding: .4rem;
-}
-.dv-rung {
-  flex: none; margin: 0;
-  display: flex; flex-direction: column; gap: .45rem;
-}
-.dv-rung .device { flex: none; }
-
-/* the zoom island's target: assets/vendor/canvas.js (the ADR-0002 amendment's
-   one sanctioned script) scales this wrapper on pinch (ctrl+wheel) and pans
-   the scroll container on drag. transform-origin 0 0 keeps the scroll-
-   anchored zoom math exact; the wrapper's layout position never changes
-   under scale, so native overflow pan keeps working at any zoom */
-.dv-stage .dv-zoom { margin: auto; transform-origin: 0 0; }
-.dv-rungs .dv-zoom {
-  display: flex; gap: 1.2rem; align-items: flex-start;
-  transform-origin: 0 0;
-}
-.dv-stage:active, .dv-rungs:active { cursor: grabbing; }
-.dv-rung-cap {
-  display: flex; gap: .5rem; align-items: baseline;
-  font-size: .72rem; color: var(--tx-2); padding: 0 .2rem;
-}
-.dv-rung-cap strong { color: var(--tx); }
-.dv-rung-cap code { margin-left: auto; font-size: .64rem; }
-
-@media (max-width: 599px) {
-  .dv-rungs { min-height: 26rem; }
-}
-
-/* ---------- board mode: every screen as an artboard (draft-all canvas) ----------
-   Same zero-JS pan idiom as .dv-rungs: the board is an overflow:auto pan area,
-   .dv-zoom is the canvas.js island's scale target. One row per artboard, its
-   rungs side by side at real device sizes; artboards never shrink. */
-.dv-board {
-  overflow: auto; flex: 1; min-height: 32rem;
-  padding: .4rem;
-  /* clear the floating filmstrip (10.2rem wide at left:0) so every
-     artboard's left-edge pin stays clickable */
-  padding-left: 11rem;
-}
-.dv-board .dv-zoom {
-  display: flex; flex-direction: column; gap: 2.2rem; align-items: flex-start;
-  width: max-content;
-  transform-origin: 0 0;
-}
-.dv-board:active { cursor: grabbing; }
-.dv-artboard {
-  flex: none; margin: 0;
-  display: flex; flex-direction: column; gap: .55rem;
-  padding: .7rem .8rem;
-  border-radius: var(--radius);
-  outline: 2px solid transparent; outline-offset: 4px;
-}
-.dv-artboard.is-dim { opacity: .45; }
-.dv-artboard.is-dim:hover { opacity: .8; }
-.dv-artboard.in-ctx { outline-color: var(--ctx); background: var(--bg); }
-.dv-ab-chrome {
-  display: flex; gap: .6rem; align-items: center;
-  font-size: .78rem; color: var(--tx-2);
-}
-.dv-ab-label code { font-size: .68rem; }
-.dv-ab-chrome .status-pill { margin-left: auto; }
-.dv-ab-rungs { display: flex; gap: 1.2rem; align-items: flex-start; }
-.dv-pin { color: var(--tx-3); text-decoration: none; font-size: .85rem; }
-.dv-pin:hover { color: var(--tx); }
-.dv-pin.on { color: var(--ctx); }
+/* ---------- design viewer: the artboard canvas (flow) + floating chrome ----
+   The shared screen stage (ui/common/design_viewer.html — flow tiles, the
+   only mode). The zoom island's target: assets/vendor/canvas.js (the
+   ADR-0002 amendment's one sanctioned script) scales .dv-zoom on pinch
+   (ctrl+wheel) and pans the scroll container on drag. transform-origin 0 0
+   keeps the scroll-anchored zoom math exact; the wrapper's layout position
+   never changes under scale, so native overflow pan keeps working at any
+   zoom. */
 
 /* ---------- context tones: chip ⇄ outline ⇄ thumb share one hue ----------
-   chat.css owns the shared palette (cyan/violet/olive/amber, with --ctx-soft
-   for the chips). The design facade's TONES extends it with blue/ember so 11
-   screens collide less; the extensions live here with both tokens. */
+   composer.css owns the shared palette (cyan/violet/olive/amber, with
+   --ctx-soft for the chips). The design facade's TONES extends it with
+   blue/ember so 11 screens collide less; the extensions live here with both
+   tokens. */
 .ctx-blue   { --ctx: #3473DF; --ctx-soft: rgba(52, 115, 223, .12); }
 .ctx-ember  { --ctx: #BC5215; --ctx-soft: rgba(188, 82, 21, .09); }
 #app[data-theme="dark"] .ctx-blue   { --ctx: #7FA5F0; --ctx-soft: rgba(127, 165, 240, .18); }
@@ -97,47 +27,131 @@
 .dv-thumb.is-dim { opacity: .55; }
 .dv-thumb.is-dim:hover { opacity: .85; }
 
-@media (max-width: 599px) {
-  .dv-board { min-height: 26rem; }
+/* ---------- flow: every screen as a draggable tile ---------- */
+.design-viewer { position: relative; }
+.dv-flow { position: relative; flex: 1; overflow: hidden; }
+.dv-flow-canvas {
+  position: relative; overflow: auto; flex: 1; min-height: 32rem;
+  /* bottom pad lets the last tile row scroll clear of the floating mini-rail */
+  padding: 1rem 1rem 11rem; cursor: default;
 }
+.dv-flow-canvas:active { cursor: grabbing; }
+.dv-flow-canvas .dv-zoom {
+  position: relative; width: max-content; min-width: 100%;
+  min-height: 100%; transform-origin: 0 0;
+  display: flex; flex-direction: column; gap: 1.2rem; align-items: flex-start;
+}
+/* ONE coordinate space: groups are plain block-flow rows, tiles are in-flow
+   flex items until the facade has a saved position — the template then emits
+   position:absolute inline with GROUP-relative left/top (this wrapper is the
+   positioned ancestor drag.js measures against). No facade auto-grid. */
+.dv-tile-group {
+  position: relative;
+  display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-start;
+}
+.dv-tile-group-label {
+  flex: 0 0 100%;
+  font-size: .68rem; text-transform: uppercase; letter-spacing: .06em;
+  color: var(--tx-3); padding: .8rem 0 .3rem;
+}
+.dv-tile-label { flex: 1; min-width: 0; }
+.dv-tile {
+  position: relative; flex: none; display: flex; flex-direction: column; gap: .35rem;
+  padding: .5rem; border-radius: var(--radius);
+  background: var(--bg); border: 1px solid var(--border);
+  box-shadow: var(--shadow-1); cursor: grab;
+  outline: 2px solid transparent; outline-offset: 4px;
+  transition: outline-color .12s, box-shadow .12s;
+}
+.dv-tile:hover { box-shadow: var(--shadow-2, 0 2px 12px rgba(0,0,0,.12)); }
+.dv-tile.is-selected { outline-color: var(--accent, #0891b2); }
+.dv-tile.in-ctx { outline-color: var(--ctx); }
+.dv-tile.is-dim { opacity: .45; }
+.dv-tile.is-dim:hover { opacity: .8; }
+/* read-only canvas (build evidence): no drag cursor, no dim states */
+.dv-flow-canvas[data-static] .dv-tile { cursor: default; }
+.dv-tile-chrome {
+  display: flex; gap: .4rem; align-items: center;
+  font-size: .72rem; color: var(--tx-2);
+}
+.dv-tile-chrome code { font-size: .64rem; }
+.dv-tile-frame {
+  width: 100%; border: none; border-radius: calc(var(--radius) - 2px);
+  pointer-events: none; background: var(--bg);
+}
+/* inspect armed: the tile frames must take pointer input again (inspect.js
+   lives inside the stub render and needs hover/click) */
+.design-viewer[data-inspect] .dv-tile-frame { pointer-events: auto; }
+.dv-pin { color: var(--tx-3); text-decoration: none; pointer-events: auto; }
+.dv-pin:hover { color: var(--tx); }
+.dv-pin.on { color: var(--ctx); }
 
-/* ---------- the filmstrip: a floating card over the stage, no scrollbar ----------
-   Single mode only (rungs has no strip). The strip leaves the flow and
-   floats over the stage's left edge, vertically centered, as a self-contained
-   card in the rail's chrome tokens (app.css .rail: --radius / 1px --border /
-   --shadow-1); the card bg is var(--bg) — the layering .msg cards use inside
-   the rail, so it reads on every stage bg in both themes.
-   Anchored to .dv-body, NOT inside .dv-stage: the stage is the overflow:auto
-   pan area, so anything absolute in it scrolls away with the content and can
-   be clipped. No .dv-* / .artifact ancestor between the two hides overflow.
-   The strip's own box IS the card, so it captures no pointer events outside
-   itself (thumb iframes already have pointer-events:none in app.css); links
-   and htmx swaps are untouched. z-index lifts it above .device
-   (position:relative) and its z-index:2 chrome, which follow it in tree order.
-   Scrollbars are hidden here (scrollbar-width:none + webkit display:none) —
-   an explicit exception, for this component only, to the app-wide "scrollbars
-   blend" rule in app.css. Internal vertical scroll still works on overflow. */
-.dv-body { position: relative; }
-.dv-strip-float {
-  position: absolute; left: 0; top: 50%; transform: translateY(-50%);
-  z-index: 5;
-  width: 10.2rem;                 /* .5rem card padding around the 9.2rem strip */
-  max-height: calc(100% - .4rem);
-  padding: .5rem;
-  background: var(--bg);
-  border: 1px solid var(--border); border-radius: var(--radius);
-  box-shadow: var(--shadow-1);
-  scrollbar-width: none;
+/* marquee selection */
+.dv-marquee {
+  position: absolute; border: 1.5px solid var(--accent, #0891b2);
+  background: rgba(8, 145, 178, .08); pointer-events: none; z-index: 10;
 }
-.dv-strip-float::-webkit-scrollbar { display: none; }
+/* marquee bulk-pin: drag.js appends it to .dv-flow-canvas (position:relative)
+   and positions it in canvas content coordinates — absolute, not fixed.
+   The actions panel's own pin button shares the class for styling + the
+   data-href drag.js reads; in the panel it must stay in-flow (static). */
+.dv-bulk-pin {
+  position: absolute; z-index: 20; padding: .4rem .8rem; border-radius: 999px;
+  background: var(--accent, #0891b2); color: #fff; border: none; cursor: pointer;
+  font-size: .78rem; box-shadow: var(--shadow-1);
+}
+#mini-rail-actions .dv-bulk-pin { position: static; }
 
-/* compact: the strip docks as a floating pill centered over the stage's
-   bottom edge — same chrome tokens, horizontal scroll, still no scrollbar */
-@media (max-width: 599px) {
-  .dv-strip-float {
-    left: 50%; top: auto; bottom: 0; transform: translateX(-50%);
-    width: auto; max-width: calc(100% - .4rem); max-height: none;
-    padding: .45rem .5rem;
-    border-radius: 999px;
-  }
+/* ---------- mini-rail: bottom-anchored floating controller ---------- */
+/* floats over the viewer's bottom edge, centered — absolute against
+   .design-viewer (position:relative), never consuming layout height. A plain
+   card radius, NOT a 999px pill: with a panel open the rail is far taller
+   than it is deep, and a pill radius on that box renders as an ellipse. */
+.mini-rail {
+  position: absolute; left: 50%; bottom: .5rem; transform: translateX(-50%);
+  z-index: 15;
+  max-width: calc(100% - 1rem);
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: var(--radius); box-shadow: var(--shadow-1);
+  overflow: hidden;
 }
+.mini-rail-bar {
+  display: flex; gap: .15rem; padding: .25rem;
+  border-bottom: 1px solid var(--border);
+}
+.mini-rail-tab {
+  display: inline-flex; align-items: center; justify-content: center;
+  /* padding:0 — the app.css global button rule's .45rem/1.05rem padding eats
+     the whole 2rem box and flex-shrinks the icon svg to width 0 */
+  width: 2rem; height: 2rem; padding: 0; border: none; border-radius: var(--radius);
+  background: transparent; color: var(--tx-3); cursor: pointer;
+}
+.mini-rail-tab:hover { background: var(--bg-2, rgba(0,0,0,.04)); color: var(--tx); }
+.mini-rail-tab.is-active { background: var(--accent-soft, rgba(8,145,178,.12)); color: var(--accent, #0891b2); }
+.mini-rail-panels { padding: .2rem .5rem; }
+.mini-rail-panel {
+  display: flex; gap: .6rem; align-items: center; flex-wrap: wrap;
+  font-size: .78rem;
+}
+.mini-rail-group { display: inline-flex; gap: .2rem; align-items: center; }
+.mini-rail-group + .mini-rail-group { border-left: 1px solid var(--border); padding-left: .6rem; }
+.mini-rail-strip {
+  display: flex; gap: .4rem; overflow-x: auto; max-width: 40rem;
+  padding-bottom: .2rem; scrollbar-width: none;
+}
+.mini-rail-strip::-webkit-scrollbar { display: none; }
+/* the strip's thumbs use the same compact scale as the composer tray's —
+   the unconstrained .dv-thumb default (12.4rem clip over a 390px iframe) is
+   what blew the rail up into the giant ellipse */
+.mini-rail-strip .dv-thumb { width: 5.6rem; }
+.mini-rail-strip .dv-thumb-clip { height: 7.2rem; }
+.mini-rail-strip .dv-thumb-clip iframe { transform: scale(.221); }
+.mini-rail-info { color: var(--tx-3); font-size: .72rem; }
+/* .ico-btn base + :hover live in chrome.css (circular icon button); these add
+   the disabled and active-on variants the mini-rail controller buttons need */
+.ico-btn:disabled { opacity: .35; cursor: default; }
+.ico-btn.on { color: var(--accent, #0891b2); }
+
+/* ---------- inspect overlay (inside iframe documents) ---------- */
+.inspect-outline { position: fixed; pointer-events: none; z-index: 99998; }
+.inspect-label { position: fixed; pointer-events: none; z-index: 99999; }

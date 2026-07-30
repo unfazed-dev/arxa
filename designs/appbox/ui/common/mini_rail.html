@@ -1,0 +1,131 @@
+<!-- appbox:provenance
+     generator: app-box  licence: free  project: 662368770980
+     Built with app-box (free tier) — https://appbox.dev
+-->
+{# The floating mini-rail (replaces dv-toolbar + filmstrip): a bottom-anchored
+   floating bar with icon-tab panels. Same multi-view idiom as rail_views.html:
+   the active panel is server state, a tab click is a GET that swaps #design-viewer.
+   Macro-only file; importing it from a fragment render never emits stray markup.
+
+   Usage:
+     {% import "ui/common/mini_rail.html" as mr %}
+     {{ mr.miniRail(v) }}
+
+   v.rail shape (canvas-redesign-contract.md §1/§3):
+     activePanel: 'screens' | 'controller' | 'actions' (default 'screens')
+     screens: [{ id, label, tone, inContext, dim, src, contextHref }]
+     controller: {
+       inspectOn: bool,
+       inspectHref: '/design/viewer?...&inspect=1',          // toggles the inspect param
+       bgs:   [{ value, active, href }],                      // value is a pre-translated label
+       undo:  { can: bool, href: '/design/undo/canvas' },
+       redo:  { can: bool, href: '/design/redo/canvas' },
+     }
+     actions: { selectedCount: int, bulkPinHref: str|null, simHref: str|null }
+
+   The panel-switch GETs echo the full viewer state (bg, inspect) so
+   switching panels never loses it. The active panel is carried by the
+   `panel` query param — zero custom JS. #}
+
+{# Screens — the filmstrip as context picker. A thumb toggles the screen's
+   chat-context chip (in-context thumbs carry the chip's tone); it swaps the
+   whole stage so the chip layer refreshes. #}
+{% macro screensPanel(v, rail) %}
+<div class="mini-rail-panel" id="mini-rail-screens">
+  <div class="mini-rail-strip">
+    {% for s in rail.screens %}
+    <a class="dv-thumb {{ 'in-ctx ctx-' + s.tone if s.inContext }} {{ 'is-dim' if s.dim }}"
+       href="{{ s.contextHref }}" hx-get="{{ s.contextHref }}" hx-target="#panels" hx-swap="outerHTML"
+       title="{{ s.label or s.id }}">
+      <span class="dv-thumb-clip"><iframe src="{{ s.src }}" scrolling="no" tabindex="-1" title=""></iframe></span>
+      <span class="dv-thumb-label"><code>{{ s.id }}</code></span>
+    </a>
+    {% endfor %}
+  </div>
+</div>
+{% endmacro %}
+
+{# Controller — inspect toggle, zoom-to-fit, bg, canvas undo/redo.
+   Undo/redo swap #panels; the other controls swap #design-viewer.
+   Zoom-to-fit is client-side (canvas.js / drag.js) via a data-action, so it
+   carries no route. #}
+{% macro controllerPanel(v, rail) %}
+{% set c = rail.controller %}
+<div class="mini-rail-panel" id="mini-rail-controller">
+  <span class="mini-rail-group">
+    <a class="ico-btn {{ 'on' if c.inspectOn }}" href="{{ c.inspectHref }}" hx-get="{{ c.inspectHref }}" hx-target="#design-viewer" hx-swap="outerHTML" title="{{ t('miniRail.inspect') }}">{{ icon('mouse-pointer-click', {size: 16}) }}</a>
+    <button class="ico-btn" data-action="zoom-fit" title="{{ t('miniRail.zoomFit') }}">{{ icon('maximize', {size: 16}) }}</button>
+  </span>
+  <span class="mini-rail-group" role="group" aria-label="{{ t('miniRail.bgGroup') }}">
+    {% for b in c.bgs %}
+    <a class="dv-chip {{ 'on' if b.active }}" href="{{ b.href }}" hx-get="{{ b.href }}" hx-target="#design-viewer" hx-swap="outerHTML">{{ b.value }}</a>
+    {% endfor %}
+  </span>
+  <span class="mini-rail-group" role="group" aria-label="{{ t('miniRail.historyGroup') }}">
+    {% if c.undo.can %}
+    <button class="ico-btn undo-btn" hx-post="{{ c.undo.href }}" hx-target="#panels" hx-swap="outerHTML" title="{{ t('miniRail.undo') }}">{{ icon('undo-2', {size: 16}) }}</button>
+    {% else %}
+    <button class="ico-btn undo-btn" disabled title="{{ t('miniRail.undo') }}">{{ icon('undo-2', {size: 16}) }}</button>
+    {% endif %}
+    {% if c.redo.can %}
+    <button class="ico-btn redo-btn" hx-post="{{ c.redo.href }}" hx-target="#panels" hx-swap="outerHTML" title="{{ t('miniRail.redo') }}">{{ icon('redo-2', {size: 16}) }}</button>
+    {% else %}
+    <button class="ico-btn redo-btn" disabled title="{{ t('miniRail.redo') }}">{{ icon('redo-2', {size: 16}) }}</button>
+    {% endif %}
+  </span>
+</div>
+{% endmacro %}
+
+{# Actions — marquee bulk-pin (drag.js appends the selected ids to data-href at
+   click time) and the sim link (a full nav when present). #}
+{% macro actionsPanel(v, rail) %}
+<div class="mini-rail-panel" id="mini-rail-actions">
+  {% if rail.actions.bulkPinHref %}
+  <span class="mini-rail-group">
+    <span class="mini-rail-info" id="mini-rail-selected">{{ t('miniRail.selected', {count: rail.actions.selectedCount}) }}</span>
+    <button class="dv-bulk-pin" data-href="{{ rail.actions.bulkPinHref }}" title="{{ t('miniRail.pinTitle') }}">{{ icon('pin', {size: 16}) }} {{ t('miniRail.pin') }}</button>
+  </span>
+  {% endif %}
+  {% if rail.actions.simHref %}
+  <span class="mini-rail-group">
+    <a class="ico-btn" href="{{ rail.actions.simHref }}" title="{{ t('miniRail.simTitle') }}">{{ icon('play', {size: 16}) }} {{ t('miniRail.sim') }}</a>
+  </span>
+  {% endif %}
+</div>
+{% endmacro %}
+
+{# The bar itself: three icon tabs + the active panel. The `q` query echoes the
+   current viewer state so a panel switch is state-preserving. #}
+{% macro miniRail(v) %}
+{% set rail = v.rail %}
+{% set panel = rail.activePanel or 'screens' %}
+{% set q = 'bg=' + (v.bg or 'canvas')
+        + ('&inspect=1' if v.inspect else '') %}
+<nav class="mini-rail" aria-label="{{ t('miniRail.aria') }}">
+  <div class="mini-rail-bar">
+    <button class="mini-rail-tab {{ 'is-active' if panel == 'screens' }}"
+            data-panel="screens"
+            hx-get="{{ v.base }}?{{ q }}&panel=screens" hx-target="#design-viewer" hx-swap="outerHTML"
+            aria-pressed="{{ 'true' if panel == 'screens' else 'false' }}"
+            title="{{ t('miniRail.tab.screens') }}">{{ icon('layout-grid', {size: 18}) }}</button>
+    <button class="mini-rail-tab {{ 'is-active' if panel == 'controller' }}"
+            data-panel="controller"
+            hx-get="{{ v.base }}?{{ q }}&panel=controller" hx-target="#design-viewer" hx-swap="outerHTML"
+            aria-pressed="{{ 'true' if panel == 'controller' else 'false' }}"
+            title="{{ t('miniRail.tab.controller') }}">{{ icon('sliders-horizontal', {size: 18}) }}</button>
+    <button class="mini-rail-tab {{ 'is-active' if panel == 'actions' }}"
+            data-panel="actions"
+            hx-get="{{ v.base }}?{{ q }}&panel=actions" hx-target="#design-viewer" hx-swap="outerHTML"
+            aria-pressed="{{ 'true' if panel == 'actions' else 'false' }}"
+            title="{{ t('miniRail.tab.actions') }}">{{ icon('zap', {size: 18}) }}</button>
+  </div>
+
+  {# Only the active panel renders — the server picks it from the query param. #}
+  <div class="mini-rail-panels">
+    {% if panel == 'screens' %}{{ screensPanel(v, rail) }}
+    {% elif panel == 'controller' %}{{ controllerPanel(v, rail) }}
+    {% elif panel == 'actions' %}{{ actionsPanel(v, rail) }}
+    {% endif %}
+  </div>
+</nav>
+{% endmacro %}

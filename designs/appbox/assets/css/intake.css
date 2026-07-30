@@ -1,24 +1,9 @@
 /* intake.css — intake.* surfaces: the chat-native interview (question
    carousel), the live story map (status dots, rollups), the brief document,
-   the moodboard gallery, and the intake left-rail views. Builds on app.css
-   tokens + chat.css/rail.css shared chrome; nothing here restyles them.
-   Linked per-page via head-support (see _integration_intake.md). */
-
-/* ---------- the two zones: left multi-view rail + the stage ---------- */
-.intake-zones {
-  position: relative;
-  display: grid; grid-template-columns: auto minmax(0, 1fr);
-  gap: 1rem; padding: 1rem;
-  height: calc(100dvh - var(--nav-h) - var(--tl-h));
-}
-/* chat.css caller contract: flex column, position relative (the docked chat
-   floats over the canvas's right edge) */
-#stage-layout {
-  position: relative;
-  display: flex; flex-direction: column;
-  min-width: 0; min-height: 0;
-}
-#stage-layout .canvas { flex: 1 1 auto; min-height: 0; }
+   the moodboard gallery, and the intake activity-panel views. Builds on
+   app.css tokens + composer.css/panels.css shared chrome; nothing here
+   restyles them. Linked per-page via head-support (see
+   _integration_intake.md). */
 
 /* ---------- MoSCoW priority chips ---------- */
 .pri-chip {
@@ -239,14 +224,9 @@ a.rv-card:hover { border-color: var(--accent); filter: none; }
 
 /* ---------- rungs ---------- */
 @media (max-width: 839px) {
-  .intake-zones { gap: .75rem; padding: .75rem; }
   .shot-grid { grid-template-columns: repeat(2, 1fr); }
 }
 @media (max-width: 599px) {
-  .intake-zones { display: flex; flex-direction: column; height: auto; gap: 0; padding: 0; }
-  #stage-layout { order: 1; min-height: calc(100dvh - var(--nav-h) - var(--tl-h)); }
-  .intake-zones .mv-rail { order: 2; margin: 0 1rem 1rem; max-height: 44dvh; }
-  #stage-layout .canvas { overflow: visible; }
   .shot-grid { grid-template-columns: 1fr; }
   .doc-stories li { flex-wrap: wrap; }
   .inv-table th:nth-child(3), .inv-table td:nth-child(3) { display: none; }

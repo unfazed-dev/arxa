@@ -1,6 +1,9 @@
+// appbox:provenance
+// generator: app-box  licence: free  project: 662368770980
+// Built with app-box (free tier) — https://appbox.dev
 // BuildFacade — composes the run fixture with session-scoped state (gate
-// decisions, chat messages, stage/run controls, the open canvas artifact,
-// context chips, the left rail's active view) into exactly what
+// decisions, chat messages, stage/run controls, the open main-panel artifact,
+// context chips, the activity panel's active view) into exactly what
 // loop_viewmodel needs. Every leveled fixture string passes through the
 // jargon facade at the reader's level; static view copy comes in as the
 // runtime translator `t` (h.t(c) — level and locale already bound, l10n/
@@ -12,38 +15,40 @@
 // applied when the thread is composed, so a later jargon/locale switch still
 // re-renders them correctly.
 //
-// The run thread IS the chat: narrative cards render in the chat stage,
-// evidence/charts/gates open as center artifacts (chat docks right), and
-// gate notes are chat replies carrying a gate context chip — there is no
-// second input path.
+// The run thread IS the chat: narrative cards render in the composer
+// panel, evidence/charts/gates open as main-panel artifacts (chat docks
+// right), and gate notes are chat replies carrying a gate context chip —
+// there is no second input path.
 import * as repo from '../repositories/build_repository.js';
 import * as jargon from './jargon.js';
 import * as agent from './agent_menus.js';
+import * as fv from './file_views.js';
 
 // All build-tab session state lives behind one namespace so it never
 // collides with the intake/design/app surfaces sharing the session — each
 // shell manages its own data (design: sessionData.design, intake: .intake).
 const B = (sd) => (sd.build ??= {});
 
-// Rail filter vocabulary: 'all' shows everything; anything else matches the
-// card type derived from the message's artifact ref ('note' = no artifact).
-export const RAIL_FILTERS = ['all', 'stage', 'gate', 'findings', 'evidence', 'note'];
+// Thread filter vocabulary: 'all' shows everything; anything else matches
+// the card type derived from the message's artifact ref ('note' = no
+// artifact).
+export const THREAD_FILTERS = ['all', 'stage', 'gate', 'findings', 'evidence', 'note'];
 
-// Left multi-view rail registry: run controls, thread filter, artifact
+// Activity panel view registry: run controls, thread filter, artifact
 // index, and the seeded commits/files views (real git wiring is a later
-// stage — the views say so). Labels render via t('rail.<id>').
-export const RAIL_VIEWS = [
+// stage — the views say so). Labels render via t('activityView.<id>').
+export const ACTIVITY_VIEWS = [
   { id: 'run', icon: 'play', label: 'run' },
   { id: 'thread', icon: 'messages-square', label: 'thread' },
   { id: 'artifacts', icon: 'package', label: 'artifacts' },
   { id: 'commits', icon: 'git-branch', label: 'commits' },
   { id: 'files', icon: 'folder', label: 'files' },
 ];
-const RAIL_VIEW_IDS = RAIL_VIEWS.map((v) => v.id);
+const ACTIVITY_VIEW_IDS = ACTIVITY_VIEWS.map((v) => v.id);
 
-// Rail width steps, per side — the build shell's own persisted rail sizing.
-const RAIL_SIZES = ['s', 'm', 'l'];
-const railSizeFor = (sd, side) => (RAIL_SIZES.includes(B(sd).railSize?.[side]) ? B(sd).railSize[side] : 's');
+// Panel width steps, per side — the build shell's own persisted sizing.
+const PANEL_SIZES = ['s', 'm', 'l'];
+const panelSizeFor = (sd, side) => (PANEL_SIZES.includes(B(sd).panelSize?.[side]) ? B(sd).panelSize[side] : 's');
 
 // Where each human gate sits on the timeline: it docks after this stage.
 const GATE_AFTER = { 'design.approval': 'design', 'build.acceptance': 'review', 'ship.confirm': 'deploy' };
@@ -59,17 +64,6 @@ const narrate = (sessionData, m) => {
   const extra = (B(sessionData).extraMessages ??= []);
   const seq = (B(sessionData).msgSeq = (B(sessionData).msgSeq ?? 0) + 1);
   extra.push({ id: `a-${seq}`, at: 'now', from: 'agent', ...m });
-};
-
-const labelForRef = (ref, L, t) => {
-  const [kind, id] = (ref || '').split('/');
-  if (kind === 'stage') return repo.stages(L).find((s) => s.id === id)?.label ?? id;
-  if (kind === 'gate') return repo.humanGates(L).find((g) => g.id === id)?.label ?? id;
-  if (kind === 'findings') return t('build.ref.findings', { id });
-  if (kind === 'evidence') return t('build.ref.evidence');
-  if (kind === 'chart') return t('build.ref.chart');
-  if (kind === 'log') return t('build.ref.log');
-  return ref;
 };
 
 // Human-gate decisions are the human's act; a POST lands them in the session
@@ -221,33 +215,61 @@ function evidenceWithLevel(lv, L, t = (k) => k) {
 }
 
 // ---------- design viewer (evidence canvas) ----------
-// The evidence canvas embeds the designed screens in iframes; the toolbar
-// offers only the viewports the design actually authored (seed truth).
-// B(sessionData).viewer = { screen, vp, bg }.
+// The evidence canvas shows the designed screens as read-only artboards
+// (flow tiles, static canvas — no pins, no drag). Tile heights come from the
+// viewports the design actually authored (seed truth).
+// B(sessionData).viewer = { bg, inspect, panel }.
 export const VIEWPORT_WIDTHS = { mobile: 390, tablet: 744, desktop: 1280 };
 export const VIEWER_BGS = ['canvas', 'warm', 'slate'];
 
 function viewerFor(sessionData, evidence) {
   const v = B(sessionData).viewer ?? {};
-  const screens = evidence.map((e) => ({
-    id: e.surface, label: e.surface, state: e.state,
-    chips: e.chips, viewports: e.viewports ?? ['mobile'],
-  }));
-  const screen = screens.find((s) => s.id === v.screen) ?? screens[0];
-  const authored = screen?.viewports ?? ['mobile'];
-  const vp = authored.includes(v.vp) ? v.vp : authored[0];
+  const screens = evidence.map((e) => {
+    const viewports = e.viewports ?? ['mobile'];
+    return {
+      id: e.surface, label: e.surface, state: e.state,
+      chips: e.chips, viewports,
+      shell: e.surface?.split('.')[0] ?? 'app',
+      primaryWidth: VIEWPORT_WIDTHS[viewports[0]] ?? 390,
+    };
+  });
   const bg = VIEWER_BGS.includes(v.bg) ? v.bg : 'canvas';
-  const os = ['ios', 'android'].includes(v.os) ? v.os : 'ios';
-  const mode = ['single', 'rungs'].includes(v.mode) ? v.mode : 'single';
+  const base = '/build/artifact/evidence/surfaces/viewer';
+  const inspect = v.inspect === '1';
+
+  // Viewer href builder: current viewer state merged with overrides, empties
+  // dropped — same idiom as the design facade's.
+  const withParams = (over) => {
+    const merged = { bg, inspect: inspect ? '1' : null, ...over };
+    const qs = Object.entries(merged).filter(([, val]) => val != null).map(([k, val]) => `${k}=${val}`).join('&');
+    return qs ? `${base}?${qs}` : base;
+  };
+
   return {
-    screens, active: screen?.id, vp, bg, os, mode, strip: true,
-    base: '/build/artifact/evidence/surfaces/viewer', stubBase: '/build/screens/',
+    screens, bg, inspect, strip: true, static: true,
+    base, stubBase: '/build/screens/',
+    // The viewer mounts its controls in the mini-rail. The Screens/Actions
+    // panels are design-canvas concepts (context pins, marquee bulk-pin);
+    // build leaves them empty and opens on the Controller. No history stacks
+    // here — the pair stays disabled (can:false renders without the hx-post).
+    rail: {
+      activePanel: ['screens', 'controller', 'actions'].includes(v.panel) ? v.panel : 'controller',
+      screens: [],
+      controller: {
+        inspectOn: inspect,
+        inspectHref: withParams({ inspect: inspect ? null : '1' }),
+        bgs: VIEWER_BGS.map((value) => ({ value, active: value === bg, href: withParams({ bg: value }) })),
+        undo: { can: false, href: '/design/undo/canvas' },
+        redo: { can: false, href: '/design/redo/canvas' },
+      },
+      actions: { selectedCount: 0, bulkPinHref: null, simHref: null },
+    },
   };
 }
 
 // The iframe document's context: an honest labelled stand-in for the designer
 // artifact the daemon serves in the shipped app.
-export const screenStub = (surface, vp, prefs = {}, locale = 'en') => {
+export const screenStub = (surface, vp, prefs = {}, locale = 'en', opts = {}) => {
   const e = repo.evidence(locale).find((x) => x.surface === surface);
   const authored = e?.viewports ?? ['mobile'];
   const v = authored.includes(vp) ? vp : authored[0];
@@ -255,12 +277,17 @@ export const screenStub = (surface, vp, prefs = {}, locale = 'en') => {
     surface, vp: v, width: VIEWPORT_WIDTHS[v],
     kind: surface?.split('.')[1] ?? surface,
     theme: prefs.theme ?? 'light',
+    embed: opts.embed ?? false,
+    inspect: opts.inspect ?? false,
   };
 };
 
-// Viewer toolbar/filmstrip act: record the choice, re-render the viewer block.
+// Viewer toolbar/filmstrip act: merge the choice into stored state (a mode
+// toggle that sends only mode must not reset screen/vp/bg/os).
 export const setViewer = (sessionData, query, prefs = {}, t = (k) => k, locale = 'en') => {
-  B(sessionData).viewer = { screen: query.screen, vp: query.vp, bg: query.bg, os: query.os, mode: query.mode };
+  const next = {};
+  for (const [k, v] of Object.entries(query)) if (v != null) next[k] = v;
+  B(sessionData).viewer = { ...B(sessionData).viewer, ...next };
   return loopContext(sessionData, 'evidence/surfaces', prefs, t, locale);
 };
 
@@ -321,8 +348,8 @@ export const contextFor = (sessionData, ref, lv = 'balanced', t = (k) => k, loca
   return { artifact, linked, brief };
 };
 
-// The canvas renders ONE artifact at a time; ref is "kind/id". No ref (or an
-// unknown one) means nothing is open — the chat sits centered.
+// The main panel renders ONE artifact at a time; ref is "kind/id". No ref
+// (or an unknown one) means nothing is open — the chat sits centered.
 function resolveArtifact(ref, { gates, stages, messages, findings, evidence }, L) {
   if (!ref) return null;
   const [kind, id] = ref.split('/');
@@ -360,24 +387,18 @@ const noteGateFor = (sessionData, gates) => {
   return g && g.state === 'pending' ? g : null;
 };
 
-// Composer context chips for cs.wrap: the pinned gate (a reject note is the
-// next chat message) and the open artifact (a follow-up is chat with the
-// artifact in context). Both are removable.
-const chipsFor = (activeArtifact, noteGate, L, t) => {
-  const chips = [];
-  if (noteGate) {
-    chips.push({
-      id: `gate/${noteGate.id}`, label: t('build.noteChip', { label: noteGate.label.toLowerCase() }),
-      tone: 'gate', removeHref: `/build/chips/unpin?ref=gate/${noteGate.id}`,
-    });
-  }
-  if (activeArtifact) {
-    chips.push({ id: activeArtifact, label: labelForRef(activeArtifact, L, t), removeHref: '/build/close' });
-  }
-  return chips;
+// Composer context chips for cp.frame: the pinned gate (a reject note is
+// the next chat message). The open artifact needs no chip — the main panel
+// is always visible, there is nothing to close.
+const chipsFor = (noteGate, L, t) => {
+  if (!noteGate) return [];
+  return [{
+    id: `gate/${noteGate.id}`, label: t('build.noteChip', { label: noteGate.label.toLowerCase() }),
+    tone: 'gate', removeHref: `/build/chips/unpin?ref=gate/${noteGate.id}`,
+  }];
 };
 
-// The artifacts rail view: everything openable, in pipeline order.
+// The artifacts activity view: everything openable, in pipeline order.
 function artifactIndex({ gates, stages }, t) {
   return [
     ...gates.map((g) => ({ ref: `gate/${g.id}`, label: g.label, kind: 'gate', state: g.state })),
@@ -389,20 +410,28 @@ function artifactIndex({ gates, stages }, t) {
   ];
 }
 
-export const loopContext = (sessionData = {}, ref = null, prefs = {}, t = (k) => k, locale = 'en') => {
+export const loopContext = (sessionData = {}, ref = null, prefs = {}, t = (k) => k, locale = 'en', fileArg, panelArg) => {
   const L = locale;
   const lv = jargon.level(prefs);
+  // The open file (main panel): ?file=<path> opens, ?file=none closes; an
+  // artifact open always clears it — the main panel shows one thing.
+  if (fileArg === 'none') delete B(sessionData).currentFile;
+  else if (fileArg) { B(sessionData).currentFile = fileArg; delete B(sessionData).currentArtifact; }
+  const currentFile = B(sessionData).currentFile ?? null;
+  // The panel bar (compact/medium): ?panel= picks the single visible content
+  // panel and sticks; default main.
+  if (['activity', 'main', 'composer'].includes(panelArg)) B(sessionData).panel = panelArg;
   const gates = gatesWithDecisions(sessionData, L, t);
   const stages = stagesWithDecisions(gates, lv, sessionData, L, t);
   const findings = findingsWithLevel(lv, L);
   const evidence = evidenceWithLevel(lv, L, t);
   const parts = { gates, stages, findings, evidence };
-  const activeArtifact = ref ?? B(sessionData).currentArtifact ?? null;
-  const filter = RAIL_FILTERS.includes(B(sessionData).railFilter) ? B(sessionData).railFilter : 'all';
+  const activeArtifact = currentFile ? null : (ref ?? B(sessionData).currentArtifact ?? null);
+  const filter = THREAD_FILTERS.includes(B(sessionData).threadFilter) ? B(sessionData).threadFilter : 'all';
   const messages = messagesWithSession(sessionData, activeArtifact, lv, parts, filter, L, t);
   const artifact = resolveArtifact(activeArtifact, { ...parts, messages }, L);
   const openRef = artifact ? activeArtifact : null;
-  const railView = RAIL_VIEW_IDS.includes(B(sessionData).railView) ? B(sessionData).railView : 'run';
+  const activityView = ACTIVITY_VIEW_IDS.includes(B(sessionData).activityView) ? B(sessionData).activityView : 'run';
   const noteGate = noteGateFor(sessionData, gates);
   return {
     run: runWithState(sessionData, gates, L, t),
@@ -418,40 +447,41 @@ export const loopContext = (sessionData = {}, ref = null, prefs = {}, t = (k) =>
     timeline: timeline(parts),
     activeArtifact: openRef,
     artifact,
-    artifactOpen: Boolean(artifact),
+    fileView: currentFile ? fv.fileViewFor(currentFile, '/build?file=none') : null,
+    panel: B(sessionData).panel ?? 'main',
     viewer: openRef === 'evidence/surfaces' ? viewerFor(sessionData, evidence) : null,
-    chips: chipsFor(openRef, noteGate, L, t),
+    chips: chipsFor(noteGate, L, t),
     noteGate,
     suggestions: noteGate
       ? [{ value: t('build.composer.rejectValue'), label: t('build.composer.rejectLabel') }]
       : [t('build.composer.sugCoverage'), t('build.composer.sugDurations'), t('build.composer.sugLog')],
     placeholder: noteGate ? t('composer.placeholder.buildNote') : t('composer.placeholder.build'),
-    railView,
-    railSize: railSizeFor(sessionData, 'left'),
-    railSizeHref: '/build/rail/size/left/',
-    railViews: RAIL_VIEWS.map((v) => ({ ...v, label: t('rail.' + v.id), href: `/build/rail?view=${v.id}`, active: v.id === railView })),
+    activityView,
+    panelSize: panelSizeFor(sessionData, 'left'),
+    panelSizeHref: '/build/panel/size/left/',
+    activityViews: ACTIVITY_VIEWS.map((v) => ({ ...v, label: t('activityView.' + v.id), href: `/build/panel?view=${v.id}`, active: v.id === activityView })),
     artifacts: artifactIndex(parts, t),
     commits: repo.commits(L),
-    files: repo.files(L),
+    files: repo.files(L).map((f) => ({ ...f, ...fv.fileLink(f.path, '/build') })),
     jargonLevel: lv,
   };
 };
 
 export const showArtifact = (sessionData, ref, prefs = {}, t = (k) => k, locale = 'en') => {
   B(sessionData).currentArtifact = ref;
+  delete B(sessionData).currentFile;
   return loopContext(sessionData, ref, prefs, t, locale);
 };
+
+// A file row in the activity panel: open it in the main panel (the mode is
+// the server's, from the extension).
+export const openFile = (sessionData, path, prefs = {}, t = (k) => k, locale = 'en') =>
+  loopContext(sessionData, null, prefs, t, locale, path ?? 'none');
 
 // Composer chrome: pick the agent model (shared session state), then
 // re-render the loop stage.
 export const setModel = (sessionData, id, prefs = {}, t = (k) => k, locale = 'en') => {
   agent.setModel(sessionData, id);
-  return loopContext(sessionData, null, prefs, t, locale);
-};
-
-// Closing the artifact centers the chat again.
-export const closeArtifact = (sessionData, prefs = {}, t = (k) => k, locale = 'en') => {
-  delete B(sessionData).currentArtifact;
   return loopContext(sessionData, null, prefs, t, locale);
 };
 
@@ -474,22 +504,22 @@ export const unpinChip = (sessionData, ref, prefs = {}, t = (k) => k, locale = '
   return loopContext(sessionData, null, prefs, t, locale);
 };
 
-// Left rail view switching: run / thread / artifacts / commits / files.
-export const setRailView = (sessionData, view, prefs = {}, t = (k) => k, locale = 'en') => {
-  B(sessionData).railView = RAIL_VIEW_IDS.includes(view) ? view : 'run';
+// Activity panel view switching: run / thread / artifacts / commits / files.
+export const setActivityView = (sessionData, view, prefs = {}, t = (k) => k, locale = 'en') => {
+  B(sessionData).activityView = ACTIVITY_VIEW_IDS.includes(view) ? view : 'run';
   return loopContext(sessionData, null, prefs, t, locale);
 };
 
 // Thread filter (thread view): all | stage | gate | findings | evidence | note.
-export const setRailFilter = (sessionData, filter, prefs = {}, t = (k) => k, locale = 'en') => {
-  B(sessionData).railFilter = RAIL_FILTERS.includes(filter) ? filter : 'all';
+export const setThreadFilter = (sessionData, filter, prefs = {}, t = (k) => k, locale = 'en') => {
+  B(sessionData).threadFilter = THREAD_FILTERS.includes(filter) ? filter : 'all';
   return loopContext(sessionData, null, prefs, t, locale);
 };
 
-// Rail width grip: cycle persisted per side (the shell's own sizing state).
-export const setRailSize = (sessionData, side, size, prefs = {}, t = (k) => k, locale = 'en') => {
-  if (['left', 'right'].includes(side) && RAIL_SIZES.includes(size)) {
-    (B(sessionData).railSize ??= {})[side] = size;
+// Panel width grip: cycle persisted per side (the shell's own sizing state).
+export const setPanelSize = (sessionData, side, size, prefs = {}, t = (k) => k, locale = 'en') => {
+  if (['left', 'right'].includes(side) && PANEL_SIZES.includes(size)) {
+    (B(sessionData).panelSize ??= {})[side] = size;
   }
   return loopContext(sessionData, null, prefs, t, locale);
 };

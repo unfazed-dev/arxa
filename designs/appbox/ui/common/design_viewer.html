@@ -1,216 +1,98 @@
-{# ---------- Shared screen stage: live iframe + toolbar + device chrome + filmstrip ----------
-   One component, three modes:
-     single — one screen at one authored viewport, filmstrip floating over the stage
-     rungs  — the same screen at every authored width side by side, no strip
-     board  — every screen as an artboard with its rungs side by side at real
-              device sizes (the design shell's draft-all canvas); the filmstrip
-              floats as the CONTEXT PICKER
-   Canon markup: the build evidence canvas. Any shell that can name screens
-   with authored viewports renders this; every parameter travels in v:
+<!-- appbox:provenance
+     generator: app-box  licence: free  project: 662368770980
+     Built with app-box (free tier) — https://appbox.dev
+-->
+{# ---------- Shared screen stage: the artboard canvas, flow mode only -------
+   ONE artboard canvas: every screen as a chromeless tile (?embed=1) at its
+   primary authored width, grouped by shell (structure.json screens[].shell)
+   into block-flow rows. Tiles drag freely; x/y POSTed on drop, a saved
+   position renders the tile absolute (group-relative). The per-screen pin
+   stays always-on where the shell passes a contextBase. The retired
+   prototype mode (the device-chrome wired-app preview) is gone — the design
+   shell itself plus inspect/fine-tuning replaces it.
+   The bottom-anchored mini-rail (Screens / Controller / Actions panels)
+   renders inside the viewer via ui/common/mini_rail.html. Canon markup:
+   canvas-redesign-contract.md §3. Every parameter travels in v (the shell's
+   facade viewerFor produces it — see contract §1):
      v.screens  [{ id, label?, state?, chips? [{text,title}], viewports,
-                  inContext?, dim?, tone? }]
-     v.active   id of the screen on stage (validated by the facade;
-                unset falls back to the first screen)
-     v.vp       current viewport key (falls back to the screen's first)
-     v.os       'ios' | 'android' — mobile device chrome (default ios)
+                  inContext?, dim?, tone?, shell, layout?, primaryWidth }]
+     v.inspect  bool — inspect island armed (default false)
+     v.static   bool — read-only canvas (build evidence): no drag/marquee,
+                no pin affordances
      v.bg       'canvas' | 'warm' | 'slate' — stage background (default canvas)
-     v.base     route prefix for viewer actions — toolbar and strip GET it
-                with screen/vp/bg/os/mode params, swap #design-viewer
+     v.base     route prefix for viewer actions — toggles GET it with params
+                and swap #design-viewer
      v.stubBase iframe src prefix — the served design render per screen
-     v.mode     'single' | 'rungs' | 'board' (default single)
-     v.strip    filmstrip in single/board mode (default on; rungs never has one)
-     v.contextBase — present only where screens can pin as chat context
-                (design shell): strip thumbs and artboard pins GET
-                {contextBase}{id}?state=toggle and swap #stage-layout, and the
-                toolbar's mode group gains 'board'. Screens in context render
-                with a .ctx-<tone> outline + an "in context" tag; s.dim artboards
-                fade back.
+                (flow appends ?embed=1)
+     v.contextBase — present where screens can pin as chat context (design
+                shell): tile pins GET {contextBase}{id}?state=toggle and swap
+                #panels. Screens in context render with a .ctx-<tone>
+                outline + an "on" pin; s.dim tiles fade back.
    A viewport entry is a key ('mobile'|'tablet'|'desktop') or an authored
-   object { vp, width, height?, rung?, note?, shot? } — the design shell's rungs
-   pass through as-is. Wiring: ui/common/_integration_viewer.md. #}
-{% import "ui/common/primitives.html" as prim %}
-
-{# Device chrome around the live render at the REAL device size — width and
-   height both authored (VP_SIZES fallback). The stage/rungs pan areas scroll
-   when the frame is oversized and center it when it fits; never clamped. #}
-{% macro deviceChrome(v, screenId, key, w, h, os) %}
-{% if key == 'mobile' %}
-<div class="device device-{{ os }}" style="width: {{ w }}px; height: {{ h }}px">
-  <span class="device-island" aria-hidden="true"></span>
-  <iframe class="dv-frame" src="{{ v.stubBase }}{{ screenId }}?vp={{ key }}" title="{{ t('viewer.frameTitle', {id: screenId, size: key}) }}"></iframe>
-  <span class="device-home" aria-hidden="true"></span>
-</div>
-{% elif key == 'tablet' %}
-<div class="device device-tablet" style="width: {{ w }}px; height: {{ h }}px">
-  <iframe class="dv-frame" src="{{ v.stubBase }}{{ screenId }}?vp={{ key }}" title="{{ t('viewer.frameTitle', {id: screenId, size: key}) }}"></iframe>
-</div>
-{% else %}
-<div class="device device-win" style="width: {{ w }}px; height: {{ h }}px">
-  <span class="device-titlebar" aria-hidden="true"><i></i><i></i><i></i></span>
-  <iframe class="dv-frame" src="{{ v.stubBase }}{{ screenId }}?vp={{ key }}" title="{{ t('viewer.frameTitle', {id: screenId, size: key}) }}"></iframe>
-</div>
-{% endif %}
-{% endmacro %}
-
-{# The filmstrip. With v.contextBase it is the context picker: a thumb toggles
-   the screen's chat-context chip (in-context thumbs carry the chip's tone);
-   without it, a thumb puts its screen on stage (legacy single mode). Score
-   badges (s.chips) render in both shapes. #}
-{% macro filmstrip(v, active, vp, bg, os, mode) %}
-<div class="dv-strip dv-strip-float">
-  {% for s in v.screens %}
-  {% if v.contextBase %}
-  <a class="dv-thumb {{ 'in-ctx ctx-' + s.tone if s.inContext }} {{ 'is-dim' if s.dim }}"
-     href="{{ v.contextBase }}{{ s.id }}?state=toggle"
-     hx-get="{{ v.contextBase }}{{ s.id }}?state=toggle" hx-target="#stage-layout" hx-swap="outerHTML"
-     title="{{ t('viewer.removeCtx', {id: s.id}) if s.inContext else t('viewer.pinCtx', {id: s.id}) }}">
-  {% else %}
-  <a class="dv-thumb {{ 'on' if s.id == active }}" href="{{ v.base }}?screen={{ s.id }}&vp={{ vp }}&bg={{ bg }}&os={{ os }}&mode={{ mode }}"
-     hx-get="{{ v.base }}?screen={{ s.id }}&vp={{ vp }}&bg={{ bg }}&os={{ os }}&mode={{ mode }}"
-     hx-target="#design-viewer" hx-swap="outerHTML"
-     title="{{ s.id }}">
-  {% endif %}
-    <span class="dv-thumb-clip"><iframe src="{{ v.stubBase }}{{ s.id }}?vp=mobile" scrolling="no" tabindex="-1" title=""></iframe></span>
-    <span class="dv-thumb-label">{{ s.label or s.id }}{% if s.state %} {{ prim.statusPill(s.state) }}{% endif %}</span>
-    {% if s.chips %}
-    <span class="dv-thumb-score">
-      {% for chip in s.chips %}<span class="probe-chip" title="{{ chip.title }}">{{ chip.text }}</span>{% endfor %}
-    </span>
-    {% endif %}
-  </a>
-  {% endfor %}
-</div>
-{% endmacro %}
-
-{# One artboard on the board: pin toggle + label + in-context tag chrome, the
-   rungs side by side at real device sizes underneath. #}
-{% macro artboard(v, s, os) %}
-{% set VP_SIZES = {'mobile': [390, 844], 'tablet': [744, 1133], 'desktop': [1280, 800]} %}
-<figure class="dv-artboard {{ 'in-ctx ctx-' + s.tone if s.inContext }} {{ 'is-dim' if s.dim }}" id="dv-ab-{{ s.id }}">
-  <header class="dv-ab-chrome">
-    <a class="dv-pin {{ 'on' if s.inContext }}" href="{{ v.contextBase }}{{ s.id }}?state=toggle"
-       hx-get="{{ v.contextBase }}{{ s.id }}?state=toggle" hx-target="#stage-layout" hx-swap="outerHTML"
-       aria-label="{{ t('viewer.removeCtxAria', {id: s.id}) if s.inContext else t('viewer.pinCtxAria', {id: s.id}) }}"
-       title="{{ t('viewer.removeCtx', {id: s.id}) if s.inContext else t('viewer.pinCtx', {id: s.id}) }}">{{ icon('pin', {size: 14}) }}</a>
-    <span class="dv-ab-label"><strong>{{ s.label or s.id }}</strong> <code>{{ s.id }}</code></span>
-    {% if s.inContext %}<span class="ctx-tag">{{ t('viewer.inContextTag') }}</span>{% endif %}
-    {% if s.state %}{{ prim.statusPill(s.state) }}{% endif %}
-  </header>
-  <div class="dv-ab-rungs">
-    {% for e in s.viewports %}
-    {% set key = e.vp or e %}
-    {% set w = e.width or VP_SIZES[key][0] %}
-    {% set h = e.height or VP_SIZES[key][1] %}
-    <figure class="dv-rung">
-      {{ deviceChrome(v, s.id, key, w, h, os) }}
-      <figcaption class="dv-rung-cap">
-        <span><strong>{{ w }}×{{ h }}</strong> · {{ e.rung or key }}</span>
-        {% if e.note %}<span class="muted">{{ e.note }}</span>{% endif %}
-        {% if e.shot %}<code>{{ e.shot }}</code>{% endif %}
-      </figcaption>
-    </figure>
-    {% endfor %}
-  </div>
-</figure>
-{% endmacro %}
+   object { vp, width, height?, rung?, note?, shot? }. Wiring:
+   ui/common/_integration_viewer.md. #}
+{% import "ui/common/mini_rail.html" as mr %}
 
 {% macro designViewer(v) %}
 {% set VP_SIZES = {'mobile': [390, 844], 'tablet': [744, 1133], 'desktop': [1280, 800]} %}
-{% set mode = v.mode or 'single' %}
-{% set os = v.os or 'ios' %}
 {% set bg = v.bg or 'canvas' %}
-{% set active = v.active or v.screens[0].id %}
-{% set strip = v.strip if v.strip is defined else true %}
-{% set modes = ['single', 'rungs', 'board'] if v.contextBase else ['single', 'rungs'] %}
-{% set modeTitles = {'single': t('viewer.mode.single'), 'rungs': t('viewer.mode.rungs'), 'board': t('viewer.mode.board')} %}
-{# nunjucks has no namespace and selectattr can't compare to a value, so the
-   one screen whose id matches renders the stage (ids are unique). Facades
-   pass a validated active — build's viewerFor already falls back to the
-   first screen; an unset active does the same here. #}
-{% for screen in v.screens %}{% if screen.id == active %}
-{% set firstVp = screen.viewports[0] %}
-{% set vp = v.vp or (firstVp.vp or firstVp) %}
-<div class="design-viewer dv-bg-{{ bg }}" id="design-viewer">
-  <div class="dv-toolbar">
-    <code class="dv-screen">{{ active }}</code>
-    {% if mode == 'single' %}
-    <span class="dv-group" role="group" aria-label="{{ t('viewer.viewport') }}">
-      {% for e in screen.viewports %}
-      {% set key = e.vp or e %}
-      <a class="dv-chip {{ 'on' if key == vp }}" href="{{ v.base }}?screen={{ active }}&vp={{ key }}&bg={{ bg }}&os={{ os }}&mode={{ mode }}"
-         hx-get="{{ v.base }}?screen={{ active }}&vp={{ key }}&bg={{ bg }}&os={{ os }}&mode={{ mode }}"
-         hx-target="#design-viewer" hx-swap="outerHTML">{{ t('viewer.vp.' ~ key) }}</a>
-      {% endfor %}
-    </span>
-    {% if vp == 'mobile' %}
-    <span class="dv-group" role="group" aria-label="{{ t('viewer.deviceChrome') }}">
-      {% for o in ['ios', 'android'] %}
-      <a class="dv-chip {{ 'on' if o == os }}" href="{{ v.base }}?screen={{ active }}&vp={{ vp }}&bg={{ bg }}&os={{ o }}&mode={{ mode }}"
-         hx-get="{{ v.base }}?screen={{ active }}&vp={{ vp }}&bg={{ bg }}&os={{ o }}&mode={{ mode }}"
-         hx-target="#design-viewer" hx-swap="outerHTML">{{ o }}</a>
-      {% endfor %}
-    </span>
-    {% endif %}
-    {% endif %}
-    <span class="dv-group" role="group" aria-label="{{ t('viewer.background') }}">
-      {% for b in ['canvas', 'warm', 'slate'] %}
-      <a class="dv-chip dv-chip-bg {{ 'on' if b == bg }}" href="{{ v.base }}?screen={{ active }}&vp={{ vp }}&bg={{ b }}&os={{ os }}&mode={{ mode }}"
-         hx-get="{{ v.base }}?screen={{ active }}&vp={{ vp }}&bg={{ b }}&os={{ os }}&mode={{ mode }}"
-         hx-target="#design-viewer" hx-swap="outerHTML" title="{{ t('viewer.bgTitle', {bg: b}) }}">{{ t('viewer.bg.' ~ b) }}</a>
-      {% endfor %}
-    </span>
-    <span class="dv-group" role="group" aria-label="{{ t('viewer.stageMode') }}">
-      {% for m in modes %}
-      <a class="dv-chip {{ 'on' if m == mode }}" href="{{ v.base }}?screen={{ active }}&vp={{ vp }}&bg={{ bg }}&os={{ os }}&mode={{ m }}"
-         hx-get="{{ v.base }}?screen={{ active }}&vp={{ vp }}&bg={{ bg }}&os={{ os }}&mode={{ m }}"
-         hx-target="#design-viewer" hx-swap="outerHTML"
-         title="{{ modeTitles[m] }}">{{ t('viewer.modeLabel.' ~ m) }}</a>
-      {% endfor %}
-    </span>
-    <span class="dv-sim" title="{{ t('viewer.simTitle') }}">{{ icon('play', {size: 12}) }} {{ t('viewer.sim') }}</span>
-  </div>
-  {% if mode == 'rungs' %}
-  <div class="dv-rungs">
-    <div class="dv-zoom">
-    {% for e in screen.viewports %}
-    {% set key = e.vp or e %}
-    {% set w = e.width or VP_SIZES[key][0] %}
-    {% set h = e.height or VP_SIZES[key][1] %}
-    <figure class="dv-rung">
-      {{ deviceChrome(v, active, key, w, h, os) }}
-      <figcaption class="dv-rung-cap">
-        <span><strong>{{ w }}×{{ h }}</strong> · {{ e.rung or key }}</span>
-        {% if e.note %}<span class="muted">{{ e.note }}</span>{% endif %}
-        {% if e.shot %}<code>{{ e.shot }}</code>{% endif %}
-      </figcaption>
-    </figure>
-    {% endfor %}
-    </div>
-  </div>
-  {% elif mode == 'board' %}
-  <div class="dv-body">
-    {% if strip %}{{ filmstrip(v, active, vp, bg, os, mode) }}{% endif %}
-    <div class="dv-board">
+<div class="design-viewer dv-bg-{{ bg }}" id="design-viewer"{% if v.inspect %} data-inspect="1"{% endif %}>
+
+  {# FLOW — tiles grouped by shell, one block-flow row per group. ONE
+     coordinate space: a tile is position:relative in-flow until the facade has
+     a saved position for it (s.layout); only then does it go absolute with
+     left/top — group-relative, because .dv-tile-group is the positioned
+     ancestor and drag.js reads/writes offsetLeft/offsetTop against it. No
+     facade auto-grid: CSS flow layout IS the auto-grid (layout null = in-flow).
+     This nunjucks runtime ships neither a groupby filter nor namespace(), and
+     selectattr cannot compare against a variable value — so shells are gathered
+     by an O(n²) first-occurrence pass: a screen starts a new group when no
+     earlier screen shares its shell, then that group re-iterates all screens
+     filtered to the same shell. N is the screen count (small), so the quadratic
+     pass is negligible, and every shell's tiles land inside one .dv-tile-group
+     wrapper exactly as contract §3 specifies.
+     v.static (build evidence): data-static disarms drag.js on this canvas —
+     read-only artboards, no marquee, no tile drag. #}
+  <div class="dv-flow">
+    <div class="dv-flow-canvas"{% if v.static %} data-static="1"{% endif %}>
       <div class="dv-zoom">
-        {% for s in v.screens %}
-        {{ artboard(v, s, os) }}
-        {% endfor %}
+      {% for g in v.screens %}
+      {% set gi = loop.index0 %}
+      {% set groupStart = true %}
+      {% for q in v.screens %}{% if loop.index0 < gi and q.shell == g.shell %}{% set groupStart = false %}{% endif %}{% endfor %}
+      {% if groupStart %}
+      <div class="dv-tile-group" data-shell="{{ g.shell }}">
+        <div class="dv-tile-group-label">{{ g.shell }}</div>
+        {% for s in v.screens %}{% if s.shell == g.shell %}
+        {% set fe = s.viewports[0] %}
+        {% set fvp = fe.vp or fe %}
+        <div class="dv-tile {{ 'in-ctx ctx-' + s.tone if s.inContext }} {{ 'is-dim' if s.dim }}"
+             data-id="{{ s.id }}" data-shell="{{ s.shell }}"
+             style="{% if s.layout %}position: absolute; left: {{ s.layout.x }}px; top: {{ s.layout.y }}px;{% endif %} width: {{ s.primaryWidth }}px">
+          <header class="dv-tile-chrome">
+            {% if v.contextBase %}
+            <a class="dv-pin {{ 'on' if s.inContext }}" href="{{ v.contextBase }}{{ s.id }}?state=toggle"
+               hx-get="{{ v.contextBase }}{{ s.id }}?state=toggle" hx-target="#panels" hx-swap="outerHTML"
+               aria-label="{{ t('viewer.removeCtxAria', {id: s.id}) if s.inContext else t('viewer.pinCtxAria', {id: s.id}) }}"
+               title="{{ t('viewer.removeCtx', {id: s.id}) if s.inContext else t('viewer.pinCtx', {id: s.id}) }}">{{ icon('pin', {size: 14}) }}</a>
+            {% endif %}
+            <span class="dv-tile-label"><strong>{{ s.label or s.id }}</strong> <code>{{ s.id }}</code></span>
+          </header>
+          <iframe class="dv-tile-frame"
+                  src="{{ v.stubBase }}{{ s.id }}?embed=1{{ '&inspect=1' if v.inspect }}"
+                  style="height: {{ fe.height or VP_SIZES[fvp][1] }}px"
+                  scrolling="no" tabindex="-1" title="{{ s.label or s.id }}"></iframe>
+        </div>
+        {% endif %}{% endfor %}
+      </div>
+      {% endif %}
+      {% endfor %}
       </div>
     </div>
   </div>
-  {% else %}
-  <div class="dv-body">
-    {% if strip %}{{ filmstrip(v, active, vp, bg, os, mode) }}{% endif %}
-    <div class="dv-stage">
-      <div class="dv-zoom">
-      {% for e in screen.viewports %}{% if (e.vp or e) == vp %}
-      {% set w = e.width or VP_SIZES[vp][0] %}{% set h = e.height or VP_SIZES[vp][1] %}
-      {{ deviceChrome(v, active, vp, w, h, os) }}
-      {% endif %}{% endfor %}
-      </div>
-    </div>
-  </div>
-  {% endif %}
+
+  {# MINI-RAIL — bottom-anchored floating controller (Screens / Controller /
+     Actions). Rendered inside the viewer so it stays in sync on every swap. #}
+  {{ mr.miniRail(v) }}
 </div>
-{% endif %}{% endfor %}
 {% endmacro %}

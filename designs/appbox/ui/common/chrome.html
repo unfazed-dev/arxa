@@ -1,16 +1,20 @@
-{# The shell's chrome — one macro emits all of it, from ONE destination list
-   (the components-first rule: four presentations, never four copies):
-   · the appbar (drawer button, brand, project cluster, shell links, daemon
-     channel, theme toggle, overflow menu)
-   · compact: bottom nav (recipe 5) + staggered-action FAB
-   · medium: collapsible floating left rail dock (the drawer's docked form)
-   · expanded: rail mount points shell views populate
-   Rung visibility is pure CSS (shell.css, compact <600 / medium 600–839 /
+<!-- appbox:provenance
+     generator: app-box  licence: free  project: 662368770980
+     Built with app-box (free tier) — https://appbox.dev
+-->
+{# The shell's chrome panels — one macro emits all of it, from ONE destination
+   list (the components-first rule: four presentations, never four copies):
+   · the header panel (drawer button, brand, project cluster, shell links,
+     daemon channel, theme toggle, overflow menu)
+   · compact: the tabbar (shell switcher, recipe 5) + staggered-action FAB
+   · medium: the railbar — collapsible floating left icon strip (the drawer's
+     docked form)
+   Rung visibility is pure CSS (chrome.css, compact <600 / medium 600–839 /
    expanded ≥840); every open/close is <details> — zero client JS.
    Icons are the runtime icon() global (Lucide) — never glyphs or emoji.
    project = { name, savedLabel }; absent → no project cluster (backward
-   compatible with shellNav(activeShell, prefs)). #}
-{% macro shellNav(activeShell, prefs, project) %}
+   compatible with chrome(activeShell, prefs)). #}
+{% macro chrome(activeShell, prefs, project) %}
 {% set destinations = [
   { id: 'intake',    label: t('tab.intake'),   icon: 'square-pen',   href: '/intake' },
   { id: 'design',    label: t('tab.design'),   icon: 'pen-tool',     href: '/design' },
@@ -19,7 +23,7 @@
   { id: 'workspace', label: t('tab.settings'), icon: 'settings',     href: '/workspace' }
 ] %}
 {% set shellNames = { intake: t('tab.intake'), design: t('tab.design'), build: t('tab.build'), index: t('tab.surfaces'), workspace: t('tab.settings') } %}
-<nav class="shell-nav">
+<nav class="panel-header">
   <details class="shell-drawer shell-chrome-touch">
     <summary class="ico-btn" aria-label="{{ t('nav.open') }}">{{ icon('menu', {size: 20}) }}</summary>
     <div class="drawer-panel" role="menu">
@@ -54,7 +58,7 @@
        {% if activeShell == d.id %}aria-current="page"{% endif %}>{{ d.label }}</a>
     {% endfor %}
   </span>
-  <span class="shell-nav-spacer"></span>
+  <span class="panel-header-spacer"></span>
   <span class="channel" title="{{ t('chrome.daemonChannel') }}">
     <span class="channel-dot"></span><span class="channel-label">{{ t('chrome.daemonLive') }}</span>
   </span>
@@ -71,12 +75,12 @@
   </details>
 </nav>
 
-{# compact: primary nav leaves the appbar and becomes the bottom nav #}
-<nav class="bottom-nav" aria-label="{{ t('nav.primary') }}">
+{# compact: primary nav leaves the header panel and becomes the tabbar #}
+<nav class="tabbar" aria-label="{{ t('nav.primary') }}">
   {% for d in destinations %}
-  <a class="bottom-nav__link {{ 'is-active' if activeShell == d.id }}" href="{{ d.href }}"
+  <a class="tabbar__link {{ 'is-active' if activeShell == d.id }}" href="{{ d.href }}"
      {% if activeShell == d.id %}aria-current="page"{% endif %}>
-    {{ icon(d.icon, {size: 22, cls: 'bottom-nav__icon'}) }}<span class="bottom-nav__label">{{ d.label }}</span></a>
+    {{ icon(d.icon, {size: 22, cls: 'tabbar__icon'}) }}<span class="tabbar__label">{{ d.label }}</span></a>
   {% endfor %}
 </nav>
 
@@ -90,14 +94,14 @@
   </div>
 </details>
 
-{# medium: the drawer's docked form — slim icon strip, expands on tap #}
-<details class="rail-dock">
-  <summary class="rail-dock-strip" aria-label="{{ t('nav.openRail') }}">
+{# medium: the railbar — the drawer's docked form: slim icon strip, expands on tap #}
+<details class="railbar">
+  <summary class="railbar-strip" aria-label="{{ t('nav.openRailbar') }}">
     {% for d in destinations %}
-    <span class="rd-ico {{ 'is-active' if activeShell == d.id }}">{{ icon(d.icon, {size: 20}) }}</span>
+    <span class="railbar-ico {{ 'is-active' if activeShell == d.id }}">{{ icon(d.icon, {size: 20}) }}</span>
     {% endfor %}
   </summary>
-  <div class="rail-dock-panel" role="menu">
+  <div class="railbar-panel" role="menu">
     {% for d in destinations %}
     <a class="drawer-link {{ 'is-active' if activeShell == d.id }}" href="{{ d.href }}"
        {% if activeShell == d.id %}aria-current="page"{% endif %}>
@@ -105,9 +109,4 @@
     {% endfor %}
   </div>
 </details>
-
-{# expanded: rail mount points — shell views populate these (openable/closeable
-   chrome ships with the content they mount) #}
-<div id="rail-left-mount" class="rail-mount"></div>
-<div id="rail-right-mount" class="rail-mount"></div>
 {% endmacro %}

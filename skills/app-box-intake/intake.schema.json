@@ -39,6 +39,10 @@
       "$ref": "#/definitions/fieldList",
       "description": "What the client explicitly said this app is NOT."
     },
+    "layoutTemplate": {
+      "$ref": "#/definitions/layoutTemplateField",
+      "description": "The Layout Template picked at intake (vocabulary: Layout Template, Named Container, Rung): category from the closed list, archetype from the six-archetype gallery, copied VERBATIM from layout_templates.json — never composed or edited at intake. Optional; omit when the client declines."
+    },
     "surfaces": {
       "type": "array",
       "description": "The registry seed — what the client wants named. surface is ALWAYS null in a seed: intake names, it never designs (§22). comp is derived by convention at emit time, never authored here.",
@@ -66,6 +70,46 @@
       "additionalProperties": false,
       "properties": {
         "value": { "type": "array", "items": { "type": "string" } },
+        "provenance": { "$ref": "#/definitions/provenance" }
+      }
+    },
+    "layoutTemplateField": {
+      "type": "object",
+      "required": ["value", "provenance"],
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "type": "object",
+          "required": ["category", "archetype", "areas", "containers"],
+          "additionalProperties": false,
+          "properties": {
+            "category": {
+              "type": "string",
+              "enum": ["ecommerce", "social", "productivity", "dashboard", "editorial", "landing", "custom"],
+              "description": "Closed category list (layout_templates.json)."
+            },
+            "archetype": {
+              "type": "string",
+              "enum": ["feed", "list-detail", "supporting-pane", "dashboard", "hero-scroll", "detail-column"],
+              "description": "One of the six archetypes (layout_templates.json)."
+            },
+            "areas": {
+              "type": "object",
+              "required": ["compact", "medium", "expanded"],
+              "additionalProperties": false,
+              "properties": {
+                "compact":  { "type": "array", "items": { "type": "string" } },
+                "medium":   { "type": "array", "items": { "type": "string" } },
+                "expanded": { "type": "array", "items": { "type": "string" } }
+              },
+              "description": "CSS grid-template-areas per rung of the viewport ladder (compact 390 / medium 744 / expanded 1280); each array item is one quoted row."
+            },
+            "containers": {
+              "type": "object",
+              "description": "Named Container sidecar: container name (closed vocabulary) -> {type, hints}."
+            }
+          }
+        },
         "provenance": { "$ref": "#/definitions/provenance" }
       }
     },

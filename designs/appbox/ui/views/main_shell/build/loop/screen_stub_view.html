@@ -1,4 +1,8 @@
 <!doctype html>
+<!-- appbox:provenance
+     generator: app-box  licence: free  project: 662368770980
+     Built with app-box (free tier) — https://appbox.dev
+-->
 {# Stand-in render of a client design screen, served as the iframe document
    on the evidence canvas. In the shipped app this src is the designer
    artifact the daemon serves; here it is an honest labelled stub. #}
@@ -9,10 +13,11 @@
   <title>{{ surface }} · {{ vp }}</title>
   <link rel="stylesheet" href="/assets/css/app.css">
 </head>
-<body class="stub-body">
+<body class="stub-body {{ 'stub-embed' if embed }}" data-surface="{{ surface }}" {{ 'data-inspect-armed="true"' if inspect }}>
 <div id="app" data-theme="{{ theme }}" data-accent="cyan">
-  <div class="stub-screen" style="max-width: {{ width }}px">
-    <header class="stub-nav">
+  <div class="stub-screen" style="{{ '' if embed else 'max-width: ' + width + 'px' }}">
+    {% if not embed %}
+    <header class="stub-nav" data-el="nav-bar" data-inspect-role="nav" data-inspect-style="app bar · brand + links" data-inspect-motion="none" data-inspect-fn="Top-level navigation and brand for the screen">
       {% if kind in ['home', 'cart', 'checkout', 'confirmation'] %}
       <span class="stub-brand">Petal &amp; Stem</span>
       {% else %}
@@ -24,33 +29,34 @@
       {% if kind == 'confirmation' %}<span class="stub-nav-links">Order #PS-1042</span>{% endif %}
       {% if kind not in ['home', 'cart', 'checkout', 'confirmation'] %}<span class="stub-nav-links">{{ t('stub.kind.' ~ kind) }}</span>{% endif %}
     </header>
+    {% endif %}
 
     {% if kind == 'home' %}
-    <section class="stub-hero">
+    <section class="stub-hero" data-el="hero" data-inspect-role="hero" data-inspect-style="display headline + lede" data-inspect-motion="reveal" data-inspect-fn="States the shop's value proposition">
       <h1>Fresh stems, same day</h1>
       <p>Hand-tied in the studio this morning.</p>
     </section>
     <section class="stub-grid">
       {% for i in [1, 2, 3, 4, 5, 6] %}
-      <article class="stub-card"><span class="stub-thumb"></span><b>Bouquet {{ i }}</b><span class="stub-price">$4{{ i }}</span></article>
+      <article class="stub-card" data-el="product-card:Bouquet {{ i }}" data-inspect-role="card" data-inspect-style="card grid · thumb + name + price" data-inspect-motion="spotlight" data-inspect-fn="Opens the bouquet detail"><span class="stub-thumb"></span><b>Bouquet {{ i }}</b><span class="stub-price">$4{{ i }}</span></article>
       {% endfor %}
     </section>
     {% elif kind == 'cart' %}
     <section class="stub-rows">
       {% for i in [1, 2, 3] %}
-      <div class="stub-row"><span class="stub-thumb sm"></span><span class="stub-row-name">Bouquet {{ i }}</span><span class="stub-price">$4{{ i }}</span></div>
+      <div class="stub-row" data-el="cart-item:Bouquet {{ i }}" data-inspect-role="list row" data-inspect-style="row · thumb + name + price" data-inspect-motion="none" data-inspect-fn="One line item in the cart"><span class="stub-thumb sm"></span><span class="stub-row-name">Bouquet {{ i }}</span><span class="stub-price">$4{{ i }}</span></div>
       {% endfor %}
     </section>
-    <footer class="stub-summary"><span>Total</span><b>$136</b></footer>
+    <footer class="stub-summary" data-el="cart-summary" data-inspect-role="summary" data-inspect-style="footer row · total" data-inspect-motion="none" data-inspect-fn="Cart total and checkout entry"><span>Total</span><b>$136</b></footer>
     {% elif kind == 'checkout' %}
     <section class="stub-form">
       {% for f in ['Delivery address', 'Delivery date', 'Card for the occasion', 'Payment'] %}
-      <div class="stub-field"><label>{{ f }}</label><span class="stub-input"></span></div>
+      <div class="stub-field" data-el="form-field:{{ f }}" data-inspect-role="form field" data-inspect-style="label + input shell" data-inspect-motion="none" data-inspect-fn="Collects one checkout input"><label>{{ f }}</label><span class="stub-input"></span></div>
       {% endfor %}
-      <button class="stub-cta">Place order</button>
+      <button class="stub-cta" data-el="place-order" data-inspect-role="button" data-inspect-style="primary CTA pill" data-inspect-motion="notify" data-inspect-fn="Submits the order">Place order</button>
     </section>
     {% elif kind == 'confirmation' %}
-    <section class="stub-hero center">
+    <section class="stub-hero center" data-el="hero" data-inspect-role="hero" data-inspect-style="confirmation · check + headline" data-inspect-motion="reveal" data-inspect-fn="Confirms the order went through">
       <span class="stub-check">{{ icon('check', {size: 22}) }}</span>
       <h1>Order placed</h1>
       <p>Bouquets arrive Thursday before noon.</p>
@@ -58,19 +64,24 @@
     {% else %}
     {# Generic fallback: any surface without a bespoke stub renders an honest
        labelled placeholder — nav carries the name, a few blocks stand in. #}
-    <section class="stub-hero">
+    <section class="stub-hero" data-el="hero" data-inspect-role="hero" data-inspect-style="display headline + note" data-inspect-motion="reveal" data-inspect-fn="Names the screen being previewed">
       <h1>{{ t('stub.kind.' ~ kind) }}</h1>
       <p>{{ t('stub.previewNote') }}</p>
     </section>
     <section class="stub-rows">
       {% for i in [1, 2, 3] %}
-      <div class="stub-row"><span class="stub-thumb sm"></span><span class="stub-row-name">{{ t('stub.block', {kind: kind, i: i}) }}</span></div>
+      <div class="stub-row" data-el="list-item:Block {{ i }}" data-inspect-role="list row" data-inspect-style="row · thumb + label" data-inspect-motion="none" data-inspect-fn="Content placeholder row"><span class="stub-thumb sm"></span><span class="stub-row-name">{{ t('stub.block', {kind: kind, i: i}) }}</span></div>
       {% endfor %}
     </section>
     {% endif %}
 
+    {% if not embed %}
     <span class="stub-tag">{{ t('stub.tag', {surface: surface, vp: vp}) }}</span>
+    {% endif %}
   </div>
 </div>
+{% if inspect %}
+<script src="/assets/vendor/inspect.js"></script>
+{% endif %}
 </body>
 </html>

@@ -1,3 +1,6 @@
+// appbox:provenance
+// generator: app-box  licence: free  project: 662368770980
+// Built with app-box (free tier) — https://appbox.dev
 import * as mainShell from './ui/views/main_shell/main_shell_viewmodel.js';
 import * as buildLoop from './ui/views/main_shell/build/loop/loop_viewmodel.js';
 import * as settings from './ui/views/workspace_shell/settings/settings_viewmodel.js';
@@ -24,18 +27,17 @@ export default [
   ...intakeRoutes,
   ...designRoutes,
   ['GET', '/build', buildLoop.page],
-  ['GET', '/build/rail', buildLoop.rail],
-  ['GET', '/build/rail/size/:side/:size', buildLoop.railSize],
+  ['GET', '/build/panel', buildLoop.panel],
+  ['GET', '/build/panel/size/:side/:size', buildLoop.panelSize],
   ['POST', '/build/run/control', buildLoop.runControl],
   ['GET', '/build/artifact/:kind/:id', buildLoop.artifact],
+  ['GET', '/build/file', buildLoop.file],
   ['GET', '/build/artifact/evidence/surfaces/viewer', buildLoop.evidenceViewer],
   ['GET', '/build/screens/:surface', buildLoop.screenStub],
-  ['GET', '/build/bar/:kind/:id', buildLoop.bar],
   ['POST', '/build/artifact/:kind/:id/messages', buildLoop.askArtifact],
   ['POST', '/build/stages/:id/control', buildLoop.stageControl],
   ['POST', '/build/messages', buildLoop.sendMessage],
   ['POST', '/build/gates/decide', buildLoop.decide],
-  ['GET', '/build/close', buildLoop.closeArtifact],
   ['GET', '/build/model/:id', buildLoop.model],
   ['GET', '/build/chips/pin', buildLoop.pinChip],
   ['GET', '/build/chips/unpin', buildLoop.unpinChip],

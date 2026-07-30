@@ -1,8 +1,12 @@
+<!-- appbox:provenance
+     generator: app-box  licence: free  project: 662368770980
+     Built with app-box (free tier) — https://appbox.dev
+-->
 {% extends "ui/common/base.html" %}
-{% import "ui/common/shell_nav.html" as shellNav %}
+{% import "ui/common/chrome.html" as chrome %}
 {% block title %}{{ t('index.pageTitle') }}{% endblock %}
 {% block content %}
-{{ shellNav.shellNav(activeShell, prefs, project) }}
+{{ chrome.chrome(activeShell, prefs, project) }}
 <main class="shell-main {% block main_class %}{% endblock %}">
   {% block surface %}
   <h1 class="display">{{ t('index.title') }}</h1>
@@ -28,5 +32,5 @@
   {% endfor %}
   {% endblock %}
 </main>
-<footer id="bottom-bar">{% block bottombar %}{% endblock %}</footer>
+<footer id="panel-footer">{% block bottombar %}{% endblock %}</footer>
 {% endblock %}

@@ -31,6 +31,11 @@ designing, never back-filled. See
 
 **1. Load the methodology.** Read [`system-prompt.md`](system-prompt.md) — the
 core design process and craft standards. Follow it for the whole job.
+**Consume the brief when one is handed to you.** If the intake stage produced
+a design brief, read its **Layout Template** section (the named containers +
+per-rung `grid-template-areas`) and consume it **without rewriting** — surfaces
+compose into those named containers as given; it is the structure, not a
+suggestion.
 
 **2. Load the architecture contract.** Read
 [`DESIGN-ARCHITECTURE.md`](DESIGN-ARCHITECTURE.md) — the **binding** contract
@@ -72,7 +77,9 @@ context, fidelity, variations (see "Asking questions" in `system-prompt.md`).
 **8. Set up the output folder.** Ask **where to save** (default
 `designs/<descriptive-project-name>/`) and **which design system(s) to use**.
 Start every artifact by copying `examples/hello-hda/` and renaming; never
-scatter design files in the repo root. Import design systems with
+scatter design files in the repo root. The copy carries a `serve.mjs` at the
+artifact root — `node serve.mjs [--port N] [--json]` from inside the design
+serves it without referencing the skill path. Keep it; never delete it. Import design systems with
 `agents/import-design-system.mjs` and record deliverables with
 `agents/record-asset.mjs` as in `built-in-skills/use-design-system.md`.
 
@@ -81,7 +88,12 @@ surface, author the artifact's component library: inventory the design's
 repeated patterns and define them as macros/partials in `ui/common/` +
 `ui/widgets/`, starting from [`references/ui-recipes.md`](references/ui-recipes.md)
 and the drop-in partials in `starter-partials/components/` — surfaces compose
-only from that library. Then build the artifact per the contract, serve it with
+only from that library. **Auto Layout is default-ON for every component in
+the library** (DESIGN-ARCHITECTURE, "Auto Layout"): each macro's container
+carries the `data-layout` attribute set and its children size with
+`data-resize-x` / `data-resize-y`. To turn it off per frame, omit
+`data-layout` (art-directed frames); to exempt a single child, give it
+`data-layout-ignore`. Then build the artifact per the contract, serve it with
 `node <skill>/runtime/serve.mjs <artifact-dir> --port 4319` (background), then
 verify: `node <skill>/runtime/lint.mjs <artifact-dir>` (zero-custom-JS),
 `node <skill>/runtime/console-check.mjs http://localhost:4319/…` (console

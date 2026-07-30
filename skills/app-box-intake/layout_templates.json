@@ -1,0 +1,185 @@
+{
+  "description": "Layout Template catalog for the intake stage (vocabulary: Layout Template, Named Container, Rung, Viewport Ladder). Intake offers a category first (closed list), then the archetype gallery as PLAIN COLORED BOXES with named containers, one default pre-selected per category. The chosen archetype is copied VERBATIM into the answers JSON as layoutTemplate {category, archetype, areas, containers} — intake never composes or edits templates. Plain data; nothing here executes.",
+  "categories": ["ecommerce", "social", "productivity", "dashboard", "editorial", "landing", "custom"],
+  "rungs": { "compact": 390, "medium": 744, "expanded": 1280 },
+  "areasFormat": "CSS grid-template-areas: each array item is one quoted row; area names come from the closed Named Container vocabulary.",
+  "namedContainerVocabulary": ["app-bar", "nav", "nav-rail", "drawer", "fab", "sheet", "tab-bar", "hero", "toolbar", "filter-bar", "list", "card-grid", "feed", "detail", "supporting-pane", "sidebar", "footer"],
+  "defaultFor": {
+    "ecommerce": "detail-column",
+    "social": "feed",
+    "productivity": "list-detail",
+    "dashboard": "dashboard",
+    "editorial": "supporting-pane",
+    "landing": "hero-scroll",
+    "custom": "list-detail"
+  },
+  "archetypes": {
+    "feed": {
+      "label": "Feed",
+      "summary": "One endless stream under an app bar; creation floats on top.",
+      "areas": {
+        "compact": [
+          "app-bar",
+          "feed",
+          "tab-bar"
+        ],
+        "medium": [
+          "app-bar app-bar",
+          "nav-rail feed"
+        ],
+        "expanded": [
+          "app-bar app-bar app-bar",
+          "nav-rail feed sidebar"
+        ]
+      },
+      "containers": {
+        "app-bar": { "type": "chrome", "hints": "title, search entry, primary actions" },
+        "nav-rail": { "type": "navigation", "hints": "shell switcher; replaces the tab-bar at medium and up" },
+        "tab-bar": { "type": "navigation", "hints": "shell switcher at compact only" },
+        "feed": { "type": "content", "hints": "infinite stream of posts or items" },
+        "fab": { "type": "action", "hints": "compose / create; floats over the feed, not a grid area" },
+        "sidebar": { "type": "content", "hints": "trends, suggestions, filters; expanded rung only" }
+      }
+    },
+    "list-detail": {
+      "label": "List–detail",
+      "summary": "A collection beside the selected item; sequential at compact.",
+      "areas": {
+        "compact": [
+          "app-bar",
+          "list",
+          "tab-bar"
+        ],
+        "medium": [
+          "app-bar app-bar app-bar",
+          "nav-rail list detail"
+        ],
+        "expanded": [
+          "app-bar app-bar app-bar",
+          "nav-rail list detail"
+        ]
+      },
+      "containers": {
+        "app-bar": { "type": "chrome", "hints": "title, primary actions" },
+        "nav-rail": { "type": "navigation", "hints": "shell switcher at medium and up" },
+        "tab-bar": { "type": "navigation", "hints": "shell switcher at compact only" },
+        "list": { "type": "content", "hints": "the collection; source of selection" },
+        "detail": { "type": "content", "hints": "the selected item; at compact the panes collapse and detail is a pushed route" }
+      }
+    },
+    "supporting-pane": {
+      "label": "Supporting pane",
+      "summary": "A main working surface with contextual extras alongside; extras become a sheet below expanded.",
+      "areas": {
+        "compact": [
+          "app-bar",
+          "detail",
+          "tab-bar"
+        ],
+        "medium": [
+          "app-bar app-bar",
+          "nav-rail detail"
+        ],
+        "expanded": [
+          "app-bar app-bar app-bar",
+          "nav-rail detail supporting-pane"
+        ]
+      },
+      "containers": {
+        "app-bar": { "type": "chrome", "hints": "title, primary actions" },
+        "nav-rail": { "type": "navigation", "hints": "shell switcher at medium and up" },
+        "tab-bar": { "type": "navigation", "hints": "shell switcher at compact only" },
+        "detail": { "type": "content", "hints": "the main reading / working surface" },
+        "supporting-pane": { "type": "content", "hints": "comments, attachments, metadata; expanded rung only" },
+        "sheet": { "type": "overlay", "hints": "hosts the supporting-pane content below the expanded rung" }
+      }
+    },
+    "dashboard": {
+      "label": "Dashboard",
+      "summary": "A toolbar over a grid of metric cards.",
+      "areas": {
+        "compact": [
+          "app-bar",
+          "card-grid",
+          "tab-bar"
+        ],
+        "medium": [
+          "app-bar app-bar",
+          "nav-rail toolbar",
+          "nav-rail card-grid"
+        ],
+        "expanded": [
+          "app-bar app-bar app-bar",
+          "nav-rail toolbar toolbar",
+          "nav-rail card-grid sidebar"
+        ]
+      },
+      "containers": {
+        "app-bar": { "type": "chrome", "hints": "title, primary actions" },
+        "nav-rail": { "type": "navigation", "hints": "shell switcher at medium and up" },
+        "tab-bar": { "type": "navigation", "hints": "shell switcher at compact only" },
+        "toolbar": { "type": "chrome", "hints": "date range, view controls, primary actions over the grid" },
+        "card-grid": { "type": "content", "hints": "metric cards and charts; reflows per rung" },
+        "sidebar": { "type": "content", "hints": "alerts, recent activity; expanded rung only" }
+      }
+    },
+    "hero-scroll": {
+      "label": "Hero scroll",
+      "summary": "A marketing page: hero, then feature blocks, then footer. Single column at every rung; the grid inside card-grid widens.",
+      "areas": {
+        "compact": [
+          "app-bar",
+          "hero",
+          "list",
+          "footer"
+        ],
+        "medium": [
+          "app-bar",
+          "hero",
+          "card-grid",
+          "footer"
+        ],
+        "expanded": [
+          "app-bar",
+          "hero",
+          "card-grid",
+          "footer"
+        ]
+      },
+      "containers": {
+        "app-bar": { "type": "chrome", "hints": "top nav links, sign-in" },
+        "hero": { "type": "content", "hints": "headline, subhead, primary call to action" },
+        "list": { "type": "content", "hints": "feature rows at compact" },
+        "card-grid": { "type": "content", "hints": "feature / pricing cards at medium and up" },
+        "footer": { "type": "chrome", "hints": "links, legal, social" }
+      }
+    },
+    "detail-column": {
+      "label": "Detail column",
+      "summary": "One centered detail column — a product, an article — with the primary action floating.",
+      "areas": {
+        "compact": [
+          "app-bar",
+          "detail",
+          "tab-bar"
+        ],
+        "medium": [
+          "app-bar app-bar",
+          "nav-rail detail"
+        ],
+        "expanded": [
+          "app-bar app-bar app-bar",
+          "nav-rail detail sidebar"
+        ]
+      },
+      "containers": {
+        "app-bar": { "type": "chrome", "hints": "title, search, cart / save entry" },
+        "nav-rail": { "type": "navigation", "hints": "shell switcher at medium and up" },
+        "tab-bar": { "type": "navigation", "hints": "shell switcher at compact only" },
+        "detail": { "type": "content", "hints": "the thing itself — gallery, price, description, body" },
+        "fab": { "type": "action", "hints": "the primary buy / save action; floats over the detail column" },
+        "sidebar": { "type": "content", "hints": "related items, recommendations; expanded rung only" }
+      }
+    }
+  }
+}

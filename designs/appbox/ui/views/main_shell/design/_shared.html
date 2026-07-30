@@ -1,20 +1,27 @@
-{# Design-shell shared stage (DRAFT-ALL + refine-via-chat contract): the left
-   multi-view rail (screens / artifacts / files), the chat stage with context
-   chips, and the design thread with per-screen checkpoints. Macro-only file —
-   importing it from a fragment render never emits stray markup.
-   Assumes ui/common/chat_stage.html's cs.wrap({ eyebrow, docked, collapseHref,
-   bottom }) via call/caller (nunjucks — rail_views.html already relies on
-   caller); the composer's tray owns the pinned-screens filmstrip. #}
+<!-- appbox:provenance
+     generator: app-box  licence: free  project: 662368770980
+     Built with app-box (free tier) — https://appbox.dev
+-->
+{# Design-shell shared panels (DRAFT-ALL + refine-via-chat contract): the
+   activity panel (screens / artifacts / files) on the left, the composer
+   panel with context chips, and the design thread with per-screen
+   checkpoints. Macro-only file — importing it from a fragment render never
+   emits stray markup.
+   Assumes ui/common/composer_panel.html's cp.frame({ eyebrow, docked,
+   collapseHref, bottom }) via call/caller (nunjucks — panel_views.html
+   already relies on caller); the composer's tray owns the pinned-screens
+   filmstrip. #}
 {% import "ui/common/primitives.html" as prim %}
 {% import "ui/common/rail.html" as rail %}
-{% import "ui/common/rail_views.html" as mv %}
-{% import "ui/common/chat_stage.html" as cs %}
+{% import "ui/common/panel_views.html" as pv %}
+{% import "ui/common/composer_panel.html" as cp %}
 {% import "ui/common/composer.html" as cm %}
+{% import "ui/common/main_panel.html" as mp %}
 
-{# ---------- the chat stage: thread + composer inside the shared wrap ----------
+{# ---------- the composer panel: thread + composer inside the shared frame ----
    The composer is the shared card (ui/common/composer.html): every
    design-stage swap — composer, context toggle, revert — targets the one
-   container the chat and the canvas share, #stage-layout. #}
+   container the chat and the artifact share, #panels. #}
 
 {% macro checkpointCard(e) %}
 <div class="checkpoint {{ 'is-reverted' if e.reverted }}">
@@ -33,7 +40,7 @@
   <span class="bt-action-done" title="{{ t('checkpoint.revertedTitle') }}">{{ t('checkpoint.reverted') }} {{ icon('check', {size: 14}) }}</span>
   {% else %}
   <form class="cp-revert" method="post" action="/design/chat/screen/{{ e.screen }}/revert/{{ e.id }}"
-        hx-post="/design/chat/screen/{{ e.screen }}/revert/{{ e.id }}" hx-target="#stage-layout" hx-swap="outerHTML">
+        hx-post="/design/chat/screen/{{ e.screen }}/revert/{{ e.id }}" hx-target="#panels" hx-swap="outerHTML">
     <button type="submit" class="ghost">{{ icon('undo-2', {size: 14}) }} {{ t('checkpoint.revert', {id: e.id}) }}</button>
   </form>
   {% endif %}
@@ -54,23 +61,39 @@
     {% for e in m.cps %}{{ checkpointCard(e) }}{% endfor %}
     {% endif %}
   {% endfor %}
-  {% if not c.drafted %}
-  <p class="bt-msg bt-agent">{{ c.draft.offer }}</p>
-  {% endif %}
 </div>
 {% endmacro %}
 
-{% macro chatStage(c) %}
-{% call cs.wrap({ eyebrow: c.stageEyebrow, docked: c.docked, collapseHref: c.collapseHref, bottom: c.threading }) %}
+{% macro composerPanel(c) %}
+{% call cp.frame({ eyebrow: c.stageEyebrow, chips: c.chips }) %}
   {{ thread(c) }}
   <p class="ctx-note muted">{{ t('ctxNote') }}</p>
   {{ cm.field(c) }}
 {% endcall %}
 {% endmacro %}
 
-{# ---------- the left rail: one multi-view rail, screens / artifacts / files ---------- #}
+{# The main panel's empty read state (nothing open yet). #}
+{% macro mainEmpty() %}{{ mp.empty() }}{% endmacro %}
 
-{% macro railBar(c, oob) %}
+{# The open file, rendered by the main panel's automatic mode. #}
+{% macro fileView(c) %}{{ mp.view(c.fileView) }}{% endmacro %}
+
+{# The three content panels, one swap unit: every stage interaction
+   re-renders #panels outerHTML (panel widths are server state, so the
+   activity panel rides along without an out-of-band re-feed). The caller
+   fills the main panel. #}
+{% macro panels(c) %}
+<div class="panels" id="panels" data-panel="{{ c.panel }}">
+  {{ mp.panelBar(c) }}
+  {{ activityPanel(c) }}
+  <div class="panel-main" id="panel-main">{{ caller() }}</div>
+  {{ composerPanel(c) }}
+</div>
+{% endmacro %}
+
+{# ---------- the activity panel: one multi-view frame, screens / artifacts / files ---------- #}
+
+{% macro runBar(c, oob) %}
 {{ rail.railBar(c, oob, {
   eyebrow: t('design.runEyebrow', {number: c.run.number, brief: c.run.brief}),
   state: c.run.stateLabel,
@@ -78,7 +101,7 @@
   filter: {
     summaryAria: t('design.filterAria'), summaryTitle: t('design.filterTitle'),
     summary: c.filter if c.filter != 'all' else t('design.allEpics'),
-    target: '#rail-list', swap: 'outerHTML', url: '/design/rail?epic=', active: c.filter,
+    target: '#rail-list', swap: 'outerHTML', url: '/design/panel?epic=', active: c.filter,
     options: [{id: 'all', label: t('design.allEpics')}].concat(c.epics)
   }
 }) }}
@@ -98,7 +121,7 @@
   <footer class="msg-foot">
     <span class="msg-cta">
       <a class="cta-main" href="/design/chat/context/{{ s.id }}?state=toggle"
-         hx-get="/design/chat/context/{{ s.id }}?state=toggle" hx-target="#stage-layout" hx-swap="outerHTML" hx-push-url="false">
+         hx-get="/design/chat/context/{{ s.id }}?state=toggle" hx-target="#panels" hx-swap="outerHTML" hx-push-url="false">
         {% if s.inContext %}{{ t('design.inContext') }} {{ icon('check', {size: 14}) }}{% else %}{{ t('design.pinToContext') }} {{ icon('pin', {size: 14}) }}{% endif %}</a>
     </span>
     <span class="msg-time">{{ s.label }}</span>
@@ -116,10 +139,10 @@
 </div>
 {% endmacro %}
 
-{# The active rail view's body — /design/rail/:view hx-swaps this into
-   #rail-left-body (the id rail_views.frame owns). #}
-{% macro railBody(c) %}
-{% if c.railView == 'artifacts' %}
+{# The active view's body — /design/panel/:view hx-swaps this into
+   #panel-left-body (the id panel_views.frame owns). #}
+{% macro activityBody(c) %}
+{% if c.activityView == 'artifacts' %}
 <div class="rail-list" id="rail-list">
   {% for a in c.artifacts %}
   <a class="msg msg-agent rail-row" href="{{ a.href }}">
@@ -129,41 +152,42 @@
   </a>
   {% endfor %}
 </div>
-{% elif c.railView == 'files' %}
+{% elif c.activityView == 'files' %}
 <div class="rail-list" id="rail-list">
   {% for f in c.files %}
+  {% if f.mode %}
+  <a class="msg msg-agent rail-row {{ 'is-active' if c.fileView and c.fileView.path == f.path }}" href="{{ f.href }}"
+     hx-get="{{ f.get }}" hx-target="#panel-main" hx-swap="innerHTML" hx-push-url="{{ f.href }}">
+    <span class="msg-text"><code>{{ f.path }}</code></span>
+    <span class="msg-detail">{{ f.detail }}</span>
+  </a>
+  {% else %}
   <div class="msg msg-agent rail-row">
     <span class="msg-text"><code>{{ f.path }}</code></span>
     <span class="msg-detail">{{ f.detail }}</span>
   </div>
+  {% endif %}
   {% endfor %}
 </div>
 {% else %}
-{{ railBar(c, false) }}
+{{ runBar(c, false) }}
 {{ screenList(c, false) }}
 {% endif %}
 {% endmacro %}
 
-{% macro railLeft(c) %}
-{% call mv.frame({ side: 'left', label: c.railLabel, views: c.railViews, size: c.railSize, sizeHref: c.railSizeHref }) %}
-  {{ railBody(c) }}
+{% macro activityPanel(c) %}
+{% call pv.frame({ side: 'left', label: c.activityLabel, views: c.activityViews, size: c.panelSize, sizeHref: c.panelSizeHref, panelSizePx: c.panelSizePx }) %}
+  {{ activityBody(c) }}
 {% endcall %}
 {% endmacro %}
 
-{# Targeted view-switch response (/design/rail/:view → #rail-left-body): the
+{# Targeted view-switch response (/design/panel/:view → #panel-left-body): the
    new body plus head + bar out-of-band, so the label and the active accent
-   icon track the server's rail state. #}
-{% macro railSwap(c) %}
-{{ railBody(c) }}
-{{ mv.head({ side: 'left', label: c.railLabel, views: c.railViews, size: c.railSize, sizeHref: c.railSizeHref }, true) }}
-{{ mv.bar({ side: 'left', label: c.railLabel, views: c.railViews, size: c.railSize, sizeHref: c.railSizeHref }, true) }}
+   icon track the server's panel state. #}
+{% macro activitySwap(c) %}
+{{ activityBody(c) }}
+{{ pv.head({ side: 'left', label: c.activityLabel, views: c.activityViews, size: c.panelSize, sizeHref: c.panelSizeHref }, true) }}
+{{ pv.bar({ side: 'left', label: c.activityLabel, views: c.activityViews, size: c.panelSize, sizeHref: c.panelSizeHref }, true) }}
 {% endmacro %}
 
-{# Stage-driven re-feed: any stage act (pin, revert, draft) refreshes the
-   whole rail out-of-band — the rail reacts to the data, never a stale copy.
-   The <aside> itself (and its persisted width) is never replaced. #}
-{% macro railOob(c) %}
-{% call mv.body({ side: 'left' }, true) %}{{ railBody(c) }}{% endcall %}
-{{ mv.head({ side: 'left', label: c.railLabel, views: c.railViews, size: c.railSize, sizeHref: c.railSizeHref }, true) }}
-{{ mv.bar({ side: 'left', label: c.railLabel, views: c.railViews, size: c.railSize, sizeHref: c.railSizeHref }, true) }}
-{% endmacro %}
+

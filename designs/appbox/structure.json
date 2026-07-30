@@ -174,18 +174,18 @@
       "deps": []
     },
     {
-      "id": "chat.rails",
-      "shell": "chat",
-      "comp": "ChatRails",
+      "id": "shell.composer",
+      "shell": "shell",
+      "comp": "ShellComposer",
       "shellDir": null,
       "surface": null,
       "viewmodel": null,
       "deps": []
     },
     {
-      "id": "chat.bottom",
-      "shell": "chat",
-      "comp": "ChatBottom",
+      "id": "shell.footer",
+      "shell": "shell",
+      "comp": "ShellFooter",
       "shellDir": null,
       "surface": null,
       "viewmodel": null,

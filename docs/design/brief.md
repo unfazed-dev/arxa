@@ -35,7 +35,7 @@ app-box
 - [must/R1 Dogfood] Project creation is a GenUI wizard generated inline in the chat thread (name + platform targets: iOS/Android/macOS/web)
 - [should/R2 Anywhere] Repo connect (GitHub default, other hosts) deferred to first gate approval; also available in settings
 - [must/R1 Dogfood] Auto-save of every chat action with a saved/saving indicator
-- [must/R1 Dogfood] Appbar shows project name + current stage chip, with click-through to the dashboard/project switcher
+- [must/R1 Dogfood] Header panel shows project name + current stage chip, with click-through to the dashboard/project switcher
 
 #### Pairing
 
@@ -60,7 +60,8 @@ app-box
 
 - [must/R1 Dogfood] Intake is a chat-native interview: depth choice (simple / normal / advanced — three separate question banks per audience) is the first chat message with 3 buttons
 - [must/R1 Dogfood] Each question is a horizontal-carousel card inline in the conversation: free text + single/multi-choice chips + suggested answers; skippable with a visible skipped state; swipe back to revisit
-- [must/R1 Dogfood] All-at-once generation when the questionnaire completes: brief + story map appear as rail artifacts; the moodboard follows as a suggested next step
+- [must/R1 Dogfood] All-at-once generation when the questionnaire completes: brief + story map appear as main panel artifacts; the moodboard follows as a suggested next step
+- [must/R1 Dogfood] Layout template picking is an intake step: app category first (closed list), then one of six archetype galleries (feed, list-detail, supporting-pane, dashboard, hero-scroll, detail-column) shown as plain colored boxes of named containers at full size in the main panel — recorded in the brief, consumed by the designer without rewriting
 
 #### Mapping
 
@@ -68,7 +69,7 @@ app-box
 - [must/R1 Dogfood] Surface count + kit-coverage estimate within an hour of signing, to quote honestly
 - [should/R1 Dogfood] A non-technical client can read and correct the story map (HTML)
 - [could/R3 Delight] Stories carry EARS-style acceptance criteria gates can check
-- [must/R1 Dogfood] Stage gating: the Design tab stays locked until the story map is approved (human-gate pattern); locked tabs explain why and the chat nudges
+- [must/R1 Dogfood] Stage gating: the Design shell stays locked until the story map is approved (human-gate pattern); locked shells explain why and the chat nudges
 - [should/R2 Anywhere] Post-approval edits produce a new story-map version requiring re-approval; downstream stages get a 'map changed' badge
 
 #### Live Map
@@ -97,6 +98,7 @@ app-box
 - [must/R1 Dogfood] Every surface designed at 390/744/1280 from targets alone (literal parity)
 - [must/R1 Dogfood] Target selection labels buildability on this machine (requires macOS)
 - [must/R1 Dogfood] The daemon drafts all screens from the approved story map in one pass; refining happens exclusively in the centered chat
+- [must/R1 Dogfood] Component-library components are Auto Layout by default (flow, gap, padding, alignment; child hug/fill/fixed emitted as flexbox data-attributes); off by default at artboard level, per-frame opt-out
 
 #### Chat
 
@@ -108,6 +110,7 @@ app-box
 - [should/R1 Dogfood] Stale-selection guard: prototype changed since the in-context screens were pinned triggers re-sync or warn
 - [could/R2 Anywhere] Shared token/nav edit offers 'affects N screens, apply to all?' (nobody ships this)
 - [must/R1 Dogfood] The floating vertical filmstrip inside the design artifact is the context picker: clicking toggles a screen's in-context state
+- [must/R1 Dogfood] Design elements carry inspect metadata (data-inspect-role/-style/-motion/-fn): role, style, motion and function facts read straight from the markup by the inspect pass
 
 #### Freeze
 
@@ -119,18 +122,21 @@ app-box
 
 #### Chat Stage
 
-- [must/R1 Dogfood] Chat is the centerpiece in every stage: centered when no artifact is open; slides into a right floating rail when an artifact opens; closes back via X / Esc / collapse handle
+- [must/R1 Dogfood] Chat is the centerpiece in every stage, living in the composer panel — permanent, single-state, always on the right; the retired two-state chat (centered, sliding into a floating rail) is gone
 - [must/R1 Dogfood] Single input path: no text inputs outside the chat — gate notes are chat replies carrying a context chip
 
-#### Rails
+#### Panels
 
-- [must/R1 Dogfood] One reusable multi-view rail component used on both sides; per-tab view registry (runs / artifacts / commits / files / chat); an icon-button carousel in each rail's own bottom bar switches that rail's view
-- [should/R2 Anywhere] Rails resize via a hover handle on the inner edge only, min = current width, max = 1.5×
-- [must/R1 Dogfood] Adaptive chrome defaults: mobile = app bar (drawer + dropdown menu) + bottom tab bar + staggered-action FAB; tablet = app bar + collapsible floating left rail + FAB; desktop = app bar + bottom bar + both rails openable/closeable — overridable per project in the design brief
+- [must/R1 Dogfood] Activity panel (left): navigation and inventory — files, surfaces, runs / artifacts / commits views
+- [must/R1 Dogfood] Main panel: the single render destination, an automatic multi-mode viewer — render:code/doc/image/svg/pdf/video for files, art/map/board for stage content; the active shell plus the content type select the mode, no user toggles
+- [must/R1 Dogfood] Composer panel (right): permanent and single-state in every shell
+- [must/R1 Dogfood] Panel bar: on compact and medium rungs a segmented switcher picks the one visible content panel (activity / main / composer); the tabbar (compact) and railbar (medium) switch shells
+- [must/R1 Dogfood] Adaptive chrome defaults: expanded = header panel + activity/main/composer panels + footer panel; compact = header panel + tabbar + panel bar; medium = header panel + railbar + panel bar — overridable per project in the design brief
+- [should/R2 Anywhere] Panels resize via a hover handle on the inner edge only, min = current width, max = 1.5×
 
-#### Bottom Bar
+#### Footer Panel
 
-- [must/R1 Dogfood] Bottom bar: read-only stage timeline with proper labels (not clickable; animation kept), project + run state, daemon status + pending-gate dots; the old top stage strip is removed
+- [must/R1 Dogfood] Footer panel: read-only stage timeline with proper labels (not clickable; animation kept), project + run state, daemon status + pending-gate dots; in the design shell it also shows the design sub-steps (artboards → inspect · fine-tune → approval → freeze); the old top stage strip is removed
 
 ### Build & Gates
 
@@ -139,7 +145,7 @@ app-box
 - [must/R1 Dogfood] Start a build, walk away; stops on red, ESC_LIMIT=3
 - [must/R1 Dogfood] Per-surface evidence report (screen to tests to code), not one giant diff
 - [must/R1 Dogfood] SARIF findings pinned to file/line with reproduce command
-- [must/R1 Dogfood] The run thread is the build tab's chat: stage, evidence, chart and gate cards stream in as chat messages; evidence and charts open as center artifacts (chat slides right — see Chat-Centric Layout)
+- [must/R1 Dogfood] The run thread is the build shell's chat: stage, evidence, chart and gate cards stream in as chat messages; evidence and charts open in the main panel (the composer panel stays put — see Chat-Centric Layout)
 
 #### Gates
 
@@ -158,14 +164,14 @@ app-box
 
 #### Git
 
-- [must/R1 Dogfood] The pipeline auto-commits at each gate/stage with tab-scoped conventional messages (e.g. chore(intake): ...)
-- [should/R2 Anywhere] Commits rail view: git history with per-commit diff and CI status dots
+- [must/R1 Dogfood] The pipeline auto-commits at each gate/stage with shell-scoped conventional messages (e.g. chore(intake): ...)
+- [should/R2 Anywhere] Commits view in the activity panel: git history with per-commit diff and CI status dots
 - [could/R2 Anywhere] Open-in-editor button (VS Code default, configurable editor) launches the project externally
 - [should/R2 Anywhere] app-box scaffolds each project's git setup: repo init, .gitignore, host connect
 
 #### Files
 
-- [should/R2 Anywhere] Files rail view: read-only generated-project tree with per-file status badges (new/changed/frozen); clicking a file opens its content as a center artifact
+- [should/R2 Anywhere] Files view in the activity panel: read-only generated-project tree with per-file status badges (new/changed/frozen); clicking a file opens its content in the main panel
 
 ### Flows Canvas
 
@@ -240,6 +246,7 @@ app-box
 
 | id | label | priority | release |
 |----|-------|----------|---------|
+| `app.splash` | Splash | must | R1 Dogfood |
 | `app.access` | Access | must | R1 Dogfood |
 | `app.dashboard` | Dashboard | must | R1 Dogfood |
 | `app.projects` | Projects | must | R1 Dogfood |
@@ -255,8 +262,9 @@ app-box
 | `design.chat` | Chat | must | R1 Dogfood |
 | `design.freeze` | Freeze | must | R1 Dogfood |
 | `chat.chat2` | Chat Stage | must | R1 Dogfood |
-| `chat.rails` | Rails | must | R1 Dogfood |
-| `chat.bottom` | Bottom Bar | must | R1 Dogfood |
+| `shell.composer` | Composer Panel | must | R1 Dogfood |
+| `shell.footer` | Footer Panel | must | R1 Dogfood |
+| `main.chrome` | Main Shell | must | R1 Dogfood |
 | `build.loop` | Loop | must | R1 Dogfood |
 | `build.gates` | Gates | must | R1 Dogfood |
 | `build.visual` | Visual | must | R1 Dogfood |

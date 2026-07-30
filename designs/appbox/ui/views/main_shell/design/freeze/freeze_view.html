@@ -1,3 +1,7 @@
+<!-- appbox:provenance
+     generator: app-box  licence: free  project: 662368770980
+     Built with app-box (free tier) — https://appbox.dev
+-->
 {% extends "ui/views/main_shell/main_shell_view.html" %}
 {% import "ui/common/primitives.html" as prim %}
 {% import "ui/common/timeline.html" as tl %}
@@ -6,9 +10,10 @@
 {% block main_class %}shell-main-loop{% endblock %}
 
 {# ---------- Named Fragments (renderable alone via freeze_view.html#macro) ----------
-   Same stage pattern as the prototype surface: chat docked beside the
-   artifact canvas (manifest + approval + trace). The approval card is the
-   human gate — the chat quick-reply "approve the manifest" signs it. #}
+   Same panel pattern as the prototype surface: the freeze cards (manifest +
+   approval + trace) live in the main panel, the composer panel permanent on
+   the right. The approval card is the human gate — the chat quick-reply
+   "approve the manifest" signs it. #}
 
 {% macro timeline(c, oob) %}{{ tl.timeline(c, oob, t('design.timelineLabel')) }}{% endmacro %}
 
@@ -25,7 +30,7 @@
   <p class="approval-note">{{ c.approval.note }}</p>
   {% if not c.approval.approved %}
   <form method="post" action="/design/freeze/messages"
-        hx-post="/design/freeze/messages" hx-target="#stage-layout" hx-swap="outerHTML">
+        hx-post="/design/freeze/messages" hx-target="#panels" hx-swap="outerHTML">
     <button type="submit" name="preset" value="approve" class="cta-main">{{ t('freeze.approveCta') }}</button>
   </form>
   {% endif %}
@@ -129,7 +134,7 @@
 {# ---------- Fragment responses ---------- #}
 
 {% macro freezeCanvas(c) %}
-<section class="canvas freeze-canvas" id="design-canvas" aria-live="polite">
+<section class="mp-content" id="mp-content" aria-live="polite">
   <div class="freeze-stack">
     {{ approvalCard(c) }}
     {{ manifestCard(c) }}
@@ -140,19 +145,21 @@
 </section>
 {% endmacro %}
 
-{# The stage markup proper — the page renders this directly; the fragment
-   (stageSwap) adds the rail's out-of-band re-feed (response-only markup). #}
-{% macro stageLayout(c) %}
-<div class="stage-layout {{ 'is-docked' if c.docked }}" id="stage-layout">
-  {{ sh.chatStage(c) }}
-  {{ freezeCanvas(c) }}
-</div>
+{# The three panels — the freeze canvas always fills the main panel. #}
+{# The main panel's content: the open file, else the freeze cards. #}
+{% macro mainContent(c) %}
+{% if c.fileView %}{{ sh.fileView(c) }}{% else %}{{ freezeCanvas(c) }}{% endif %}
 {% endmacro %}
 
-{% macro stageSwap(c) %}
-{{ stageLayout(c) }}
-{{ sh.railOob(c) }}
+{% macro panels(c) %}
+{% call sh.panels(c) %}{{ mainContent(c) }}{% endcall %}
 {% endmacro %}
+
+{# A file row's response: the main panel renders the file in the mode the
+   server picked from its extension. #}
+{% macro fileSwap(c) %}{{ mainContent(c) }}{% endmacro %}
+
+{% macro panelsSwap(c) %}{{ panels(c) }}{% endmacro %}
 
 {% macro driftSwap(c) %}
 {{ driftCard(c, false) }}
@@ -165,9 +172,4 @@
 {{ timeline(c, false) }}
 {% endblock %}
 
-{% block surface %}
-<div class="loop-zones stage-zones">
-  {{ sh.railLeft(c) }}
-  {{ stageLayout(c) }}
-</div>
-{% endblock %}
+{% block surface %}{{ panels(c) }}{% endblock %}

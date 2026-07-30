@@ -1,24 +1,28 @@
+<!-- appbox:provenance
+     generator: app-box  licence: free  project: 662368770980
+     Built with app-box (free tier) — https://appbox.dev
+-->
 {% extends "ui/views/main_shell/main_shell_view.html" %}
 {% import "ui/common/primitives.html" as prim %}
 {% import "ui/common/timeline.html" as tl %}
 {% import "ui/common/design_viewer.html" as dv %}
+{% import "ui/common/mini_rail.html" as mr %}
 {% import "ui/views/main_shell/design/_shared.html" as sh %}
 {% block title %}{{ t('design.pageTitle') }}{% endblock %}
 {% block main_class %}shell-main-loop{% endblock %}
 
 {# ---------- Named Fragments (renderable alone via prototype_view.html#macro) ----------
-   The design shell is one stage: chat (centered, then docked) + the artboard
-   canvas, wrapped in #stage-layout; the multi-view rail on the left. The shell
-   opens on the chat with the draft-all offer; accepting renders every screen
-   as an artboard on the pan/zoom canvas island. #}
+   The design shell is three panels: the activity panel on the left, the
+   artboards in the main panel, the composer panel permanently on the right.
+   Intake hands design a generated design, so the artboards fill the main
+   panel from the first render. #}
 
 {% macro timeline(c, oob) %}{{ tl.timeline(c, oob, t('design.timelineLabel')) }}{% endmacro %}
 
-{# ---------- The canvas: every drafted screen as an artboard ---------- #}
+{# ---------- The main panel: every designed screen as an artboard ---------- #}
 
 {% macro canvasBoard(c) %}
-{% if c.drafted %}
-<section class="canvas design-canvas" id="design-canvas" aria-live="polite">
+<section class="mp-content" id="mp-content" aria-live="polite">
   <article class="artifact screen-artifact evidence-artifact">
     <header class="artifact-head">
       <span class="eyebrow">{{ t('design.artboardsEyebrow', {count: c.counts.screens}) }}</span>
@@ -28,55 +32,47 @@
     <p class="artifact-foot muted">{{ t('protoFoot') }}</p>
   </article>
 </section>
-{% endif %}
 {% endmacro %}
 
 {# ---------- Fragment responses ---------- #}
 
-{# The whole stage: chat (fresh chips/thread) + canvas (fresh outlines),
-   inside the #stage-layout container. Context toggles, composer sends,
-   reverts and chip close buttons all swap #stage-layout outerHTML with this. #}
-{# The stage markup proper — used by the page AND the fragment. The fragment
-   (stageSwap) adds the rail's out-of-band re-feed; the page must render the
-   stage WITHOUT it (OOB parts are response-only markup). #}
-{% macro stageLayout(c) %}
-<div class="stage-layout {{ 'is-docked' if c.docked }}" id="stage-layout">
-  {{ sh.chatStage(c) }}
-  {{ canvasBoard(c) }}
-</div>
+{# The whole panels block: chat (fresh chips/thread) + main panel (fresh
+   outlines). Context toggles, composer sends, reverts and chip unpin buttons
+   all swap #panels outerHTML with this. The design shell is always drafted
+   (intake hands it a generated design), so the artboards always fill the
+   main panel; the activity panel rides along (its width is server state). #}
+{# The main panel's content: the open file, else the artboards. #}
+{% macro mainContent(c) %}
+{% if c.fileView %}{{ sh.fileView(c) }}{% else %}{{ canvasBoard(c) }}{% endif %}
 {% endmacro %}
 
-{% macro stageSwap(c) %}
-{{ stageLayout(c) }}
-{{ sh.railOob(c) }}
+{% macro panels(c) %}
+{% call sh.panels(c) %}{{ mainContent(c) }}{% endcall %}
 {% endmacro %}
 
-{% macro railSwap(c) %}{{ sh.railSwap(c) }}{% endmacro %}
+{% macro panelsSwap(c) %}{{ panels(c) }}{% endmacro %}
 
-{# The width grip's response: the whole rail re-rendered at its new persisted
+{% macro activitySwap(c) %}{{ sh.activitySwap(c) }}{% endmacro %}
+
+{# The rail handle's response: the whole rail re-rendered at its new persisted
    size (the aside is server state now, so replacing it loses nothing). #}
-{% macro railFrameSwap(c) %}{{ sh.railLeft(c) }}{% endmacro %}
+{% macro activityFrameSwap(c) %}{{ sh.activityPanel(c) }}{% endmacro %}
 
 {% macro viewerSwap(c) %}{{ dv.designViewer(c.viewer) }}{% endmacro %}
 
+{# A file row's response: the main panel renders the file in the mode the
+   server picked from its extension. #}
+{% macro fileSwap(c) %}{{ mainContent(c) }}{% endmacro %}
+
 {% macro filterSwap(c) %}
 {{ sh.screenList(c, false) }}
-{{ sh.railBar(c, true) }}
+{{ sh.runBar(c, true) }}
 {% endmacro %}
 
 {# ---------- Page ---------- #}
-
-{% macro surfaceBody(c) %}
-{{ sh.railLeft(c) }}
-{{ stageLayout(c) }}
-{% endmacro %}
 
 {% block bottombar %}
 {{ timeline(c, false) }}
 {% endblock %}
 
-{% block surface %}
-<div class="loop-zones stage-zones">
-  {{ surfaceBody(c) }}
-</div>
-{% endblock %}
+{% block surface %}{{ panels(c) }}{% endblock %}

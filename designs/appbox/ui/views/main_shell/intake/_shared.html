@@ -1,22 +1,32 @@
-{# Shared intake macros — the Chat-Centric Layout applied to the intake shell:
-   left multi-view rail (mv.frame: thread / artifacts / files), the chat stage
-   (cs.wrap) centered until an artifact docks it right, the canvas artifact a
-   sibling inside #stage-layout, and the read-only timeline in the bottom bar.
-   The stage-bar FAB follow-up pattern is retired — follow-ups are plain chat
-   carrying the open artifact as a context chip (chip removeHref closes it).
+<!-- appbox:provenance
+     generator: app-box  licence: free  project: 662368770980
+     Built with app-box (free tier) — https://appbox.dev
+-->
+{# Shared intake macros — the panel layout applied to the intake shell:
+   the activity panel (pv.frame: thread / artifacts / files) on the left, the
+   main panel in the center (the caller fills it), the composer panel
+   (cp.frame) permanently on the right, and the read-only timeline in the
+   footer panel. Follow-ups are plain chat; the open artifact rides the main
+   panel until another one replaces it.
 
-   Assumed call/caller for cs.wrap + mv.frame — both shared components ship
-   caller() bodies; the fallback would be cs.open(spec)/cs.close().
-   The composer is the shared card (ui/common/composer.html) — same markup
-   on every shell; per-surface data (action, placeholder, agent menus)
-   travels in the facade context. #}
-{% import "ui/common/chat_stage.html" as cs %}
-{% import "ui/common/rail_views.html" as mv %}
+   Assumed call/caller for cp.frame + pv.frame — both shared components ship
+   caller() bodies. The composer is the shared card (ui/common/composer.html)
+   — same markup on every shell; per-surface data (action, placeholder,
+   agent menus) travels in the facade context. #}
+{% import "ui/common/composer_panel.html" as cp %}
+{% import "ui/common/panel_views.html" as pv %}
 {% import "ui/common/timeline.html" as tl %}
 {% import "ui/common/composer.html" as cm %}
+{% import "ui/common/main_panel.html" as mp %}
 
-{# The bottom-bar timeline: read-only stage line, intake item current. #}
+{# The footer-panel timeline: read-only stage line, intake item current. #}
 {% macro timeline(c, oob) %}{{ tl.timeline(c, oob, t('intake.timelineLabel')) }}{% endmacro %}
+
+{# The main panel's empty read state (nothing open yet). #}
+{% macro mainEmpty() %}{{ mp.empty() }}{% endmacro %}
+
+{# The open file, rendered by the main panel's automatic mode. #}
+{% macro fileView(c) %}{{ mp.view(c.fileView) }}{% endmacro %}
 
 {# ---------- the interview: horizontal question carousel ---------- #}
 
@@ -28,7 +38,7 @@
   <p class="q-text">{{ q.text }}</p>
   {% if q.state == 'current' or q.state == 'editing' %}
   <form class="q-form" method="post" action="{{ c.base }}/answer"
-        hx-post="{{ c.base }}/answer" hx-target="#stage-layout" hx-swap="outerHTML">
+        hx-post="{{ c.base }}/answer" hx-target="#panels" hx-swap="outerHTML">
     <input type="hidden" name="q" value="{{ q.id }}">
     <input type="text" name="text" value="{{ q.answer or '' }}" placeholder="{{ t('intake.answerPlaceholder') }}" aria-label="{{ t('intake.answerAria', {question: q.text}) }}">
     <button type="submit" class="composer-send" aria-label="{{ t('intake.sendAnswer') }}">{{ icon('arrow-up', {size: 18}) }}</button>
@@ -36,7 +46,7 @@
   {% if q.suggestions.length %}
   <span class="q-sugs">
     {% for s in q.suggestions %}
-    <form method="post" action="{{ c.base }}/answer" hx-post="{{ c.base }}/answer" hx-target="#stage-layout" hx-swap="outerHTML">
+    <form method="post" action="{{ c.base }}/answer" hx-post="{{ c.base }}/answer" hx-target="#panels" hx-swap="outerHTML">
       <input type="hidden" name="q" value="{{ q.id }}">
       <button type="submit" name="text" value="{{ s }}">{{ s }}</button>
     </form>
@@ -44,18 +54,18 @@
   </span>
   {% endif %}
   <form class="q-skip" method="post" action="{{ c.base }}/skip"
-        hx-post="{{ c.base }}/skip" hx-target="#stage-layout" hx-swap="outerHTML">
+        hx-post="{{ c.base }}/skip" hx-target="#panels" hx-swap="outerHTML">
     <input type="hidden" name="q" value="{{ q.id }}">
     <button type="submit" aria-label="{{ t('intake.skipAria') }}">{{ t('intake.skip') }} {{ icon('chevron-right', {size: 14}) }}</button>
   </form>
   {% elif q.state == 'answered' %}
   <p class="q-answer">{{ q.answer }}</p>
   <a class="q-edit" href="{{ c.base }}/edit?q={{ q.id }}"
-     hx-get="{{ c.base }}/edit?q={{ q.id }}" hx-target="#stage-layout" hx-swap="outerHTML" hx-push-url="false">{{ t('intake.edit') }}</a>
+     hx-get="{{ c.base }}/edit?q={{ q.id }}" hx-target="#panels" hx-swap="outerHTML" hx-push-url="false">{{ t('intake.edit') }}</a>
   {% elif q.state == 'skipped' %}
   <p class="q-answer muted">{{ t('intake.skipped') }}</p>
   <a class="q-edit" href="{{ c.base }}/edit?q={{ q.id }}"
-     hx-get="{{ c.base }}/edit?q={{ q.id }}" hx-target="#stage-layout" hx-swap="outerHTML" hx-push-url="false">{{ t('intake.answerAnyway') }}</a>
+     hx-get="{{ c.base }}/edit?q={{ q.id }}" hx-target="#panels" hx-swap="outerHTML" hx-push-url="false">{{ t('intake.answerAnyway') }}</a>
   {% else %}
   <p class="q-answer muted">{{ t('intake.upNext') }}</p>
   {% endif %}
@@ -81,7 +91,7 @@
   {% if m.quickReplies %}
   <span class="q-replies">
     {% for r in m.quickReplies %}
-    <form method="post" action="{{ r.action }}" hx-post="{{ r.action }}" hx-target="#stage-layout" hx-swap="outerHTML">
+    <form method="post" action="{{ r.action }}" hx-post="{{ r.action }}" hx-target="#panels" hx-swap="outerHTML">
       <button type="submit" class="qr-chip" name="{{ r.name }}" value="{{ r.value }}">{{ r.label }}</button>
     </form>
     {% endfor %}
@@ -92,7 +102,7 @@
   <span class="msg-cta">
     {% if m.artifactRef %}
     <a class="cta-main" href="{{ c.base }}/artifact/{{ m.artifactRef }}"
-       hx-get="{{ c.base }}/artifact/{{ m.artifactRef }}" hx-target="#stage-layout" hx-swap="outerHTML" hx-push-url="false">{{ m.artifactLabel }} {{ icon('chevron-right', {size: 14}) }}</a>
+       hx-get="{{ c.base }}/artifact/{{ m.artifactRef }}" hx-target="#panels" hx-swap="outerHTML" hx-push-url="false">{{ m.artifactLabel }} {{ icon('chevron-right', {size: 14}) }}</a>
     {% endif %}
     {% if m.nextHref %}<a class="cta-ghost" href="{{ m.nextHref }}">{{ m.nextLabel }} {{ icon('chevron-right', {size: 14}) }}</a>{% endif %}
   </span>
@@ -107,24 +117,36 @@
 </div>
 {% endmacro %}
 
-{# The chat stage proper — each view wraps it in its own #stage-layout so the
-   canvas artifact markup stays surface-local; the composer is the shared
-   card (ui/common/composer.html). #}
-{% macro chatStage(c) %}
-{% call cs.wrap({ eyebrow: c.eyebrow, docked: c.docked, chips: c.chips, collapseHref: c.collapseHref, bottom: c.threading }) %}
+{# The composer panel proper — permanent, right, single-state; the composer
+   is the shared card (ui/common/composer.html). #}
+{% macro composerPanel(c) %}
+{% call cp.frame({ eyebrow: c.eyebrow, chips: c.chips }) %}
   {{ chatThread(c) }}
   {{ cm.field(c) }}
 {% endcall %}
 {% endmacro %}
 
-{# ---------- the left multi-view rail ---------- #}
+{# The three content panels, one swap unit: every stage interaction
+   re-renders #panels outerHTML (panel widths are server state, so the
+   activity panel rides along without an out-of-band re-feed). The caller
+   fills the main panel. #}
+{% macro panels(c) %}
+<div class="panels" id="panels" data-panel="{{ c.panel }}">
+  {{ mp.panelBar(c) }}
+  {{ activityPanel(c) }}
+  <div class="panel-main" id="panel-main">{{ caller() }}</div>
+  {{ composerPanel(c) }}
+</div>
+{% endmacro %}
 
-{% macro railBody(c) %}
-{% if c.railView == 'artifacts' %}
+{# ---------- the activity panel: one multi-view frame, thread / artifacts / files ---------- #}
+
+{% macro activityBody(c) %}
+{% if c.activityView == 'artifacts' %}
 <div class="rv-list">
-  {% for a in c.railBody.artifacts %}
+  {% for a in c.activityBody.artifacts %}
   <a class="rv-card" href="{{ c.base }}/artifact/{{ a.ref }}"
-     hx-get="{{ c.base }}/artifact/{{ a.ref }}" hx-target="#stage-layout" hx-swap="outerHTML" hx-push-url="false">
+     hx-get="{{ c.base }}/artifact/{{ a.ref }}" hx-target="#panels" hx-swap="outerHTML" hx-push-url="false">
     <span class="rv-title">{{ a.title }}</span>
     <span class="rv-detail muted">{{ a.detail }}</span>
     {% if a.badges.length %}
@@ -135,21 +157,29 @@
   </a>
   {% endfor %}
 </div>
-{% elif c.railView == 'files' %}
+{% elif c.activityView == 'files' %}
 <ul class="rv-files">
-  {% for f in c.railBody.files %}
-  <li><code class="rv-path">{{ f.path }}</code><span class="file-badge fb-{{ f.badge }}">{{ f.badge }}</span></li>
+  {% for f in c.activityBody.files %}
+  <li>
+    {% if f.mode %}
+    <a class="rv-file {{ 'is-active' if c.fileView and c.fileView.path == f.path }}" href="{{ f.href }}"
+       hx-get="{{ f.get }}" hx-target="#panel-main" hx-swap="innerHTML" hx-push-url="{{ f.href }}">
+      <code class="rv-path">{{ f.path }}</code><span class="file-badge fb-{{ f.badge }}">{{ f.badge }}</span></a>
+    {% else %}
+    <code class="rv-path">{{ f.path }}</code><span class="file-badge fb-{{ f.badge }}">{{ f.badge }}</span>
+    {% endif %}
+  </li>
   {% endfor %}
 </ul>
 {% else %}
 <div class="rv-list">
-  {% for m in c.railBody.thread | reverse %}
+  {% for m in c.activityBody.thread | reverse %}
   <div class="rv-card is-static">
     <span class="msg-text">{{ m.text }}</span>
     <span class="rv-foot">
       {% if m.artifact %}
       <a class="cta-ghost" href="{{ c.base }}/artifact/{{ m.artifact }}"
-         hx-get="{{ c.base }}/artifact/{{ m.artifact }}" hx-target="#stage-layout" hx-swap="outerHTML" hx-push-url="false">{{ m.artifactLabel }} {{ icon('chevron-right', {size: 14}) }}</a>
+         hx-get="{{ c.base }}/artifact/{{ m.artifact }}" hx-target="#panels" hx-swap="outerHTML" hx-push-url="false">{{ m.artifactLabel }} {{ icon('chevron-right', {size: 14}) }}</a>
       {% endif %}
       <span class="msg-time">{{ m.at }}</span>
     </span>
@@ -159,26 +189,19 @@
 {% endif %}
 {% endmacro %}
 
-{% macro railFrame(c) %}
-{% call mv.frame({ side: 'left', label: c.railLabel, views: c.railViews, size: c.railSize, sizeHref: c.railSizeHref }) %}
-  {{ railBody(c) }}
+{% macro activityPanel(c) %}
+{% call pv.frame({ side: 'left', label: c.activityLabel, views: c.activityViews, size: c.panelSize, sizeHref: c.panelSizeHref }) %}
+  {{ activityBody(c) }}
 {% endcall %}
 {% endmacro %}
 
-{# Targeted view-switch response (<base>/rail?view= → #rail-left-body): the
+{# Targeted view-switch response (<base>/panel?view= → #panel-left-body): the
    new body plus head + bar out-of-band, so the label and the active accent
-   icon track the server's rail state. #}
-{% macro railSwap(c) %}
-{{ railBody(c) }}
-{{ mv.head({ side: 'left', label: c.railLabel, views: c.railViews, size: c.railSize, sizeHref: c.railSizeHref }, true) }}
-{{ mv.bar({ side: 'left', label: c.railLabel, views: c.railViews, size: c.railSize, sizeHref: c.railSizeHref }, true) }}
+   icon track the server's panel state. #}
+{% macro activitySwap(c) %}
+{{ activityBody(c) }}
+{{ pv.head({ side: 'left', label: c.activityLabel, views: c.activityViews, size: c.panelSize, sizeHref: c.panelSizeHref }, true) }}
+{{ pv.bar({ side: 'left', label: c.activityLabel, views: c.activityViews, size: c.panelSize, sizeHref: c.panelSizeHref }, true) }}
 {% endmacro %}
 
-{# Stage-driven re-feed: interview progress, approvals and artifact opens
-   change the rail's data — refresh it out-of-band with the stage. The
-   <aside> itself (and its persisted width) is never replaced. #}
-{% macro railOob(c) %}
-{% call mv.body({ side: 'left' }, true) %}{{ railBody(c) }}{% endcall %}
-{{ mv.head({ side: 'left', label: c.railLabel, views: c.railViews, size: c.railSize, sizeHref: c.railSizeHref }, true) }}
-{{ mv.bar({ side: 'left', label: c.railLabel, views: c.railViews, size: c.railSize, sizeHref: c.railSizeHref }, true) }}
-{% endmacro %}
+
