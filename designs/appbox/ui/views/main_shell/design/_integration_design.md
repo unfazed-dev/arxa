@@ -56,7 +56,7 @@ export default [
 ];
 ```
 
-`tabRoots.design` is already `'/design'` — no change needed there.
+`shellRoots.design` is already `'/design'` — no change needed there.
 
 Routes (15):
 
@@ -87,11 +87,11 @@ Already links `design.css` and `viewer.css` — no change needed.
 
 ## 3. Shell nav (optional) — `designs/appbox/ui/views/main_shell/main_shell_view.html`
 
-The design views render with `activeTab: 'design'`; add a Design tab to the
+The design views render with `activeShell: 'design'`; add a Design destination to the
 shell nav if it isn't there yet:
 
 ```html
-<a class="shell-tab {{ 'is-active' if activeTab == 'design' }}" href="/design">Design</a>
+<a class="shell-link {{ 'is-active' if activeShell == 'design' }}" href="/design">Design</a>
 ```
 
 ## Notes for the integrator

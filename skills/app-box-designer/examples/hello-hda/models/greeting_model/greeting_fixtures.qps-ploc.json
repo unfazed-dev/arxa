@@ -1,0 +1,13 @@
+{
+  "_generated_from": "greeting_seed.qps-ploc.json",
+  "greetings": [
+    {
+      "id": "g1",
+      "text": "[!! Hëłłö ~̷~~̷~ !!]"
+    },
+    {
+      "id": "g2",
+      "text": "[!! Gööð möřñïñg ~̷~~̷~ !!]"
+    }
+  ]
+}

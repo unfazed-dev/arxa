@@ -10,7 +10,7 @@ producer.
 
 `emit_structure` looks for `jsx/app.jsx` and regexes `P2_REGISTRY` out of it. An
 htmx producer has no `jsx/`, so it falls back to **filename inference** —
-emitting `registry: null` and `tabRoots: {}`. Measured on the reference
+emitting `registry: null` and `shellRoots: {}`. Measured on the reference
 producer: **42 registry entries become 37 frozen screens**, and the five with
 `surface: null` vanish silently instead of being declared exclusions.
 
@@ -27,12 +27,12 @@ plan supplies the second source.
 - [x] **5.1** Add a second registry source to `tools/emit_structure`: when there
       is no JSX entry point, read `models/screens_model/registry.json`.
       **No regex — it is already JSON.**
-- [x] **5.2** Source `tabRoots` for htmx producers from `app.routes.js`'s
-      exported tab-root map (plan 01 step 1.9 makes the designer emit it). A
-      producer with no `tabRoots` **fails** — an empty object must no longer
+- [x] **5.2** Source `shellRoots` for htmx producers from `app.routes.js`'s
+      exported shell-root map (plan 01 step 1.9 makes the designer emit it). A
+      producer with no `shellRoots` **fails** — an empty object must no longer
       pass vacuously.
 - [x] **5.3** Join surfaces to viewmodels on the **declared `surfaceId`**, not
-      on filename similarity. Measured, a `(tab, short)` join resolves only
+      on filename similarity. Measured, a `(shell, short)` join resolves only
       **21 of 37**; the residual is lexical (`giftcards`↔`gift_cards`,
       `productedit`↔`product_edit`) plus genuinely semantic cases
       (`inbox.thread_list` ↔ `inbox/home`).
@@ -48,8 +48,8 @@ plan supplies the second source.
 - [x] **5.6** Preserve exclusion semantics: `surface: null` **is** the
       exclusion. Do not add a parallel exclusions list — two ways to express one
       fact is the drift this architecture exists to prevent.
-- [x] **5.7** Emit into `structure.json`, per screen: `id`, `tab`, `comp`,
-      `shell`, `surface`, plus the resolved `viewmodel` path and its declared
+- [x] **5.7** Emit into `structure.json`, per screen: `id`, `shell`, `comp`,
+      `surface`, plus the resolved `viewmodel` path and its declared
       repository/facade dependencies. The shell mapping is a **pure rename
       table** — measured, `tab → shell` has zero fan-out — so derive it, do not
       hand-maintain it.
@@ -57,7 +57,7 @@ plan supplies the second source.
 ## Done-when
 
 1. Running the emitter against the reference htmx producer yields non-null
-   `registry` and a **non-empty `tabRoots`**.
+   `registry` and a **non-empty `shellRoots`**.
 2. All declared screens resolve; **zero** unmatched. Removing one `surfaceId`
    makes it fail and name that viewmodel.
 3. The count is reconciled: registry entries = frozen screens + `surface: null`

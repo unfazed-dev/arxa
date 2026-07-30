@@ -4,6 +4,10 @@
 it. Builder agents: read `plans/implementation/00-README.md` next, then your
 assigned plan. Do not read the research unless your plan points you at it.
 
+**Glossary SSOT:** [VOCABULARY.md](VOCABULARY.md) is the sacred single source
+of truth for project vocabulary — every human and agent uses its terms, and
+word-meaning conflicts resolve there.
+
 **Owner:** Totem Labs. **Founder:** Evan F Pierre Louis.
 
 ---

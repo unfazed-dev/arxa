@@ -5,7 +5,7 @@ Architecture §18 and docs/plans/feature-crud.md: a feature is a registry entry.
 This module writes the AUTHORED layer only:
 
   models/screens_model/registry.json     the feature list (identity)
-  ui/views/<tab>/<short>/                the _view.html + _viewmodel.js pair
+  ui/views/<shell>/<short>/              the _view.html + _viewmodel.js pair
   models/screens_model/migrations.json   rename lineage (lazy; renames only)
 
 It NEVER writes structure.json or lib/** — those are GENERATED, emitted
@@ -17,7 +17,7 @@ this one path.
 Operations
   list   <root>                         Read — the registry IS the feature list.
   show   <root> <id>                    Read one entry.
-  create <root> --id --tab --comp [--surface] [--label]
+  create <root> --id --shell --comp [--surface] [--label]
                                        Append entry + view pair. surface:null
                                        (or --surface null) ⇒ entry only, no pair:
                                        a declared exclusion, distinct from delete.
@@ -47,8 +47,8 @@ MIGRATIONS_REL = "models/screens_model/migrations.json"
 VIEWS_REL = "ui/views"
 
 # Entry key order — frozen so round-trips are byte-stable (matches the existing
-# registry.json: id, label, surface, tab, comp).
-ENTRY_KEYS = ("id", "label", "surface", "tab", "comp")
+# registry.json: id, label, surface, shell, comp).
+ENTRY_KEYS = ("id", "label", "surface", "shell", "comp")
 
 SURFACEID_RE = re.compile(r"surfaceId\s*=\s*['\"]([^'\"]+)['\"]")
 
@@ -119,7 +119,7 @@ def fail(msg, code=1):
 # ---- derivation ------------------------------------------------------------
 def short_of(eid):
     """The directory short-name is the last '.'-segment of the id — a stable,
-    documented derivation (contract: ui/views/<tab>/<short>/)."""
+    documented derivation (contract: ui/views/<shell>/<short>/)."""
     return eid.split(".")[-1]
 
 
@@ -128,7 +128,7 @@ def pair_rel(entry):
     pair is ever created or expected)."""
     if not entry.get("surface"):
         return None
-    return f"{VIEWS_REL}/{entry['tab']}/{short_of(entry['id'])}"
+    return f"{VIEWS_REL}/{entry['shell']}/{short_of(entry['id'])}"
 
 
 def find_entry(entries, eid):
@@ -149,7 +149,7 @@ PAIR_VIEW = """<!-- {label} — authored view (CRUD writes this; never hand-edit
 """
 
 PAIR_VM = """// {label} — authored viewmodel. The surfaceId declaration is what
-// removes the fuzzy (tab, short) join: a view resolves to its registry entry by
+// removes the fuzzy (shell, short) join: a view resolves to its registry entry by
 // assertion, not by name matching (§14 / feature-crud.md Create step 2).
 export const surfaceId = '{id}';
 """
@@ -187,7 +187,7 @@ def _remove_pair_dir(root, rel, short):
         if os.path.isfile(p):
             os.remove(p)
     # Walk BOTTOM-UP from the pair dir, dropping now-empty ancestors. A rename
-    # that emptied a tab folder must leave no empty dir behind — that empty dir
+    # that emptied a shell folder must leave no empty dir behind — that empty dir
     # is exactly the debris the orphan assertion would flag forever. Stops at the
     # first non-empty ancestor (other features' dirs are never touched) and never
     # ascends past the design root.
@@ -289,7 +289,7 @@ def op_create(args):
              f"reused (§18). Use `rename` to retire it, or pick a new id.")
     surface = _coerce_surface(args.surface)
     entry = {"id": args.id, "label": args.label or "", "surface": surface,
-             "tab": args.tab, "comp": args.comp}
+             "shell": args.shell, "comp": args.comp}
     # canonical key order
     entry = {k: entry[k] for k in ENTRY_KEYS}
     reg.append(entry)
@@ -334,7 +334,7 @@ def op_rename(args):
     # --- never delete before the replacement exists (§18 prior art: a fixer ---
     # --- that deleted first once left a project with no service locator). -----
     new = {"id": args.to_id, "label": old.get("label", ""), "surface": new_surface,
-           "tab": old.get("tab"), "comp": old.get("comp")}
+           "shell": old.get("shell"), "comp": old.get("comp")}
     new = {k: new[k] for k in ENTRY_KEYS}
     reg.append(new)
     save_registry(args.root, reg)
@@ -440,7 +440,7 @@ def main(argv=None):
     p = sub.add_parser("create", help="append a feature + its view pair")
     root_arg(p)
     p.add_argument("--id", required=True)
-    p.add_argument("--tab", required=True)
+    p.add_argument("--shell", required=True)
     p.add_argument("--comp", required=True)
     p.add_argument("--surface", default=None,
                    help="surface id; 'null'/omitted ⇒ declared exclusion (no pair)")

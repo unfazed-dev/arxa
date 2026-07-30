@@ -1,6 +1,6 @@
-{# The rail, shared across tabs (DESIGN-ARCHITECTURE.md "Shared components
+{# The rail, shared across shells (DESIGN-ARCHITECTURE.md "Shared components
    (views)"): the top bar, the card shell, the list, and the composer.
-   Each tab keeps a thin wrapper in its own view that passes its domain data
+   Each shell keeps a thin wrapper in its own view that passes its domain data
    through `spec` / `base` — facades stay untouched. Macro-only file, so
    importing it from a fragment render never emits stray markup. #}
 {% import "ui/common/primitives.html" as prim %}
@@ -13,7 +13,7 @@
                options: [{id, label} | string] } — the type/epic/release
                dropdown; `url` is the full href prefix up to '='. Absent when
                the surface has no filter.
-     control: { action, value, title, glyph } — run pause/resume (build). #}
+     control: { action, value, title, icon } — run pause/resume (build). #}
 {% macro railBar(c, oob, spec) %}
 <header class="rail-bar" id="rail-bar" {% if oob %}hx-swap-oob="outerHTML"{% endif %}>
   <span class="rail-bar-main">
@@ -27,7 +27,7 @@
     {% if spec.filter %}
     <details class="rail-filter">
       <summary aria-label="{{ spec.filter.summaryAria }}" title="{{ spec.filter.summaryTitle }}">
-        {{ spec.filter.summary }}<span class="caret">⌄</span>
+        {{ spec.filter.summary }}{{ icon('chevron-down', {size: 14, cls: 'caret'}) }}
       </summary>
       <span class="filter-menu">
         {% for o in spec.filter.options %}
@@ -42,7 +42,7 @@
     {% if spec.control %}
     <form method="post" action="{{ spec.control.action }}" hx-post="{{ spec.control.action }}" hx-target="#rail-bar" hx-swap="outerHTML">
       <button type="submit" name="action" value="{{ spec.control.value }}" class="ico-btn"
-              title="{{ spec.control.title }}" aria-label="{{ spec.control.title }}">{{ spec.control.glyph }}</button>
+              title="{{ spec.control.title }}" aria-label="{{ spec.control.title }}">{{ icon(spec.control.icon, {size: 16}) }}</button>
     </form>
     {% endif %}
   </span>
@@ -52,8 +52,8 @@
 {# The card shell: type chip + thread count left, status pill top-right; the
    narrative text; one detail line; CTAs bottom-left, time bottom-right.
    `base` is the CTA route prefix (/build/artifact, c.base + '/artifact',
-   /design/screen). askTitle / threadTail carry per-tab phrasing; the
-   defaults are the build tab's. Cards without a state render no pill. #}
+   /design/screen). askTitle / threadTail carry per-shell phrasing; the
+   defaults are the build shell's. Cards without a state render no pill. #}
 {% macro msg(c, m, base, askTitle='Ask a follow-up about this', threadTail='in this canvas thread') %}
 {% if m.from == 'user' %}
 <div class="msg msg-user">
@@ -73,10 +73,10 @@
     <span class="msg-cta">
       <a class="cta-main" href="{{ base }}/{{ m.artifact }}"
          hx-get="{{ base }}/{{ m.artifact }}" hx-target="#canvas" hx-swap="innerHTML" hx-push-url="false">
-        {{ 'on canvas ●' if m.active else 'view on canvas →' }}</a>
+        {% if m.active %}on canvas {{ icon('circle-dot', {size: 12}) }}{% else %}view on canvas {{ icon('arrow-right', {size: 14}) }}{% endif %}</a>
       <a class="cta-ghost" href="{{ base }}/{{ m.artifact }}?bar=open"
          hx-get="{{ base }}/{{ m.artifact }}?bar=open" hx-target="#canvas" hx-swap="innerHTML" hx-push-url="false"
-         title="{{ askTitle }}">ask ↩</a>
+         title="{{ askTitle }}">ask {{ icon('reply', {size: 14}) }}</a>
     </span>
     {% endif %}
     <span class="msg-time">{{ m.at }}</span>
@@ -85,8 +85,8 @@
 {% endif %}
 {% endmacro %}
 
-{# The narrative rail list, newest first. Serves tabs whose rail iterates
-   c.messages (build, intake); the design tab's artboard rail iterates
+{# The narrative rail list, newest first. Serves shells whose rail iterates
+   c.messages (build, intake); the design shell's artboard rail iterates
    c.screens instead and keeps its own one-loop wrapper. #}
 {% macro railList(c, oob, base) %}
 <div class="rail-list" id="rail-list" {% if oob %}hx-swap-oob="outerHTML"{% endif %}>
@@ -105,7 +105,7 @@
       hx-post="{{ spec.action }}" hx-target="#canvas" hx-swap="innerHTML"
       {% if oob %}hx-swap-oob="outerHTML"{% endif %}>
   <details class="composer-plus">
-    <summary aria-label="{{ spec.plusAria or 'Suggestions' }}">+</summary>
+    <summary aria-label="{{ spec.plusAria or 'Suggestions' }}">{{ icon('plus', {size: 18}) }}</summary>
     <span class="composer-sugs">
       {% for s in spec.suggestions %}
       <button type="submit" name="preset" value="{{ s.value or s }}">{{ s.label or s }}</button>
@@ -113,6 +113,6 @@
     </span>
   </details>
   <textarea name="text" rows="1" placeholder="{{ spec.placeholder }}" aria-label="{{ spec.ariaLabel }}"></textarea>
-  <button type="submit" class="composer-send" aria-label="Send">↑</button>
+  <button type="submit" class="composer-send" aria-label="Send">{{ icon('arrow-up', {size: 18}) }}</button>
 </form>
 {% endmacro %}

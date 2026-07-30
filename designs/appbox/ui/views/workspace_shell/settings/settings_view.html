@@ -10,7 +10,7 @@
   <h2>Appearance</h2>
   <p class="settings-note">Warm paper or warm charcoal. Both are full citizens — every surface is checked in both.</p>
   <form method="post" action="/prefs/theme" hx-post="/prefs/theme" hx-swap="none">
-    <button type="submit">Switch to {{ 'light' if theme == 'dark' else 'dark' }}</button>
+    <button type="submit">{{ icon('sun' if theme == 'dark' else 'moon', {size: 15}) }} Switch to {{ 'light' if theme == 'dark' else 'dark' }}</button>
   </form>
 </section>
 
@@ -20,7 +20,7 @@
   <form class="swatch-row" method="post" action="/prefs/accent" hx-post="/prefs/accent" hx-swap="none">
     {% for s in accents %}
     <button type="submit" name="accent" value="{{ s.id }}" class="swatch {{ 'is-active' if s.id == accent }}">
-      <span class="swatch-dot" style="--swatch: {{ s.dot }}"></span>{{ s.label }}
+      <span class="swatch-dot" style="--swatch: {{ s.dot }}"></span>{{ s.label }}{% if s.id == accent %} {{ icon('check', {size: 13}) }}{% endif %}
     </button>
     {% endfor %}
   </form>
@@ -33,7 +33,7 @@
     {% for l in levels %}
     <form method="post" action="/prefs/jargon" hx-post="/prefs/jargon" hx-swap="none">
       <button type="submit" name="jargon" value="{{ l.id }}" class="level-card {{ 'is-active' if l.id == jargon }}">
-        <span class="level-name">{{ l.label }}</span>
+        <span class="level-name">{{ l.label }}{% if l.id == jargon %} {{ icon('check', {size: 14}) }}{% endif %}</span>
         <span class="level-example">“{{ l.example }}”</span>
       </button>
     </form>

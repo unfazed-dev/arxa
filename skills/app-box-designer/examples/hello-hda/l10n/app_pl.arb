@@ -1,0 +1,31 @@
+{
+  "@@locale": "pl",
+
+  "nav.home": "Start",
+  "nav.timer": "Minutnik",
+
+  "home.pageTitle": "Start — hello-hda",
+  "home.title": "Start",
+  "home.tagline": "Nawigacja z boost, stan renderowany po stronie serwera, zero własnego JS po stronie klienta.",
+  "home.greetingsHeader": "Powitania",
+  "home.toTimer": "Przejdź do minutnika",
+  "itemCount": "{count, plural, =0{Brak powitań z greeting_facade} one{{count} powitanie z greeting_facade} few{{count} powitania z greeting_facade} many{{count} powitań z greeting_facade} other{{count} powitania z greeting_facade}}",
+
+  "accent.label": "Akcent",
+  "accent.apply": "Zastosuj",
+  "accent.current": "Bieżący akcent",
+  "accent.option.iris": "Irys",
+  "accent.option.lagoon": "Laguna",
+  "accent.option.signal": "Sygnał",
+
+  "timer.pageTitle": "Minutnik — hello-hda",
+  "timer.title": "Minutnik odpoczynku",
+  "timer.tagline": "Serwer trzyma termin; strona odpytuje co sekundę. Bez napisanego JS.",
+  "timer.skip": "Pomiń",
+  "timer.done": "Koniec — dobra seria.",
+
+  "lang.label": "Język",
+  "lang.name.en": "English",
+  "lang.name.pl": "Polski",
+  "lang.name.qps-ploc": "Pseudo"
+}

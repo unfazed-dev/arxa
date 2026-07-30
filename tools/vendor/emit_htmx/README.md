@@ -71,7 +71,7 @@ Exit discipline (`freeze_design.sh` precedent — a gate never auto-installs):
    its output precisely so `--self-test` calibrates the freeze itself.
 
 3. **Reads the registry.** `models/screens_model/registry.json` —
-   `[{id, label, surface, tab, phase, comp, roles?}]`.
+   `[{id, label, surface, shell, phase, comp, roles?}]`.
 
 4. **Picks the role that can actually see each screen** — `entry.roles[0]`,
    else `comp` prefix `Studio` → `leo` / `Admin` → `erika`, else `felix`. This

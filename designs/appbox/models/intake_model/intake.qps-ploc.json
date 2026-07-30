@@ -1,0 +1,1657 @@
+{
+  "project": "[!! Pëţåł & Šţëm ~̷~~̷~ !!]",
+  "map": {
+    "releases": [
+      {
+        "name": "R1 Dogfood",
+        "description": "[!! åpp-böx ðëšïgñš, büïłðš åñð šhïpš ïţšëłf; Mïçhëłłë'š 20-mïñüţë ëvåłüåţïöñ ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+        "stories": 49
+      },
+      {
+        "name": "R2 Anywhere",
+        "description": "[!! řëåçh ţhë ðåëmöñ fřöm åñÿwhëřë (šëłf-höšţ ţåïłñëţ); vïšüåł řëvïëw ðëpţh ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+        "stories": 16
+      },
+      {
+        "name": "R3 Delight",
+        "description": "[!! pöłïšh åñð möåţ-wïðëñïñg ~̷~~̷~~̷~ !!]",
+        "stories": 1
+      }
+    ],
+    "epics": [
+      {
+        "id": "k-m-pp-g",
+        "name": "[!! Ïñţåkë & Šţöřÿ Måppïñg ~̷~~̷~~̷~ !!]",
+        "storyCount": 10,
+        "features": [
+          {
+            "id": "m-pp-g",
+            "name": "[!! Måppïñg ~̷~~̷~ !!]",
+            "stories": [
+              {
+                "id": "s-1",
+                "name": "[!! Ëvåñ ţüřñš å çłïëñţ břïëf ïñţö åñ Ëpïç-Fëåţüřë-Šţöřÿ måp ïñ öñë šïţţïñg ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+                "priority": "must",
+                "release": "R1 Dogfood",
+                "epic": "[!! Ïñţåkë & Šţöřÿ Måppïñg ~̷~~̷~~̷~ !!]",
+                "feature": "[!! Måppïñg ~̷~~̷~ !!]",
+                "surfaces": [
+                  "intake.mapping"
+                ]
+              },
+              {
+                "id": "s-2",
+                "name": "[!! Šüřfåçë çöüñţ + kïţ-çövëřågë ëšţïmåţë wïţhïñ åñ höüř öf šïgñïñg, ţö qüöţë höñëšţłÿ ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+                "priority": "must",
+                "release": "R1 Dogfood",
+                "epic": "[!! Ïñţåkë & Šţöřÿ Måppïñg ~̷~~̷~~̷~ !!]",
+                "feature": "[!! Måppïñg ~̷~~̷~ !!]",
+                "surfaces": [
+                  "intake.mapping"
+                ]
+              },
+              {
+                "id": "s-3",
+                "name": "[!! Å ñöñ-ţëçhñïçåł çłïëñţ çåñ řëåð åñð çöřřëçţ ţhë šţöřÿ måp (HŢMŁ) ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+                "priority": "should",
+                "release": "R1 Dogfood",
+                "epic": "[!! Ïñţåkë & Šţöřÿ Måppïñg ~̷~~̷~~̷~ !!]",
+                "feature": "[!! Måppïñg ~̷~~̷~ !!]",
+                "surfaces": [
+                  "intake.mapping"
+                ]
+              },
+              {
+                "id": "s-4",
+                "name": "[!! Šţöřïëš çåřřÿ ËÅŘŠ-šţÿłë åççëpţåñçë çřïţëřïå gåţëš çåñ çhëçk ~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+                "priority": "could",
+                "release": "R3 Delight",
+                "epic": "[!! Ïñţåkë & Šţöřÿ Måppïñg ~̷~~̷~~̷~ !!]",
+                "feature": "[!! Måppïñg ~̷~~̷~ !!]",
+                "surfaces": [
+                  "intake.mapping"
+                ]
+              }
+            ]
+          },
+          {
+            "id": "b-f",
+            "name": "[!! Břïëf ~̷~~̷~ !!]",
+            "stories": [
+              {
+                "id": "s-5",
+                "name": "[!! břïëf.mð šüřfåçë ţåbłë fëëðš ţhë ðëšïgñëř; ëvëřÿ řëgïšţřÿ šüřfåçë ţřåçëš ţö å šţöřÿ ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+                "priority": "must",
+                "release": "R1 Dogfood",
+                "epic": "[!! Ïñţåkë & Šţöřÿ Måppïñg ~̷~~̷~~̷~ !!]",
+                "feature": "[!! Břïëf ~̷~~̷~ !!]",
+                "surfaces": [
+                  "intake.brief"
+                ]
+              },
+              {
+                "id": "s-6",
+                "name": "[!! Řëgïšţřÿ šëëðëð fřöm ţhë břïëf wïţhöüţ řëwřïţïñg ~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+                "priority": "must",
+                "release": "R1 Dogfood",
+                "epic": "[!! Ïñţåkë & Šţöřÿ Måppïñg ~̷~~̷~~̷~ !!]",
+                "feature": "[!! Břïëf ~̷~~̷~ !!]",
+                "surfaces": [
+                  "intake.brief"
+                ]
+              }
+            ]
+          },
+          {
+            "id": "m-b",
+            "name": "[!! Mööðböåřð ~̷~~̷~ !!]",
+            "stories": [
+              {
+                "id": "s-7",
+                "name": "[!! Gïvëñ ţhë šţöřÿ måp, ţhë mööðböåřð öřçhëšţřåţöř fåñš öüţ pëř-ëpïç řëfëřëñçë-gåţhëřïñg přömpţš åñð çüřåţëš řëåł åppš ţö šţëåł fřöm ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+                "priority": "must",
+                "release": "R1 Dogfood",
+                "epic": "[!! Ïñţåkë & Šţöřÿ Måppïñg ~̷~~̷~~̷~ !!]",
+                "feature": "[!! Mööðböåřð ~̷~~̷~ !!]",
+                "surfaces": [
+                  "intake.moodboard"
+                ]
+              },
+              {
+                "id": "s-8",
+                "name": "[!! Ëåçh řëfëřëñçë'š këÿ šçřëëñš åřë çåpţüřëð (přöbë-řüññëř) åñð šåvëð wïţh šëmåñţïç fïłëñåmëš (řëf__šçřëëñ.pñg) ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+                "priority": "must",
+                "release": "R1 Dogfood",
+                "epic": "[!! Ïñţåkë & Šţöřÿ Måppïñg ~̷~~̷~~̷~ !!]",
+                "feature": "[!! Mööðböåřð ~̷~~̷~ !!]",
+                "surfaces": [
+                  "intake.moodboard"
+                ]
+              },
+              {
+                "id": "s-9",
+                "name": "[!! Ţhë mööðböåřð åššëmbłëš åš å břöwšåbłë ðöç łïñkïñg řëfëřëñçëš åñð šhöţš ţö ţhë ëpïçš ţhëÿ ïñföřm; ëvëřÿ ëmbëððëð šhöţ vëřïfïëð öñ ðïšk ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+                "priority": "must",
+                "release": "R1 Dogfood",
+                "epic": "[!! Ïñţåkë & Šţöřÿ Måppïñg ~̷~~̷~~̷~ !!]",
+                "feature": "[!! Mööðböåřð ~̷~~̷~ !!]",
+                "surfaces": [
+                  "intake.moodboard"
+                ]
+              },
+              {
+                "id": "s-10",
+                "name": "[!! Ţhë ðëšïgñ šţågë řëçëïvëš ţhë mööðböåřð åłöñgšïðë ţhë břïëf åñð çöñšüłţš ïţ bëföřë åüţhöřïñg ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+                "priority": "should",
+                "release": "R1 Dogfood",
+                "epic": "[!! Ïñţåkë & Šţöřÿ Måppïñg ~̷~~̷~~̷~ !!]",
+                "feature": "[!! Mööðböåřð ~̷~~̷~ !!]",
+                "surfaces": [
+                  "intake.moodboard"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "g-f",
+        "name": "[!! Ðëšïgñ & Fřëëžë ~̷~~̷~ !!]",
+        "storyCount": 12,
+        "features": [
+          {
+            "id": "p-p",
+            "name": "[!! Přöţöţÿpë ~̷~~̷~ !!]",
+            "stories": [
+              {
+                "id": "s-11",
+                "name": "[!! Břïëf ţö çłïçkåbłë hţmx přöţöţÿpë ïñ üñðëř 10 mïñüţëš, çåřřÿïñg šţřüçţüřë ñöţ pïxëłš ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+                "priority": "must",
+                "release": "R1 Dogfood",
+                "epic": "[!! Ðëšïgñ & Fřëëžë ~̷~~̷~ !!]",
+                "feature": "[!! Přöţöţÿpë ~̷~~̷~ !!]",
+                "surfaces": [
+                  "design.prototype"
+                ]
+              },
+              {
+                "id": "s-12",
+                "name": "[!! Ëvëřÿ šüřfåçë ðëšïgñëð åţ 390/744/1280 fřöm ţåřgëţš åłöñë (łïţëřåł påřïţÿ) ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+                "priority": "must",
+                "release": "R1 Dogfood",
+                "epic": "[!! Ðëšïgñ & Fřëëžë ~̷~~̷~ !!]",
+                "feature": "[!! Přöţöţÿpë ~̷~~̷~ !!]",
+                "surfaces": [
+                  "design.prototype"
+                ]
+              },
+              {
+                "id": "s-13",
+                "name": "[!! Ţåřgëţ šëłëçţïöñ łåbëłš büïłðåbïłïţÿ öñ ţhïš måçhïñë (řëqüïřëš måçÖŠ) ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+                "priority": "must",
+                "release": "R1 Dogfood",
+                "epic": "[!! Ðëšïgñ & Fřëëžë ~̷~~̷~ !!]",
+                "feature": "[!! Přöţöţÿpë ~̷~~̷~ !!]",
+                "surfaces": [
+                  "design.prototype"
+                ]
+              }
+            ]
+          },
+          {
+            "id": "h",
+            "name": "[!! Çhåţ ~̷~~̷~ !!]",
+            "stories": [
+              {
+                "id": "s-14",
+                "name": "[!! Šëłëçţ å šçřëëñ, çhåţ ëxçłüšïvëłÿ ïñ ïţš çöñţëxţ; åłł öţhëř šçřëëñš ðïm ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+                "priority": "must",
+                "release": "R1 Dogfood",
+                "epic": "[!! Ðëšïgñ & Fřëëžë ~̷~~̷~ !!]",
+                "feature": "[!! Çhåţ ~̷~~̷~ !!]",
+                "surfaces": [
+                  "design.chat"
+                ]
+              },
+              {
+                "id": "s-15",
+                "name": "[!! Šëłëçţïöñ ïš å řëmövåbłë çöñţëxţ çhïp: ţhïš šüřfåçëÏð'š špëç, ñëvëř ţhë whöłë åpp ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+                "priority": "must",
+                "release": "R1 Dogfood",
+                "epic": "[!! Ðëšïgñ & Fřëëžë ~̷~~̷~ !!]",
+                "feature": "[!! Çhåţ ~̷~~̷~ !!]",
+                "surfaces": [
+                  "design.chat"
+                ]
+              },
+              {
+                "id": "s-16",
+                "name": "[!! Håřð ţööł-gåţïñg: öñłÿ ţhïš šçřëëñ'š ţööłš ëxpöšëð (ëðïţ-łåÿöüţ, řëšţÿłë, åðjüšţ-šţåţëš, řëgëñëřåţë) ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+                "priority": "must",
+                "release": "R1 Dogfood",
+                "epic": "[!! Ðëšïgñ & Fřëëžë ~̷~~̷~ !!]",
+                "feature": "[!! Çhåţ ~̷~~̷~ !!]",
+                "surfaces": [
+                  "design.chat"
+                ]
+              },
+              {
+                "id": "s-17",
+                "name": "[!! Ţëxţ/ţökëñ ţwëåkš åppłÿ ïñšţåñţłÿ, ñö möðëł řöüñð-ţřïp ~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+                "priority": "should",
+                "release": "R1 Dogfood",
+                "epic": "[!! Ðëšïgñ & Fřëëžë ~̷~~̷~ !!]",
+                "feature": "[!! Çhåţ ~̷~~̷~ !!]",
+                "surfaces": [
+                  "design.chat"
+                ]
+              },
+              {
+                "id": "s-18",
+                "name": "[!! Ëåçh mëššågë çhëçkpöïñţš ţhïš šçřëëñ öñłÿ; öñë-ţåp řëvëřţ, řëñðëřëð bëföřë/åfţëř ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+                "priority": "must",
+                "release": "R1 Dogfood",
+                "epic": "[!! Ðëšïgñ & Fřëëžë ~̷~~̷~ !!]",
+                "feature": "[!! Çhåţ ~̷~~̷~ !!]",
+                "surfaces": [
+                  "design.chat"
+                ]
+              },
+              {
+                "id": "s-19",
+                "name": "[!! Šţåłë-šëłëçţïöñ güåřð: přöţöţÿpë çhåñgëð šïñçë šëłëçţïöñ ţřïggëřš řë-šÿñç öř wåřñ ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+                "priority": "should",
+                "release": "R1 Dogfood",
+                "epic": "[!! Ðëšïgñ & Fřëëžë ~̷~~̷~ !!]",
+                "feature": "[!! Çhåţ ~̷~~̷~ !!]",
+                "surfaces": [
+                  "design.chat"
+                ]
+              },
+              {
+                "id": "s-20",
+                "name": "[!! Šhåřëð ţökëñ/ñåv ëðïţ öffëřš 'åffëçţš Ñ šçřëëñš, åppłÿ ţö åłł?' (ñöböðÿ šhïpš ţhïš) ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+                "priority": "could",
+                "release": "R2 Anywhere",
+                "epic": "[!! Ðëšïgñ & Fřëëžë ~̷~~̷~ !!]",
+                "feature": "[!! Çhåţ ~̷~~̷~ !!]",
+                "surfaces": [
+                  "design.chat"
+                ]
+              }
+            ]
+          },
+          {
+            "id": "f",
+            "name": "[!! Fřëëžë ~̷~~̷~ !!]",
+            "stories": [
+              {
+                "id": "s-21",
+                "name": "[!! Håšh-łöçkëð fřëëžë; åppřövåł böüñð ţö ţhë ðëšïgñ håšh; pöšţ-åppřövåł çhåñgë göëš šţåłë łöüðłÿ ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+                "priority": "must",
+                "release": "R1 Dogfood",
+                "epic": "[!! Ðëšïgñ & Fřëëžë ~̷~~̷~ !!]",
+                "feature": "[!! Fřëëžë ~̷~~̷~ !!]",
+                "surfaces": [
+                  "design.freeze"
+                ]
+              },
+              {
+                "id": "s-22",
+                "name": "[!! Ðřïfţ řëpöřţ + břïëf-ţö-šüřfåçë-ţö-çöðë ţřåçëåbïłïţÿ ~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+                "priority": "must",
+                "release": "R1 Dogfood",
+                "epic": "[!! Ðëšïgñ & Fřëëžë ~̷~~̷~ !!]",
+                "feature": "[!! Fřëëžë ~̷~~̷~ !!]",
+                "surfaces": [
+                  "design.freeze"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "b-g",
+        "name": "[!! Büïłð & Gåţëš ~̷~~̷~ !!]",
+        "storyCount": 8,
+        "features": [
+          {
+            "id": "p",
+            "name": "[!! Łööp ~̷~~̷~ !!]",
+            "stories": [
+              {
+                "id": "s-23",
+                "name": "[!! Šţåřţ å büïłð, wåłk åwåÿ; šţöpš öñ řëð, ËŠÇ_ŁÏMÏŢ=3 ~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+                "priority": "must",
+                "release": "R1 Dogfood",
+                "epic": "[!! Büïłð & Gåţëš ~̷~~̷~ !!]",
+                "feature": "[!! Łööp ~̷~~̷~ !!]",
+                "surfaces": [
+                  "build.loop"
+                ]
+              },
+              {
+                "id": "s-24",
+                "name": "[!! Pëř-šüřfåçë ëvïðëñçë řëpöřţ (šçřëëñ ţö ţëšţš ţö çöðë), ñöţ öñë gïåñţ ðïff ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+                "priority": "must",
+                "release": "R1 Dogfood",
+                "epic": "[!! Büïłð & Gåţëš ~̷~~̷~ !!]",
+                "feature": "[!! Łööp ~̷~~̷~ !!]",
+                "surfaces": [
+                  "build.loop"
+                ]
+              },
+              {
+                "id": "s-25",
+                "name": "[!! ŠÅŘÏF fïñðïñgš pïññëð ţö fïłë/łïñë wïţh řëpřöðüçë çömmåñð ~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+                "priority": "must",
+                "release": "R1 Dogfood",
+                "epic": "[!! Büïłð & Gåţëš ~̷~~̷~ !!]",
+                "feature": "[!! Łööp ~̷~~̷~ !!]",
+                "surfaces": [
+                  "build.loop"
+                ]
+              }
+            ]
+          },
+          {
+            "id": "g",
+            "name": "[!! Gåţëš ~̷~~̷~ !!]",
+            "stories": [
+              {
+                "id": "s-26",
+                "name": "[!! Ţhřëë gåţëš åñ ågëñţ çåñ řëåçh büţ ñëvëř påšš; åppřövåł = hümåñ + åñÿ åüţhëñţïçåţëð šhëłł, přövëñåñçë-böüñð (šhëłł, ðëvïçë/ñöðë ïðëñţïţÿ, çöñfïřm mëţhöð, ţïmëšţåmp, håšh) ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+                "priority": "must",
+                "release": "R1 Dogfood",
+                "epic": "[!! Büïłð & Gåţëš ~̷~~̷~ !!]",
+                "feature": "[!! Gåţëš ~̷~~̷~ !!]",
+                "surfaces": [
+                  "build.gates"
+                ]
+              },
+              {
+                "id": "s-27",
+                "name": "[!! Åppřövë/řëjëçţ fřöm phöñë püšh wïţh bïömëţřïç çöñfïřm ~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+                "priority": "must",
+                "release": "R1 Dogfood",
+                "epic": "[!! Büïłð & Gåţëš ~̷~~̷~ !!]",
+                "feature": "[!! Gåţëš ~̷~~̷~ !!]",
+                "surfaces": [
+                  "build.gates"
+                ]
+              },
+              {
+                "id": "s-28",
+                "name": "[!! Přë-šübmïššïöñ çhëçkłïšţ gåţë (çřåšhëš/pëřmïššïöñš, whëřë gëñëřåţëð åppš ðïë) ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+                "priority": "should",
+                "release": "R1 Dogfood",
+                "epic": "[!! Büïłð & Gåţëš ~̷~~̷~ !!]",
+                "feature": "[!! Gåţëš ~̷~~̷~ !!]",
+                "surfaces": [
+                  "build.gates"
+                ]
+              }
+            ]
+          },
+          {
+            "id": "v",
+            "name": "[!! Vïšüåł ~̷~~̷~ !!]",
+            "stories": [
+              {
+                "id": "s-29",
+                "name": "[!! přöbë-řüññëř ðëšïgñ-vš-büïłţ gåţëš: pïxëł (ŠŠÏM), škëłëţöñ, çöłöüř (ðëłţåË) ågåïñšţ ţhë fřöžëñ göłðëñ ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+                "priority": "must",
+                "release": "R1 Dogfood",
+                "epic": "[!! Büïłð & Gåţëš ~̷~~̷~ !!]",
+                "feature": "[!! Vïšüåł ~̷~~̷~ !!]",
+                "surfaces": [
+                  "build.visual"
+                ]
+              },
+              {
+                "id": "s-30",
+                "name": "[!! Šmökë pëř ţåřgëţ: åpp bööţš, fïřšţ šçřëëñ řëñðëřš, ñö çřåšh ~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+                "priority": "must",
+                "release": "R1 Dogfood",
+                "epic": "[!! Büïłð & Gåţëš ~̷~~̷~ !!]",
+                "feature": "[!! Vïšüåł ~̷~~̷~ !!]",
+                "surfaces": [
+                  "build.visual"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "f-w-v",
+        "name": "[!! Fłöwš Çåñvåš ~̷~~̷~ !!]",
+        "storyCount": 3,
+        "features": [
+          {
+            "id": "v",
+            "name": "[!! Çåñvåš ~̷~~̷~ !!]",
+            "stories": [
+              {
+                "id": "s-31",
+                "name": "[!! åpp-böx åüţö-çåpţüřëš šçřëëñšhöţš öf ðëšïgñ + büïłţ åpp pëř šüřfåçë (přöbë-řüññëř) ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+                "priority": "must",
+                "release": "R2 Anywhere",
+                "epic": "[!! Fłöwš Çåñvåš ~̷~~̷~ !!]",
+                "feature": "[!! Çåñvåš ~̷~~̷~ !!]",
+                "surfaces": [
+                  "flows.canvas"
+                ]
+              },
+              {
+                "id": "s-32",
+                "name": "[!! Fłöwš öñ å çåñvåš: łïvïñg çåpţüřëš, çöññëçţïöñš ţřüţh-ðëřïvëð fřöm řëåł ñåvïgåţïöñ ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+                "priority": "must",
+                "release": "R2 Anywhere",
+                "epic": "[!! Fłöwš Çåñvåš ~̷~~̷~ !!]",
+                "feature": "[!! Çåñvåš ~̷~~̷~ !!]",
+                "surfaces": [
+                  "flows.canvas"
+                ]
+              },
+              {
+                "id": "s-33",
+                "name": "[!! Řëpłåÿåbłë ñåmëð fłöwš föř gåţë řëvïëwš; žööm-šëmåñţïç çåñvåš këÿëð ţö šţöřÿ-måp šëçţïöñš ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+                "priority": "should",
+                "release": "R2 Anywhere",
+                "epic": "[!! Fłöwš Çåñvåš ~̷~~̷~ !!]",
+                "feature": "[!! Çåñvåš ~̷~~̷~ !!]",
+                "surfaces": [
+                  "flows.canvas"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "h-p-p",
+        "name": "[!! Šhïp & Ðëpłöÿ ~̷~~̷~ !!]",
+        "storyCount": 4,
+        "features": [
+          {
+            "id": "p",
+            "name": "[!! Ðëpłöÿ ~̷~~̷~ !!]",
+            "stories": [
+              {
+                "id": "s-34",
+                "name": "[!! Pëř-płåţföřm büïłðš fřöm öñë çöðëbåšë; üñbüïłðåbłë ţåřgëţš håřð-błöçk åš å ñåmëð přëçöñðïţïöñ, ñëvëř å řëð gåţë ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+                "priority": "must",
+                "release": "R1 Dogfood",
+                "epic": "[!! Šhïp & Ðëpłöÿ ~̷~~̷~ !!]",
+                "feature": "[!! Ðëpłöÿ ~̷~~̷~ !!]",
+                "surfaces": [
+                  "ship.deploy"
+                ]
+              },
+              {
+                "id": "s-35",
+                "name": "[!! Påÿmëñţ gåţë åţ fïřšţ ðëpłöÿ: łïçëñçë řëqüïřëð ţö šhïp; ëvëřÿţhïñg bëföřë ïţ fřëë ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+                "priority": "must",
+                "release": "R1 Dogfood",
+                "epic": "[!! Šhïp & Ðëpłöÿ ~̷~~̷~ !!]",
+                "feature": "[!! Ðëpłöÿ ~̷~~̷~ !!]",
+                "surfaces": [
+                  "ship.deploy"
+                ]
+              },
+              {
+                "id": "s-36",
+                "name": "[!! Ëxpöřţ-åłwåÿš: öřðïñåřÿ Šţåçkëð MVVM ïñ mÿ öwñ řëpö, ñö ëxpöřţ ţïëř ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+                "priority": "must",
+                "release": "R1 Dogfood",
+                "epic": "[!! Šhïp & Ðëpłöÿ ~̷~~̷~ !!]",
+                "feature": "[!! Ðëpłöÿ ~̷~~̷~ !!]",
+                "surfaces": [
+                  "ship.deploy"
+                ]
+              },
+              {
+                "id": "s-37",
+                "name": "[!! Güïðëð šţöřë šübmïššïöñ (möšţ-çïţëð üñmëţ gåp ïñ ëvëřÿ büïłðëř) ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+                "priority": "should",
+                "release": "R2 Anywhere",
+                "epic": "[!! Šhïp & Ðëpłöÿ ~̷~~̷~ !!]",
+                "feature": "[!! Ðëpłöÿ ~̷~~̷~ !!]",
+                "surfaces": [
+                  "ship.deploy"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "v",
+        "name": "[!! Åççëšš & Ðëvïçëš ~̷~~̷~ !!]",
+        "storyCount": 7,
+        "features": [
+          {
+            "id": "p-g",
+            "name": "[!! Påïřïñg ~̷~~̷~ !!]",
+            "stories": [
+              {
+                "id": "s-38",
+                "name": "[!! Öñë-šçåñ QŘ påïřïñg (höšţ/pöřţ/ñöñçë/këÿ fïñgëřpřïñţ); řëłåÿëð QŘ fåïłš ţhë pïñ ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+                "priority": "must",
+                "release": "R1 Dogfood",
+                "epic": "[!! Åççëšš & Ðëvïçëš ~̷~~̷~ !!]",
+                "feature": "[!! Påïřïñg ~̷~~̷~ !!]",
+                "surfaces": [
+                  "access.pairing"
+                ]
+              },
+              {
+                "id": "s-39",
+                "name": "[!! Ðëvïçë łïšţ wïţh łåšţ-šëëñ + řëvökë; řëvökë ðřöpš ţhë šëššïöñ ïmmëðïåţëłÿ ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+                "priority": "must",
+                "release": "R1 Dogfood",
+                "epic": "[!! Åççëšš & Ðëvïçëš ~̷~~̷~ !!]",
+                "feature": "[!! Påïřïñg ~̷~~̷~ !!]",
+                "surfaces": [
+                  "access.pairing"
+                ]
+              },
+              {
+                "id": "s-40",
+                "name": "[!! ŁÅÑ-öñłÿ bÿ ðëfåüłţ, ñö çłöüð řëłåÿ; åñ ågëñţ çåñ ñëvëř mïñţ åñ åppřövåł ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+                "priority": "must",
+                "release": "R1 Dogfood",
+                "epic": "[!! Åççëšš & Ðëvïçëš ~̷~~̷~ !!]",
+                "feature": "[!! Påïřïñg ~̷~~̷~ !!]",
+                "surfaces": [
+                  "access.pairing"
+                ]
+              }
+            ]
+          },
+          {
+            "id": "f",
+            "name": "[!! Ñöţïfïçåţïöñš ~̷~~̷~ !!]",
+            "stories": [
+              {
+                "id": "s-41",
+                "name": "[!! Püšh whëñ å gåţë göëš řëð (ðëðüpëð pëř ţřåñšïţïöñ), ðëëp-łïñk ïñţö ţhë gåţë çåřð ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+                "priority": "must",
+                "release": "R1 Dogfood",
+                "epic": "[!! Åççëšš & Ðëvïçëš ~̷~~̷~ !!]",
+                "feature": "[!! Ñöţïfïçåţïöñš ~̷~~̷~ !!]",
+                "surfaces": [
+                  "access.notifications"
+                ]
+              },
+              {
+                "id": "s-42",
+                "name": "[!! Åçţïöñåbłë ñöţïfïçåţïöñ: åppřövë/řëjëçţ wïţhöüţ öpëñïñg ţhë åpp ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+                "priority": "should",
+                "release": "R1 Dogfood",
+                "epic": "[!! Åççëšš & Ðëvïçëš ~̷~~̷~ !!]",
+                "feature": "[!! Ñöţïfïçåţïöñš ~̷~~̷~ !!]",
+                "surfaces": [
+                  "access.notifications"
+                ]
+              }
+            ]
+          },
+          {
+            "id": "m",
+            "name": "[!! Řëmöţë ~̷~~̷~ !!]",
+            "stories": [
+              {
+                "id": "s-43",
+                "name": "[!! Šëłf-höšţ ţåïłñëţ (çömpöšë fïłë) öř höšţëð Ţåïłšçåłë; přë-åüţh këÿ ïñ ţhë QŘ; åppřövåłš bïñð ţö WïřëGüåřð ñöðë ïðëñţïţÿ ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+                "priority": "should",
+                "release": "R2 Anywhere",
+                "epic": "[!! Åççëšš & Ðëvïçëš ~̷~~̷~ !!]",
+                "feature": "[!! Řëmöţë ~̷~~̷~ !!]",
+                "surfaces": [
+                  "access.remote"
+                ]
+              },
+              {
+                "id": "s-44",
+                "name": "[!! Přïvåţë mëšh ÇÅ gïvëš ţřüšţëð HŢŢPŠ öřïgïñš övëř ţhë mëšh (åřxå ÅÐŘ-0036 påţţëřñ) ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+                "priority": "should",
+                "release": "R2 Anywhere",
+                "epic": "[!! Åççëšš & Ðëvïçëš ~̷~~̷~ !!]",
+                "feature": "[!! Řëmöţë ~̷~~̷~ !!]",
+                "surfaces": [
+                  "access.remote"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "f-h-w",
+        "name": "[!! Fïřšţ Řüñ & Šhöwçåšë ~̷~~̷~~̷~ !!]",
+        "storyCount": 5,
+        "features": [
+          {
+            "id": "h-w",
+            "name": "[!! Šhöwçåšë ~̷~~̷~ !!]",
+            "stories": [
+              {
+                "id": "s-45",
+                "name": "[!! Šhöwçåšë åpp łåüñçhëš öñ ïñšţåłł, åüţömåţïçåłłÿ; qüåłïţÿ vïšïbłë ïñ mïñüţë öñë ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+                "priority": "must",
+                "release": "R1 Dogfood",
+                "epic": "[!! Fïřšţ Řüñ & Šhöwçåšë ~̷~~̷~~̷~ !!]",
+                "feature": "[!! Šhöwçåšë ~̷~~̷~ !!]",
+                "surfaces": [
+                  "first.showcase",
+                  "website.showcase2"
+                ]
+              },
+              {
+                "id": "s-46",
+                "name": "[!! Fïřšţ přöjëçţ ţö wöřkïñg přöţöţÿpë ïñ 20 mïñüţëš öř łëšš, ñö ðöçš (ţïmëð; övëř 20 ïš å fïñðïñg) ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+                "priority": "must",
+                "release": "R1 Dogfood",
+                "epic": "[!! Fïřšţ Řüñ & Šhöwçåšë ~̷~~̷~~̷~ !!]",
+                "feature": "[!! Šhöwçåšë ~̷~~̷~ !!]",
+                "surfaces": [
+                  "first.showcase",
+                  "website.showcase2"
+                ]
+              }
+            ]
+          },
+          {
+            "id": "h",
+            "name": "[!! Höñëšţÿ ~̷~~̷~ !!]",
+            "stories": [
+              {
+                "id": "s-47",
+                "name": "[!! Šţübš łåbëłłëð bëföřë ÿöü büïłð ågåïñšţ ţhëm; kïţ åvåïłåbïłïţÿ höñëšţ ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+                "priority": "must",
+                "release": "R1 Dogfood",
+                "epic": "[!! Fïřšţ Řüñ & Šhöwçåšë ~̷~~̷~~̷~ !!]",
+                "feature": "[!! Höñëšţÿ ~̷~~̷~ !!]",
+                "surfaces": [
+                  "first.honesty"
+                ]
+              },
+              {
+                "id": "s-48",
+                "name": "[!! Çřëðëñţïåł ţïëř šţåţëð öñ šçřëëñ (šţöřëð ïñ ţhë måçÖŠ Këÿçhåïñ) ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+                "priority": "must",
+                "release": "R1 Dogfood",
+                "epic": "[!! Fïřšţ Řüñ & Šhöwçåšë ~̷~~̷~~̷~ !!]",
+                "feature": "[!! Höñëšţÿ ~̷~~̷~ !!]",
+                "surfaces": [
+                  "first.honesty"
+                ]
+              },
+              {
+                "id": "s-49",
+                "name": "[!! Ëmpţÿ šţåţëš çåřřÿ wöřðïñg, ñöţ błåñk šüřfåçëš ~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+                "priority": "should",
+                "release": "R1 Dogfood",
+                "epic": "[!! Fïřšţ Řüñ & Šhöwçåšë ~̷~~̷~~̷~ !!]",
+                "feature": "[!! Höñëšţÿ ~̷~~̷~ !!]",
+                "surfaces": [
+                  "first.honesty"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "w-k-p",
+        "name": "[!! Wöřkšpåçë ~̷~~̷~ !!]",
+        "storyCount": 6,
+        "features": [
+          {
+            "id": "p-j",
+            "name": "[!! Přöjëçţš ~̷~~̷~ !!]",
+            "stories": [
+              {
+                "id": "s-50",
+                "name": "[!! Müłţï-přöjëçţ måñågëmëñţ; řëgïšţřÿ ÇŘÜÐ; åðð/ðëłëţë fëåţüřë ÿïëłðš bÿţë-ïðëñţïçåł řöüñð-ţřïp ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+                "priority": "must",
+                "release": "R1 Dogfood",
+                "epic": "[!! Wöřkšpåçë ~̷~~̷~ !!]",
+                "feature": "[!! Přöjëçţš ~̷~~̷~ !!]",
+                "surfaces": [
+                  "workspace.projects"
+                ]
+              }
+            ]
+          },
+          {
+            "id": "g",
+            "name": "[!! Šëţţïñgš ~̷~~̷~ !!]",
+            "stories": [
+              {
+                "id": "s-51",
+                "name": "[!! BŸÖ këÿ ïñ ÖŠ våüłţ, ñëvëř łöggëð; ñö ïñfëřëñçë mëţëřïñg, çöšţ ïš ÿöüřš åñð vïšïbłë ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+                "priority": "must",
+                "release": "R1 Dogfood",
+                "epic": "[!! Wöřkšpåçë ~̷~~̷~ !!]",
+                "feature": "[!! Šëţţïñgš ~̷~~̷~ !!]",
+                "surfaces": [
+                  "workspace.settings"
+                ]
+              },
+              {
+                "id": "s-52",
+                "name": "[!! Fłåţ łïçëñçë, ñëvëř pëř-šëåţ; påÿ åţ fïřšţ ðëpłöÿ ~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+                "priority": "must",
+                "release": "R1 Dogfood",
+                "epic": "[!! Wöřkšpåçë ~̷~~̷~ !!]",
+                "feature": "[!! Šëţţïñgš ~̷~~̷~ !!]",
+                "surfaces": [
+                  "workspace.settings"
+                ]
+              },
+              {
+                "id": "s-53",
+                "name": "[!! Kïţ vëñðöřïñg fřöm ţåřgëţš + çåpåbïłïţïëš; ðëpëñðëñçÿMöðë çöñfïg fřöm ðåÿ öñë ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+                "priority": "should",
+                "release": "R1 Dogfood",
+                "epic": "[!! Wöřkšpåçë ~̷~~̷~ !!]",
+                "feature": "[!! Šëţţïñgš ~̷~~̷~ !!]",
+                "surfaces": [
+                  "workspace.settings"
+                ]
+              },
+              {
+                "id": "s-54",
+                "name": "[!! Åppëåřåñçë přëfš pëř ðëvïçë: wåřm łïghţ/ðåřk ţhëmë + břåñð åççëñţ pïçkëř (çÿåñ/vïöłëţ/błüë/ëmbëř fřöm ţhë łögö) ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+                "priority": "should",
+                "release": "R1 Dogfood",
+                "epic": "[!! Wöřkšpåçë ~̷~~̷~ !!]",
+                "feature": "[!! Šëţţïñgš ~̷~~̷~ !!]",
+                "surfaces": [
+                  "workspace.settings"
+                ]
+              },
+              {
+                "id": "s-55",
+                "name": "[!! Łåñgüågë łëvëł płåïñ/båłåñçëð/ţëçhñïçåł — ëvëřÿ üšëř-fåçïñg šţřïñg wřïţţëñ ţhřëë wåÿš; vïšüåł mëţřïçš řëñðëř åš X/100 måţçh šçöřëš (ΔË 2.0 = 95/100 påšš båř), ţëçhñïçåł łëvëł këëpš řåw våłüëš ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+                "priority": "must",
+                "release": "R1 Dogfood",
+                "epic": "[!! Wöřkšpåçë ~̷~~̷~ !!]",
+                "feature": "[!! Šëţţïñgš ~̷~~̷~ !!]",
+                "surfaces": [
+                  "workspace.settings"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "w-b",
+        "name": "[!! Wëbšïţë ~̷~~̷~ !!]",
+        "storyCount": 11,
+        "features": [
+          {
+            "id": "",
+            "name": "[!! Šïţë ~̷~~̷~ !!]",
+            "stories": [
+              {
+                "id": "s-56",
+                "name": "[!! Å vïšïţöř gëţš åpp-böx ïñ 30 šëçöñðš: gåţëð pïpëłïñë, öwñ-ÿöüř-çöðë ëxpöřţ, påÿ-åţ-ðëpłöÿ ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+                "priority": "must",
+                "release": "R2 Anywhere",
+                "epic": "[!! Wëbšïţë ~̷~~̷~ !!]",
+                "feature": "[!! Šïţë ~̷~~̷~ !!]",
+                "surfaces": [
+                  "website.site"
+                ]
+              },
+              {
+                "id": "s-57",
+                "name": "[!! Ţhë ţhřëë hümåñ gåţëš åřë ţhë hëåðłïñë, šhöwñ ñöţ ţöłð (řëçöřðëð gåţë fłöw) ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+                "priority": "should",
+                "release": "R2 Anywhere",
+                "epic": "[!! Wëbšïţë ~̷~~̷~ !!]",
+                "feature": "[!! Šïţë ~̷~~̷~ !!]",
+                "surfaces": [
+                  "website.site"
+                ]
+              },
+              {
+                "id": "s-58",
+                "name": "[!! Přïçïñg pågë: fłåţ łïçëñçë, ñëvëř pëř-šëåţ, BŸÖ këÿ, påÿ åţ fïřšţ ðëpłöÿ (ţhë åñţï-çřëðïţ-řågë pågë) ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+                "priority": "must",
+                "release": "R2 Anywhere",
+                "epic": "[!! Wëbšïţë ~̷~~̷~ !!]",
+                "feature": "[!! Šïţë ~̷~~̷~ !!]",
+                "surfaces": [
+                  "website.site"
+                ]
+              }
+            ]
+          },
+          {
+            "id": "",
+            "name": "[!! Ðöçš ~̷~~̷~ !!]",
+            "stories": [
+              {
+                "id": "s-59",
+                "name": "[!! Ðöçš pöřţåł pübłïšhëš ţhë kñöwłëðgë båšë (åřçhïţëçţüřë, płåñš, řëšëåřçh, škïłłš) wïţh šëåřçh ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+                "priority": "must",
+                "release": "R1 Dogfood",
+                "epic": "[!! Wëbšïţë ~̷~~̷~ !!]",
+                "feature": "[!! Ðöçš ~̷~~̷~ !!]",
+                "surfaces": [
+                  "website.docs"
+                ]
+              },
+              {
+                "id": "s-60",
+                "name": "[!! Gëţţïñg-šţåřţëð mïřřöřš Mïçhëłłë'š 20 mïñüţëš: ïñšţåłł, šhöwçåšë, fïřšţ přöţöţÿpë ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+                "priority": "must",
+                "release": "R1 Dogfood",
+                "epic": "[!! Wëbšïţë ~̷~~̷~ !!]",
+                "feature": "[!! Ðöçš ~̷~~̷~ !!]",
+                "surfaces": [
+                  "website.docs"
+                ]
+              },
+              {
+                "id": "s-61",
+                "name": "[!! Pübłïç höñëšţÿ pågë: whåţ ïš wïřëð, whåţ ţhřöwš, whåţ ïš řöåðmåp ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+                "priority": "should",
+                "release": "R2 Anywhere",
+                "epic": "[!! Wëbšïţë ~̷~~̷~ !!]",
+                "feature": "[!! Ðöçš ~̷~~̷~ !!]",
+                "surfaces": [
+                  "website.docs"
+                ]
+              }
+            ]
+          },
+          {
+            "id": "h-w",
+            "name": "[!! Šhöwçåšë ~̷~~̷~ !!]",
+            "stories": [
+              {
+                "id": "s-62",
+                "name": "[!! Řëçöřðëð wåłkţhřöüghš åñð ðëšïgñ-vš-büïłţ çömpåřïšöñš (přöbë-řüññëř çåpţüřëš) přövë qüåłïţÿ bëföřë ïñšţåłł ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+                "priority": "should",
+                "release": "R2 Anywhere",
+                "epic": "[!! Wëbšïţë ~̷~~̷~ !!]",
+                "feature": "[!! Šhöwçåšë ~̷~~̷~ !!]",
+                "surfaces": [
+                  "first.showcase",
+                  "website.showcase2"
+                ]
+              },
+              {
+                "id": "s-63",
+                "name": "[!! Ðëmö vïðëöš pëř pëřšöñå jöüřñëÿ (Ëvåñ'š möðëš, Mïçhëłłë'š 20 mïñüţëš) ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+                "priority": "should",
+                "release": "R2 Anywhere",
+                "epic": "[!! Wëbšïţë ~̷~~̷~ !!]",
+                "feature": "[!! Šhöwçåšë ~̷~~̷~ !!]",
+                "surfaces": [
+                  "first.showcase",
+                  "website.showcase2"
+                ]
+              }
+            ]
+          },
+          {
+            "id": "w",
+            "name": "[!! Ðöwñłöåð ~̷~~̷~ !!]",
+            "stories": [
+              {
+                "id": "s-64",
+                "name": "[!! Ðöwñłöåð pëř płåţföřm: måçÖŠ ðmg, ðåëmöñ ÇŁÏ föř Wïñðöwš/Łïñüx, möbïłë åppš, wïţh ţhë höñëšţ büïłð måţřïx ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+                "priority": "must",
+                "release": "R2 Anywhere",
+                "epic": "[!! Wëbšïţë ~̷~~̷~ !!]",
+                "feature": "[!! Ðöwñłöåð ~̷~~̷~ !!]",
+                "surfaces": [
+                  "website.download"
+                ]
+              },
+              {
+                "id": "s-65",
+                "name": "[!! Łïçëñçë püřçhåšë åñð åçţïvåţïöñ, påÿ-åţ-ðëpłöÿ ëxpłåïñëð bëföřë çhëçköüţ ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+                "priority": "must",
+                "release": "R2 Anywhere",
+                "epic": "[!! Wëbšïţë ~̷~~̷~ !!]",
+                "feature": "[!! Ðöwñłöåð ~̷~~̷~ !!]",
+                "surfaces": [
+                  "website.download"
+                ]
+              },
+              {
+                "id": "s-66",
+                "name": "[!! Çhåñgëłög åñð řëłëåšë ñöţëš pëř vëřšïöñ ~̷~~̷~~̷~~̷~~̷~ !!]",
+                "priority": "should",
+                "release": "R2 Anywhere",
+                "epic": "[!! Wëbšïţë ~̷~~̷~ !!]",
+                "feature": "[!! Ðöwñłöåð ~̷~~̷~ !!]",
+                "surfaces": [
+                  "website.download"
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "brief": {
+    "title": "[!! åpp-böx — ðëšïgñ břïëf ~̷~~̷~~̷~ !!]",
+    "provenance": "[!! Ëłïçïţëð vïå åpp-böx-šţöřÿ-måppëř · šţöřÿ-måp.jšöñ åłöñgšïðë · gåţëš/ïñţåkë, płåñ 10.7 ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+    "intro": "[!! Přïöřïţïëš åřë MöŠÇöW, gřöüpëð ïñţö řëłëåšë šwïmłåñëš. Ëvëřÿ řëgïšţřÿ šüřfåçë müšţ ţřåçë ţö ţhë šüřfåçë ïñvëñţöřÿ ţåbłë bëłöw. ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+    "introPlain": "[!! Ëvëřÿ šţöřÿ ïš šöřţëð müšţ / šhöüłð / çöüłð åñð šłöţţëð ïñţö å řëłëåšë. Ëvëřÿ šçřëëñ ïñ ţhë åpp ţřåçëš båçk ţö å šţöřÿ ïñ ţhïš břïëf. ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+    "surfaceNote": "[!! Ëvëřÿ řëgïšţřÿ šüřfåçë ţřåçëš ţö å šţöřÿ — ţhë ţåbłë ţhë ðëšïgñëř çöñšümëš. ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+    "surfaces": [
+      {
+        "id": "intake.mapping",
+        "label": "[!! Måppïñg ~̷~~̷~ !!]",
+        "priority": "must",
+        "release": "R1 Dogfood"
+      },
+      {
+        "id": "intake.brief",
+        "label": "[!! Břïëf ~̷~~̷~ !!]",
+        "priority": "must",
+        "release": "R1 Dogfood"
+      },
+      {
+        "id": "intake.moodboard",
+        "label": "[!! Mööðböåřð ~̷~~̷~ !!]",
+        "priority": "must",
+        "release": "R1 Dogfood"
+      },
+      {
+        "id": "design.prototype",
+        "label": "[!! Přöţöţÿpë ~̷~~̷~ !!]",
+        "priority": "must",
+        "release": "R1 Dogfood"
+      },
+      {
+        "id": "design.chat",
+        "label": "[!! Çhåţ ~̷~~̷~ !!]",
+        "priority": "must",
+        "release": "R1 Dogfood"
+      },
+      {
+        "id": "design.freeze",
+        "label": "[!! Fřëëžë ~̷~~̷~ !!]",
+        "priority": "must",
+        "release": "R1 Dogfood"
+      },
+      {
+        "id": "build.loop",
+        "label": "[!! Łööp ~̷~~̷~ !!]",
+        "priority": "must",
+        "release": "R1 Dogfood"
+      },
+      {
+        "id": "build.gates",
+        "label": "[!! Gåţëš ~̷~~̷~ !!]",
+        "priority": "must",
+        "release": "R1 Dogfood"
+      },
+      {
+        "id": "build.visual",
+        "label": "[!! Vïšüåł ~̷~~̷~ !!]",
+        "priority": "must",
+        "release": "R1 Dogfood"
+      },
+      {
+        "id": "flows.canvas",
+        "label": "[!! Çåñvåš ~̷~~̷~ !!]",
+        "priority": "must",
+        "release": "R2 Anywhere"
+      },
+      {
+        "id": "ship.deploy",
+        "label": "[!! Ðëpłöÿ ~̷~~̷~ !!]",
+        "priority": "must",
+        "release": "R1 Dogfood"
+      },
+      {
+        "id": "access.pairing",
+        "label": "[!! Påïřïñg ~̷~~̷~ !!]",
+        "priority": "must",
+        "release": "R1 Dogfood"
+      },
+      {
+        "id": "access.notifications",
+        "label": "[!! Ñöţïfïçåţïöñš ~̷~~̷~ !!]",
+        "priority": "must",
+        "release": "R1 Dogfood"
+      },
+      {
+        "id": "access.remote",
+        "label": "[!! Řëmöţë ~̷~~̷~ !!]",
+        "priority": "should",
+        "release": "R2 Anywhere"
+      },
+      {
+        "id": "first.showcase",
+        "label": "[!! Šhöwçåšë ~̷~~̷~ !!]",
+        "priority": "must",
+        "release": "R1 Dogfood"
+      },
+      {
+        "id": "first.honesty",
+        "label": "[!! Höñëšţÿ ~̷~~̷~ !!]",
+        "priority": "must",
+        "release": "R1 Dogfood"
+      },
+      {
+        "id": "workspace.projects",
+        "label": "[!! Přöjëçţš ~̷~~̷~ !!]",
+        "priority": "must",
+        "release": "R1 Dogfood"
+      },
+      {
+        "id": "workspace.settings",
+        "label": "[!! Šëţţïñgš ~̷~~̷~ !!]",
+        "priority": "must",
+        "release": "R1 Dogfood"
+      },
+      {
+        "id": "website.site",
+        "label": "[!! Šïţë ~̷~~̷~ !!]",
+        "priority": "must",
+        "release": "R2 Anywhere"
+      },
+      {
+        "id": "website.docs",
+        "label": "[!! Ðöçš ~̷~~̷~ !!]",
+        "priority": "must",
+        "release": "R1 Dogfood"
+      },
+      {
+        "id": "website.showcase2",
+        "label": "[!! Šhöwçåšë ~̷~~̷~ !!]",
+        "priority": "should",
+        "release": "R2 Anywhere"
+      },
+      {
+        "id": "website.download",
+        "label": "[!! Ðöwñłöåð ~̷~~̷~ !!]",
+        "priority": "must",
+        "release": "R2 Anywhere"
+      }
+    ]
+  },
+  "moodboard": {
+    "curated": "[!! 2026-07-28 ~̷~~̷~ !!]",
+    "provenance": "[!! ðöçš/mööðböåřðš · přöbë-řüññëř çåpţüřëš · ëvëřÿ šhöţ vëřïfïëð öñ ðïšk ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+    "boards": [
+      {
+        "id": "builders",
+        "title": "[!! ÅÏ Åpp Büïłðëřš & Fłöwš Çåñvåš ~̷~~̷~~̷~~̷~ !!]",
+        "slice": "[!! ÅÏ åpp büïłðëřš + ðëšïgñ-çåñvåš/fłöwš ţööłš ~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+        "informs": "[!! Fłöwš Çåñvåš ~̷~~̷~ !!]",
+        "file": "ai-builders-and-flows-canvas.md",
+        "references": [
+          {
+            "name": "[!! Ðřëåmfłöw ~̷~~̷~ !!]",
+            "url": "https://dreamflow.app/",
+            "grade": "hot",
+            "shot": {
+              "file": "dreamflow__tri-surface.png",
+              "caption": "[!! ţřï-šüřfåçë ëðïţöř — přëvïëw + ågëñţ + çöðë ~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+              "id": "builders--dreamflow__tri-surface",
+              "src": "/assets/images/moodboard/builders/dreamflow__tri-surface.png"
+            },
+            "steal": "[!! Ţřï-påñë wïţh ţhřëë łïvë-šÿñçëð šüřfåçëš — ågëñţ çhåţ, vïšüåł çåñvåš, füłł çöðë ëðïţöř; ëðïţ åñÿ öñë, ţhë öţhëř ţwö üpðåţë. Ñö-łöçk-ïñ fïłë-šÿšţëm åççëšš: ţhë vïšüåł łåÿëř ëðïţš řëåł přöjëçţ fïłëš. ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+            "why": "[!! Ţhë çłöšëšţ šţřüçţüřåł šïbłïñg (Fłüţţëř-ñåţïvë, ÅÏ-fïřšţ). Ïţš ţřï-šüřfåçë šÿñç ïš ţhë båř: ţhë fłöwš çåñvåš müšţ řëfłëçţ ţhë åçţüåł büïłţ ţåřgëţ, ñöţ å šţåłë möçk. ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]"
+          },
+          {
+            "name": "[!! FłüţţëřFłöw ~̷~~̷~ !!]",
+            "url": "https://flutterflow.io/",
+            "grade": "warm",
+            "shot": {
+              "file": "flutterflow__editor.png",
+              "caption": "[!! ëðïţöř åñåţömÿ — wïðgëţ ţřëë + çåñvåš + přöpëřţïëš ~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+              "id": "builders--flutterflow__editor",
+              "src": "/assets/images/moodboard/builders/flutterflow__editor.png"
+            },
+            "steal": "[!! Pågë-łïšţ řåïł + çåñvåš + přöpëřţïëš ïñšpëçţöř — ţhë çłåššïç ţhřëë-çöłümñ büïłðëř åñåţömÿ. Ðëšïgñ Łïbřåřÿ påñëł: głöbåł çöłöřš, ţÿpë šçåłëš, çömpöñëñţ šţÿłëš ïñ öñë płåçë. ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+            "why": "[!! Ţhë ïñçümbëñţ ţhë ïñðïë-ðëv ëvåłüåţöř åłřëåðÿ kñöwš. Måţçhïñg ïţš ëðïţöř åñåţömÿ måkëš åpp-böx łëgïbłë ïñ 30 šëçöñðš; ţhë fłöwš çåñvåš ïš ţhë ðïffëřëñţïåţöř ïţ ðöëš ñöţ håvë. ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]"
+          },
+          {
+            "name": "[!! v0 / Łövåbłë / Böłţ.ñëw ~̷~~̷~~̷~ !!]",
+            "url": "https://v0.dev/",
+            "grade": "hot",
+            "shot": {
+              "file": "v0__chat-to-app.png",
+              "caption": "[!! přömpţ ïñpüţ + ţëmpłåţë gåłłëřÿ ~̷~~̷~~̷~~̷~ !!]",
+              "id": "builders--v0__chat-to-app",
+              "src": "/assets/images/moodboard/builders/v0__chat-to-app.png"
+            },
+            "steal": "[!! Špłïţ vïëw: přömpţ/çhåţ ţhřëåð łëfţ, łïvë řüññïñg přëvïëw řïghţ — ţhë ñöw-šţåñðåřð ÅÏ-büïłðëř łåÿöüţ. Gëñëřåţïöñ ţïmëłïñë: vëřšïöñëð çhëçkpöïñţš pëř přömpţ, řöłł båçk ţö åñÿ přïöř řëñðëř. ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+            "why": "[!! Ţhë çhåţ-ţö-åpp ţřïö ðëfïñëš ţhë ëñţřÿ ëxpëçţåţïöñ; åpp-böx’š gåţë hïšţöřÿ (åppřövë/řëjëçţ/řëgëñëřåţë) šhöüłð łöök łïkë v0’š vëřšïöñëð çhëçkpöïñţš. ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]"
+          },
+          {
+            "name": "[!! MågïçPåţh ~̷~~̷~ !!]",
+            "url": "https://magicpath.ai/",
+            "grade": "hot",
+            "shot": {
+              "file": "magicpath__canvas.png",
+              "caption": "[!! přömpţ ïñpüţ öñ ţhë müłţïpłåÿëř çåñvåš ~̷~~̷~~̷~~̷~~̷~ !!]",
+              "id": "builders--magicpath__canvas",
+              "src": "/assets/images/moodboard/builders/magicpath__canvas.png"
+            },
+            "steal": "[!! Přömpţ-ţö-çåñvåš, ñöţ přömpţ-ţö-çhåţ — gëñëřåţëð šçřëëñš łåñð åš ţïłëš öñ ţhë ïñfïñïţë çåñvåš; ţhë çåñvåš ïš ţhë ðöçümëñţ. Müłţï-pågë fłöw gëñëřåţïöñ: öñë přömpţ, å çöññëçţëð šëqüëñçë öf šçřëëñš. ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+            "why": "[!! Ţhë šţřöñgëšţ ëxïšţïñg přööf öf åpp-böx’š çöřë łåÿöüţ — ÅÏ ïš föř gëñëřåţïöñ, håñðš åřë föř řëfïñëmëñţ. ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]"
+          }
+        ]
+      },
+      {
+        "id": "pipeline",
+        "title": "[!! Büïłðëř ÜÏ & Pïpëłïñë/ÇÏ Ðåšhböåřðš ~̷~~̷~~̷~~̷~~̷~ !!]",
+        "slice": "[!! pïpëłïñë/ÇÏ ðåšhböåřðš + přëmïüm ðëvëłöpëř-ţööł ÜÏš ~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+        "informs": "[!! Büïłð & Gåţëš ~̷~~̷~ !!]",
+        "file": "builder-and-pipeline.md",
+        "references": [
+          {
+            "name": "[!! Łïñëåř ~̷~~̷~ !!]",
+            "url": "https://linear.app/",
+            "grade": "hot",
+            "shot": {
+              "file": "linear__features.png",
+              "caption": "[!! fëåţüřëš — ţhë çřåfţ řëfëřëñçë pöïñţ ~̷~~̷~~̷~~̷~~̷~ !!]",
+              "id": "pipeline--linear__features",
+              "src": "/assets/images/moodboard/pipeline/linear__features.png"
+            },
+            "steal": "[!! Ţřïågë Ïñböx åš ţhë gåţë qüëüë — pëñðïñg åppřövåłš ñëvëř pöłłüţë ţhë måïñ pïpëłïñë vïëw. Šüb-ïššüë ţřëëš wïţh řöłłëð-üp šţåţüš: pëř-šüřfåçë ţřåçëåbïłïţÿ, ëåçh šüřfåçë çåřřÿïñg ïţš öwñ gåţë/çhëçk šţåţüš. ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+            "why": "[!! Přövëš å ðëñšë ðåţå ţööł çåñ fëëł çåłm. Ïţš šţåţüš šëmåñţïçš måp åłmöšţ 1:1 öñţö gåţë šţåţëš (qüëüëð → řüññïñg → åwåïţïñg åppřövåł → åppřövëð/řëjëçţëð). ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]"
+          },
+          {
+            "name": "[!! Vëřçëł Ðëpłöÿmëñţ Çhëçkš ~̷~~̷~~̷~ !!]",
+            "url": "https://vercel.com/",
+            "grade": "hot",
+            "shot": {
+              "file": "vercel__deployment-checks.png",
+              "caption": "[!! ðëpłöÿmëñţ çhëçkš — ñåmëð, błöçkïñg çöñðïţïöñš ~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+              "id": "pipeline--vercel__deployment-checks",
+              "src": "/assets/images/moodboard/pipeline/vercel__deployment-checks.png"
+            },
+            "steal": "[!! Ðëpłöÿmëñţ Çhëçkš = åpp-böx’š gåţëš: ñåmëð, błöçkïñg çöñðïţïöñš åš å çhëçkłïšţ wïţh řüññïñg/šüççëëðëð/fåïłëð šţåţëš. Çhëçk řöw: ñåmë, šţåţüš ïçöñ, ðüřåţïöñ, ëxpåñðåbłë öüţpüţ, řë-řüñ åfföřðåñçë. ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+            "why": "[!! Ţhë bëšţ qüåłïţÿ-gåţë-åš-ÜÏ påţţëřñ ïñ ţhë ïñðüšţřÿ — çhëçkš-åš-ÜÏ ïš ţhë föüñðëř’š gåţë möðëł vëřbåţïm. ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]"
+          },
+          {
+            "name": "[!! GïţHüb Åçţïöñš ~̷~~̷~ !!]",
+            "url": "https://github.com/features/actions",
+            "grade": "hot",
+            "shot": {
+              "file": "github-actions__visualization-graph.png",
+              "caption": "[!! wöřkfłöw vïšüåłïžåţïöñ gřåph ~̷~~̷~~̷~~̷~ !!]",
+              "id": "pipeline--github-actions__visualization-graph",
+              "src": "/assets/images/moodboard/pipeline/github-actions__visualization-graph.png"
+            },
+            "steal": "[!! Ţhë påţţëřñ ëvëřÿ ðëvëłöpëř åłřëåðÿ kñöwš — åpp-böx wïñš bÿ bëïñg fåmïłïåř hëřë, ñöţ ñövëł. Jöb gřåph + ëxpåñðåbłë pëř-šţëp łögš. ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+            "why": "[!! Fåmïłïåřïţÿ ïš ţhë fëåţüřë: ţhë pïpëłïñë řüñ pågë šhöüłð řëåð ïñšţåñţłÿ ţö åñÿöñë whö håš wåţçhëð åñ Åçţïöñš řüñ. ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]"
+          },
+          {
+            "name": "[!! Šëñţřÿ ~̷~~̷~ !!]",
+            "url": "https://sentry.io/",
+            "grade": "warm",
+            "shot": {
+              "file": "sentry__issue-details.png",
+              "caption": "[!! ïššüë ðëţåïł — šţåçk fřåmëš ţö fïłë:łïñë ~̷~~̷~~̷~~̷~~̷~ !!]",
+              "id": "pipeline--sentry__issue-details",
+              "src": "/assets/images/moodboard/pipeline/sentry__issue-details.png"
+            },
+            "steal": "[!! Ïššüë šţřëåm řöwš: šëvëřïţÿ çöłöř båř, çüłpřïţ (fïłë:füñçţïöñ), ëvëñţ çöüñţ, fïřšţ/łåšţ šëëñ. Måp ţö ŠÅŘÏF: šëvëřïţÿ çhïp, řüłë ÏÐ, fïłë:łïñë çhïp, öççüřřëñçë çöüñţ åçřöšš řüñš. ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+            "why": "[!! åpp-böx’š ŠÅŘÏF fïñðïñgš ñëëð Šëñţřÿ’š ðïšçïpłïñë — åggřëgåţëð, ðëðüpłïçåţëð, řåñkëð bÿ šëvëřïţÿ — öř ţhë föüñðëř ðřöwñš ïñ łïñţëř ñöïšë. ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]"
+          }
+        ]
+      },
+      {
+        "id": "companion",
+        "title": "[!! Çömpåñïöñ Åppš & måçÖŠ-Ñåţïvë Pöłïšh ~̷~~̷~~̷~~̷~~̷~ !!]",
+        "slice": "[!! möbïłë çömpåñïöñ/öpš åppš + måçÖŠ-ñåţïvë pöłïšh ~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+        "informs": "[!! Åççëšš & Ðëvïçëš ~̷~~̷~ !!]",
+        "file": "companion-and-macos-polish.md",
+        "references": [
+          {
+            "name": "[!! GïţHüb Möbïłë ~̷~~̷~ !!]",
+            "url": "https://github.com/mobile",
+            "grade": "hot",
+            "shot": {
+              "file": "github-mobile__deploy-review.png",
+              "caption": "[!! řëvïëwïñg ðëpłöÿmëñţš — püšh → åppřövë ~̷~~̷~~̷~~̷~~̷~ !!]",
+              "id": "companion--github-mobile__deploy-review",
+              "src": "/assets/images/moodboard/companion/github-mobile__deploy-review.png"
+            },
+            "steal": "[!! Püšh föř å ðëpłöÿmëñţ-řëvïëw ðëëp-łïñkš šţřåïghţ ïñţö ţhë ëxåçţ řëvïëw ðïåłög — Åppřövë / Řëjëçţ, ñö ñåvïgåţïöñ ðëţöüř. Pëř-ñöţïfïçåţïöñ-çåţëgöřÿ šçhëðüłïñg. ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+            "why": "[!! Ţhë föüñðëř’š ëxïšţïñg mëñţåł möðëł föř \"wåłkëð åwåÿ, phöñë büžžëš, åppřövë ţhë ðëpłöÿ\" — ţhë çåñöñïçåł püšh → åppřövë/řëjëçţ łööp. ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]"
+          },
+          {
+            "name": "[!! Łïñëåř möbïłë ~̷~~̷~ !!]",
+            "url": "https://linear.app/",
+            "grade": "hot",
+            "shot": {
+              "file": "linear__mobile-redesign.png",
+              "caption": "[!! möbïłë řëðëšïgñ, Öçţ 2025 ~̷~~̷~~̷~ !!]",
+              "id": "companion--linear__mobile-redesign",
+              "src": "/assets/images/moodboard/companion/linear__mobile-redesign.png"
+            },
+            "steal": "[!! Ţřïågë ïñböx åš ţhë hömë šçřëëñ: å qüëüë öf ïţëmš ëåçh ðëmåñðïñg ëxåçţłÿ öñë ðëçïšïöñ. Fřöšţëð-głåšš måţëřïåł wïţh ðïšçïpłïñë — ðëpţh bëhïñð ñåvïgåţïöñ, ñëvëř bëhïñð çöñţëñţ. ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+            "why": "[!! Ţhë çüřřëñţ çřåfţ bëñçhmåřk föř ðëv-ţööł möbïłë — ţhë ðïřëçţ åñšwëř ţö ţhë \"ţöö mëðïöçřë\" båř. ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]"
+          },
+          {
+            "name": "[!! Řåÿçåšţ ~̷~~̷~ !!]",
+            "url": "https://raycast.com/",
+            "grade": "hot",
+            "shot": {
+              "file": "raycast__home.png",
+              "caption": "[!! řåÿçåšţ.çöm hömë — ţhë måçÖŠ pöłïšh çëïłïñg ~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+              "id": "companion--raycast__home",
+              "src": "/assets/images/moodboard/companion/raycast__home.png"
+            },
+            "steal": "[!! Çömmåñð-båř ëřgöñömïçš: ëvëřÿ åçţïöñ řëåçhåbłë bÿ füžžÿ šëåřçh, këÿböåřð-fïřšţ, vïšïbłë šhöřţçüţš — ţhë måçÖŠ šhëłł šhöüłð öpëñ öñ å çömmåñð båř (\"åppřövë\", \"řëţřÿ gåţë\", \"öpëñ přëvïëw\"). ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+            "why": "[!! Ţhë måçÖŠ pöłïšh çëïłïñg, ñöw wïţh å phöñë çömpåñïöñ — ðëñšë łïšţš ţhåţ šţïłł břëåţhë. ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]"
+          },
+          {
+            "name": "[!! Ţåïłšçåłë ðëvïçë åppřövåł ~̷~~̷~~̷~ !!]",
+            "url": "https://tailscale.com/",
+            "grade": "hot",
+            "shot": {
+              "file": "tailscale__device-approval.png",
+              "caption": "[!! ðëvïçë åppřövåł — ţhë åðmïñ ţřüšţ gåţë ~̷~~̷~~̷~~̷~~̷~ !!]",
+              "id": "companion--tailscale__device-approval",
+              "src": "/assets/images/moodboard/companion/tailscale__device-approval.png"
+            },
+            "steal": "[!! Ñëw ðëvïçë çöññëçţš büţ ïš ïñëřţ üñţïł åppřövëð — å ñëwłÿ påïřëð phöñë çåñ vïëw büţ çåññöţ Åppřövë/Řëjëçţ üñţïł åñ åłřëåðÿ-påïřëð ðëvïçë çöñfïřmš ïţ. ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+            "why": "[!! Åñšwëřš ţhë ţhřëåţ QŘ åłöñë ðöëšñ’ţ: hümåñ-çöñfïřmš-ñëw-ðëvïçë ïš ţhë ðïffëřëñçë bëţwëëñ \"påïřëð\" åñð \"ţřüšţëð ţö mïñţ åppřövåłš\". ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]"
+          }
+        ]
+      }
+    ],
+    "counts": {
+      "boards": 3,
+      "references": 12,
+      "shots": 12
+    }
+  },
+  "questionBanks": {
+    "simple": [
+      {
+        "id": "q-what",
+        "text": "[!! Whåţ åřë wë büïłðïñg, ïñ öñë šëñţëñçë? ~̷~~̷~~̷~~̷~~̷~ !!]",
+        "suggestions": [
+          "[!! Å çömpåñïöñ åpp föř åñ ëxïšţïñg ţööł ~̷~~̷~~̷~~̷~~̷~ !!]",
+          "[!! Å çłïëñţ-fåçïñg pöřţåł ~̷~~̷~~̷~ !!]",
+          "[!! Åñ ïñţëřñåł öpš ţööł ~̷~~̷~~̷~ !!]"
+        ]
+      },
+      {
+        "id": "q-who",
+        "text": "[!! Whö ïš ïţ föř? ~̷~~̷~ !!]",
+        "suggestions": [
+          "[!! Ïñðïë ðëvëłöpëřš ~̷~~̷~ !!]",
+          "[!! Šmåłł çłïëñţ ţëåmš ~̷~~̷~~̷~ !!]",
+          "[!! Jüšţ üš, ïñţëřñåłłÿ ~̷~~̷~~̷~ !!]"
+        ]
+      },
+      {
+        "id": "q-must",
+        "text": "[!! Whåţ müšţ ţhë fïřšţ řëłëåšë åbšöłüţëłÿ ðö? ~̷~~̷~~̷~~̷~~̷~ !!]",
+        "suggestions": [
+          "[!! Přövë ţhë çöřë łööp ëñð-ţö-ëñð ~̷~~̷~~̷~~̷~ !!]",
+          "[!! Řëpłåçë öñë måñüåł wöřkfłöw ~̷~~̷~~̷~~̷~ !!]",
+          "[!! Ïmpřëšš öñë ñåmëð ëvåłüåţöř ~̷~~̷~~̷~~̷~ !!]"
+        ]
+      },
+      {
+        "id": "q-platforms",
+        "text": "[!! Whïçh płåţföřmš? ~̷~~̷~ !!]",
+        "suggestions": [
+          "[!! ïÖŠ + Åñðřöïð ~̷~~̷~ !!]",
+          "[!! måçÖŠ öñłÿ ~̷~~̷~ !!]",
+          "[!! ïÖŠ + Åñðřöïð + måçÖŠ + wëb ~̷~~̷~~̷~~̷~ !!]"
+        ]
+      }
+    ],
+    "normal": [
+      {
+        "id": "q-what",
+        "text": "[!! Whåţ åřë wë büïłðïñg, ïñ öñë šëñţëñçë? ~̷~~̷~~̷~~̷~~̷~ !!]",
+        "suggestions": [
+          "[!! Å çömpåñïöñ åpp föř åñ ëxïšţïñg ţööł ~̷~~̷~~̷~~̷~~̷~ !!]",
+          "[!! Å çłïëñţ-fåçïñg pöřţåł ~̷~~̷~~̷~ !!]",
+          "[!! Åñ ïñţëřñåł öpš ţööł ~̷~~̷~~̷~ !!]"
+        ]
+      },
+      {
+        "id": "q-who",
+        "text": "[!! Whö ïš ïţ föř — åñð whö ëvåłüåţëš ïţ fïřšţ? ~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+        "suggestions": [
+          "[!! Ïñðïë ðëvëłöpëřš ~̷~~̷~ !!]",
+          "[!! Šmåłł çłïëñţ ţëåmš ~̷~~̷~~̷~ !!]",
+          "[!! Jüšţ üš, ïñţëřñåłłÿ ~̷~~̷~~̷~ !!]"
+        ]
+      },
+      {
+        "id": "q-must",
+        "text": "[!! Whåţ müšţ ţhë fïřšţ řëłëåšë åbšöłüţëłÿ ðö? ~̷~~̷~~̷~~̷~~̷~ !!]",
+        "suggestions": [
+          "[!! Přövë ţhë çöřë łööp ëñð-ţö-ëñð ~̷~~̷~~̷~~̷~ !!]",
+          "[!! Řëpłåçë öñë måñüåł wöřkfłöw ~̷~~̷~~̷~~̷~ !!]",
+          "[!! Ïmpřëšš öñë ñåmëð ëvåłüåţöř ~̷~~̷~~̷~~̷~ !!]"
+        ]
+      },
+      {
+        "id": "q-success",
+        "text": "[!! Ţwëñţÿ mïñüţëš åfţëř ïñšţåłł, whåţ šhöüłð å fïřšţ-ţïmëř håvë ðöñë? ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+        "suggestions": [
+          "[!! Šëëñ å wöřkïñg přöţöţÿpë ~̷~~̷~~̷~ !!]",
+          "[!! Çömpłëţëð öñë řëåł ţåšk ~̷~~̷~~̷~ !!]",
+          "[!! Ïñvïţëð ţhëïř ţëåm ~̷~~̷~~̷~ !!]"
+        ]
+      },
+      {
+        "id": "q-platforms",
+        "text": "[!! Whïçh płåţföřmš — åñð whïçh müšţ büïłð öñ ţhïš måçhïñë? ~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+        "suggestions": [
+          "[!! ïÖŠ + Åñðřöïð ~̷~~̷~ !!]",
+          "[!! måçÖŠ öñłÿ ~̷~~̷~ !!]",
+          "[!! ïÖŠ + Åñðřöïð + måçÖŠ + wëb ~̷~~̷~~̷~~̷~ !!]"
+        ]
+      },
+      {
+        "id": "q-never",
+        "text": "[!! Whåţ šhöüłð ïţ ñëvëř ðö? ~̷~~̷~~̷~ !!]",
+        "suggestions": [
+          "[!! Łöçk üšëřš ïñ ~̷~~̷~ !!]",
+          "[!! Hïðë ţhë çöšţ ~̷~~̷~ !!]",
+          "[!! Řëqüïřë å çłöüð åççöüñţ ~̷~~̷~~̷~ !!]"
+        ]
+      }
+    ],
+    "advanced": [
+      {
+        "id": "q-what",
+        "text": "[!! Whåţ åřë wë büïłðïñg, ïñ öñë šëñţëñçë — åñð whåţ ïš ţhë möåţ? ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+        "suggestions": [
+          "[!! Å çömpåñïöñ åpp föř åñ ëxïšţïñg ţööł ~̷~~̷~~̷~~̷~~̷~ !!]",
+          "[!! Å çłïëñţ-fåçïñg pöřţåł ~̷~~̷~~̷~ !!]",
+          "[!! Åñ ïñţëřñåł öpš ţööł ~̷~~̷~~̷~ !!]"
+        ]
+      },
+      {
+        "id": "q-who",
+        "text": "[!! Whö ïš ïţ föř — ñåmë ţhë ëvåłüåţöř pëřšöñå åñð ţhëïř båř ~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+        "suggestions": [
+          "[!! Ïñðïë ðëvëłöpëřš ~̷~~̷~ !!]",
+          "[!! Šmåłł çłïëñţ ţëåmš ~̷~~̷~~̷~ !!]",
+          "[!! Jüšţ üš, ïñţëřñåłłÿ ~̷~~̷~~̷~ !!]"
+        ]
+      },
+      {
+        "id": "q-must",
+        "text": "[!! Whåţ müšţ ţhë fïřšţ řëłëåšë åbšöłüţëłÿ ðö — MöŠÇöW ţhë řëšţ łåţëř ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+        "suggestions": [
+          "[!! Přövë ţhë çöřë łööp ëñð-ţö-ëñð ~̷~~̷~~̷~~̷~ !!]",
+          "[!! Řëpłåçë öñë måñüåł wöřkfłöw ~̷~~̷~~̷~~̷~ !!]",
+          "[!! Ïmpřëšš öñë ñåmëð ëvåłüåţöř ~̷~~̷~~̷~~̷~ !!]"
+        ]
+      },
+      {
+        "id": "q-success",
+        "text": "[!! Ţwëñţÿ mïñüţëš åfţëř ïñšţåłł, whåţ šhöüłð å fïřšţ-ţïmëř håvë ðöñë? ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+        "suggestions": [
+          "[!! Šëëñ å wöřkïñg přöţöţÿpë ~̷~~̷~~̷~ !!]",
+          "[!! Çömpłëţëð öñë řëåł ţåšk ~̷~~̷~~̷~ !!]",
+          "[!! Ïñvïţëð ţhëïř ţëåm ~̷~~̷~~̷~ !!]"
+        ]
+      },
+      {
+        "id": "q-platforms",
+        "text": "[!! Whïçh płåţföřmš — whïçh büïłð hëřë, whïçh åřë ñåmëð přëçöñðïţïöñš? ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+        "suggestions": [
+          "[!! ïÖŠ + Åñðřöïð ~̷~~̷~ !!]",
+          "[!! måçÖŠ öñłÿ ~̷~~̷~ !!]",
+          "[!! ïÖŠ + Åñðřöïð + måçÖŠ + wëb ~̷~~̷~~̷~~̷~ !!]"
+        ]
+      },
+      {
+        "id": "q-verify",
+        "text": "[!! Höw šhöüłð ëåçh šţöřÿ bë vëřïfïëð bëföřë ïţ šhïpš? ~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+        "suggestions": [
+          "[!! Åüţömåţëð gåţëš wïţh ëvïðëñçë ~̷~~̷~~̷~~̷~ !!]",
+          "[!! Måñüåł řëvïëw pëř řëłëåšë ~̷~~̷~~̷~ !!]",
+          "[!! Ðögfööð ïţ öüřšëłvëš fïřšţ ~̷~~̷~~̷~~̷~ !!]"
+        ]
+      },
+      {
+        "id": "q-never",
+        "text": "[!! Whåţ šhöüłð ïţ ñëvëř ðö — ţhë håřð çöñšţřåïñţš ~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+        "suggestions": [
+          "[!! Łöçk üšëřš ïñ ~̷~~̷~ !!]",
+          "[!! Hïðë ţhë çöšţ ~̷~~̷~ !!]",
+          "[!! Řëqüïřë å çłöüð åççöüñţ ~̷~~̷~~̷~ !!]"
+        ]
+      },
+      {
+        "id": "q-scope",
+        "text": "[!! Whåţ ïš ëxpłïçïţłÿ öüţ öf šçöpë föř v1? ~̷~~̷~~̷~~̷~~̷~ !!]",
+        "suggestions": [
+          "[!! Çöłłåböřåţïöñ fëåţüřëš ~̷~~̷~~̷~ !!]",
+          "[!! Å płügïñ ëçöšÿšţëm ~̷~~̷~~̷~ !!]",
+          "[!! Åñÿţhïñg ţhåţ ðëłåÿš ţhë fïřšţ řëłëåšë ~̷~~̷~~̷~~̷~~̷~ !!]"
+        ]
+      }
+    ]
+  },
+  "statuses": {
+    "s-1": "done",
+    "s-2": "done",
+    "s-3": "done",
+    "s-4": "done",
+    "s-5": "done",
+    "s-6": "done",
+    "s-7": "done",
+    "s-8": "done",
+    "s-9": "done",
+    "s-10": "done",
+    "s-11": "done",
+    "s-12": "done",
+    "s-13": "done",
+    "s-14": "in-progress",
+    "s-15": "in-progress",
+    "s-34": "blocked"
+  },
+  "files": [
+    {
+      "path": "docs/design/brief.md",
+      "badge": "frozen"
+    },
+    {
+      "path": "docs/design/story-map.json",
+      "badge": "frozen"
+    },
+    {
+      "path": "docs/design/story_map.html",
+      "badge": "new"
+    },
+    {
+      "path": "docs/moodboards/ai-builders-and-flows-canvas.md",
+      "badge": "frozen"
+    },
+    {
+      "path": "docs/moodboards/builder-and-pipeline.md",
+      "badge": "frozen"
+    },
+    {
+      "path": "docs/moodboards/companion-and-macos-polish.md",
+      "badge": "frozen"
+    },
+    {
+      "path": "docs/moodboards/shots/dreamflow__tri-surface.png",
+      "badge": "new"
+    },
+    {
+      "path": "docs/moodboards/shots/linear__features.png",
+      "badge": "new"
+    }
+  ],
+  "state": {
+    "depth": null,
+    "answers": {},
+    "generated": false,
+    "approved": false,
+    "approvedVersion": 0,
+    "currentVersion": 1
+  },
+  "narrative": {
+    "mapping": [
+      {
+        "at": "[!! 09:02 ~̷~~̷~ !!]",
+        "text": "[!! Çłïëñţ břïëf ëłïçïţëð ïñ öñë šïţţïñg — 9 ëpïçš, 22 fëåţüřëš, 66 šţöřïëš. ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+        "textPlain": "[!! Wë ţüřñëð ţhë çłïëñţ çöñvëřšåţïöñ ïñţö 9 bïg ţhëmëš, 22 fëåţüřëš åñð 66 šţöřïëš ïñ öñë šïţţïñg. ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+        "artifact": "map/full"
+      },
+      {
+        "at": "[!! 09:31 ~̷~~̷~ !!]",
+        "text": "[!! MöŠÇöW åppłïëð: 46 müšţ · 18 šhöüłð · 2 çöüłð — ëvëřÿ šţöřÿ šłöţţëð ïñţö å řëłëåšë šwïmłåñë. ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+        "textPlain": "[!! Ëvëřÿ šţöřÿ ïš šöřţëð: 46 müšţ-håvëš, 18 šhöüłð-håvëš, 2 ñïçë-ţö-håvëš — ëåçh wïţh å řëłëåšë. ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+        "artifact": "map/priorities"
+      },
+      {
+        "at": "[!! 09:44 ~̷~~̷~ !!]",
+        "text": "[!! Ř1 Ðögfööð çåřřïëš 49 šţöřïëš — åpp-böx ðëšïgñš, büïłðš åñð šhïpš ïţšëłf; Mïçhëłłë’š 20-mïñüţë ëvåłüåţïöñ. ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+        "textPlain": "[!! Ţhë fïřšţ řëłëåšë håš 49 šţöřïëš: åpp-böx büïłðš ïţšëłf, åñð Mïçhëłłë çåñ jüðgë ïţ ïñ 20 mïñüţëš. ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+        "artifact": "map/releases"
+      },
+      {
+        "at": "[!! 09:58 ~̷~~̷~ !!]",
+        "text": "[!! Šüřfåçë çöüñţ + kïţ-çövëřågë ëšţïmåţë wïţhïñ ţhë höüř — 22 šüřfåçëš, qüöţëð höñëšţłÿ. ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+        "textPlain": "[!! Wïţhïñ ţhë höüř wë ëšţïmåţëð 22 šçřëëñš åñð höw müçh řëåðÿ-måðë påřţš çövëř — ëñöügh ţö qüöţë höñëšţłÿ. ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+        "artifact": "map/full",
+        "tone": "action"
+      }
+    ],
+    "brief": [
+      {
+        "at": "[!! 10:04 ~̷~~̷~ !!]",
+        "text": "[!! břïëf.mð gëñëřåţëð fřöm ţhë šţöřÿ-måp šëššïöñ — MöŠÇöW přïöřïţïëš, řëłëåšë šwïmłåñëš, ñö řëwřïţïñg. ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+        "textPlain": "[!! Ţhë břïëf wřöţë ïţšëłf fřöm ţhë šţöřÿ måp — ñöţhïñg řëţÿpëð. ~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+        "artifact": "doc/full"
+      },
+      {
+        "at": "[!! 10:04 ~̷~~̷~ !!]",
+        "text": "[!! Šüřfåçë ïñvëñţöřÿ: 22 šüřfåçëš, ëvëřÿ öñë ţřåçëš ţö å šţöřÿ. ~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+        "textPlain": "[!! 22 šçřëëñš łïšţëð — ëvëřÿ šçřëëñ ţřåçëš båçk ţö å šţöřÿ. ~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+        "artifact": "doc/surfaces"
+      },
+      {
+        "at": "[!! 10:05 ~̷~~̷~ !!]",
+        "text": "[!! Řëgïšţřÿ šëëðëð fřöm ţhë břïëf — ţhë ðëšïgñëř çöñšümëš ţhë šüřfåçë ţåbłë åš-ïš. ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+        "textPlain": "[!! Ţhë åpp’š šçřëëñ řëgïšţřÿ wåš fïłłëð šţřåïghţ fřöm ţhïš ţåbłë. ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+        "artifact": "doc/surfaces",
+        "tone": "action"
+      }
+    ],
+    "moodboard": [
+      {
+        "at": "[!! 10:12 ~̷~~̷~ !!]",
+        "text": "[!! Öřçhëšţřåţöř fåññëð öüţ pëř-ëpïç řëfëřëñçë-gåţhëřïñg — 3 böåřðš çüřåţëð 2026-07-28. ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+        "textPlain": "[!! Ţhë mööðböåřð gåţhëřëð řëåł åppš ţö łëåřñ fřöm, öñë böåřð pëř ţhëmë — 3 böåřðš. ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+        "artifact": "gallery/all"
+      },
+      {
+        "at": "[!! 10:31 ~̷~~̷~ !!]",
+        "text": "[!! 12 këÿ šçřëëñš çåpţüřëð wïţh přöbë-řüññëř — šëmåñţïç fïłëñåmëš, ëvëřÿ šhöţ vëřïfïëð öñ ðïšk. ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+        "textPlain": "[!! 12 šçřëëñšhöţš çåpţüřëð åüţömåţïçåłłÿ, ñåmëð çłëåřłÿ, åłł çhëçkëð ţö ëxïšţ. ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+        "artifact": "gallery/all"
+      },
+      {
+        "at": "[!! 10:40 ~̷~~̷~ !!]",
+        "text": "[!! Ðřëåmfłöw ïš ţhë šţřüçţüřåł šïbłïñg; Łïñëåř šëţš ţhë çřåfţ båř; GïţHüb Möbïłë öwñš ţhë åppřövë-fřöm-phöñë łööp. ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+        "textPlain": "[!! Ţhë ţhřëë åppš wöřţh çöpÿïñg möšţ: Ðřëåmfłöw, Łïñëåř, GïţHüb Möbïłë. ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+        "artifact": "gallery/highlights"
+      },
+      {
+        "at": "[!! 10:41 ~̷~~̷~ !!]",
+        "text": "[!! Mööðböåřð šhïpš ţö ţhë ðëšïgñ šţågë åłöñgšïðë ţhë břïëf — çöñšüłţëð bëföřë åüţhöřïñg. ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+        "textPlain": "[!! Ðëšïgñëřš šëë ţhïš böåřð ţögëţhëř wïţh ţhë břïëf bëföřë ðřåwïñg åñÿţhïñg. ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+        "artifact": "gallery/all",
+        "tone": "action"
+      }
+    ]
+  },
+  "replies": [
+    {
+      "match": [
+        "r1",
+        "dogfood",
+        "first release"
+      ],
+      "text": "[!! Ř1 Ðögfööð ïš 49 šţöřïëš åçřöšš åłł 9 ëpïçš — åpp-böx ðëšïgñš, büïłðš åñð šhïpš ïţšëłf, ţhëñ Mïçhëłłë ëvåłüåţëš ïţ ïñ 20 mïñüţëš. Ţhë šwïmłåñëš öñ ţhë måp šhöw ţhë špłïţ. ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+      "artifact": "map/releases"
+    },
+    {
+      "match": [
+        "moscow",
+        "priority",
+        "priorities",
+        "must"
+      ],
+      "text": "[!! MöŠÇöW: 46 müšţ · 18 šhöüłð · 2 çöüłð. Müšţš gåţë Ř1; ţhë 2 çöüłðš (ËÅŘŠ çřïţëřïå, šhåřëð ţökëñ ëðïţš) wåïţ föř Ř2/Ř3. ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+      "textPlain": "[!! 46 šţöřïëš åřë müšţ-håvëš, 18 šhöüłð-håvëš, 2 ñïçë-ţö-håvëš. Öñłÿ ţhë ñïçë-ţö-håvëš wåïţ föř łåţëř řëłëåšëš. ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+      "artifact": "map/priorities"
+    },
+    {
+      "match": [
+        "trace",
+        "surface",
+        "inventory"
+      ],
+      "text": "[!! Ţhë šüřfåçë ïñvëñţöřÿ łïšţš 22 šüřfåçëš; ëvëřÿ öñë ţřåçëš ţö å šţöřÿ ïñ ţhë måp. Ţhåţ ţåbłë ïš whåţ ţhë ðëšïgñëř çöñšümëš — ñöţhïñg ïš ïñvëñţëð ðöwñšţřëåm. ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+      "artifact": "doc/surfaces"
+    },
+    {
+      "match": [
+        "moodboard",
+        "reference",
+        "steal"
+      ],
+      "text": "[!! Ţhřëë böåřðš: büïłðëřš (Ðřëåmfłöw, FłüţţëřFłöw, v0, MågïçPåţh), pïpëłïñë (Łïñëåř, Vëřçëł, GïţHüb Åçţïöñš, Šëñţřÿ), çömpåñïöñ (GïţHüb Möbïłë, Łïñëåř möbïłë, Řåÿçåšţ, Ţåïłšçåłë). Ëvëřÿ šhöţ vëřïfïëð öñ ðïšk. ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+      "artifact": "gallery/all"
+    },
+    {
+      "match": [
+        "who",
+        "michelle",
+        "evan"
+      ],
+      "text": "[!! Ëvåñ ïš ţhë föüñðëř måppïñg ţhë çłïëñţ břïëf; Mïçhëłłë ïš ţhë ïñðïë-ðëv ëvåłüåţöř — hëř 20-mïñüţë fïřšţ-řüñ ïš åñ Ř1 müšţ. ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+      "artifact": null
+    }
+  ],
+  "replyFallback": {
+    "text": "[!! Ţhë ïñţåkë šţågë přöðüçëð ţhřëë åřţïfåçţš — ţhë šţöřÿ måp, ţhë břïëf, ţhë mööðböåřð. Åšk åböüţ Ř1, MöŠÇöW, ţřåçëåbïłïţÿ, öř ţhë řëfëřëñçëš. ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+    "textPlain": "[!! Ïñţåkë måðë ţhřëë ţhïñgš: ţhë šţöřÿ måp, ţhë břïëf åñð ţhë mööðböåřð. Åšk åböüţ ţhë fïřšţ řëłëåšë, ţhë přïöřïţïëš, öř ţhë åppš wë šţüðïëð. ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]"
+  },
+  "counts": {
+    "epics": 9,
+    "features": 22,
+    "stories": 66,
+    "must": 46,
+    "should": 18,
+    "could": 2,
+    "byRelease": {
+      "R1 Dogfood": 49,
+      "R3 Delight": 1,
+      "R2 Anywhere": 16
+    }
+  }
+}

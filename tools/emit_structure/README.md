@@ -21,9 +21,9 @@ knows the structure, so it writes it down, and the structure gate asserts it.
 
 1. **registry** — reads `models/screens_model/registry.json` as JSON (no regex).
    Every entry is emitted, `surface: null` included.
-2. **tabRoots** — lifted from the `tabRoots` export of `app.routes.js`. A producer
-   with no `tabRoots` (or an empty map) **fails** — an empty object no longer
-   passes vacuously.
+2. **shellRoots** — lifted from the `shellRoots` export of `app.routes.js`. A
+   producer with no `shellRoots` (or an empty map) **fails** — an empty object no
+   longer passes vacuously.
 3. **surfaceId join** — each entry with a surface is joined to its viewmodel on
    the viewmodel's **exported `surfaceId`** (== the registry entry's `id`), never
    on filename similarity. A missing `surfaceId` is a **hard failure naming the
@@ -39,11 +39,11 @@ reconciles exactly: `registry == frozen + exclusions`.
 
 ## Per-screen fields
 
-`id`, `tab`, `comp`, `shell`, `surface`, plus the resolved `viewmodel` path and
-its declared `deps` (the `services/facades/*` and `services/repositories/*`
-modules it imports, design-root-relative). `tab → shell` is a pure rename table
-(one shell per tab), so `shell` is *derived* from the surface's `<shell>_shell_`
-prefix, never hand-maintained.
+`id`, `shell`, `comp`, `shellDir`, `surface`, plus the resolved `viewmodel` path
+and its declared `deps` (the `services/facades/*` and `services/repositories/*`
+modules it imports, design-root-relative). `shell` is the registry's shell group
+(the id's first segment); `shellDir` is *derived* from the surface's
+`<shell>_shell_` prefix, never hand-maintained.
 
 ## Output shape
 
@@ -51,14 +51,14 @@ prefix, never hand-maintained.
 {
   "$schema": "app-box/structure@1",
   "registry": "models/screens_model/registry.json",
-  "tabRoots": { "projects": "/", "design": "/design", ... },
+  "shellRoots": { "projects": "/", "design": "/design", ... },
   "screens": [
-    { "id": "projects.home", "tab": "projects", "comp": "ProjectsHome",
-      "shell": "stage_shell", "surface": "stage_shell_projects_home_view",
+    { "id": "projects.home", "shell": "projects", "comp": "ProjectsHome",
+      "shellDir": "stage_shell", "surface": "stage_shell_projects_home_view",
       "viewmodel": "ui/views/.../home_viewmodel.js",
       "deps": ["services/facades/project_facade.js", "services/facades/shell_facade.js"] },
-    { "id": "projects.splash", "tab": "projects", "comp": "ProjectsSplash",
-      "shell": "stage_shell", "surface": null, "viewmodel": null, "deps": [] }
+    { "id": "projects.splash", "shell": "projects", "comp": "ProjectsSplash",
+      "shellDir": "stage_shell", "surface": null, "viewmodel": null, "deps": [] }
   ]
 }
 ```

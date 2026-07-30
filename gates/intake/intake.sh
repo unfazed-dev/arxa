@@ -16,7 +16,7 @@
 #   1. intake answers  — pipeline state intake slot (run.intake.json), or the
 #                        skill's answers document passed via --answers.
 #   2. hand-written    — a brief whose surface table seeds the registry (10.7).
-#                        The gate parses the table for <tab>.<short> ids, the
+#                        The gate parses the table for <shell>.<short> ids, the
 #                        same pattern the engine's seed_from_brief uses.
 #
 # If no source exists AND no registry exists, the gate passes vacuously —
@@ -123,7 +123,7 @@ if answers_path and os.path.isfile(answers_path):
         source_label = "intake answers"
 
 if not source_ids and brief_path and os.path.isfile(brief_path):
-    # hand-written brief (10.7): parse the surface table for <tab>.<short> ids,
+    # hand-written brief (10.7): parse the surface table for <shell>.<short> ids,
     # the same pattern the engine's seed_from_brief uses.
     md = open(brief_path, errors="replace").read()
     for line in md.splitlines():
@@ -223,13 +223,13 @@ self_test(){
   cat > "$T/answers.json" <<'EOF'
 {"product":{"value":"Demo","provenance":"client"},
  "surfaces":[
-   {"id":"projects.home","label":"Home","tab":"projects","provenance":"client"},
-   {"id":"projects.new","label":"New","tab":"projects","provenance":"client"}
+   {"id":"projects.home","label":"Home","shell":"projects","provenance":"client"},
+   {"id":"projects.new","label":"New","shell":"projects","provenance":"client"}
  ]}
 EOF
   cat > "$T/registry.json" <<'EOF'
-[{"id":"projects.home","label":"Home","tab":"projects","comp":"ProjectsHome","surface":null},
- {"id":"projects.new","label":"New","tab":"projects","comp":"ProjectsNew","surface":null}]
+[{"id":"projects.home","label":"Home","shell":"projects","comp":"ProjectsHome","surface":null},
+ {"id":"projects.new","label":"New","shell":"projects","comp":"ProjectsNew","surface":null}]
 EOF
   o=$( ANSWERS="$T/answers.json" REGISTRY="$T/registry.json" BRIEF="/dev/null" run )
   chk "$?" 0 "happy: answers and registry agree -> PASSES"
@@ -239,8 +239,8 @@ EOF
   cat > "$T/answers_orphan.json" <<'EOF'
 {"product":{"value":"Demo","provenance":"client"},
  "surfaces":[
-   {"id":"projects.home","label":"Home","tab":"projects","provenance":"client"},
-   {"id":"projects.settings","label":"Settings","tab":"projects","provenance":"client"}
+   {"id":"projects.home","label":"Home","shell":"projects","provenance":"client"},
+   {"id":"projects.settings","label":"Settings","shell":"projects","provenance":"client"}
  ]}
 EOF
   o=$( ANSWERS="$T/answers_orphan.json" REGISTRY="$T/registry.json" BRIEF="/dev/null" run )
@@ -250,8 +250,8 @@ EOF
 
   # ---- NEGATIVE: unanswered surface (surface in registry, not in answers) ----
   cat > "$T/registry_unanswered.json" <<'EOF'
-[{"id":"projects.home","label":"Home","tab":"projects","comp":"ProjectsHome","surface":null},
- {"id":"projects.secret","label":"Secret","tab":"projects","comp":"ProjectsSecret","surface":null}]
+[{"id":"projects.home","label":"Home","shell":"projects","comp":"ProjectsHome","surface":null},
+ {"id":"projects.secret","label":"Secret","shell":"projects","comp":"ProjectsSecret","surface":null}]
 EOF
   o=$( ANSWERS="$T/answers.json" REGISTRY="$T/registry_unanswered.json" BRIEF="/dev/null" run )
   chk "$?" 1 "unanswered surface -> FAILS"
@@ -264,14 +264,14 @@ EOF
 
 ## Surface inventory — the registry seed
 
-| id | tab | comp | label | surface |
+| id | shell | comp | label | surface |
 |---|---|---|---|---|
 | `shop.cart` | shop | ShopCart | Cart | _null_ |
 | `shop.home` | shop | ShopHome | Home | _null_ |
 EOF
   cat > "$T/registry_shop.json" <<'EOF'
-[{"id":"shop.cart","label":"Cart","tab":"shop","comp":"ShopCart","surface":null},
- {"id":"shop.home","label":"Home","tab":"shop","comp":"ShopHome","surface":null}]
+[{"id":"shop.cart","label":"Cart","shell":"shop","comp":"ShopCart","surface":null},
+ {"id":"shop.home","label":"Home","shell":"shop","comp":"ShopHome","surface":null}]
 EOF
   o=$( ANSWERS="/dev/null" REGISTRY="$T/registry_shop.json" BRIEF="$T/brief.md" run )
   chk "$?" 0 "hand-written brief matches registry -> PASSES"
@@ -279,7 +279,7 @@ EOF
 
   # ---- NEGATIVE: brief has a surface the registry dropped --------------------
   cat > "$T/registry_short.json" <<'EOF'
-[{"id":"shop.cart","label":"Cart","tab":"shop","comp":"ShopCart","surface":null}]
+[{"id":"shop.cart","label":"Cart","shell":"shop","comp":"ShopCart","surface":null}]
 EOF
   o=$( ANSWERS="/dev/null" REGISTRY="$T/registry_short.json" BRIEF="$T/brief.md" run )
   chk "$?" 1 "brief surface dropped from registry -> FAILS"
@@ -296,8 +296,8 @@ EOF
 
   # ---- NEGATIVE: duplicate registry id ---------------------------------------
   cat > "$T/registry_dup.json" <<'EOF'
-[{"id":"shop.cart","label":"Cart","tab":"shop","comp":"ShopCart","surface":null},
- {"id":"shop.cart","label":"Cart2","tab":"shop","comp":"ShopCart","surface":null}]
+[{"id":"shop.cart","label":"Cart","shell":"shop","comp":"ShopCart","surface":null},
+ {"id":"shop.cart","label":"Cart2","shell":"shop","comp":"ShopCart","surface":null}]
 EOF
   o=$( ANSWERS="/dev/null" REGISTRY="$T/registry_dup.json" BRIEF="$T/brief.md" run )
   chk "$?" 1 "duplicate registry id -> FAILS"
@@ -306,11 +306,11 @@ EOF
   # ---- happy: intake state slot wrapping answers (run.intake.json shape) -----
   cat > "$T/intake_state.json" <<'EOF'
 {"answers":{"product":{"value":"Demo","provenance":"client"},
- "surfaces":[{"id":"projects.home","label":"Home","tab":"projects","provenance":"client"}]},
+ "surfaces":[{"id":"projects.home","label":"Home","shell":"projects","provenance":"client"}]},
  "artefacts":{"brief":"docs/design/brief.md","registry":"docs/design/registry.json"}}
 EOF
   cat > "$T/registry_one.json" <<'EOF'
-[{"id":"projects.home","label":"Home","tab":"projects","comp":"ProjectsHome","surface":null}]
+[{"id":"projects.home","label":"Home","shell":"projects","comp":"ProjectsHome","surface":null}]
 EOF
   o=$( ANSWERS="$T/intake_state.json" REGISTRY="$T/registry_one.json" BRIEF="/dev/null" run )
   chk "$?" 0 "intake state slot (answers wrapper) -> PASSES"
@@ -330,8 +330,8 @@ EOF
  "targets":{"value":["macos"],"provenance":"client"},
  "brand":{"value":"none stated","provenance":"inferred"},
  "surfaces":[
-   {"id":"projects.home","label":"Home","tab":"projects","provenance":"client"},
-   {"id":"projects.new","label":"New","tab":"projects","provenance":"client"}
+   {"id":"projects.home","label":"Home","shell":"projects","provenance":"client"},
+   {"id":"projects.new","label":"New","shell":"projects","provenance":"client"}
  ]}
 EOF
     python3 "$ENGINE" emit --answers "$T/dw1_answers.json" \

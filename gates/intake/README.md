@@ -18,7 +18,7 @@ Checked in order; the first non-empty source wins:
    or the skill's answers document via `--answers`. Reads the `answers.surfaces[*].id`
    set.
 2. **hand-written brief** (10.7) — a brief whose surface table seeds the registry.
-   The gate parses the table for `<tab>.<short>` ids, the same pattern the engine's
+   The gate parses the table for `<shell>.<short>` ids, the same pattern the engine's
    `seed_from_brief` uses. `docs/design/brief.md` by default.
 
 If no source exists AND no registry exists, the gate passes vacuously — nothing

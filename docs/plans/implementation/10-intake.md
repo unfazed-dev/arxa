@@ -36,7 +36,7 @@ unavoidable, **mark it** — the same discipline as the playbook generator's
       validation, and artefact emission. **No UI code here.**
 - [x] **10.3** Emit `docs/design/brief.md` from the schema, with every
       `inferred` field visibly marked in the output.
-- [x] **10.4** Emit the **seeded `registry.json`** — ids, tabs, comps, and
+- [x] **10.4** Emit the **seeded `registry.json`** — ids, shells, comps, and
       `surface: null` for anything named but not yet designed.
 - [x] **10.5** Build the wizard surfaces in the desktop app over the same
       engine. Resumable, skippable, and **never blocking**: Michelle skips it

@@ -1,21 +1,21 @@
 {% extends "ui/views/main_shell/main_shell_view.html" %}
 {% import "ui/views/main_shell/intake/_shared.html" as sh %}
-{% block title %}appbox — Moodboard{% endblock %}
+{% block title %}{{ t('intake.moodboard.pageTitle') }}{% endblock %}
 {% block main_class %}shell-main-loop{% endblock %}
 
 {# ---------- Canvas artifacts ---------- #}
 
 {% macro gradeChip(g) %}
-<span class="grade grade-{{ g }}">{{ '🔥 current' if g == 'hot' else '🌡️ established' }}</span>
+<span class="grade grade-{{ g }}">{% if g == 'hot' %}{{ icon('flame', {size: 12}) }} {{ t('grade.hot') }}{% else %}{{ icon('thermometer', {size: 12}) }} {{ t('grade.warm') }}{% endif %}</span>
 {% endmacro %}
 
 {# The gallery: boards as sections, shots as cards linked to the detail. #}
 {% macro galleryCanvas(c, a) %}
 <article class="artifact gallery-artifact">
   <header class="artifact-head">
-    <span class="eyebrow">moodboard</span>
-    {% if c.approval.stale %}<span class="rv-badge rv-warn">changed since approval</span>{% endif %}
-    <span class="chip">{{ a.boards | length }} board{{ 's' if a.boards | length != 1 }} · curated {{ a.curated }}</span>
+    <span class="eyebrow">{{ t('mood.eyebrow') }}</span>
+    {% if c.approval.stale %}<span class="rv-badge rv-warn">{{ t('badge.stale') }}</span>{% endif %}
+    <span class="chip">{{ t('mood.boardsCount', {count: a.boards | length}) }} · {{ t('mood.curated', {date: a.curated}) }}</span>
   </header>
   <h2 class="display">{{ a.headline }}</h2>
   <p class="artifact-lede">{{ a.lede }}</p>
@@ -24,7 +24,7 @@
   <section class="board">
     <header class="board-head">
       <h3 class="board-title">{{ b.title }}</h3>
-      <span class="chip">informs {{ b.informs }}</span>
+      <span class="chip">{{ t('mood.informs', {epic: b.informs}) }}</span>
     </header>
     <p class="board-slice muted">{{ b.slice }} · <code>{{ b.file }}</code></p>
     <div class="shot-grid">
@@ -55,13 +55,13 @@
   <p class="artifact-detail muted"><a href="{{ a.reference.url }}" rel="noreferrer">{{ a.reference.url }}</a></p>
   <img class="shot-full" src="{{ a.shot.src }}" alt="{{ a.reference.name }} — {{ a.shot.caption }}">
   <p class="artifact-detail muted">{{ a.shot.caption }}</p>
-  <p class="fact-label">{{ c.t.shotSteal }}</p>
+  <p class="fact-label">{{ t('shotSteal') }}</p>
   <p class="artifact-detail">{{ a.reference.steal }}</p>
-  <p class="fact-label">{{ c.t.shotWhy }}</p>
+  <p class="fact-label">{{ t('shotWhy') }}</p>
   <p class="artifact-detail">{{ a.reference.why }}</p>
   <p class="artifact-foot">
     <a href="{{ c.base }}/artifact/{{ a.backRef }}"
-       hx-get="{{ c.base }}/artifact/{{ a.backRef }}" hx-target="#stage-layout" hx-swap="outerHTML" hx-push-url="false">← back to the board</a>
+       hx-get="{{ c.base }}/artifact/{{ a.backRef }}" hx-target="#stage-layout" hx-swap="outerHTML" hx-push-url="false">{{ icon('chevron-left', {size: 14}) }} {{ t('mood.back') }}</a>
   </p>
 </article>
 {% endmacro %}

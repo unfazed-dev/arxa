@@ -1,13 +1,13 @@
 {% extends "ui/views/main_shell/main_shell_view.html" %}
 {% import "ui/views/main_shell/intake/_shared.html" as sh %}
-{% block title %}appbox — Story Mapping{% endblock %}
+{% block title %}{{ t('intake.mapping.pageTitle') }}{% endblock %}
 {% block main_class %}shell-main-loop{% endblock %}
 
 {# ---------- Canvas artifacts ---------- #}
 
 {# Live status dot per story, fed by the seeded pipeline statuses. #}
 {% macro statusDot(s) %}
-<span class="status-dot st-{{ s.status }}" title="{{ s.status }}" aria-label="status: {{ s.status }}"></span>
+<span class="status-dot st-{{ s.status }}" title="{{ s.status }}" aria-label="{{ s.status }}"></span>
 {% endmacro %}
 
 {% macro storyCard(c, s) %}
@@ -15,23 +15,23 @@
    hx-get="{{ c.base }}/artifact/story/{{ s.id }}" hx-target="#stage-layout" hx-swap="outerHTML" hx-push-url="false">
   {{ statusDot(s) }}
   <span class="story-text">{{ s.name }}</span>
-  <span class="pri-chip pri-{{ s.priority }}">{{ s.priority }}</span>
+  <span class="pri-chip pri-{{ s.priority }}">{{ t('pri.name.' ~ s.priority) }}</span>
 </a>
 {% endmacro %}
 
 {% macro rollupChip(r) %}
-<span class="chip">{{ r.done }}/{{ r.total }} done{% if r.active %} · {{ r.active }} active{% endif %}{% if r.blocked %} · {{ r.blocked }} blocked{% endif %}</span>
+<span class="chip">{{ t('map.rollupDone', {done: r.done, total: r.total}) }}{% if r.active %} · {{ t('map.rollupActive', {count: r.active}) }}{% endif %}{% if r.blocked %} · {{ t('map.rollupBlocked', {count: r.blocked}) }}{% endif %}</span>
 {% endmacro %}
 
 {# Approval state on the map artifact: the gate chip, and the versioned
    re-approval badge when answers moved after approval. #}
 {% macro approvalBadge(c) %}
 {% if c.approval.stale %}
-<span class="rv-badge rv-warn">changed since approval — v{{ c.approval.currentVersion }} awaits re-approval</span>
+<span class="rv-badge rv-warn">{{ t('map.staleBadge', {version: c.approval.currentVersion}) }}</span>
 {% elif c.approval.approved %}
-<span class="rv-badge rv-ok">approved · v{{ c.approval.approvedVersion }}</span>
+<span class="rv-badge rv-ok">{{ t('map.approvedBadge', {version: c.approval.approvedVersion}) }}</span>
 {% else %}
-<span class="rv-badge">not approved — design stays locked</span>
+<span class="rv-badge">{{ t('map.notApprovedBadge') }}</span>
 {% endif %}
 {% endmacro %}
 
@@ -40,21 +40,21 @@
 {% macro mapCanvas(c, a) %}
 <article class="artifact map-artifact">
   <header class="artifact-head">
-    <span class="eyebrow">live story map</span>
+    <span class="eyebrow">{{ t('map.eyebrow') }}</span>
     {{ approvalBadge(c) }}
-    <span class="chip">{{ a.counts.stories }} stories · {{ a.counts.epics }} epics · {{ a.counts.features }} features</span>
+    <span class="chip">{{ t('map.storiesCount', {count: a.counts.stories}) }} · {{ t('map.epicsCount', {count: a.counts.epics}) }} · {{ t('map.featuresCount', {count: a.counts.features}) }}</span>
   </header>
   <h2 class="display">{{ a.headline }}</h2>
   <p class="artifact-lede">{{ a.lede }}</p>
   <p class="map-legend">
-    <span class="pri-chip pri-must">must · {{ a.counts.must }}</span>
-    <span class="pri-chip pri-should">should · {{ a.counts.should }}</span>
-    <span class="pri-chip pri-could">could · {{ a.counts.could }}</span>
+    <span class="pri-chip pri-must">{{ t('pri.must', {count: a.counts.must}) }}</span>
+    <span class="pri-chip pri-should">{{ t('pri.should', {count: a.counts.should}) }}</span>
+    <span class="pri-chip pri-could">{{ t('pri.could', {count: a.counts.could}) }}</span>
     <span class="map-legend-dots">
-      <span class="status-dot st-done"></span> done
-      <span class="status-dot st-in-progress"></span> in progress
-      <span class="status-dot st-blocked"></span> blocked
-      <span class="status-dot st-pending"></span> pending
+      <span class="status-dot st-done"></span> {{ t('status.name.done') }}
+      <span class="status-dot st-in-progress"></span> {{ t('status.name.in-progress') }}
+      <span class="status-dot st-blocked"></span> {{ t('status.name.blocked') }}
+      <span class="status-dot st-pending"></span> {{ t('status.name.pending') }}
     </span>
   </p>
   {% for lane in a.lanes %}
@@ -87,21 +87,21 @@
 {% macro storyCanvas(c, s) %}
 <article class="artifact story-artifact">
   <header class="artifact-head">
-    <span class="eyebrow">story · {{ s.epic }} / {{ s.feature }}</span>
-    <span class="story-status">{{ statusDot(s) }} {{ s.status }}</span>
-    <span class="pri-chip pri-{{ s.priority }}">{{ s.priority }}</span>
+    <span class="eyebrow">{{ t('story.eyebrow', {epic: s.epic, feature: s.feature}) }}</span>
+    <span class="story-status">{{ statusDot(s) }} {{ t('status.name.' ~ s.status) }}</span>
+    <span class="pri-chip pri-{{ s.priority }}">{{ t('pri.name.' ~ s.priority) }}</span>
   </header>
   <h2 class="display">{{ s.name }}</h2>
   <p class="artifact-lede"><span class="chip">{{ s.release }}</span></p>
   {% if s.surfaces.length %}
-  <p class="fact-label">{{ c.t.storyTrace }}</p>
+  <p class="fact-label">{{ t('storyTrace') }}</p>
   <ul class="trace-list">
     {% for sid in s.surfaces %}<li><code class="surface-id">{{ sid }}</code></li>{% endfor %}
   </ul>
   {% endif %}
   <p class="artifact-foot">
     <a href="{{ c.base }}/artifact/map/full"
-       hx-get="{{ c.base }}/artifact/map/full" hx-target="#stage-layout" hx-swap="outerHTML" hx-push-url="false">← back to the map</a>
+       hx-get="{{ c.base }}/artifact/map/full" hx-target="#stage-layout" hx-swap="outerHTML" hx-push-url="false">{{ icon('chevron-left', {size: 14}) }} {{ t('map.back') }}</a>
   </p>
 </article>
 {% endmacro %}

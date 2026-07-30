@@ -1,16 +1,18 @@
 import { createTemplates } from './templates.mjs';
 import { sessionOf, prefsOf, setPrefs } from './state.mjs';
+import { localeOf } from './l10n.mjs';
 import { timers } from './timers.mjs';
 
 // The `h` object every viewmodel handler receives: `handler(c, h) => Response`.
-export function createHelpers(artifactDir) {
-  const templates = createTemplates(artifactDir);
+export function createHelpers(artifactDir, l10n) {
+  const templates = createTemplates(artifactDir, l10n);
 
   return {
-    // Renders a page or a `#fragment`; merges cookie prefs into the context.
-    // Templates see the context bag as top-level keys AND as `c` (for macro calls).
+    // Renders a page or a `#fragment`; merges cookie prefs and the request
+    // locale into the context. Templates see the context bag as top-level keys
+    // AND as `c` (for macro calls).
     render(c, viewRef, ctx = {}, status = 200) {
-      const bag = { prefs: prefsOf(c), ...ctx };
+      const bag = { prefs: prefsOf(c), locale: localeOf(c), locales: l10n?.locales ?? [], ...ctx };
       bag.c = bag;
       c.status(status);
       return c.html(templates.render(viewRef, bag));
@@ -22,6 +24,14 @@ export function createHelpers(artifactDir) {
 
     session: sessionOf,
     prefs: prefsOf,
+
+    // Request locale (resolved by the router middleware) and a translator
+    // bound to it — viewmodels use h.t(c) for strings the context carries
+    // (nav labels, facade-level text); templates use the `t` global directly.
+    locale: localeOf,
+    t(c) {
+      return l10n ? l10n.createT({ locale: localeOf(c), level: prefsOf(c).jargon }) : (s) => s;
+    },
 
     setPrefs(c, patch) {
       setPrefs(c, { ...prefsOf(c), ...patch });

@@ -3,28 +3,28 @@
     "id": "main.shell",
     "label": "Shell",
     "surface": "main_shell_view",
-    "tab": "main",
+    "shell": "main",
     "comp": "MainShell"
   },
   {
     "id": "main.home",
     "label": "Home",
     "surface": "main_shell_home_view",
-    "tab": "main",
+    "shell": "main",
     "comp": "MainHome"
   },
   {
     "id": "main.timer",
     "label": "Timer",
     "surface": "main_shell_timer_view",
-    "tab": "main",
+    "shell": "main",
     "comp": "MainTimer"
   },
   {
     "id": "main.about",
     "label": "About",
     "surface": null,
-    "tab": "main",
+    "shell": "main",
     "comp": "MainAbout"
   }
 ]

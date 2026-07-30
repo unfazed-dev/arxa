@@ -28,15 +28,15 @@ mkdir -p "$D/models/screens_model" \
 
 cat > "$D/models/screens_model/registry.json" <<'JSON'
 [
-  {"id":"stage.shell","tab":"stage","comp":"StageShell","surface":"stage_shell_view"},
-  {"id":"proj.home","tab":"proj","comp":"ProjHome","surface":"stage_shell_proj_home_view"},
-  {"id":"proj.new","tab":"proj","comp":"ProjNew","surface":"stage_shell_proj_new_view"},
-  {"id":"proj.splash","tab":"proj","comp":"ProjSplash","surface":null}
+  {"id":"stage.shell","shell":"stage","comp":"StageShell","surface":"stage_shell_view"},
+  {"id":"proj.home","shell":"proj","comp":"ProjHome","surface":"stage_shell_proj_home_view"},
+  {"id":"proj.new","shell":"proj","comp":"ProjNew","surface":"stage_shell_proj_new_view"},
+  {"id":"proj.splash","shell":"proj","comp":"ProjSplash","surface":null}
 ]
 JSON
 cat > "$D/app.routes.js" <<'JS'
 export default [['GET','/',home.page]];
-export const tabRoots = { proj: '/', stage: '/' };
+export const shellRoots = { proj: '/', stage: '/' };
 JS
 printf "export const surfaceId = 'stage.shell';\nimport {c} from '../../../services/facades/shell_facade.js';\n" > "$D/ui/views/stage_shell/stage_shell_viewmodel.js"
 printf "export const surfaceId = 'proj.home';\nimport {l} from '../../../../../services/facades/project_facade.js';\n" > "$D/ui/views/stage_shell/proj/home/home_viewmodel.js"
@@ -92,7 +92,7 @@ python3 - <<PY
 import json
 p="$D/models/screens_model/registry.json"
 d=json.load(open(p))
-d.append({"id":"proj.extra","tab":"proj","comp":"ProjExtra","surface":"stage_shell_proj_extra_view"})
+d.append({"id":"proj.extra","shell":"proj","comp":"ProjExtra","surface":"stage_shell_proj_extra_view"})
 json.dump(d,open(p,"w"))
 PY
 vm_extra="$D/ui/views/stage_shell/proj/extra/extra_viewmodel.js"

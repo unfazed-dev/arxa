@@ -43,7 +43,7 @@ echo "== CRUD R5 suite =="
 # READ
 # ============================================================================
 seed
-$PY "$CRUD" create "$T/app" --id inbox.threads --tab inbox --comp InboxThreads \
+$PY "$CRUD" create "$T/app" --id inbox.threads --shell inbox --comp InboxThreads \
     --surface stage_shell_inbox_threads_view --label Threads >/dev/null
 o="$($PY "$CRUD" list "$T/app" 2>&1)"; chk "$?" 0 "list exits 0"
 need "$o" "inbox.threads" "list names the feature"
@@ -55,7 +55,7 @@ need "$o" '"id": "inbox.threads"' "show prints the entry as JSON"
 # CREATE — entry + pair appear; porcelain sees the new files
 # ============================================================================
 seed
-$PY "$CRUD" create "$T/app" --id inbox.threads --tab inbox --comp InboxThreads \
+$PY "$CRUD" create "$T/app" --id inbox.threads --shell inbox --comp InboxThreads \
     --surface stage_shell_inbox_threads_view --label Threads >/dev/null
 chk "$?" 0 "create exits 0"
 [ -f "$T/app/ui/views/inbox/threads/threads_view.html" ] && pass=$((pass+1)) \
@@ -70,8 +70,8 @@ o="$(porcelain)"; need "$o" "threads_view" "porcelain sees the newly created pai
 # NEGATIVE: duplicate id fails validation (Done-when #3)
 # ============================================================================
 seed
-$PY "$CRUD" create "$T/app" --id inbox.threads --tab inbox --comp A --surface s_a_view >/dev/null
-o="$($PY "$CRUD" create "$T/app" --id inbox.threads --tab inbox --comp B --surface s_b_view 2>&1)"; rc=$?
+$PY "$CRUD" create "$T/app" --id inbox.threads --shell inbox --comp A --surface s_a_view >/dev/null
+o="$($PY "$CRUD" create "$T/app" --id inbox.threads --shell inbox --comp B --surface s_b_view 2>&1)"; rc=$?
 chk "$rc" 1 "duplicate id is rejected (id is a stable key, §18)"
 need "$o" "already exists" "duplicate names the offending id"
 [ -z "$(porcelain | grep s_b)" ] && pass=$((pass+1)) \
@@ -81,7 +81,7 @@ need "$o" "already exists" "duplicate names the offending id"
 # UPDATE — content edits; id/surface stay immutable
 # ============================================================================
 seed
-$PY "$CRUD" create "$T/app" --id inbox.threads --tab inbox --comp InboxThreads \
+$PY "$CRUD" create "$T/app" --id inbox.threads --shell inbox --comp InboxThreads \
     --surface stage_shell_inbox_threads_view --label Old >/dev/null
 $PY "$CRUD" update "$T/app" --id inbox.threads --label "New label" >/dev/null
 chk "$?" 0 "update exits 0"
@@ -94,7 +94,7 @@ need "$o" '"id": "inbox.threads"' "update left id unchanged (stable key)"
 # RENAME — new id + migration; old pair removed only AFTER the new exists
 # ============================================================================
 seed
-$PY "$CRUD" create "$T/app" --id inbox.threads --tab inbox --comp InboxThreads \
+$PY "$CRUD" create "$T/app" --id inbox.threads --shell inbox --comp InboxThreads \
     --surface stage_shell_inbox_threads_view --label Threads >/dev/null
 o="$($PY "$CRUD" rename "$T/app" --from inbox.threads --to inbox.feed \
      --surface stage_shell_inbox_feed_view 2>&1)"; chk "$?" 0 "rename exits 0"
@@ -114,7 +114,7 @@ need "$(cat "$T/app/models/screens_model/migrations.json")" '"to": "inbox.feed"'
 # Done-when #1 — CREATE → DELETE round-trip: tree byte-identical (the contract)
 # ============================================================================
 seed
-$PY "$CRUD" create "$T/app" --id inbox.threads --tab inbox --comp InboxThreads \
+$PY "$CRUD" create "$T/app" --id inbox.threads --shell inbox --comp InboxThreads \
     --surface stage_shell_inbox_threads_view --label Threads >/dev/null
 $PY "$CRUD" delete "$T/app" --id inbox.threads --confirm humantok >/dev/null
 chk "$?" 0 "delete (with confirm) exits 0"
@@ -127,7 +127,7 @@ o="$(empty_dirs)"; [ -z "$o" ] && pass=$((pass+1)) \
 # Done-when #4 — RENAME round-trip: rename then delete leaves no debris
 # ============================================================================
 seed
-$PY "$CRUD" create "$T/app" --id inbox.threads --tab inbox --comp InboxThreads \
+$PY "$CRUD" create "$T/app" --id inbox.threads --shell inbox --comp InboxThreads \
     --surface stage_shell_inbox_threads_view --label Threads >/dev/null
 $PY "$CRUD" rename "$T/app" --from inbox.threads --to inbox.feed \
      --surface stage_shell_inbox_feed_view >/dev/null
@@ -141,7 +141,7 @@ o="$(porcelain)"; [ -z "$o" ] && pass=$((pass+1)) \
 # Done-when #5 — delete refuses to run unattended (no / empty confirm)
 # ============================================================================
 seed
-$PY "$CRUD" create "$T/app" --id inbox.threads --tab inbox --comp InboxThreads \
+$PY "$CRUD" create "$T/app" --id inbox.threads --shell inbox --comp InboxThreads \
     --surface stage_shell_inbox_threads_view --label Threads >/dev/null
 "${GIT[@]}" -C "$T/app" add -A && "${GIT[@]}" -C "$T/app" commit -qm "feature present" >/dev/null
 # --- NEGATIVE: no token → exit 1 and the tree is untouched ---
@@ -157,7 +157,7 @@ o="$(porcelain)"; [ -z "$o" ] && pass=$((pass+1)) \
 # 7.6 — surface:null is a declared exclusion, distinct from deletion
 # ============================================================================
 seed
-$PY "$CRUD" create "$T/app" --id inbox.splash --tab inbox --comp InboxSplash \
+$PY "$CRUD" create "$T/app" --id inbox.splash --shell inbox --comp InboxSplash \
     --surface null --label Splash >/dev/null
 chk "$?" 0 "create with surface:null exits 0"
 [ ! -e "$T/app/ui/views/inbox/splash" ] && pass=$((pass+1)) \
@@ -171,12 +171,12 @@ o="$(porcelain)"; [ -z "$o" ] && pass=$((pass+1)) \
 # Done-when #6 — crash mid-delete: the next run repairs (idempotent end state)
 # ============================================================================
 seed
-$PY "$CRUD" create "$T/app" --id inbox.threads --tab inbox --comp InboxThreads \
+$PY "$CRUD" create "$T/app" --id inbox.threads --shell inbox --comp InboxThreads \
     --surface stage_shell_inbox_threads_view --label Threads >/dev/null
 "${GIT[@]}" -C "$T/app" add -A && "${GIT[@]}" -C "$T/app" commit -qm "feature present" >/dev/null
 # Simulate the crash window: registry already rewritten (entry gone), pair NOT
 # yet removed. This is the dangerous mid-delete state §18 warns about.
-printf '[{"id":"inbox.other","label":"x","surface":null,"tab":"inbox","comp":"X"}]\n' \
+printf '[{"id":"inbox.other","label":"x","surface":null,"shell":"inbox","comp":"X"}]\n' \
   > "$T/app/models/screens_model/registry.json"
 # verify DETECTS the orphaned pair (entry gone, pair lingers)…
 o="$($PY "$CRUD" verify "$T/app" 2>&1)"; chk "$?" 1 "verify flags the crash-left orphan"
@@ -204,7 +204,7 @@ $PY "$CRUD" verify "$T/app" --fix 2>&1 >/dev/null; chk "$?" 1 "verify --fix with
 # 7.7 — CRUD NEVER writes the generated layer (structure.json / lib/**)
 # ============================================================================
 seed
-$PY "$CRUD" create "$T/app" --id inbox.threads --tab inbox --comp InboxThreads \
+$PY "$CRUD" create "$T/app" --id inbox.threads --shell inbox --comp InboxThreads \
     --surface stage_shell_inbox_threads_view --label Threads >/dev/null
 $PY "$CRUD" rename "$T/app" --from inbox.threads --to inbox.feed \
      --surface stage_shell_inbox_feed_view >/dev/null

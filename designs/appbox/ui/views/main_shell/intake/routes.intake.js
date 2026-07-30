@@ -6,7 +6,7 @@ import * as brief from './brief/brief_viewmodel.js';
 import * as moodboard from './moodboard/moodboard_viewmodel.js';
 
 export default [
-  // intake.mapping — Story Mapping (the intake tab root IS the chat interview)
+  // intake.mapping — Story Mapping (the intake shell root IS the chat interview)
   ['GET', '/intake', mapping.page],
   ['GET', '/intake/artifact/:kind/:id', mapping.artifact],
   ['GET', '/intake/close', mapping.close],

@@ -2,8 +2,8 @@
 """emit_structure.py — derive <design-root>/structure.json from the authored layer.
 
 The authored layer is the source of truth for structure: the producer's
-``models/screens_model/registry.json`` (id/tab/comp/surface per screen) and its
-``app.routes.js`` (the exported ``tabRoots`` map). This emitter joins each
+``models/screens_model/registry.json`` (id/shell/comp/surface per screen) and its
+``app.routes.js`` (the exported ``shellRoots`` map). This emitter joins each
 declared surface to its viewmodel on the viewmodel's **exported surfaceId** —
 not filename similarity — and writes the shell/surface map that the structure
 gate drift-checks against.
@@ -13,8 +13,9 @@ Two facts that used to be invented downstream now move to where they are known:
 * ``surface: null`` in the registry **IS** the exclusion. There is deliberately
   no second "excluded" list — two ways to express one fact is the drift this
   architecture exists to prevent.
-* ``tab -> shell`` is a pure rename table (every tab lands in exactly one shell),
-  so the shell is *derived* from the surface prefix, never hand-maintained.
+* every shell group (the registry's ``shell`` field) lands in exactly one shell
+  dir, so the shell dir is *derived* from the surface prefix, never
+  hand-maintained.
 
 Pure data: no browser, no render. Emittable on a machine with only python3.
 
@@ -34,10 +35,10 @@ BANNER = "app-box/structure@1"
 # on filename similarity — `giftcards` vs `gift_cards` is a lexical trap.
 _SURFACEID = re.compile(r"export\s+const\s+surfaceId\s*=\s*['\"]([^'\"]+)['\"]")
 
-# tabRoots is an ES module export: `export const tabRoots = { tab: '/path', ... };`.
+# shellRoots is an ES module export: `export const shellRoots = { shell: '/path', ... };`.
 # app.routes.js is JavaScript, not JSON, so the export is lifted out by matching
 # the object body — the registry itself is read as JSON (no regex on data).
-_TABROOTS = re.compile(r"export\s+const\s+tabRoots\s*=\s*\{([^}]*)\}", re.S)
+_SHELLROOTS = re.compile(r"export\s+const\s+shellRoots\s*=\s*\{([^}]*)\}", re.S)
 _PAIR = re.compile(r"([A-Za-z_][\w-]*)\s*:\s*['\"]([^'\"]+)['\"]")
 
 # Declared dependencies: facades and repositories the viewmodel imports. Anything
@@ -65,26 +66,26 @@ def _load_registry(root):
     return data
 
 
-def _tab_roots(root):
-    """{tab: '/route'} from app.routes.js's exported tabRoots map.
+def _shell_roots(root):
+    """{shell: '/route'} from app.routes.js's exported shellRoots map.
 
-    Empty/absent is a hard failure: a producer with no tabRoots has no idea where
-    its tabs land, and an empty object must no longer pass vacuously.
+    Empty/absent is a hard failure: a producer with no shellRoots has no idea
+    where its shells land, and an empty object must no longer pass vacuously.
     """
     path = os.path.join(root, "app.routes.js")
     if not os.path.isfile(path):
-        return _fail("no app.routes.js — cannot read the tabRoots map")
+        return _fail("no app.routes.js — cannot read the shellRoots map")
     src = open(path).read()
-    m = _TABROOTS.search(src)
+    m = _SHELLROOTS.search(src)
     if not m:
-        return _fail("app.routes.js exports no `tabRoots` map")
+        return _fail("app.routes.js exports no `shellRoots` map")
     roots = dict(_PAIR.findall(m.group(1)))
     if not roots:
-        return _fail("tabRoots is empty — every tab needs a landing route")
+        return _fail("shellRoots is empty — every shell needs a landing route")
     return roots
 
 
-def _shell(surface):
+def _shell_dir(surface):
     """stage_shell_projects_home_view -> stage_shell (the <shell>_shell prefix)."""
     if not surface or "_shell_" not in surface:
         return None
@@ -123,27 +124,28 @@ def build(root):
     registry_entries = _load_registry(root)
     if registry_entries is None:
         return None
-    tab_roots = _tab_roots(root)
-    if tab_roots is None:
+    shell_roots = _shell_roots(root)
+    if shell_roots is None:
         return None
     vms = _viewmodels(root)
     if vms is None:
         return None
 
-    # First pass: derive shell from every entry that carries a surface, and learn
-    # the tab -> shell table from those (tab -> shell is pure: one shell per tab).
-    tab_to_shell = {}
+    # First pass: derive the shell dir from every entry that carries a surface,
+    # and learn the shell-group -> shell-dir table from those (the mapping is
+    # pure: one shell dir per shell group).
+    group_to_dir = {}
     for e in registry_entries:
         if e.get("surface"):
-            sh = _shell(e["surface"])
-            if sh is None:
+            sd = _shell_dir(e["surface"])
+            if sd is None:
                 return _fail(f"screen '{e.get('id')}' has surface '{e['surface']}' "
                              f"with no <shell>_shell_ prefix")
-            tab = e.get("tab")
-            if tab in tab_to_shell and tab_to_shell[tab] != sh:
-                return _fail(f"tab '{tab}' maps to two shells "
-                             f"({tab_to_shell[tab]} and {sh}) — tab->shell must be pure")
-            tab_to_shell.setdefault(tab, sh)
+            group = e.get("shell")
+            if group in group_to_dir and group_to_dir[group] != sd:
+                return _fail(f"shell group '{group}' maps to two shell dirs "
+                             f"({group_to_dir[group]} and {sd}) — group->dir must be pure")
+            group_to_dir.setdefault(group, sd)
 
     screens = []
     for e in registry_entries:
@@ -155,25 +157,25 @@ def build(root):
                 # The join failed on the DECLARED surfaceId, not filename gist.
                 return _fail(f"screen '{sid}' declares a surface but no viewmodel "
                              f"exports surfaceId '{sid}'")
-            shell = _shell(surface)
+            shell_dir = _shell_dir(surface)
             screens.append({
                 "id": sid,
-                "tab": e.get("tab"),
+                "shell": e.get("shell"),
                 "comp": e.get("comp"),
-                "shell": shell,
+                "shellDir": shell_dir,
                 "surface": surface,
                 "viewmodel": vm["path"],
                 "deps": vm["deps"],
             })
         else:
             # surface:null IS the exclusion — preserved verbatim, never dropped.
-            tab = e.get("tab")
-            shell = tab_to_shell.get(tab)
+            group = e.get("shell")
+            shell_dir = group_to_dir.get(group)
             screens.append({
                 "id": sid,
-                "tab": tab,
+                "shell": group,
                 "comp": e.get("comp"),
-                "shell": shell,
+                "shellDir": shell_dir,
                 "surface": None,
                 "viewmodel": None,
                 "deps": [],
@@ -190,7 +192,7 @@ def build(root):
     return {
         "$schema": BANNER,
         "registry": "models/screens_model/registry.json",
-        "tabRoots": tab_roots,
+        "shellRoots": shell_roots,
         "screens": screens,
     }
 
@@ -255,16 +257,16 @@ def self_test():
             open(p, "w").write(body)
 
     REG = json.dumps([
-        {"id": "stage.shell", "tab": "stage", "comp": "StageShell",
+        {"id": "stage.shell", "shell": "stage", "comp": "StageShell",
          "surface": "stage_shell_view"},
-        {"id": "proj.home", "tab": "proj", "comp": "ProjHome",
+        {"id": "proj.home", "shell": "proj", "comp": "ProjHome",
          "surface": "stage_shell_proj_home_view"},
-        {"id": "proj.splash", "tab": "proj", "comp": "ProjSplash",
+        {"id": "proj.splash", "shell": "proj", "comp": "ProjSplash",
          "surface": None},
     ])
     ROUTES = (
         "export default [['GET','/',home.page]];\n"
-        "export const tabRoots = { proj: '/', stage: '/' };\n"
+        "export const shellRoots = { proj: '/', stage: '/' };\n"
     )
     # viewmodels live 3 and 5 dirs deep; imports resolve back to the design root.
     SHELL_VM = "export const surfaceId = 'stage.shell';\nimport {chrome} from '../../../services/facades/shell_facade.js';\n"
@@ -283,11 +285,11 @@ def self_test():
         splash = [s for s in d["screens"] if s["id"] == "proj.splash"][0]
         chk(splash["surface"] is None, "surface:null preserved as the exclusion")
         chk(splash["viewmodel"] is None, "excluded screen has no viewmodel")
-        chk(splash["shell"] == "stage_shell", "excluded screen derives shell from tab->shell")
+        chk(splash["shellDir"] == "stage_shell", "excluded screen derives shellDir from group->dir")
         home = [s for s in d["screens"] if s["id"] == "proj.home"][0]
         chk(home["viewmodel"].endswith("home_viewmodel.js"), "viewmodel path resolved via surfaceId")
         chk("services/facades/project_facade.js" in home["deps"], "facade dep captured, design-root-relative")
-        chk(d["tabRoots"] == {"proj": "/", "stage": "/"}, "tabRoots lifted from app.routes.js")
+        chk(d["shellRoots"] == {"proj": "/", "stage": "/"}, "shellRoots lifted from app.routes.js")
         chk(d["registry"] == "models/screens_model/registry.json", "registry source recorded")
 
         # 2. --check green in sync, RED on a one-char hand-edit.
@@ -317,13 +319,13 @@ def self_test():
         })
         chk(emit(c) == 1, "orphan viewmodel (unclaimed surfaceId) fails")
 
-        # 5. empty tabRoots -> HARD fail (no longer passes vacuously).
+        # 5. empty shellRoots -> HARD fail (no longer passes vacuously).
         e = os.path.join(tmp, "e")
-        plant(e, REG, "export const tabRoots = {};\nexport default [];", {
+        plant(e, REG, "export const shellRoots = {};\nexport default [];", {
             "ui/views/stage_shell/stage_shell_viewmodel.js": SHELL_VM,
             "ui/views/stage_shell/proj/home/home_viewmodel.js": HOME_VM,
         })
-        chk(emit(e) == 1, "empty tabRoots fails")
+        chk(emit(e) == 1, "empty shellRoots fails")
 
         # 6. a viewmodel with no surfaceId export -> HARD fail naming the file.
         g = os.path.join(tmp, "g")

@@ -17,13 +17,13 @@ as the pre-flight for a producer whose surfaces have not been emitted yet.
 
 Two producer shapes, picked automatically:
 
-  registry  — `jsx/app.jsx` carries P2_REGISTRY (id/tab/comp/surface) and
-              P2_TAB_ROOTS. EVERY entry is emitted, including `surface: null`.
+  registry  — `jsx/app.jsx` carries P2_REGISTRY (id/shell/comp/surface) and
+              P2_SHELL_ROOTS. EVERY entry is emitted, including `surface: null`.
               Those nulls ARE the exclusions — there is deliberately no second
               "excluded" list, because a list you maintain by hand is a list you
               pad to make a gate green.
   surfaces  — no registry: one screen per `surfaces/*.html`, id/comp derived from
-              the filename, no tab roots. (The htmx producer's shape.)
+              the filename, no shell roots. (The htmx producer's shape.)
 
 `shell` comes from the `<shell>_shell_` filename prefix — the convention the
 scaffolder has been parsing implicitly all along, now written down and checked.
@@ -53,7 +53,7 @@ BANNER = "kit/design-structure@1"
 
 
 def _entries(src):
-    """(list[(id, tab, comp, surface)] | None, tabRoots) from an app.jsx text."""
+    """(list[(id, shell, comp, surface)] | None, shellRoots) from an app.jsx text."""
     reg = re.search(r"const P2_REGISTRY\s*=\s*\[(.*?)\n\];", src, re.S)
     if not reg:
         return None, {}
@@ -68,13 +68,13 @@ def _entries(src):
             return None if mm.group(1) == "null" else mm.group(2)
 
         if f("id"):
-            out.append((f("id"), f("tab"), f("comp"), f("surface")))
-    roots = re.search(r"const P2_TAB_ROOTS\s*=\s*\{(.*?)\};", src, re.S)
-    tab_roots = dict(re.findall(r"(\w+):\s*'([^']+)'", roots.group(1))) if roots else {}
-    return out, tab_roots
+            out.append((f("id"), f("shell"), f("comp"), f("surface")))
+    roots = re.search(r"const P2_SHELL_ROOTS\s*=\s*\{(.*?)\};", src, re.S)
+    shell_roots = dict(re.findall(r"(\w+):\s*'([^']+)'", roots.group(1))) if roots else {}
+    return out, shell_roots
 
 
-def _shell(surface):
+def _shell_dir(surface):
     """train_shell_training_library_view -> train_shell"""
     if not surface or "_shell_" not in surface:
         return None
@@ -84,34 +84,34 @@ def _shell(surface):
 def build(root):
     app_jsx = os.path.join(root, "jsx", "app.jsx")
     if os.path.isfile(app_jsx):
-        entries, tab_roots = _entries(open(app_jsx).read())
+        entries, shell_roots = _entries(open(app_jsx).read())
         if entries is None:
             print(f"FAIL: {app_jsx} has no P2_REGISTRY", file=sys.stderr)
             return None
         screens = [
-            {"id": i, "tab": t, "comp": c, "shell": _shell(s), "surface": s}
+            {"id": i, "shell": t, "comp": c, "shellDir": _shell_dir(s), "surface": s}
             for (i, t, c, s) in entries
         ]
         registry = "jsx/app.jsx"
     else:
-        registry, tab_roots, screens = None, {}, []
+        registry, shell_roots, screens = None, {}, []
         for path in sorted(glob.glob(os.path.join(root, "surfaces", "*.html"))):
             name = os.path.basename(path)[:-5]
             if name in HARNESS:
                 continue
-            sh = _shell(name)
+            sh = _shell_dir(name)
             rest = name[len(sh) + 1:] if sh else name
             rest = rest[:-5] if rest.endswith("_view") else rest
             screens.append({
                 "id": f"{sh[:-6]}.{rest}" if sh else rest,
-                "tab": sh[:-6] if sh else None,
+                "shell": sh[:-6] if sh else None,
                 "comp": "".join(p.title() for p in (rest or name).split("_")),
-                "shell": sh,
+                "shellDir": sh,
                 "surface": name,
             })
 
     return {"$schema": BANNER, "registry": registry,
-            "tabRoots": tab_roots, "screens": screens}
+            "shellRoots": shell_roots, "screens": screens}
 
 
 def emit(root, check=False):
@@ -140,7 +140,7 @@ def emit(root, check=False):
         print(f"wrote {out}")
     n = len(data["screens"])
     c = sum(1 for s in data["screens"] if s["surface"])
-    shells = sorted({s["shell"] for s in data["screens"] if s["shell"]})
+    shells = sorted({s["shellDir"] for s in data["screens"] if s["shellDir"]})
     print(f"  {n} screens, {c} with a surface, {n - c} without")
     print(f"  {len(shells)} shell(s): {', '.join(shells) or '(none)'}")
     return 0
@@ -168,11 +168,11 @@ def self_test():
 
     JSX = """
 const P2_REGISTRY = [
-  { id: 'train.home',    label: 'x', tab: 'train', comp: 'TrainHome', surface: null },
-  { id: 'train.library', label: 'x', tab: 'train', comp: 'TrainLib',
+  { id: 'train.home',    label: 'x', shell: 'train', comp: 'TrainHome', surface: null },
+  { id: 'train.library', label: 'x', shell: 'train', comp: 'TrainLib',
     surface: 'train_shell_library_view' },
 ];
-const P2_TAB_ROOTS = { train: 'train.home' };
+const P2_SHELL_ROOTS = { train: 'train.home' };
 """
 
     with tempfile.TemporaryDirectory() as tmp:
@@ -183,8 +183,8 @@ const P2_TAB_ROOTS = { train: 'train.home' };
         d = json.load(open(os.path.join(a, "structure.json")))
         chk(len(d["screens"]) == 2, "both screens emitted (null NOT dropped)")
         chk(d["screens"][0]["surface"] is None, "surface:null preserved verbatim")
-        chk(d["screens"][1]["shell"] == "train_shell", "shell derived from prefix")
-        chk(d["tabRoots"] == {"train": "train.home"}, "tabRoots carried")
+        chk(d["screens"][1]["shellDir"] == "train_shell", "shellDir derived from prefix")
+        chk(d["shellRoots"] == {"train": "train.home"}, "shellRoots carried")
         chk(d["registry"] == "jsx/app.jsx", "registry path recorded")
 
         # 2. write-on-diff + --check drift guard.

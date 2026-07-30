@@ -153,8 +153,8 @@ except Exception as e: fail(f"{rel}/structure.json does not parse — {e}"); sys
 
 frozen={}
 for s in st.get("screens",[]):
-    if s.get("surface") and s.get("shell"):
-        frozen.setdefault(s["shell"],set()).add(s["surface"])
+    if s.get("surface") and s.get("shellDir"):
+        frozen.setdefault(s["shellDir"],set()).add(s["surface"])
 if not frozen:
     fail(f"{rel}/structure.json declares no surfaces — nothing to cover"); sys.exit(1)
 
@@ -347,10 +347,10 @@ PY
     local a="$1" man="$2" tg="$3"; shift 3
     rm -rf "$a"; mkdir -p "$a/lib/ui/views/train_shell" "$a/design/new"
     cat > "$a/design/new/structure.json" <<'EOF'
-{"$schema":"kit/design-structure@1","registry":null,"tabRoots":{},
+{"$schema":"kit/design-structure@1","registry":null,"shellRoots":{},
  "screens":[
-  {"id":"train.library","tab":"train","comp":"L","shell":"train_shell","surface":"train_shell_library_view"},
-  {"id":"train.stats","tab":"train","comp":"S","shell":"train_shell","surface":"train_shell_stats_view"}]}
+  {"id":"train.library","shell":"train","comp":"L","shellDir":"train_shell","surface":"train_shell_library_view"},
+  {"id":"train.stats","shell":"train","comp":"S","shellDir":"train_shell","surface":"train_shell_stats_view"}]}
 EOF
     printf '%s' "$man" > "$a/lib/ui/views/.shell-structure.json"
     local fs; fs="$(factors_of "$tg")"
@@ -493,8 +493,8 @@ EOF
   # for an htmx design). 4.4 still applies: missing structure.json fails loudly.
   rm -rf "$T/h"; mkdir -p "$T/h/design/htmx"
   printf 'export default [["GET","/",{}]];\n' > "$T/h/design/htmx/app.routes.js"
-  printf '{"registry":"registry.json","tabRoots":{},"screens":[{"id":"a","shell":"sh","surface":"sh_a_view"}]}\n' > "$T/h/design/htmx/structure.json"
-  printf '[{"id":"a","surface":"sh_a_view","tab":"sh","comp":"A"}]\n' > "$T/h/design/htmx/registry.json"
+  printf '{"registry":"registry.json","shellRoots":{},"screens":[{"id":"a","shell":"sh","shellDir":"sh","surface":"sh_a_view"}]}\n' > "$T/h/design/htmx/structure.json"
+  printf '[{"id":"a","surface":"sh_a_view","shell":"sh","comp":"A"}]\n' > "$T/h/design/htmx/registry.json"
   o=$( KIT_DESIGN_DIR=design/htmx APPBOX_TARGETS=macos run_gate_for "$T/h" 2>&1 ); chk "$?" 0 "htmx macos: derives set, passes (no scaffold)"
   need "$o" "htmx producer — 1 frozen surface" "htmx reports the frozen surface count"
   need "$o" "form factors [desktop]" "htmx derives desktop for macos"

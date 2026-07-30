@@ -1,8 +1,10 @@
 // BuildFacade — composes the run fixture with session-scoped state (gate
 // decisions, chat messages, stage/run controls, the open canvas artifact,
 // context chips, the left rail's active view) into exactly what
-// loop_viewmodel needs. Every string passes through the jargon facade at
-// the reader's level.
+// loop_viewmodel needs. Every leveled fixture string passes through the
+// jargon facade at the reader's level; static view copy is the runtime t()
+// in the templates (l10n/app_*.arb). The locale comes from the request
+// (h.locale(c)) and picks the per-locale fixture, en fallback.
 //
 // The run thread IS the chat: narrative cards render in the chat stage,
 // evidence/charts/gates open as center artifacts (chat docks right), and
@@ -20,11 +22,11 @@ export const RAIL_FILTERS = ['all', 'stage', 'gate', 'findings', 'evidence', 'no
 // index, and the seeded commits/files views (real git wiring is a later
 // stage — the views say so).
 export const RAIL_VIEWS = [
-  { id: 'run', glyph: '▶', label: 'run' },
-  { id: 'thread', glyph: '✳', label: 'thread' },
-  { id: 'artifacts', glyph: '◆', label: 'artifacts' },
-  { id: 'commits', glyph: '⎇', label: 'commits' },
-  { id: 'files', glyph: '≡', label: 'files' },
+  { id: 'run', icon: 'play', label: 'run' },
+  { id: 'thread', icon: 'messages-square', label: 'thread' },
+  { id: 'artifacts', icon: 'package', label: 'artifacts' },
+  { id: 'commits', icon: 'git-branch', label: 'commits' },
+  { id: 'files', icon: 'folder', label: 'files' },
 ];
 const RAIL_VIEW_IDS = RAIL_VIEWS.map((v) => v.id);
 
@@ -44,10 +46,10 @@ const narrate = (sessionData, m) => {
   extra.push({ id: `a-${seq}`, at: 'now', from: 'agent', ...m });
 };
 
-const labelForRef = (ref) => {
+const labelForRef = (ref, L) => {
   const [kind, id] = (ref || '').split('/');
-  if (kind === 'stage') return repo.stages().find((s) => s.id === id)?.label ?? id;
-  if (kind === 'gate') return repo.humanGates().find((g) => g.id === id)?.label ?? id;
+  if (kind === 'stage') return repo.stages(L).find((s) => s.id === id)?.label ?? id;
+  if (kind === 'gate') return repo.humanGates(L).find((g) => g.id === id)?.label ?? id;
   if (kind === 'findings') return `the ${id} findings`;
   if (kind === 'evidence') return 'surface evidence';
   if (kind === 'chart') return 'the duration chart';
@@ -57,9 +59,9 @@ const labelForRef = (ref) => {
 
 // Human-gate decisions are the human's act; a POST lands them in the session
 // and the facade overlays them onto the fixture's lifecycle.
-function gatesWithDecisions(sessionData) {
+function gatesWithDecisions(sessionData, L) {
   const decisions = sessionData.gateDecisions ?? {};
-  return repo.humanGates().map((g) => {
+  return repo.humanGates(L).map((g) => {
     const d = decisions[g.id];
     if (!d) return g;
     return {
@@ -78,9 +80,9 @@ function gatesWithDecisions(sessionData) {
   });
 }
 
-function stagesWithDecisions(gates, lv, sessionData) {
+function stagesWithDecisions(gates, lv, sessionData, L) {
   const acceptance = gates.find((g) => g.id === 'build.acceptance');
-  return repo.stages().map((s) => {
+  return repo.stages(L).map((s) => {
     let out = {
       ...s,
       summary: jargon.pick(s, 'summary', lv),
@@ -112,8 +114,8 @@ function stagesWithDecisions(gates, lv, sessionData) {
   });
 }
 
-function runWithState(sessionData, gates) {
-  const run = { ...repo.run() };
+function runWithState(sessionData, gates, L) {
+  const run = { ...repo.run(L) };
   const acceptance = gates.find((g) => g.id === 'build.acceptance');
   run.pausedByYou = Boolean(sessionData.runControl?.paused);
   if (run.pausedByYou) {
@@ -168,9 +170,9 @@ function cardFor(ref, parts) {
   }
 }
 
-function messagesWithSession(sessionData, activeArtifact, lv, parts, filter) {
+function messagesWithSession(sessionData, activeArtifact, lv, parts, filter, L) {
   const extra = sessionData.extraMessages ?? [];
-  const all = [...repo.narrative(), ...extra].map((m) => ({
+  const all = [...repo.narrative(L), ...extra].map((m) => ({
     from: 'agent',
     tone: null,
     artifact: null,
@@ -183,8 +185,8 @@ function messagesWithSession(sessionData, activeArtifact, lv, parts, filter) {
   return all.filter((m) => m.card.type === filter);
 }
 
-function findingsWithLevel(lv) {
-  const byGate = repo.findingsByGate();
+function findingsWithLevel(lv, L) {
+  const byGate = repo.findingsByGate(L);
   return Object.fromEntries(
     Object.entries(byGate).map(([gate, list]) => [
       gate,
@@ -198,8 +200,8 @@ function findingsWithLevel(lv) {
   );
 }
 
-function evidenceWithLevel(lv) {
-  return repo.evidence().map((e) => ({
+function evidenceWithLevel(lv, L) {
+  return repo.evidence(L).map((e) => ({
     ...e,
     chips: jargon.probeChips(e.probe, lv),
     band: jargon.band(jargon.scoreDeltaE(e.probe.deltaE)),
@@ -233,8 +235,8 @@ function viewerFor(sessionData, evidence) {
 
 // The iframe document's context: an honest labelled stand-in for the designer
 // artifact the daemon serves in the shipped app.
-export const screenStub = (surface, vp, prefs = {}) => {
-  const e = repo.evidence().find((x) => x.surface === surface);
+export const screenStub = (surface, vp, prefs = {}, locale = 'en') => {
+  const e = repo.evidence(locale).find((x) => x.surface === surface);
   const authored = e?.viewports ?? ['mobile'];
   const v = authored.includes(vp) ? vp : authored[0];
   return {
@@ -245,9 +247,9 @@ export const screenStub = (surface, vp, prefs = {}) => {
 };
 
 // Viewer toolbar/filmstrip act: record the choice, re-render the viewer block.
-export const setViewer = (sessionData, query, prefs = {}) => {
+export const setViewer = (sessionData, query, prefs = {}, locale = 'en') => {
   sessionData.viewer = { screen: query.screen, vp: query.vp, bg: query.bg, os: query.os, mode: query.mode };
-  return loopContext(sessionData, 'evidence/surfaces', prefs);
+  return loopContext(sessionData, 'evidence/surfaces', prefs, locale);
 };
 
 // The shell timeline: the whole line at a glance, current item highlighted.
@@ -269,10 +271,10 @@ function timeline({ stages, gates }) {
 // Local: the artifact's own rendered data + its direct links. Global: a thin
 // fixed brief. The fixture replies below AND any real model consume this
 // same typed envelope — swap the reply generator, keep the structure.
-export const contextFor = (sessionData, ref, lv = 'balanced') => {
-  const gates = gatesWithDecisions(sessionData);
-  const stages = stagesWithDecisions(gates, lv, sessionData);
-  const run = repo.run();
+export const contextFor = (sessionData, ref, lv = 'balanced', locale = 'en') => {
+  const gates = gatesWithDecisions(sessionData, locale);
+  const stages = stagesWithDecisions(gates, lv, sessionData, locale);
+  const run = repo.run(locale);
   const brief = {
     run: run.number, project: run.project, state: run.state,
     policy: run.policy,
@@ -284,22 +286,22 @@ export const contextFor = (sessionData, ref, lv = 'balanced') => {
   const linked = [];
   if (kind === 'stage') {
     artifact = stages.find((s) => s.id === id) ?? null;
-    if (id === 'coverage') linked.push({ findings: findingsWithLevel(lv).coverage ?? [] });
+    if (id === 'coverage') linked.push({ findings: findingsWithLevel(lv, locale).coverage ?? [] });
     if (id === 'deploy') linked.push({ gates: gates.filter((g) => g.id !== 'design.approval') });
     if (id === 'design') linked.push({ gate: gates.find((g) => g.id === 'design.approval') });
   } else if (kind === 'gate') {
     artifact = gates.find((g) => g.id === id) ?? null;
-    if (id === 'build.acceptance') linked.push({ evidence: evidenceWithLevel(lv) }, { stage: stages.find((s) => s.id === 'deploy') });
+    if (id === 'build.acceptance') linked.push({ evidence: evidenceWithLevel(lv, locale) }, { stage: stages.find((s) => s.id === 'deploy') });
     if (id === 'design.approval') linked.push({ stages: stages.filter((s) => ['design', 'freeze'].includes(s.id)) });
     if (id === 'ship.confirm') linked.push({ stage: stages.find((s) => s.id === 'deploy') });
   } else if (kind === 'findings') {
-    artifact = { gate: id, list: findingsWithLevel(lv)[id] ?? [] };
+    artifact = { gate: id, list: findingsWithLevel(lv, locale)[id] ?? [] };
     linked.push({ stage: stages.find((s) => s.id === id) });
   } else if (kind === 'chart') {
-    artifact = repo.chart();
+    artifact = repo.chart(locale);
     linked.push({ stages: stages.map((s) => ({ id: s.id, duration: s.duration, state: s.state })) });
   } else if (kind === 'evidence') {
-    artifact = evidenceWithLevel(lv);
+    artifact = evidenceWithLevel(lv, locale);
     linked.push({ stage: stages.find((s) => s.id === 'freeze') });
   } else if (kind === 'log') {
     artifact = { note: 'the whole line, in order' };
@@ -309,7 +311,7 @@ export const contextFor = (sessionData, ref, lv = 'balanced') => {
 
 // The canvas renders ONE artifact at a time; ref is "kind/id". No ref (or an
 // unknown one) means nothing is open — the chat sits centered.
-function resolveArtifact(ref, { gates, stages, messages, findings, evidence }) {
+function resolveArtifact(ref, { gates, stages, messages, findings, evidence }, L) {
   if (!ref) return null;
   const [kind, id] = ref.split('/');
   switch (kind) {
@@ -329,7 +331,7 @@ function resolveArtifact(ref, { gates, stages, messages, findings, evidence }) {
       break;
     }
     case 'chart':
-      return { kind, chart: repo.chart(), ref };
+      return { kind, chart: repo.chart(L), ref };
     case 'log':
       return { kind, messages, ref };
     case 'evidence':
@@ -349,7 +351,7 @@ const noteGateFor = (sessionData, gates) => {
 // Composer context chips for cs.wrap: the pinned gate (a reject note is the
 // next chat message) and the open artifact (a follow-up is chat with the
 // artifact in context). Both are removable.
-const chipsFor = (activeArtifact, noteGate) => {
+const chipsFor = (activeArtifact, noteGate, L) => {
   const chips = [];
   if (noteGate) {
     chips.push({
@@ -358,7 +360,7 @@ const chipsFor = (activeArtifact, noteGate) => {
     });
   }
   if (activeArtifact) {
-    chips.push({ id: activeArtifact, label: labelForRef(activeArtifact), removeHref: '/build/close' });
+    chips.push({ id: activeArtifact, label: labelForRef(activeArtifact, L), removeHref: '/build/close' });
   }
   return chips;
 };
@@ -375,30 +377,30 @@ function artifactIndex({ gates, stages }) {
   ];
 }
 
-export const loopContext = (sessionData = {}, ref = null, prefs = {}) => {
+export const loopContext = (sessionData = {}, ref = null, prefs = {}, locale = 'en') => {
+  const L = locale;
   const lv = jargon.level(prefs);
-  const gates = gatesWithDecisions(sessionData);
-  const stages = stagesWithDecisions(gates, lv, sessionData);
-  const findings = findingsWithLevel(lv);
-  const evidence = evidenceWithLevel(lv);
+  const gates = gatesWithDecisions(sessionData, L);
+  const stages = stagesWithDecisions(gates, lv, sessionData, L);
+  const findings = findingsWithLevel(lv, L);
+  const evidence = evidenceWithLevel(lv, L);
   const parts = { gates, stages, findings, evidence };
-  const t = jargon.t(lv);
   const activeArtifact = ref ?? sessionData.currentArtifact ?? null;
   const filter = RAIL_FILTERS.includes(sessionData.railFilter) ? sessionData.railFilter : 'all';
-  const messages = messagesWithSession(sessionData, activeArtifact, lv, parts, filter);
-  const artifact = resolveArtifact(activeArtifact, { ...parts, messages });
+  const messages = messagesWithSession(sessionData, activeArtifact, lv, parts, filter, L);
+  const artifact = resolveArtifact(activeArtifact, { ...parts, messages }, L);
   const openRef = artifact ? activeArtifact : null;
   const railView = RAIL_VIEW_IDS.includes(sessionData.railView) ? sessionData.railView : 'run';
   const noteGate = noteGateFor(sessionData, gates);
   return {
-    run: runWithState(sessionData, gates),
-    project: { name: repo.run().project },
+    run: runWithState(sessionData, gates, L),
+    project: { name: repo.run(L).project },
     composerAction: '/build/messages',
     modelMenu: agent.modelMenuFor(sessionData, '/build'),
     threading: messages.some((m) => m.from === 'user'),
     stages,
     gates,
-    counts: repo.counts(),
+    counts: repo.counts(L),
     messages,
     filter,
     timeline: timeline(parts),
@@ -406,7 +408,7 @@ export const loopContext = (sessionData = {}, ref = null, prefs = {}) => {
     artifact,
     artifactOpen: Boolean(artifact),
     viewer: openRef === 'evidence/surfaces' ? viewerFor(sessionData, evidence) : null,
-    chips: chipsFor(openRef, noteGate),
+    chips: chipsFor(openRef, noteGate, L),
     noteGate,
     suggestions: noteGate
       ? [{ value: 'Not this build — see my note.', label: 'Send the note & reject' }]
@@ -415,69 +417,68 @@ export const loopContext = (sessionData = {}, ref = null, prefs = {}) => {
     railView,
     railViews: RAIL_VIEWS.map((v) => ({ ...v, href: `/build/rail?view=${v.id}`, active: v.id === railView })),
     artifacts: artifactIndex(parts),
-    commits: repo.commits(),
-    files: repo.files(),
-    t,
+    commits: repo.commits(L),
+    files: repo.files(L),
     jargonLevel: lv,
   };
 };
 
-export const showArtifact = (sessionData, ref, prefs = {}) => {
+export const showArtifact = (sessionData, ref, prefs = {}, locale = 'en') => {
   sessionData.currentArtifact = ref;
-  return loopContext(sessionData, ref, prefs);
+  return loopContext(sessionData, ref, prefs, locale);
 };
 
 // Composer chrome: pick the agent model (shared session state), then
 // re-render the loop stage.
-export const setModel = (sessionData, id, prefs = {}) => {
+export const setModel = (sessionData, id, prefs = {}, locale = 'en') => {
   agent.setModel(sessionData, id);
-  return loopContext(sessionData, null, prefs);
+  return loopContext(sessionData, null, prefs, locale);
 };
 
 // Closing the artifact centers the chat again.
-export const closeArtifact = (sessionData, prefs = {}) => {
+export const closeArtifact = (sessionData, prefs = {}, locale = 'en') => {
   delete sessionData.currentArtifact;
-  return loopContext(sessionData, null, prefs);
+  return loopContext(sessionData, null, prefs, locale);
 };
 
 // ---------- context chips (gate note pin / unpin) ----------
 
 // "Reject with note" pins the gate as a context chip; the composer becomes
 // the note input (single input path) and the next message is the rejection.
-export const pinChip = (sessionData, ref, prefs = {}) => {
+export const pinChip = (sessionData, ref, prefs = {}, locale = 'en') => {
   const [kind, id] = (ref || '').split('/');
   if (kind === 'gate') {
-    const g = gatesWithDecisions(sessionData).find((x) => x.id === id);
+    const g = gatesWithDecisions(sessionData, locale).find((x) => x.id === id);
     if (g?.state === 'pending') sessionData.gateChip = id;
   }
-  return loopContext(sessionData, null, prefs);
+  return loopContext(sessionData, null, prefs, locale);
 };
 
-export const unpinChip = (sessionData, ref, prefs = {}) => {
+export const unpinChip = (sessionData, ref, prefs = {}, locale = 'en') => {
   const [kind, id] = (ref || '').split('/');
   if (kind === 'gate' && sessionData.gateChip === id) delete sessionData.gateChip;
-  return loopContext(sessionData, null, prefs);
+  return loopContext(sessionData, null, prefs, locale);
 };
 
 // Left rail view switching: run / thread / artifacts / commits / files.
-export const setRailView = (sessionData, view, prefs = {}) => {
+export const setRailView = (sessionData, view, prefs = {}, locale = 'en') => {
   sessionData.railView = RAIL_VIEW_IDS.includes(view) ? view : 'run';
-  return loopContext(sessionData, null, prefs);
+  return loopContext(sessionData, null, prefs, locale);
 };
 
 // The composer round-trip: append the user's message, then a simulated
 // agent reply; the reply may pull a new artifact onto the canvas.
 // With a gate chip pinned, the message IS the reject note + decision.
-export const sendMessage = (sessionData, text, prefs = {}) => {
+export const sendMessage = (sessionData, text, prefs = {}, locale = 'en') => {
   const lv = jargon.level(prefs);
 
   if (sessionData.gateChip) {
     const gateId = sessionData.gateChip;
     delete sessionData.gateChip;
-    const gate = gatesWithDecisions(sessionData).find((g) => g.id === gateId);
+    const gate = gatesWithDecisions(sessionData, locale).find((g) => g.id === gateId);
     if (gate?.state === 'pending') {
       pushUser(sessionData, text);
-      return decide(sessionData, gateId, 'rejected', text, prefs);
+      return decide(sessionData, gateId, 'rejected', text, prefs, locale);
     }
     // The gate was decided elsewhere — the stale chip drops, the message
     // falls through as an ordinary one.
@@ -490,37 +491,37 @@ export const sendMessage = (sessionData, text, prefs = {}) => {
   // Typed run-ops (pause / cancel / resume) scope to the open stage canvas —
   // the follow-up-with-context-chip replacement for the retired stage bar.
   if (ref) {
-    const op = typedOp(sessionData, ref, lower, lv);
+    const op = typedOp(sessionData, ref, lower, lv, locale);
     if (op) {
       narrate(sessionData, { text: op.replyText, artifact: ref, tone: null });
-      const ctx = loopContext(sessionData, ref, prefs);
+      const ctx = loopContext(sessionData, ref, prefs, locale);
       ctx.opFired = op.fired;
       return ctx;
     }
   }
 
-  const reply = repo.replies().find((r) => r.match.some((k) => lower.includes(k)))
-    ?? (ref ? scopedReply(contextFor(sessionData, ref, lv)) : repo.replyFallback());
+  const reply = repo.replies(locale).find((r) => r.match.some((k) => lower.includes(k)))
+    ?? (ref ? scopedReply(contextFor(sessionData, ref, lv, locale), locale) : repo.replyFallback(locale));
   narrate(sessionData, {
     text: reply.text, textBalanced: reply.textBalanced, textPlain: reply.textPlain,
     artifact: reply.artifact ?? null, tone: reply.artifact ? 'action' : null,
   });
 
   const nextRef = reply.artifact ?? ref;
-  return nextRef ? showArtifact(sessionData, nextRef, prefs) : loopContext(sessionData, null, prefs);
+  return nextRef ? showArtifact(sessionData, nextRef, prefs, locale) : loopContext(sessionData, null, prefs, locale);
 };
 
 // Legacy stage-bar follow-up route — the FAB is retired. A follow-up is now
 // an ordinary chat message with the artifact open as the context chip.
-export const askArtifact = (sessionData, ref, text, prefs = {}) => {
+export const askArtifact = (sessionData, ref, text, prefs = {}, locale = 'en') => {
   sessionData.currentArtifact = ref;
-  return sendMessage(sessionData, text, prefs);
+  return sendMessage(sessionData, text, prefs, locale);
 };
 
 // The scoped fallback: answer from the canvas's own envelope.
-function scopedReply(env) {
+function scopedReply(env, L) {
   const a = env.artifact;
-  if (!a) return { ...repo.replyFallback() };
+  if (!a) return { ...repo.replyFallback(L) };
   if (a.summary !== undefined) return { text: `${a.label} — ${a.summary}. ${a.detail ?? ''}`.trim() };
   if (a.context) return { text: `${a.label} — ${a.context}` };
   if (a.list) return { text: `${a.list.length} findings on the ${a.gate} gate — all fixed in attempt 2. Ask about one by name.` };
@@ -529,7 +530,7 @@ function scopedReply(env) {
     return { text: `${a.length} screens probed against their goldens — ${a.length - watch} pass${watch ? `, ${watch} on watch` : ''}.` };
   }
   if (a.bars) return { text: `Design took two-thirds of the line — every other stage came in under seven minutes.` };
-  return { ...repo.replyFallback() };
+  return { ...repo.replyFallback(L) };
 }
 
 // Shared stage-control overlay (button POST and typed op land here).
@@ -551,7 +552,7 @@ const opEvent = {
 
 // Typed ops from the chat: pause/hold, cancel/stop/kill, resume/continue —
 // only when the open stage's current state actually offers the action.
-function typedOp(sessionData, ref, lower, lv) {
+function typedOp(sessionData, ref, lower, lv, L) {
   const [kind, id] = ref.split('/');
   if (kind !== 'stage') return null;
   const wants = /\b(pause|hold)\b/.test(lower) ? 'pause'
@@ -559,7 +560,7 @@ function typedOp(sessionData, ref, lower, lv) {
     : /\b(resume|continue|unpause)\b/.test(lower) ? 'resume'
     : null;
   if (!wants) return null;
-  const stages = stagesWithDecisions(gatesWithDecisions(sessionData), lv, sessionData);
+  const stages = stagesWithDecisions(gatesWithDecisions(sessionData, L), lv, sessionData, L);
   const s = stages.find((x) => x.id === id);
   if (!s) return null;
   const offered = wants === 'pause' ? ['active', 'queued'].includes(s.state)
@@ -575,8 +576,8 @@ function typedOp(sessionData, ref, lower, lv) {
 // Stage control from the run view: pause holds a stage, resume releases it,
 // cancel takes it off the line. Narrated to the chat — the thread is the
 // run's history.
-export const stageControl = (sessionData, stageId, action, prefs = {}) => {
-  const stage = repo.stages().find((s) => s.id === stageId);
+export const stageControl = (sessionData, stageId, action, prefs = {}, locale = 'en') => {
+  const stage = repo.stages(locale).find((s) => s.id === stageId);
   const label = stage ? stage.label : stageId;
   if (stage) applyStageControl(sessionData, stageId, action);
   narrate(sessionData, {
@@ -587,11 +588,11 @@ export const stageControl = (sessionData, stageId, action, prefs = {}) => {
     artifact: stage ? `stage/${stageId}` : null,
     tone: action === 'cancel' ? 'fail' : action === 'pause' ? 'warn' : 'action',
   });
-  return showArtifact(sessionData, stage ? `stage/${stageId}` : (sessionData.currentArtifact ?? null), prefs);
+  return showArtifact(sessionData, stage ? `stage/${stageId}` : (sessionData.currentArtifact ?? null), prefs, locale);
 };
 
 // Run control from the run view: pause holds the whole line.
-export const runControl = (sessionData, action, prefs = {}) => {
+export const runControl = (sessionData, action, prefs = {}, locale = 'en') => {
   if (action === 'pause') sessionData.runControl = { paused: true };
   else delete sessionData.runControl;
   narrate(sessionData, {
@@ -604,20 +605,20 @@ export const runControl = (sessionData, action, prefs = {}) => {
     artifact: null,
     tone: action === 'pause' ? 'warn' : 'action',
   });
-  return loopContext(sessionData, null, prefs);
+  return loopContext(sessionData, null, prefs, locale);
 };
 
 // Gate decision: record it, mint provenance, narrate the consequence to the
 // chat. The note arrives either as the form field (legacy) or — via the
 // pinned gate chip — as the user's chat message itself.
-export const decide = (sessionData, gateId, decision, note, prefs = {}) => {
+export const decide = (sessionData, gateId, decision, note, prefs = {}, locale = 'en') => {
   const decisions = (sessionData.gateDecisions ??= {});
   decisions[gateId] = {
     decision,
     note: note || null,
     hash: decision === 'approved' ? 'c71b…e9d2' : '88d0…f4a6',
   };
-  const gate = repo.humanGates().find((g) => g.id === gateId);
+  const gate = repo.humanGates(locale).find((g) => g.id === gateId);
   const label = gate ? gate.label.toLowerCase() : gateId;
   const hash = decisions[gateId].hash;
   narrate(sessionData, {
@@ -630,5 +631,5 @@ export const decide = (sessionData, gateId, decision, note, prefs = {}) => {
     artifact: `gate/${gateId}`,
     tone: decision === 'approved' ? 'action' : 'fail',
   });
-  return showArtifact(sessionData, `gate/${gateId}`, prefs);
+  return showArtifact(sessionData, `gate/${gateId}`, prefs, locale);
 };

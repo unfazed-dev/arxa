@@ -1,7 +1,7 @@
 # Integration — shared design viewer (ui/common/design_viewer.html)
 
 The evidence canvas's design viewer is now the shared screen-stage component
-for every tab. Everything below is owned by the integrator; the component
+for every shell. Everything below is owned by the integrator; the component
 itself is done and verified (demo route smoke-tested, then reverted).
 
 Files landed by this component:
@@ -26,7 +26,7 @@ Files landed by this component:
   vp:       'mobile' | 'tablet' | 'desktop',  // validated against the screen
   os:       'ios' | 'android',          // mobile device chrome
   bg:       'canvas' | 'warm' | 'slate',
-  base:     '/build/artifact/evidence/surfaces/viewer',  // per-tab route
+  base:     '/build/artifact/evidence/surfaces/viewer',  // per-shell route
   stubBase: '/build/screens/',          // iframe src prefix
   mode:     'single' | 'rungs',
   strip:    true | false,               // filmstrip, single mode only
@@ -67,7 +67,7 @@ In `ui/views/main_shell/build/loop/loop_view.html`: delete the local
 - The evidence strip's per-thumb title (`tests/files`) moves into chip titles
   or is dropped — the shared thumb title is the screen id.
 
-## (b) design tab — adopt in both modes (parent-owned)
+## (b) design shell — adopt in both modes (parent-owned)
 
 Facade state: `sessionData.design.viewer = { screen, vp, bg, os, mode }`
 (namespaced like the rest of the design session state). Mirror build's

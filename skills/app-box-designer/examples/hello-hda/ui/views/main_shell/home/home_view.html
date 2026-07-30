@@ -1,34 +1,36 @@
 {% extends "ui/views/main_shell/main_shell_view.html" %}
-{% block title %}Home — hello-hda{% endblock %}
+{% block title %}{{ t('home.pageTitle') }}{% endblock %}
 {% block surface %}
-<h1>Home</h1>
-<p>Boosted navigation, server-rendered state, zero custom client-side JS.</p>
+<h1>{{ t('home.title') }}</h1>
+<p>{{ t('home.tagline') }}</p>
 
 {# Context comes from a facade, which composes repositories, which read
    fixtures generated from a seed. The view never touches data directly. #}
 <section class="list-section">
-  <h2 class="list-section__header">Greetings</h2>
+  <h2 class="list-section__header">{{ t('home.greetingsHeader') }}</h2>
   <div class="list-section__card">
     {% for row in rows %}{% include "ui/widgets/components/_list-row.html" %}{% endfor %}
   </div>
 </section>
-<p class="muted">{{ count }} greeting(s) from <code>greeting_facade</code>.</p>
+{# Plural demo: itemCount runs the ICU plural subset against demoCount —
+   try ?n=0, ?n=1, ?n=3, ?n=7 under ?lang=pl for one/few/many. #}
+<p class="muted">{{ t('itemCount', {count: demoCount}) }}</p>
 
-<p><a class="btn" href="/timer">Go to the timer {{ icon('arrow-right', {size: 16}) }}</a></p>
+<p><a class="btn" href="/timer">{{ t('home.toTimer') }} {{ icon('arrow-right', {size: 16}) }}</a></p>
 
 <form hx-post="/prefs/accent" hx-swap="none">
   {% set field = {
     name: 'accent',
-    label: 'Accent',
+    label: t('accent.label'),
     value: prefs.accent or 'blueviolet',
     options: [
-      { value: 'blueviolet', label: 'Iris' },
-      { value: 'teal', label: 'Lagoon' },
-      { value: 'tomato', label: 'Signal' }
+      { value: 'blueviolet', label: t('accent.option.iris') },
+      { value: 'teal', label: t('accent.option.lagoon') },
+      { value: 'tomato', label: t('accent.option.signal') }
     ]
   } %}
   {% include "ui/widgets/components/_form-field.html" %}
-  <button class="btn" type="submit">Apply</button>
+  <button class="btn" type="submit">{{ t('accent.apply') }}</button>
 </form>
-<p>Current accent: <span class="swatch"></span> <code>{{ prefs.accent or 'blueviolet' }}</code></p>
+<p>{{ t('accent.current') }}: <span class="swatch"></span> <code>{{ prefs.accent or 'blueviolet' }}</code></p>
 {% endblock %}

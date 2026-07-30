@@ -2,23 +2,23 @@
 {% import "ui/common/shell_nav.html" as shellNav %}
 {% block title %}appbox{% endblock %}
 {% block content %}
-{{ shellNav.shellNav(activeTab, prefs, project) }}
+{{ shellNav.shellNav(activeShell, prefs, project) }}
 <main class="shell-main {% block main_class %}{% endblock %}">
   {% block surface %}
-  <h1 class="display">Design index</h1>
-  <p class="muted">The registry rendered as the build tracker. Surfaces appear as they are authored — every one at compact, medium and expanded.</p>
+  <h1 class="display">{{ t('index.title') }}</h1>
+  <p class="muted">{{ t('index.lede') }}</p>
   {% for shell in shells %}
   <section class="shell-group">
     <h2>{{ shell.label }}</h2>
-    {% for tab in shell.tabs %}
-    <div class="tab-group">
-      <h3><code>{{ tab.tab }}</code></h3>
+    {% for group in shell.shells %}
+    <div class="surface-group">
+      <h3><code>{{ group.shell }}</code></h3>
       <ul class="surface-list">
-        {% for s in tab.surfaces %}
+        {% for s in group.surfaces %}
         <li>
           <span class="surface-label">{{ s.label }}</span>
           <code class="surface-id">{{ s.id }}</code>
-          <span class="chip">planned</span>
+          <span class="chip">{{ t('index.planned') }}</span>
         </li>
         {% endfor %}
       </ul>
@@ -28,5 +28,5 @@
   {% endfor %}
   {% endblock %}
 </main>
-<footer id="bottom-bar">{% block bottombar %}{% endblock %}</footer>
+<footer id="bottom-bar">{% include "ui/common/_lang_switcher.html" %}{% block bottombar %}{% endblock %}</footer>
 {% endblock %}

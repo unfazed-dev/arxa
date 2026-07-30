@@ -108,7 +108,7 @@ that visual review was skipped**.
   http://localhost:4319/<route>` loads pages headless and fails on any console
   error or pageerror. Check for zero page errors before surfacing.
 - **Structure:** `node <skill>/selftest.sh`-style checks — the registry parses,
-  every viewmodel declares a `surfaceId`, `tabRoots` is non-empty. See
+  every viewmodel declares a `surfaceId`, `shellRoots` is non-empty. See
   [`app-architecture.md`](app-architecture.md).
 - **Wiring:** `node <skill>/runtime/check_wiring.mjs <artifact> <property>`
   (`fragments`, `mutations-posted`, `urls-resolve`, `targets-exist`). These are

@@ -3,16 +3,16 @@
 {% import "ui/common/timeline.html" as tl %}
 {% import "ui/common/design_viewer.html" as dv %}
 {% import "ui/views/main_shell/design/_shared.html" as sh %}
-{% block title %}appbox — Design{% endblock %}
+{% block title %}{{ t('design.pageTitle') }}{% endblock %}
 {% block main_class %}shell-main-loop{% endblock %}
 
 {# ---------- Named Fragments (renderable alone via prototype_view.html#macro) ----------
-   The design tab is one stage: chat (centered ⇄ docked) + the artboard
-   canvas, wrapped in #stage-layout; the multi-view rail on the left. The tab
+   The design shell is one stage: chat (centered, then docked) + the artboard
+   canvas, wrapped in #stage-layout; the multi-view rail on the left. The shell
    opens on the chat with the draft-all offer; accepting renders every screen
    as an artboard on the pan/zoom canvas island. #}
 
-{% macro timeline(c, oob) %}{{ tl.timeline(c, oob, 'Design progress') }}{% endmacro %}
+{% macro timeline(c, oob) %}{{ tl.timeline(c, oob, t('design.timelineLabel')) }}{% endmacro %}
 
 {# ---------- The canvas: every drafted screen as an artboard ---------- #}
 
@@ -21,11 +21,11 @@
 <section class="canvas design-canvas" id="design-canvas" aria-live="polite">
   <article class="artifact screen-artifact evidence-artifact">
     <header class="artifact-head">
-      <span class="eyebrow">artboards · {{ c.counts.screens }} surfaces · real device sizes</span>
+      <span class="eyebrow">{{ t('design.artboardsEyebrow', {count: c.counts.screens}) }}</span>
       {{ prim.statusPill(c.run.state) }}
     </header>
     {{ dv.designViewer(c.viewer) }}
-    <p class="artifact-foot muted">{{ c.t.protoFoot }}</p>
+    <p class="artifact-foot muted">{{ t('protoFoot') }}</p>
   </article>
 </section>
 {% endif %}
@@ -35,7 +35,7 @@
 
 {# The whole stage: chat (fresh chips/thread) + canvas (fresh outlines),
    inside the #stage-layout container. Context toggles, composer sends,
-   reverts and chip ×'s all swap #stage-layout outerHTML with this. #}
+   reverts and chip close buttons all swap #stage-layout outerHTML with this. #}
 {% macro stageSwap(c) %}
 <div class="stage-layout {{ 'is-docked' if c.docked }}" id="stage-layout">
   {{ sh.chatStage(c) }}

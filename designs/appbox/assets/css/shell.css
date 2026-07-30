@@ -1,11 +1,11 @@
-/* appbox · shell chrome — appbar, drawer, bottom tab bar, staggered FAB,
+/* appbox · shell chrome — appbar, drawer, bottom nav, staggered FAB,
    rail dock, rail mounts, bottom bar + timeline.
    Rung visibility is pure CSS: compact <600 / medium 600–839 / expanded ≥840
    (the ladder's window size classes; rung NAMES are the contract, the px here
    are the class boundaries, never freeze widths). All open/close is <details>.
    Tokens, motion vocabulary and keyframes (ab-disclose) come from app.css. */
 
-#app { --tabbar-h: 3.6rem; }
+#app { --bottomnav-h: 3.6rem; }
 
 /* ---------- appbar ---------- */
 .shell-nav {
@@ -22,17 +22,17 @@
   font-family: 'Lexend Giga', 'Lexend', sans-serif; font-weight: 400;
   letter-spacing: .01em; color: var(--tx); text-decoration: none;
 }
-.shell-tabs { display: flex; gap: .25rem; }
-.shell-tab {
+.shell-links { display: flex; gap: .25rem; }
+.shell-link {
   padding: .3rem .75rem; border-radius: 999px;
   color: var(--tx-2); text-decoration: none; font-weight: 500; font-size: .84rem;
 }
-.shell-tab.is-active { color: var(--tx); background: var(--bg-2); box-shadow: inset 0 0 0 1px var(--border); }
+.shell-link.is-active { color: var(--tx); background: var(--bg-2); box-shadow: inset 0 0 0 1px var(--border); }
 .shell-nav-spacer { flex: 1; }
 .channel { display: flex; gap: .45rem; align-items: center; font-size: .78rem; color: var(--tx-2); }
 .channel-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 0 3px var(--ok-soft); }
 .shell-main { width: 100%; max-width: 56rem; margin: 0 auto; padding: 2rem 1.1rem 3rem; flex: 1; }
-/* stage tabs (intake/design/build) run full-bleed — the chat centerpiece,
+/* stage shells (intake/design/build) run full-bleed — the chat centerpiece,
    docked rails and canvas need the whole width; shell.css must repeat this
    because it loads after app.css and would otherwise cap them at 56rem */
 .shell-main-loop { max-width: none; padding: 0; }
@@ -56,13 +56,13 @@
 }
 .shell-project:hover { box-shadow: inset 0 0 0 1px var(--tx-3); }
 .shell-project-name { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.shell-project-tab { color: var(--accent); font-weight: 500; }
-.shell-project-tab::before { content: '· '; color: var(--tx-3); }
+.shell-project-shell { color: var(--accent); font-weight: 500; }
+.shell-project-shell::before { content: '· '; color: var(--tx-3); }
 .shell-project-saved { color: var(--tx-2); font-size: .76rem; white-space: nowrap; }
 .shell-project-saved::before { content: '· '; color: var(--tx-3); }
 
 /* ---------- touch chrome: hidden on expanded, shown by rung below ---------- */
-.shell-chrome-touch, .bottom-tabs, .fab-menu, .rail-dock { display: none; }
+.shell-chrome-touch, .bottom-nav, .fab-menu, .rail-dock { display: none; }
 
 /* drawer + overflow: details-based floating panels hanging off the appbar */
 .shell-drawer, .shell-overflow { position: relative; }
@@ -78,43 +78,43 @@
 .drawer-panel { left: 0; min-width: 12rem; }
 .overflow-menu { right: 0; min-width: 9.5rem; }
 .shell-drawer[open] .drawer-panel, .shell-overflow[open] .overflow-menu { display: flex; }
-.drawer-tab, .overflow-item {
+.drawer-link, .overflow-item {
   display: flex; gap: .6rem; align-items: center;
   padding: .42rem .7rem; border-radius: 8px;
   font-size: .84rem; color: var(--tx); text-decoration: none;
 }
-.drawer-tab:hover, .overflow-item:hover { background: var(--bg-2); }
-.drawer-tab.is-active { background: var(--accent-soft); color: var(--accent); font-weight: 500; }
-.drawer-ico { width: 1.1rem; text-align: center; color: var(--tx-2); }
-.drawer-tab.is-active .drawer-ico { color: var(--accent); }
+.drawer-link:hover, .overflow-item:hover { background: var(--bg-2); }
+.drawer-link.is-active { background: var(--accent-soft); color: var(--accent); font-weight: 500; }
+.drawer-icon { flex: none; color: var(--tx-2); }
+.drawer-link.is-active .drawer-icon { color: var(--accent); }
 .drawer-row {
   display: flex; align-items: center; padding: .42rem .7rem;
   border-top: 1px solid var(--border); margin-top: .15rem;
 }
 .drawer-row form { display: inline; }
 
-/* ---------- compact: bottom tab bar ---------- */
-.bottom-tabs {
+/* ---------- compact: bottom nav ---------- */
+.bottom-nav {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 11;
-  height: var(--tabbar-h);
+  height: var(--bottomnav-h);
   display: none; align-items: stretch; justify-content: space-around;
   border-top: 1px solid var(--border);
   background: color-mix(in srgb, var(--bg) 88%, transparent);
   -webkit-backdrop-filter: saturate(1.4) blur(14px);
   backdrop-filter: saturate(1.4) blur(14px);
 }
-.bottom-tab {
+.bottom-nav__link {
   flex: 1; display: flex; flex-direction: column; gap: .12rem;
   align-items: center; justify-content: center;
   color: var(--tx-2); text-decoration: none;
 }
-.bt-ico { font-size: 1rem; line-height: 1; }
-.bt-label {
+.bottom-nav__icon { display: block; }
+.bottom-nav__label {
   font-family: 'Lexend Deca', 'Lexend', sans-serif;
   font-size: .58rem; letter-spacing: .07em; text-transform: uppercase;
 }
-.bottom-tab.is-active { color: var(--accent); }
-.bottom-tab.is-active .bt-label { font-weight: 500; }
+.bottom-nav__link.is-active { color: var(--accent); }
+.bottom-nav__link.is-active .bottom-nav__label { font-weight: 500; }
 
 /* ---------- compact + medium: staggered-action FAB ---------- */
 .fab-menu {
@@ -165,7 +165,7 @@
 }
 .rail-dock[open] .rail-dock-panel { display: flex; }
 
-/* ---------- expanded: rail mount points, populated by tab views ---------- */
+/* ---------- expanded: rail mount points, populated by shell views ---------- */
 .rail-mount { position: fixed; top: calc(var(--nav-h) + .8rem); bottom: calc(var(--tl-h) + .8rem); z-index: 8; }
 #rail-left-mount { left: .8rem; }
 #rail-right-mount { right: .8rem; }
@@ -211,21 +211,21 @@
 .tl-item.is-current .tl-mark { box-shadow: 0 0 0 3px var(--accent-soft); }
 
 /* ---------- rungs ---------- */
-/* compact: drawer + overflow in the appbar, bottom tab bar + FAB, no bottom bar */
+/* compact: drawer + overflow in the appbar, bottom nav + FAB, no bottom bar */
 @media (max-width: 599px) {
   .shell-nav { gap: .5rem; padding: 0 .7rem; }
   .shell-chrome-touch { display: block; }
-  .shell-tabs, .shell-nav > .channel, .shell-nav > form { display: none; }
+  .shell-links, .shell-nav > .channel, .shell-nav > form { display: none; }
   .shell-project-saved { display: none; }
-  .bottom-tabs { display: flex; }
-  .fab-menu { display: flex; bottom: calc(var(--tabbar-h) + 1rem); }
+  .bottom-nav { display: flex; }
+  .fab-menu { display: flex; bottom: calc(var(--bottomnav-h) + 1rem); }
   .rail-mount, #bottom-bar { display: none; }
-  .shell-main { padding-bottom: calc(var(--tabbar-h) + 3rem); }
+  .shell-main { padding-bottom: calc(var(--bottomnav-h) + 3rem); }
 }
-/* medium: same appbar, floating left rail dock + FAB, no bottom tab/bottom bar */
+/* medium: same appbar, floating left rail dock + FAB, no bottom nav/bottom bar */
 @media (min-width: 600px) and (max-width: 839px) {
   .shell-chrome-touch { display: block; }
-  .shell-tabs { display: none; }
+  .shell-links { display: none; }
   .rail-dock { display: flex; }
   .fab-menu { display: flex; }
   .rail-mount, #bottom-bar { display: none; }

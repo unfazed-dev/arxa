@@ -27,7 +27,7 @@ mkshape(){ printf '# Design System\n' > "$DESIGN/design-system.md"
   printf '{"globs":["surfaces/*"],"selectors":[]}\n' > "$DESIGN/exclusions.json"
   printf '# Direction\napproved\n' > "$DESIGN/direction-approved.md"
   printf '# Brand\n' > "$DESIGN/brand-spec.md"; }
-structure(){ printf '{"tabRoots":{},"screens":%s}\n' "$1" > "$DESIGN/structure.json"; }
+structure(){ printf '{"shellRoots":{},"screens":%s}\n' "$1" > "$DESIGN/structure.json"; }
 
 # ---- HAPPY: shape + vocab + exclusions pass (render skipped for a fast green) ----
 mktokens; mkshape
@@ -91,8 +91,8 @@ need "$o" "targets changed since approval" "names the reason (targets changed)"
 TH="$(mktemp -d)"
 mkdir -p "$TH/design/ui/views/stage_shell/projects/home"
 printf 'export default [\n  ["GET","/",{}],\n];\n' > "$TH/design/app.routes.js"
-printf '{"registry":"registry.json","tabRoots":{"projects":"/"},"screens":[{"id":"projects.home","tab":"projects","comp":"Home","shell":"stage_shell","surface":"stage_shell_projects_home_view"}]}\n' > "$TH/design/structure.json"
-printf '[{"id":"projects.home","surface":"stage_shell_projects_home_view","tab":"projects","comp":"Home"}]\n' > "$TH/design/registry.json"
+printf '{"registry":"registry.json","shellRoots":{"projects":"/"},"screens":[{"id":"projects.home","shell":"projects","comp":"Home","shellDir":"stage_shell","surface":"stage_shell_projects_home_view"}]}\n' > "$TH/design/structure.json"
+printf '[{"id":"projects.home","surface":"stage_shell_projects_home_view","shell":"projects","comp":"Home"}]\n' > "$TH/design/registry.json"
 printf '<html><body>home</body></html>\n' > "$TH/design/ui/views/stage_shell/projects/home/home_view.html"
 o="$(FREEZE_RENDER=skip bash "$GATE" --targets macos "$TH" 2>&1)"; chk "$?" 0 "htmx: valid frozen inputs pass (no tokens/exclusions needed)"
 need "$o" "htmx producer (app.routes.js present)" "htmx producer detected"
@@ -128,8 +128,8 @@ EOF
   cat > "$THR/design/ui/views/sh/b/b_viewmodel.js" <<'EOF'
 export const page = (c) => c.html('<html><body><script>console.error("THE_ONE_ERROR")</script>b</body></html>');
 EOF
-  printf '{"registry":"registry.json","tabRoots":{},"screens":[{"id":"a","shell":"sh","surface":"sh_a_view"},{"id":"b","shell":"sh","surface":"sh_b_view"}]}\n' > "$THR/design/structure.json"
-  printf '[{"id":"a","surface":"sh_a_view","tab":"sh","comp":"A"},{"id":"b","surface":"sh_b_view","tab":"sh","comp":"B"}]\n' > "$THR/design/registry.json"
+  printf '{"registry":"registry.json","shellRoots":{},"screens":[{"id":"a","shell":"sh","shellDir":"sh","surface":"sh_a_view"},{"id":"b","shell":"sh","shellDir":"sh","surface":"sh_b_view"}]}\n' > "$THR/design/structure.json"
+  printf '[{"id":"a","surface":"sh_a_view","shell":"sh","comp":"A"},{"id":"b","surface":"sh_b_view","shell":"sh","comp":"B"}]\n' > "$THR/design/registry.json"
   o="$(bash "$GATE" --targets macos "$THR" 2>&1)"; chk "$?" 1 "htmx render: a console error fails the render"
   need "$o" "THE_ONE_ERROR" "htmx render names the console error"
   need "$o" "render: 2 route/viewport render(s) across 1 derived width(s), 1 error(s)" "htmx 4.3: one error across two routes reported exactly once"
@@ -140,6 +140,29 @@ EOF
 else
   echo "  (skip: htmx render exact-count case — node not on PATH)"
 fi
+
+# ---- l10n parity (3b): locale ARBs must match the app_en.arb template -------
+# HAPPY: app_pl.arb at key + placeholder parity with the template passes
+# (@-prefixed metadata keys are ignored).
+mkdir -p "$DESIGN/l10n"
+printf '{\n  "homeTitle": "Projects",\n  "@homeTitle": {},\n  "welcome": "Hello {name}"\n}\n' > "$DESIGN/l10n/app_en.arb"
+printf '{\n  "homeTitle": "Projekty",\n  "welcome": "Cześć {name}"\n}\n' > "$DESIGN/l10n/app_pl.arb"
+o="$(FREEZE_RENDER=skip bash "$GATE" --targets macos "$T" 2>&1)"; chk "$?" 0 "l10n: key + placeholder parity passes"
+need "$o" "l10n: 1 locale catalog(s) at key + placeholder parity" "l10n happy reports parity"
+
+# NEGATIVE: a locale missing a template key fails, naming the locale and key.
+printf '{\n  "homeTitle": "Projekty"\n}\n' > "$DESIGN/l10n/app_pl.arb"
+o="$(FREEZE_RENDER=skip bash "$GATE" --targets macos "$T" 2>&1)"; chk "$?" 1 "l10n negative: missing key fails"
+need "$o" "app_pl.arb missing key(s)" "l10n negative names the locale catalog"
+need "$o" "welcome" "l10n negative names the missing key"
+
+# NEGATIVE: placeholder drift ({name} in the template, {user} in the locale)
+# fails, naming the drifted key.
+printf '{\n  "homeTitle": "Projekty",\n  "welcome": "Cześć {user}"\n}\n' > "$DESIGN/l10n/app_pl.arb"
+o="$(FREEZE_RENDER=skip bash "$GATE" --targets macos "$T" 2>&1)"; chk "$?" 1 "l10n negative: placeholder drift fails"
+need "$o" "placeholder drift" "l10n negative names the placeholder drift"
+need "$o" "welcome" "l10n negative names the drifted key"
+rm -rf "$DESIGN/l10n"
 
 echo "freeze selftest: $pass passed, $failc failed"
 [ "$failc" -eq 0 ] && exit 0 || exit 1

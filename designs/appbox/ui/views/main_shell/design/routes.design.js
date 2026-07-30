@@ -1,4 +1,4 @@
-// Design-tab route table — same [method, path, handler] shape as
+// Design-shell route table — same [method, path, handler] shape as
 // app.routes.js. Integration: spread into the default export of
 // app.routes.js (see _integration_design.md, next to this file).
 import * as prototype from './prototype/prototype_viewmodel.js';
@@ -6,7 +6,7 @@ import * as chat from './chat/chat_viewmodel.js';
 import * as freeze from './freeze/freeze_viewmodel.js';
 
 export default [
-  // design.prototype — the design stage (tab root: /design)
+  // design.prototype — the design stage (shell root: /design)
   ['GET', '/design', prototype.page],
   ['GET', '/design/rail', prototype.rail],
   ['GET', '/design/rail/:view', prototype.railView],

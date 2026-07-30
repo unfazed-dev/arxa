@@ -40,8 +40,18 @@ check, and is never rendered is the stale-green pattern §16 exists to kill.
 It also writes `lib/ui/views/.shell-structure.json` — the manifest the coverage
 gate reads (`selfContained` shells + the `{shell: {surfaceId: dir}}` map). The
 directory name is a scaffolder **decision** (coverage refuses to guess it);
-here it is `<tab>_<short>` from the registry id (the stable key, §18),
+here it is `<shell>_<short>` from the registry id (the stable key, §18),
 recorded so the gate can check it.
+
+When the design carries `l10n/*.arb` catalogs (`app_<locale>.arb`), the
+scaffolder also copies them verbatim into `lib/l10n/`, drops a fixed-contract
+`l10n.yaml` at the app root (gen-l10n; `template-arb-file: app_en.arb`, no
+synthetic package), and records `"l10n": {"arbDir", "locales"}` in the
+manifest so gates never re-derive the locale set. `--check` asserts the
+catalog file set + `l10n.yaml` too. A design with no `l10n/` dir gets **no**
+l10n artifacts (backward compat). The pubspec side of l10n
+(`flutter_localizations`, `intl`, `flutter.generate: true`) is emitted
+unconditionally by `tools/vendor/stages/blueprint.py`.
 
 **You do not choose dependencies.** `scaffold.py` never reads or writes a
 `pubspec.yaml`; the dependency set arrives from the kit and the app template.

@@ -33,7 +33,7 @@ const VIEW = 'ui/views/workspace_shell/settings/settings_view.html';
 export const page = (c, h) => {
   const prefs = h.prefs(c);
   return h.render(c, VIEW, {
-    activeTab: 'workspace',
+    activeShell: 'workspace',
     theme: prefs.theme || 'light',
     accent: prefs.accent || 'cyan',
     jargon: prefs.jargon || 'balanced',

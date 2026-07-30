@@ -37,7 +37,13 @@
 
 /* run view: whole-line control + per-stage rows with pause/resume/cancel */
 .run-controls { display: flex; }
-.run-controls button { width: 100%; }
+.run-controls button {
+  width: 100%;
+  display: inline-flex; align-items: center; justify-content: center; gap: .45rem;
+}
+/* lucide icons riding inline with text (CTAs, eyebrows) — baseline nudge.
+   (ctaLink macro links are inline-flex and need no nudge.) */
+.cta-main svg, .cta-ghost svg, .findings-artifact .eyebrow svg { vertical-align: -0.14em; }
 .run-stages {
   list-style: none; margin: 0; padding: 0;
   display: flex; flex-direction: column;

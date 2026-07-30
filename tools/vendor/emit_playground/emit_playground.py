@@ -18,10 +18,10 @@ with playwright importable -> exit 2 with install instructions.
 
 Contract:
   - serve <app>/design/ on an ephemeral port; load new/index.html and read
-    window.P2.registry (array of {id, tab, roles, surface, ...}; `surface` is
+    window.P2.registry (array of {id, shell, roles, surface, ...}; `surface` is
     a canonical ID or null). Missing registry -> exit 1.
   - per entry with surface != null: pick an allowed role (entry.roles[0],
-    else the role whose tabs contain entry.tab, from window.P2.roles), goto
+    else the role whose shells contain entry.shell, from window.P2.roles), goto
     new/index.html?role=<role>&screen=<id>, settle ~1500ms, fail on any
     console/page error, extract the SCREEN CONTENT only: the .phone-screen
     subtree with every design/exclusions.json `selectors` match stripped.
@@ -102,24 +102,24 @@ def strip_css_comments(css):
 
 
 def role_for(entry, roles):
-    """Allowed role: entry.roles[0], else the role whose tabs contain the
-    entry's tab. Liberal about window.P2.roles shape: {id: {tabs: [...]}} or
-    {id: [...]} or [{id, tabs}]."""
+    """Allowed role: entry.roles[0], else the role whose shells contain the
+    entry's shell. Liberal about window.P2.roles shape: {id: {shells: [...]}} or
+    {id: [...]} or [{id, shells}]."""
     r = entry.get("roles")
     if isinstance(r, list) and r:
         return r[0]
-    tab = entry.get("tab")
+    shell = entry.get("shell")
     pairs = []
     if isinstance(roles, dict):
         for rid, cfg in roles.items():
-            tabs = cfg.get("tabs") if isinstance(cfg, dict) else cfg
-            pairs.append((rid, tabs if isinstance(tabs, list) else []))
+            shells = cfg.get("shells") if isinstance(cfg, dict) else cfg
+            pairs.append((rid, shells if isinstance(shells, list) else []))
     elif isinstance(roles, list):
         for cfg in roles:
             if isinstance(cfg, dict):
-                pairs.append((cfg.get("id"), cfg.get("tabs") or []))
-    for rid, tabs in pairs:
-        if tab in tabs:
+                pairs.append((cfg.get("id"), cfg.get("shells") or []))
+    for rid, shells in pairs:
+        if shell in shells:
             return rid
     return pairs[0][0] if pairs else None
 
@@ -179,7 +179,7 @@ def emit(app, check=False):
                 failures.append(f"registry load: {m}")
             if registry is None:
                 print("FAIL: window.P2.registry not found on design/new/index.html — the playground must expose "
-                      "the screen registry (array of {id, tab, roles, surface, ...}) as window.P2.registry",
+                      "the screen registry (array of {id, shell, roles, surface, ...}) as window.P2.registry",
                       file=sys.stderr)
                 return 1
             if not isinstance(registry, list):
@@ -201,7 +201,7 @@ def emit(app, check=False):
                 role = role_for(entry, roles)
                 if not role:
                     failures.append(f"{surface}: no usable role for screen '{sid}' "
-                                    "(entry.roles empty and no window.P2.roles tab match)")
+                                    "(entry.roles empty and no window.P2.roles shell match)")
                     continue
                 pg, msgs = fresh_page()
                 pg.goto(f"{base}?role={quote(str(role))}&screen={quote(str(sid))}")
@@ -320,7 +320,7 @@ def self_test():
             home = surf / "fixture_home_view.html"
             chk(home.is_file(), "surface emitted at design/new/surfaces/fixture_home_view.html")
             chk((surf / "fixture_studio_view.html").is_file(),
-                "roles-less entry falls back to the role whose tabs contain its tab (studio → leo)")
+                "roles-less entry falls back to the role whose shells contain its shell (studio → leo)")
             files = sorted(p.name for p in surf.glob("*.html"))
             chk(files == ["fixture_home_view.html", "fixture_studio_view.html"],
                 f"registry-null screen not emitted (files: {files})")

@@ -128,7 +128,7 @@
   ],
   "files": [
     { "path": "docs/design/story-map.json", "detail": "approved story map — the draft source" },
-    { "path": "designs/appbox/models/design_model/seed.json", "detail": "authored design seed" },
+    { "path": "designs/appbox/models/design_model/design_seed.en.json", "detail": "authored design seed" },
     { "path": "designs/appbox/models/design_model/run.json", "detail": "generated fixture — 11 surfaces, 33 shots" },
     { "path": "app/structure.json", "detail": "locked structure — the drift reference" },
     { "path": "app/goldens/", "detail": "33 frozen goldens, hashed at freeze" }

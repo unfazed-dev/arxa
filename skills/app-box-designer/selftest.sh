@@ -46,9 +46,10 @@ exclusions-file|no exclusions.json
 surface-id|every viewmodel declares surfaceId
 orphan-id|every surfaceId joins a registry entry
 uncovered-entry|every buildable registry entry has a surface
-empty-tabroots|app.routes.js exports a non-empty tabRoots
+empty-shellroots|app.routes.js exports a non-empty shellRoots
 repo-import|no viewmodel imports a repository directly
 fixture-provenance|fixtures record their seed provenance
+arb-parity|ARB catalogs have key parity across locales
 ladder-doc|references/viewport-ladder.md exists
 ladder-config|runtime/ladder.json exists
 ladder-drift|ladder.json and viewport-ladder.md agree
@@ -87,19 +88,26 @@ mutate() {
   esac
   VM="$(find "$ART/ui/views" -name '*_viewmodel.js' | sort | head -1)"
   HTML="$(find "$ART/ui" -name '*_view.html' | sort | head -1)"
-  FIX="$(ls "$ART"/models/*/*_fixtures.json 2>/dev/null | head -1)"
+  FIX="$(ls "$ART"/models/*/*_fixtures*.json 2>/dev/null | head -1)"
   REGJ="$ART/models/screens_model/registry.json"
   case "$1" in
     registry-key)       node -e 'const fs=require("fs"),f=process.argv[1],r=JSON.parse(fs.readFileSync(f));delete r[0].label;fs.writeFileSync(f,JSON.stringify(r,null,2))' "$REGJ" ;;
     exclusions-file)    : > "$ART/exclusions.json" ;;
     surface-id)         perl -ni -e 'print unless /export const surfaceId/' "$VM" ;;
     orphan-id)          node -e 'const fs=require("fs"),f=process.argv[1];fs.writeFileSync(f,fs.readFileSync(f,"utf8").replace(/(surfaceId\s*=\s*["\x27])[^"\x27]+/,"$1zzz.nope"))' "$VM" ;;
-    uncovered-entry)    node -e 'const fs=require("fs"),f=process.argv[1],r=JSON.parse(fs.readFileSync(f));r.push({id:"zzz.ghost",label:"Ghost",surface:"ghost_view",tab:"main",comp:"Ghost"});fs.writeFileSync(f,JSON.stringify(r,null,2))' "$REGJ" ;;
-    empty-tabroots)     node -e 'const fs=require("fs"),f=process.argv[1];fs.writeFileSync(f,fs.readFileSync(f,"utf8").replace(/export const tabRoots\s*=\s*\{[^}]*\}/,"export const tabRoots = {}"))' "$ART/app.routes.js" ;;
+    uncovered-entry)    node -e 'const fs=require("fs"),f=process.argv[1],r=JSON.parse(fs.readFileSync(f));r.push({id:"zzz.ghost",label:"Ghost",surface:"ghost_view",shell:"main",comp:"Ghost"});fs.writeFileSync(f,JSON.stringify(r,null,2))' "$REGJ" ;;
+    empty-shellroots)   node -e 'const fs=require("fs"),f=process.argv[1];fs.writeFileSync(f,fs.readFileSync(f,"utf8").replace(/export const shellRoots\s*=\s*\{[^}]*\}/,"export const shellRoots = {}"))' "$ART/app.routes.js" ;;
     # A real import would also break the module graph and prove less; that
     # check is a text scan, so the honest break is text.
     repo-import)        printf '// reaches services/repositories/x.js directly\n' >> "$VM" ;;
     fixture-provenance) perl -ni -e 'print unless /_generated_from/' "$FIX" ;;
+    arb-parity)         node -e '
+      const fs=require("fs"),path=require("path"),d=path.join(process.argv[1],"l10n");
+      const strip=s=>s.split("\n").filter(l=>!l.trimStart().startsWith("//")).join("\n");
+      const f=fs.readdirSync(d).find(x=>/^app_(?!en[.])[^/]+\.arb$/.test(x));
+      const p=path.join(d,f),j=JSON.parse(strip(fs.readFileSync(p,"utf8")));
+      delete j[Object.keys(j).find(k=>!k.startsWith("@"))];
+      fs.writeFileSync(p,JSON.stringify(j,null,2))' "$ART" ;;
     ladder-doc)         rm -f "$SKILL/references/viewport-ladder.md" ;;
     ladder-config)      rm -f "$SKILL/runtime/ladder.json" ;;
     ladder-drift)       node -e 'const fs=require("fs"),f=process.argv[1],j=JSON.parse(fs.readFileSync(f));j.rungs.compact.width+=1;fs.writeFileSync(f,JSON.stringify(j,null,2))' "$SKILL/runtime/ladder.json" ;;
@@ -217,7 +225,7 @@ OUT="$(node -e '
 const fs = require("fs");
 const r = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
 if (!Array.isArray(r) || r.length === 0) { console.error("registry is not a non-empty array"); process.exit(1); }
-const need = ["id","label","surface","tab","comp"];
+const need = ["id","label","surface","shell","comp"];
 let bad = 0;
 for (const e of r) for (const k of need)
   if (!(k in e)) { console.error(`entry ${e.id ?? "?"} missing key: ${k}`); bad++; }
@@ -275,13 +283,13 @@ process.exit(bad ? 1 : 0);
 ' "$REG" "$ART/ui/views" 2>&1)"
 check $? "every buildable registry entry has a surface" "$OUT"
 
-# --- 6. tabRoots exported and non-empty ------------------------------------
+# --- 6. shellRoots exported and non-empty ----------------------------------
 OUT="$(node --input-type=module -e '
 const m = await import(process.argv[1]);
-if (!m.tabRoots || Object.keys(m.tabRoots).length === 0) { console.error("tabRoots missing or empty"); process.exit(1); }
-console.log(Object.keys(m.tabRoots).join(", "));
+if (!m.shellRoots || Object.keys(m.shellRoots).length === 0) { console.error("shellRoots missing or empty"); process.exit(1); }
+console.log(Object.keys(m.shellRoots).join(", "));
 ' "$ART/app.routes.js" 2>&1)"
-check $? "app.routes.js exports a non-empty tabRoots" "$OUT"
+check $? "app.routes.js exports a non-empty shellRoots" "$OUT"
 
 # --- 7. viewmodels do not reach past facades -------------------------------
 LEAK="$(grep -rl "repositories/" "$ART/ui" 2>/dev/null || true)"
@@ -289,9 +297,38 @@ LEAK="$(grep -rl "repositories/" "$ART/ui" 2>/dev/null || true)"
 check $? "no viewmodel imports a repository directly" "$LEAK"
 
 # --- 8. fixtures are generated, not authored -------------------------------
-UNGEN="$(grep -Lr '_generated_from' "$ART"/models/*/*_fixtures.json 2>/dev/null || true)"
+UNGEN="$(grep -Lr '_generated_from' "$ART"/models/*/*_fixtures*.json 2>/dev/null || true)"
 [ -z "$UNGEN" ]
 check $? "fixtures record their seed provenance" "$UNGEN"
+
+# --- 8b. ARB catalogs mirror the en catalog key-for-key ---------------------
+# A locale missing a key falls back to en at runtime — silently. A designer
+# reviewing pl sees English and files no bug; parity is a check, not a hope.
+OUT="$(node -e '
+const fs = require("fs"), path = require("path");
+const dir = path.join(process.argv[1], "l10n");
+if (!fs.existsSync(dir)) { console.log("no l10n/ — nothing to check"); process.exit(0); }
+const strip = (s) => s.split("\n").filter((l) => !l.trimStart().startsWith("//")).join("\n");
+const keys = {};
+for (const f of fs.readdirSync(dir).filter((f) => /^app_.+\.arb$/.test(f)))
+  keys[f] = Object.keys(JSON.parse(strip(fs.readFileSync(path.join(dir, f), "utf8"))))
+    .filter((k) => !k.startsWith("@")).sort();
+const files = Object.keys(keys);
+const base = keys["app_en.arb"] ?? keys[files.sort()[0]];
+const baseName = keys["app_en.arb"] ? "app_en.arb" : files.sort()[0];
+let bad = 0;
+for (const f of files) {
+  if (f === baseName) continue;
+  const missing = base.filter((k) => !keys[f].includes(k));
+  const extra = keys[f].filter((k) => !base.includes(k));
+  if (missing.length || extra.length) {
+    console.error(`${f}: missing [${missing.join(",")}] extra [${extra.join(",")}] vs ${baseName}`);
+    bad++;
+  }
+}
+process.exit(bad ? 1 : 0);
+' "$ART" 2>&1)"
+check $? "ARB catalogs have key parity across locales" "$OUT"
 
 # --- 9. the ladder is documented, configured, and unhardcoded in code ------
 [ -f "$SKILL/references/viewport-ladder.md" ]

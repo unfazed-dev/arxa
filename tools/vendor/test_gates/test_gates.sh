@@ -388,12 +388,12 @@ PY
 {
   "$schema": "kit/design-structure@1",
   "registry": "jsx/app.jsx",
-  "tabRoots": { "train": "train.library" },
+  "shellRoots": { "train": "train.library" },
   "screens": [
-    { "id": "train.library", "tab": "train", "comp": "TrainLib",
-      "shell": "train_shell", "surface": "train_shell_library_view" },
-    { "id": "train.stats", "tab": "train", "comp": "TrainStats",
-      "shell": "train_shell", "surface": "train_shell_stats_view" }
+    { "id": "train.library", "shell": "train", "comp": "TrainLib",
+      "shellDir": "train_shell", "surface": "train_shell_library_view" },
+    { "id": "train.stats", "shell": "train", "comp": "TrainStats",
+      "shellDir": "train_shell", "surface": "train_shell_stats_view" }
   ]
 }
 JSON
@@ -429,17 +429,17 @@ test_structure(){
   mk_design "$a"; mkdir -p "$a/design/new/jsx"
   cat > "$a/design/new/jsx/app.jsx" <<'JSX'
 const P2_REGISTRY = [
-  { id: 'train.library', label: 'x', tab: 'train', comp: 'TrainLib', surface: 'train_shell_library_view' },
-  { id: 'train.stats',   label: 'x', tab: 'train', comp: 'TrainStats', surface: 'train_shell_stats_view' },
+  { id: 'train.library', label: 'x', shell: 'train', comp: 'TrainLib', surface: 'train_shell_library_view' },
+  { id: 'train.stats',   label: 'x', shell: 'train', comp: 'TrainStats', surface: 'train_shell_stats_view' },
 ];
-const P2_TAB_ROOTS = { train: 'train.library' };
+const P2_SHELL_ROOTS = { train: 'train.library' };
 JSX
   python3 "$REAL/tools/emit_structure/emit_structure.py" --app "$a" --design-dir design/new >/dev/null
   o=$(fz "$a")
   has "exit:0" "$o" && has "in sync with" "$o" \
     && ok "structure: emitted structure.json reports in-sync with app.jsx" \
     || bad "emitted structure should be in sync: $(echo "$o" | grep FAIL | head -2)"
-  printf "const P2_REGISTRY = [\n  { id: 'train.zzz', label: 'x', tab: 'train', comp: 'Z', surface: null },\n  { id: 'train.library', label: 'x', tab: 'train', comp: 'TrainLib', surface: 'train_shell_library_view' },\n  { id: 'train.stats', label: 'x', tab: 'train', comp: 'TrainStats', surface: 'train_shell_stats_view' },\n];\nconst P2_TAB_ROOTS = { train: 'train.library' };\n" > "$a/design/new/jsx/app.jsx"
+  printf "const P2_REGISTRY = [\n  { id: 'train.zzz', label: 'x', shell: 'train', comp: 'Z', surface: null },\n  { id: 'train.library', label: 'x', shell: 'train', comp: 'TrainLib', surface: 'train_shell_library_view' },\n  { id: 'train.stats', label: 'x', shell: 'train', comp: 'TrainStats', surface: 'train_shell_stats_view' },\n];\nconst P2_SHELL_ROOTS = { train: 'train.library' };\n" > "$a/design/new/jsx/app.jsx"
   o=$(fz "$a")
   has "exit:1" "$o" && has "drifted from jsx/app.jsx" "$o" \
     && ok "structure: registry screen added without re-emitting FAILS as drift" \
@@ -466,33 +466,33 @@ JSX
     && ok "structure: duplicate surface claim FAILS" \
     || bad "duplicate claim should fail: $o"
 
-  # ---- (d) shell: the filename-prefix convention, asserted not assumed
-  mk_design "$a"; patch_structure "$a" "d['screens'][0]['shell']='shop_shell'"
+  # ---- (d) shellDir: the filename-prefix convention, asserted not assumed
+  mk_design "$a"; patch_structure "$a" "d['screens'][0]['shellDir']='shop_shell'"
   o=$(fz "$a")
   has "exit:1" "$o" && has "is not under shell" "$o" \
-    && ok "structure: surface/shell prefix mismatch FAILS" \
-    || bad "shell mismatch should fail: $o"
-  mk_design "$a"; patch_structure "$a" "d['screens'][0]['shell']=None"
+    && ok "structure: surface/shellDir prefix mismatch FAILS" \
+    || bad "shellDir mismatch should fail: $o"
+  mk_design "$a"; patch_structure "$a" "d['screens'][0]['shellDir']=None"
   o=$(fz "$a")
   has "exit:1" "$o" && has "has a surface but no shell" "$o" \
-    && ok "structure: surface with null shell FAILS" \
-    || bad "null shell should fail: $o"
+    && ok "structure: surface with null shellDir FAILS" \
+    || bad "null shellDir should fail: $o"
 
   # ---- (e) roots: the assertion that catches train.home in the real design
   mk_design "$a"
   rm "$a/design/new/surfaces/train_shell_library_view.html"
-  patch_structure "$a" "d['screens'][0]['surface']=None; d['screens'][0]['shell']=None"
+  patch_structure "$a" "d['screens'][0]['surface']=None; d['screens'][0]['shellDir']=None"
   o=$(fz "$a")
   has "exit:1" "$o" && has "landing screen was never designed" "$o" \
-    && ok "structure: excluded tab-root screen FAILS (the train.home defect)" \
-    || bad "excluded tab root should fail: $o"
+    && ok "structure: excluded shell-root screen FAILS (the train.home defect)" \
+    || bad "excluded shell root should fail: $o"
 
   # ---- schema floor: absent/empty/malformed is never a silent pass
   mk_design "$a"; rm "$a/design/new/structure.json"; o=$(fz "$a")
   has "exit:1" "$o" && has "structure.json missing" "$o" \
     && ok "structure: absent structure.json FAILS at shape" \
     || bad "missing structure.json should fail: $o"
-  mk_design "$a"; echo '{"screens":[],"tabRoots":{}}' > "$a/design/new/structure.json"; o=$(fz "$a")
+  mk_design "$a"; echo '{"screens":[],"shellRoots":{}}' > "$a/design/new/structure.json"; o=$(fz "$a")
   has "exit:1" "$o" && has "non-empty" "$o" \
     && ok "structure: empty screens list FAILS (no opting out by emptiness)" \
     || bad "empty screens should fail: $o"

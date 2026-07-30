@@ -2,7 +2,7 @@
 {% import "ui/common/primitives.html" as prim %}
 {% import "ui/common/timeline.html" as tl %}
 {% import "ui/views/main_shell/design/_shared.html" as sh %}
-{% block title %}appbox — Freeze & Trace{% endblock %}
+{% block title %}{{ t('design.freeze.pageTitle') }}{% endblock %}
 {% block main_class %}shell-main-loop{% endblock %}
 
 {# ---------- Named Fragments (renderable alone via freeze_view.html#macro) ----------
@@ -10,23 +10,23 @@
    artifact canvas (manifest + approval + trace). The approval card is the
    human gate — the chat quick-reply "approve the manifest" signs it. #}
 
-{% macro timeline(c, oob) %}{{ tl.timeline(c, oob, 'Design progress') }}{% endmacro %}
+{% macro timeline(c, oob) %}{{ tl.timeline(c, oob, t('design.timelineLabel')) }}{% endmacro %}
 
 {# ---------- The approval card: the human gate that unlocks Build ---------- #}
 
 {% macro approvalCard(c) %}
 <article class="artifact approval-card {{ 'is-approved' if c.approval.approved }}" id="approval">
   <header class="artifact-head">
-    <span class="eyebrow">design approval · the human gate</span>
+    <span class="eyebrow">{{ t('freeze.approvalEyebrow') }}</span>
     {{ prim.statusPill('approved' if c.approval.approved else 'pending') }}
   </header>
-  <h2 class="display">{{ 'Build unlocked' if c.approval.approved else 'Approve the frozen manifest' }}</h2>
+  <h2 class="display">{{ t('freeze.unlocked') if c.approval.approved else t('freeze.approveH') }}</h2>
   <p class="artifact-lede">{{ c.approval.lede }}</p>
   <p class="approval-note">{{ c.approval.note }}</p>
   {% if not c.approval.approved %}
   <form method="post" action="/design/freeze/messages"
         hx-post="/design/freeze/messages" hx-target="#stage-layout" hx-swap="outerHTML">
-    <button type="submit" name="preset" value="approve" class="cta-main">approve the manifest</button>
+    <button type="submit" name="preset" value="approve" class="cta-main">{{ t('freeze.approveCta') }}</button>
   </form>
   {% endif %}
 </article>
@@ -37,21 +37,21 @@
 {% macro manifestCard(c) %}
 <article class="artifact freeze-manifest">
   <header class="artifact-head">
-    <span class="eyebrow">freeze manifest · {{ c.manifest.id }}</span>
+    <span class="eyebrow">{{ t('freeze.manifestEyebrow', {id: c.manifest.id}) }}</span>
     {{ prim.statusPill('frozen') }}
   </header>
-  <h2 class="display">Frozen — {{ c.manifest.id }}</h2>
-  <p class="artifact-lede">{{ c.t.freezeLede }}</p>
-  <p class="big-metric">{{ c.manifest.goldens }}<span class="big-metric-label">goldens · {{ c.manifest.surfaces }} surfaces · {{ c.manifest.rungs }}</span></p>
+  <h2 class="display">{{ t('freeze.frozenH', {id: c.manifest.id}) }}</h2>
+  <p class="artifact-lede">{{ t('freezeLede') }}</p>
+  <p class="big-metric">{{ c.manifest.goldens }}<span class="big-metric-label">{{ t('freeze.goldensLabel', {surfaces: c.manifest.surfaces, rungs: c.manifest.rungs}) }}</span></p>
   <div class="evidence-chain">
-    <span class="fact"><span class="fact-label">manifest</span><code>{{ c.manifest.hash }}</code></span>
-    <span class="fact"><span class="fact-label">frozen</span>{{ c.manifest.frozenAt }}</span>
+    <span class="fact"><span class="fact-label">{{ t('freeze.manifestLabel') }}</span><code>{{ c.manifest.hash }}</code></span>
+    <span class="fact"><span class="fact-label">{{ t('freeze.frozenLabel') }}</span>{{ c.manifest.frozenAt }}</span>
   </div>
   <dl class="provenance">
-    <div><dt>approved by</dt><dd>{{ c.manifest.provenance.by }} · {{ c.manifest.provenance.shell }}</dd></div>
-    <div><dt>device</dt><dd>{{ c.manifest.provenance.device }}</dd></div>
-    <div><dt>confirm</dt><dd>{{ c.manifest.provenance.method }} · {{ c.manifest.provenance.at }}</dd></div>
-    <div><dt>content hash</dt><dd><code>{{ c.manifest.provenance.hash }}</code></dd></div>
+    <div><dt>{{ t('prov.approvedBy') }}</dt><dd>{{ c.manifest.provenance.by }} · {{ c.manifest.provenance.shell }}</dd></div>
+    <div><dt>{{ t('prov.device') }}</dt><dd>{{ c.manifest.provenance.device }}</dd></div>
+    <div><dt>{{ t('prov.confirm') }}</dt><dd>{{ c.manifest.provenance.method }} · {{ c.manifest.provenance.at }}</dd></div>
+    <div><dt>{{ t('prov.hash') }}</dt><dd><code>{{ c.manifest.provenance.hash }}</code></dd></div>
   </dl>
   <p class="artifact-foot muted">{{ c.manifest.structure }}</p>
 </article>
@@ -62,13 +62,13 @@
 {% macro traceCard(c) %}
 <article class="artifact">
   <header class="artifact-head">
-    <span class="eyebrow">{{ c.t.traceEyebrow }}</span>
+    <span class="eyebrow">{{ t('traceEyebrow') }}</span>
   </header>
   <div class="log-lines">
     {% for e in c.trace %}
     <p class="log-line log-{{ 'user' if e.who == 'you' else 'agent' }}">
       <span class="log-time">{{ e.at }}</span>
-      <span class="log-who">{{ e.who }}</span>
+      <span class="log-who">{{ t('log.you') if e.who == 'you' else t('log.agent') }}</span>
       <span class="log-text">{{ e.text }}</span>
     </p>
     {% endfor %}
@@ -76,20 +76,20 @@
 </article>
 {% endmacro %}
 
-{# ---------- Traceability: brief story → surface → code ---------- #}
+{# ---------- Traceability: brief story, surface, code ---------- #}
 
 {% macro traceabilityCard(c) %}
 <article class="artifact">
   <header class="artifact-head">
-    <span class="eyebrow">{{ c.t.traceabilityEyebrow }}</span>
-    <span class="chip">{{ c.traceability | length }} traced</span>
+    <span class="eyebrow">{{ t('traceabilityEyebrow') }}</span>
+    <span class="chip">{{ t('freeze.tracedCount', {count: c.traceability | length}) }}</span>
   </header>
   <div class="trace-rows">
     {% for r in c.traceability %}
     <div class="trace-row">
       <code class="trace-surface">{{ r.surface }}</code>
       <span class="trace-story">{{ r.story }}</span>
-      <span class="trace-code"><code>{{ r.code }}</code> <span class="muted">· {{ r.files }} files</span></span>
+      <span class="trace-code"><code>{{ r.code }}</code> <span class="muted">· {{ t('freeze.files', {count: r.files}) }}</span></span>
     </div>
     {% endfor %}
   </div>
@@ -101,11 +101,11 @@
 {% macro driftCard(c, oob) %}
 <article class="artifact" id="drift" {% if oob %}hx-swap-oob="outerHTML"{% endif %}>
   <header class="artifact-head">
-    <span class="eyebrow">drift report · checked {{ c.drift.checked }}</span>
+    <span class="eyebrow">{{ t('drift.eyebrow', {when: c.drift.checked}) }}</span>
     {{ prim.statusPill('pass' if c.drift.clean else 'red') }}
   </header>
-  <h2 class="display">{{ c.drift.matched }} goldens match</h2>
-  <p class="artifact-lede">{{ c.t.driftLede }}</p>
+  <h2 class="display">{{ t('drift.matchedH', {matched: c.drift.matched}) }}</h2>
+  <p class="artifact-lede">{{ t('driftLede') }}</p>
   {% for h in c.drift.history %}
   <div class="finding finding-warning">
     <header class="finding-head">
@@ -114,14 +114,14 @@
     </header>
     <p class="finding-note">{{ h.text }}</p>
     <footer class="finding-foot">
-      <span class="muted">re-frozen hash <code>{{ h.hash }}</code></span>
+      <span class="muted">{{ t('drift.refrozen') }} <code>{{ h.hash }}</code></span>
     </footer>
   </div>
   {% endfor %}
   <form method="post" action="/design/freeze/recheck"
         hx-post="/design/freeze/recheck" hx-target="#drift" hx-swap="outerHTML">
-    <button type="submit" class="ghost">↻ re-run drift check</button>
-    <span class="htmx-indicator muted">hashing goldens…</span>
+    <button type="submit" class="ghost">{{ icon('refresh-cw', {size: 14}) }} {{ t('drift.recheck') }}</button>
+    <span class="htmx-indicator muted">{{ t('drift.hashing') }}</span>
   </form>
 </article>
 {% endmacro %}

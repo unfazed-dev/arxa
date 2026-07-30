@@ -1,11 +1,11 @@
 # Intake surfaces — integration notes
 
-Three surfaces on the Chat-Centric Layout: the intake tab root IS a chat (the
+Three surfaces on the Chat-Centric Layout: the intake shell root IS a chat (the
 interview), artifacts open on a canvas that docks the chat right, the left
 multi-view rail carries thread / artifacts / files, and the read-only stage
 timeline lives in the bottom bar.
 
-| surface | route (tab root) | canvas artifacts |
+| surface | route (shell root) | canvas artifacts |
 |---|---|---|
 | `intake.mapping` Story Mapping | `/intake` | `map/full` (live) · `map/priorities` · `map/releases` · `story/:id` |
 | `intake.brief` Design Brief | `/intake/brief` | `doc/full` · `doc/surfaces` |

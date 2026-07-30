@@ -1,0 +1,335 @@
+{
+  "account": {
+    "name": "Evan",
+    "email": "evan@totem.labs"
+  },
+  "tagline": "Opisz. Zamknij bramką. Wyślij.",
+  "auth": {
+    "headline": "Zaloguj się do appbox",
+    "lede": "Jedno konto dla każdego projektu w Twoim tailnecie. Wersja prototypowa — każdy e-mail Cię zaloguje.",
+    "providers": [
+      {
+        "id": "apple",
+        "label": "Kontynuuj z Apple"
+      },
+      {
+        "id": "google",
+        "label": "Kontynuuj z Google"
+      }
+    ]
+  },
+  "projects": [
+    {
+      "id": "p-cartsense",
+      "name": "CartSense",
+      "targets": [
+        "ios",
+        "android"
+      ],
+      "stage": "build",
+      "stageLabel": "Budowanie · bramki",
+      "lastSaved": "zapisano 2 min temu"
+    },
+    {
+      "id": "p-foxglove",
+      "name": "Foxglove",
+      "targets": [
+        "web",
+        "macos"
+      ],
+      "stage": "design",
+      "stageLabel": "Projektowanie · zamrożenie",
+      "lastSaved": "zapisano 1 godz. temu"
+    },
+    {
+      "id": "p-anvil",
+      "name": "Anvil CRM",
+      "targets": [
+        "web",
+        "macos",
+        "ios",
+        "android"
+      ],
+      "stage": "intake",
+      "stageLabel": "Intake · mapowanie",
+      "lastSaved": "zapisano wczoraj"
+    }
+  ],
+  "gates": [
+    {
+      "id": "g-1",
+      "project": "CartSense",
+      "gate": "Akceptacja budowania",
+      "stage": "build",
+      "waiting": "czeka 26 min",
+      "summary": "Przebieg #14 zielony na pikselach + szkielecie; 1 wynik koloru przy ΔE 4.8"
+    },
+    {
+      "id": "g-2",
+      "project": "Foxglove",
+      "gate": "Zamrożenie projektu",
+      "stage": "design",
+      "waiting": "czeka 3 godz.",
+      "summary": "22 powierzchnie zamrożone na hashu 9f3c…e1 — zatwierdzenie odblokowuje Budowanie"
+    },
+    {
+      "id": "g-3",
+      "project": "CartSense",
+      "gate": "Lista kontrolna przed wysyłką",
+      "stage": "ship",
+      "waiting": "czeka 1 dzień",
+      "summary": "2 crashe w teście dymnym iOS; audyt uprawnień czysty"
+    }
+  ],
+  "analytics": {
+    "runs": {
+      "label": "Przebiegi w tym tygodniu",
+      "total": 23,
+      "unit": "przebiegi",
+      "bars": [
+        {
+          "label": "pon",
+          "value": 2
+        },
+        {
+          "label": "wt",
+          "value": 4
+        },
+        {
+          "label": "śr",
+          "value": 3
+        },
+        {
+          "label": "czw",
+          "value": 6
+        },
+        {
+          "label": "pt",
+          "value": 5
+        },
+        {
+          "label": "sob",
+          "value": 1
+        },
+        {
+          "label": "niedz",
+          "value": 2
+        }
+      ]
+    },
+    "stageTime": {
+      "label": "Śr. czas etapu",
+      "total": 34,
+      "unit": "min",
+      "bars": [
+        {
+          "label": "intake",
+          "value": 18
+        },
+        {
+          "label": "projektowanie",
+          "value": 42
+        },
+        {
+          "label": "budowanie",
+          "value": 65
+        },
+        {
+          "label": "wysyłka",
+          "value": 12
+        }
+      ]
+    },
+    "gateLatency": {
+      "label": "Bramki czekające",
+      "total": 3,
+      "unit": "otwarte",
+      "bars": [
+        {
+          "label": "pon",
+          "value": 1
+        },
+        {
+          "label": "wt",
+          "value": 2
+        },
+        {
+          "label": "śr",
+          "value": 1
+        },
+        {
+          "label": "czw",
+          "value": 4
+        },
+        {
+          "label": "pt",
+          "value": 3
+        },
+        {
+          "label": "sob",
+          "value": 3
+        },
+        {
+          "label": "niedz",
+          "value": 3
+        }
+      ]
+    }
+  },
+  "pairing": {
+    "code": "A7K2-9QXM",
+    "expiresLabel": "jednorazowy · wygasa za 10:00",
+    "fingerprint": "SHA256:7f3a…9c2e · węzeł tailnet appbox-mbpro",
+    "deviceName": "Ten iPhone",
+    "qr": [
+      "111111100101111111111",
+      "100000101110101000001",
+      "101110111100101011101",
+      "101110110010111011101",
+      "101110110000101011101",
+      "100000101110011000001",
+      "111111110101111111111",
+      "100000111011100011000",
+      "001111100110110001101",
+      "100000001010000101011",
+      "011000100001110100100",
+      "011110101110110100000",
+      "001100101010110000000",
+      "000010001001010010100",
+      "111111110000011000010",
+      "100000101001000011110",
+      "101110100110101011101",
+      "101110100010101100010",
+      "101110111100111000100",
+      "100000100100001100100",
+      "111111111000110111110"
+    ]
+  },
+  "wizard": {
+    "prompt": "Nazwij projekt i wybierz jego platformy — podłączenie repozytorium (GitHub) czeka na Twoje pierwsze zatwierdzenie bramki, a potem mieszka w ustawieniach.",
+    "targets": [
+      "web",
+      "macos",
+      "ios",
+      "android"
+    ],
+    "note": "Podłączenie repozytorium jest odroczone do pierwszej bramki — teraz nie ma nic do ustawiania."
+  },
+  "stats": {
+    "runs": {
+      "label": "Przebiegi w tym tygodniu",
+      "total": 23,
+      "unit": "przebiegi",
+      "bars": [
+        {
+          "label": "pon",
+          "value": 2,
+          "height": 33
+        },
+        {
+          "label": "wt",
+          "value": 4,
+          "height": 67
+        },
+        {
+          "label": "śr",
+          "value": 3,
+          "height": 50
+        },
+        {
+          "label": "czw",
+          "value": 6,
+          "height": 100
+        },
+        {
+          "label": "pt",
+          "value": 5,
+          "height": 83
+        },
+        {
+          "label": "sob",
+          "value": 1,
+          "height": 17
+        },
+        {
+          "label": "niedz",
+          "value": 2,
+          "height": 33
+        }
+      ]
+    },
+    "stageTime": {
+      "label": "Śr. czas etapu",
+      "total": 34,
+      "unit": "min",
+      "bars": [
+        {
+          "label": "intake",
+          "value": 18,
+          "height": 28
+        },
+        {
+          "label": "projektowanie",
+          "value": 42,
+          "height": 65
+        },
+        {
+          "label": "budowanie",
+          "value": 65,
+          "height": 100
+        },
+        {
+          "label": "wysyłka",
+          "value": 12,
+          "height": 18
+        }
+      ]
+    },
+    "gateLatency": {
+      "label": "Bramki czekające",
+      "total": 3,
+      "unit": "otwarte",
+      "bars": [
+        {
+          "label": "pon",
+          "value": 1,
+          "height": 25
+        },
+        {
+          "label": "wt",
+          "value": 2,
+          "height": 50
+        },
+        {
+          "label": "śr",
+          "value": 1,
+          "height": 25
+        },
+        {
+          "label": "czw",
+          "value": 4,
+          "height": 100
+        },
+        {
+          "label": "pt",
+          "value": 3,
+          "height": 75
+        },
+        {
+          "label": "sob",
+          "value": 3,
+          "height": 75
+        },
+        {
+          "label": "niedz",
+          "value": 3,
+          "height": 75
+        }
+      ]
+    }
+  },
+  "counts": {
+    "projects": 3,
+    "gates": 3
+  }
+}

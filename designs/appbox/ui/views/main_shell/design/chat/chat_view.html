@@ -1,26 +1,30 @@
 {% extends "ui/views/main_shell/main_shell_view.html" %}
 {% import "ui/common/timeline.html" as tl %}
 {% import "ui/views/main_shell/design/prototype/prototype_view.html" as pv %}
-{% block title %}appbox — Design Chat{% endblock %}
+{% block title %}{{ t('design.chat.pageTitle') }}{% endblock %}
 {% block main_class %}shell-main-loop{% endblock %}
 
-{# ---------- The retired Screen Chat surface, re-skinned ----------
-   Per-screen serial chat is gone: refinement happens in the one design chat
-   with pinned screens as context chips. This page keeps the /design/chat
-   route working on the new stage layout; ?screen=<id> deep-links a pin,
-   ?screen=none clears the context. Fragments the chat routes render live in
-   prototype_view.html (stageSwap) — the stage is identical, only the
-   timeline's current item differs. #}
+{# ---------- design.chat — the one design chat (reference surface) ----------
+   Composition, not markup: this surface owns no chrome of its own. The page
+   is main_shell_view's blocks (surface / bottombar); the stage is the shared
+   chat stage (ui/common/chat_stage.html + composer.html) and the design
+   viewer, composed once in prototype_view.html and re-used here — per-screen
+   serial chat is retired, refinement happens here with pinned screens as
+   context chips. What this file adds is ONLY the delta:
+     · stageSwap / revertSwap — the Named Fragments the chat routes render
+       (view.html#macro); the revert path appends a notify toast OOB
+     · the bottombar block — the shared timeline on this surface's line
+   ?screen=<id> deep-links a pin, ?screen=none clears the context. #}
 
 {% macro stageSwap(c) %}{{ pv.stageSwap(c) }}{% endmacro %}
 
 {% macro revertSwap(c) %}
 {{ pv.stageSwap(c) }}
-<div hx-swap-oob="beforeend:#toasts"><div class="toast" id="toast-revert">Checkpoint reverted — the screen is back, the record stays</div></div>
+<div hx-swap-oob="beforeend:#toasts"><div class="toast" id="toast-revert">{{ t('design.revertToast') }}</div></div>
 {% endmacro %}
 
 {% block bottombar %}
-{{ tl.timeline(c, false, 'Design progress') }}
+{{ tl.timeline(c, false, t('design.timelineLabel')) }}
 {% endblock %}
 
 {% block surface %}

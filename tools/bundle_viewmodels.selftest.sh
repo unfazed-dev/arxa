@@ -26,9 +26,9 @@ if node -e "
   eval(c);
   const a = globalThis.__artifact;
   if (!a || !Array.isArray(a.default) || a.default.length === 0) process.exit(1);
-  if (!a.tabRoots || Object.keys(a.tabRoots).length === 0) process.exit(2);
+  if (!a.shellRoots || Object.keys(a.shellRoots).length === 0) process.exit(2);
   process.exit(0);
-"; then ok "bundle exposes routes + tabRoots"; else bad "bundle missing routes/tabRoots"; fi
+"; then ok "bundle exposes routes + shellRoots"; else bad "bundle missing routes/shellRoots"; fi
 
 echo "== negative case: a bare spec must fail the bundler (exit 65) =="
 mkdir -p "$TMP/bad/ui/views/x"

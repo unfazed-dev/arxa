@@ -27,7 +27,7 @@
     <form class="auth-form" method="post" action="/pair/confirm">
       <label class="auth-label" for="pair-code">Pairing code</label>
       <input id="pair-code" type="text" name="code" placeholder="A7K2-9QXM" autocomplete="off" autocapitalize="characters" autofocus>
-      {% if pairError %}<p class="pair-error" role="alert">{{ pairError }}</p>{% endif %}
+      {% if pairError %}<p class="pair-error" role="alert">{{ icon('circle-alert', {size: 16}) }}<span>{{ pairError }}</span></p>{% endif %}
       <button type="submit">Pair</button>
     </form>
 

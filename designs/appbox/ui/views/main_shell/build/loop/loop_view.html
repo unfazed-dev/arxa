@@ -5,7 +5,7 @@
 {% import "ui/common/chat_stage.html" as cs %}
 {% import "ui/common/rail_views.html" as mv %}
 {% import "ui/common/composer.html" as cm %}
-{% block title %}appbox — Build Monitor{% endblock %}
+{% block title %}{{ t('build.pageTitle') }}{% endblock %}
 {% block main_class %}shell-main-loop{% endblock %}
 
 {# ---------- Build loop, chat-centric ----------
@@ -20,7 +20,7 @@
 {# ---------- the chat: thread cards + composer (inside cs.wrap) ---------- #}
 
 {# One thread card. Pending gates get inline quick-replies; every artifact
-   card keeps the "view on canvas →" CTA that docks the chat. #}
+   card keeps the "view on canvas" CTA that docks the chat. #}
 {% macro msgCard(c, m) %}
 {% if m.from == 'user' %}
 <div class="msg msg-user">
@@ -39,20 +39,22 @@
     <form method="post" action="/build/gates/decide"
           hx-post="/build/gates/decide" hx-target="#stage-layout" hx-swap="outerHTML">
       <input type="hidden" name="gate" value="{{ m.card.gateId }}">
-      <button type="submit" name="decision" value="approved" class="btn-approve">Approve</button>
-      <button type="submit" name="decision" value="rejected" class="btn-reject ghost">Reject</button>
+      <button type="submit" name="decision" value="approved" class="btn-approve">{{ t('action.approve') }}</button>
+      <button type="submit" name="decision" value="rejected" class="btn-reject ghost">{{ t('action.reject') }}</button>
     </form>
-    <a class="cta-ghost" href="/build/chips/pin?ref=gate/{{ m.card.gateId }}"
-       hx-get="/build/chips/pin?ref=gate/{{ m.card.gateId }}" hx-target="#stage-layout" hx-swap="outerHTML" hx-push-url="false"
-       title="Pin this gate above the composer — your next message is the note and the rejection">reject with note ↩</a>
+    {{ prim.ctaLink('/build/chips/pin?ref=gate/' + m.card.gateId, t('build.rejectWithNote'), glyph='undo-2', variant='ghost', size=13,
+        title=t('build.rejectWithNoteTitle'),
+        hx={target: '#stage-layout'}) }}
   </span>
   {% endif %}
   <footer class="msg-foot">
     {% if m.artifact %}
     <span class="msg-cta">
-      <a class="cta-main" href="/build/artifact/{{ m.artifact }}"
-         hx-get="/build/artifact/{{ m.artifact }}" hx-target="#stage-layout" hx-swap="outerHTML" hx-push-url="false">
-        {{ 'on canvas ●' if m.active else 'view on canvas →' }}</a>
+      {% if m.active %}
+      {{ prim.ctaLink('/build/artifact/' + m.artifact, t('build.onCanvas'), glyph='circle-dot', variant='main', size=12, hx={target: '#stage-layout'}) }}
+      {% else %}
+      {{ prim.ctaLink('/build/artifact/' + m.artifact, t('build.viewOnCanvas'), variant='main', size=13, hx={target: '#stage-layout'}) }}
+      {% endif %}
     </span>
     {% endif %}
     <span class="msg-time">{{ m.at }}</span>
@@ -94,18 +96,18 @@
     <span class="eyebrow">run #{{ c.run.number }} · {{ c.run.brief }}</span>
     <strong class="rail-state">{{ c.run.stateLabel }}</strong>
     <span class="rail-facts">
-      <span>started {{ c.run.started }}</span>
-      <span>elapsed {{ c.run.elapsed }}</span>
-      <span>{{ c.t.railStopOnRed }} {{ 'on' if c.run.policy.stopOnRed else 'off' }}</span>
-      <span>{{ c.t.railEsc }} {{ c.run.policy.escLimit }}</span>
+      <span>{{ t('build.started') }} {{ c.run.started }}</span>
+      <span>{{ t('build.elapsedFact') }} {{ c.run.elapsed }}</span>
+      <span>{{ t('railStopOnRed') }} {{ t('build.on') if c.run.policy.stopOnRed else t('build.off') }}</span>
+      <span>{{ t('railEsc') }} {{ c.run.policy.escLimit }}</span>
     </span>
   </header>
   <form class="run-controls" method="post" action="/build/run/control"
         hx-post="/build/run/control" hx-target="#left-rail" hx-swap="outerHTML">
     {% if c.run.pausedByYou %}
-    <button type="submit" name="action" value="resume" class="btn-approve">→ resume the run</button>
+    <button type="submit" name="action" value="resume" class="btn-approve">{{ icon('play', {size: 14}) }} {{ t('build.resumeRun') }}</button>
     {% else %}
-    <button type="submit" name="action" value="pause" class="ghost">‖ pause the run</button>
+    <button type="submit" name="action" value="pause" class="ghost">{{ icon('pause', {size: 14}) }} {{ t('build.pauseRun') }}</button>
     {% endif %}
   </form>
   <ol class="run-stages">
@@ -120,17 +122,17 @@
         {% if s.state == 'held' %}
         <form method="post" action="/build/stages/{{ s.id }}/control"
               hx-post="/build/stages/{{ s.id }}/control" hx-target="#stage-layout" hx-swap="outerHTML">
-          <button type="submit" name="action" value="resume" class="ico-btn" title="Resume {{ s.label }}" aria-label="Resume {{ s.label }}">→</button>
+          <button type="submit" name="action" value="resume" class="ico-btn" title="{{ t('build.resumeStage', {label: s.label}) }}" aria-label="{{ t('build.resumeStage', {label: s.label}) }}">{{ icon('play', {size: 14}) }}</button>
         </form>
         {% else %}
         <form method="post" action="/build/stages/{{ s.id }}/control"
               hx-post="/build/stages/{{ s.id }}/control" hx-target="#stage-layout" hx-swap="outerHTML">
-          <button type="submit" name="action" value="pause" class="ico-btn" title="Pause {{ s.label }}" aria-label="Pause {{ s.label }}">‖</button>
+          <button type="submit" name="action" value="pause" class="ico-btn" title="{{ t('build.pauseStage', {label: s.label}) }}" aria-label="{{ t('build.pauseStage', {label: s.label}) }}">{{ icon('pause', {size: 14}) }}</button>
         </form>
         {% endif %}
         <form method="post" action="/build/stages/{{ s.id }}/control"
               hx-post="/build/stages/{{ s.id }}/control" hx-target="#stage-layout" hx-swap="outerHTML">
-          <button type="submit" name="action" value="cancel" class="ico-btn" title="Cancel {{ s.label }}" aria-label="Cancel {{ s.label }}">×</button>
+          <button type="submit" name="action" value="cancel" class="ico-btn" title="{{ t('build.cancelStage', {label: s.label}) }}" aria-label="{{ t('build.cancelStage', {label: s.label}) }}">{{ icon('x', {size: 14}) }}</button>
         </form>
       </span>
       {% endif %}
@@ -142,9 +144,9 @@
 
 {% macro threadView(c) %}
 <div class="rail-view thread-view">
-  <p class="rail-view-note muted">Filter the run thread by card type.</p>
-  <nav class="thread-filter" aria-label="Filter cards by type">
-    {% for o in [{id: 'all', label: 'all'}, {id: 'stage', label: 'stages'}, {id: 'gate', label: 'gates'}, {id: 'findings', label: 'findings'}, {id: 'evidence', label: 'evidence'}, {id: 'note', label: 'notes'}] %}
+  <p class="rail-view-note muted">{{ t('build.filterNote') }}</p>
+  <nav class="thread-filter" aria-label="{{ t('build.filterAria') }}">
+    {% for o in [{id: 'all', label: t('build.filter.all')}, {id: 'stage', label: t('build.filter.stage')}, {id: 'gate', label: t('build.filter.gate')}, {id: 'findings', label: t('build.filter.findings')}, {id: 'evidence', label: t('build.filter.evidence')}, {id: 'note', label: t('build.filter.note')}] %}
     <a class="filter-item {{ 'is-active' if c.filter == o.id }}"
        href="/build/rail?type={{ o.id }}"
        hx-get="/build/rail?type={{ o.id }}" hx-target="#left-rail" hx-swap="outerHTML" hx-push-url="false">{{ o.label }}</a>
@@ -173,7 +175,7 @@
 
 {% macro commitsView(c) %}
 <div class="rail-view commits-view">
-  <p class="rail-view-note muted">The pipeline auto-commits at each gate/stage. Seeded — real git wiring lands in a later stage.</p>
+  <p class="rail-view-note muted">{{ t('build.commitsNote') }}</p>
   <ol class="commit-list">
     {% for cm in c.commits | reverse %}
     <li class="commit">
@@ -187,7 +189,7 @@
 
 {% macro filesView(c) %}
 <div class="rail-view files-view">
-  <p class="rail-view-note muted">Files this run touched. Seeded — the live project tree lands in a later stage.</p>
+  <p class="rail-view-note muted">{{ t('build.filesNote') }}</p>
   <ul class="file-list">
     {% for f in c.files %}
     <li class="file-row">
@@ -217,16 +219,16 @@
 {% endmacro %}
 
 {# ---------- the shell timeline: the whole line, current highlighted ----------
-   Bottom-bar resident and read-only (no base → inert items). #}
+   Bottom-bar resident and read-only (no base: inert items). #}
 
-{% macro timeline(c, oob) %}{{ tl.timeline(c, oob, 'Pipeline progress') }}{% endmacro %}
+{% macro timeline(c, oob) %}{{ tl.timeline(c, oob, t('build.timelineLabel')) }}{% endmacro %}
 
 {# ---------- Canvas artifacts: one thing at a time, large ---------- #}
 
 {% macro gateCanvas(c, gate) %}
 <article class="artifact gate-artifact gate-{{ gate.state }}">
   <header class="artifact-head">
-    <span class="eyebrow">human gate</span>
+    <span class="eyebrow">{{ t('build.humanGate') }}</span>
     {{ prim.statusPill(gate.state) }}
   </header>
   <h2 class="display">{{ gate.label }}</h2>
@@ -237,24 +239,23 @@
     <form class="gate-buttons" method="post" action="/build/gates/decide"
           hx-post="/build/gates/decide" hx-target="#stage-layout" hx-swap="outerHTML">
       <input type="hidden" name="gate" value="{{ gate.id }}">
-      <button type="submit" name="decision" value="approved" class="btn-approve">Approve</button>
-      <button type="submit" name="decision" value="rejected" class="btn-reject ghost">Reject</button>
-      <span class="htmx-indicator muted">minting provenance…</span>
+      <button type="submit" name="decision" value="approved" class="btn-approve">{{ t('action.approve') }}</button>
+      <button type="submit" name="decision" value="rejected" class="btn-reject ghost">{{ t('action.reject') }}</button>
+      <span class="htmx-indicator muted">{{ t('build.minting') }}</span>
     </form>
-    <a class="cta-ghost" href="/build/chips/pin?ref=gate/{{ gate.id }}"
-       hx-get="/build/chips/pin?ref=gate/{{ gate.id }}" hx-target="#stage-layout" hx-swap="outerHTML" hx-push-url="false">reject with a note — pin the gate, write it in the chat ↩</a>
+    {{ prim.ctaLink('/build/chips/pin?ref=gate/' + gate.id, t('build.rejectWithNoteLong'), glyph='undo-2', variant='ghost', hx={target: '#stage-layout'}) }}
   </div>
-  <p class="artifact-foot muted">{{ c.t.gateFoot }}</p>
+  <p class="artifact-foot muted">{{ t('gateFoot') }}</p>
   {% elif gate.provenance %}
   <dl class="provenance">
-    <div><dt>decided by</dt><dd>{{ gate.provenance.by }} · {{ gate.provenance.shell }}</dd></div>
-    <div><dt>device</dt><dd>{{ gate.provenance.device }}</dd></div>
-    <div><dt>confirm</dt><dd>{{ gate.provenance.method }} · {{ gate.provenance.at }}</dd></div>
-    <div><dt>content hash</dt><dd><code>{{ gate.provenance.hash }}</code></dd></div>
+    <div><dt>{{ t('prov.decidedBy') }}</dt><dd>{{ gate.provenance.by }} · {{ gate.provenance.shell }}</dd></div>
+    <div><dt>{{ t('prov.device') }}</dt><dd>{{ gate.provenance.device }}</dd></div>
+    <div><dt>{{ t('prov.confirm') }}</dt><dd>{{ gate.provenance.method }} · {{ gate.provenance.at }}</dd></div>
+    <div><dt>{{ t('prov.hash') }}</dt><dd><code>{{ gate.provenance.hash }}</code></dd></div>
   </dl>
-  {% if gate.note %}<p class="gate-note">Your note: {{ gate.note }}</p>{% endif %}
+  {% if gate.note %}<p class="gate-note">{{ t('build.yourNote') }} {{ gate.note }}</p>{% endif %}
   {% else %}
-  <p class="artifact-foot muted">Not yet reachable — the pipeline hasn't earned this gate.</p>
+  <p class="artifact-foot muted">{{ t('build.gateNotReachable') }}</p>
   {% endif %}
 </article>
 {% endmacro %}
@@ -262,18 +263,18 @@
 {% macro stageCanvas(c, s, total) %}
 <article class="artifact stage-artifact stage-state-{{ s.state }}">
   <header class="artifact-head">
-    <span class="eyebrow">stage {{ s.n }} of {{ total }} · automated</span>
+    <span class="eyebrow">{{ t('build.stageEyebrow', {n: s.n, total: total}) }}</span>
     {{ prim.statusPill(s.state) }}
   </header>
   <h2 class="display">{{ s.label }}</h2>
-  <p class="big-metric">{{ s.duration }}<span class="big-metric-label">on the line</span></p>
+  <p class="big-metric">{{ s.duration }}<span class="big-metric-label">{{ t('build.onTheLine') }}</span></p>
   <p class="artifact-lede">{{ s.summary }}</p>
   <p class="artifact-detail muted">{{ s.detail }}</p>
   {% if s.attempts %}
   <ol class="attempts">
     {% for a in s.attempts %}
     <li class="attempt attempt-{{ a.state }}">
-      <span class="attempt-n">attempt {{ a.n }} of {{ c.run.policy.escLimit }}</span>
+      <span class="attempt-n">{{ t('build.attemptOf', {n: a.n, total: c.run.policy.escLimit}) }}</span>
       {{ prim.statusPill(a.state) }}
       <span class="muted">{{ a.note }}</span>
     </li>
@@ -282,8 +283,7 @@
   {% endif %}
   {% if s.state == 'recovered' %}
   <p class="artifact-foot">
-    <a href="/build/artifact/findings/coverage"
-       hx-get="/build/artifact/findings/coverage" hx-target="#stage-layout" hx-swap="outerHTML" hx-push-url="false">See the 3 findings from attempt 1 →</a>
+    {{ prim.ctaLink('/build/artifact/findings/coverage', t('build.seeFindings'), hx={target: '#stage-layout'}) }}
   </p>
   {% endif %}
 </article>
@@ -292,11 +292,11 @@
 {% macro findingsCanvas(c, a) %}
 <article class="artifact findings-artifact">
   <header class="artifact-head">
-    <span class="eyebrow">findings · {{ a.gate }} gate · attempt 1 → red</span>
-    <span class="chip">{{ a.list | length }} findings · all fixed in attempt 2</span>
+    <span class="eyebrow">{{ t('build.findingsEyebrow', {gate: a.gate}) }}</span>
+    <span class="chip">{{ t('build.findingsChip', {count: a.list | length}) }}</span>
   </header>
-  <h2 class="display">{{ c.t.findingsHeadline }}</h2>
-  <p class="artifact-lede">{{ c.t.findingsLede }}</p>
+  <h2 class="display">{{ t('findingsHeadline') }}</h2>
+  <p class="artifact-lede">{{ t('findingsLede') }}</p>
   <div class="finding-list">
     {% for f in a.list %}
     <article class="finding finding-{{ f.severity }}">
@@ -306,13 +306,13 @@
         <span class="finding-check muted">{{ f.check }}</span>
       </header>
       <dl class="finding-body">
-        <div><dt>expected</dt><dd>{{ f.expected }}</dd></div>
-        <div><dt>actual</dt><dd>{{ f.actual }}</dd></div>
+        <div><dt>{{ t('finding.expected') }}</dt><dd>{{ f.expected }}</dd></div>
+        <div><dt>{{ t('finding.actual') }}</dt><dd>{{ f.actual }}</dd></div>
       </dl>
-      <p class="reproduce"><span class="fact-label">reproduce</span><code>{{ f.reproduce }}</code></p>
+      <p class="reproduce"><span class="fact-label">{{ t('finding.reproduce') }}</span><code>{{ f.reproduce }}</code></p>
       <footer class="finding-foot">
         <span class="chip">{{ f.state }}</span>
-        <span class="muted">fingerprint <code>{{ f.fingerprint }}</code></span>
+        <span class="muted">{{ t('finding.fingerprint') }} <code>{{ f.fingerprint }}</code></span>
       </footer>
       <p class="finding-note muted">{{ f.note }}</p>
     </article>
@@ -324,11 +324,11 @@
 {% macro chartCanvas(c, chart) %}
 <article class="artifact chart-artifact">
   <header class="artifact-head">
-    <span class="eyebrow">stage durations · run #{{ c.run.number }}</span>
+    <span class="eyebrow">{{ t('build.chartEyebrow', {number: c.run.number}) }}</span>
   </header>
-  <h2 class="display">Design took two-thirds of the line</h2>
-  <p class="artifact-lede">{{ chart.maxDuration.duration }} of {{ c.run.elapsed }} elapsed — every other stage came in under seven minutes.</p>
-  <div class="bars" role="img" aria-label="Bar chart of stage durations; design longest at {{ chart.maxDuration.duration }}">
+  <h2 class="display">{{ t('build.chartHeadline') }}</h2>
+  <p class="artifact-lede">{{ t('build.chartLede', {duration: chart.maxDuration.duration, elapsed: c.run.elapsed}) }}</p>
+  <div class="bars" role="img" aria-label="{{ t('build.chartAria', {duration: chart.maxDuration.duration}) }}">
     {% for b in chart.bars %}
     <div class="bar-row">
       <span class="bar-label">{{ b.label }}</span>
@@ -337,22 +337,22 @@
     </div>
     {% endfor %}
   </div>
-  <p class="chart-note muted"><span class="legend-swatch"></span>{{ c.t.chartNote }}</p>
+  <p class="chart-note muted"><span class="legend-swatch"></span>{{ t('chartNote') }}</p>
 </article>
 {% endmacro %}
 
 {% macro logCanvas(c, messages) %}
 <article class="artifact log-artifact">
   <header class="artifact-head">
-    <span class="eyebrow">{{ c.t.logEyebrow }} · run #{{ c.run.number }}</span>
-    <span class="chip">{{ c.run.elapsed }} elapsed</span>
+    <span class="eyebrow">{{ t('logEyebrow') }} · {{ t('build.runShort', {number: c.run.number}) }}</span>
+    <span class="chip">{{ t('build.elapsedChip', {elapsed: c.run.elapsed}) }}</span>
   </header>
-  <h2 class="display">The whole line, in order</h2>
+  <h2 class="display">{{ t('build.logHeadline') }}</h2>
   <div class="log-lines">
     {% for m in messages %}
     <p class="log-line log-{{ m.from }} {{ 'log-tone-' + m.tone if m.tone }}">
       <span class="log-time">{{ m.at }}</span>
-      <span class="log-who">{{ 'you' if m.from == 'user' else 'agent' }}</span>
+      <span class="log-who">{{ t('log.you') if m.from == 'user' else t('log.agent') }}</span>
       <span class="log-text">{{ m.text }}</span>
     </p>
     {% endfor %}
@@ -365,10 +365,10 @@
 {% macro evidenceCanvas(c, evidence) %}
 <article class="artifact evidence-artifact">
   <header class="artifact-head">
-    <span class="eyebrow">{{ c.t.evidenceEyebrow }}</span>
+    <span class="eyebrow">{{ t('evidenceEyebrow') }}</span>
   </header>
-  <h2 class="display">{{ c.t.evidenceHeadline }}</h2>
-  <p class="artifact-lede">{{ c.t.evidenceLede }}</p>
+  <h2 class="display">{{ t('evidenceHeadline') }}</h2>
+  <p class="artifact-lede">{{ t('evidenceLede') }}</p>
   {% if c.viewer %}{{ dv.designViewer(c.viewer) }}{% endif %}
 </article>
 {% endmacro %}

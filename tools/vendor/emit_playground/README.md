@@ -46,10 +46,10 @@ failures (legacy frozen surfaces legitimately exist).
 1. Serves `<app>/design/` on an ephemeral port (in-process `http.server` via
    `socketserver.ThreadingTCPServer`), loads `new/index.html` in headless
    Chromium (viewport 390×844) and evaluates `window.P2.registry` — an array
-   of `{id, tab, roles, surface, ...}` where `surface` is a canonical ID or
+   of `{id, shell, roles, surface, ...}` where `surface` is a canonical ID or
    `null`. Entries with `surface: null` are playground-only, never emitted.
 2. Per emitted entry, picks an allowed role — `entry.roles[0]`, else the
-   role whose tabs contain `entry.tab` (from `window.P2.roles`, shape-liberal)
+   role whose shells contain `entry.shell` (from `window.P2.roles`, shape-liberal)
    — and loads `new/index.html?role=<role>&screen=<id>`. After a ~1500ms
    settle, any console `error` or `pageerror` fails the run.
 3. Extracts the SCREEN CONTENT only: the `.phone-screen` subtree (the
@@ -85,7 +85,7 @@ runs only.
 `--self-test` is hermetic: it copies the jsx-less fixture playground under
 `fixtures/app/design/` (own `index.html` + `tokens.css`/`app.css` +
 `exclusions.json` + one asset, 3 registry entries: one surface, one
-registry-null, one roles-less for the tab-fallback role pick) to a temp app
+registry-null, one roles-less for the shell-fallback role pick) to a temp app
 and asserts: the emitted file lands at the expected `design/new/surfaces/` path;
 chrome matching the fixture selector is stripped; no `<script>` tags or
 remote URLs survive; CSS comments (a planted `tweak` signature) are stripped

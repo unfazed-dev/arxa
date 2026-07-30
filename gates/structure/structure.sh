@@ -16,7 +16,7 @@
 #                    file is committed and current. `git diff --exit-code` CANNOT
 #                    see a new file, and a producer that adds a surface is the
 #                    expected case — porcelain is the only assertion that holds.
-#   S2  resolve — every tabRoot lands on a screen WITH a surface; the reconcile
+#   S2  resolve — every shellRoot lands on a screen WITH a surface; the reconcile
 #                 count is printed, exclusions (surface:null) listed by id.
 #
 # The registry join (surfaceId -> viewmodel), orphan detection and shell
@@ -61,7 +61,7 @@ fi
 # ---- S1a: content drift (regenerate-to-memory compare) -------------------------
 # No jsx/app.jsx guard: the drift check runs for every producer that carries the
 # authored registry (models/screens_model/registry.json). The emitter fails loud
-# on a missing surfaceId, an orphan viewmodel, an empty tabRoots map, or a stale
+# on a missing surfaceId, an orphan viewmodel, an empty shellRoots map, or a stale
 # structure.json — all surfaced here as a content mismatch or a build failure.
 if [ ! -f "$EMIT" ]; then
   fail "structure: emit_structure.py not found at $EMIT"
@@ -104,9 +104,9 @@ fi
 
 # ---- S2: resolve + reconcile print --------------------------------------------
 # The emitter has already proven every surface joins to a viewmodel and there are
-# no orphans (S1a). What remains: tab roots land on a screen WITH a surface (a
-# tab whose root was excluded ships a tab with no home), and the human reader sees
-# the reconcile count and the exclusion list rather than a silent drop.
+# no orphans (S1a). What remains: shell roots land on a screen WITH a surface (a
+# shell whose root was excluded ships a shell with no home), and the human reader
+# sees the reconcile count and the exclusion list rather than a silent drop.
 pyout="$(python3 - "$DESIGN" "$DESIGN_REL" 2>&1 <<'PY'
 import json,sys,os
 design,rel=sys.argv[1],sys.argv[2]
@@ -114,24 +114,24 @@ def bad(m): print(f"FAIL: structure: {m}")
 try: st=json.load(open(os.path.join(design,"structure.json")))
 except Exception as e: bad(f"structure.json does not parse — {e}"); sys.exit(1)
 
-screens=st.get("screens"); roots=st.get("tabRoots")
+screens=st.get("screens"); roots=st.get("shellRoots")
 if not isinstance(screens,list) or not screens:
     bad(f"{rel}/structure.json needs a non-empty \"screens\" list"); sys.exit(1)
 if not isinstance(roots,dict) or not roots:
-    bad(f"{rel}/structure.json needs a non-empty \"tabRoots\" object"); sys.exit(1)
+    bad(f"{rel}/structure.json needs a non-empty \"shellRoots\" object"); sys.exit(1)
 
 f=0
-# tabRoots here carry ROUTES (projects: '/'), not screen ids, so the structural
-# question is: does every tab have at least one frozen (non-excluded) screen?
-tabs_with_surfaces={s.get("tab") for s in screens if isinstance(s,dict) and s.get("surface")}
-for tab in sorted(roots):
-    if tab not in tabs_with_surfaces:
-        bad(f"tab '{tab}' has no screen with a surface — its landing screen was excluded or never designed"); f+=1
+# shellRoots here carry ROUTES (projects: '/'), not screen ids, so the structural
+# question is: does every shell group have at least one frozen (non-excluded) screen?
+groups_with_surfaces={s.get("shell") for s in screens if isinstance(s,dict) and s.get("surface")}
+for group in sorted(roots):
+    if group not in groups_with_surfaces:
+        bad(f"shell '{group}' has no screen with a surface — its landing screen was excluded or never designed"); f+=1
 if f: sys.exit(1)
 
 n=len(screens); excl=[s["id"] for s in screens if isinstance(s,dict) and s.get("surface") is None]
 frozen=n-len(excl)
-print(f"  ✓ structure: {n} screens / {frozen} frozen / {len(excl)} excluded, {len(roots)} tab roots land on a surface")
+print(f"  ✓ structure: {n} screens / {frozen} frozen / {len(excl)} excluded, {len(roots)} shell roots land on a surface")
 if excl: print(f"    exclusions (surface:null): {', '.join(excl)}")
 PY
 )"

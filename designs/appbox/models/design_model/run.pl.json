@@ -1,0 +1,786 @@
+{
+  "run": {
+    "id": "design-07",
+    "number": 7,
+    "project": "Petal & Stem",
+    "brief": "aplikacja towarzysząca — zatwierdzaj buildy z dowolnego miejsca",
+    "started": "Wczoraj 14:02",
+    "elapsed": "21m 05s",
+    "state": "frozen",
+    "stateLabel": "Zamrożony — manifest frz_9c41e2",
+    "policy": {
+      "rungs": [
+        390,
+        744,
+        1280
+      ],
+      "kitCoverage": 96
+    }
+  },
+  "line": [
+    {
+      "id": "brief",
+      "kind": "stage",
+      "label": "Brief",
+      "state": "green"
+    },
+    {
+      "id": "moodboard",
+      "kind": "stage",
+      "label": "Moodboard",
+      "state": "green"
+    },
+    {
+      "id": "prototype",
+      "kind": "stage",
+      "label": "Prototyp",
+      "state": "green",
+      "href": "/design"
+    },
+    {
+      "id": "refine",
+      "kind": "stage",
+      "label": "Ulepszanie",
+      "state": "green",
+      "href": "/design/chat"
+    },
+    {
+      "id": "design.approval",
+      "kind": "gate",
+      "label": "Zatwierdzenie",
+      "state": "approved",
+      "href": "/design/freeze"
+    },
+    {
+      "id": "freeze",
+      "kind": "stage",
+      "label": "Zamrożenie",
+      "state": "green",
+      "href": "/design/freeze"
+    }
+  ],
+  "screens": [
+    {
+      "id": "intake.mapping",
+      "label": "Mapowanie historyjek",
+      "epic": "Intake i mapowanie historyjek",
+      "state": "frozen",
+      "wire": "split",
+      "kit": 96,
+      "summary": "Mapa Epik → Funkcja → Historyjka z torami MoSCoW i swimlane'ami wydań — 42 historyjki w jednej sesji",
+      "summaryPlain": "Mapa historyjek: epiki, funkcje i historyjki posortowane must/could/won't, w torach wydań — 42 historyjki zmapowane w jednej sesji",
+      "rungs": [
+        {
+          "rung": "compact",
+          "width": 390,
+          "shot": "sh_325d…e062",
+          "note": "składane — najpierw kanwa, szyna unosi się poniżej"
+        },
+        {
+          "rung": "medium",
+          "width": 744,
+          "shot": "sh_4bed…7a5f",
+          "note": "wąska szyna 300px obok kanwy"
+        },
+        {
+          "rung": "expanded",
+          "width": 1280,
+          "shot": "sh_c97c…cd9d",
+          "note": "szyna 340px + jeden duży artefakt"
+        }
+      ]
+    },
+    {
+      "id": "intake.brief",
+      "label": "Brief projektowy",
+      "epic": "Intake i mapowanie historyjek",
+      "state": "frozen",
+      "wire": "stack",
+      "kit": 98,
+      "summary": "Brief jako żyjący dokument — inwentarz powierzchni karmi rejestr bez przepisywania",
+      "summaryPlain": "Brief jako czytelny dokument — jego lista ekranów zasiewa rejestr aplikacji bez przepisywania",
+      "rungs": [
+        {
+          "rung": "compact",
+          "width": 390,
+          "shot": "sh_eae7…e3f4",
+          "note": "jedna kolumna, akcje w linii"
+        },
+        {
+          "rung": "medium",
+          "width": 744,
+          "shot": "sh_d602…e4a5",
+          "note": "jedna kolumna, szersza miara"
+        },
+        {
+          "rung": "expanded",
+          "width": 1280,
+          "shot": "sh_222c…485c",
+          "note": "wyśrodkowana kolumna, limit 56rem"
+        }
+      ]
+    },
+    {
+      "id": "intake.moodboard",
+      "label": "Moodboard",
+      "epic": "Intake i mapowanie historyjek",
+      "state": "frozen",
+      "wire": "grid",
+      "kit": 92,
+      "summary": "Kuriowane referencje i przechwycone ujęcia per epik — każde osadzone ujęcie zweryfikowane na dysku",
+      "summaryPlain": "Aplikacje referencyjne, z których warto kraść, z prawdziwymi zrzutami ekranu per temat — każdy obraz sprawdzony, że istnieje na dysku",
+      "rungs": [
+        {
+          "rung": "compact",
+          "width": 390,
+          "shot": "sh_b766…b7ce",
+          "note": "karty pojedynczo"
+        },
+        {
+          "rung": "medium",
+          "width": 744,
+          "shot": "sh_60bc…c427",
+          "note": "siatka podwójna"
+        },
+        {
+          "rung": "expanded",
+          "width": 1280,
+          "shot": "sh_e59f…4219",
+          "note": "siatka potrójna"
+        }
+      ]
+    },
+    {
+      "id": "design.prototype",
+      "label": "Prototyp",
+      "epic": "Projektowanie i zamrażanie",
+      "state": "frozen",
+      "wire": "split",
+      "kit": 100,
+      "summary": "Plansze w 390/744/1280 z samych platform docelowych — dosłowna parzystość, struktura nie piksele",
+      "summaryPlain": "Każdy ekran pokazany w rozmiarze telefonu, tabletu i desktopu — ta sama struktura wszędzie, bez przesuwania pikseli",
+      "rungs": [
+        {
+          "rung": "compact",
+          "width": 390,
+          "shot": "sh_79d8…e735",
+          "note": "składane — najpierw kanwa, szyna unosi się poniżej"
+        },
+        {
+          "rung": "medium",
+          "width": 744,
+          "shot": "sh_6702…f38d",
+          "note": "wąska szyna 300px obok kanwy"
+        },
+        {
+          "rung": "expanded",
+          "width": 1280,
+          "shot": "sh_7163…717f",
+          "note": "szyna 340px + jeden duży artefakt"
+        }
+      ]
+    },
+    {
+      "id": "design.chat",
+      "label": "Czat projektowy",
+      "epic": "Projektowanie i zamrażanie",
+      "state": "frozen",
+      "wire": "split",
+      "kit": 97,
+      "summary": "Przypięte ekrany jako zdejmowane chipy kontekstu — czat ulepsza dokładnie te, obwiedzione na kanwie",
+      "summaryPlain": "Przypnij ekrany, nad którymi pracujesz, jako chipy — czat zmienia tylko je, a one zostają obwiedzione na kanwie",
+      "rungs": [
+        {
+          "rung": "compact",
+          "width": 390,
+          "shot": "sh_d4df…6ed5",
+          "note": "składane — najpierw kanwa, szyna unosi się poniżej"
+        },
+        {
+          "rung": "medium",
+          "width": 744,
+          "shot": "sh_512b…2489",
+          "note": "wąska szyna 300px obok kanwy"
+        },
+        {
+          "rung": "expanded",
+          "width": 1280,
+          "shot": "sh_773c…c4a7",
+          "note": "szyna 340px + jeden duży artefakt"
+        }
+      ]
+    },
+    {
+      "id": "design.freeze",
+      "label": "Zamrożenie i ślady",
+      "epic": "Projektowanie i zamrażanie",
+      "state": "frozen",
+      "wire": "stack",
+      "kit": 95,
+      "summary": "Zamrożenie na hashu — zatwierdzenie wiąże się z hashem projektu; zmiana po zatwierdzeniu staje się głośno nieaktualna",
+      "summaryPlain": "Zablokuj zatwierdzony projekt — Twoje zatwierdzenie podpisuje dokładnie tę wersję; każda późniejsza zmiana jest wyraźnie oznaczana",
+      "rungs": [
+        {
+          "rung": "compact",
+          "width": 390,
+          "shot": "sh_6816…16d0",
+          "note": "jedna kolumna, akcje w linii"
+        },
+        {
+          "rung": "medium",
+          "width": 744,
+          "shot": "sh_13da…2c4c",
+          "note": "jedna kolumna, szersza miara"
+        },
+        {
+          "rung": "expanded",
+          "width": 1280,
+          "shot": "sh_4adf…3f7f",
+          "note": "wyśrodkowana kolumna, limit 56rem"
+        }
+      ]
+    },
+    {
+      "id": "build.loop",
+      "label": "Monitor budowania",
+      "epic": "Budowanie i bramki",
+      "state": "frozen",
+      "wire": "split",
+      "kit": 99,
+      "summary": "Szyna narracyjna + jeden duży artefakt — przebieg to rozmowa, którą można przerwać",
+      "summaryPlain": "Strumień tego, co robi build, plus jeden duży widok szczegółów — możesz zadawać pytania albo zatrzymać go w każdej chwili",
+      "rungs": [
+        {
+          "rung": "compact",
+          "width": 390,
+          "shot": "sh_5b85…c59d",
+          "note": "składane — najpierw kanwa, szyna unosi się poniżej"
+        },
+        {
+          "rung": "medium",
+          "width": 744,
+          "shot": "sh_b89c…57dd",
+          "note": "wąska szyna 300px obok kanwy"
+        },
+        {
+          "rung": "expanded",
+          "width": 1280,
+          "shot": "sh_c55d…6549",
+          "note": "szyna 340px + jeden duży artefakt"
+        }
+      ]
+    },
+    {
+      "id": "build.gates",
+      "label": "Bramki",
+      "epic": "Budowanie i bramki",
+      "state": "frozen",
+      "wire": "stack",
+      "kit": 96,
+      "summary": "Trzy ludzkie bramki jako kolejka triage — osiągalne dla agentów, przechodzące tylko przez Ciebie",
+      "summaryPlain": "Trzy decyzje, które możesz podjąć tylko Ty, w kolejce jak w skrzynce — agent Ci je przynosi, nigdy ich nie podejmuje",
+      "rungs": [
+        {
+          "rung": "compact",
+          "width": 390,
+          "shot": "sh_3744…edd4",
+          "note": "jedna kolumna, akcje w linii"
+        },
+        {
+          "rung": "medium",
+          "width": 744,
+          "shot": "sh_d037…a387",
+          "note": "jedna kolumna, szersza miara"
+        },
+        {
+          "rung": "expanded",
+          "width": 1280,
+          "shot": "sh_6176…43a6",
+          "note": "wyśrodkowana kolumna, limit 56rem"
+        }
+      ]
+    },
+    {
+      "id": "build.visual",
+      "label": "Wierność wizualna",
+      "epic": "Budowanie i bramki",
+      "state": "frozen",
+      "wire": "split",
+      "kit": 94,
+      "summary": "Sondy projekt-vs-zbudowane per powierzchnia — SSIM, szkielet, ΔE względem zamrożonego wzorca",
+      "summaryPlain": "Każdy zbudowany ekran porównany piksel po pikselu z projektem, który zatwierdziłeś — struktura, układ i kolor",
+      "rungs": [
+        {
+          "rung": "compact",
+          "width": 390,
+          "shot": "sh_5ace…e6c3",
+          "note": "składane — najpierw kanwa, szyna unosi się poniżej"
+        },
+        {
+          "rung": "medium",
+          "width": 744,
+          "shot": "sh_2c33…e774",
+          "note": "wąska szyna 300px obok kanwy"
+        },
+        {
+          "rung": "expanded",
+          "width": 1280,
+          "shot": "sh_af23…4b2c",
+          "note": "szyna 340px + jeden duży artefakt"
+        }
+      ]
+    },
+    {
+      "id": "access.pairing",
+      "label": "Parowanie i urządzenia",
+      "epic": "Dostęp i urządzenia",
+      "state": "frozen",
+      "wire": "stack",
+      "kit": 93,
+      "summary": "Parowanie jednym skanem QR, lista urządzeń z odwołaniem — domyślnie tylko LAN, bez chmurowego przekaźnika",
+      "summaryPlain": "Sparuj urządzenie skanując jeden kod, zobacz i odwołaj sparowane urządzenia — domyślnie tylko sieć lokalna",
+      "rungs": [
+        {
+          "rung": "compact",
+          "width": 390,
+          "shot": "sh_b868…bef4",
+          "note": "jedna kolumna, akcje w linii"
+        },
+        {
+          "rung": "medium",
+          "width": 744,
+          "shot": "sh_05ee…58f1",
+          "note": "jedna kolumna, szersza miara"
+        },
+        {
+          "rung": "expanded",
+          "width": 1280,
+          "shot": "sh_04df…ac2f",
+          "note": "wyśrodkowana kolumna, limit 56rem"
+        }
+      ]
+    },
+    {
+      "id": "access.notifications",
+      "label": "Powiadomienia",
+      "epic": "Dostęp i urządzenia",
+      "state": "frozen",
+      "wire": "stack",
+      "kit": 91,
+      "summary": "Push przy czerwonej bramce, deep-link prosto do karty bramki — zatwierdzaj z ekranu blokady",
+      "summaryPlain": "Powiadomienie push, gdy potrzebna decyzja, otwierające prosto tę decyzję — zatwierdzaj z ekranu blokady",
+      "rungs": [
+        {
+          "rung": "compact",
+          "width": 390,
+          "shot": "sh_61f7…1112",
+          "note": "jedna kolumna, akcje w linii"
+        },
+        {
+          "rung": "medium",
+          "width": 744,
+          "shot": "sh_a00b…6036",
+          "note": "jedna kolumna, szersza miara"
+        },
+        {
+          "rung": "expanded",
+          "width": 1280,
+          "shot": "sh_8d1c…c0d4",
+          "note": "wyśrodkowana kolumna, limit 56rem"
+        }
+      ]
+    }
+  ],
+  "draft": {
+    "offer": "Mapa historyjek zatwierdzona — 11 powierzchni, każda prześledzona do historyjki. Mogę naszkicować je wszystkie w jednym przebiegu: 11 plansz na kanwie w 390/744/1280, prawdziwe rozmiary urządzeń. Potem ulepszamy tutaj, z ekranami, które przypniesz jako kontekst.",
+    "offerPlain": "Mapa historyjek jest zatwierdzona — 11 ekranów. Mogę naszkicować je wszystkie naraz na kanwie w rozmiarze telefonu, tabletu i desktopu. Potem polerujemy je tutaj, jedna wiadomość na raz.",
+    "chip": "naszkicuj wszystkie 11 powierzchni",
+    "done": "Wszystkie 11 powierzchni naszkicowanych — 33 ujęcia w 390/744/1280. Przypnij ekran jako kontekst (pinezka na planszy albo miniatura) a dostanie kolorową obwódkę tutaj i na kanwie; tylko narzędzia przypiętych ekranów są aktywne.",
+    "donePlain": "Wszystkie 11 ekranów jest na kanwie, każdy w rozmiarze telefonu, tabletu i desktopu. Dotknij ekranu — na kanwie albo w pasku miniaturek — żeby go tu przypiąć; Twoje zmiany zawsze dotykają tylko przypiętych ekranów."
+  },
+  "approval": {
+    "state": "approved",
+    "chip": "zatwierdź manifest",
+    "lede": "Zatwierdzenie podpisuje manifest frz_9c41e2 — sha256:9c41…e2b7 — i odblokowuje etap Budowania. Agent może Ci go przynieść; tylko Ty możesz go podpisać.",
+    "ledePlain": "Zatwierdzenie podpisuje dokładnie ten projekt i pozwala wystartować budowaniu. Agent może prosić — tylko Ty możesz zatwierdzić.",
+    "approvedNote": "Zatwierdzone przez Evana · Touch ID · studio-mac · Wczoraj 16:42 — budowanie odblokowane.",
+    "approvedNotePlain": "Zatwierdziłeś ten projekt wczoraj (Touch ID, studio-mac) — budowanie jest odblokowane.",
+    "pendingNote": "Jeszcze niezatwierdzone — etap Budowania pozostaje zablokowany, dopóki nie podpiszesz.",
+    "pendingNotePlain": "Jeszcze niezatwierdzone — budowanie nie może wystartować, dopóki nie zatwierdzisz.",
+    "confirm": "Manifest frz_9c41e2 zatwierdzony — sha256:9c41…e2b7 podpisany, provenancja zapisana. Etap Budowania jest odblokowany.",
+    "confirmPlain": "Zatwierdzone — dokładnie ten projekt jest podpisany i zapisany. Budowanie może wystartować."
+  },
+  "noContext": {
+    "text": "Nic nie jest przypięte — najpierw przypnij ekran (pinezka na planszy albo miniatura); Twoja wiadomość obejmie wtedy dokładnie te ekrany. Narzędzia pozostają ciemne, dopóki nie ma kontekstu.",
+    "textPlain": "Najpierw przypnij ekran — dotknij jednego na kanwie albo w pasku miniaturek. Twoje zmiany zawsze dotykają tylko przypiętych ekranów."
+  },
+  "artifacts": [
+    {
+      "id": "manifest",
+      "label": "Manifest zamrożenia",
+      "kind": "manifest",
+      "detail": "frz_9c41e2 · 33 wzorce · sha256:9c41…e2b7",
+      "href": "/design/freeze"
+    },
+    {
+      "id": "structure",
+      "label": "structure.json",
+      "kind": "spec",
+      "detail": "zablokowany przy zamrożeniu — kontrola dryfu porównuje z nim",
+      "href": "/design/freeze"
+    },
+    {
+      "id": "story-map",
+      "label": "Mapa historyjek",
+      "kind": "brief",
+      "detail": "42 historyjki · tory MoSCoW · źródło szkicu",
+      "href": "/intake"
+    },
+    {
+      "id": "goldens",
+      "label": "Wzorce",
+      "kind": "shots",
+      "detail": "33 zamrożone ujęcia · 11 powierzchni × 3 rozmiary",
+      "href": "/design"
+    }
+  ],
+  "files": [
+    {
+      "path": "docs/design/story-map.json",
+      "detail": "zatwierdzona mapa historyjek — źródło szkicu"
+    },
+    {
+      "path": "designs/appbox/models/design_model/design_seed.pl.json",
+      "detail": "autorski seed projektu"
+    },
+    {
+      "path": "designs/appbox/models/design_model/run.pl.json",
+      "detail": "wygenerowany fixture — 11 powierzchni, 33 ujęcia"
+    },
+    {
+      "path": "app/structure.json",
+      "detail": "zablokowana struktura — odniesienie dla dryfu"
+    },
+    {
+      "path": "app/goldens/",
+      "detail": "33 zamrożone wzorce, zahashowane przy zamrożeniu"
+    }
+  ],
+  "manifest": {
+    "id": "frz_9c41e2",
+    "goldens": 33,
+    "surfaces": 11,
+    "rungs": "390 / 744 / 1280",
+    "hash": "sha256:9c41…e2b7",
+    "frozenAt": "Wczoraj 16:42",
+    "structure": "structure.json zablokowany — edycja warstwy autorskiej po zamrożeniu nie przechodzi kontroli dryfu",
+    "structurePlain": "zatwierdzona struktura jest zablokowana — cokolwiek zbudowane później, co od niej odbiegnie, zatrzyma przebieg i Ci pokaże",
+    "provenance": {
+      "by": "Evan",
+      "shell": "macOS shell",
+      "device": "studio-mac (node m4-mini)",
+      "method": "Touch ID",
+      "at": "Wczoraj 16:42",
+      "hash": "g8f3…a1c4"
+    }
+  },
+  "trace": [
+    {
+      "at": "14:02",
+      "who": "agent",
+      "text": "Brief prześledzony — 22 powierzchnie z story-map.json; każde id rejestru poparte historyjką.",
+      "textPlain": "Brief sprawdzony — 22 ekrany pochodzą z mapy historyjek; każdy ekran prowadzi z powrotem do historyjki użytkownika."
+    },
+    {
+      "at": "14:09",
+      "who": "agent",
+      "text": "Moodboard skonsultowany — 4 tablice, 61 ujęć referencyjnych zweryfikowanych na dysku przed tworzeniem.",
+      "textPlain": "Moodboardy przejrzane — 4 kolekcje, 61 referencyjnych zrzutów ekranu, wszystkie potwierdzone jako prawdziwe przed projektowaniem."
+    },
+    {
+      "at": "14:31",
+      "who": "agent",
+      "text": "Prototyp złożony — 11 powierzchni × 3 rozmiary z samych platform docelowych; przenoszona struktura, nie piksele.",
+      "textPlain": "Prototyp zbudowany — 11 ekranów, każdy w rozmiarze telefonu, tabletu i desktopu; liczy się struktura układu, nie dekoracja."
+    },
+    {
+      "at": "15:58",
+      "who": "you",
+      "text": "Czat ekranu na build.loop — 4 punkty kontrolne; karty bramek wyciszone, pasek compact zadokowany.",
+      "textPlain": "Ulepszyłeś ekran budowania na czacie — 4 zapisane zmiany; spokojniejsze karty decyzji, lepszy układ na telefon."
+    },
+    {
+      "at": "16:42",
+      "who": "you",
+      "text": "Zatwierdzenie projektu podpisane — Touch ID · studio-mac · g8f3…a1c4. Podpisany wygląd jest zamrożonym.",
+      "textPlain": "Zatwierdziłeś projekt — podpisany Touch ID na studio-mac. To, co zatwierdziłeś, jest dokładnie tym, co zostaje zablokowane."
+    },
+    {
+      "at": "16:42",
+      "who": "agent",
+      "text": "Zamrożenie wybite — manifest frz_9c41e2 · 33 wzorce zahashowane · structure.json zablokowany.",
+      "textPlain": "Projekt zablokowany — wszystkie 33 zatwierdzone migawki odciskowane i zapisane; struktura jest teraz wzorcem."
+    },
+    {
+      "at": "09:12",
+      "who": "agent",
+      "text": "Kontrola dryfu — 33/33 wzorców zgodnych z manifestem. Czysto.",
+      "textPlain": "Kontrola dryfu — wszystkie 33 migawki wciąż zgadzają się z zatwierdzonym projektem. Nic się nie ruszyło."
+    }
+  ],
+  "traceability": [
+    {
+      "surface": "intake.mapping",
+      "story": "Evan zamienia brief klienta w mapę Epik-Funkcja-Historyjka w jednej sesji",
+      "code": "app/lib/ui/views/intake/mapping_view.dart",
+      "files": 4
+    },
+    {
+      "surface": "design.prototype",
+      "story": "Każda powierzchnia zaprojektowana w 390/744/1280 z samych platform docelowych (dosłowna parzystość)",
+      "code": "app/lib/ui/views/design/prototype_view.dart",
+      "files": 4
+    },
+    {
+      "surface": "design.chat",
+      "story": "Przypnij wiele ekranów jako kontekst czatu (zdejmowane chipy); ekrany w kontekście obwiedzione obok siebie w prawdziwych rozmiarach",
+      "code": "app/lib/ui/views/design/chat_view.dart",
+      "files": 4
+    },
+    {
+      "surface": "build.loop",
+      "story": "Wystartuj build, odejdź; zatrzymuje się na czerwonym, ESC_LIMIT=3",
+      "code": "app/lib/ui/views/build/loop_view.dart",
+      "files": 4
+    },
+    {
+      "surface": "build.gates",
+      "story": "Trzy bramki, do których agent może dotrzeć, ale nigdy przejść; zatwierdzenie związane z provenancją",
+      "code": "app/lib/ui/views/build/gates_view.dart",
+      "files": 4
+    },
+    {
+      "surface": "access.pairing",
+      "story": "Parowanie jednym skanem QR; przekazany QR nie przechodzi weryfikacji",
+      "code": "app/lib/ui/views/access/pairing_view.dart",
+      "files": 4
+    },
+    {
+      "surface": "ship.deploy",
+      "story": "Bramka płatności przy pierwszym wdrożeniu: licencja wymagana do wysyłki; wszystko przed nią darmowe",
+      "code": "app/lib/ui/views/ship/deploy_view.dart",
+      "files": 4
+    }
+  ],
+  "drift": {
+    "checked": "dziś 09:12",
+    "matched": "33/33",
+    "clean": true,
+    "history": [
+      {
+        "at": "dziś 08:47",
+        "state": "resolved",
+        "text": "ujęcie compact design.chat zmieniło się po zatwierdzeniu (punkt kontrolny cp-5) — oznaczone głośno jako nieaktualne; zatwierdzone ponownie i zamrożone 08:52",
+        "textPlain": "ujęcie ekranu czatu w rozmiarze telefonu zmieniło się po Twoim zatwierdzeniu — projekt był oznaczony jako nieaktualny, dopóki nie zatwierdziłeś zmiany o 08:52",
+        "hash": "d41f…7b2c"
+      }
+    ]
+  },
+  "designThread": [
+    {
+      "at": "15:52",
+      "from": "user",
+      "text": "Karty bramek są krzyczące — pending krzyczy. Może trochę oddechu?"
+    },
+    {
+      "at": "15:53",
+      "from": "agent",
+      "text": "Złagodzone — pending siedzi teraz na 12% akcentu z włosową obwódką; zatwierdzenie zostaje pełnym tuszem. Punkt kontrolny cp-3 poniżej, jeden dotk cofa.",
+      "textPlain": "Wyciszone — stan oczekiwania to teraz miękki odcień zamiast głośnego wypełnienia; przycisk zatwierdzenia zostaje wyrazisty. Zapisane jako cp-3 poniżej, jeden dotk cofa.",
+      "cps": [
+        {
+          "screen": "build.loop",
+          "cp": "cp-3"
+        }
+      ]
+    },
+    {
+      "at": "16:04",
+      "from": "user",
+      "text": "Rozmiar compact: pasek sceny zasłania CTA kanwy."
+    },
+    {
+      "at": "16:05",
+      "from": "agent",
+      "text": "Zadokowane — poniżej 600px pasek przypina się do krawędzi widoku, a kanwa robi mu miejsce. cp-4.",
+      "textPlain": "Naprawione — na ekranach wielkości telefonu pasek narzędzi przypina się do krawędzi ekranu zamiast unosić nad treścią. Zapisane jako cp-4.",
+      "cps": [
+        {
+          "screen": "build.loop",
+          "cp": "cp-4"
+        }
+      ]
+    }
+  ],
+  "checkpoints": {
+    "build.loop": [
+      {
+        "id": "cp-1",
+        "n": 1,
+        "at": "15:41",
+        "summary": "kompozycja początkowa — szyna + kanwa + FAB",
+        "summaryPlain": "pierwszy układ — boczny strumień, duży widok szczegółów, pływający przycisk akcji"
+      },
+      {
+        "id": "cp-2",
+        "n": 2,
+        "at": "15:49",
+        "summary": "przejście gęstości szyny — odznaki typów, liczniki wątków",
+        "summaryPlain": "uporządkowany strumień — czytelniejsze etykiety, liczniki odpowiedzi"
+      },
+      {
+        "id": "cp-3",
+        "n": 3,
+        "at": "15:53",
+        "summary": "spokojniejsze karty bramek — miękki pending, solidne zatwierdzenie",
+        "summaryPlain": "spokojniejsze karty decyzji — miękki stan oczekiwania, wyraziste zatwierdzenie",
+        "before": "pending: pełne wypełnienie akcentem",
+        "after": "pending: 12% odcienia + włosowa obwódka"
+      },
+      {
+        "id": "cp-4",
+        "n": 4,
+        "at": "16:05",
+        "summary": "pasek sceny compact dokuje do krawędzi widoku",
+        "summaryPlain": "układ telefonu: pasek narzędzi przypina się do krawędzi ekranu",
+        "before": "pasek unosi się nad CTA kanwy",
+        "after": "pasek dokuje do krawędzi widoku"
+      }
+    ]
+  },
+  "chatReplies": [
+    {
+      "match": [
+        "approve",
+        "manifest",
+        "sign",
+        "unlock",
+        "zatwierd",
+        "podpis",
+        "odblokuj"
+      ],
+      "text": "Zatwierdzenie manifestu to ludzka bramka — podpisuje frz_9c41e2 i odblokowuje etap Budowania. Karta zatwierdzenia mieszka na powierzchni zamrożenia; jej szybka odpowiedź podpisuje.",
+      "textPlain": "Zatwierdzenie manifestu to Twoja decyzja — blokuje dokładnie ten projekt i pozwala wystartować budowaniu. Zrób to z ekranu zamrożenia.",
+      "link": {
+        "href": "/design/freeze",
+        "label": "otwórz zamrożenie i ślady →"
+      }
+    },
+    {
+      "match": [
+        "calm",
+        "loud",
+        "soft",
+        "quiet",
+        "shout",
+        "spokój",
+        "spokojn",
+        "krzycz",
+        "cich"
+      ],
+      "text": "Wyciszone — pending spada do 12% akcentu z włosową obwódką; zatwierdzenie zostaje pełnym tuszem. Punkt kontrolny poniżej; jeden dotk cofa.",
+      "textPlain": "Wyciszone — stan oczekiwania to teraz miękki odcień zamiast głośnego wypełnienia; przycisk zatwierdzenia zostaje wyrazisty. Zapisane poniżej, jeden dotk cofa.",
+      "checkpoint": "spokojniejszy stan pending — miękki odcień, solidne zatwierdzenie",
+      "checkpointPlain": "spokojniejszy stan oczekiwania — miękki odcień, wyraziste zatwierdzenie",
+      "before": "pending: pełne wypełnienie akcentem",
+      "after": "pending: 12% odcienia + włosowa obwódka"
+    },
+    {
+      "match": [
+        "accent",
+        "colour",
+        "color",
+        "cyan",
+        "violet",
+        "theme",
+        "token",
+        "akcent",
+        "kolor",
+        "motyw",
+        "cyjan",
+        "fiolet"
+      ],
+      "text": "Podkręcenie tokenu — --accent to token projektowy, więc ujęcia renderują się od razu bez obiegu przez model. Punkt kontrolny poniżej.",
+      "textPlain": "Szybka zmiana koloru — akcent to wspólne ustawienie, więc migawki aktualizują się od razu bez ponownego generowania. Zapisane poniżej.",
+      "checkpoint": "przejście tokenu akcentu na ujęciach tego ekranu",
+      "checkpointPlain": "przejście koloru akcentu na migawkach tego ekranu",
+      "before": "akcent: odziedziczony domyślny",
+      "after": "akcent: token przypięty na tej powierzchni"
+    },
+    {
+      "match": [
+        "compact",
+        "phone",
+        "small",
+        "390",
+        "mobile",
+        "telefon",
+        "mały",
+        "kompakt"
+      ],
+      "text": "Przejście compact — poniżej 600px strefy układają się kanwa-pierwsza, a pasek dokuje do krawędzi widoku. Punkt kontrolny poniżej.",
+      "textPlain": "Przejście rozmiaru telefonu — na wąskich ekranach podgląd siedzi na górze, a pasek narzędzi przypina się do krawędzi ekranu. Zapisane poniżej.",
+      "checkpoint": "rozmiar compact — składane strefy, zadokowany pasek",
+      "checkpointPlain": "układ rozmiaru telefonu — składane strefy, przypięty pasek narzędzi",
+      "before": "pasek unosi się nad treścią",
+      "after": "pasek dokuje do krawędzi widoku"
+    },
+    {
+      "match": [
+        "frozen",
+        "freeze",
+        "locked",
+        "stale",
+        "drift",
+        "zamroż",
+        "zablokow",
+        "nieaktualn",
+        "dryf"
+      ],
+      "text": "Ten ekran jest zamrożony pod frz_9c41e2 — edycje lądują jako punkty kontrolne i oznaczają jego wzorce jako nieaktualne, dopóki nie zatwierdzisz ponownie. Ślad mieszka na powierzchni zamrożenia.",
+      "textPlain": "Ten ekran jest częścią zatwierdzonego projektu — zmiany zapisują się jako punkty kontrolne i oznaczają się jako dryf, dopóki nie zatwierdzisz ich ponownie. Ekran zamrożenia pokazuje pełną historię.",
+      "link": {
+        "href": "/design/freeze",
+        "label": "otwórz zamrożenie i ślady →"
+      }
+    },
+    {
+      "match": [
+        "kit",
+        "coverage",
+        "primitive",
+        "component",
+        "pokrycie",
+        "prymityw",
+        "komponent"
+      ],
+      "text": "Pokrycie kitu 96% na 11 powierzchniach — reszta na zamówienie to zoom kanwy flows i gesty triage bramek.",
+      "textPlain": "96% tych ekranów da się zbudować z gotowych części — praca na zamówienie to zoom kanwy flows i gesty przesuwania bramek."
+    }
+  ],
+  "chatFallback": {
+    "text": "Ograniczone do {label} — poproś o zmianę układu, stylu albo stanu, albo nazwij rozmiar (390/744/1280). Tylko narzędzia przypiętych ekranów są tu aktywne.",
+    "textPlain": "Pracujemy tylko nad {label} — poproś o zmianę układu, stylu albo koloru, albo o poprawkę na telefon/tablet/desktop. Nic innego w aplikacji nie jest tu w zasięgu."
+  },
+  "epics": [
+    "Intake i mapowanie historyjek",
+    "Projektowanie i zamrażanie",
+    "Budowanie i bramki",
+    "Dostęp i urządzenia"
+  ],
+  "counts": {
+    "screens": 11,
+    "shots": 33,
+    "frozen": 11
+  }
+}

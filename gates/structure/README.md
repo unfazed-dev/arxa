@@ -14,11 +14,11 @@ is current and self-consistent. Findings route through `gates/_common/sarif.sh`.
   carries the authored registry (`models/screens_model/registry.json`).
   - **S1a content** — `emit_structure --check` regenerates to memory and diffs
     against the on-disk file. Catches a one-char hand-edit, a stale registry, a
-    missing `surfaceId`, an orphan viewmodel, or an empty `tabRoots` map.
+    missing `surfaceId`, an orphan viewmodel, or an empty `shellRoots` map.
   - **S1b tracked** — `git status --porcelain` over `structure.json` is empty.
     `git diff --exit-code` is forbidden here (R5): it cannot see an untracked
     file, and a producer that adds a surface is the expected case.
-- **S2 resolve** — every tab root lands on a screen WITH a surface; the
+- **S2 resolve** — every shell root lands on a screen WITH a surface; the
   reconcile count is printed and the exclusion list (`surface: null`) is named,
   never silently dropped.
 

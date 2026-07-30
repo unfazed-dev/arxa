@@ -36,7 +36,7 @@ Contract:
     while rendering (player_facade.js), so without it train.player's elapsed
     timer moves between runs and write-on-diff can never be a no-op. See
     frozen_clock.mjs.
-  - read models/screens_model/registry.json — [{id, label, surface, tab,
+  - read models/screens_model/registry.json — [{id, label, surface, shell,
     phase, comp, roles?}]. `surface` is a canonical view name or null.
     NULL-SURFACE RULE: skipped, never invented, and always REPORTED (one
     `skip:` line each + a count in the summary). `surface` is the shared

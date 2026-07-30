@@ -138,7 +138,7 @@ retained inside `skills/app-box-story-mapper/`.
 (`story-map-builder` → `app-box-story-mapper`) and scoped into the pipeline as
 the pre-design elicitation step feeding `app-box-designer` directly.
 `generate_story_map.py` gained `--data-out`, `--brief-out` and `--self-test`:
-the brief emission (Epic → tab, Feature → surface, all-`wont` → out-of-scope,
+the brief emission (Epic → shell, Feature → surface, all-`wont` → out-of-scope,
 per-surface MoSCoW/release rollups as table columns) produces the surface table
 `gates/intake` (plan 10.7) traces against. The HTML story map and all original
 features are unchanged.

@@ -78,13 +78,13 @@ whose fonts 404.
       (§12) — measured: zero breakpoint doctrine in 46 upstream doc files.
 - [x] **1.9** **Add the app-architecture contract.** New file
       `references/app-architecture.md` documenting the authored layer (§14):
-      - `models/screens_model/registry.json` — `{id, tab, comp, surface, label}`
+      - `models/screens_model/registry.json` — `{id, shell, comp, surface, label}`
         plus optional `roles`; `surface: null` **is** the exclusion, so no
         separate exclusions list;
-      - `ui/views/<shell>/<tab>/<short>/{<short>_view.html, <short>_viewmodel.js}`;
+      - `ui/views/<shell>/<short>/{<short>_view.html, <short>_viewmodel.js}`;
       - `services/{repositories,facades}/`, `models/<x>_model/*_fixtures.json`;
       - **every viewmodel declares `export const surfaceId = '<id>';`**
-      - `app.routes.js` exports the route table **and** `tabRoots`.
+      - `app.routes.js` exports the route table **and** `shellRoots`.
 - [x] **1.10** Fold `DESIGN-ARCHITECTURE.md` (87 lines, already the upstream
       "spine architecture contract") into the above rather than replacing it.
       Keep its structure; add the app_box-specific layers.
@@ -114,7 +114,7 @@ whose fonts 404.
       `readlink ~/.agents/skills/app-box-designer`.
 - [x] **1.14** Write `skills/app-box-designer/selftest.sh`: scaffold a
       two-surface throwaway producer from the starter, assert the registry
-      parses, every viewmodel declares a `surfaceId`, `tabRoots` is non-empty,
+      parses, every viewmodel declares a `surfaceId`, `shellRoots` is non-empty,
       and each surface renders at every ladder width without console errors.
 
 ## Done-when
@@ -130,7 +130,7 @@ whose fonts 404.
    an unmodified `emit_structure` could read.~~ **UNSATISFIABLE AS WRITTEN —
    see Amendment A6.** The unmodified emitter cannot read a JSON registry in
    any form. Replaced by: the starter's `registry.json` carries every field
-   the emitter extracts (`id`/`tab`/`comp`/`surface`) plus `tabRoots`, so
+   the emitter extracts (`id`/`shell`/`comp`/`surface`) plus `shellRoots`, so
    plan 05's rewire is a read-path change and nothing else.
 
 ## Do not
@@ -249,10 +249,10 @@ belongs to **plan 05**, not here. What plan 01 *can* guarantee, and now does:
 | the emitter extracts | the starter's registry carries |
 |---|---|
 | `id` | ✅ |
-| `tab` | ✅ |
+| `shell` | ✅ |
 | `comp` | ✅ |
 | `surface` (incl. `null`) | ✅ — and `surface: null` is the exclusion |
-| `tabRoots` | ✅ exported from `app.routes.js` |
+| `shellRoots` | ✅ exported from `app.routes.js` |
 
 so plan 05's change is a **read path** — JSON instead of a regex over JSX — with
 no schema negotiation.

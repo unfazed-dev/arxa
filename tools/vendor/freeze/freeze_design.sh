@@ -20,8 +20,8 @@
 #                             status bars) that must NEVER scaffold into kit UI
 #     direction-approved.md   gate file: the approved design direction
 #     brand-spec.md           gate file: brand tokens/spec in prose
-#     structure.json          the shell/surface map: {"screens":[{id,tab,comp,
-#                             shell,surface}], "tabRoots":{...}} — emitted by
+#     structure.json          the shell/surface map: {"screens":[{id,shell,comp,
+#                             shellDir,surface}], "shellRoots":{...}} — emitted by
 #                             the producer (design/tools/emit_structure.py) and
 #                             checked below. surface:null = designed, not frozen
 #     surfaces/*.html         the frozen hi-fi surfaces (≥1)
@@ -34,7 +34,7 @@
 #                  by an exclusions glob/selector (uncovered = would scaffold)
 #   4. structure  — structure.json's shell/surface map resolves: every declared
 #                   surface has a file, every file is claimed by exactly one
-#                   screen, shells match the filename prefix, and no tab root
+#                   screen, shells match the filename prefix, and no shell root
 #                   was left without a surface
 #   5. render    — headless Chromium: every surface loads with zero console/
 #                  page errors; screenshots land in .kit/state/prototype/evidence/
@@ -176,15 +176,15 @@ try: st=json.load(open(os.path.join(design,"structure.json")))
 except Exception as e: bad(f"structure.json does not parse — {e}"); sys.exit(1)
 
 f=0
-screens=st.get("screens"); roots=st.get("tabRoots")
+screens=st.get("screens"); roots=st.get("shellRoots")
 if not isinstance(screens,list) or not screens:
     bad(f"{rel}/structure.json needs a non-empty \"screens\" list"); sys.exit(1)
 if not isinstance(roots,dict):
-    bad(f"{rel}/structure.json needs a \"tabRoots\" object (may be empty)"); sys.exit(1)
+    bad(f"{rel}/structure.json needs a \"shellRoots\" object (may be empty)"); sys.exit(1)
 for i,s in enumerate(screens):
     if not isinstance(s,dict) or not s.get("id"):
         bad(f"screens[{i}] has no id"); f+=1
-for k in ("shell","surface"):
+for k in ("shell","shellDir","surface"):
     for s in screens:
         if k not in s: bad(f"screen {s.get('id')} has no \"{k}\" key (use null)"); f+=1
 if f: sys.exit(1)
@@ -201,18 +201,18 @@ for s in sorted(on_disk-set(declared)):
 # (c) uniqueness — two screens on one surface means one of them is a lie
 for s in sorted({x for x in declared if declared.count(x)>1}):
     bad(f"surface '{s}' is claimed by {declared.count(s)} screens"); f+=1
-# (d) shell — the prefix convention the scaffolder parses, now asserted
+# (d) shellDir — the prefix convention the scaffolder parses, now asserted
 for s in screens:
-    surf,sh=s.get("surface"),s.get("shell")
+    surf,sh=s.get("surface"),s.get("shellDir")
     if surf and not sh: bad(f"screen '{s['id']}' has a surface but no shell"); f+=1
     elif surf and not surf.startswith(sh+"_"):
         bad(f"screen '{s['id']}': surface '{surf}' is not under shell '{sh}'"); f+=1
-# (e) roots — a tab whose ROOT screen was excluded ships a tab with no home
+# (e) roots — a shell whose ROOT screen was excluded ships a shell with no home
 byid={s["id"]:s for s in screens}
-for tab,sid in sorted(roots.items()):
-    if sid not in byid: bad(f"tabRoots['{tab}'] = '{sid}' is not a screen"); f+=1
+for shell,sid in sorted(roots.items()):
+    if sid not in byid: bad(f"shellRoots['{shell}'] = '{sid}' is not a screen"); f+=1
     elif not byid[sid].get("surface"):
-        bad(f"tabRoots['{tab}'] = '{sid}' has no surface — the tab's landing screen was never designed"); f+=1
+        bad(f"shellRoots['{shell}'] = '{sid}' has no surface — the shell's landing screen was never designed"); f+=1
 
 if f: sys.exit(1)
 n=len(screens); c=len(declared)

@@ -1,6 +1,6 @@
 /* rail.css · the multi-view rail (ui/common/rail_views.html — mv.frame).
    Sibling of the .rail family in app.css: same card shell, same tokens.
-   Width is tunable per tab via --rail-w (min = default, only grows) and
+   Width is tunable per shell via --rail-w (min = default, only grows) and
    --rail-w-max (≈1.5×). Resize is pure CSS: the left rail resizes from its
    right (inner) edge; the right rail flips its container to rtl so the native
    handle lands on its left (inner) edge, children reset to ltr. No JS. */

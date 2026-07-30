@@ -296,6 +296,21 @@ a.list-row:hover { background: color-mix(in srgb, currentColor 6%, transparent);
 
 /* ── artifact-local ───────────────────────────────────────────────────────── */
 .swatch { display: inline-block; width: .9em; height: .9em; border-radius: 50%; background: var(--accent); }
+.lang-switcher {
+  display: flex;
+  gap: 4px;
+  justify-content: flex-end;
+  padding: 8px 16px 0;
+  font-size: 12px;
+}
+.lang-switcher__link {
+  padding: 4px 8px;
+  border-radius: 8px;
+  color: color-mix(in srgb, CanvasText 55%, Canvas);
+  text-decoration: none;
+}
+.lang-switcher__link:hover { background: color-mix(in srgb, currentColor 8%, transparent); }
+.lang-switcher__link[aria-current] { color: var(--accent); font-weight: 600; }
 .timer { font-size: 4rem; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--accent); }
 .timer.done { font-size: 1.6rem; color: seagreen; }
 @media (prefers-reduced-motion: no-preference) {

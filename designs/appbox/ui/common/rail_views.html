@@ -1,5 +1,5 @@
 {# The multi-view rail (story map · Chat-Centric Layout → Rails): ONE reusable
-   rail for both sides. Each tab registers its own views (runs / artifacts /
+   rail for both sides. Each shell registers its own views (runs / artifacts /
    commits / files / chat); the rail owns a head (active view label + collapse
    affordance), a body the caller fills via call/caller, and a bottom bar whose
    icon carousel switches views by hx-swapping the body. Sibling of rail.html;
@@ -14,10 +14,11 @@
    spec:
      side         — 'left' | 'right' (drives the id, the resize edge, rtl flip)
      label        — the active view's label, shown in the head
-     views        — [{ id, glyph, label, href, active }], one carousel icon each;
-                    href hx-swaps that view's fragment into #rail-<side>-body
-     collapseHref? — when present, a × button hx-swaps the whole rail (outerHTML)
-                    with the collapsed state the server returns #}
+     views        — [{ id, icon, label, href, active }], one carousel button
+                    each; icon is a Lucide name for the icon() global, href
+                    hx-swaps that view's fragment into #rail-<side>-body
+     collapseHref? — when present, a close button hx-swaps the whole rail
+                    (outerHTML) with the collapsed state the server returns #}
 {% macro frame(spec) %}
 <aside class="mv-rail mv-rail-{{ spec.side }}" id="rail-{{ spec.side }}">
   <header class="mv-rail-head">
@@ -25,15 +26,15 @@
     {% if spec.collapseHref %}
     <a class="ico-btn" href="{{ spec.collapseHref }}"
        hx-get="{{ spec.collapseHref }}" hx-target="#rail-{{ spec.side }}" hx-swap="outerHTML" hx-push-url="false"
-       title="Collapse the {{ spec.side }} rail" aria-label="Collapse the {{ spec.side }} rail">×</a>
+       title="{{ t('railViews.collapse.' ~ spec.side) }}" aria-label="{{ t('railViews.collapse.' ~ spec.side) }}">{{ icon('x', {size: 16}) }}</a>
     {% endif %}
   </header>
   <div class="mv-rail-body" id="rail-{{ spec.side }}-body">
     {{ caller() }}
   </div>
-  <footer class="mv-rail-bar" aria-label="{{ spec.side }} rail views">
+  <footer class="mv-rail-bar" aria-label="{{ t('railViews.aria.' ~ spec.side) }}">
     {% for v in spec.views %}
-    <a class="mv-icon {{ 'is-active' if v.active }}" href="{{ v.href }}" hx-get="{{ v.href }}" hx-target="#rail-{{ spec.side }}-body" hx-swap="innerHTML" hx-push-url="false" title="{{ v.label }}">{{ v.glyph }}</a>
+    <a class="mv-icon {{ 'is-active' if v.active }}" href="{{ v.href }}" hx-get="{{ v.href }}" hx-target="#rail-{{ spec.side }}-body" hx-swap="innerHTML" hx-push-url="false" title="{{ v.label }}" aria-label="{{ v.label }}">{{ icon(v.icon, {size: 18}) }}</a>
     {% endfor %}
   </footer>
 </aside>

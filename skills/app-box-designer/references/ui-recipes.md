@@ -80,6 +80,16 @@ medium/expanded keep the end-aligned row.
 
 **Flutter:** KitNativeButton, KitNativeSplitButton; KitNativeIconButton for icon-only.
 
+**Navigational variant — CTA link** (partial `_cta-link.html`, context:
+`cta = { href, label, icon?, external?, hx? }`). When the action is *go
+somewhere* rather than *do something* — card footers, "view on canvas",
+artifact cross-links — use the cta-link instead of a ghost button: label with
+a trailing affordance glyph (`icon` defaults to `chevron-right`,
+`arrow-up-right` when `external`, `false` for a bare text link). Fragment
+navigation passes `hx: { get?, target, swap?, pushUrl? }` (`get` defaults to
+`href`, `swap` to `outerHTML`). Motion: `traverse`, or `swap` under `hx`.
+Flutter: KitListTile trailing chevron / KitNativeButton(link).
+
 ## 2. Icon
 
 **Use:** every glyph in the artifact. The runtime global renders vendored
@@ -426,8 +436,8 @@ detail pane beside `#results` — the input does not widen past the list pane.
 
 ## 12. Dialog / popover
 
-**Use:** confirms, short forms, focused decisions. Two mechanisms, both zero
-JS — pick by whether the content needs the server.
+**Use:** confirms, short forms, focused decisions. Three mechanisms, all zero
+JS — pick by whether the content needs the server at all.
 
 **Macro:** partial `_dialog.html` for server-driven dialogs (context:
 `dialog = { title, body, scrim?, dismiss?, actions? }`). The shell owns an
@@ -449,8 +459,18 @@ For stateless popovers/menus use the native form — no endpoint at all:
 <div id="sort-pop" popover class="popover">… boosted sort links …</div>
 ```
 
+For static confirms/info overlays whose content the page already owns — no
+endpoint, no host, not even a request — use the declarative `_modal.html`
+(context: `modal = { trigger, body, label?, cardClass?, closeLabel? }`): a
+pure `<details>` toggle; the open summary stretches into the scrim (click
+outside closes) and the card floats above it. `body` is trusted HTML composed
+in the surface (`{% set %}` capture), rendered `|safe`. Esc does not close
+(no JS) — note it in the surface's design notes if the product expects it.
+
 **CSS:** `.dialog` in components.css — fixed, centered, radius + shadow;
-`.overlay-scrim` dims. Popover styling and its open/close transitions are
+`.overlay-scrim` dims. `.modal` is the declarative variant: `<details>` root,
+the open `<summary>` doubles as the fixed scrim, `.modal-card` centers like
+`.dialog`. Popover styling and its open/close transitions are
 motion.css §3 (`@starting-style` + `allow-discrete`).
 
 **htmx:** the trigger swaps the dialog (rendered `<dialog open>`) into the
@@ -705,7 +725,7 @@ up; never infinite-scroll — no JS.
 
 | Recipe | Drop-in partial | Flutter primitive (kit registry) |
 |---|---|---|
-| Buttons & action rows | — (macros) | KitNativeButton, KitNativeIconButton, KitNativeSplitButton |
+| Buttons & action rows | `_cta-link.html` (navigational variant) | KitNativeButton, KitNativeIconButton, KitNativeSplitButton |
 | Icon | — (runtime global) | KitGlyphs (core) |
 | Nav rail / sidebar | `_nav-rail.html` | KitNativeNavigationRail; KitDrawer (drawer form) |
 | Tabs | `_tabs.html` | KitAnimatedTabStack, KitDirectionalTabTransition, KitNativeTabBar |
@@ -716,7 +736,7 @@ up; never infinite-scroll — no JS.
 | Chip | — (macro) | KitChip, KitChipCarousel |
 | Form fields + 422 | `_form-field.html` | KitNativeTextField + KitFieldController (forms kit) |
 | Search / filter | — (macro) | KitNativeSearchBar |
-| Dialog / popover | `_dialog.html` | ui_library sheet/dialog services; KitNativePopupMenu |
+| Dialog / popover | `_dialog.html` (server-driven), `_modal.html` (declarative) | ui_library sheet/dialog services; KitNativePopupMenu |
 | Bottom sheet | `_bottom-sheet.html` | ui_library sheet service |
 | Toast | `_toast.html` | KitNotificationService.show |
 | Table / data density | — (macro) | none — compose KitListTile / custom |

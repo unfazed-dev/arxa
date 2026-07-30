@@ -1,4 +1,4 @@
-/* design.css — design-tab surfaces (prototype / chat / freeze).
+/* design.css — design-shell surfaces (prototype / chat / freeze).
    Reuses app.css idioms (rail, canvas, msg, provenance, log-lines, evidence,
    finding, toast) and the stage chrome from chat.css/rail.css; only
    surface-specific styles live here. Context tones: chat.css owns the shared

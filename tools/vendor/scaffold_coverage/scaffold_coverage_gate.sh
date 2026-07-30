@@ -83,8 +83,8 @@ except Exception as e: fail(f"{rel}/structure.json does not parse — {e}"); sys
 
 frozen={}
 for s in st.get("screens",[]):
-    if s.get("surface") and s.get("shell"):
-        frozen.setdefault(s["shell"],set()).add(s["surface"])
+    if s.get("surface") and s.get("shellDir"):
+        frozen.setdefault(s["shellDir"],set()).add(s["surface"])
 if not frozen:
     fail(f"{rel}/structure.json declares no surfaces — nothing to cover"); sys.exit(1)
 
@@ -190,10 +190,10 @@ self_test(){
     local a="$1" man="$2"; shift 2
     rm -rf "$a"; mkdir -p "$a/lib/ui/views/train_shell" "$a/design/new"
     cat > "$a/design/new/structure.json" <<'EOF'
-{"$schema":"kit/design-structure@1","registry":null,"tabRoots":{},
+{"$schema":"kit/design-structure@1","registry":null,"shellRoots":{},
  "screens":[
-  {"id":"train.library","tab":"train","comp":"L","shell":"train_shell","surface":"train_shell_library_view"},
-  {"id":"train.stats","tab":"train","comp":"S","shell":"train_shell","surface":"train_shell_stats_view"}]}
+  {"id":"train.library","shell":"train","comp":"L","shellDir":"train_shell","surface":"train_shell_library_view"},
+  {"id":"train.stats","shell":"train","comp":"S","shellDir":"train_shell","surface":"train_shell_stats_view"}]}
 EOF
     printf '%s' "$man" > "$a/lib/ui/views/.shell-structure.json"
     local d; for d in "$@"; do

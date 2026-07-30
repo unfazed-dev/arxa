@@ -6,9 +6,9 @@ import intakeRoutes from './ui/views/main_shell/intake/routes.intake.js';
 import designRoutes from './ui/views/main_shell/design/routes.design.js';
 import appRoutes from './ui/views/app_shell/routes.app.js';
 
-// Landing route of each tab. Required and non-empty — the scaffolder
-// cannot derive it, and a tab whose root is unknown gets an invented one.
-export const tabRoots = {
+// Landing route of each shell. Required and non-empty — the scaffolder
+// cannot derive it, and a shell whose root is unknown gets an invented one.
+export const shellRoots = {
   intake: '/intake',
   design: '/design',
   build: '/build',

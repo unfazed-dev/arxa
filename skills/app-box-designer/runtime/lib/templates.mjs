@@ -62,15 +62,21 @@ function icon(name, opts = {}) {
 //   'ui/views/.../home_view.html'        → full page
 //   'ui/views/.../home_view.html#rows'   → Named Fragment: the `rows` macro in that file
 // Macros take one argument: the context bag `c` (pages pass `c`; see helpers.render).
-export function createTemplates(artifactDir) {
+export function createTemplates(artifactDir, l10n) {
   const env = new nunjucks.Environment(
     new nunjucks.FileSystemLoader(artifactDir, { watch: false, noCache: false }),
     { autoescape: true, throwOnUndefined: false },
   );
   env.addGlobal('icon', icon);
+  // Default; rebound per render below. `t` must be a real global (not a context
+  // key) because Named Fragment macros imported into a renderString see only
+  // `c` + globals. Rebinding is safe: renders are synchronous and Node is
+  // single-threaded, so no two requests interleave between bind and render.
+  env.addGlobal('t', l10n ? l10n.createT({}) : (s) => s);
 
   return {
     render(viewRef, ctx) {
+      if (l10n) env.addGlobal('t', l10n.createT({ locale: ctx.locale, level: ctx.prefs?.jargon }));
       const hash = viewRef.indexOf('#');
       if (hash === -1) return env.render(viewRef, ctx);
       const file = viewRef.slice(0, hash);

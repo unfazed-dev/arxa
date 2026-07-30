@@ -18,15 +18,15 @@ For **every** surface you create, in this order:
 1. **Add the registry entry first**, before the directory exists.
    ```json
    { "id": "shop.cart", "label": "Cart", "surface": "shop_shell_cart_view",
-     "tab": "shop", "comp": "ShopCart" }
+     "shell": "shop", "comp": "ShopCart" }
    ```
-2. **Create the directory** at `ui/views/<shell>/<tab>/<short>/`.
+2. **Create the directory** at `ui/views/<shell>/<short>/`.
 3. **First line of the viewmodel** — before any logic:
    ```js
    export const surfaceId = 'shop.cart';
    ```
-4. **Add the routes** to `app.routes.js`. If this is a tab's landing surface,
-   add it to `tabRoots` in the same edit.
+4. **Add the routes** to `app.routes.js`. If this is a shell's landing surface,
+   add it to `shellRoots` in the same edit.
 5. **Design it**, at every rung in the active ladder
    ([`../references/viewport-ladder.md`](../references/viewport-ladder.md)).
 
@@ -39,7 +39,7 @@ Set `surface: null`. Keep the entry, the `id` and the `label`.
 
 ```json
 { "id": "shop.wishlist", "label": "Wishlist", "surface": null,
-  "tab": "shop", "comp": "ShopWishlist" }
+  "shell": "shop", "comp": "ShopWishlist" }
 ```
 
 Do **not** delete the entry and do **not** create an exclusions file. The
@@ -72,12 +72,13 @@ means someone deleted entries instead of nulling them.
 
 ## Naming
 
-- `id` is `<tab>.<short>`, lowercase, dotted. **It is permanent.** Renaming an
+- `id` is `<shell>.<short>`, lowercase, dotted. **It is permanent.** Renaming an
   `id` breaks every downstream reference; add a new entry and null the old one
   instead.
 - `<short>` in the path matches the `id`'s second segment exactly.
 - `comp` is PascalCase and unique across the app.
-- `surface` is `<shell>_<tab>_<short>_view` — but it is a *value the registry
+- `surface` is `<shell>_<short>_view` (flattened, e.g. a subgrouped surface is
+  `stage_shell_proj_home_view`) — but it is a *value the registry
   states*, not a rule anything infers. State it; never let it be guessed.
 
 ## Do not

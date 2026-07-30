@@ -1,33 +1,32 @@
 {% extends "ui/views/main_shell/main_shell_view.html" %}
-{% block title %}appbox — Dashboard{% endblock %}
+{% import "ui/common/primitives.html" as prim %}
+{% import "ui/common/modal.html" as modal %}
+{% block title %}{{ t('dash.pageTitle') }}{% endblock %}
 
 {% block surface %}
 <span class="eyebrow">app</span>
 <div class="dash-head">
   <div>
-    <h1 class="display">Good to see you, {{ account.name }}</h1>
-    <p class="muted">{{ gateCount }} gate{{ 's' if gateCount != 1 }} need{{ 's' if gateCount == 1 }} you · {{ projects.length }} projects on this tailnet</p>
+    <h1 class="display">{{ t('dash.greeting', {name: account.name}) }}</h1>
+    <p class="muted">{{ t('dash.gatesNeedYou', {count: gateCount}) }} · {{ t('dash.projectsTailnet', {count: projects.length}) }}</p>
   </div>
-  {# Pair-a-device entry point — opens the QR modal (pure <details>, no JS).
-     The open summary becomes the scrim: clicking anywhere outside closes. #}
-  <details class="modal">
-    <summary class="modal-trigger"><span class="modal-open-label">Pair a device</span><span class="modal-close-label" aria-hidden="true">×</span></summary>
-    <div class="modal-card pair-modal" role="dialog" aria-modal="true" aria-label="Pair a device">
-      <h2>Pair a device</h2>
-      <p class="muted">Scan with the phone or tablet you want to approve gates from.</p>
-      <div class="qr" role="img" aria-label="Prototype QR placeholder — decorative, not scannable" style="--qr-n: {{ pairingModal.qr.length }}">
-        {% for row in pairingModal.qr %}{% for cell in row %}<span class="qr-c {{ 'on' if cell == '1' }}"></span>{% endfor %}{% endfor %}
-      </div>
-      <p class="pair-code"><code>{{ pairingModal.code }}</code></p>
-      <p class="pair-expiry">{{ pairingModal.expiresLabel }}</p>
-      <p class="pair-fingerprint muted"><code>{{ pairingModal.fingerprint }}</code></p>
+  {# Pair-a-device entry point — declarative modal (ui/common/modal.html):
+     pure <details>, no JS; the open summary becomes the scrim. #}
+  {% call modal.wrap({ trigger: t('pair.title'), closeLabel: t('pair.closeLabel'), cardClass: 'pair-modal' }) %}
+    <h2>{{ t('pair.title') }}</h2>
+    <p class="muted">{{ t('pair.lede') }}</p>
+    <div class="qr" role="img" aria-label="{{ t('pair.qrAria') }}" style="--qr-n: {{ pairingModal.qr.length }}">
+      {% for row in pairingModal.qr %}{% for cell in row %}<span class="qr-c {{ 'on' if cell == '1' }}"></span>{% endfor %}{% endfor %}
     </div>
-  </details>
+    <p class="pair-code"><code>{{ pairingModal.code }}</code></p>
+    <p class="pair-expiry">{{ icon('timer', {size: 14}) }}<span>{{ pairingModal.expiresLabel }}</span></p>
+    <p class="pair-fingerprint muted"><code>{{ pairingModal.fingerprint }}</code></p>
+  {% endcall %}
 </div>
 
 {# Needs-you strip — pending human gates across projects, quick actions seeded. #}
 <section class="dash-section" aria-labelledby="needs-h">
-  <h2 id="needs-h">Needs you</h2>
+  <h2 id="needs-h">{{ t('dash.needsYouH') }}</h2>
   {% if gates.length %}
   <div class="gates-strip" role="list">
     {% for g in gates %}
@@ -41,20 +40,20 @@
       <p class="gate-summary muted">{{ g.summary }}</p>
       <form class="gate-actions" method="post" action="/dashboard/gates/decide">
         <input type="hidden" name="gate" value="{{ g.id }}">
-        <button type="submit" name="decision" value="approve">Approve</button>
-        <button type="submit" name="decision" value="reject" class="ghost">Reject</button>
+        <button type="submit" name="decision" value="approve">{{ icon('check', {size: 16}) }}{{ t('action.approve') }}</button>
+        <button type="submit" name="decision" value="reject" class="ghost">{{ icon('x', {size: 16}) }}{{ t('action.reject') }}</button>
       </form>
     </article>
     {% endfor %}
   </div>
   {% else %}
-  <p class="dash-empty muted">Nothing needs you — every gate is decided. New gates land here the moment a run goes red or a stage finishes.</p>
+  <p class="dash-empty muted">{{ t('dash.gatesEmpty') }}</p>
   {% endif %}
 </section>
 
 {# Project grid — name, targets, stage, last activity, open into intake. #}
 <section class="dash-section" aria-labelledby="proj-h">
-  <h2 id="proj-h">Projects</h2>
+  <h2 id="proj-h">{{ t('dash.projectsH') }}</h2>
   <div class="proj-grid">
     {% for p in projects %}
     <article class="proj-card">
@@ -67,7 +66,7 @@
       </p>
       <div class="proj-card-foot">
         <span class="proj-saved muted">{{ p.lastSaved }}</span>
-        <a class="proj-open" href="/intake">open →</a>
+        {{ prim.ctaLink('/intake', t('dash.open'), size=16) }}
       </div>
     </article>
     {% endfor %}
@@ -76,7 +75,7 @@
 
 {# Analytics trio — CSS bar charts, no JS. #}
 <section class="dash-section" aria-labelledby="stats-h">
-  <h2 id="stats-h">This week</h2>
+  <h2 id="stats-h">{{ t('dash.thisWeek') }}</h2>
   <div class="stat-trio">
     {% for key in ['runs', 'stageTime', 'gateLatency'] %}
     {% set s = stats[key] %}
@@ -94,14 +93,14 @@
 {# New project — a GenUI wizard in chat style. Repo connect is deferred to
    the first gate; the note says so. POST creates a seeded row → /intake. #}
 <section class="dash-section" aria-labelledby="wizard-h">
-  <h2 id="wizard-h">New project</h2>
+  <h2 id="wizard-h">{{ t('action.newProject') }}</h2>
   <div class="wizard">
     <p class="wizard-agent">{{ wizard.prompt }}</p>
     <form class="wizard-form" method="post" action="/dashboard/projects">
-      <label class="auth-label" for="wizard-name">Project name</label>
-      <input id="wizard-name" type="text" name="name" placeholder="e.g. Foxglove" autocomplete="off">
+      <label class="auth-label" for="wizard-name">{{ t('wizard.nameLabel') }}</label>
+      <input id="wizard-name" type="text" name="name" placeholder="{{ t('wizard.namePlaceholder') }}" autocomplete="off">
       <fieldset class="wizard-targets">
-        <legend class="auth-label">Targets</legend>
+        <legend class="auth-label">{{ t('wizard.targets') }}</legend>
         {% for t in wizard.targets %}
         <label class="wizard-chip">
           <input type="checkbox" name="targets" value="{{ t }}" {{ 'checked' if t == 'web' }}>
@@ -111,7 +110,7 @@
       </fieldset>
       <div class="wizard-foot">
         <p class="wizard-note muted">{{ wizard.note }}</p>
-        <button type="submit">Create project</button>
+        <button type="submit">{{ icon('plus', {size: 16}) }}{{ t('wizard.create') }}</button>
       </div>
     </form>
   </div>

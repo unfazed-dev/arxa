@@ -4,7 +4,7 @@ description: >-
   Design an application prototype whose structure the app_box pipeline
   consumes — server-rendered htmx + CSS with zero custom client-side
   JavaScript (one named island exception: canvas.js, pan/zoom for the
-  design canvas), in a genuine MVVM structure: app screens, shells, tabs,
+  design canvas), in a genuine MVVM structure: app screens, shells,
   dashboards, interactive prototypes and wireframes, authored at every
   viewport in the active ladder. Use when the user asks to design, mock up,
   prototype, wireframe or visualize an application, product screen or user
@@ -116,6 +116,13 @@ applications.
 - `system-prompt.md` is the craft SSOT; `runtime/README.md` is the artifact
   contract; `references/ui-recipes.md` is the component catalog; `CONTEXT.md`
   is the vocabulary; `docs/adr/` holds the runtime decisions.
+- **i18n**: when an artifact is localized, every chrome/surface string lives in
+  `l10n/app_<locale>.arb` and renders via the `t` global — never hardcode copy
+  in templates. Jargon variants are key suffixes (`keyPlain`/`keyTechnical`).
+  Localized content is per-locale seeds (`<name>_seed.<locale>.json` is the
+  SSOT) generating `<name>_fixtures.<locale>.json`. `runtime/pseudolocalize.mjs`
+  derives the `qps-ploc` pseudo-locale from English — run it to catch
+  truncation and hardcoded strings. Full contract: runtime/README.md "L10n".
 - Keep artifacts self-contained: copy every referenced asset into the artifact
   folder; client libraries come only from the runtime's vendored, SRI-pinned set
   (`runtime/vendor/`).

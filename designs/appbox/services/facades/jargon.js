@@ -1,8 +1,10 @@
 // JargonFacade — one rule for the whole app: every user-facing string and
 // metric renders at the reader's level. Levels: plain / balanced / technical
-// (default balanced). Copy variants live in the data spine (seed.json sparse
+// (default balanced). Copy variants live in the data spine (seed sparse
 // overrides: textPlain / textBalanced — plain falls back to balanced falls
-// back to technical). STATIC view copy lives in the `t` table below.
+// back to technical). STATIC view copy lives in l10n/app_*.arb — the
+// runtime's t() applies the same level rule (keyPlain / keyTechnical, base =
+// balanced); views get it from the render context, not from here.
 // Metrics keep raw values in fixtures; scores are computed here.
 
 export const LEVELS = ['plain', 'balanced', 'technical'];
@@ -57,93 +59,3 @@ export const probeChips = (probe, lv) => {
     { text: probe.skeleton === 'match' ? 'layout exact' : `layout ${probe.skeleton}`, title: raw },
   ];
 };
-
-// Static view copy, keyed by string id, leveled. Rule: if a string carries
-// jargon, it lives here with three variants; plain UI labels stay in views.
-const COPY = {
-  findingsHeadline: {
-    technical: 'Coverage held the run — then one fix closed all three',
-    balanced: 'Coverage held the run — then one fix closed all three',
-    plain: 'The checks stopped the run — then one fix closed all three',
-  },
-  findingsLede: {
-    technical: 'SARIF sidecars, pinned to file:line. The red gate kept these — no terminal scrollback required.',
-    balanced: 'Check findings (SARIF), pinned to file:line — the red gate kept these.',
-    plain: 'What failed, pinned to the exact file and line — kept here so you never have to read raw build logs.',
-  },
-  evidenceHeadline: {
-    technical: 'All 4 surfaces match their frozen goldens',
-    balanced: 'All 4 screens match their goldens',
-    plain: 'All 4 screens match the design you approved',
-  },
-  evidenceLede: {
-    technical: 'screen → tests → code, then the probe: SSIM, skeleton diff, colour distance. order.confirmation is on watch.',
-    balanced: 'tests, code, then screenshot comparison (SSIM / skeleton / colour match). order.confirmation is on watch.',
-    plain: 'Every screen was tested, then compared pixel-by-pixel with the design you approved. order.confirmation is being watched.',
-  },
-  evidenceEyebrow: {
-    technical: 'surface evidence · probe-runner vs frozen golden',
-    balanced: 'surface evidence · screenshots vs goldens',
-    plain: 'surface evidence · built screens vs approved designs',
-  },
-  chartNote: {
-    technical: 'amber — recovered after a red first attempt. Deploy is queued behind a human gate, so it has no bar.',
-    balanced: 'amber — recovered after a failed first attempt. Deploy has no bar: it waits on a human gate.',
-    plain: 'Amber means the stage failed once and fixed itself. Shipping has no bar — it waits for your decision.',
-  },
-  gateFoot: {
-    technical: 'An agent can reach this gate. Only a paired human device passes it.',
-    balanced: 'An agent can reach this gate. Only a paired human device passes it.',
-    plain: 'The agent can bring this decision to you — never take it. Only you, on a paired device, can pass it.',
-  },
-  railStopOnRed: {
-    technical: 'stop-on-red',
-    balanced: 'stops on red',
-    plain: 'stops at first failure',
-  },
-  railEsc: {
-    technical: 'esc',
-    balanced: 'fix attempts',
-    plain: 'tries before asking',
-  },
-  logEyebrow: {
-    technical: 'full log',
-    balanced: 'full log',
-    plain: 'everything that happened',
-  },
-  // Canvas stage-bar hints — "what to do next" per artifact kind.
-  barHintStage: {
-    technical: 'Scoped to this stage — ask why, or hold / cancel it here.',
-    balanced: 'Ask about this stage, pause it, or cancel it.',
-    plain: 'Ask anything about this step — or pause / stop it here.',
-  },
-  barHintGate: {
-    technical: 'The decision happens above — interrogate the evidence before you sign.',
-    balanced: 'The decision happens above — ask anything before you sign.',
-    plain: 'Your decision is above — ask anything before you decide.',
-  },
-  barHintFindings: {
-    technical: 'Ask why a check failed, or how one fix closed all three.',
-    balanced: 'Ask why a check failed, or how one fix closed all three.',
-    plain: 'Ask what went wrong, or how one fix closed all three.',
-  },
-  barHintEvidence: {
-    technical: 'Ask what the probe compared, or why one surface is on watch.',
-    balanced: 'Ask what was compared, or why one screen is on watch.',
-    plain: 'Ask what was compared, or why one screen is being watched.',
-  },
-  barHintChart: {
-    technical: 'Ask where the line spent its time.',
-    balanced: 'Ask where the time went.',
-    plain: 'Ask where the time went.',
-  },
-  barHintLog: {
-    technical: 'Ask about anything on the line.',
-    balanced: 'Ask about anything that happened.',
-    plain: 'Ask about anything that happened.',
-  },
-};
-
-// The leveled static-copy map handed to views as `t`.
-export const t = (lv) =>
-  Object.fromEntries(Object.entries(COPY).map(([k, v]) => [k, v[lv] ?? v.technical]));

@@ -35,12 +35,12 @@ runnable *before* surfaces are emitted.
 
 ## Producer shapes
 
-- **registry** — `jsx/app.jsx` has `P2_REGISTRY` + `P2_TAB_ROOTS`. Every entry is
+- **registry** — `jsx/app.jsx` has `P2_REGISTRY` + `P2_SHELL_ROOTS`. Every entry is
   emitted, `surface: null` included. Those nulls **are** the exclusions; there is
   no second "excluded" list, because a hand-maintained list is one you pad to
   keep a gate green.
 - **surfaces** — no `jsx/`: one screen per `surfaces/*.html`, id/comp derived
-  from the filename, empty `tabRoots`. (The htmx producer.)
+  from the filename, empty `shellRoots`. (The htmx producer.)
 
 `surfaces/index.html` is the playground harness page and is never a screen. That
 name is hard-coded here and in the gate, not author-supplied, so a producer
@@ -50,7 +50,7 @@ cannot declare its way out of the coverage check.
 
 resolution (declared surface has a file) · coverage (every file is claimed) ·
 uniqueness (no two screens on one surface) · shell (matches the filename prefix)
-· roots (no `tabRoots` entry left without a surface).
+· roots (no `shellRoots` entry left without a surface).
 
-The last one is the one that catches a tab whose landing screen was designed but
+The last one is the one that catches a shell whose landing screen was designed but
 never frozen. Adversarial twins live in `tools/test_gates.sh -g structure`.

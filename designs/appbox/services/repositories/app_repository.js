@@ -1,14 +1,21 @@
-// AppRepository — read-only access to the generated app-shell fixture.
+// AppRepository — reads one per-locale fixture (app.<locale>.json). Unknown
+// locale falls back to en — a partial translation never 500s the page.
 import { readFixture } from './fixture_reader.js';
 
-const data = () => readFixture('../../models/app_model/app.json');
+const data = (locale = 'en') => {
+  try {
+    return readFixture(`../../models/app_model/app.${locale}.json`);
+  } catch {
+    return readFixture('../../models/app_model/app.en.json');
+  }
+};
 
-export const account = () => data().account;
-export const tagline = () => data().tagline;
-export const auth = () => data().auth;
-export const projects = () => data().projects;
-export const gates = () => data().gates;
-export const stats = () => data().stats;
-export const pairing = () => data().pairing;
-export const wizard = () => data().wizard;
-export const counts = () => data().counts;
+export const account = (locale = 'en') => data(locale).account;
+export const tagline = (locale = 'en') => data(locale).tagline;
+export const auth = (locale = 'en') => data(locale).auth;
+export const projects = (locale = 'en') => data(locale).projects;
+export const gates = (locale = 'en') => data(locale).gates;
+export const stats = (locale = 'en') => data(locale).stats;
+export const pairing = (locale = 'en') => data(locale).pairing;
+export const wizard = (locale = 'en') => data(locale).wizard;
+export const counts = (locale = 'en') => data(locale).counts;

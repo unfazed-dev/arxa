@@ -1,5 +1,5 @@
 {# Shared micro-primitives — the status pill and the card type badge, used by
-   the rail, the canvas artifacts, and the freeze/trace views across tabs.
+   the rail, the canvas artifacts, and the freeze/trace views across shells.
    See DESIGN-ARCHITECTURE.md "Shared components (views)". #}
 
 {% macro statusPill(state) %}
@@ -12,4 +12,19 @@
    text (design artboards show the epic) pass it explicitly. #}
 {% macro typeBadge(type, label) %}
 <span class="type-badge tb-{{ type }}">{{ label or type }}</span>
+{% endmacro %}
+
+{# ctaLink — navigational CTA: label + trailing affordance glyph (default
+   chevron-right; pass glyph=false for bare text). variant: 'main' (pill,
+   mirrors .cta-main) | 'ghost' (mirrors .cta-ghost) | '' (plain accent link).
+   hx: { get?, target, swap?, pushUrl? } for fragment nav — get defaults to
+   href, swap to outerHTML. Styles: app.css (.cta-link block). #}
+{% macro ctaLink(href, label, glyph='chevron-right', variant='', hx=null, size=14, title='', external=false) %}
+<a class="cta-link{{ ' cta-link--' + variant if variant }}" href="{{ href }}"
+  {%- if hx %} hx-get="{{ hx.get or href }}" hx-target="{{ hx.target }}" hx-swap="{{ hx.swap or 'outerHTML' }}" hx-push-url="{{ 'true' if hx.pushUrl else 'false' }}"{% endif %}
+  {%- if title %} title="{{ title }}"{% endif %}
+  {%- if external %} target="_blank" rel="noopener"{% endif %}>
+  <span>{{ label }}</span>
+  {%- if glyph %}{{ icon(glyph, {size: size}) }}{% endif %}
+</a>
 {% endmacro %}

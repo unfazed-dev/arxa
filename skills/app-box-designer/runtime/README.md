@@ -10,6 +10,7 @@ node runtime/serve.mjs <artifact-dir|design-name> [--port 4319] [--host 127.0.0.
 node runtime/lint.mjs  <artifact-dir>                 # zero-custom-client-JS check
 node runtime/check_wiring.mjs <artifact-dir> <property>
 #   fragments | mutations-posted | urls-resolve | targets-exist
+node runtime/pseudolocalize.mjs <artifact-dir>        # en → qps-ploc pseudo-locale
 node runtime/vendor/fetch.mjs                         # (re)vendor htmx + extensions
 ```
 
@@ -43,6 +44,7 @@ implementation of everything below.
 ```
 <artifact>/
 ├── app.routes.js                 # the URL inventory: [method, path, handler]
+├── l10n/app_<locale>.arb         # string catalogs (add when i18n; en first)
 ├── models/<domain>_model/…       # shapes + fixtures (add when needed)
 ├── services/{repositories,facades}/…
 ├── ui/
@@ -85,6 +87,7 @@ Runtime helper object:
 | `h.form(c)` | parsed POST body |
 | `h.session(c)` | `{ id, data }` — in-memory session store |
 | `h.prefs(c)` / `h.setPrefs(c, patch)` | small scalar prefs cookie (theme, accent, role) |
+| `h.locale(c)` / `h.t(c)` | resolved request locale / a `t` bound to it (L10n below) |
 | `h.timers.start/extend/remaining/stop` | server-held deadlines for load-polling timers |
 | `h.noContent(c)` | 204 — mutation done, no swap |
 | `h.stopPolling(c)` | 286 — cancel a poll |
@@ -143,12 +146,69 @@ Body: `<body hx-boost="true" hx-sync="this:replace" hx-ext="head-support,preload
 - **Theme/accent/role**: POST → `h.setPrefs(c, {accent:'lagoon'})` → `h.refresh(c)`;
   render CSS vars on an in-body wrapper (`#app`), never on `<body>`/`<html>`
   attributes (they don't update under boosted swaps).
+- **Language**: built-in `GET/POST /prefs/lang?lang=<locale>` does the same
+  dance (setPrefs + refresh/302); the switcher is plain anchors
+  (`ui/common/_lang_switcher.html`, see L10n below).
 - **Countdown**: `hx-get="/timer/tick" hx-trigger="load delay:1s" hx-swap="outerHTML"`;
   each tick renders `timers.remaining(id)`; drop the trigger (or 286) at zero.
 - **Toasts**: respond `hx-swap="none"` (or `HX-Reswap: none`) + an
   `hx-swap-oob="beforeend:#toasts"` fragment.
 - **Validation errors**: return 422 + the re-rendered form (the meta config
   swaps 422s).
+
+## L10n (i18n)
+
+Optional per artifact. Chrome and surface strings live in catalogs, never
+hardcoded in templates: `l10n/app_<locale>.arb` — plain JSON (lines starting
+`//` are stripped before parse; `@`-prefixed ARB metadata keys are ignored).
+Every `app_<locale>.arb` on disk IS an available locale — writing
+`app_qps-ploc.arb` registers `qps-ploc`. An artifact with no `l10n/` dir is
+unaffected: `t()` passes the key through and the locale is always `en`.
+
+```njk
+{{ t('home.title') }}                        {# page renders + macros #}
+{{ t('itemCount', {count: demoCount}) }}     {# {var} + ICU plural subset #}
+```
+
+- **`t` is a Nunjucks global** (rebound per render to the request locale — safe
+  because renders are synchronous), so Named Fragment macros see it too.
+  ViewModels use `h.t(c)` for strings the context carries (nav labels) and
+  `h.locale(c)` for the locale itself.
+- **Fallback chain**: active locale → `en` → the key literal. Jargon dimension:
+  with level `plain`/`technical` (prefs key `jargon`), `t` tries
+  `key+'Plain'`/`key+'Technical'` first, then the base key (base = balanced).
+- **Values**: `{var}` interpolation (vars HTML-escaped; catalog text is
+  authored and trusted) and the ICU plural subset
+  `{count, plural, =0{…} one{…} few{…} many{…} other{…}}` — category selection
+  via built-in `Intl.PluralRules`, zero deps. Polish works out of the box:
+  1 → one, 2–4/22–24 → few, 0/5–21 → many.
+- **Key parity across catalogs is a selftest check**, not a hope — a locale
+  missing a key silently renders English otherwise.
+
+**Locale resolution** (router middleware, merged into every render context as
+`locale`; `locales` lists the catalogs): `?lang=` query → prefs cookie `lang` →
+`Accept-Language` (q-factor order, exact then base-tag match — `pl-PL` matches
+a `pl` catalog) → `'en'`. `base.html` sets `<html lang="{{ locale or 'en' }}">`;
+HTML responses carry `Vary: Accept-Language`.
+
+**Switching** is built into the runtime (ADR-0004 prefs recipe — every
+artifact, no route-table entry): `/prefs/lang?lang=<locale>` (GET or POST) does
+`h.setPrefs(c, {lang})`, then `h.refresh(c)` for htmx-boosted requests or a
+302 back to the Referer for plain navigation. The switcher is plain anchors —
+copy `examples/hello-hda/ui/common/_lang_switcher.html` into the chrome:
+
+```njk
+{% include "ui/common/_lang_switcher.html" %}
+```
+
+**Localized content** follows the data spine per locale: seeds
+`<name>_seed.<locale>.json` (identical IDs/schema across locales) are the SSOT,
+the generator emits `<name>_fixtures.<locale>.json` (never hand-edited,
+`_generated_from` provenance kept), repositories take the locale and fall back
+to `en`. `node runtime/pseudolocalize.mjs <artifact-dir>` derives
+`app_qps-ploc.arb` and `*_seed.qps-ploc.json` from the English SSOT (wrapped,
+accented, ~35% padded — truncation and hardcoded strings become visible);
+re-run the model generator afterwards.
 
 ## The no-JS contract (ADR-0002)
 

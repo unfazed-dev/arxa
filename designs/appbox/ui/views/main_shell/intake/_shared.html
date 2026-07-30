@@ -1,4 +1,4 @@
-{# Shared intake macros — the Chat-Centric Layout applied to the intake tab:
+{# Shared intake macros — the Chat-Centric Layout applied to the intake shell:
    left multi-view rail (mv.frame: thread / artifacts / files), the chat stage
    (cs.wrap) centered until an artifact docks it right, the canvas artifact a
    sibling inside #stage-layout, and the read-only timeline in the bottom bar.
@@ -8,7 +8,7 @@
    Assumed call/caller for cs.wrap + mv.frame — both shared components ship
    caller() bodies; the fallback would be cs.open(spec)/cs.close().
    The composer is the shared card (ui/common/composer.html) — same markup
-   on every tab; per-surface data (action, placeholder, agent menus)
+   on every shell; per-surface data (action, placeholder, agent menus)
    travels in the facade context. #}
 {% import "ui/common/chat_stage.html" as cs %}
 {% import "ui/common/rail_views.html" as mv %}
@@ -16,7 +16,7 @@
 {% import "ui/common/composer.html" as cm %}
 
 {# The bottom-bar timeline: read-only stage line, intake item current. #}
-{% macro timeline(c, oob) %}{{ tl.timeline(c, oob, 'Intake progress') }}{% endmacro %}
+{% macro timeline(c, oob) %}{{ tl.timeline(c, oob, t('intake.timelineLabel')) }}{% endmacro %}
 
 {# ---------- the interview: horizontal question carousel ---------- #}
 
@@ -30,8 +30,8 @@
   <form class="q-form" method="post" action="{{ c.base }}/answer"
         hx-post="{{ c.base }}/answer" hx-target="#stage-layout" hx-swap="outerHTML">
     <input type="hidden" name="q" value="{{ q.id }}">
-    <input type="text" name="text" value="{{ q.answer or '' }}" placeholder="Your answer…" aria-label="Answer: {{ q.text }}">
-    <button type="submit" class="composer-send" aria-label="Send this answer">↑</button>
+    <input type="text" name="text" value="{{ q.answer or '' }}" placeholder="{{ t('intake.answerPlaceholder') }}" aria-label="{{ t('intake.answerAria', {question: q.text}) }}">
+    <button type="submit" class="composer-send" aria-label="{{ t('intake.sendAnswer') }}">{{ icon('arrow-up', {size: 18}) }}</button>
   </form>
   {% if q.suggestions.length %}
   <span class="q-sugs">
@@ -46,24 +46,24 @@
   <form class="q-skip" method="post" action="{{ c.base }}/skip"
         hx-post="{{ c.base }}/skip" hx-target="#stage-layout" hx-swap="outerHTML">
     <input type="hidden" name="q" value="{{ q.id }}">
-    <button type="submit" aria-label="Skip this question">skip →</button>
+    <button type="submit" aria-label="{{ t('intake.skipAria') }}">{{ t('intake.skip') }} {{ icon('chevron-right', {size: 14}) }}</button>
   </form>
   {% elif q.state == 'answered' %}
   <p class="q-answer">{{ q.answer }}</p>
   <a class="q-edit" href="{{ c.base }}/edit?q={{ q.id }}"
-     hx-get="{{ c.base }}/edit?q={{ q.id }}" hx-target="#stage-layout" hx-swap="outerHTML" hx-push-url="false">edit</a>
+     hx-get="{{ c.base }}/edit?q={{ q.id }}" hx-target="#stage-layout" hx-swap="outerHTML" hx-push-url="false">{{ t('intake.edit') }}</a>
   {% elif q.state == 'skipped' %}
-  <p class="q-answer muted">skipped</p>
+  <p class="q-answer muted">{{ t('intake.skipped') }}</p>
   <a class="q-edit" href="{{ c.base }}/edit?q={{ q.id }}"
-     hx-get="{{ c.base }}/edit?q={{ q.id }}" hx-target="#stage-layout" hx-swap="outerHTML" hx-push-url="false">answer anyway</a>
+     hx-get="{{ c.base }}/edit?q={{ q.id }}" hx-target="#stage-layout" hx-swap="outerHTML" hx-push-url="false">{{ t('intake.answerAnyway') }}</a>
   {% else %}
-  <p class="q-answer muted">up next</p>
+  <p class="q-answer muted">{{ t('intake.upNext') }}</p>
   {% endif %}
 </div>
 {% endmacro %}
 
 {% macro qCarousel(c, car) %}
-<div class="q-carousel" aria-label="Interview questions — {{ car.bank }} bank">
+<div class="q-carousel" aria-label="{{ t('intake.questionsAria', {bank: car.bank}) }}">
   {% for q in car.questions %}{{ qCard(c, q) }}{% endfor %}
 </div>
 {% endmacro %}
@@ -92,9 +92,9 @@
   <span class="msg-cta">
     {% if m.artifactRef %}
     <a class="cta-main" href="{{ c.base }}/artifact/{{ m.artifactRef }}"
-       hx-get="{{ c.base }}/artifact/{{ m.artifactRef }}" hx-target="#stage-layout" hx-swap="outerHTML" hx-push-url="false">{{ m.artifactLabel }}</a>
+       hx-get="{{ c.base }}/artifact/{{ m.artifactRef }}" hx-target="#stage-layout" hx-swap="outerHTML" hx-push-url="false">{{ m.artifactLabel }} {{ icon('chevron-right', {size: 14}) }}</a>
     {% endif %}
-    {% if m.nextHref %}<a class="cta-ghost" href="{{ m.nextHref }}">{{ m.nextLabel }}</a>{% endif %}
+    {% if m.nextHref %}<a class="cta-ghost" href="{{ m.nextHref }}">{{ m.nextLabel }} {{ icon('chevron-right', {size: 14}) }}</a>{% endif %}
   </span>
   {% endif %}
 </div>
@@ -149,7 +149,7 @@
     <span class="rv-foot">
       {% if m.artifact %}
       <a class="cta-ghost" href="{{ c.base }}/artifact/{{ m.artifact }}"
-         hx-get="{{ c.base }}/artifact/{{ m.artifact }}" hx-target="#stage-layout" hx-swap="outerHTML" hx-push-url="false">{{ m.artifactLabel }} →</a>
+         hx-get="{{ c.base }}/artifact/{{ m.artifact }}" hx-target="#stage-layout" hx-swap="outerHTML" hx-push-url="false">{{ m.artifactLabel }} {{ icon('chevron-right', {size: 14}) }}</a>
       {% endif %}
       <span class="msg-time">{{ m.at }}</span>
     </span>

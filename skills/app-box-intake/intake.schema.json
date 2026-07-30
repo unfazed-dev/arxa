@@ -71,19 +71,19 @@
     },
     "surface": {
       "type": "object",
-      "required": ["id", "label", "tab", "provenance"],
+      "required": ["id", "label", "shell", "provenance"],
       "additionalProperties": false,
       "properties": {
         "id": {
           "type": "string",
           "pattern": "^[a-z][a-z0-9]*\\.[a-z][a-z0-9]*$",
-          "description": "<tab>.<short>, lowercase dotted, permanent (declare-structure naming). Renaming breaks every downstream reference."
+          "description": "<shell>.<short>, lowercase dotted, permanent (declare-structure naming). Renaming breaks every downstream reference."
         },
         "label": { "type": "string", "description": "Human label shown in lists." },
-        "tab": {
+        "shell": {
           "type": "string",
           "pattern": "^[a-z][a-z0-9]*$",
-          "description": "The tab this surface groups under; MUST equal the id's first segment."
+          "description": "The shell group this surface belongs to; MUST equal the id's first segment."
         },
         "provenance": { "$ref": "#/definitions/provenance" }
       }

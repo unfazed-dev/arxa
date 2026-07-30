@@ -27,8 +27,12 @@ Two artefacts, both written by the engine (`intake.py`):
    audience, the things the app must do, existing systems, targets, brand,
    constraints, out-of-scope). Every field whose provenance is `inferred` is
    **visibly marked** in the output — a reader who skims must not miss it.
+   The brief also records **`locales`** (e.g. `[en, pl]`) and the **default
+   locale** for the project — this drives the i18n capability and the ARB
+   catalog set (`l10n/app_en.arb` template + one ARB per locale) the designer
+   authors.
 2. **`docs/design/registry.json`** — the **seed** the designer consumes: one
-   entry per surface the client named, with keys `{id, label, tab, comp,
+   entry per surface the client named, with keys `{id, label, shell, comp,
    surface}`. `surface` is **always `null`** — intake names what the client
    asked for; design binds a surface to each. `comp` is derived by convention
    (`shop.cart` → `ShopCart`), never authored. A hand-written brief whose
@@ -59,7 +63,7 @@ authority the brief does not have.
 
 2. **Author the answers document.** One JSON object conforming to
    `intake.schema.json`. Each surface the client named becomes an entry with
-   `id` (`<tab>.<short>`), `label`, `tab`, `provenance`. Do not set `comp` or
+   `id` (`<shell>.<short>`), `label`, `shell`, `provenance`. Do not set `comp` or
    `surface` — the engine derives `comp` and forces `surface: null`.
 
 3. **Emit.**

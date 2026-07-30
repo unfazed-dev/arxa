@@ -30,18 +30,18 @@
      survives the next render. #}
   <input class="cm-tray-cb" type="checkbox" id="cm-tray-cb" {{ 'checked' if c.tray.open }}
          hx-get="{{ c.tray.toggleHref }}" hx-trigger="change" hx-target="#stage-layout" hx-swap="outerHTML" hx-push-url="false"
-         aria-label="{{ 'Collapse the context strip' if c.tray.open else 'Show the pinned screens' }}">
-  <label class="cm-tray-head" for="cm-tray-cb" title="{{ 'Collapse the context strip' if c.tray.open else 'Show the pinned screens' }}">
-    <span class="cm-tray-title">context · {{ c.strip[0].id }}{{ ' +' + (c.strip.length - 1) if c.strip.length > 1 }}</span>
-    <span class="composer-chev">⌄</span>
+         aria-label="{{ t('composer.collapseTray') if c.tray.open else t('composer.showTray') }}">
+  <label class="cm-tray-head" for="cm-tray-cb" title="{{ t('composer.collapseTray') if c.tray.open else t('composer.showTray') }}">
+    <span class="cm-tray-title">{{ t('composer.context') }} · {{ c.strip[0].id }}{{ ' +' + (c.strip.length - 1) if c.strip.length > 1 }}</span>
+    {{ icon('chevron-down', {size: 14, cls: 'composer-chev'}) }}
   </label>
   <div class="cm-tray">
     <div class="cm-tray-clip">
-      <div class="cs-strip" aria-label="Screens in context">
+      <div class="cs-strip" aria-label="{{ t('composer.screensInContext') }}">
         {% for s in c.strip %}
         <span class="dv-thumb cs-thumb ctx-{{ s.tone }}">
           <span class="dv-thumb-clip"><iframe src="{{ s.src }}" scrolling="no" tabindex="-1" title="{{ s.label }}"></iframe></span>
-          <span class="dv-thumb-label"><code>{{ s.id }}</code>{% if s.removeHref %}<a class="ctx-x" href="{{ s.removeHref }}" hx-get="{{ s.removeHref }}" hx-target="#stage-layout" hx-swap="outerHTML" hx-push-url="false" aria-label="Remove {{ s.label }} from context">×</a>{% endif %}</span>
+          <span class="dv-thumb-label"><code>{{ s.id }}</code>{% if s.removeHref %}<a class="ctx-x" href="{{ s.removeHref }}" hx-get="{{ s.removeHref }}" hx-target="#stage-layout" hx-swap="outerHTML" hx-push-url="false" aria-label="{{ t('chat.removeChip', {label: s.label}) }}">{{ icon('x', {size: 12}) }}</a>{% endif %}</span>
         </span>
         {% endfor %}
       </div>
@@ -51,7 +51,7 @@
   <textarea name="text" rows="1" placeholder="{{ c.placeholder }}" aria-label="{{ c.placeholder }}"></textarea>
   <div class="composer-bar">
     <details class="composer-plus">
-      <summary aria-label="Tools and suggestions">+</summary>
+      <summary aria-label="{{ t('composer.tools') }}">{{ icon('plus', {size: 18}) }}</summary>
       <span class="composer-sugs">
         {% for s in c.suggestions %}
         <button type="submit" name="preset" value="{{ s.value or s }}">{{ s.label or s }}</button>
@@ -61,19 +61,19 @@
     <span class="composer-spacer"></span>
     {% if c.modelMenu %}
     <details class="composer-model">
-      <summary aria-label="Agent model" title="Agent model">{{ c.modelMenu.label }} <span class="composer-chev">⌄</span></summary>
+      <summary aria-label="{{ t('composer.agentModel') }}" title="{{ t('composer.agentModel') }}">{{ c.modelMenu.label }} {{ icon('chevron-down', {size: 14, cls: 'composer-chev'}) }}</summary>
       <span class="composer-menu composer-menu-right">
         {% for o in c.modelMenu.options %}
         <a class="composer-opt {{ 'on' if o.active }}" href="{{ o.href }}" hx-get="{{ o.href }}" hx-target="#stage-layout" hx-swap="outerHTML" hx-push-url="false">
           <span class="composer-opt-label">{{ o.label }}</span>
           <span class="composer-opt-blurb">{{ o.blurb }}</span>
-          {% if o.active %}<span class="composer-opt-check">✓</span>{% endif %}
+          {% if o.active %}{{ icon('check', {size: 14, cls: 'composer-opt-check'}) }}{% endif %}
         </a>
         {% endfor %}
       </span>
     </details>
     {% endif %}
-    <button type="submit" class="composer-send" aria-label="Send">↑</button>
+    <button type="submit" class="composer-send" aria-label="{{ t('composer.send') }}">{{ icon('arrow-up', {size: 18}) }}</button>
   </div>
 </form>
 {% endmacro %}

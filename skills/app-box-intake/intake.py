@@ -10,7 +10,7 @@ failed). It does three things and only three things:
                  every field carries provenance (client | founder | inferred).
   2. emit      — turn validated answers into docs/design/brief.md (every
                  `inferred` field visibly marked) and a seeded registry.json
-                 (ids, tabs, comps; surface ALWAYS null — intake names, never
+                 (ids, shells, comps; surface ALWAYS null — intake names, never
                  designs).
   3. seed      — accept a HAND-WRITTEN brief (plan 10.7: intake is optional)
                  and derive the registry seed from its surface table, without
@@ -49,7 +49,7 @@ ROOT = Path(__file__).resolve().parents[2]  # skills/app-box-intake/ -> repo roo
 SCHEMA_PATH = Path(__file__).resolve().parent / "intake.schema.json"
 
 PROVENANCE = ("client", "founder", "inferred")
-# Surface id is <tab>.<short>, both lowercased alnum (see intake.schema.json).
+# Surface id is <shell>.<short>, both lowercased alnum (see intake.schema.json).
 ID_RE = re.compile(r"^([a-z][a-z0-9]*)\.([a-z][a-z0-9]*)$")
 # The visible marker the emitted brief puts on any `inferred` field. A reader
 # who skims must not miss it — that is the entire point of marking inference.
@@ -112,7 +112,7 @@ def validate(answers: dict) -> list[str]:
             elif not isinstance(val, str):
                 errs.append(f"{key}: value must be a string")
 
-    # surfaces: shape + the tab==id-prefix invariant + uniqueness
+    # surfaces: shape + the shell==id-prefix invariant + uniqueness
     surfaces = answers.get("surfaces", [])
     if not isinstance(surfaces, list):
         errs.append("surfaces: must be a list")
@@ -123,22 +123,22 @@ def validate(answers: dict) -> list[str]:
         if not isinstance(s, dict):
             errs.append(f"{where}: expected an object")
             continue
-        for req in ("id", "label", "tab", "provenance"):
+        for req in ("id", "label", "shell", "provenance"):
             if req not in s:
                 errs.append(f"{where}: missing '{req}'")
         sid = s.get("id", "")
         m = ID_RE.match(str(sid))
         if not m:
             errs.append(
-                f"{where}: id '{sid}' must be <tab>.<short> (lowercase alnum, "
+                f"{where}: id '{sid}' must be <shell>.<short> (lowercase alnum, "
                 f"e.g. projects.home)"
             )
         else:
-            tab_from_id, _short = m.group(1), m.group(2)
-            if s.get("tab") != tab_from_id:
+            shell_from_id, _short = m.group(1), m.group(2)
+            if s.get("shell") != shell_from_id:
                 errs.append(
-                    f"{where}: tab '{s.get('tab')}' must equal the id's first "
-                    f"segment '{tab_from_id}'"
+                    f"{where}: shell '{s.get('shell')}' must equal the id's first "
+                    f"segment '{shell_from_id}'"
                 )
         if s.get("provenance") not in PROVENANCE:
             errs.append(
@@ -156,13 +156,13 @@ def validate(answers: dict) -> list[str]:
 
 
 def derive_comp(surface_id: str) -> str:
-    """comp = PascalCase(tab) + PascalCase(short), the declare-structure
+    """comp = PascalCase(shell) + PascalCase(short), the declare-structure
     convention (shop.cart -> ShopCart). Purely mechanical; not design."""
     m = ID_RE.match(surface_id)
     if not m:
         raise ValueError(f"cannot derive comp from malformed id '{surface_id}'")
-    tab, short = m.group(1), m.group(2)
-    return _cap(tab) + _cap(short)
+    shell, short = m.group(1), m.group(2)
+    return _cap(shell) + _cap(short)
 
 
 def _cap(seg: str) -> str:
@@ -175,7 +175,7 @@ def _cap(seg: str) -> str:
 def emit_registry(answers: dict) -> list[dict]:
     """Seed registry: one entry per elicited surface, surface ALWAYS null.
 
-    The keys are exactly {id, label, tab, comp, surface} — the contract the
+    The keys are exactly {id, label, shell, comp, surface} — the contract the
     designer's declare-structure enforces. No entry is invented and none is
     dropped: len(out) == len(answers['surfaces']), asserted by the self-test.
     """
@@ -184,7 +184,7 @@ def emit_registry(answers: dict) -> list[dict]:
         out.append({
             "id": s["id"],
             "label": s["label"],
-            "tab": s["tab"],
+            "shell": s["shell"],
             "comp": derive_comp(s["id"]),
             "surface": None,  # intake names; design binds. Never non-null here.
         })
@@ -242,11 +242,11 @@ def emit_brief(answers: dict) -> str:
     if not surfaces:
         lines.append("_No surfaces named at intake. The designer authors the registry._")
     else:
-        lines.append("| id | tab | comp | label | surface |")
+        lines.append("| id | shell | comp | label | surface |")
         lines.append("|---|---|---|---|---|")
         for s in surfaces:
             lines.append(
-                f"| `{s['id']}` | {s['tab']} | {derive_comp(s['id'])} | "
+                f"| `{s['id']}` | {s['shell']} | {derive_comp(s['id'])} | "
                 f"{s['label']} | _null_ |"
             )
         lines.append("")
@@ -269,7 +269,7 @@ def seed_from_brief(md: str) -> list[dict]:
     """Plan 10.7: a hand-written brief is valid input. Derive the registry
     seed from its surface-inventory table WITHOUT rewriting the brief (the
     brief is the client's words — the ideal case). Rows whose first cell
-    matches the <tab>.<short> id pattern become seed entries; surface is null.
+    matches the <shell>.<short> id pattern become seed entries; surface is null.
     A brief with no such table yields an empty seed (the designer authors the
     registry) and that is NOT an error — intake is optional.
     """
@@ -299,12 +299,12 @@ def seed_from_brief(md: str) -> list[dict]:
         m = ID_RE.match(sid)
         if not m:
             continue
-        tab, _short = m.group(1), m.group(2)
+        shell, _short = m.group(1), m.group(2)
         label = cells[header_idx["label"]].strip() if "label" in header_idx and header_idx["label"] < len(cells) else _cap(_short)
         entry = {
             "id": sid,
             "label": label or _cap(_short),
-            "tab": tab,
+            "shell": shell,
             "comp": derive_comp(sid),
             "surface": None,
         }
@@ -415,8 +415,8 @@ def _self_test() -> None:
                 "targets": {"value": ["macos"], "provenance": "client"},
                 "brand": {"value": "none stated", "provenance": "inferred"},
                 "surfaces": [
-                    {"id": "projects.home", "label": "Home", "tab": "projects", "provenance": "client"},
-                    {"id": "projects.new", "label": "New", "tab": "projects", "provenance": "client"},
+                    {"id": "projects.home", "label": "Home", "shell": "projects", "provenance": "client"},
+                    {"id": "projects.new", "label": "New", "shell": "projects", "provenance": "client"},
                 ],
             }
 
@@ -433,10 +433,10 @@ def _self_test() -> None:
         e = validate(bad)
         assert any("surfaces[0]" in x and "Projects.Home" in x for x in e), f"missed bad id: {e}"
 
-        # 4. NEGATIVE: tab must equal id prefix
-        bad = good_answers(); bad["surfaces"][1]["tab"] = "build"
+        # 4. NEGATIVE: shell must equal id prefix
+        bad = good_answers(); bad["surfaces"][1]["shell"] = "build"
         e = validate(bad)
-        assert any("surfaces[1]" in x and "first segment" in x for x in e), f"missed tab mismatch: {e}"
+        assert any("surfaces[1]" in x and "first segment" in x for x in e), f"missed shell mismatch: {e}"
 
         # 5. NEGATIVE: duplicate id rejected (ids are permanent)
         bad = good_answers(); bad["surfaces"][1]["id"] = "projects.home"
@@ -454,7 +454,7 @@ def _self_test() -> None:
         # 7. NEGATIVE generation guard: if emit_registry somehow returned an
         #    extra entry, the count assertion above would have to catch it.
         #    Plant the failure explicitly to prove the guard bites.
-        tampered = reg + [{"id": "chat.home", "label": "x", "tab": "chat", "comp": "ChatHome", "surface": None}]
+        tampered = reg + [{"id": "chat.home", "label": "x", "shell": "chat", "comp": "ChatHome", "surface": None}]
         assert len(tampered) != len(ans["surfaces"]), "generation guard would not bite on an extra entry"
 
         # 8. comp derivation by convention (shop.cart -> ShopCart)
@@ -479,7 +479,7 @@ def _self_test() -> None:
         md = (
             "# Widget shop\n\n"
             "## Surface inventory\n\n"
-            "| id | tab | label |\n"
+            "| id | shell | label |\n"
             "|---|---|---|\n"
             "| `shop.cart` | shop | Cart |\n"
             "| `shop.home` | shop | Home |\n"
@@ -487,14 +487,14 @@ def _self_test() -> None:
         handwritten.write_text(md, encoding="utf-8")
         seed = seed_from_brief(md)
         assert len(seed) == 2, f"hand-written brief seed wrong size: {seed}"
-        assert seed[0] == {"id": "shop.cart", "label": "Cart", "tab": "shop", "comp": "ShopCart", "surface": None}, seed[0]
+        assert seed[0] == {"id": "shop.cart", "label": "Cart", "shell": "shop", "comp": "ShopCart", "surface": None}, seed[0]
         assert all(e["surface"] is None for e in seed), "hand-written seed bound a surface"
 
         # 12. NEGATIVE: a brief with NO surface table -> empty seed, not an error
         assert seed_from_brief("# Just prose\n\nNo table here.\n") == [], "empty brief should seed nothing"
 
         # 13. NEGATIVE: a row that is not a valid id is skipped, not crashed
-        mixed = "| id | tab |\n|---|---|\n| `shop.cart` | shop |\n| not-an-id | x |\n"
+        mixed = "| id | shell |\n|---|---|\n| `shop.cart` | shop |\n| not-an-id | x |\n"
         s2 = seed_from_brief(mixed)
         assert [e["id"] for e in s2] == ["shop.cart"], f"bad id row not skipped: {s2}"
 

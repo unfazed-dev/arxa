@@ -10,7 +10,7 @@ The one write path for adding, renaming and removing a feature on the
 
 | layer | files | this tool |
 |---|---|---|
-| **authored** | `models/screens_model/registry.json`, `ui/views/<tab>/<short>/{_view.html,_viewmodel.js}`, `models/screens_model/migrations.json` (rename lineage, lazy) | **writes** |
+| **authored** | `models/screens_model/registry.json`, `ui/views/<shell>/<short>/{_view.html,_viewmodel.js}`, `models/screens_model/migrations.json` (rename lineage, lazy) | **writes** |
 | **generated** | `structure.json`, `lib/ui/views/**/*.dart` | **never** |
 
 Editing generated output makes a second writer and kills the regenerate-and-diff
@@ -28,7 +28,7 @@ python3 tools/crud/crud.py <op> <design-root> [flags]
 |---|---|---|
 | `list` | — | **Read.** The registry *is* the feature list (never a filesystem scan). |
 | `show` | `id` | **Read** one entry. |
-| `create` | `--id --tab --comp [--surface] [--label]` | Append entry + view pair. `--surface null` ⇒ entry only (a declared exclusion, no pair). Duplicate id is rejected (id is a stable key). |
+| `create` | `--id --shell --comp [--surface] [--label]` | Append entry + view pair. `--surface null` ⇒ entry only (a declared exclusion, no pair). Duplicate id is rejected (id is a stable key). |
 | `update` | `--id [--label]` | Edit non-identity fields. `id`/`surface` are immutable on an entry. |
 | `rename` | `--from --to [--surface]` | New id + explicit migration. The old pair is removed **only after** the new one exists (never delete-before-write). |
 | `delete` | `--id --confirm TOK` | Remove entry + pair. **Behind a human-minted token** — the one operation that is not recoverable by re-running a stage. Idempotent on the desired end state. |

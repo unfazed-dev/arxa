@@ -9,7 +9,7 @@ How a feature is added, renamed and removed. Decision and rationale are
 
 | layer | files | who writes |
 |---|---|---|
-| **authored** | `models/screens_model/registry.json`, `ui/views/<tab>/<short>/{_view.html,_viewmodel.js}` | a person, the GUI, the chat, the companion |
+| **authored** | `models/screens_model/registry.json`, `ui/views/<shell>/<short>/{_view.html,_viewmodel.js}` | a person, the GUI, the chat, the companion |
 | **generated** | `structure.json`, `surfaces/*.html`, `lib/ui/views/**/*.dart` | tools only |
 
 Editing scaffolded Dart makes a second writer, and the regenerate-and-diff gate
@@ -24,10 +24,10 @@ the identity; everything else is derived from it.
 
 1. Append to `registry.json`:
    ```json
-   {"id":"inbox.thread_list","tab":"inbox","comp":"InboxThreadList",
+   {"id":"inbox.thread_list","shell":"inbox","comp":"InboxThreadList",
     "surface":"stage_shell_thread_list_view","label":"Threads"}
    ```
-2. Create `ui/views/<tab>/<short>/` with the `_view.html` + `_viewmodel.js`
+2. Create `ui/views/<shell>/<short>/` with the `_view.html` + `_viewmodel.js`
    pair, and declare its identity in the viewmodel:
    ```js
    export const surfaceId = 'inbox.thread_list';
@@ -35,14 +35,14 @@ the identity; everything else is derived from it.
 3. Re-emit surfaces → re-run freeze → scaffold emits the Dart.
 
 `surfaceId` is what removes the fuzzy join: measured, only **21 of 37** frozen
-screens resolved to a viewmodel by `(tab, short)` matching. A declaration takes
+screens resolved to a viewmodel by `(shell, short)` matching. A declaration takes
 the residual to zero and turns a guess into an assertion.
 
 ## Read
 
 `registry.json` **is** the feature list. Any UI listing features reads it —
 never a filesystem scan, which is how the flat `registry: null` /
-`tabRoots: {}` inference happened in the first place.
+`shellRoots: {}` inference happened in the first place.
 
 ## Update
 

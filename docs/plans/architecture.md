@@ -465,7 +465,7 @@ is blind to it. Measured in `design/new-htmx/`:
 
 | layer | files | lines | shape |
 |---|---:|---:|---|
-| `ui/views/<shell>/<tab>/<surface>/` | 97 | 4,529 | `X_view.html` + `X_viewmodel.js` pairs |
+| `ui/views/<shell>/<subgroup>/<surface>/` | 97 | 4,529 | `X_view.html` + `X_viewmodel.js` pairs |
 | `services/{repositories,facades}/` | 13 | 1,759 | `people_repository.js`, `navigation_facade.js` |
 | `models/<x>_model/*_fixtures.json` | 10 | 2,101 | seed/fake data |
 | `app.routes.js` | 1 | 65 | URL inventory, cites ADR-0005 |
@@ -476,21 +476,22 @@ the app_box requirements.
 
 **What the freeze keeps: 37 flat HTML files.** `structure.json` is then
 re-inferred from *filenames*, which is why `new-htmx` shows `registry: null`
-and `tabRoots: {}` while the JSX producer shows six real tab roots.
+and `shellRoots: {}` while the JSX producer shows six real shell roots.
 
 **Correction to a stronger claim I first made here:** the inferred shells are
-*not* a decomposition the producer never made. Measured, `tab → shell` has
-**zero fan-out** — it is a pure rename table of 8 entries
-(`admin → admin_shell`, `train → train_shell`, …). One `stage_shell` with tabs
-and eight `<tab>_shell`s are the same decomposition under two spellings. The
-inference is flat, not wrong.
+*not* a decomposition the producer never made. Measured, the legacy
+`tab → shell` mapping has **zero fan-out** — a pure rename table of 8 entries
+(`admin → admin_shell`, `train → train_shell`, …), which is exactly why the
+pipeline vocabulary now spells the grouping `shell` throughout. One
+`stage_shell` with shell groups and eight `<shell>_shell`s are the same
+decomposition under two spellings. The inference is flat, not wrong.
 
 ### What to actually build: an exporter, not an architecture
 
 The delta is `emit_structure` learning a second input. Today it reads
 `jsx/app.jsx` for `P2_REGISTRY` and falls back to filenames. It should read the
 htmx producer's real tree — `app.routes.js` + the `ui/views/**` pairs — and
-emit `registry`, `tabRoots`, per-surface viewmodel name, repository and facade
+emit `registry`, `shellRoots`, per-surface viewmodel name, repository and facade
 dependencies, and route/link semantics.
 
 **Measured joinability** (34 viewmodel pairs vs 37 frozen screens):
@@ -498,7 +499,7 @@ dependencies, and route/link semantics.
 | | result |
 |---|---|
 | shell mapping | **pure rename table, 8 entries, zero fan-out** — mechanical |
-| surface join on `(tab, short)` | **21 / 37** resolve mechanically |
+| surface join on `(shell, short)` | **21 / 37** resolve mechanically |
 | the residual 16 | lexical (`giftcards`↔`gift_cards`, `whitelabel`↔`white_label`, `productedit`↔`product_edit`) plus a few semantic (`inbox.thread_list` ↔ `inbox/home`) |
 
 **So do not write a normalizer — make the producer declare the id.** A fuzzy
@@ -541,7 +542,7 @@ Yes, and the corpus already does it. `design/new-htmx/models/screens_model/`
 `emit_structure` regexes out of `P2_REGISTRY`**:
 
 ```json
-{"id":"train.library","label":"Training Library","tab":"train",
+{"id":"train.library","label":"Training Library","shell":"train",
  "comp":"TrainLibrary","surface":"train_shell_training_library_view",
  "phase":"Belong"}
 {"id":"train.home", ..., "surface": null}
@@ -553,7 +554,7 @@ by `screens_repository.js` and `navigation_facade.js`.
 
 **`emit_structure` never looks at it.** It searches for `jsx/app.jsx`, finds
 none, and falls back to filename inference — which is why `new-htmx` emits
-`registry: null` and `tabRoots: {}`, and why 42 registry entries become 37
+`registry: null` and `shellRoots: {}`, and why 42 registry entries become 37
 frozen screens (the 5 carrying `surface: null`, e.g. `train.home`, vanish
 silently instead of being declared exclusions).
 
@@ -561,7 +562,7 @@ silently instead of being declared exclusions).
 
 | layer | artifact | writer |
 |---|---|---|
-| **authored** | `models/screens_model/registry.json` — ids, tabs, comps, surface bindings, role gating | the designer |
+| **authored** | `models/screens_model/registry.json` — ids, shells, comps, surface bindings, role gating | the designer |
 | **derived** | `ui/views/**` pairs + `app.routes.js` — structure and nav edges | the producer's code |
 | **generated** | `structure.json` = *f*(registry, tree, `surfaces/`) | `emit_structure`, never a human |
 
@@ -576,8 +577,8 @@ itself.
 
 `emit_structure` gains a second registry source: no `jsx/`, so read
 `models/screens_model/registry.json` — **no regex needed, it is already JSON**.
-`tabRoots` still needs an htmx source (JSX declares `P2_TAB_ROOTS`); either
-`app.routes.js` exports one or a sibling `tab_roots.json` declares it.
+`shellRoots` still needs an htmx source (JSX declares `P2_TAB_ROOTS`); either
+`app.routes.js` exports one or a sibling `shell_roots.json` declares it.
 
 Consequence: the drift check currently guarded on `[ -f "$DESIGN/jsx/app.jsx" ]`
 starts applying to htmx. Per `docs/research/web-research-drift.md`, assert it
@@ -765,7 +766,7 @@ chat, the companion. **They all write the registry, not the code.**
 
 | op | mechanism | state |
 |---|---|---|
-| **Create** | registry entry + `ui/views/<tab>/<short>/` pair + surface HTML → freeze → scaffold emits | works today |
+| **Create** | registry entry + `ui/views/<shell>/<short>/` pair + surface HTML → freeze → scaffold emits | works today |
 | **Read** | the registry *is* the feature list | works today |
 | **Update (content)** | edit the view/viewmodel pair, re-freeze | works today |
 | **Update (rename)** | ⚠️ downstream this is delete + create | **`id` must be a stable key, never reused.** A rename is a new id plus an explicit migration, or the old scaffold orphans silently |
@@ -823,7 +824,7 @@ own history as the *"shared spine realized for htmx/HDA"* and referenced as the
 
 The lineage cannot supply these (§12): the **viewport ladder** (390/744/1280,
 borrowed from `kimi-design-flutter`'s archetypes), **`export const surfaceId`**
-declarations, a **`tabRoots` source**, and the **`registry.json` convention**
+declarations, a **`shellRoots` source**, and the **`registry.json` convention**
 `emit_structure` can read.
 
 Of the 28 `built-in-skills/`, app_box needs the app-design subset —
@@ -851,7 +852,7 @@ Every decision above is settled. Sequencing for the agents:
 
 | # | work | why here |
 |---|---|---|
-| 1 | **Fork `kimi-design-htmx` → `app-box-designer`** (MIT, attributed); add the viewport ladder, `surfaceId`, `tabRoots` | nothing downstream can be dogfooded without it |
+| 1 | **Fork `kimi-design-htmx` → `app-box-designer`** (MIT, attributed); add the viewport ladder, `surfaceId`, `shellRoots` | nothing downstream can be dogfooded without it |
 | 2 | **`emit_structure` reads `registry.json`** when there is no `jsx/` | turns on a drift check currently impossible for htmx (§14) |
 | 3 | **Gates read targets from state** — freeze widths (§11) and form-factor emission (§16); assert with `git status --porcelain` | the bill §11 and §16 both defer |
 | 4 | **Orphan assertion + guarded delete path** (§18) | CRUD is incomplete without it |

@@ -24,10 +24,15 @@ THE CONTRACT
   the file set + the .shell-structure.json manifest the coverage gate reads.
 
   Directory naming is a scaffolder DECISION, recorded in the manifest (the
-  coverage gate refuses to guess it). The decision here: dir = <tab>_<short>
+  coverage gate refuses to guess it). The decision here: dir = <shell>_<short>
   from the registry id — the stable key §18 says must never be reused — which is
   single-segment by construction and matches the existing app convention
   (projects_home/, settings_kits/) and the coverage gate's dir==file-prefix rule.
+
+  The OPTIONAL l10n layer: when the design carries l10n/*.arb catalogs, they are
+  copied verbatim into lib/l10n/ and a fixed-contract l10n.yaml (gen-l10n) is
+  dropped at the app root; the manifest records the locale set so gates can read
+  it. A design with no l10n/ dir gets NO l10n artifacts (backward compat).
 
   Pure stdlib. Exit: 0 emitted / in-sync · 1 missing input, drift, wrong count.
 
@@ -40,6 +45,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import sys
 import tempfile
 from pathlib import Path
@@ -90,7 +96,7 @@ def derive_factors(targets, derivation_path, config_path):
 
 # ----------------------------------------------------------------- naming
 def surface_dir(screen):
-    """dir = <tab>_<short> from the screen id (the registry's stable key, §18).
+    """dir = <shell>_<short> from the screen id (the registry's stable key, §18).
     Single segment by construction; matches the existing app convention
     (projects_home/, settings_kits/) and the coverage gate's d==file-prefix
     contract (gates/coverage line ~211: f"{d}_view.dart")."""
@@ -98,7 +104,7 @@ def surface_dir(screen):
     parts = sid.split(".")
     if len(parts) != 2:
         raise ValueError(
-            f"screen id '{sid}' is not <tab>.<short> — cannot derive a directory"
+            f"screen id '{sid}' is not <shell>.<short> — cannot derive a directory"
         )
     return f"{parts[0]}_{parts[1]}"
 
@@ -123,7 +129,7 @@ def stub_view(screen, factors, targets):
 //   surface:       {screen['surface']}
 //   comp:          {comp}View
 //   id:            {screen['id']}
-//   shell:         {screen['shell']}
+//   shell:         {screen['shellDir']}
 //   targets:       [{','.join(targets)}] -> derived form factors [{fl}]
 {deps_line}// The widget tree and the form-factor switch are the builder's job (plan 08).
 import 'package:flutter/material.dart';
@@ -198,7 +204,7 @@ def design_system_doc(screen, factors):
 > app-box-scaffolder: STRUCTURE ONLY. The builder (plan 08) fills the real intent.
 
 - **surface:** `{screen['surface']}`  ({screen['id']})
-- **shell:**  {screen['shell']}
+- **shell:**  {screen['shellDir']}
 - **derived form factors:** {', '.join(factors) if factors else '(none)'}
 
 ## Palette
@@ -272,18 +278,76 @@ class {comp}Chrome {{
 """
 
 
+# ----------------------------------------------------------------- l10n
+# The gen-l10n config is a FIXED contract — gates assert it verbatim, so it is
+# a constant, never templated.
+L10N_YAML = """\
+arb-dir: lib/l10n
+template-arb-file: app_en.arb
+output-localization-file: app_localizations.dart
+synthetic-package: false
+nullable-getter: false
+"""
+
+_ARB_RE = re.compile(r"app_([A-Za-z0-9_]+)\.arb$")
+
+
+def design_l10n(design_root):
+    """The optional l10n layer: a frozen design may carry l10n/*.arb catalogs
+    (app_<locale>.arb). Returns the sorted catalog filenames, or None when the
+    design has no l10n/ dir — backward compat: no l10n artifacts are emitted.
+    Raises ValueError on a malformed catalog (unparseable name, or a missing
+    app_en.arb template): the l10n.yaml contract is fixed, so a design that
+    cannot satisfy it is a bad input, not a skip."""
+    d = os.path.join(design_root, "l10n")
+    if not os.path.isdir(d):
+        return None
+    files = sorted(fn for fn in os.listdir(d) if fn.endswith(".arb"))
+    if not files:
+        return None  # kimitail: an empty l10n/ dir is treated as absent
+    for fn in files:
+        if not _ARB_RE.match(fn):
+            raise ValueError(
+                f"l10n/{fn} is not app_<locale>.arb — locales are derived from "
+                f"the catalog filenames, so this name is unparseable")
+    if "app_en.arb" not in files:
+        raise ValueError(
+            "l10n/ has no app_en.arb — the l10n.yaml contract fixes "
+            "template-arb-file: app_en.arb, so the English catalog is required")
+    return files
+
+
+def l10n_locales(files):
+    """app_<locale>.arb -> locale, for the manifest the gates read."""
+    return [_ARB_RE.match(fn).group(1) for fn in files]
+
+
+def emit_l10n(design_root, app_root, files):
+    """Copy the design's ARB catalogs verbatim into lib/l10n/ and drop the
+    fixed l10n.yaml at the app root (gen-l10n runs on pub get — blueprint.py
+    sets flutter.generate: true)."""
+    dst = os.path.join(app_root, "lib", "l10n")
+    os.makedirs(dst, exist_ok=True)
+    for fn in files:
+        with open(os.path.join(design_root, "l10n", fn), "rb") as r:
+            data = r.read()
+        open(os.path.join(dst, fn), "wb").write(data)
+    open(os.path.join(app_root, "l10n.yaml"), "w").write(L10N_YAML)
+
+
 # ----------------------------------------------------------------- manifest
-def build_manifest(frozen, factors, targets):
+def build_manifest(frozen, factors, targets, l10n=None):
     """The .shell-structure.json the coverage gate reads: selfContained shells
     + the {shell: {surfaceId: dir}} map. The dir is the scaffolder's recorded
     decision (coverage.sh ~19-26: 'a directory name is a scaffolder DECISION,
-    so it is recorded, not guessed')."""
-    shells = sorted({s["shell"] for s in frozen})
+    so it is recorded, not guessed'). When the design carries l10n/, the
+    manifest records the arbDir + locale set so gates never re-derive them."""
+    shells = sorted({s["shellDir"] for s in frozen})
     by_shell = {sh: {} for sh in shells}
     for s in frozen:
-        by_shell[s["shell"]][s["surface"]] = surface_dir(s)
+        by_shell[s["shellDir"]][s["surface"]] = surface_dir(s)
     fl = ", ".join(factors) if factors else "none"
-    return {
+    m = {
         "selfContained": shells,
         "surfaces": by_shell,
         # the DERIVED form-factor set (§16): macos -> [desktop], never the full
@@ -294,10 +358,13 @@ def build_manifest(frozen, factors, targets):
         "notes": (
             "scaffolded by app-box-scaffolder from a frozen structure.json; "
             f"targets=[{','.join(targets)}] -> form factors [{fl}]; "
-            "dir=<tab>_<short> from the registry id (the stable key, §18). "
+            "dir=<shell>_<short> from the registry id (the stable key, §18). "
             "Widget bodies are the builder's job (plan 08)."
         ),
     }
+    if l10n:
+        m["l10n"] = {"arbDir": "lib/l10n", "locales": l10n_locales(l10n)}
+    return m
 
 
 # ----------------------------------------------------------------- io
@@ -332,7 +399,7 @@ def _validate_frozen(frozen):
     failed first, but the scaffold defends anyway (never trust an invariant you
     do not re-check)."""
     for s in frozen:
-        for req in ("id", "comp", "shell", "surface", "viewmodel"):
+        for req in ("id", "comp", "shellDir", "surface", "viewmodel"):
             if not s.get(req):
                 who = s.get("id") or s.get("surface") or "?"
                 return _fail(
@@ -364,6 +431,11 @@ def scaffold(design_root, app_root, targets, derivation_path, config_path, check
     except ValueError as e:
         _fail(str(e))
         return 1
+    try:
+        l10n = design_l10n(design_root)
+    except ValueError as e:
+        _fail(str(e))
+        return 1
 
     frozen = [s for s in data["screens"] if s.get("surface")]
     if not frozen:
@@ -376,7 +448,7 @@ def scaffold(design_root, app_root, targets, derivation_path, config_path, check
     views = os.path.join(app_root, "lib", "ui", "views")
 
     if check:
-        return _check(views, frozen, factors, targets)
+        return _check(views, frozen, factors, targets, app_root, l10n)
 
     per = 2 + len(factors)  # base + viewmodel + one per derived factor
     collisions = _dir_collisions(frozen)
@@ -385,7 +457,7 @@ def scaffold(design_root, app_root, targets, derivation_path, config_path, check
     written = 0
     for s in frozen:
         d = surface_dir(s)
-        base = os.path.join(views, s["shell"], d)
+        base = os.path.join(views, s["shellDir"], d)
         os.makedirs(base, exist_ok=True)
         open(os.path.join(base, f"{d}_view.dart"), "w").write(
             stub_view(s, factors, targets))
@@ -402,7 +474,7 @@ def scaffold(design_root, app_root, targets, derivation_path, config_path, check
     # (scaffold gate S4: ## Palette + KitColors) + a *_chrome.dart (S6). These
     # live at views/<shell>/ (the shell root); coverage ignores them (it counts
     # surface SUBDIRS, not shell-root files).
-    for sh in sorted({s["shell"] for s in frozen}):
+    for sh in sorted({s["shellDir"] for s in frozen}):
         sh_dir = os.path.join(views, sh)
         os.makedirs(sh_dir, exist_ok=True)
         open(os.path.join(sh_dir, "design-system.md"), "w").write(
@@ -410,15 +482,21 @@ def scaffold(design_root, app_root, targets, derivation_path, config_path, check
         open(os.path.join(sh_dir, f"{sh}_chrome.dart"), "w").write(
             shell_chrome(sh))
 
-    manifest = build_manifest(frozen, factors, targets)
+    manifest = build_manifest(frozen, factors, targets, l10n)
     os.makedirs(views, exist_ok=True)
     mf_path = os.path.join(views, ".shell-structure.json")
     open(mf_path, "w").write(json.dumps(manifest, indent=2) + "\n")
 
+    if l10n:
+        emit_l10n(design_root, app_root, l10n)
+
     fl = ", ".join(factors) if factors else "none"
     print(f"scaffold: {written} surface(s) x {per} file(s) = {written * per} files")
     print(f"  targets [{','.join(targets)}] -> form factors [{fl}]")
-    print(f"  shells: {', '.join(sorted({s['shell'] for s in frozen}))}")
+    print(f"  shells: {', '.join(sorted({s['shellDir'] for s in frozen}))}")
+    if l10n:
+        print(f"  l10n: {len(l10n)} catalog(s) -> lib/l10n/ + l10n.yaml "
+              f"(locales: {', '.join(l10n_locales(l10n))})")
     print(f"  manifest -> {os.path.relpath(mf_path, app_root)}")
     return 0
 
@@ -432,28 +510,29 @@ def _dir_collisions(frozen):
         if d in seen:
             _fail(f"surfaces '{seen[d]}' and '{s['surface']}' both derive dir "
                   f"'{d}' (id collision) — the registry must give them distinct "
-                  f"<tab>.<short> ids")
+                  f"<shell>.<short> ids")
             return True
         seen[d] = s["surface"]
     return False
 
 
-def _check(views, frozen, factors, targets):
+def _check(views, frozen, factors, targets, app_root, l10n):
     """Compare the on-disk tree against what structure.json + targets imply.
     Returns 0 if in sync, 1 naming every drift. Asserts the SAME file set the
-    coverage gate (C1) walks, plus the manifest surfaces map / selfContained."""
+    coverage gate (C1) walks, plus the manifest surfaces map / selfContained,
+    plus the l10n layer when the design carries one (catalog set + l10n.yaml)."""
     problems = []
     for s in frozen:
         d = surface_dir(s)
-        base = os.path.join(views, s["shell"], d)
+        base = os.path.join(views, s["shellDir"], d)
         for fn in expected_files(s, factors):
             if not os.path.isfile(os.path.join(base, fn)):
                 problems.append(
-                    f"lib/ui/views/{s['shell']}/{d}/{fn} missing — targets "
+                    f"lib/ui/views/{s['shellDir']}/{d}/{fn} missing — targets "
                     f"[{','.join(targets)}] derive form factors "
                     f"[{', '.join(factors) or 'none'}]")
     mf = os.path.join(views, ".shell-structure.json")
-    want = build_manifest(frozen, factors, targets)
+    want = build_manifest(frozen, factors, targets, l10n)
     if not os.path.isfile(mf):
         problems.append("lib/ui/views/.shell-structure.json missing — the "
                         "manifest the coverage gate reads")
@@ -469,6 +548,28 @@ def _check(views, frozen, factors, targets):
             if sorted(on_disk.get("selfContained") or []) != sorted(want["selfContained"]):
                 problems.append(".shell-structure.json selfContained drifted "
                                 "from structure.json — re-run scaffold")
+            if on_disk.get("l10n") != want.get("l10n"):
+                problems.append(".shell-structure.json l10n drifted from the "
+                                "design's l10n/ catalogs — re-run scaffold")
+    if l10n:
+        dst = os.path.join(app_root, "lib", "l10n")
+        on_disk = (sorted(fn for fn in os.listdir(dst) if fn.endswith(".arb"))
+                   if os.path.isdir(dst) else [])
+        for fn in l10n:
+            if fn not in on_disk:
+                problems.append(f"lib/l10n/{fn} missing — the design's l10n/ "
+                                f"catalog was not scaffolded (re-run scaffold)")
+        for fn in on_disk:
+            if fn not in l10n:
+                problems.append(f"lib/l10n/{fn} has no source in the design's "
+                                f"l10n/ — drift (re-run scaffold)")
+        yf = os.path.join(app_root, "l10n.yaml")
+        if not os.path.isfile(yf):
+            problems.append("l10n.yaml missing — the gen-l10n config for the "
+                            "design's l10n/ catalogs (re-run scaffold)")
+        elif "template-arb-file: app_en.arb" not in open(yf).read():
+            problems.append("l10n.yaml template-arb-file drifted (contract: "
+                            "app_en.arb) — re-run scaffold")
     if problems:
         for p in problems:
             _fail(p)
@@ -498,22 +599,22 @@ def _self_test():
     STRUCT = {
         "$schema": "app-box/structure@1",
         "registry": "models/screens_model/registry.json",
-        "tabRoots": {"projects": "/", "settings": "/settings"},
+        "shellRoots": {"projects": "/", "settings": "/settings"},
         "screens": [
-            {"id": "stage.shell", "tab": "stage", "comp": "StageShell",
-             "shell": "stage_shell", "surface": "stage_shell_view",
+            {"id": "stage.shell", "shell": "stage", "comp": "StageShell",
+             "shellDir": "stage_shell", "surface": "stage_shell_view",
              "viewmodel": "ui/views/stage_shell/stage_shell_viewmodel.js",
              "deps": ["services/facades/shell_facade.js"]},
-            {"id": "projects.home", "tab": "projects", "comp": "ProjectsHome",
-             "shell": "stage_shell", "surface": "stage_shell_projects_home_view",
+            {"id": "projects.home", "shell": "projects", "comp": "ProjectsHome",
+             "shellDir": "stage_shell", "surface": "stage_shell_projects_home_view",
              "viewmodel": "ui/views/stage_shell/projects/home/home_viewmodel.js",
              "deps": ["services/facades/project_facade.js"]},
-            {"id": "settings.kits", "tab": "settings", "comp": "SettingsKits",
-             "shell": "stage_shell", "surface": "stage_shell_settings_kits_view",
+            {"id": "settings.kits", "shell": "settings", "comp": "SettingsKits",
+             "shellDir": "stage_shell", "surface": "stage_shell_settings_kits_view",
              "viewmodel": "ui/views/stage_shell/settings/kits/kits_viewmodel.js",
              "deps": ["services/facades/shell_facade.js"]},
-            {"id": "projects.splash", "tab": "projects", "comp": "ProjectsSplash",
-             "shell": "stage_shell", "surface": None, "viewmodel": None, "deps": []},
+            {"id": "projects.splash", "shell": "projects", "comp": "ProjectsSplash",
+             "shellDir": "stage_shell", "surface": None, "viewmodel": None, "deps": []},
         ],
     }
 
@@ -633,16 +734,16 @@ def _self_test():
 
         # 8. NEGATIVE: two surfaces deriving the same dir (id collision) -> FAIL.
         coll = json.loads(json.dumps(STRUCT))
-        # rename settings.kits -> projects.kits: same <tab>_<short> as nothing? no.
+        # rename settings.kits -> projects.kits: same <shell>_<short> as nothing? no.
         # instead force a real collision: a second screen projects.home.
-        coll["screens"].append({"id": "projects.home", "tab": "projects",
-                                "comp": "ProjectsHome2", "shell": "stage_shell",
+        coll["screens"].append({"id": "projects.home", "shell": "projects",
+                                "comp": "ProjectsHome2", "shellDir": "stage_shell",
                                 "surface": "stage_shell_projects_home_2_view",
                                 "viewmodel": "ui/views/x.js", "deps": []})
         cdes = tmp / "cdesign"; cdes.mkdir()
         (cdes / "structure.json").write_text(json.dumps(coll), encoding="utf-8")
         rc = scaffold(str(cdes), str(tmp / "appC"), ["macos"], str(DERIVATION), str(CONFIG))
-        chk(rc == 1, "dir collision (two surfaces, same <tab>_<short>) -> exit 1")
+        chk(rc == 1, "dir collision (two surfaces, same <shell>_<short>) -> exit 1")
 
         # 9. derivation agrees with the coverage gate's own rule (macos -> desktop,
         #    ios,android -> mobile+tablet, web -> all three): the producer and the
@@ -659,6 +760,45 @@ def _self_test():
               / "projects_home_viewmodel.dart").read_text(encoding="utf-8")
         chk("class ProjectsHomeViewModel extends BaseViewModel" in vm,
             "viewmodel declares <comp>ViewModel over BaseViewModel")
+
+        # 11. BACKWARD COMPAT: a design with no l10n/ gets no l10n artifacts.
+        chk(not (app1 / "lib" / "l10n").exists(),
+            "no l10n/ in design -> no lib/l10n emitted")
+        chk(not (app1 / "l10n.yaml").exists(),
+            "no l10n/ in design -> no l10n.yaml emitted")
+        chk("l10n" not in mf, "no l10n/ in design -> manifest has no l10n key")
+
+        # 12. l10n layer: a design WITH l10n/ -> catalogs copied, fixed
+        #     l10n.yaml emitted, manifest records the locale set.
+        ldes = tmp / "ldesign"
+        (ldes / "l10n").mkdir(parents=True)
+        (ldes / "structure.json").write_text(json.dumps(STRUCT), encoding="utf-8")
+        (ldes / "l10n" / "app_en.arb").write_text('{"appTitle": "Demo"}', encoding="utf-8")
+        (ldes / "l10n" / "app_pl.arb").write_text('{"appTitle": "Demo pl"}', encoding="utf-8")
+        appL = tmp / "appL"
+        rc = scaffold(str(ldes), str(appL), ["macos"], str(DERIVATION), str(CONFIG))
+        chk(rc == 0, "l10n design scaffold emits (exit 0)")
+        chk((appL / "lib" / "l10n" / "app_en.arb").read_text(encoding="utf-8")
+            == '{"appTitle": "Demo"}', "app_en.arb copied verbatim")
+        chk((appL / "lib" / "l10n" / "app_pl.arb").is_file(), "app_pl.arb copied")
+        chk((appL / "l10n.yaml").read_text(encoding="utf-8") == L10N_YAML,
+            "l10n.yaml matches the fixed contract verbatim")
+        mfL = json.load(open(appL / "lib" / "ui" / "views" / ".shell-structure.json"))
+        chk(mfL.get("l10n") == {"arbDir": "lib/l10n", "locales": ["en", "pl"]},
+            "manifest records l10n arbDir + locales")
+        chk(scaffold(str(ldes), str(appL), ["macos"], str(DERIVATION), str(CONFIG), check=True) == 0,
+            "l10n design --check green")
+        # 12b. NEGATIVE (R5): a deleted catalog -> --check FAILS naming it.
+        (appL / "lib" / "l10n" / "app_pl.arb").unlink()
+        rc = scaffold(str(ldes), str(appL), ["macos"], str(DERIVATION), str(CONFIG), check=True)
+        chk(rc == 1, "deleted lib/l10n/app_pl.arb -> --check exit 1")
+        # 12c. NEGATIVE (R5): no app_en.arb template -> FAIL naming it.
+        bdes = tmp / "bdesign_l10n"
+        (bdes / "l10n").mkdir(parents=True)
+        (bdes / "structure.json").write_text(json.dumps(STRUCT), encoding="utf-8")
+        (bdes / "l10n" / "app_pl.arb").write_text("{}", encoding="utf-8")
+        rc = scaffold(str(bdes), str(tmp / "appBL"), ["macos"], str(DERIVATION), str(CONFIG))
+        chk(rc == 1, "l10n/ without app_en.arb -> exit 1")
 
     print(f"\nscaffold self-test: passed={P[0]} failed={F[0]}")
     if F[0]:

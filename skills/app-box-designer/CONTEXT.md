@@ -4,6 +4,10 @@ The design-prototyping context: generates polished design artifacts (mockups, in
 
 ## Language
 
+_Docs deferral: `docs/VOCABULARY.md` is the project-wide sacred glossary SSOT.
+This file holds only designer-skill-local terms; on any disagreement,
+`docs/VOCABULARY.md` wins._
+
 **Artifact**:
 A generated design deliverable: a Hono/Node hypermedia app (templates + viewmodels + fixtures + assets) run by the Runtime. Lives in its own directory.
 _Avoid_: project, website, page
@@ -24,8 +28,8 @@ One screen of an Artifact: a view template plus its co-located ViewModel. The un
 _Avoid_: page, route, screen (except in URL/registry contexts)
 
 **Shell**:
-The layout tier between `base.html` and Surfaces — section chrome (nav, tab bar, device frame) shared by a group of Surfaces.
-_Avoid_: layout (reserved for `base.html`)
+The layout tier between `base.html` and Surfaces — section chrome (nav, tab bar, device frame) shared by a group of Surfaces. Shell also absorbs the retired Tab grouping role: the registry's `shell` field and each registry id's `<shell>.<short>` prefix name the shell group a Surface belongs to.
+_Avoid_: layout (reserved for `base.html`), tab (legacy — say shell)
 
 **ViewModel**:
 A per-Surface server module: context builders (pure functions → template data) plus handlers (request → facade calls → full-page-vs-fragment response). Stateless by construction — rebuilt per request; re-render-and-swap replaces binding.

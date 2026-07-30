@@ -32,7 +32,7 @@ One entry per surface. This is the SSOT for what the app contains.
   "id":      "train.library",
   "label":   "Training Library",
   "surface": "train_shell_training_library_view",
-  "tab":     "train",
+  "shell":   "train",
   "comp":    "TrainLibrary",
   "roles":   ["coach"]
 }
@@ -40,10 +40,10 @@ One entry per surface. This is the SSOT for what the app contains.
 
 | key | required | meaning |
 |---|---|---|
-| `id` | yes | stable dotted identifier, `<tab>.<short>`. Never renamed once shipped. |
+| `id` | yes | stable dotted identifier, `<shell>.<short>`. Never renamed once shipped. |
 | `label` | yes | human title, shown in UI |
 | `surface` | yes | the surface file's identity — **or `null`** |
-| `tab` | yes | which shell/tab this belongs to |
+| `shell` | yes | which shell group this belongs to (the id's first segment) |
 | `comp` | yes | component name for the scaffolder |
 | `roles` | no | audience gate; absent = everyone |
 
@@ -64,13 +64,17 @@ with no warning**. Two lists of what exists means one of them is wrong and
 nothing says which. One list, one nullable field, and every check can see the
 whole population.
 
-## 2. Surfaces — `ui/views/<shell>/<tab>/<short>/`
+## 2. Surfaces — `ui/views/<shell>/<short>/`
 
 ```
-ui/views/<shell>/<tab>/<short>/
+ui/views/<shell>/<short>/
 ├── <short>_view.html        the template
 └── <short>_viewmodel.js     co-located; the only place logic lives
 ```
+
+A shell with many surfaces may add one subgrouping level —
+`ui/views/<shell>/<subgroup>/<short>/` (e.g. `stage_shell/proj/home/`). The
+subgroup is the shell's own organization, not a second registry concept.
 
 Shell-level surfaces sit one level up:
 `ui/views/<shell>/<shell>_view.html` + `<shell>_viewmodel.js`.
@@ -103,7 +107,7 @@ export default [
   ['POST', '/library/pick',  library.pick],
 ];
 
-export const tabRoots = {
+export const shellRoots = {
   train:   '/',
   account: '/account',
 };
@@ -111,8 +115,8 @@ export const tabRoots = {
 
 - `GET` returns a rendered fragment or page; `POST` mutates then returns the
   updated fragment. No other verbs.
-- **`tabRoots` is required and must be non-empty.** It names the landing route
-  of each tab. The scaffolder cannot derive it — a tab whose root is unknown
+- **`shellRoots` is required and must be non-empty.** It names the landing route
+  of each shell. The scaffolder cannot derive it — a shell whose root is unknown
   gets an invented one.
 
 ## 4. Services and models
@@ -146,7 +150,7 @@ mechanical — and each one **can fail**, which is the point:
 | surface join | a viewmodel's `surfaceId` matches no registry entry |
 | coverage | a registry entry with a non-null `surface` has no directory |
 | orphan | a surface directory no entry declares |
-| `tabRoots` | empty, or names a tab absent from the registry |
+| `shellRoots` | empty, or names a shell absent from the registry |
 | ladder | a surface never rendered at an active rung |
 
 ## Do not

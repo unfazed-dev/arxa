@@ -1,0 +1,335 @@
+{
+  "account": {
+    "name": "Evan",
+    "email": "evan@totem.labs"
+  },
+  "tagline": "Describe it. Gate it. Ship it.",
+  "auth": {
+    "headline": "Sign in to appbox",
+    "lede": "One account for every project on your tailnet. Prototype build — any email signs you in.",
+    "providers": [
+      {
+        "id": "apple",
+        "label": "Continue with Apple"
+      },
+      {
+        "id": "google",
+        "label": "Continue with Google"
+      }
+    ]
+  },
+  "projects": [
+    {
+      "id": "p-cartsense",
+      "name": "CartSense",
+      "targets": [
+        "ios",
+        "android"
+      ],
+      "stage": "build",
+      "stageLabel": "Build · gates",
+      "lastSaved": "saved 2 min ago"
+    },
+    {
+      "id": "p-foxglove",
+      "name": "Foxglove",
+      "targets": [
+        "web",
+        "macos"
+      ],
+      "stage": "design",
+      "stageLabel": "Design · freeze",
+      "lastSaved": "saved 1 h ago"
+    },
+    {
+      "id": "p-anvil",
+      "name": "Anvil CRM",
+      "targets": [
+        "web",
+        "macos",
+        "ios",
+        "android"
+      ],
+      "stage": "intake",
+      "stageLabel": "Intake · mapping",
+      "lastSaved": "saved yesterday"
+    }
+  ],
+  "gates": [
+    {
+      "id": "g-1",
+      "project": "CartSense",
+      "gate": "Build acceptance",
+      "stage": "build",
+      "waiting": "waiting 26 min",
+      "summary": "Run #14 green on pixel + skeleton; 1 colour finding at ΔE 4.8"
+    },
+    {
+      "id": "g-2",
+      "project": "Foxglove",
+      "gate": "Design freeze",
+      "stage": "design",
+      "waiting": "waiting 3 h",
+      "summary": "22 surfaces frozen at hash 9f3c…e1 — approval unlocks Build"
+    },
+    {
+      "id": "g-3",
+      "project": "CartSense",
+      "gate": "Pre-submission checklist",
+      "stage": "ship",
+      "waiting": "waiting 1 d",
+      "summary": "2 crashes on the iOS smoke pass; permissions audit clean"
+    }
+  ],
+  "analytics": {
+    "runs": {
+      "label": "Runs this week",
+      "total": 23,
+      "unit": "runs",
+      "bars": [
+        {
+          "label": "Mon",
+          "value": 2
+        },
+        {
+          "label": "Tue",
+          "value": 4
+        },
+        {
+          "label": "Wed",
+          "value": 3
+        },
+        {
+          "label": "Thu",
+          "value": 6
+        },
+        {
+          "label": "Fri",
+          "value": 5
+        },
+        {
+          "label": "Sat",
+          "value": 1
+        },
+        {
+          "label": "Sun",
+          "value": 2
+        }
+      ]
+    },
+    "stageTime": {
+      "label": "Avg stage time",
+      "total": 34,
+      "unit": "min",
+      "bars": [
+        {
+          "label": "intake",
+          "value": 18
+        },
+        {
+          "label": "design",
+          "value": 42
+        },
+        {
+          "label": "build",
+          "value": 65
+        },
+        {
+          "label": "ship",
+          "value": 12
+        }
+      ]
+    },
+    "gateLatency": {
+      "label": "Gates waiting",
+      "total": 3,
+      "unit": "open",
+      "bars": [
+        {
+          "label": "Mon",
+          "value": 1
+        },
+        {
+          "label": "Tue",
+          "value": 2
+        },
+        {
+          "label": "Wed",
+          "value": 1
+        },
+        {
+          "label": "Thu",
+          "value": 4
+        },
+        {
+          "label": "Fri",
+          "value": 3
+        },
+        {
+          "label": "Sat",
+          "value": 3
+        },
+        {
+          "label": "Sun",
+          "value": 3
+        }
+      ]
+    }
+  },
+  "pairing": {
+    "code": "A7K2-9QXM",
+    "expiresLabel": "single-use · expires in 10:00",
+    "fingerprint": "SHA256:7f3a…9c2e · tailnet node appbox-mbpro",
+    "deviceName": "This iPhone",
+    "qr": [
+      "111111100101111111111",
+      "100000101110101000001",
+      "101110111100101011101",
+      "101110110010111011101",
+      "101110110000101011101",
+      "100000101110011000001",
+      "111111110101111111111",
+      "100000111011100011000",
+      "001111100110110001101",
+      "100000001010000101011",
+      "011000100001110100100",
+      "011110101110110100000",
+      "001100101010110000000",
+      "000010001001010010100",
+      "111111110000011000010",
+      "100000101001000011110",
+      "101110100110101011101",
+      "101110100010101100010",
+      "101110111100111000100",
+      "100000100100001100100",
+      "111111111000110111110"
+    ]
+  },
+  "wizard": {
+    "prompt": "Name the project and pick its targets — repo connect (GitHub) waits for your first gate approval, and lives in settings after that.",
+    "targets": [
+      "web",
+      "macos",
+      "ios",
+      "android"
+    ],
+    "note": "Repo connect is deferred to the first gate — nothing to set up now."
+  },
+  "stats": {
+    "runs": {
+      "label": "Runs this week",
+      "total": 23,
+      "unit": "runs",
+      "bars": [
+        {
+          "label": "Mon",
+          "value": 2,
+          "height": 33
+        },
+        {
+          "label": "Tue",
+          "value": 4,
+          "height": 67
+        },
+        {
+          "label": "Wed",
+          "value": 3,
+          "height": 50
+        },
+        {
+          "label": "Thu",
+          "value": 6,
+          "height": 100
+        },
+        {
+          "label": "Fri",
+          "value": 5,
+          "height": 83
+        },
+        {
+          "label": "Sat",
+          "value": 1,
+          "height": 17
+        },
+        {
+          "label": "Sun",
+          "value": 2,
+          "height": 33
+        }
+      ]
+    },
+    "stageTime": {
+      "label": "Avg stage time",
+      "total": 34,
+      "unit": "min",
+      "bars": [
+        {
+          "label": "intake",
+          "value": 18,
+          "height": 28
+        },
+        {
+          "label": "design",
+          "value": 42,
+          "height": 65
+        },
+        {
+          "label": "build",
+          "value": 65,
+          "height": 100
+        },
+        {
+          "label": "ship",
+          "value": 12,
+          "height": 18
+        }
+      ]
+    },
+    "gateLatency": {
+      "label": "Gates waiting",
+      "total": 3,
+      "unit": "open",
+      "bars": [
+        {
+          "label": "Mon",
+          "value": 1,
+          "height": 25
+        },
+        {
+          "label": "Tue",
+          "value": 2,
+          "height": 50
+        },
+        {
+          "label": "Wed",
+          "value": 1,
+          "height": 25
+        },
+        {
+          "label": "Thu",
+          "value": 4,
+          "height": 100
+        },
+        {
+          "label": "Fri",
+          "value": 3,
+          "height": 75
+        },
+        {
+          "label": "Sat",
+          "value": 3,
+          "height": 75
+        },
+        {
+          "label": "Sun",
+          "value": 3,
+          "height": 75
+        }
+      ]
+    }
+  },
+  "counts": {
+    "projects": 3,
+    "gates": 3
+  }
+}

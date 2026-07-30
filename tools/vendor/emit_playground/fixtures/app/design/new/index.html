@@ -23,13 +23,13 @@
 // (window.P2.registry / window.P2.roles, ?role=&screen= routing).
 window.P2 = {
   roles: {
-    felix: { tabs: ['train', 'shop'] },
-    leo:   { tabs: ['train', 'studio'] },
+    felix: { shells: ['train', 'shop'] },
+    leo:   { shells: ['train', 'studio'] },
   },
   registry: [
-    { id: 'train.home',  tab: 'train',  roles: ['felix'], surface: 'fixture_home_view' },
-    { id: 'train.draft', tab: 'train',  roles: ['felix'], surface: null },
-    { id: 'studio.dash', tab: 'studio', surface: 'fixture_studio_view' },
+    { id: 'train.home',  shell: 'train',  roles: ['felix'], surface: 'fixture_home_view' },
+    { id: 'train.draft', shell: 'train',  roles: ['felix'], surface: null },
+    { id: 'studio.dash', shell: 'studio', surface: 'fixture_studio_view' },
   ],
 };
 const SCREENS = {

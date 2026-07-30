@@ -72,7 +72,7 @@ def validate_data(data):
 # --- app-box pipeline handoff -------------------------------------------------
 # app-box-story-mapper feeds app-box-designer DIRECTLY (intake.py bypassed).
 # The brief emitted here is the traceability source for gates/intake (plan
-# 10.7): the gate parses the surface table for <tab>.<short> ids, so every id
+# 10.7): the gate parses the surface table for <shell>.<short> ids, so every id
 # MUST match the registry id pattern — lowercase alnum segments, no hyphens.
 
 ID_RE = re.compile(r"^([a-z][a-z0-9]*)\.([a-z][a-z0-9]*)$")
@@ -96,15 +96,15 @@ PRIORITY_RANK = {"must": 0, "should": 1, "could": 2, "wont": 3}
 
 
 def derive_surfaces(data):
-    """Epic -> tab, Feature -> surface. A feature whose stories are ALL 'wont'
+    """Epic -> shell, Feature -> surface. A feature whose stories are ALL 'wont'
     is out-of-scope this cycle, not a surface. Features with no stories stay
     surfaces (named, not yet detailed). Each surface carries a rollup of its
     live (non-wont) stories: strongest priority, earliest release."""
-    used_tabs, used_ids = set(), set()
+    used_shells, used_ids = set(), set()
     rel_order = {r["name"]: i for i, r in enumerate(data["releases"])}
     surfaces, out_of_scope = [], []
     for epic in data["epics"]:
-        tab = slugify(epic["name"], used_tabs)
+        shell = slugify(epic["name"], used_shells)
         for feat in epic.get("features", []):
             stories = feat.get("stories", [])
             if stories and all(s.get("priority") == "wont" for s in stories):
@@ -112,7 +112,7 @@ def derive_surfaces(data):
                 continue
             live = [s for s in stories if s.get("priority") != "wont"]
             surfaces.append({
-                "id": f"{tab}.{slugify(feat['name'], used_ids)}",
+                "id": f"{shell}.{slugify(feat['name'], used_ids)}",
                 "label": feat["name"],
                 "epic": epic["name"],
                 "stories": stories,
