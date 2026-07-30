@@ -11,7 +11,9 @@
 import 'dart:io';
 
 import 'package:appboxd/config.dart';
+import 'package:appboxd/emit_htmx.dart';
 import 'package:appboxd/emit_structure.dart';
+import 'package:appboxd/transform_tokens.dart';
 import 'package:appboxd/gate_advertise.dart';
 import 'package:appboxd/gate_intake.dart';
 import 'package:appboxd/gate_memory.dart';
@@ -237,11 +239,11 @@ void _runEmit(List<String> args) {
   switch (emitter) {
     case 'structure':
       exit(emitStructure('$appRoot/$designDir', check: check));
-    default:
-      stderr.writeln('appbox emit: emitter "$emitter" not yet ported to Dart');
-      stderr.writeln('  ported: structure');
-      stderr.writeln('  pending: htmx, playground, transform_tokens, blueprint, generate_view');
-      exit(2);
+    case 'transform_tokens':
+      exit(transformTokens('$appRoot/$designDir/tokens.json', '$appRoot/$designDir'));
+    case 'htmx':
+      emitHtmx('$appRoot/$designDir', check: check).then((rc) => exit(rc));
+      return;
   }
 }
 
