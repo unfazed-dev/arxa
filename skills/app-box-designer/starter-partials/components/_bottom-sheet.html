@@ -1,0 +1,53 @@
+{# ============================================================================
+   _bottom-sheet.html — server-driven action sheet (Partial)
+   Zero JavaScript. Same host/swap mechanics as _dialog.html: a trigger swaps
+   this include into an empty host; the sheet renders OPEN and slides in
+   (`reveal` motion, components.css):
+
+       <button class="btn" hx-get="/share-sheet" hx-target="#sheet-host" hx-swap="innerHTML">Share</button>
+       <div id="sheet-host"></div>
+
+   Reads `sheet` from the context bag:
+
+     sheet = {
+       title?,                      -- small header above the list
+       items: [{ icon?, label, href, danger? }],
+       dismiss: "Cancel"            -- footer close, native form method="dialog"
+     }
+
+   Items are boosted links: picking one navigates (traverse motion) and the
+   sheet's host simply isn't rendered by the next page. Close paths are the
+   same as _dialog.html (native dismiss vs server close endpoint); the scrim
+   does not click-to-dismiss (no JS).
+
+   Ladder: bottom-anchored sheet on compact; from the medium rung up it
+   presents as a centered dialog (M3 behaviour — CSS only, same markup).
+   Styles: assets/css/components.css (blocks: .sheet, .overlay-scrim).
+   Flutter: ui_library sheet service.
+   ============================================================================ #}
+<div class="overlay-scrim" aria-hidden="true"></div>
+<dialog id="sheet" class="sheet" open {% if sheet.title %}aria-labelledby="sheet-title"{% endif %}>
+  <div class="sheet__grab" aria-hidden="true"></div>
+  {% if sheet.title %}<h2 class="sheet__title" id="sheet-title">{{ sheet.title }}</h2>{% endif %}
+  <ul class="sheet__list">
+    {% for item in sheet.items %}
+    <li>
+      <a class="sheet__item{% if item.danger %} sheet__item--danger{% endif %}" href="{{ item.href }}">
+        {% if item.icon %}{{ icon(item.icon, {size: 20}) }}{% endif %}
+        <span>{{ item.label }}</span>
+      </a>
+    </li>
+    {% endfor %}
+  </ul>
+  {% if sheet.dismiss %}
+  <ul class="sheet__list">
+    <li>
+      <form method="dialog">
+        <button class="sheet__item sheet__dismiss" type="submit">
+          <span>{{ sheet.dismiss }}</span>
+        </button>
+      </form>
+    </li>
+  </ul>
+  {% endif %}
+</dialog>

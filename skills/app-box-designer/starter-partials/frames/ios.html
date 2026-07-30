@@ -10,8 +10,8 @@
        {% import "ui/widgets/frames/ios.html" as ios %}
        {% call ios.device(c) %}
          {{ ios.list({ header: "General", rows: [
-           { title: "Airplane Mode", icon: "#ff9500" },
-           { title: "Wi-Fi", detail: "Home", icon: "#007aff" }
+           { title: "Airplane Mode", icon: "#ff9500", glyph: "plane" },
+           { title: "Wi-Fi", detail: "Home", icon: "#007aff", glyph: "wifi" }
          ] }) }}
        {% endcall %}
 
@@ -31,7 +31,8 @@
 
    Composing macros: status_bar(f) · nav_bar(f) · pill(f) (call block) ·
    list({header, rows}) · list_row(row) · keyboard(f).
-   row = { title, detail?, icon? (CSS color), chevron? (default true) }.
+   row = { title, detail?, icon? (CSS color for the badge), glyph? (Lucide
+   name, white on the badge), chevron? (default true) }.
    ============================================================================ #}
 
 {% macro device(c) %}
@@ -80,20 +81,10 @@
 <div class="ios-nav">
   <div class="ios-nav__row">
     {% call pill(f) %}
-      <span class="ios-pill__icon">
-        <svg width="12" height="20" viewBox="0 0 12 20" fill="none" style="margin-left: -1px;">
-          <path d="M10 2L2 10l8 8" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </span>
+      <span class="ios-pill__icon">{{ icon('chevron-left', {size: 22, strokeWidth: 2.5}) }}</span>
     {% endcall %}
     {% call pill(f) %}
-      <span class="ios-pill__icon">
-        <svg width="22" height="6" viewBox="0 0 22 6" fill="currentColor">
-          <circle cx="3" cy="3" r="2.5"/>
-          <circle cx="11" cy="3" r="2.5"/>
-          <circle cx="19" cy="3" r="2.5"/>
-        </svg>
-      </span>
+      <span class="ios-pill__icon">{{ icon('ellipsis', {size: 20}) }}</span>
     {% endcall %}
   </div>
   <div class="ios-nav__title">{{ f.title }}</div>
@@ -117,7 +108,7 @@
 
 {% macro list_row(row) %}
 <div class="ios-row{% if row.icon %} ios-row--icon{% endif %}">
-  {% if row.icon %}<span class="ios-row__icon" style="background: {{ row.icon }};" aria-hidden="true"></span>{% endif %}
+  {% if row.icon %}<span class="ios-row__icon" style="background: {{ row.icon }};" aria-hidden="true">{% if row.glyph %}{{ icon(row.glyph, {size: 18}) }}{% endif %}</span>{% endif %}
   <span class="ios-row__title">{{ row.title }}</span>
   {% if row.detail %}<span class="ios-row__detail">{{ row.detail }}</span>{% endif %}
   {% if row.chevron is not defined or row.chevron %}

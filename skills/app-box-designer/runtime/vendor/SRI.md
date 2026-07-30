@@ -8,3 +8,4 @@
 | sse.js | htmx-ext-sse | 2.2.4 | `sha384-A986SAtodyH8eg8x8irJnYUk7i9inVQqYigD6qZ9evobksGNIXfeFvDwLSHcp31N` |
 | client-side-templates.js | htmx-ext-client-side-templates | 2.0.2 | `sha384-sKX0kzraJJEV0VPe2cmrjHqjTVhEGPVxHhCCa4YCRcYphgn2YTwHZMOeP16FTXPG` |
 | mustache.min.js | mustache | 4.2.0 | `sha384-WASZCYHGuIg0bwkJEH65mhmbKS1x4/VKI2bzElPKmL5B3e0UaH45nIdqOm+BUuRA` |
+| lucide/icons/*.svg | lucide-static | 1.27.0 | `sha384-FcKTsoAfrNAQlm72mTH2j0YueLBCmw6bdz42xM+FFTPLs8te/VOKhDMJv9TJa/fQ` |

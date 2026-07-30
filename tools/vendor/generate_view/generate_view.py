@@ -594,25 +594,29 @@ def _wcag_contrast(h1, h2):
     return (hi + 0.05) / (lo + 0.05)
 
 
-# Generic icon-name → (Material rounded, SF Symbol) — native-vocabulary glyphs the
-# appbox is allowed to render on native controls (NOT brand graphics). The design's
-# `<Icon name="…"/>` keeps its name as a node prop (Icon is a switch, not expanded),
-# so a button wrapping one renders as a native AdaptiveIconButton with the mapped glyph.
+# Generic icon-name → (Material-tier glyph expr, SF Symbol) — native-vocabulary
+# glyphs the appbox is allowed to render on native controls (NOT brand graphics).
+# The Material-tier side resolves through KitGlyphs.lucide('<lucide-name>') —
+# design-time icon names ARE Lucide names (kebab-case), resolved by-name against
+# the kit's generated Lucide map (stacked_kit core, lucide_flutter-backed).
+# The design's `<Icon name="…"/>` keeps its name as a node prop (Icon is a
+# switch, not expanded), so a button wrapping one renders as a native
+# AdaptiveIconButton with the mapped glyph.
 _ICON = {
-    "play": ("Icons.play_arrow_rounded", "play.fill"),
-    "pause": ("Icons.pause_rounded", "pause.fill"),
-    "reset": ("Icons.refresh_rounded", "arrow.clockwise"),
-    "back": ("Icons.arrow_back_ios_new_rounded", "chevron.left"),
-    "chevron-left": ("Icons.arrow_back_ios_new_rounded", "chevron.left"),
-    "chevron-right": ("Icons.chevron_right_rounded", "chevron.right"),
-    "chevron": ("Icons.chevron_right_rounded", "chevron.right"),
-    "edit": ("Icons.edit_rounded", "pencil"),
-    "check": ("Icons.check_rounded", "checkmark"),
-    "sound": ("Icons.volume_up_rounded", "speaker.wave.2.fill"),
-    "close": ("Icons.close_rounded", "xmark"),
-    "plus": ("Icons.add_rounded", "plus"),
+    "play": ("KitGlyphs.lucide('play')", "play.fill"),
+    "pause": ("KitGlyphs.lucide('pause')", "pause.fill"),
+    "reset": ("KitGlyphs.lucide('refresh-cw')", "arrow.clockwise"),
+    "back": ("KitGlyphs.lucide('chevron-left')", "chevron.left"),
+    "chevron-left": ("KitGlyphs.lucide('chevron-left')", "chevron.left"),
+    "chevron-right": ("KitGlyphs.lucide('chevron-right')", "chevron.right"),
+    "chevron": ("KitGlyphs.lucide('chevron-right')", "chevron.right"),
+    "edit": ("KitGlyphs.lucide('pencil')", "pencil"),
+    "check": ("KitGlyphs.lucide('check')", "checkmark"),
+    "sound": ("KitGlyphs.lucide('volume-2')", "speaker.wave.2.fill"),
+    "close": ("KitGlyphs.lucide('x')", "xmark"),
+    "plus": ("KitGlyphs.lucide('plus')", "plus"),
 }
-_DEFAULT_ICON = ("Icons.circle_outlined", "circle")
+_DEFAULT_ICON = ("KitGlyphs.lucide('circle')", "circle")
 
 
 def _icon_for(name):
@@ -1335,7 +1339,7 @@ def _emit_impl(node, sess):
         # candidate and stays native even inside the lite workout card; the
         # primitive tight-boxes the platform view (SizedBox.square) so it can't
         # drift row-to-row. Only composite surfaces & whole rows go lite.
-        return ("AdaptiveIconButton(icon: Icons.play_arrow_rounded, sfSymbol: 'play.fill', "
+        return ("AdaptiveIconButton(icon: KitGlyphs.lucide('play'), sfSymbol: 'play.fill', "
                 "tint: AppTokens.ink, foreground: AppTokens.bone, size: 36, "
                 "onPressed: () {}, semanticLabel: 'Start workout')")
 

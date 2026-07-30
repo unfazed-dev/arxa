@@ -76,7 +76,12 @@ scatter design files in the repo root. Import design systems with
 `agents/import-design-system.mjs` and record deliverables with
 `agents/record-asset.mjs` as in `built-in-skills/use-design-system.md`.
 
-**9. Build, serve, verify.** Build the artifact per the contract, serve it with
+**9. Build components-first, then serve and verify.** Before composing any
+surface, author the artifact's component library: inventory the design's
+repeated patterns and define them as macros/partials in `ui/common/` +
+`ui/widgets/`, starting from [`references/ui-recipes.md`](references/ui-recipes.md)
+and the drop-in partials in `starter-partials/components/` — surfaces compose
+only from that library. Then build the artifact per the contract, serve it with
 `node <skill>/runtime/serve.mjs <artifact-dir> --port 4319` (background), then
 verify: `node <skill>/runtime/lint.mjs <artifact-dir>` (zero-custom-JS),
 `node <skill>/runtime/console-check.mjs http://localhost:4319/…` (console
@@ -109,8 +114,8 @@ applications.
 ## Notes
 
 - `system-prompt.md` is the craft SSOT; `runtime/README.md` is the artifact
-  contract; `CONTEXT.md` is the vocabulary; `docs/adr/` holds the runtime
-  decisions.
+  contract; `references/ui-recipes.md` is the component catalog; `CONTEXT.md`
+  is the vocabulary; `docs/adr/` holds the runtime decisions.
 - Keep artifacts self-contained: copy every referenced asset into the artifact
   folder; client libraries come only from the runtime's vendored, SRI-pinned set
   (`runtime/vendor/`).

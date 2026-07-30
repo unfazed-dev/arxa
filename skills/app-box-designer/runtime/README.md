@@ -100,6 +100,26 @@ Runtime helper object:
 - Shared cross-surface fragments are `_name.html` partials under
   `ui/widgets|dialogs|bottomsheets/`, pulled in with `{% include %}`.
 
+## Icons (`icon()` global)
+
+The full Lucide set (ISC, ~2000 glyphs) is vendored at
+`runtime/vendor/lucide/icons/<kebab-name>.svg` by `vendor/fetch.mjs` and
+inlined **server-side** via a Nunjucks global — no client JS, and no SRI:
+nothing is served to the browser as a file, so there is no fetched
+subresource to pin (the manifest records the npm tarball hash instead).
+
+```njk
+{{ icon('arrow-left') }}                                   {# 24px, decorative #}
+{{ icon('search', {size: 20, cls: 'my-ic'}) }}             {# size + class #}
+{{ icon('trash-2', {label: 'Delete', strokeWidth: 1.5}) }} {# accessible img #}
+```
+
+Decorative by default (`aria-hidden` + `focusable="false"`); with `label` it
+gets `role="img"`, `aria-label`, and a `<title>`. Names are validated against
+`[a-z0-9-]+` (path-traversal safe); an unknown name renders a visible
+dashed-square placeholder and warns on the server console. Icons inherit
+`currentColor` — style them with CSS `color`.
+
 ## Boilerplate head (copy from `examples/hello-hda/ui/common/base.html`)
 
 Every artifact's `base.html` carries: the vendored htmx script tag (blocking,

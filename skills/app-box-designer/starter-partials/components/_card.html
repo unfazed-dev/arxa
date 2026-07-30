@@ -1,0 +1,39 @@
+{# ============================================================================
+   _card.html — content card (Partial)
+   Zero JavaScript. Include per card, typically inside a .card-grid (the
+   dashboard-stack archetype: 1 → 2 → 3 columns across the ladder):
+
+       <div class="card-grid">
+         {% for card in cards %}{% include "ui/widgets/components/_card.html" %}{% endfor %}
+       </div>
+
+   Reads `card` from the context bag:
+
+     card = {
+       id: "7",                 -- required; the root id is card-<id>, so the
+                                -- card can be an htmx/OOB target
+       media: "/assets/images/x.jpg",   -- optional image URL
+       title, subtitle?, body?,         -- body is plain text (autoescaped)
+       actions: [{ label, href, kind? }],      -- ghost buttons, optional
+       vt: true                   -- optional spotlight: tags the card with a
+                                -- stable view-transition-name for a shared-
+                                -- element morph across boosted navigation
+                                -- (name derived per-record, per motion.css §2)
+     }
+
+   Styles: assets/css/components.css (blocks: .card, .card-grid).
+   Flutter: KitGlassCard / KitFrostedSurface.
+   ============================================================================ #}
+<article id="card-{{ card.id }}" class="card"{% if card.vt %} style="view-transition-name: card-{{ card.id }};"{% endif %}>
+  {% if card.media %}<img class="card__media" src="{{ card.media }}" alt="" />{% endif %}
+  {% if card.title %}<h3 class="card__title">{{ card.title }}</h3>{% endif %}
+  {% if card.subtitle %}<p class="card__subtitle">{{ card.subtitle }}</p>{% endif %}
+  {% if card.body %}<p class="card__body">{{ card.body }}</p>{% endif %}
+  {% if card.actions %}
+  <div class="card__actions">
+    {% for a in card.actions %}
+    <a class="btn btn--{% if a.kind %}{{ a.kind }}{% else %}ghost{% endif %}" href="{{ a.href }}">{{ a.label }}</a>
+    {% endfor %}
+  </div>
+  {% endif %}
+</article>

@@ -272,6 +272,10 @@
   border-radius: 7px;
   margin-right: 12px;
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff; /* the white Lucide glyph inside the colored badge */
 }
 .ios-row__title { flex: 1; }
 .ios-row__detail { color: var(--ios-secondary); margin-right: 6px; }
@@ -453,13 +457,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-}
-.android-appbar__icon-dot {
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: var(--md-on-surface-var);
-  opacity: .3;
+  color: var(--md-on-surface-var);
 }
 .android-appbar__title { flex: 1; font-size: 22px; font-weight: 400; }
 .android-appbar__spacer { flex: 1; }
@@ -679,13 +677,14 @@
 .mac-sidebar-item__icon {
   width: 14px;
   height: 14px;
-  border-radius: 50%;
-  background: rgba(0, 0, 0, .4);
-  opacity: .5;
   flex-shrink: 0;
   position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--mac-text-dim);
 }
-.mac-sidebar-item.is-selected .mac-sidebar-item__icon { background: var(--mac-accent); opacity: 1; }
+.mac-sidebar-item.is-selected .mac-sidebar-item__icon { color: var(--mac-accent); }
 .mac-sidebar-item__label { position: relative; }
 
 /* Toolbar — title + single glass pill icon + search */
@@ -703,13 +702,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-}
-.mac-toolbar__action-dot {
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: #4c4c4c;
-  opacity: .4;
+  color: #4c4c4c;
 }
 .mac-toolbar__search {
   width: 140px;
@@ -805,9 +798,11 @@
 .browser-tab__icon {
   width: 14px;
   height: 14px;
-  border-radius: 50%;
-  background: #5f6368;
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--browser-dim);
 }
 .browser-tab__title {
   flex: 1;
@@ -833,13 +828,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-}
-.browser-toolbar__icon-dot {
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: var(--browser-dim);
-  opacity: .4;
+  color: var(--browser-dim);
 }
 .browser-toolbar__url {
   flex: 1;
@@ -856,10 +845,11 @@
 .browser-toolbar__lock {
   width: 12px;
   height: 12px;
-  border-radius: 50%;
-  background: var(--browser-dim);
-  opacity: .4;
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--browser-dim);
 }
 .browser-toolbar__url-text {
   flex: 1;

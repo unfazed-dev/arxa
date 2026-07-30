@@ -41,3 +41,4 @@ guarded on a file the htmx producer does not have. Every one was green.
 |---|---|
 | [flutter-genui.md](flutter-genui.md) | Docs digest (2026-07-28) for the GenUI design direction: package status, A2UI architecture, the appboxd-as-A2UI-server fit, custom-catalog consequences. |
 | [sim-embed.md](sim-embed.md) | Live iOS/Android display in the canvas (2026-07-29): literal embedding impossible, capture→redisplay pattern, v1 polling-screenshots / v1.5 Android gRPC / v2 iOS ScreenCaptureKit, with local measurements. |
+| [icon-library-components-first.md](icon-library-components-first.md) | Icon-library bake-off (2026-07-29) behind the designer's components-first update: Lucide chosen (license/style/currentColor/Flutter parity), inline-SVG-macro over sprite/webfont, `icon()` global + `KitGlyphs.lucide` decisions, build evidence, open follow-ups. |

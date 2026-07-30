@@ -49,6 +49,10 @@ _Avoid_: partial (that word means the shared kind)
 **Partial**:
 A shared `_name.html` fragment file under `ui/widgets|dialogs|bottomsheets/`, used across Surfaces.
 
+**Component Library**:
+The artifact's own set of parameterized macros/partials (`ui/common/` + `ui/widgets|dialogs|bottomsheets/`), authored in the component-library pass BEFORE any Surface is composed; Surfaces compose only from it. Seeded from `references/ui-recipes.md` (the Recipe catalog) and `starter-partials/components/`.
+_Avoid_: widget set, UI kit (that word means a design system)
+
 **Boosted MPA**:
 The navigation architecture: every Surface is a real URL serving a full page; `hx-boost` swaps body content; the server branches full-page vs Named Fragment on `HX-Request`.
 

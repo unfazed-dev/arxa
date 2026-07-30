@@ -1,0 +1,50 @@
+{# ============================================================================
+   _tabs.html — tab bar for in-surface switching (Partial)
+   Zero JavaScript. Include once in the surface view, above its panel:
+
+       {% include "ui/widgets/components/_tabs.html" %}
+       <div id="tab-panel" class="tabs__panel">…active panel content…</div>
+
+   Reads `tabs` from the context bag:
+
+     tabs = {
+       endpoint: "/things/tab",        -- GET fragment endpoint, no query string
+       oob: false,                     -- true only when rendered for an OOB swap
+       items: [{ id, label, current? }]
+     }
+
+   Wiring: a tab click GETs `<endpoint>?tab=<id>` and swaps #tab-panel
+   (outerHTML). The fragment endpoint returns BOTH the panel and the bar, so
+   the active marker moves — the bar re-renders out-of-band because the
+   endpoint sets tabs.oob = true in the fragment context:
+
+       export const tab = (c, h) =>
+         h.render(c, `${VIEW}#tab_panel`, {
+           tabs: { ...tabsFor(c.req.query('tab')), oob: true },
+           panel: facade.tabPanel(c.req.query('tab')),
+         });
+
+       {% macro tab_panel(c) %}
+       {% set tabs = c.tabs %}{% include "ui/widgets/components/_tabs.html" %}
+       <div id="tab-panel" class="tabs__panel">…render c.panel…</div>
+       {% endmacro %}
+
+   Why the {% set %}: a fragment render {% import %}s the view file, and an
+   imported macro sees only its arguments (`c`) and globals — NOT the
+   render context. Shadowing the key makes the include work identically on
+   the page path and the fragment path.
+
+   Panel content rides the `swap` motion (.htmx-added fade from motion.css).
+   Styles: assets/css/components.css (block: .tabs).
+   Flutter: KitAnimatedTabStack (+ KitDirectionalTabTransition).
+   ============================================================================ #}
+{% if tabs %}
+<div id="tabs" class="tabs" role="tablist"{% if tabs.oob %} hx-swap-oob="outerHTML"{% endif %}>
+  {% for t in tabs.items %}
+  <button class="tabs__tab{% if t.current %} is-active{% endif %}" role="tab" type="button"
+          aria-selected="{% if t.current %}true{% else %}false{% endif %}"
+          hx-get="{{ tabs.endpoint }}?tab={{ t.id | urlencode }}"
+          hx-target="#tab-panel" hx-swap="outerHTML">{{ t.label }}</button>
+  {% endfor %}
+</div>
+{% endif %}

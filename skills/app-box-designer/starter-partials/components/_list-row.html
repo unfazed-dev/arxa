@@ -1,0 +1,46 @@
+{# ============================================================================
+   _list-row.html — one list row (Partial)
+   Zero JavaScript. Rows live inside a section card; the surface loops:
+
+       <section class="list-section">
+         <h2 class="list-section__header">General</h2>
+         <div class="list-section__card">
+           {% for row in rows %}{% include "ui/widgets/components/_list-row.html" %}{% endfor %}
+         </div>
+       </section>
+
+   Reads `row` from the context bag:
+
+     row = {
+       id: "42",                  -- required; the root id is row-<id>, so a
+                                  -- mutation response can re-render one row
+       title, subtitle?, detail?,
+       icon?,                     -- Lucide kebab-case name for the leading tile
+       href?,                     -- makes the whole row a link (+ chevron)
+       chevron?,                  -- default: shown when href is set
+       oob?                       -- true: root carries hx-swap-oob="outerHTML"
+                                  -- (targets its own id — the updated-row pattern)
+     }
+
+   Row update flow: POST mutates one record; the handler responds
+   hx-swap="none" + renders this include with row.oob = true — htmx swaps the
+   updated row over the old one in place (`swap` motion).
+
+   Styles: assets/css/components.css (blocks: .list-section, .list-row).
+   Flutter: KitListTile (row), KitListSection (grouped card + header).
+   ============================================================================ #}
+{% if row.href %}<a {% else %}<div {% endif %}id="row-{{ row.id }}" class="list-row"
+   {%- if row.oob %} hx-swap-oob="outerHTML"{% endif %}
+   {%- if row.href %} href="{{ row.href }}"{% endif %}>
+  {% if row.icon %}
+  <span class="list-row__leading">{{ icon(row.icon, {size: 18}) }}</span>
+  {% endif %}
+  <span class="list-row__text">
+    <span class="list-row__title">{{ row.title }}</span>
+    {% if row.subtitle %}<span class="list-row__subtitle">{{ row.subtitle }}</span>{% endif %}
+  </span>
+  {% if row.detail %}<span class="list-row__detail">{{ row.detail }}</span>{% endif %}
+  {% if row.href and row.chevron is not defined or row.chevron %}
+  {{ icon("chevron-right", {size: 18, cls: "list-row__chevron"}) }}
+  {% endif %}
+{% if row.href %}</a>{% else %}</div>{% endif %}

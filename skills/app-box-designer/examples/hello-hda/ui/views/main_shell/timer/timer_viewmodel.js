@@ -1,10 +1,12 @@
 export const surfaceId = 'main.timer';
 
+import { chrome } from '../main_shell_viewmodel.js';
+
 const VIEW = 'ui/views/main_shell/timer/timer_view.html';
 
 export const page = (c, h) => {
   h.timers.start('rest', 30);
-  return h.render(c, VIEW, { remaining: 30 });
+  return h.render(c, VIEW, { ...chrome('timer'), remaining: 30 });
 };
 
 export const tick = (c, h) =>

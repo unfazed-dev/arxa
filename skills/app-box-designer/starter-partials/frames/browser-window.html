@@ -69,18 +69,18 @@
     <path d="M0 10C2 9 6 8 8 0V10H0Z" fill="currentColor"/>
   </svg>
   {% endif %}
-  <span class="browser-tab__icon" aria-hidden="true"></span>
+  <span class="browser-tab__icon" aria-hidden="true">{{ icon(t.glyph or 'globe', {size: 14}) }}</span>
   <span class="browser-tab__title">{{ t.title or "New Tab" }}</span>
 </div>
 {% endmacro %}
 
 {% macro toolbar(f) %}
 <div class="browser-toolbar">
-  <span class="browser-toolbar__icon" aria-hidden="true"><span class="browser-toolbar__icon-dot"></span></span>
+  <span class="browser-toolbar__icon" aria-hidden="true">{{ icon('arrow-left', {size: 16}) }}</span>
   <div class="browser-toolbar__url">
-    <span class="browser-toolbar__lock" aria-hidden="true"></span>
+    <span class="browser-toolbar__lock" aria-hidden="true">{{ icon('lock', {size: 12}) }}</span>
     <span class="browser-toolbar__url-text">{{ f.url or "example.com" }}</span>
   </div>
-  <span class="browser-toolbar__icon" aria-hidden="true"><span class="browser-toolbar__icon-dot"></span></span>
+  <span class="browser-toolbar__icon" aria-hidden="true">{{ icon('refresh-cw', {size: 14}) }}</span>
 </div>
 {% endmacro %}

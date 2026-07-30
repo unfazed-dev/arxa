@@ -54,12 +54,13 @@ A ViewModel never renders a template string itself and never touches a repositor
 
 ## Shared components (views)
 
-A UI pattern that appears on two surfaces is extracted, never copied. The moment a second surface needs a rail, a card, a timeline bar, a shell nav, a composer, a viewer — it moves to a shared partial under `ui/common/` as a parameterized macro, and both surfaces call it. Three near-identical implementations of the same widget is the most expensive drift this medium allows: each copy silently diverges (the rail that pauses differently, the scrollbar that tints differently) and the scaffold downstream inherits the divergence.
+Components come first. Before any surface is composed, the design's repeated patterns are inventoried and authored as parameterized macros — the artifact's component library — and surfaces are then composed only from that library. Start from the catalog in `references/ui-recipes.md` (drop-in partials: `starter-partials/components/`): each recipe is a macro + its CSS + its htmx wiring, viewport-ladder aware. A pattern the catalog doesn't cover is authored new, once, in the same shape. The rule holds after the first pass too: a UI pattern that appears on two surfaces is extracted, never copied. The moment a second surface needs a rail, a card, a timeline bar, a shell nav, a composer, a viewer — it moves to a shared partial under `ui/common/` as a parameterized macro, and both surfaces call it. Three near-identical implementations of the same widget is the most expensive drift this medium allows: each copy silently diverges (the rail that pauses differently, the scrollbar that tints differently) and the scaffold downstream inherits the divergence.
 
-- `ui/common/` owns cross-surface macros: shell chrome (nav, timeline), the rail (top bar, card shell, composer), the design viewer, primitives.
+- `ui/common/` owns cross-surface macros: shell chrome (nav, timeline), the rail (top bar, card shell, composer), the design viewer, primitives. `ui/widgets|dialogs|bottomsheets/` owns the `_name.html` include partials (see the runtime contract).
 - Per-surface views keep only what is genuinely theirs: the card's domain content, the canvas artifact's body.
 - Parameters travel through the macro's context (e.g. a `base` path prefix); session state stays namespaced per tab in the facade.
 - The same rule applies to CSS: shared component styles live in the artifact's main stylesheet, not duplicated across per-surface CSS files. Scrollbars always blend (transparent track, theme-ink thumb) — see the starter's `app.css`.
+- Icons are vocabulary, not pixels: `{{ icon('name') }}` inlines a vendored Lucide glyph server-side (see the runtime contract) — emoji or hand-drawn stand-ins are never shipped as icons.
 
 ## Motion vocabulary
 

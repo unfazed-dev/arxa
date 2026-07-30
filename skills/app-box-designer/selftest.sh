@@ -59,6 +59,8 @@ fragment-typo|every rendered fragment exists as a macro
 orphan-post|every mutation route is reachable from markup
 dead-url|every static URL in markup resolves to a route
 dangling-target|every hx-target names an element that exists
+emoji-icon|icons come from the icon() global, never emoji stand-ins
+widget-partials|surfaces compose shared partials from ui/widgets
 untracked-file|every artifact file is tracked by git
 client-js|zero-custom-client-JS lint
 commented-js|ok:zero-custom-client-JS lint
@@ -112,6 +114,10 @@ mutate() {
     orphan-post)        node -e 'const fs=require("fs");for(const f of process.argv.slice(1)){const s=fs.readFileSync(f,"utf8");if(/hx-post="/.test(s)){fs.writeFileSync(f,s.replace(/hx-post="[^"]*"/,""));break}}' $(find "$ART/ui" -name '*.html' | sort) ;;
     dead-url)           node -e 'const fs=require("fs");for(const f of process.argv.slice(1)){const s=fs.readFileSync(f,"utf8");const r=/href="\/(?!assets\/|_ds\/)[^"{]*"/;if(r.test(s)){fs.writeFileSync(f,s.replace(r,String.raw`href="/zzz-nope"`));break}}' $(find "$ART/ui" -name '*.html' | sort) ;;
     dangling-target)    node -e 'const fs=require("fs");for(const f of process.argv.slice(1)){const s=fs.readFileSync(f,"utf8");if(/hx-target="#/.test(s)){fs.writeFileSync(f,s.replace(/hx-target="#[^"]*"/,String.raw`hx-target="#zznope"`));break}}' $(find "$ART/ui" -name '*.html' | sort) ;;
+    # A text arrow is the same violation as an emoji: a stand-in wearing an
+    # icon's hat. Both must flip the icons check.
+    emoji-icon)         printf '<p>\xe2\x86\x92</p>\n' >> "$HTML" ;;
+    widget-partials)    rm -rf "$ART/ui/widgets" ;;
     untracked-file)     printf 'stray\n' > "$ART/ui/stray.txt" ;;
     broken-route)       node -e 'const fs=require("fs"),f=process.argv[1];fs.writeFileSync(f,fs.readFileSync(f,"utf8").replace(/\[\s*.GET.\s*,\s*(.[^\x27"]+.)\s*,[^\]]+\]/,"[\x27GET\x27, $1, () => { throw new Error(\x27mutation\x27); }]"))' "$ART/app.routes.js" ;;
     *) printf 'unknown mutation: %s\n' "$1" >&2; exit 64 ;;
@@ -149,7 +155,7 @@ if [ "$NEGATIVE" = 1 ]; then
     exit 65
   fi
 
-  # Nothing joins the table to the checks, so adding a 16th check tomorrow
+  # Nothing joins the table to the checks, so adding a new check tomorrow
   # would still print "proven, unproven 0" — an untested check counted as
   # tested, which is the exact shape of the defect this mode exists to kill.
   # Every label the baseline reported must be claimed by some row.
@@ -351,7 +357,26 @@ for P in fragments mutations-posted urls-resolve targets-exist; do
   check $? "$LBL" "$OUT"
 done
 
-# --- 16. the tree the gates read is the tree git has ------------------------
+# --- 16-17. the component library is real, and icons are vocabulary ---------
+# The components-first contract (DESIGN-ARCHITECTURE "Shared components"):
+# shared UI lives in `_*.html` partials under ui/widgets|dialogs|bottomsheets/
+# (or macros in ui/common/) and surfaces pull them with {% include %} — a
+# pattern used on two surfaces is extracted, never copied. And every glyph is
+# the icon() global (vendored Lucide, inlined server-side): an emoji or a text
+# arrow wearing an icon's hat is the same violation.
+WID="$(find "$ART/ui/widgets" "$ART/ui/dialogs" "$ART/ui/bottomsheets" -name '_*.html' 2>/dev/null | head -1)"
+if [ -n "$WID" ]; then
+  grep -rq '{% include "ui/' "$ART/ui/views" 2>/dev/null
+else
+  grep -rq '{%[[:space:]]*macro' "$ART/ui/common" 2>/dev/null
+fi
+check $? "surfaces compose shared partials from ui/widgets"
+
+EMOJI="$(perl -CSD -ne 'print "$ARGV:$.: $_" if /[\x{2190}-\x{21FF}\x{2600}-\x{27BF}\x{2B00}-\x{2BFF}\x{1F000}-\x{1FAFF}\x{FE0F}]/' $(find "$ART/ui" -name '*.html' | sort) 2>/dev/null)"
+[ -z "$EMOJI" ] && grep -rq "icon('" "$ART/ui"
+check $? "icons come from the icon() global, never emoji stand-ins" "$(printf '%s' "$EMOJI" | head -3 | tr '\n' ' ')"
+
+# --- 18. the tree the gates read is the tree git has ------------------------
 # Every check above runs on the WORKING TREE. That is right — work in progress
 # has to be checkable — but it means a green suite says nothing about what a
 # clone would get. A generic `build/` ignore once swallowed three surfaces out

@@ -17,7 +17,9 @@
      title    "Folder"   toolbar title
      sidebar  []         list of sidebar entries, in order:
                            { header: "Favorites" }            section header
-                           { label: "Recents", selected: true }  row
+                           { label: "Recents", glyph: "clock", selected: true }  row
+                         `glyph` is any Lucide name (default 'folder'); the
+                         selected row's glyph tints accent.
                          The sidebar (traffic lights + glass panel) always
                          renders, like the React original; leave the list
                          empty for a bare sidebar.
@@ -68,7 +70,7 @@
 
 {% macro sidebar_item(item) %}
 <div class="mac-sidebar-item{% if item.selected %} is-selected{% endif %}">
-  <span class="mac-sidebar-item__icon" aria-hidden="true"></span>
+  <span class="mac-sidebar-item__icon" aria-hidden="true">{{ icon(item.glyph or 'folder', {size: 14}) }}</span>
   <span class="mac-sidebar-item__label">{{ item.label }}</span>
 </div>
 {% endmacro %}
@@ -82,14 +84,11 @@
   <div class="mac-toolbar__title">{{ f.title or "Folder" }}</div>
   <div class="mac-toolbar__spacer"></div>
   {% call glass({}) %}
-    <span class="mac-toolbar__action" aria-hidden="true"><span class="mac-toolbar__action-dot"></span></span>
+    <span class="mac-toolbar__action" aria-hidden="true">{{ icon('plus', {size: 16}) }}</span>
   {% endcall %}
   {% call glass({}) %}
     <span class="mac-toolbar__search">
-      <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true">
-        <circle cx="5.5" cy="5.5" r="4" stroke="#727272" stroke-width="1.5"/>
-        <path d="M8.5 8.5l3 3" stroke="#727272" stroke-width="1.5" stroke-linecap="round"/>
-      </svg>
+      {{ icon('search', {size: 13}) }}
       <span>Search</span>
     </span>
   {% endcall %}

@@ -4,10 +4,10 @@
 <h1>Rest timer</h1>
 <p>The server holds the deadline; the page polls once a second. No JS written.</p>
 {{ tick(c) }}
-<p class="row">
-  <button hx-post="/timer/extend" hx-target="#timer" hx-swap="outerHTML">+15s</button>
-  <button hx-post="/timer/skip" hx-target="#timer" hx-swap="outerHTML">Skip</button>
-</p>
+<div class="action-row">
+  <button class="btn" hx-post="/timer/extend" hx-target="#timer" hx-swap="outerHTML">+15s</button>
+  <button class="btn btn--ghost" hx-post="/timer/skip" hx-target="#timer" hx-swap="outerHTML">Skip</button>
+</div>
 {% endblock %}
 
 {% macro tick(c) %}

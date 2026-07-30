@@ -73,10 +73,10 @@
 {% macro app_bar(f) %}
 <div class="android-appbar">
   <div class="android-appbar__row">
-    <span class="android-appbar__icon" aria-hidden="true"><span class="android-appbar__icon-dot"></span></span>
+    <span class="android-appbar__icon" aria-hidden="true">{{ icon('arrow-left', {size: 24}) }}</span>
     {% if f.large %}<span class="android-appbar__spacer"></span>
     {% else %}<span class="android-appbar__title">{{ f.title }}</span>{% endif %}
-    <span class="android-appbar__icon" aria-hidden="true"><span class="android-appbar__icon-dot"></span></span>
+    <span class="android-appbar__icon" aria-hidden="true">{{ icon('ellipsis-vertical', {size: 24}) }}</span>
   </div>
   {% if f.large %}<div class="android-appbar__large-title">{{ f.title }}</div>{% endif %}
 </div>

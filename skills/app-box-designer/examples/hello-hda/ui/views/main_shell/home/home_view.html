@@ -6,22 +6,29 @@
 
 {# Context comes from a facade, which composes repositories, which read
    fixtures generated from a seed. The view never touches data directly. #}
-<ul class="greetings">
-  {% for g in greetings %}<li>{{ g.text }}</li>{% endfor %}
-</ul>
+<section class="list-section">
+  <h2 class="list-section__header">Greetings</h2>
+  <div class="list-section__card">
+    {% for row in rows %}{% include "ui/widgets/components/_list-row.html" %}{% endfor %}
+  </div>
+</section>
 <p class="muted">{{ count }} greeting(s) from <code>greeting_facade</code>.</p>
 
-<p><a class="btn" href="/timer">Go to the timer →</a></p>
+<p><a class="btn" href="/timer">Go to the timer {{ icon('arrow-right', {size: 16}) }}</a></p>
 
 <form hx-post="/prefs/accent" hx-swap="none">
-  <label>Accent
-    <select name="accent">
-      <option value="blueviolet">Iris</option>
-      <option value="teal">Lagoon</option>
-      <option value="tomato">Signal</option>
-    </select>
-  </label>
-  <button type="submit">Apply</button>
+  {% set field = {
+    name: 'accent',
+    label: 'Accent',
+    value: prefs.accent or 'blueviolet',
+    options: [
+      { value: 'blueviolet', label: 'Iris' },
+      { value: 'teal', label: 'Lagoon' },
+      { value: 'tomato', label: 'Signal' }
+    ]
+  } %}
+  {% include "ui/widgets/components/_form-field.html" %}
+  <button class="btn" type="submit">Apply</button>
 </form>
-<p class="row"><span class="swatch"></span> Current accent: <code>{{ prefs.accent or 'blueviolet' }}</code></p>
+<p>Current accent: <span class="swatch"></span> <code>{{ prefs.accent or 'blueviolet' }}</code></p>
 {% endblock %}

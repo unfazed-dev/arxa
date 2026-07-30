@@ -1,11 +1,16 @@
 {% extends "ui/common/base.html" %}
 {% block content %}
-<nav class="shell-nav">
-  <strong>hello-hda</strong>
-  <a href="/">Home</a>
-  <a href="/timer" preload>Timer</a>
-</nav>
-<main class="shell-main">
-  {% block surface %}{% endblock %}
-</main>
+{# Shell chrome composes the component library: one `rail` context (built by
+   main_shell_viewmodel.chrome) feeds both nav partials — the rail shows from
+   the medium rung up, the bottom nav on compact (ladder CSS lives in
+   assets/css/app.css). #}
+<div class="shell">
+  {% include "ui/widgets/components/_nav-rail.html" %}
+  <div class="shell__col">
+    <main class="shell-main">
+      {% block surface %}{% endblock %}
+    </main>
+    {% include "ui/widgets/components/_bottom-nav.html" %}
+  </div>
+</div>
 {% endblock %}

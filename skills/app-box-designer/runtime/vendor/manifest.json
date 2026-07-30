@@ -34,5 +34,11 @@
     "package": "mustache",
     "version": "4.2.0",
     "integrity": "sha384-WASZCYHGuIg0bwkJEH65mhmbKS1x4/VKI2bzElPKmL5B3e0UaH45nIdqOm+BUuRA"
+  },
+  {
+    "file": "lucide/icons/*.svg",
+    "package": "lucide-static",
+    "version": "1.27.0",
+    "integrity": "sha384-FcKTsoAfrNAQlm72mTH2j0YueLBCmw6bdz42xM+FFTPLs8te/VOKhDMJv9TJa/fQ"
   }
 ]
