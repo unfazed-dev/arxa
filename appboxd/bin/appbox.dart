@@ -14,6 +14,7 @@ import 'package:appboxd/config.dart';
 import 'package:appboxd/gate_advertise.dart';
 import 'package:appboxd/gate_intake.dart';
 import 'package:appboxd/gate_memory.dart';
+import 'package:appboxd/gate_structure.dart';
 import 'package:appboxd/gate_runner.dart';
 import 'package:appboxd/gates.dart';
 import 'package:appboxd/server.dart' as server;
@@ -176,8 +177,9 @@ GateResult _dispatchGate(String name, GateContext ctx) {
       return advertiseGate(ctx);
     case 'intake':
       return intakeGate(ctx);
+    case 'structure':
+      return structureGate(ctx);
     // The following gates are ported incrementally — uncomment as they land:
-    // case 'structure': return structureGate(ctx);
     // case 'deploy': return deployGate(ctx);
     // case 'native_deps': return nativeDepsGate(ctx);
     // case 'review' — already in Dart at gates/review/review.dart (1,658 lines)
