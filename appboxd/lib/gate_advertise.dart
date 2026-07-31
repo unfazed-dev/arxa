@@ -17,7 +17,7 @@
 //
 // Inputs (defaults relative to repoRoot):
 //   config/kit-registry.json  — recorded tier per provider
-//   tools/verification/evidence.json             — ledger of suites that ran
+//   config/evidence.json                          — ledger of suites that ran
 //   gates/advertise/offers.json                  — what each surface offers
 
 import 'dart:convert';
@@ -219,7 +219,7 @@ List<_Finding> _checkOffers(Map<String, String> idx, String offersPath) {
 GateResult advertiseGate(GateContext ctx) {
   final root = ctx.repoRoot;
   final registryPath = '$root/config/kit-registry.json';
-  final evidencePath = '$root/tools/verification/evidence.json';
+  final evidencePath = '$root/config/evidence.json';
   final offersPath = '$root/gates/advertise/offers.json';
 
   // Registry is the essential input — its absence is a hard fail, not vacuous.
