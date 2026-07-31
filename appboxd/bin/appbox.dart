@@ -20,8 +20,12 @@ import 'package:appboxd/generate_view.dart';
 import 'package:appboxd/synthesize.dart';
 import 'package:appboxd/transform_tokens.dart';
 import 'package:appboxd/gate_advertise.dart';
+import 'package:appboxd/gate_coverage.dart';
+import 'package:appboxd/gate_deploy.dart';
 import 'package:appboxd/gate_intake.dart';
 import 'package:appboxd/gate_memory.dart';
+import 'package:appboxd/gate_native_deps.dart';
+import 'package:appboxd/gate_scaffold.dart';
 import 'package:appboxd/gate_structure.dart';
 import 'package:appboxd/gate_runner.dart';
 import 'package:appboxd/gates.dart';
@@ -190,20 +194,42 @@ GateResult _dispatchGate(String name, GateContext ctx) {
       return intakeGate(ctx);
     case 'structure':
       return structureGate(ctx);
-    // The following gates are ported incrementally — uncomment as they land:
-    // case 'deploy': return deployGate(ctx);
-    // case 'native_deps': return nativeDepsGate(ctx);
-    // case 'review' — already in Dart at gates/review/review.dart (1,658 lines)
-    case 'freeze':
-    case 'scaffold':
+    case 'deploy':
+      return deployGate(ctx);
+    case 'native_deps':
+      return nativeDepsGate(ctx);
     case 'coverage':
-    case 'review':
+      return coverageGate(ctx);
+    case 'scaffold':
+      return scaffoldGate(ctx);
+    case 'freeze':
       return GateResult.env(
-        'gate "$name" is not yet ported to Dart — use the bash gate at gates/$name/${name}.sh',
-      );
+        'gate "freeze" is async (CDP) — use bash gate or gate --all');
+    case 'review':
+      // review.dart is 1,658 lines at gates/review/review.dart — call via dart run.
+      return _runReviewGate(ctx);
     default:
       return GateResult.env('unknown gate "$name"');
   }
+}
+
+GateResult _runReviewGate(GateContext ctx) {
+  final gatePath = '${ctx.repoRoot}/gates/review/review.dart';
+  if (!File(gatePath).existsSync()) {
+    return GateResult.env('review gate not found at $gatePath');
+  }
+  final args = <String>['run', gatePath];
+  if (ctx.appRoot != null) args.addAll(['--app', ctx.appRoot!]);
+  final result = Process.runSync('dart', args, workingDirectory: ctx.repoRoot);
+  final out = (result.stdout as String).trim();
+  final err = (result.stderr as String).trim();
+  if (result.exitCode == 0) {
+    return GateResult.ok('review: ${out.split('\n').last}');
+  } else if (result.exitCode == 2) {
+    return GateResult.env('review: env/not-applicable');
+  }
+  return GateResult.fail('review: ${(err.isNotEmpty ? err : out).split('\n').first}',
+      err.isNotEmpty ? err.split('\n') : out.split('\n'));
 }
 
 // ── emit ───────────────────────────────────────────────────────────
