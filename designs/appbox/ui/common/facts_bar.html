@@ -1,0 +1,53 @@
+<!-- appbox:provenance
+     generator: appbox  licence: free  project: 662368770980
+     Built with appbox (free tier) — https://appbox.dev
+-->
+{# The facts bar, shared across shells (DESIGN-ARCHITECTURE.md "Shared
+   components (views)"): a content header — eyebrow + state + facts on the
+   left, actions (filter dropdown, run control) on the right. Each shell
+   keeps a thin wrapper in its own view that passes its domain data through
+   `spec` — facades stay untouched. Macro-only file, so importing it from a
+   fragment render never emits stray markup.
+
+   spec:
+     eyebrow, state  — the left cluster's eyebrow line and bold state label
+     facts: [string] — muted fact spans, pre-rendered by the caller
+     filter: { summaryAria, summaryTitle, summary, target, swap, url, active,
+               options: [{id, label} | string] } — the type/epic/release
+               dropdown; `url` is the full href prefix up to '='. Absent when
+               the surface has no filter.
+     control: { action, value, title, icon } — run pause/resume (build). #}
+{% macro factsBar(c, oob, spec) %}
+<header class="facts-bar" id="facts-bar" {% if oob %}hx-swap-oob="outerHTML"{% endif %}>
+  <span class="facts-bar-main">
+    <span class="eyebrow">{{ spec.eyebrow }}</span>
+    <strong class="facts-state">{{ spec.state }}</strong>
+    <span class="facts-list">
+      {% for f in spec.facts %}<span>{{ f }}</span>{% endfor %}
+    </span>
+  </span>
+  <span class="facts-acts">
+    {% if spec.filter %}
+    <details class="facts-filter">
+      <summary aria-label="{{ spec.filter.summaryAria }}" title="{{ spec.filter.summaryTitle }}">
+        {{ spec.filter.summary }}{{ icon('chevron-down', {size: 14, cls: 'caret'}) }}
+      </summary>
+      <span class="filter-menu">
+        {% for o in spec.filter.options %}
+        {% set oid = o.id or o %}
+        <a class="filter-item {{ 'is-active' if spec.filter.active == oid }}"
+           href="{{ spec.filter.url }}{{ oid | urlencode }}"
+           hx-get="{{ spec.filter.url }}{{ oid | urlencode }}" hx-target="{{ spec.filter.target }}" hx-swap="{{ spec.filter.swap }}" hx-push-url="false">{{ o.label or oid }}</a>
+        {% endfor %}
+      </span>
+    </details>
+    {% endif %}
+    {% if spec.control %}
+    <form method="post" action="{{ spec.control.action }}" hx-post="{{ spec.control.action }}" hx-target="#facts-bar" hx-swap="outerHTML">
+      <button type="submit" name="action" value="{{ spec.control.value }}" class="ico-btn"
+              title="{{ spec.control.title }}" aria-label="{{ spec.control.title }}">{{ icon(spec.control.icon, {size: 16}) }}</button>
+    </form>
+    {% endif %}
+  </span>
+</header>
+{% endmacro %}

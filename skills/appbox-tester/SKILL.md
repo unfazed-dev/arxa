@@ -1,6 +1,6 @@
 ---
 name: appbox-tester
-description: Use when writing/running tests for a appbox-built target — mocktail the repository Ports for unit/TDD, probe-runner for visual + smoke, Patrol for native E2E. Trigger on "test the app", "write tests", "TDD", "visual test", "smoke test", "E2E".
+description: Use when writing/running tests for a appbox-built target — mocktail the repository Ports for unit/TDD, appbox lens (appboxd/lib/lens.dart, the probe-runner port) for visual + smoke, Patrol for native E2E. Trigger on "test the app", "write tests", "TDD", "visual test", "smoke test", "E2E".
 ---
 
 # tester — TDD (Ports mocked), visual, smoke, E2E
@@ -30,8 +30,8 @@ expect(await viewModel.load(), [sample]);
 |-------|------|--------|
 | unit | `flutter_test` + **mocktail** | VM logic, Port contracts (Ports mocked) |
 | widget | `flutter_test` | a View renders given a VM state |
-| smoke | **probe-runner** (`appbox lens (appboxd/lib/lens.dart)`, Flutter target) | app boots, first screen renders, no crash |
-| visual | **probe-runner** (`appbox lens (appboxd/lib/lens.dart)`, screencapture) | pixel diff vs the source `design/*.html` |
+| smoke | **appbox lens** (`appboxd/lib/lens.dart` over `cdp.dart`, Flutter target) | app boots, first screen renders, no crash |
+| visual | **appbox lens** (golden capture + compare; console/page errors fail) | byte/pixel diff vs the source `design/*.html` golden |
 | E2E | **Patrol** (native) | real taps/scrolls across screens on ios/android |
 
 ## i18n (when the target carries `l10n/`)

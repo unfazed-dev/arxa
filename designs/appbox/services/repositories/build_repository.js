@@ -24,6 +24,6 @@ export const narrative = (locale = 'en') => data(locale).narrative;
 export const replies = (locale = 'en') => data(locale).replies;
 export const replyFallback = (locale = 'en') => data(locale).replyFallback;
 export const counts = (locale = 'en') => data(locale).counts;
-// Seeded rail-view data — the real git wiring is a later stage.
+// Seeded activity-view data — the real git wiring is a later stage.
 export const commits = (locale = 'en') => data(locale).commits;
 export const files = (locale = 'en') => data(locale).files;

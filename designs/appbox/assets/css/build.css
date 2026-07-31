@@ -12,13 +12,13 @@
 .gate-quick button { padding: .35rem .9rem; font-size: .78rem; }
 
 /* ---------- activity panel views ---------- */
-.rail-view {
+.av-view {
   flex: 1; min-height: 0; overflow-y: auto;
   display: flex; flex-direction: column; gap: .8rem;
   padding: .8rem;
 }
-.rail-view-head { display: flex; flex-direction: column; gap: .28rem; }
-.rail-view-note { font-size: .76rem; margin: 0; }
+.av-view-head { display: flex; flex-direction: column; gap: .28rem; }
+.av-view-note { font-size: .76rem; margin: 0; }
 
 /* run view: whole-line control + per-stage rows with pause/resume/cancel */
 .run-controls { display: flex; }

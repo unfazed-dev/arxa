@@ -1,5 +1,5 @@
 name: appbox_kit_documents
-description: API-first document kit — typed ports for document scanning, OCR and PDF (stubbed, native-first for phase 2) plus a working file_selector-backed document picker. Plugin-neutral value types; no XFile leakage.
+description: API-first document kit — typed ports for document scanning and OCR (stubbed, native-first for phase 2), PDF rendering + interactive viewer via pdfrx, plus a working file_selector-backed document picker. Plugin-neutral value types; no XFile leakage.
 version: 0.1.0
 publish_to: 'none'
 

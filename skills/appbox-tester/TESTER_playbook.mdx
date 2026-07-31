@@ -3,7 +3,7 @@
 
 `app-box-tester` · status: **active**
 
-**Role (one line):** write and run tests for a built target — mocktail the repository Ports for unit/TDD, probe-runner for visual + smoke, Patrol for native E2E.
+**Role (one line):** write and run tests for a built target — mocktail the repository Ports for unit/TDD, appbox lens (`appboxd/lib/lens.dart`, the probe-runner port) for visual + smoke, Patrol for native E2E.
 
 **Scope of this document:** lets a human OR an LLM drive the test phase without reading the skill source. Folded from `SKILL.md`.
 
@@ -24,7 +24,7 @@ The architecture contract is statically enforced by `arch_guard` — do not re-a
 
 ### Procedure
 
-TDD loop (red-green-refactor): red — write the test first against a repository Port (interface in `domain/`), mocking it with mocktail (no codegen); it fails with no impl. Green — builder emits the minimum code to pass (Ports locator-injected; adapter behind the Port). Refactor — keep tests green; `arch_guard` stays PASS. Layers, cheapest first: unit (`flutter_test` + mocktail, VM logic + Port contracts); widget (`flutter_test`, a View renders given a VM state); smoke (probe-runner: app boots, first screen renders, no crash); visual (probe-runner screencapture, pixel diff vs `design/*.html`); E2E (Patrol, real taps/scrolls on ios/android).
+TDD loop (red-green-refactor): red — write the test first against a repository Port (interface in `domain/`), mocking it with mocktail (no codegen); it fails with no impl. Green — builder emits the minimum code to pass (Ports locator-injected; adapter behind the Port). Refactor — keep tests green; `arch_guard` stays PASS. Layers, cheapest first: unit (`flutter_test` + mocktail, VM logic + Port contracts); widget (`flutter_test`, a View renders given a VM state); smoke (appbox lens: app boots, first screen renders, no crash); visual (appbox lens golden compare, byte/pixel diff vs `design/*.html`; console/page errors fail the lens); E2E (Patrol, real taps/scrolls on ios/android).
 
 ### Outputs
 

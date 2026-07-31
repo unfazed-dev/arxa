@@ -54,7 +54,7 @@
     btn.style.top = (last.bottom - cr.top + el.scrollTop + 12) + 'px';
     // the POST base is server-rendered (v.rail.actions.bulkPinHref, carried on
     // the actions panel's own pin button); the selected ids go on the query.
-    const base = document.querySelector('#mini-rail-actions .dv-bulk-pin')?.dataset.href
+    const base = document.querySelector('#mini-panel-actions .dv-bulk-pin')?.dataset.href
       || '/design/chat/context/bulk';
     btn.addEventListener('click', () => {
       htmx.ajax('POST', base + '?ids=' + encodeURIComponent(ids.join(',')), {

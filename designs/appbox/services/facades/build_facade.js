@@ -248,11 +248,11 @@ function viewerFor(sessionData, evidence) {
   return {
     screens, bg, inspect, strip: true, static: true,
     base, stubBase: '/build/screens/',
-    // The viewer mounts its controls in the mini-rail. The Screens/Actions
+    // The viewer mounts its controls in the mini panel. The Screens/Actions
     // panels are design-canvas concepts (context pins, marquee bulk-pin);
     // build leaves them empty and opens on the Controller. No history stacks
     // here — the pair stays disabled (can:false renders without the hx-post).
-    rail: {
+    miniPanel: {
       activePanel: ['screens', 'controller', 'actions'].includes(v.panel) ? v.panel : 'controller',
       screens: [],
       controller: {

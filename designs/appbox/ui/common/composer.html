@@ -88,17 +88,17 @@
       </span>
     </details>
     {% endif %}
-    <span class="composer-undo-redo" role="group" aria-label="{{ t('miniRail.historyGroup') }}">
+    <span class="composer-undo-redo" role="group" aria-label="{{ t('miniPanel.historyGroup') }}">
       <button type="button" class="ico-btn undo-btn" {{ '' if c.undoRedo and c.undoRedo.chat.canUndo else 'disabled' }}
               {% if c.undoRedo and c.undoRedo.chat.canUndo %}
               hx-post="/design/undo/chat" hx-target="#panels" hx-swap="outerHTML"
               {% endif %}
-              title="{{ t('miniRail.undo') }}">{{ icon('undo-2', {size: 16}) }}</button>
+              title="{{ t('miniPanel.undo') }}">{{ icon('undo-2', {size: 16}) }}</button>
       <button type="button" class="ico-btn redo-btn" {{ '' if c.undoRedo and c.undoRedo.chat.canRedo else 'disabled' }}
               {% if c.undoRedo and c.undoRedo.chat.canRedo %}
               hx-post="/design/redo/chat" hx-target="#panels" hx-swap="outerHTML"
               {% endif %}
-              title="{{ t('miniRail.redo') }}">{{ icon('redo-2', {size: 16}) }}</button>
+              title="{{ t('miniPanel.redo') }}">{{ icon('redo-2', {size: 16}) }}</button>
     </span>
     <span class="composer-spacer"></span>
     {% if c.modelMenu %}

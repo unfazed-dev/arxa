@@ -15,7 +15,7 @@ export const page = (c, h) =>
 export const file = (c, h) =>
   h.render(c, `${VIEW}#fileSwap`, facade.openFile(h.session(c).data, c.req.query('path'), h.prefs(c), h.t(c), h.locale(c)));
 
-// Clicking a thread card (or a rail artifact row) opens the artifact
+// Clicking a thread card (or an activity artifact row) opens the artifact
 // center-stage and docks the chat right.
 export const artifact = (c, h) => {
   const ref = `${c.req.param('kind')}/${c.req.param('id')}`;
@@ -69,7 +69,7 @@ export const runControl = async (c, h) => {
 
 // The design viewer on the evidence canvas: controller acts swap just the
 // viewer block; the choice lives in the session. panel/inspect ride along so
-// the mini-rail tabs and the inspect toggle round-trip.
+// the mini panel tabs and the inspect toggle round-trip.
 export const evidenceViewer = (c, h) =>
   h.render(c, `${VIEW}#viewerSwap`, facade.setViewer(h.session(c).data, {
     bg: c.req.query('bg'), inspect: c.req.query('inspect'), panel: c.req.query('panel'),

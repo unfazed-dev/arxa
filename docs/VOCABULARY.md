@@ -103,7 +103,7 @@ _Layer_: Product
 A browsable collection of real apps worth stealing from, gathered per epic,
 with captured screenshots, consulted before any screen is authored.
 The per-epic reference artifact assembled by fan-out gathering: each
-reference's key screens captured by probe-runner under semantic filenames and
+reference's key screens captured by the appbox lens under semantic filenames and
 verified on disk.
 _Avoid_: inspiration board, references (bare)
 _Layer_: Product
@@ -249,9 +249,9 @@ _Layer_: Product
 
 **Golden**:
 The approved design image a built screen is compared against, pixel by pixel.
-The frozen capture used by probe-runner design-vs-built checks: pixel (SSIM),
-skeleton, and colour (ΔE) comparisons against it, rendered to the user as
-X/100 match scores.
+The frozen capture used by appbox lens design-vs-built checks: byte/pixel
+(SSIM planned) comparison against it; console/page errors fail the lens
+regardless of pixel match.
 _Avoid_: screenshot (bare), reference image, baseline
 _Layer_: Product
 
@@ -379,12 +379,18 @@ derive from targets, never from hand decisions.
 _Avoid_: boilerplate, codegen (bare)
 _Layer_: Pipeline
 
-**probe-runner**:
+**appbox lens**:
 The robot photographer: captures screens of the design and of the built app
 so they can be compared honestly.
-The capture/compare tool behind moodboard shots, flows-canvas captures, and
-the design-vs-built visual gates (SSIM, skeleton, ΔE against the golden).
-_Avoid_: screenshot tool, test runner
+The appbox-native capture/compare tool — `appboxd/lib/lens.dart` over the CDP
+client (`appboxd/lib/cdp.dart`) — behind moodboard shots, flows-canvas
+captures, and the design-vs-built visual gates (byte/pixel against the
+golden; console/page errors are an automatic failure). The promoted port of
+the archived probe-runner: **for anything regarding appbox, appbox's own
+tools come first** — lens (and the `appbox` CLI: gate, crud, serve, emit,
+lint, watermark) before any external or archived tooling. If a capture verb
+is missing, extend lens.dart/cdp.dart; never reach back for probe-runner.
+_Avoid_: screenshot tool, test runner, probe-runner (archived name)
 _Layer_: Pipeline
 
 ---

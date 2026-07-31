@@ -69,7 +69,7 @@
 {% endmacro %}
 
 {% macro chatThread(c) %}
-<div class="rail-list chat-thread" id="chat-thread">
+<div class="av-list chat-thread" id="chat-thread">
   {% for m in c.messages | reverse %}
   {{ msgCard(c, m) }}
   {% endfor %}
@@ -116,15 +116,15 @@
 {# ---------- the activity panel ---------- #}
 
 {% macro runView(c) %}
-<div class="rail-view run-view">
-  <header class="rail-view-head">
+<div class="av-view run-view">
+  <header class="av-view-head">
     <span class="eyebrow">{{ t('build.runEyebrow', {number: c.run.number, brief: c.run.brief}) }}</span>
-    <strong class="rail-state">{{ c.run.stateLabel }}</strong>
-    <span class="rail-facts">
+    <strong class="facts-state">{{ c.run.stateLabel }}</strong>
+    <span class="facts-list">
       <span>{{ t('build.started') }} {{ c.run.started }}</span>
       <span>{{ t('build.elapsedFact') }} {{ c.run.elapsed }}</span>
-      <span>{{ t('railStopOnRed') }} {{ t('build.on') if c.run.policy.stopOnRed else t('build.off') }}</span>
-      <span>{{ t('railEsc') }} {{ c.run.policy.escLimit }}</span>
+      <span>{{ t('facts.stopOnRed') }} {{ t('build.on') if c.run.policy.stopOnRed else t('build.off') }}</span>
+      <span>{{ t('facts.esc') }} {{ c.run.policy.escLimit }}</span>
     </span>
   </header>
   <form class="run-controls" method="post" action="/build/run/control"
@@ -168,20 +168,20 @@
 {% endmacro %}
 
 {% macro threadView(c) %}
-<div class="rail-view thread-view">
-  <p class="rail-view-note muted">{{ t('build.filterNote') }}</p>
+<div class="av-view thread-view">
+  <p class="av-view-note muted">{{ t('build.filterNote') }}</p>
   <nav class="thread-filter" aria-label="{{ t('build.filterAria') }}">
     {% for o in [{id: 'all', label: t('build.filter.all')}, {id: 'stage', label: t('build.filter.stage')}, {id: 'gate', label: t('build.filter.gate')}, {id: 'findings', label: t('build.filter.findings')}, {id: 'evidence', label: t('build.filter.evidence')}, {id: 'note', label: t('build.filter.note')}] %}
     <a class="filter-item {{ 'is-active' if c.filter == o.id }}"
-       href="/build/rail?type={{ o.id }}"
-       hx-get="/build/rail?type={{ o.id }}" hx-target="#panel-left-body" hx-swap="innerHTML" hx-push-url="false">{{ o.label }}</a>
+       href="/build/panel?type={{ o.id }}"
+       hx-get="/build/panel?type={{ o.id }}" hx-target="#panel-left-body" hx-swap="innerHTML" hx-push-url="false">{{ o.label }}</a>
     {% endfor %}
   </nav>
 </div>
 {% endmacro %}
 
 {% macro artifactsView(c) %}
-<div class="rail-view artifacts-view">
+<div class="av-view artifacts-view">
   <ul class="artifact-index">
     {% for a in c.artifacts %}
     <li>
@@ -199,8 +199,8 @@
 {% endmacro %}
 
 {% macro commitsView(c) %}
-<div class="rail-view commits-view">
-  <p class="rail-view-note muted">{{ t('build.commitsNote') }}</p>
+<div class="av-view commits-view">
+  <p class="av-view-note muted">{{ t('build.commitsNote') }}</p>
   <ol class="commit-list">
     {% for cm in c.commits | reverse %}
     <li class="commit">
@@ -213,8 +213,8 @@
 {% endmacro %}
 
 {% macro filesView(c) %}
-<div class="rail-view files-view">
-  <p class="rail-view-note muted">{{ t('build.filesNote') }}</p>
+<div class="av-view files-view">
+  <p class="av-view-note muted">{{ t('build.filesNote') }}</p>
   <ul class="file-list">
     {% for f in c.files %}
     <li class="file-row">

@@ -12,7 +12,7 @@ const VIEW = 'ui/views/main_shell/design/chat/chat_view.html';
 export const page = (c, h) =>
   h.render(c, VIEW, { activeShell: 'design', ...facade.stageContext(h.session(c).data, { line: 'refine', pin: c.req.query('screen') ?? null, file: c.req.query('file'), panel: c.req.query('panel') }, h.prefs(c), h.t(c), h.locale(c)) });
 
-// Filmstrip thumb / artboard pin / rail card: toggle a screen's context chip
+// Filmstrip thumb / artboard pin / activity card: toggle a screen's context chip
 // (?state=toggle|on|off) — one swap re-renders chat chips + canvas outlines.
 export const context = (c, h) =>
   h.render(c, `${VIEW}#panelsSwap`, facade.toggleContext(h.session(c).data, c.req.param('id'), c.req.query('state') ?? 'toggle', h.prefs(c), h.t(c), h.locale(c)));

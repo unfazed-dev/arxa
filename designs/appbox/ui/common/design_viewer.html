@@ -10,8 +10,8 @@
    stays always-on where the shell passes a contextBase. The retired
    prototype mode (the device-chrome wired-app preview) is gone — the design
    shell itself plus inspect/fine-tuning replaces it.
-   The bottom-anchored mini-rail (Screens / Controller / Actions panels)
-   renders inside the viewer via ui/common/mini_rail.html. Canon markup:
+   The bottom-anchored mini panel (Screens / Controller / Actions panels)
+   renders inside the viewer via ui/common/mini_panel.html. Canon markup:
    canvas-redesign-contract.md §3. Every parameter travels in v (the shell's
    facade viewerFor produces it — see contract §1):
      v.screens  [{ id, label?, state?, chips? [{text,title}], viewports,
@@ -31,7 +31,7 @@
    A viewport entry is a key ('mobile'|'tablet'|'desktop') or an authored
    object { vp, width, height?, rung?, note?, shot? }. Wiring:
    ui/common/_integration_viewer.md. #}
-{% import "ui/common/mini_rail.html" as mr %}
+{% import "ui/common/mini_panel.html" as mn %}
 
 {% macro designViewer(v) %}
 {% set VP_SIZES = {'mobile': [390, 844], 'tablet': [744, 1133], 'desktop': [1280, 800]} %}
@@ -91,8 +91,8 @@
     </div>
   </div>
 
-  {# MINI-RAIL — bottom-anchored floating controller (Screens / Controller /
+  {# MINI PANEL — bottom-anchored floating controller (Screens / Controller /
      Actions). Rendered inside the viewer so it stays in sync on every swap. #}
-  {{ mr.miniRail(v) }}
+  {{ mn.miniPanel(v) }}
 </div>
 {% endmacro %}

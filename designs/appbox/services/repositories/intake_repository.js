@@ -37,7 +37,7 @@ export const replies = (locale = 'en') => data(locale).replies;
 export const replyFallback = (locale = 'en') => data(locale).replyFallback;
 export const questionBanks = (locale = 'en') => data(locale).questionBanks;
 // Live-map display data: pipeline status per story id, and the generated
-// file list for the files rail view. Absent keys read as 'pending'.
+// file list for the files activity view. Absent keys read as 'pending'.
 export const statuses = (locale = 'en') => data(locale).statuses ?? {};
 export const files = (locale = 'en') => data(locale).files ?? [];
 // Initial interview state; the facade clones it into the session.

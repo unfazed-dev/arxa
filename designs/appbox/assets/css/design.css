@@ -1,5 +1,5 @@
 /* design.css — design-shell surfaces (prototype / chat / freeze).
-   Reuses app.css idioms (rail, mp-content, msg, provenance, log-lines,
+   Reuses app.css idioms (facts-bar, mp-content, msg, provenance, log-lines,
    evidence, finding, toast) and the panel chrome from composer.css /
    panels.css; only surface-specific styles live here. Context tones:
    composer.css owns the shared palette (cyan/violet/olive/amber), viewer.css
@@ -32,11 +32,11 @@
 .cp-revert { margin: 0; }
 .cp-revert button { padding: .3rem .75rem; font-size: .76rem; }
 
-/* ---------- the left rail: screens / artifacts / files views ---------- */
-a.rail-row { text-decoration: none; color: inherit; }
-a.rail-row:hover { border-color: var(--tx-3); }
-.rail-row code { overflow-wrap: anywhere; }
-/* a pinned screen's rail card carries its context tone (same hue as the
+/* ---------- the activity panel: screens / artifacts / files views ---------- */
+a.av-row { text-decoration: none; color: inherit; }
+a.av-row:hover { border-color: var(--tx-3); }
+.av-row code { overflow-wrap: anywhere; }
+/* a pinned screen's activity card carries its context tone (same hue as the
    canvas outline and the chat chip) */
 .msg-ctx { border-color: var(--ctx); }
 .msg-ctx .cta-main { color: var(--ctx); box-shadow: inset 0 0 0 1px var(--ctx); }

@@ -6,7 +6,6 @@
 {% import "ui/common/primitives.html" as prim %}
 {% import "ui/common/timeline.html" as tl %}
 {% import "ui/common/design_viewer.html" as dv %}
-{% import "ui/common/mini_rail.html" as mr %}
 {% import "ui/views/main_shell/design/_shared.html" as sh %}
 {% block title %}{{ t('design.pageTitle') }}{% endblock %}
 {% block main_class %}shell-main-loop{% endblock %}
@@ -54,8 +53,8 @@
 
 {% macro activitySwap(c) %}{{ sh.activitySwap(c) }}{% endmacro %}
 
-{# The rail handle's response: the whole rail re-rendered at its new persisted
-   size (the aside is server state now, so replacing it loses nothing). #}
+{# The drag handle's response: the whole activity panel re-rendered at its
+   new persisted size (the aside is server state, so replacing it loses nothing). #}
 {% macro activityFrameSwap(c) %}{{ sh.activityPanel(c) }}{% endmacro %}
 
 {% macro viewerSwap(c) %}{{ dv.designViewer(c.viewer) }}{% endmacro %}

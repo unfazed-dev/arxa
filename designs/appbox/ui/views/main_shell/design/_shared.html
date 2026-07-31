@@ -12,7 +12,7 @@
    already relies on caller); the composer's tray owns the pinned-screens
    filmstrip. #}
 {% import "ui/common/primitives.html" as prim %}
-{% import "ui/common/rail.html" as rail %}
+{% import "ui/common/facts_bar.html" as fb %}
 {% import "ui/common/panel_views.html" as pv %}
 {% import "ui/common/composer_panel.html" as cp %}
 {% import "ui/common/composer.html" as cm %}
@@ -94,14 +94,14 @@
 {# ---------- the activity panel: one multi-view frame, screens / artifacts / files ---------- #}
 
 {% macro runBar(c, oob) %}
-{{ rail.railBar(c, oob, {
+{{ fb.factsBar(c, oob, {
   eyebrow: t('design.runEyebrow', {number: c.run.number, brief: c.run.brief}),
   state: c.run.stateLabel,
   facts: [t('surfaces.count', {count: c.counts.screens}), t('design.shotsFact', {count: c.counts.shots}), c.run.rungsLabel],
   filter: {
     summaryAria: t('design.filterAria'), summaryTitle: t('design.filterTitle'),
     summary: c.filter if c.filter != 'all' else t('design.allEpics'),
-    target: '#rail-list', swap: 'outerHTML', url: '/design/panel?epic=', active: c.filter,
+    target: '#av-list', swap: 'outerHTML', url: '/design/panel?epic=', active: c.filter,
     options: [{id: 'all', label: t('design.allEpics')}].concat(c.epics)
   }
 }) }}
@@ -130,7 +130,7 @@
 {% endmacro %}
 
 {% macro screenList(c, oob) %}
-<div class="rail-list" id="rail-list" {% if oob %}hx-swap-oob="outerHTML"{% endif %}>
+<div class="av-list" id="av-list" {% if oob %}hx-swap-oob="outerHTML"{% endif %}>
   {% for s in c.screens %}
   {{ screenCard(c, s) }}
   {% else %}
@@ -143,9 +143,9 @@
    #panel-left-body (the id panel_views.frame owns). #}
 {% macro activityBody(c) %}
 {% if c.activityView == 'artifacts' %}
-<div class="rail-list" id="rail-list">
+<div class="av-list" id="av-list">
   {% for a in c.artifacts %}
-  <a class="msg msg-agent rail-row" href="{{ a.href }}">
+  <a class="msg msg-agent av-row" href="{{ a.href }}">
     <header class="msg-meta">{{ prim.typeBadge(a.kind) }}</header>
     <span class="msg-text">{{ a.label }}</span>
     <span class="msg-detail">{{ a.detail }}</span>
@@ -153,16 +153,16 @@
   {% endfor %}
 </div>
 {% elif c.activityView == 'files' %}
-<div class="rail-list" id="rail-list">
+<div class="av-list" id="av-list">
   {% for f in c.files %}
   {% if f.mode %}
-  <a class="msg msg-agent rail-row {{ 'is-active' if c.fileView and c.fileView.path == f.path }}" href="{{ f.href }}"
+  <a class="msg msg-agent av-row {{ ''is-active' if c.fileView and c.fileView.path == f.path }}" href="{{ f.href }}"
      hx-get="{{ f.get }}" hx-target="#panel-main" hx-swap="innerHTML" hx-push-url="{{ f.href }}">
     <span class="msg-text"><code>{{ f.path }}</code></span>
     <span class="msg-detail">{{ f.detail }}</span>
   </a>
   {% else %}
-  <div class="msg msg-agent rail-row">
+  <div class="msg msg-agent av-row">
     <span class="msg-text"><code>{{ f.path }}</code></span>
     <span class="msg-detail">{{ f.detail }}</span>
   </div>

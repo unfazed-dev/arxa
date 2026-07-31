@@ -147,7 +147,7 @@ const applyEntry = (d, entry, dir) => {
 // ---------- the shared design viewer (ui/common/design_viewer.html) ----------
 // One content mode: 'flow' — every screen as a draggable tile grouped by
 // shell (the retired prototype mode's device-chrome preview is gone; the
-// design shell itself plus inspect/fine-tuning replaces it). The mini-rail
+// design shell itself plus inspect/fine-tuning replaces it). The mini panel
 // (screens/controller/actions) + undo/redo + element chips are always
 // produced.
 const RUNG_VP = { 390: 'mobile', 744: 'tablet', 1280: 'desktop' };
@@ -187,7 +187,7 @@ function viewerFor(d, L, t) {
     return qs ? `${base}?${qs}` : base;
   };
 
-  const rail = {
+  const miniPanel = {
     activePanel: panel,
     screens: screens.map((s) => ({
       id: s.id, label: s.label, tone: s.tone, inContext: s.inContext, dim: s.dim,
@@ -213,7 +213,7 @@ function viewerFor(d, L, t) {
     screens, bg,
     strip: true,
     base, stubBase: '/build/screens/', contextBase,
-    rail,
+    miniPanel,
     undoRedo: {
       canvas: { canUndo: (d.undoStacks?.canvas?.length ?? 0) > 0, canRedo: (d.redoStacks?.canvas?.length ?? 0) > 0 },
       chat:   { canUndo: (d.undoStacks?.chat?.length ?? 0) > 0, canRedo: (d.redoStacks?.chat?.length ?? 0) > 0 },
@@ -338,7 +338,7 @@ export const stageContext = (sessionData = {}, opts = {}, prefs = {}, t = (k) =>
     viewer,
     // The shared composer reads these at stage level (composer.html: element
     // chips in the tray, the chat undo/redo pair) — the viewer keeps its own
-    // copies for the mini-rail (contract §1).
+    // copies for the mini panel (contract §1).
     elements: viewer.elements,
     undoRedo: viewer.undoRedo,
     thread,

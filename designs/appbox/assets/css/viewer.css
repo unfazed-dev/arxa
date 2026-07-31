@@ -32,7 +32,7 @@
 .dv-flow { position: relative; flex: 1; overflow: hidden; }
 .dv-flow-canvas {
   position: relative; overflow: auto; flex: 1; min-height: 32rem;
-  /* bottom pad lets the last tile row scroll clear of the floating mini-rail */
+  /* bottom pad lets the last tile row scroll clear of the floating mini panel */
   padding: 1rem 1rem 11rem; cursor: default;
 }
 .dv-flow-canvas:active { cursor: grabbing; }
@@ -100,14 +100,14 @@
   background: var(--accent, #0891b2); color: #fff; border: none; cursor: pointer;
   font-size: .78rem; box-shadow: var(--shadow-1);
 }
-#mini-rail-actions .dv-bulk-pin { position: static; }
+#mini-panel-actions .dv-bulk-pin { position: static; }
 
-/* ---------- mini-rail: bottom-anchored floating controller ---------- */
+/* ---------- mini panel: bottom-anchored floating controller ---------- */
 /* floats over the viewer's bottom edge, centered — absolute against
    .design-viewer (position:relative), never consuming layout height. A plain
-   card radius, NOT a 999px pill: with a panel open the rail is far taller
+   card radius, NOT a 999px pill: with a panel open the bar is far taller
    than it is deep, and a pill radius on that box renders as an ellipse. */
-.mini-rail {
+.mini-panel {
   position: absolute; left: 50%; bottom: .5rem; transform: translateX(-50%);
   z-index: 15;
   max-width: calc(100% - 1rem);
@@ -115,40 +115,40 @@
   border-radius: var(--radius); box-shadow: var(--shadow-1);
   overflow: hidden;
 }
-.mini-rail-bar {
+.mini-panel-bar {
   display: flex; gap: .15rem; padding: .25rem;
   border-bottom: 1px solid var(--border);
 }
-.mini-rail-tab {
+.mini-panel-tab {
   display: inline-flex; align-items: center; justify-content: center;
   /* padding:0 — the app.css global button rule's .45rem/1.05rem padding eats
      the whole 2rem box and flex-shrinks the icon svg to width 0 */
   width: 2rem; height: 2rem; padding: 0; border: none; border-radius: var(--radius);
   background: transparent; color: var(--tx-3); cursor: pointer;
 }
-.mini-rail-tab:hover { background: var(--bg-2, rgba(0,0,0,.04)); color: var(--tx); }
-.mini-rail-tab.is-active { background: var(--accent-soft, rgba(8,145,178,.12)); color: var(--accent, #0891b2); }
-.mini-rail-panels { padding: .2rem .5rem; }
-.mini-rail-panel {
+.mini-panel-tab:hover { background: var(--bg-2, rgba(0,0,0,.04)); color: var(--tx); }
+.mini-panel-tab.is-active { background: var(--accent-soft, rgba(8,145,178,.12)); color: var(--accent, #0891b2); }
+.mini-panel-bodys { padding: .2rem .5rem; }
+.mini-panel-body {
   display: flex; gap: .6rem; align-items: center; flex-wrap: wrap;
   font-size: .78rem;
 }
-.mini-rail-group { display: inline-flex; gap: .2rem; align-items: center; }
-.mini-rail-group + .mini-rail-group { border-left: 1px solid var(--border); padding-left: .6rem; }
-.mini-rail-strip {
+.mini-panel-group { display: inline-flex; gap: .2rem; align-items: center; }
+.mini-panel-group + .mini-panel-group { border-left: 1px solid var(--border); padding-left: .6rem; }
+.mini-panel-strip {
   display: flex; gap: .4rem; overflow-x: auto; max-width: 40rem;
   padding-bottom: .2rem; scrollbar-width: none;
 }
-.mini-rail-strip::-webkit-scrollbar { display: none; }
+.mini-panel-strip::-webkit-scrollbar { display: none; }
 /* the strip's thumbs use the same compact scale as the composer tray's —
    the unconstrained .dv-thumb default (12.4rem clip over a 390px iframe) is
-   what blew the rail up into the giant ellipse */
-.mini-rail-strip .dv-thumb { width: 5.6rem; }
-.mini-rail-strip .dv-thumb-clip { height: 7.2rem; }
-.mini-rail-strip .dv-thumb-clip iframe { transform: scale(.221); }
-.mini-rail-info { color: var(--tx-3); font-size: .72rem; }
+   what blew the bar up into the giant ellipse */
+.mini-panel-strip .dv-thumb { width: 5.6rem; }
+.mini-panel-strip .dv-thumb-clip { height: 7.2rem; }
+.mini-panel-strip .dv-thumb-clip iframe { transform: scale(.221); }
+.mini-panel-info { color: var(--tx-3); font-size: .72rem; }
 /* .ico-btn base + :hover live in chrome.css (circular icon button); these add
-   the disabled and active-on variants the mini-rail controller buttons need */
+   the disabled and active-on variants the mini panel controller buttons need */
 .ico-btn:disabled { opacity: .35; cursor: default; }
 .ico-btn.on { color: var(--accent, #0891b2); }
 

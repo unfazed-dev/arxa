@@ -1,6 +1,6 @@
 ---
 name: appbox-moodboarder
-description: "Turn a story map / requirements brief into a browsable moodboard of real reference apps — fans out one gathering subagent per epic, captures screenshots of the key screens with probe-runner under semantic filenames, and assembles the moodboard the appbox-designer consults alongside docs/design/brief.md. Runs after appbox-story-mapper, before design. Trigger on moodboard, design references, visual direction, 'what should it look like', gather reference apps, capture screenshots for design."
+description: "Turn a story map / requirements brief into a browsable moodboard of real reference apps — fans out one gathering subagent per epic, captures screenshots of the key screens with the appbox lens under semantic filenames, and assembles the moodboard the appbox-designer consults alongside docs/design/brief.md. Runs after appbox-story-mapper, before design. Trigger on moodboard, design references, visual direction, 'what should it look like', gather reference apps, capture screenshots for design."
 license: MIT
 ---
 
@@ -28,7 +28,7 @@ Also runnable standalone whenever a requirement needs visual references
    holds 3+ features). Each slice gets one subagent; slices fan out in
    parallel (one message, ≤8).
 2. **Gather** — each subagent runs the prompt template below.
-3. **Capture** — screenshots of every key screen, via probe-runner, under the
+3. **Capture** — screenshots of every key screen, via the appbox lens, under the
    filename convention below.
 4. **Assemble** — one moodboard doc per slice + embedded local shots.
 5. **Verify** — every embedded `![](shots/…)` path resolves to a file on
