@@ -10,9 +10,14 @@
 
 import 'dart:io';
 
+import 'package:appboxd/blueprint.dart';
 import 'package:appboxd/config.dart';
 import 'package:appboxd/emit_htmx.dart';
+import 'package:appboxd/emit_playground.dart';
+import 'package:appboxd/emit_stage.dart';
 import 'package:appboxd/emit_structure.dart';
+import 'package:appboxd/generate_view.dart';
+import 'package:appboxd/synthesize.dart';
 import 'package:appboxd/transform_tokens.dart';
 import 'package:appboxd/gate_advertise.dart';
 import 'package:appboxd/gate_intake.dart';
@@ -206,7 +211,8 @@ GateResult _dispatchGate(String name, GateContext ctx) {
 void _runEmit(List<String> args) {
   if (args.isEmpty) {
     stderr.writeln('appbox emit: missing emitter name');
-    stderr.writeln('  emitters: structure, htmx, playground, transform_tokens');
+    stderr.writeln('  emitters: structure, htmx, playground, transform_tokens,');
+    stderr.writeln('            synthesize, blueprint, emit_stage, generate_view');
     exit(2);
   }
 
@@ -218,6 +224,8 @@ void _runEmit(List<String> args) {
   String? designDir;
   var check = false;
 
+  // Collect positional args (not flags).
+  final positional = <String>[];
   for (var i = 0; i < rest.length; i++) {
     switch (rest[i]) {
       case '--app':
@@ -229,6 +237,27 @@ void _runEmit(List<String> args) {
       case '--check':
         check = true;
         break;
+      case '--apply':
+        break;
+      case '--tokens':
+      case '--out':
+      case '--breakdown':
+      case '--spec':
+      case '--target':
+      case '--blueprint':
+      case '--primitives':
+      case '--maps':
+      case '--design-html':
+      case '--catalog':
+        // Consume the value so it doesn't become positional.
+        i++;
+        break;
+      default:
+        if (rest[i].startsWith('--')) {
+          i++; // skip flag value if present
+        } else {
+          positional.add(rest[i]);
+        }
     }
   }
 
@@ -244,7 +273,36 @@ void _runEmit(List<String> args) {
     case 'htmx':
       emitHtmx('$appRoot/$designDir', check: check).then((rc) => exit(rc));
       return;
+    case 'playground':
+      emitPlayground('$appRoot/$designDir', check: check).then((rc) => exit(rc));
+      return;
+    case 'synthesize':
+      if (positional.length < 5) {
+        stderr.writeln('appbox emit synthesize: needs <primitives> <maps> <design-html> <catalog> <out>');
+        exit(2);
+      }
+      exit(synthesize(positional[0], positional[1], positional[2], positional[3], positional[4]));
+    case 'blueprint':
+      if (positional.length < 2) {
+        stderr.writeln('appbox emit blueprint: needs <breakdown.json> <out-dir> [--tokens <path>]');
+        exit(2);
+      }
+      exit(buildBlueprint(positional[0], positional[1], tokensPath: _flagValue(rest, '--tokens')));
+    case 'emit_stage':
+      if (positional.length < 2) {
+        stderr.writeln('appbox emit emit_stage: needs <blueprint-dir> <target-dir> [--apply]');
+        exit(2);
+      }
+      exit(emitStage(positional[0], positional[1], apply: rest.contains('--apply')));
+    case 'generate_view':
+      if (positional.length < 2) {
+        stderr.writeln('appbox emit generate_view: needs <spec.json> <out.dart> [--tokens <path>]');
+        exit(2);
+      }
+      exit(generateView(positional[0], positional[1], tokensPath: _flagValue(rest, '--tokens')));
   }
+  stderr.writeln('appbox emit: unknown emitter "$emitter"');
+  exit(2);
 }
 
 // ── serve ──────────────────────────────────────────────────────────
@@ -268,6 +326,11 @@ void _runServe(List<String> args) {
 }
 
 // ── helpers ────────────────────────────────────────────────────────
+
+String? _flagValue(List<String> args, String flag) {
+  final i = args.indexOf(flag);
+  return (i >= 0 && i + 1 < args.length) ? args[i + 1] : null;
+}
 
 String? _findRepoRoot() {
   var dir = Directory.current;
