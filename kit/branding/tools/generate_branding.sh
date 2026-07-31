@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# branding/tools/generate_branding.sh — vendoring codegen for a stacked_kit host app.
+# branding/tools/generate_branding.sh — vendoring codegen for a appbox_kit host app.
 #
 # Emits into <host_app>:
 #   lib/ui/common/generated/brand_colors.dart   kit ramp constants; accent := kcPrimaryColor

@@ -1,0 +1,531 @@
+{
+  "$id": "flutter-crew.web-shadcn-ui",
+  "$comment": "Shape: globalFacts (object) + map: { canonicalId -> PlatformMapping }. PlatformMapping fields defined in ../schemas/breakdown.schema.json.",
+  "platform": "web",
+  "system": "shadcn_ui (Flutter port of shadcn/ui)",
+  "package": "shadcn_ui",
+  "publisher": "nank1ro (github.com/nank1ro/flutter-shadcn-ui)",
+  "version": "0.54.0",
+  "license": "MIT",
+  "canonicalVersion": "1.0.0",
+  "globalFacts": {
+    "install": "pubspec: shadcn_ui: ^0.54.0  (pin exact — frequent breaking changes). Requires Flutter >=3.41.0 / Dart >=3.11.0. All 6 platforms incl web.",
+    "bootstrap": "runApp(ShadApp(theme: ShadThemeData(colorScheme: ShadSlateColorScheme.light(), radius: 0.7), darkTheme: ShadThemeData(colorScheme: ShadSlateColorScheme.dark()), themeMode: ThemeMode.system, home: Home())). ShadApp also has .router / .custom / ShadAppBuilder variants. ShadcnLayer for Material interop.",
+    "prefixRule": "Widget prefix is Shad (NOT Shadcn). Bootstrap class is ShadApp (NOT ShadcnApp / ShadcnApp.bootstrap — those do NOT exist).",
+    "theming": "ShadThemeData(colorScheme, radius, scaling, typography, iconTheme, platform). Dark mode via themeMode (animated). ColorScheme tokens: background, foreground, card(+Fg), popover(+Fg), primary(+Fg), secondary(+Fg), muted(+Fg), accent(+Fg), destructive(+Fg), border, input, ring, selection, custom:Map<String,Color>. NO chart1-5 (use custom map).",
+    "palettes": "13 presets, each .light()/.dark(): ShadSlateColorScheme (default), Gray, Zinc, Neutral, Stone, Red, Orange, Green, Blue, Yellow, Violet, Rose.",
+    "controlledVsUncontrolled": "value XOR controller (asserted at runtime) on Tabs, Accordion, Select, Slider, Popover, etc. Pick one.",
+    "notShipped": "Carousel, Collapsible, Command, Drawer, DataTable, Skeleton, Sidebar, Pagination, NavigationMenu, Stepper are NOT shipped. Redirects: ScrollArea → use Flutter scroll widgets; HoverCard → ShadPopover; DropdownMenu → ShadContextMenu.",
+    "icons": "lucide_icons_flutter (dep) for icon set.",
+    "motion": "flutter_animate (dep) for spring/entrance animations. No native glass; BackdropFilter for blur.",
+    "flutterBridge": "FLUTTER-ONLY (web target). Native Flutter via shadcn_ui (nank1ro 0.54.0). For web, map[id].symbol IS the Flutter widget (Shad*). EMIT RULE: symbol = map[id].symbol (the Shad widget), stack=flutter, bridge=package, nativeRef=null (it IS the Flutter implementation). NOT-shipped components (Carousel/Command/Drawer/DataTable/Skeleton/Sidebar/Pagination/NavigationMenu/Stepper) -> custom Flutter recipe per map[id].notes, bridge=pureFlutter.",
+    "nativeDecoration": "GATE G3 (native-decoration policy): a shadcn control carries ONLY native-vocabulary decoration — a lucide icon (the shadcn icon set). The Button contract has NO brand-glyph slot. A custom brand SVG the design paints inside a button (Google's 4-colour G, a partner logo) is NOT native vocabulary: in native mode DROP it from the render — do NOT force it in. DROP != discard: the asset manager RECORDS every dropped glyph in the target's NON-bundled provenance/asset_ledger.json (origin, dims, vector, reason); design render mode reproduces it. Applied to EVERY button the SAME way, incl. social-auth — in native mode every social button (Apple, Google) is a native control and ALL brand marks drop; do NOT substitute an official provider button as the native default, and do NOT keep one provider's mark but not another's. The ONLY native way a dropped mark rides a native button is converting it to a native symbol (SF Symbol on iOS / Material icon on Android), which is currently closed for trademark brand marks (licence + exact-asset requirements)."
+  },
+  "map": {
+    "surface.card": {
+      "symbol": "ShadCard",
+      "api": "ShadCard(title: Text('Title'), description: Text('sub'), footer: Text('footer'), trailing: Icon(Icons.more_horiz), child: content)",
+      "availability": "shadcn_ui 0.54.0",
+      "experimental": false,
+      "notes": "Has title/description/footer/trailing/child slots."
+    },
+    "surface.panel": {
+      "symbol": "ShadSurface / Container + decoration",
+      "api": "ShadSurface(child: content)  // or Container(decoration: BoxDecoration(color: theme.colorScheme.card, borderRadius: BorderRadius.circular(12)))",
+      "availability": "0.54.0",
+      "experimental": false,
+      "unconfirmed": true,
+      "notes": "Opaque grouped block. Use Container + BoxDecoration for full control."
+    },
+    "surface.glass": {
+      "symbol": "BackdropFilter(ImageFilter.blur) + translucent ShadSurface (no native glass)",
+      "api": "ClipRect(child: BackdropFilter(filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16), child: Container(color: Colors.white.withOpacity(0.6), child: content)))",
+      "availability": "Flutter foundation",
+      "experimental": false,
+      "unconfirmed": true,
+      "notes": "shadcn/ui web has no glass; neither does shadcn_ui. Approximate via BackdropFilter + translucent color."
+    },
+    "surface.sheet": {
+      "symbol": "ShadSheet",
+      "api": "showShadSheet(context: context, builder: (context) => ShadSheet(child: content))  // [unconfirmed exact API]",
+      "availability": "0.54.0",
+      "experimental": false,
+      "unconfirmed": true,
+      "notes": "Drawer NOT shipped. Sheet present per shadcn/ui parity — verify showShadSheet/constructor."
+    },
+    "surface.modal": {
+      "symbol": "ShadDialog / showShadDialog / ShadDialogRoute",
+      "api": "showShadDialog(context: context, builder: (context) => ShadDialog(title: Text('Title'), child: content, actions: [ShadButton(child: Text('OK'))]))",
+      "availability": "0.54.0",
+      "experimental": false,
+      "unconfirmed": true,
+      "notes": "Dialog + DialogRoute variant. Verify showShadDialog vs showDialog+ShadDialog."
+    },
+    "surface.popover": {
+      "symbol": "ShadPopover",
+      "api": "ShadPopover(controller: ctrl, child: trigger, popover: (context) => content)",
+      "availability": "0.54.0",
+      "experimental": false,
+      "notes": "Also replaces HoverCard (not shipped). Controlled via PopoverController."
+    },
+    "surface.tooltip": {
+      "symbol": "ShadTooltip",
+      "api": "ShadTooltip(controller: ctrl, child: trigger, tooltip: (context) => Text('tip'))",
+      "availability": "0.54.0",
+      "experimental": false,
+      "unconfirmed": true,
+      "notes": "Verify controller vs builder API."
+    },
+    "surface.toolbar": {
+      "symbol": "ShadAppBar / Scaffold",
+      "api": "ShadApp Scaffold: Scaffold(appBar: ShadAppBar(title: Text('Home'), actions: [IconButton(icon: Icon(LucideIcons.plus))], child: body))",
+      "availability": "0.54.0",
+      "experimental": false,
+      "unconfirmed": true,
+      "notes": "ShadAppBar exists in extras. Scaffold provides layout."
+    },
+    "surface.tabbar": {
+      "symbol": "Custom bottom nav — no shadcn mobile tabbar",
+      "api": "Custom Row of ShadButtons or Material NavigationBar",
+      "availability": "0.54.0 primitives",
+      "experimental": false,
+      "notes": "shadcn/ui is web-first; no bottom tab bar. Build custom, or use Material NavigationBar for mobile parity."
+    },
+    "surface.navrail": {
+      "symbol": "Custom / NavigationRail (Material) — no shadcn rail",
+      "api": "NavigationRail(...) or custom Column of ShadButtons",
+      "availability": "Material / custom",
+      "experimental": false,
+      "notes": "No shadcn nav rail."
+    },
+    "surface.sidebar": {
+      "symbol": "ShadResizablePanelGroup (custom) — Sidebar NOT shipped",
+      "api": "ShadResizablePanelGroup(children: [Panel(child: sidebar), Panel(child: main)])",
+      "availability": "0.54.0",
+      "experimental": false,
+      "unconfirmed": true,
+      "notes": "No Sidebar component. Use ShadResizablePanelGroup for resizable split, or custom Drawer/Side panel."
+    },
+    "surface.list": {
+      "symbol": "ListView + custom rows",
+      "api": "ListView(children: items.map((i) => ShadCard(child: Row(...))).toList())",
+      "availability": "Flutter",
+      "experimental": false,
+      "notes": "No ShadList; compose ListView + cards."
+    },
+    "surface.grid": {
+      "symbol": "GridView / Wrap / SliverGrid",
+      "api": "GridView.count(crossAxisCount: 2, children: cells)  // or Wrap",
+      "availability": "Flutter",
+      "experimental": false,
+      "notes": "Standard Flutter grid."
+    },
+    "action.button": {
+      "symbol": "ShadButton (+ variants)",
+      "api": "ShadButton(child: Text('Save'), onPressed: () {})  // named ctors: ShadButton.primary / .secondary / .outline / .ghost / .destructive / .link / .raw. size: ShadButtonSize.",
+      "params": [
+        {
+          "name": "variant",
+          "value": "primary / .secondary / .outline / .ghost / .destructive / .link"
+        },
+        {
+          "name": "size",
+          "value": "ShadButtonSize (sm/md/lg)"
+        },
+        {
+          "name": "icon",
+          "value": "Icon (leading/trailing)"
+        }
+      ],
+      "availability": "0.54.0",
+      "experimental": false,
+      "notes": "ShadButtonVariant { primary, destructive, outline, secondary, ghost, link }. Use .icon constructor for icon-leading."
+    },
+    "action.icon-button": {
+      "symbol": "ShadButton.icon / ShadIconButton",
+      "api": "ShadButton.icon(icon: Icon(LucideIcons.plus), onPressed: () {})  // [unconfirmed exact ctor]",
+      "availability": "0.54.0",
+      "experimental": false,
+      "unconfirmed": true,
+      "notes": "Icon-only button via ShadButton.icon or ghost variant. Verify ctor name."
+    },
+    "action.fab": {
+      "symbol": "FloatingActionButton (Material) — no shadcn FAB",
+      "api": "FloatingActionButton(onPressed: () {}, child: Icon(LucideIcons.plus))",
+      "availability": "Material",
+      "experimental": false,
+      "notes": "shadcn/ui has no FAB concept. Use Material FAB or custom circular ShadButton."
+    },
+    "action.segmented": {
+      "symbol": "Custom toggle group — no native segmented",
+      "api": "Row(children: options.map((o) => ShadButton.secondary(onPressed: () {}, child: Text(o))).toList())  // track selected state",
+      "availability": "0.54.0 primitives",
+      "experimental": false,
+      "notes": "No native segmented control. Build Row of toggle buttons, or use ShadTabs for single-select."
+    },
+    "action.switch": {
+      "symbol": "ShadSwitch",
+      "api": "ShadSwitch(value: on, onChanged: (v) {})",
+      "availability": "0.54.0",
+      "experimental": false,
+      "notes": "Controlled via value; uncontrolled via controller."
+    },
+    "action.checkbox": {
+      "symbol": "ShadCheckbox",
+      "api": "ShadCheckbox(value: checked, onChanged: (v) {})",
+      "availability": "0.54.0",
+      "experimental": false,
+      "notes": "Standard checkbox."
+    },
+    "action.radio": {
+      "symbol": "ShadRadioGroup + ShadRadio / ShadRadioCard",
+      "api": "ShadRadioGroup(group: group, child: Column(children: options.map((o) => ShadRadio(value: o, group: group)).toList()))",
+      "availability": "0.54.0",
+      "experimental": false,
+      "unconfirmed": true,
+      "notes": "RadioGroup + Radio. ShadRadioCard for card-style option. Verify group API."
+    },
+    "action.chip": {
+      "symbol": "ShadChip",
+      "api": "ShadChip(label: Text('tag'), selected: sel, onPressed: () {}, leading: Icon(...))",
+      "availability": "0.54.0",
+      "experimental": false,
+      "unconfirmed": true,
+      "notes": "Verify selected/removable params."
+    },
+    "action.link": {
+      "symbol": "ShadButton.link / Text + InkWell",
+      "api": "ShadButton.link(child: Text('Details'), onPressed: () {})",
+      "availability": "0.54.0",
+      "experimental": false,
+      "notes": "link variant = text link. Inline → Text + recognizer."
+    },
+    "input.text-field": {
+      "symbol": "ShadInput",
+      "api": "ShadInput(placeholder: 'Email', controller: ctrl, prefix: Icon(LucideIcons.mail))",
+      "availability": "0.54.0",
+      "experimental": false,
+      "notes": "prefix/suffix icon slots."
+    },
+    "input.textarea": {
+      "symbol": "ShadTextarea",
+      "api": "ShadTextarea(placeholder: 'Body', controller: ctrl, minLines: 4)",
+      "availability": "0.54.0",
+      "experimental": false,
+      "notes": "Multi-line."
+    },
+    "input.search": {
+      "symbol": "ShadInput (search-styled) — no dedicated SearchBar",
+      "api": "ShadInput(placeholder: 'Search', prefix: Icon(LucideIcons.search), suffix: clearBtn)",
+      "availability": "0.54.0",
+      "experimental": false,
+      "notes": "No dedicated search widget; style ShadInput with search icon + clear button."
+    },
+    "input.select": {
+      "symbol": "ShadSelect / ShadControlledSelect",
+      "api": "ShadSelect(options: [...], selected: sel, onChanged: (v) {})  // or ShadControlledSelect(controller: ctrl)",
+      "availability": "0.54.0",
+      "experimental": false,
+      "unconfirmed": true,
+      "notes": "Controlled (value/onChanged) or ShadControlledSelect(controller). Verify options builder API."
+    },
+    "input.multiselect": {
+      "symbol": "ShadMultiSelect / MultiSelectController",
+      "api": "ShadMultiSelect(controller: MultiSelectController(), options: [...])  // [unconfirmed exact ctor]",
+      "availability": "0.54.0",
+      "experimental": false,
+      "unconfirmed": true,
+      "notes": "MultiSelectController for controlled multi. Verify ctor."
+    },
+    "input.slider": {
+      "symbol": "ShadSlider",
+      "api": "ShadSlider(value: v, min: 0, max: 100, divisions: 10, onChanged: (v) {})",
+      "availability": "0.54.0",
+      "experimental": false,
+      "notes": "value XOR controller."
+    },
+    "input.stepper": {
+      "symbol": "Custom (ShadButton - / +) — Stepper NOT shipped [unconfirmed]",
+      "api": "Row(children: [ShadButton.outline(onPressed:dec, child: Text('-')), Text('$n'), ShadButton.outline(onPressed:inc, child: Text('+'))])",
+      "availability": "0.54.0 primitives",
+      "experimental": false,
+      "unconfirmed": true,
+      "notes": "README lists Stepper as NOT shipped, but a Stepper/Steps component is referenced elsewhere — CONFLICT. Verify; build custom if absent."
+    },
+    "input.date-picker": {
+      "symbol": "ShadDatePicker / ShadCalendar",
+      "api": "ShadDatePicker(controller: ctrl)  // 0.43.0 renamed icon→leading",
+      "availability": "0.54.0",
+      "experimental": false,
+      "unconfirmed": true,
+      "notes": "ShadCalendar for inline. Note 0.43.0 breaking: icon→leading param."
+    },
+    "input.toggle-group": {
+      "symbol": "Custom ShadButton group — no native toggle group",
+      "api": "Row(children: items.map((i) => ShadButton.secondary(onPressed: () => toggle(i), child: Text(i))).toList())",
+      "availability": "0.54.0 primitives",
+      "experimental": false,
+      "notes": "No native multi-toggle group. Custom."
+    },
+    "feedback.progress": {
+      "symbol": "ShadProgress",
+      "api": "ShadProgress(value: 0.6)  // [unconfirmed value API]",
+      "availability": "0.54.0",
+      "experimental": false,
+      "unconfirmed": true,
+      "notes": "Linear determinate. Verify value vs controller."
+    },
+    "feedback.spinner": {
+      "symbol": "CircularProgressIndicator (Material) — no shadcn spinner",
+      "api": "CircularProgressIndicator()  // or custom via flutter_animate",
+      "availability": "Material",
+      "experimental": false,
+      "notes": "No ShadSpinner; use Material indicator or custom."
+    },
+    "feedback.toast": {
+      "symbol": "Toast / Sonner [unconfirmed] or custom overlay",
+      "api": "// verify: ShadToast / showShadToast; else custom OverlayEntry",
+      "availability": "0.54.0 [unconfirmed]",
+      "experimental": false,
+      "unconfirmed": true,
+      "notes": "shadcn/ui web uses Sonner. nank1ro Toast/Sonner NOT confirmed in shipped list. Verify; fall back to custom overlay + flutter_animate."
+    },
+    "feedback.alert": {
+      "symbol": "ShadAlert",
+      "api": "ShadAlert(title: Text('Title'), description: Text('msg'), icon: Icon(LucideIcons.info))",
+      "availability": "0.54.0",
+      "experimental": false,
+      "notes": "Variants mirror badge tones."
+    },
+    "feedback.skeleton": {
+      "symbol": "Custom shimmer Box — Skeleton NOT shipped",
+      "api": "Container(decoration: BoxDecoration(color: theme.colorScheme.muted, borderRadius: BorderRadius.circular(8))) // shimmer via flutter_animate .shimmer()",
+      "availability": "0.54.0 + flutter_animate",
+      "experimental": false,
+      "notes": "No ShadSkeleton. Custom Container + flutter_animate shimmer, or skeletonizer package."
+    },
+    "feedback.badge": {
+      "symbol": "ShadBadge",
+      "api": "ShadBadge(child: Text('New'))  // variants: primary / secondary / outline / destructive",
+      "availability": "0.54.0",
+      "experimental": false,
+      "notes": "ShadBadgeVariant { primary, secondary, outline, destructive }."
+    },
+    "display.text": {
+      "symbol": "Text + ShadThemeData.typography",
+      "api": "Text('Title', style: theme.typography.h1)  // scale: xSmall..x9Large",
+      "availability": "0.54.0",
+      "experimental": false,
+      "notes": "Typography size scale xSmall→x9Large + weights. Geist default font. Map display→h1/h2, title→h3/h4, body→p, caption→small, label→small."
+    },
+    "display.icon": {
+      "symbol": "Icon (lucide_icons_flutter)",
+      "api": "Icon(LucideIcons.home, size: 24, color: theme.colorScheme.foreground)",
+      "availability": "0.54.0",
+      "experimental": false,
+      "notes": "Lucide icon set via lucide_icons_flutter dep."
+    },
+    "display.avatar": {
+      "symbol": "ShadAvatar / ShadAvatarGroup",
+      "api": "ShadAvatar(image: NetworkImage(url), size: 40)  // fallback initials",
+      "availability": "0.54.0",
+      "experimental": false,
+      "unconfirmed": true,
+      "notes": "ShadAvatarGroup for stacked avatars. Verify image/size API."
+    },
+    "display.divider": {
+      "symbol": "ShadDivider",
+      "api": "ShadDivider()  // horizontal/vertical, label slot",
+      "availability": "0.54.0",
+      "experimental": false,
+      "notes": "Note: shadcn/ui names this Separator; shadcn_ui uses Divider."
+    },
+    "display.media": {
+      "symbol": "Image / Image.network",
+      "api": "Image.network(url, fit: BoxFit.cover) // ClipRRect for radius",
+      "availability": "Flutter",
+      "experimental": false,
+      "notes": "Standard Flutter Image + ClipRRect for rounded."
+    },
+    "display.stat": {
+      "symbol": "Column { Text(value); Text(label) }",
+      "api": "Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('1,204', style: theme.typography.h2), Text('steps', style: theme.typography.small, )])",
+      "availability": "0.54.0",
+      "experimental": false,
+      "notes": "Compose; no dedicated widget."
+    },
+    "display.empty-state": {
+      "symbol": "Custom Column — no native",
+      "api": "Column(children: [Icon(LucideIcons.inbox, size: 64), Text('Nothing here'), ShadButton(child: Text('Add'))])",
+      "availability": "0.54.0",
+      "experimental": false,
+      "notes": "No ShadEmptyState; compose."
+    },
+    "navigation.tabs": {
+      "symbol": "ShadTabs + ShadTabList + ShadTab",
+      "api": "ShadTabs(controller: ctrl, children: [ShadTabList(children: [ShadTab(text:'A', value:'a'), ShadTab(text:'B', value:'b')]), ShadTabPanel(value:'a', child: A()), ShadTabPanel(value:'b', child: B())])",
+      "availability": "0.54.0",
+      "experimental": false,
+      "unconfirmed": true,
+      "notes": "value XOR controller. Verify ShadTabPanel vs content builder."
+    },
+    "navigation.breadcrumb": {
+      "symbol": "ShadBreadcrumb",
+      "api": "ShadBreadcrumb(items: [BreadcrumbItem(text:'Home', onTap: () {}), BreadcrumbItem(text:'Current')])  // [unconfirmed item API]",
+      "availability": "0.54.0",
+      "experimental": false,
+      "unconfirmed": true,
+      "notes": "Verify item/separator API."
+    },
+    "navigation.pagination": {
+      "symbol": "Custom Row — Pagination NOT shipped",
+      "api": "Row(children: [ShadButton.outline(child: Text('Prev')), Text('1/5'), ShadButton.outline(child: Text('Next'))])",
+      "availability": "0.54.0 primitives",
+      "experimental": false,
+      "notes": "No ShadPagination; build custom."
+    },
+    "navigation.dropdown-menu": {
+      "symbol": "ShadContextMenu (replaces DropdownMenu)",
+      "api": "ShadContextMenu(controller: ctrl, child: trigger, items: [ContextMenuItem(onTap: () {}, child: Text('Edit')), ContextMenuItem(onTap: () {}, child: Text('Delete'))])",
+      "availability": "0.54.0",
+      "experimental": false,
+      "unconfirmed": true,
+      "notes": "shadcn_ui redirects DropdownMenu → ShadContextMenu. Verify item API."
+    },
+    "navigation.context-menu": {
+      "symbol": "ShadContextMenu",
+      "api": "ShadContextMenu(trigger: ContextMenuTrigger.longPress, ...)",
+      "availability": "0.54.0",
+      "experimental": false,
+      "unconfirmed": true,
+      "notes": "Same ShadContextMenu; trigger on right-click/long-press. Verify trigger config."
+    },
+    "navigation.command": {
+      "symbol": "Custom — Command NOT shipped",
+      "api": "// Build: ShadDialog/Overlay + ShadInput + filtered ListView",
+      "availability": "0.54.0 primitives",
+      "experimental": false,
+      "notes": "No ShadCommand. Build overlay + search + list."
+    },
+    "navigation.menubar": {
+      "symbol": "ShadMenubar",
+      "api": "ShadMenubar(children: [ShadMenuButton(child: Text('File'), items: [...])])  // [unconfirmed item API]",
+      "availability": "0.54.0",
+      "experimental": false,
+      "unconfirmed": true,
+      "notes": "Verify ShadMenuButton / item API."
+    },
+    "data.table": {
+      "symbol": "ShadTable / ShadTable.list",
+      "api": "ShadTable(columns: [col1, col2], rows: rows.map((r) => ShadTableRow(cells: {'name': ShadTableCell(child: Text(r.name)), 'age': ShadTableCell(child: Text('${r.age}'))}).toList())",
+      "availability": "0.54.0",
+      "experimental": false,
+      "notes": "Built on two_dimensional_scrollables. ShadTable (lazy) or ShadTable.list (eager). ShadTableCell.header / .footer / .raw. There is NO DataTable widget."
+    },
+    "data.data-table": {
+      "symbol": "ShadTable + custom sort/select (no DataTable widget)",
+      "api": "ShadTable with ShadTableCell.header(onTap: toggleSort) + selection state",
+      "availability": "0.54.0 + custom",
+      "experimental": false,
+      "notes": "No dedicated DataTable. Extend ShadTable with sortable headers + selection."
+    },
+    "data.carousel": {
+      "symbol": "PageView / third-party — Carousel NOT shipped",
+      "api": "PageView.builder(itemCount: n, itemBuilder: (c,i) => card(i))",
+      "availability": "Flutter",
+      "experimental": false,
+      "notes": "No ShadCarousel. Use PageView or a carousel package."
+    },
+    "data.timeline": {
+      "symbol": "ShadTimeline [unconfirmed] or custom ListView",
+      "api": "// verify ShadTimeline; else ListView with custom TimelineTile rows",
+      "availability": "0.54.0 [unconfirmed]",
+      "experimental": false,
+      "unconfirmed": true,
+      "notes": "Timeline referenced in component list but not in shipped README — CONFLICT. Verify; build custom if absent."
+    },
+    "data.accordion": {
+      "symbol": "ShadAccordion + ShadAccordionItem",
+      "api": "ShadAccordion(children: [ShadAccordionItem(title: Text('Section'), child: content)])",
+      "availability": "0.54.0",
+      "experimental": false,
+      "notes": "value XOR controller. Collapsible NOT shipped (use Accordion single)."
+    },
+    "data.row": {
+      "symbol": "ShadTableRow (table ctx) / Row + Text (compose)",
+      "api": "ShadTableRow(cells: {'name': ShadTableCell(child: Text(label)), 'value': ShadTableCell(child: Text(value))})  // table context; standalone: Row(children: [Text(label), Spacer(), Text(value)])",
+      "availability": "0.54.0",
+      "experimental": false,
+      "notes": "shadcn_ui ships NO standalone list/row widget — only ShadTableRow inside ShadTable. Standalone data row composes from Row + Text. UNCONFIRMED."
+    },
+    "data.chart": {
+      "symbol": "fl_chart wrapped in ShadTheme (NO ShadChart)",
+      "api": "// fl_chart: BarChart/LineChart/ScatterChart/PieChart; style via ShadThemeData colors + ShadSurface container",
+      "availability": "third-party fl_chart",
+      "experimental": false,
+      "notes": "shadcn_ui has NO chart component (web shadcn charts are Recharts — not ported). Wrap fl_chart styled by ShadThemeData. UNCONFIRMED."
+    }
+  },
+  "motions": {
+    "motion.glass-blur": {
+      "symbol": "BackdropFilter(ImageFilter.blur) + translucent color (no native glass)",
+      "api": "ClipRect(child: BackdropFilter(filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16), child: Container(color: theme.colorScheme.background.withOpacity(0.6))))",
+      "availability": "Flutter",
+      "experimental": false,
+      "notes": "No glass system; manual blur."
+    },
+    "motion.spring-press": {
+      "symbol": "flutter_animate .scale / .shake",
+      "api": "button.animate(onTap: () => {}).scale(begin: 1.0, end: 0.96, duration: 100.ms)",
+      "availability": "flutter_animate dep",
+      "experimental": false,
+      "notes": "flutter_animate is a shadcn_ui dep; use for press/spring."
+    },
+    "motion.morph": {
+      "symbol": "AnimatedSwitcher / Hero / flutter_animate (no shared-element morph)",
+      "api": "AnimatedSwitcher(duration: 300.ms, transition: (c,a) => ScaleTransition(scale: a, child: c), child: keyedChild)",
+      "availability": "Flutter",
+      "experimental": false,
+      "notes": "No native shared-element morph like iOS/Compose. Use AnimatedSwitcher or flutter_animate."
+    },
+    "motion.rise-in": {
+      "symbol": "flutter_animate .fadeIn().slideY()",
+      "api": "widget.animate().fadeIn(duration: 300.ms).slideY(begin: 0.1, end: 0)",
+      "availability": "flutter_animate dep",
+      "experimental": false,
+      "notes": "Entrance via flutter_animate."
+    },
+    "motion.parallax": {
+      "symbol": "ScrollController + Transform",
+      "api": "Transform.translate(offset: Offset(0, scrollOffset * 0.5), child: image)",
+      "availability": "Flutter",
+      "experimental": false,
+      "notes": "Custom scroll-coupled transform."
+    }
+  },
+  "unconfirmedSymbols": [
+    "ShadSheet/Sheet show API",
+    "ShadDialog show API (showShadDialog vs showDialog)",
+    "ShadSelect/MultiSelect options builder",
+    "ShadRadioGroup group param",
+    "ShadChip selected/removable params",
+    "ShadTabs ShadTabPanel vs content builder",
+    "ShadBreadcrumb item API",
+    "ShadContextMenu item/trigger API",
+    "ShadMenubar item API",
+    "ShadAvatar image/size API",
+    "Toast/Sonner existence",
+    "ShadTimeline existence",
+    "Stepper existence (conflict)",
+    "ShadProgress value API",
+    "ShadIconButton/ShadButton.icon ctor",
+    "data.row (no standalone Shad row widget)",
+    "data.chart (no ShadChart - fl_chart)"
+  ],
+  "conflicts": "README ❌-list vs component-index for: Stepper, Timeline. Resolve by reading lib/src before emitting final code.",
+  "missingVsIos": [
+    "No glass/translucency system (manual BackdropFilter)",
+    "No shared-element morph (AnimatedSwitcher/flutter_animate only)",
+    "No Skeleton/Carousel/Command/Sidebar/Pagination/NavigationMenu/Drawer"
+  ]
+}

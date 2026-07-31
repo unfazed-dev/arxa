@@ -3,7 +3,7 @@
   "kits": [
     {
       "dir": "core",
-      "package": "stacked_kit_core",
+      "package": "appbox_kit_core",
       "capabilities": [
         "MVVM plumbing",
         "error/theme services",
@@ -87,7 +87,7 @@
     },
     {
       "dir": "state",
-      "package": "stacked_kit_state",
+      "package": "appbox_kit_state",
       "capabilities": [
         "async state vocabulary (idle/loading/error)",
         "retry policy",
@@ -102,7 +102,7 @@
     },
     {
       "dir": "data",
-      "package": "stacked_kit_data",
+      "package": "appbox_kit_data",
       "capabilities": [
         "repositories",
         "schema descriptors",
@@ -120,7 +120,7 @@
     },
     {
       "dir": "auth",
-      "package": "stacked_kit_auth",
+      "package": "appbox_kit_auth",
       "capabilities": [
         "email/OAuth auth seam",
         "typed AuthResult",
@@ -153,7 +153,7 @@
     },
     {
       "dir": "forms",
-      "package": "stacked_kit_forms",
+      "package": "appbox_kit_forms",
       "capabilities": [
         "form field state",
         "sync/async validation",
@@ -169,7 +169,7 @@
     },
     {
       "dir": "permissions",
-      "package": "stacked_kit_permissions",
+      "package": "appbox_kit_permissions",
       "capabilities": [
         "OS permissions (camera/location/...)",
         "typed permission + status"
@@ -183,7 +183,7 @@
     },
     {
       "dir": "media",
-      "package": "stacked_kit_media",
+      "package": "appbox_kit_media",
       "capabilities": [
         "camera/photos",
         "audio record",
@@ -198,7 +198,7 @@
     },
     {
       "dir": "documents",
-      "package": "stacked_kit_documents",
+      "package": "appbox_kit_documents",
       "capabilities": [
         "doc pick",
         "scan (stub)",
@@ -214,7 +214,7 @@
     },
     {
       "dir": "notifications",
-      "package": "stacked_kit_notifications",
+      "package": "appbox_kit_notifications",
       "capabilities": [
         "device push/local notifications",
         "tokens",
@@ -229,7 +229,7 @@
     },
     {
       "dir": "analytics",
-      "package": "stacked_kit_analytics",
+      "package": "appbox_kit_analytics",
       "capabilities": [
         "analytics event fan-out"
       ],
@@ -242,7 +242,7 @@
     },
     {
       "dir": "payments",
-      "package": "stacked_kit_payments",
+      "package": "appbox_kit_payments",
       "capabilities": [
         "Apple Pay",
         "Google Pay"
@@ -274,7 +274,7 @@
     },
     {
       "dir": "maps",
-      "package": "stacked_kit_maps",
+      "package": "appbox_kit_maps",
       "capabilities": [
         "native maps",
         "KitMapView"
@@ -302,7 +302,7 @@
     },
     {
       "dir": "deploy",
-      "package": "stacked_kit_deploy",
+      "package": "appbox_kit_deploy",
       "capabilities": [
         "release automation (fastlane/shorebird/CF Pages)"
       ],
@@ -321,7 +321,7 @@
     },
     {
       "dir": "haptics",
-      "package": "stacked_kit_haptics",
+      "package": "appbox_kit_haptics",
       "capabilities": [
         "haptic feedback"
       ],
@@ -334,7 +334,7 @@
     },
     {
       "dir": "bluetooth",
-      "package": "stacked_kit_bluetooth",
+      "package": "appbox_kit_bluetooth",
       "capabilities": [
         "bluetooth adapter state",
         "BLE scan/GATT (stub)"
@@ -348,7 +348,7 @@
     },
     {
       "dir": "wifi",
-      "package": "stacked_kit_wifi",
+      "package": "appbox_kit_wifi",
       "capabilities": [
         "Wi-Fi state",
         "network info",
@@ -363,7 +363,7 @@
     },
     {
       "dir": "support",
-      "package": "stacked_kit_support",
+      "package": "appbox_kit_support",
       "capabilities": [
         "in-app support",
         "feedback + Talker export",
@@ -378,7 +378,7 @@
     },
     {
       "dir": "security",
-      "package": "stacked_kit_security",
+      "package": "appbox_kit_security",
       "capabilities": [
         "biometrics",
         "secure storage",
@@ -395,7 +395,7 @@
     },
     {
       "dir": "compliance",
-      "package": "stacked_kit_compliance",
+      "package": "appbox_kit_compliance",
       "capabilities": [
         "ToS/privacy/EULA",
         "consent gates",
@@ -426,7 +426,7 @@
     },
     {
       "dir": "motion",
-      "package": "stacked_kit_motion",
+      "package": "appbox_kit_motion",
       "capabilities": [
         "entrance/exit choreography",
         "gesture drivers",
@@ -453,7 +453,7 @@
     },
     {
       "dir": "i18n",
-      "package": "stacked_kit_i18n",
+      "package": "appbox_kit_i18n",
       "capabilities": [
         "i18n"
       ],
@@ -466,7 +466,7 @@
     },
     {
       "dir": "showcase_app",
-      "package": "stacked_kit_showcase_app",
+      "package": "appbox_kit_showcase_app",
       "capabilities": [
         "integration surface / reference app (proves every kit)"
       ],

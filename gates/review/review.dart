@@ -901,7 +901,7 @@ final _sizingOptOut = RegExp(r'//\s*sizing:');
 final _sizedBoxAsChild = RegExp(r'child:\s*(const\s+)?SizedBox\(');
 
 /// 1w2: a single-argument `SizedBox(height:/width:)` with no child is a GAP,
-/// not sizing — gaps are the stacked_kit_core helpers. Line-scoped opt-outs
+/// not sizing — gaps are the appbox_kit_core helpers. Line-scoped opt-outs
 /// (`// sizing:`, `child: SizedBox(`) match review_checklist.sh exactly.
 CheckResult checkNoAdhocSpacing(String src, String path) {
   if (_isKitInternalOrTest(path) || path.endsWith('ui_helpers.dart')) {
@@ -935,7 +935,7 @@ CheckResult checkNoAdhocSpacing(String src, String path) {
       'no_adhoc_spacing',
       false,
       'ad-hoc spacing SizedBox (single-arg, no child) at ${hits.join('; ')}. '
-          'Gaps use the stacked_kit_core helpers (verticalSpace*/horizontalSpace*, '
+          'Gaps use the appbox_kit_core helpers (verticalSpace*/horizontalSpace*, '
           'or verticalSpace(h)/horizontalSpace(w) for one-offs, via the '
           'ui_library barrel). Placeholder sizing: mount it as `child:` or opt '
           'out with `// sizing: <reason>` (review_checklist check 1w2).');

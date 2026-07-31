@@ -2,9 +2,11 @@
 
 **Status:** **COMPLETE**. All Python/bash/Node tooling retired to
 `archives/tooling-pre-dart/`. One Dart binary (`appbox`) handles gates,
-emitters, lens, and serve. stacked_kit copied in-repo as `packages/`
-(24 packages, 511 .dart files). Sweep rename complete — zero stale
-`app-box`/`app_box`/`KIT_APP` references. 290/290 appboxd tests pass.
+emitters, lens, and serve. stacked_kit copied in-repo as `kit/`
+(24 packages, 511 .dart files, all renamed `appbox_kit_*`). Sweep rename
+complete — zero stale `app-box`/`app_box`/`KIT_APP`/`stacked_kit` references
+in source. 347/347 appboxd tests pass. Flutter analyze clean. Catalogs
+copied from flutter-crew to `config/catalogs/`. `arch_guard` ported to Dart.
 Flutter pub get resolves.
 
 Completed 2026-07-31.
@@ -195,9 +197,9 @@ emit_stage (1,163 lines, 5 tests), synthesize (620 lines, 7 tests). All 8
 emitters wired into `appbox emit` dispatch.
 
 **appbox kit copy ✅ (Phase 5)** — 24 library packages from stacked_kit
-copied into `packages/` (511 .dart files, 31 pubspecs). All `stacked_kit_*`
+copied into `kit/` (511 .dart files, 31 pubspecs). All `stacked_kit_*`
 identifiers rewritten to `appbox_kit_*`. Flutter app path-depends on
-in-repo `packages/i18n`. `flutter pub get` resolves.
+in-repo `kit/i18n`. `flutter pub get` resolves.
 
 **Sweep rename ✅ (Phase 6)** — 1,237 text replacements across 2,410 files.
 Physical renames: `config/appbox.config.json`, 10 skill dirs in `skills/`
@@ -222,7 +224,43 @@ Repo-root discovery anchor changed from `pipeline/pipeline.sh` to
 - `gates/review/review.dart` — already Dart (1,658 lines)
 - `tools/sweep_rename.sh` + `tools/phase5_kit_copy.sh` — transient
 
-**Final test suite: 290/290 green.**
+**Final test suite: 347/347 green** (was 290 at session 2; +18 arch_guard
+tests in session 3).
+
+### 2026-07-31 — session 3 (kit rename + flutter-crew gap closure)
+
+**kit/ rename + stacked_kit purge ✅** — `packages/` corrected to `kit/` per
+plan ("stacked_kit → appbox kit (`lib/kit/`)"). 22 barrel files renamed
+(`lib/stacked_kit_*.dart` → `lib/appbox_kit_*.dart`). 44 stacked_kit text
+refs cleaned across 12 kit/ files (lockfiles, vendored HTML playbooks,
+templates, generated SQL, config). `config/kit-registry.json` updated:
+22 `stacked_kit_*` package names → `appbox_kit_*`. `gate_scaffold.dart`
+startsWith check fixed. Zero `stacked_kit`/`StackedKit` in source.
+
+**Catalogs copied ✅** — 6 widget/design catalog JSONs from flutter-crew
+copied to `config/catalogs/` (flutter-widgets, ios-liquid-glass,
+android-m4-expressive, web-shadcn-ui, primitives-canonical, exclusions).
+`synthesize.dart` reads these at runtime via `catalogDir` arg — was a
+functional gap (emitter had no data to consume).
+
+**flutter-crew gap analysis ✅** — exhaustive comparison of flutter-crew's
+32 Python stages vs appboxd's 44 Dart files:
+- **5 directly ported** (blueprint, transform_tokens, synthesize,
+  generate_view, emit_stage).
+- **16 covered** by appboxd's deliberately different authored-layer
+  architecture (run_pipeline → FSM; parse_html/parse_jsx → superseded by
+  authored layer; design_gate → lens.dart; etc.).
+- **11 deferred/superseded** (capture_*.py, glass_entrance.py,
+  motion_device.py — require the jsx design model appbox doesn't use).
+- flutter-crew's 319 Dart files are 259 test fixtures (generated golden
+  outputs) + 61 vendored native_liquid_glass plugin — not library code
+  to copy. Catalogs, schemas, commands, skills all covered or not needed.
+
+**arch_guard ported ✅** — flutter-crew's `arch_guard.py` (204 lines)
+ported to `appboxd/lib/arch_guard.dart`. Validates the DDD 4-layer contract
+that `blueprint.dart` emits: G1 layering purity, G2 busy-capable
+ViewModels, G3 no async-without-busy, G4 infra-repo implements Port,
+G5 Supabase confined to infrastructure. Wired into `appbox gate arch`.
 
 **Known deferrals (honestly stated):**
 - No golden-diff test against actual Playwright output for emit_htmx (CDP
@@ -235,3 +273,11 @@ Repo-root discovery anchor changed from `pipeline/pipeline.sh` to
 - Tools without Dart ports archived as retired (crud.py, watermark.mjs,
   tier1.py, lint_conventions.sh, run_repo_tests.sh) — may need future
   Dart ports if their functionality is still needed.
+- **flutter-crew medium gaps (not yet ported):**
+  - `theme_map.py` — blueprint emits stub `ThemeData(useMaterial3: true)`;
+    needs real token→theme mapping.
+  - `gen_freshness.py` — detects drift in committed generated files
+    (`app.router.dart`/`*.gen.dart`) via build_runner diff.
+  - `trace.py` — per-screen view↔viewmodel↔route cross-reference manifest.
+  - `palette.py` — generative HCT seed-color → DTCG tonal scheme for the
+    designer skill.

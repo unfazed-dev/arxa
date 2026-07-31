@@ -48,7 +48,7 @@ For each `<Screen>View` + `<Screen>ViewModel`:
     void attach(BuildContext context) => _l10n = AppLocalizations.of(context)!;
   }
   ```
-- **Capability wiring:** register `KitI18n` + `KitLocaleStore` (stacked_kit_i18n) in the stacked locator, and give the settings surface a language row — System / English / Polski (system locale + persisted override, live switch).
+- **Capability wiring:** register `KitI18n` + `KitLocaleStore` (appbox_kit_i18n) in the stacked locator, and give the settings surface a language row — System / English / Polski (system locale + persisted override, live switch).
 - **Generative UI:** every generative-UI prompt includes `kitI18n.llmLocaleDirective()` in the system prompt, so generated copy lands in the active locale.
 
 ## Output

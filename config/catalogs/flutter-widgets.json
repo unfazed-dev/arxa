@@ -1,0 +1,216 @@
+{
+  "$id": "flutter-crew.flutter-widgets",
+  "$comment": "v2.1.0 — PER-PLATFORM, NATIVE via platform views (no approximation). Each platform owns its own map (no shared symbol, no interference): ios = Cupertino (Liquid Glass via GlassContainer UiKitView when motion.glass-blur); android = NATIVE Material 3 Expressive embedded via AndroidView(ComposeView → MaterialExpressiveTheme), material3 1.5.0-alpha22 — NEVER pure-Flutter approximation (operator mandate; Flutter has no native expressive, #168813, so embed Compose); web = shadcn_ui straight from web-shadcn-ui.json (no entry here — shadcn IS the Flutter package). Where a native family lacks a widget, that platform independently chooses the standard widget + a note. `android` map values are Compose composables (map_all wraps each in an AndroidView host). `custom`: ids with NO 1:1 widget → per-platform recipe from the native system.",
+  "version": "2.2.0",
+  "updated": "2026-06-20",
+  "glassWidget": "GlassContainer (UiKitView → SwiftUI Liquid Glass host)",
+  "androidHost": "AndroidView(ComposeView) → MaterialExpressiveTheme (material3 1.5.0-alpha22)",
+
+  "ios": {
+    "surface.glass":    { "widget": "GlassContainer (UiKitView → SwiftUI Liquid Glass host)", "note": "motion.glass-blur → UiKitView platform view; native Liquid Glass" },
+    "surface.card":     { "widget": "Card", "note": "no Cupertino Card; Material Card styled Cupertino (radius/elevation token)" },
+    "surface.panel":    { "widget": "Card (elevated/filled/outlined)", "note": "no Cupertino panel" },
+    "surface.modal":    { "widget": "showDialog → CupertinoAlertDialog" },
+    "surface.sheet":    { "widget": "showModalBottomSheet (Cupertino-styled) / CupertinoPageRoute full-screen modal", "note": "Cupertino sheets slide; bottom = ModalBottomSheet" },
+    "surface.tooltip":  { "widget": "Tooltip" },
+    "surface.toolbar":  { "widget": "CupertinoNavigationBar" },
+    "surface.tabbar":   { "widget": "CupertinoTabBar" },
+    "surface.navrail":  { "widget": "NavigationRail", "note": "iOS does not use nav rails; standard Flutter NavigationRail" },
+    "surface.sidebar":  { "widget": "Drawer / custom", "note": "no Cupertino sidebar", "unconfirmed": true },
+    "surface.list":     { "widget": "CupertinoListSection / ListView", "note": "CupertinoListSection for inset-grouped look" },
+    "surface.grid":     { "widget": "GridView", "note": "no Cupertino grid" },
+
+    "action.button":      { "widget": "CupertinoButton" },
+    "action.icon-button": { "widget": "CupertinoButton(icon:)" },
+    "action.fab":         { "widget": "FloatingActionButton", "note": "no Cupertino FAB; standard FAB if used" },
+    "action.chip":        { "widget": "Chip / ActionChip", "note": "no Cupertino chip" },
+    "action.checkbox":    { "widget": "CupertinoCheckbox" },
+    "action.switch":      { "widget": "CupertinoSwitch" },
+    "action.radio":       { "widget": "CupertinoRadio", "note": "CupertinoRadio (Flutter 3.10+); else Radio" },
+    "action.segmented":   { "widget": "CupertinoSegmentedControl" },
+    "action.link":        { "widget": "CupertinoButton(text:) / TextButton" },
+
+    "input.search":       { "widget": "CupertinoSearchTextField" },
+    "input.text-field":   { "widget": "CupertinoTextField" },
+    "input.textarea":     { "widget": "CupertinoTextField(maxLines: null)" },
+    "input.select":       { "widget": "CupertinoPicker (wheel) / CupertinoContextMenu menu", "note": "no Cupertino dropdown; wheel picker is idiomatic", "unconfirmed": true },
+    "input.slider":       { "widget": "CupertinoSlider" },
+    "input.date-picker":  { "widget": "CupertinoDatePicker" },
+    "input.toggle-group": { "widget": "CupertinoSegmentedControl" },
+
+    "display.stat":       { "widget": "Text + Column (semantic)" },
+    "display.text":       { "widget": "Text / RichText" },
+    "display.avatar":     { "widget": "CircleAvatar", "note": "no Cupertino avatar" },
+    "display.icon":       { "widget": "Icon (SF Symbols via cupertino_icons)" },
+    "display.media":      { "widget": "Image / FadeInImage" },
+    "display.divider":    { "widget": "CupertinoDivider / Divider" },
+
+    "feedback.badge":     { "widget": "Badge", "note": "no Cupertino badge" },
+    "feedback.progress":  { "widget": "CupertinoActivityIndicator / LinearProgressIndicator" },
+    "feedback.spinner":   { "widget": "CupertinoActivityIndicator" },
+    "feedback.alert":     { "widget": "showDialog → CupertinoAlertDialog" },
+
+    "data.table":         { "widget": "DataTable", "note": "no Cupertino table" },
+    "data.row":           { "widget": "CupertinoListTile / ListTile", "note": "CupertinoListTile (Flutter 3.16+) for iOS list rows; else ListTile. nativeRef = SwiftUI LabeledContent/List row. Content layer, not glassed." },
+    "data.chart":         { "widget": "fl_chart (BarChart/LineChart) or CustomPaint", "note": "no Cupertino chart; fl_chart styled to nativeRef (SwiftUI Charts: BarMark/LineMark/RectangleMark/SectorMark). pureFlutter." },
+    "data.accordion":     { "widget": "ExpansionTile", "note": "no Cupertino accordion; or CupertinoContextMenu" },
+
+    "navigation.tabs":        { "widget": "CupertinoTabBar" },
+    "navigation.menubar":     { "widget": "MenuBar", "note": "no Cupertino menubar" },
+    "navigation.dropdown-menu": { "widget": "CupertinoContextMenu / DropdownButton", "unconfirmed": true }
+  },
+
+  "android": {
+    "_host": "Each value is a Jetpack Compose composable (material3 1.5.0-alpha22, MaterialExpressiveTheme). map_all wraps it: symbol = AndroidView(ComposeView) → Compose: <composable>; bridge = platformView. NATIVE — no pure-Flutter approximation.",
+    "surface.glass":    { "widget": "Surface (Material Expressive; translucent surfaceContainer + expressive elevation)", "note": "no Liquid Glass on Android; native expressive Surface translucency via Compose (NOT Flutter BackdropFilter)" },
+    "surface.card":     { "widget": "Card / ElevatedCard / OutlinedCard" },
+    "surface.panel":    { "widget": "Card (elevated/filled/outlined)" },
+    "surface.modal":    { "widget": "AlertDialog / BasicAlertDialog (Dialog)" },
+    "surface.sheet":    { "widget": "ModalBottomSheet / SheetState" },
+    "surface.tooltip":  { "widget": "Tooltip (foundation) / PlainTooltip" },
+    "surface.toolbar":  { "widget": "TopAppBar / CenterAlignedTopAppBar" },
+    "surface.tabbar":   { "widget": "NavigationBar / NavigationBarItem" },
+    "surface.navrail":  { "widget": "NavigationRail / NavigationRailItem" },
+    "surface.sidebar":  { "widget": "NavigationDrawer / ModalNavigationDrawer" },
+    "surface.list":     { "widget": "LazyColumn / Column + ListItem" },
+    "surface.grid":     { "widget": "LazyVerticalGrid / GridCells" },
+
+    "action.button":      { "widget": "Button / FilledButton / FilledTonalButton / OutlinedButton (expressive variants graduated alpha19)" },
+    "action.icon-button": { "widget": "IconButton" },
+    "action.fab":         { "widget": "FloatingActionButton / ExtendedFloatingActionButton (FAB Menu graduated alpha19)" },
+    "action.chip":        { "widget": "FilterChip / AssistChip / SuggestionChip / InputChip" },
+    "action.checkbox":    { "widget": "Checkbox / TriStateCheckbox" },
+    "action.switch":      { "widget": "Switch" },
+    "action.radio":       { "widget": "RadioButton / RadioGroup" },
+    "action.segmented":   { "widget": "SegmentedButton / SingleChoiceSegmentedButtonRow; ToggleButtons (promoted stable alpha19)" },
+    "action.link":        { "widget": "TextButton" },
+
+    "input.search":       { "widget": "SearchBar / DockedSearchBar" },
+    "input.text-field":   { "widget": "TextField / OutlinedTextField (expressive)" },
+    "input.textarea":     { "widget": "OutlinedTextField (maxLines)" },
+    "input.select":       { "widget": "ExposedDropdownMenuBox", "unconfirmed": true },
+    "input.slider":       { "widget": "Slider / RangeSlider" },
+    "input.date-picker":  { "widget": "DatePicker / DatePickerDialog" },
+    "input.toggle-group": { "widget": "SegmentedButton / FilterChip group" },
+
+    "display.stat":       { "widget": "Text + Column (expressive typography)" },
+    "display.text":       { "widget": "Text (emphasized type scales)" },
+    "display.avatar":     { "widget": "AsyncImage (coil) / Image + CircleShape" },
+    "display.icon":       { "widget": "Icon" },
+    "display.media":      { "widget": "AsyncImage (coil) / Image" },
+    "display.divider":    { "widget": "HorizontalDivider / VerticalDivider" },
+
+    "feedback.badge":     { "widget": "Badge / BadgedBox" },
+    "feedback.progress":  { "widget": "LinearProgressIndicator / LoadingIndicator (expressive, graduated)" },
+    "feedback.spinner":   { "widget": "CircularProgressIndicator / LoadingIndicator (expressive)" },
+    "feedback.alert":     { "widget": "AlertDialog" },
+
+    "data.table":         { "widget": "LazyColumn grid / custom Table" },
+    "data.row":           { "widget": "ListItem (material3 compose)", "note": "material3 ListItem headline/supporting/leading/trailing/overline. Native via AndroidView(ComposeView)." },
+    "data.chart":         { "widget": "Vico CartesianChartHost (compose-m3)", "note": "NO first-party Material chart (Google I/O 2025: none). Vico compose-m3 candidate (perf caveats); MPAndroidChart (view) legacy. Embed via AndroidView(ComposeView) -> Vico.", "unconfirmed": true },
+    "data.accordion":     { "widget": "Card + animateContentSize" },
+
+    "navigation.tabs":        { "widget": "NavigationBar / NavigationBarItem" },
+    "navigation.menubar":     { "widget": "MenuBar / DropdownMenu (expressive menus graduated alpha19)" },
+    "navigation.dropdown-menu": { "widget": "ExposedDropdownMenuBox / DropdownMenu" }
+  },
+
+  "custom": {
+    "surface.popover": {
+      "reason": "Anchored floating content — no first-party Flutter popover.",
+      "recipes": {
+        "ios":     { "nativeRef": ".popover(presenting:) + .glassEffect(.regular)", "bridge": "platformView", "compose": "SwiftUI .popover anchored to source, wrapped in .glassEffect(.regular) → UiKitView host", "experimental": false, "unconfirmed": false },
+        "android": { "nativeRef": "androidx.compose.ui.window.Popup", "bridge": "pureFlutter", "compose": "OverlayEntry + RoundedSuperellipseBorder + surfaceContainer tint (approximate Compose Popup)", "experimental": false, "unconfirmed": true },
+        "web":     { "nativeRef": null, "bridge": "package", "compose": "ShadDialog as anchored popover (shadcn_ui ships no Popover) + ShadButton trigger", "experimental": false, "unconfirmed": true }
+      }
+    },
+    "input.stepper": {
+      "reason": "− / value / + stepper — no first-party Flutter widget.",
+      "recipes": {
+        "ios":     { "nativeRef": "SwiftUI Stepper", "bridge": "platformView", "compose": "SwiftUI Stepper(value:in:) → UiKitView", "experimental": false, "unconfirmed": false },
+        "android": { "nativeRef": "none (Compose Row + IconButton)", "bridge": "pureFlutter", "compose": "Row(IconButton −, Text value, IconButton +) with MaterialTheme.shapes", "experimental": false, "unconfirmed": false },
+        "web":     { "nativeRef": null, "bridge": "package", "compose": "ShadButton group + ShadInput (shadcn_ui ships no Stepper)", "experimental": false, "unconfirmed": true }
+      }
+    },
+    "input.multiselect": {
+      "reason": "Many-of-many picker — no first-party Flutter widget.",
+      "recipes": {
+        "ios":     { "nativeRef": "SwiftUI List + Toggle / .picker", "bridge": "platformView", "compose": "SwiftUI List of Toggles (multi) → UiKitView, or .glassEffect sheet", "experimental": false, "unconfirmed": true },
+        "android": { "nativeRef": "FilterChip (Compose) / ModalBottomSheet", "bridge": "pureFlutter", "compose": "Wrap of FilterChips or a bottom-sheet Checkbox list", "experimental": false, "unconfirmed": false },
+        "web":     { "nativeRef": null, "bridge": "package", "compose": "ShadCheckbox group inside ShadSheet/ShadDialog (no ShadMultiselect)", "experimental": false, "unconfirmed": true }
+      }
+    },
+    "display.empty-state": {
+      "reason": "Empty/zero-data state — no first-party Flutter widget.",
+      "recipes": {
+        "ios":     { "nativeRef": "SwiftUI ContentUnavailableView", "bridge": "pureFlutter", "compose": "Column(Icon, title, subtitle, action) mirroring ContentUnavailableView", "experimental": false, "unconfirmed": false },
+        "android": { "nativeRef": "none (Column + MaterialTheme.colorScheme.outline)", "bridge": "pureFlutter", "compose": "Column(Icon, Text title, Text subtitle, Button action)", "experimental": false, "unconfirmed": false },
+        "web":     { "nativeRef": null, "bridge": "package", "compose": "ShadCard with ShadAvatar/Icon + texts + ShadButton", "experimental": false, "unconfirmed": false }
+      }
+    },
+    "feedback.toast": {
+      "reason": "Transient toast — Flutter has SnackBar only (not a toast).",
+      "recipes": {
+        "ios":     { "nativeRef": "custom overlay + .glassEffect(.regular)", "bridge": "platformView", "compose": "SwiftUI floating overlay in .glassEffect → UiKitView (anchored to top/safe area)", "experimental": false, "unconfirmed": true },
+        "android": { "nativeRef": "SnackbarHost + Snackbar (material3)", "bridge": "pureFlutter", "compose": "ScaffoldMessenger.showSnackBar; style with MaterialTheme.shapes.full + surfaceContainerHighest", "experimental": false, "unconfirmed": false },
+        "web":     { "nativeRef": "ShadToast / ShadToaster", "bridge": "package", "compose": "ShadToaster + ShadToast (shipped by shadcn_ui)", "experimental": false, "unconfirmed": true }
+      }
+    },
+    "feedback.skeleton": {
+      "reason": "Loading skeleton — no first-party Flutter widget.",
+      "recipes": {
+        "ios":     { "nativeRef": "SwiftUI .redacted(reason: .placeholder)", "bridge": "platformView", "compose": "SwiftUI .redacted(reason: .placeholder) → UiKitView, or shimmer Container", "experimental": false, "unconfirmed": false },
+        "android": { "nativeRef": "Modifier.skeleton() (material3 expressive alpha)", "bridge": "pureFlutter", "compose": "Container with shimmer gradient approximating expressive Modifier.skeleton()", "experimental": true, "unconfirmed": true },
+        "web":     { "nativeRef": null, "bridge": "package", "compose": "Shad DecoratedBox + shimmer (shadcn_ui ships no Skeleton)", "experimental": false, "unconfirmed": true }
+      }
+    },
+    "data.carousel": {
+      "reason": "Carousel — Flutter PageView exists but no expressive/native carousel.",
+      "recipes": {
+        "ios":     { "nativeRef": "SwiftUI TabView(.page) / UIPageViewController", "bridge": "platformView", "compose": "SwiftUI TabView with .page tabViewStyle → UiKitView", "experimental": false, "unconfirmed": false },
+        "android": { "nativeRef": "HorizontalCarousel / StratifiedCarousel (material3 1.5.0-alpha22)", "bridge": "pureFlutter", "compose": "PageView + scale/rotation transform approximating expressive StratifiedCarousel", "experimental": true, "unconfirmed": true },
+        "web":     { "nativeRef": null, "bridge": "package", "compose": "PageView + custom transform (shadcn_ui ships no Carousel)", "experimental": false, "unconfirmed": true }
+      }
+    },
+    "data.timeline": {
+      "reason": "Vertical timeline — no standard native or Flutter widget.",
+      "recipes": {
+        "ios":     { "nativeRef": "SwiftUI List + custom row", "bridge": "pureFlutter", "compose": "Custom Column of (node + connector + content) rows", "experimental": false, "unconfirmed": true },
+        "android": { "nativeRef": "LazyColumn + custom row", "bridge": "pureFlutter", "compose": "Custom Column/LazyColumn timeline rows with MaterialTheme.divider", "experimental": false, "unconfirmed": true },
+        "web":     { "nativeRef": null, "bridge": "package", "compose": "Column of ShadAvatar + ShadText + divider (no ShadTimeline)", "experimental": false, "unconfirmed": true }
+      }
+    },
+    "navigation.breadcrumb": {
+      "reason": "Breadcrumb trail — no Flutter widget.",
+      "recipes": {
+        "ios":     { "nativeRef": "SwiftUI .toolbar breadcrumb item", "bridge": "pureFlutter", "compose": "Wrap of Text/TextButton segments with '>' separators", "experimental": false, "unconfirmed": true },
+        "android": { "nativeRef": "none", "bridge": "pureFlutter", "compose": "Wrap of TextButton crumbs + separators", "experimental": false, "unconfirmed": true },
+        "web":     { "nativeRef": null, "bridge": "package", "compose": "Row of ShadButton.text + separators (shadcn_ui ships no Breadcrumb)", "experimental": false, "unconfirmed": true }
+      }
+    },
+    "navigation.pagination": {
+      "reason": "Page controls — no Flutter widget.",
+      "recipes": {
+        "ios":     { "nativeRef": "SwiftUI .toolbar PageButton / custom", "bridge": "pureFlutter", "compose": "Row of IconButton pages + current Text", "experimental": false, "unconfirmed": true },
+        "android": { "nativeRef": "none", "bridge": "pureFlutter", "compose": "Row of IconButtons + a page Text/TextField", "experimental": false, "unconfirmed": true },
+        "web":     { "nativeRef": null, "bridge": "package", "compose": "Row of ShadButton + ShadInput (shadcn_ui ships no Pagination)", "experimental": false, "unconfirmed": true }
+      }
+    },
+    "navigation.context-menu": {
+      "reason": "Right-click / long-press menu — no first-party Flutter widget.",
+      "recipes": {
+        "ios":     { "nativeRef": "SwiftUI .contextMenu", "bridge": "platformView", "compose": "SwiftUI .contextMenu { buttons } → UiKitView host", "experimental": false, "unconfirmed": false },
+        "android": { "nativeRef": "DropdownMenu (Compose) on long-press", "bridge": "pureFlutter", "compose": "GestureDetector(longPress) + MenuAnchor/PopupMenuButton", "experimental": false, "unconfirmed": true },
+        "web":     { "nativeRef": null, "bridge": "package", "compose": "ShadDropdownMenu on right-click (shadcn_ui ships no ContextMenu)", "experimental": false, "unconfirmed": true }
+      }
+    },
+    "navigation.command": {
+      "reason": "Command palette (⌘K) — no native or Flutter widget.",
+      "recipes": {
+        "ios":     { "nativeRef": "SwiftUI .searchable + .keyboardShortcut", "bridge": "platformView", "compose": "SwiftUI searchable command list → UiKitView overlay", "experimental": false, "unconfirmed": true },
+        "android": { "nativeRef": "none", "bridge": "pureFlutter", "compose": "Dialog + filtered ListView + TextField; MaterialTheme.shapes.full", "experimental": false, "unconfirmed": true },
+        "web":     { "nativeRef": null, "bridge": "package", "compose": "ShadDialog + ShadInput + filtered ShadList (shadcn_ui ships no Command)", "experimental": false, "unconfirmed": true }
+      }
+    }
+  }
+}

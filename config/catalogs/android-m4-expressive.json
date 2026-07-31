@@ -1,0 +1,489 @@
+{
+  "$id": "flutter-crew.android-material-expressive",
+  "$comment": "Shape: globalFacts (object) + map: { canonicalId -> PlatformMapping }. PlatformMapping fields defined in ../schemas/breakdown.schema.json.",
+  "platform": "android",
+  "system": "Material 3 Expressive (Jetpack Compose)",
+  "version": "material3 1.5.0-alpha22 (expressive theme); stable 1.4.0. compileSdk 35+, minSdk 21.",
+  "canonicalVersion": "1.0.0",
+  "globalFacts": {
+    "dependency": "androidx.compose.material3:material3:1.5.0-alpha22  (stable line: 1.4.0). Wear OS uses androidx.wear.compose:compose-material3 — different lib.",
+    "theme": "MaterialExpressiveTheme(colorScheme: ColorScheme?, motionScheme: MotionScheme?, shapes: Shapes?, typography: Typography?, content:) — alpha-only. Defaults: expressiveLightColorScheme(), MotionScheme.expressive(), expanded Shapes, default Typography. Access motion via MaterialTheme.motionScheme.",
+    "optIns": "@ExperimentalMaterial3ExpressiveApi (LoadingIndicator, SplitButton, Carousel, WideNavigationRail, FloatingToolbar, MaterialShapes, Morph.toPath, 8-slot Shapes ctor, expressive menus); @ExperimentalMaterial3Api (most M3 components); @ExperimentalMaterial3ComponentOverrideApi (XR overrides).",
+    "shapes": "8-slot expressive scale: extraSmall, small, medium, large, largeIncreased, extraLarge, extraLargeIncreased, extraExtraLarge. Pass all 8 named.",
+    "motion": "MotionScheme.standard() | MotionScheme.expressive(). Accessors: defaultEffectsSpec<T>(), defaultSpatialSpec<T>(), fastEffectsSpec<T>(). Consume via MaterialTheme.motionScheme. Separates spatial (bounds/position) from effects (color/alpha).",
+    "colorRoles": "expressiveLightColorScheme() / expressiveDarkColorScheme(). Surface containers (central): surfaceContainer, surfaceContainerLow/Lowest/High/Highest, surfaceBright, surfaceDim. Fixed roles required since 1.4.0-alpha15.",
+    "noGlass": "Android has NO Liquid Glass. Native Compose translucency: Surface(color=surfaceContainer.copy(alpha)) + Modifier.blur(radius) (API 31+) or RenderEffect.createBlurEffect — rendered via AndroidView(ComposeView). Apply motion.glass-blur accordingly.",
+    "shapeMorph": "Morph.toPath(progress: Float, path: Path, startAngle: Int) from androidx.graphics:graphics-shapes. MaterialShapes factories (Squircle, Circle, Clover, Cookie, Slash...).",
+    "sharedElementMorph": "Lives in androidx.compose.animation:animation (NOT material3): SharedTransitionLayout { SharedTransitionScope -> Modifier.sharedElement(...) / Modifier.sharedBounds(...) }. Pair with Morph.toPath for shape morphing.",
+    "alphaChurn": "Alpha is volatile: MaterialShapes/LoadingIndicator promoted then REVERTED to experimental in alpha19. Pin exact version; never use +.",
+    "flutterBridge": "NATIVE via platform view (operator mandate: no approximation). Flutter has NO Material 3 Expressive (umbrella #168813) — so embed NATIVE Compose expressive via AndroidView(ComposeView → MaterialExpressiveTheme, material3 1.5.0-alpha22), mirroring iOS UiKitView→SwiftUI. Interop: ComposeView/AbstractComposeView + setContent{} + ViewCompositionStrategy (dispose). CAVEATS: Android-only; every android primitive is a platform view (FPS/gesture/lifecycle cost — fidelity-first tradeoff); Hybrid Composition best on Flutter 3.44+/API 34+/Vulkan; dual-theme-system drift between Flutter MaterialTheme and Compose MaterialTheme. EMIT RULE: symbol = AndroidView(ComposeView) → Compose: <composable from flutter-widgets.json android map>; bridge = platformView (DEFAULT); nativeRef = map[id].symbol (the Compose expressive target); availability = material3 1.5.0-alpha22. pureFlutter approximation is an explicit operator opt-OUT only (edit catalog), NOT the default.",
+    "nativeDecoration": "GATE G3 (native-decoration policy): a native Compose control carries ONLY native-vocabulary decoration — a Material icon (androidx Icons / material-icons via Compose Icon). The button contract has NO brand-glyph slot. A custom brand SVG the design paints inside a button (Google's 4-colour G, a partner logo) is NOT native vocabulary: in native mode DROP it from the render — do NOT rasterise/force it in. DROP != discard: the asset manager RECORDS every dropped glyph in the target's NON-bundled provenance/asset_ledger.json (origin, dims, vector, reason); design render mode reproduces it. Applied to EVERY button the SAME way, incl. social-auth — in native mode every social button (Apple, Google) is a native control and ALL brand marks drop; do NOT substitute an official provider button as the native default, and do NOT keep one provider's mark but not another's. The ONLY native way a dropped mark rides a native button is converting it to a native symbol (SF Symbol on iOS / Material icon on Android), which is currently closed for trademark brand marks (licence + exact-asset requirements)."
+  },
+  "map": {
+    "surface.card": {
+      "symbol": "Card / ElevatedCard / OutlinedCard",
+      "api": "ElevatedCard(shape = MaterialTheme.shapes.medium) { content }",
+      "availability": "material3 stable; shapes expressive 1.5.0-alpha22",
+      "experimental": false,
+      "notes": "No glass. For translucent: Surface(color = surfaceContainerHighest.copy(alpha=0.7f), shape=shapes.medium)."
+    },
+    "surface.panel": {
+      "symbol": "Surface(color = surfaceContainer)",
+      "api": "Surface(color = MaterialTheme.colorScheme.surfaceContainer, shape = shapes.medium) { content }",
+      "availability": "stable",
+      "experimental": false,
+      "notes": "Opaque grouped block."
+    },
+    "surface.glass": {
+      "symbol": "Surface (Material Expressive; translucent surfaceContainer) + Modifier.blur",
+      "api": "Surface(color = surfaceContainer.copy(alpha = 0.6f), shape = shapes.large).blur(20.dp)  // API 31+",
+      "availability": "Modifier.blur API 31+; RenderEffect fallback",
+      "experimental": false,
+      "unconfirmed": true,
+      "notes": "No Liquid Glass on Android. Native Compose expressive Surface translucency via AndroidView (NOT Flutter BackdropFilter). Lean on surfaceContainer color roles + expressive elevation."
+    },
+    "surface.sheet": {
+      "symbol": "FlexibleBottomSheet (expressive) | ModalBottomSheet (stable)",
+      "api": "FlexibleBottomSheet(onDismissRequest={}, flexibleSheetState = rememberFlexibleBottomSheetState(...)) { content }",
+      "availability": "FlexibleBottomSheet expressive alpha; ModalBottomSheet stable",
+      "experimental": true,
+      "notes": "FlexibleBottomSheet = arbitrary detents. ModalBottomSheet = standard detents. sheetGestureEnabled param; isAnimationRunning on SheetState."
+    },
+    "surface.modal": {
+      "symbol": "AlertDialog / Dialog",
+      "api": "AlertDialog(onDismissRequest={}, confirmButton={ TextButton(onClick={}){Text(\"OK\")} }, title={Text(t)}, text={Text(body)})",
+      "availability": "stable",
+      "experimental": false,
+      "notes": "Stable AlertDialog. Custom → Dialog composable."
+    },
+    "surface.popover": {
+      "symbol": "DropdownMenu / Popup",
+      "api": "DropdownMenu(expanded = expanded, onDismissRequest = {}) { items }",
+      "availability": "stable",
+      "experimental": false,
+      "notes": "Anchored popup. Expressive menus add groups/checkable items (alpha09)."
+    },
+    "surface.tooltip": {
+      "symbol": "PlainTooltipBox / RichTooltipBox / TooltipBox",
+      "api": "TooltipBox(tooltip = { PlainTooltip { Text(\"Info\") } }, state = tooltipState) { content }",
+      "availability": "stable; rich tooltips alpha",
+      "experimental": true,
+      "notes": "Plain/Rich tooltips. maxWidth plain 200dp, rich 320dp; caret support."
+    },
+    "surface.toolbar": {
+      "symbol": "TopAppBar / LargeTopAppBar / CenterAlignedTopAppBar",
+      "api": "Scaffold(topBar = { LargeTopAppBar(title = { Text(\"Home\") }, actions = { IconButton(onClick={}){ Icon(Icons.Default.Add, null) } }) }) { content }",
+      "availability": "ExperimentalMaterial3Api",
+      "experimental": true,
+      "notes": "Use inside Scaffold. scrollBehavior for collapse. CenterAlignedTopAppBar for centered title."
+    },
+    "surface.tabbar": {
+      "symbol": "NavigationBar + NavigationBarItem",
+      "api": "NavigationBar { items.forEach { NavigationBarItem(selected = it == sel, onClick = {}, icon = { Icon(...) }, label = { Text(it.label) }) } }",
+      "availability": "stable",
+      "experimental": false,
+      "notes": "Primary bottom nav. Expressive variant via ComponentOverride (alpha16)."
+    },
+    "surface.navrail": {
+      "symbol": "WideNavigationRail (expressive) | NavigationRail (stable)",
+      "api": "WideNavigationRail { items.forEach { WideNavigationRailItem(...) } }  // expanded/collapsed",
+      "availability": "WideNavigationRail expressive alpha; NavigationRail stable",
+      "experimental": true,
+      "notes": "Large-screen rail. ModalWideNavigationRail for modal. LocalModalWideNavigationRailOverride (alpha22). Falls back to NavigationBar on compact."
+    },
+    "surface.sidebar": {
+      "symbol": "ModalNavigationDrawer / PermanentNavigationDrawer / DismissibleNavigationDrawer",
+      "api": "ModalNavigationDrawer(drawerContent = { NavigationDrawerHeader {...}; items }) { content }",
+      "availability": "stable",
+      "experimental": false,
+      "notes": "Permanent for tablet/desktop; Modal for phone; Dismissible for swipe."
+    },
+    "surface.list": {
+      "symbol": "LazyColumn + ListItem",
+      "api": "LazyColumn { items(list) { ListItem(headlineContent = { Text(it.title) }, leadingContent = { Icon(...) }) } }",
+      "availability": "stable",
+      "experimental": false,
+      "notes": "ListItem has leading/trailing/overline slots. selectedLeadingIcon padding fixes alpha16."
+    },
+    "surface.grid": {
+      "symbol": "LazyVerticalGrid / LazyHorizontalGrid",
+      "api": "LazyVerticalGrid(columns = GridCells.Adaptive(160.dp)) { items(list) { Cell(it) } }",
+      "availability": "stable",
+      "experimental": false,
+      "notes": "Foundation grid."
+    },
+    "action.button": {
+      "symbol": "Button / FilledTonalButton / OutlinedButton / TextButton",
+      "api": "Button(onClick = {}, shape = MaterialTheme.shapes.full) { Text(\"Save\") }  // variants: filled=Button, secondary=FilledTonalButton, outline=OutlinedButton, ghost/link=TextButton, destructive=Button(containerColor=errorContainer)",
+      "params": [
+        {
+          "name": "variant",
+          "value": "primary=Button ; secondary=FilledTonalButton ; outline=OutlinedButton ; ghost/link=TextButton ; destructive→containerColor=error"
+        },
+        {
+          "name": "shape",
+          "value": "shapes.full (capsule) for expressive"
+        }
+      ],
+      "availability": "stable",
+      "experimental": false,
+      "notes": "Expressive leans capsule shapes. Group connected buttons via ButtonGroup (expressive)."
+    },
+    "action.icon-button": {
+      "symbol": "IconButton / FilledIconButton / FilledTonalIconButton / OutlinedIconButton",
+      "api": "FilledIconButton(onClick = {}) { Icon(Icons.Default.Add, null) }",
+      "availability": "stable",
+      "experimental": false,
+      "notes": "Filled/Tonal/Outlined variants. 48dp touch target."
+    },
+    "action.fab": {
+      "symbol": "FloatingActionButton / ExtendedFloatingActionButton / AnimatedFloatingActionButton",
+      "api": "FloatingActionButton(onClick = {}) { Icon(Icons.Default.Add, null) }  // ExtendedFloatingActionButton(text,icon); AnimatedFloatingActionButton (expressive)",
+      "availability": "FAB stable; AnimatedFAB + FAB Menu expressive alpha19",
+      "experimental": true,
+      "notes": "Expressive adds AnimatedFloatingActionButton and FAB Menu."
+    },
+    "action.segmented": {
+      "symbol": "SingleChoiceSegmentedButtonRow + SegmentedButton",
+      "api": "SingleChoiceSegmentedButtonRow { options.forEachIndexed { i, label -> SegmentedButton(selected = i==sel, onClick = {}, shape = SegmentedButtonDefaults.itemShape(i, options.size)) { Text(label) } } }",
+      "availability": "ExperimentalMaterial3Api",
+      "experimental": true,
+      "notes": "Expressive segmented control. shape per item via itemShape(index,count)."
+    },
+    "action.switch": {
+      "symbol": "Switch",
+      "api": "Switch(checked = on, onCheckedChange = {})",
+      "availability": "stable",
+      "experimental": false,
+      "notes": "Stable Switch."
+    },
+    "action.checkbox": {
+      "symbol": "Checkbox / TriStateCheckbox",
+      "api": "Checkbox(checked = c, onCheckedChange = {})  // TriStateCheckbox for indeterminate",
+      "availability": "stable",
+      "experimental": false,
+      "notes": "TriStateCheckbox for select-all state."
+    },
+    "action.radio": {
+      "symbol": "RadioButton (+ custom RadioGroup)",
+      "api": "RadioButton(selected = r==sel, onClick = {})",
+      "availability": "stable",
+      "experimental": false,
+      "notes": "No native RadioGroup composable; group manually. Or use Select/SegmentedButton."
+    },
+    "action.chip": {
+      "symbol": "FilterChip / AssistChip / InputChip / SuggestionChip",
+      "api": "FilterChip(selected = sel, onClick = {}, label = { Text(label) }, leadingIcon = { Icon(...) })  // assist/input/suggestion variants",
+      "availability": "stable",
+      "experimental": false,
+      "notes": "FilterChip=selectable; InputChip=removable; AssistChip=action; SuggestionChip=hint."
+    },
+    "action.link": {
+      "symbol": "TextButton / ClickableText",
+      "api": "TextButton(onClick = {}) { Text(\"Details\") }  // inline: AnnotatedString + ClickableText",
+      "availability": "stable",
+      "experimental": false,
+      "notes": "Inline link → ClickableText with SpanStyle(color=primary)."
+    },
+    "input.text-field": {
+      "symbol": "TextField / OutlinedTextField",
+      "api": "OutlinedTextField(value = v, onValueChange = {}, label = { Text(\"Email\") }, isError = false, supportingText = { Text(helper) })",
+      "availability": "stable",
+      "experimental": false,
+      "notes": "Outlined is default expressive. supportingText = helper/error. leading/trailing icon slots."
+    },
+    "input.textarea": {
+      "symbol": "OutlinedTextField(multiline)",
+      "api": "OutlinedTextField(value = v, onValueChange = {}, modifier = Modifier.heightIn(min = 120.dp))",
+      "availability": "stable",
+      "experimental": false,
+      "notes": "Set heightIn; no dedicated textarea widget."
+    },
+    "input.search": {
+      "symbol": "SearchBar / DockedSearchBar",
+      "api": "SearchBar(query = q, onQueryChange = {}, onSearch = {}, active = active, onActiveChange = {}) { content }",
+      "availability": "ExperimentalMaterial3Api; ExpandedDockedSearchBarWithGap expressive alpha09",
+      "experimental": true,
+      "notes": "Material SearchBar w/ expanded state. Expressive adds ExpandedDockedSearchBarWithGap."
+    },
+    "input.select": {
+      "symbol": "ExposedDropdownMenuBox + OutlinedTextField",
+      "api": "ExposedDropdownMenuBox(expanded = exp, onExpandedChange = {}) { OutlinedTextField(..., trailingIcon = { ExposedDropdownMenuBox.TrailingIcon(exp) }); DropdownMenu(...) { options.forEach { DropdownMenuItem(...) } } }",
+      "availability": "stable",
+      "experimental": false,
+      "notes": "No dedicated Select composable. ExposedDropdownMenuBox pattern. AutoComplete = same pattern."
+    },
+    "input.multiselect": {
+      "symbol": "FilterChip cluster (multi) or custom checklist",
+      "api": "FlowRow { options.map { FilterChip(selected = it in sel, onClick = {}, label = { Text(it) }) } }",
+      "availability": "stable",
+      "experimental": false,
+      "notes": "No native multiselect. Chips or checkbox list."
+    },
+    "input.slider": {
+      "symbol": "Slider / RangeSlider",
+      "api": "Slider(value = v, onValueChange = {}, valueRange = 0f..100f, steps = 9)",
+      "availability": "stable",
+      "experimental": false,
+      "notes": "RangeSlider for dual-thumb."
+    },
+    "input.stepper": {
+      "symbol": "Custom (IconButton - / +) — no native stepper",
+      "api": "Row { FilledIconButton(onClick={n--}){Icon(Remove,null)}; Text(\"$n\"); FilledIconButton(onClick={n++}){Icon(Add,null)} }",
+      "availability": "stable primitives",
+      "experimental": false,
+      "notes": "No native stepper. Build from IconButtons. Or SegmentedButton style."
+    },
+    "input.date-picker": {
+      "symbol": "DatePicker / DatePickerDialog",
+      "api": "DatePickerDialog(onDismissRequest={}, confirmButton={}) { DatePicker(state = datePickerState) }",
+      "availability": "ExperimentalMaterial3Api",
+      "experimental": true,
+      "notes": "DatePickerDialog wraps DatePicker. datePickerState for selection."
+    },
+    "input.toggle-group": {
+      "symbol": "MultiChoiceSegmentedButtonRow + SegmentedButton",
+      "api": "MultiChoiceSegmentedButtonRow { items.forEachIndexed { i, it -> SegmentedButton(checked = it in sel, onCheckedChange = {}, shape = SegmentedButtonDefaults.itemShape(i, items.size)) { Text(it) } } }",
+      "availability": "ExperimentalMaterial3Api",
+      "experimental": true,
+      "notes": "Expressive connected multi-toggle group."
+    },
+    "feedback.progress": {
+      "symbol": "LinearProgressIndicator / CircularProgressIndicator",
+      "api": "LinearProgressIndicator(progress = { 0.6f })",
+      "availability": "stable",
+      "experimental": false,
+      "notes": "Determinate. Motion updated to MotionScheme."
+    },
+    "feedback.spinner": {
+      "symbol": "LoadingIndicator (expressive flagship) / CircularProgressIndicator",
+      "api": "LoadingIndicator()  // multi-color scale-animated; CircularWavyProgressIndicator/LinearWavyProgressIndicator variants",
+      "availability": "LoadingIndicator expressive alpha (reverted exp alpha19); CircularProgressIndicator stable",
+      "experimental": true,
+      "notes": "LoadingIndicator is the expressive flagship. ContainedLoadingIndicator = surface-wrapped. Wavy variants optional."
+    },
+    "feedback.toast": {
+      "symbol": "Snackbar (via Scaffold snackbarHost)",
+      "api": "Scaffold(snackbarHost = { SnackbarHost(snackbarHostState) }) { ... }; scope.launch { snackbarHostState.showSnackbar(\"Saved\", actionLabel=\"Undo\") }",
+      "availability": "stable",
+      "experimental": false,
+      "notes": "Snackbar through Scaffold. actionLabel for action."
+    },
+    "feedback.alert": {
+      "symbol": "AlertDialog / Snackbar (no native Banner)",
+      "api": "AlertDialog(onDismissRequest={}, title={Text(\"Heads up\")}, text={Text(msg)}, confirmButton={...})",
+      "availability": "stable",
+      "experimental": false,
+      "notes": "M3 Compose has no Banner composable. Inline alert → custom Surface(surfaceVariant) + Text, or Snackbar/AlertDialog."
+    },
+    "feedback.skeleton": {
+      "symbol": "Custom shimmer Box — no native skeleton",
+      "api": "Box(Modifier.size(120.dp).clip(shapes.small).background(shimmerBrush))  // shimmerBrush = Brush.linearGradient(animated)",
+      "availability": "stable primitives",
+      "experimental": false,
+      "notes": "No native skeleton. Custom Box + animated gradient brush."
+    },
+    "feedback.badge": {
+      "symbol": "BadgedBox + Badge",
+      "api": "BadgedBox(badge = { Badge { Text(\"3\") } }) { Icon(...) }  // dot: Badge() empty",
+      "availability": "stable",
+      "experimental": false,
+      "notes": "BadgedBox wraps content; Badge for count or dot."
+    },
+    "display.text": {
+      "symbol": "Text + MaterialTheme.typography",
+      "api": "Text(s, style = MaterialTheme.typography.headlineMedium)  // tiers: displayLarge..labelSmall",
+      "availability": "stable",
+      "experimental": false,
+      "notes": "Map display→displaySmall, title→headlineMedium, subtitle→titleMedium, body→bodyLarge, caption→bodySmall, label→labelLarge, overline→labelSmall.uppercase. New Typography ctor accepts defaultFontFamily + emphasized scale (alpha16). TextAutoSize experimental."
+    },
+    "display.icon": {
+      "symbol": "Icon (material-icons-extended)",
+      "api": "Icon(Icons.Filled.Home, contentDescription = null, modifier = Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary)",
+      "availability": "stable",
+      "experimental": false,
+      "notes": "Icons.Filled/Outlined/Round/Sharp/TwoTone."
+    },
+    "display.avatar": {
+      "symbol": "Image/AsyncImage + Modifier.clip(CircleShape)",
+      "api": "AsyncImage(model = url, contentDescription = null, modifier = Modifier.size(40.dp).clip(CircleShape))",
+      "availability": "stable + coil-compose",
+      "experimental": false,
+      "notes": "Use coil-compose AsyncImage. Initials fallback → Box+Text. Ring → border()."
+    },
+    "display.divider": {
+      "symbol": "HorizontalDivider / VerticalDivider",
+      "api": "HorizontalDivider(modifier = Modifier.fillMaxWidth(), color = outlineVariant)",
+      "availability": "stable",
+      "experimental": false,
+      "notes": "Stable (replaced old Divider)."
+    },
+    "display.media": {
+      "symbol": "Image / AsyncImage + Modifier.clip",
+      "api": "AsyncImage(model = url, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.aspectRatio(16f/9f).clip(shapes.medium))",
+      "availability": "stable + coil-compose",
+      "experimental": false,
+      "notes": "Coil AsyncImage + aspectRatio + clip. No background-extension equivalent."
+    },
+    "display.stat": {
+      "symbol": "Column { Text(value); Text(label) }",
+      "api": "Column { Text(\"1,204\", style = typography.displaySmall); Text(\"steps\", style = typography.labelMedium, color = onSurfaceVariant) }",
+      "availability": "stable",
+      "experimental": false,
+      "notes": "Compose; no dedicated widget."
+    },
+    "display.empty-state": {
+      "symbol": "Custom Column (no native EmptyState)",
+      "api": "Column(horizontalAlignment = CenterHorizontally) { Icon(Icons.Outlined.Inbox, null, Modifier.size(64.dp)); Text(\"Nothing here\"); TextButton(onClick={}){Text(\"Add\")} }",
+      "availability": "stable",
+      "experimental": false,
+      "notes": "No native EmptyState composable in material3. Build custom."
+    },
+    "navigation.tabs": {
+      "symbol": "TabRow / ScrollableTabRow + Tab",
+      "api": "TabRow(selectedTabIndex = sel) { tabs.forEachIndexed { i, t -> Tab(selected = i==sel, onClick = {}, text = { Text(t) }) } }",
+      "availability": "stable",
+      "experimental": false,
+      "notes": "Top tabs. PrimaryNav = NavigationBar (bottom)."
+    },
+    "navigation.breadcrumb": {
+      "symbol": "Custom Row — no native",
+      "api": "Row { TextButton(onClick={}){Text(\"Home\")}; Text(\"/\"); Text(\"Current\") }",
+      "availability": "stable primitives",
+      "experimental": false,
+      "notes": "No native breadcrumb."
+    },
+    "navigation.pagination": {
+      "symbol": "Custom Row of buttons — no native",
+      "api": "Row { TextButton(onClick={}){Text(\"Prev\")}; Text(\"1/5\"); TextButton(onClick={}){Text(\"Next\")} }",
+      "availability": "stable primitives",
+      "experimental": false,
+      "notes": "No native pagination."
+    },
+    "navigation.dropdown-menu": {
+      "symbol": "DropdownMenu + DropdownMenuItem",
+      "api": "DropdownMenu(expanded = exp, onDismissRequest = {}) { DropdownMenuItem(text = { Text(\"Edit\") }, onClick = {}); DropdownMenuItem(text = { Text(\"Delete\") }, onClick = {}, leadingIcon = { Icon(Delete,null) }) }",
+      "availability": "stable; expressive menus alpha09",
+      "experimental": false,
+      "notes": "Expressive menus add toggleable/selectable items, menu groups, popup. MenuDefaults updated alpha09."
+    },
+    "navigation.context-menu": {
+      "symbol": "DropdownMenu on long-press (combinedClickable) — no native context menu",
+      "api": "Box(Modifier.combinedClickable(onClick = {}, onLongClick = { expanded = true })) { content }; DropdownMenu(expanded,...){}",
+      "availability": "stable",
+      "experimental": false,
+      "notes": "No dedicated ContextMenu; use DropdownMenu triggered by combinedClickable onLongClick."
+    },
+    "navigation.command": {
+      "symbol": "Custom SearchBar + List — no native command palette",
+      "api": "Custom: SearchBar expanded + filtered LazyColumn of actions",
+      "availability": "stable primitives",
+      "experimental": false,
+      "notes": "No native command palette. Native Compose SearchBar + filtered LazyColumn."
+    },
+    "navigation.menubar": {
+      "symbol": "Custom Row — no native",
+      "api": "Row { items.map { TextButton(onClick={}){Text(it)} } }",
+      "availability": "stable primitives",
+      "experimental": false,
+      "notes": "No native menubar composable."
+    },
+    "data.table": {
+      "symbol": "LazyColumn rows or Grid (no native table)",
+      "api": "LazyColumn { item { HeaderRow() }; items(rows) { Row(it) } }",
+      "availability": "stable",
+      "experimental": false,
+      "notes": "material3 ships NO table/grid composable. Build from LazyColumn + Row, or RowScope columns. For interactive: third-party (two_dimensional_scrollables not in material3)."
+    },
+    "data.data-table": {
+      "symbol": "Custom LazyColumn + sort/filter state",
+      "api": "LazyColumn { stickyHeader { SortHeader(sortState) }; items(sorted) { DataRow(it) } }",
+      "availability": "stable",
+      "experimental": false,
+      "notes": "No native data-table. Build with LazyColumn + stickyHeader + sorting state. Consider third-party."
+    },
+    "data.carousel": {
+      "symbol": "HorizontalCarousel / HeroCarousel (expressive) | HorizontalPager (foundation)",
+      "api": "HorizontalCarousel(state = carouselState) { items(count) { HeroCarouselItem(...) } }  // HeroCarousel center-focal",
+      "availability": "Carousel/HeroCarousel expressive alpha16; HorizontalPager stable foundation",
+      "experimental": true,
+      "notes": "Expressive Carousel family (Hero/Horizontal/Vertical/Stratified[unconfirmed]). CarouselState.currentItem observable. HorizontalPager = foundation fallback."
+    },
+    "data.timeline": {
+      "symbol": "Custom LazyColumn — no native",
+      "api": "LazyColumn { items(events) { TimelineRow(it) } }",
+      "availability": "stable primitives",
+      "experimental": false,
+      "notes": "No native timeline."
+    },
+    "data.accordion": {
+      "symbol": "Custom expandable Card (no native Accordion)",
+      "api": "var exp by remember{mutableStateOf(false)}; ElevatedCard(onClick={exp=!exp}) { Column { Row{ Text(title); Icon(if(exp)ExpandMore else ExpandLess,null) }; AnimatedVisibility(exp){ content } } }",
+      "availability": "stable",
+      "experimental": false,
+      "notes": "No native Accordion in material3. Build expandable Card + AnimatedVisibility."
+    },
+    "data.row": {
+      "symbol": "ListItem (material3)",
+      "api": "ListItem(headlineContent = { Text(h) }, supportingContent = { Text(sub) }, leadingContent = { Icon(..) }, trailingContent = { Text(meta) }, overlineContent = { Text(over) })",
+      "availability": "stable",
+      "experimental": false,
+      "notes": "material3 ListItem: headline + supporting(two-line) + leading + trailing + overline. Native via AndroidView(ComposeView). Numbered/plain via leadingContent."
+    },
+    "data.chart": {
+      "symbol": "Vico compose-m3 / Canvas (NO first-party Material chart)",
+      "api": "// Vico: CartesianChartHost(chart = CartesianChart(..))  // or hand-rolled Canvas",
+      "availability": "third-party (com.patrykandpatrick.vico:compose-m3)",
+      "experimental": false,
+      "notes": "Material/Compose has NO first-party chart (Google I/O 2025: none announced). Vico (compose-m3) is the leading Compose-native lib — perf caveats on large data; MPAndroidChart (view, via AndroidView) is the legacy alt. UNCONFIRMED: third-party, verify API. Embed via AndroidView(ComposeView) -> Vico."
+    }
+  },
+  "motions": {
+    "motion.glass-blur": {
+      "symbol": "Modifier.blur(radius) (API 31+) over translucent Surface; RenderEffect fallback",
+      "api": "Surface(color = surfaceContainer.copy(alpha = 0.6f), shape = shapes.large, modifier = Modifier.blur(24.dp))",
+      "availability": "Modifier.blur API 31+; below → RenderEffect or skip",
+      "experimental": false,
+      "unconfirmed": true,
+      "notes": "No Liquid Glass on Android. Native Compose expressive Surface translucency + Modifier.blur via AndroidView."
+    },
+    "motion.spring-press": {
+      "symbol": "animateFloatAsState(spring) + graphicsLayer scale; or MotionScheme spec",
+      "api": "val scale by animateFloatAsState(if (pressed) 0.95f else 1f, animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec(), label=\"press\"); Modifier.graphicsLayer { scaleX = scale; scaleY = scale }",
+      "availability": "MotionScheme expressive alpha; spring stable",
+      "experimental": true,
+      "notes": "Press via pointerInput detectTapGestures/onPress. Use MotionScheme.expressive() specs for consistent motion."
+    },
+    "motion.morph": {
+      "symbol": "SharedTransitionLayout + Modifier.sharedElement + Morph.toPath",
+      "api": "SharedTransitionLayout { ... Modifier.sharedElement(rememberSharedContentState(key=\"card\"), animatedVisibilityScope=it) }; Morph.toPath(progress, path)",
+      "availability": "androidx.compose.animation stable; graphics-shapes Morph expressive alpha",
+      "experimental": true,
+      "notes": "sharedElement/sharedBounds in androidx.compose.animation:animation. Pair with Morph.toPath for organic shape morph (Squircle etc.)."
+    },
+    "motion.rise-in": {
+      "symbol": "AnimatedVisibility + slideInVertically + fadeIn (MotionScheme spec)",
+      "api": "AnimatedVisibility(visible, enter = slideInVertically(animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec()) { it/4 } + fadeIn()) { content }",
+      "availability": "MotionScheme expressive alpha; AnimatedVisibility stable",
+      "experimental": true,
+      "notes": "Entrance via AnimatedVisibility + MotionScheme spring spec."
+    },
+    "motion.parallax": {
+      "symbol": "graphicsLayer offset from LazyListState scroll",
+      "api": "val s = rememberLazyListState(); Modifier.graphicsLayer { translationY = s.firstVisibleItemScrollOffset * 0.5f }",
+      "availability": "stable",
+      "experimental": false,
+      "notes": "Custom scroll-coupled transform via LazyListState + graphicsLayer."
+    }
+  },
+  "unconfirmedSymbols": [
+    "expressiveDarkColorScheme() exact name",
+    "StratifiedCarousel name",
+    "MaterialShapes factory list",
+    "MotionScheme 4th accessor (defaultHoldSpec/fastSpatialSpec)"
+  ],
+  "missingVsIos": [
+    "No Liquid Glass / native translucency",
+    "No native table/data-table/accordion/timeline/stepper/empty-state/breadcrumb/pagination/menubar — all custom"
+  ]
+}

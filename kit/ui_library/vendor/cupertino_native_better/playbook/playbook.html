@@ -63,19 +63,19 @@ ul.checklist li .n{color:var(--muted);font-size:12.5px;display:block}
 </style></head>
 <body><div class="wrap">
 <h1>cupertino_native_better — Per-Package Playbook</h1><p class="meta"><span class="pill">playbook</span> rendered from <code>plan.mdx</code> · regenerate with <code>render-playbook.py</code></p>
-<div class="callout "><span class="h">Version:</span><p>1.5.2 · <strong>Role:</strong> the iOS native tier (real Liquid Glass via Swift/UIKit + SVGKit, <code>UiKitView</code>-backed; Cupertino/Material fallback) — the concrete iOS adapter under <code>stacked_kit</code>'s <code>Kit*</code> ports. <strong>Status:</strong> vendored fork of upstream <code>cupertino_native_better@1.5.2</code> with <strong>two local patches</strong> held in-repo until upstreaming. Path-dep of <code>stacked_kit</code> (not a normal direct host dep).</p></div>
+<div class="callout "><span class="h">Version:</span><p>1.5.2 · <strong>Role:</strong> the iOS native tier (real Liquid Glass via Swift/UIKit + SVGKit, <code>UiKitView</code>-backed; Cupertino/Material fallback) — the concrete iOS adapter under <code>appbox_kit</code>'s <code>Kit*</code> ports. <strong>Status:</strong> vendored fork of upstream <code>cupertino_native_better@1.5.2</code> with <strong>two local patches</strong> held in-repo until upstreaming. Path-dep of <code>appbox_kit</code> (not a normal direct host dep).</p></div>
 <h2>Contents</h2>
-<p>1. <a href="#overview--role">Overview & role</a> — what this package is, the host wiring tier 2. <a href="#glossary">Glossary</a> — CN*, Liquid Glass, UiKitView, CNTabBarRouteObserver, PlatformVersion 3. <a href="#architecture">Architecture</a> — federated plugin + Dart widget library, build-time branch 4. <a href="#public-api-reference">Public API reference</a> — every exported symbol 5. <a href="#usage-playbook">Usage playbook</a> 5b. <a href="#wiring">Wiring</a> — path dep, deployment target, the two patches, route observer registration 6. <a href="#integration-map">Integration map</a> — consumed by <code>stacked_kit</code> 7. <a href="#features-appendix">Features appendix</a> — native surfaces, controllers, glass unioning, dark-mode sync 8. <a href="#examples">Examples</a> 9. <a href="#gotchas">Gotchas</a> — patches, SVGKit weight, <code>CNTabBarNative</code> semantics, <code>LiquidGlassContainer</code> 10. <a href="#decisions--adrs">Decisions / ADRs</a> 11. <a href="#changelog--status">Changelog & status</a> 12. <a href="#open-questions">Open questions</a></p>
+<p>1. <a href="#overview--role">Overview & role</a> — what this package is, the host wiring tier 2. <a href="#glossary">Glossary</a> — CN*, Liquid Glass, UiKitView, CNTabBarRouteObserver, PlatformVersion 3. <a href="#architecture">Architecture</a> — federated plugin + Dart widget library, build-time branch 4. <a href="#public-api-reference">Public API reference</a> — every exported symbol 5. <a href="#usage-playbook">Usage playbook</a> 5b. <a href="#wiring">Wiring</a> — path dep, deployment target, the two patches, route observer registration 6. <a href="#integration-map">Integration map</a> — consumed by <code>appbox_kit</code> 7. <a href="#features-appendix">Features appendix</a> — native surfaces, controllers, glass unioning, dark-mode sync 8. <a href="#examples">Examples</a> 9. <a href="#gotchas">Gotchas</a> — patches, SVGKit weight, <code>CNTabBarNative</code> semantics, <code>LiquidGlassContainer</code> 10. <a href="#decisions--adrs">Decisions / ADRs</a> 11. <a href="#changelog--status">Changelog & status</a> 12. <a href="#open-questions">Open questions</a></p>
 <p>---</p>
 <h3>Overview & role</h3>
-<p><code>cupertino_native_better</code> (internally still <code>package:cupertino_native_better/...</code>) is the <strong>iOS native tier</strong> of the p2 app. On iOS 26+ and macOS 26+ it renders Apple's real Liquid Glass through Swift/UIKit (iOS) and AppKit (macOS) <code>UiKitView</code>/<code>AppKitView</code> platform views; on older Apple OSes it falls back to <code>Cupertino</code>; on Android/web it falls back to Material. It is the concrete implementation beneath <code>stacked_kit</code>'s <code>Kit*</code> ports — the host almost never imports <code>cupertino_native_better</code> directly; <code>stacked_kit</code> does, and re-exports nothing.</p>
+<p><code>cupertino_native_better</code> (internally still <code>package:cupertino_native_better/...</code>) is the <strong>iOS native tier</strong> of the p2 app. On iOS 26+ and macOS 26+ it renders Apple's real Liquid Glass through Swift/UIKit (iOS) and AppKit (macOS) <code>UiKitView</code>/<code>AppKitView</code> platform views; on older Apple OSes it falls back to <code>Cupertino</code>; on Android/web it falls back to Material. It is the concrete implementation beneath <code>appbox_kit</code>'s <code>Kit*</code> ports — the host almost never imports <code>cupertino_native_better</code> directly; <code>appbox_kit</code> does, and re-exports nothing.</p>
 <p>The package ships three layers fused into one <code>path</code> dep: a federated Flutter plugin (Dart platform interface + method channel + Swift/SPM native), a Dart widget library of <code>CN*</code> widgets that own the build-time platform branch, and an iOS-26-only native tab-bar takeover (<code>CNTabBarNative</code>) that bypasses the widget tree and presents a real <code>UITabBarController</code>.</p>
 <div class="diagram-wrap">
-<p class="diag-cap">cupertino_native_better is the iOS native tier under stacked_kit's Kit* ports.</p>
+<p class="diag-cap">cupertino_native_better is the iOS native tier under appbox_kit's Kit* ports.</p>
 <div class="diagram-panel" data-rough>
   <div class="diagram-box" data-rough>
-    <div class="diagram-pill">Host app (e.g. stacked_kit_showcase)</div>
-    <div class="diagram-node">stacked_kit · ~18 Kit* ports</div>
+    <div class="diagram-pill">Host app (e.g. appbox_kit_showcase)</div>
+    <div class="diagram-node">appbox_kit · ~18 Kit* ports</div>
     <div class="diagram-muted">KitNativeButton, KitTabBar, KitNativeSheet, KitGlassCard, KitNativeSlider, KitNativeSwitch, KitNativePopupMenu, KitNativeSegmentedControl, KitNativeSearchBar, KitNativeSplitButton, KitNativeFab, KitNativeToolbar, KitNativeIconButton, KitNativeChromeGate, KitNativeOverlay, KitNativeRangeSlider, KitTabBar, KitNotificationService</div>
   </div>
   <div class="diagram-arrow">↓ delegates to</div>
@@ -547,7 +547,7 @@ class _HomeState extends State&lt;Home&gt; {
 }
 </code></pre><ul class="ann"><li><b>Observer</b> <span class="ann-l">L9</span>: Without CNTabBarRouteObserver on the root navigator, glass halos bleed through sheets and popups.</li><li><b>Glass</b> <span class="ann-l">L31</span>: style: CNButtonStyle.glass picks Liquid Glass on iOS 26+; falls back to Cupertino on older Apple, Material elsewhere.</li></ul>
 <h3>Wiring</h3>
-<div class="callout warn"><span class="h">Hosts almost never declare this package as a direct dep.</span><p>It is a <code>path:</code> dependency of <code>stacked_kit</code> (<code>path: ../cupertino_native_better</code>); <code>stacked_kit</code> is the only intended consumer. Importing <code>cupertino_native_better</code> directly from a host app is fine for one-off native surfaces, but the Kit* ports are the supported surface. <strong>iOS deployment target: 15.0</strong> (set in <code>ios/cupertino_native_better/Package.swift</code>). <strong>macOS deployment target: 11.0</strong>. Swift tools version <strong>5.9</strong>. Native code is consumed via Swift Package Manager (with <code>.podspec</code> fallbacks).</p></div>
+<div class="callout warn"><span class="h">Hosts almost never declare this package as a direct dep.</span><p>It is a <code>path:</code> dependency of <code>appbox_kit</code> (<code>path: ../cupertino_native_better</code>); <code>appbox_kit</code> is the only intended consumer. Importing <code>cupertino_native_better</code> directly from a host app is fine for one-off native surfaces, but the Kit* ports are the supported surface. <strong>iOS deployment target: 15.0</strong> (set in <code>ios/cupertino_native_better/Package.swift</code>). <strong>macOS deployment target: 11.0</strong>. Swift tools version <strong>5.9</strong>. Native code is consumed via Swift Package Manager (with <code>.podspec</code> fallbacks).</p></div>
 <p>The two local patches held in this vendored fork:</p>
 <p class="code-fn"><code>pubspec.yaml (patch #1)</code></p><pre><code>dependencies:
   flutter:
@@ -560,7 +560,7 @@ class _HomeState extends State&lt;Home&gt; {
   cupertino_icons: ^1.0.8
   plugin_platform_interface: ^2.0.2</code></pre><ul class="ann"><li><b>Patch #1</b> <span class="ann-l">L8</span>: Revert when upstream accepts the dependency; this is a no-op patch for apps that already pull cupertino_icons, and additive for everyone else.</li></ul>
 
-<p class="code-fn"><code>stacked_kit/pubspec.yaml (records patch #2)</code></p><pre><code>  # Vendored at ../cupertino_native_better: upstream 1.5.2 + local fix to the
+<p class="code-fn"><code>appbox_kit/pubspec.yaml (records patch #2)</code></p><pre><code>  # Vendored at ../cupertino_native_better: upstream 1.5.2 + local fix to the
   # iOS tab-bar platform view (refresh no longer clobbers native selection /
   # setSelectedIndex race — the &quot;Search tab mixed state&quot; ticket). Path dep
   # so the patch survives `pub cache repair`; drop back to hosted once
@@ -571,15 +571,15 @@ class _HomeState extends State&lt;Home&gt; {
 <div class="callout warn"><span class="h"><code>CNTabBarRouteObserver()</code> must be on the root navigator.</span><p>On <code>MaterialApp</code> use <code>navigatorObservers:</code>; on <code>CupertinoApp</code> likewise; on <code>GoRouter</code> use <code>observers:</code> on the router config. Without it, <code>anyModalDepth</code> never advances and Liquid Glass halos bleed through sheets/modals/popups. For non-route overlays (<code>Scaffold.showBottomSheet</code>, persistent bottom sheets) you must also call <code>CNTabBarRouteObserver.markAnyModalActive()</code> on open and <code>markAnyModalInactive()</code> on close — the observer can only see route-based modals.</p></div>
 <h3>Integration map</h3>
 <div class="diagram-wrap">
-<p class="diag-cap">stacked_kit is the only intended consumer; ~18 Kit<em> ports delegate to CN</em>. cupertino_native_better is NOT re-exported by stacked_kit.</p>
+<p class="diag-cap">appbox_kit is the only intended consumer; ~18 Kit<em> ports delegate to CN</em>. cupertino_native_better is NOT re-exported by appbox_kit.</p>
 <div class="diagram-panel" data-rough>
   <div class="diagram-box" data-rough>
     <div class="diagram-pill">Host app</div>
-    <div class="diagram-node">imports package:stacked_kit</div>
+    <div class="diagram-node">imports package:appbox_kit</div>
   </div>
   <div class="diagram-arrow">↓</div>
   <div class="diagram-box" data-rough>
-    <div class="diagram-pill">stacked_kit (sole consumer)</div>
+    <div class="diagram-pill">appbox_kit (sole consumer)</div>
     <div class="diagram-node">KitNativeButton → CNButton</div>
     <div class="diagram-node">KitTabBar → CNTabBar</div>
     <div class="diagram-node">KitNativeSheet → CNBottomSheet</div>
@@ -679,7 +679,7 @@ class _HomeState extends State&lt;Home&gt; {
 </div>
 </div>
 <h3>Gotchas</h3>
-<div class="callout warn"><span class="h">Two local patches — revert when upstreamed.</span><p>Patch #1 (<code>cupertino_icons: ^1.0.8</code> in this package's <code>pubspec.yaml</code>) fixes "?" tofu toast icons. Patch #2 (in the Swift tab-bar factory + <code>components/tab_bar.dart</code>) fixes the iOS tab-bar platform-view refresh race that corrupted the search tab's selection ("Search tab mixed state"). Both are recorded in code comments; the path dep on <code>stacked_kit</code> ensures they survive <code>pub cache repair</code>. When upstream ships both, drop back to hosted.</p></div>
+<div class="callout warn"><span class="h">Two local patches — revert when upstreamed.</span><p>Patch #1 (<code>cupertino_icons: ^1.0.8</code> in this package's <code>pubspec.yaml</code>) fixes "?" tofu toast icons. Patch #2 (in the Swift tab-bar factory + <code>components/tab_bar.dart</code>) fixes the iOS tab-bar platform-view refresh race that corrupted the search tab's selection ("Search tab mixed state"). Both are recorded in code comments; the path dep on <code>appbox_kit</code> ensures they survive <code>pub cache repair</code>. When upstream ships both, drop back to hosted.</p></div>
 
 <div class="callout warn"><span class="h">SVGKit adds binary weight on iOS.</span><p>The iOS SPM target depends on <code>SVGKit ~&gt; 3.0</code>. If you don't use SVG image assets via <code>CNImageAsset</code>, you still pay the binary cost — this is upstream behavior, not a local choice.</p></div>
 
@@ -691,11 +691,11 @@ class _HomeState extends State&lt;Home&gt; {
 <h3>Decisions / ADRs</h3>
 <div class="callout "><p>No formal ADRs in this package. Two upstream-pending decisions are documented in code comments as the local-patch rationale (patches #1 and #2). When upstreaming, capture the iOS-26-only / non-Widget nature of <code>CNTabBarNative</code> and the <code>CNTabBarRouteObserver</code>-must-be-on-root-navigator contract in upstream docs.</p></div>
 <h3>Changelog & status</h3>
-<table><tr><th>Field</th><th>Value</th></tr><tr><td>Version</td><td>1.5.2 (upstream baseline this fork tracks)</td></tr><tr><td>Status</td><td>Vendored fork with two local patches; not published. Path-dep of stacked_kit.</td></tr><tr><td>iOS deployment target</td><td>15.0</td></tr><tr><td>macOS deployment target</td><td>11.0</td></tr><tr><td>Swift tools version</td><td>5.9</td></tr><tr><td>Upstream</td><td>https://github.com/gunumdogdu/cupertino_native_better</td></tr><tr><td>Native packaging</td><td>Swift Package Manager (primary) + .podspec fallback (per platform)</td></tr><tr><td>iOS binary deps</td><td>SVGKit ~> 3.0 (SVG image rendering)</td></tr><tr><td>Dart SDK</td><td>^3.9.0</td></tr><tr><td>Method channels</td><td>Per-instance: CupertinoNativeXxx_$id, CNGlassCard_$id, CNSearchBar_$id, cn_native_tab_bar. Legacy facade for getPlatformVersion.</td></tr><tr><td>Local patch #1</td><td>cupertino_icons ^1.0.8 in pubspec.yaml — fixes '?' tofu toast icons</td></tr><tr><td>Local patch #2</td><td>iOS tab-bar platform-view refresh race — fixes 'Search tab mixed state'</td></tr><tr><td>Open tracking</td><td>Drop path dep back to hosted once both patches are upstreamed</td></tr></table>
+<table><tr><th>Field</th><th>Value</th></tr><tr><td>Version</td><td>1.5.2 (upstream baseline this fork tracks)</td></tr><tr><td>Status</td><td>Vendored fork with two local patches; not published. Path-dep of appbox_kit.</td></tr><tr><td>iOS deployment target</td><td>15.0</td></tr><tr><td>macOS deployment target</td><td>11.0</td></tr><tr><td>Swift tools version</td><td>5.9</td></tr><tr><td>Upstream</td><td>https://github.com/gunumdogdu/cupertino_native_better</td></tr><tr><td>Native packaging</td><td>Swift Package Manager (primary) + .podspec fallback (per platform)</td></tr><tr><td>iOS binary deps</td><td>SVGKit ~> 3.0 (SVG image rendering)</td></tr><tr><td>Dart SDK</td><td>^3.9.0</td></tr><tr><td>Method channels</td><td>Per-instance: CupertinoNativeXxx_$id, CNGlassCard_$id, CNSearchBar_$id, cn_native_tab_bar. Legacy facade for getPlatformVersion.</td></tr><tr><td>Local patch #1</td><td>cupertino_icons ^1.0.8 in pubspec.yaml — fixes '?' tofu toast icons</td></tr><tr><td>Local patch #2</td><td>iOS tab-bar platform-view refresh race — fixes 'Search tab mixed state'</td></tr><tr><td>Open tracking</td><td>Drop path dep back to hosted once both patches are upstreamed</td></tr></table>
 <h3>Open questions</h3>
 <div class="qform">
 <div class="q">Have patch #1 and #2 been filed upstream?</div>
-<div class="qsub">The path dep on stacked_kit is debt; once upstream ships both fixes we revert to hosted.</div>
+<div class="qsub">The path dep on appbox_kit is debt; once upstream ships both fixes we revert to hosted.</div>
 <div class="opts">
 <label>○ Both PRs filed — Track merge; switch to hosted on next upstream release.</label>
 <label>○ Only one filed — Keep the path dep until the second is merged.</label>

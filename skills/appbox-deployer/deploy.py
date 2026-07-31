@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """appbox-deployer — the deploy mechanics, behind the strictest human gate.
 
-Architecture §17 / plan 11. The deploy kit (`stacked_kit_deploy`, vendored as a
+Architecture §17 / plan 11. The deploy kit (`appbox_kit_deploy`, vendored as a
 skill at tools/vendor/skills/deployer/) is pure-Dart, standalone, registry
 `phase: stable`. Its targets:
 

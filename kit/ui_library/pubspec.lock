@@ -740,14 +740,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.5.0"
-  stacked_kit_core:
+  appbox_kit_core:
     dependency: "direct main"
     description:
       path: "../core"
       relative: true
     source: path
     version: "0.1.0"
-  stacked_kit_motion:
+  appbox_kit_motion:
     dependency: "direct main"
     description:
       path: "../motion"

@@ -1,0 +1,466 @@
+{
+  "$id": "flutter-crew.ios-liquid-glass",
+  "$comment": "Shape: globalFacts (object) + map: { canonicalId -> PlatformMapping }. PlatformMapping fields defined in ../schemas/breakdown.schema.json.",
+  "platform": "ios",
+  "system": "Apple Liquid Glass (SwiftUI)",
+  "version": "iOS 26+ (Xcode 26 SDK)",
+  "canonicalVersion": "1.0.0",
+  "globalFacts": {
+    "availability": "All glass APIs are @available(iOS 26.0, *). NO backward-deployment. Gate: if #available(iOS 26, *).",
+    "autoAdoption": "Recompiling with Xcode 26 makes stock controls (TabView, NavigationStack, .toolbar, .sheet, .popover, .searchable, Slider, Toggle, Stepper, Picker, .alert) adopt Liquid Glass automatically — no code change.",
+    "layerRule": "Liquid Glass is for the NAVIGATION/FUNCTIONAL layer that floats above content. Do NOT apply .glassEffect() to list rows, scroll content, or full-screen backgrounds.",
+    "noStacking": "Never place glass directly on glass. Wrap clusters in GlassEffectContainer.",
+    "coreModifier": "View.glassEffect(_ glass: Glass = .regular, in shape: S = Capsule, isEnabled: Bool = true)",
+    "glassVariants": "Glass.regular (default adaptive) | Glass.clear (near-transparent, over media) | Glass.identity (off). Chain .tint(Color) and .interactive(). Do NOT emit Glass.filled (not a shipping case).",
+    "container": "GlassEffectContainer(spacing: CGFloat? = nil, @ViewBuilder content:) — required for 2+ glass elements + morphing.",
+    "morph": ".glassEffectID(id, in: namespace) + .glassEffectUnion(id:namespace:) inside a GlassEffectContainer + @Namespace.",
+    "buttonStyles": ".buttonStyle(.glass) = translucent (secondary); .buttonStyle(.glassProminent).tint(c) = opaque CTA. Control sizes: .mini .small .regular .large .extraLarge.",
+    "backdeployFallback": "Pre-iOS 26: approximate .glassEffect(.regular) → .background(.ultraThinMaterial); .interactive() → .thinMaterial + manual scaleEffect on gesture.",
+    "test": "Simulator approximates lensing/specular; TEST ON REAL HARDWARE. Reduce Transparency / Increase Contrast / Reduce Motion handled automatically.",
+    "flutterBridge": "FLUTTER-ONLY (iOS target). Flutter Cupertino widgets do NOT auto-adopt Liquid Glass (Dart-drawn reimplementations; Flutter team will not build it — issue #170310). Real Liquid Glass is reachable ONLY via a PLATFORM VIEW: UiKitView embedding a UIHostingController whose SwiftUI root applies .glassEffect(_:in:)/.buttonStyle(.glassProminent)/GlassEffectContainer. iOS uses Hybrid Composition so glass refracts real Flutter content. CONSTRAINTS: GlassEffectContainer/glassEffectUnion CANNOT blend glass across separate platform views — group glass primitives inside ONE hosting controller; EagerGestureRecognizer via gestureRecognizers is REQUIRED so native taps aren't stolen by Flutter's gesture arena. PATTERN — Swift: class FCGlassFactory: NSObject,FlutterPlatformViewFactory{ create()->FCGlassView }; FCGlassView{ let host=UIHostingController(rootView: GlassRoot(...).glassEffect(.regular,in:RoundedRectangle(cornerRadius:r))); return host.view }; register in AppDelegate. Dart: UiKitView(viewType:'fc-glass-<id>', gestureRecognizers:<EagerGestureRecognizer>). Pure-Dart fallback (lower fidelity): liquid_glass_renderer (Impeller-only, experimental) / liquid_glass_easy (Skia) / BackdropFilter(ImageFilter.blur)+translucent color. EMIT RULE: if the primitive id is in glassPrimitives AND the design intends glass -> symbol = Flutter UiKitView host embedding map[id].symbol (SwiftUI), bridge=platformView, nativeRef=map[id].symbol. Otherwise -> symbol = the plain Flutter equivalent (Text/Divider/ListView/Image/Switch/Checkbox/Slider/SegmentedButton/AlertDialog/showModalBottomSheet/PopupMenuButton/TabBar/DataTable/PageView/ExpansionTile/CircleAvatar/CircularProgressIndicator...), bridge=pureFlutter, nativeRef=map[id].symbol (or null). NOTE: glassPrimitives are DEFAULT glass candidates (floating functional/navigation layer per Apple HIG) — deliberately NOT all primitives; content (text/list/grid/data) is pureFlutter by design. The AUTHORITATIVE glass signal is the design's motion.glass-blur flag + whether the primitive floats in chrome: glass a listed primitive only if the design intends glass, and glass an UNLISTED primitive if it carries motion.glass-blur.",
+    "glassPrimitives": [
+      "surface.glass",
+      "surface.toolbar",
+      "surface.tabbar",
+      "surface.sheet",
+      "surface.popover",
+      "surface.modal",
+      "surface.tooltip",
+      "surface.card",
+      "action.button",
+      "action.icon-button",
+      "action.fab",
+      "action.chip",
+      "feedback.badge",
+      "feedback.toast",
+      "input.search",
+      "surface.navrail",
+      "surface.sidebar"
+    ],
+    "nativeDecoration": "GATE G3 (native-decoration policy): a native control carries ONLY native-vocabulary decoration — an SF Symbol via Image(systemName:) / NativeLiquidGlassIcon.sfSymbol. The action.button contract (params: variant/tint/size/shape + a SYSTEM-symbol icon) has NO brand-glyph slot. A custom brand SVG the design paints inside a button (Google's 4-colour G, a partner logo) is NOT native vocabulary: in native mode DROP it from the render — do NOT rasterise it to PNG to force it in (forcing a non-native graphic into a native control is the bug this gate stops). DROP != discard: the asset manager RECORDS every dropped glyph in the target's NON-bundled provenance/asset_ledger.json (origin, dims, the vector, drop reason); design render mode reproduces it religiously. Applied to EVERY button the SAME way, incl. social-auth — in native mode the Apple button is a native Liquid Glass AdaptiveButton like Google's and BOTH marks (apple.logo, Google G) drop. Do NOT substitute an official provider button (SignInWithAppleButton) as the native default, and do NOT keep one provider's mark but not another's. The ONLY native way a dropped mark could ride a native button is converting it to an SF Symbol — but that path is currently CLOSED for these marks: native_liquid_glass loads icons only via UIImage(systemName:) (system symbols; a custom asset-catalog symbol needs UIImage(named:), not called), the SF Symbols licence forbids logo/trademark glyphs (apple.logo restricted), and Google requires the exact provided G. So SF-Symbol conversion is a future path only for a simple non-trademark tintable glyph. Mirrors the same policy on Android (Material icon vocabulary) and web (lucide)."
+  },
+  "map": {
+    "surface.card": {
+      "symbol": "View.glassEffect(.regular, in: RoundedRectangle(cornerRadius: r))  |  or .background(.regularMaterial) for content cards",
+      "api": "content.glassEffect(.regular, in: RoundedRectangle(cornerRadius: .containerConcentric))",
+      "availability": "iOS 26+",
+      "notes": "Prefer glass only for FLOATING cards. Content-layer cards → .background(.regularMaterial) (Material, not Glass) per Apple's layer rule. Use .containerConcentric to auto-align corners with container."
+    },
+    "surface.panel": {
+      "symbol": "RoundedRectangle(cornerRadius:).fill()",
+      "api": "RoundedRectangle(cornerRadius: 16).fill(Color.surface).shadow(...)",
+      "availability": "iOS 15+",
+      "notes": "Opaque surface; do not glass."
+    },
+    "surface.glass": {
+      "symbol": "View.glassEffect(_:in:)",
+      "api": "content.glassEffect(.regular.tint(c).interactive(), in: shape)",
+      "params": [
+        {
+          "name": "variant",
+          "value": ".regular | .clear"
+        },
+        {
+          "name": "tint",
+          "value": "Color"
+        },
+        {
+          "name": "interactive",
+          "value": "Bool"
+        }
+      ],
+      "availability": "iOS 26+",
+      "experimental": false,
+      "notes": "Core primitive. .clear over media. Wrap clusters in GlassEffectContainer."
+    },
+    "surface.sheet": {
+      "symbol": ".sheet(...) + .presentationDetents",
+      "api": ".sheet(isPresented:) { Content() }.presentationDetents([.medium, .large])",
+      "availability": "iOS 16+ detents; iOS 26 auto floating glass",
+      "notes": "Partial detents auto-float with inset Liquid Glass; .large → opaque + attached. Morph: matchedTransitionSource + navigationTransition(.zoom)."
+    },
+    "surface.modal": {
+      "symbol": ".alert / .confirmationDialog / custom overlay",
+      "api": ".alert(title, isPresented:) {}  |  .confirmationDialog(...)",
+      "availability": "iOS 26 auto glass for system dialogs",
+      "notes": "System .alert/.confirmationDialog auto-glass. Custom modal → .overlay + GlassEffectContainer."
+    },
+    "surface.popover": {
+      "symbol": ".popover",
+      "api": ".popover(isPresented:) { Content() }",
+      "availability": "iOS 26 auto glass",
+      "notes": "Auto-glass popover."
+    },
+    "surface.tooltip": {
+      "symbol": ".popover (custom) — iOS has no native tooltip",
+      "api": ".popover(isPresented:) { Text(tip).padding().glassEffect() }",
+      "availability": "iOS 26+",
+      "notes": "No native iOS tooltip. Build via .popover + glass capsule, or long-press preview."
+    },
+    "surface.toolbar": {
+      "symbol": ".toolbar { ToolbarItem }",
+      "api": ".toolbar { ToolbarItem(placement: .topBarTrailing) { action } }",
+      "availability": "iOS 26 auto glass",
+      "notes": "Auto-glass. Symbols prioritized over text. .confirmationAction placement auto-applies .glassProminent. Remove old .ultraThinMaterial/.presentationBackground workarounds."
+    },
+    "surface.tabbar": {
+      "symbol": "TabView { Tab(...) }",
+      "api": "TabView(selection:) { Tab(\"Home\", systemImage:\"house\", value:0){...} ; Tab(\"Search\", systemImage:\"magnifyingglass\", value:1, role:.search){...} }.tabBarMinimizeBehavior(.onScrollDown).tabViewBottomAccessory { ... }",
+      "availability": "iOS 26+",
+      "notes": "Floating glass tab bar. .tabBarMinimizeBehavior(.automatic|.onScrollDown|.never). Tab(role:.search) = floating search button. .tabViewBottomAccessory for persistent glass accessory."
+    },
+    "surface.navrail": {
+      "symbol": "NavigationSplitView sidebar / TabView on iPadOS",
+      "api": "NavigationSplitView { Sidebar } detail: { Detail }",
+      "availability": "iOS 26 auto glass sidebar",
+      "notes": "iPadOS large-screen rail auto-adapts glass. Collapse to TabView on compact width."
+    },
+    "surface.sidebar": {
+      "symbol": "NavigationSplitView sidebar",
+      "api": "NavigationSplitView { List(selection:) {...} } detail: {...}",
+      "availability": "iOS 26 auto glass",
+      "notes": "Sidebar auto-adapts (does not flip in dark mode — intentional)."
+    },
+    "surface.list": {
+      "symbol": "List / Form",
+      "api": "List { ForEach(items) { Row($0) } }",
+      "availability": "iOS 15+",
+      "notes": "Do NOT glass list rows. Content layer."
+    },
+    "surface.grid": {
+      "symbol": "LazyVGrid",
+      "api": "LazyVGrid(columns: [GridItem(.adaptive(minimum:160))]) { ... }",
+      "availability": "iOS 14+",
+      "notes": "Plain grid; no glass."
+    },
+    "action.button": {
+      "symbol": "Button{}.buttonStyle(.glassProminent | .glass)",
+      "api": "Button(\"Save\"){}.buttonStyle(.glassProminent).tint(.blue).controlSize(.large)",
+      "params": [
+        {
+          "name": "variant",
+          "value": "primary→.glassProminent ; secondary/ghost→.glass"
+        },
+        {
+          "name": "tint",
+          "value": "Color (glassProminent fills whole button)"
+        },
+        {
+          "name": "size",
+          "value": ".mini .small .regular .large .extraLarge"
+        },
+        {
+          "name": "shape",
+          "value": ".buttonBorderShape(.capsule | .roundedRectangle(radius:) | .circle)"
+        }
+      ],
+      "availability": "iOS 26+",
+      "notes": ".glassProminent = opaque CTA; .glass = translucent secondary. Destructive → .tint(.red). Known beta artifact: .glassProminent + .circle → use .clipShape(Circle()) workaround."
+    },
+    "action.icon-button": {
+      "symbol": "Button{}.buttonStyle(.glass) / .bordered",
+      "api": "Button(action:){Image(systemName:\"plus\")}.buttonStyle(.glass).buttonBorderShape(.circle)",
+      "availability": "iOS 26+",
+      "notes": "Filled → .glassProminent; tonal → .bordered. Badge via .overlay badge view."
+    },
+    "action.fab": {
+      "symbol": "Floating Button(.glassProminent) or .tabViewBottomAccessory",
+      "api": "Button{Image(systemName:\"plus\")}.buttonStyle(.glassProminent).buttonBorderShape(.circle).controlSize(.large)",
+      "availability": "iOS 26+",
+      "notes": "iOS has NO native FAB. Use a floating .glassProminent circle, or attach via .tabViewBottomAccessory."
+    },
+    "action.segmented": {
+      "symbol": "Picker(.segmented)",
+      "api": "Picker(\"\", selection:$sel){ Text(\"A\").tag(0); Text(\"B\").tag(1) }.pickerStyle(.segmented)",
+      "availability": "iOS 26 auto glass in chrome",
+      "notes": "Auto-glass. For pill custom style, build GlassEffectContainer + .glass buttons."
+    },
+    "action.switch": {
+      "symbol": "Toggle",
+      "api": "Toggle(\"Airplane\", isOn:$on)",
+      "availability": "iOS 26 auto glass in chrome",
+      "notes": "Auto-glass in chrome contexts."
+    },
+    "action.checkbox": {
+      "symbol": "Toggle(.button) — iOS has no native checkbox",
+      "api": "Toggle(isOn:$checked).toggleStyle(.button)",
+      "availability": "iOS 17+ .button style",
+      "notes": "No native Checkbox on iOS. Use Toggle with .button/.checkbox(macOS) or custom Button + Image(systemName:\"checkmark\")."
+    },
+    "action.radio": {
+      "symbol": "Picker — iOS has no native radio",
+      "api": "Picker(selection:$sel){ options }.pickerStyle(.inline) / .segmented",
+      "availability": "iOS 16+",
+      "notes": "No native radio button. Use Picker (segmented/menu) or custom selectable chips in GlassEffectContainer."
+    },
+    "action.chip": {
+      "symbol": "Button + .glassEffect() inside GlassEffectContainer",
+      "api": "Button(chip){}.glassEffect(selected ? .regular.tint(c) : .regular, in: Capsule())",
+      "availability": "iOS 26+",
+      "notes": "Custom. Selected → tint or .glassProminent. Removable → trailing x button. Cluster MUST be in GlassEffectContainer."
+    },
+    "action.link": {
+      "symbol": "NavigationLink / Link",
+      "api": "NavigationLink(\"Details\"){ DetailView() }  |  Link(\"Site\", destination:url)",
+      "availability": "iOS 16+ NavigationLink value-based; iOS 26 auto glass",
+      "notes": "Inline → .foregroundStyle(.tint)."
+    },
+    "input.text-field": {
+      "symbol": "TextField",
+      "api": "TextField(\"Email\", text:$val).textContentType(.emailAddress)",
+      "availability": "iOS 26 auto glass in chrome; floating → wrap .glassEffect",
+      "notes": "Auto-glass in chrome. Floating field → wrap in .glassEffect capsule. Secure → SecureField."
+    },
+    "input.textarea": {
+      "symbol": "TextEditor",
+      "api": "TextEditor(text:$body)",
+      "availability": "iOS 15+",
+      "notes": "Plain; frame height fixed. No glass."
+    },
+    "input.search": {
+      "symbol": ".searchable(text:)",
+      "api": "ContentView().searchable(text:$q, prompt:\"Search\")",
+      "availability": "iOS 26 auto glass; Tab(role:.search) floating",
+      "notes": "Auto-glass search field. Use Tab(role:.search) for floating reachability search button."
+    },
+    "input.select": {
+      "symbol": "Picker",
+      "api": "Picker(\"Sort\", selection:$s){ Text(\"New\").tag(0) }.pickerStyle(.menu | .navigationLink)",
+      "availability": "iOS 26 auto glass",
+      "notes": ".menu = dropdown popover (auto-glass); .navigationLink = push to list."
+    },
+    "input.multiselect": {
+      "symbol": "Custom List + Toggle, or EditMode .selection",
+      "api": "List(selection:$multi){ ForEach(opts){Text($0)} }.environment(\\.editMode, .active)",
+      "availability": "iOS 16+",
+      "notes": "No native multiselect control. Use List with selection or chip cluster."
+    },
+    "input.slider": {
+      "symbol": "Slider",
+      "api": "Slider(value:$v, in:0...100, step:1)",
+      "availability": "iOS 26 auto glass in chrome",
+      "notes": "Auto-glass in chrome."
+    },
+    "input.stepper": {
+      "symbol": "Stepper",
+      "api": "Stepper(value:$n, in:0...10){ Text(\"\\(n)\") }",
+      "availability": "iOS 26 auto glass in chrome",
+      "notes": "Auto-glass."
+    },
+    "input.date-picker": {
+      "symbol": "DatePicker",
+      "api": "DatePicker(\"Date\", selection:$date).datePickerStyle(.graphical | .compact | .wheel)",
+      "availability": "iOS 26 auto glass",
+      "notes": ".graphicalStyle = calendar popover (auto-glass)."
+    },
+    "input.toggle-group": {
+      "symbol": "GlassEffectContainer + .glass buttons (custom)",
+      "api": "GlassEffectContainer { HStack { toggles.map { Button($0){}.buttonStyle(.glass) } } }",
+      "availability": "iOS 26+",
+      "notes": "No native connected toggle group. Build custom."
+    },
+    "feedback.progress": {
+      "symbol": "ProgressView(value:)",
+      "api": "ProgressView(value:0.6)  // .circular via .progressViewStyle(.circular)",
+      "availability": "iOS 26 auto glass",
+      "notes": "Auto-glass."
+    },
+    "feedback.spinner": {
+      "symbol": "ProgressView()",
+      "api": "ProgressView().controlSize(.regular)",
+      "availability": "iOS 26 auto glass",
+      "notes": "Indeterminate ProgressView auto-glass."
+    },
+    "feedback.toast": {
+      "symbol": "Custom overlay + .glassEffect() — no native toast",
+      "api": ".overlay(alignment:.bottom){ Text(msg).padding().glassEffect(.regular, in: Capsule()).transition(.move(.up).combined(with:.opacity)) }",
+      "availability": "iOS 26+",
+      "notes": "No native toast. Custom overlay + glass capsule + withAnimation(.spring). Or third-party."
+    },
+    "feedback.alert": {
+      "symbol": ".alert / .confirmationDialog",
+      "api": ".alert(\"Saved\", isPresented:$show){ Button(\"OK\", role:.cancel){} }",
+      "availability": "iOS 26 auto glass",
+      "notes": "System dialogs auto-glass."
+    },
+    "feedback.skeleton": {
+      "symbol": "redacted(reason: .placeholder) + shimmer",
+      "api": "Text(\"----\").redacted(reason: .placeholder)",
+      "availability": "iOS 15+",
+      "notes": "No native skeleton. redacted + custom shimmer opacity animation."
+    },
+    "feedback.badge": {
+      "symbol": "Text in Capsule + .glassEffect() / .glassProminent",
+      "api": "Text(\"3\").font(.caption).padding(.horizontal,8).padding(.vertical,2).glassEffect(.regular.tint(.red), in: Capsule())",
+      "availability": "iOS 26+",
+      "notes": "Custom. Count badge → red tint glass; status → neutral."
+    },
+    "display.text": {
+      "symbol": "Text + .font(...) typography tier",
+      "api": "Text(s).font(.largeTitle .bold())  // tiers: largeTitle,title,title2,title3,headline,body,callout,subheadline,footnote,caption,caption2",
+      "availability": "iOS 15+",
+      "notes": "Map display→largeTitle, title→title2, subtitle→headline, body→body, caption→footnote, label→caption, overline→caption2.uppercaseSmallCaps."
+    },
+    "display.icon": {
+      "symbol": "Image(systemName:)",
+      "api": "Image(systemName:\"house.fill\").font(.title2).foregroundStyle(.tint)",
+      "availability": "iOS 14+",
+      "notes": "SF Symbols. Filled variant → .fill suffix."
+    },
+    "display.avatar": {
+      "symbol": "AsyncImage + .clipShape(.circle)",
+      "api": "AsyncImage(url:url){$0.image} placeholder:{Circle().fill(.gray)}.frame(width:40,height:40).clipShape(.circle)",
+      "availability": "iOS 15+",
+      "notes": "Glass ring → overlay .glassEffect(Circle()). Initials fallback → Text in Circle."
+    },
+    "display.divider": {
+      "symbol": "Divider()",
+      "api": "Divider()",
+      "availability": "iOS 13+",
+      "notes": "Plain."
+    },
+    "display.media": {
+      "symbol": "Image / AsyncImage + .clipShape + .backgroundExtensionEffect()",
+      "api": "image.clipShape(RoundedRectangle(cornerRadius:12)); bleed: image.backgroundExtensionEffect()",
+      "availability": "iOS 26+ for backgroundExtensionEffect",
+      "notes": "Use .backgroundExtensionEffect for content bleeding behind sidebar/card (Podcasts/Maps look)."
+    },
+    "display.stat": {
+      "symbol": "VStack { Text(value).font(.title.monospacedDigit()); Text(label).font(.caption).foregroundStyle(.secondary) }",
+      "api": "VStack(alignment:.leading){ Text(\"1,204\").font(.title); Text(\"steps\").foregroundStyle(.secondary) }",
+      "availability": "iOS 15+",
+      "notes": "Compose; no dedicated widget."
+    },
+    "display.empty-state": {
+      "symbol": "ContentUnavailableView",
+      "api": "ContentUnavailableView(\"No workouts\", systemImage:\"figure.run\", description:Text(\"Add one\"))",
+      "availability": "iOS 17+",
+      "notes": "Native empty state. Action → ContentUnavailableView(action:)."
+    },
+    "navigation.tabs": {
+      "symbol": "Picker(.segmented) — top tabs",
+      "api": "Picker(\"\",selection:$t){ Text(\"A\").tag(0) }.pickerStyle(.segmented)",
+      "availability": "iOS 26 auto glass",
+      "notes": "iOS top tabs = segmented Picker. Primary nav uses TabView (bottom)."
+    },
+    "navigation.breadcrumb": {
+      "symbol": "Custom HStack — no native",
+      "api": "HStack { Button(\"Home\"){}; Text(\"/\"); Text(\"Current\") }",
+      "availability": "iOS 15+",
+      "notes": "No native breadcrumb. Custom inline."
+    },
+    "navigation.pagination": {
+      "symbol": "Custom button row",
+      "api": "HStack { Button(\"Prev\"){}; Text(\"1/5\"); Button(\"Next\"){} }.buttonStyle(.glass)",
+      "availability": "iOS 26+ glass",
+      "notes": "No native pagination. Custom."
+    },
+    "navigation.dropdown-menu": {
+      "symbol": "Menu",
+      "api": "Menu { Button(\"Edit\"){}; Button(\"Delete\", role:.destructive){} } label: { Label(\"Actions\", systemImage:\"ellipsis.circle\") }",
+      "availability": "iOS 26 auto glass popover",
+      "notes": "Menu auto-glass popover. Supports sections, destructive roles."
+    },
+    "navigation.context-menu": {
+      "symbol": ".contextMenu",
+      "api": "view.contextMenu { Button(\"Share\"){}; Button(\"Delete\", role:.destructive){} }",
+      "availability": "iOS 26 auto glass",
+      "notes": "Auto-glass context menu."
+    },
+    "navigation.command": {
+      "symbol": ".searchable overlay — no native cmd palette",
+      "api": "Custom: .searchable + filtered List in a sheet",
+      "availability": "iOS 26+",
+      "notes": "No native command palette. Approximate via searchable + list."
+    },
+    "navigation.menubar": {
+      "symbol": "MenuBarExtra (macOS) — iOS custom",
+      "api": "macOS: MenuBarExtra(\"App\", systemImage:\"app\"){}",
+      "availability": "macOS 13+",
+      "notes": "iOS: no menubar. macOS only."
+    },
+    "data.table": {
+      "symbol": "Grid (iOS 16+) or List rows",
+      "api": "Grid { GridRow { Text(\"A\"); Text(\"B\") } }",
+      "availability": "iOS 16+ Grid",
+      "notes": "No native rich table. Grid (iOS 16) or List rows."
+    },
+    "data.data-table": {
+      "symbol": "Custom List + sort/filter",
+      "api": "List(sortedItems){ row in RowView(row) } with sort state",
+      "availability": "iOS 15+",
+      "notes": "No native data table. Build List + headers + sort."
+    },
+    "data.carousel": {
+      "symbol": "TabView(.page) or ScrollView + .scrollTargetBehavior",
+      "api": "TabView(selection:$i){ cards }.tabViewStyle(.page) // or ScrollView(.horizontal){...}.scrollTargetBehavior(.viewAligned)",
+      "availability": "iOS 17+ scrollTargetBehavior",
+      "notes": ".page TabView or paged ScrollView with peek."
+    },
+    "data.timeline": {
+      "symbol": "ScrollView/List + TimelineView",
+      "api": "List(events){ e in EventRow(e) }",
+      "availability": "iOS 15+",
+      "notes": "Custom; TimelineView drives time-based updates."
+    },
+    "data.accordion": {
+      "symbol": "DisclosureGroup",
+      "api": "DisclosureGroup(\"Section\") { content }",
+      "availability": "iOS 16+",
+      "notes": "DisclosureGroup. In List: sections with .listStyle(.sidebar)."
+    },
+    "data.row": {
+      "symbol": "List row / LabeledContent (iOS 16+)",
+      "api": "List { LabeledContent(\"Distance\", value: \"5 km\") }  // key/value; else HStack { Text(label); Spacer(); Text(value).foregroundStyle(.secondary) }",
+      "availability": "iOS 16+ (LabeledContent)",
+      "experimental": false,
+      "notes": "Single structured row (label/value, key/value, numbered, two-line). LabeledContent for key/value; List row + .listRowSeparator; inset-grouped. Content layer — NOT glassed."
+    },
+    "data.chart": {
+      "symbol": "Chart (SwiftUI Charts, iOS 16+)",
+      "api": "Chart(data) { BarMark(x: .value(\"d\", $0.d), y: .value(\"v\", $0.v)) }  // LineMark/AreaMark/PointMark; RectangleMark = heatmap; SectorMark (iOS 17+) = pie/donut",
+      "availability": "iOS 16+ (SectorMark iOS 17+)",
+      "experimental": false,
+      "notes": "SwiftUI Charts. Marks: Bar/Line/Area/Point/Rectangle(heatmap)/Sector(iOS17+ pie/donut). Reached via UiKitView; content layer, not glassed."
+    }
+  },
+  "motions": {
+    "motion.glass-blur": {
+      "symbol": ".glassEffect(.regular.tint(c))",
+      "api": "view.glassEffect(.regular.tint(c), in: shape)",
+      "availability": "iOS 26+; backdeploy .ultraThinMaterial",
+      "notes": "Apply to surface.* primitives. ContainerConcentric for nested alignment."
+    },
+    "motion.spring-press": {
+      "symbol": ".glassEffect(.regular.interactive())",
+      "api": "view.glassEffect(.regular.interactive())  // or custom ButtonStyle scaleEffect",
+      "availability": "iOS 26+ interactive; else spring(response:0.3,dampingFraction:0.6)",
+      "notes": ".interactive() enables scale-on-press + shimmer + touch illumination."
+    },
+    "motion.morph": {
+      "symbol": ".glassEffectID(id, in: ns) inside GlassEffectContainer",
+      "api": "GlassEffectContainer { a.glassEffectID(\"x\", in:ns) }; b.glassEffectID(\"x\", in:ns)",
+      "availability": "iOS 26+",
+      "notes": "Pair .glassEffectID; animate via withAnimation on state. .glassEffectUnion merges shapes."
+    },
+    "motion.rise-in": {
+      "symbol": ".transition(.move(edge:.bottom).combined(with:.opacity)) + withAnimation(.spring)",
+      "api": "withAnimation(.spring(response:0.4,dampingFraction:0.8)){ show = true }; view.transition(.move(edge:.bottom).combined(with:.opacity))",
+      "availability": "iOS 15+",
+      "notes": "Entrance. Reduce Motion handled automatically."
+    },
+    "motion.parallax": {
+      "symbol": ".scrollTransition + .offset",
+      "api": "image.scrollTransition { content, phase in content.offset(phase.isIdentity ? 0 : 40) }",
+      "availability": "iOS 17+",
+      "notes": "Scroll-coupled transform."
+    }
+  },
+  "unconfirmedSymbols": [
+    "GlassEffectTransition exact cases",
+    "named spring presets beyond spring(response:dampingFraction:)"
+  ],
+  "forbiddenSymbols": [
+    "Glass.filled — use .buttonStyle(.glassProminent) instead"
+  ]
+}

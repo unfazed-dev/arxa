@@ -1,0 +1,76 @@
+{
+  "$id": "flutter-crew.exclusions",
+  "$comment": "Design-context artifacts that are NOT app-implementable primitives. The guard (bin/guard.py) detects these by signature and EXCLUDES them — they never reach map_all/synthesize, so the building agent cannot draw them. Mirror of real designs (e.g. Atlet's <div class=\\\"statusbar\\\">9:41 + battery + signal).",
+  "version": "1.0.0",
+  "updated": "2026-06-20",
+  "purpose": "Distinguish design-context artifacts (OS chrome, device frame, annotations) from buildable primitives. Context artifacts are audited in breakdown.exclusions[] and dropped — never built.",
+  "overrideAttr": "data-crew",
+  "overrideValue": "implement",
+  "overrideNote": "A node carrying data-crew=\"implement\" is kept regardless of signature (designer asserts it is a genuine custom element, e.g. an app that truly custom-draws its status bar).",
+  "detectionNote": "class/id/attr patterns trigger directly. text patterns trigger ONLY with corroboration (a text marker like battery/signal/wifi) to avoid false positives on legit in-app clocks.",
+  "kinds": [
+    {
+      "kind": "os-chrome",
+      "label": "OS / device chrome",
+      "reason": "System-managed UI — status bar, home indicator, dynamic island, notch. The OS owns this; the app must NOT draw it. (e.g. Atlet's <div class=\"statusbar\"> leaked into the build.)",
+      "severity": "skip",
+      "ids": ["chrome.status-bar", "chrome.home-indicator", "chrome.dynamic-island", "chrome.notch"],
+      "patterns": {
+        "class": ["status[-_ ]?bar", "home[-_ ]?indicator", "dynamic[-_ ]?island", "\\bnotch\\b", "\\bbattery\\b", "signal[-_ ]?bars?", "\\bcarrier\\b", "\\bstatusbar\\b"],
+        "id": ["status[-_ ]?bar", "home[-_ ]?indicator", "dynamic[-_ ]?island", "\\bnotch\\b"],
+        "attr": ["data-statusbar", "data-chrome", "data-os-chrome"],
+        "text": ["\\b9:41\\b", "\\b[0-9]{1,2}:[0-9]{2}\\s*([ap]m)?\\b"],
+        "textMarkers": ["battery", "signal", "wifi", "carrier", "📶", "🔋", "⚡"]
+      }
+    },
+    {
+      "kind": "device-frame",
+      "label": "Device frame / bezel",
+      "reason": "Phone bezel, hardware buttons, device rounded corners drawn around the screen — presentation context, not app UI.",
+      "severity": "skip",
+      "ids": ["chrome.device-frame"],
+      "patterns": {
+        "class": ["device[-_ ]?frame", "phone[-_ ]?frame", "mockup[-_ ]?frame", "\\bbezel\\b"],
+        "id": ["device[-_ ]?frame", "bezel"],
+        "attr": ["data-device-frame"]
+      }
+    },
+    {
+      "kind": "annotation",
+      "label": "Design annotation / scaffold",
+      "reason": "Figma labels, redlines, spacing rulers, component-name tags, grid overlays, comments — documentation overlaid on the design, not UI to build.",
+      "severity": "skip",
+      "ids": ["annotation.label", "annotation.ruler", "annotation.comment"],
+      "patterns": {
+        "class": ["\\bredline\\b", "figma", "annotation", "spec[-_ ]?label", "\\bruler\\b", "\\bguide\\b", "measure", "grid[-_ ]?overlay"],
+        "id": ["annotation", "redline"],
+        "attr": ["data-annotation", "data-redline", "data-figma", "data-spec"]
+      }
+    },
+    {
+      "kind": "viewport-chrome",
+      "label": "Browser / viewport chrome",
+      "reason": "Address bar, tab strip — browser-owned on web targets; not part of the app surface.",
+      "severity": "skip",
+      "ids": ["chrome.address-bar"],
+      "patterns": {
+        "class": ["address[-_ ]?bar", "tab[-_ ]?strip", "browser[-_ ]?chrome"],
+        "id": ["address[-_ ]?bar"]
+      }
+    },
+    {
+      "kind": "design-tool",
+      "label": "Design-time tooling / tweak panel",
+      "reason": "Authoring tooling used to iterate the DESIGN (accent/font/theme controls, EDITMODE inspector) — not shipped UI. e.g. Atlet's <TweaksPanel> is driven by tweakState/tweakOpen and mutates design variables; its controls (accent row, font segmented, switches) must never be built. Whole subtree excluded.",
+      "severity": "skip",
+      "subtree": true,
+      "ids": ["chrome.design-tool", "annotation.tweak-panel"],
+      "patterns": {
+        "class": ["tweak", "devtools", "inspector", "control[-_ ]?panel", "design[-_ ]?panel", "editmode", "author[-_ ]?panel", "theme[-_ ]?picker"],
+        "id": ["tweak", "devtools", "inspector", "editmode"],
+        "tag": ["Tweak[A-Za-z]*", "Inspector[A-Za-z]*", "DevTools[A-Za-z]*"],
+        "attr": ["data-tweak", "data-editmode", "data-devtools", "data-design-tool"]
+      }
+    }
+  ]
+}

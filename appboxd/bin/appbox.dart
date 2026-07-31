@@ -10,6 +10,7 @@
 
 import 'dart:io';
 
+import 'package:appboxd/arch_guard.dart';
 import 'package:appboxd/blueprint.dart';
 import 'package:appboxd/config.dart';
 import 'package:appboxd/crud.dart';
@@ -78,7 +79,7 @@ void _usage() {
 Usage: appbox <command> [options]
 
 Commands:
-  gate <name>    Run a gate by name (intake, freeze, structure, scaffold,
+  gate <name>    Run a gate by name (arch, intake, freeze, structure, scaffold,
                  coverage, memory, advertise, review, native_deps, deploy)
   crud <op>      Feature CRUD on the authored layer (list/show/create/update/
                  rename/delete/verify — the one write path, §18)
@@ -102,7 +103,7 @@ Options:
 Future<void> _runGate(List<String> args) async {
   if (args.isEmpty) {
     stderr.writeln('appbox gate: missing gate name');
-    stderr.writeln('  gates: intake freeze structure scaffold coverage memory advertise review native_deps deploy');
+    stderr.writeln('  gates: arch intake freeze structure scaffold coverage memory advertise review native_deps deploy');
     exit(2);
   }
 
@@ -113,6 +114,13 @@ Future<void> _runGate(List<String> args) async {
   if (gateName == '--all' || gateName == 'all') {
     await _runAllGates(rest);
     return;
+  }
+
+  // arch is special: it validates a target's lib/ tree directly and takes
+  // --target <dir> rather than a GateContext/repo-root discovery.
+  if (gateName == 'arch') {
+    final rc = _runArchGate(rest);
+    exit(rc);
   }
 
   // Parse common flags.
@@ -246,6 +254,35 @@ Future<GateResult> _runReviewGate(GateContext ctx) async {
   }
   return GateResult.fail('review: ${(err.isNotEmpty ? err : out).split('\n').first}',
       err.isNotEmpty ? err.split('\n') : out.split('\n'));
+}
+
+// ── arch ───────────────────────────────────────────────────────────
+
+int _runArchGate(List<String> args) {
+  String? target;
+  for (var i = 0; i < args.length; i++) {
+    if (args[i] == '--target' && i + 1 < args.length) {
+      target = args[++i];
+    } else {
+      stderr.writeln('appbox gate arch: unknown flag ${args[i]}');
+      exit(2);
+    }
+  }
+  if (target == null) {
+    stderr.writeln('appbox gate arch: --target <dir> required');
+    return 2;
+  }
+  final r = archGuard(target);
+  final status = r.passed ? 'PASS' : 'FAIL';
+  print('arch_guard $status — files=${r.files} '
+      'violations=${r.violations.length} warnings=${r.warnings.length}');
+  for (final v in r.violations) {
+    print('  ✗ ${v.rule} ${v.file}: ${v.msg}');
+  }
+  for (final w in r.warnings) {
+    print('  ⚠ ${w.rule} ${w.file}: ${w.msg}');
+  }
+  return r.passed ? 0 : 1;
 }
 
 // ── crud ───────────────────────────────────────────────────────────
