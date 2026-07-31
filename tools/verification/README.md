@@ -68,7 +68,7 @@ device-only list.
 | 3 | ports for payments + auth to Tier 1 | ✅ done (Stripe, PayPal, Apple/Google signin → port-tested) |
 | 4 | Stripe to Tier 3 | ⛔ env-blocked — physical device + Stripe test keys |
 | 5 | auth providers to Tier 3 | ⛔ env-blocked — device + Apple/Google developer accounts |
-| 6 | maps + Vercel last | ⛔ not started — neither blocks app_box; `Vercel` stays stub and is **not advertised** until its port lands |
+| 6 | maps + Vercel last | ⛔ not started — neither blocks appbox; `Vercel` stays stub and is **not advertised** until its port lands |
 
 Items 4–6 are recorded as the known remaining work. They are **not faked**: a
 tier that has no suite run stays `stub` in the registry, and `gates/advertise`

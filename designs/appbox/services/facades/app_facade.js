@@ -1,6 +1,6 @@
 // appbox:provenance
-// generator: app-box  licence: free  project: 662368770980
-// Built with app-box (free tier) — https://appbox.dev
+// generator: appbox  licence: free  project: 662368770980
+// Built with appbox (free tier) — https://appbox.dev
 // AppFacade — composes the app-shell fixture (account, projects, gates,
 // analytics, pairing) with session-scoped state (signed-in user, paired
 // device, decided gates, wizard-created projects) into exactly what the

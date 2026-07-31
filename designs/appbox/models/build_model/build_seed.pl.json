@@ -2,7 +2,7 @@
   "run": {
     "id": "run-47",
     "number": 47,
-    "project": "app-box",
+    "project": "appbox",
     "brief": "aplikacja towarzysząca — ios + macos",
     "started": "09:14",
     "elapsed": "34m 12s",
@@ -203,7 +203,7 @@
     { "path": "docs/structure.json", "status": "frozen" }
   ],
   "narrative": [
-    { "id": "n-01", "at": "09:14", "text": "Przebieg #47 na linii — app-box, build dogfood R1 na ios + macos. Stop-on-red włączony, limit eskalacji 3.", "textPlain": "Przebieg #47 jest na linii — app-box, build dogfood R1 na iPhone'a i Maca. Przebieg zatrzymuje się sam przy pierwszym błędzie; do 3 automatycznych prób naprawy.", "artifact": null },
+    { "id": "n-01", "at": "09:14", "text": "Przebieg #47 na linii — appbox, build dogfood R1 na ios + macos. Stop-on-red włączony, limit eskalacji 3.", "textPlain": "Przebieg #47 jest na linii — appbox, build dogfood R1 na iPhone'a i Maca. Przebieg zatrzymuje się sam przy pierwszym błędzie; do 3 automatycznych prób naprawy.", "artifact": null },
     { "id": "n-02", "at": "09:18", "text": "Etap 1/7 intake zielony w 3m 48s — 42 historyjki zmapowane z briefu, MoSCoW zastosowane.", "textPlain": "Etap 1/7 intake skończony w 3m 48s — 42 historyjki użytkownika zmapowane z briefu, posortowane must/could/won't.", "artifact": "stage/intake" },
     { "id": "n-03", "at": "09:39", "text": "Etap 2/7 projektowanie zielony w 21m 05s — 11 powierzchni × 3 rozmiary, 33 ujęcia zamrożone.", "textPlain": "Etap 2/7 projektowanie skończone w 21m 05s — 11 ekranów, 33 migawki rozmiarów zablokowane.", "artifact": "stage/design" },
     { "id": "n-04", "at": "16:42", "text": "Zatwierdzenie projektu przeszło — Evan, Touch ID na studio-mac. Podpisany wygląd jest teraz zamrożony.", "artifact": "gate/design.approval" },

@@ -83,7 +83,7 @@ Core `genui` pulls `audioplayers`, `video_player`, `url_launcher`,
 - Repo `dev_tools/`: `catalog_gallery`, `composer`.
 - A2UI repo: protocol spec + Lit/Angular/React renderers.
 
-## Fit for app-box
+## Fit for appbox
 
 - appboxd can be the A2UI server: call the LLM itself and relay chunks, or
   expose enough A2A for `A2uiAgentConnector` (verdure pattern). No cloud.

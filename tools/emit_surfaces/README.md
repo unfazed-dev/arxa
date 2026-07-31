@@ -1,7 +1,7 @@
 # emit_surfaces — retired stub
 
-Surface emission is owned by the **`app-box-scaffolder` skill**
-(`skills/app-box-scaffolder/`): it consumes `structure.json` (emitted by
+Surface emission is owned by the **`appbox-scaffolder` skill**
+(`skills/appbox-scaffolder/`): it consumes `structure.json` (emitted by
 `tools/emit_structure/`) + `--targets` and scaffolds the per-surface file set
 the coverage gate asserts (macos → 3 files/surface, ios/android → 4).
 

@@ -33,7 +33,7 @@ Usage:
   emit_structure.py --check ...                                    drift guard
   emit_structure.py --self-test                                    hermetic
 
-$KIT_APP is the default app root; $KIT_DESIGN_DIR the default design segment.
+$APPBOX_APP is the default app root; $KIT_DESIGN_DIR the default design segment.
 Exit discipline (freeze_design.sh precedent): 0 = emitted / in sync,
 1 = missing input or drift.
 """
@@ -222,7 +222,7 @@ const P2_SHELL_ROOTS = { train: 'train.home' };
 def main(argv):
     if "--self-test" in argv:
         return self_test()
-    app = os.environ.get("KIT_APP") or "."
+    app = os.environ.get("APPBOX_APP") or "."
     dd = os.environ.get("KIT_DESIGN_DIR") or "design/new"
     check = "--check" in argv
     i = 1

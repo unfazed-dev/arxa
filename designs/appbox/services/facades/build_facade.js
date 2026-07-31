@@ -1,6 +1,6 @@
 // appbox:provenance
-// generator: app-box  licence: free  project: 662368770980
-// Built with app-box (free tier) — https://appbox.dev
+// generator: appbox  licence: free  project: 662368770980
+// Built with appbox (free tier) — https://appbox.dev
 // BuildFacade — composes the run fixture with session-scoped state (gate
 // decisions, chat messages, stage/run controls, the open main-panel artifact,
 // context chips, the activity panel's active view) into exactly what

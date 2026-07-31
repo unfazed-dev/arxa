@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# sweep_rename.sh — rename app-box → appbox across the repo.
+# sweep_rename.sh — rename appbox → appbox across the repo.
 #
 # Run repeatedly until grep-clean (no matches for the old names).
 # Safe: skips .git/, build/, .dart_tool/, node_modules/, archives/.
@@ -15,21 +15,21 @@ CHECK=0
 # Patterns to find (old → new).
 # Order matters: longer patterns first so they don't get partially replaced.
 declare -a PATTERNS=(
-  "app-box.config.json:appbox.config.json"
-  "app-box-builder:appbox-builder"
-  "app-box-designer:appbox-designer"
-  "app-box-deployer:appbox-deployer"
-  "app-box-intake:appbox-intake"
-  "app-box-lint:appbox-lint"
-  "app-box-moodboarder:appbox-moodboarder"
-  "app-box-reviewer:appbox-reviewer"
-  "app-box-scaffolder:appbox-scaffolder"
-  "app-box-story-mapper:appbox-story-mapper"
-  "app-box-tester:appbox-tester"
-  "app-box:appbox"
-  "app_box:appbox"
-  "APP_BOX:APPBOX"
-  "KIT_APP:APPBOX_APP"
+  "appbox.config.json:appbox.config.json"
+  "appbox-builder:appbox-builder"
+  "appbox-designer:appbox-designer"
+  "appbox-deployer:appbox-deployer"
+  "appbox-intake:appbox-intake"
+  "appbox-lint:appbox-lint"
+  "appbox-moodboarder:appbox-moodboarder"
+  "appbox-reviewer:appbox-reviewer"
+  "appbox-scaffolder:appbox-scaffolder"
+  "appbox-story-mapper:appbox-story-mapper"
+  "appbox-tester:appbox-tester"
+  "appbox:appbox"
+  "appbox:appbox"
+  "APPBOX:APPBOX"
+  "APPBOX_APP:APPBOX_APP"
 )
 
 # Directories to skip.

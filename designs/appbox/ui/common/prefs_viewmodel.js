@@ -1,6 +1,6 @@
 // appbox:provenance
-// generator: app-box  licence: free  project: 662368770980
-// Built with app-box (free tier) — https://appbox.dev
+// generator: appbox  licence: free  project: 662368770980
+// Built with appbox (free tier) — https://appbox.dev
 // Prefs — small scalar cookie prefs (theme, accent, jargon).
 // Theme + accent render on #app; jargon is picked up server-side by facades.
 const ALLOWED_ACCENT = ['cyan', 'violet', 'blue', 'ember'];

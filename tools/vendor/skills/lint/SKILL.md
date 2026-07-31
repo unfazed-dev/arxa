@@ -1,6 +1,6 @@
 ---
 name: lint
-description: Use to health-check the app-box knowledge base — catch contradictions, stale claims, dead links, orphan pages, and docs that disagree with shipped code/catalogs. Run before a session handoff, after a behavior change, or on "lint the docs", "check knowledge consistency", "is the wiki still true?". Pairs with skills/refresh (which keeps one catalog current).
+description: Use to health-check the appbox knowledge base — catch contradictions, stale claims, dead links, orphan pages, and docs that disagree with shipped code/catalogs. Run before a session handoff, after a behavior change, or on "lint the docs", "check knowledge consistency", "is the wiki still true?". Pairs with skills/refresh (which keeps one catalog current).
 ---
 
 # fc-lint — keep the knowledge base honest

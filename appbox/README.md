@@ -1,9 +1,9 @@
 # appbox
 
-The consolidated app-box shell: **one Stacked Flutter app with full parity
+The consolidated appbox shell: **one Stacked Flutter app with full parity
 across web, macOS, iOS and Android** (consolidation plan,
 `docs/plans/consolidate-one-app-plus-daemon.md`, dogfood step 1). There is no
-"companion" and no "remote app" — every shell is app-box with every surface.
+"companion" and no "remote app" — every shell is appbox with every surface.
 
 Created once, by hand, as the honest bootstrap:
 
@@ -66,7 +66,7 @@ flutter build macos --release   # Xcode required
 ```
 
 Template fixes applied on creation (stacked v1.15.5 template bugs, not
-app-box logic): quoted the pubspec description, replaced deprecated
+appbox logic): quoted the pubspec description, replaced deprecated
 `Matrix4.scale/translate` and `tester.binding.window` calls, dropped `const`
 from `HomeViewRoute()`, pointed the golden test at the mock service
 registration, and generated the missing golden file.

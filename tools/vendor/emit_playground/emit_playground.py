@@ -6,7 +6,7 @@ loads surfaces/*.html headlessly and fails on any console/page error, so
 emitted files are hermetic: no React/Babel/CDN, all CSS inlined, DOM frozen).
 
 Usage:
-  emit_playground.py [--app <app-root>]   emit (default app root: $KIT_APP)
+  emit_playground.py [--app <app-root>]   emit (default app root: $APPBOX_APP)
   emit_playground.py --self-test          hermetic calibration (fixtures/)
   EMIT_RENDER=skip emit_playground.py     skip the browser pass entirely
 
@@ -385,7 +385,7 @@ def self_test():
 
 def main(argv):
     ap = argparse.ArgumentParser(description="emit chrome-stripped static surfaces from the design/new playground")
-    ap.add_argument("--app", help="app root (default: $KIT_APP)")
+    ap.add_argument("--app", help="app root (default: $APPBOX_APP)")
     ap.add_argument("--check", action="store_true",
                     help="drift guard: render + compare against on-disk surfaces, write nothing")
     ap.add_argument("--self-test", action="store_true", help="hermetic calibration against fixtures/")
@@ -396,9 +396,9 @@ def main(argv):
         self_test()
         return
 
-    app = args.app or os.environ.get("KIT_APP")
+    app = args.app or os.environ.get("APPBOX_APP")
     if not app:
-        print("emit: ERROR (exit 2) — no app root: pass --app <app-root> or set $KIT_APP", file=sys.stderr)
+        print("emit: ERROR (exit 2) — no app root: pass --app <app-root> or set $APPBOX_APP", file=sys.stderr)
         sys.exit(2)
     app = Path(app).resolve()
     if not app.is_dir():

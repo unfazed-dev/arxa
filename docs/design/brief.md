@@ -1,17 +1,17 @@
-# app-box — design brief
+# appbox — design brief
 
-Elicited via app-box-story-mapper; the full story map lives alongside
+Elicited via appbox-story-mapper; the full story map lives alongside
 this brief (`story-map.json`, `story_map.html`). Priorities are MoSCoW,
 grouped into release swimlanes. Every registry surface must trace to
 the surface inventory table below (gates/intake, plan 10.7).
 
 ## Product
 
-app-box
+appbox
 
 ## Releases
 
-- **R1 Dogfood** — app-box designs, builds and ships itself; Michelle's 20-minute evaluation
+- **R1 Dogfood** — appbox designs, builds and ships itself; Michelle's 20-minute evaluation
 - **R2 Anywhere** — visual review depth; richer remote and notification surface
 - **R3 Delight** — polish and moat-widening
 
@@ -167,7 +167,7 @@ app-box
 - [must/R1 Dogfood] The pipeline auto-commits at each gate/stage with shell-scoped conventional messages (e.g. chore(intake): ...)
 - [should/R2 Anywhere] Commits view in the activity panel: git history with per-commit diff and CI status dots
 - [could/R2 Anywhere] Open-in-editor button (VS Code default, configurable editor) launches the project externally
-- [should/R2 Anywhere] app-box scaffolds each project's git setup: repo init, .gitignore, host connect
+- [should/R2 Anywhere] appbox scaffolds each project's git setup: repo init, .gitignore, host connect
 
 #### Files
 
@@ -177,7 +177,7 @@ app-box
 
 #### Canvas
 
-- [must/R2 Anywhere] app-box auto-captures screenshots of design + built app per surface (probe-runner)
+- [must/R2 Anywhere] appbox auto-captures screenshots of design + built app per surface (probe-runner)
 - [must/R2 Anywhere] Flows on a canvas: living captures, connections truth-derived from real navigation
 - [should/R2 Anywhere] Replayable named flows for gate reviews; zoom-semantic canvas keyed to story-map sections
 
@@ -221,7 +221,7 @@ app-box
 
 #### Site
 
-- [must/R2 Anywhere] A visitor gets app-box in 30 seconds: gated pipeline, own-your-code export, pay-at-deploy
+- [must/R2 Anywhere] A visitor gets appbox in 30 seconds: gated pipeline, own-your-code export, pay-at-deploy
 - [should/R2 Anywhere] The three human gates are the headline, shown not told (recorded gate flow)
 - [must/R2 Anywhere] Pricing page: flat licence, never per-seat, BYO key, pay at first deploy (the anti-credit-rage page)
 

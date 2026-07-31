@@ -1,4 +1,4 @@
-# 11 — `app-box-deployer` and gate 3
+# 11 — `appbox-deployer` and gate 3
 
 **Goal.** Ship through the already-wired deploy kit, behind the strictest human
 gate in the product.
@@ -25,7 +25,7 @@ credentials, no signing identity, no shorebird install. This one can.
 
 ## Steps
 
-- [x] **11.1** Wire `skills/app-box-deployer/` over the vendored deploy kit.
+- [x] **11.1** Wire `skills/appbox-deployer/` over the vendored deploy kit.
       Registry says `hasSkill: false` for every kit — this is the first phase
       skill of its kind, so there is no in-kit prior art to copy. Follow the
       stage contract: one module, a self-test, JSON emit.
@@ -46,7 +46,7 @@ credentials, no signing identity, no shorebird install. This one can.
 
 ## Done-when
 
-1. `app-box-deployer` runs fastlane, shorebird and Cloudflare Pages command
+1. `appbox-deployer` runs fastlane, shorebird and Cloudflare Pages command
    shapes under a scripted runner, asserted exactly.
 2. `vercel` is not offered.
 3. Gate 3 refuses to pass without a confirmation naming all three of target,

@@ -46,11 +46,11 @@
 # $KIT_DESIGN_DIR selects the producer folder (default: design).
 set -uo pipefail
 
-# form-factor set is config-driven (R3): the keys of config/app-box.config.json
+# form-factor set is config-driven (R3): the keys of config/appbox.config.json
 # viewports (mobile/tablet/desktop), not a hardcoded five-file list. Plans 05/06
 # consume the same derivation.
 GATE_ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
-FACTORS="$(python3 -c "import json;d=json.load(open('$GATE_ROOT/config/app-box.config.json'));print(' '.join(d['viewports'].keys()))" 2>/dev/null || echo "mobile tablet desktop")"
+FACTORS="$(python3 -c "import json;d=json.load(open('$GATE_ROOT/config/appbox.config.json'));print(' '.join(d['viewports'].keys()))" 2>/dev/null || echo "mobile tablet desktop")"
 
 run_gate_for(){
   local APP="$1"
@@ -272,5 +272,5 @@ EOF
 
 case "${1:-}" in
   --self-test) self_test; exit $?;;
-  *) run_gate_for "${1:-${KIT_APP:-$PWD}}"; exit $?;;
+  *) run_gate_for "${1:-${APPBOX_APP:-$PWD}}"; exit $?;;
 esac

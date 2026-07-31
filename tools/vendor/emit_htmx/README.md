@@ -24,7 +24,7 @@ damage would look like an ordinary content diff rather than an overwrite.
 ## Usage
 
 ```sh
-python3 emit_htmx.py [--app <app-root>]          # emit (default app: $KIT_APP)
+python3 emit_htmx.py [--app <app-root>]          # emit (default app: $APPBOX_APP)
 python3 emit_htmx.py --app <app-root> --check    # pre-gate drift guard
 python3 emit_htmx.py --self-test                 # hermetic calibration
 EMIT_RENDER=skip python3 emit_htmx.py            # skip the browser pass
@@ -39,7 +39,7 @@ Exit discipline (`freeze_design.sh` precedent — a gate never auto-installs):
   error, an extraction failure (bad selector, no `.phone-screen` root), a
   surface that came back as the Phase-E placeholder, an un-rewritten
   `/assets/` URL, or — with `--check` — any surface DRIFT
-- **2** — environment: no app root (`--app`/`$KIT_APP` both absent), no render
+- **2** — environment: no app root (`--app`/`$APPBOX_APP` both absent), no render
   backend, no `node`, or the producer server failed to boot
 
 ## How it works

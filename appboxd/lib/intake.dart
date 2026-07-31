@@ -1,6 +1,6 @@
 import 'process.dart';
 
-/// 10.5 — drives the elicitation engine (`skills/app-box-intake/intake.py`)
+/// 10.5 — drives the elicitation engine (`skills/appbox-intake/intake.py`)
 /// headless via the [ProcessRunner] seam. Ported from
 /// `app/lib/services/intake_runner_service.dart` (locator → injected config).
 ///

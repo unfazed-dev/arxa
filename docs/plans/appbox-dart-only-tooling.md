@@ -51,8 +51,8 @@ pocket for future app-side native cores, not tooling.
    `archives/` (working name `archives/tooling-pre-dart/`): the Python, bash,
    and mjs sources, the vendored snapshots, VENDOR.lock, and each bash gate
    as it is replaced. The done-criterion is "archived and grep-clean", never
-   "rm". Existing `archives/` entries (app-box-app, appbox-variants,
-   design-v1|v2, spikes) are untouched. **Scope: the app-box repo only.** The
+   "rm". Existing `archives/` entries (appbox-app, appbox-variants,
+   design-v1|v2, spikes) are untouched. **Scope: the appbox repo only.** The
    `stacked_kit` and `flutter-crew` sibling repos are never archived, moved,
    or deleted by this plan — they live on independently; their own fate
    (retire/keep) is a separate operator decision, outside this plan.
@@ -76,7 +76,7 @@ pocket for future app-side native cores, not tooling.
 7. **End state — one `appbox` binary.** `appboxd` absorbs the pipeline FSM,
    gates, emitters, lens, and the CDP substrate; ships via
    `dart compile exe` (subcommands: `gate`, `emit`, `serve`, …). Rename
-   `app-box` → `appbox` everywhere (docs, file names, config keys) via a
+   `appbox` → `appbox` everywhere (docs, file names, config keys) via a
    sweep script run repeatedly until grep-clean.
 8. **Moat — server-side.** A local binary cannot be protected from its user
    ([Flutter obfuscation docs](https://docs.flutter.dev/deployment/obfuscate):

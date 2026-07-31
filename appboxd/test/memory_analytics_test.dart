@@ -268,7 +268,7 @@ void main() {
       ]);
 
       final md = await briefing(tmp.path);
-      expect(md, contains('# app-box operator briefing'));
+      expect(md, contains('# appbox operator briefing'));
       expect(md, contains('## Gate pass rate (routing regret)'));
       expect(md, contains('| intake | frontier | 2 | 50% | 1.00 |'));
       expect(md, contains('## Top retry offenders'));

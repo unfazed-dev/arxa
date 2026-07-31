@@ -1,4 +1,4 @@
-# Consolidation — one app-box app + daemon
+# Consolidation — one appbox app + daemon
 
 **Status:** planned, **not started**. Documentation only; no implementation has
 been done. Settled in the consolidation grill, 2026-07-28.
@@ -12,7 +12,7 @@ been done. Settled in the consolidation grill, 2026-07-28.
 
 ## The shape
 
-app-box becomes **one product, one codebase, four shells**, plus a daemon:
+appbox becomes **one product, one codebase, four shells**, plus a daemon:
 
 | piece | what it is |
 |---|---|
@@ -21,7 +21,7 @@ app-box becomes **one product, one codebase, four shells**, plus a daemon:
 | shells | web (browser, the universal builder UI), macOS (native shell embedding the daemon — the zero-friction .dmg install), iOS, Android |
 
 **Full parity, literal, from R1.** There is no "remote app" and no "companion" —
-every shell is app-box with every surface. The viewport ladder already designs
+every shell is appbox with every surface. The viewport ladder already designs
 each surface at 390/744/1280 from targets alone, so parity is the pipeline's
 natural output, not extra work. Phone-specific capabilities (push, biometric
 approval, QR camera scan, widgets) are features under the epics, not a
@@ -32,7 +32,7 @@ separate app.
 1. **Scope** — the story map covers the whole consolidated app. Archived
    designs (`archives/design-v1|v2`) are dead context; `docs/` plans and
    research remain current.
-2. **Web** — the web build is the full builder, because app-box must work on
+2. **Web** — the web build is the full builder, because appbox must work on
    any desktop OS (macOS/Windows/Linux). A browser can't execute the pipeline
    (`dart:io Process`), so the daemon is a forced consequence, not a choice.
 3. **Host** — daemon + web everywhere; the native macOS shell survives as the
@@ -55,7 +55,7 @@ separate app.
    other screens dim; per-message per-screen checkpoints with rendered
    before/after, never diffs. Research: `design.chat` stories 2.4–2.10.
 8. **Preview** — rendered design only (htmx); no built-binary install on
-   devices. Built-app screenshots are captured by app-box itself
+   devices. Built-app screenshots are captured by appbox itself
    (probe-runner) for the flows canvas.
 9. **Releases** — R1 Dogfood (39 stories), R2 Anywhere (6), R3 Delight (1) +
    `access.remote` should/R2 ×2 — see `docs/design/story-map.json`.
@@ -100,7 +100,7 @@ the native shell.
 
 ## probe-runner
 
-`~/.claude/skills/probe-runner` (already app-box-tester's smoke/visual runner)
+`~/.claude/skills/probe-runner` (already appbox-tester's smoke/visual runner)
 becomes the capture + fidelity engine: `design_golden` / `color_assert` /
 `skeleton_diff` / `pixdiff` as **deterministic design↔built gates** in the
 build loop (story 3.7), and `flutter_shot` / `*_shot` / `flutter_skeleton` as
@@ -159,13 +159,13 @@ call lives in the A2UI topology:
 
 1. `stacked create app appbox --template=web --platforms=web,macos,ios,android`
    (by hand, once — the bootstrap).
-2. `docs/design/brief.md` → `app-box-moodboarder` fans out per-epic reference
+2. `docs/design/brief.md` → `appbox-moodboarder` fans out per-epic reference
    gathering and captures screenshots into `docs/moodboards/` (orchestrator's
-   first run: the three app-box boards themselves).
-3. brief + moodboards → `app-box-designer` produces the whole-app design
+   first run: the three appbox boards themselves).
+3. brief + moodboards → `appbox-designer` produces the whole-app design
    (D: 18 surfaces from the brief's table, every viewport derived).
 4. Freeze → scaffold through the pipeline → build with gates → the
-   consolidated app is the R1 dogfood: app-box designed and built by app-box.
+   consolidated app is the R1 dogfood: appbox designed and built by appbox.
 5. `appboxd/` grows alongside as the orchestration home for `pipeline.sh` +
    `gates/` + `tools/`.
 

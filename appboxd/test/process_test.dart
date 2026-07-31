@@ -70,7 +70,7 @@ void main() {
     test('emit invokes the ONE engine on the answers file', () async {
       final intake = IntakeRunner(
         command: 'python3',
-        script: 'skills/app-box-intake/intake.py',
+        script: 'skills/appbox-intake/intake.py',
         runner: runner,
       );
       await intake.emit(
@@ -80,7 +80,7 @@ void main() {
       );
       expect(runner.calls.single, [
         'python3',
-        'skills/app-box-intake/intake.py',
+        'skills/appbox-intake/intake.py',
         'emit',
         '--answers', 'a.json',
         '--brief-out', 'brief.md',
@@ -92,25 +92,25 @@ void main() {
   group('HarnessAuth', () {
     test('presence probes PATH via the seam', () async {
       final harness = HarnessAuth(
-        command: 'app-box-harness',
-        envHint: 'APP_BOX_HARNESS_PATH_TEST_ABSENT',
+        command: 'appbox-harness',
+        envHint: 'APPBOX_HARNESS_PATH_TEST_ABSENT',
         runner: runner,
       );
       runner.handler = (_, _) => const RunnerResult(1, '', '');
       expect(await harness.harnessPresent, isFalse);
-      expect(runner.calls.single, ['command', '-v', 'app-box-harness']);
+      expect(runner.calls.single, ['command', '-v', 'appbox-harness']);
     });
 
     test('harnessAction shells out to the harness, holding no token', () async {
       final harness = HarnessAuth(
-        command: 'app-box-harness',
-        envHint: 'APP_BOX_HARNESS_PATH_TEST_ABSENT',
+        command: 'appbox-harness',
+        envHint: 'APPBOX_HARNESS_PATH_TEST_ABSENT',
         runner: runner,
       );
       runner.handler = (_, _) => const RunnerResult(0, 'done', '');
       final res = await harness.harnessAction('generate');
       expect(res.ok, isTrue);
-      expect(runner.calls.single, ['app-box-harness', 'generate']);
+      expect(runner.calls.single, ['appbox-harness', 'generate']);
     });
   });
 }

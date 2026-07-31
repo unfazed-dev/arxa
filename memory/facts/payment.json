@@ -15,7 +15,7 @@
     "ts": "2026-07-30"
   },
   {
-    "fact": "Encrypt app-box's own sensitive state at rest: LLM-key vault, licence file, memory/analytics store (XChaCha20-Poly1305 / age-class).",
+    "fact": "Encrypt appbox's own sensitive state at rest: LLM-key vault, licence file, memory/analytics store (XChaCha20-Poly1305 / age-class).",
     "source": "docs/plans/appbox-memory-and-payment.md",
     "ts": "2026-07-30"
   },

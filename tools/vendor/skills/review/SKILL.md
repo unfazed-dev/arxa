@@ -11,7 +11,7 @@ it builds nothing.
 
 ## Gate (run in order, stop on red)
 1. **Contract** — `python3 "$FC/stages/arch_guard.py" <target>` (ADR-0003;
-   `$FC` = app-box plugin root — on this install `~/Developer/factory/app-box`).
+   `$FC` = appbox plugin root — on this install `~/Developer/factory/appbox`).
    Exit 0 required. Violations → builder re-emits.
 2. **Code economy** — `/ponytail-review` on the diff (built extension points +
    any generated-layer drift). Flags: reinvented stdlib, unneeded deps,

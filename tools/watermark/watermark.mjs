@@ -28,7 +28,7 @@ import { fileURLToPath } from 'node:url';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 
 export const MARKER = 'appbox:provenance';
-export const WATERMARK_LINE = 'Built with app-box (free tier) — https://appbox.dev';
+export const WATERMARK_LINE = 'Built with appbox (free tier) — https://appbox.dev';
 export const MANIFEST_NAME = '.appbox-provenance.json';
 
 // Comment syntax per extension. .json is deliberately absent: no comment
@@ -70,7 +70,7 @@ function resolveTier(lic) {
 function renderBlock(ext, { tier, projectHash }) {
   const lines = [
     MARKER,
-    `generator: app-box  licence: ${tier}  project: ${projectHash}`,
+    `generator: appbox  licence: ${tier}  project: ${projectHash}`,
     // evidence of origin, not a lock — see file header comment
   ];
   if (tier === 'free') lines.push(WATERMARK_LINE);

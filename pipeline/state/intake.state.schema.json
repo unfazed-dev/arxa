@@ -1,17 +1,17 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "pipeline/state/intake.state.schema.json",
-  "title": "app_box intake state",
-  "description": "The pipeline-owned state slot for intake answers (plan 10.1). The answers shape is defined by skills/app-box-intake/intake.schema.json (the engine's artefact format — the skill keeps it); this schema binds those answers into pipeline state and records where the engine wrote its emitted artefacts. Architecture §22: intake elicits; it does not generate. Every field in `answers` carries provenance (client|founder|inferred); every surface carries {id,label,shell,provenance}.",
+  "title": "appbox intake state",
+  "description": "The pipeline-owned state slot for intake answers (plan 10.1). The answers shape is defined by skills/appbox-intake/intake.schema.json (the engine's artefact format — the skill keeps it); this schema binds those answers into pipeline state and records where the engine wrote its emitted artefacts. Architecture §22: intake elicits; it does not generate. Every field in `answers` carries provenance (client|founder|inferred); every surface carries {id,label,shell,provenance}.",
   "type": "object",
   "required": ["answers", "artefacts"],
   "additionalProperties": false,
   "properties": {
     "answers": {
-      "description": "The elicited intake answers, or null before intake has run. When non-null, conforms to skills/app-box-intake/intake.schema.json: product, audience, appMustDo, targets, existingSystems, brand, constraints, outOfScope, surfaces — each with provenance.",
+      "description": "The elicited intake answers, or null before intake has run. When non-null, conforms to skills/appbox-intake/intake.schema.json: product, audience, appMustDo, targets, existingSystems, brand, constraints, outOfScope, surfaces — each with provenance.",
       "oneOf": [
         { "type": "null" },
-        { "$ref": "skills/app-box-intake/intake.schema.json" }
+        { "$ref": "skills/appbox-intake/intake.schema.json" }
       ]
     },
     "artefacts": {

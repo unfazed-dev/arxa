@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-# pipeline/prototype/serve.py -- app_box prototype runtime (plan 09).
+# pipeline/prototype/serve.py -- appbox prototype runtime (plan 09).
 #
 # Serves a frozen design's static tree over loopback HTTP and prints one
 # machine-readable ready line a UI spawns against. Host and port come from
-# config/app-box.config.json (prototypeServer), never literals -- port 0 asks
+# config/appbox.config.json (prototypeServer), never literals -- port 0 asks
 # the OS for a free one, the same spawn contract as the designer's serve CLI.
 #
 # Buildable subset of plan 09: static serving + correct MIME + relative asset
@@ -26,10 +26,10 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent.parent  # pipeline/prototype/ -> pipeline/ -> repo root
-CONFIG = ROOT / "config" / "app-box.config.json"
+CONFIG = ROOT / "config" / "appbox.config.json"
 DESIGNS = ROOT / "designs"
 
-READY_TAG = "app-box-prototype-ready"
+READY_TAG = "appbox-prototype-ready"
 
 
 def die(msg, code=1):
@@ -86,7 +86,7 @@ def register_mime():
 class Handler(BaseHTTPRequestHandler):
     root = None  # injected per run (the resolved design dir)
 
-    server_version = "app-box-prototype/1.0"
+    server_version = "appbox-prototype/1.0"
 
     def translate_path(self, path):
         # Strip query/fragment, drop any '..' segment, and confine the result to
@@ -129,9 +129,9 @@ class Handler(BaseHTTPRequestHandler):
 def main():
     ap = argparse.ArgumentParser(
         prog="serve.py",
-        description="Serve a frozen design over loopback HTTP (app_box prototype runtime).",
+        description="Serve a frozen design over loopback HTTP (appbox prototype runtime).",
     )
-    ap.add_argument("design", help="design name (e.g. app-box-app) or path to a design dir")
+    ap.add_argument("design", help="design name (e.g. appbox-app) or path to a design dir")
     ap.add_argument("--host", help="bind host (default: config prototypeServer.host)")
     ap.add_argument(
         "--port",
@@ -187,7 +187,7 @@ def main():
             flush=True,
         )
     else:
-        print(f"app-box prototype serving {design_dir}", flush=True)
+        print(f"appbox prototype serving {design_dir}", flush=True)
         print(f"-> {url}", flush=True)
 
     def _stop(signum, frame):

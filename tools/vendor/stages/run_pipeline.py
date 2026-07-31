@@ -487,7 +487,7 @@ def main(argv):
         else:
             _run("extract_tokens.py", os.path.abspath(design), tokens_out)
         # blueprint orientation doc — part of the flow: regenerated every run,
-        # emitted by the same named view /app-box:viz blueprint hosts.
+        # emitted by the same named view /appbox:viz blueprint hosts.
         _run("viz.py", work, "--view", "blueprint", "--report")
         print(f"\nDONE (deterministic, no LLM) → {work}")
     else:

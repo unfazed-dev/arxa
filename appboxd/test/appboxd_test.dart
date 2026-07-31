@@ -24,7 +24,7 @@ void main() {
     // Web root fixture.
     Directory('${fixture.path}/web').createSync();
     File('${fixture.path}/web/index.html')
-        .writeAsStringSync('<h1>app-box</h1>');
+        .writeAsStringSync('<h1>appbox</h1>');
     File('${fixture.path}/web/app.js').writeAsStringSync('console.log(1);');
     File('${fixture.path}/web/brief.md').writeAsStringSync('# brief');
     // Pipeline fixture: a fake pipeline.sh that echoes its gate invocation.
@@ -69,7 +69,7 @@ void main() {
     final (response, body) = await _get(client, port, '/');
     expect(response.statusCode, HttpStatus.ok);
     expect(response.headers.contentType.toString(), contains('text/html'));
-    expect(body, contains('app-box'));
+    expect(body, contains('appbox'));
   });
 
   test('GET /api/health answers ok', () async {
@@ -123,14 +123,14 @@ void main() {
     final (response, body) = await _get(client, port, '/api/memory/briefing');
     expect(response.statusCode, HttpStatus.ok);
     expect(response.headers.contentType.toString(), contains('text/markdown'));
-    expect(body, contains('# app-box operator briefing'));
+    expect(body, contains('# appbox operator briefing'));
     expect(body, contains('build'));
   });
 
   test('GET /api/memory/briefing degrades with no pipeline state', () async {
     final (response, body) = await _get(client, port, '/api/memory/briefing');
     expect(response.statusCode, HttpStatus.ok);
-    expect(body, contains('# app-box operator briefing'));
+    expect(body, contains('# appbox operator briefing'));
     expect(body, contains('no scorecard data'));
   });
 }

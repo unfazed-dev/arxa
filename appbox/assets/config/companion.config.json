@@ -1,5 +1,5 @@
 {
-  "_comment": "app_box companion runtime config — bundled with the app (R3: no literals in code). Mirrors the desktop app's config pattern. Heartbeat cadence, reconnect/dead thresholds and the Bonjour service type live here; code reads them, never inlines them.",
+  "_comment": "appbox companion runtime config — bundled with the app (R3: no literals in code). Mirrors the desktop app's config pattern. Heartbeat cadence, reconnect/dead thresholds and the Bonjour service type live here; code reads them, never inlines them.",
   "channel": {
     "_comment": "The paired channel's liveness signal. The companion heartbeats the prototype URL over HTTP — this is the channel state the FAB carries (live/reconnecting/dead), never whether the WebView painted. deadAfterFailures consecutive failures within heartbeat cadence flip the FAB to dead within one heartbeat window.",
     "heartbeatIntervalMs": 1500,
@@ -18,7 +18,7 @@
   },
   "readyLine": {
     "_comment": "The P09 spawn contract — one JSON object the desktop emits once the prototype server is listening. The companion matches this tag to find the URL/port/host in the channel payload, never a literal URL.",
-    "tag": "app-box-prototype-ready"
+    "tag": "appbox-prototype-ready"
   },
   "fab": {
     "_comment": "FAB constraints (12.10). It occludes by definition — the edge-dock inset parks it off the prototype content, and the home-indicator keepout stops it parking over the gesture area. Values are logical pixels from the screen edge.",

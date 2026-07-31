@@ -1,6 +1,6 @@
 // appbox:provenance
-// generator: app-box  licence: free  project: 662368770980
-// Built with app-box (free tier) — https://appbox.dev
+// generator: appbox  licence: free  project: 662368770980
+// Built with appbox (free tier) — https://appbox.dev
 // AgentMenus — the composer's LLM model menu. ONE module so every tab
 // narrates the same agent; the selection lives on sessionData.agent.model
 // (shared across tabs — it is the same agent everywhere), and the menu

@@ -34,15 +34,15 @@ count_marker() { grep -c 'appbox:provenance' "$1" || true; }
 echo "== free tier: watermark inside the provenance block, every style =="
 plant "$TMP/free"
 APPBOX_LICENCE_STATUS=free node "$WM" "$TMP/free" >/dev/null
-grep -q 'Built with app-box (free tier)' "$TMP/free/lib/main.dart" \
+grep -q 'Built with appbox (free tier)' "$TMP/free/lib/main.dart" \
   && ok "dart: // block with watermark" || bad "dart block missing watermark"
-grep -q 'Built with app-box (free tier)' "$TMP/free/lib/util.js" \
+grep -q 'Built with appbox (free tier)' "$TMP/free/lib/util.js" \
   && ok "js: // block with watermark" || bad "js block missing watermark"
-grep -q 'Built with app-box (free tier)' "$TMP/free/pubspec.yaml" \
+grep -q 'Built with appbox (free tier)' "$TMP/free/pubspec.yaml" \
   && ok "yaml: # block with watermark" || bad "yaml block missing watermark"
-grep -q 'Built with app-box (free tier)' "$TMP/free/web/index.html" \
+grep -q 'Built with appbox (free tier)' "$TMP/free/web/index.html" \
   && ok "html: <!-- --> block with watermark" || bad "html block missing watermark"
-grep -q 'Built with app-box (free tier)' "$TMP/free/scripts/run.sh" \
+grep -q 'Built with appbox (free tier)' "$TMP/free/scripts/run.sh" \
   && ok "sh: # block with watermark" || bad "sh block missing watermark"
 [ "$(head -1 "$TMP/free/scripts/run.sh")" = '#!/bin/sh' ] \
   && ok "sh: shebang still line 1" || bad "shebang displaced"
@@ -78,7 +78,7 @@ APPBOX_LICENCE_STATUS='{"status":"paid","tier":"pro","expires":"2099-01-01"}' \
   node "$WM" "$TMP/paid" >/dev/null
 grep -q 'appbox:provenance' "$TMP/paid/lib/main.dart" \
   && ok "paid: provenance block present" || bad "paid: provenance missing"
-if grep -q 'Built with app-box' "$TMP/paid/lib/main.dart"; then
+if grep -q 'Built with appbox' "$TMP/paid/lib/main.dart"; then
   bad "paid: watermark line leaked into clean output"
 else
   ok "paid: no watermark line"
@@ -100,7 +100,7 @@ echo "== licence tool missing: degrade to free, never block =="
 plant "$TMP/notool"
 env -u APPBOX_LICENCE_STATUS APPBOXD_DIR="$TMP/does-not-exist" \
   node "$WM" "$TMP/notool" >/dev/null
-grep -q 'Built with app-box (free tier)' "$TMP/notool/lib/main.dart" \
+grep -q 'Built with appbox (free tier)' "$TMP/notool/lib/main.dart" \
   && ok "missing licence tool => free-tier watermark" || bad "missing tool did not fall back to free"
 
 echo

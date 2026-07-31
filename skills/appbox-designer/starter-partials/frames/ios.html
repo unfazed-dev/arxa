@@ -1,0 +1,162 @@
+{# ============================================================================
+   ios.html — iOS 26 (Liquid Glass) device frame, Nunjucks partial
+   Pure HTML+CSS port of appbox-designer's starter-components/ios-frame.jsx.
+   Zero JavaScript. Styles live in frames.css (copy it to assets/css/).
+
+   Usage — copy frames/ into your artifact (e.g. ui/widgets/frames/), then
+   import and wrap your screen content with a call block; the macro takes the
+   context bag `c` (runtime convention) and reads `c.frame`:
+
+       {% import "ui/widgets/frames/ios.html" as ios %}
+       {% call ios.device(c) %}
+         {{ ios.list({ header: "General", rows: [
+           { title: "Airplane Mode", icon: "#ff9500", glyph: "plane" },
+           { title: "Wi-Fi", detail: "Home", icon: "#007aff", glyph: "wifi" }
+         ] }) }}
+       {% endcall %}
+
+   c.frame options (all optional):
+     width    402      device width in px        height  874   device height
+     dark     false    dark chrome (adds .ios-device--dark)
+     time     "9:41"   status-bar clock
+     title    unset    when set, renders the nav bar (glass pills + large title)
+     keyboard false    when true, renders the liquid-glass keyboard
+
+   Slot: screen content lands in `<div class="frame-screen">` (scrolls).
+   Without a call block, `{{ ios.device(c) }}` renders the frame with an
+   empty, marked screen slot you can paste markup into directly.
+
+   Named Fragment bonus: because the macro takes `c`, a viewmodel can render
+   the bare frame via h.render(c, "ui/widgets/frames/ios.html#device").
+
+   Composing macros: status_bar(f) · nav_bar(f) · pill(f) (call block) ·
+   list({header, rows}) · list_row(row) · keyboard(f).
+   row = { title, detail?, icon? (CSS color for the badge), glyph? (Lucide
+   name, white on the badge), chevron? (default true) }.
+   ============================================================================ #}
+
+{% macro device(c) %}
+{% set f = c.frame or {} %}
+<div class="ios-device{% if f.dark %} ios-device--dark{% endif %}" style="--ios-w: {{ f.width or 402 }}px; --ios-h: {{ f.height or 874 }}px;">
+  <div class="ios-device__island" aria-hidden="true"></div>
+  {{ status_bar(f) }}
+  <div class="ios-device__body">
+    {% if f.title is defined %}{{ nav_bar(f) }}{% endif %}
+    <div class="frame-screen ios-device__screen">
+      {%- if caller %}{{ caller() }}{% else %}<!-- SLOT: screen content goes here (see this file's header comment for the call-block usage) -->{% endif %}
+    </div>
+    {% if f.keyboard %}{{ keyboard(f) }}{% endif %}
+  </div>
+  <div class="ios-device__home" aria-hidden="true"><span class="ios-device__home-bar"></span></div>
+</div>
+{% endmacro %}
+
+{% macro status_bar(f) %}
+<div class="ios-status">
+  <div class="ios-status__cell ios-status__time-cell">
+    <span class="ios-status__time">{{ f.time or "9:41" }}</span>
+  </div>
+  <div class="ios-status__cell ios-status__icons" aria-hidden="true">
+    <svg width="19" height="12" viewBox="0 0 19 12" fill="currentColor">
+      <rect x="0" y="7.5" width="3.2" height="4.5" rx="0.7"/>
+      <rect x="4.8" y="5" width="3.2" height="7" rx="0.7"/>
+      <rect x="9.6" y="2.5" width="3.2" height="9.5" rx="0.7"/>
+      <rect x="14.4" y="0" width="3.2" height="12" rx="0.7"/>
+    </svg>
+    <svg width="17" height="12" viewBox="0 0 17 12" fill="currentColor">
+      <path d="M8.5 3.2C10.8 3.2 12.9 4.1 14.4 5.6L15.5 4.5C13.7 2.7 11.2 1.5 8.5 1.5C5.8 1.5 3.3 2.7 1.5 4.5L2.6 5.6C4.1 4.1 6.2 3.2 8.5 3.2Z"/>
+      <path d="M8.5 6.8C9.9 6.8 11.1 7.3 12 8.2L13.1 7.1C11.8 5.9 10.2 5.1 8.5 5.1C6.8 5.1 5.2 5.9 3.9 7.1L5 8.2C5.9 7.3 7.1 6.8 8.5 6.8Z"/>
+      <circle cx="8.5" cy="10.5" r="1.5"/>
+    </svg>
+    <svg width="27" height="13" viewBox="0 0 27 13">
+      <rect x="0.5" y="0.5" width="23" height="12" rx="3.5" fill="none" stroke="currentColor" stroke-opacity="0.35"/>
+      <rect x="2" y="2" width="20" height="9" rx="2" fill="currentColor"/>
+      <path d="M25 4.5V8.5C25.8 8.2 26.5 7.2 26.5 6.5C26.5 5.8 25.8 4.8 25 4.5Z" fill="currentColor" fill-opacity="0.4"/>
+    </svg>
+  </div>
+</div>
+{% endmacro %}
+
+{% macro nav_bar(f) %}
+<div class="ios-nav">
+  <div class="ios-nav__row">
+    {% call pill(f) %}
+      <span class="ios-pill__icon">{{ icon('chevron-left', {size: 22, strokeWidth: 2.5}) }}</span>
+    {% endcall %}
+    {% call pill(f) %}
+      <span class="ios-pill__icon">{{ icon('ellipsis', {size: 20}) }}</span>
+    {% endcall %}
+  </div>
+  <div class="ios-nav__title">{{ f.title }}</div>
+</div>
+{% endmacro %}
+
+{% macro pill(f) %}
+<div class="ios-pill">
+  {%- if caller %}{{ caller() }}{% endif %}
+</div>
+{% endmacro %}
+
+{% macro list(f) %}
+<div class="ios-list">
+  {% if f.header %}<div class="ios-list__header">{{ f.header }}</div>{% endif %}
+  <div class="ios-list__card">
+    {% for row in f.rows or [] %}{{ list_row(row) }}{% endfor %}
+  </div>
+</div>
+{% endmacro %}
+
+{% macro list_row(row) %}
+<div class="ios-row{% if row.icon %} ios-row--icon{% endif %}">
+  {% if row.icon %}<span class="ios-row__icon" style="background: {{ row.icon }};" aria-hidden="true">{% if row.glyph %}{{ icon(row.glyph, {size: 18}) }}{% endif %}</span>{% endif %}
+  <span class="ios-row__title">{{ row.title }}</span>
+  {% if row.detail %}<span class="ios-row__detail">{{ row.detail }}</span>{% endif %}
+  {% if row.chevron is not defined or row.chevron %}
+  <svg class="ios-row__chevron" width="8" height="14" viewBox="0 0 8 14" fill="none" aria-hidden="true">
+    <path d="M1 1l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>
+  {% endif %}
+</div>
+{% endmacro %}
+
+{% macro keyboard(f) %}
+<div class="ios-kb" aria-hidden="true">
+  <div class="ios-kb__suggest">
+    <span class="ios-kb__suggest-word">&ldquo;The&rdquo;</span>
+    <span class="ios-kb__suggest-sep"></span>
+    <span class="ios-kb__suggest-word">the</span>
+    <span class="ios-kb__suggest-sep"></span>
+    <span class="ios-kb__suggest-word">to</span>
+  </div>
+  <div class="ios-kb__rows">
+    <div class="ios-kb__row">
+      {% for k in ["q", "w", "e", "r", "t", "y", "u", "i", "o", "p"] %}<span class="ios-kb__key">{{ k }}</span>{% endfor %}
+    </div>
+    <div class="ios-kb__row ios-kb__row--inset">
+      {% for k in ["a", "s", "d", "f", "g", "h", "j", "k", "l"] %}<span class="ios-kb__key">{{ k }}</span>{% endfor %}
+    </div>
+    <div class="ios-kb__row ios-kb__row--wide">
+      <span class="ios-kb__key ios-kb__key--special">
+        <svg width="19" height="17" viewBox="0 0 19 17" fill="currentColor"><path d="M9.5 1L1 9.5h4.5V16h8V9.5H18L9.5 1z"/></svg>
+      </span>
+      <span class="ios-kb__row3">
+        {% for k in ["z", "x", "c", "v", "b", "n", "m"] %}<span class="ios-kb__key">{{ k }}</span>{% endfor %}
+      </span>
+      <span class="ios-kb__key ios-kb__key--special">
+        <svg width="23" height="17" viewBox="0 0 23 17" fill="none">
+          <path d="M7 1h13a2 2 0 012 2v11a2 2 0 01-2 2H7l-6-7.5L7 1z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+          <path d="M10 5l7 7M17 5l-7 7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
+      </span>
+    </div>
+    <div class="ios-kb__row">
+      <span class="ios-kb__key ios-kb__key--bottom">ABC</span>
+      <span class="ios-kb__key"></span>
+      <span class="ios-kb__key ios-kb__key--bottom ios-kb__key--return">
+        <svg width="20" height="14" viewBox="0 0 20 14" fill="none"><path d="M18 1v6H4m0 0l4-4M4 7l4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </span>
+    </div>
+  </div>
+  <div class="ios-kb__bottom-spacer"></div>
+</div>
+{% endmacro %}

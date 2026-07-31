@@ -8,9 +8,9 @@
 # they change marks the pipeline dirty → the reviewer must re-approve.
 #
 # Operates on a tree of stacked_kit surfaces. Default target = the stacked_kit
-# monorepo itself (ROOT). Set KIT_APP=<dir> for CONSUMER mode — any authentic
+# monorepo itself (ROOT). Set APPBOX_APP=<dir> for CONSUMER mode — any authentic
 # stacked_kit app (path-deps a kit + @StackedApp), e.g. this repo's own sample-app/.
-# With KIT_APP unset, running from a cwd OUTSIDE the kit tree is refused
+# With APPBOX_APP unset, running from a cwd OUTSIDE the kit tree is refused
 # (phantom-state guard — keeps state from silently splitting into the kit);
 # escape hatches: KIT_PIPELINE_STATE_DIR=<dir> or KIT_MONOREPO=1.
 # Consumer mode retargets cwd + state to the app and drops the monorepo-only
@@ -63,24 +63,24 @@
 #             "skill must render fixture first", never a gate FAIL. Not a phase:
 #             advance is unaffected.)
 set -uo pipefail
-ROOT="$(cd "$(dirname "$0")/.." && pwd)"            # app-box repo root — where gates/config live
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"            # appbox repo root — where gates/config live
 SELF="$(cd "$(dirname "$0")" && pwd)/$(basename "$0")"   # absolute path to this script (selftest re-invokes)
-CONFIG="$ROOT/config/app-box.config.json"           # R3: configurable values live here, never inline
+CONFIG="$ROOT/config/appbox.config.json"           # R3: configurable values live here, never inline
 # cfg <python-subscript>: read a value from CONFIG, empty on missing/unreadable.
 cfg(){ python3 -c "import json;d=json.load(open('$CONFIG'));print(d$1)" 2>/dev/null || true; }
-APP="${KIT_APP:-$ROOT}"                              # tree to operate on (default: the repo)
+APP="${APPBOX_APP:-$ROOT}"                              # tree to operate on (default: the repo)
 CONSUMER=0; [ "$APP" != "$ROOT" ] && CONSUMER=1      # consumer-app mode?
-# Phantom-state guard: with KIT_APP unset, state defaults into the repo
+# Phantom-state guard: with APPBOX_APP unset, state defaults into the repo
 # ($ROOT/pipeline/state). Invoked from a cwd OUTSIDE the repo tree (e.g. an app's root,
-# forgetting KIT_APP=$PWD) that silently manufactures a split state inside the repo —
+# forgetting APPBOX_APP=$PWD) that silently manufactures a split state inside the repo —
 # the split-state phantom. Fail loud instead. Escape hatches: set
 # KIT_PIPELINE_STATE_DIR explicitly, or KIT_MONOREPO=1 to confirm you really mean the
 # repo itself. (cwd inside the repo tree = plausible intent, allowed.)
-if [ -z "${KIT_APP:-}" ] && [ -z "${KIT_PIPELINE_STATE_DIR:-}" ] && [ "${KIT_MONOREPO:-0}" != "1" ]; then
+if [ -z "${APPBOX_APP:-}" ] && [ -z "${KIT_PIPELINE_STATE_DIR:-}" ] && [ "${KIT_MONOREPO:-0}" != "1" ]; then
   case "$(pwd)/" in
     "$ROOT/"*) : ;;  # standing inside the repo — fine
-    *) echo "FAIL: KIT_APP is unset and cwd is outside the repo — state would land in $ROOT/pipeline/state (split-brain)." >&2
-       echo "     consumer mode:  KIT_APP=\$PWD $0 $*" >&2
+    *) echo "FAIL: APPBOX_APP is unset and cwd is outside the repo — state would land in $ROOT/pipeline/state (split-brain)." >&2
+       echo "     consumer mode:  APPBOX_APP=\$PWD $0 $*" >&2
        echo "     repo mode:      cd $ROOT first, or prefix KIT_MONOREPO=1" >&2
        exit 2;;
   esac
@@ -88,7 +88,7 @@ fi
 cd "$APP"                                            # operate in-target (gates are cwd/target-based)
 STATE_DIR="${KIT_PIPELINE_STATE_DIR:-$APP/pipeline/state}"
 STATE="$STATE_DIR/phase.json"
-# escalation limit is config-driven (config/app-box.config.json escalationLimit); env wins.
+# escalation limit is config-driven (config/appbox.config.json escalationLimit); env wins.
 ESC_LIMIT="${KIT_PIPELINE_REVIEW_ESCALATION:-$(cfg "['escalationLimit']")}"
 ESC_LIMIT="${ESC_LIMIT:-3}"                          # fallback if config absent
 
@@ -671,22 +671,22 @@ _loop_escalate(){   # always deliver the last critique + tree diff (CodeRabbit: 
 
 selftest(){
   # Hermeticity: this is a self-test of pipeline.sh, not of the shell that
-  # launched it. KIT_APP / KIT_PIPELINE_STATE_DIR / KIT_MONOREPO are consumed at
+  # launched it. APPBOX_APP / KIT_PIPELINE_STATE_DIR / KIT_MONOREPO are consumed at
   # the *top* of this file — long before any case runs — where they re-point
   # STATE_DIR and `cd "$APP"`. Inheriting them silently puts the whole suite in
   # consumer mode, and cases that assert monorepo-root behaviour ("prototype gate
   # no-ops at the monorepo root") then cannot pass by construction: a green
-  # pipeline.sh gets reported as broken, which is how KIT_APP came to look like a
+  # pipeline.sh gets reported as broken, which is how APPBOX_APP came to look like a
   # defect rather than an invocation artifact. Re-exec once with the three
   # scrubbed so the suite always measures the same thing.
   #
   # `cd "$ROOT"` before the exec is load-bearing: the phantom-state guard keys on
-  # cwd once KIT_APP is gone, and by this point line 86 has already left us in
+  # cwd once APPBOX_APP is gone, and by this point line 86 has already left us in
   # $APP — outside the kit — so the re-exec would trip the guard and exit 2.
-  if [ -n "${KIT_APP:-}" ] || [ -n "${KIT_PIPELINE_STATE_DIR:-}" ] || [ -n "${KIT_MONOREPO:-}" ]; then
-    echo "note: re-running selftest with KIT_APP/KIT_PIPELINE_STATE_DIR/KIT_MONOREPO scrubbed (hermetic monorepo mode)" >&2
+  if [ -n "${APPBOX_APP:-}" ] || [ -n "${KIT_PIPELINE_STATE_DIR:-}" ] || [ -n "${KIT_MONOREPO:-}" ]; then
+    echo "note: re-running selftest with APPBOX_APP/KIT_PIPELINE_STATE_DIR/KIT_MONOREPO scrubbed (hermetic monorepo mode)" >&2
     cd "$ROOT" || exit 1
-    exec env -u KIT_APP -u KIT_PIPELINE_STATE_DIR -u KIT_MONOREPO bash "$SELF" selftest
+    exec env -u APPBOX_APP -u KIT_PIPELINE_STATE_DIR -u KIT_MONOREPO bash "$SELF" selftest
   fi
   local TMP; TMP="$(mktemp -d)"; STATE="$TMP/phase.json"; STATE_DIR="$TMP"; local P=0 F=0
   # hermetic stub gates (deterministic exit 0) — exercises do_gate delegation + FSM, not the real gates
@@ -769,7 +769,7 @@ selftest(){
   do_loop --max 2 >/dev/null 2>&1; chk "$?" 4 "loop with no --fix-cmd escalates gracefully (exit 4)"
   rm -rf "$L"
   # The four subprocess cases below all turn on the phantom-state guard, whose
-  # entire trigger condition is "KIT_APP, KIT_PIPELINE_STATE_DIR and KIT_MONOREPO
+  # entire trigger condition is "APPBOX_APP, KIT_PIPELINE_STATE_DIR and KIT_MONOREPO
   # are all unset" (see the guard at the top of this file). A subprocess inherits
   # the caller's environment, so if the operator exported any of the three the
   # cases stop testing pipeline.sh and start testing the shell they were launched
@@ -781,18 +781,18 @@ selftest(){
   #             escaping was never armed. A vacuous pass is worse than a failure.
   # Scrub all three per invocation, then set only what the case under test needs,
   # so the result is a property of this script and not of its caller.
-  # consumer mode (subprocess): KIT_APP retargets state under the app + drops gate.sh
+  # consumer mode (subprocess): APPBOX_APP retargets state under the app + drops gate.sh
   local C; C="$(mktemp -d)"
-  env -u KIT_PIPELINE_STATE_DIR -u KIT_MONOREPO KIT_APP="$C" bash "$SELF" init >/dev/null 2>&1
-  chk "$([ -f "$C/pipeline/state/phase.json" ] && echo 1 || echo 0)" 1 "consumer mode writes state under KIT_APP"
+  env -u KIT_PIPELINE_STATE_DIR -u KIT_MONOREPO APPBOX_APP="$C" bash "$SELF" init >/dev/null 2>&1
+  chk "$([ -f "$C/pipeline/state/phase.json" ] && echo 1 || echo 0)" 1 "consumer mode writes state under APPBOX_APP"
   rm -rf "$C"
   # phantom-state guard (subprocess): from a cwd OUTSIDE the kit tree with no
-  # KIT_APP, init must be refused (exit 2) and leave no split state in the kit;
+  # APPBOX_APP, init must be refused (exit 2) and leave no split state in the kit;
   # an explicit KIT_PIPELINE_STATE_DIR override is the sanctioned way through.
   local O; O="$(mktemp -d)"
-  ( cd "$O" && env -u KIT_APP -u KIT_PIPELINE_STATE_DIR -u KIT_MONOREPO bash "$SELF" init ) >/dev/null 2>&1; chk "$?" 2 "phantom-state guard refuses init outside the kit without KIT_APP"
+  ( cd "$O" && env -u APPBOX_APP -u KIT_PIPELINE_STATE_DIR -u KIT_MONOREPO bash "$SELF" init ) >/dev/null 2>&1; chk "$?" 2 "phantom-state guard refuses init outside the kit without APPBOX_APP"
   chk "$([ -f "$ROOT/pipeline/state/phase.json" ] && echo 1 || echo 0)" 0 "guard left no phantom state in the kit monorepo"
-  ( cd "$O" && env -u KIT_APP -u KIT_MONOREPO KIT_PIPELINE_STATE_DIR="$O/s" bash "$SELF" init ) >/dev/null 2>&1; chk "$?" 0 "explicit KIT_PIPELINE_STATE_DIR override passes the guard"
+  ( cd "$O" && env -u APPBOX_APP -u KIT_MONOREPO KIT_PIPELINE_STATE_DIR="$O/s" bash "$SELF" init ) >/dev/null 2>&1; chk "$?" 0 "explicit KIT_PIPELINE_STATE_DIR override passes the guard"
   chk "$([ -f "$O/s/phase.json" ] && echo 1 || echo 0)" 1 "the override actually placed state at KIT_PIPELINE_STATE_DIR (not a vacuous pass)"
   rm -rf "$O"
   # non-UI slice exemption (teeth): a FAILING design gate is bypassed by
@@ -889,7 +889,7 @@ selftest(){
   local K; K="$(mktemp -d)"
   git -C "$K" init -q -b main >/dev/null 2>&1; git -C "$K" config user.email t@t.t; git -C "$K" config user.name t
   echo base > "$K/a.txt"; git -C "$K" add -A; git -C "$K" commit -qm base
-  local KG="KIT_APP=$K KIT_PIPELINE_STATE_DIR=$K/pipeline/state PIPELINE_PROTOTYPE_GATE=$TMP/stub.sh PIPELINE_DESIGN_GATE=$TMP/stub.sh PIPELINE_SCAFFOLD_GATE_A=$TMP/stub.sh PIPELINE_SCAFFOLD_GATE_B=$TMP/stub.sh PIPELINE_BRANDING_GATE=$TMP/stub.sh PIPELINE_REVIEW_GATE_A=$TMP/stub.sh PIPELINE_REVIEW_GATE_B=$TMP/stub.sh"
+  local KG="APPBOX_APP=$K KIT_PIPELINE_STATE_DIR=$K/pipeline/state PIPELINE_PROTOTYPE_GATE=$TMP/stub.sh PIPELINE_DESIGN_GATE=$TMP/stub.sh PIPELINE_SCAFFOLD_GATE_A=$TMP/stub.sh PIPELINE_SCAFFOLD_GATE_B=$TMP/stub.sh PIPELINE_BRANDING_GATE=$TMP/stub.sh PIPELINE_REVIEW_GATE_A=$TMP/stub.sh PIPELINE_REVIEW_GATE_B=$TMP/stub.sh"
   env $KG bash "$SELF" init >/dev/null 2>&1
   env $KG bash "$SELF" gate prototype >/dev/null 2>&1
   env $KG bash "$SELF" gate prototype --approve w >/dev/null 2>&1
@@ -906,7 +906,7 @@ selftest(){
   local K2; K2="$(mktemp -d)"
   git -C "$K2" init -q -b main >/dev/null 2>&1; git -C "$K2" config user.email t@t.t; git -C "$K2" config user.name t
   echo base > "$K2/a.txt"; git -C "$K2" add -A; git -C "$K2" commit -qm base
-  local KH="KIT_APP=$K2 KIT_PIPELINE_STATE_DIR=$K2/pipeline/state"
+  local KH="APPBOX_APP=$K2 KIT_PIPELINE_STATE_DIR=$K2/pipeline/state"
   env $KH bash "$SELF" init >/dev/null 2>&1
   echo wip > "$K2/b.txt"
   local out
@@ -915,8 +915,8 @@ selftest(){
   grep -q '"gate_green": false' "$K2/pipeline/state/checkpoints.jsonl"; chk "$?" 0 "ledger records gate_green=false"
   # outside a git work tree → exit 1
   local K3; K3="$(mktemp -d)"
-  env KIT_APP="$K3" KIT_PIPELINE_STATE_DIR="$K3/pipeline/state" bash "$SELF" init >/dev/null 2>&1
-  ( env KIT_APP="$K3" KIT_PIPELINE_STATE_DIR="$K3/pipeline/state" bash "$SELF" checkpoint ) >/dev/null 2>&1; chk "$?" 1 "checkpoint outside git exits 1"
+  env APPBOX_APP="$K3" KIT_PIPELINE_STATE_DIR="$K3/pipeline/state" bash "$SELF" init >/dev/null 2>&1
+  ( env APPBOX_APP="$K3" KIT_PIPELINE_STATE_DIR="$K3/pipeline/state" bash "$SELF" checkpoint ) >/dev/null 2>&1; chk "$?" 1 "checkpoint outside git exits 1"
   # REGRESSION — advance must exit 0 on SUCCESS with a CLEAN tree.
   # do_advance ended with a bare `[ -n "$(git status --porcelain)" ] && echo …`,
   # which made that test the function's exit status: clean tree → test false →
@@ -936,7 +936,7 @@ selftest(){
   git -C "$K4" init -q -b main >/dev/null 2>&1; git -C "$K4" config user.email t@t.t; git -C "$K4" config user.name t
   printf 'pipeline/state/\n' > "$K4/.gitignore"
   echo base > "$K4/a.txt"; git -C "$K4" add -A; git -C "$K4" commit -qm base
-  local KC="KIT_APP=$K4 KIT_PIPELINE_STATE_DIR=$K4/pipeline/state PIPELINE_PROTOTYPE_GATE=$TMP/stub.sh PIPELINE_DESIGN_GATE=$TMP/stub.sh"
+  local KC="APPBOX_APP=$K4 KIT_PIPELINE_STATE_DIR=$K4/pipeline/state PIPELINE_PROTOTYPE_GATE=$TMP/stub.sh PIPELINE_DESIGN_GATE=$TMP/stub.sh"
   env $KC bash "$SELF" init >/dev/null 2>&1
   env $KC bash "$SELF" gate prototype >/dev/null 2>&1
   env $KC bash "$SELF" gate prototype --approve w >/dev/null 2>&1
@@ -987,7 +987,7 @@ EOF
   FREEZE_RENDER=skip bash "$ROOT/tools/freeze_design.sh" "$FD/app" >/dev/null 2>&1; chk "$?" 1 "freeze fails on missing kit token vocab"
   mkdesign "$FD/app"
   echo '<div class="tweaks-panel">x</div>' >> "$FD/app/design/surfaces/train_shell_home_view.html"
-  FREEZE_RENDER=skip bash "$ROOT/tools/freeze_design.sh" "$FD/app" >/dev/null 2>&1; chk "$?" 1 "freeze fails on uncovered app-box-design chrome (tweaks-panel)"
+  FREEZE_RENDER=skip bash "$ROOT/tools/freeze_design.sh" "$FD/app" >/dev/null 2>&1; chk "$?" 1 "freeze fails on uncovered appbox-design chrome (tweaks-panel)"
   echo '{"globs":[],"selectors":[".tweaks-panel"]}' > "$FD/app/design/exclusions.json"
   FREEZE_RENDER=skip bash "$ROOT/tools/freeze_design.sh" "$FD/app" >/dev/null 2>&1; chk "$?" 0 "freeze passes when chrome is excluded (D6)"
   rm -rf "$FD"

@@ -53,7 +53,7 @@ What to steal from the gathered references.
 `;
 
 const STRUCTURE_JSON = `{
-  "$schema": "app-box/structure@1",
+  "$schema": "appbox/structure@1",
   "registry": "models/screens_model/registry.json",
   "screens": []
 }

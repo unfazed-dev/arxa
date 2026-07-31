@@ -19,7 +19,7 @@ class AppboxdConfig {
 
   static const defaultPort = 8787;
 
-  /// Loads config/app-box.config.json under [repoRoot] when present; the
+  /// Loads config/appbox.config.json under [repoRoot] when present; the
   /// optional `daemon` object may carry `port` and `webRoot` (relative to the
   /// repo root). Anything missing falls back to defaults.
   static AppboxdConfig load(String repoRoot, {int? port, String? webRoot}) {
@@ -27,7 +27,7 @@ class AppboxdConfig {
     var cfgPort = defaultPort;
     var cfgRoot = p.join(repoRoot, 'appbox', 'build', 'web');
 
-    final file = File(p.join(repoRoot, 'config', 'app-box.config.json'));
+    final file = File(p.join(repoRoot, 'config', 'appbox.config.json'));
     if (file.existsSync()) {
       try {
         final json = jsonDecode(file.readAsStringSync());

@@ -1,6 +1,6 @@
 // appbox:provenance
-// generator: app-box  licence: free  project: 662368770980
-// Built with app-box (free tier) — https://appbox.dev
+// generator: appbox  licence: free  project: 662368770980
+// Built with appbox (free tier) — https://appbox.dev
 // Design-shell route table — same [method, path, handler] shape as
 // app.routes.js. Integration: spread into the default export of
 // app.routes.js (see _integration_design.md, next to this file).

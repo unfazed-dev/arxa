@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 /// The curated memory layer (`memory/` at the repo root): durable facts and
-/// per-stage lesson logs. app-box owns this tree — stacked_kit's `memory/` is
+/// per-stage lesson logs. appbox owns this tree — stacked_kit's `memory/` is
 /// the template, never a dependency (docs/plans/appbox-memory-and-payment.md,
 /// M1).
 ///

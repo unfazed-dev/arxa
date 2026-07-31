@@ -1,6 +1,6 @@
 // appbox:provenance
-// generator: app-box  licence: free  project: 662368770980
-// Built with app-box (free tier) — https://appbox.dev
+// generator: appbox  licence: free  project: 662368770980
+// Built with appbox (free tier) — https://appbox.dev
 // DesignFacade — composes the design fixture with session-scoped state
 // (pinned context chips, the design thread with
 // per-screen checkpoints, manifest approval, drift rechecks) into exactly

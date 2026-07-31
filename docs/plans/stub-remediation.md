@@ -76,13 +76,13 @@ attached.**
 1. **`verification` field + the advertise-gate.** Cheapest, and it makes every
    later step honest by default.
 2. **`SeedAuthBackend`.** No device, no accounts, unblocks seeded data — and
-   app_box's own showcase depends on it.
+   appbox's own showcase depends on it.
 3. **Ports for payments and auth** (Tier 1). Now the SDK calls are asserted in
    CI forever.
-4. **Stripe to Tier 3.** app_box's own licensing needs it; dogfooding forces
+4. **Stripe to Tier 3.** appbox's own licensing needs it; dogfooding forces
    it to be real.
 5. **Auth providers to Tier 3.**
-6. **Maps, vercel** — lowest priority; neither blocks app_box itself.
+6. **Maps, vercel** — lowest priority; neither blocks appbox itself.
 
 ## The rule to write into the gate
 

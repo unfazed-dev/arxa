@@ -23,7 +23,7 @@ CompanionConfig testConfig({
       'qrRotationSeconds': 25,
       'sessionIdleTimeoutSeconds': 60,
     },
-    'readyLine': {'tag': 'app-box-prototype-ready'},
+    'readyLine': {'tag': 'appbox-prototype-ready'},
     'fab': {
       'edgeDockInset': 16.0,
       'homeIndicatorKeepout': 34.0,

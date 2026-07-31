@@ -37,7 +37,7 @@ with open(sys.argv[1]) as fh:
 doc = {
     "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
     "version": "2.1.0",
-    "runs": [{"tool": {"driver": {"name": "app-box-gates", "informationUri": "https://example.invalid"}}, "results": results}],
+    "runs": [{"tool": {"driver": {"name": "appbox-gates", "informationUri": "https://example.invalid"}}, "results": results}],
 }
 print(json.dumps(doc, indent=2))
 ' "$SARIF_RESULTS_FILE"

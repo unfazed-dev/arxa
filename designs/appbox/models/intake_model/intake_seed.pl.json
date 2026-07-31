@@ -1,10 +1,10 @@
 {
-  "project": "app-box",
+  "project": "appbox",
   "map": {
     "releases": [
       {
         "name": "R1 Dogfood",
-        "description": "app-box projektuje, buduje i wydaje się sam; 20-minutowa ewaluacja Michelle"
+        "description": "appbox projektuje, buduje i wydaje się sam; 20-minutowa ewaluacja Michelle"
       },
       {
         "name": "R2 Anywhere",
@@ -233,7 +233,7 @@
             "name": "Kanwa",
             "stories": [
               {
-                "name": "app-box automatycznie przechwytuje zrzuty ekranu projektu + zbudowanej aplikacji per powierzchnia (probe-runner)",
+                "name": "appbox automatycznie przechwytuje zrzuty ekranu projektu + zbudowanej aplikacji per powierzchnia (probe-runner)",
                 "priority": "must",
                 "release": "R2 Anywhere"
               },
@@ -428,7 +428,7 @@
             "name": "Strona",
             "stories": [
               {
-                "name": "Odwiedzający rozumie app-box w 30 sekund: pipeline z bramkami, eksport własnego kodu, płatność przy wdrożeniu",
+                "name": "Odwiedzający rozumie appbox w 30 sekund: pipeline z bramkami, eksport własnego kodu, płatność przy wdrożeniu",
                 "priority": "must",
                 "release": "R2 Anywhere"
               },
@@ -504,8 +504,8 @@
     ]
   },
   "brief": {
-    "title": "app-box — brief projektowy",
-    "provenance": "Zebrany przez app-box-story-mapper · story-map.json obok · gates/intake, plan 10.7",
+    "title": "appbox — brief projektowy",
+    "provenance": "Zebrany przez appbox-story-mapper · story-map.json obok · gates/intake, plan 10.7",
     "intro": "Priorytety to MoSCoW, zgrupowane w swimlane'y wydań. Każda powierzchnia rejestru musi prowadzić do tabeli inwentarza powierzchni poniżej.",
     "introPlain": "Każda historyjka jest posortowana must / should / could i wpisana w wydanie. Każdy ekran w aplikacji prowadzi z powrotem do historyjki w tym briefie.",
     "surfaceNote": "Każda powierzchnia rejestru prowadzi do historyjki — tabela, którą konsumuje designer.",
@@ -675,7 +675,7 @@
               "caption": "anatomia edytora — drzewo widgetów + kanwa + właściwości"
             },
             "steal": "Szyna listy stron + kanwa + inspektor właściwości — klasyczna anatomia buildera w trzech kolumnach. Panel Design Library: globalne kolory, skale typografii, style komponentów w jednym miejscu.",
-            "why": "Obecny lider, którego ewaluator indie-dev już zna. Dorównanie jego anatomii edytora czyni app-box czytelnym w 30 sekund; kanwa flows to wyróżnik, którego on nie ma."
+            "why": "Obecny lider, którego ewaluator indie-dev już zna. Dorównanie jego anatomii edytora czyni appbox czytelnym w 30 sekund; kanwa flows to wyróżnik, którego on nie ma."
           },
           {
             "name": "v0 / Lovable / Bolt.new",
@@ -686,7 +686,7 @@
               "caption": "pole promptu + galeria szablonów"
             },
             "steal": "Widok dzielony: wątek promptu/czatu po lewej, żywy działający podgląd po prawej — obecnie standardowy układ buildera AI. Oś czasu generowania: wersjonowane punkty kontrolne per prompt, powrót do dowolnego wcześniejszego renderu.",
-            "why": "Trójka chat-to-app definiuje oczekiwanie wejściowe; historia bramek app-box (zatwierdź/odrzuć/regeneruj) powinna wyglądać jak wersjonowane punkty kontrolne v0."
+            "why": "Trójka chat-to-app definiuje oczekiwanie wejściowe; historia bramek appbox (zatwierdź/odrzuć/regeneruj) powinna wyglądać jak wersjonowane punkty kontrolne v0."
           },
           {
             "name": "MagicPath",
@@ -697,7 +697,7 @@
               "caption": "pole promptu na kanwie multiplayer"
             },
             "steal": "Prompt-do-kanwy, nie prompt-do-czatu — wygenerowane ekrany lądują jako kafelki na nieskończonej kanwie; kanwa jest dokumentem. Generowanie flow wielostronicowego: jeden prompt, połączona sekwencja ekranów.",
-            "why": "Najmocniejszy istniejący dowód kluczowego układu app-box — AI jest do generowania, ręce do ulepszania."
+            "why": "Najmocniejszy istniejący dowód kluczowego układu appbox — AI jest do generowania, ręce do ulepszania."
           }
         ]
       },
@@ -727,7 +727,7 @@
               "file": "vercel__deployment-checks.png",
               "caption": "kontrole wdrożenia — nazwane, blokujące warunki"
             },
-            "steal": "Deployment Checks = bramki app-box: nazwane, blokujące warunki jako lista kontrolna ze stanami running/succeeded/failed. Wiersz kontroli: nazwa, ikona statusu, czas, rozwijany output, możliwość ponownego uruchomienia.",
+            "steal": "Deployment Checks = bramki appbox: nazwane, blokujące warunki jako lista kontrolna ze stanami running/succeeded/failed. Wiersz kontroli: nazwa, ikona statusu, czas, rozwijany output, możliwość ponownego uruchomienia.",
             "why": "Najlepszy w branży wzorzec bramki-jakości-jako-UI — checks-as-UI to dosłownie model bramek założyciela."
           },
           {
@@ -738,7 +738,7 @@
               "file": "github-actions__visualization-graph.png",
               "caption": "graf wizualizacji workflow"
             },
-            "steal": "Wzorzec, który każdy deweloper już zna — app-box wygrywa tu znajomością, nie nowością. Graf jobów + rozwijane logi per krok.",
+            "steal": "Wzorzec, który każdy deweloper już zna — appbox wygrywa tu znajomością, nie nowością. Graf jobów + rozwijane logi per krok.",
             "why": "Znajomość jest funkcją: strona przebiegu pipeline'u powinna czytać się natychmiast dla każdego, kto oglądał przebieg Actions."
           },
           {
@@ -750,7 +750,7 @@
               "caption": "szczegóły issue — ramki stosu do plik:linia"
             },
             "steal": "Wiersze strumienia issue: pasek koloru severity, winowajca (plik:funkcja), liczba zdarzeń, pierwsze/ostatnie wystąpienie. Mapowanie na SARIF: chip severity, ID reguły, chip plik:linia, liczba wystąpień między przebiegami.",
-            "why": "Wyniki SARIF app-box potrzebują dyscypliny Sentry — agregowane, deduplikowane, rankingowane po severity — inaczej założyciel utonie w szumie lintera."
+            "why": "Wyniki SARIF appbox potrzebują dyscypliny Sentry — agregowane, deduplikowane, rankingowane po severity — inaczej założyciel utonie w szumie lintera."
           }
         ]
       },
@@ -1067,8 +1067,8 @@
       },
       {
         "at": "09:44",
-        "text": "R1 Dogfood niesie 49 historyjek — app-box projektuje, buduje i wydaje się sam; 20-minutowa ewaluacja Michelle.",
-        "textPlain": "Pierwsze wydanie ma 49 historyjek: app-box buduje się sam, a Michelle może go ocenić w 20 minut.",
+        "text": "R1 Dogfood niesie 49 historyjek — appbox projektuje, buduje i wydaje się sam; 20-minutowa ewaluacja Michelle.",
+        "textPlain": "Pierwsze wydanie ma 49 historyjek: appbox buduje się sam, a Michelle może go ocenić w 20 minut.",
         "artifact": "map/releases"
       },
       {
@@ -1136,7 +1136,7 @@
         "first release",
         "pierwsze wydanie"
       ],
-      "text": "R1 Dogfood to 49 historyjek we wszystkich 9 epikach — app-box projektuje, buduje i wydaje się sam, potem Michelle ocenia go w 20 minut. Swimlane'y na mapie pokazują podział.",
+      "text": "R1 Dogfood to 49 historyjek we wszystkich 9 epikach — appbox projektuje, buduje i wydaje się sam, potem Michelle ocenia go w 20 minut. Swimlane'y na mapie pokazują podział.",
       "artifact": "map/releases"
     },
     {

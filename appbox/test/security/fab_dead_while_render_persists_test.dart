@@ -44,7 +44,7 @@ void main() {
   });
 
   Map<String, dynamic> readyPayload(String url) => {
-        'tag': 'app-box-prototype-ready',
+        'tag': 'appbox-prototype-ready',
         'url': url,
         'port': server.port,
         'host': server.address.host,

@@ -3,7 +3,7 @@ import 'package:appboxd/vault.dart';
 import 'package:test/test.dart';
 
 void main() {
-  const prefix = 'app_box.';
+  const prefix = 'appbox.';
   late InMemoryVault vault;
   late CredentialStore store;
 
@@ -14,7 +14,7 @@ void main() {
 
   test('stores and reads a BYO API key under <prefix>key.<id>', () async {
     await store.storeApiKey(id: 'anthropic', key: 'sk-1');
-    expect(await vault.read('app_box.key.anthropic'), 'sk-1');
+    expect(await vault.read('appbox.key.anthropic'), 'sk-1');
     expect(await store.read('anthropic'), 'sk-1');
     expect(store.activeTier, CredentialTier.byoKey);
   });
@@ -36,10 +36,10 @@ void main() {
   });
 
   test('hydrate rebuilds tiers from the vault key layout', () async {
-    await vault.write('app_box.key.openai', 'sk-2');
-    await vault.write('app_box.oauth.google', 'tok');
-    await vault.write('app_box.licence', 'LIC');
-    await vault.write('app_box.flag.x', '1');
+    await vault.write('appbox.key.openai', 'sk-2');
+    await vault.write('appbox.oauth.google', 'tok');
+    await vault.write('appbox.licence', 'LIC');
+    await vault.write('appbox.flag.x', '1');
     await vault.write('foreign.key', 'nope');
 
     await store.hydrate();
@@ -56,15 +56,15 @@ void main() {
     store.markHarnessAuth('claude-cli');
     expect(store.activeTier, CredentialTier.harness);
     expect(
-        await vault.readAllKeys(), isNot(contains('app_box.key.claude-cli')));
+        await vault.readAllKeys(), isNot(contains('appbox.key.claude-cli')));
   });
 
   test('delete removes both key and oauth entries for the id', () async {
     await store.storeApiKey(id: 'x', key: 'k');
     await store.storeOAuthToken(id: 'x', token: 't');
     await store.delete('x');
-    expect(await vault.read('app_box.key.x'), isNull);
-    expect(await vault.read('app_box.oauth.x'), isNull);
+    expect(await vault.read('appbox.key.x'), isNull);
+    expect(await vault.read('appbox.oauth.x'), isNull);
     expect(store.activeTier, CredentialTier.none);
   });
 }

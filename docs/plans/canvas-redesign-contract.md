@@ -17,7 +17,7 @@ contract for that work.
 
 - **Vendor islands** serve from the SKILL's `runtime/vendor/` dir at URL
   `/assets/vendor/<name>.js`. The router maps `/assets/vendor/*` → `runtime/vendor/`.
-  New islands go in `.kimi-code/skills/app-box-designer/runtime/vendor/`.
+  New islands go in `.kimi-code/skills/appbox-designer/runtime/vendor/`.
 - **lint.mjs** allows `<script src="/assets/vendor/...">` tags only. Any other
   `<script>`, `hx-on:*`, `js:` attrs, or `[expr]` triggers FAIL the lint.
 - **base.html** loads vendor scripts `defer`. Add new islands the same way:

@@ -2,7 +2,7 @@
   "run": {
     "id": "run-47",
     "number": 47,
-    "project": "app-box",
+    "project": "appbox",
     "brief": "companion app — ios + macos",
     "started": "09:14",
     "elapsed": "34m 12s",
@@ -339,8 +339,8 @@
     {
       "id": "n-01",
       "at": "09:14",
-      "text": "Run #47 on the line — app-box, the R1 dogfood build for ios + macos. Stop-on-red is on, escalation limit 3.",
-      "textPlain": "Run #47 is on the line — app-box, the R1 dogfood build for iPhone and Mac. The run stops itself at the first failure; up to 3 automatic fix attempts.",
+      "text": "Run #47 on the line — appbox, the R1 dogfood build for ios + macos. Stop-on-red is on, escalation limit 3.",
+      "textPlain": "Run #47 is on the line — appbox, the R1 dogfood build for iPhone and Mac. The run stops itself at the first failure; up to 3 automatic fix attempts.",
       "artifact": null
     },
     {

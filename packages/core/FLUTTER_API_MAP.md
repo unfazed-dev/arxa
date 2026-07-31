@@ -30,7 +30,7 @@ One row per line inside the fenced `map` block, pipe-delimited, exactly 7 fields
 problem-class | mode | banned-tokens | sanctioned-material | sanctioned-cupertino | kit-equivalent | source-urls
 ```
 
-- `mode` — `E`: scanner fails on any banned token in `$KIT_APP/lib`; `A`: guidance only, not scanned.
+- `mode` — `E`: scanner fails on any banned token in `$APPBOX_APP/lib`; `A`: guidance only, not scanned.
 - `banned-tokens` — comma-separated literals matched against comment-stripped Dart source. Word
   boundaries are added around tokens that start/end alphanumeric. A `*` inside a token is a
   `.*?` wildcard (for `Scaffold.of(ctx)`-style variants). `—` = nothing banned.

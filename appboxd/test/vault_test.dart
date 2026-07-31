@@ -42,22 +42,22 @@ void main() {
     });
 
     test('write shells add-generic-password -U with service/account/secret', () async {
-      await vault.write('app_box.key.anthropic', 'sk-secret');
+      await vault.write('appbox.key.anthropic', 'sk-secret');
       expect(runner.calls.single, [
         KeychainVault.binary,
         'add-generic-password',
         '-U',
         '-s', 'appboxd',
-        '-a', 'app_box.key.anthropic',
+        '-a', 'appbox.key.anthropic',
         '-w', 'sk-secret',
       ]);
     });
 
     test('read returns the password without the trailing newline', () async {
       runner.handler = (_, _) => const RunnerResult(0, 'sk-secret\n', '');
-      expect(await vault.read('app_box.key.anthropic'), 'sk-secret');
+      expect(await vault.read('appbox.key.anthropic'), 'sk-secret');
       expect(runner.calls.single, containsAllInOrder([
-        'find-generic-password', '-s', 'appboxd', '-a', 'app_box.key.anthropic', '-w',
+        'find-generic-password', '-s', 'appboxd', '-a', 'appbox.key.anthropic', '-w',
       ]));
     });
 
@@ -81,11 +81,11 @@ void main() {
 keychain: "/keychains-fixture/login.keychain-db"
 class: "genp"
 attributes:
-    "acct"<blob>="app_box.key.anthropic"
+    "acct"<blob>="appbox.key.anthropic"
     "svce"<blob>="appboxd"
 class: "genp"
 attributes:
-    "acct"<blob>="app_box.licence"
+    "acct"<blob>="appbox.licence"
     "svce"<blob>="appboxd"
 class: "genp"
 attributes:
@@ -97,7 +97,7 @@ attributes:
     "svce"<blob>="appboxd"
 ''', '');
       expect(await vault.readAllKeys(),
-          ['app_box.key.anthropic', 'app_box.licence']);
+          ['appbox.key.anthropic', 'appbox.licence']);
     });
   });
 }

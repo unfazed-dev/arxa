@@ -1,4 +1,4 @@
-/// Offline licence verification for app-box (docs/plans/appbox-memory-and-payment.md,
+/// Offline licence verification for appbox (docs/plans/appbox-memory-and-payment.md,
 /// P1/P2: Ed25519-signed licence file, verified fully offline by appboxd;
 /// flat annual + perpetual fallback).
 ///
@@ -80,7 +80,7 @@ class Licence {
   /// (research §2: offline grace runs days to months; 30 days per the plan).
   static const gracePeriod = Duration(days: 30);
 
-  /// The app-box licence PUBLIC key (Ed25519, 32 bytes).
+  /// The appbox licence PUBLIC key (Ed25519, 32 bytes).
   ///
   /// DEV KEYPAIR — the matching private key lives in test/licence_test.dart
   /// so the whole flow is exercisable today. Replace this constant (and the

@@ -1,6 +1,6 @@
 // appbox:provenance
-// generator: app-box  licence: free  project: 662368770980
-// Built with app-box (free tier) — https://appbox.dev
+// generator: appbox  licence: free  project: 662368770980
+// Built with appbox (free tier) — https://appbox.dev
 // ScreensRepository — reads the surface registry. The registry IS the
 // screens model (app-architecture contract); repositories are the DB-swap seam.
 import { readFixture } from './fixture_reader.js';

@@ -1,9 +1,9 @@
 {
-  "project": "app-box",
+  "project": "appbox",
   "releases": [
     {
       "name": "R1 Dogfood",
-      "description": "app-box designs, builds and ships itself; Michelle's 20-minute evaluation"
+      "description": "appbox designs, builds and ships itself; Michelle's 20-minute evaluation"
     },
     {
       "name": "R2 Anywhere",
@@ -532,7 +532,7 @@
               "release": "R2 Anywhere"
             },
             {
-              "name": "app-box scaffolds each project's git setup: repo init, .gitignore, host connect",
+              "name": "appbox scaffolds each project's git setup: repo init, .gitignore, host connect",
               "priority": "should",
               "release": "R2 Anywhere"
             }
@@ -557,7 +557,7 @@
           "name": "Canvas",
           "stories": [
             {
-              "name": "app-box auto-captures screenshots of design + built app per surface (probe-runner)",
+              "name": "appbox auto-captures screenshots of design + built app per surface (probe-runner)",
               "priority": "must",
               "release": "R2 Anywhere"
             },
@@ -697,7 +697,7 @@
           "name": "Site",
           "stories": [
             {
-              "name": "A visitor gets app-box in 30 seconds: gated pipeline, own-your-code export, pay-at-deploy",
+              "name": "A visitor gets appbox in 30 seconds: gated pipeline, own-your-code export, pay-at-deploy",
               "priority": "must",
               "release": "R2 Anywhere"
             },

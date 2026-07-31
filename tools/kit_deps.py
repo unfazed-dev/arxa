@@ -3,7 +3,7 @@
 through the dependencyMode switch (plan 03.9–03.14).
 
 The kit is PRIVATE. A buyer cannot `flutter pub get` a git ref to it. So every kit
-reference in a generated pubspec.yaml routes through config/app-box.config.json
+reference in a generated pubspec.yaml routes through config/appbox.config.json
 `dependencyMode`:
 
   vendored (default) → path deps into <app>/packages/<dir>/  (no network, no kit
@@ -24,7 +24,7 @@ Env:
 import json, os, re, shutil, sys
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-CONFIG = os.path.join(REPO, "config", "app-box.config.json")
+CONFIG = os.path.join(REPO, "config", "appbox.config.json")
 REGISTRY = os.path.join(REPO, "tools", "vendor", "kit_registry", "kit-registry.json")
 
 # Kits every app needs regardless of capabilities (the spine).

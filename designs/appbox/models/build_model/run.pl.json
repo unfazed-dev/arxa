@@ -2,7 +2,7 @@
   "run": {
     "id": "run-47",
     "number": 47,
-    "project": "app-box",
+    "project": "appbox",
     "brief": "aplikacja towarzysząca — ios + macos",
     "started": "09:14",
     "elapsed": "34m 12s",
@@ -339,8 +339,8 @@
     {
       "id": "n-01",
       "at": "09:14",
-      "text": "Przebieg #47 na linii — app-box, build dogfood R1 na ios + macos. Stop-on-red włączony, limit eskalacji 3.",
-      "textPlain": "Przebieg #47 jest na linii — app-box, build dogfood R1 na iPhone'a i Maca. Przebieg zatrzymuje się sam przy pierwszym błędzie; do 3 automatycznych prób naprawy.",
+      "text": "Przebieg #47 na linii — appbox, build dogfood R1 na ios + macos. Stop-on-red włączony, limit eskalacji 3.",
+      "textPlain": "Przebieg #47 jest na linii — appbox, build dogfood R1 na iPhone'a i Maca. Przebieg zatrzymuje się sam przy pierwszym błędzie; do 3 automatycznych prób naprawy.",
       "artifact": null
     },
     {

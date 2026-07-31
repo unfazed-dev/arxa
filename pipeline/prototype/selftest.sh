@@ -2,7 +2,7 @@
 # pipeline/prototype/selftest.sh -- R5 proof that the prototype runtime works
 # AND can fail for the right reasons.
 #
-# Positive: serves the real app-box-app fixture, the ready line parses, the
+# Positive: serves the real appbox-app fixture, the ready line parses, the
 # OS-assigned port is real, every design asset resolves through the server
 # with the right MIME, and SIGTERM stops it cleanly.
 # Negative: an unknown design name exits non-zero and prints NO ready line;
@@ -54,7 +54,7 @@ for _ in $(seq 1 50); do
   sleep 0.1
 done
 
-if printf '%s' "$ready" | grep -q '"tag":"app-box-prototype-ready"'; then ok "ready line present"
+if printf '%s' "$ready" | grep -q '"tag":"appbox-prototype-ready"'; then ok "ready line present"
 else bad "no ready line"; cat "$out"; fi
 
 read_field() { printf '%s' "$ready" | python3 -c "import sys,json;print(json.loads(sys.stdin.read())['$1'])" 2>/dev/null; }

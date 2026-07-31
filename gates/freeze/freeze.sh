@@ -4,7 +4,7 @@
 # structure gate's own folder. Asserts the frozen inputs are present AND that
 # every surface renders clean at every DERIVED width — the viewport set implied
 # by --targets via pipeline/state/targets.derivation.json (6.4). Widths come
-# ONLY from config/app-box.config.json (R3); there are no viewport literals here.
+# ONLY from config/appbox.config.json (R3); there are no viewport literals here.
 #
 # Targets (6.2/6.3): pass --targets ios,android explicitly for a deterministic
 # gate/golden run; with no flag, targets are read from pipeline state (the live
@@ -30,7 +30,7 @@
 #     tokens.json design-system.md exclusions.json direction-approved.md
 #     brand-spec.md structure.json surfaces/*.html (>=1)
 #
-#   htmx producer (app-box-designer):
+#   htmx producer (appbox-designer):
 #     app.routes.js structure.json models/screens_model/registry.json
 #     ui/views/**/*_view.html (>=1) — Jinja templates served dynamically
 #
@@ -104,7 +104,7 @@ esac
 DESIGN="$APP/$DESIGN_REL"
 EVIDENCE="$APP/.kit/state/prototype/evidence"
 GATE_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
-CONFIG="$GATE_ROOT/config/app-box.config.json"
+CONFIG="$GATE_ROOT/config/appbox.config.json"
 DERIVATION="$GATE_ROOT/pipeline/state/targets.derivation.json"
 
 # resolve targets: explicit flag, else ambient pipeline state (6.2)
@@ -396,7 +396,7 @@ else
       echo "  the htmx producer is served and rendered by Node; install Node, or FREEZE_RENDER=skip for a hermetic run" >&2
       exit 2
     fi
-    RUNTIME="$GATE_ROOT/skills/app-box-designer/runtime"
+    RUNTIME="$GATE_ROOT/skills/appbox-designer/runtime"
     SERVE_MJS="$RUNTIME/serve.mjs"
     RENDER_DRIVER="$(cd "$(dirname "$0")" && pwd)/render_htmx.mjs"
     # Locale dimension (3b's render half): when the design carries l10n/, every

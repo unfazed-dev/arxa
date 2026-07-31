@@ -1,6 +1,6 @@
 // appbox:provenance
-// generator: app-box  licence: free  project: 662368770980
-// Built with app-box (free tier) — https://appbox.dev
+// generator: appbox  licence: free  project: 662368770980
+// Built with appbox (free tier) — https://appbox.dev
 import * as mainShell from './ui/views/main_shell/main_shell_viewmodel.js';
 import * as buildLoop from './ui/views/main_shell/build/loop/loop_viewmodel.js';
 import * as settings from './ui/views/workspace_shell/settings/settings_viewmodel.js';

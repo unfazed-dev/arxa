@@ -1,6 +1,6 @@
 # 14 — Dogfood and smoke test
 
-**Goal.** app_box designs and builds **itself** — proving the designer on a
+**Goal.** appbox designs and builds **itself** — proving the designer on a
 desktop *and* a mobile design, and the pipeline end to end.
 
 **Depends on:** 01, 05, 06, 07, 08. **This is the acceptance test for the
@@ -10,7 +10,7 @@ whole product.**
 
 | # | design | targets | viewports exercised |
 |---|---|---|---|
-| **D1** | app_box's own macOS desktop app | `macos` | desktop only → **3 layout files** |
+| **D1** | appbox's own macOS desktop app | `macos` | desktop only → **3 layout files** |
 | **D2** | the iOS companion | `ios` | mobile + tablet → **4 layout files** |
 
 Together they prove the derivation table end to end: one target implying one
@@ -18,8 +18,8 @@ viewport, another implying two, and the form-factor emission following each.
 
 ## Phase A — design (founder-led, starts the moment plan 01 lands)
 
-- [ ] **14.1** Run `app-box-designer` against
-      [`../../design/app-box-persona-design-brief.md`](../../design/app-box-persona-design-brief.md) to produce **D1**: 14
+- [ ] **14.1** Run `appbox-designer` against
+      [`../../design/appbox-persona-design-brief.md`](../../design/appbox-persona-design-brief.md) to produce **D1**: 14
       surfaces, states per the brief, authored at the desktop width.
 - [ ] **14.2** Author `registry.json` and a `surfaceId` in every viewmodel while
       designing — **never back-filled**.
@@ -89,7 +89,7 @@ viewport, another implying two, and the form-factor emission following each.
       the 29-state embedded-vs-node byte-identical Done-when #1.)*
 - [ ] **14.18** **Companion:** pair, serve, kill the server, confirm the FAB
       goes dead while the WebView still shows the last render.
-- [ ] **14.19** **Michelle's path:** on a clean machine with no app_box context,
+- [ ] **14.19** **Michelle's path:** on a clean machine with no appbox context,
       install → showcase app launches by itself → reach a working prototype
       without reading any documentation. **Time it.** If it exceeds twenty
       minutes, that is a finding, not a pass.
@@ -100,7 +100,7 @@ viewport, another implying two, and the form-factor emission following each.
 2. Form-factor counts differ correctly between them (3 vs 4) — derived, never
    configured per surface.
 3. All smoke tests in Phase D pass, **including every negative case**.
-4. app_box's macOS app, built by app_box, runs and can drive its own pipeline.
+4. appbox's macOS app, built by appbox, runs and can drive its own pipeline.
 5. A written report records: gate pass counts, the Michelle timing, and every
    place a human had to intervene that the plans did not predict.
 

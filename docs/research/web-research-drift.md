@@ -54,7 +54,7 @@ needs full runtime. Meaning: regenerate-and-diff catches drift only when the
 **9. Git-ref pinning** — record the commit SHA at generation, later check
 whether commits since touched related files. Proposal-stage, not established.
 
-## What this changes for app_box
+## What this changes for appbox
 
 - **§13's recommendation is the industry pattern.** Producer authoritative,
   regenerate-and-diff, hand-edit = policy violation. No change needed.
@@ -84,7 +84,7 @@ i.e. the platform-conditional ceremonies §11 proposed. `transform_tokens.py`
 already emits per-platform token files (Dart / Swift / XML) from DTCG.
 
 So "zero platform awareness" was true of **stacked_kit's pipeline**, not of the
-corpus. flutter-crew has the mechanism; app_box should adopt it, not invent it.
+corpus. flutter-crew has the mechanism; appbox should adopt it, not invent it.
 
 **And its config comment carries a design lesson that refines §11:**
 

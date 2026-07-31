@@ -1,4 +1,4 @@
-# Agent memory, self-learning, and caching for app-box
+# Agent memory, self-learning, and caching for appbox
 
 Reading-research (web sources, not measured findings), 2026-07-30. Every
 load-bearing claim carries a grade: **A** = official docs / primary paper,
@@ -14,9 +14,9 @@ this doc fills in the memory, lesson-log, and cache layers.
    unusually well-evidenced — full audit dataset in the issue).
 2. **Files are the memory.** The settled 2026 practice is the Claude Code
    model: small human-editable index file + topic files on demand, plain
-   markdown, git-versioned, zero infra (A). app-box already has the bones:
+   markdown, git-versioned, zero infra (A). appbox already has the bones:
    per-run scorecards in pipeline state, gate outputs, the skills tree.
-3. **Gates are the reward signal; reflexion is the loop.** app-box's
+3. **Gates are the reward signal; reflexion is the loop.** appbox's
    pass/fail gates are exactly the reliable evaluator Reflexion requires.
    Add a per-stage `LESSONS.md` written only on gate failure → fixed,
    human-reviewable, and cache-friendly.
@@ -100,7 +100,7 @@ comparisons):
   pushed to topic files read on demand. Machine-local, per-repo, plain
   markdown, auditable. Documented limits: it is "context, not enforced
   configuration" — vague or conflicting instructions are followed
-  arbitrarily; enforcement needs hooks/gates, not memory. app-box already
+  arbitrarily; enforcement needs hooks/gates, not memory. appbox already
   has gates; competitors mostly don't.
 - **Aider / Cursor conventions** — the same file-based pattern converged
   everywhere: `.cursor/rules` + `.cursorrules`, `CONVENTIONS.md`,
@@ -149,7 +149,7 @@ in-repo: `../plans/appbox-engine-llm-fabric.md` §Scorecard.)
 **Reflexion-style lesson logs (build a constrained version).** Reflexion
 (Shinn et al., A: [arXiv 2303.11366](https://arxiv.org/abs/2303.11366))
 showed verbal self-feedback stored in an episodic buffer beats more
-attempts — *when a reliable evaluator exists*. app-box's gates are that
+attempts — *when a reliable evaluator exists*. appbox's gates are that
 evaluator; most agent products don't have one, which is why reflexion
 underdelivers for them. The 2026-durable form is Anthropic's "structured
 note-taking" (A, [context engineering post](https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents)):
@@ -163,7 +163,7 @@ produce junk at 97.8% rates; "the gate failed, record why" cannot
 hallucinate Vim preferences because the trigger is an observed event,
 not an inference. Voyager's skill library (A:
 [arXiv 2305.16291](https://arxiv.org/abs/2305.16291)) is the same idea
-one level up — app-box's skills tree already is the executable-skill
+one level up — appbox's skills tree already is the executable-skill
 store; don't build a second one.
 
 **Context engineering, durable vs hype (2025–2026 settled practice).**
@@ -212,7 +212,7 @@ Load-bearing mechanics worth designing around (all A, Anthropic docs):
 best-case workload. Stage prompts are identical across runs modulo the
 app spec, so: static prefix = system + stage instructions + primitives
 catalog + `LESSONS.md`, breakpoint at its end; variable suffix = spec +
-gate output. Expected effect at app-box scale (Sonnet 4.6, 20K-token
+gate output. Expected effect at appbox scale (Sonnet 4.6, 20K-token
 stage prefix, 8 stages, one retry each): without cache ≈ 16 × 20K × $3/M
 ≈ $0.96 of input; with prefix caching ≈ one 1.25× write ($0.075) +
 15 reads × 0.1× ($0.09) ≈ **$0.17 — an ~82% input-cost cut**, plus
@@ -275,7 +275,7 @@ new API or models", A, repo README) and still demos `gpt-3.5-turbo`.
 
 - **mem0/Letta/Zep or any agent-decided memory store.** The 2026
   production evidence (97.8% junk audit; Zep CE shutdown; Letta stack
-  churn) says the category's write path is unsolved, and app-box's
+  churn) says the category's write path is unsolved, and appbox's
   gates make the curated alternative strictly better.
 - **Semantic response caching.** Wrong tool for near-duplicate inputs;
   upstream project in maintenance mode.
@@ -284,11 +284,11 @@ new API or models", A, repo README) and still demos `gpt-3.5-turbo`.
   Revisit only if a lessons file ever exceeds the ~25KB that Claude
   Code's cap implies is the adherence ceiling (A).
 - **A memory MCP server / memory-as-a-service.** Contradicts local-first
-  and BYO-key; the differentiator is that app-box's memory is *files in
+  and BYO-key; the differentiator is that appbox's memory is *files in
   the user's repo* — inspectable, diffable, deletable.
 
 The positioning angle: every competitor's "memory" is an opaque store the
-user cannot audit; app-box's would be **deterministic, git-versioned, and
+user cannot audit; appbox's would be **deterministic, git-versioned, and
 written only by gates** — the same "a gate that cannot fail is not a
 gate" doctrine (see README §three findings) applied to learning.
 

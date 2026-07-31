@@ -67,7 +67,7 @@ class TestKey {
 
 /// DEV keypair — private half of the dev public key embedded in
 /// lib/licence.dart. Seed = first 32 bytes of
-/// sha512('app-box licence DEV keypair v1 — replace before first release').
+/// sha512('appbox licence DEV keypair v1 — replace before first release').
 /// Never a production secret; replace with the real issuer keypair at launch.
 final devKey = TestKey(_hex(
     '53d3edc57ad5ef51a42e5e8b19f0d9f3a1f527d7e2faea86a81e68352fee45e4'));

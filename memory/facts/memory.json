@@ -1,6 +1,6 @@
 [
   {
-    "fact": "M1: the memory module is a dedicated appboxd module owning memory read/write/consolidation. app-box manages its own memory — no dependency on stacked_kit's memory/ (its pattern is the template, not a dependency).",
+    "fact": "M1: the memory module is a dedicated appboxd module owning memory read/write/consolidation. appbox manages its own memory — no dependency on stacked_kit's memory/ (its pattern is the template, not a dependency).",
     "source": "docs/plans/appbox-memory-and-payment.md",
     "ts": "2026-07-30"
   },

@@ -4,7 +4,7 @@
 ///   `dart run bin/licence_tool.dart verify <file>`
 ///
 /// `status` prints exactly one JSON line to stdout — the contract other
-/// app-box code consumes:
+/// appbox code consumes:
 ///
 ///   {"status":"paid"|"free"|"none","tier":...,"expires":...}
 ///

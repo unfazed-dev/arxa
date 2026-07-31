@@ -7,7 +7,7 @@ Today that is one live migration: Apple platforms moving from CocoaPods to
 **Swift Package Manager**. Flutter 3.44 enables SwiftPM by default and warns per
 build that plugins without a `Package.swift` *"will become an error in a future
 version of Flutter"*. That warning scrolls past in build output nobody reads —
-app_box shipped for months with `flutter_js` in exactly that state, and it was
+appbox shipped for months with `flutter_js` in exactly that state, and it was
 found by eye, not by a gate.
 
 ## What it asserts
@@ -86,7 +86,7 @@ authors](https://docs.flutter.dev/packages-and-plugins/swift-package-manager/for
 
 ## Why here and not in the scaffolder
 
-`skills/app-box-scaffolder/scaffold.py` emits per-surface Dart only — it never
+`skills/appbox-scaffolder/scaffold.py` emits per-surface Dart only — it never
 reads or writes a `pubspec.yaml` and does not choose dependencies (verified, not
 assumed). Dependencies arrive from the kit and the app template, so the place to
 catch a bad one is over the assembled app, which is what a gate is.

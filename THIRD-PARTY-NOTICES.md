@@ -1,16 +1,16 @@
 # Third-party notices
 
-app_box incorporates third-party software. Their licence terms are reproduced
+appbox incorporates third-party software. Their licence terms are reproduced
 below and continue to apply to the incorporated portions.
 
 ---
 
-## `skills/app-box-designer`
+## `skills/appbox-designer`
 
-`skills/app-box-designer` is a fork of an MIT-licensed design skill. The
+`skills/appbox-designer` is a fork of an MIT-licensed design skill. The
 upstream copyright notice and permission notice are reproduced here in full, as
 the licence requires. The same `LICENSE` file is also retained inside
-`skills/app-box-designer/`.
+`skills/appbox-designer/`.
 
 > MIT License
 >
@@ -49,11 +49,11 @@ historical reference.
 
 ---
 
-## `skills/app-box-designer/runtime/vendor/`
+## `skills/appbox-designer/runtime/vendor/`
 
 Client libraries served to prototypes, vendored and SRI-pinned. Packages and
 versions below are read from
-[`runtime/vendor/manifest.json`](skills/app-box-designer/runtime/vendor/manifest.json),
+[`runtime/vendor/manifest.json`](skills/appbox-designer/runtime/vendor/manifest.json),
 which also carries the SRI hashes.
 
 | file | package | version |
@@ -71,7 +71,7 @@ cannot be read from the artifacts on disk. Before any distribution, resolve them
 from the registry rather than from memory:
 
 ```sh
-cd skills/app-box-designer/runtime/vendor
+cd skills/appbox-designer/runtime/vendor
 python3 -c "import json;[print(e['package'], e['version']) for e in json.load(open('manifest.json'))]" \
   | while read -r p v; do echo "$p@$v: $(npm view "$p@$v" license 2>/dev/null)"; done
 ```
@@ -81,7 +81,7 @@ python3 -c "import json;[print(e['package'], e['version']) for e in json.load(op
 ## Runtime dependencies
 
 Installed from npm at setup, not vendored. See
-`skills/app-box-designer/runtime/package.json`.
+`skills/appbox-designer/runtime/package.json`.
 
 Licences below were **read from each installed package's `package.json`** on
 2026-07-27, not recalled:
@@ -105,12 +105,12 @@ License text: https://openfontlicense.org. Per-file inventory:
 
 ---
 
-## `skills/app-box-story-mapper`
+## `skills/appbox-story-mapper`
 
-`skills/app-box-story-mapper` is an MIT-licensed story-mapping skill, adapted
-for app_box. The upstream copyright notice and permission notice are reproduced
+`skills/appbox-story-mapper` is an MIT-licensed story-mapping skill, adapted
+for appbox. The upstream copyright notice and permission notice are reproduced
 here in full, as the licence requires. The same `LICENSE.txt` file is also
-retained inside `skills/app-box-story-mapper/`.
+retained inside `skills/appbox-story-mapper/`.
 
 > MIT License
 >
@@ -135,8 +135,8 @@ retained inside `skills/app-box-story-mapper/`.
 > SOFTWARE.
 
 **What was changed in the adaptation.** The skill was renamed
-(`story-map-builder` → `app-box-story-mapper`) and scoped into the pipeline as
-the pre-design elicitation step feeding `app-box-designer` directly.
+(`story-map-builder` → `appbox-story-mapper`) and scoped into the pipeline as
+the pre-design elicitation step feeding `appbox-designer` directly.
 `generate_story_map.py` gained `--data-out`, `--brief-out` and `--self-test`:
 the brief emission (Epic → shell, Feature → surface, all-`wont` → out-of-scope,
 per-surface MoSCoW/release rollups as table columns) produces the surface table

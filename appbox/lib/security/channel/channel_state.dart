@@ -25,10 +25,10 @@ enum ChannelState {
 /// Shape (from `pipeline/prototype/serve.py` + the desktop's
 /// `PrototypeServerService`):
 /// ```json
-/// {"tag":"app-box-prototype-ready","url":"http://...","port":1234,"host":"..."}
+/// {"tag":"appbox-prototype-ready","url":"http://...","port":1234,"host":"..."}
 /// ```
 class ReadyLine {
-  static const String tag = 'app-box-prototype-ready';
+  static const String tag = 'appbox-prototype-ready';
 
   final String url;
   final int port;

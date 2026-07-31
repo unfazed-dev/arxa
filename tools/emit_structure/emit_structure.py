@@ -29,7 +29,7 @@ import subprocess
 import sys
 import tempfile
 
-BANNER = "app-box/structure@1"
+BANNER = "appbox/structure@1"
 
 # A viewmodel declares which screen it renders via `export const surfaceId = ...`.
 # The join to the registry is on that token (== the registry entry's `id`), never
@@ -351,7 +351,7 @@ def self_test():
 def main(argv):
     if "--self-test" in argv:
         return self_test()
-    app = os.environ.get("KIT_APP") or "."
+    app = os.environ.get("APPBOX_APP") or "."
     dd = os.environ.get("KIT_DESIGN_DIR") or "design"
     check = "--check" in argv
     i = 1

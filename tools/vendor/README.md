@@ -1,1 +1,1 @@
-Vendored upstream tooling + VENDOR.lock (plan 03). Copied first, then renamed into the app_box namespace (R2). Belongs: copied pipeline, gates, emitters, registry. Does not belong: hand-authored logic — fixes belong to the plan that owns that behaviour.
+Vendored upstream tooling + VENDOR.lock (plan 03). Copied first, then renamed into the appbox namespace (R2). Belongs: copied pipeline, gates, emitters, registry. Does not belong: hand-authored logic — fixes belong to the plan that owns that behaviour.

@@ -1,6 +1,6 @@
 # appboxd
 
-The app-box daemon (see `docs/plans/consolidate-one-app-plus-daemon.md`).
+The appbox daemon (see `docs/plans/consolidate-one-app-plus-daemon.md`).
 Pure Dart, `dart:io` only — no third-party runtime dependencies.
 
 It will eventually: execute pipeline phases/gates, serve the web builder UI,
@@ -14,7 +14,7 @@ dart run bin/appboxd.dart            # from the repo root (or appboxd/)
 dart run bin/appboxd.dart --port 9000
 ```
 
-Config: `config/app-box.config.json` may carry an optional
+Config: `config/appbox.config.json` may carry an optional
 `"daemon": { "port": 8787, "webRoot": "appbox/build/web" }` object; anything
 absent falls back to port 8787 and `appbox/build/web` relative to the repo
 root. The repo root is found by walking up from the cwd until

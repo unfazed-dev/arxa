@@ -1,10 +1,10 @@
 {
-  "project": "app-box",
+  "project": "appbox",
   "map": {
     "releases": [
       {
         "name": "R1 Dogfood",
-        "description": "app-box designs, builds and ships itself; Michelle's 20-minute evaluation"
+        "description": "appbox designs, builds and ships itself; Michelle's 20-minute evaluation"
       },
       {
         "name": "R2 Anywhere",
@@ -233,7 +233,7 @@
             "name": "Canvas",
             "stories": [
               {
-                "name": "app-box auto-captures screenshots of design + built app per surface (probe-runner)",
+                "name": "appbox auto-captures screenshots of design + built app per surface (probe-runner)",
                 "priority": "must",
                 "release": "R2 Anywhere"
               },
@@ -428,7 +428,7 @@
             "name": "Site",
             "stories": [
               {
-                "name": "A visitor gets app-box in 30 seconds: gated pipeline, own-your-code export, pay-at-deploy",
+                "name": "A visitor gets appbox in 30 seconds: gated pipeline, own-your-code export, pay-at-deploy",
                 "priority": "must",
                 "release": "R2 Anywhere"
               },
@@ -504,8 +504,8 @@
     ]
   },
   "brief": {
-    "title": "app-box — design brief",
-    "provenance": "Elicited via app-box-story-mapper · story-map.json alongside · gates/intake, plan 10.7",
+    "title": "appbox — design brief",
+    "provenance": "Elicited via appbox-story-mapper · story-map.json alongside · gates/intake, plan 10.7",
     "intro": "Priorities are MoSCoW, grouped into release swimlanes. Every registry surface must trace to the surface inventory table below.",
     "introPlain": "Every story is sorted must / should / could and slotted into a release. Every screen in the app traces back to a story in this brief.",
     "surfaceNote": "Every registry surface traces to a story — the table the designer consumes.",
@@ -675,7 +675,7 @@
               "caption": "editor anatomy — widget tree + canvas + properties"
             },
             "steal": "Page-list rail + canvas + properties inspector — the classic three-column builder anatomy. Design Library panel: global colors, type scales, component styles in one place.",
-            "why": "The incumbent the indie-dev evaluator already knows. Matching its editor anatomy makes app-box legible in 30 seconds; the flows canvas is the differentiator it does not have."
+            "why": "The incumbent the indie-dev evaluator already knows. Matching its editor anatomy makes appbox legible in 30 seconds; the flows canvas is the differentiator it does not have."
           },
           {
             "name": "v0 / Lovable / Bolt.new",
@@ -686,7 +686,7 @@
               "caption": "prompt input + template gallery"
             },
             "steal": "Split view: prompt/chat thread left, live running preview right — the now-standard AI-builder layout. Generation timeline: versioned checkpoints per prompt, roll back to any prior render.",
-            "why": "The chat-to-app trio defines the entry expectation; app-box’s gate history (approve/reject/regenerate) should look like v0’s versioned checkpoints."
+            "why": "The chat-to-app trio defines the entry expectation; appbox’s gate history (approve/reject/regenerate) should look like v0’s versioned checkpoints."
           },
           {
             "name": "MagicPath",
@@ -697,7 +697,7 @@
               "caption": "prompt input on the multiplayer canvas"
             },
             "steal": "Prompt-to-canvas, not prompt-to-chat — generated screens land as tiles on the infinite canvas; the canvas is the document. Multi-page flow generation: one prompt, a connected sequence of screens.",
-            "why": "The strongest existing proof of app-box’s core layout — AI is for generation, hands are for refinement."
+            "why": "The strongest existing proof of appbox’s core layout — AI is for generation, hands are for refinement."
           }
         ]
       },
@@ -727,7 +727,7 @@
               "file": "vercel__deployment-checks.png",
               "caption": "deployment checks — named, blocking conditions"
             },
-            "steal": "Deployment Checks = app-box’s gates: named, blocking conditions as a checklist with running/succeeded/failed states. Check row: name, status icon, duration, expandable output, re-run affordance.",
+            "steal": "Deployment Checks = appbox’s gates: named, blocking conditions as a checklist with running/succeeded/failed states. Check row: name, status icon, duration, expandable output, re-run affordance.",
             "why": "The best quality-gate-as-UI pattern in the industry — checks-as-UI is the founder’s gate model verbatim."
           },
           {
@@ -738,7 +738,7 @@
               "file": "github-actions__visualization-graph.png",
               "caption": "workflow visualization graph"
             },
-            "steal": "The pattern every developer already knows — app-box wins by being familiar here, not novel. Job graph + expandable per-step logs.",
+            "steal": "The pattern every developer already knows — appbox wins by being familiar here, not novel. Job graph + expandable per-step logs.",
             "why": "Familiarity is the feature: the pipeline run page should read instantly to anyone who has watched an Actions run."
           },
           {
@@ -750,7 +750,7 @@
               "caption": "issue detail — stack frames to file:line"
             },
             "steal": "Issue stream rows: severity color bar, culprit (file:function), event count, first/last seen. Map to SARIF: severity chip, rule ID, file:line chip, occurrence count across runs.",
-            "why": "app-box’s SARIF findings need Sentry’s discipline — aggregated, deduplicated, ranked by severity — or the founder drowns in linter noise."
+            "why": "appbox’s SARIF findings need Sentry’s discipline — aggregated, deduplicated, ranked by severity — or the founder drowns in linter noise."
           }
         ]
       },
@@ -1067,8 +1067,8 @@
       },
       {
         "at": "09:44",
-        "text": "R1 Dogfood carries 49 stories — app-box designs, builds and ships itself; Michelle’s 20-minute evaluation.",
-        "textPlain": "The first release has 49 stories: app-box builds itself, and Michelle can judge it in 20 minutes.",
+        "text": "R1 Dogfood carries 49 stories — appbox designs, builds and ships itself; Michelle’s 20-minute evaluation.",
+        "textPlain": "The first release has 49 stories: appbox builds itself, and Michelle can judge it in 20 minutes.",
         "artifact": "map/releases"
       },
       {
@@ -1135,7 +1135,7 @@
         "dogfood",
         "first release"
       ],
-      "text": "R1 Dogfood is 49 stories across all 9 epics — app-box designs, builds and ships itself, then Michelle evaluates it in 20 minutes. The swimlanes on the map show the split.",
+      "text": "R1 Dogfood is 49 stories across all 9 epics — appbox designs, builds and ships itself, then Michelle evaluates it in 20 minutes. The swimlanes on the map show the split.",
       "artifact": "map/releases"
     },
     {

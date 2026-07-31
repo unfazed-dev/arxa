@@ -1,6 +1,6 @@
 # 08 — The macOS desktop app
 
-**Goal.** app_box itself: a chromed Stacked MVVM macOS app, forked from the
+**Goal.** appbox itself: a chromed Stacked MVVM macOS app, forked from the
 showcase app so the chrome, theming and seed data are copied, not written.
 
 **Blocks:** 09, 10, 12, 14. **Depends on:** 02.
@@ -24,7 +24,7 @@ is step 8.2 and is the one real cost of this base.
       surfaces). Keep the **chrome, theming, splash, navigation and the
       services/facades/repositories skeleton** — that skeleton is the point of
       this base.
-- [x] **8.4** Rebrand: app_box name, logo, splash, accent. Branding flows
+- [x] **8.4** Rebrand: appbox name, logo, splash, accent. Branding flows
       through the kit's generated brand colours — **do not hand-edit generated
       colour files**.
 - [x] **8.5** Add macOS **Keychain Sharing entitlements to BOTH**
@@ -33,7 +33,7 @@ is step 8.2 and is the one real cost of this base.
 - [x] **8.6** Implement credential storage on `flutter_secure_storage`. **Never
       hand-rolled crypto.** State the active tier in the UI — *"stored in the
       macOS Keychain"*.
-- [x] **8.7** Build the surfaces from [`../../design/app-box-persona-design-brief.md`](../../design/app-box-persona-design-brief.md)
+- [x] **8.7** Build the surfaces from [`../../design/appbox-persona-design-brief.md`](../../design/appbox-persona-design-brief.md)
       §10 — the 20-surface inventory with its states. `settings.kits` must render
       **wired vs stubbed honestly**; a buyer who picks a stubbed provider and
       meets `UnimplementedError` at build time has been misled.
@@ -59,7 +59,7 @@ is step 8.2 and is the one real cost of this base.
 
 ## Done-when
 
-1. `flutter build macos` succeeds; the app launches with app_box branding.
+1. `flutter build macos` succeeds; the app launches with appbox branding.
 2. **Credential proof: write → restart → read back in a signed and notarised
    build.** Not `flutter run --release` — two known macOS failure modes (App
    Group missing from `keychain-access-groups`, hardened runtime after

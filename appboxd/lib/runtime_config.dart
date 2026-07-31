@@ -2,11 +2,11 @@ import 'dart:convert';
 import 'dart:io';
 
 /// The daemon's runtime config: the app-side sections of the legacy
-/// `app_box.config.json` merged with `companion.config.json` into the planned
+/// `appbox.config.json` merged with `companion.config.json` into the planned
 /// single-config shape (one file, companion values under a `companion`
 /// section — superseded merge plan step 4; R3 forbids literals in code).
 ///
-/// The repo-level `config/app-box.config.json` stays the pipeline's SSOT for
+/// The repo-level `config/appbox.config.json` stays the pipeline's SSOT for
 /// targets/kit SHA; this loader holds runtime values only (credential,
 /// pipeline, harness, mcp, launch, licence, prototype, intake, companion).
 class RuntimeConfig {

@@ -8,16 +8,16 @@ that make R3 (no hardcode) and R4 (one folder per gate) enforceable.
 ## Target layout
 
 ```
-app-box/
+appbox/
   app/                      the Flutter desktop app          (plan 08)
   companion/                the iOS companion                (plan 12)
   skills/
-    app-box-designer/       (plan 01)  ← SSOT, symlinked into ~/.agents/skills
-    app-box-intake/         (plan 10)
-    app-box-scaffolder/     (plan 03)
-    app-box-reviewer/       (plan 03)
-    app-box-builder/        (plan 03)
-    app-box-deployer/       (plan 11)
+    appbox-designer/       (plan 01)  ← SSOT, symlinked into ~/.agents/skills
+    appbox-intake/         (plan 10)
+    appbox-scaffolder/     (plan 03)
+    appbox-reviewer/       (plan 03)
+    appbox-builder/        (plan 03)
+    appbox-deployer/       (plan 11)
   gates/
     _common/                shared helpers — the ONLY sideways import allowed
     freeze/
@@ -34,7 +34,7 @@ app-box/
     emit_structure/
     emit_surfaces/
   config/
-    app-box.config.json     targets, ladder widths, ports, kit SHA
+    appbox.config.json     targets, ladder widths, ports, kit SHA
   docs/
   THIRD-PARTY-NOTICES.md
 ```
@@ -43,7 +43,7 @@ app-box/
 
 - [x] **2.1** Create the tree above. Every leaf gets a `README.md` stating what
       belongs in it and what does not — one paragraph, no filler.
-- [x] **2.2** Write `config/app-box.config.json` with **every** value that any
+- [x] **2.2** Write `config/appbox.config.json` with **every** value that any
       later plan would otherwise inline:
       ```json
       {
@@ -77,7 +77,7 @@ app-box/
 ## Done-when
 
 1. The tree exists; every leaf has a `README.md`.
-2. `config/app-box.config.json` parses and holds every tunable named above.
+2. `config/appbox.config.json` parses and holds every tunable named above.
 3. `tools/lint_conventions.sh` **passes on the empty tree** and **fails** on a
    planted violation of each of its four rules — prove all four (R5).
 4. No plan after this one needs to invent a folder.

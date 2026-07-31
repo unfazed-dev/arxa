@@ -5,8 +5,8 @@ gate drift-checks against — from the **authored layer**: the producer's
 `models/screens_model/registry.json` and `app.routes.js`.
 
 ```sh
-tools/emit_structure/emit_structure.py --app <app-root> --design-dir designs/app-box-app        # emit
-tools/emit_structure/emit_structure.py --app <app-root> --design-dir designs/app-box-app --check # drift guard
+tools/emit_structure/emit_structure.py --app <app-root> --design-dir designs/appbox-app        # emit
+tools/emit_structure/emit_structure.py --app <app-root> --design-dir designs/appbox-app --check # drift guard
 tools/emit_structure/emit_structure.py --self-test                                              # hermetic
 ```
 
@@ -49,7 +49,7 @@ modules it imports, design-root-relative). `shell` is the registry's shell group
 
 ```jsonc
 {
-  "$schema": "app-box/structure@1",
+  "$schema": "appbox/structure@1",
   "registry": "models/screens_model/registry.json",
   "shellRoots": { "projects": "/", "design": "/design", ... },
   "screens": [

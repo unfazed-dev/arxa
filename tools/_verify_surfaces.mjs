@@ -12,8 +12,8 @@ import vm from 'node:vm';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '..');
-const DESIGN = path.join(ROOT, 'designs', 'app-box-app');
-const RUNTIME = path.join(ROOT, 'skills', 'app-box-designer', 'runtime');
+const DESIGN = path.join(ROOT, 'designs', 'appbox-app');
+const RUNTIME = path.join(ROOT, 'skills', 'appbox-designer', 'runtime');
 
 // route -> states (derived from the reference design's viewmodels; recompute
 // by scanning app.routes.js + STATES if the design changes).
@@ -36,7 +36,7 @@ const ROUTES = {
 
 function startNodeServer() {
   return new Promise((resolve, reject) => {
-    const p = spawn('node', [path.join(RUNTIME, 'serve.mjs'), 'app-box-app', '--port', '0', '--json'], {
+    const p = spawn('node', [path.join(RUNTIME, 'serve.mjs'), 'appbox-app', '--port', '0', '--json'], {
       cwd: ROOT,
     });
     let buf = '';

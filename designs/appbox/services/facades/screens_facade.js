@@ -1,6 +1,6 @@
 // appbox:provenance
-// generator: app-box  licence: free  project: 662368770980
-// Built with app-box (free tier) — https://appbox.dev
+// generator: appbox  licence: free  project: 662368770980
+// Built with appbox (free tier) — https://appbox.dev
 // ScreensFacade — composes the registry into view-ready context.
 // ViewModels talk to facades, never to repositories or fixtures directly.
 // Labels render through the runtime translator: each registry entry carries

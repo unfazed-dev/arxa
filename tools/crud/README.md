@@ -15,7 +15,7 @@ The one write path for adding, renaming and removing a feature on the
 
 Editing generated output makes a second writer and kills the regenerate-and-diff
 gate. Every surface that edits a feature — the desktop GUI, the chat, the
-companion, `app-box-designer` — routes through this module so that nothing but
+companion, `appbox-designer` — routes through this module so that nothing but
 the pipeline's emitters touch the generated layer.
 
 ## Operations

@@ -105,7 +105,7 @@ need "$o" "approval STALE" "stale approval fails loudly"
 need "$o" "targets changed since approval" "names the reason (targets changed)"
 
 # ---- htmx producer: shape detection + htmx shape contract (skip render) ----
-# Producer-shape seam (dogfood P14 #1): an app-box-designer design (app.routes.js
+# Producer-shape seam (dogfood P14 #1): an appbox-designer design (app.routes.js
 # + registry + ui/views) is detected as htmx and must NOT need tokens.json /
 # exclusions.json / surfaces/*.html (the stacked_kit contract).
 TH="$(mktemp -d)"

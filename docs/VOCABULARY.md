@@ -1,7 +1,7 @@
-# app-box — VOCABULARY
+# appbox — VOCABULARY
 
 **This document is sacred.** It is the single source of truth for the words
-every human and every agent working on app-box uses. When two documents, two
+every human and every agent working on appbox uses. When two documents, two
 agents, or a human and an LLM disagree about what a word means, the conflict
 resolves **here** — not in the doc that shouted loudest or shipped most
 recently.
@@ -30,7 +30,7 @@ paths. Ownership attribution (term → layer) is the only pointer allowed.
 
 Terms for the thing we are selling and the people it serves.
 
-**app-box**:
+**appbox**:
 The product: one app plus its daemon that turns a client conversation into a
 shipped mobile/desktop app, with a human approving every irreversible step.
 A chat-centric Flutter app driving a deterministic design→build→ship pipeline
@@ -84,7 +84,7 @@ _Layer_: Product
 
 **Release Swimlane**:
 Which release a story lands in: R1 Dogfood, R2 Anywhere, or R3 Delight.
-The story map's horizontal grouping per release — R1 Dogfood (app-box ships
+The story map's horizontal grouping per release — R1 Dogfood (appbox ships
 itself; Michelle's 20-minute evaluation), R2 Anywhere (remote/review depth),
 R3 Delight (polish).
 _Avoid_: milestone, sprint, phase (as release names)
@@ -117,14 +117,14 @@ _Avoid_: step, tab (a stage is a phase, never a navigation element)
 _Layer_: Product
 
 **Main Panel**:
-The big middle area of the app: everything app-box shows you — a file, a
+The big middle area of the app: everything appbox shows you — a file, a
 design, the story map, a video — appears there, automatically in the right
 form.
 The center chrome region between the activity and composer panels; the single
 render destination for all content, in both the design prototype and the
 shipped app. Fully automatic: the active shell plus the content type select
 the mode and the panel composition — the user has no mode toggles, no tabs,
-no panel picking. Every file made available in app-box (code, text, image,
+no panel picking. Every file made available in appbox (code, text, image,
 svg, pdf, video) renders here, read-only, as does all stage content.
 _Avoid_: mainboard (proposed, renamed before landing), center panel,
 workspace, canvas
@@ -222,7 +222,7 @@ _Avoid_: login (touch devices), linking
 _Layer_: Product
 
 **Tailnet**:
-Your private network of your own devices; app-box never relays through a
+Your private network of your own devices; appbox never relays through a
 third-party cloud.
 A self-hosted WireGuard mesh (self-host compose or hosted Tailscale); daemon
 and apps are in-process nodes and approvals bind to node identity.
@@ -264,7 +264,7 @@ _Avoid_: attachment, mention
 _Layer_: Product
 
 **BYO Key**:
-You bring your own AI key; app-box never meters or marks up inference.
+You bring your own AI key; appbox never meters or marks up inference.
 Bring-your-own-key credential model: keys live in the OS vault, are never
 logged, and inference cost stays the user's — a structural cost advantage,
 not a discount tier.
@@ -338,7 +338,7 @@ _Avoid_: lock (bare), finalize, sign-off
 _Layer_: Pipeline
 
 **Drift**:
-When reality quietly moves away from what was approved — app-box treats that
+When reality quietly moves away from what was approved — appbox treats that
 as an alarm, not a shrug.
 Any divergence between the frozen manifest and current state; the drift
 report plus brief-to-surface-to-code traceability is a freeze-stage
@@ -419,7 +419,7 @@ _Avoid_: vendoring strategy, package mode
 _Layer_: Kit
 
 **Lucide**:
-The icon set — the only icons app-box ships, written as a name, never drawn
+The icon set — the only icons appbox ships, written as a name, never drawn
 by hand.
 The icon vocabulary: `icon('name')` inlines a vendored Lucide glyph at design
 time; `KitGlyphs.lucide('name')` resolves the same name in Flutter.
@@ -644,7 +644,7 @@ Dead words and what replaced them. Never reintroduce the left column.
 | tab | **Shell** | Shell is THE grouping/navigation unit; the code rename is landing alongside this entry |
 | tab-group / tab-group shell | **Shell** | same retirement; older flow docs still say it |
 | top stage strip | **Footer Panel** | the read-only stage timeline moved to the bottom strip, which is now the footer panel; the top strip is removed |
-| companion (app) | **app-box app** | consolidation (2026-07-28): one app + daemon, no separate companion |
+| companion (app) | **appbox app** | consolidation (2026-07-28): one app + daemon, no separate companion |
 | Totem Cloud | **tailnet** | self-hosted remote only; no third-party relay, no Totem-run cloud |
 | spine (bare) | **Data Spine** | "the spine" meant both the system shape and the artifact's data flow; the artifact one is always *data* spine |
 | bottom bar | **Footer Panel** | panel consolidation (2026-07-30): all chrome is named panels; dead in code (`{% block footer %}`, `#panel-footer`) |

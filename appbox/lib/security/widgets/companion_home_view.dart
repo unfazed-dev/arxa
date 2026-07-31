@@ -60,7 +60,7 @@ class _CompanionHomeViewState extends State<CompanionHomeView> {
       payload = jsonDecode(input) as Map<String, dynamic>;
     } else {
       payload = {
-        'tag': 'app-box-prototype-ready',
+        'tag': 'appbox-prototype-ready',
         'url': input,
         'port': Uri.tryParse(input)?.port ?? 0,
         'host': Uri.tryParse(input)?.host ?? '',
@@ -118,7 +118,7 @@ class _CompanionHomeViewState extends State<CompanionHomeView> {
                 border: const OutlineInputBorder(),
                 labelText: l10n.readyLineFieldLabel,
                 // Literal payload example — a code sample, not prose.
-                hintText: '{"tag":"app-box-prototype-ready","url":...}',
+                hintText: '{"tag":"appbox-prototype-ready","url":...}',
               ),
             ),
             const SizedBox(height: 12),

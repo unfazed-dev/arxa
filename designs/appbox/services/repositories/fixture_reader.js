@@ -1,6 +1,6 @@
 // appbox:provenance
-// generator: app-box  licence: free  project: 662368770980
-// Built with app-box (free tier) — https://appbox.dev
+// generator: appbox  licence: free  project: 662368770980
+// Built with appbox (free tier) — https://appbox.dev
 // Shared fixture reader — the only file that touches models/ JSON on disk.
 // Repositories build on this; the productionize DB swap happens behind them.
 import { readFileSync } from 'node:fs';

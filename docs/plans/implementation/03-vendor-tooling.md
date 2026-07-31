@@ -1,6 +1,6 @@
 # 03 — Vendor the tooling
 
-**Goal.** app_box owns a working copy of the pipeline and phase skills, with no
+**Goal.** appbox owns a working copy of the pipeline and phase skills, with no
 dependency on a private repo and no reference to where it came from.
 
 **Blocks:** 04, 11, 13. **Depends on:** 02.
@@ -41,15 +41,15 @@ signal.
       that reports "ok" is the exact stale-green pattern this project documents.
       Skip cleanly (exit 0, message) when upstream is unreachable — unreachable
       is not the same as fresh, and the message must say so.
-- [x] **3.4** **Rename into app_box's namespace** (R2). Strip `flutter-crew`,
+- [x] **3.4** **Rename into appbox's namespace** (R2). Strip `flutter-crew`,
       `crew`, `kimi`, `stacked_kit`-as-tool-identity, `p2` from: filenames,
       function names, CLI help, log strings, config keys, doc links. Skills
-      become `app-box-scaffolder`, `app-box-reviewer`, `app-box-builder`,
-      `app-box-deployer`.
+      become `appbox-scaffolder`, `appbox-reviewer`, `appbox-builder`,
+      `appbox-deployer`.
       **Not stripped:** `stacked_kit` where it names a real runtime dependency
       of a scaffolded app (R2 exception 2).
 - [x] **3.5** Move `pipeline.sh` to `pipeline/pipeline.sh` and repoint every
-      path it resolves at `config/app-box.config.json` and `pipeline/state/`.
+      path it resolves at `config/appbox.config.json` and `pipeline/state/`.
       **No absolute paths** (R3).
 - [x] **3.6** Replace every hardcoded constant found during 3.4–3.5 with a
       config lookup. Known offenders from the survey: the **390×844 viewport
@@ -57,7 +57,7 @@ signal.
       **five-file form-factor list in `scaffold_coverage_gate.sh:144`**.
       Both become config/state reads — plans 06 and 05 depend on it.
 - [x] **3.7** Copy `gen_playbook.py` and its `TODO(prose)` discipline verbatim
-      (architecture §20). Generate one playbook per `app-box-*` skill. Copy the
+      (architecture §20). Generate one playbook per `appbox-*` skill. Copy the
       matching assertion from `test_memory.sh` that the marker count is zero.
 - [x] **3.8** Run every copied suite. Record the pass count in `VENDOR.lock` as
       the baseline. Any later drop is a regression.
@@ -68,7 +68,7 @@ Separate from tooling vendoring above: this is how a **scaffolded app** gets its
 kit packages, since the kit is private and no buyer can pull it.
 
 - [x] **3.9** Add `dependencyMode: "vendored" | "hosted"` to
-      `config/app-box.config.json`, defaulting to `vendored`. **Every kit
+      `config/appbox.config.json`, defaulting to `vendored`. **Every kit
       reference in a generated `pubspec.yaml` goes through this switch.** No
       code branches on the kit being private — it branches on the config value.
       This is what makes publishing a config flip rather than a rewrite.
@@ -123,14 +123,14 @@ Resolved during execution; recorded so downstream plans inherit the decisions.
 The plan's 3.4 skill list was incomplete. Resolved per the builder brief:
 
 - `flutter-crew/designer` → **DROPPED**, not vendored. Superseded by P01's
-  `skills/app-box-designer/` (delivered). The vendored source copy and its
+  `skills/appbox-designer/` (delivered). The vendored source copy and its
   `skill_designer` row were removed from `tools/vendor/`.
-- `builder` → `skills/app-box-builder/` · `deployer` → `skills/app-box-deployer/`
-  · `review` → `skills/app-box-reviewer/` (P02 skeleton dirs).
-- `tester` → `skills/app-box-tester/` · `lint` → `skills/app-box-lint/`
+- `builder` → `skills/appbox-builder/` · `deployer` → `skills/appbox-deployer/`
+  · `review` → `skills/appbox-reviewer/` (P02 skeleton dirs).
+- `tester` → `skills/appbox-tester/` · `lint` → `skills/appbox-lint/`
   (**created** — P02's skeleton omitted both).
 
-Each carries a renamed `SKILL.md` (frontmatter `name: app-box-*`) plus, for lint,
+Each carries a renamed `SKILL.md` (frontmatter `name: appbox-*`) plus, for lint,
 `lint_kb.py`. `crew`/`flutter-crew` identity refs stripped in-content per R2.
 
 ### A2 — `crew` rename target
@@ -150,7 +150,7 @@ runtime dependency (R2 exception 2); `stacked_kit` stays ABSENT from
 Two unavoidable collisions, both resolved with behaviour-preserving shims (the
 value of the work was not changing; only the literal token was):
 
-1. **`skills/app-box-designer/selftest.sh`** (P01-delivered, fenced) assembles the
+1. **`skills/appbox-designer/selftest.sh`** (P01-delivered, fenced) assembles the
    stripped-name grep pattern via split printf args to avoid self-match. Its
    `lutter-crew` fragment contained the bare token `crew`, which became a
    stripped name. Resolved by splitting `flutter-crew` one level further
@@ -166,7 +166,7 @@ value of the work was not changing; only the literal token was):
 
 ### A4 — `designs/` `p2` collision (out of fence, minimal fix)
 
-`designs/app-box-app/models/project_model/{project_seed,project_fixtures}.json`
+`designs/appbox-app/models/project_model/{project_seed,project_fixtures}.json`
 used `p1`/`p2`/`p3` as generic project ids; `p2` collided with the stripped name.
 `designs/` is neither owned nor fenced in the brief; the ids are self-contained
 (no foreign-key refs). Renamed the scheme to `proj-1`/`proj-2`/`proj-3` in both

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// tools/bundle_viewmodels.js -- app_box prototype runtime bundler (plan 09 step 9.3).
+// tools/bundle_viewmodels.js -- appbox prototype runtime bundler (plan 09 step 9.3).
 //
 // A frozen design's viewmodels are ES modules; embedded JS engines resolve
 // modules poorly. This bundler walks the import graph rooted at a design's

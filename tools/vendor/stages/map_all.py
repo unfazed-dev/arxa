@@ -8,7 +8,7 @@ only id + variant + motion; this script turns those into the 3 mappings.
 
 Determinism: identical inputs → identical maps.json (dict-sorted JSON, no clocks).
 
-Resolver policy (see docs/plans/app-box-per-platform-fallback.md):
+Resolver policy (see docs/plans/appbox-per-platform-fallback.md):
     stack = "flutter"  (one Flutter codebase; each platform owns its fallback)
     ios:     glass("motion.glass-blur" ∈ motion) → GlassContainer(UiKitView), bridge=platformView
              else CUPERTINO widget (flutter-widgets.json `ios`), bridge=pureFlutter

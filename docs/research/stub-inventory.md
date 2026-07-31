@@ -13,16 +13,16 @@ throw UnimplementedError('PayPalPaymentsProvider is a stub (phase-later)');
 ```
 
 The registry lists `payments | native-first | Apple Pay` — **Apple Pay is the
-only wired path**. So the app_box **payment gate cannot be built on the
+only wired path**. So the appbox **payment gate cannot be built on the
 payments kit as it stands**. Either Stripe gets implemented (the kit's own TODO
-says *"implement with `flutter_stripe`"*), or app_box's licensing runs through
+says *"implement with `flutter_stripe`"*), or appbox's licensing runs through
 something outside the kit entirely.
 
 This is worth stating plainly because §17 placed the payment gate at
-`app-box-builder` on the assumption the machinery existed. The *placement* is
+`appbox-builder` on the assumption the machinery existed. The *placement* is
 still right; the *implementation* has no foundation yet.
 
-## 🟠 Auth — the other one app_box needs itself
+## 🟠 Auth — the other one appbox needs itself
 
 | symbol | state |
 |---|---|
@@ -30,7 +30,7 @@ still right; the *implementation* has no foundation yet.
 | `GoogleSignInProvider.signIn` | `UnimplementedError` (phase-later) |
 | `SeedAuthBackend` | stub (phase-4) |
 
-app_box's desktop app wants auth. `SeedAuthBackend` being a stub also means the
+appbox's desktop app wants auth. `SeedAuthBackend` being a stub also means the
 seeded/fake-data story the product promises is thinner than it reads.
 
 ## 🟡 Other stubs
@@ -50,7 +50,7 @@ seeded/fake-data story the product promises is thinner than it reads.
 | `n/a` | 1 | `showcase_app` (integration surface) |
 
 **`hasSkill: false` on all 23.** No kit has a phase skill today, so every
-`app-box-*` skill is the first of its kind — there is no prior art to copy
+`appbox-*` skill is the first of its kind — there is no prior art to copy
 inside the kit, only the flutter-crew stage contract.
 
 ## flutter-crew
@@ -79,6 +79,6 @@ discipline missing elsewhere.
 1. Nothing blocks the **design → freeze → scaffold** path; that is all wired.
 2. **Deploy is wired** for the targets that matter (fastlane, shorebird, CF
    Pages). Do not advertise vercel.
-3. **Payments and auth are the two real holes**, and app_box needs both for
+3. **Payments and auth are the two real holes**, and appbox needs both for
    itself. They are product work, not pipeline work — sequence them
    accordingly rather than discovering it at the payment gate.

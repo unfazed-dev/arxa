@@ -14,7 +14,7 @@ is emit_playground's committed, diff-clean output. Two producers, two frozen
 trees; clobbering one from the other would silently destroy an SSOT.
 
 Usage:
-  emit_htmx.py [--app <app-root>]     emit (default app root: $KIT_APP)
+  emit_htmx.py [--app <app-root>]     emit (default app root: $APPBOX_APP)
   emit_htmx.py --app <r> --check      pre-gate drift guard (writes nothing)
   emit_htmx.py --self-test            hermetic calibration (fixtures/)
   EMIT_RENDER=skip emit_htmx.py       skip the browser pass entirely
@@ -80,11 +80,11 @@ FIXTURE_APP = TOOL.parent / "fixtures" / "app"
 CLOCK = TOOL.parent / "frozen_clock.mjs"
 REPO = TOOL.parents[3]  # tools/vendor/emit_htmx/emit_htmx.py → repo root
 
-# Mobile viewport is config-driven (R3: config/app-box.config.json viewports.mobile),
+# Mobile viewport is config-driven (R3: config/appbox.config.json viewports.mobile),
 # not the 390×844 literal. Fallback only if config is absent/unreadable.
 def _cfg_viewport():
     try:
-        d = json.loads((REPO / "config" / "app-box.config.json").read_text())
+        d = json.loads((REPO / "config" / "appbox.config.json").read_text())
         v = d["viewports"]["mobile"]
         return int(v["width"]), int(v["height"])
     except Exception:
@@ -501,10 +501,10 @@ def self_test():
 
         # -- no app root / skip mode: environment discipline before rendering
         e = dict(os.environ)
-        e.pop("KIT_APP", None)
+        e.pop("APPBOX_APP", None)
         e.pop("EMIT_RENDER", None)
         r = subprocess.run([sys.executable, str(TOOL)], capture_output=True, text=True, env=e)
-        chk(r.returncode == 2, "no --app and no $KIT_APP → exit 2 (environment)")
+        chk(r.returncode == 2, "no --app and no $APPBOX_APP → exit 2 (environment)")
 
         r = subprocess.run([sys.executable, str(TOOL), "--app", str(app)],
                            capture_output=True, text=True,
@@ -597,7 +597,7 @@ def self_test():
 def main(argv):
     ap = argparse.ArgumentParser(
         description="emit chrome-stripped static surfaces from the design/new-htmx producer")
-    ap.add_argument("--app", help="app root (default: $KIT_APP)")
+    ap.add_argument("--app", help="app root (default: $APPBOX_APP)")
     ap.add_argument("--check", action="store_true",
                     help="drift guard: render + compare against on-disk surfaces, write nothing")
     ap.add_argument("--self-test", action="store_true", help="hermetic calibration against fixtures/")
@@ -608,9 +608,9 @@ def main(argv):
         self_test()
         return
 
-    app = args.app or os.environ.get("KIT_APP")
+    app = args.app or os.environ.get("APPBOX_APP")
     if not app:
-        print("emit: ERROR (exit 2) — no app root: pass --app <app-root> or set $KIT_APP",
+        print("emit: ERROR (exit 2) — no app root: pass --app <app-root> or set $APPBOX_APP",
               file=sys.stderr)
         sys.exit(2)
     app = Path(app).resolve()

@@ -221,12 +221,12 @@ String? _resolveClockPath(String htmxDir) {
   return null;
 }
 
-/// Read viewport from config/app-box.config.json, fallback to 390×844.
+/// Read viewport from config/appbox.config.json, fallback to 390×844.
 (int, int) _cfgViewport(String htmxDir) {
   try {
     var dir = Directory(htmxDir);
     for (var i = 0; i < 20; i++) {
-      final cfg = File(p.join(dir.path, 'config', 'app-box.config.json'));
+      final cfg = File(p.join(dir.path, 'config', 'appbox.config.json'));
       if (cfg.existsSync()) {
         final d = jsonDecode(cfg.readAsStringSync()) as Map<String, dynamic>;
         final v =

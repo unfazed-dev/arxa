@@ -5,7 +5,7 @@
 // the design-approval stamp is valid, and every surface renders clean at every
 // DERIVED viewport — the width set implied by --targets via
 // pipeline/state/targets.derivation.json (6.4). Widths come ONLY from
-// config/app-box.config.json (R3); there are no viewport literals here.
+// config/appbox.config.json (R3); there are no viewport literals here.
 //
 // Checks (cheapest first, all must pass):
 //   1. shape      — every required input present (per producer: htmx vs stacked_kit)
@@ -189,7 +189,7 @@ class _Derivation {
 
 _Derivation _deriveViewports(List<String> targets, String repoRoot) {
   final derivationPath = '$repoRoot/pipeline/state/targets.derivation.json';
-  final configPath = '$repoRoot/config/app-box.config.json';
+  final configPath = '$repoRoot/config/appbox.config.json';
 
   Map<String, dynamic> tbl;
   Map<String, dynamic> cfgVps;
@@ -810,7 +810,7 @@ Future<List<String>> _renderHtmxCdp(
   String repoRoot,
   List<String> details,
 ) async {
-  final runtimeDir = '$repoRoot/skills/app-box-designer/runtime';
+  final runtimeDir = '$repoRoot/skills/appbox-designer/runtime';
   final served = await _startDesignerServer(runtimeDir, designRoot);
   if (served.base == null) {
     served.dispose();
@@ -994,7 +994,7 @@ Future<List<String>?> _renderFallbackStacked(
   final uv = await _which('uv');
   if (uv == null) return null;
 
-  final configPath = '$repoRoot/config/app-box.config.json';
+  final configPath = '$repoRoot/config/appbox.config.json';
   final derived = viewports.map((v) => v.name).join(' ');
   final py = _stackedRenderScript;
   final res = await Process.start(
@@ -1038,7 +1038,7 @@ Future<List<String>?> _renderFallbackHtmx(
   final node = await _which('node');
   if (node == null) return null;
 
-  final runtimeDir = '$repoRoot/skills/app-box-designer/runtime';
+  final runtimeDir = '$repoRoot/skills/appbox-designer/runtime';
   final served = await _startDesignerServer(runtimeDir, designRoot);
   if (served.base == null) {
     details.add('  FAIL: render: designer server did not start '

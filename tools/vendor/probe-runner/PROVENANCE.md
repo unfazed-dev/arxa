@@ -4,10 +4,10 @@
 - **Copied:** 2026-07-28
 - **Licence:** Totem Labs internal — no third-party licence required.
 - **Update policy:** re-copy from the source skill; the copy in this repo
-  (`tools/vendor/probe-runner/`) is canonical for app-box. Do not patch it
+  (`tools/vendor/probe-runner/`) is canonical for appbox. Do not patch it
   here piecemeal — fix upstream, then re-vendor.
 - **Excluded on copy:** `__pycache__`, `.DS_Store`.
-- **Consumers:** `skills/app-box-tester`, `skills/app-box-moodboarder`, and
+- **Consumers:** `skills/appbox-tester`, `skills/appbox-moodboarder`, and
   the appboxd daemon (shells out to its scripts per
   `docs/plans/consolidate-one-app-plus-daemon.md`, O1 vendoring pattern).
 

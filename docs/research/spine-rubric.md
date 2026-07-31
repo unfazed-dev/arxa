@@ -1,4 +1,4 @@
-# app_box spine rubric — PRE-REGISTERED
+# appbox spine rubric — PRE-REGISTERED
 
 Written **before** any suite was run or any repo scored. The point of writing it
 first is that a rubric authored after the measurements is not a rubric, it is a

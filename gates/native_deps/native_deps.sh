@@ -8,7 +8,7 @@
 # WHY THIS GATE EXISTS. Flutter 3.44 enables SwiftPM by default and warns, per
 # build, that plugins without a Package.swift "will become an error in a future
 # version of Flutter". That warning scrolls past in build output nobody reads,
-# and it is invisible to a generated app until someone happens to look. app_box
+# and it is invisible to a generated app until someone happens to look. appbox
 # shipped for months with flutter_js in exactly that state. A generated app must
 # not inherit a dependency that is scheduled to stop building.
 #

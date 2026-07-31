@@ -3,7 +3,7 @@
 # gen_playbook.py emits a <!-- TODO(prose): ... --> marker for every narrative
 # section it could not fill from source. A shipped playbook must have ZERO: a
 # marker is an unfilled section, i.e. an incomplete doc that reads as complete.
-# This is the app-box-* skill counterpart of test_memory.sh's per-kit assertion
+# This is the appbox-* skill counterpart of test_memory.sh's per-kit assertion
 # ("rich README => zero TODO(prose) markers in generated playbooks").
 #
 # R5: includes a negative case — plant a marker and prove the check goes red.
@@ -17,11 +17,11 @@ ok()  { echo "  PASS: $1"; pass=$((pass + 1)); }
 bad() { echo "  FAIL: $1"; failc=$((failc + 1)); }
 
 PLAYBOOKS=(
-  "$SKILLS/app-box-builder/BUILDER_playbook.mdx"
-  "$SKILLS/app-box-deployer/DEPLOYER_playbook.mdx"
-  "$SKILLS/app-box-reviewer/REVIEWER_playbook.mdx"
-  "$SKILLS/app-box-tester/TESTER_playbook.mdx"
-  "$SKILLS/app-box-lint/LINT_playbook.mdx"
+  "$SKILLS/appbox-builder/BUILDER_playbook.mdx"
+  "$SKILLS/appbox-deployer/DEPLOYER_playbook.mdx"
+  "$SKILLS/appbox-reviewer/REVIEWER_playbook.mdx"
+  "$SKILLS/appbox-tester/TESTER_playbook.mdx"
+  "$SKILLS/appbox-lint/LINT_playbook.mdx"
 )
 
 # 1 — happy path: every shipped playbook has zero TODO(prose) markers.

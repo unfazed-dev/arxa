@@ -1,6 +1,6 @@
 # Remote control, device preview, and the chat surface
 
-Research for: an iOS companion that pairs to the desktop app by QR, so app_box
+Research for: an iOS companion that pairs to the desktop app by QR, so appbox
 can be driven remotely — and an industry-standard LLM chat inside the desktop
 app.
 
@@ -47,7 +47,7 @@ attacker's session. Reported mitigations:
 | Biometric/PIN before approving | blocks opportunistic physical access |
 | Treat numeric pairing-code fallback as high risk | it is the weaker path |
 
-**app_box's case is materially easier and should stay that way.** Pairing is
+**appbox's case is materially easier and should stay that way.** Pairing is
 **LAN-local, with no cloud relay** — so the phishing shape above (a public web
 client whose QR can be lifted) does not exist unless we build it. Concretely:
 
@@ -96,12 +96,12 @@ one registry the model sees.
 |---|---|
 | `chat-mcp` (Electron, BYO key) | dynamic provider config for anything OpenAI-SDK-compatible; UI extractable for web so desktop and web share interaction logic |
 | RecurseChat | per-server **connection-state visualisation**; imports Claude Desktop config |
-| Azure MCP CLI Client | JSON-config schema registration; **interactive vs batch mode split** — directly relevant to app_box being both a GUI and a harness plugin |
+| Azure MCP CLI Client | JSON-config schema registration; **interactive vs batch mode split** — directly relevant to appbox being both a GUI and a harness plugin |
 | Cherry Studio / LM Studio / Kiln | multi-provider + local-model coverage |
 
 **🌡️ The scaling problem to plan for now: tool-context bloat.** As users add
 servers, the combined registry eats the context window. One approach in the
-wild is an MCP proxy filtering tool exposure with local embeddings. app_box is
+wild is an MCP proxy filtering tool exposure with local embeddings. appbox is
 especially exposed here because the pipeline itself wants to be a tool surface.
 
 ## 🔥 BYO-key credential storage — CLOSED

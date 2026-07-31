@@ -1,4 +1,4 @@
-# app_box — document index
+# appbox — document index
 
 **Start here.** Every document in this repo, what it settles, and when to read
 it. Builder agents: read `plans/implementation/00-README.md` next, then your
@@ -31,8 +31,8 @@ recorded. If your plan is ambiguous, stop and report — do not choose.
 |---|---|
 | [design/README.md](design/README.md) | index, reading order, standing notes (canonical language, citation rules) |
 | [design/personas.md](design/personas.md) | **Evan** (founder, 4 modes) and **Michelle** (indie iOS+Android dev, the buyer) — proto-personas with JTBD, frustrations, design-must-get-right |
-| [design/app-box-persona-design-brief.md](design/app-box-persona-design-brief.md) | handoff brief: actor model, cross-cutting constraints (three gates, credential tiers, stub honesty, viewport derivation), pinned-vs-open, the 20-surface inventory that seeds `registry.json` |
-| [design/app-box-design-generation-brief.md](design/app-box-design-generation-brief.md) | design-generation program: viewport ladder, foundation prompt, per-mode/persona stage prompts, coverage check — for driving `app-box-designer` |
+| [design/appbox-persona-design-brief.md](design/appbox-persona-design-brief.md) | handoff brief: actor model, cross-cutting constraints (three gates, credential tiers, stub honesty, viewport derivation), pinned-vs-open, the 20-surface inventory that seeds `registry.json` |
+| [design/appbox-design-generation-brief.md](design/appbox-design-generation-brief.md) | design-generation program: viewport ladder, foundation prompt, per-mode/persona stage prompts, coverage check — for driving `appbox-designer` |
 | [design/journeys/evan-founder-journey.md](design/journeys/evan-founder-journey.md) | Evan: full pipeline journey (intake → design → freeze → build → ship → remote → CRUD) |
 | [design/journeys/michelle-buyer-journey.md](design/journeys/michelle-buyer-journey.md) | Michelle: 20-minute evaluation (install → showcase → first project → build → evaluate-and-leave) |
 | [design/flows/README.md](design/flows/README.md) | flow-library layout, flow-doc template, conventions |
@@ -64,8 +64,8 @@ memory module, offline licence + §17 deploy paywall — see
 | doc | contents |
 |---|---|
 | [plans/consolidate-one-app-plus-daemon.md](plans/consolidate-one-app-plus-daemon.md) | **the shape going forward:** one Stacked app (`appbox/`, web/macOS/iOS/Android) + `appboxd/` daemon; full parity; target detection; provenance-bound approvals; self-host remote (no Totem Cloud); licence-only, pay at first deploy. Supersedes `merge-companion-into-one-flutter-project.md`, amends §17 |
-| [design/story-map.json](design/story-map.json) · [design/brief.md](design/brief.md) · [design/story_map.html](design/story_map.html) | the consolidated app's story map — 8 epics, 17 surfaces, 47 stories, R1 Dogfood / R2 Anywhere / R3 Delight. Feeds `app-box-designer` directly |
-| [moodboards/](moodboards/) | design references: `builder-and-pipeline.md`, `ai-builders-and-flows-canvas.md`, `companion-and-macos-polish.md` + `shots/` — produced by `skills/app-box-moodboarder/` (story-mapper → moodboarder → designer; `intake.moodboard` surface) |
+| [design/story-map.json](design/story-map.json) · [design/brief.md](design/brief.md) · [design/story_map.html](design/story_map.html) | the consolidated app's story map — 8 epics, 17 surfaces, 47 stories, R1 Dogfood / R2 Anywhere / R3 Delight. Feeds `appbox-designer` directly |
+| [moodboards/](moodboards/) | design references: `builder-and-pipeline.md`, `ai-builders-and-flows-canvas.md`, `companion-and-macos-polish.md` + `shots/` — produced by `skills/appbox-moodboarder/` (story-mapper → moodboarder → designer; `intake.moodboard` surface) |
 
 ---
 
@@ -92,7 +92,7 @@ memory module, offline licence + §17 deploy paywall — see
 | §16 | targets drive form-factor emission (macOS ⇒ 3 files, not 5) |
 | §17 | vendor the kit at a pinned SHA; payment gate at builder; deployer |
 | §18 | CRUD writes the registry, never scaffolded Dart; delete is the gap |
-| §19 | `app-box-designer` is an **MIT fork**, not a clean-room rewrite |
+| §19 | `appbox-designer` is an **MIT fork**, not a clean-room rewrite |
 | §21 | build order |
 | §22 | intake is an optional phase — **elicits, never generates** |
 
@@ -121,8 +121,8 @@ Copy from these. **Do not rewrite what already exists.**
 
 | path | what to take |
 |---|---|
-| `skills/app-box-designer/` | ✅ **DELIVERED** (plan 01). The design stage, in this repo. Symlinked to `~/.agents/skills/app-box-designer`. Run `./selftest.sh` and `node runtime/doctor.mjs` |
-| `skills/app-box-story-mapper/` | ✅ **DELIVERED** (MIT adaptation). Pre-design elicitation: Epic→Feature→Story map → `docs/design/brief.md` + `story-map.json` + `story_map.html`, feeding `app-box-designer` directly (intake bypassed; the brief's surface table is the 10.7 traceability source). Run `python3 scripts/generate_story_map.py --self-test` |
+| `skills/appbox-designer/` | ✅ **DELIVERED** (plan 01). The design stage, in this repo. Symlinked to `~/.agents/skills/appbox-designer`. Run `./selftest.sh` and `node runtime/doctor.mjs` |
+| `skills/appbox-story-mapper/` | ✅ **DELIVERED** (MIT adaptation). Pre-design elicitation: Epic→Feature→Story map → `docs/design/brief.md` + `story-map.json` + `story_map.html`, feeding `appbox-designer` directly (intake bypassed; the brief's surface table is the 10.7 traceability source). Run `python3 scripts/generate_story_map.py --self-test` |
 | `~/.agents/skills/kimi-design-htmx` | the fork base — **already forked; do not re-copy** |
 | `~/.agents/skills/kimi-design-flutter` | viewport archetypes (390/744) — doctrine only |
 | `/Volumes/developer_ssd/Developer/totem_labs/stacked_kit/tools` | `pipeline.sh` 1018, gates, `emit_*`, `kit_registry` |
@@ -150,14 +150,14 @@ hello-world Flutter binary. The bloat objection does not survive measurement.
 buyer's shipped app stops resolving dependencies when her licence lapses. That
 is runtime lock-in — the incumbent's one-way-export trap in a different costume
 — and it contradicts journey J10 and Michelle's second trust condition.
-**Rejected — gating app_box to kit-holders**, which deletes the buyer persona.
+**Rejected — gating appbox to kit-holders**, which deletes the buyer persona.
 
 **`dependencyMode` is a config value from day one** — see O3.
 
 ### ✅ O3 — publishing the kit — **deferred, and non-breaking whenever it happens**
 
 Publishing is a **config flip plus a migration command**, not a
-re-architecture, because `config/app-box.config.json` carries
+re-architecture, because `config/appbox.config.json` carries
 `dependencyMode: "vendored" | "hosted"` from the start.
 
 | on publish | outcome |

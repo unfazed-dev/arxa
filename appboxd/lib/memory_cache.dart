@@ -40,7 +40,7 @@ class ResponseCache {
   /// everything above this marker at ~0.1x input cost; [assemblePrompt]
   /// only enforces the order discipline — the gateway sets the actual
   /// breakpoint on the final block of the prefix region.
-  static const cacheBreakpointMarker = '--- app-box cache breakpoint ---';
+  static const cacheBreakpointMarker = '--- appbox cache breakpoint ---';
 
   Directory get _dir =>
       Directory(p.join(repoRoot, 'pipeline', 'state', 'memory', 'cache'));

@@ -14,7 +14,7 @@ Branches on producer shape, detected by `app.routes.js` at the design root
 
 - **stacked_kit producer** — full scaffold checks (C1–C5 below) over
   `lib/ui/views/.shell-structure.json` + the platform ceremonies.
-- **htmx producer (app-box-designer)** — the producer IS the authored layer; its
+- **htmx producer (appbox-designer)** — the producer IS the authored layer; its
   Flutter scaffold is downstream of the scaffolder and not yet present. So
   coverage **derives and reports** the target form-factor set the scaffold WILL
   require (e.g. `macos` → desktop → 3 files/surface) and **defers** the

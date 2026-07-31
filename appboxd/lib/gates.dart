@@ -44,8 +44,8 @@ class GateContext {
       ? '$appRoot/designs/appbox'
       : '$repoRoot/designs/appbox';
 
-  /// Path to config/app-box.config.json.
-  String get configFile => '$repoRoot/config/app-box.config.json';
+  /// Path to config/appbox.config.json.
+  String get configFile => '$repoRoot/config/appbox.config.json';
 }
 
 /// Result of running a gate.

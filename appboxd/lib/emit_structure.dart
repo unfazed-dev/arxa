@@ -12,7 +12,7 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 
-const banner = 'app-box/structure@1';
+const banner = 'appbox/structure@1';
 
 // export const surfaceId = 'stage.shell'
 final _surfaceIdRe = RegExp("export\\s+const\\s+surfaceId\\s*=\\s*['\"]([^'\"]+)['\"]");

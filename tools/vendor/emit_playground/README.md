@@ -11,7 +11,7 @@ pre-rendered.
 ## Usage
 
 ```sh
-python3 emit_playground.py [--app <app-root>]   # emit (default app: $KIT_APP)
+python3 emit_playground.py [--app <app-root>]   # emit (default app: $APPBOX_APP)
 python3 emit_playground.py --app <app-root> --check  # pre-gate drift guard
 python3 emit_playground.py --self-test          # hermetic calibration
 EMIT_RENDER=skip python3 emit_playground.py     # skip the browser pass
@@ -25,7 +25,7 @@ Exit discipline (`freeze_design.sh` precedent — a gate never auto-installs):
 - **1** — `window.P2.registry` missing/not an array, a render console/page
   error, an extraction failure (bad selector, no `.phone-screen` root), or —
   with `--check` — any surface DRIFT
-- **2** — environment: no app root (`--app`/`$KIT_APP` both absent), or no
+- **2** — environment: no app root (`--app`/`$APPBOX_APP` both absent), or no
   render backend
 
 ## `--check` — the pre-gate drift guard

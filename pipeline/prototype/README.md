@@ -2,12 +2,12 @@
 
 Serves a frozen design over loopback HTTP and prints **one machine-readable
 ready line** a UI spawns against. Host and port come from
-`config/app-box.config.json` (`prototypeServer`), never literals — `port: 0`
+`config/appbox.config.json` (`prototypeServer`), never literals — `port: 0`
 asks the OS for a free one. This is the spawn target the desktop app (plan 08)
 and the companion (plan 12) drive to preview a design.
 
 ```sh
-python3 pipeline/prototype/serve.py app-box-app --json
+python3 pipeline/prototype/serve.py appbox-app --json
 ```
 
 ## The spawn contract
@@ -17,7 +17,7 @@ A parent process reads **exactly one line from stdout** and knows the server is
 caller integrates against one contract for both servers:
 
 ```json
-{"tag":"app-box-prototype-ready","url":"http://127.0.0.1:51234/","port":51234,"host":"127.0.0.1","pid":4321,"design":"app-box-app","artifact":"…/designs/app-box-app"}
+{"tag":"appbox-prototype-ready","url":"http://127.0.0.1:51234/","port":51234,"host":"127.0.0.1","pid":4321,"design":"appbox-app","artifact":"…/designs/appbox-app"}
 ```
 
 - `url` is what a WebView loads. `port` is the port the OS actually bound (the
@@ -71,7 +71,7 @@ These are deliberate, fenced scope — not gaps to fill by reaching into `app/`.
 |---|---|---|---|
 | 1 | 37 surfaces render identically, engine vs Node | **env-blocked** | needs the embedded engine (steps 9.1–9.4), fenced to `app/` |
 | 2 | a `POST` mutation updates a fragment | **env-blocked** | needs the engine to run viewmodel handlers |
-| 3 | every asset resolves | **pass** | every file in `designs/app-box-app/assets` returns `200` with correct MIME — asserted by resolving each URL to a real file, not by grepping |
+| 3 | every asset resolves | **pass** | every file in `designs/appbox-app/assets` returns `200` with correct MIME — asserted by resolving each URL to a real file, not by grepping |
 | 4 | added bundle size < ~5 MB | **pass** | the runtime is two text scripts (~10 KB); no binary, no runtime dep beyond `python3` (already required by `pipeline.sh`) |
 | 5 | kill → dead on the channel within a heartbeat | **env-blocked** | needs the paired channel (plan 12); clean shutdown + port release *are* verified here |
 | 6 | no Node on `PATH` → app still serves | **partial** | static serving + the spawn contract need zero Node; rendered pages need the engine (blocked) |

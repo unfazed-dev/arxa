@@ -1,6 +1,6 @@
 // appbox:provenance
-// generator: app-box  licence: free  project: 662368770980
-// Built with app-box (free tier) — https://appbox.dev
+// generator: appbox  licence: free  project: 662368770980
+// Built with appbox (free tier) — https://appbox.dev
 // IntakeFacade — composes the intake fixture (story map, design brief,
 // moodboard, question banks, live statuses) with session-scoped state (the
 // interview, composer messages, the open artifact, the activity panel view)

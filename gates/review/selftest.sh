@@ -92,7 +92,7 @@ need "$o" "Loading ..." "i18n negative names the offending literal"
 printf 'class HomeView { final t = Text(AppLocalizations.of(context)!.loading); }\n' > "$SURF/home_view.dart"
 o="$(dart "$GATE" "$SURF/home_view.dart" 2>&1)"; chk "$?" 0 "i18n: AppLocalizations copy passes"
 # GREEN: a scaffolder stub (STRUCTURE ONLY header) with a placeholder key passes.
-{ printf '// app-box-scaffolder: surface skeleton. STRUCTURE ONLY — the builder fills this.\n'
+{ printf '// appbox-scaffolder: surface skeleton. STRUCTURE ONLY — the builder fills this.\n'
   printf 'class HomeView { final t = Text(%s); }\n' "'projects.home'"; } > "$SURF/home_view.dart"
 o="$(dart "$GATE" "$SURF/home_view.dart" 2>&1)"; chk "$?" 0 "i18n: STRUCTURE ONLY stub with placeholder key passes"
 

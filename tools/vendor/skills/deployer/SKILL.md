@@ -27,7 +27,7 @@ bundle id, and app ids are project secrets the factory never holds.
 
 ## Rules
 - Never commit secrets — `.env` (Supabase), signing (`match` storage), store keys are operator-owned, gitignored.
-- Release is **gated on QC green** (`/app-box:review`) + manifest hash match. Don't ship a drifted target.
+- Release is **gated on QC green** (`/appbox:review`) + manifest hash match. Don't ship a drifted target.
 - Version: factory stamps `0.1.0+1` in the generated pubspec; operator bumps per release.
 
 ## Output

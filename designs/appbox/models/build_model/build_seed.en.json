@@ -2,7 +2,7 @@
   "run": {
     "id": "run-47",
     "number": 47,
-    "project": "app-box",
+    "project": "appbox",
     "brief": "companion app — ios + macos",
     "started": "09:14",
     "elapsed": "34m 12s",
@@ -203,7 +203,7 @@
     { "path": "docs/structure.json", "status": "frozen" }
   ],
   "narrative": [
-    { "id": "n-01", "at": "09:14", "text": "Run #47 on the line — app-box, the R1 dogfood build for ios + macos. Stop-on-red is on, escalation limit 3.", "textPlain": "Run #47 is on the line — app-box, the R1 dogfood build for iPhone and Mac. The run stops itself at the first failure; up to 3 automatic fix attempts.", "artifact": null },
+    { "id": "n-01", "at": "09:14", "text": "Run #47 on the line — appbox, the R1 dogfood build for ios + macos. Stop-on-red is on, escalation limit 3.", "textPlain": "Run #47 is on the line — appbox, the R1 dogfood build for iPhone and Mac. The run stops itself at the first failure; up to 3 automatic fix attempts.", "artifact": null },
     { "id": "n-02", "at": "09:18", "text": "Stage 1/7 intake green in 3m 48s — 42 stories mapped from the brief, MoSCoW applied.", "textPlain": "Stage 1/7 intake done in 3m 48s — 42 user stories mapped from the brief, sorted must/could/won't.", "artifact": "stage/intake" },
     { "id": "n-03", "at": "09:39", "text": "Stage 2/7 design green in 21m 05s — 11 surfaces × 3 rungs, 33 shots frozen.", "textPlain": "Stage 2/7 design done in 21m 05s — 11 screens, 33 size snapshots locked.", "artifact": "stage/design" },
     { "id": "n-04", "at": "16:42", "text": "Design approval passed — Evan, Touch ID on studio-mac. The signed look is now the frozen one.", "artifact": "gate/design.approval" },

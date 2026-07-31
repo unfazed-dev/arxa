@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 // appbox:provenance
-// generator: app-box  licence: free  project: 662368770980
-// Built with app-box (free tier) — https://appbox.dev
+// generator: appbox  licence: free  project: 662368770980
+// Built with appbox (free tier) — https://appbox.dev
 // Serve this design: `node serve.mjs [--port N] [--host H] [--json] [--no-watch]`
 //
-// Thin wrapper — the actual server is the app-box-designer runtime
+// Thin wrapper — the actual server is the appbox-designer runtime
 // (one implementation for every artifact, ADR-0001). This file just finds
 // it by walking up from the design folder, so a design can be served
 // without remembering where the skill lives.
@@ -22,7 +22,7 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 let dir = here;
 let runtimeServe;
 for (;;) {
-  const candidate = path.join(dir, '.kimi-code/skills/app-box-designer/runtime/serve.mjs');
+  const candidate = path.join(dir, '.kimi-code/skills/appbox-designer/runtime/serve.mjs');
   if (existsSync(candidate)) {
     runtimeServe = candidate;
     break;
@@ -30,8 +30,8 @@ for (;;) {
   const parent = path.dirname(dir);
   if (parent === dir) {
     console.error(
-      'app-box-designer runtime not found above this folder ' +
-        '(expected .kimi-code/skills/app-box-designer/runtime/serve.mjs)',
+      'appbox-designer runtime not found above this folder ' +
+        '(expected .kimi-code/skills/appbox-designer/runtime/serve.mjs)',
     );
     process.exit(66);
   }

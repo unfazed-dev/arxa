@@ -5,7 +5,7 @@ void main() {
   group('ReadyLine.tryParse', () {
     test('parses a valid ready-line payload', () {
       final r = ReadyLine.tryParse(const {
-        'tag': 'app-box-prototype-ready',
+        'tag': 'appbox-prototype-ready',
         'url': 'http://127.0.0.1:54321/',
         'port': 54321,
         'host': '127.0.0.1',
@@ -31,13 +31,13 @@ void main() {
 
     test('rejects a payload missing required fields (negative)', () {
       expect(
-        ReadyLine.tryParse(const {'tag': 'app-box-prototype-ready'}),
+        ReadyLine.tryParse(const {'tag': 'appbox-prototype-ready'}),
         isNull,
       );
       // Wrong types: port as string, url missing.
       expect(
         ReadyLine.tryParse(const {
-          'tag': 'app-box-prototype-ready',
+          'tag': 'appbox-prototype-ready',
           'url': 'http://x/',
           'port': 'not-a-port',
           'host': 'x',

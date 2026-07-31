@@ -150,7 +150,7 @@ test_gate(){
 
 test_capscan(){
   say "CAPABILITY_SCAN"; local s o
-  cap(){ ( KIT_APP="$1" bash "$REAL/tools/capability_scan.sh" ) 2>&1; echo "exit:$?"; }
+  cap(){ ( APPBOX_APP="$1" bash "$REAL/tools/capability_scan.sh" ) 2>&1; echo "exit:$?"; }
   mkapp(){ local p="$SCRATCH/$1"; rm -rf "$p"; mkdir -p "$p/lib" "$p/docs"; echo "$p"; }
   # clean app: no playback signals, no manifest — passes vacuously
   s=$(mkapp cs-clean); printf 'void main() {}\n' > "$s/lib/a.dart"
@@ -178,7 +178,7 @@ test_capscan(){
 
 test_apimap(){
   say "API_MAP_SCAN"; local o
-  am(){ ( KIT_APP="$1" bash "$REAL/tools/api_map_scan.sh" ) 2>&1; echo "exit:$?"; }
+  am(){ ( APPBOX_APP="$1" bash "$REAL/tools/api_map_scan.sh" ) 2>&1; echo "exit:$?"; }
   # dirty fixture: planted banned APIs must fail non-zero with named FAIL lines
   o=$(am "$REAL/tools/fixtures/api_map/dirty")
   has "exit:1" "$o" && has "FAIL: lib/main.dart" "$o" && ok "dirty fixture fails non-zero" || bad "dirty fixture should fail: $o"
@@ -291,13 +291,13 @@ test_translate(){
   # WHICH app? `$REAL/..` was the consuming repo while stacked_kit was a
   # subdirectory of it. Since the 2026-07-26 extraction this repo stands alone and
   # its parent is just a workspace folder with no design/ in it — so the real-app
-  # leg is SKIPPED unless an app is named. Point $KIT_APP at a consumer to run it:
-  #   KIT_APP=/path/to/sample-app tools/test_gates.sh -g translate
+  # leg is SKIPPED unless an app is named. Point $APPBOX_APP at a consumer to run it:
+  #   APPBOX_APP=/path/to/sample-app tools/test_gates.sh -g translate
   # Skipping is deliberate: a standalone library repo has no real app, and failing
   # would report a missing consumer as a translator defect. The hermetic self-test
   # above still covers the transform, the golden, drift, and the legs.
   local RD="design/new"
-  local RAPP="${KIT_APP:-$REAL/..}"
+  local RAPP="${APPBOX_APP:-$REAL/..}"
   if [ -f "$RAPP/$RD/tokens.json" ]; then
     o=$( python3 "$TD" tokens --app "$RAPP" --design-dir "$RD" 2>&1; echo "exit:$?" )
     has "exit:0" "$o" && ok "real-app token transform runs clean" || bad "real-app token transform failed: $(echo "$o" | tail -3)"
@@ -306,7 +306,7 @@ test_translate(){
     has "exit:0" "$o" && ok "real-app token parity PASS (committed == regen)" || bad "real-app token parity drifted: $(echo "$o" | tail -3)"
   else
     echo "  SKIP: real-app token legs — no $RD/tokens.json under $RAPP"
-    echo "        (standalone kit repo; set KIT_APP=<consumer> to exercise them)"
+    echo "        (standalone kit repo; set APPBOX_APP=<consumer> to exercise them)"
   fi
   # (W2) extraction legs + manifest validators.
   #

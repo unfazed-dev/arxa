@@ -226,7 +226,7 @@ final _textOrLabelLiteral = RegExp(
 // (Text('projects.home')) that the builder replaces with AppLocalizations
 // lookups, so a STRUCTURE ONLY file is exempt from no_hardcoded_strings.
 final _scaffolderStubHeader =
-    RegExp(r'//\s*app-box-scaffolder:[^\n]*STRUCTURE ONLY');
+    RegExp(r'//\s*appbox-scaffolder:[^\n]*STRUCTURE ONLY');
 
 // Any file under the view tree — no_hardcoded_strings scopes to view files.
 final _viewsTree = RegExp(r'/ui/views/');
@@ -595,7 +595,7 @@ CheckResult checkNoCrossShellImports(String src, String path) {
 /// It therefore runs on _stripComments only (a commented-out Text('…') is still
 /// not a violation), never on _stripNoise. The two paths stay separate.
 ///
-/// Exemptions: scaffolder stub files (the "app-box-scaffolder: … STRUCTURE
+/// Exemptions: scaffolder stub files (the "appbox-scaffolder: … STRUCTURE
 /// ONLY" header — their Text('<arb.key>') placeholders are filled by the
 /// builder); strings that are clearly not copy (see [_isNonCopyLiteral]):
 /// single chars/symbols/digits-only, route paths, asset paths, dotted keys.
@@ -1578,7 +1578,7 @@ void _selfTestPureSections(void Function(bool, String) expect) {
   //      key Text('projects.home') is exempt.
   expect(
       checkNoHardcodedStrings(
-              '// app-box-scaffolder: surface skeleton. STRUCTURE ONLY — the builder fills this.\n'
+              '// appbox-scaffolder: surface skeleton. STRUCTURE ONLY — the builder fills this.\n'
               "Text('projects.home');",
               i18nLeaf)
           .ok,

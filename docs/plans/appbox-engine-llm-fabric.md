@@ -1,11 +1,11 @@
-# app-box engine + LLM fabric — decisions record
+# appbox engine + LLM fabric — decisions record
 
 Status: **decided 2026-07-29, not yet built.** This is the architecture contract for the
 engine effort that follows the i18n launch work. Each decision was made against
 docs-grounded research (sources cited inline; grades: A = official docs, B = corroborated
 secondary, C = unverified single source).
 
-Purpose (operator's words): app-box operates **standalone with the user's LLM
+Purpose (operator's words): appbox operates **standalone with the user's LLM
 credentials** and produces bespoke applications — one credential set powers the whole
 pipeline journey and every module that needs an LLM (genui included).
 
@@ -40,7 +40,7 @@ appboxd absorbs three things it half-has:
 2. **Headless runner adapter** — a stage = `kimi --print -p "<skill prompt>" --output-format=stream-json --afk` (A: official print mode; exit codes 0/1/75-retryable) with the CLI config pointed at the loopback gateway and a stage-scoped token. Skills stay as **Markdown files** (Agent Skills is an open standard since 2025-12, A) — no consolidation rewrite.
 3. **Run manifests + session IDs** for checkpoint/resume (`pipeline/state/` already implies it; `--continue`/`--resume` are official, A).
 
-Rationale: Anthropic's canon (A) — app-box's pipeline is a *workflow* (finite,
+Rationale: Anthropic's canon (A) — appbox's pipeline is a *workflow* (finite,
 predefined paths with programmatic gates), and deterministic drivers beat LLM
 commanders there. MAST (A, 1600+ traces): task-routing errors and error propagation
 are the top multi-agent failure modes; multi-agent burns ~15× tokens. A home-grown
@@ -130,7 +130,7 @@ tier assignments (A: Anthropic small-sample eval guidance).
 - **Kimi CLI headless contract**: pre-write config (or `--config`) with
   base_url=127.0.0.1 + scoped token; `--print` implies `--afk`; stream-json in/out;
   env-var key injection **not officially documented** — config file is the path (A).
-- **z.ai**: Coding Plan is tool-restricted by policy (A) — app-box engine use needs
+- **z.ai**: Coding Plan is tool-restricted by policy (A) — appbox engine use needs
   PAYG keys, not a Coding-Plan subscription.
 - **Fugu-as-provider**: OpenAI-compatible (A) — slots in as a frontier candidate with
   no adapter work; pool opt-outs map to catalog config.

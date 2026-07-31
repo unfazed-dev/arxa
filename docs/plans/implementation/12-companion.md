@@ -10,7 +10,7 @@ Design: §15. Research:
 
 ## Steps
 
-- [ ] **12.1** Scaffold the companion **through app_box's own pipeline** from
+- [ ] **12.1** Scaffold the companion **through appbox's own pipeline** from
       the design produced in plan 14. This is the mobile half of the designer
       proof — do not hand-build it.
       *(env-blocked: plan 14 not done; this run built the minimal surface in
@@ -69,7 +69,7 @@ Design: §15. Research:
       `lib/prototype/prototype_session.dart` + `lib/ui/prototype_view.dart`;
       the "command the desktop to start" half needs the paired channel and is
       env-blocked.)*
-- [x] **12.8** Implement the **floating draggable FAB**: app_box controls, stop
+- [x] **12.8** Implement the **floating draggable FAB**: appbox controls, stop
       server, back to the companion.
       *(`lib/widgets/channel_fab.dart` — Stop + Back controls.)*
 - [x] **12.9** The FAB **carries channel state** (live / reconnecting / dead)

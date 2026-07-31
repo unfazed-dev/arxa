@@ -267,7 +267,7 @@ Future<String> briefing(String repoRoot) async {
   final events = await _eventCounts(repoRoot);
 
   final out = StringBuffer()
-    ..writeln('# app-box operator briefing')
+    ..writeln('# appbox operator briefing')
     ..writeln(
         '_generated ${DateTime.now().toUtc().toIso8601String().substring(0, 19)}Z_')
     ..writeln()

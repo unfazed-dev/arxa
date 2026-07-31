@@ -73,14 +73,14 @@ set -uo pipefail
 set +e
 
 GATE_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
-CONFIG="$GATE_ROOT/config/app-box.config.json"
+CONFIG="$GATE_ROOT/config/appbox.config.json"
 DERIVATION="$GATE_ROOT/pipeline/state/targets.derivation.json"
 
 # targets: explicit --targets (6.3) for deterministic gate/golden runs, else
 # ambient pipeline state (6.2). The form-factor set DERIVES from these (6.5).
 SELF_TEST=0
 APPBOX_TARGETS=""
-APP="${KIT_APP:-$PWD}"
+APP="${APPBOX_APP:-$PWD}"
 while [ $# -gt 0 ]; do
   case "$1" in
     --self-test) SELF_TEST=1; shift ;;
@@ -96,7 +96,7 @@ run_gate_for(){
   local DESIGN_REL="${KIT_DESIGN_DIR:-design}"
   local DESIGN="$APP/$DESIGN_REL"
   # producer shape (the producer-shape seam, dogfood P14 finding #1): app.routes.js
-  # at the design root => htmx producer (app-box-designer). The stacked_kit
+  # at the design root => htmx producer (appbox-designer). The stacked_kit
   # producer carries surfaces/*.html + tokens.json and has no app.routes.js.
   local PRODUCER=stacked_kit
   [ -f "$DESIGN/app.routes.js" ] && PRODUCER=htmx

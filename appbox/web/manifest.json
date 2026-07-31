@@ -5,7 +5,7 @@
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": ""app-box — one Stacked app with full parity across web, macOS, iOS and Android (consolidation slice 1: the honest bootstrap shell; the pipeline owns lib/ui/** once the scaffolder runs)."",
+    "description": ""appbox — one Stacked app with full parity across web, macOS, iOS and Android (consolidation slice 1: the honest bootstrap shell; the pipeline owns lib/ui/** once the scaffolder runs)."",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

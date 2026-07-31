@@ -9,7 +9,7 @@ void main() {
     test('keeps app sections verbatim and nests companion under one section', () {
       final merged = RuntimeConfig.mergeMaps(
         {
-          'credential': {'keyPrefix': 'app_box.'},
+          'credential': {'keyPrefix': 'appbox.'},
           'pipeline': {'command': 'bash'},
         },
         {
@@ -18,7 +18,7 @@ void main() {
           'pairing': {'qrRotationSeconds': 25},
         },
       );
-      expect(merged['credential'], {'keyPrefix': 'app_box.'});
+      expect(merged['credential'], {'keyPrefix': 'appbox.'});
       expect(merged['pipeline'], {'command': 'bash'});
       final companion = merged['companion'] as Map;
       expect(companion['channel'], {'heartbeatIntervalMs': 1500});
@@ -38,23 +38,23 @@ void main() {
     tearDown(() => dir.deleteSync(recursive: true));
 
     test('loads the merged single-config shape from the two legacy files', () {
-      final appPath = '${dir.path}/app_box.config.json';
+      final appPath = '${dir.path}/appbox.config.json';
       final companionPath = '${dir.path}/companion.config.json';
       File(appPath).writeAsStringSync(jsonEncode({
         'credential': {
           'storageTierLabel': 'macOS Keychain',
-          'keyPrefix': 'app_box.',
+          'keyPrefix': 'appbox.',
         },
         'pipeline': {
           'command': 'bash',
           'args': ['pipeline/pipeline.sh'],
           'stateDir': 'pipeline/state',
-          'repoConfigPath': 'config/app-box.config.json',
+          'repoConfigPath': 'config/appbox.config.json',
         },
-        'harness': {'command': 'app-box-harness', 'envHint': 'APP_BOX_HARNESS_PATH'},
-        'intake': {'command': 'python3', 'script': 'skills/app-box-intake/intake.py'},
+        'harness': {'command': 'appbox-harness', 'envHint': 'APPBOX_HARNESS_PATH'},
+        'intake': {'command': 'python3', 'script': 'skills/appbox-intake/intake.py'},
         'licence': {'preconditionMessage': 'A licence is required.'},
-        'launch': {'autoLaunchDemo': true, 'firstRunKey': 'app_box.first_run_done'},
+        'launch': {'autoLaunchDemo': true, 'firstRunKey': 'appbox.first_run_done'},
         'prototype': {'host': '127.0.0.1', 'port': 0},
         'mcp': {
           'servers': [
@@ -70,16 +70,16 @@ void main() {
         },
         'discovery': {'bonjourServiceType': '_appbox._tcp', 'bonjourDomain': 'local.'},
         'pairing': {'qrRotationSeconds': 25, 'sessionIdleTimeoutSeconds': 60},
-        'readyLine': {'tag': 'app-box-prototype-ready'},
+        'readyLine': {'tag': 'appbox-prototype-ready'},
       }));
 
       final cfg = RuntimeConfig.load(appPath, companionPath: companionPath);
 
-      expect(cfg.credentialKeyPrefix, 'app_box.');
+      expect(cfg.credentialKeyPrefix, 'appbox.');
       expect(cfg.pipelineCommand, 'bash');
       expect(cfg.pipelineArgs, ['pipeline/pipeline.sh']);
-      expect(cfg.harnessCommand, 'app-box-harness');
-      expect(cfg.intakeScript, 'skills/app-box-intake/intake.py');
+      expect(cfg.harnessCommand, 'appbox-harness');
+      expect(cfg.intakeScript, 'skills/appbox-intake/intake.py');
       expect(cfg.licencePreconditionMessage, 'A licence is required.');
       expect(cfg.autoLaunchDemo, isTrue);
       expect(cfg.mcpServers.single['id'], 'local');
@@ -88,11 +88,11 @@ void main() {
       expect(cfg.channelDeadAfterFailures, 3);
       expect(cfg.bonjourServiceType, '_appbox._tcp');
       expect(cfg.qrRotationSeconds, 25);
-      expect(cfg.readyLineTag, 'app-box-prototype-ready');
+      expect(cfg.readyLineTag, 'appbox-prototype-ready');
     });
 
     test('hasSection reports the companion section honestly', () {
-      final appPath = '${dir.path}/app_box.config.json';
+      final appPath = '${dir.path}/appbox.config.json';
       File(appPath).writeAsStringSync(jsonEncode({'credential': {}}));
       final cfg = RuntimeConfig.load(appPath);
       expect(cfg.hasSection('companion'), isFalse);

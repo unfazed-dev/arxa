@@ -48,7 +48,7 @@ SELF_TEST=0
 ANSWERS=""
 REGISTRY=""
 BRIEF=""
-APP="${KIT_APP:-$PWD}"
+APP="${APPBOX_APP:-$PWD}"
 while [ $# -gt 0 ]; do
   case "$1" in
     --self-test) SELF_TEST=1; shift ;;
@@ -321,7 +321,7 @@ EOF
   # The headless path does the same. Proof: run the engine TWICE on the same
   # answers to two output dirs, then cmp — byte-identical. Since both fronts
   # invoke the same engine on the same input, their outputs cannot diverge.
-  local ENGINE; ENGINE="$GATE_ROOT/skills/app-box-intake/intake.py"
+  local ENGINE; ENGINE="$GATE_ROOT/skills/appbox-intake/intake.py"
   if python3 "$ENGINE" --self-test >/dev/null 2>&1; then
     cat > "$T/dw1_answers.json" <<'EOF'
 {"product":{"value":"Demo app","provenance":"client"},

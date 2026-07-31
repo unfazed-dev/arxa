@@ -1,7 +1,7 @@
-# memory/ — app-box curated memory
+# memory/ — appbox curated memory
 
-The durable, human-auditable memory of the app-box pipeline. Files, not a
-service: plain markdown + JSON, git-tracked, diffable, deletable. app-box owns
+The durable, human-auditable memory of the appbox pipeline. Files, not a
+service: plain markdown + JSON, git-tracked, diffable, deletable. appbox owns
 this tree — stacked_kit's `memory/` is the template, never a dependency
 (docs/plans/appbox-memory-and-payment.md, M1).
 

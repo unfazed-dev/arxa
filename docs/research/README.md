@@ -1,6 +1,6 @@
 # Research index
 
-Findings that led to app_box's architecture. Every claim here was measured by
+Findings that led to appbox's architecture. Every claim here was measured by
 running the thing, not inferred from reading it — where a claim was later
 falsified, the correction is left in place rather than edited out.
 

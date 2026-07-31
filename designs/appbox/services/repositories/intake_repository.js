@@ -1,6 +1,6 @@
 // appbox:provenance
-// generator: app-box  licence: free  project: 662368770980
-// Built with app-box (free tier) — https://appbox.dev
+// generator: appbox  licence: free  project: 662368770980
+// Built with appbox (free tier) — https://appbox.dev
 // IntakeRepository — reads one per-locale fixture (intake.<locale>.json).
 // Unknown locale falls back to en — a partial translation never 500s the page.
 import { readFixture } from './fixture_reader.js';

@@ -1,6 +1,6 @@
 // appbox:provenance
-// generator: app-box  licence: free  project: 662368770980
-// Built with app-box (free tier) — https://appbox.dev
+// generator: appbox  licence: free  project: 662368770980
+// Built with appbox (free tier) — https://appbox.dev
 // Fixture generator — app_seed.<locale>.json → app.<locale>.json (+ app.json
 // as the en alias). The fixture is the denormalized projection a template
 // wants: chart bars carry precomputed heights, the pairing QR is a

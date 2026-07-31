@@ -146,7 +146,7 @@ void main() {
     final key = randomBytes(32);
     final nonce24 = randomBytes(24);
     final nonce12 = randomBytes(12);
-    final pt = ascii('{"licence":"app-box","tier":"paid"}');
+    final pt = ascii('{"licence":"appbox","tier":"paid"}');
     final aad = ascii('v1');
 
     test('xchacha seal → open returns the plaintext', () {

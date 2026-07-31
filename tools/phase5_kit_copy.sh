@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# phase5_kit_copy.sh — copy stacked_kit packages into app-box, rename imports.
+# phase5_kit_copy.sh — copy stacked_kit packages into appbox, rename imports.
 #
 # Copies 24 library packages from the stacked_kit sibling repo into
-# app-box/packages/, then rewrites all stacked_kit_* identifiers to
+# appbox/packages/, then rewrites all stacked_kit_* identifiers to
 # appbox_kit_* across .dart and .yaml files.
 #
 # Usage: bash tools/phase5_kit_copy.sh

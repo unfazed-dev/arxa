@@ -1,7 +1,7 @@
 # Icon library + components-first — research and decisions (2026-07-29)
 
 Web research (fan-out, three parallel investigators) plus local exploration that
-preceded the app-box-designer **components-first** update: the UI-recipes
+preceded the appbox-designer **components-first** update: the UI-recipes
 catalog, the vendored Lucide set with the `icon()` runtime global, and
 `KitGlyphs.lucide` in stacked_kit. Grades: **hot** = seen on the official
 page/repo that day · **warm** = official but indirect/stale · **cold** =
@@ -108,4 +108,4 @@ build if pipeline-critical names vanish upstream).
 - Emitted Flutter views now require `KitGlyphs` in scope via the kit import
   chain (the same contract the review gate's "Use KitGlyphs.*" message assumes).
 - `runtime/serve.test.mjs` fails pre-existing: it hardcodes design
-  `app-box-app`, absent from this checkout.
+  `appbox-app`, absent from this checkout.

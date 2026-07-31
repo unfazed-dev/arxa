@@ -42,7 +42,7 @@ fi
 
 if [ "$TO" = "vendored" ]; then
   # hosted → vendored
-  [ -n "${KIT_REPO:-}" ] || KIT_REPO="$(python3 -c "import json;print(json.load(open('$ROOT/config/app-box.config.json')).get('kit',{}).get('repo',''))")"
+  [ -n "${KIT_REPO:-}" ] || KIT_REPO="$(python3 -c "import json;print(json.load(open('$ROOT/config/appbox.config.json')).get('kit',{}).get('repo',''))")"
   [ -n "$KIT_REPO" ] && [ -d "$KIT_REPO" ] || { echo "migrate: KIT_REPO must point at the stacked_kit checkout for --to vendored" >&2; exit 2; }
   KIT_REPO="$KIT_REPO" python3 "$KIT_DEPS" copy --app "$APP" "${KD_ARGS[@]}" >/dev/null
   python3 "$KIT_DEPS" rewrite --app "$APP" --mode vendored "${KD_ARGS[@]}"

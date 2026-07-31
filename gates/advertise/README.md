@@ -90,9 +90,9 @@ attached.
 1. `verification` field + this gate (cheapest; makes every later step honest).
 2. `SeedAuthBackend` to Tier 1 — no device, no accounts, unblocks seeded data.
 3. Ports for payments + auth to Tier 1 (now the SDK calls are asserted in CI).
-4. **Stripe to Tier 3** — app_box's own licensing needs it; dogfooding forces it.
+4. **Stripe to Tier 3** — appbox's own licensing needs it; dogfooding forces it.
 5. Auth providers to Tier 3.
-6. Maps + Vercel last — neither blocks app_box itself.
+6. Maps + Vercel last — neither blocks appbox itself.
 
 Steps 1–3 are implemented in this plan. Steps 4–6 are **env-blocked** (physical
 device, merchant accounts, credentials) and recorded as the known remaining

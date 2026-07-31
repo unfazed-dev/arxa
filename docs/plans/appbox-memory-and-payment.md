@@ -1,4 +1,4 @@
-# app-box memory + payment — decisions record
+# appbox memory + payment — decisions record
 
 Status: **decided 2026-07-30, not yet built.** Companion to
 `appbox-engine-llm-fabric.md` (engine). Decisions were grilled out with the
@@ -6,10 +6,10 @@ operator against `docs/research/agent-memory-and-caching.md`,
 `docs/research/monetization-and-licensing.md`, and
 `docs/research/engine-decision-digest.md`.
 
-## M1 — app-box-memory: dedicated appboxd module
+## M1 — appbox-memory: dedicated appboxd module
 
 A **dedicated memory module inside appboxd** owns memory read/write/consolidation
-across three layers. app-box manages its own memory — it does not depend on
+across three layers. appbox manages its own memory — it does not depend on
 stacked_kit's `memory/` (that repo's pattern is the template, not a dependency).
 
 - **Consumers (all three layers):** the engine (self-tuning), the operator
@@ -56,7 +56,7 @@ reduction) + exact-match response cache keyed `(stage, model, prompt hash)`.
   liability reasons, individuals who strip watermarks were never customers
   (industry norm: Sublime/JetBrains/TablePlus; Unity Personal splash is the
   accepted watermark precedent).
-- **Encrypt app-box's own sensitive state at rest:** LLM-key vault, licence
+- **Encrypt appbox's own sensitive state at rest:** LLM-key vault, licence
   file, memory/analytics store (XChaCha20-Poly1305 / age-class). Users expect
   this; it protects *their* data.
 
@@ -73,7 +73,7 @@ accounts, machine transfer) is a later, optional layer.
 Docker-on-VPS generation would close the export bypass only by becoming
 FlutterFlow (server-side generation, export paywall) — which kills E1's
 standalone/BYO-key promise and turns inference cost into our problem (the
-Cursor-credit trap). An optional hosted tier ("app-box Cloud") for teams is a
+Cursor-credit trap). An optional hosted tier ("appbox Cloud") for teams is a
 legitimate **v2 expansion**, decided separately — never a replacement for the
 local product.
 

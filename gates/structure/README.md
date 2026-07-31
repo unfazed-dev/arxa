@@ -41,6 +41,6 @@ registry entries == frozen screens (surface set) + exclusions (surface: null)
 
 ```sh
 structure.sh [app-root]                       # 0 pass / 1 FAIL / 2 env
-KIT_DESIGN_DIR=designs/app-box-app structure.sh
+KIT_DESIGN_DIR=designs/appbox-app structure.sh
 bash structure/selftest.sh                    # R5: happy + NEGATIVE cases
 ```
