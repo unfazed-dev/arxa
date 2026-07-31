@@ -48,6 +48,18 @@ const _skipDirs = <String>{
   'build', 'node_modules', '__pycache__', 'coverage', 'Pods', 'ephemeral',
 };
 
+// Flutter/Gradle-generated config FILES (gitignored — `git ls-files
+// --exclude-standard` dropped them in the bash version). They embed
+// machine-made absolute paths (FLUTTER_ROOT, sdk.dir, …): R3 noise, never
+// authored literals. Pruned by basename wherever the walk finds them.
+const _generatedFiles = <String>{
+  '.flutter-plugins',
+  '.flutter-plugins-dependencies',
+  'local.properties',
+  'Generated.xcconfig',
+  'flutter_export_environment.sh',
+};
+
 final _commentLine = RegExp(r'^\s*#');
 
 /// Runs the R2 + R3 convention lint over [root].
@@ -171,8 +183,13 @@ bool _isExempt(String rel) {
   if (p.extension(rel) == '.md') return true;
   final base = p.basename(rel);
   if (base == 'LICENSE' || base.startsWith('LICENSE.')) return true;
+  if (_generatedFiles.contains(base)) return true;
   // The rule definitions themselves — scanning them is self-referential.
   if (rel == 'config/stripped_names.txt') return true;
   if (rel == 'config/forbidden_abs_prefixes.txt') return true;
+  // The linter's own source/tests reference the rule patterns by design
+  // (the bash version exempted tools/lint_conventions.sh and its selftest).
+  if (rel == 'appboxd/lib/lint_conventions.dart') return true;
+  if (rel == 'appboxd/test/lint_conventions_test.dart') return true;
   return false;
 }
