@@ -1,0 +1,216 @@
+<Callout id="header" tone="info">
+
+# genui_bridge — Per-Package Playbook
+
+
+`genui_bridge` v**0.1.0** · `publish_to: 'none'` · status: **active**
+
+
+**Role (one line):** Provider- and model-agnostic reliability core for making any LLM emit valid A2UI v0.
+
+
+**Scope of this document:** lets a human OR an LLM use, wire, and extend `genui_bridge` **without reading its source**. The public surface below was extracted from the barrel; README content is folded into the narrative sections.
+
+
+## Table of contents
+
+0. Header & TOC — *you are here* · 1. Overview & role · 2. Public surface · 3. Usage & wiring · 4. Integration map · 5. Architecture · 6. Gotchas · 7. Testing · 8. Features · 9. Decisions · 10. References · 11. Open questions
+
+
+</Callout>
+
+
+### Overview & role
+
+Provider- and model-agnostic reliability core for making any LLM emit valid A2UI v0.9 JSON messages for Flutter's genui package — an A2UI message model, incremental stream parser, catalog-schema validation, and a bounded repair loop over a thin ChatStream port (OpenAI-compatible and Anthropic adapters). Pure Dart, zero Flutter imports.
+
+
+### Public surface
+
+Exported from `lib/genui_bridge.dart`:
+
+<Table id="genui_bridge-api" columns={["Symbol", "Kind", "Defined in"]} rows={[["A2uiFormatException", "class", "src/a2ui_message.dart"], ["A2uiMessage", "class", "src/a2ui_message.dart"], ["CreateSurface", "class", "src/a2ui_message.dart"], ["UpdateComponents", "class", "src/a2ui_message.dart"], ["UpdateDataModel", "class", "src/a2ui_message.dart"], ["DeleteSurface", "class", "src/a2ui_message.dart"], ["A2uiStreamEvent", "class", "src/a2ui_stream_parser.dart"], ["A2uiMessageEvent", "class", "src/a2ui_stream_parser.dart"], ["A2uiTextEvent", "class", "src/a2ui_stream_parser.dart"], ["A2uiErrorEvent", "class", "src/a2ui_stream_parser.dart"], ["A2uiStreamParser", "class", "src/a2ui_stream_parser.dart"], ["ChatRole", "enum", "src/chat_stream.dart"], ["ChatMessage", "class", "src/chat_stream.dart"], ["ChatStream", "abstract class", "src/chat_stream.dart"], ["ChatStreamException", "class", "src/chat_stream.dart"], ["A2uiTurn", "class", "src/genui_bridge.dart"], ["GenuiBridgeFailure", "class", "src/genui_bridge.dart"], ["GenuiBridge", "class", "src/genui_bridge.dart"], ["JsonSchema", "typedef", "src/json_schema.dart"], ["SchemaError", "class", "src/json_schema.dart"], ["JsonSchemaValidator", "class", "src/json_schema.dart"], ["SseTransport", "typedef", "src/sse_transport.dart"], ["AnthropicChatStream", "class", "src/adapters/anthropic_chat_stream.dart"], ["OpenAIParamPolicy", "enum", "src/adapters/openai_chat_stream.dart"], ["OpenAIChatStream", "class", "src/adapters/openai_chat_stream.dart"]]} />
+
+Test doubles in `lib/testing.dart`: `FakeChatStream`.
+
+Scripts and call-counts — tests never touch platform channels.
+
+
+### Usage & wiring
+
+```dart
+import 'package:genui_bridge/genui_bridge.dart';
+
+final chat = OpenAIChatStream(
+  model: 'qwen3:8b',
+  baseUrl: Uri.parse('http://localhost:11434'), // no apiKey — local server
+);
+
+final bridge = GenuiBridge(
+  chat: chat,
+  catalogId: 'appbox.dev:catalog',
+  catalog: {
+    'StageCard': {
+      'type': 'object',
+      'properties': {
+        'id': {'type': 'string'},
+        'component': {'const': 'StageCard'},
+        'title': {'type': 'string'},
+        'status': {'type': 'string', 'enum': ['pending', 'running', 'done']},
+      },
+      'required': ['id', 'component', 'title', 'status'],
+    },
+    // …one schema per catalog component type. Runtime input, flattened —
+    // see the validator ceiling below.
+  },
+);
+
+try {
+  final turn = await bridge.generate([
+    const ChatMessage.user('show me the build pipeline status'),
+  ]);
+  // Only valid messages ever get here. Forward the canonical JSONL to the
+  // Flutter client, whose genui A2uiTransportAdapter.addChunk() consumes it:
+  final jsonl = turn.toJsonl();
+} on GenuiBridgeFailure catch (f) {
+  // Still invalid after 1 + maxRepairs attempts: f.errors, f.lastRawOutput.
+}
+```
+
+What you get, in layers (each usable on its own):
+
+- **`A2uiMessage` model** — parse/serialize the four v0.9 verbs
+  (`createSurface`, `updateComponents`, `updateDataModel`, `deleteSurface`).
+  Read-tolerant of the rename-in-flight (`surfaceUpdate`/`dataModelUpdate`
+  accepted as aliases), canonical v0.9 on write. Strict on
+  `version == 'v0.9'`, because that is what genui's `a2ui_core` accepts.
+- **`A2uiStreamParser`** — `StreamTransformer<String, A2uiStreamEvent>` that
+  assembles messages split across arbitrary chunk boundaries (fenced blocks,
+  balanced-brace objects, JSONL separators), passes prose through as
+  `A2uiTextEvent`, and surfaces malformed/truncated payloads as
+  `A2uiErrorEvent`s instead of throwing.
+- **`GenuiBridge`** — prompt → parse → catalog validation → bounded repair,
+  per turn. An attempt that mixes valid and invalid messages is discarded
+  whole; a turn's messages are only emitted once every one validates.
+- **`lib/testing.dart`** — `FakeChatStream` (script queues + call recording)
+  for testing your own bridge consumer without network.
+
+
+### Integration map
+
+<Table id="genui_bridge-integration" columns={["Stacked framework deps", "Backing SDK packages", "Depends on (kit)"]} rows={[["\u2014", "\u2014 (SDK only / pure Dart)", "\u2014 (standalone)"]]} />
+
+See `kit_matrix.md` for the full routing + dependency graph.
+
+
+### Architecture
+
+Four layers, each usable on its own, all depending inward on the protocol
+core — nothing depends on Flutter or another kit:
+
+- **Protocol core** (`a2ui_message.dart`) — the four-verb `A2uiMessage`
+  model. The single seam that absorbs A2UI renames: v0.8 verb aliases are
+  accepted on read, canonical v0.9 is always written.
+- **Stream layer** (`a2ui_stream_parser.dart`) — `A2uiStreamParser`, a
+  `StreamTransformer<String, A2uiStreamEvent>`. Errors flow as data
+  (`A2uiErrorEvent`), never as exceptions, so the repair loop can consume
+  them without try/catch plumbing.
+- **Port + adapters** (`chat_stream.dart`, `sse_transport.dart`,
+  `adapters/`) — the one abstraction is `ChatStream`
+  (`Stream<String> complete(messages, {schema})`). Adapters build the
+  provider request and parse SSE; the actual HTTP is an injected
+  `SseTransport` function (default: dart:io `httpPostStream`), which is how
+  tests assert request shapes with zero network.
+- **Orchestrator** (`genui_bridge.dart`) — `GenuiBridge.generate` runs one
+  turn: prompt (catalog schemas embedded) → streamed parse → catalog
+  validation → bounded repair (re-ask with the error appended, n ≤ 2) →
+  `A2uiTurn`, or a typed `GenuiBridgeFailure`. An attempt that mixes valid
+  and invalid messages is discarded whole — only fully valid batches leave
+  the bridge.
+
+
+### Gotchas
+
+- **Pinned to A2UI v0.9** — the only version genui 0.10.1's `a2ui_core`
+  accepts. Envelopes without `version: "v0.9"` are rejected, and v0.8's
+  `beginRendering` is *not* aliased (its body shape differs from
+  `createSurface`). A2UI is pre-1.0; when re-pinning, re-fetch the fixtures
+  in `assets/a2ui/` and update `PROVENANCE.md`.
+- **`JsonSchemaValidator` is a subset validator** — `$ref`/`$defs`,
+  `allOf`/`oneOf`/`anyOf`, `pattern` and `format` are ignored. Flatten refs
+  and unions out of catalog schemas before handing them over (they are
+  runtime inputs, not compiled in).
+- **Batch semantics** — `generate` buffers each attempt; there is no
+  progressive emission of a partial batch. Consumers forwarding to a genui
+  client should send `A2uiTurn.toJsonl()`.
+- **Provider-native structured output is never load-bearing** — the
+  `schema` hint maps to OpenAI `response_format` but is *ignored* by the
+  Anthropic adapter (no shape-preserving native mode). Reliability comes
+  from validate + repair, not from the hint.
+- **`httpPostStream` has no timeout or retry** — wrap the `SseTransport`
+  seam in the embedding daemon if it needs either. Auth is an injected
+  header per request; nothing is stored.
+- **Typed failure** — after `1 + maxRepairs` attempts, `generate` throws
+  `GenuiBridgeFailure` carrying `errors` and `lastRawOutput` for
+  diagnostics; it is an exception, not a silent empty turn.
+
+
+### Testing
+
+`genui_bridge` ships `lib/testing.dart`.
+
+
+### Features
+
+<Checklist id="genui_bridge-features" items={[{"id": "genui_bridge-feat-0", "label": "`A2uiFormatException` \u2014 class"}, {"id": "genui_bridge-feat-1", "label": "`A2uiMessage` \u2014 class"}, {"id": "genui_bridge-feat-2", "label": "`CreateSurface` \u2014 class"}, {"id": "genui_bridge-feat-3", "label": "`UpdateComponents` \u2014 class"}, {"id": "genui_bridge-feat-4", "label": "`UpdateDataModel` \u2014 class"}, {"id": "genui_bridge-feat-5", "label": "`DeleteSurface` \u2014 class"}, {"id": "genui_bridge-feat-6", "label": "`A2uiStreamEvent` \u2014 class"}, {"id": "genui_bridge-feat-7", "label": "`A2uiMessageEvent` \u2014 class"}, {"id": "genui_bridge-feat-8", "label": "`A2uiTextEvent` \u2014 class"}, {"id": "genui_bridge-feat-9", "label": "`A2uiErrorEvent` \u2014 class"}, {"id": "genui_bridge-feat-10", "label": "`A2uiStreamParser` \u2014 class"}, {"id": "genui_bridge-feat-11", "label": "`ChatRole` \u2014 enum"}]} />
+
+
+### Decisions / ADRs
+
+- **Pure Dart, zero dependencies** — the primary consumer is appboxd, a
+  dart:io daemon, so the package has no Flutter imports and no third-party
+  deps at all. This keeps it inside the repo's standalone-topology default.
+- **dart:io HTTP behind a `SseTransport` typedef seam, not `package:http`** —
+  no kit in the repo depends on `http`/`dio`, and the function seam makes
+  both adapters unit-testable without mocking dart:io types.
+- **Hand-rolled subset schema validator** — no kit depends on a JSON Schema
+  package and the catalog's dataSchemas are caller-controlled runtime
+  inputs, so the object/properties/required subset suffices (ceiling marked
+  `# kimitail:` in `json_schema.dart`; upgrade to a real schema package the
+  day a catalog needs union types).
+- **Rename tolerance in exactly one place** — the app-box plan pins the
+  bridge against genui's experimental 0.x API "with one adapter seam for
+  renames"; that seam is `A2uiMessage.fromJson`'s alias map.
+- **Unprefixed package name** — `genui_bridge` (like `ui_library` and
+  `branding`) is the name the app-box consolidation plan
+  (`consolidate-one-app-plus-daemon.md`, "Kit candidate — kit_genui")
+  assigns; the Flutter layer (`kit_genui`) is a future sibling kit.
+- **Provenance fixtures** — `assets/a2ui/server_to_client.json` is a
+  verbatim copy of the canonical v0.9 schema (fetched 2026-07-28); the
+  spec↔code disagreements (verb renames, schema-strictness gap) are
+  recorded in `assets/a2ui/PROVENANCE.md`.
+
+<!-- kb:begin -->
+### References
+
+Official docs and tooling:
+
+- [Stacked — official documentation](https://stacked.filledstacks.com) — Canonical framework docs. Start here for ViewModel/Service patterns used by every kit.
+- [stacked (pub.dev)](https://pub.dev/packages/stacked) — Lightweight MVVM + service locator. Pinned ^3.5.0 across the kits.
+- [stacked_shared (pub.dev)](https://pub.dev/packages/stacked_shared) — StackedLocator.instance — the shared singleton kits resolve through. Pinned ^1.4.2.
+- [stacked_generator (pub.dev)](https://pub.dev/packages/stacked_generator) — Generates routers + @StackedApp wiring. Pinned ^2.0.4.
+- [stacked_cli (pub.dev)](https://pub.dev/packages/stacked_cli) — Scaffolding CLI for new Stacked apps/views/services.
+- [Flutter — official documentation](https://docs.flutter.dev) — Framework docs, platform integration, performance.
+- [Dart — official documentation](https://dart.dev) — Language tour, async, package ecosystem.
+- [Dart & Flutter MCP server (official)](https://dart.dev/tools/mcp-server) — Ships with the Dart SDK (dart mcp-server). Exposes analyzer diagnostics, pub, tests, and live Flutter app introspection via DTD. Wired in stacked_kit/.mcp.json.
+<!-- kb:end -->
+
+<QuestionForm id="open-questions" questions={[
+  {
+    id: "q-genui_bridge-gaps",
+    title: "What is unclear or missing from this playbook?",
+    mode: "freeform",
+    placeholder: "Note anything a new contributor or agent would need that is not covered above.",
+  },
+]} />
+

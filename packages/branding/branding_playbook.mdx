@@ -1,0 +1,116 @@
+<Callout id="header" tone="info">
+
+# branding — Per-Package Playbook
+
+
+`branding` v**0.1.0** · `publish_to: 'none'` · status: **active**
+
+
+**Role (one line):** Reusable brand layer for stacked_kit apps.
+
+
+**Scope of this document:** lets a human OR an LLM use, wire, and extend `branding` **without reading its source**. The public surface below was extracted from the barrel; README content is folded into the narrative sections.
+
+
+## Table of contents
+
+0. Header & TOC — *you are here* · 1. Overview & role · 2. Public surface · 3. Usage & wiring · 4. Integration map · 5. Architecture · 6. Gotchas · 7. Testing · 8. Features · 9. Decisions · 10. References · 11. Open questions
+
+
+</Callout>
+
+
+### Overview & role
+
+Reusable brand layer for `stacked_kit`-built apps. Ships **`BrandSplash`** — a presentational splash widget (centered brand mark + a `Loading · N%` progress bar) that owns no routing or auth — plus a build-time codegen step (`tools/generate_branding.sh` + `templates/`) that vendors the kit warm-neutral color ramp into a host as `generated/brand_colors.dart`, seeding the brand accent from the host's own `app_colors.dart`. Depends **only on Flutter**, so a kit-themed host and a custom-themed host both render correctly. Reach for it to give a scaffolded app a consistent splash + brand-color layer without coupling host views to the kit.
+
+
+### Public surface
+
+Exported from `lib/branding.dart`:
+
+<Table id="branding-api" columns={["Symbol", "Kind", "Defined in"]} rows={[["BrandSplash", "class", "src/startup_view.dart"]]} />
+
+Scripts and call-counts — tests never touch platform channels.
+
+
+### Usage & wiring
+
+Run the codegen from the monorepo (pure bash, no Flutter needed), then generate assets in the host:
+
+```sh
+# 1. emit brand_colors + icon/splash configs into the host app
+stacked_kit/branding/tools/generate_branding.sh /path/to/host_app
+
+# 2. in the host: pull deps, then generate launcher icons + native splash
+cd /path/to/host_app
+flutter pub get
+dart run flutter_launcher_icons
+dart run flutter_native_splash:create
+```
+
+Wire it in the host: pass the local accent to the theme builder (`theme: kitLightTheme(accent: BrandColors.accent)` / `darkTheme: kitDarkTheme(accent: BrandColors.accent)`), render `BrandSplash` from the app's `StartupView`, and drive the native to Flutter handoff with `FlutterNativeSplash.preserve()` in `main.dart` plus `FlutterNativeSplash.remove()` at the start of the startup view-model's `runStartupLogic` (see Gotchas).
+
+
+### Integration map
+
+<Table id="branding-integration" columns={["Stacked framework deps", "Backing SDK packages", "Depends on (kit)"]} rows={[["\u2014", "\u2014 (SDK only / pure Dart)", "\u2014 (standalone)"]]} />
+
+See `kit_matrix.md` for the full routing + dependency graph.
+
+
+### Architecture
+
+`branding` is not a port/adapter kit — it is a **build-time generator plus a tiny presentational runtime**, in two independent halves. (1) `tools/generate_branding.sh` — an idempotent bash codegen (no Flutter needed) that reads the host's `kcPrimaryColor` and emits `generated/brand_colors.dart`, `flutter_launcher_icons.yaml`, and `flutter_native_splash.yaml` into the host, and rasterizes `assets/icons/splash_logo.png` at 4x `BrandSplash.logoSize`. (2) `lib/src/startup_view.dart` — the `BrandSplash` widget the host's `StartupView` renders. Dependency direction is strictly **outbound**: the package depends only on Flutter and imports nothing from `stacked_kit` core, `stacked`, or `stacked_services`. The host's `ThemeData` styles `BrandSplash`, and the theme builder (`kitLightTheme`/`kitDarkTheme`) stays imported via `package:ui_library` — never copied. Only the color *ramp* is vendored (a generated copy), so host views need no kit import for color values.
+
+
+### Gotchas
+
+- **Splash background = app surface, not the accent.** The native splash background is the kit surface (`#F5F0E8` light / `#1C1814` dark), emitted with `color` + `color_dark` so it follows the system theme and matches the in-Flutter `BrandSplash` with no seam. An accent-colored splash clashed with the warm surface and could not go dark (the native splash renders before Flutter and cannot read `ThemeMode`).
+- **Logo size is a pipeline token.** `flutter_native_splash` renders `image:` at its **source** pixel dimensions (no upscale), so `generate_branding.sh` rasterizes a dedicated `splash_logo.png` at 4x `BrandSplash.logoSize` (320px) via macOS `sips`. On non-macOS the fallback copies the full-res icon and the branding gate then **fails** on the oversize (no silent ship). `android_12.image` stays the full-res `icon.png` — the Android 12 splash icon is system-fixed (~240dp, masked).
+- **Startup handoff.** The host calls `FlutterNativeSplash.preserve()` in `main.dart` and `FlutterNativeSplash.remove()` **first** in the startup view-model's `runStartupLogic` (post-first-frame). Removing after the loading delay keeps the native splash covering the in-Flutter progress bar. Because the host calls these runtime APIs, `flutter_native_splash` is a **regular** host dependency (it stays a `dev_dependency` here, used only for generation).
+- **Android desugaring.** A host that also wires `stacked_kit_notifications` (via `flutter_local_notifications`) must enable Android core-library desugaring in `android/app/build.gradle.kts`, or the build fails at `:app:checkDebugAarMetadata` (see the kit-scaffolder post-create Android patch).
+
+
+### Testing
+
+`branding` ships no runtime fakes — `BrandSplash` is a pure presentational widget with no injected collaborators, so there is nothing to script. Its test seam is **`scripts/branding_gate.sh`**, a read-only assertion (scaffold sub-gate C) that fails loud if a host's generated brand layer drifts: it checks that the accent resolves from `app_colors.dart`, that generated `brand_colors.dart` matches it, that the icon + native-splash configs are present, that the native splash does **not** use the accent as its background and carries `color_dark`, and that `splash_logo.png` is at most 320px (4x `logoSize`). Run it via `pipeline.sh gate scaffold` in consumer mode; it no-ops at the monorepo root (no app to brand).
+
+
+### Features
+
+<Checklist id="branding-features" items={[{"id": "branding-feat-0", "label": "`BrandSplash` \u2014 class"}]} />
+
+
+### Decisions / ADRs
+
+- **Vendor the color ramp, don't import it.** The host owns its brand colors locally (`generated/brand_colors.dart`) so host views need no `stacked_kit` import for color values; the accent comes from the host's own `app_colors.dart`, not the kit default. Regenerating each pipeline run keeps the vendored ramp drift-free with `kit_colors.dart` (which is never modified).
+- **Copy the ramp, not the theme builder.** `kitLightTheme`/`kitDarkTheme` stay imported from `package:ui_library`; the host passes its local accent in. Copying the builder would fork kit theming.
+- **`BrandSplash`, not `StartupView`.** Named to avoid colliding with every Stacked app's own `StartupView` route.
+- **Splash background = surface, not accent.** Regression guard — the native splash renders before Flutter and cannot read `ThemeMode`, so an accent background clashed with the warm surface and never went dark.
+- **Standalone (Flutter-only).** Depending on nothing from the kit lets a kit-themed host and a custom-themed host both render `BrandSplash` correctly.
+
+<!-- kb:begin -->
+### References
+
+Official docs and tooling:
+
+- [Stacked — official documentation](https://stacked.filledstacks.com) — Canonical framework docs. Start here for ViewModel/Service patterns used by every kit.
+- [stacked (pub.dev)](https://pub.dev/packages/stacked) — Lightweight MVVM + service locator. Pinned ^3.5.0 across the kits.
+- [stacked_shared (pub.dev)](https://pub.dev/packages/stacked_shared) — StackedLocator.instance — the shared singleton kits resolve through. Pinned ^1.4.2.
+- [stacked_generator (pub.dev)](https://pub.dev/packages/stacked_generator) — Generates routers + @StackedApp wiring. Pinned ^2.0.4.
+- [stacked_cli (pub.dev)](https://pub.dev/packages/stacked_cli) — Scaffolding CLI for new Stacked apps/views/services.
+- [Flutter — official documentation](https://docs.flutter.dev) — Framework docs, platform integration, performance.
+- [Dart — official documentation](https://dart.dev) — Language tour, async, package ecosystem.
+- [Dart & Flutter MCP server (official)](https://dart.dev/tools/mcp-server) — Ships with the Dart SDK (dart mcp-server). Exposes analyzer diagnostics, pub, tests, and live Flutter app introspection via DTD. Wired in stacked_kit/.mcp.json.
+<!-- kb:end -->
+
+<QuestionForm id="open-questions" questions={[
+  {
+    id: "q-branding-gaps",
+    title: "What is unclear or missing from this playbook?",
+    mode: "freeform",
+    placeholder: "Note anything a new contributor or agent would need that is not covered above.",
+  },
+]} />
+

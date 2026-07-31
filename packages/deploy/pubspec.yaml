@@ -1,0 +1,20 @@
+name: appbox_kit_deploy
+description: Deploy port for stacked_kit apps — a process-runner port with
+  wired fastlane, shorebird, and Cloudflare Pages targets (plus a Vercel
+  stub), so release automation is testable without shelling out.
+version: 0.1.0
+publish_to: 'none'
+
+environment:
+  sdk: '>=3.0.3 <4.0.0'
+
+# NATIVE-FIRST / STANDALONE: pure Dart dev tooling. No dependency on
+# flutter, stacked, stacked_services, or stacked_kit core. External CLIs
+# (fastlane, shorebird, wrangler, flutter) are invoked through the
+# KitProcessRunner port, so every command shape is unit-testable via
+# ScriptedProcessRunner without touching a real toolchain.
+dependencies: {}
+
+dev_dependencies:
+  lints: ^6.0.0
+  test: ^1.25.0

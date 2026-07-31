@@ -1,0 +1,64 @@
+{
+  "tables": [
+    {
+      "$id": "categories",
+      "databaseId": "example_db",
+      "name": "categories",
+      "enabled": true,
+      "rowSecurity": false,
+      "$permissions": [],
+      "columns": [
+        {
+          "key": "name",
+          "type": "string",
+          "required": true,
+          "array": false,
+          "size": 4096
+        }
+      ]
+    },
+    {
+      "$id": "products",
+      "databaseId": "example_db",
+      "name": "products",
+      "enabled": true,
+      "rowSecurity": false,
+      "$permissions": [],
+      "columns": [
+        {
+          "key": "name",
+          "type": "string",
+          "required": true,
+          "array": false,
+          "size": 4096
+        },
+        {
+          "key": "price",
+          "type": "float",
+          "required": true,
+          "array": false
+        },
+        {
+          "key": "category",
+          "type": "string",
+          "required": true,
+          "array": false,
+          "size": 36
+        },
+        {
+          "key": "tags",
+          "type": "string",
+          "required": false,
+          "array": false,
+          "size": 1048576
+        },
+        {
+          "key": "created_at",
+          "type": "datetime",
+          "required": false,
+          "array": false
+        }
+      ]
+    }
+  ]
+}

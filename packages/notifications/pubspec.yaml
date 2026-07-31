@@ -1,0 +1,30 @@
+name: appbox_kit_notifications
+description: Device-notifications port for stacked_kit apps — permission seam (typed result), push token / foreground-message streams, local notifications and per-notification badge, with a native-first flutter_local_notifications default. Distinct from stacked_kit core's in-app KitNotificationService (transient toast/snackbar).
+version: 0.1.0
+publish_to: 'none'
+
+environment:
+  sdk: '>=3.0.3 <4.0.0'
+
+# NATIVE-FIRST / STANDALONE: no dependency on stacked_kit (core), stacked, or
+# stacked_services. The working default (LocalKitNotificationsService) wraps
+# flutter_local_notifications, which is native-first — UNUserNotificationCenter
+# on iOS/macOS and NotificationManager on Android.
+#
+# NOTE ON SDK FLOOR: the declared lower bound is the shared-bar `>=3.0.3`, but
+# flutter_local_notifications ^21 effectively requires Flutter >= 3.38.1 (Dart
+# >= 3.9). This resolves cleanly on the repo's installed Flutter 3.44 / Dart
+# 3.12; a host on an older Flutter must lower the pin (^19) or bump Flutter.
+#
+# Push backends (FCM/APNs) and outbound backends (SMS/email) are file stubs
+# that name their target package+version in a TODO — they are NOT wired as
+# dependencies here, so no firebase_messaging / vendor SDK is pulled.
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_local_notifications: ^21.0.0
+
+dev_dependencies:
+  flutter_lints: ^6.0.0
+  flutter_test:
+    sdk: flutter

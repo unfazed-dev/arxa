@@ -1,0 +1,277 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>fab_m3e — vendored fork playbook</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>mermaid.initialize({startOnLoad:true,securityLevel:'loose',theme:'neutral'});</script>
+<style>
+:root{--fg:#1b1b1b;--muted:#5b6770;--bg:#fff;--soft:#f5f7f9;--line:#dfe4e8;--accent:#4f46e5;--warn:#b45309;--ok:#15803d}
+*{box-sizing:border-box}body{font:15px/1.6 -apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;color:var(--fg);margin:0;padding:0 0 80px}
+.wrap{max-width:880px;margin:0 auto;padding:32px 24px}
+h1{font-size:1.9rem;line-height:1.25;margin:0 0 6px}
+h2{font-size:1.35rem;margin:34px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--line)}
+h3{font-size:1.08rem;margin:22px 0 8px}
+h4{font-size:.98rem;margin:16px 0 6px}
+code{font:13px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--soft);padding:1px 5px;border-radius:4px}
+pre{background:#0f1115;color:#e7e9ee;padding:14px 16px;border-radius:8px;overflow:auto}
+pre code{background:none;color:inherit;padding:0}
+pre.mermaid{background:var(--soft);color:var(--fg);text-align:center}
+.callout{border:1px solid var(--line);border-left:4px solid var(--accent);background:var(--soft);padding:12px 16px;border-radius:6px;margin:14px 0}
+.callout.warn{border-left-color:var(--warn)} .callout.ok{border-left-color:var(--ok)}
+.callout .h{font-weight:700;display:block;margin-bottom:4px}
+table{border-collapse:collapse;width:100%;margin:14px 0;font-size:13.5px}
+th,td{border:1px solid var(--line);padding:7px 10px;text-align:left;vertical-align:top}
+th{background:var(--soft)} tr:nth-child(even) td{background:#fbfcfd}
+ul.checklist{list-style:none;padding:0;margin:14px 0}
+ul.checklist li{padding:6px 0 6px 28px;position:relative}
+ul.checklist li:before{content:"☐";position:absolute;left:0;top:5px;font-size:16px;color:var(--accent)}
+ul.checklist li .n{color:var(--muted);font-size:12.5px;display:block}
+.qform{border:1px dashed var(--line);border-radius:8px;padding:14px 16px;margin:14px 0;background:#fbfcfd}
+.qform .q{font-weight:600;margin:10px 0 4px} .qform .q:first-child{margin-top:0}
+.qform .opts{margin:4px 0 8px 4px} .qform .opts label{display:block;padding:2px 0}
+.qform .qsub{color:var(--muted);font-size:13px;margin:0 0 6px}
+.meta{color:var(--muted);font-size:12.5px;margin:10px 0 0}
+.pill{display:inline-block;font-size:11px;font-weight:600;background:var(--accent);color:#fff;padding:2px 8px;border-radius:10px;margin-right:6px}
+.filetree{list-style:none;padding:0;margin:12px 0;font-size:13.5px}
+.filetree li{padding:4px 0;border-bottom:1px dashed var(--line)}
+.filetree li code{background:none;padding:0;color:var(--accent)}
+.ft-title{font-weight:700;margin:14px 0 4px}
+.ft-chg{font-size:10.5px;font-weight:700;padding:1px 6px;border-radius:8px;margin-left:6px;text-transform:uppercase;color:#fff}
+.ft-added{background:var(--ok)} .ft-modified{background:var(--accent)} .ft-deleted{background:var(--warn)}
+.ft-note{color:var(--muted);display:block;padding-left:8px}
+.tabs{margin:14px 0}
+.tab{border:1px solid var(--line);border-radius:8px;padding:4px 16px 12px;margin:10px 0;background:#fbfcfd}
+.tab-h{font-size:1rem;margin:8px 0 4px;color:var(--accent);border-bottom:1px solid var(--line);padding-bottom:4px}
+.tab-block{margin:6px 0}
+.code-fn{font-size:12px;color:var(--muted);margin:10px 0 2px}
+.ann{margin:6px 0 14px;font-size:13px;padding-left:18px}
+.ann li{padding:2px 0} .ann .ann-l{font-size:11px;color:var(--muted)}
+/* Diagram (author-authored HTML: boxes + arrows) */
+.diagram-wrap{border:1px solid var(--line);border-radius:8px;background:var(--soft);padding:14px 16px;margin:14px 0;overflow:auto}
+.diag-cap{text-align:center;color:var(--muted);font-size:13px;margin:0 0 10px}
+.diagram-panel{display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:center}
+.diagram-card{border:1px solid var(--line);border-radius:8px;padding:10px 12px;background:#fff;min-width:120px;text-align:center}
+.diagram-card.diagram-accent{border-color:var(--accent);box-shadow:0 0 0 2px rgba(79,70,229,.12)}
+.diagram-node{font-weight:700}
+.diagram-muted{color:var(--muted);font-size:12px}
+.diagram-arrow{color:var(--accent);font-size:20px;font-weight:700}
+.diagram-pill{display:inline-block;font-size:11px;background:var(--soft);border:1px solid var(--line);border-radius:10px;padding:1px 8px;margin:3px 4px 0 0}
+/* Columns */
+.columns{display:flex;gap:16px;margin:14px 0}
+.columns .col{flex:1;min-width:0}
+.col-h{font-size:.95rem;margin:0 0 6px;color:var(--accent);border-bottom:1px solid var(--line);padding-bottom:3px}
+@media(max-width:640px){.columns{flex-direction:column}}
+</style></head>
+<body><div class="wrap">
+<h1>fab_m3e — vendored fork playbook</h1><p class="meta"><span class="pill">playbook</span> rendered from <code>plan.mdx</code> · regenerate with <code>render-playbook.py</code></p>
+<p><strong>Version:</strong> 0.1.1 (fork) · <strong>Upstream:</strong> <code>EmilyMoonstone/material_3_expressive</code> · <strong>Status:</strong> vendored fork, pinned by root <code>dependency_overrides</code></p>
+<p><strong>Role (one line):</strong> Material 3 Expressive Floating Action Button, Extended FAB, and FAB Menu — forked so the menu reveals items with a staggered, FAB-anchored spring instead of a single centre-origin scale+fade.</p>
+<div class="callout warn"><p>Vendored fork of upstream <code>fab_m3e</code> <code>0.1.1</code>. The patched source lives in this repo at <code>packages/fab_m3e/lib/src/fab_menu_m3e.dart</code>. The patch is activated by the root <code>pubspec.yaml</code> <code>dependency_overrides</code> <code>path:</code> entry — remove that entry and <code>flutter pub get</code> silently reverts to upstream.</p></div>
+<h2>Contents</h2>
+<p>0. Fork banner 1. Overview & role 2. Glossary 3. Architecture — fork contract + FileTree 4. Public API reference 5. Usage playbook 5b. Wiring 6. Integration map 7. Features appendix 8. Examples 9. Gotchas + re-sync procedure 10. Decisions / ADRs 11. Changelog & status 12. Open questions</p>
+<h3>Overview & role</h3>
+<p><code>fab_m3e</code> is a leaf Material 3 Expressive UI widget package. Hexagonal / domain-layer concerns are N/A — it has no data, service, or routing surface. It only renders widgets and consumes <code>m3e_design</code> tokens.</p>
+<p>This package is one of four vendored forks of <code>EmilyMoonstone/material_3_expressive</code> pinned in this repo (alongside <code>navigation_rail_m3e</code>, <code>split_button_m3e</code>, <code>toolbar_m3e</code>). Each fork exists because a specific upstream behaviour was wrong for this product; the patch is small and surgical.</p>
+<h3>What this is</h3>
+<p>A vendored fork of upstream <code>fab_m3e</code> <code>0.1.1</code>. The fork is pulled in transitively via the <code>m3e_collection</code> umbrella package, and activated by a <code>path:</code> <code>dependency_overrides</code> entry in the root <code>pubspec.yaml</code>. The patched file is <code>packages/fab_m3e/lib/src/fab_menu_m3e.dart</code>. The patch marker in source is <code>// Patched (vendored fork)</code>.</p>
+<h3>Glossary</h3>
+<ul>
+<li><strong>Fork</strong> — a vendored copy of an upstream package, edited in-tree, pinned by a <code>path:</code> override.</li>
+<li><strong>Override</strong> — the <code>dependency_overrides:</code> block in the root <code>pubspec.yaml</code> that forces <code>pub</code> to resolve this package from a local folder instead of pub.dev.</li>
+<li><strong>Patch marker</strong> — an inline comment tag (<code>// Patched (vendored fork)</code>, <code>// Fork patch:</code>, or <code>// PATCH</code>) that flags every block of code changed from upstream. Audit with <code>grep -rEn &#x27;FORK|fork patch|PATCH|vendored&#x27; packages/fab_m3e/lib</code>.</li>
+<li><strong>Re-sync</strong> — the procedure for re-applying this fork's patches onto a newer upstream version (see §9).</li>
+<li><strong>M3E</strong> — Material 3 Expressive, the motion/shape system this widget implements.</li>
+</ul>
+<h3>Architecture — the fork contract</h3>
+<p>The fork contract has two halves: <strong>WHY</strong> the patch exists (the root <code>pubspec.yaml</code> override comment) and <strong>HOW</strong> it is implemented (the inline <code>// Patched (vendored fork)</code> / <code>// Fork patch:</code> / <code>// PATCH</code> markers in <code>lib/src/</code>).</p>
+<div class="diagram-wrap">
+<p class="diag-cap">fab_m3e fork wiring: root override → umbrella → fork package.</p>
+<div class="diagram-panel" data-rough>
+  <div class="diagram-box" data-rough>
+    <div class="diagram-pill">root pubspec.yaml</div>
+    <div class="diagram-node">dependency_overrides</div>
+  </div>
+  <div class="diagram-arrow">↓ activates</div>
+  <div class="diagram-box" data-rough>
+    <div class="diagram-pill">m3e_collection</div>
+    <div class="diagram-node">umbrella re-export</div>
+  </div>
+  <div class="diagram-arrow">↓ resolves to</div>
+  <div class="diagram-box diagram-accent" data-rough>
+    <div class="diagram-pill">fab_m3e (fork)</div>
+    <div class="diagram-node">lib/src/fab_menu_m3e.dart</div>
+  </div>
+  <div class="diagram-arrow">↓ consumed by</div>
+  <div class="diagram-box" data-rough>
+    <div class="diagram-pill">stacked_kit</div>
+    <div class="diagram-node">Kit* wrappers</div>
+  </div>
+</div>
+
+</div>
+
+<p class="ft-title">fab_m3e — files that matter for the fork</p>
+<ul class="filetree">
+<li><code>packages/fab_m3e/lib/fab_m3e.dart</code> <span class="ft-chg ft-modified">modified</span><span class="ft-note">Barrel; re-exports src/fab_theme_m3e.dart show FabTokensAdapter.</span></li>
+<li><code>packages/fab_m3e/lib/src/fab_menu_m3e.dart</code> <span class="ft-chg ft-modified">modified</span><span class="ft-note">PATCHED — staggered FAB-anchored spring reveal. Single // Patched (vendored fork) marker block.</span></li>
+<li><code>packages/fab_m3e/lib/src/extended_fab_m3e.dart</code> <span class="ft-chg ft-modified">modified</span><span class="ft-note">Unpatched; imported by FabMenuM3E to render each item as ExtendedFabM3E.</span></li>
+<li><code>packages/fab_m3e/lib/src/fab_theme_m3e.dart</code> <span class="ft-chg ft-modified">modified</span><span class="ft-note">FabTokensAdapter; unpatched.</span></li>
+<li><code>packages/fab_m3e/lib/src/enums.dart</code> <span class="ft-chg ft-modified">modified</span><span class="ft-note">FabM3EKind/Size/Density + FabMenuDirection enum.</span></li>
+<li><code>packages/fab_m3e/test/fab_m3e_test.dart</code> <span class="ft-chg ft-modified">modified</span><span class="ft-note">Test/ exists.</span></li>
+<li><code>packages/fab_m3e/CHANGELOG.md</code> <span class="ft-chg ft-modified">modified</span><span class="ft-note">STALE — only 0.1.0 'Changelog initialized.'; 0.1.1 needs backfill.</span></li>
+<li><code>packages/fab_m3e/pubspec.yaml</code> <span class="ft-chg ft-modified">modified</span><span class="ft-note">issue_tracker has EmilyMonestone (sic) typo.</span></li>
+</ul>
+<h3>The fork contract (shared)</h3>
+<p>Every vendored fork in this repo carries the same contract:</p>
+<ul>
+<li>The <strong>WHY</strong> is documented in the root <code>pubspec.yaml</code> <code>dependency_overrides</code> comment block above each <code>path:</code> entry. Read it before editing.</li>
+<li>The <strong>HOW</strong> is flagged in source with <code>// Patched (vendored fork)</code>, <code>// Fork patch:</code>, or <code>// PATCH</code>. Every changed block has a marker.</li>
+<li>The <strong>audit command</strong> is <code>grep -rEn &#x27;FORK|fork patch|PATCH|vendored&#x27; packages/&lt;name&gt;/lib</code> — re-run after every edit and before every re-sync.</li>
+<li>The <strong>doc-gap checklist</strong> (every fork carries this debt): add a <code>&gt; Vendored fork of upstream &lt;name&gt; &lt;version&gt;</code> banner to the README; backfill the CHANGELOG; fix the <code>EmilyMonestone</code> → <code>EmilyMoonstone</code> typo in <code>issue_tracker</code> (present in every fork's <code>pubspec.yaml</code>).</li>
+<li>The <strong>test contract</strong>: every fork SHOULD ship a <code>test/</code>. <code>navigation_rail_m3e</code> currently has NONE (highest debt); the other three forks do ship one.</li>
+</ul>
+<h3>Public API reference</h3>
+<p>The barrel <code>lib/fab_m3e.dart</code> exports five symbols. The fork only changes the internals of <code>FabMenuM3E</code>; the public signatures are unchanged from upstream.</p>
+<div class="tabs">
+<div class="tab"><h3 class="tab-h">FabMenuM3E</h3>
+<p class="code-fn"><code>packages/fab_m3e/lib/src/fab_menu_m3e.dart</code></p><pre><code>class FabMenuM3E extends StatefulWidget {
+  const FabMenuM3E({
+    required this.primaryFab,
+    required this.items,
+    this.direction = FabMenuDirection.up,
+    this.spacing,
+    this.overlay = true,
+    this.alignment = Alignment.bottomRight,
+    this.popOnItemTap = true,
+    this.controller,
+    this.heroTag,
+  });
+
+  final Widget primaryFab;
+  final List&lt;FabMenuItem&gt; items;
+  final FabMenuDirection direction;
+  final FabMenuController? controller;
+  // ... see source for the rest
+}
+
+class FabMenuItem {
+  final Widget icon;
+  final Widget label;
+  final VoidCallback onPressed;
+  final String? semanticLabel;
+}
+
+class FabMenuController extends ChangeNotifier {
+  bool get isOpen;
+  void open();
+  void close();
+  void toggle();
+}</code></pre><ul class="ann"><li><b>FabMenuM3E</b> <span class="ann-l">L1-13</span>: StatefulWidget. The fork only changes the State's reveal animation; constructor signature is identical to upstream.</li><li><b>FabMenuDirection</b> <span class="ann-l">L15-17</span>: Re-exported from enums.dart. Drives _originFor(direction) so each item scales from the corner facing the FAB.</li><li><b>FabMenuItem</b> <span class="ann-l">L25-30</span>: Plain model: icon, label, onPressed, optional semanticLabel.</li><li><b>FabMenuController</b> <span class="ann-l">L32-37</span>: External controller hook; open/close/toggle + isOpen. Optional — fork creates an internal one if omitted.</li></ul>
+</div>
+<div class="tab"><h3 class="tab-h">FabM3E / ExtendedFabM3E</h3>
+<div class="tab-block"><p><code>FabM3E</code> and <code>ExtendedFabM3E</code> (in <code>src/fab_m3e.dart</code> and <code>src/extended_fab_m3e.dart</code>) are <strong>unchanged from upstream</strong>. They take <code>kind</code> (<code>FabM3EKind</code>), <code>size</code> (<code>FabM3ESize</code>), <code>density</code> (<code>FabM3EDensity</code>), <code>onPressed</code>, and standard M3E token-driven styling. <code>FabMenuM3E</code> builds each menu item as an <code>ExtendedFabM3E</code> with <code>kind: FabM3EKind.surface</code>.</p></div>
+</div>
+<div class="tab"><h3 class="tab-h">FabTokensAdapter</h3>
+<div class="tab-block"><p><code>FabTokensAdapter</code> (in <code>src/fab_theme_m3e.dart</code>, exported via <code>show</code>) bridges <code>m3e_design</code> tokens into FAB colors/shapes. <strong>Unpatched.</strong> Re-exported from the barrel as <code>export &#x27;src/fab_theme_m3e.dart&#x27; show FabTokensAdapter;</code>.</p></div>
+</div>
+</div>
+<h3>Usage playbook</h3>
+<p class="code-fn"><code>example/fab_menu_usage.dart</code></p><pre><code>import &#x27;package:m3e_collection/m3e_collection.dart&#x27;;
+
+FabMenuM3E(
+  primaryFab: FabM3E(
+    icon: const Icon(Icons.add),
+    onPressed: () {},
+  ),
+  direction: FabMenuDirection.up,
+  items: [
+    FabMenuItem(icon: const Icon(Icons.note), label: const Text(&#x27;Note&#x27;), onPressed: () {}),
+    FabMenuItem(icon: const Icon(Icons.task), label: const Text(&#x27;Task&#x27;), onPressed: () {}),
+  ],
+)</code></pre><ul class="ann"><li><b>direction</b> <span class="ann-l">L5</span>: Drives _originFor(): up=bottomRight, down=topRight, left=centerRight, right=centerLeft. Each item scales from that corner of its own box.</li><li><b>items</b> <span class="ann-l">L7-10</span>: Reveal order = list order; the item nearest the FAB leads the stagger.</li></ul>
+<h2>5b. Wiring — how a host actually gets this fork</h2>
+<p class="code-fn"><code>pubspec.yaml (root)</code></p><pre><code># Vendored fork of fab_m3e 0.1.1 (pulled in transitively via m3e_collection).
+# Patched so the FAB Menu reveals items with a staggered, FAB-anchored spring
+# (M3E spec) instead of one center-origin scale+fade, and never draws a scrim.
+# Source of the patch: packages/fab_m3e/lib/src/fab_menu_m3e.dart.
+dependency_overrides:
+  fab_m3e:
+    path: packages/fab_m3e</code></pre><ul class="ann"><li><b>WHY</b> <span class="ann-l">L1-4</span>: Root pubspec.yaml override comment. This is the auditable reason for the fork; edit it whenever the patch changes.</li><li><b>HOW</b> <span class="ann-l">L5-7</span>: path: override activates the fork. m3e_collection still re-exports fab_m3e by name; the override redirects that name to the local folder.</li></ul>
+
+<div class="callout "><p>Hosts almost never import <code>package:fab_m3e/...</code> directly. The fork is pulled in <strong>transitively</strong> via <code>m3e_collection</code> (the umbrella that re-exports every M3E widget), and most apps reach it through <code>stacked_kit</code>'s <code>Kit*</code> wrappers. The root <code>dependency_overrides</code> <code>path:</code> entry is the only thing that activates the patch — <code>m3e_collection</code>'s own version constraint is unchanged.</p></div>
+<h3>Integration map</h3>
+<div class="diagram-wrap">
+<p class="diag-cap">Apps import m3e_collection; the root override redirects fab_m3e to the local fork.</p>
+<div class="diagram-panel" data-rough>
+  <div class="diagram-box" data-rough>
+    <div class="diagram-pill">App (showcase / host)</div>
+  </div>
+  <div class="diagram-arrow">↓ imports</div>
+  <div class="diagram-box" data-rough>
+    <div class="diagram-pill">m3e_collection</div>
+    <div class="diagram-node">umbrella</div>
+  </div>
+  <div class="diagram-arrow">↓ re-exports</div>
+  <div class="diagram-box" data-rough>
+    <div class="diagram-pill">stacked_kit</div>
+    <div class="diagram-node">Kit* wrappers</div>
+  </div>
+  <div class="diagram-box" data-rough>
+    <div class="diagram-pill">root pubspec.yaml</div>
+    <div class="diagram-node">dependency_overrides: fab_m3e path:packages/fab_m3e</div>
+  </div>
+  <div class="diagram-arrow">↓ redirects</div>
+  <div class="diagram-box diagram-accent" data-rough>
+    <div class="diagram-pill">packages/fab_m3e</div>
+    <div class="diagram-node">this fork, not pub.dev</div>
+  </div>
+</div>
+
+</div>
+<h3>Features appendix</h3>
+<ul class="checklist">
+<li>FabM3E (small/medium/large)<span class="n">Unchanged from upstream.</span></li>
+<li>ExtendedFabM3E (label + icon)<span class="n">Unchanged; reused as the menu item body.</span></li>
+<li>FabMenuM3E staggered spring reveal (fork)<span class="n">Each item scales from the corner facing the FAB via _originFor(direction).</span></li>
+<li>FabMenuM3E never draws a scrim (fork)<span class="n">M3E spec; root pubspec override comment calls this out explicitly.</span></li>
+<li>FabMenuController open/close/toggle</li>
+<li>FabTokensAdapter bridges m3e_design tokens</li>
+</ul>
+<h3>Examples</h3>
+<p style="font-size:12px;color:var(--muted);margin:14px 0 2px"><code>example/controlled_menu.dart</code></p><p style="font-size:12px;color:var(--muted);margin:2px 0 4px">Drive the menu from an external controller (e.g. from a ViewModel).</p><pre><code>final c = FabMenuController();
+// ...
+FabMenuM3E(
+  controller: c,
+  primaryFab: FabM3E(icon: const Icon(Icons.add), onPressed: c.toggle),
+  items: [/* ... */],
+);</code></pre>
+<h3>Gotchas + re-sync procedure</h3>
+<div class="callout "><p>The fork uses <code>Interval.transform</code> on the raw controller value <strong>instead</strong> of allocating a <code>CurvedAnimation</code> per item per build. Upstream's per-item <code>CurvedAnimation</code> allocation leaked in Flutter 3.44. Do not "simplify" the loop back to <code>CurvedAnimation</code> — that reintroduces the leak.</p></div>
+
+<div class="callout warn"><p>Forward duration is <strong>300ms</strong> (raised from upstream's 200ms so the stagger cascade is legible). Reverse stays 200ms. If you change <code>_staggerSpread</code>, re-test with 4+ items — the cascade collapses if the spread window is too narrow.</p></div>
+<h3>Re-sync procedure (shared across all four forks)</h3>
+<p>When bumping upstream (<code>fab_m3e</code>, <code>navigation_rail_m3e</code>, <code>split_button_m3e</code>, or <code>toolbar_m3e</code>):</p>
+<p>1. <strong>Bump</strong> the fork's <code>pubspec.yaml</code> <code>version:</code> and the root <code>pubspec.yaml</code> override comment's stated version. 2. <strong>Backfill</strong> the fork's <code>CHANGELOG.md</code> with the new version entry (every fork's CHANGELOG is stale — see §11). 3. <strong>Diff</strong> each patched file against the new upstream release of the same path. 4. <strong>Re-apply</strong> each <code>// Patched (vendored fork)</code> / <code>// Fork patch:</code> / <code>// PATCH</code> block by hand. Do NOT copy upstream over the fork blindly — the markers are your only map of what to preserve. 5. <strong>Update</strong> the root <code>pubspec.yaml</code> override comment if the WHY or the patched-file list changed. 6. <strong>Run</strong> the fork's <code>flutter test</code> in <code>packages/&lt;name&gt;/</code>, then run the consuming showcase (<code>stacked_kit_showcase</code>) to confirm the patched behaviour still renders.</p>
+<h3>Override hygiene (shared)</h3>
+<div class="callout warn"><p>Never remove a <code>dependency_overrides</code> <code>path:</code> entry without first confirming upstream includes the fix. A "clean" <code>flutter pub get</code> silently reverts the fork to the pub.dev release, and the patch — including its bug fix — disappears with no compile error. The root override comment is the only durable record of why the patch exists.</p></div>
+
+<div class="callout "><p>Doc-gap debt every fork carries: (a) no <code>&gt; Vendored fork of upstream &lt;name&gt; &lt;version&gt;</code> banner in the README; (b) stale <code>CHANGELOG.md</code>; (c) <code>EmilyMonestone</code> → <code>EmilyMoonstone</code> typo in <code>issue_tracker</code> (present in every fork's <code>pubspec.yaml</code>).</p></div>
+<h3>Decisions / ADRs</h3>
+<p>None. The fork contract is documented in the root <code>pubspec.yaml</code> override comment; no separate ADR was written. If the patch grows beyond one file, write one.</p>
+<h3>Changelog & status</h3>
+<p>The fork's <code>CHANGELOG.md</code> is <strong>stale</strong> — it only contains <code>## 0.1.0 - Changelog initialized.</code> There is no <code>0.1.1</code> entry documenting the fork patch.</p>
+<p><strong>Backfill task:</strong> add a <code>## 0.1.1</code> entry describing the staggered-spring reveal, the 200→300ms forward duration, the no-scrim behaviour, and the <code>Interval.transform</code> leak fix.</p>
+<h3>Open questions</h3>
+<div class="qform">
+<div class="q">How often should we re-sync against upstream fab_m3e?</div>
+<div class="qsub">Upstream is on pub.dev; the fork drifts further every release.</div>
+<div class="opts">
+<label>○ Every upstream release — Lowest drift; highest maintenance.</label>
+<label>○ Quarterly <i>(recommended)</i> — Batch re-syncs; risk of stale Flutter SDK constraints.</label>
+<label>○ Only when upstream fixes a bug we hit — Lowest effort; highest drift risk.</label>
+</div>
+<div class="q">Should the staggered-spring patch be upstreamed as a PR?</div>
+<div class="opts">
+</div>
+</div>
+
+</div></body></html>

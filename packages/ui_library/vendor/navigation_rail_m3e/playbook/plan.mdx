@@ -1,0 +1,352 @@
+# navigation_rail_m3e — vendored fork playbook
+
+**Version:** 0.3.5 (fork) · **Upstream:** `EmilyMoonstone/material_3_expressive` · **Status:** vendored fork, pinned by root `dependency_overrides`
+
+**Role (one line):** Material 3 Expressive navigation rail (collapsed + expanded, modal/standard) — forked so the expand/collapse transition lays content out at the target width behind a ClipRect+OverflowBox reveal and so indicator/container corners match the M3E token spec.
+
+<Callout id="navrail-fork-banner" tone="warning">
+
+Vendored fork of upstream `navigation_rail_m3e` `0.3.5`. The patched sources live in this repo at `packages/navigation_rail_m3e/lib/src/`. The patch is activated by the root `pubspec.yaml` `dependency_overrides` `path:` entry — remove that entry and `flutter pub get` silently reverts to upstream.
+
+</Callout>
+
+## Contents
+
+0. Fork banner
+1. Overview & role
+2. Glossary
+3. Architecture — fork contract + FileTree
+4. Public API reference
+5. Usage playbook
+5b. Wiring
+6. Integration map
+7. Features appendix
+8. Examples
+9. Gotchas + re-sync procedure
+10. Decisions / ADRs
+11. Changelog & status
+12. Open questions
+
+### Overview & role
+
+`navigation_rail_m3e` is a leaf Material 3 Expressive UI widget package. Hexagonal / domain-layer concerns are N/A — it has no data, service, or routing surface. It renders a responsive navigation rail and consumes `m3e_design` tokens plus three sibling M3E packages (`fab_m3e`, `icon_button_m3e`, `button_m3e`).
+
+This package is one of four vendored forks of `EmilyMoonstone/material_3_expressive` pinned in this repo (alongside `fab_m3e`, `split_button_m3e`, `toolbar_m3e`). It is the only fork with **multiple patched files** and the only fork with **no `test/`** — the highest test debt of the four.
+
+### What this is
+
+A vendored fork of upstream `navigation_rail_m3e` `0.3.5`. The fork is pulled in transitively via the `m3e_collection` umbrella package, and activated by a `path:` `dependency_overrides` entry in the root `pubspec.yaml`. The root override comment names all four patched files (`navigation_rail_m3e_widget.dart`, `rail_item_button_m3e.dart`, `rail_tokens_adapter.dart`, `rail_theme.dart`). Patch markers in source use the `// Fork patch:` form.
+
+### Glossary
+
+- **Fork** — a vendored copy of an upstream package, edited in-tree, pinned by a `path:` override.
+- **Override** — the `dependency_overrides:` block in the root `pubspec.yaml` that forces `pub` to resolve this package from a local folder instead of pub.dev.
+- **Patch marker** — an inline comment tag (`// Patched (vendored fork)`, `// Fork patch:`, or `// PATCH`) that flags every block of code changed from upstream. Audit with `grep -rEni 'fork|patch|vendored' packages/navigation_rail_m3e/lib` (case-insensitive — this fork's markers use `Fork patch:` with a capital F).
+- **Re-sync** — the procedure for re-applying this fork's patches onto a newer upstream version (see §9).
+- **M3E** — Material 3 Expressive, the motion/shape system this widget implements.
+
+### Architecture — the fork contract
+
+The fork contract has two halves: **WHY** the patch exists (the root `pubspec.yaml` override comment) and **HOW** it is implemented (the inline `// Fork patch:` markers in `lib/src/`).
+
+<Diagram id="navrail-arch-diagram" caption="navigation_rail_m3e fork wiring: root override → umbrella → fork package.">
+
+```html
+<div class="diagram-panel" data-rough>
+  <div class="diagram-box" data-rough>
+    <div class="diagram-pill">root pubspec.yaml</div>
+    <div class="diagram-muted">dependency_overrides</div>
+  </div>
+  <div class="diagram-arrow">↓ activates</div>
+  <div class="diagram-box" data-rough>
+    <div class="diagram-pill">m3e_collection</div>
+    <div class="diagram-muted">umbrella re-export</div>
+  </div>
+  <div class="diagram-arrow">↓ re-exports</div>
+  <div class="diagram-box diagram-accent" data-rough>
+    <div class="diagram-pill">navigation_rail_m3e (fork)</div>
+    <div class="diagram-muted">lib/src/*.dart (4 patched)</div>
+  </div>
+  <div class="diagram-arrow">↓ wrapped by</div>
+  <div class="diagram-box" data-rough>
+    <div class="diagram-pill">stacked_kit</div>
+    <div class="diagram-muted">Kit* wrappers</div>
+  </div>
+</div>
+```
+
+```css
+.diagram-panel { display: flex; flex-direction: column; gap: 8px; }
+.diagram-arrow { text-align: center; padding: 2px 0; opacity: .7; }
+```
+
+</Diagram>
+
+<FileTree id="navrail-file-tree" title="navigation_rail_m3e — files that matter for the fork" entries={[
+  { path: "packages/navigation_rail_m3e/lib/navigation_rail_m3e.dart", change: "modified", note: "Barrel; exports 10 symbols across modality/widget/badges/destinations/sections/FAB slot/menu slot/theme/tokens/type." },
+  { path: "packages/navigation_rail_m3e/lib/src/navigation_rail_m3e_widget.dart", change: "modified", note: "PATCHED — Stack of both layouts (collapsed+expanded always mounted), FadeTransition cross-fade inside ClipRect+OverflowBox, single _widthT drives width+opacity, reverse uses _expandCurve.flipped, didUpdateWidget honors host type changes. 6 Fork patch markers." },
+  { path: "packages/navigation_rail_m3e/lib/src/rail_item_button_m3e.dart", change: "modified", note: "PATCHED — expanded indicator = Material with indicatorShapeFull (corner.full). 2 Fork patch markers." },
+  { path: "packages/navigation_rail_m3e/lib/src/rail_tokens_adapter.dart", change: "modified", note: "PATCHED — indicatorShapeFull returns StadiumBorder() (corner.full, not round.xs). 1 Fork patch marker." },
+  { path: "packages/navigation_rail_m3e/lib/src/rail_theme.dart", change: "modified", note: "PATCHED — itemExpandedHeight = 56 (M3E token table; upstream was 40). 1 Fork patch marker." },
+  { path: "packages/navigation_rail_m3e/pubspec.lock", change: "added", note: "Committed — cross-deps (fab_m3e/icon_button_m3e/button_m3e) need a stable resolution." },
+  { path: "packages/navigation_rail_m3e/test/", change: "modified", note: "MISSING — no test/ dir. Highest test debt of the 4 forks." },
+  { path: "packages/navigation_rail_m3e/CHANGELOG.md", change: "modified", note: "Has 0.1.0/0.3.4/0.3.5 — but no fork-patch entries." },
+  { path: "packages/navigation_rail_m3e/pubspec.yaml", change: "modified", note: "issue_tracker has EmilyMonestone (sic) typo." },
+]} />
+
+### The fork contract (shared)
+
+Every vendored fork in this repo carries the same contract:
+
+- The **WHY** is documented in the root `pubspec.yaml` `dependency_overrides` comment block above each `path:` entry. Read it before editing.
+- The **HOW** is flagged in source with `// Patched (vendored fork)`, `// Fork patch:`, or `// PATCH`. Every changed block has a marker.
+- The **audit command** is `grep -rEni 'fork|patch|vendored' packages/<name>/lib` (case-insensitive). Re-run after every edit and before every re-sync.
+- The **doc-gap checklist** (every fork carries this debt): add a `> Vendored fork of upstream <name> <version>` banner to the README; backfill the CHANGELOG; fix the `EmilyMonestone` → `EmilyMoonstone` typo in `issue_tracker` (present in every fork's `pubspec.yaml`).
+- The **test contract**: every fork SHOULD ship a `test/`. `navigation_rail_m3e` currently has NONE (highest debt); the other three forks do ship one.
+
+### Public API reference
+
+The barrel `lib/navigation_rail_m3e.dart` exports 10 symbols. The fork only changes internals; the public signatures are unchanged from upstream.
+
+<TabsBlock id="navrail-api-tabs" tabs={[
+  {
+    id: "navrail-api-widget",
+    label: "NavigationRailM3E",
+    blocks: [
+      {
+        id: "navrail-api-widget-code",
+        type: "annotated-code",
+        data: {
+          filename: "packages/navigation_rail_m3e/lib/src/navigation_rail_m3e_widget.dart",
+          language: "dart",
+          code: "class NavigationRailM3E extends StatefulWidget {\n  const NavigationRailM3E({\n    this.type = NavigationRailM3EType.expanded,\n    this.modality = NavigationRailM3EModality.standard,\n    required this.sections,\n    required this.selectedIndex,\n    required this.onDestinationSelected,\n    this.fab,\n    this.hideWhenCollapsed = false,\n    this.expandedWidth,\n    this.onDismissModal,\n    this.onTypeChanged,\n    this.labelBehavior = NavigationRailM3ELabelBehavior.alwaysShow,\n    this.scrollable = true,\n    this.trailing,\n    this.trailingAtBottom = true,\n    this.background,\n  });\n}",
+          annotations: [
+            { lines: "3", label: "type", note: "NavigationRailM3EType: expanded / collapsed / alwaysCollapsed / alwaysExpanded. The fork's didUpdateWidget honors host type changes (the upstream silently ignored them after first build)." },
+            { lines: "4", label: "modality", note: "standard (in-flow) or modal (overlay + scrim)." },
+            { lines: "5", label: "sections", note: "List<NavigationRailM3ESection>; each section has destinations and an optional header." },
+            { lines: "8", label: "fab", note: "Optional NavigationRailM3EFabSlot — wraps a FabM3E or ExtendedFabM3E for the top cluster." },
+            { lines: "10", label: "hideWhenCollapsed", note: "When true + type collapsed, rail animates to width 0 (collapsed-peek overlay still drawn)." },
+            { lines: "11", label: "expandedWidth", note: "Clamped to theme bounds (220-360)." },
+          ],
+        },
+      },
+    ],
+  },
+  {
+    id: "navrail-api-models",
+    label: "Models + enums",
+    blocks: [
+      {
+        id: "navrail-api-models-text",
+        type: "rich-text",
+        data: {
+          markdown: "**Models:** `NavigationRailM3ESection` (= `RailSectionM3E`), `NavigationRailM3EDestination` (= `RailDestinationM3E`), `NavigationRailM3EFabSlot` (= `RailFabSlot`), `RailMenuSlot`. **Enums:** `NavigationRailM3EType` (type.dart), `NavigationRailM3EModality` (modality.dart), `NavigationRailM3ELabelBehavior`. All unchanged from upstream — the fork only edits how the widget *renders* and *animates*, not what the host configures.",
+        },
+      },
+    ],
+  },
+  {
+    id: "navrail-api-theme",
+    label: "Theme + Tokens",
+    blocks: [
+      {
+        id: "navrail-api-theme-code",
+        type: "annotated-code",
+        data: {
+          filename: "packages/navigation_rail_m3e/lib/src/rail_theme.dart",
+          language: "dart",
+          code: "class NavigationRailM3ETheme extends ThemeExtension<NavigationRailM3ETheme> {\n  const NavigationRailM3ETheme({\n    this.collapsedWidth = 96.0,\n    this.expandedMinWidth = 220.0,\n    this.expandedMaxWidth = 360.0,\n    // Fork patch: 56 per the m3.material.io token table...\n    this.itemExpandedHeight = 56.0,\n    this.itemCollapsedHeight = 66.0,\n    this.iconSize = 24.0,\n    this.indicatorLeading = 16.0,\n    this.indicatorTrailing = 16.0,\n    this.iconLabelGap = 8.0,\n    // ... itemVerticalGap, sectionHeader spacing\n  });\n}\n\nclass NavigationRailTokensAdapter {\n  const NavigationRailTokensAdapter(this.context);\n  ShapeBorder get indicatorShapeFull => const StadiumBorder();\n  // containerColor, activeIndicatorColor, activeIconAndLabel, badge*, ...\n}",
+          annotations: [
+            { lines: "6", label: "Fork patch", note: "itemExpandedHeight = 56 (was 40 upstream). Reduces the swap jump between collapsed (66) and expanded layouts." },
+            { lines: "14", label: "NavigationRailTokensAdapter", note: "Bridges m3e_design tokens with Theme.of(context) fallbacks." },
+            { lines: "16", label: "Fork patch", note: "indicatorShapeFull returns StadiumBorder() — corner.full per m3.material.io token table, not round.xs." },
+          ],
+        },
+      },
+    ],
+  },
+  {
+    id: "navrail-api-itembutton",
+    label: "RailItemButtonM3E",
+    blocks: [
+      {
+        id: "navrail-api-itembutton-text",
+        type: "rich-text",
+        data: {
+          markdown: "`RailItemButtonM3E` is the internal per-destination button (exported for advanced hosts). It renders expanded (Row: icon + label + badge, wrapped in a `Material` with `indicatorShapeFull` when selected) or collapsed (Column: `IconButtonM3E` + label). **Fork patch:** only the expanded indicator uses the corner.full `Material` — the collapsed pill is drawn by `IconButtonM3E`'s round shape variant; mixing the two would clip corner glyphs.",
+        },
+      },
+    ],
+  },
+]} />
+
+### Usage playbook
+
+<AnnotatedCode id="navrail-usage-basic" filename="example/rail_usage.dart" language="dart" code={"import 'package:m3e_collection/m3e_collection.dart';\n\nNavigationRailM3E(\n  type: NavigationRailM3EType.expanded,\n  modality: NavigationRailM3EModality.standard,\n  selectedIndex: 0,\n  onDestinationSelected: (i) {},\n  sections: [\n    NavigationRailM3ESection(destinations: [\n      NavigationRailM3EDestination(icon: const Icon(Icons.inbox), label: const Text('Inbox')),\n      NavigationRailM3EDestination(icon: const Icon(Icons.settings), label: const Text('Settings')),\n    ]),\n  ],\n)"} annotations={[
+  { lines: "1", note: "Hosts import via the umbrella m3e_collection, not the fork directly (see 5b)." },
+  { lines: "4-5", label: "type + modality", note: "Toggle via onTypeChanged to let the built-in menu button drive collapse; or set type directly — the fork's didUpdateWidget honors either path." },
+]} />
+
+## 5b. Wiring — how a host actually gets this fork
+
+<AnnotatedCode id="navrail-wiring-override" filename="pubspec.yaml (root)" language="yaml" code={"# Vendored fork of navigation_rail_m3e 0.3.5 (pulled in via m3e_collection).\n# Patched so the expand/collapse transition lays content out at the target\n# width behind a ClipRect+OverflowBox reveal (no transient RenderFlex\n# overflow, no label squish), uses the M3E spatial-spring fallback curve,\n# fades labels in, honors type changes from the host, and fixes indicator/\n# container corners to spec (corner.full pill indicators, corner.large modal\n# container). Patches: packages/navigation_rail_m3e/lib/src/\n# navigation_rail_m3e_widget.dart, rail_item_button_m3e.dart,\n# rail_tokens_adapter.dart.\ndependency_overrides:\n  navigation_rail_m3e:\n    path: packages/navigation_rail_m3e"} annotations={[
+  { lines: "1-8", label: "WHY", note: "Root pubspec.yaml override comment — the auditable reason for the fork. Edit whenever the patch list changes." },
+  { lines: "9-11", label: "HOW", note: "path: override activates the fork. m3e_collection still re-exports navigation_rail_m3e by name; the override redirects that name to the local folder." },
+]} />
+
+<Callout id="navrail-wiring-callout" tone="info">
+
+Hosts almost never import `package:navigation_rail_m3e/...` directly. The fork is pulled in **transitively** via `m3e_collection` (the umbrella that re-exports every M3E widget), and most apps reach it through `stacked_kit`'s `Kit*` wrappers. The root `dependency_overrides` `path:` entry is the only thing that activates the patch — `m3e_collection`'s own version constraint is unchanged. The fork also has cross-deps on three sibling M3E forks/packages: `fab_m3e ^0.1.1`, `icon_button_m3e ^0.2.1`, `button_m3e ^0.1.1` (which is why `pubspec.lock` is committed here).
+
+</Callout>
+
+### Integration map
+
+<Diagram id="navrail-integration-map" caption="Apps import m3e_collection; the root override redirects navigation_rail_m3e to the local fork, which depends on three more M3E packages.">
+
+```html
+<div class="diagram-panel" data-rough>
+  <div class="diagram-box" data-rough>
+    <div class="diagram-pill">App (showcase / host)</div>
+  </div>
+  <div class="diagram-arrow">imports →</div>
+  <div class="diagram-box" data-rough>
+    <div class="diagram-pill">m3e_collection</div>
+    <div class="diagram-muted">umbrella</div>
+  </div>
+  <div class="diagram-arrow">re-exports</div>
+  <div class="diagram-box" data-rough>
+    <div class="diagram-pill">stacked_kit</div>
+    <div class="diagram-muted">Kit* wrappers</div>
+  </div>
+  <div class="diagram-box" data-rough>
+    <div class="diagram-pill">root pubspec.yaml</div>
+    <div class="diagram-muted">dependency_overrides: navigation_rail_m3e path:...</div>
+  </div>
+  <div class="diagram-arrow">redirects →</div>
+  <div class="diagram-box diagram-accent" data-rough>
+    <div class="diagram-pill">packages/navigation_rail_m3e</div>
+    <div class="diagram-muted">this fork</div>
+  </div>
+  <div class="diagram-arrow">depends on →</div>
+  <div class="diagram-box" data-rough>
+    <div class="diagram-node">fab_m3e</div>
+    <div class="diagram-node">icon_button_m3e</div>
+    <div class="diagram-node">button_m3e</div>
+    <div class="diagram-node">m3e_design</div>
+  </div>
+</div>
+```
+
+```css
+.diagram-panel { display: flex; flex-direction: column; gap: 8px; }
+.diagram-arrow { text-align: center; padding: 2px 0; opacity: .7; }
+```
+
+</Diagram>
+
+### Features appendix
+
+<Checklist id="navrail-features" items={[
+  { id: "feat-collapsed", label: "Collapsed rail (icon-only, 96dp)", note: "Standard mode + optional collapsed-peek overlay when hideWhenCollapsed." },
+  { id: "feat-expanded", label: "Expanded rail (220-360dp, labels)", note: "Configurable via expandedWidth, clamped to theme bounds." },
+  { id: "feat-transition", label: "Single-controller width + cross-fade transition (fork)", checked: true, note: "_widthT drives both width and layer opacities; reverse uses _expandCurve.flipped so collapse starts moving immediately." },
+  { id: "feat-cliprect", label: "ClipRect + OverflowBox reveal (fork)", checked: true, note: "Both layouts always mounted at target width; no transient RenderFlex overflow, no label squish." },
+  { id: "feat-modality", label: "Standard + modal modality" },
+  { id: "feat-modal-scrim", label: "Modal scrim + onDismissModal" },
+  { id: "feat-sections", label: "Sections with headers + per-section destinations" },
+  { id: "feat-badges", label: "RailBadgeM3E numeric badges" },
+  { id: "feat-fab-slot", label: "Built-in FAB slot (wraps FabM3E / ExtendedFabM3E)" },
+  { id: "feat-corners", label: "corner.full pill indicators + corner.large modal container (fork)", checked: true, note: "indicatorShapeFull = StadiumBorder(); rail_tokens_adapter + rail_item_button fix." },
+  { id: "feat-type-sync", label: "Honors host type changes after first build (fork)", checked: true, note: "didUpdateWidget's last else-if branch; upstream silently ignored these." },
+]} />
+
+### Examples
+
+<Code id="navrail-example-modal" filename="example/modal_rail.dart" language="dart" caption="Modal rail with a host-driven type toggle." code={"NavigationRailM3E(\n  type: _expanded ? NavigationRailM3EType.expanded : NavigationRailM3EType.collapsed,\n  modality: NavigationRailM3EModality.modal,\n  onDismissModal: () => setState(() => _modalOpen = false),\n  onTypeChanged: (t) => setState(() => _expanded = t == NavigationRailM3EType.expanded),\n  sections: _sections,\n  selectedIndex: _index,\n  onDestinationSelected: (i) => setState(() => _index = i),\n)"} />
+
+### Gotchas + re-sync procedure
+
+<Callout id="navrail-gotcha-opacity" tone="risk">
+
+The fork uses **`FadeTransition`** (repaint only) for layer cross-fades — never `Opacity`. `Opacity` during animation triggers `saveLayer` per frame, a documented perf anti-pattern. Do not "simplify" back to `Opacity`.
+
+</Callout>
+
+<Callout id="navrail-gotcha-reverse" tone="warning">
+
+The reverse curve is `_expandCurve.flipped`, NOT `_expandCurve`. A straight time-reversal would spend its first ~300ms inside the spring's overshoot tail (width frozen at ~220) and read as lag. If you change `_expandCurve`, re-test both directions.
+
+</Callout>
+
+<Callout id="navrail-gotcha-no-test" tone="risk">
+
+This is the **only one of the four forks with no `test/`**. Re-syncs and edits are uninsured — every change must be smoke-tested manually in the consuming showcase (`stacked_kit_showcase`). Adding a `test/navigation_rail_m3e_test.dart` that asserts the Stack-of-two-layouts structure and the corner.full indicator is the single highest-value investment.
+
+</Callout>
+
+<Callout id="navrail-gotcha-cross-deps" tone="warning">
+
+This fork depends on **three** other M3E packages (`fab_m3e`, `icon_button_m3e`, `button_m3e`). When re-syncing upstream, all four cross-deps must remain compatible — `pubspec.lock` is committed here precisely so a transitive resolution drift cannot silently break the rail. Re-run `flutter pub get` after any cross-dep bump and commit the new lock.
+
+</Callout>
+
+### Re-sync procedure (shared across all four forks)
+
+When bumping upstream (`fab_m3e`, `navigation_rail_m3e`, `split_button_m3e`, or `toolbar_m3e`):
+
+1. **Bump** the fork's `pubspec.yaml` `version:` and the root `pubspec.yaml` override comment's stated version.
+2. **Backfill** the fork's `CHANGELOG.md` with the new version entry (every fork's CHANGELOG is stale — see §11).
+3. **Diff** each patched file against the new upstream release of the same path. For this fork, that is four files: `navigation_rail_m3e_widget.dart`, `rail_item_button_m3e.dart`, `rail_tokens_adapter.dart`, `rail_theme.dart`.
+4. **Re-apply** each `// Patched (vendored fork)` / `// Fork patch:` / `// PATCH` block by hand. Do NOT copy upstream over the fork blindly — the markers are your only map of what to preserve.
+5. **Update** the root `pubspec.yaml` override comment if the WHY or the patched-file list changed.
+6. **Run** the fork's `flutter test` in `packages/<name>/` (this fork has none — extra reason to add one), then run the consuming showcase (`stacked_kit_showcase`) to confirm the patched behaviour still renders.
+
+### Override hygiene (shared)
+
+<Callout id="navrail-override-hygiene" tone="warning">
+
+Never remove a `dependency_overrides` `path:` entry without first confirming upstream includes the fix. A "clean" `flutter pub get` silently reverts the fork to the pub.dev release, and the patch — including its bug fix — disappears with no compile error. The root override comment is the only durable record of why the patch exists.
+
+</Callout>
+
+<Callout id="navrail-doc-gap" tone="risk">
+
+Doc-gap debt every fork carries: (a) no `> Vendored fork of upstream <name> <version>` banner in the README; (b) stale `CHANGELOG.md`; (c) `EmilyMonestone` → `EmilyMoonstone` typo in `issue_tracker` (present in every fork's `pubspec.yaml`).
+
+</Callout>
+
+### Decisions / ADRs
+
+None. The fork contract is documented in the root `pubspec.yaml` override comment; no separate ADR was written. Given this fork patches four files (the most of the four), it is the strongest candidate for a dedicated ADR if the patch surface grows further.
+
+### Changelog & status
+
+The fork's `CHANGELOG.md` exists (`0.1.0`, `0.3.4`, `0.3.5 — fix bug with collapsed mode`) but contains **no fork-patch entries**. The fork patches are undocumented in-place.
+
+**Backfill task:** add fork-patch entries covering (a) the single-controller width+opacity transition with `ClipRect+OverflowBox`, (b) the `_expandCurve.flipped` reverse, (c) the corner.full indicator/container token fixes, (d) `itemExpandedHeight = 56`, (e) host-type-change honoring in `didUpdateWidget`.
+
+**Test status:** no `test/` directory — highest test debt of the four forks.
+
+### Open questions
+
+<QuestionForm id="navrail-open-questions" questions={[
+  {
+    id: "navrail-q-test-debt",
+    title: "When does this fork get a test/ suite?",
+    subtitle: "It is the only one of the four forks with no tests. Every edit is currently uninsured.",
+    mode: "single",
+    options: [
+      { id: "next-edit", label: "Before the next fork edit", detail: "Lock the Stack-of-layouts + corner.full indicator behaviour first.", recommended: true },
+      { id: "next-resync", label: "Before the next upstream re-sync" },
+      { id: "defer", label: "Defer indefinitely", detail: "Accept the manual-showcase smoke-test burden." },
+    ],
+    required: false,
+  },
+  {
+    id: "navrail-q-rail-theme-split",
+    title: "Should rail_theme.dart be added to the root override comment's patched-file list?",
+    mode: "freeform",
+    placeholder: "The override comment names 3 files; the audit shows 4. Note whether to update the comment.",
+  },
+]} submitLabel="Record answers" />

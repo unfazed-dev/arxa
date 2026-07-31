@@ -1,0 +1,150 @@
+<Callout id="header" tone="info">
+
+# stacked_kit_payments — Per-Package Playbook
+
+
+`stacked_kit_payments` v**0.1.0** · `publish_to: 'none'` · status: **active**
+
+
+**Role (one line):** Native-first payments for stacked_kit apps — Apple Pay + Google Pay via Google's first-party pay plugin, behind a pluggable provider port so Stripe/PayPal backends slot in later.
+
+
+**Scope of this document:** lets a human OR an LLM use, wire, and extend `stacked_kit_payments` **without reading its source**. The public surface below was extracted from the barrel; README content is folded into the narrative sections.
+
+
+## Table of contents
+
+0. Header & TOC — *you are here* · 1. Overview & role · 2. Public surface · 3. Usage & wiring · 4. Integration map · 5. Architecture · 6. Gotchas · 7. Testing · 8. Features · 9. Decisions · 10. References · 11. Open questions
+
+
+</Callout>
+
+
+### Overview & role
+
+Native-first payments for stacked_kit apps — Apple Pay + Google Pay via Google's first-party pay plugin, behind a pluggable provider port so Stripe/PayPal backends slot in later. Typed PaymentResult, scriptable fakes.
+
+
+### Public surface
+
+Exported from `lib/stacked_kit_payments.dart`:
+
+<Table id="payments-api" columns={["Symbol", "Kind", "Defined in"]} rows={[["KitPaymentsProvider", "abstract interface class", "src/providers/kit_payments_provider.dart"], ["KitPaymentsProviderRegistry", "class", "src/providers/kit_payments_provider.dart"], ["SeedPaymentProfile", "class", "src/providers/seed/seed_payments_provider.dart"], ["SeedSucceed", "class", "src/providers/seed/seed_payments_provider.dart"], ["SeedDecline", "class", "src/providers/seed/seed_payments_provider.dart"], ["SeedCancel", "class", "src/providers/seed/seed_payments_provider.dart"], ["SeedTimeout", "class", "src/providers/seed/seed_payments_provider.dart"], ["SeedPaymentsProvider", "class", "src/providers/seed/seed_payments_provider.dart"], ["PayPaymentsProvider", "class", "src/providers/native/pay_payments_provider.dart"], ["PayPalPaymentsProvider", "class", "src/providers/paypal/paypal_payments_provider.dart"], ["StripePaymentsProvider", "class", "src/providers/stripe/stripe_payments_provider.dart"], ["KitPaymentConfig", "class", "src/models/kit_payment_config.dart"], ["ApplePayConfig", "class", "src/models/kit_payment_config.dart"], ["GooglePayConfig", "class", "src/models/kit_payment_config.dart"], ["KitPaymentItemStatus", "enum", "src/models/kit_payment_item.dart"], ["KitPaymentItem", "class", "src/models/kit_payment_item.dart"], ["KitPaymentMethod", "enum", "src/models/kit_payment_method.dart"], ["PaymentResult", "class", "src/models/payment_result.dart"], ["PaymentSuccess", "class", "src/models/payment_result.dart"], ["PaymentCancelled", "class", "src/models/payment_result.dart"], ["PaymentDeclined", "class", "src/models/payment_result.dart"], ["PaymentError", "class", "src/models/payment_result.dart"], ["KitPaymentsService", "abstract interface class", "src/service/kit_payments_service.dart"], ["DefaultKitPaymentsService", "class", "src/service/kit_payments_service.dart"], ["KitPayButton", "class", "src/widgets/kit_pay_button.dart"]]} />
+
+Test doubles in `lib/testing.dart`: `FakeKitPaymentsService`, `FakePaymentsProvider`.
+
+Scripts and call-counts — tests never touch platform channels.
+
+
+### Usage & wiring
+
+```dart
+import 'package:stacked_kit_payments/stacked_kit_payments.dart';
+
+final payments = DefaultKitPaymentsService.native(
+  applePay: const ApplePayConfig.fromAsset('assets/apple_pay_config.json'),
+  googlePay: const GooglePayConfig.fromAsset('assets/google_pay_config.json'),
+);
+
+if (await payments.canPay(KitPaymentMethod.applePay)) {
+  final result = await payments.requestPayment(
+    config: const ApplePayConfig.fromAsset('assets/apple_pay_config.json'),
+    items: const [KitPaymentItem(label: 'Total', amount: '99.99')],
+  );
+  switch (result) {
+    case PaymentSuccess(:final token):   // forward token to your server / PSP
+    case PaymentCancelled():             // user dismissed — do nothing
+    case PaymentDeclined(:final reason): // retry with another method
+    case PaymentError(:final message):   // log; not user-fixable
+  }
+}
+```
+
+Or drop in the button directly:
+
+```dart
+KitPayButton(
+  applePay: const ApplePayConfig.fromAsset('assets/apple_pay_config.json'),
+  googlePay: const GooglePayConfig.fromAsset('assets/google_pay_config.json'),
+  items: const [KitPaymentItem(label: 'Total', amount: '99.99')],
+  onResult: (result) { /* same switch as above */ },
+);
+```
+
+
+### Integration map
+
+<Table id="payments-integration" columns={["Stacked framework deps", "Backing SDK packages", "Depends on (kit)"]} rows={[["\u2014", "pay", "\u2014 (standalone)"]]} />
+
+See `kit_matrix.md` for the full routing + dependency graph.
+
+
+### Architecture
+
+Hosts depend only on the `KitPaymentsService` port (`canPay` + `requestPayment`) and the sealed `PaymentResult`; `DefaultKitPaymentsService` routes each call through a `KitPaymentsProviderRegistry` to the first registered `KitPaymentsProvider` whose `supportedMethods` contains the requested wallet. `PayPaymentsProvider` is the sole live adapter, wrapping the `pay` plugin, while `StripePaymentsProvider` and `PayPalPaymentsProvider` ship as same-shaped stubs that throw `UnimplementedError` until their phase arrives. Dependency direction is strictly models/service → providers → `pay`: the service and ViewModels carry no provider SDK, so backends can be swapped without touching call sites. The package is also standalone — it declares no dependency on `stacked_kit`, `stacked`, or `stacked_services`.
+
+
+### Gotchas
+
+Native setup is yours to own: Apple Pay requires the Apple Merchant ID entitlement and a matching `merchantIdentifier` in the profile JSON, and Google Pay requires merchant approval in the Google Pay & Wallet Console plus the gateway wiring in the Android manifest — this package ships the flow, not the merchant onboarding. The sample profiles under `example/` (`apple_pay_config.json`, `google_pay_config.json`) must be copied into the host app's own `assets/` and declared in its pubspec; no payment profile is bundled here. Note that Apple/Google Pay do not distinguish a card decline client-side, so a declined instrument surfaces as `PaymentError`, not `PaymentDeclined` — the decline-vs-error split only becomes meaningful once the Stripe/PayPal stubs (currently `UnimplementedError`) are implemented. This package only mints a wallet token; capturing/charging it is your server's job (an explicit non-goal), and it targets Android + iOS only — the `pay` plugin supports no other platform.
+
+
+### Testing
+
+```dart
+import 'package:stacked_kit_payments/testing.dart';
+
+final payments = FakeKitPaymentsService(
+  canPayByMethod: {KitPaymentMethod.applePay: true},
+  results: [
+    PaymentSuccess(token: 't', method: KitPaymentMethod.applePay),
+    const PaymentCancelled(),
+    const PaymentDeclined(reason: 'insufficient funds'),
+    const PaymentError('network'),
+  ],
+);
+```
+
+Named factories cover the common single-outcome cases:
+`FakeKitPaymentsService.alwaysSucceeds()`, `.alwaysCancels()`,
+`.alwaysDeclined()`, `.alwaysErrors()`. `FakePaymentsProvider` exercises the
+registry/routing layer directly.
+
+
+### Features
+
+<Checklist id="payments-features" items={[{"id": "payments-feat-0", "label": "`KitPaymentsProvider` \u2014 abstract interface class"}, {"id": "payments-feat-1", "label": "`KitPaymentsProviderRegistry` \u2014 class"}, {"id": "payments-feat-2", "label": "`SeedPaymentProfile` \u2014 class"}, {"id": "payments-feat-3", "label": "`SeedSucceed` \u2014 class"}, {"id": "payments-feat-4", "label": "`SeedDecline` \u2014 class"}, {"id": "payments-feat-5", "label": "`SeedCancel` \u2014 class"}, {"id": "payments-feat-6", "label": "`SeedTimeout` \u2014 class"}, {"id": "payments-feat-7", "label": "`SeedPaymentsProvider` \u2014 class"}, {"id": "payments-feat-8", "label": "`PayPaymentsProvider` \u2014 class"}, {"id": "payments-feat-9", "label": "`PayPalPaymentsProvider` \u2014 class"}, {"id": "payments-feat-10", "label": "`StripePaymentsProvider` \u2014 class"}, {"id": "payments-feat-11", "label": "`KitPaymentConfig` \u2014 class"}]} />
+
+
+### Decisions / ADRs
+
+The package backs itself with Google's first-party `pay` plugin because it wraps PassKit and the Google Pay API directly, driving the wallet the user already trusts without putting a third-party PSP SDK in the hot path. It ships standalone (no dependency on `stacked_kit`, `stacked`, or `stacked_services`) so the payments surface stays usable from non-stacked apps and is not coupled to the framework's release cadence — `pay ^3.3.0` is its only backing dependency. Stripe and PayPal were left as same-shaped stubs behind the `KitPaymentsProvider` port rather than baked in, so a real PSP backend can be added later without changing any call site: native-wallet coverage first, PSP capture deferred to the layer that actually owns it (your server).
+
+<!-- kb:begin -->
+### References
+
+Official docs and tooling:
+
+- [Stacked — official documentation](https://stacked.filledstacks.com) — Canonical framework docs. Start here for ViewModel/Service patterns used by every kit.
+- [stacked (pub.dev)](https://pub.dev/packages/stacked) — Lightweight MVVM + service locator. Pinned ^3.5.0 across the kits.
+- [stacked_shared (pub.dev)](https://pub.dev/packages/stacked_shared) — StackedLocator.instance — the shared singleton kits resolve through. Pinned ^1.4.2.
+- [stacked_generator (pub.dev)](https://pub.dev/packages/stacked_generator) — Generates routers + @StackedApp wiring. Pinned ^2.0.4.
+- [stacked_cli (pub.dev)](https://pub.dev/packages/stacked_cli) — Scaffolding CLI for new Stacked apps/views/services.
+- [Flutter — official documentation](https://docs.flutter.dev) — Framework docs, platform integration, performance.
+- [Dart — official documentation](https://dart.dev) — Language tour, async, package ecosystem.
+- [Dart & Flutter MCP server (official)](https://dart.dev/tools/mcp-server) — Ships with the Dart SDK (dart mcp-server). Exposes analyzer diagnostics, pub, tests, and live Flutter app introspection via DTD. Wired in stacked_kit/.mcp.json.
+
+Kit-specific:
+
+- [pay (pub.dev)](https://pub.dev/packages/pay) — pay — backing dependency of stacked_kit_payments.
+<!-- kb:end -->
+
+<QuestionForm id="open-questions" questions={[
+  {
+    id: "q-payments-gaps",
+    title: "What is unclear or missing from this playbook?",
+    mode: "freeform",
+    placeholder: "Note anything a new contributor or agent would need that is not covered above.",
+  },
+]} />
+

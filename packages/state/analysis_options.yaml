@@ -1,0 +1,3 @@
+# Pure-Dart package — the `lints` recommended set (flutter_lints requires
+# Flutter, which this package deliberately does not depend on).
+include: package:lints/recommended.yaml

@@ -1,0 +1,183 @@
+import 'dart:io' show Platform;
+
+import 'package:flutter/foundation.dart' show ValueListenable, kIsWeb;
+import 'package:flutter/widgets.dart';
+import '../cupertino_native_platform_interface.dart';
+
+/// A navigation observer that automatically notifies native Cupertino components
+/// when route transitions begin and end.
+///
+/// This prevents visual artifacts with Liquid Glass effects during Flutter
+/// navigation transitions.
+///
+/// ## Usage
+///
+/// Add this observer to your app's navigatorObservers:
+///
+/// ```dart
+/// MaterialApp(
+///   navigatorObservers: [
+///     CNTransitionObserver(),
+///   ],
+///   // ...
+/// )
+/// ```
+///
+/// Or with GoRouter:
+///
+/// ```dart
+/// GoRouter(
+///   observers: [
+///     CNTransitionObserver(),
+///   ],
+///   // ...
+/// )
+/// ```
+class CNTransitionObserver extends NavigatorObserver {
+  /// Creates a [CNTransitionObserver] instance.
+  CNTransitionObserver();
+
+  int _transitionCount = 0;
+
+  /// Global count of route transitions in flight across ALL observer instances
+  /// (root + nested navigators). This is the Dart-side signal a widget listens
+  /// to when it must ALPHA-0 HIDE a native platform view for the duration of a
+  /// route slide — the native `beginTransition`/`endTransition` flag only
+  /// drives the on-view glass-effect tint, and a hybrid-composition platform
+  /// view can't be tinted out of a leak: it must leave the frame's layer tree
+  /// (see `KitNativeChromeGate`). Includes the interactive back-swipe, held
+  /// open by the `didStartUserGesture`/`didStopUserGesture` hooks below —
+  /// `didPop` alone fires only at gesture COMMIT, leaving the drag unguarded.
+  static final ValueNotifier<int> _activeTransitions = ValueNotifier<int>(0);
+
+  /// Read-only: `> 0` while any route transition (push / pop / replace /
+  /// remove, or an interactive back-swipe gesture) is animating.
+  static ValueListenable<int> get activeTransitions => _activeTransitions;
+
+  @override
+  void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    _beginTransition();
+    _scheduleEndTransition(route);
+  }
+
+  @override
+  void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    _beginTransition();
+    _scheduleEndTransition(previousRoute);
+  }
+
+  @override
+  void didReplace({Route<dynamic>? newRoute, Route<dynamic>? oldRoute}) {
+    _beginTransition();
+    _scheduleEndTransition(newRoute);
+  }
+
+  @override
+  void didRemove(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    _beginTransition();
+    _scheduleEndTransition(previousRoute);
+  }
+
+  // Interactive back-swipe (iOS edge-drag): the pop's `didPop` fires only at
+  // COMMIT, so the drag itself is otherwise unguarded — the exact window the
+  // app-bar glass leaked in. Hold the transition open for the whole gesture
+  // (a cancelled swipe's `didStopUserGesture` balances the `didStartUserGesture`
+  // begin; a committed one is carried past the gesture by `didPop`'s scheduled
+  // end, so the flag stays set through the settle animation).
+  @override
+  void didStartUserGesture(
+      Route<dynamic> route, Route<dynamic>? previousRoute) {
+    _beginTransition();
+  }
+
+  @override
+  void didStopUserGesture() {
+    _endTransition();
+  }
+
+  void _beginTransition() {
+    _transitionCount++;
+    _activeTransitions.value = _activeTransitions.value + 1;
+    // The native begin/endTransition calls only have an iOS implementation
+    // (Liquid Glass tint); on Android/macOS the method channel has no handler
+    // and the call throws MissingPluginException into the zone error handler.
+    // Guard so the noise stops at the source. The Dart-side
+    // [_activeTransitions] signal still drives KitNativeChromeGate everywhere.
+    if (_transitionCount == 1 && (!kIsWeb && Platform.isIOS)) {
+      CupertinoNativePlatform.instance.beginTransition();
+    }
+  }
+
+  void _scheduleEndTransition(Route<dynamic>? route) {
+    // Get the animation from the route (only ModalRoute has animation)
+    Animation<double>? animation;
+    if (route is ModalRoute) {
+      animation = route.animation;
+    }
+
+    if (animation != null && animation.status != AnimationStatus.completed) {
+      // Wait for animation to complete
+      void listener(AnimationStatus status) {
+        if (status == AnimationStatus.completed ||
+            status == AnimationStatus.dismissed) {
+          animation!.removeStatusListener(listener);
+          _endTransition();
+        }
+      }
+
+      animation.addStatusListener(listener);
+    } else {
+      // No animation or already complete, end after a short delay
+      Future.delayed(const Duration(milliseconds: 350), _endTransition);
+    }
+  }
+
+  void _endTransition() {
+    _transitionCount--;
+    final int next = _activeTransitions.value - 1;
+    _activeTransitions.value = next < 0 ? 0 : next;
+    if (_transitionCount <= 0) {
+      _transitionCount = 0;
+      // Mirror the begin guard — only iOS has a native handler.
+      if (!kIsWeb && Platform.isIOS) {
+        CupertinoNativePlatform.instance.endTransition();
+      }
+    }
+  }
+}
+
+/// Static utility methods for manual transition control.
+///
+/// Use these when you need fine-grained control over transition notifications,
+/// such as with custom transitions or modal presentations.
+class CNTransitionHelper {
+  CNTransitionHelper._();
+
+  /// Call this before starting a navigation transition.
+  static Future<void> beginTransition() {
+    return CupertinoNativePlatform.instance.beginTransition();
+  }
+
+  /// Call this after a navigation transition completes.
+  static Future<void> endTransition() {
+    return CupertinoNativePlatform.instance.endTransition();
+  }
+
+  /// Wraps an async navigation operation with transition notifications.
+  ///
+  /// Example:
+  /// ```dart
+  /// await CNTransitionHelper.withTransition(() async {
+  ///   await Navigator.of(context).pushNamed('/details');
+  /// });
+  /// ```
+  static Future<T> withTransition<T>(Future<T> Function() operation) async {
+    await beginTransition();
+    try {
+      return await operation();
+    } finally {
+      // Delay end to allow animation to complete
+      Future.delayed(const Duration(milliseconds: 350), endTransition);
+    }
+  }
+}

@@ -1,0 +1,133 @@
+<Callout id="header" tone="info">
+
+# stacked_kit_data — Per-Package Playbook
+
+
+`stacked_kit_data` v**0.1.0** · `publish_to: 'none'` · status: **active**
+
+
+**Role (one line):** Data layer for stacked_kit apps — generic repositories over a seed (fixture-backed), Supabase, or Appwrite backend selected by KitDataConfig, deterministic v5 canonical IDs, schema descriptors with SQL/appwrite.
+
+
+**Scope of this document:** lets a human OR an LLM use, wire, and extend `stacked_kit_data` **without reading its source**. The public surface below was extracted from the barrel; README content is folded into the narrative sections.
+
+
+## Table of contents
+
+0. Header & TOC — *you are here* · 1. Overview & role · 2. Public surface · 3. Usage & wiring · 4. Integration map · 5. Architecture · 6. Gotchas · 7. Testing · 8. Features · 9. Decisions · 10. References · 11. Open questions
+
+
+</Callout>
+
+
+### Overview & role
+
+Data layer for stacked_kit apps — generic repositories over a seed (fixture-backed), Supabase, or Appwrite backend selected by KitDataConfig, deterministic v5 canonical IDs, schema descriptors with SQL/appwrite.json emitters, and rxdart facade services.
+
+
+### Public surface
+
+Exported from `lib/stacked_kit_data.dart`:
+
+<Table id="data-api" columns={["Symbol", "Kind", "Defined in"]} rows={[["KitData", "class", "kit_data.dart"], ["KitDataBackend", "enum", "config/kit_data_config.dart"], ["KitSeedPersistenceMode", "enum", "config/kit_data_config.dart"], ["KitSupabaseConfig", "class", "config/kit_data_config.dart"], ["KitAppwriteConfig", "class", "config/kit_data_config.dart"], ["KitAuthConfig", "class", "config/kit_data_config.dart"], ["KitDataConfig", "class", "config/kit_data_config.dart"], ["KitSeedException", "class", "config/kit_seed_profile.dart"], ["KitSeedProfile", "class", "config/kit_seed_profile.dart"], ["KitAuthService", "abstract interface class", "auth/kit_auth_service.dart"], ["KitAuthUser", "class", "auth/kit_auth_types.dart"], ["KitAuthSession", "class", "auth/kit_auth_types.dart"], ["KitAuthException", "class", "auth/kit_auth_types.dart"], ["KitSeedAuthService", "class", "auth/seed/kit_seed_auth_service.dart"], ["KitSupabaseAuthService", "class", "auth/supabase/kit_supabase_auth_service.dart"], ["KitAppwriteAuthService", "class", "auth/appwrite/kit_appwrite_auth_service.dart"], ["KitDataSeeder", "class", "seeding/kit_data_seeder.dart"], ["KitFixtureLoader", "class", "seeding/kit_fixture_loader.dart"], ["KitRepository", "abstract interface class", "repositories/kit_repository.dart"], ["KitSeedPersistence", "abstract interface class", "repositories/seed/kit_seed_persistence.dart"], ["KitNoPersistence", "class", "repositories/seed/kit_seed_persistence.dart"], ["KitBootResolution", "class", "repositories/seed/kit_seed_persistence.dart"], ["KitSnapshotPersistence", "class", "repositories/seed/kit_seed_persistence.dart"], ["KitSeedRepository", "class", "repositories/seed/kit_seed_repository.dart"], ["KitSeedStore", "class", "repositories/seed/kit_seed_store.dart"], ["KitSupabaseRepository", "class", "repositories/supabase/kit_supabase_repository.dart"], ["KitAppwriteRepository", "class", "repositories/appwrite/kit_appwrite_repository.dart"], ["KitEntityRegistration", "class", "models/kit_entity_registration.dart"], ["StorageObjectRef", "class", "storage/kit_storage_service.dart"], ["KitStorageService", "abstract interface class", "storage/kit_storage_service.dart"], ["KitSeedStorageService", "class", "storage/seed/kit_seed_storage_service.dart"], ["KitStoragePersistence", "abstract interface class", "storage/seed/kit_storage_persistence.dart"], ["KitNoStoragePersistence", "class", "storage/seed/kit_storage_persistence.dart"], ["KitSnapshotStoragePersistence", "class", "storage/seed/kit_storage_persistence.dart"], ["KitSupabaseStorageService", "class", "storage/supabase/kit_supabase_storage_service.dart"], ["KitAppwriteStorageService", "class", "storage/appwrite/kit_appwrite_storage_service.dart"], ["KitIdService", "class", "ids/kit_id_service.dart"], ["KitSchemaRegistry", "class", "schema/kit_schema_registry.dart"], ["KitColumnType", "enum", "schema/kit_table_schema.dart"], ["KitColumn", "class", "schema/kit_table_schema.dart"], ["KitTableSchema", "class", "schema/kit_table_schema.dart"], ["KitDataFacade", "abstract class", "facades/kit_data_facade.dart"], ["KitAppwriteJsonEmitter", "class", "emitters/kit_appwrite_json_emitter.dart"], ["KitSupabaseSeedEmitter", "class", "emitters/kit_supabase_seed_emitter.dart"], ["KitSupabaseSqlEmitter", "class", "emitters/kit_supabase_sql_emitter.dart"], ["KitFilterOp", "enum", "query/kit_query.dart"], ["KitFilter", "class", "query/kit_query.dart"], ["KitQuery", "class", "query/kit_query.dart"], ["KitAssetReader", "abstract interface class", "assets/kit_asset_reader.dart"], ["KitMemoryAssetReader", "class", "assets/kit_asset_reader.dart"], ["KitRootBundleAssetReader", "class", "assets/kit_root_bundle_asset_reader.dart"]]} />
+
+Test doubles in `lib/testing.dart`: `FakeKitRepository`, `FakeKitDataFacade`.
+
+Scripts and call-counts — tests never touch platform channels.
+
+
+### Usage & wiring
+
+Add `stacked_kit_data` as a path dependency (`path: ../data` from a sibling host), then call `KitData.initialize` once in `main()` after `setupLocator()` — the kit never self-registers, so the host owns the call. Pass one `KitEntityRegistration<T>` per model (a plain model plus `fromJson`/`toJson`; the storage mapping lives on the `KitTableSchema`, never the model) and the fixture asset paths; `initialize` switches on `KitDataConfig.backend` and registers one `KitRepository<T>` per entity into the shared `StackedLocator.instance` (plus `KitAuthService` when `auth:` is set). ViewModels then resolve them directly, e.g. `locator<KitRepository<Product>>()`, or through a `KitDataFacade` subclass for derived streams and `mutate(...)`-driven writes.
+
+```dart
+await KitData.initialize(
+  config: const KitDataConfig(backend: KitDataBackend.seed),
+  entities: [productRegistration],
+  fixtureAssets: ['assets/seed/products.json'],
+);
+final products = locator<KitRepository<Product>>();
+```
+
+
+### Integration map
+
+<Table id="data-integration" columns={["Stacked framework deps", "Backing SDK packages", "Depends on (kit)"]} rows={[["stacked_shared", "ui_library, rxdart, uuid, supabase_flutter, appwrite, path_provider, google_sign_in, sign_in_with_apple, crypto, win32, device_info_plus, package_info_plus", "stacked_kit_core"]]} />
+
+See `kit_matrix.md` for the full routing + dependency graph.
+
+
+### Architecture
+
+```
+View → ViewModel → Facade Service → Repository → Backend
+```
+
+- **Repository** (`KitRepository<T>`) is the swap seam: one interface,
+  three backend implementations (`KitSeedRepository`, `KitSupabaseRepository`,
+  `KitAppwriteRepository`). No codegen.
+- **Facade Service** (`KitDataFacade` subclass) is the only layer ViewModels
+  talk to. It composes repositories into derived streams and routes
+  mutations through `KitAction` via `mutate(...)`.
+- Only one Backend is active per app run, chosen by `KitDataConfig.backend`
+  (default `KitDataBackend.supabase`).
+
+
+### Gotchas
+
+The host must mirror three `dependency_overrides` into its own `pubspec.yaml` (`win32: ^6.0.1`, `device_info_plus: ^13.0.0`, `package_info_plus: ^10.0.0`) — pub overrides don't propagate, and missing them breaks desktop `flutter test` (`win32_registry 2.x` won't compile against `win32 6.x`); the Windows FFI involved never runs on iOS/Android/web/macOS. Any file defining a `KitTableSchema` or `KitEntityRegistration` must use targeted imports, never the `stacked_kit_data` barrel — the barrel re-exports the Supabase/Appwrite adapters, whose FFI/native-asset deps crash the pure-Dart kernel compile inside `dart run` generators. The ADR-0001 namespace is load-bearing: changing it on a host that already stores rows orphans every primary key, every foreign-key reference, and breaks idempotent re-seeding. On the auth side, Fake Auth is seed-only (Supabase RLS and Appwrite default-deny reject it); Supabase Google needs `googleServerClientId` plus Android SHA fingerprints and the iOS URL scheme, while Appwrite OAuth runs as a browser flow behind the `appwrite-callback-<PROJECT_ID>` URL scheme.
+
+
+### Testing
+
+The test seam is the AssetBundle inversion: `KitAssetReader` is a pure-Dart port, so tests inject a `KitMemoryAssetReader({...})` of fixture JSON (and `KitData.initialize(assetReader: ...)` accepts it) and exercise the entire seed path under `flutter test` or `dart run` with no Flutter binding. The suite favors real components over scripted mocks — a real `KitSeedStore` backed by `KitNoPersistence` is the usual substrate — so assertions are on stream emissions (`emitsInOrder`) and on `tableSnapshot` row contents, not on mock call-counts. `KitData.resetForTesting()` clears the composition root between cases.
+
+
+### Features
+
+<Checklist id="data-features" items={[{"id": "data-feat-0", "label": "`KitData` \u2014 class"}, {"id": "data-feat-1", "label": "`KitDataBackend` \u2014 enum"}, {"id": "data-feat-2", "label": "`KitSeedPersistenceMode` \u2014 enum"}, {"id": "data-feat-3", "label": "`KitSupabaseConfig` \u2014 class"}, {"id": "data-feat-4", "label": "`KitAppwriteConfig` \u2014 class"}, {"id": "data-feat-5", "label": "`KitAuthConfig` \u2014 class"}, {"id": "data-feat-6", "label": "`KitDataConfig` \u2014 class"}, {"id": "data-feat-7", "label": "`KitSeedException` \u2014 class"}, {"id": "data-feat-8", "label": "`KitSeedProfile` \u2014 class"}, {"id": "data-feat-9", "label": "`KitAuthService` \u2014 abstract interface class"}, {"id": "data-feat-10", "label": "`KitAuthUser` \u2014 class"}, {"id": "data-feat-11", "label": "`KitAuthSession` \u2014 class"}]} />
+
+
+### Decisions / ADRs
+
+**ADR-0001 — Deterministic UUID v5 canonical IDs** (accepted, hard-to-reverse): every Seed Key becomes `uuid.v5(namespace, '<table>:<key>')`, so one fixture yields byte-identical primary keys on Seed, Supabase, and Appwrite and re-seeding is idempotent everywhere; the namespace is persisted as Postgres PKs / Appwrite row IDs, so changing it breaks every stored row. Rejected alternatives were random v4 plus a key→uuid mapping artifact (adds a sync problem), raw semantic keys as PKs (invalid for Postgres `uuid`, leaks authoring into storage), and per-backend native ID generation (the same row gets different IDs per backend). The package ships as `publish_to: 'none'` on a path dep, pairing `supabase_flutter` and `appwrite` behind one `KitRepository<T>` port with no codegen, so the active backend is a runtime swap rather than a fork — see `kit_matrix.md` for the full decisions log.
+
+<!-- kb:begin -->
+### References
+
+Official docs and tooling:
+
+- [Stacked — official documentation](https://stacked.filledstacks.com) — Canonical framework docs. Start here for ViewModel/Service patterns used by every kit.
+- [stacked (pub.dev)](https://pub.dev/packages/stacked) — Lightweight MVVM + service locator. Pinned ^3.5.0 across the kits.
+- [stacked_shared (pub.dev)](https://pub.dev/packages/stacked_shared) — StackedLocator.instance — the shared singleton kits resolve through. Pinned ^1.4.2.
+- [stacked_generator (pub.dev)](https://pub.dev/packages/stacked_generator) — Generates routers + @StackedApp wiring. Pinned ^2.0.4.
+- [stacked_cli (pub.dev)](https://pub.dev/packages/stacked_cli) — Scaffolding CLI for new Stacked apps/views/services.
+- [Flutter — official documentation](https://docs.flutter.dev) — Framework docs, platform integration, performance.
+- [Dart — official documentation](https://dart.dev) — Language tour, async, package ecosystem.
+- [Dart & Flutter MCP server (official)](https://dart.dev/tools/mcp-server) — Ships with the Dart SDK (dart mcp-server). Exposes analyzer diagnostics, pub, tests, and live Flutter app introspection via DTD. Wired in stacked_kit/.mcp.json.
+
+Kit-specific:
+
+- [ui_library (pub.dev)](https://pub.dev/packages/ui_library) — ui_library — backing dependency of stacked_kit_data.
+- [rxdart (pub.dev)](https://pub.dev/packages/rxdart) — rxdart — backing dependency of stacked_kit_data.
+- [uuid (pub.dev)](https://pub.dev/packages/uuid) — uuid — backing dependency of stacked_kit_data.
+- [supabase_flutter (pub.dev)](https://pub.dev/packages/supabase_flutter) — supabase_flutter — backing dependency of stacked_kit_data.
+- [appwrite (pub.dev)](https://pub.dev/packages/appwrite) — appwrite — backing dependency of stacked_kit_data.
+- [path_provider (pub.dev)](https://pub.dev/packages/path_provider) — path_provider — backing dependency of stacked_kit_data.
+- [google_sign_in (pub.dev)](https://pub.dev/packages/google_sign_in) — google_sign_in — backing dependency of stacked_kit_data.
+- [sign_in_with_apple (pub.dev)](https://pub.dev/packages/sign_in_with_apple) — sign_in_with_apple — backing dependency of stacked_kit_data.
+- [crypto (pub.dev)](https://pub.dev/packages/crypto) — crypto — backing dependency of stacked_kit_data.
+- [win32 (pub.dev)](https://pub.dev/packages/win32) — win32 — backing dependency of stacked_kit_data.
+- [device_info_plus (pub.dev)](https://pub.dev/packages/device_info_plus) — device_info_plus — backing dependency of stacked_kit_data.
+- [package_info_plus (pub.dev)](https://pub.dev/packages/package_info_plus) — package_info_plus — backing dependency of stacked_kit_data.
+<!-- kb:end -->
+
+<QuestionForm id="open-questions" questions={[
+  {
+    id: "q-data-gaps",
+    title: "What is unclear or missing from this playbook?",
+    mode: "freeform",
+    placeholder: "Note anything a new contributor or agent would need that is not covered above.",
+  },
+]} />
+

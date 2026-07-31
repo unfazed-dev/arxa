@@ -1,0 +1,325 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>split_button_m3e — vendored fork playbook</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>mermaid.initialize({startOnLoad:true,securityLevel:'loose',theme:'neutral'});</script>
+<style>
+:root{--fg:#1b1b1b;--muted:#5b6770;--bg:#fff;--soft:#f5f7f9;--line:#dfe4e8;--accent:#4f46e5;--warn:#b45309;--ok:#15803d}
+*{box-sizing:border-box}body{font:15px/1.6 -apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;color:var(--fg);margin:0;padding:0 0 80px}
+.wrap{max-width:880px;margin:0 auto;padding:32px 24px}
+h1{font-size:1.9rem;line-height:1.25;margin:0 0 6px}
+h2{font-size:1.35rem;margin:34px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--line)}
+h3{font-size:1.08rem;margin:22px 0 8px}
+h4{font-size:.98rem;margin:16px 0 6px}
+code{font:13px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--soft);padding:1px 5px;border-radius:4px}
+pre{background:#0f1115;color:#e7e9ee;padding:14px 16px;border-radius:8px;overflow:auto}
+pre code{background:none;color:inherit;padding:0}
+pre.mermaid{background:var(--soft);color:var(--fg);text-align:center}
+.callout{border:1px solid var(--line);border-left:4px solid var(--accent);background:var(--soft);padding:12px 16px;border-radius:6px;margin:14px 0}
+.callout.warn{border-left-color:var(--warn)} .callout.ok{border-left-color:var(--ok)}
+.callout .h{font-weight:700;display:block;margin-bottom:4px}
+table{border-collapse:collapse;width:100%;margin:14px 0;font-size:13.5px}
+th,td{border:1px solid var(--line);padding:7px 10px;text-align:left;vertical-align:top}
+th{background:var(--soft)} tr:nth-child(even) td{background:#fbfcfd}
+ul.checklist{list-style:none;padding:0;margin:14px 0}
+ul.checklist li{padding:6px 0 6px 28px;position:relative}
+ul.checklist li:before{content:"☐";position:absolute;left:0;top:5px;font-size:16px;color:var(--accent)}
+ul.checklist li .n{color:var(--muted);font-size:12.5px;display:block}
+.qform{border:1px dashed var(--line);border-radius:8px;padding:14px 16px;margin:14px 0;background:#fbfcfd}
+.qform .q{font-weight:600;margin:10px 0 4px} .qform .q:first-child{margin-top:0}
+.qform .opts{margin:4px 0 8px 4px} .qform .opts label{display:block;padding:2px 0}
+.qform .qsub{color:var(--muted);font-size:13px;margin:0 0 6px}
+.meta{color:var(--muted);font-size:12.5px;margin:10px 0 0}
+.pill{display:inline-block;font-size:11px;font-weight:600;background:var(--accent);color:#fff;padding:2px 8px;border-radius:10px;margin-right:6px}
+.filetree{list-style:none;padding:0;margin:12px 0;font-size:13.5px}
+.filetree li{padding:4px 0;border-bottom:1px dashed var(--line)}
+.filetree li code{background:none;padding:0;color:var(--accent)}
+.ft-title{font-weight:700;margin:14px 0 4px}
+.ft-chg{font-size:10.5px;font-weight:700;padding:1px 6px;border-radius:8px;margin-left:6px;text-transform:uppercase;color:#fff}
+.ft-added{background:var(--ok)} .ft-modified{background:var(--accent)} .ft-deleted{background:var(--warn)}
+.ft-note{color:var(--muted);display:block;padding-left:8px}
+.tabs{margin:14px 0}
+.tab{border:1px solid var(--line);border-radius:8px;padding:4px 16px 12px;margin:10px 0;background:#fbfcfd}
+.tab-h{font-size:1rem;margin:8px 0 4px;color:var(--accent);border-bottom:1px solid var(--line);padding-bottom:4px}
+.tab-block{margin:6px 0}
+.code-fn{font-size:12px;color:var(--muted);margin:10px 0 2px}
+.ann{margin:6px 0 14px;font-size:13px;padding-left:18px}
+.ann li{padding:2px 0} .ann .ann-l{font-size:11px;color:var(--muted)}
+/* Diagram (author-authored HTML: boxes + arrows) */
+.diagram-wrap{border:1px solid var(--line);border-radius:8px;background:var(--soft);padding:14px 16px;margin:14px 0;overflow:auto}
+.diag-cap{text-align:center;color:var(--muted);font-size:13px;margin:0 0 10px}
+.diagram-panel{display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:center}
+.diagram-card{border:1px solid var(--line);border-radius:8px;padding:10px 12px;background:#fff;min-width:120px;text-align:center}
+.diagram-card.diagram-accent{border-color:var(--accent);box-shadow:0 0 0 2px rgba(79,70,229,.12)}
+.diagram-node{font-weight:700}
+.diagram-muted{color:var(--muted);font-size:12px}
+.diagram-arrow{color:var(--accent);font-size:20px;font-weight:700}
+.diagram-pill{display:inline-block;font-size:11px;background:var(--soft);border:1px solid var(--line);border-radius:10px;padding:1px 8px;margin:3px 4px 0 0}
+/* Columns */
+.columns{display:flex;gap:16px;margin:14px 0}
+.columns .col{flex:1;min-width:0}
+.col-h{font-size:.95rem;margin:0 0 6px;color:var(--accent);border-bottom:1px solid var(--line);padding-bottom:3px}
+@media(max-width:640px){.columns{flex-direction:column}}
+</style></head>
+<body><div class="wrap">
+<h1>split_button_m3e — vendored fork playbook</h1><p class="meta"><span class="pill">playbook</span> rendered from <code>plan.mdx</code> · regenerate with <code>render-playbook.py</code></p>
+<p><strong>Version:</strong> 0.2.1 (fork) · <strong>Upstream:</strong> <code>EmilyMoonstone/material_3_expressive</code> · <strong>Status:</strong> vendored fork, pinned by root <code>dependency_overrides</code></p>
+<p><strong>Role (one line):</strong> Material 3 Expressive split button (two segments: leading action + trailing menu trigger) — forked so the dropdown is positioned edge-aware from the trailing segment's real rect instead of snapping to the screen's left edge.</p>
+<div class="callout warn"><p>Vendored fork of upstream <code>split_button_m3e</code> <code>0.2.1</code>. The patched source lives in this repo at <code>packages/split_button_m3e/lib/src/split_button.dart</code>. The patch is activated by the root <code>pubspec.yaml</code> <code>dependency_overrides</code> <code>path:</code> entry — remove that entry and <code>flutter pub get</code> silently reverts to upstream.</p></div>
+<h2>Contents</h2>
+<p>0. Fork banner 1. Overview & role 2. Glossary 3. Architecture — fork contract + FileTree 4. Public API reference 5. Usage playbook 5b. Wiring 6. Integration map 7. Features appendix 8. Examples 9. Gotchas + re-sync procedure 10. Decisions / ADRs 11. Changelog & status 12. Open questions</p>
+<h3>Overview & role</h3>
+<p><code>split_button_m3e</code> is a leaf Material 3 Expressive UI widget package. Hexagonal / domain-layer concerns are N/A — it has no data, service, or routing surface. It renders a two-segment button and consumes <code>m3e_design</code> tokens.</p>
+<p>This package is one of four vendored forks of <code>EmilyMoonstone/material_3_expressive</code> pinned in this repo (alongside <code>fab_m3e</code>, <code>navigation_rail_m3e</code>, <code>toolbar_m3e</code>). It is the only one of the four that ships <strong>both</strong> a <code>test/</code> and an <code>example/</code> directory.</p>
+<h3>What this is</h3>
+<p>A vendored fork of upstream <code>split_button_m3e</code> <code>0.2.1</code>. The fork is pulled in transitively via the <code>m3e_collection</code> umbrella package, and activated by a <code>path:</code> <code>dependency_overrides</code> entry in the root <code>pubspec.yaml</code>. The patched file is <code>packages/split_button_m3e/lib/src/split_button.dart</code> (the <code>_menuPosition()</code> method). The patch marker in source is <code>// Patched (vendored fork)</code>.</p>
+<h3>Glossary</h3>
+<ul>
+<li><strong>Fork</strong> — a vendored copy of an upstream package, edited in-tree, pinned by a <code>path:</code> override.</li>
+<li><strong>Override</strong> — the <code>dependency_overrides:</code> block in the root <code>pubspec.yaml</code> that forces <code>pub</code> to resolve this package from a local folder instead of pub.dev.</li>
+<li><strong>Patch marker</strong> — an inline comment tag (<code>// Patched (vendored fork)</code>, <code>// Fork patch:</code>, or <code>// PATCH</code>) that flags every block of code changed from upstream. Audit with <code>grep -rEn &#x27;FORK|fork patch|PATCH|vendored&#x27; packages/split_button_m3e/lib</code>.</li>
+<li><strong>Re-sync</strong> — the procedure for re-applying this fork's patches onto a newer upstream version (see §9).</li>
+<li><strong>M3E</strong> — Material 3 Expressive, the motion/shape system this widget implements.</li>
+<li><strong>Trailing segment</strong> — the chevron half of the split button; the menu trigger. Has its own <code>GlobalKey</code> (<code>_trailingKey</code>) so the fork can read its real <code>RenderBox</code> rect.</li>
+</ul>
+<h3>Architecture — the fork contract</h3>
+<p>The fork contract has two halves: <strong>WHY</strong> the patch exists (the root <code>pubspec.yaml</code> override comment) and <strong>HOW</strong> it is implemented (the inline <code>// Patched (vendored fork)</code> marker in <code>lib/src/split_button.dart</code>).</p>
+<div class="diagram-wrap">
+<p class="diag-cap">split_button_m3e fork wiring: root override → umbrella → fork package.</p>
+<div class="diagram-panel" data-rough>
+  <div class="diagram-box" data-rough>
+    <div class="diagram-pill">root pubspec.yaml</div>
+    <div class="diagram-node">dependency_overrides</div>
+  </div>
+  <div class="diagram-arrow">↓ re-exported by</div>
+  <div class="diagram-box" data-rough>
+    <div class="diagram-pill">m3e_collection</div>
+    <div class="diagram-node">umbrella re-export</div>
+  </div>
+  <div class="diagram-arrow">↓ path: override redirects</div>
+  <div class="diagram-box diagram-accent" data-rough>
+    <div class="diagram-pill">split_button_m3e (fork)</div>
+    <div class="diagram-node">lib/src/split_button.dart _menuPosition()</div>
+  </div>
+  <div class="diagram-arrow">↓ wrapped by</div>
+  <div class="diagram-box" data-rough>
+    <div class="diagram-pill">stacked_kit</div>
+    <div class="diagram-node">Kit* wrappers</div>
+  </div>
+</div>
+
+</div>
+
+<p class="ft-title">split_button_m3e — files that matter for the fork</p>
+<ul class="filetree">
+<li><code>packages/split_button_m3e/lib/split_button_m3e.dart</code> <span class="ft-chg ft-modified">modified</span><span class="ft-note">Barrel; exports src/enums.dart, src/menu_items.dart, src/split_button.dart.</span></li>
+<li><code>packages/split_button_m3e/lib/src/split_button.dart</code> <span class="ft-chg ft-modified">modified</span><span class="ft-note">PATCHED — _menuPosition() computes edge-aware RelativeRect from the trailing segment's real RenderBox rect. Single // Patched (vendored fork) marker block; supporting comments document showMenu's private _PopupMenuRouteLayout coupling.</span></li>
+<li><code>packages/split_button_m3e/lib/src/enums.dart</code> <span class="ft-chg ft-modified">modified</span><span class="ft-note">SplitButtonM3EShape/Size/Emphasis/TrailingAlignment + SplitButtonM3ETokens. Unpatched.</span></li>
+<li><code>packages/split_button_m3e/lib/src/menu_items.dart</code> <span class="ft-chg ft-modified">modified</span><span class="ft-note">SplitButtonM3EItem<T> model. Unpatched.</span></li>
+<li><code>packages/split_button_m3e/test/split_button_m3e_test.dart</code> <span class="ft-chg ft-modified">modified</span><span class="ft-note">test/ exists.</span></li>
+<li><code>packages/split_button_m3e/example/</code> <span class="ft-chg ft-modified">modified</span><span class="ft-note">example/ exists — only fork of the four with both test+example.</span></li>
+<li><code>packages/split_button_m3e/CHANGELOG.md</code> <span class="ft-chg ft-modified">modified</span><span class="ft-note">STALE — only 0.1.0 entry; 0.2.1 fork patch not documented.</span></li>
+<li><code>packages/split_button_m3e/pubspec.yaml</code> <span class="ft-chg ft-modified">modified</span><span class="ft-note">issue_tracker has EmilyMonestone (sic) typo.</span></li>
+</ul>
+<h3>The fork contract (shared)</h3>
+<p>Every vendored fork in this repo carries the same contract:</p>
+<ul>
+<li>The <strong>WHY</strong> is documented in the root <code>pubspec.yaml</code> <code>dependency_overrides</code> comment block above each <code>path:</code> entry. Read it before editing.</li>
+<li>The <strong>HOW</strong> is flagged in source with <code>// Patched (vendored fork)</code>, <code>// Fork patch:</code>, or <code>// PATCH</code>. Every changed block has a marker.</li>
+<li>The <strong>audit command</strong> is <code>grep -rEn &#x27;FORK|fork patch|PATCH|vendored&#x27; packages/&lt;name&gt;/lib</code> — re-run after every edit and before every re-sync.</li>
+<li>The <strong>doc-gap checklist</strong> (every fork carries this debt): add a <code>&gt; Vendored fork of upstream &lt;name&gt; &lt;version&gt;</code> banner to the README; backfill the CHANGELOG; fix the <code>EmilyMonestone</code> → <code>EmilyMoonstone</code> typo in <code>issue_tracker</code> (present in every fork's <code>pubspec.yaml</code>).</li>
+<li>The <strong>test contract</strong>: every fork SHOULD ship a <code>test/</code>. <code>navigation_rail_m3e</code> currently has NONE (highest debt); the other three forks do ship one.</li>
+</ul>
+<h3>Public API reference</h3>
+<p>The barrel <code>lib/split_button_m3e.dart</code> exports three files. <code>SplitButtonM3E</code> is generic on the menu value type <code>&lt;T&gt;</code>. The fork only changes the <code>_menuPosition()</code> private method; the public signatures are unchanged from upstream.</p>
+<div class="tabs">
+<div class="tab"><h3 class="tab-h">SplitButtonM3E<T></h3>
+<p class="code-fn"><code>packages/split_button_m3e/lib/src/split_button.dart</code></p><pre><code>class SplitButtonM3E&lt;T&gt; extends StatefulWidget {
+  const SplitButtonM3E({
+    super.key,
+    this.shape = SplitButtonM3EShape.round,
+    this.size = SplitButtonM3ESize.sm,
+    this.emphasis = SplitButtonM3EEmphasis.filled,
+    this.label,
+    this.leadingIcon,
+    this.onPressed,
+    required this.items,
+    this.onSelected,
+    this.trailingAlignment = SplitButtonM3ETrailingAlignment.opticalCenter,
+    this.leadingTooltip,
+    this.trailingTooltip,
+    this.enabled = true,
+    this.menuBuilder,
+  });
+
+  final SplitButtonM3EShape shape;
+  final SplitButtonM3ESize size;
+  final SplitButtonM3EEmphasis emphasis;
+  final String? label;
+  final IconData? leadingIcon;
+  final VoidCallback? onPressed;
+  final List&lt;SplitButtonM3EItem&lt;T&gt;&gt;? items;
+  final List&lt;PopupMenuEntry&lt;T&gt;&gt; Function(BuildContext)? menuBuilder;
+  final ValueChanged&lt;T&gt;? onSelected;
+  final SplitButtonM3ETrailingAlignment trailingAlignment;
+  final bool enabled;
+}</code></pre><ul class="ann"><li><b>Generic</b> <span class="ann-l">L1</span>: SplitButtonM3E<T> — T is the menu value type. Items are SplitButtonM3EItem<T>.</li><li><b>shape / size / emphasis</b> <span class="ann-l">L3-5</span>: Tokens-driven; pressed morph uses tokens. Unchanged from upstream.</li><li><b>items xor menuBuilder</b> <span class="ann-l">L11</span>: Provide a static list (items) OR a builder that returns PopupMenuEntry<T>. Asserted at construction.</li><li><b>trailingAlignment</b> <span class="ann-l">L16</span>: Chevron alignment strategy (e.g. opticalCenter). Unchanged from upstream.</li></ul>
+</div>
+<div class="tab"><h3 class="tab-h">SplitButtonM3EItem<T></h3>
+<p class="code-fn"><code>packages/split_button_m3e/lib/src/menu_items.dart</code></p><pre><code>class SplitButtonM3EItem&lt;T&gt; {
+  const SplitButtonM3EItem({
+    required this.value,
+    required this.child,
+    this.enabled = true,
+  });
+
+  final T value;
+  final Object child; // Widget or plain string; the caller builds PopupMenuItem
+  final bool enabled;
+}</code></pre><ul class="ann"><li><b>child</b> <span class="ann-l">L7</span>: Object — Widget or plain string. The fork's _openMenu builds the PopupMenuItem and styles disabled children at 0.38 alpha.</li></ul>
+</div>
+<div class="tab"><h3 class="tab-h">Enums</h3>
+<div class="tab-block"><p><strong><code>SplitButtonM3EShape</code></strong> — <code>round</code> / <code>square</code> (resting outer shape; pressed morph uses tokens). <strong><code>SplitButtonM3ESize</code></strong> — XS / S / SM / M / L / XL. <strong><code>SplitButtonM3EEmphasis</code></strong> — <code>filled</code> / <code>tonal</code> / <code>outlined</code> / <code>elevated</code>. <strong><code>SplitButtonM3ETrailingAlignment</code></strong> — chevron alignment (e.g. <code>opticalCenter</code>).</p>
+<p>All unchanged from upstream.</p></div>
+</div>
+<div class="tab"><h3 class="tab-h">_menuPosition (the patch)</h3>
+<p class="code-fn"><code>packages/split_button_m3e/lib/src/split_button.dart</code></p><pre><code>RelativeRect _menuPosition(BuildContext context) {
+  final RenderBox overlay =
+      Overlay.of(context).context.findRenderObject() as RenderBox;
+  final BuildContext? tCtx = _trailingKey.currentContext;
+  RenderBox? targetBox = tCtx?.findRenderObject() as RenderBox?;
+  targetBox ??= context.findRenderObject() as RenderBox?;
+  // ... targetRect from targetBox.localToGlobal + size
+
+  const double _kMenuVerticalOffset = 8.0;
+  const double _kMenuScreenPadding = 8.0;
+  final EdgeInsets safe = MediaQuery.paddingOf(Overlay.of(context).context);
+  final double estHeight =
+      (widget.items?.length ?? 0) * kMinInteractiveDimension + 16.0;
+  final double fitBottom = overlay.size.height - _kMenuScreenPadding - safe.bottom;
+  final bool below =
+      targetRect.bottom + _kMenuVerticalOffset + estHeight &lt;= fitBottom;
+  final double top = below
+      ? targetRect.bottom + _kMenuVerticalOffset
+      : (targetRect.top - estHeight - _kMenuVerticalOffset);
+  // ... _menuMaxHeight side-effect
+
+  // Patched (vendored fork): pass the true trailing rect so showMenu is edge-aware.
+  final double left = targetRect.left;
+  final double right = overlay.size.width - targetRect.right;
+  return RelativeRect.fromLTRB(left, top, right, overlay.size.height);
+}</code></pre><ul class="ann"><li><b>overlay context</b> <span class="ann-l">L2-3</span>: Read MediaQuery.paddingOf from Overlay.of(context).context — that's where showMenu reads it. A Scaffold body can consume padding; reading from the button's context would under-count the bottom nav/safe-area.</li><li><b>trailing rect</b> <span class="ann-l">L4-6</span>: Prefer the trailing segment's RenderBox (_trailingKey); fall back to the whole control. This is the rect that anchors the menu.</li><li><b>8px gap</b> <span class="ann-l">L9</span>: Was 4 upstream. 8 matches KitNativePopupMenu so both dropdowns sit the same distance below their trigger.</li><li><b>flip above</b> <span class="ann-l">L13-15</span>: If the menu does not fit below (using the same screen-fit bound showMenu uses), flip it above the trigger.</li><li><b>edge-aware left/right</b> <span class="ann-l">L22-24</span>: THE PATCH. Upstream pinned left=0.0 in LTR so _PopupMenuRouteLayout always picked the left side. Passing the real rect lets showMenu right-align for right-of-centre triggers and left-align for left-of-centre.</li></ul>
+</div>
+</div>
+<h3>Usage playbook</h3>
+<p class="code-fn"><code>example/split_usage.dart</code></p><pre><code>import &#x27;package:m3e_collection/m3e_collection.dart&#x27;;
+
+SplitButtonM3E&lt;String&gt;(
+  label: &#x27;Send&#x27;,
+  leadingIcon: Icons.send,
+  onPressed: () =&gt; _send(),
+  onSelected: (v) =&gt; _sendAs(v),
+  items: [
+    SplitButtonM3EItem(value: &#x27;plain&#x27;, child: &#x27;Plain&#x27;),
+    SplitButtonM3EItem(value: &#x27;encrypted&#x27;, child: &#x27;Encrypted&#x27;),
+  ],
+)</code></pre><ul class="ann"><li><b>generic</b> <span class="ann-l">L2</span>: SplitButtonM3E<String> — T flows through items, onSelected, and the PopupMenuEntry list.</li><li><b>items</b> <span class="ann-l">L7-10</span>: SplitButtonM3EItem.child accepts a Widget or a plain string; the fork's _openMenu builds the PopupMenuItem and applies disabled-alpha styling.</li></ul>
+<h2>5b. Wiring — how a host actually gets this fork</h2>
+<p class="code-fn"><code>pubspec.yaml (root)</code></p><pre><code># Vendored fork of split_button_m3e 0.2.1 (pulled in via m3e_collection).
+# Patched so the dropdown is positioned edge-aware from the trigger&#x27;s real rect
+# (right-aligned for a right-side trigger, left for a left one) instead of
+# snapping to the screen&#x27;s left edge. Patch: packages/split_button_m3e/lib/src/
+# split_button.dart _menuPosition.
+dependency_overrides:
+  split_button_m3e:
+    path: packages/split_button_m3e</code></pre><ul class="ann"><li><b>WHY</b> <span class="ann-l">L1-4</span>: Root pubspec.yaml override comment. This is the auditable reason for the fork; edit it whenever the patch changes.</li><li><b>HOW</b> <span class="ann-l">L5-7</span>: path: override activates the fork. m3e_collection still re-exports split_button_m3e by name; the override redirects that name to the local folder.</li></ul>
+
+<div class="callout "><p>Hosts almost never import <code>package:split_button_m3e/...</code> directly. The fork is pulled in <strong>transitively</strong> via <code>m3e_collection</code> (the umbrella that re-exports every M3E widget), and most apps reach it through <code>stacked_kit</code>'s <code>Kit*</code> wrappers (e.g. <code>KitNativePopupMenu</code>). The root <code>dependency_overrides</code> <code>path:</code> entry is the only thing that activates the patch — <code>m3e_collection</code>'s own version constraint is unchanged.</p></div>
+<h3>Integration map</h3>
+<div class="diagram-wrap">
+<p class="diag-cap">Apps import m3e_collection; the root override redirects split_button_m3e to the local fork.</p>
+<div class="diagram-panel" data-rough>
+  <div class="diagram-box" data-rough>
+    <div class="diagram-pill">App (showcase / host)</div>
+  </div>
+  <div class="diagram-arrow">↓ imports</div>
+  <div class="diagram-box" data-rough>
+    <div class="diagram-pill">m3e_collection</div>
+    <div class="diagram-node">umbrella</div>
+  </div>
+  <div class="diagram-arrow">↓ re-exports</div>
+  <div class="diagram-box" data-rough>
+    <div class="diagram-pill">stacked_kit</div>
+    <div class="diagram-node">KitNativePopupMenu + Kit* wrappers</div>
+  </div>
+  <div class="diagram-arrow">↓ fork activated by override</div>
+  <div class="diagram-box" data-rough>
+    <div class="diagram-pill">root pubspec.yaml</div>
+    <div class="diagram-node">dependency_overrides: split_button_m3e path:packages/split_button_m3e</div>
+  </div>
+  <div class="diagram-arrow">↓ redirects to local folder</div>
+  <div class="diagram-box diagram-accent" data-rough>
+    <div class="diagram-pill">packages/split_button_m3e</div>
+    <div class="diagram-node">this fork, not pub.dev</div>
+  </div>
+</div>
+
+</div>
+<h3>Features appendix</h3>
+<ul class="checklist">
+<li>Two-segment split button (leading action + trailing menu)</li>
+<li>Six size rows (XS-XL)</li>
+<li>Four emphasis families (filled / tonal / outlined / elevated)</li>
+<li>Round or square resting shape; pressed morph via tokens</li>
+<li>items: list OR menuBuilder: for dynamic PopupMenuEntry lists</li>
+<li>Edge-aware dropdown positioning from trailing rect (fork)<span class="n">Right-aligned for right-of-centre triggers, left for left-of-centre. Passes the true rect to showMenu so _PopupMenuRouteLayout picks the right side.</span></li>
+<li>8px vertical gap (parity with KitNativePopupMenu) (fork)<span class="n">Was 4 upstream; 4 read as 'touching' the chevron.</span></li>
+<li>Flips above when no fit below (fork)<span class="n">Uses the same screen-fit bound showMenu uses (screen - 8 - safeArea.bottom).</span></li>
+<li>Caps _menuMaxHeight to free space (fork)<span class="n">Set as a side-effect in _menuPosition; read by _openMenu's showMenu constraints. Overlap-proof even when estHeight is wrong.</span></li>
+<li>48x48 min tap targets per segment</li>
+<li>Caret rotation on open via AnimatedRotation</li>
+</ul>
+<h3>Examples</h3>
+<p style="font-size:12px;color:var(--muted);margin:14px 0 2px"><code>example/dynamic_menu.dart</code></p><p style="font-size:12px;color:var(--muted);margin:2px 0 4px">Build the menu dynamically (e.g. from a ViewModel) instead of a static items list.</p><pre><code>SplitButtonM3E&lt;MailAction&gt;(
+  label: &#x27;Move&#x27;,
+  leadingIcon: Icons.move_to_inbox,
+  onPressed: () =&gt; _move(),
+  menuBuilder: (ctx) =&gt; _folders
+      .map((f) =&gt; PopupMenuItem(value: MailAction(f.id), child: Text(f.name)))
+      .toList(),
+  onSelected: (a) =&gt; _moveTo(a),
+)</code></pre>
+<h3>Gotchas + re-sync procedure</h3>
+<div class="callout "><p>The patch couples to <strong>Flutter's private <code>_PopupMenuRouteLayout</code></strong> behaviour — specifically that it compares <code>position.left</code> vs <code>position.right</code> to pick which screen edge to anchor against. This is not a stable public API. On any Flutter SDK bump, re-test that the menu still anchors to the trailing edge for centre and right-side triggers. If <code>_PopupMenuRouteLayout</code> changes its side-picking rule, this patch's edge-aware logic must be re-derived.</p></div>
+
+<div class="callout warn"><p><code>_menuPosition</code> reads <code>MediaQuery.paddingOf(Overlay.of(context).context)</code> — the <strong>overlay's</strong> context, NOT the button's. A <code>Scaffold</code> body consumes bottom padding (e.g. nav-bar insets); reading from the button's context under-counts and lets <code>showMenu</code>'s clamp drag the menu back over the chevron. If you refactor the call site, preserve the overlay-context lookup.</p></div>
+
+<div class="callout warn"><p><code>_menuPosition</code> is <strong>not pure</strong> — it sets <code>_menuMaxHeight</code> as a side-effect, which <code>_openMenu</code> then reads when calling <code>showMenu(constraints: BoxConstraints(maxHeight: _menuMaxHeight))</code>. If you cache or reorder the call, the cap is lost and a tall menu can be clamped back over the trigger.</p></div>
+<h3>Re-sync procedure (shared across all four forks)</h3>
+<p>When bumping upstream (<code>fab_m3e</code>, <code>navigation_rail_m3e</code>, <code>split_button_m3e</code>, or <code>toolbar_m3e</code>):</p>
+<p>1. <strong>Bump</strong> the fork's <code>pubspec.yaml</code> <code>version:</code> and the root <code>pubspec.yaml</code> override comment's stated version. 2. <strong>Backfill</strong> the fork's <code>CHANGELOG.md</code> with the new version entry (every fork's CHANGELOG is stale — see §11). 3. <strong>Diff</strong> each patched file against the new upstream release of the same path. 4. <strong>Re-apply</strong> each <code>// Patched (vendored fork)</code> / <code>// Fork patch:</code> / <code>// PATCH</code> block by hand. Do NOT copy upstream over the fork blindly — the markers are your only map of what to preserve. 5. <strong>Update</strong> the root <code>pubspec.yaml</code> override comment if the WHY or the patched-file list changed. 6. <strong>Run</strong> the fork's <code>flutter test</code> in <code>packages/&lt;name&gt;/</code>, then run the consuming showcase (<code>stacked_kit_showcase</code>) to confirm the patched behaviour still renders.</p>
+<h3>Override hygiene (shared)</h3>
+<div class="callout warn"><p>Never remove a <code>dependency_overrides</code> <code>path:</code> entry without first confirming upstream includes the fix. A "clean" <code>flutter pub get</code> silently reverts the fork to the pub.dev release, and the patch — including its bug fix — disappears with no compile error. The root override comment is the only durable record of why the patch exists.</p></div>
+
+<div class="callout "><p>Doc-gap debt every fork carries: (a) no <code>&gt; Vendored fork of upstream &lt;name&gt; &lt;version&gt;</code> banner in the README; (b) stale <code>CHANGELOG.md</code>; (c) <code>EmilyMonestone</code> → <code>EmilyMoonstone</code> typo in <code>issue_tracker</code> (present in every fork's <code>pubspec.yaml</code>).</p></div>
+<h3>Decisions / ADRs</h3>
+<p>None. The fork contract is documented in the root <code>pubspec.yaml</code> override comment; no separate ADR was written. The private-API coupling (<code>_PopupMenuRouteLayout</code>) is the strongest argument for an ADR if the patch surface grows.</p>
+<h3>Changelog & status</h3>
+<p>The fork's <code>CHANGELOG.md</code> is <strong>stale</strong> — it only contains the <code>0.1.0</code> initial-release entry. There is no <code>0.2.1</code> entry documenting the fork patch.</p>
+<p><strong>Backfill task:</strong> add a <code>## 0.2.1</code> entry describing the edge-aware <code>_menuPosition</code>, the 8px gap (parity with <code>KitNativePopupMenu</code>), the flip-above fit test, the <code>_menuMaxHeight</code> cap, the overlay-context <code>MediaQuery.paddingOf</code> lookup, and the <code>_PopupMenuRouteLayout</code> side-picking coupling.</p>
+<p><strong>Test status:</strong> <code>test/split_button_m3e_test.dart</code> exists. The <code>example/</code> directory also exists — this is the only fork of the four with both.</p>
+<h3>Open questions</h3>
+<div class="qform">
+<div class="q">How do we detect a _PopupMenuRouteLayout regression on Flutter SDK bumps?</div>
+<div class="qsub">The patch couples to a private Flutter layout class.</div>
+<div class="opts">
+<label>○ Golden test of the menu anchored centre + right <i>(recommended)</i> — Catches a side-pick regression visually.</label>
+<label>○ Manual showcase smoke per Flutter bump — Cheap; easy to forget.</label>
+<label>○ Drive showMenu in an integration test and assert rect — Most rigorous; highest setup cost.</label>
+</div>
+<div class="q">Should the edge-aware positioning be upstreamed as a PR?</div>
+<div class="opts">
+</div>
+</div>
+
+</div></body></html>

@@ -1,0 +1,51 @@
+name: appbox_kit_core
+description: Reusable Stacked MVVM toolkit — KitAction fluent operation API, reactive services (error/haptic/theme/navigation), overlay & selectable systems, formatters, and design-token constants for Flutter apps built on the Stacked architecture.
+version: 0.1.0
+publish_to: 'none'
+
+environment:
+  # Floor raised from 3.0.3 for lucide_flutter (requires Dart ^3.8.1).
+  sdk: '>=3.8.1 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  stacked: ^3.5.0
+  stacked_services: ^1.6.0
+  # Direct dep for SnackbarController only (already transitive via
+  # stacked_services): kit_native_overlay unwraps showCustomSnackBar's result.
+  get: ^4.7.2
+  stacked_shared: ^1.4.2
+  rxdart: ^0.28.0
+  talker_flutter: ^5.1.17
+  flutter_animate: ^4.5.2
+  shared_preferences: ^2.5.5
+  # Vendored at ../cupertino_native_better: upstream 1.5.2 + local fix to the
+  # iOS tab-bar platform view (refresh no longer clobbers native selection /
+  # setSelectedIndex race — the "Search tab mixed state" ticket). Path dep so
+  # the patch survives `pub cache repair`; drop back to hosted once upstreamed.
+  cupertino_native_better:
+    path: ../ui_library/vendor/cupertino_native_better
+  # Android Material-3-Expressive tier (per-widget morph). m3e_collection
+  # umbrella — supersedes the per-package cherry-pick of kit-m3e-android-tier:
+  # the kit now wires ~12 of the 13 bundled components, so the publisher's
+  # tested bundle wins over dragging individual deps. Same publisher
+  # (bruckcode.de) as the former cherry-picks; the only new transitive surface
+  # is material_new_shapes (morph engine) + expressive_refresh (optional PTR).
+  # All widgets import via package:m3e_collection/m3e_collection.dart (the
+  # umbrella re-exports every sub-lib, so no per-package imports). Segmented
+  # control uses button_group_m3e's *connected button group* (M3E deprecates
+  # segmented buttons; docs are SSOT).
+  # Lucide icon font backing KitGlyphs.lucide (design-time by-name glyph
+  # resolution). The name→IconData map is generated from this package's own
+  # source by tools/gen_lucide_glyphs.py — regenerate on a version bump.
+  lucide_flutter: ^1.25.0
+  m3e_collection: ^0.3.7
+
+dev_dependencies:
+  flutter_lints: ^6.0.0
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true

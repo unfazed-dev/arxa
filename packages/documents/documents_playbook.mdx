@@ -1,0 +1,126 @@
+<Callout id="header" tone="info">
+
+# stacked_kit_documents — Per-Package Playbook
+
+
+`stacked_kit_documents` v**0.1.0** · `publish_to: 'none'` · status: **active**
+
+
+**Role (one line):** API-first document kit — typed ports for document scanning, OCR and PDF (stubbed, native-first for phase 2) plus a working file_selector-backed document picker.
+
+
+**Scope of this document:** lets a human OR an LLM use, wire, and extend `stacked_kit_documents` **without reading its source**. The public surface below was extracted from the barrel; README content is folded into the narrative sections.
+
+
+## Table of contents
+
+0. Header & TOC — *you are here* · 1. Overview & role · 2. Public surface · 3. Usage & wiring · 4. Integration map · 5. Architecture · 6. Gotchas · 7. Testing · 8. Features · 9. Decisions · 10. References · 11. Open questions
+
+
+</Callout>
+
+
+### Overview & role
+
+API-first document kit — typed ports for document scanning, OCR and PDF (stubbed, native-first for phase 2) plus a working file_selector-backed document picker. Plugin-neutral value types; no XFile leakage.
+
+
+### Public surface
+
+Exported from `lib/stacked_kit_documents.dart`:
+
+<Table id="documents-api" columns={["Symbol", "Kind", "Defined in"]} rows={[["KitDocumentPickerService", "abstract interface class", "src/kit_document_picker_service.dart"], ["FileSelectorKitDocumentPickerService", "class", "src/kit_document_picker_service.dart"], ["KitScannedPage", "class", "src/kit_document_scan_service.dart"], ["KitScannedDocument", "class", "src/kit_document_scan_service.dart"], ["KitDocumentScanService", "abstract interface class", "src/kit_document_scan_service.dart"], ["UnimplementedKitDocumentScanService", "class", "src/kit_document_scan_service.dart"], ["KitOcrBlock", "class", "src/kit_ocr_service.dart"], ["KitOcrResult", "class", "src/kit_ocr_service.dart"], ["KitOcrService", "abstract interface class", "src/kit_ocr_service.dart"], ["UnimplementedKitOcrService", "class", "src/kit_ocr_service.dart"], ["KitPdfPageImage", "class", "src/kit_pdf_service.dart"], ["KitPdfService", "abstract interface class", "src/kit_pdf_service.dart"], ["UnimplementedKitPdfService", "class", "src/kit_pdf_service.dart"], ["KitPdfViewer", "class", "src/kit_pdf_viewer.dart"], ["KitPickedDocument", "class", "src/kit_picked_document.dart"], ["PdfrxPdfService", "class", "src/pdfrx_pdf_service.dart"]]} />
+
+Test doubles in `lib/testing.dart`: `FakeKitDocumentPickerService`, `FakeKitDocumentScanService`, `FakeKitOcrService`, `FakeKitPdfService`.
+
+Scripts and call-counts — tests never touch platform channels.
+
+
+### Usage & wiring
+
+Add `stacked_kit_documents` to your `pubspec.yaml` — it transitively pulls only `file_selector` and imports no other kit. Import `package:stacked_kit_documents/stacked_kit_documents.dart` to get every port plus its plugin-neutral value types. The production adapter is a `const` constructor with no dependencies, so you can hold it directly or register it into any service locator (e.g. the shared Stacked locator):
+
+```dart
+import 'package:stacked_kit_documents/stacked_kit_documents.dart';
+
+final picker = FileSelectorKitDocumentPickerService();
+final KitPickedDocument? doc = await picker.pickDocument(extensions: ['pdf']);
+if (doc != null) {
+  final Uint8List bytes = await doc.readBytes();
+}
+```
+
+Note: the README does not yet carry an explicit Setup/registration block — only the working picker path above is sourced. Wire the scan/OCR/PDF ports only when you adopt their phase-2 native backends, since their shipped `Unimplemented…` adapters throw.
+
+
+### Integration map
+
+<Table id="documents-integration" columns={["Stacked framework deps", "Backing SDK packages", "Depends on (kit)"]} rows={[["\u2014", "file_selector, pdfrx", "\u2014 (standalone)"]]} />
+
+See `kit_matrix.md` for the full routing + dependency graph.
+
+
+### Architecture
+
+The kit is four `abstract interface class` ports — `KitDocumentPickerService`, `KitDocumentScanService`, `KitOcrService`, `KitPdfService` — each with its own concrete adapter behind the seam. Only the picker has a live adapter (`FileSelectorKitDocumentPickerService` over `file_selector`); scan, OCR, and PDF ship `Unimplemented…` classes whose methods throw `UnimplementedError`, holding final signatures stable until the phase-2 native backends. Dependency direction is strictly outward: the package imports only `dart:typed_data` and `file_selector`, and nothing from `stacked_kit*`, `stacked`, or `stacked_services`. The `file_selector` `XFile` never crosses the seam — adapters project it onto plugin-neutral value types (`KitPickedDocument`, `KitScannedPage`, `KitOcrResult`, `KitPdfPageImage`), and bytes are read lazily so large files stay unloaded until used.
+
+
+### Gotchas
+
+- **Scan** — VisionKit `VNDocumentCameraViewController` / DocKit on iOS; ML Kit
+  Document Scanner on Android.
+- **OCR** — Vision `VNRecognizeTextRequest` on iOS; ML Kit Text Recognition on
+  Android.
+- **PDF** — PDFKit / `CGPDFDocument` on iOS; `PdfRenderer` on Android.
+
+Backing package (working path) verified pub.dev 2026-07-14: `file_selector`
+**^1.1.0**.
+
+
+### Testing
+
+`package:stacked_kit_documents/testing.dart` exports fakes for all four ports —
+`FakeKitDocumentPickerService`, `FakeKitDocumentScanService`,
+`FakeKitOcrService`, `FakeKitPdfService`. Each supports a `failWith` error to
+exercise **failure states**; the picker/scan fakes return `null` to simulate a
+**user cancel**.
+
+
+### Features
+
+<Checklist id="documents-features" items={[{"id": "documents-feat-0", "label": "`KitDocumentPickerService` \u2014 abstract interface class"}, {"id": "documents-feat-1", "label": "`FileSelectorKitDocumentPickerService` \u2014 class"}, {"id": "documents-feat-2", "label": "`KitScannedPage` \u2014 class"}, {"id": "documents-feat-3", "label": "`KitScannedDocument` \u2014 class"}, {"id": "documents-feat-4", "label": "`KitDocumentScanService` \u2014 abstract interface class"}, {"id": "documents-feat-5", "label": "`UnimplementedKitDocumentScanService` \u2014 class"}, {"id": "documents-feat-6", "label": "`KitOcrBlock` \u2014 class"}, {"id": "documents-feat-7", "label": "`KitOcrResult` \u2014 class"}, {"id": "documents-feat-8", "label": "`KitOcrService` \u2014 abstract interface class"}, {"id": "documents-feat-9", "label": "`UnimplementedKitOcrService` \u2014 class"}, {"id": "documents-feat-10", "label": "`KitPdfPageImage` \u2014 class"}, {"id": "documents-feat-11", "label": "`KitPdfService` \u2014 abstract interface class"}]} />
+
+
+### Decisions / ADRs
+
+The kit is **API-first by design**: it ships the full typed port surface now so app code compiles against final signatures, then backfills native adapters in phase 2 — which is why scan/OCR/PDF exist as throwing `Unimplemented…` stubs rather than being absent entirely. It is **deliberately standalone**: it takes no path dependency on `stacked_kit`, `stacked`, `stacked_services`, or `stacked_kit_permissions`, staying pure ports over native plugins and reusable outside the Stacked graph. The one working path uses `file_selector` (`^1.1.0`, verified pub.dev 2026-07-14) because it wraps the OS document pickers (`UIDocumentPickerViewController` on iOS, the Storage Access Framework on Android) without dragging in a heavier media dependency. The native-first plan pins each stub to a first-party engine — VisionKit/Vision/PDFKit on iOS, ML Kit/PdfRenderer on Android — and per the README's Non-goals, camera/photo-library permission for scanning is deferred to a downstream reconciliation pass rather than forcing a `stacked_kit_permissions` dependency now.
+
+<!-- kb:begin -->
+### References
+
+Official docs and tooling:
+
+- [Stacked — official documentation](https://stacked.filledstacks.com) — Canonical framework docs. Start here for ViewModel/Service patterns used by every kit.
+- [stacked (pub.dev)](https://pub.dev/packages/stacked) — Lightweight MVVM + service locator. Pinned ^3.5.0 across the kits.
+- [stacked_shared (pub.dev)](https://pub.dev/packages/stacked_shared) — StackedLocator.instance — the shared singleton kits resolve through. Pinned ^1.4.2.
+- [stacked_generator (pub.dev)](https://pub.dev/packages/stacked_generator) — Generates routers + @StackedApp wiring. Pinned ^2.0.4.
+- [stacked_cli (pub.dev)](https://pub.dev/packages/stacked_cli) — Scaffolding CLI for new Stacked apps/views/services.
+- [Flutter — official documentation](https://docs.flutter.dev) — Framework docs, platform integration, performance.
+- [Dart — official documentation](https://dart.dev) — Language tour, async, package ecosystem.
+- [Dart & Flutter MCP server (official)](https://dart.dev/tools/mcp-server) — Ships with the Dart SDK (dart mcp-server). Exposes analyzer diagnostics, pub, tests, and live Flutter app introspection via DTD. Wired in stacked_kit/.mcp.json.
+
+Kit-specific:
+
+- [file_selector (pub.dev)](https://pub.dev/packages/file_selector) — file_selector — backing dependency of stacked_kit_documents.
+- [pdfrx (pub.dev)](https://pub.dev/packages/pdfrx) — pdfrx — backing dependency of stacked_kit_documents.
+<!-- kb:end -->
+
+<QuestionForm id="open-questions" questions={[
+  {
+    id: "q-documents-gaps",
+    title: "What is unclear or missing from this playbook?",
+    mode: "freeform",
+    placeholder: "Note anything a new contributor or agent would need that is not covered above.",
+  },
+]} />
+

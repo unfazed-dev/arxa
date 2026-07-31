@@ -1,0 +1,22 @@
+name: appbox_kit_forms
+description: Stacked form management for stacked_kit apps — typed field/form controllers (pristine/dirty/validating/valid/invalid) with sync + async validation, a composable validator library, and code-first error mapping for i18n. Integrates with Stacked's form generator conventions.
+version: 0.1.0
+publish_to: 'none'
+
+environment:
+  sdk: '>=3.0.3 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  # The ONLY dependency: Stacked, so KitForm integrates with the form
+  # generator's FormViewModel / FormStateHelper conventions. No stacked_services.
+  stacked: ^3.5.0
+
+dev_dependencies:
+  flutter_lints: ^6.0.0
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true

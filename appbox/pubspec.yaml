@@ -15,8 +15,8 @@ dependencies:
   # SDK-pinned via flutter_localizations — never pin.
   intl: any
   # Locale machinery kit (KitI18n, persisted locale override).
-  stacked_kit_i18n:
-    path: ../../stacked_kit/i18n
+  appbox_kit_i18n:
+    path: ../packages/i18n
   stacked: ^3.4.0
   stacked_services: ^1.1.0
   url_strategy: ^0.2.0

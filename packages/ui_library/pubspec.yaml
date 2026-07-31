@@ -1,0 +1,45 @@
+name: ui_library
+description: Stacked kit UI tier — Kit* adaptive port widgets, UI-coupled services (navigation/sheet/notifications), overlay + component plumbing. Re-exports appbox_kit_core so consumers import one package.
+version: 0.1.0
+publish_to: 'none'
+
+environment:
+  sdk: '>=3.0.3 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  stacked: ^3.5.0
+  stacked_services: ^1.6.0
+  get: ^4.7.2
+  stacked_shared: ^1.4.2
+  rxdart: ^0.28.0
+  talker_flutter: ^5.1.17
+  flutter_animate: ^4.5.2
+  shared_preferences: ^2.5.5
+  # Viewer chrome: markdown rendering (with syntax-highlighted code blocks)
+  # and SVG images. `markdown` is pinned because KitMarkdown's code builder
+  # implements MarkdownElementBuilder against its Element type.
+  # Latest verified on pub.dev 2026-07-30: flutter_markdown_plus 1.0.12,
+  # flutter_highlighting 0.9.0+11.8.0, flutter_svg 2.3.0, markdown 7.3.1.
+  flutter_markdown_plus: ^1.0.12
+  flutter_highlighting: ^0.9.0+11.8.0
+  flutter_svg: ^2.3.0
+  markdown: ^7.3.1
+  cupertino_native_better:
+    path: vendor/cupertino_native_better
+  text_field_m3e:
+    path: packages/text_field_m3e
+  m3e_collection: ^0.3.7
+  appbox_kit_core:
+    path: ../core
+  appbox_kit_motion:
+    path: ../motion
+
+dev_dependencies:
+  flutter_lints: ^6.0.0
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true

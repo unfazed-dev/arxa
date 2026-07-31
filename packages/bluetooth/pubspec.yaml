@@ -1,0 +1,24 @@
+name: appbox_kit_bluetooth
+description: Plugin-neutral port over flutter_blue_plus — live Bluetooth adapter-state stream, a capability gate (Android enable-dialog vs iOS escort), and full stub ports for BLE scanning and GATT connect/read/write/notify.
+version: 0.1.0
+publish_to: 'none'
+
+environment:
+  sdk: '>=3.0.3 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  # Native-first: flutter_blue_plus wraps CoreBluetooth (iOS) and
+  # android.bluetooth (Android) directly. Backs the priority adapter-state
+  # stream today; scanner + GATT ports are stubbed against its API.
+  # Latest verified on pub.dev 2026-07-14: 2.3.10.
+  flutter_blue_plus: ^2.3.10
+  # Bluetooth settings deep-link for the iOS escort flow.
+  # Latest verified on pub.dev 2026-07-14: 7.0.0.
+  app_settings: ^7.0.0
+
+dev_dependencies:
+  flutter_lints: ^6.0.0
+  flutter_test:
+    sdk: flutter

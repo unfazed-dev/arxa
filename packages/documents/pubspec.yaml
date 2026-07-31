@@ -1,0 +1,25 @@
+name: appbox_kit_documents
+description: API-first document kit — typed ports for document scanning, OCR and PDF (stubbed, native-first for phase 2) plus a working file_selector-backed document picker. Plugin-neutral value types; no XFile leakage.
+version: 0.1.0
+publish_to: 'none'
+
+environment:
+  sdk: '>=3.0.3 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  # The one working path: pick an existing document. Native-first — wraps
+  # UIDocumentPickerViewController (iOS) / Storage Access Framework (Android).
+  # Latest verified on pub.dev 2026-07-14: 1.1.0.
+  file_selector: ^1.1.0
+  # PDF rendering behind KitPdfService (pageCount/renderPage). PDFium-based,
+  # covers iOS/Android/macOS/Windows/Linux/Web — supersedes the native-first
+  # PDFKit/PdfRenderer plan for rendering (createFromImages stays stubbed).
+  # Latest verified on pub.dev 2026-07-30: 2.4.7.
+  pdfrx: ^2.4.7
+
+dev_dependencies:
+  flutter_lints: ^6.0.0
+  flutter_test:
+    sdk: flutter

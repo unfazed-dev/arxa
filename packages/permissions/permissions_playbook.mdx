@@ -1,0 +1,107 @@
+<Callout id="header" tone="info">
+
+# stacked_kit_permissions — Per-Package Playbook
+
+
+`stacked_kit_permissions` v**0.1.0** · `publish_to: 'none'` · status: **active**
+
+
+**Role (one line):** Plugin-neutral port for OS permissions — typed KitPermission enum, four-state KitPermissionStatus, and a permission_handler-backed service with a settings-escort contract for permanently-denied permissions.
+
+
+**Scope of this document:** lets a human OR an LLM use, wire, and extend `stacked_kit_permissions` **without reading its source**. The public surface below was extracted from the barrel; README content is folded into the narrative sections.
+
+
+## Table of contents
+
+0. Header & TOC — *you are here* · 1. Overview & role · 2. Public surface · 3. Usage & wiring · 4. Integration map · 5. Architecture · 6. Gotchas · 7. Testing · 8. Features · 9. Decisions · 10. References · 11. Open questions
+
+
+</Callout>
+
+
+### Overview & role
+
+Plugin-neutral port for OS permissions — typed KitPermission enum, four-state KitPermissionStatus, and a permission_handler-backed service with a settings-escort contract for permanently-denied permissions.
+
+
+### Public surface
+
+Exported from `lib/stacked_kit_permissions.dart`:
+
+<Table id="permissions-api" columns={["Symbol", "Kind", "Defined in"]} rows={[["KitPermission", "enum", "src/kit_permission.dart"], ["KitPermissionStatus", "enum", "src/kit_permission_status.dart"], ["KitPermissionsService", "abstract interface class", "src/kit_permissions_service.dart"], ["PermissionHandlerKitPermissionsService", "class", "src/permission_handler_kit_permissions_service.dart"]]} />
+
+Test doubles in `lib/testing.dart`: `FakeKitPermissionsService`.
+
+Scripts and call-counts — tests never touch platform channels.
+
+
+### Usage & wiring
+
+Add `stacked_kit_permissions` to your app's `pubspec.yaml`. The kit is standalone — it has no Stacked framework deps and ships no `@StackedApp` wiring (see the integration map) — so registration is a plain locator bind of `PermissionHandlerKitPermissionsService()` against the `KitPermissionsService` interface, resolved through the host app's locator (`StackedLocator.instance`). Inject the port and branch on the four-state status, escorting to system Settings when the OS will never prompt again: `final s = await service.request(KitPermission.camera); if (s.requiresSettingsEscort) { await service.openAppSettings(); }`. No README Usage/Setup section exists yet; the snippet above uses only the port methods documented under *Scope*.
+
+
+### Integration map
+
+<Table id="permissions-integration" columns={["Stacked framework deps", "Backing SDK packages", "Depends on (kit)"]} rows={[["\u2014", "permission_handler", "\u2014 (standalone)"]]} />
+
+See `kit_matrix.md` for the full routing + dependency graph.
+
+
+### Architecture
+
+Classic ports-and-adapters. `KitPermissionsService` is the abstract interface the app depends on; `PermissionHandlerKitPermissionsService` is the sole production adapter, mapping `KitPermission` onto `permission_handler`'s `Permission` and projecting the plugin's richer `PermissionStatus` onto the four-state `KitPermissionStatus`. The adapter holds no state of its own — every call is a live OS query, and iOS `limited`/`provisional` collapse to `granted` (usable access). Dependency direction runs one way — app → port → adapter → `permission_handler` → platform — and the package imports no other kit (not `stacked_kit`, `stacked`, or `stacked_services`), so it can sit at the bottom of the kit graph as the root permissions kit the hardware kits will eventually consume.
+
+
+### Gotchas
+
+`permission_handler` is a thin wrapper over the platform authorization APIs
+(iOS `AVCaptureDevice`/`CLLocationManager`/`PHPhotoLibrary`/… and Android
+runtime permissions). No custom native code ships in this package.
+
+
+### Testing
+
+`package:stacked_kit_permissions/testing.dart` exports
+`FakeKitPermissionsService`: script per-permission responses (including the
+`permanentlyDenied → openAppSettings` escort scenario), then assert against
+`requestLog` and `openAppSettingsCallCount`.
+
+
+### Features
+
+<Checklist id="permissions-features" items={[{"id": "permissions-feat-0", "label": "`KitPermission` \u2014 enum"}, {"id": "permissions-feat-1", "label": "`KitPermissionStatus` \u2014 enum"}, {"id": "permissions-feat-2", "label": "`KitPermissionsService` \u2014 abstract interface class"}, {"id": "permissions-feat-3", "label": "`PermissionHandlerKitPermissionsService` \u2014 class"}]} />
+
+
+### Decisions / ADRs
+
+Per `kit_matrix.md` §2 (*standalone by default*) and §6 (*native-first phasing*), `stacked_kit_permissions` is a plugin-neutral port with `deps_kit: []` — chosen so the hardware kits can eventually route authorization through one typed seam instead of each taking a direct `permission_handler` dependency. The backing plugin is `permission_handler` ^12.0.3 (verified on pub.dev 2026-07-14), picked because it is a thin, well-maintained wrapper over iOS `AVCaptureDevice`/`CLLocationManager`/`PHPhotoLibrary` and Android runtime permissions, which lets the kit stay native-first with no custom native code of its own. The four-state status — with iOS `limited`/`provisional` collapsed to `granted` — and the `requiresSettingsEscort` contract are the deliberate surface: UIs branch on actionable states and stop re-prompting once the OS will never show another dialog. No path dependency is registered from this kit yet; the "root kit others consume" topology is deferred to the downstream workspace-reconciliation pass (see README *Non-goals*).
+
+<!-- kb:begin -->
+### References
+
+Official docs and tooling:
+
+- [Stacked — official documentation](https://stacked.filledstacks.com) — Canonical framework docs. Start here for ViewModel/Service patterns used by every kit.
+- [stacked (pub.dev)](https://pub.dev/packages/stacked) — Lightweight MVVM + service locator. Pinned ^3.5.0 across the kits.
+- [stacked_shared (pub.dev)](https://pub.dev/packages/stacked_shared) — StackedLocator.instance — the shared singleton kits resolve through. Pinned ^1.4.2.
+- [stacked_generator (pub.dev)](https://pub.dev/packages/stacked_generator) — Generates routers + @StackedApp wiring. Pinned ^2.0.4.
+- [stacked_cli (pub.dev)](https://pub.dev/packages/stacked_cli) — Scaffolding CLI for new Stacked apps/views/services.
+- [Flutter — official documentation](https://docs.flutter.dev) — Framework docs, platform integration, performance.
+- [Dart — official documentation](https://dart.dev) — Language tour, async, package ecosystem.
+- [Dart & Flutter MCP server (official)](https://dart.dev/tools/mcp-server) — Ships with the Dart SDK (dart mcp-server). Exposes analyzer diagnostics, pub, tests, and live Flutter app introspection via DTD. Wired in stacked_kit/.mcp.json.
+
+Kit-specific:
+
+- [permission_handler (pub.dev)](https://pub.dev/packages/permission_handler) — permission_handler — backing dependency of stacked_kit_permissions.
+<!-- kb:end -->
+
+<QuestionForm id="open-questions" questions={[
+  {
+    id: "q-permissions-gaps",
+    title: "What is unclear or missing from this playbook?",
+    mode: "freeform",
+    placeholder: "Note anything a new contributor or agent would need that is not covered above.",
+  },
+]} />
+

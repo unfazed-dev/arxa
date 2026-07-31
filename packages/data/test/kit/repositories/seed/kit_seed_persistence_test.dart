@@ -1,0 +1,245 @@
+import 'dart:io';
+
+import 'package:flutter_test/flutter_test.dart';
+import 'package:appbox_kit_data/repositories/seed/kit_seed_persistence.dart';
+
+/// KitSeedPersistence tests.
+///
+/// Branches under test:
+/// - [KitSnapshotPersistence] with `overrideDirectory` pointing at a temp
+///   dir (so no `path_provider` platform channel is touched): roundtrip
+///   (`persistTable` then `load` returns the same nested map), `load` with
+///   no directory yet returns `null`, a corrupt JSON file makes `load`
+///   throw a [FormatException] whose message names the offending file
+///   path, and `reset` removes the directory entirely.
+/// - [KitNoPersistence].`load` always returns `null`.
+void main() {
+  late Directory tempDir;
+
+  setUp(() {
+    tempDir = Directory.systemTemp.createTempSync('kit_seed_persistence_test');
+  });
+
+  tearDown(() {
+    if (tempDir.existsSync()) {
+      tempDir.deleteSync(recursive: true);
+    }
+  });
+
+  group('KitSnapshotPersistence', () {
+    test('persistTable then load roundtrips the same nested map', () async {
+      final persistence = KitSnapshotPersistence(overrideDirectory: tempDir);
+      final rows = {
+        'row-1': {'id': 'row-1', 'name': 'Alpha'},
+        'row-2': {'id': 'row-2', 'name': 'Beta'},
+      };
+
+      await persistence.persistTable('widgets', rows);
+      final loaded = await persistence.load();
+
+      expect(loaded, isNotNull);
+      expect(loaded!['widgets'], rows);
+    });
+
+    test('load with no directory yet returns null', () async {
+      final persistence = KitSnapshotPersistence(overrideDirectory: tempDir);
+
+      expect(await persistence.load(), isNull);
+    });
+
+    test('corrupt JSON file throws FormatException naming the file path', () async {
+      final persistence = KitSnapshotPersistence(overrideDirectory: tempDir);
+      final seedDir = Directory('${tempDir.path}/appbox_kit_data/seed')
+        ..createSync(recursive: true);
+      final corruptFile = File('${seedDir.path}/widgets.json')
+        ..writeAsStringSync('{not valid json');
+
+      await expectLater(
+        persistence.load(),
+        throwsA(
+          isA<FormatException>().having(
+            (e) => e.message,
+            'message',
+            contains(corruptFile.path),
+          ),
+        ),
+      );
+    });
+
+    test('reset removes the directory', () async {
+      final persistence = KitSnapshotPersistence(overrideDirectory: tempDir);
+      await persistence.persistTable('widgets', {
+        'row-1': {'id': 'row-1'},
+      });
+      final seedDir = Directory('${tempDir.path}/appbox_kit_data/seed');
+      expect(seedDir.existsSync(), isTrue);
+
+      await persistence.reset();
+
+      expect(seedDir.existsSync(), isFalse);
+    });
+  });
+
+  group('KitNoPersistence', () {
+    test('load always returns null', () async {
+      final persistence = KitNoPersistence();
+      expect(await persistence.load(), isNull);
+    });
+  });
+
+  group('fixture fingerprints sidecar', () {
+    test('loadFixtureFingerprints returns null before any persist', () async {
+      final persistence = KitSnapshotPersistence(overrideDirectory: tempDir);
+      expect(await persistence.loadFixtureFingerprints(), isNull);
+    });
+
+    test('persist then load roundtrips, and the sidecar is not a table', () async {
+      final persistence = KitSnapshotPersistence(overrideDirectory: tempDir);
+
+      await persistence.persistFixtureFingerprints({'notes': 'abcd1234'});
+
+      expect(await persistence.loadFixtureFingerprints(), {'notes': 'abcd1234'});
+      // The sidecar lives in the same dir as table snapshots but must not
+      // surface as a table named ".fixture_fingerprints".
+      expect(await persistence.load(), isNull);
+    });
+
+    test('corrupt sidecar degrades to null (re-seed) instead of throwing', () async {
+      final persistence = KitSnapshotPersistence(overrideDirectory: tempDir);
+      Directory('${tempDir.path}/appbox_kit_data/seed').createSync(recursive: true);
+      File('${tempDir.path}/appbox_kit_data/seed/.fixture_fingerprints.json')
+          .writeAsStringSync('{not valid json');
+
+      expect(await persistence.loadFixtureFingerprints(), isNull);
+    });
+  });
+
+  group('fixtureFingerprint', () {
+    test('is stable across map key ordering', () {
+      final a = {
+        'n-1': {'id': 'n-1', 'body': 'seeded note'},
+      };
+      final b = {
+        'n-1': {'body': 'seeded note', 'id': 'n-1'},
+      };
+      expect(fixtureFingerprint(a), fixtureFingerprint(b));
+    });
+
+    test('changes when any row content changes', () {
+      final a = {
+        'n-1': {'id': 'n-1', 'body': 'seeded note'},
+      };
+      final b = {
+        'n-1': {'id': 'n-1', 'body': 'edited note'},
+      };
+      expect(fixtureFingerprint(a), isNot(fixtureFingerprint(b)));
+    });
+  });
+
+  group('resolveBootTables', () {
+    final fixtures = {
+      'notes': {
+        'n-1': {'id': 'n-1', 'body': 'seeded note'},
+      },
+      'notes_folders': {
+        'f-1': {'id': 'f-1', 'name': 'Notes'},
+      },
+    };
+    Map<String, String> fingerprintsOf(
+      Map<String, Map<String, Map<String, dynamic>>> tables,
+    ) =>
+        {for (final e in tables.entries) e.key: fixtureFingerprint(e.value)};
+
+    test('no snapshot (first boot) → fixtures verbatim, nothing re-seeded', () {
+      final resolution = resolveBootTables(fixtures: fixtures, snapshot: null);
+
+      expect(resolution.tables, fixtures);
+      expect(resolution.reseededTables, isEmpty);
+      expect(resolution.fingerprints, fingerprintsOf(fixtures));
+    });
+
+    test(
+        'rule 1: partial snapshot must not shadow never-persisted fixture '
+        'tables (regression: fake-auth boot persists only kit_auth_users, '
+        'second boot then showed empty notes)', () async {
+      final persistence = KitSnapshotPersistence(overrideDirectory: tempDir);
+
+      // Boot 1: nothing persisted → fixtures. Fake-auth initialize then
+      // write-throughs ONLY the reserved users table.
+      expect(await persistence.load(), isNull);
+      await persistence.persistTable('kit_auth_users', {
+        'u-1': {'id': 'u-1', 'email': 'evan@seed.local'},
+      });
+
+      // Boot 2: snapshot exists but covers one table.
+      final resolution = resolveBootTables(
+        fixtures: fixtures,
+        snapshot: await persistence.load(),
+      );
+
+      expect(resolution.tables['notes'], fixtures['notes']);
+      expect(resolution.tables['notes_folders'], fixtures['notes_folders']);
+      expect(resolution.tables['kit_auth_users']?.keys, ['u-1']);
+    });
+
+    test(
+        'rule 2: matching fingerprint → snapshot verbatim '
+        '(user edits and deletions survive reboot)', () {
+      final resolution = resolveBootTables(
+        fixtures: fixtures,
+        snapshot: {'notes': {}}, // user deleted the seeded note
+        recordedFingerprints: fingerprintsOf(fixtures),
+      );
+
+      expect(resolution.tables['notes'], isEmpty);
+      expect(resolution.tables['notes_folders'], fixtures['notes_folders']);
+      expect(resolution.reseededTables, isEmpty);
+    });
+
+    test(
+        'rule 3: changed fixtures re-seed a stale snapshot, preserving '
+        'user-created rows (regression: updated seed data never reached '
+        'devices that already persisted a snapshot)', () {
+      final snapshot = {
+        'notes': {
+          'n-1': {'id': 'n-1', 'body': 'OLD seeded generation'},
+          'user-note': {'id': 'user-note', 'body': 'written in-app'},
+        },
+      };
+      // Recorded fingerprints describe the OLD fixture generation.
+      final oldFingerprints = {
+        'notes': fixtureFingerprint(snapshot['notes']!..remove('user-note')),
+      };
+      snapshot['notes']!['user-note'] = {'id': 'user-note', 'body': 'written in-app'};
+
+      final resolution = resolveBootTables(
+        fixtures: fixtures,
+        snapshot: snapshot,
+        recordedFingerprints: oldFingerprints,
+      );
+
+      expect(resolution.tables['notes']?['n-1'], fixtures['notes']!['n-1']);
+      expect(resolution.tables['notes']?['user-note'],
+          {'id': 'user-note', 'body': 'written in-app'});
+      expect(resolution.reseededTables, {'notes'});
+      expect(resolution.fingerprints, fingerprintsOf(fixtures));
+    });
+
+    test(
+        'rule 3: snapshot that predates fingerprinting (no sidecar) '
+        're-seeds fixture rows', () {
+      final resolution = resolveBootTables(
+        fixtures: fixtures,
+        snapshot: {
+          'notes': {
+            'n-1': {'id': 'n-1', 'body': 'OLD seeded generation'},
+          },
+        },
+        recordedFingerprints: null,
+      );
+
+      expect(resolution.tables['notes']?['n-1'], fixtures['notes']!['n-1']);
+      expect(resolution.reseededTables, {'notes'});
+    });
+  });
+}

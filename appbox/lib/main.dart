@@ -6,7 +6,7 @@ import 'package:appbox/app/app.locator.dart';
 import 'package:appbox/app/app.router.dart';
 import 'package:appbox/l10n/app_localizations.dart';
 import 'package:appbox/services/l10n_service.dart';
-import 'package:stacked_kit_i18n/stacked_kit_i18n.dart';
+import 'package:appbox_kit_i18n/stacked_kit_i18n.dart';
 import 'package:url_strategy/url_strategy.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 

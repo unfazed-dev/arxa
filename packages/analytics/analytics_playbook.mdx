@@ -1,0 +1,113 @@
+<Callout id="header" tone="info">
+
+# stacked_kit_analytics — Per-Package Playbook
+
+
+`stacked_kit_analytics` v**0.1.0** · `publish_to: 'none'` · status: **active**
+
+
+**Role (one line):** Analytics port for stacked_kit apps — a backend-agnostic KitAnalyticsService that fans a single event stream out to any number of registered backends, with a zero-dependency DebugConsoleAnalyticsBackend shipped as the working default.
+
+
+**Scope of this document:** lets a human OR an LLM use, wire, and extend `stacked_kit_analytics` **without reading its source**. The public surface below was extracted from the barrel; README content is folded into the narrative sections.
+
+
+## Table of contents
+
+0. Header & TOC — *you are here* · 1. Overview & role · 2. Public surface · 3. Usage & wiring · 4. Integration map · 5. Architecture · 6. Gotchas · 7. Testing · 8. Features · 9. Decisions · 10. References · 11. Open questions
+
+
+</Callout>
+
+
+### Overview & role
+
+Analytics port for stacked_kit apps — a backend-agnostic KitAnalyticsService that fans a single event stream out to any number of registered backends, with a zero-dependency DebugConsoleAnalyticsBackend shipped as the working default.
+
+
+### Public surface
+
+Exported from `lib/stacked_kit_analytics.dart`:
+
+<Table id="analytics-api" columns={["Symbol", "Kind", "Defined in"]} rows={[["KitAnalyticsBackend", "abstract class", "src/kit_analytics_backend.dart"], ["KitAnalyticsEvent", "class", "src/kit_analytics_event.dart"], ["KitScreenView", "class", "src/kit_analytics_event.dart"], ["KitUserProperty", "class", "src/kit_analytics_event.dart"], ["KitAnalyticsTiming", "class", "src/kit_analytics_event.dart"], ["KitAnalyticsErrorHandler", "typedef", "src/kit_analytics_service.dart"], ["KitAnalyticsService", "class", "src/kit_analytics_service.dart"], ["AmplitudeBackend", "class", "src/backends/amplitude_backend.dart"], ["DebugConsoleAnalyticsBackend", "class", "src/backends/debug_console_backend.dart"], ["FirebaseAnalyticsBackend", "class", "src/backends/firebase_analytics_backend.dart"], ["PosthogBackend", "class", "src/backends/posthog_backend.dart"]]} />
+
+Test doubles in `lib/testing.dart`: `RecordingAnalyticsBackend`, `ThrowingAnalyticsBackend`.
+
+Scripts and call-counts — tests never touch platform channels.
+
+
+### Usage & wiring
+
+Add the package as a path dependency (`stacked_kit_analytics: { path: ../analytics }`, since it is `publish_to: 'none'`), import the barrel, and construct `KitAnalyticsService` with the backends you want — `DebugConsoleAnalyticsBackend` ships as the working default. The service is intentionally not a Stacked service and has no dependency on `stacked`, `stacked_services`, or `stacked_kit` core, so register the constructed instance on your app's locator however you wire singletons (the kits resolve through the shared `StackedLocator.instance`). Minimal usage:
+
+```dart
+import 'package:stacked_kit_analytics/stacked_kit_analytics.dart';
+
+final analytics = KitAnalyticsService(
+  backends: [DebugConsoleAnalyticsBackend()],
+);
+
+await analytics.logEvent('checkout_completed', params: {'total_cents': 4200});
+await analytics.screenView('Cart', screenClass: 'CartView');
+await analytics.timing('time_to_interactive', const Duration(milliseconds: 830));
+```
+
+
+### Integration map
+
+<Table id="analytics-integration" columns={["Stacked framework deps", "Backing SDK packages", "Depends on (kit)"]} rows={[["\u2014", "\u2014 (SDK only / pure Dart)", "\u2014 (standalone)"]]} />
+
+See `kit_matrix.md` for the full routing + dependency graph.
+
+
+### Architecture
+
+`KitAnalyticsService` is the single entry point and depends only on its own value objects — it normalizes each call into a `KitAnalyticsEvent` / `KitScreenView` / `KitUserProperty` / `KitAnalyticsTiming` and fans it out, via `Future.wait`, to every registered `KitAnalyticsBackend` held in an id-keyed map. `KitAnalyticsBackend` is the abstract port each destination implements, so the dependency direction is backends → port, never the service → a vendor SDK. Each backend call is wrapped in a try/catch so one throwing backend is isolated (routed to `onError`, default `debugPrint`) and the remaining backends still receive the call. The package is deliberately not a Stacked service and has no dependency on `stacked_kit` core, `stacked`, or `stacked_services`.
+
+
+### Gotchas
+
+This package is pure Dart with zero native dependencies, so it requires no permissions, manifest keys, or platform channels — any native setup belongs to the vendor SDK a host opts into, not here. The Firebase / Amplitude / PostHog backends are `UnimplementedError` stubs: registering one before implementing it will throw on every call (caught and reported, but the event is lost), and each stub documents a 2026-verified target version (`firebase_analytics ^12.1.1`, `amplitude_flutter ^4.6.1`, `posthog_flutter ^5.24.2`) that will need re-pinning as those SDKs move. Note also that `registerBackend` replaces any existing backend with the same `id` (last registration wins), `DebugConsoleAnalyticsBackend` is suppressed in release by default (`enableInRelease: false`), and fan-out is awaited as a group so one slow backend stalls the whole call.
+
+
+### Testing
+
+`import 'package:stacked_kit_analytics/testing.dart';` for
+`RecordingAnalyticsBackend` (records every call with `eventsNamed`, `lastEvent`,
+`userProperty`, `didLog` query helpers) and `ThrowingAnalyticsBackend` (proves
+fan-out isolation).
+
+
+### Features
+
+<Checklist id="analytics-features" items={[{"id": "analytics-feat-0", "label": "`KitAnalyticsBackend` \u2014 abstract class"}, {"id": "analytics-feat-1", "label": "`KitAnalyticsEvent` \u2014 class"}, {"id": "analytics-feat-2", "label": "`KitScreenView` \u2014 class"}, {"id": "analytics-feat-3", "label": "`KitUserProperty` \u2014 class"}, {"id": "analytics-feat-4", "label": "`KitAnalyticsTiming` \u2014 class"}, {"id": "analytics-feat-5", "label": "`KitAnalyticsErrorHandler` \u2014 typedef"}, {"id": "analytics-feat-6", "label": "`KitAnalyticsService` \u2014 class"}, {"id": "analytics-feat-7", "label": "`AmplitudeBackend` \u2014 class"}, {"id": "analytics-feat-8", "label": "`DebugConsoleAnalyticsBackend` \u2014 class"}, {"id": "analytics-feat-9", "label": "`FirebaseAnalyticsBackend` \u2014 class"}, {"id": "analytics-feat-10", "label": "`PosthogBackend` \u2014 class"}]} />
+
+
+### Decisions / ADRs
+
+The kit chose a **native-first / standalone** stance: it depends on neither `stacked_kit` core, `stacked`, nor `stacked_services`, shipping only a pure-Dart port plus the zero-dependency `DebugConsoleAnalyticsBackend`. The vendor backends (Firebase / Amplitude / PostHog) are kept as real-signature file stubs rather than wired dependencies so this package's dependency graph stays minimal and `flutter pub get` resolves without pulling any vendor SDK — a host pays that cost only when it opts in. Consent / opt-out gating, offline queuing, and A/B assignment were explicitly deferred as app- or backend-level concerns.
+
+<!-- kb:begin -->
+### References
+
+Official docs and tooling:
+
+- [Stacked — official documentation](https://stacked.filledstacks.com) — Canonical framework docs. Start here for ViewModel/Service patterns used by every kit.
+- [stacked (pub.dev)](https://pub.dev/packages/stacked) — Lightweight MVVM + service locator. Pinned ^3.5.0 across the kits.
+- [stacked_shared (pub.dev)](https://pub.dev/packages/stacked_shared) — StackedLocator.instance — the shared singleton kits resolve through. Pinned ^1.4.2.
+- [stacked_generator (pub.dev)](https://pub.dev/packages/stacked_generator) — Generates routers + @StackedApp wiring. Pinned ^2.0.4.
+- [stacked_cli (pub.dev)](https://pub.dev/packages/stacked_cli) — Scaffolding CLI for new Stacked apps/views/services.
+- [Flutter — official documentation](https://docs.flutter.dev) — Framework docs, platform integration, performance.
+- [Dart — official documentation](https://dart.dev) — Language tour, async, package ecosystem.
+- [Dart & Flutter MCP server (official)](https://dart.dev/tools/mcp-server) — Ships with the Dart SDK (dart mcp-server). Exposes analyzer diagnostics, pub, tests, and live Flutter app introspection via DTD. Wired in stacked_kit/.mcp.json.
+<!-- kb:end -->
+
+<QuestionForm id="open-questions" questions={[
+  {
+    id: "q-analytics-gaps",
+    title: "What is unclear or missing from this playbook?",
+    mode: "freeform",
+    placeholder: "Note anything a new contributor or agent would need that is not covered above.",
+  },
+]} />
+

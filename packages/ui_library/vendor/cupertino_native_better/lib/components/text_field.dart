@@ -1,0 +1,275 @@
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
+import '../channel/params.dart' show resolveColorToArgb;
+import '../components/tab_bar.dart' show CNTabBarRouteObserver;
+import '../utils/modal_hide_mixin.dart';
+
+/// A native iOS text field with Liquid Glass styling, for use as a real form
+/// input (not a search affordance).
+///
+/// Backed by `UITextField` via SwiftUI hosted in a `UiKitView` (iOS 26+ renders
+/// `.glassEffect(.regular, in: .capsule)`; below iOS 26 a `Color(.systemGray6)`
+/// capsule). On macOS it hosts the same SwiftUI field via `AppKitView`. This is
+/// the primitive [KitNativeTextField] wraps on its Liquid Glass tier.
+///
+/// **Two-way controller** (the gap [CNSearchBar] leaves open): pass a
+/// [TextEditingController] and it stays in sync both ways — programmatic
+/// `controller.text = …` is forwarded to the native field via `setText`, and
+/// every native keystroke writes back into the controller, so reads after the
+/// field loses focus (form submission) return the current value. A reentrancy
+/// guard breaks the would-be echo loop.
+///
+/// **Keyboard** — `keyboardType` is honored on the plain (non-secure) tier;
+/// secure fields (passwords) intentionally do not set a keyboard type so iOS
+/// uses the default (which is correct for secure entry).
+///
+/// **Modal z-order** — includes [autoHideOnModal] (Issue #53): when a modal
+/// sheet is presented above this widget's host route, the native platform view
+/// is torn down so its pixels don't bleed through the sheet's scrim. Requires
+/// `CNTabBarRouteObserver()` registered in the app's `navigatorObservers`
+/// (same contract as [CNSearchBar]).
+class CNTextField extends StatefulWidget {
+  /// Creates a native Liquid Glass text field. See the class doc for the
+  /// two-way controller contract and the modal-hide behavior.
+  const CNTextField({
+    super.key,
+    this.controller,
+    this.placeholder,
+    this.obscureText = false,
+    this.keyboardType,
+    this.autofocus = false,
+    this.onChanged,
+    this.onSubmitted,
+    this.onFocusChanged,
+    this.tint,
+    this.textColor,
+    this.placeholderColor,
+    this.autoHideOnModal = true,
+  });
+
+  /// Owns the input text. Two-way synced: programmatic writes forward to the
+  /// native field; native keystrokes write back. `null` creates an internal
+  /// controller (not retrievable — pass one if you need to read `.text`).
+  final TextEditingController? controller;
+
+  /// Placeholder shown when the field is empty.
+  final String? placeholder;
+
+  /// `true` → `SecureField` (passwords / OTP). Disables the inline clear button.
+  final bool obscureText;
+
+  /// Keyboard type. Applied on the plain tier only.
+  final TextInputType? keyboardType;
+
+  /// Autofocus on appearance.
+  final bool autofocus;
+
+  /// Fired on every keystroke with the current text.
+  final ValueChanged<String>? onChanged;
+
+  /// Fired on submit (return key).
+  final ValueChanged<String>? onSubmitted;
+
+  /// Fired when focus enters/leaves the field.
+  final ValueChanged<bool>? onFocusChanged;
+
+  /// Accent / caret / clear-button tint (ARGB resolved from context).
+  final Color? tint;
+
+  /// Text color (nil → `.primary`).
+  final Color? textColor;
+
+  /// Placeholder color (nil → `.secondary`).
+  final Color? placeholderColor;
+
+  /// See class doc. Mirrors [CNSearchBar.autoHideOnModal].
+  final bool autoHideOnModal;
+
+  @override
+  State<CNTextField> createState() => _CNTextFieldState();
+}
+
+/// Standard iOS single-line field height. The platform view (and its
+/// pre-creation `SizedBox.expand()` placeholder inside [UiKitView]) sizes to
+/// `constraints.biggest`, so the widget MUST own a bounded height or it blows
+/// up with "given an infinite size" inside any unbounded-height parent
+/// (Column under a scroll view) — same contract as [CNSearchBar.expandedHeight].
+const double _kFieldHeight = 44.0;
+
+class _CNTextFieldState extends State<CNTextField>
+    with ModalHideMixin<CNTextField> {
+  @override
+  bool get autoHideOnModal => widget.autoHideOnModal;
+
+  @override
+  MethodChannel? get platformViewChannel => _channel;
+
+  MethodChannel? _channel;
+
+  late TextEditingController _controller;
+  bool _ownsController = false;
+
+  /// Reentrancy guard for the two-way controller sync. Set while applying a
+  /// native-originated text change to the Dart controller, so the controller's
+  /// listener doesn't echo it back to native via `setText`.
+  bool _suppressControllerEcho = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = widget.controller ?? TextEditingController();
+    _ownsController = widget.controller == null;
+    _controller.addListener(_onControllerChanged);
+    CNTabBarRouteObserver.anyModalDepth.addListener(_onAnyModalDepthChanged);
+    _onAnyModalDepthChanged();
+  }
+
+  @override
+  void didUpdateWidget(covariant CNTextField oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.controller != oldWidget.controller) {
+      _controller.removeListener(_onControllerChanged);
+      if (_ownsController) _controller.dispose();
+      _controller = widget.controller ?? TextEditingController();
+      _ownsController = widget.controller == null;
+      _controller.addListener(_onControllerChanged);
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.removeListener(_onControllerChanged);
+    if (_ownsController) _controller.dispose();
+    CNTabBarRouteObserver.anyModalDepth.removeListener(_onAnyModalDepthChanged);
+    super.dispose();
+  }
+
+  /// Dart controller → native. Fires when the host sets `controller.text`
+  /// programmatically (autofill, reset, validation clear). Guarded against the
+  /// native→Dart echo (we set the guard in `_onTextChanged` before mutating).
+  void _onControllerChanged() {
+    if (_suppressControllerEcho) return;
+    _channel?.invokeMethod('setText', {'text': _controller.text});
+  }
+
+  /// Modal-depth listener stub (ModalHideMixin drives the hide via
+  /// `maybeHiddenPlaceholder`; this listener is the registration the mixin
+  /// requires so it re-evaluates when a modal opens).
+  void _onAnyModalDepthChanged() {
+    // ModalHideMixin reads anyModalDepth in build via maybeHiddenPlaceholder.
+    if (mounted) setState(() {});
+  }
+
+  void _onPlatformViewCreated(int id) {
+    final ch = MethodChannel('CNTextField_$id');
+    _channel = ch;
+    ch.setMethodCallHandler(_onMethodCall);
+    // Push the initial text so native and Dart agree from frame one (covers the
+    // case where the controller was constructed with non-empty text).
+    if (_controller.text.isNotEmpty) {
+      ch.invokeMethod('setText', {'text': _controller.text});
+    }
+  }
+
+  Future<dynamic> _onMethodCall(MethodCall call) async {
+    switch (call.method) {
+      case 'textChanged':
+        final text = (call.arguments['text'] as String?) ?? '';
+        if (_controller.text != text) {
+          // Native → Dart. Suppress the echo so _onControllerChanged doesn't
+          // bounce this back to native as a setText (would loop / fight the
+          // cursor).
+          _suppressControllerEcho = true;
+          _controller.value = TextEditingValue(
+            text: text,
+            selection: TextSelection.collapsed(offset: text.length),
+          );
+          _suppressControllerEcho = false;
+        }
+        widget.onChanged?.call(text);
+        break;
+      case 'submitted':
+        widget.onSubmitted?.call((call.arguments['text'] as String?) ?? '');
+        break;
+      case 'focusChanged':
+        widget.onFocusChanged?.call(
+            (call.arguments['focused'] as bool?) ?? false);
+        break;
+    }
+    return null;
+  }
+
+  /// Maps [TextInputType] → the string the Swift side expects
+  /// (`TextModel.uiKeyboardType`).
+  String _keyboardTypeString() {
+    final t = widget.keyboardType;
+    if (t == TextInputType.number) return 'number';
+    if (t == TextInputType.phone) return 'phone';
+    if (t == TextInputType.emailAddress) return 'emailAddress';
+    if (t == TextInputType.url) return 'url';
+    return 'default';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Liquid Glass is iOS 26+ / macOS 26+ only. Below that, the native SwiftUI
+    // field still renders a `systemGray6` capsule — so the platform view is
+    // valid on all iOS/macOS. The kit wrapper decides whether to use this tier
+    // or the Material fallback; this widget always builds the native field.
+    if (!kIsWeb &&
+        (defaultTargetPlatform == TargetPlatform.iOS ||
+            defaultTargetPlatform == TargetPlatform.macOS)) {
+      final hidden = maybeHiddenPlaceholder(height: _kFieldHeight);
+      if (hidden != null) return hidden;
+
+      const viewType = 'CNTextField';
+      final creationParams = <String, dynamic>{
+        'text': _controller.text,
+        'placeholder': widget.placeholder ?? '',
+        'isSecure': widget.obscureText,
+        'autofocus': widget.autofocus,
+        'keyboardType': _keyboardTypeString(),
+        'tint': resolveColorToArgb(widget.tint, context),
+        'textColor': resolveColorToArgb(widget.textColor, context),
+        'placeholderColor': resolveColorToArgb(widget.placeholderColor, context),
+        'isDark': Theme.of(context).brightness == Brightness.dark,
+      };
+
+      final platformView = defaultTargetPlatform == TargetPlatform.iOS
+          ? UiKitView(
+              viewType: viewType,
+              creationParams: creationParams,
+              creationParamsCodec: const StandardMessageCodec(),
+              onPlatformViewCreated: _onPlatformViewCreated,
+            )
+          : AppKitView(
+              viewType: viewType,
+              creationParams: creationParams,
+              creationParamsCodec: const StandardMessageCodec(),
+              onPlatformViewCreated: _onPlatformViewCreated,
+            );
+
+      // Bounded height is mandatory: UiKitView/AppKitView (and the
+      // SizedBox.expand placeholder Flutter builds before the native view is
+      // created) size to constraints.biggest.
+      return wrapWithModalInteractionGuard(
+        SizedBox(height: _kFieldHeight, child: platformView),
+      );
+    }
+
+    // Non-Apple — should not be reached (the kit wrapper gates this). Render a
+    // Material fallback defensively rather than throwing, so a misconfigured
+    // host still gets a usable field.
+    return TextField(
+      controller: _controller,
+      decoration: InputDecoration(hintText: widget.placeholder),
+      obscureText: widget.obscureText,
+      keyboardType: widget.keyboardType,
+      autofocus: widget.autofocus,
+      onChanged: widget.onChanged,
+      onSubmitted: widget.onSubmitted,
+    );
+  }
+}

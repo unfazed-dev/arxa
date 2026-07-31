@@ -1,0 +1,232 @@
+import 'package:cupertino_native_better/cupertino_native_better.dart'
+    show CNTabBarRouteObserver;
+import 'package:flutter/material.dart';
+
+import 'package:appbox_kit_core/common/kit_glyphs.dart';
+import 'package:appbox_kit_core/platform/kit_platform.dart';
+
+import 'kit_frosted_surface.dart';
+import 'kit_native_button.dart';
+
+/// Style role for a [KitNativeDialogAction] — drives the action button's
+/// emphasis on the frosted tier and its tint on the M3 tier.
+enum KitDialogActionRole {
+  /// The confirming CTA — filled accent pill (iOS 26 `prominentGlass` look).
+  primary,
+
+  /// A neutral alternative — subdued glass pill. The default.
+  secondary,
+
+  /// An irreversible action — tinted, with the glyph in [ColorScheme.error].
+  destructive,
+}
+
+/// One action in [kitShowNativeDialog]'s stacked action column.
+///
+/// Primitives only ([label], optional [glyph], [role]) so hosts never import
+/// the underlying button deps. [value] is handed back to the dialog's caller
+/// when the action is tapped (`Navigator.pop(context, value)`); [onPressed]
+/// fires first, for side effects. Both are optional — a bare action still
+/// dismisses the dialog with a `null` result.
+class KitNativeDialogAction<T> {
+  const KitNativeDialogAction({
+    required this.label,
+    this.glyph,
+    this.role = KitDialogActionRole.secondary,
+    this.value,
+    this.onPressed,
+  });
+
+  /// The button label.
+  final String label;
+
+  /// Optional leading glyph — one token pairing the Material icon with its
+  /// SF Symbol (see [KitGlyphs]).
+  final KitGlyph? glyph;
+
+  /// Emphasis role — see [KitDialogActionRole].
+  final KitDialogActionRole role;
+
+  /// Result the `kitShowNativeDialog` future resolves to when this action is
+  /// tapped.
+  final T? value;
+
+  /// Side effect run on tap, before the dialog pops.
+  final VoidCallback? onPressed;
+}
+
+/// Shows a platform-adaptive alert dialog and resolves to the tapped action's
+/// [KitNativeDialogAction.value] (`null` on barrier-dismiss / back).
+///
+/// Routing (mirrors [KitNotificationService]'s tier-routing pattern):
+///
+/// - **Android** ([KitPlatform.supportsComposeM3E]) → stock M3 [AlertDialog]
+///   (title / content / text-button actions, destructive tinted
+///   [ColorScheme.error]). There is no `m3e_collection` dialog class, and the
+///   M3 dialog idiom is a plain surface — no frosted panel on this tier.
+/// - **iOS / else** → the iOS 26 alert *idiom*, Flutter-drawn: a
+///   [KitFrostedSurface] panel (ADR 0010's content-layer frosted tier —
+///   dialog bodies are Flutter glass; platform-view glass is pinned chrome
+///   only) with a bold centered title, a gray message, and VERTICALLY STACKED
+///   full-width [KitNativeButton]s — the [KitDialogActionRole.primary] action
+///   filled (`prominentGlass`), the rest subdued glass, destructive tinted.
+///   [showDialog] supplies the plain-dim barrier and the stock fade+scale
+///   entrance, which IS the idiom — no custom transition.
+///
+/// The generic result is honored end-to-end: tapping an action pops the route
+/// with its value, so `await kitShowNativeDialog<T>(...)` resolves to it.
+///
+/// Accepted ceiling (ADR 0011, item 2): no real `UIAlertController` — this
+/// reproduces the alert *idiom* (glass panel + stacked pill actions), not
+/// the system alert.
+Future<T?> kitShowNativeDialog<T>({
+  required BuildContext context,
+  required String title,
+  String? message,
+  required List<KitNativeDialogAction<T>> actions,
+  bool barrierDismissible = true,
+}) async {
+  // Bump the shared modal depth for the dialog's lifetime (same bracket as
+  // kitShowNativeSheet): no navigator registers CNTabBarRouteObserver, so the
+  // route push alone never moves anyModalDepth — without this, native glass
+  // on the obscured page would composite above the dialog. Marking BEFORE the
+  // push also lets KitNativeChromeGates INSIDE the dialog snapshot the bumped
+  // depth as their mount baseline, so they never self-hide.
+  CNTabBarRouteObserver.markAnyModalActive();
+  try {
+    // Android → stock M3 AlertDialog (the M3 dialog idiom; no frosted panel).
+    if (KitPlatform.supportsComposeM3E) {
+      return await showDialog<T>(
+        context: context,
+        barrierDismissible: barrierDismissible,
+        builder: (dialogContext) => AlertDialog(
+          title: Text(title),
+          content: message == null ? null : Text(message),
+          actions: [
+            for (final action in actions)
+              TextButton(
+                onPressed: () {
+                  action.onPressed?.call();
+                  Navigator.of(dialogContext).pop(action.value);
+                },
+                style: action.role == KitDialogActionRole.destructive
+                    ? TextButton.styleFrom(
+                        foregroundColor:
+                            Theme.of(dialogContext).colorScheme.error,
+                      )
+                    : null,
+                child: Text(action.label),
+              ),
+          ],
+        ),
+      );
+    }
+    // iOS / macOS / else → Flutter-drawn frosted panel (the iOS 26 alert
+    // idiom) over showDialog's plain-dim barrier.
+    return await showDialog<T>(
+      context: context,
+      barrierDismissible: barrierDismissible,
+      builder: (_) => _KitFrostedAlertDialog<T>(
+        title: title,
+        message: message,
+        actions: actions,
+      ),
+    );
+  } finally {
+    // Future completes on pop → restore. `finally` keeps the depth balanced
+    // even if the dialog route throws.
+    CNTabBarRouteObserver.markAnyModalInactive();
+  }
+}
+
+/// The iOS-tier dialog panel: a [KitFrostedSurface] body (radius 24, ~300pt
+/// wide) with centered title/message and a stacked full-width action column.
+/// Private — hosts go through [kitShowNativeDialog].
+class _KitFrostedAlertDialog<T> extends StatelessWidget {
+  const _KitFrostedAlertDialog({
+    required this.title,
+    required this.message,
+    required this.actions,
+  });
+
+  final String title;
+  final String? message;
+  final List<KitNativeDialogAction<T>> actions;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    // Transparent, elevation-less Dialog: a positioning + semantics wrapper
+    // only — the frosted surface owns every painted pixel (and the Dialog's
+    // own transparent Material supplies the ink/text ancestry the buttons
+    // need).
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 300),
+        child: KitFrostedSurface(
+          borderRadius: 24,
+          padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                style: theme.textTheme.titleMedium
+                    ?.copyWith(fontWeight: FontWeight.w700),
+              ),
+              if (message != null) ...[
+                const SizedBox(height: 6),
+                Text(
+                  message!,
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.bodyMedium
+                      ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                ),
+              ],
+              const SizedBox(height: 20),
+              for (var i = 0; i < actions.length; i++) ...[
+                // Tight full-width constraint — the stacked-pill look on every
+                // tier (a tight parent width wins over KitNativeButton's
+                // content-sized shrinkWrap).
+                SizedBox(
+                  width: double.infinity,
+                  child: _actionButton(context, actions[i]),
+                ),
+                if (i < actions.length - 1) const SizedBox(height: 8),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _actionButton(
+    BuildContext context,
+    KitNativeDialogAction<T> action,
+  ) {
+    return KitNativeButton(
+      label: action.label,
+      glyph: action.glyph,
+      style: switch (action.role) {
+        KitDialogActionRole.primary => KitButtonStyle.prominentGlass,
+        KitDialogActionRole.secondary => KitButtonStyle.glass,
+        KitDialogActionRole.destructive => KitButtonStyle.tinted,
+      },
+      // kimitail: only the glyph takes the error tint — KitNativeButton
+      // exposes no label/tint color. If a red LABEL is ever required, the
+      // upgrade path is a `tint` passthrough on KitNativeButton (CNButton
+      // already supports it — see kit_native_toolbar.dart).
+      sfSymbolColor: action.role == KitDialogActionRole.destructive
+          ? Theme.of(context).colorScheme.error
+          : null,
+      onPressed: () {
+        action.onPressed?.call();
+        Navigator.of(context).pop(action.value);
+      },
+    );
+  }
+}

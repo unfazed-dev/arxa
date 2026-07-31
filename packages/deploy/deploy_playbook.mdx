@@ -1,0 +1,130 @@
+<Callout id="header" tone="info">
+
+# stacked_kit_deploy — Per-Package Playbook
+
+
+`stacked_kit_deploy` v**0.1.0** · `publish_to: 'none'` · status: **active**
+
+
+**Role (one line):** Deploy port for stacked_kit apps — a process-runner port with wired fastlane, shorebird, and Cloudflare Pages targets (plus a Vercel stub), so release automation is testable without shelling out.
+
+
+**Scope of this document:** lets a human OR an LLM use, wire, and extend `stacked_kit_deploy` **without reading its source**. The public surface below was extracted from the barrel; README content is folded into the narrative sections.
+
+
+## Table of contents
+
+0. Header & TOC — *you are here* · 1. Overview & role · 2. Public surface · 3. Usage & wiring · 4. Integration map · 5. Architecture · 6. Gotchas · 7. Testing · 8. Features · 9. Decisions · 10. References · 11. Open questions
+
+
+</Callout>
+
+
+### Overview & role
+
+Deploy port for stacked_kit apps — a process-runner port with
+
+
+### Public surface
+
+Exported from `lib/stacked_kit_deploy.dart`:
+
+<Table id="deploy-api" columns={["Symbol", "Kind", "Defined in"]} rows={[["KitDeployService", "class", "src/kit_deploy_service.dart"], ["KitDeployTarget", "abstract interface class", "src/kit_deploy_target.dart"], ["CloudflarePagesTarget", "class", "src/targets/cloudflare_pages_target.dart"], ["FastlaneTarget", "class", "src/targets/fastlane_target.dart"], ["ShorebirdMode", "enum", "src/targets/shorebird_target.dart"], ["ShorebirdTarget", "class", "src/targets/shorebird_target.dart"], ["VercelTarget", "class", "src/targets/vercel_target.dart"], ["KitDeployConfig", "class", "src/models/kit_deploy_config.dart"], ["KitDoctorCheck", "class", "src/models/kit_deploy_result.dart"], ["KitDeployResult", "class", "src/models/kit_deploy_result.dart"], ["KitProcessResult", "class", "src/process/kit_process_runner.dart"], ["KitProcessRunner", "abstract interface class", "src/process/kit_process_runner.dart"], ["IoProcessRunner", "class", "src/process/kit_process_runner.dart"]]} />
+
+Test doubles in `lib/testing.dart`: `ScriptedProcessRunner`.
+
+Scripts and call-counts — tests never touch platform channels.
+
+
+### Usage & wiring
+
+```dart
+import 'package:stacked_kit_deploy/stacked_kit_deploy.dart';
+
+const runner = IoProcessRunner();
+final service = KitDeployService(targets: [
+  const ShorebirdTarget(runner, mode: ShorebirdMode.release),
+  const CloudflarePagesTarget(runner),
+]);
+
+final config = KitDeployConfig(
+  projectName: 'showcase',
+  flutterVersion: '3.24.0',
+  dartDefines: {'ENV': 'prod'},
+  environment: {'CLOUDFLARE_API_TOKEN': token},
+);
+
+final checks = await service.doctor(config);   // preflight
+final result = await service.deployTo('cloudflare-pages', config);
+```
+
+CLI: `dart run stacked_kit_deploy doctor` /
+`dart run stacked_kit_deploy deploy cloudflare-pages --project-name=showcase`.
+
+
+### Integration map
+
+<Table id="deploy-integration" columns={["Stacked framework deps", "Backing SDK packages", "Depends on (kit)"]} rows={[["\u2014", "\u2014 (SDK only / pure Dart)", "\u2014 (standalone)"]]} />
+
+See `kit_matrix.md` for the full routing + dependency graph.
+
+
+### Architecture
+
+`KitDeployService` is a facade holding a name-indexed map of `KitDeployTarget`s: `doctor(config)` fans out to every registered target, while `deployTo(name, config)` routes to a single target by key (throwing `ArgumentError` for an unknown name). Each target implements the `KitDeployTarget` interface and depends only on the `KitProcessRunner` port — never on `dart:io` directly — so `IoProcessRunner` is the production adapter and `ScriptedProcessRunner` is the test double. Dependency direction is strictly inbound and standalone: `KitDeployConfig` flows in, `KitDeployResult` / `KitDoctorCheck` flow out, and the package pulls in no `flutter`, `stacked`, or `stacked_kit` dependency.
+
+
+### Gotchas
+
+The external CLIs (`flutter`, `bundle`/`fastlane`, `shorebird`, `wrangler`) must be on `PATH` — `IoProcessRunner` shells out with `runInShell: true`, and a missing binary surfaces as `exitCode: 127` (caught from `ProcessException`) rather than a thrown Dart error. Secrets and tokens are passed via `KitDeployConfig.environment` (e.g. `CLOUDFLARE_API_TOKEN`) and forwarded to each subprocess; they are never hard-coded. Two behavioral pitfalls: `VercelTarget` is still a stub that throws `UnimplementedError`, and real tool failures do not throw — targets return `KitDeployResult(ok: false, failureReason: ...)`. Note: the README lists no native permission or manifest keys, because this package orchestrates CLIs rather than shipping a platform plugin — iOS/Android signing, shorebird app IDs, and lane-specific credentials live in the host app and its fastlane configuration.
+
+
+### Testing
+
+```dart
+import 'package:stacked_kit_deploy/testing.dart';
+
+final runner = ScriptedProcessRunner(script: {
+  'flutter build web': KitProcessResult(exitCode: 1, stderr: 'boom'),
+});
+// runner.commandsRun / workingDirectories / environments record each call.
+```
+
+Targets never throw on tool failure — they return
+`KitDeployResult(ok: false, failureReason: ...)`. Only stubs throw
+`UnimplementedError`.
+
+
+### Features
+
+<Checklist id="deploy-features" items={[{"id": "deploy-feat-0", "label": "`KitDeployService` \u2014 class"}, {"id": "deploy-feat-1", "label": "`KitDeployTarget` \u2014 abstract interface class"}, {"id": "deploy-feat-2", "label": "`CloudflarePagesTarget` \u2014 class"}, {"id": "deploy-feat-3", "label": "`FastlaneTarget` \u2014 class"}, {"id": "deploy-feat-4", "label": "`ShorebirdMode` \u2014 enum"}, {"id": "deploy-feat-5", "label": "`ShorebirdTarget` \u2014 class"}, {"id": "deploy-feat-6", "label": "`VercelTarget` \u2014 class"}, {"id": "deploy-feat-7", "label": "`KitDeployConfig` \u2014 class"}, {"id": "deploy-feat-8", "label": "`KitDoctorCheck` \u2014 class"}, {"id": "deploy-feat-9", "label": "`KitDeployResult` \u2014 class"}, {"id": "deploy-feat-10", "label": "`KitProcessResult` \u2014 class"}, {"id": "deploy-feat-11", "label": "`KitProcessRunner` \u2014 abstract interface class"}]} />
+
+
+### Decisions / ADRs
+
+`kit_matrix.md` sets "standalone by default" as the project-wide rule — new kits depend on neither `stacked_kit`, `stacked`, nor `stacked_services` — and records `stacked_kit_deploy` as `{role: deploy-tooling, deps_kit: [], backing: []}`. Deploy takes that stance furthest: zero kit dependencies and zero backing Dart packages, because it shells out to external CLIs through the `KitProcessRunner` port instead of binding their SDKs. That port is the load-bearing decision — it keeps the package pure Dart (runnable as `dart run stacked_kit_deploy`), and lets every command shape be asserted with `ScriptedProcessRunner` so CI needs no Flutter/fastlane/shorebird toolchain installed.
+
+<!-- kb:begin -->
+### References
+
+Official docs and tooling:
+
+- [Stacked — official documentation](https://stacked.filledstacks.com) — Canonical framework docs. Start here for ViewModel/Service patterns used by every kit.
+- [stacked (pub.dev)](https://pub.dev/packages/stacked) — Lightweight MVVM + service locator. Pinned ^3.5.0 across the kits.
+- [stacked_shared (pub.dev)](https://pub.dev/packages/stacked_shared) — StackedLocator.instance — the shared singleton kits resolve through. Pinned ^1.4.2.
+- [stacked_generator (pub.dev)](https://pub.dev/packages/stacked_generator) — Generates routers + @StackedApp wiring. Pinned ^2.0.4.
+- [stacked_cli (pub.dev)](https://pub.dev/packages/stacked_cli) — Scaffolding CLI for new Stacked apps/views/services.
+- [Flutter — official documentation](https://docs.flutter.dev) — Framework docs, platform integration, performance.
+- [Dart — official documentation](https://dart.dev) — Language tour, async, package ecosystem.
+- [Dart & Flutter MCP server (official)](https://dart.dev/tools/mcp-server) — Ships with the Dart SDK (dart mcp-server). Exposes analyzer diagnostics, pub, tests, and live Flutter app introspection via DTD. Wired in stacked_kit/.mcp.json.
+<!-- kb:end -->
+
+<QuestionForm id="open-questions" questions={[
+  {
+    id: "q-deploy-gaps",
+    title: "What is unclear or missing from this playbook?",
+    mode: "freeform",
+    placeholder: "Note anything a new contributor or agent would need that is not covered above.",
+  },
+]} />
+

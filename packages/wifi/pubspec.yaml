@@ -1,0 +1,27 @@
+name: appbox_kit_wifi
+description: Plugin-neutral port for observing Wi-Fi connectivity state and escorting the user to Wi-Fi settings — live OS state stream, best-effort network info, and a capability gate so UIs can label controls direct vs escorted.
+version: 0.1.0
+publish_to: 'none'
+
+environment:
+  sdk: '>=3.0.3 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  # Live OS connectivity stream backing the priority Stream<KitWifiState>
+  # (wraps Android ConnectivityManager / iOS NWPathMonitor). network_info_plus
+  # has no stream, so connectivity_plus is the source of the "real OS stream".
+  # Latest verified on pub.dev 2026-07-14: 7.2.0.
+  connectivity_plus: ^7.2.0
+  # Best-effort SSID/BSSID/IP reads (location-permission gated by the OS).
+  # Latest verified on pub.dev 2026-07-14: 8.2.0.
+  network_info_plus: ^8.2.0
+  # Settings deep-links for the escort flow (AppSettingsType.wifi).
+  # Latest verified on pub.dev 2026-07-14: 7.0.0.
+  app_settings: ^7.0.0
+
+dev_dependencies:
+  flutter_lints: ^6.0.0
+  flutter_test:
+    sdk: flutter

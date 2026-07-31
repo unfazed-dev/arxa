@@ -1,0 +1,14 @@
+[
+  {
+    "id": "cat-1",
+    "name": "Apparel"
+  },
+  {
+    "id": "cat-2",
+    "name": "Home Goods"
+  },
+  {
+    "id": "cat-3",
+    "name": "Electronics"
+  }
+]

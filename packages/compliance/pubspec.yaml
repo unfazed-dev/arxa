@@ -1,0 +1,18 @@
+name: appbox_kit_compliance
+description: Standalone port for legal/compliance surfaces — a versioned KitComplianceDocument registry, KitConsentStore-backed consent tracking with a typed KitConsentStatus, a pure KitConsentGate, and a KitLicensesService over Flutter's LicenseRegistry. Zero third-party runtime dependencies.
+version: 0.1.0
+publish_to: 'none'
+
+environment:
+  sdk: '>=3.0.3 <4.0.0'
+
+dependencies:
+  # Flutter SDK only — LicenseRegistry (dart:ui via foundation) and @immutable.
+  # No other kit, and no third-party runtime dependency.
+  flutter:
+    sdk: flutter
+
+dev_dependencies:
+  flutter_lints: ^6.0.0
+  flutter_test:
+    sdk: flutter

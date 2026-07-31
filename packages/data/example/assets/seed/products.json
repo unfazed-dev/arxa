@@ -1,0 +1,50 @@
+[
+  {
+    "id": "p-1",
+    "name": "Classic Cotton Tee",
+    "price": 24.99,
+    "category": "cat-1",
+    "tags": ["cotton", "unisex"],
+    "created_at": "2026-01-15T10:00:00Z"
+  },
+  {
+    "id": "p-2",
+    "name": "Wool Beanie",
+    "price": 18.5,
+    "category": "cat-1",
+    "tags": ["winter", "wool"],
+    "created_at": "2026-02-01T09:30:00Z"
+  },
+  {
+    "id": "p-3",
+    "name": "Ceramic Mug",
+    "price": 12.0,
+    "category": "cat-2",
+    "tags": ["kitchen", "dishwasher-safe"],
+    "created_at": null
+  },
+  {
+    "id": "p-4",
+    "name": "Linen Throw Pillow",
+    "price": 29.99,
+    "category": "cat-2",
+    "tags": [],
+    "created_at": "2026-03-10T14:20:00Z"
+  },
+  {
+    "id": "p-5",
+    "name": "Wireless Earbuds",
+    "price": 79.0,
+    "category": "cat-3",
+    "tags": ["bluetooth", "audio"],
+    "created_at": "2026-04-05T08:15:00Z"
+  },
+  {
+    "id": "p-6",
+    "name": "USB-C Charging Cable",
+    "price": 9.99,
+    "category": "cat-3",
+    "tags": ["accessory"],
+    "created_at": null
+  }
+]

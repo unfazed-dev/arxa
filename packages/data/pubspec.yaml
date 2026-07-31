@@ -1,0 +1,53 @@
+name: appbox_kit_data
+description: Data layer for stacked_kit apps — generic repositories over a seed (fixture-backed), Supabase, or Appwrite backend selected by KitDataConfig, deterministic v5 canonical IDs, schema descriptors with SQL/appwrite.json emitters, and rxdart facade services.
+version: 0.1.0
+publish_to: 'none'
+
+environment:
+  sdk: '>=3.0.3 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  # KitAction integration + shared locator conventions.
+  appbox_kit_core:
+    path: ../core
+  ui_library:
+    path: ../ui_library
+  stacked_shared: ^1.4.2
+  rxdart: ^0.28.0
+  uuid: ^4.5.3
+  supabase_flutter: ^2.16.0
+  appwrite: ^25.2.0
+  # Snapshot persistence writes to the app-documents directory.
+  path_provider: ^2.1.5
+  # Auth: native Google flow for the Supabase backend (v7 rewrite —
+  # GoogleSignIn.instance / initialize() / authenticate(); note Supabase's
+  # own guide still shows the pre-v7 API, tracked in supabase/supabase#36775).
+  google_sign_in: ^7.2.0
+  # Auth: native Apple flow for the Supabase backend (nonce round-trip).
+  sign_in_with_apple: ^8.1.0
+  # SHA-256 of the raw nonce handed to Apple.
+  crypto: ^3.0.6
+
+# appwrite's transitive graph pins win32 5.x while stacked_kit → talker_flutter
+# → share_plus 13 needs win32 ^6, so win32 must be forced to 6.x. That alone is
+# NOT enough: `flutter test` on a desktop host also compiles device_info_plus's
+# Windows implementation (exported on every non-JS platform), and 12.x pulls
+# win32_registry 2.x which doesn't compile against win32 6 — so appwrite's
+# solver-only <13/<10 pins on device_info_plus/package_info_plus are overridden
+# to the first win32-6-compatible lines (API-compatible with appwrite's usage).
+# The Windows FFI this touches never runs on iOS/Android/web/macOS. Host apps
+# depending on this package need the same three overrides in their own pubspec
+# (pub overrides don't propagate).
+dependency_overrides:
+  win32: ^6.0.1
+  device_info_plus: ^13.0.0
+  package_info_plus: ^10.0.0
+
+dev_dependencies:
+  flutter_lints: ^6.0.0
+  flutter_test:
+    sdk: flutter
+  # Test-only: fake-clock latency assertions for KitSeedProfile.slow.
+  fake_async: ^1.3.3

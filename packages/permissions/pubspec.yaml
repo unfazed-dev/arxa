@@ -1,0 +1,20 @@
+name: appbox_kit_permissions
+description: Plugin-neutral port for OS permissions — typed KitPermission enum, four-state KitPermissionStatus, and a permission_handler-backed service with a settings-escort contract for permanently-denied permissions.
+version: 0.1.0
+publish_to: 'none'
+
+environment:
+  sdk: '>=3.0.3 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  # Native-first: thin wrapper over the OS permission APIs
+  # (UIKit authorization / Android runtime permissions). Latest verified on
+  # pub.dev 2026-07-14: 12.0.3.
+  permission_handler: ^12.0.3
+
+dev_dependencies:
+  flutter_lints: ^6.0.0
+  flutter_test:
+    sdk: flutter
