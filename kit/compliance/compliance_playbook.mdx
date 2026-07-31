@@ -1,0 +1,115 @@
+<Callout id="header" tone="info">
+
+# appbox_kit_compliance — Per-Package Playbook
+
+
+`appbox_kit_compliance` v**0.1.0** · `publish_to: 'none'` · status: **active**
+
+
+**Role (one line):** Standalone port for legal/compliance surfaces — a versioned KitComplianceDocument registry, KitConsentStore-backed consent tracking with a typed KitConsentStatus, a pure KitConsentGate, and a KitLicensesService over Flutter's LicenseRegistry.
+
+
+**Scope of this document:** lets a human OR an LLM use, wire, and extend `appbox_kit_compliance` **without reading its source**. The public surface below was extracted from the barrel; README content is folded into the narrative sections.
+
+
+## Table of contents
+
+0. Header & TOC — *you are here* · 1. Overview & role · 2. Public surface · 3. Usage & wiring · 4. Integration map · 5. Architecture · 6. Gotchas · 7. Testing · 8. Features · 9. Decisions · 10. References · 11. Open questions
+
+
+</Callout>
+
+
+### Overview & role
+
+Standalone port for legal/compliance surfaces — a versioned KitComplianceDocument registry, KitConsentStore-backed consent tracking with a typed KitConsentStatus, a pure KitConsentGate, and a KitLicensesService over Flutter's LicenseRegistry. Zero third-party runtime dependencies.
+
+
+### Public surface
+
+Exported from `lib/appbox_kit_compliance.dart`:
+
+<Table id="compliance-api" columns={["Symbol", "Kind", "Defined in"]} rows={[["KitComplianceDocumentKind", "enum", "src/kit_compliance_document.dart"], ["KitComplianceSource", "class", "src/kit_compliance_document.dart"], ["KitComplianceRemoteSource", "class", "src/kit_compliance_document.dart"], ["KitComplianceInlineSource", "class", "src/kit_compliance_document.dart"], ["KitComplianceDocument", "class", "src/kit_compliance_document.dart"], ["KitComplianceRegistry", "class", "src/kit_compliance_registry.dart"], ["KitConsentGateResult", "class", "src/kit_consent_gate.dart"], ["KitConsentGateAllowed", "class", "src/kit_consent_gate.dart"], ["KitConsentGateBlocked", "class", "src/kit_consent_gate.dart"], ["KitConsentGate", "class", "src/kit_consent_gate.dart"], ["KitConsentMethod", "enum", "src/kit_consent_record.dart"], ["KitConsentRecord", "class", "src/kit_consent_record.dart"], ["KitConsentStatusChange", "class", "src/kit_consent_service.dart"], ["KitConsentService", "class", "src/kit_consent_service.dart"], ["KitConsentStatus", "class", "src/kit_consent_status.dart"], ["KitConsentAccepted", "class", "src/kit_consent_status.dart"], ["KitConsentAcceptedOutdatedVersion", "class", "src/kit_consent_status.dart"], ["KitConsentWithdrawn", "class", "src/kit_consent_status.dart"], ["KitConsentNeverAccepted", "class", "src/kit_consent_status.dart"], ["KitConsentNotRequired", "class", "src/kit_consent_status.dart"], ["KitConsentStore", "abstract interface class", "src/kit_consent_store.dart"], ["InMemoryKitConsentStore", "class", "src/kit_consent_store.dart"], ["KitLicenseEntry", "class", "src/kit_license_entry.dart"], ["KitLicensesService", "class", "src/kit_licenses_service.dart"]]} />
+
+Test doubles in `lib/testing.dart`: `FakeKitLicensesService`.
+
+Scripts and call-counts — tests never touch platform channels.
+
+
+### Usage & wiring
+
+Add `appbox_kit_compliance` as a path or git dependency — it is `publish_to: 'none'`, so it is not published to pub.dev. The kit mandates **no** Stacked locator or `@StackedApp` wiring (it depends on no other kit), so the only thing you register is the `KitConsentStore` port: bind `InMemoryKitConsentStore` for the working default, or your own durable implementation. Populate a `KitComplianceRegistry` with your `KitComplianceDocument`s, then drive the flow with `KitConsentService.statusFor` / `outstandingDocuments()` and `KitConsentGate.evaluate()`, which returns `allowed` or `blocked(outstanding)` in registry order. App version is passed in as a plain string — the kit takes no `package_info_plus` dependency.
+
+
+### Integration map
+
+<Table id="compliance-integration" columns={["Stacked framework deps", "Backing SDK packages", "Depends on (kit)"]} rows={[["\u2014", "\u2014 (SDK only / pure Dart)", "\u2014 (standalone)"]]} />
+
+See `kit_matrix.md` for the full routing + dependency graph.
+
+
+### Architecture
+
+This package intentionally depends on **no other kit** (not `appbox_kit`,
+`stacked`, or `stacked_services`). Persistence is behind the `KitConsentStore`
+port; the app binds `InMemoryKitConsentStore` or its own durable
+implementation. Nothing here imports Flutter widgets.
+
+
+### Gotchas
+
+- **v0 (this package)** — standalone, own `KitConsentStore` port, in-memory
+  default, exact-string versioning.
+- **One document per kind** — `currentDocuments` and the gate collapse to a
+  single current document per `KitComplianceDocumentKind` (latest registered
+  wins). Two documents sharing a kind — most plausibly `custom` — gate as one;
+  give each its own kind if both must be presented.
+- **Deferred** — durable store bindings (secure storage / a backend), semver-aware
+  version policies, locale-negotiation of which document to present, and any
+  consent UI. Add as consuming apps need them. Unifying the typed results onto
+  `appbox_kit_state` is a documented later phase; there are no cross-kit imports
+  now.
+
+
+### Testing
+
+`package:appbox_kit_compliance/testing.dart` re-exports the API and adds
+`FakeKitLicensesService`, a `KitLicensesService` backed by a scripted list of
+`LicenseEntry`s (build them with `LicenseEntryWithLineBreaks`) so license
+collection can be tested without a Flutter binding. The in-memory consent store
+is used directly in tests.
+
+
+### Features
+
+<Checklist id="compliance-features" items={[{"id": "compliance-feat-0", "label": "`KitComplianceDocumentKind` \u2014 enum"}, {"id": "compliance-feat-1", "label": "`KitComplianceSource` \u2014 class"}, {"id": "compliance-feat-2", "label": "`KitComplianceRemoteSource` \u2014 class"}, {"id": "compliance-feat-3", "label": "`KitComplianceInlineSource` \u2014 class"}, {"id": "compliance-feat-4", "label": "`KitComplianceDocument` \u2014 class"}, {"id": "compliance-feat-5", "label": "`KitComplianceRegistry` \u2014 class"}, {"id": "compliance-feat-6", "label": "`KitConsentGateResult` \u2014 class"}, {"id": "compliance-feat-7", "label": "`KitConsentGateAllowed` \u2014 class"}, {"id": "compliance-feat-8", "label": "`KitConsentGateBlocked` \u2014 class"}, {"id": "compliance-feat-9", "label": "`KitConsentGate` \u2014 class"}, {"id": "compliance-feat-10", "label": "`KitConsentMethod` \u2014 enum"}, {"id": "compliance-feat-11", "label": "`KitConsentRecord` \u2014 class"}]} />
+
+
+### Decisions / ADRs
+
+The kit is standalone by design — it depends on **no other kit** (not `appbox_kit`, `stacked`, or `stacked_services`) so the `KitConsentStore` port stays the sole coupling point and consuming apps own persistence. Its only backing is the Flutter SDK: consent value types and the license reader use `@immutable` and `LicenseRegistry` from `package:flutter/foundation.dart`, yielding **zero third-party runtime dependencies**. App version is passed in as a plain string rather than pulling `package_info_plus`, and version comparison is exact-string (no semver parsing) so `2026-07-01` and `1.2.0` are equally valid version schemes.
+
+<!-- kb:begin -->
+### References
+
+Official docs and tooling:
+
+- [Stacked — official documentation](https://stacked.filledstacks.com) — Canonical framework docs. Start here for ViewModel/Service patterns used by every kit.
+- [stacked (pub.dev)](https://pub.dev/packages/stacked) — Lightweight MVVM + service locator. Pinned ^3.5.0 across the kits.
+- [stacked_shared (pub.dev)](https://pub.dev/packages/stacked_shared) — StackedLocator.instance — the shared singleton kits resolve through. Pinned ^1.4.2.
+- [stacked_generator (pub.dev)](https://pub.dev/packages/stacked_generator) — Generates routers + @StackedApp wiring. Pinned ^2.0.4.
+- [stacked_cli (pub.dev)](https://pub.dev/packages/stacked_cli) — Scaffolding CLI for new Stacked apps/views/services.
+- [Flutter — official documentation](https://docs.flutter.dev) — Framework docs, platform integration, performance.
+- [Dart — official documentation](https://dart.dev) — Language tour, async, package ecosystem.
+- [Dart & Flutter MCP server (official)](https://dart.dev/tools/mcp-server) — Ships with the Dart SDK (dart mcp-server). Exposes analyzer diagnostics, pub, tests, and live Flutter app introspection via DTD. Wired in appbox_kit/.mcp.json.
+<!-- kb:end -->
+
+<QuestionForm id="open-questions" questions={[
+  {
+    id: "q-compliance-gaps",
+    title: "What is unclear or missing from this playbook?",
+    mode: "freeform",
+    placeholder: "Note anything a new contributor or agent would need that is not covered above.",
+  },
+]} />
+

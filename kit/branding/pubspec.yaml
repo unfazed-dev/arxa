@@ -1,0 +1,18 @@
+name: branding
+version: 0.1.0
+description: Reusable brand layer for appbox_kit apps. Ships a presentational BrandSplash widget plus a build-time codegen step (generate_branding.sh + templates) that vendors the kit warm-neutral color ramp into a host as generated/brand_colors.dart. Flutter-only — the host ThemeData styles it.
+publish_to: "none"
+
+environment:
+  sdk: '>=3.0.3 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+dev_dependencies:
+  # Invoked by tools/generate_branding.sh at build time only — NOT imported by lib.
+  flutter_launcher_icons: ^0.14.4
+  flutter_native_splash: ^2.4.8
+  flutter_test:
+    sdk: flutter

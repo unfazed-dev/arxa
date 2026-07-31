@@ -8,10 +8,10 @@
 // config/appbox.config.json (R3); there are no viewport literals here.
 //
 // Checks (cheapest first, all must pass):
-//   1. shape      — every required input present (per producer: htmx vs stacked_kit)
+//   1. shape      — every required input present (per producer: htmx vs appbox_kit)
 //   1b. approval  — design/approval.lock targets + inputsHash still match (6.7)
-//   2. vocab      — [stacked_kit] tokens.json parses as DTCG and carries kit paths
-//   3. exclusions — [stacked_kit] harness chrome in surfaces covered by exclusions.json
+//   2. vocab      — [appbox_kit] tokens.json parses as DTCG and carries kit paths
+//   3. exclusions — [appbox_kit] harness chrome in surfaces covered by exclusions.json
 //   3b. l10n      — locale ARB key + placeholder parity when <design>/l10n/ exists
 //   4. render     — headless Chromium (CDP) renders every surface clean at every
 //                   config viewport; falls back to the proven Python/Node tools
@@ -88,7 +88,7 @@ Future<GateResult> freezeGate(
   // ---- 0b. producer shape (producer-shape seam, dogfood P14 #1) ----
   final producer = File('$designRoot/app.routes.js').existsSync()
       ? 'htmx'
-      : 'stacked_kit';
+      : 'kit';
   if (producer == 'htmx') {
     ok('shape: htmx producer (app.routes.js present) — render via the designer Node server');
   }
@@ -103,8 +103,8 @@ Future<GateResult> freezeGate(
   final inputsHash = _inputsHash(designRoot, producer, requested);
   _validateApproval(designRoot, designRel, requested, inputsHash, ok, fail);
 
-  // ---- 2/3. vocab + exclusions (stacked_kit only) ----
-  if (producer == 'stacked_kit') {
+  // ---- 2/3. vocab + exclusions (appbox_kit only) ----
+  if (producer == 'kit') {
     _checkVocab(designRoot, designRel, ok, fail);
     _checkExclusions(designRoot, designRel, ok, fail);
   } else {
@@ -722,7 +722,7 @@ void _reportRender(
   }
 }
 
-// ── CDP render: stacked_kit (dart:io HttpServer + CdpClient) ────────────────
+// ── CDP render: appbox_kit (dart:io HttpServer + CdpClient) ────────────────
 
 Future<List<String>> _renderStackedCdp(
   String designRoot,
@@ -762,7 +762,7 @@ Future<List<String>> _renderStackedCdp(
 }
 
 /// Loopback static server over a directory (the dart:io analog of python's
-/// SimpleHTTPRequestHandler used by the stacked_kit render).
+/// SimpleHTTPRequestHandler used by the appbox_kit render).
 Future<HttpServer> _bindStaticServer(String root) async {
   final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
   server.listen((request) async {
@@ -982,7 +982,7 @@ Future<List<String>?> _renderFallback({
   return _renderFallbackStacked(designRoot, evidence, viewports, repoRoot, details);
 }
 
-/// stacked_kit fallback: `uv run --with playwright python -` with the same
+/// appbox_kit fallback: `uv run --with playwright python -` with the same
 /// render script freeze.sh embeds. If uv is absent, there is no backend.
 Future<List<String>?> _renderFallbackStacked(
   String designRoot,
@@ -1074,7 +1074,7 @@ Future<List<String>?> _renderFallbackHtmx(
   }
 }
 
-/// The exact stacked_kit render script freeze.sh embeds (uv + playwright),
+/// The exact appbox_kit render script freeze.sh embeds (uv + playwright),
 /// trimmed of comments. Behaviour identical to the bash heredoc.
 const _stackedRenderScript = r'''
 import sys,threading,functools,http.server,socketserver,os,glob,json

@@ -1,0 +1,144 @@
+<Callout id="header" tone="info">
+
+# appbox_kit_media — Per-Package Playbook
+
+
+`appbox_kit_media` v**0.1.0** · `publish_to: 'none'` · status: **active**
+
+
+**Role (one line):** Media kit for appbox_kit apps — "pixels and sound, in and out": camera and photo-library capture, audio recording, and audio + video playback exposed as framework-free ports over native-backed plugins.
+
+
+**Scope of this document:** lets a human OR an LLM use, wire, and extend `appbox_kit_media` **without reading its source**. The public surface below was extracted from the barrel; README content is folded into the narrative sections.
+
+
+## Table of contents
+
+0. Header & TOC — *you are here* · 1. Overview & role · 2. Public surface · 3. Usage & wiring · 4. Integration map · 5. Architecture · 6. Gotchas · 7. Testing · 8. Features · 9. Decisions · 10. References · 11. Open questions
+
+
+</Callout>
+
+
+### Overview & role
+
+>-
+
+
+### Public surface
+
+Exported from `lib/appbox_kit_media.dart`:
+
+<Table id="media-api" columns={["Symbol", "Kind", "Defined in"]} rows={[["CapturedMedia", "abstract class", "src/capture/media_capture_result.dart"], ["XFileCapturedMedia", "class", "src/capture/media_capture_result.dart"], ["MediaCaptureResult", "class", "src/capture/media_capture_result.dart"], ["MediaCaptured", "class", "src/capture/media_capture_result.dart"], ["MediaCaptureCancelled", "class", "src/capture/media_capture_result.dart"], ["MediaCapturePermissionDenied", "class", "src/capture/media_capture_result.dart"], ["MediaCaptureUnavailable", "class", "src/capture/media_capture_result.dart"], ["MediaCaptureFailed", "class", "src/capture/media_capture_result.dart"], ["MediaCaptureService", "abstract class", "src/capture/media_capture_service.dart"], ["ImagePickerMediaCaptureService", "class", "src/capture/media_capture_service.dart"], ["MediaSource", "enum", "src/capture/media_source.dart"], ["VideoPlayerService", "abstract class", "src/video/video_player_service.dart"], ["PluginVideoPlayerService", "class", "src/video/video_player_service.dart"], ["AudioPlayerService", "abstract class", "src/audio/audio_player_service.dart"], ["JustAudioPlayerService", "class", "src/audio/audio_player_service.dart"], ["AudioRecorderService", "abstract class", "src/audio/audio_recorder_service.dart"], ["RecordAudioRecorderService", "class", "src/audio/audio_recorder_service.dart"], ["MediaProcessingState", "enum", "src/audio/playback_state.dart"], ["PlaybackState", "class", "src/audio/playback_state.dart"], ["MediaEditingService", "abstract class", "src/editing/media_editing_service.dart"]]} />
+
+Test doubles in `lib/testing.dart`: `FakeCapturedMedia`, `FakeMediaCaptureService`, `FakeAudioRecorderService`, `FakeAudioPlayerService`, `FakeVideoPlayerService`, `StubVideoPlayerService`, `RecordingResult`, `StubMediaEditingService`.
+
+Scripts and call-counts — tests never touch platform channels.
+
+
+### Usage & wiring
+
+```dart
+import 'package:appbox_kit_media/appbox_kit_media.dart';
+
+final capture = ImagePickerMediaCaptureService();
+final result = await capture.capturePhoto(source: MediaSource.camera);
+switch (result) {
+  case MediaCaptured(:final media):
+    await media.saveTo('/somewhere/photo.jpg');
+  case MediaCapturePermissionDenied():
+    // surface a "grant camera access" hint
+  case MediaCaptureCancelled():
+  case MediaCaptureUnavailable():
+  case MediaCaptureFailed():
+}
+```
+
+
+### Integration map
+
+<Table id="media-integration" columns={["Stacked framework deps", "Backing SDK packages", "Depends on (kit)"]} rows={[["\u2014", "record, just_audio, image_picker, video_player, path_provider", "\u2014 (standalone)"]]} />
+
+See `kit_matrix.md` for the full routing + dependency graph.
+
+
+### Architecture
+
+- **No dependency on `stacked` / `stacked_services` / `appbox_kit`.** This kit
+  is pure ports + backing plugins; apps depend on it, never the reverse.
+- **No plugin type crosses a port.** `image_picker`'s `ImageSource`/`XFile`,
+  `just_audio`'s `PlayerState`, and `record`'s `RecordConfig` stay inside the
+  implementations. Callers see kit-owned `MediaSource`, `CapturedMedia`,
+  `PlaybackState`.
+- **Permission denial is a value, not an exception.** `capturePhoto` returns a
+  sealed `MediaCaptureResult` (`MediaCaptured` / `MediaCaptureCancelled` /
+  `MediaCapturePermissionDenied` / `MediaCaptureUnavailable` /
+  `MediaCaptureFailed`) so callers `switch` exhaustively.
+- **Capability flags:** `MediaCaptureService.hasCamera` (false on the iOS
+  Simulator) lets UIs hide capture affordances that would fail.
+- **The recorder owns its clock:** `elapsed$` emits `Duration.zero` on start,
+  ticks while recording, and emits `null` when idle — bind directly instead of
+  running a timer.
+
+
+### Gotchas
+
+`record` / `just_audio` / `image_picker` pull the Windows FFI `win32` family
+transitively. A host app that already depends on `talker_flutter`/`appwrite`
+(as the showcase does) must keep the workspace `win32` / `device_info_plus` /
+`package_info_plus` overrides — pub overrides do not propagate from this
+package.
+
+
+### Testing
+
+`package:appbox_kit_media/testing.dart` ships scriptable fakes —
+`FakeMediaCaptureService`, `FakeAudioRecorderService`, `FakeAudioPlayerService`
+(and `FakeCapturedMedia`) — with canned files, scripted denial/failure, and
+stream-driving helpers (`driveElapsed`, `drivePosition`, `driveState`, …). No
+plugins or MethodChannels required.
+
+
+### Features
+
+<Checklist id="media-features" items={[{"id": "media-feat-0", "label": "`CapturedMedia` \u2014 abstract class"}, {"id": "media-feat-1", "label": "`XFileCapturedMedia` \u2014 class"}, {"id": "media-feat-2", "label": "`MediaCaptureResult` \u2014 class"}, {"id": "media-feat-3", "label": "`MediaCaptured` \u2014 class"}, {"id": "media-feat-4", "label": "`MediaCaptureCancelled` \u2014 class"}, {"id": "media-feat-5", "label": "`MediaCapturePermissionDenied` \u2014 class"}, {"id": "media-feat-6", "label": "`MediaCaptureUnavailable` \u2014 class"}, {"id": "media-feat-7", "label": "`MediaCaptureFailed` \u2014 class"}, {"id": "media-feat-8", "label": "`MediaCaptureService` \u2014 abstract class"}, {"id": "media-feat-9", "label": "`ImagePickerMediaCaptureService` \u2014 class"}, {"id": "media-feat-10", "label": "`MediaSource` \u2014 enum"}, {"id": "media-feat-11", "label": "`VideoPlayerService` \u2014 abstract class"}]} />
+
+
+### Decisions / ADRs
+
+This kit is pure ports plus backing plugins: it declares no dependency on `stacked`, `stacked_services`, or any other `appbox_kit` package, so apps depend on it but never the reverse. Capture, recording, and playback layer onto mature, narrowly-scoped plugins (`image_picker`, `record`, `just_audio`) so the kit owns no codec or platform glue of its own and plugin types never cross a port. Music and video playback are deliberately absorbed here rather than split into separate `appbox_kit_music` / `appbox_kit_video` kits, keeping the media surface in one package and leaving `VideoPlayerService` and `MediaEditingService` as phase-2A stubs to fill in against the existing seams.
+
+<!-- kb:begin -->
+### References
+
+Official docs and tooling:
+
+- [Stacked — official documentation](https://stacked.filledstacks.com) — Canonical framework docs. Start here for ViewModel/Service patterns used by every kit.
+- [stacked (pub.dev)](https://pub.dev/packages/stacked) — Lightweight MVVM + service locator. Pinned ^3.5.0 across the kits.
+- [stacked_shared (pub.dev)](https://pub.dev/packages/stacked_shared) — StackedLocator.instance — the shared singleton kits resolve through. Pinned ^1.4.2.
+- [stacked_generator (pub.dev)](https://pub.dev/packages/stacked_generator) — Generates routers + @StackedApp wiring. Pinned ^2.0.4.
+- [stacked_cli (pub.dev)](https://pub.dev/packages/stacked_cli) — Scaffolding CLI for new Stacked apps/views/services.
+- [Flutter — official documentation](https://docs.flutter.dev) — Framework docs, platform integration, performance.
+- [Dart — official documentation](https://dart.dev) — Language tour, async, package ecosystem.
+- [Dart & Flutter MCP server (official)](https://dart.dev/tools/mcp-server) — Ships with the Dart SDK (dart mcp-server). Exposes analyzer diagnostics, pub, tests, and live Flutter app introspection via DTD. Wired in appbox_kit/.mcp.json.
+
+Kit-specific:
+
+- [Flutter API reference](https://api.flutter.dev) — Full widget/framework API. The source of truth for Flutter classes.
+- [Flutter cookbook](https://docs.flutter.dev/cookbook) — Recipes for common Flutter tasks.
+- [record (pub.dev)](https://pub.dev/packages/record) — record — backing dependency of appbox_kit_media.
+- [just_audio (pub.dev)](https://pub.dev/packages/just_audio) — just_audio — backing dependency of appbox_kit_media.
+- [image_picker (pub.dev)](https://pub.dev/packages/image_picker) — image_picker — backing dependency of appbox_kit_media.
+- [video_player (pub.dev)](https://pub.dev/packages/video_player) — video_player — backing dependency of appbox_kit_media.
+- [path_provider (pub.dev)](https://pub.dev/packages/path_provider) — path_provider — backing dependency of appbox_kit_media.
+<!-- kb:end -->
+
+<QuestionForm id="open-questions" questions={[
+  {
+    id: "q-media-gaps",
+    title: "What is unclear or missing from this playbook?",
+    mode: "freeform",
+    placeholder: "Note anything a new contributor or agent would need that is not covered above.",
+  },
+]} />
+

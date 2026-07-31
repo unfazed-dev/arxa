@@ -1,0 +1,316 @@
+# toolbar_m3e — vendored fork playbook
+
+**Version:** 0.1.1 (fork) · **Upstream:** `EmilyMoonstone/material_3_expressive` · **Status:** vendored fork, pinned by root `dependency_overrides`
+
+**Role (one line):** Material 3 Expressive Toolbar + ToolbarAction — forked so inline toolbar actions render `IconButtonM3E` (real M3E shape morph on press) instead of a plain Material `IconButton`, and honor `isDestructive` inline.
+
+<Callout id="toolbar-fork-banner" tone="warning">
+
+Vendored fork of upstream `toolbar_m3e` `0.1.1`. The patched source lives in this repo at `packages/toolbar_m3e/lib/src/toolbar_action_m3e.dart`. The patch is activated by the root `pubspec.yaml` `dependency_overrides` `path:` entry — remove that entry and `flutter pub get` silently reverts to upstream.
+
+</Callout>
+
+## Contents
+
+0. Fork banner
+1. Overview & role
+2. Glossary
+3. Architecture — fork contract + FileTree
+4. Public API reference
+5. Usage playbook
+5b. Wiring
+6. Integration map
+7. Features appendix
+8. Examples
+9. Gotchas + re-sync procedure
+10. Decisions / ADRs
+11. Changelog & status
+12. Open questions
+
+### Overview & role
+
+`toolbar_m3e` is a leaf Material 3 Expressive UI widget package. Hexagonal / domain-layer concerns are N/A — it has no data, service, or routing surface. It renders a token-driven toolbar (top app, bottom app, container) and consumes `m3e_design` tokens plus `icon_button_m3e`.
+
+This package is one of four vendored forks of `EmilyMoonstone/material_3_expressive` pinned in this repo (alongside `fab_m3e`, `navigation_rail_m3e`, `split_button_m3e`). Its patch is the smallest of the four — a single `build()` method on one widget — but it carries one extra quirk: the fork **adds a real dependency** (`icon_button_m3e ^0.2.1`) that upstream does not declare. Re-syncs must re-add it.
+
+### What this is
+
+A vendored fork of upstream `toolbar_m3e` `0.1.1`. The fork is pulled in transitively via the `m3e_collection` umbrella package, and activated by a `path:` `dependency_overrides` entry in the root `pubspec.yaml`. The patched file is `packages/toolbar_m3e/lib/src/toolbar_action_m3e.dart` (the `ToolbarIconButtonM3E.build()` method). The patch marker in source is `// PATCH (vendored fork)`.
+
+### Glossary
+
+- **Fork** — a vendored copy of an upstream package, edited in-tree, pinned by a `path:` override.
+- **Override** — the `dependency_overrides:` block in the root `pubspec.yaml` that forces `pub` to resolve this package from a local folder instead of pub.dev.
+- **Patch marker** — an inline comment tag (`// Patched (vendored fork)`, `// Fork patch:`, or `// PATCH`) that flags every block of code changed from upstream. Audit with `grep -rEn 'FORK|fork patch|PATCH|vendored' packages/toolbar_m3e/lib`.
+- **Re-sync** — the procedure for re-applying this fork's patches onto a newer upstream version (see §9).
+- **M3E** — Material 3 Expressive, the motion/shape system this widget implements.
+
+### Architecture — the fork contract
+
+The fork contract has two halves: **WHY** the patch exists (the root `pubspec.yaml` override comment) and **HOW** it is implemented (the inline `// PATCH (vendored fork)` marker in `lib/src/toolbar_action_m3e.dart`).
+
+<Diagram id="toolbar-arch-diagram" caption="toolbar_m3e fork wiring: root override → umbrella → fork package → icon_button_m3e.">
+
+```html
+<div class="diagram-panel" data-rough>
+  <div class="diagram-box" data-rough>
+    <div class="diagram-pill">Activation chain</div>
+    <div class="diagram-node">root pubspec.yaml</div>
+    <div class="diagram-muted">dependency_overrides</div>
+    <div class="diagram-node">m3e_collection</div>
+    <div class="diagram-muted">umbrella re-export</div>
+    <div class="diagram-node">toolbar_m3e (fork)</div>
+    <div class="diagram-muted">lib/src/toolbar_action_m3e.dart</div>
+    <div class="diagram-node">appbox_kit</div>
+    <div class="diagram-muted">Kit* wrappers</div>
+  </div>
+  <div class="diagram-arrow">↓ fork adds real dep</div>
+  <div class="diagram-box diagram-accent" data-rough>
+    <div class="diagram-pill">The patch — shape morph</div>
+    <div class="diagram-node">icon_button_m3e ^0.2.1</div>
+    <div class="diagram-muted">real M3E shape morph</div>
+  </div>
+</div>
+```
+
+```css
+.diagram-panel { display: flex; flex-direction: column; gap: 8px; }
+.diagram-arrow { text-align: center; padding: 2px 0; opacity: .7; }
+```
+
+</Diagram>
+
+<FileTree id="toolbar-file-tree" title="toolbar_m3e — files that matter for the fork" entries={[
+  { path: "packages/toolbar_m3e/lib/toolbar_m3e.dart", change: "modified", note: "Barrel; exports src/enums.dart, src/toolbar_action_m3e.dart, src/toolbar_m3e.dart, src/toolbar_tokens_adapter.dart (show ToolbarTokensAdapter)." },
+  { path: "packages/toolbar_m3e/lib/src/toolbar_action_m3e.dart", change: "modified", note: "PATCHED — ToolbarIconButtonM3E.build() returns IconButtonM3E instead of plain IconButton; honors isDestructive inline. Entire ~55-line file; single // PATCH (vendored fork) marker." },
+  { path: "packages/toolbar_m3e/lib/src/toolbar_m3e.dart", change: "modified", note: "ToolbarM3E widget. Unpatched." },
+  { path: "packages/toolbar_m3e/lib/src/enums.dart", change: "modified", note: "Toolbar type/variant enums. Unpatched." },
+  { path: "packages/toolbar_m3e/lib/src/toolbar_tokens_adapter.dart", change: "modified", note: "ToolbarTokensAdapter. Unpatched." },
+  { path: "packages/toolbar_m3e/pubspec.yaml", change: "modified", note: "PATCHED — fork ADDS `icon_button_m3e: ^0.2.1` as a real dep with an inline comment. Re-add on re-sync." },
+  { path: "packages/toolbar_m3e/test/toolbar_m3e_test.dart", change: "modified", note: "test/ exists." },
+  { path: "packages/toolbar_m3e/CHANGELOG.md", change: "modified", note: "STALE — only 0.1.0 'Changelog initialized.'; 0.1.1 needs backfill." },
+]} />
+
+### The fork contract (shared)
+
+Every vendored fork in this repo carries the same contract:
+
+- The **WHY** is documented in the root `pubspec.yaml` `dependency_overrides` comment block above each `path:` entry. Read it before editing.
+- The **HOW** is flagged in source with `// Patched (vendored fork)`, `// Fork patch:`, or `// PATCH`. Every changed block has a marker.
+- The **audit command** is `grep -rEn 'FORK|fork patch|PATCH|vendored' packages/<name>/lib` — re-run after every edit and before every re-sync.
+- The **doc-gap checklist** (every fork carries this debt): add a `> Vendored fork of upstream <name> <version>` banner to the README; backfill the CHANGELOG; fix the `EmilyMonestone` → `EmilyMoonstone` typo in `issue_tracker` (present in every fork's `pubspec.yaml`).
+- The **test contract**: every fork SHOULD ship a `test/`. `navigation_rail_m3e` currently has NONE (highest debt); the other three forks do ship one.
+
+### Public API reference
+
+The barrel `lib/toolbar_m3e.dart` exports four files. The fork only changes the body of `ToolbarIconButtonM3E.build()`; the public signatures are unchanged from upstream.
+
+<TabsBlock id="toolbar-api-tabs" tabs={[
+  {
+    id: "toolbar-api-action",
+    label: "ToolbarActionM3E",
+    blocks: [
+      {
+        id: "toolbar-api-action-code",
+        type: "annotated-code",
+        data: {
+          filename: "packages/toolbar_m3e/lib/src/toolbar_action_m3e.dart",
+          language: "dart",
+          code: "class ToolbarActionM3E {\n  const ToolbarActionM3E({\n    required this.icon,\n    required this.onPressed,\n    this.tooltip,\n    this.semanticLabel,\n    this.enabled = true,\n    this.label, // used in overflow menu\n    this.isDestructive = false,\n  });\n\n  final IconData icon;\n  final VoidCallback onPressed;\n  final String? tooltip;\n  final String? semanticLabel;\n  final bool enabled;\n\n  /// Optional label used in the overflow menu; if null, tooltip or semanticLabel will be used.\n  final String? label;\n\n  /// If true, the action is styled as destructive in overflow (e.g. error color).\n  final bool isDestructive;\n}",
+          annotations: [
+            { lines: "1-11", label: "ToolbarActionM3E", note: "Plain model. Unchanged from upstream — the fork changes how the icon variant is rendered, not the model." },
+            { lines: "18", label: "label", note: "Used in the overflow menu; falls back to tooltip or semanticLabel." },
+            { lines: "21", label: "isDestructive", note: "Upstream styles this ONLY in the overflow menu. The fork also honors it inline on the icon variant — error color on the glyph." },
+          ],
+        },
+      },
+    ],
+  },
+  {
+    id: "toolbar-api-iconbutton",
+    label: "ToolbarIconButtonM3E (the patch)",
+    blocks: [
+      {
+        id: "toolbar-api-iconbutton-code",
+        type: "annotated-code",
+        data: {
+          filename: "packages/toolbar_m3e/lib/src/toolbar_action_m3e.dart",
+          language: "dart",
+          code: "class ToolbarIconButtonM3E extends StatelessWidget {\n  const ToolbarIconButtonM3E({\n    super.key,\n    required this.action,\n    this.color,\n    this.iconSize,\n  });\n\n  final ToolbarActionM3E action;\n  final Color? color;\n  final double? iconSize;\n\n  @override\n  Widget build(BuildContext context) {\n    // PATCH (vendored fork): render the real M3E icon button — shape-morphs on\n    // press — instead of a plain Material IconButton, and honor isDestructive\n    // inline (upstream only styles it in the overflow menu).\n    final glyphColor = action.isDestructive\n        ? Theme.of(context).colorScheme.error\n        : color;\n    return IconButtonM3E(\n      icon: Icon(action.icon, size: iconSize, color: glyphColor),\n      onPressed: action.enabled ? action.onPressed : null,\n      tooltip: action.tooltip ?? action.label,\n      semanticLabel: action.semanticLabel,\n    );\n  }\n}",
+          annotations: [
+            { lines: "13-16", label: "THE PATCH", note: "Returns IconButtonM3E (real M3E shape morph on press) instead of a plain Material IconButton. Upstream returned IconButton." },
+            { lines: "17-19", label: "isDestructive inline", note: "Applies colorScheme.error to the glyph inline. Upstream only honored isDestructive in the overflow menu." },
+            { lines: "21-22", label: "tooltip fallback", note: "Falls back to action.label so the icon variant and the overflow menu share a tooltip source." },
+          ],
+        },
+      },
+    ],
+  },
+  {
+    id: "toolbar-api-toolbar",
+    label: "ToolbarM3E + Tokens",
+    blocks: [
+      {
+        id: "toolbar-api-toolbar-text",
+        type: "rich-text",
+        data: {
+          markdown: "`ToolbarM3E` (in `src/toolbar_m3e.dart`) is the toolbar container itself — token-driven colors, shapes, density, overflow handling. **Unpatched.**  \n\n`ToolbarTokensAdapter` (in `src/toolbar_tokens_adapter.dart`, exported via `show`) bridges `m3e_design` tokens into toolbar colors/shapes. **Unpatched.**  \n\nEnums (in `src/enums.dart`) cover toolbar type/variant. **Unpatched.**",
+        },
+      },
+    ],
+  },
+]} />
+
+### Usage playbook
+
+<AnnotatedCode id="toolbar-usage-actions" filename="example/toolbar_usage.dart" language="dart" code={"import 'package:m3e_collection/m3e_collection.dart';\n\nToolbarM3E(\n  actions: [\n    ToolbarActionM3E(icon: Icons.search, onPressed: _onSearch, tooltip: 'Search'),\n    ToolbarActionM3E(\n      icon: Icons.delete_outline,\n      onPressed: _onDelete,\n      tooltip: 'Delete',\n      isDestructive: true,\n    ),\n  ],\n)"} annotations={[
+  { lines: "1", note: "Hosts import via the umbrella m3e_collection, not the fork directly (see 5b)." },
+  { lines: "6-9", label: "isDestructive", note: "The fork renders this inline with colorScheme.error on the icon variant; upstream only styles it in the overflow menu." },
+]} />
+
+## 5b. Wiring — how a host actually gets this fork
+
+<AnnotatedCode id="toolbar-wiring-override" filename="pubspec.yaml (root)" language="yaml" code={"# Vendored fork of toolbar_m3e 0.1.1 (pulled in via m3e_collection).\n# Patched so inline toolbar actions render IconButtonM3E (real M3E shape\n# morph on press) instead of a plain Material IconButton, and honor\n# isDestructive inline. Patch: packages/toolbar_m3e/lib/src/\n# toolbar_action_m3e.dart ToolbarIconButtonM3E.\ndependency_overrides:\n  toolbar_m3e:\n    path: packages/toolbar_m3e"} annotations={[
+  { lines: "1-4", label: "WHY", note: "Root pubspec.yaml override comment — auditable reason for the fork. Edit whenever the patch changes." },
+  { lines: "5-7", label: "HOW", note: "path: override activates the fork. m3e_collection still re-exports toolbar_m3e by name; the override redirects that name to the local folder." },
+]} />
+
+<AnnotatedCode id="toolbar-wiring-dep" filename="packages/toolbar_m3e/pubspec.yaml" language="yaml" code={"dependencies:\n  flutter:\n    sdk: flutter\n  m3e_design: ^0.2.0\n  # Fork patch: inline toolbar actions render IconButtonM3E (shape morph).\n  icon_button_m3e: ^0.2.1"} annotations={[
+  { lines: "5", label: "Fork adds a real dep", note: "Upstream does NOT depend on icon_button_m3e. The fork does, because ToolbarIconButtonM3E.build returns IconButtonM3E. Re-add this line on every re-sync — the patch does not compile without it." },
+]} />
+
+<Callout id="toolbar-wiring-callout" tone="info">
+
+Hosts almost never import `package:toolbar_m3e/...` directly. The fork is pulled in **transitively** via `m3e_collection` (the umbrella that re-exports every M3E widget), and most apps reach it through `appbox_kit`'s `Kit*` wrappers. The root `dependency_overrides` `path:` entry is the only thing that activates the patch — `m3e_collection`'s own version constraint is unchanged.
+
+</Callout>
+
+### Integration map
+
+<Diagram id="toolbar-integration-map" caption="Apps import m3e_collection; the root override redirects toolbar_m3e to the local fork, which adds icon_button_m3e as a real dep.">
+
+```html
+<div class="diagram-panel" data-rough>
+  <div class="diagram-box" data-rough>
+    <div class="diagram-pill">Host import path</div>
+    <div class="diagram-node">App (showcase / host)</div>
+    <div class="diagram-muted">imports →</div>
+    <div class="diagram-node">m3e_collection</div>
+    <div class="diagram-muted">umbrella</div>
+    <div class="diagram-muted">re-exports</div>
+    <div class="diagram-node">appbox_kit</div>
+    <div class="diagram-muted">Kit* wrappers</div>
+  </div>
+  <div class="diagram-arrow">↓ root override redirects</div>
+  <div class="diagram-box" data-rough>
+    <div class="diagram-pill">Override target</div>
+    <div class="diagram-node">root pubspec.yaml</div>
+    <div class="diagram-muted">dependency_overrides: toolbar_m3e path:packages/toolbar_m3e</div>
+    <div class="diagram-muted">redirects →</div>
+    <div class="diagram-node">packages/toolbar_m3e</div>
+    <div class="diagram-muted">this fork</div>
+  </div>
+  <div class="diagram-arrow">↓ fork adds real dep</div>
+  <div class="diagram-box diagram-accent" data-rough>
+    <div class="diagram-pill">Shape morph deps</div>
+    <div class="diagram-muted">fork adds real dep →</div>
+    <div class="diagram-node">icon_button_m3e ^0.2.1</div>
+    <div class="diagram-node">m3e_design ^0.2.0</div>
+  </div>
+</div>
+```
+
+```css
+.diagram-panel { display: flex; flex-direction: column; gap: 8px; }
+.diagram-arrow { text-align: center; padding: 2px 0; opacity: .7; }
+```
+
+</Diagram>
+
+### Features appendix
+
+<Checklist id="toolbar-features" items={[
+  { id: "feat-toolbar", label: "ToolbarM3E container (top / bottom app / container)", note: "Token-driven colors, shapes, density. Unchanged from upstream." },
+  { id: "feat-overflow", label: "Overflow menu handling for actions that do not fit", note: "Action.label is used here." },
+  { id: "feat-shape-morph", label: "Inline actions render IconButtonM3E shape morph (fork)", checked: true, note: "ToolbarIconButtonM3E.build returns IconButtonM3E, not plain IconButton." },
+  { id: "feat-destructive-inline", label: "isDestructive honored inline (fork)", checked: true, note: "Applies colorScheme.error to the glyph; upstream only styles it in overflow." },
+  { id: "feat-tokens", label: "ToolbarTokensAdapter bridges m3e_design tokens" },
+]} />
+
+### Examples
+
+<Code id="toolbar-example-mixed" filename="example/mixed_actions.dart" language="dart" caption="A toolbar with normal, disabled, and destructive actions side by side." code={"ToolbarM3E(\n  actions: [\n    ToolbarActionM3E(icon: Icons.share, onPressed: _share, tooltip: 'Share'),\n    ToolbarActionM3E(icon: Icons.save, onPressed: _save, tooltip: 'Save', enabled: false),\n    ToolbarActionM3E(icon: Icons.delete, onPressed: _delete, tooltip: 'Delete', isDestructive: true),\n  ],\n)"} />
+
+### Gotchas + re-sync procedure
+
+<Callout id="toolbar-gotcha-dep" tone="risk">
+
+The fork **adds `icon_button_m3e: ^0.2.1` as a real dependency** to `packages/toolbar_m3e/pubspec.yaml`. Upstream does not declare it. On every re-sync, after copying upstream's `pubspec.yaml`, you MUST re-add the `icon_button_m3e` line (with its `# Fork patch:` comment) — otherwise `ToolbarIconButtonM3E.build` fails to resolve `IconButtonM3E` and the package does not compile.
+
+</Callout>
+
+<Callout id="toolbar-gotcha-isdestructive" tone="warning">
+
+Upstream honors `isDestructive` **only in the overflow menu**. The fork also applies `colorScheme.error` to the inline icon variant. If you "restore" upstream's `IconButton` you will lose both the shape morph AND the inline destructive styling — the two changes ship together in the same patch.
+
+</Callout>
+
+### Re-sync procedure (shared across all four forks)
+
+When bumping upstream (`fab_m3e`, `navigation_rail_m3e`, `split_button_m3e`, or `toolbar_m3e`):
+
+1. **Bump** the fork's `pubspec.yaml` `version:` and the root `pubspec.yaml` override comment's stated version.
+2. **Backfill** the fork's `CHANGELOG.md` with the new version entry (every fork's CHANGELOG is stale — see §11).
+3. **Diff** each patched file against the new upstream release of the same path.
+4. **Re-apply** each `// Patched (vendored fork)` / `// Fork patch:` / `// PATCH` block by hand. Do NOT copy upstream over the fork blindly — the markers are your only map of what to preserve. For this fork, also re-add the `icon_button_m3e: ^0.2.1` line to `pubspec.yaml` (see §5b).
+5. **Update** the root `pubspec.yaml` override comment if the WHY or the patched-file list changed.
+6. **Run** the fork's `flutter test` in `packages/<name>/`, then run the consuming showcase (`appbox_kit_showcase`) to confirm the patched behaviour still renders.
+
+### Override hygiene (shared)
+
+<Callout id="toolbar-override-hygiene" tone="warning">
+
+Never remove a `dependency_overrides` `path:` entry without first confirming upstream includes the fix. A "clean" `flutter pub get` silently reverts the fork to the pub.dev release, and the patch — including its bug fix — disappears with no compile error. The root override comment is the only durable record of why the patch exists. (For this fork specifically: reverting also drops the `icon_button_m3e` dep, so the build fails — a rare case where the silent revert is caught at compile time.)
+
+</Callout>
+
+<Callout id="toolbar-doc-gap" tone="risk">
+
+Doc-gap debt every fork carries: (a) no `> Vendored fork of upstream <name> <version>` banner in the README; (b) stale `CHANGELOG.md`; (c) `EmilyMonestone` → `EmilyMoonstone` typo in `issue_tracker` (present in every fork's `pubspec.yaml`).
+
+</Callout>
+
+### Decisions / ADRs
+
+None. The fork contract is documented in the root `pubspec.yaml` override comment; no separate ADR was written. The added `icon_button_m3e` dependency is documented inline in the fork's own `pubspec.yaml` — the only fork of the four whose patch leaks past source into the manifest.
+
+### Changelog & status
+
+The fork's `CHANGELOG.md` is **stale** — it only contains `## 0.1.0 - Changelog initialized.` There is no `0.1.1` entry documenting the fork patch.
+
+**Backfill task:** add a `## 0.1.1` entry describing the `IconButtonM3E` swap, the inline `isDestructive` honoring, and the new `icon_button_m3e ^0.2.1` dependency.
+
+**Test status:** `test/toolbar_m3e_test.dart` exists.
+
+### Open questions
+
+<QuestionForm id="toolbar-open-questions" questions={[
+  {
+    id: "toolbar-q-upstream-pr",
+    title: "Should the IconButtonM3E swap be upstreamed as a PR?",
+    subtitle: "The change is small and additive; the added dep is the only complication.",
+    mode: "single",
+    options: [
+      { id: "pr-with-dep", label: "Yes — PR including the icon_button_m3e dep", detail: "Cleanest for upstream; they decide whether to take the dep." },
+      { id: "pr-conditional", label: "Yes — but guard the dep behind a flag", detail: "Lower friction for upstream; fork still keeps the simple form." },
+      { id: "no-pr", label: "No — keep as a vendored fork", detail: "Avoids debating the dep with upstream.", recommended: true },
+    ],
+    required: false,
+  },
+  {
+    id: "toolbar-q-destructive-token",
+    title: "Should isDestructive use colorScheme.error or a dedicated token?",
+    mode: "freeform",
+    placeholder: "Note whether m3e_design exposes a destructive token that should be used instead.",
+  },
+]} submitLabel="Record answers" />

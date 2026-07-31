@@ -1,0 +1,720 @@
+# cupertino_native_better — Per-Package Playbook
+
+<Callout id="cn-header" tone="info">
+
+**Version:** 1.5.2 · **Role:** the iOS native tier (real Liquid Glass via Swift/UIKit + SVGKit, `UiKitView`-backed; Cupertino/Material fallback) — the concrete iOS adapter under `appbox_kit`'s `Kit*` ports. **Status:** vendored fork of upstream `cupertino_native_better@1.5.2` with **four local patches** held in-repo until upstreaming. Path-dep of `appbox_kit` (not a normal direct host dep).
+
+</Callout>
+
+## Contents
+
+1. [Overview & role](#overview--role) — what this package is, the host wiring tier
+2. [Glossary](#glossary) — CN*, Liquid Glass, UiKitView, CNTabBarRouteObserver, PlatformVersion
+3. [Architecture](#architecture) — federated plugin + Dart widget library, build-time branch
+4. [Public API reference](#public-api-reference) — every exported symbol
+5. [Usage playbook](#usage-playbook)
+5b. [Wiring](#wiring) — path dep, deployment target, the two patches, route observer registration
+6. [Integration map](#integration-map) — consumed by `appbox_kit`
+7. [Features appendix](#features-appendix) — native surfaces, controllers, glass unioning, dark-mode sync
+8. [Examples](#examples)
+9. [Gotchas](#gotchas) — patches, SVGKit weight, `CNTabBarNative` semantics, `LiquidGlassContainer`
+10. [Decisions / ADRs](#decisions--adrs)
+11. [Changelog & status](#changelog--status)
+12. [Open questions](#open-questions)
+
+---
+
+### Overview & role
+
+`cupertino_native_better` (internally still `package:cupertino_native_better/...`) is the **iOS native tier** of the p2 app. On iOS 26+ and macOS 26+ it renders Apple's real Liquid Glass through Swift/UIKit (iOS) and AppKit (macOS) `UiKitView`/`AppKitView` platform views; on older Apple OSes it falls back to `Cupertino`; on Android/web it falls back to Material. It is the concrete implementation beneath `appbox_kit`'s `Kit*` ports — the host almost never imports `cupertino_native_better` directly; `appbox_kit` does, and re-exports nothing.
+
+The package ships three layers fused into one `path` dep: a federated Flutter plugin (Dart platform interface + method channel + Swift/SPM native), a Dart widget library of `CN*` widgets that own the build-time platform branch, and an iOS-26-only native tab-bar takeover (`CNTabBarNative`) that bypasses the widget tree and presents a real `UITabBarController`.
+
+<Diagram id="cn-role-diagram" caption="cupertino_native_better is the iOS native tier under appbox_kit's Kit* ports.">
+
+```html
+<div class="diagram-panel" data-rough>
+  <div class="diagram-box" data-rough>
+    <div class="diagram-pill">Host app (e.g. appbox_kit_showcase)</div>
+    <div class="diagram-node">appbox_kit · ~18 Kit* ports</div>
+    <div class="diagram-muted">KitNativeButton, KitTabBar, KitNativeSheet, KitGlassCard, KitNativeSlider, KitNativeSwitch, KitNativePopupMenu, KitNativeSegmentedControl, KitNativeSearchBar, KitNativeSplitButton, KitNativeFab, KitNativeToolbar, KitNativeIconButton, KitNativeChromeGate, KitNativeOverlay, KitNativeRangeSlider, KitTabBar, KitNotificationService</div>
+  </div>
+  <div class="diagram-arrow">↓ delegates to</div>
+  <div class="diagram-box diagram-accent" data-rough>
+    <div class="diagram-pill">cupertino_native_better (this package)</div>
+    <div class="diagram-node">CN* widgets · PlatformVersion · CNTabBarRouteObserver</div>
+    <div class="diagram-muted">build-time branch</div>
+  </div>
+  <div class="diagram-box" data-rough>
+    <div class="diagram-pill">Platform branches</div>
+    <div class="diagram-node">iOS 26+ / macOS 26+ → UiKitView / AppKitView + Liquid Glass</div>
+    <div class="diagram-node">older Apple → Cupertino fallback</div>
+    <div class="diagram-node">Android / web → Material fallback</div>
+  </div>
+</div>
+```
+
+```css
+.diagram-panel { display: flex; flex-direction: column; gap: 8px; }
+.diagram-arrow { text-align: center; padding: 2px 0; opacity: .7; }
+```
+
+</Diagram>
+
+### Glossary
+
+<Table
+  id="cn-glossary"
+  columns={["Term", "Meaning"]}
+  rows={[
+    ["CN*", "Naming prefix for every public Dart widget/class in this package: CNButton, CNIcon, CNTabBar, CNSlider, CNSwitch, CNPopupMenuButton, CNSegmentedControl, CNGlassButtonGroup, CNBottomSheet, CNFloatingIsland, CNSearchBar, CNToast, CNGlassCard, CNSplitButton, etc."],
+    ["Liquid Glass", "Apple's design language introduced in iOS 26 / macOS 26 — translucent, refractive surfaces rendered natively by UIKit/AppKit. This package surfaces it via UiKitView/AppKitView platform views, not Dart paint."],
+    ["UiKitView / AppKitView", "Flutter platform-view embedders. iOS 26+ CN widgets become a UiKitView backed by a Swift factory; macOS 26+ by an AppKitView + NSView factory. Older OSes use a pure Dart Cupertino widget instead — same Dart API."],
+    ["CNTabBarRouteObserver", "A NavigatorObserver exported from components/tab_bar.dart. Must be registered on the root navigator so CN widgets learn when sheets/modals/popups cover them and hide/clip their platform views to stop Liquid Glass halos bleeding through."],
+    ["PlatformVersion", "Dart-side version detector (utils/version_detector.dart) that parses Platform.operatingSystemVersion — NOT a method channel — so release builds return correct iOS/macOS versions. Auto-initializes on first access."],
+    ["PlatformViewGuard", "Debug-only 500 ms gate that delays platform-view creation until the engine has purged stale registrations after a hot restart. No-op in release mode."],
+    ["ModalHideMixin", "Mixin used by CNButton/CNSlider/CNSwitch/etc. that listens to CNTabBarRouteObserver and self-destroys its platform view while a sheet/popup is above it."],
+    ["CNTabBarNative", "iOS-26-only native tab-bar TAKEOVER (a real UITabBarController). NOT a Flutter Widget — invoked via static CNTabBarNative.enable(...). Drives its own Flutter content per tab."],
+    ["CupertinoNativeBetter", "Top-level facade class for low-level platform interactions. Most callers never touch it; use the CN* widgets directly."],
+  ]}
+/>
+
+### Architecture
+
+The package is a **federated Flutter plugin** plus a Dart widget library. Each widget does a build-time branch:
+
+- iOS 26+ / macOS 26+ → embed a `UiKitView`/`AppKitView` whose native side is built by a Swift `*Factory` (registered by `CupertinoNativePlugin`) and rendered by SwiftUI/UIKit/AppKit.
+- Older Apple (iOS < 26, macOS < 26) → emit the equivalent `Cupertino` widget.
+- Android / web → emit the Material equivalent.
+
+Native code is shipped via Swift Package Manager (`ios/cupertino_native_better/Package.swift`, `macos/cupertino_native_better/Package.swift`), with two `.podspec` files per platform as a CocoaPods fallback. The iOS SPM target depends on `SVGKit ~> 3.0` for SVG image rendering. Per-instance method channels (`CupertinoNativeXxx_$id`, `CNGlassCard_$id`, `CNSearchBar_$id`, etc.) wire Dart state to each platform view; the takeover tab bar has its own `cn_native_tab_bar` channel; a legacy facade channel exposes `getPlatformVersion` for debugging.
+
+<FileTree
+  id="cn-file-tree"
+  title="package layout (lib + native)"
+  entries={[
+    { path: "pubspec.yaml", change: "modified", note: "LOCAL PATCH #1: cupertino_icons ^1.0.8 added — fixes '?' tofu toast icons." },
+    { path: "lib/cupertino_native_better.dart", change: "modified", note: "Barrel; exports every CN* symbol. Facade class CupertinoNativeBetter." },
+    { path: "lib/components/", change: "modified", note: "18 widget files: button, icon, slider, range_slider, switch, tab_bar, native_tab_bar, segmented_control, glass_button_group, split_button, popup_menu_button, popup_gesture, bottom_sheet, search_bar, search_scaffold, floating_island, toast." },
+    { path: "lib/components/experimental/glass_card.dart", change: "modified", note: "CNGlassCard (experimental)." },
+    { path: "lib/style/", change: "modified", note: "button_style, button_data, sf_symbol, native_list, image_placement, glass_effect, spotlight_mode, tab_bar_search_item." },
+    { path: "lib/utils/", change: "modified", note: "version_detector (PlatformVersion), platform_view_guard (PlatformViewGuard), theme_helper, transition_observer (CNTransitionObserver), modal_hide_mixin." },
+    { path: "lib/components/tab_bar.dart", change: "modified", note: "LOCAL PATCH #2 host: contains CNTabBarRouteObserver + CNTabBar; the iOS-side takeover fix pairs with the Swift CupertinoTabBarFactory." },
+    { path: "lib/components/button.dart", change: "modified", note: "LOCAL PATCH #3 host: both fallback tiers pin the SizedBox width only for icon-only buttons (was widget.isIcon — squashed icon+label buttons to 44pt)." },
+    { path: "lib/components/icon.dart", change: "modified", note: "LOCAL PATCH #4 host: CNIcon widget selection gates on defaultTargetPlatform + PlatformViewGuard.isTestEnvironment (was dart:io Platform — AppKitView + MissingPluginException in tests on a macOS host)." },
+    { path: "ios/cupertino_native_better/Package.swift", change: "modified", note: "SPM package; platforms [.iOS(\"15.0\")]; depends on SVGKit ~>3.0." },
+    { path: "ios/cupertino_native_better/Sources/...", change: "modified", note: "39 Swift files: CupertinoNativePlugin + Factories + Views + Utils (TransitionObserver, SpotlightManager, ImageCacheManager, SVGImageLoader, HostingSafeArea)." },
+    { path: "macos/cupertino_native_better/Package.swift", change: "modified", note: "SPM package; platforms [.macOS(\"11.0\")]; AppKit NSView factories." },
+    { path: "macos/cupertino_native_better/Sources/...", change: "modified", note: "Native plugin + NSView factories (button, slider, switch, segmented control, popup menu, tab bar, glass container)." },
+    { path: "{ios,macos}/*.podspec", change: "modified", note: "CocoaPods fallback for non-SPM consumers (cupertino_native_better.podspec, cupertino_native_plus.podspec)." },
+  ]}
+/>
+
+<Diagram id="cn-arch-diagram" caption="Federated plugin + per-widget build-time branch.">
+
+```html
+<div class="diagram-panel" data-rough>
+  <div class="diagram-box" data-rough>
+    <div class="diagram-pill">Dart widget library</div>
+    <div class="diagram-node">CNButton · CNIcon · CNTabBar · CNSlider · CNSwitch · CNPopupMenuButton · CNSegmentedControl · CNGlassButtonGroup · CNBottomSheet · CNFloatingIsland · CNSearchBar · CNToast · CNGlassCard · CNSplitButton · LiquidGlassContainer</div>
+  </div>
+  <div class="diagram-box diagram-accent" data-rough>
+    <div class="diagram-pill">Build-time branch (PlatformVersion)</div>
+    <div class="diagram-node">iOS 26+ → UiKitView + Swift Factory + Liquid Glass</div>
+    <div class="diagram-node">macOS 26+ → AppKitView + NSView Factory</div>
+    <div class="diagram-node">iOS &lt; 26 → Cupertino</div>
+    <div class="diagram-node">macOS &lt; 26 → Cupertino</div>
+    <div class="diagram-node">Android / web → Material</div>
+  </div>
+  <div class="diagram-box" data-rough>
+    <div class="diagram-pill">Native (Swift, SPM)</div>
+    <div class="diagram-node">CupertinoNativePlugin registers Factories</div>
+    <div class="diagram-node">Per-instance channels: CupertinoNativeXxx_$id · cn_native_tab_bar · CNGlassCard_$id</div>
+    <div class="diagram-node">SVGKit (~3.0) for SVG assets</div>
+  </div>
+</div>
+```
+
+```css
+.diagram-panel { display: flex; flex-direction: column; gap: 8px; }
+```
+
+</Diagram>
+
+### Public API reference
+
+Every public symbol exported by `lib/cupertino_native_better.dart`, grouped. The barrel exports platform interface + method channel, all components (with two `show` filters for `bottom_sheet`), all styles, and the three utilities.
+
+<TabsBlock
+  id="cn-api-tabs"
+  tabs={[
+    {
+      id: "tab-buttons",
+      label: "Buttons & groups",
+      blocks: [
+        {
+          id: "tab-buttons-note",
+          type: "rich-text",
+          data: { markdown: "Buttons are StatefulWidget wrappers around a Swift factory. `CNButtonConfig` carries the style; `style: CNButtonStyle.glass` opts into Liquid Glass. `CNGlassButtonGroup` unions multiple buttons under one glass effect." },
+        },
+        {
+          id: "api-cn-button",
+          type: "annotated-code",
+          data: {
+            filename: "lib/components/button.dart",
+            language: "dart",
+            code: "enum CNButtonStyle { glass, floating, plain, prominent, filled, borderless }\n\nclass CNButtonConfig {\n  const CNButtonConfig({\n    this.style = CNButtonStyle.glass,\n    this.glassEffect,\n    this.padding,\n    this.cornerRadius,\n  });\n  final CNButtonStyle style;\n  final CNGlassEffect? glassEffect;\n  final EdgeInsets? padding;\n  final double? cornerRadius;\n}\n\nclass CNButton extends StatefulWidget {\n  const CNButton({\n    super.key,\n    required this.onPressed,\n    required this.child,\n    this.config = const CNButtonConfig(),\n  });\n  const CNButton.icon({\n    super.key,\n    required this.onPressed,\n    required this.child,\n    this.config = const CNButtonConfig(style: CNButtonStyle.glass),\n  });\n  final VoidCallback? onPressed;\n  final Widget child;\n  final CNButtonConfig config;\n}",
+            annotations: [
+              { lines: "1", label: "Styles", note: "glass = Liquid Glass (iOS 26+/macOS 26+); other styles map to UIButton.Configuration variants; Cupertino/Material on older OSes." },
+              { lines: "13-16", label: "Config", note: "Glass effect, padding, corner radius travel with the button into the Swift factory." },
+              { lines: "21-23", label: "Constructor", note: "Same const signature across iOS/macOS/other; the platform branch happens in State.build." },
+            ],
+          },
+        },
+        {
+          id: "api-cn-glass-button-group",
+          type: "annotated-code",
+          data: {
+            filename: "lib/components/glass_button_group.dart",
+            language: "dart",
+            code: "class CNGlassButtonGroup extends StatefulWidget {\n  const CNGlassButtonGroup({\n    super.key,\n    required this.children,\n    this.glassEffect,\n    this.axis = Axis.horizontal,\n  });\n  final List<Widget> children;\n  final CNGlassEffect? glassEffect;\n  final Axis axis;\n}",
+            annotations: [
+              { lines: "6-7", label: "Unioned glass", note: "Children share one Liquid Glass effect — the visual union, not N independent buttons." },
+            ],
+          },
+        },
+        {
+          id: "api-cn-split-button",
+          type: "annotated-code",
+          data: {
+            filename: "lib/components/split_button.dart",
+            language: "dart",
+            code: "class CNSplitButton extends StatelessWidget {\n  const CNSplitButton({\n    super.key,\n    required this.primary,\n    this.menuItems = const [],\n    this.onMenuItemSelected,\n  });\n  final Widget primary;\n  final List<CNButtonDataPopupItem> menuItems;\n  final void Function(int)? onMenuItemSelected;\n}",
+            annotations: [
+              { lines: "1", label: "Stateless", note: "Split button has no controller state; it forwards to CNPopupMenuButton for the menu half." },
+            ],
+          },
+        },
+      ],
+    },
+    {
+      id: "tab-tabbar",
+      label: "Tab bar & takeover",
+      blocks: [
+        {
+          id: "tab-tabbar-note",
+          type: "rich-text",
+          data: { markdown: "Two distinct surfaces share the `CNTab` name. **`CNTabBar`** is a normal StatefulWidget rendered as a UiKitView (iOS 26+) or CupertinoTabBar (older). **`CNTabBarNative`** is a class with only static methods — it presents a real `UITabBarController` that takes over the screen; it is iOS-26-only and is NOT a Flutter Widget." },
+        },
+        {
+          id: "api-cn-tabbar",
+          type: "annotated-code",
+          data: {
+            filename: "lib/components/tab_bar.dart",
+            language: "dart",
+            code: "class CNTabBarItem {\n  const CNTabBarItem({\n    required this.sfSymbol,\n    required this.title,\n    this.badge,\n    this.onTap,\n  });\n  final CNSymbol sfSymbol;\n  final String title;\n  final int? badge;\n  final VoidCallback? onTap;\n}\n\nclass CNTabBar extends StatefulWidget {\n  const CNTabBar({\n    super.key,\n    required this.items,\n    this.selectedIndex = 0,\n    this.onTabSelected,\n    this.searchItem,\n    this.appearance,\n  });\n  final List<CNTabBarItem> items;\n  final int selectedIndex;\n  final void Function(int)? onTabSelected;\n  final CNTabBarSearchItem? searchItem;\n  final dynamic appearance;\n}\n\nclass CNTabBarRouteObserver extends NavigatorObserver {\n  static ValueListenable<int> get modalDepth => _modalDepth;\n  static ValueListenable<int> get anyModalDepth => _anyModalDepth;\n  static ValueListenable<Rect?> get topModalRect => _topModalRect;\n  static void markAnyModalActive();\n  static void markAnyModalInactive();\n  static void publishTopModalRect(Rect? rect);\n}",
+            annotations: [
+              { lines: "11-19", label: "Widget tab bar", note: "CNTabBar is the embedded (in-tree) Liquid Glass tab bar — drives onTabSelected from Dart." },
+              { lines: "21-32", label: "Route observer", note: "Register on root navigator (MaterialApp/CupertinoApp/GoRouter.observers). Drives modal-hide + halo clipping for every CN widget." },
+              { lines: "26-27", label: "Manual bump", note: "For non-route overlays (Scaffold.showBottomSheet) call markAnyModalActive/Inactive so the tab bar still hides — the observer can't see those." },
+            ],
+          },
+        },
+        {
+          id: "api-cn-tabbar-native",
+          type: "annotated-code",
+          data: {
+            filename: "lib/components/native_tab_bar.dart",
+            language: "dart",
+            code: "enum CNTabMinimizeBehavior { never, onScrollDown, onScrollUp }\n\nclass CNTabAccessory {\n  const CNTabAccessory({\n    required this.text,\n    required this.sfSymbol,\n    this.onTap,\n  });\n  final String text;\n  final CNSymbol sfSymbol;\n  final VoidCallback? onTap;\n}\n\nclass CNTabBarNative {\n  static const MethodChannel _channel = MethodChannel('cn_native_tab_bar');\n  static bool get isEnabled;\n  static Future<void> enable({\n    required List<CNTab> tabs,\n    CNTabMinimizeBehavior minimizeBehavior = CNTabMinimizeBehavior.onScrollDown,\n    CNTabAccessory? bottomAccessory,\n    void Function(int index)? onTabSelected,\n  });\n  static Future<void> disable();\n}\n\nclass CNTab {\n  const CNTab({\n    required this.title,\n    required this.sfSymbol,\n    this.nativeList,\n    this.flutterContent,\n    this.isSearchTab = false,\n  });\n  final String title;\n  final CNSymbol sfSymbol;\n  final CNNativeList? nativeList;\n  final Widget? flutterContent;\n  final bool isSearchTab;\n}",
+            annotations: [
+              { lines: "11-12", label: "NOT a Widget", note: "CNTabBarNative has no const constructor, no build(); it is a static API over a UITabBarController. iOS 26+ only — no-op elsewhere." },
+              { lines: "13-21", label: "Takeover", note: "enable() presents a real native tab bar that owns the whole screen; each CNTab hosts either a native list or your Flutter content. Do NOT drive an IndexedStack from onTabSelected — the native bar IS the source of truth for selection." },
+              { lines: "26-28", label: "Search tab", note: "At most one CNTab may set isSearchTab: true. On iOS 26 it renders as the unified search pill; the local patch (#2) fixes the refresh race that previously corrupted its selection state." },
+            ],
+          },
+        },
+      ],
+    },
+    {
+      id: "tab-input",
+      label: "Sliders, switch, segmented",
+      blocks: [
+        {
+          id: "tab-input-note",
+          type: "rich-text",
+          data: { markdown: "Each input ships a controller so the host can set/get value imperatively (and the platform view can call back). All three use ModalHideMixin to self-destroy while a modal route is above them." },
+        },
+        {
+          id: "api-cn-slider",
+          type: "annotated-code",
+          data: {
+            filename: "lib/components/slider.dart",
+            language: "dart",
+            code: "class CNSliderController extends ChangeNotifier {\n  CNSliderController({double value = 0.0});\n  double get value;\n  set value(double v);\n}\n\nclass CNSlider extends StatefulWidget {\n  const CNSlider({\n    super.key,\n    required this.controller,\n    this.min = 0.0,\n    this.max = 1.0,\n    this.onChanged,\n    this.onChangeStart,\n    this.onChangeEnd,\n  });\n  final CNSliderController controller;\n  final double min;\n  final double max;\n  final ValueChanged<double>? onChanged;\n  final ValueChanged<double>? onChangeStart;\n  final ValueChanged<double>? onChangeEnd;\n}",
+            annotations: [
+              { lines: "1-5", label: "Controller", note: "Holds the source of truth; platform view invokes it via the per-instance channel." },
+            ],
+          },
+        },
+        {
+          id: "api-cn-switch",
+          type: "annotated-code",
+          data: {
+            filename: "lib/components/switch.dart",
+            language: "dart",
+            code: "class CNSwitchController extends ChangeNotifier {\n  CNSwitchController({bool value = false});\n  bool get value;\n  set value(bool v);\n}\n\nclass CNSwitch extends StatefulWidget {\n  const CNSwitch({\n    super.key,\n    required this.controller,\n    this.onChanged,\n  });\n  final CNSwitchController controller;\n  final ValueChanged<bool>? onChanged;\n}",
+            annotations: [{ lines: "1-5", label: "Controller", note: "Same ChangeNotifier pattern as CNSliderController." }],
+          },
+        },
+        {
+          id: "api-cn-segmented",
+          type: "annotated-code",
+          data: {
+            filename: "lib/components/segmented_control.dart",
+            language: "dart",
+            code: "class CNSegmentedControl extends StatefulWidget {\n  const CNSegmentedControl({\n    super.key,\n    required this.children,\n    required this.groupValue,\n    this.onChanged,\n    this.appearance,\n  });\n  final List<Widget> children;\n  final dynamic groupValue;\n  final ValueChanged<dynamic>? onChanged;\n  final dynamic appearance;\n}",
+            annotations: [{ lines: "1-11", label: "Channel", note: "Per-instance channel 'CupertinoNativeSegmentedControl_$id' carries selection." }],
+          },
+        },
+      ],
+    },
+    {
+      id: "tab-overlays",
+      label: "Sheets, popups, search, toast",
+      blocks: [
+        {
+          id: "tab-overlays-note",
+          type: "rich-text",
+          data: { markdown: "Overlays depend on `CNTabBarRouteObserver` being registered on the root navigator. `CNBottomSheet` publishes a geometry probe (`topModalRect`) so only CN widgets whose rect actually intersects the sheet get hidden — the rest stay alive." },
+        },
+        {
+          id: "api-cn-bottom-sheet",
+          type: "annotated-code",
+          data: {
+            filename: "lib/components/bottom_sheet.dart",
+            language: "dart",
+            code: "class CNBottomSheet {\n  static Future<T?> show<T>({...});\n  static Future<T?> showCupertino<T>({...});\n}\n\nclass CNSheetGeometryProbe extends StatefulWidget {\n  const CNSheetGeometryProbe({super.key, required this.child});\n  final Widget child;\n}",
+            annotations: [
+              { lines: "1-4", label: "show/showCupertino", note: "Both attach a CNSheetGeometryProbe that publishes topModalRect; raw showModalBottomSheet leaves the probe null and ModalHideMixin falls back to 'destroy everything' (still bleed-free)." },
+            ],
+          },
+        },
+        {
+          id: "api-cn-popup-menu",
+          type: "annotated-code",
+          data: {
+            filename: "lib/components/popup_menu_button.dart",
+            language: "dart",
+            code: "class CNPopupMenuItem extends CNPopupMenuEntry {\n  const CNPopupMenuItem({required this.value, required this.child});\n}\nclass CNPopupMenuDivider extends CNPopupMenuEntry { ... }\nclass CNPopupMenuButton extends StatefulWidget {\n  const CNPopupMenuButton({\n    super.key,\n    required this.itemBuilder,\n    this.onSelected,\n    this.child,\n  });\n  final List<CNPopupMenuEntry> Function(BuildContext) itemBuilder;\n  final ValueChanged<dynamic>? onSelected;\n  final Widget? child;\n}",
+            annotations: [{ lines: "3-12", label: "Route-observer dependency", note: "Doc requires CNTabBarRouteObserver registered on the app's navigator for halo-clip containment." }],
+          },
+        },
+        {
+          id: "api-cn-search-bar",
+          type: "annotated-code",
+          data: {
+            filename: "lib/components/search_bar.dart",
+            language: "dart",
+            code: "class CNSearchBarController extends ChangeNotifier {\n  bool isExpanded;\n  String query;\n  void toggle();\n  void clear();\n}\nclass CNSearchBar extends StatefulWidget {\n  const CNSearchBar({\n    super.key,\n    required this.controller,\n    this.onChanged,\n    this.onSubmitted,\n  });\n  final CNSearchBarController controller;\n  final ValueChanged<String>? onChanged;\n  final ValueChanged<String>? onSubmitted;\n}",
+            annotations: [{ lines: "6-8", label: "Route-observer dependency", note: "Library doc states: requires CNTabBarRouteObserver() registered in the navigator observers." }],
+          },
+        },
+        {
+          id: "api-cn-toast",
+          type: "annotated-code",
+          data: {
+            filename: "lib/components/toast.dart",
+            language: "dart",
+            code: "enum CNToastPosition { top, center, bottom }\nenum CNToastDuration { short, medium, long }\nenum CNToastStyle { glass, plain }\nclass CNToast {\n  static void show({...});\n  static CNLoadingToastHandle showLoading({...});\n}",
+            annotations: [{ lines: "1-4", label: "Icons", note: "Toast uses CupertinoIcons.* glyphs — local patch #1 (cupertino_icons ^1.0.8) bundles the font so they don't render as '?' tofu." }],
+          },
+        },
+      ],
+    },
+    {
+      id: "tab-icon-container",
+      label: "Icon, Liquid Glass container, glass card",
+      blocks: [
+        {
+          id: "tab-icon-note",
+          type: "rich-text",
+          data: { markdown: "`CNIcon` is the SF Symbols bridge. `LiquidGlassContainer` wraps any child in a real Liquid Glass background via UiKitView — do NOT put it inside a `ListView.builder`/`GridView` (platform-view creation cost per cell). `CNGlassCard` (experimental) is the styled card surface on top of the container." },
+        },
+        {
+          id: "api-cn-icon",
+          type: "annotated-code",
+          data: {
+            filename: "lib/components/icon.dart",
+            language: "dart",
+            code: "class CNIcon extends StatefulWidget {\n  const CNIcon({\n    super.key,\n    this.sfSymbol,\n    this.iconData,\n    this.imageAsset,\n    this.size = 24,\n    this.color,\n    this.renderingMode,\n  });\n  final CNSymbol? sfSymbol;\n  final IconData? iconData;\n  final CNImageAsset? imageAsset;\n  final double size;\n  final Color? color;\n  final CNSymbolRenderingMode? renderingMode;\n}",
+            annotations: [{ lines: "6-8", label: "Three icon types", note: "Exactly one of sfSymbol (iOS/macOS native), iconData (Flutter IconData), or imageAsset (raster/SVG via SVGKit on iOS)." }],
+          },
+        },
+        {
+          id: "api-liquid-glass-container",
+          type: "annotated-code",
+          data: {
+            filename: "lib/components/liquid_glass_container.dart",
+            language: "dart",
+            code: "class LiquidGlassContainer extends StatefulWidget {\n  const LiquidGlassContainer({\n    super.key,\n    required this.child,\n    this.glassEffect,\n    this.shape = CNGlassEffectShape.rectangle,\n  });\n  final Widget child;\n  final CNGlassEffect? glassEffect;\n  final CNGlassEffectShape shape;\n}",
+            annotations: [{ lines: "1-2", label: "UiKitView-backed", note: "iOS 26+ embeds a UiKitView; older OSes render a ClipRRect+SizedBox fallback. Avoid inside virtualizing lists — see Gotchas." }],
+          },
+        },
+        {
+          id: "api-cn-glass-card",
+          type: "annotated-code",
+          data: {
+            filename: "lib/components/experimental/glass_card.dart",
+            language: "dart",
+            code: "class CNGlassCard extends StatefulWidget {\n  const CNGlassCard({\n    super.key,\n    required this.child,\n    this.padding,\n    this.glassEffect,\n  });\n  final Widget child;\n  final EdgeInsets? padding;\n  final CNGlassEffect? glassEffect;\n}",
+            annotations: [{ lines: "1-2", label: "Experimental", note: "Lives under components/experimental/. Per-instance channel 'CNGlassCard_$id'." }],
+          },
+        },
+      ],
+    },
+    {
+      id: "tab-misc",
+      label: "Floating island, split, styles, utils",
+      blocks: [
+        {
+          id: "api-cn-floating-island",
+          type: "annotated-code",
+          data: {
+            filename: "lib/components/floating_island.dart",
+            language: "dart",
+            code: "enum CNFloatingIslandPosition { leading, trailing }\nclass CNFloatingIslandController { ... }\nclass CNFloatingIsland extends StatefulWidget { ... }",
+            annotations: [{ lines: "1-3", label: "iOS-26 surface", note: "The compact 'pill' the Liquid Glass tab bar collapses into; controller toggles expand/collapse." }],
+          },
+        },
+        {
+          id: "api-styles",
+          type: "annotated-code",
+          data: {
+            filename: "lib/style/",
+            language: "dart",
+            code: "// style/sf_symbol.dart\nenum CNSymbolRenderingMode { hierarchical, palette, multicolor }\nclass CNSymbol { const CNSymbol(this.name); final String name; }\nclass CNImageAsset { const CNImageAsset(this.path); final String path; }\n\n// style/glass_effect.dart\nenum CNGlassEffect { none, regular, clear }\nenum CNGlassEffectShape { rectangle, capsule, circle }\nclass LiquidGlassConfig { const LiquidGlassConfig({this.effect, this.shape}); }\n\n// style/button_style.dart\nenum CNButtonStyle { glass, floating, plain, prominent, filled, borderless }\n\n// style/image_placement.dart\nenum CNImagePlacement { leading, trailing, top, bottom }\n\n// style/spotlight_mode.dart\nenum CNSpotlightMode { none, soft, strong }\n\n// style/native_list.dart\nclass CNListItem { const CNListItem({...}); }\nclass CNNativeList { const CNNativeList({required this.items}); }\n\n// style/tab_bar_search_item.dart\nclass CNTabBarSearchItem { const CNTabBarSearchItem({...}); }\nclass CNTabBarSearchStyle { const CNTabBarSearchStyle(); }\nclass CNTabBarSearchController extends ChangeNotifier { ... }\n\n// style/button_data.dart\nclass CNButtonData { const CNButtonData({...}); }\nclass CNButtonDataPopupItem { const CNButtonDataPopupItem({...}); }\nclass CNButtonDataConfig { const CNButtonDataConfig({...}); }",
+            annotations: [{ lines: "1-4", label: "SF Symbols", note: "CNSymbol is just the SF Symbol name; rendering happens on the Swift side. CNSymbolRenderingMode maps to SwiftUI rendering modes." }],
+          },
+        },
+        {
+          id: "api-platform-version",
+          type: "annotated-code",
+          data: {
+            filename: "lib/utils/version_detector.dart",
+            language: "dart",
+            code: "class PlatformVersion {\n  // Auto-initializes on first access.\n  static Future<void> ensureInitialized();\n  static int? get iosMajor;\n  static int? get iosMinor;\n  static int? get macosMajor;\n  static int? get macosMinor;\n  static bool get isIOS26Plus;\n  static bool get isMacOS26Plus;\n  static bool get supportsLiquidGlass;\n}",
+            annotations: [{ lines: "1-3", label: "Dart parsing", note: "Parses Platform.operatingSystemVersion (not a method channel) so release builds return correct versions. Used at widget build time to pick UiKitView vs Cupertino." }],
+          },
+        },
+        {
+          id: "api-route-observer",
+          type: "annotated-code",
+          data: {
+            filename: "lib/components/tab_bar.dart (lines 1547+)",
+            language: "dart",
+            code: "class CNTabBarRouteObserver extends NavigatorObserver {\n  static ValueListenable<int> get modalDepth;     // narrow: only *Sheet\n  static ValueListenable<int> get anyModalDepth;  // broad: any modal\n  static ValueListenable<Rect?> get topModalRect; // sheet probe\n  static void markAnyModalActive();               // for non-route overlays\n  static void markAnyModalInactive();\n  static void publishTopModalRect(Rect? rect);    // called by CNBottomSheet probe\n  @override void didPush(Route route, Route? previousRoute);\n  @override void didPop(Route route, Route? previousRoute);\n}",
+            annotations: [
+              { lines: "2-4", label: "Three notifiers", note: "modalDepth drives CNTabBar auto-hide; anyModalDepth drives CNButton/CNSlider/CNSwitch halo clipping; topModalRect enables position-aware hide." },
+              { lines: "5-6", label: "Manual bump", note: "Pair markAnyModalActive/Inactive for showBottomSheet-style overlays the observer can't see." },
+            ],
+          },
+        },
+      ],
+    },
+  ]}
+/>
+
+### Usage playbook
+
+<AnnotatedCode
+  id="cn-usage-app"
+  filename="host_app/lib/main.dart"
+  language="dart"
+  code={"import 'package:flutter/material.dart';\nimport 'package:cupertino_native_better/cupertino_native_better.dart';\n\nvoid main() => runApp(const MyApp());\n\nclass MyApp extends StatelessWidget {\n  const MyApp({super.key});\n  @override\n  Widget build(BuildContext context) {\n    return MaterialApp(\n      // REQUIRED: register the route observer on the root navigator.\n      navigatorObservers: [CNTabBarRouteObserver()],\n      home: const Home(),\n    );\n  }\n}\n\nclass Home extends StatefulWidget {\n  const Home({super.key});\n  @override\n  State<Home> createState() => _HomeState();\n}\n\nclass _HomeState extends State<Home> {\n  final _slider = CNSliderController(value: 0.4);\n  final _switch = CNSwitchController(value: true);\n\n  @override\n  Widget build(BuildContext context) {\n    return Scaffold(\n      body: Center(\n        child: Column(\n          mainAxisAlignment: MainAxisAlignment.center,\n          children: [\n            CNButton(\n              onPressed: () {},\n              child: const Text('Push'),\n              config: const CNButtonConfig(style: CNButtonStyle.glass),\n            ),\n            const SizedBox(height: 16),\n            CNSlider(controller: _slider, min: 0, max: 100),\n            const SizedBox(height: 16),\n            CNSwitch(controller: _switch),\n            const SizedBox(height: 16),\n            LiquidGlassContainer(\n              child: const Padding(\n                padding: EdgeInsets.all(16),\n                child: Text('Liquid Glass surface'),\n              ),\n            ),\n          ],\n        ),\n      ),\n    );\n  }\n}\n"}
+  annotations={[
+    { lines: "9", label: "Observer", note: "Without CNTabBarRouteObserver on the root navigator, glass halos bleed through sheets and popups." },
+    { lines: "31", label: "Glass", note: "style: CNButtonStyle.glass picks Liquid Glass on iOS 26+; falls back to Cupertino on older Apple, Material elsewhere." },
+  ]}
+/>
+
+### Wiring
+
+<Callout id="cn-wiring-callout" tone="warning">
+
+**Hosts almost never declare this package as a direct dep.** It is a `path:` dependency of `appbox_kit` (`path: ../cupertino_native_better`); `appbox_kit` is the only intended consumer. Importing `cupertino_native_better` directly from a host app is fine for one-off native surfaces, but the Kit* ports are the supported surface. **iOS deployment target: 15.0** (set in `ios/cupertino_native_better/Package.swift`). **macOS deployment target: 11.0**. Swift tools version **5.9**. Native code is consumed via Swift Package Manager (with `.podspec` fallbacks).
+
+</Callout>
+
+The four local patches held in this vendored fork:
+
+<AnnotatedCode
+  id="cn-patch1"
+  filename="pubspec.yaml (patch #1)"
+  language="yaml"
+  code={"dependencies:\n  flutter:\n    sdk: flutter\n  # LOCAL PATCH: upstream uses CupertinoIcons.* glyphs (toast.dart) without\n  # depending on the cupertino_icons font package, so every toast icon\n  # renders as a \"?\" tofu box in apps that don't happen to pull it in\n  # themselves (observed on the iOS 26.5 sim). Declaring it here bundles\n  # the icon font.\n  cupertino_icons: ^1.0.8\n  plugin_platform_interface: ^2.0.2"}
+  annotations={[{ lines: "8", label: "Patch #1", note: "Revert when upstream accepts the dependency; this is a no-op patch for apps that already pull cupertino_icons, and additive for everyone else." }]}
+/>
+
+<AnnotatedCode
+  id="cn-patch2"
+  filename="appbox_kit/pubspec.yaml (records patch #2)"
+  language="yaml"
+  code={"  # Vendored at ../cupertino_native_better: upstream 1.5.2 + local fix to the\n  # iOS tab-bar platform view (refresh no longer clobbers native selection /\n  # setSelectedIndex race — the \"Search tab mixed state\" ticket). Path dep\n  # so the patch survives `pub cache repair`; drop back to hosted once\n  # upstreamed.\n  cupertino_native_better:\n    path: ../cupertino_native_better"}
+  annotations={[{ lines: "5-6", label: "Path dep", note: "Path dep (not hosted) so the local fix survives `pub cache repair`. Patch #2 lives in the Swift tab-bar factory on the iOS side and pairs with CNTabBarRouteObserver/CNTabBar logic in components/tab_bar.dart." }]}
+/>
+
+<AnnotatedCode
+  id="cn-patch3"
+  filename="lib/components/button.dart (patch #3)"
+  language="dart"
+  code={"    // LOCAL PATCH #3: pin the width only for icon-ONLY buttons — the same\n    // test the native path's LayoutBuilder uses. Upstream keyed on\n    // widget.isIcon, which is also true when a label is present, so an\n    // icon+label button was squashed into a defaultHeight-wide (44pt) box\n    // and its label overflowed. Icon+label buttons must size to content.\n    // Revert when upstreamed.\n    final buttonWidth = isIconOnlyButton\n        ? (widget.config.width ?? calculatedSize ?? defaultHeight)\n        : null;"}
+  annotations={[{ lines: "7-9", label: "Patch #3", note: "Applied in BOTH fallback tiers (_buildCupertinoFallback + _buildMaterialFallback); isIconOnlyButton = widget.isIcon && widget.label == null, mirroring the native path. Regression test: test/fallback_tier_test.dart (icon+label not width-pinned; icon-only stays 44pt square). Revert when upstreamed." }]}
+/>
+
+<AnnotatedCode
+  id="cn-patch4"
+  filename="lib/components/icon.dart (patch #4)"
+  language="dart"
+  code={"    // Widget SELECTION gates on defaultTargetPlatform (honors\n    // debugDefaultTargetPlatformOverride) + the package's flutter-test\n    // probe — never dart:io Platform, which reflects the test HOST and\n    // made CNIcon build an AppKitView headless (MissingPluginException).\n    final shouldUseNative =\n        !kIsWeb &&\n        !PlatformViewGuard.isTestEnvironment &&\n        (defaultTargetPlatform == TargetPlatform.iOS ||\n            defaultTargetPlatform == TargetPlatform.macOS);"}
+  annotations={[{ lines: "5-9", label: "Patch #4", note: "Was PlatformVersion.supportsSFSymbols (dart:io Platform.isIOS || Platform.isMacOS — TRUE on a macOS test host). Real iOS/macOS selection unchanged. PlatformViewGuard.isTestEnvironment was exposed (public getter) for this gate. Regression test: test/fallback_tier_test.dart (no platform view under android OR iOS override). Revert when upstreamed." }]}
+/>
+
+<Callout id="cn-observer-callout" tone="warning">
+
+**`CNTabBarRouteObserver()` must be on the root navigator.** On `MaterialApp` use `navigatorObservers:`; on `CupertinoApp` likewise; on `GoRouter` use `observers:` on the router config. Without it, `anyModalDepth` never advances and Liquid Glass halos bleed through sheets/modals/popups. For non-route overlays (`Scaffold.showBottomSheet`, persistent bottom sheets) you must also call `CNTabBarRouteObserver.markAnyModalActive()` on open and `markAnyModalInactive()` on close — the observer can only see route-based modals.
+
+</Callout>
+
+### Integration map
+
+<Diagram id="cn-integration-diagram" caption="appbox_kit is the only intended consumer; ~18 Kit* ports delegate to CN*. cupertino_native_better is NOT re-exported by appbox_kit.">
+
+```html
+<div class="diagram-panel" data-rough>
+  <div class="diagram-box" data-rough>
+    <div class="diagram-pill">Host app</div>
+    <div class="diagram-node">imports package:appbox_kit</div>
+  </div>
+  <div class="diagram-arrow">↓</div>
+  <div class="diagram-box" data-rough>
+    <div class="diagram-pill">appbox_kit (sole consumer)</div>
+    <div class="diagram-node">KitNativeButton → CNButton</div>
+    <div class="diagram-node">KitTabBar → CNTabBar</div>
+    <div class="diagram-node">KitNativeSheet → CNBottomSheet</div>
+    <div class="diagram-node">KitGlassCard → CNGlassCard</div>
+    <div class="diagram-node">KitNativeSlider → CNSlider</div>
+    <div class="diagram-node">KitNativeRangeSlider → CNRangeSlider</div>
+    <div class="diagram-node">KitNativeSwitch → CNSwitch</div>
+    <div class="diagram-node">KitNativePopupMenu → CNPopupMenuButton</div>
+    <div class="diagram-node">KitNativeSegmentedControl → CNSegmentedControl</div>
+    <div class="diagram-node">KitNativeSearchBar → CNSearchBar</div>
+    <div class="diagram-node">KitNativeSplitButton → CNSplitButton</div>
+    <div class="diagram-node">KitNativeFab / FabMenu → CNFloatingIsland</div>
+    <div class="diagram-node">KitNativeToolbar / IconButton → CNButton/CNIcon</div>
+    <div class="diagram-node">KitNativeChromeGate → CNTabBarRouteObserver</div>
+    <div class="diagram-node">KitNativeOverlay → CNToast + CNBottomSheet</div>
+    <div class="diagram-node">KitNotificationService → CNToast</div>
+  </div>
+  <div class="diagram-arrow">↓</div>
+  <div class="diagram-box diagram-accent" data-rough>
+    <div class="diagram-pill">cupertino_native_better (NOT re-exported)</div>
+  </div>
+</div>
+```
+
+```css
+.diagram-panel { display: flex; flex-direction: column; gap: 8px; }
+.diagram-arrow { text-align: center; padding: 2px 0; opacity: .7; }
+```
+
+</Diagram>
+
+### Features appendix
+
+<Checklist
+  id="cn-features"
+  items={[
+    { id: "feat-native-ios", label: "Real Liquid Glass on iOS 26+ via UiKitView (Swift factories + SwiftUI/UIKit)", checked: true },
+    { id: "feat-native-macos", label: "Real Liquid Glass on macOS 26+ via AppKitView (NSView factories)", checked: true },
+    { id: "feat-fallback-cupertino", label: "Cupertino fallback on older Apple OSes (same Dart API)", checked: true },
+    { id: "feat-fallback-material", label: "Material fallback on Android / web", checked: true },
+    { id: "feat-sf-symbols", label: "SF Symbols via CNIcon + CNSymbol (hierarchical / palette / multicolor rendering)", checked: true },
+    { id: "feat-svg", label: "SVG image rendering on iOS via SVGKit ~>3.0 (binary weight — see Gotchas)", checked: true },
+    { id: "feat-controllers", label: "Imperative controllers: CNSliderController, CNSwitchController, CNRangeSliderController, CNSearchBarController, CNTabBarSearchController, CNFloatingIslandController", checked: true },
+    { id: "feat-glass-union", label: "Glass unioning via CNGlassButtonGroup (multiple buttons share one effect)", checked: true },
+    { id: "feat-dark-mode", label: "Dark-mode tint sync via ThemeHelper (Swift side reads Flutter theme channel)", checked: true },
+    { id: "feat-version-detect", label: "Reliable PlatformVersion via Platform.operatingSystemVersion parsing (no method channel) — fixes release-build misdetection", checked: true },
+    { id: "feat-platform-view-guard", label: "PlatformViewGuard delays platform-view creation 500 ms in debug to skip the hot-restart recycle race; no-op in release", checked: true },
+    { id: "feat-route-observer", label: "CNTabBarRouteObserver drives modal-hide + halo clipping for all CN widgets (modalDepth / anyModalDepth / topModalRect notifiers)", checked: true },
+    { id: "feat-position-aware-hide", label: "Position-aware hide via CNSheetGeometryProbe — only CN widgets whose rect intersects the sheet get destroyed", checked: true },
+    { id: "feat-takeover-tabbar", label: "CNTabBarNative: iOS-26-only native UITabBarController takeover with search, minimize-on-scroll, bottom accessory, native lists", checked: true },
+  ]}
+/>
+
+### Examples
+
+<TabsBlock
+  id="cn-examples-tabs"
+  tabs={[
+    {
+      id: "ex-tab-bar-embedded",
+      label: "Embedded tab bar",
+      blocks: [
+        {
+          id: "ex-tab-bar-embedded-code",
+          type: "code",
+          data: {
+            filename: "example/embedded_tab_bar.dart",
+            language: "dart",
+            caption: "CNTabBar as an in-tree UiKitView on iOS 26+, Cupertino fallback elsewhere.",
+            code: "CNTabBar(\n  selectedIndex: _index,\n  onTabSelected: (i) => setState(() => _index = i),\n  items: const [\n    CNTabBarItem(sfSymbol: CNSymbol('house.fill'), title: 'Home'),\n    CNTabBarItem(sfSymbol: CNSymbol('magnifyingglass'), title: 'Search'),\n    CNTabBarItem(sfSymbol: CNSymbol('person.fill'), title: 'Profile', badge: 3),\n  ],\n)",
+          },
+        },
+      ],
+    },
+    {
+      id: "ex-tab-bar-takeover",
+      label: "Native takeover",
+      blocks: [
+        {
+          id: "ex-tab-bar-takeover-code",
+          type: "code",
+          data: {
+            filename: "example/native_takeover.dart",
+            language: "dart",
+            caption: "CNTabBarNative.enable presents a real UITabBarController. Do NOT mirror onTabSelected into an IndexedStack — the native bar IS the source of truth.",
+            code: "Future<void> presentTakeover() async {\n  await CNTabBarNative.enable(\n    tabs: [\n      CNTab(\n        title: 'Feed',\n        sfSymbol: CNSymbol('list.bullet'),\n        nativeList: const CNNativeList(items: feedItems),\n      ),\n      CNTab(title: 'Profile', sfSymbol: CNSymbol('person.fill')),\n      CNTab(title: 'Search', isSearchTab: true),\n    ],\n    minimizeBehavior: CNTabMinimizeBehavior.onScrollDown,\n    bottomAccessory: CNTabAccessory(\n      text: 'Now playing',\n      sfSymbol: CNSymbol('music.note'),\n    ),\n    onTabSelected: (i) => debugPrint('tab $i'),\n  );\n}",
+          },
+        },
+      ],
+    },
+    {
+      id: "ex-bottom-sheet",
+      label: "Modal sheet",
+      blocks: [
+        {
+          id: "ex-bottom-sheet-code",
+          type: "code",
+          data: {
+            filename: "example/sheet.dart",
+            language: "dart",
+            caption: "CNBottomSheet.show attaches a geometry probe so CN widgets under the sheet hide only if their rect intersects it.",
+            code: "Future<void> openSheet(BuildContext context) {\n  return CNBottomSheet.show(\n    context: context,\n    builder: (ctx) => const Padding(\n      padding: EdgeInsets.all(16),\n      child: Text('Sheet content'),\n    ),\n  );\n}",
+          },
+        },
+      ],
+    },
+    {
+      id: "ex-manual-modal",
+      label: "Non-route overlay",
+      blocks: [
+        {
+          id: "ex-manual-modal-code",
+          type: "code",
+          data: {
+            filename: "example/persistent_bottom_sheet.dart",
+            language: "dart",
+            caption: "Scaffold.showBottomSheet is anchored to Scaffold state — the route observer can't see it. Bump anyModalDepth manually so CN widgets still hide their halos.",
+            code: "void openPersistentSheet(BuildContext context) {\n  final controller = Scaffold.of(context).showBottomSheet(\n    (ctx) => const SizedBox(height: 200, child: Center(child: Text('Persistent'))),\n  );\n  CNTabBarRouteObserver.markAnyModalActive();\n  controller.closed.whenComplete(\n    CNTabBarRouteObserver.markAnyModalInactive,\n  );\n}",
+          },
+        },
+      ],
+    },
+  ]}
+/>
+
+### Gotchas
+
+<Callout id="cn-gotcha-patches" tone="warning">
+
+**Four local patches — revert when upstreamed.** Patch #1 (`cupertino_icons: ^1.0.8` in this package's `pubspec.yaml`) fixes "?" tofu toast icons. Patch #2 (in the Swift tab-bar factory + `components/tab_bar.dart`) fixes the iOS tab-bar platform-view refresh race that corrupted the search tab's selection ("Search tab mixed state"). Patch #3 (`components/button.dart`, both fallback tiers) pins the fallback button's width only for icon-ONLY buttons — icon+label buttons were squashed to a 44pt-wide box. Patch #4 (`components/icon.dart` + a public `PlatformViewGuard.isTestEnvironment` getter) gates `CNIcon`'s native tier on `defaultTargetPlatform` instead of dart:io `Platform`, so `flutter test` on a macOS host no longer builds an `AppKitView` headless (`MissingPluginException`). All are recorded in code comments (`LOCAL PATCH #n`); the path dep on `appbox_kit` ensures they survive `pub cache repair`. When upstream ships them, drop back to hosted.
+
+</Callout>
+
+<Callout id="cn-gotcha-svgkit" tone="warning">
+
+**SVGKit adds binary weight on iOS.** The iOS SPM target depends on `SVGKit ~> 3.0`. If you don't use SVG image assets via `CNImageAsset`, you still pay the binary cost — this is upstream behavior, not a local choice.
+
+</Callout>
+
+<Callout id="cn-gotcha-native-tabbar" tone="warning">
+
+**`CNTabBarNative` is iOS-26-only AND not a Flutter Widget.** It's a class with static `enable()/disable()` methods that present a real `UITabBarController`. Two consequences: (a) on iOS < 26 / macOS / Android / web, `enable()` is a no-op — do not gate it from Dart; (b) do NOT drive an `IndexedStack` from `onTabSelected`. The native bar IS the source of truth for selection; mirroring it into a Flutter IndexedStack creates a double-source-of-truth race (the same class of bug patch #2 fixed).
+
+</Callout>
+
+<Callout id="cn-gotcha-container-in-list" tone="warning">
+
+**`LiquidGlassContainer` is a UiKitView.** Don't put it (or `CNButton`, `CNSlider`, `CNSwitch`, etc.) inside a `ListView.builder` / `GridView` / any virtualizing list. Each cell creates a platform view, which is expensive to mount and recycle. Use the Dart fallback (`Cupertino`/`Material`) for cells, or hoist the glass surface above the list.
+
+</Callout>
+
+<Callout id="cn-gotcha-macos-spm" tone="info">
+
+**macOS support is real, not just a `topics` claim.** `pubspec.yaml` declares `macos: pluginClass: CupertinoNativePlugin` and the macOS SPM package at `macos/cupertino_native_better/Package.swift` ships a full Swift target (AppKit NSView factories for button, slider, switch, segmented control, popup menu, tab bar, glass container). The old `macos/Classes/` Cocoapods convention is replaced by SPM sources under `macos/cupertino_native_better/Sources/`. The macOS deployment target is 11.0; Liquid Glass surfaces light up on macOS 26+.
+
+</Callout>
+
+### Decisions / ADRs
+
+<Callout id="cn-decisions-none" tone="info">
+
+No formal ADRs in this package. Four upstream-pending decisions are documented in code comments as the local-patch rationale (patches #1–#4). When upstreaming, capture the iOS-26-only / non-Widget nature of `CNTabBarNative` and the `CNTabBarRouteObserver`-must-be-on-root-navigator contract in upstream docs.
+
+</Callout>
+
+### Changelog & status
+
+<Table
+  id="cn-status"
+  columns={["Field", "Value"]}
+  rows={[
+    ["Version", "1.5.2 (upstream baseline this fork tracks)"],
+    ["Status", "Vendored fork with four local patches; not published. Path-dep of appbox_kit."],
+    ["iOS deployment target", "15.0"],
+    ["macOS deployment target", "11.0"],
+    ["Swift tools version", "5.9"],
+    ["Upstream", "https://github.com/gunumdogdu/cupertino_native_better"],
+    ["Native packaging", "Swift Package Manager (primary) + .podspec fallback (per platform)"],
+    ["iOS binary deps", "SVGKit ~> 3.0 (SVG image rendering)"],
+    ["Dart SDK", "^3.9.0"],
+    ["Method channels", "Per-instance: CupertinoNativeXxx_$id, CNGlassCard_$id, CNSearchBar_$id, cn_native_tab_bar. Legacy facade for getPlatformVersion."],
+    ["Local patch #1", "cupertino_icons ^1.0.8 in pubspec.yaml — fixes '?' tofu toast icons"],
+    ["Local patch #2", "iOS tab-bar platform-view refresh race — fixes 'Search tab mixed state'"],
+    ["Local patch #3", "button.dart fallbacks pin width only for icon-ONLY buttons — fixes icon+label squash to 44pt"],
+    ["Local patch #4", "icon.dart native-tier gate uses defaultTargetPlatform + flutter-test probe — fixes headless AppKitView/MissingPluginException in tests"],
+    ["Open tracking", "Drop path dep back to hosted once all four patches are upstreamed"],
+  ]}
+/>
+
+### Open questions
+
+<QuestionForm
+  id="cn-open-questions"
+  questions={[
+    {
+      id: "upstream-prs",
+      title: "Have patches #1–#4 been filed upstream?",
+      subtitle: "The path dep on appbox_kit is debt; once upstream ships all four fixes we revert to hosted.",
+      mode: "single",
+      options: [
+        { id: "filed-both", label: "All PRs filed", detail: "Track merge; switch to hosted on next upstream release." },
+        { id: "filed-one", label: "Only some filed", detail: "Keep the path dep until the rest are merged." },
+        { id: "neither", label: "None filed", detail: "Open issues/PRs against gunumdogdu/cupertino_native_better before next upgrade.", recommended: true },
+      ],
+    },
+    {
+      id: "tabbar-native-mirror",
+      title: "Any call site mirroring CNTabBarNative.onTabSelected into an IndexedStack?",
+      subtitle: "The native bar IS the source of truth; a Flutter IndexedStack mirror reintroduces the race patch #2 fixed.",
+      mode: "single",
+      options: [
+        { id: "no-mirror", label: "No mirror — correct", recommended: true },
+        { id: "mirror-found", label: "Mirror exists — remove it", detail: "Audit showcase + host apps before next release." },
+        { id: "unsure", label: "Unsure — needs grep", detail: "Run: grep -rn 'onTabSelected' packages/*/lib" },
+      ],
+    },
+  ]}
+  submitLabel="Send answers"
+/>

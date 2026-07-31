@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:appbox_kit_i18n/stacked_kit_i18n.dart';
+import 'package:appbox_kit_i18n/appbox_kit_i18n.dart';
 
 import 'package:appbox/app/app.locator.dart';
 import 'package:appbox/l10n/app_localizations.dart';

@@ -1,0 +1,111 @@
+<Callout id="header" tone="info">
+
+# appbox_kit_notifications — Per-Package Playbook
+
+
+`appbox_kit_notifications` v**0.1.0** · `publish_to: 'none'` · status: **active**
+
+
+**Role (one line):** Device-notifications port for appbox_kit apps — permission seam (typed result), push token / foreground-message streams, local notifications and per-notification badge, with a native-first flutter_local_notifications default.
+
+
+**Scope of this document:** lets a human OR an LLM use, wire, and extend `appbox_kit_notifications` **without reading its source**. The public surface below was extracted from the barrel; README content is folded into the narrative sections.
+
+
+## Table of contents
+
+0. Header & TOC — *you are here* · 1. Overview & role · 2. Public surface · 3. Usage & wiring · 4. Integration map · 5. Architecture · 6. Gotchas · 7. Testing · 8. Features · 9. Decisions · 10. References · 11. Open questions
+
+
+</Callout>
+
+
+### Overview & role
+
+Device-notifications port for appbox_kit apps — permission seam (typed result), push token / foreground-message streams, local notifications and per-notification badge, with a native-first flutter_local_notifications default. Distinct from appbox_kit core's in-app KitNotificationService (transient toast/snackbar).
+
+
+### Public surface
+
+Exported from `lib/appbox_kit_notifications.dart`:
+
+<Table id="notifications-api" columns={["Symbol", "Kind", "Defined in"]} rows={[["KitNotificationsService", "abstract class", "src/kit_notifications_service.dart"], ["KitNotificationAuthorization", "enum", "src/kit_notifications_types.dart"], ["KitNotificationPermissionResult", "class", "src/kit_notifications_types.dart"], ["KitNotificationPermissionRequest", "class", "src/kit_notifications_types.dart"], ["KitPushProvider", "enum", "src/kit_notifications_types.dart"], ["KitPushToken", "class", "src/kit_notifications_types.dart"], ["KitRemoteMessage", "class", "src/kit_notifications_types.dart"], ["KitLocalNotification", "class", "src/kit_notifications_types.dart"], ["KitOutboundMessage", "class", "src/kit_notifications_types.dart"], ["KitOutboundMessageSink", "abstract class", "src/kit_outbound_message_sink.dart"], ["EmailBackend", "class", "src/backends/email_backend.dart"], ["FcmPushBackend", "class", "src/backends/fcm_push_backend.dart"], ["SmsBackend", "class", "src/backends/sms_backend.dart"], ["LocalKitNotificationsService", "class", "src/local/local_notifications_service.dart"]]} />
+
+Test doubles in `lib/testing.dart`: `FakeKitNotificationsService`, `FakeOutboundMessageSink`.
+
+Scripts and call-counts — tests never touch platform channels.
+
+
+### Usage & wiring
+
+- **iOS/macOS:** notification capability + (for push) APNs entitlement and the
+  `AppDelegate` registration are the app's responsibility.
+- **Android:** the `POST_NOTIFICATIONS` runtime permission (API 33+),
+  notification channels, and any FCM `google-services.json` live in the host.
+
+
+### Integration map
+
+<Table id="notifications-integration" columns={["Stacked framework deps", "Backing SDK packages", "Depends on (kit)"]} rows={[["\u2014", "flutter_local_notifications", "\u2014 (standalone)"]]} />
+
+See `kit_matrix.md` for the full routing + dependency graph.
+
+
+### Architecture
+
+Two ports sit at the center, each with a working default and pluggable backends. `KitNotificationsService` (plural) is the device-notifications port — `initialize`, `requestPermission`, `permissionStatus`, `tokenStream`, `currentToken`, `foregroundMessages`, `showLocalNotification`, `cancel`/`cancelAll`, `setBadgeCount`/`clearBadge`, `dispose` — backed by `LocalKitNotificationsService`, a native-first adapter over `flutter_local_notifications` (UNUserNotificationCenter on iOS/macOS, NotificationManager on Android). `KitOutboundMessageSink` is a separate port for one-to-one SMS/email, backed by `SmsBackend` / `EmailBackend` stubs. `FcmPushBackend` carries the real `firebase_messaging` signatures but pulls no `firebase_*` dependency; the local default emits nothing on `tokenStream` / `foregroundMessages`, leaving push to the host's APNs/FCM backend. Dependency direction is strictly outbound: this package depends on neither `appbox_kit` core, `stacked`, nor `stacked_services`, and does not import core's singular `KitNotificationService` (in-app toast/snackbar), which stays in core.
+
+
+### Gotchas
+
+- **iOS/macOS:** notification capability + (for push) APNs entitlement and the
+  `AppDelegate` registration are the app's responsibility.
+- **Android:** the `POST_NOTIFICATIONS` runtime permission (API 33+),
+  notification channels, and any FCM `google-services.json` live in the host.
+
+
+### Testing
+
+`import 'package:appbox_kit_notifications/testing.dart';` for
+`FakeKitNotificationsService` (scripted `permissionResult`, `emitToken` /
+`emitMessage` stream drivers, recorded `shown` / `cancelled` / `badgeCounts`)
+and `FakeOutboundMessageSink` (records `sent`, scriptable `failWith`).
+
+
+### Features
+
+<Checklist id="notifications-features" items={[{"id": "notifications-feat-0", "label": "`KitNotificationsService` \u2014 abstract class"}, {"id": "notifications-feat-1", "label": "`KitNotificationAuthorization` \u2014 enum"}, {"id": "notifications-feat-2", "label": "`KitNotificationPermissionResult` \u2014 class"}, {"id": "notifications-feat-3", "label": "`KitNotificationPermissionRequest` \u2014 class"}, {"id": "notifications-feat-4", "label": "`KitPushProvider` \u2014 enum"}, {"id": "notifications-feat-5", "label": "`KitPushToken` \u2014 class"}, {"id": "notifications-feat-6", "label": "`KitRemoteMessage` \u2014 class"}, {"id": "notifications-feat-7", "label": "`KitLocalNotification` \u2014 class"}, {"id": "notifications-feat-8", "label": "`KitOutboundMessage` \u2014 class"}, {"id": "notifications-feat-9", "label": "`KitOutboundMessageSink` \u2014 abstract class"}, {"id": "notifications-feat-10", "label": "`EmailBackend` \u2014 class"}, {"id": "notifications-feat-11", "label": "`FcmPushBackend` \u2014 class"}]} />
+
+
+### Decisions / ADRs
+
+**Standalone, not stacked-coupled.** The package deliberately depends on no `appbox_kit` core, `stacked`, or `stacked_services`, so it can be adopted host-side without dragging the framework graph in. **Native-first local default.** `flutter_local_notifications` was chosen as the backing SDK because it maps directly onto the platform notification centers (iOS/macOS UNUserNotificationCenter, Android NotificationManager) and gives real permission + show/cancel behavior out of the box; push (`FcmPushBackend`) is a real-signature stub with no `firebase_*` dependency pulled, so the FCM/APNs seam is owned by the host backend. **Badge is per-notification, not standalone.** Because `flutter_local_notifications` v21 only sets the iOS badge as a side effect of a delivered notification (`DarwinNotificationDetails.badgeNumber`) and Android badges are launcher-specific, `LocalKitNotificationsService.setBadgeCount` / `clearBadge` throw `UnsupportedError` — callers set `KitLocalNotification.badgeCount` on a shown notification or own the badge from the push payload (a backend may override). **Outbound is a stub seam.** `SmsBackend` / `EmailBackend` are provider-side (Twilio/SendGrid over HTTPS) or native-send seams, wired only when a host opts in.
+
+<!-- kb:begin -->
+### References
+
+Official docs and tooling:
+
+- [Stacked — official documentation](https://stacked.filledstacks.com) — Canonical framework docs. Start here for ViewModel/Service patterns used by every kit.
+- [stacked (pub.dev)](https://pub.dev/packages/stacked) — Lightweight MVVM + service locator. Pinned ^3.5.0 across the kits.
+- [stacked_shared (pub.dev)](https://pub.dev/packages/stacked_shared) — StackedLocator.instance — the shared singleton kits resolve through. Pinned ^1.4.2.
+- [stacked_generator (pub.dev)](https://pub.dev/packages/stacked_generator) — Generates routers + @StackedApp wiring. Pinned ^2.0.4.
+- [stacked_cli (pub.dev)](https://pub.dev/packages/stacked_cli) — Scaffolding CLI for new Stacked apps/views/services.
+- [Flutter — official documentation](https://docs.flutter.dev) — Framework docs, platform integration, performance.
+- [Dart — official documentation](https://dart.dev) — Language tour, async, package ecosystem.
+- [Dart & Flutter MCP server (official)](https://dart.dev/tools/mcp-server) — Ships with the Dart SDK (dart mcp-server). Exposes analyzer diagnostics, pub, tests, and live Flutter app introspection via DTD. Wired in appbox_kit/.mcp.json.
+
+Kit-specific:
+
+- [flutter_local_notifications (pub.dev)](https://pub.dev/packages/flutter_local_notifications) — flutter_local_notifications — backing dependency of appbox_kit_notifications.
+<!-- kb:end -->
+
+<QuestionForm id="open-questions" questions={[
+  {
+    id: "q-notifications-gaps",
+    title: "What is unclear or missing from this playbook?",
+    mode: "freeform",
+    placeholder: "Note anything a new contributor or agent would need that is not covered above.",
+  },
+]} />
+

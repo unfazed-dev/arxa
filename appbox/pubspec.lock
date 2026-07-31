@@ -20,7 +20,7 @@ packages:
   appbox_kit_i18n:
     dependency: "direct main"
     description:
-      path: "../packages/i18n"
+      path: "../kit/i18n"
       relative: true
     source: path
     version: "0.1.0"

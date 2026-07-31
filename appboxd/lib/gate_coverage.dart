@@ -24,7 +24,7 @@
 // Two producer shapes (dogfood P14): app.routes.js at the design root => htmx
 // producer — coverage derives + reports the form-factor set and DEFERS the
 // scaffold/ceremony checks (no Flutter layer for an htmx design yet). The
-// stacked_kit producer runs the full C1–C5 set over lib/ui/views.
+// appbox_kit producer runs the full C1–C5 set over lib/ui/views.
 
 import 'dart:convert';
 import 'dart:io';
@@ -170,7 +170,7 @@ GateResult coverageGate(GateContext ctx) {
 
   // ---- producer shape: app.routes.js at the design root => htmx ----
   final producer =
-      File('$designDir/app.routes.js').existsSync() ? 'htmx' : 'stacked_kit';
+      File('$designDir/app.routes.js').existsSync() ? 'htmx' : 'kit';
 
   if (producer == 'htmx') {
     final n = frozen.values.fold(0, (a, v) => a + v.length);
@@ -186,7 +186,7 @@ GateResult coverageGate(GateContext ctx) {
         details);
   }
 
-  // ---- stacked_kit producer: full C1–C5 over lib/ui/views ----
+  // ---- appbox_kit producer: full C1–C5 over lib/ui/views ----
   Map<String, dynamic> mf = {};
   final manifestFile = File(manifestPath);
   if (manifestFile.existsSync()) {

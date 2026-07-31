@@ -1,0 +1,130 @@
+<Callout id="header" tone="info">
+
+# appbox_kit_auth — Per-Package Playbook
+
+
+`appbox_kit_auth` v**0.1.0** · `publish_to: 'none'` · status: **active**
+
+
+**Role (one line):** API-first auth seam for appbox_kit apps — a KitAuthService port (email/password + OAuth), typed AuthResult with failure reasons, an in-memory default backend, and scriptable fakes.
+
+
+**Scope of this document:** lets a human OR an LLM use, wire, and extend `appbox_kit_auth` **without reading its source**. The public surface below was extracted from the barrel; README content is folded into the narrative sections.
+
+
+## Table of contents
+
+0. Header & TOC — *you are here* · 1. Overview & role · 2. Public surface · 3. Usage & wiring · 4. Integration map · 5. Architecture · 6. Gotchas · 7. Testing · 8. Features · 9. Decisions · 10. References · 11. Open questions
+
+
+</Callout>
+
+
+### Overview & role
+
+API-first auth seam for appbox_kit apps — a KitAuthService port (email/password + OAuth), typed AuthResult with failure reasons, an in-memory default backend, and scriptable fakes. Seed-backend and native OAuth wiring are later phases.
+
+
+### Public surface
+
+Exported from `lib/appbox_kit_auth.dart`:
+
+<Table id="auth-api" columns={["Symbol", "Kind", "Defined in"]} rows={[["KitOAuthProvider", "abstract interface class", "src/providers/kit_oauth_provider.dart"], ["AppleSignInProvider", "class", "src/providers/apple/apple_sign_in_provider.dart"], ["GoogleSignInProvider", "class", "src/providers/google/google_sign_in_provider.dart"], ["SeedAuthBackend", "class", "src/backends/seed_auth_backend.dart"], ["AuthCredentials", "class", "src/models/auth_credentials.dart"], ["EmailPasswordCredentials", "class", "src/models/auth_credentials.dart"], ["AuthFailureReason", "enum", "src/models/auth_failure.dart"], ["AuthResult", "class", "src/models/auth_result.dart"], ["AuthSuccess", "class", "src/models/auth_result.dart"], ["AuthFailure", "class", "src/models/auth_result.dart"], ["AuthSession", "class", "src/models/auth_session.dart"], ["AuthUser", "class", "src/models/auth_user.dart"], ["InMemoryKitAuthService", "class", "src/service/in_memory_auth_service.dart"], ["KitAuthService", "abstract interface class", "src/service/kit_auth_service.dart"], ["KitAccessPolicy", "class", "src/policy/kit_access_policy.dart"], ["KitAccessDeniedError", "class", "src/policy/kit_access_policy.dart"], ["KitCan", "class", "src/policy/kit_can.dart"]]} />
+
+Test doubles in `lib/testing.dart`: `FakeKitAuthService`.
+
+Scripts and call-counts — tests never touch platform channels.
+
+
+### Usage & wiring
+
+```dart
+import 'package:appbox_kit_auth/appbox_kit_auth.dart';
+
+final auth = InMemoryKitAuthService();
+
+auth.authStateChanges.listen((user) {
+  // null = signed out (also how token-expiry surfaces).
+});
+
+final result = await auth.signIn(
+  const EmailPasswordCredentials(email: 'a@b.com', password: 'hunter2'),
+);
+switch (result) {
+  case AuthSuccess(:final user):    // signed in
+  case AuthFailure(:final reason):  // branch on reason (userNotFound, …)
+}
+```
+
+
+### Integration map
+
+<Table id="auth-integration" columns={["Stacked framework deps", "Backing SDK packages", "Depends on (kit)"]} rows={[["\u2014", "\u2014 (SDK only / pure Dart)", "\u2014 (standalone)"]]} />
+
+See `kit_matrix.md` for the full routing + dependency graph.
+
+
+### Architecture
+
+`KitAuthService` is the single port — an `abstract interface class` exposing `authStateChanges`, `currentUser`, `signUp`, `signIn`, `signInWithApple`, `signInWithGoogle`, `signOut`, and `dispose`; failures come back as typed `AuthResult` rather than thrown exceptions (only programming errors like using a disposed service throw). `InMemoryKitAuthService` is the sole concrete adapter today — a process-lifetime identity store with no persistence and no network — while `SeedAuthBackend` and the `KitOAuthProvider` stubs are ports that future backends compose behind the same service. Dependency direction is strictly inbound: the models (`AuthUser`, `AuthSession`, `AuthResult`) and the port sit at the centre, the adapter depends on the port, and call sites (ViewModels) depend only on the port and never on a backend SDK.
+
+
+### Gotchas
+
+No native platform setup is required today: the `AppleSignInProvider` / `GoogleSignInProvider` stubs throw `UnimplementedError`, so there are no iOS entitlements, `GoogleService-Info.plist`, or Android manifest keys to configure until the phase-later OAuth wiring lands. The main pitfall is treating `InMemoryKitAuthService` as production-grade — passwords live in plaintext in memory and are lost on restart, and the README explicitly marks it a build-time convenience, not a security boundary (no real hashing, session persistence, RBAC, or account recovery). Watch the naming collision: `appbox_kit_data` also ships a `KitAuthService` (a different, backend-coupled variant with `session$`/`currentSession`); the repo has zero co-imports today, but if a workspace ever imports both it must prefix-import (`as`) one of them — full reconciliation is a Phase-4 fold, not this package's job.
+
+
+### Testing
+
+```dart
+import 'package:appbox_kit_auth/testing.dart';
+
+final auth = FakeKitAuthService(
+  scriptedResults: [
+    AuthSuccess(AuthSession(user: AuthUser(id: 'u1', email: 'a@b.com'))),
+    const AuthFailure(AuthFailureReason.tokenExpired),
+  ],
+);
+
+// Drive token-expiry directly:
+auth.expireSession();               // emits signed-out on authStateChanges
+```
+
+Factories: `FakeKitAuthService.signedIn(user)`, `.signedOut()`,
+`.alwaysFails(reason)`. `FakeKitAuthService.expiredSession(user)` builds an
+already-expired `AuthSession` for `AuthSession.isExpiredAt` assertions.
+
+
+### Features
+
+<Checklist id="auth-features" items={[{"id": "auth-feat-0", "label": "`KitOAuthProvider` \u2014 abstract interface class"}, {"id": "auth-feat-1", "label": "`AppleSignInProvider` \u2014 class"}, {"id": "auth-feat-2", "label": "`GoogleSignInProvider` \u2014 class"}, {"id": "auth-feat-3", "label": "`SeedAuthBackend` \u2014 class"}, {"id": "auth-feat-4", "label": "`AuthCredentials` \u2014 class"}, {"id": "auth-feat-5", "label": "`EmailPasswordCredentials` \u2014 class"}, {"id": "auth-feat-6", "label": "`AuthFailureReason` \u2014 enum"}, {"id": "auth-feat-7", "label": "`AuthResult` \u2014 class"}, {"id": "auth-feat-8", "label": "`AuthSuccess` \u2014 class"}, {"id": "auth-feat-9", "label": "`AuthFailure` \u2014 class"}, {"id": "auth-feat-10", "label": "`AuthSession` \u2014 class"}, {"id": "auth-feat-11", "label": "`AuthUser` \u2014 class"}]} />
+
+
+### Decisions / ADRs
+
+The package is deliberately standalone: it depends on the Flutter SDK only, with no dependency on `stacked`, `stacked_services`, `appbox_kit`, or any app code, so the auth seam can be adopted (or swapped out) without pulling in the rest of the kit graph. OAuth backing SDKs are chosen but deferred — `sign_in_with_apple ^8.1.0` and `google_sign_in ^7.2.0` are the picked providers, kept as a non-breaking later add behind the `KitOAuthProvider` port rather than a hard dependency today. The `SeedAuthBackend` seam is held interface-clean on purpose: it will never import app code, and the host injects the operations it needs, so a real backend can land in Phase 4 without coupling this package to the host's identity layer.
+
+<!-- kb:begin -->
+### References
+
+Official docs and tooling:
+
+- [Stacked — official documentation](https://stacked.filledstacks.com) — Canonical framework docs. Start here for ViewModel/Service patterns used by every kit.
+- [stacked (pub.dev)](https://pub.dev/packages/stacked) — Lightweight MVVM + service locator. Pinned ^3.5.0 across the kits.
+- [stacked_shared (pub.dev)](https://pub.dev/packages/stacked_shared) — StackedLocator.instance — the shared singleton kits resolve through. Pinned ^1.4.2.
+- [stacked_generator (pub.dev)](https://pub.dev/packages/stacked_generator) — Generates routers + @StackedApp wiring. Pinned ^2.0.4.
+- [stacked_cli (pub.dev)](https://pub.dev/packages/stacked_cli) — Scaffolding CLI for new Stacked apps/views/services.
+- [Flutter — official documentation](https://docs.flutter.dev) — Framework docs, platform integration, performance.
+- [Dart — official documentation](https://dart.dev) — Language tour, async, package ecosystem.
+- [Dart & Flutter MCP server (official)](https://dart.dev/tools/mcp-server) — Ships with the Dart SDK (dart mcp-server). Exposes analyzer diagnostics, pub, tests, and live Flutter app introspection via DTD. Wired in appbox_kit/.mcp.json.
+<!-- kb:end -->
+
+<QuestionForm id="open-questions" questions={[
+  {
+    id: "q-auth-gaps",
+    title: "What is unclear or missing from this playbook?",
+    mode: "freeform",
+    placeholder: "Note anything a new contributor or agent would need that is not covered above.",
+  },
+]} />
+

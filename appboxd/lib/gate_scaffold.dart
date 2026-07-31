@@ -442,7 +442,7 @@ void _runS8(String app, void Function(String) ok, void Function(String) warn,
   final index = <String, _Src>{};
   for (final p in pkgs.cast<Map<String, dynamic>>()) {
     final name = (p['name'] ?? '') as String;
-    if (!name.startsWith('stacked_kit') && name != 'ui_library') continue;
+    if (!name.startsWith('kit') && name != 'ui_library') continue;
     final kitRoot = _resolveRootUri((p['rootUri'] ?? '') as String, app);
     for (final f in _findFiles(
         Directory('$kitRoot/lib'), (f) => f.path.endsWith('.dart'))) {

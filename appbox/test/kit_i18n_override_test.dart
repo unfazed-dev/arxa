@@ -1,6 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:stacked_kit_i18n/testing.dart';
+import 'package:appbox_kit_i18n/testing.dart';
 
 /// Locale override resolution: persisted override → system locale → English.
 void main() {

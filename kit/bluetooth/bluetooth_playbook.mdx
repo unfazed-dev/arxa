@@ -1,0 +1,128 @@
+<Callout id="header" tone="info">
+
+# appbox_kit_bluetooth — Per-Package Playbook
+
+
+`appbox_kit_bluetooth` v**0.1.0** · `publish_to: 'none'` · status: **active**
+
+
+**Role (one line):** Plugin-neutral port over flutter_blue_plus — live Bluetooth adapter-state stream, a capability gate (Android enable-dialog vs iOS escort), and full stub ports for BLE scanning and GATT connect/read/write/notify.
+
+
+**Scope of this document:** lets a human OR an LLM use, wire, and extend `appbox_kit_bluetooth` **without reading its source**. The public surface below was extracted from the barrel; README content is folded into the narrative sections.
+
+
+## Table of contents
+
+0. Header & TOC — *you are here* · 1. Overview & role · 2. Public surface · 3. Usage & wiring · 4. Integration map · 5. Architecture · 6. Gotchas · 7. Testing · 8. Features · 9. Decisions · 10. References · 11. Open questions
+
+
+</Callout>
+
+
+### Overview & role
+
+Plugin-neutral port over flutter_blue_plus — live Bluetooth adapter-state stream, a capability gate (Android enable-dialog vs iOS escort), and full stub ports for BLE scanning and GATT connect/read/write/notify.
+
+
+### Public surface
+
+Exported from `lib/appbox_kit_bluetooth.dart`:
+
+<Table id="bluetooth-api" columns={["Symbol", "Kind", "Defined in"]} rows={[["FlutterBluePlusKitBluetoothService", "class", "src/flutter_blue_plus_kit_bluetooth_service.dart"], ["KitBluetoothAdapterState", "enum", "src/kit_bluetooth_adapter_state.dart"], ["KitBluetoothCapabilities", "class", "src/kit_bluetooth_capabilities.dart"], ["KitBluetoothDevice", "class", "src/kit_bluetooth_device.dart"], ["KitBluetoothScanResult", "class", "src/kit_bluetooth_device.dart"], ["KitBluetoothConnectionState", "enum", "src/kit_bluetooth_device.dart"], ["KitGattService", "class", "src/kit_bluetooth_device.dart"], ["KitGattCharacteristic", "class", "src/kit_bluetooth_device.dart"], ["KitBluetoothGattClient", "abstract interface class", "src/kit_bluetooth_gatt.dart"], ["UnimplementedKitBluetoothGattClient", "class", "src/kit_bluetooth_gatt.dart"], ["KitBluetoothScanner", "abstract interface class", "src/kit_bluetooth_scanner.dart"], ["UnimplementedKitBluetoothScanner", "class", "src/kit_bluetooth_scanner.dart"], ["KitBluetoothUnsupportedError", "class", "src/kit_bluetooth_service.dart"], ["KitBluetoothService", "abstract interface class", "src/kit_bluetooth_service.dart"]]} />
+
+Test doubles in `lib/testing.dart`: `FakeKitBluetoothService`.
+
+Scripts and call-counts — tests never touch platform channels.
+
+
+### Usage & wiring
+
+Add `appbox_kit_bluetooth` to your `pubspec.yaml` and run `flutter pub get`. The package is **standalone** — no path dependency on any kit, no `setupLocator`, no codegen — so you construct the production binding directly and register it into your host app's locator (`StackedLocator.instance`, the same singleton the generated `locator` uses):
+
+```dart
+import 'package:appbox_kit_bluetooth/appbox_kit_bluetooth.dart';
+
+final KitBluetoothService bluetooth = FlutterBluePlusKitBluetoothService();
+// register once during app bootstrap:
+locator.registerSingleton<KitBluetoothService>(FlutterBluePlusKitBluetoothService());
+```
+
+Consume the live adapter stream and branch the enable path off the capability gate (`canControlAdapter` is `true` on Android, `false` on iOS):
+
+```dart
+bluetooth.adapterState.listen((s) { /* rebuild on poweredOff / poweredOn / … */ });
+if (bluetooth.capabilities.canControlAdapter) {
+  await bluetooth.requestEnable();   // Android: system enable dialog
+} else {
+  await bluetooth.openSettings();    // iOS: escort to Bluetooth settings
+}
+```
+
+
+### Integration map
+
+<Table id="bluetooth-integration" columns={["Stacked framework deps", "Backing SDK packages", "Depends on (kit)"]} rows={[["\u2014", "flutter_blue_plus, app_settings", "\u2014 (standalone)"]]} />
+
+See `kit_matrix.md` for the full routing + dependency graph.
+
+
+### Architecture
+
+`appbox_kit_bluetooth` is a hexagonal port-and-adapter package. `KitBluetoothService` is the implemented port (with `KitBluetoothScanner` and `KitBluetoothGattClient` as phase-2 ports whose `Unimplemented*` stubs throw on every call); `FlutterBluePlusKitBluetoothService` is the sole production adapter, wrapping `flutter_blue_plus` for adapter-state observation and `app_settings` for the iOS settings escort. Dependency direction points one way only — consumers depend on the ports and the Kit-prefixed value types (`KitBluetoothAdapterState`, `KitBluetoothDevice`, …), while the adapter alone imports `flutter_blue_plus`, so no plugin types leak across the seam. The package is standalone by design: it depends on no other kit and not on `stacked`/`stacked_services`, keeping it a pure port over a native plugin.
+
+
+### Gotchas
+
+`flutter_blue_plus` is a direct wrapper over the OS Bluetooth stacks; this
+package ships no custom native code. The escort contract holds: adapter state
+always comes from the live OS stream, never cached UI state.
+
+
+### Testing
+
+`package:appbox_kit_bluetooth/testing.dart` exports `FakeKitBluetoothService`:
+drive the adapter stream with `emit`, choose the capability set, and assert the
+escort via `openSettingsCallCount` / `requestEnableCallCount`. On the
+`escortOnly` capability set `requestEnable` throws so the escort branch is
+exercisable.
+
+
+### Features
+
+<Checklist id="bluetooth-features" items={[{"id": "bluetooth-feat-0", "label": "`FlutterBluePlusKitBluetoothService` \u2014 class"}, {"id": "bluetooth-feat-1", "label": "`KitBluetoothAdapterState` \u2014 enum"}, {"id": "bluetooth-feat-2", "label": "`KitBluetoothCapabilities` \u2014 class"}, {"id": "bluetooth-feat-3", "label": "`KitBluetoothDevice` \u2014 class"}, {"id": "bluetooth-feat-4", "label": "`KitBluetoothScanResult` \u2014 class"}, {"id": "bluetooth-feat-5", "label": "`KitBluetoothConnectionState` \u2014 enum"}, {"id": "bluetooth-feat-6", "label": "`KitGattService` \u2014 class"}, {"id": "bluetooth-feat-7", "label": "`KitGattCharacteristic` \u2014 class"}, {"id": "bluetooth-feat-8", "label": "`KitBluetoothGattClient` \u2014 abstract interface class"}, {"id": "bluetooth-feat-9", "label": "`UnimplementedKitBluetoothGattClient` \u2014 class"}, {"id": "bluetooth-feat-10", "label": "`KitBluetoothScanner` \u2014 abstract interface class"}, {"id": "bluetooth-feat-11", "label": "`UnimplementedKitBluetoothScanner` \u2014 class"}]} />
+
+
+### Decisions / ADRs
+
+`flutter_blue_plus` was chosen because it is native-first — a direct wrapper over CoreBluetooth (iOS) and `android.bluetooth` (Android) — so this package ships no custom native code of its own; it is pinned at `^2.3.10` (verified on pub.dev 2026-07-14). `app_settings` (`^7.0.0`) backs only the Bluetooth settings deep-link used by the iOS escort flow. The standalone stance (no path dependency on `appbox_kit_permissions` or any other kit, and no `stacked`/`stacked_services` dep) keeps this a pure plugin-neutral port: swapping the backing plugin later touches only `FlutterBluePlusKitBluetoothService`, never its consumers. The Android 12+ `BLUETOOTH_CONNECT`/`BLUETOOTH_SCAN` runtime-permission wiring is deliberately deferred to the downstream reconciliation pass rather than pulled in here.
+
+<!-- kb:begin -->
+### References
+
+Official docs and tooling:
+
+- [Stacked — official documentation](https://stacked.filledstacks.com) — Canonical framework docs. Start here for ViewModel/Service patterns used by every kit.
+- [stacked (pub.dev)](https://pub.dev/packages/stacked) — Lightweight MVVM + service locator. Pinned ^3.5.0 across the kits.
+- [stacked_shared (pub.dev)](https://pub.dev/packages/stacked_shared) — StackedLocator.instance — the shared singleton kits resolve through. Pinned ^1.4.2.
+- [stacked_generator (pub.dev)](https://pub.dev/packages/stacked_generator) — Generates routers + @StackedApp wiring. Pinned ^2.0.4.
+- [stacked_cli (pub.dev)](https://pub.dev/packages/stacked_cli) — Scaffolding CLI for new Stacked apps/views/services.
+- [Flutter — official documentation](https://docs.flutter.dev) — Framework docs, platform integration, performance.
+- [Dart — official documentation](https://dart.dev) — Language tour, async, package ecosystem.
+- [Dart & Flutter MCP server (official)](https://dart.dev/tools/mcp-server) — Ships with the Dart SDK (dart mcp-server). Exposes analyzer diagnostics, pub, tests, and live Flutter app introspection via DTD. Wired in appbox_kit/.mcp.json.
+
+Kit-specific:
+
+- [flutter_blue_plus (pub.dev)](https://pub.dev/packages/flutter_blue_plus) — flutter_blue_plus — backing dependency of appbox_kit_bluetooth.
+- [app_settings (pub.dev)](https://pub.dev/packages/app_settings) — app_settings — backing dependency of appbox_kit_bluetooth.
+<!-- kb:end -->
+
+<QuestionForm id="open-questions" questions={[
+  {
+    id: "q-bluetooth-gaps",
+    title: "What is unclear or missing from this playbook?",
+    mode: "freeform",
+    placeholder: "Note anything a new contributor or agent would need that is not covered above.",
+  },
+]} />
+

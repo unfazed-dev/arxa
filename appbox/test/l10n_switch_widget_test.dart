@@ -3,7 +3,7 @@ import 'package:appbox/l10n/app_localizations.dart';
 import 'package:appbox/ui/views/startup/startup_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:stacked_kit_i18n/testing.dart';
+import 'package:appbox_kit_i18n/testing.dart';
 
 import 'helpers/test_helpers.dart';
 

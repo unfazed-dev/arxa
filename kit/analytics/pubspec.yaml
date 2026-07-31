@@ -1,0 +1,22 @@
+name: appbox_kit_analytics
+description: Analytics port for appbox_kit apps — a backend-agnostic KitAnalyticsService that fans a single event stream out to any number of registered backends, with a zero-dependency DebugConsoleAnalyticsBackend shipped as the working default.
+version: 0.1.0
+publish_to: 'none'
+
+environment:
+  sdk: '>=3.0.3 <4.0.0'
+
+# NATIVE-FIRST / STANDALONE: this package intentionally depends on neither
+# appbox_kit (core), stacked, nor stacked_services. It is a pure port + a
+# zero-dep console backend. Real backends (Firebase / Amplitude / PostHog) are
+# file stubs that name their target package+version in a TODO — they are NOT
+# wired as dependencies here, so this package's dep graph stays minimal and
+# `flutter pub get` resolves without pulling any vendor SDK.
+dependencies:
+  flutter:
+    sdk: flutter
+
+dev_dependencies:
+  flutter_lints: ^6.0.0
+  flutter_test:
+    sdk: flutter
