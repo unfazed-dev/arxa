@@ -1,0 +1,37 @@
+{# ============================================================================
+   _tabbar.html — the tabbar: compact primary navigation (Partial)
+   Zero JavaScript: items are plain boosted links; traverse motion comes from
+   globalViewTransitions. Include once in the shell view, as the LAST element
+   of the scrolling column (it is sticky to the bottom):
+
+       {% include "ui/widgets/components/_tabbar.html" %}
+
+   Reads `nav` from the context bag — the SAME shape as _nav-rail.html (the
+   tabbar is the nav-rail's compact form, not a second component; one
+   viewmodel key feeds both):
+
+     nav = { items: [{ id, label, icon, href, current? }] }
+
+   Keep items to 3–5 destinations (viewmodel's concern). Ladder: visible on
+   compact only; display:none from the medium rung up, where the railbar
+   takes over (components.css, block: .tabbar).
+
+   Re-render: wrap the include in a Named Fragment to make it an htmx target
+   (the {% set %} shadows the key from the bag — imported macros see only
+   `c` + globals, see _nav-rail.html):
+
+       {% macro tabbar(c) %}{% set nav = c.nav %}{% include "ui/widgets/components/_tabbar.html" %}{% endmacro %}
+
+   Flutter: KitBottomNavScaffold.
+   ============================================================================ #}
+{% if nav %}
+<nav id="tabbar" class="tabbar" aria-label="Primary">
+  {% for item in nav.items %}
+  <a class="tabbar__link{% if item.current %} is-active{% endif %}" href="{{ item.href }}"
+     {% if item.current %}aria-current="page"{% endif %}>
+    {% if item.icon %}{{ icon(item.icon, {size: 22, cls: "tabbar__icon"}) }}{% endif %}
+    <span class="tabbar__label">{{ item.label }}</span>
+  </a>
+  {% endfor %}
+</nav>
+{% endif %}

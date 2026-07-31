@@ -169,7 +169,7 @@
       "state": "frozen",
       "wire": "split",
       "kit": 99,
-      "summary": "Narrative rail + one artifact large — the run is a conversation you can interrupt",
+      "summary": "Composer panel + one artifact large — the run is a conversation you can interrupt",
       "summaryPlain": "A feed of what the build is doing plus one big detail view — you can ask questions or stop it any time",
       "rungs": [
         {
@@ -513,14 +513,14 @@
         "id": "cp-1",
         "n": 1,
         "at": "15:41",
-        "summary": "initial composition — rail + canvas + FAB",
+        "summary": "initial composition — activity panel + canvas + FAB",
         "summaryPlain": "first layout — side feed, big detail view, floating action button"
       },
       {
         "id": "cp-2",
         "n": 2,
         "at": "15:49",
-        "summary": "rail density pass — type badges, thread counts",
+        "summary": "activity panel density pass — type badges, thread counts",
         "summaryPlain": "tidied the feed — clearer labels, follow-up counts"
       },
       {

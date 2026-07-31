@@ -5,9 +5,9 @@
 
        {% include "ui/widgets/components/_nav-rail.html" %}
 
-   Reads `rail` from the context bag:
+   Reads `nav` from the context bag:
 
-     rail = {
+     nav = {
        brand: "App",                          -- wordmark, expanded rung only (optional)
        drawer: false,                         -- true renders the drawer form (below)
        items: [{ id, label, icon, href, current? }]
@@ -17,8 +17,8 @@
    marks the active destination (viewmodel derives it from the route) and
    renders aria-current="page".
 
-   Ladder (CSS, .nav-rail in components.css): hidden on compact — the bottom
-   nav (_bottom-nav.html) is primary there; floating icon-only rail on medium;
+   Ladder (CSS, .nav-rail in components.css): hidden on compact — the tabbar
+   (_tabbar.html) is primary there; floating icon-only rail on medium;
    icon+label rail on expanded.
 
    Drawer form (compact overflow destinations): the rail's undocked form per
@@ -27,24 +27,24 @@
    inside a popover, and the app bar opens it with popovertarget:
 
        <div id="nav-drawer" class="drawer" popover>
-         {% set rail = rail_drawer %}{% include "ui/widgets/components/_nav-rail.html" %}
+         {% set nav = nav_drawer %}{% include "ui/widgets/components/_nav-rail.html" %}
        </div>
-       {% set rail = rail_main %}
+       {% set nav = nav_main %}
 
    Re-render: wrap the include in a Named Fragment to make it an htmx target.
    The {% set %} shadows the context key from the bag — a fragment render
    {% import %}s the view, and imported macros see only `c` + globals:
 
-       {% macro nav_rail(c) %}{% set rail = c.rail %}{% include "ui/widgets/components/_nav-rail.html" %}{% endmacro %}
+       {% macro nav_rail(c) %}{% set nav = c.nav %}{% include "ui/widgets/components/_nav-rail.html" %}{% endmacro %}
 
    Styles: assets/css/components.css (block: .nav-rail).
    Flutter: KitNativeNavigationRail (medium+), KitDrawer (compact drawer).
    ============================================================================ #}
-{% if rail %}
-<nav id="{% if rail.drawer %}nav-drawer{% else %}nav-rail{% endif %}" class="nav-rail{% if rail.drawer %} nav-rail--drawer{% endif %}" aria-label="Primary">
-  {% if rail.brand %}<span class="nav-rail__brand">{{ rail.brand }}</span>{% endif %}
+{% if nav %}
+<nav id="{% if nav.drawer %}nav-drawer{% else %}nav-rail{% endif %}" class="nav-rail{% if nav.drawer %} nav-rail--drawer{% endif %}" aria-label="Primary">
+  {% if nav.brand %}<span class="nav-rail__brand">{{ nav.brand }}</span>{% endif %}
   <ul class="nav-rail__items">
-    {% for item in rail.items %}
+    {% for item in nav.items %}
     <li class="nav-rail__item">
       <a class="nav-rail__link{% if item.current %} is-active{% endif %}" href="{{ item.href }}"
          {% if item.current %}aria-current="page"{% endif %}>

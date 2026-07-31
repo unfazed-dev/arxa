@@ -32,19 +32,19 @@
           "rung": "compact",
           "width": 390,
           "shot": "sh_325d…e062",
-          "note": "składane — najpierw kanwa, szyna unosi się poniżej"
+          "note": "składane — najpierw panel główny, panel aktywności poniżej"
         },
         {
           "rung": "medium",
           "width": 744,
           "shot": "sh_4bed…7a5f",
-          "note": "wąska szyna 300px obok kanwy"
+          "note": "wąski panel aktywności 300px obok panelu głównego"
         },
         {
           "rung": "expanded",
           "width": 1280,
           "shot": "sh_c97c…cd9d",
-          "note": "szyna 340px + jeden duży artefakt"
+          "note": "panel aktywności 340px + jeden duży artefakt"
         }
       ]
     },
@@ -122,19 +122,19 @@
           "rung": "compact",
           "width": 390,
           "shot": "sh_79d8…e735",
-          "note": "składane — najpierw kanwa, szyna unosi się poniżej"
+          "note": "składane — najpierw panel główny, panel aktywności poniżej"
         },
         {
           "rung": "medium",
           "width": 744,
           "shot": "sh_6702…f38d",
-          "note": "wąska szyna 300px obok kanwy"
+          "note": "wąski panel aktywności 300px obok panelu głównego"
         },
         {
           "rung": "expanded",
           "width": 1280,
           "shot": "sh_7163…717f",
-          "note": "szyna 340px + jeden duży artefakt"
+          "note": "panel aktywności 340px + jeden duży artefakt"
         }
       ]
     },
@@ -152,19 +152,19 @@
           "rung": "compact",
           "width": 390,
           "shot": "sh_d4df…6ed5",
-          "note": "składane — najpierw kanwa, szyna unosi się poniżej"
+          "note": "składane — najpierw panel główny, panel aktywności poniżej"
         },
         {
           "rung": "medium",
           "width": 744,
           "shot": "sh_512b…2489",
-          "note": "wąska szyna 300px obok kanwy"
+          "note": "wąski panel aktywności 300px obok panelu głównego"
         },
         {
           "rung": "expanded",
           "width": 1280,
           "shot": "sh_773c…c4a7",
-          "note": "szyna 340px + jeden duży artefakt"
+          "note": "panel aktywności 340px + jeden duży artefakt"
         }
       ]
     },
@@ -212,19 +212,19 @@
           "rung": "compact",
           "width": 390,
           "shot": "sh_5b85…c59d",
-          "note": "składane — najpierw kanwa, szyna unosi się poniżej"
+          "note": "składane — najpierw panel główny, panel aktywności poniżej"
         },
         {
           "rung": "medium",
           "width": 744,
           "shot": "sh_b89c…57dd",
-          "note": "wąska szyna 300px obok kanwy"
+          "note": "wąski panel aktywności 300px obok panelu głównego"
         },
         {
           "rung": "expanded",
           "width": 1280,
           "shot": "sh_c55d…6549",
-          "note": "szyna 340px + jeden duży artefakt"
+          "note": "panel aktywności 340px + jeden duży artefakt"
         }
       ]
     },
@@ -272,19 +272,19 @@
           "rung": "compact",
           "width": 390,
           "shot": "sh_5ace…e6c3",
-          "note": "składane — najpierw kanwa, szyna unosi się poniżej"
+          "note": "składane — najpierw panel główny, panel aktywności poniżej"
         },
         {
           "rung": "medium",
           "width": 744,
           "shot": "sh_2c33…e774",
-          "note": "wąska szyna 300px obok kanwy"
+          "note": "wąski panel aktywności 300px obok panelu głównego"
         },
         {
           "rung": "expanded",
           "width": 1280,
           "shot": "sh_af23…4b2c",
-          "note": "szyna 340px + jeden duży artefakt"
+          "note": "panel aktywności 340px + jeden duży artefakt"
         }
       ]
     },
@@ -579,7 +579,7 @@
         "id": "cp-1",
         "n": 1,
         "at": "15:41",
-        "summary": "kompozycja początkowa — szyna + kanwa + FAB",
+        "summary": "kompozycja początkowa — panel aktywności + kanwa + FAB",
         "summaryPlain": "pierwszy układ — boczny strumień, duży widok szczegółów, pływający przycisk akcji"
       },
       {

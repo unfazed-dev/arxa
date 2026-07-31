@@ -58,8 +58,8 @@ two jobs.
 
 | archetype | compact | medium | expanded |
 |---|---|---|---|
-| **tab-shell** | bottom tab bar | navigation rail | rail or permanent drawer |
-| **nested-shell** | tab bar + inner segmented control | rail + inner tabs | rail + two-pane content |
+| **tab-shell** | tabbar | nav-rail | nav-rail or permanent drawer |
+| **nested-shell** | tabbar + inner segmented control | nav-rail + inner tabs | nav-rail + two-pane content |
 | **dashboard-stack** | one scrolling column of cards | two-column grid | true multi-column grid |
 | **inset-grouped-list** | full-width grouped rows | wider inset, same rows | master–detail two-pane |
 | **pinned-search-list** | pinned search + results column | same, wider gutters | search + results list + detail pane |
@@ -80,18 +80,18 @@ the resolved ladder at session start.
 
 | chrome | compact | medium | expanded |
 |---|---|---|---|
-| app bar | always — title + **drawer action** + **dropdown menu** | same as compact | always — full action row |
-| primary nav | **bottom tab bar** | **floating left rail**, collapsible/expandable | **floating left + right rails**, each openable/closeable |
-| bottom bar | — | — | status/timeline bar |
+| header panel | always — title + **drawer action** + **dropdown menu** | same as compact | always — full action row |
+| primary nav | **tabbar** | **railbar**, collapsible/expandable | **activity panel + composer panel**, the composer permanent |
+| footer panel | — | — | the read-only stage timeline |
 | FAB | **staggered action menu**, animated fan-out | same as compact | — |
 
-- The compact/medium drawer carries whatever the expanded left rail carries;
-  the rail is the drawer's docked form, not a second component.
-- Chrome *contents* (which tabs, which rail views, which FAB actions) come from
-  the surface's viewmodel — this contract fixes placement and behaviour, not
-  items.
+- The compact/medium drawer carries whatever the expanded activity panel
+  carries; the railbar is the drawer's docked form, not a second component.
+- Chrome *contents* (which destinations, which activity views, which FAB
+  actions) come from the surface's viewmodel — this contract fixes placement
+  and behaviour, not items.
 - The staggered FAB is the home of contextual actions on touch rungs; on
-  expanded those same actions live in the rails/bottom bar instead.
+  expanded those same actions live in the panels/footer panel instead.
 
 ## Authoring and verifying at every rung
 

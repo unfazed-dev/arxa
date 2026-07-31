@@ -109,7 +109,7 @@ body {
 
 /* scrollbars blend into the active theme: transparent track, thumb = theme ink
    at 22%. var(--tx), NOT currentColor — one consistent tint across containers
-   whose local text colors differ (rails, chips, code blocks). */
+   whose local text colors differ (panels, chips, code blocks). */
 #app { color-scheme: light; }
 #app[data-theme="dark"] { color-scheme: dark; }
 * { scrollbar-width: thin; scrollbar-color: color-mix(in oklab, var(--tx, currentColor) 22%, transparent) transparent; }

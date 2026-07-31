@@ -1,0 +1,83 @@
+{# ============================================================================
+   _panel-views.html — the multi-view panel frame (Partial, macro-only)
+   ONE reusable frame for either side of the stage: the Activity Panel's
+   chrome. Each shell registers its own views (thread / artifacts / files /
+   runs…); the frame owns a head (active view label + resize handle), a body
+   the caller fills via call/caller, and a bottom views bar whose icon
+   carousel switches views by hx-swapping the body.
+
+   THE STATEFUL-COMPONENT REFERENCE (DESIGN-ARCHITECTURE, "Component state"):
+   all panel state is server session state, namespaced per shell — the DOM is
+   never a store.
+     · view switch → carousel targets #panel-<side>-body; the response is
+       the body content PLUS head + bar rendered with oob=true, so the active
+       icon and label track the server; the <aside> (scroll, width class) is
+       never replaced
+     · width → s|m|l steps rendered as panel-size-* classes from the shell's
+       session (discrete, server-validated — a CSS `resize` drag can never
+       persist without client JS, which the contract forbids); optionally a
+       drag handle (panel-frame-handle) that the vendored drag.js island
+       wires to POST a px width
+     · stage acts → re-feed body + head + bar OOB in the same response
+     · page render → frame only; OOB parts are response-only markup
+
+   Usage:
+     {% import "ui/widgets/components/_panel-views.html" as pv %}
+     {% call pv.frame(spec) %}
+       …markup for the active view…
+     {% endcall %}
+
+   spec:
+     side         — 'left' | 'right' (drives the ids: #panel-<side>…)
+     label        — the active view's label, shown in the head
+     views        — [{ id, icon, label, href, active }], one carousel button
+                    each; icon is a Lucide name for the icon() global, href
+                    hx-swaps that view's fragment into #panel-<side>-body
+     size?        — 's' | 'm' | 'l' (default 's'): the shell's persisted panel
+                    width (facade session state, panelSize[side]); used as the
+                    panel-size-* class fallback when panelSizePx is unset
+     sizeHref?    — present when the panel can be resized; renders the drag
+                    handle that drag.js wires to POST px width (live width in
+                    .panel-frame-width)
+     panelSizePx? — persisted px width; when set, applied as an inline width
+                    style on the aside instead of the panel-size-* fallback
+
+   Required l10n keys: panelViews.aria.<side>, panelViews.dragHandle (only
+   with sizeHref).
+   CSS: .panel-frame family in components.css. Recipe 19 in ui-recipes.md. #}
+
+{% macro head(spec, oob) %}
+<header class="panel-frame-head" id="panel-{{ spec.side }}-head" {% if oob %}hx-swap-oob="outerHTML"{% endif %}>
+  <strong class="panel-frame-label">{{ spec.label }}</strong>
+  {% if spec.sizeHref %}
+  <div class="panel-frame-handle" data-side="{{ spec.side }}" title="{{ t('panelViews.dragHandle') }}" aria-label="{{ t('panelViews.dragHandle') }}">
+    {{ icon('grip-vertical', {size: 16}) }}
+    <span class="panel-frame-width"></span>
+  </div>
+  {% endif %}
+</header>
+{% endmacro %}
+
+{% macro body(spec, oob) %}
+<div class="panel-frame-body" id="panel-{{ spec.side }}-body" {% if oob %}hx-swap-oob="outerHTML"{% endif %}>
+  {{ caller() }}
+</div>
+{% endmacro %}
+
+{% macro bar(spec, oob) %}
+<footer class="panel-frame-bar" id="panel-{{ spec.side }}-bar" aria-label="{{ t('panelViews.aria.' ~ spec.side) }}" {% if oob %}hx-swap-oob="outerHTML"{% endif %}>
+  {% for v in spec.views %}
+  <a class="pv-icon {{ 'is-active' if v.active }}" href="{{ v.href }}" hx-get="{{ v.href }}" hx-target="#panel-{{ spec.side }}-body" hx-swap="innerHTML" hx-push-url="false" title="{{ v.label }}" aria-label="{{ v.label }}">{{ icon(v.icon, {size: 18}) }}</a>
+  {% endfor %}
+</footer>
+{% endmacro %}
+
+{% macro frame(spec) %}
+<aside class="panel-frame panel-frame-{{ spec.side }} {{ 'panel-size-' + (spec.size or 's') if not spec.panelSizePx }}" id="panel-{{ spec.side }}"{% if spec.panelSizePx %} style="width:{{ spec.panelSizePx }}px"{% endif %}>
+  {{ head(spec, false) }}
+  <div class="panel-frame-body" id="panel-{{ spec.side }}-body">
+    {{ caller() }}
+  </div>
+  {{ bar(spec, false) }}
+</aside>
+{% endmacro %}

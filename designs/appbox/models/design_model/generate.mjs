@@ -21,9 +21,9 @@ if (!seeds.length) {
 const RUNG_NOTES = {
   en: {
     split: {
-      compact: 'stacked — canvas first, rail floats below',
-      medium: 'narrow 300px rail beside the canvas',
-      expanded: '340px rail + one artifact large',
+      compact: 'stacked — main panel first, activity panel below',
+      medium: 'narrow 300px activity panel beside the main panel',
+      expanded: '340px activity panel + one artifact large',
     },
     stack: {
       compact: 'single column, actions inline',
@@ -38,9 +38,9 @@ const RUNG_NOTES = {
   },
   pl: {
     split: {
-      compact: 'składane — najpierw kanwa, szyna unosi się poniżej',
-      medium: 'wąska szyna 300px obok kanwy',
-      expanded: 'szyna 340px + jeden duży artefakt',
+      compact: 'składane — najpierw panel główny, panel aktywności poniżej',
+      medium: 'wąski panel aktywności 300px obok panelu głównego',
+      expanded: 'panel aktywności 340px + jeden duży artefakt',
     },
     stack: {
       compact: 'jedna kolumna, akcje w linii',

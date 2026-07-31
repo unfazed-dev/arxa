@@ -117,25 +117,25 @@ Lucide SVGs server-side — decorative by default, meaningful with `label`.
 render a dashed placeholder + server-side warning, so a typo is visible in
 the prototype, not silent.
 
-**Ladder:** size is per-component (22 rail, 20 toolbar, 18 list/menu); never
+**Ladder:** size is per-component (22 nav-rail, 20 toolbar, 18 list/menu); never
 scale icons between rungs — composition changes, not glyph size.
 
 **Motion:** none of its own; `pending` spinners add `.indicator-spin` (recipe 17).
 
 **Flutter:** KitGlyphs (core kit).
 
-## 3. Nav rail / sidebar
+## 3. Nav rail (the railbar's container)
 
-**Use:** the primary nav on medium+ rungs (tab-shell archetype). Compact's
-primary nav is the bottom bar (recipe 5); the rail's overflow destinations
-ride the compact drawer.
+**Use:** the primary nav on medium+ rungs (tab-shell archetype) — the
+railbar in app chrome. Compact's primary nav is the tabbar (recipe 5); the
+nav-rail's overflow destinations ride the compact drawer.
 
-**Macro:** partial — `_nav-rail.html` (context: `rail = { brand?, drawer?,
+**Macro:** partial — `_nav-rail.html` (context: `nav = { brand?, drawer?,
 items: [{ id, label, icon, href, current? }] }`). Include in the shell; wrap
 for fragment re-render:
 
 ```html
-{% macro nav_rail(c) %}{% set rail = c.rail %}{% include "ui/widgets/components/_nav-rail.html" %}{% endmacro %}
+{% macro nav_rail(c) %}{% set nav = c.nav %}{% include "ui/widgets/components/_nav-rail.html" %}{% endmacro %}
 ```
 
 (The `{% set %}` shadows the context key from the bag: a fragment render
@@ -144,16 +144,16 @@ for fragment re-render:
 see the full context either way.)
 
 **CSS:** `.nav-rail` in components.css — `display: none` on compact; floating
-icon-only rail (76px, sticky) at ≥600; icon+label (224px) at ≥840. Active
-item: `.is-active` + `aria-current="page"`.
+icon-only nav-rail (76px, sticky) at ≥600; icon+label (224px) at ≥840.
+Active item: `.is-active` + `aria-current="page"`.
 
 **htmx:** none — plain boosted `<a href>`. The server marks `current` per
 route; boosted swaps carry the state automatically.
 
 **Ladder:** hidden → icon-only → icon+label. The compact drawer is the same
-partial with `rail.drawer: true`, included inside `<div id="nav-drawer"
-popover>` and opened by the app bar's `popovertarget` button (native popover,
-zero JS).
+partial with `nav.drawer: true`, included inside `<div id="nav-drawer"
+popover>` and opened by the header panel's `popovertarget` button (native
+popover, zero JS).
 
 **Motion:** `traverse` (boosted navigation crossfade).
 
@@ -191,21 +191,21 @@ the app bar instead of under it — wider gutters only, same partial.
 **Flutter:** KitAnimatedTabStack (+ KitDirectionalTabTransition,
 KitNativeTabBar for the bar alone).
 
-## 5. Bottom nav
+## 5. Tabbar
 
 **Use:** THE primary nav on compact (tab-shell default chrome). 3–5 top-level
 destinations only.
 
-**Macro:** partial — `_bottom-nav.html`, reading the SAME `rail` context key
-as `_nav-rail.html` (one viewmodel source feeds both; the bottom nav is the
-rail's compact form). Include as the last element of the shell's scrolling
-column — it is sticky-bottom.
+**Macro:** partial — `_tabbar.html`, reading the SAME `nav` context key
+as `_nav-rail.html` (one viewmodel source feeds both; the tabbar is the
+nav-rail's compact form). Include as the last element of the shell's
+scrolling column — it is sticky-bottom.
 
 ```html
-{% macro bottom_nav(c) %}{% set rail = c.rail %}{% include "ui/widgets/components/_bottom-nav.html" %}{% endmacro %}
+{% macro tabbar(c) %}{% set nav = c.nav %}{% include "ui/widgets/components/_tabbar.html" %}{% endmacro %}
 ```
 
-**CSS:** `.bottom-nav` in components.css — flex row, icon over label,
+**CSS:** `.tabbar` in components.css — flex row, icon over label,
 `env(safe-area-inset-bottom)` padding; `display: none` from 600px up.
 
 **htmx:** none — boosted links; `current` marks the active destination.
@@ -731,48 +731,52 @@ This is the reference implementation of the Component-state contract
 server session state, namespaced per shell, rendered back as classes — and
 the panel's parts refresh out-of-band so nothing ever shows a stale copy.
 
-**Macro:** partial — `_rail-views.html`. `frame(spec)` wraps a caller body;
-part macros `head` / `body` / `bar` carry their own ids (`#rail-<side>-head|
--body|-bar`) and an `oob` flag:
+**Macro:** partial — `_panel-views.html`. `frame(spec)` wraps a caller
+body; part macros `head` / `body` / `bar` carry their own ids
+(`#panel-<side>-head|-body|-bar`) and an `oob` flag:
 
 ```html
-{% call mv.frame({ side: 'left', label: c.railLabel, views: c.railViews,
-                   size: c.railSize, sizeHref: c.railSizeHref }) %}
+{% call pv.frame({ side: 'left', label: c.activityLabel, views: c.activityViews,
+                   size: c.panelSize, sizeHref: c.panelSizeHref }) %}
   …markup for the active view…
 {% endcall %}
 ```
 
 `spec.views`: `[{ id, icon, label, href, active }]` — one carousel button per
-registered view, `href` targets `#rail-<side>-body`. `spec.size` is `'s'|'m'|
-'l'`; `spec.sizeHref` is the size route prefix up to the value (`…/rail/size/
-<side>/`) — the head's grip cycles s → m → l → s and re-renders the whole
-panel. Requires l10n keys `railViews.aria.<side>`, `railViews.collapse.<side>`
-(only with `collapseHref`), `railViews.size.s|m|l`.
+registered view, `href` targets `#panel-<side>-body`. `spec.size` is `'s'|'m'|
+'l'`; `spec.sizeHref` marks the panel resizable — the head renders a drag
+handle (`panel-frame-handle`) that the vendored drag.js island wires to POST
+the px width (`…/panel/size/<side>`). Requires l10n keys
+`panelViews.aria.<side>`, `panelViews.dragHandle` (only with `sizeHref`).
 
-**State (facade, per shell, per side):** `railView` (active view id),
-`railSize` (width step enum — discrete and server-validated, never a dragged
-pixel value), plus whatever domain filter the shell owns. All under
-`sessionData.<shell>`; routes `<base>/rail?view=…` and `<base>/rail/size/
-<side>/<step>` mutate and re-render.
+**State (facade, per shell, per side):** `activityView` (active view id),
+`panelSize` (width step enum — discrete and server-validated, never a dragged
+pixel value), `panelSizePx` (px width from the drag handle), plus whatever
+domain filter the shell owns. All under `sessionData.<shell>`; routes
+`<base>/panel?view=…` and `<base>/panel/size/<side>/<step>` mutate and
+re-render.
 
 **htmx wiring:**
 
-- **view switch** — carousel targets `#rail-<side>-body`; the response is the
-  body content PLUS head and bar rendered with `oob: true`, so the active
+- **view switch** — carousel targets `#panel-<side>-body`; the response is
+  the body content PLUS head and bar rendered with `oob: true`, so the active
   icon and the head label track the server. The `<aside>` itself (user's
   scroll, width class) is never replaced.
-- **size grip** — targets the whole aside `outerHTML`; safe because the width
-  is server state (the response re-renders it), unlike a CSS `resize` drag
-  which cannot persist at all.
+- **resize** — the drag handle POSTs the px width on release and the whole
+  aside re-renders `outerHTML`; safe because the width is server state (the
+  response re-renders it), unlike a CSS `resize` drag which cannot persist
+  at all.
 - **stage acts** — anything that changes the panel's data (pins, approvals,
   decisions) re-feeds body + head + bar OOB in the same response.
 - **page render** — emits `frame` only; OOB parts are response-only markup.
 
-**CSS:** `.mv-rail` + `.mv-size-s|m|l` width classes (`transition: width` on
-`--rail-w`); `.mv-icon.is-active` takes the accent ring. Hidden below the
-expanded rung — the shell's drawer/dock is the panel's undocked form there.
+**CSS:** `.panel-frame` + `.panel-size-s|m|l` width classes (`transition:
+width` on `--panel-w`); `.pv-icon.is-active` takes the accent ring. Below the
+expanded rung the panel bar picks the single visible content panel (recipe:
+the `?panel=` switcher).
 
-**Ladder:** expanded only; medium/compact use the drawer or dock (recipes 3, 5).
+**Ladder:** expanded shows all panels; medium/compact show one content panel
+at a time under the panel bar.
 
 **Motion:** `swap` on view switches; width transition on the size step.
 
@@ -855,9 +859,9 @@ Stack + Positioned for the escape hatch.
 |---|---|---|
 | Buttons & action rows | `_cta-link.html` (navigational variant) | KitNativeButton, KitNativeIconButton, KitNativeSplitButton |
 | Icon | — (runtime global) | KitGlyphs (core) |
-| Nav rail / sidebar | `_nav-rail.html` | KitNativeNavigationRail; KitDrawer (drawer form) |
+| Nav rail (railbar) | `_nav-rail.html` | KitNativeNavigationRail; KitDrawer (drawer form) |
 | Tabs | `_tabs.html` | KitAnimatedTabStack, KitDirectionalTabTransition, KitNativeTabBar |
-| Bottom nav | `_bottom-nav.html` | KitBottomNavScaffold |
+| Tabbar | `_tabbar.html` | KitBottomNavScaffold |
 | App bar / toolbar | `_appbar.html` | KitNativeAppBar, KitNativeSliverAppBar, KitNativeToolbar |
 | List rows & sections | `_list-row.html` | KitListTile, KitListSection |
 | Card | `_card.html` | KitGlassCard, KitFrostedSurface |
@@ -871,5 +875,5 @@ Stack + Positioned for the escape hatch.
 | Empty state | `_empty-state.html` | none — compose icon + copy + KitNativeButton |
 | Loading / skeleton | — (motion.css) | KitNativeLoadingIndicator, KitNativeProgress, KitLazyIndexedStack |
 | Pagination / load-more | — (macros) | KitLazyIndexedStack |
-| Multi-view panel | `_rail-views.html` | per-shell panel controller (view/size/filter) + adaptive panel — compose |
+| Multi-view panel | `_panel-views.html` | per-shell panel controller (view/size/filter) + adaptive panel — compose |
 | Auto Layout | — (attribute layer in components.css) | Row/Column + Expanded (fill) / SizedBox (fixed); Stack + Positioned (ignore) |
