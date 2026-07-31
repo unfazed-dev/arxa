@@ -164,8 +164,8 @@ String dartStrSeed(dynamic s) {
 }
 
 String pascalCase(String s) {
-  final parts = RegExp(r'[_\-\s]+')
-      .split(s)
+  final parts = s
+      .split(RegExp(r'[_\-\s]+'))
       .where((w) => w.isNotEmpty);
   return parts.map((w) => w[0].toUpperCase() + w.substring(1)).join();
 }
@@ -174,14 +174,6 @@ String snakeCase(String s) {
   var t = s.replaceAll(RegExp(r'[\-\s]+'), '_');
   t = t.replaceAll(RegExp(r'^_+'), '').replaceAll(RegExp(r'_+$'), '');
   return t.toLowerCase();
-}
-
-String _toCamel(String s) {
-  final parts =
-      RegExp(r'[^0-9a-zA-Z]+').split(s).where((x) => x.isNotEmpty).toList();
-  if (parts.isEmpty) return s;
-  return parts[0].toLowerCase() +
-      parts.sublist(1).map((x) => x[0].toUpperCase() + x.substring(1)).join();
 }
 
 /// Relative luminance of a #rrggbb hex (for contrast math).
@@ -837,10 +829,13 @@ List<String> seedToSessionLiterals(List<dynamic> seedRows,
     {Map<String, String>? fieldMap}) {
   if (seedRows.isEmpty) return <String>[];
   // entityField ← seedKey; build rev (entityField → seedKey), explicit wins.
+  // Mirrors Python exactly: rev is keyed on the RAW field_map keys (the camelCased
+  // fmap the Python builds is never used for the lookup), so a field_map with
+  // already-camelCase keys (occurredOn) resolves, matching Python's actual behavior.
   final rev = <String, String>{};
   if (fieldMap != null) {
     fieldMap.forEach((seedKey, entField) {
-      rev.putIfAbsent(_toCamel(entField), () => seedKey);
+      rev.putIfAbsent(entField, () => seedKey);
     });
   }
   seedDefaultMap.forEach((seedKey, entField) {
@@ -853,14 +848,6 @@ List<String> seedToSessionLiterals(List<dynamic> seedRows,
     final idKey = rev['id'] ?? 'id';
     final titleKey = rev['title'] ?? 'name';
     if (!row.containsKey(idKey) || !row.containsKey(titleKey)) continue;
-
-    String? val(String entField, [dynamic dflt]) {
-      final sk = rev[entField] ?? entField;
-      if (row.containsKey(sk)) {
-        return null; // placeholder; handled below
-      }
-      return dflt?.toString();
-    }
 
     dynamic rawVal(String entField, [dynamic dflt]) {
       final sk = rev[entField] ?? entField;
@@ -1087,7 +1074,6 @@ class ${name}ViewModel extends ${name}ViewModelBase {
   // TODO(builder): override runStartupLogic() or add splash-specific actions.
 }
 ''';
-}
 
 String tplVmAuth(String name, String snake,
     {List<String> oauth = const [],
@@ -1712,9 +1698,6 @@ String wireNavImports(String dart) {
   return dart.substring(0, pos) + inject.toString() + dart.substring(pos);
 }
 
-// dart:math import (kept minimal — only wcagContrast needs it).
-import 'dart:math' as _math;
-
 // ──────────── the generator (per-build mutable state + emit) ────────────
 
 class GenerateView {
@@ -2012,9 +1995,9 @@ class GenerateView {
         ? 'Play or pause'
         : action.contains('reset')
             ? 'Reset'
-            : (RegExp(r'\W+').replaceAll(name ?? 'button', ' ').trim().isEmpty
+            : ((name ?? 'button').replaceAll(RegExp(r'\W+'), ' ').trim().isEmpty
                 ? 'button'
-                : RegExp(r'\W+').replaceAll(name ?? 'button', ' ').trim());
+                : (name ?? 'button').replaceAll(RegExp(r'\W+'), ' ').trim());
     return 'AdaptiveIconButton(icon: $mat, sfSymbol: $sf, tint: $tint, '
         'foreground: AppTokens.bone, size: ${primary ? 44 : 36}, '
         'semanticLabel: ${dartStr(sem)}, onPressed: $action)';
@@ -2183,7 +2166,8 @@ class GenerateView {
       }
     } else {
       fg = contrastFg(bgHex);
-      assertLegible(fg, bgHex, 'button[${cls.join(' ') || '?'}]');
+      final ctxCls = classesOf(node).join(' ');
+      assertLegible(fg, bgHex, 'button[${ctxCls.isEmpty ? '?' : ctxCls}]');
     }
     final isFormGated = formVm &&
         variant == 'primary' &&
@@ -2206,8 +2190,11 @@ class GenerateView {
     }
     final glyph = findSvg(node);
     if (glyph != null) {
-      dropGlyph(glyph, origin: '${cls.join(' ') || 'button'} (native action.button)',
-          reason: 'native Liquid Glass button accepts only SF Symbols, not a custom brand graphic');
+      final originCls = classesOf(node).join(' ');
+      dropGlyph(
+          glyph,
+          '${originCls.isEmpty ? 'button' : originCls} (native action.button)',
+          'native Liquid Glass button accepts only SF Symbols, not a custom brand graphic');
     }
     if (tint != null) args.add('tint: $tint');
     if (fg != null) args.add('foreground: $fg');
@@ -2285,13 +2272,6 @@ class GenerateView {
       final pad = edgeInsets(edges(style, 'padding'));
       if (pad != null) widget = 'Padding(padding: $pad, child: $widget)';
     }
-    if (prim == 'Box' ||
-        prim == 'Row' ||
-        prim == 'Column' &&
-            kidsOf(node).isNotEmpty &&
-            bespokeBoxClasses.intersection(classesOf(node).toSet()).isEmpty) {
-      // guarded below
-    }
     if ((prim == 'Box' || prim == 'Row' || prim == 'Column') &&
         kidsOf(node).isNotEmpty &&
         bespokeBoxClasses.intersection(classesOf(node).toSet()).isEmpty) {
@@ -2338,6 +2318,54 @@ class GenerateView {
   List<String> children(List<Node> nodes, bool sess) =>
       nodes.map((n) => emit(n, sess)).where((e) => e.isNotEmpty).toList();
 
+  String rowOrCol(Node node, bool sess, bool horizontal) {
+    final raw = kidsOf(node);
+    final sb = gapBox(styleOf(node), horizontal);
+    final ma = mainAxis(styleOf(node));
+    final parts = <String>[];
+    for (final c in raw) {
+      final cprim = c['prim']?.toString() ?? '';
+      final willFlex = horizontal &&
+          parts.isEmpty &&
+          raw.length > 1 &&
+          !rowWUnbounded &&
+          (cprim == 'Column' || cprim == 'Box' || (cprim == 'Text' && ma == 'spaceBetween'));
+      final prev = rowWUnbounded;
+      if (horizontal) rowWUnbounded = !willFlex;
+      String e;
+      try {
+        e = emit(c, sess);
+      } finally {
+        rowWUnbounded = prev;
+      }
+      if (e.isEmpty) continue;
+      e = motionWrap(c, boxWrap(c, e));
+      if (willFlex) {
+        final wrap = cprim == 'Column' || cprim == 'Box' ? 'Expanded' : 'Flexible';
+        e = '$wrap(child: $e)';
+      }
+      if (parts.isNotEmpty && sb != null) {
+        if (!horizontal &&
+            formVm &&
+            providerRe.hasMatch(classesOf(c).join(' '))) {
+          parts.add(adaptiveGap(sb));
+        } else {
+          parts.add(sb);
+        }
+      }
+      parts.add(e);
+    }
+    if (parts.isEmpty) return '';
+    final kids = parts.join(',\n');
+    final widget = horizontal ? 'Row' : 'Column';
+    var extra = horizontal ? '' : 'mainAxisSize: MainAxisSize.min, ';
+    final ca = crossAxis(styleOf(node));
+    extra += 'crossAxisAlignment: CrossAxisAlignment.$ca, ';
+    if (ca == 'baseline') extra += 'textBaseline: TextBaseline.alphabetic, ';
+    if (ma != 'start') extra += 'mainAxisAlignment: MainAxisAlignment.$ma, ';
+    return '$widget($extra children: [\n$kids,\n])';
+  }
+
   // ── handler / nav wiring ──
 
   String? handlerForNode(Node node) {
@@ -2372,7 +2400,7 @@ class GenerateView {
       if (tabTargets.containsKey(t)) {
         return 'locator<RootNavigationViewModel>().onTabSelected(${tabTargets[t]})';
       }
-      final view = RegExp(r'[_-]').split(t).map((w) => _cap(w)).join() + 'View';
+      final view = '${t.split(RegExp(r'[_-]')).map((w) => _cap(w)).join()}View';
       return 'locator<NavigationService>().navigateTo$view()';
     }
     return null;
@@ -2612,9 +2640,9 @@ class GenerateView {
       if (e.isEmpty) continue;
       final we = motionWrap(c, boxWrap(c, e));
       final st = styleOf(c);
+      final inset = st['inset']?.toString().trim() ?? '';
       if (st['position']?.toString() == 'absolute' &&
-          (st['inset']?.toString().trim() ?? '') == '0' ||
-          (st['inset']?.toString().trim() ?? '') == '0px') {
+          (inset == '0' || inset == '0px')) {
         parts.add('Positioned.fill(child: $we)');
       } else {
         parts.add(we);
@@ -2757,7 +2785,7 @@ class GenerateView {
         treeOf(spec), (x) => classesOf(x).contains('workouts-title') && x['text'] != null);
     n ??= findNode(treeOf(spec),
         (x) => (x['text']?.toString().toLowerCase() ?? '').startsWith('your workout'));
-    return n != null ? n!['text'].toString() : 'Your workouts';
+    return n != null ? n['text'].toString() : 'Your workouts';
   }
 
   String headerSrc(String? avatarNav) {
@@ -3005,9 +3033,11 @@ class GenerateView {
     if (model) {
       rels.add("import '../domain/ports/session_repository.dart';");
     }
-    final imports = '${pkgs..sort()}\n${rels..sort()}'.replaceAll('][', '\n');
+    pkgs.sort();
+    rels.sort();
+    final importsStr = [...pkgs, '', ...rels].join('\n');
     var out = genericHead(
-      imports: imports.join('\n'),
+      imports: importsStr,
       name: name,
       body: body,
       ready: ready,
@@ -3034,9 +3064,7 @@ class GenerateView {
     return '// AUTO-GENERATED by flutter_crew (generate_view.py) — the $name countdown state\n'
         '// machine. Regenerated every run; do NOT hand-edit. ${name}ViewModel extends this and\n'
         '// IS the hand-editable extension point. Pattern detected by capture_data (ticker +\n'
-        '//
-`$running` +
-`$value`←record field).\n'
+        '// `$running` + `$value`<-record field).\n'
         "import 'dart:async';\n\n"
         "import 'package:stacked/stacked.dart';\n\n"
         "import '../domain/ports/session_repository.dart';\n\n"
