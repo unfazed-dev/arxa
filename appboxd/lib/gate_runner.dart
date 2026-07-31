@@ -95,7 +95,7 @@ Future<GateResult?> _runSingleGate(String name, GateContext ctx) async {
   if (dartResult != null) return dartResult;
 
   // Fall back to bash gate (strangler — unported gates still work).
-  return _tryBashGate(name, ctx);
+  return await _tryBashGate(name, ctx);
 }
 
 /// Dispatch to a Dart-ported gate. Returns null if not yet ported.
@@ -126,7 +126,7 @@ Future<GateResult?> _tryDartGate(String name, GateContext ctx) async {
 
 /// Fall back to the bash gate at `gates/<name>/<name>.sh`.
 /// Returns null if the bash gate doesn't exist.
-GateResult? _tryBashGate(String name, GateContext ctx) {
+Future<GateResult?> _tryBashGate(String name, GateContext ctx) async {
   final extensions = {'intake': '.sh', 'freeze': '.sh', 'structure': '.sh',
     'scaffold': '.sh', 'coverage': '.sh', 'review': '.dart',
     'native_deps': '.sh', 'deploy': '.sh'};
@@ -144,7 +144,7 @@ GateResult? _tryBashGate(String name, GateContext ctx) {
   }
   if (ctx.appRoot != null) cmd.addAll(['--app', ctx.appRoot!]);
 
-  final result = Process.runSync(cmd.first, cmd.sublist(1),
+  final result = await Process.run(cmd.first, cmd.sublist(1),
       workingDirectory: ctx.repoRoot);
 
   final stdout = (result.stdout as String).trim();

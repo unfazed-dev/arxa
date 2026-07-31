@@ -8,6 +8,7 @@
 //
 // Planned: `dart compile exe bin/appbox.dart` → self-contained binary.
 
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:appboxd/arch_guard.dart';
@@ -19,7 +20,10 @@ import 'package:appboxd/emit_playground.dart';
 import 'package:appboxd/emit_stage.dart';
 import 'package:appboxd/emit_structure.dart';
 import 'package:appboxd/generate_view.dart';
+import 'package:appboxd/gen_freshness.dart';
 import 'package:appboxd/synthesize.dart';
+import 'package:appboxd/theme_map.dart';
+import 'package:appboxd/trace.dart';
 import 'package:appboxd/transform_tokens.dart';
 import 'package:appboxd/gate_advertise.dart';
 import 'package:appboxd/gate_coverage.dart';
@@ -33,7 +37,9 @@ import 'package:appboxd/gate_structure.dart';
 import 'package:appboxd/gate_runner.dart';
 import 'package:appboxd/gates.dart';
 import 'package:appboxd/lint_conventions.dart';
+import 'package:appboxd/palette.dart';
 import 'package:appboxd/server.dart' as server;
+import 'package:appboxd/tier1.dart';
 import 'package:appboxd/watermark.dart';
 
 Future<void> main(List<String> args) async {
@@ -79,8 +85,9 @@ void _usage() {
 Usage: appbox <command> [options]
 
 Commands:
-  gate <name>    Run a gate by name (arch, intake, freeze, structure, scaffold,
-                 coverage, memory, advertise, review, native_deps, deploy)
+  gate <name>    Run a gate by name (arch, gen-freshness, trace, intake, freeze,
+                 structure, scaffold, coverage, memory, advertise, review,
+                 native_deps, deploy, tier1)
   crud <op>      Feature CRUD on the authored layer (list/show/create/update/
                  rename/delete/verify — the one write path, §18)
   serve          Start the HTTP daemon (appboxd)
@@ -103,7 +110,7 @@ Options:
 Future<void> _runGate(List<String> args) async {
   if (args.isEmpty) {
     stderr.writeln('appbox gate: missing gate name');
-    stderr.writeln('  gates: arch intake freeze structure scaffold coverage memory advertise review native_deps deploy');
+    stderr.writeln('  gates: arch gen-freshness trace intake freeze structure scaffold coverage memory advertise review native_deps deploy tier1');
     exit(2);
   }
 
@@ -120,6 +127,27 @@ Future<void> _runGate(List<String> args) async {
   // --target <dir> rather than a GateContext/repo-root discovery.
   if (gateName == 'arch') {
     final rc = _runArchGate(rest);
+    exit(rc);
+  }
+
+  // tier1 is special: a pure in-memory self-check (auth + payments call-shape
+  // verification). It needs no repo root, no credentials, no toolchain — so it
+  // bypasses the GateContext/repo-root discovery like arch.
+  if (gateName == 'tier1') {
+    exit(_runTier1Gate());
+  }
+
+  // gen-freshness is also --target-driven (runs build_runner in a temp copy of
+  // a Flutter target), so it bypasses the GateContext/repo-root path.
+  if (gateName == 'gen-freshness') {
+    final rc = await _runGenFreshnessGate(rest);
+    exit(rc);
+  }
+
+  // trace is --target-driven: it cross-references a breakdown.json against the
+  // emitted views/VMs/router in a target, so it bypasses repo-root discovery.
+  if (gateName == 'trace') {
+    final rc = _runTraceGate(rest);
     exit(rc);
   }
 
@@ -256,6 +284,20 @@ Future<GateResult> _runReviewGate(GateContext ctx) async {
       err.isNotEmpty ? err.split('\n') : out.split('\n'));
 }
 
+// ── tier1 ──────────────────────────────────────────────────────────
+
+int _runTier1Gate() {
+  final result = runTier1Suites();
+  for (final p in result.passed) {
+    print('  PASS  $p');
+  }
+  for (final f in result.failed) {
+    stderr.writeln('  FAIL  $f');
+  }
+  print('tier1: ${result.passed.length} passed, ${result.failed.length} failed');
+  return result.allPassed ? 0 : 1;
+}
+
 // ── arch ───────────────────────────────────────────────────────────
 
 int _runArchGate(List<String> args) {
@@ -285,6 +327,99 @@ int _runArchGate(List<String> args) {
   return r.passed ? 0 : 1;
 }
 
+// ── trace ──────────────────────────────────────────────────────────
+
+int _runTraceGate(List<String> args) {
+  String? target;
+  String? breakdownPath;
+  var checkOnly = false;
+  String? outPath;
+  for (var i = 0; i < args.length; i++) {
+    switch (args[i]) {
+      case '--target':
+        target = args[++i];
+        break;
+      case '--breakdown':
+        breakdownPath = args[++i];
+        break;
+      case '--out':
+        outPath = args[++i];
+        break;
+      case '--check':
+        checkOnly = true;
+        break;
+      default:
+        stderr.writeln('appbox gate trace: unknown flag ${args[i]}');
+        return 2;
+    }
+  }
+  if (target == null) {
+    stderr.writeln('appbox gate trace: --target <dir> required');
+    return 2;
+  }
+  final manifest = derive(target, breakdownPath: breakdownPath);
+  if (!checkOnly) {
+    final path = outPath ?? '$target/.crew/trace.json';
+    final outFile = File(path);
+    outFile.parent.createSync(recursive: true);
+    outFile.writeAsStringSync(
+      "${const JsonEncoder.withIndent('  ').convert(manifest.toJson())}\n",
+    );
+    print('trace: wrote $path (${manifest.screens.length} screens)');
+  }
+  final r = check(manifest);
+  final status = r.passed ? 'PASS' : 'FAIL';
+  final initials = r.initials.join(',');
+  final initialsDisplay = initials.isEmpty ? '(none)' : initials;
+  print('trace_guard $status — initial=$initialsDisplay, issues=${r.issues.length}');
+  for (final issue in r.issues) {
+    print('  ✗ $issue');
+  }
+  return r.passed ? 0 : 1;
+}
+
+// ── gen-freshness ──────────────────────────────────────────────────
+
+Future<int> _runGenFreshnessGate(List<String> args) async {
+  String? target;
+  for (var i = 0; i < args.length; i++) {
+    if (args[i] == '--target' && i + 1 < args.length) {
+      target = args[++i];
+    } else {
+      stderr.writeln('appbox gate gen-freshness: unknown flag ${args[i]}');
+      return 2;
+    }
+  }
+  if (target == null) {
+    stderr.writeln('appbox gate gen-freshness: --target <dir> required');
+    return 2;
+  }
+  if (!Directory(target).existsSync()) {
+    stderr.writeln('appbox gate gen-freshness: target not found: $target');
+    return 2;
+  }
+  final r = await genFreshness(target);
+  if (r.buildFailed == true) {
+    stderr.writeln(
+        'gen_freshness ERROR — build_runner failed (target not runnable):');
+    stderr.writeln(r.logTail);
+    return 2;
+  }
+  final status = r.passed ? 'PASS' : 'FAIL';
+  print('gen_freshness $status — ${r.freshN} generated file(s) checked, '
+      '${r.drifted.length} drifted');
+  for (final d in r.drifted) {
+    if (d['reason'] != null) {
+      print('  ✗ ${d['file']}: ${d['reason']}');
+    } else {
+      print('  ✗ ${d['file']}: committed ${d['committedSha']} ≠ fresh '
+          '${d['freshSha']} — regenerate: dart run build_runner build '
+          '--delete-conflicting-outputs');
+    }
+  }
+  return r.passed ? 0 : 1;
+}
+
 // ── crud ───────────────────────────────────────────────────────────
 
 void _runCrud(List<String> args) {
@@ -297,7 +432,8 @@ void _runEmit(List<String> args) {
   if (args.isEmpty) {
     stderr.writeln('appbox emit: missing emitter name');
     stderr.writeln('  emitters: structure, htmx, playground, transform_tokens,');
-    stderr.writeln('            synthesize, blueprint, emit_stage, generate_view');
+    stderr.writeln('            synthesize, blueprint, emit_stage, generate_view,');
+    stderr.writeln('            theme-map, palette');
     exit(2);
   }
 
@@ -385,9 +521,53 @@ void _runEmit(List<String> args) {
         exit(2);
       }
       exit(generateView(positional[0], positional[1], tokensPath: _flagValue(rest, '--tokens')));
+    case 'theme-map':
+      if (positional.isEmpty) {
+        stderr.writeln('appbox emit theme-map: needs <tokens.json> [--out fragment.dart]');
+        exit(2);
+      }
+      final tree =
+          jsonDecode(File(positional[0]).readAsStringSync()) as Map<String, dynamic>;
+      final frag = themeMap(tree);
+      final outPath = _flagValue(rest, '--out');
+      if (outPath != null) {
+        File(outPath).writeAsStringSync(frag);
+      } else {
+        stdout.write(frag);
+      }
+      exit(0);
+    case 'palette':
+      if (positional.isEmpty) {
+        stderr.writeln('appbox emit palette: needs <seed-hex> [--name brand] [--out tokens.json]');
+        exit(2);
+      }
+      exit(_emitPalette(positional.first, rest));
   }
   stderr.writeln('appbox emit: unknown emitter "$emitter"');
   exit(2);
+}
+
+// ── palette emitter ────────────────────────────────────────────────
+
+int _emitPalette(String seedHex, List<String> rest) {
+  final name = _flagValue(rest, '--name') ?? 'brand';
+  final out = _flagValue(rest, '--out');
+  final doc = generate(seedHex, name: name);
+  final blob = "${const JsonEncoder.withIndent('  ').convert(doc)}\n";
+  if (out != null) {
+    final f = File(out);
+    f.parent.createSync(recursive: true);
+    f.writeAsStringSync(blob);
+    final ramp = tonalRamp(seedHex);
+    final onAccent =
+        ((doc['color'] as Map)['fg'] as Map)['on-accent'] as Map;
+    final onAccentValue = onAccent[r'$value'] as String;
+    final lc = apcaLc(onAccentValue, canonHex(seedHex)).abs().toStringAsFixed(0);
+    print('wrote $out: ${ramp.length} tones from $seedHex (on-accent |Lc$lc|)');
+  } else {
+    stdout.write(blob);
+  }
+  return 0;
 }
 
 // ── serve ──────────────────────────────────────────────────────────
