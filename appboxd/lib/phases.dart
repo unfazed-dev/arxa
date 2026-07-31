@@ -3,6 +3,8 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 
+import 'gate_runner.dart';
+import 'gates.dart';
 import 'process.dart';
 
 /// Pipeline phases, in FSM order (pipeline/state/state.schema.json, with
@@ -47,18 +49,48 @@ class PhaseResult {
       };
 }
 
-/// Runs `bash pipeline/pipeline.sh gate <phase>` from the repo root,
-/// capturing stdout/stderr and the exit code. Goes through the [ProcessRunner]
-/// seam so tests (and surfaces) can drive it with no toolchain present.
+/// Map of pipeline phase → gates to run for that phase.
+const phaseGates = <String, List<String>>{
+  'intake': ['intake'],
+  'prototype': ['freeze'],
+  'design': ['structure'],
+  'scaffold': ['scaffold', 'coverage'],
+  'review': ['review', 'memory'],
+  'build': ['native_deps'],
+  'deploy': ['deploy', 'advertise'],
+};
+
+/// Runs the gates for [phase] using the Dart gate runner directly (no
+/// pipeline.sh shell-out). Each gate's summary is collected into stdout;
+/// the first failure sets the exit code.
 Future<PhaseResult> runPhase(String repoRoot, String phase,
     {ProcessRunner? runner}) async {
-  final script = p.join(repoRoot, 'pipeline', 'pipeline.sh');
-  final res = await (runner ?? const RealProcessRunner()).run(
-    'bash',
-    [script, 'gate', phase],
-    workingDirectory: repoRoot,
-  );
-  return PhaseResult(phase, res.exitCode, res.stdout, res.stderr);
+  final gates = phaseGates[phase];
+  if (gates == null) {
+    return PhaseResult(phase, 2, '', 'unknown phase "$phase"');
+  }
+
+  final ctx = GateContext(repoRoot: repoRoot);
+  final out = StringBuffer();
+  var exitCode = 0;
+
+  for (final name in gates) {
+    final result = runGate(name, ctx);
+    if (result == null) {
+      out.writeln('  ⊘ $name: skipped (unavailable)');
+      continue;
+    }
+    out.writeln('  ${result.passed ? "✓" : "✗"} $name: ${result.summary}');
+    for (final d in result.details) {
+      out.writeln('    $d');
+    }
+    if (!result.passed && result.exitCode != envExit) {
+      exitCode = 1;
+    }
+  }
+
+  out.writeln('phase "$phase": ${exitCode == 0 ? "passed" : "failed"}');
+  return PhaseResult(phase, exitCode, out.toString(), '');
 }
 
 enum PipelineAvailability { ready, absent }

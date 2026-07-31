@@ -10,7 +10,6 @@ import 'dart:io';
 import 'package:appboxd/gate_advertise.dart';
 import 'package:appboxd/gate_coverage.dart';
 import 'package:appboxd/gate_deploy.dart';
-import 'package:appboxd/gate_freeze.dart';
 import 'package:appboxd/gate_intake.dart';
 import 'package:appboxd/gate_memory.dart';
 import 'package:appboxd/gate_native_deps.dart';
@@ -83,6 +82,10 @@ SuiteResult runAllGates(GateContext ctx) {
   summaries.insert(0, 'appbox gate suite: $passed passed, $failed failed, $skipped skipped');
   return SuiteResult(passed: passed, failed: failed, skipped: skipped, summaries: summaries);
 }
+
+/// Run a single gate by name. Returns null if the gate is unavailable.
+/// Public for phase-gate dispatch from phases.dart.
+GateResult? runGate(String name, GateContext ctx) => _runSingleGate(name, ctx);
 
 /// Run a single gate by name. Returns null if the gate is unavailable.
 GateResult? _runSingleGate(String name, GateContext ctx) {

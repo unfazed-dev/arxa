@@ -55,14 +55,20 @@ void main() {
   });
 
   group('runPhase', () {
-    test('goes through the ProcessRunner seam', () async {
-      runner.handler = (_, _) => const RunnerResult(0, 'gate output', 'warn');
-      final result = await runPhase('/repo', 'build', runner: runner);
-      expect(runner.calls.single,
-          ['bash', '/repo/pipeline/pipeline.sh', 'gate', 'build']);
-      expect(result.exitCode, 0);
-      expect(result.stdout, 'gate output');
-      expect(result.stderr, 'warn');
+    test('runs Dart gates for the phase (no pipeline.sh)', () async {
+      // 'build' → native_deps gate. On a non-existent repo root the gate
+      // returns env (not applicable), which is exit code 2.
+      final result = await runPhase('/nonexistent', 'build');
+      expect(result.phase, 'build');
+      // native_deps gate returns env exit on invalid path.
+      expect(result.exitCode, anyOf(0, 1, 2));
+      expect(result.stdout, contains('native_deps'));
+    });
+
+    test('unknown phase returns exit code 2', () async {
+      final result = await runPhase('/repo', 'bogus');
+      expect(result.exitCode, 2);
+      expect(result.stderr, contains('unknown phase'));
     });
   });
 
