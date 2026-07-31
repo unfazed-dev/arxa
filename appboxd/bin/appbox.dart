@@ -128,10 +128,10 @@ void _runGate(List<String> args) {
     }
   }
 
-  // Discover repo root by walking up for pipeline/pipeline.sh.
+  // Discover repo root by walking up for config/appbox.config.json.
   repoRoot ??= _findRepoRoot();
   if (repoRoot == null) {
-    stderr.writeln('appbox gate: cannot find repo root (no pipeline/pipeline.sh found)');
+    stderr.writeln('appbox gate: cannot find repo root (no config/appbox.config.json found)');
     exit(2);
   }
 
@@ -361,7 +361,7 @@ String? _flagValue(List<String> args, String flag) {
 String? _findRepoRoot() {
   var dir = Directory.current;
   while (true) {
-    if (File('${dir.path}/pipeline/pipeline.sh').existsSync()) {
+    if (File('${dir.path}/config/appbox.config.json').existsSync()) {
       return dir.path;
     }
     final parent = dir.parent;

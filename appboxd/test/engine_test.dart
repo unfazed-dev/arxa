@@ -6,13 +6,13 @@ import 'package:appboxd/gateway.dart' show TokenMinter;
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
-/// Walks up from the cwd to the repo root (where pipeline/pipeline.sh
-/// lives), same convention as bin/appboxd.dart.
+/// Walks up from the cwd to the repo root (where config/appbox.config.json
+/// lives), same convention as bin/appbox.dart.
 String repoRoot() {
   var root = Directory.current.path;
-  while (!File(p.join(root, 'pipeline', 'pipeline.sh')).existsSync()) {
+  while (!File(p.join(root, 'config', 'appbox.config.json')).existsSync()) {
     final parent = p.dirname(root);
-    if (parent == root) fail('pipeline/pipeline.sh not found above $root');
+    if (parent == root) fail('config/appbox.config.json not found above $root');
     root = parent;
   }
   return root;
@@ -20,9 +20,8 @@ String repoRoot() {
 
 void main() {
   group('stage registry', () {
-    test('reads the real gates/ dir in gates/run_all.sh order', () {
+    test('returns the 10 Dart gates in dependency order', () {
       final stages = loadStages(repoRoot());
-      // run_all.sh dependency order, then the gates it does not drive.
       expect(
         stages.map((s) => s.name).toList(),
         [
@@ -40,19 +39,12 @@ void main() {
       );
       for (final stage in stages) {
         expect(stage.tier, isNotEmpty);
-        // Every gate command resolves to a script that exists on disk.
-        expect(File(p.join(repoRoot(), stage.gate[1])).existsSync(), isTrue,
-            reason: '${stage.name}: ${stage.gate}');
       }
       // Tiers come from the fabric catalog: intake/review are frontier,
       // scaffold standard, and unlisted gates fall back to standard.
       expect(stages.firstWhere((s) => s.name == 'intake').tier, 'frontier');
       expect(stages.firstWhere((s) => s.name == 'review').tier, 'frontier');
       expect(stages.firstWhere((s) => s.name == 'scaffold').tier, 'standard');
-    });
-
-    test('missing gates/ dir yields an empty registry', () {
-      expect(loadStages(Directory.systemTemp.path), isEmpty);
     });
   });
 

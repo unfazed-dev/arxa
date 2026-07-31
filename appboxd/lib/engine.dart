@@ -5,6 +5,7 @@ import 'package:path/path.dart' as p;
 
 import 'fabric.dart';
 import 'gateway.dart' show TokenMinter;
+import 'gate_runner.dart' show gateOrder;
 import 'memory.dart';
 import 'memory_cache.dart';
 import 'memory_curate.dart';
@@ -66,63 +67,15 @@ String? _stageTier(Map<String, String?>? fabricTiers, String name) {
   return fabricTiers[name];
 }
 
-/// Reads the stage registry from gates/ under [repoRoot]. Order follows
-/// gates/run_all.sh (the gates' orchestrator — pipeline/pipeline.sh is the
-/// stacked_kit FSM and never invokes gates/*): the `run_bash_gate <name>`
-/// call order, with `review` at its `run_review_gate` position, then any
-/// gate dirs run_all does not drive appended sorted. Tiers come
-/// from the fabric catalog (E4) via [_stageTier].
+/// Loads the stage registry. Stages are the Dart gate order from
+/// [gateOrder] — the gates are in-process Dart, no filesystem scan.
+/// Tiers come from the fabric catalog (E4) via [_stageTier].
 List<Stage> loadStages(String repoRoot) {
-  final gatesDir = Directory(p.join(repoRoot, 'gates'));
-  if (!gatesDir.existsSync()) return const [];
-
   final fabricTiers = _fabricStageTiers(repoRoot);
-
-  final order = <String>[];
-  final runAll = File(p.join(gatesDir.path, 'run_all.sh'));
-  if (runAll.existsSync()) {
-    for (final line in runAll.readAsLinesSync()) {
-      final bash = RegExp(r'^\s*run_bash_gate\s+(\w+)').firstMatch(line);
-      if (bash != null) {
-        order.add(bash.group(1)!);
-      } else if (RegExp(r'run_review_gate\s*$').hasMatch(line) &&
-          !order.contains('review')) {
-        order.add('review');
-      }
-    }
-  }
-
-  final dirs = gatesDir
-      .listSync()
-      .whereType<Directory>()
-      .map((d) => p.basename(d.path))
-      .where((name) => !name.startsWith('_') && !order.contains(name))
-      .toList()
-    ..sort();
-  order.addAll(dirs);
-
   return [
-    for (final name in order)
-      if (_gateCommand(gatesDir.path, name) case final gate?
-        when gate.isNotEmpty)
-        Stage(name: name, gate: gate, tier: _stageTier(fabricTiers, name)),
+    for (final name in gateOrder)
+      Stage(name: name, gate: const [], tier: _stageTier(fabricTiers, name)),
   ];
-}
-
-/// The gate's entry command: `gates/<name>/<name>.sh|py|dart`, whichever
-/// exists. Null when the dir holds no runnable gate (e.g. _common).
-List<String>? _gateCommand(String gatesPath, String name) {
-  for (final entry in [
-    ['bash', '$name.sh'],
-    ['python3', '$name.py'],
-    ['dart', '$name.dart'],
-  ]) {
-    final script = p.join(gatesPath, name, entry[1]);
-    if (File(script).existsSync()) {
-      return [entry[0], p.join('gates', name, entry[1])];
-    }
-  }
-  return null;
 }
 
 /// Fabric tiers ordered frontier → fast; escalation is one tier up (E4:

@@ -16,7 +16,7 @@
 //      fails.
 //
 // Inputs (defaults relative to repoRoot):
-//   tools/vendor/kit_registry/kit-registry.json  — recorded tier per provider
+//   config/kit-registry.json  — recorded tier per provider
 //   tools/verification/evidence.json             — ledger of suites that ran
 //   gates/advertise/offers.json                  — what each surface offers
 
@@ -218,7 +218,7 @@ List<_Finding> _checkOffers(Map<String, String> idx, String offersPath) {
 /// Port of gates/advertise/advertise.py main().
 GateResult advertiseGate(GateContext ctx) {
   final root = ctx.repoRoot;
-  final registryPath = '$root/tools/vendor/kit_registry/kit-registry.json';
+  final registryPath = '$root/config/kit-registry.json';
   final evidencePath = '$root/tools/verification/evidence.json';
   final offersPath = '$root/gates/advertise/offers.json';
 

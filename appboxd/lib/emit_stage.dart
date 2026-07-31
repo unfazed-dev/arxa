@@ -85,12 +85,12 @@ Map<String, dynamic> _detectAppbox(String targetDir) {
   }
 }
 
-/// Walk up from the cwd until the repo marker (pipeline/pipeline.sh) appears.
-/// Mirrors bin/appboxd.dart's repo-root discovery; null if not found.
+/// Walk up from the cwd until the repo marker (config/appbox.config.json)
+/// appears. Mirrors bin/appbox.dart's repo-root discovery; null if not found.
 String? _repoRoot() {
   var dir = Directory.current.path;
   for (;;) {
-    if (File(p.join(dir, 'pipeline', 'pipeline.sh')).existsSync()) return dir;
+    if (File(p.join(dir, 'config', 'appbox.config.json')).existsSync()) return dir;
     final parent = p.dirname(dir);
     if (parent == dir) return null;
     dir = parent;
