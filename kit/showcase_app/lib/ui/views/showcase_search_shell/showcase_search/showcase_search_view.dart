@@ -1,0 +1,32 @@
+import 'package:flutter/material.dart';
+import 'package:responsive_builder/responsive_builder.dart';
+import 'package:stacked/stacked.dart';
+
+import 'showcase_search_view.desktop.dart';
+import 'showcase_search_view.tablet.dart';
+import 'showcase_search_view.mobile.dart';
+import 'showcase_search_viewmodel.dart';
+
+/// Search-tab showcase: [KitNativeSearchBar], [KitNativeSlider],
+/// [KitNativeRangeSlider], [KitNativeSwitch] — all state-driven so the native
+/// controls actually respond.
+class ShowcaseSearchView extends StackedView<ShowcaseSearchViewModel> {
+  const ShowcaseSearchView({super.key});
+
+  @override
+  ShowcaseSearchViewModel viewModelBuilder(BuildContext context) =>
+      ShowcaseSearchViewModel();
+
+  @override
+  Widget builder(
+    BuildContext context,
+    ShowcaseSearchViewModel viewModel,
+    Widget? child,
+  ) {
+    return ScreenTypeLayout.builder(
+      mobile: (_) => const ShowcaseSearchViewMobile(),
+      tablet: (_) => const ShowcaseSearchViewTablet(),
+      desktop: (_) => const ShowcaseSearchViewDesktop(),
+    );
+  }
+}

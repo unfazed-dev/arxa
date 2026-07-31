@@ -1,0 +1,51 @@
+[
+  {
+    "id": "folder-notes",
+    "name": "Notes",
+    "sort_order": 0,
+    "owner": "user-1",
+    "created_at": "2026-06-01T09:00:00Z"
+  },
+  {
+    "id": "folder-work",
+    "name": "Work",
+    "sort_order": 1,
+    "owner": "user-1",
+    "created_at": "2026-06-01T09:01:00Z"
+  },
+  {
+    "id": "folder-personal",
+    "name": "Personal",
+    "sort_order": 2,
+    "owner": "user-1",
+    "created_at": "2026-06-01T09:02:00Z"
+  },
+  {
+    "id": "folder-guest",
+    "name": "Notes",
+    "sort_order": 0,
+    "owner": "user-2",
+    "created_at": "2026-06-01T09:03:00Z"
+  },
+  {
+    "id": "folder-google",
+    "name": "Notes",
+    "sort_order": 0,
+    "owner": "user-google",
+    "created_at": "2026-06-01T09:04:00Z"
+  },
+  {
+    "id": "folder-apple",
+    "name": "Notes",
+    "sort_order": 0,
+    "owner": "user-apple",
+    "created_at": "2026-06-01T09:05:00Z"
+  },
+  {
+    "id": "folder-admin",
+    "name": "Ops",
+    "sort_order": 0,
+    "owner": "user-admin",
+    "created_at": "2026-06-01T09:06:00Z"
+  }
+]

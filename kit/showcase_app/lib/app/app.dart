@@ -1,0 +1,110 @@
+import 'package:appbox_kit_showcase_app/ui/bottom_sheets/notice/notice_sheet.dart';
+import 'package:appbox_kit_showcase_app/ui/dialogs/info_alert/info_alert_dialog.dart';
+import 'package:appbox_kit_showcase_app/ui/views/showcase_unknown/showcase_unknown_view.dart';
+import 'package:appbox_kit_showcase_app/ui/views/showcase_startup/showcase_startup_view.dart';
+import 'package:appbox_kit_showcase_app/ui/views/showcase_shell/showcase_shell_view.dart';
+import 'package:appbox_kit_showcase_app/ui/views/showcase_home_shell/showcase_home_shell_view.dart';
+import 'package:appbox_kit_showcase_app/ui/views/showcase_home_shell/showcase_home/showcase_home_view.dart';
+import 'package:appbox_kit_showcase_app/ui/views/showcase_search_shell/showcase_search_shell_view.dart';
+import 'package:appbox_kit_showcase_app/ui/views/showcase_search_shell/showcase_search/showcase_search_view.dart';
+import 'package:appbox_kit_showcase_app/ui/views/showcase_profile_shell/showcase_profile_shell_view.dart';
+import 'package:appbox_kit_showcase_app/ui/views/showcase_profile_shell/showcase_profile/showcase_profile_view.dart';
+import 'package:appbox_kit_showcase_app/ui/views/showcase_profile_shell/showcase_motion/showcase_motion_view.dart';
+import 'package:appbox_kit_showcase_app/ui/views/showcase_profile_shell/showcase_components/showcase_components_view.dart';
+import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_shell_view.dart';
+import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes/showcase_notes_view.dart';
+import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_folder/showcase_notes_folder_view.dart';
+import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_note_editor/showcase_note_editor_view.dart';
+import 'package:stacked/stacked_annotations.dart';
+import 'package:stacked_services/stacked_services.dart';
+import 'package:talker_flutter/talker_flutter.dart';
+import 'package:appbox_kit_haptics/appbox_kit_haptics.dart';
+import 'package:ui_library/ui_library.dart';
+import 'package:appbox_kit_showcase_app/services/repositories/notes_repository.dart';
+import 'package:appbox_kit_showcase_app/services/facades/notes_facade.dart';
+import 'package:appbox_kit_showcase_app/services/notes_media_service.dart';
+// @stacked-import
+
+@StackedApp(
+  routes: [
+    // Shell-per-tab (navigator2): ShowcaseShellView hosts four tab stacks in a
+    // StackedTabsRouter (IndexedStack — every stack stays alive). Each tab file
+    // defines both a `*ShellView` router outlet and its leaf view. Ported from
+    // the source showcase; names/paths must match ShowcaseShellView.tabs.
+    AdaptiveRoute(page: ShowcaseStartupView, initial: true),
+
+    AdaptiveRoute(page: ShowcaseShellView, path: '/', children: [
+      AdaptiveRoute(
+          page: ShowcaseHomeShellView,
+          path: 'home',
+          initial: true,
+          children: [
+            AdaptiveRoute(page: ShowcaseHomeView, path: '', initial: true),
+          ]),
+      AdaptiveRoute(page: ShowcaseSearchShellView, path: 'search', children: [
+        AdaptiveRoute(page: ShowcaseSearchView, path: '', initial: true),
+      ]),
+      AdaptiveRoute(page: ShowcaseProfileShellView, path: 'profile', children: [
+        AdaptiveRoute(page: ShowcaseProfileView, path: '', initial: true),
+        // appbox_kit_motion showcase — AdaptiveRoute on purpose: the demo's
+        // route-driven KitMotionScope rides the native push animation and the
+        // iOS swipe-back scrub (same rationale as the note editor below).
+        AdaptiveRoute(page: ShowcaseMotionView, path: 'motion'),
+        // ADR 0011 video-parity components — same AdaptiveRoute rationale as
+        // the motion demo above.
+        AdaptiveRoute(page: ShowcaseComponentsView, path: 'components'),
+      ]),
+      AdaptiveRoute(page: ShowcaseNotesShellView, path: 'notes', children: [
+        AdaptiveRoute(page: ShowcaseNotesView, path: '', initial: true),
+        AdaptiveRoute(page: ShowcaseNotesFolderView, path: 'folder/:id'),
+        // Kept as AdaptiveRoute deliberately: in stacked 3.5.0 AdaptiveRoute
+        // has no transitionsBuilder (only CustomRoute does), and swapping to
+        // CustomRoute would trade away the platform-native push animation
+        // AND iOS interactive swipe-back for a fixed PageRouteBuilder.
+        // Adaptive already animates: Cupertino slide on iOS, zoom on Android.
+        AdaptiveRoute(page: ShowcaseNoteEditorView, path: 'note/:id'),
+      ]),
+    ]),
+
+    // @stacked-route
+    AdaptiveRoute(page: ShowcaseUnknownView, path: '/404'),
+
+    /// When none of the above routes match, redirect to ShowcaseUnknownView
+    RedirectRoute(path: '*', redirectTo: '/404'),
+  ],
+  dependencies: [
+    // KitBottomSheetService presents stacked sheets through kitShowNativeSheet
+    // (CNBottomSheet on iOS, M3 modal sheet on Android) — registered as the
+    // base type so every BottomSheetService call site stays untouched.
+    LazySingleton(classType: KitBottomSheetService, asType: BottomSheetService),
+    LazySingleton(classType: DialogService),
+    LazySingleton(classType: RouterService),
+    LazySingleton(classType: SnackbarService),
+
+    // Kit services — registration lives in the app, decoupled from the kit.
+    LazySingleton(classType: Talker),
+    LazySingleton(classType: KitErrorService),
+    LazySingleton(classType: KitNotificationService),
+    LazySingleton(classType: KitHapticService),
+    LazySingleton(classType: KitThemeService),
+    LazySingleton(classType: KitNavigationControllerService),
+    LazySingleton(classType: KitOverlayService),
+    LazySingleton(classType: KitSelectableService),
+    // Data layer (appbox_kit_data layering): the Notes Repository — the
+    // notes-domain gateway over the kit's KitRepository<Note>/<NoteFolder> —
+    // then the Facade, the only layer viewmodels talk to.
+    LazySingleton(classType: NotesRepository),
+    LazySingleton(classType: NotesFacade),
+    LazySingleton(classType: NotesMediaService),
+// @stacked-service
+  ],
+  bottomsheets: [
+    StackedBottomsheet(classType: NoticeSheet),
+    // @stacked-bottom-sheet
+  ],
+  dialogs: [
+    StackedDialog(classType: InfoAlertDialog),
+    // @stacked-dialog
+  ],
+)
+class App {}

@@ -1,0 +1,31 @@
+import 'package:flutter/material.dart';
+import 'package:responsive_builder/responsive_builder.dart';
+import 'package:stacked/stacked.dart';
+
+import 'showcase_note_editor_view.desktop.dart';
+import 'showcase_note_editor_view.tablet.dart';
+import 'showcase_note_editor_view.mobile.dart';
+import 'showcase_note_editor_viewmodel.dart';
+
+/// The note editor. Route `/notes/note/:id`.
+class ShowcaseNoteEditorView extends StackedView<ShowcaseNoteEditorViewModel> {
+  const ShowcaseNoteEditorView({super.key});
+
+  @override
+  Widget builder(
+    BuildContext context,
+    ShowcaseNoteEditorViewModel viewModel,
+    Widget? child,
+  ) {
+    return ScreenTypeLayout.builder(
+      mobile: (_) => const ShowcaseNoteEditorViewMobile(),
+      tablet: (_) => const ShowcaseNoteEditorViewTablet(),
+      desktop: (_) => const ShowcaseNoteEditorViewDesktop(),
+    );
+  }
+
+  @override
+  ShowcaseNoteEditorViewModel viewModelBuilder(BuildContext context) =>
+      ShowcaseNoteEditorViewModel(
+          noteId: context.routeData.pathParams.getString('id'));
+}

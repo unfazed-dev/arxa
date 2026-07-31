@@ -7,6 +7,28 @@ It will eventually: execute pipeline phases/gates, serve the web builder UI,
 broker client channels, and hold credentials in the OS vault. This skeleton
 does the first two at their simplest.
 
+## Tools first
+
+For anything regarding appbox, use appbox's own tools before any external or
+archived tooling: the `appbox` CLI (`bin/appbox.dart` — gate, crud, serve,
+emit, lint, watermark) and the **appbox lens** (`lib/lens.dart` over
+`lib/cdp.dart`, the promoted probe-runner port). If a capability is missing,
+extend the appbox tool — never reach back for the archived probe-runner
+(`archives/tooling-pre-dart/`).
+
+## appbox lens
+
+The design-vs-built visual gate: golden capture + compare over headless Chrome
+(CDP). Console/page errors fail the lens regardless of pixel match.
+
+```sh
+dart run tool/lens_shot.dart <url> <out.png> [width] [height] [settleMs]
+```
+
+Library API: `captureGolden` (save a golden), `compareGolden` (byte/pixel vs
+golden; ssim planned), `runLensGate` (multi-surface). The `appbox lens` CLI
+subcommand is wired as future work in `bin/appbox.dart`.
+
 ## Run
 
 ```sh

@@ -64,41 +64,32 @@ Anchor searches to the current year. Return compact markdown, ≤60 lines.
 
 Then the capture pass (same or a follow-up subagent):
 
-## Capture convention (probe-runner — the web block only)
+## Capture convention (appbox lens — web shots only)
 
-The moodboarder uses probe-runner's **host-web block** — nothing else. Motion
-recovery, bundles, pixel/skeleton/colour diffs, and the native-target verbs
-belong to the build visual gates (story 3.7) and flows-canvas capture (4.1),
-not to moodboarding.
+The moodboarder uses the **appbox lens** (`appboxd/lib/lens.dart` over the CDP
+client `appboxd/lib/cdp.dart`) — the promoted probe-runner port, and the
+standing rule applies: **appbox's own tools first, before anything else.**
+Golden compare, console-error gates, and native-target captures belong to the
+build visual gates (story 3.7) and flows-canvas capture (4.1), not to
+moodboarding — here we only take plain shots.
 
-| verb | use |
+| need | how |
 |---|---|
-| `web_open` + `web_shot` | the capture (CDP; Chrome default, Safari fallback) |
-| `web_emu` | device-viewport shots (390/744) — references inform a full-parity app |
-| `web_scroll` | full-page captures when the pattern is below the fold |
-| `web_tokens` *(optional)* | computed palette/type/radii/shadows → `tokens.json` beside the shot — upgrades "picture to eyeball" to "tokens to steal" |
+| the capture | `dart run appboxd/tool/lens_shot.dart <url> <out.png> [width] [height] [settleMs]` |
+| device-viewport shots (390/744) | pass the viewport as args: `… 390 844` / `… 744 1133` — references inform a full-parity app |
+| full-page (below the fold) / computed tokens | **not yet ported to the lens** — extend `lens.dart`/`cdp.dart` (scroll capture, Runtime.evaluate token extraction); never reach back for the archived probe-runner |
 
 ```bash
-PROBE=appbox lens (appboxd/lib/lens.dart)/scripts        # resolves to the vendored copy (O1); shell-out, no import dep
-
-# Per-slice isolation — MANDATORY when capture slices run in parallel.
-# Every web verb drives CDP targets[0]; one shared Chrome = slices navigate
-# each other's tab mid-capture. probe-runner's own env vars give each slice
-# its own Chrome instance + profile; no hand-rolled CDP needed:
-export PROBE_RUNNER_CHROME_CDP_PORT=93<NN>               # unique per slice (9331, 9332, …)
-export PROBE_RUNNER_CHROME_USER_DATA_DIR=/tmp/probe-mb-<slice-slug>
-
-python3 $PROBE/web_open.py <url>                # navigate (Chrome/CDP); web_shot.py takes NO --url
-python3 $PROBE/web_shot.py --out <path.png>     # capture the open page; safaridriver when no Chrome
+# Per-slice isolation is built in: every `dart run` launches its own headless
+# Chrome with a throwaway temp profile and an ephemeral CDP port — slices can
+# run in parallel with no env juggling and no shared browser state.
+dart run appboxd/tool/lens_shot.dart <url> docs/moodboards/shots/<slice>/<ref>__<screen>.png 390 844
 ```
 
-**Never shoot the user's browser.** probe-runner launches its own Chrome with
-a dedicated `--user-data-dir`, so the user's tabs are only at risk if they run
-personal Chrome with CDP on the same port — the per-slice port above (93xx,
-not 9222) avoids that too. If you must share one Chrome instance instead
-(single-slice run), create a fresh tab via CDP `Target.createTarget`, shoot,
-close it — per shot, with the final URL + title logged as provenance. Never
-blindly reuse `targets[0]` across slices.
+**Never shoot the user's browser.** The lens always launches its own headless
+Chrome (`--headless=new`, temp `--user-data-dir`, port 0 = ephemeral), so the
+user's tabs are never touched. Log the final URL + title as provenance per
+shot.
 
 - Output: `docs/moodboards/shots/<slice-slug>/<ref-slug>__<screen-slug>.png`
   — lowercase ascii, double-underscore separators, numbered `__2` when one

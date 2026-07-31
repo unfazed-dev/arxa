@@ -25,6 +25,7 @@ import 'package:appboxd/synthesize.dart';
 import 'package:appboxd/theme_map.dart';
 import 'package:appboxd/trace.dart';
 import 'package:appboxd/transform_tokens.dart';
+import 'package:appboxd/validate_docs.dart';
 import 'package:appboxd/gate_advertise.dart';
 import 'package:appboxd/gate_coverage.dart';
 import 'package:appboxd/gate_deploy.dart';
@@ -41,6 +42,14 @@ import 'package:appboxd/palette.dart';
 import 'package:appboxd/server.dart' as server;
 import 'package:appboxd/tier1.dart';
 import 'package:appboxd/watermark.dart';
+import 'package:appboxd/api_map_scan.dart';
+import 'package:appboxd/capability_scan.dart';
+import 'package:appboxd/gen_playbook.dart';
+import 'package:appboxd/kb_build.dart';
+import 'package:appboxd/kb_check.dart';
+import 'package:appboxd/kit_conventions.dart';
+import 'package:appboxd/kit_facts.dart';
+import 'package:appboxd/kit_lock.dart';
 
 Future<void> main(List<String> args) async {
   if (args.isEmpty) {
@@ -70,6 +79,12 @@ Future<void> main(List<String> args) async {
     case 'lint':
       _runLint(rest);
       break;
+    case 'docs':
+      _runDocs(rest);
+      break;
+    case 'kb':
+      _runKb(rest);
+      break;
     case '--help' || '-h':
       _usage();
       break;
@@ -87,13 +102,17 @@ Usage: appbox <command> [options]
 Commands:
   gate <name>    Run a gate by name (arch, gen-freshness, trace, intake, freeze,
                  structure, scaffold, coverage, memory, advertise, review,
-                 native_deps, deploy, tier1)
+                 native_deps, deploy, tier1, capability, api-map)
   crud <op>      Feature CRUD on the authored layer (list/show/create/update/
                  rename/delete/verify — the one write path, §18)
   serve          Start the HTTP daemon (appboxd)
   lens           Visual gate (appbox lens — future)
   emit <name>    Run an emitter (future)
   lint [root]    Scan for repo convention violations (R2, R3)
+  docs [root]    Validate the docs/INDEX.md contract (dead links fail,
+                 unindexed docs warn)
+  kb <sub>       Kit introspection: facts, build, check, lock, playbook,
+                 conventions
   watermark <root>  Post-emit provenance/watermark pass on an emitted tree
 
 Options:
@@ -149,6 +168,15 @@ Future<void> _runGate(List<String> args) async {
   if (gateName == 'trace') {
     final rc = _runTraceGate(rest);
     exit(rc);
+  }
+
+  // capability + api-map are consumer-app gates (scan the app that uses the kit,
+  // not the kit itself) — bypass the GateContext/repo-root path.
+  if (gateName == 'capability') {
+    exit(_runCapabilityGate(rest));
+  }
+  if (gateName == 'api-map') {
+    exit(_runApiMapGate(rest));
   }
 
   // Parse common flags.
@@ -610,6 +638,134 @@ void _runLint(List<String> args) {
   }
   stderr.writeln('LINT FAILED: ${result.violations.length} violation(s)');
   exit(1);
+}
+
+// ── docs ───────────────────────────────────────────────────────────
+
+void _runDocs(List<String> args) {
+  final root = args.isNotEmpty && !args.first.startsWith('-')
+      ? args.first
+      : (_findRepoRoot() ?? Directory.current.path);
+  final result = validateDocs(root);
+  for (final f in result.failures) {
+    stderr.writeln('DOCS FAIL: $f');
+  }
+  for (final w in result.warnings) {
+    stdout.writeln('docs warn: $w');
+  }
+  if (result.ok) {
+    print(
+        'DOCS OK (${result.scanned} links checked, ${result.warnings.length} warning(s))');
+    exit(0);
+  }
+  stderr.writeln('DOCS FAILED: ${result.failures.length} dead link(s)');
+  exit(1);
+}
+
+// ── kb ────────────────────────────────────────────────────────────
+
+void _runKb(List<String> args) {
+  if (args.isEmpty) {
+    stderr.writeln('appbox kb: missing subcommand');
+    stderr.writeln('  subcommands: facts build check lock playbook conventions');
+    exit(2);
+  }
+  final sub = args.first;
+  final rest = args.sublist(1);
+  final repoRoot = _findRepoRoot() ?? Directory.current.path;
+
+  switch (sub) {
+    case 'facts':
+      final kitRoot = rest.isNotEmpty ? rest.first : '$repoRoot/kit';
+      final facts = extractFacts(kitRoot,
+          factsDir: '$repoRoot/memory/facts');
+      print('extracted ${facts.length} kit fact(s) to memory/facts/');
+      exit(0);
+    case 'build':
+      final root = rest.isNotEmpty ? rest.first : repoRoot;
+      final result = buildKb(root);
+      print('kb: ${result.registrySources} registry + '
+          '${result.minedPackageRefs} mined, ${result.domainPages} pages, '
+          '${result.injectedPlaybooks} playbooks');
+      final toc = buildToc(root);
+      print('toc: playbooks.md + llms.txt for ${toc.kitCount} kits');
+      exit(0);
+    case 'check':
+      final root = rest.isNotEmpty ? rest.first : repoRoot;
+      final result = kbCheck(root);
+      for (final e in result.errors) {
+        stderr.writeln('FAIL: $e');
+      }
+      for (final w in result.warnings) {
+        stdout.writeln('WARN: $w');
+      }
+      print(result.ok ? 'OK' : 'FAILED');
+      exit(result.ok ? 0 : 1);
+    case 'lock':
+      final root = rest.isNotEmpty ? rest.first : repoRoot;
+      stdout.write(generateKitLock(root, '$root/kit'));
+      exit(0);
+    case 'playbook':
+      if (rest.isEmpty) {
+        stderr.writeln('appbox kb playbook: needs <facts.json>');
+        exit(2);
+      }
+      final facts =
+          jsonDecode(File(rest.first).readAsStringSync()) as Map<String, dynamic>;
+      print(generatePlaybook(facts));
+      exit(0);
+    case 'conventions':
+      final kitRoot = rest.isNotEmpty ? rest.first : '$repoRoot/kit';
+      final result = checkKitConventions(kitRoot);
+      for (final e in result.errors) {
+        stderr.writeln('FAIL: $e');
+      }
+      for (final w in result.warnings) {
+        stdout.writeln('WARN: $w');
+      }
+      print(result.ok ? 'OK' : 'FAILED');
+      exit(result.ok ? 0 : 1);
+    default:
+      stderr.writeln('appbox kb: unknown subcommand "$sub"');
+      exit(2);
+  }
+}
+
+// ── capability / api-map gates ────────────────────────────────────
+
+int _runCapabilityGate(List<String> args) {
+  final appRoot = args.isNotEmpty && !args.first.startsWith('-')
+      ? args.first
+      : (_findRepoRoot() ?? Directory.current.path);
+  final result = scanCapabilities(appRoot);
+  for (final e in result.evidence) {
+    print('  $e');
+  }
+  if (result.ok) {
+    print('capability scan: all signals declared');
+    return 0;
+  }
+  for (final u in result.undeclared) {
+    stderr.writeln('FAIL: $u playback present but undeclared');
+  }
+  return 1;
+}
+
+int _runApiMapGate(List<String> args) {
+  final appRoot = args.isNotEmpty && !args.first.startsWith('-')
+      ? args.first
+      : (_findRepoRoot() ?? Directory.current.path);
+  final mapPath = '$appRoot/kit/core/FLUTTER_API_MAP.md';
+  final violations = scanApiMap(appRoot, mapPath);
+  if (violations.isEmpty) {
+    print('api map scan: clean');
+    return 0;
+  }
+  for (final v in violations) {
+    stderr.writeln(
+        'FAIL: ${v.file} — ${v.token} (${v.sanctioned}; ${v.problemClass})');
+  }
+  return 1;
 }
 
 void _runServe(List<String> args) {

@@ -296,3 +296,36 @@ list is now resolved:
 
 **Final test suite: 408/408 green.** Zero analyzer issues across appboxd,
 appbox, and all 24 kit/ packages. All Python/bash/Node tooling retired.
+
+### 2026-07-31 — session 5 (kit introspection + showcase_app)
+
+**Kit introspection pipeline ported ✅** — the stacked_kit tooling layer
+that stayed behind (ingest/playbook tooling in the sibling repo) is now
+Dart in appboxd. Nine new modules, all wired into `appbox kb` subcommands:
+
+- `kit_facts.dart` — extract_facts.sh port (pubspec + symbol extraction,
+  the strip_noncode state machine, atomic fact JSON writes). 23 tests.
+- `kb_build.dart` — kb_build.py + build_toc.py combined (KB.md index +
+  domain pages + References injection + playbooks.md + llms.txt). 20 tests.
+- `kb_check.dart` — kb_check.sh port (sources.json schema + coverage +
+  References validation). 8 tests.
+- `kit_lock.dart` — gen_kit_lock.sh port (deterministic SHA-256 pin). 5 tests.
+- `kit_conventions.dart` — conventions.sh structural checks (barrel,
+  publish_to, SDK pin, hub-and-spoke topology). 9 tests.
+- `capability_scan.dart` — capability_scan.sh port (audio/video playback
+  gate against capability manifest). 6 tests.
+- `api_map_scan.dart` — api_map_scan.sh port (banned Flutter API gate
+  from FLUTTER_API_MAP.md). 7 tests.
+- `gen_playbook.dart` — gen_playbook.py port (playbook .mdx generator). 5 tests.
+- `validate_docs.dart` — docs/INDEX.md dead-link + unindexed-doc validator. 5 tests.
+
+CLI: `appbox kb facts|build|check|lock|playbook|conventions`,
+`appbox gate capability|api-map`, `appbox docs`.
+
+**showcase_app copied ✅** — 121-file Flutter app from stacked_kit copied
+to `kit/showcase_app/` with all `stacked_kit_*` → `appbox_kit_*` renames
+(82 files modified). `flutter pub get` resolves, `flutter analyze` clean.
+`FLUTTER_API_MAP.md` copied to `kit/core/`.
+
+**Final test suite: 496/496 green.** Zero analyzer issues across appboxd
+and all 25 kit/ packages (24 libraries + showcase_app).

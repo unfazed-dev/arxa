@@ -1,0 +1,167 @@
+[
+  {
+    "id": "note-groceries",
+    "folder_id": "folder-personal",
+    "owner": "user-1",
+    "body": "Groceries\nOat milk\nEggs\nSourdough\nEspresso beans\nBlueberries",
+    "pinned": true,
+    "attachments": [],
+    "deleted_at": null,
+    "created_at": "2026-07-11T08:15:00Z",
+    "updated_at": "2026-07-12T07:40:00Z"
+  },
+  {
+    "id": "note-standup",
+    "folder_id": "folder-work",
+    "owner": "user-1",
+    "body": "Standup notes\nYesterday: shipped the data layer kit\nToday: notes smoke tests on seeded backend\nBlockers: none",
+    "pinned": false,
+    "attachments": [],
+    "deleted_at": null,
+    "created_at": "2026-07-12T09:05:00Z",
+    "updated_at": "2026-07-12T09:12:00Z"
+  },
+  {
+    "id": "note-kit-ideas",
+    "folder_id": "folder-work",
+    "owner": "user-1",
+    "body": "Stacked kit ideas\nStorage seam for attachment sync\nOffline queue for mutations\nSchema diff emitter for migrations",
+    "pinned": true,
+    "attachments": [],
+    "deleted_at": null,
+    "created_at": "2026-07-08T14:30:00Z",
+    "updated_at": "2026-07-10T18:22:00Z"
+  },
+  {
+    "id": "note-books",
+    "folder_id": "folder-personal",
+    "owner": "user-1",
+    "body": "Reading list\nThe Pragmatic Programmer\nA Philosophy of Software Design\nDesigning Data-Intensive Applications",
+    "pinned": false,
+    "attachments": [],
+    "deleted_at": null,
+    "created_at": "2026-07-06T21:10:00Z",
+    "updated_at": "2026-07-06T21:30:00Z"
+  },
+  {
+    "id": "note-welcome",
+    "folder_id": "folder-notes",
+    "owner": "user-1",
+    "body": "Welcome to Kit Notes\nThis app is a smoke test for appbox_kit_data.\nEverything you see is seeded fixture data flowing through KitSeedRepository streams.\nCreate, edit, pin, delete, record a voice memo, snap a photo — then restart the app to see snapshot persistence keep your changes.",
+    "pinned": false,
+    "attachments": [],
+    "deleted_at": null,
+    "created_at": "2026-06-20T10:00:00Z",
+    "updated_at": "2026-06-20T10:00:00Z"
+  },
+  {
+    "id": "note-workout",
+    "folder_id": "folder-personal",
+    "owner": "user-1",
+    "body": "Push day\nBench 4x8\nOverhead press 3x10\nDips 3x12\nFace pulls 4x15",
+    "pinned": false,
+    "attachments": [],
+    "deleted_at": null,
+    "created_at": "2026-05-14T07:00:00Z",
+    "updated_at": "2026-05-14T07:45:00Z"
+  },
+  {
+    "id": "note-retro",
+    "folder_id": "folder-work",
+    "owner": "user-1",
+    "body": "Q2 retro\nWhat went well: native kit surfaces landed\nWhat to improve: earlier smoke tests\nAction: showcase app doubles as the test bed",
+    "pinned": false,
+    "attachments": [],
+    "deleted_at": null,
+    "created_at": "2026-06-30T16:00:00Z",
+    "updated_at": "2026-07-01T09:00:00Z"
+  },
+  {
+    "id": "note-deleted-draft",
+    "folder_id": "folder-notes",
+    "owner": "user-1",
+    "body": "Old draft\nThis one was deleted — it should only appear in Recently Deleted, and be restorable from there.",
+    "pinned": false,
+    "attachments": [],
+    "deleted_at": "2026-07-09T12:00:00Z",
+    "created_at": "2026-07-02T11:00:00Z",
+    "updated_at": "2026-07-09T12:00:00Z"
+  },
+  {
+    "id": "note-guest-hello",
+    "folder_id": "folder-guest",
+    "owner": "user-2",
+    "body": "Guest note\nSign in as guest@seed.local to see this — it proves per-owner filtering: evan@seed.local must never see it.",
+    "pinned": false,
+    "attachments": [],
+    "deleted_at": null,
+    "created_at": "2026-07-10T10:00:00Z",
+    "updated_at": "2026-07-10T10:00:00Z"
+  },
+  {
+    "id": "note-google-hello",
+    "folder_id": "folder-google",
+    "owner": "user-google",
+    "body": "Google sign-in\nTapping Continue with Google resolves this pre-seeded identity — the provider button is a real seeded user, not a fresh one.",
+    "pinned": false,
+    "attachments": [],
+    "deleted_at": null,
+    "created_at": "2026-07-11T09:00:00Z",
+    "updated_at": "2026-07-11T09:00:00Z"
+  },
+  {
+    "id": "note-google-scope",
+    "folder_id": "folder-google",
+    "owner": "user-google",
+    "body": "Owner scoping\nOnly google-user@seed.local sees this folder; other sign-in methods land on their own seed keys.",
+    "pinned": true,
+    "attachments": [],
+    "deleted_at": null,
+    "created_at": "2026-07-11T09:05:00Z",
+    "updated_at": "2026-07-11T09:10:00Z"
+  },
+  {
+    "id": "note-apple-hello",
+    "folder_id": "folder-apple",
+    "owner": "user-apple",
+    "body": "Apple sign-in\nTapping Continue with Apple resolves this pre-seeded identity — same email-matching path as every other credential flow.",
+    "pinned": false,
+    "attachments": [],
+    "deleted_at": null,
+    "created_at": "2026-07-11T10:00:00Z",
+    "updated_at": "2026-07-11T10:00:00Z"
+  },
+  {
+    "id": "note-apple-scope",
+    "folder_id": "folder-apple",
+    "owner": "user-apple",
+    "body": "Owner scoping\nOnly apple-user@seed.local sees this folder; the Google button lands on its own seed key.",
+    "pinned": true,
+    "attachments": [],
+    "deleted_at": null,
+    "created_at": "2026-07-11T10:05:00Z",
+    "updated_at": "2026-07-11T10:10:00Z"
+  },
+  {
+    "id": "note-admin-runbook",
+    "folder_id": "folder-admin",
+    "owner": "user-admin",
+    "body": "Admin runbook\nSign in as admin@seed.local to see the All users section on the Folders screen — every owner's folders with live note counts.",
+    "pinned": true,
+    "attachments": [],
+    "deleted_at": null,
+    "created_at": "2026-07-12T08:00:00Z",
+    "updated_at": "2026-07-12T08:05:00Z"
+  },
+  {
+    "id": "note-admin-scope",
+    "folder_id": "folder-admin",
+    "owner": "user-admin",
+    "body": "Visibility, not authority\nAdmin sees all owners' folders read-only. The fake backend has no security boundary — this is a client-side showcase of role metadata.",
+    "pinned": false,
+    "attachments": [],
+    "deleted_at": null,
+    "created_at": "2026-07-12T08:10:00Z",
+    "updated_at": "2026-07-12T08:10:00Z"
+  }
+]

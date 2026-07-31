@@ -1,0 +1,129 @@
+name: appbox_kit_showcase_app
+description: Template Stacked app built the opinionated way on the appbox_kit core/ui_library/data kits. iOS/Android native-chrome shell + Notes data slice (Repository/Facade over the seeded data layer); web/desktop/tablet responsive stubs kept unimplemented as a form-factor showcase.
+publish_to: 'none'
+version: 0.1.0
+
+environment:
+  sdk: '>=3.0.3 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  stacked: ^3.5.0
+  stacked_services: ^1.6.0
+  # The kit under test — path deps to the sibling packages.
+  appbox_kit_core:
+    path: ../core
+  ui_library:
+    path: ../ui_library
+  appbox_kit_data:
+    path: ../data
+  # Device haptics — extracted from appbox_kit core (phase 2B).
+  appbox_kit_haptics:
+    path: ../haptics
+  # M3E text field (focus shape-morph) — the Material-tier auth field
+  # (Apple/desktop keep KitNativeTextField's native CNTextField capsule).
+  text_field_m3e:
+    path: ../ui_library/packages/text_field_m3e
+  rxdart: ^0.28.0
+  uuid: ^4.5.3
+  # Web / responsive-stub structure (from `stacked create --template=web`).
+  url_strategy: ^0.3.0
+  responsive_builder: ^0.7.1
+  flutter_animate: ^4.5.2
+  # Notes media (ios/android paths only; never invoked from web/desktop stubs):
+  # voice-memo capture, playback with position streams, camera/library photos —
+  # now via the media kit's framework-free ports. record/just_audio/image_picker
+  # are absorbed into the kit; NotesMediaService is a thin app-side adapter.
+  appbox_kit_media:
+    path: ../media
+  # Wake/set-down choreography — KitMotionScope/KitWake demoed on the Motion
+  # showcase surface (pushed from the Profile tab).
+  appbox_kit_motion:
+    path: ../motion
+  # Full kit registration (Task #7 reconciliation): mirrors the p2 root — all
+  # extracted kits resolve in the showcase's universe so conflicts surface at
+  # pub get time.
+  appbox_kit_analytics:
+    path: ../analytics
+  appbox_kit_auth:
+    path: ../auth
+  appbox_kit_bluetooth:
+    path: ../bluetooth
+  appbox_kit_compliance:
+    path: ../compliance
+  appbox_kit_deploy:
+    path: ../deploy
+  appbox_kit_documents:
+    path: ../documents
+  appbox_kit_forms:
+    path: ../forms
+  appbox_kit_i18n:
+    path: ../i18n
+  appbox_kit_maps:
+    path: ../maps
+  appbox_kit_notifications:
+    path: ../notifications
+  appbox_kit_payments:
+    path: ../payments
+  appbox_kit_permissions:
+    path: ../permissions
+  appbox_kit_security:
+    path: ../security
+  appbox_kit_state:
+    path: ../state
+  appbox_kit_support:
+    path: ../support
+  appbox_kit_wifi:
+    path: ../wifi
+  # Attachment binaries live in the app documents dir (rows carry paths).
+  path_provider: ^2.1.5
+  # app.dart registers Talker as a lazy singleton (KitAction/KitErrorService
+  # resolve it from the locator).
+  talker_flutter: ^5.1.17
+
+# Mirrors the root pubspec.yaml dependency_overrides (paths rebased ../).
+# Pub overrides do NOT propagate to a standalone package, so without these the
+# vendored m3e forks silently revert to their pub.dev releases (losing the
+# patches) and the win32-family version conflict fails resolution outright.
+dependency_overrides:
+  # Vendored fork of fab_m3e 0.1.1 (via m3e_collection): staggered FAB-anchored
+  # spring reveal, no scrim. Patch: fab_m3e/lib/src/fab_menu_m3e.dart.
+  fab_m3e:
+    path: ../ui_library/vendor/fab_m3e
+  # Vendored fork of split_button_m3e 0.2.1: edge-aware dropdown from the
+  # trigger's real rect. Patch: split_button_m3e/lib/src/split_button.dart.
+  split_button_m3e:
+    path: ../ui_library/vendor/split_button_m3e
+  # Vendored fork of toolbar_m3e 0.1.1: inline actions render IconButtonM3E
+  # (M3E shape morph) + honor isDestructive. Patch: toolbar_m3e/lib/src/
+  # toolbar_action_m3e.dart.
+  toolbar_m3e:
+    path: ../ui_library/vendor/toolbar_m3e
+  # Vendored fork of navigation_rail_m3e 0.3.5: ClipRect+OverflowBox expand
+  # reveal (no RenderFlex overflow / label squish), M3E spring curve, label
+  # fade, host type-change sync, corner.full/large indicators, expanded item
+  # height token (56). Patches: navigation_rail_m3e/lib/src/
+  # navigation_rail_m3e_widget.dart, rail_item_button_m3e.dart,
+  # rail_tokens_adapter.dart, rail_theme.dart.
+  navigation_rail_m3e:
+    path: ../ui_library/vendor/navigation_rail_m3e
+  # win32-family: appwrite's transitive win32 5.x vs talker_flutter ->
+  # share_plus 13 needing win32 ^6; the plus-package bumps come with it.
+  win32: ^6.0.1
+  device_info_plus: ^13.0.0
+  package_info_plus: ^10.0.0
+
+dev_dependencies:
+  build_runner: ^2.15.0
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  mockito: ^5.7.0
+  stacked_generator: ^2.0.4
+flutter:
+  # Standalone app: bundles the MaterialIcons font (appbox_kit + the M3E
+  # packages require it, else Material icons render as tofu).
+  uses-material-design: true
+  assets:
+    - assets/seed/
