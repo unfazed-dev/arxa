@@ -15,14 +15,14 @@ const S = path.join(HERE, 'serve.mjs');
 const HELLO = path.join(HERE, '..', 'examples', 'hello-hda');
 const REGISTRY_DIR = path.join(os.tmpdir(), 'appbox-designer-serve');
 
-// The repo root is the first ancestor holding designs/appbox — the skill's
+// The repo root is the first ancestor holding designs/appbox-studio — the skill's
 // depth in a checkout is not fixed (.kimi-code/skills/… here, skills/… upstream).
 let ROOT = HERE;
 for (;;) {
-  if (existsSync(path.join(ROOT, 'designs', 'appbox', 'app.routes.js'))) break;
+  if (existsSync(path.join(ROOT, 'designs', 'appbox-studio', 'app.routes.js'))) break;
   const parent = path.dirname(ROOT);
   if (parent === ROOT) {
-    console.error('no repo root with designs/appbox above this file');
+    console.error('no repo root with designs/appbox-studio above this file');
     process.exit(64);
   }
   ROOT = parent;
@@ -81,8 +81,8 @@ const body = (u) => fetch(u).then((r) => r.text()).catch(() => '');
 const dead = (u) => get(u).then((s) => s === 0);
 
 // --- resolution + ready-record contract --------------------------------------
-const r = await start(['appbox', '--port', '0', '--json']);
-chk('resolves a bare design NAME', !!r.rec && /designs\/appbox$/.test(r.rec.artifact || ''));
+const r = await start(['appbox-studio', '--port', '0', '--json']);
+chk('resolves a bare design NAME', !!r.rec && /designs\/appbox-studio$/.test(r.rec.artifact || ''));
 chk('--port 0 reports the port actually bound', !!r.rec && r.rec.port > 0 && r.rec.port !== 4319,
     r.rec ? `  (:${r.rec.port})` : `  (no record; stderr: ${r.err.trim().slice(0, 80)})`);
 chk('record carries url/port/host/pid/artifact/workerPid',
@@ -98,7 +98,7 @@ if (ip && r.rec) {
 }
 
 // --- port collision ------------------------------------------------------------
-const busy = await start(['appbox', '--port', String(r.rec.port), '--json']);
+const busy = await start(['appbox-studio', '--port', String(r.rec.port), '--json']);
 chk('collision exits non-zero', busy.code > 0, `  (exit ${busy.code})`);
 chk('collision names the port, no stack trace',
     /already in use/.test(busy.err) && !/at Server|throw er/.test(busy.err));
@@ -112,12 +112,22 @@ chk('unknown design exits non-zero', nope.code > 0, `  (exit ${nope.code})`);
 chk('unknown design lists the paths tried',
     /app\.routes\.js/.test(nope.err) && nope.err.split('\n').length > 3);
 
-const legacy = await start(['designs/appbox', '--port', '4371']);
+const legacy = await start(['designs/appbox-studio', '--port', '4371']);
 chk('legacy path + --port form still works', (await get('http://localhost:4371/')) === 200);
 legacy.proc.kill('SIGTERM');
 await waitFor(() => dead('http://localhost:4371/'));
 
-const open = await start(['appbox', '--port', '4372', '--host', '0.0.0.0']);
+// --- named islands are served (ADR-0002 islands amendment) ----------------
+const isl = await start(['designs/appbox-studio', '--port', '4373']);
+for (const f of ['model-viewer.min.js', 'dotlottie-wc.js', 'dotlottie-player.wasm',
+                 'lottie-player.js', 'rive.js', 'three.module.min.js', 'three.core.min.js',
+                 'dotlottie_island.js', 'rive_island.js', 'three_island.js', 'game_island.js']) {
+  chk(`vendor serves ${f}`, (await get(`http://localhost:4373/assets/vendor/${f}`)) === 200);
+}
+isl.proc.kill('SIGTERM');
+await waitFor(() => dead('http://localhost:4373/'));
+
+const open = await start(['appbox-studio', '--port', '4372', '--host', '0.0.0.0']);
 chk('--host 0.0.0.0 opt-in warns it is exposed', /every interface/.test(open.out));
 open.proc.kill('SIGTERM');
 await waitFor(() => dead('http://localhost:4372/'));

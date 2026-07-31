@@ -1,6 +1,6 @@
 # appbox-designer
 
-The design-prototyping context: generates polished design artifacts (mockups, interactive prototypes, decks, mobile screens) as server-rendered hypermedia applications — htmx + CSS, zero custom client-side JavaScript — in a genuine MVVM structure. Ported from appbox-designer (the upstream MIT project / Claude Design lineage).
+The design-prototyping context: generates polished design artifacts (mockups, interactive prototypes, decks, mobile screens) as server-rendered hypermedia applications — htmx + CSS, no ad-hoc client-side JavaScript (named islands only) — in a genuine MVVM structure. Ported from appbox-designer (the upstream MIT project / Claude Design lineage).
 
 ## Language
 
@@ -70,7 +70,7 @@ The decided mechanism table: server = single truth, URL = shareable state, cooki
 An official `htmx-ext-*` library permitted in Artifacts (preload, head-support, sse; client-side-templates allowed but not recommended). Vendored, never CDN.
 
 **Client-JS-Free**:
-The skill's boundary: zero hand-written client-side JavaScript — no `<script>` blocks, no `hx-on:*`, no `js:`-prefixed attributes, no `[expr]` trigger filters. Libraries (htmx + Allowlisted Extensions) are exempt. Enforced by `allowEval:false` + lint.
+The skill's boundary: zero hand-written client-side JavaScript — no `<script>` blocks, no `hx-on:*`, no `js:`-prefixed attributes, no `[expr]` trigger filters. Libraries (htmx + Allowlisted Extensions) are exempt. Enforced by `allowEval:false` + lint. Named islands (vendored, enumerated in ADR-0002's islands amendment) are the only permitted extension: third-party declarative web components and first-party data-attribute init modules, all loaded from /assets/vendor/.
 
 **Read States**:
 The closed set idle / loading / error / empty / data, rendered as server-side template branches; "loading" appears client-side only as indicator CSS during requests.

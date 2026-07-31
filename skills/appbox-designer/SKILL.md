@@ -3,8 +3,9 @@ name: appbox-designer
 description: >-
   Design an application prototype whose structure the appbox pipeline
   consumes — server-rendered htmx + CSS with zero custom client-side
-  JavaScript (one named island exception: canvas.js, pan/zoom for the
-  design canvas), in a genuine MVVM structure: app screens, shells,
+  JavaScript — named islands only: reusable, vendored, SRI-pinned runtimes
+  and first-party glue islands in runtime/vendor/, in a genuine MVVM
+  structure: app screens, shells,
   dashboards, interactive prototypes and wireframes, authored at every
   viewport in the active ladder. Use when the user asks to design, mock up,
   prototype, wireframe or visualize an application, product screen or user
@@ -16,9 +17,12 @@ description: >-
 # appbox-designer
 
 The design stage of the appbox pipeline. Every artifact is a Hono + htmx MVVM
-app with **zero custom client-side JavaScript** — one named island exception:
-`canvas.js`, the dependency-free pan/zoom module for the design canvas
-(ADR-0002 amendment) — the same structure the
+app with **no ad-hoc client-side JavaScript — named islands only**. An
+island is a reusable, vendored script in runtime/vendor/: a third-party
+declarative web component (<model-viewer>, <dotlottie-wc>, <lottie-player>)
+or a first-party data-attribute init module (canvas.js, drag.js, inspect.js,
+dotlottie_island.js, rive_island.js, three_island.js, game_island.js).
+Anything outside that registry is banned and linted — the same structure the
 scaffolder later emits as Flutter, which is why the prototype can carry
 structure rather than pixels.
 
@@ -95,7 +99,7 @@ carries the `data-layout` attribute set and its children size with
 `data-layout` (art-directed frames); to exempt a single child, give it
 `data-layout-ignore`. Then build the artifact per the contract, serve it with
 `node <skill>/runtime/serve.mjs <artifact-dir> --port 4319` (background), then
-verify: `node <skill>/runtime/lint.mjs <artifact-dir>` (zero-custom-JS),
+verify: `node <skill>/runtime/lint.mjs <artifact-dir>` (no-ad-hoc-JS / named-islands),
 `node <skill>/runtime/console-check.mjs http://localhost:4319/…` (console
 clean), and `node <skill>/runtime/shoot.mjs http://localhost:4319/<route>` (**every width in the active ladder**, plus overflow and failed-request checks). Fix
 before surfacing; give the user the served URL.

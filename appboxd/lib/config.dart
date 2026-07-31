@@ -25,7 +25,7 @@ class AppboxdConfig {
   static AppboxdConfig load(String repoRoot, {int? port, String? webRoot}) {
     repoRoot = p.canonicalize(repoRoot);
     var cfgPort = defaultPort;
-    var cfgRoot = p.join(repoRoot, 'appbox', 'build', 'web');
+    var cfgRoot = p.join(repoRoot, 'appbox-studio', 'build', 'web');
 
     final file = File(p.join(repoRoot, 'config', 'appbox.config.json'));
     if (file.existsSync()) {

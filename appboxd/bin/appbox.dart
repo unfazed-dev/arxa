@@ -512,7 +512,7 @@ void _runEmit(List<String> args) {
 
   final repoRoot = _findRepoRoot() ?? Directory.current.path;
   appRoot ??= repoRoot;
-  designDir ??= 'designs/appbox';
+  designDir ??= 'designs/appbox-studio';
 
   switch (emitter) {
     case 'structure':

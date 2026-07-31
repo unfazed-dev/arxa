@@ -69,8 +69,9 @@ Hono + htmx 2.0.10 (server-rendered MVVM, Nunjucks) · vendored
   `node .kimi-code/skills/appbox-designer/runtime/lint.mjs designs/appbox-studio`
   must stay clean after every screen task.
 - **Frozen artifacts stay untouched:** `docs/design/brief.md`,
-  `docs/design/story-map.json`, `docs/moodboards/*` (they still mention
-  probe-runner and `appbox` — preserve-by-default; see Follow-up work).
+  `docs/design/story-map.json`, `docs/moodboards/*` (preserve-by-default;
+  probe-runner mentions were reworded to the appbox lens by the 2026-07-31
+  retirement sweep — see Follow-up work).
 - **Historical documents stay untouched:** `archives/**`, superseded plans and
   research reports (`docs/plans/architecture.md`,
   `docs/plans/consolidate-one-app-plus-daemon.md`,
@@ -149,7 +150,7 @@ identifier, pipeline-level: it stays**.
 ### Steps
 
 - [ ] 2.1 `appboxd` — pipeline code pointing at the design dir. Edit:
-  - `appboxd/bin/appbox.dart:487` — `designDir ??= 'designs/appbox';` →
+  - `appboxd/bin/appbox.dart:515` — `designDir ??= 'designs/appbox';` →
     `'designs/appbox-studio'`
   - `appboxd/lib/gate_freeze.dart:50` — `const designRel = 'designs/appbox';`
     → `'designs/appbox-studio'`
@@ -318,8 +319,7 @@ identifier, pipeline-level: it stays**.
   done
   kill %1
   ```
-  Expected: `200` for every file. (If Task 2 is not done yet, serve
-  `designs/appbox` instead — the route map is identical.)
+  Expected: `200` for every file.
 
 ---
 
@@ -1044,9 +1044,10 @@ Shared plumbing for the six screens; no screen content yet.
 - Produces: `head_extra` block in `ui/common/base.html`;
   `assets/css/media.css`; `ui/views/app_shell/routes.media.js`; spread +
   import in `app.routes.js`; 6 entries in `structure.json`; `media.*` l10n
-  keys in all three catalogs; `GET /media/*` routes 404→200 only after the
-  screen tasks land their viewmodels (scaffold alone leaves routes wired but
-  the views missing — that is expected and fixed per screen task).
+  keys in all three catalogs. **Caveat:** `routes.media.js` imports the six
+  viewmodels at module load, so the design will not *boot* until Tasks 9-14
+  land them — Task 8's own gate is lint + JSON validation only (steps 8.5,
+  8.7); serve checks resume at Task 9.
 
 ### Steps
 
@@ -1054,7 +1055,11 @@ Shared plumbing for the six screens; no screen content yet.
   `{% block head_extra %}{% endblock %}` on its own line immediately before
   `</head>` (after line 25, the `appshell.css` link). Per-screen island tags
   and the scoped stylesheet load through this block — never globally.
-- [ ] 8.2 Create `designs/appbox-studio/assets/css/media.css`:
+- [ ] 8.2 Create `designs/appbox-studio/assets/css/media.css`. Convention for
+  this and every new file the screen tasks add: carry the repo's standard
+  provenance header (`<!-- appbox:provenance … -->` as in
+  `ui/common/base.html:2-5` for .html, `// appbox:provenance …` as in
+  `app.routes.js:1-4` for .js), matching the neighboring files.
   ```css
   /* Media lab — smoke screens for the named islands (3D/animation/game). */
   .media-stage { margin-top: 16px; display: grid; gap: 12px; justify-items: center; }
@@ -1160,46 +1165,78 @@ Shared plumbing for the six screens; no screen content yet.
   ```
   Validate: `python3 -c "import json;json.load(open('designs/appbox-studio/structure.json'));print('structure.json ok')"`.
 - [ ] 8.6 L10n keys — append to `designs/appbox-studio/l10n/app_en.arb`
-  (before the closing `}`, comma after the previous last key):
+  immediately before the closing `}` (add a comma after the previously-last
+  entry so the file stays valid JSON):
   ```json
     "media.eyebrow": "Media lab",
-  ,
+    "media.action.play": "Play",
+    "media.action.pause": "Pause",
+    "media.rive.pageTitle": "appbox studio — Rive",
+    "media.rive.title": "Rive",
+    "media.rive.lede": "State-machine animation — play/pause and fire inputs.",
+    "media.rive.inputsAria": "State machine inputs",
+    "media.lottie.pageTitle": "appbox studio — Lottie",
+    "media.lottie.title": "Lottie",
+    "media.lottie.lede": "Lottie JSON with the player's built-in controls.",
+    "media.dotlottie.pageTitle": "appbox studio — dotLottie",
+    "media.dotlottie.title": "dotLottie",
+    "media.dotlottie.lede": "A .lottie bundle; play and pause swap server-side.",
+    "media.model3d.pageTitle": "appbox studio — 3D model",
+    "media.model3d.title": "3D model",
+    "media.model3d.lede": "GLB in the model-viewer — drag to orbit.",
+    "media.model3d.action.rotateOn": "Auto-rotate on",
+    "media.model3d.action.rotateOff": "Auto-rotate off",
+    "media.scene3d.pageTitle": "appbox studio — 3D scene",
+    "media.scene3d.title": "three.js scene",
+    "media.scene3d.lede": "A custom three.js scene with island-bound toggles.",
+    "media.scene3d.action.rotate": "Toggle rotation",
+    "media.scene3d.action.wireframe": "Toggle wireframe",
+    "media.game.pageTitle": "appbox studio — Game",
+    "media.game.title": "Dungeon Dash",
+    "media.game.lede": "Collect the gems. Arrow keys / WASD or the pad.",
+    "media.game.hint": "Arrow keys / WASD move; the pad works too.",
+    "media.game.move.up": "Move up",
+    "media.game.move.down": "Move down",
+    "media.game.move.left": "Move left",
+    "media.game.move.right": "Move right"
   ```
-  …do not hand-write the JSON diff — append these exact keys (valid JSON,
-  mind the comma on the previously-last entry):
-  `"media.eyebrow": "Media lab"`,
-  `"media.action.play": "Play"`, `"media.action.pause": "Pause"`,
-  `"media.rive.pageTitle": "appbox studio — Rive"`,
-  `"media.rive.title": "Rive"`,
-  `"media.rive.lede": "State-machine animation — play/pause and fire inputs."`,
-  `"media.rive.inputsAria": "State machine inputs"`,
-  `"media.lottie.pageTitle": "appbox studio — Lottie"`,
-  `"media.lottie.title": "Lottie"`,
-  `"media.lottie.lede": "Lottie JSON with the player's built-in controls."`,
-  `"media.dotlottie.pageTitle": "appbox studio — dotLottie"`,
-  `"media.dotlottie.title": "dotLottie"`,
-  `"media.dotlottie.lede": "A .lottie bundle; play and pause swap server-side."`,
-  `"media.model3d.pageTitle": "appbox studio — 3D model"`,
-  `"media.model3d.title": "3D model"`,
-  `"media.model3d.lede": "GLB in the model-viewer — drag to orbit."`,
-  `"media.model3d.action.rotateOn": "Auto-rotate on"`,
-  `"media.model3d.action.rotateOff": "Auto-rotate off"`,
-  `"media.scene3d.pageTitle": "appbox studio — 3D scene"`,
-  `"media.scene3d.title": "three.js scene"`,
-  `"media.scene3d.lede": "A custom three.js scene with island-bound toggles."`,
-  `"media.scene3d.action.rotate": "Toggle rotation"`,
-  `"media.scene3d.action.wireframe": "Toggle wireframe"`,
-  `"media.game.pageTitle": "appbox studio — Game"`,
-  `"media.game.title": "Dungeon Dash"`,
-  `"media.game.lede": "Collect the gems. Arrow keys / WASD or the pad."`,
-  `"media.game.hint": "Arrow keys / WASD move; the pad works too."`,
-  `"media.game.move.up": "Move up"`, `"media.game.move.down": "Move down"`,
-  `"media.game.move.left": "Move left"`, `"media.game.move.right": "Move right"`.
-  Same keys in `app_pl.arb` with Polish values ("Odtwarzaj"/"Pauza" for
-  play/pause; "Laboratorium mediów" for the eyebrow; titles stay "Rive",
-  "Lottie", "dotLottie", "Model 3D", "Scena three.js", "Dungeon Dash";
-  mirror the ledes in natural Polish). Validate both files with
-  `python3 -c "import json;json.load(open('<file>'))"`.
+- [ ] 8.6b The same keys in `designs/appbox-studio/l10n/app_pl.arb` (same
+  append procedure), with these exact Polish values:
+  ```json
+    "media.eyebrow": "Laboratorium mediów",
+    "media.action.play": "Odtwarzaj",
+    "media.action.pause": "Pauza",
+    "media.rive.pageTitle": "appbox studio — Rive",
+    "media.rive.title": "Rive",
+    "media.rive.lede": "Animacja maszyny stanów — odtwarzaj, wstrzymuj i wyzwalaj wejścia.",
+    "media.rive.inputsAria": "Wejścia maszyny stanów",
+    "media.lottie.pageTitle": "appbox studio — Lottie",
+    "media.lottie.title": "Lottie",
+    "media.lottie.lede": "Lottie JSON z wbudowanymi kontrolkami odtwarzacza.",
+    "media.dotlottie.pageTitle": "appbox studio — dotLottie",
+    "media.dotlottie.title": "dotLottie",
+    "media.dotlottie.lede": "Pakiet .lottie; odtwarzanie i pauza podmieniane po stronie serwera.",
+    "media.model3d.pageTitle": "appbox studio — Model 3D",
+    "media.model3d.title": "Model 3D",
+    "media.model3d.lede": "GLB w model-viewer — przeciągnij, aby obracać.",
+    "media.model3d.action.rotateOn": "Włącz auto-obrót",
+    "media.model3d.action.rotateOff": "Wyłącz auto-obrót",
+    "media.scene3d.pageTitle": "appbox studio — Scena 3D",
+    "media.scene3d.title": "Scena three.js",
+    "media.scene3d.lede": "Własna scena three.js z przełącznikami podpiętymi w wyspę.",
+    "media.scene3d.action.rotate": "Przełącz obrót",
+    "media.scene3d.action.wireframe": "Przełącz szkielet",
+    "media.game.pageTitle": "appbox studio — Gra",
+    "media.game.title": "Dungeon Dash",
+    "media.game.lede": "Zbierz klejnoty. Strzałki / WASD albo pad.",
+    "media.game.hint": "Strzałki / WASD poruszają; pad też działa.",
+    "media.game.move.up": "Ruch w górę",
+    "media.game.move.down": "Ruch w dół",
+    "media.game.move.left": "Ruch w lewo",
+    "media.game.move.right": "Ruch w prawo"
+  ```
+  Validate both files:
+  `python3 -c "import json;json.load(open('designs/appbox-studio/l10n/app_en.arb'));json.load(open('designs/appbox-studio/l10n/app_pl.arb'));print('arb json ok')"`.
 - [ ] 8.7 Regenerate the pseudo-locale and confirm key parity:
   ```sh
   cd /Volumes/developer_ssd/Developer/totem_labs/app-box
@@ -1280,9 +1317,14 @@ Shared plumbing for the six screens; no screen content yet.
 
 ### Steps
 
-- [ ] 10.1 `lottie_viewmodel.js` — same shape as 9.1, with
-  `surfaceId = 'app.mediaLottie'` and
-  `VIEW = 'ui/views/app_shell/media/lottie/lottie_view.html'`.
+- [ ] 10.1 Create `designs/appbox-studio/ui/views/app_shell/media/lottie/lottie_viewmodel.js`:
+  ```js
+  export const surfaceId = 'app.mediaLottie';
+
+  const VIEW = 'ui/views/app_shell/media/lottie/lottie_view.html';
+
+  export const page = (c, h) => h.render(c, VIEW, { activeShell: 'app' });
+  ```
 - [ ] 10.2 Create `designs/appbox-studio/ui/views/app_shell/media/lottie/lottie_view.html`:
   ```html
   {% extends "ui/views/main_shell/main_shell_view.html" %}
@@ -1431,9 +1473,14 @@ Shared plumbing for the six screens; no screen content yet.
 
 ### Steps
 
-- [ ] 13.1 `scene3d_viewmodel.js` — same shape as 9.1, with
-  `surfaceId = 'app.mediaScene3d'` and
-  `VIEW = 'ui/views/app_shell/media/scene3d/scene3d_view.html'`.
+- [ ] 13.1 Create `designs/appbox-studio/ui/views/app_shell/media/scene3d/scene3d_viewmodel.js`:
+  ```js
+  export const surfaceId = 'app.mediaScene3d';
+
+  const VIEW = 'ui/views/app_shell/media/scene3d/scene3d_view.html';
+
+  export const page = (c, h) => h.render(c, VIEW, { activeShell: 'app' });
+  ```
 - [ ] 13.2 Create `designs/appbox-studio/ui/views/app_shell/media/scene3d/scene3d_view.html`:
   ```html
   {% extends "ui/views/main_shell/main_shell_view.html" %}
@@ -1469,9 +1516,14 @@ Shared plumbing for the six screens; no screen content yet.
 
 ### Steps
 
-- [ ] 14.1 `game_viewmodel.js` — same shape as 9.1, with
-  `surfaceId = 'app.mediaGame'` and
-  `VIEW = 'ui/views/app_shell/media/game/game_view.html'`.
+- [ ] 14.1 Create `designs/appbox-studio/ui/views/app_shell/media/game/game_viewmodel.js`:
+  ```js
+  export const surfaceId = 'app.mediaGame';
+
+  const VIEW = 'ui/views/app_shell/media/game/game_view.html';
+
+  export const page = (c, h) => h.render(c, VIEW, { activeShell: 'app' });
+  ```
 - [ ] 14.2 Create `designs/appbox-studio/ui/views/app_shell/media/game/game_view.html`:
   ```html
   {% extends "ui/views/main_shell/main_shell_view.html" %}
@@ -1579,10 +1631,10 @@ The release bar for the whole plan. appbox lens only.
   `model_viewer_plus` / `three_js` / `flutter_scene` (flagged) / Flame +
   `flame_3d` (flagged). This plan's islands and smoke screens are the design
   evidence those kits freeze against.
-- **Frozen artifacts still say probe-runner:** `docs/design/brief.md`,
-  `docs/design/story-map.json`, `docs/moodboards/*` predate the appbox lens
-  doctrine. Left untouched (preserve-by-default); reword on their next
-  natural revision, not as a sweep.
+- **Frozen artifacts reworded to the appbox lens (2026-07-31):** `docs/design/brief.md`,
+  `docs/design/story-map.json`, `docs/moodboards/*` predated the appbox lens
+  doctrine; the probe-runner retirement sweep reworded them to name the
+  appbox lens.
 - **Historical plan/research docs** (`docs/plans/architecture.md`,
   `consolidate-one-app-plus-daemon.md`, `docs/research/*`) still say
   `appbox/` — records, deliberately not rewritten.

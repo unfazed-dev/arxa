@@ -39,13 +39,13 @@ recorded. If your plan is ambiguous, stop and report — do not choose.
 
 Status map refreshed 2026-07-30 (full audit; the consolidation demolition —
 commit `3460f01` — deleted plan 08's `app/` and plan 12's `companion/`, and
-`appbox/` + `appboxd/` are the shape going forward):
+`appbox-studio/` + `appboxd/` are the shape going forward):
 
 | state | plans |
 |---|---|
 | ✅ DELIVERED | 01 designer · 02 repo skeleton · 03 vendor tooling · 04 gates (10 gates, selftests + can-fail meta-test) · 05 emit_structure · 06 targets · 07 CRUD · 11 deployer · 13 verification tiers (Tier 1; 2/3 env-blocked) |
-| ⚠️ PARTIAL | 09 prototype runtime (static server + viewmodel bundler; no embedded engine — `prototypeRuntime:"embedded"` is a dead config key) · 10 intake (headless yes; wizard UI died with `app/`) · 12 companion (security modules + tests survive in `appbox/lib/security/`; no on-device pairing yet) · 14 dogfood (D1 design healthy; `appbox/` not yet scaffolded from `designs/appbox/`) |
-| ◻ RESET | 08 desktop app — `appbox/` is the hand-bootstrapped shell, awaiting the design freeze before scaffolding (by doctrine, no app UI before design approval) |
+| ⚠️ PARTIAL | 09 prototype runtime (static server + viewmodel bundler; no embedded engine — `prototypeRuntime:"embedded"` is a dead config key) · 10 intake (headless yes; wizard UI died with `app/`) · 12 companion (security modules + tests survive in `appbox-studio/lib/security/`; no on-device pairing yet) · 14 dogfood (D1 design healthy; `appbox-studio/` not yet scaffolded from `designs/appbox-studio/`) |
+| ◻ RESET | 08 desktop app — `appbox-studio/` is the hand-bootstrapped shell, awaiting the design freeze before scaffolding (by doctrine, no app UI before design approval) |
 
 Also landed outside the plan track: `appboxd/` engine + LLM fabric (E1–E4),
 memory module, offline licence + §17 deploy paywall — see
@@ -56,7 +56,7 @@ memory module, offline licence + §17 deploy paywall — see
 
 | doc | contents |
 |---|---|
-| [plans/consolidate-one-app-plus-daemon.md](plans/consolidate-one-app-plus-daemon.md) | **the shape going forward:** one Stacked app (`appbox/`, web/macOS/iOS/Android) + `appboxd/` daemon; full parity; target detection; provenance-bound approvals; self-host remote (no Totem Cloud); licence-only, pay at first deploy. Supersedes `merge-companion-into-one-flutter-project.md`, amends §17 |
+| [plans/consolidate-one-app-plus-daemon.md](plans/consolidate-one-app-plus-daemon.md) | **the shape going forward:** one Stacked app (`appbox-studio/`, web/macOS/iOS/Android) + `appboxd/` daemon; full parity; target detection; provenance-bound approvals; self-host remote (no Totem Cloud); licence-only, pay at first deploy. Supersedes `merge-companion-into-one-flutter-project.md`, amends §17 |
 | [design/story-map.json](design/story-map.json) · [design/brief.md](design/brief.md) · [design/story_map.html](design/story_map.html) | the consolidated app's story map — 8 epics, 17 surfaces, 47 stories, R1 Dogfood / R2 Anywhere / R3 Delight. Feeds `appbox-designer` directly |
 | [moodboards/](moodboards/) | design references: `builder-and-pipeline.md`, `ai-builders-and-flows-canvas.md`, `companion-and-macos-polish.md` + `shots/` — produced by `skills/appbox-moodboarder/` (story-mapper → moodboarder → designer; `intake.moodboard` surface) |
 

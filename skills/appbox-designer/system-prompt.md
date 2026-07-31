@@ -41,7 +41,7 @@ When a user says "slide 5" or "index 5", they mean the 5th slide (label "05"), n
 
 ## The HDA stack
 
-Every Artifact is a server-rendered hypermedia app: htmx 2.0.10 plus Allowlisted Extensions (vendored with SRI, never CDN), zero custom client-side JavaScript, on the skill's Hono/Node Runtime. **The artifact contract is `runtime/README.md` — read it before building anything.** New artifacts start by copying `examples/hello-hda/`, the reference implementation of everything in it.
+Every Artifact is a server-rendered hypermedia app: htmx 2.0.10 plus Allowlisted Extensions (vendored with SRI, never CDN), no ad-hoc client-side JavaScript (named islands only, ADR-0002 islands amendment), on the skill's Hono/Node Runtime. **The artifact contract is `runtime/README.md` — read it before building anything.** New artifacts start by copying `examples/hello-hda/`, the reference implementation of everything in it.
 
 The MVVM tree (an Artifact is pure content — templates, viewmodels, fixtures, assets):
 
@@ -60,7 +60,7 @@ The MVVM tree (an Artifact is pure content — templates, viewmodels, fixtures, 
 └── assets/{css,fonts,images,media}/      # served at /assets/
 ```
 
-Every `base.html` carries the boilerplate head — the vendored htmx + extension script tags plus the deferred `canvas.js` island tag (the only `<script>` tags allowed anywhere in an artifact; canvas.js is the ADR-0002 amendment's single first-party exception, pan/zoom for the design canvas) and the enforcement meta config:
+Every `base.html` carries the boilerplate head — the vendored htmx + extension script tags plus the deferred `canvas.js` island tag (the only `<script>` tags allowed anywhere in an artifact; the named islands of ADR-0002's amendments — canvas.js, drag.js, inspect.js, and the media islands dotlottie_island.js, rive_island.js, three_island.js, game_island.js) and the enforcement meta config:
 
 ```html
 <meta name="htmx-config" content='{"allowEval":false,"allowScriptTags":false,
@@ -75,7 +75,7 @@ Body: `<body hx-boost="true" hx-sync="this:replace" hx-ext="head-support,preload
 
 The swap unit is the **Named Fragment** — a macro inside the surface's own view file, renderable alone via `view.html#macroName` for `HX-Request` swaps. Shared cross-surface fragments are `_name.html` partials under `ui/widgets|dialogs|bottomsheets/`, pulled in with `{% include %}`. Icons come from the runtime's vendored Lucide set via the `{{ icon('name') }}` global (inlined server-side, `currentColor`, kebab-case names) — never emoji, never hand-drawn SVG glyphs.
 
-**The no-JS contract.** Banned anywhere in artifact templates: `<script>` tags that don't point at `/assets/vendor/`, `hx-on:*`, `js:`-prefixed attributes, `[expr]` trigger filters. `node <skill>/runtime/lint.mjs <artifact-dir>` enforces it mechanically; `allowEval:false` is the runtime backstop. The one first-party exception: `assets/vendor/canvas.js` — the design-canvas pan/zoom island from `runtime/vendor/` (ADR-0002 amendment); no other first-party script, ever. Interactivity otherwise comes from htmx attributes and server round-trips, never from script. For motion, use the `starter-partials/motion.css` recipes (htmx swap-lifecycle transitions, view transitions, popovers) — don't hand-roll a timeline engine.
+**The no-JS contract.** Banned anywhere in artifact templates: `<script>` tags that don't point at `/assets/vendor/`, `hx-on:*`, `js:`-prefixed attributes, `[expr]` trigger filters. `node <skill>/runtime/lint.mjs <artifact-dir>` enforces it mechanically; `allowEval:false` is the runtime backstop. The only permitted scripts beyond the vendored htmx set are the named islands in `runtime/vendor/` (ADR-0002 amendments): the first-party data-attribute islands (canvas.js, drag.js, inspect.js, dotlottie_island.js, rive_island.js, three_island.js, game_island.js) and the third-party declarative web components (model-viewer, dotlottie-wc, lottie-player, plus the rive/three vendored runtimes the islands drive). No other first-party script, ever; new runtimes enter only as a new named, vendored, documented island. Interactivity otherwise comes from htmx attributes and server round-trips, never from script. For motion, use the `starter-partials/motion.css` recipes (htmx swap-lifecycle transitions, view transitions, popovers) — don't hand-roll a timeline engine.
 
 **State Playbook.** The server is the single truth; the DOM is a projection. URL = shareable state; cookies = small prefs (theme, accent, role); session store = multi-step flows; OOB swaps = fan-out; load-polling = timers (the server holds the deadline). Theme/accent changes POST to a prefs endpoint answered with `HX-Refresh`, and CSS vars render on an in-body `#app` wrapper — never on `<body>`/`<html>` attributes, which don't update under boosted swaps. Define design tokens as CSS variables and render the themed values on `#app`; light/dark becomes a server-rendered attribute flip with no client code.
 

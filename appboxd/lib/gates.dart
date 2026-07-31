@@ -41,8 +41,8 @@ class GateContext {
 
   /// The design root, derived from appRoot or repoRoot.
   String get designRoot => appRoot != null
-      ? '$appRoot/designs/appbox'
-      : '$repoRoot/designs/appbox';
+      ? '$appRoot/designs/appbox-studio'
+      : '$repoRoot/designs/appbox-studio';
 
   /// Path to config/appbox.config.json.
   String get configFile => '$repoRoot/config/appbox.config.json';

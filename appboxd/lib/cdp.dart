@@ -75,7 +75,10 @@ class CdpClient {
       '--user-data-dir=${tmpDir.path}',
       '--no-first-run',
       '--no-default-browser-check',
-      '--disable-gpu',
+      '--use-gl=angle',
+      '--use-angle=swiftshader',
+      '--enable-unsafe-swiftshader',
+      '--ignore-gpu-blocklist',
       '--hide-scrollbars',
       ...extraArgs,
       'about:blank',
@@ -375,6 +378,40 @@ class CdpSession {
     final res = await send('Page.captureScreenshot', params);
     final data = res['result']['data'] as String;
     return base64Decode(data);
+  }
+
+  /// Dispatch a key press (down + up) via Input.dispatchKeyEvent.
+  /// Supports arrows, Enter, Escape, Space and single characters.
+  ///
+  // kimitail: windowsVirtualKeyCode/nativeVirtualKeyCode intentionally
+  // omitted — in --headless=new Chrome they trigger an auto-repeat storm
+  // of `Unidentified` keydown events (verified via diagnostic). `key` +
+  // `code` alone yield the single correct keydown the page listeners (and
+  // the game screen) expect.
+  Future<void> key(String key) async {
+    final code = key == ' '
+        ? 'Space'
+        : (key.length == 1 ? 'Key${key.toUpperCase()}' : key);
+    for (final type in ['keyDown', 'keyUp']) {
+      await send('Input.dispatchKeyEvent', {
+        'type': type,
+        'key': key,
+        'code': code,
+      });
+    }
+  }
+
+  /// Click at viewport coordinates via Input.dispatchMouseEvent.
+  Future<void> click(int x, int y) async {
+    for (final type in ['mousePressed', 'mouseReleased']) {
+      await send('Input.dispatchMouseEvent', {
+        'type': type,
+        'x': x,
+        'y': y,
+        'button': 'left',
+        'clickCount': 1,
+      });
+    }
   }
 
   // ── events ────────────────────────────────────────────────────────

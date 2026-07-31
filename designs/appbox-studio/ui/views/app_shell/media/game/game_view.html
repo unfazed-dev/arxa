@@ -1,0 +1,25 @@
+<!-- appbox:provenance
+     generator: appbox  licence: free  project: 662368770980
+     Built with appbox (free tier) — https://appbox.dev
+-->
+{% extends "ui/views/main_shell/main_shell_view.html" %}
+{% block title %}{{ t('media.game.pageTitle') }}{% endblock %}
+{% block head_extra %}
+<script src="/assets/vendor/game_island.js" defer></script>
+<link rel="stylesheet" href="/assets/css/media.css">
+{% endblock %}
+{% block surface %}
+<span class="eyebrow">{{ t('media.eyebrow') }}</span>
+<h1 class="display">{{ t('media.game.title') }}</h1>
+<p class="muted">{{ t('media.game.lede') }}</p>
+<section class="media-stage" data-game="dungeon-dash" data-game-tiles="/assets/media/kenney">
+  <canvas data-game-canvas class="media-game-canvas" width="352" height="352"></canvas>
+  <div class="media-dpad">
+    <button type="button" data-game-move="up" aria-label="{{ t('media.game.move.up') }}">{{ icon('arrow-up', {size: 18}) }}</button>
+    <button type="button" data-game-move="left" aria-label="{{ t('media.game.move.left') }}">{{ icon('arrow-left', {size: 18}) }}</button>
+    <button type="button" data-game-move="down" aria-label="{{ t('media.game.move.down') }}">{{ icon('arrow-down', {size: 18}) }}</button>
+    <button type="button" data-game-move="right" aria-label="{{ t('media.game.move.right') }}">{{ icon('arrow-right', {size: 18}) }}</button>
+  </div>
+  <p class="muted">{{ t('media.game.hint') }}</p>
+</section>
+{% endblock %}

@@ -71,7 +71,7 @@ Components come first. Before any surface is composed, the design's repeated pat
 
 ## Auto Layout
 
-Auto Layout is the medium's default layout discipline for component-library components — the Figma-equivalent property set, emitted as pure static CSS keyed on data-attributes. It needs no client JavaScript and gets none: the whole layer is attribute selectors in `starter-partials/components/components.css`, so the Client-JS-Free rule is untouched.
+Auto Layout is the medium's default layout discipline for component-library components — the Figma-equivalent property set, emitted as pure static CSS keyed on data-attributes. It needs no client JavaScript and gets none: the whole layer is attribute selectors in `starter-partials/components/components.css`, so the Client-JS-Free rule is untouched. The same holds for the named media islands (ADR-0002's 2026-07-31 amendment): 3D, animation and game runtimes are vendored web components or data-attribute islands — a surface uses them by writing markup, never script.
 
 **Property set.** A container carries: flow (horizontal | vertical), wrap, gap (a spacing value, or `auto` to push children apart), padding, 9-point alignment (main axis × cross axis: start / center / end, plus stretch on the cross axis), and clip. Each child carries a resizing mode per axis: **hug** (size to content), **fill** (take the remaining space), **fixed** (explicit size, never shrinks). Min/max modifiers are design constraints, not layout choices — they live in the component's own class CSS, not in attributes.
 

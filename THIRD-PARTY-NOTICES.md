@@ -56,19 +56,27 @@ versions below are read from
 [`runtime/vendor/manifest.json`](skills/appbox-designer/runtime/vendor/manifest.json),
 which also carries the SRI hashes.
 
-| file | package | version |
-|---|---|---|
-| `htmx.min.js` | `htmx.org` | 2.0.10 |
-| `preload.min.js` | `htmx-ext-preload` | 2.1.2 |
-| `head-support.js` | `htmx-ext-head-support` | 2.0.5 |
-| `sse.js` | `htmx-ext-sse` | 2.2.4 |
-| `client-side-templates.js` | `htmx-ext-client-side-templates` | 2.0.2 |
-| `mustache.min.js` | `mustache` | 4.2.0 |
+| file | package | version | licence |
+|---|---|---|---|
+| `htmx.min.js` | `htmx.org` | 2.0.10 | — |
+| `preload.min.js` | `htmx-ext-preload` | 2.1.2 | — |
+| `head-support.js` | `htmx-ext-head-support` | 2.0.5 | — |
+| `sse.js` | `htmx-ext-sse` | 2.2.4 | — |
+| `client-side-templates.js` | `htmx-ext-client-side-templates` | 2.0.2 | — |
+| `mustache.min.js` | `mustache` | 4.2.0 | — |
+| `model-viewer.min.js` | `@google/model-viewer` | 4.3.1 | Apache-2.0 |
+| `dotlottie-wc.js` | `@lottiefiles/dotlottie-wc` | 0.9.24 | MIT |
+| `dotlottie-player.wasm` | `@lottiefiles/dotlottie-web` | 0.78.2 | MIT |
+| `lottie-player.js` | `@lottiefiles/lottie-player` | 2.0.12 | MIT |
+| `rive.js` | `@rive-app/canvas-single` | 2.39.1 | MIT |
+| `three.module.min.js` | `three` | 0.185.1 | MIT |
+| `three.core.min.js` | `three` | 0.185.1 | MIT |
 
 **Licence terms are those published by each package at the pinned version.** The
 vendored files are minified bundles carrying no licence header, so the terms
 cannot be read from the artifacts on disk. Before any distribution, resolve them
-from the registry rather than from memory:
+from the registry rather than from memory. The `licence` column records values
+resolved via the script below; `—` marks legacy entries not cached there:
 
 ```sh
 cd skills/appbox-designer/runtime/vendor
@@ -95,13 +103,13 @@ Licences below were **read from each installed package's `package.json`** on
 
 ---
 
-## Lexend fonts (`designs/appbox/assets/fonts/`)
+## Lexend fonts (`designs/appbox-studio/assets/fonts/`)
 
 The Lexend superfamily (Lexend, Lexend Giga, Lexend Deca) by Thomas Jockin /
 Font Bureau, vendored as woff2 from fonts.gstatic.com on 2026-07-28. Published
 under the **SIL Open Font License 1.1** — free to use, embed, and redistribute.
 License text: https://openfontlicense.org. Per-file inventory:
-`designs/appbox/assets/fonts/FONTS.md`.
+`designs/appbox-studio/assets/fonts/FONTS.md`.
 
 ---
 
@@ -142,3 +150,19 @@ the brief emission (Epic → shell, Feature → surface, all-`wont` → out-of-s
 per-surface MoSCoW/release rollups as table columns) produces the surface table
 `gates/intake` (plan 10.7) traces against. The HTML story map and all original
 features are unchanged.
+
+---
+
+## Example media assets (`designs/appbox-studio/assets/media/`)
+
+One example asset per island runtime, each free for commercial use.
+Per-file inventory with source URLs and sha256 hashes:
+`designs/appbox-studio/assets/media/MEDIA.md`.
+
+| file | source | licence |
+|---|---|---|
+| `boombox.glb` | Khronos glTF-Sample-Models (Microsoft) | CC0 1.0 |
+| `off_road_car.riv` | rive-app/rive-flutter example assets | MIT |
+| `lottie_logo.json` | airbnb/lottie-ios test samples | Apache-2.0 |
+| `dotlottie-demo.lottie` | dotlottie/player-component test asset | MIT |
+| `kenney/` tiles | Kenney.nl "Tiny Dungeon" | CC0 1.0 |

@@ -17,7 +17,7 @@ import 'dart:io';
 import 'package:appboxd/gates.dart';
 
 GateResult structureGate(GateContext ctx) {
-  const designRel = 'designs/appbox';
+  const designRel = 'designs/appbox-studio';
   final designRoot = ctx.designRoot;
   final structurePath = '$designRoot/structure.json';
   final details = <String>[];

@@ -40,5 +40,47 @@
     "package": "lucide-static",
     "version": "1.27.0",
     "integrity": "sha384-FcKTsoAfrNAQlm72mTH2j0YueLBCmw6bdz42xM+FFTPLs8te/VOKhDMJv9TJa/fQ"
+  },
+  {
+    "file": "model-viewer.min.js",
+    "package": "@google/model-viewer",
+    "version": "4.3.1",
+    "integrity": "sha384-cprcVQt7wbUl0xngF3PGP6yBB7n4/t+4AoAMG9biiMCGFiWOdzUH10Ie2COTqFNW"
+  },
+  {
+    "file": "dotlottie-wc.js",
+    "package": "@lottiefiles/dotlottie-wc",
+    "version": "0.9.24",
+    "integrity": "sha384-8NZI8IXJtphV4Ekaf5f60Sw4u248eN1N3aclL5WppacPU4l/dVuMLKuf/tQU4b64"
+  },
+  {
+    "file": "dotlottie-player.wasm",
+    "package": "@lottiefiles/dotlottie-web",
+    "version": "0.78.2",
+    "integrity": "sha384-i1sY5AOkt8qdlQSoSCP6KWXgFZxMOakcpH1YTb3ZLA2vTRuUL4MVoDjL8IGtBZmk"
+  },
+  {
+    "file": "lottie-player.js",
+    "package": "@lottiefiles/lottie-player",
+    "version": "2.0.12",
+    "integrity": "sha384-i8zT4p4C0XG4mPhfz0zuffZpppP8NjlttNsP6srEdEBatwZkcYUBoQtAW7sfKEp2"
+  },
+  {
+    "file": "rive.js",
+    "package": "@rive-app/canvas-single",
+    "version": "2.39.1",
+    "integrity": "sha384-jRbQsI9QPjjr+DhiZkP5YCdx71KCDHF8fSu7Ue5lptc4UNv/tMWJmgF1gwzkko5g"
+  },
+  {
+    "file": "three.module.min.js",
+    "package": "three",
+    "version": "0.185.1",
+    "integrity": "sha384-QHQk1LzjJlJYNdthXjKCmffpDRZL3EqJ7LfqBzyKyvGgjAYM2ZVuYtFGg42NcAJ/"
+  },
+  {
+    "file": "three.core.min.js",
+    "package": "three",
+    "version": "0.185.1",
+    "integrity": "sha384-rx+KIp/9ptjArhnFAcpVoOc/ynktDsRtRJKIbC7YVKylEvFu8sgmzk9RmQ+CIV48"
   }
 ]

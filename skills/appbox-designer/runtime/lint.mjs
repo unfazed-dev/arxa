@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-// Zero-custom-client-JS lint (ADR-0002). Usage: node lint.mjs <artifact-dir>
+// No-ad-hoc-client-JS lint (ADR-0002 + islands amendments). Named islands
+// pass because every allowlisted script loads from /assets/vendor/. Usage: node lint.mjs <artifact-dir>
 // Scans artifact templates; viewmodels (.js) are server code and not in scope.
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';

@@ -1,0 +1,1184 @@
+{
+  "project": "appbox-studio",
+  "map": {
+    "releases": [
+      {
+        "name": "R1 Dogfood",
+        "description": "appbox designs, builds and ships itself; Michelle's 20-minute evaluation"
+      },
+      {
+        "name": "R2 Anywhere",
+        "description": "reach the daemon from anywhere (self-host tailnet); visual review depth"
+      },
+      {
+        "name": "R3 Delight",
+        "description": "polish and moat-widening"
+      }
+    ],
+    "epics": [
+      {
+        "name": "Intake & Story Mapping",
+        "features": [
+          {
+            "name": "Mapping",
+            "stories": [
+              {
+                "name": "Evan turns a client brief into an Epic-Feature-Story map in one sitting",
+                "priority": "must",
+                "release": "R1 Dogfood"
+              },
+              {
+                "name": "Surface count + kit-coverage estimate within an hour of signing, to quote honestly",
+                "priority": "must",
+                "release": "R1 Dogfood"
+              },
+              {
+                "name": "A non-technical client can read and correct the story map (HTML)",
+                "priority": "should",
+                "release": "R1 Dogfood"
+              },
+              {
+                "name": "Stories carry EARS-style acceptance criteria gates can check",
+                "priority": "could",
+                "release": "R3 Delight"
+              }
+            ]
+          },
+          {
+            "name": "Brief",
+            "stories": [
+              {
+                "name": "brief.md surface table feeds the designer; every registry surface traces to a story",
+                "priority": "must",
+                "release": "R1 Dogfood"
+              },
+              {
+                "name": "Registry seeded from the brief without rewriting",
+                "priority": "must",
+                "release": "R1 Dogfood"
+              }
+            ]
+          },
+          {
+            "name": "Moodboard",
+            "stories": [
+              {
+                "name": "Given the story map, the moodboard orchestrator fans out per-epic reference-gathering prompts and curates real apps to steal from",
+                "priority": "must",
+                "release": "R1 Dogfood"
+              },
+              {
+                "name": "Each reference's key screens are captured (appbox lens) and saved with semantic filenames (ref__screen.png)",
+                "priority": "must",
+                "release": "R1 Dogfood"
+              },
+              {
+                "name": "The moodboard assembles as a browsable doc linking references and shots to the epics they inform; every embedded shot verified on disk",
+                "priority": "must",
+                "release": "R1 Dogfood"
+              },
+              {
+                "name": "The design stage receives the moodboard alongside the brief and consults it before authoring",
+                "priority": "should",
+                "release": "R1 Dogfood"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Design & Freeze",
+        "features": [
+          {
+            "name": "Prototype",
+            "stories": [
+              {
+                "name": "Brief to clickable htmx prototype in under 10 minutes, carrying structure not pixels",
+                "priority": "must",
+                "release": "R1 Dogfood"
+              },
+              {
+                "name": "Every surface designed at 390/744/1280 from targets alone (literal parity)",
+                "priority": "must",
+                "release": "R1 Dogfood"
+              },
+              {
+                "name": "Target selection labels buildability on this machine (requires macOS)",
+                "priority": "must",
+                "release": "R1 Dogfood"
+              }
+            ]
+          },
+          {
+            "name": "Chat",
+            "stories": [
+              {
+                "name": "Select a screen, chat exclusively in its context; all other screens dim",
+                "priority": "must",
+                "release": "R1 Dogfood"
+              },
+              {
+                "name": "Selection is a removable context chip: this surfaceId's spec, never the whole app",
+                "priority": "must",
+                "release": "R1 Dogfood"
+              },
+              {
+                "name": "Hard tool-gating: only this screen's tools exposed (edit-layout, restyle, adjust-states, regenerate)",
+                "priority": "must",
+                "release": "R1 Dogfood"
+              },
+              {
+                "name": "Text/token tweaks apply instantly, no model round-trip",
+                "priority": "should",
+                "release": "R1 Dogfood"
+              },
+              {
+                "name": "Each message checkpoints this screen only; one-tap revert, rendered before/after",
+                "priority": "must",
+                "release": "R1 Dogfood"
+              },
+              {
+                "name": "Stale-selection guard: prototype changed since selection triggers re-sync or warn",
+                "priority": "should",
+                "release": "R1 Dogfood"
+              },
+              {
+                "name": "Shared token/nav edit offers 'affects N screens, apply to all?' (nobody ships this)",
+                "priority": "could",
+                "release": "R2 Anywhere"
+              }
+            ]
+          },
+          {
+            "name": "Freeze",
+            "stories": [
+              {
+                "name": "Hash-locked freeze; approval bound to the design hash; post-approval change goes stale loudly",
+                "priority": "must",
+                "release": "R1 Dogfood"
+              },
+              {
+                "name": "Drift report + brief-to-surface-to-code traceability",
+                "priority": "must",
+                "release": "R1 Dogfood"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Build & Gates",
+        "features": [
+          {
+            "name": "Loop",
+            "stories": [
+              {
+                "name": "Start a build, walk away; stops on red, ESC_LIMIT=3",
+                "priority": "must",
+                "release": "R1 Dogfood"
+              },
+              {
+                "name": "Per-surface evidence report (screen to tests to code), not one giant diff",
+                "priority": "must",
+                "release": "R1 Dogfood"
+              },
+              {
+                "name": "SARIF findings pinned to file/line with reproduce command",
+                "priority": "must",
+                "release": "R1 Dogfood"
+              }
+            ]
+          },
+          {
+            "name": "Gates",
+            "stories": [
+              {
+                "name": "Three gates an agent can reach but never pass; approval = human + any authenticated shell, provenance-bound (shell, device/node identity, confirm method, timestamp, hash)",
+                "priority": "must",
+                "release": "R1 Dogfood"
+              },
+              {
+                "name": "Approve/reject from phone push with biometric confirm",
+                "priority": "must",
+                "release": "R1 Dogfood"
+              },
+              {
+                "name": "Pre-submission checklist gate (crashes/permissions, where generated apps die)",
+                "priority": "should",
+                "release": "R1 Dogfood"
+              }
+            ]
+          },
+          {
+            "name": "Visual",
+            "stories": [
+              {
+                "name": "appbox lens design-vs-built gates: pixel (SSIM), skeleton, colour (deltaE) against the frozen golden",
+                "priority": "must",
+                "release": "R1 Dogfood"
+              },
+              {
+                "name": "Smoke per target: app boots, first screen renders, no crash",
+                "priority": "must",
+                "release": "R1 Dogfood"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Flows Canvas",
+        "features": [
+          {
+            "name": "Canvas",
+            "stories": [
+              {
+                "name": "appbox auto-captures screenshots of design + built app per surface (appbox lens)",
+                "priority": "must",
+                "release": "R2 Anywhere"
+              },
+              {
+                "name": "Flows on a canvas: living captures, connections truth-derived from real navigation",
+                "priority": "must",
+                "release": "R2 Anywhere"
+              },
+              {
+                "name": "Replayable named flows for gate reviews; zoom-semantic canvas keyed to story-map sections",
+                "priority": "should",
+                "release": "R2 Anywhere"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Ship & Deploy",
+        "features": [
+          {
+            "name": "Deploy",
+            "stories": [
+              {
+                "name": "Per-platform builds from one codebase; unbuildable targets hard-block as a named precondition, never a red gate",
+                "priority": "must",
+                "release": "R1 Dogfood"
+              },
+              {
+                "name": "Payment gate at first deploy: licence required to ship; everything before it free",
+                "priority": "must",
+                "release": "R1 Dogfood"
+              },
+              {
+                "name": "Export-always: ordinary Stacked MVVM in my own repo, no export tier",
+                "priority": "must",
+                "release": "R1 Dogfood"
+              },
+              {
+                "name": "Guided store submission (most-cited unmet gap in every builder)",
+                "priority": "should",
+                "release": "R2 Anywhere"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Access & Devices",
+        "features": [
+          {
+            "name": "Pairing",
+            "stories": [
+              {
+                "name": "One-scan QR pairing (host/port/nonce/key fingerprint); relayed QR fails the pin",
+                "priority": "must",
+                "release": "R1 Dogfood"
+              },
+              {
+                "name": "Device list with last-seen + revoke; revoke drops the session immediately",
+                "priority": "must",
+                "release": "R1 Dogfood"
+              },
+              {
+                "name": "LAN-only by default, no cloud relay; an agent can never mint an approval",
+                "priority": "must",
+                "release": "R1 Dogfood"
+              }
+            ]
+          },
+          {
+            "name": "Notifications",
+            "stories": [
+              {
+                "name": "Push when a gate goes red (deduped per transition), deep-link into the gate card",
+                "priority": "must",
+                "release": "R1 Dogfood"
+              },
+              {
+                "name": "Actionable notification: approve/reject without opening the app",
+                "priority": "should",
+                "release": "R1 Dogfood"
+              }
+            ]
+          },
+          {
+            "name": "Remote",
+            "stories": [
+              {
+                "name": "Self-host tailnet (compose file) or hosted Tailscale; pre-auth key in the QR; approvals bind to WireGuard node identity",
+                "priority": "should",
+                "release": "R2 Anywhere"
+              },
+              {
+                "name": "Private mesh CA gives trusted HTTPS origins over the mesh (arxa ADR-0036 pattern)",
+                "priority": "should",
+                "release": "R2 Anywhere"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "First Run & Showcase",
+        "features": [
+          {
+            "name": "Showcase",
+            "stories": [
+              {
+                "name": "Showcase app launches on install, automatically; quality visible in minute one",
+                "priority": "must",
+                "release": "R1 Dogfood"
+              },
+              {
+                "name": "First project to working prototype in 20 minutes or less, no docs (timed; over 20 is a finding)",
+                "priority": "must",
+                "release": "R1 Dogfood"
+              }
+            ]
+          },
+          {
+            "name": "Honesty",
+            "stories": [
+              {
+                "name": "Stubs labelled before you build against them; kit availability honest",
+                "priority": "must",
+                "release": "R1 Dogfood"
+              },
+              {
+                "name": "Credential tier stated on screen (stored in the macOS Keychain)",
+                "priority": "must",
+                "release": "R1 Dogfood"
+              },
+              {
+                "name": "Empty states carry wording, not blank surfaces",
+                "priority": "should",
+                "release": "R1 Dogfood"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Workspace",
+        "features": [
+          {
+            "name": "Projects",
+            "stories": [
+              {
+                "name": "Multi-project management; registry CRUD; add/delete feature yields byte-identical round-trip",
+                "priority": "must",
+                "release": "R1 Dogfood"
+              }
+            ]
+          },
+          {
+            "name": "Settings",
+            "stories": [
+              {
+                "name": "BYO key in OS vault, never logged; no inference metering, cost is yours and visible",
+                "priority": "must",
+                "release": "R1 Dogfood"
+              },
+              {
+                "name": "Flat licence, never per-seat; pay at first deploy",
+                "priority": "must",
+                "release": "R1 Dogfood"
+              },
+              {
+                "name": "Kit vendoring from targets + capabilities; dependencyMode config from day one",
+                "priority": "should",
+                "release": "R1 Dogfood"
+              },
+              {
+                "name": "Appearance prefs per device: warm light/dark theme + brand accent picker (cyan/violet/blue/ember from the logo)",
+                "priority": "should",
+                "release": "R1 Dogfood"
+              },
+              {
+                "name": "Language level plain/balanced/technical — every user-facing string written three ways; visual metrics render as X/100 match scores (ΔE 2.0 = 95/100 pass bar), technical level keeps raw values",
+                "priority": "must",
+                "release": "R1 Dogfood"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Website",
+        "features": [
+          {
+            "name": "Site",
+            "stories": [
+              {
+                "name": "A visitor gets appbox in 30 seconds: gated pipeline, own-your-code export, pay-at-deploy",
+                "priority": "must",
+                "release": "R2 Anywhere"
+              },
+              {
+                "name": "The three human gates are the headline, shown not told (recorded gate flow)",
+                "priority": "should",
+                "release": "R2 Anywhere"
+              },
+              {
+                "name": "Pricing page: flat licence, never per-seat, BYO key, pay at first deploy (the anti-credit-rage page)",
+                "priority": "must",
+                "release": "R2 Anywhere"
+              }
+            ]
+          },
+          {
+            "name": "Docs",
+            "stories": [
+              {
+                "name": "Docs portal publishes the knowledge base (architecture, plans, research, skills) with search",
+                "priority": "must",
+                "release": "R1 Dogfood"
+              },
+              {
+                "name": "Getting-started mirrors Michelle's 20 minutes: install, showcase, first prototype",
+                "priority": "must",
+                "release": "R1 Dogfood"
+              },
+              {
+                "name": "Public honesty page: what is wired, what throws, what is roadmap",
+                "priority": "should",
+                "release": "R2 Anywhere"
+              }
+            ]
+          },
+          {
+            "name": "Showcase",
+            "stories": [
+              {
+                "name": "Recorded walkthroughs and design-vs-built comparisons (appbox lens captures) prove quality before install",
+                "priority": "should",
+                "release": "R2 Anywhere"
+              },
+              {
+                "name": "Demo videos per persona journey (Evan's modes, Michelle's 20 minutes)",
+                "priority": "should",
+                "release": "R2 Anywhere"
+              }
+            ]
+          },
+          {
+            "name": "Download",
+            "stories": [
+              {
+                "name": "Download per platform: macOS dmg, daemon CLI for Windows/Linux, mobile apps, with the honest build matrix",
+                "priority": "must",
+                "release": "R2 Anywhere"
+              },
+              {
+                "name": "Licence purchase and activation, pay-at-deploy explained up front",
+                "priority": "must",
+                "release": "R2 Anywhere"
+              },
+              {
+                "name": "Changelog and release notes per version",
+                "priority": "should",
+                "release": "R2 Anywhere"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "brief": {
+    "title": "appbox — design brief",
+    "provenance": "Elicited via appbox-story-mapper · story-map.json alongside · gates/intake, plan 10.7",
+    "intro": "Priorities are MoSCoW, grouped into release swimlanes. Every registry surface must trace to the surface inventory table below.",
+    "introPlain": "Every story is sorted must / should / could and slotted into a release. Every screen in the app traces back to a story in this brief.",
+    "surfaceNote": "Every registry surface traces to a story — the table the designer consumes.",
+    "surfaces": [
+      {
+        "id": "intake.mapping",
+        "label": "Mapping",
+        "priority": "must",
+        "release": "R1 Dogfood"
+      },
+      {
+        "id": "intake.brief",
+        "label": "Brief",
+        "priority": "must",
+        "release": "R1 Dogfood"
+      },
+      {
+        "id": "intake.moodboard",
+        "label": "Moodboard",
+        "priority": "must",
+        "release": "R1 Dogfood"
+      },
+      {
+        "id": "design.prototype",
+        "label": "Prototype",
+        "priority": "must",
+        "release": "R1 Dogfood"
+      },
+      {
+        "id": "design.chat",
+        "label": "Chat",
+        "priority": "must",
+        "release": "R1 Dogfood"
+      },
+      {
+        "id": "design.freeze",
+        "label": "Freeze",
+        "priority": "must",
+        "release": "R1 Dogfood"
+      },
+      {
+        "id": "build.loop",
+        "label": "Loop",
+        "priority": "must",
+        "release": "R1 Dogfood"
+      },
+      {
+        "id": "build.gates",
+        "label": "Gates",
+        "priority": "must",
+        "release": "R1 Dogfood"
+      },
+      {
+        "id": "build.visual",
+        "label": "Visual",
+        "priority": "must",
+        "release": "R1 Dogfood"
+      },
+      {
+        "id": "flows.canvas",
+        "label": "Canvas",
+        "priority": "must",
+        "release": "R2 Anywhere"
+      },
+      {
+        "id": "ship.deploy",
+        "label": "Deploy",
+        "priority": "must",
+        "release": "R1 Dogfood"
+      },
+      {
+        "id": "access.pairing",
+        "label": "Pairing",
+        "priority": "must",
+        "release": "R1 Dogfood"
+      },
+      {
+        "id": "access.notifications",
+        "label": "Notifications",
+        "priority": "must",
+        "release": "R1 Dogfood"
+      },
+      {
+        "id": "access.remote",
+        "label": "Remote",
+        "priority": "should",
+        "release": "R2 Anywhere"
+      },
+      {
+        "id": "first.showcase",
+        "label": "Showcase",
+        "priority": "must",
+        "release": "R1 Dogfood"
+      },
+      {
+        "id": "first.honesty",
+        "label": "Honesty",
+        "priority": "must",
+        "release": "R1 Dogfood"
+      },
+      {
+        "id": "workspace.projects",
+        "label": "Projects",
+        "priority": "must",
+        "release": "R1 Dogfood"
+      },
+      {
+        "id": "workspace.settings",
+        "label": "Settings",
+        "priority": "must",
+        "release": "R1 Dogfood"
+      },
+      {
+        "id": "website.site",
+        "label": "Site",
+        "priority": "must",
+        "release": "R2 Anywhere"
+      },
+      {
+        "id": "website.docs",
+        "label": "Docs",
+        "priority": "must",
+        "release": "R1 Dogfood"
+      },
+      {
+        "id": "website.showcase2",
+        "label": "Showcase",
+        "priority": "should",
+        "release": "R2 Anywhere"
+      },
+      {
+        "id": "website.download",
+        "label": "Download",
+        "priority": "must",
+        "release": "R2 Anywhere"
+      }
+    ]
+  },
+  "moodboard": {
+    "curated": "2026-07-28",
+    "provenance": "docs/moodboards · appbox lens captures · every shot verified on disk",
+    "boards": [
+      {
+        "id": "builders",
+        "title": "AI App Builders & Flows Canvas",
+        "slice": "AI app builders + design-canvas/flows tools",
+        "informs": "Flows Canvas",
+        "file": "ai-builders-and-flows-canvas.md",
+        "references": [
+          {
+            "name": "Dreamflow",
+            "url": "https://dreamflow.app/",
+            "grade": "hot",
+            "shot": {
+              "file": "dreamflow__tri-surface.png",
+              "caption": "tri-surface editor — preview + agent + code"
+            },
+            "steal": "Tri-pane with three live-synced surfaces — agent chat, visual canvas, full code editor; edit any one, the other two update. No-lock-in file-system access: the visual layer edits real project files.",
+            "why": "The closest structural sibling (Flutter-native, AI-first). Its tri-surface sync is the bar: the flows canvas must reflect the actual built target, not a stale mock."
+          },
+          {
+            "name": "FlutterFlow",
+            "url": "https://flutterflow.io/",
+            "grade": "warm",
+            "shot": {
+              "file": "flutterflow__editor.png",
+              "caption": "editor anatomy — widget tree + canvas + properties"
+            },
+            "steal": "Page-list rail + canvas + properties inspector — the classic three-column builder anatomy. Design Library panel: global colors, type scales, component styles in one place.",
+            "why": "The incumbent the indie-dev evaluator already knows. Matching its editor anatomy makes appbox legible in 30 seconds; the flows canvas is the differentiator it does not have."
+          },
+          {
+            "name": "v0 / Lovable / Bolt.new",
+            "url": "https://v0.dev/",
+            "grade": "hot",
+            "shot": {
+              "file": "v0__chat-to-app.png",
+              "caption": "prompt input + template gallery"
+            },
+            "steal": "Split view: prompt/chat thread left, live running preview right — the now-standard AI-builder layout. Generation timeline: versioned checkpoints per prompt, roll back to any prior render.",
+            "why": "The chat-to-app trio defines the entry expectation; appbox’s gate history (approve/reject/regenerate) should look like v0’s versioned checkpoints."
+          },
+          {
+            "name": "MagicPath",
+            "url": "https://magicpath.ai/",
+            "grade": "hot",
+            "shot": {
+              "file": "magicpath__canvas.png",
+              "caption": "prompt input on the multiplayer canvas"
+            },
+            "steal": "Prompt-to-canvas, not prompt-to-chat — generated screens land as tiles on the infinite canvas; the canvas is the document. Multi-page flow generation: one prompt, a connected sequence of screens.",
+            "why": "The strongest existing proof of appbox’s core layout — AI is for generation, hands are for refinement."
+          }
+        ]
+      },
+      {
+        "id": "pipeline",
+        "title": "Builder UI & Pipeline/CI Dashboards",
+        "slice": "pipeline/CI dashboards + premium developer-tool UIs",
+        "informs": "Build & Gates",
+        "file": "builder-and-pipeline.md",
+        "references": [
+          {
+            "name": "Linear",
+            "url": "https://linear.app/",
+            "grade": "hot",
+            "shot": {
+              "file": "linear__features.png",
+              "caption": "features — the craft reference point"
+            },
+            "steal": "Triage Inbox as the gate queue — pending approvals never pollute the main pipeline view. Sub-issue trees with rolled-up status: per-surface traceability, each surface carrying its own gate/check status.",
+            "why": "Proves a dense data tool can feel calm. Its status semantics map almost 1:1 onto gate states (queued → running → awaiting approval → approved/rejected)."
+          },
+          {
+            "name": "Vercel Deployment Checks",
+            "url": "https://vercel.com/",
+            "grade": "hot",
+            "shot": {
+              "file": "vercel__deployment-checks.png",
+              "caption": "deployment checks — named, blocking conditions"
+            },
+            "steal": "Deployment Checks = appbox’s gates: named, blocking conditions as a checklist with running/succeeded/failed states. Check row: name, status icon, duration, expandable output, re-run affordance.",
+            "why": "The best quality-gate-as-UI pattern in the industry — checks-as-UI is the founder’s gate model verbatim."
+          },
+          {
+            "name": "GitHub Actions",
+            "url": "https://github.com/features/actions",
+            "grade": "hot",
+            "shot": {
+              "file": "github-actions__visualization-graph.png",
+              "caption": "workflow visualization graph"
+            },
+            "steal": "The pattern every developer already knows — appbox wins by being familiar here, not novel. Job graph + expandable per-step logs.",
+            "why": "Familiarity is the feature: the pipeline run page should read instantly to anyone who has watched an Actions run."
+          },
+          {
+            "name": "Sentry",
+            "url": "https://sentry.io/",
+            "grade": "warm",
+            "shot": {
+              "file": "sentry__issue-details.png",
+              "caption": "issue detail — stack frames to file:line"
+            },
+            "steal": "Issue stream rows: severity color bar, culprit (file:function), event count, first/last seen. Map to SARIF: severity chip, rule ID, file:line chip, occurrence count across runs.",
+            "why": "appbox’s SARIF findings need Sentry’s discipline — aggregated, deduplicated, ranked by severity — or the founder drowns in linter noise."
+          }
+        ]
+      },
+      {
+        "id": "companion",
+        "title": "Companion Apps & macOS-Native Polish",
+        "slice": "mobile companion/ops apps + macOS-native polish",
+        "informs": "Access & Devices",
+        "file": "companion-and-macos-polish.md",
+        "references": [
+          {
+            "name": "GitHub Mobile",
+            "url": "https://github.com/mobile",
+            "grade": "hot",
+            "shot": {
+              "file": "github-mobile__deploy-review.png",
+              "caption": "reviewing deployments — push → approve"
+            },
+            "steal": "Push for a deployment-review deep-links straight into the exact review dialog — Approve / Reject, no navigation detour. Per-notification-category scheduling.",
+            "why": "The founder’s existing mental model for \"walked away, phone buzzes, approve the deploy\" — the canonical push → approve/reject loop."
+          },
+          {
+            "name": "Linear mobile",
+            "url": "https://linear.app/",
+            "grade": "hot",
+            "shot": {
+              "file": "linear__mobile-redesign.png",
+              "caption": "mobile redesign, Oct 2025"
+            },
+            "steal": "Triage inbox as the home screen: a queue of items each demanding exactly one decision. Frosted-glass material with discipline — depth behind navigation, never behind content.",
+            "why": "The current craft benchmark for dev-tool mobile — the direct answer to the \"too mediocre\" bar."
+          },
+          {
+            "name": "Raycast",
+            "url": "https://raycast.com/",
+            "grade": "hot",
+            "shot": {
+              "file": "raycast__home.png",
+              "caption": "raycast.com home — the macOS polish ceiling"
+            },
+            "steal": "Command-bar ergonomics: every action reachable by fuzzy search, keyboard-first, visible shortcuts — the macOS shell should open on a command bar (\"approve\", \"retry gate\", \"open preview\").",
+            "why": "The macOS polish ceiling, now with a phone companion — dense lists that still breathe."
+          },
+          {
+            "name": "Tailscale device approval",
+            "url": "https://tailscale.com/",
+            "grade": "hot",
+            "shot": {
+              "file": "tailscale__device-approval.png",
+              "caption": "device approval — the admin trust gate"
+            },
+            "steal": "New device connects but is inert until approved — a newly paired phone can view but cannot Approve/Reject until an already-paired device confirms it.",
+            "why": "Answers the threat QR alone doesn’t: human-confirms-new-device is the difference between \"paired\" and \"trusted to mint approvals\"."
+          }
+        ]
+      }
+    ]
+  },
+  "questionBanks": {
+    "simple": [
+      {
+        "id": "q-what",
+        "text": "What are we building, in one sentence?",
+        "suggestions": [
+          "A companion app for an existing tool",
+          "A client-facing portal",
+          "An internal ops tool"
+        ]
+      },
+      {
+        "id": "q-who",
+        "text": "Who is it for?",
+        "suggestions": [
+          "Indie developers",
+          "Small client teams",
+          "Just us, internally"
+        ]
+      },
+      {
+        "id": "q-must",
+        "text": "What must the first release absolutely do?",
+        "suggestions": [
+          "Prove the core loop end-to-end",
+          "Replace one manual workflow",
+          "Impress one named evaluator"
+        ]
+      },
+      {
+        "id": "q-platforms",
+        "text": "Which platforms?",
+        "suggestions": [
+          "iOS + Android",
+          "macOS only",
+          "iOS + Android + macOS + web"
+        ]
+      }
+    ],
+    "normal": [
+      {
+        "id": "q-what",
+        "text": "What are we building, in one sentence?",
+        "suggestions": [
+          "A companion app for an existing tool",
+          "A client-facing portal",
+          "An internal ops tool"
+        ]
+      },
+      {
+        "id": "q-who",
+        "text": "Who is it for — and who evaluates it first?",
+        "suggestions": [
+          "Indie developers",
+          "Small client teams",
+          "Just us, internally"
+        ]
+      },
+      {
+        "id": "q-must",
+        "text": "What must the first release absolutely do?",
+        "suggestions": [
+          "Prove the core loop end-to-end",
+          "Replace one manual workflow",
+          "Impress one named evaluator"
+        ]
+      },
+      {
+        "id": "q-success",
+        "text": "Twenty minutes after install, what should a first-timer have done?",
+        "suggestions": [
+          "Seen a working prototype",
+          "Completed one real task",
+          "Invited their team"
+        ]
+      },
+      {
+        "id": "q-platforms",
+        "text": "Which platforms — and which must build on this machine?",
+        "suggestions": [
+          "iOS + Android",
+          "macOS only",
+          "iOS + Android + macOS + web"
+        ]
+      },
+      {
+        "id": "q-never",
+        "text": "What should it never do?",
+        "suggestions": [
+          "Lock users in",
+          "Hide the cost",
+          "Require a cloud account"
+        ]
+      }
+    ],
+    "advanced": [
+      {
+        "id": "q-what",
+        "text": "What are we building, in one sentence — and what is the moat?",
+        "suggestions": [
+          "A companion app for an existing tool",
+          "A client-facing portal",
+          "An internal ops tool"
+        ]
+      },
+      {
+        "id": "q-who",
+        "text": "Who is it for — name the evaluator persona and their bar",
+        "suggestions": [
+          "Indie developers",
+          "Small client teams",
+          "Just us, internally"
+        ]
+      },
+      {
+        "id": "q-must",
+        "text": "What must the first release absolutely do — MoSCoW the rest later",
+        "suggestions": [
+          "Prove the core loop end-to-end",
+          "Replace one manual workflow",
+          "Impress one named evaluator"
+        ]
+      },
+      {
+        "id": "q-success",
+        "text": "Twenty minutes after install, what should a first-timer have done?",
+        "suggestions": [
+          "Seen a working prototype",
+          "Completed one real task",
+          "Invited their team"
+        ]
+      },
+      {
+        "id": "q-platforms",
+        "text": "Which platforms — which build here, which are named preconditions?",
+        "suggestions": [
+          "iOS + Android",
+          "macOS only",
+          "iOS + Android + macOS + web"
+        ]
+      },
+      {
+        "id": "q-verify",
+        "text": "How should each story be verified before it ships?",
+        "suggestions": [
+          "Automated gates with evidence",
+          "Manual review per release",
+          "Dogfood it ourselves first"
+        ]
+      },
+      {
+        "id": "q-never",
+        "text": "What should it never do — the hard constraints",
+        "suggestions": [
+          "Lock users in",
+          "Hide the cost",
+          "Require a cloud account"
+        ]
+      },
+      {
+        "id": "q-scope",
+        "text": "What is explicitly out of scope for v1?",
+        "suggestions": [
+          "Collaboration features",
+          "A plugin ecosystem",
+          "Anything that delays the first release"
+        ]
+      }
+    ]
+  },
+  "statuses": {
+    "s-1": "done",
+    "s-2": "done",
+    "s-3": "done",
+    "s-4": "done",
+    "s-5": "done",
+    "s-6": "done",
+    "s-7": "done",
+    "s-8": "done",
+    "s-9": "done",
+    "s-10": "done",
+    "s-11": "done",
+    "s-12": "done",
+    "s-13": "done",
+    "s-14": "in-progress",
+    "s-15": "in-progress",
+    "s-34": "blocked"
+  },
+  "files": [
+    {
+      "path": "docs/design/brief.md",
+      "badge": "frozen"
+    },
+    {
+      "path": "docs/design/story-map.json",
+      "badge": "frozen"
+    },
+    {
+      "path": "docs/design/story_map.html",
+      "badge": "new"
+    },
+    {
+      "path": "docs/moodboards/ai-builders-and-flows-canvas.md",
+      "badge": "frozen"
+    },
+    {
+      "path": "docs/moodboards/builder-and-pipeline.md",
+      "badge": "frozen"
+    },
+    {
+      "path": "docs/moodboards/companion-and-macos-polish.md",
+      "badge": "frozen"
+    },
+    {
+      "path": "docs/moodboards/shots/dreamflow__tri-surface.png",
+      "badge": "new"
+    },
+    {
+      "path": "docs/moodboards/shots/linear__features.png",
+      "badge": "new"
+    },
+    {
+      "path": "docs/design/flows.svg",
+      "badge": "new"
+    },
+    {
+      "path": "docs/design/brief.pdf",
+      "badge": "new"
+    },
+    {
+      "path": "docs/moodboards/shots/dreamflow__walkthrough.mp4",
+      "badge": "new"
+    }
+  ],
+  "state": {
+    "depth": null,
+    "answers": {},
+    "generated": false,
+    "approved": false,
+    "approvedVersion": 0,
+    "currentVersion": 1
+  },
+  "narrative": {
+    "mapping": [
+      {
+        "at": "09:02",
+        "text": "Client brief elicited in one sitting — 9 epics, 22 features, 66 stories.",
+        "textPlain": "We turned the client conversation into 9 big themes, 22 features and 66 stories in one sitting.",
+        "artifact": "map/full"
+      },
+      {
+        "at": "09:31",
+        "text": "MoSCoW applied: 46 must · 18 should · 2 could — every story slotted into a release swimlane.",
+        "textPlain": "Every story is sorted: 46 must-haves, 18 should-haves, 2 nice-to-haves — each with a release.",
+        "artifact": "map/priorities"
+      },
+      {
+        "at": "09:44",
+        "text": "R1 Dogfood carries 49 stories — appbox designs, builds and ships itself; Michelle’s 20-minute evaluation.",
+        "textPlain": "The first release has 49 stories: appbox builds itself, and Michelle can judge it in 20 minutes.",
+        "artifact": "map/releases"
+      },
+      {
+        "at": "09:58",
+        "text": "Surface count + kit-coverage estimate within the hour — 22 surfaces, quoted honestly.",
+        "textPlain": "Within the hour we estimated 22 screens and how much ready-made parts cover — enough to quote honestly.",
+        "artifact": "map/full",
+        "tone": "action"
+      }
+    ],
+    "brief": [
+      {
+        "at": "10:04",
+        "text": "brief.md generated from the story-map session — MoSCoW priorities, release swimlanes, no rewriting.",
+        "textPlain": "The brief wrote itself from the story map — nothing retyped.",
+        "artifact": "doc/full"
+      },
+      {
+        "at": "10:04",
+        "text": "Surface inventory: 22 surfaces, every one traces to a story.",
+        "textPlain": "22 screens listed — every screen traces back to a story.",
+        "artifact": "doc/surfaces"
+      },
+      {
+        "at": "10:05",
+        "text": "Registry seeded from the brief — the designer consumes the surface table as-is.",
+        "textPlain": "The app’s screen registry was filled straight from this table.",
+        "artifact": "doc/surfaces",
+        "tone": "action"
+      }
+    ],
+    "moodboard": [
+      {
+        "at": "10:12",
+        "text": "Orchestrator fanned out per-epic reference-gathering — 3 boards curated 2026-07-28.",
+        "textPlain": "The moodboard gathered real apps to learn from, one board per theme — 3 boards.",
+        "artifact": "gallery/all"
+      },
+      {
+        "at": "10:31",
+        "text": "12 key screens captured with the appbox lens — semantic filenames, every shot verified on disk.",
+        "textPlain": "12 screenshots captured automatically, named clearly, all checked to exist.",
+        "artifact": "gallery/all"
+      },
+      {
+        "at": "10:40",
+        "text": "Dreamflow is the structural sibling; Linear sets the craft bar; GitHub Mobile owns the approve-from-phone loop.",
+        "textPlain": "The three apps worth copying most: Dreamflow, Linear, GitHub Mobile.",
+        "artifact": "gallery/highlights"
+      },
+      {
+        "at": "10:41",
+        "text": "Moodboard ships to the design stage alongside the brief — consulted before authoring.",
+        "textPlain": "Designers see this board together with the brief before drawing anything.",
+        "artifact": "gallery/all",
+        "tone": "action"
+      }
+    ]
+  },
+  "replies": [
+    {
+      "match": [
+        "r1",
+        "dogfood",
+        "first release"
+      ],
+      "text": "R1 Dogfood is 49 stories across all 9 epics — appbox designs, builds and ships itself, then Michelle evaluates it in 20 minutes. The swimlanes on the map show the split.",
+      "artifact": "map/releases"
+    },
+    {
+      "match": [
+        "moscow",
+        "priority",
+        "priorities",
+        "must"
+      ],
+      "text": "MoSCoW: 46 must · 18 should · 2 could. Musts gate R1; the 2 coulds (EARS criteria, shared token edits) wait for R2/R3.",
+      "textPlain": "46 stories are must-haves, 18 should-haves, 2 nice-to-haves. Only the nice-to-haves wait for later releases.",
+      "artifact": "map/priorities"
+    },
+    {
+      "match": [
+        "trace",
+        "surface",
+        "inventory"
+      ],
+      "text": "The surface inventory lists 22 surfaces; every one traces to a story in the map. That table is what the designer consumes — nothing is invented downstream.",
+      "artifact": "doc/surfaces"
+    },
+    {
+      "match": [
+        "moodboard",
+        "reference",
+        "steal"
+      ],
+      "text": "Three boards: builders (Dreamflow, FlutterFlow, v0, MagicPath), pipeline (Linear, Vercel, GitHub Actions, Sentry), companion (GitHub Mobile, Linear mobile, Raycast, Tailscale). Every shot verified on disk.",
+      "artifact": "gallery/all"
+    },
+    {
+      "match": [
+        "who",
+        "michelle",
+        "evan"
+      ],
+      "text": "Evan is the founder mapping the client brief; Michelle is the indie-dev evaluator — her 20-minute first-run is an R1 must.",
+      "artifact": null
+    }
+  ],
+  "replyFallback": {
+    "text": "The intake stage produced three artifacts — the story map, the brief, the moodboard. Ask about R1, MoSCoW, traceability, or the references.",
+    "textPlain": "Intake made three things: the story map, the brief and the moodboard. Ask about the first release, the priorities, or the apps we studied."
+  }
+}

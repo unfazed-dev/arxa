@@ -150,9 +150,8 @@ dashed-square placeholder and warns on the server console. Icons inherit
 ## Boilerplate head (copy from `examples/hello-hda/ui/common/base.html`)
 
 Every artifact's `base.html` carries: the vendored htmx script tag (blocking,
-with SRI), the extension tags, the deferred canvas-island tag
-(`<script src="/assets/vendor/canvas.js" defer>` — ADR-0002's one first-party
-exception, pan/zoom for the design canvas), and the enforcement meta config:
+with SRI), the extension tags, the deferred island tags — the named islands of ADR-0002's amendments, loaded from
+/assets/vendor/ as screens need them, and the enforcement meta config:
 
 ```html
 <meta name="htmx-config" content='{"allowEval":false,"allowScriptTags":false,
@@ -236,10 +235,10 @@ re-run the model generator afterwards.
 
 ## The no-JS contract (ADR-0002)
 
-Allowed: the vendored libraries above, plus the ONE first-party island
-`assets/vendor/canvas.js` (pan/zoom for the design canvas, ADR-0002 amendment
-2026-07 — dependency-free, scoped to `.dv-stage`/`.dv-rungs`, no server
-coupling). Banned anywhere in artifact templates:
+Allowed: the vendored libraries above, plus the named islands of ADR-0002's
+amendments (first-party data-attribute islands and third-party declarative web
+components, all vendored in runtime/vendor/). Banned anywhere in artifact
+templates:
 `<script>` tags that don't point at `/assets/vendor/`, `hx-on:*`, `js:`-prefixed
 attributes, `[expr]` trigger filters. `node runtime/lint.mjs` enforces it;
 `allowEval:false` is the runtime backstop.

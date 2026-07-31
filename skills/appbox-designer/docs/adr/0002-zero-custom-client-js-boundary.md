@@ -14,3 +14,19 @@ when the `inspect` server param is on). Both are dependency-free IIFEs, no
 globals, no build step, re-arm on `htmx.onLoad`. The boundary otherwise stands
 unchanged: three named islands total (canvas.js, drag.js, inspect.js), each
 with a documented ceiling.
+
+**Amendment (2026-07-31) — the media islands.** The island registry grows
+from three to a first-class, two-tier architecture. Tier one, third-party
+declarative web components, vendored and SRI-pinned via
+`vendor/manifest.json`: `<model-viewer>` (GLB 3D), `<dotlottie-wc>`
+(dotLottie; its WASM is pinned to the vendored copy by
+`dotlottie_island.js`), `<lottie-player>` (Lottie JSON), plus the runtimes
+the tier-two islands drive (`rive.js` canvas-single, `three.module.min.js`
++ `three.core.min.js`). Tier two, first-party data-attribute init islands,
+same shape as canvas.js (no SRI, no globals, re-arm on `htmx:load`):
+`dotlottie_island.js`, `rive_island.js` (state-machine inputs rendered as
+buttons), `three_island.js` (one demo scene, rotate/wireframe toggles),
+`game_island.js` (playable canvas game). The boundary otherwise stands
+unchanged: no ad-hoc client JS, no inline scripts, enforcement is still
+`allowEval:false` + the vendor-path lint. A new runtime enters only as a
+new named, vendored, documented island amending this ADR.

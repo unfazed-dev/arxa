@@ -47,7 +47,7 @@ Future<GateResult> freezeGate(
   List<String>? targets,
   bool approve = false,
 }) async {
-  const designRel = 'designs/appbox';
+  const designRel = 'designs/appbox-studio';
   final designRoot = ctx.designRoot;
   final details = <String>[];
   var groupFails = 0;
