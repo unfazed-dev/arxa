@@ -2,7 +2,7 @@
 
 Slice: the conversation surface for **appbox** — a chat-first build monitor where the composer is the primary control and responses render as contextual cards (pipeline state, gates, charts) inline in the thread.
 
-Captured 2026-07-28 via probe-runner. Freshness: **🔥** current · **🌡️** canonical.
+Captured 2026-07-28 with the appbox lens. Freshness: **🔥** current · **🌡️** canonical.
 
 ---
 

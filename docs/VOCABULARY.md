@@ -383,9 +383,10 @@ _Layer_: Pipeline
 The robot photographer: captures screens of the design and of the built app
 so they can be compared honestly.
 The appbox-native capture/compare tool — `appboxd/lib/lens.dart` over the CDP
-client (`appboxd/lib/cdp.dart`) — behind moodboard shots, flows-canvas
-captures, and the design-vs-built visual gates (byte/pixel against the
-golden; console/page errors are an automatic failure). The promoted port of
+client (`appboxd/lib/cdp.dart`), driven via `skills/appbox-lens` — behind
+moodboard shots, flows-canvas captures, and the design-vs-built visual gates
+(byte/pixel against the golden; console/page errors are an automatic
+failure). The promoted port of
 the archived probe-runner: **for anything regarding appbox, appbox's own
 tools come first** — lens (and the `appbox` CLI: gate, crud, serve, emit,
 lint, watermark) before any external or archived tooling. If a capture verb

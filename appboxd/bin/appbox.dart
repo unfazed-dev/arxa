@@ -3,8 +3,11 @@
 // Subcommands:
 //   appbox gate <name> [--app <root>] [--check]   — run a gate
 //   appbox serve [--port <n>]                      — start the HTTP daemon
-//   appbox lens <args>                             — visual gate (future)
-//   appbox emit <name> <args>                      — run an emitter (future)
+//   appbox lens <verb> <args>                      — visual gate
+//   appbox design <sub> <args>                     — designer runtimes
+//   appbox deploy <sub> <args>                     — deploy runtime
+//   appbox intake <sub> <args>                     — elicitation engine
+//   appbox emit <name> <args>                      — run an emitter
 //
 // Planned: `dart compile exe bin/appbox.dart` → self-contained binary.
 
@@ -15,6 +18,9 @@ import 'package:appboxd/arch_guard.dart';
 import 'package:appboxd/blueprint.dart';
 import 'package:appboxd/config.dart';
 import 'package:appboxd/crud.dart';
+import 'package:appboxd/design_cli.dart';
+import 'package:appboxd/deploy_cli.dart';
+import 'package:appboxd/docs_lint.dart';
 import 'package:appboxd/emit_htmx.dart';
 import 'package:appboxd/emit_playground.dart';
 import 'package:appboxd/emit_stage.dart';
@@ -31,20 +37,25 @@ import 'package:appboxd/gate_coverage.dart';
 import 'package:appboxd/gate_deploy.dart';
 import 'package:appboxd/gate_freeze.dart';
 import 'package:appboxd/gate_intake.dart';
+import 'package:appboxd/gate_lens.dart';
 import 'package:appboxd/gate_memory.dart';
 import 'package:appboxd/gate_native_deps.dart';
 import 'package:appboxd/gate_scaffold.dart';
 import 'package:appboxd/gate_structure.dart';
 import 'package:appboxd/gate_runner.dart';
 import 'package:appboxd/gates.dart';
+import 'package:appboxd/lens_cli.dart';
 import 'package:appboxd/lint_conventions.dart';
 import 'package:appboxd/palette.dart';
 import 'package:appboxd/server.dart' as server;
+import 'package:appboxd/scaffold_cli.dart';
+import 'package:appboxd/story_map_cli.dart';
 import 'package:appboxd/tier1.dart';
 import 'package:appboxd/watermark.dart';
 import 'package:appboxd/api_map_scan.dart';
 import 'package:appboxd/capability_scan.dart';
 import 'package:appboxd/gen_playbook.dart';
+import 'package:appboxd/intake_cli.dart';
 import 'package:appboxd/kb_build.dart';
 import 'package:appboxd/kb_check.dart';
 import 'package:appboxd/kit_conventions.dart';
@@ -64,6 +75,14 @@ Future<void> main(List<String> args) async {
     case 'gate':
       await _runGate(rest);
       break;
+    case 'lens':
+      exit(await runLensCli(rest));
+    case 'design':
+      exit(await designMain(rest));
+    case 'deploy':
+      exit(await deployMain(rest));
+    case 'intake':
+      exit(intakeMain(rest));
     case 'emit':
       _runEmit(rest);
       break;
@@ -102,15 +121,22 @@ Usage: appbox <command> [options]
 Commands:
   gate <name>    Run a gate by name (arch, gen-freshness, trace, intake, freeze,
                  structure, scaffold, coverage, memory, advertise, review,
-                 native_deps, deploy, tier1, capability, api-map)
+                 native_deps, lens, deploy, tier1, capability, api-map)
   crud <op>      Feature CRUD on the authored layer (list/show/create/update/
                  rename/delete/verify — the one write path, §18)
   serve          Start the HTTP daemon (appboxd)
-  lens           Visual gate (appbox lens — future)
-  emit <name>    Run an emitter (future)
+  lens <verb>    Visual gate — capture/compare/tokens/dom/a11y/net/skeleton/
+                 crawl/ocr/... and native capture (appbox lens --help)
+  design <sub>   Designer runtimes — lint, check-ladder, check-wiring,
+                 pseudolocalize, vendor-fetch, doctor (appbox design --help)
+  deploy <sub>   Deploy runtime — doctor, deploy, --self-test (appbox deploy --help)
+  intake <sub>   Elicitation engine — emit, seed, validate (appbox intake --help)
+  emit <name>    Run an emitter: structure, htmx, playground, transform_tokens,
+                 synthesize, blueprint, emit_stage, generate_view, theme-map,
+                 palette, story-map, scaffold
   lint [root]    Scan for repo convention violations (R2, R3)
   docs [root]    Validate the docs/INDEX.md contract (dead links fail,
-                 unindexed docs warn)
+                 unindexed docs + KB-lint orphans warn)
   kb <sub>       Kit introspection: facts, build, check, lock, playbook,
                  conventions
   watermark <root>  Post-emit provenance/watermark pass on an emitted tree
@@ -129,7 +155,7 @@ Options:
 Future<void> _runGate(List<String> args) async {
   if (args.isEmpty) {
     stderr.writeln('appbox gate: missing gate name');
-    stderr.writeln('  gates: arch gen-freshness trace intake freeze structure scaffold coverage memory advertise review native_deps deploy tier1');
+    stderr.writeln('  gates: arch gen-freshness trace intake freeze structure scaffold coverage memory advertise review native_deps lens deploy tier1');
     exit(2);
   }
 
@@ -279,6 +305,8 @@ Future<GateResult> _dispatchGate(String name, GateContext ctx) async {
       return deployGate(ctx);
     case 'native_deps':
       return nativeDepsGate(ctx);
+    case 'lens':
+      return lensGate(ctx);
     case 'coverage':
       return coverageGate(ctx);
     case 'scaffold':
@@ -515,6 +543,10 @@ void _runEmit(List<String> args) {
   designDir ??= 'designs/appbox-studio';
 
   switch (emitter) {
+    case 'story-map':
+      exit(storyMapMain(rest));
+    case 'scaffold':
+      exit(scaffoldMain(rest));
     case 'structure':
       exit(emitStructure('$appRoot/$designDir', check: check));
     case 'transform_tokens':
@@ -653,9 +685,16 @@ void _runDocs(List<String> args) {
   for (final w in result.warnings) {
     stdout.writeln('docs warn: $w');
   }
+  // Fold the advisory KB-lint warnings (orphans / supersede / wikilink) on top
+  // of validate_docs' dead-link (R1) + index-coverage (R2) contract. These are
+  // stdout warnings only — they never change the exit code.
+  final kbWarnings = lintKb(root);
+  for (final w in kbWarnings) {
+    stdout.writeln('docs warn: $w');
+  }
   if (result.ok) {
-    print(
-        'DOCS OK (${result.scanned} links checked, ${result.warnings.length} warning(s))');
+    print('DOCS OK (${result.scanned} links checked, '
+        '${result.warnings.length + kbWarnings.length} warning(s))');
     exit(0);
   }
   stderr.writeln('DOCS FAILED: ${result.failures.length} dead link(s)');

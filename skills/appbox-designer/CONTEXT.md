@@ -17,7 +17,7 @@ The skill-vendored Hono mini-framework (routing, named-fragment templates, sessi
 _Avoid_: server, backend
 
 **Serve CLI**:
-The command that runs an Artifact against the Runtime (`runtime/serve.mjs <artifact-dir>`).
+The command that runs an Artifact against the Runtime (`appbox design serve <artifact-dir>`).
 
 **Productionize**:
 The command that ejects an Artifact into a self-contained, hardened Hono app (own package.json, Runtime inlined, tests, deploy notes). The Repository seam is the documented DB swap point.

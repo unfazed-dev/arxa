@@ -336,7 +336,7 @@ import androidx.compose.material3.lightColorScheme
 // WITH arrangement = ShortNavigationBarArrangement.EqualWeight — the fix for the
 // 1-of-4-tabs bug. The default ShortNavigationBar arrangement (Centered/Spaced)
 // collapses inactive items to icon-only and measures to content width, so only
-// the selected item renders (proven via probe-runner: one 142px item centered in
+// the selected item renders (proven via the appbox lens: one 142px item centered in
 // a 1080px bar, the other 3 tabs absent). EqualWeight forces every item to an
 // equal share of the full host width with a persistent icon+label — matching the
 // design's .tabbar (left:0;right:0;display:flex, every tab equal-width). The
@@ -407,7 +407,7 @@ private class ExpressiveView(
     // _ExpressiveViewState.didUpdateWidget) trigger Compose recomposition. Without this,
     // a button frozen at its creation-time `enabled`/`tint` never reflects later Dart-side
     // state changes (the Send-code button stayed disabled-coloured even after the email
-    // became valid — proven via probe-runner).
+    // became valid — proven via the appbox lens).
     private val params = mutableStateMapOf<String, Any?>().apply { putAll(creationParams) }
 
     init {
@@ -573,7 +573,7 @@ private fun ExNavBar(params: Map<String, Any?>, invoke: (String, Any?) -> Unit) 
     // M3 Expressive ShortNavigationBar WITH arrangement = EqualWeight — the
     // research-correct fix for the 1-of-4-tabs bug. The DEFAULT ShortNavigationBar
     // arrangement (Centered/Spaced) collapses inactive items to icon-only and
-    // measures to content width → only the selected item renders (probe-runner:
+    // measures to content width → only the selected item renders (appbox lens:
     // one 142px item centered in a 1080px bar, the other 3 tabs absent).
     // ShortNavigationBarArrangement.EqualWeight forces every item to an equal share
     // of the full host width with a persistent icon+label — matching the design's

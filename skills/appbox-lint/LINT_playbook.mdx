@@ -24,7 +24,7 @@ The expensive failure isn't a missing doc — it's a confidently wrong one. A si
 
 ### Procedure
 
-Mechanical pass — run `python skills/app-box-lint/lint_kb.py`: flags docs missing from the index, dead `.md` links, orphan pages, half-wired supersede pointers, unresolved memory wikilinks; exit 1 = at least one error; fix errors before continuing. Semantic pass — for each topic touched recently (read the last few changelog entries), cross-check the claim across all layers (catalogs ↔ docs ↔ memory ↔ code comment) and find disagreement. Resolve per the hierarchy: the lower layer is the bug; fix the doc/memory to match the catalog/code, never the reverse unless primary-source-verified. Record it: append a changelog entry; when a claim is superseded, leave a one-line `⚠️ SUPERSEDED by (y)` pointer and write the new entry — append-only, never rewrite history.
+Mechanical pass — run `appbox docs` (the Dart port of the archived `lint_kb.py`): flags docs missing from the index, dead `.md` links, orphan pages, half-wired supersede pointers, unresolved memory wikilinks; exit 1 = at least one error; fix errors before continuing. Semantic pass — for each topic touched recently (read the last few changelog entries), cross-check the claim across all layers (catalogs ↔ docs ↔ memory ↔ code comment) and find disagreement. Resolve per the hierarchy: the lower layer is the bug; fix the doc/memory to match the catalog/code, never the reverse unless primary-source-verified. Record it: append a changelog entry; when a claim is superseded, leave a one-line `⚠️ SUPERSEDED by (y)` pointer and write the new entry — append-only, never rewrite history.
 
 ### Outputs
 

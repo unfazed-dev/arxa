@@ -1,6 +1,6 @@
 ---
 name: appbox-scaffolder
-description: Use to turn a FROZEN design into the per-surface Flutter file set the coverage gate asserts. Scaffolds app surfaces from structure.json + targets; form factors follow targets (macos -> 3 files/surface, ios/android -> 4), never empty. Trigger on "scaffold the app", "generate the views", "emit the Dart", "why does coverage find no lib/ui/views". Drives skills/appbox-scaffolder/scaffold.py.
+description: Use to turn a FROZEN design into the per-surface Flutter file set the coverage gate asserts. Scaffolds app surfaces from structure.json + targets; form factors follow targets (macos -> 3 files/surface, ios/android -> 4), never empty. Trigger on "scaffold the app", "generate the views", "emit the Dart", "why does coverage find no lib/ui/views". Drives `appbox emit scaffold` (the Dart port in appboxd/lib/scaffold.dart).
 ---
 
 # appbox-scaffolder — produce the Dart tree the gates assert
@@ -22,7 +22,7 @@ matches the registry, the scaffolder emits that tree from a frozen
 
 ## What you produce (and what you do not)
 
-One engine (`scaffold.py`) reads `structure.json` + the target set and writes,
+One engine (`appbox emit scaffold`, Dart in `appboxd/lib/scaffold.dart`) reads `structure.json` + the target set and writes,
 per frozen surface, **exactly the derived form-factor file set** (architecture
 §16, P06):
 
@@ -53,7 +53,7 @@ l10n artifacts (backward compat). The pubspec side of l10n
 (`flutter_localizations`, `intl`, `flutter.generate: true`) is emitted
 unconditionally by `appboxd/lib/blueprint.dart`.
 
-**You do not choose dependencies.** `scaffold.py` never reads or writes a
+**You do not choose dependencies.** The scaffold never reads or writes a
 `pubspec.yaml`; the dependency set arrives from the kit and the app template.
 That means a dependency which cannot be built for a declared target is not
 something you can prevent here — it is caught over the assembled app by
@@ -76,12 +76,12 @@ stub. The builder (plan 08) fills the bodies.
    with the authored layer. The scaffold reads it as the frozen input; it never
    re-derives structure. Check:
    ```sh
-   KIT_DESIGN_DIR=<design> python3 tools/emit_structure/emit_structure.py --check
+   KIT_DESIGN_DIR=<design> appbox emit structure --check
    ```
 
 2. **Scaffold, naming the targets explicitly.**
    ```sh
-   python3 skills/appbox-scaffolder/scaffold.py \
+   appbox emit scaffold \
      --design-dir <design> --app-root <app> --targets macos
    ```
    `--targets` is **required** (or `APPBOX_TARGETS` env). The scaffold never
@@ -91,7 +91,7 @@ stub. The builder (plan 08) fills the bodies.
 
 3. **Verify the tree matches** (drift check, e.g. after a registry edit):
    ```sh
-   python3 skills/appbox-scaffolder/scaffold.py \
+   appbox emit scaffold \
      --design-dir <design> --app-root <app> --targets macos --check
    ```
    `--check` regenerates the expected set in memory and diffs against disk:
@@ -106,7 +106,7 @@ stub. The builder (plan 08) fills the bodies.
 
 The engine's self-test is the proof the guardrail holds:
 ```sh
-python3 skills/appbox-scaffolder/scaffold.py --self-test
+appbox emit scaffold --self-test
 ```
 It asserts, negatively (R5): a missing `structure.json` fails naming it; a
 frozen surface with no viewmodel fails; a wrong file count fails `--check` and

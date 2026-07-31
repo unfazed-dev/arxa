@@ -1,0 +1,7 @@
+{
+  "@@locale": "qps-ploc",
+  "@_readme": "English source catalog.",
+  "greet": "[!! Hëłłö {name} ~̷~~̷~ !!]",
+  "count": "{count, plural, =0{[!! Ñöñë ~̷~~̷~ !!]} one{[!! Öñë ïţëm ~̷~~̷~ !!]} other{[!! {count} ïţëmš ~̷~~̷~ !!]}}",
+  "save": "[!! Šåvë ~̷~~̷~ !!]"
+}

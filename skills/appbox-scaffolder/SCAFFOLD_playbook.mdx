@@ -25,7 +25,7 @@ The scaffolder PRODUCES the tree the gates ASSERT (architecture §16). The struc
 
 ### Procedure
 
-Confirm the design is frozen (`emit_structure.py --check` in sync). Scaffold, naming targets explicitly: `python3 skills/app-box-scaffolder/scaffold.py --design-dir <design> --app-root <app> --targets macos`. `--targets` is required (or `APPBOX_TARGETS` env); the scaffold never reads ambient pipeline state for targets (the stale-green defect, §16). Widths and factor names come from the derivation table + config, never literals (R3). Verify drift after a registry edit with `--check`: it regenerates the expected set in memory and diffs against disk, naming any missing factor file, stale manifest, or hand-edited dir — the same file set `gates/coverage` (C1) walks. Hand the scaffolded tree to `app-box-builder` for the widget bodies; the coverage gate then asserts the scaffolded layer.
+Confirm the design is frozen (`emit_structure.py --check` in sync). Scaffold, naming targets explicitly: `appbox emit scaffold --design-dir <design> --app-root <app> --targets macos` (the Dart port of the archived `scaffold.py`). `--targets` is required (or `APPBOX_TARGETS` env); the scaffold never reads ambient pipeline state for targets (the stale-green defect, §16). Widths and factor names come from the derivation table + config, never literals (R3). Verify drift after a registry edit with `--check`: it regenerates the expected set in memory and diffs against disk, naming any missing factor file, stale manifest, or hand-edited dir — the same file set `gates/coverage` (C1) walks. Hand the scaffolded tree to `app-box-builder` for the widget bodies; the coverage gate then asserts the scaffolded layer.
 
 ### Outputs
 

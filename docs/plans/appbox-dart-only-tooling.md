@@ -1,5 +1,7 @@
 # appbox dart-only tooling — retirement of Python/bash/Node
 
+> **Note (2026-07):** probe-runner is superseded by the appbox lens (`appboxd/lib/lens.dart`, skill `skills/appbox-lens`); probe-runner mentions below are historical.
+
 **Status:** **COMPLETE**. All Python/bash/Node tooling retired to
 `archives/tooling-pre-dart/`. One Dart binary (`appbox`) handles gates,
 emitters, lens, and serve. stacked_kit copied in-repo as `kit/`

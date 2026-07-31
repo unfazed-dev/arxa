@@ -29,6 +29,7 @@ import 'dart:typed_data';
 import 'package:appboxd/cdp.dart';
 import 'package:appboxd/crypto_aead.dart' as crypto;
 import 'package:appboxd/gates.dart';
+import 'package:appboxd/design_server.dart';
 
 /// A derived viewport: a config name plus its width/height from config.
 class _Vp {
@@ -815,7 +816,7 @@ Future<List<String>> _renderHtmxCdp(
   if (served.base == null) {
     served.dispose();
     throw StateError('designer server did not start '
-        '(${served.error ?? "see serve.mjs stderr"})');
+        '(${served.error ?? "unknown error"})');
   }
   final base = served.base!.replaceAll(RegExp(r'/+$'), '');
   final routes = _getRoutes(designRoot);
@@ -859,78 +860,33 @@ Future<List<String>> _renderHtmxCdp(
   return errors;
 }
 
-/// Start the designer's Node prototype server (serve.mjs) and read its --json
-/// ready line for the bound base URL.
-Future<_FutureServer> _startDesignerServer(String runtimeDir, String designRoot) {
-  final serveMjs = '$runtimeDir/serve.mjs';
-  final completer = Completer<_FutureServer>();
-  if (!File(serveMjs).existsSync()) {
-    completer.complete(_FutureServer(
-        base: null, dispose: () {}, error: 'serve.mjs not found at $serveMjs'));
-    return completer.future;
+/// Boot the designer's Dart [DesignServer] in-process and return its bound base
+/// URL. The server is stopped via [dispose]. The Dart server is the same live
+/// serve path used by `appbox design serve` — the freeze gate shares one server
+/// substrate with the command (formerly serve.mjs over Node, now in-process
+/// Dart), so both the CDP render path and the htmx fallback render against it.
+Future<_FutureServer> _startDesignerServer(String runtimeDir, String designRoot) async {
+  try {
+    final server = await DesignServer.start(
+      artifactDir: designRoot,
+      port: 0,
+      host: '127.0.0.1',
+      noWatch: true,
+      runtimeVendorDir: '$runtimeDir/vendor',
+    ).timeout(const Duration(seconds: 12));
+    return _FutureServer(
+      base: server.url,
+      dispose: () => server.stop(),
+    );
+  } catch (e) {
+    return _FutureServer(
+      base: null,
+      dispose: () {},
+      error: e is TimeoutException
+          ? 'designer server did not start within 12s'
+          : 'designer server failed to start ($e)',
+    );
   }
-
-  Process.start('node', [
-    serveMjs,
-    designRoot,
-    '--port', '0',
-    '--host', '127.0.0.1',
-    '--json',
-  ]).then((proc) {
-    late StreamSubscription sub;
-    sub = proc.stdout
-        .transform(utf8.decoder)
-        .transform(const LineSplitter())
-        .listen((line) {
-      final trimmed = line.trim();
-      if (!trimmed.startsWith('{')) return;
-      try {
-        final j = jsonDecode(trimmed) as Map<String, dynamic>;
-        final url = j['url'];
-        if (url is String && !completer.isCompleted) {
-          completer.complete(_FutureServer(
-            base: url,
-            dispose: () {
-              sub.cancel();
-              proc.kill(ProcessSignal.sigkill);
-            },
-          ));
-        }
-      } catch (_) {}
-    });
-    // If the server exits before emitting a URL, complete with null.
-    proc.exitCode.then((_) {
-      if (!completer.isCompleted) {
-        completer.complete(_FutureServer(
-          base: null,
-          dispose: () {},
-          error: 'designer server exited before binding',
-        ));
-      }
-    });
-    // Give the server a bounded window to come up.
-    Future.delayed(const Duration(seconds: 12), () {
-      if (!completer.isCompleted) {
-        sub.cancel();
-        proc.kill(ProcessSignal.sigkill);
-        completer.complete(_FutureServer(
-          base: null,
-          dispose: () {},
-          error: 'designer server did not start within 12s',
-        ));
-      }
-    });
-  }).catchError((e) {
-    if (!completer.isCompleted) {
-      completer.complete(_FutureServer(
-        base: null,
-        dispose: () {},
-        error: 'node not available ($e)',
-      ));
-    }
-  });
-
-  return completer.future;
 }
 
 class _FutureServer {
@@ -1026,7 +982,7 @@ Future<List<String>?> _renderFallbackStacked(
   return out.where((l) => l.startsWith('FAIL: render:')).toList();
 }
 
-/// htmx fallback: start serve.mjs (Node), then run the existing render_htmx.mjs.
+/// htmx fallback: start the Dart designer server, then run render_htmx.mjs.
 /// Mirrors freeze.sh's Node orchestration.
 Future<List<String>?> _renderFallbackHtmx(
   String designRoot,

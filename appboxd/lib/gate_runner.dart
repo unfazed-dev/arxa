@@ -12,6 +12,7 @@ import 'package:appboxd/gate_coverage.dart';
 import 'package:appboxd/gate_deploy.dart';
 import 'package:appboxd/gate_freeze.dart';
 import 'package:appboxd/gate_intake.dart';
+import 'package:appboxd/gate_lens.dart';
 import 'package:appboxd/gate_memory.dart';
 import 'package:appboxd/gate_native_deps.dart';
 import 'package:appboxd/gate_scaffold.dart';
@@ -29,6 +30,7 @@ const gateOrder = [
   'advertise',
   'review',
   'native_deps',
+  'lens',
   'deploy',
 ];
 
@@ -113,6 +115,8 @@ Future<GateResult?> _tryDartGate(String name, GateContext ctx) async {
       return deployGate(ctx);
     case 'native_deps':
       return nativeDepsGate(ctx);
+    case 'lens':
+      return lensGate(ctx);
     case 'coverage':
       return coverageGate(ctx);
     case 'scaffold':

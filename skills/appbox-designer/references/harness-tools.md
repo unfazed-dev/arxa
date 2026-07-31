@@ -10,7 +10,7 @@ the tool name is not.
 | Ask the user a question | `AskUserQuestion` |
 | Run a command | `Bash` (or the harness's shell tool) |
 | Show / preview a page | serve via the Runtime, hand back `http://localhost:<port>/…` |
-| Screenshot a page | shell → `node <skill>/runtime/shoot.mjs <url>` |
+| Screenshot a page | shell → `appbox lens shoot <url>` |
 | Read a screenshot / image | `Read` / `ReadMediaFile` — any tool that accepts an image |
 | Console / DOM debug | shell (node or playwright one-off scripts) |
 | Verification subagent | `Agent` / `Task` with a read-only subagent type |
@@ -43,7 +43,7 @@ Serve each artifact through the Runtime and reuse it for that project:
 
 ```sh
 # background; skip if already running for this artifact
-node <skill>/runtime/serve.mjs designs/<project> --port 4319
+appbox design serve designs/<project> --port 4319
 ```
 
 Then reference `http://localhost:4319/…` (routes come from the artifact's
@@ -58,11 +58,11 @@ several prototypes at once — use the machine-readable form instead of guessing
 a port:
 
 ```sh
-node <skill>/runtime/serve.mjs <project> --port 0 --json
+appbox design serve <project> --port 0 --json
 # {"url":"http://127.0.0.1:52953/","port":52953,…}  ← printed once it is LISTENING
 ```
 
-Read that one line and you have the URL to hand to `shoot.mjs` or a browser.
+Read that one line and you have the URL to hand to `appbox lens shoot` or a browser.
 Errors go to stderr and exit non-zero, so a caller can tell a dead server from
 a live one — it could not before. The server binds loopback only.
 
@@ -75,13 +75,13 @@ hardcoded here:
 
 ```sh
 # every rung in the active ladder, in one pass
-node <skill>/runtime/shoot.mjs http://localhost:4319/<route> --out /tmp/shots
+appbox lens shoot http://localhost:4319/<route> --out /tmp/shots
 
 # a derived subset (e.g. targets: ios -> compact + medium)
-node <skill>/runtime/shoot.mjs http://localhost:4319/<route> --rungs compact,medium
+appbox lens shoot http://localhost:4319/<route> --rungs compact,medium
 ```
 
-Widths come from `runtime/ladder.json`; **never pass a pixel value**. `shoot.mjs`
+Widths come from `runtime/ladder.json`; **never pass a pixel value**. `appbox lens shoot`
 also fails on console errors, failed requests, 4xx/5xx and horizontal overflow —
 things a screenshot alone will not show you. It exits non-zero when any rung has
 a problem.
@@ -102,26 +102,26 @@ that visual review was skipped**.
 
 ## Verification & debug
 
-- **No-JS lint:** `node <skill>/runtime/lint.mjs <artifact-dir>` — the
+- **No-JS lint:** `appbox design lint <artifact-dir>` — the
   zero-custom-client-JS check (ADR-0002). Must pass before surfacing.
-- **Console errors:** `node <skill>/runtime/console-check.mjs
+- **Console errors:** `appbox lens check
   http://localhost:4319/<route>` loads pages headless and fails on any console
   error or pageerror. Check for zero page errors before surfacing.
-- **Structure:** `node <skill>/selftest.sh`-style checks — the registry parses,
+- **Structure:** `appbox design selftest`-style checks — the registry parses,
   every viewmodel declares a `surfaceId`, `shellRoots` is non-empty. See
   [`app-architecture.md`](app-architecture.md).
-- **Wiring:** `node <skill>/runtime/check_wiring.mjs <artifact> <property>`
+- **Wiring:** `appbox design check-wiring <artifact> <property>`
   (`fragments`, `mutations-posted`, `urls-resolve`, `targets-exist`). These are
   the only checks that assert the artifact **does** something — every other one
   bans something, and a ban passes on an artifact that does nothing at all.
-- **Falsifiability:** `<skill>/selftest.sh <artifact> --negative` re-runs the
+- **Falsifiability:** `appbox design selftest <artifact> --negative` re-runs the
   whole suite once per deliberate break and requires each check to catch its
   own. Run it after adding a check; a check with no mutation aborts the run
   rather than being counted as proven.
 - **Thorough or directed checks:** spawn the read-only verification subagent
   with the prompt in `agents/fork-verifier-agent.md`. Its verdict is
   `done` / `needs_work` only and it never edits.
-- **Design-system checking:** run the `agents/check-design-system.mjs` CLI, or
+- **Design-system checking:** run the `appbox design ds-check` CLI, or
   spawn the `agents/design-system-checker.md` subagent read-only.
 
 ## Parallel variations
@@ -135,7 +135,7 @@ keeps the directions divergent. Present the results side-by-side;
 ## Ejecting an artifact
 
 To ship or share an artifact, eject it into a self-contained Hono app:
-`node <skill>/runtime/eject.mjs <artifact-dir> <out-dir>` — see
+`appbox design eject <artifact-dir> <out-dir>` — see
 `built-in-skills/productionize.md`. Delivery = the output directory path.
 
 ## Operating notes

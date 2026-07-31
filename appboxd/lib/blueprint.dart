@@ -2323,7 +2323,7 @@ class _ExpressiveViewState extends State<_ExpressiveView> {
     // the Dart side rebuilds with new params (e.g. the Send-code button's `enabled` flips
     // false→true as the email becomes valid, or tint changes), the Kotlin side would NEVER
     // see the update and the button renders frozen at its creation-time state (proven via
-    // probe-runner: the Dart `enabled` flips correctly but the rendered colour never changes).
+    // appbox lens: the Dart `enabled` flips correctly but the rendered colour never changes).
     // Push the volatile fields (enabled/tint/fg/busy/label/trailing) over the existing
     // MethodChannel so the Compose side can recompose with the new values.
     final ch = _channel;
@@ -2923,7 +2923,7 @@ String _playbook(
       '   - iOS: glass (UiKitView → Liquid Glass)\n'
       '   - Android: expressive (AndroidView → ComposeView + MaterialExpressiveTheme)\n'
       '   - web + desktop: shadcn (`Shad*` from shadcn_ui)\n'
-      '4. **tester** (TDD) — mocktail the Ports; probe-runner visual/smoke; Patrol E2E.\n'
+      '4. **tester** (TDD) — mocktail the Ports; appbox lens visual/smoke; Patrol E2E.\n'
       '5. **reviewer + QC** — arch_guard + ponytail-debt gate; green ⇒ release-ready.\n'
       '6. **deployer** — fastlane (stores) + shorebird (OTA patch).\n'
       '\n'

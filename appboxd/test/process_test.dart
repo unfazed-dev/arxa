@@ -1,5 +1,4 @@
 import 'package:appboxd/harness.dart';
-import 'package:appboxd/intake.dart';
 import 'package:appboxd/phases.dart';
 import 'package:appboxd/process.dart';
 import 'package:test/test.dart';
@@ -69,29 +68,6 @@ void main() {
       final result = await runPhase('/repo', 'bogus');
       expect(result.exitCode, 2);
       expect(result.stderr, contains('unknown phase'));
-    });
-  });
-
-  group('IntakeRunner', () {
-    test('emit invokes the ONE engine on the answers file', () async {
-      final intake = IntakeRunner(
-        command: 'python3',
-        script: 'skills/appbox-intake/intake.py',
-        runner: runner,
-      );
-      await intake.emit(
-        answersPath: 'a.json',
-        briefOut: 'brief.md',
-        registryOut: 'registry.json',
-      );
-      expect(runner.calls.single, [
-        'python3',
-        'skills/appbox-intake/intake.py',
-        'emit',
-        '--answers', 'a.json',
-        '--brief-out', 'brief.md',
-        '--registry-out', 'registry.json',
-      ]);
     });
   });
 

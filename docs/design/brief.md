@@ -86,7 +86,7 @@ appbox
 #### Moodboard
 
 - [must/R1 Dogfood] Given the story map, the moodboard orchestrator fans out per-epic reference-gathering prompts and curates real apps to steal from
-- [must/R1 Dogfood] Each reference's key screens are captured (probe-runner) and saved with semantic filenames (ref__screen.png)
+- [must/R1 Dogfood] Each reference's key screens are captured (appbox lens) and saved with semantic filenames (ref__screen.png)
 - [must/R1 Dogfood] The moodboard assembles as a browsable doc linking references and shots to the epics they inform; every embedded shot verified on disk
 - [should/R1 Dogfood] The design stage receives the moodboard alongside the brief and consults it before authoring
 
@@ -157,7 +157,7 @@ appbox
 
 #### Visual
 
-- [must/R1 Dogfood] probe-runner design-vs-built gates: pixel (SSIM), skeleton, colour (deltaE) against the frozen golden
+- [must/R1 Dogfood] appbox lens design-vs-built gates: pixel (SSIM), skeleton, colour (deltaE) against the frozen golden
 - [must/R1 Dogfood] Smoke per target: app boots, first screen renders, no crash
 
 ### Source Control & Files
@@ -177,7 +177,7 @@ appbox
 
 #### Canvas
 
-- [must/R2 Anywhere] appbox auto-captures screenshots of design + built app per surface (probe-runner)
+- [must/R2 Anywhere] appbox auto-captures screenshots of design + built app per surface (appbox lens)
 - [must/R2 Anywhere] Flows on a canvas: living captures, connections truth-derived from real navigation
 - [should/R2 Anywhere] Replayable named flows for gate reviews; zoom-semantic canvas keyed to story-map sections
 
@@ -233,7 +233,7 @@ appbox
 
 #### Showcase
 
-- [should/R2 Anywhere] Recorded walkthroughs and design-vs-built comparisons (probe-runner captures) prove quality before install
+- [should/R2 Anywhere] Recorded walkthroughs and design-vs-built comparisons (appbox lens captures) prove quality before install
 - [should/R2 Anywhere] Demo videos per persona journey (Evan's modes, Michelle's 20 minutes)
 
 #### Download

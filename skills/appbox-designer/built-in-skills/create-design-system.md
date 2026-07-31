@@ -4,12 +4,19 @@ description: "Create design system\nSkill to use if user asks you to create a de
 ---
 Design system creation instructions:
 
+> **Archived (dart-only port).** The `compile-design-system.mjs` compiler and
+> `build-preview.mjs` preview builder were node tools, now dropped and archived
+> under `archives/tooling-pre-dart/skills-pre-dart/appbox-designer/agents/`.
+> Only the read-only checker survived, as the Dart command
+> `appbox design ds-check`. The command examples below are the archived tools'
+> reference interface, not active invocations.
+
 ## This project is a design system
 
-You are authoring the design system itself, not consuming one. `_ds_bundle.js`, `_ds_manifest.json`, `_adherence.oxlintrc.json`, and `preview.html` are **generated artifacts** — never hand-edit them. After you edit components or tokens, (re)generate them by running the portable compiler (a plain shell call):
+You are authoring the design system itself, not consuming one. `_ds_bundle.js`, `_ds_manifest.json`, `_adherence.oxlintrc.json`, and `preview.html` are **generated artifacts** — never hand-edit them. After you edit components or tokens, (re)generate them by running the portable compiler, formerly a node call (now archived):
 
 ```
-node <skill>/agents/compile-design-system.mjs designs/<project>
+node <skill>/agents/compile-design-system.mjs designs/<project>   # archived — no Dart replacement
 ```
 
 (`<skill>` is this skill's directory.) See [`design-system-authoring-guide.md`](design-system-authoring-guide.md) for the full authoring flow — including importing sources from GitHub repos (see [`import-from-github.md`](import-from-github.md): browse with `gh api`, sparse-checkout only the paths you need into a scratch dir outside the project).
@@ -27,15 +34,15 @@ When the user says "create a starting point <X>", write an `.html` with the `<!-
 After any edit, recompile (above), then run the **read-only design-system checker** to confirm the project is usable by consuming projects — it reports what the compiler found (namespace, components, cards, starting points, tokens, fonts) and any issues, and writes nothing:
 
 ```
-node <skill>/agents/check-design-system.mjs designs/<project>
+appbox design ds-check designs/<project>
 ```
 
-To run it as an isolated read-only subagent (recommended after a batch of edits), launch it with the prompt at [`../agents/design-system-checker.md`](../agents/design-system-checker.md) — launch it with the `Agent` tool, `subagent_type="explore"`. Fix what it reports and run again until clean.
+The standalone subagent prompt that used to drive this (`agents/design-system-checker.md`) was archived with the agents tree; run `appbox design ds-check` directly, or re-run it after each fix until clean.
 
-**Finish by building the single-file review page** — once compiler + checker are clean, generate `designs/<project>/preview.html` (one self-contained interactive HTML with the Readme and every card) and re-generate it after any later edit:
+**Finish by building the single-file review page** — once compiler + checker are clean, generate `designs/<project>/preview.html` (one self-contained interactive HTML with the Readme and every card) and re-generate it after any later edit. The builder was a node tool (now archived):
 
 ```
-node <skill>/agents/build-preview.mjs designs/<project>
+node <skill>/agents/build-preview.mjs designs/<project>   # archived — no Dart replacement
 ```
 
 Full doc: [`design-system-preview.md`](design-system-preview.md).

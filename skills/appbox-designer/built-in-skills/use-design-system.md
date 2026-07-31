@@ -39,14 +39,14 @@ Before building, confirm with `AskUserQuestion`:
 2. **Which design system(s)** — list what discovery found, **multiSelect** so the user can pick **none** (free design), **one**, or **several**. With several selected, the **first selection** is the primary by default; confirm if they want a different primary.
 3. **(Optional) A starting point** — if a chosen system exposes `startingPoints[]`, offer them as seeds; otherwise offer its `cards[]` as reference or let the user design from scratch.
 
-If the user picks no design system, skip the rest of this flow (steps 3–8) and design normally — no `_ds/` folder, `designSystems: []`, `primaryDesignSystem: null`. You **still** get a `_d_meta.json`: `record-asset.mjs` creates it (with `type`/`createdAt`/`updatedAt`) the first time you record a deliverable as an asset — see ["Recording deliverables as assets"](#recording-deliverables-as-assets) below.
+If the user picks no design system, skip the rest of this flow (steps 3–8) and design normally — no `_ds/` folder, `designSystems: []`, `primaryDesignSystem: null`. You **still** get a `_d_meta.json`: `appbox design record-asset` creates it (with `type`/`createdAt`/`updatedAt`) the first time you record a deliverable as an asset — see ["Recording deliverables as assets"](#recording-deliverables-as-assets) below.
 
 ### 3. Import each selected design system
 
 For **each** selected system, run the sync script (a plain `node` call, like the compiler/checker):
 
 ```
-node <skill>/agents/import-design-system.mjs <dsDir> <projectDir> [--primary]
+appbox design ds-import <dsDir> <projectDir> [--primary]
 ```
 
 `<skill>` is this skill's directory; `<dsDir>` is the design-system folder (e.g. `designs/fluent2-design-system`); `<projectDir>` is your artifact folder. Pass `--primary` for the system the user chose as primary (otherwise the **first** system imported auto-claims the primary slot, and later imports leave it untouched).
@@ -129,7 +129,7 @@ The script writes/merges `<project>/_d_meta.json` for you. Shape:
 
 - `designSystems` is an **array** (0..N). No system → `[]` and `primaryDesignSystem: null`.
 - `primaryDesignSystem` points at one entry's `slug`, independent of array order. It decides CSS precedence (its `<link>` loads last), the default target for "update / add a component", and records the project's main visual language.
-- `assets` records the project's **UI entry points** (the pages you'd show the user) — a map keyed by display name, each with a `versions[]` list. It is **independent of `designSystems`** and present even when no design system is used. Each version is `{ path, createdAt, status, subtitle?, viewport?{width,height?}, chatId?, section? }`, with `path` project-relative and `status ∈ needs-review|approved|changes-requested`. Don't hand-write this — `record-asset.mjs` maintains it (see "Recording deliverables as assets" below).
+- `assets` records the project's **UI entry points** (the pages you'd show the user) — a map keyed by display name, each with a `versions[]` list. It is **independent of `designSystems`** and present even when no design system is used. Each version is `{ path, createdAt, status, subtitle?, viewport?{width,height?}, chatId?, section? }`, with `path` project-relative and `status ∈ needs-review|approved|changes-requested`. Don't hand-write this — `appbox design record-asset` maintains it (see "Recording deliverables as assets" below).
 - The script merges — it preserves orchestrator-written fields (`title`, `prompt`, `startingPoint`, `assets`, …), sets `type:"design"` if absent, sets `createdAt` once, and bumps `updatedAt` each run. Add `title`/`prompt`/`startingPoint` yourself when creating the project.
 
 ### 8. (Optional) Sanity-check the copy
@@ -137,17 +137,17 @@ The script writes/merges `<project>/_d_meta.json` for you. Shape:
 You can run the read-only checker against a consumed copy to confirm it's loadable:
 
 ```
-node <skill>/agents/check-design-system.mjs <projectDir>/_ds/<slug>
+appbox design ds-check <projectDir>/_ds/<slug>
 ```
 
 **Expect "Components: (none)" and "Starting points: (none)" here** — and that's fine. A consumed copy ships the compiled `_ds_bundle.js`, not the source `.jsx`/`.d.ts`, so the checker (which discovers components from source) finds none. What it *does* confirm is that the global-CSS `@import` closure resolves and the tokens are present. A clean exit (0) means the copy is wired correctly; to re-validate components, run the checker against the DS **source** instead.
 
 ## Recording deliverables as assets
 
-`_d_meta.json` also indexes the project's **deliverables** — the served URLs and pages you'd actually show the user — under `assets` (shape in step 7 above). This is **independent of design systems**: every project has deliverables, so it applies even to a project that imported no system. Don't hand-edit `assets`; the `record-asset.mjs` helper maintains it — and it **bootstraps `_d_meta.json` itself** when the project has none yet (the no-design-system case):
+`_d_meta.json` also indexes the project's **deliverables** — the served URLs and pages you'd actually show the user — under `assets` (shape in step 7 above). This is **independent of design systems**: every project has deliverables, so it applies even to a project that imported no system. Don't hand-edit `assets`; the `appbox design record-asset` helper maintains it — and it **bootstraps `_d_meta.json` itself** when the project has none yet (the no-design-system case):
 
 ```
-node <skill>/agents/record-asset.mjs <projectDir> <htmlPath> [flags]
+appbox design record-asset <projectDir> <htmlPath> [flags]
 ```
 
 `<htmlPath>` is the deliverable, project-relative (e.g. `Welcome.html`); an absolute or `<projectDir>`-prefixed path is normalized to project-relative POSIX for you. Flags:
@@ -165,7 +165,7 @@ node <skill>/agents/record-asset.mjs <projectDir> <htmlPath> [flags]
 **Unrecord** — when a deliverable is deleted or renamed, drop it:
 
 ```
-node <skill>/agents/record-asset.mjs <projectDir> --remove [<htmlPath>] [--name "<n>"] [--path <relPath>]
+appbox design record-asset <projectDir> --remove [<htmlPath>] [--name "<n>"] [--path <relPath>]
 ```
 
 A path removes that one version (scoped to `--name` if also given); `--name` alone removes the whole asset. An asset whose last version is removed is deleted, and `assets` is dropped entirely once empty. Running `--remove` against a missing `_d_meta.json` is a no-op — it won't create an empty file.

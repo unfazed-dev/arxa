@@ -1,0 +1,39 @@
+{
+  "project": "Self-Test App",
+  "releases": [
+    {"name": "Release 1"},
+    {"name": "Release 2", "description": "hardening pass"}
+  ],
+  "epics": [
+    {
+      "name": "User System",
+      "features": [
+        {
+          "name": "Registration & Login",
+          "stories": [
+            {"name": "Phone signup", "priority": "must", "release": "Release 1", "points": 3, "description": "SMS-verified onboarding"},
+            {"name": "Email login", "priority": "should", "release": "Release 2", "points": 2}
+          ]
+        },
+        {
+          "name": "注册",
+          "stories": [
+            {"name": "Phone signup", "priority": "must", "release": "Release 1"}
+          ]
+        },
+        {
+          "name": "Legacy SSO",
+          "stories": [
+            {"name": "SAML login", "priority": "wont", "release": "Release 2"}
+          ]
+        }
+      ]
+    },
+    {
+      "name": "User System",
+      "features": [
+        {"name": "Registration & Login", "stories": []}
+      ]
+    }
+  ]
+}

@@ -1,5 +1,7 @@
 # Consolidation — one appbox app + daemon
 
+> **Note (2026-07):** probe-runner is superseded by the appbox lens (`appboxd/lib/lens.dart`, skill `skills/appbox-lens`); the `## probe-runner` section and probe-runner mentions below are historical.
+
 **Status:** planned, **not started**. Documentation only; no implementation has
 been done. Settled in the consolidation grill, 2026-07-28.
 **Supersedes:** [`merge-companion-into-one-flutter-project.md`](merge-companion-into-one-flutter-project.md).

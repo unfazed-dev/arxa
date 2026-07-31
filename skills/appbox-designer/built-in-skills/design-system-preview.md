@@ -4,6 +4,12 @@ description: "Compile a design system directory (one with _ds_manifest.json and/
 ---
 # Design system → single-file preview.html
 
+> **Archived (dart-only port).** The `build-preview.mjs` node tool this document
+> describes was dropped and archived under
+> `archives/tooling-pre-dart/skills-pre-dart/appbox-designer/agents/` (no Dart
+> replacement). What follows is the archived tool's reference behavior; the run
+> command below is not an active invocation.
+
 Builds the design-system review pane as ONE static HTML
 file: 248px outline nav (pinned Readme + collapsible groups + scrollspy) and a
 content column (max-width 760px) with the rendered Readme and one live,
@@ -25,8 +31,10 @@ artifact**: never hand-edit it, always regenerate.
 
 ## Run
 
+The builder was a node tool (now archived, no Dart replacement):
+
 ```bash
-node <skill>/agents/build-preview.mjs designs/<project>
+node <skill>/agents/build-preview.mjs designs/<project>   # archived
 ```
 
 (`<skill>` is this skill's directory; `designs/<project>` is the design-system
@@ -45,8 +53,9 @@ Options:
 | `--cdn` | reference React/Babel from unpkg instead of inlining (smaller file, needs network) |
 | `--offline` | never hit the network; use vendor cache or emit CDN tags |
 
-React/ReactDOM UMDs and Babel are inlined from `agents/vendor/` (shipped with
-this skill), so the default build needs no network.
+React/ReactDOM UMDs and Babel were inlined from `agents/vendor/` (shipped with
+this skill, now archived with the agents tree), so the default build needed no
+network.
 
 ## Input format
 
@@ -58,9 +67,9 @@ this skill), so the default build needs no network.
   line is `<!-- @dsCard group="…" viewport="WxH" name="…" subtitle="…" -->`.
 - `readme.md` at the root becomes the pinned Readme card.
 - React cards (`<script type="text/babel">` + `_ds_bundle.js` + React CDN tags
-  in the card HTML) are supported: JSX is compiled at build time
-  (@babel/standalone from `agents/vendor/`), React production UMDs and
-  `_ds_bundle.js` are inlined once at document level.
+  in the card HTML) were supported: JSX was compiled at build time
+  (@babel/standalone from `agents/vendor/`, archived), React production UMDs and
+  `_ds_bundle.js` were inlined once at document level.
 
 ## How fidelity is kept
 
@@ -106,5 +115,5 @@ this skill), so the default build needs no network.
 After building, validate by serving the file and screenshotting (see
 `references/harness-tools.md` for preview/screenshot tools): outline items must
 scroll+highlight, React cards must mount (run
-`node <skill>/runtime/console-check.mjs <served-url>` — it fails on any
+`appbox lens check <served-url>` — it fails on any
 `[ds-preview]` console error), and cards must be visually isolated.

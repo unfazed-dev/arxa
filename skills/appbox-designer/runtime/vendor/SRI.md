@@ -1,4 +1,4 @@
-# Vendored client libraries (re-run `node vendor/fetch.mjs` to update)
+# Vendored client libraries (the `fetch.mjs` updater was archived; re-vendor htmx + extensions via `appbox design vendor-fetch`)
 
 | file | package | version | integrity |
 |---|---|---|---|

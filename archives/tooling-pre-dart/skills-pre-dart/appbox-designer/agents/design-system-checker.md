@@ -17,7 +17,7 @@ to this skill's `agents/` directory.
 1. Run the checker (it writes nothing):
 
    ```
-   node <skill>/agents/check-design-system.mjs "<projectDir>"
+   appbox design ds-check "<projectDir>"
    ```
 
    Add `--verbose` only if the caller asked for the full export map (every

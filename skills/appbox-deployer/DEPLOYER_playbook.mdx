@@ -15,7 +15,7 @@
 
 ### Overview & role
 
-fastlane, shorebird and wrangler are existing CLIs; this role drives them with a recipe. The Fastfile, `shorebird.yaml` and Pages project are operator-owned extension points — signing, bundle id, app ids and the Pages project name are project secrets the pipeline never holds. The mechanics live in `deploy.py` (this directory): every external CLI runs through a `ProcessRunner` port, so `deploy.py --self-test` asserts each command shape under a scripted runner with no toolchain, no credentials and no signing identity.
+fastlane, shorebird and wrangler are existing CLIs; this role drives them with a recipe. The Fastfile, `shorebird.yaml` and Pages project are operator-owned extension points — signing, bundle id, app ids and the Pages project name are project secrets the pipeline never holds. The mechanics live in `appboxd/lib/deploy.dart` (the Dart port of the former `deploy.py`, now archived): every external CLI runs through a `ProcessRunner` port, so `appbox deploy --self-test` asserts each command shape under a scripted runner with no toolchain, no credentials and no signing identity.
 
 **Targets — wired vs stubbed (honest):**
 
@@ -42,7 +42,7 @@ Only wired targets are surfaced to an operator. `vercel` is excluded here and `g
 
 **Web — Cloudflare Pages:** once, `wrangler pages project create <name>` (operator-owned); deploy with `wrangler pages deploy <dir> --project-name <name>`, which returns a deployment URL.
 
-**The gate.** Deploy is the third human gate and the strictest — it is a write to the outside world that cannot be undone by re-running a stage. `gates/deploy` names target + version + account and requires a person to confirm that exact triple. Run `doctor` as preflight (it reports readiness; it is NOT the gate). An agent may prepare, preflight, reach the gate and stop — it never mints the approval token. `deploy.py deploy` requires that approval as an argument and halts without it, recording a `halted` ledger row.
+**The gate.** Deploy is the third human gate and the strictest — it is a write to the outside world that cannot be undone by re-running a stage. `gates/deploy` names target + version + account and requires a person to confirm that exact triple. Run `doctor` as preflight (it reports readiness; it is NOT the gate). An agent may prepare, preflight, reach the gate and stop — it never mints the approval token. `appbox deploy deploy` requires that approval as an argument and halts without it, recording a `halted` ledger row.
 
 ### Outputs
 
@@ -54,8 +54,8 @@ Never commit secrets — `.env`, signing, store keys, the Cloudflare token are o
 
 <!-- kb:begin -->
 ### References
-- `skills/app-box-deployer/deploy.py` — the mechanics + `--self-test` (scripted runner, no credentials).
-- `gates/deploy/` — the deploy gate; `selftest.sh` proves the negative for each of target / version / account (R5).
+- `appboxd/lib/deploy.dart` — the mechanics + `appbox deploy --self-test` (scripted runner, no credentials). The former `deploy.py` is archived under `archives/tooling-pre-dart/skills-pre-dart/appbox-deployer/`.
+- `gates/deploy/` — the deploy gate; its self-test proves the negative for each of target / version / account (R5).
 - `appboxd/lib/tier1.dart` — the same `ProcessRunner` / `ScriptedRunner` seam, applied to payments + auth.
 - `docs/plans/architecture.md` §17 — kit consumption, the deployer, and why deploy is a third human gate.
 <!-- kb:end -->

@@ -20,7 +20,7 @@ String repoRoot() {
 
 void main() {
   group('stage registry', () {
-    test('returns the 10 Dart gates in dependency order', () {
+    test('returns the 11 Dart gates in dependency order', () {
       final stages = loadStages(repoRoot());
       expect(
         stages.map((s) => s.name).toList(),
@@ -34,6 +34,7 @@ void main() {
           'advertise',
           'review',
           'native_deps',
+          'lens',
           'deploy',
         ],
       );

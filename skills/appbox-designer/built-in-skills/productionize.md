@@ -8,7 +8,7 @@ Transform an artifact (which runs on the skill's shared Runtime) into a standalo
 ## Run it
 
 ```sh
-node <skill>/runtime/eject.mjs <artifact-dir> <out-dir>
+appbox design eject <artifact-dir> <out-dir>
 cd <out-dir> && npm install && npm test && npm start   # http://localhost:4319 (PORT env to change)
 ```
 
@@ -29,7 +29,7 @@ cd <out-dir> && npm install && npm test && npm start   # http://localhost:4319 (
 2. **Data layer** — swap fixture Repositories for real ones, one at a time, behind the existing Facade contracts. This is the seam the MVVM structure was built for: ViewModels touch only Facades, so no template or route changes.
 3. **Session store** — the in-memory store is single-process; for multi-instance deploys swap `runtime/lib/state.mjs`'s Map for a shared store (cookie-signed or Redis) behind the same `sessionOf/prefsOf/setPrefs` helpers.
 4. **Tests** — extend `test/smoke.test.mjs`: one request-level test per route (Hono's `app.request()` needs no listening server), plus the Playwright paths that matter.
-5. **Security** — keep `lint.mjs` green in CI (the zero-custom-JS contract); add standard headers (Hono `secureHeaders` middleware); review cookies (`httpOnly` is already set on the session cookie).
+5. **Security** — keep `appbox design lint` green in CI (the zero-custom-JS contract); add standard headers (Hono `secureHeaders` middleware); review cookies (`httpOnly` is already set on the session cookie).
 6. **Deploy** — any Node ≥20 host. Minimal Dockerfile: `FROM node:22-slim`, copy, `npm ci --omit=dev`, `CMD ["npm","start"]`.
 
 ## Not included (by design — ADR-0008)
@@ -38,4 +38,4 @@ Auth, database provisioning/migrations, CI pipelines. Those are product decision
 
 ## Verify
 
-`npm test` passes, `npm run lint` clean, `node runtime/console-check.mjs http://localhost:4319/` clean after `npm start`, and a final Playwright screenshot review of the key surfaces.
+`npm test` passes, `npm run lint` clean, `appbox lens check http://localhost:4319/` clean after `npm start`, and a final Playwright screenshot review of the key surfaces.

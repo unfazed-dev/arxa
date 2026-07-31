@@ -99,7 +99,7 @@ the resolved ladder at session start.
    same `surfaceId`, same viewmodel; the *view* branches on width via CSS
    container queries or media queries.
 2. Shoot every surface at every active rung and read the images back:
-   `node <skill>/runtime/shoot.mjs <url> [--rungs a,b]`. Widths live in
+   `appbox lens shoot <url> [--rungs a,b]`. Widths live in
    `runtime/ladder.json` — pass rung *names*, never pixels. See
    [`harness-tools.md`](harness-tools.md).
 3. A surface that renders identically at two rungs is fine — say so explicitly

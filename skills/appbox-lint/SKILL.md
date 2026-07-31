@@ -17,10 +17,14 @@ See `docs/KNOWLEDGE.md` for the source-of-truth hierarchy this skill enforces.
 
 ## Procedure
 
-1. **Mechanical pass.** `python skills/appbox-lint/lint_kb.py`
+1. **Mechanical pass.** `appbox docs`
    - Flags: docs missing from `docs/index.md`, dead `.md` links, orphan pages, half-wired
      supersede pointers, unresolved memory `[[wikilinks]]`. Exit 1 = at least one ERROR.
    - Fix ERRORs before continuing (usually: add the page to `index.md`, or fix the link).
+   - (`appbox docs` is the Dart port of `lint_kb.py` — it folds the KB-lint orphans/supersede/
+     wikilink warnings on top of the dead-link + index-coverage contract. The synthetic-fixture
+     `--self-test` did not carry over; the live `appbox docs` run against the real tree is the
+     check.)
 
 2. **Semantic pass — the part that matters.** For each topic touched recently (read the last few
    `changelog.md` entries; `grep "^## " docs/changelog.md | head`), cross-check the claim across
@@ -49,5 +53,6 @@ See `docs/KNOWLEDGE.md` for the source-of-truth hierarchy this skill enforces.
   changelog). Grep the assertion across all layers and fix every copy.
 - **Skipping the semantic pass** because the script went green. The script checks plumbing, not
   truth. A perfectly-linked, fully-indexed wiki can still be confidently wrong.
-- **Letting the script's `--self-test` rot.** If you change `lint_kb.py`, keep its self-test green
-  (`python skills/lint/lint_kb.py --self-test`).
+- **Letting the check rot.** If you change `appboxd/lib/docs_lint.dart`, keep `appbox docs` green
+  against the real repo tree — there is no synthetic `--self-test` in the Dart port; the live run
+  is the regression check.

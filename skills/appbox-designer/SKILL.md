@@ -82,10 +82,11 @@ context, fidelity, variations (see "Asking questions" in `system-prompt.md`).
 `designs/<descriptive-project-name>/`) and **which design system(s) to use**.
 Start every artifact by copying `examples/hello-hda/` and renaming; never
 scatter design files in the repo root. The copy carries a `serve.mjs` at the
-artifact root — `node serve.mjs [--port N] [--json]` from inside the design
-serves it without referencing the skill path. Keep it; never delete it. Import design systems with
-`agents/import-design-system.mjs` and record deliverables with
-`agents/record-asset.mjs` as in `built-in-skills/use-design-system.md`.
+artifact root — `appbox design serve <artifact-dir> [--port N] [--json]` (or the
+copied `serve.mjs` shim from inside the design) serves it without referencing
+the skill path. Keep the shim; never delete it. Import design systems with
+`appbox design ds-import` and record deliverables with
+`appbox design record-asset` as in `built-in-skills/use-design-system.md`.
 
 **9. Build components-first, then serve and verify.** Before composing any
 surface, author the artifact's component library: inventory the design's
@@ -98,20 +99,22 @@ carries the `data-layout` attribute set and its children size with
 `data-resize-x` / `data-resize-y`. To turn it off per frame, omit
 `data-layout` (art-directed frames); to exempt a single child, give it
 `data-layout-ignore`. Then build the artifact per the contract, serve it with
-`node <skill>/runtime/serve.mjs <artifact-dir> --port 4319` (background), then
-verify: `node <skill>/runtime/lint.mjs <artifact-dir>` (no-ad-hoc-JS / named-islands),
-`node <skill>/runtime/console-check.mjs http://localhost:4319/…` (console
-clean), and `node <skill>/runtime/shoot.mjs http://localhost:4319/<route>` (**every width in the active ladder**, plus overflow and failed-request checks). Fix
+`appbox design serve <artifact-dir> --port 4319` (background), then
+verify: `appbox design lint <artifact-dir>` (no-ad-hoc-JS / named-islands),
+`appbox lens check http://localhost:4319/…` (console
+clean), and `appbox lens shoot http://localhost:4319/<route>` (**every width in the active ladder**, plus overflow and failed-request checks). Fix
 before surfacing; give the user the served URL.
 
-**10. Productionize on request.** `node <skill>/runtime/eject.mjs <artifact-dir>
+**10. Productionize on request.** `appbox design eject <artifact-dir>
 <out-dir>` ejects a self-contained, hardened Hono app — see
 `built-in-skills/productionize.md`.
 
 ## Requirements
 
-This skill needs **Node** on `PATH` (Hono, nunjucks) and **Playwright** for the
-render and console checks. Run `node <skill>/runtime/doctor.mjs` to check. This requirement applies to the *designer's* machine only — the shipped
+The designer runtimes are **Dart** — the `appbox design` and `appbox lens`
+commands (served, linted, captured over the Dart design server + the lens).
+Run `appbox design doctor` to preflight the toolchain the gates use. This
+requirement applies to the *designer's* machine only — the shipped
 appbox desktop app serves prototypes without Node.
 
 ## Deliberately absent capabilities
@@ -136,7 +139,7 @@ applications.
   `l10n/app_<locale>.arb` and renders via the `t` global — never hardcode copy
   in templates. Jargon variants are key suffixes (`keyPlain`/`keyTechnical`).
   Localized content is per-locale seeds (`<name>_seed.<locale>.json` is the
-  SSOT) generating `<name>_fixtures.<locale>.json`. `runtime/pseudolocalize.mjs`
+  SSOT) generating `<name>_fixtures.<locale>.json`. `appbox design pseudolocalize`
   derives the `qps-ploc` pseudo-locale from English — run it to catch
   truncation and hardcoded strings. Full contract: runtime/README.md "L10n".
 - Keep artifacts self-contained: copy every referenced asset into the artifact

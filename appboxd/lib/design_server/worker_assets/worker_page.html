@@ -1,0 +1,12 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<!-- import map BEFORE any module import: remaps node:fs to our sync shim so
+     artifact ES modules (fixture_reader.js does `import {readFileSync} from
+     'node:fs'`) resolve in the browser. This is the one Node builtin the
+     artifact graph uses; it is backed by a Dart-prefetched fixture map. -->
+<script type="importmap">
+{ "imports": { "node:fs": "/__worker_assets/fs_shim.js" } }
+</script>
+<script src="/__worker_assets/nunjucks.min.js"></script>
+<script src="/__worker_assets/worker_shim.js"></script>
+</head><body></body></html>

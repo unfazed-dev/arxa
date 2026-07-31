@@ -407,7 +407,7 @@ any CN Swift file that constructs a `UIHostingController(` without calling
 after allocation; if the view *intentionally* wants safe area (docked chrome
 that never scrolls), add it to the test's allowlist with a comment saying why.
 
-**Verified (iOS 26.5 sim, probe-runner frame tracking):** pill-to-label offset
+**Verified (iOS 26.5 sim, appbox lens frame tracking):** pill-to-label offset
 and pill-to-card-bottom gap invariant across gentle scrolls, mid-scroll parks,
 and repeated hard-fling cycles; Search-tab switches pixel-identical before/after
 a fling. Native (Swift) changes need a **full stop + rebuild** to test — hot

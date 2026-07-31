@@ -2,7 +2,7 @@
 
 Slice: layout behavior for **appbox**'s redesign — the previous design failed on information overload/paralysis; this slice is the antidote pattern library: focus modes, card stacks, spacious empty states, depth-on-demand.
 
-Captured 2026-07-28 via probe-runner. Freshness: **🔥** current · **🌡️** canonical.
+Captured 2026-07-28 with the appbox lens. Freshness: **🔥** current · **🌡️** canonical.
 
 ---
 

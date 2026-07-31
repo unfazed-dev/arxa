@@ -57,7 +57,7 @@ const phaseGates = <String, List<String>>{
   'design': ['structure'],
   'scaffold': ['scaffold', 'coverage'],
   'review': ['review', 'memory'],
-  'build': ['native_deps'],
+  'build': ['native_deps', 'lens'],
   'deploy': ['deploy', 'advertise'],
 };
 

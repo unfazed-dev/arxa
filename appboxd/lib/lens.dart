@@ -4,14 +4,28 @@
 // compare them against frozen golden images. Three comparison modes:
 //   - byte:   exact PNG byte match (strictest, anti-aliasing sensitive)
 //   - pixel:  per-pixel diff percentage (tolerant of sub-pixel shifts)
-//   - ssim:   structural similarity index (perceptual, future)
+//   - ssim:   structural similarity index (perceptual, luma 11x11 Gaussian)
 //
-// The lens is the promoted probe-runner — from underused vendored skill
-// to a first-class gate. See plan §6.
+// Pixel/SSIM decode both captures via package:image (lib/lens/pixels.dart)
+// and compare in decoded terms. Console/page errors auto-fail before any
+// pixel work. The lens is the promoted probe-runner — from underused
+// vendored skill to a first-class gate. See plan §6.
 
 import 'dart:io';
 
 import 'package:appboxd/cdp.dart';
+import 'package:appboxd/lens/pixels.dart';
+
+export 'lens/pixels.dart';
+export 'lens/tokens.dart';
+export 'lens/dom.dart';
+export 'lens/a11y.dart';
+export 'lens/net.dart';
+export 'lens/motion.dart';
+export 'lens/skeleton.dart';
+export 'lens/states.dart';
+export 'lens/crawl.dart';
+export 'lens/ocr.dart';
 
 /// Comparison method for the visual gate.
 enum LensMode { byte, pixel, ssim }
@@ -43,6 +57,7 @@ Future<List<int>> captureGolden(
   int height, {
   String? goldenPath,
   int settleMs = 1500,
+  bool fullPage = false,
 }) async {
   final client = await CdpClient.launch();
   try {
@@ -50,7 +65,7 @@ Future<List<int>> captureGolden(
     await tab.enable();
     await tab.setViewport(width, height);
     await tab.navigateAndSettle(url, settleMs: settleMs);
-    final png = await tab.screenshot();
+    final png = await tab.screenshot(fullPage: fullPage);
 
     if (goldenPath != null) {
       final f = File(goldenPath);
@@ -119,36 +134,41 @@ Future<LensResult> compareGolden(
         );
 
       case LensMode.pixel:
-        // Compare PNG dimensions + basic structural check.
-        // Full per-pixel comparison requires PNG decode — deferred to when
-        // the `image` package is added or CDP canvas comparison is wired.
-        final dimsMatch = _pngDimensions(png) == _pngDimensions(goldenBytes);
-        if (!dimsMatch) {
+      case LensMode.ssim:
+        try {
+          final live = decodePng(png);
+          final golden = decodePng(goldenBytes);
+          if (mode == LensMode.pixel) {
+            final diff = pixelDiff(live, golden);
+            final similarity = diff.similarity;
+            final ok = similarity >= threshold;
+            return LensResult(
+              surface: url,
+              passed: ok,
+              similarity: similarity,
+              diffPixels: diff.diffPixels,
+              note: ok
+                  ? 'pixel match (similarity ${similarity.toStringAsFixed(4)}, ${diff.diffPixels}/${diff.totalPixels} differ)'
+                  : 'pixels differ (similarity ${similarity.toStringAsFixed(4)}, ${diff.diffPixels}/${diff.totalPixels})',
+            );
+          }
+          final similarity = ssimSimilarity(live, golden);
+          final ok = similarity >= threshold;
+          return LensResult(
+            surface: url,
+            passed: ok,
+            similarity: similarity,
+            note: ok
+                ? 'ssim match (similarity ${similarity.toStringAsFixed(4)})'
+                : 'ssim below threshold (similarity ${similarity.toStringAsFixed(4)} < $threshold)',
+          );
+        } on LensPixelException catch (e) {
           return LensResult(
             surface: url,
             passed: false,
-            note: 'dimensions differ: live=${_pngDimensions(png)} golden=${_pngDimensions(goldenBytes)}',
+            note: 'decode failed: $e',
           );
         }
-        // kimitail: byte-level fallback until per-pixel SSIM is wired.
-        // Ceiling: anti-aliased text or sub-pixel font hinting will cause
-        // false negatives in byte mode. Upgrade: add `image` package for
-        // per-pixel delta, or compute SSIM via CDP canvas + Runtime.evaluate.
-        final match = _bytesEqual(png, goldenBytes);
-        return LensResult(
-          surface: url,
-          passed: match,
-          similarity: match ? 1.0 : 0.0,
-          note: match ? 'pixel-identical to golden' : 'pixels differ (byte-level check; per-pixel delta coming)',
-        );
-
-      case LensMode.ssim:
-        // TODO: implement SSIM via CDP canvas comparison or `image` package.
-        return LensResult(
-          surface: url,
-          passed: false,
-          note: 'ssim mode not yet implemented — use byte or pixel',
-        );
     }
   } finally {
     await client.close();
@@ -192,12 +212,4 @@ bool _bytesEqual(List<int> a, List<int> b) {
     if (a[i] != b[i]) return false;
   }
   return true;
-}
-
-/// Extract width×height from PNG IHDR (bytes 16–23).
-(String, String) _pngDimensions(List<int> png) {
-  if (png.length < 24) return ('?', '?');
-  final w = (png[16] << 24) | (png[17] << 16) | (png[18] << 8) | png[19];
-  final h = (png[20] << 24) | (png[21] << 16) | (png[22] << 8) | png[23];
-  return ('$w', '$h');
 }

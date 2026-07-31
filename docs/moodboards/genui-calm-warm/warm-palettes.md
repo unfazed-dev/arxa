@@ -2,7 +2,7 @@
 
 Slice: color direction for **appbox**'s calm/warm GenUI redesign — a warm-LIGHT scheme (cream/paper/terracotta/amber) and a warm-DARK scheme (ember/warm-charcoal), with real hex values to steal.
 
-Captured 2026-07-28 via probe-runner (own-tab CDP, 1440×900 @2x, full-page). Freshness: **🔥** current craft bar · **🌡️** canonical, steal selectively · **❄️** dated.
+Captured 2026-07-28 with the appbox lens (own-tab CDP, 1440×900 @2x, full-page). Freshness: **🔥** current craft bar · **🌡️** canonical, steal selectively · **❄️** dated.
 
 ---
 

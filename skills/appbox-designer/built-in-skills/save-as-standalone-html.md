@@ -7,7 +7,7 @@ description: "Eject / share an artifact\nSelf-contained Hono app via the Product
 ## Eject
 
 ```sh
-node <skill>/runtime/eject.mjs <artifact-dir> <out-dir>
+appbox design eject <artifact-dir> <out-dir>
 ```
 
 This writes a self-contained Hono app to `<out-dir>`: its own package.json, the Runtime inlined, the artifact's MVVM structure preserved, and a baseline test. For the full hardening story — env-based config, deploy notes, the Repository DB-swap seam — see [`productionize.md`](productionize.md).
@@ -16,7 +16,7 @@ Only the vendored libraries the artifact's markup actually loads are copied. `ve
 
 The eject **fails** rather than shipping if the markup names a library that is not vendored, or if no HTML loads htmx at all. An app with an empty `vendor/` boots clean, logs nothing, and is silently inert — the one failure mode this stack is worst at surfacing.
 
-Verify before delivering: boot the ejected app, hit its routes, and keep `node <skill>/runtime/lint.mjs <out-dir>` clean. Then deliver the `<out-dir>` path to the user — don't ask whether they want it, just give it.
+Verify before delivering: boot the ejected app, hit its routes, and keep `appbox design lint <out-dir>` clean. Then deliver the `<out-dir>` path to the user — don't ask whether they want it, just give it.
 
 ## If the user truly needs one offline file
 

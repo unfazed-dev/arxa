@@ -242,7 +242,7 @@
               "release": "R1 Dogfood"
             },
             {
-              "name": "Each reference's key screens are captured (probe-runner) and saved with semantic filenames (ref__screen.png)",
+              "name": "Each reference's key screens are captured (appbox lens) and saved with semantic filenames (ref__screen.png)",
               "priority": "must",
               "release": "R1 Dogfood"
             },
@@ -497,7 +497,7 @@
           "name": "Visual",
           "stories": [
             {
-              "name": "probe-runner design-vs-built gates: pixel (SSIM), skeleton, colour (deltaE) against the frozen golden",
+              "name": "appbox lens design-vs-built gates: pixel (SSIM), skeleton, colour (deltaE) against the frozen golden",
               "priority": "must",
               "release": "R1 Dogfood"
             },
@@ -557,7 +557,7 @@
           "name": "Canvas",
           "stories": [
             {
-              "name": "appbox auto-captures screenshots of design + built app per surface (probe-runner)",
+              "name": "appbox auto-captures screenshots of design + built app per surface (appbox lens)",
               "priority": "must",
               "release": "R2 Anywhere"
             },
@@ -737,7 +737,7 @@
           "name": "Showcase",
           "stories": [
             {
-              "name": "Recorded walkthroughs and design-vs-built comparisons (probe-runner captures) prove quality before install",
+              "name": "Recorded walkthroughs and design-vs-built comparisons (appbox lens captures) prove quality before install",
               "priority": "should",
               "release": "R2 Anywhere"
             },

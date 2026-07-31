@@ -2,7 +2,7 @@
 
 Slice: type direction for **appbox** — one superfamily that covers display, body, and UI-label roles while reinforcing "calm, warm, readable" (Lexend was literally engineered for reading proficiency).
 
-Captured 2026-07-28 via probe-runner. Freshness: **🔥** current · **🌡️** canonical.
+Captured 2026-07-28 with the appbox lens. Freshness: **🔥** current · **🌡️** canonical.
 
 ---
 

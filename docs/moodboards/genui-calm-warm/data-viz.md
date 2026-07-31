@@ -2,7 +2,7 @@
 
 Slice: chart language for **appbox**'s generative cards — build-duration trends, gate pass/fail history, coverage deltas — rendered with editorial restraint, not dashboard density.
 
-Captured 2026-07-28 via probe-runner. Freshness: **🔥** current · **🌡️** canonical.
+Captured 2026-07-28 with the appbox lens. Freshness: **🔥** current · **🌡️** canonical.
 
 ---
 

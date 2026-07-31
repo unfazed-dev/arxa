@@ -1,6 +1,6 @@
 ---
 name: appbox-intake
-description: Use to turn a client conversation into a design brief plus a seeded registry.json — OPTIONAL, runs before design. Elicits requirements; never generates design or code. Trigger on "intake a project", "write the brief", "seed the registry", "what does the client want". Drives skills/appbox-intake/intake.py.
+description: Use to turn a client conversation into a design brief plus a seeded registry.json — OPTIONAL, runs before design. Elicits requirements; never generates design or code. Trigger on "intake a project", "write the brief", "seed the registry", "what does the client want". Drives `appbox intake` (the Dart port in appboxd/lib/intake.dart).
 ---
 
 # appbox-intake — elicit the brief, seed the registry
@@ -21,7 +21,8 @@ first run the buyer skips intake entirely and still reaches the showcase app
 
 ## What you produce (and what you do not)
 
-Two artefacts, both written by the engine (`intake.py`):
+Two artefacts, both written by the engine (`appbox intake`, Dart in
+`appboxd/lib/intake.dart`):
 
 1. **`docs/design/brief.md`** — one section per elicited field (product,
    audience, the things the app must do, existing systems, targets, brand,
@@ -84,11 +85,11 @@ authority the brief does not have.
 
 4. **Emit.**
    ```sh
-   python skills/appbox-intake/intake.py emit --answers <answers.json>
+   appbox intake emit --answers <answers.json>
    ```
    Validate first if you only want a check:
    ```sh
-   python skills/appbox-intake/intake.py validate <answers.json>
+   appbox intake validate <answers.json>
    ```
    Outputs default under `docs/design/` (overridable via `--brief-out` /
    `--registry-out`, or the `INTAKE_BRIEF_OUT` / `INTAKE_REGISTRY_OUT` env
@@ -98,7 +99,7 @@ authority the brief does not have.
    ideal case — it is already the client's words. Seed the registry from its
    surface table without rewriting a word:
    ```sh
-   python skills/appbox-intake/intake.py seed --brief docs/design/brief.md
+   appbox intake seed --brief docs/design/brief.md
    ```
    A brief with no surface table yields an empty seed (the designer authors the
    registry). That is not an error; intake is optional.
@@ -114,7 +115,7 @@ authority the brief does not have.
 
 The engine's self-test is the proof the guardrail holds:
 ```sh
-python skills/appbox-intake/intake.py --self-test
+appbox intake --self-test
 ```
 It asserts, negatively: feed N surfaces, the emitted registry has exactly N
 (no invented entries); every `surface` is `null`; every `inferred` field is

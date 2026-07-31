@@ -167,14 +167,14 @@ Organize the data in the following format:
 One command emits all three handoff artifacts:
 
 ```bash
-python3 skills/appbox-story-mapper/scripts/generate_story_map.py \
+appbox emit story-map \
   --input data.json \
   --output docs/design/story_map.html \
   --data-out docs/design/story-map.json \
   --brief-out docs/design/brief.md
 
 # Read JSON from stdin
-echo '{"project":"demo",...}' | python3 skills/appbox-story-mapper/scripts/generate_story_map.py \
+echo '{"project":"demo",...}' | appbox emit story-map \
   --output docs/design/story_map.html \
   --data-out docs/design/story-map.json \
   --brief-out docs/design/brief.md
@@ -206,7 +206,7 @@ flags.
 - **`story_map.html`** → the human artifact: show it to the client to confirm
   scope before design starts.
 - Optionally seed the registry without rewriting a word:
-  `python3 skills/appbox-intake/intake.py seed --brief docs/design/brief.md`
+  `appbox intake seed --brief docs/design/brief.md`
   (plan 10.7 — the brief passes through unmodified).
 
 The script produces a **self-contained HTML file** (no external dependencies) with these features:
@@ -259,5 +259,5 @@ The script produces a **self-contained HTML file** (no external dependencies) wi
 3. **Empty data handling**: If a Feature has no Stories, the column shows an empty placeholder — and the Feature still becomes a surface (named, not yet detailed)
 4. **Multilingual support**: Project names, Epic names, etc. support mixed CJK and Latin characters. Slugs are the name's first ascii word; a CJK-only name slugs to `s` — prefer names that slug readably, and confirm the derived ids with the user before emitting the brief
 5. **Large map advisory**: If total Stories exceed 50, consider splitting into multiple sub-maps
-6. **Self-check**: `python3 scripts/generate_story_map.py --self-test` asserts the handoff contract — ids match the gate pattern, are unique, all-`wont` features stay out of the surface table, and the gate's own parse would recover exactly the emitted ids
+6. **Self-check**: `appbox emit story-map --self-test` asserts the handoff contract — ids match the gate pattern, are unique, all-`wont` features stay out of the surface table, and the gate's own parse would recover exactly the emitted ids
 7. **Licensed MIT** — third-party skill, adapted for appbox. See `LICENSE.txt` and the repository's `THIRD-PARTY-NOTICES.md`

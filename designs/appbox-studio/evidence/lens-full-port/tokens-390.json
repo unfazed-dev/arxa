@@ -1,0 +1,265 @@
+{
+  "url": "http://localhost:4399/",
+  "viewport": [
+    390,
+    844
+  ],
+  "palette": [
+    {
+      "hex": "#6f6e69",
+      "count": 189
+    },
+    {
+      "hex": "#100f0f",
+      "count": 141
+    },
+    {
+      "hex": "#fffcf0",
+      "count": 46
+    },
+    {
+      "hex": "#f2f0e5",
+      "count": 35
+    },
+    {
+      "hex": "#0c87a8",
+      "count": 28
+    },
+    {
+      "hex": "#0c87a8",
+      "count": 3
+    },
+    {
+      "hex": "#ffffff",
+      "count": 2
+    },
+    {
+      "hex": "#66800b",
+      "count": 2
+    }
+  ],
+  "type": [
+    {
+      "value": 9,
+      "count": 5
+    },
+    {
+      "value": 12,
+      "count": 40
+    },
+    {
+      "value": 13,
+      "count": 118
+    },
+    {
+      "value": 14,
+      "count": 35
+    },
+    {
+      "value": 15,
+      "count": 159
+    },
+    {
+      "value": 17,
+      "count": 4
+    },
+    {
+      "value": 18,
+      "count": 1
+    },
+    {
+      "value": 26,
+      "count": 1
+    }
+  ],
+  "spacing": [
+    {
+      "value": 2,
+      "count": 2
+    },
+    {
+      "value": 3,
+      "count": 68
+    },
+    {
+      "value": 5,
+      "count": 10
+    },
+    {
+      "value": 6,
+      "count": 29
+    },
+    {
+      "value": 7,
+      "count": 41
+    },
+    {
+      "value": 8,
+      "count": 69
+    },
+    {
+      "value": 10,
+      "count": 68
+    },
+    {
+      "value": 11,
+      "count": 33
+    },
+    {
+      "value": 12,
+      "count": 78
+    },
+    {
+      "value": 14,
+      "count": 20
+    },
+    {
+      "value": 16,
+      "count": 1
+    },
+    {
+      "value": 17,
+      "count": 4
+    },
+    {
+      "value": 18,
+      "count": 2
+    },
+    {
+      "value": 22,
+      "count": 1
+    },
+    {
+      "value": 32,
+      "count": 1
+    },
+    {
+      "value": 33,
+      "count": 1
+    },
+    {
+      "value": 35,
+      "count": 1
+    },
+    {
+      "value": 37,
+      "count": 1
+    },
+    {
+      "value": 42,
+      "count": 1
+    },
+    {
+      "value": 44,
+      "count": 1
+    },
+    {
+      "value": 45,
+      "count": 1
+    },
+    {
+      "value": 46,
+      "count": 1
+    },
+    {
+      "value": 55,
+      "count": 1
+    },
+    {
+      "value": 60,
+      "count": 2
+    },
+    {
+      "value": 68,
+      "count": 1
+    },
+    {
+      "value": 80,
+      "count": 2
+    },
+    {
+      "value": 82,
+      "count": 1
+    },
+    {
+      "value": 89,
+      "count": 2
+    },
+    {
+      "value": 91,
+      "count": 1
+    },
+    {
+      "value": 94,
+      "count": 1
+    },
+    {
+      "value": 103,
+      "count": 2
+    },
+    {
+      "value": 104,
+      "count": 1
+    },
+    {
+      "value": 106,
+      "count": 1
+    },
+    {
+      "value": 107,
+      "count": 1
+    },
+    {
+      "value": 111,
+      "count": 1
+    },
+    {
+      "value": 112,
+      "count": 2
+    },
+    {
+      "value": 114,
+      "count": 3
+    },
+    {
+      "value": 119,
+      "count": 1
+    },
+    {
+      "value": 120,
+      "count": 1
+    },
+    {
+      "value": 126,
+      "count": 1
+    },
+    {
+      "value": 141,
+      "count": 1
+    }
+  ],
+  "radii": [
+    {
+      "value": 8,
+      "count": 13
+    },
+    {
+      "value": 10,
+      "count": 34
+    },
+    {
+      "value": 14,
+      "count": 3
+    },
+    {
+      "value": 50,
+      "count": 10
+    },
+    {
+      "value": 999,
+      "count": 45
+    }
+  ],
+  "consoleErrors": [],
+  "certified": true
+}

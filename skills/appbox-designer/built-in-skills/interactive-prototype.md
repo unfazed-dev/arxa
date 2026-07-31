@@ -24,7 +24,7 @@ Build a fully interactive prototype as a **server-first hypermedia app**: every 
 2. Copy `examples/hello-hda/` → your artifact dir; rename shell/surfaces.
 3. Models + fixtures first (`models/`, `services/repositories|facades/`) — the data the screens bind to.
 4. Shell (chrome + nav) in `ui/views/<shell>_shell/`, then one Surface at a time: `<surface>_view.html` (page + Named Fragment macros) + `<surface>_viewmodel.js` (context builders + handlers).
-5. Serve, then verify per surface: `lint.mjs`, `console-check.mjs`, playwright screenshot + `ReadMediaFile`.
+5. Serve, then verify per surface: `appbox design lint`, `appbox lens check`, playwright screenshot + `ReadMediaFile`.
 
 ## The playbook (copy these patterns)
 
@@ -57,4 +57,4 @@ Live clocks without a server tick, drag/swipe gestures, canvas/Lottie, auto-dism
 
 ## Verify before surfacing
 
-`node <skill>/runtime/lint.mjs <artifact-dir>` → `node <skill>/runtime/console-check.mjs <url>` → `npx playwright screenshot <url> /tmp/x.png` + `ReadMediaFile`. All three pass, then give the user the served URL.
+`appbox design lint <artifact-dir>` → `appbox lens check <url>` → `npx playwright screenshot <url> /tmp/x.png` + `ReadMediaFile`. All three pass, then give the user the served URL.

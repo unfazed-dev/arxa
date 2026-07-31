@@ -11,10 +11,11 @@ recipe. The Fastfile, `shorebird.yaml` and Pages project are **operator-owned
 extension points** — signing, bundle id, app ids and the Pages project name are
 project secrets the pipeline never holds.
 
-The mechanics live in `deploy.py` (this directory): the external CLIs are invoked
-through a `ProcessRunner` port, so `deploy.py --self-test` exercises **every
-command shape under a scripted runner with no toolchain, no credentials and no
-signing identity** — the one property that makes a deploy stage self-testable.
+The mechanics live in `appboxd/lib/deploy.dart` (the Dart port of the former
+`deploy.py`): the external CLIs are invoked through a `ProcessRunner` port, so
+`appbox deploy --self-test` exercises **every command shape under a scripted
+runner with no toolchain, no credentials and no signing identity** — the one
+property that makes a deploy stage self-testable.
 
 ## Targets — wired vs stubbed (honest)
 
@@ -59,7 +60,7 @@ gates. It names the build **target**, the release **version** and the releasing
 **account**, and requires a person to confirm that exact triple. The gate
 asserts those three in pipeline state (`approvalTokens.deploy`); an agent may
 prepare, run `doctor` preflight, reach the gate and **stop** — it can never mint
-the approval token. `deploy.py deploy` requires that approval as an argument and
+the approval token. `appbox deploy deploy` requires that approval as an argument and
 halts (recording a `halted` ledger row, minting nothing) without it.
 
 `doctor(config)` is **preflight, not the gate** — it reports readiness; the gate
@@ -80,7 +81,6 @@ still has to assert a value.
 
 ## Run
 ```sh
-python3 skills/appbox-deployer/deploy.py --self-test   # all shapes, no credentials
-python3 skills/appbox-deployer/deploy.py doctor        # preflight report (NOT a gate)
-bash gates/deploy/selftest.sh                           # gate: happy + 3 negatives (R5)
+appbox deploy --self-test   # all shapes, no credentials
+appbox deploy doctor        # preflight report (NOT a gate)
 ```

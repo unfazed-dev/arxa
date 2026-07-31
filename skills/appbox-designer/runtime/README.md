@@ -6,12 +6,12 @@ are pure MVVM content (ADR-0005) — templates, viewmodels, fixtures, assets.
 ## Commands
 
 ```sh
-node runtime/serve.mjs <artifact-dir|design-name> [--port 4319] [--host 127.0.0.1] [--json] [--no-watch]
-node runtime/lint.mjs  <artifact-dir>                 # zero-custom-client-JS check
-node runtime/check_wiring.mjs <artifact-dir> <property>
+appbox design serve <artifact-dir|design-name> [--port 4319] [--host 127.0.0.1] [--json] [--no-watch]
+appbox design lint  <artifact-dir>                 # zero-custom-client-JS check
+appbox design check-wiring <artifact-dir> <property>
 #   fragments | mutations-posted | urls-resolve | targets-exist
-node runtime/pseudolocalize.mjs <artifact-dir>        # en → qps-ploc pseudo-locale
-node runtime/vendor/fetch.mjs                         # (re)vendor htmx + extensions
+appbox design pseudolocalize <artifact-dir>        # en → qps-ploc pseudo-locale
+appbox design vendor-fetch                         # (re)vendor htmx + extensions
 ```
 
 `serve` takes a path **or** a bare design name — `appbox-app` resolves to
@@ -25,7 +25,7 @@ phone, and says so on stdout when you use it.
 For a caller that spawns it (a UI preview button, a script):
 
 ```sh
-node runtime/serve.mjs appbox-app --port 0 --json
+appbox design serve appbox-app --port 0 --json
 # {"url":"http://127.0.0.1:52953/","port":52953,"host":"127.0.0.1","pid":40311,"artifact":"/…/designs/appbox-app"}
 ```
 
@@ -66,7 +66,7 @@ implementation of everything below.
 
 ```
 <artifact>/
-├── serve.mjs                     # `node serve.mjs` — finds the runtime and serves this design
+├── serve.mjs                     # formerly `node serve.mjs` (archived) — now served via `appbox design serve <dir>`
 ├── app.routes.js                 # the URL inventory: [method, path, handler]
 ├── l10n/app_<locale>.arb         # string catalogs (add when i18n; en first)
 ├── models/<domain>_model/…       # shapes + fixtures (add when needed)
@@ -82,7 +82,7 @@ implementation of everything below.
 ```
 
 Consumed design-system copies live in `_ds/<slug>/` at the artifact root
-(`agents/import-design-system.mjs`) and are served at `/_ds/` — wire their CSS
+(`appbox design ds-import`) and are served at `/_ds/` — wire their CSS
 into `ui/common/base.html` per `built-in-skills/use-design-system.md`. The
 React `_ds_bundle.js` never loads in an artifact (zero-custom-JS contract);
 components are recreated as Nunjucks partials.
@@ -130,7 +130,7 @@ Runtime helper object:
 ## Icons (`icon()` global)
 
 The full Lucide set (ISC, ~2000 glyphs) is vendored at
-`runtime/vendor/lucide/icons/<kebab-name>.svg` by `vendor/fetch.mjs` and
+`runtime/vendor/lucide/icons/<kebab-name>.svg` by `appbox design vendor-fetch` and
 inlined **server-side** via a Nunjucks global — no client JS, and no SRI:
 nothing is served to the browser as a file, so there is no fetched
 subresource to pin (the manifest records the npm tarball hash instead).
@@ -228,7 +228,7 @@ copy `examples/hello-hda/ui/common/_lang_switcher.html` into the chrome:
 `<name>_seed.<locale>.json` (identical IDs/schema across locales) are the SSOT,
 the generator emits `<name>_fixtures.<locale>.json` (never hand-edited,
 `_generated_from` provenance kept), repositories take the locale and fall back
-to `en`. `node runtime/pseudolocalize.mjs <artifact-dir>` derives
+to `en`. `appbox design pseudolocalize <artifact-dir>` derives
 `app_qps-ploc.arb` and `*_seed.qps-ploc.json` from the English SSOT (wrapped,
 accented, ~35% padded — truncation and hardcoded strings become visible);
 re-run the model generator afterwards.
@@ -240,7 +240,7 @@ amendments (first-party data-attribute islands and third-party declarative web
 components, all vendored in runtime/vendor/). Banned anywhere in artifact
 templates:
 `<script>` tags that don't point at `/assets/vendor/`, `hx-on:*`, `js:`-prefixed
-attributes, `[expr]` trigger filters. `node runtime/lint.mjs` enforces it;
+attributes, `[expr]` trigger filters. `appbox design lint` enforces it;
 `allowEval:false` is the runtime backstop.
 
 Comments (`<!-- -->`, `{# #}`) are stripped before matching, so writing down

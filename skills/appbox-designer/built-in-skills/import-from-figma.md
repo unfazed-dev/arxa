@@ -4,7 +4,15 @@ description: "Import from Figma (.fig)\nDecode a local .fig file offline — mou
 ---
 # Import from Figma (.fig)
 
-Import a **local `.fig` file** with `agents/import-figma.mjs`. The vendored decoder (`agents/vendor/fig-materialize.mjs`) runs entirely offline: kiwi + zstd/deflate decode → node tree → React JSX / token CSS emit. Two destinations:
+> **Archived (dart-only port).** The `import-figma.mjs` node tool this document
+> describes was dropped and archived under
+> `archives/tooling-pre-dart/skills-pre-dart/appbox-designer/agents/`
+> (no Dart replacement — the offline `.fig` decoder, its `agents/vendor/`
+> kiwi/zstd pipeline, and the React-JSX/token-CSS emitter all retired with it).
+> What follows is the archived tool's reference behavior; the commands below are
+> not active invocations.
+
+A **local `.fig` file** was imported with `agents/import-figma.mjs` (now archived). The vendored decoder (`agents/vendor/fig-materialize.mjs`) ran entirely offline: kiwi + zstd/deflate decode → node tree → React JSX / token CSS emit. Two destinations:
 
 - **Design reference** — mount the file as a browsable tree inside a project, cherry-pick real component code, render frames as visual ground truth.
 - **Design system** — emit every component + variables into a new `designs/<slug>/` folder that follows [design-system-authoring-guide.md](design-system-authoring-guide.md), then compile/check/preview as usual.
@@ -21,8 +29,8 @@ Import a **local `.fig` file** with `agents/import-figma.mjs`. The vendored deco
 Run it first, every time — it's read-only and tells you what's inside (pages → frames with guids, component counts and top variant sets, variable/style counts):
 
 ```bash
-node <skill>/agents/import-figma.mjs outline <file.fig>          # human summary
-node <skill>/agents/import-figma.mjs outline <file.fig> --json   # full structured list
+node <skill>/agents/import-figma.mjs outline <file.fig>          # archived — human summary
+node <skill>/agents/import-figma.mjs outline <file.fig> --json   # archived — full structured list
 ```
 
 Then use `AskUserQuestion` to confirm with the user: which pages/frames matter? Reference or full design system? Where should it land? (Community files often carry hundreds of icon symbols — importing everything is rarely what the user wants for a reference; it's fine for a design system.) Carry the confirmed scope into every later command — `--pages` on `mount`/`design-system`, explicit `--frames`/`--components` on `materialize` — so out-of-scope pages never get decoded into the project.
@@ -31,7 +39,7 @@ Then use `AskUserQuestion` to confirm with the user: which pages/frames matter? 
 
 1. **Mount** the decoded file into the project, then explore with Read/Grep/Glob:
    ```bash
-   node <skill>/agents/import-figma.mjs mount <file.fig> <projectDir> [--pages <a,b>]
+   node <skill>/agents/import-figma.mjs mount <file.fig> <projectDir> [--pages <a,b>]   # archived
    ```
    This writes `<projectDir>/_fig/<slug>/` — `README.md`, `METADATA.md`, `/<Page>/<frame>/index.jsx` per frame, `/<Page>/components/`, `/external-shared/`, plus `node-index.json` (guid → path). Each `.jsx` opens with a `// figma node: <guid>` comment. It is a **read-only reference tree**, not a deliverable:
    - The mounted JSX is a **quick reconstruction for orientation** — never copy it into project files; when you need real code, **materialize** it (step 3) and get dependency-closed modules.
@@ -42,13 +50,13 @@ Then use `AskUserQuestion` to confirm with the user: which pages/frames matter? 
 2. **Read before you draw**: start with the mounted `README.md`/`METADATA.md`, then the frame JSX for the screens that matter. The JSX is the truth for geometry, colors, and text.
 3. **Materialize** real code when you need it in the project (guids come from `node-index.json` or the `// figma node:` comments):
    ```bash
-   node <skill>/agents/import-figma.mjs materialize <file.fig> --out <dir> --components Button,Input
-   node <skill>/agents/import-figma.mjs materialize <file.fig> --out <dir> --frames 13:2144
+   node <skill>/agents/import-figma.mjs materialize <file.fig> --out <dir> --components Button,Input   # archived
+   node <skill>/agents/import-figma.mjs materialize <file.fig> --out <dir> --frames 13:2144          # archived
    ```
    Emits flat `<Name>.jsx` + `<Name>.d.ts` with the dependency closure (sibling relative imports — keep an emitted set together in one folder), `assets/` + `fig-assets.css`, and with `--tokens`/`--typography` the variable/text-style CSS. Component names derive from Figma layer names (PascalCased, deduped) — read the printed component list and each `<Name>.d.ts` before writing code; the variant axes are the props. In an HDA artifact the emitted JSX is reference material — recreate it as Nunjucks templates/macros (artifacts ship zero custom client-side JS), don't wire the `.jsx` in. Then wire the emitted `fig-*.css` files into the page or the project's root stylesheet via `<link>`/`@import` — they do nothing until referenced. (Flow B skips this: `design-system` writes `styles.css` itself.)
 4. **Render** a frame for visual ground truth — serve it over HTTP and screenshot it (playwright + `ReadMediaFile` — see `references/harness-tools.md`):
    ```bash
-   node <skill>/agents/import-figma.mjs render <file.fig> --frame <guid> --out <dir>/frame.html
+   node <skill>/agents/import-figma.mjs render <file.fig> --frame <guid> --out <dir>/frame.html   # archived
    ```
    Render **sparingly**: each render inlines every image (multi-MB HTML) plus a serve/screenshot round trip — one or two frames are enough to orient, never one render per component, and never render a node whose JSX you haven't read. Use the render to judge look-and-feel and the JSX to copy exact values. Never redraw from a screenshot alone when the decoded code is sitting right there.
 
@@ -56,7 +64,7 @@ Then use `AskUserQuestion` to confirm with the user: which pages/frames matter? 
 
 1. Emit everything in one shot:
    ```bash
-   node <skill>/agents/import-figma.mjs design-system <file.fig> designs/<slug> --name "Display Name" [--pages <a,b>]
+   node <skill>/agents/import-figma.mjs design-system <file.fig> designs/<slug> --name "Display Name" [--pages <a,b>]   # archived
    ```
    This writes the authoring convention: `components/<Name>.jsx` + `.d.ts` (every variant set + symbol, dependency-closed), `tokens/fig-tokens.css` + `tokens/fig-typography.css` (when the file has variables/styles; unclassifiable tokens are marked `/* @kind other */`), `assets/` + `fig-assets.css`, `styles.css` (@imports), and a stub `README.md` with provenance + design metadata.
 2. Continue with [design-system-authoring-guide.md](design-system-authoring-guide.md) — the emitted folder is **raw material, not a finished system**. The curation pass:
@@ -69,13 +77,15 @@ Then use `AskUserQuestion` to confirm with the user: which pages/frames matter? 
 
 ## Command reference
 
+The archived tool's CLI (for reference only — not runnable, the script is archived):
+
 ```
-node import-figma.mjs outline <file.fig> [--json]
-node import-figma.mjs mount <file.fig> <destDir> [--name <slug>] [--pages <a,b>] [--force]
-node import-figma.mjs materialize <file.fig> --out <dir> (--components <A,B> | --frames <guid|name,...>)
+node import-figma.mjs outline <file.fig> [--json]                                              # archived
+node import-figma.mjs mount <file.fig> <destDir> [--name <slug>] [--pages <a,b>] [--force]     # archived
+node import-figma.mjs materialize <file.fig> --out <dir> (--components <A,B> | --frames <guid|name,...>)   # archived
                       [--tokens] [--typography] [--annotate] [--asset-max-mb <n>]
-node import-figma.mjs render <file.fig> --frame <guid|name> --out <file.html>
-node import-figma.mjs design-system <file.fig> <designs/slug> [--name "Title"] [--pages <a,b>] [--force]
+node import-figma.mjs render <file.fig> --frame <guid|name> --out <file.html>                   # archived
+node import-figma.mjs design-system <file.fig> <designs/slug> [--name "Title"] [--pages <a,b>] [--force]   # archived
 ```
 
 Exit codes: 0 ok, 1 error, 64 usage. Names are matched exactly; ambiguous names list candidates — use the guid. Non-empty destinations need `--force`.
