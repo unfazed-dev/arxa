@@ -75,7 +75,7 @@ Future<PhaseResult> runPhase(String repoRoot, String phase,
   var exitCode = 0;
 
   for (final name in gates) {
-    final result = runGate(name, ctx);
+    final result = await runGate(name, ctx);
     if (result == null) {
       out.writeln('  ⊘ $name: skipped (unavailable)');
       continue;

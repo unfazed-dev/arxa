@@ -10,6 +10,7 @@ import 'dart:io';
 import 'package:appboxd/gate_advertise.dart';
 import 'package:appboxd/gate_coverage.dart';
 import 'package:appboxd/gate_deploy.dart';
+import 'package:appboxd/gate_freeze.dart';
 import 'package:appboxd/gate_intake.dart';
 import 'package:appboxd/gate_memory.dart';
 import 'package:appboxd/gate_native_deps.dart';
@@ -51,12 +52,12 @@ class SuiteResult {
 
 /// Run all gates in dependency order.
 /// Dart-portable gates run natively; others fall back to bash.
-SuiteResult runAllGates(GateContext ctx) {
+Future<SuiteResult> runAllGates(GateContext ctx) async {
   var passed = 0, failed = 0, skipped = 0;
   final summaries = <String>[];
 
   for (final name in gateOrder) {
-    final result = _runSingleGate(name, ctx);
+    final result = await _runSingleGate(name, ctx);
 
     if (result == null) {
       // Gate not available — skip with a note.
@@ -85,12 +86,12 @@ SuiteResult runAllGates(GateContext ctx) {
 
 /// Run a single gate by name. Returns null if the gate is unavailable.
 /// Public for phase-gate dispatch from phases.dart.
-GateResult? runGate(String name, GateContext ctx) => _runSingleGate(name, ctx);
+Future<GateResult?> runGate(String name, GateContext ctx) => _runSingleGate(name, ctx);
 
 /// Run a single gate by name. Returns null if the gate is unavailable.
-GateResult? _runSingleGate(String name, GateContext ctx) {
+Future<GateResult?> _runSingleGate(String name, GateContext ctx) async {
   // Try Dart gate first.
-  final dartResult = _tryDartGate(name, ctx);
+  final dartResult = await _tryDartGate(name, ctx);
   if (dartResult != null) return dartResult;
 
   // Fall back to bash gate (strangler — unported gates still work).
@@ -98,7 +99,7 @@ GateResult? _runSingleGate(String name, GateContext ctx) {
 }
 
 /// Dispatch to a Dart-ported gate. Returns null if not yet ported.
-GateResult? _tryDartGate(String name, GateContext ctx) {
+Future<GateResult?> _tryDartGate(String name, GateContext ctx) async {
   switch (name) {
     case 'memory':
       return memoryGate(ctx);
@@ -116,7 +117,8 @@ GateResult? _tryDartGate(String name, GateContext ctx) {
       return coverageGate(ctx);
     case 'scaffold':
       return scaffoldGate(ctx);
-    // freeze is async (CDP) — handled separately
+    case 'freeze':
+      return freezeGate(ctx);
     default:
       return null; // not yet ported to Dart
   }

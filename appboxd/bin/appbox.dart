@@ -22,6 +22,7 @@ import 'package:appboxd/transform_tokens.dart';
 import 'package:appboxd/gate_advertise.dart';
 import 'package:appboxd/gate_coverage.dart';
 import 'package:appboxd/gate_deploy.dart';
+import 'package:appboxd/gate_freeze.dart';
 import 'package:appboxd/gate_intake.dart';
 import 'package:appboxd/gate_memory.dart';
 import 'package:appboxd/gate_native_deps.dart';
@@ -31,7 +32,7 @@ import 'package:appboxd/gate_runner.dart';
 import 'package:appboxd/gates.dart';
 import 'package:appboxd/server.dart' as server;
 
-void main(List<String> args) {
+Future<void> main(List<String> args) async {
   if (args.isEmpty) {
     _usage();
     exit(2);
@@ -42,7 +43,7 @@ void main(List<String> args) {
 
   switch (command) {
     case 'gate':
-      _runGate(rest);
+      await _runGate(rest);
       break;
     case 'emit':
       _runEmit(rest);
@@ -82,7 +83,7 @@ Options:
 
 // ── gate ───────────────────────────────────────────────────────────
 
-void _runGate(List<String> args) {
+Future<void> _runGate(List<String> args) async {
   if (args.isEmpty) {
     stderr.writeln('appbox gate: missing gate name');
     stderr.writeln('  gates: intake freeze structure scaffold coverage memory advertise review native_deps deploy');
@@ -94,7 +95,7 @@ void _runGate(List<String> args) {
 
   // --all runs the full gate suite.
   if (gateName == '--all' || gateName == 'all') {
-    _runAllGates(rest);
+    await _runAllGates(rest);
     return;
   }
 
@@ -142,7 +143,7 @@ void _runGate(List<String> args) {
     selfTest: selfTest,
   );
 
-  final result = _dispatchGate(gateName, ctx);
+  final result = await _dispatchGate(gateName, ctx);
 
   // Print details.
   for (final d in result.details) {
@@ -158,7 +159,7 @@ void _runGate(List<String> args) {
   exit(result.exitCode);
 }
 
-void _runAllGates(List<String> args) {
+Future<void> _runAllGates(List<String> args) async {
   String? repoRoot;
   String? appRoot;
   for (var i = 0; i < args.length; i++) {
@@ -177,14 +178,14 @@ void _runAllGates(List<String> args) {
     exit(2);
   }
   final ctx = GateContext(repoRoot: repoRoot, appRoot: appRoot);
-  final suite = runAllGates(ctx);
+  final suite = await runAllGates(ctx);
   for (final s in suite.summaries) {
     print(s);
   }
   exit(suite.exitCode);
 }
 
-GateResult _dispatchGate(String name, GateContext ctx) {
+Future<GateResult> _dispatchGate(String name, GateContext ctx) async {
   switch (name) {
     case 'memory':
       return memoryGate(ctx);
@@ -203,8 +204,7 @@ GateResult _dispatchGate(String name, GateContext ctx) {
     case 'scaffold':
       return scaffoldGate(ctx);
     case 'freeze':
-      return GateResult.env(
-        'gate "freeze" is async (CDP) — use bash gate or gate --all');
+      return freezeGate(ctx);
     case 'review':
       // review.dart is 1,658 lines at gates/review/review.dart — call via dart run.
       return _runReviewGate(ctx);
@@ -213,7 +213,7 @@ GateResult _dispatchGate(String name, GateContext ctx) {
   }
 }
 
-GateResult _runReviewGate(GateContext ctx) {
+Future<GateResult> _runReviewGate(GateContext ctx) async {
   final gatePath = '${ctx.repoRoot}/gates/review/review.dart';
   if (!File(gatePath).existsSync()) {
     return GateResult.env('review gate not found at $gatePath');
