@@ -5,7 +5,7 @@
 emitters, lens, and serve. stacked_kit copied in-repo as `kit/`
 (24 packages, 511 .dart files, all renamed `appbox_kit_*`). Sweep rename
 complete — zero stale `app-box`/`app_box`/`KIT_APP`/`stacked_kit` references
-in source. 347/408 appboxd tests pass. Flutter analyze clean. Catalogs
+in source. 408/408 appboxd tests pass. Flutter analyze clean. Catalogs
 copied from flutter-crew to `config/catalogs/`. `arch_guard` ported to Dart.
 Flutter pub get resolves.
 

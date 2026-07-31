@@ -10,7 +10,7 @@ Two independent reviewers, both must be green. This role WIRES existing tools;
 it builds nothing.
 
 ## Gate (run in order, stop on red)
-1. **Contract** — `python3 "tools/vendor/stages/arch_guard.py" <target>` (ADR-0003;
+1. **Contract** — `appbox gate arch --target <dir>` (ADR-0003;
    resolved relative to the appbox repo root). Exit 0 required. Violations
    → builder re-emits. (arch_guard is a forward reference — not yet vendored.)
 2. **Code economy** — `/ponytail-review` on the diff (built extension points +

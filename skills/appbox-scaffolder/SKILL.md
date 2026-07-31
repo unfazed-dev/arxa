@@ -51,7 +51,7 @@ manifest so gates never re-derive the locale set. `--check` asserts the
 catalog file set + `l10n.yaml` too. A design with no `l10n/` dir gets **no**
 l10n artifacts (backward compat). The pubspec side of l10n
 (`flutter_localizations`, `intl`, `flutter.generate: true`) is emitted
-unconditionally by `tools/vendor/stages/blueprint.py`.
+unconditionally by `appboxd/lib/blueprint.dart`.
 
 **You do not choose dependencies.** `scaffold.py` never reads or writes a
 `pubspec.yaml`; the dependency set arrives from the kit and the app template.

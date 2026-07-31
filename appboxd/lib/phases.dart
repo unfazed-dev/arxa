@@ -105,8 +105,8 @@ enum PipelineAvailability { ready, absent }
 /// runtime config, never a literal). Ported from
 /// `app/lib/services/pipeline_runner_service.dart`.
 ///
-/// Unlike [runPhase] — which serves the phase-gate endpoint against the
-/// repo's real `pipeline/pipeline.sh` — this resolves the vendored pipeline
+/// Unlike [runPhase] — which serves the phase-gate endpoint by calling the
+/// Dart gate runner directly — this resolves the vendored pipeline
 /// command from config and probes availability honestly: if the binary is
 /// absent, the answer is [PipelineAvailability.absent], never a faked green.
 class PipelineRunner {

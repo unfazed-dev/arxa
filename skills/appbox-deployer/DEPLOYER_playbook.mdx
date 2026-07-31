@@ -56,6 +56,6 @@ Never commit secrets — `.env`, signing, store keys, the Cloudflare token are o
 ### References
 - `skills/app-box-deployer/deploy.py` — the mechanics + `--self-test` (scripted runner, no credentials).
 - `gates/deploy/` — the deploy gate; `selftest.sh` proves the negative for each of target / version / account (R5).
-- `tools/verification/tier1.py` — the same `ProcessRunner` / `ScriptedRunner` seam, applied to payments + auth.
+- `appboxd/lib/tier1.dart` — the same `ProcessRunner` / `ScriptedRunner` seam, applied to payments + auth.
 - `docs/plans/architecture.md` §17 — kit consumption, the deployer, and why deploy is a third human gate.
 <!-- kb:end -->

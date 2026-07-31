@@ -149,7 +149,7 @@
       "actual": "ΔE 4.8 na karcie RunSummary — dryf tokenu przygaszonego tekstu",
       "actualBalanced": "88/100 (ΔE 4.8) na karcie RunSummary — dryf tokenu przygaszonego tekstu",
       "actualPlain": "wyraźnie różne — 88/100 na karcie RunSummary. Przygaszony kolor tekstu działał tylko w trybie jasnym",
-      "reproduce": "./tools/verification/probe_run.sh --surface build.loop --rung expanded",
+      "reproduce": "appbox lens --surface build.loop --rung expanded",
       "fingerprint": "fp_b8e0…c3f2",
       "state": "naprawione w próbie 2",
       "note": "Token --muted rozwiązywał tylko względem jasnego motywu; zamrożenie przypina teraz oba motywy.",

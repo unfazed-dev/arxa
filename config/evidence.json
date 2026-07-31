@@ -2,31 +2,31 @@
   "ledger": {
     "auth/Apple SignIn": {
       "tier": "port-tested",
-      "suite": "tools/verification/tier1.py",
+      "suite": "appboxd/lib/tier1.dart",
       "digest": "sha256:9416dd5c30f616fbc5ed61c448922c73d403216455bed6d855c289034b74c79a",
       "ran_at": "2026-07-27T15:17:31Z"
     },
     "payments/PayPal": {
       "tier": "port-tested",
-      "suite": "tools/verification/tier1.py",
+      "suite": "appboxd/lib/tier1.dart",
       "digest": "sha256:9416dd5c30f616fbc5ed61c448922c73d403216455bed6d855c289034b74c79a",
       "ran_at": "2026-07-27T15:17:31Z"
     },
     "payments/Stripe": {
       "tier": "port-tested",
-      "suite": "tools/verification/tier1.py",
+      "suite": "appboxd/lib/tier1.dart",
       "digest": "sha256:9416dd5c30f616fbc5ed61c448922c73d403216455bed6d855c289034b74c79a",
       "ran_at": "2026-07-27T15:17:31Z"
     },
     "auth/Google SignIn": {
       "tier": "port-tested",
-      "suite": "tools/verification/tier1.py",
+      "suite": "appboxd/lib/tier1.dart",
       "digest": "sha256:9416dd5c30f616fbc5ed61c448922c73d403216455bed6d855c289034b74c79a",
       "ran_at": "2026-07-27T15:17:31Z"
     },
     "auth/SeedAuthBackend": {
       "tier": "port-tested",
-      "suite": "tools/verification/tier1.py",
+      "suite": "appboxd/lib/tier1.dart",
       "digest": "sha256:9416dd5c30f616fbc5ed61c448922c73d403216455bed6d855c289034b74c79a",
       "ran_at": "2026-07-27T15:17:31Z"
     }

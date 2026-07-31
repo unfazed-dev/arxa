@@ -16,8 +16,8 @@
 /// Licence path resolution for `status`:
 ///   1. `--licence <path>` when given;
 ///   2. `~/.appbox/licence.json` (HOME, or USERPROFILE on Windows);
-///   3. `pipeline/state/licence.json` under the repo root (found by walking
-///      up from the cwd until pipeline/pipeline.sh appears, same rule as
+///   3. `config/licence.json` under the repo root (found by walking
+///      up from the cwd until config/appbox.config.json appears, same rule as
 ///      bin/appboxd.dart).
 /// The first path that exists wins; if none exists the status is `none`.
 ///
@@ -100,12 +100,12 @@ String? _defaultLicencePath() {
     if (File(userPath).existsSync()) return userPath;
   }
   var root = Directory.current.path;
-  while (!File('$root/pipeline/pipeline.sh').existsSync()) {
+  while (!File('$root/config/appbox.config.json').existsSync()) {
     final parent = Directory(root).parent.path;
     if (parent == root) return null; // outside a repo: no fallback path
     root = parent;
   }
-  final repoPath = '$root/pipeline/state/licence.json';
+  final repoPath = '$root/config/licence.json';
   return File(repoPath).existsSync() ? repoPath : null;
 }
 

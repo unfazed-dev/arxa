@@ -149,7 +149,7 @@
       "actual": "ΔE 4.8 on the RunSummary card — muted text token drift",
       "actualBalanced": "88/100 (ΔE 4.8) on the RunSummary card — muted text token drift",
       "actualPlain": "noticeably different — 88/100 on the RunSummary card. A muted text colour only worked in light mode",
-      "reproduce": "./tools/verification/probe_run.sh --surface build.loop --rung expanded",
+      "reproduce": "appbox lens --surface build.loop --rung expanded",
       "fingerprint": "fp_b8e0…c3f2",
       "state": "fixed in attempt 2",
       "note": "Token --muted resolved against light theme only; freeze now pins both themes.",

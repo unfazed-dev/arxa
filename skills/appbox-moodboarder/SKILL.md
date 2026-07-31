@@ -79,7 +79,7 @@ not to moodboarding.
 | `web_tokens` *(optional)* | computed palette/type/radii/shadows → `tokens.json` beside the shot — upgrades "picture to eyeball" to "tokens to steal" |
 
 ```bash
-PROBE=tools/vendor/probe-runner/scripts        # resolves to the vendored copy (O1); shell-out, no import dep
+PROBE=appbox lens (appboxd/lib/lens.dart)/scripts        # resolves to the vendored copy (O1); shell-out, no import dep
 
 # Per-slice isolation — MANDATORY when capture slices run in parallel.
 # Every web verb drives CDP targets[0]; one shared Chrome = slices navigate

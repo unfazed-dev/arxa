@@ -2,7 +2,7 @@
 """appbox-deployer — the deploy mechanics, behind the strictest human gate.
 
 Architecture §17 / plan 11. The deploy kit (`appbox_kit_deploy`, vendored as a
-skill at tools/vendor/skills/deployer/) is pure-Dart, standalone, registry
+skill, vendored as kit/deploy) is pure-Dart, standalone, registry
 `phase: stable`. Its targets:
 
     fastlane-android / fastlane-ios   wired
@@ -11,7 +11,7 @@ skill at tools/vendor/skills/deployer/) is pure-Dart, standalone, registry
     vercel   STUB — throws UnimplementedError, NEVER offered
 
 This module drives those targets' external CLIs through a `ProcessRunner` port
-(mirrors the deploy kit's KitProcessRunner seam, and tools/verification/tier1.py).
+(mirrors the deploy kit's KitProcessRunner seam, and appboxd/lib/tier1.dart).
 The scripted runner asserts every command shape with NO toolchain, NO
 credentials, NO signing identity — the one property that makes a deploy stage
 self-testable (§17). A deploy normally cannot be self-tested; this one can.
@@ -51,7 +51,7 @@ DEF_LEDGER = ROOT / "pipeline" / "state" / "deploy-ledger.json"
 
 # --------------------------------------------------------------------------- #
 # Process runner port (mirrors the deploy kit's KitProcessRunner seam,
-# and tools/verification/tier1.py — same shape, one place to fake the world)
+# and appboxd/lib/tier1.dart — same shape, one place to fake the world)
 # --------------------------------------------------------------------------- #
 class CompletedProc:
     def __init__(self, exit_code, stdout="", stderr=""):

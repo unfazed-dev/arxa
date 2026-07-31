@@ -9,10 +9,10 @@ import 'package:appboxd/vault.dart';
 Future<void> main(List<String> args) async {
   // appboxd runs from the repo root (or a subdirectory of it).
   var root = Directory.current.path;
-  while (!File('$root/pipeline/pipeline.sh').existsSync()) {
+  while (!File('$root/config/appbox.config.json').existsSync()) {
     final parent = Directory(root).parent.path;
     if (parent == root) {
-      stderr.writeln('appboxd: pipeline/pipeline.sh not found — run from the repo root.');
+      stderr.writeln('appboxd: config/appbox.config.json not found — run from the repo root.');
       exit(64);
     }
     root = parent;

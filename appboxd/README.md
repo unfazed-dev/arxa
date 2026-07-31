@@ -18,7 +18,7 @@ Config: `config/appbox.config.json` may carry an optional
 `"daemon": { "port": 8787, "webRoot": "appbox/build/web" }` object; anything
 absent falls back to port 8787 and `appbox/build/web` relative to the repo
 root. The repo root is found by walking up from the cwd until
-`pipeline/pipeline.sh` appears.
+`config/appbox.config.json` appears.
 
 ## Endpoints
 
@@ -26,7 +26,7 @@ root. The repo root is found by walking up from the cwd until
 |---|---|---|
 | `/api/health` | GET | `{"status":"ok", repoRoot, webRoot}` |
 | `/api/phases` | GET | phase list (intake → deploy, per `pipeline/state/state.schema.json`) + current phase from `pipeline/state/default.state.json` |
-| `/api/phases/<name>/run` | POST | runs `bash pipeline/pipeline.sh gate <name>` from the repo root; returns `{phase, exitCode, stdout, stderr}` (502 when exit code ≠ 0, 404 for unknown phase) |
+| `/api/phases/<name>/run` | POST | runs the Dart gate runner from the repo root; returns `{phase, exitCode, stdout, stderr}` (502 when exit code ≠ 0, 404 for unknown phase) |
 | `/<path>` | GET | static file from the web root; `index.html` for directories; path traversal outside the web root is refused (403) |
 
 ## Deliberately NOT in the skeleton (later releases per the plan)
