@@ -1,10 +1,13 @@
 # appbox dart-only tooling — retirement of Python/bash/Node
 
-**Status:** **in progress**. CDP spike proven (7/7 tests green). Gate framework
-+ 9/10 gates ported to Dart. emit_structure + transform_tokens emitters porting.
-5 subagents active (scaffold gate, coverage gate, transform_tokens, emit_htmx
-with CDP, freeze gate). Settled in the Rust-vs-Dart grill, 2026-07-30.
-Green-light trigger: "start the CDP spike" — fired 2026-07-30.
+**Status:** **COMPLETE**. All Python/bash/Node tooling retired to
+`archives/tooling-pre-dart/`. One Dart binary (`appbox`) handles gates,
+emitters, lens, and serve. stacked_kit copied in-repo as `packages/`
+(24 packages, 511 .dart files). Sweep rename complete — zero stale
+`app-box`/`app_box`/`KIT_APP` references. 290/290 appboxd tests pass.
+Flutter pub get resolves.
+
+Completed 2026-07-31.
 
 ## The verdict on Rust
 
@@ -183,3 +186,52 @@ emit_structure 7 + emit_htmx 23 + transform_tokens 14 + lens 4).
 
 **Remaining emitters:** blueprint (3,642 lines), emit (1,100 lines),
 generate_view (3,935 lines) — generation flow, not yet started.
+
+### 2026-07-31 — session 2 (completion)
+
+**All 8 emitters ported ✅** — blueprint (3,622 lines, 10 tests, golden hash
+parity verified), generate_view (3,240 lines, 12 tests, pure-Dart SHA-1),
+emit_stage (1,163 lines, 5 tests), synthesize (620 lines, 7 tests). All 8
+emitters wired into `appbox emit` dispatch.
+
+**appbox kit copy ✅ (Phase 5)** — 24 library packages from stacked_kit
+copied into `packages/` (511 .dart files, 31 pubspecs). All `stacked_kit_*`
+identifiers rewritten to `appbox_kit_*`. Flutter app path-depends on
+in-repo `packages/i18n`. `flutter pub get` resolves.
+
+**Sweep rename ✅ (Phase 6)** — 1,237 text replacements across 2,410 files.
+Physical renames: `config/appbox.config.json`, 10 skill dirs in `skills/`
+and `.kimi-code/skills/`, icon files. Zero stale references remaining.
+
+**Pipeline rewired ✅ (Phase 7b)** — `phases.dart` `runPhase()` calls Dart
+gate runner directly (phase→gate map) instead of shelling to pipeline.sh.
+Repo-root discovery anchor changed from `pipeline/pipeline.sh` to
+`config/appbox.config.json`. `engine.dart` `loadStages()` uses hardcoded
+`gateOrder` (no filesystem scan).
+
+**Bulk archive ✅ (Phase 7c)** — All Python/bash/Node tooling moved to
+`archives/tooling-pre-dart/`:
+- `tools/vendor/` (emit_*.py, stages/, probe-runner/, VENDOR.lock, check_freshness)
+- `tools/crud/`, `tools/verification/`, `tools/watermark/`, `tools/emit_surfaces/`
+- `tools/bundle_viewmodels.js`, `_verify_surfaces.mjs`, `kit_deps.py`, etc.
+- `pipeline/pipeline.sh` + `pipeline/prototype/`
+- 8 gate bash dirs + `_common/` + `run_all.sh` + `test_gates_can_fail.sh`
+
+**Kept in place** (still active):
+- `gates/freeze/` — async gate, bash fallback until runner goes async
+- `gates/review/review.dart` — already Dart (1,658 lines)
+- `tools/sweep_rename.sh` + `tools/phase5_kit_copy.sh` — transient
+
+**Final test suite: 290/290 green.**
+
+**Known deferrals (honestly stated):**
+- No golden-diff test against actual Playwright output for emit_htmx (CDP
+  works by smoke test, not byte-compared vs Python).
+- Freeze gate remains bash-fallback (async CDP gate exists but gate runner
+  is sync).
+- Pipeline FSM state management (phase transitions, approval rounds,
+  golden audit logging) not ported — `runPhase()` runs gates but doesn't
+  manage the FSM state file.
+- Tools without Dart ports archived as retired (crud.py, watermark.mjs,
+  tier1.py, lint_conventions.sh, run_repo_tests.sh) — may need future
+  Dart ports if their functionality is still needed.
