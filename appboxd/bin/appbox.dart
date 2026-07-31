@@ -12,6 +12,7 @@ import 'dart:io';
 
 import 'package:appboxd/blueprint.dart';
 import 'package:appboxd/config.dart';
+import 'package:appboxd/crud.dart';
 import 'package:appboxd/emit_htmx.dart';
 import 'package:appboxd/emit_playground.dart';
 import 'package:appboxd/emit_stage.dart';
@@ -30,7 +31,9 @@ import 'package:appboxd/gate_scaffold.dart';
 import 'package:appboxd/gate_structure.dart';
 import 'package:appboxd/gate_runner.dart';
 import 'package:appboxd/gates.dart';
+import 'package:appboxd/lint_conventions.dart';
 import 'package:appboxd/server.dart' as server;
+import 'package:appboxd/watermark.dart';
 
 Future<void> main(List<String> args) async {
   if (args.isEmpty) {
@@ -48,8 +51,17 @@ Future<void> main(List<String> args) async {
     case 'emit':
       _runEmit(rest);
       break;
+    case 'crud':
+      _runCrud(rest);
+      break;
     case 'serve':
       _runServe(rest);
+      break;
+    case 'watermark':
+      _runWatermark(rest);
+      break;
+    case 'lint':
+      _runLint(rest);
       break;
     case '--help' || '-h':
       _usage();
@@ -68,9 +80,13 @@ Usage: appbox <command> [options]
 Commands:
   gate <name>    Run a gate by name (intake, freeze, structure, scaffold,
                  coverage, memory, advertise, review, native_deps, deploy)
+  crud <op>      Feature CRUD on the authored layer (list/show/create/update/
+                 rename/delete/verify — the one write path, §18)
   serve          Start the HTTP daemon (appboxd)
   lens           Visual gate (appbox lens — future)
   emit <name>    Run an emitter (future)
+  lint [root]    Scan for repo convention violations (R2, R3)
+  watermark <root>  Post-emit provenance/watermark pass on an emitted tree
 
 Options:
   --app <root>   App root (defaults to repo root)
@@ -232,6 +248,12 @@ Future<GateResult> _runReviewGate(GateContext ctx) async {
       err.isNotEmpty ? err.split('\n') : out.split('\n'));
 }
 
+// ── crud ───────────────────────────────────────────────────────────
+
+void _runCrud(List<String> args) {
+  exit(crudMain(args));
+}
+
 // ── emit ───────────────────────────────────────────────────────────
 
 void _runEmit(List<String> args) {
@@ -332,6 +354,46 @@ void _runEmit(List<String> args) {
 }
 
 // ── serve ──────────────────────────────────────────────────────────
+
+void _runWatermark(List<String> args) {
+  if (args.isEmpty) {
+    stderr.writeln('usage: appbox watermark <rootDir> [--licence <path>]');
+    exit(64);
+  }
+  String? licencePath;
+  for (var i = 1; i < args.length; i++) {
+    if (args[i] == '--licence' && i + 1 < args.length) {
+      licencePath = args[++i];
+    }
+  }
+  final manifest = runPass(args.first, licencePath: licencePath);
+  print(
+      'provenance pass: tier=${manifest['tier']} files=${(manifest['files'] as List).length} -> ${args.first}/$manifestName');
+  exit(0);
+}
+
+// ── lint ───────────────────────────────────────────────────────────
+
+void _runLint(List<String> args) {
+  final root = args.isNotEmpty && !args.first.startsWith('-')
+      ? args.first
+      : (_findRepoRoot() ?? Directory.current.path);
+  if (!File('$root/config/forbidden_abs_prefixes.txt').existsSync() ||
+      !File('$root/config/stripped_names.txt').existsSync()) {
+    stderr.writeln('appbox lint: missing config rule files under $root/config/');
+    exit(2);
+  }
+  final result = lintConventions(root);
+  for (final v in result.violations) {
+    stderr.writeln('LINT FAIL: ${v.file} — ${v.message}');
+  }
+  if (result.ok) {
+    print('LINT OK (${result.scanned} files scanned)');
+    exit(0);
+  }
+  stderr.writeln('LINT FAILED: ${result.violations.length} violation(s)');
+  exit(1);
+}
 
 void _runServe(List<String> args) {
   var port = AppboxdConfig.defaultPort;

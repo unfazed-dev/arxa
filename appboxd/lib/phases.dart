@@ -5,6 +5,7 @@ import 'package:path/path.dart' as p;
 
 import 'gate_runner.dart';
 import 'gates.dart';
+import 'pipeline_fsm.dart';
 import 'process.dart';
 
 /// Pipeline phases, in FSM order (pipeline/state/state.schema.json, with
@@ -90,6 +91,11 @@ Future<PhaseResult> runPhase(String repoRoot, String phase,
   }
 
   out.writeln('phase "$phase": ${exitCode == 0 ? "passed" : "failed"}');
+
+  // Record FSM state (gate result + audit trail).
+  final passed = exitCode == 0;
+  recordPhaseStatus(repoRoot, phase, passed, exitCode: exitCode);
+
   return PhaseResult(phase, exitCode, out.toString(), '');
 }
 

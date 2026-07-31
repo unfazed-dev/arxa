@@ -5,11 +5,10 @@
   "description": "The single source of truth for a run. Targets live here in state, never in CLI flags (architecture §11). Approval tokens are minted only by a human at a gate — never by an agent.",
   "type": "object",
   "required": ["phase", "targets", "approvalTokens", "designHash", "kitSha"],
-  "additionalProperties": false,
   "properties": {
     "phase": {
       "type": "string",
-      "description": "Current FSM phase: intake | design | review | scaffold | build | deploy."
+      "description": "Current FSM phase: intake | prototype | design | scaffold | review | build | deploy."
     },
     "targets": {
       "type": "array",
@@ -28,6 +27,34 @@
     "kitSha": {
       "type": "string",
       "description": "The vendored kit SHA this run is pinned to."
+    },
+    "schema": { "type": "integer" },
+    "createdAt": { "type": "string" },
+    "updatedAt": { "type": "string" },
+    "dirty": { "type": "boolean" },
+    "phaseStatus": {
+      "type": "object",
+      "description": "Per-phase gate status: ready/passed/failed/blocked.",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "status": { "type": "string" },
+          "ts": { "type": ["string", "null"] },
+          "attempts": { "type": "integer" }
+        }
+      }
+    },
+    "humanApproved": {
+      "type": "object",
+      "description": "Per-phase human approval flags.",
+      "additionalProperties": { "type": "boolean" }
+    },
+    "review": {
+      "type": "object",
+      "properties": {
+        "approved": { "type": "boolean" },
+        "rejections": { "type": "integer" }
+      }
     }
   }
 }

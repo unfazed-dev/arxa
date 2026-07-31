@@ -7,6 +7,7 @@ import 'config.dart';
 import 'gateway.dart';
 import 'memory_analytics.dart' as memory_analytics;
 import 'phases.dart' as pipeline;
+import 'pipeline_fsm.dart' as fsm;
 
 /// Starts the appboxd HTTP server: static web builder UI + /api/ endpoints,
 /// plus the /llm/ loopback gateway (E2) when [gateway] is supplied.
@@ -65,6 +66,42 @@ Future<void> _handle(AppboxdConfig config, HttpRequest request, Gateway? gateway
         ContentType('text', 'markdown', charset: 'utf-8');
     response.write(text);
     return response.close();
+  }
+
+  // ── pipeline FSM endpoints ─────────────────────────────────────────
+  if (path == '/api/pipeline/status') {
+    final state = fsm.readState(config.repoRoot);
+    if (state == null) {
+      return _json(request, {'error': 'no pipeline state — POST /api/pipeline/init'},
+          status: HttpStatus.notFound);
+    }
+    return _json(request, {
+      ...state,
+      'done': fsm.isDone(config.repoRoot),
+    });
+  }
+  if (path == '/api/pipeline/init' && request.method == 'POST') {
+    final state = fsm.initPipeline(config.repoRoot);
+    return _json(request, state);
+  }
+  final advanceMatch = RegExp(r'^/api/phases/([a-z]+)/advance$').firstMatch(path);
+  if (advanceMatch != null && request.method == 'POST') {
+    final next = fsm.advance(config.repoRoot);
+    if (next == null) {
+      return _json(request, {'error': 'advance guard failed — phase gate not passed or human approval missing'},
+          status: HttpStatus.conflict);
+    }
+    return _json(request, {'phase': next, 'advanced': true});
+  }
+  if (path == '/api/prototype/approve' && request.method == 'POST') {
+    fsm.approvePrototype(config.repoRoot);
+    return _json(request, {'approved': true});
+  }
+  final reviewMatch = RegExp(r'^/api/review/(approve|reject)$').firstMatch(path);
+  if (reviewMatch != null && request.method == 'POST') {
+    final approve = reviewMatch.group(1) == 'approve';
+    fsm.reviewVerdict(config.repoRoot, approve);
+    return _json(request, {'verdict': approve ? 'approved' : 'rejected'});
   }
   if (path.startsWith('/api/')) {
     return _json(request, {'error': 'not found'}, status: HttpStatus.notFound);
