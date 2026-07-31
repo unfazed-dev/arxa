@@ -482,7 +482,7 @@ private fun ExButton(params: Map<String, Any?>, invoke: (String, Any?) -> Unit) 
     } else {
         Modifier.fillMaxSize()
     }
-    // Explicit design container & label colours (contrast-verified upstream by the
+    // Explicit design container + label colours (contrast-verified upstream by the
     // legibility gate), NOT theme roles. The theme path set primary = the button's own
     // tint with a hardcoded white onPrimary, so a light-tint button (Google `paper`)
     // rendered white-on-cream and vanished. shapes=… preserves the Expressive press morph.
