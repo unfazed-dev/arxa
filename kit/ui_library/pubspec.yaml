@@ -36,6 +36,16 @@ dependencies:
   appbox_kit_motion:
     path: ../motion
 
+dependency_overrides:
+  fab_m3e:
+    path: vendor/fab_m3e
+  navigation_rail_m3e:
+    path: vendor/navigation_rail_m3e
+  split_button_m3e:
+    path: vendor/split_button_m3e
+  toolbar_m3e:
+    path: vendor/toolbar_m3e
+
 dev_dependencies:
   flutter_lints: ^6.0.0
   flutter_test:

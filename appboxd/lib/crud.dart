@@ -76,7 +76,7 @@ void _atomicWriteJson(String path, Object obj) {
   // round-trips byte-identical. Temp file then rename → a crash mid-write
   // cannot corrupt the file.
   Directory(p.dirname(path)).createSync(recursive: true);
-  final text = const JsonEncoder.withIndent('  ').convert(obj) + '\n';
+  final text = '${const JsonEncoder.withIndent('  ').convert(obj)}\n';
   final tmp = '$path.tmp';
   File(tmp).writeAsStringSync(text);
   File(tmp).renameSync(path);

@@ -104,7 +104,7 @@ void main() {
 
       final goldenPath = '${goldenDir.path}/error.png';
       // First capture the golden (which also has the error, but we save anyway)
-      final golden = await captureGolden('$base2/', 390, 844, goldenPath: goldenPath, settleMs: 300);
+      await captureGolden('$base2/', 390, 844, goldenPath: goldenPath, settleMs: 300);
 
       final result = await compareGolden(
         '$base2/', goldenPath, 390, 844,

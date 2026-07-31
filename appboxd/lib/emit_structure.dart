@@ -196,7 +196,7 @@ String? shellDir(String surface) {
 
 /// Serialize structure data as indented JSON + newline (matches Python json.dumps(indent=2)).
 String _serialize(Map<String, dynamic> data) {
-  return const JsonEncoder.withIndent('  ').convert(data) + '\n';
+  return '${const JsonEncoder.withIndent('  ').convert(data)}\n';
 }
 
 /// Emit structure.json. Returns 0 on success, 1 on failure.

@@ -127,7 +127,7 @@ class StateReader {
 
   void _write(Map<String, dynamic> data) {
     File(stateFile).writeAsStringSync(
-      const JsonEncoder.withIndent('  ').convert(data) + '\n',
+      '${const JsonEncoder.withIndent('  ').convert(data)}\n',
     );
   }
 }

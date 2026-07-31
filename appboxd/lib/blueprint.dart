@@ -263,7 +263,7 @@ Uint8List? _rasterizeSvg(String svg, [int size = 54]) {
   final tmpDir = Directory.systemTemp;
   final svgFile =
       File('${tmpDir.path}/bp_${DateTime.now().microsecondsSinceEpoch}.svg');
-  final pngFile = File('${svgFile.path.replaceAll('.svg', '.png')}');
+  final pngFile = File(svgFile.path.replaceAll('.svg', '.png'));
   try {
     svgFile.writeAsStringSync(svg);
     final r = Process.runSync('rsvg-convert',
@@ -308,8 +308,6 @@ List<String> _detectedBrands(Map<String, dynamic> breakdown) {
   return found.toList()..sort();
 }
 
-String _brandColorMode(String name) =>
-    _brandRegistry[name]?.colorMode ?? 'brand';
 
 List<String> _emitBrandPngs(
     Map<String, dynamic> gen, List<String> detected) {
@@ -582,7 +580,7 @@ linter:
 }
 
 String _tplFeedbackService() {
-  return genMarker + '\n' + r'''
+  return '$genMarker\n' r'''
 import 'package:stacked_services/stacked_services.dart';
 
 import 'primitives.dart';
@@ -623,8 +621,7 @@ String _tplPrimitives(
     }
   }
   final ppMap = entries.isEmpty ? '{}' : '{${entries.join(', ')}}';
-  return genMarker + '\n' +
-      r'''
+  return '$genMarker\n${r'''
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart' show Factory;
 import 'package:flutter/gestures.dart';
@@ -2458,7 +2455,7 @@ void showAdaptiveToast(BuildContext context, String message,
 }
 '''
           .replaceAll('__MONO_SET__', monoSet)
-          .replaceAll('__PROVIDER_PLATFORMS__', ppMap);
+          .replaceAll('__PROVIDER_PLATFORMS__', ppMap)}';
 }
 
 // ──────────────────── COMPLEX TEMPLATES ────────────────────
@@ -3245,14 +3242,14 @@ String _migrationSql(List entities) {
     }
     out.add('');
   }
-  return out.join('\n') + '\n';
+  return '${out.join('\n')}\n';
 }
 
 String _sqlVal(dynamic v) {
   if (v == null) return 'null';
   if (v is bool) return v ? 'true' : 'false';
   if (v is int || v is double) return v.toString();
-  return "'" + v.toString().replaceAll("'", "''") + "'";
+  return "'${v.toString().replaceAll("'", "''")}'";
 }
 
 String _authUserSql(String uid, String email, String pw) {
@@ -3385,7 +3382,7 @@ String _seedSql(List entities, Map? authUser,
         'on conflict do nothing;');
     out.add('');
   }
-  return out.join('\n') + '\n';
+  return '${out.join('\n')}\n';
 }
 
 Map<String, dynamic> _loadDataModel(String? path) {

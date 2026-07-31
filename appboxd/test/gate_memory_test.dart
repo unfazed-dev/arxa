@@ -53,8 +53,7 @@ void main() {
   test('negative — lessons over 200 lines fails', () {
     final f = File('${tmp.path}/memory/stages/intake.LESSONS.md');
     f.writeAsStringSync(
-      '# stage — lessons\n\n## Lessons\n' +
-      List.generate(199, (i) => '- lesson $i').join('\n'),
+      '# stage — lessons\n\n## Lessons\n${List.generate(199, (i) => '- lesson $i').join('\n')}',
     );
     final result = memoryGate(ctx);
     expect(result.passed, isFalse);

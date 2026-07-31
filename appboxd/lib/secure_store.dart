@@ -31,9 +31,8 @@ import 'crypto_aead.dart';
 import 'vault.dart';
 
 class SecureStore {
-  SecureStore({Vault? vault, Map<String, String>? env, int? iterations})
-      : _vault = vault,
-        _env = env ?? Platform.environment,
+  SecureStore({this._vault, Map<String, String>? env, int? iterations})
+      : _env = env ?? Platform.environment,
         _pbkdf2Iterations = iterations ?? pbkdf2Iterations;
 
   /// Vault key under which the random data key is stored (hex-encoded).

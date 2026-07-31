@@ -11,7 +11,6 @@
 // and the appbox lens visual gate.
 
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:appboxd/cdp.dart';

@@ -134,7 +134,7 @@ void recordPhaseStatus(
     'action': 'gate',
     'result': passed ? 'passed' : 'failed',
     'exitCode': exitCode,
-    if (failingSig != null) 'failingSignature': failingSig,
+    'failingSignature': ?failingSig,
   });
 }
 
@@ -203,7 +203,7 @@ void approvePrototype(String repoRoot, {String? note}) {
     'phase': 'prototype',
     'action': 'approve',
     'result': 'ok',
-    if (note != null) 'note': note,
+    'note': ?note,
   });
 }
 
@@ -240,7 +240,7 @@ void reviewVerdict(String repoRoot, bool approve, {String? reason}) {
       'phase': 'review',
       'action': 'review',
       'result': 'rejected',
-      if (reason != null) 'reason': reason,
+      'reason': ?reason,
     });
   }
 

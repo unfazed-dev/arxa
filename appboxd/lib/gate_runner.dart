@@ -124,7 +124,7 @@ Future<GateResult?> _tryDartGate(String name, GateContext ctx) async {
   }
 }
 
-/// Fall back to the bash gate at gates/<name>/<name>.sh.
+/// Fall back to the bash gate at `gates/<name>/<name>.sh`.
 /// Returns null if the bash gate doesn't exist.
 GateResult? _tryBashGate(String name, GateContext ctx) {
   final extensions = {'intake': '.sh', 'freeze': '.sh', 'structure': '.sh',
