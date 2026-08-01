@@ -3,7 +3,7 @@
 
 `appbox-intake` · status: **active**
 
-**Role (one line):** turn a client conversation into `docs/design/brief.md` plus a seeded `docs/design/registry.json` — by eliciting, never by generating.
+**Role (one line):** turn a client conversation into a validated answers document plus a registry seeded at the design root — by eliciting, never by generating. Intake is the head of one chain; `appbox emit story-map` is its tail and writes the unified `docs/design/brief.md`.
 
 **Scope of this document:** lets a human OR an LLM (or the desktop wizard) drive the intake engine without reading the skill source. Folded from `SKILL.md`.
 
@@ -19,16 +19,24 @@ Intake elicits; it does not generate (architecture §22). A phase that *writes* 
 
 ### Inputs
 
-- **Either** an answers document (JSON conforming to `skills/appbox-intake/intake.schema.json`): one object per field (`product`, `audience`, `appMustDo`, `existingSystems`, `targets`, `brand`, `constraints`, `outOfScope`, `surfaces`), each carrying `value` + `provenance` (`client` | `founder` | `inferred`).
+- **Either** an answers document (JSON conforming to `skills/appbox-intake/intake.schema.json`): one object per field (`product`, `audience`, `appMustDo`, `existingSystems`, `targets`, `brand`, `constraints`, `outOfScope`, `surfaces`), each carrying `value` + `provenance` (`client` | `founder` | `inferred`). Optional groups: `direction` (`{adjectives: [...], avoids: [...]}` — the design direction), `contentAnchors` (real content examples), `locales` (locale codes, rendered after Targets in the brief), and per-surface `states` (UI state names, carried into the registry seed and the brief's surface table).
 - **Or** a hand-written `brief.md` (plan 10.7) — the ideal case, already the client's words.
 
 ### Procedure
 
-Elicit the field set with the client or founder; capture verbatim, rephrase nothing; where the client was silent, mark the field `inferred` with a placeholder (never an invented value). Author the answers document; each named surface is `{id, label, tab, provenance}` with `id` = `<tab>.<short>` — do not set `comp` or `surface`. Emit: `appbox intake emit --answers <f>` (the Dart port of the archived `intake.py`) writes `brief.md` (every `inferred` field visibly marked) and `registry.json` (one entry per surface, `surface` null, `comp` derived). Validate-only while authoring: `appbox intake validate <f>`. Hand-written brief: `appbox intake seed --brief docs/design/brief.md` derives the registry seed from the brief's surface table without rewriting a word; a brief with no table yields an empty seed (not an error). Outputs default under `docs/design/`, overridable via `--brief-out` / `--registry-out` or `INTAKE_BRIEF_OUT` / `INTAKE_REGISTRY_OUT`. Invalid input writes nothing.
+Elicit the field set with the client or founder; capture verbatim, rephrase nothing; where the client was silent, mark the field `inferred` with a placeholder (never an invented value). Ask, beyond the core fields:
+
+- **Audience (JTBD):** "Finish this sentence for each kind of user — *When [situation], I want [motivation], so I can [outcome]*." Record the sentence verbatim.
+- **Design direction:** "Which three-to-five adjectives should the design feel like? Which should it deliberately avoid?" → `direction: {adjectives: [...], avoids: [...]}`.
+- **Content anchors:** "Give me real examples of the content this app shows — actual names, listings, messages, numbers." → `contentAnchors`.
+- **Locales:** "Which languages must the app ship in, and which is the default?" → `locales` (rendered after Targets in the brief).
+- **Per-surface states:** for each named surface, "Which UI states must this screen cover — loading, empty, error, offline, …?" → the surface's `states` list, carried into the registry seed and the brief's surface table.
+
+Author the answers document; each named surface is `{id, label, shell, provenance}` (plus optional `states`) with `id` = `<shell>.<short>` — do not set `comp` or `surface`. Emit: `appbox intake emit --answers <f>` (the Dart port of the archived `intake.py`) validates the answers and seeds `registry.json` (one entry per surface, `surface` null, `comp` derived) at the **design root** — `designs/<app>/models/screens_model/registry.json`, or structure.json's `"registry"` field; `docs/design/registry.json` is only the fallback when no design root exists. The unified `docs/design/brief.md` is written by the chain's tail — `appbox emit story-map --answers <f>` (intake sections + releases + the epic/feature/story hierarchy + the surface inventory, every `inferred` field visibly marked). Validate-only while authoring: `appbox intake validate <f>`. Hand-written brief: `appbox intake seed --brief docs/design/brief.md` derives the registry seed from the brief's surface table without rewriting a word; a brief with no table yields an empty seed (not an error). Output paths are overridable via `--brief-out` / `--registry-out` or `INTAKE_BRIEF_OUT` / `INTAKE_REGISTRY_OUT`. Invalid input writes nothing.
 
 ### Outputs
 
-`docs/design/brief.md` (provenance-marked; `inferred` fields flagged) and `docs/design/registry.json` (keys exactly `{id, label, tab, comp, surface}`, `surface` null everywhere). These are the inputs to `appbox-designer`; the traceability gate (plan 10.6, `gates/`) then asserts every registry entry traces to a brief requirement.
+The seeded `registry.json` at the design root (`designs/<app>/models/screens_model/registry.json`, or structure.json's `"registry"` field; keys exactly `{id, label, shell, comp, surface}` plus any elicited `states`, `surface` null everywhere) and — via the chain tail `appbox emit story-map` — the unified `docs/design/brief.md` (provenance-marked; `inferred` fields flagged; `## Surface inventory`, and `## Layout template` when a template was picked). These are the inputs to `appbox-designer`; the traceability gate (plan 10.6, `appbox gate intake` — pure Dart, `appboxd/lib/gate_intake.dart`) then asserts every registry entry traces to a brief requirement and back, and that the brief carries those sections.
 
 ### Rules
 

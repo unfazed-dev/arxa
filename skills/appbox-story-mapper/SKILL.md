@@ -1,6 +1,6 @@
 ---
 name: appbox-story-mapper
-description: "Elicit product requirements as an Epic → Feature → Story user story map (MoSCoW priorities, release swimlanes) and hand it to appbox-designer: emits an interactive HTML story map, the story-map.json data file, and a gate-compatible docs/design/brief.md whose surface table the intake traceability gate (plan 10.7) traces the registry against. Runs before design; feeds the designer directly, bypassing appbox-intake. Trigger on story mapping, backlog visualization, MoSCoW priority, release planning, organize requirements into a story map, or 'map the requirements before design'."
+description: "Elicit product requirements as an Epic → Feature → Story user story map (MoSCoW priorities, release swimlanes) — the tail of the intake chain: consumes `appbox intake` answers (--answers, auto-discovered from pipeline/state when omitted) and emits the unified docs/design/brief.md (intake sections + releases + story hierarchy + surface inventory), plus an interactive HTML story map and story-map.json. Also valid standalone (no answers — intake is optional, plan 10.7): features then derive surfaces as before, flagged [inferred]. The intake traceability gate (appbox gate intake, plan 10.6) traces the registry against the brief both ways. Trigger on story mapping, backlog visualization, MoSCoW priority, release planning, organize requirements into a story map, or 'map the requirements before design'."
 license: MIT
 ---
 
@@ -14,25 +14,41 @@ hands those requirements to `appbox-designer`.
 ## Where this sits in the appbox pipeline
 
 ```
-story-mapper  →  docs/design/brief.md (+ story-map.json, story_map.html)  →  appbox-designer
+appbox intake (answers)  →  appbox emit story-map  →  docs/design/brief.md (unified) + story-map.json + story_map.html  →  appbox-designer
 ```
 
-- This skill **feeds the designer directly**; `appbox-intake` is bypassed
-  (intake is optional — a brief is valid designer input, plan 10.7).
+- This skill is the **tail of the intake chain** — one chain, one brief. Given
+  intake answers, it emits the **unified** `docs/design/brief.md`: the intake
+  sections, then Releases, then the epic/feature/story hierarchy, then a
+  surface inventory built from the intake-declared surfaces.
+- It also remains valid **standalone** (no answers): `appbox-intake` is
+  optional — a story map alone is valid designer input (plan 10.7). Standalone,
+  surfaces are derived from features exactly as before.
 - Like intake, this skill **elicits; it does not generate** (architecture §22).
   The map is the client's words, structured. You do NOT produce views,
   viewmodels, routes, or layouts — that is the designer's job.
-- The emitted `brief.md` carries a **surface inventory table** in the exact
-  format `gates/intake/intake.sh` (traceability, plan 10.6) parses — so the
-  gate passes unchanged: every registry surface the designer authors traces to
-  a row here, no orphans either way.
+- The emitted `brief.md` carries a **`## Surface inventory`** table (and
+  `## Layout template` when intake elicited one) in the exact format
+  `appbox gate intake` (pure Dart, `appboxd/lib/gate_intake.dart`; plan 10.6)
+  parses — so the gate passes unchanged: every registry surface the designer
+  authors traces to a row here, no orphans either way.
+
+### Intake owns the surface inventory; stories ATTACH
+
+When answers are present, the surface inventory is **the intake-declared
+surfaces**, not a derivation. A feature pins a declared surface by carrying an
+explicit `id` field equal to that surface's id — the feature's stories then
+attach to that surface. A feature whose `id` (explicit or slug-derived) matches
+**no** declared intake surface is derived as before and flagged ` — [inferred]`
+in the unified brief's surface table, so a reader can tell client-declared
+scope from mapper-derived scope at a glance.
 
 ### The mapping (enforced by the script, not by prose)
 
 | Story map | appbox | Rule |
 |---|---|---|
 | Epic | shell | slugified from its first ascii word, lowercase (`User System` → `user`) |
-| Feature | surface | `id = <epic-slug>.<feature-slug>` (`shop.cart` → comp `ShopCart`); ids match `^([a-z][a-z0-9]*)\.([a-z][a-z0-9]*)$` |
+| Feature | surface | **with intake answers:** an explicit `id` field equal to a declared intake surface id pins (attaches to) that surface. **Without a match (or standalone):** derived as before — `id = <epic-slug>.<feature-slug>` (`shop.cart` → comp `ShopCart`); ids match `^([a-z][a-z0-9]*)\.([a-z][a-z0-9]*)$`; unmatched derived surfaces are flagged ` — [inferred]` in the brief's surface table |
 | Story | requirement | listed under its feature in the brief — what that screen must satisfy |
 | MoSCoW + release | sibling metadata | rolled up per surface (strongest live priority, earliest live release) into the table's `priority` / `release` columns; `appbox intake seed` carries them into the registry as additive fields (the four-field canon is untouched) |
 | all-`wont` feature | out-of-scope | excluded from the surface table, listed in the brief's Out of scope |
@@ -173,6 +189,14 @@ appbox emit story-map \
   --data-out docs/design/story-map.json \
   --brief-out docs/design/brief.md
 
+# Chained after intake: answers make the brief UNIFIED (intake sections first)
+appbox emit story-map \
+  --input data.json \
+  --answers pipeline/state/run.intake.json \
+  --output docs/design/story_map.html \
+  --data-out docs/design/story-map.json \
+  --brief-out docs/design/brief.md
+
 # Read JSON from stdin
 echo '{"project":"demo",...}' | appbox emit story-map \
   --output docs/design/story_map.html \
@@ -188,11 +212,22 @@ echo '{"project":"demo",...}' | appbox emit story-map \
 | `--output` | ✅ | Output HTML file path (unless `--self-test`) |
 | `--data-out` | ❌ | Write the validated story-map data JSON here — the machine-readable handoff |
 | `--brief-out` | ❌ | Write the gate-compatible design brief here — the traceability source |
+| `--answers` | ❌ | Intake answers JSON — makes the emitted brief the **unified** one. When omitted, auto-discovers `pipeline/state/run.intake.json`, then `pipeline/state/default.intake.json`; when neither exists (or has no answers), the story map runs standalone as before (10.7) |
 | `--self-test` | ❌ | Run the handoff self-check (slugs, gate parse, all-wont rule) and exit |
 
 Standard appbox layout: all three under `docs/design/` — the gate's default
-paths (`--brief docs/design/brief.md`), so `gates/intake/intake.sh` needs no
-flags.
+paths, so `appbox gate intake` needs no flags.
+
+#### The unified brief (when answers are present)
+
+Section order: the intake sections — Product, Audience (JTBD), What the app
+must do, Existing systems, Targets, **Locales**, Brand, **Design direction**,
+**Content anchors**, Constraints, Out of scope, **Layout template** (when one
+was elicited) — then **Releases**, then the epic/feature/story hierarchy, then
+the **surface inventory** built from the intake-declared surfaces (stories
+attached by feature `id`; unmatched derived surfaces flagged ` — [inferred]`).
+Every intake field carries its provenance (`client` | `founder` | `inferred`),
+with `inferred` visibly marked.
 
 ### Step 4: Hand off to design
 
