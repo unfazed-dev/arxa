@@ -474,6 +474,12 @@ const _packages = [
       ['dist/client-side-templates.min.js', 'dist/client-side-templates.js'],
       'client-side-templates.js'),
   _Pkg('mustache', ['mustache.min.js', 'mustache.js'], 'mustache.min.js'),
+  // Leaflet is pinned like htmx: the runtime vendor copy is hand-checked and
+  // the manifest rows must survive a re-fetch unchanged. Its images/ sprites
+  // are NOT fetched (they ride along unpinned, same as the lucide SVGs did
+  // before the tarball step) — re-adding them means an npm-tarball extract.
+  _Pkg('leaflet', ['dist/leaflet.js'], 'leaflet/leaflet.js', version: '1.9.4'),
+  _Pkg('leaflet', ['dist/leaflet.css'], 'leaflet/leaflet.css', version: '1.9.4'),
   _Pkg('htmx-ext-morph', ['dist/morph.min.js', 'dist/morph.js'], 'morph.js',
       optional: true),
 ];
@@ -578,7 +584,9 @@ Future<CmdResult> vendorFetch(String vendorDir,
       if (pkg.expect && integrity != expectPin) {
         throw Exception('integrity mismatch! got $integrity, expected $expectPin');
       }
-      File(p.join(vendorDir, pkg.out)).writeAsBytesSync(buf);
+      final outFile = File(p.join(vendorDir, pkg.out));
+      outFile.parent.createSync(recursive: true); // leaflet/* lives in a subdir
+      outFile.writeAsBytesSync(buf);
       manifest.add(manifestEntry(
           file: pkg.out, pkg: pkg.pkg, version: v, integrity: integrity));
       out.add('✓ ${pkg.out} ← ${pkg.pkg}@$v (${buf.length} bytes)');
@@ -786,8 +794,10 @@ CmdResult designDoctor(List<String> args) {
 // a checked `appbox design serve . --no-watch` line: ejected artifacts run on
 // the same Dart design server, no node anywhere.
 
-/// `/assets/vendor/<file>.js` references in artifact HTML. (eject.mjs §2b.)
-final _vendorRefRe = RegExp(r'/assets/vendor/([\w.-]+\.js)');
+/// `/assets/vendor/<path>.(js|css)` references in artifact HTML — subpaths
+/// included, so e.g. `leaflet/leaflet.js` and `leaflet/leaflet.css` match.
+/// (eject.mjs §2b.)
+final _vendorRefRe = RegExp(r'/assets/vendor/([\w./-]+\.(?:js|css))');
 
 /// Recursive copy of a directory tree (files only; parents auto-created).
 /// Dart stdlib has no recursive copy — this is `cpSync(src, dst, {recursive})`.
@@ -845,10 +855,10 @@ CmdResult designEject(List<String> args) {
   // nothing in the console — is the failure this stack is worst at surfacing.
   final available = Directory(vendorDir).existsSync()
       ? Directory(vendorDir)
-          .listSync()
+          .listSync(recursive: true)
           .whereType<File>()
-          .map((f) => p.basename(f.path))
-          .where((n) => n.endsWith('.js'))
+          .map((f) => p.relative(f.path, from: vendorDir).replaceAll('\\', '/'))
+          .where((n) => n.endsWith('.js') || n.endsWith('.css'))
           .toSet()
       : <String>{};
   final missing = wanted.where((f) => !available.contains(f)).toList()..sort();
@@ -866,8 +876,19 @@ CmdResult designEject(List<String> args) {
 
   final outVendor =
       Directory(p.join(out, 'runtime', 'vendor'))..createSync(recursive: true);
+  // A referenced path under a subdirectory (leaflet/leaflet.js) rides with its
+  // whole subdir — leaflet.css references its marker sprites in images/
+  // relative to itself, so per-file copying would ship a map with no markers.
+  final copiedDirs = <String>{};
   for (final f in wanted) {
-    File(p.join(vendorDir, f)).copySync(p.join(outVendor.path, f));
+    final slash = f.indexOf('/');
+    if (slash < 0) {
+      File(p.join(vendorDir, f)).copySync(p.join(outVendor.path, f));
+    } else if (copiedDirs.add(f.substring(0, slash))) {
+      _copyTree(
+          p.join(vendorDir, f.substring(0, slash)),
+          p.join(outVendor.path, f.substring(0, slash)));
+    }
   }
   // Provenance travels with the copy: the same rows, narrowed to what shipped.
   final manifest =

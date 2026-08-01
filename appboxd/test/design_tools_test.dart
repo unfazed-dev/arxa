@@ -833,6 +833,40 @@ export default [
       expect(r.stderrLines.first, contains('refusing to eject'));
     });
 
+    test('map-island artifact ejects the leaflet subdir incl. images/', () {
+      final d = _tmpDir();
+      _write(d, 'app.routes.js', "export default [['GET','/']];\n");
+      _write(d, 'index.html',
+          '<script src="/assets/vendor/htmx.min.js"></script>'
+          '<link rel="stylesheet" href="/assets/vendor/leaflet/leaflet.css">'
+          '<script src="/assets/vendor/leaflet/leaflet.js" defer></script>');
+      final out = _tmpDir();
+      addTearDown(() {
+        d.deleteSync(recursive: true);
+        out.deleteSync(recursive: true);
+      });
+      final r = designEject([d.path, out.path]);
+      expect(r.exitCode, 0, reason: r.stderrLines.join('\n'));
+
+      // The whole leaflet/ subdir ships: leaflet.css references its marker
+      // sprites in images/ relative to itself.
+      final vendor = p.join(out.path, 'runtime', 'vendor');
+      expect(File(p.join(vendor, 'leaflet', 'leaflet.js')).existsSync(), isTrue);
+      expect(
+          File(p.join(vendor, 'leaflet', 'leaflet.css')).existsSync(), isTrue);
+      expect(
+          File(p.join(vendor, 'leaflet', 'images', 'marker-icon.png'))
+              .existsSync(),
+          isTrue,
+          reason: 'leaflet.css references images/ relative to itself');
+
+      // The narrowed manifest keeps both leaflet rows.
+      final manifest = jsonDecode(
+          File(p.join(vendor, 'manifest.json')).readAsStringSync()) as List;
+      final files = manifest.map((e) => (e as Map)['file']).toSet();
+      expect(files, containsAll(['leaflet/leaflet.js', 'leaflet/leaflet.css']));
+    });
+
     // The plan-20.5 serve smoke: the ejected copy renders + serves htmx on
     // the Dart design server, booted in-process.
     test('serve smoke: ejected copy serves / and htmx (in-process)', () async {
