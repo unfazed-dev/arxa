@@ -312,7 +312,7 @@
       "dir": "deploy",
       "package": "appbox_kit_deploy",
       "capabilities": [
-        "release automation (fastlane/shorebird/CF Pages)"
+        "release automation (fastlane/shorebird/CF Pages+Workers/Vercel)"
       ],
       "backing": "pure-Dart dev tooling",
       "topology": "standalone",
@@ -323,7 +323,24 @@
       "providers": [
         {
           "name": "Vercel",
-          "verification": "stub"
+          "verification": "port-tested",
+          "notes": "implemented 2026-08-01 — CLI wrap: flutter build web + vercel deploy build/web --prod --yes; shape tests green; not yet device/CI-verified against a real project"
+        },
+        {
+          "name": "Cloudflare Pages",
+          "verification": "port-tested"
+        },
+        {
+          "name": "Cloudflare Workers",
+          "verification": "port-tested"
+        },
+        {
+          "name": "fastlane",
+          "verification": "port-tested"
+        },
+        {
+          "name": "Shorebird",
+          "verification": "port-tested"
         }
       ]
     },

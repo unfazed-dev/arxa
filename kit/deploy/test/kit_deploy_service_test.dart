@@ -56,7 +56,11 @@ void main() {
       'cloudflare-pages',
       'vercel',
     ]));
-    expect(report['vercel']!.single.ok, isFalse, reason: 'stub');
+    expect(
+      report['vercel']!.any((c) => !c.ok),
+      isTrue,
+      reason: 'VERCEL_TOKEN is not set in this config',
+    );
   });
 
   test('KitDeployConfig.dartDefineArgs preserves insertion order', () {

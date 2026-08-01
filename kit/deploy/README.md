@@ -14,7 +14,18 @@ Pure Dart and standalone: no flutter, stacked, or appbox_kit dependency.
 | `shorebird-release` | `shorebird release <platform> [--flutter-version=X]` | **Wired** |
 | `shorebird-patch` | `shorebird patch <platform> [--release-version=Y]` | **Wired** |
 | `cloudflare-pages` | `flutter build web --release` → `wrangler pages deploy build/web --project-name=<n>` | **Wired** |
-| `vercel` | `vercel deploy build/web --prod --yes` (planned) | Stub — throws `UnimplementedError` |
+| `cloudflare-workers` | `wrangler deploy` (from the working directory's `wrangler.toml`) | **Wired** |
+| `vercel` | `flutter build web --release` → `vercel deploy build/web --prod --yes` | **Wired** |
+
+`vercel` reads `VERCEL_TOKEN` from `KitDeployConfig.environment`. Vercel CLI
+v55+ tightened non-interactive project linking — pin a CLI major version
+(`doctor` reports `vercel --version`) and set `VERCEL_ORG_ID` /
+`VERCEL_PROJECT_ID` to link non-interactively.
+
+`cloudflare-workers` needs `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID`
+and a `workingDirectory` containing the Worker's `wrangler.toml` (there is no
+flutter build step); it fails with `ok: false` when `workingDirectory` is
+null.
 
 ## Usage
 
@@ -53,5 +64,4 @@ final runner = ScriptedProcessRunner(script: {
 ```
 
 Targets never throw on tool failure — they return
-`KitDeployResult(ok: false, failureReason: ...)`. Only stubs throw
-`UnimplementedError`.
+`KitDeployResult(ok: false, failureReason: ...)`.

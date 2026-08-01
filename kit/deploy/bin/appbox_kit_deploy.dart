@@ -26,6 +26,7 @@ Future<void> main(List<String> args) async {
     const ShorebirdTarget(runner, mode: ShorebirdMode.release),
     const ShorebirdTarget(runner, mode: ShorebirdMode.patch),
     const CloudflarePagesTarget(runner),
+    const CloudflareWorkersTarget(runner),
     const VercelTarget(runner),
   ]);
 

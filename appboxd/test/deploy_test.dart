@@ -94,21 +94,47 @@ void main() {
       expect(res.ok, isTrue);
       expect(res.artefactId, 'https://app.pages.dev');
     });
-  });
 
-  group('vercel — honest non-availability', () {
-    test('vercel throws (it is a stub)', () {
-      // vercel throws — never silently "succeeds". Done-when #2.
-      expect(
-        () => vercel(ScriptedRunner([]), '1.2.3'),
-        throwsA(predicate<Object>(
-            (Object e) => e.toString().toLowerCase().contains('stub'))),
-      );
+    test('cloudflare-workers: wrangler deploy -> deployment URL', () async {
+      final runner = ScriptedRunner([
+        (['wrangler', 'deploy'],
+            const RunnerResult(0, 'https://app.workers.dev', '')),
+      ]);
+      final res = await cloudflareWorkers(runner, '1.2.3');
+      expect(res.ok, isTrue);
+      expect(res.target, 'cloudflare-workers');
+      expect(res.artefactId, 'https://app.workers.dev');
     });
 
-    test('vercel is NOT in OFFERED and is marked stub', () {
-      expect(offered, isNot(contains('vercel')));
-      expect(targetStatus('vercel'), 'stub');
+    test('vercel: flutter build web -> vercel deploy --prod --yes', () async {
+      final runner = ScriptedRunner([
+        (['flutter', 'build', 'web', '--release'], const RunnerResult(0, '', '')),
+        (['vercel', 'deploy', 'build/web', '--prod', '--yes'],
+            const RunnerResult(0, 'https://app.vercel.app', '')),
+      ]);
+      final res = await vercel(runner, '1.2.3');
+      expect(runner.callCount, 2, reason: 'vercel must issue build -> deploy');
+      expect(res.ok, isTrue);
+      expect(res.target, 'vercel');
+      expect(res.artefactId, 'https://app.vercel.app');
+    });
+
+    test('vercel: a failed flutter build short-circuits before deploy', () async {
+      final runner = ScriptedRunner([
+        (['flutter', 'build', 'web', '--release'],
+            const RunnerResult(1, '', 'compile error')),
+      ]);
+      final res = await vercel(runner, '1.2.3');
+      expect(runner.callCount, 1, reason: 'must not deploy a broken build');
+      expect(res.ok, isFalse);
+      expect(res.error, contains('compile error'));
+    });
+  });
+
+  group('vercel — wired and offered', () {
+    test('vercel is in OFFERED and marked wired', () {
+      expect(offered, contains('vercel'));
+      expect(targetStatus('vercel'), 'wired');
     });
   });
 
@@ -117,10 +143,12 @@ void main() {
       offered,
       [
         'cloudflare-pages',
+        'cloudflare-workers',
         'fastlane-android',
         'fastlane-ios',
         'shorebird-patch',
         'shorebird-release',
+        'vercel',
       ],
     );
   });
@@ -129,7 +157,7 @@ void main() {
     test('doctor returns a report; it never decides whether a deploy may proceed', () {
       final rep = Deployer().doctor();
       expect(rep.offered, offered);
-      expect(rep.stubNotOfferered, contains('vercel'));
+      expect(rep.stubNotOfferered, isEmpty);
       expect(rep.ready, contains('gate'));
     });
 
@@ -247,18 +275,30 @@ void main() {
       );
     });
 
-    test('a stub target halts even with approval — vercel is never shipped', () async {
+    test('an approved vercel deploy ships through the gate', () async {
+      // vercel is wired, but the human gate still applies: the confirmed
+      // triple + approval ships and records a full ledger row.
       final ledger = _tempLedger();
-      await expectLater(
-        () => Deployer(runner: ScriptedRunner([]), ledgerPath: ledger).deploy(
-          target: 'vercel',
-          version: '1.2.3',
-          account: 'totem-labs',
-          approval: 'ops@totem',
-        ),
-        throwsA(predicate<DeployHalted>(
-            (DeployHalted e) => e.toString().contains('stub'))),
+      final runner = ScriptedRunner([
+        (['flutter', 'build', 'web', '--release'], const RunnerResult(0, '', '')),
+        (['vercel', 'deploy', 'build/web', '--prod', '--yes'],
+            const RunnerResult(0, 'https://app.vercel.app', '')),
+      ]);
+      final res = await Deployer(runner: runner, ledgerPath: ledger).deploy(
+        target: 'vercel',
+        version: '1.2.3',
+        account: 'totem-labs',
+        approval: 'ops@totem',
       );
+      expect(res.ok, isTrue);
+      expect(res.artefactId, 'https://app.vercel.app');
+      final led =
+          (jsonDecode(File(ledger).readAsStringSync()) as Map<String, dynamic>)['attempts']
+              as List;
+      final row = led.last as Map<String, dynamic>;
+      expect(row['status'], 'shipped');
+      expect(row['target'], 'vercel');
+      expect(row['approver'], 'ops@totem');
     });
   });
 }

@@ -29,6 +29,36 @@
       "suite": "appboxd/lib/tier1.dart",
       "digest": "sha256:6911339109078f0d860f8e1b83a7ae0ade44d77e5d6b30ddba57cd058fa805ee",
       "ran_at": "2026-08-01T01:54:19Z"
+    },
+    "deploy/Vercel": {
+      "tier": "port-tested",
+      "suite": "appboxd/lib/deploy.dart",
+      "digest": "sha256:d48c7a3689b1cb05299854b51ac19129959b78fbeb1820c4de96a9f58cc791a3",
+      "ran_at": "2026-08-01T02:27:30Z"
+    },
+    "deploy/Cloudflare Pages": {
+      "tier": "port-tested",
+      "suite": "appboxd/lib/deploy.dart",
+      "digest": "sha256:d48c7a3689b1cb05299854b51ac19129959b78fbeb1820c4de96a9f58cc791a3",
+      "ran_at": "2026-08-01T02:27:30Z"
+    },
+    "deploy/Cloudflare Workers": {
+      "tier": "port-tested",
+      "suite": "appboxd/lib/deploy.dart",
+      "digest": "sha256:d48c7a3689b1cb05299854b51ac19129959b78fbeb1820c4de96a9f58cc791a3",
+      "ran_at": "2026-08-01T02:27:30Z"
+    },
+    "deploy/fastlane": {
+      "tier": "port-tested",
+      "suite": "appboxd/lib/deploy.dart",
+      "digest": "sha256:d48c7a3689b1cb05299854b51ac19129959b78fbeb1820c4de96a9f58cc791a3",
+      "ran_at": "2026-08-01T02:27:30Z"
+    },
+    "deploy/Shorebird": {
+      "tier": "port-tested",
+      "suite": "appboxd/lib/deploy.dart",
+      "digest": "sha256:d48c7a3689b1cb05299854b51ac19129959b78fbeb1820c4de96a9f58cc791a3",
+      "ran_at": "2026-08-01T02:27:30Z"
     }
   }
 }

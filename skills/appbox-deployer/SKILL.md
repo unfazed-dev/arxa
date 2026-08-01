@@ -1,9 +1,9 @@
 ---
 name: appbox-deployer
-description: Use when shipping an appbox-built target to stores (fastlane: TestFlight/App Store + Play internal/production), pushing an OTA Dart patch (shorebird), or deploying a web build to Cloudflare Pages. Trigger on "deploy", "ship to TestFlight", "release to Play", "push an OTA patch", "hotfix", "deploy to Cloudflare Pages".
+description: Use when shipping an appbox-built target to stores (fastlane: TestFlight/App Store + Play internal/production), pushing an OTA Dart patch (shorebird), or deploying a web build to Cloudflare Pages/Workers or Vercel. Trigger on "deploy", "ship to TestFlight", "release to Play", "push an OTA patch", "hotfix", "deploy to Cloudflare Pages", "deploy to Vercel".
 ---
 
-# deployer — stores (fastlane) + OTA patches (shorebird) + web (Cloudflare Pages)
+# deployer — stores (fastlane) + OTA patches (shorebird) + web (Cloudflare Pages/Workers, Vercel)
 
 ## Core principle
 fastlane, shorebird and wrangler are existing CLIs; this role drives them with a
@@ -17,19 +17,21 @@ The mechanics live in `appboxd/lib/deploy.dart` (the Dart port of the former
 runner with no toolchain, no credentials and no signing identity** — the one
 property that makes a deploy stage self-testable.
 
-## Targets — wired vs stubbed (honest)
+## Targets — wired (honest about verification tier)
 
 | target | status |
 |---|---|
 | `fastlane-ios` / `fastlane-android` | **wired** |
 | `shorebird-release` / `shorebird-patch` | **wired** |
 | `cloudflare-pages` | **wired** |
-| `vercel` | **stub — throws `UnimplementedError`; NEVER offered** |
+| `cloudflare-workers` | **wired** (port-tested) |
+| `vercel` | **wired** (port-tested) |
 
-Only the wired targets are surfaced to an operator. `vercel` is excluded from
-`OFFERED` here, and `gates/advertise` independently rejects any offer of a
-stub-tier provider — two enforcements of the same rule. Do not "wire vercel
-quickly" by removing the throw; honest non-availability is the point.
+All five are surfaced to an operator. `vercel` and `cloudflare-workers` are
+port-tested tier: command shapes are covered by scripted-runner tests, but
+neither has been CI-verified against a real project yet — `gates/advertise`
+caps any offer at the tier recorded in `config/kit-registry.json`, so say
+"port-tested", not "proven".
 
 ## Stores — fastlane (gym + match + deliver/supply)
 1. **Once per project** — `fastlane init` in `<target>/ios` + `<target>/android`.
@@ -52,6 +54,17 @@ quickly" by removing the throw; honest non-availability is the point.
 2. **Deploy** — `wrangler pages deploy <dir> --project-name <name>`. Returns a
    deployment URL (the artefact id recorded in the ledger).
 
+## Web — Cloudflare Workers (wrangler)
+1. **Deploy** — `wrangler deploy` in the worker directory, with
+   `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` in the ambient environment.
+   Returns a deployment URL.
+
+## Web — Vercel
+1. **Build** — `flutter build web --release`.
+2. **Deploy** — `vercel deploy build/web --prod --yes`, with `VERCEL_TOKEN` in
+   the ambient environment (set `VERCEL_ORG_ID` / `VERCEL_PROJECT_ID` to link
+   non-interactively). Returns a deployment URL.
+
 ## The deploy gate (the strictest human gate)
 Deploy is a **write to the outside world** and the most irreversible act in the
 pipeline — an App Store submission cannot be rolled back by re-running a stage.
@@ -67,7 +80,7 @@ halts (recording a `halted` ledger row, minting nothing) without it.
 still has to assert a value.
 
 ## Rules
-- Never commit secrets — `.env` (Supabase), signing (`match` storage), store keys, the Cloudflare account/Pages token are operator-owned, gitignored.
+- Never commit secrets — `.env` (Supabase), signing (`match` storage), store keys, the Cloudflare account/Pages/Workers tokens and `VERCEL_TOKEN` are operator-owned, gitignored.
 - Release is **gated on QC green** (`/appbox:review`) + manifest hash match. Don't ship a drifted target.
 - Version: the pipeline stamps `0.1.0+1` in the generated pubspec; the operator bumps per release.
 - Every deploy attempt — shipped or halted — is recorded in the deploy ledger
@@ -75,8 +88,8 @@ still has to assert a value.
   target, version, account, approving person, timestamp, resulting artefact id.
 
 ## Output
-- A shipped build (store track), a shorebird patch version, and/or a Pages
-  deployment URL. Deploy is the only outward-facing pipeline action — **confirm
+- A shipped build (store track), a shorebird patch version, and/or a web
+  deployment URL (Pages, Workers or Vercel). Deploy is the only outward-facing pipeline action — **confirm
   with the operator before pushing.**
 
 ## Run

@@ -12,14 +12,14 @@
 //   fastlane-ios / fastlane-android     wired
 //   shorebird-release / shorebird-patch wired
 //   cloudflare-pages                    wired
-//   vercel                              STUB — throws, NEVER offered
+//   cloudflare-workers                  wired
+//   vercel                              wired
 //
-// THE TWO THINGS THIS MODULE WILL NOT DO
-//   1. Mint an approval token. Deploy is the third human gate (§17): it names
-//      the target, the version and the account, and a person confirms that
-//      exact triple. [Deployer.deploy] REQUIRES that approval as an argument;
-//      an automated run reaches the gate and halts, minting nothing.
-//   2. Offer vercel. It throws; it is excluded from OFFERED.
+// THE ONE THING THIS MODULE WILL NOT DO
+//   Mint an approval token. Deploy is the third human gate (§17): it names
+//   the target, the version and the account, and a person confirms that
+//   exact triple. [Deployer.deploy] REQUIRES that approval as an argument;
+//   an automated run reaches the gate and halts, minting nothing.
 //
 // The ledger (default pipeline/state/deploy-ledger.json, override via
 // --ledger or $APPBOX_DEPLOY_LEDGER in the CLI) is append-only and records
@@ -227,11 +227,38 @@ Future<DeployResult> cloudflarePages(ProcessRunner runner, String version) async
       artefactId: id.isEmpty ? 'https://demo.pages.dev' : id);
 }
 
-/// STUB. Throws — vercel is not wired and is NEVER offered (plan 11.2;
-/// gates/advertise rejects stub-tier providers). Do not remove the throw to
-/// "wire it quickly" — the whole point is honest non-availability.
-Future<DeployResult> vercel(ProcessRunner runner, String version) {
-  throw UnimplementedError('vercel deploy is a stub (phase-later); not offered');
+/// Cloudflare Workers deploy via wrangler -> a deployment URL. No flutter
+/// build step — a Worker ships from its own wrangler.toml in the working
+/// directory, with CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID in the
+/// ambient environment.
+Future<DeployResult> cloudflareWorkers(ProcessRunner runner, String version) async {
+  final r = await runner.run('wrangler', ['deploy']);
+  if (!r.ok) {
+    return DeployResult(false, 'cloudflare-workers',
+        error: 'workers deploy failed: ${r.stderr}');
+  }
+  final id = r.stdout.trim();
+  return DeployResult(true, 'cloudflare-workers',
+      artefactId: id.isEmpty ? 'https://demo.workers.dev' : id);
+}
+
+/// Vercel deploy of a static Flutter web build:
+/// `flutter build web --release` -> `vercel deploy build/web --prod --yes`,
+/// with VERCEL_TOKEN in the ambient environment -> a deployment URL. Same
+/// command shape as kit/deploy's VercelTarget.
+Future<DeployResult> vercel(ProcessRunner runner, String version) async {
+  final build = await runner.run('flutter', ['build', 'web', '--release']);
+  if (!build.ok) {
+    return DeployResult(false, 'vercel',
+        error: 'flutter build web failed: ${build.stderr}');
+  }
+  final r = await runner.run('vercel', ['deploy', 'build/web', '--prod', '--yes']);
+  if (!r.ok) {
+    return DeployResult(false, 'vercel', error: 'vercel deploy failed: ${r.stderr}');
+  }
+  final id = r.stdout.trim();
+  return DeployResult(true, 'vercel',
+      artefactId: id.isEmpty ? 'https://demo.vercel.app' : id);
 }
 
 typedef _TargetPort = Future<DeployResult> Function(ProcessRunner runner, String version);
@@ -251,12 +278,13 @@ final Map<String, _Target> _targets = {
   'shorebird-release': _Target(shorebirdRelease, 'wired'),
   'shorebird-patch': _Target(shorebirdPatch, 'wired'),
   'cloudflare-pages': _Target(cloudflarePages, 'wired'),
-  'vercel': _Target(vercel, 'stub'),
+  'cloudflare-workers': _Target(cloudflareWorkers, 'wired'),
+  'vercel': _Target(vercel, 'wired'),
 };
 
-/// OFFERED = wired targets only, sorted. vercel (stub) is excluded — plan 11.2.
-/// gates/advertise independently enforces this against the registry; this is
-/// the skill-side defence in depth.
+/// OFFERED = wired targets only, sorted. gates/advertise independently
+/// enforces this against the registry; this is the skill-side defence in
+/// depth.
 final List<String> offered =
     (_targets.entries.where((e) => e.value.status == 'wired').map((e) => e.key).toList()
           ..sort());
@@ -558,15 +586,41 @@ Future<void> _suiteCloudflarePages() async {
       'cloudflare-pages: $res');
 }
 
-Future<void> _suiteVercelIsStubAndNotOffered() async {
-  // vercel throws (honest non-availability) — Done-when #2
-  try {
-    await vercel(ScriptedRunner([]), '1.2.3');
-  } catch (e) {
-    _check(e.toString().toLowerCase().contains('stub'), 'vercel throws: $e');
-  }
-  _check(!offered.contains('vercel'), 'vercel must not be offered: $offered');
-  _check(targetStatus('vercel') == 'stub', 'vercel is stub');
+Future<void> _suiteCloudflareWorkers() async {
+  final (_, res) = await _scripted(
+    [
+      (['wrangler', 'deploy'],
+          const RunnerResult(0, 'https://app.workers.dev', '')),
+    ],
+    (run) => cloudflareWorkers(run, '1.2.3'),
+  );
+  _check(res.ok && res.artefactId == 'https://app.workers.dev',
+      'cloudflare-workers: $res');
+}
+
+Future<void> _suiteVercel() async {
+  var (r, res) = await _scripted(
+    [
+      (['flutter', 'build', 'web', '--release'], const RunnerResult(0, '', '')),
+      (['vercel', 'deploy', 'build/web', '--prod', '--yes'],
+          const RunnerResult(0, 'https://app.vercel.app', '')),
+    ],
+    (run) => vercel(run, '1.2.3'),
+  );
+  _check(r.callCount == 2, 'vercel did not issue build -> deploy');
+  _check(res.ok && res.artefactId == 'https://app.vercel.app', 'vercel: $res');
+  // a failed flutter build short-circuits — never deploy a broken build
+  (r, res) = await _scripted(
+    [
+      (['flutter', 'build', 'web', '--release'],
+          const RunnerResult(1, '', 'compile error')),
+    ],
+    (run) => vercel(run, '1.2.3'),
+  );
+  _check(r.callCount == 1 && !res.ok && res.error!.contains('compile error'),
+      'vercel build failure: $res');
+  _check(offered.contains('vercel'), 'vercel is offered: $offered');
+  _check(targetStatus('vercel') == 'wired', 'vercel is wired');
 }
 
 Future<void> _suiteOfferedIsExactlyTheWiredSet() async {
@@ -575,10 +629,12 @@ Future<void> _suiteOfferedIsExactlyTheWiredSet() async {
       offered,
       [
         'cloudflare-pages',
+        'cloudflare-workers',
         'fastlane-android',
         'fastlane-ios',
         'shorebird-patch',
         'shorebird-release',
+        'vercel',
       ],
     ),
     'OFFERED is the wired set, sorted: $offered',
@@ -588,7 +644,7 @@ Future<void> _suiteOfferedIsExactlyTheWiredSet() async {
 Future<void> _suiteDoctorIsPreflightNotGate() async {
   final rep = Deployer().doctor();
   _check(rep.ready.contains('gate'), 'doctor ready mentions gate: ${rep.ready}');
-  _check(rep.stubNotOfferered.contains('vercel'), 'doctor lists vercel stub');
+  _check(rep.stubNotOfferered.isEmpty, 'no stubs: ${rep.stubNotOfferered}');
   _check(_listEq(rep.offered, offered), 'doctor.offered == OFFERED');
 }
 
@@ -665,19 +721,28 @@ Future<void> _suiteDeployRecordsFullAttempt() async {
       (row['timestamp'] as String).endsWith('Z'), 'row ts: $row');
 }
 
-Future<void> _suiteDeployRejectsStubTarget() async {
+Future<void> _suiteDeployShipsVercelWithApproval() async {
   final ledger = _selftestLedger();
-  // A stub target halts even WITH approval — vercel is never shipped.
-  try {
-    await Deployer(runner: ScriptedRunner([]), ledgerPath: ledger).deploy(
+  // vercel is wired, but the gate still applies: only a confirmed triple +
+  // approval ships, and the attempt is recorded.
+  final (_, res) = await _scripted(
+    [
+      (['flutter', 'build', 'web', '--release'], const RunnerResult(0, '', '')),
+      (['vercel', 'deploy', 'build/web', '--prod', '--yes'],
+          const RunnerResult(0, 'https://app.vercel.app', '')),
+    ],
+    (run) => Deployer(runner: run, ledgerPath: ledger).deploy(
       target: 'vercel',
       version: '1.2.3',
       account: 'totem-labs',
       approval: 'ops@totem',
-    );
-  } catch (e) {
-    _check(e.toString().contains('stub'), 'stub halt: $e');
-  }
+    ),
+  );
+  _check(res.ok && res.artefactId == 'https://app.vercel.app', 'shipped: $res');
+  final led = (jsonDecode(File(ledger).readAsStringSync())
+      as Map<String, dynamic>)['attempts'] as List;
+  final row = led.last as Map<String, dynamic>;
+  _check(row['status'] == 'shipped' && row['target'] == 'vercel', 'row: $row');
 }
 
 /// One deploy self-test suite: its label plus the entrypoint.
@@ -690,12 +755,13 @@ final List<DeploySuite> deploySuites = <DeploySuite>[
   ('shorebird-release shape', _suiteShorebirdRelease),
   ('shorebird-patch shape', _suiteShorebirdPatch),
   ('cloudflare-pages shape', _suiteCloudflarePages),
-  ('vercel is stub and not offered', _suiteVercelIsStubAndNotOffered),
+  ('cloudflare-workers shape', _suiteCloudflareWorkers),
+  ('vercel shape', _suiteVercel),
   ('OFFERED is exactly the wired set', _suiteOfferedIsExactlyTheWiredSet),
   ('doctor is preflight, not a gate', _suiteDoctorIsPreflightNotGate),
   ('deploy halts without approval', _suiteDeployHaltsWithoutApproval),
   ('deploy records full attempt', _suiteDeployRecordsFullAttempt),
-  ('deploy rejects stub target', _suiteDeployRejectsStubTarget),
+  ('deploy ships vercel with approval', _suiteDeployShipsVercelWithApproval),
 ];
 
 /// Outcome of running every self-test suite.

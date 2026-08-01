@@ -141,26 +141,135 @@ void main() {
   });
 
   group('VercelTarget', () {
-    test('deploy throws UnimplementedError naming the planned shape',
-        () async {
-      final target = VercelTarget(ScriptedProcessRunner());
+    const vercelConfig = KitDeployConfig(
+      projectName: 'showcase',
+      workingDirectory: '/app',
+      dartDefines: {'ENV': 'prod'},
+      environment: {'VERCEL_TOKEN': 'vercel-token'},
+    );
+
+    test('deploy builds web then vercel deploy --prod --yes', () async {
+      final runner = ScriptedProcessRunner();
+      final target = VercelTarget(runner);
+
+      final result = await target.deploy(vercelConfig);
+
+      expect(result.ok, isTrue);
+      expect(result.target, 'vercel');
+      expect(result.commandsRun, [
+        'flutter build web --release --dart-define=ENV=prod',
+        'vercel deploy build/web --prod --yes',
+      ]);
       expect(
-        () => target.deploy(config),
-        throwsA(
-          isA<UnimplementedError>().having(
-            (e) => e.message,
-            'message',
-            contains('vercel deploy build/web --prod'),
-          ),
+        runner.environments.last,
+        containsPair('VERCEL_TOKEN', 'vercel-token'),
+      );
+    });
+
+    test('stops after failed flutter build', () async {
+      final runner = ScriptedProcessRunner(script: {
+        'flutter build web':
+            const KitProcessResult(exitCode: 1, stderr: 'compile error'),
+      });
+      final result = await VercelTarget(runner).deploy(vercelConfig);
+
+      expect(result.ok, isFalse);
+      expect(result.commandsRun, hasLength(1));
+      expect(result.failureReason, contains('compile error'));
+      expect(
+        runner.commandsRun.every((c) => !c.startsWith('vercel deploy')),
+        isTrue,
+        reason: 'must not deploy a broken build',
+      );
+    });
+
+    test('doctor reports vercel CLI + token presence', () async {
+      final runner = ScriptedProcessRunner();
+      final checks = await VercelTarget(runner).doctor(vercelConfig);
+
+      expect(runner.commandsRun, ['vercel --version']);
+      expect(checks, hasLength(2));
+      expect(checks.every((c) => c.ok), isTrue);
+    });
+
+    test('doctor flags a missing VERCEL_TOKEN', () async {
+      final runner = ScriptedProcessRunner();
+      final checks = await VercelTarget(runner).doctor(config);
+
+      expect(checks[0].ok, isTrue);
+      expect(checks[1].ok, isFalse);
+      expect(checks[1].name, 'VERCEL_TOKEN');
+    });
+  });
+
+  group('CloudflareWorkersTarget', () {
+    const workersConfig = KitDeployConfig(
+      projectName: 'showcase',
+      workingDirectory: '/worker',
+      environment: {
+        'CLOUDFLARE_API_TOKEN': 'cf-token',
+        'CLOUDFLARE_ACCOUNT_ID': 'cf-account',
+      },
+    );
+
+    test('deploy runs wrangler deploy in the working directory', () async {
+      final runner = ScriptedProcessRunner();
+      final target = CloudflareWorkersTarget(runner);
+
+      final result = await target.deploy(workersConfig);
+
+      expect(result.ok, isTrue);
+      expect(result.target, 'cloudflare-workers');
+      expect(result.commandsRun, ['wrangler deploy']);
+      expect(runner.workingDirectories.single, '/worker');
+      expect(
+        runner.environments.single,
+        allOf(
+          containsPair('CLOUDFLARE_API_TOKEN', 'cf-token'),
+          containsPair('CLOUDFLARE_ACCOUNT_ID', 'cf-account'),
         ),
       );
     });
 
-    test('doctor flags the stub', () async {
-      final checks = await VercelTarget(ScriptedProcessRunner())
-          .doctor(config);
-      expect(checks.single.ok, isFalse);
-      expect(checks.single.detail, contains('stub'));
+    test('fails without a workingDirectory (no wrangler.toml to read)',
+        () async {
+      final runner = ScriptedProcessRunner();
+      const noDir = KitDeployConfig(projectName: 'showcase');
+
+      final result = await CloudflareWorkersTarget(runner).deploy(noDir);
+
+      expect(result.ok, isFalse);
+      expect(result.failureReason, contains('workingDirectory'));
+      expect(runner.commandsRun, isEmpty);
+    });
+
+    test('deploy failure surfaces exit code and stderr', () async {
+      final runner = ScriptedProcessRunner(script: {
+        'wrangler deploy':
+            const KitProcessResult(exitCode: 1, stderr: 'missing wrangler.toml'),
+      });
+      final result = await CloudflareWorkersTarget(runner).deploy(workersConfig);
+
+      expect(result.ok, isFalse);
+      expect(result.failureReason, contains('exited 1'));
+      expect(result.failureReason, contains('missing wrangler.toml'));
+    });
+
+    test('doctor reports wrangler + token + account id presence', () async {
+      final runner = ScriptedProcessRunner();
+      final checks = await CloudflareWorkersTarget(runner).doctor(workersConfig);
+
+      expect(runner.commandsRun, ['wrangler --version']);
+      expect(checks, hasLength(3));
+      expect(checks.every((c) => c.ok), isTrue);
+    });
+
+    test('doctor flags a missing CLOUDFLARE_ACCOUNT_ID', () async {
+      final runner = ScriptedProcessRunner();
+      final checks = await CloudflareWorkersTarget(runner).doctor(config);
+
+      expect(checks[2].ok, isFalse);
+      expect(checks[2].name, 'CLOUDFLARE_ACCOUNT_ID');
     });
   });
 }

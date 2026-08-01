@@ -3,7 +3,7 @@
 
 `appbox-deployer` · status: **active**
 
-**Role (one line):** ship an appbox-built target to stores (fastlane), push an OTA Dart patch (shorebird), and/or deploy a web build to Cloudflare Pages — all behind the strictest human gate.
+**Role (one line):** ship an appbox-built target to stores (fastlane), push an OTA Dart patch (shorebird), and/or deploy a web build to Cloudflare Pages/Workers or Vercel — all behind the strictest human gate.
 
 **Scope of this document:** lets a human OR an LLM drive the deploy phase without reading the skill source. Folded from `SKILL.md`.
 
@@ -17,16 +17,17 @@
 
 fastlane, shorebird and wrangler are existing CLIs; this role drives them with a recipe. The Fastfile, `shorebird.yaml` and Pages project are operator-owned extension points — signing, bundle id, app ids and the Pages project name are project secrets the pipeline never holds. The mechanics live in `appboxd/lib/deploy.dart` (the Dart port of the former `deploy.py`, now archived): every external CLI runs through a `ProcessRunner` port, so `appbox deploy --self-test` asserts each command shape under a scripted runner with no toolchain, no credentials and no signing identity.
 
-**Targets — wired vs stubbed (honest):**
+**Targets — wired (honest about verification tier):**
 
 | target | status |
 |---|---|
 | `fastlane-ios` / `fastlane-android` | wired |
 | `shorebird-release` / `shorebird-patch` | wired |
 | `cloudflare-pages` | wired |
-| `vercel` | **stub — throws `UnimplementedError`; never offered** |
+| `cloudflare-workers` | wired (port-tested) |
+| `vercel` | wired (port-tested) |
 
-Only wired targets are surfaced to an operator. `vercel` is excluded here and `gates/advertise` independently rejects any offer of a stub-tier provider.
+All five are surfaced to an operator. `vercel` and `cloudflare-workers` are port-tested tier: command shapes pass under the scripted runner, but neither is CI-verified against a real project yet — `gates/advertise` caps any offer at the tier recorded in `config/kit-registry.json`.
 
 ### Inputs
 
@@ -42,15 +43,19 @@ Only wired targets are surfaced to an operator. `vercel` is excluded here and `g
 
 **Web — Cloudflare Pages:** once, `wrangler pages project create <name>` (operator-owned); deploy with `wrangler pages deploy <dir> --project-name <name>`, which returns a deployment URL.
 
+**Web — Cloudflare Workers:** `wrangler deploy` in the worker directory, with `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` in the ambient environment; returns a deployment URL.
+
+**Web — Vercel:** `flutter build web --release`, then `vercel deploy build/web --prod --yes` with `VERCEL_TOKEN` in the ambient environment (`VERCEL_ORG_ID` / `VERCEL_PROJECT_ID` to link non-interactively); returns a deployment URL.
+
 **The gate.** Deploy is the third human gate and the strictest — it is a write to the outside world that cannot be undone by re-running a stage. `gates/deploy` names target + version + account and requires a person to confirm that exact triple. Run `doctor` as preflight (it reports readiness; it is NOT the gate). An agent may prepare, preflight, reach the gate and stop — it never mints the approval token. `appbox deploy deploy` requires that approval as an argument and halts without it, recording a `halted` ledger row.
 
 ### Outputs
 
-A shipped build (store track), a shorebird patch version, and/or a Cloudflare Pages deployment URL. Every attempt — shipped or halted — is recorded in the deploy ledger (`pipeline/state/deploy-ledger.json`, overridable via `APPBOX_DEPLOY_LEDGER`): target, version, account, approving person, timestamp, resulting artefact id. Deploy is the only outward-facing pipeline action — confirm with the operator before pushing.
+A shipped build (store track), a shorebird patch version, and/or a web deployment URL (Pages, Workers or Vercel). Every attempt — shipped or halted — is recorded in the deploy ledger (`pipeline/state/deploy-ledger.json`, overridable via `APPBOX_DEPLOY_LEDGER`): target, version, account, approving person, timestamp, resulting artefact id. Deploy is the only outward-facing pipeline action — confirm with the operator before pushing.
 
 ### Rules
 
-Never commit secrets — `.env`, signing, store keys, the Cloudflare token are operator-owned, gitignored. Release is gated on QC green + manifest hash match; don't ship a drifted target. The pipeline stamps `0.1.0+1` in the generated pubspec; the operator bumps per release. A stub target (`vercel`) is never offered even if an approval is somehow supplied.
+Never commit secrets — `.env`, signing, store keys, the Cloudflare tokens and `VERCEL_TOKEN` are operator-owned, gitignored. Release is gated on QC green + manifest hash match; don't ship a drifted target. The pipeline stamps `0.1.0+1` in the generated pubspec; the operator bumps per release. Offers are capped at each provider's verification tier in `config/kit-registry.json` — `vercel` and `cloudflare-workers` are port-tested, not yet CI-verified.
 
 <!-- kb:begin -->
 ### References

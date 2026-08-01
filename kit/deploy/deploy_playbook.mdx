@@ -6,7 +6,7 @@
 `appbox_kit_deploy` v**0.1.0** · `publish_to: 'none'` · status: **active**
 
 
-**Role (one line):** Deploy port for appbox_kit apps — a process-runner port with wired fastlane, shorebird, and Cloudflare Pages targets (plus a Vercel stub), so release automation is testable without shelling out.
+**Role (one line):** Deploy port for appbox_kit apps — a process-runner port with wired fastlane, shorebird, Vercel, and Cloudflare Pages/Workers targets, so release automation is testable without shelling out.
 
 
 **Scope of this document:** lets a human OR an LLM use, wire, and extend `appbox_kit_deploy` **without reading its source**. The public surface below was extracted from the barrel; README content is folded into the narrative sections.
@@ -29,7 +29,7 @@ Deploy port for appbox_kit apps — a process-runner port with
 
 Exported from `lib/appbox_kit_deploy.dart`:
 
-<Table id="deploy-api" columns={["Symbol", "Kind", "Defined in"]} rows={[["KitDeployService", "class", "src/kit_deploy_service.dart"], ["KitDeployTarget", "abstract interface class", "src/kit_deploy_target.dart"], ["CloudflarePagesTarget", "class", "src/targets/cloudflare_pages_target.dart"], ["FastlaneTarget", "class", "src/targets/fastlane_target.dart"], ["ShorebirdMode", "enum", "src/targets/shorebird_target.dart"], ["ShorebirdTarget", "class", "src/targets/shorebird_target.dart"], ["VercelTarget", "class", "src/targets/vercel_target.dart"], ["KitDeployConfig", "class", "src/models/kit_deploy_config.dart"], ["KitDoctorCheck", "class", "src/models/kit_deploy_result.dart"], ["KitDeployResult", "class", "src/models/kit_deploy_result.dart"], ["KitProcessResult", "class", "src/process/kit_process_runner.dart"], ["KitProcessRunner", "abstract interface class", "src/process/kit_process_runner.dart"], ["IoProcessRunner", "class", "src/process/kit_process_runner.dart"]]} />
+<Table id="deploy-api" columns={["Symbol", "Kind", "Defined in"]} rows={[["KitDeployService", "class", "src/kit_deploy_service.dart"], ["KitDeployTarget", "abstract interface class", "src/kit_deploy_target.dart"], ["CloudflarePagesTarget", "class", "src/targets/cloudflare_pages_target.dart"], ["CloudflareWorkersTarget", "class", "src/targets/cloudflare_workers_target.dart"], ["FastlaneTarget", "class", "src/targets/fastlane_target.dart"], ["ShorebirdMode", "enum", "src/targets/shorebird_target.dart"], ["ShorebirdTarget", "class", "src/targets/shorebird_target.dart"], ["VercelTarget", "class", "src/targets/vercel_target.dart"], ["KitDeployConfig", "class", "src/models/kit_deploy_config.dart"], ["KitDoctorCheck", "class", "src/models/kit_deploy_result.dart"], ["KitDeployResult", "class", "src/models/kit_deploy_result.dart"], ["KitProcessResult", "class", "src/process/kit_process_runner.dart"], ["KitProcessRunner", "abstract interface class", "src/process/kit_process_runner.dart"], ["IoProcessRunner", "class", "src/process/kit_process_runner.dart"]]} />
 
 Test doubles in `lib/testing.dart`: `ScriptedProcessRunner`.
 
@@ -76,7 +76,7 @@ See `kit_matrix.md` for the full routing + dependency graph.
 
 ### Gotchas
 
-The external CLIs (`flutter`, `bundle`/`fastlane`, `shorebird`, `wrangler`) must be on `PATH` — `IoProcessRunner` shells out with `runInShell: true`, and a missing binary surfaces as `exitCode: 127` (caught from `ProcessException`) rather than a thrown Dart error. Secrets and tokens are passed via `KitDeployConfig.environment` (e.g. `CLOUDFLARE_API_TOKEN`) and forwarded to each subprocess; they are never hard-coded. Two behavioral pitfalls: `VercelTarget` is still a stub that throws `UnimplementedError`, and real tool failures do not throw — targets return `KitDeployResult(ok: false, failureReason: ...)`. Note: the README lists no native permission or manifest keys, because this package orchestrates CLIs rather than shipping a platform plugin — iOS/Android signing, shorebird app IDs, and lane-specific credentials live in the host app and its fastlane configuration.
+The external CLIs (`flutter`, `bundle`/`fastlane`, `shorebird`, `wrangler`, `vercel`) must be on `PATH` — `IoProcessRunner` shells out with `runInShell: true`, and a missing binary surfaces as `exitCode: 127` (caught from `ProcessException`) rather than a thrown Dart error. Secrets and tokens are passed via `KitDeployConfig.environment` (e.g. `CLOUDFLARE_API_TOKEN`, `VERCEL_TOKEN`) and forwarded to each subprocess; they are never hard-coded. Two target-specific pitfalls: `VercelTarget` runs `flutter build web --release` then `vercel deploy build/web --prod --yes` — Vercel CLI v55+ tightened non-interactive project linking, so pin a CLI major version (`doctor` reports `vercel --version`) and set `VERCEL_ORG_ID` / `VERCEL_PROJECT_ID` to link non-interactively — and `CloudflareWorkersTarget` runs `wrangler deploy` with no flutter build step, reading the Worker's own `wrangler.toml` from `workingDirectory` (failing with `ok: false` when it is null) and needing `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID`. Real tool failures do not throw — targets return `KitDeployResult(ok: false, failureReason: ...)`. Note: the README lists no native permission or manifest keys, because this package orchestrates CLIs rather than shipping a platform plugin — iOS/Android signing, shorebird app IDs, and lane-specific credentials live in the host app and its fastlane configuration.
 
 
 ### Testing
@@ -91,13 +91,12 @@ final runner = ScriptedProcessRunner(script: {
 ```
 
 Targets never throw on tool failure — they return
-`KitDeployResult(ok: false, failureReason: ...)`. Only stubs throw
-`UnimplementedError`.
+`KitDeployResult(ok: false, failureReason: ...)`.
 
 
 ### Features
 
-<Checklist id="deploy-features" items={[{"id": "deploy-feat-0", "label": "`KitDeployService` \u2014 class"}, {"id": "deploy-feat-1", "label": "`KitDeployTarget` \u2014 abstract interface class"}, {"id": "deploy-feat-2", "label": "`CloudflarePagesTarget` \u2014 class"}, {"id": "deploy-feat-3", "label": "`FastlaneTarget` \u2014 class"}, {"id": "deploy-feat-4", "label": "`ShorebirdMode` \u2014 enum"}, {"id": "deploy-feat-5", "label": "`ShorebirdTarget` \u2014 class"}, {"id": "deploy-feat-6", "label": "`VercelTarget` \u2014 class"}, {"id": "deploy-feat-7", "label": "`KitDeployConfig` \u2014 class"}, {"id": "deploy-feat-8", "label": "`KitDoctorCheck` \u2014 class"}, {"id": "deploy-feat-9", "label": "`KitDeployResult` \u2014 class"}, {"id": "deploy-feat-10", "label": "`KitProcessResult` \u2014 class"}, {"id": "deploy-feat-11", "label": "`KitProcessRunner` \u2014 abstract interface class"}]} />
+<Checklist id="deploy-features" items={[{"id": "deploy-feat-0", "label": "`KitDeployService` \u2014 class"}, {"id": "deploy-feat-1", "label": "`KitDeployTarget` \u2014 abstract interface class"}, {"id": "deploy-feat-2", "label": "`CloudflarePagesTarget` \u2014 class"}, {"id": "deploy-feat-2b", "label": "`CloudflareWorkersTarget` \u2014 class"}, {"id": "deploy-feat-3", "label": "`FastlaneTarget` \u2014 class"}, {"id": "deploy-feat-4", "label": "`ShorebirdMode` \u2014 enum"}, {"id": "deploy-feat-5", "label": "`ShorebirdTarget` \u2014 class"}, {"id": "deploy-feat-6", "label": "`VercelTarget` \u2014 class"}, {"id": "deploy-feat-7", "label": "`KitDeployConfig` \u2014 class"}, {"id": "deploy-feat-8", "label": "`KitDoctorCheck` \u2014 class"}, {"id": "deploy-feat-9", "label": "`KitDeployResult` \u2014 class"}, {"id": "deploy-feat-10", "label": "`KitProcessResult` \u2014 class"}, {"id": "deploy-feat-11", "label": "`KitProcessRunner` \u2014 abstract interface class"}]} />
 
 
 ### Decisions / ADRs
