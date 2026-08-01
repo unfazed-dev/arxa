@@ -63,6 +63,15 @@
     "route": "/remote"
   },
   {
+    "id": "app.credentials",
+    "label": "Credentials",
+    "surface": "app_shell_app_credentials_view",
+    "shell": "app",
+    "comp": "AppCredentials",
+    "labelKey": "screen.label.app.credentials",
+    "route": "/credentials"
+  },
+  {
     "id": "intake.interview",
     "label": "Interview",
     "surface": null,

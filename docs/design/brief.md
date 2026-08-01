@@ -128,7 +128,8 @@ appbox
 #### Panels
 
 - [must/R1 Dogfood] Activity panel (left): navigation and inventory — files, surfaces, runs / artifacts / commits views
-- [must/R1 Dogfood] Main panel: the single render destination, an automatic multi-mode viewer — render:code/doc/image/svg/pdf/video for files, art/map/board for stage content; the active shell plus the content type select the mode, no user toggles
+- [must/R1 Dogfood] Main panel: the single render destination, an automatic multi-mode viewer — render:code/doc/image/svg/pdf/video for files, art/map/board for stage content
+- [must/R1 Dogfood] Main panel mode selection is fully automatic: the active shell plus the content type select the mode and panel composition — no user toggles, no tabs, no panel picking
 - [must/R1 Dogfood] Composer panel (right): permanent and single-state in every shell
 - [must/R1 Dogfood] Panel bar: on compact and medium rungs a segmented switcher picks the one visible content panel (activity / main / composer); the tabbar (compact) and railbar (medium) switch shells
 - [must/R1 Dogfood] Adaptive chrome defaults: expanded = header panel + activity/main/composer panels + footer panel; compact = header panel + tabbar + panel bar; medium = header panel + railbar + panel bar — overridable per project in the design brief
@@ -217,6 +218,12 @@ appbox
 - [should/R1 Dogfood] Appearance prefs per device: warm light/dark theme + brand accent picker (cyan/violet/blue/ember from the logo)
 - [must/R1 Dogfood] Language level plain/balanced/technical — every user-facing string written three ways; visual metrics render as X/100 match scores (ΔE 2.0 = 95/100 pass bar), technical level keeps raw values
 
+#### Credentials
+
+- [must/R1 Dogfood] One credentials surface manages every credential the generated app needs — payments, auth, maps, deploy and AI providers grouped in sections; each row shows the key name, a secret/publishable badge, a password-style input, a where-to-get link and a set/not-set chip
+- [must/R1 Dogfood] User adds a Stripe test key for their design app from the credentials surface; the value goes to the OS vault via the daemon, never logged, and test keys work on simulators
+- [must/R1 Dogfood] User sees which required keys are missing before build — the credentials surface and `appbox credentials check` report missing required keys per module
+
 ### Website
 
 #### Site
@@ -246,7 +253,6 @@ appbox
 
 | id | label | priority | release |
 |----|-------|----------|---------|
-| `app.splash` | Splash | must | R1 Dogfood |
 | `app.access` | Access | must | R1 Dogfood |
 | `app.dashboard` | Dashboard | must | R1 Dogfood |
 | `app.projects` | Projects | must | R1 Dogfood |
@@ -262,9 +268,8 @@ appbox
 | `design.chat` | Chat | must | R1 Dogfood |
 | `design.freeze` | Freeze | must | R1 Dogfood |
 | `chat.chat2` | Chat Stage | must | R1 Dogfood |
-| `shell.composer` | Composer Panel | must | R1 Dogfood |
-| `shell.footer` | Footer Panel | must | R1 Dogfood |
-| `main.chrome` | Main Shell | must | R1 Dogfood |
+| `chat.panels` | Panels | must | R1 Dogfood |
+| `chat.footer` | Footer Panel | must | R1 Dogfood |
 | `build.loop` | Loop | must | R1 Dogfood |
 | `build.gates` | Gates | must | R1 Dogfood |
 | `build.visual` | Visual | must | R1 Dogfood |
@@ -276,6 +281,7 @@ appbox
 | `first.honesty` | Honesty | must | R1 Dogfood |
 | `workspace.projects2` | Projects | must | R1 Dogfood |
 | `workspace.settings` | Settings | must | R1 Dogfood |
+| `workspace.credentials` | Credentials | must | R1 Dogfood |
 | `website.site` | Site | must | R2 Anywhere |
 | `website.docs` | Docs | must | R1 Dogfood |
 | `website.showcase2` | Showcase | should | R2 Anywhere |

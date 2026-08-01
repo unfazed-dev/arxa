@@ -181,10 +181,6 @@
       "note": "json: no comment syntax — provenance is this manifest entry"
     },
     {
-      "path": "serve.mjs",
-      "sha256": "6eb0dd89f5cd621c5e7dc4780c9d38313583f043e3cbd155f98f5cb17441e921"
-    },
-    {
       "path": "services/facades/agent_menus.js",
       "sha256": "95a74707c782087c0167f5937da7304af55bb1bb20a192a06c4c3684ec303180"
     },

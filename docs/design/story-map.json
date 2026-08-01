@@ -687,6 +687,26 @@
               "release": "R1 Dogfood"
             }
           ]
+        },
+        {
+          "name": "Credentials",
+          "stories": [
+            {
+              "name": "One credentials surface manages every credential the generated app needs — payments, auth, maps, deploy and AI providers grouped in sections; each row shows the key name, a secret/publishable badge, a password-style input, a where-to-get link and a set/not-set chip",
+              "priority": "must",
+              "release": "R1 Dogfood"
+            },
+            {
+              "name": "User adds a Stripe test key for their design app from the credentials surface; the value goes to the OS vault via the daemon, never logged, and test keys work on simulators",
+              "priority": "must",
+              "release": "R1 Dogfood"
+            },
+            {
+              "name": "User sees which required keys are missing before build — the credentials surface and `appbox credentials check` report missing required keys per module",
+              "priority": "must",
+              "release": "R1 Dogfood"
+            }
+          ]
         }
       ]
     },

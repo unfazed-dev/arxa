@@ -81,6 +81,17 @@
       "deps": []
     },
     {
+      "id": "app.credentials",
+      "shell": "app",
+      "comp": "AppCredentials",
+      "shellDir": "app_shell",
+      "surface": "app_shell_app_credentials_view",
+      "viewmodel": "ui/views/app_shell/credential/credential_viewmodel.js",
+      "deps": [
+        "services/facades/app_facade.js"
+      ]
+    },
+    {
       "id": "intake.interview",
       "shell": "intake",
       "comp": "IntakeInterview",

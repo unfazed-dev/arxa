@@ -8,6 +8,7 @@ import * as splash from './splash/splash_viewmodel.js';
 import * as auth from './auth/auth_viewmodel.js';
 import * as pairing from './pairing/pairing_viewmodel.js';
 import * as dashboard from './dashboard/dashboard_viewmodel.js';
+import * as credential from './credential/credential_viewmodel.js';
 
 export default [
   // app.splash — splash (auto-advances); app.access — desktop sign-in
@@ -23,4 +24,9 @@ export default [
   ['GET', '/dashboard', dashboard.page],
   ['POST', '/dashboard/gates/decide', dashboard.decide],
   ['POST', '/dashboard/projects', dashboard.createProject],
+
+  // app.credentials — every key the generated app needs, one surface
+  ['GET', '/credentials', credential.page],
+  ['POST', '/credentials/set', credential.set],
+  ['POST', '/credentials/unset', credential.unset],
 ];
