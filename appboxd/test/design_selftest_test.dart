@@ -97,19 +97,19 @@ void main() {
       }
     });
 
-    test('catches real repo-skill degradation (upstream token leak)', () async {
-      // The legacy runtime .mjs that carried hardcoded ladder widths
-      // (verify-*.mjs / serve.mjs) were archived in Task 23, so that check now
-      // passes against the repo skill. The upstream-leak check still flips: the
-      // kept vendored runtime/vendor/drag.js carries a `// kimitail:` comment
-      // whose `kimi` substring matches the upstream-token filter — this proves
-      // the port is faithful, not green-washing.
+    test('real repo skill is clean (no upstream token leak)', () async {
+      // runtime/vendor/drag.js once carried a `// kimitail:` comment whose
+      // `kimi` substring tripped the upstream-token filter — that real leak
+      // is fixed, so the baseline against the real skill must pass. A new
+      // leak regresses here; the planted upstream-leak mutation row proves
+      // the check still catches one.
       final tmp = await _copyFixture('selftest-degraded-');
       try {
         final r = await runSelftest(
             artifactDir: tmp, skillDir: _skillDir(), skipRender: true);
-        expect(r.exitCode, 1);
-        expect(r.failLabels, contains('no upstream references outside LICENSE'));
+        expect(r.exitCode, 0, reason: r.stderrText);
+        expect(r.failLabels,
+            isNot(contains('no upstream references outside LICENSE')));
       } finally {
         await Directory(tmp).delete(recursive: true);
       }

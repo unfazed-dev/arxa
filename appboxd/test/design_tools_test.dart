@@ -212,10 +212,10 @@ export default [
 <a href="/">home</a>
 <form hx-post="/save" hx-target="#main"><button>save</button></form>
 ''');
-      // fragments: a viewmodel that renders "#row" + a co-located view macro.
+      // fragments: a viewmodel that renders `${VIEW}#row` + a co-located view macro.
       _write(d, 'thing_viewmodel.js', '''
 const VIEW = 'thing_view.html';
-const frag = "#row";
+const frag = `\${VIEW}#row`;
 ''');
       _write(d, 'thing_view.html', '''
 {% macro row(item) %}<li>{{ item }}</li>{% endmacro %}
@@ -335,6 +335,20 @@ export default [
       expect(out, contains('"id": "stable-id"'));
       expect(out, contains('"status": "active"'));
       expect(out, contains('"_note": "seed is SSOT"'));
+    });
+
+    test('JSON nulls in seeds pass through (regression: null → Object crash)', () {
+      final d = _tmpDir();
+      _write(d, 'models/greeting_model/greeting_seed.en.json',
+          '{"artifact": null, "items": [{"text": "Hi", "extra": null}]}');
+      addTearDown(() => d.deleteSync(recursive: true));
+
+      final r = designPseudolocalize([d.path]);
+      expect(r.exitCode, 0);
+      final out = File('${d.path}/models/greeting_model/greeting_seed.qps-ploc.json')
+          .readAsStringSync();
+      expect(out, contains('"artifact": null'));
+      expect(out, contains('"extra": null'));
     });
 
     test('nothing to do → exit 66', () {

@@ -142,7 +142,7 @@
     return out;
   }
 
-  function makeC(method, fullPath, headers, body, state) {
+  function makeC(method, fullPath, headers, body, state, params) {
     const hlc = {}; for (const k in headers) hlc[k.toLowerCase()] = headers[k];
     const cookies = parseCookies(hlc);
     const qs = parseQs(fullPath);
@@ -159,6 +159,7 @@
     return {
       req: {
         method, path: pathOnly,
+        param: (k) => params[k],
         query: (k) => qs[k],
         header: (k) => hlc[k.toLowerCase()],
         parseBody: async () => parseForm(body),
@@ -232,22 +233,35 @@
   globalThis.__dispatch = async function (method, fullPath, headers, body, state) {
     state = state || {};
     const pathOnly = fullPath.split('?')[0];
-    const entry = routesTable.find(function (r) { return r[0] === method && matchRoute(r[1], pathOnly); });
+    let entry = null; let params = {};
+    for (const r of routesTable) {
+      if (r[0] !== method) continue;
+      const p = matchParams(r[1], pathOnly);
+      if (p) { entry = r; params = p; break; }
+    }
     if (!entry) return JSON.stringify({ status: 404, headers: { 'content-type': 'text/plain; charset=utf-8' }, body: '404 \u2014 no route for ' + method + ' ' + pathOnly, setCookies: [], timers: state.timers || {}, locale: state.locale || 'en' });
-    const c = makeC(method, fullPath, headers || {}, body, state);
+    const c = makeC(method, fullPath, headers || {}, body, state, params);
     const h = makeHelpers();
-    await entry[2](c, h);
+    try {
+      await entry[2](c, h);
+    } catch (err) {
+      // Hono's onError: a throwing handler answers 500 — it never takes the
+      // request path (or the design server) down with it.
+      return JSON.stringify({ status: 500, headers: { 'content-type': 'text/plain; charset=utf-8' }, body: '500 \u2014 handler threw: ' + ((err && err.message) || err), setCookies: [], timers: state.timers || {}, locale: state.locale || 'en' });
+    }
     const r = c._collect();
     return JSON.stringify(r);
   };
   // :param matcher (Hono :segments only — no wildcards in appbox routes).
-  function matchRoute(pattern, path) {
+  // Returns the extracted params map on match, null on mismatch.
+  function matchParams(pattern, path) {
     const pp = pattern.split('/'); const ap = path.split('/');
-    if (pp.length !== ap.length) return false;
+    if (pp.length !== ap.length) return null;
+    const params = {};
     for (let i = 0; i < pp.length; i++) {
-      if (pp[i].startsWith(':')) continue;
-      if (pp[i] !== ap[i]) return false;
+      if (pp[i].startsWith(':')) { params[pp[i].slice(1)] = decodeURIComponent(ap[i]); continue; }
+      if (pp[i] !== ap[i]) return null;
     }
-    return true;
+    return params;
   }
 })();

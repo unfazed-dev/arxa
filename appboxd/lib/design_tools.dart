@@ -211,12 +211,36 @@ List<String> checkWiringArtifact(String artifactDir, String property) {
       .where((f) => f.path.endsWith('.html'))
       .map((f) => (f, stripComments(f.readAsStringSync())))
       .toList();
-  final routesSrc = File(p.join(dir, 'app.routes.js')).readAsStringSync();
+  // app.routes.js spreads the per-shell routes.<shell>.js tables — parse
+  // them all, or routes defined there are invisible to the joins below.
+  final routeFiles = files.where((f) {
+    final b = p.basename(f.path);
+    return b == 'app.routes.js' || (b.startsWith('routes.') && b.endsWith('.js'));
+  });
   final routeRe = RegExp(r"\[\s*'(GET|POST|PUT|PATCH|DELETE)'\s*,\s*'([^']+)'");
-  final routes = routeRe
-      .allMatches(routesSrc)
-      .map((m) => (m.group(1)!, m.group(2)!))
-      .toList();
+  final routes = <(String, String)>[];
+  final postedBy = <String>{};
+  for (final f in routeFiles) {
+    for (final line in f.readAsLinesSync()) {
+      final m = routeRe.firstMatch(line);
+      if (m == null) continue;
+      routes.add((m.group(1)!, m.group(2)!));
+      // A route whose only sender is statically unresolvable (a facade-
+      // computed hx-post like {{ c.composerAction }}, or a named island's
+      // htmx.ajax) declares it on the route line: // posted-by: <sender>.
+      if (line.contains('posted-by:')) postedBy.add('${m.group(1)} ${m.group(2)}');
+    }
+  }
+  // Segment-wise route match: a `:param` segment matches any one segment.
+  bool routeHits(String pattern, String url) {
+    final pp = pattern.split('/'), up = url.split('/');
+    if (pp.length != up.length) return false;
+    for (var i = 0; i < pp.length; i++) {
+      if (pp[i].startsWith(':')) continue;
+      if (pp[i] != up[i]) return false;
+    }
+    return true;
+  }
   final problems = <String>[];
 
   switch (property) {
@@ -227,7 +251,10 @@ List<String> checkWiringArtifact(String artifactDir, String property) {
         final view = named != null
             ? p.join(dir, named.group(1)!)
             : f.path.replaceAll(RegExp(r'_viewmodel\.js$'), '_view.html');
-        final wantedRe = RegExp(r"""[`'"][^`'"]*#(\w+)[`'"]""");
+        // Fragment refs are view refs: `${VIEW}#macro` or 'path.html#macro'.
+        // Data strings like '#21BFE9' (hex colors) are not renders.
+        final wantedRe =
+            RegExp(r"""[`'"][^`'"]*(?:\.html|\$\{VIEW\})#(\w+)[`'"]""");
         final wanted = wantedRe
             .allMatches(src)
             .map((m) => m.group(1)!)
@@ -246,49 +273,98 @@ List<String> checkWiringArtifact(String artifactDir, String property) {
       }
 
     case 'mutations-posted':
-      final sent = <String>{};
-      final sendRe = RegExp(r'hx-(get|post|put|patch|delete)\s*=\s*"([^"{]+)"',
+      // Senders: hx-* attributes plus plain form actions (body is
+      // hx-boost="true", so a plain form IS an htmx post). Templated values
+      // are kept: a {{ }} segment is a wildcard (it can render a literal —
+      // {{ c.base }}/answer — or a route :param — /build/stages/{{ s.id }}).
+      final sent = <(String, String)>[];
+      final sendRe = RegExp(r'hx-(get|post|put|patch|delete)\s*=\s*"([^"]+)"',
           caseSensitive: false);
+      final formTagRe = RegExp(r'<form\b[^>]*>', caseSensitive: false);
+      final formMethodRe = RegExp(r'method\s*=\s*"post"', caseSensitive: false);
+      final formActionRe = RegExp(r'action\s*=\s*"([^"]+)"', caseSensitive: false);
       for (final (_, t) in markup) {
         for (final m in sendRe.allMatches(t)) {
-          sent.add('${m.group(1)!.toUpperCase()} ${m.group(2)!.split('?')[0]}');
+          sent.add((m.group(1)!.toUpperCase(), m.group(2)!.split('?')[0]));
+        }
+        for (final tag in formTagRe.allMatches(t)) {
+          final attrs = tag.group(0)!;
+          if (!formMethodRe.hasMatch(attrs)) continue;
+          final a = formActionRe.firstMatch(attrs);
+          if (a != null) sent.add(('POST', a.group(1)!.split('?')[0]));
         }
       }
+      bool sendHits(String sendUrl, String pattern) {
+        final sp = sendUrl.split('/'), pp = pattern.split('/');
+        // Segment-wise: a {{ }} send segment or a :param route segment is a
+        // wildcard (/design/undo/chat posts /design/undo/:stack).
+        var segHit = sp.length == pp.length;
+        if (segHit) {
+          for (var i = 0; i < sp.length; i++) {
+            if (sp[i].contains('{{') || pp[i].startsWith(':')) continue;
+            if (sp[i] != pp[i]) { segHit = false; break; }
+          }
+        }
+        if (segHit) return true;
+        // A templated segment can span route segments ({{ c.base }}/answer
+        // renders /intake/answer): regex the send against a concrete route
+        // instance. Anchored sends only — a whole-URL {{ }} sender proves
+        // nothing (those routes name their sender: // posted-by:).
+        if (!sp.any((s) => s.isNotEmpty && !s.contains('{{'))) return false;
+        final concrete =
+            pp.map((s) => s.startsWith(':') ? 'p' : s).join('/');
+        final re = RegExp(
+            '^${sp.map((s) => s.contains('{{') ? '.+' : RegExp.escape(s)).join('/')}' r'$');
+        return re.hasMatch(concrete);
+      }
+
       for (final (method, path) in routes) {
         if (method == 'GET') continue;
-        if (!sent.contains('$method $path')) {
+        final reachable = postedBy.contains('$method $path') ||
+            sent.any((s) => s.$1 == method && sendHits(s.$2, path));
+        if (!reachable) {
           problems.add('$method $path is a route no markup sends to — it is either '
-              'dead, or reached by a plain form, which is how htmx ends up '
-              'carried and unused');
+              'dead, or its sender is dynamic (name it: // posted-by: <sender>)');
         }
       }
 
     case 'urls-resolve':
-      final known = routes.map((r) => r.$2).toSet();
       final urlRe = RegExp(r'(?:hx-(?:get|post|put|patch|delete)|href)\s*=\s*"(/[^"{]*)"',
           caseSensitive: false);
       for (final (f, t) in markup) {
         for (final m in urlRe.allMatches(t)) {
           final u = m.group(1)!.split('?')[0].split('#')[0];
           if (u.startsWith('/assets/') || u.startsWith('/_ds/')) continue;
-          if (!known.contains(u)) {
-            problems.add('${rel(f.path)}: "$u" matches no route in app.routes.js');
+          if (!routes.any((r) => routeHits(r.$2, u))) {
+            problems.add('${rel(f.path)}: "$u" matches no route in the route tables');
           }
         }
       }
 
     case 'targets-exist':
-      final ids = <String>{};
-      final idRe = RegExp(r'\bid\s*=\s*"([^"{]+)"');
+      // Ids may be templated (panel-{{ spec.side }}-body): a {{ }} segment
+      // is a wildcard when matching an hx-target against them. An unanchored
+      // templated value ({{ s.id }}) proves nothing — it is not evidence.
+      // (Leading \s so data-id is not mistaken for an element id.)
+      final ids = <String>[];
+      final idRe = RegExp(r'\sid\s*=\s*"([^"]+)"');
       for (final (_, t) in markup) {
         for (final m in idRe.allMatches(t)) {
           ids.add(m.group(1)!);
         }
       }
+      bool idHits(String target) => ids.any((id) {
+            if (!id.contains('{{')) return id == target;
+            final parts = id.split(RegExp(r'\{\{[^}]*\}\}'));
+            if (!parts.any((s) => s.isNotEmpty)) return false;
+            final re = RegExp(
+                '^${parts.map(RegExp.escape).join('[^"]*')}' r'$');
+            return re.hasMatch(target);
+          });
       final targetRe = RegExp(r'hx-target\s*=\s*"#([^"\s]+)"');
       for (final (f, t) in markup) {
         for (final m in targetRe.allMatches(t)) {
-          if (!ids.contains(m.group(1)!)) {
+          if (!idHits(m.group(1)!)) {
             problems.add('${rel(f.path)}: hx-target="#${m.group(1)}" — no element in the artifact carries that id');
           }
         }
@@ -373,8 +449,9 @@ const _enumKeys = {
 };
 
 /// Recursively transform a seed: ENUM_KEYS and `_`-prefixed keys stay
-/// byte-identical; everything else (human text) expands.
-Object plocSeed(Object value, String key) {
+/// byte-identical; everything else (human text) expands. JSON `null` values
+/// pass through untouched (seeds use them for empty slots like `artifact`).
+Object? plocSeed(Object? value, String key) {
   if (value is String) {
     return (_enumKeys.contains(key) || key.startsWith('_')) ? value : plocText(value);
   }
@@ -464,6 +541,14 @@ class _Pkg {
       {this.version, this.expect = false, this.optional = false});
 }
 
+/// Lucide is pinned like htmx/leaflet: @latest drift would silently rewrite
+/// the whole icon set and its manifest row. The tarball is fetched (not a CDN
+/// file), so the loop special-cases it — the marker row keeps the manifest
+/// order stable across re-runs.
+const _lucidePin = '1.27.0';
+
+/// Order pins the manifest row order: re-running vendor-fetch must rewrite
+/// manifest.json + SRI.md byte-identically.
 const _packages = [
   _Pkg('htmx.org', ['dist/htmx.min.js'], 'htmx.min.js',
       version: _htmxPin, expect: true),
@@ -474,6 +559,20 @@ const _packages = [
       ['dist/client-side-templates.min.js', 'dist/client-side-templates.js'],
       'client-side-templates.js'),
   _Pkg('mustache', ['mustache.min.js', 'mustache.js'], 'mustache.min.js'),
+  _Pkg('lucide-static', [], 'lucide/icons/*.svg', version: _lucidePin),
+  _Pkg('@google/model-viewer', ['dist/model-viewer.min.js'],
+      'model-viewer.min.js', version: '4.3.1'),
+  _Pkg('@lottiefiles/dotlottie-wc', ['dist/dotlottie-wc.js'], 'dotlottie-wc.js',
+      version: '0.9.24'),
+  _Pkg('@lottiefiles/dotlottie-web', ['dist/dotlottie-player.wasm'],
+      'dotlottie-player.wasm', version: '0.78.2'),
+  _Pkg('@lottiefiles/lottie-player', ['dist/lottie-player.js'],
+      'lottie-player.js', version: '2.0.12'),
+  _Pkg('@rive-app/canvas-single', ['rive.js'], 'rive.js', version: '2.39.1'),
+  _Pkg('three', ['build/three.module.min.js'], 'three.module.min.js',
+      version: '0.185.1'),
+  _Pkg('three', ['build/three.core.min.js'], 'three.core.min.js',
+      version: '0.185.1'),
   // Leaflet is pinned like htmx: the runtime vendor copy is hand-checked and
   // the manifest rows must survive a re-fetch unchanged. Its images/ sprites
   // are NOT fetched (they ride along unpinned, same as the lucide SVGs did
@@ -570,6 +669,38 @@ Future<CmdResult> vendorFetch(String vendorDir,
   final manifest = <Map<String, String>>[];
 
   for (final pkg in _packages) {
+    // Lucide icon set: every SVG inlined server-side, no per-file SRI; the
+    // manifest records the tarball hash instead. Handled inline (not after the
+    // loop) so the manifest row order survives a re-run byte-identically.
+    if (pkg.pkg == 'lucide-static') {
+      try {
+        final v = pkg.version!;
+        final tgz = await _httpGet('$npm/lucide-static/-/lucide-static-$v.tgz');
+        if (tgz == null) {
+          throw Exception('npm registry: lucide-static tarball unreachable');
+        }
+        final icons = _untar(GZipCodec().decode(tgz))
+            .where(
+                (e) => RegExp(r'^package/icons/[a-z0-9-]+\.svg$').hasMatch(e.$1))
+            .toList();
+        if (icons.length < 1000) {
+          throw Exception('suspiciously few icons extracted: ${icons.length}');
+        }
+        final lucideDir = Directory(p.join(vendorDir, 'lucide', 'icons'));
+        if (lucideDir.existsSync()) lucideDir.deleteSync(recursive: true);
+        lucideDir.createSync(recursive: true);
+        for (final (name, data) in icons) {
+          File(p.join(lucideDir.path, p.basename(name))).writeAsBytesSync(data);
+        }
+        manifest.add(manifestEntry(
+            file: pkg.out, pkg: pkg.pkg, version: v, integrity: await sri(tgz)));
+        out.add('✓ ${pkg.out} ← lucide-static@$v (${icons.length} icons)');
+      } catch (e) {
+        err.add('✗ lucide-static: $e');
+        return CmdResult(1, stdoutLines: out, stderrLines: err);
+      }
+      continue;
+    }
     try {
       final v = pkg.version ?? await _latestVersion(npm, pkg.pkg);
       List<int>? buf;
@@ -600,41 +731,15 @@ Future<CmdResult> vendorFetch(String vendorDir,
     }
   }
 
-  // Lucide icon set: every SVG inlined server-side, no per-file SRI; the
-  // manifest records the tarball hash instead.
-  try {
-    final v = await _latestVersion(npm, 'lucide-static');
-    final tgz = await _httpGet('$npm/lucide-static/-/lucide-static-$v.tgz');
-    if (tgz == null) throw Exception('npm registry: lucide-static tarball unreachable');
-    final icons = _untar(GZipCodec().decode(tgz))
-        .where((e) => RegExp(r'^package/icons/[a-z0-9-]+\.svg$').hasMatch(e.$1))
-        .toList();
-    if (icons.length < 1000) {
-      throw Exception('suspiciously few icons extracted: ${icons.length}');
-    }
-    final lucideDir = Directory(p.join(vendorDir, 'lucide', 'icons'));
-    if (lucideDir.existsSync()) lucideDir.deleteSync(recursive: true);
-    lucideDir.createSync(recursive: true);
-    for (final (name, data) in icons) {
-      File(p.join(lucideDir.path, p.basename(name))).writeAsBytesSync(data);
-    }
-    manifest.add(manifestEntry(
-        file: 'lucide/icons/*.svg',
-        pkg: 'lucide-static',
-        version: v,
-        integrity: await sri(tgz)));
-    out.add('✓ lucide/icons/*.svg ← lucide-static@$v (${icons.length} icons)');
-  } catch (e) {
-    err.add('✗ lucide-static: $e');
-    return CmdResult(1, stdoutLines: out, stderrLines: err);
-  }
-
   File(p.join(vendorDir, 'manifest.json'))
       .writeAsStringSync("${const JsonEncoder.withIndent('  ').convert(manifest)}\n");
   File(p.join(vendorDir, 'SRI.md')).writeAsStringSync(
-      '# Vendored client libraries (re-run `appbox design vendor-fetch` to update)\n\n'
+      '# Vendored client libraries (the `fetch.mjs` updater was archived; re-vendor htmx + extensions via `appbox design vendor-fetch`)\n\n'
       '| file | package | version | integrity |\n|---|---|---|---|\n'
-      '${manifest.map((m) => '| ${m['file']} | ${m['package']} | ${m['version']} | `${m['integrity']}` |').join('\n')}\n');
+      '${manifest.map((m) => '| ${m['file']} | ${m['package']} | ${m['version']} | `${m['integrity']}` |').join('\n')}\n\n'
+      '`leaflet/images/*.png` (marker + layers control sprites, referenced by\n'
+      '`leaflet.css` relative to itself) ride along unpinned — like the lucide SVGs\n'
+      'they are never loaded as a subresource with an integrity attribute.\n');
   out.add('');
   out.add('${manifest.length} libraries vendored → $vendorDir');
   return CmdResult(0, stdoutLines: out, stderrLines: err);

@@ -473,7 +473,9 @@ List<_Check> _buildChecks({required bool skipRender}) {
           unicode: true);
       final bad = <String>[];
       for (final f in _htmlFiles(art)) {
-        for (final m in emojiRe.allMatches(f.readAsStringSync())) {
+        // Comments are prose, not chrome — an arrow in a comment is not an
+        // icon stand-in (same rule as the wiring checks).
+        for (final m in emojiRe.allMatches(stripComments(f.readAsStringSync()))) {
           bad.add('${p.relative(f.path, from: art)}: found ${m[0]}');
           if (bad.length >= 3) break;
         }
@@ -688,8 +690,10 @@ void _mutateLadderDrift(String art, String skill) {
 }
 
 void _mutateLadderHardcode(String art, String skill) {
-  final f = File(p.join(skill, 'runtime', 'console-check.mjs'));
-  f.writeAsStringSync('${f.readAsStringSync()}\nconst _probe = 390;\n');
+  // The scanned globs (runtime/*.mjs …) no longer exist in the ported skill
+  // — write the probe file rather than appending to a dropped one.
+  File(p.join(skill, 'runtime', 'console-check.mjs'))
+      .writeAsStringSync('const _probe = 390;\n');
 }
 
 void _mutateUpstreamLeak(String art, String skill) {
@@ -704,26 +708,33 @@ void _mutateFullReload(String art, String skill) {
 }
 
 void _mutateFragmentTypo(String art, String skill) {
-  for (final f in _htmlFiles(art)) {
-    final src = f.readAsStringSync();
-    final m = RegExp(r'(\{%\s*macro\s+)(\w+)').firstMatch(src);
-    if (m != null) {
-      f.writeAsStringSync(
-          src.replaceFirst(RegExp(r'(\{%\s*macro\s+)\w+'), '${m.group(1)}${m.group(2)}zz'));
-      return;
-    }
+  // Rename a macro a viewmodel actually renders as a fragment — renaming an
+  // unreferenced macro (shared partials) would prove nothing.
+  for (final vm in _viewModels(art)) {
+    final src = vm.readAsStringSync();
+    final frag = RegExp(r'\$\{VIEW\}#(\w+)').firstMatch(src);
+    if (frag == null) continue;
+    final named =
+        RegExp(r"""const VIEW\s*=\s*['"]([^'"]+)['"]""").firstMatch(src);
+    if (named == null) continue;
+    final view = File(p.join(art, named.group(1)!));
+    if (!view.existsSync()) continue;
+    final tpl = view.readAsStringSync();
+    final re = RegExp(r'(\{%\s*macro\s+)' + RegExp.escape(frag.group(1)!) + r'\b');
+    if (!re.hasMatch(tpl)) continue;
+    view.writeAsStringSync(
+        tpl.replaceFirst(re, '\${1}${frag.group(1)}zz'));
+    return;
   }
 }
 
 void _mutateOrphanPost(String art, String skill) {
-  for (final f in _htmlFiles(art)) {
-    final src = f.readAsStringSync();
-    final re = RegExp(r'hx-post="[^"]*"');
-    if (re.hasMatch(src)) {
-      f.writeAsStringSync(src.replaceFirst(re, ''));
-      return;
-    }
-  }
+  // A route no markup sends to must be caught. (Removing one hx-post no
+  // longer orphans anything: senders multiply — boosted forms, templated
+  // and annotated sends cover the same route.)
+  final f = File(p.join(art, 'app.routes.js'));
+  f.writeAsStringSync(
+      "${f.readAsStringSync()}\n['POST', '/__orphan-post', null],\n");
 }
 
 void _mutateDeadUrl(String art, String skill) {
@@ -756,8 +767,15 @@ void _mutateEmojiIcon(String art, String skill) {
 }
 
 void _mutateWidgetPartials(String art, String skill) {
-  final d = Directory(p.join(art, 'ui', 'widgets'));
-  if (d.existsSync()) d.deleteSync(recursive: true);
+  // Delete the shared-partials dir the artifact actually uses — ui/widgets
+  // when present, else the ui/common macro library this generation composes.
+  for (final d in ['widgets', 'dialogs', 'bottomsheets', 'common']) {
+    final dir = Directory(p.join(art, 'ui', d));
+    if (dir.existsSync()) {
+      dir.deleteSync(recursive: true);
+      return;
+    }
+  }
 }
 
 void _mutateUntrackedFile(String art, String skill) {
