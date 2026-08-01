@@ -8,7 +8,7 @@
 # Usage: bash tools/phase5_kit_copy.sh
 set -euo pipefail
 
-SRC="/Volumes/developer_ssd/Developer/totem_labs/stacked_kit"
+SRC="$(cd "$(dirname "$0")/../../stacked_kit" && pwd)"
 DST="$(cd "$(dirname "$0")/.." && pwd)/packages"
 
 # Packages to copy (all library packages, excluding showcase_app).

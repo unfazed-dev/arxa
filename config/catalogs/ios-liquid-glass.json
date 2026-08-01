@@ -1,5 +1,5 @@
 {
-  "$id": "flutter-crew.ios-liquid-glass",
+  "$id": "appbox.ios-liquid-glass",
   "$comment": "Shape: globalFacts (object) + map: { canonicalId -> PlatformMapping }. PlatformMapping fields defined in ../schemas/breakdown.schema.json.",
   "platform": "ios",
   "system": "Apple Liquid Glass (SwiftUI)",

@@ -445,7 +445,7 @@ int _runTraceGate(List<String> args) {
   }
   final manifest = derive(target, breakdownPath: breakdownPath);
   if (!checkOnly) {
-    final path = outPath ?? '$target/.crew/trace.json';
+    final path = outPath ?? '$target/.appbox/trace.json';
     final outFile = File(path);
     outFile.parent.createSync(recursive: true);
     outFile.writeAsStringSync(

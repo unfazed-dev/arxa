@@ -1,5 +1,5 @@
 {
-  "$id": "flutter-crew.web-shadcn-ui",
+  "$id": "appbox.web-shadcn-ui",
   "$comment": "Shape: globalFacts (object) + map: { canonicalId -> PlatformMapping }. PlatformMapping fields defined in ../schemas/breakdown.schema.json.",
   "platform": "web",
   "system": "shadcn_ui (Flutter port of shadcn/ui)",

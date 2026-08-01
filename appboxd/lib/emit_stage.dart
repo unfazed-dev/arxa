@@ -111,11 +111,11 @@ void _ensurePasskeysWebSdk(String targetDir, Map<String, dynamic> report) {
   }
   final html = index.readAsStringSync();
   if (html.contains('src="bundle.js"')) return; // already present — idempotent
-  // Python resolves two dirs up from the emit.py script = the vendored crew
-  // root (tools/vendor/). The Dart port resolves the same crew root via the
+  // Python resolves two dirs up from the emit.py script = the vendored tool
+  // root (tools/vendor/). The Dart port resolves the same root via the
   // repo marker.
-  final crewRoot = _repoRoot() == null ? null : p.join(_repoRoot()!, 'tools', 'vendor');
-  final sdkSrc = crewRoot == null ? null : p.join(crewRoot, 'assets', 'web', 'passkeys-bundle.js');
+  final vendorRoot = _repoRoot() == null ? null : p.join(_repoRoot()!, 'tools', 'vendor');
+  final sdkSrc = vendorRoot == null ? null : p.join(vendorRoot, 'assets', 'web', 'passkeys-bundle.js');
   if (sdkSrc == null || !File(sdkSrc).existsSync() || !html.contains('</head>')) {
     return; // vendored SDK or head marker missing — skip rather than break emit
   }

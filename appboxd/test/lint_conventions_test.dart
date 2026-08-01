@@ -117,4 +117,39 @@ void main() {
     expect(result.scanned, greaterThanOrEqualTo(2));
     expect(result.ok, isTrue);
   });
+
+  group('exemptions', () {
+    test('archives/ is skipped (frozen historical material)', () {
+      final root = seed({
+        'archives/old/tool.sh':
+            'ROOT="/Volumes/dev/project" # flutter-crew era\n',
+      });
+      expect(lintConventions(root).ok, isTrue);
+    });
+
+    test('an SRI-pinned vendored artifact (manifest-listed) is skipped', () {
+      final root = seed({
+        'runtime/vendor/manifest.json':
+            '[{"file": "upstream.min.js", "package": "x", "integrity": "sha384-abc"}]\n',
+        // Mangled identifier in minified upstream code, not an authored ref.
+        'runtime/vendor/upstream.min.js': 'function p2(){return p2+1}\n',
+      });
+      expect(lintConventions(root).ok, isTrue);
+    });
+
+    test('a file NOT listed in the sibling manifest is still linted', () {
+      final root = seed({
+        'runtime/vendor/manifest.json':
+            '[{"file": "upstream.min.js", "package": "x", "integrity": "sha384-abc"}]\n',
+        'runtime/vendor/glue_island.js': '// p2 reference\n',
+      });
+      final result = lintConventions(root);
+      expect(result.ok, isFalse);
+      expect(
+          result.violations,
+          contains(predicate<LintViolation>((v) =>
+              v.file == 'runtime/vendor/glue_island.js' &&
+              v.message.contains('p2'))));
+    });
+  });
 }

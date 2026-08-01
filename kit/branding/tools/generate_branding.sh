@@ -54,7 +54,8 @@ cp "$TPL/splash.yaml.tmpl" "$HOST/flutter_native_splash.yaml"
 
 # Rasterize the native-splash logo PNG at 4× logoSize (SPLASH_PX). flutter_native_splash
 # renders `image:` at its source pixel dimensions (no upscale), so a full-res 1024px
-# launcher icon would show enormous on the pre-Flutter OS splash. asko uses the same
+# launcher icon would show enormous on the pre-Flutter OS splash. The reference
+# app uses the same
 # 4× convention (logoSize 80 -> 320px). Keep LOGO_SIZE in sync with BrandSplash.logoSize
 # (branding/lib/src/startup_view.dart) + branding_gate.sh.
 LOGO_SIZE=80
@@ -65,7 +66,7 @@ if command -v sips >/dev/null 2>&1; then
 else
   # ponytail: sips is macOS-only — on Linux/CI fall back to a copy so the asset still
   # resolves; the branding gate then FAILS on the oversized dimensions (no silent ship).
-  # Upgrade path: rasterize via python+PIL (asko's freeze_brand.py) if CI needs it.
+  # Upgrade path: rasterize via python+PIL (the reference pipeline's freeze_brand.py) if CI needs it.
   cp "$HOST/assets/icons/icon.png" "$SPLASH_PNG"
   echo "WARN: sips missing — splash_logo.png is the full-res icon (gate will FAIL on size); resize to ${SPLASH_PX}px or run on macOS." >&2
 fi

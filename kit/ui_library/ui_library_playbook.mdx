@@ -40,7 +40,7 @@ Scripts and call-counts — tests never touch platform channels.
 
 Add `ui_library` as a path dependency and import the single barrel `package:ui_library/ui_library.dart` — it re-exports `appbox_kit_core`, so widgets, tokens, the locator, and the error/theme services all arrive through one import. At boot, call `setupLocator()` (registers `KitNotificationService` and the rest) followed by `setupKitSnackbars()` to install the `SnackbarConfig` variants the Android and iOS-action-fallback tiers render, and register `KitBottomSheetService` as the base type (`LazySingleton(classType: KitBottomSheetService, asType: BottomSheetService)`) so stacked sheet call sites stay untouched. Mix `KitPlatformPagesMixin` into your generated `AppRouter` (which already extends `StackedRouterWeb`) to render Cupertino pages on iOS and Material pages elsewhere. Widget call sites take primitives only — e.g. `KitNativeButton(onPressed: ..., label: 'Save', glyph: KitGlyphs.save)` — and operations flow through the fluent `KitAction.run<T>(operation: ...).withLoading(...).withSnackbars(...).execute()` API.
 
-Repo-level consumer map: `ui-library-usage-appendix.md` in this package (SSOT) catalogues every barrel symbol and where it is used across the p2 app, the tests, the showcase app, and the other kit packages.
+Repo-level consumer map: `ui-library-usage-appendix.md` in this package (SSOT) catalogues every barrel symbol and where it is used across the host app, the tests, the showcase app, and the other kit packages.
 
 
 ### Integration map

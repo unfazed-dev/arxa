@@ -1,12 +1,12 @@
 {
-  "$id": "flutter-crew.exclusions",
+  "$id": "appbox.exclusions",
   "$comment": "Design-context artifacts that are NOT app-implementable primitives. The guard (bin/guard.py) detects these by signature and EXCLUDES them — they never reach map_all/synthesize, so the building agent cannot draw them. Mirror of real designs (e.g. Atlet's <div class=\\\"statusbar\\\">9:41 + battery + signal).",
   "version": "1.0.0",
   "updated": "2026-06-20",
   "purpose": "Distinguish design-context artifacts (OS chrome, device frame, annotations) from buildable primitives. Context artifacts are audited in breakdown.exclusions[] and dropped — never built.",
-  "overrideAttr": "data-crew",
+  "overrideAttr": "data-appbox",
   "overrideValue": "implement",
-  "overrideNote": "A node carrying data-crew=\"implement\" is kept regardless of signature (designer asserts it is a genuine custom element, e.g. an app that truly custom-draws its status bar).",
+  "overrideNote": "A node carrying data-appbox=\"implement\" is kept regardless of signature (designer asserts it is a genuine custom element, e.g. an app that truly custom-draws its status bar).",
   "detectionNote": "class/id/attr patterns trigger directly. text patterns trigger ONLY with corroboration (a text marker like battery/signal/wifi) to avoid false positives on legit in-app clocks.",
   "kinds": [
     {

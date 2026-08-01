@@ -26,7 +26,7 @@
 
 ### Overview & role
 
-`cupertino_native_better` (internally still `package:cupertino_native_better/...`) is the **iOS native tier** of the p2 app. On iOS 26+ and macOS 26+ it renders Apple's real Liquid Glass through Swift/UIKit (iOS) and AppKit (macOS) `UiKitView`/`AppKitView` platform views; on older Apple OSes it falls back to `Cupertino`; on Android/web it falls back to Material. It is the concrete implementation beneath `appbox_kit`'s `Kit*` ports — the host almost never imports `cupertino_native_better` directly; `appbox_kit` does, and re-exports nothing.
+`cupertino_native_better` (internally still `package:cupertino_native_better/...`) is the **iOS native tier** of the host app. On iOS 26+ and macOS 26+ it renders Apple's real Liquid Glass through Swift/UIKit (iOS) and AppKit (macOS) `UiKitView`/`AppKitView` platform views; on older Apple OSes it falls back to `Cupertino`; on Android/web it falls back to Material. It is the concrete implementation beneath `appbox_kit`'s `Kit*` ports — the host almost never imports `cupertino_native_better` directly; `appbox_kit` does, and re-exports nothing.
 
 The package ships three layers fused into one `path` dep: a federated Flutter plugin (Dart platform interface + method channel + Swift/SPM native), a Dart widget library of `CN*` widgets that own the build-time platform branch, and an iOS-26-only native tab-bar takeover (`CNTabBarNative`) that bypasses the widget tree and presents a real `UITabBarController`.
 

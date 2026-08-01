@@ -90,7 +90,7 @@ abstract final class KitGlyphs {
   static const photo = KitGlyph(Icons.photo, 'photo');
   static const chevronRight = KitGlyph(Icons.chevron_right, 'chevron.right');
 
-  // -- Tab destinations (p2 shell) --------------------------------------------
+  // -- Tab destinations (app shell) ------------------------------------------
   /// Train tab — workouts / fitness.
   static const train = KitGlyph(Icons.fitness_center, 'dumbbell.fill');
 

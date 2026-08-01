@@ -41,7 +41,8 @@ dependencies:
   # showcase surface (pushed from the Profile tab).
   appbox_kit_motion:
     path: ../motion
-  # Full kit registration (Task #7 reconciliation): mirrors the p2 root — all
+  # Full kit registration (Task #7 reconciliation): mirrors the upstream app
+  # root — all
   # extracted kits resolve in the showcase's universe so conflicts surface at
   # pub get time.
   appbox_kit_analytics:

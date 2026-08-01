@@ -298,7 +298,7 @@ void main() {
       _fact(tmp, 'auth', {
         'kit': 'auth',
         'name': 'appbox_kit_auth',
-        'backingPackages': ['p1', 'p2', 'p3'],
+        'backingPackages': ['pkg1', 'pkg2', 'pkg3'],
       });
       buildKb(tmp.path);
 

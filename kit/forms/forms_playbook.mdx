@@ -68,7 +68,7 @@ Sync is echo-free in both directions:
 - **User typing** → `onChanged` → `field.value =` (drives validation + `StackedView` rebuild).
 - **External prefill** (e.g. a model loaded into the VM) → `field.value =` → a `field` listener seeds the controller **only when the value differs** (`value != controller.text`); that equal-value guard avoids cursor resets on the echo of a user's own keystroke.
 
-Reference implementation: p2 `lib/ui/widgets/kit_field_text_field.dart` — `KitFieldTextField`, a `StatefulWidget` wiring `KitFieldController<String>` → `KitNativeTextField`.
+Reference implementation (upstream app): `lib/ui/widgets/kit_field_text_field.dart` — `KitFieldTextField`, a `StatefulWidget` wiring `KitFieldController<String>` → `KitNativeTextField`.
 
 
 ### Integration map

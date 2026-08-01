@@ -1,5 +1,5 @@
 {
-  "$id": "flutter-crew.flutter-widgets",
+  "$id": "appbox.flutter-widgets",
   "$comment": "v2.1.0 — PER-PLATFORM, NATIVE via platform views (no approximation). Each platform owns its own map (no shared symbol, no interference): ios = Cupertino (Liquid Glass via GlassContainer UiKitView when motion.glass-blur); android = NATIVE Material 3 Expressive embedded via AndroidView(ComposeView → MaterialExpressiveTheme), material3 1.5.0-alpha22 — NEVER pure-Flutter approximation (operator mandate; Flutter has no native expressive, #168813, so embed Compose); web = shadcn_ui straight from web-shadcn-ui.json (no entry here — shadcn IS the Flutter package). Where a native family lacks a widget, that platform independently chooses the standard widget + a note. `android` map values are Compose composables (map_all wraps each in an AndroidView host). `custom`: ids with NO 1:1 widget → per-platform recipe from the native system.",
   "version": "2.2.0",
   "updated": "2026-06-20",

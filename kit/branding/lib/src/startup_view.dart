@@ -10,14 +10,14 @@ import 'package:flutter/material.dart';
 /// this widget while it waits, then replaces it via the router.
 ///
 /// [duration] MUST match the host view-model's splash floor so the bar reaches
-/// 100% as the brand moment ends. Mirrors the Atlet / asko splash layout
+/// 100% as the brand moment ends. Mirrors the reference app's splash layout
 /// (logo center, bottom progress) adapted to the host theme.
 class BrandSplash extends StatelessWidget {
   /// Canonical brand-logo edge in dp (in-Flutter). SSOT for the logo size across
   /// the pipeline: the host binds its logo `Image.asset` width/height to this,
   /// and `tools/generate_branding.sh` rasterizes the native-splash PNG at 4× this
   /// (`SPLASH_PX`) so the pre-Flutter OS splash shows the logo at the same dp.
-  /// Matches the asko reference (`logoSize: 80`). Android 12+ sizes its splash
+  /// Matches the reference app (`logoSize: 80`). Android 12+ sizes its splash
   /// logo by the logo's fraction of a fixed ~240dp icon window, so
   /// `generate_branding.sh` pads a small logo into a 960px canvas
   /// (`splash_logo_android12.png`) to hit the same on-screen size as iOS.

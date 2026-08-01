@@ -218,8 +218,8 @@ void main() {
   });
 
   testWidgets('tab-list shrink mid-exit cuts the exit short', (tester) async {
-    // Live recomposition (p2's per-Session tab list) can remove the leaving
-    // tab while its exit is still running.
+    // Live recomposition (the host's per-Session tab list) can remove the
+    // leaving tab while its exit is still running.
     await tester.pumpWidget(_frame(2));
     await tester.pumpWidget(_frame(1)); // tab2 starts exiting
     await tester.pump(const Duration(milliseconds: 50));

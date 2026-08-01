@@ -124,7 +124,7 @@ void main() {
       );
       final second = await service.signInWithEmailPassword(
         email: 'dup@example.com',
-        password: 'p2-totally-different',
+        password: 'pw-totally-different',
       );
 
       expect(second.user.id, first.user.id);

@@ -20,7 +20,16 @@
 // port walks the tree and prunes hidden directories plus the build/vendored
 // set (notably .dart_tool/, whose package_config.json embeds the very abs
 // paths R3 forbids). Same effective scan surface.
+//
+// Two further exemptions beyond the bash port:
+//   - archives/ is frozen historical material (see archives/README.md) —
+//     grandfathered like docs/, never edited to satisfy a rule.
+//   - SRI-pinned vendored runtime artifacts (a file listed with an
+//     `integrity` hash in a sibling manifest.json) — editing upstream
+//     minified code to satisfy R2 would break the integrity hashes, and
+//     mangled identifiers there are not authored references.
 
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
@@ -75,7 +84,16 @@ LintResult lintConventions(String root) {
   final violations = <LintViolation>[];
   var scanned = 0;
 
+  // Cache of directory → vendored artifact basenames (from a sibling
+  // manifest.json), so the manifest is read at most once per directory.
+  final vendoredCache = <String, Set<String>>{};
+
   void check(String path, String rel) {
+    // SRI-pinned vendored artifact — upstream bytes, not authored content.
+    final dir = p.dirname(path);
+    final vendored = vendoredCache.putIfAbsent(dir, () => _vendoredNames(dir));
+    if (vendored.contains(p.basename(path))) return;
+
     scanned++;
 
     // R2 path check — whole token, before reading content: a stripped name
@@ -134,6 +152,36 @@ List<String> _loadPatterns(String path) {
 
 bool _underConfig(String rel) => rel == 'config' || rel.startsWith('config/');
 
+/// Basenames of SRI-pinned vendored artifacts in [dir], per a sibling
+/// manifest.json shaped as a JSON list of {"file", "integrity", …} entries
+/// (the appbox-designer runtime vendor manifest). Only exact top-level file
+/// entries count — glob/subdirectory entries (lucide/icons/*.svg) are not
+/// resolved. Anything else (missing, unreadable, or a different manifest
+/// shape like a Flutter web manifest) yields the empty set.
+Set<String> _vendoredNames(String dir) {
+  const none = <String>{};
+  final manifest = File(p.join(dir, 'manifest.json'));
+  if (!manifest.existsSync()) return none;
+  final Object? decoded;
+  try {
+    decoded = jsonDecode(manifest.readAsStringSync());
+  } catch (_) {
+    return none;
+  }
+  if (decoded is! List) return none;
+  return {
+    for (final entry in decoded)
+      if (entry is Map &&
+          entry['file'] is String &&
+          entry['integrity'] is String &&
+          _isExactTopLevel(entry['file'] as String))
+        entry['file'] as String,
+  };
+}
+
+bool _isExactTopLevel(String file) =>
+    !file.contains('/') && !file.contains('*');
+
 /// Fixed-substring match bounded by non-word characters (grep -owF). A word
 /// char is `[A-Za-z0-9_]`, matching grep's definition.
 bool _containsWholeWord(String text, String word) {
@@ -180,6 +228,9 @@ void _walk(String dir, String root, void Function(String, String) onFile) {
 
 bool _isExempt(String rel) {
   if (rel.startsWith('docs/')) return true;
+  // Frozen historical material (archives/README.md) — never edited, so never
+  // linted; mirrors the docs/ grandfathering above.
+  if (rel.startsWith('archives/')) return true;
   if (p.extension(rel) == '.md') return true;
   final base = p.basename(rel);
   if (base == 'LICENSE' || base.startsWith('LICENSE.')) return true;
@@ -191,5 +242,8 @@ bool _isExempt(String rel) {
   // (the bash version exempted tools/lint_conventions.sh and its selftest).
   if (rel == 'appboxd/lib/lint_conventions.dart') return true;
   if (rel == 'appboxd/test/lint_conventions_test.dart') return true;
+  // The designer selftest's upstream-leak check names the very tokens it
+  // scans for — self-referential for the same reason.
+  if (rel == 'appboxd/lib/design_selftest.dart') return true;
   return false;
 }
