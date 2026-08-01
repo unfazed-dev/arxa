@@ -4,6 +4,9 @@
 //   - models/screens_model/registry.json (id/shell/comp/surface per screen,
 //     plus an optional `kits` list of kit dir names, validated against
 //     config/kit-registry.json)
+//   - models/screens_model/flows.json (OPTIONAL — the triad's flows lens:
+//     journeys as {from,to,trigger} edges over registry ids; every endpoint
+//     must resolve to a registry entry, absent = no flows lens)
 //   - app.routes.js (shellRoots map)
 //   - ui/views/**/*_viewmodel.js (surfaceId + deps)
 //
@@ -50,6 +53,44 @@ Map<String, dynamic>? buildStructure(String designRoot) {
   if (registry.isEmpty) {
     stderr.writeln('FAIL: registry.json must be a non-empty list of screen entries');
     return null;
+  }
+
+  // ---- flows (optional): the triad's flows lens, edges over registry ids ----
+  List? flows;
+  final flowsFile = File('${root.path}/models/screens_model/flows.json');
+  if (flowsFile.existsSync()) {
+    try {
+      flows = jsonDecode(flowsFile.readAsStringSync()) as List;
+    } catch (e) {
+      stderr.writeln('FAIL: flows.json does not parse as JSON — $e');
+      return null;
+    }
+    final ids = {for (final e in registry) (e as Map)['id']};
+    for (final f in flows) {
+      if (f is! Map) {
+        stderr.writeln('FAIL: flows.json entries must be objects');
+        return null;
+      }
+      final edges = f['edges'];
+      if (edges is! List) {
+        stderr.writeln("FAIL: flow '${f['id']}' has no edges list");
+        return null;
+      }
+      for (final edge in edges) {
+        if (edge is! Map || edge['trigger'] is! String) {
+          stderr.writeln("FAIL: flow '${f['id']}' has an edge without a trigger");
+          return null;
+        }
+        for (final k in const ['from', 'to']) {
+          final ep = edge[k];
+          if (!ids.contains(ep)) {
+            stderr.writeln("FAIL: flow '${f['id']}' edge $k '$ep' is not a "
+                'registry id — flows name screens the registry declares');
+            return null;
+          }
+        }
+      }
+    }
   }
 
   // ---- shellRoots from app.routes.js ----
@@ -215,6 +256,7 @@ Map<String, dynamic>? buildStructure(String designRoot) {
     'registry': 'models/screens_model/registry.json',
     'shellRoots': shellRoots,
     'screens': screens,
+    'flows': ?flows,
   };
 }
 

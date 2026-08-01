@@ -473,5 +473,103 @@
         "services/facades/screens_facade.js"
       ]
     }
+  ],
+  "flows": [
+    {
+      "id": "flow-intake",
+      "name": "New project intake",
+      "persona": "persona-client",
+      "provenance": "inferred",
+      "edges": [
+        {
+          "from": "app.dashboard",
+          "to": "intake.interview",
+          "trigger": "New project",
+          "label": "start"
+        },
+        {
+          "from": "intake.interview",
+          "to": "intake.personas",
+          "trigger": "Questions answered"
+        },
+        {
+          "from": "intake.personas",
+          "to": "intake.surfaces",
+          "trigger": "Personas confirmed"
+        },
+        {
+          "from": "intake.surfaces",
+          "to": "intake.flows",
+          "trigger": "Inventory confirmed"
+        },
+        {
+          "from": "intake.flows",
+          "to": "intake.mapping",
+          "trigger": "Flows confirmed"
+        },
+        {
+          "from": "intake.mapping",
+          "to": "intake.direction",
+          "trigger": "Map approved"
+        },
+        {
+          "from": "intake.direction",
+          "to": "intake.brief",
+          "trigger": "Direction confirmed"
+        },
+        {
+          "from": "intake.brief",
+          "to": "design.prototype",
+          "trigger": "Brief approved",
+          "label": "handoff"
+        }
+      ]
+    },
+    {
+      "id": "flow-build",
+      "name": "Design to build",
+      "persona": "persona-designer",
+      "provenance": "inferred",
+      "edges": [
+        {
+          "from": "design.prototype",
+          "to": "design.freeze",
+          "trigger": "Freeze"
+        },
+        {
+          "from": "design.freeze",
+          "to": "build.loop",
+          "trigger": "Scaffold"
+        },
+        {
+          "from": "build.loop",
+          "to": "build.gates",
+          "trigger": "Run gates"
+        },
+        {
+          "from": "build.gates",
+          "to": "ship.deploy",
+          "trigger": "Gates green"
+        }
+      ]
+    },
+    {
+      "id": "flow-credentials",
+      "name": "Connect services",
+      "persona": "persona-developer",
+      "provenance": "founder",
+      "edges": [
+        {
+          "from": "app.credentials",
+          "to": "app.config",
+          "trigger": "Add key"
+        },
+        {
+          "from": "app.config",
+          "to": "design.prototype",
+          "trigger": "Use kit in design"
+        }
+      ]
+    }
   ]
 }

@@ -207,4 +207,60 @@ void main() {
       expect(emitStructure(a), 1, reason: 'non-string kit entry fails');
     });
   });
+
+  group('flows passthrough', () {
+    void plantFlows(String dir, Object flows) {
+      File('$dir/models/screens_model/flows.json').writeAsStringSync(jsonEncode(flows));
+    }
+
+    test('absent flows.json -> no flows key; present -> threaded verbatim', () {
+      final a = '${tmp.path}/f1';
+      plant(a, reg, routes, {
+        'ui/views/stage_shell/stage_shell_viewmodel.js': shellVm,
+        'ui/views/stage_shell/proj/home/home_viewmodel.js': homeVm,
+      });
+      expect(emitStructure(a), 0);
+      var d = jsonDecode(File('$a/structure.json').readAsStringSync())
+          as Map<String, dynamic>;
+      expect(d.containsKey('flows'), isFalse,
+          reason: 'no flows.json -> no flows lens (key omitted, not empty)');
+
+      final flows = [
+        {
+          'id': 'flow-main',
+          'name': 'Main journey',
+          'edges': [
+            {'from': 'proj.home', 'to': 'stage.shell', 'trigger': 'Open'},
+            {'from': 'stage.shell', 'to': 'proj.splash', 'trigger': 'Leave'},
+          ],
+        },
+      ];
+      plantFlows(a, flows);
+      expect(emitStructure(a), 0);
+      d = jsonDecode(File('$a/structure.json').readAsStringSync())
+          as Map<String, dynamic>;
+      expect(d['flows'], flows,
+          reason: 'flows thread through verbatim (surface:null endpoints allowed)');
+      expect(emitStructure(a, check: true), 0,
+          reason: '--check stays green with flows threaded');
+    });
+
+    test('edge endpoint not in the registry -> hard fail, no structure.json', () {
+      final a = '${tmp.path}/f2';
+      plant(a, reg, routes, {
+        'ui/views/stage_shell/stage_shell_viewmodel.js': shellVm,
+        'ui/views/stage_shell/proj/home/home_viewmodel.js': homeVm,
+      });
+      plantFlows(a, [
+        {
+          'id': 'flow-ghost',
+          'edges': [
+            {'from': 'proj.home', 'to': 'proj.ghost', 'trigger': 'Boom'},
+          ],
+        },
+      ]);
+      expect(emitStructure(a), 1, reason: 'unresolved edge endpoint fails');
+      expect(File('$a/structure.json').existsSync(), isFalse);
+    });
+  });
 }
