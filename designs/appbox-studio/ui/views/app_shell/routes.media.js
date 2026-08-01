@@ -8,6 +8,7 @@ import * as dotlottie from './media/dotlottie/dotlottie_viewmodel.js';
 import * as model3d from './media/model3d/model3d_viewmodel.js';
 import * as scene3d from './media/scene3d/scene3d_viewmodel.js';
 import * as game from './media/game/game_viewmodel.js';
+import * as maps from './media/maps/maps_viewmodel.js';
 
 export default [
   ['GET', '/media/rive', rive.page],
@@ -18,4 +19,5 @@ export default [
   ['GET', '/media/model3d/stage', model3d.stage],
   ['GET', '/media/scene3d', scene3d.page],
   ['GET', '/media/game', game.page],
+  ['GET', '/media/maps', maps.page],
 ];

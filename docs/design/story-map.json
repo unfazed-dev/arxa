@@ -360,6 +360,11 @@
               "name": "Freeze approval of the frozen manifest is the human gate that unlocks the Build stage",
               "priority": "must",
               "release": "R1 Dogfood"
+            },
+            {
+              "name": "Designer declares kit usage per surface (the registry `kits` field); the declaration is validated against the kit registry and flows through structure.json to the scaffold",
+              "priority": "must",
+              "release": "R1 Dogfood"
             }
           ]
         }
@@ -703,6 +708,11 @@
             },
             {
               "name": "User sees which required keys are missing before build — the credentials surface and `appbox credentials check` report missing required keys per module",
+              "priority": "must",
+              "release": "R1 Dogfood"
+            },
+            {
+              "name": "Design surfaces the required credentials by key name from the catalog for the kits a surface declares — a maps screen lists its maps keys before build",
               "priority": "must",
               "release": "R1 Dogfood"
             }

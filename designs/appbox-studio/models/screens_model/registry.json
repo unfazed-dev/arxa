@@ -72,6 +72,70 @@
     "route": "/credentials"
   },
   {
+    "id": "app.mediaRive",
+    "label": "Rive",
+    "surface": "app_shell_app_mediaRive_view",
+    "shell": "app",
+    "comp": "AppMediaRive",
+    "labelKey": "screen.label.app.mediaRive",
+    "route": "/media/rive"
+  },
+  {
+    "id": "app.mediaLottie",
+    "label": "Lottie",
+    "surface": "app_shell_app_mediaLottie_view",
+    "shell": "app",
+    "comp": "AppMediaLottie",
+    "labelKey": "screen.label.app.mediaLottie",
+    "route": "/media/lottie"
+  },
+  {
+    "id": "app.mediaDotlottie",
+    "label": "dotLottie",
+    "surface": "app_shell_app_mediaDotlottie_view",
+    "shell": "app",
+    "comp": "AppMediaDotlottie",
+    "labelKey": "screen.label.app.mediaDotlottie",
+    "route": "/media/dotlottie"
+  },
+  {
+    "id": "app.mediaModel3d",
+    "label": "3D model",
+    "surface": "app_shell_app_mediaModel3d_view",
+    "shell": "app",
+    "comp": "AppMediaModel3d",
+    "labelKey": "screen.label.app.mediaModel3d",
+    "route": "/media/model3d"
+  },
+  {
+    "id": "app.mediaScene3d",
+    "label": "3D scene",
+    "surface": "app_shell_app_mediaScene3d_view",
+    "shell": "app",
+    "comp": "AppMediaScene3d",
+    "labelKey": "screen.label.app.mediaScene3d",
+    "route": "/media/scene3d"
+  },
+  {
+    "id": "app.mediaGame",
+    "label": "Game",
+    "surface": "app_shell_app_mediaGame_view",
+    "shell": "app",
+    "comp": "AppMediaGame",
+    "labelKey": "screen.label.app.mediaGame",
+    "route": "/media/game"
+  },
+  {
+    "id": "app.mediaMaps",
+    "label": "Maps",
+    "surface": "app_shell_app_mediaMaps_view",
+    "shell": "app",
+    "comp": "AppMediaMaps",
+    "labelKey": "screen.label.app.mediaMaps",
+    "route": "/media/maps",
+    "kits": ["maps"]
+  },
+  {
     "id": "intake.interview",
     "label": "Interview",
     "surface": null,

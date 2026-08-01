@@ -117,6 +117,7 @@ appbox
 - [must/R1 Dogfood] Hash-locked freeze; approval bound to the design hash; post-approval change goes stale loudly
 - [must/R1 Dogfood] Drift report + brief-to-surface-to-code traceability
 - [must/R1 Dogfood] Freeze approval of the frozen manifest is the human gate that unlocks the Build stage
+- [must/R1 Dogfood] Designer declares kit usage per surface (the registry `kits` field); the declaration is validated against the kit registry and flows through structure.json to the scaffold
 
 ### Chat-Centric Layout
 
@@ -223,6 +224,7 @@ appbox
 - [must/R1 Dogfood] One credentials surface manages every credential the generated app needs — payments, auth, maps, deploy and AI providers grouped in sections; each row shows the key name, a secret/publishable badge, a password-style input, a where-to-get link and a set/not-set chip
 - [must/R1 Dogfood] User adds a Stripe test key for their design app from the credentials surface; the value goes to the OS vault via the daemon, never logged, and test keys work on simulators
 - [must/R1 Dogfood] User sees which required keys are missing before build — the credentials surface and `appbox credentials check` report missing required keys per module
+- [must/R1 Dogfood] Design surfaces the required credentials by key name from the catalog for the kits a surface declares — a maps screen lists its maps keys before build
 
 ### Website
 
