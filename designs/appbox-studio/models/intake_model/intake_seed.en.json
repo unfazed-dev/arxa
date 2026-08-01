@@ -505,7 +505,7 @@
   },
   "brief": {
     "title": "appbox — design brief",
-    "provenance": "Elicited via appbox-story-mapper · story-map.json alongside · gates/intake, plan 10.7",
+    "provenance": "Elicited via appbox-story-mapper · story-map.json alongside · appbox gate intake, plan 10.7",
     "intro": "Priorities are MoSCoW, grouped into release swimlanes. Every registry surface must trace to the surface inventory table below.",
     "introPlain": "Every story is sorted must / should / could and slotted into a release. Every screen in the app traces back to a story in this brief.",
     "surfaceNote": "Every registry surface traces to a story — the table the designer consumes.",

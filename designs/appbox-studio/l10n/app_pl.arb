@@ -197,7 +197,7 @@
   "briefHeadlineTechnical": "Wygenerowany brief projektowy — kontrakt designera",
   "briefLede": "Priorytety, wydania i inwentarz powierzchni. Każda powierzchnia prowadzi do historyjki.",
   "briefLedePlain": "Co aplikacja musi robić, posortowane i wpisane w wydania. Każdy ekran daje się prześledzić z powrotem do historyjki.",
-  "briefLedeTechnical": "Priorytety MoSCoW, swimlane'y wydań, inwentarz powierzchni. Każda powierzchnia rejestru prowadzi do historyjki — gates/intake, plan 10.7.",
+  "briefLedeTechnical": "Priorytety MoSCoW, swimlane'y wydań, inwentarz powierzchni. Każda powierzchnia rejestru prowadzi do historyjki — appbox gate intake, plan 10.7.",
   "surfacesHeadline": "22 powierzchnie — każda prowadzi do historyjki",
   "surfacesHeadlinePlain": "22 ekrany — każdy powstaje z historyjki",
   "surfacesHeadlineTechnical": "Inwentarz powierzchni — 22 powierzchnie, każda prześledzona",

@@ -948,7 +948,7 @@
   },
   "brief": {
     "title": "appbox — brief projektowy",
-    "provenance": "Zebrany przez appbox-story-mapper · story-map.json obok · gates/intake, plan 10.7",
+    "provenance": "Zebrany przez appbox-story-mapper · story-map.json obok · appbox gate intake, plan 10.7",
     "intro": "Priorytety to MoSCoW, zgrupowane w swimlane'y wydań. Każda powierzchnia rejestru musi prowadzić do tabeli inwentarza powierzchni poniżej.",
     "introPlain": "Każda historyjka jest posortowana must / should / could i wpisana w wydanie. Każdy ekran w aplikacji prowadzi z powrotem do historyjki w tym briefie.",
     "surfaceNote": "Każda powierzchnia rejestru prowadzi do historyjki — tabela, którą konsumuje designer.",

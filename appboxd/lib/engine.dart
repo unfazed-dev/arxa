@@ -22,17 +22,17 @@ import 'process.dart';
 /// emits 75 routes to retry instead of a hard failure.
 const exitRetryable = 75;
 
-/// One pipeline stage. The single source of truth is the filesystem:
-/// [loadStages] reads gates/ and gates/run_all.sh at load — nothing here is
-/// a hardcoded copy of the FSM.
+/// One pipeline stage. The single source of truth is the Dart gate order in
+/// [loadStages] — gates run in-process (gate_runner), not as scripts.
 class Stage {
   Stage({required this.name, required this.gate, required this.tier});
 
-  /// Gate directory name under gates/ (intake, freeze, structure, …).
+  /// Gate name (intake, freeze, structure, …).
   final String name;
 
-  /// The gate command, e.g. ['bash', 'gates/intake/intake.sh'] — resolved
-  /// from the entry script that actually exists in the gate dir.
+  /// Vestigial: the gate command from the bash-gate era. Always `const []`
+  /// since gates are pure Dart ([loadStages] hardcodes it); kept only for
+  /// JSON shape stability.
   final List<String> gate;
 
   /// Fabric tier default for this stage, from config/model-fabric.json's

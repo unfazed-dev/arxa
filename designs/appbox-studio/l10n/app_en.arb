@@ -198,7 +198,7 @@
   "briefHeadlineTechnical": "The generated design brief — the designer’s contract",
   "briefLede": "Priorities, releases and the surface inventory. Every surface traces to a story.",
   "briefLedePlain": "What the app must do, sorted and slotted into releases. Every screen traces back to a story here.",
-  "briefLedeTechnical": "MoSCoW priorities, release swimlanes, surface inventory. Every registry surface traces to a story — gates/intake, plan 10.7.",
+  "briefLedeTechnical": "MoSCoW priorities, release swimlanes, surface inventory. Every registry surface traces to a story — appbox gate intake, plan 10.7.",
   "surfacesHeadline": "22 surfaces — every one traces to a story",
   "surfacesHeadlinePlain": "22 screens — each one comes from a story",
   "surfacesHeadlineTechnical": "Surface inventory — 22 surfaces, every one traced",
