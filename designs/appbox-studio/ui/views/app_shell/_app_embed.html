@@ -1,0 +1,14 @@
+<!-- appbox:provenance
+     generator: appbox  licence: free  project: 662368770980
+     Built with appbox (free tier) — https://appbox.dev
+-->
+{% extends "ui/common/base.html" %}
+{% block content %}
+{# Embed render — content-only inside the viewer's app frame, no studio
+   chrome. Same block names as main_shell_view.html, so an app view swaps
+   layouts by its `embed` flag alone. The tab bar partial is included by
+   each app view's surface block. #}
+<main class="app-embed">
+  {% block surface %}{% endblock %}
+</main>
+{% endblock %}

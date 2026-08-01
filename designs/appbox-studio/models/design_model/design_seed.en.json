@@ -2,8 +2,8 @@
   "run": {
     "id": "design-07",
     "number": 7,
-    "project": "appbox-studio",
-    "brief": "appbox — designs, builds and ships itself",
+    "project": "Portalo",
+    "brief": "Portalo — a game-graphics demo app, designed and built by appbox",
     "started": "Yesterday 14:02",
     "elapsed": "21m 05s",
     "state": "frozen",
@@ -19,14 +19,14 @@
   },
   "screens": [
     {
-      "id": "intake.mapping",
-      "label": "Story Mapping",
-      "epic": "Intake & Story Mapping",
+      "id": "app.splash",
+      "label": "Splash",
+      "epic": "Onboarding",
       "state": "frozen",
-      "wire": "split",
-      "kit": 96,
-      "summary": "Epic → Feature → Story map with MoSCoW lanes and release swimlanes — 42 stories in one sitting",
-      "summaryPlain": "The story map: epics, features and stories sorted must/could/won't, in release lanes — 42 stories mapped in one sitting",
+      "wire": "stack",
+      "kit": 100,
+      "summary": "Animated logo first paint under 300ms — the brand moment, nothing else",
+      "summaryPlain": "The opening screen: the Portalo logo animates in fast, nothing else loads here",
       "rungs": [
         {
           "rung": "compact",
@@ -43,14 +43,14 @@
       ]
     },
     {
-      "id": "intake.brief",
-      "label": "Design Brief",
-      "epic": "Intake & Story Mapping",
+      "id": "app.startup",
+      "label": "Startup",
+      "epic": "Onboarding",
       "state": "frozen",
       "wire": "stack",
       "kit": 98,
-      "summary": "The brief as a living doc — the surface inventory feeds the registry without rewriting",
-      "summaryPlain": "The brief as a readable document — its screen list seeds the app registry without retyping",
+      "summary": "Loading orchestration — kits warm up behind a real progress line, never a spinner",
+      "summaryPlain": "The loading screen: demos get ready behind an honest progress bar, not a spinning wheel",
       "rungs": [
         {
           "rung": "compact",
@@ -67,134 +67,14 @@
       ]
     },
     {
-      "id": "intake.moodboard",
-      "label": "Moodboard",
-      "epic": "Intake & Story Mapping",
-      "state": "frozen",
-      "wire": "grid",
-      "kit": 92,
-      "summary": "Curated references and captured shots per epic — every embedded shot verified on disk",
-      "summaryPlain": "Reference apps to steal from, with real screenshots per theme — every picture checked to exist on disk",
-      "rungs": [
-        {
-          "rung": "compact",
-          "width": 390
-        },
-        {
-          "rung": "medium",
-          "width": 744
-        },
-        {
-          "rung": "expanded",
-          "width": 1280
-        }
-      ]
-    },
-    {
-      "id": "design.prototype",
-      "label": "Prototype",
-      "epic": "Design & Freeze",
-      "state": "frozen",
-      "wire": "split",
-      "kit": 100,
-      "summary": "Artboards at 390/744/1280 from targets alone — literal parity, structure not pixels",
-      "summaryPlain": "Every screen shown at phone, tablet and desktop size — same structure everywhere, no pixel-pushing",
-      "rungs": [
-        {
-          "rung": "compact",
-          "width": 390
-        },
-        {
-          "rung": "medium",
-          "width": 744
-        },
-        {
-          "rung": "expanded",
-          "width": 1280
-        }
-      ]
-    },
-    {
-      "id": "design.chat",
-      "label": "Design Chat",
-      "epic": "Design & Freeze",
-      "state": "frozen",
-      "wire": "split",
-      "kit": 97,
-      "summary": "Pinned screens as removable context chips — the chat refines exactly those, outlined on the canvas",
-      "summaryPlain": "Pin the screens you're working on as chips — the chat changes only those, and they stay outlined on the canvas",
-      "rungs": [
-        {
-          "rung": "compact",
-          "width": 390
-        },
-        {
-          "rung": "medium",
-          "width": 744
-        },
-        {
-          "rung": "expanded",
-          "width": 1280
-        }
-      ]
-    },
-    {
-      "id": "design.freeze",
-      "label": "Freeze & Trace",
-      "epic": "Design & Freeze",
-      "state": "frozen",
-      "wire": "stack",
-      "kit": 95,
-      "summary": "Hash-locked freeze — the approval binds to the design hash; post-approval change goes stale loudly",
-      "summaryPlain": "Lock the approved design — your approval signs this exact version; any later change is flagged clearly",
-      "rungs": [
-        {
-          "rung": "compact",
-          "width": 390
-        },
-        {
-          "rung": "medium",
-          "width": 744
-        },
-        {
-          "rung": "expanded",
-          "width": 1280
-        }
-      ]
-    },
-    {
-      "id": "build.loop",
-      "label": "Build Monitor",
-      "epic": "Build & Gates",
-      "state": "frozen",
-      "wire": "split",
-      "kit": 99,
-      "summary": "Composer panel + one artifact large — the run is a conversation you can interrupt",
-      "summaryPlain": "A feed of what the build is doing plus one big detail view — you can ask questions or stop it any time",
-      "rungs": [
-        {
-          "rung": "compact",
-          "width": 390
-        },
-        {
-          "rung": "medium",
-          "width": 744
-        },
-        {
-          "rung": "expanded",
-          "width": 1280
-        }
-      ]
-    },
-    {
-      "id": "build.gates",
-      "label": "Gates",
-      "epic": "Build & Gates",
+      "id": "app.access",
+      "label": "Sign In",
+      "epic": "Onboarding",
       "state": "frozen",
       "wire": "stack",
       "kit": 96,
-      "summary": "The three human gates as a triage queue — reachable by agents, passable only by you",
-      "summaryPlain": "The three decisions only you can make, queued like an inbox — the agent brings them to you, never takes them",
+      "summary": "One-tap sign-in — Apple/Google, the session persists; no demo ever asks twice",
+      "summaryPlain": "Sign in once with Apple or Google — the app remembers you, no demo asks again",
       "rungs": [
         {
           "rung": "compact",
@@ -211,14 +91,86 @@
       ]
     },
     {
-      "id": "build.visual",
-      "label": "Visual Fidelity",
-      "epic": "Build & Gates",
+      "id": "app.dashboard",
+      "label": "Demo Dashboard",
+      "epic": "Demos",
+      "state": "frozen",
+      "wire": "split",
+      "kit": 97,
+      "summary": "Every demo one tap away — live status chips show which kits are ready",
+      "summaryPlain": "The home screen: every demo a tap away, with chips showing what is ready to run",
+      "rungs": [
+        {
+          "rung": "compact",
+          "width": 390
+        },
+        {
+          "rung": "medium",
+          "width": 744
+        },
+        {
+          "rung": "expanded",
+          "width": 1280
+        }
+      ]
+    },
+    {
+      "id": "app.demos",
+      "label": "Demo Index",
+      "epic": "Demos",
+      "state": "frozen",
+      "wire": "grid",
+      "kit": 95,
+      "summary": "The full demo catalog as cards — grouped by kit, filterable by media type",
+      "summaryPlain": "All demos as cards, grouped by the library they show off — easy to browse",
+      "rungs": [
+        {
+          "rung": "compact",
+          "width": 390
+        },
+        {
+          "rung": "medium",
+          "width": 744
+        },
+        {
+          "rung": "expanded",
+          "width": 1280
+        }
+      ]
+    },
+    {
+      "id": "app.mediarive",
+      "label": "Rive Demo",
+      "epic": "Demos",
+      "state": "frozen",
+      "wire": "split",
+      "kit": 93,
+      "summary": "State-machine Rive animation — inputs scrubbed live from the control panel",
+      "summaryPlain": "An interactive Rive animation — the side panel drives its state machine live",
+      "rungs": [
+        {
+          "rung": "compact",
+          "width": 390
+        },
+        {
+          "rung": "medium",
+          "width": 744
+        },
+        {
+          "rung": "expanded",
+          "width": 1280
+        }
+      ]
+    },
+    {
+      "id": "app.medialottie",
+      "label": "Lottie Demo",
+      "epic": "Demos",
       "state": "frozen",
       "wire": "split",
       "kit": 94,
-      "summary": "Design-vs-built probes per surface — SSIM, skeleton, ΔE against the frozen golden",
-      "summaryPlain": "Each built screen compared pixel-by-pixel with the design you approved — structure, layout and colour",
+      "summary": "Lottie playback with frame-accurate scrubbing and loop control",
+      "summaryPlain": "A Lottie animation you can play, pause and scrub frame by frame",
       "rungs": [
         {
           "rung": "compact",
@@ -235,14 +187,14 @@
       ]
     },
     {
-      "id": "access.pairing",
-      "label": "Pairing & Devices",
-      "epic": "Access & Devices",
+      "id": "app.mediadotlottie",
+      "label": "dotLottie Demo",
+      "epic": "Demos",
       "state": "frozen",
-      "wire": "stack",
-      "kit": 93,
-      "summary": "One-scan QR pairing, device list with revoke — LAN-only by default, no cloud relay",
-      "summaryPlain": "Pair a device by scanning one code, see and revoke paired devices — local network only by default",
+      "wire": "split",
+      "kit": 92,
+      "summary": "Bundled .lottie archives — theme variants switched without a reload",
+      "summaryPlain": "The packed dotLottie format — swap its baked-in themes without reloading",
       "rungs": [
         {
           "rung": "compact",
@@ -259,14 +211,134 @@
       ]
     },
     {
-      "id": "access.notifications",
-      "label": "Notifications",
-      "epic": "Access & Devices",
+      "id": "app.mediamodel3d",
+      "label": "3D Model Demo",
+      "epic": "Demos",
       "state": "frozen",
-      "wire": "stack",
+      "wire": "split",
+      "kit": 90,
+      "summary": "glTF model viewer — orbit, zoom and lighting presets at 60 fps",
+      "summaryPlain": "Spin and zoom a 3D model with finger gestures — smooth 60 fps",
+      "rungs": [
+        {
+          "rung": "compact",
+          "width": 390
+        },
+        {
+          "rung": "medium",
+          "width": 744
+        },
+        {
+          "rung": "expanded",
+          "width": 1280
+        }
+      ]
+    },
+    {
+      "id": "app.mediascene3d",
+      "label": "3D Scene Demo",
+      "epic": "Demos",
+      "state": "frozen",
+      "wire": "split",
+      "kit": 89,
+      "summary": "A composed three.js scene — camera dolly, fog and light probes live",
+      "summaryPlain": "A full 3D scene built with three.js — camera moves, fog and lights adjustable live",
+      "rungs": [
+        {
+          "rung": "compact",
+          "width": 390
+        },
+        {
+          "rung": "medium",
+          "width": 744
+        },
+        {
+          "rung": "expanded",
+          "width": 1280
+        }
+      ]
+    },
+    {
+      "id": "app.mediagame",
+      "label": "Mini Game",
+      "epic": "Demos",
+      "state": "frozen",
+      "wire": "split",
       "kit": 91,
-      "summary": "Push on red gate, deep-linked into the gate card — approve from the lock screen",
-      "summaryPlain": "A push message when a decision is needed, opening straight to that decision — approve from your lock screen",
+      "summary": "A playable mini-game — frame budget proven on the real device, HUD from kit primitives",
+      "summaryPlain": "A small game you can actually play — proof the graphics stay smooth on a real phone",
+      "rungs": [
+        {
+          "rung": "compact",
+          "width": 390
+        },
+        {
+          "rung": "medium",
+          "width": 744
+        },
+        {
+          "rung": "expanded",
+          "width": 1280
+        }
+      ]
+    },
+    {
+      "id": "app.mediamaps",
+      "label": "Maps Demo",
+      "epic": "Demos",
+      "state": "frozen",
+      "wire": "split",
+      "kit": 93,
+      "summary": "Map tiles with kit credentials — styles and overlays from the maps kit",
+      "summaryPlain": "A live map — tiles only load with valid credentials, styles come from the maps kit",
+      "rungs": [
+        {
+          "rung": "compact",
+          "width": 390
+        },
+        {
+          "rung": "medium",
+          "width": 744
+        },
+        {
+          "rung": "expanded",
+          "width": 1280
+        }
+      ]
+    },
+    {
+      "id": "app.credentials",
+      "label": "Kit Credentials",
+      "epic": "System",
+      "state": "frozen",
+      "wire": "stack",
+      "kit": 95,
+      "summary": "API keys per kit, validated on save — a bad key fails loudly, never silently",
+      "summaryPlain": "Where the API keys live — each one is checked when you save it, so nothing breaks quietly",
+      "rungs": [
+        {
+          "rung": "compact",
+          "width": 390
+        },
+        {
+          "rung": "medium",
+          "width": 744
+        },
+        {
+          "rung": "expanded",
+          "width": 1280
+        }
+      ]
+    },
+    {
+      "id": "app.config",
+      "label": "App Config",
+      "epic": "System",
+      "state": "frozen",
+      "wire": "stack",
+      "kit": 96,
+      "summary": "Runtime flags and demo defaults — editable in-app, persisted across restarts",
+      "summaryPlain": "The settings screen — switches for how demos behave, remembered between launches",
       "rungs": [
         {
           "rung": "compact",
@@ -304,7 +376,7 @@
       "id": "manifest",
       "label": "Freeze manifest",
       "kind": "manifest",
-      "detail": "frz_9c41e2 · 33 goldens · sha256:9c41…e2b7",
+      "detail": "frz_9c41e2 · 42 goldens · sha256:9c41…e2b7",
       "href": "/design/freeze"
     },
     {
@@ -325,7 +397,7 @@
       "id": "goldens",
       "label": "Goldens",
       "kind": "shots",
-      "detail": "33 frozen shots · 11 surfaces × 3 rungs",
+      "detail": "42 frozen shots · 14 surfaces × 3 rungs",
       "href": "/design"
     }
   ],
@@ -340,7 +412,7 @@
     },
     {
       "path": "designs/appbox-studio/models/design_model/run.json",
-      "detail": "generated fixture — 11 surfaces, 33 shots"
+      "detail": "generated fixture — 14 surfaces, 42 shots"
     },
     {
       "path": "app/structure.json",
@@ -348,13 +420,13 @@
     },
     {
       "path": "app/goldens/",
-      "detail": "33 frozen goldens, hashed at freeze"
+      "detail": "42 frozen goldens, hashed at freeze"
     }
   ],
   "manifest": {
     "id": "frz_9c41e2",
-    "goldens": 33,
-    "surfaces": 11,
+    "goldens": 42,
+    "surfaces": 14,
     "rungs": "390 / 744 / 1280",
     "hash": "sha256:9c41…e2b7",
     "frozenAt": "Yesterday 16:42",
@@ -373,8 +445,8 @@
     {
       "at": "14:02",
       "who": "agent",
-      "text": "Brief traced — 22 surfaces from story-map.json; every registry id backed by a story.",
-      "textPlain": "Brief checked — 22 screens come from the story map; every screen traces back to a user story."
+      "text": "Brief traced — 14 surfaces from story-map.json; every registry id backed by a story.",
+      "textPlain": "Brief checked — 14 screens come from the story map; every screen traces back to a user story."
     },
     {
       "at": "14:09",
@@ -385,14 +457,14 @@
     {
       "at": "14:31",
       "who": "agent",
-      "text": "Prototype composed — 11 surfaces × 3 rungs from targets alone; structure carried, not pixels.",
-      "textPlain": "Prototype built — 11 screens, each at phone, tablet and desktop size; the layout structure is what matters, not decoration."
+      "text": "Prototype composed — 14 surfaces × 3 rungs from targets alone; structure carried, not pixels.",
+      "textPlain": "Prototype built — 14 screens, each at phone, tablet and desktop size; the layout structure is what matters, not decoration."
     },
     {
       "at": "15:58",
       "who": "you",
-      "text": "Screen chat on build.loop — 4 checkpoints; gate cards calmed, compact bar docked.",
-      "textPlain": "You refined the build screen in chat — 4 saved changes; calmer decision cards, better phone layout."
+      "text": "Screen chat on app.mediagame — 4 checkpoints; HUD calmed, compact control bar docked.",
+      "textPlain": "You refined the mini-game screen in chat — 4 saved changes; a calmer HUD, better phone layout."
     },
     {
       "at": "16:42",
@@ -403,70 +475,70 @@
     {
       "at": "16:42",
       "who": "agent",
-      "text": "Freeze minted — manifest frz_9c41e2 · 33 goldens hashed · structure.json locked.",
-      "textPlain": "Design locked — all 33 approved snapshots fingerprinted and recorded; the structure is now the reference."
+      "text": "Freeze minted — manifest frz_9c41e2 · 42 goldens hashed · structure.json locked.",
+      "textPlain": "Design locked — all 42 approved snapshots fingerprinted and recorded; the structure is now the reference."
     },
     {
       "at": "09:12",
       "who": "agent",
-      "text": "Drift check — 33/33 goldens match the manifest. Clean.",
-      "textPlain": "Drift check — all 33 snapshots still match the approved design. Nothing has moved."
+      "text": "Drift check — 42/42 goldens match the manifest. Clean.",
+      "textPlain": "Drift check — all 42 snapshots still match the approved design. Nothing has moved."
     }
   ],
   "traceability": [
     {
-      "surface": "intake.mapping",
-      "story": "Evan turns a client brief into an Epic-Feature-Story map in one sitting",
-      "code": "app/lib/ui/views/intake/mapping_view.dart",
+      "surface": "app.splash",
+      "story": "First paint under 300ms — animated Portalo logo, no jank",
+      "code": "app/lib/ui/views/app/splash_view.dart",
       "files": 4
     },
     {
-      "surface": "design.prototype",
-      "story": "Every surface designed at 390/744/1280 from targets alone (literal parity)",
-      "code": "app/lib/ui/views/design/prototype_view.dart",
+      "surface": "app.access",
+      "story": "One-tap sign-in before any demo; the session persists across launches",
+      "code": "app/lib/ui/views/app/access_view.dart",
       "files": 4
     },
     {
-      "surface": "design.chat",
-      "story": "Pin multiple screens as chat context (removable chips); in-context screens outlined side-by-side at real device sizes",
-      "code": "app/lib/ui/views/design/chat_view.dart",
+      "surface": "app.dashboard",
+      "story": "Every demo one tap from the dashboard, with live kit-status chips",
+      "code": "app/lib/ui/views/app/dashboard_view.dart",
       "files": 4
     },
     {
-      "surface": "build.loop",
-      "story": "Start a build, walk away; stops on red, ESC_LIMIT=3",
-      "code": "app/lib/ui/views/build/loop_view.dart",
+      "surface": "app.mediascene3d",
+      "story": "A composed three.js scene running at 60 fps on the real device",
+      "code": "app/lib/ui/views/app/mediascene3d_view.dart",
       "files": 4
     },
     {
-      "surface": "build.gates",
-      "story": "Three gates an agent can reach but never pass; approval is provenance-bound",
-      "code": "app/lib/ui/views/build/gates_view.dart",
+      "surface": "app.mediagame",
+      "story": "A playable mini-game proving the frame budget — HUD from kit primitives",
+      "code": "app/lib/ui/views/app/mediagame_view.dart",
       "files": 4
     },
     {
-      "surface": "access.pairing",
-      "story": "One-scan QR pairing; a relayed QR fails the pin",
-      "code": "app/lib/ui/views/access/pairing_view.dart",
+      "surface": "app.mediamaps",
+      "story": "Map tiles load only with valid kit credentials — styles from the maps kit",
+      "code": "app/lib/ui/views/app/mediamaps_view.dart",
       "files": 4
     },
     {
-      "surface": "ship.deploy",
-      "story": "Payment gate at first deploy: licence required to ship; everything before it free",
-      "code": "app/lib/ui/views/ship/deploy_view.dart",
+      "surface": "app.config",
+      "story": "Runtime flags editable in-app; changes survive a restart",
+      "code": "app/lib/ui/views/app/config_view.dart",
       "files": 4
     }
   ],
   "drift": {
     "checked": "today 09:12",
-    "matched": "33/33",
+    "matched": "42/42",
     "clean": true,
     "history": [
       {
         "at": "today 08:47",
         "state": "resolved",
-        "text": "design.chat compact shot changed after approval (checkpoint cp-5) — flagged stale loudly; re-approved and re-frozen 08:52",
-        "textPlain": "the phone-size shot of the chat screen changed after you approved it — the design was marked out-of-date until you approved the change at 08:52",
+        "text": "app.mediagame compact shot changed after approval (checkpoint cp-5) — flagged stale loudly; re-approved and re-frozen 08:52",
+        "textPlain": "the phone-size shot of the mini-game screen changed after you approved it — the design was marked out-of-date until you approved the change at 08:52",
         "hash": "d41f…7b2c"
       }
     ]
@@ -475,16 +547,16 @@
     {
       "at": "15:52",
       "from": "user",
-      "text": "The gate cards feel loud — pending shouts. Can it breathe?"
+      "text": "The game HUD feels loud — the score banner shouts. Can it breathe?"
     },
     {
       "at": "15:53",
       "from": "agent",
-      "text": "Softened — pending now sits on 12% accent with a hairline border; approve stays solid ink. Checkpoint cp-3 below, one tap reverts.",
-      "textPlain": "Made it calmer — the waiting state is now a soft tint instead of a loud fill; the approve button stays bold. Saved as cp-3 below, one tap undoes it.",
+      "text": "Softened — the banner now sits on 12% accent with a hairline border; pause stays solid ink. Checkpoint cp-3 below, one tap reverts.",
+      "textPlain": "Made it calmer — the score banner is now a soft tint instead of a loud fill; the pause button stays bold. Saved as cp-3 below, one tap undoes it.",
       "cps": [
         {
-          "screen": "build.loop",
+          "screen": "app.mediagame",
           "cp": "cp-3"
         }
       ]
@@ -492,53 +564,53 @@
     {
       "at": "16:04",
       "from": "user",
-      "text": "Compact rung: the stage bar covers the canvas CTA."
+      "text": "Compact rung: the control bar covers the play field."
     },
     {
       "at": "16:05",
       "from": "agent",
-      "text": "Docked — under 600px the bar pins to the viewport edge and the canvas pads for it. cp-4.",
-      "textPlain": "Fixed — on phone-size screens the toolbar pins to the screen edge instead of floating over the content. Saved as cp-4.",
+      "text": "Docked — under 600px the bar pins to the viewport edge and the play field pads for it. cp-4.",
+      "textPlain": "Fixed — on phone-size screens the control bar pins to the screen edge instead of floating over the play field. Saved as cp-4.",
       "cps": [
         {
-          "screen": "build.loop",
+          "screen": "app.mediagame",
           "cp": "cp-4"
         }
       ]
     }
   ],
   "checkpoints": {
-    "build.loop": [
+    "app.mediagame": [
       {
         "id": "cp-1",
         "n": 1,
         "at": "15:41",
-        "summary": "initial composition — activity panel + canvas + FAB",
-        "summaryPlain": "first layout — side feed, big detail view, floating action button"
+        "summary": "initial composition — game canvas + control panel + FAB",
+        "summaryPlain": "first layout — play field, side controls, floating action button"
       },
       {
         "id": "cp-2",
         "n": 2,
         "at": "15:49",
-        "summary": "activity panel density pass — type badges, thread counts",
-        "summaryPlain": "tidied the feed — clearer labels, follow-up counts"
+        "summary": "control panel density pass — badge types, fps counters",
+        "summaryPlain": "tidied the controls — clearer labels, frame-rate counters"
       },
       {
         "id": "cp-3",
         "n": 3,
         "at": "15:53",
-        "summary": "calmer gate cards — soft pending, solid approve",
-        "summaryPlain": "calmer decision cards — soft waiting state, bold approve",
-        "before": "pending: solid accent fill",
-        "after": "pending: 12% tint + hairline"
+        "summary": "calmer HUD — soft score banner, solid pause",
+        "summaryPlain": "calmer game overlay — soft score banner, bold pause button",
+        "before": "banner: solid accent fill",
+        "after": "banner: 12% tint + hairline"
       },
       {
         "id": "cp-4",
         "n": 4,
         "at": "16:05",
-        "summary": "compact stage bar docks to the viewport",
-        "summaryPlain": "phone layout: the toolbar pins to the screen edge",
-        "before": "bar floats over the canvas CTA",
+        "summary": "compact control bar docks to the viewport",
+        "summaryPlain": "phone layout: the control bar pins to the screen edge",
+        "before": "bar floats over the play field",
         "after": "bar docks to the viewport edge"
       }
     ]
@@ -566,12 +638,12 @@
         "quiet",
         "shout"
       ],
-      "text": "Calmed it — pending drops to 12% accent with a hairline border; approve stays solid ink. Checkpointed below; one tap reverts.",
-      "textPlain": "Made it calmer — the waiting state is now a soft tint instead of a loud fill; the approve button stays bold. Saved below, one tap undoes it.",
-      "checkpoint": "calmer pending state — soft tint, solid approve",
-      "checkpointPlain": "calmer waiting state — soft tint, bold approve",
-      "before": "pending: solid accent fill",
-      "after": "pending: 12% tint + hairline"
+      "text": "Calmed it — the score banner drops to 12% accent with a hairline border; pause stays solid ink. Checkpointed below; one tap reverts.",
+      "textPlain": "Made it calmer — the score banner is now a soft tint instead of a loud fill; the pause button stays bold. Saved below, one tap undoes it.",
+      "checkpoint": "calmer HUD — soft tint, solid pause",
+      "checkpointPlain": "calmer game overlay — soft tint, bold pause",
+      "before": "banner: solid accent fill",
+      "after": "banner: 12% tint + hairline"
     },
     {
       "match": [
@@ -627,8 +699,8 @@
         "primitive",
         "component"
       ],
-      "text": "Kit coverage 96% across the 11 surfaces — the bespoke remainder is the flows-canvas zoom and the gate triage gestures.",
-      "textPlain": "96% of these screens can be built from ready-made parts — the custom work is the flows-canvas zoom and the gate swipe gestures."
+      "text": "Kit coverage 96% across the 14 surfaces — the bespoke remainder is the game loop and the three.js scene graph.",
+      "textPlain": "96% of these screens can be built from ready-made parts — the custom work is the game loop and the 3D scene."
     }
   ],
   "chatFallback": {

@@ -6,11 +6,10 @@
 {% block title %}{{ t('auth.pageTitle') }}{% endblock %}
 
 {% block content %}
-{# Chromeless sign-in — desktop only. Phones/tablets pair instead (see /pair);
-   account sign-in never renders on touch rungs. Seeded: any input signs in. #}
+{# Chromeless sign-in. Seeded: any input signs in. #}
 <main class="centered-state">
   <section class="auth-card" aria-labelledby="auth-h">
-    <span class="auth-brand">appbox</span>
+    <span class="auth-brand">{{ t('app.brand') }}</span>
     <h1 class="display" id="auth-h">{{ auth.headline }}</h1>
     <p class="muted">{{ auth.lede }}</p>
 
@@ -27,8 +26,6 @@
       <button type="submit" class="ghost auth-provider" name="provider" value="{{ p.id }}">{{ p.label }}</button>
     </form>
     {% endfor %}
-
-    <p class="auth-foot muted">{{ t('auth.footPre') }} <a href="/pair">{{ t('auth.footLink') }}</a> {{ t('auth.footPost') }}</p>
   </section>
 </main>
 {% endblock %}

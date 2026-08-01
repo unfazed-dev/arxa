@@ -8,7 +8,12 @@ import * as facade from '../../../../services/facades/app_facade.js';
 const VIEW = 'ui/views/app_shell/dashboard/dashboard_view.html';
 
 export const page = (c, h) =>
-  h.render(c, VIEW, { activeShell: 'app', ...facade.dashboardContext(h.session(c).data, h.locale(c)) });
+  h.render(c, VIEW, {
+    activeShell: 'app',
+    tab: 'dashboard',
+    ...facade.embedContext(c),
+    ...facade.dashboardContext(h.session(c).data, h.locale(c)),
+  });
 
 // Needs-you quick actions — seeded decision, 303 back to the dashboard.
 export const decide = async (c, h) => {

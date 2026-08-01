@@ -4,26 +4,31 @@ The shared screen-stage component: two lenses over the shell's screen
 registry, switched by server-side viewer state and swapped through
 `#design-viewer`.
 
-- `flow` (default) — every screen as a chromeless tile (`?embed=1`) at its
-  primary authored width, grouped by shell into block-flow rows. Tiles drag
-  freely (drag.js); x/y is POSTed on drop (`/design/artboard/:id/layout`),
-  a saved position renders the tile absolute, group-relative. CSS flow
-  layout IS the auto-grid — no facade grid math.
+- `flow` (default) — every screen as a chromeless tile (`?embed=1`) at the
+  CURRENT rung (`vp` param, default mobile; `s.tile` carries the per-screen
+  width/height at that rung, falling back to the first authored rung),
+  grouped by shell into block-flow rows. Tiles drag freely (drag.js); x/y is
+  POSTed on drop (`/design/artboard/:id/layout`), a saved position renders
+  the tile absolute, group-relative. CSS flow layout IS the auto-grid — no
+  facade grid math. Saved layout is per-screen, shared across rungs.
 - `proto` — the wired-app preview: ONE screen live at a REAL rung size
   inside device chrome (phone / tablet / desktop window — `.device` in
   `assets/css/viewer.css`; ONE mobile chrome, no os dimension). The rung
   switches from the device icon buttons in the mini panel's bar-right
-  cluster; the active screen is picked from the Screens mini panel (a
+  cluster (present in BOTH modes — in flow they re-render the tiles at that
+  rung); the active screen is picked from the Screens mini panel (a
   thumb is a picker in proto, a chat-context toggle in flow).
 
 Files:
 
 - `ui/common/design_viewer.html` — `designViewer(v)` macro (+ `protoStage`,
   `deviceChrome`).
-- `ui/common/mini_panel.html` — the floating Screens / Controller / Actions
-  panel; the Controller carries the lens switch (`flow` / `prototype`), the
-  bar-right cluster carries the device rung icons (proto only) — divider —
-  bg swatches (every mode).
+- `ui/common/mini_panel.html` — the floating Screens / Controller panel; the
+  Controller carries the lens switch (`flow` / `prototype`) and the zoom-fit
+  button (`data-action="zoom-fit"`, implemented client-side by
+  `runtime/vendor/canvas.js` — scales the stage's zoom child to fit, same
+  `_z`/transform mechanism as ctrl+wheel), the bar-right cluster carries the
+  device rung icons (both modes) — divider — bg swatches (every mode).
 - `assets/css/viewer.css` — flow canvas, mini panel, `.dv-proto*` + `.device`.
 
 ## The `v` contract (produced by the shell facade's `viewerFor`)
@@ -31,19 +36,22 @@ Files:
 ```js
 {
   screens:  [{ id, label?, state?, chips?, viewports, inContext?, dim?,
-               tone?, shell, layout?, primaryWidth }],
+               tone?, shell, layout?, primaryWidth,
+               tile: { vp, width, height } }],   // dims at the CURRENT rung
+               // + srcBase per screen: the live registry route for app.*
+               // surfaces, '/build/screens/<id>' (the stub) for the rest
   mode:     'flow' | 'proto',          // default 'flow'
   proto:    { active, vp, src },       // proto mode only
+  vp:       'mobile' | 'tablet' | 'desktop',   // current rung (default mobile)
   inspect:  bool,                      // inspect island armed
   static:   bool,                      // build evidence: read-only canvas
   bg:       'canvas' | 'warm' | 'slate',
   base:     '/design/viewer',          // per-shell viewer route
-  stubBase: '/build/screens/',         // iframe src prefix
   contextBase: '/design/chat/context/',// present where tiles pin as context
   miniPanel: { activePanel,
                bar: { devices: [{ key, icon, active, href }] | null,
                       bgs: [{ value, active, href }] },
-               screens, controller: { modes, inspect… }, actions },
+               screens, controller: { modes, inspect… } },
 }
 ```
 
@@ -60,9 +68,10 @@ Files:
   `{ vp, width, height?, rung?, note?, shot? }`. Real rung sizes are
   390×844 / 744×1133 / 1280×800; devices render at true size — the proto
   stage pans when oversized, centers when it fits, never clamps.
-- Proto iframe src: `{stubBase}{active}?vp={vp}&embed=1` — served by the
-  existing `GET /build/screens/:surface` stub renderer. Flow tiles append
-  only `?embed=1`.
+- Proto iframe src: `{srcBase(active)}?vp={vp}&embed=1` — the live registry
+  route for app.* surfaces, otherwise the `GET /build/screens/:surface` stub
+  renderer. Flow tiles use the same shape with `s.tile.vp`
+  (`{s.srcBase}?vp={tile.vp}&embed=1`).
 
 ## Wiring a shell
 

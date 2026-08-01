@@ -1,36 +1,180 @@
 {
-  "account": { "name": "Evan", "email": "evan@totem.labs" },
+  "account": {
+    "name": "Evan",
+    "email": "evan@totem.labs"
+  },
   "tagline": "Describe it. Gate it. Ship it.",
   "auth": {
-    "headline": "Sign in to appbox",
+    "headline": "Sign in to Portalo",
     "lede": "One account for every project on your tailnet. Prototype build — any email signs you in.",
     "providers": [
-      { "id": "apple", "label": "Continue with Apple" },
-      { "id": "google", "label": "Continue with Google" }
+      {
+        "id": "apple",
+        "label": "Continue with Apple"
+      },
+      {
+        "id": "google",
+        "label": "Continue with Google"
+      }
     ]
   },
   "projects": [
-    { "id": "p-cartsense", "name": "CartSense", "targets": ["ios", "android"], "stage": "build", "stageLabel": "Build · gates", "lastSaved": "saved 2 min ago" },
-    { "id": "p-foxglove", "name": "Foxglove", "targets": ["web", "macos"], "stage": "design", "stageLabel": "Design · freeze", "lastSaved": "saved 1 h ago" },
-    { "id": "p-anvil", "name": "Anvil CRM", "targets": ["web", "macos", "ios", "android"], "stage": "intake", "stageLabel": "Intake · mapping", "lastSaved": "saved yesterday" }
+    {
+      "id": "p-cartsense",
+      "name": "Portalo",
+      "targets": [
+        "ios",
+        "android"
+      ],
+      "stage": "build",
+      "stageLabel": "Build · gates",
+      "lastSaved": "saved 2 min ago"
+    },
+    {
+      "id": "p-foxglove",
+      "name": "Foxglove",
+      "targets": [
+        "web",
+        "macos"
+      ],
+      "stage": "design",
+      "stageLabel": "Design · freeze",
+      "lastSaved": "saved 1 h ago"
+    },
+    {
+      "id": "p-anvil",
+      "name": "Anvil CRM",
+      "targets": [
+        "web",
+        "macos",
+        "ios",
+        "android"
+      ],
+      "stage": "intake",
+      "stageLabel": "Intake · mapping",
+      "lastSaved": "saved yesterday"
+    }
   ],
   "gates": [
-    { "id": "g-1", "project": "CartSense", "gate": "Build acceptance", "stage": "build", "waiting": "waiting 26 min", "summary": "Run #14 green on pixel + skeleton; 1 colour finding at ΔE 4.8" },
-    { "id": "g-2", "project": "Foxglove", "gate": "Design freeze", "stage": "design", "waiting": "waiting 3 h", "summary": "22 surfaces frozen at hash 9f3c…e1 — approval unlocks Build" },
-    { "id": "g-3", "project": "CartSense", "gate": "Pre-submission checklist", "stage": "ship", "waiting": "waiting 1 d", "summary": "2 crashes on the iOS smoke pass; permissions audit clean" }
+    {
+      "id": "g-1",
+      "project": "Portalo",
+      "gate": "Build acceptance",
+      "stage": "build",
+      "waiting": "waiting 26 min",
+      "summary": "Run #14 green on pixel + skeleton; 1 colour finding at ΔE 4.8"
+    },
+    {
+      "id": "g-2",
+      "project": "Foxglove",
+      "gate": "Design freeze",
+      "stage": "design",
+      "waiting": "waiting 3 h",
+      "summary": "22 surfaces frozen at hash 9f3c…e1 — approval unlocks Build"
+    },
+    {
+      "id": "g-3",
+      "project": "Portalo",
+      "gate": "Pre-submission checklist",
+      "stage": "ship",
+      "waiting": "waiting 1 d",
+      "summary": "2 crashes on the iOS smoke pass; permissions audit clean"
+    }
   ],
   "analytics": {
-    "runs": { "label": "Runs this week", "total": 23, "unit": "runs", "bars": [
-      { "label": "Mon", "value": 2 }, { "label": "Tue", "value": 4 }, { "label": "Wed", "value": 3 },
-      { "label": "Thu", "value": 6 }, { "label": "Fri", "value": 5 }, { "label": "Sat", "value": 1 }, { "label": "Sun", "value": 2 }
-    ] },
-    "stageTime": { "label": "Avg stage time", "total": 34, "unit": "min", "bars": [
-      { "label": "intake", "value": 18 }, { "label": "design", "value": 42 }, { "label": "build", "value": 65 }, { "label": "ship", "value": 12 }
-    ] },
-    "gateLatency": { "label": "Gates waiting", "total": 3, "unit": "open", "bars": [
-      { "label": "Mon", "value": 1 }, { "label": "Tue", "value": 2 }, { "label": "Wed", "value": 1 },
-      { "label": "Thu", "value": 4 }, { "label": "Fri", "value": 3 }, { "label": "Sat", "value": 3 }, { "label": "Sun", "value": 3 }
-    ] }
+    "runs": {
+      "label": "Runs this week",
+      "total": 23,
+      "unit": "runs",
+      "bars": [
+        {
+          "label": "Mon",
+          "value": 2
+        },
+        {
+          "label": "Tue",
+          "value": 4
+        },
+        {
+          "label": "Wed",
+          "value": 3
+        },
+        {
+          "label": "Thu",
+          "value": 6
+        },
+        {
+          "label": "Fri",
+          "value": 5
+        },
+        {
+          "label": "Sat",
+          "value": 1
+        },
+        {
+          "label": "Sun",
+          "value": 2
+        }
+      ]
+    },
+    "stageTime": {
+      "label": "Avg stage time",
+      "total": 34,
+      "unit": "min",
+      "bars": [
+        {
+          "label": "intake",
+          "value": 18
+        },
+        {
+          "label": "design",
+          "value": 42
+        },
+        {
+          "label": "build",
+          "value": 65
+        },
+        {
+          "label": "ship",
+          "value": 12
+        }
+      ]
+    },
+    "gateLatency": {
+      "label": "Gates waiting",
+      "total": 3,
+      "unit": "open",
+      "bars": [
+        {
+          "label": "Mon",
+          "value": 1
+        },
+        {
+          "label": "Tue",
+          "value": 2
+        },
+        {
+          "label": "Wed",
+          "value": 1
+        },
+        {
+          "label": "Thu",
+          "value": 4
+        },
+        {
+          "label": "Fri",
+          "value": 3
+        },
+        {
+          "label": "Sat",
+          "value": 3
+        },
+        {
+          "label": "Sun",
+          "value": 3
+        }
+      ]
+    }
   },
   "pairing": {
     "code": "A7K2-9QXM",
@@ -40,7 +184,12 @@
   },
   "wizard": {
     "prompt": "Name the project and pick its targets — repo connect (GitHub) waits for your first gate approval, and lives in settings after that.",
-    "targets": ["web", "macos", "ios", "android"],
+    "targets": [
+      "web",
+      "macos",
+      "ios",
+      "android"
+    ],
     "note": "Repo connect is deferred to the first gate — nothing to set up now."
   }
 }

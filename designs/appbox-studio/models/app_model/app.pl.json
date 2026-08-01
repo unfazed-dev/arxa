@@ -5,7 +5,7 @@
   },
   "tagline": "Opisz. Zamknij bramką. Wyślij.",
   "auth": {
-    "headline": "Zaloguj się do appbox",
+    "headline": "Zaloguj się do Portalo",
     "lede": "Jedno konto dla każdego projektu w Twoim tailnecie. Wersja prototypowa — każdy e-mail Cię zaloguje.",
     "providers": [
       {
@@ -21,7 +21,7 @@
   "projects": [
     {
       "id": "p-cartsense",
-      "name": "CartSense",
+      "name": "Portalo",
       "targets": [
         "ios",
         "android"
@@ -58,7 +58,7 @@
   "gates": [
     {
       "id": "g-1",
-      "project": "CartSense",
+      "project": "Portalo",
       "gate": "Akceptacja budowania",
       "stage": "build",
       "waiting": "czeka 26 min",
@@ -74,7 +74,7 @@
     },
     {
       "id": "g-3",
-      "project": "CartSense",
+      "project": "Portalo",
       "gate": "Lista kontrolna przed wysyłką",
       "stage": "ship",
       "waiting": "czeka 1 dzień",

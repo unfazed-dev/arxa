@@ -92,15 +92,12 @@
   background: rgba(8, 145, 178, .08); pointer-events: none; z-index: 10;
 }
 /* marquee bulk-pin: drag.js appends it to .dv-flow-canvas (position:relative)
-   and positions it in canvas content coordinates — absolute, not fixed.
-   The actions panel's own pin button shares the class for styling + the
-   data-href drag.js reads; in the panel it must stay in-flow (static). */
+   and positions it in canvas content coordinates — absolute, not fixed. */
 .dv-bulk-pin {
   position: absolute; z-index: 20; padding: .4rem .8rem; border-radius: 999px;
   background: var(--accent, #0891b2); color: #fff; border: none; cursor: pointer;
   font-size: .78rem; box-shadow: var(--shadow-1);
 }
-#mini-panel-actions .dv-bulk-pin { position: static; }
 
 /* ---------- mini panel: bottom-anchored floating controller ---------- */
 /* floats over the viewer's bottom edge, centered — absolute against
@@ -116,7 +113,7 @@
   overflow: hidden;
 }
 .mini-panel-bar {
-  display: flex; gap: .15rem; padding: .25rem;
+  display: flex; gap: .15rem; padding: .5rem .8rem;
   border-bottom: 1px solid var(--border);
 }
 .mini-panel-tab {
@@ -157,7 +154,6 @@
 .mini-panel-strip .dv-thumb { width: 5.6rem; }
 .mini-panel-strip .dv-thumb-clip { height: 7.2rem; }
 .mini-panel-strip .dv-thumb-clip iframe { transform: scale(.221); }
-.mini-panel-info { color: var(--tx-3); font-size: .72rem; }
 /* .ico-btn base + :hover live in chrome.css (circular icon button); these add
    the disabled and active-on variants the mini panel controller buttons need */
 .ico-btn:disabled { opacity: .35; cursor: default; }

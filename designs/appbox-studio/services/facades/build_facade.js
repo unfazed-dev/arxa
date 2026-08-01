@@ -20,6 +20,7 @@
 // right), and gate notes are chat replies carrying a gate context chip —
 // there is no second input path.
 import * as repo from '../repositories/build_repository.js';
+import * as screensRepo from '../repositories/screens_repository.js';
 import * as jargon from './jargon.js';
 import * as agent from './agent_menus.js';
 import * as fv from './file_views.js';
@@ -220,17 +221,28 @@ function evidenceWithLevel(lv, L, t = (k) => k) {
 // viewports the design actually authored (seed truth).
 // B(sessionData).viewer = { bg, inspect, panel }.
 export const VIEWPORT_WIDTHS = { mobile: 390, tablet: 744, desktop: 1280 };
+export const VIEWPORT_HEIGHTS = { mobile: 844, tablet: 1133, desktop: 800 };
 export const VIEWER_BGS = ['canvas', 'warm', 'slate'];
+
+// Same real-render rule as the design facade: app.* surfaces with a registry
+// route render the live (embed-aware) view; the rest keep the generic stub.
+const srcBaseFor = (id) =>
+  id?.startsWith('app.') && screensRepo.routeFor(id) ? screensRepo.routeFor(id) : `/build/screens/${id}`;
 
 function viewerFor(sessionData, evidence) {
   const v = B(sessionData).viewer ?? {};
   const screens = evidence.map((e) => {
     const viewports = e.viewports ?? ['mobile'];
+    const v0 = viewports[0];
     return {
       id: e.surface, label: e.surface, state: e.state,
       chips: e.chips, viewports,
       shell: e.surface?.split('.')[0] ?? 'app',
-      primaryWidth: VIEWPORT_WIDTHS[viewports[0]] ?? 390,
+      primaryWidth: VIEWPORT_WIDTHS[v0] ?? 390,
+      // static evidence canvas: no rung switching, tiles render at the first
+      // authored rung (same contract field the design facade fills per vp).
+      tile: { vp: v0, width: VIEWPORT_WIDTHS[v0] ?? 390, height: VIEWPORT_HEIGHTS[v0] ?? 844 },
+      srcBase: srcBaseFor(e.surface),
     };
   });
   const bg = VIEWER_BGS.includes(v.bg) ? v.bg : 'canvas';
@@ -247,13 +259,13 @@ function viewerFor(sessionData, evidence) {
 
   return {
     screens, bg, inspect, strip: true, static: true,
-    base, stubBase: '/build/screens/',
-    // The viewer mounts its controls in the mini panel. The Screens/Actions
-    // panels are design-canvas concepts (context pins, marquee bulk-pin);
-    // build leaves them empty and opens on the Controller. No history stacks
-    // here — the pair stays disabled (can:false renders without the hx-post).
+    base,
+    // The viewer mounts its controls in the mini panel. The Screens panel is
+    // a design-canvas concept (context pins); build leaves it empty and opens
+    // on the Controller. No history stacks here — the pair stays disabled
+    // (can:false renders without the hx-post).
     miniPanel: {
-      activePanel: ['screens', 'controller', 'actions'].includes(v.panel) ? v.panel : 'controller',
+      activePanel: ['screens', 'controller'].includes(v.panel) ? v.panel : 'controller',
       // Bar-right cluster: bg swatches only — no devices on a static canvas.
       bar: {
         devices: null,
@@ -266,7 +278,6 @@ function viewerFor(sessionData, evidence) {
         undo: { can: false, href: '/design/undo/canvas' },
         redo: { can: false, href: '/design/redo/canvas' },
       },
-      actions: { selectedCount: 0, bulkPinHref: null, simHref: null },
     },
   };
 }

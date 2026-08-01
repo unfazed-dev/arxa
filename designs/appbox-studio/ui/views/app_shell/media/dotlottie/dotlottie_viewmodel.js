@@ -3,10 +3,12 @@
 // Built with appbox (free tier) — https://appbox.dev
 export const surfaceId = 'app.mediadotlottie';
 
+import * as facade from '../../../../../services/facades/app_facade.js';
+
 const VIEW = 'ui/views/app_shell/media/dotlottie/dotlottie_view.html';
 
 export const page = (c, h) =>
-  h.render(c, VIEW, { activeShell: 'app', playing: true });
+  h.render(c, VIEW, { activeShell: 'app', tab: 'demos', playing: true, ...facade.embedContext(c) });
 
 // Play/pause the hypermedia way: re-render the stage fragment with the
 // autoplay attribute flipped (named-fragment render, VIEW#stage).

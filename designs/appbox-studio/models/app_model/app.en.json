@@ -5,7 +5,7 @@
   },
   "tagline": "Describe it. Gate it. Ship it.",
   "auth": {
-    "headline": "Sign in to appbox",
+    "headline": "Sign in to Portalo",
     "lede": "One account for every project on your tailnet. Prototype build — any email signs you in.",
     "providers": [
       {
@@ -21,7 +21,7 @@
   "projects": [
     {
       "id": "p-cartsense",
-      "name": "CartSense",
+      "name": "Portalo",
       "targets": [
         "ios",
         "android"
@@ -58,7 +58,7 @@
   "gates": [
     {
       "id": "g-1",
-      "project": "CartSense",
+      "project": "Portalo",
       "gate": "Build acceptance",
       "stage": "build",
       "waiting": "waiting 26 min",
@@ -74,7 +74,7 @@
     },
     {
       "id": "g-3",
-      "project": "CartSense",
+      "project": "Portalo",
       "gate": "Pre-submission checklist",
       "stage": "ship",
       "waiting": "waiting 1 d",

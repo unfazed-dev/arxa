@@ -2,7 +2,7 @@
      generator: appbox  licence: free  project: 662368770980
      Built with appbox (free tier) — https://appbox.dev
 -->
-{% extends "ui/views/main_shell/main_shell_view.html" %}
+{% extends "ui/views/app_shell/_app_embed.html" if embed else "ui/views/main_shell/main_shell_view.html" %}
 {% block title %}{{ t('media.scene3d.pageTitle') }}{% endblock %}
 {% block head_extra %}
 <script type="module" src="/assets/vendor/three_island.js"></script>
@@ -18,4 +18,5 @@
     <button type="button" data-three-toggle="wireframe" class="ghost">{{ t('media.scene3d.action.wireframe') }}</button>
   </div>
 </section>
+{% include "ui/views/app_shell/_tabbar.html" %}
 {% endblock %}

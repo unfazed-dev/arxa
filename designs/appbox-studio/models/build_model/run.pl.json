@@ -2,7 +2,7 @@
   "run": {
     "id": "run-47",
     "number": 47,
-    "project": "appbox-studio",
+    "project": "Portalo",
     "brief": "aplikacja towarzysząca — ios + macos",
     "started": "09:14",
     "elapsed": "34m 12s",
@@ -258,7 +258,7 @@
       ]
     },
     {
-      "surface": "access.pairing",
+      "surface": "app.credentials",
       "tests": "3/3",
       "files": 4,
       "probe": {
@@ -323,7 +323,7 @@
       "status": "new"
     },
     {
-      "path": "app/lib/ui/views/access/pairing_view.dart",
+      "path": "app/lib/ui/views/app/credentials_view.dart",
       "status": "new"
     },
     {
@@ -505,9 +505,9 @@
         "zrzut",
         "ekran"
       ],
-      "text": "Cztery powierzchnie sondowane względem zamrożonych wzorców — SSIM, szkielet i ΔE per powierzchnia, wszystkie przechodzą. access.pairing jest obserwowany przy ΔE 2.2.",
-      "textBalanced": "Cztery ekrany porównane ze wzorcami — SSIM, szkielet i zgodność kolorów per ekran, wszystkie przechodzą. access.pairing jest obserwowany przy 94/100 (ΔE 2.2).",
-      "textPlain": "Wszystkie cztery ekrany zostały porównane piksel po pikselu z projektami, które zatwierdziłeś — trzy są niemal identyczne. access.pairing jest obserwowany przy 94/100, tuż pod progiem 95.",
+      "text": "Cztery powierzchnie sondowane względem zamrożonych wzorców — SSIM, szkielet i ΔE per powierzchnia, wszystkie przechodzą. app.credentials jest obserwowany przy ΔE 2.2.",
+      "textBalanced": "Cztery ekrany porównane ze wzorcami — SSIM, szkielet i zgodność kolorów per ekran, wszystkie przechodzą. app.credentials jest obserwowany przy 94/100 (ΔE 2.2).",
+      "textPlain": "Wszystkie cztery ekrany zostały porównane piksel po pikselu z projektami, które zatwierdziłeś — trzy są niemal identyczne. app.credentials jest obserwowany przy 94/100, tuż pod progiem 95.",
       "artifact": "evidence/surfaces"
     }
   ],

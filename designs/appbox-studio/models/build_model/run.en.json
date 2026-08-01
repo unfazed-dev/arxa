@@ -2,7 +2,7 @@
   "run": {
     "id": "run-47",
     "number": 47,
-    "project": "appbox-studio",
+    "project": "Portalo",
     "brief": "companion app — ios + macos",
     "started": "09:14",
     "elapsed": "34m 12s",
@@ -258,7 +258,7 @@
       ]
     },
     {
-      "surface": "access.pairing",
+      "surface": "app.credentials",
       "tests": "3/3",
       "files": 4,
       "probe": {
@@ -323,7 +323,7 @@
       "status": "new"
     },
     {
-      "path": "app/lib/ui/views/access/pairing_view.dart",
+      "path": "app/lib/ui/views/app/credentials_view.dart",
       "status": "new"
     },
     {
@@ -483,9 +483,9 @@
         "golden",
         "screenshot"
       ],
-      "text": "Four surfaces probed against their frozen goldens — SSIM, skeleton and ΔE per surface, all passing. access.pairing is on watch at ΔE 2.2.",
-      "textBalanced": "Four screens compared with their goldens — SSIM, skeleton and colour match per screen, all passing. access.pairing is on watch at 94/100 (ΔE 2.2).",
-      "textPlain": "All four screens were compared pixel-by-pixel with the designs you approved — three are near-identical. access.pairing is being watched at 94/100, just under the 95 bar.",
+      "text": "Four surfaces probed against their frozen goldens — SSIM, skeleton and ΔE per surface, all passing. app.credentials is on watch at ΔE 2.2.",
+      "textBalanced": "Four screens compared with their goldens — SSIM, skeleton and colour match per screen, all passing. app.credentials is on watch at 94/100 (ΔE 2.2).",
+      "textPlain": "All four screens were compared pixel-by-pixel with the designs you approved — three are near-identical. app.credentials is being watched at 94/100, just under the 95 bar.",
       "artifact": "evidence/surfaces"
     }
   ],

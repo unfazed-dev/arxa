@@ -2,7 +2,7 @@
      generator: appbox  licence: free  project: 662368770980
      Built with appbox (free tier) — https://appbox.dev
 -->
-{% extends "ui/views/main_shell/main_shell_view.html" %}
+{% extends "ui/views/app_shell/_app_embed.html" if embed else "ui/views/main_shell/main_shell_view.html" %}
 {% block title %}{{ t('cfg.pageTitle') }}{% endblock %}
 {% block head_extra %}
 <link rel="stylesheet" href="/assets/css/credential.css">
@@ -91,4 +91,5 @@
     </div>
   </div>
 </section>
+{% include "ui/views/app_shell/_tabbar.html" %}
 {% endblock %}

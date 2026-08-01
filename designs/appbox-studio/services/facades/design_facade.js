@@ -10,6 +10,7 @@
 // templates. The locale comes from the request and picks the per-locale
 // fixture, en fallback.
 import * as repo from '../repositories/design_repository.js';
+import * as screensRepo from '../repositories/screens_repository.js';
 import * as jargon from './jargon.js';
 import * as agent from './agent_menus.js';
 import * as fv from './file_views.js';
@@ -93,7 +94,7 @@ const stripFor = (d, base, L) =>
     id,
     label: repo.screen(id, L).label,
     tone: toneFor(id, L),
-    src: `/build/screens/${id}?vp=mobile`,
+    src: `${srcBaseFor(id, L)}?vp=mobile`,
     removeHref: `${base}/context/${id}?state=off`,
   }));
 
@@ -146,14 +147,20 @@ const applyEntry = (d, entry, dir) => {
 
 // ---------- the shared design viewer (ui/common/design_viewer.html) ----------
 // Two lenses over the screen registry, switched by the `mode` viewer param:
-// 'flow' — every screen as a draggable tile grouped by shell; 'proto' — the
-// wired-app preview, one screen live at a real rung size inside device
-// chrome (screen/vp params; one mobile chrome, no os dimension). The mini
-// panel (screens/controller/actions) + undo/redo + element chips are always
-// produced; in proto mode the Screens panel picks the active screen instead
-// of toggling chat context. Device rung icons + bg swatches live in the
-// panel bar itself (miniPanel.bar).
+// 'flow' — every screen as a draggable tile grouped by shell, rendered at the
+// CURRENT rung (vp param, default mobile); 'proto' — the wired-app preview,
+// one screen live at a real rung size inside device chrome (screen/vp params;
+// one mobile chrome, no os dimension). The mini panel (screens/controller) +
+// undo/redo + element chips are always produced; in proto mode the Screens
+// panel picks the active screen instead of toggling chat context. Device
+// rung icons + bg swatches live in the panel bar itself (miniPanel.bar).
 const RUNG_VP = { 390: 'mobile', 744: 'tablet', 1280: 'desktop' };
+const VP_HEIGHTS = { mobile: 844, tablet: 1133, desktop: 800 };
+
+// Real-render resolution: app.* surfaces are embed-aware views with real
+// registry routes; everything else still renders the generic stub.
+const srcBaseFor = (id, L) =>
+  id.startsWith('app.') && screensRepo.routeFor(id, L) ? screensRepo.routeFor(id, L) : `/build/screens/${id}`;
 
 function viewerFor(d, L, t) {
   const v = d.viewer ?? {};
@@ -161,8 +168,14 @@ function viewerFor(d, L, t) {
   const base = '/design/viewer';
   const contextBase = '/design/chat/context/';
 
+  const vp = ['mobile', 'tablet', 'desktop'].includes(v.vp) ? v.vp : 'mobile';
+
   const screens = repo.screens(L).map((s) => {
     const viewports = s.rungs.map((r) => ({ vp: RUNG_VP[r.width] ?? 'mobile', width: r.width, rung: r.rung, note: r.note, shot: r.shot }));
+    // Flow tile dims at the CURRENT rung (fallback: the screen's first
+    // authored rung; heights fall back to the rung default).
+    const te = viewports.find((e) => e.vp === vp) ?? viewports[0];
+    const tile = te ? { vp: te.vp, width: te.width, height: te.height ?? VP_HEIGHTS[te.vp] } : null;
     return {
       id: s.id, label: s.label, state: s.state,
       inContext: ids.includes(s.id),
@@ -175,15 +188,16 @@ function viewerFor(d, L, t) {
       shell: s.shell ?? s.id.split('.')[0],
       layout: d.artboardLayout?.[s.id] ?? null,
       primaryWidth: viewports[0]?.width ?? 390,
+      tile,
+      srcBase: srcBaseFor(s.id, L),
     };
   });
 
   const bg = ['canvas', 'warm', 'slate'].includes(v.bg) ? v.bg : 'canvas';
-  const panel = ['screens', 'controller', 'actions'].includes(v.panel) ? v.panel : 'screens';
+  const panel = ['screens', 'controller'].includes(v.panel) ? v.panel : 'screens';
   const inspect = v.inspect === '1';
   const mode = v.mode === 'proto' ? 'proto' : 'flow';
   const active = screens.some((s) => s.id === v.screen) ? v.screen : screens[0]?.id;
-  const vp = ['mobile', 'tablet', 'desktop'].includes(v.vp) ? v.vp : 'mobile';
 
   // Device rungs as mini-bar icon buttons (lucide names, picked up by the
   // server's template icon scan). One mobile chrome — no os dimension.
@@ -212,23 +226,21 @@ function viewerFor(d, L, t) {
   // rung size. Only produced in proto mode.
   const proto = mode === 'proto' ? {
     active, vp,
-    src: `/build/screens/${active}?vp=${vp}&embed=1`,
+    src: `${srcBaseFor(active, L)}?vp=${vp}&embed=1`,
   } : null;
 
   const miniPanel = {
     activePanel: panel,
-    // The bar-right cluster (always mounted): device rung icons in proto
-    // mode (vp is meaningless on the flow canvas) + bg swatches in every
-    // mode, a divider between the groups.
+    // The bar-right cluster (always mounted): device rung icons in BOTH
+    // modes (in flow they re-render the tiles at that rung) + bg swatches
+    // in every mode, a divider between the groups.
     bar: {
-      devices: mode === 'proto'
-        ? DEVICES.map((d) => ({ ...d, active: d.key === vp, href: withParams({ vp: d.key === 'mobile' ? null : d.key }) }))
-        : null,
+      devices: DEVICES.map((d) => ({ ...d, active: d.key === vp, href: withParams({ vp: d.key === 'mobile' ? null : d.key }) })),
       bgs: ['canvas', 'warm', 'slate'].map((value) => ({ value, active: value === bg, href: withParams({ bg: value }) })),
     },
     screens: screens.map((s) => ({
       id: s.id, label: s.label, tone: s.tone, inContext: s.inContext, dim: s.dim,
-      src: `/build/screens/${s.id}?vp=mobile&embed=1`,
+      src: `${s.srcBase}?vp=mobile&embed=1`,
       // flow: a thumb toggles chat context; proto: it picks the active screen.
       ...(mode === 'proto'
         ? { protoHref: withParams({ screen: s.id }), active: s.id === active }
@@ -241,19 +253,14 @@ function viewerFor(d, L, t) {
       undo: { can: (d.undoStacks?.canvas?.length ?? 0) > 0, href: '/design/undo/canvas' },
       redo: { can: (d.redoStacks?.canvas?.length ?? 0) > 0, href: '/design/redo/canvas' },
     },
-    actions: {
-      selectedCount: 0,            // updated client-side by drag.js marquee
-      bulkPinHref: '/design/chat/context/bulk',
-      simHref: null,               // sim toggle (placeholder)
-    },
   };
 
   return {
     inspect,
     screens, bg,
-    mode, proto,
+    mode, proto, vp,
     strip: true,
-    base, stubBase: '/build/screens/', contextBase,
+    base, contextBase,
     miniPanel,
     undoRedo: {
       canvas: { canUndo: (d.undoStacks?.canvas?.length ?? 0) > 0, canRedo: (d.redoStacks?.canvas?.length ?? 0) > 0 },

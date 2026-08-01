@@ -9,6 +9,15 @@
     "route": "/splash"
   },
   {
+    "id": "app.startup",
+    "label": "Startup",
+    "surface": "app_shell_app_startup_view",
+    "shell": "app",
+    "comp": "AppStartup",
+    "labelKey": "screen.label.app.startup",
+    "route": "/startup"
+  },
+  {
     "id": "app.access",
     "label": "Access",
     "surface": "app_shell_app_access_view",
@@ -27,40 +36,13 @@
     "route": "/dashboard"
   },
   {
-    "id": "app.projects",
-    "label": "Projects",
-    "surface": null,
+    "id": "app.demos",
+    "label": "Demos",
+    "surface": "app_shell_app_demos_view",
     "shell": "app",
-    "comp": "AppProjects",
-    "labelKey": "screen.label.app.projects",
-    "route": "/projects"
-  },
-  {
-    "id": "app.pairing",
-    "label": "Pairing",
-    "surface": "app_shell_app_pairing_view",
-    "shell": "app",
-    "comp": "AppPairing",
-    "labelKey": "screen.label.app.pairing",
-    "route": "/pair"
-  },
-  {
-    "id": "app.notifications",
-    "label": "Notifications",
-    "surface": null,
-    "shell": "app",
-    "comp": "AppNotifications",
-    "labelKey": "screen.label.app.notifications",
-    "route": "/notifications"
-  },
-  {
-    "id": "app.remote",
-    "label": "Remote",
-    "surface": null,
-    "shell": "app",
-    "comp": "AppRemote",
-    "labelKey": "screen.label.app.remote",
-    "route": "/remote"
+    "comp": "AppDemos",
+    "labelKey": "screen.label.app.demos",
+    "route": "/demos"
   },
   {
     "id": "app.credentials",

@@ -2,7 +2,7 @@
      generator: appbox  licence: free  project: 662368770980
      Built with appbox (free tier) — https://appbox.dev
 -->
-{% extends "ui/views/main_shell/main_shell_view.html" %}
+{% extends "ui/views/app_shell/_app_embed.html" if embed else "ui/views/main_shell/main_shell_view.html" %}
 {% block title %}{{ t('media.game.pageTitle') }}{% endblock %}
 {% block head_extra %}
 <script src="/assets/vendor/game_island.js" defer></script>
@@ -22,4 +22,5 @@
   </div>
   <p class="muted">{{ t('media.game.hint') }}</p>
 </section>
+{% include "ui/views/app_shell/_tabbar.html" %}
 {% endblock %}

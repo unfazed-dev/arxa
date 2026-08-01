@@ -8,7 +8,11 @@ import * as facade from '../../../../services/facades/app_facade.js';
 const VIEW = 'ui/views/app_shell/credential/credential_view.html';
 
 export const page = (c, h) =>
-  h.render(c, VIEW, { activeShell: 'app', ...facade.credentialsContext(h.session(c).data, h.t(c)) });
+  h.render(c, VIEW, {
+    activeShell: 'app',
+    ...facade.embedContext(c),
+    ...facade.credentialsContext(h.session(c).data, h.t(c)),
+  });
 
 // Save marks the key held (a boolean in session state — never the value) and
 // 303s back, same seeded-mutation pattern as the dashboard gate decisions.

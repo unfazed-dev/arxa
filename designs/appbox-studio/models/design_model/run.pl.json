@@ -2,8 +2,8 @@
   "run": {
     "id": "design-07",
     "number": 7,
-    "project": "appbox-studio",
-    "brief": "appbox — projektuje, buduje i wydaje się sam",
+    "project": "Portalo",
+    "brief": "Portalo — demonstrator grafiki gier, projektowany i budowany przez appbox",
     "started": "Wczoraj 14:02",
     "elapsed": "21m 05s",
     "state": "frozen",
@@ -19,331 +19,421 @@
   },
   "screens": [
     {
-      "id": "intake.mapping",
-      "label": "Mapowanie historyjek",
-      "epic": "Intake i mapowanie historyjek",
-      "state": "frozen",
-      "wire": "split",
-      "kit": 96,
-      "summary": "Mapa Epik → Funkcja → Historyjka z torami MoSCoW i swimlane'ami wydań — 42 historyjki w jednej sesji",
-      "summaryPlain": "Mapa historyjek: epiki, funkcje i historyjki posortowane must/could/won't, w torach wydań — 42 historyjki zmapowane w jednej sesji",
-      "rungs": [
-        {
-          "rung": "compact",
-          "width": 390,
-          "shot": "sh_325d…e062",
-          "note": "składane — najpierw panel główny, panel aktywności poniżej"
-        },
-        {
-          "rung": "medium",
-          "width": 744,
-          "shot": "sh_4bed…7a5f",
-          "note": "wąski panel aktywności 300px obok panelu głównego"
-        },
-        {
-          "rung": "expanded",
-          "width": 1280,
-          "shot": "sh_c97c…cd9d",
-          "note": "panel aktywności 340px + jeden duży artefakt"
-        }
-      ]
-    },
-    {
-      "id": "intake.brief",
-      "label": "Brief projektowy",
-      "epic": "Intake i mapowanie historyjek",
+      "id": "app.splash",
+      "label": "Splash",
+      "epic": "Onboarding",
       "state": "frozen",
       "wire": "stack",
-      "kit": 98,
-      "summary": "Brief jako żyjący dokument — inwentarz powierzchni karmi rejestr bez przepisywania",
-      "summaryPlain": "Brief jako czytelny dokument — jego lista ekranów zasiewa rejestr aplikacji bez przepisywania",
+      "kit": 100,
+      "summary": "Animowane logo, pierwsza klatka poniżej 300 ms — moment marki, nic więcej",
+      "summaryPlain": "Ekran otwierający: logo Portalo animuje się szybko, nic innego się tu nie ładuje",
       "rungs": [
         {
           "rung": "compact",
           "width": 390,
-          "shot": "sh_eae7…e3f4",
+          "shot": "sh_0fc9…109e",
           "note": "jedna kolumna, akcje w linii"
         },
         {
           "rung": "medium",
           "width": 744,
-          "shot": "sh_d602…e4a5",
+          "shot": "sh_3209…a2de",
           "note": "jedna kolumna, szersza miara"
         },
         {
           "rung": "expanded",
           "width": 1280,
-          "shot": "sh_222c…485c",
+          "shot": "sh_999a…b04a",
           "note": "wyśrodkowana kolumna, limit 56rem"
         }
       ]
     },
     {
-      "id": "intake.moodboard",
-      "label": "Moodboard",
-      "epic": "Intake i mapowanie historyjek",
+      "id": "app.startup",
+      "label": "Start",
+      "epic": "Onboarding",
       "state": "frozen",
-      "wire": "grid",
-      "kit": 92,
-      "summary": "Kuriowane referencje i przechwycone ujęcia per epik — każde osadzone ujęcie zweryfikowane na dysku",
-      "summaryPlain": "Aplikacje referencyjne, z których warto kraść, z prawdziwymi zrzutami ekranu per temat — każdy obraz sprawdzony, że istnieje na dysku",
+      "wire": "stack",
+      "kit": 98,
+      "summary": "Orkiestracja ładowania — kity grzeją się za prawdziwym paskiem postępu, nigdy spinnerem",
+      "summaryPlain": "Ekran ładowania: dema przygotowują się za uczciwym paskiem postępu, nie kręcącym się kółkiem",
       "rungs": [
         {
           "rung": "compact",
           "width": 390,
-          "shot": "sh_b766…b7ce",
+          "shot": "sh_7cb6…097a",
+          "note": "jedna kolumna, akcje w linii"
+        },
+        {
+          "rung": "medium",
+          "width": 744,
+          "shot": "sh_8822…bf2d",
+          "note": "jedna kolumna, szersza miara"
+        },
+        {
+          "rung": "expanded",
+          "width": 1280,
+          "shot": "sh_ca48…5f4c",
+          "note": "wyśrodkowana kolumna, limit 56rem"
+        }
+      ]
+    },
+    {
+      "id": "app.access",
+      "label": "Logowanie",
+      "epic": "Onboarding",
+      "state": "frozen",
+      "wire": "stack",
+      "kit": 96,
+      "summary": "Logowanie jednym dotknięciem — Apple/Google, sesja trwa; żadne demo nie pyta dwa razy",
+      "summaryPlain": "Zaloguj się raz przez Apple lub Google — aplikacja Cię pamięta, żadne demo nie pyta ponownie",
+      "rungs": [
+        {
+          "rung": "compact",
+          "width": 390,
+          "shot": "sh_f256…f12c",
+          "note": "jedna kolumna, akcje w linii"
+        },
+        {
+          "rung": "medium",
+          "width": 744,
+          "shot": "sh_1850…836b",
+          "note": "jedna kolumna, szersza miara"
+        },
+        {
+          "rung": "expanded",
+          "width": 1280,
+          "shot": "sh_089f…90d8",
+          "note": "wyśrodkowana kolumna, limit 56rem"
+        }
+      ]
+    },
+    {
+      "id": "app.dashboard",
+      "label": "Panel demo",
+      "epic": "Dema",
+      "state": "frozen",
+      "wire": "split",
+      "kit": 97,
+      "summary": "Każde demo o jedno dotknięcie — żywe chipy stanu pokazują, które kity są gotowe",
+      "summaryPlain": "Ekran główny: każde demo o dotknięcie, z chipami pokazującymi, co jest gotowe do uruchomienia",
+      "rungs": [
+        {
+          "rung": "compact",
+          "width": 390,
+          "shot": "sh_a644…d5ac",
+          "note": "składane — najpierw panel główny, panel aktywności poniżej"
+        },
+        {
+          "rung": "medium",
+          "width": 744,
+          "shot": "sh_78f5…eb28",
+          "note": "wąski panel aktywności 300px obok panelu głównego"
+        },
+        {
+          "rung": "expanded",
+          "width": 1280,
+          "shot": "sh_d280…fe5b",
+          "note": "panel aktywności 340px + jeden duży artefakt"
+        }
+      ]
+    },
+    {
+      "id": "app.demos",
+      "label": "Indeks demo",
+      "epic": "Dema",
+      "state": "frozen",
+      "wire": "grid",
+      "kit": 95,
+      "summary": "Pełny katalog dem jako karty — grupowane per kit, filtrowane po typie mediów",
+      "summaryPlain": "Wszystkie dema jako karty, pogrupowane po bibliotece, którą pokazują — łatwo przeglądać",
+      "rungs": [
+        {
+          "rung": "compact",
+          "width": 390,
+          "shot": "sh_6435…ffb0",
           "note": "karty pojedynczo"
         },
         {
           "rung": "medium",
           "width": 744,
-          "shot": "sh_60bc…c427",
+          "shot": "sh_d1aa…db1e",
           "note": "siatka podwójna"
         },
         {
           "rung": "expanded",
           "width": 1280,
-          "shot": "sh_e59f…4219",
+          "shot": "sh_d2ad…3663",
           "note": "siatka potrójna"
         }
       ]
     },
     {
-      "id": "design.prototype",
-      "label": "Prototyp",
-      "epic": "Projektowanie i zamrażanie",
+      "id": "app.mediarive",
+      "label": "Demo Rive",
+      "epic": "Dema",
       "state": "frozen",
       "wire": "split",
-      "kit": 100,
-      "summary": "Plansze w 390/744/1280 z samych platform docelowych — dosłowna parzystość, struktura nie piksele",
-      "summaryPlain": "Każdy ekran pokazany w rozmiarze telefonu, tabletu i desktopu — ta sama struktura wszędzie, bez przesuwania pikseli",
+      "kit": 93,
+      "summary": "Animacja Rive z maszyną stanów — wejścia sterowane na żywo z panelu kontrolnego",
+      "summaryPlain": "Interaktywna animacja Rive — panel boczny steruje jej maszyną stanów na żywo",
       "rungs": [
         {
           "rung": "compact",
           "width": 390,
-          "shot": "sh_79d8…e735",
+          "shot": "sh_c092…93c3",
           "note": "składane — najpierw panel główny, panel aktywności poniżej"
         },
         {
           "rung": "medium",
           "width": 744,
-          "shot": "sh_6702…f38d",
+          "shot": "sh_f5ad…a93f",
           "note": "wąski panel aktywności 300px obok panelu głównego"
         },
         {
           "rung": "expanded",
           "width": 1280,
-          "shot": "sh_7163…717f",
+          "shot": "sh_01e5…bc73",
           "note": "panel aktywności 340px + jeden duży artefakt"
         }
       ]
     },
     {
-      "id": "design.chat",
-      "label": "Czat projektowy",
-      "epic": "Projektowanie i zamrażanie",
-      "state": "frozen",
-      "wire": "split",
-      "kit": 97,
-      "summary": "Przypięte ekrany jako zdejmowane chipy kontekstu — czat ulepsza dokładnie te, obwiedzione na kanwie",
-      "summaryPlain": "Przypnij ekrany, nad którymi pracujesz, jako chipy — czat zmienia tylko je, a one zostają obwiedzione na kanwie",
-      "rungs": [
-        {
-          "rung": "compact",
-          "width": 390,
-          "shot": "sh_d4df…6ed5",
-          "note": "składane — najpierw panel główny, panel aktywności poniżej"
-        },
-        {
-          "rung": "medium",
-          "width": 744,
-          "shot": "sh_512b…2489",
-          "note": "wąski panel aktywności 300px obok panelu głównego"
-        },
-        {
-          "rung": "expanded",
-          "width": 1280,
-          "shot": "sh_773c…c4a7",
-          "note": "panel aktywności 340px + jeden duży artefakt"
-        }
-      ]
-    },
-    {
-      "id": "design.freeze",
-      "label": "Zamrożenie i ślady",
-      "epic": "Projektowanie i zamrażanie",
-      "state": "frozen",
-      "wire": "stack",
-      "kit": 95,
-      "summary": "Zamrożenie na hashu — zatwierdzenie wiąże się z hashem projektu; zmiana po zatwierdzeniu staje się głośno nieaktualna",
-      "summaryPlain": "Zablokuj zatwierdzony projekt — Twoje zatwierdzenie podpisuje dokładnie tę wersję; każda późniejsza zmiana jest wyraźnie oznaczana",
-      "rungs": [
-        {
-          "rung": "compact",
-          "width": 390,
-          "shot": "sh_6816…16d0",
-          "note": "jedna kolumna, akcje w linii"
-        },
-        {
-          "rung": "medium",
-          "width": 744,
-          "shot": "sh_13da…2c4c",
-          "note": "jedna kolumna, szersza miara"
-        },
-        {
-          "rung": "expanded",
-          "width": 1280,
-          "shot": "sh_4adf…3f7f",
-          "note": "wyśrodkowana kolumna, limit 56rem"
-        }
-      ]
-    },
-    {
-      "id": "build.loop",
-      "label": "Monitor budowania",
-      "epic": "Budowanie i bramki",
-      "state": "frozen",
-      "wire": "split",
-      "kit": 99,
-      "summary": "Szyna narracyjna + jeden duży artefakt — przebieg to rozmowa, którą można przerwać",
-      "summaryPlain": "Strumień tego, co robi build, plus jeden duży widok szczegółów — możesz zadawać pytania albo zatrzymać go w każdej chwili",
-      "rungs": [
-        {
-          "rung": "compact",
-          "width": 390,
-          "shot": "sh_5b85…c59d",
-          "note": "składane — najpierw panel główny, panel aktywności poniżej"
-        },
-        {
-          "rung": "medium",
-          "width": 744,
-          "shot": "sh_b89c…57dd",
-          "note": "wąski panel aktywności 300px obok panelu głównego"
-        },
-        {
-          "rung": "expanded",
-          "width": 1280,
-          "shot": "sh_c55d…6549",
-          "note": "panel aktywności 340px + jeden duży artefakt"
-        }
-      ]
-    },
-    {
-      "id": "build.gates",
-      "label": "Bramki",
-      "epic": "Budowanie i bramki",
-      "state": "frozen",
-      "wire": "stack",
-      "kit": 96,
-      "summary": "Trzy ludzkie bramki jako kolejka triage — osiągalne dla agentów, przechodzące tylko przez Ciebie",
-      "summaryPlain": "Trzy decyzje, które możesz podjąć tylko Ty, w kolejce jak w skrzynce — agent Ci je przynosi, nigdy ich nie podejmuje",
-      "rungs": [
-        {
-          "rung": "compact",
-          "width": 390,
-          "shot": "sh_3744…edd4",
-          "note": "jedna kolumna, akcje w linii"
-        },
-        {
-          "rung": "medium",
-          "width": 744,
-          "shot": "sh_d037…a387",
-          "note": "jedna kolumna, szersza miara"
-        },
-        {
-          "rung": "expanded",
-          "width": 1280,
-          "shot": "sh_6176…43a6",
-          "note": "wyśrodkowana kolumna, limit 56rem"
-        }
-      ]
-    },
-    {
-      "id": "build.visual",
-      "label": "Wierność wizualna",
-      "epic": "Budowanie i bramki",
+      "id": "app.medialottie",
+      "label": "Demo Lottie",
+      "epic": "Dema",
       "state": "frozen",
       "wire": "split",
       "kit": 94,
-      "summary": "Sondy projekt-vs-zbudowane per powierzchnia — SSIM, szkielet, ΔE względem zamrożonego wzorca",
-      "summaryPlain": "Każdy zbudowany ekran porównany piksel po pikselu z projektem, który zatwierdziłeś — struktura, układ i kolor",
+      "summary": "Odtwarzanie Lottie z dokładnym przewijaniem klatek i kontrolą pętli",
+      "summaryPlain": "Animacja Lottie, którą możesz odtwarzać, pauzować i przewijać klatka po klatce",
       "rungs": [
         {
           "rung": "compact",
           "width": 390,
-          "shot": "sh_5ace…e6c3",
+          "shot": "sh_fbec…a841",
           "note": "składane — najpierw panel główny, panel aktywności poniżej"
         },
         {
           "rung": "medium",
           "width": 744,
-          "shot": "sh_2c33…e774",
+          "shot": "sh_c60b…4dd1",
           "note": "wąski panel aktywności 300px obok panelu głównego"
         },
         {
           "rung": "expanded",
           "width": 1280,
-          "shot": "sh_af23…4b2c",
+          "shot": "sh_31c4…6265",
           "note": "panel aktywności 340px + jeden duży artefakt"
         }
       ]
     },
     {
-      "id": "access.pairing",
-      "label": "Parowanie i urządzenia",
-      "epic": "Dostęp i urządzenia",
+      "id": "app.mediadotlottie",
+      "label": "Demo dotLottie",
+      "epic": "Dema",
       "state": "frozen",
-      "wire": "stack",
-      "kit": 93,
-      "summary": "Parowanie jednym skanem QR, lista urządzeń z odwołaniem — domyślnie tylko LAN, bez chmurowego przekaźnika",
-      "summaryPlain": "Sparuj urządzenie skanując jeden kod, zobacz i odwołaj sparowane urządzenia — domyślnie tylko sieć lokalna",
+      "wire": "split",
+      "kit": 92,
+      "summary": "Spakowane archiwa .lottie — warianty motywu przełączane bez przeładowania",
+      "summaryPlain": "Format dotLottie — przełączaj wbudowane motywy bez ponownego ładowania",
       "rungs": [
         {
           "rung": "compact",
           "width": 390,
-          "shot": "sh_b868…bef4",
+          "shot": "sh_cdd3…8f04",
+          "note": "składane — najpierw panel główny, panel aktywności poniżej"
+        },
+        {
+          "rung": "medium",
+          "width": 744,
+          "shot": "sh_2fe9…e702",
+          "note": "wąski panel aktywności 300px obok panelu głównego"
+        },
+        {
+          "rung": "expanded",
+          "width": 1280,
+          "shot": "sh_9ccd…b0c4",
+          "note": "panel aktywności 340px + jeden duży artefakt"
+        }
+      ]
+    },
+    {
+      "id": "app.mediamodel3d",
+      "label": "Demo modelu 3D",
+      "epic": "Dema",
+      "state": "frozen",
+      "wire": "split",
+      "kit": 90,
+      "summary": "Przeglądarka glTF — orbita, zoom i presety światła w 60 fps",
+      "summaryPlain": "Obracaj i przybliżaj model 3D gestami — płynne 60 fps",
+      "rungs": [
+        {
+          "rung": "compact",
+          "width": 390,
+          "shot": "sh_06d0…93f5",
+          "note": "składane — najpierw panel główny, panel aktywności poniżej"
+        },
+        {
+          "rung": "medium",
+          "width": 744,
+          "shot": "sh_efaf…a04d",
+          "note": "wąski panel aktywności 300px obok panelu głównego"
+        },
+        {
+          "rung": "expanded",
+          "width": 1280,
+          "shot": "sh_8375…1e3f",
+          "note": "panel aktywności 340px + jeden duży artefakt"
+        }
+      ]
+    },
+    {
+      "id": "app.mediascene3d",
+      "label": "Demo sceny 3D",
+      "epic": "Dema",
+      "state": "frozen",
+      "wire": "split",
+      "kit": 89,
+      "summary": "Złożona scena three.js — dolly kamery, mgła i sondy światła na żywo",
+      "summaryPlain": "Pełna scena 3D zbudowana w three.js — ruchy kamery, mgła i światła regulowane na żywo",
+      "rungs": [
+        {
+          "rung": "compact",
+          "width": 390,
+          "shot": "sh_b999…bcf2",
+          "note": "składane — najpierw panel główny, panel aktywności poniżej"
+        },
+        {
+          "rung": "medium",
+          "width": 744,
+          "shot": "sh_4808…c94a",
+          "note": "wąski panel aktywności 300px obok panelu głównego"
+        },
+        {
+          "rung": "expanded",
+          "width": 1280,
+          "shot": "sh_29b5…473c",
+          "note": "panel aktywności 340px + jeden duży artefakt"
+        }
+      ]
+    },
+    {
+      "id": "app.mediagame",
+      "label": "Mini gra",
+      "epic": "Dema",
+      "state": "frozen",
+      "wire": "split",
+      "kit": 91,
+      "summary": "Grywalna mini-gra — budżet klatek udowodniony na prawdziwym urządzeniu, HUD z prymitywów kitu",
+      "summaryPlain": "Mała gra, w którą naprawdę można zagrać — dowód, że grafika zostaje płynna na prawdziwym telefonie",
+      "rungs": [
+        {
+          "rung": "compact",
+          "width": 390,
+          "shot": "sh_820b…93be",
+          "note": "składane — najpierw panel główny, panel aktywności poniżej"
+        },
+        {
+          "rung": "medium",
+          "width": 744,
+          "shot": "sh_2d77…a93a",
+          "note": "wąski panel aktywności 300px obok panelu głównego"
+        },
+        {
+          "rung": "expanded",
+          "width": 1280,
+          "shot": "sh_6f88…bc6e",
+          "note": "panel aktywności 340px + jeden duży artefakt"
+        }
+      ]
+    },
+    {
+      "id": "app.mediamaps",
+      "label": "Demo map",
+      "epic": "Dema",
+      "state": "frozen",
+      "wire": "split",
+      "kit": 93,
+      "summary": "Kafelki map z poświadczeniami kitu — style i nakładki z kitu maps",
+      "summaryPlain": "Mapa na żywo — kafelki ładują się tylko z ważnymi poświadczeniami, style pochodzą z kitu maps",
+      "rungs": [
+        {
+          "rung": "compact",
+          "width": 390,
+          "shot": "sh_6a85…93c1",
+          "note": "składane — najpierw panel główny, panel aktywności poniżej"
+        },
+        {
+          "rung": "medium",
+          "width": 744,
+          "shot": "sh_036a…a93d",
+          "note": "wąski panel aktywności 300px obok panelu głównego"
+        },
+        {
+          "rung": "expanded",
+          "width": 1280,
+          "shot": "sh_964d…bc70",
+          "note": "panel aktywności 340px + jeden duży artefakt"
+        }
+      ]
+    },
+    {
+      "id": "app.credentials",
+      "label": "Poświadczenia kitów",
+      "epic": "System",
+      "state": "frozen",
+      "wire": "stack",
+      "kit": 95,
+      "summary": "Klucze API per kit, walidowane przy zapisie — zły klucz zawodzi głośno, nigdy po cichu",
+      "summaryPlain": "Tu mieszkają klucze API — każdy jest sprawdzany przy zapisie, więc nic nie psuje się po cichu",
+      "rungs": [
+        {
+          "rung": "compact",
+          "width": 390,
+          "shot": "sh_f5ee…a32f",
           "note": "jedna kolumna, akcje w linii"
         },
         {
           "rung": "medium",
           "width": 744,
-          "shot": "sh_05ee…58f1",
+          "shot": "sh_523c…48bf",
           "note": "jedna kolumna, szersza miara"
         },
         {
           "rung": "expanded",
           "width": 1280,
-          "shot": "sh_04df…ac2f",
+          "shot": "sh_780c…5d53",
           "note": "wyśrodkowana kolumna, limit 56rem"
         }
       ]
     },
     {
-      "id": "access.notifications",
-      "label": "Powiadomienia",
-      "epic": "Dostęp i urządzenia",
+      "id": "app.config",
+      "label": "Konfiguracja",
+      "epic": "System",
       "state": "frozen",
       "wire": "stack",
-      "kit": 91,
-      "summary": "Push przy czerwonej bramce, deep-link prosto do karty bramki — zatwierdzaj z ekranu blokady",
-      "summaryPlain": "Powiadomienie push, gdy potrzebna decyzja, otwierające prosto tę decyzję — zatwierdzaj z ekranu blokady",
+      "kit": 96,
+      "summary": "Flagi runtime i domyślne ustawienia dem — edytowalne w aplikacji, trwałe między restartami",
+      "summaryPlain": "Ekran ustawień — przełączniki zachowania dem, zapamiętywane między uruchomieniami",
       "rungs": [
         {
           "rung": "compact",
           "width": 390,
-          "shot": "sh_61f7…1112",
+          "shot": "sh_dc92…f544",
           "note": "jedna kolumna, akcje w linii"
         },
         {
           "rung": "medium",
           "width": 744,
-          "shot": "sh_a00b…6036",
+          "shot": "sh_ac42…8783",
           "note": "jedna kolumna, szersza miara"
         },
         {
           "rung": "expanded",
           "width": 1280,
-          "shot": "sh_8d1c…c0d4",
+          "shot": "sh_65f2…94f0",
           "note": "wyśrodkowana kolumna, limit 56rem"
         }
       ]
@@ -370,7 +460,7 @@
       "id": "manifest",
       "label": "Manifest zamrożenia",
       "kind": "manifest",
-      "detail": "frz_9c41e2 · 33 wzorce · sha256:9c41…e2b7",
+      "detail": "frz_9c41e2 · 42 wzorce · sha256:9c41…e2b7",
       "href": "/design/freeze"
     },
     {
@@ -391,7 +481,7 @@
       "id": "goldens",
       "label": "Wzorce",
       "kind": "shots",
-      "detail": "33 zamrożone ujęcia · 11 powierzchni × 3 rozmiary",
+      "detail": "42 zamrożone ujęcia · 14 powierzchni × 3 rozmiary",
       "href": "/design"
     }
   ],
@@ -406,7 +496,7 @@
     },
     {
       "path": "designs/appbox-studio/models/design_model/run.pl.json",
-      "detail": "wygenerowany fixture — 11 powierzchni, 33 ujęcia"
+      "detail": "wygenerowany fixture — 14 powierzchni, 42 ujęcia"
     },
     {
       "path": "app/structure.json",
@@ -414,13 +504,13 @@
     },
     {
       "path": "app/goldens/",
-      "detail": "33 zamrożone wzorce, zahashowane przy zamrożeniu"
+      "detail": "42 zamrożone wzorce, zahashowane przy zamrożeniu"
     }
   ],
   "manifest": {
     "id": "frz_9c41e2",
-    "goldens": 33,
-    "surfaces": 11,
+    "goldens": 42,
+    "surfaces": 14,
     "rungs": "390 / 744 / 1280",
     "hash": "sha256:9c41…e2b7",
     "frozenAt": "Wczoraj 16:42",
@@ -439,8 +529,8 @@
     {
       "at": "14:02",
       "who": "agent",
-      "text": "Brief prześledzony — 22 powierzchnie z story-map.json; każde id rejestru poparte historyjką.",
-      "textPlain": "Brief sprawdzony — 22 ekrany pochodzą z mapy historyjek; każdy ekran prowadzi z powrotem do historyjki użytkownika."
+      "text": "Brief prześledzony — 14 powierzchni z story-map.json; każde id rejestru poparte historyjką.",
+      "textPlain": "Brief sprawdzony — 14 ekranów pochodzi z mapy historyjek; każdy ekran prowadzi z powrotem do historyjki użytkownika."
     },
     {
       "at": "14:09",
@@ -451,14 +541,14 @@
     {
       "at": "14:31",
       "who": "agent",
-      "text": "Prototyp złożony — 11 powierzchni × 3 rozmiary z samych platform docelowych; przenoszona struktura, nie piksele.",
-      "textPlain": "Prototyp zbudowany — 11 ekranów, każdy w rozmiarze telefonu, tabletu i desktopu; liczy się struktura układu, nie dekoracja."
+      "text": "Prototyp złożony — 14 powierzchni × 3 rozmiary z samych platform docelowych; przenoszona struktura, nie piksele.",
+      "textPlain": "Prototyp zbudowany — 14 ekranów, każdy w rozmiarze telefonu, tabletu i desktopu; liczy się struktura układu, nie dekoracja."
     },
     {
       "at": "15:58",
       "who": "you",
-      "text": "Czat ekranu na build.loop — 4 punkty kontrolne; karty bramek wyciszone, pasek compact zadokowany.",
-      "textPlain": "Ulepszyłeś ekran budowania na czacie — 4 zapisane zmiany; spokojniejsze karty decyzji, lepszy układ na telefon."
+      "text": "Czat ekranu na app.mediagame — 4 punkty kontrolne; HUD wyciszony, pasek sterowania compact zadokowany.",
+      "textPlain": "Ulepszyłeś ekran mini-gry na czacie — 4 zapisane zmiany; spokojniejszy HUD, lepszy układ na telefon."
     },
     {
       "at": "16:42",
@@ -469,70 +559,70 @@
     {
       "at": "16:42",
       "who": "agent",
-      "text": "Zamrożenie wybite — manifest frz_9c41e2 · 33 wzorce zahashowane · structure.json zablokowany.",
-      "textPlain": "Projekt zablokowany — wszystkie 33 zatwierdzone migawki odciskowane i zapisane; struktura jest teraz wzorcem."
+      "text": "Zamrożenie wybite — manifest frz_9c41e2 · 42 wzorce zahashowane · structure.json zablokowany.",
+      "textPlain": "Projekt zablokowany — wszystkie 42 zatwierdzone migawki odciskowane i zapisane; struktura jest teraz wzorcem."
     },
     {
       "at": "09:12",
       "who": "agent",
-      "text": "Kontrola dryfu — 33/33 wzorców zgodnych z manifestem. Czysto.",
-      "textPlain": "Kontrola dryfu — wszystkie 33 migawki wciąż zgadzają się z zatwierdzonym projektem. Nic się nie ruszyło."
+      "text": "Kontrola dryfu — 42/42 wzorców zgodnych z manifestem. Czysto.",
+      "textPlain": "Kontrola dryfu — wszystkie 42 migawki wciąż zgadzają się z zatwierdzonym projektem. Nic się nie ruszyło."
     }
   ],
   "traceability": [
     {
-      "surface": "intake.mapping",
-      "story": "Evan zamienia brief klienta w mapę Epik-Funkcja-Historyjka w jednej sesji",
-      "code": "app/lib/ui/views/intake/mapping_view.dart",
+      "surface": "app.splash",
+      "story": "Pierwsza klatka poniżej 300 ms — animowane logo Portalo, bez szarpania",
+      "code": "app/lib/ui/views/app/splash_view.dart",
       "files": 4
     },
     {
-      "surface": "design.prototype",
-      "story": "Każda powierzchnia zaprojektowana w 390/744/1280 z samych platform docelowych (dosłowna parzystość)",
-      "code": "app/lib/ui/views/design/prototype_view.dart",
+      "surface": "app.access",
+      "story": "Logowanie jednym dotknięciem przed każdym demo; sesja trwa między uruchomieniami",
+      "code": "app/lib/ui/views/app/access_view.dart",
       "files": 4
     },
     {
-      "surface": "design.chat",
-      "story": "Przypnij wiele ekranów jako kontekst czatu (zdejmowane chipy); ekrany w kontekście obwiedzione obok siebie w prawdziwych rozmiarach",
-      "code": "app/lib/ui/views/design/chat_view.dart",
+      "surface": "app.dashboard",
+      "story": "Każde demo o jedno dotknięcie z panelu, z żywymi chipami stanu kitów",
+      "code": "app/lib/ui/views/app/dashboard_view.dart",
       "files": 4
     },
     {
-      "surface": "build.loop",
-      "story": "Wystartuj build, odejdź; zatrzymuje się na czerwonym, ESC_LIMIT=3",
-      "code": "app/lib/ui/views/build/loop_view.dart",
+      "surface": "app.mediascene3d",
+      "story": "Złożona scena three.js działająca w 60 fps na prawdziwym urządzeniu",
+      "code": "app/lib/ui/views/app/mediascene3d_view.dart",
       "files": 4
     },
     {
-      "surface": "build.gates",
-      "story": "Trzy bramki, do których agent może dotrzeć, ale nigdy przejść; zatwierdzenie związane z provenancją",
-      "code": "app/lib/ui/views/build/gates_view.dart",
+      "surface": "app.mediagame",
+      "story": "Grywalna mini-gra dowodząca budżetu klatek — HUD z prymitywów kitu",
+      "code": "app/lib/ui/views/app/mediagame_view.dart",
       "files": 4
     },
     {
-      "surface": "access.pairing",
-      "story": "Parowanie jednym skanem QR; przekazany QR nie przechodzi weryfikacji",
-      "code": "app/lib/ui/views/access/pairing_view.dart",
+      "surface": "app.mediamaps",
+      "story": "Kafelki map ładują się tylko z ważnymi poświadczeniami kitu — style z kitu maps",
+      "code": "app/lib/ui/views/app/mediamaps_view.dart",
       "files": 4
     },
     {
-      "surface": "ship.deploy",
-      "story": "Bramka płatności przy pierwszym wdrożeniu: licencja wymagana do wysyłki; wszystko przed nią darmowe",
-      "code": "app/lib/ui/views/ship/deploy_view.dart",
+      "surface": "app.config",
+      "story": "Flagi runtime edytowalne w aplikacji; zmiany przeżywają restart",
+      "code": "app/lib/ui/views/app/config_view.dart",
       "files": 4
     }
   ],
   "drift": {
     "checked": "dziś 09:12",
-    "matched": "33/33",
+    "matched": "42/42",
     "clean": true,
     "history": [
       {
         "at": "dziś 08:47",
         "state": "resolved",
-        "text": "ujęcie compact design.chat zmieniło się po zatwierdzeniu (punkt kontrolny cp-5) — oznaczone głośno jako nieaktualne; zatwierdzone ponownie i zamrożone 08:52",
-        "textPlain": "ujęcie ekranu czatu w rozmiarze telefonu zmieniło się po Twoim zatwierdzeniu — projekt był oznaczony jako nieaktualny, dopóki nie zatwierdziłeś zmiany o 08:52",
+        "text": "ujęcie compact app.mediagame zmieniło się po zatwierdzeniu (punkt kontrolny cp-5) — oznaczone głośno jako nieaktualne; zatwierdzone ponownie i zamrożone 08:52",
+        "textPlain": "ujęcie ekranu mini-gry w rozmiarze telefonu zmieniło się po Twoim zatwierdzeniu — projekt był oznaczony jako nieaktualny, dopóki nie zatwierdziłeś zmiany o 08:52",
         "hash": "d41f…7b2c"
       }
     ]
@@ -541,16 +631,16 @@
     {
       "at": "15:52",
       "from": "user",
-      "text": "Karty bramek są krzyczące — pending krzyczy. Może trochę oddechu?"
+      "text": "HUD gry jest krzyczący — baner wyniku krzyczy. Może trochę oddechu?"
     },
     {
       "at": "15:53",
       "from": "agent",
-      "text": "Złagodzone — pending siedzi teraz na 12% akcentu z włosową obwódką; zatwierdzenie zostaje pełnym tuszem. Punkt kontrolny cp-3 poniżej, jeden dotk cofa.",
-      "textPlain": "Wyciszone — stan oczekiwania to teraz miękki odcień zamiast głośnego wypełnienia; przycisk zatwierdzenia zostaje wyrazisty. Zapisane jako cp-3 poniżej, jeden dotk cofa.",
+      "text": "Złagodzone — baner siedzi teraz na 12% akcentu z włosową obwódką; pauza zostaje pełnym tuszem. Punkt kontrolny cp-3 poniżej, jeden dotk cofa.",
+      "textPlain": "Wyciszone — baner wyniku to teraz miękki odcień zamiast głośnego wypełnienia; przycisk pauzy zostaje wyrazisty. Zapisane jako cp-3 poniżej, jeden dotk cofa.",
       "cps": [
         {
-          "screen": "build.loop",
+          "screen": "app.mediagame",
           "cp": "cp-3"
         }
       ]
@@ -558,53 +648,53 @@
     {
       "at": "16:04",
       "from": "user",
-      "text": "Rozmiar compact: pasek sceny zasłania CTA kanwy."
+      "text": "Rozmiar compact: pasek sterowania zasłania pole gry."
     },
     {
       "at": "16:05",
       "from": "agent",
-      "text": "Zadokowane — poniżej 600px pasek przypina się do krawędzi widoku, a kanwa robi mu miejsce. cp-4.",
-      "textPlain": "Naprawione — na ekranach wielkości telefonu pasek narzędzi przypina się do krawędzi ekranu zamiast unosić nad treścią. Zapisane jako cp-4.",
+      "text": "Zadokowane — poniżej 600px pasek przypina się do krawędzi widoku, a pole gry robi mu miejsce. cp-4.",
+      "textPlain": "Naprawione — na ekranach wielkości telefonu pasek sterowania przypina się do krawędzi ekranu zamiast unosić nad polem gry. Zapisane jako cp-4.",
       "cps": [
         {
-          "screen": "build.loop",
+          "screen": "app.mediagame",
           "cp": "cp-4"
         }
       ]
     }
   ],
   "checkpoints": {
-    "build.loop": [
+    "app.mediagame": [
       {
         "id": "cp-1",
         "n": 1,
         "at": "15:41",
-        "summary": "kompozycja początkowa — panel aktywności + kanwa + FAB",
-        "summaryPlain": "pierwszy układ — boczny strumień, duży widok szczegółów, pływający przycisk akcji"
+        "summary": "kompozycja początkowa — kanwa gry + panel sterowania + FAB",
+        "summaryPlain": "pierwszy układ — pole gry, boczne sterowanie, pływający przycisk akcji"
       },
       {
         "id": "cp-2",
         "n": 2,
         "at": "15:49",
-        "summary": "przejście gęstości szyny — odznaki typów, liczniki wątków",
-        "summaryPlain": "uporządkowany strumień — czytelniejsze etykiety, liczniki odpowiedzi"
+        "summary": "przejście gęstości panelu — odznaki typów, liczniki fps",
+        "summaryPlain": "uporządkowane sterowanie — czytelniejsze etykiety, liczniki klatek"
       },
       {
         "id": "cp-3",
         "n": 3,
         "at": "15:53",
-        "summary": "spokojniejsze karty bramek — miękki pending, solidne zatwierdzenie",
-        "summaryPlain": "spokojniejsze karty decyzji — miękki stan oczekiwania, wyraziste zatwierdzenie",
-        "before": "pending: pełne wypełnienie akcentem",
-        "after": "pending: 12% odcienia + włosowa obwódka"
+        "summary": "spokojniejszy HUD — miękki baner wyniku, solidna pauza",
+        "summaryPlain": "spokojniejszy overlay gry — miękki baner wyniku, wyrazisty przycisk pauzy",
+        "before": "baner: pełne wypełnienie akcentem",
+        "after": "baner: 12% odcienia + włosowa obwódka"
       },
       {
         "id": "cp-4",
         "n": 4,
         "at": "16:05",
-        "summary": "pasek sceny compact dokuje do krawędzi widoku",
-        "summaryPlain": "układ telefonu: pasek narzędzi przypina się do krawędzi ekranu",
-        "before": "pasek unosi się nad CTA kanwy",
+        "summary": "pasek sterowania compact dokuje do krawędzi widoku",
+        "summaryPlain": "układ telefonu: pasek sterowania przypina się do krawędzi ekranu",
+        "before": "pasek unosi się nad polem gry",
         "after": "pasek dokuje do krawędzi widoku"
       }
     ]
@@ -639,12 +729,12 @@
         "krzycz",
         "cich"
       ],
-      "text": "Wyciszone — pending spada do 12% akcentu z włosową obwódką; zatwierdzenie zostaje pełnym tuszem. Punkt kontrolny poniżej; jeden dotk cofa.",
-      "textPlain": "Wyciszone — stan oczekiwania to teraz miękki odcień zamiast głośnego wypełnienia; przycisk zatwierdzenia zostaje wyrazisty. Zapisane poniżej, jeden dotk cofa.",
-      "checkpoint": "spokojniejszy stan pending — miękki odcień, solidne zatwierdzenie",
-      "checkpointPlain": "spokojniejszy stan oczekiwania — miękki odcień, wyraziste zatwierdzenie",
-      "before": "pending: pełne wypełnienie akcentem",
-      "after": "pending: 12% odcienia + włosowa obwódka"
+      "text": "Wyciszone — baner wyniku spada do 12% akcentu z włosową obwódką; pauza zostaje pełnym tuszem. Punkt kontrolny poniżej; jeden dotk cofa.",
+      "textPlain": "Wyciszone — baner wyniku to teraz miękki odcień zamiast głośnego wypełnienia; przycisk pauzy zostaje wyrazisty. Zapisane poniżej, jeden dotk cofa.",
+      "checkpoint": "spokojniejszy HUD — miękki odcień, solidna pauza",
+      "checkpointPlain": "spokojniejszy overlay gry — miękki odcień, wyrazista pauza",
+      "before": "baner: pełne wypełnienie akcentem",
+      "after": "baner: 12% odcienia + włosowa obwódka"
     },
     {
       "match": [
@@ -715,8 +805,8 @@
         "prymityw",
         "komponent"
       ],
-      "text": "Pokrycie kitu 96% na 11 powierzchniach — reszta na zamówienie to zoom kanwy flows i gesty triage bramek.",
-      "textPlain": "96% tych ekranów da się zbudować z gotowych części — praca na zamówienie to zoom kanwy flows i gesty przesuwania bramek."
+      "text": "Pokrycie kitu 96% na 14 powierzchniach — reszta na zamówienie to pętla gry i graf sceny three.js.",
+      "textPlain": "96% tych ekranów da się zbudować z gotowych części — praca na zamówienie to pętla gry i scena 3D."
     }
   ],
   "chatFallback": {
@@ -724,14 +814,13 @@
     "textPlain": "Pracujemy tylko nad {label} — poproś o zmianę układu, stylu albo koloru, albo o poprawkę na telefon/tablet/desktop. Nic innego w aplikacji nie jest tu w zasięgu."
   },
   "epics": [
-    "Intake i mapowanie historyjek",
-    "Projektowanie i zamrażanie",
-    "Budowanie i bramki",
-    "Dostęp i urządzenia"
+    "Onboarding",
+    "Dema",
+    "System"
   ],
   "counts": {
-    "screens": 11,
-    "shots": 33,
-    "frozen": 11
+    "screens": 14,
+    "shots": 42,
+    "frozen": 14
   }
 }

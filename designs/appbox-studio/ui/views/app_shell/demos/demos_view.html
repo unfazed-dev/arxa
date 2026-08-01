@@ -3,18 +3,22 @@
      Built with appbox (free tier) — https://appbox.dev
 -->
 {% extends "ui/views/app_shell/_app_embed.html" if embed else "ui/views/main_shell/main_shell_view.html" %}
-{% block title %}{{ t('media.lottie.pageTitle') }}{% endblock %}
+{% block title %}{{ t('demos.pageTitle') }}{% endblock %}
 {% block head_extra %}
-<script type="module" src="/assets/vendor/lottie-player.js"></script>
 <link rel="stylesheet" href="/assets/css/media.css">
 {% endblock %}
 {% block surface %}
 <span class="eyebrow">{{ t('media.eyebrow') }}</span>
-<h1 class="display">{{ t('media.lottie.title') }}</h1>
-<p class="muted">{{ t('media.lottie.lede') }}</p>
-<section class="media-stage">
-  <lottie-player src="/assets/media/lottie_logo.json" autoplay loop controls
-    class="media-viewer" aria-label="{{ t('media.lottie.title') }}"></lottie-player>
-</section>
+<h1 class="display">{{ t('demos.title') }}</h1>
+<p class="muted">{{ t('demos.lede') }}</p>
+<div class="demo-grid">
+  {% for d in demos %}
+  <a class="demo-card" href="{{ d.href }}">
+    {{ icon(d.icon, {size: 24}) }}
+    <span class="demo-card-title">{{ t('media.' ~ d.id ~ '.title') }}</span>
+    <span class="demo-card-lede muted">{{ t('media.' ~ d.id ~ '.lede') }}</span>
+  </a>
+  {% endfor %}
+</div>
 {% include "ui/views/app_shell/_tabbar.html" %}
 {% endblock %}

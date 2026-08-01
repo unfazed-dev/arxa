@@ -1,6 +1,7 @@
-/* appbox · app shell family — splash / auth / pairing (chromeless centered
+/* appbox · app shell family — splash / startup / auth (chromeless centered
    states) + the dashboard (needs-you strip, project grid, analytics trio,
-   pair-a-device QR modal, chat-style new-project wizard).
+   pair-a-device QR modal, chat-style new-project wizard), the demos index
+   and the compact-rung tab bar.
    Tokens come from app.css; rung breaks follow the sibling convention
    (599px compact, 839px medium). Zero JS anywhere in this family. */
 
@@ -26,6 +27,19 @@
 @media (prefers-reduced-motion: no-preference) {
   .splash-shimmer::after { animation: splash-shimmer 1.2s var(--motion-ease) infinite; }
   @keyframes splash-shimmer { from { transform: translateX(-100%); } to { transform: translateX(350%); } }
+}
+
+/* ---------- startup — keyframed fill matching the 3s meta refresh ---------- */
+.startup-bar {
+  width: 10rem; height: 4px; border-radius: 999px; background: var(--bg-2); overflow: hidden;
+}
+.startup-bar::after { content: ''; display: block; height: 100%; width: 0; background: var(--accent); }
+@media (prefers-reduced-motion: no-preference) {
+  .startup-bar::after { animation: startup-fill 2.8s linear forwards; }
+  @keyframes startup-fill { from { width: 0; } to { width: 100%; } }
+}
+@media (prefers-reduced-motion: reduce) {
+  .startup-bar::after { width: 100%; }
 }
 
 /* ---------- centered states (auth / pairing) — centered-state archetype:
@@ -62,11 +76,7 @@
 .auth-foot { margin: .2rem 0 0; font-size: .8rem; }
 .auth-foot a { color: var(--accent); }
 
-/* ---------- pairing ---------- */
-.pair-steps { margin: 0; padding-left: 1.2rem; color: var(--tx-2); display: flex; flex-direction: column; gap: .3rem; }
-.pair-error { margin: 0; color: var(--fail); font-size: .85rem; display: flex; align-items: center; gap: .4rem; }
-.pair-ok { display: flex; align-items: center; gap: .5rem; margin: 0; font-weight: 500; }
-.pair-ok-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 0 3px var(--ok-soft); }
+/* ---------- pairing (dashboard QR modal) ---------- */
 .pair-fingerprint { margin: 0; overflow-wrap: anywhere; }
 .pair-code { margin: 0; font-size: 1.5rem; letter-spacing: .12em; text-align: center; }
 .pair-expiry { margin: 0; display: flex; align-items: center; justify-content: center; gap: .35rem; color: var(--amber); font-size: .82rem; }
@@ -197,3 +207,35 @@
 .wizard-foot { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
 .wizard-foot button { display: inline-flex; align-items: center; gap: .35rem; }
 .wizard-note { margin: 0; font-size: .8rem; max-width: 22rem; }
+
+/* ---------- demos index — card grid, same rung ladder as the project grid ---------- */
+.demo-grid { display: grid; gap: .8rem; grid-template-columns: 1fr; margin-top: 1rem; }
+@media (min-width: 600px) { .demo-grid { grid-template-columns: 1fr 1fr; } }
+@media (min-width: 840px) { .demo-grid { grid-template-columns: 1fr 1fr 1fr; } }
+.demo-card {
+  display: flex; flex-direction: column; gap: .4rem; text-decoration: none; color: var(--tx);
+  background: var(--bg-2); border: 1px solid var(--border); border-radius: var(--radius);
+  box-shadow: var(--shadow-1); padding: 1rem;
+}
+.demo-card:hover { box-shadow: inset 0 0 0 1.5px var(--accent); }
+.demo-card > svg { color: var(--accent); }
+.demo-card-title { font-weight: 500; }
+.demo-card-lede { font-size: .83rem; }
+
+/* ---------- app tab bar — fixed bottom nav, compact rung only (≤599px).
+   :has() scopes the clearance padding to mains that actually render a bar. ---------- */
+.apptabs { display: none; }
+@media (max-width: 599px) {
+  .apptabs {
+    position: fixed; inset: auto 0 0 0; z-index: 50; display: flex;
+    background: var(--bg); border-top: 1px solid var(--border);
+    padding: .3rem .5rem calc(.3rem + env(safe-area-inset-bottom));
+  }
+  .apptab {
+    flex: 1; display: flex; flex-direction: column; align-items: center; gap: .15rem;
+    padding: .35rem 0; border-radius: var(--radius-s);
+    color: var(--tx-3); font-size: .68rem; text-decoration: none;
+  }
+  .apptab.on { color: var(--accent); }
+  main:has(.apptabs) { padding-bottom: 4.5rem; }
+}

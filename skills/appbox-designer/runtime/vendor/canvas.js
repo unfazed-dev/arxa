@@ -10,6 +10,7 @@
      pinch (ctrl+wheel)            → zoom around the cursor, 0.25×–4×
      drag on free canvas           → pan (pointer capture)
      double-click on free canvas   → reset zoom to 1×
+     mini-panel zoom-fit button    → fit the content to the stage, centered
 
    Zoom scales the .dv-zoom wrapper (transform-origin 0 0) and re-anchors the
    scroll position so the point under the cursor stays put. Scale is paint-
@@ -25,6 +26,10 @@
   const SEL = '.dv-stage, .dv-rungs, .dv-flow-canvas, .dv-proto-stage';
   const clamp = (z) => Math.min(4, Math.max(0.25, z));
 
+  // the zoomable child: the flow canvas wraps tiles in .dv-zoom; the proto
+  // stage's .device IS the zoom child.
+  const zoomChild = (el) => el.querySelector(':scope > .dv-zoom, :scope > .device');
+
   // cursor-anchored zoom: scale the wrapper, then re-anchor the scroll so the
   // point under (clientX, clientY) stays put
   const zoomAt = (el, t, clientX, clientY, deltaY) => {
@@ -34,16 +39,38 @@
     const r = el.getBoundingClientRect();
     const cx = clientX - r.left, cy = clientY - r.top, k = z1 / z0;
     el._z = z1;
+    t.style.transformOrigin = '0 0';
     t.style.transform = `scale(${z1})`;
     el.scrollLeft = (el.scrollLeft + cx) * k - cx;
     el.scrollTop = (el.scrollTop + cy) * k - cy;
+  };
+
+  // zoom-fit (mini panel [data-action="zoom-fit"]): scale the zoom child so
+  // the content fills the stage's padding box, then scroll to center it.
+  // Same _z + transform mechanism as the wheel zoom, so ctrl+wheel/dblclick
+  // pick up from the fitted scale.
+  const zoomFit = (el) => {
+    const t = zoomChild(el);
+    if (!t) return;
+    const z0 = el._z || 1;
+    const cw = t.offsetWidth / z0, ch = t.offsetHeight / z0; // unscaled content size
+    if (!cw || !ch) return;
+    const cs = getComputedStyle(el);
+    const availW = el.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+    const availH = el.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+    const z1 = clamp(Math.min(availW / cw, availH / ch));
+    el._z = z1;
+    t.style.transformOrigin = '0 0';
+    t.style.transform = `scale(${z1})`;
+    el.scrollLeft = Math.max(0, t.offsetLeft + (z1 * cw - el.clientWidth) / 2);
+    el.scrollTop = Math.max(0, t.offsetTop + (z1 * ch - el.clientHeight) / 2);
   };
 
   function attach(el) {
     if (el._cz) return;
     el._cz = 1;
 
-    const t = el.querySelector(':scope > .dv-zoom');
+    const t = zoomChild(el);
 
     el.addEventListener('wheel', (e) => {
       if (!e.ctrlKey) return; // plain wheel/trackpad = native pan
@@ -90,9 +117,18 @@
     el.addEventListener('dblclick', (e) => {
       if (e.target.closest('a, iframe, .dv-strip')) return;
       el._z = 1;
-      if (t) t.style.transform = '';
+      if (t) { t.style.transform = ''; t.style.transformOrigin = ''; }
     });
   }
+
+  // zoom-fit is requested from the mini panel, OUTSIDE the stage — a document-
+  // delegated click finds the enclosing viewer's stage. The button renders on
+  // every viewer swap, so delegation never needs re-arming.
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('[data-action="zoom-fit"]')) return;
+    const stage = e.target.closest('.design-viewer')?.querySelector(SEL);
+    if (stage) zoomFit(stage);
+  });
 
   const scan = (root) => {
     if (root.matches?.(SEL)) attach(root);

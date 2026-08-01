@@ -8,7 +8,12 @@ import * as facade from '../../../../services/facades/app_facade.js';
 const VIEW = 'ui/views/app_shell/config/config_view.html';
 
 export const page = (c, h) =>
-  h.render(c, VIEW, { activeShell: 'app', ...facade.configContext(h.session(c).data, h.t(c), h.prefs(c)) });
+  h.render(c, VIEW, {
+    activeShell: 'app',
+    tab: 'config',
+    ...facade.embedContext(c),
+    ...facade.configContext(h.session(c).data, h.t(c), h.prefs(c)),
+  });
 
 // App-config choices persist in session state (the prototype's stand-in for
 // config/appbox.config.json) and 303 back, same seeded-mutation pattern as

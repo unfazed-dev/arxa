@@ -13,8 +13,8 @@
      {{ mn.miniPanel(v) }}
 
    v.miniPanel shape (canvas-redesign-contract.md §1/§3):
-     activePanel: 'screens' | 'controller' | 'actions' (default 'screens')
-     bar: { devices: [{ key, icon, active, href }] | null,   // proto mode only
+     activePanel: 'screens' | 'controller' (default 'screens')
+     bar: { devices: [{ key, icon, active, href }] | null,   // rung icons
             bgs: [{ value, active, href }] }                 // swatch buttons
      screens: [{ id, label, tone, inContext, dim, src, contextHref }]
      controller: {
@@ -23,7 +23,6 @@
        undo:  { can: bool, href: '/design/undo/canvas' },
        redo:  { can: bool, href: '/design/redo/canvas' },
      }
-     actions: { selectedCount: int, bulkPinHref: str|null, simHref: str|null }
 
    The panel-switch GETs echo the full viewer state (bg, inspect) so
    switching panels never loses it. The active panel is carried by the
@@ -89,28 +88,10 @@
 </div>
 {% endmacro %}
 
-{# Actions — marquee bulk-pin (drag.js appends the selected ids to data-href at
-   click time) and the sim link (a full nav when present). #}
-{% macro actionsPanel(v, pnl) %}
-<div class="mini-panel-body" id="mini-panel-actions">
-  {% if pnl.actions.bulkPinHref %}
-  <span class="mini-panel-group">
-    <span class="mini-panel-info" id="mini-panel-selected">{{ t('miniPanel.selected', {count: pnl.actions.selectedCount}) }}</span>
-    <button class="dv-bulk-pin" data-href="{{ pnl.actions.bulkPinHref }}" title="{{ t('miniPanel.pinTitle') }}">{{ icon('pin', {size: 16}) }} {{ t('miniPanel.pin') }}</button>
-  </span>
-  {% endif %}
-  {% if pnl.actions.simHref %}
-  <span class="mini-panel-group">
-    <a class="ico-btn" href="{{ pnl.actions.simHref }}" title="{{ t('miniPanel.simTitle') }}">{{ icon('play', {size: 16}) }} {{ t('miniPanel.sim') }}</a>
-  </span>
-  {% endif %}
-</div>
-{% endmacro %}
-
-{# The bar itself: three icon tabs + the active panel. The `q` query echoes the
+{# The bar itself: two icon tabs + the active panel. The `q` query echoes the
    current viewer state so a panel switch is state-preserving. Bar-right
-   cluster (the green-rect zone): device rung icon buttons (proto mode only)
-   — divider — bg swatch buttons (every mode). #}
+   cluster (the green-rect zone): device rung icon buttons — divider — bg
+   swatch buttons (every mode). #}
 {% macro miniPanel(v) %}
 {% set pnl = v.miniPanel %}
 {% set panel = pnl.activePanel or 'screens' %}
@@ -118,7 +99,7 @@
         + ('&inspect=1' if v.inspect else '')
         + ('&mode=proto' if v.mode == 'proto' else '')
         + ('&screen=' + v.proto.active if v.proto else '')
-        + ('&vp=' + v.proto.vp if v.proto and v.proto.vp != 'mobile' else '') %}
+        + ('&vp=' + v.vp if v.vp and v.vp != 'mobile' else '') %}
 <nav class="mini-panel" aria-label="{{ t('miniPanel.aria') }}">
   <div class="mini-panel-bar">
     <button class="mini-panel-tab {{ 'is-active' if panel == 'screens' }}"
@@ -131,11 +112,6 @@
             hx-get="{{ v.base }}?{{ q }}&panel=controller" hx-target="#design-viewer" hx-swap="outerHTML"
             aria-pressed="{{ 'true' if panel == 'controller' else 'false' }}"
             title="{{ t('miniPanel.tab.controller') }}">{{ icon('sliders-horizontal', {size: 18}) }}</button>
-    <button class="mini-panel-tab {{ 'is-active' if panel == 'actions' }}"
-            data-panel="actions"
-            hx-get="{{ v.base }}?{{ q }}&panel=actions" hx-target="#design-viewer" hx-swap="outerHTML"
-            aria-pressed="{{ 'true' if panel == 'actions' else 'false' }}"
-            title="{{ t('miniPanel.tab.actions') }}">{{ icon('zap', {size: 18}) }}</button>
 
     <span class="mini-panel-bar-right">
       {% if pnl.bar.devices %}
@@ -160,7 +136,6 @@
   <div class="mini-panel-panels">
     {% if panel == 'screens' %}{{ screensPanel(v, pnl) }}
     {% elif panel == 'controller' %}{{ controllerPanel(v, pnl) }}
-    {% elif panel == 'actions' %}{{ actionsPanel(v, pnl) }}
     {% endif %}
   </div>
 </nav>
