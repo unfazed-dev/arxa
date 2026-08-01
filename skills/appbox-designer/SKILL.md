@@ -11,7 +11,8 @@ description: >-
   prototype, wireframe or visualize an application, product screen or user
   flow that will be scaffolded into a real app. Produces an authored
   `registry.json`, a `surfaceId` in every viewmodel and a route table the
-  freeze step can read. Not for slide decks or printable documents.
+  freeze step can read — one screen registry viewed through three lenses
+  (prototype / flows / screens), flows authored as data edges over it. Not for slide decks or printable documents.
 ---
 
 # appbox-designer
@@ -30,6 +31,18 @@ structure rather than pixels.
 you produce is a *typed input to a build pipeline*. Structure is authored while
 designing, never back-filled. See
 [`references/app-architecture.md`](references/app-architecture.md).
+
+**The triad output.** Every artifact is *three switchable lenses over one
+screen registry* — **prototype** (wired navigation over each entry's `route`),
+**flows** (journeys as an edge graph), and **screens** (the tile inventory) —
+never three separate artifacts. Flows are authored as **data**: `{from, to,
+trigger}` edges over registry ids carried through the data spine and rendered
+by a server template / named island — never bespoke per-flow markup, never a
+separate file format. The freeze threads an optional top-level `flows` array
+into `structure.json` (absent = no flows lens, valid for small artifacts); the
+scaffolder emits surfaces from the registry screens, the builder wires
+navigation from the edges. Binding contract:
+[`DESIGN-ARCHITECTURE.md`](DESIGN-ARCHITECTURE.md) "The output triad".
 
 ## How to use this skill
 

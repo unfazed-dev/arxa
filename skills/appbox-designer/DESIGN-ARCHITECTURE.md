@@ -33,14 +33,38 @@ Two channels, both locale-aware, neither hardcoded:
 
 ## Registry canon
 
-This medium currently has no Surface registry — `app.routes.js` is a route table (`[method, path, handler]`), not an inventory, and it mixes real Surfaces with non-page endpoints (form posts, poll targets, OOB fragments). The contract requires a separate registry, one entry per Surface, with exactly four fields:
+The Surface registry is a separate inventory, one entry per Surface — never the route table (`app.routes.js` mixes real Surfaces with non-page endpoints: form posts, poll targets, OOB fragments). It lives on the data spine as generated JSON (`models/screens_model/registry.json`, seeded like any other model; `structure.json`'s `"registry"` field points at it). Entry shape:
 
-- `id` — stable identifier, derived from the Surface's own path: `<shell>/<surface>` (e.g. `main/prefs`).
+- `id` — stable identifier `<shell>.<short>`, both segments lowercase alnum (the same pattern intake, declare-structure, and the gates enforce — e.g. `projects.home`). Ids are permanent: add new ones, never reuse.
 - `label` — human-readable name for nav/breadcrumb use.
-- `surface` — nullable. Holds the render target (`ui/views/<shell>_shell/<surface>_view.html`) for a real page; `null` for entries that represent state (a toast, a dialog, an overlay) with no independent URL of its own.
-- `roles` — array, required even when every Surface is open to everyone (`['*']` is a valid, explicit value, not an omission).
+- `surface` — nullable. Holds the render target for a real page; `null` for entries that represent state (a toast, a dialog, an overlay) with no independent URL of their own. Required on every entry — omit only by setting it to `null`, never by leaving it out.
+- `shell` — the id's first segment, denormalized for grouping (must equal it — the engines validate the invariant).
+- `comp` — mechanical: `PascalCase(shell) + PascalCase(short)` (`shop.cart` → `ShopCart`), the scaffolder's class name. Derived, never authored.
+- `labelKey` / `route` — the l10n key backing the label, and the Surface's URL.
+- `kits` — optional; the kits the Surface composes (absent on entries that use none).
 
-This medium historically shipped without a `surface` field; the contract now requires it on every entry — omit it only by setting it to `null`, never by leaving it out. Realize the registry server-side as a plain JS/JSON module (e.g. `registry.mjs` alongside `app.routes.js`), not a browser global — there is no client runtime to hold it. A route may reference a registry `id` as an extra field on its table row; the registry does not replace the route table, it indexes the subset of routes that are Surfaces.
+A route may reference a registry `id`; the registry does not replace the route table, it indexes the subset of routes that are Surfaces.
+
+## The output triad: prototype / flows / screens
+
+One Artifact, three lenses. `structure.json` is the single screen registry; the design surface exposes three switchable views over it — **prototype** (the wired app: device-chrome navigation over each entry's `route`), **flows** (the journeys: an edge graph across screens), and **screens** (the inventory: every screen as a tile, grouped by shell). Three lenses over one registry — never three separate artifacts, and never a flows document that can drift from the screens it names.
+
+**Flows are data, not markup.** A flow is authored as an array of edges over registry ids:
+
+```json
+{ "id": "flow-intake", "name": "New project intake",
+  "edges": [
+    { "from": "intake.interview", "to": "intake.personas", "trigger": "Questions answered" }
+  ] }
+```
+
+`from` / `to` / `trigger` are the contract; flow-level metadata (`id`, `name`, `persona`, `provenance`, edge `label`) is allowed. Edge endpoints are not negotiable: they are registry ids (plus any per-screen state the registry already carries), and an edge naming an id the registry does not declare is a bug the same mechanical style of check as the surface join can catch. Flows travel the data spine like any other content — seed → fixture → repository → facade — and render through a server template (a Nunjucks macro, e.g. an edge chain) or a named island. Never bespoke per-flow markup, never a separate file format: the flows lens is a projection of the registry plus the edges.
+
+The freeze carries flows into `structure.json` as an optional top-level `flows` array — same edge shape, keyed by registry screen ids. Absent means the Artifact has no flows lens, which is valid for small artifacts; present means every `from`/`to` resolves to a registry entry.
+
+**Handoff.** `appbox-scaffolder` consumes the frozen `structure.json`'s registry screens (with `shellRoots`, `kits`, `deps`) and emits the per-surface Flutter file sets plus the `.shell-structure.json` manifest — surfaces, never navigation: the scaffolder explicitly does not produce routes. The flows edges are the navigation declaration the builder wires downstream: each edge maps to a navigation call between the two surfaces the scaffolder emitted. One registry, three lenses, and the pipeline reads all three from the same authored layer.
+
+Reference implementation: `designs/appbox-studio` — flows authored in `models/intake_model/intake_seed.*.json` (`flows[]` with `{from,to,trigger}` edges over registry ids), rendered by the intake flows surface (`ui/views/main_shell/intake/flows/flows_view.html`'s `edgeChain` macro, with the facade resolving ids to registry labels); the screens lens is the design viewer's tile canvas (`ui/common/design_viewer.html`), grouping `structure.json` screens by shell.
 
 ## Services split
 

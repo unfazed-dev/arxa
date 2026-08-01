@@ -77,6 +77,21 @@ with no warning**. Two lists of what exists means one of them is wrong and
 nothing says which. One list, one nullable field, and every check can see the
 whole population.
 
+### Flows — data over the registry (optional)
+
+The registry's output is a triad — prototype / flows / screens — three
+switchable lenses over this one registry, never three artifacts (binding
+contract: [`../DESIGN-ARCHITECTURE.md`](../DESIGN-ARCHITECTURE.md) "The output
+triad"). The flows lens is a **thin data layer**, not an authoring surface:
+journeys are arrays of `{from, to, trigger}` edges keyed by registry ids,
+carried through the data spine (seed → fixture → repository → facade) like any
+other content and rendered by a server template macro or named island — never
+bespoke per-flow markup, never a separate file format. Flow-level metadata
+(`id`, `name`, `persona`, `provenance`, edge `label`) is allowed; the edge
+endpoints are always registry ids. The freeze threads the array into
+`structure.json` as an optional top-level `flows` array — absent means no
+flows lens, which is valid for small artifacts.
+
 ### `?embed=1` bare render mode
 
 The stub screen renderer (`screen_stub_view.html`) supports `?embed=1`: a
@@ -181,6 +196,7 @@ mechanical — and each one **can fail**, which is the point:
 | orphan | a surface directory no entry declares |
 | `shellRoots` | empty, or names a shell absent from the registry |
 | ladder | a surface never rendered at an active rung |
+| flows join | a `flows` edge's `from`/`to` matches no registry entry |
 
 ## Do not
 

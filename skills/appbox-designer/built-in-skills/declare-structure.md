@@ -72,6 +72,30 @@ credentials the client must supply. Which kits exist, which have design-time
 islands, and how credentials surface:
 [`../references/kit-catalog.md`](../references/kit-catalog.md).
 
+### `flows` — declaring journeys as data (optional)
+
+The artifact's output is a triad — prototype / flows / screens — three lenses
+over this one registry (contract:
+[`../DESIGN-ARCHITECTURE.md`](../DESIGN-ARCHITECTURE.md) "The output triad").
+The flows lens needs no new files: declare the journeys as **data**, an array
+of `{from, to, trigger}` edges over the registry ids you declared above,
+carried in the model seed whose surface renders them (e.g. the studio design's
+`models/intake_model/intake_seed.*.json`):
+
+```json
+{ "id": "flow-signup", "name": "Sign up",
+  "edges": [
+    { "from": "shop.home", "to": "shop.signup", "trigger": "Create account" },
+    { "from": "shop.signup", "to": "shop.cart", "trigger": "Signed up" }
+  ] }
+```
+
+Every `from`/`to` must be a registry id — declare the endpoints in the
+registry first, then the edge. The flows view renders these edges with a
+server template macro (resolving ids to labels via the facade); never author
+per-flow markup. Absent = no flows lens, which is valid for small artifacts.
+The freeze threads the array into `structure.json` keyed by the same ids.
+
 ## Checking yourself
 
 Run `appbox design selftest <artifact-dir>` — or, by hand, before you call any surface
