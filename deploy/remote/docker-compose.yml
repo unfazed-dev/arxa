@@ -1,14 +1,14 @@
-# app-box self-host remote access (plan: consolidate-one-app-plus-daemon.md, decision 10).
+# appbox self-host remote access (plan: consolidate-one-app-plus-daemon.md, decision 10).
 # Headscale = coordination server (enrollment door, the ONLY public surface).
 # Caddy terminates public Let's Encrypt TLS for headscale only — no app traffic
 # is ever public; app traffic rides the WireGuard mesh (DERP relays see ciphertext only).
 
-name: app-box-remote
+name: appbox-remote
 
 services:
   headscale:
     image: headscale/headscale:0.29.2
-    container_name: app-box-headscale
+    container_name: appbox-headscale
     restart: unless-stopped
     command: serve
     environment:
@@ -22,7 +22,7 @@ services:
 
   caddy:
     image: caddy:2.10
-    container_name: app-box-caddy
+    container_name: appbox-caddy
     restart: unless-stopped
     ports:
       - "80:80"
