@@ -157,6 +157,94 @@ void main() {
     });
   });
 
+  group('renderBrief — unified chain (answers:)', () {
+    final answers = <String, dynamic>{
+      'product': {'value': 'Chain App', 'provenance': 'client'},
+      'audience': {'value': 'Devs', 'provenance': 'client'},
+      'appMustDo': {'value': ['ship'], 'provenance': 'client'},
+      'targets': {'value': ['macos'], 'provenance': 'client'},
+      'brand': {'value': 'none stated', 'provenance': 'inferred'},
+      'surfaces': [
+        {
+          'id': 'projects.home',
+          'label': 'Home',
+          'shell': 'projects',
+          'states': ['empty', 'loading'],
+          'provenance': 'client',
+        },
+        {
+          'id': 'projects.new',
+          'label': 'New',
+          'shell': 'projects',
+          'provenance': 'client',
+        },
+      ],
+    };
+    final data = <String, dynamic>{
+      'project': 'Chain App',
+      'releases': [
+        {'name': 'Release 1'}
+      ],
+      'epics': [
+        {
+          'name': 'Projects',
+          'features': [
+            {
+              'name': 'Home',
+              'id': 'projects.home',
+              'stories': [
+                {'name': 'List', 'priority': 'must', 'release': 'Release 1'},
+              ],
+            },
+            {
+              'name': 'Search',
+              'stories': [
+                {'name': 'Find', 'priority': 'should', 'release': 'Release 1'},
+              ],
+            },
+          ],
+        },
+      ],
+    };
+
+    test('intake sections render with provenance + [inferred] marks, then the story map', () {
+      final brief = renderBrief(data, answers: answers);
+      expect(brief.contains('Emitted by the intake → story-map chain'), isTrue);
+      expect(brief.contains('## Audience\n\nDevs\n\n_provenance: client_'), isTrue);
+      expect(brief.contains('**[inferred]**'), isTrue); // brand
+      expect(brief.contains('## Releases\n\n- **Release 1**'), isTrue);
+      expect(brief.contains('#### Home\n\n- [must/Release 1] List'), isTrue);
+      // the standalone "## Product" intro line is NOT present — intake owns it
+      expect(brief.contains('Elicited via appbox-story-mapper'), isFalse);
+    });
+
+    test('declared surfaces carry the attaching feature rollup + states', () {
+      final brief = renderBrief(data, answers: answers);
+      expect(
+          brief.contains(
+              '| `projects.home` | Home | empty, loading | must | Release 1 |'),
+          isTrue);
+      // no feature pins projects.new -> blank rollup, empty states
+      expect(brief.contains('| `projects.new` | New |  |  |  |'), isTrue);
+    });
+
+    test('an unattached feature is appended, flagged — [inferred]', () {
+      final brief = renderBrief(data, answers: answers);
+      expect(
+          brief.contains(
+              '| `projects.search` | Search — [inferred] |  | should | Release 1 |'),
+          isTrue);
+      // declared rows come before derived rows
+      expect(brief.indexOf('`projects.new`') < brief.indexOf('`projects.search`'),
+          isTrue);
+    });
+
+    test('standalone path is untouched when answers is null', () {
+      final golden = File(_goldenBriefPath).readAsStringSync();
+      expect(renderBrief(sample), golden);
+    });
+  });
+
   group('storyMapMain (CLI contract)', () {
     test('--self-test prints "self-test OK" and returns 0', () {
       final rc = storyMapMain(const ['--self-test']);
@@ -197,6 +285,42 @@ void main() {
           File(_goldenDataPath).readAsStringSync());
       expect(File(brief).readAsStringSync(),
           File(_goldenBriefPath).readAsStringSync());
+      await dir.delete(recursive: true);
+    });
+
+    test('--answers emits the unified brief; bad answers exit 1 writing nothing', () async {
+      final dir = await Directory.systemTemp.createTemp('sm_chain_');
+      final out = '${dir.path}/o.html';
+      final brief = '${dir.path}/o.brief.md';
+      final answersPath = '${dir.path}/answers.json';
+      await File(answersPath).writeAsString(jsonEncode({
+        'product': {'value': 'Chain App', 'provenance': 'client'},
+        'audience': {'value': 'Devs', 'provenance': 'client'},
+        'appMustDo': {'value': ['ship'], 'provenance': 'client'},
+        'targets': {'value': ['macos'], 'provenance': 'client'},
+        'surfaces': [
+          {'id': 'user.registration', 'label': 'Registration', 'shell': 'user', 'provenance': 'client'},
+        ],
+      }));
+      final rc = storyMapMain(
+          ['-i', _sampleJsonPath, '-o', out, '--brief-out', brief, '--answers', answersPath]);
+      expect(rc, 0);
+      final md = File(brief).readAsStringSync();
+      expect(md.contains('Emitted by the intake → story-map chain'), isTrue);
+      expect(md.contains('## Audience'), isTrue);
+
+      // invalid answers -> exit 1, NOTHING written
+      final out2 = '${dir.path}/o2.html';
+      final brief2 = '${dir.path}/o2.brief.md';
+      final badPath = '${dir.path}/bad.json';
+      await File(badPath).writeAsString(jsonEncode({
+        'product': {'value': 'x', 'provenance': 'guessed'},
+      }));
+      final rc2 = storyMapMain(
+          ['-i', _sampleJsonPath, '-o', out2, '--brief-out', brief2, '--answers', badPath]);
+      expect(rc2, 1);
+      expect(File(out2).existsSync(), isFalse);
+      expect(File(brief2).existsSync(), isFalse);
       await dir.delete(recursive: true);
     });
   });

@@ -11,6 +11,13 @@
 //   2. emit     — turn validated answers into docs/design/brief.md (every
 //      `inferred` field visibly marked) and a seeded registry.json (ids,
 //      shells, comps; surface ALWAYS null — intake names, never designs).
+//      The default registry path is the GATE's canonical one (structure.json's
+//      "registry" field under designs/appbox-studio), not the legacy
+//      docs/design/ path — see defaultRegistryOut().
+//
+// [renderBriefSections] is public so the intake → story-map chain
+// (story_map.dart renderBrief's `answers` path) can emit the UNIFIED brief
+// without duplicating the section rendering — one engine, one renderer.
 //   3. seed     — accept a HAND-WRITTEN brief (plan 10.7: intake is optional)
 //      and derive the registry seed from its surface table, without rewriting
 //      a word of the brief.
@@ -45,13 +52,16 @@ const _fieldTitles = <(String, String)>[
   ('appMustDo', 'What the app must do'),
   ('existingSystems', 'Existing systems'),
   ('targets', 'Targets'),
+  ('locales', 'Locales'),
   ('brand', 'Brand'),
+  ('direction', 'Design direction'),
+  ('contentAnchors', 'Content anchors'),
   ('constraints', 'Constraints'),
   ('outOfScope', 'Out of scope'),
   ('layoutTemplate', 'Layout template'),
 ];
 
-const _listFields = {'appMustDo', 'constraints', 'outOfScope'};
+const _listFields = {'appMustDo', 'constraints', 'outOfScope', 'locales', 'contentAnchors'};
 
 final _tableSplit = RegExp(r'\s*\|\s*');
 const _sepChars = {'-', ':', ' '};
@@ -93,6 +103,8 @@ ValidationResult validateIntake(Map<String, dynamic> answers) {
       }
     } else if (key == 'layoutTemplate') {
       errs.addAll(_validateLayoutTemplate(val));
+    } else if (key == 'direction') {
+      errs.addAll(_validateDirection(val));
     } else {
       if (val is! String) {
         errs.add('$key: value must be a string');
@@ -134,6 +146,10 @@ ValidationResult validateIntake(Map<String, dynamic> answers) {
     if (!provenance.contains(s['provenance'])) {
       errs.add("$where: provenance '${s['provenance']}' is not one of $provenance");
     }
+    final states = s['states'];
+    if (states != null && (states is! List || states.any((x) => x is! String))) {
+      errs.add("$where: states must be a list of strings (e.g. empty, loading, error)");
+    }
     if (seen.contains(sid)) {
       errs.add("$where: duplicate id '$sid' (ids are permanent — add a new "
           'one, do not reuse)');
@@ -142,6 +158,25 @@ ValidationResult validateIntake(Map<String, dynamic> answers) {
   }
 
   return ValidationResult(errs);
+}
+
+List<String> _validateDirection(Object? val) {
+  // Shape-check a direction value: {adjectives: [string], avoids: [string]} —
+  // both lists optional, but when present they must be string lists.
+  if (val is! Map) {
+    return [
+      'direction: value must be an object {adjectives, avoids} '
+          '(both lists optional), got ${_pyTypeName(val)}'
+    ];
+  }
+  final errs = <String>[];
+  for (final k in const ['adjectives', 'avoids']) {
+    final v = val[k];
+    if (v != null && (v is! List || v.any((x) => x is! String))) {
+      errs.add('direction: $k must be a list of strings');
+    }
+  }
+  return errs;
 }
 
 List<String> _validateLayoutTemplate(Object? val) {
@@ -198,27 +233,31 @@ String _cap(String seg) => seg[0].toUpperCase() + seg.substring(1);
 
 /// Seed registry: one entry per elicited surface, surface ALWAYS null.
 ///
-/// Keys are exactly {id, label, shell, comp, surface} in that order (matches
-/// the Python emit). No entry is invented and none is dropped:
-/// `out.length == answers['surfaces'].length`.
+/// Keys are {id, label, shell, comp, surface} in that order (matches the
+/// Python emit), plus an ADDITIVE `states` key after `surface` when the
+/// surface declared a non-empty states list. No entry is invented and none is
+/// dropped: `out.length == answers['surfaces'].length`.
 List<Map<String, dynamic>> emitRegistry(Map<String, dynamic> answers) {
   final out = <Map<String, dynamic>>[];
   final surfaces = answers['surfaces'];
   if (surfaces is! List) return out;
   for (final s in surfaces) {
     final surf = s as Map;
-    out.add({
+    final entry = <String, dynamic>{
       'id': surf['id'],
       'label': surf['label'],
       'shell': surf['shell'],
       'comp': deriveComp(surf['id'] as String),
       'surface': null, // intake names; design binds. Never non-null here.
-    });
+    };
+    final states = surf['states'];
+    if (states is List && states.isNotEmpty) entry['states'] = states;
+    out.add(entry);
   }
   return out;
 }
 
-List<String> _block(String title, Map<String, dynamic>? node) {
+List<String> _block(String key, String title, Map<String, dynamic>? node) {
   // Render one brief section. An `inferred` field gets the visible mark;
   // client/founder provenance is noted quietly underneath (transparency, not
   // noise). The value is passed through verbatim — never rephrased.
@@ -234,7 +273,10 @@ List<String> _block(String title, Map<String, dynamic>? node) {
     lines.add('');
   }
   if (val is Map) {
-    lines.addAll(_layoutTemplateLines(val));
+    // Two object-valued fields: direction renders its adjectives/avoids,
+    // layoutTemplate its grid areas. Everything else is a shape error the
+    // validator has already named.
+    lines.addAll(key == 'direction' ? _directionLines(val) : _layoutTemplateLines(val));
   } else if (val is List) {
     if (val.isNotEmpty) {
       for (final item in val) {
@@ -250,6 +292,22 @@ List<String> _block(String title, Map<String, dynamic>? node) {
   lines.add('_provenance: ${prov}_');
   lines.add('');
   return lines;
+}
+
+List<String> _directionLines(Map val) {
+  // Render a direction value: the adjectives to aim for and the anti-goals to
+  // avoid, verbatim. Absent/empty lists are simply not rendered.
+  final out = <String>[];
+  final adjectives = val['adjectives'];
+  if (adjectives is List && adjectives.isNotEmpty) {
+    out.add('- adjectives: ${adjectives.join(', ')}');
+  }
+  final avoids = val['avoids'];
+  if (avoids is List && avoids.isNotEmpty) {
+    out.add('- avoids: ${avoids.join(', ')}');
+  }
+  if (out.isEmpty) out.add('_None stated._');
+  return out;
 }
 
 List<String> _layoutTemplateLines(Map val) {
@@ -301,6 +359,18 @@ List<String> _layoutTemplateLines(Map val) {
   return out;
 }
 
+/// Render the intake brief sections (the `## Title` blocks in `_fieldTitles`
+/// order, provenance marks included) as lines. Public so the intake →
+/// story-map chain (story_map.dart `renderBrief(answers:)`) can emit the
+/// UNIFIED brief without duplicating this logic.
+List<String> renderBriefSections(Map<String, dynamic> answers) {
+  final lines = <String>[];
+  for (final (key, title) in _fieldTitles) {
+    lines.addAll(_block(key, title, _asNode(answers[key])));
+  }
+  return lines;
+}
+
 /// Render the brief markdown. Every `inferred` field is visibly marked; the
 /// header states the rule once. No prose is generated beyond section scaffolding
 /// and the provenance notes — field VALUES come straight from the answers.
@@ -318,9 +388,7 @@ String emitBrief(Map<String, dynamic> answers) {
     '> be confirmed before design consumes this brief.',
     '',
   ];
-  for (final (key, title) in _fieldTitles) {
-    lines.addAll(_block(title, _asNode(answers[key])));
-  }
+  lines.addAll(renderBriefSections(answers));
 
   // surface inventory — the registry seed (surface null everywhere)
   final surfaces = answers['surfaces'];
@@ -331,12 +399,14 @@ String emitBrief(Map<String, dynamic> answers) {
   if (!hasSurfaces) {
     lines.add('_No surfaces named at intake. The designer authors the registry._');
   } else {
-    lines.add('| id | shell | comp | label | surface |');
-    lines.add('|---|---|---|---|---|');
+    lines.add('| id | shell | comp | label | states | surface |');
+    lines.add('|---|---|---|---|---|---|');
     for (final s in surfaceList) {
       final surf = s as Map;
+      final states = surf['states'];
+      final statesCell = (states is List && states.isNotEmpty) ? states.join(', ') : '';
       lines.add('| `${surf['id']}` | ${surf['shell']} | '
-          '${deriveComp(surf['id'] as String)} | ${surf['label']} | _null_ |');
+          '${deriveComp(surf['id'] as String)} | ${surf['label']} | $statesCell | _null_ |');
     }
     lines.add('');
     lines.add('Every `surface` is `null` — intake names what the client asked for; '
@@ -407,8 +477,9 @@ List<Map<String, dynamic>> seedFromBrief(String md) {
       'surface': null,
     };
     // additive sibling metadata (never woven into the four required fields):
-    // optional columns pass through — appbox-story-mapper emits priority/release.
-    for (final opt in const ['priority', 'release']) {
+    // optional columns pass through — appbox-story-mapper emits priority/release,
+    // intake's surface inventory emits states.
+    for (final opt in const ['priority', 'release', 'states']) {
       final col = headerIdx[opt];
       if (col != null && col < cells.length) {
         final val = cells[col].trim();
@@ -483,7 +554,7 @@ class IntakeEngine {
   /// Turn validated [answers] into brief.md + registry.json. On invalid input,
   /// writes nothing and returns [EmitResult.failure] (no partial artefacts).
   /// Paths fall back to `INTAKE_BRIEF_OUT`/`INTAKE_REGISTRY_OUT` then to
-  /// `<repo>/docs/design/{brief.md,registry.json}`.
+  /// [defaultBriefOut]/[defaultRegistryOut].
   EmitResult emit(
     Map<String, dynamic> answers, {
     String? briefOut,
@@ -535,8 +606,35 @@ int _countInferred(Map<String, dynamic> answers) {
 String defaultBriefOut() =>
     Platform.environment['INTAKE_BRIEF_OUT'] ?? '${repoRoot()}/docs/design/brief.md';
 
-String defaultRegistryOut() =>
-    Platform.environment['INTAKE_REGISTRY_OUT'] ?? '${repoRoot()}/docs/design/registry.json';
+/// Default registry output: the GATE's canonical path, not the legacy
+/// docs/design/ one (which the gate never reads). This is a deliberate
+/// divergence from the Python emit. Mirrors `_resolveRegistry` in
+/// gate_intake.dart — keep them in step; intake.dart does NOT import the gate.
+String defaultRegistryOut() {
+  final env = Platform.environment['INTAKE_REGISTRY_OUT'];
+  if (env != null) return env;
+  final root = repoRoot();
+  final designRoot = '$root/designs/appbox-studio';
+  if (!Directory(designRoot).existsSync()) {
+    // No design root yet (pre-scaffold) — the legacy fallback.
+    return '$root/docs/design/registry.json';
+  }
+  var rel = 'models/screens_model/registry.json';
+  final struct = File('$designRoot/structure.json');
+  if (struct.existsSync()) {
+    try {
+      final data = jsonDecode(struct.readAsStringSync());
+      if (data is Map &&
+          data['registry'] is String &&
+          (data['registry'] as String).isNotEmpty) {
+        rel = data['registry'] as String;
+      }
+    } catch (_) {
+      // keep default on parse error (same as the gate)
+    }
+  }
+  return '$designRoot/$rel';
+}
 
 /// Repo root: walk up from the cwd for `config/appbox.config.json` (the same
 /// discovery `appbox` uses), falling back to the cwd.

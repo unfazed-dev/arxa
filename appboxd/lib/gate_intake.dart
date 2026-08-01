@@ -9,6 +9,12 @@
 //   1. intake answers — pipeline/state/run.intake.json, then default.intake.json
 //   2. hand-written brief (10.7) — the design's brief.md, then docs/design/brief.md
 //
+// When the source is intake answers AND a brief exists on disk, the gate ALSO
+// checks the brief carries the chain's sections (`## Surface inventory`, plus
+// `## Layout template` when the answers declare one) — a stale standalone
+// brief fails and must be re-emitted via the chain. Hand-written briefs
+// without answers (10.7) skip this section check entirely.
+//
 // The registry path comes from structure.json's "registry" field (default
 // models/screens_model/registry.json), relative to the design root — the
 // engine's seed path, never the legacy docs/design/ path. If no source AND no
@@ -42,6 +48,7 @@ GateResult intakeGate(GateContext ctx) {
   // ---- collect SOURCE surface ids -------------------------------------------
   final sourceIds = <String>[];
   String? sourceLabel;
+  Map<dynamic, dynamic>? answersDoc;
 
   if (answersPath != null) {
     try {
@@ -51,6 +58,7 @@ GateResult intakeGate(GateContext ctx) {
       final answers =
           (data is Map && data.containsKey('answers')) ? data['answers'] : data;
       if (answers is Map) {
+        answersDoc = answers;
         final surfaces = answers['surfaces'];
         if (surfaces is List) {
           for (final s in surfaces) {
@@ -72,6 +80,27 @@ GateResult intakeGate(GateContext ctx) {
   if (sourceIds.isEmpty && briefPath != null) {
     _collectBriefIds(briefPath, sourceIds);
     if (sourceIds.isNotEmpty) sourceLabel = 'brief surface table';
+  }
+
+  // ---- brief-section check (chain briefs only) -------------------------------
+  // When the source is intake answers and a brief exists, the brief must be
+  // the UNIFIED chain brief: `## Surface inventory` always, `## Layout
+  // template` when the answers declare a layoutTemplate. Hand-written briefs
+  // without answers (10.7) skip this entirely.
+  if (sourceLabel == 'intake answers' && briefPath != null) {
+    const chainHint = 're-emit via the chain: appbox emit story-map '
+        '--brief-out <brief.md> --answers <answers.json>';
+    final md = File(briefPath).readAsStringSync();
+    bool hasHeading(String prefix) =>
+        md.split('\n').any((l) => l.trimLeft().startsWith(prefix));
+    if (!hasHeading('## Surface inventory')) {
+      fail("brief $briefPath has no '## Surface inventory' heading — $chainHint");
+    }
+    if (answersDoc!.containsKey('layoutTemplate') &&
+        !hasHeading('## Layout template')) {
+      fail('answers declare a layoutTemplate but brief $briefPath has no '
+          "'## Layout template' heading — $chainHint");
+    }
   }
 
   // ---- collect REGISTRY surface ids -----------------------------------------

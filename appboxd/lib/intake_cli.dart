@@ -223,11 +223,61 @@ int _selfTest() {
     if (reg.any((e) => e['surface'] != null)) {
       throw 'a seed surface is non-null (intake must not design)';
     }
+    // 6b. states round-trip into the registry as an additive key
+    if (!_listEq((reg[0]['states'] as List).cast<String>(), ['empty', 'loading'])) {
+      throw 'states not carried into the registry: ${reg[0]}';
+    }
+    if (reg[1].containsKey('states')) {
+      throw 'states key must be omitted when absent (additive only)';
+    }
+    // 7. bad direction shape rejected and named
+    final badDir = goodAnswers()
+      ..['direction'] = {'value': 'minimal', 'provenance': 'client'};
+    final eDir = validateIntake(badDir).errors;
+    if (!eDir.any((e) => e.contains('direction'))) {
+      throw 'missed bad direction value: $eDir';
+    }
+    final badDir2 = goodAnswers()
+      ..['direction'] = {
+        'value': {'adjectives': [1, 2]},
+        'provenance': 'client',
+      };
+    final eDir2 = validateIntake(badDir2).errors;
+    if (!eDir2.any((e) => e.contains('direction') && e.contains('adjectives'))) {
+      throw 'missed bad direction.adjectives: $eDir2';
+    }
+    // 7b. bad locales/contentAnchors/states shapes rejected and named
+    final badLoc = goodAnswers()
+      ..['locales'] = {'value': 'en', 'provenance': 'client'};
+    if (!validateIntake(badLoc).errors.any((e) => e.contains('locales'))) {
+      throw 'missed bad locales value';
+    }
+    final badStates = goodAnswers();
+    ((badStates['surfaces'] as List)[0] as Map)['states'] = 'empty';
+    if (!validateIntake(badStates).errors.any((e) => e.contains('states'))) {
+      throw 'missed bad states value';
+    }
     // 8. comp derivation by convention
     if (deriveComp('shop.cart') != 'ShopCart') throw 'comp derivation wrong';
     // 9. inferred field is visibly marked; client field is not
     final brief = emitBrief(good);
     if (!brief.contains('**[inferred]**')) throw 'inferred field not marked';
+    // 10. new sections render: locales, direction, content anchors, states col
+    if (!brief.contains('## Locales') || !brief.contains('- en')) {
+      throw 'locales section missing from the brief';
+    }
+    if (!brief.contains('## Design direction') ||
+        !brief.contains('- adjectives: calm, dense') ||
+        !brief.contains('- avoids: playful gradients')) {
+      throw 'direction section missing from the brief';
+    }
+    if (!brief.contains('## Content anchors')) {
+      throw 'content anchors section missing from the brief';
+    }
+    if (!brief.contains('| id | shell | comp | label | states | surface |') ||
+        !brief.contains('| `projects.home` | projects | ProjectsHome | Home | empty, loading | _null_ |')) {
+      throw 'states column missing from the brief surface table';
+    }
     // 12. a brief with no surface table -> empty seed
     if (seedFromBrief('# Just prose\n\nNo table here.\n').isNotEmpty) {
       throw 'empty brief should seed nothing';
@@ -242,7 +292,10 @@ int _selfTest() {
 
 Map<String, dynamic> goodAnswers() => {
       'product': {'value': 'Demo app', 'provenance': 'client'},
-      'audience': {'value': 'Indie devs', 'provenance': 'client'},
+      'audience': {
+        'value': 'When I have a client brief, I want to scaffold the app, so I can skip boilerplate',
+        'provenance': 'client',
+      },
       'appMustDo': {
         'value': ['list projects', 'run a build'],
         'provenance': 'client',
@@ -251,12 +304,41 @@ Map<String, dynamic> goodAnswers() => {
         'value': ['macos'],
         'provenance': 'client',
       },
+      'locales': {
+        'value': ['en', 'pl'],
+        'provenance': 'client',
+      },
       'brand': {'value': 'none stated', 'provenance': 'inferred'},
+      'direction': {
+        'value': {
+          'adjectives': ['calm', 'dense'],
+          'avoids': ['playful gradients'],
+        },
+        'provenance': 'client',
+      },
+      'contentAnchors': {
+        'value': ['Q3 roadmap', 'invoice #1042'],
+        'provenance': 'client',
+      },
       'surfaces': [
-        {'id': 'projects.home', 'label': 'Home', 'shell': 'projects', 'provenance': 'client'},
+        {
+          'id': 'projects.home',
+          'label': 'Home',
+          'shell': 'projects',
+          'states': ['empty', 'loading'],
+          'provenance': 'client',
+        },
         {'id': 'projects.new', 'label': 'New', 'shell': 'projects', 'provenance': 'client'},
       ],
     };
+
+bool _listEq(List<String> a, List<String> b) {
+  if (a.length != b.length) return false;
+  for (var i = 0; i < a.length; i++) {
+    if (a[i] != b[i]) return false;
+  }
+  return true;
+}
 
 // -- io ---------------------------------------------------------------------
 

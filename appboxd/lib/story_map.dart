@@ -3,11 +3,16 @@
 // (HTML + JSON + gate-compatible design brief) from a story-map.json input.
 //
 // Pure functions + File-based I/O; matches the package's top-level-function
-// convention (emit_structure.dart, validate_docs.dart). Output must be
-// byte-identical to the Python original so the intake gate (plan 10.7) sees
-// the same surface ids + markup — the surface table is the traceability source.
+// convention (emit_structure.dart, validate_docs.dart). The STANDALONE brief
+// (renderBrief without `answers`) must stay byte-identical to the Python
+// original so the intake gate (plan 10.7) sees the same surface ids + markup —
+// the surface table is the traceability source. The `answers:` path is the
+// intake → story-map CHAIN (Dart-only): one unified brief, intake sections
+// rendered by intake.dart's renderBriefSections.
 
 import 'dart:convert';
+
+import 'package:appboxd/intake.dart';
 
 // ── priorities ─────────────────────────────────────────────────────
 
@@ -267,8 +272,20 @@ Surfaces deriveSurfaces(Map<String, dynamic> data) {
 /// Render the gate-compatible design brief. Pass [derived] to reuse a prior
 /// [deriveSurfaces] call (the CLI does, for the surface count); otherwise it
 /// is derived here.
-String renderBrief(Map<String, dynamic> data, [Surfaces? derived]) {
+///
+/// When [answers] (validated intake answers) is passed, this renders the
+/// UNIFIED brief of the intake → story-map chain: the intake sections with
+/// provenance marks (via intake.dart's [renderBriefSections] — one renderer,
+/// no duplication), then releases + story hierarchy, then a surface inventory
+/// built from the DECLARED intake surfaces. When [answers] is null the
+/// standalone story-map brief is rendered, byte-for-byte as before.
+String renderBrief(
+  Map<String, dynamic> data, {
+  Surfaces? derived,
+  Map<String, dynamic>? answers,
+}) {
   final d = derived ?? deriveSurfaces(data);
+  if (answers != null) return _renderUnifiedBrief(data, d, answers);
   final lines = <String>[
     "# ${data['project']} — design brief",
     '',
@@ -281,19 +298,107 @@ String renderBrief(Map<String, dynamic> data, [Surfaces? derived]) {
     '',
     data['project'] as String,
     '',
-    '## Releases',
+  ];
+  lines.addAll(_releaseLines(data));
+  lines.addAll(_hierarchyLines(data));
+  lines
+    ..add('## Surface inventory')
+    ..add('')
+    ..add('| id | label | priority | release |')
+    ..add('|----|-------|----------|---------|');
+  for (final s in d.surfaces) {
+    lines.add('| `${s.id}` | ${s.label} | ${s.priority} | ${s.release} |');
+  }
+  lines.add('');
+  lines.addAll(_outOfScopeLines(d));
+  return lines.join('\n');
+}
+
+/// The unified chain brief: intake sections first (provenance marks intact),
+/// then the story-map content. The surface inventory names the DECLARED
+/// intake surfaces; story-map derivation is only the fallback and every
+/// derived row is visibly flagged `— [inferred]`.
+String _renderUnifiedBrief(
+  Map<String, dynamic> data,
+  Surfaces d,
+  Map<String, dynamic> answers,
+) {
+  final productNode = answers['product'];
+  final product = (productNode is Map && productNode['value'] != null)
+      ? productNode['value'].toString()
+      : data['project'] as String;
+  final lines = <String>[
+    '# $product — design brief',
+    '',
+    '> Emitted by the intake → story-map chain from elicited answers.',
+    '> Fields marked **[inferred]** were not stated by the client and MUST',
+    '> be confirmed before design consumes this brief.',
     '',
   ];
+  lines.addAll(renderBriefSections(answers));
+  lines.addAll(_releaseLines(data));
+  lines.addAll(_hierarchyLines(data));
+  lines.addAll(_unifiedSurfaceTable(data, d, answers));
+  lines.addAll(_outOfScopeLines(d));
+  return lines.join('\n');
+}
+
+/// Unified surface inventory: declared intake surfaces first — priority and
+/// release roll up from the attaching feature (a feature whose explicit `id`
+/// equals the intake surface id; blank when none attaches) — then derived
+/// story-map surfaces that attach to nothing, flagged `— [inferred]`.
+List<String> _unifiedSurfaceTable(
+  Map<String, dynamic> data,
+  Surfaces d,
+  Map<String, dynamic> answers,
+) {
+  final lines = <String>[
+    '## Surface inventory',
+    '',
+    '| id | label | states | priority | release |',
+    '|----|-------|--------|----------|---------|',
+  ];
+  final raw = answers['surfaces'];
+  final declared = raw is List ? raw : const [];
+  final explicitIds = <String>{
+    for (final epic in (data['epics'] as List).cast<Map<String, dynamic>>())
+      for (final feat
+          in ((epic['features'] as List?) ?? const []).cast<Map<String, dynamic>>())
+        if (feat['id'] is String) feat['id'] as String,
+  };
+  final declaredIds = <String>{};
+  final byId = {for (final s in d.surfaces) s.id: s};
+  for (final s in declared) {
+    final surf = s as Map;
+    final sid = surf['id'].toString();
+    declaredIds.add(sid);
+    final states = surf['states'];
+    final statesCell = (states is List && states.isNotEmpty) ? states.join(', ') : '';
+    final deriv = explicitIds.contains(sid) ? byId[sid] : null;
+    lines.add('| `$sid` | ${surf['label']} | $statesCell | '
+        '${deriv?.priority ?? ''} | ${deriv?.release ?? ''} |');
+  }
+  for (final s in d.surfaces) {
+    if (declaredIds.contains(s.id)) continue;
+    lines.add('| `${s.id}` | ${s.label} — [inferred] |  | ${s.priority} | ${s.release} |');
+  }
+  lines.add('');
+  return lines;
+}
+
+List<String> _releaseLines(Map<String, dynamic> data) {
+  final lines = <String>['## Releases', ''];
   for (final rel in (data['releases'] as List).cast<Map<String, dynamic>>()) {
     final desc = rel['description'] is String
         ? ' — ${rel['description'] as String}'
         : '';
     lines.add("- **${rel['name']}**$desc");
   }
-  lines
-    ..add('')
-    ..add('## The things the app must do')
-    ..add('');
+  return lines;
+}
+
+List<String> _hierarchyLines(Map<String, dynamic> data) {
+  final lines = <String>['', '## The things the app must do', ''];
   for (final epic in (data['epics'] as List).cast<Map<String, dynamic>>()) {
     lines.add('### ${epic['name']}');
     lines.add('');
@@ -312,15 +417,11 @@ String renderBrief(Map<String, dynamic> data, [Surfaces? derived]) {
       lines.add('');
     }
   }
-  lines
-    ..add('## Surface inventory')
-    ..add('')
-    ..add('| id | label | priority | release |')
-    ..add('|----|-------|----------|---------|');
-  for (final s in d.surfaces) {
-    lines.add('| `${s.id}` | ${s.label} | ${s.priority} | ${s.release} |');
-  }
-  lines.add('');
+  return lines;
+}
+
+List<String> _outOfScopeLines(Surfaces d) {
+  final lines = <String>[];
   if (d.outOfScope.isNotEmpty) {
     lines.add('## Out of scope');
     lines.add('');
@@ -329,7 +430,7 @@ String renderBrief(Map<String, dynamic> data, [Surfaces? derived]) {
     }
     lines.add('');
   }
-  return lines.join('\n');
+  return lines;
 }
 
 // ── HTML ───────────────────────────────────────────────────────────

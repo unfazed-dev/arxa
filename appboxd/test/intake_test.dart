@@ -1,8 +1,9 @@
 // Tests for the Dart intake engine — port of skills/appbox-intake/intake.py.
 //
-// The brief/registry goldens below were captured byte-for-byte from the Python
-// engine (`emit_brief` / `emit_registry`) on the `goodAnswers()` fixture; the
-// byte-identity must hold or the port has drifted.
+// The registry golden below was captured byte-for-byte from the Python engine
+// (`emit_registry`) on the `goodAnswers()` fixture. The brief golden DIVERGES
+// deliberately: the merged chain added Locales / Design direction / Content
+// anchors sections and a states column the Python engine does not emit.
 
 import 'dart:convert';
 import 'dart:io';
@@ -67,7 +68,9 @@ Map<String, dynamic> goodWithLayout() {
   return a;
 }
 
-// The exact bytes the Python engine emits for goodAnswers() — the contract.
+// The exact bytes the Dart engine emits for goodAnswers(). Sections through
+// "Existing systems" are byte-identical to the Python golden; from "Locales"
+// on the merged chain diverges deliberately (new field groups + states column).
 const expectedBrief = '''# Demo app — design brief
 
 > Emitted by appbox-intake from elicited answers.
@@ -103,6 +106,9 @@ _Not stated._
 
 _provenance: client_
 
+## Locales
+
+_Not stated._
 ## Brand
 
 > **[inferred]** — not stated by the client; confirm or correct.
@@ -111,6 +117,12 @@ none stated
 
 _provenance: inferred_
 
+## Design direction
+
+_Not stated._
+## Content anchors
+
+_Not stated._
 ## Constraints
 
 _Not stated._
@@ -122,10 +134,10 @@ _Not stated._
 _Not stated._
 ## Surface inventory — the registry seed
 
-| id | shell | comp | label | surface |
-|---|---|---|---|---|
-| `projects.home` | projects | ProjectsHome | Home | _null_ |
-| `projects.new` | projects | ProjectsNew | New | _null_ |
+| id | shell | comp | label | states | surface |
+|---|---|---|---|---|---|
+| `projects.home` | projects | ProjectsHome | Home |  | _null_ |
+| `projects.new` | projects | ProjectsNew | New |  | _null_ |
 
 Every `surface` is `null` — intake names what the client asked for; design binds a surface to each.
 ''';
@@ -265,7 +277,7 @@ void main() {
       expect(reg.every((e) => e['surface'] == null), isTrue);
     });
 
-    test('emitBrief is byte-identical to the Python golden', () {
+    test('emitBrief matches the golden (chain sections included)', () {
       expect(emitBrief(goodAnswers()), expectedBrief);
     });
 
@@ -385,6 +397,154 @@ void main() {
       final res = engine.seed(briefPath, registryOut: registryPath);
       expect(res.registry.length, 2);
       expect(File(registryPath).readAsStringSync(), expectedSeed);
+    });
+  });
+
+  group('validate — new field groups', () {
+    Map<String, dynamic> withNewFields() {
+      final a = goodAnswers();
+      a['locales'] = {'value': ['en', 'pl'], 'provenance': 'client'};
+      a['direction'] = {
+        'value': {'adjectives': ['calm'], 'avoids': ['noisy']},
+        'provenance': 'client',
+      };
+      a['contentAnchors'] = {'value': ['Q3 roadmap'], 'provenance': 'client'};
+      return a;
+    }
+
+    test('direction/contentAnchors/locales validate when well-formed', () {
+      expect(validateIntake(withNewFields()).errors, isEmpty);
+    });
+
+    test('direction value that is not an object is rejected and named', () {
+      final bad = withNewFields()
+        ..['direction'] = {'value': 'minimal', 'provenance': 'client'};
+      final errs = validateIntake(bad).errors;
+      expect(errs.any((e) => e.contains('direction')), isTrue);
+    });
+
+    test('direction.adjectives that is not a string list is rejected and named', () {
+      final bad = withNewFields()
+        ..['direction'] = {
+          'value': {'adjectives': [1, 2]},
+          'provenance': 'client',
+        };
+      final errs = validateIntake(bad).errors;
+      expect(
+          errs.any((e) => e.contains('direction') && e.contains('adjectives')),
+          isTrue);
+    });
+
+    test('locales that is not a string list is rejected and named', () {
+      final bad = withNewFields()
+        ..['locales'] = {'value': 'en', 'provenance': 'client'};
+      expect(validateIntake(bad).errors.any((e) => e.contains('locales')), isTrue);
+    });
+
+    test('contentAnchors that is not a string list is rejected and named', () {
+      final bad = withNewFields()
+        ..['contentAnchors'] = {'value': 'roadmap', 'provenance': 'client'};
+      expect(validateIntake(bad).errors.any((e) => e.contains('contentAnchors')),
+          isTrue);
+    });
+
+    test('surface states that is not a string list is rejected and named', () {
+      final bad = goodAnswers();
+      ((bad['surfaces'] as List)[0] as Map)['states'] = 'empty';
+      final errs = validateIntake(bad).errors;
+      expect(errs.any((e) => e.contains('surfaces[0]') && e.contains('states')),
+          isTrue);
+    });
+  });
+
+  group('states — validate → registry → brief round-trip', () {
+    Map<String, dynamic> withStates() {
+      final a = goodAnswers();
+      // Replace the surfaces wholesale — the fixture's literal maps are
+      // reified Map<String, String> and reject a List value on mutation.
+      a['surfaces'] = [
+        {
+          'id': 'projects.home',
+          'label': 'Home',
+          'shell': 'projects',
+          'states': ['empty', 'loading'],
+          'provenance': 'client',
+        },
+        {
+          'id': 'projects.new',
+          'label': 'New',
+          'shell': 'projects',
+          'provenance': 'client',
+        },
+      ];
+      return a;
+    }
+
+    test('states validate and land in the registry as an additive key', () {
+      final a = withStates();
+      expect(validateIntake(a).errors, isEmpty);
+      final reg = emitRegistry(a);
+      expect(reg[0]['states'], ['empty', 'loading']);
+      expect(reg[0].keys.toList(),
+          ['id', 'label', 'shell', 'comp', 'surface', 'states']);
+      // absent states -> no key at all (additive only)
+      expect(reg[1].containsKey('states'), isFalse);
+    });
+
+    test('the brief surface table carries the states column', () {
+      final brief = emitBrief(withStates());
+      expect(brief.contains('| id | shell | comp | label | states | surface |'),
+          isTrue);
+      expect(
+          brief.contains(
+              '| `projects.home` | projects | ProjectsHome | Home | empty, loading | _null_ |'),
+          isTrue);
+    });
+
+    test('seedFromBrief passes a states column through as sibling metadata', () {
+      const tbl =
+          '| id | label | states |\n|---|---|---|\n| `shop.cart` | Cart | empty, loading |\n';
+      final s = seedFromBrief(tbl);
+      expect(s[0]['states'], 'empty, loading');
+      expect(s[0]['surface'], null);
+    });
+  });
+
+  group('defaultRegistryOut — mirrors the gate resolver', () {
+    late Directory tmp;
+    late Directory prevDir;
+
+    setUp(() {
+      // resolveSymbolicLinksSync: Directory.current is symlink-resolved on
+      // macOS (/var -> /private/var), so compare resolved paths.
+      tmp = Directory(Directory.systemTemp
+          .createTempSync('appbox_registry_out')
+          .resolveSymbolicLinksSync());
+      prevDir = Directory.current;
+      File('${tmp.path}/config/appbox.config.json').createSync(recursive: true);
+      Directory.current = tmp;
+    });
+    tearDown(() {
+      Directory.current = prevDir;
+      if (tmp.existsSync()) tmp.deleteSync(recursive: true);
+    });
+
+    test('no design root -> legacy docs/design/registry.json fallback', () {
+      expect(defaultRegistryOut(), '${tmp.path}/docs/design/registry.json');
+    });
+
+    test('design root without structure.json -> models/screens_model default', () {
+      Directory('${tmp.path}/designs/appbox-studio').createSync(recursive: true);
+      expect(defaultRegistryOut(),
+          '${tmp.path}/designs/appbox-studio/models/screens_model/registry.json');
+    });
+
+    test('structure.json "registry" field wins', () {
+      Directory('${tmp.path}/designs/appbox-studio').createSync(recursive: true);
+      File('${tmp.path}/designs/appbox-studio/structure.json')
+          .writeAsStringSync('{"registry": "custom/reg.json"}');
+      expect(defaultRegistryOut(),
+          '${tmp.path}/designs/appbox-studio/custom/reg.json');
     });
   });
 

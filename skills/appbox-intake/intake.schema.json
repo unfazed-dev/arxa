@@ -13,7 +13,7 @@
     },
     "audience": {
       "$ref": "#/definitions/field",
-      "description": "Who the app is for."
+      "description": "Who the app is for, in JTBD format: 'When [situation], I want [motivation], so I can [outcome]'."
     },
     "appMustDo": {
       "$ref": "#/definitions/fieldList",
@@ -27,9 +27,21 @@
       "$ref": "#/definitions/field",
       "description": "Platform-only targets (architecture §11); viewports derive. value is an array of platform strings."
     },
+    "locales": {
+      "$ref": "#/definitions/fieldList",
+      "description": "Target locales (BCP-47-ish, e.g. en, pl — not regex-validated). Rendered immediately after Targets. Optional."
+    },
     "brand": {
       "$ref": "#/definitions/field",
       "description": "Name, colour, voice — only if the client stated one."
+    },
+    "direction": {
+      "$ref": "#/definitions/directionField",
+      "description": "Design direction: adjectives to aim for and anti-goals to avoid. Rendered after Brand. Optional."
+    },
+    "contentAnchors": {
+      "$ref": "#/definitions/fieldList",
+      "description": "Real content anchors — actual names, labels, items the design must use, not lorem. Rendered after Design direction. Optional."
     },
     "constraints": {
       "$ref": "#/definitions/fieldList",
@@ -70,6 +82,30 @@
       "additionalProperties": false,
       "properties": {
         "value": { "type": "array", "items": { "type": "string" } },
+        "provenance": { "$ref": "#/definitions/provenance" }
+      }
+    },
+    "directionField": {
+      "type": "object",
+      "required": ["value", "provenance"],
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "adjectives": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "Words the design should feel like."
+            },
+            "avoids": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "Anti-goals — what the design must NOT feel like."
+            }
+          }
+        },
         "provenance": { "$ref": "#/definitions/provenance" }
       }
     },
@@ -128,6 +164,11 @@
           "type": "string",
           "pattern": "^[a-z][a-z0-9]*$",
           "description": "The shell group this surface belongs to; MUST equal the id's first segment."
+        },
+        "states": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Optional per-surface states (e.g. empty, loading, error). Carried into the registry seed as an additive key when non-empty."
         },
         "provenance": { "$ref": "#/definitions/provenance" }
       }

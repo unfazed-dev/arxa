@@ -8,6 +8,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:appboxd/intake.dart' show repoRoot, validateIntake;
 import 'package:appboxd/story_map.dart';
 
 const _usage = '''
@@ -18,6 +19,9 @@ Options:
   -o, --output <path>    Output HTML file (required, unless --self-test)
       --data-out <path>  Write the validated story-map data JSON here
       --brief-out <path> Write the gate-compatible design brief here
+      --answers <path>   Intake answers for the UNIFIED chain brief
+                         (default: pipeline/state/run.intake.json, then
+                         default.intake.json, under the repo root)
       --self-test        Run the embedded self-check and exit
 ''';
 
@@ -27,6 +31,7 @@ int storyMapMain(List<String> args) {
   String? output;
   String? dataOut;
   String? briefOut;
+  String? answersPath;
   var selfTest = false;
 
   for (var i = 0; i < args.length; i++) {
@@ -49,6 +54,10 @@ int storyMapMain(List<String> args) {
       case '--brief-out':
         if (++i >= args.length) return _usageErr('flag $a needs a value');
         briefOut = args[i];
+        break;
+      case '--answers':
+        if (++i >= args.length) return _usageErr('flag $a needs a value');
+        answersPath = args[i];
         break;
       case '--self-test':
         selfTest = true;
@@ -94,6 +103,26 @@ int storyMapMain(List<String> args) {
     return 1;
   }
 
+  // Answers only matter when a brief is being written. Resolve + validate
+  // BEFORE any artefact is written: invalid answers exit 1 writing nothing.
+  Map<String, dynamic>? answers;
+  if (briefOut != null) {
+    if (answersPath != null && !File(answersPath).existsSync()) {
+      stderr.writeln('Intake answers: file not found: $answersPath');
+      return 1;
+    }
+    answers = _loadAnswers(answersPath);
+    if (answers != null) {
+      final aErrs = validateIntake(answers).errors;
+      if (aErrs.isNotEmpty) {
+        for (final err in aErrs) {
+          stderr.writeln('Intake answers error: $err');
+        }
+        return 1;
+      }
+    }
+  }
+
   File(output).writeAsStringSync(renderHtml(data));
   print('Story map generated: $output');
 
@@ -104,11 +133,44 @@ int storyMapMain(List<String> args) {
 
   if (briefOut != null) {
     final d = deriveSurfaces(data);
-    File(briefOut).writeAsStringSync(renderBrief(data, d));
+    File(briefOut).writeAsStringSync(renderBrief(data, derived: d, answers: answers));
     print('Design brief written: $briefOut '
         '(${d.surfaces.length} surfaces, ${d.outOfScope.length} out-of-scope)');
   }
   return 0;
+}
+
+/// Load intake answers for the unified brief. Explicit [path] wins; otherwise
+/// auto-discover pipeline/state/run.intake.json then default.intake.json under
+/// the repo root (same order as gate_intake's `_resolveAnswers`). A state file
+/// wrapping answers under an "answers" key is unwrapped; anything that is not
+/// an answers Map (missing file, `null` slot) means "no answers" — the brief
+/// falls back to the standalone story-map rendering.
+Map<String, dynamic>? _loadAnswers(String? path) {
+  String? resolved = path;
+  if (resolved == null) {
+    final root = repoRoot();
+    for (final rel in const [
+      'pipeline/state/run.intake.json',
+      'pipeline/state/default.intake.json',
+    ]) {
+      if (File('$root/$rel').existsSync()) {
+        resolved = '$root/$rel';
+        break;
+      }
+    }
+  }
+  if (resolved == null) return null;
+  final Object? decoded;
+  try {
+    decoded = jsonDecode(File(resolved).readAsStringSync());
+  } on FormatException catch (e) {
+    stderr.writeln('Intake answers $resolved: JSON parse error — $e');
+    return null;
+  }
+  if (decoded is! Map) return null;
+  final answers = decoded.containsKey('answers') ? decoded['answers'] : decoded;
+  return answers is Map ? answers.cast<String, dynamic>() : null;
 }
 
 int _usageErr(String msg) {
@@ -206,7 +268,7 @@ void storyMapSelfTest() {
   if (empty.priority != '' || empty.release != '') {
     throw StateError('no stories -> blank rollup');
   }
-  final brief = renderBrief(sample, d);
+  final brief = renderBrief(sample, derived: d);
   // Simulate the gate's table parse: first id-shaped cell per row.
   final sepRe = RegExp(r'^[-: ]+$');
   final found = <String>[];
