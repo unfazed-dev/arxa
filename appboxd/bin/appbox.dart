@@ -57,6 +57,7 @@ import 'package:appboxd/api_map_scan.dart';
 import 'package:appboxd/capability_scan.dart';
 import 'package:appboxd/gen_playbook.dart';
 import 'package:appboxd/intake_cli.dart';
+import 'package:appboxd/project_cli.dart';
 import 'package:appboxd/kb_build.dart';
 import 'package:appboxd/kb_check.dart';
 import 'package:appboxd/kit_conventions.dart';
@@ -84,6 +85,8 @@ Future<void> main(List<String> args) async {
       exit(await deployMain(rest));
     case 'intake':
       exit(intakeMain(rest));
+    case 'project':
+      exit(projectMain(rest));
     case 'credentials':
       exit(await credentialsMain(
         rest,
