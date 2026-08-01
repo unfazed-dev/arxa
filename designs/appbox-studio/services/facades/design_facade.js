@@ -145,11 +145,12 @@ const applyEntry = (d, entry, dir) => {
 };
 
 // ---------- the shared design viewer (ui/common/design_viewer.html) ----------
-// One content mode: 'flow' — every screen as a draggable tile grouped by
-// shell (the retired prototype mode's device-chrome preview is gone; the
-// design shell itself plus inspect/fine-tuning replaces it). The mini panel
-// (screens/controller/actions) + undo/redo + element chips are always
-// produced.
+// Two lenses over the screen registry, switched by the `mode` viewer param:
+// 'flow' — every screen as a draggable tile grouped by shell; 'proto' — the
+// wired-app preview, one screen live at a real rung size inside device
+// chrome (screen/vp/os params). The mini panel (screens/controller/actions)
+// + undo/redo + element chips are always produced; in proto mode the
+// Screens panel picks the active screen instead of toggling chat context.
 const RUNG_VP = { 390: 'mobile', 744: 'tablet', 1280: 'desktop' };
 
 function viewerFor(d, L, t) {
@@ -178,25 +179,52 @@ function viewerFor(d, L, t) {
   const bg = ['canvas', 'warm', 'slate'].includes(v.bg) ? v.bg : 'canvas';
   const panel = ['screens', 'controller', 'actions'].includes(v.panel) ? v.panel : 'screens';
   const inspect = v.inspect === '1';
+  const mode = v.mode === 'proto' ? 'proto' : 'flow';
+  const active = screens.some((s) => s.id === v.screen) ? v.screen : screens[0]?.id;
+  const vp = ['mobile', 'tablet', 'desktop'].includes(v.vp) ? v.vp : 'mobile';
+  const os = ['ios', 'android'].includes(v.os) ? v.os : 'ios';
 
   // Viewer href builder: current viewer state merged with overrides, empties
   // dropped — so a controller toggle href only flips the one param it names.
+  // Defaults (flow mode, mobile rung, ios chrome) stay out of the URL.
   const withParams = (over) => {
-    const merged = { bg, inspect: inspect ? '1' : null, ...over };
+    const merged = {
+      bg, inspect: inspect ? '1' : null,
+      mode: mode === 'flow' ? null : mode,
+      screen: active,
+      vp: vp === 'mobile' ? null : vp,
+      os: os === 'ios' ? null : os,
+      ...over,
+    };
     const qs = Object.entries(merged).filter(([, val]) => val != null).map(([k, val]) => `${k}=${val}`).join('&');
     return qs ? `${base}?${qs}` : base;
   };
+
+  // The wired-app lens: device chrome around the live render at the real
+  // rung size. Only produced in proto mode.
+  const proto = mode === 'proto' ? {
+    active, vp, os,
+    src: `/build/screens/${active}?vp=${vp}&embed=1`,
+    rungs: ['mobile', 'tablet', 'desktop'].map((key) => ({ key, active: key === vp, href: withParams({ vp: key === 'mobile' ? null : key }) })),
+    oss: vp === 'mobile'
+      ? ['ios', 'android'].map((key) => ({ key, active: key === os, href: withParams({ os: key === 'ios' ? null : key }) }))
+      : null,
+  } : null;
 
   const miniPanel = {
     activePanel: panel,
     screens: screens.map((s) => ({
       id: s.id, label: s.label, tone: s.tone, inContext: s.inContext, dim: s.dim,
       src: `/build/screens/${s.id}?vp=mobile&embed=1`,
-      contextHref: `${contextBase}${s.id}?state=toggle`,
+      // flow: a thumb toggles chat context; proto: it picks the active screen.
+      ...(mode === 'proto'
+        ? { protoHref: withParams({ screen: s.id }), active: s.id === active }
+        : { contextHref: `${contextBase}${s.id}?state=toggle` }),
     })),
     controller: {
       inspectOn: inspect,
       inspectHref: withParams({ inspect: inspect ? null : '1' }),
+      modes: ['flow', 'proto'].map((key) => ({ key, active: key === mode, href: withParams({ mode: key === 'flow' ? null : key }) })),
       bgs: ['canvas', 'warm', 'slate'].map((value) => ({ value, active: value === bg, href: withParams({ bg: value }) })),
       undo: { can: (d.undoStacks?.canvas?.length ?? 0) > 0, href: '/design/undo/canvas' },
       redo: { can: (d.redoStacks?.canvas?.length ?? 0) > 0, href: '/design/redo/canvas' },
@@ -211,6 +239,7 @@ function viewerFor(d, L, t) {
   return {
     inspect,
     screens, bg,
+    mode, proto,
     strip: true,
     base, stubBase: '/build/screens/', contextBase,
     miniPanel,

@@ -28,19 +28,29 @@
    switching panels never loses it. The active panel is carried by the
    `panel` query param — zero custom JS. #}
 
-{# Screens — the filmstrip as context picker. A thumb toggles the screen's
-   chat-context chip (in-context thumbs carry the chip's tone); it swaps the
-   whole stage so the chip layer refreshes. #}
+{# Screens — flow mode: the filmstrip as context picker (a thumb toggles the
+   screen's chat-context chip). Proto mode: the filmstrip as screen picker —
+   a thumb makes that screen the wired-app preview's active screen, swapping
+   only the viewer. #}
 {% macro screensPanel(v, pnl) %}
 <div class="mini-panel-body" id="mini-panel-screens">
   <div class="mini-panel-strip">
     {% for s in pnl.screens %}
+    {% if s.protoHref %}
+    <a class="dv-thumb {{ 'on' if s.active }}"
+       href="{{ s.protoHref }}" hx-get="{{ s.protoHref }}" hx-target="#design-viewer" hx-swap="outerHTML"
+       title="{{ s.label or s.id }}">
+      <span class="dv-thumb-clip"><iframe src="{{ s.src }}" scrolling="no" tabindex="-1" title=""></iframe></span>
+      <span class="dv-thumb-label"><code>{{ s.id }}</code></span>
+    </a>
+    {% else %}
     <a class="dv-thumb {{ 'in-ctx ctx-' + s.tone if s.inContext }} {{ 'is-dim' if s.dim }}"
        href="{{ s.contextHref }}" hx-get="{{ s.contextHref }}" hx-target="#panels" hx-swap="outerHTML"
        title="{{ s.label or s.id }}">
       <span class="dv-thumb-clip"><iframe src="{{ s.src }}" scrolling="no" tabindex="-1" title=""></iframe></span>
       <span class="dv-thumb-label"><code>{{ s.id }}</code></span>
     </a>
+    {% endif %}
     {% endfor %}
   </div>
 </div>
@@ -53,6 +63,11 @@
 {% macro controllerPanel(v, pnl) %}
 {% set c = pnl.controller %}
 <div class="mini-panel-body" id="mini-panel-controller">
+  <span class="mini-panel-group" role="group" aria-label="{{ t('miniPanel.modeGroup') }}">
+    {% for m in c.modes %}
+    <a class="dv-chip {{ 'on' if m.active }}" href="{{ m.href }}" hx-get="{{ m.href }}" hx-target="#design-viewer" hx-swap="outerHTML">{{ t('viewer.modeLabel.' ~ m.key) }}</a>
+    {% endfor %}
+  </span>
   <span class="mini-panel-group">
     <a class="ico-btn {{ 'on' if c.inspectOn }}" href="{{ c.inspectHref }}" hx-get="{{ c.inspectHref }}" hx-target="#design-viewer" hx-swap="outerHTML" title="{{ t('miniPanel.inspect') }}">{{ icon('mouse-pointer-click', {size: 16}) }}</a>
     <button class="ico-btn" data-action="zoom-fit" title="{{ t('miniPanel.zoomFit') }}">{{ icon('maximize', {size: 16}) }}</button>
@@ -101,7 +116,11 @@
 {% set pnl = v.miniPanel %}
 {% set panel = pnl.activePanel or 'screens' %}
 {% set q = 'bg=' + (v.bg or 'canvas')
-        + ('&inspect=1' if v.inspect else '') %}
+        + ('&inspect=1' if v.inspect else '')
+        + ('&mode=proto' if v.mode == 'proto' else '')
+        + ('&screen=' + v.proto.active if v.proto else '')
+        + ('&vp=' + v.proto.vp if v.proto and v.proto.vp != 'mobile' else '')
+        + ('&os=' + v.proto.os if v.proto and v.proto.os != 'ios' else '') %}
 <nav class="mini-panel" aria-label="{{ t('miniPanel.aria') }}">
   <div class="mini-panel-bar">
     <button class="mini-panel-tab {{ 'is-active' if panel == 'screens' }}"

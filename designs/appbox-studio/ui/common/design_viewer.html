@@ -2,20 +2,26 @@
      generator: appbox  licence: free  project: 662368770980
      Built with appbox (free tier) — https://appbox.dev
 -->
-{# ---------- Shared screen stage: the artboard canvas, flow mode only -------
-   ONE artboard canvas: every screen as a chromeless tile (?embed=1) at its
-   primary authored width, grouped by shell (structure.json screens[].shell)
-   into block-flow rows. Tiles drag freely; x/y POSTed on drop, a saved
-   position renders the tile absolute (group-relative). The per-screen pin
-   stays always-on where the shell passes a contextBase. The retired
-   prototype mode (the device-chrome wired-app preview) is gone — the design
-   shell itself plus inspect/fine-tuning replaces it.
+{# ---------- Shared screen stage: two lenses over the screen registry ------
+   Lens switch is server state (v.mode), swapped through #design-viewer:
+     flow  — every screen as a chromeless tile (?embed=1) at its primary
+             authored width, grouped by shell into block-flow rows. Tiles
+             drag freely; x/y POSTed on drop, a saved position renders the
+             tile absolute (group-relative).
+     proto — the wired-app preview: ONE screen live at a REAL rung size
+             inside device chrome (ios/android phone, tablet, desktop
+             window), rung + os switched from the proto bar, the active
+             screen picked from the Screens mini panel.
+   The per-screen pin stays always-on where the shell passes a contextBase.
    The bottom-anchored mini panel (Screens / Controller / Actions panels)
    renders inside the viewer via ui/common/mini_panel.html. Canon markup:
    canvas-redesign-contract.md §3. Every parameter travels in v (the shell's
    facade viewerFor produces it — see contract §1):
      v.screens  [{ id, label?, state?, chips? [{text,title}], viewports,
                   inContext?, dim?, tone?, shell, layout?, primaryWidth }]
+     v.mode     'flow' (default) | 'proto'
+     v.proto    present in proto mode: { active, vp, os, src, rungs
+                  [{key,active,href}], oss? [{key,active,href}] }
      v.inspect  bool — inspect island armed (default false)
      v.static   bool — read-only canvas (build evidence): no drag/marquee,
                 no pin affordances
@@ -23,7 +29,7 @@
      v.base     route prefix for viewer actions — toggles GET it with params
                 and swap #design-viewer
      v.stubBase iframe src prefix — the served design render per screen
-                (flow appends ?embed=1)
+                (flow appends ?embed=1, proto ?vp=<rung>&embed=1)
      v.contextBase — present where screens can pin as chat context (design
                 shell): tile pins GET {contextBase}{id}?state=toggle and swap
                 #panels. Screens in context render with a .ctx-<tone>
@@ -33,11 +39,66 @@
    ui/common/_integration_viewer.md. #}
 {% import "ui/common/mini_panel.html" as mn %}
 
+{# Device chrome around the live render at the REAL rung size — width and
+   height both fixed by the rung (VP_SIZES). The stage pans when the frame is
+   oversized and centers it when it fits; never clamped. #}
+{% macro deviceChrome(src, vp, os, title) %}
+{% set VP_SIZES = {'mobile': [390, 844], 'tablet': [744, 1133], 'desktop': [1280, 800]} %}
+{% set w = VP_SIZES[vp][0] %}{% set h = VP_SIZES[vp][1] %}
+{% if vp == 'mobile' %}
+<div class="device device-{{ os }}" style="width: {{ w }}px; height: {{ h }}px">
+  <span class="device-island" aria-hidden="true"></span>
+  <iframe class="dv-frame" src="{{ src }}" title="{{ title }}"></iframe>
+  <span class="device-home" aria-hidden="true"></span>
+</div>
+{% elif vp == 'tablet' %}
+<div class="device device-tablet" style="width: {{ w }}px; height: {{ h }}px">
+  <iframe class="dv-frame" src="{{ src }}" title="{{ title }}"></iframe>
+</div>
+{% else %}
+<div class="device device-win" style="width: {{ w }}px; height: {{ h }}px">
+  <span class="device-titlebar" aria-hidden="true"><i></i><i></i><i></i></span>
+  <iframe class="dv-frame" src="{{ src }}" title="{{ title }}"></iframe>
+</div>
+{% endif %}
+{% endmacro %}
+
+{# PROTO — the wired-app lens: one live screen in device chrome, rung + os
+   from the proto bar, the active screen from the Screens mini panel. #}
+{% macro protoStage(v) %}
+{% set p = v.proto %}
+<div class="dv-proto">
+  <div class="dv-proto-bar">
+    <code class="dv-screen">{{ p.active }}</code>
+    <span class="dv-group" role="group" aria-label="{{ t('viewer.viewportGroup') }}">
+      {% for r in p.rungs %}
+      <a class="dv-chip {{ 'on' if r.active }}" href="{{ r.href }}" hx-get="{{ r.href }}"
+         hx-target="#design-viewer" hx-swap="outerHTML">{{ t('viewer.vp.' ~ r.key) }}</a>
+      {% endfor %}
+    </span>
+    {% if p.oss %}
+    <span class="dv-group" role="group" aria-label="{{ t('viewer.osGroup') }}">
+      {% for o in p.oss %}
+      <a class="dv-chip {{ 'on' if o.active }}" href="{{ o.href }}" hx-get="{{ o.href }}"
+         hx-target="#design-viewer" hx-swap="outerHTML">{{ o.key }}</a>
+      {% endfor %}
+    </span>
+    {% endif %}
+  </div>
+  <div class="dv-proto-stage">
+    {{ deviceChrome(p.src, p.vp, p.os, t('viewer.frameTitle', {id: p.active, size: p.vp})) }}
+  </div>
+</div>
+{% endmacro %}
+
 {% macro designViewer(v) %}
 {% set VP_SIZES = {'mobile': [390, 844], 'tablet': [744, 1133], 'desktop': [1280, 800]} %}
 {% set bg = v.bg or 'canvas' %}
 <div class="design-viewer dv-bg-{{ bg }}" id="design-viewer"{% if v.inspect %} data-inspect="1"{% endif %}>
 
+{% if v.mode == 'proto' %}
+  {{ protoStage(v) }}
+{% else %}
   {# FLOW — tiles grouped by shell, one block-flow row per group. ONE
      coordinate space: a tile is position:relative in-flow until the facade has
      a saved position for it (s.layout); only then does it go absolute with
@@ -90,6 +151,7 @@
       </div>
     </div>
   </div>
+{% endif %}
 
   {# MINI PANEL — bottom-anchored floating controller (Screens / Controller /
      Actions). Rendered inside the viewer so it stays in sync on every swap. #}

@@ -155,3 +155,55 @@
 /* ---------- inspect overlay (inside iframe documents) ---------- */
 .inspect-outline { position: fixed; pointer-events: none; z-index: 99998; }
 .inspect-label { position: fixed; pointer-events: none; z-index: 99999; }
+
+/* ---------- proto: the wired-app lens (one live screen in device chrome) ----
+   The stage pans when the frame is oversized and centers it when it fits —
+   margin:auto on the flex child, never clamped. Device chrome ported from
+   the retired prototype mode (phone island/home, tablet bezel, window
+   titlebar); the frame fills the chrome's content box. */
+.dv-proto { display: flex; flex-direction: column; flex: 1; min-height: 32rem; }
+.dv-proto-bar {
+  display: flex; align-items: center; gap: .8rem; flex-wrap: wrap;
+  padding: .5rem .8rem; border-bottom: 1px solid var(--border);
+}
+.dv-proto-bar .dv-screen { color: var(--tx-3); }
+.dv-proto-bar .dv-group { display: flex; gap: .3rem; }
+.dv-proto-stage { flex: 1; overflow: auto; display: flex; padding: 1rem 1rem 11rem; }
+.dv-proto-stage > .device { margin: auto; }
+
+.device {
+  position: relative; display: flex; flex-direction: column; flex: none;
+  border: 3px solid #232326; background: #232326;
+  box-shadow: var(--shadow-2);
+}
+.device-ios, .device-android { border-radius: 2.4rem; overflow: hidden; }
+.device-ios .device-island {
+  position: absolute; top: .55rem; left: 50%; transform: translateX(-50%);
+  width: 5.6rem; height: 1.35rem; border-radius: 999px; background: #0a0a0c; z-index: 2;
+}
+.device-android .device-island {
+  position: absolute; top: .55rem; left: 50%; transform: translateX(-50%);
+  width: .8rem; height: .8rem; border-radius: 50%; background: #0a0a0c; z-index: 2;
+}
+.device-ios .device-home {
+  position: absolute; bottom: .35rem; left: 50%; transform: translateX(-50%);
+  width: 6.4rem; height: .22rem; border-radius: 999px; background: rgba(128,128,128,.55); z-index: 2;
+}
+.device-android .device-home {
+  position: absolute; bottom: .3rem; left: 50%; transform: translateX(-50%);
+  width: 2.4rem; height: .22rem; border-radius: 999px; background: rgba(128,128,128,.55); z-index: 2;
+}
+.device-tablet { border-radius: 1.1rem; overflow: hidden; border-width: .55rem; }
+.device-win { border-radius: .6rem .6rem 0 0; overflow: hidden; border-width: 0; }
+.device-win .device-titlebar {
+  display: flex; gap: .38rem; align-items: center;
+  padding: .5rem .7rem; background: var(--bg-2); border-bottom: 1px solid var(--border);
+}
+.device-win .device-titlebar i { width: .62rem; height: .62rem; border-radius: 50%; background: var(--tx-3, var(--border)); }
+.device-win .device-titlebar i:first-child { background: #ec6a5e; }
+.device-win .device-titlebar i:nth-child(2) { background: #f4bf4f; }
+.device-win .device-titlebar i:nth-child(3) { background: #61c454; }
+.device .dv-frame { width: 100%; flex: 1; border: 0; }
+
+/* the active screen's thumb in proto mode (the picker state) */
+.dv-thumb.on .dv-thumb-clip { border-color: var(--accent, #0891b2); box-shadow: 0 0 0 1.5px var(--accent, #0891b2); }

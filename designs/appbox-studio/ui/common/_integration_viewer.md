@@ -1,125 +1,71 @@
 # Integration — shared design viewer (ui/common/design_viewer.html)
 
-The evidence canvas's design viewer is now the shared screen-stage component
-for every shell. Everything below is owned by the integrator; the component
-itself is done and verified (demo route smoke-tested, then reverted).
+The shared screen-stage component: two lenses over the shell's screen
+registry, switched by server-side viewer state and swapped through
+`#design-viewer`.
 
-Files landed by this component:
+- `flow` (default) — every screen as a chromeless tile (`?embed=1`) at its
+  primary authored width, grouped by shell into block-flow rows. Tiles drag
+  freely (drag.js); x/y is POSTed on drop (`/design/artboard/:id/layout`),
+  a saved position renders the tile absolute, group-relative. CSS flow
+  layout IS the auto-grid — no facade grid math.
+- `proto` — the wired-app preview: ONE screen live at a REAL rung size
+  inside device chrome (ios/android phone, tablet, desktop window —
+  `.device` in `assets/css/viewer.css`). The rung and os switch from the
+  proto bar; the active screen is picked from the Screens mini panel (a
+  thumb is a picker in proto, a chat-context toggle in flow).
 
-- `ui/common/design_viewer.html` — `designViewer(v)` macro (+ private
-  `deviceChrome`). Markup/classes are the evidence viewer's canon (`.dv-*`,
-  `.device`) plus a `.dv-rungs` body for rungs mode.
-- `assets/css/viewer.css` — rungs-mode styles (real device sizes, top-aligned)
-  plus the single-mode filmstrip as a floating card over the stage (scrollbars
-  hidden there by explicit exception). Other single-mode styles stay
-  in `app.css` (`.dv-*`, `.device`); nothing is duplicated.
-- `ui/views/main_shell/build/loop/screen_stub_view.html` — surfaces without a
-  bespoke florist stub now render a generic labelled stub (nav + placeholder
-  blocks) instead of an empty frame. The 4 bespoke variants are untouched.
+Files:
 
-## The `v` contract
+- `ui/common/design_viewer.html` — `designViewer(v)` macro (+ `protoStage`,
+  `deviceChrome`).
+- `ui/common/mini_panel.html` — the floating Screens / Controller / Actions
+  panel; the Controller carries the lens switch (`flow` / `prototype`).
+- `assets/css/viewer.css` — flow canvas, mini panel, `.dv-proto*` + `.device`.
+
+## The `v` contract (produced by the shell facade's `viewerFor`)
 
 ```js
 {
-  screens:  [{ id, label?, state?, chips? [{ text, title }], viewports }],
-  active:   '<screen id>',              // falls back to screens[0]
-  vp:       'mobile' | 'tablet' | 'desktop',  // validated against the screen
-  os:       'ios' | 'android',          // mobile device chrome
+  screens:  [{ id, label?, state?, chips?, viewports, inContext?, dim?,
+               tone?, shell, layout?, primaryWidth }],
+  mode:     'flow' | 'proto',          // default 'flow'
+  proto:    { active, vp, os, src,     // proto mode only
+              rungs: [{ key, active, href }], oss: [{ key, active, href }] | null },
+  inspect:  bool,                      // inspect island armed
+  static:   bool,                      // build evidence: read-only canvas
   bg:       'canvas' | 'warm' | 'slate',
-  base:     '/build/artifact/evidence/surfaces/viewer',  // per-shell route
-  stubBase: '/build/screens/',          // iframe src prefix
-  mode:     'single' | 'rungs',
-  strip:    true | false,               // filmstrip, single mode only
+  base:     '/design/viewer',          // per-shell viewer route
+  stubBase: '/build/screens/',         // iframe src prefix
+  contextBase: '/design/chat/context/',// present where tiles pin as context
+  miniPanel: { activePanel, screens, controller: { modes, bgs, inspect… }, actions },
 }
 ```
 
-- Every toolbar/strip action is `GET {{base}}?screen=&vp=&bg=&os=&mode=`
+- Every viewer action is `GET {{base}}?bg=&inspect=&panel=&mode=&screen=&vp=&os=`
   with `hx-target="#design-viewer" hx-swap="outerHTML"` — the route records
-  the choice in the session and re-renders the viewer fragment.
+  the choice (`setViewer` merges, never replaces) and re-renders the viewer
+  fragment. Defaults stay out of the URL (`flow`, `mobile`, `ios`).
 - A `viewports` entry is a key (`'mobile'`) or an authored object
-  `{ vp, width, height?, rung?, note?, shot? }`. The macro maps keys to real
-  device sizes (390×844 / 744×1133 / 1280×800); authored objects keep their
-  own width (+ optional height) and their rung/note/shot captions. Devices
-  render at true size — never clamped; the stage/rungs pan areas scroll.
-- `rungs` mode renders every authored width side by side in device chrome
-  (mobile rung uses `os`), caption `width×height · rung` underneath, no strip.
+  `{ vp, width, height?, rung?, note?, shot? }`. Real rung sizes are
+  390×844 / 744×1133 / 1280×800; devices render at true size — the proto
+  stage pans when oversized, centers when it fits, never clamps.
+- Proto iframe src: `{stubBase}{active}?vp={vp}&embed=1` — served by the
+  existing `GET /build/screens/:surface` stub renderer. Flow tiles append
+  only `?embed=1`.
 
-## (a) build loop — replace the local macro
+## Wiring a shell
 
-In `ui/views/main_shell/build/loop/loop_view.html`: delete the local
-`designViewer` macro; keep `viewerSwap` as a thin adapter:
+1. Facade: a `viewerFor` producing the contract above (see
+   `services/facades/design_facade.js`), plus a `setViewer` that merges the
+   query into namespaced session state (`sessionData.<shell>.viewer`).
+2. Viewmodel: whitelist the query params into `setViewer` — see
+   `design/prototype/prototype_viewmodel.js` (`bg/inspect/panel/mode/screen/
+   vp/os`). Forgetting a param silently drops that control (the viewer
+   renders, the toggle does nothing).
+3. View: a `viewerSwap(c)` fragment macro rendering `dv.designViewer(c.viewer)`;
+   the canvas block calls the same macro on full renders.
+4. `ui/common/base.html` links `assets/css/viewer.css`.
 
-```njk
-{% import "ui/common/design_viewer.html" as dv %}
-...
-{% macro viewerSwap(c) %}{{ dv.designViewer(c.viewer) }}{% endmacro %}
-```
-
-`build_facade.js` changes so `c.viewer` matches the contract:
-
-- `viewerFor(sessionData, evidence)` returns the full `v`:
-  `screens` = evidence mapped to
-  `{ id: e.surface, label: e.surface, state: e.state, chips: e.chips, viewports: e.viewports }`,
-  `active` = validated screen, `vp`/`bg`/`os` as today,
-  `base: '/build/artifact/evidence/surfaces/viewer'`,
-  `stubBase: '/build/screens/'`, `mode` (new, default `'single'`), `strip: true`.
-- `setViewer` passes `mode: query.mode` through into `sessionData.viewer`.
-- The evidence strip's per-thumb title (`tests/files`) moves into chip titles
-  or is dropped — the shared thumb title is the screen id.
-
-## (b) design shell — adopt in both modes (parent-owned)
-
-Facade state: `sessionData.design.viewer = { screen, vp, bg, os, mode }`
-(namespaced like the rest of the design session state). Mirror build's
-`viewerFor` in `design_facade.js`:
-
-```js
-// sessionData.design.viewer = { screen, vp, bg, os, mode }
-const RUNG_VP = { 390: 'mobile', 744: 'tablet', 1280: 'desktop' };
-function viewerFor(d, screens) {
-  const v = d.viewer ?? {};
-  const screen = screens.find((s) => s.id === v.screen) ?? screens[0];
-  const viewports = screen.rungs.map((r) => ({
-    vp: RUNG_VP[r.width], width: r.width, rung: r.rung, note: r.note, shot: r.shot,
-  }));
-  const keys = viewports.map((x) => x.vp);
-  return {
-    screens: screens.map((s) => ({ id: s.id, label: s.label, state: s.state, viewports: /* same mapping */ })),
-    active: screen.id,
-    vp: keys.includes(v.vp) ? v.vp : keys[0],
-    bg: VIEWER_BGS.includes(v.bg) ? v.bg : 'canvas',
-    os: ['ios', 'android'].includes(v.os) ? v.os : 'ios',
-    base: '/design/viewer',
-    stubBase: '/build/screens/',   // shared stub renderer until design serves its own
-    mode: v.mode === 'rungs' ? 'rungs' : 'single',
-    strip: true,
-  };
-}
-```
-
-Routes (parent-owned):
-
-| method | path | handler | purpose |
-|---|---|---|---|
-| GET | `/design/viewer` | prototype.viewer | viewer fragment: record `sessionData.design.viewer`, render the component |
-
-The prototype canvas (`design/prototype/prototype_view.html`) then renders
-`dv.designViewer(c.viewer)` instead of the hand-drawn `.shots` wireframes —
-`rungs` mode replaces the three CSS wireframe figures with live renders at
-390/744/1280; `single` mode is the focused screen + strip. A thin
-`viewerSwap(c)` fragment macro on the prototype view (same shape as build's)
-keeps the route's `h.render(c, '...#viewerSwap', ctx)` idiom.
-
-Note: design screens (`intake.mapping`, `design.chat`, …) have no bespoke
-stub — they render through the new generic fallback in
-`screen_stub_view.html`, served by the existing
-`GET /build/screens/:surface` route. If design later serves its own iframe
-documents, only `stubBase` changes.
-
-## (c) stylesheet link — `ui/common/base.html`
-
-Add after the `design.css` link:
-
-```html
-<link rel="stylesheet" href="/assets/css/viewer.css">
-```
+Build evidence uses the same component with `static: true` (read-only
+artboards, no drag/marquee/pins) and no `contextBase`.
