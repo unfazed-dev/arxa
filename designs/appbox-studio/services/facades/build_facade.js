@@ -570,13 +570,6 @@ export const sendMessage = (sessionData, text, prefs = {}, t = (k) => k, locale 
   return nextRef ? showArtifact(sessionData, nextRef, prefs, t, locale) : loopContext(sessionData, null, prefs, t, locale);
 };
 
-// Legacy stage-bar follow-up route — the FAB is retired. A follow-up is now
-// an ordinary chat message with the artifact open as the context chip.
-export const askArtifact = (sessionData, ref, text, prefs = {}, t = (k) => k, locale = 'en') => {
-  B(sessionData).currentArtifact = ref;
-  return sendMessage(sessionData, text, prefs, t, locale);
-};
-
 // The scoped fallback: answer from the canvas's own envelope. Computed
 // replies come back as translation keys + vars (rendered at read time);
 // fixture fallbacks carry their per-locale strings directly.

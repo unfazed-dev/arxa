@@ -16,12 +16,12 @@ export default [
   ['GET', '/intake/model/:id', mapping.model],
   ['GET', '/intake/panel', mapping.panel],
   ['GET', '/intake/panel/size/:side/:size', mapping.panelSize],
-  ['POST', '/intake/messages', mapping.sendMessage],
-  ['POST', '/intake/depth', mapping.depth],
+  ['POST', '/intake/messages', mapping.sendMessage], // posted-by: c.composerAction (intake_facade)
+  ['POST', '/intake/depth', mapping.depth], // posted-by: r.action quick-replies (intake_facade)
   ['POST', '/intake/answer', mapping.answer],
   ['POST', '/intake/skip', mapping.skip],
   ['GET', '/intake/edit', mapping.edit],
-  ['POST', '/intake/approve', mapping.approve],
+  ['POST', '/intake/approve', mapping.approve], // posted-by: r.action quick-replies (intake_facade)
 
   // intake.brief — Design Brief
   ['GET', '/intake/brief', brief.page],
@@ -30,7 +30,7 @@ export default [
   ['GET', '/intake/brief/model/:id', brief.model],
   ['GET', '/intake/brief/panel', brief.panel],
   ['GET', '/intake/brief/panel/size/:side/:size', brief.panelSize],
-  ['POST', '/intake/brief/messages', brief.sendMessage],
+  ['POST', '/intake/brief/messages', brief.sendMessage], // posted-by: c.composerAction (intake_facade)
 
   // intake.moodboard — Moodboard
   ['GET', '/intake/moodboard', moodboard.page],
@@ -39,5 +39,5 @@ export default [
   ['GET', '/intake/moodboard/model/:id', moodboard.model],
   ['GET', '/intake/moodboard/panel', moodboard.panel],
   ['GET', '/intake/moodboard/panel/size/:side/:size', moodboard.panelSize],
-  ['POST', '/intake/moodboard/messages', moodboard.sendMessage],
+  ['POST', '/intake/moodboard/messages', moodboard.sendMessage], // posted-by: c.composerAction (intake_facade)
 ];

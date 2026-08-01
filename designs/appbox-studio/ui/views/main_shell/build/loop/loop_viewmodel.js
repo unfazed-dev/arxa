@@ -81,16 +81,6 @@ export const evidenceViewer = (c, h) =>
 export const screenStub = (c, h) =>
   h.render(c, STUB_VIEW, facade.screenStub(c.req.param('surface'), c.req.query('vp'), h.prefs(c), h.locale(c), { embed: c.req.query('embed') === '1', inspect: c.req.query('inspect') === '1' }));
 
-// Legacy per-canvas follow-up — now an ordinary chat message with the
-// artifact open as the context chip.
-export const askArtifact = async (c, h) => {
-  const form = await h.form(c);
-  const text = String(form.text || '').trim();
-  if (!text) return h.noContent(c);
-  const ref = `${c.req.param('kind')}/${c.req.param('id')}`;
-  return h.render(c, `${VIEW}#messageSwap`, facade.askArtifact(h.session(c).data, ref, text, h.prefs(c), h.t(c), h.locale(c)));
-};
-
 // Stage control (run view): pause | resume | cancel one stage.
 export const stageControl = async (c, h) => {
   const form = await h.form(c);

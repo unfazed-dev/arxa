@@ -222,8 +222,9 @@
   // panels swap as the icon-button pairs. The stacks and their routes are
   // design-shell-only, so the keys engage only there — posting them from
   // intake/build would swap design markup into another shell's #panels.
-  // kimitail: pointer-iframes swallow hover, so "over the canvas" registers
-  // only on chrome/free canvas — good enough; the buttons cover the rest.
+  // Deliberate simplification: pointer-iframes swallow hover, so "over the
+  // canvas" registers only on chrome/free canvas — good enough; the buttons
+  // cover the rest.
   let pointerStack = 'canvas';
   document.addEventListener('pointerover', (e) => {
     if (e.target.closest?.('.panel-composer')) pointerStack = 'chat';

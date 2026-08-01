@@ -17,22 +17,21 @@ export default [
   ['GET', '/design/viewer', prototype.viewer],
   ['GET', '/design/file', prototype.file],
   ['GET', '/design/screen/:id', prototype.screen],
-  ['POST', '/design/layout/artboard/:id', prototype.artboardLayout],
-  ['POST', '/design/panel/size/:side', prototype.panelSizePx],
+  ['POST', '/design/layout/artboard/:id', prototype.artboardLayout], // posted-by: drag.js island (htmx.ajax)
+  ['POST', '/design/panel/size/:side', prototype.panelSizePx], // posted-by: drag.js island (htmx.ajax)
   ['POST', '/design/undo/:stack', prototype.undo],
   ['POST', '/design/redo/:stack', prototype.redo],
 
   // design.chat — the one design chat; context chips replace per-screen pages
   ['GET', '/design/chat', chat.page],
-  ['POST', '/design/chat/messages', chat.send],
+  ['POST', '/design/chat/messages', chat.send], // posted-by: c.composerAction (design_facade)
   ['GET', '/design/chat/context/:id', chat.context],
-  ['POST', '/design/chat/context/element', chat.elementContext],
+  ['POST', '/design/chat/context/element', chat.elementContext], // posted-by: inspect.js island (fetch)
   ['GET', '/design/chat/context/element/remove', chat.elementContextRemove],
-  ['POST', '/design/chat/context/bulk', chat.bulkContext],
+  ['POST', '/design/chat/context/bulk', chat.bulkContext], // posted-by: drag.js island (htmx.ajax)
   ['GET', '/design/chat/model/:id', chat.model],
   ['GET', '/design/chat/tray', chat.tray],
   ['GET', '/design/chat/screen/:id', chat.select],
-  ['POST', '/design/chat/screen/:id/messages', chat.send],
   ['POST', '/design/chat/screen/:id/revert/:cp', chat.revert],
 
   // design.freeze — freeze & trace + the manifest approval gate
