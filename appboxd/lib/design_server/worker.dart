@@ -66,7 +66,8 @@ class _Prefetch {
   _Prefetch(this.templates, this.fixtures, this.arb, this.icons);
 }
 
-_Prefetch _scanArtifact(String artifactDir, String origin, String? iconsDir) {
+_Prefetch _scanArtifact(String artifactDir, String origin, String? iconsDir,
+    {String? projectDir}) {
   final templates = <String, String>{};
   final fixtures = <String, String>{};
   final arb = <String, Map<String, dynamic>>{};
@@ -75,29 +76,60 @@ _Prefetch _scanArtifact(String artifactDir, String origin, String? iconsDir) {
   String posixRel(String f) =>
       p.relative(f, from: artifactDir).split(p.separator).join('/');
 
+  void iconScan(String src) {
+    for (final m
+        in RegExp(r"""icon['"]?\s*[:\(]\s*['"]([a-z0-9-]+)['"]""").allMatches(src)) {
+      iconNames.add(m.group(1)!);
+    }
+  }
+
   for (final f in _walk(Directory(artifactDir))) {
     final rel = posixRel(f.path);
     if (rel.endsWith('.html') || rel.endsWith('.js')) {
       final src = f.readAsStringSync();
       if (rel.endsWith('.html')) templates[rel] = src;
-      for (final m
-          in RegExp(r"""icon['"]?\s*[:\(]\s*['"]([a-z0-9-]+)['"]""").allMatches(src)) {
-        iconNames.add(m.group(1)!);
-      }
+      iconScan(src);
     }
     if (RegExp(r'^models/.*\.json$').hasMatch(rel)) {
       fixtures['$origin/$rel'] = f.readAsStringSync();
     }
   }
-  final l10nDir = Directory(p.join(artifactDir, 'l10n'));
-  if (l10nDir.existsSync()) {
+  void scanArbDir(Directory l10nDir) {
+    if (!l10nDir.existsSync()) return;
     for (final f in l10nDir.listSync().whereType<File>()) {
       final m = RegExp(r'app_(.+)\.arb$').firstMatch(p.basename(f.path));
       if (m == null) continue;
       final entries = parseArb(f.path);
-      arb[m.group(1)!] = Map.fromEntries(
-          entries.entries.where((e) => !e.key.startsWith('@')));
+      // Project keys merge OVER the artifact's (a project can restyle copy).
+      arb[m.group(1)!] = {
+        ...?arb[m.group(1)!],
+        ...Map.fromEntries(
+            entries.entries.where((e) => !e.key.startsWith('@'))),
+      };
     }
+  }
+
+  scanArbDir(Directory(p.join(artifactDir, 'l10n')));
+
+  // ---- the live-read project overlay (~/.appbox/projects/<name>/) ---------
+  // The studio serves the CURRENT PROJECT's data alongside its own chrome:
+  //   design/surfaces/**.html -> templates ui/project/<sub>  (screen partials)
+  //   design/l10n/app_*.arb   -> merged over the artifact's arb (project wins)
+  //   **.json anywhere        -> fixtures at /project/<rel>  (design seeds,
+  //                              intake registry+flows, build evidence)
+  if (projectDir != null) {
+    for (final f in _walk(Directory(projectDir))) {
+      final rel = p.relative(f.path, from: projectDir).split(p.separator).join('/');
+      if (rel.endsWith('.html') || rel.endsWith('.js')) iconScan(f.readAsStringSync());
+      if (rel.startsWith('design/surfaces/') && rel.endsWith('.html')) {
+        templates['ui/project/${rel.substring('design/surfaces/'.length)}'] =
+            f.readAsStringSync();
+      }
+      if (rel.endsWith('.json')) {
+        fixtures['$origin/project/$rel'] = f.readAsStringSync();
+      }
+    }
+    scanArbDir(Directory(p.join(projectDir, 'design', 'l10n')));
   }
   final icons = <String, String>{};
   if (iconsDir != null) {
@@ -118,11 +150,13 @@ List<File> _walk(Directory d) => d
 /// A live headless-Chrome worker tab. Boot it once per server; reload on
 /// artifact change; dispose on shutdown.
 class JsWorker {
-  JsWorker._(this._tab, this._origin, this._artifactDir, this._iconsDir);
+  JsWorker._(this._tab, this._origin, this._artifactDir, this._iconsDir,
+      this._projectDir);
   final CdpSession _tab;
   final String _origin;
   final String _artifactDir;
   final String? _iconsDir;
+  final String? _projectDir;
   _ChromeHandle? _chrome;
 
   /// Boot a worker against the artifact served at [origin] (the Dart server's
@@ -136,15 +170,17 @@ class JsWorker {
     required String origin,
     required String artifactDir,
     String? iconsDir,
+    String? projectDir,
   }) async {
     final handle = await _ChromeHandle.launch();
     try {
       final tab = await handle.client.newTab();
       await tab.enable();
       await tab.navigateAndSettle(workerPageUrl, settleMs: 600);
-      final w = JsWorker._(tab, origin, artifactDir, iconsDir)
+      final w = JsWorker._(tab, origin, artifactDir, iconsDir, projectDir)
         .._chrome = handle;
-      await w._inject(_scanArtifact(artifactDir, origin, iconsDir));
+      await w._inject(
+          _scanArtifact(artifactDir, origin, iconsDir, projectDir: projectDir));
       final ok = await tab.evaluateFunction(
           '(b) => globalThis.__boot(b).then(() => true).catch(e => "FAIL:"+(e&&e.message||e))',
           origin);
@@ -206,7 +242,8 @@ class JsWorker {
   /// Hot reload: refresh the prefetch maps (pick up edits) then re-import the
   /// artifact modules cache-busted.
   Future<void> reload() async {
-    await _inject(_scanArtifact(_artifactDir, _origin, _iconsDir));
+    await _inject(_scanArtifact(_artifactDir, _origin, _iconsDir,
+        projectDir: _projectDir));
     await _tab.evaluateFunction(
         '(b) => globalThis.__boot(b+"?reload="+Date.now()).then(()=>true).catch(e=>"FAIL:"+(e&&e.message||e))',
         _origin);

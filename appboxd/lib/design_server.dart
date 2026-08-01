@@ -24,6 +24,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:appboxd/design_server/worker.dart';
+import 'package:appboxd/project.dart';
 import 'package:path/path.dart' as p;
 
 const _exitUsage = 64;
@@ -76,6 +77,7 @@ class _ServeArgs {
   bool asJson = false;
   bool noWatch = false;
   bool worker = false;
+  String? project;
   String? error;
 }
 
@@ -101,6 +103,14 @@ _ServeArgs _parseArgs(List<String> args) {
       a.noWatch = true;
     } else if (s == '--worker') {
       a.worker = true; // accepted for compat; no-op (Chrome is the worker)
+    } else if (s == '--project') {
+      if (i + 1 >= args.length) {
+        a.error = '--project requires a value';
+        return a;
+      }
+      a.project = args[++i];
+    } else if (s.startsWith('--project=')) {
+      a.project = s.substring(10);
     } else if (s.startsWith('--')) {
       a.error = 'unknown flag: $s';
       return a;
@@ -121,6 +131,7 @@ class DesignServer {
   // + app.routes.js) are served before the route table is populated.
   List<List<String>> _routeTable = const [];
   StreamSubscription<FileSystemEvent>? _watcherSub;
+  StreamSubscription<FileSystemEvent>? _projectWatcherSub;
   Timer? _debounce;
   bool _stopped = false;
 
@@ -143,7 +154,9 @@ class DesignServer {
     return 'http://$shown:$port/';
   }
 
-  /// Boot the server. [port] 0 asks the OS for a free port.
+  /// Boot the server. [port] 0 asks the OS for a free port. [projectDir]
+  /// overlays the live-read project (.appbox/projects/name) — see
+  /// _scanArtifact in worker.dart.
   static Future<DesignServer> start({
     required String artifactDir,
     int port = 0,
@@ -152,13 +165,14 @@ class DesignServer {
     String? runtimeVendorDir,
     String? iconsDir,
     String? workerAssetsDir,
+    String? projectDir,
   }) async {
     final srv = DesignServer._()
       ..artifactDir = artifactDir
       .._pidValue = _osPid
       ..host = host
       ..noWatch = noWatch
-      ..locales = _scanLocales(artifactDir);
+      ..locales = _scanLocales(artifactDir, projectDir: projectDir);
     // Let SocketException propagate (EADDRINUSE/EACCES) — designServe maps it
     // via bindExitCode; tests assert the bind path directly.
     srv._http = await HttpServer.bind(_bindAddress(host), port);
@@ -180,10 +194,14 @@ class DesignServer {
       origin: origin,
       artifactDir: artifactDir,
       iconsDir: iconsDir ?? _findIconsDir(),
+      projectDir: projectDir,
     );
     srv.workerPid = srv._worker.workerPid;
     srv._routeTable = await srv._worker.routes();
-    if (!noWatch) srv._startWatcher(artifactDir);
+    if (!noWatch) {
+      srv._startWatcher(artifactDir);
+      if (projectDir != null) srv._startProjectWatcher(projectDir);
+    }
     return srv;
   }
 
@@ -380,6 +398,22 @@ class DesignServer {
     }
   }
 
+  // The live-read project gets the same hot reload: editing a partial or a
+  // fixture under ~/.appbox/projects/<name> re-scans and re-boots the worker.
+  void _startProjectWatcher(String dir) {
+    try {
+      _projectWatcherSub = Directory(dir).watch(recursive: true).listen((e) {
+        if (_ignoreRe.hasMatch(e.path)) return;
+        _debounce?.cancel();
+        _debounce = Timer(const Duration(milliseconds: 200), () {
+          if (!_stopped) _worker.reload();
+        });
+      });
+    } catch (_) {
+      // watch unsupported — hot reload simply disabled.
+    }
+  }
+
   /// Reload the worker now (used by tests; production uses the file watcher).
   Future<void> reload() => _worker.reload();
 
@@ -388,6 +422,7 @@ class DesignServer {
     _stopped = true;
     _debounce?.cancel();
     await _watcherSub?.cancel();
+    await _projectWatcherSub?.cancel();
     await _http.close(force: true);
     await _worker.dispose();
   }
@@ -419,12 +454,24 @@ Future<int> designServe(List<String> args) async {
     return _exitNothing;
   }
   final DesignServer srv;
+  // The live-read project: --project wins, then APPBOX_PROJECT, then the
+  // ~/.appbox current project when it exists; none → artifact-only serving.
+  final projectName = a.project ??
+      Platform.environment['APPBOX_PROJECT'] ??
+      (Directory(projectDir(currentProject())).existsSync()
+          ? currentProject()
+          : null);
+  final resolvedProject =
+      projectName != null && Directory(projectDir(projectName)).existsSync()
+          ? projectDir(projectName)
+          : null;
   try {
     srv = await DesignServer.start(
       artifactDir: resolved.dir,
       port: a.port,
       host: a.host,
       noWatch: a.noWatch || a.worker,
+      projectDir: resolvedProject,
     );
   } on SocketException catch (e) {
     final code = bindExitCode(e);
@@ -524,13 +571,19 @@ InternetAddress _bindAddress(String host) {
   return InternetAddress(host);
 }
 
-Set<String> _scanLocales(String artifactDir) {
-  final dir = Directory(p.join(artifactDir, 'l10n'));
+Set<String> _scanLocales(String artifactDir, {String? projectDir}) {
   final out = <String>{};
-  if (!dir.existsSync()) return out;
-  for (final f in dir.listSync().whereType<File>()) {
-    final m = RegExp(r'app_(.+)\.arb$').firstMatch(p.basename(f.path));
-    if (m != null) out.add(m.group(1)!);
+  void scan(Directory dir) {
+    if (!dir.existsSync()) return;
+    for (final f in dir.listSync().whereType<File>()) {
+      final m = RegExp(r'app_(.+)\.arb$').firstMatch(p.basename(f.path));
+      if (m != null) out.add(m.group(1)!);
+    }
+  }
+
+  scan(Directory(p.join(artifactDir, 'l10n')));
+  if (projectDir != null) {
+    scan(Directory(p.join(projectDir, 'design', 'l10n')));
   }
   return out;
 }

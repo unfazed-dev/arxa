@@ -20,6 +20,7 @@
 // right), and gate notes are chat replies carrying a gate context chip —
 // there is no second input path.
 import * as repo from '../repositories/build_repository.js';
+import * as proj from '../repositories/project_repository.js';
 import * as jargon from './jargon.js';
 import * as agent from './agent_menus.js';
 import * as fv from './file_views.js';
@@ -278,22 +279,29 @@ function viewerFor(sessionData, evidence) {
 }
 
 // The iframe document's context: an honest labelled stand-in for the designer
-// artifact the daemon serves in the shipped app.
+// artifact the daemon serves in the shipped app. When the CURRENT PROJECT
+// ships a bespoke partial for the kind (design/surfaces/<kind>.html), the
+// stub renders it with the project's flow context (tabs, next edge) — the
+// prototype chrome is flow-driven (project_repository).
 export const screenStub = (surface, vp, prefs = {}, locale = 'en', opts = {}) => {
   const e = repo.evidence(locale).find((x) => x.surface === surface);
   // No evidence entry (design-content ids like portalo.*): every rung is
   // authored — the design canvas drives the viewport, not the evidence log.
   const authored = e?.viewports ?? ['mobile', 'tablet', 'desktop'];
   const v = authored.includes(vp) ? vp : authored[0];
+  const kind = surface?.split('.')[1] ?? surface;
   return {
     surface, vp: v, width: VIEWPORT_WIDTHS[v],
-    kind: surface?.split('.')[1] ?? surface,
+    kind,
     theme: prefs.theme ?? 'light',
     embed: opts.embed ?? false,
     inspect: opts.inspect ?? false,
     // still: freeze frame for canvas tiles — partials skip auto-advance
     // (meta refresh) so every screen in a chain stays itself on the canvas.
     still: opts.still ?? false,
+    partial: proj.hasPartial(kind) ? `ui/project/${kind}.html` : null,
+    tabs: proj.hasPartial(kind) ? proj.tabs() : [],
+    next: proj.hasPartial(kind) ? proj.nextEdge(surface) : null,
   };
 };
 

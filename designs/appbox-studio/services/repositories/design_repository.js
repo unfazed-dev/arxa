@@ -1,15 +1,18 @@
 // appbox:provenance
 // generator: appbox  licence: free  project: 662368770980
 // Built with appbox (free tier) — https://appbox.dev
-// DesignRepository — reads one per-locale fixture (run.<locale>.json).
+// DesignRepository — reads the CURRENT PROJECT's design-stage fixture
+// (~/.appbox/projects/<name>/design/models/design_model/run.<locale>.json),
+// overlaid by the design server at /project/... — the studio live-reads the
+// project; the artifact carries NO project content of its own.
 // Unknown locale falls back to en — a partial translation never 500s the page.
-import { readFixture } from './fixture_reader.js';
+import { readProjectFixture } from './fixture_reader.js';
 
 const data = (locale = 'en') => {
   try {
-    return readFixture(`../../models/design_model/run.${locale}.json`);
+    return readProjectFixture(`design/models/design_model/run.${locale}.json`);
   } catch {
-    return readFixture('../../models/design_model/run.en.json');
+    return readProjectFixture('design/models/design_model/run.en.json');
   }
 };
 

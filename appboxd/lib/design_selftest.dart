@@ -22,6 +22,7 @@ import 'dart:io';
 import 'package:appboxd/cdp.dart';
 import 'package:appboxd/design_server.dart';
 import 'package:appboxd/design_tools.dart';
+import 'package:appboxd/project.dart';
 import 'package:path/path.dart' as p;
 
 // ══ result types ════════════════════════════════════════════════════════
@@ -529,7 +530,14 @@ List<_Check> _buildChecks({required bool skipRender}) {
       }
       DesignServer? srv;
       try {
-        srv = await DesignServer.start(artifactDir: art, port: 0, noWatch: true);
+        // The route-200 sweep serves the artifact WITH the current project
+        // overlaid (the studio live-reads ~/.appbox) when one exists — the
+        // smoke-test project is part of the artifact's render contract.
+        final projDir = Directory(projectDir(currentProject())).existsSync()
+            ? projectDir(currentProject())
+            : null;
+        srv = await DesignServer.start(
+            artifactDir: art, port: 0, noWatch: true, projectDir: projDir);
         final routesSrc = File(p.join(art, 'app.routes.js')).readAsStringSync();
         final getPaths = RegExp(r"""\[\s*['"]GET['"]\s*,\s*['"]([^'"]+)['"]""")
             .allMatches(routesSrc)
