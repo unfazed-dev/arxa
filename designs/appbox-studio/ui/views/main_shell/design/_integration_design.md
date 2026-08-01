@@ -77,7 +77,9 @@ Routes (18):
 | GET | `/design/file` | prototype.file | file row → main panel render mode fragment |
 | GET | `/design/viewer` | prototype.viewer | viewer controller acts (bg/inspect/mode/screen/vp), swaps `#design-viewer` |
 | GET | `/design/screen/:id` | prototype.screen | legacy artboard deep-link → pins context, swaps panels |
-| POST | `/design/layout/artboard/:id` | prototype.artboardLayout | flow tile drag persist |
+| POST | `/design/flows/:flow/move/:screen` | prototype.flowMove | flow reorder (toolbar `dir` nudge / drag.js drop `index`) — writes flows.json |
+| POST | `/design/flows/:flow/add/:screen` | prototype.flowAdd | append a screen to a flow — writes flows.json |
+| POST | `/design/flows/:flow/remove/:screen` | prototype.flowRemove | stitch a screen out of a flow — writes flows.json |
 | POST | `/design/undo/:stack` / `/design/redo/:stack` | prototype.undo/redo | canvas + chat stacks |
 | GET | `/design/chat` | chat.page | the one design chat (`?screen=<id>`/`none`) |
 | POST | `/design/chat/messages` | chat.send | the one composer: `approve` / refine |

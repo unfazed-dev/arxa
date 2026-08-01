@@ -1,10 +1,12 @@
 /* drag.js — the gesture island (ADR-0002 amendment, 2026-07).
-   The second named first-party script: marquee selection + free tile drag +
-   rail resize, all pointer-based. Sibling to canvas.js; same island shape
-   (view-state-only, no globals, no build step). Loaded defer from base.html.
+   The second named first-party script: marquee selection + axis-locked flow
+   row drag + rail resize, all pointer-based. Sibling to canvas.js; same
+   island shape (view-state-only, no globals, no build step). Loaded defer
+   from base.html.
 
    Scopes:
-     .dv-flow-canvas — marquee select + Space/middle-drag pan + tile free-drag
+     .dv-flow-canvas — marquee select + Space/middle-drag pan; tile drag only
+                       inside a .dv-flow-row (flows lens), X-axis locked
      .panel-frame-handle — drag-resize the panel aside (live width badge, POST px on release)
      document        — Cmd/Ctrl+Z / Shift+Cmd/Ctrl+Z undo/redo, routed by
                        pointer focus (canvas vs chat) to /design/undo|redo/:stack
@@ -14,6 +16,7 @@
   const CANVAS = '.dv-flow-canvas';
   const RAIL = '.panel-frame-handle';
   const TILE = '.dv-tile';
+  const ROW = '.dv-flow-row';
   // let these keep their native behaviour; don't start a gesture over them
   const SKIP = '.dv-pin, a, iframe, button, .dv-tile-tools, .dv-bulk-pin';
 
@@ -109,38 +112,43 @@
     }, { once: true });
   };
 
-  // --- tile free-drag: move a tile, POST final {x,y} on release ---
-  // Coordinates are GROUP-relative: .dv-tile-group is the positioned ancestor,
-  // so offsetLeft/offsetTop measure against it and the server re-renders the
-  // saved position absolute inside the same group — one coordinate space.
-  // An in-flow tile (no saved layout yet) goes absolute on first grab; setting
-  // left/top in the same frame keeps it visually put while its siblings
-  // reflow into the gap.
-  // The drop POST is fire-and-forget (swap:'none'): the drag already placed
-  // the tile client-side, the POST only persists {x,y} — a viewer re-render
-  // would reset the canvas.js zoom and reload every screen iframe. Ceiling:
-  // the undo button's enabled state is server-rendered, so it goes stale
-  // until the next natural swap. Accepted, not faked client-side.
-  const startTileDrag = (e, tile) => {
+  // --- tile row-drag (flows lens only): a tile grabbed inside a .dv-flow-row
+  // shifts horizontally (translateX — Y is clamped to the row by
+  // construction, no reflow); on drop the target slot is the count of sibling
+  // tiles whose midpoint sits left of the drop x, and ONE htmx POST to the
+  // move endpoint (index) re-renders the stage. Views-mode tiles don't drag.
+  const startRowDrag = (e, tile, row) => {
     e.preventDefault();
     tile.setPointerCapture(e.pointerId);
-    const sx = e.clientX, sy = e.clientY;
-    const ox = tile.offsetLeft, oy = tile.offsetTop; // offsetParent == tile group
-    tile.style.position = 'absolute';
-    tile.style.left = ox + 'px';
-    tile.style.top = oy + 'px';
+    const sx = e.clientX;
+    let dragged = false;
     const move = (ev) => {
-      tile.style.left = (ox + ev.clientX - sx) + 'px';
-      tile.style.top = (oy + ev.clientY - sy) + 'px';
+      const dx = ev.clientX - sx;
+      if (Math.abs(dx) < 4 && !dragged) return; // click jitter, not a drag
+      dragged = true;
+      tile.style.zIndex = 5;
+      tile.style.transform = `translateX(${dx}px)`;
     };
     tile.addEventListener('pointermove', move);
-    tile.addEventListener('pointerup', () => {
+    tile.addEventListener('pointerup', (ev) => {
       tile.removeEventListener('pointermove', move);
+      tile.style.transform = '';
+      tile.style.zIndex = '';
       const id = tile.dataset.id;
-      if (!id) return;
-      htmx.ajax('POST', `/design/layout/artboard/${encodeURIComponent(id)}`, {
-        values: { x: String(Math.round(tile.offsetLeft)), y: String(Math.round(tile.offsetTop)) },
-        target: '#design-viewer', swap: 'none',
+      const flow = row.dataset.flow;
+      if (!dragged || !id || !flow) return;
+      const siblings = [...row.querySelectorAll(TILE)];
+      const current = siblings.indexOf(tile);
+      // the index among the OTHER tiles == the slot in the post-move order
+      const index = siblings.filter((t) => {
+        if (t === tile) return false;
+        const r = t.getBoundingClientRect();
+        return r.left + r.width / 2 < ev.clientX;
+      }).length;
+      if (index === current) return;
+      htmx.ajax('POST', `/design/flows/${encodeURIComponent(flow)}/move/${encodeURIComponent(id)}`, {
+        values: { index: String(index) },
+        target: '#panels', swap: 'outerHTML',
       });
     }, { once: true });
   };
@@ -151,7 +159,11 @@
       if (e.target.closest(SKIP)) return;
       if (spaceDown || e.button === 1) { startPan(e, el); return; }
       const tile = e.target.closest(TILE);
-      if (tile) { startTileDrag(e, tile); return; }
+      if (tile) {
+        const row = tile.closest(ROW);
+        if (row && e.button === 0) startRowDrag(e, tile, row);
+        return;
+      }
       if (e.button === 0) startMarquee(e, el);
     });
   }

@@ -1,31 +1,39 @@
 # Integration — shared design viewer (ui/common/design_viewer.html)
 
-The shared screen-stage component: two lenses over the shell's screen
+The shared screen-stage component: three lenses over the shell's screen
 registry, switched by server-side viewer state and swapped through
 `#design-viewer`.
 
-- `flow` (default) — every screen as a chromeless tile (`?embed=1`) at the
-  CURRENT rung (`vp` param, default mobile; `s.tile` carries the per-screen
-  width/height at that rung, falling back to the first authored rung),
-  grouped by shell into block-flow rows. Tiles drag freely (drag.js); x/y is
-  POSTed on drop (`/design/artboard/:id/layout`), a saved position renders
-  the tile absolute, group-relative. CSS flow layout IS the auto-grid — no
-  facade grid math. Saved layout is per-screen, shared across rungs.
+- `views` (default; legacy `mode=flow` aliases here) — every screen as a
+  chromeless tile (`?embed=1`) at the CURRENT rung (`vp` param, default
+  mobile; `s.tile` carries the per-screen width/height at that rung, falling
+  back to the first authored rung), a flat wrapping grid in REGISTRY order.
+- `flows` — one dashed `.dv-flow-row` per project flow, tiles in edge-chain
+  order with a `.dv-connector` (trigger label + line + arrowhead) between
+  consecutive tiles. Flow edits WRITE the project's flows.json:
+  `POST /design/flows/:flow/move/:screen` (form `dir` -1|1 from the toolbar
+  nudge arrows, or `index` from drag.js's axis-locked row drag — the only
+  tile drag left; X-axis locked inside the row, drop slot = count of sibling
+  midpoints left of the drop x), `POST /design/flows/:flow/add/:screen`
+  (views-lens add-to-flow menu, appends) and
+  `POST /design/flows/:flow/remove/:screen` (stitches the chain). All three
+  re-render `#panels` and record canvas undo entries replayed as file writes.
 - `proto` — the wired-app preview: ONE screen live at a REAL rung size
   inside device chrome (phone / tablet / desktop window — `.device` in
   `assets/css/viewer.css`; ONE mobile chrome, no os dimension). The rung
   switches from the device icon buttons in the mini panel's bar-right
-  cluster (present in BOTH modes — in flow they re-render the tiles at that
-  rung); the active screen is picked from the composer tray's filmstrip
+  cluster (present in ALL modes — in views/flows they re-render the tiles at
+  that rung); the active screen is picked from the composer tray's filmstrip
   (a thumb is a picker in proto — via `protoPicks` — a chat-context
-  toggle in flow).
+  toggle in views/flows).
 
 Files:
 
 - `ui/common/design_viewer.html` — `designViewer(v)` macro (+ `protoStage`,
   `deviceChrome`).
 - `ui/common/mini_panel.html` — the floating mini panel: ONE panel, the
-  Controller, carrying the lens switch (`flow` / `prototype`) and the viewer
+  Controller, carrying the lens switch (`views` / `flows` / `proto`), the
+  canvas undo/redo pair and the viewer
   fullscreen button (`data-action="viewer-fullscreen"`, implemented
   client-side by `runtime/vendor/canvas.js` — requestFullscreen on the
   enclosing `.design-viewer`; a `data-action="viewer-fullscreen-exit"` close
@@ -40,12 +48,16 @@ Files:
 ```js
 {
   screens:  [{ id, label?, state?, chips?, viewports, inContext?, dim?,
-               tone?, shell, layout?, primaryWidth,
-               tile: { vp, width, height } }],   // dims at the CURRENT rung
-  mode:     'flow' | 'proto',          // default 'flow'
+               tone?, primaryWidth,
+               tile: { vp, width, height },       // dims at the CURRENT rung
+               inspecting?, live?, inspectHref?, liveHref?, liveCloseHref? }],
+  flows:    [{ id, name, tiles: [...screens entries + conn?] }],
+               // flows lens rows; conn = trigger label to the NEXT tile
+  mode:     'views' | 'flows' | 'proto',  // default 'views'
   proto:    { active, vp, src },       // proto mode only
   vp:       'mobile' | 'tablet' | 'desktop',   // current rung (default mobile)
-  inspect:  bool,                      // inspect island armed
+  inspect:  screen id | null,          // that tile's inspect island armed
+  live:     screen id | null,          // that tile live + interactive
   static:   bool,                      // build evidence: read-only canvas
   bg:       'canvas' | 'warm' | 'slate',
   base:     '/design/viewer',          // per-shell viewer route
@@ -58,7 +70,7 @@ Files:
   contextBase: '/design/chat/context/',// present where tiles pin as context
   miniPanel: { bar: { devices: [{ key, icon, active, href }] | null,
                       bgs: [{ value, active, href }] },
-               controller: { modes, inspect… } },
+               controller: { modes, undo, redo } },
   protoPicks: { <screenId>: '/design/viewer?...&screen=<id>' } | null,
                // proto mode only — the composer tray's filmstrip turns its
                // thumbs into the active-screen picker with these hrefs
@@ -66,21 +78,23 @@ Files:
 }
 ```
 
-- Every viewer action is `GET {{base}}?bg=&inspect=&mode=&screen=&vp=`
+- Every viewer CONTROLLER action is `GET {{base}}?bg=&inspect=&live=&mode=&screen=&vp=`
   with `hx-target="#design-viewer" hx-swap="outerHTML"` — the route records
   the choice and re-renders the viewer fragment. Every control href echoes
-  the WHOLE viewer state with defaults elided (`flow`, `mobile`), so
+  the WHOLE viewer state with defaults elided (`views`, `mobile`), so
   `setViewer` treats the state keys as authoritative — an absent key means
   "back to default", never "keep" (merging would strand every non-default:
   the canvas chip sends no `mode=`, so a merged `mode:'proto'` could never
-  flip back).
+  flip back). Flow edits are the exception: POSTs to the `/design/flows/…`
+  endpoints above, swapping `#panels`.
 - A `viewports` entry is a key (`'mobile'`) or an authored object
   `{ vp, width, height?, rung?, note?, shot? }`. Real rung sizes are
   390×844 / 744×1133 / 1280×800; devices render at true size — the proto
   stage pans when oversized, centers when it fits, never clamps.
 - Proto iframe src: `{stubBase}{active}?vp={vp}&embed=1` — the
-  `GET /build/screens/:surface` stub renderer. Flow tiles use the same shape
-  with `s.tile.vp` (`{stubBase}{s.id}?vp={tile.vp}&embed=1`).
+  `GET /build/screens/:surface` stub renderer. Canvas tiles use the same
+  shape with `s.tile.vp` (`{stubBase}{s.id}?vp={tile.vp}&embed=1&still=1` —
+  the live tile drops `still`, the inspected tile appends `&inspect=1`).
 
 ## Wiring a shell
 

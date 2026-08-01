@@ -11,6 +11,11 @@ export const registry = () => readProjectFixture('intake/registry.json');
 export const flows = () => readProjectFixture('intake/flows.json');
 export const registryEntry = (id) => registry().find((e) => e.id === id);
 
+// Flow edits (move/add/remove from the viewer) write the whole flows.json
+// back through the server's confined channel; writeProjectFixture busts the
+// read cache, so the re-render that follows sees the new bytes.
+export const writeFlows = (flows) => writeProjectFixture('intake/flows.json', flows);
+
 // The overlaid project's settings/project.json ({name, targets, locales}) —
 // null when artifact-only serving.
 export const settings = () => {

@@ -88,10 +88,12 @@
   position: relative; flex: none; display: flex; flex-direction: column; gap: .35rem;
   padding: .5rem; border-radius: var(--radius);
   background: var(--bg); border: 1px solid var(--border);
-  box-shadow: var(--shadow-1); cursor: grab;
+  box-shadow: var(--shadow-1);
   outline: 2px solid transparent; outline-offset: 4px;
   transition: outline-color .12s, box-shadow .12s;
 }
+/* only flow-row tiles drag (axis-locked, drag.js) — views/evidence tiles don't */
+.dv-flow-row .dv-tile { cursor: grab; }
 .dv-tile:hover { box-shadow: var(--shadow-2, 0 2px 12px rgba(0,0,0,.12)); }
 .dv-tile.is-selected { outline-color: var(--accent, #0891b2); }
 .dv-tile.is-live { outline-color: var(--accent, #0891b2); }
@@ -139,8 +141,11 @@
   box-shadow: var(--shadow-2, 0 2px 12px rgba(0,0,0,.12));
   font-size: .72rem;
 }
-.dv-menu-item { padding: .3rem .5rem; border-radius: calc(var(--radius) - 2px); color: var(--tx-2); }
-.dv-menu-note { padding: .25rem .5rem .1rem; font-size: .62rem; color: var(--tx-3); }
+.dv-menu-item {
+  display: block; width: 100%; padding: .3rem .5rem; border: none; border-radius: calc(var(--radius) - 2px);
+  background: none; font: inherit; text-align: left; cursor: pointer; color: var(--tx-2);
+}
+.dv-menu-item:hover { background: var(--bg-2, rgba(0,0,0,.04)); color: var(--tx); }
 .dv-live-close { flex: none; width: 1.6rem; height: 1.6rem; color: var(--accent, #0891b2); }
 
 /* marquee selection */

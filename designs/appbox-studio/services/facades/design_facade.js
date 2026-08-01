@@ -114,9 +114,9 @@ const ctxLabel = (d, L, t) => contextIds(d, L).map((id) => repo.screen(id, L).la
 // ---------- undo / redo (two session stacks: canvas, chat) ----------
 // Each entry carries enough to reverse itself in both directions, so the same
 // object simply moves between the undo and redo stacks as the user steps back
-// and forth. Canvas stack: artboard moves + screen pin/unpin. Chat stack is
-// wired for design-change checkpoints (contract §6); the reverse for a move is
-// "restore the previous position" (or auto-grid null).
+// and forth. Canvas stack: flow edits (move/add/remove — replayed as project
+// flows.json writes) + screen pin/unpin. Chat stack is wired for design-change
+// checkpoints (contract §6).
 const pushUndo = (d, stack, entry) => {
   (d.undoStacks ??= {}); (d.redoStacks ??= {});
   (d.undoStacks[stack] ??= []).push(entry);
@@ -124,11 +124,97 @@ const pushUndo = (d, stack, entry) => {
 };
 const pushCanvasUndo = (d, entry) => pushUndo(d, 'canvas', entry);
 
-const applyEntry = (d, entry, dir) => {
-  if (entry.type === 'move') {
-    const pos = dir === 'undo' ? entry.from : entry.to;
-    if (pos) (d.artboardLayout ??= {})[entry.screenId] = { ...pos };
-    else delete d.artboardLayout?.[entry.screenId];
+// ---------- flow edit operations (WRITE the project's flows.json) ----------
+// A flow is a linear edge list; chainOf derives the screen order by the same
+// walk the flows lens renders (head = the edge whose `from` has no incoming
+// edge, a seen-set guards a malformed cycle).
+const chainOf = (flow) => {
+  const edges = flow?.edges ?? [];
+  const incoming = new Set(edges.map((e) => e.to));
+  let cur = edges.find((e) => !incoming.has(e.from)) ?? edges[0];
+  const chain = [];
+  const seen = new Set();
+  while (cur && !seen.has(cur.from)) {
+    seen.add(cur.from);
+    chain.push(cur);
+    cur = edges.find((e) => e.from === cur.to);
+  }
+  return chain.length ? [chain[0].from, ...chain.map((e) => e.to)] : [];
+};
+
+// Rewire rule (the documented deterministic choice): rebuild edges pairwise
+// from the new order; a pair already adjacent keeps its edge untouched, a NEW
+// pair takes the FROM screen's previous outgoing trigger/action — the trigger
+// names what you do ON that screen to advance, so it travels with the screen.
+// `memory` (the move undo entry's per-screen trigger snapshot) is consulted
+// next, so undoing a move that demoted a screen to chain tail still restores
+// the trigger the file no longer carries; continue/push is the last fallback
+// (an appended screen, or the old chain head).
+const rewire = (flow, order, memory) => {
+  const edges = flow.edges ?? [];
+  const byPair = new Map(edges.map((e) => [`${e.from}→${e.to}`, e]));
+  const outByFrom = new Map(edges.map((e) => [e.from, e]));
+  flow.edges = order.slice(0, -1).map((from, i) => {
+    const kept = byPair.get(`${from}→${order[i + 1]}`);
+    if (kept) return kept;
+    const prev = outByFrom.get(from) ?? memory?.[from];
+    return { from, to: order[i + 1], trigger: prev?.trigger ?? 'continue', action: prev?.action ?? 'push' };
+  });
+};
+
+// Cut screenId out of the chain, stitching the gap: the incoming edge's from
+// links to the outgoing edge's to KEEPING THE INCOMING trigger; removing the
+// head/tail just drops the one edge. Returns the undo payload (null when the
+// screen is not a member).
+const excise = (flow, screenId) => {
+  const edges = flow.edges ?? [];
+  const incoming = edges.find((e) => e.to === screenId) ?? null;
+  const outgoing = edges.find((e) => e.from === screenId) ?? null;
+  if (!incoming && !outgoing) return null;
+  const at = edges.indexOf(incoming ?? outgoing);
+  const rest = edges.filter((e) => e !== incoming && e !== outgoing);
+  const stitch = incoming && outgoing
+    ? [{ from: incoming.from, to: outgoing.to, trigger: incoming.trigger, action: incoming.action ?? 'push' }]
+    : [];
+  flow.edges = [...rest.slice(0, at), ...stitch, ...rest.slice(at)];
+  return { incoming, outgoing };
+};
+
+// Append screenId to the chain's tail: one new edge off the last screen.
+const appendTo = (flow, screenId) => {
+  const chain = chainOf(flow);
+  if (!chain.length || chain.includes(screenId)) return false;
+  (flow.edges ??= []).push({ from: chain[chain.length - 1], to: screenId, trigger: 'continue', action: 'push' });
+  return true;
+};
+
+// Reverse of excise: drop the stitch edge and put the stored incoming/outgoing
+// edges back where they were (entry.index = the screen's chain position
+// before removal).
+const restore = (flow, entry) => {
+  const edges = flow.edges ?? [];
+  const without = entry.incoming && entry.outgoing
+    ? edges.filter((e) => !(e.from === entry.incoming.from && e.to === entry.outgoing.to))
+    : [...edges];
+  const at = entry.incoming ? Math.max(0, entry.index - 1) : entry.index;
+  const back = [entry.incoming, entry.outgoing].filter(Boolean);
+  flow.edges = [...without.slice(0, at), ...back, ...without.slice(at)];
+};
+
+// Flow entries replay their file write in both directions (re-deriving edges
+// from the CURRENT file, so triggers follow their from screen); pin/chat
+// entries stay pure session state.
+const applyEntry = async (d, entry, dir) => {
+  if (entry.type === 'flow-move' || entry.type === 'flow-add' || entry.type === 'flow-remove') {
+    const flows = proj.flows();
+    const flow = flows.find((f) => f.id === entry.flowId);
+    if (!flow) return;
+    if (entry.type === 'flow-move') rewire(flow, dir === 'undo' ? entry.before : entry.after, entry.triggers);
+    else if (entry.type === 'flow-add') {
+      if (dir === 'undo') excise(flow, entry.screenId); else appendTo(flow, entry.screenId);
+    } else if (dir === 'undo') restore(flow, entry);
+    else excise(flow, entry.screenId);
+    await proj.writeFlows(flows);
   } else if (entry.type === 'pin' || entry.type === 'unpin') {
     // A 'pin' entry means a pin happened: undo unpins, redo re-pins. 'unpin' is
     // the mirror. Membership is toggled directly on d.context (the same array
@@ -524,13 +610,68 @@ export const setPanelSizePx = (sessionData, side, width, prefs = {}, t = (k) => 
   return stageContext(sessionData, {}, prefs, t, locale);
 };
 
-// Artboard tile drag: persist {x, y} on drop and record a reversible move on
-// the canvas undo stack (prev lets undo restore the prior position / auto-grid).
-export const setArtboardLayout = (sessionData, screenId, x, y, prefs, t, locale) => {
+// Move a screen inside a flow — a one-step nudge (dir -1|1, no-op at the row
+// ends) from the tile toolbar, or a drop-to-index from the axis-locked row
+// drag (index counts slots among the OTHER tiles, so splice-out-then-insert
+// lands it exactly there). Writes the project's flows.json and records the
+// before/after order arrays for undo/redo replay.
+export const moveInFlow = async (sessionData, flowId, screenId, to = {}, prefs = {}, t = (k) => k, locale = 'en') => {
   const d = design(sessionData);
-  const prev = d.artboardLayout?.[screenId] ? { ...d.artboardLayout[screenId] } : null;
-  (d.artboardLayout ??= {})[screenId] = { x, y };
-  pushCanvasUndo(d, { type: 'move', screenId, from: prev, to: { x, y } });
+  try {
+    const flows = proj.flows();
+    const flow = flows.find((f) => f.id === flowId);
+    const chain = chainOf(flow);
+    const i = chain.indexOf(screenId);
+    let j = i;
+    if (Number.isInteger(to.index)) j = Math.max(0, Math.min(chain.length - 1, to.index));
+    else if (to.dir === -1 || to.dir === 1) j = i + to.dir;
+    if (flow && i >= 0 && j !== i && j >= 0 && j < chain.length) {
+      const before = [...chain];
+      const after = [...chain];
+      after.splice(i, 1);
+      after.splice(j, 0, screenId);
+      // Per-screen trigger snapshot taken BEFORE the rewire: a screen demoted
+      // to chain tail drops its outgoing edge from the file, and undo replays
+      // by re-deriving from the then-current file — this memory lets that
+      // replay restore the trigger verbatim (see rewire).
+      const triggers = Object.fromEntries((flow.edges ?? []).map((e) => [e.from, { trigger: e.trigger, action: e.action ?? 'push' }]));
+      rewire(flow, after, triggers);
+      await proj.writeFlows(flows);
+      pushCanvasUndo(d, { type: 'flow-move', flowId, before, after, triggers });
+    }
+  } catch { /* no project overlaid / unknown flow — no-op re-render */ }
+  return stageContext(sessionData, {}, prefs, t, locale);
+};
+
+// Append a screen to a flow's chain (views-lens add-to-flow menu). No-op when
+// already a member.
+export const addToFlow = async (sessionData, flowId, screenId, prefs = {}, t = (k) => k, locale = 'en') => {
+  const d = design(sessionData);
+  try {
+    const flows = proj.flows();
+    const flow = flows.find((f) => f.id === flowId);
+    if (flow && proj.registryEntry(screenId) && appendTo(flow, screenId)) {
+      await proj.writeFlows(flows);
+      pushCanvasUndo(d, { type: 'flow-add', flowId, screenId });
+    }
+  } catch { /* no project overlaid / unknown flow — no-op re-render */ }
+  return stageContext(sessionData, {}, prefs, t, locale);
+};
+
+// Remove a screen from a flow, stitching the chain (see excise). The undo
+// entry keeps the removed edges so undo restores them verbatim.
+export const removeFromFlow = async (sessionData, flowId, screenId, prefs = {}, t = (k) => k, locale = 'en') => {
+  const d = design(sessionData);
+  try {
+    const flows = proj.flows();
+    const flow = flows.find((f) => f.id === flowId);
+    const index = chainOf(flow).indexOf(screenId);
+    const removed = flow ? excise(flow, screenId) : null;
+    if (removed) {
+      await proj.writeFlows(flows);
+      pushCanvasUndo(d, { type: 'flow-remove', flowId, screenId, index, ...removed });
+    }
+  } catch { /* no project overlaid / unknown flow — no-op re-render */ }
   return stageContext(sessionData, {}, prefs, t, locale);
 };
 
@@ -556,29 +697,30 @@ export const unpinElement = (sessionData, screenId, name, prefs, t, locale) => {
 
 // Undo / redo walk the two session stacks. Popping an entry, applying its
 // reverse, and re-pushing onto the opposite stack is the whole mechanic — the
-// entry object travels with the user as they step back and forth. The stack
-// param is a URL segment: anything but canvas|chat is a no-op re-render (it
-// must not mint junk stack keys in the session).
+// entry object travels with the user as they step back and forth. Async:
+// replaying a flow entry rewrites the project's flows.json. The stack param
+// is a URL segment: anything but canvas|chat is a no-op re-render (it must
+// not mint junk stack keys in the session).
 const STACKS = ['canvas', 'chat'];
-export const undo = (sessionData, stack, prefs = {}, t = (k) => k, locale = 'en') => {
+export const undo = async (sessionData, stack, prefs = {}, t = (k) => k, locale = 'en') => {
   const d = design(sessionData);
   if (!STACKS.includes(stack)) return stageContext(sessionData, {}, prefs, t, locale);
   (d.undoStacks ??= {}); (d.redoStacks ??= {});
   const entry = (d.undoStacks[stack] ??= []).pop();
   if (entry) {
-    applyEntry(d, entry, 'undo');
+    await applyEntry(d, entry, 'undo');
     (d.redoStacks[stack] ??= []).push(entry);
   }
   return stageContext(sessionData, {}, prefs, t, locale);
 };
 
-export const redo = (sessionData, stack, prefs = {}, t = (k) => k, locale = 'en') => {
+export const redo = async (sessionData, stack, prefs = {}, t = (k) => k, locale = 'en') => {
   const d = design(sessionData);
   if (!STACKS.includes(stack)) return stageContext(sessionData, {}, prefs, t, locale);
   (d.undoStacks ??= {}); (d.redoStacks ??= {});
   const entry = (d.redoStacks[stack] ??= []).pop();
   if (entry) {
-    applyEntry(d, entry, 'redo');
+    await applyEntry(d, entry, 'redo');
     (d.undoStacks[stack] ??= []).push(entry);
   }
   return stageContext(sessionData, {}, prefs, t, locale);

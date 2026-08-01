@@ -18,10 +18,11 @@
    named tile's iframe gains &inspect=1 (inspect island) or drops &still=1
    (live render); both get pointer-events:auto via .is-inspecting/.is-live.
    The per-tile hover toolbar (pin / inspect / select + add-to-flow in
-   views, move/remove placeholders in flows) is the ONLY per-tile chrome,
+   views, move ←→ + remove-from-flow in flows) is the ONLY per-tile chrome,
    revealed on :hover/:focus-within, pure CSS. Free drag/layout offsets are
-   gone; the bottom-anchored mini panel renders inside the viewer via
-   ui/common/mini_panel.html. Canon markup: canvas-redesign-contract.md §3.
+   gone (flow edits POST the project write endpoints); the bottom-anchored
+   mini panel renders inside the viewer via ui/common/mini_panel.html.
+   Canon markup: canvas-redesign-contract.md §3.
    Every parameter travels in v (the shell's facade viewerFor produces it —
    see contract §1):
      v.screens  [{ id, label?, state?, chips? [{text,title}], viewports,
@@ -97,12 +98,14 @@
 
 {# The per-tile hover toolbar — the ONLY per-tile chrome (replaces the old
    always-on pin). Revealed on :hover/:focus-within (viewer.css, zero JS).
-   Every act is a GET echoing the full viewer state (the facade's withParams);
-   pins swap #panels (chat context), inspect/live swap #design-viewer.
-   views: + add-to-flow <details> menu (items inert until the flow-write
-   endpoints land — visually complete, no hrefs). flows: + move /
-   remove-from-flow placeholders (disabled until the same slice). #}
-{% macro tileTools(v, s) %}
+   Pin/inspect/live are GETs echoing the full viewer state (the facade's
+   withParams); pins swap #panels (chat context), inspect/live swap
+   #design-viewer. The flow edits are POSTs that WRITE the project's
+   flows.json and re-render the whole stage (#panels): views gets the
+   add-to-flow <details> menu (one small form per flow), flows gets move ←/→
+   nudges (disabled at the row ends) + remove-from-flow. row/first/last are
+   passed only from the flows lens. #}
+{% macro tileTools(v, s, row, first, last) %}
 <span class="dv-tile-tools">
   {% if v.contextBase %}
   <a class="ico-btn dv-tool {{ 'on' if s.inContext }}" href="{{ v.contextBase }}{{ s.id }}?state=toggle"
@@ -114,15 +117,25 @@
      aria-label="{{ t('viewer.inspectAria', {id: s.id}) }}" title="{{ t('viewer.inspect', {id: s.id}) }}">{{ icon('mouse-pointer-click', {size: 14}) }}</a>
   <a class="ico-btn dv-tool {{ 'on' if s.live }}" href="{{ s.liveHref }}" hx-get="{{ s.liveHref }}" hx-target="#design-viewer" hx-swap="outerHTML"
      aria-label="{{ t('viewer.liveAria', {id: s.id}) }}" title="{{ t('viewer.live', {id: s.id}) }}">{{ icon('play', {size: 14}) }}</a>
-  {% if v.mode == 'flows' %}
-  <button class="ico-btn dv-tool" type="button" disabled title="{{ t('viewer.move') }} — {{ t('viewer.flowEditSoon') }}">{{ icon('move-horizontal', {size: 14}) }}</button>
-  <button class="ico-btn dv-tool" type="button" disabled title="{{ t('viewer.removeFromFlow') }} — {{ t('viewer.flowEditSoon') }}">{{ icon('list-x', {size: 14}) }}</button>
+  {% if v.mode == 'flows' and row %}
+  <button class="ico-btn dv-tool" type="button" {{ 'disabled' if first }}
+     hx-post="/design/flows/{{ row.id }}/move/{{ s.id }}" hx-vals='{"dir": -1}' hx-target="#panels" hx-swap="outerHTML"
+     aria-label="{{ t('viewer.moveEarlier', {id: s.id}) }}" title="{{ t('viewer.moveEarlier', {id: s.id}) }}">{{ icon('arrow-left', {size: 14}) }}</button>
+  <button class="ico-btn dv-tool" type="button" {{ 'disabled' if last }}
+     hx-post="/design/flows/{{ row.id }}/move/{{ s.id }}" hx-vals='{"dir": 1}' hx-target="#panels" hx-swap="outerHTML"
+     aria-label="{{ t('viewer.moveLater', {id: s.id}) }}" title="{{ t('viewer.moveLater', {id: s.id}) }}">{{ icon('arrow-right', {size: 14}) }}</button>
+  <button class="ico-btn dv-tool" type="button"
+     hx-post="/design/flows/{{ row.id }}/remove/{{ s.id }}" hx-target="#panels" hx-swap="outerHTML"
+     aria-label="{{ t('viewer.removeFromFlowAria', {id: s.id}) }}" title="{{ t('viewer.removeFromFlow') }}">{{ icon('list-x', {size: 14}) }}</button>
   {% elif v.flows %}
   <details class="dv-tool-menu">
-    <summary class="ico-btn dv-tool" title="{{ t('viewer.addToFlow') }}">{{ icon('list-plus', {size: 14}) }}</summary>
+    <summary class="ico-btn dv-tool" title="{{ t('viewer.addToFlow') }}" aria-label="{{ t('viewer.addToFlow') }}">{{ icon('list-plus', {size: 14}) }}</summary>
     <span class="dv-menu">
-      {% for f in v.flows %}<span class="dv-menu-item">{{ f.name }}</span>{% endfor %}
-      <span class="dv-menu-note">{{ t('viewer.flowEditSoon') }}</span>
+      {% for f in v.flows %}
+      <form hx-post="/design/flows/{{ f.id }}/add/{{ s.id }}" hx-target="#panels" hx-swap="outerHTML">
+        <button class="dv-menu-item" type="submit">{{ f.name }}</button>
+      </form>
+      {% endfor %}
     </span>
   </details>
   {% endif %}
@@ -133,12 +146,12 @@
    the stub-render iframe. The live tile drops &still=1 (live render) and the
    inspected tile gains &inspect=1; .is-live/.is-inspecting restore pointer
    events on the frame (viewer.css). #}
-{% macro tile(v, s) %}
+{% macro tile(v, s, row, first, last) %}
 <div class="dv-tile {{ 'in-ctx ctx-' + s.tone if s.inContext }} {{ 'is-dim' if s.dim }} {{ 'is-live' if s.live }} {{ 'is-inspecting' if s.inspecting }}"
      data-id="{{ s.id }}"
      style="width: {{ s.tile.width }}px">
   <header class="dv-tile-chrome">
-    {% if not v.static %}{{ tileTools(v, s) }}{% endif %}
+    {% if not v.static %}{{ tileTools(v, s, row, first, last) }}{% endif %}
     <span class="dv-tile-label"><strong>{{ s.label or s.id }}</strong> <code>{{ s.id }}</code></span>
     {% if s.live %}
     <a class="ico-btn dv-live-close" href="{{ s.liveCloseHref }}" hx-get="{{ s.liveCloseHref }}" hx-target="#design-viewer" hx-swap="outerHTML"
@@ -174,7 +187,7 @@
         <div class="dv-flow-row" data-flow="{{ row.id }}">
           <span class="dv-flow-label">{{ row.name }}</span>
           {% for s in row.tiles %}
-          {{ tile(v, s) }}
+          {{ tile(v, s, row, loop.first, loop.last) }}
           {% if s.conn %}
           <span class="dv-connector" aria-hidden="true">
             <span class="dv-connector-label">{{ s.conn }}</span>

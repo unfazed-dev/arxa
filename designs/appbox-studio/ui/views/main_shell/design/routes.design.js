@@ -17,7 +17,9 @@ export default [
   ['GET', '/design/viewer', prototype.viewer],
   ['GET', '/design/file', prototype.file],
   ['GET', '/design/screen/:id', prototype.screen],
-  ['POST', '/design/layout/artboard/:id', prototype.artboardLayout], // posted-by: drag.js island (htmx.ajax)
+  ['POST', '/design/flows/:flow/move/:screen', prototype.flowMove], // sent-by: tile toolbar (hx-post, dir) + drag.js island (htmx.ajax, index)
+  ['POST', '/design/flows/:flow/add/:screen', prototype.flowAdd],
+  ['POST', '/design/flows/:flow/remove/:screen', prototype.flowRemove],
   ['POST', '/design/panel/size/:side', prototype.panelSizePx], // posted-by: drag.js island (htmx.ajax)
   ['POST', '/design/undo/:stack', prototype.undo],
   ['POST', '/design/redo/:stack', prototype.redo],

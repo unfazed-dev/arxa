@@ -40,11 +40,20 @@ export const viewer = (c, h) =>
     mode: c.req.query('mode'), screen: c.req.query('screen'), vp: c.req.query('vp'),
   }, h.prefs(c), h.t(c), h.locale(c)));
 
-// Artboard tile drag (flow mode): persist {x, y} on drop, swap just the viewer.
-export const artboardLayout = async (c, h) => {
+// Flow edits from the per-tile toolbar (nudge arrows / remove / add menu) and
+// the axis-locked row drag (drop-to-index). Each writes the PROJECT's
+// flows.json through the facade and re-renders the whole stage (#panelsSwap:
+// canvas rows, tray and the minirail undo buttons all stay in sync).
+export const flowMove = async (c, h) => {
   const form = await h.form(c);
-  return h.render(c, `${VIEW}#viewerSwap`, facade.setArtboardLayout(h.session(c).data, c.req.param('id'), Number(form.x), Number(form.y), h.prefs(c), h.t(c), h.locale(c)));
+  return h.render(c, `${VIEW}#panelsSwap`, await facade.moveInFlow(h.session(c).data, c.req.param('flow'), c.req.param('screen'), { dir: Number(form.dir) || null, index: form.index != null ? Number(form.index) : null }, h.prefs(c), h.t(c), h.locale(c)));
 };
+
+export const flowAdd = async (c, h) =>
+  h.render(c, `${VIEW}#panelsSwap`, await facade.addToFlow(h.session(c).data, c.req.param('flow'), c.req.param('screen'), h.prefs(c), h.t(c), h.locale(c)));
+
+export const flowRemove = async (c, h) =>
+  h.render(c, `${VIEW}#panelsSwap`, await facade.removeFromFlow(h.session(c).data, c.req.param('flow'), c.req.param('screen'), h.prefs(c), h.t(c), h.locale(c)));
 
 // Panel drag handle: px width persisted per side, re-render the panel frame.
 export const panelSizePx = async (c, h) => {
@@ -54,8 +63,9 @@ export const panelSizePx = async (c, h) => {
 
 // Canvas/chat undo+redo: stepping a stack re-renders the whole stage (chat +
 // canvas share it), so a moved tile or toggled pin updates in both at once.
-export const undo = (c, h) =>
-  h.render(c, `${VIEW}#panelsSwap`, facade.undo(h.session(c).data, c.req.param('stack'), h.prefs(c), h.t(c), h.locale(c)));
+// Async: replaying a flow entry rewrites the project's flows.json.
+export const undo = async (c, h) =>
+  h.render(c, `${VIEW}#panelsSwap`, await facade.undo(h.session(c).data, c.req.param('stack'), h.prefs(c), h.t(c), h.locale(c)));
 
-export const redo = (c, h) =>
-  h.render(c, `${VIEW}#panelsSwap`, facade.redo(h.session(c).data, c.req.param('stack'), h.prefs(c), h.t(c), h.locale(c)));
+export const redo = async (c, h) =>
+  h.render(c, `${VIEW}#panelsSwap`, await facade.redo(h.session(c).data, c.req.param('stack'), h.prefs(c), h.t(c), h.locale(c)));

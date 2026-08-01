@@ -68,11 +68,11 @@ export const runControl = async (c, h) => {
 };
 
 // The design viewer on the evidence canvas: controller acts swap just the
-// viewer block; the choice lives in the session. panel/inspect ride along so
-// the mini panel tabs and the inspect toggle round-trip.
+// viewer block; the choice lives in the session. panel rides along so the
+// mini panel tabs round-trip.
 export const evidenceViewer = (c, h) =>
   h.render(c, `${VIEW}#viewerSwap`, facade.setViewer(h.session(c).data, {
-    bg: c.req.query('bg'), inspect: c.req.query('inspect'), panel: c.req.query('panel'),
+    bg: c.req.query('bg'), panel: c.req.query('panel'),
   }, h.prefs(c), h.t(c), h.locale(c)));
 
 // The iframe document: an honest labelled stand-in render of the client's
