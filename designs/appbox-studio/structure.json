@@ -92,6 +92,17 @@
       ]
     },
     {
+      "id": "app.config",
+      "shell": "app",
+      "comp": "AppConfig",
+      "shellDir": "app_shell",
+      "surface": "app_shell_app_config_view",
+      "viewmodel": "ui/views/app_shell/config/config_viewmodel.js",
+      "deps": [
+        "services/facades/app_facade.js"
+      ]
+    },
+    {
       "id": "app.mediaRive",
       "shell": "app",
       "comp": "AppMediaRive",

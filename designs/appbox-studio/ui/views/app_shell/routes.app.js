@@ -9,6 +9,7 @@ import * as auth from './auth/auth_viewmodel.js';
 import * as pairing from './pairing/pairing_viewmodel.js';
 import * as dashboard from './dashboard/dashboard_viewmodel.js';
 import * as credential from './credential/credential_viewmodel.js';
+import * as config from './config/config_viewmodel.js';
 
 export default [
   // app.splash — splash (auto-advances); app.access — desktop sign-in
@@ -29,4 +30,8 @@ export default [
   ['GET', '/credentials', credential.page],
   ['POST', '/credentials/set', credential.set],
   ['POST', '/credentials/unset', credential.unset],
+
+  // app.config — targets/locale (config.json mirror), credentials summary, prefs
+  ['GET', '/config', config.page],
+  ['POST', '/config/set', config.set],
 ];

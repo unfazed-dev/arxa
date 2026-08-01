@@ -172,3 +172,47 @@ export const unsetCredential = (sd, key) => {
   const held = (S(sd).credentials ??= {});
   if (CREDENTIAL_KEYS.has(key)) delete held[key];
 };
+
+// ---------- config ----------
+// The unified config surface: the design-side mirror of
+// config/appbox.config.json (targets + default locale — the prototype
+// persists choices in session), a compact credentials summary (the full
+// editor stays at /credentials), and the chrome prefs (theme/accent/jargon,
+// posted to the shared /prefs/* endpoints — no duplicate mutations here).
+const CONFIG_TARGETS = ['macos', 'ios', 'android', 'web'];
+const CONFIG_LOCALES = ['en', 'pl'];
+const CONFIG_ACCENTS = ['cyan', 'violet', 'blue', 'ember'];
+const CONFIG_JARGONS = ['plain', 'balanced', 'technical'];
+
+export const configContext = (sd, t = (k) => k, prefs = {}) => {
+  const s = S(sd);
+  const cfg = (s.config ??= { targets: ['macos'], defaultLocale: 'en' });
+  const creds = credentialsContext(sd, t);
+  const theme = prefs.theme || 'light';
+  const accent = prefs.accent || 'cyan';
+  const jargon = prefs.jargon || 'balanced';
+  return {
+    targets: CONFIG_TARGETS.map((id) => ({ id, label: t(`cfg.target.${id}`), on: cfg.targets.includes(id) })),
+    locales: CONFIG_LOCALES.map((id) => ({ id, label: t(`cfg.locale.${id}`), on: cfg.defaultLocale === id })),
+    credGroups: creds.groups.map((g) => ({
+      id: g.id,
+      label: g.label,
+      set: g.rows.filter((r) => r.set).length,
+      total: g.rows.length,
+      missing: g.rows.filter((r) => r.required && !r.set).length,
+    })),
+    credMissing: creds.missing,
+    prefs: { theme, accent, jargon },
+    accents: CONFIG_ACCENTS.map((id) => ({ id, label: t(`cfg.accent.${id}`), on: accent === id })),
+    jargons: CONFIG_JARGONS.map((id) => ({ id, label: t(`cfg.jargon.${id}`), on: jargon === id })),
+  };
+};
+
+export const setConfig = (sd, form) => {
+  const s = S(sd);
+  const targets = CONFIG_TARGETS.filter((id) => form[`target_${id}`]);
+  const cfg = (s.config ??= {});
+  cfg.targets = targets.length ? targets : ['macos']; // at least one target
+  const locale = String(form.defaultLocale || '');
+  if (CONFIG_LOCALES.includes(locale)) cfg.defaultLocale = locale;
+};

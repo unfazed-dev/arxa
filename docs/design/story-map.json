@@ -715,6 +715,11 @@
               "name": "Design surfaces the required credentials by key name from the catalog for the kits a surface declares — a maps screen lists its maps keys before build",
               "priority": "must",
               "release": "R1 Dogfood"
+            },
+            {
+              "name": "One config surface unifies the app's knobs — build targets and default locale (the appbox.config.json mirror), a credentials summary per module with missing-required badges, and shell prefs (theme, accent, jargon) — so the user reviews everything a generated app ships with in one place",
+              "priority": "must",
+              "release": "R1 Dogfood"
             }
           ]
         }

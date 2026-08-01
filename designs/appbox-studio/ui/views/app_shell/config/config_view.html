@@ -1,0 +1,94 @@
+<!-- appbox:provenance
+     generator: appbox  licence: free  project: 662368770980
+     Built with appbox (free tier) — https://appbox.dev
+-->
+{% extends "ui/views/main_shell/main_shell_view.html" %}
+{% block title %}{{ t('cfg.pageTitle') }}{% endblock %}
+{% block head_extra %}
+<link rel="stylesheet" href="/assets/css/credential.css">
+{% endblock %}
+{% block surface %}
+<span class="eyebrow">{{ t('cfg.eyebrow') }}</span>
+<h1 class="display">{{ t('cfg.title') }}</h1>
+<p class="muted">{{ t('cfg.lede') }}</p>
+
+<section class="settings-section">
+  <h2>{{ t('cfg.section.app') }}</h2>
+  <p class="settings-note">{{ t('cfg.appNote') }}</p>
+  <form method="post" action="/config/set">
+    <div class="cred-row">
+      <div class="cred-row-head">
+        <span class="cred-key">{{ t('cfg.targets') }}</span>
+        {% for tg in targets %}
+        <label class="chip {{ 'is-set' if tg.on }}">
+          <input type="checkbox" name="target_{{ tg.id }}" {{ 'checked' if tg.on }}> {{ tg.label }}
+        </label>
+        {% endfor %}
+      </div>
+    </div>
+    <div class="cred-row">
+      <div class="cred-row-head">
+        <span class="cred-key">{{ t('cfg.defaultLocale') }}</span>
+        {% for lc in locales %}
+        <label class="chip {{ 'is-set' if lc.on }}">
+          <input type="radio" name="defaultLocale" value="{{ lc.id }}" {{ 'checked' if lc.on }}> {{ lc.label }}
+        </label>
+        {% endfor %}
+        <button type="submit">{{ t('cfg.action.save') }}</button>
+      </div>
+    </div>
+  </form>
+</section>
+
+<section class="settings-section">
+  <h2>{{ t('cfg.section.creds') }}</h2>
+  {% if credMissing > 0 %}
+  <p class="cred-missing"><span class="type-badge tb-findings">{{ t('creds.missing', {count: credMissing}) }}</span></p>
+  {% else %}
+  <p class="cred-missing"><span class="type-badge tb-evidence">{{ t('creds.allSet') }}</span></p>
+  {% endif %}
+  {% for g in credGroups %}
+  <div class="cred-row">
+    <div class="cred-row-head">
+      <span class="cred-key">{{ g.label }}</span>
+      <span class="chip {{ 'is-set' if g.missing == 0 }}">{{ t('cfg.creds.setOf', {set: g.set, total: g.total}) }}</span>
+      {% if g.missing > 0 %}<span class="type-badge tb-findings">{{ t('cfg.creds.missing', {count: g.missing}) }}</span>{% endif %}
+      <a class="cred-where" href="/credentials">{{ t('cfg.creds.manage') }}</a>
+    </div>
+  </div>
+  {% endfor %}
+</section>
+
+<section class="settings-section">
+  <h2>{{ t('cfg.section.prefs') }}</h2>
+  <div class="cred-row">
+    <div class="cred-row-head">
+      <span class="cred-key">{{ t('cfg.prefs.theme') }}</span>
+      <span class="chip is-set">{{ t('cfg.theme.' + prefs.theme) }}</span>
+      <form method="post" action="/prefs/theme">
+        <button type="submit" class="ghost">{{ t('cfg.action.toggle') }}</button>
+      </form>
+    </div>
+  </div>
+  <div class="cred-row">
+    <div class="cred-row-head">
+      <span class="cred-key">{{ t('cfg.prefs.accent') }}</span>
+      {% for a in accents %}
+      <form method="post" action="/prefs/accent">
+        <button type="submit" name="accent" value="{{ a.id }}" class="chip {{ 'is-set' if a.on }}">{{ a.label }}</button>
+      </form>
+      {% endfor %}
+    </div>
+  </div>
+  <div class="cred-row">
+    <div class="cred-row-head">
+      <span class="cred-key">{{ t('cfg.prefs.jargon') }}</span>
+      {% for j in jargons %}
+      <form method="post" action="/prefs/jargon">
+        <button type="submit" name="jargon" value="{{ j.id }}" class="chip {{ 'is-set' if j.on }}">{{ j.label }}</button>
+      </form>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endblock %}

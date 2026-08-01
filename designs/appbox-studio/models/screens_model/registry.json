@@ -72,6 +72,15 @@
     "route": "/credentials"
   },
   {
+    "id": "app.config",
+    "label": "Config",
+    "surface": "app_shell_app_config_view",
+    "shell": "app",
+    "comp": "AppConfig",
+    "labelKey": "screen.label.app.config",
+    "route": "/config"
+  },
+  {
     "id": "app.mediaRive",
     "label": "Rive",
     "surface": "app_shell_app_mediaRive_view",

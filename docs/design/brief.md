@@ -225,6 +225,7 @@ appbox
 - [must/R1 Dogfood] User adds a Stripe test key for their design app from the credentials surface; the value goes to the OS vault via the daemon, never logged, and test keys work on simulators
 - [must/R1 Dogfood] User sees which required keys are missing before build — the credentials surface and `appbox credentials check` report missing required keys per module
 - [must/R1 Dogfood] Design surfaces the required credentials by key name from the catalog for the kits a surface declares — a maps screen lists its maps keys before build
+- [must/R1 Dogfood] One config surface unifies the app's knobs — build targets and default locale (the appbox.config.json mirror), a credentials summary per module with missing-required badges, and shell prefs (theme, accent, jargon) — so the user reviews everything a generated app ships with in one place
 
 ### Website
 
