@@ -217,9 +217,10 @@ function evidenceWithLevel(lv, L, t = (k) => k) {
 
 // ---------- design viewer (evidence canvas) ----------
 // The evidence canvas shows the designed screens as read-only artboards
-// (flow tiles, static canvas — no pins, no drag). Tile heights come from the
-// viewports the design actually authored (seed truth).
-// B(sessionData).viewer = { bg, inspect }.
+// (views-lens tiles only, static canvas — no pins, no flows, no per-tile
+// tools). Tile heights come from the viewports the design actually authored
+// (seed truth).
+// B(sessionData).viewer = { bg }.
 export const VIEWPORT_WIDTHS = { mobile: 390, tablet: 744, desktop: 1280 };
 export const VIEWPORT_HEIGHTS = { mobile: 844, tablet: 1133, desktop: 800 };
 export const VIEWER_BGS = ['canvas', 'warm', 'slate'];
@@ -234,7 +235,6 @@ function viewerFor(sessionData, evidence) {
     return {
       id: e.surface, label: e.surface, state: e.state,
       chips: e.chips, viewports,
-      shell: e.surface?.split('.')[0] ?? 'app',
       primaryWidth: VIEWPORT_WIDTHS[v0] ?? 390,
       // static evidence canvas: no rung switching, tiles render at the first
       // authored rung (same contract field the design facade fills per vp).
@@ -243,18 +243,17 @@ function viewerFor(sessionData, evidence) {
   });
   const bg = VIEWER_BGS.includes(v.bg) ? v.bg : 'canvas';
   const base = '/build/artifact/evidence/surfaces/viewer';
-  const inspect = v.inspect === '1';
 
   // Viewer href builder: current viewer state merged with overrides, empties
   // dropped — same idiom as the design facade's.
   const withParams = (over) => {
-    const merged = { bg, inspect: inspect ? '1' : null, ...over };
+    const merged = { bg, ...over };
     const qs = Object.entries(merged).filter(([, val]) => val != null).map(([k, val]) => `${k}=${val}`).join('&');
     return qs ? `${base}?${qs}` : base;
   };
 
   return {
-    screens, bg, inspect, strip: true, static: true,
+    screens, bg, strip: true, static: true,
     base,
     // Every tile iframes the stub renderer — see the comment above viewerFor.
     stubBase: '/build/screens/',
@@ -269,8 +268,6 @@ function viewerFor(sessionData, evidence) {
         bgs: VIEWER_BGS.map((value) => ({ value, active: value === bg, href: withParams({ bg: value }) })),
       },
       controller: {
-        inspectOn: inspect,
-        inspectHref: withParams({ inspect: inspect ? null : '1' }),
         undo: { can: false, href: '/design/undo/canvas' },
         redo: { can: false, href: '/design/redo/canvas' },
       },
@@ -305,10 +302,9 @@ export const screenStub = (surface, vp, prefs = {}, locale = 'en', opts = {}) =>
   };
 };
 
-// Viewer toolbar act: bg/inspect are AUTHORITATIVE (every control href echoes
-// both, defaults elided — absent means "back to default", never "keep";
-// merging would strand inspect:'1' on forever). Same contract as the design
-// facade's.
+// Viewer toolbar act: bg is AUTHORITATIVE (every control href echoes it, the
+// default elided — absent means "back to default", never "keep"). Same
+// contract as the design facade's.
 export const setViewer = (sessionData, query, prefs = {}, t = (k) => k, locale = 'en') => {
   const next = {};
   for (const [k, v] of Object.entries(query)) if (v != null) next[k] = v;

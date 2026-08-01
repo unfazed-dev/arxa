@@ -10,6 +10,7 @@
 // templates. The locale comes from the request and picks the per-locale
 // fixture, en fallback.
 import * as repo from '../repositories/design_repository.js';
+import * as proj from '../repositories/project_repository.js';
 import * as jargon from './jargon.js';
 import * as agent from './agent_menus.js';
 import * as fv from './file_views.js';
@@ -156,14 +157,19 @@ const applyEntry = (d, entry, dir) => {
 };
 
 // ---------- the shared design viewer (ui/common/design_viewer.html) ----------
-// Two lenses over the screen registry, switched by the `mode` viewer param:
-// 'flow' — every screen as a draggable tile grouped by shell, rendered at the
-// CURRENT rung (vp param, default mobile); 'proto' — the wired-app preview,
-// one screen live at a real rung size inside device chrome (screen/vp params;
-// one mobile chrome, no os dimension). The mini panel is a single controller
-// panel (mode/inspect/fullscreen/undo-redo) + the bar's device rung icons and
-// bg swatches; the screens filmstrip lives in the composer tray, where proto
-// mode turns its thumbs into the active-screen picker (protoPicks).
+// Three lenses over the current project's screens, switched by the `mode`
+// viewer param: 'views' (default; legacy mode=flow falls through to it) —
+// every screen as a flat wrapping grid in REGISTRY order; 'flows' — one
+// dashed row per project flow, tiles in edge-chain order with trigger-labelled
+// connectors; 'proto' — the wired-app preview, one screen live at a real rung
+// size inside device chrome (screen/vp params; one mobile chrome, no os
+// dimension). Per-tile viewer state: `inspect=<screenId>` arms the inspect
+// island in that tile's iframe, `live=<screenId>` drops still=1 and makes the
+// tile interactive (one live tile at a time by construction — single key).
+// The mini panel is a single controller panel (mode/fullscreen/undo-redo) +
+// the bar's device rung icons and bg swatches; the screens filmstrip lives in
+// the composer tray, where proto mode turns its thumbs into the
+// active-screen picker (protoPicks).
 const RUNG_VP = { 390: 'mobile', 744: 'tablet', 1280: 'desktop' };
 const VP_HEIGHTS = { mobile: 844, tablet: 1133, desktop: 800 };
 
@@ -180,34 +186,22 @@ function viewerFor(d, L, t) {
 
   const vp = ['mobile', 'tablet', 'desktop'].includes(v.vp) ? v.vp : 'mobile';
 
-  const screens = repo.screens(L).map((s) => {
-    const viewports = s.rungs.map((r) => ({ vp: RUNG_VP[r.width] ?? 'mobile', width: r.width, rung: r.rung, note: r.note, shot: r.shot }));
-    // Flow tile dims at the CURRENT rung (fallback: the screen's first
-    // authored rung; heights fall back to the rung default).
-    const te = viewports.find((e) => e.vp === vp) ?? viewports[0];
-    // Flow tiles request STILL frames (no auto-advance on the canvas) — the
-    // template's tile iframe src carries an explicit &still=1.
-    const tile = te ? { vp: te.vp, width: te.width, height: te.height ?? VP_HEIGHTS[te.vp] } : null;
-    return {
-      id: s.id, label: s.label, state: s.state,
-      inContext: ids.includes(s.id),
-      dim: ids.length > 0 && !ids.includes(s.id),
-      tone: toneFor(s.id, L),
-      chips: [{ text: `${s.kit}%`, title: t('design.kitChipTitle', { kit: s.kit, id: s.id }) }],
-      viewports,
-      // shell drives flow tile grouping; the fixture has no shell field, so
-      // derive it from the screen id prefix (e.g. "design.chat" → "design").
-      shell: s.shell ?? s.id.split('.')[0],
-      layout: d.artboardLayout?.[s.id] ?? null,
-      primaryWidth: viewports[0]?.width ?? 390,
-      tile,
-    };
-  });
+  // Tile order is the project REGISTRY order (the views lens is a flat grid
+  // over it); the tile data itself comes from the design-stage fixture
+  // (rungs/kit/state). Fallback: fixture order when no project is overlaid.
+  const fixture = repo.screens(L);
+  let registryIds = [];
+  try { registryIds = proj.registry().map((e) => e.id); } catch { /* artifact-only serving */ }
+  const ordered = registryIds.length
+    ? registryIds.map((id) => fixture.find((s) => s.id === id)).filter(Boolean)
+    : fixture;
 
   const bg = ['canvas', 'warm', 'slate'].includes(v.bg) ? v.bg : 'canvas';
-  const inspect = v.inspect === '1';
-  const mode = v.mode === 'proto' ? 'proto' : 'flow';
-  const active = screens.some((s) => s.id === v.screen) ? v.screen : screens[0]?.id;
+  const mode = ['views', 'flows', 'proto'].includes(v.mode) ? v.mode : 'views';
+  const active = ordered.some((s) => s.id === v.screen) ? v.screen : ordered[0]?.id;
+  // Per-tile params: the screen id they name, else null (unknown ids drop).
+  const inspect = ordered.some((s) => s.id === v.inspect) ? v.inspect : null;
+  const live = ordered.some((s) => s.id === v.live) ? v.live : null;
 
   // Device rungs as mini-bar icon buttons (lucide names, picked up by the
   // server's template icon scan). One mobile chrome — no os dimension.
@@ -219,11 +213,11 @@ function viewerFor(d, L, t) {
 
   // Viewer href builder: current viewer state merged with overrides, empties
   // dropped — so a controller toggle href only flips the one param it names.
-  // Defaults (flow mode, mobile rung) stay out of the URL.
+  // Defaults (views mode, mobile rung) stay out of the URL.
   const withParams = (over) => {
     const merged = {
-      bg, inspect: inspect ? '1' : null,
-      mode: mode === 'flow' ? null : mode,
+      bg, inspect, live,
+      mode: mode === 'views' ? null : mode,
       screen: active,
       vp: vp === 'mobile' ? null : vp,
       ...over,
@@ -231,6 +225,61 @@ function viewerFor(d, L, t) {
     const qs = Object.entries(merged).filter(([, val]) => val != null).map(([k, val]) => `${k}=${val}`).join('&');
     return qs ? `${base}?${qs}` : base;
   };
+
+  const screens = ordered.map((s) => {
+    const viewports = s.rungs.map((r) => ({ vp: RUNG_VP[r.width] ?? 'mobile', width: r.width, rung: r.rung, note: r.note, shot: r.shot }));
+    // Tile dims at the CURRENT rung (fallback: the screen's first authored
+    // rung; heights fall back to the rung default).
+    const te = viewports.find((e) => e.vp === vp) ?? viewports[0];
+    const tile = te ? { vp: te.vp, width: te.width, height: te.height ?? VP_HEIGHTS[te.vp] } : null;
+    return {
+      id: s.id, label: s.label, state: s.state,
+      inContext: ids.includes(s.id),
+      dim: ids.length > 0 && !ids.includes(s.id),
+      tone: toneFor(s.id, L),
+      chips: [{ text: `${s.kit}%`, title: t('design.kitChipTitle', { kit: s.kit, id: s.id }) }],
+      viewports,
+      primaryWidth: viewports[0]?.width ?? 390,
+      tile,
+      // Per-tile hover toolbar state + toggle hrefs (inspect toggles off when
+      // re-clicked; live has an explicit on-tile close).
+      inspecting: s.id === inspect,
+      live: s.id === live,
+      inspectHref: withParams({ inspect: s.id === inspect ? null : s.id }),
+      liveHref: withParams({ live: s.id }),
+      liveCloseHref: withParams({ live: null }),
+    };
+  });
+
+  // Flows lens rows: one ordered tile chain per project flow. Chain order =
+  // edge-chain order starting from the edge whose `from` has no incoming edge
+  // (a cycle guard keeps a malformed file from looping forever). A screen in
+  // several flows appears once per row — tiles are shallow copies of the
+  // views-lens entries plus `conn`, the trigger label on the connector to the
+  // NEXT tile (null on the last).
+  const tileById = Object.fromEntries(screens.map((s) => [s.id, s]));
+  let flows = [];
+  try {
+    flows = proj.flows().map((f) => {
+      const edges = f.edges ?? [];
+      const incoming = new Set(edges.map((e) => e.to));
+      let cur = edges.find((e) => !incoming.has(e.from)) ?? edges[0];
+      const chain = [];
+      const seen = new Set();
+      while (cur && !seen.has(cur.from)) {
+        seen.add(cur.from);
+        chain.push(cur);
+        cur = edges.find((e) => e.from === cur.to);
+      }
+      const chainIds = chain.length ? [chain[0].from, ...chain.map((e) => e.to)] : [];
+      return {
+        id: f.id, name: f.name,
+        tiles: chainIds
+          .map((id, i) => (tileById[id] ? { ...tileById[id], conn: i < chain.length ? chain[i].trigger : null } : null))
+          .filter(Boolean),
+      };
+    });
+  } catch { /* no project overlaid — the flows lens renders empty */ }
 
   // The wired-app lens: device chrome around the live render at the real
   // rung size. Only produced in proto mode.
@@ -240,25 +289,23 @@ function viewerFor(d, L, t) {
   } : null;
 
   const miniPanel = {
-    // The bar-right cluster (always mounted): device rung icons in BOTH
-    // modes (in flow they re-render the tiles at that rung) + bg swatches
-    // in every mode, a divider between the groups.
+    // The bar-right cluster (always mounted): device rung icons in ALL
+    // lenses (in views/flows they re-render the tiles at that rung) + bg
+    // swatches in every mode, a divider between the groups.
     bar: {
       devices: DEVICES.map((d) => ({ ...d, active: d.key === vp, href: withParams({ vp: d.key === 'mobile' ? null : d.key }) })),
       bgs: ['canvas', 'warm', 'slate'].map((value) => ({ value, active: value === bg, href: withParams({ bg: value }) })),
     },
     controller: {
-      inspectOn: inspect,
-      inspectHref: withParams({ inspect: inspect ? null : '1' }),
-      modes: ['flow', 'proto'].map((key) => ({ key, active: key === mode, href: withParams({ mode: key === 'flow' ? null : key }) })),
+      modes: ['views', 'flows', 'proto'].map((key) => ({ key, active: key === mode, href: withParams({ mode: key === 'views' ? null : key }) })),
       undo: { can: (d.undoStacks?.canvas?.length ?? 0) > 0, href: '/design/undo/canvas' },
       redo: { can: (d.redoStacks?.canvas?.length ?? 0) > 0, href: '/design/redo/canvas' },
     },
   };
 
   return {
-    inspect,
-    screens, bg,
+    inspect, live,
+    screens, flows, bg,
     mode, proto, vp,
     // Proto-mode screen picks for the composer tray's filmstrip (the tray
     // lives outside #design-viewer, so the viewer hands the hrefs over).
@@ -274,7 +321,7 @@ function viewerFor(d, L, t) {
   };
 }
 
-// Viewer toolbar act: the state keys (bg/inspect/mode/screen/vp) are
+// Viewer toolbar act: the state keys (bg/inspect/live/mode/screen/vp) are
 // AUTHORITATIVE — every control href echoes the whole viewer state
 // (withParams), with defaults elided from the URL, so an absent key means
 // "back to default", never "keep". Merging would strand every non-default

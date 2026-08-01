@@ -17,18 +17,16 @@
      bar: { devices: [{ key, icon, active, href }] | null,   // rung icons
             bgs: [{ value, active, href }] }                 // swatch buttons
      controller: {
-       modes: [{ key, active, href }],                       // flow/proto lens
-       inspectOn: bool,
-       inspectHref: '/design/viewer?...&inspect=1',          // toggles the inspect param
+       modes: [{ key, active, href }],                       // views/flows/proto lens
        undo:  { can: bool, href: '/design/undo/canvas' },
        redo:  { can: bool, href: '/design/redo/canvas' },
      }
 
-   The control GETs echo the full viewer state (bg, inspect, mode, vp) so a
-   toggle never loses it — zero custom JS. #}
+   The control GETs echo the full viewer state (bg, inspect, live, mode, vp)
+   so a toggle never loses it — zero custom JS. #}
 
-{# The single panel: mode toggle, inspect, viewer fullscreen, canvas
-   undo/redo. Undo/redo swap #panels; the other controls swap #design-viewer.
+{# The single panel: mode toggle, viewer fullscreen, canvas undo/redo.
+   Undo/redo swap #panels; the other controls swap #design-viewer.
    Fullscreen is client-side (canvas.js) via a data-action, so it carries no
    route. (Device rungs + bg swatches live in the bar itself — see
    miniPanel().) #}
@@ -41,7 +39,6 @@
     {% endfor %}
   </span>
   <span class="mini-panel-group">
-    <a class="ico-btn {{ 'on' if c.inspectOn }}" href="{{ c.inspectHref }}" hx-get="{{ c.inspectHref }}" hx-target="#design-viewer" hx-swap="outerHTML" title="{{ t('miniPanel.inspect') }}">{{ icon('mouse-pointer-click', {size: 16}) }}</a>
     <button class="ico-btn" data-action="viewer-fullscreen" title="{{ t('miniPanel.fullscreen') }}">{{ icon('maximize', {size: 16}) }}</button>
   </span>
   <span class="mini-panel-group" role="group" aria-label="{{ t('miniPanel.historyGroup') }}">

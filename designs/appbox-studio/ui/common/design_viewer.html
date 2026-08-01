@@ -2,36 +2,48 @@
      generator: appbox  licence: free  project: 662368770980
      Built with appbox (free tier) — https://appbox.dev
 -->
-{# ---------- Shared screen stage: two lenses over the screen registry ------
+{# ---------- Shared screen stage: three lenses over the project screens ----
    Lens switch is server state (v.mode), swapped through #design-viewer:
-     flow  — every screen as a chromeless tile (?embed=1) at the CURRENT rung
-             (v.vp; s.tile carries the per-screen width/height at that rung),
-             grouped by shell into block-flow rows. Tiles drag freely; x/y
-             POSTed on drop, a saved position renders the tile absolute
-             (group-relative).
+     views — every screen of the current project as a flat wrapping grid in
+             REGISTRY order (v.screens; s.tile carries the per-screen
+             width/height at the current rung v.vp), no containers/lines.
+     flows — one dashed row per project flow (v.flows), tiles in edge-chain
+             order with a .dv-connector (line + arrowhead + trigger label)
+             BETWEEN consecutive tiles, pure CSS/HTML.
      proto — the wired-app preview: ONE screen live at a REAL rung size
              inside device chrome (phone / tablet / desktop window), the
              rung picked from the mini bar's device icons, the active
              screen picked from the composer tray's filmstrip.
-   The per-screen pin stays always-on where the shell passes a contextBase.
-   The bottom-anchored mini panel (Screens / Controller panels)
-   renders inside the viewer via ui/common/mini_panel.html. Canon markup:
-   canvas-redesign-contract.md §3. Every parameter travels in v (the shell's
-   facade viewerFor produces it — see contract §1):
+   Per-tile state: v.inspect / v.live are screen IDS, not booleans — the
+   named tile's iframe gains &inspect=1 (inspect island) or drops &still=1
+   (live render); both get pointer-events:auto via .is-inspecting/.is-live.
+   The per-tile hover toolbar (pin / inspect / select + add-to-flow in
+   views, move/remove placeholders in flows) is the ONLY per-tile chrome,
+   revealed on :hover/:focus-within, pure CSS. Free drag/layout offsets are
+   gone; the bottom-anchored mini panel renders inside the viewer via
+   ui/common/mini_panel.html. Canon markup: canvas-redesign-contract.md §3.
+   Every parameter travels in v (the shell's facade viewerFor produces it —
+   see contract §1):
      v.screens  [{ id, label?, state?, chips? [{text,title}], viewports,
-                  inContext?, dim?, tone?, shell, layout?, primaryWidth,
-                  tile { vp, width, height } }]
-     v.mode     'flow' (default) | 'proto'
+                  inContext?, dim?, tone?, primaryWidth,
+                  tile { vp, width, height },
+                  inspecting?, live?, inspectHref?, liveHref?, liveCloseHref? }]
+     v.flows    [{ id, name, tiles: [...v.screens entries + conn?] }] —
+                conn is the trigger label on the connector to the NEXT tile
+                (null on the last). Absent on the static evidence canvas.
+     v.mode     'views' (default) | 'flows' | 'proto'
      v.proto    present in proto mode: { active, vp, src }
      v.vp       current rung ('mobile'|'tablet'|'desktop', default mobile)
-     v.inspect  bool — inspect island armed (default false)
+     v.inspect  screen id — that tile's inspect island armed (default none)
+     v.live     screen id — that tile live-rendered + interactive (default none)
      v.static   bool — read-only canvas (build evidence): no drag/marquee,
-                no pin affordances
+                no hover toolbar
      v.bg       'canvas' | 'warm' | 'slate' — stage background (default canvas)
      v.base     route prefix for viewer actions — toggles GET it with params
                 and swap #design-viewer
      v.stubBase iframe src prefix — the served design render per screen
-                ('/build/screens/'; both modes append ?vp=<rung>&embed=1).
+                ('/build/screens/'; tiles append ?vp=<rung>&embed=1&still=1,
+                live tiles drop &still=1, inspected tiles append &inspect=1).
                 The app-under-design is CONTENT on the stub renderer, never
                 a live route.
      v.contextBase — present where screens can pin as chat context (design
@@ -83,61 +95,101 @@
 </div>
 {% endmacro %}
 
+{# The per-tile hover toolbar — the ONLY per-tile chrome (replaces the old
+   always-on pin). Revealed on :hover/:focus-within (viewer.css, zero JS).
+   Every act is a GET echoing the full viewer state (the facade's withParams);
+   pins swap #panels (chat context), inspect/live swap #design-viewer.
+   views: + add-to-flow <details> menu (items inert until the flow-write
+   endpoints land — visually complete, no hrefs). flows: + move /
+   remove-from-flow placeholders (disabled until the same slice). #}
+{% macro tileTools(v, s) %}
+<span class="dv-tile-tools">
+  {% if v.contextBase %}
+  <a class="ico-btn dv-tool {{ 'on' if s.inContext }}" href="{{ v.contextBase }}{{ s.id }}?state=toggle"
+     hx-get="{{ v.contextBase }}{{ s.id }}?state=toggle" hx-target="#panels" hx-swap="outerHTML"
+     aria-label="{{ t('viewer.removeCtxAria', {id: s.id}) if s.inContext else t('viewer.pinCtxAria', {id: s.id}) }}"
+     title="{{ t('viewer.removeCtx', {id: s.id}) if s.inContext else t('viewer.pinCtx', {id: s.id}) }}">{{ icon('pin', {size: 14}) }}</a>
+  {% endif %}
+  <a class="ico-btn dv-tool {{ 'on' if s.inspecting }}" href="{{ s.inspectHref }}" hx-get="{{ s.inspectHref }}" hx-target="#design-viewer" hx-swap="outerHTML"
+     aria-label="{{ t('viewer.inspectAria', {id: s.id}) }}" title="{{ t('viewer.inspect', {id: s.id}) }}">{{ icon('mouse-pointer-click', {size: 14}) }}</a>
+  <a class="ico-btn dv-tool {{ 'on' if s.live }}" href="{{ s.liveHref }}" hx-get="{{ s.liveHref }}" hx-target="#design-viewer" hx-swap="outerHTML"
+     aria-label="{{ t('viewer.liveAria', {id: s.id}) }}" title="{{ t('viewer.live', {id: s.id}) }}">{{ icon('play', {size: 14}) }}</a>
+  {% if v.mode == 'flows' %}
+  <button class="ico-btn dv-tool" type="button" disabled title="{{ t('viewer.move') }} — {{ t('viewer.flowEditSoon') }}">{{ icon('move-horizontal', {size: 14}) }}</button>
+  <button class="ico-btn dv-tool" type="button" disabled title="{{ t('viewer.removeFromFlow') }} — {{ t('viewer.flowEditSoon') }}">{{ icon('list-x', {size: 14}) }}</button>
+  {% elif v.flows %}
+  <details class="dv-tool-menu">
+    <summary class="ico-btn dv-tool" title="{{ t('viewer.addToFlow') }}">{{ icon('list-plus', {size: 14}) }}</summary>
+    <span class="dv-menu">
+      {% for f in v.flows %}<span class="dv-menu-item">{{ f.name }}</span>{% endfor %}
+      <span class="dv-menu-note">{{ t('viewer.flowEditSoon') }}</span>
+    </span>
+  </details>
+  {% endif %}
+</span>
+{% endmacro %}
+
+{# One screen tile: chrome header (hover toolbar + label + live close) over
+   the stub-render iframe. The live tile drops &still=1 (live render) and the
+   inspected tile gains &inspect=1; .is-live/.is-inspecting restore pointer
+   events on the frame (viewer.css). #}
+{% macro tile(v, s) %}
+<div class="dv-tile {{ 'in-ctx ctx-' + s.tone if s.inContext }} {{ 'is-dim' if s.dim }} {{ 'is-live' if s.live }} {{ 'is-inspecting' if s.inspecting }}"
+     data-id="{{ s.id }}"
+     style="width: {{ s.tile.width }}px">
+  <header class="dv-tile-chrome">
+    {% if not v.static %}{{ tileTools(v, s) }}{% endif %}
+    <span class="dv-tile-label"><strong>{{ s.label or s.id }}</strong> <code>{{ s.id }}</code></span>
+    {% if s.live %}
+    <a class="ico-btn dv-live-close" href="{{ s.liveCloseHref }}" hx-get="{{ s.liveCloseHref }}" hx-target="#design-viewer" hx-swap="outerHTML"
+       aria-label="{{ t('viewer.liveCloseAria') }}" title="{{ t('viewer.liveClose') }}">{{ icon('x', {size: 14}) }}</a>
+    {% endif %}
+  </header>
+  <iframe class="dv-tile-frame"
+          src="{{ v.stubBase }}{{ s.id }}?vp={{ s.tile.vp }}&embed=1{{ '' if s.live else '&still=1' }}{{ '&inspect=1' if s.inspecting }}"
+          style="height: {{ s.tile.height }}px"
+          scrolling="no" tabindex="-1" title="{{ s.label or s.id }}"></iframe>
+</div>
+{% endmacro %}
+
 {% macro designViewer(v) %}
 {% set bg = v.bg or 'canvas' %}
-<div class="design-viewer dv-bg-{{ bg }}" id="design-viewer"{% if v.inspect %} data-inspect="1"{% endif %}>
+<div class="design-viewer dv-bg-{{ bg }}" id="design-viewer">
 
 {% if v.mode == 'proto' %}
   {{ protoStage(v) }}
 {% else %}
-  {# FLOW — tiles grouped by shell, one block-flow row per group. ONE
-     coordinate space: a tile is position:relative in-flow until the facade has
-     a saved position for it (s.layout); only then does it go absolute with
-     left/top — group-relative, because .dv-tile-group is the positioned
-     ancestor and drag.js reads/writes offsetLeft/offsetTop against it. No
-     facade auto-grid: CSS flow layout IS the auto-grid (layout null = in-flow).
-     This nunjucks runtime ships neither a groupby filter nor namespace(), and
-     selectattr cannot compare against a variable value — so shells are gathered
-     by an O(n²) first-occurrence pass: a screen starts a new group when no
-     earlier screen shares its shell, then that group re-iterates all screens
-     filtered to the same shell. N is the screen count (small), so the quadratic
-     pass is negligible, and every shell's tiles land inside one .dv-tile-group
-     wrapper exactly as contract §3 specifies.
-     v.static (build evidence): data-static disarms drag.js on this canvas —
-     read-only artboards, no marquee, no tile drag. #}
+  {# VIEWS — the flat registry grid: every screen, wrapping rows, no
+     containers/lines. FLOWS — one dashed .dv-flow-row per project flow,
+     column-stacked with a clear gap, the flow label chip at the top-left,
+     .dv-connector between consecutive tiles (the row order arrives from the
+     facade — no template-side grouping). v.static (build evidence):
+     data-static disarms drag.js on this canvas — read-only artboards, no
+     marquee, no tile drag, no hover toolbar. #}
   <div class="dv-flow">
     <div class="dv-flow-canvas"{% if v.static %} data-static="1"{% endif %}>
-      <div class="dv-zoom">
-      {% for g in v.screens %}
-      {% set gi = loop.index0 %}
-      {% set groupStart = true %}
-      {% for q in v.screens %}{% if loop.index0 < gi and q.shell == g.shell %}{% set groupStart = false %}{% endif %}{% endfor %}
-      {% if groupStart %}
-      <div class="dv-tile-group" data-shell="{{ g.shell }}">
-        <div class="dv-tile-group-label">{{ g.shell }}</div>
-        {% for s in v.screens %}{% if s.shell == g.shell %}
-        <div class="dv-tile {{ 'in-ctx ctx-' + s.tone if s.inContext }} {{ 'is-dim' if s.dim }}"
-             data-id="{{ s.id }}" data-shell="{{ s.shell }}"
-             style="{% if s.layout %}position: absolute; left: {{ s.layout.x }}px; top: {{ s.layout.y }}px;{% endif %} width: {{ s.tile.width }}px">
-          <header class="dv-tile-chrome">
-            {% if v.contextBase %}
-            <a class="dv-pin {{ 'on' if s.inContext }}" href="{{ v.contextBase }}{{ s.id }}?state=toggle"
-               hx-get="{{ v.contextBase }}{{ s.id }}?state=toggle" hx-target="#panels" hx-swap="outerHTML"
-               aria-label="{{ t('viewer.removeCtxAria', {id: s.id}) if s.inContext else t('viewer.pinCtxAria', {id: s.id}) }}"
-               title="{{ t('viewer.removeCtx', {id: s.id}) if s.inContext else t('viewer.pinCtx', {id: s.id}) }}">{{ icon('pin', {size: 14}) }}</a>
-            {% endif %}
-            <span class="dv-tile-label"><strong>{{ s.label or s.id }}</strong> <code>{{ s.id }}</code></span>
-          </header>
-          <iframe class="dv-tile-frame"
-                  src="{{ v.stubBase }}{{ s.id }}?vp={{ s.tile.vp }}&embed=1&still=1{{ '&inspect=1' if v.inspect }}"
-                  style="height: {{ s.tile.height }}px"
-                  scrolling="no" tabindex="-1" title="{{ s.label or s.id }}"></iframe>
+      {% if v.mode == 'flows' %}
+      <div class="dv-zoom dv-zoom-flows">
+        {% for row in v.flows %}
+        <div class="dv-flow-row" data-flow="{{ row.id }}">
+          <span class="dv-flow-label">{{ row.name }}</span>
+          {% for s in row.tiles %}
+          {{ tile(v, s) }}
+          {% if s.conn %}
+          <span class="dv-connector" aria-hidden="true">
+            <span class="dv-connector-label">{{ s.conn }}</span>
+            <span class="dv-connector-line"></span>
+          </span>
+          {% endif %}
+          {% endfor %}
         </div>
-        {% endif %}{% endfor %}
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="dv-zoom dv-zoom-views">
+        {% for s in v.screens %}{{ tile(v, s) }}{% endfor %}
       </div>
       {% endif %}
-      {% endfor %}
-      </div>
     </div>
   </div>
 {% endif %}
@@ -148,7 +200,7 @@
           title="{{ t('miniPanel.fullscreenExit') }}">{{ icon('x', {size: 16}) }}</button>
 
   {# MINI PANEL — bottom-anchored floating controller (one panel: mode,
-     inspect, fullscreen, undo/redo + the bar's device/bg clusters).
+     fullscreen, undo/redo + the bar's device/bg clusters).
      Rendered inside the viewer so it stays in sync on every swap. #}
   {{ mn.miniPanel(v) }}
 </div>

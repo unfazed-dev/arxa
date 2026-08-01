@@ -15,7 +15,7 @@
   const RAIL = '.panel-frame-handle';
   const TILE = '.dv-tile';
   // let these keep their native behaviour; don't start a gesture over them
-  const SKIP = '.dv-pin, a, iframe, button, .dv-bulk-pin';
+  const SKIP = '.dv-pin, a, iframe, button, .dv-tile-tools, .dv-bulk-pin';
 
   // Space arms pan mode (Figma idiom); Esc clears any marquee selection.
   // Excluded over form fields / buttons so keyboard activation still works.
