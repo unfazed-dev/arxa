@@ -5,8 +5,10 @@
 //   0 ok · 1 invalid input · 2 usage / self-test error.
 //
 // Usage:
-//   appbox intake emit    --answers <answers.json> [--brief-out p] [--registry-out p]
+//   appbox intake emit    --answers <answers.json> [--project <name>]
+//                         [--brief-out p] [--registry-out p]
 //   appbox intake seed    --brief <brief.md> [--registry-out p]
+//   appbox intake flows confirm --project <name> --flow <id> --as founder|client
 //   appbox intake validate <answers.json>
 //   appbox intake --self-test
 
@@ -14,6 +16,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:appboxd/intake.dart';
+import 'package:appboxd/project.dart';
 
 int intakeMain(List<String> args) {
   if (args.isEmpty) {
@@ -32,6 +35,8 @@ int intakeMain(List<String> args) {
       return _cmdEmit(rest);
     case 'seed':
       return _cmdSeed(rest);
+    case 'flows':
+      return _cmdFlows(rest);
     default:
       stderr.writeln('appbox intake: unknown subcommand "$cmd"');
       _usage();
@@ -44,10 +49,14 @@ void _usage() {
 Usage: appbox intake <subcommand> [options]
 
 Subcommands:
-  emit --answers <f> [--brief-out p] [--registry-out p]
-                        Emit brief.md + seeded registry.json from answers
+  emit --answers <f> [--project <name>] [--brief-out p] [--registry-out p]
+                        Emit brief.md + seeded registry.json from answers;
+                        with --project every output lands in the project's
+                        ~/.appbox intake/ dir (answers/brief/registry/flows)
   seed --brief <f> [--registry-out p]
                         Derive registry.json from a hand-written brief (10.7)
+  flows confirm --project <name> --flow <id> --as founder|client
+                        Flip a flow's provenance (derive + confirm)
   validate <answers>    Validate an answers document
   --self-test           Run the embedded negative-case self-test
 
@@ -84,11 +93,16 @@ int _cmdEmit(List<String> args) {
   String? answersPath;
   String? briefOut;
   String? registryOut;
+  String? project;
   for (var i = 0; i < args.length; i++) {
     switch (args[i]) {
       case '--answers':
         if (i + 1 >= args.length) return _emitMissingValue('--answers');
         answersPath = args[++i];
+        break;
+      case '--project':
+        if (i + 1 >= args.length) return _emitMissingValue('--project');
+        project = args[++i];
         break;
       case '--brief-out':
         if (i + 1 >= args.length) return _emitMissingValue('--brief-out');
@@ -116,7 +130,7 @@ int _cmdEmit(List<String> args) {
     return 1;
   }
   final res = const IntakeEngine().emit(answers,
-      briefOut: briefOut, registryOut: registryOut);
+      briefOut: briefOut, registryOut: registryOut, project: project);
   if (!res.ok) {
     for (final e in res.errors) {
       stderr.writeln('ERROR $e');
@@ -126,6 +140,9 @@ int _cmdEmit(List<String> args) {
   }
   print('intake emit: brief -> ${res.briefPath}, registry '
       '(${res.entries} entries, surface null) -> ${res.registryPath}');
+  if (res.flowsPath != null) {
+    print('  flows -> ${res.flowsPath}');
+  }
   if (res.inferredCount > 0) {
     print('  ${res.inferredCount} inferred field(s) marked in the brief '
         '— confirm before design.');
@@ -135,6 +152,51 @@ int _cmdEmit(List<String> args) {
 
 int _emitMissingValue(String flag) {
   stderr.writeln('appbox intake emit: $flag requires a value');
+  return 2;
+}
+
+// -- flows ------------------------------------------------------------------
+
+int _cmdFlows(List<String> args) {
+  if (args.isEmpty || args.first != 'confirm') {
+    stderr.writeln('appbox intake flows: only subcommand is "confirm"');
+    return 2;
+  }
+  String? project, flowId, as;
+  for (var i = 1; i < args.length; i++) {
+    switch (args[i]) {
+      case '--project':
+        if (i + 1 >= args.length) return _flowsMissing('--project');
+        project = args[++i];
+        break;
+      case '--flow':
+        if (i + 1 >= args.length) return _flowsMissing('--flow');
+        flowId = args[++i];
+        break;
+      case '--as':
+        if (i + 1 >= args.length) return _flowsMissing('--as');
+        as = args[++i];
+        break;
+      default:
+        stderr.writeln('appbox intake flows confirm: unknown flag ${args[i]}');
+        return 2;
+    }
+  }
+  if (project == null || flowId == null || as == null) {
+    stderr.writeln('appbox intake flows confirm: --project, --flow and --as are required');
+    return 2;
+  }
+  final err = const IntakeEngine().confirmFlow(project, flowId, as);
+  if (err != null) {
+    stderr.writeln('ERROR $err');
+    return 1;
+  }
+  print('flows confirm: $flowId -> provenance $as (${shellDir(project, 'intake')}/flows.json)');
+  return 0;
+}
+
+int _flowsMissing(String flag) {
+  stderr.writeln('appbox intake flows confirm: $flag requires a value');
   return 2;
 }
 
@@ -281,6 +343,117 @@ int _selfTest() {
     // 12. a brief with no surface table -> empty seed
     if (seedFromBrief('# Just prose\n\nNo table here.\n').isNotEmpty) {
       throw 'empty brief should seed nothing';
+    }
+    // 13. route derivation + additive flags
+    if (deriveRoute('shop.cart') != '/cart') throw 'route derivation wrong';
+    final regRoute = emitRegistry(good);
+    if (regRoute[0]['route'] != '/home') throw 'route missing from registry: ${regRoute[0]}';
+    final flagged = goodAnswers();
+    ((flagged['surfaces'] as List)[0] as Map)['requiresAuth'] = true;
+    ((flagged['surfaces'] as List)[0] as Map)['tab'] = true;
+    final regFlags = emitRegistry(flagged);
+    if (regFlags[0]['requiresAuth'] != true || regFlags[0]['tab'] != true) {
+      throw 'requiresAuth/tab not carried: ${regFlags[0]}';
+    }
+    if (regFlags[1].containsKey('requiresAuth')) {
+      throw 'requiresAuth key must be omitted when false (additive only)';
+    }
+    // 14. flows: declared pass through with default action; bad shapes named
+    final withFlows = goodAnswers()
+      ..['flows'] = [
+        {
+          'id': 'flow-projects',
+          'name': 'Projects journey',
+          'provenance': 'founder',
+          'edges': [
+            {'from': 'projects.home', 'to': 'projects.new', 'trigger': 'New project'},
+          ],
+        },
+      ];
+    if (validateIntake(withFlows).errors.isNotEmpty) {
+      throw 'valid flows rejected: ${validateIntake(withFlows).errors}';
+    }
+    final emittedFlows = emitFlows(withFlows);
+    if (emittedFlows.length != 1 ||
+        (emittedFlows[0]['edges'] as List)[0]['action'] != 'push') {
+      throw 'declared flows did not pass through with default action: $emittedFlows';
+    }
+    final badAction = goodAnswers()
+      ..['flows'] = [
+        {
+          'id': 'flow-projects',
+          'name': 'x',
+          'provenance': 'founder',
+          'edges': [
+            {'from': 'projects.home', 'to': 'projects.new', 'trigger': 'x', 'action': 'teleport'},
+          ],
+        },
+      ];
+    if (!validateIntake(badAction).errors.any((e) => e.contains('teleport'))) {
+      throw 'missed bad edge action';
+    }
+    final badEndpoint = goodAnswers()
+      ..['flows'] = [
+        {
+          'id': 'flow-projects',
+          'name': 'x',
+          'provenance': 'founder',
+          'edges': [
+            {'from': 'projects.home', 'to': 'projects.ghost', 'trigger': 'x'},
+          ],
+        },
+      ];
+    if (!validateIntake(badEndpoint).errors.any((e) => e.contains('projects.ghost'))) {
+      throw 'missed undeclared edge endpoint';
+    }
+    final branched = goodAnswers()
+      ..['flows'] = [
+        {
+          'id': 'flow-projects',
+          'name': 'x',
+          'provenance': 'founder',
+          'edges': [
+            {'from': 'projects.home', 'to': 'projects.new', 'trigger': 'a'},
+            {'from': 'projects.home', 'to': 'projects.new', 'trigger': 'b'},
+          ],
+        },
+      ];
+    if (!validateIntake(branched).errors.any((e) => e.contains('linear'))) {
+      throw 'missed non-linear flow (second outgoing edge)';
+    }
+    // 15. derive + confirm: no flows key -> one inferred draft flow per shell,
+    //     chained in declaration order; confirm flips provenance on disk
+    final derived = emitFlows(goodAnswers());
+    if (derived.length != 1 ||
+        derived[0]['id'] != 'flow-projects' ||
+        derived[0]['provenance'] != 'inferred' ||
+        (derived[0]['edges'] as List).length != 1) {
+      throw 'derived draft flow wrong: $derived';
+    }
+    final tmp = Directory.systemTemp.createTempSync('appbox_intake_selftest');
+    try {
+      appboxHomeOverride = '${tmp.path}/.appbox';
+      final res = const IntakeEngine().emit(goodAnswers(), project: 'selftest');
+      if (!res.ok || res.flowsPath == null) throw 'project emit failed: ${res.errors}';
+      for (final f in ['answers.json', 'brief.md', 'registry.json', 'flows.json']) {
+        if (!File('${shellDir('selftest', 'intake')}/$f').existsSync()) {
+          throw 'project emit missing $f';
+        }
+      }
+      if (const IntakeEngine().confirmFlow('selftest', 'flow-projects', 'ghost') == null) {
+        throw 'confirmFlow accepted a bad --as value';
+      }
+      if (const IntakeEngine().confirmFlow('selftest', 'flow-projects', 'founder') != null) {
+        throw 'confirmFlow failed';
+      }
+      final confirmed = jsonDecode(
+          File('${shellDir('selftest', 'intake')}/flows.json').readAsStringSync());
+      if (confirmed[0]['provenance'] != 'founder') {
+        throw 'confirmFlow did not flip provenance: $confirmed';
+      }
+    } finally {
+      appboxHomeOverride = null;
+      tmp.deleteSync(recursive: true);
     }
   } on Object catch (e) {
     stderr.writeln('self-test: FAIL: $e');

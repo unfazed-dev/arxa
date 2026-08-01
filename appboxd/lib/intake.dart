@@ -32,6 +32,8 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:appboxd/project.dart';
+
 /// Who supplied a field. `inferred` = NOT elicited; a placeholder the brief must
 /// visibly flag. There is no fourth value — 'guessed', 'assumed', 'default' are
 /// all 'inferred'.
@@ -40,6 +42,14 @@ const provenance = ['client', 'founder', 'inferred'];
 /// Surface id is `<shell>.<short>`, both lowercase alnum (see
 /// intake.schema.json).
 final _idRe = RegExp(r'^([a-z][a-z0-9]*)\.([a-z][a-z0-9]*)$');
+
+/// Flow id is `flow-<name>` (kebab), matching the registry's flows.json.
+final _flowIdRe = RegExp(r'^flow-[a-z0-9]+(-[a-z0-9]+)*$');
+
+/// The typed navigation actions an edge can carry (flows.json v2). `system`
+/// marks non-gesture edges (auth-success, deep-link) — the scaffolder maps
+/// them to route guards, never to buttons.
+const edgeActions = ['push', 'replace', 'back', 'modal', 'system'];
 
 /// The visible marker the emitted brief puts on any `inferred` field. A reader
 /// who skims must not miss it — that is the entire point of marking inference.
@@ -155,9 +165,96 @@ ValidationResult validateIntake(Map<String, dynamic> answers) {
           'one, do not reuse)');
     }
     seen.add(sid);
+    final route = s['route'];
+    if (route != null && (route is! String || !route.startsWith('/'))) {
+      errs.add("$where: route must be a path string starting with '/' "
+          '(omit it to derive /<short>)');
+    }
+    for (final flag in const ['requiresAuth', 'tab']) {
+      if (s[flag] != null && s[flag] is! bool) {
+        errs.add("$where: $flag must be a boolean");
+      }
+    }
   }
 
+  errs.addAll(_validateFlows(answers, seen));
+
   return ValidationResult(errs);
+}
+
+/// Validate the optional `flows` group: a list of
+/// `{id, name, provenance, edges: [{from, to, trigger, action?}]}`, where
+/// every endpoint is a DECLARED surface and each flow is a LINEAR chain
+/// (≤1 outgoing and ≤1 incoming edge per screen — no branches, no loops).
+List<String> _validateFlows(Map<String, dynamic> answers, Set<String> surfaceIds) {
+  final errs = <String>[];
+  final flows = answers['flows'];
+  if (flows == null) return errs; // absent → the engine derives drafts
+  if (flows is! List) return ['flows: must be a list'];
+  final seenFlows = <String>{};
+  for (var i = 0; i < flows.length; i++) {
+    final f = flows[i];
+    final where = 'flows[$i]';
+    if (f is! Map) {
+      errs.add('$where: expected an object');
+      continue;
+    }
+    final fid = f['id']?.toString() ?? '';
+    if (!_flowIdRe.hasMatch(fid)) {
+      errs.add("$where: id '$fid' must be flow-<name> (kebab-case)");
+    }
+    if (seenFlows.contains(fid)) errs.add("$where: duplicate flow id '$fid'");
+    seenFlows.add(fid);
+    if (f['name'] is! String || (f['name'] as String?)!.isEmpty) {
+      errs.add("$where: missing 'name'");
+    }
+    if (!provenance.contains(f['provenance'])) {
+      errs.add("$where: provenance '${f['provenance']}' is not one of $provenance");
+    }
+    final edges = f['edges'];
+    if (edges is! List || edges.isEmpty) {
+      errs.add('$where: edges must be a non-empty list (a flow is a chain)');
+      continue;
+    }
+    final outgoing = <String>{};
+    final incoming = <String>{};
+    for (var j = 0; j < edges.length; j++) {
+      final e = edges[j];
+      final ew = '$where.edges[$j]';
+      if (e is! Map) {
+        errs.add('$ew: expected an object');
+        continue;
+      }
+      for (final req in const ['from', 'to', 'trigger']) {
+        if (e[req] is! String || (e[req] as String?)!.isEmpty) {
+          errs.add("$ew: missing '$req'");
+        }
+      }
+      for (final end in const ['from', 'to']) {
+        final sid = e[end]?.toString() ?? '';
+        if (e[end] is String && !surfaceIds.contains(sid)) {
+          errs.add("$ew: $end '$sid' is not a declared surface "
+              '(flows wire intake surfaces, nothing else)');
+        }
+      }
+      final action = e['action'];
+      if (action != null && !edgeActions.contains(action)) {
+        errs.add("$ew: action '$action' is not one of $edgeActions");
+      }
+      final from = e['from']?.toString() ?? '';
+      final to = e['to']?.toString() ?? '';
+      if (from == to) errs.add("$ew: self-edge '$from' (loops are not drawn)");
+      if (!outgoing.add(from)) {
+        errs.add("$ew: '$from' has a second outgoing edge "
+            '(flows are linear chains — no branches)');
+      }
+      if (!incoming.add(to)) {
+        errs.add("$ew: '$to' has a second incoming edge "
+            '(flows are linear chains — no merges)');
+      }
+    }
+  }
+  return errs;
 }
 
 List<String> _validateDirection(Object? val) {
@@ -227,16 +324,27 @@ String deriveComp(String surfaceId) {
   return _cap(m.group(1)!) + _cap(m.group(2)!);
 }
 
+/// route = '/' + short segment (portalo.product -> /product). Purely
+/// mechanical; an answers `route` key overrides per surface. Params
+/// (/:id) are design's call, not intake's — intake names, never designs.
+String deriveRoute(String surfaceId) {
+  final m = _idRe.firstMatch(surfaceId);
+  if (m == null) {
+    throw ArgumentError("cannot derive route from malformed id '$surfaceId'");
+  }
+  return '/${m.group(2)!}';
+}
+
 String _cap(String seg) => seg[0].toUpperCase() + seg.substring(1);
 
 // --------------------------------------------------------------- emission
 
 /// Seed registry: one entry per elicited surface, surface ALWAYS null.
 ///
-/// Keys are {id, label, shell, comp, surface} in that order (matches the
-/// Python emit), plus an ADDITIVE `states` key after `surface` when the
-/// surface declared a non-empty states list. No entry is invented and none is
-/// dropped: `out.length == answers['surfaces'].length`.
+/// Keys are {id, label, shell, comp, route, surface} in that order, plus
+/// ADDITIVE keys after `surface` when declared: `states`, `requiresAuth`,
+/// `tab` (bottom-tab membership — the scaffolder's shell group). No entry
+/// is invented and none is dropped: `out.length == answers['surfaces'].length`.
 List<Map<String, dynamic>> emitRegistry(Map<String, dynamic> answers) {
   final out = <Map<String, dynamic>>[];
   final surfaces = answers['surfaces'];
@@ -248,13 +356,70 @@ List<Map<String, dynamic>> emitRegistry(Map<String, dynamic> answers) {
       'label': surf['label'],
       'shell': surf['shell'],
       'comp': deriveComp(surf['id'] as String),
+      'route': surf['route'] ?? deriveRoute(surf['id'] as String),
       'surface': null, // intake names; design binds. Never non-null here.
     };
     final states = surf['states'];
     if (states is List && states.isNotEmpty) entry['states'] = states;
+    if (surf['requiresAuth'] == true) entry['requiresAuth'] = true;
+    if (surf['tab'] == true) entry['tab'] = true;
     out.add(entry);
   }
   return out;
+}
+
+/// Emit the project's flows.json. Declared flows pass through (each edge
+/// gains the default `action: 'push'`); when answers carry no flows group,
+/// DERIVE one draft flow per shell — surfaces chained in declaration order,
+/// provenance `inferred`, so the confirm step has something to confirm.
+/// Deterministic: sorted shells, declaration order, no clock.
+List<Map<String, dynamic>> emitFlows(Map<String, dynamic> answers) {
+  final declared = answers['flows'];
+  if (declared is List && declared.isNotEmpty) {
+    return [
+      for (final f in declared)
+        <String, dynamic>{
+          'id': f['id'],
+          'name': f['name'],
+          'provenance': f['provenance'],
+          'edges': [
+            for (final e in (f['edges'] as List))
+              <String, dynamic>{
+                'from': e['from'],
+                'to': e['to'],
+                'trigger': e['trigger'],
+                'action': e['action'] ?? 'push',
+              },
+          ],
+        },
+    ];
+  }
+  final surfaces = answers['surfaces'];
+  if (surfaces is! List || surfaces.length < 2) return const [];
+  final byShell = <String, List<String>>{};
+  for (final s in surfaces) {
+    final surf = s as Map;
+    byShell.putIfAbsent(surf['shell'] as String, () => []).add(surf['id'] as String);
+  }
+  final shells = byShell.keys.toList()..sort();
+  return [
+    for (final shell in shells)
+      if (byShell[shell]!.length > 1)
+        <String, dynamic>{
+          'id': 'flow-$shell',
+          'name': '${_cap(shell)} journey',
+          'provenance': 'inferred',
+          'edges': [
+            for (var i = 0; i + 1 < byShell[shell]!.length; i++)
+              <String, dynamic>{
+                'from': byShell[shell]![i],
+                'to': byShell[shell]![i + 1],
+                'trigger': 'continue',
+                'action': 'push',
+              },
+          ],
+        },
+  ];
 }
 
 List<String> _block(String key, String title, Map<String, dynamic>? node) {
@@ -474,6 +639,7 @@ List<Map<String, dynamic>> seedFromBrief(String md) {
       'label': label.isNotEmpty ? label : _cap(short),
       'shell': shell,
       'comp': deriveComp(sid),
+      'route': deriveRoute(sid),
       'surface': null,
     };
     // additive sibling metadata (never woven into the four required fields):
@@ -516,12 +682,14 @@ class EmitResult {
     required this.registryPath,
     required this.entries,
     required this.inferredCount,
+    this.flowsPath,
   })  : ok = true,
         errors = const [];
   EmitResult.failure(this.errors)
       : ok = false,
         briefPath = null,
         registryPath = null,
+        flowsPath = null,
         entries = 0,
         inferredCount = 0;
 
@@ -529,6 +697,7 @@ class EmitResult {
   final List<String> errors;
   final String? briefPath;
   final String? registryPath;
+  final String? flowsPath;
   final int entries;
   final int inferredCount;
 }
@@ -551,28 +720,73 @@ class IntakeEngine {
 
   ValidationResult validate(Map<String, dynamic> answers) => validateIntake(answers);
 
-  /// Turn validated [answers] into brief.md + registry.json. On invalid input,
-  /// writes nothing and returns [EmitResult.failure] (no partial artefacts).
+  /// Turn validated [answers] into brief.md + registry.json (+ flows.json
+  /// when [project] is given). On invalid input, writes nothing and returns
+  /// [EmitResult.failure] (no partial artefacts).
   /// Paths fall back to `INTAKE_BRIEF_OUT`/`INTAKE_REGISTRY_OUT` then to
-  /// [defaultBriefOut]/[defaultRegistryOut].
+  /// [defaultBriefOut]/[defaultRegistryOut]. With [project], ALL outputs
+  /// land in `~/.appbox/projects/<project>/intake/` — answers.json (the
+  /// input, verbatim), brief.md, registry.json, flows.json.
   EmitResult emit(
     Map<String, dynamic> answers, {
     String? briefOut,
     String? registryOut,
+    String? project,
   }) {
     final errs = validateIntake(answers).errors;
     if (errs.isNotEmpty) return EmitResult.failure(errs);
-    final briefPath = briefOut ?? defaultBriefOut();
-    final registryPath = registryOut ?? defaultRegistryOut();
+    const json = JsonEncoder.withIndent('  ');
+    String? flowsPath;
+    final String briefPath;
+    final String registryPath;
+    if (project != null) {
+      if (!validProjectName(project)) {
+        return EmitResult.failure(['project: bad name "$project"']);
+      }
+      ensureProject(project);
+      final dir = shellDir(project, 'intake');
+      briefPath = '$dir/brief.md';
+      registryPath = '$dir/registry.json';
+      flowsPath = '$dir/flows.json';
+      _write('$dir/answers.json', '${json.convert(answers)}\n');
+      _write(flowsPath, '${json.convert(emitFlows(answers))}\n');
+    } else {
+      briefPath = briefOut ?? defaultBriefOut();
+      registryPath = registryOut ?? defaultRegistryOut();
+    }
     _write(briefPath, emitBrief(answers));
-    _write(
-        registryPath, '${const JsonEncoder.withIndent('  ').convert(emitRegistry(answers))}\n');
+    _write(registryPath, '${json.convert(emitRegistry(answers))}\n');
     return EmitResult.ok(
       briefPath: briefPath,
       registryPath: registryPath,
+      flowsPath: flowsPath,
       entries: (answers['surfaces'] is List) ? (answers['surfaces'] as List).length : 0,
       inferredCount: _countInferred(answers),
     );
+  }
+
+  /// Flip one flow's provenance to client/founder in the project's
+  /// flows.json (the confirm half of derive + confirm). Returns the error
+  /// string, or null on success.
+  String? confirmFlow(String project, String flowId, String as) {
+    if (!['client', 'founder'].contains(as)) {
+      return "confirmFlow: as must be client|founder, got '$as'";
+    }
+    final path = '${shellDir(project, 'intake')}/flows.json';
+    final f = File(path);
+    if (!f.existsSync()) return 'confirmFlow: no flows.json at $path';
+    final flows = jsonDecode(f.readAsStringSync());
+    if (flows is! List) return 'confirmFlow: $path is not a flows list';
+    var found = false;
+    for (final flow in flows) {
+      if (flow is Map && flow['id'] == flowId) {
+        flow['provenance'] = as;
+        found = true;
+      }
+    }
+    if (!found) return "confirmFlow: no flow '$flowId' in $path";
+    _write(path, '${const JsonEncoder.withIndent('  ').convert(flows)}\n');
+    return null;
   }
 
   /// Derive registry.json from a HAND-WRITTEN brief's surface table (10.7),

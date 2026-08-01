@@ -1,9 +1,9 @@
 ---
 name: appbox-intake
-description: Use to turn a client conversation into validated intake answers plus a seeded registry.json — the head of ONE chain whose tail (`appbox emit story-map`) emits the unified design brief. OPTIONAL, runs before design. Elicits requirements; never generates design or code. Trigger on "intake a project", "write the brief", "seed the registry", "what does the client want". Drives `appbox intake` (the Dart port in appboxd/lib/intake.dart).
+description: Use to turn a client conversation into validated intake answers plus a seeded registry.json and flows.json — the head of ONE chain whose tail (`appbox emit story-map`) emits the unified design brief. OPTIONAL, runs before design. Elicits requirements; never generates design or code. Trigger on "intake a project", "write the brief", "seed the registry", "what does the client want". Drives `appbox intake` (the Dart port in appboxd/lib/intake.dart).
 ---
 
-# appbox-intake — elicit the answers, seed the registry
+# appbox-intake — elicit the answers, seed the registry + flows
 
 ## Core principle
 
@@ -24,7 +24,7 @@ first run the buyer skips intake entirely and still reaches the showcase app
 ```
 appbox intake  →  validated answers  →  appbox emit story-map --answers <f>  →  docs/design/brief.md (unified)
                      +
-              registry seeded at the design root
+              registry + flows seeded in the project's ~/.appbox intake/ dir
 ```
 
 Intake is the **head** of a single sequential chain; `appbox emit story-map`
@@ -35,6 +35,21 @@ Locales, Brand, Design direction, Content anchors, Constraints, Out of scope,
 Layout template) + Releases + the epic/feature/story hierarchy + a **surface
 inventory built from the intake-declared surfaces**. Standalone story-map (no
 answers) still works exactly as before — intake is optional (plan 10.7).
+
+## Projects live in ~/.appbox
+
+Every user project is `~/.appbox/projects/<name>/{intake,design,build,settings}`
+(`appbox project init <name>`; `APPBOX_HOME` overrides the root; the studio
+design itself stays in the repo — ~/.appbox holds user projects only). Emitting
+with `--project <name>` writes ALL intake outputs there:
+
+```
+~/.appbox/projects/<name>/intake/
+  answers.json     the validated answers, verbatim
+  brief.md         the emitted brief (inferred fields marked)
+  registry.json    the seeded registry (see below)
+  flows.json       declared flows, or derived drafts marked inferred
+```
 
 ## What you produce (and what you do not)
 
@@ -51,19 +66,64 @@ Two artefacts, written by the chain:
      (`l10n/app_en.arb` template + one ARB per locale) the designer authors.
    - **per-surface `states`** — UI state names (loading, empty, error, …),
      carried into the registry seed and the brief's surface table.
+   - optional per-surface flags: **`requiresAuth`** (the screen sits behind
+     sign-in) and **`tab`** (bottom-tab membership — the scaffolder's shell
+     group), booleans carried into the registry.
    The **audience** is elicited in JTBD form: *"When [situation], I want
    [motivation], so I can [outcome]."*
-2. **The seeded registry** — `appbox intake emit` seeds it at the **design
-   root**: `designs/<app>/models/screens_model/registry.json`, or whatever
-   structure.json's `"registry"` field names — the same path
+2. **The seeded registry + flows** — `appbox intake emit` seeds them in the
+   project's `intake/` dir (with `--project`), or at the design root
+   (`designs/<app>/models/screens_model/registry.json`, or whatever
+   structure.json's `"registry"` field names) without it — the same path
    `appbox gate intake` reads. `docs/design/registry.json` is only a fallback
    when no design root exists. One entry per surface the client named, with
-   keys `{id, label, shell, comp, surface}`. `surface` is **always `null`** —
-   intake names what the client asked for; design binds a surface to each.
-   `comp` is derived by convention (`shop.cart` → `ShopCart`), never authored.
+   keys `{id, label, shell, comp, route, surface}`. `comp` and `route` are
+   derived by convention (`shop.cart` → `ShopCart`, `/cart`), never authored —
+   an answers `route` key overrides per surface. `surface` is **always
+   `null`** — intake names what the client asked for; design binds a surface
+   to each. `comp` is derived by convention, never authored.
    A hand-written brief whose surface table carries `priority` / `release`
    columns (e.g. from `appbox-story-mapper`) passes them through as optional
-   sibling metadata — additive, never woven into the four canon keys.
+   sibling metadata — additive, never woven into the canon keys.
+
+## Flows — derive + confirm
+
+Flows wire the declared surfaces into linear user journeys; they are how the
+designer later produces views + flows + prototype deterministically. Shape
+(flows.json v2):
+
+```json
+[{ "id": "flow-browse-buy", "name": "Browse and buy", "provenance": "founder",
+   "edges": [{ "from": "portalo.home", "to": "portalo.category",
+               "trigger": "Category tile", "action": "push" }] }]
+```
+
+- **Edges** are `{from, to, trigger, action?}`; endpoints must be declared
+  intake surfaces (flows wire what the client named, nothing else).
+- **`action` is typed**: `push | replace | back | modal | system` (default
+  `push`). `system` marks non-gesture edges (auth-success, deep-link) — the
+  scaffolder maps them to route guards, never to buttons.
+- **Linear chains only**: a screen has at most one outgoing and one incoming
+  edge per flow. No branches, no loops, no self-edges — the validator rejects
+  them by name. A screen may appear in MANY flows (multi-flow membership).
+- **Derive + confirm**: when answers carry no `flows` group, the engine
+  derives one draft flow per shell (surfaces chained in declaration order,
+  trigger `continue`) marked `provenance: inferred` — a draft to confirm, never
+  a fact. Confirming flips provenance:
+  ```sh
+  appbox intake flows confirm --project <name> --flow <id> --as founder|client
+  ```
+
+The unified `docs/design/brief.md` is emitted by the chain's tail —
+`appbox emit story-map --answers <answers.json>` (when `--answers` is omitted
+it auto-discovers `pipeline/state/run.intake.json`, then
+`pipeline/state/default.intake.json`). Every field whose provenance is
+`inferred` is **visibly marked** in the brief — a reader who skims must not
+miss it.
+
+You do **not** produce: views, viewmodels, routes, copy, layouts, component
+libraries, or anything that is design. That is the next phase. If you find
+yourself writing a screen, stop — you are in the wrong skill.
 
 The unified `docs/design/brief.md` is emitted by the chain's tail —
 `appbox emit story-map --answers <answers.json>` (when `--answers` is omitted
@@ -96,11 +156,15 @@ authority the brief does not have.
 2. **Author the answers document.** One JSON object conforming to
    `intake.schema.json`. Each surface the client named becomes an entry with
    `id` (`<shell>.<short>`), `label`, `shell`, `provenance` — plus the optional
-   `states` list (the UI states that screen must cover). Do not set `comp` or
-   `surface` — the engine derives `comp` and forces `surface: null`. Record the
+   `states` list (the UI states that screen must cover) and the optional
+   `requiresAuth` / `tab` booleans. Do not set `comp` or `surface` — the
+   engine derives `comp` (and `route`) and forces `surface: null`. Record the
    optional groups when elicited: `direction` (`{adjectives, avoids}`),
-   `contentAnchors`, `locales`. Capture the audience in JTBD form: *"When
-   [situation], I want [motivation], so I can [outcome]."*
+   `contentAnchors`, `locales`. Record the journeys the client described as
+   the `flows` group (shape above — linear chains, typed actions); when the
+   client did not describe journeys, omit `flows` and let the engine derive
+   drafts marked `inferred` for the confirm step. Capture the audience in
+   JTBD form: *"When [situation], I want [motivation], so I can [outcome]."*
 
 3. **Offer the layout template.** After the fields are elicited and before
    emit, offer the **Layout Template** pick. First the app **category** from
@@ -119,13 +183,15 @@ authority the brief does not have.
 
 4. **Emit.**
    ```sh
-   appbox intake emit --answers <answers.json>
+   appbox intake emit --answers <answers.json> --project <name>
    ```
    Validate first if you only want a check:
    ```sh
    appbox intake validate <answers.json>
    ```
-   `emit` validates the answers and seeds the registry at the design root
+   With `--project`, every output lands in the project's
+   `~/.appbox/projects/<name>/intake/` dir (answers/brief/registry/flows).
+   Without it, `emit` seeds the registry at the design root
    (`designs/<app>/models/screens_model/registry.json`, or structure.json's
    `"registry"` field; `docs/design/registry.json` only when no design root
    exists). Paths are overridable via `--brief-out` / `--registry-out`, or the

@@ -148,6 +148,7 @@ const expectedRegistry = '''[
     "label": "Home",
     "shell": "projects",
     "comp": "ProjectsHome",
+    "route": "/home",
     "surface": null
   },
   {
@@ -155,6 +156,7 @@ const expectedRegistry = '''[
     "label": "New",
     "shell": "projects",
     "comp": "ProjectsNew",
+    "route": "/new",
     "surface": null
   }
 ]
@@ -176,6 +178,7 @@ const expectedSeed = '''[
     "label": "Cart",
     "shell": "shop",
     "comp": "ShopCart",
+    "route": "/cart",
     "surface": null
   },
   {
@@ -183,6 +186,7 @@ const expectedSeed = '''[
     "label": "Home",
     "shell": "shop",
     "comp": "ShopHome",
+    "route": "/home",
     "surface": null
   }
 ]
@@ -348,7 +352,7 @@ void main() {
       const prio =
           '| id | label | priority | release |\n|---|---|---|---|\n| `shop.cart` | Cart | must | Release 1 |\n';
       expect(seedFromBrief(prio)[0].keys.toList(),
-          ['id', 'label', 'shell', 'comp', 'surface', 'priority', 'release']);
+          ['id', 'label', 'shell', 'comp', 'route', 'surface', 'priority', 'release']);
     });
   });
 
@@ -486,7 +490,7 @@ void main() {
       final reg = emitRegistry(a);
       expect(reg[0]['states'], ['empty', 'loading']);
       expect(reg[0].keys.toList(),
-          ['id', 'label', 'shell', 'comp', 'surface', 'states']);
+          ['id', 'label', 'shell', 'comp', 'route', 'surface', 'states']);
       // absent states -> no key at all (additive only)
       expect(reg[1].containsKey('states'), isFalse);
     });
