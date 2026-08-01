@@ -23,8 +23,21 @@
 // the spec under test. This Dart port keeps that property: no kit path
 // dependencies, pure Dart. [runTier1Suites] is the bundled self-check the CLI
 // gate runs (`appbox gate tier1`).
+//
+// 2026-08-01 — the kits are now real: kit/auth, kit/payments and kit/maps ship
+// genuine implementations with their own mocked-boundary suites. appboxd must
+// stay pure Dart (the kits depend on Flutter, so a package dependency on them
+// is impossible), so this file remains the paired SPEC, not an importer of kit
+// code: SeedAuthBackend below is the spec copy of kit/auth's real backend (see
+// its doc comment for the pairing), and the scripted SDK shapes mirror what
+// the real kit providers issue. `appbox gate tier1 --promote` is the only
+// path that writes config/evidence.json + registry tiers (port of tier1.py's
+// --promote, plan 13.3).
 
+import 'dart:convert';
 import 'dart:io';
+
+import 'package:appboxd/crypto_aead.dart' as crypto;
 
 // --------------------------------------------------------------------------- //
 // Process runner port (mirrors the deploy kit's KitProcessRunner seam)
@@ -161,7 +174,12 @@ PaymentResult stripePay(
   return PaymentResult(ok: true, provider: 'Stripe', paymentIntentId: intentId);
 }
 
-/// PayPal Orders v2 / Braintree shape: create order -> tokenize.
+/// PayPal Orders v2 shape: create order -> approve -> capture. The real kit
+/// flow (kit/payments `PayPalPaymentsProvider`) is createOrder -> approve via
+/// web redirect (flutter_web_auth_2) -> captureOrder; the scripted
+/// `tokens request` step below stands in for the approve+capture half —
+/// Tier 1 asserts call shape and failure handling, not the redirect
+/// mechanics (those are covered by the kit's own mocked-boundary suite).
 PaymentResult paypalOrder(ProcessRunner runner, int amountMinor, String currency) {
   final order = runner.run([
     'paypal',
@@ -276,6 +294,15 @@ const _defaultSeed = <String, _SeededUser>{
 /// A backend, not a port: it does not shell out, so there is no runner to fake.
 /// Tokens are minted monotonically (`tok_1`, `tok_2`, …) so refresh rotation
 /// is observable and deterministic.
+///
+/// PAIRED IMPLEMENTATION: `kit/auth/lib/src/backends/seed_auth_backend.dart`
+/// is the real kit backend ported from this spec (same seeds, failure
+/// messages, deterministic token minting); its behavior suite is
+/// `kit/auth/test/backends/seed_auth_backend_test.dart`. Deliberate deltas
+/// there: it is async behind the kit's `KitAuthService` interface, tracks a
+/// single current user for the auth-state stream (per-uid sessions are still
+/// kept — see its `currentUserFor`), and refuses use after `dispose()`.
+/// Email matching is exact after trim, both here and in the kit.
 class SeedAuthBackend {
   final Map<String, _SeededUser> _users = {};
   final Map<String, _Session> _sessionsByUid = {}; // userId -> session
@@ -289,6 +316,7 @@ class SeedAuthBackend {
 
   /// Sign in an existing seed user. On success mints a fresh session token.
   AuthResult signIn(String email, String password) {
+    email = email.trim(); // match after trim, mirroring the kit backend
     String? uid;
     _SeededUser? rec;
     for (final entry in _users.entries) {
@@ -317,6 +345,7 @@ class SeedAuthBackend {
   /// Register a brand-new user and open a session for them. Fails if the email
   /// is already taken (mirrors a real signup endpoint's conflict).
   AuthResult signUp(String email, String password) {
+    email = email.trim(); // match + store after trim, mirroring the kit backend
     for (final rec in _users.values) {
       if (rec.email == email) {
         return AuthResult(ok: false, provider: 'SeedAuthBackend', error: 'user already exists');
@@ -547,8 +576,8 @@ class Tier1SuiteResult {
 }
 
 /// Run every Tier-1 suite, catching failures per provider so one break does
-/// not mask the rest. Mirrors tier1.py's `main()` loop (without `--promote` —
-/// tier promotion stays a registry concern, out of scope for the self-check).
+/// not mask the rest. Mirrors tier1.py's `main()` loop. Tier promotion is a
+/// separate explicit step: [promoteTier1] (`appbox gate tier1 --promote`).
 Tier1SuiteResult runTier1Suites() {
   final passed = <String>[];
   final failed = <String>[];
@@ -561,4 +590,87 @@ Tier1SuiteResult runTier1Suites() {
     }
   }
   return Tier1SuiteResult(passed, failed);
+}
+
+
+// --------------------------------------------------------------------------- //
+// Promotion — port of tier1.py's promote(): the ONLY path that writes a tier
+// (plan 13.3). Idempotent: re-running with unchanged suite content leaves both
+// files byte-stable.
+// --------------------------------------------------------------------------- //
+
+/// Path of this suite relative to the repo root — what the evidence ledger
+/// records and what the advertise gate re-digests.
+const tier1SuitePath = 'appboxd/lib/tier1.dart';
+
+/// `"sha256:" + hex` of this suite file's raw bytes (same construction as
+/// gate_advertise's `_fileDigest`).
+String _suiteDigest(String repoRoot) {
+  final digest = crypto.sha256(File('$repoRoot/$tier1SuitePath').readAsBytesSync());
+  return 'sha256:${digest.map((b) => b.toRadixString(16).padLeft(2, '0')).join()}';
+}
+
+/// `time.strftime("%Y-%m-%dT%H:%M:%SZ", gmtime())` — second precision, no
+/// fractional part.
+String _utcNow() {
+  final s = DateTime.now().toUtc().toIso8601String();
+  return s.replaceAll(RegExp(r'\.\d+Z$'), 'Z');
+}
+
+/// Port of tier1.py's promote(): set `verification: port-tested` for each
+/// passed provider in the registry AND record evidence (suite path + content
+/// digest + run timestamp) in the ledger. Call only on a fully green run —
+/// that is what makes a tier *evidence*, not a label. Returns the number of
+/// registry fields changed.
+int promoteTier1(List<(String kitDir, String name)> passed,
+    {required String repoRoot}) {
+  final registryPath = '$repoRoot/config/kit-registry.json';
+  final evidencePath = '$repoRoot/config/evidence.json';
+  final digest = _suiteDigest(repoRoot);
+  final ranAt = _utcNow();
+
+  final reg = jsonDecode(File(registryPath).readAsStringSync())
+      as Map<String, dynamic>;
+  final passedSet = passed.toSet();
+  var bumped = 0;
+  for (final kit in (reg['kits'] as List).cast<Map<String, dynamic>>()) {
+    final providers = kit['providers'];
+    if (providers is! List) continue;
+    for (final p in providers.cast<Map<String, dynamic>>()) {
+      if (passedSet.contains((kit['dir'] as String, p['name'] as String)) &&
+          p['verification'] != 'port-tested') {
+        p['verification'] = 'port-tested';
+        bumped++;
+      }
+    }
+  }
+  File(registryPath).writeAsStringSync(
+      '${const JsonEncoder.withIndent('  ').convert(reg)}\n');
+
+  var ledger = <String, dynamic>{};
+  final evFile = File(evidencePath);
+  if (evFile.existsSync()) {
+    final prev = jsonDecode(evFile.readAsStringSync());
+    if (prev is Map && prev['ledger'] is Map) {
+      ledger = (prev['ledger'] as Map).cast<String, dynamic>();
+    }
+  }
+  for (final (kitDir, name) in passed) {
+    final key = '$kitDir/$name';
+    final prevRec = ledger[key];
+    final prevMap =
+        prevRec is Map ? prevRec.cast<String, dynamic>() : const <String, dynamic>{};
+    // Preserve ran_at when nothing material changed, so re-running a stable
+    // suite does not churn the committed evidence (byte-stable no-op).
+    final same = prevMap['tier'] == 'port-tested' && prevMap['digest'] == digest;
+    ledger[key] = {
+      'tier': 'port-tested',
+      'suite': tier1SuitePath,
+      'digest': digest,
+      'ran_at': same ? prevMap['ran_at'] : ranAt,
+    };
+  }
+  evFile.writeAsStringSync(
+      '${const JsonEncoder.withIndent('  ').convert({'ledger': ledger})}\n');
+  return bumped;
 }

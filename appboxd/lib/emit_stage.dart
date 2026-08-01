@@ -1135,8 +1135,8 @@ int emitStage(String blueprintDir, String targetDir, {bool apply = false}) {
     // report.json → blueprint dir (the stage's scratch area).
     _write(p.join(blueprintDir, 'report.json'), _encodeSorted(report));
 
-    final isAppboxTruthy =
-        report['isAppbox'] is Map && (report['isAppbox'] as Map).isNotEmpty;
+    final isAppboxTruthy = report['isAppbox'] is Map &&
+        (report['isAppbox'] as Map)['isAppbox'] == true;
     final mode = isAppboxTruthy
         ? 'appbox-replay'
         : (report['isNewApp'] == true ? 'new-app' : 'arbitrary');

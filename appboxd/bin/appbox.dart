@@ -17,6 +17,7 @@ import 'dart:io';
 import 'package:appboxd/arch_guard.dart';
 import 'package:appboxd/blueprint.dart';
 import 'package:appboxd/config.dart';
+import 'package:appboxd/credential_cli.dart';
 import 'package:appboxd/crud.dart';
 import 'package:appboxd/design_cli.dart';
 import 'package:appboxd/deploy_cli.dart';
@@ -83,6 +84,12 @@ Future<void> main(List<String> args) async {
       exit(await deployMain(rest));
     case 'intake':
       exit(intakeMain(rest));
+    case 'credentials':
+      exit(await credentialsMain(
+        rest,
+        catalogPath:
+            '${_findRepoRoot() ?? Directory.current.path}/config/credentials.catalog.json',
+      ));
     case 'emit':
       _runEmit(rest);
       break;
@@ -122,6 +129,8 @@ Commands:
   gate <name>    Run a gate by name (arch, gen-freshness, trace, intake, freeze,
                  structure, scaffold, coverage, memory, advertise, review,
                  native_deps, lens, deploy, tier1, capability, api-map)
+                 tier1 accepts --promote: on a green run, write the evidence
+                 ledger + port-tested tiers (the only path that sets a tier)
   crud <op>      Feature CRUD on the authored layer (list/show/create/update/
                  rename/delete/verify — the one write path, §18)
   serve          Start the HTTP daemon (appboxd)
@@ -131,6 +140,8 @@ Commands:
                  pseudolocalize, vendor-fetch, doctor (appbox design --help)
   deploy <sub>   Deploy runtime — doctor, deploy, --self-test (appbox deploy --help)
   intake <sub>   Elicitation engine — emit, seed, validate (appbox intake --help)
+  credentials <verb>  Unified credential manager — list/check/set/unset over
+                 the catalog + OS vault (never prints secrets)
   emit <name>    Run an emitter: structure, htmx, playground, transform_tokens,
                  synthesize, blueprint, emit_stage, generate_view, theme-map,
                  palette, story-map, scaffold
@@ -177,9 +188,10 @@ Future<void> _runGate(List<String> args) async {
 
   // tier1 is special: a pure in-memory self-check (auth + payments call-shape
   // verification). It needs no repo root, no credentials, no toolchain — so it
-  // bypasses the GateContext/repo-root discovery like arch.
+  // bypasses the GateContext/repo-root discovery like arch. `--promote` (green
+  // runs only) writes the evidence ledger + registry tiers (plan 13.3).
   if (gateName == 'tier1') {
-    exit(_runTier1Gate());
+    exit(_runTier1Gate(rest));
   }
 
   // gen-freshness is also --target-driven (runs build_runner in a temp copy of
@@ -342,7 +354,8 @@ Future<GateResult> _runReviewGate(GateContext ctx) async {
 
 // ── tier1 ──────────────────────────────────────────────────────────
 
-int _runTier1Gate() {
+int _runTier1Gate(List<String> args) {
+  final promote = args.contains('--promote');
   final result = runTier1Suites();
   for (final p in result.passed) {
     print('  PASS  $p');
@@ -351,6 +364,23 @@ int _runTier1Gate() {
     stderr.writeln('  FAIL  $f');
   }
   print('tier1: ${result.passed.length} passed, ${result.failed.length} failed');
+  if (promote) {
+    if (!result.allPassed) {
+      stderr.writeln('tier1 --promote: refusing to promote — suites failed');
+      return 1;
+    }
+    final root = _findRepoRoot();
+    if (root == null) {
+      stderr.writeln('tier1 --promote: cannot find repo root');
+      return 2;
+    }
+    final bumped = promoteTier1(
+      [for (final (kitDir, name, _) in tier1Suites) (kitDir, name)],
+      repoRoot: root,
+    );
+    print('promote: ${result.passed.length} provider(s) at port-tested '
+        '($bumped registry field(s) changed); evidence recorded');
+  }
   return result.allPassed ? 0 : 1;
 }
 

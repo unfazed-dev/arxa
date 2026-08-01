@@ -81,7 +81,7 @@ GateResult intakeGate(GateContext ctx) {
       return GateResult.ok('intake: PASS — nothing to trace (greenfield).', details);
     }
     fail('$sourceLabel has ${sourceIds.length} surface(s) but registry not found '
-        'at $registryPath — run intake.py emit to seed it');
+        'at $registryPath — run appbox intake emit to seed it');
     return GateResult.fail('intake: FAIL ($fails check(s))', details);
   }
 

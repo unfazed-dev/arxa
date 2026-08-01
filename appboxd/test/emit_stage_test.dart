@@ -7,6 +7,7 @@
 //   - arbitrary existing target: dry-run blocks, apply writes, no stamp w/o adopt
 //   - binary (png) round-trip + skip-on-identical
 
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
@@ -176,6 +177,35 @@ void main() {
     expect((report['written'] as List).cast<String>(), ['lib/generated.dart']);
     expect((report['blocked_dryrun'] as List), isEmpty);
     expect(report['stamped'], false, reason: 'apply alone never stamps an arbitrary target');
+  });
+
+  test('mode line: arbitrary target is not reported as appbox-replay', () {
+    // capture print() output
+    final lines = <String>[];
+    String run(void Function() body) {
+      lines.clear();
+      runZoned(body,
+          zoneSpecification: ZoneSpecification(
+              print: (self, parent, zone, line) => lines.add(line)));
+      return lines.join('\n');
+    }
+
+    // arbitrary existing target: mode must be 'arbitrary' (or 'new-app'),
+    // never 'appbox-replay' — the {'isAppbox': false} map is not truthy.
+    final bp = plantBlueprint(tmp);
+    final t = newTarget(tmp, 'mode-arbitrary');
+    File('$t/pubspec.yaml').writeAsStringSync('name: existing\n');
+    var out = run(() => emitStage(bp, t, apply: true));
+    expect(out, contains('[mode=arbitrary'));
+
+    // stamped appbox target: mode is 'appbox-replay'
+    final t2 = newTarget(tmp, 'mode-appbox');
+    Directory('$t2/.appbox').createSync(recursive: true);
+    File('$t2/.appbox/manifest.json')
+        .writeAsStringSync(jsonEncode({'factoryVersion': 'old'}));
+    File('$t2/pubspec.yaml').writeAsStringSync('name: myapp\n');
+    out = run(() => emitStage(bp, t2));
+    expect(out, contains('[mode=appbox-replay'));
   });
 
   test('binary (png) assets round-trip raw and skip-on-identical', () {

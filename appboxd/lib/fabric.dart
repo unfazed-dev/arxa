@@ -147,6 +147,38 @@ class ModelFabric {
   FabricStage stage(String name) =>
       stages[name] ?? (throw ArgumentError('unknown stage: $name'));
 
+  /// USD cost of [tokensIn]/[tokensOut] on [modelName] at the catalog's
+  /// per-1M-token prices (E4 scorecard feed). Null when the model is unknown
+  /// or unpriced, or when either token count is null — cost is measured or
+  /// absent, never estimated.
+  double? costFor(String modelName, int? tokensIn, int? tokensOut) {
+    if (tokensIn == null || tokensOut == null) return null;
+    for (final candidates in tiers.values) {
+      for (final c in candidates) {
+        if (c.model != modelName) continue;
+        final priceIn = c.priceIn, priceOut = c.priceOut;
+        if (priceIn == null || priceOut == null) return null;
+        return tokensIn * priceIn / 1e6 + tokensOut * priceOut / 1e6;
+      }
+    }
+    return null;
+  }
+
+  /// Maker/checker split (E4, stages.review.notes): the review stage must not
+  /// be served by the build stage's provider. Returns [name]'s candidates
+  /// with any on [makerProvider] moved behind the rest — the identical list
+  /// when nothing collides, so behavior is unchanged when review ≠ build
+  /// already. The maker provider stays in the list: with no keyed
+  /// alternative it still serves (a 503 helps nobody).
+  List<FabricModel> checkerFirst(String name, String makerProvider) {
+    final candidates = tier(name);
+    if (!candidates.any((c) => c.provider == makerProvider)) return candidates;
+    return [
+      ...candidates.where((c) => c.provider != makerProvider),
+      ...candidates.where((c) => c.provider == makerProvider),
+    ];
+  }
+
   List<String> paramPolicy(String providerName) =>
       provider(providerName).paramPolicy;
 

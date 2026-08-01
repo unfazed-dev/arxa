@@ -18,6 +18,10 @@ class MockUpstream {
   int respondStatus = HttpStatus.ok;
   Map<String, dynamic> respondBody = {};
 
+  /// When set, the response is these raw SSE chunks (text/event-stream),
+  /// flushed one at a time — [respondBody] is ignored.
+  List<String>? respondChunks;
+
   Future<void> start() async {
     server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
     server.listen((request) async {
@@ -26,6 +30,18 @@ class MockUpstream {
       lastApiKey = request.headers.value('x-api-key');
       lastBody = (jsonDecode(await utf8.decoder.bind(request).join()) as Map)
           .cast<String, dynamic>();
+      final chunks = respondChunks;
+      if (chunks != null) {
+        request.response
+          ..statusCode = respondStatus
+          ..headers.contentType = ContentType('text', 'event-stream');
+        for (final chunk in chunks) {
+          request.response.write(chunk);
+          await request.response.flush();
+        }
+        await request.response.close();
+        return;
+      }
       request.response
         ..statusCode = respondStatus
         ..headers.contentType = ContentType.json
@@ -197,6 +213,19 @@ void main() {
         ],
       };
 
+  /// POST returning the raw body text + content type (SSE is not JSON).
+  Future<(int, String, String?)> postRaw(String path, Map<String, dynamic> body,
+      {String? token}) async {
+    final request =
+        await client.postUrl(Uri.parse('http://127.0.0.1:$port$path'));
+    if (token != null) request.headers.set('authorization', 'Bearer $token');
+    request.headers.contentType = ContentType.json;
+    request.write(jsonEncode(body));
+    final response = await request.close();
+    final text = await utf8.decoder.bind(response).join();
+    return (response.statusCode, text, response.headers.contentType?.mimeType);
+  }
+
   group('token minter', () {
     test('mint/verify round-trips consumer and tier scope', () {
       final minter = TokenMinter();
@@ -274,6 +303,92 @@ void main() {
           await post('/llm/v1/chat/completions', chatBody(), token: stdToken);
       expect(status, 429);
       expect(body['error'], 'rate limited');
+    });
+  });
+
+  group('maker/checker split (E4)', () {
+    test('review ≠ build provider when they would otherwise collide', () async {
+      // Point both stages at the same tier so the first keyed candidate
+      // (alpha) would serve both without the split.
+      final catalog = jsonDecode(
+              File('${fixture.path}/config/model-fabric.json').readAsStringSync())
+          as Map<String, dynamic>;
+      catalog['stages'] = {
+        'build': {'tier': 'standard'},
+        'review': {'tier': 'standard'},
+      };
+      File('${fixture.path}/config/model-fabric.json')
+          .writeAsStringSync(jsonEncode(catalog));
+      final reviewToken = gateway.minter
+          .mint(consumer: 'pipeline-stage:review', tiers: ['standard']);
+
+      await vault.write('key.alpha', 'alpha-secret');
+      await vault.write('key.beta', 'beta-secret');
+      alpha.respondBody = _openAiResponse('from alpha');
+      beta.respondBody = _openAiResponse('from beta');
+
+      // Build takes the tier leader (alpha).
+      final (buildStatus, buildBody) = await post(
+          '/llm/v1/chat/completions', chatBody(),
+          token: stdToken);
+      expect(buildStatus, HttpStatus.ok);
+      expect(buildBody['choices'][0]['message']['content'], 'from alpha');
+
+      // Review must NOT be checked by the maker's provider: beta serves.
+      final (reviewStatus, reviewBody) = await post(
+          '/llm/v1/chat/completions', chatBody(),
+          token: reviewToken);
+      expect(reviewStatus, HttpStatus.ok);
+      expect(reviewBody['choices'][0]['message']['content'], 'from beta');
+
+      final usage = File('${fixture.path}/pipeline/state/usage.jsonl')
+          .readAsLinesSync()
+          .map((l) => (jsonDecode(l) as Map).cast<String, dynamic>())
+          .toList();
+      expect(usage[0]['provider'], 'alpha');
+      expect(usage[1]['provider'], 'beta');
+      expect(usage[1]['consumer'], 'pipeline-stage:review');
+    });
+
+    test('the maker provider still serves when it is the only keyed one',
+        () async {
+      final catalog = jsonDecode(
+              File('${fixture.path}/config/model-fabric.json').readAsStringSync())
+          as Map<String, dynamic>;
+      catalog['stages'] = {
+        'build': {'tier': 'standard'},
+        'review': {'tier': 'standard'},
+      };
+      File('${fixture.path}/config/model-fabric.json')
+          .writeAsStringSync(jsonEncode(catalog));
+      final reviewToken = gateway.minter
+          .mint(consumer: 'pipeline-stage:review', tiers: ['standard']);
+
+      await vault.write('key.alpha', 'alpha-secret');
+      alpha.respondBody = _openAiResponse('only alpha');
+      final (status, body) = await post('/llm/v1/chat/completions', chatBody(),
+          token: reviewToken);
+      expect(status, HttpStatus.ok,
+          reason: 'no keyed alternative → the maker provider serves');
+      expect(body['choices'][0]['message']['content'], 'only alpha');
+    });
+
+    test('unchanged when review and build providers already differ', () async {
+      await vault.write('key.alpha', 'alpha-secret');
+      await vault.write('key.claude', 'claude-secret');
+      alpha.respondBody = _openAiResponse('from alpha');
+      claude.respondBody = _anthropicResponse('from claude');
+
+      final (reviewStatus, reviewBody) = await post(
+          '/llm/v1/chat/completions', chatBody(tier: 'frontier'),
+          token: frontierToken);
+      expect(reviewStatus, HttpStatus.ok);
+      expect(reviewBody['choices'][0]['message']['content'], 'from claude');
+
+      final (buildStatus, buildBody) =
+          await post('/llm/v1/chat/completions', chatBody(), token: stdToken);
+      expect(buildStatus, HttpStatus.ok);
+      expect(buildBody['choices'][0]['message']['content'], 'from alpha');
     });
   });
 
@@ -478,6 +593,128 @@ void main() {
       final (status, _) = await post('/llm/v1/chat/completions', chatBody(),
           token: stdToken);
       expect(status, HttpStatus.serviceUnavailable);
+    });
+  });
+
+  group('streaming (SSE passthrough)', () {
+    test('OpenAI endpoint relays chunks and records final-chunk usage',
+        () async {
+      await vault.write('key.alpha', 'alpha-secret');
+      alpha.respondChunks = [
+        'data: {"id":"c1","choices":[{"index":0,"delta":{"role":"assistant","content":"he"}}]}\n\n',
+        'data: {"id":"c1","choices":[{"index":0,"delta":{"content":"llo"}}]}\n\n',
+        'data: {"id":"c1","choices":[],"usage":{"prompt_tokens":21,"completion_tokens":9}}\n\n',
+        'data: [DONE]\n\n',
+      ];
+      final (status, text, mime) = await postRaw('/llm/v1/chat/completions',
+          chatBody()..['stream'] = true,
+          token: stdToken);
+      expect(status, HttpStatus.ok);
+      expect(mime, 'text/event-stream');
+      expect(text, contains('"content":"he"'));
+      expect(text, contains('data: [DONE]'));
+      // The upstream got the tier-resolved model with stream kept on.
+      expect(alpha.lastBody!['stream'], isTrue);
+      expect(alpha.lastBody!['model'], 'alpha-1');
+
+      final usage = (jsonDecode(
+              File('${fixture.path}/pipeline/state/usage.jsonl')
+                  .readAsLinesSync()
+                  .single) as Map)
+          .cast<String, dynamic>();
+      expect(usage['tokens_in'], 21);
+      expect(usage['tokens_out'], 9);
+
+      final event = (jsonDecode(
+              File('${fixture.path}/pipeline/state/memory/events.jsonl')
+                  .readAsLinesSync()
+                  .single) as Map)
+          .cast<String, dynamic>();
+      expect(event['kind'], 'llm_request');
+      final payload = (event['payload'] as Map).cast<String, dynamic>();
+      expect(payload['tokens_in'], 21);
+      expect(payload['tokens_out'], 9);
+      expect(payload['ok'], isTrue);
+    });
+
+    test('Anthropic endpoint relays events and records message_delta usage',
+        () async {
+      await vault.write('key.claude', 'claude-secret');
+      claude.respondChunks = [
+        'event: message_start\n',
+        'data: {"type":"message_start","message":{"usage":{"input_tokens":13,"output_tokens":1}}}\n\n',
+        'event: content_block_delta\n',
+        'data: {"type":"content_block_delta","delta":{"text":"bonjour"}}\n\n',
+        'event: message_delta\n',
+        'data: {"type":"message_delta","delta":{"stop_reason":"end_turn"},"usage":{"output_tokens":5}}\n\n',
+      ];
+      final (status, text, mime) = await postRaw(
+          '/llm/v1/messages',
+          {
+            'model': 'frontier',
+            'max_tokens': 50,
+            'stream': true,
+            'messages': [
+              {'role': 'user', 'content': 'hi'},
+            ],
+          },
+          token: frontierToken);
+      expect(status, HttpStatus.ok);
+      expect(mime, 'text/event-stream');
+      expect(text, contains('message_start'));
+      expect(text, contains('bonjour'));
+      expect(claude.lastBody!['stream'], isTrue);
+      expect(claude.lastBody!['model'], 'claude-x');
+
+      final usage = (jsonDecode(
+              File('${fixture.path}/pipeline/state/usage.jsonl')
+                  .readAsLinesSync()
+                  .single) as Map)
+          .cast<String, dynamic>();
+      expect(usage['tokens_in'], 13);
+      expect(usage['tokens_out'], 5,
+          reason: 'message_delta output usage overrides the start estimate');
+    });
+
+    test('cross-protocol streaming is rejected with a clear error', () async {
+      await vault.write('key.claude', 'claude-secret');
+      // OpenAI caller routed to the Anthropic-protocol provider.
+      final (status, body) = await post(
+          '/llm/v1/chat/completions', chatBody(tier: 'frontier')..['stream'] = true,
+          token: frontierToken);
+      expect(status, HttpStatus.badRequest);
+      expect(body['error'], contains('stream=false'));
+      expect(claude.lastBody, isNull, reason: 'nothing was sent upstream');
+
+      // Anthropic caller routed to an OpenAI-protocol provider.
+      await vault.write('key.alpha', 'alpha-secret');
+      final (status2, body2) = await post(
+          '/llm/v1/messages',
+          {
+            'model': 'standard',
+            'max_tokens': 10,
+            'stream': true,
+            'messages': [
+              {'role': 'user', 'content': 'hi'},
+            ],
+          },
+          token: stdToken);
+      expect(status2, HttpStatus.badRequest);
+      expect(body2['error'], contains('stream=false'));
+      expect(alpha.lastBody, isNull);
+    });
+
+    test('upstream errors relay as JSON and record nothing', () async {
+      await vault.write('key.alpha', 'alpha-secret');
+      alpha.respondStatus = 500;
+      alpha.respondBody = {'error': 'boom'};
+      final (status, body) = await post('/llm/v1/chat/completions',
+          chatBody()..['stream'] = true,
+          token: stdToken);
+      expect(status, 500);
+      expect(body['error'], 'boom');
+      expect(File('${fixture.path}/pipeline/state/usage.jsonl').existsSync(),
+          isFalse);
     });
   });
 

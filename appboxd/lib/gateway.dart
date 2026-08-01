@@ -157,14 +157,8 @@ class Gateway {
       return _json(request, {'error': 'token not scoped for tier "$tier"'},
           status: HttpStatus.forbidden);
     }
-    if (body['stream'] == true) {
-      // kimitail: non-streaming only. Upgrade path: chunked SSE pass-through —
-      // pipe the upstream response stream into request.response, flushing per
-      // chunk (decode UTF-8 incrementally; see the plan's sse_transport note).
-      return _json(
-          request, {'error': 'streaming not supported yet — set stream=false'},
-          status: HttpStatus.badRequest);
-    }
+    // SSE passthrough, routed after route selection — see _streamUpstream.
+    final streaming = body['stream'] == true;
 
     final catalog = _catalogOrNull();
     if (catalog == null) {
@@ -172,11 +166,16 @@ class Gateway {
           {'error': 'model fabric catalog missing or unparseable'},
           status: HttpStatus.serviceUnavailable);
     }
-    final route = await _selectRoute(catalog, tier);
+    final route = await _selectRoute(catalog, tier, scope);
     if (route == null) {
       return _json(request,
           {'error': 'no provider in tier "$tier" has a vault key'},
           status: HttpStatus.serviceUnavailable);
+    }
+
+    if (streaming) {
+      return _streamUpstream(request, scope, tier, route, body,
+          openAiShape: openAiShape);
     }
 
     try {
@@ -192,8 +191,8 @@ class Gateway {
           : (_isAnthropic(route.provider)
               ? upstream
               : _openAiResponseToAnthropic(upstream));
-      _recordUsage(scope, tier, route, upstream);
-      await _recordEvent(scope, tier, route, upstream);
+      _recordUsage(scope, tier, route, _usageOf(upstream));
+      await _recordEvent(scope, tier, route, _usageOf(upstream));
       return _json(request, response);
     } on HttpException catch (e) {
       return _json(request, {'error': 'upstream unreachable: ${e.message}'},
@@ -201,6 +200,122 @@ class Gateway {
     } on SocketException catch (e) {
       return _json(request, {'error': 'upstream unreachable: ${e.message}'},
           status: HttpStatus.badGateway);
+    }
+  }
+
+  /// SSE passthrough (E2): forwards a streaming request to a SAME-protocol
+  /// upstream and relays the chunks verbatim, flushing per chunk. Usage is
+  /// harvested from the relayed `data:` lines — the OpenAI final-chunk usage
+  /// object, or Anthropic's message_start (input) / message_delta (output) —
+  /// and recorded like the non-streaming path.
+  ///
+  /// kimitail: cross-protocol streaming (an OpenAI caller on an Anthropic
+  /// provider or vice versa) would need SSE event translation, not
+  /// passthrough — rejected with a clear error; set stream=false there.
+  /// Upgrade path: a chunk-by-chunk translator beside the response mappers.
+  Future<void> _streamUpstream(
+    HttpRequest request,
+    ScopedToken scope,
+    String tier,
+    _Route route,
+    Map<String, dynamic> body, {
+    required bool openAiShape,
+  }) async {
+    final provider = route.provider;
+    final anthropicUpstream = _isAnthropic(provider);
+    if (anthropicUpstream == openAiShape) {
+      return _json(request, {
+        'error': 'streaming is pass-through only — tier "$tier" routes to an '
+            '${anthropicUpstream ? 'Anthropic' : 'OpenAI'}-protocol provider; '
+            'set stream=false for translated calls',
+      }, status: HttpStatus.badRequest);
+    }
+
+    final upstreamBody = openAiShape
+        ? _normalizeOpenAi(
+            Map<String, dynamic>.of(body), provider.paramPolicy)
+        : Map<String, dynamic>.of(body);
+    upstreamBody['model'] = route.model;
+    upstreamBody['stream'] = true;
+
+    final HttpClientResponse upstream;
+    try {
+      final req = await _client
+          .postUrl(Uri.parse(_upstreamUrl(provider, anthropicUpstream)));
+      req.headers.contentType = ContentType.json;
+      if (anthropicUpstream) {
+        req.headers.set('x-api-key', route.apiKey);
+        req.headers.set('anthropic-version', '2023-06-01');
+      } else {
+        req.headers.set('authorization', 'Bearer ${route.apiKey}');
+      }
+      req.write(jsonEncode(upstreamBody));
+      upstream = await req.close();
+    } on HttpException catch (e) {
+      return _json(request, {'error': 'upstream unreachable: ${e.message}'},
+          status: HttpStatus.badGateway);
+    } on SocketException catch (e) {
+      return _json(request, {'error': 'upstream unreachable: ${e.message}'},
+          status: HttpStatus.badGateway);
+    }
+
+    final response = request.response;
+    if (upstream.statusCode != HttpStatus.ok) {
+      // Errors relay as JSON like the non-streaming path; nothing recorded.
+      response.statusCode = upstream.statusCode;
+      response.headers.contentType = ContentType.json;
+      response.write(await utf8.decoder.bind(upstream).join());
+      await response.close();
+      return;
+    }
+
+    response.statusCode = HttpStatus.ok;
+    response.headers.contentType = ContentType('text', 'event-stream');
+    response.headers.set('cache-control', 'no-cache');
+    response.bufferOutput = false;
+
+    var tokensIn = 0;
+    var tokensOut = 0;
+    final pending = StringBuffer();
+    try {
+      await for (final text in utf8.decoder.bind(upstream)) {
+        response.add(utf8.encode(text));
+        // Scan complete SSE data lines for usage; the partial tail carries
+        // over to the next chunk.
+        pending.write(text);
+        final lines = pending.toString().split('\n');
+        pending.clear();
+        pending.write(lines.removeLast());
+        for (final line in lines) {
+          if (!line.startsWith('data:') || line.startsWith('data: [DONE]')) {
+            continue;
+          }
+          Object? decoded;
+          try {
+            decoded = jsonDecode(line.substring(5).trim());
+          } on FormatException {
+            continue; // Non-JSON data lines are relayed, never parsed.
+          }
+          if (decoded is! Map) continue;
+          final map = decoded.cast<String, dynamic>();
+          // Anthropic's message_start nests usage inside `message`.
+          var (i, o) = _usageOf(map);
+          if (i == 0 && o == 0 && map['message'] is Map) {
+            (i, o) = _usageOf((map['message'] as Map).cast<String, dynamic>());
+          }
+          if (i > 0) tokensIn = i;
+          if (o > 0) tokensOut = o;
+        }
+      }
+      // Recorded BEFORE the response closes: the caller's stream completes
+      // on close, so this ordering keeps the usage/event lands visible to
+      // the caller once it holds the full stream.
+      _recordUsage(scope, tier, route, (tokensIn, tokensOut));
+      await _recordEvent(scope, tier, route, (tokensIn, tokensOut));
+      await response.close();
+    } on HttpException {
+      // The caller hung up mid-stream; nothing more to relay, and a partial
+      // stream records nothing.
     }
   }
 
@@ -215,8 +330,32 @@ class Gateway {
   }
 
   /// First candidate in the tier whose provider has a vault key (E4).
-  Future<_Route?> _selectRoute(ModelFabric catalog, String tier) async {
-    for (final candidate in catalog.tiers[tier] ?? const <FabricModel>[]) {
+  ///
+  /// Maker/checker split (E4, stages.review.notes): for the review stage the
+  /// build stage's provider is tried LAST — review ≠ build whenever the tier
+  /// offers a keyed alternative; with no alternative the maker provider still
+  /// serves (a 503 helps nobody). Behavior is unchanged when the providers
+  /// already differ.
+  Future<_Route?> _selectRoute(
+      ModelFabric catalog, String tier, ScopedToken scope) async {
+    var candidates = catalog.tiers[tier] ?? const <FabricModel>[];
+    if (scope.consumer == 'pipeline-stage:review') {
+      final buildTier = catalog.stages['build']?.tier;
+      if (buildTier != null) {
+        final maker = await _routeFor(
+            catalog, catalog.tiers[buildTier] ?? const <FabricModel>[]);
+        if (maker != null) {
+          candidates = catalog.checkerFirst(tier, maker.provider.name);
+        }
+      }
+    }
+    return _routeFor(catalog, candidates);
+  }
+
+  /// First route in [candidates] whose provider has a vault key (E4).
+  Future<_Route?> _routeFor(
+      ModelFabric catalog, List<FabricModel> candidates) async {
+    for (final candidate in candidates) {
       final FabricProvider provider;
       try {
         provider = catalog.provider(candidate.provider);
@@ -457,8 +596,8 @@ class Gateway {
   }
 
   void _recordUsage(
-      ScopedToken scope, String tier, _Route route, Map<String, dynamic> resp) {
-    final (tokensIn, tokensOut) = _usageOf(resp);
+      ScopedToken scope, String tier, _Route route, (int, int) tokens) {
+    final (tokensIn, tokensOut) = tokens;
     final file = File(p.join(repoRoot, 'pipeline', 'state', 'usage.jsonl'));
     file.parent.createSync(recursive: true);
     file.writeAsStringSync(
@@ -481,8 +620,8 @@ class Gateway {
   /// a write failure warns on stderr and never fails the request — the
   /// caller already holds the upstream's answer.
   Future<void> _recordEvent(ScopedToken scope, String tier, _Route route,
-      Map<String, dynamic> resp) async {
-    final (tokensIn, tokensOut) = _usageOf(resp);
+      (int, int) tokens) async {
+    final (tokensIn, tokensOut) = tokens;
     try {
       await EventLog(p.join(repoRoot, 'pipeline', 'state')).append(MemoryEvent(
         kind: MemoryKinds.llmRequest,

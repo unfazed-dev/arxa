@@ -5,6 +5,9 @@
 //   - Provider ports (Stripe / PayPal / Apple / Google): exercised through a
 //     ScriptedRunner that asserts the SDK call shape + failure handling.
 
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:appboxd/tier1.dart';
 import 'package:test/test.dart';
 
@@ -284,6 +287,49 @@ void main() {
       expect(result.failed, isEmpty, reason: result.failed.join('\n'));
       expect(result.passed, hasLength(5));
       expect(result.allPassed, isTrue);
+    });
+  });
+
+  group('promoteTier1 — the only tier writer (13.3)', () {
+    test('sets port-tested, records evidence, and is byte-stable on re-run', () {
+      final tmp = Directory.systemTemp.createTempSync('tier1_promote');
+      addTearDown(() => tmp.deleteSync(recursive: true));
+      Directory('${tmp.path}/appboxd/lib').createSync(recursive: true);
+      Directory('${tmp.path}/config').createSync(recursive: true);
+      // the digest is over the suite file itself — copy the real one
+      File('lib/tier1.dart').copySync('${tmp.path}/appboxd/lib/tier1.dart');
+      File('${tmp.path}/config/kit-registry.json').writeAsStringSync(
+          '{"kits":[{"dir":"auth","providers":['
+          '{"name":"SeedAuthBackend","verification":"stub"},'
+          '{"name":"Apple SignIn","verification":"stub"}]}]}');
+
+      final bumped = promoteTier1(
+        [('auth', 'SeedAuthBackend'), ('auth', 'Apple SignIn')],
+        repoRoot: tmp.path,
+      );
+      expect(bumped, 2);
+
+      final reg = jsonDecode(
+          File('${tmp.path}/config/kit-registry.json').readAsStringSync());
+      for (final p in reg['kits'][0]['providers']) {
+        expect(p['verification'], 'port-tested');
+      }
+      final ledger = jsonDecode(
+              File('${tmp.path}/config/evidence.json').readAsStringSync())['ledger']
+          as Map<String, dynamic>;
+      final rec = ledger['auth/SeedAuthBackend'] as Map<String, dynamic>;
+      expect(rec['tier'], 'port-tested');
+      expect(rec['suite'], 'appboxd/lib/tier1.dart');
+      expect(rec['digest'], startsWith('sha256:'));
+
+      // idempotent: same suite content -> nothing changes, ran_at preserved
+      final before = File('${tmp.path}/config/evidence.json').readAsStringSync();
+      final bumpedAgain = promoteTier1(
+        [('auth', 'SeedAuthBackend'), ('auth', 'Apple SignIn')],
+        repoRoot: tmp.path,
+      );
+      expect(bumpedAgain, 0);
+      expect(File('${tmp.path}/config/evidence.json').readAsStringSync(), before);
     });
   });
 }

@@ -133,7 +133,7 @@ class TocResult {
 /// Builds KB index + domain pages from sources.json + facts, and injects
 /// References blocks into each kit playbook.
 ///
-/// [repoRoot] is the app-box root. Reads `kb/sources.json` and
+/// [repoRoot] is the appbox root. Reads `kb/sources.json` and
 /// `memory/facts/*.json`; writes `kb/KB.md`, `kb/<domain>.md`, and rewrites any
 /// `<repoRoot>/<kit>/<kit>_playbook.mdx`. Creates `kb/` if it does not exist.
 KbBuildResult buildKb(String repoRoot) {
@@ -164,7 +164,7 @@ KbBuildResult buildKb(String repoRoot) {
 
 /// Generates playbooks.md + llms.txt from facts.
 ///
-/// [repoRoot] is the app-box root. Reads `memory/facts/*.json`; writes
+/// [repoRoot] is the appbox root. Reads `memory/facts/*.json`; writes
 /// `playbooks.md` and `llms.txt` at the repo root.
 TocResult buildToc(String repoRoot) {
   final facts = _loadFacts(p.join(repoRoot, 'memory', 'facts'));

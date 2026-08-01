@@ -20,7 +20,7 @@ import 'package:path/path.dart' as p;
 
 /// Generates kit.lock content as a deterministic JSON string.
 ///
-/// [repoRoot] is the app-box root — `skills/` and `tools/` live here.
+/// [repoRoot] is the appbox root — `skills/` and `tools/` live here.
 /// [kitRoot] is the `kit/` directory; the kit version is read from
 /// `core/pubspec.yaml` (core is the keystone kit).
 String generateKitLock(String repoRoot, String kitRoot) {

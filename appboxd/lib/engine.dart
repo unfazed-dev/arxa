@@ -166,6 +166,37 @@ Future<void> appendScorecard(String repoRoot, Map<String, Object?> entry) async 
   await file.writeAsString('${jsonEncode(entry)}\n', mode: FileMode.append);
 }
 
+/// E4 cost wiring: the run's USD cost from the fabric catalog's per-model
+/// pricing. Null when usage was not recorded (tokens null — the CLI emits
+/// none yet), when the catalog is missing/unparseable, or when the model is
+/// unpriced — cost is measured or absent, never estimated.
+///
+/// kimitail: when [model] is null the tier's first candidate stands in — the
+/// same "a tier pins a model" assumption the cache key makes; the gateway may
+/// actually serve a later candidate, in which case this is the tier leader's
+/// price. Upgrade path: record the served model on the scorecard from the
+/// gateway's usage.jsonl instead.
+double? _runCost(String repoRoot,
+    {String? model, String? tier, int? tokensIn, int? tokensOut}) {
+  if (tokensIn == null || tokensOut == null) return null;
+  final ModelFabric fabric;
+  try {
+    fabric = ModelFabric.load(repoRoot);
+  } on FileSystemException {
+    return null;
+  } on FormatException {
+    return null;
+  }
+  final candidates = tier == null ? null : fabric.tiers[tier];
+  final modelName = model ??
+      ((candidates == null || candidates.isEmpty)
+          ? null
+          : candidates.first.model);
+  return modelName == null
+      ? null
+      : fabric.costFor(modelName, tokensIn, tokensOut);
+}
+
 /// The outcome of one headless stage run.
 class StageRun {
   StageRun({
@@ -345,9 +376,14 @@ class Engine {
       'model': model,
       'tokens_in': tokensIn,
       'tokens_out': tokensOut,
-      // kimitail: pricing lives in the E4 fabric catalog — null until
-      // that wiring lands, never estimated here.
-      'cost': null,
+      // E4 cost wiring: priced from the fabric catalog when the run recorded
+      // usage; null tokens (the CLI emitted no usage yet) → cost stays null,
+      // never estimated.
+      'cost': _runCost(repoRoot,
+          model: model,
+          tier: stage.tier,
+          tokensIn: tokensIn,
+          tokensOut: tokensOut),
       'gate_pass': gatePass,
       'retries': retries,
       'cache_hit': cacheHit,

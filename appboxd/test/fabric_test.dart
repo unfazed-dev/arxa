@@ -49,4 +49,36 @@ void main() {
       }
     }
   });
+
+  group('costFor', () {
+    test('prices recorded usage at per-1M rates', () {
+      // kimi-k2.7-code: $0.95 in / $4 out per 1M.
+      expect(fabric.costFor('kimi-k2.7-code', 1000000, 500000),
+          closeTo(0.95 + 2.0, 1e-12));
+    });
+
+    test('null when tokens, model, or pricing are absent', () {
+      expect(fabric.costFor('kimi-k2.7-code', null, 5), isNull);
+      expect(fabric.costFor('kimi-k2.7-code', 5, null), isNull);
+      expect(fabric.costFor('no-such-model', 5, 5), isNull);
+      // glm-4.7-flash is explicitly unpriced (free).
+      expect(fabric.costFor('glm-4.7-flash', 5, 5), isNull);
+    });
+  });
+
+  group('checkerFirst (maker/checker split)', () {
+    test('demotes the maker provider behind the rest of the tier', () {
+      final reordered = fabric.checkerFirst('frontier', 'kimi');
+      expect(reordered.first.provider, isNot('kimi'));
+      expect(reordered.last.provider, 'kimi',
+          reason: 'the maker provider stays as the last resort');
+      expect(reordered, hasLength(fabric.tier('frontier').length));
+    });
+
+    test('no collision → the identical list', () {
+      final candidates = fabric.tier('frontier');
+      expect(fabric.checkerFirst('frontier', 'no-such-provider'),
+          same(candidates));
+    });
+  });
 }

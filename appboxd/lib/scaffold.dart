@@ -36,6 +36,8 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'mem_b.dart';
+
 /// The gen-l10n config is a FIXED contract — gates assert it verbatim, so it is
 /// a constant, never templated. (synthetic-package deliberately absent: the SDK
 /// deprecated it — output always lands in the package now.)
@@ -544,6 +546,23 @@ int scaffold(
 
   if (l10n != null) {
     _emitL10n(designRoot, appRoot, l10n);
+  }
+
+  // MEM-B (architecture §4): the memory file that travels with the delivered
+  // app, write-on-diff like the rest of the emit. Best-effort — a memory
+  // read failure warns, never fails the scaffold.
+  try {
+    if (writeMemB(
+        appRoot,
+        assembleMemB(findRepoRoot(appRoot),
+            appName: appRoot.split('/').where((s) => s.isNotEmpty).last,
+            surfaces: [for (final s in frozen) s['surface'] as String],
+            targets: targets,
+            factors: factors))) {
+      print('  MEM-B.md refreshed');
+    }
+  } catch (e) {
+    stderr.writeln('scaffold: WARN MEM-B write failed: $e');
   }
 
   final fl = factors.isNotEmpty ? factors.join(', ') : 'none';

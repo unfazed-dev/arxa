@@ -221,6 +221,60 @@ void main() {
       expect(entry['tokens_out'], isNull);
     });
 
+    group('scorecard cost (E4 fabric pricing)', () {
+      void seedFabric({double? priceIn = 2, double? priceOut = 10}) {
+        Directory(p.join(tmp.path, 'config')).createSync();
+        File(p.join(tmp.path, 'config', 'model-fabric.json'))
+            .writeAsStringSync(jsonEncode({
+          'schema_version': 1,
+          'providers': <Object?>[],
+          'tiers': {
+            'frontier': [
+              {
+                'model': 'alpha-1',
+                'provider': 'alpha',
+                'price_in': priceIn,
+                'price_out': priceOut,
+              },
+            ],
+          },
+          'stages': {
+            'intake': {'tier': 'frontier'},
+          },
+          'escalation': <String, Object?>{},
+        }));
+      }
+
+      Future<Map<String, Object?>> scorecardEntry() async {
+        final lines = await File(
+                p.join(tmp.path, 'pipeline', 'state', 'scorecard.jsonl'))
+            .readAsLines();
+        return jsonDecode(lines.single) as Map<String, Object?>;
+      }
+
+      test('recorded usage is priced at the fabric rate', () async {
+        seedFabric();
+        await engine.runStage('intake', prompt: 'x', environment: fakeEnv());
+        // fake kimi reports 123 in / 45 out; alpha-1 is $2/$10 per 1M.
+        expect((await scorecardEntry())['cost'],
+            closeTo(123 * 2 / 1e6 + 45 * 10 / 1e6, 1e-12));
+      });
+
+      test('null usage keeps cost null even with a priced catalog', () async {
+        seedFabric();
+        await engine.runStage('intake',
+            prompt: 'x',
+            environment: fakeEnv(extra: {'FAKE_KIMI_NO_USAGE': '1'}));
+        expect((await scorecardEntry())['cost'], isNull);
+      });
+
+      test('an unpriced model keeps cost null — never estimated', () async {
+        seedFabric(priceIn: null, priceOut: null);
+        await engine.runStage('intake', prompt: 'x', environment: fakeEnv());
+        expect((await scorecardEntry())['cost'], isNull);
+      });
+    });
+
     test('each run appends a stage_run memory event', () async {
       final run = await engine.runStage(
         'intake',

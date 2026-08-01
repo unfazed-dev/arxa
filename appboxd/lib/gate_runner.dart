@@ -18,6 +18,8 @@ import 'package:appboxd/gate_native_deps.dart';
 import 'package:appboxd/gate_scaffold.dart';
 import 'package:appboxd/gate_structure.dart';
 import 'package:appboxd/gates.dart';
+import 'package:appboxd/memory.dart';
+import 'package:path/path.dart' as p;
 
 /// The gate execution order (matches gates/run_all.sh:148-164).
 const gateOrder = [
@@ -92,12 +94,43 @@ Future<GateResult?> runGate(String name, GateContext ctx) => _runSingleGate(name
 
 /// Run a single gate by name. Returns null if the gate is unavailable.
 Future<GateResult?> _runSingleGate(String name, GateContext ctx) async {
+  final sw = Stopwatch()..start();
+
   // Try Dart gate first.
   final dartResult = await _tryDartGate(name, ctx);
-  if (dartResult != null) return dartResult;
+  if (dartResult != null) {
+    await _appendGateRunEvent(name, dartResult, ctx, sw.elapsed);
+    return dartResult;
+  }
 
   // Fall back to bash gate (strangler — unported gates still work).
-  return await _tryBashGate(name, ctx);
+  final bashResult = await _tryBashGate(name, ctx);
+  if (bashResult != null) {
+    await _appendGateRunEvent(name, bashResult, ctx, sw.elapsed);
+  }
+  return bashResult;
+}
+
+/// M1: the gate runner is a deterministic writer of raw memory events
+/// (engine.dart writes stage_run; this writes gate_run). Best-effort —
+/// a logging failure warns, never fails the gate run.
+Future<void> _appendGateRunEvent(
+    String name, GateResult result, GateContext ctx, Duration duration) async {
+  try {
+    await EventLog(p.join(ctx.repoRoot, 'pipeline', 'state'))
+        .append(MemoryEvent(
+      kind: MemoryKinds.gateRun,
+      actor: 'gate-runner',
+      payload: {
+        'gate': name,
+        'passed': result.passed,
+        'exit_code': result.exitCode,
+        'duration_ms': duration.inMilliseconds,
+      },
+    ));
+  } catch (e) {
+    stderr.writeln('gate-runner: WARN memory event append failed: $e');
+  }
 }
 
 /// Dispatch to a Dart-ported gate. Returns null if not yet ported.

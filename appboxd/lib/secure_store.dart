@@ -24,6 +24,7 @@
 /// behaviour, not a gap.)
 library;
 
+import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -121,4 +122,51 @@ class SecureStore {
     final body = Uint8List.sublistView(raw, header);
     return openXChaCha20Poly1305(key, nonce, body);
   }
+}
+
+/// A [Vault] over a single [SecureStore]-sealed JSON file — the credential
+/// fallback for hosts with no OS vault backend (the Windows/Linux TODOs on
+/// [Vault]). The whole map is re-sealed on every mutation; a credential store
+/// is small, so rewriting is the honest simple thing.
+class SealedFileVault implements Vault {
+  SealedFileVault(this.path, this._store);
+
+  final String path;
+  final SecureStore _store;
+  Map<String, String>? _cache;
+
+  Future<Map<String, String>> _load() async {
+    final cached = _cache;
+    if (cached != null) return cached;
+    if (!File(path).existsSync()) return _cache = {};
+    final plain = await _store.open(path);
+    final decoded = jsonDecode(utf8.decode(plain)) as Map<String, dynamic>;
+    return _cache = decoded.map((k, v) => MapEntry(k, v as String));
+  }
+
+  Future<void> _flush(Map<String, String> entries) async {
+    _cache = entries;
+    await _store.seal(
+        path, Uint8List.fromList(utf8.encode(jsonEncode(entries))));
+  }
+
+  @override
+  Future<String?> read(String key) async => (await _load())[key];
+
+  @override
+  Future<void> write(String key, String value) async {
+    final entries = await _load();
+    await _flush({...entries, key: value});
+  }
+
+  @override
+  Future<void> delete(String key) async {
+    final entries = await _load();
+    if (!entries.containsKey(key)) return;
+    await _flush({...entries}..remove(key));
+  }
+
+  @override
+  Future<List<String>> readAllKeys() async =>
+      List.unmodifiable((await _load()).keys);
 }
