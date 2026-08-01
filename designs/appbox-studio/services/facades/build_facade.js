@@ -254,11 +254,15 @@ function viewerFor(sessionData, evidence) {
     // here — the pair stays disabled (can:false renders without the hx-post).
     miniPanel: {
       activePanel: ['screens', 'controller', 'actions'].includes(v.panel) ? v.panel : 'controller',
+      // Bar-right cluster: bg swatches only — no devices on a static canvas.
+      bar: {
+        devices: null,
+        bgs: VIEWER_BGS.map((value) => ({ value, active: value === bg, href: withParams({ bg: value }) })),
+      },
       screens: [],
       controller: {
         inspectOn: inspect,
         inspectHref: withParams({ inspect: inspect ? null : '1' }),
-        bgs: VIEWER_BGS.map((value) => ({ value, active: value === bg, href: withParams({ bg: value }) })),
         undo: { can: false, href: '/design/undo/canvas' },
         redo: { can: false, href: '/design/redo/canvas' },
       },

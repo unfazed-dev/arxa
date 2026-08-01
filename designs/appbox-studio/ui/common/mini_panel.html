@@ -14,11 +14,12 @@
 
    v.miniPanel shape (canvas-redesign-contract.md §1/§3):
      activePanel: 'screens' | 'controller' | 'actions' (default 'screens')
+     bar: { devices: [{ key, icon, active, href }] | null,   // proto mode only
+            bgs: [{ value, active, href }] }                 // swatch buttons
      screens: [{ id, label, tone, inContext, dim, src, contextHref }]
      controller: {
        inspectOn: bool,
        inspectHref: '/design/viewer?...&inspect=1',          // toggles the inspect param
-       bgs:   [{ value, active, href }],                      // value is a pre-translated label
        undo:  { can: bool, href: '/design/undo/canvas' },
        redo:  { can: bool, href: '/design/redo/canvas' },
      }
@@ -56,10 +57,11 @@
 </div>
 {% endmacro %}
 
-{# Controller — inspect toggle, zoom-to-fit, bg, canvas undo/redo.
+{# Controller — mode toggle, inspect, zoom-to-fit, canvas undo/redo.
    Undo/redo swap #panels; the other controls swap #design-viewer.
    Zoom-to-fit is client-side (canvas.js / drag.js) via a data-action, so it
-   carries no route. #}
+   carries no route. (Device rungs + bg swatches live in the bar itself —
+   see miniPanel().) #}
 {% macro controllerPanel(v, pnl) %}
 {% set c = pnl.controller %}
 <div class="mini-panel-body" id="mini-panel-controller">
@@ -71,11 +73,6 @@
   <span class="mini-panel-group">
     <a class="ico-btn {{ 'on' if c.inspectOn }}" href="{{ c.inspectHref }}" hx-get="{{ c.inspectHref }}" hx-target="#design-viewer" hx-swap="outerHTML" title="{{ t('miniPanel.inspect') }}">{{ icon('mouse-pointer-click', {size: 16}) }}</a>
     <button class="ico-btn" data-action="zoom-fit" title="{{ t('miniPanel.zoomFit') }}">{{ icon('maximize', {size: 16}) }}</button>
-  </span>
-  <span class="mini-panel-group" role="group" aria-label="{{ t('miniPanel.bgGroup') }}">
-    {% for b in c.bgs %}
-    <a class="dv-chip {{ 'on' if b.active }}" href="{{ b.href }}" hx-get="{{ b.href }}" hx-target="#design-viewer" hx-swap="outerHTML">{{ b.value }}</a>
-    {% endfor %}
   </span>
   <span class="mini-panel-group" role="group" aria-label="{{ t('miniPanel.historyGroup') }}">
     {% if c.undo.can %}
@@ -111,7 +108,9 @@
 {% endmacro %}
 
 {# The bar itself: three icon tabs + the active panel. The `q` query echoes the
-   current viewer state so a panel switch is state-preserving. #}
+   current viewer state so a panel switch is state-preserving. Bar-right
+   cluster (the green-rect zone): device rung icon buttons (proto mode only)
+   — divider — bg swatch buttons (every mode). #}
 {% macro miniPanel(v) %}
 {% set pnl = v.miniPanel %}
 {% set panel = pnl.activePanel or 'screens' %}
@@ -119,8 +118,7 @@
         + ('&inspect=1' if v.inspect else '')
         + ('&mode=proto' if v.mode == 'proto' else '')
         + ('&screen=' + v.proto.active if v.proto else '')
-        + ('&vp=' + v.proto.vp if v.proto and v.proto.vp != 'mobile' else '')
-        + ('&os=' + v.proto.os if v.proto and v.proto.os != 'ios' else '') %}
+        + ('&vp=' + v.proto.vp if v.proto and v.proto.vp != 'mobile' else '') %}
 <nav class="mini-panel" aria-label="{{ t('miniPanel.aria') }}">
   <div class="mini-panel-bar">
     <button class="mini-panel-tab {{ 'is-active' if panel == 'screens' }}"
@@ -138,6 +136,24 @@
             hx-get="{{ v.base }}?{{ q }}&panel=actions" hx-target="#design-viewer" hx-swap="outerHTML"
             aria-pressed="{{ 'true' if panel == 'actions' else 'false' }}"
             title="{{ t('miniPanel.tab.actions') }}">{{ icon('zap', {size: 18}) }}</button>
+
+    <span class="mini-panel-bar-right">
+      {% if pnl.bar.devices %}
+      <span class="mini-panel-group" role="group" aria-label="{{ t('viewer.viewportGroup') }}">
+        {% for d in pnl.bar.devices %}
+        <a class="mini-panel-tab {{ 'is-active' if d.active }}" href="{{ d.href }}" hx-get="{{ d.href }}" hx-target="#design-viewer" hx-swap="outerHTML"
+           aria-label="{{ t('viewer.vp.' ~ d.key) }}" title="{{ t('viewer.vp.' ~ d.key) }}">{{ icon(d.icon, {size: 16}) }}</a>
+        {% endfor %}
+      </span>
+      <span class="mini-panel-divider" aria-hidden="true"></span>
+      {% endif %}
+      <span class="mini-panel-group" role="group" aria-label="{{ t('miniPanel.bgGroup') }}">
+        {% for b in pnl.bar.bgs %}
+        <a class="mini-swatch mini-swatch-{{ b.value }} {{ 'on' if b.active }}" href="{{ b.href }}" hx-get="{{ b.href }}" hx-target="#design-viewer" hx-swap="outerHTML"
+           aria-label="{{ t('miniPanel.bg.' ~ b.value) }}" title="{{ t('miniPanel.bg.' ~ b.value) }}"></a>
+        {% endfor %}
+      </span>
+    </span>
   </div>
 
   {# Only the active panel renders — the server picks it from the query param. #}

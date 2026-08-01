@@ -37,7 +37,7 @@ export const panelSize = (c, h) =>
 export const viewer = (c, h) =>
   h.render(c, `${VIEW}#viewerSwap`, facade.setViewer(h.session(c).data, {
     bg: c.req.query('bg'), inspect: c.req.query('inspect'), panel: c.req.query('panel'),
-    mode: c.req.query('mode'), screen: c.req.query('screen'), vp: c.req.query('vp'), os: c.req.query('os'),
+    mode: c.req.query('mode'), screen: c.req.query('screen'), vp: c.req.query('vp'),
   }, h.prefs(c), h.t(c), h.locale(c)));
 
 // Artboard tile drag (flow mode): persist {x, y} on drop, swap just the viewer.

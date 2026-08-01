@@ -148,9 +148,11 @@ const applyEntry = (d, entry, dir) => {
 // Two lenses over the screen registry, switched by the `mode` viewer param:
 // 'flow' — every screen as a draggable tile grouped by shell; 'proto' — the
 // wired-app preview, one screen live at a real rung size inside device
-// chrome (screen/vp/os params). The mini panel (screens/controller/actions)
-// + undo/redo + element chips are always produced; in proto mode the
-// Screens panel picks the active screen instead of toggling chat context.
+// chrome (screen/vp params; one mobile chrome, no os dimension). The mini
+// panel (screens/controller/actions) + undo/redo + element chips are always
+// produced; in proto mode the Screens panel picks the active screen instead
+// of toggling chat context. Device rung icons + bg swatches live in the
+// panel bar itself (miniPanel.bar).
 const RUNG_VP = { 390: 'mobile', 744: 'tablet', 1280: 'desktop' };
 
 function viewerFor(d, L, t) {
@@ -182,18 +184,24 @@ function viewerFor(d, L, t) {
   const mode = v.mode === 'proto' ? 'proto' : 'flow';
   const active = screens.some((s) => s.id === v.screen) ? v.screen : screens[0]?.id;
   const vp = ['mobile', 'tablet', 'desktop'].includes(v.vp) ? v.vp : 'mobile';
-  const os = ['ios', 'android'].includes(v.os) ? v.os : 'ios';
+
+  // Device rungs as mini-bar icon buttons (lucide names, picked up by the
+  // server's template icon scan). One mobile chrome — no os dimension.
+  const DEVICES = [
+    { key: 'mobile', icon: 'smartphone' },
+    { key: 'tablet', icon: 'tablet' },
+    { key: 'desktop', icon: 'monitor' },
+  ];
 
   // Viewer href builder: current viewer state merged with overrides, empties
   // dropped — so a controller toggle href only flips the one param it names.
-  // Defaults (flow mode, mobile rung, ios chrome) stay out of the URL.
+  // Defaults (flow mode, mobile rung) stay out of the URL.
   const withParams = (over) => {
     const merged = {
       bg, inspect: inspect ? '1' : null,
       mode: mode === 'flow' ? null : mode,
       screen: active,
       vp: vp === 'mobile' ? null : vp,
-      os: os === 'ios' ? null : os,
       ...over,
     };
     const qs = Object.entries(merged).filter(([, val]) => val != null).map(([k, val]) => `${k}=${val}`).join('&');
@@ -203,16 +211,21 @@ function viewerFor(d, L, t) {
   // The wired-app lens: device chrome around the live render at the real
   // rung size. Only produced in proto mode.
   const proto = mode === 'proto' ? {
-    active, vp, os,
+    active, vp,
     src: `/build/screens/${active}?vp=${vp}&embed=1`,
-    rungs: ['mobile', 'tablet', 'desktop'].map((key) => ({ key, active: key === vp, href: withParams({ vp: key === 'mobile' ? null : key }) })),
-    oss: vp === 'mobile'
-      ? ['ios', 'android'].map((key) => ({ key, active: key === os, href: withParams({ os: key === 'ios' ? null : key }) }))
-      : null,
   } : null;
 
   const miniPanel = {
     activePanel: panel,
+    // The bar-right cluster (always mounted): device rung icons in proto
+    // mode (vp is meaningless on the flow canvas) + bg swatches in every
+    // mode, a divider between the groups.
+    bar: {
+      devices: mode === 'proto'
+        ? DEVICES.map((d) => ({ ...d, active: d.key === vp, href: withParams({ vp: d.key === 'mobile' ? null : d.key }) }))
+        : null,
+      bgs: ['canvas', 'warm', 'slate'].map((value) => ({ value, active: value === bg, href: withParams({ bg: value }) })),
+    },
     screens: screens.map((s) => ({
       id: s.id, label: s.label, tone: s.tone, inContext: s.inContext, dim: s.dim,
       src: `/build/screens/${s.id}?vp=mobile&embed=1`,
@@ -225,7 +238,6 @@ function viewerFor(d, L, t) {
       inspectOn: inspect,
       inspectHref: withParams({ inspect: inspect ? null : '1' }),
       modes: ['flow', 'proto'].map((key) => ({ key, active: key === mode, href: withParams({ mode: key === 'flow' ? null : key }) })),
-      bgs: ['canvas', 'warm', 'slate'].map((value) => ({ value, active: value === bg, href: withParams({ bg: value }) })),
       undo: { can: (d.undoStacks?.canvas?.length ?? 0) > 0, href: '/design/undo/canvas' },
       redo: { can: (d.redoStacks?.canvas?.length ?? 0) > 0, href: '/design/redo/canvas' },
     },
@@ -251,7 +263,7 @@ function viewerFor(d, L, t) {
   };
 }
 
-// Viewer toolbar act: the state keys (bg/inspect/mode/screen/vp/os) are
+// Viewer toolbar act: the state keys (bg/inspect/mode/screen/vp) are
 // AUTHORITATIVE — every control href echoes the whole viewer state
 // (withParams / the panel-tab q echo), with defaults elided from the URL, so
 // an absent key means "back to default", never "keep". Merging would strand
