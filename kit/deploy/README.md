@@ -65,3 +65,25 @@ final runner = ScriptedProcessRunner(script: {
 
 Targets never throw on tool failure — they return
 `KitDeployResult(ok: false, failureReason: ...)`.
+
+## Live smoke
+
+`test/live_smoke_test.dart` is an opt-in harness that proves the CLI + token
+path against the real providers. Without credentials every test skips, so CI
+is unaffected. To run it, set the tokens (via
+`appbox credentials set VERCEL_TOKEN` + re-export, or directly):
+
+```sh
+export VERCEL_TOKEN=…                       # vercel
+export CLOUDFLARE_API_TOKEN=…               # cloudflare-pages + cloudflare-workers
+export CLOUDFLARE_ACCOUNT_ID=…              # cloudflare-pages + cloudflare-workers
+dart test test/live_smoke_test.dart
+```
+
+Per target it asserts `doctor()` is all-ok, then does a REAL deploy of a tiny
+fixture — preview/non-prod only: vercel without `--prod`, Pages to a
+throwaway `appbox-smoke-<timestamp>` project on a `smoke-preview` branch, and
+an unrouted Worker. These create real preview deployments on your account —
+delete them afterwards in the Vercel / Cloudflare dashboard (vercel preview
+deployments and workers are both deletable).
+
