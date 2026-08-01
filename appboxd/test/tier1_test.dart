@@ -1,9 +1,11 @@
 // Tier-1 verification tests — port of tier1.py's scenario coverage.
 //
-// Two layers:
+// Three layers:
 //   - SeedAuthBackend: the real in-memory backend (sign-in / sign-up / refresh).
 //   - Provider ports (Stripe / PayPal / Apple / Google): exercised through a
 //     ScriptedRunner that asserts the SDK call shape + failure handling.
+//   - Maps tile-provider spec (OSM / Mapbox): pure-Dart spec copy of kit/maps'
+//     tiled providers — tile URL/geometry, provider resolution, token edge.
 
 import 'dart:convert';
 import 'dart:io';
@@ -281,11 +283,65 @@ void main() {
     });
   });
 
+  group('maps tile-provider spec — provider resolution', () {
+    test('iOS resolves to Apple Maps', () {
+      expect(defaultMapProviderFor('ios'), MapProviderKind.apple);
+    });
+
+    test('every non-iOS platform resolves to Google Maps', () {
+      for (final p in ['android', 'fuchsia', 'linux', 'macos', 'windows']) {
+        expect(defaultMapProviderFor(p), MapProviderKind.google, reason: p);
+      }
+    });
+  });
+
+  group('maps tile-provider spec — OpenStreetMap', () {
+    test('standard tile server, 256px tiles, policy-required UA', () {
+      final spec = osmTileLayer(userAgentPackageName: 'com.example.test');
+      expect(spec.urlTemplate,
+          'https://tile.openstreetmap.org/{z}/{x}/{y}.png');
+      expect(spec.tileDimension, 256);
+      expect(spec.zoomOffset, 0);
+      expect(tileUserAgentHeader(spec.userAgentPackageName),
+          'flutter_map (com.example.test)');
+    });
+  });
+
+  group('maps tile-provider spec — Mapbox', () {
+    test('512px raster tiles with the public token in the URL', () {
+      final spec = mapboxTileLayer(
+          accessToken: 'pk.test-token',
+          userAgentPackageName: 'com.example.test');
+      expect(
+        spec.urlTemplate,
+        'https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/512/'
+        '{z}/{x}/{y}@2x?access_token=pk.test-token',
+      );
+      expect(spec.tileDimension, 512);
+      expect(spec.zoomOffset, -1);
+    });
+
+    test('mapType selects the Mapbox style', () {
+      expect(mapboxStyleFor('normal'), 'streets-v12');
+      expect(mapboxStyleFor('satellite'), 'satellite-v9');
+      expect(mapboxStyleFor('hybrid'), 'satellite-streets-v12');
+      expect(mapboxStyleFor('terrain'), 'outdoors-v12');
+    });
+
+    test('missing token is rejected eagerly, not as silent tile 401s', () {
+      expect(
+        () => mapboxTileLayer(
+            accessToken: '', userAgentPackageName: 'com.example.test'),
+        throwsArgumentError,
+      );
+    });
+  });
+
   group('bundled self-check', () {
     test('runTier1Suites passes every suite', () {
       final result = runTier1Suites();
       expect(result.failed, isEmpty, reason: result.failed.join('\n'));
-      expect(result.passed, hasLength(5));
+      expect(result.passed, hasLength(7));
       expect(result.allPassed, isTrue);
     });
   });

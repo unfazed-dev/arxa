@@ -298,13 +298,13 @@
       "providers": [
         {
           "name": "OpenStreetMap",
-          "verification": "stub",
-          "notes": "implemented 2026-08-01 — kit/maps OSM provider on flutter_map 8.3.1; unit+widget tests green, showcase demo wired (profile -> maps). Tier stays stub: no Tier-1 suite covers maps yet, and a tier is set only by a suite that ran (13.3). Simulator smoke not yet run."
+          "verification": "port-tested",
+          "notes": "implemented 2026-08-01 — kit/maps OSM provider on flutter_map 8.3.1; unit+widget tests green, showcase demo wired (profile -> maps). Tier-1 spec suite green 2026-08-01 (appboxd/lib/tier1.dart: tile URL/256px geometry/policy UA + provider resolution). Simulator/device tile-rendering smoke not yet run — tier stays port-tested."
         },
         {
           "name": "Mapbox",
-          "verification": "stub",
-          "notes": "implemented 2026-08-01 — kit/maps Mapbox provider on flutter_map 8.3.1 (512px raster tiles, public pk token); unit+widget tests green. Tier stays stub: no Tier-1 suite covers maps yet (13.3). Simulator smoke not yet run."
+          "verification": "port-tested",
+          "notes": "implemented 2026-08-01 — kit/maps Mapbox provider on flutter_map 8.3.1 (512px raster tiles, public pk token; empty token rejected eagerly with ArgumentError); unit+widget tests green. Tier-1 spec suite green 2026-08-01 (appboxd/lib/tier1.dart: URL/512px geometry/style map/token edge). Simulator/device tile-rendering smoke not yet run — tier stays port-tested."
         }
       ]
     },

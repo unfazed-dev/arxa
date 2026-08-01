@@ -1,4 +1,5 @@
-// tier1 — Tier-1 verification suites for payments + auth, plus SeedAuthBackend.
+// tier1 — Tier-1 verification suites for payments + auth + maps, plus
+// SeedAuthBackend.
 //
 // Dart port of archives/tooling-pre-dart/tools/verification/tier1.py.
 //
@@ -16,7 +17,10 @@
 // SeedAuthBackend (13.7) is the exception: it has no external process, no
 // device, and no accounts — so its suite tests the REAL backend, not a
 // scripted fake. It is implemented first because it unblocks the seeded-data
-// story and proves the tier-promotion path end to end.
+// story and proves the tier-promotion path end to end. The maps tile
+// providers (OSM + Mapbox on flutter_map) are the same shape: pure Dart, no
+// external process — their suites test the spec copy of the kit's tile
+// config directly.
 //
 // The Python original is self-contained (stdlib only) and does NOT import from
 // the auth/payments kits — the per-provider call shapes live in this file as
@@ -410,6 +414,100 @@ class SeedAuthBackend {
 }
 
 // --------------------------------------------------------------------------- //
+// Maps tile-provider spec (paired with kit/maps' tiled providers)
+// --------------------------------------------------------------------------- //
+//
+// kit/maps' OpenStreetMap + Mapbox providers are pure-Dart flutter_map
+// backends — no external process, no native SDK — so, like SeedAuthBackend,
+// there is no runner to fake and the suite tests the REAL spec logic. This
+// section is the spec copy of the kit's behavioral contract, asserted by the
+// kit's own suites (kit/maps/test/provider_resolution_test.dart,
+// kit/maps/test/tiled_providers_test.dart):
+//   - defaultMapProviderFor   <-> kit_map_provider.dart's defaultProviderFor
+//   - osmTileLayer            <-> OpenStreetMapProvider.buildMap
+//   - mapboxTileLayer         <-> MapboxProvider.buildMap (+ _styleFor)
+//   - tileUserAgentHeader     <-> flutter_map's UA header the kit tests assert
+
+/// Which map backend a provider wraps — spec copy of kit/maps'
+/// `KitMapProviderKind`.
+enum MapProviderKind { google, apple, openStreetMap, mapbox }
+
+/// Spec copy of kit/maps' `defaultProviderFor`: Apple Maps on iOS
+/// (first-party SDK, no API key), Google Maps everywhere else. The platform
+/// is a plain string (`ios`, `android`, `fuchsia`, `linux`, `macos`,
+/// `windows`) — appboxd is pure Dart and cannot import Flutter's
+/// TargetPlatform.
+MapProviderKind defaultMapProviderFor(String platform) =>
+    platform == 'ios' ? MapProviderKind.apple : MapProviderKind.google;
+
+/// The tile-layer config a tiled maps provider must produce.
+class TileLayerSpec {
+  final String urlTemplate;
+  final int tileDimension;
+  final double zoomOffset;
+  final String userAgentPackageName;
+
+  const TileLayerSpec({
+    required this.urlTemplate,
+    required this.tileDimension,
+    required this.zoomOffset,
+    required this.userAgentPackageName,
+  });
+}
+
+/// The User-Agent header flutter_map derives from `userAgentPackageName` —
+/// asserted by the kit's widget tests because the OSM tile-usage policy
+/// blocks generic user agents.
+String tileUserAgentHeader(String packageName) => 'flutter_map ($packageName)';
+
+/// Spec copy of kit/maps' OpenStreetMapProvider: the standard OSM tile
+/// server, 256px tiles, no API key. [userAgentPackageName] is REQUIRED by
+/// the OSM tile-usage policy (a required constructor parameter in the kit).
+TileLayerSpec osmTileLayer({required String userAgentPackageName}) {
+  return TileLayerSpec(
+    urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+    tileDimension: 256,
+    zoomOffset: 0,
+    userAgentPackageName: userAgentPackageName,
+  );
+}
+
+/// Mapbox style ID per kit map type — spec copy of MapboxProvider._styleFor.
+String mapboxStyleFor(String mapType) => switch (mapType) {
+      'normal' => 'streets-v12',
+      'satellite' => 'satellite-v9',
+      'hybrid' => 'satellite-streets-v12',
+      'terrain' => 'outdoors-v12',
+      _ => throw ArgumentError.value(mapType, 'mapType', 'unknown kit map type'),
+    };
+
+/// Spec copy of kit/maps' MapboxProvider: Mapbox 512px raster tiles (retina:
+/// `tileDimension: 512, zoomOffset: -1`) with the public `pk.*` token riding
+/// in the tile URL. An empty token is rejected eagerly — otherwise the
+/// misconfiguration surfaces only as tile 401s at runtime (the kit provider
+/// throws the same ArgumentError; the showcase falls back to OSM when the
+/// dart-define is absent).
+TileLayerSpec mapboxTileLayer({
+  required String accessToken,
+  required String userAgentPackageName,
+  String mapType = 'normal',
+}) {
+  if (accessToken.isEmpty) {
+    throw ArgumentError.value(accessToken, 'accessToken',
+        'MapboxProvider needs a public pk.* token — pass '
+        '--dart-define=MAPBOX_PUBLIC_TOKEN=pk....');
+  }
+  return TileLayerSpec(
+    urlTemplate: 'https://api.mapbox.com/styles/v1/mapbox/'
+        '${mapboxStyleFor(mapType)}/tiles/512/{z}/{x}/{y}@2x'
+        '?access_token=$accessToken',
+    tileDimension: 512,
+    zoomOffset: -1,
+    userAgentPackageName: userAgentPackageName,
+  );
+}
+
+// --------------------------------------------------------------------------- //
 // Suites — assert-based, runnable as a bundled self-check ([runTier1Suites])
 // --------------------------------------------------------------------------- //
 
@@ -553,6 +651,54 @@ void _suiteSeedAuth() {
   _check(!backend.refreshToken('bogus').ok, 'bogus token rejected');
 }
 
+void _suiteOsmMapsPort() {
+  // provider resolution: Apple Maps on iOS, Google Maps everywhere else
+  _check(defaultMapProviderFor('ios') == MapProviderKind.apple,
+      'ios must resolve to Apple Maps');
+  for (final p in ['android', 'fuchsia', 'linux', 'macos', 'windows']) {
+    _check(defaultMapProviderFor(p) == MapProviderKind.google,
+        '$p must resolve to Google Maps');
+  }
+
+  // OSM tile config: standard tile server, 256px tiles, policy-required UA
+  final spec = osmTileLayer(userAgentPackageName: 'com.example.test');
+  _check(spec.urlTemplate == 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+      'osm url template: ${spec.urlTemplate}');
+  _check(spec.tileDimension == 256 && spec.zoomOffset == 0,
+      'osm geometry must be 256px tiles with no zoom offset');
+  _check(tileUserAgentHeader(spec.userAgentPackageName) ==
+      'flutter_map (com.example.test)', 'osm UA header');
+}
+
+void _suiteMapboxMapsPort() {
+  // 512px retina tiles (zoomOffset -1) with the public token in the URL
+  final spec = mapboxTileLayer(
+      accessToken: 'pk.test-token', userAgentPackageName: 'com.example.test');
+  _check(
+      spec.urlTemplate == 'https://api.mapbox.com/styles/v1/mapbox/'
+          'streets-v12/tiles/512/{z}/{x}/{y}@2x?access_token=pk.test-token',
+      'mapbox url template: ${spec.urlTemplate}');
+  _check(spec.tileDimension == 512 && spec.zoomOffset == -1,
+      'mapbox geometry must be 512px tiles with zoomOffset -1');
+  _check(tileUserAgentHeader(spec.userAgentPackageName) ==
+      'flutter_map (com.example.test)', 'mapbox UA header');
+
+  // mapType selects the Mapbox style
+  _check(mapboxStyleFor('normal') == 'streets-v12', 'normal style');
+  _check(mapboxStyleFor('satellite') == 'satellite-v9', 'satellite style');
+  _check(mapboxStyleFor('hybrid') == 'satellite-streets-v12', 'hybrid style');
+  _check(mapboxStyleFor('terrain') == 'outdoors-v12', 'terrain style');
+
+  // edge: a missing token fails eagerly, not as silent tile 401s at runtime
+  var threw = false;
+  try {
+    mapboxTileLayer(accessToken: '', userAgentPackageName: 'com.example.test');
+  } on ArgumentError {
+    threw = true;
+  }
+  _check(threw, 'empty mapbox token must throw ArgumentError');
+}
+
 /// One provider's Tier-1 suite: its `(kitDir, name)` key plus the entrypoint.
 typedef Tier1Suite = (String kitDir, String name, void Function() body);
 
@@ -563,6 +709,8 @@ final List<Tier1Suite> tier1Suites = <Tier1Suite>[
   ('auth', 'Apple SignIn', _suiteAppleSigninPort),
   ('auth', 'Google SignIn', _suiteGoogleSigninPort),
   ('auth', 'SeedAuthBackend', _suiteSeedAuth),
+  ('maps', 'OpenStreetMap', _suiteOsmMapsPort),
+  ('maps', 'Mapbox', _suiteMapboxMapsPort),
 ];
 
 /// Outcome of running every Tier-1 suite.

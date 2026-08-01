@@ -18,13 +18,21 @@ import '../tiled/tiled_map_view.dart';
 /// `--dart-define=MAPBOX_PUBLIC_TOKEN=pk....` and read it with
 /// `String.fromEnvironment`, matching the `MAPBOX_PUBLIC_TOKEN` entry in
 /// config/credentials.catalog.json. The catalog's optional
-/// `MAPBOX_SECRET_TOKEN` entry is NOT needed by this provider.
+/// `MAPBOX_SECRET_TOKEN` entry is NOT needed by this provider. An empty
+/// token is rejected eagerly (ArgumentError) rather than surfacing as tile
+/// 401s at runtime.
 class MapboxProvider implements KitMapProvider {
   MapboxProvider({
     required this.accessToken,
     required this.userAgentPackageName,
     this.tileProvider,
-  });
+  }) {
+    if (accessToken.isEmpty) {
+      throw ArgumentError.value(accessToken, 'accessToken',
+          'MapboxProvider needs a public pk.* token — pass '
+          '--dart-define=MAPBOX_PUBLIC_TOKEN=pk....');
+    }
+  }
 
   /// Public Mapbox access token (`pk.*`). See class docs for injection.
   final String accessToken;
