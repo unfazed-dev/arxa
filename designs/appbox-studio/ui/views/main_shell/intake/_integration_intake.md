@@ -1,15 +1,42 @@
 # Intake surfaces — integration notes
 
-Three surfaces on the panel layout: the intake shell root IS a chat (the
-interview) in the permanent composer panel, artifacts open in the main
-panel, the activity panel carries thread / artifacts / files, and the
-read-only stage timeline lives in the footer panel.
+The intake shell is a **typeform journey**: eight surfaced steps, each walking
+one item at a time in the main panel (a question, a persona, a shell's
+surface group, a flow, a direction group) — prefilled from the fixture with a
+provenance chip, confirmed or corrected, never blank. The composer panel is
+the chat rail, always in the current step's context; the activity panel
+carries thread / artifacts / files; the journey timeline lives in the footer
+panel.
 
-| surface | route (shell root) | main-panel artifacts |
+| surface | route | main panel |
 |---|---|---|
-| `intake.mapping` Story Mapping | `/intake` | `map/full` (live) · `map/priorities` · `map/releases` · `story/:id` |
-| `intake.brief` Design Brief | `/intake/brief` | `doc/full` · `doc/surfaces` |
+| `intake.interview` Interview | `/intake` (shell root) | mode pick → question cards → answer summary |
+| `intake.personas` Personas | `/intake/personas` | persona cards (item engine) |
+| `intake.surfaces` Surfaces | `/intake/surfaces` | shell groups × surface rows + states |
+| `intake.flows` Flows | `/intake/flows` | persona-bound edge chains over the registry |
+| `intake.mapping` Story Map | `/intake/map` | `map/full` (auto-opens once generated) · `map/priorities` · `map/releases` · `story/:id` |
+| `intake.direction` Direction | `/intake/direction` | adjectives / avoids / references groups |
+| `intake.brief` Design Brief | `/intake/brief` | `doc/full` · `doc/surfaces` — carries the approval gate |
 | `intake.moodboard` Moodboard | `/intake/moodboard` | `gallery/all` · `gallery/:boardId` · `shot/:shotId` |
+
+## Modes
+
+The interview's first move picks the mode (question bank + journey shape):
+**simple** auto-answers from suggestions, auto-accepts every prefill, and
+collapses the journey to interview → brief; **normal** (default) shows every
+step prefilled for confirmation (with accept-all); **advanced** (expert)
+shows every step with no auto-accept.
+
+## The item engine
+
+`personas` / `surfaces` / `flows` / `direction` share one protocol in
+`services/facades/intake_facade.js`: items come from the fixture
+(prefills + provenance), the session records `{confirmed | edited | skipped}`
+per item (`sessionData.intake.steps.<step>`), `current` = first open item,
+corrections merge over the prefill at render. Actions per step:
+`POST confirm` · `POST save` (correction) · `POST skip` · `GET edit?item=` ·
+`POST accept-all`. The interview runs the same protocol over its question
+bank (`POST answer` · `POST skip` · `GET edit?q=`).
 
 ## Layout contract
 
@@ -24,33 +51,35 @@ read-only stage timeline lives in the footer panel.
   sits at the panel floor.
 - Every stage interaction swaps `#panels` **outerHTML** — the three content
   panels (activity / main / composer) are one swap unit; the timeline rides
-  out-of-band (`hx-swap-oob`) since interview progress moves it too.
-- Follow-ups are plain chat; the open artifact rides the main panel until
-  another one replaces it (there is no close act — the composer is
-  permanent). A file row in the files view opens the file in the main panel
+  out-of-band (`hx-swap-oob`) since step progress moves it too.
+- Follow-ups are plain chat; on the artifact surfaces (mapping / brief /
+  moodboard) the open artifact rides the main panel until another one
+  replaces it. A file row in the files view opens the file in the main panel
   (`{base}/file?path=`, mode picked server-side from the extension) until
   `?file=none`.
 - Compact/medium rungs show one content panel at a time under the panel bar
   (`?panel=activity|main|composer`, `mp.panelBar`).
 - The timeline macro call sits in `{% block bottombar %}` (the shell's
-  `footer#panel-footer`).
+  `footer#panel-footer`); it is mode-aware (simple collapses the stages) and
+  marks the first unfinished stage active.
 
 ## 1. Wire the routes (`app.routes.js`)
 
 `ui/views/main_shell/intake/routes.intake.js` exports the same
 `[method, path, handler]` array shape as `app.routes.js` (already spread
-there). Per surface: `GET page`, `GET artifact/:kind/:id`, `GET file`,
-`GET panel?view=`, `GET panel/size/:side/:size`, `POST messages`. Mapping
-adds the interview: `POST depth` · `POST answer` · `POST skip` ·
-`GET edit?q=` · `POST approve`. The retired routes (`/close`, `/filter`,
-`/bar/*`, `/artifact/*/messages`) are gone.
+there). Per surface: `GET page`, `GET file`, `GET model/:id`, `GET panel`,
+`GET panel/size/:side/:size`, `POST messages`. The four item steps add
+`POST confirm|save|skip|accept-all` + `GET edit`; the interview adds
+`POST depth|answer|skip` + `GET edit?q=`; the artifact surfaces add
+`GET artifact/:kind/:id`; mapping and brief each carry `POST approve`.
 
 ## 2. Link the stylesheet
 
-`assets/css/intake.css` holds all intake-specific styles (question
-carousel, status dots + rollups, MoSCoW chips, brief document, moodboard
-gallery, activity-view cards/badges). `app.css` is untouched. Add to
-`ui/common/base.html` after the app.css link:
+`assets/css/intake.css` holds all intake-specific styles (step stages, item
+strips, provenance chips, mode cards, edge chains, status dots + rollups,
+MoSCoW chips, brief document, moodboard gallery, activity-view
+cards/badges). `app.css` is untouched. Linked in `ui/common/base.html` after
+the app.css link:
 
 ```html
 <link rel="stylesheet" href="/assets/css/intake.css">
@@ -58,13 +87,20 @@ gallery, activity-view cards/badges). `app.css` is untouched. Add to
 
 ## 3. Regenerating data
 
-`models/intake_model/intake.json` is generated — never hand-edit.
+`models/intake_model/intake.<locale>.json` is generated — never hand-edit.
 Source of truth is `models/intake_model/intake_seed.<locale>.json`. Besides
-the story map / brief / moodboard, the seed now carries display/runtime
-data:
+the story map / brief / moodboard, the seed carries display/runtime data:
 
 - `questionBanks` — three separate banks (`simple` / `normal` / `advanced`),
-  the depth choice in the first chat message picks one;
+  the mode choice picks one;
+- `personas` — the drafted personas (goals / frustrations / contexts /
+  proficiency / accessibility / provenance);
+- `flows` — persona-bound edge sets over the screen registry
+  (`{from, to, trigger, label?}`, ids resolve to labels in the facade);
+- `direction` — adjectives / avoids / moodboard references, each with
+  provenance;
+- `brief.surfaces[].states` + `.provenance` — the states each surface must
+  cover;
 - `statuses` — pipeline status per generated story id (`s-<n>`), feeding the
   live map's status dots and rollups (absent = `pending`);
 - `files` — the files activity view's generated-project list with badges
@@ -80,6 +116,6 @@ Regenerate: `node designs/appbox-studio/models/intake_model/generate.mjs`
 ## 4. Session state
 
 All ephemeral UI state lives under `sessionData.intake` (`interview`,
-composer `extra`, `current` artifact per surface, `currentFile` per surface,
-`activityView` per surface, `panelSize`, `panel`, `msgSeq`) — no collision
-with other facades' session keys.
+`steps.<step>` item records, composer `extra`, `current` artifact per
+surface, `currentFile` per surface, `activityView` per surface, `panelSize`,
+`panel`, `msgSeq`) — no collision with other facades' session keys.

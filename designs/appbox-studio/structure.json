@@ -173,9 +173,44 @@
       "shell": "intake",
       "comp": "IntakeInterview",
       "shellDir": "main_shell",
-      "surface": null,
-      "viewmodel": null,
-      "deps": []
+      "surface": "main_shell_intake_interview_view",
+      "viewmodel": "ui/views/main_shell/intake/interview/interview_viewmodel.js",
+      "deps": [
+        "services/facades/intake_facade.js"
+      ]
+    },
+    {
+      "id": "intake.personas",
+      "shell": "intake",
+      "comp": "IntakePersonas",
+      "shellDir": "main_shell",
+      "surface": "main_shell_intake_personas_view",
+      "viewmodel": "ui/views/main_shell/intake/personas/personas_viewmodel.js",
+      "deps": [
+        "services/facades/intake_facade.js"
+      ]
+    },
+    {
+      "id": "intake.surfaces",
+      "shell": "intake",
+      "comp": "IntakeSurfaces",
+      "shellDir": "main_shell",
+      "surface": "main_shell_intake_surfaces_view",
+      "viewmodel": "ui/views/main_shell/intake/surfaces/surfaces_viewmodel.js",
+      "deps": [
+        "services/facades/intake_facade.js"
+      ]
+    },
+    {
+      "id": "intake.flows",
+      "shell": "intake",
+      "comp": "IntakeFlows",
+      "shellDir": "main_shell",
+      "surface": "main_shell_intake_flows_view",
+      "viewmodel": "ui/views/main_shell/intake/flows/flows_viewmodel.js",
+      "deps": [
+        "services/facades/intake_facade.js"
+      ]
     },
     {
       "id": "intake.mapping",
@@ -184,6 +219,17 @@
       "shellDir": "main_shell",
       "surface": "main_shell_intake_mapping_view",
       "viewmodel": "ui/views/main_shell/intake/mapping/mapping_viewmodel.js",
+      "deps": [
+        "services/facades/intake_facade.js"
+      ]
+    },
+    {
+      "id": "intake.direction",
+      "shell": "intake",
+      "comp": "IntakeDirection",
+      "shellDir": "main_shell",
+      "surface": "main_shell_intake_direction_view",
+      "viewmodel": "ui/views/main_shell/intake/direction/direction_viewmodel.js",
       "deps": [
         "services/facades/intake_facade.js"
       ]

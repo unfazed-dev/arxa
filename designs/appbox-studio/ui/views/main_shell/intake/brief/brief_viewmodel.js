@@ -40,3 +40,7 @@ export const sendMessage = async (c, h) => {
   if (!text) return h.noContent(c);
   return h.render(c, `${VIEW}#panelsSwap`, facade.sendMessage(h.session(c).data, S, text, h.prefs(c), h.t(c), h.locale(c)));
 };
+
+// The approval gate rides the brief: approving here unlocks the design shell.
+export const approve = (c, h) =>
+  h.render(c, `${VIEW}#panelsSwap`, facade.approveMap(h.session(c).data, S, h.prefs(c), h.t(c), h.locale(c)));

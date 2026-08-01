@@ -1,25 +1,53 @@
 // appbox:provenance
 // generator: appbox  licence: free  project: 662368770980
 // Built with appbox (free tier) — https://appbox.dev
-// IntakeFacade — composes the intake fixture (story map, design brief,
-// moodboard, question banks, live statuses) with session-scoped state (the
-// interview, composer messages, the open artifact, the activity panel view)
-// into exactly what the three intake viewmodels need. The intake shell root
-// IS a chat: the interview runs in the composer panel, artifacts dock it
-// right.
+// IntakeFacade — composes the intake fixture (interview banks, personas,
+// surface inventory, flows, direction, story map, design brief, moodboard)
+// with session-scoped state into exactly what the intake viewmodels need.
+//
+// The intake shell is a TYPEFORM JOURNEY: eight steps, each a surfaced
+// screen whose main panel walks one item at a time (question, persona,
+// surface group, flow, direction group) — prefilled from the fixture with a
+// provenance chip, confirmed or corrected, never blank. The composer panel
+// on the right is the chat rail, always in the current step's context.
+//
+// Modes (the interview's depth choice): simple auto-accepts prefills and
+// collapses the journey to interview → brief; normal (default) shows every
+// step prefilled for confirmation; advanced (expert) shows every step with
+// no auto-accept.
+//
 // Leveled fixture strings pass through jargon.pick; static leveled copy
 // lives in l10n/app_*.arb and comes in as the runtime translator `t`
 // (h.t(c) — level and locale already bound). The locale picks the
 // per-locale fixture, en fallback.
 import * as repo from '../repositories/intake_repository.js';
+import * as screens from '../repositories/screens_repository.js';
 import * as jargon from './jargon.js';
 import * as agent from './agent_menus.js';
 import * as fv from './file_views.js';
 
-export const SURFACES = ['mapping', 'brief', 'moodboard'];
+export const SURFACES = ['interview', 'personas', 'surfaces', 'flows', 'mapping', 'direction', 'brief', 'moodboard'];
+
+const BASE = {
+  interview: '/intake',
+  personas: '/intake/personas',
+  surfaces: '/intake/surfaces',
+  flows: '/intake/flows',
+  mapping: '/intake/map',
+  direction: '/intake/direction',
+  brief: '/intake/brief',
+  moodboard: '/intake/moodboard',
+};
+
+// The journey, in order. Moodboard keeps its historic slot after the brief.
+// Simple mode collapses to the fast path; the approval gate follows brief.
+const JOURNEY = ['interview', 'personas', 'surfaces', 'flows', 'mapping', 'direction', 'brief', 'moodboard'];
+const SIMPLE_JOURNEY = ['interview', 'brief'];
+const STEPS = ['personas', 'surfaces', 'flows', 'direction']; // item-engine steps
+const ARTIFACT_SURFACES = ['mapping', 'brief', 'moodboard'];
 
 // ---------- session ----------
-const S = (sd) => (sd.intake ??= { extra: {}, current: {}, activityView: {}, msgSeq: 0, interview: null });
+const S = (sd) => (sd.intake ??= { extra: {}, current: {}, activityView: {}, msgSeq: 0, interview: null, steps: {} });
 
 // The interview: seeded from the fixture, then session-owned.
 const interview = (sd, L) => (S(sd).interview ??= JSON.parse(JSON.stringify(repo.initialState(L))));
@@ -30,13 +58,14 @@ const approvalFor = (sd, L) => {
   return { approved: st.approved, stale: isStale(st), approvedVersion: st.approvedVersion, currentVersion: st.currentVersion };
 };
 
-// ---------- the interview → chat ----------
+// ---------- the interview → question carousel (main-panel typeform) ----------
 function carouselFor(st, t, L) {
   const bank = repo.questionBanks(L)[st.depth] ?? [];
   const firstOpen = bank.find((q) => !st.answers[q.id]);
   return {
     bank: st.depth,
     bankLabel: t('intake.bank.' + st.depth),
+    editing: st.editing ?? null,
     questions: bank.map((q) => {
       const a = st.answers[q.id];
       const state = st.editing === q.id ? 'editing'
@@ -48,7 +77,84 @@ function carouselFor(st, t, L) {
   };
 }
 
-function mappingChat(sd, t, L) {
+// ---------- the item engine (personas / surfaces / flows / direction) ----------
+// Every step walks the same protocol: items prefilled from the fixture,
+// session records confirm/correct/skip per item, current = first open item.
+const stepState = (sd, step) => (S(sd).steps[step] ??= { answers: {}, editing: null, auto: false });
+
+// Registry id → label, for flow node chips and surface group headers.
+let LABELS = null;
+const labelOf = (id) => (LABELS ??= Object.fromEntries(screens.all().map((e) => [e.id, e.label])))[id] ?? id;
+
+function stepItems(step, L) {
+  if (step === 'personas') return repo.personas(L);
+  if (step === 'surfaces') {
+    const groups = {};
+    for (const s of repo.brief(L).surfaces) {
+      const shell = s.id.split('.')[0];
+      (groups[shell] ??= { id: shell, label: labelOf(shell + '.shell') === shell + '.shell' ? shell : labelOf(shell + '.shell'), surfaces: [] }).surfaces.push(s);
+    }
+    return Object.values(groups);
+  }
+  if (step === 'flows') {
+    const personas = repo.personas(L);
+    return repo.flows(L).map((f) => ({
+      ...f,
+      personaName: personas.find((p) => p.id === f.persona)?.name ?? f.persona,
+      edges: f.edges.map((e) => ({ ...e, fromLabel: labelOf(e.from), toLabel: labelOf(e.to) })),
+    }));
+  }
+  // direction: three groups, each one item
+  const d = repo.direction(L);
+  return [
+    { id: 'adjectives', values: d.adjectives },
+    { id: 'avoids', values: d.avoids },
+    { id: 'references', values: d.references },
+  ];
+}
+
+function withStates(items, st) {
+  const firstOpen = items.find((i) => !st.answers[i.id]);
+  return items.map((i) => {
+    const a = st.answers[i.id];
+    const state = st.editing === i.id ? 'editing'
+      : a ? (a.skipped ? 'skipped' : 'confirmed')
+      : !st.editing && firstOpen && firstOpen.id === i.id ? 'current'
+      : 'upcoming';
+    // Corrections ride the item: saved fields override the prefill verbatim.
+    return { ...i, ...(a?.edited ?? {}), state };
+  });
+}
+
+function stepContext(sd, step, L) {
+  const st = stepState(sd, step);
+  const mode = interview(sd, L).depth;
+  const source = stepItems(step, L);
+  // simple mode auto-accepts every prefill once; expert never does.
+  if (mode === 'simple' && !st.auto) {
+    for (const i of source) st.answers[i.id] ??= { confirmed: true };
+    st.auto = true;
+  }
+  const items = withStates(source, st);
+  const done = items.filter((i) => i.state === 'confirmed' || i.state === 'skipped').length;
+  const idx = JOURNEY.indexOf(step);
+  const journey = mode === 'simple' ? SIMPLE_JOURNEY : JOURNEY;
+  const next = journey[journey.indexOf(step) + 1];
+  return {
+    id: step,
+    mode,
+    items,
+    total: items.length,
+    done,
+    complete: items.length > 0 && done === items.length,
+    nextHref: next ? BASE[next] : null,
+    nextLabel: next ? 'screen.label.intake.' + next : null, // view feeds it through t()
+    position: idx + 1,
+  };
+}
+
+// ---------- chat (the rail, always in step context) ----------
+function interviewChat(sd, t, L) {
   const st = interview(sd, L);
   const msgs = [];
   msgs.push({
@@ -57,19 +163,41 @@ function mappingChat(sd, t, L) {
   });
   if (!st.depth) return msgs;
   msgs.push({ id: 'u-depth', from: 'user', text: t('intake.depthEcho.' + st.depth) });
-  msgs.push({ id: 'carousel', from: 'agent', text: t('carouselIntro'), carousel: carouselFor(st, t, L) });
+  msgs.push({ id: 'guide', from: 'agent', text: t('intake.chat.guideInterview') });
+  if (st.generated) {
+    msgs.push({ id: 'gen', from: 'agent', text: t('intake.chat.interviewDone'), nextHref: BASE.personas, nextLabel: t('intake.cta.nextPersonas') });
+  }
+  return msgs;
+}
+
+function stepChat(sd, surface, t, L) {
+  const sc = stepContext(sd, surface, L);
+  const msgs = [{ id: 'intro', from: 'agent', text: t('intake.chat.intro.' + surface) }];
+  if (sc.complete) {
+    msgs.push({
+      id: 'done', from: 'agent', text: t('intake.chat.stepDone', { done: sc.done, total: sc.total }),
+      nextHref: sc.nextHref, nextLabel: sc.nextLabel ? t(sc.nextLabel) : null,
+    });
+  } else {
+    msgs.push({ id: 'progress', from: 'agent', text: t('intake.chat.stepProgress', { done: sc.done, total: sc.total }) });
+  }
+  return msgs;
+}
+
+function mappingChat(sd, t, L) {
+  const st = interview(sd, L);
+  const msgs = [{ id: 'intro', from: 'agent', text: t('intake.chat.intro.mapping') }];
   if (st.generated) {
     const stale = isStale(st);
     msgs.push({
       id: 'gen', from: 'agent', text: t('generated'),
       artifactRef: 'map/full', artifactLabel: t('intake.cta.openStoryMap'),
-      nextHref: '/intake/brief', nextLabel: t('intake.cta.readBrief'),
+      nextHref: BASE.direction, nextLabel: t('intake.cta.nextDirection'),
       quickReplies: !st.approved || stale
-        ? [{ label: stale ? t('intake.cta.reapproveMap', { version: st.currentVersion }) : t('intake.cta.approveMap'), action: '/intake/approve', name: 'go', value: 'approve' }]
+        ? [{ label: stale ? t('intake.cta.reapproveMap', { version: st.currentVersion }) : t('intake.cta.approveMap'), action: '/intake/map/approve', name: 'go', value: 'approve' }]
         : null,
     });
-    msgs.push({ id: 'next', from: 'agent', text: t('moodboardNext'), nextHref: '/intake/moodboard', nextLabel: t('intake.cta.curateMoodboard') });
-    if (st.approved && !stale) msgs.push({ id: 'ok', from: 'agent', text: t('approved'), nextHref: '/design', nextLabel: t('intake.cta.openDesignShell') });
+    if (st.approved && !stale) msgs.push({ id: 'ok', from: 'agent', text: t('approved'), nextHref: BASE.direction, nextLabel: t('intake.cta.nextDirection') });
     if (stale) msgs.push({ id: 'stale', from: 'agent', text: t('stale') });
   }
   return msgs;
@@ -83,13 +211,29 @@ function extrasFor(sd, surface, lv) {
 }
 
 function chatFor(sd, surface, lv, t, L) {
-  if (surface === 'mapping') return [...mappingChat(sd, t, L), ...extrasFor(sd, surface, lv)];
-  const intro = {
-    mapping: null,
-    brief: { id: 'intro', from: 'agent', text: t('chatIntroBrief'), artifactRef: 'doc/full', artifactLabel: t('intake.cta.openBriefStage') },
-    moodboard: { id: 'intro', from: 'agent', text: t('chatIntroMoodboard'), artifactRef: 'gallery/all', artifactLabel: t('intake.cta.openGalleryStage') },
+  const base = {
+    interview: () => interviewChat(sd, t, L),
+    mapping: () => mappingChat(sd, t, L),
+    brief: () => [{
+      id: 'intro', from: 'agent', text: t('chatIntroBrief'),
+      artifactRef: 'doc/full', artifactLabel: t('intake.cta.openBriefStage'),
+      ...approvalChatBits(sd, t, L),
+    }],
+    moodboard: () => [{ id: 'intro', from: 'agent', text: t('chatIntroMoodboard'), artifactRef: 'gallery/all', artifactLabel: t('intake.cta.openGalleryStage') }],
   }[surface];
-  return [intro, ...extrasFor(sd, surface, lv)];
+  const msgs = base ? base() : stepChat(sd, surface, t, L);
+  return [...msgs, ...extrasFor(sd, surface, lv)];
+}
+
+// The brief carries the approval gate: the approve quick-reply rides its intro.
+function approvalChatBits(sd, t, L) {
+  const st = interview(sd, L);
+  if (!st.generated) return {};
+  const stale = isStale(st);
+  if (st.approved && !stale) return { nextHref: '/design', nextLabel: t('intake.cta.openDesignShell') };
+  return {
+    quickReplies: [{ label: stale ? t('intake.cta.reapproveMap', { version: st.currentVersion }) : t('intake.cta.approveMap'), action: '/intake/brief/approve', name: 'go', value: 'approve' }],
+  };
 }
 
 // ---------- canvas artifacts ----------
@@ -161,24 +305,30 @@ function chipLabel(ref, t) {
   }[kind] ?? ref;
 }
 
-// ---------- the footer-panel timeline (read-only) ----------
+// ---------- the footer-panel journey timeline (read-only) ----------
+function stepDone(sd, step, st, L) {
+  if (step === 'interview') return Boolean(st.depth && st.generated);
+  if (step === 'mapping' || step === 'brief') return st.generated;
+  if (step === 'moodboard') return false; // stays browsable; never blocks the gate
+  return stepContext(sd, step, L).complete;
+}
+
 function timelineFor(sd, surface, t, L) {
   const st = interview(sd, L);
   const stale = isStale(st);
   const unlocked = st.approved && !stale;
-  const items = [
-    { id: 'interview', kind: 'stage', label: t('screen.label.intake.interview'), state: st.depth ? 'green' : 'active' },
-    { id: 'mapping', kind: 'stage', label: t('intake.timeline.storyMap'), state: st.generated ? 'green' : st.depth ? 'active' : 'pending' },
-    { id: 'brief', kind: 'stage', label: t('screen.label.intake.brief'), state: st.generated ? 'green' : 'pending' },
-    { id: 'moodboard', kind: 'stage', label: t('screen.label.intake.moodboard'), state: st.generated ? 'active' : 'pending' },
-    { id: 'intake.approval', kind: 'gate', label: t('intake.timeline.approval'), state: st.approved ? (stale ? 'held' : 'approved') : st.generated ? 'active' : 'pending' },
-    { id: 'design', kind: 'stage', label: unlocked ? t('tab.design') : t('intake.timeline.lockedSuffix', { label: t('tab.design') }), state: unlocked ? 'pending' : 'cancelled' },
-  ];
-  // current = the step actively in progress (first 'active'), never a
-  // surface being browsed — the line must read as pipeline truth; the shared
-  // timeline macro matches currentId against `ref`, so mirror id → ref
-  const withRefs = items.map((i) => ({ ...i, ref: i.id }));
-  return { items: withRefs, currentId: (items.find((i) => i.state === 'active') || {}).id ?? null };
+  const journey = st.depth === 'simple' ? SIMPLE_JOURNEY : JOURNEY;
+  const items = journey.map((step) => ({
+    id: step, kind: 'stage', label: t('screen.label.intake.' + step),
+    state: stepDone(sd, step, st, L) ? 'green' : 'pending', ref: step,
+  }));
+  items.push({ id: 'intake.approval', kind: 'gate', label: t('intake.timeline.approval'), state: st.approved ? (stale ? 'held' : 'approved') : st.generated ? 'active' : 'pending', ref: 'intake.approval' });
+  items.push({ id: 'design', kind: 'stage', label: unlocked ? t('tab.design') : t('intake.timeline.lockedSuffix', { label: t('tab.design') }), state: unlocked ? 'pending' : 'cancelled', ref: 'design' });
+  // current = the first unfinished stage — the line reads as pipeline truth,
+  // never as the surface being browsed.
+  const firstOpen = items.find((i) => i.state === 'pending' || i.state === 'active');
+  if (firstOpen && firstOpen.state === 'pending') firstOpen.state = 'active';
+  return { items, currentId: firstOpen?.id ?? null };
 }
 
 // ---------- the activity panel views: thread / artifacts / files ----------
@@ -194,8 +344,10 @@ const PANEL_SIZES = ['s', 'm', 'l'];
 const panelSizeFor = (sd, side) => (PANEL_SIZES.includes(S(sd).panelSize?.[side]) ? S(sd).panelSize[side] : 's');
 
 function activityViewFor(sd, surface, base, lv, t, L) {
-  const active = S(sd).activityView[surface] ?? 'thread';
-  const views = ACTIVITY_VIEWS.map((v) => ({ ...v, label: t('activityView.' + v.id), href: `${base}/panel?view=${v.id}`, active: v.id === active }));
+  const views = ARTIFACT_SURFACES.includes(surface) ? ACTIVITY_VIEWS : ACTIVITY_VIEWS.filter((v) => v.id !== 'artifacts');
+  let active = S(sd).activityView[surface] ?? 'thread';
+  if (!views.some((v) => v.id === active)) active = 'thread';
+  const viewLinks = views.map((v) => ({ ...v, label: t('activityView.' + v.id), href: `${base}/panel?view=${v.id}`, active: v.id === active }));
   let body;
   if (active === 'artifacts') {
     const c = repo.counts(L);
@@ -219,7 +371,7 @@ function activityViewFor(sd, surface, base, lv, t, L) {
           { ref: 'gallery/all', title: t('intake.activity.moodboard.title'), detail: t('intake.activity.moodboard.detail', { boards: repo.moodboard(L).boards.length, shots: repo.moodboard(L).counts.shots }), badges: [] },
           ...repo.moodboard(L).boards.map((b) => ({ ref: `gallery/${b.id}`, title: b.title, detail: t('intake.activity.board.detail', { count: b.references.length, informs: b.informs }), badges: [] })),
         ],
-      }[surface],
+      }[surface] ?? [],
     };
   } else if (active === 'files') {
     body = { files: repo.files(L).map((f) => ({ ...f, ...fv.fileLink(f.path, base) })) };
@@ -243,12 +395,10 @@ function activityViewFor(sd, surface, base, lv, t, L) {
       ],
     };
   }
-  return { views, active, label: views.find((v) => v.id === active).label, body };
+  return { views: viewLinks, active, label: viewLinks.find((v) => v.id === active).label, body };
 }
 
 // ---------- context ----------
-const BASE = { mapping: '/intake', brief: '/intake/brief', moodboard: '/intake/moodboard' };
-
 export const context = (sd, surface, ref, prefs = {}, t = (k) => k, locale = 'en', fileArg, panelArg) => {
   const L = locale;
   const lv = jargon.level(prefs);
@@ -263,9 +413,13 @@ export const context = (sd, surface, ref, prefs = {}, t = (k) => k, locale = 'en
   // panel and sticks; default main.
   if (['activity', 'main', 'composer'].includes(panelArg)) s.panel = panelArg;
   const panel = s.panel ?? 'main';
-  const activeArtifact = currentFile ? null : (ref ?? s.current[surface] ?? null);
+  let activeArtifact = currentFile ? null : (ref ?? s.current[surface] ?? null);
+  // The story map opens by default once generated — the mapping step's main
+  // panel is the map, not an empty stage.
+  if (surface === 'mapping' && !activeArtifact && !currentFile && interview(sd, L).generated) activeArtifact = 'map/full';
   const activity = activityViewFor(sd, surface, base, lv, t, L);
   const chat = chatFor(sd, surface, lv, t, L);
+  const st = interview(sd, L);
   return {
     surface,
     base,
@@ -276,7 +430,12 @@ export const context = (sd, surface, ref, prefs = {}, t = (k) => k, locale = 'en
     modelMenu: agent.modelMenuFor(sd, base, t),
     threading: chat.some((m) => m.from === 'user'),
     suggestions: {
+      interview: [t('intake.sug.whyTheseQuestions'), t('intake.sug.whichMode')],
+      personas: [t('intake.sug.whoIsMissing'), t('intake.sug.whyThesePersonas')],
+      surfaces: [t('intake.sug.whichSurfaces'), t('intake.sug.whyTheseStates')],
+      flows: [t('intake.sug.whichFlows'), t('intake.sug.whichSurfaces')],
       mapping: [t('intake.sug.whatsInR1'), t('intake.sug.explainMoscow'), t('intake.sug.whichSurfaces')],
+      direction: [t('intake.sug.whatToSteal'), t('intake.sug.whyThisDirection')],
       brief: [t('intake.sug.briefFeedsDesign'), t('intake.sug.whichSurfaces')],
       moodboard: [t('intake.sug.whatToSteal'), t('intake.sug.whichReferences')],
     }[surface],
@@ -294,6 +453,13 @@ export const context = (sd, surface, ref, prefs = {}, t = (k) => k, locale = 'en
     timeline: timelineFor(sd, surface, t, L),
     approval: approvalFor(sd, L),
     jargonLevel: lv,
+    // The step payload: interview carries the question carousel; the four
+    // item steps carry the item engine's state.
+    carousel: surface === 'interview' && st.depth ? carouselFor(st, t, L) : null,
+    step: STEPS.includes(surface) ? stepContext(sd, surface, L)
+      : surface === 'interview'
+        ? { id: 'interview', mode: st.depth, complete: st.generated, done: Object.keys(st.answers).length, total: (repo.questionBanks(L)[st.depth] ?? []).length, nextHref: BASE.personas, nextLabel: 'screen.label.intake.personas' }
+        : null,
   };
 };
 
@@ -332,7 +498,13 @@ export const setPanelSize = (sd, surface, side, size, prefs = {}, t = (k) => k, 
 export const chooseDepth = (sd, depth, prefs = {}, t = (k) => k, locale = 'en') => {
   const st = interview(sd, locale);
   if (!st.depth && repo.questionBanks(locale)[depth]) st.depth = depth;
-  return context(sd, 'mapping', null, prefs, t, locale);
+  // simple mode: the fast path answers every question with its first
+  // suggestion and auto-approves nothing — confirmation still gates design.
+  if (st.depth === 'simple') {
+    for (const q of repo.questionBanks(locale).simple) st.answers[q.id] ??= { text: q.suggestions?.[0] ?? null, skipped: !q.suggestions?.length };
+    st.generated = true;
+  }
+  return context(sd, 'interview', null, prefs, t, locale);
 };
 
 const bankOf = (st, L) => repo.questionBanks(L)[st.depth] ?? [];
@@ -350,27 +522,66 @@ function record(sd, qid, entry, L) {
 
 export const answerQuestion = (sd, qid, text, prefs = {}, t = (k) => k, locale = 'en') => {
   record(sd, qid, { text, skipped: false }, locale);
-  return context(sd, 'mapping', null, prefs, t, locale);
+  return context(sd, 'interview', null, prefs, t, locale);
 };
 
 export const skipQuestion = (sd, qid, prefs = {}, t = (k) => k, locale = 'en') => {
   record(sd, qid, { text: null, skipped: true }, locale);
-  return context(sd, 'mapping', null, prefs, t, locale);
+  return context(sd, 'interview', null, prefs, t, locale);
 };
 
 export const editQuestion = (sd, qid, prefs = {}, t = (k) => k, locale = 'en') => {
   const st = interview(sd, locale);
   if (st.answers[qid]) st.editing = qid;
-  return context(sd, 'mapping', null, prefs, t, locale);
+  return context(sd, 'interview', null, prefs, t, locale);
 };
 
-export const approveMap = (sd, prefs = {}, t = (k) => k, locale = 'en') => {
+// The approval gate: approving locks the intake output at its version and
+// unlocks the design shell. Reachable from mapping and from the brief.
+export const approveMap = (sd, surface = 'mapping', prefs = {}, t = (k) => k, locale = 'en') => {
   const st = interview(sd, locale);
   if (st.generated) {
     st.approved = true;
     st.approvedVersion = st.currentVersion;
   }
-  return context(sd, 'mapping', null, prefs, t, locale);
+  return context(sd, surface, null, prefs, t, locale);
+};
+
+// ---------- item-engine actions (personas / surfaces / flows / direction) ----------
+const recordItem = (sd, step, id, entry, L) => {
+  const st = stepState(sd, step);
+  if (!stepItems(step, L).some((i) => i.id === id)) return;
+  st.answers[id] = entry;
+  st.editing = null;
+};
+
+export const confirmItem = (sd, surface, id, prefs = {}, t = (k) => k, locale = 'en') => {
+  recordItem(sd, surface, id, { confirmed: true }, locale);
+  return context(sd, surface, null, prefs, t, locale);
+};
+
+// A correction: the form's fields ride the entry and override the prefill.
+export const saveItem = (sd, surface, id, fields, prefs = {}, t = (k) => k, locale = 'en') => {
+  recordItem(sd, surface, id, { confirmed: true, edited: fields }, locale);
+  return context(sd, surface, null, prefs, t, locale);
+};
+
+export const skipItem = (sd, surface, id, prefs = {}, t = (k) => k, locale = 'en') => {
+  recordItem(sd, surface, id, { skipped: true }, locale);
+  return context(sd, surface, null, prefs, t, locale);
+};
+
+export const editItem = (sd, surface, id, prefs = {}, t = (k) => k, locale = 'en') => {
+  const st = stepState(sd, surface);
+  if (st.answers[id]) st.editing = id;
+  return context(sd, surface, null, prefs, t, locale);
+};
+
+// Normal mode's convenience: accept every remaining prefill in one move.
+export const acceptAll = (sd, surface, prefs = {}, t = (k) => k, locale = 'en') => {
+  const st = stepState(sd, surface);
+  for (const i of stepItems(surface, locale)) st.answers[i.id] ??= { confirmed: true };
+  return context(sd, surface, null, prefs, t, locale);
 };
 
 // ---------- the composer round-trip ----------
@@ -392,6 +603,6 @@ export const sendMessage = (sd, surface, text, prefs = {}, t = (k) => k, locale 
     artifactRef: reply.artifact ?? null,
     artifactLabel: reply.artifact ? t('intake.cta.openArtifact', { label: chipLabel(reply.artifact, t) }) : null,
   });
-  if (reply.artifact) { s.current[surface] = reply.artifact; (s.currentFile ??= {})[surface] = null; }
+  if (reply.artifact && ARTIFACT_SURFACES.includes(surface)) { s.current[surface] = reply.artifact; (s.currentFile ??= {})[surface] = null; }
   return context(sd, surface, null, prefs, t, locale);
 };

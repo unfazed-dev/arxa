@@ -1,0 +1,116 @@
+<!-- appbox:provenance
+     generator: appbox  licence: free  project: 662368770980
+     Built with appbox (free tier) — https://appbox.dev
+-->
+{% extends "ui/views/main_shell/main_shell_view.html" %}
+{% import "ui/views/main_shell/intake/_shared.html" as sh %}
+{% block title %}{{ t('intake.direction.pageTitle') }}{% endblock %}
+{% block main_class %}shell-main-loop{% endblock %}
+
+{# ---------- the direction stage: three groups, one card per panel ---------- #}
+
+{# Prefill values as chips, each with its provenance; avoids carry the ban
+   mark (the negative of the adjectives). #}
+{% macro valueChips(item) %}
+<span class="value-chips">
+  {% for v in item.values %}
+  <span class="chip value-chip{{ ' avoid-chip' if item.id == 'avoids' }}">{% if item.id == 'avoids' %}{{ icon('ban', {size: 12}) }} {% endif %}{{ v.value }} {{ sh.provChip(v.provenance) }}</span>
+  {% endfor %}
+</span>
+{% endmacro %}
+
+{# The references group: one row per moodboard pull — board, note, and the
+   link back to the board it came from. #}
+{% macro referenceRows(item) %}
+<div class="ref-list">
+  {% for v in item.values %}
+  <div class="ref-row">
+    <span class="chip">{{ v.board }}</span>
+    <span class="ref-note">{{ v.note }}</span>
+    <a class="ref-link" href="/intake/moodboard">{{ icon('image', {size: 14}) }} {{ t('intake.direction.fromBoard', {board: v.board}) }}</a>
+  </div>
+  {% endfor %}
+</div>
+{% endmacro %}
+
+{# The correction form (adjectives / avoids only): one value per line,
+   prefilled with the current values; the viewmodel splits on newlines and
+   stamps each corrected value as client-provenance. #}
+{% macro valuesForm(c, item) %}
+<form class="values-form" method="post" action="{{ c.base }}/save"
+      hx-post="{{ c.base }}/save" hx-target="#panels" hx-swap="outerHTML">
+  <input type="hidden" name="item" value="{{ item.id }}">
+  <label class="fact-label" for="values-{{ item.id }}">{{ t('intake.form.values') }}</label>
+  <textarea id="values-{{ item.id }}" name="values" rows="6">{% for v in item.values %}{{ v.value }}
+{% endfor %}</textarea>
+  <button type="submit" class="cta-main">{{ t('intake.form.save') }} {{ icon('check', {size: 14}) }}</button>
+</form>
+{% endmacro %}
+
+{# The current/editing group, large — the typeform's one thing per panel. #}
+{% macro groupCard(c, item) %}
+<div class="q-card group-card is-{{ item.state }}">
+  <h2 class="display">{{ icon('sparkles' if item.id == 'adjectives' else ('ban' if item.id == 'avoids' else 'image'), {size: 20}) }} {{ t('intake.direction.group.' ~ item.id) }}</h2>
+  {% if item.id == 'references' %}{{ referenceRows(item) }}{% else %}{{ valueChips(item) }}{% endif %}
+  {% if item.state == 'editing' and item.id != 'references' %}{{ valuesForm(c, item) }}{% endif %}
+  {{ sh.itemActions(c, item) }}
+</div>
+{% endmacro %}
+
+{# All confirmed: a compact summary of the three groups, each re-openable. #}
+{% macro stepSummary(c) %}
+<div class="step-summary">
+  <h2 class="display">{{ icon('compass', {size: 20}) }} {{ t('intake.step.allConfirmed', {total: c.step.total}) }}</h2>
+  {% for item in c.step.items %}
+  <div class="q-card is-{{ item.state }}">
+    <p class="q-text">{{ t('intake.direction.group.' ~ item.id) }}</p>
+    {% if item.id == 'references' %}
+    <span class="value-chips">{% for v in item.values %}<span class="chip">{{ v.board }}</span>{% endfor %}</span>
+    {% else %}{{ valueChips(item) }}{% endif %}
+    {{ sh.itemActions(c, item) }}
+  </div>
+  {% endfor %}
+</div>
+{% endmacro %}
+
+{# The main panel's content: the open file, else the direction stage. #}
+{% macro mainContent(c) %}
+{% if c.fileView %}{{ sh.fileView(c) }}
+{% else %}
+{% call sh.stepStage(c) %}
+  {% if c.step.complete %}{{ stepSummary(c) }}
+  {% else %}
+  {% for item in c.step.items %}
+    {% if item.state == 'current' or item.state == 'editing' %}{{ groupCard(c, item) }}{% endif %}
+  {% endfor %}
+  {% endif %}
+{% endcall %}
+{% endif %}
+{% endmacro %}
+
+{% macro panels(c) %}
+{% call sh.panels(c) %}{{ mainContent(c) }}{% endcall %}
+{% endmacro %}
+
+{# ---------- Fragment responses ---------- #}
+
+{% macro panelsSwap(c) %}
+{{ panels(c) }}
+{{ sh.timeline(c, true) }}
+{% endmacro %}
+
+{% macro activitySwap(c) %}
+{{ sh.activitySwap(c) }}
+{% endmacro %}
+
+{% macro fileSwap(c) %}{{ mainContent(c) }}{% endmacro %}
+
+{% macro activityFrameSwap(c) %}
+{{ sh.activityPanel(c) }}
+{% endmacro %}
+
+{# ---------- Page ---------- #}
+
+{% block footer %}{{ sh.timeline(c, false) }}{% endblock %}
+
+{% block surface %}{{ panels(c) }}{% endblock %}

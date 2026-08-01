@@ -514,133 +514,252 @@
         "id": "intake.mapping",
         "label": "Mapping",
         "priority": "must",
-        "release": "R1 Dogfood"
+        "release": "R1 Dogfood",
+        "states": [
+          "empty",
+          "draft",
+          "approved"
+        ],
+        "provenance": "founder"
       },
       {
         "id": "intake.brief",
         "label": "Brief",
         "priority": "must",
-        "release": "R1 Dogfood"
+        "release": "R1 Dogfood",
+        "states": [
+          "empty",
+          "draft",
+          "approved",
+          "stale"
+        ],
+        "provenance": "founder"
       },
       {
         "id": "intake.moodboard",
         "label": "Moodboard",
         "priority": "must",
-        "release": "R1 Dogfood"
+        "release": "R1 Dogfood",
+        "states": [
+          "empty",
+          "curating",
+          "curated"
+        ],
+        "provenance": "founder"
       },
       {
         "id": "design.prototype",
         "label": "Prototype",
         "priority": "must",
-        "release": "R1 Dogfood"
+        "release": "R1 Dogfood",
+        "states": [
+          "empty",
+          "authoring",
+          "review"
+        ],
+        "provenance": "founder"
       },
       {
         "id": "design.chat",
         "label": "Chat",
         "priority": "must",
-        "release": "R1 Dogfood"
+        "release": "R1 Dogfood",
+        "states": [
+          "idle",
+          "threading"
+        ],
+        "provenance": "founder"
       },
       {
         "id": "design.freeze",
         "label": "Freeze",
         "priority": "must",
-        "release": "R1 Dogfood"
+        "release": "R1 Dogfood",
+        "states": [
+          "unfrozen",
+          "frozen",
+          "stale"
+        ],
+        "provenance": "founder"
       },
       {
         "id": "build.loop",
         "label": "Loop",
         "priority": "must",
-        "release": "R1 Dogfood"
+        "release": "R1 Dogfood",
+        "states": [
+          "idle",
+          "running",
+          "failed",
+          "green"
+        ],
+        "provenance": "founder"
       },
       {
         "id": "build.gates",
         "label": "Gates",
         "priority": "must",
-        "release": "R1 Dogfood"
+        "release": "R1 Dogfood",
+        "states": [
+          "pending",
+          "running",
+          "passed",
+          "failed"
+        ],
+        "provenance": "founder"
       },
       {
         "id": "build.visual",
         "label": "Visual",
         "priority": "must",
-        "release": "R1 Dogfood"
+        "release": "R1 Dogfood",
+        "states": [
+          "pending",
+          "capturing",
+          "compared"
+        ],
+        "provenance": "founder"
       },
       {
         "id": "flows.canvas",
         "label": "Canvas",
         "priority": "must",
-        "release": "R2 Anywhere"
+        "release": "R2 Anywhere",
+        "states": [
+          "empty",
+          "draft",
+          "saved"
+        ],
+        "provenance": "founder"
       },
       {
         "id": "ship.deploy",
         "label": "Deploy",
         "priority": "must",
-        "release": "R1 Dogfood"
+        "release": "R1 Dogfood",
+        "states": [
+          "never",
+          "queued",
+          "deployed",
+          "failed"
+        ],
+        "provenance": "founder"
       },
       {
         "id": "access.pairing",
         "label": "Pairing",
         "priority": "must",
-        "release": "R1 Dogfood"
+        "release": "R1 Dogfood",
+        "states": [
+          "disconnected",
+          "connecting",
+          "connected"
+        ],
+        "provenance": "founder"
       },
       {
         "id": "access.notifications",
         "label": "Notifications",
         "priority": "must",
-        "release": "R1 Dogfood"
+        "release": "R1 Dogfood",
+        "states": [
+          "disconnected",
+          "connecting",
+          "connected"
+        ],
+        "provenance": "founder"
       },
       {
         "id": "access.remote",
         "label": "Remote",
         "priority": "should",
-        "release": "R2 Anywhere"
+        "release": "R2 Anywhere",
+        "states": [
+          "disconnected",
+          "connecting",
+          "connected"
+        ],
+        "provenance": "founder"
       },
       {
         "id": "first.showcase",
         "label": "Showcase",
         "priority": "must",
-        "release": "R1 Dogfood"
+        "release": "R1 Dogfood",
+        "states": [
+          "default"
+        ],
+        "provenance": "founder"
       },
       {
         "id": "first.honesty",
         "label": "Honesty",
         "priority": "must",
-        "release": "R1 Dogfood"
+        "release": "R1 Dogfood",
+        "states": [
+          "default"
+        ],
+        "provenance": "founder"
       },
       {
         "id": "workspace.projects",
         "label": "Projects",
         "priority": "must",
-        "release": "R1 Dogfood"
+        "release": "R1 Dogfood",
+        "states": [
+          "default"
+        ],
+        "provenance": "founder"
       },
       {
         "id": "workspace.settings",
         "label": "Settings",
         "priority": "must",
-        "release": "R1 Dogfood"
+        "release": "R1 Dogfood",
+        "states": [
+          "default"
+        ],
+        "provenance": "founder"
       },
       {
         "id": "website.site",
         "label": "Site",
         "priority": "must",
-        "release": "R2 Anywhere"
+        "release": "R2 Anywhere",
+        "states": [
+          "default"
+        ],
+        "provenance": "founder"
       },
       {
         "id": "website.docs",
         "label": "Docs",
         "priority": "must",
-        "release": "R1 Dogfood"
+        "release": "R1 Dogfood",
+        "states": [
+          "default"
+        ],
+        "provenance": "founder"
       },
       {
         "id": "website.showcase2",
         "label": "Showcase",
         "priority": "should",
-        "release": "R2 Anywhere"
+        "release": "R2 Anywhere",
+        "states": [
+          "default"
+        ],
+        "provenance": "founder"
       },
       {
         "id": "website.download",
         "label": "Download",
         "priority": "must",
-        "release": "R2 Anywhere"
+        "release": "R2 Anywhere",
+        "states": [
+          "default"
+        ],
+        "provenance": "founder"
       }
     ]
   },
@@ -1126,6 +1245,34 @@
         "artifact": "gallery/all",
         "tone": "action"
       }
+    ],
+    "personas": [
+      {
+        "at": "09:41",
+        "text": "Three personas drafted from the discovery call — the client leads, the designer and developer follow."
+      },
+      {
+        "at": "09:44",
+        "text": "The client persona was confirmed by the founder; the other two are inferred and need a look."
+      }
+    ],
+    "surfaces": [
+      {
+        "at": "09:52",
+        "text": "Surface inventory grouped by shell — 22 surfaces, each with the states it must cover."
+      }
+    ],
+    "flows": [
+      {
+        "at": "10:03",
+        "text": "Flows drafted over the screen registry: intake, design-to-build, and connecting services."
+      }
+    ],
+    "direction": [
+      {
+        "at": "10:17",
+        "text": "Design direction drafted: four adjectives, three hard avoids, references pulled from the moodboard."
+      }
     ]
   },
   "replies": [
@@ -1180,5 +1327,213 @@
   "replyFallback": {
     "text": "The intake stage produced three artifacts — the story map, the brief, the moodboard. Ask about R1, MoSCoW, traceability, or the references.",
     "textPlain": "Intake made three things: the story map, the brief and the moodboard. Ask about the first release, the priorities, or the apps we studied."
+  },
+  "personas": [
+    {
+      "id": "persona-client",
+      "name": "The Client",
+      "role": "Founder / stakeholder",
+      "provenance": "founder",
+      "goals": [
+        "Describe the app in plain words",
+        "See what was decided and why",
+        "Approve the direction before design starts"
+      ],
+      "frustrations": [
+        "Jargon walls",
+        "Blank canvases",
+        "Decisions disappearing into chat logs"
+      ],
+      "contexts": [
+        "Phone between meetings",
+        "Weekly review on a laptop"
+      ],
+      "proficiency": "novice",
+      "accessibility": "Prefers plain language"
+    },
+    {
+      "id": "persona-designer",
+      "name": "The Designer",
+      "role": "Product designer",
+      "provenance": "inferred",
+      "goals": [
+        "Turn a frozen brief into a prototype without re-doing the IA",
+        "Keep structure and pixels in sync"
+      ],
+      "frustrations": [
+        "Pixel-only handoffs",
+        "Rebuilding the same screen at three widths"
+      ],
+      "contexts": [
+        "Desktop, full-day studio work"
+      ],
+      "proficiency": "expert",
+      "accessibility": null
+    },
+    {
+      "id": "persona-developer",
+      "name": "The Developer",
+      "role": "Solo / agency developer",
+      "provenance": "inferred",
+      "goals": [
+        "Scaffold from a frozen design",
+        "Trace every screen back to a story"
+      ],
+      "frustrations": [
+        "Undocumented decisions",
+        "Generated code that cannot be extended"
+      ],
+      "contexts": [
+        "Desktop plus a simulator farm"
+      ],
+      "proficiency": "expert",
+      "accessibility": null
+    }
+  ],
+  "flows": [
+    {
+      "id": "flow-intake",
+      "name": "New project intake",
+      "persona": "persona-client",
+      "provenance": "inferred",
+      "edges": [
+        {
+          "from": "app.dashboard",
+          "to": "intake.interview",
+          "trigger": "New project",
+          "label": "start"
+        },
+        {
+          "from": "intake.interview",
+          "to": "intake.personas",
+          "trigger": "Questions answered"
+        },
+        {
+          "from": "intake.personas",
+          "to": "intake.surfaces",
+          "trigger": "Personas confirmed"
+        },
+        {
+          "from": "intake.surfaces",
+          "to": "intake.flows",
+          "trigger": "Inventory confirmed"
+        },
+        {
+          "from": "intake.flows",
+          "to": "intake.mapping",
+          "trigger": "Flows confirmed"
+        },
+        {
+          "from": "intake.mapping",
+          "to": "intake.direction",
+          "trigger": "Map approved"
+        },
+        {
+          "from": "intake.direction",
+          "to": "intake.brief",
+          "trigger": "Direction confirmed"
+        },
+        {
+          "from": "intake.brief",
+          "to": "design.prototype",
+          "trigger": "Brief approved",
+          "label": "handoff"
+        }
+      ]
+    },
+    {
+      "id": "flow-build",
+      "name": "Design to build",
+      "persona": "persona-designer",
+      "provenance": "inferred",
+      "edges": [
+        {
+          "from": "design.prototype",
+          "to": "design.freeze",
+          "trigger": "Freeze"
+        },
+        {
+          "from": "design.freeze",
+          "to": "build.loop",
+          "trigger": "Scaffold"
+        },
+        {
+          "from": "build.loop",
+          "to": "build.gates",
+          "trigger": "Run gates"
+        },
+        {
+          "from": "build.gates",
+          "to": "ship.deploy",
+          "trigger": "Gates green"
+        }
+      ]
+    },
+    {
+      "id": "flow-credentials",
+      "name": "Connect services",
+      "persona": "persona-developer",
+      "provenance": "founder",
+      "edges": [
+        {
+          "from": "app.credentials",
+          "to": "app.config",
+          "trigger": "Add key"
+        },
+        {
+          "from": "app.config",
+          "to": "design.prototype",
+          "trigger": "Use kit in design"
+        }
+      ]
+    }
+  ],
+  "direction": {
+    "adjectives": [
+      {
+        "value": "Calm",
+        "provenance": "founder"
+      },
+      {
+        "value": "Deliberate",
+        "provenance": "founder"
+      },
+      {
+        "value": "Tactile",
+        "provenance": "inferred"
+      },
+      {
+        "value": "Honest about state",
+        "provenance": "inferred"
+      }
+    ],
+    "avoids": [
+      {
+        "value": "AI-slop gradients",
+        "provenance": "client"
+      },
+      {
+        "value": "Chat dead ends",
+        "provenance": "inferred"
+      },
+      {
+        "value": "Mystery-meat icons",
+        "provenance": "inferred"
+      }
+    ],
+    "references": [
+      {
+        "board": "builders",
+        "note": "Flow canvas density"
+      },
+      {
+        "board": "pipeline",
+        "note": "Pipeline truth in the chrome"
+      },
+      {
+        "board": "companion",
+        "note": "macOS polish bar"
+      }
+    ]
   }
 }

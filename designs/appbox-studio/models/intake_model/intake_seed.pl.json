@@ -514,133 +514,252 @@
         "id": "intake.mapping",
         "label": "Mapowanie",
         "priority": "must",
-        "release": "R1 Dogfood"
+        "release": "R1 Dogfood",
+        "states": [
+          "empty",
+          "draft",
+          "approved"
+        ],
+        "provenance": "founder"
       },
       {
         "id": "intake.brief",
         "label": "Brief",
         "priority": "must",
-        "release": "R1 Dogfood"
+        "release": "R1 Dogfood",
+        "states": [
+          "empty",
+          "draft",
+          "approved",
+          "stale"
+        ],
+        "provenance": "founder"
       },
       {
         "id": "intake.moodboard",
         "label": "Moodboard",
         "priority": "must",
-        "release": "R1 Dogfood"
+        "release": "R1 Dogfood",
+        "states": [
+          "empty",
+          "curating",
+          "curated"
+        ],
+        "provenance": "founder"
       },
       {
         "id": "design.prototype",
         "label": "Prototyp",
         "priority": "must",
-        "release": "R1 Dogfood"
+        "release": "R1 Dogfood",
+        "states": [
+          "empty",
+          "authoring",
+          "review"
+        ],
+        "provenance": "founder"
       },
       {
         "id": "design.chat",
         "label": "Czat",
         "priority": "must",
-        "release": "R1 Dogfood"
+        "release": "R1 Dogfood",
+        "states": [
+          "idle",
+          "threading"
+        ],
+        "provenance": "founder"
       },
       {
         "id": "design.freeze",
         "label": "Zamrożenie",
         "priority": "must",
-        "release": "R1 Dogfood"
+        "release": "R1 Dogfood",
+        "states": [
+          "unfrozen",
+          "frozen",
+          "stale"
+        ],
+        "provenance": "founder"
       },
       {
         "id": "build.loop",
         "label": "Pętla",
         "priority": "must",
-        "release": "R1 Dogfood"
+        "release": "R1 Dogfood",
+        "states": [
+          "idle",
+          "running",
+          "failed",
+          "green"
+        ],
+        "provenance": "founder"
       },
       {
         "id": "build.gates",
         "label": "Bramki",
         "priority": "must",
-        "release": "R1 Dogfood"
+        "release": "R1 Dogfood",
+        "states": [
+          "pending",
+          "running",
+          "passed",
+          "failed"
+        ],
+        "provenance": "founder"
       },
       {
         "id": "build.visual",
         "label": "Wizualne",
         "priority": "must",
-        "release": "R1 Dogfood"
+        "release": "R1 Dogfood",
+        "states": [
+          "pending",
+          "capturing",
+          "compared"
+        ],
+        "provenance": "founder"
       },
       {
         "id": "flows.canvas",
         "label": "Kanwa",
         "priority": "must",
-        "release": "R2 Anywhere"
+        "release": "R2 Anywhere",
+        "states": [
+          "empty",
+          "draft",
+          "saved"
+        ],
+        "provenance": "founder"
       },
       {
         "id": "ship.deploy",
         "label": "Wdrożenie",
         "priority": "must",
-        "release": "R1 Dogfood"
+        "release": "R1 Dogfood",
+        "states": [
+          "never",
+          "queued",
+          "deployed",
+          "failed"
+        ],
+        "provenance": "founder"
       },
       {
         "id": "access.pairing",
         "label": "Parowanie",
         "priority": "must",
-        "release": "R1 Dogfood"
+        "release": "R1 Dogfood",
+        "states": [
+          "disconnected",
+          "connecting",
+          "connected"
+        ],
+        "provenance": "founder"
       },
       {
         "id": "access.notifications",
         "label": "Powiadomienia",
         "priority": "must",
-        "release": "R1 Dogfood"
+        "release": "R1 Dogfood",
+        "states": [
+          "disconnected",
+          "connecting",
+          "connected"
+        ],
+        "provenance": "founder"
       },
       {
         "id": "access.remote",
         "label": "Zdalny dostęp",
         "priority": "should",
-        "release": "R2 Anywhere"
+        "release": "R2 Anywhere",
+        "states": [
+          "disconnected",
+          "connecting",
+          "connected"
+        ],
+        "provenance": "founder"
       },
       {
         "id": "first.showcase",
         "label": "Prezentacja",
         "priority": "must",
-        "release": "R1 Dogfood"
+        "release": "R1 Dogfood",
+        "states": [
+          "default"
+        ],
+        "provenance": "founder"
       },
       {
         "id": "first.honesty",
         "label": "Uczciwość",
         "priority": "must",
-        "release": "R1 Dogfood"
+        "release": "R1 Dogfood",
+        "states": [
+          "default"
+        ],
+        "provenance": "founder"
       },
       {
         "id": "workspace.projects",
         "label": "Projekty",
         "priority": "must",
-        "release": "R1 Dogfood"
+        "release": "R1 Dogfood",
+        "states": [
+          "default"
+        ],
+        "provenance": "founder"
       },
       {
         "id": "workspace.settings",
         "label": "Ustawienia",
         "priority": "must",
-        "release": "R1 Dogfood"
+        "release": "R1 Dogfood",
+        "states": [
+          "default"
+        ],
+        "provenance": "founder"
       },
       {
         "id": "website.site",
         "label": "Strona",
         "priority": "must",
-        "release": "R2 Anywhere"
+        "release": "R2 Anywhere",
+        "states": [
+          "default"
+        ],
+        "provenance": "founder"
       },
       {
         "id": "website.docs",
         "label": "Dokumentacja",
         "priority": "must",
-        "release": "R1 Dogfood"
+        "release": "R1 Dogfood",
+        "states": [
+          "default"
+        ],
+        "provenance": "founder"
       },
       {
         "id": "website.showcase2",
         "label": "Prezentacja",
         "priority": "should",
-        "release": "R2 Anywhere"
+        "release": "R2 Anywhere",
+        "states": [
+          "default"
+        ],
+        "provenance": "founder"
       },
       {
         "id": "website.download",
         "label": "Pobieranie",
         "priority": "must",
-        "release": "R2 Anywhere"
+        "release": "R2 Anywhere",
+        "states": [
+          "default"
+        ],
+        "provenance": "founder"
       }
     ]
   },
@@ -1126,6 +1245,34 @@
         "artifact": "gallery/all",
         "tone": "action"
       }
+    ],
+    "personas": [
+      {
+        "at": "09:41",
+        "text": "Trzy persony naszkicowane z rozmowy odkrywczej — klient prowadzi, projektant i deweloper za nim."
+      },
+      {
+        "at": "09:44",
+        "text": "Personę klienta potwierdził founder; pozostałe dwie są wnioskowane i wymagają sprawdzenia."
+      }
+    ],
+    "surfaces": [
+      {
+        "at": "09:52",
+        "text": "Inwentarz powierzchni pogrupowany po shellach — 22 powierzchnie, każda ze stanami do pokrycia."
+      }
+    ],
+    "flows": [
+      {
+        "at": "10:03",
+        "text": "Przepływy naszkicowane na rejestrze ekranów: intake, projekt-do-budowy i podłączanie usług."
+      }
+    ],
+    "direction": [
+      {
+        "at": "10:17",
+        "text": "Kierunek projektu naszkicowany: cztery przymiotniki, trzy twarde zakazy, referencje z moodboardu."
+      }
     ]
   },
   "replies": [
@@ -1189,5 +1336,213 @@
   "replyFallback": {
     "text": "Etap intake wyprodukował trzy artefakty — mapę historyjek, brief i moodboard. Zapytaj o R1, MoSCoW, śledzenie albo referencje.",
     "textPlain": "Intake zrobił trzy rzeczy: mapę historyjek, brief i moodboard. Zapytaj o pierwsze wydanie, priorytety albo aplikacje, które studiowaliśmy."
+  },
+  "personas": [
+    {
+      "id": "persona-client",
+      "name": "Klient",
+      "role": "Founder / interesariusz",
+      "provenance": "founder",
+      "goals": [
+        "Opisać aplikację prostymi słowami",
+        "Widzieć, co zdecydowano i dlaczego",
+        "Zatwierdzić kierunek przed startem projektu"
+      ],
+      "frustrations": [
+        "Ściany żargonu",
+        "Puste płótna",
+        "Decyzje znikające w logach czatu"
+      ],
+      "contexts": [
+        "Telefon między spotkaniami",
+        "Tygodniowy przegląd na laptopie"
+      ],
+      "proficiency": "novice",
+      "accessibility": "Preferuje prosty język"
+    },
+    {
+      "id": "persona-designer",
+      "name": "Projektant",
+      "role": "Projektant produktu",
+      "provenance": "inferred",
+      "goals": [
+        "Zamienić zamrożony brief w prototyp bez powtarzania IA",
+        "Utrzymać strukturę i piksele w synchronizacji"
+      ],
+      "frustrations": [
+        "Przekazanie samych pikseli",
+        "Budowanie tego samego ekranu w trzech szerokościach"
+      ],
+      "contexts": [
+        "Desktop, całodzienna praca studyjna"
+      ],
+      "proficiency": "expert",
+      "accessibility": null
+    },
+    {
+      "id": "persona-developer",
+      "name": "Deweloper",
+      "role": "Deweloper solo / agencja",
+      "provenance": "inferred",
+      "goals": [
+        "Rusztowanie z zamrożonego projektu",
+        "Śledzenie każdego ekranu do historyjki"
+      ],
+      "frustrations": [
+        "Neudokumentowane decyzje",
+        "Wygenerowany kod, którego nie da się rozbudować"
+      ],
+      "contexts": [
+        "Desktop plus farma symulatorów"
+      ],
+      "proficiency": "expert",
+      "accessibility": null
+    }
+  ],
+  "flows": [
+    {
+      "id": "flow-intake",
+      "name": "Przyjęcie nowego projektu",
+      "persona": "persona-client",
+      "provenance": "inferred",
+      "edges": [
+        {
+          "from": "app.dashboard",
+          "to": "intake.interview",
+          "trigger": "Nowy projekt",
+          "label": "start"
+        },
+        {
+          "from": "intake.interview",
+          "to": "intake.personas",
+          "trigger": "Pytania omówione"
+        },
+        {
+          "from": "intake.personas",
+          "to": "intake.surfaces",
+          "trigger": "Persony potwierdzone"
+        },
+        {
+          "from": "intake.surfaces",
+          "to": "intake.flows",
+          "trigger": "Inwentarz potwierdzony"
+        },
+        {
+          "from": "intake.flows",
+          "to": "intake.mapping",
+          "trigger": "Przepływy potwierdzone"
+        },
+        {
+          "from": "intake.mapping",
+          "to": "intake.direction",
+          "trigger": "Mapa zatwierdzona"
+        },
+        {
+          "from": "intake.direction",
+          "to": "intake.brief",
+          "trigger": "Kierunek potwierdzony"
+        },
+        {
+          "from": "intake.brief",
+          "to": "design.prototype",
+          "trigger": "Brief zatwierdzony",
+          "label": "handoff"
+        }
+      ]
+    },
+    {
+      "id": "flow-build",
+      "name": "Od projektu do budowy",
+      "persona": "persona-designer",
+      "provenance": "inferred",
+      "edges": [
+        {
+          "from": "design.prototype",
+          "to": "design.freeze",
+          "trigger": "Zamrożenie"
+        },
+        {
+          "from": "design.freeze",
+          "to": "build.loop",
+          "trigger": "Rusztowanie"
+        },
+        {
+          "from": "build.loop",
+          "to": "build.gates",
+          "trigger": "Uruchom bramki"
+        },
+        {
+          "from": "build.gates",
+          "to": "ship.deploy",
+          "trigger": "Bramki zielone"
+        }
+      ]
+    },
+    {
+      "id": "flow-credentials",
+      "name": "Podłączanie usług",
+      "persona": "persona-developer",
+      "provenance": "founder",
+      "edges": [
+        {
+          "from": "app.credentials",
+          "to": "app.config",
+          "trigger": "Dodaj klucz"
+        },
+        {
+          "from": "app.config",
+          "to": "design.prototype",
+          "trigger": "Użyj kitu w projekcie"
+        }
+      ]
+    }
+  ],
+  "direction": {
+    "adjectives": [
+      {
+        "value": "Spokojny",
+        "provenance": "founder"
+      },
+      {
+        "value": "Przemyślany",
+        "provenance": "founder"
+      },
+      {
+        "value": "Namacalny",
+        "provenance": "inferred"
+      },
+      {
+        "value": "Szczery o stanie",
+        "provenance": "inferred"
+      }
+    ],
+    "avoids": [
+      {
+        "value": "Gradienty AI-slop",
+        "provenance": "client"
+      },
+      {
+        "value": "Ślepe zaułki czatu",
+        "provenance": "inferred"
+      },
+      {
+        "value": "Ikony-zagadki",
+        "provenance": "inferred"
+      }
+    ],
+    "references": [
+      {
+        "board": "builders",
+        "note": "Gęstość płótna przepływów"
+      },
+      {
+        "board": "pipeline",
+        "note": "Prawda pipeline w chromie"
+      },
+      {
+        "board": "companion",
+        "note": "Poprzeczka polerki macOS"
+      }
+    ]
   }
 }

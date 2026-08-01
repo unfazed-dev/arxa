@@ -72,13 +72,96 @@
 </div>
 {% endmacro %}
 
-{% macro qCarousel(c, car) %}
-<div class="q-carousel" aria-label="{{ t('intake.questionsAria', {bank: car.bankLabel}) }}">
-  {% for q in car.questions %}{{ qCard(c, q) }}{% endfor %}
+{# ---------- the item engine: typeform step stage ---------- #}
+
+{# Provenance chip: where a prefill came from (client / founder / inferred). #}
+{% macro provChip(p) %}
+{% if p %}<span class="prov-chip prov-{{ p }}">{{ t('intake.prov.' ~ p) }}</span>{% endif %}
+{% endmacro %}
+
+{# The current item's action bar: confirm the prefill as-is, or skip. #}
+{% macro itemActions(c, item) %}
+{% if item.state == 'current' or item.state == 'editing' %}
+<span class="item-actions">
+  <form method="post" action="{{ c.base }}/confirm" hx-post="{{ c.base }}/confirm" hx-target="#panels" hx-swap="outerHTML">
+    <input type="hidden" name="item" value="{{ item.id }}">
+    <button type="submit" class="cta-main">{{ t('intake.item.confirm') }} {{ icon('check', {size: 14}) }}</button>
+  </form>
+  <form method="post" action="{{ c.base }}/skip" hx-post="{{ c.base }}/skip" hx-target="#panels" hx-swap="outerHTML">
+    <input type="hidden" name="item" value="{{ item.id }}">
+    <button type="submit" class="cta-ghost">{{ t('intake.skip') }} {{ icon('chevron-right', {size: 14}) }}</button>
+  </form>
+</span>
+{% elif item.state == 'confirmed' %}
+<a class="q-edit" href="{{ c.base }}/edit?item={{ item.id }}"
+   hx-get="{{ c.base }}/edit?item={{ item.id }}" hx-target="#panels" hx-swap="outerHTML" hx-push-url="false">{{ t('intake.edit') }}</a>
+{% elif item.state == 'skipped' %}
+<a class="q-edit" href="{{ c.base }}/edit?item={{ item.id }}"
+   hx-get="{{ c.base }}/edit?item={{ item.id }}" hx-target="#panels" hx-swap="outerHTML" hx-push-url="false">{{ t('intake.item.reviewAnyway') }}</a>
+{% endif %}
+{% endmacro %}
+
+{# The item strip: one dot per item, state-coloured; done items re-open. #}
+{% macro itemStrip(c, step) %}
+<nav class="item-strip" aria-label="{{ t('intake.step.stripAria') }}">
+  {% for item in step.items %}
+  {% if item.state == 'confirmed' or item.state == 'skipped' %}
+  <a class="strip-dot is-{{ item.state }}" href="{{ c.base }}/edit?item={{ item.id }}"
+     hx-get="{{ c.base }}/edit?item={{ item.id }}" hx-target="#panels" hx-swap="outerHTML" hx-push-url="false"
+     title="{{ item.name or item.label or item.id }}" aria-label="{{ item.name or item.label or item.id }}"></a>
+  {% else %}
+  <span class="strip-dot is-{{ item.state }}" title="{{ item.name or item.label or item.id }}"></span>
+  {% endif %}
+  {% endfor %}
+</nav>
+{% endmacro %}
+
+{# The step footer: accept-all while open, the next-step CTA when complete.
+   A div, never a p — <p> auto-closes on <form> and the browser ejects it. #}
+{% macro stepFoot(c, step) %}
+<div class="step-foot">
+  {% if step.complete %}
+  {% if step.nextHref %}<a class="cta-main" href="{{ step.nextHref }}">{{ t(step.nextLabel) }} {{ icon('chevron-right', {size: 14}) }}</a>{% endif %}
+  {% else %}
+  <form method="post" action="{{ c.base }}/accept-all" hx-post="{{ c.base }}/accept-all" hx-target="#panels" hx-swap="outerHTML">
+    <button type="submit" class="cta-ghost">{{ t('intake.item.acceptAll') }}</button>
+  </form>
+  {% endif %}
 </div>
 {% endmacro %}
 
-{# ---------- the chat thread ---------- #}
+{# The step stage: header (eyebrow + progress + mode), the caller's item
+   card(s), the strip, the footer. One thing per main panel. #}
+{% macro stepStage(c) %}
+<section class="mp-content step-stage" id="mp-content" aria-live="polite">
+  <header class="step-head">
+    <span class="eyebrow">{{ c.eyebrow }}</span>
+    <span class="chip">{{ t('intake.step.progress', {done: c.step.done, total: c.step.total}) }}</span>
+    {% if c.step.mode %}<span class="chip">{{ t('intake.bank.' ~ c.step.mode) }}</span>{% endif %}
+  </header>
+  {{ caller() }}
+  {{ itemStrip(c, c.step) }}
+  {{ stepFoot(c, c.step) }}
+</section>
+{% endmacro %}
+
+{# A question strip for the interview stage (same protocol as itemStrip,
+   but questions re-open with ?q=). #}
+{% macro qStrip(c, car) %}
+<nav class="item-strip" aria-label="{{ t('intake.step.stripAria') }}">
+  {% for q in car.questions %}
+  {% if q.state == 'answered' or q.state == 'skipped' %}
+  <a class="strip-dot is-{{ 'confirmed' if q.state == 'answered' else 'skipped' }}" href="{{ c.base }}/edit?q={{ q.id }}"
+     hx-get="{{ c.base }}/edit?q={{ q.id }}" hx-target="#panels" hx-swap="outerHTML" hx-push-url="false"
+     title="{{ q.text }}" aria-label="{{ q.text }}"></a>
+  {% else %}
+  <span class="strip-dot is-{{ 'current' if q.state == 'current' else 'upcoming' }}" title="{{ q.text }}"></span>
+  {% endif %}
+  {% endfor %}
+</nav>
+{% endmacro %}
+
+
 
 {% macro chatMsg(c, m) %}
 {% if m.from == 'user' %}
@@ -97,7 +180,6 @@
     {% endfor %}
   </span>
   {% endif %}
-  {% if m.carousel %}{{ qCarousel(c, m.carousel) }}{% endif %}
   {% if m.artifactRef or m.nextHref %}
   <span class="msg-cta">
     {% if m.artifactRef %}

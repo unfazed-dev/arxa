@@ -147,11 +147,38 @@
   {
     "id": "intake.interview",
     "label": "Interview",
-    "surface": null,
+    "surface": "main_shell_intake_interview_view",
     "shell": "intake",
     "comp": "IntakeInterview",
     "labelKey": "screen.label.intake.interview",
-    "route": "/intake/interview"
+    "route": "/intake"
+  },
+  {
+    "id": "intake.personas",
+    "label": "Personas",
+    "surface": "main_shell_intake_personas_view",
+    "shell": "intake",
+    "comp": "IntakePersonas",
+    "labelKey": "screen.label.intake.personas",
+    "route": "/intake/personas"
+  },
+  {
+    "id": "intake.surfaces",
+    "label": "Surfaces",
+    "surface": "main_shell_intake_surfaces_view",
+    "shell": "intake",
+    "comp": "IntakeSurfaces",
+    "labelKey": "screen.label.intake.surfaces",
+    "route": "/intake/surfaces"
+  },
+  {
+    "id": "intake.flows",
+    "label": "Flows",
+    "surface": "main_shell_intake_flows_view",
+    "shell": "intake",
+    "comp": "IntakeFlows",
+    "labelKey": "screen.label.intake.flows",
+    "route": "/intake/flows"
   },
   {
     "id": "intake.mapping",
@@ -160,7 +187,16 @@
     "shell": "intake",
     "comp": "IntakeMapping",
     "labelKey": "screen.label.intake.mapping",
-    "route": "/intake"
+    "route": "/intake/map"
+  },
+  {
+    "id": "intake.direction",
+    "label": "Direction",
+    "surface": "main_shell_intake_direction_view",
+    "shell": "intake",
+    "comp": "IntakeDirection",
+    "labelKey": "screen.label.intake.direction",
+    "route": "/intake/direction"
   },
   {
     "id": "intake.live",

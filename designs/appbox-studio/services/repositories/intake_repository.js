@@ -36,6 +36,11 @@ export const narrative = (surface, locale = 'en') => data(locale).narrative[surf
 export const replies = (locale = 'en') => data(locale).replies;
 export const replyFallback = (locale = 'en') => data(locale).replyFallback;
 export const questionBanks = (locale = 'en') => data(locale).questionBanks;
+// The typeform steps' prefills: personas, flows over the screen registry,
+// and the design direction (adjectives / avoids / moodboard references).
+export const personas = (locale = 'en') => data(locale).personas ?? [];
+export const flows = (locale = 'en') => data(locale).flows ?? [];
+export const direction = (locale = 'en') => data(locale).direction ?? { adjectives: [], avoids: [], references: [] };
 // Live-map display data: pipeline status per story id, and the generated
 // file list for the files activity view. Absent keys read as 'pending'.
 export const statuses = (locale = 'en') => data(locale).statuses ?? {};
