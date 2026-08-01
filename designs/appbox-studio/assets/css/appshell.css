@@ -42,6 +42,13 @@
   .startup-bar::after { width: 100%; }
 }
 
+/* startup step list — the deterministic warm-up steps next to the fill */
+.startup-steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .35rem; font-size: .82rem; color: var(--tx-3); }
+.startup-step { display: flex; align-items: center; gap: .45rem; }
+.startup-step.is-done { color: var(--tx-2); }
+.startup-step.is-current { color: var(--tx); }
+.startup-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); display: inline-block; }
+
 /* Brand reveal — the end state once the fill completes: the .startup-done
    keyframe is timed to the 2.8s fill (same clock as the 3s meta refresh).
    Still frames (flow tiles) render settled: bar full, brand shown. */

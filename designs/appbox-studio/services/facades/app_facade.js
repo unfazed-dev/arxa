@@ -7,19 +7,26 @@
 // splash / auth / pairing / dashboard viewmodels need. The locale comes
 // from the request and picks the per-locale fixture, en fallback.
 import * as repo from '../repositories/app_repository.js';
-
-// Catalog lookup with the former en literal as fallback while a key awaits
-// merge into l10n/app_*.arb (same pattern as screens_facade.labelOf).
-const tr = (t, key, vars, fallback) => {
-  const v = t(key, vars);
-  return v == key ? fallback : v;
-};
+import * as proj from '../repositories/project_repository.js';
 
 // ---------- session ----------
 const S = (sd) => (sd.app ??= { user: null, paired: null, pairError: null, decided: {}, extraProjects: [], projSeq: 0 });
 
 // ---------- chromeless pages ----------
 export const splashContext = (locale = 'en') => ({ tagline: repo.tagline(locale) });
+
+// Startup: the loading view between splash and auth/dashboard. The step list
+// is deterministic copy (daemon, kits, current project); the advance target
+// is the one session-dependent bit — signed in → dashboard, else auth.
+export const startupContext = (sd, t = (k) => k, locale = 'en') => ({
+  steps: [
+    t('startup.step.daemon'),
+    t('startup.step.kits'),
+    t('startup.step.project', { name: proj.currentName() ?? '—' }),
+  ],
+  doneThrough: 1,
+  advanceHref: S(sd).user ? '/dashboard' : '/auth',
+});
 
 export const authContext = (locale = 'en') => ({ account: repo.account(locale), auth: repo.auth(locale) });
 
@@ -28,45 +35,67 @@ export const signIn = (sd, email, provider, locale = 'en') => {
 };
 
 // ---------- dashboard ----------
-export const dashboardContext = (sd, locale = 'en') => {
+// The project grid LIVE-READS ~/.appbox/projects (proj.listProjects → the
+// server's /__projects): one card per real project, stage derived from its
+// outputs, no seeded fiction. The gates strip shows only what project
+// outputs contain — nothing yet (no per-project gate state files), so it
+// renders its honest empty state. Stats/pairing/wizard stay seeded chrome.
+export const dashboardContext = async (sd, locale = 'en') => {
   const s = S(sd);
-  const gates = repo.gates(locale).filter((g) => !s.decided[g.id]);
-  const projects = [...repo.projects(locale), ...s.extraProjects];
-  const current = projects[0];
+  const { current, projects: cards } = await proj.listProjects();
+  const projects = cards.map((p) => ({
+    id: p.name,
+    name: p.name,
+    targets: p.targets,
+    stage: p.stage,
+    stageLabel: p.stage, // CSS class + the raw key; the label rides t() in the view
+    detail: p.flows
+        ? `${p.surfaces} surfaces · ${p.flows} flows`
+        : p.surfaces
+            ? `${p.surfaces} surfaces`
+            : '',
+    current: p.name === current,
+  }));
+  const currentCard = projects.find((p) => p.current) ?? projects[0] ?? null;
   return {
     account: repo.account(locale),
     user: s.user,
-    gates,
-    gateCount: gates.length,
+    gates: [],
+    gateCount: 0,
     projects,
     stats: repo.stats(locale),
     pairingModal: repo.pairing(locale),
     wizard: repo.wizard(locale),
     // Header panel project info — the shell's chrome(activeShell, prefs, project)
     // renders name + savedLabel when present.
-    project: { name: current.name, savedLabel: current.lastSaved },
+    project: currentCard ? { name: currentCard.name, savedLabel: currentCard.detail } : null,
   };
 };
 
-// Needs-you quick actions — seeded: the gate leaves the strip, 303 back.
+// Needs-you quick actions — the strip is empty until project gate state
+// exists; the endpoint stays for the shape.
 export const decideGate = (sd, id, decision, locale = 'en') => {
   if (repo.gates(locale).some((g) => g.id === id)) S(sd).decided[id] = decision;
 };
 
-// GenUI new-project wizard: name + targets → a seeded project row, 303 to intake.
-export const createProject = (sd, name, targets, t = (k) => k) => {
-  const s = S(sd);
-  const seq = (s.projSeq += 1);
+// The new-project wizard: name + targets → a REAL project on disk
+// (~/.appbox/projects/<name>/), 303 to intake. Names slugify to the project
+// id convention; an invalid slug is a no-op (the form stays).
+export const createProject = async (sd, name, targets, t = (k) => k) => {
+  const slug = String(name || '')
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .replace(/^([0-9])/, 'p-$1');
+  if (!/^[a-z][a-z0-9]*(-[a-z0-9]+)*$/.test(slug)) return;
   const list = Array.isArray(targets) ? targets : targets ? [targets] : [];
-  s.extraProjects.push({
-    id: `p-new-${seq}`,
-    name: String(name || '').trim() || tr(t, 'dash.untitledProject', { n: seq }, `Untitled project ${seq}`),
-    targets: list.length ? list : ['web'],
-    stage: 'intake',
-    stageLabel: tr(t, 'dash.stageIntake', null, 'Intake · interview'),
-    lastSaved: tr(t, 'dash.savedJustNow', null, 'saved just now'),
-  });
+  await proj.createProject(slug, list);
+  await proj.useProject(slug);
 };
+
+// A dashboard project card picks the current project (writes ~/.appbox/current).
+export const useProject = (name) => proj.useProject(name);
 
 // ---------- credentials ----------
 // The one surface where a user manages every credential their generated app

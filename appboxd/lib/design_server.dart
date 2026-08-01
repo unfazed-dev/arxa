@@ -140,7 +140,7 @@ class DesignServer {
   late final Set<String> locales;
 
   String artifactDir = '';
-  String? projectDir;
+  String? projectRoot;
   String host = '127.0.0.1';
   int get port => _http.port;
   int _pidValue = 0;
@@ -170,7 +170,7 @@ class DesignServer {
   }) async {
     final srv = DesignServer._()
       ..artifactDir = artifactDir
-      ..projectDir = projectDir
+      ..projectRoot = projectDir
       .._pidValue = _osPid
       ..host = host
       ..noWatch = noWatch
@@ -228,6 +228,38 @@ class DesignServer {
       // worker POSTs {path, body}; the write is confined to the project dir.
       if (method == 'POST' && path == '/__project_write') {
         return _handleProjectWrite(req);
+      }
+      // The dashboard's live project grid: every project in ~/.appbox with
+      // its derived stage + honest output counts.
+      if (method == 'GET' && path == '/__projects') {
+        req.response.headers.contentType =
+            ContentType.parse('application/json; charset=utf-8');
+        req.response.write(jsonEncode({
+          'current': currentProject(),
+          'projects': projectCards(),
+        }));
+        await req.response.close();
+        return;
+      }
+      // Point `current` at another project (the overlay itself rebinds on the
+      // next serve — the marker + grid update immediately).
+      if (method == 'POST' && path == '/__project_use') {
+        final payload =
+            jsonDecode(await utf8.decoder.bind(req).join()) as Map<String, dynamic>;
+        final name = (payload['name'] ?? '').toString();
+        try {
+          useProject(name);
+        } on ArgumentError catch (e) {
+          req.response.statusCode = 404;
+          req.response.write(e.message);
+          await req.response.close();
+          return;
+        }
+        req.response.headers.contentType =
+            ContentType.parse('application/json; charset=utf-8');
+        req.response.write(jsonEncode({'ok': true, 'current': name}));
+        await req.response.close();
+        return;
       }
       if (_matchRoute(method, path) != null) {
         return _dispatch(req, method, path);
@@ -339,21 +371,32 @@ class DesignServer {
       await req.response.close();
     }
 
-    final root = projectDir;
-    if (root == null) return deny(409, 'no project overlaid');
+    final root = projectRoot;
     final Map<String, dynamic> payload;
     try {
       payload = jsonDecode(await utf8.decoder.bind(req).join()) as Map<String, dynamic>;
     } catch (_) {
       return deny(400, 'bad JSON body');
     }
+    // payload.project targets ANOTHER (or new) project — the wizard's create
+    // path. Name-validated, still confined to the projects dir; ensureProject
+    // lays out the four shell dirs first (idempotent).
+    final targetProject = payload['project']?.toString();
+    if (targetProject != null && !validProjectName(targetProject)) {
+      return deny(400, 'bad project name');
+    }
+    if (targetProject != null) ensureProject(targetProject);
+    final base = targetProject != null ? projectDir(targetProject) : root;
+    if (base == null) {
+      return deny(409, 'no project overlaid');
+    }
     final rel = (payload['path'] ?? '').toString();
     final body = payload['body'];
     if (rel.isEmpty || body is! String) {
       return deny(400, 'path and body (string) are required');
     }
-    final abs = p.normalize(p.join(root, rel));
-    if (!p.isWithin(root, abs) && abs != root) {
+    final abs = p.normalize(p.join(base, rel));
+    if (!p.isWithin(base, abs) && abs != base) {
       return deny(403, 'path escapes the project');
     }
     final f = File(abs);

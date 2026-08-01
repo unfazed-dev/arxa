@@ -18,43 +18,6 @@
       }
     ]
   },
-  "projects": [
-    {
-      "id": "p-cartsense",
-      "name": "Portalo",
-      "targets": [
-        "ios",
-        "android"
-      ],
-      "stage": "build",
-      "stageLabel": "Build · gates",
-      "lastSaved": "saved 2 min ago"
-    },
-    {
-      "id": "p-foxglove",
-      "name": "Foxglove",
-      "targets": [
-        "web",
-        "macos"
-      ],
-      "stage": "design",
-      "stageLabel": "Design · freeze",
-      "lastSaved": "saved 1 h ago"
-    },
-    {
-      "id": "p-anvil",
-      "name": "Anvil CRM",
-      "targets": [
-        "web",
-        "macos",
-        "ios",
-        "android"
-      ],
-      "stage": "intake",
-      "stageLabel": "Intake · mapping",
-      "lastSaved": "saved yesterday"
-    }
-  ],
   "gates": [
     {
       "id": "g-1",
@@ -329,7 +292,6 @@
     }
   },
   "counts": {
-    "projects": 3,
     "gates": 3
   }
 }

@@ -21,6 +21,17 @@
       ]
     },
     {
+      "id": "app.startup",
+      "shell": "app",
+      "comp": "AppStartup",
+      "shellDir": "app_shell",
+      "surface": "app_shell_app_startup_view",
+      "viewmodel": "ui/views/app_shell/startup/startup_viewmodel.js",
+      "deps": [
+        "services/facades/app_facade.js"
+      ]
+    },
+    {
       "id": "app.access",
       "shell": "app",
       "comp": "AppAccess",
@@ -357,17 +368,6 @@
       "surface": null,
       "viewmodel": null,
       "deps": []
-    },
-    {
-      "id": "main.chrome",
-      "shell": "main",
-      "comp": "MainChrome",
-      "shellDir": "main_shell",
-      "surface": "main_shell_main_chrome_view",
-      "viewmodel": "ui/views/main_shell/main_shell_viewmodel.js",
-      "deps": [
-        "services/facades/screens_facade.js"
-      ]
     }
   ],
   "flows": [

@@ -9,6 +9,15 @@
     "route": "/splash"
   },
   {
+    "id": "app.startup",
+    "label": "Startup",
+    "surface": "app_shell_app_startup_view",
+    "shell": "app",
+    "comp": "AppStartup",
+    "labelKey": "screen.label.app.startup",
+    "route": "/startup"
+  },
+  {
     "id": "app.access",
     "label": "Access",
     "surface": "app_shell_app_access_view",
@@ -313,14 +322,5 @@
     "comp": "WebsiteDownload",
     "labelKey": "screen.label.website.download",
     "route": "/website/download"
-  },
-  {
-    "id": "main.chrome",
-    "label": "Main Shell",
-    "surface": "main_shell_main_chrome_view",
-    "shell": "main",
-    "comp": "MainChrome",
-    "labelKey": "shell.main",
-    "route": "/"
   }
 ]

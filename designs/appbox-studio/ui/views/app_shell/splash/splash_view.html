@@ -6,10 +6,10 @@
 {% block title %}{{ t('splash.pageTitle') }}{% endblock %}
 
 {% block content %}
-{# Chromeless splash — auto-advances to /auth. The meta refresh sits in the
-   body because base.html exposes no head block; browsers honour it anywhere.
-   Prototype-appropriate, zero JS. #}
-<meta http-equiv="refresh" content="2;url=/auth">
+{# Chromeless splash — auto-advances to /startup (the loading view). The
+   meta refresh sits in the body because base.html exposes no head block;
+   browsers honour it anywhere. Prototype-appropriate, zero JS. #}
+<meta http-equiv="refresh" content="2;url=/startup">
 <main class="splash">
   <span class="splash-brand">appbox studio</span>
   <p class="splash-tagline">{{ tagline }}</p>

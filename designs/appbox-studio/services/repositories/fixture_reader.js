@@ -32,15 +32,17 @@ export function readProjectFixture(rel) {
 // worker's prefetched map + busts the read cache so the re-render that
 // follows sees the new bytes immediately (the project watcher also reloads,
 // ~200ms later, for every OTHER client).
-export async function writeProjectFixture(rel, value) {
+export async function writeProjectFixture(rel, value, { project } = {}) {
   const body = typeof value === 'string' ? value : `${JSON.stringify(value, null, 2)}\n`;
   const origin = new URL('../../', import.meta.url).href.replace(/\/$/, '');
   const res = await fetch(`${origin}/__project_write`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ path: rel, body }),
+    body: JSON.stringify({ path: rel, body, ...(project ? { project } : {}) }),
   });
   if (!res.ok) throw new Error(`project write failed (${res.status}): ${await res.text()}`);
-  globalThis.__fixtures[`${origin}/project/${rel}`] = body;
-  cache.delete(`../../project/${rel}`);
+  if (!project) {
+    globalThis.__fixtures[`${origin}/project/${rel}`] = body;
+    cache.delete(`../../project/${rel}`);
+  }
 }

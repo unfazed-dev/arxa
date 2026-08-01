@@ -138,7 +138,7 @@
   function parseForm(body) {
     const out = {};
     if (!body) return out;
-    for (const pair of body.split('&')) { const i = pair.indexOf('='); if (i > -1) out[decodeURIComponent(pair.slice(0, i).replace(/\+/g, ' '))] = decodeURIComponent(pair.slice(i + 1).replace(/\+/g, ' ')); }
+    for (const pair of body.split('&')) { const i = pair.indexOf('='); if (i > -1) { const k = decodeURIComponent(pair.slice(0, i).replace(/\+/g, ' ')); const v = decodeURIComponent(pair.slice(i + 1).replace(/\+/g, ' ')); if (k in out) out[k] = [].concat(out[k], v); else out[k] = v; } }
     return out;
   }
 

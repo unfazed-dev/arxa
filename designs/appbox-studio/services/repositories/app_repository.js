@@ -16,7 +16,6 @@ const data = (locale = 'en') => {
 export const account = (locale = 'en') => data(locale).account;
 export const tagline = (locale = 'en') => data(locale).tagline;
 export const auth = (locale = 'en') => data(locale).auth;
-export const projects = (locale = 'en') => data(locale).projects;
 export const gates = (locale = 'en') => data(locale).gates;
 export const stats = (locale = 'en') => data(locale).stats;
 export const pairing = (locale = 'en') => data(locale).pairing;

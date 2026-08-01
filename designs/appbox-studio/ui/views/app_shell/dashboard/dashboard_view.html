@@ -55,26 +55,38 @@
   {% endif %}
 </section>
 
-{# Project grid — name, targets, stage, last activity, open into intake. #}
+{# Project grid — LIVE: one card per real project in ~/.appbox/projects, the
+   stage derived from its outputs; a card picks the current project. #}
 <section class="dash-section" aria-labelledby="proj-h">
   <h2 id="proj-h">{{ t('dash.projectsH') }}</h2>
+  {% if projects.length %}
   <div class="proj-grid">
     {% for p in projects %}
-    <article class="proj-card">
+    <article class="proj-card {{ 'is-current' if p.current }}">
       <div class="proj-card-head">
         <h3>{{ p.name }}</h3>
-        <span class="chip proj-stage proj-stage-{{ p.stage }}">{{ p.stageLabel }}</span>
+        <span class="chip proj-stage proj-stage-{{ p.stage }}">{{ t('dash.stage.' ~ p.stage) }}</span>
       </div>
       <p class="proj-targets">
         {% for t in p.targets %}<span class="chip">{{ t }}</span>{% endfor %}
+        {% if p.current %}<span class="chip proj-current">{{ t('dash.current') }}</span>{% endif %}
       </p>
       <div class="proj-card-foot">
-        <span class="proj-saved muted">{{ p.lastSaved }}</span>
+        <span class="proj-saved muted">{{ p.detail }}</span>
+        {% if not p.current %}
+        <form method="post" action="/dashboard/projects/use">
+          <input type="hidden" name="project" value="{{ p.id }}">
+          <button type="submit" class="ghost">{{ t('dash.useProject') }}</button>
+        </form>
+        {% endif %}
         {{ prim.ctaLink('/intake', t('dash.open'), size=16) }}
       </div>
     </article>
     {% endfor %}
   </div>
+  {% else %}
+  <p class="dash-empty muted">{{ t('dash.projectsEmpty') }}</p>
+  {% endif %}
 </section>
 
 {# Analytics trio — CSS bar charts, no JS. #}

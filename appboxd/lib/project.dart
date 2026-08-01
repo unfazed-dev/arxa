@@ -79,7 +79,7 @@ void useProject(String name) {
 /// Create the project layout + settings/project.json. Idempotent: existing
 /// dirs are kept, a missing project.json is (re)written, an existing one is
 /// left untouched (init never clobbers project state).
-void ensureProject(String name, {List<String> targets = const ['390', '744', '1280'], List<String> locales = const ['en', 'pl']}) {
+void ensureProject(String name, {List<String> targets = const ['ios', 'android', 'macos'], List<String> locales = const ['en', 'pl']}) {
   if (!validProjectName(name)) {
     throw ArgumentError('bad project name "$name" — lowercase alnum + dash, like a surface id');
   }
@@ -103,4 +103,56 @@ Map<String, dynamic>? readProjectSettings(String name) {
   final f = File(projectSettingsPath(name));
   if (!f.existsSync()) return null;
   return jsonDecode(f.readAsStringSync()) as Map<String, dynamic>;
+}
+
+/// The stage a project has reached, derived DETERMINISTICALLY from which
+/// outputs exist (never stored, never guessed):
+///   build/ holds any evidence json          -> gates
+///   design/models/design_model/run.en.json  -> build
+///   intake/registry.json                    -> design
+///   otherwise                               -> intake
+String projectStage(String name) {
+  final dir = projectDir(name);
+  final buildDir = Directory('$dir/build');
+  if (buildDir.existsSync() &&
+      buildDir
+          .listSync(recursive: true)
+          .whereType<File>()
+          .any((f) => f.path.endsWith('.json'))) {
+    return 'gates';
+  }
+  if (File('$dir/design/models/design_model/run.en.json').existsSync()) {
+    return 'build';
+  }
+  if (File('$dir/intake/registry.json').existsSync()) return 'design';
+  return 'intake';
+}
+
+/// One dashboard card per project: name/targets/locales from settings, the
+/// derived stage, and honest output counts (surfaces/flows) — no timestamps,
+/// no fabricated activity.
+List<Map<String, dynamic>> projectCards() {
+  return [
+    for (final name in listProjects())
+      <String, dynamic>{
+        'name': name,
+        'targets':
+            (readProjectSettings(name)?['targets'] as List?)?.cast<String>() ??
+                const [],
+        'stage': projectStage(name),
+        'surfaces': _countJsonList('${projectDir(name)}/intake/registry.json'),
+        'flows': _countJsonList('${projectDir(name)}/intake/flows.json'),
+      },
+  ];
+}
+
+int _countJsonList(String path) {
+  final f = File(path);
+  if (!f.existsSync()) return 0;
+  try {
+    final v = jsonDecode(f.readAsStringSync());
+    return v is List ? v.length : 0;
+  } catch (_) {
+    return 0;
+  }
 }

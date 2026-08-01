@@ -29,7 +29,7 @@ void main() {
     }
     final settings = readProjectSettings('portalo')!;
     expect(settings['name'], 'portalo');
-    expect(settings['targets'], ['390', '744', '1280']);
+    expect(settings['targets'], ['ios', 'android', 'macos']);
     expect(settings['locales'], ['en', 'pl']);
     // determinism: no clock fields, byte-stable content
     expect(settings.keys.toList(), ['name', 'targets', 'locales']);

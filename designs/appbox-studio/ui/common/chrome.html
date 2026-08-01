@@ -19,10 +19,9 @@
   { id: 'intake',    label: t('tab.intake'),   icon: 'square-pen',   href: '/intake' },
   { id: 'design',    label: t('tab.design'),   icon: 'pen-tool',     href: '/design' },
   { id: 'build',     label: t('tab.build'),    icon: 'hammer',       href: '/build' },
-  { id: 'index',     label: t('tab.surfaces'), icon: 'layout-grid',  href: '/' },
   { id: 'workspace', label: t('tab.settings'), icon: 'settings',     href: '/workspace' }
 ] %}
-{% set shellNames = { intake: t('tab.intake'), design: t('tab.design'), build: t('tab.build'), index: t('tab.surfaces'), workspace: t('tab.settings') } %}
+{% set shellNames = { intake: t('tab.intake'), design: t('tab.design'), build: t('tab.build'), workspace: t('tab.settings') } %}
 <nav class="panel-header">
   <details class="shell-drawer shell-chrome-touch">
     <summary class="ico-btn" aria-label="{{ t('nav.open') }}">{{ icon('menu', {size: 20}) }}</summary>

@@ -64,10 +64,11 @@ for (const f of seeds.sort()) {
     ...seed,
     stats,
     pairing: { ...seed.pairing, qr: qrFor(seed.pairing.code) },
-    counts: { projects: seed.projects.length, gates: seed.gates.length },
+    // projects are LIVE-READ from ~/.appbox — no seeded count anymore.
+    counts: { gates: seed.gates.length },
   };
   writeFileSync(new URL(`app.${locale}.json`, import.meta.url), JSON.stringify(fixture, null, 2) + '\n');
-  console.log(`app.${locale}.json ← ${f}: ${seed.projects.length} projects, ${seed.gates.length} gates, qr ${QR_SIZE}×${QR_SIZE}`);
+  console.log(`app.${locale}.json ← ${f}: ${seed.gates.length} gates, qr ${QR_SIZE}×${QR_SIZE}`);
 }
 
 // Un-suffixed alias = en, for anything that still reads app.json directly.

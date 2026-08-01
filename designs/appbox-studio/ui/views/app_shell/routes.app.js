@@ -5,17 +5,24 @@
 // dashboard. Same [method, path, handler] shape as app.routes.js; wire by
 // spreading into its default export next to intakeRoutes/designRoutes.
 import * as splash from './splash/splash_viewmodel.js';
+import * as startup from './startup/startup_viewmodel.js';
 import * as auth from './auth/auth_viewmodel.js';
 import * as dashboard from './dashboard/dashboard_viewmodel.js';
 
 export default [
-  // app.splash — splash (auto-advances); app.access — desktop sign-in
+  // The studio home: root lands on the dashboard.
+  ['GET', '/', dashboard.root],
+  // app.splash — splash (auto-advances to startup); app.startup — loading;
+  // app.access — desktop sign-in
   ['GET', '/splash', splash.page],
+  ['GET', '/startup', startup.page],
   ['GET', '/auth', auth.page],
   ['POST', '/auth/signin', auth.signIn],
 
-  // app.dashboard — needs-you strip, project grid, analytics, QR modal, wizard
+  // app.dashboard — needs-you strip, LIVE ~/.appbox project grid, analytics,
+  // QR modal, wizard
   ['GET', '/dashboard', dashboard.page],
   ['POST', '/dashboard/gates/decide', dashboard.decide],
   ['POST', '/dashboard/projects', dashboard.createProject],
+  ['POST', '/dashboard/projects/use', dashboard.useProject],
 ];
