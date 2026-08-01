@@ -148,7 +148,7 @@
 {# A question strip for the interview stage (same protocol as itemStrip,
    but questions re-open with ?q=). #}
 {% macro qStrip(c, car) %}
-<nav class="item-strip" aria-label="{{ t('intake.step.stripAria') }}">
+<nav class="item-strip" aria-label="{{ t('intake.questionsAria', {bank: car.bankLabel}) }}">
   {% for q in car.questions %}
   {% if q.state == 'answered' or q.state == 'skipped' %}
   <a class="strip-dot is-{{ 'confirmed' if q.state == 'answered' else 'skipped' }}" href="{{ c.base }}/edit?q={{ q.id }}"

@@ -63,7 +63,7 @@
   <h2 class="display">{{ icon('compass', {size: 20}) }} {{ t('intake.step.allConfirmed', {total: c.step.total}) }}</h2>
   {% for item in c.step.items %}
   <div class="q-card is-{{ item.state }}">
-    <p class="q-text">{{ t('intake.direction.group.' ~ item.id) }}</p>
+    <p class="q-text">{{ t('intake.direction.group.' ~ item.id) }} {% if item.edited %}<span class="chip">{{ t('intake.item.edited') }}</span>{% endif %}</p>
     {% if item.id == 'references' %}
     <span class="value-chips">{% for v in item.values %}<span class="chip">{{ v.board }}</span>{% endfor %}</span>
     {% else %}{{ valueChips(item) }}{% endif %}

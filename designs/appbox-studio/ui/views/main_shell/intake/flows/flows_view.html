@@ -66,6 +66,7 @@
   <span class="rv-badges">
     <span class="chip">{{ icon('user', {size: 14}) }} {{ t('intake.flows.personaLabel', {name: item.personaName}) }}</span>
     <span class="chip">{{ t('intake.flows.edgeCount', {count: item.edges.length}) }}</span>
+    {% if item.edited %}<span class="chip">{{ t('intake.item.edited') }}</span>{% endif %}
   </span>
   {{ sh.itemActions(c, item) }}
 </div>

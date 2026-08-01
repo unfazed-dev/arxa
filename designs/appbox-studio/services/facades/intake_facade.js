@@ -122,7 +122,8 @@ function withStates(items, st) {
       : !st.editing && firstOpen && firstOpen.id === i.id ? 'current'
       : 'upcoming';
     // Corrections ride the item: saved fields override the prefill verbatim.
-    return { ...i, ...(a?.edited ?? {}), state };
+    // `edited` flags a corrected item so views can mark it after confirm.
+    return { ...i, ...(a?.edited ?? {}), state, edited: a?.edited ? true : null };
   });
 }
 

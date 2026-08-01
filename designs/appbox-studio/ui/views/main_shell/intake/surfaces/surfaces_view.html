@@ -32,7 +32,7 @@
   <header class="artifact-head">
     <h2 class="display">{{ item.label }}</h2>
     <span class="chip">{{ t('intake.surfaces.surfaceCount', {count: item.surfaces.length}) }}</span>
-    {% if item.state == 'editing' %}<span class="chip">{{ t('intake.item.edited') }}</span>{% endif %}
+    {% if item.edited %}<span class="chip">{{ t('intake.item.edited') }}</span>{% endif %}
   </header>
   <ul class="surface-list">
     {% for s in item.surfaces %}{{ surfaceRow(s) }}{% endfor %}
@@ -44,7 +44,7 @@
 {# A done group, compact: label + count, with the shared revisit link. #}
 {% macro summaryCard(c, item) %}
 <div class="q-card is-{{ item.state }}">
-  <p class="q-text">{{ item.label }} <span class="chip">{{ t('intake.surfaces.surfaceCount', {count: item.surfaces.length}) }}</span></p>
+  <p class="q-text">{{ item.label }} <span class="chip">{{ t('intake.surfaces.surfaceCount', {count: item.surfaces.length}) }}</span> {% if item.edited %}<span class="chip">{{ t('intake.item.edited') }}</span>{% endif %}</p>
   {{ sh.itemActions(c, item) }}
 </div>
 {% endmacro %}
