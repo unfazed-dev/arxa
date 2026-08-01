@@ -144,16 +144,21 @@
 .mini-swatch-canvas { background: var(--bg-2); }
 .mini-swatch-warm { background: #f4ead8; }
 .mini-swatch-slate { background: #2b3038; }
-.mini-panel-panels { padding: .5rem .8rem; }
+.mini-panel-panels { padding: .5rem .8rem .2rem; overflow: hidden; }
 .mini-panel-body {
   display: flex; gap: .8rem; align-items: center; flex-wrap: wrap;
   font-size: .78rem;
 }
 .mini-panel-group { display: inline-flex; gap: .35rem; align-items: center; }
 .mini-panel-group + .mini-panel-group { border-left: 1px solid var(--border); padding-left: .8rem; }
+/* scrollbar-hiding rules (scrollbar-width / ::-webkit-scrollbar) are
+   cosmetics some UAs ignore (older Safari) — the strip's bar is killed
+   STRUCTURALLY instead: padding pushes it below the content edge, the
+   negative margin + the panels wrapper's overflow:hidden clip it out.
+   Works in every UA; horizontal scroll still works natively. */
 .mini-panel-strip {
   display: flex; gap: .4rem; overflow-x: auto; max-width: 40rem;
-  padding-bottom: .2rem; scrollbar-width: none;
+  padding-bottom: 1.2rem; margin-bottom: -1.2rem; scrollbar-width: none;
 }
 .mini-panel-strip::-webkit-scrollbar { display: none; }
 /* the strip's thumbs use the same compact scale as the composer tray's —
