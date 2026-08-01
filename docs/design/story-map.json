@@ -19,6 +19,16 @@
       "name": "App Shell & Accounts",
       "features": [
         {
+          "name": "Splash",
+          "stories": [
+            {
+              "name": "Splash holds while the daemon handshake resolves — brand mark and live status, never a dead-end spinner",
+              "priority": "should",
+              "release": "R1 Dogfood"
+            }
+          ]
+        },
+        {
           "name": "Access",
           "stories": [
             {
@@ -132,6 +142,123 @@
               "release": "R2 Anywhere"
             }
           ]
+        },
+        {
+          "name": "Credentials",
+          "stories": [
+            {
+              "name": "One credentials surface manages every credential the generated app needs — payments, auth, maps, deploy and AI providers grouped in sections; each row shows the key name, a secret/publishable badge, a password-style input, a where-to-get link and a set/not-set chip",
+              "priority": "must",
+              "release": "R1 Dogfood"
+            },
+            {
+              "name": "User adds a Stripe test key for their design app from the credentials surface; the value goes to the OS vault via the daemon, never logged, and test keys work on simulators",
+              "priority": "must",
+              "release": "R1 Dogfood"
+            },
+            {
+              "name": "User sees which required keys are missing before build — the credentials surface and `appbox credentials check` report missing required keys per module",
+              "priority": "must",
+              "release": "R1 Dogfood"
+            },
+            {
+              "name": "Design surfaces the required credentials by key name from the catalog for the kits a surface declares — a maps screen lists its maps keys before build",
+              "priority": "must",
+              "release": "R1 Dogfood"
+            },
+            {
+              "name": "One config surface unifies the app's knobs — build targets and default locale (the appbox.config.json mirror), a credentials summary per module with missing-required badges, and shell prefs (theme, accent, jargon) — so the user reviews everything a generated app ships with in one place",
+              "priority": "must",
+              "release": "R1 Dogfood"
+            }
+          ]
+        },
+        {
+          "name": "Config",
+          "stories": [
+            {
+              "name": "A unified config view manages every kit credential and provider setting in one place — the same catalog the designer, scaffolder, and builder consume",
+              "priority": "must",
+              "release": "R1 Dogfood"
+            }
+          ]
+        },
+        {
+          "name": "Media Rive",
+          "id": "app.mediarive",
+          "stories": [
+            {
+              "name": "Rive demo surface plays a vendored .riv in the kit viewer island",
+              "priority": "could",
+              "release": "R3 Delight"
+            }
+          ]
+        },
+        {
+          "name": "Media Lottie",
+          "id": "app.medialottie",
+          "stories": [
+            {
+              "name": "Lottie demo surface plays a vendored .json animation via lottie-player",
+              "priority": "could",
+              "release": "R3 Delight"
+            }
+          ]
+        },
+        {
+          "name": "Media Dotlottie",
+          "id": "app.mediadotlottie",
+          "stories": [
+            {
+              "name": "dotLottie demo surface plays a vendored .lottie via dotlottie-wc",
+              "priority": "could",
+              "release": "R3 Delight"
+            }
+          ]
+        },
+        {
+          "name": "Media Model3d",
+          "id": "app.mediamodel3d",
+          "stories": [
+            {
+              "name": "3D model demo surface renders a vendored glb in <model-viewer>",
+              "priority": "could",
+              "release": "R3 Delight"
+            }
+          ]
+        },
+        {
+          "name": "Media Scene3d",
+          "id": "app.mediascene3d",
+          "stories": [
+            {
+              "name": "3D scene demo surface renders the three_island scene",
+              "priority": "could",
+              "release": "R3 Delight"
+            }
+          ]
+        },
+        {
+          "name": "Media Game",
+          "id": "app.mediagame",
+          "stories": [
+            {
+              "name": "Game demo surface boots the game_island canvas loop",
+              "priority": "could",
+              "release": "R3 Delight"
+            }
+          ]
+        },
+        {
+          "name": "Media Maps",
+          "id": "app.mediamaps",
+          "stories": [
+            {
+              "name": "Maps demo surface renders the Leaflet island (tier1 port-tested) with markers and a credential-gated tile provider",
+              "priority": "should",
+              "release": "R2 Anywhere"
+            }
+          ]
         }
       ]
     },
@@ -157,7 +284,7 @@
               "release": "R1 Dogfood"
             },
             {
-              "name": "Personas, the surface inventory (grouped by shell, states per surface), flows over the screen registry (persona-bound edge sets), and design direction (adjectives / avoids / references) are their own confirmable steps between interview and story map — corrections post as structured edits, accept-all confirms a whole step",
+              "name": "Each journey step is its own surfaced screen with confirm, a structured correction form, skip, and accept-all — progress lives in the footer timeline, the chat rail answers in step context",
               "priority": "must",
               "release": "R1 Dogfood"
             },
@@ -168,6 +295,46 @@
             },
             {
               "name": "Layout template picking is an intake step: app category first (closed list), then one of six archetype galleries (feed, list-detail, supporting-pane, dashboard, hero-scroll, detail-column) shown as plain colored boxes of named containers at full size in the main panel — recorded in the brief, consumed by the designer without rewriting",
+              "priority": "must",
+              "release": "R1 Dogfood"
+            }
+          ]
+        },
+        {
+          "name": "Personas",
+          "stories": [
+            {
+              "name": "Personas are a confirmable step: drafted from the interview with provenance chips (goals / frustrations / contexts / proficiency / accessibility), corrected via structured edits, re-opened from the item strip",
+              "priority": "must",
+              "release": "R1 Dogfood"
+            }
+          ]
+        },
+        {
+          "name": "Surfaces",
+          "stories": [
+            {
+              "name": "The surface inventory is a confirmable step grouped by shell — every surface lists the states it must cover (empty / loading / error / populated), feeding the designer and the coverage gate",
+              "priority": "must",
+              "release": "R1 Dogfood"
+            }
+          ]
+        },
+        {
+          "name": "Flows",
+          "stories": [
+            {
+              "name": "Flows are drafted over the screen registry as persona-bound edge sets {from, to, trigger} — one edge set, three projections (prototype / flows / screens), confirmed path by path",
+              "priority": "must",
+              "release": "R1 Dogfood"
+            }
+          ]
+        },
+        {
+          "name": "Direction",
+          "stories": [
+            {
+              "name": "Design direction is a confirmable step: adjectives to chase, hard avoids, and moodboard references — handed to the designer alongside the brief",
               "priority": "must",
               "release": "R1 Dogfood"
             }
@@ -436,13 +603,26 @@
               "priority": "should",
               "release": "R2 Anywhere"
             }
-          ]
+          ],
+          "id": "shell.composer"
         },
         {
           "name": "Footer Panel",
           "stories": [
             {
               "name": "Footer panel: read-only stage timeline with proper labels (not clickable; animation kept), project + run state, daemon status + pending-gate dots; in the design shell it also shows the design sub-steps (artboards → inspect · fine-tune → approval → freeze); the old top stage strip is removed",
+              "priority": "must",
+              "release": "R1 Dogfood"
+            }
+          ],
+          "id": "shell.footer"
+        },
+        {
+          "name": "Main Chrome",
+          "id": "main.chrome",
+          "stories": [
+            {
+              "name": "The main chrome (tab bar, shell switcher, daemon status) is one shared frame across every shell — intake, design, build, surfaces, settings",
               "priority": "must",
               "release": "R1 Dogfood"
             }
@@ -698,36 +878,6 @@
             },
             {
               "name": "Language level plain/balanced/technical — every user-facing string written three ways; visual metrics render as X/100 match scores (ΔE 2.0 = 95/100 pass bar), technical level keeps raw values",
-              "priority": "must",
-              "release": "R1 Dogfood"
-            }
-          ]
-        },
-        {
-          "name": "Credentials",
-          "stories": [
-            {
-              "name": "One credentials surface manages every credential the generated app needs — payments, auth, maps, deploy and AI providers grouped in sections; each row shows the key name, a secret/publishable badge, a password-style input, a where-to-get link and a set/not-set chip",
-              "priority": "must",
-              "release": "R1 Dogfood"
-            },
-            {
-              "name": "User adds a Stripe test key for their design app from the credentials surface; the value goes to the OS vault via the daemon, never logged, and test keys work on simulators",
-              "priority": "must",
-              "release": "R1 Dogfood"
-            },
-            {
-              "name": "User sees which required keys are missing before build — the credentials surface and `appbox credentials check` report missing required keys per module",
-              "priority": "must",
-              "release": "R1 Dogfood"
-            },
-            {
-              "name": "Design surfaces the required credentials by key name from the catalog for the kits a surface declares — a maps screen lists its maps keys before build",
-              "priority": "must",
-              "release": "R1 Dogfood"
-            },
-            {
-              "name": "One config surface unifies the app's knobs — build targets and default locale (the appbox.config.json mirror), a credentials summary per module with missing-required badges, and shell prefs (theme, accent, jargon) — so the user reviews everything a generated app ships with in one place",
               "priority": "must",
               "release": "R1 Dogfood"
             }

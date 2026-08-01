@@ -1,7 +1,7 @@
 // appbox:provenance
 // generator: appbox  licence: free  project: 662368770980
 // Built with appbox (free tier) — https://appbox.dev
-export const surfaceId = 'app.mediaModel3d';
+export const surfaceId = 'app.mediamodel3d';
 
 const VIEW = 'ui/views/app_shell/media/model3d/model3d_view.html';
 

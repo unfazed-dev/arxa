@@ -103,65 +103,65 @@
       ]
     },
     {
-      "id": "app.mediaRive",
+      "id": "app.mediarive",
       "shell": "app",
       "comp": "AppMediaRive",
       "shellDir": "app_shell",
-      "surface": "app_shell_app_mediaRive_view",
+      "surface": "app_shell_app.mediarive_view",
       "viewmodel": "ui/views/app_shell/media/rive/rive_viewmodel.js",
       "deps": []
     },
     {
-      "id": "app.mediaLottie",
+      "id": "app.medialottie",
       "shell": "app",
       "comp": "AppMediaLottie",
       "shellDir": "app_shell",
-      "surface": "app_shell_app_mediaLottie_view",
+      "surface": "app_shell_app.medialottie_view",
       "viewmodel": "ui/views/app_shell/media/lottie/lottie_viewmodel.js",
       "deps": []
     },
     {
-      "id": "app.mediaDotlottie",
+      "id": "app.mediadotlottie",
       "shell": "app",
       "comp": "AppMediaDotlottie",
       "shellDir": "app_shell",
-      "surface": "app_shell_app_mediaDotlottie_view",
+      "surface": "app_shell_app.mediadotlottie_view",
       "viewmodel": "ui/views/app_shell/media/dotlottie/dotlottie_viewmodel.js",
       "deps": []
     },
     {
-      "id": "app.mediaModel3d",
+      "id": "app.mediamodel3d",
       "shell": "app",
       "comp": "AppMediaModel3d",
       "shellDir": "app_shell",
-      "surface": "app_shell_app_mediaModel3d_view",
+      "surface": "app_shell_app.mediamodel3d_view",
       "viewmodel": "ui/views/app_shell/media/model3d/model3d_viewmodel.js",
       "deps": []
     },
     {
-      "id": "app.mediaScene3d",
+      "id": "app.mediascene3d",
       "shell": "app",
       "comp": "AppMediaScene3d",
       "shellDir": "app_shell",
-      "surface": "app_shell_app_mediaScene3d_view",
+      "surface": "app_shell_app.mediascene3d_view",
       "viewmodel": "ui/views/app_shell/media/scene3d/scene3d_viewmodel.js",
       "deps": []
     },
     {
-      "id": "app.mediaGame",
+      "id": "app.mediagame",
       "shell": "app",
       "comp": "AppMediaGame",
       "shellDir": "app_shell",
-      "surface": "app_shell_app_mediaGame_view",
+      "surface": "app_shell_app.mediagame_view",
       "viewmodel": "ui/views/app_shell/media/game/game_viewmodel.js",
       "deps": []
     },
     {
-      "id": "app.mediaMaps",
+      "id": "app.mediamaps",
       "shell": "app",
       "comp": "AppMediaMaps",
       "shellDir": "app_shell",
-      "surface": "app_shell_app_mediaMaps_view",
+      "surface": "app_shell_app.mediamaps_view",
       "viewmodel": "ui/views/app_shell/media/maps/maps_viewmodel.js",
       "deps": [],
       "kits": [

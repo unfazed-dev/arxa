@@ -19,6 +19,10 @@ appbox
 
 ### App Shell & Accounts
 
+#### Splash
+
+- [should/R1 Dogfood] Splash holds while the daemon handshake resolves — brand mark and live status, never a dead-end spinner
+
 #### Access
 
 - [must/R1 Dogfood] Splash screen while the daemon connects, then sign-in (email + Sign in with Apple + Google, seeded accounts) landing on the dashboard; sign-up, sign-out and session-expired states seeded
@@ -54,6 +58,46 @@ appbox
 - [must/R1 Dogfood] Self-host tailnet (compose file) or hosted Tailscale from day one; daemon and apps are tailnet nodes in-process; approvals bind to WireGuard node identity
 - [should/R2 Anywhere] Private mesh CA gives trusted HTTPS origins over the mesh (arxa ADR-0036 pattern)
 
+#### Credentials
+
+- [must/R1 Dogfood] One credentials surface manages every credential the generated app needs — payments, auth, maps, deploy and AI providers grouped in sections; each row shows the key name, a secret/publishable badge, a password-style input, a where-to-get link and a set/not-set chip
+- [must/R1 Dogfood] User adds a Stripe test key for their design app from the credentials surface; the value goes to the OS vault via the daemon, never logged, and test keys work on simulators
+- [must/R1 Dogfood] User sees which required keys are missing before build — the credentials surface and `appbox credentials check` report missing required keys per module
+- [must/R1 Dogfood] Design surfaces the required credentials by key name from the catalog for the kits a surface declares — a maps screen lists its maps keys before build
+- [must/R1 Dogfood] One config surface unifies the app's knobs — build targets and default locale (the appbox.config.json mirror), a credentials summary per module with missing-required badges, and shell prefs (theme, accent, jargon) — so the user reviews everything a generated app ships with in one place
+
+#### Config
+
+- [must/R1 Dogfood] A unified config view manages every kit credential and provider setting in one place — the same catalog the designer, scaffolder, and builder consume
+
+#### Media Rive
+
+- [could/R3 Delight] Rive demo surface plays a vendored .riv in the kit viewer island
+
+#### Media Lottie
+
+- [could/R3 Delight] Lottie demo surface plays a vendored .json animation via lottie-player
+
+#### Media Dotlottie
+
+- [could/R3 Delight] dotLottie demo surface plays a vendored .lottie via dotlottie-wc
+
+#### Media Model3d
+
+- [could/R3 Delight] 3D model demo surface renders a vendored glb in <model-viewer>
+
+#### Media Scene3d
+
+- [could/R3 Delight] 3D scene demo surface renders the three_island scene
+
+#### Media Game
+
+- [could/R3 Delight] Game demo surface boots the game_island canvas loop
+
+#### Media Maps
+
+- [should/R2 Anywhere] Maps demo surface renders the Leaflet island (tier1 port-tested) with markers and a credential-gated tile provider
+
 ### Intake & Story Mapping
 
 #### Interview
@@ -61,9 +105,25 @@ appbox
 - [must/R1 Dogfood] Intake is a typeform journey of eight surfaced steps — interview, personas, surfaces, flows, story map, direction, brief, moodboard — each walking one item at a time in the main panel, the chat rail always in step context, the journey timeline in the footer
 - [must/R1 Dogfood] Mode pick is the journey's first move (selectable cards, not chat buttons): simple auto-answers and auto-accepts prefills on the fast path (interview → brief); normal (default) shows every step prefilled for confirmation; advanced (expert) shows every step raw with no auto-accept
 - [must/R1 Dogfood] Every prefill carries a provenance chip (client / founder / inferred) — inferred items ask to be confirmed or corrected, never trusted silently; confirmed items re-open from the item strip
-- [must/R1 Dogfood] Personas, the surface inventory (grouped by shell, states per surface), flows over the screen registry (persona-bound edge sets), and design direction (adjectives / avoids / references) are their own confirmable steps between interview and story map — corrections post as structured edits, accept-all confirms a whole step
+- [must/R1 Dogfood] Each journey step is its own surfaced screen with confirm, a structured correction form, skip, and accept-all — progress lives in the footer timeline, the chat rail answers in step context
 - [must/R1 Dogfood] All-at-once generation when the questionnaire completes: brief + story map appear as main panel artifacts; the moodboard follows as a suggested next step
 - [must/R1 Dogfood] Layout template picking is an intake step: app category first (closed list), then one of six archetype galleries (feed, list-detail, supporting-pane, dashboard, hero-scroll, detail-column) shown as plain colored boxes of named containers at full size in the main panel — recorded in the brief, consumed by the designer without rewriting
+
+#### Personas
+
+- [must/R1 Dogfood] Personas are a confirmable step: drafted from the interview with provenance chips (goals / frustrations / contexts / proficiency / accessibility), corrected via structured edits, re-opened from the item strip
+
+#### Surfaces
+
+- [must/R1 Dogfood] The surface inventory is a confirmable step grouped by shell — every surface lists the states it must cover (empty / loading / error / populated), feeding the designer and the coverage gate
+
+#### Flows
+
+- [must/R1 Dogfood] Flows are drafted over the screen registry as persona-bound edge sets {from, to, trigger} — one edge set, three projections (prototype / flows / screens), confirmed path by path
+
+#### Direction
+
+- [must/R1 Dogfood] Design direction is a confirmable step: adjectives to chase, hard avoids, and moodboard references — handed to the designer alongside the brief
 
 #### Mapping
 
@@ -141,6 +201,10 @@ appbox
 #### Footer Panel
 
 - [must/R1 Dogfood] Footer panel: read-only stage timeline with proper labels (not clickable; animation kept), project + run state, daemon status + pending-gate dots; in the design shell it also shows the design sub-steps (artboards → inspect · fine-tune → approval → freeze); the old top stage strip is removed
+
+#### Main Chrome
+
+- [must/R1 Dogfood] The main chrome (tab bar, shell switcher, daemon status) is one shared frame across every shell — intake, design, build, surfaces, settings
 
 ### Build & Gates
 
@@ -221,14 +285,6 @@ appbox
 - [should/R1 Dogfood] Appearance prefs per device: warm light/dark theme + brand accent picker (cyan/violet/blue/ember from the logo)
 - [must/R1 Dogfood] Language level plain/balanced/technical — every user-facing string written three ways; visual metrics render as X/100 match scores (ΔE 2.0 = 95/100 pass bar), technical level keeps raw values
 
-#### Credentials
-
-- [must/R1 Dogfood] One credentials surface manages every credential the generated app needs — payments, auth, maps, deploy and AI providers grouped in sections; each row shows the key name, a secret/publishable badge, a password-style input, a where-to-get link and a set/not-set chip
-- [must/R1 Dogfood] User adds a Stripe test key for their design app from the credentials surface; the value goes to the OS vault via the daemon, never logged, and test keys work on simulators
-- [must/R1 Dogfood] User sees which required keys are missing before build — the credentials surface and `appbox credentials check` report missing required keys per module
-- [must/R1 Dogfood] Design surfaces the required credentials by key name from the catalog for the kits a surface declares — a maps screen lists its maps keys before build
-- [must/R1 Dogfood] One config surface unifies the app's knobs — build targets and default locale (the appbox.config.json mirror), a credentials summary per module with missing-required badges, and shell prefs (theme, accent, jargon) — so the user reviews everything a generated app ships with in one place
-
 ### Website
 
 #### Site
@@ -258,13 +314,27 @@ appbox
 
 | id | label | priority | release |
 |----|-------|----------|---------|
+| `app.splash` | Splash | should | R1 Dogfood |
 | `app.access` | Access | must | R1 Dogfood |
 | `app.dashboard` | Dashboard | must | R1 Dogfood |
 | `app.projects` | Projects | must | R1 Dogfood |
 | `app.pairing` | Pairing | must | R1 Dogfood |
 | `app.notifications` | Notifications | must | R1 Dogfood |
 | `app.remote` | Remote | must | R1 Dogfood |
+| `app.credentials` | Credentials | must | R1 Dogfood |
+| `app.config` | Config | must | R1 Dogfood |
+| `app.mediarive` | Media Rive | could | R3 Delight |
+| `app.medialottie` | Media Lottie | could | R3 Delight |
+| `app.mediadotlottie` | Media Dotlottie | could | R3 Delight |
+| `app.mediamodel3d` | Media Model3d | could | R3 Delight |
+| `app.mediascene3d` | Media Scene3d | could | R3 Delight |
+| `app.mediagame` | Media Game | could | R3 Delight |
+| `app.mediamaps` | Media Maps | should | R2 Anywhere |
 | `intake.interview` | Interview | must | R1 Dogfood |
+| `intake.personas` | Personas | must | R1 Dogfood |
+| `intake.surfaces` | Surfaces | must | R1 Dogfood |
+| `intake.flows` | Flows | must | R1 Dogfood |
+| `intake.direction` | Direction | must | R1 Dogfood |
 | `intake.mapping` | Mapping | must | R1 Dogfood |
 | `intake.live` | Live Map | must | R1 Dogfood |
 | `intake.brief` | Brief | must | R1 Dogfood |
@@ -273,8 +343,9 @@ appbox
 | `design.chat` | Chat | must | R1 Dogfood |
 | `design.freeze` | Freeze | must | R1 Dogfood |
 | `chat.chat2` | Chat Stage | must | R1 Dogfood |
-| `chat.panels` | Panels | must | R1 Dogfood |
-| `chat.footer` | Footer Panel | must | R1 Dogfood |
+| `shell.composer` | Panels | must | R1 Dogfood |
+| `shell.footer` | Footer Panel | must | R1 Dogfood |
+| `main.chrome` | Main Chrome | must | R1 Dogfood |
 | `build.loop` | Loop | must | R1 Dogfood |
 | `build.gates` | Gates | must | R1 Dogfood |
 | `build.visual` | Visual | must | R1 Dogfood |
@@ -286,7 +357,6 @@ appbox
 | `first.honesty` | Honesty | must | R1 Dogfood |
 | `workspace.projects2` | Projects | must | R1 Dogfood |
 | `workspace.settings` | Settings | must | R1 Dogfood |
-| `workspace.credentials` | Credentials | must | R1 Dogfood |
 | `website.site` | Site | must | R2 Anywhere |
 | `website.docs` | Docs | must | R1 Dogfood |
 | `website.showcase2` | Showcase | should | R2 Anywhere |

@@ -1,7 +1,7 @@
 // appbox:provenance
 // generator: appbox  licence: free  project: 662368770980
 // Built with appbox (free tier) — https://appbox.dev
-export const surfaceId = 'app.mediaMaps';
+export const surfaceId = 'app.mediamaps';
 
 const VIEW = 'ui/views/app_shell/media/maps/maps_view.html';
 

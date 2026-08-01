@@ -247,7 +247,10 @@ Surfaces deriveSurfaces(Map<String, dynamic> data) {
         }
       }
       surfaces.add(Surface(
-        id: '$shell.${slugify(feat['name'] as String, usedIds)}',
+        // A feature may pin its surface id explicitly — the slug can't
+        // produce camelCase or cross-shell ids (app.mediaRive, shell.composer),
+        // and the traceability gate compares verbatim.
+        id: (feat['id'] as String?) ?? '$shell.${slugify(feat['name'] as String, usedIds)}',
         label: feat['name'] as String,
         epic: epic['name'] as String,
         stories: stories,

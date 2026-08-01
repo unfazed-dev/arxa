@@ -110,6 +110,30 @@ void main() {
       expect(empty!.priority, '');
       expect(empty.release, '');
     });
+
+    test('explicit feature id wins over the slug (camelCase / cross-shell)', () {
+      final r = deriveSurfaces({
+        'project': 'x',
+        'releases': [
+          {'name': 'R1'}
+        ],
+        'epics': [
+          {
+            'name': 'App Shell',
+            'features': [
+              {
+                'name': 'Media Rive',
+                'id': 'app.mediaRive',
+                'stories': [
+                  {'name': 's', 'priority': 'could', 'release': 'R1'}
+                ],
+              },
+            ],
+          },
+        ],
+      });
+      expect(r.surfaces.single.id, 'app.mediaRive');
+    });
   });
 
   group('byte-identity vs Python goldens', () {
