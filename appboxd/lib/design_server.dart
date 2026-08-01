@@ -140,6 +140,7 @@ class DesignServer {
   late final Set<String> locales;
 
   String artifactDir = '';
+  String? projectDir;
   String host = '127.0.0.1';
   int get port => _http.port;
   int _pidValue = 0;
@@ -169,6 +170,7 @@ class DesignServer {
   }) async {
     final srv = DesignServer._()
       ..artifactDir = artifactDir
+      ..projectDir = projectDir
       .._pidValue = _osPid
       ..host = host
       ..noWatch = noWatch
@@ -221,6 +223,11 @@ class DesignServer {
       }
       if ((method == 'GET' || method == 'POST') && path == '/prefs/lang') {
         return _handlePrefsLang(req);
+      }
+      // Project write channel (the studio edits the current project): the JS
+      // worker POSTs {path, body}; the write is confined to the project dir.
+      if (method == 'POST' && path == '/__project_write') {
+        return _handleProjectWrite(req);
       }
       if (_matchRoute(method, path) != null) {
         return _dispatch(req, method, path);
@@ -316,6 +323,45 @@ class DesignServer {
       req.response.headers.add('Vary', 'Accept-Language');
     }
     if (resp.body != null) req.response.add(utf8.encode(resp.body!));
+    await req.response.close();
+  }
+
+  /// POST /__project_write {path, body} — write one file INSIDE the live-read
+  /// project. The studio edits the project through this one confined channel
+  /// (flow confirms, tile reorders); path traversal outside the project is
+  /// rejected. The project watcher hot-reloads the worker on its own.
+  Future<void> _handleProjectWrite(HttpRequest req) async {
+    Future<void> deny(int code, String msg) async {
+      req.response.statusCode = code;
+      req.response.headers.contentType =
+          ContentType.parse('application/json; charset=utf-8');
+      req.response.write(jsonEncode({'ok': false, 'error': msg}));
+      await req.response.close();
+    }
+
+    final root = projectDir;
+    if (root == null) return deny(409, 'no project overlaid');
+    final Map<String, dynamic> payload;
+    try {
+      payload = jsonDecode(await utf8.decoder.bind(req).join()) as Map<String, dynamic>;
+    } catch (_) {
+      return deny(400, 'bad JSON body');
+    }
+    final rel = (payload['path'] ?? '').toString();
+    final body = payload['body'];
+    if (rel.isEmpty || body is! String) {
+      return deny(400, 'path and body (string) are required');
+    }
+    final abs = p.normalize(p.join(root, rel));
+    if (!p.isWithin(root, abs) && abs != root) {
+      return deny(403, 'path escapes the project');
+    }
+    final f = File(abs);
+    f.parent.createSync(recursive: true);
+    f.writeAsStringSync(body);
+    req.response.headers.contentType =
+        ContentType.parse('application/json; charset=utf-8');
+    req.response.write(jsonEncode({'ok': true, 'path': rel}));
     await req.response.close();
   }
 

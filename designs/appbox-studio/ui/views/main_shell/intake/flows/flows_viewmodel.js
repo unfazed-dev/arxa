@@ -36,6 +36,7 @@ const lines = (v) => String(v ?? '').split('\n').map((s) => s.trim()).filter(Boo
 
 export const confirm = async (c, h) => {
   const form = await h.form(c);
+  await facade.confirmFlowProvenance(String(form.item || ''));
   return h.render(c, `${VIEW}#panelsSwap`, facade.confirmItem(h.session(c).data, S, String(form.item || ''), h.prefs(c), h.t(c), h.locale(c)));
 };
 
@@ -53,5 +54,7 @@ export const skip = async (c, h) => {
 export const edit = (c, h) =>
   h.render(c, `${VIEW}#panelsSwap`, facade.editItem(h.session(c).data, S, c.req.query('item'), h.prefs(c), h.t(c), h.locale(c)));
 
-export const acceptAll = (c, h) =>
-  h.render(c, `${VIEW}#panelsSwap`, facade.acceptAll(h.session(c).data, S, h.prefs(c), h.t(c), h.locale(c)));
+export const acceptAll = async (c, h) => {
+  await facade.confirmAllFlows();
+  return h.render(c, `${VIEW}#panelsSwap`, facade.acceptAll(h.session(c).data, S, h.prefs(c), h.t(c), h.locale(c)));
+};

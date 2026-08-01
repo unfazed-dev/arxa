@@ -25,3 +25,22 @@ export function readFixture(relFromThisFile) {
 export function readProjectFixture(rel) {
   return readFixture(`../../project/${rel}`);
 }
+
+// Write one project fixture through the design server's confined channel
+// (POST /__project_write) — the studio EDITS the current project: flow
+// confirms, tile reorders, membership. Async (viewmodels are); updates the
+// worker's prefetched map + busts the read cache so the re-render that
+// follows sees the new bytes immediately (the project watcher also reloads,
+// ~200ms later, for every OTHER client).
+export async function writeProjectFixture(rel, value) {
+  const body = typeof value === 'string' ? value : `${JSON.stringify(value, null, 2)}\n`;
+  const origin = new URL('../../', import.meta.url).href.replace(/\/$/, '');
+  const res = await fetch(`${origin}/__project_write`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ path: rel, body }),
+  });
+  if (!res.ok) throw new Error(`project write failed (${res.status}): ${await res.text()}`);
+  globalThis.__fixtures[`${origin}/project/${rel}`] = body;
+  cache.delete(`../../project/${rel}`);
+}

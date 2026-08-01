@@ -22,6 +22,8 @@
 // per-locale fixture, en fallback.
 import * as repo from '../repositories/intake_repository.js';
 import * as screens from '../repositories/screens_repository.js';
+import * as proj from '../repositories/project_repository.js';
+import { writeProjectFixture } from '../repositories/fixture_reader.js';
 import * as jargon from './jargon.js';
 import * as agent from './agent_menus.js';
 import * as fv from './file_views.js';
@@ -97,12 +99,20 @@ function stepItems(step, L) {
     return Object.values(groups);
   }
   if (step === 'flows') {
-    const personas = repo.personas(L);
-    return repo.flows(L).map((f) => ({
-      ...f,
-      personaName: personas.find((p) => p.id === f.persona)?.name ?? f.persona,
-      edges: f.edges.map((e) => ({ ...e, fromLabel: labelOf(e.from), toLabel: labelOf(e.to) })),
-    }));
+    // The CURRENT PROJECT's flows (live-read from its intake/flows.json),
+    // labelled from its registry. The studio's own journey flows are pipeline
+    // metadata (screens_model) — never shown here. Project flows carry no
+    // persona (flows.json v2) — the chip hides on null.
+    try {
+      const labels = Object.fromEntries(proj.registry().map((e) => [e.id, e.label]));
+      return proj.flows().map((f) => ({
+        ...f,
+        personaName: null,
+        edges: f.edges.map((e) => ({ ...e, fromLabel: labels[e.from] ?? e.from, toLabel: labels[e.to] ?? e.to })),
+      }));
+    } catch {
+      return []; // no project overlaid — nothing to confirm
+    }
   }
   // direction: three groups, each one item
   const d = repo.direction(L);
@@ -559,6 +569,36 @@ const recordItem = (sd, step, id, entry, L) => {
 export const confirmItem = (sd, surface, id, prefs = {}, t = (k) => k, locale = 'en') => {
   recordItem(sd, surface, id, { confirmed: true }, locale);
   return context(sd, surface, null, prefs, t, locale);
+};
+
+// Confirming a flow flips its provenance to founder in the PROJECT's
+// flows.json (derive + confirm) — the studio edits the project through the
+// server's confined write channel. Session state is the item engine's; the
+// file write is the real confirm. No project overlaid → the session confirm
+// still stands, the file stays as derived.
+export const confirmFlowProvenance = async (flowId) => {
+  try {
+    const flows = proj.flows();
+    const f = flows.find((x) => x.id === flowId);
+    if (f && f.provenance !== 'founder') {
+      f.provenance = 'founder';
+      await writeProjectFixture('intake/flows.json', flows);
+    }
+  } catch {
+    // no project overlaid — nothing to write
+  }
+};
+
+export const confirmAllFlows = async () => {
+  try {
+    const flows = proj.flows();
+    if (flows.some((f) => f.provenance === 'inferred')) {
+      for (const f of flows) if (f.provenance === 'inferred') f.provenance = 'founder';
+      await writeProjectFixture('intake/flows.json', flows);
+    }
+  } catch {
+    // no project overlaid — nothing to write
+  }
 };
 
 // A correction: the form's fields ride the entry and override the prefill.
