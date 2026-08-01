@@ -58,8 +58,10 @@ appbox
 
 #### Interview
 
-- [must/R1 Dogfood] Intake is a chat-native interview: depth choice (simple / normal / advanced — three separate question banks per audience) is the first chat message with 3 buttons
-- [must/R1 Dogfood] Each question is a horizontal-carousel card inline in the conversation: free text + single/multi-choice chips + suggested answers; skippable with a visible skipped state; swipe back to revisit
+- [must/R1 Dogfood] Intake is a typeform journey of eight surfaced steps — interview, personas, surfaces, flows, story map, direction, brief, moodboard — each walking one item at a time in the main panel, the chat rail always in step context, the journey timeline in the footer
+- [must/R1 Dogfood] Mode pick is the journey's first move (selectable cards, not chat buttons): simple auto-answers and auto-accepts prefills on the fast path (interview → brief); normal (default) shows every step prefilled for confirmation; advanced (expert) shows every step raw with no auto-accept
+- [must/R1 Dogfood] Every prefill carries a provenance chip (client / founder / inferred) — inferred items ask to be confirmed or corrected, never trusted silently; confirmed items re-open from the item strip
+- [must/R1 Dogfood] Personas, the surface inventory (grouped by shell, states per surface), flows over the screen registry (persona-bound edge sets), and design direction (adjectives / avoids / references) are their own confirmable steps between interview and story map — corrections post as structured edits, accept-all confirms a whole step
 - [must/R1 Dogfood] All-at-once generation when the questionnaire completes: brief + story map appear as main panel artifacts; the moodboard follows as a suggested next step
 - [must/R1 Dogfood] Layout template picking is an intake step: app category first (closed list), then one of six archetype galleries (feed, list-detail, supporting-pane, dashboard, hero-scroll, detail-column) shown as plain colored boxes of named containers at full size in the main panel — recorded in the brief, consumed by the designer without rewriting
 
