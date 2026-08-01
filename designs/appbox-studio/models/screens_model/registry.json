@@ -9,15 +9,6 @@
     "route": "/splash"
   },
   {
-    "id": "app.startup",
-    "label": "Startup",
-    "surface": "app_shell_app_startup_view",
-    "shell": "app",
-    "comp": "AppStartup",
-    "labelKey": "screen.label.app.startup",
-    "route": "/startup"
-  },
-  {
     "id": "app.access",
     "label": "Access",
     "surface": "app_shell_app_access_view",
@@ -34,97 +25,6 @@
     "comp": "AppDashboard",
     "labelKey": "screen.label.app.dashboard",
     "route": "/dashboard"
-  },
-  {
-    "id": "app.demos",
-    "label": "Demos",
-    "surface": "app_shell_app_demos_view",
-    "shell": "app",
-    "comp": "AppDemos",
-    "labelKey": "screen.label.app.demos",
-    "route": "/demos"
-  },
-  {
-    "id": "app.credentials",
-    "label": "Credentials",
-    "surface": "app_shell_app_credentials_view",
-    "shell": "app",
-    "comp": "AppCredentials",
-    "labelKey": "screen.label.app.credentials",
-    "route": "/credentials"
-  },
-  {
-    "id": "app.config",
-    "label": "Config",
-    "surface": "app_shell_app_config_view",
-    "shell": "app",
-    "comp": "AppConfig",
-    "labelKey": "screen.label.app.config",
-    "route": "/config"
-  },
-  {
-    "id": "app.mediarive",
-    "label": "Rive",
-    "surface": "app_shell_app.mediarive_view",
-    "shell": "app",
-    "comp": "AppMediaRive",
-    "labelKey": "screen.label.app.mediarive",
-    "route": "/media/rive"
-  },
-  {
-    "id": "app.medialottie",
-    "label": "Lottie",
-    "surface": "app_shell_app.medialottie_view",
-    "shell": "app",
-    "comp": "AppMediaLottie",
-    "labelKey": "screen.label.app.medialottie",
-    "route": "/media/lottie"
-  },
-  {
-    "id": "app.mediadotlottie",
-    "label": "dotLottie",
-    "surface": "app_shell_app.mediadotlottie_view",
-    "shell": "app",
-    "comp": "AppMediaDotlottie",
-    "labelKey": "screen.label.app.mediadotlottie",
-    "route": "/media/dotlottie"
-  },
-  {
-    "id": "app.mediamodel3d",
-    "label": "3D model",
-    "surface": "app_shell_app.mediamodel3d_view",
-    "shell": "app",
-    "comp": "AppMediaModel3d",
-    "labelKey": "screen.label.app.mediamodel3d",
-    "route": "/media/model3d"
-  },
-  {
-    "id": "app.mediascene3d",
-    "label": "3D scene",
-    "surface": "app_shell_app.mediascene3d_view",
-    "shell": "app",
-    "comp": "AppMediaScene3d",
-    "labelKey": "screen.label.app.mediascene3d",
-    "route": "/media/scene3d"
-  },
-  {
-    "id": "app.mediagame",
-    "label": "Game",
-    "surface": "app_shell_app.mediagame_view",
-    "shell": "app",
-    "comp": "AppMediaGame",
-    "labelKey": "screen.label.app.mediagame",
-    "route": "/media/game"
-  },
-  {
-    "id": "app.mediamaps",
-    "label": "Maps",
-    "surface": "app_shell_app.mediamaps_view",
-    "shell": "app",
-    "comp": "AppMediaMaps",
-    "labelKey": "screen.label.app.mediamaps",
-    "route": "/media/maps",
-    "kits": ["maps"]
   },
   {
     "id": "intake.interview",
@@ -359,6 +259,24 @@
     "comp": "WorkspaceSettings",
     "labelKey": "screen.label.workspace.settings",
     "route": "/workspace"
+  },
+  {
+    "id": "workspace.credentials",
+    "label": "Credentials",
+    "surface": "workspace_shell_workspace_credentials_view",
+    "shell": "workspace",
+    "comp": "WorkspaceCredentials",
+    "labelKey": "screen.label.workspace.credentials",
+    "route": "/workspace/credentials"
+  },
+  {
+    "id": "workspace.config",
+    "label": "Config",
+    "surface": "workspace_shell_workspace_config_view",
+    "shell": "workspace",
+    "comp": "WorkspaceConfig",
+    "labelKey": "screen.label.workspace.config",
+    "route": "/workspace/config"
   },
   {
     "id": "website.site",

@@ -20,7 +20,7 @@
    facade viewerFor produces it — see contract §1):
      v.screens  [{ id, label?, state?, chips? [{text,title}], viewports,
                   inContext?, dim?, tone?, shell, layout?, primaryWidth,
-                  tile { vp, width, height }, srcBase }]
+                  tile { vp, width, height } }]
      v.mode     'flow' (default) | 'proto'
      v.proto    present in proto mode: { active, vp, src }
      v.vp       current rung ('mobile'|'tablet'|'desktop', default mobile)
@@ -30,9 +30,10 @@
      v.bg       'canvas' | 'warm' | 'slate' — stage background (default canvas)
      v.base     route prefix for viewer actions — toggles GET it with params
                 and swap #design-viewer
-     s.srcBase  iframe src prefix per screen — the live registry route for
-                app.* surfaces, the served stub for the rest (both modes
-                append ?vp=<rung>&embed=1)
+     v.stubBase iframe src prefix — the served design render per screen
+                ('/build/screens/'; both modes append ?vp=<rung>&embed=1).
+                The app-under-design is CONTENT on the stub renderer, never
+                a live route.
      v.contextBase — present where screens can pin as chat context (design
                 shell): tile pins GET {contextBase}{id}?state=toggle and swap
                 #panels. Screens in context render with a .ctx-<tone>
@@ -128,7 +129,7 @@
             <span class="dv-tile-label"><strong>{{ s.label or s.id }}</strong> <code>{{ s.id }}</code></span>
           </header>
           <iframe class="dv-tile-frame"
-                  src="{{ s.srcBase }}?vp={{ s.tile.vp }}&embed=1{{ '&inspect=1' if v.inspect }}"
+                  src="{{ v.stubBase }}{{ s.id }}?vp={{ s.tile.vp }}&embed=1{{ '&inspect=1' if v.inspect }}"
                   style="height: {{ s.tile.height }}px"
                   scrolling="no" tabindex="-1" title="{{ s.label or s.id }}"></iframe>
         </div>

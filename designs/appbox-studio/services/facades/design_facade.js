@@ -10,7 +10,6 @@
 // templates. The locale comes from the request and picks the per-locale
 // fixture, en fallback.
 import * as repo from '../repositories/design_repository.js';
-import * as screensRepo from '../repositories/screens_repository.js';
 import * as jargon from './jargon.js';
 import * as agent from './agent_menus.js';
 import * as fv from './file_views.js';
@@ -94,7 +93,7 @@ const stripFor = (d, base, L) =>
     id,
     label: repo.screen(id, L).label,
     tone: toneFor(id, L),
-    src: `${srcBaseFor(id, L)}?vp=mobile`,
+    src: `/build/screens/${id}?vp=mobile`,
     removeHref: `${base}/context/${id}?state=off`,
   }));
 
@@ -157,10 +156,10 @@ const applyEntry = (d, entry, dir) => {
 const RUNG_VP = { 390: 'mobile', 744: 'tablet', 1280: 'desktop' };
 const VP_HEIGHTS = { mobile: 844, tablet: 1133, desktop: 800 };
 
-// Real-render resolution: app.* surfaces are embed-aware views with real
-// registry routes; everything else still renders the generic stub.
-const srcBaseFor = (id, L) =>
-  id.startsWith('app.') && screensRepo.routeFor(id, L) ? screensRepo.routeFor(id, L) : `/build/screens/${id}`;
+// Every canvas tile/thumb/proto frame iframes the stub renderer: the
+// app-under-design (Portalo) is design CONTENT served by /build/screens,
+// never a live studio route.
+const STUB_BASE = '/build/screens/';
 
 function viewerFor(d, L, t) {
   const v = d.viewer ?? {};
@@ -189,7 +188,6 @@ function viewerFor(d, L, t) {
       layout: d.artboardLayout?.[s.id] ?? null,
       primaryWidth: viewports[0]?.width ?? 390,
       tile,
-      srcBase: srcBaseFor(s.id, L),
     };
   });
 
@@ -226,7 +224,7 @@ function viewerFor(d, L, t) {
   // rung size. Only produced in proto mode.
   const proto = mode === 'proto' ? {
     active, vp,
-    src: `${srcBaseFor(active, L)}?vp=${vp}&embed=1`,
+    src: `${STUB_BASE}${active}?vp=${vp}&embed=1`,
   } : null;
 
   const miniPanel = {
@@ -240,7 +238,7 @@ function viewerFor(d, L, t) {
     },
     screens: screens.map((s) => ({
       id: s.id, label: s.label, tone: s.tone, inContext: s.inContext, dim: s.dim,
-      src: `${s.srcBase}?vp=mobile&embed=1`,
+      src: `${STUB_BASE}${s.id}?vp=mobile&embed=1`,
       // flow: a thumb toggles chat context; proto: it picks the active screen.
       ...(mode === 'proto'
         ? { protoHref: withParams({ screen: s.id }), active: s.id === active }
@@ -260,7 +258,7 @@ function viewerFor(d, L, t) {
     screens, bg,
     mode, proto, vp,
     strip: true,
-    base, contextBase,
+    base, stubBase: STUB_BASE, contextBase,
     miniPanel,
     undoRedo: {
       canvas: { canUndo: (d.undoStacks?.canvas?.length ?? 0) > 0, canRedo: (d.redoStacks?.canvas?.length ?? 0) > 0 },

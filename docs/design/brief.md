@@ -58,46 +58,6 @@ appbox
 - [must/R1 Dogfood] Self-host tailnet (compose file) or hosted Tailscale from day one; daemon and apps are tailnet nodes in-process; approvals bind to WireGuard node identity
 - [should/R2 Anywhere] Private mesh CA gives trusted HTTPS origins over the mesh (arxa ADR-0036 pattern)
 
-#### Credentials
-
-- [must/R1 Dogfood] One credentials surface manages every credential the generated app needs — payments, auth, maps, deploy and AI providers grouped in sections; each row shows the key name, a secret/publishable badge, a password-style input, a where-to-get link and a set/not-set chip
-- [must/R1 Dogfood] User adds a Stripe test key for their design app from the credentials surface; the value goes to the OS vault via the daemon, never logged, and test keys work on simulators
-- [must/R1 Dogfood] User sees which required keys are missing before build — the credentials surface and `appbox credentials check` report missing required keys per module
-- [must/R1 Dogfood] Design surfaces the required credentials by key name from the catalog for the kits a surface declares — a maps screen lists its maps keys before build
-- [must/R1 Dogfood] One config surface unifies the app's knobs — build targets and default locale (the appbox.config.json mirror), a credentials summary per module with missing-required badges, and shell prefs (theme, accent, jargon) — so the user reviews everything a generated app ships with in one place
-
-#### Config
-
-- [must/R1 Dogfood] A unified config view manages every kit credential and provider setting in one place — the same catalog the designer, scaffolder, and builder consume
-
-#### Media Rive
-
-- [could/R3 Delight] Rive demo surface plays a vendored .riv in the kit viewer island
-
-#### Media Lottie
-
-- [could/R3 Delight] Lottie demo surface plays a vendored .json animation via lottie-player
-
-#### Media Dotlottie
-
-- [could/R3 Delight] dotLottie demo surface plays a vendored .lottie via dotlottie-wc
-
-#### Media Model3d
-
-- [could/R3 Delight] 3D model demo surface renders a vendored glb in <model-viewer>
-
-#### Media Scene3d
-
-- [could/R3 Delight] 3D scene demo surface renders the three_island scene
-
-#### Media Game
-
-- [could/R3 Delight] Game demo surface boots the game_island canvas loop
-
-#### Media Maps
-
-- [should/R2 Anywhere] Maps demo surface renders the Leaflet island (tier1 port-tested) with markers and a credential-gated tile provider
-
 ### Intake & Story Mapping
 
 #### Interview
@@ -285,6 +245,18 @@ appbox
 - [should/R1 Dogfood] Appearance prefs per device: warm light/dark theme + brand accent picker (cyan/violet/blue/ember from the logo)
 - [must/R1 Dogfood] Language level plain/balanced/technical — every user-facing string written three ways; visual metrics render as X/100 match scores (ΔE 2.0 = 95/100 pass bar), technical level keeps raw values
 
+#### Credentials
+
+- [must/R1 Dogfood] One credentials surface manages every credential the generated app needs — payments, auth, maps, deploy and AI providers grouped in sections; each row shows the key name, a secret/publishable badge, a password-style input, a where-to-get link and a set/not-set chip
+- [must/R1 Dogfood] User adds a Stripe test key for their design app from the credentials surface; the value goes to the OS vault via the daemon, never logged, and test keys work on simulators
+- [must/R1 Dogfood] User sees which required keys are missing before build — the credentials surface and `appbox credentials check` report missing required keys per module
+- [must/R1 Dogfood] Design surfaces the required credentials by key name from the catalog for the kits a surface declares — a maps screen lists its maps keys before build
+- [must/R1 Dogfood] One config surface unifies the app's knobs — build targets and default locale (the appbox.config.json mirror), a credentials summary per module with missing-required badges, and shell prefs (theme, accent, jargon) — so the user reviews everything a generated app ships with in one place
+
+#### Config
+
+- [must/R1 Dogfood] A unified config view manages every kit credential and provider setting in one place — the same catalog the designer, scaffolder, and builder consume
+
 ### Website
 
 #### Site
@@ -321,15 +293,6 @@ appbox
 | `app.pairing` | Pairing | must | R1 Dogfood |
 | `app.notifications` | Notifications | must | R1 Dogfood |
 | `app.remote` | Remote | must | R1 Dogfood |
-| `app.credentials` | Credentials | must | R1 Dogfood |
-| `app.config` | Config | must | R1 Dogfood |
-| `app.mediarive` | Media Rive | could | R3 Delight |
-| `app.medialottie` | Media Lottie | could | R3 Delight |
-| `app.mediadotlottie` | Media Dotlottie | could | R3 Delight |
-| `app.mediamodel3d` | Media Model3d | could | R3 Delight |
-| `app.mediascene3d` | Media Scene3d | could | R3 Delight |
-| `app.mediagame` | Media Game | could | R3 Delight |
-| `app.mediamaps` | Media Maps | should | R2 Anywhere |
 | `intake.interview` | Interview | must | R1 Dogfood |
 | `intake.personas` | Personas | must | R1 Dogfood |
 | `intake.surfaces` | Surfaces | must | R1 Dogfood |
@@ -357,6 +320,8 @@ appbox
 | `first.honesty` | Honesty | must | R1 Dogfood |
 | `workspace.projects2` | Projects | must | R1 Dogfood |
 | `workspace.settings` | Settings | must | R1 Dogfood |
+| `workspace.credentials` | Credentials | must | R1 Dogfood |
+| `workspace.config` | Config | must | R1 Dogfood |
 | `website.site` | Site | must | R2 Anywhere |
 | `website.docs` | Docs | must | R1 Dogfood |
 | `website.showcase2` | Showcase | should | R2 Anywhere |

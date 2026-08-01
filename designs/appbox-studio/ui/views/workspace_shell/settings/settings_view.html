@@ -50,4 +50,16 @@
     {% endfor %}
   </div>
 </section>
+
+<section class="settings-section">
+  <h2>{{ t('settings.credentialsH') }}</h2>
+  <p class="settings-note">{{ t('settings.credentialsNote') }}</p>
+  <a class="ghost" href="/workspace/credentials">{{ t('settings.credentialsH') }} {{ icon('arrow-right', {size: 14}) }}</a>
+</section>
+
+<section class="settings-section">
+  <h2>{{ t('settings.configH') }}</h2>
+  <p class="settings-note">{{ t('settings.configNote') }}</p>
+  <a class="ghost" href="/workspace/config">{{ t('settings.configH') }} {{ icon('arrow-right', {size: 14}) }}</a>
+</section>
 {% endblock %}

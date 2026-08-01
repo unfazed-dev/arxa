@@ -4,11 +4,12 @@
 import * as mainShell from './ui/views/main_shell/main_shell_viewmodel.js';
 import * as buildLoop from './ui/views/main_shell/build/loop/loop_viewmodel.js';
 import * as settings from './ui/views/workspace_shell/settings/settings_viewmodel.js';
+import * as credentials from './ui/views/workspace_shell/credentials/credential_viewmodel.js';
+import * as config from './ui/views/workspace_shell/config/config_viewmodel.js';
 import * as prefs from './ui/common/prefs_viewmodel.js';
 import intakeRoutes from './ui/views/main_shell/intake/routes.intake.js';
 import designRoutes from './ui/views/main_shell/design/routes.design.js';
 import appRoutes from './ui/views/app_shell/routes.app.js';
-import mediaRoutes from './ui/views/app_shell/routes.media.js';
 
 // Landing route of each shell. Required and non-empty — the scaffolder
 // cannot derive it, and a shell whose root is unknown gets an invented one.
@@ -25,7 +26,6 @@ export const shellRoots = {
 export default [
   ['GET', '/', mainShell.page],
   ...appRoutes,
-  ...mediaRoutes,
   ...intakeRoutes,
   ...designRoutes,
   ['GET', '/build', buildLoop.page],
@@ -43,6 +43,13 @@ export default [
   ['GET', '/build/chips/pin', buildLoop.pinChip],
   ['GET', '/build/chips/unpin', buildLoop.unpinChip],
   ['GET', '/workspace', settings.page],
+  // workspace.credentials — every key the generated app needs, one surface
+  ['GET', '/workspace/credentials', credentials.page],
+  ['POST', '/workspace/credentials/set', credentials.set],
+  ['POST', '/workspace/credentials/unset', credentials.unset],
+  // workspace.config — targets/locale (config.json mirror), credentials summary, prefs
+  ['GET', '/workspace/config', config.page],
+  ['POST', '/workspace/config/set', config.set],
   ['POST', '/prefs/accent', prefs.setAccent],
   ['POST', '/prefs/theme', prefs.setTheme],
   ['POST', '/prefs/jargon', prefs.setJargon],

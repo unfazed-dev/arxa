@@ -2,7 +2,7 @@
      generator: appbox  licence: free  project: 662368770980
      Built with appbox (free tier) — https://appbox.dev
 -->
-{% extends "ui/views/app_shell/_app_embed.html" if embed else "ui/views/main_shell/main_shell_view.html" %}
+{% extends "ui/views/main_shell/main_shell_view.html" %}
 {% block title %}{{ t('cfg.pageTitle') }}{% endblock %}
 {% block head_extra %}
 <link rel="stylesheet" href="/assets/css/credential.css">
@@ -15,7 +15,7 @@
 <section class="settings-section">
   <h2>{{ t('cfg.section.app') }}</h2>
   <p class="settings-note">{{ t('cfg.appNote') }}</p>
-  <form method="post" action="/config/set">
+  <form method="post" action="/workspace/config/set">
     <div class="cred-row">
       <div class="cred-row-head">
         <span class="cred-key">{{ t('cfg.targets') }}</span>
@@ -53,7 +53,7 @@
       <span class="cred-key">{{ g.label }}</span>
       <span class="chip {{ 'is-set' if g.missing == 0 }}">{{ t('cfg.creds.setOf', {set: g.set, total: g.total}) }}</span>
       {% if g.missing > 0 %}<span class="type-badge tb-findings">{{ t('cfg.creds.missing', {count: g.missing}) }}</span>{% endif %}
-      <a class="cred-where" href="/credentials">{{ t('cfg.creds.manage') }}</a>
+      <a class="cred-where" href="/workspace/credentials">{{ t('cfg.creds.manage') }}</a>
     </div>
   </div>
   {% endfor %}
@@ -91,5 +91,4 @@
     </div>
   </div>
 </section>
-{% include "ui/views/app_shell/_tabbar.html" %}
 {% endblock %}

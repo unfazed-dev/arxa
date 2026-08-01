@@ -1,17 +1,15 @@
 // appbox:provenance
 // generator: appbox  licence: free  project: 662368770980
 // Built with appbox (free tier) — https://appbox.dev
-export const surfaceId = 'app.config';
+export const surfaceId = 'workspace.config';
 
 import * as facade from '../../../../services/facades/app_facade.js';
 
-const VIEW = 'ui/views/app_shell/config/config_view.html';
+const VIEW = 'ui/views/workspace_shell/config/config_view.html';
 
 export const page = (c, h) =>
   h.render(c, VIEW, {
-    activeShell: 'app',
-    tab: 'config',
-    ...facade.embedContext(c),
+    activeShell: 'workspace',
     ...facade.configContext(h.session(c).data, h.t(c), h.prefs(c)),
   });
 
@@ -21,5 +19,5 @@ export const page = (c, h) =>
 export const set = async (c, h) => {
   const form = await h.form(c);
   facade.setConfig(h.session(c).data, form);
-  return c.redirect('/config', 303);
+  return c.redirect('/workspace/config', 303);
 };

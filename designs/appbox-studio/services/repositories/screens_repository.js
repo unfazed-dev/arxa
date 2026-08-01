@@ -9,10 +9,6 @@ const data = () => readFixture('../../models/screens_model/registry.json');
 
 export const all = () => data();
 
-// The real route for a surface id, or null when the registry has none —
-// viewers use this to point iframes at the live view instead of the stub.
-export const routeFor = (id, _locale = 'en') => data().find((e) => e.id === id)?.route ?? null;
-
 const byShellGroup = (members) =>
   [...new Set(members.map((m) => m.shell))].map((shell) => ({
     shell,

@@ -1,0 +1,13 @@
+{# Portalo dotLottie demo — static playing state (the island autoplays);
+   the live view's htmx play/pause stage swap is not re-created here. #}
+<script type="module" src="/assets/vendor/dotlottie_island.js"></script>
+<span class="eyebrow">{{ t('media.eyebrow') }}</span>
+<h1 class="display">{{ t('media.dotlottie.title') }}</h1>
+<p class="muted">{{ t('media.dotlottie.lede') }}</p>
+<section class="media-stage">
+  <div class="media-frame">
+    <dotlottie-wc src="/assets/media/dotlottie-demo.lottie" loop autoplay
+      class="media-viewer" aria-label="{{ t('media.dotlottie.title') }}"></dotlottie-wc>
+  </div>
+</section>
+{% include "ui/views/main_shell/build/loop/portalo/_tabbar.html" %}

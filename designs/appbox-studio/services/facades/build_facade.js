@@ -20,7 +20,6 @@
 // right), and gate notes are chat replies carrying a gate context chip —
 // there is no second input path.
 import * as repo from '../repositories/build_repository.js';
-import * as screensRepo from '../repositories/screens_repository.js';
 import * as jargon from './jargon.js';
 import * as agent from './agent_menus.js';
 import * as fv from './file_views.js';
@@ -224,11 +223,8 @@ export const VIEWPORT_WIDTHS = { mobile: 390, tablet: 744, desktop: 1280 };
 export const VIEWPORT_HEIGHTS = { mobile: 844, tablet: 1133, desktop: 800 };
 export const VIEWER_BGS = ['canvas', 'warm', 'slate'];
 
-// Same real-render rule as the design facade: app.* surfaces with a registry
-// route render the live (embed-aware) view; the rest keep the generic stub.
-const srcBaseFor = (id) =>
-  id?.startsWith('app.') && screensRepo.routeFor(id) ? screensRepo.routeFor(id) : `/build/screens/${id}`;
-
+// The evidence canvas renders every surface through the stub renderer —
+// the app-under-design (Portalo) is design CONTENT, never a live route.
 function viewerFor(sessionData, evidence) {
   const v = B(sessionData).viewer ?? {};
   const screens = evidence.map((e) => {
@@ -242,7 +238,6 @@ function viewerFor(sessionData, evidence) {
       // static evidence canvas: no rung switching, tiles render at the first
       // authored rung (same contract field the design facade fills per vp).
       tile: { vp: v0, width: VIEWPORT_WIDTHS[v0] ?? 390, height: VIEWPORT_HEIGHTS[v0] ?? 844 },
-      srcBase: srcBaseFor(e.surface),
     };
   });
   const bg = VIEWER_BGS.includes(v.bg) ? v.bg : 'canvas';
@@ -260,6 +255,8 @@ function viewerFor(sessionData, evidence) {
   return {
     screens, bg, inspect, strip: true, static: true,
     base,
+    // Every tile iframes the stub renderer — see the comment above viewerFor.
+    stubBase: '/build/screens/',
     // The viewer mounts its controls in the mini panel. The Screens panel is
     // a design-canvas concept (context pins); build leaves it empty and opens
     // on the Controller. No history stacks here — the pair stays disabled
@@ -286,7 +283,9 @@ function viewerFor(sessionData, evidence) {
 // artifact the daemon serves in the shipped app.
 export const screenStub = (surface, vp, prefs = {}, locale = 'en', opts = {}) => {
   const e = repo.evidence(locale).find((x) => x.surface === surface);
-  const authored = e?.viewports ?? ['mobile'];
+  // No evidence entry (design-content ids like portalo.*): every rung is
+  // authored — the design canvas drives the viewport, not the evidence log.
+  const authored = e?.viewports ?? ['mobile', 'tablet', 'desktop'];
   const v = authored.includes(vp) ? vp : authored[0];
   return {
     surface, vp: v, width: VIEWPORT_WIDTHS[v],

@@ -19,7 +19,7 @@
   },
   "screens": [
     {
-      "id": "app.splash",
+      "id": "portalo.splash",
       "label": "Splash",
       "epic": "Onboarding",
       "state": "frozen",
@@ -31,25 +31,25 @@
         {
           "rung": "compact",
           "width": 390,
-          "shot": "sh_0fc9…109e",
+          "shot": "sh_c9b8…f6c6",
           "note": "single column, actions inline"
         },
         {
           "rung": "medium",
           "width": 744,
-          "shot": "sh_3209…a2de",
+          "shot": "sh_825c…90c2",
           "note": "single column, wider measure"
         },
         {
           "rung": "expanded",
           "width": 1280,
-          "shot": "sh_999a…b04a",
+          "shot": "sh_1d7a…e401",
           "note": "centred column, 56rem cap"
         }
       ]
     },
     {
-      "id": "app.startup",
+      "id": "portalo.startup",
       "label": "Startup",
       "epic": "Onboarding",
       "state": "frozen",
@@ -61,25 +61,25 @@
         {
           "rung": "compact",
           "width": 390,
-          "shot": "sh_7cb6…097a",
+          "shot": "sh_0097…e83e",
           "note": "single column, actions inline"
         },
         {
           "rung": "medium",
           "width": 744,
-          "shot": "sh_8822…bf2d",
+          "shot": "sh_4210…8dcd",
           "note": "single column, wider measure"
         },
         {
           "rung": "expanded",
           "width": 1280,
-          "shot": "sh_ca48…5f4c",
+          "shot": "sh_c278…a261",
           "note": "centred column, 56rem cap"
         }
       ]
     },
     {
-      "id": "app.access",
+      "id": "portalo.access",
       "label": "Sign In",
       "epic": "Onboarding",
       "state": "frozen",
@@ -91,25 +91,25 @@
         {
           "rung": "compact",
           "width": 390,
-          "shot": "sh_f256…f12c",
+          "shot": "sh_ac44…d753",
           "note": "single column, actions inline"
         },
         {
           "rung": "medium",
           "width": 744,
-          "shot": "sh_1850…836b",
+          "shot": "sh_68a2…7150",
           "note": "single column, wider measure"
         },
         {
           "rung": "expanded",
           "width": 1280,
-          "shot": "sh_089f…90d8",
+          "shot": "sh_8c80…c48e",
           "note": "centred column, 56rem cap"
         }
       ]
     },
     {
-      "id": "app.dashboard",
+      "id": "portalo.dashboard",
       "label": "Demo Dashboard",
       "epic": "Demos",
       "state": "frozen",
@@ -121,25 +121,25 @@
         {
           "rung": "compact",
           "width": 390,
-          "shot": "sh_a644…d5ac",
+          "shot": "sh_b415…128b",
           "note": "stacked — main panel first, activity panel below"
         },
         {
           "rung": "medium",
           "width": 744,
-          "shot": "sh_78f5…eb28",
+          "shot": "sh_7125…9140",
           "note": "narrow 300px activity panel beside the main panel"
         },
         {
           "rung": "expanded",
           "width": 1280,
-          "shot": "sh_d280…fe5b",
+          "shot": "sh_7ecc…d191",
           "note": "340px activity panel + one artifact large"
         }
       ]
     },
     {
-      "id": "app.demos",
+      "id": "portalo.demos",
       "label": "Demo Index",
       "epic": "Demos",
       "state": "frozen",
@@ -151,25 +151,25 @@
         {
           "rung": "compact",
           "width": 390,
-          "shot": "sh_6435…ffb0",
+          "shot": "sh_b487…40eb",
           "note": "one-up cards"
         },
         {
           "rung": "medium",
           "width": 744,
-          "shot": "sh_d1aa…db1e",
+          "shot": "sh_b339…5667",
           "note": "two-up grid"
         },
         {
           "rung": "expanded",
           "width": 1280,
-          "shot": "sh_d2ad…3663",
+          "shot": "sh_8c9b…699b",
           "note": "three-up grid"
         }
       ]
     },
     {
-      "id": "app.mediarive",
+      "id": "portalo.mediarive",
       "label": "Rive Demo",
       "epic": "Demos",
       "state": "frozen",
@@ -181,25 +181,25 @@
         {
           "rung": "compact",
           "width": 390,
-          "shot": "sh_c092…93c3",
+          "shot": "sh_ce63…d0a2",
           "note": "stacked — main panel first, activity panel below"
         },
         {
           "rung": "medium",
           "width": 744,
-          "shot": "sh_f5ad…a93f",
+          "shot": "sh_eddd…4f58",
           "note": "narrow 300px activity panel beside the main panel"
         },
         {
           "rung": "expanded",
           "width": 1280,
-          "shot": "sh_01e5…bc73",
+          "shot": "sh_ae31…8fa8",
           "note": "340px activity panel + one artifact large"
         }
       ]
     },
     {
-      "id": "app.medialottie",
+      "id": "portalo.medialottie",
       "label": "Lottie Demo",
       "epic": "Demos",
       "state": "frozen",
@@ -211,25 +211,25 @@
         {
           "rung": "compact",
           "width": 390,
-          "shot": "sh_fbec…a841",
+          "shot": "sh_d917…27c5",
           "note": "stacked — main panel first, activity panel below"
         },
         {
           "rung": "medium",
           "width": 744,
-          "shot": "sh_c60b…4dd1",
+          "shot": "sh_7256…cf7c",
           "note": "narrow 300px activity panel beside the main panel"
         },
         {
           "rung": "expanded",
           "width": 1280,
-          "shot": "sh_31c4…6265",
+          "shot": "sh_f9fd…3df4",
           "note": "340px activity panel + one artifact large"
         }
       ]
     },
     {
-      "id": "app.mediadotlottie",
+      "id": "portalo.mediadotlottie",
       "label": "dotLottie Demo",
       "epic": "Demos",
       "state": "frozen",
@@ -241,25 +241,25 @@
         {
           "rung": "compact",
           "width": 390,
-          "shot": "sh_cdd3…8f04",
+          "shot": "sh_6dc5…77ac",
           "note": "stacked — main panel first, activity panel below"
         },
         {
           "rung": "medium",
           "width": 744,
-          "shot": "sh_2fe9…e702",
+          "shot": "sh_6ee0…8daf",
           "note": "narrow 300px activity panel beside the main panel"
         },
         {
           "rung": "expanded",
           "width": 1280,
-          "shot": "sh_9ccd…b0c4",
+          "shot": "sh_fb0b…3e25",
           "note": "340px activity panel + one artifact large"
         }
       ]
     },
     {
-      "id": "app.mediamodel3d",
+      "id": "portalo.mediamodel3d",
       "label": "3D Model Demo",
       "epic": "Demos",
       "state": "frozen",
@@ -271,25 +271,25 @@
         {
           "rung": "compact",
           "width": 390,
-          "shot": "sh_06d0…93f5",
+          "shot": "sh_cf0a…04e1",
           "note": "stacked — main panel first, activity panel below"
         },
         {
           "rung": "medium",
           "width": 744,
-          "shot": "sh_efaf…a04d",
+          "shot": "sh_ccda…5405",
           "note": "narrow 300px activity panel beside the main panel"
         },
         {
           "rung": "expanded",
           "width": 1280,
-          "shot": "sh_8375…1e3f",
+          "shot": "sh_c26c…b4a3",
           "note": "340px activity panel + one artifact large"
         }
       ]
     },
     {
-      "id": "app.mediascene3d",
+      "id": "portalo.mediascene3d",
       "label": "3D Scene Demo",
       "epic": "Demos",
       "state": "frozen",
@@ -301,25 +301,25 @@
         {
           "rung": "compact",
           "width": 390,
-          "shot": "sh_b999…bcf2",
+          "shot": "sh_81d2…2ddf",
           "note": "stacked — main panel first, activity panel below"
         },
         {
           "rung": "medium",
           "width": 744,
-          "shot": "sh_4808…c94a",
+          "shot": "sh_2533…7d03",
           "note": "narrow 300px activity panel beside the main panel"
         },
         {
           "rung": "expanded",
           "width": 1280,
-          "shot": "sh_29b5…473c",
+          "shot": "sh_68ac…dda0",
           "note": "340px activity panel + one artifact large"
         }
       ]
     },
     {
-      "id": "app.mediagame",
+      "id": "portalo.mediagame",
       "label": "Mini Game",
       "epic": "Demos",
       "state": "frozen",
@@ -331,25 +331,25 @@
         {
           "rung": "compact",
           "width": 390,
-          "shot": "sh_820b…93be",
+          "shot": "sh_8fdc…d09d",
           "note": "stacked — main panel first, activity panel below"
         },
         {
           "rung": "medium",
           "width": 744,
-          "shot": "sh_2d77…a93a",
+          "shot": "sh_25a7…4f52",
           "note": "narrow 300px activity panel beside the main panel"
         },
         {
           "rung": "expanded",
           "width": 1280,
-          "shot": "sh_6f88…bc6e",
+          "shot": "sh_1bd4…8fa3",
           "note": "340px activity panel + one artifact large"
         }
       ]
     },
     {
-      "id": "app.mediamaps",
+      "id": "portalo.mediamaps",
       "label": "Maps Demo",
       "epic": "Demos",
       "state": "frozen",
@@ -361,80 +361,20 @@
         {
           "rung": "compact",
           "width": 390,
-          "shot": "sh_6a85…93c1",
+          "shot": "sh_7856…d0a0",
           "note": "stacked — main panel first, activity panel below"
         },
         {
           "rung": "medium",
           "width": 744,
-          "shot": "sh_036a…a93d",
+          "shot": "sh_fb9a…4f55",
           "note": "narrow 300px activity panel beside the main panel"
         },
         {
           "rung": "expanded",
           "width": 1280,
-          "shot": "sh_964d…bc70",
+          "shot": "sh_4298…8fa6",
           "note": "340px activity panel + one artifact large"
-        }
-      ]
-    },
-    {
-      "id": "app.credentials",
-      "label": "Kit Credentials",
-      "epic": "System",
-      "state": "frozen",
-      "wire": "stack",
-      "kit": 95,
-      "summary": "API keys per kit, validated on save — a bad key fails loudly, never silently",
-      "summaryPlain": "Where the API keys live — each one is checked when you save it, so nothing breaks quietly",
-      "rungs": [
-        {
-          "rung": "compact",
-          "width": 390,
-          "shot": "sh_f5ee…a32f",
-          "note": "single column, actions inline"
-        },
-        {
-          "rung": "medium",
-          "width": 744,
-          "shot": "sh_523c…48bf",
-          "note": "single column, wider measure"
-        },
-        {
-          "rung": "expanded",
-          "width": 1280,
-          "shot": "sh_780c…5d53",
-          "note": "centred column, 56rem cap"
-        }
-      ]
-    },
-    {
-      "id": "app.config",
-      "label": "App Config",
-      "epic": "System",
-      "state": "frozen",
-      "wire": "stack",
-      "kit": 96,
-      "summary": "Runtime flags and demo defaults — editable in-app, persisted across restarts",
-      "summaryPlain": "The settings screen — switches for how demos behave, remembered between launches",
-      "rungs": [
-        {
-          "rung": "compact",
-          "width": 390,
-          "shot": "sh_dc92…f544",
-          "note": "single column, actions inline"
-        },
-        {
-          "rung": "medium",
-          "width": 744,
-          "shot": "sh_ac42…8783",
-          "note": "single column, wider measure"
-        },
-        {
-          "rung": "expanded",
-          "width": 1280,
-          "shot": "sh_65f2…94f0",
-          "note": "centred column, 56rem cap"
         }
       ]
     }
@@ -460,7 +400,7 @@
       "id": "manifest",
       "label": "Freeze manifest",
       "kind": "manifest",
-      "detail": "frz_9c41e2 · 42 goldens · sha256:9c41…e2b7",
+      "detail": "frz_9c41e2 · 36 goldens · sha256:9c41…e2b7",
       "href": "/design/freeze"
     },
     {
@@ -481,7 +421,7 @@
       "id": "goldens",
       "label": "Goldens",
       "kind": "shots",
-      "detail": "42 frozen shots · 14 surfaces × 3 rungs",
+      "detail": "36 frozen shots · 12 surfaces × 3 rungs",
       "href": "/design"
     }
   ],
@@ -496,7 +436,7 @@
     },
     {
       "path": "designs/appbox-studio/models/design_model/run.json",
-      "detail": "generated fixture — 14 surfaces, 42 shots"
+      "detail": "generated fixture — 12 surfaces, 36 shots"
     },
     {
       "path": "app/structure.json",
@@ -504,13 +444,13 @@
     },
     {
       "path": "app/goldens/",
-      "detail": "42 frozen goldens, hashed at freeze"
+      "detail": "36 frozen goldens, hashed at freeze"
     }
   ],
   "manifest": {
     "id": "frz_9c41e2",
-    "goldens": 42,
-    "surfaces": 14,
+    "goldens": 36,
+    "surfaces": 12,
     "rungs": "390 / 744 / 1280",
     "hash": "sha256:9c41…e2b7",
     "frozenAt": "Yesterday 16:42",
@@ -529,8 +469,8 @@
     {
       "at": "14:02",
       "who": "agent",
-      "text": "Brief traced — 14 surfaces from story-map.json; every registry id backed by a story.",
-      "textPlain": "Brief checked — 14 screens come from the story map; every screen traces back to a user story."
+      "text": "Brief traced — 12 surfaces from story-map.json; every registry id backed by a story.",
+      "textPlain": "Brief checked — 12 screens come from the story map; every screen traces back to a user story."
     },
     {
       "at": "14:09",
@@ -541,13 +481,13 @@
     {
       "at": "14:31",
       "who": "agent",
-      "text": "Prototype composed — 14 surfaces × 3 rungs from targets alone; structure carried, not pixels.",
-      "textPlain": "Prototype built — 14 screens, each at phone, tablet and desktop size; the layout structure is what matters, not decoration."
+      "text": "Prototype composed — 12 surfaces × 3 rungs from targets alone; structure carried, not pixels.",
+      "textPlain": "Prototype built — 12 screens, each at phone, tablet and desktop size; the layout structure is what matters, not decoration."
     },
     {
       "at": "15:58",
       "who": "you",
-      "text": "Screen chat on app.mediagame — 4 checkpoints; HUD calmed, compact control bar docked.",
+      "text": "Screen chat on portalo.mediagame — 4 checkpoints; HUD calmed, compact control bar docked.",
       "textPlain": "You refined the mini-game screen in chat — 4 saved changes; a calmer HUD, better phone layout."
     },
     {
@@ -559,69 +499,63 @@
     {
       "at": "16:42",
       "who": "agent",
-      "text": "Freeze minted — manifest frz_9c41e2 · 42 goldens hashed · structure.json locked.",
-      "textPlain": "Design locked — all 42 approved snapshots fingerprinted and recorded; the structure is now the reference."
+      "text": "Freeze minted — manifest frz_9c41e2 · 36 goldens hashed · structure.json locked.",
+      "textPlain": "Design locked — all 36 approved snapshots fingerprinted and recorded; the structure is now the reference."
     },
     {
       "at": "09:12",
       "who": "agent",
-      "text": "Drift check — 42/42 goldens match the manifest. Clean.",
-      "textPlain": "Drift check — all 42 snapshots still match the approved design. Nothing has moved."
+      "text": "Drift check — 36/36 goldens match the manifest. Clean.",
+      "textPlain": "Drift check — all 36 snapshots still match the approved design. Nothing has moved."
     }
   ],
   "traceability": [
     {
-      "surface": "app.splash",
+      "surface": "portalo.splash",
       "story": "First paint under 300ms — animated Portalo logo, no jank",
       "code": "app/lib/ui/views/app/splash_view.dart",
       "files": 4
     },
     {
-      "surface": "app.access",
+      "surface": "portalo.access",
       "story": "One-tap sign-in before any demo; the session persists across launches",
       "code": "app/lib/ui/views/app/access_view.dart",
       "files": 4
     },
     {
-      "surface": "app.dashboard",
+      "surface": "portalo.dashboard",
       "story": "Every demo one tap from the dashboard, with live kit-status chips",
       "code": "app/lib/ui/views/app/dashboard_view.dart",
       "files": 4
     },
     {
-      "surface": "app.mediascene3d",
+      "surface": "portalo.mediascene3d",
       "story": "A composed three.js scene running at 60 fps on the real device",
       "code": "app/lib/ui/views/app/mediascene3d_view.dart",
       "files": 4
     },
     {
-      "surface": "app.mediagame",
+      "surface": "portalo.mediagame",
       "story": "A playable mini-game proving the frame budget — HUD from kit primitives",
       "code": "app/lib/ui/views/app/mediagame_view.dart",
       "files": 4
     },
     {
-      "surface": "app.mediamaps",
+      "surface": "portalo.mediamaps",
       "story": "Map tiles load only with valid kit credentials — styles from the maps kit",
       "code": "app/lib/ui/views/app/mediamaps_view.dart",
-      "files": 4
-    },
-    {
-      "surface": "app.config",
-      "story": "Runtime flags editable in-app; changes survive a restart",
-      "code": "app/lib/ui/views/app/config_view.dart",
       "files": 4
     }
   ],
   "drift": {
     "checked": "today 09:12",
-    "matched": "42/42",
+    "matched": "36/36",
     "clean": true,
     "history": [
       {
         "at": "today 08:47",
         "state": "resolved",
-        "text": "app.mediagame compact shot changed after approval (checkpoint cp-5) — flagged stale loudly; re-approved and re-frozen 08:52",
+        "text": "portalo.mediagame compact shot changed after approval (checkpoint cp-5) — flagged stale loudly; re-approved and re-frozen 08:52",
         "textPlain": "the phone-size shot of the mini-game screen changed after you approved it — the design was marked out-of-date until you approved the change at 08:52",
         "hash": "d41f…7b2c"
       }
@@ -640,7 +574,7 @@
       "textPlain": "Made it calmer — the score banner is now a soft tint instead of a loud fill; the pause button stays bold. Saved as cp-3 below, one tap undoes it.",
       "cps": [
         {
-          "screen": "app.mediagame",
+          "screen": "portalo.mediagame",
           "cp": "cp-3"
         }
       ]
@@ -657,14 +591,14 @@
       "textPlain": "Fixed — on phone-size screens the control bar pins to the screen edge instead of floating over the play field. Saved as cp-4.",
       "cps": [
         {
-          "screen": "app.mediagame",
+          "screen": "portalo.mediagame",
           "cp": "cp-4"
         }
       ]
     }
   ],
   "checkpoints": {
-    "app.mediagame": [
+    "portalo.mediagame": [
       {
         "id": "cp-1",
         "n": 1,
@@ -783,7 +717,7 @@
         "primitive",
         "component"
       ],
-      "text": "Kit coverage 96% across the 14 surfaces — the bespoke remainder is the game loop and the three.js scene graph.",
+      "text": "Kit coverage 96% across the 12 surfaces — the bespoke remainder is the game loop and the three.js scene graph.",
       "textPlain": "96% of these screens can be built from ready-made parts — the custom work is the game loop and the 3D scene."
     }
   ],
@@ -793,12 +727,11 @@
   },
   "epics": [
     "Onboarding",
-    "Demos",
-    "System"
+    "Demos"
   ],
   "counts": {
-    "screens": 14,
-    "shots": 42,
-    "frozen": 14
+    "screens": 12,
+    "shots": 36,
+    "frozen": 12
   }
 }

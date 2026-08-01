@@ -38,8 +38,6 @@ Files:
   screens:  [{ id, label?, state?, chips?, viewports, inContext?, dim?,
                tone?, shell, layout?, primaryWidth,
                tile: { vp, width, height } }],   // dims at the CURRENT rung
-               // + srcBase per screen: the live registry route for app.*
-               // surfaces, '/build/screens/<id>' (the stub) for the rest
   mode:     'flow' | 'proto',          // default 'flow'
   proto:    { active, vp, src },       // proto mode only
   vp:       'mobile' | 'tablet' | 'desktop',   // current rung (default mobile)
@@ -47,6 +45,12 @@ Files:
   static:   bool,                      // build evidence: read-only canvas
   bg:       'canvas' | 'warm' | 'slate',
   base:     '/design/viewer',          // per-shell viewer route
+  stubBase: '/build/screens/',         // iframe src prefix — every tile,
+               // thumb and proto frame renders the STUB, always. The
+               // app-under-design (Portalo) is design CONTENT served by
+               // GET /build/screens/:surface (bespoke partials under
+               // build/loop/portalo/), never a registry surface or a
+               // live studio route.
   contextBase: '/design/chat/context/',// present where tiles pin as context
   miniPanel: { activePanel,
                bar: { devices: [{ key, icon, active, href }] | null,
@@ -68,10 +72,9 @@ Files:
   `{ vp, width, height?, rung?, note?, shot? }`. Real rung sizes are
   390×844 / 744×1133 / 1280×800; devices render at true size — the proto
   stage pans when oversized, centers when it fits, never clamps.
-- Proto iframe src: `{srcBase(active)}?vp={vp}&embed=1` — the live registry
-  route for app.* surfaces, otherwise the `GET /build/screens/:surface` stub
-  renderer. Flow tiles use the same shape with `s.tile.vp`
-  (`{s.srcBase}?vp={tile.vp}&embed=1`).
+- Proto iframe src: `{stubBase}{active}?vp={vp}&embed=1` — the
+  `GET /build/screens/:surface` stub renderer. Flow tiles use the same shape
+  with `s.tile.vp` (`{stubBase}{s.id}?vp={tile.vp}&embed=1`).
 
 ## Wiring a shell
 

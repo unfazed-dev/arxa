@@ -1,0 +1,8 @@
+{# Portalo tab bar — fixed bottom nav on the compact rung only (≤599px,
+   appshell.css). `kind` (from the stub facade) names the active destination;
+   `pqs` keeps vp/embed on in-frame navigation. #}
+<nav class="apptabs" aria-label="{{ t('tabs.aria') }}">
+  <a class="apptab {{ 'on' if kind == 'dashboard' }}" href="/build/screens/portalo.dashboard{{ pqs }}">{{ icon('home', {size: 20}) }}<span>{{ t('screen.label.app.dashboard') }}</span></a>
+  <a class="apptab {{ 'on' if kind in ['demos', 'mediarive', 'medialottie', 'mediadotlottie', 'mediamodel3d', 'mediascene3d', 'mediagame'] }}" href="/build/screens/portalo.demos{{ pqs }}">{{ icon('layout-grid', {size: 20}) }}<span>{{ t('demos.title') }}</span></a>
+  <a class="apptab {{ 'on' if kind == 'mediamaps' }}" href="/build/screens/portalo.mediamaps{{ pqs }}">{{ icon('map', {size: 20}) }}<span>{{ t('media.maps.title') }}</span></a>
+</nav>

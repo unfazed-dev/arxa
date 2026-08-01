@@ -5,7 +5,7 @@
   },
   "tagline": "Describe it. Gate it. Ship it.",
   "auth": {
-    "headline": "Sign in to Portalo",
+    "headline": "Sign in to appbox",
     "lede": "One account for every project on your tailnet. Prototype build — any email signs you in.",
     "providers": [
       {

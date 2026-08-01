@@ -21,17 +21,6 @@
       ]
     },
     {
-      "id": "app.startup",
-      "shell": "app",
-      "comp": "AppStartup",
-      "shellDir": "app_shell",
-      "surface": "app_shell_app_startup_view",
-      "viewmodel": "ui/views/app_shell/startup/startup_viewmodel.js",
-      "deps": [
-        "services/facades/app_facade.js"
-      ]
-    },
-    {
       "id": "app.access",
       "shell": "app",
       "comp": "AppAccess",
@@ -51,119 +40,6 @@
       "viewmodel": "ui/views/app_shell/dashboard/dashboard_viewmodel.js",
       "deps": [
         "services/facades/app_facade.js"
-      ]
-    },
-    {
-      "id": "app.demos",
-      "shell": "app",
-      "comp": "AppDemos",
-      "shellDir": "app_shell",
-      "surface": "app_shell_app_demos_view",
-      "viewmodel": "ui/views/app_shell/demos/demos_viewmodel.js",
-      "deps": [
-        "services/facades/app_facade.js"
-      ]
-    },
-    {
-      "id": "app.credentials",
-      "shell": "app",
-      "comp": "AppCredentials",
-      "shellDir": "app_shell",
-      "surface": "app_shell_app_credentials_view",
-      "viewmodel": "ui/views/app_shell/credential/credential_viewmodel.js",
-      "deps": [
-        "services/facades/app_facade.js"
-      ]
-    },
-    {
-      "id": "app.config",
-      "shell": "app",
-      "comp": "AppConfig",
-      "shellDir": "app_shell",
-      "surface": "app_shell_app_config_view",
-      "viewmodel": "ui/views/app_shell/config/config_viewmodel.js",
-      "deps": [
-        "services/facades/app_facade.js"
-      ]
-    },
-    {
-      "id": "app.mediarive",
-      "shell": "app",
-      "comp": "AppMediaRive",
-      "shellDir": "app_shell",
-      "surface": "app_shell_app.mediarive_view",
-      "viewmodel": "ui/views/app_shell/media/rive/rive_viewmodel.js",
-      "deps": [
-        "services/facades/app_facade.js"
-      ]
-    },
-    {
-      "id": "app.medialottie",
-      "shell": "app",
-      "comp": "AppMediaLottie",
-      "shellDir": "app_shell",
-      "surface": "app_shell_app.medialottie_view",
-      "viewmodel": "ui/views/app_shell/media/lottie/lottie_viewmodel.js",
-      "deps": [
-        "services/facades/app_facade.js"
-      ]
-    },
-    {
-      "id": "app.mediadotlottie",
-      "shell": "app",
-      "comp": "AppMediaDotlottie",
-      "shellDir": "app_shell",
-      "surface": "app_shell_app.mediadotlottie_view",
-      "viewmodel": "ui/views/app_shell/media/dotlottie/dotlottie_viewmodel.js",
-      "deps": [
-        "services/facades/app_facade.js"
-      ]
-    },
-    {
-      "id": "app.mediamodel3d",
-      "shell": "app",
-      "comp": "AppMediaModel3d",
-      "shellDir": "app_shell",
-      "surface": "app_shell_app.mediamodel3d_view",
-      "viewmodel": "ui/views/app_shell/media/model3d/model3d_viewmodel.js",
-      "deps": [
-        "services/facades/app_facade.js"
-      ]
-    },
-    {
-      "id": "app.mediascene3d",
-      "shell": "app",
-      "comp": "AppMediaScene3d",
-      "shellDir": "app_shell",
-      "surface": "app_shell_app.mediascene3d_view",
-      "viewmodel": "ui/views/app_shell/media/scene3d/scene3d_viewmodel.js",
-      "deps": [
-        "services/facades/app_facade.js"
-      ]
-    },
-    {
-      "id": "app.mediagame",
-      "shell": "app",
-      "comp": "AppMediaGame",
-      "shellDir": "app_shell",
-      "surface": "app_shell_app.mediagame_view",
-      "viewmodel": "ui/views/app_shell/media/game/game_viewmodel.js",
-      "deps": [
-        "services/facades/app_facade.js"
-      ]
-    },
-    {
-      "id": "app.mediamaps",
-      "shell": "app",
-      "comp": "AppMediaMaps",
-      "shellDir": "app_shell",
-      "surface": "app_shell_app.mediamaps_view",
-      "viewmodel": "ui/views/app_shell/media/maps/maps_viewmodel.js",
-      "deps": [
-        "services/facades/app_facade.js"
-      ],
-      "kits": [
-        "maps"
       ]
     },
     {
@@ -425,6 +301,28 @@
       "deps": []
     },
     {
+      "id": "workspace.credentials",
+      "shell": "workspace",
+      "comp": "WorkspaceCredentials",
+      "shellDir": "workspace_shell",
+      "surface": "workspace_shell_workspace_credentials_view",
+      "viewmodel": "ui/views/workspace_shell/credentials/credential_viewmodel.js",
+      "deps": [
+        "services/facades/app_facade.js"
+      ]
+    },
+    {
+      "id": "workspace.config",
+      "shell": "workspace",
+      "comp": "WorkspaceConfig",
+      "shellDir": "workspace_shell",
+      "surface": "workspace_shell_workspace_config_view",
+      "viewmodel": "ui/views/workspace_shell/config/config_viewmodel.js",
+      "deps": [
+        "services/facades/app_facade.js"
+      ]
+    },
+    {
       "id": "website.site",
       "shell": "website",
       "comp": "WebsiteSite",
@@ -558,12 +456,17 @@
       "provenance": "founder",
       "edges": [
         {
-          "from": "app.credentials",
-          "to": "app.config",
+          "from": "workspace.settings",
+          "to": "workspace.credentials",
+          "trigger": "Open credentials"
+        },
+        {
+          "from": "workspace.credentials",
+          "to": "workspace.config",
           "trigger": "Add key"
         },
         {
-          "from": "app.config",
+          "from": "workspace.config",
           "to": "design.prototype",
           "trigger": "Use kit in design"
         }

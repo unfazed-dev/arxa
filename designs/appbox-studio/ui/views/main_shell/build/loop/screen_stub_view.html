@@ -12,14 +12,22 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{ surface }} · {{ vp }}</title>
   <link rel="stylesheet" href="/assets/css/app.css">
+  {% if kind in ['splash', 'startup', 'access', 'dashboard', 'demos', 'mediarive', 'medialottie', 'mediadotlottie', 'mediamodel3d', 'mediascene3d', 'mediagame', 'mediamaps'] %}
+  {# Portalo content mockups reuse the app-shell/media stylesheets. #}
+  <link rel="stylesheet" href="/assets/css/appshell.css">
+  <link rel="stylesheet" href="/assets/css/media.css">
+  {% endif %}
 </head>
 <body class="stub-body {{ 'stub-embed' if embed }}" data-surface="{{ surface }}" {{ 'data-inspect-armed="true"' if inspect }}>
+{% set pqs = '?vp=' + vp + ('&embed=1' if embed else '') %}
 <div id="app" data-theme="{{ theme }}" data-accent="cyan">
   <div class="stub-screen" style="{{ '' if embed else 'max-width: ' + width + 'px' }}">
     {% if not embed %}
     <header class="stub-nav" data-el="nav-bar" data-inspect-role="nav" data-inspect-style="app bar · brand + links" data-inspect-motion="none" data-inspect-fn="Top-level navigation and brand for the screen">
       {% if kind in ['home', 'cart', 'checkout', 'confirmation'] %}
       <span class="stub-brand">Petal &amp; Stem</span>
+      {% elif kind in ['splash', 'startup', 'access', 'dashboard', 'demos', 'mediarive', 'medialottie', 'mediadotlottie', 'mediamodel3d', 'mediascene3d', 'mediagame', 'mediamaps'] %}
+      <span class="stub-brand">{{ t('app.brand') }}</span>
       {% else %}
       <span class="stub-brand">appbox</span>
       {% endif %}
@@ -61,6 +69,30 @@
       <h1>Order placed</h1>
       <p>Bouquets arrive Thursday before noon.</p>
     </section>
+    {% elif kind == 'splash' %}
+    {% include "ui/views/main_shell/build/loop/portalo/splash.html" %}
+    {% elif kind == 'startup' %}
+    {% include "ui/views/main_shell/build/loop/portalo/startup.html" %}
+    {% elif kind == 'access' %}
+    {% include "ui/views/main_shell/build/loop/portalo/access.html" %}
+    {% elif kind == 'dashboard' %}
+    {% include "ui/views/main_shell/build/loop/portalo/dashboard.html" %}
+    {% elif kind == 'demos' %}
+    {% include "ui/views/main_shell/build/loop/portalo/demos.html" %}
+    {% elif kind == 'mediarive' %}
+    {% include "ui/views/main_shell/build/loop/portalo/mediarive.html" %}
+    {% elif kind == 'medialottie' %}
+    {% include "ui/views/main_shell/build/loop/portalo/medialottie.html" %}
+    {% elif kind == 'mediadotlottie' %}
+    {% include "ui/views/main_shell/build/loop/portalo/mediadotlottie.html" %}
+    {% elif kind == 'mediamodel3d' %}
+    {% include "ui/views/main_shell/build/loop/portalo/mediamodel3d.html" %}
+    {% elif kind == 'mediascene3d' %}
+    {% include "ui/views/main_shell/build/loop/portalo/mediascene3d.html" %}
+    {% elif kind == 'mediagame' %}
+    {% include "ui/views/main_shell/build/loop/portalo/mediagame.html" %}
+    {% elif kind == 'mediamaps' %}
+    {% include "ui/views/main_shell/build/loop/portalo/mediamaps.html" %}
     {% else %}
     {# Generic fallback: any surface without a bespoke stub renders an honest
        labelled placeholder — nav carries the name, a few blocks stand in. #}

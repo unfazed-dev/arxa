@@ -19,7 +19,7 @@
   },
   "screens": [
     {
-      "id": "app.splash",
+      "id": "portalo.splash",
       "label": "Splash",
       "epic": "Onboarding",
       "state": "frozen",
@@ -43,7 +43,7 @@
       ]
     },
     {
-      "id": "app.startup",
+      "id": "portalo.startup",
       "label": "Start",
       "epic": "Onboarding",
       "state": "frozen",
@@ -67,7 +67,7 @@
       ]
     },
     {
-      "id": "app.access",
+      "id": "portalo.access",
       "label": "Logowanie",
       "epic": "Onboarding",
       "state": "frozen",
@@ -91,7 +91,7 @@
       ]
     },
     {
-      "id": "app.dashboard",
+      "id": "portalo.dashboard",
       "label": "Panel demo",
       "epic": "Dema",
       "state": "frozen",
@@ -115,7 +115,7 @@
       ]
     },
     {
-      "id": "app.demos",
+      "id": "portalo.demos",
       "label": "Indeks demo",
       "epic": "Dema",
       "state": "frozen",
@@ -139,7 +139,7 @@
       ]
     },
     {
-      "id": "app.mediarive",
+      "id": "portalo.mediarive",
       "label": "Demo Rive",
       "epic": "Dema",
       "state": "frozen",
@@ -163,7 +163,7 @@
       ]
     },
     {
-      "id": "app.medialottie",
+      "id": "portalo.medialottie",
       "label": "Demo Lottie",
       "epic": "Dema",
       "state": "frozen",
@@ -187,7 +187,7 @@
       ]
     },
     {
-      "id": "app.mediadotlottie",
+      "id": "portalo.mediadotlottie",
       "label": "Demo dotLottie",
       "epic": "Dema",
       "state": "frozen",
@@ -211,7 +211,7 @@
       ]
     },
     {
-      "id": "app.mediamodel3d",
+      "id": "portalo.mediamodel3d",
       "label": "Demo modelu 3D",
       "epic": "Dema",
       "state": "frozen",
@@ -235,7 +235,7 @@
       ]
     },
     {
-      "id": "app.mediascene3d",
+      "id": "portalo.mediascene3d",
       "label": "Demo sceny 3D",
       "epic": "Dema",
       "state": "frozen",
@@ -259,7 +259,7 @@
       ]
     },
     {
-      "id": "app.mediagame",
+      "id": "portalo.mediagame",
       "label": "Mini gra",
       "epic": "Dema",
       "state": "frozen",
@@ -283,7 +283,7 @@
       ]
     },
     {
-      "id": "app.mediamaps",
+      "id": "portalo.mediamaps",
       "label": "Demo map",
       "epic": "Dema",
       "state": "frozen",
@@ -291,54 +291,6 @@
       "kit": 93,
       "summary": "Kafelki map z poświadczeniami kitu — style i nakładki z kitu maps",
       "summaryPlain": "Mapa na żywo — kafelki ładują się tylko z ważnymi poświadczeniami, style pochodzą z kitu maps",
-      "rungs": [
-        {
-          "rung": "compact",
-          "width": 390
-        },
-        {
-          "rung": "medium",
-          "width": 744
-        },
-        {
-          "rung": "expanded",
-          "width": 1280
-        }
-      ]
-    },
-    {
-      "id": "app.credentials",
-      "label": "Poświadczenia kitów",
-      "epic": "System",
-      "state": "frozen",
-      "wire": "stack",
-      "kit": 95,
-      "summary": "Klucze API per kit, walidowane przy zapisie — zły klucz zawodzi głośno, nigdy po cichu",
-      "summaryPlain": "Tu mieszkają klucze API — każdy jest sprawdzany przy zapisie, więc nic nie psuje się po cichu",
-      "rungs": [
-        {
-          "rung": "compact",
-          "width": 390
-        },
-        {
-          "rung": "medium",
-          "width": 744
-        },
-        {
-          "rung": "expanded",
-          "width": 1280
-        }
-      ]
-    },
-    {
-      "id": "app.config",
-      "label": "Konfiguracja",
-      "epic": "System",
-      "state": "frozen",
-      "wire": "stack",
-      "kit": 96,
-      "summary": "Flagi runtime i domyślne ustawienia dem — edytowalne w aplikacji, trwałe między restartami",
-      "summaryPlain": "Ekran ustawień — przełączniki zachowania dem, zapamiętywane między uruchomieniami",
       "rungs": [
         {
           "rung": "compact",
@@ -376,7 +328,7 @@
       "id": "manifest",
       "label": "Manifest zamrożenia",
       "kind": "manifest",
-      "detail": "frz_9c41e2 · 42 wzorce · sha256:9c41…e2b7",
+      "detail": "frz_9c41e2 · 36 wzorców · sha256:9c41…e2b7",
       "href": "/design/freeze"
     },
     {
@@ -397,7 +349,7 @@
       "id": "goldens",
       "label": "Wzorce",
       "kind": "shots",
-      "detail": "42 zamrożone ujęcia · 14 powierzchni × 3 rozmiary",
+      "detail": "36 zamrożonych ujęć · 12 powierzchni × 3 rozmiary",
       "href": "/design"
     }
   ],
@@ -412,7 +364,7 @@
     },
     {
       "path": "designs/appbox-studio/models/design_model/run.pl.json",
-      "detail": "wygenerowany fixture — 14 powierzchni, 42 ujęcia"
+      "detail": "wygenerowany fixture — 12 powierzchni, 36 ujęć"
     },
     {
       "path": "app/structure.json",
@@ -420,13 +372,13 @@
     },
     {
       "path": "app/goldens/",
-      "detail": "42 zamrożone wzorce, zahashowane przy zamrożeniu"
+      "detail": "36 zamrożonych wzorców, zahashowanych przy zamrożeniu"
     }
   ],
   "manifest": {
     "id": "frz_9c41e2",
-    "goldens": 42,
-    "surfaces": 14,
+    "goldens": 36,
+    "surfaces": 12,
     "rungs": "390 / 744 / 1280",
     "hash": "sha256:9c41…e2b7",
     "frozenAt": "Wczoraj 16:42",
@@ -445,8 +397,8 @@
     {
       "at": "14:02",
       "who": "agent",
-      "text": "Brief prześledzony — 14 powierzchni z story-map.json; każde id rejestru poparte historyjką.",
-      "textPlain": "Brief sprawdzony — 14 ekranów pochodzi z mapy historyjek; każdy ekran prowadzi z powrotem do historyjki użytkownika."
+      "text": "Brief prześledzony — 12 powierzchni z story-map.json; każde id rejestru poparte historyjką.",
+      "textPlain": "Brief sprawdzony — 12 ekranów pochodzi z mapy historyjek; każdy ekran prowadzi z powrotem do historyjki użytkownika."
     },
     {
       "at": "14:09",
@@ -457,13 +409,13 @@
     {
       "at": "14:31",
       "who": "agent",
-      "text": "Prototyp złożony — 14 powierzchni × 3 rozmiary z samych platform docelowych; przenoszona struktura, nie piksele.",
-      "textPlain": "Prototyp zbudowany — 14 ekranów, każdy w rozmiarze telefonu, tabletu i desktopu; liczy się struktura układu, nie dekoracja."
+      "text": "Prototyp złożony — 12 powierzchni × 3 rozmiary z samych platform docelowych; przenoszona struktura, nie piksele.",
+      "textPlain": "Prototyp zbudowany — 12 ekranów, każdy w rozmiarze telefonu, tabletu i desktopu; liczy się struktura układu, nie dekoracja."
     },
     {
       "at": "15:58",
       "who": "you",
-      "text": "Czat ekranu na app.mediagame — 4 punkty kontrolne; HUD wyciszony, pasek sterowania compact zadokowany.",
+      "text": "Czat ekranu na portalo.mediagame — 4 punkty kontrolne; HUD wyciszony, pasek sterowania compact zadokowany.",
       "textPlain": "Ulepszyłeś ekran mini-gry na czacie — 4 zapisane zmiany; spokojniejszy HUD, lepszy układ na telefon."
     },
     {
@@ -475,69 +427,63 @@
     {
       "at": "16:42",
       "who": "agent",
-      "text": "Zamrożenie wybite — manifest frz_9c41e2 · 42 wzorce zahashowane · structure.json zablokowany.",
-      "textPlain": "Projekt zablokowany — wszystkie 42 zatwierdzone migawki odciskowane i zapisane; struktura jest teraz wzorcem."
+      "text": "Zamrożenie wybite — manifest frz_9c41e2 · 36 wzorców zahashowanych · structure.json zablokowany.",
+      "textPlain": "Projekt zablokowany — wszystkie 36 zatwierdzonych migawek odciskowane i zapisane; struktura jest teraz wzorcem."
     },
     {
       "at": "09:12",
       "who": "agent",
-      "text": "Kontrola dryfu — 42/42 wzorców zgodnych z manifestem. Czysto.",
-      "textPlain": "Kontrola dryfu — wszystkie 42 migawki wciąż zgadzają się z zatwierdzonym projektem. Nic się nie ruszyło."
+      "text": "Kontrola dryfu — 36/36 wzorców zgodnych z manifestem. Czysto.",
+      "textPlain": "Kontrola dryfu — wszystkie 36 migawek wciąż zgadzają się z zatwierdzonym projektem. Nic się nie ruszyło."
     }
   ],
   "traceability": [
     {
-      "surface": "app.splash",
+      "surface": "portalo.splash",
       "story": "Pierwsza klatka poniżej 300 ms — animowane logo Portalo, bez szarpania",
       "code": "app/lib/ui/views/app/splash_view.dart",
       "files": 4
     },
     {
-      "surface": "app.access",
+      "surface": "portalo.access",
       "story": "Logowanie jednym dotknięciem przed każdym demo; sesja trwa między uruchomieniami",
       "code": "app/lib/ui/views/app/access_view.dart",
       "files": 4
     },
     {
-      "surface": "app.dashboard",
+      "surface": "portalo.dashboard",
       "story": "Każde demo o jedno dotknięcie z panelu, z żywymi chipami stanu kitów",
       "code": "app/lib/ui/views/app/dashboard_view.dart",
       "files": 4
     },
     {
-      "surface": "app.mediascene3d",
+      "surface": "portalo.mediascene3d",
       "story": "Złożona scena three.js działająca w 60 fps na prawdziwym urządzeniu",
       "code": "app/lib/ui/views/app/mediascene3d_view.dart",
       "files": 4
     },
     {
-      "surface": "app.mediagame",
+      "surface": "portalo.mediagame",
       "story": "Grywalna mini-gra dowodząca budżetu klatek — HUD z prymitywów kitu",
       "code": "app/lib/ui/views/app/mediagame_view.dart",
       "files": 4
     },
     {
-      "surface": "app.mediamaps",
+      "surface": "portalo.mediamaps",
       "story": "Kafelki map ładują się tylko z ważnymi poświadczeniami kitu — style z kitu maps",
       "code": "app/lib/ui/views/app/mediamaps_view.dart",
-      "files": 4
-    },
-    {
-      "surface": "app.config",
-      "story": "Flagi runtime edytowalne w aplikacji; zmiany przeżywają restart",
-      "code": "app/lib/ui/views/app/config_view.dart",
       "files": 4
     }
   ],
   "drift": {
     "checked": "dziś 09:12",
-    "matched": "42/42",
+    "matched": "36/36",
     "clean": true,
     "history": [
       {
         "at": "dziś 08:47",
         "state": "resolved",
-        "text": "ujęcie compact app.mediagame zmieniło się po zatwierdzeniu (punkt kontrolny cp-5) — oznaczone głośno jako nieaktualne; zatwierdzone ponownie i zamrożone 08:52",
+        "text": "ujęcie compact portalo.mediagame zmieniło się po zatwierdzeniu (punkt kontrolny cp-5) — oznaczone głośno jako nieaktualne; zatwierdzone ponownie i zamrożone 08:52",
         "textPlain": "ujęcie ekranu mini-gry w rozmiarze telefonu zmieniło się po Twoim zatwierdzeniu — projekt był oznaczony jako nieaktualny, dopóki nie zatwierdziłeś zmiany o 08:52",
         "hash": "d41f…7b2c"
       }
@@ -556,7 +502,7 @@
       "textPlain": "Wyciszone — baner wyniku to teraz miękki odcień zamiast głośnego wypełnienia; przycisk pauzy zostaje wyrazisty. Zapisane jako cp-3 poniżej, jeden dotk cofa.",
       "cps": [
         {
-          "screen": "app.mediagame",
+          "screen": "portalo.mediagame",
           "cp": "cp-3"
         }
       ]
@@ -573,14 +519,14 @@
       "textPlain": "Naprawione — na ekranach wielkości telefonu pasek sterowania przypina się do krawędzi ekranu zamiast unosić nad polem gry. Zapisane jako cp-4.",
       "cps": [
         {
-          "screen": "app.mediagame",
+          "screen": "portalo.mediagame",
           "cp": "cp-4"
         }
       ]
     }
   ],
   "checkpoints": {
-    "app.mediagame": [
+    "portalo.mediagame": [
       {
         "id": "cp-1",
         "n": 1,
@@ -721,7 +667,7 @@
         "prymityw",
         "komponent"
       ],
-      "text": "Pokrycie kitu 96% na 14 powierzchniach — reszta na zamówienie to pętla gry i graf sceny three.js.",
+      "text": "Pokrycie kitu 96% na 12 powierzchniach — reszta na zamówienie to pętla gry i graf sceny three.js.",
       "textPlain": "96% tych ekranów da się zbudować z gotowych części — praca na zamówienie to pętla gry i scena 3D."
     }
   ],

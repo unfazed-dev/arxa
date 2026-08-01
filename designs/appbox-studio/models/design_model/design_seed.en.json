@@ -19,7 +19,7 @@
   },
   "screens": [
     {
-      "id": "app.splash",
+      "id": "portalo.splash",
       "label": "Splash",
       "epic": "Onboarding",
       "state": "frozen",
@@ -43,7 +43,7 @@
       ]
     },
     {
-      "id": "app.startup",
+      "id": "portalo.startup",
       "label": "Startup",
       "epic": "Onboarding",
       "state": "frozen",
@@ -67,7 +67,7 @@
       ]
     },
     {
-      "id": "app.access",
+      "id": "portalo.access",
       "label": "Sign In",
       "epic": "Onboarding",
       "state": "frozen",
@@ -91,7 +91,7 @@
       ]
     },
     {
-      "id": "app.dashboard",
+      "id": "portalo.dashboard",
       "label": "Demo Dashboard",
       "epic": "Demos",
       "state": "frozen",
@@ -115,7 +115,7 @@
       ]
     },
     {
-      "id": "app.demos",
+      "id": "portalo.demos",
       "label": "Demo Index",
       "epic": "Demos",
       "state": "frozen",
@@ -139,7 +139,7 @@
       ]
     },
     {
-      "id": "app.mediarive",
+      "id": "portalo.mediarive",
       "label": "Rive Demo",
       "epic": "Demos",
       "state": "frozen",
@@ -163,7 +163,7 @@
       ]
     },
     {
-      "id": "app.medialottie",
+      "id": "portalo.medialottie",
       "label": "Lottie Demo",
       "epic": "Demos",
       "state": "frozen",
@@ -187,7 +187,7 @@
       ]
     },
     {
-      "id": "app.mediadotlottie",
+      "id": "portalo.mediadotlottie",
       "label": "dotLottie Demo",
       "epic": "Demos",
       "state": "frozen",
@@ -211,7 +211,7 @@
       ]
     },
     {
-      "id": "app.mediamodel3d",
+      "id": "portalo.mediamodel3d",
       "label": "3D Model Demo",
       "epic": "Demos",
       "state": "frozen",
@@ -235,7 +235,7 @@
       ]
     },
     {
-      "id": "app.mediascene3d",
+      "id": "portalo.mediascene3d",
       "label": "3D Scene Demo",
       "epic": "Demos",
       "state": "frozen",
@@ -259,7 +259,7 @@
       ]
     },
     {
-      "id": "app.mediagame",
+      "id": "portalo.mediagame",
       "label": "Mini Game",
       "epic": "Demos",
       "state": "frozen",
@@ -283,7 +283,7 @@
       ]
     },
     {
-      "id": "app.mediamaps",
+      "id": "portalo.mediamaps",
       "label": "Maps Demo",
       "epic": "Demos",
       "state": "frozen",
@@ -291,54 +291,6 @@
       "kit": 93,
       "summary": "Map tiles with kit credentials — styles and overlays from the maps kit",
       "summaryPlain": "A live map — tiles only load with valid credentials, styles come from the maps kit",
-      "rungs": [
-        {
-          "rung": "compact",
-          "width": 390
-        },
-        {
-          "rung": "medium",
-          "width": 744
-        },
-        {
-          "rung": "expanded",
-          "width": 1280
-        }
-      ]
-    },
-    {
-      "id": "app.credentials",
-      "label": "Kit Credentials",
-      "epic": "System",
-      "state": "frozen",
-      "wire": "stack",
-      "kit": 95,
-      "summary": "API keys per kit, validated on save — a bad key fails loudly, never silently",
-      "summaryPlain": "Where the API keys live — each one is checked when you save it, so nothing breaks quietly",
-      "rungs": [
-        {
-          "rung": "compact",
-          "width": 390
-        },
-        {
-          "rung": "medium",
-          "width": 744
-        },
-        {
-          "rung": "expanded",
-          "width": 1280
-        }
-      ]
-    },
-    {
-      "id": "app.config",
-      "label": "App Config",
-      "epic": "System",
-      "state": "frozen",
-      "wire": "stack",
-      "kit": 96,
-      "summary": "Runtime flags and demo defaults — editable in-app, persisted across restarts",
-      "summaryPlain": "The settings screen — switches for how demos behave, remembered between launches",
       "rungs": [
         {
           "rung": "compact",
@@ -376,7 +328,7 @@
       "id": "manifest",
       "label": "Freeze manifest",
       "kind": "manifest",
-      "detail": "frz_9c41e2 · 42 goldens · sha256:9c41…e2b7",
+      "detail": "frz_9c41e2 · 36 goldens · sha256:9c41…e2b7",
       "href": "/design/freeze"
     },
     {
@@ -397,7 +349,7 @@
       "id": "goldens",
       "label": "Goldens",
       "kind": "shots",
-      "detail": "42 frozen shots · 14 surfaces × 3 rungs",
+      "detail": "36 frozen shots · 12 surfaces × 3 rungs",
       "href": "/design"
     }
   ],
@@ -412,7 +364,7 @@
     },
     {
       "path": "designs/appbox-studio/models/design_model/run.json",
-      "detail": "generated fixture — 14 surfaces, 42 shots"
+      "detail": "generated fixture — 12 surfaces, 36 shots"
     },
     {
       "path": "app/structure.json",
@@ -420,13 +372,13 @@
     },
     {
       "path": "app/goldens/",
-      "detail": "42 frozen goldens, hashed at freeze"
+      "detail": "36 frozen goldens, hashed at freeze"
     }
   ],
   "manifest": {
     "id": "frz_9c41e2",
-    "goldens": 42,
-    "surfaces": 14,
+    "goldens": 36,
+    "surfaces": 12,
     "rungs": "390 / 744 / 1280",
     "hash": "sha256:9c41…e2b7",
     "frozenAt": "Yesterday 16:42",
@@ -445,8 +397,8 @@
     {
       "at": "14:02",
       "who": "agent",
-      "text": "Brief traced — 14 surfaces from story-map.json; every registry id backed by a story.",
-      "textPlain": "Brief checked — 14 screens come from the story map; every screen traces back to a user story."
+      "text": "Brief traced — 12 surfaces from story-map.json; every registry id backed by a story.",
+      "textPlain": "Brief checked — 12 screens come from the story map; every screen traces back to a user story."
     },
     {
       "at": "14:09",
@@ -457,13 +409,13 @@
     {
       "at": "14:31",
       "who": "agent",
-      "text": "Prototype composed — 14 surfaces × 3 rungs from targets alone; structure carried, not pixels.",
-      "textPlain": "Prototype built — 14 screens, each at phone, tablet and desktop size; the layout structure is what matters, not decoration."
+      "text": "Prototype composed — 12 surfaces × 3 rungs from targets alone; structure carried, not pixels.",
+      "textPlain": "Prototype built — 12 screens, each at phone, tablet and desktop size; the layout structure is what matters, not decoration."
     },
     {
       "at": "15:58",
       "who": "you",
-      "text": "Screen chat on app.mediagame — 4 checkpoints; HUD calmed, compact control bar docked.",
+      "text": "Screen chat on portalo.mediagame — 4 checkpoints; HUD calmed, compact control bar docked.",
       "textPlain": "You refined the mini-game screen in chat — 4 saved changes; a calmer HUD, better phone layout."
     },
     {
@@ -475,69 +427,63 @@
     {
       "at": "16:42",
       "who": "agent",
-      "text": "Freeze minted — manifest frz_9c41e2 · 42 goldens hashed · structure.json locked.",
-      "textPlain": "Design locked — all 42 approved snapshots fingerprinted and recorded; the structure is now the reference."
+      "text": "Freeze minted — manifest frz_9c41e2 · 36 goldens hashed · structure.json locked.",
+      "textPlain": "Design locked — all 36 approved snapshots fingerprinted and recorded; the structure is now the reference."
     },
     {
       "at": "09:12",
       "who": "agent",
-      "text": "Drift check — 42/42 goldens match the manifest. Clean.",
-      "textPlain": "Drift check — all 42 snapshots still match the approved design. Nothing has moved."
+      "text": "Drift check — 36/36 goldens match the manifest. Clean.",
+      "textPlain": "Drift check — all 36 snapshots still match the approved design. Nothing has moved."
     }
   ],
   "traceability": [
     {
-      "surface": "app.splash",
+      "surface": "portalo.splash",
       "story": "First paint under 300ms — animated Portalo logo, no jank",
       "code": "app/lib/ui/views/app/splash_view.dart",
       "files": 4
     },
     {
-      "surface": "app.access",
+      "surface": "portalo.access",
       "story": "One-tap sign-in before any demo; the session persists across launches",
       "code": "app/lib/ui/views/app/access_view.dart",
       "files": 4
     },
     {
-      "surface": "app.dashboard",
+      "surface": "portalo.dashboard",
       "story": "Every demo one tap from the dashboard, with live kit-status chips",
       "code": "app/lib/ui/views/app/dashboard_view.dart",
       "files": 4
     },
     {
-      "surface": "app.mediascene3d",
+      "surface": "portalo.mediascene3d",
       "story": "A composed three.js scene running at 60 fps on the real device",
       "code": "app/lib/ui/views/app/mediascene3d_view.dart",
       "files": 4
     },
     {
-      "surface": "app.mediagame",
+      "surface": "portalo.mediagame",
       "story": "A playable mini-game proving the frame budget — HUD from kit primitives",
       "code": "app/lib/ui/views/app/mediagame_view.dart",
       "files": 4
     },
     {
-      "surface": "app.mediamaps",
+      "surface": "portalo.mediamaps",
       "story": "Map tiles load only with valid kit credentials — styles from the maps kit",
       "code": "app/lib/ui/views/app/mediamaps_view.dart",
-      "files": 4
-    },
-    {
-      "surface": "app.config",
-      "story": "Runtime flags editable in-app; changes survive a restart",
-      "code": "app/lib/ui/views/app/config_view.dart",
       "files": 4
     }
   ],
   "drift": {
     "checked": "today 09:12",
-    "matched": "42/42",
+    "matched": "36/36",
     "clean": true,
     "history": [
       {
         "at": "today 08:47",
         "state": "resolved",
-        "text": "app.mediagame compact shot changed after approval (checkpoint cp-5) — flagged stale loudly; re-approved and re-frozen 08:52",
+        "text": "portalo.mediagame compact shot changed after approval (checkpoint cp-5) — flagged stale loudly; re-approved and re-frozen 08:52",
         "textPlain": "the phone-size shot of the mini-game screen changed after you approved it — the design was marked out-of-date until you approved the change at 08:52",
         "hash": "d41f…7b2c"
       }
@@ -556,7 +502,7 @@
       "textPlain": "Made it calmer — the score banner is now a soft tint instead of a loud fill; the pause button stays bold. Saved as cp-3 below, one tap undoes it.",
       "cps": [
         {
-          "screen": "app.mediagame",
+          "screen": "portalo.mediagame",
           "cp": "cp-3"
         }
       ]
@@ -573,14 +519,14 @@
       "textPlain": "Fixed — on phone-size screens the control bar pins to the screen edge instead of floating over the play field. Saved as cp-4.",
       "cps": [
         {
-          "screen": "app.mediagame",
+          "screen": "portalo.mediagame",
           "cp": "cp-4"
         }
       ]
     }
   ],
   "checkpoints": {
-    "app.mediagame": [
+    "portalo.mediagame": [
       {
         "id": "cp-1",
         "n": 1,
@@ -699,7 +645,7 @@
         "primitive",
         "component"
       ],
-      "text": "Kit coverage 96% across the 14 surfaces — the bespoke remainder is the game loop and the three.js scene graph.",
+      "text": "Kit coverage 96% across the 12 surfaces — the bespoke remainder is the game loop and the three.js scene graph.",
       "textPlain": "96% of these screens can be built from ready-made parts — the custom work is the game loop and the 3D scene."
     }
   ],

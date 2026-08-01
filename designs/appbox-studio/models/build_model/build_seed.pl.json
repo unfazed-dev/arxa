@@ -179,7 +179,7 @@
       "viewports": ["mobile", "tablet", "desktop"]
     },
     {
-      "surface": "app.credentials",
+      "surface": "portalo.mediagame",
       "tests": "3/3", "files": 4,
       "probe": { "ssim": "0.965", "skeleton": "1 węzeł naprawiony", "deltaE": "2.2" },
       "state": "watch",
@@ -198,7 +198,7 @@
     { "path": "app/test/ui/views/build/loop_viewmodel_test.dart", "status": "new" },
     { "path": "app/lib/ui/views/intake/mapping_view.dart", "status": "new" },
     { "path": "app/lib/ui/views/design/chat_view.dart", "status": "new" },
-    { "path": "app/lib/ui/views/app/credentials_view.dart", "status": "new" },
+    { "path": "app/lib/ui/views/game_view.dart", "status": "new" },
     { "path": "designs/frozen/build.loop/expanded.png", "status": "frozen" },
     { "path": "docs/structure.json", "status": "frozen" }
   ],
@@ -242,9 +242,9 @@
     },
     {
       "match": ["evidence", "visual", "probe", "golden", "screenshot", "dowod", "wzorc", "zrzut", "ekran"],
-      "text": "Cztery powierzchnie sondowane względem zamrożonych wzorców — SSIM, szkielet i ΔE per powierzchnia, wszystkie przechodzą. app.credentials jest obserwowany przy ΔE 2.2.",
-      "textBalanced": "Cztery ekrany porównane ze wzorcami — SSIM, szkielet i zgodność kolorów per ekran, wszystkie przechodzą. app.credentials jest obserwowany przy 94/100 (ΔE 2.2).",
-      "textPlain": "Wszystkie cztery ekrany zostały porównane piksel po pikselu z projektami, które zatwierdziłeś — trzy są niemal identyczne. app.credentials jest obserwowany przy 94/100, tuż pod progiem 95.",
+      "text": "Cztery powierzchnie sondowane względem zamrożonych wzorców — SSIM, szkielet i ΔE per powierzchnia, wszystkie przechodzą. demo gry (portalo.mediagame) jest obserwowane przy ΔE 2.2.",
+      "textBalanced": "Cztery ekrany porównane ze wzorcami — SSIM, szkielet i zgodność kolorów per ekran, wszystkie przechodzą. demo gry (portalo.mediagame) jest obserwowane przy 94/100 (ΔE 2.2).",
+      "textPlain": "Wszystkie cztery ekrany zostały porównane piksel po pikselu z projektami, które zatwierdziłeś — trzy są niemal identyczne. demo gry (portalo.mediagame) jest obserwowane przy 94/100, tuż pod progiem 95.",
       "artifact": "evidence/surfaces"
     }
   ],

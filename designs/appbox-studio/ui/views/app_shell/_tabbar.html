@@ -1,9 +1,0 @@
-{# App tab bar — fixed bottom nav on the compact rung only (≤599px,
-   appshell.css). `tab` names the active destination (passed by each
-   viewmodel); `qs` keeps embed/vp on in-frame navigation. #}
-<nav class="apptabs" aria-label="{{ t('tabs.aria') }}">
-  <a class="apptab {{ 'on' if tab == 'dashboard' }}" href="/dashboard{{ qs }}">{{ icon('home', {size: 20}) }}<span>{{ t('screen.label.app.dashboard') }}</span></a>
-  <a class="apptab {{ 'on' if tab == 'demos' }}" href="/demos{{ qs }}">{{ icon('layout-grid', {size: 20}) }}<span>{{ t('screen.label.app.demos') }}</span></a>
-  <a class="apptab {{ 'on' if tab == 'maps' }}" href="/media/maps{{ qs }}">{{ icon('map', {size: 20}) }}<span>{{ t('screen.label.app.mediaMaps') }}</span></a>
-  <a class="apptab {{ 'on' if tab == 'config' }}" href="/config{{ qs }}">{{ icon('settings', {size: 20}) }}<span>{{ t('tabs.settings') }}</span></a>
-</nav>

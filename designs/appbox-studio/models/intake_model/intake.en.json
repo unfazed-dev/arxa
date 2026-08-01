@@ -1948,12 +1948,17 @@
       "provenance": "founder",
       "edges": [
         {
-          "from": "app.credentials",
-          "to": "app.config",
+          "from": "workspace.settings",
+          "to": "workspace.credentials",
+          "trigger": "Open credentials"
+        },
+        {
+          "from": "workspace.credentials",
+          "to": "workspace.config",
           "trigger": "Add key"
         },
         {
-          "from": "app.config",
+          "from": "workspace.config",
           "to": "design.prototype",
           "trigger": "Use kit in design"
         }

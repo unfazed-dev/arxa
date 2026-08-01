@@ -1485,12 +1485,17 @@
       "provenance": "founder",
       "edges": [
         {
-          "from": "app.credentials",
-          "to": "app.config",
+          "from": "workspace.settings",
+          "to": "workspace.credentials",
+          "trigger": "Otwórz poświadczenia"
+        },
+        {
+          "from": "workspace.credentials",
+          "to": "workspace.config",
           "trigger": "Dodaj klucz"
         },
         {
-          "from": "app.config",
+          "from": "workspace.config",
           "to": "design.prototype",
           "trigger": "Użyj kitu w projekcie"
         }

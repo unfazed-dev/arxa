@@ -1948,12 +1948,17 @@
       "provenance": "[!! föüñðëř ~̷~~̷~ !!]",
       "edges": [
         {
-          "from": "app.credentials",
-          "to": "[!! åpp.çöñfïg ~̷~~̷~ !!]",
+          "from": "workspace.settings",
+          "to": "[!! wöřkšpåçë.çřëðëñţïåłš ~̷~~̷~~̷~ !!]",
+          "trigger": "[!! Öpëñ çřëðëñţïåłš ~̷~~̷~ !!]"
+        },
+        {
+          "from": "workspace.credentials",
+          "to": "[!! wöřkšpåçë.çöñfïg ~̷~~̷~ !!]",
           "trigger": "[!! Åðð këÿ ~̷~~̷~ !!]"
         },
         {
-          "from": "app.config",
+          "from": "workspace.config",
           "to": "[!! ðëšïgñ.přöţöţÿpë ~̷~~̷~ !!]",
           "trigger": "[!! Üšë kïţ ïñ ðëšïgñ ~̷~~̷~ !!]"
         }

@@ -1,0 +1,14 @@
+{# Portalo 3D model demo — static rotating state (model-viewer auto-rotate);
+   the live view's htmx rotate stage swap is not re-created here. #}
+<script type="module" src="/assets/vendor/model-viewer.min.js"></script>
+<span class="eyebrow">{{ t('media.eyebrow') }}</span>
+<h1 class="display">{{ t('media.model3d.title') }}</h1>
+<p class="muted">{{ t('media.model3d.lede') }}</p>
+<section class="media-stage">
+  <div class="media-frame">
+    <model-viewer src="/assets/media/boombox.glb" camera-controls interaction-prompt="auto"
+      shadow-intensity="1" auto-rotate
+      class="media-viewer" aria-label="{{ t('media.model3d.title') }}"></model-viewer>
+  </div>
+</section>
+{% include "ui/views/main_shell/build/loop/portalo/_tabbar.html" %}

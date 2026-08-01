@@ -18,18 +18,6 @@ const tr = (t, key, vars, fallback) => {
 // ---------- session ----------
 const S = (sd) => (sd.app ??= { user: null, paired: null, pairError: null, decided: {}, extraProjects: [], projSeq: 0 });
 
-// ---------- embed (the viewer's app frame) ----------
-// embed=1 renders the view content-only (no studio chrome — the view swaps
-// its extends to _app_embed.html); qs keeps embed/vp on in-frame navigation
-// (tab bar, demo cards, splash/startup meta refresh). vp is informational —
-// the document adapts to the iframe size via CSS.
-export const embedContext = (c) => {
-  const embed = c.req.query('embed') === '1';
-  const vp = c.req.query('vp') || '';
-  const qs = embed ? `?embed=1${vp ? `&vp=${encodeURIComponent(vp)}` : ''}` : '';
-  return { embed, vp, qs };
-};
-
 // ---------- chromeless pages ----------
 export const splashContext = (locale = 'en') => ({ tagline: repo.tagline(locale) });
 

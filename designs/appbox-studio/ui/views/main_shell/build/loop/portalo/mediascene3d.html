@@ -1,14 +1,5 @@
-<!-- appbox:provenance
-     generator: appbox  licence: free  project: 662368770980
-     Built with appbox (free tier) — https://appbox.dev
--->
-{% extends "ui/views/app_shell/_app_embed.html" if embed else "ui/views/main_shell/main_shell_view.html" %}
-{% block title %}{{ t('media.scene3d.pageTitle') }}{% endblock %}
-{% block head_extra %}
+{# Portalo 3D scene demo — vendored three_island runtime. #}
 <script type="module" src="/assets/vendor/three_island.js"></script>
-<link rel="stylesheet" href="/assets/css/media.css">
-{% endblock %}
-{% block surface %}
 <span class="eyebrow">{{ t('media.eyebrow') }}</span>
 <h1 class="display">{{ t('media.scene3d.title') }}</h1>
 <p class="muted">{{ t('media.scene3d.lede') }}</p>
@@ -18,5 +9,4 @@
     <button type="button" data-three-toggle="wireframe" class="ghost">{{ t('media.scene3d.action.wireframe') }}</button>
   </div>
 </section>
-{% include "ui/views/app_shell/_tabbar.html" %}
-{% endblock %}
+{% include "ui/views/main_shell/build/loop/portalo/_tabbar.html" %}
