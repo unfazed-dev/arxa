@@ -12,7 +12,7 @@ class AppLocalizationsPl extends AppLocalizations {
   String get loading => 'Ładowanie…';
 
   @override
-  String get appTitle => 'Towarzysz app_box';
+  String get appTitle => 'Towarzysz appbox';
 
   @override
   String counterLabel(int count) {

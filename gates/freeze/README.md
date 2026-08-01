@@ -1,5 +1,12 @@
 # freeze
 
+> **⚠️ SUPERSEDED (2026-07-31, commit 4f9c458).** This bash gate is superseded
+> by the Dart freeze gate — `dart run bin/appbox.dart gate freeze` (or `appbox
+> gate freeze`) in `appboxd/` (`appboxd/lib/gate_freeze.dart`). It is retained
+> for reference only and is silently broken: its htmx path shells out to the
+> archived `skills/appbox-designer/runtime/serve.mjs` via `render_htmx.mjs`,
+> which no longer exists. Do not run it; run the Dart gate.
+
 The FREEZE / PROTOTYPE gate. Asserts the frozen design inputs are present, the
 design-approval stamp is valid, and every surface renders clean at **every
 derived viewport** — the width set implied by `--targets` via

@@ -1,4 +1,10 @@
 #!/usr/bin/env bash
+# ⚠️ SUPERSEDED (2026-07-31, commit 4f9c458): this bash freeze gate is
+# superseded by the Dart freeze gate — `dart run bin/appbox.dart gate freeze`
+# (or `appbox gate freeze`) in appboxd/ (appboxd/lib/gate_freeze.dart).
+# Retained for reference only; it is silently broken because its htmx path
+# uses the archived skills/appbox-designer/runtime/serve.mjs (render_htmx.mjs).
+#
 # freeze.sh — the FREEZE / PROTOTYPE gate (plan 04.1): the render half of the
 # vendored freeze_design.sh, after the structure checks were split out to the
 # structure gate's own folder. Asserts the frozen inputs are present AND that

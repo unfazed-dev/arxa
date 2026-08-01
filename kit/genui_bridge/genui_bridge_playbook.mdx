@@ -178,11 +178,11 @@ core — nothing depends on Flutter or another kit:
   inputs, so the object/properties/required subset suffices (ceiling marked
   `# kimitail:` in `json_schema.dart`; upgrade to a real schema package the
   day a catalog needs union types).
-- **Rename tolerance in exactly one place** — the app-box plan pins the
+- **Rename tolerance in exactly one place** — the appbox plan pins the
   bridge against genui's experimental 0.x API "with one adapter seam for
   renames"; that seam is `A2uiMessage.fromJson`'s alias map.
 - **Unprefixed package name** — `genui_bridge` (like `ui_library` and
-  `branding`) is the name the app-box consolidation plan
+  `branding`) is the name the appbox consolidation plan
   (`consolidate-one-app-plus-daemon.md`, "Kit candidate — kit_genui")
   assigns; the Flutter layer (`kit_genui`) is a future sibling kit.
 - **Provenance fixtures** — `assets/a2ui/server_to_client.json` is a

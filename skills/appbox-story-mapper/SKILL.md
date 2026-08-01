@@ -34,7 +34,7 @@ story-mapper  →  docs/design/brief.md (+ story-map.json, story_map.html)  → 
 | Epic | shell | slugified from its first ascii word, lowercase (`User System` → `user`) |
 | Feature | surface | `id = <epic-slug>.<feature-slug>` (`shop.cart` → comp `ShopCart`); ids match `^([a-z][a-z0-9]*)\.([a-z][a-z0-9]*)$` |
 | Story | requirement | listed under its feature in the brief — what that screen must satisfy |
-| MoSCoW + release | sibling metadata | rolled up per surface (strongest live priority, earliest live release) into the table's `priority` / `release` columns; `intake.py seed` carries them into the registry as additive fields (the four-field canon is untouched) |
+| MoSCoW + release | sibling metadata | rolled up per surface (strongest live priority, earliest live release) into the table's `priority` / `release` columns; `appbox intake seed` carries them into the registry as additive fields (the four-field canon is untouched) |
 | all-`wont` feature | out-of-scope | excluded from the surface table, listed in the brief's Out of scope |
 
 ---

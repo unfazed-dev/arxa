@@ -1,7 +1,7 @@
 <Callout id="header" tone="info">
-# app-box-lint — Per-Skill Playbook
+# appbox-lint — Per-Skill Playbook
 
-`app-box-lint` · status: **active**
+`appbox-lint` · status: **active**
 
 **Role (one line):** health-check the knowledge base — catch contradictions, stale claims, dead links, orphan pages, and docs that disagree with shipped code/catalogs.
 
@@ -32,7 +32,7 @@ A green mechanical pass plus a list of semantic corrections applied (each with a
 
 ### Rules
 
-Don't trust memory or a doc over a catalog/code — catalogs enforce, prose lags; on conflict the prose is wrong. Don't rewrite the changelog — supersede with a pointer + new entry. Don't fix only the file you noticed — a wrong claim usually lives in 2-3 places; grep the assertion across all layers and fix every copy. Don't skip the semantic pass because the script went green. Keep `lint_kb.py`'s self-test green when you change it.
+Don't trust memory or a doc over a catalog/code — catalogs enforce, prose lags; on conflict the prose is wrong. Don't rewrite the changelog — supersede with a pointer + new entry. Don't fix only the file you noticed — a wrong claim usually lives in 2-3 places; grep the assertion across all layers and fix every copy. Don't skip the semantic pass because the script went green. Keep `appbox docs` (the Dart docs_lint — `appboxd/lib/docs_lint.dart` + `appboxd/test/docs_lint_test.dart`) green when you change it.
 
 <!-- kb:begin -->
 ### References

@@ -56,7 +56,7 @@ screen's route). State it explicitly when the path is not the convention.
 
 ## Checking yourself
 
-Run `./selftest.sh <artifact-dir>` — or, by hand, before you call any surface
+Run `appbox design selftest <artifact-dir>` — or, by hand, before you call any surface
 done:
 
 ```sh

@@ -6,8 +6,8 @@ files. It does NOT replace `flutter analyze` (compile/types) or `flutter run`
 (perceptual checks); it catches the kit-specific slop the compiler accepts but
 the design contract forbids.
 
-Emits JSON (`--json`) which `run_all.sh` routes through `gates/_common/sarif.sh`
-(one SARIF transport).
+Runs via `appbox gate review` → `gates/review/review.dart`, dispatched by
+`appboxd/lib/gate_runner.dart` like the other gates. Emits JSON (`--json`).
 
 ## Asserts (per `*_view.dart`)
 

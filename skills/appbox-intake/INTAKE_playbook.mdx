@@ -1,7 +1,7 @@
 <Callout id="header" tone="info">
-# app-box-intake — Per-Skill Playbook
+# appbox-intake — Per-Skill Playbook
 
-`app-box-intake` · status: **active**
+`appbox-intake` · status: **active**
 
 **Role (one line):** turn a client conversation into `docs/design/brief.md` plus a seeded `docs/design/registry.json` — by eliciting, never by generating.
 
@@ -19,7 +19,7 @@ Intake elicits; it does not generate (architecture §22). A phase that *writes* 
 
 ### Inputs
 
-- **Either** an answers document (JSON conforming to `skills/app-box-intake/intake.schema.json`): one object per field (`product`, `audience`, `appMustDo`, `existingSystems`, `targets`, `brand`, `constraints`, `outOfScope`, `surfaces`), each carrying `value` + `provenance` (`client` | `founder` | `inferred`).
+- **Either** an answers document (JSON conforming to `skills/appbox-intake/intake.schema.json`): one object per field (`product`, `audience`, `appMustDo`, `existingSystems`, `targets`, `brand`, `constraints`, `outOfScope`, `surfaces`), each carrying `value` + `provenance` (`client` | `founder` | `inferred`).
 - **Or** a hand-written `brief.md` (plan 10.7) — the ideal case, already the client's words.
 
 ### Procedure
@@ -28,11 +28,11 @@ Elicit the field set with the client or founder; capture verbatim, rephrase noth
 
 ### Outputs
 
-`docs/design/brief.md` (provenance-marked; `inferred` fields flagged) and `docs/design/registry.json` (keys exactly `{id, label, tab, comp, surface}`, `surface` null everywhere). These are the inputs to `app-box-designer`; the traceability gate (plan 10.6, `gates/`) then asserts every registry entry traces to a brief requirement.
+`docs/design/brief.md` (provenance-marked; `inferred` fields flagged) and `docs/design/registry.json` (keys exactly `{id, label, tab, comp, surface}`, `surface` null everywhere). These are the inputs to `appbox-designer`; the traceability gate (plan 10.6, `gates/`) then asserts every registry entry traces to a brief requirement.
 
 ### Rules
 
-Elicit, do not generate — no views, viewmodels, routes, copy, or layouts; that is the next phase. Provenance is the whole contract: there is no fourth value, and "guessed"/"assumed"/"default" are all `inferred`. Never record a `client` field the client did not state — that manufactures authority the brief does not have. Never bind a `surface` — intake names; design binds, and a non-null seed surface means intake did design's job. Keep `intake.py --self-test` green when you change the engine; it is the proof the guardrail holds (negatively: no invented entries, every surface null, every inference marked).
+Elicit, do not generate — no views, viewmodels, routes, copy, or layouts; that is the next phase. Provenance is the whole contract: there is no fourth value, and "guessed"/"assumed"/"default" are all `inferred`. Never record a `client` field the client did not state — that manufactures authority the brief does not have. Never bind a `surface` — intake names; design binds, and a non-null seed surface means intake did design's job. Keep `appbox intake --self-test` (and `appboxd/test/intake_test.dart`) green when you change the engine; it is the proof the guardrail holds (negatively: no invented entries, every surface null, every inference marked).
 
 <!-- kb:begin -->
 ### References

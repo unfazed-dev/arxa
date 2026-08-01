@@ -12,7 +12,7 @@ build/
 !designs/*/ui/views/**/build/
 *.dill
 *.lock.bak
-# pubspec.lock is deliberately NOT ignored — app_box is an application, and its
+# pubspec.lock is deliberately NOT ignored — appbox is an application, and its
 # whole thesis is reproducibility. The kit arrives as ~39 git deps pinned to a
 # commit SHA; an unlocked resolve is exactly the ambient-state defect the
 # research documents (see docs/research/spine-findings.md).

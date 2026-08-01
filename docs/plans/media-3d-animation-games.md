@@ -1,6 +1,8 @@
 # Media, 3D, animation & games — rename, designer islands, smoke screens
 
-**Status:** planned, **not started**. Settled with the operator 2026-07-31.
+**Status:** **COMPLETE** (2026-07-31). Settled with the operator 2026-07-31;
+landed in commit d327c60. Three JS-runtime sub-steps (2.2, 4.6, 5.6 — the
+serve.test.mjs / lint.mjs edits) were superseded by the Dart port in 4f9c458.
 **Inputs:** [`../VOCABULARY.md`](../VOCABULARY.md) (appbox lens entry) ·
 [`../../appboxd/README.md`](../../appboxd/README.md) (appbox-tools-first rule) ·
 [`../../skills/appbox-designer/docs/adr/0002-zero-custom-client-js-boundary.md`](../../skills/appbox-designer/docs/adr/0002-zero-custom-client-js-boundary.md).
@@ -101,7 +103,7 @@ Moves only; reference edits are Task 2.
 
 ### Steps
 
-- [ ] 1.1 Move the Flutter app:
+- [x] 1.1 Move the Flutter app:
   ```sh
   cd /Volumes/developer_ssd/Developer/totem_labs/app-box
   git mv appbox appbox-studio
@@ -110,10 +112,10 @@ Moves only; reference edits are Task 2.
   ```
   Expected: `R  appbox/... -> appbox-studio/...` and
   `R  designs/appbox/... -> designs/appbox-studio/...` rename entries.
-- [ ] 1.2 Rename the Dart package in `appbox-studio/pubspec.yaml:1`: change
+- [x] 1.2 Rename the Dart package in `appbox-studio/pubspec.yaml:1`: change
   `name: appbox` to `name: appbox_studio`, and in line 2 change the
   description's leading `appbox —` to `appbox-studio —`.
-- [ ] 1.3 Rewrite all package imports:
+- [x] 1.3 Rewrite all package imports:
   ```sh
   cd /Volumes/developer_ssd/Developer/totem_labs/app-box
   grep -rl "package:appbox/" appbox-studio/lib appbox-studio/test \
@@ -121,11 +123,11 @@ Moves only; reference edits are Task 2.
   grep -rc "package:appbox/" appbox-studio/lib appbox-studio/test | grep -v ':0' || echo "imports clean"
   ```
   Expected: `imports clean` (32 files / 84 imports rewritten).
-- [ ] 1.4 Update product display names: `appbox-studio/web/manifest.json:2-3`
+- [x] 1.4 Update product display names: `appbox-studio/web/manifest.json:2-3`
   (`"name": "appbox"` → `"name": "appbox-studio"`, same for `"short_name"`)
   and `appbox-studio/android/app/src/main/AndroidManifest.xml:13`
   (`android:label="appbox"` → `android:label="appbox-studio"`).
-- [ ] 1.5 Verify the app still analyzes and tests green:
+- [x] 1.5 Verify the app still analyzes and tests green:
   ```sh
   cd /Volumes/developer_ssd/Developer/totem_labs/app-box/appbox-studio
   flutter pub get && flutter test
@@ -149,7 +151,7 @@ identifier, pipeline-level: it stays**.
 
 ### Steps
 
-- [ ] 2.1 `appboxd` — pipeline code pointing at the design dir. Edit:
+- [x] 2.1 `appboxd` — pipeline code pointing at the design dir. Edit:
   - `appboxd/bin/appbox.dart:515` — `designDir ??= 'designs/appbox';` →
     `'designs/appbox-studio'`
   - `appboxd/lib/gate_freeze.dart:50` — `const designRel = 'designs/appbox';`
@@ -160,14 +162,14 @@ identifier, pipeline-level: it stays**.
   - `appboxd/lib/gate_coverage.dart:75` — comment mention → `designs/appbox-studio`
   - `appboxd/lib/config.dart:28` — `p.join(repoRoot, 'appbox', 'build', 'web')`
     → `p.join(repoRoot, 'appbox-studio', 'build', 'web')`
-- [ ] 2.2 Designer runtime serve test — `skills/appbox-designer/runtime/serve.test.mjs`:
+- [x] 2.2 Designer runtime serve test — `skills/appbox-designer/runtime/serve.test.mjs` (superseded by Dart port):
   line 22 repo-root anchor `path.join(ROOT, 'designs', 'appbox', 'app.routes.js')`
   → `'designs', 'appbox-studio', 'app.routes.js'`; line 18-19 comment →
   `designs/appbox-studio`; line 25 error string → `designs/appbox-studio`;
   line 115 `start(['designs/appbox', …])` → `'designs/appbox-studio'`;
   lines 84, 101, 120 bare design name `'appbox'` → `'appbox-studio'`.
   Then mirror: `cp skills/appbox-designer/runtime/serve.test.mjs .kimi-code/skills/appbox-designer/runtime/serve.test.mjs`.
-- [ ] 2.3 Repo docs:
+- [x] 2.3 Repo docs:
   - `THIRD-PARTY-NOTICES.md:98` — heading `Lexend fonts
     (`designs/appbox/assets/fonts/`)` → `designs/appbox-studio/assets/fonts/`
   - `THIRD-PARTY-NOTICES.md:104` — inventory path →
@@ -177,7 +179,7 @@ identifier, pipeline-level: it stays**.
     `designs/appbox/` `` → `` `appbox-studio/` … from `designs/appbox-studio/` ``
   - `docs/INDEX.md:55` — `` `appbox/` is the hand-bootstrapped shell `` →
     `` `appbox-studio/` is the hand-bootstrapped shell ``
-- [ ] 2.4 Design-internal path strings (inside `designs/appbox-studio/`):
+- [x] 2.4 Design-internal path strings (inside `designs/appbox-studio/`):
   - `services/repositories/files_repository.js:113-114` — the two embedded
     keys `'designs/appbox/models/design_model/design_seed.en.json'` and
     `'designs/appbox/models/design_model/run.json'` → `designs/appbox-studio/…`
@@ -198,7 +200,7 @@ identifier, pipeline-level: it stays**.
     command path → `designs/appbox-studio/…`
   - `ui/views/main_shell/design/_integration_design.md:44,94,98` — three
     `designs/appbox/…` code paths → `designs/appbox-studio/…`
-- [ ] 2.5 Design-internal project name — the design describes the renamed
+- [x] 2.5 Design-internal project name — the design describes the renamed
   product. In each of these 15 JSON files change `"project": "appbox"` to
   `"project": "appbox-studio"`:
   `models/intake_model/intake.json`, `intake.en.json`, `intake.pl.json`,
@@ -212,7 +214,7 @@ identifier, pipeline-level: it stays**.
   cd /Volumes/developer_ssd/Developer/totem_labs/app-box/designs/appbox-studio
   grep -rl '"project": "appbox"' models | xargs sed -i '' 's/"project": "appbox"/"project": "appbox-studio"/g'
   ```
-- [ ] 2.6 Grep-clean check (the whole point of the enumerated list):
+- [x] 2.6 Grep-clean check (the whole point of the enumerated list):
   ```sh
   cd /Volumes/developer_ssd/Developer/totem_labs/app-box
   grep -rn 'designs/appbox\b' --exclude-dir=.git --exclude-dir=node_modules \
@@ -221,14 +223,14 @@ identifier, pipeline-level: it stays**.
   ```
   Expected output: only the historical documents named in Global constraints
   (`docs/plans/*`, `docs/research/*`) — nothing else.
-- [ ] 2.7 Green checks:
+- [x] 2.7 Green checks:
   ```sh
   cd /Volumes/developer_ssd/Developer/totem_labs/app-box/appboxd && dart test
   node /Volumes/developer_ssd/Developer/totem_labs/app-box/.kimi-code/skills/appbox-designer/runtime/serve.test.mjs
   ```
   Expected: all dart tests pass; serve test prints its checklist ending with
   all `ok` lines, exit 0.
-- [ ] 2.8 Serve smoke: `node designs/appbox-studio/serve.mjs --port 4399 --no-watch &`,
+- [x] 2.8 Serve smoke: `node designs/appbox-studio/serve.mjs --port 4399 --no-watch &`,
   then `curl -sf -o /dev/null -w '%{http_code}\n' http://localhost:4399/dashboard`
   → `200`; `kill %1`.
 
@@ -243,7 +245,7 @@ identifier, pipeline-level: it stays**.
 
 ### Steps
 
-- [ ] 3.1 Download the pinned builds:
+- [x] 3.1 Download the pinned builds:
   ```sh
   cd /Volumes/developer_ssd/Developer/totem_labs/app-box/skills/appbox-designer/runtime/vendor
   curl -sfLO https://unpkg.com/@google/model-viewer@4.3.1/dist/model-viewer.min.js
@@ -259,7 +261,7 @@ identifier, pipeline-level: it stays**.
   wasm ~1-3 MB, lottie-player ~376 KB, rive ~3.1 MB (canvas-single embeds the
   WASM — deliberately the `-single` build so no second fetch), three.module
   ~357 KB, three.core ~700 KB.
-- [ ] 3.2 Self-containment audit (the vendored-no-CDN rule):
+- [x] 3.2 Self-containment audit (the vendored-no-CDN rule):
   ```sh
   grep -oE 'from"[^"]+"' three.module.min.js | sort -u
   grep -oE 'https?://[a-z0-9.-]+' model-viewer.min.js lottie-player.js rive.js three.module.min.js three.core.min.js | sort -u
@@ -274,7 +276,7 @@ identifier, pipeline-level: it stays**.
   (overridden by `dotlottie_island.js`'s `setWasmUrl` before any player
   instantiates). The behavioral proof of no-network is Task 15: any real CDN
   fetch failure surfaces as console errors, which the lens auto-fails.
-- [ ] 3.3 Compute SRI hashes and record them. For each of the 7 files:
+- [x] 3.3 Compute SRI hashes and record them. For each of the 7 files:
   ```sh
   for f in model-viewer.min.js dotlottie-wc.js dotlottie-player.wasm lottie-player.js rive.js three.module.min.js three.core.min.js; do
     printf '%s  sha384-%s\n' "$f" "$(openssl dgst -sha384 -binary "$f" | openssl base64 -A)"
@@ -288,7 +290,7 @@ identifier, pipeline-level: it stays**.
   `@lottiefiles/lottie-player` 2.0.12, `@rive-app/canvas-single` 2.39.1,
   `three` 0.185.1 (two file entries)), and one table row per file to
   `skills/appbox-designer/runtime/vendor/SRI.md`.
-- [ ] 3.4 Record licences — resolve from the registry, not memory (the
+- [x] 3.4 Record licences — resolve from the registry, not memory (the
   repo's own rule in THIRD-PARTY-NOTICES):
   ```sh
   for p in '@google/model-viewer@4.3.1' '@lottiefiles/dotlottie-wc@0.9.24' \
@@ -302,14 +304,14 @@ identifier, pipeline-level: it stays**.
   resolved licences (expected: model-viewer Apache-2.0; dotlottie-wc,
   dotlottie-web, lottie-player, canvas-single, three all MIT — record what
   npm actually says).
-- [ ] 3.5 Mirror everything:
+- [x] 3.5 Mirror everything:
   ```sh
   cd /Volumes/developer_ssd/Developer/totem_labs/app-box
   for f in model-viewer.min.js dotlottie-wc.js dotlottie-player.wasm lottie-player.js rive.js three.module.min.js three.core.min.js manifest.json SRI.md; do
     cp "skills/appbox-designer/runtime/vendor/$f" ".kimi-code/skills/appbox-designer/runtime/vendor/$f"
   done
   ```
-- [ ] 3.6 Serve check (runtime serves vendor statically — no router change):
+- [x] 3.6 Serve check (runtime serves vendor statically — no router change):
   ```sh
   cd /Volumes/developer_ssd/Developer/totem_labs/app-box
   node designs/appbox-studio/serve.mjs --port 4399 --no-watch &
@@ -335,7 +337,7 @@ re-arm on `htmx:load`). All live in `skills/appbox-designer/runtime/vendor/`.
 
 ### Steps
 
-- [ ] 4.1 Create `skills/appbox-designer/runtime/vendor/dotlottie_island.js`:
+- [x] 4.1 Create `skills/appbox-designer/runtime/vendor/dotlottie_island.js`:
   ```js
   /* dotlottie_island.js — named island (ADR-0002 islands amendment).
      Imports the dotLottie web component and pins its WASM to the vendored
@@ -346,7 +348,7 @@ re-arm on `htmx:load`). All live in `skills/appbox-designer/runtime/vendor/`.
   import { setWasmUrl } from './dotlottie-wc.js';
   setWasmUrl('/assets/vendor/dotlottie-player.wasm');
   ```
-- [ ] 4.2 Create `skills/appbox-designer/runtime/vendor/rive_island.js`:
+- [x] 4.2 Create `skills/appbox-designer/runtime/vendor/rive_island.js`:
   ```js
   /* rive_island.js — named island (ADR-0002 islands amendment).
      Data-attribute init for Rive .riv assets; global `rive` comes from the
@@ -416,7 +418,7 @@ re-arm on `htmx:load`). All live in `skills/appbox-designer/runtime/vendor/`.
     document.body.addEventListener('htmx:load', arm);
   })();
   ```
-- [ ] 4.3 Create `skills/appbox-designer/runtime/vendor/three_island.js`:
+- [x] 4.3 Create `skills/appbox-designer/runtime/vendor/three_island.js`:
   ```js
   /* three_island.js — named island (ADR-0002 islands amendment), ES module.
      Renders the one demo scene into any <div data-three-scene="orbit-demo">.
@@ -487,7 +489,7 @@ re-arm on `htmx:load`). All live in `skills/appbox-designer/runtime/vendor/`.
   arm();
   document.body.addEventListener('htmx:load', arm);
   ```
-- [ ] 4.4 Create `skills/appbox-designer/runtime/vendor/game_island.js`:
+- [x] 4.4 Create `skills/appbox-designer/runtime/vendor/game_island.js`:
   ```js
   /* game_island.js — named island (ADR-0002 islands amendment).
      "Dungeon Dash": an 11×11 top-down grid walker on a canvas, drawn with
@@ -587,15 +589,15 @@ re-arm on `htmx:load`). All live in `skills/appbox-designer/runtime/vendor/`.
     document.body.addEventListener('htmx:load', arm);
   })();
   ```
-- [ ] 4.5 Mirror the four islands:
+- [x] 4.5 Mirror the four islands:
   ```sh
   cd /Volumes/developer_ssd/Developer/totem_labs/app-box
   for f in dotlottie_island.js rive_island.js three_island.js game_island.js; do
     cp "skills/appbox-designer/runtime/vendor/$f" ".kimi-code/skills/appbox-designer/runtime/vendor/$f"
   done
   ```
-- [ ] 4.6 Extend the runtime serve test (TDD-ish: the runtime's own test
-  file is its check). In `skills/appbox-designer/runtime/serve.test.mjs`,
+- [x] 4.6 Extend the runtime serve test (TDD-ish: the runtime's own test
+  file is its check) (superseded by Dart port). In `skills/appbox-designer/runtime/serve.test.mjs`,
   after the legacy-path check (line ~117), add:
   ```js
   // --- named islands are served (ADR-0002 islands amendment) ----------------
@@ -630,7 +632,7 @@ exception" to "no ad-hoc client JS; named islands only". Edit the canonical
 
 ### Steps
 
-- [ ] 5.1 `skills/appbox-designer/SKILL.md`:
+- [x] 5.1 `skills/appbox-designer/SKILL.md`:
   - Line 6 (frontmatter description): replace
     `JavaScript (one named island exception: canvas.js, pan/zoom for the` /
     following line with `JavaScript — named islands only: reusable, vendored,
@@ -644,7 +646,7 @@ exception" to "no ad-hoc client JS; named islands only". Edit the canonical
     inspect.js, dotlottie_island.js, rive_island.js, three_island.js,
     game_island.js). Anything outside that registry is banned and linted.`
   - Line 98: change `(zero-custom-JS)` to `(no-ad-hoc-JS / named-islands)`.
-- [ ] 5.2 `skills/appbox-designer/CONTEXT.md`:
+- [x] 5.2 `skills/appbox-designer/CONTEXT.md`:
   - Line 3: replace `zero custom client-side JavaScript` with `no ad-hoc
     client-side JavaScript (named islands only)`.
   - Line 72-73 `Client-JS-Free` entry: append after the existing text:
@@ -652,7 +654,7 @@ exception" to "no ad-hoc client JS; named islands only". Edit the canonical
     are the only permitted extension: third-party declarative web components
     and first-party data-attribute init modules, all loaded from
     /assets/vendor/.`
-- [ ] 5.3 `skills/appbox-designer/system-prompt.md`:
+- [x] 5.3 `skills/appbox-designer/system-prompt.md`:
   - Line 44: replace `zero custom client-side JavaScript` with `no ad-hoc
     client-side JavaScript (named islands only, ADR-0002 islands amendment)`.
   - Line 63: replace the parenthetical `(the only <script> tags allowed
@@ -673,7 +675,7 @@ exception" to "no ad-hoc client JS; named islands only". Edit the canonical
     plus the rive/three vendored runtimes the islands drive). No other
     first-party script, ever; new runtimes enter only as a new named,
     vendored, documented island.`
-- [ ] 5.4 `skills/appbox-designer/docs/adr/0002-zero-custom-client-js-boundary.md`:
+- [x] 5.4 `skills/appbox-designer/docs/adr/0002-zero-custom-client-js-boundary.md`:
   append a new paragraph at the end:
   ```md
   **Amendment (2026-07-31) — the media islands.** The island registry grows
@@ -692,7 +694,7 @@ exception" to "no ad-hoc client JS; named islands only". Edit the canonical
   `allowEval:false` + the vendor-path lint. A new runtime enters only as a
   new named, vendored, documented island amending this ADR.
   ```
-- [ ] 5.5 `skills/appbox-designer/runtime/README.md`:
+- [x] 5.5 `skills/appbox-designer/runtime/README.md`:
   - Lines 152-155: replace `(`<script src="/assets/vendor/canvas.js" defer>` —
     ADR-0002's one first-party` / `…exception…)` phrasing with `the deferred
     island tags — the named islands of ADR-0002's amendments, loaded from
@@ -702,19 +704,19 @@ exception" to "no ad-hoc client JS; named islands only". Edit the canonical
     amendment …)` with `plus the named islands of ADR-0002's amendments
     (first-party data-attribute islands and third-party declarative web
     components, all vendored in runtime/vendor/)`.
-- [ ] 5.6 `skills/appbox-designer/runtime/lint.mjs` line 2 header comment:
+- [x] 5.6 `skills/appbox-designer/runtime/lint.mjs` line 2 header comment (superseded by Dart port):
   replace `// Zero-custom-client-JS lint (ADR-0002).` with
   `// No-ad-hoc-client-JS lint (ADR-0002 + islands amendments). Named islands
   // pass because every allowlisted script loads from /assets/vendor/.`
   (No rule change: the existing vendor-path allowlist already admits the
   islands; anything else still fails.)
-- [ ] 5.7 `skills/appbox-designer/DESIGN-ARCHITECTURE.md`: after the Client-JS
+- [x] 5.7 `skills/appbox-designer/DESIGN-ARCHITECTURE.md`: after the Client-JS
   passage at line 74 (`…so the Client-JS-Free rule is untouched.`), append:
   `The same holds for the named media islands (ADR-0002's 2026-07-31
   amendment): 3D, animation and game runtimes are vendored web components or
   data-attribute islands — a surface uses them by writing markup, never
   script.`
-- [ ] 5.8 Mirror every edited file:
+- [x] 5.8 Mirror every edited file:
   ```sh
   cd /Volumes/developer_ssd/Developer/totem_labs/app-box
   for f in SKILL.md CONTEXT.md system-prompt.md DESIGN-ARCHITECTURE.md \
@@ -722,7 +724,7 @@ exception" to "no ad-hoc client JS; named islands only". Edit the canonical
     cp "skills/appbox-designer/$f" ".kimi-code/skills/appbox-designer/$f"
   done
   ```
-- [ ] 5.9 Lint still clean + docs consistent:
+- [x] 5.9 Lint still clean + docs consistent:
   ```sh
   node .kimi-code/skills/appbox-designer/runtime/lint.mjs designs/appbox-studio
   grep -rn 'one named island\|single first-party exception\|ONE first-party island' skills/appbox-designer --include='*.md' --include='*.mjs'
@@ -745,7 +747,7 @@ rule, extend `appboxd` — never reach for archived tooling.
 
 ### Steps
 
-- [ ] 6.1 Write the failing test first —
+- [x] 6.1 Write the failing test first —
   `appboxd/test/lens_input_test.dart`:
   ```dart
   // Lens input driving — proves Input.dispatchKeyEvent / dispatchMouseEvent
@@ -815,7 +817,7 @@ rule, extend `appboxd` — never reach for archived tooling.
   ```
   Run `cd appboxd && dart test test/lens_input_test.dart` — expected:
   COMPILE ERROR (`key`/`click` undefined). Red confirmed.
-- [ ] 6.2 Add the two methods to the `CdpSession` class in
+- [x] 6.2 Add the two methods to the `CdpSession` class in
   `appboxd/lib/cdp.dart` (immediately after `screenshot()`, ~line 378):
   ```dart
   /// Dispatch a key press (down + up) via Input.dispatchKeyEvent.
@@ -850,9 +852,9 @@ rule, extend `appboxd` — never reach for archived tooling.
     }
   }
   ```
-- [ ] 6.3 Re-run `dart test test/lens_input_test.dart` — expected: 2 passed.
+- [x] 6.3 Re-run `dart test test/lens_input_test.dart` — expected: 2 passed.
   Then the full suite: `dart test` — all green.
-- [ ] 6.4 Create the check driver `appboxd/tool/lens_check.dart`:
+- [x] 6.4 Create the check driver `appboxd/tool/lens_check.dart`:
   ```dart
   // appbox lens check driver: navigate, assert, optionally drive input,
   // screenshot. Console/page errors are always a failure (lens doctrine).
@@ -930,7 +932,7 @@ rule, extend `appboxd` — never reach for archived tooling.
     stdout.writeln('lens check ok: $url -> $out (${width}x$height)');
   }
   ```
-- [ ] 6.5 Driver smoke against the live design:
+- [x] 6.5 Driver smoke against the live design:
   ```sh
   cd /Volumes/developer_ssd/Developer/totem_labs/app-box
   node designs/appbox-studio/serve.mjs --port 4399 --no-watch &
@@ -955,7 +957,7 @@ reachable on 2026-07-31; licences recorded below from the sources named.
 
 ### Steps
 
-- [ ] 7.1 Download:
+- [x] 7.1 Download:
   ```sh
   cd /Volumes/developer_ssd/Developer/totem_labs/app-box
   M=designs/appbox-studio/assets/media
@@ -983,7 +985,7 @@ reachable on 2026-07-31; licences recorded below from the sources named.
   Apache-2.0 repo. **test.lottie** — dotlottie player-component test asset,
   MIT repo. **Kenney tiny-dungeon** — CC0 (kenney.nl), license text captured
   as `KENNEY-LICENSE.txt`.
-- [ ] 7.2 Validate the payloads:
+- [x] 7.2 Validate the payloads:
   ```sh
   M=designs/appbox-studio/assets/media
   head -c4 "$M/boombox.glb"; echo            # expected: glTF
@@ -995,13 +997,13 @@ reachable on 2026-07-31; licences recorded below from the sources named.
   `manifest.json` + animations, non-empty files throughout
   (`off_road_car.riv` has no cheap magic check — the Rive screen's lens run
   in Task 14 is its proof).
-- [ ] 7.3 Record hashes for the manifest:
+- [x] 7.3 Record hashes for the manifest:
   ```sh
   M=designs/appbox-studio/assets/media
   shasum -a 256 "$M/boombox.glb" "$M/off_road_car.riv" "$M/lottie_logo.json" \
     "$M/dotlottie-demo.lottie" "$M/kenney/tile_0000.png" "$M/kenney/tile_0084.png" "$M/kenney/tile_0085.png"
   ```
-- [ ] 7.4 Write `designs/appbox-studio/assets/media/MEDIA.md` (per-file
+- [x] 7.4 Write `designs/appbox-studio/assets/media/MEDIA.md` (per-file
   inventory, `assets/fonts/FONTS.md` precedent), one row per file with these
   columns filled from the downloads above: file · source URL (exact URLs from
   step 7.1) · author/publisher · licence · sha256 (from step 7.3) · notes.
@@ -1014,7 +1016,7 @@ reachable on 2026-07-31; licences recorded below from the sources named.
   permissively-licensed vendor repo (MIT/Apache-2.0), captured with its
   source URL and hash. Kenney license text: `kenney/KENNEY-LICENSE.txt`.
   ```
-- [ ] 7.5 Append a media section to `THIRD-PARTY-NOTICES.md`:
+- [x] 7.5 Append a media section to `THIRD-PARTY-NOTICES.md`:
   ```md
   ---
 
@@ -1051,11 +1053,11 @@ Shared plumbing for the six screens; no screen content yet.
 
 ### Steps
 
-- [ ] 8.1 `designs/appbox-studio/ui/common/base.html`: insert
+- [x] 8.1 `designs/appbox-studio/ui/common/base.html`: insert
   `{% block head_extra %}{% endblock %}` on its own line immediately before
   `</head>` (after line 25, the `appshell.css` link). Per-screen island tags
   and the scoped stylesheet load through this block — never globally.
-- [ ] 8.2 Create `designs/appbox-studio/assets/css/media.css`. Convention for
+- [x] 8.2 Create `designs/appbox-studio/assets/css/media.css`. Convention for
   this and every new file the screen tasks add: carry the repo's standard
   provenance header (`<!-- appbox:provenance … -->` as in
   `ui/common/base.html:2-5` for .html, `// appbox:provenance …` as in
@@ -1078,7 +1080,7 @@ Shared plumbing for the six screens; no screen content yet.
   .media-dpad [data-game-move='right'] { grid-area: r; }
   .media-dpad button { min-height: 48px; }
   ```
-- [ ] 8.3 Create `designs/appbox-studio/ui/views/app_shell/routes.media.js`:
+- [x] 8.3 Create `designs/appbox-studio/ui/views/app_shell/routes.media.js`:
   ```js
   // Media-lab routes — one smoke screen per named island runtime.
   import * as rive from './media/rive/rive_viewmodel.js';
@@ -1099,11 +1101,11 @@ Shared plumbing for the six screens; no screen content yet.
     ['GET', '/media/game', game.page],
   ];
   ```
-- [ ] 8.4 `designs/appbox-studio/app.routes.js`: add
+- [x] 8.4 `designs/appbox-studio/app.routes.js`: add
   `import mediaRoutes from './ui/views/app_shell/routes.media.js';` after the
   line importing `appRoutes` (line 10), and `...mediaRoutes,` after
   `...appRoutes,` (line 26).
-- [ ] 8.5 `designs/appbox-studio/structure.json`: append six entries to the
+- [x] 8.5 `designs/appbox-studio/structure.json`: append six entries to the
   `screens` array (before the closing `]`), following the existing shape
   (`surface: null` — smoke screens are not scaffolder surfaces):
   ```json
@@ -1164,7 +1166,7 @@ Shared plumbing for the six screens; no screen content yet.
       }
   ```
   Validate: `python3 -c "import json;json.load(open('designs/appbox-studio/structure.json'));print('structure.json ok')"`.
-- [ ] 8.6 L10n keys — append to `designs/appbox-studio/l10n/app_en.arb`
+- [x] 8.6 L10n keys — append to `designs/appbox-studio/l10n/app_en.arb`
   immediately before the closing `}` (add a comma after the previously-last
   entry so the file stays valid JSON):
   ```json
@@ -1200,7 +1202,7 @@ Shared plumbing for the six screens; no screen content yet.
     "media.game.move.left": "Move left",
     "media.game.move.right": "Move right"
   ```
-- [ ] 8.6b The same keys in `designs/appbox-studio/l10n/app_pl.arb` (same
+- [x] 8.6b The same keys in `designs/appbox-studio/l10n/app_pl.arb` (same
   append procedure), with these exact Polish values:
   ```json
     "media.eyebrow": "Laboratorium mediów",
@@ -1237,7 +1239,7 @@ Shared plumbing for the six screens; no screen content yet.
   ```
   Validate both files:
   `python3 -c "import json;json.load(open('designs/appbox-studio/l10n/app_en.arb'));json.load(open('designs/appbox-studio/l10n/app_pl.arb'));print('arb json ok')"`.
-- [ ] 8.7 Regenerate the pseudo-locale and confirm key parity:
+- [x] 8.7 Regenerate the pseudo-locale and confirm key parity:
   ```sh
   cd /Volumes/developer_ssd/Developer/totem_labs/app-box
   node .kimi-code/skills/appbox-designer/runtime/pseudolocalize.mjs designs/appbox-studio
@@ -1264,7 +1266,7 @@ Shared plumbing for the six screens; no screen content yet.
 
 ### Steps
 
-- [ ] 9.1 Create `designs/appbox-studio/ui/views/app_shell/media/rive/rive_viewmodel.js`:
+- [x] 9.1 Create `designs/appbox-studio/ui/views/app_shell/media/rive/rive_viewmodel.js`:
   ```js
   export const surfaceId = 'app.mediaRive';
 
@@ -1272,7 +1274,7 @@ Shared plumbing for the six screens; no screen content yet.
 
   export const page = (c, h) => h.render(c, VIEW, { activeShell: 'app' });
   ```
-- [ ] 9.2 Create `designs/appbox-studio/ui/views/app_shell/media/rive/rive_view.html`:
+- [x] 9.2 Create `designs/appbox-studio/ui/views/app_shell/media/rive/rive_view.html`:
   ```html
   {% extends "ui/views/main_shell/main_shell_view.html" %}
   {% block title %}{{ t('media.rive.pageTitle') }}{% endblock %}
@@ -1295,7 +1297,7 @@ Shared plumbing for the six screens; no screen content yet.
   </section>
   {% endblock %}
   ```
-- [ ] 9.3 Check:
+- [x] 9.3 Check:
   ```sh
   cd /Volumes/developer_ssd/Developer/totem_labs/app-box
   node .kimi-code/skills/appbox-designer/runtime/lint.mjs designs/appbox-studio
@@ -1317,7 +1319,7 @@ Shared plumbing for the six screens; no screen content yet.
 
 ### Steps
 
-- [ ] 10.1 Create `designs/appbox-studio/ui/views/app_shell/media/lottie/lottie_viewmodel.js`:
+- [x] 10.1 Create `designs/appbox-studio/ui/views/app_shell/media/lottie/lottie_viewmodel.js`:
   ```js
   export const surfaceId = 'app.mediaLottie';
 
@@ -1325,7 +1327,7 @@ Shared plumbing for the six screens; no screen content yet.
 
   export const page = (c, h) => h.render(c, VIEW, { activeShell: 'app' });
   ```
-- [ ] 10.2 Create `designs/appbox-studio/ui/views/app_shell/media/lottie/lottie_view.html`:
+- [x] 10.2 Create `designs/appbox-studio/ui/views/app_shell/media/lottie/lottie_view.html`:
   ```html
   {% extends "ui/views/main_shell/main_shell_view.html" %}
   {% block title %}{{ t('media.lottie.pageTitle') }}{% endblock %}
@@ -1345,7 +1347,7 @@ Shared plumbing for the six screens; no screen content yet.
   ```
   (`controls` is the web component's declarative play/pause/seek UI — no
   island needed.)
-- [ ] 10.3 Check: same commands as 9.3 with `/media/lottie` and grep
+- [x] 10.3 Check: same commands as 9.3 with `/media/lottie` and grep
   `lottie-player` (count ≥ 1).
 
 ---
@@ -1361,7 +1363,7 @@ Shared plumbing for the six screens; no screen content yet.
 
 ### Steps
 
-- [ ] 11.1 Create `designs/appbox-studio/ui/views/app_shell/media/dotlottie/dotlottie_viewmodel.js`:
+- [x] 11.1 Create `designs/appbox-studio/ui/views/app_shell/media/dotlottie/dotlottie_viewmodel.js`:
   ```js
   export const surfaceId = 'app.mediaDotlottie';
 
@@ -1375,7 +1377,7 @@ Shared plumbing for the six screens; no screen content yet.
   export const stage = (c, h) =>
     h.render(c, `${VIEW}#stage`, { playing: c.req.query('play') !== '0' });
   ```
-- [ ] 11.2 Create `designs/appbox-studio/ui/views/app_shell/media/dotlottie/dotlottie_view.html`:
+- [x] 11.2 Create `designs/appbox-studio/ui/views/app_shell/media/dotlottie/dotlottie_view.html`:
   ```html
   {% extends "ui/views/main_shell/main_shell_view.html" %}
   {% block title %}{{ t('media.dotlottie.pageTitle') }}{% endblock %}
@@ -1401,7 +1403,7 @@ Shared plumbing for the six screens; no screen content yet.
   </section>
   {% endblock %}
   ```
-- [ ] 11.3 Check: lint clean; `curl -sf http://localhost:4399/media/dotlottie
+- [x] 11.3 Check: lint clean; `curl -sf http://localhost:4399/media/dotlottie
   | grep -c 'dotlottie-wc'` ≥ 1; `curl -sf
   'http://localhost:4399/media/dotlottie/stage?play=0' | grep -c autoplay` =
   0 and with `play=1` = 1 (fragment round-trip works).
@@ -1418,7 +1420,7 @@ Shared plumbing for the six screens; no screen content yet.
 
 ### Steps
 
-- [ ] 12.1 Create `designs/appbox-studio/ui/views/app_shell/media/model3d/model3d_viewmodel.js`:
+- [x] 12.1 Create `designs/appbox-studio/ui/views/app_shell/media/model3d/model3d_viewmodel.js`:
   ```js
   export const surfaceId = 'app.mediaModel3d';
 
@@ -1433,7 +1435,7 @@ Shared plumbing for the six screens; no screen content yet.
   export const stage = (c, h) =>
     h.render(c, `${VIEW}#stage`, { playing: c.req.query('rotate') !== '0' });
   ```
-- [ ] 12.2 Create `designs/appbox-studio/ui/views/app_shell/media/model3d/model3d_view.html`:
+- [x] 12.2 Create `designs/appbox-studio/ui/views/app_shell/media/model3d/model3d_view.html`:
   ```html
   {% extends "ui/views/main_shell/main_shell_view.html" %}
   {% block title %}{{ t('media.model3d.pageTitle') }}{% endblock %}
@@ -1459,7 +1461,7 @@ Shared plumbing for the six screens; no screen content yet.
   </section>
   {% endblock %}
   ```
-- [ ] 12.3 Check: lint clean; page contains `model-viewer`;
+- [x] 12.3 Check: lint clean; page contains `model-viewer`;
   `curl -sf 'http://localhost:4399/media/model3d/stage?rotate=0' | grep -c auto-rotate` = 0, `rotate=1` = 1.
 
 ---
@@ -1473,7 +1475,7 @@ Shared plumbing for the six screens; no screen content yet.
 
 ### Steps
 
-- [ ] 13.1 Create `designs/appbox-studio/ui/views/app_shell/media/scene3d/scene3d_viewmodel.js`:
+- [x] 13.1 Create `designs/appbox-studio/ui/views/app_shell/media/scene3d/scene3d_viewmodel.js`:
   ```js
   export const surfaceId = 'app.mediaScene3d';
 
@@ -1481,7 +1483,7 @@ Shared plumbing for the six screens; no screen content yet.
 
   export const page = (c, h) => h.render(c, VIEW, { activeShell: 'app' });
   ```
-- [ ] 13.2 Create `designs/appbox-studio/ui/views/app_shell/media/scene3d/scene3d_view.html`:
+- [x] 13.2 Create `designs/appbox-studio/ui/views/app_shell/media/scene3d/scene3d_view.html`:
   ```html
   {% extends "ui/views/main_shell/main_shell_view.html" %}
   {% block title %}{{ t('media.scene3d.pageTitle') }}{% endblock %}
@@ -1501,7 +1503,7 @@ Shared plumbing for the six screens; no screen content yet.
   </section>
   {% endblock %}
   ```
-- [ ] 13.3 Check: lint clean; `curl -sf http://localhost:4399/media/scene3d
+- [x] 13.3 Check: lint clean; `curl -sf http://localhost:4399/media/scene3d
   | grep -c 'data-three-scene'` = 1. Rendering proof is the lens run (the
   island writes `data-three-frames` only in a real browser).
 
@@ -1516,7 +1518,7 @@ Shared plumbing for the six screens; no screen content yet.
 
 ### Steps
 
-- [ ] 14.1 Create `designs/appbox-studio/ui/views/app_shell/media/game/game_viewmodel.js`:
+- [x] 14.1 Create `designs/appbox-studio/ui/views/app_shell/media/game/game_viewmodel.js`:
   ```js
   export const surfaceId = 'app.mediaGame';
 
@@ -1524,7 +1526,7 @@ Shared plumbing for the six screens; no screen content yet.
 
   export const page = (c, h) => h.render(c, VIEW, { activeShell: 'app' });
   ```
-- [ ] 14.2 Create `designs/appbox-studio/ui/views/app_shell/media/game/game_view.html`:
+- [x] 14.2 Create `designs/appbox-studio/ui/views/app_shell/media/game/game_view.html`:
   ```html
   {% extends "ui/views/main_shell/main_shell_view.html" %}
   {% block title %}{{ t('media.game.pageTitle') }}{% endblock %}
@@ -1548,7 +1550,7 @@ Shared plumbing for the six screens; no screen content yet.
   </section>
   {% endblock %}
   ```
-- [ ] 14.3 Check: lint clean; `curl -sf http://localhost:4399/media/game |
+- [x] 14.3 Check: lint clean; `curl -sf http://localhost:4399/media/game |
   grep -c 'data-game-canvas'` = 1. Playability proof is the lens run.
 
 ---
@@ -1565,13 +1567,13 @@ The release bar for the whole plan. appbox lens only.
 
 ### Steps
 
-- [ ] 15.1 Boot the design (leave running for the whole task):
+- [x] 15.1 Boot the design (leave running for the whole task):
   ```sh
   cd /Volumes/developer_ssd/Developer/totem_labs/app-box
   node designs/appbox-studio/serve.mjs --port 4319 --no-watch &
   sleep 2
   ```
-- [ ] 15.2 Capture every screen at every rung. Run this matrix from
+- [x] 15.2 Capture every screen at every rung. Run this matrix from
   `appboxd/` (heights pair with widths per the viewport ladder:
   390×844, 744×1133, 1280×832; settle 3500ms so WASM/GLB/rive load):
   ```sh
@@ -1590,7 +1592,7 @@ The release bar for the whole plan. appbox lens only.
   Expected: 18 × `lens check ok: …`. Any `lens check FAILED` stops the task —
   fix the named cause (missing asset, island error, console error) and rerun
   that line.
-- [ ] 15.3 **Pass bar per screen** (state explicitly, verify every one):
+- [x] 15.3 **Pass bar per screen** (state explicitly, verify every one):
   - **rive**: exit 0 AND `riveReady==='true'` AND (ReadMediaFile) the car is
     visibly rendered in the canvas — not a blank/poster frame.
   - **lottie**: exit 0 AND the Lottie logo animation visibly rendered, with
@@ -1605,10 +1607,10 @@ The release bar for the whole plan. appbox lens only.
     (proves input driving end to end) AND tiles + hero visibly rendered.
   - **All screens**: zero console/page errors (the lens auto-fails on any);
     layout holds at all three rungs (no overflow, controls reachable at 390).
-- [ ] 15.4 Read the evidence back: open each of the 18 PNGs with
+- [x] 15.4 Read the evidence back: open each of the 18 PNGs with
   ReadMediaFile and confirm the visual half of the bar in 15.3. Do not skip
   this — a green exit code with a blank canvas is a fail.
-- [ ] 15.5 Final green run + shutdown:
+- [x] 15.5 Final green run + shutdown:
   ```sh
   cd /Volumes/developer_ssd/Developer/totem_labs/app-box
   node .kimi-code/skills/appbox-designer/runtime/lint.mjs designs/appbox-studio

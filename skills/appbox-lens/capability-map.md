@@ -208,7 +208,7 @@ The same legend as above: **ported** (capability in Dart), **ported (partial:
 
 | runtime file | Dart target | CLI | status |
 |---|---|---|---|
-| `runtime/serve.mjs` (387) | `design_server.dart` → `designServe` (Task 20; loopback bind, `--port 0 --json`, hot-reload supervisor) | `appbox design serve` | ported (partial: the Dart design server **supersedes** it; `serve.mjs` stays in tree until Task 23 archives it) |
+| `runtime/serve.mjs` (387) | `design_server.dart` → `designServe` (Task 20; loopback bind, `--port 0 --json`, hot-reload supervisor) | `appbox design serve` | ported (the Dart design server **supersedes** it; archived by Task 23 under `archives/tooling-pre-dart/skills-pre-dart/appbox-designer/runtime/`) |
 | `runtime/serve.test.mjs` (195) | `design_server` Dart tests (serve contract) | — | ported |
 | `runtime/lint.mjs` (53) | `design_tools.dart` → `designLint` (ADR-0002 no-custom-JS check) | `appbox design lint` | ported |
 | `runtime/console-check.mjs` (32) | the lens — `consoleErrors`/`pageErrors` auto-fail (`cdp.dart`); navigate + assert | `appbox lens check` | ported |
@@ -219,7 +219,7 @@ The same legend as above: **ported** (capability in Dart), **ported (partial:
 | `runtime/check_wiring.mjs` (134) | `design_tools.dart` → `designCheckWiring` (fragments/mutations-posted/urls-resolve/targets-exist) | `appbox design check-wiring` | ported |
 | `runtime/verify-interact.mjs` (41), `verify-shots.mjs` (37), `verify-timeline.mjs` (13) | folded into `design_selftest.dart` (structural-contract selftest + falsifiability) | `appbox design selftest` | ported |
 | `runtime/vendor/fetch.mjs` | `design_tools.dart` → `designVendorFetch` (fetch + SRI-pin vendored client libs) | `appbox design vendor-fetch` | ported |
-| `runtime/eject.mjs` (153) | target: `appbox design eject` (self-contained Hono eject) | `appbox design eject` | ported (partial: the `design eject` CLI verb + Dart port land with the Task 22.1 code — not present at this HEAD; flag for verification) |
+| `runtime/eject.mjs` (153) | `design_tools.dart` → `designEject` (self-contained Hono eject) | `appbox design eject` | ported |
 | `runtime/lib/` (helpers, l10n, router, state, templates, timers — `.mjs`) | the Runtime internals, folded into `design_server.dart` (session/locale/router/timer helpers) | — | ported |
 | `runtime/vendor/` (htmx, islands, lucide, …) | **not a runtime** — served, SRI-pinned *client assets* (browser data), nothing to port; `fetch.mjs` above is the one tool that touched them | served by `appbox design serve` | n/a (data) |
 
@@ -244,13 +244,12 @@ The same legend as above: **ported** (capability in Dart), **ported (partial:
 Every retired non-Dart runtime file under `skills/` has a disposition (35 files
 total: 29 `.mjs`, 5 `.py`, 1 `.sh`):
 
-- **Ported:** 27 — the DS-intake trio (`check-design-system`/`record-asset`/`import-design-system`); the designer runtime `serve.test`/`lint`/`console-check`/`shoot`/`pseudolocalize`/`doctor`/`check_ladder`/`check_wiring`/`verify-interact`/`verify-shots`/`verify-timeline`/`vendor/fetch` (12) + the 6 `runtime/lib/*.mjs` server internals; `selftest.sh`; and the five `.py` ports (`scaffold`/`generate_story_map`/`deploy`/`lint_kb`/`intake`).
-- **Ported (partial):** 2 — `serve.mjs` (the Dart design server supersedes it; archived by Task 23) and `eject.mjs` (the `design eject` CLI verb + Dart port land with the Task 22.1 code — not present at this HEAD; flagged for verification).
+- **Ported:** 29 — the DS-intake trio (`check-design-system`/`record-asset`/`import-design-system`); the designer runtime `serve`/`serve.test`/`lint`/`console-check`/`shoot`/`pseudolocalize`/`doctor`/`check_ladder`/`check_wiring`/`verify-interact`/`verify-shots`/`verify-timeline`/`vendor/fetch`/`eject` (14) + the 6 `runtime/lib/*.mjs` server internals; `selftest.sh`; and the five `.py` ports (`scaffold`/`generate_story_map`/`deploy`/`lint_kb`/`intake`).
 - **Dropped with reason:** 6 — `import-figma.mjs` (crashes on load — absent `vendor/fig-materialize.mjs`), `compile-design-system.mjs` (absent `agents/vendor/babel.min.js`), and the preview-compiler subsystem `build-preview.mjs` / `ds-core.mjs` / `ds-prompt.mjs` / `asset-store.mjs` (~3k lines, no gate consumer, port on demand).
 
 The `appbox` CLI dispatch (`appboxd/bin/appbox.dart`) routes every ported verb:
 `appbox design <sub>` (Task 19-21 + 22.1), `appbox lens check|shoot` (Task 7),
 `appbox emit story-map|scaffold` (Tasks 14-16), `appbox deploy` / `appbox intake`
-/ `appbox docs` (the `.py` ports). Task 23 moves every file in this section to
-`archives/tooling-pre-dart/skills-pre-dart/` and rewrites the doc references that
-still name them.
+/ `appbox docs` (the `.py` ports). Task 23 moved every file in this section to
+`archives/tooling-pre-dart/skills-pre-dart/` and rewrote the doc references that
+still named them.

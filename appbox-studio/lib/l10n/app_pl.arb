@@ -1,7 +1,7 @@
 {
   "@@locale": "pl",
   "loading": "Ładowanie…",
-  "appTitle": "Towarzysz app_box",
+  "appTitle": "Towarzysz appbox",
   "counterLabel": "Licznik: {count}",
   "homeDialogTitle": "Stacked rządzi!",
   "homeDialogDescription": "Daj stacked {count} gwiazdek na GitHubie",

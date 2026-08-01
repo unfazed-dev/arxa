@@ -3,6 +3,16 @@
 The shared server for every Artifact (ADR-0001). One implementation; artifacts
 are pure MVVM content (ADR-0005) — templates, viewmodels, fixtures, assets.
 
+> **The server is the Dart design server now** (2026-07-31, commit 4f9c458):
+> `appbox design serve` → `appboxd/lib/design_server.dart` (artifact JS runs
+> in a headless-Chrome worker over CDP; Dart owns HTTP, routing, state, hot
+> reload, and the pidfile registry). The Node runtime that used to live here
+> (`serve.mjs`, `lib/*.mjs`, `lint.mjs`, `serve.test.mjs`, `eject.mjs`) is
+> **retired — archived under `archives/tooling-pre-dart/`**; what remains in
+> this directory is `vendor/` (the SRI-pinned client libraries artifacts load)
+> and `ladder.json`. The process contract documented below is the Dart
+> server's; it deliberately preserves the old runtime's observable semantics.
+
 ## Commands
 
 ```sh
@@ -36,28 +46,26 @@ OS actually bound. Failures go to stderr as plain text and exit non-zero
 (`69` port in use, `66` no such artifact, `64` bad usage); stdout stays empty,
 so a parsed ready-record is never ambiguous.
 
-**Hot reload + hot restart are on by default.** `serve` runs as a thin
-supervisor around the actual server child: edits anywhere in the artifact
-(templates, l10n, fixtures, routes, assets) or in the runtime's own code
-(`serve.mjs`, `lib/*.mjs`) restart the child on the reported port — no manual
-relaunch, no stale templates. Sessions and server-side timers ride out a
-reload: the outgoing child snapshots them to a per-artifact file under
-`os.tmpdir()` and the incoming child restores them. A child that crashes is
-respawned — unless it crashes 3 times in 10 seconds, in which case the
-supervisor stays down but keeps watching, and the next file change retries.
-Reload/crash messages go to stderr; the stdout ready-record is printed once.
+**Hot reload is on by default.** The Dart design server is a single process;
+artifact JS (viewmodels, Nunjucks views) executes in a headless-Chrome worker
+tab driven over CDP. Edits anywhere in the artifact (templates, l10n,
+fixtures, routes, assets) re-import the artifact modules cache-busted in the
+same worker tab — no manual relaunch, no stale templates. Sessions and
+server-side timers live in Dart state, so they ride out a reload. A viewmodel
+exception becomes a 500, never a crashed server, so no crash-respawn
+supervision is needed. Reload messages go to stderr; the stdout ready-record
+is printed once.
 
 **Ctrl+C stops every instance serving the same artifact**, including ones from
 earlier terminals — instances are tracked as pidfiles under
-`os.tmpdir()/appbox-designer-serve/` (one file per instance, so no shared
-registry and no lock), and a sibling pid is signalled only after `ps` confirms
-it still is a serve.mjs process. **SIGTERM stops only the signalled instance** —
+`<system-temp>/appbox-designer-serve/` (one file per instance, so no shared
+registry and no lock). **SIGTERM stops only the signalled instance** —
 that is how a UI closing one preview leaves the others running. The ready
-record's `pid` is the supervisor (kill it to stop the server cleanly);
-`workerPid` is the actual server process.
+record's `pid` is the server (kill it to stop the server cleanly).
 
-`--no-watch` serves in-process with no watcher and no registry — the ejected
-app's `npm start` uses it; keep it for anything productionized.
+`--no-watch` serves with no watcher and no registry — the ejected
+app's `appbox design serve . --no-watch` uses it; keep it for anything
+productionized.
 
 New artifacts start by copying `examples/hello-hda/` — it is the reference
 implementation of everything below.

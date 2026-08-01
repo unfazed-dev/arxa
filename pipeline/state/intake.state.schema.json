@@ -25,11 +25,11 @@
           "properties": {
             "brief": {
               "type": "string",
-              "description": "Path to docs/design/brief.md emitted by intake.py emit. Every inferred field is visibly marked in the output."
+              "description": "Path to docs/design/brief.md emitted by appbox intake emit. Every inferred field is visibly marked in the output."
             },
             "registry": {
               "type": "string",
-              "description": "Path to docs/design/registry.json emitted by intake.py emit. surface is null in every seed entry — intake names, it never designs."
+              "description": "Path to docs/design/registry.json emitted by appbox intake emit. surface is null in every seed entry — intake names, it never designs."
             }
           }
         }

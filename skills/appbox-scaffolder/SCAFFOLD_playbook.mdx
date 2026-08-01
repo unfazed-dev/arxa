@@ -1,7 +1,7 @@
 <Callout id="header" tone="info">
-# app-box-scaffolder — Per-Skill Playbook
+# appbox-scaffolder — Per-Skill Playbook
 
-`app-box-scaffolder` · status: **active**
+`appbox-scaffolder` · status: **active**
 
 **Role (one line):** turn a FROZEN `structure.json` + target set into the per-surface Flutter file set the coverage gate asserts — form factors follow targets, never empty.
 
@@ -21,11 +21,11 @@ The scaffolder PRODUCES the tree the gates ASSERT (architecture §16). The struc
 
 - A **frozen** `structure.json` at `<design-dir>/structure.json` (produced by `tools/emit_structure`; the scaffold reads it as frozen input and never re-derives structure).
 - A **target set** (`--targets macos`, or `ios,android`, or `web`, …) — explicit, never ambient. Every target must have an entry in `pipeline/state/targets.derivation.json`.
-- The derivation table (`pipeline/state/targets.derivation.json`) and config viewports (`config/app-box.config.json`) — the source of factor names and ordering (P06/R3). The scaffold reads these; it does not hardcode them.
+- The derivation table (`pipeline/state/targets.derivation.json`) and config viewports (`config/appbox.config.json`) — the source of factor names and ordering (P06/R3). The scaffold reads these; it does not hardcode them.
 
 ### Procedure
 
-Confirm the design is frozen (`emit_structure.py --check` in sync). Scaffold, naming targets explicitly: `appbox emit scaffold --design-dir <design> --app-root <app> --targets macos` (the Dart port of the archived `scaffold.py`). `--targets` is required (or `APPBOX_TARGETS` env); the scaffold never reads ambient pipeline state for targets (the stale-green defect, §16). Widths and factor names come from the derivation table + config, never literals (R3). Verify drift after a registry edit with `--check`: it regenerates the expected set in memory and diffs against disk, naming any missing factor file, stale manifest, or hand-edited dir — the same file set `gates/coverage` (C1) walks. Hand the scaffolded tree to `app-box-builder` for the widget bodies; the coverage gate then asserts the scaffolded layer.
+Confirm the design is frozen (`appbox emit structure --check` in sync). Scaffold, naming targets explicitly: `appbox emit scaffold --design-dir <design> --app-root <app> --targets macos` (the Dart port of the archived `scaffold.py`). `--targets` is required (or `APPBOX_TARGETS` env); the scaffold never reads ambient pipeline state for targets (the stale-green defect, §16). Widths and factor names come from the derivation table + config, never literals (R3). Verify drift after a registry edit with `--check`: it regenerates the expected set in memory and diffs against disk, naming any missing factor file, stale manifest, or hand-edited dir — the same file set `gates/coverage` (C1) walks. Hand the scaffolded tree to `appbox-builder` for the widget bodies; the coverage gate then asserts the scaffolded layer.
 
 ### Outputs
 
@@ -35,7 +35,7 @@ Per frozen surface (those with `surface` non-null in `structure.json`), under `<
 
 ### Rules
 
-Form factors follow targets — never emit an empty `.mobile`/`.tablet` to satisfy a count; that is the stale-green pattern §16 exists to kill (the self-test guards it). Never hardcode widths or factors — they come from the derivation table + config (P06/R3); adding a target is a data edit, not a code change here. Never read targets from ambient state — pass `--targets` explicitly. Never edit scaffolded Dart directly — edit the authored layer, re-freeze, re-scaffold, or the drift check dies. Treat stub bodies as unfinished — the builder replaces them. Keep `scaffold.py --self-test` green when you change the engine; it is the proof the guardrail holds (negatively: missing structure.json, surface with no viewmodel, wrong file count, unknown target, dir collision; positively: macos→desktop only with no empty factors).
+Form factors follow targets — never emit an empty `.mobile`/`.tablet` to satisfy a count; that is the stale-green pattern §16 exists to kill (the self-test guards it). Never hardcode widths or factors — they come from the derivation table + config (P06/R3); adding a target is a data edit, not a code change here. Never read targets from ambient state — pass `--targets` explicitly. Never edit scaffolded Dart directly — edit the authored layer, re-freeze, re-scaffold, or the drift check dies. Treat stub bodies as unfinished — the builder replaces them. Keep `appbox emit scaffold --self-test` (and `appboxd/test/scaffold_test.dart`) green when you change the engine; it is the proof the guardrail holds (negatively: missing structure.json, surface with no viewmodel, wrong file count, unknown target, dir collision; positively: macos→desktop only with no empty factors).
 
 <!-- kb:begin -->
 ### References

@@ -12,7 +12,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get loading => 'Loading ...';
 
   @override
-  String get appTitle => 'app_box companion';
+  String get appTitle => 'appbox companion';
 
   @override
   String counterLabel(int count) {

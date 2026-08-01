@@ -249,8 +249,8 @@ _Layer_: Product
 
 **Golden**:
 The approved design image a built screen is compared against, pixel by pixel.
-The frozen capture used by appbox lens design-vs-built checks: byte/pixel
-(SSIM planned) comparison against it; console/page errors fail the lens
+The frozen capture used by appbox lens design-vs-built checks: byte/pixel/SSIM
+comparison against it; console/page errors fail the lens
 regardless of pixel match.
 _Avoid_: screenshot (bare), reference image, baseline
 _Layer_: Product

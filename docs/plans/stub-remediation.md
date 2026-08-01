@@ -84,6 +84,38 @@ attached.**
 5. **Auth providers to Tier 3.**
 6. **Maps, vercel** — lowest priority; neither blocks appbox itself.
 
+## Status — 2026-08-01
+
+- **Seq 1 done** (earlier): `verification` field + advertise gate live;
+  `appbox gate tier1 --promote` (added 2026-08-01, port of tier1.py's
+  `--promote`) is again the only path that writes tiers + `config/evidence.json`.
+- **Seq 2 done.** `kit/auth/lib/src/backends/seed_auth_backend.dart` is a
+  genuine port of the tier1 spec (was `UnimplementedError`). tier1.dart stays
+  the pure-Dart paired spec — appboxd cannot depend on the Flutter kit — and
+  its header + SeedAuthBackend doc comment now name the pairing; drift
+  reconciled (email matching after trim on both sides). kit/auth 48/48.
+- **Seq 3 done (spec-reconciled).** kit/payments is real: Stripe via
+  flutter_stripe 13.1.0 PaymentSheet behind `KitStripeBackend`; PayPal via
+  Orders v2 create → approve (flutter_web_auth_2 redirect) → capture behind
+  `KitPayPalBackend`; `KitPaymentMethod.payPal` added. tier1's PayPal comment
+  now maps its scripted `tokens request` step to the real approve+capture
+  half. kit/auth Apple (sign_in_with_apple 8.1.0) + Google (google_sign_in
+  7.2.0) providers real. kit/payments 45/45, kit/auth 48/48.
+- **Seq 6 maps done (unit/widget level).** OSM + Mapbox both on flutter_map
+  8.3.1 (Mapbox = 512px raster tiles, public pk token); showcase demo wired
+  (profile → maps). kit/maps 19/19. **vercel not started.**
+- **Remaining (all need real keys / simulators / devices):**
+  - seq 4 — device-verified Stripe (physical device + test keys);
+  - seq 5 — Tier-3 auth on simulators (Apple ID signed into Simulator,
+    Play Services image + registered SHA-1);
+  - Apple Pay device-verified (merchant ID + CSR — one CSR per certificate);
+  - simulator smoke for all of the above: steps documented in the Tier-2
+    table above, **not yet run** — kit implementations + unit/widget tests
+    are done, but no tier above `port-tested` is claimed;
+  - maps tier promotion: needs a Tier-1 suite covering maps first (13.3);
+  - deploy/vercel: port-tested suite never written; still a stub, still not
+    advertised.
+
 ## The rule to write into the gate
 
 > A provider's `verification` tier is set **only** by a suite that ran at that

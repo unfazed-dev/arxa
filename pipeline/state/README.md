@@ -35,6 +35,6 @@ slot** — where elicited answers live in pipeline state. Both the desktop wizar
 (10.5) and the headless phase write the same answers here (one engine, two
 fronts — DW1: byte-identical output). `answers` carries provenance
 (`client|founder|inferred`) on every field; `artefacts` records where
-`intake.py emit` wrote `docs/design/brief.md` and `docs/design/registry.json`.
+`appbox intake emit` wrote `docs/design/brief.md` and `docs/design/registry.json`.
 The traceability gate (10.6) reads this slot to assert no orphans: every
 registry surface traces to an intake answer, and vice versa.

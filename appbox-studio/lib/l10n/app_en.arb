@@ -1,7 +1,7 @@
 {
   "@@locale": "en",
   "loading": "Loading ...",
-  "appTitle": "app_box companion",
+  "appTitle": "appbox companion",
   "counterLabel": "Counter is: {count}",
   "@counterLabel": {
     "placeholders": { "count": { "type": "int" } }

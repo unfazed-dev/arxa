@@ -15,7 +15,7 @@
 //                   blocking; on pass, clear the marker and allow Stop.
 //   sessionstart  — clear any stale marker so a fresh session starts clean.
 //
-// Source set (repo-relative): kit/ appboxd/ appbox/lib/ pipeline/ gates/
+// Source set (repo-relative): kit/ appboxd/ appbox-studio/lib/ pipeline/ gates/
 // tools/ skills/ config/ — the pieces whose behavior the docs describe.
 // archives/ and build outputs never count.
 //
@@ -92,7 +92,7 @@ const fp = payload && payload.tool_input && payload.tool_input.file_path;
 if (!fp) process.exit(0);
 
 const isMarkdown = /\.(md|mdx)$/i.test(fp);
-const SOURCE_DIRS = /[\/\\](kit|appboxd|pipeline|gates|tools|skills|config)[\/\\]|[\/\\]appbox[\/\\]lib[\/\\]/;
+const SOURCE_DIRS = /[\/\\](kit|appboxd|pipeline|gates|tools|skills|config)[\/\\]|[\/\\]appbox-studio[\/\\]lib[\/\\]/;
 const underRepo = fp.startsWith(repoRoot);
 
 if (underRepo && !isMarkdown && SOURCE_DIRS.test(fp)) setMarker();

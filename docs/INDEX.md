@@ -114,8 +114,8 @@ Copy from these. **Do not rewrite what already exists.**
 
 | path | what to take |
 |---|---|
-| `skills/appbox-designer/` | ✅ **DELIVERED** (plan 01). The design stage, in this repo. Symlinked to `~/.agents/skills/appbox-designer`. Run `./selftest.sh` and `node runtime/doctor.mjs` |
-| `skills/appbox-story-mapper/` | ✅ **DELIVERED** (MIT adaptation). Pre-design elicitation: Epic→Feature→Story map → `docs/design/brief.md` + `story-map.json` + `story_map.html`, feeding `appbox-designer` directly (intake bypassed; the brief's surface table is the 10.7 traceability source). Run `python3 scripts/generate_story_map.py --self-test` |
+| `skills/appbox-designer/` | ✅ **DELIVERED** (plan 01). The design stage, in this repo. Symlinked to `~/.agents/skills/appbox-designer`. Run `appbox design selftest <dir>` and `appbox design doctor` |
+| `skills/appbox-story-mapper/` | ✅ **DELIVERED** (MIT adaptation). Pre-design elicitation: Epic→Feature→Story map → `docs/design/brief.md` + `story-map.json` + `story_map.html`, feeding `appbox-designer` directly (intake bypassed; the brief's surface table is the 10.7 traceability source). Run `appbox emit story-map --self-test` |
 | `~/.agents/skills/kimi-design-htmx` | the fork base — **already forked; do not re-copy** |
 | `~/.agents/skills/kimi-design-flutter` | viewport archetypes (390/744) — doctrine only |
 | `/Volumes/developer_ssd/Developer/totem_labs/stacked_kit/tools` | `pipeline.sh` 1018, gates, `emit_*`, `kit_registry` |

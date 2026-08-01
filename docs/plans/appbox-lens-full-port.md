@@ -1,6 +1,9 @@
 # appbox lens — full probe-runner port + skills dartification
 
-**Status:** planned, **not started**. Settled with the operator 2026-07-31.
+**Status:** **COMPLETE** (2026-07-31). Settled with the operator 2026-07-31;
+landed in commit 4f9c458 with the full appboxd suite green (826/826).
+Documented deviations from the plan as written are noted inline in Tasks 5,
+10, 17, and 20.
 **Sequencing:** execution starts only after
 [`media-3d-animation-games.md`](media-3d-animation-games.md) completes. Its
 outputs (`CdpSession.key()`/`click()` in `appboxd/lib/cdp.dart`,
@@ -209,7 +212,7 @@ the lens gate (Task 12) all consume.
 
 ### Steps
 
-- [ ] 1.1 Write the failing test — `appboxd/test/lens_pixels_test.dart`:
+- [x] 1.1 Write the failing test — `appboxd/test/lens_pixels_test.dart`:
   ```dart
   // Pixel substrate: decode, per-pixel diff, SSIM, CIEDE2000.
   import 'dart:convert';
@@ -326,7 +329,7 @@ the lens gate (Task 12) all consume.
   Run `cd appboxd && dart test test/lens_pixels_test.dart` — expected:
   COMPILE ERROR (`package:appboxd/lens/pixels.dart` not found). Red
   confirmed.
-- [ ] 1.2 Add the one sanctioned dependency to `appboxd/pubspec.yaml`
+- [x] 1.2 Add the one sanctioned dependency to `appboxd/pubspec.yaml`
   (dependencies block, after `path: ^1.9.0`):
   ```yaml
     image: ^4.5.4
@@ -335,7 +338,7 @@ the lens gate (Task 12) all consume.
   cd /Volumes/developer_ssd/Developer/totem_labs/app-box/appboxd && dart pub get
   ```
   Expected: `Got dependencies!` with `image` resolved at 4.5.x.
-- [ ] 1.3 Create `appboxd/lib/lens/pixels.dart` — complete file:
+- [x] 1.3 Create `appboxd/lib/lens/pixels.dart` — complete file:
   ```dart
   /// Pixel substrate for the appbox lens: PNG decode, per-pixel diff,
   /// SSIM, and CIEDE2000 colour delta. The only place appboxd touches
@@ -593,7 +596,7 @@ the lens gate (Task 12) all consume.
   tests). If the SSIM blur/noise bounds fail, the kernel or variance
   computation is wrong — fix the code, never the expectations; the Sharma
   pairs pin ΔE to published reference data.
-- [ ] 1.4 Rewire `compareGolden` in `appboxd/lib/lens.dart`. Keep the
+- [x] 1.4 Rewire `compareGolden` in `appboxd/lib/lens.dart`. Keep the
   signature; change the internals: after capturing the fresh PNG, decode
   both images via `decodePng` and dispatch on mode — `LensMode.byte`: exact
   byte compare (unchanged); `LensMode.pixel`: `pixelDiff`, `similarity =
@@ -604,7 +607,7 @@ the lens gate (Task 12) all consume.
   `ssim → not yet implemented` branch. Console/page errors still auto-fail
   before any pixel work. Add `export 'lens/pixels.dart';` at the bottom of
   `lens.dart` so consumers get the substrate from the facade.
-- [ ] 1.5 Update the stale docs in `appboxd/lib/lens.dart`'s header comment
+- [x] 1.5 Update the stale docs in `appboxd/lib/lens.dart`'s header comment
   ("per-pixel is a byte fallback" → describe the three real modes) and run:
   ```sh
   cd /Volumes/developer_ssd/Developer/totem_labs/app-box/appboxd && dart test
@@ -630,7 +633,7 @@ existing changes signature.
 
 ### Steps
 
-- [ ] 2.1 Write the failing test — `appboxd/test/cdp_domains_test.dart`.
+- [x] 2.1 Write the failing test — `appboxd/test/cdp_domains_test.dart`.
   Fixture: ephemeral `HttpServer` (the `lens_input_test.dart` pattern)
   serving (a) a page with an animated element (`<div id=box>` +
   `requestAnimationFrame` background toggle) and a `fetch('/api/data')` on
@@ -745,7 +748,7 @@ existing changes signature.
   ```
   Run `cd appboxd && dart test test/cdp_domains_test.dart` — expected:
   COMPILE ERROR (`screencast`, `traceNetwork`, … undefined). Red confirmed.
-- [ ] 2.2 Add to `appboxd/lib/cdp.dart`, appended after the media plan's
+- [x] 2.2 Add to `appboxd/lib/cdp.dart`, appended after the media plan's
   `click()` — the screencast collector (complete code; the ack flow is the
   part every implementer gets wrong):
   ```dart
@@ -887,7 +890,7 @@ existing changes signature.
   `cdp.dart` — the events list above assumes
   `{'method': e.method, 'params': e.params}` projection, keep whichever the
   file's `CdpEvent` exposes.)
-- [ ] 2.3 Re-run `dart test test/cdp_domains_test.dart` — expected: 6
+- [x] 2.3 Re-run `dart test test/cdp_domains_test.dart` — expected: 6
   passed. Then `dart test` — full suite green. Note: the screencast test
   asserts >3 frames in 2s against an *animating* page; if Chrome ever
   stalls on a static page, that is protocol-correct behavior, not a bug.
@@ -914,7 +917,7 @@ consumers assert).
 
 ### Steps
 
-- [ ] 3.1 Write the failing tests first (one file per module, ephemeral
+- [x] 3.1 Write the failing tests first (one file per module, ephemeral
   `HttpServer` fixture serving a styled page):
   - `lens_tokens_test.dart` — page with known palette (buttons `#1a73e8`,
     body `#ffffff`, text `#202124`), two font sizes (16/24px), spacing
@@ -935,7 +938,7 @@ consumers assert).
     and the 404 response statuses, and a `failed` list.
   Run `dart test test/lens_tokens_test.dart` etc. — expected: COMPILE
   ERRORs. Red confirmed.
-- [ ] 3.2 Create `appboxd/lib/lens/tokens.dart` (exemplar — the clustering
+- [x] 3.2 Create `appboxd/lib/lens/tokens.dart` (exemplar — the clustering
   core is the only non-obvious part):
   ```dart
   /// Design-token extraction (ports probe-runner web_tokens): computed-style
@@ -1077,7 +1080,7 @@ consumers assert).
   }
   ```
   (`dart:io` import already present in `lens.dart`.)
-- [ ] 3.3 Create the three sibling modules — same shape as 3.2 (fixture →
+- [x] 3.3 Create the three sibling modules — same shape as 3.2 (fixture →
   navigate → one CDP call → shape JSON → `certified` flag), with these
   exact deltas:
   - `appboxd/lib/lens/dom.dart` — `Future<Map<String, dynamic>>
@@ -1104,7 +1107,7 @@ consumers assert).
     `{url, requests: [{url, method, status, mimeType, failed}],
     consoleErrors, certified}` (`status` from `responseReceived`,
     `failed: true` from `loadingFailed`). Ported `web_net`.
-- [ ] 3.4 Run the four test files — expected: all pass. Then `dart test`
+- [x] 3.4 Run the four test files — expected: all pass. Then `dart test`
   full suite green.
 
 ---
@@ -1126,7 +1129,7 @@ the reliable path in `_flipbook`) plus pixel-region diffing via
 
 ### Steps
 
-- [ ] 4.1 Write the failing test — `appboxd/test/lens_motion_test.dart`.
+- [x] 4.1 Write the failing test — `appboxd/test/lens_motion_test.dart`.
   Fixture pages (ephemeral server): (a) a page whose background cycles
   via `requestAnimationFrame`; (b) a tall page with a scroll-scrubbed
   element (`transform: translateY()` driven by a scroll listener with
@@ -1147,7 +1150,7 @@ the reliable path in `_flipbook`) plus pixel-region diffing via
     true` (WAAPI oracle path).
   Run — expected: COMPILE ERROR (`lens/motion.dart` missing). Red
   confirmed.
-- [ ] 4.2 Create `appboxd/lib/lens/motion.dart` with four public verbs:
+- [x] 4.2 Create `appboxd/lib/lens/motion.dart` with four public verbs:
   - `Future<List<List<int>>> burstFrames(String url, {int width = 390,
     int height = 844, int count = 5, int intervalMs = 100, int settleMs =
     1500})` — navigate, then `count` × (`tab.screenshot()` + sleep
@@ -1218,13 +1221,13 @@ the reliable path in `_flipbook`) plus pixel-region diffing via
     region tracking; that fallback is **not** built — kimitail: WAAPI
     covers appbox's own designs; add frame recovery when a design
     animates outside WAAPI). (Ported `web_flipbook`, oracle path.)
-- [ ] 4.3 Unit-test the pure easing-fit core directly (table-driven:
+- [x] 4.3 Unit-test the pure easing-fit core directly (table-driven:
   synthetic perfect linear/ease-in/ease-out/ease-in-out series certify to
   their curve with rms≈0; a noisy series is `certified: false`; a
   non-monotonic series is `certified: false` with reason
   `'non-monotonic'`). These cases live in `lens_motion_test.dart`
   alongside the CDP tests.
-- [ ] 4.4 Run `dart test test/lens_motion_test.dart` — all pass; `dart
+- [x] 4.4 Run `dart test test/lens_motion_test.dart` — all pass; `dart
   test` full suite green.
 
 ---
@@ -1245,7 +1248,7 @@ Architecture.
 
 ### Steps
 
-- [ ] 5.1 Write the failing tests:
+- [x] 5.1 Write the failing tests:
   - `lens_skeleton_test.dart` — fixture page with a header/nav/main/
     button structure. `captureSkeleton(url)` returns `{format:
     'lens-skeleton/1', nodes: [...]}` where each node has
@@ -1267,7 +1270,7 @@ Architecture.
     `click()`, same shape, three lines: `Input.dispatchMouseEvent` type
     `mouseMoved`).
   Run — expected: COMPILE ERRORs. Red confirmed.
-- [ ] 5.2 Create `appboxd/lib/lens/skeleton.dart`:
+- [x] 5.2 Create `appboxd/lib/lens/skeleton.dart`:
   - `Future<Map<String, dynamic>> captureSkeleton(String url, {int width
     = 390, int height = 844, int settleMs = 1500})` — one
     `captureDomSnapshot(['display','position','z-index','font-size',
@@ -1288,7 +1291,7 @@ Architecture.
     IoU gates against same-dpr self-diff noise; the 2px floor here is the
     self-diff floor observed on `lens-skeleton/1` captures — assert it in
     the self-diff test.)
-- [ ] 5.3 Create `appboxd/lib/lens/states.dart`:
+- [x] 5.3 Create `appboxd/lib/lens/states.dart`:
   `Future<Map<String, dynamic>> captureStates(String url, {required
   List<StateTrigger> triggers, int width = 390, int height = 844, int
   settleMs = 1500, int settleAfterMs = 600})` with
@@ -1308,8 +1311,10 @@ Architecture.
   diffPixels, transition, consoleErrors}], certified}` — `changed: false`
   is an observation, not a failure; `certified` rides on console errors
   only (lens doctrine). Add `CdpSession.hover` to `cdp.dart` next to the
-  media plan's `click()` (do not modify `click()` itself).
-- [ ] 5.4 Run both test files — all pass; full suite green.
+  media plan's `click()` (do not modify `click()` itself). (Landed with the
+  `mouseMoved` dispatch inlined in `states.dart` instead — the media-plan
+  constraint forbade editing `cdp.dart`; functionally identical.)
+- [x] 5.4 Run both test files — all pass; full suite green.
 
 ---
 
@@ -1330,7 +1335,7 @@ manually today.
 
 ### Steps
 
-- [ ] 6.1 Write the failing test — `appboxd/test/lens_crawl_test.dart`.
+- [x] 6.1 Write the failing test — `appboxd/test/lens_crawl_test.dart`.
   Fixture: ephemeral server with three routes `/a`, `/b`, `/c` sharing a
   palette, `/a` linking `/b` and an external URL, plus `/robots.txt`
   disallowing `/c`. Assert `crawlSite(baseUrl, routes: ['/a'], crawl:
@@ -1343,7 +1348,7 @@ manually today.
   fixture and appbox's own surfaces never use Allow/Crawl-delay;
   kimitail: Allow/rules-precedence unsupported, fail-closed treats
   unparsable robots.txt as disallow-all).
-- [ ] 6.2 Create `appboxd/lib/lens/crawl.dart`:
+- [x] 6.2 Create `appboxd/lib/lens/crawl.dart`:
   - `class CrawlResult { final List<String> routes; final String outDir;
     final List<String> skipped; }`
   - `Future<CrawlResult> crawlSite(String baseUrl, {List<String> routes =
@@ -1370,7 +1375,7 @@ manually today.
     path)` — fetch `/robots.txt` via `HttpClient`, 404 → allow, parse
     `User-agent: *` group `Disallow:` prefixes, unparsable → disallow
     (fail-closed).
-- [ ] 6.3 Run `dart test test/lens_crawl_test.dart` — pass; full suite
+- [x] 6.3 Run `dart test test/lens_crawl_test.dart` — pass; full suite
   green.
 
 ---
@@ -1391,13 +1396,13 @@ thin argv→lib adapters; the lib functions are Tasks 1-6.
 
 ### Steps
 
-- [ ] 7.1 Write the failing test — `appboxd/test/lens_cli_test.dart`:
+- [x] 7.1 Write the failing test — `appboxd/test/lens_cli_test.dart`:
   drive `runLens([...])` against an ephemeral server, asserting exit
   codes and output files per verb: `shot` writes a PNG (exit 0);
   `compare` identical → 0, tampered golden → 1; `tokens` writes JSON with
   `certified: true`; `compare` with console errors on the page → 1
   regardless of pixels; unknown verb → 2 with usage on stderr.
-- [ ] 7.2 Create `appboxd/lib/lens_cli.dart`. Verb table (each verb maps
+- [x] 7.2 Create `appboxd/lib/lens_cli.dart`. Verb table (each verb maps
   to one lib call; argv parsing follows `_runEmit`'s manual style —
   positional args then `--flag=value`):
   ```
@@ -1440,13 +1445,13 @@ thin argv→lib adapters; the lib functions are Tasks 1-6.
   `native` is dispatched to `runLensNative` (Tasks 8-11 add its cases; for
   this task, `native` prints `native verbs land in Tasks 8-11` and exits
   2 — the case exists so the wiring is tested once).
-- [ ] 7.3 Edit `appboxd/bin/appbox.dart`: add `case 'lens':
+- [x] 7.3 Edit `appboxd/bin/appbox.dart`: add `case 'lens':
   exitCode = await runLens(rest); break;` (check the file's actual
   main-loop convention — `_runGate` returns void + exits; match whatever
   shape neighboring cases use), import `lens_cli.dart`, replace the
   `lens  Visual gate (appbox lens — future)` usage line with the verb
   table summary, and delete `lens` from the header's "future" comment.
-- [ ] 7.4 Move the media plan's `tool/lens_check.dart` logic: create
+- [x] 7.4 Move the media plan's `tool/lens_check.dart` logic: create
   `Future<int> lensCheck(List<String> args)` inside `lens_cli.dart`
   containing the driver body verbatim, re-point `tool/lens_check.dart` to
   `exit(await lensCheck(args));` (keep its header comment, add "logic
@@ -1454,7 +1459,7 @@ thin argv→lib adapters; the lib functions are Tasks 1-6.
   completes — do this sub-step only if the media plan has landed; if it
   hasn't, land `lensCheck` and leave `tool/lens_check.dart` untouched
   (its creation supersedes this).
-- [ ] 7.5 Run `dart test test/lens_cli_test.dart` — pass; full suite
+- [x] 7.5 Run `dart test test/lens_cli_test.dart` — pass; full suite
   green. Smoke:
   ```sh
   cd /Volumes/developer_ssd/Developer/totem_labs/app-box
@@ -1486,7 +1491,7 @@ native-E2E owns interaction truth; see capability-map Task 13).
 
 ### Steps
 
-- [ ] 8.1 Write the failing test — `appboxd/test/lens_adb_test.dart`:
+- [x] 8.1 Write the failing test — `appboxd/test/lens_adb_test.dart`:
   a `ScriptedRunner` fake (same pattern as `deploy.py`'s ScriptedRunner,
   already mirrored by `lib/tier1.dart` tests): preloaded
   argv-prefix → `RunnerResult` expectations, asserting order. Cases:
@@ -1508,7 +1513,7 @@ native-E2E owns interaction truth; see capability-map Task 13).
   - serial resolution: explicit arg > `$APPBOX_ADB_SERIAL` env >
     single-connected-device auto-pick > error listing devices.
   Run — expected: COMPILE ERROR. Red confirmed.
-- [ ] 8.2 Create `appboxd/lib/lens/native/adb.dart`:
+- [x] 8.2 Create `appboxd/lib/lens/native/adb.dart`:
   ```dart
   /// Android capture verbs (ports probe-runner adb_shot/adb_record/
   /// adb_list/adb_url/adb_ui_tree/adb_log). Thin ProcessRunner wrappers —
@@ -1626,7 +1631,7 @@ native-E2E owns interaction truth; see capability-map Task 13).
   `Future<RunnerResult> runBytes(...)` to the interface alongside the
   existing method rather than changing it). Adjust the code above to the
   real seam; the tests pin the behavior either way.
-- [ ] 8.3 Add `native adb` cases to `runLensNative` in
+- [x] 8.3 Add `native adb` cases to `runLensNative` in
   `appboxd/lib/lens_cli.dart`: `shot <out.png> [--serial=]`, `record
   <out.mp4> [seconds] [--serial=]`, `list`, `url <url>`, `ui-tree
   [--out=path]`. Run the tests — pass; full suite green.
@@ -1647,7 +1652,7 @@ dropped with reason (external dependency, Patrol owns interaction).
 
 ### Steps
 
-- [ ] 9.1 Write the failing test — `appboxd/test/lens_simctl_test.dart`
+- [x] 9.1 Write the failing test — `appboxd/test/lens_simctl_test.dart`
   (ScriptedRunner pattern as Task 8). Cases:
   - `iosShot` runs `xcrun simctl io booted screenshot --type png
     <out>`; exit≠0 → `LensNativeException` with stderr.
@@ -1665,7 +1670,7 @@ dropped with reason (external dependency, Patrol owns interaction).
   - `iosAppearance` runs `xcrun simctl ui booted appearance dark|light`.
   - `iosOpenUrl` runs `xcrun simctl openurl booted <url>`.
   Run — expected: COMPILE ERROR. Red confirmed.
-- [ ] 9.2 Create `appboxd/lib/lens/native/simctl.dart` — same class shape
+- [x] 9.2 Create `appboxd/lib/lens/native/simctl.dart` — same class shape
   as `LensAdb`:
   ```dart
   /// iOS simulator capture verbs (ports probe-runner ios_shot/ios_record/
@@ -1753,7 +1758,7 @@ dropped with reason (external dependency, Patrol owns interaction).
   `../../process.dart`) and the `LensNativeException` import from
   `adb.dart`; every other member is above and behavior is pinned by
   9.1's tests.
-- [ ] 9.3 Add `native ios` cases to `runLensNative`: `shot <out.png>
+- [x] 9.3 Add `native ios` cases to `runLensNative`: `shot <out.png>
   [--udid=]`, `record <out.mp4> [seconds] [--udid=]`, `list`, `url
   <url>`, `status-bar [--clear]`, `appearance <dark|light>`. Run tests —
   pass; full suite green.
@@ -1772,14 +1777,16 @@ consumer; re-add from archive when one appears).
 **Interfaces**
 - Consumes: research (SCScreenshotManager one-shot, TCC preflight);
   `lib/process.dart` seam.
-- Produces: `appboxd/tool/native/lens_macos.swift` (single-file CLI);
+- Produces: `appboxd/tool/native/lens_macos.swift` (single-file CLI) (landed
+  as `appboxd/native/lens_native.swift`; binary `lens_native`,
+  `ensureLensNativeBinary()`);
   `appboxd/lib/lens/native/sck.dart`; `appboxd/lib/lens/ocr.dart`;
   `appboxd/test/lens_sck_test.dart`, `lens_ocr_test.dart`; `native macos
   shot` + lens `ocr`/`text-diff` CLI cases.
 
 ### Steps
 
-- [ ] 10.1 Write the failing tests:
+- [x] 10.1 Write the failing tests:
   - `lens_sck_test.dart` — compile-on-demand: `ensureLensMacosBinary()`
     returns a path; if the cached binary at
     `~/.appbox/bin/lens_macos` (or `.dart_tool/` — pick
@@ -1795,7 +1802,7 @@ consumer; re-add from archive when one appears).
     40 lines; probe-runner used difflib, same family). Faked runner
     returns canned JSON.
   Run — expected: COMPILE ERROR. Red confirmed.
-- [ ] 10.2 Create `appboxd/tool/native/lens_macos.swift` — complete CLI
+- [x] 10.2 Create `appboxd/tool/native/lens_macos.swift` — complete CLI
   (macOS 14+; ~120 lines):
   ```swift
   // lens_macos — appbox lens macOS helper: ScreenCaptureKit one-shot
@@ -1887,7 +1894,7 @@ consumer; re-add from archive when one appears).
       exit(64)
   }
   ```
-- [ ] 10.3 Create `appboxd/lib/lens/native/sck.dart`:
+- [x] 10.3 Create `appboxd/lib/lens/native/sck.dart`:
   `Future<String> ensureLensMacosBinary({ProcessRunner? runner})` —
   compile-on-demand with mtime check into
   `.dart_tool/appboxd/lens_macos`; `class LensSck { LensSck({ProcessRunner?
@@ -1898,7 +1905,7 @@ consumer; re-add from archive when one appears).
   `Future<Map<String, dynamic>> ocrText(String pngPath)` and
   `List<String> textDiffLines(List<String> a, List<String> b)` (LCS over
   lines, `+`/`-` prefixed output).
-- [ ] 10.4 Wire CLI: `appbox lens native macos shot <out.png>
+- [x] 10.4 Wire CLI: `appbox lens native macos shot <out.png>
   [--window-id=N]`; `appbox lens ocr <image.png> [--out=path]`;
   `appbox lens text-diff <a.png> <b.png>` (exit 1 when text differs).
   Compile check (real, on this Mac):
@@ -1932,7 +1939,7 @@ Dropped with reason: `flutter_tap`/`flutter_set_text`/`flutter_reload`/
 
 ### Steps
 
-- [ ] 11.1 Write the failing test —
+- [x] 11.1 Write the failing test —
   `appboxd/test/lens_flutter_vm_test.dart`: stand up a real
   `HttpServer` + `WebSocketTransformer.upgrade` fake VM service that
   answers JSON-RPC: `getVM` → `{isolates: [{id: 'isolates/1'}]}`,
@@ -1949,7 +1956,7 @@ Dropped with reason: `flutter_tap`/`flutter_set_text`/`flutter_reload`/
   --machine` JSON-line form (`{"event":"app.debugPort","params":
   {"wsUri":"ws://…/ws"}}`).
   Run — expected: COMPILE ERROR. Red confirmed.
-- [ ] 11.2 Create `appboxd/lib/lens/native/flutter_vm.dart` — the RPC
+- [x] 11.2 Create `appboxd/lib/lens/native/flutter_vm.dart` — the RPC
   core, complete (this is the tricky part):
   ```dart
   /// Flutter VM service client (ports probe-runner _flutter/flutter_vm/
@@ -2112,7 +2119,7 @@ Dropped with reason: `flutter_tap`/`flutter_set_text`/`flutter_reload`/
   workaround: port the `getObject` fallback in `evalDart` only if the
   fixture tests show truncation — kimitail: added on evidence, not
   preemptively.)
-- [ ] 11.3 Add `native flutter` cases to `runLensNative`: `shot <out.png>
+- [x] 11.3 Add `native flutter` cases to `runLensNative`: `shot <out.png>
   [--uri=]` (uri or `$APPBOX_FLUTTER_VM`, else read
   `pipeline/state/flutter-vm.uri` cache file written by the runner),
   `attach [--from-log=path]` (prints the discovered URI and caches it),
@@ -2120,7 +2127,7 @@ Dropped with reason: `flutter_tap`/`flutter_set_text`/`flutter_reload`/
   `semantics <on|off>` (`ext.flutter.showSemantics`), `diag
   <debugPaint|repaintRainbow|performanceOverlay> <on|off>`, `vm <method>
   [--params=<json>]` (generic RPC — the `flutter_vm.py` escape hatch).
-- [ ] 11.4 Run `dart test test/lens_flutter_vm_test.dart` — pass; full
+- [x] 11.4 Run `dart test test/lens_flutter_vm_test.dart` — pass; full
   suite green.
 
 ---
@@ -2142,7 +2149,7 @@ first-class gate in the framework of `appboxd/lib/gates.dart`.
 
 ### Steps
 
-- [ ] 12.1 Write the failing test — `appboxd/test/gate_lens_test.dart`
+- [x] 12.1 Write the failing test — `appboxd/test/gate_lens_test.dart`
   (follow `tool/_scaffold_smoke.dart`'s GateContext construction and the
   gate tests' temp-repo pattern): build a temp repo root with
   `config/appbox.config.json` carrying a `lens` block:
@@ -2168,7 +2175,7 @@ first-class gate in the framework of `appboxd/lib/gates.dart`.
   `recaptureGoldens: true` rewrites the goldens (the frozen-approval
   flow).
   Run — expected: COMPILE ERROR. Red confirmed.
-- [ ] 12.2 Create `appboxd/lib/gate_lens.dart`. Contract (match
+- [x] 12.2 Create `appboxd/lib/gate_lens.dart`. Contract (match
   `gate_freeze.dart`'s shape): top-level
   ```dart
   Future<GateResult> lensGate(GateContext ctx,
@@ -2191,7 +2198,7 @@ first-class gate in the framework of `appboxd/lib/gates.dart`.
   freeze-gate approval pattern — print the recaptured list loudly).
   Details accumulate `✓ surface@width SSIM 0.997` / `✗ surface@width
   SSIM 0.81 (< 0.98)`; findings to `ctx.sarif`.
-- [ ] 12.3 Wire it: add `'lens'` to `gateOrder` in
+- [x] 12.3 Wire it: add `'lens'` to `gateOrder` in
   `appboxd/lib/gate_runner.dart` after `'native_deps'` (before
   `'deploy'`); add the case in `_tryDartGate`; add `case 'lens': return
   lensGate(ctx);` in `_dispatchGate` (`bin/appbox.dart`); add `lens` to
@@ -2201,7 +2208,7 @@ first-class gate in the framework of `appboxd/lib/gates.dart`.
   the temp fixture repo (same code as the test) and prints PASS/FAIL
   lines including a `# NEGATIVE:` case (tampered surface must fail) —
   the gates-must-be-able-to-fail contract.
-- [ ] 12.4 Run `dart test test/gate_lens_test.dart` — pass; `dart test`
+- [x] 12.4 Run `dart test test/gate_lens_test.dart` — pass; `dart test`
   full suite green; `dart run bin/appbox.dart gate lens --self-test`
   prints its checks ending in pass.
 
@@ -2222,7 +2229,7 @@ the plan's scoreboard.
 
 ### Steps
 
-- [ ] 13.1 Rewrite `skills/appbox-lens/capability-map.md` with three
+- [x] 13.1 Rewrite `skills/appbox-lens/capability-map.md` with three
   tables. Web block — ported rows:
   `web_open/web_launch → navigateAndSettle (ported)`;
   `web_shot → lens shot / captureGolden (ported)`;
@@ -2300,19 +2307,19 @@ the plan's scoreboard.
   The 56 `test_*.py` files: noted as "behavior specs mined for Tasks
   1-6 (anim_core, crawl, merge, skeleton calibration); the rest
   archived with the tool".
-- [ ] 13.2 Update `skills/appbox-lens/SKILL.md`: replace the two-entry-
+- [x] 13.2 Update `skills/appbox-lens/SKILL.md`: replace the two-entry-
   points section with the `appbox lens` verb table (keep the
   `tool/lens_shot.dart` line as the one-off driver), delete the "Known
   gaps" bullets that Tasks 1-7 closed (SSIM, CLI subcommand), keep the
   Patrol boundary paragraph and the viewport-ladder/settle/evidence
   conventions verbatim.
-- [ ] 13.3 Mirror:
+- [x] 13.3 Mirror:
   ```sh
   cd /Volumes/developer_ssd/Developer/totem_labs/app-box
   cp skills/appbox-lens/capability-map.md .kimi-code/skills/appbox-lens/capability-map.md
   cp skills/appbox-lens/SKILL.md .kimi-code/skills/appbox-lens/SKILL.md
   ```
-- [ ] 13.4 Audit pass — every script name in
+- [x] 13.4 Audit pass — every script name in
   `archives/tooling-pre-dart/tools/vendor/probe-runner/scripts/*.py`
   appears in the new map:
   ```sh
@@ -2344,7 +2351,7 @@ the Python original on a captured fixture.
 
 ### Steps
 
-- [ ] 14.1 Capture the golden baseline from the Python original:
+- [x] 14.1 Capture the golden baseline from the Python original:
   ```sh
   cd /Volumes/developer_ssd/Developer/totem_labs/app-box
   python3 skills/appbox-story-mapper/scripts/generate_story_map.py --self-test
@@ -2360,7 +2367,7 @@ the Python original on a captured fixture.
   Expected: `self-test OK`; three golden artifacts written. These files
   are the byte-compare baseline — commit them with the task's working
   tree (they are test fixtures, not design artifacts).
-- [ ] 14.2 Write the failing test — `appboxd/test/story_map_test.dart`:
+- [x] 14.2 Write the failing test — `appboxd/test/story_map_test.dart`:
   `generateStoryMap(inputJson)` produces HTML **byte-identical** to
   `story_map_sample.html`; `--data-out` JSON byte-identical; brief.md
   byte-identical; validation errors enumerate every defect with the
@@ -2372,7 +2379,7 @@ the Python original on a captured fixture.
   release; storyless feature → blank rollup. (These are the Python
   self-test's assertions, restated.)
   Run — expected: COMPILE ERROR. Red confirmed.
-- [ ] 14.3 Create `appboxd/lib/story_map.dart`: `class StoryMap {
+- [x] 14.3 Create `appboxd/lib/story_map.dart`: `class StoryMap {
   static ValidationResult validate(Map json); static String
   renderHtml(Map json); static String renderBrief(Map json); static
   List<Surface> deriveSurfaces(Map json); }` — port the Python module
@@ -2381,7 +2388,7 @@ the Python original on a captured fixture.
   rollup rules). The HTML template is a string built in the same
   emission order as the Python — that is what makes byte-identity
   achievable; do not "improve" markup in this task.
-- [ ] 14.4 Wire `appbox emit story-map` into `_runEmit`
+- [x] 14.4 Wire `appbox emit story-map` into `_runEmit`
   (`bin/appbox.dart`): flags `-i/--input` (or stdin), `-o/--output`,
   `--data-out`, `--brief-out`, `--self-test`; exit 1 with `Validation
   error: …` lines on stderr. Run `dart test test/story_map_test.dart`
@@ -2407,7 +2414,7 @@ become the Dart test suite, plus a differential run on
 
 ### Steps
 
-- [ ] 15.1 Write the failing test — `appboxd/test/scaffold_test.dart`:
+- [x] 15.1 Write the failing test — `appboxd/test/scaffold_test.dart`:
   port the Python self-test's ~50 assertions to `package:test` in a
   temp app root: macos→[desktop] 3 files/surface (never
   `.mobile`/`.tablet`); ios,android→[mobile,tablet] 4 dart files +
@@ -2422,7 +2429,7 @@ become the Dart test suite, plus a differential run on
   negatives (deleted catalog, missing `app_en.arb`, non-matching arb
   name).
   Run — expected: COMPILE ERROR. Red confirmed.
-- [ ] 15.2 Create `appboxd/lib/scaffold.dart`: `class ScaffoldEmitter {
+- [x] 15.2 Create `appboxd/lib/scaffold.dart`: `class ScaffoldEmitter {
   ScaffoldEmitter({required String appRoot, required String designDir,
   required List<String> targets}); EmitResult emit(); CheckResult
   check(); }` — port module-for-module: structure.json parsing (screens
@@ -2436,11 +2443,11 @@ become the Dart test suite, plus a differential run on
   `--check` drift mode (fresh-manifest compare + on-disk catalog
   compare, `FAIL:` lines to stderr), stdout summary format. Reuse
   `lib/process.dart`? No — pure file I/O; no processes.
-- [ ] 15.3 Wire `appbox emit scaffold --design-dir <d> --app-root <a>
+- [x] 15.3 Wire `appbox emit scaffold --design-dir <d> --app-root <a>
   --targets <t1,t2> [--check] [--self-test]` into `_runEmit` (env
   fallbacks `KIT_DESIGN_DIR`/`APPBOX_APP`/`APPBOX_TARGETS` preserved;
   `--design-dir` must be relative — R3).
-- [ ] 15.4 Differential run against the real design (read-only check
+- [x] 15.4 Differential run against the real design (read-only check
   mode — the app surfaces were scaffolded by the Python):
   ```sh
   cd /Volumes/developer_ssd/Developer/totem_labs/app-box
@@ -2470,7 +2477,7 @@ wraps.
 
 ### Steps
 
-- [ ] 16.1 Write the failing test — `appboxd/test/deploy_test.dart`:
+- [x] 16.1 Write the failing test — `appboxd/test/deploy_test.dart`:
   the Python self-test's 11 cases with a scripted `ProcessRunner`:
   exact argv shapes per target (`fastlane-ios`: `fastlane run gym
   --version <v>` → `match` → `upload_to_testflight`; `fastlane-android`:
@@ -2485,7 +2492,7 @@ wraps.
   even with approval; doctor report shape `{offered,
   stub_not_offered, configured_targets, ready}`.
   Run — expected: COMPILE ERROR. Red confirmed.
-- [ ] 16.2 Create `appboxd/lib/deploy.dart`: `class Deployer {
+- [x] 16.2 Create `appboxd/lib/deploy.dart`: `class Deployer {
   Deployer({ProcessRunner? runner, String? ledgerPath}); DeployResult
   deploy({required String target, required String version, required
   String account, required String approval}); DoctorReport doctor();
@@ -2493,12 +2500,12 @@ wraps.
   default `pipeline/state/deploy-ledger.json` or
   `$APPBOX_DEPLOY_LEDGER`, `DeployHalted` exception. Port
   function-for-function; do not add targets.
-- [ ] 16.3 Wire top-level `appbox deploy doctor [--config f]` /
+- [x] 16.3 Wire top-level `appbox deploy doctor [--config f]` /
   `appbox deploy deploy --target T --version V --account A --approval
   <tok> [--ledger f]` in `bin/appbox.dart` (new `case 'deploy':`,
   exit codes 0 ok / 1 halt / 2 usage; HALT lines to stderr). Note in
   the usage text that `appbox gate deploy` remains the gate.
-- [ ] 16.4 Run tests — pass; full suite green.
+- [x] 16.4 Run tests — pass; full suite green.
 
 ---
 
@@ -2513,11 +2520,12 @@ checks it lacks, and retire the script as superseded.
 - Consumes: `appboxd/lib/validate_docs.dart` and its test.
 - Produces: extended `validate_docs.dart` + `validate_docs_test.dart`;
   updated `skills/appbox-lint/SKILL.md` (+ mirror). No new module, no
-  new CLI.
+  new CLI. (Landed as a new module after all: `appboxd/lib/docs_lint.dart`
+  + `docs_lint_test.dart`, wired into `appbox docs`.)
 
 ### Steps
 
-- [ ] 17.1 Diff the check lists and write failing tests for the gaps in
+- [x] 17.1 Diff the check lists and write failing tests for the gaps in
   `appboxd/test/validate_docs_test.dart` (synthetic fixture tempdir,
   the lint_kb.py self-test's cases): (a) **orphans** — doc with no
   inbound link and absent from the index → `WARN`; (b) **supersede
@@ -2529,10 +2537,10 @@ checks it lacks, and retire the script as superseded.
   being fixed by the port). Keep severity split: index coverage and
   link integrity stay ERROR (exit 1), the three new checks WARN.
   Run — expected: failures. Red confirmed.
-- [ ] 17.2 Extend `appboxd/lib/validate_docs.dart` with the three
+- [x] 17.2 Extend `appboxd/lib/validate_docs.dart` with the three
   checks, keeping the existing function shape and output format (`WARN
   …` / `ERROR …` + summary line). Run tests — pass; full suite green.
-- [ ] 17.3 Update `skills/appbox-lint/SKILL.md`: replace the `python
+- [x] 17.3 Update `skills/appbox-lint/SKILL.md`: replace the `python
   skills/appbox-lint/lint_kb.py` invocation lines (and fix the stale
   `skills/lint/` path on line 53) with `appbox docs` (or `dart run
   appboxd/bin/appbox.dart docs` from repo root — match the invocation
@@ -2562,10 +2570,10 @@ dartification list. This task ports it for real and rewrites
 
 ### Steps
 
-- [ ] 18.1 Find `IntakeRunner`'s callers before touching it:
+- [x] 18.1 Find `IntakeRunner`'s callers before touching it:
   `grep -rn 'IntakeRunner' appboxd/ skills/ .kimi-code/skills/`.
   Repoint every caller to the new in-process API in this task.
-- [ ] 18.2 Write the failing test — `appboxd/test/intake_test.dart`:
+- [x] 18.2 Write the failing test — `appboxd/test/intake_test.dart`:
   the Python self-test's cases plus goldens captured from the Python
   on a sample answers file: `emit` produces a **byte-identical**
   `brief.md` (incl. the blockquote marking of `inferred` fields) and
@@ -2575,7 +2583,7 @@ dartification list. This task ports it for real and rewrites
   a hand-written brief's surface table; exit codes 0/1/2; nothing
   written on invalid input (no partial artefacts).
   Run — expected: COMPILE ERROR. Red confirmed.
-- [ ] 18.3 Rewrite `appboxd/lib/intake.dart`: `class IntakeEngine {
+- [x] 18.3 Rewrite `appboxd/lib/intake.dart`: `class IntakeEngine {
   ValidationResult validate(Map answers); EmitResult emit(Map answers,
   {String? briefOut, String? registryOut}); SeedResult seed(String
   briefPath, {String? registryOut}); }` — pure Dart, pure function of
@@ -2584,12 +2592,12 @@ dartification list. This task ports it for real and rewrites
   `IntakeRunner`; `lib/intake.dart`'s header comment updated (it no
   longer shells out). Keep `gate_intake.dart` untouched (it is the
   gate, already Dart).
-- [ ] 18.4 Wire `appbox intake emit --answers <f> [--brief-out p]
+- [x] 18.4 Wire `appbox intake emit --answers <f> [--brief-out p]
   [--registry-out p]` / `seed --brief <f>` / `validate <f>` /
   `--self-test` into `bin/appbox.dart` (new `case 'intake':` — check
   for collision with `gate intake`: the gate is `appbox gate intake`,
   no collision).
-- [ ] 18.5 Update `skills/appbox-intake/SKILL.md:87,91,101,117` and
+- [x] 18.5 Update `skills/appbox-intake/SKILL.md:87,91,101,117` and
   `skills/appbox-story-mapper/SKILL.md`'s intake reference to the Dart
   invocation; mirror both files. Run tests — pass; full suite green.
 
@@ -2616,7 +2624,7 @@ enumerated deltas.
 
 ### Steps
 
-- [ ] 19.1 Write the failing test —
+- [x] 19.1 Write the failing test —
   `appboxd/test/design_tools_test.dart`. Fixture: a temp artifact dir
   with two html files (one clean, one carrying each violation), a
   `ladder.json` + `references/viewport-ladder.md` pair (in-sync and
@@ -2653,7 +2661,7 @@ enumerated deltas.
   - `doctor`: with a faked environment map returns the ok/MISS rows and
     exit 1 on any miss.
   Run — expected: COMPILE ERROR. Red confirmed.
-- [ ] 19.2 Capture the pseudolocalize golden from the .mjs original:
+- [x] 19.2 Capture the pseudolocalize golden from the .mjs original:
   ```sh
   cd /Volumes/developer_ssd/Developer/totem_labs/app-box
   # build the fixture (arb + one seed json), then:
@@ -2661,7 +2669,7 @@ enumerated deltas.
   cp appboxd/test/fixtures/ploc_artifact/l10n/app_qps-ploc.arb appboxd/test/fixtures/ploc_golden.arb
   git checkout -- appboxd/test/fixtures/ploc_artifact 2>/dev/null || true
   ```
-- [ ] 19.3 Create `appboxd/lib/design_tools.dart` — exemplar, the lint
+- [x] 19.3 Create `appboxd/lib/design_tools.dart` — exemplar, the lint
   port (complete):
   ```dart
   /// Designer-skill tools ported to Dart: client-JS lint (ADR-0002),
@@ -2778,7 +2786,7 @@ enumerated deltas.
     the one verb whose *meaning* changes — the .mjs checked node deps
     that no longer exist; record that in the skill doc update (Task
     22).
-- [ ] 19.4 Wire `appbox design <verb>` into `bin/appbox.dart` (new
+- [x] 19.4 Wire `appbox design <verb>` into `bin/appbox.dart` (new
   `case 'design':` → `runDesign(rest)` in
   `appboxd/lib/design_cli.dart` — sibling to `lens_cli.dart`; `serve`
   prints `lands in Task 20` + exit 2 for now). Run tests — pass; full
@@ -2797,7 +2805,9 @@ owns the process; a headless-Chrome JS worker (CDP) owns artifact JS
 execution** — viewmodels and Nunjucks run in the worker, which the Dart
 server drives with the `cdp.dart` substrate. The worker JS shim
 (`h`/`c` Hono-equivalents, nunjucks browser build) is vendored into
-`skills/appbox-designer/runtime/vendor/` like every other island.
+`skills/appbox-designer/runtime/vendor/` like every other island. (Landed
+in `appboxd/lib/design_server/worker_assets/` instead — server-side worker
+assets, not client islands served at `/assets/vendor/`.)
 
 **Interfaces**
 - Consumes: `cdp.dart` (worker transport); Task 19's l10n `parsePlural`
@@ -2816,7 +2826,7 @@ server drives with the `cdp.dart` substrate. The worker JS shim
 
 ### Steps
 
-- [ ] 20.1 **Worker spike first** (the risk gate; ~200 lines, throwaway
+- [x] 20.1 **Worker spike first** (the risk gate; ~200 lines, throwaway
   if it fails): `appboxd/tool/_worker_spike.dart` — boot the Dart
   static-file `_bindStaticServer`-pattern server over
   `designs/appbox-studio`, launch `CdpClient`, load a page that
@@ -2830,7 +2840,11 @@ server drives with the `cdp.dart` substrate. The worker JS shim
   capability-map.md + the dart-only plan's follow-up, and skip to Task
   21 — the rest of the plan stands. Do not retry the spike more than
   twice.
-- [ ] 20.2 Vendor the worker assets (SRI-pinned, the vendor/ contract):
+- [x] 20.2 Vendor the worker assets (SRI-pinned, the vendor/ contract) —
+  landed in `appboxd/lib/design_server/worker_assets/` with the FULL
+  `nunjucks.min.js` browser build, not the slim one (the worker compiles
+  templates at runtime via `new nunjucks.Environment(...)`; slim only runs
+  precompiled templates):
   download `nunjucks@3.2.4` browser slim build:
   ```sh
   cd /Volumes/developer_ssd/Developer/totem_labs/app-box/skills/appbox-designer/runtime/vendor
@@ -2853,7 +2867,7 @@ server drives with the `cdp.dart` substrate. The worker JS shim
   shim is a *port of the lib/*.mjs semantics into the worker* — keep
   function shapes identical so viewmodels cannot tell the difference.
   Mirror all three files to `.kimi-code/skills/.../vendor/`.
-- [ ] 20.3 Write the failing test —
+- [x] 20.3 Write the failing test —
   `appboxd/test/design_server_test.dart`: serve.test.mjs's 15 behaviors,
   verbatim semantics:
   1. bare design name `appbox-studio` resolves (walk-up +
@@ -2885,7 +2899,7 @@ server drives with the `cdp.dart` substrate. The worker JS shim
   Drive the server as a spawned `dart run bin/appbox.dart design serve
   …` process (the test spawns, like serve.test.mjs spawns node).
   Run — expected: COMPILE ERROR / spawn failures. Red confirmed.
-- [ ] 20.4 Create the Dart server. `design_server.dart` public entry:
+- [x] 20.4 Create the Dart server. `design_server.dart` public entry:
   ```dart
   /// The appbox design server (ports skills/appbox-designer/runtime/serve.mjs
   /// + lib/*.mjs). Dart owns the process contract — target resolution,
@@ -3008,7 +3022,7 @@ server drives with the `cdp.dart` substrate. The worker JS shim
     `worker.dispatch(...)` → write status/headers/body. `Vary:
     HX-Request` always, `Vary: Accept-Language` for HTML (port of the
     locale middleware). onError → log + `500 — <message>`.
-- [ ] 20.5 Port `eject.mjs` → `appbox design eject <artifact-dir>
+- [x] 20.5 Port `eject.mjs` → `appbox design eject <artifact-dir>
   <out-dir>` in `design_tools.dart`: same steps as the .mjs (copy
   artifact; narrow `vendor/` to referenced libs with the
   htmx-required hard fail; write narrowed manifest) but the ejected
@@ -3018,7 +3032,7 @@ server drives with the `cdp.dart` substrate. The worker JS shim
   in `design_tools_test.dart`: eject the hello-hda fixture, serve the
   ejected copy in-process, `GET /` → 200 + `<html`, `GET
   /assets/vendor/htmx.min.js` → 200.
-- [ ] 20.6 Run the 15-behavior test — all pass; full suite green. Then
+- [x] 20.6 Run the 15-behavior test — all pass; full suite green. Then
   the real-design smoke:
   ```sh
   cd /Volumes/developer_ssd/Developer/totem_labs/app-box/appboxd
@@ -3051,7 +3065,7 @@ render pass) become Dart + the Task 20 worker.
 
 ### Steps
 
-- [ ] 21.1 Write the failing test —
+- [x] 21.1 Write the failing test —
   `appboxd/test/design_selftest_test.dart`: run the selftest against a
   known-good fixture artifact (the hello-hda example copied to a temp
   dir) → `passed N, failed 0`, exit 0; then one planted violation per
@@ -3060,7 +3074,7 @@ render pass) become Dart + the Task 20 worker.
   dead-url, emoji-icon, client-js) — full 25-row proof stays in
   `--negative` mode below.
   Run — expected: COMPILE ERROR. Red confirmed.
-- [ ] 21.2 Create `appboxd/lib/design_selftest.dart`: port the ~25
+- [x] 21.2 Create `appboxd/lib/design_selftest.dart`: port the ~25
   checks in selftest.sh's order, keeping the labels and the `ok`/`FAIL
   <label>` / `passed N, failed M` output contract:
   registry parses (keys `id,label,surface,shell,comp`) · no
@@ -3091,7 +3105,7 @@ render pass) become Dart + the Task 20 worker.
   on its own temp copy*, so the guard is structural, not a check.
   Exit codes: 64 usage/unknown flag, 65 baseline-red or unclaimed
   labels, non-zero on any failure.
-- [ ] 21.3 Wire `appbox design selftest [artifact-dir] [--negative]`
+- [x] 21.3 Wire `appbox design selftest [artifact-dir] [--negative]`
   into `design_cli.dart`. Run against the real skill:
   ```sh
   cd /Volumes/developer_ssd/Developer/totem_labs/app-box/appboxd
@@ -3116,7 +3130,7 @@ updates for Tasks 14-16 + 19-21.
 
 ### Steps
 
-- [ ] 22.1 Dispositions for `skills/appbox-designer/agents/` — verify
+- [x] 22.1 Dispositions for `skills/appbox-designer/agents/` — verify
   each claim, then record in a new **`## Skills runtimes`** section
   appended to `skills/appbox-lens/capability-map.md` (created in this
   task, below the probe-runner tables — it is the audit trail for the
@@ -3147,7 +3161,7 @@ updates for Tasks 14-16 + 19-21.
     `<project>/_ds/<slug>/` + `_d_meta.json` note). Tests in
     `design_tools_test.dart` with fixture dirs. Wire as `appbox design
     ds-check|record-asset|ds-import`.
-- [ ] 22.2 Update every skill doc invocation line (enumerated —
+- [x] 22.2 Update every skill doc invocation line (enumerated —
   canonical `skills/` then mirror each):
   - `skills/appbox-story-mapper/SKILL.md:170,177,262` → `appbox emit
     story-map -i … -o … --data-out … --brief-out …` and `--self-test`.
@@ -3167,7 +3181,7 @@ updates for Tasks 14-16 + 19-21.
     (grep the skill dir for `node ` and `python` to catch every one —
     the grep, not this list, is the completeness check).
   - `skills/appbox-intake/SKILL.md` (done in Task 18.5 — verify).
-- [ ] 22.3 Mirror every file touched:
+- [x] 22.3 Mirror every file touched:
   ```sh
   cd /Volumes/developer_ssd/Developer/totem_labs/app-box
   for f in appbox-story-mapper/SKILL.md appbox-scaffolder/SKILL.md \
@@ -3195,7 +3209,7 @@ reference the old runtimes.
 
 ### Steps
 
-- [ ] 23.1 Move (preserve relative paths):
+- [x] 23.1 Move (preserve relative paths):
   ```sh
   cd /Volumes/developer_ssd/Developer/totem_labs/app-box
   A=archives/tooling-pre-dart/skills-pre-dart
@@ -3245,9 +3259,9 @@ reference the old runtimes.
   designer's own authoring step documented in the skill, and the
   archived `generate.mjs` is the reference if a generator is ever
   re-added as Dart. Mirror the README.
-- [ ] 23.2 Apply the same moves under `.kimi-code/skills/` (the live
+- [x] 23.2 Apply the same moves under `.kimi-code/skills/` (the live
   mirror) with plain `mv` (untracked tree), same target structure.
-- [ ] 23.3 Grep-clean proof — no python/node/bash runtime invocations
+- [x] 23.3 Grep-clean proof — no python/node/bash runtime invocations
   left in skills:
   ```sh
   cd /Volumes/developer_ssd/Developer/totem_labs/app-box
@@ -3260,7 +3274,7 @@ reference the old runtimes.
   *mention* the archived paths in dropped-with-reason sentences — the
   grep filter above allows exactly that; eyeball the filtered output
   before declaring clean).
-- [ ] 23.4 Fix stragglers the grep catches: any skill doc still
+- [x] 23.4 Fix stragglers the grep catches: any skill doc still
   instructing a retired invocation gets the Task 22 treatment on the
   spot (+ mirror).
 
@@ -3275,7 +3289,7 @@ reference the old runtimes.
 
 ### Steps
 
-- [ ] 24.1 Full appboxd suite + analyzer:
+- [x] 24.1 Full appboxd suite + analyzer:
   ```sh
   cd /Volumes/developer_ssd/Developer/totem_labs/app-box/appboxd
   dart analyze && dart test
@@ -3286,7 +3300,7 @@ reference the old runtimes.
   lens_simctl, lens_sck, lens_ocr, lens_flutter_vm, gate_lens,
   story_map, scaffold, deploy, validate_docs, intake, design_tools,
   design_server, design_selftest).
-- [ ] 24.2 Gate wiring smoke:
+- [x] 24.2 Gate wiring smoke:
   ```sh
   cd /Volumes/developer_ssd/Developer/totem_labs/app-box/appboxd
   dart run bin/appbox.dart gate lens --self-test
@@ -3295,7 +3309,7 @@ reference the old runtimes.
   ```
   Expected: selftest PASS lines incl. the `# NEGATIVE:` case; usage
   tables print, exit 2.
-- [ ] 24.3 End-to-end lens smoke at the ladder against the Dart design
+- [x] 24.3 End-to-end lens smoke at the ladder against the Dart design
   server (node is gone by now — this also proves Task 20):
   ```sh
   cd /Volumes/developer_ssd/Developer/totem_labs/app-box/appboxd
@@ -3312,10 +3326,10 @@ reference the old runtimes.
   ```
   Expected: three shots + tokens JSON, all clean; **read each PNG back
   (ReadMediaFile)** — a green exit with a blank canvas is a fail.
-- [ ] 24.4 Capability-map audit (rerun Task 13.4's loop): no `MISSING`
+- [x] 24.4 Capability-map audit (rerun Task 13.4's loop): no `MISSING`
   lines; every row reads `ported` or `dropped` with a reason.
-- [ ] 24.5 Re-run the grep-clean proof from Task 23.3 — `CLEAN`.
-- [ ] 24.6 Update the lens SKILL.md's remaining "future" lines if any
+- [x] 24.5 Re-run the grep-clean proof from Task 23.3 — `CLEAN`.
+- [x] 24.6 Update the lens SKILL.md's remaining "future" lines if any
   survived Task 13, mirror, and hand back: the working tree is the
   deliverable; committing is the operator's call.
 

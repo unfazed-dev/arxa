@@ -81,10 +81,13 @@ context, fidelity, variations (see "Asking questions" in `system-prompt.md`).
 **8. Set up the output folder.** Ask **where to save** (default
 `designs/<descriptive-project-name>/`) and **which design system(s) to use**.
 Start every artifact by copying `examples/hello-hda/` and renaming; never
-scatter design files in the repo root. The copy carries a `serve.mjs` at the
-artifact root — `appbox design serve <artifact-dir> [--port N] [--json]` (or the
-copied `serve.mjs` shim from inside the design) serves it without referencing
-the skill path. Keep the shim; never delete it. Import design systems with
+scatter design files in the repo root. Serve the artifact with the Dart
+design server — `appbox design serve <artifact-dir> [--port N] [--json]`
+(`appboxd/lib/design_server.dart`; artifact JS runs in a headless-Chrome
+worker over CDP) — which works without referencing the skill path. Older
+designs may still carry a `serve.mjs` shim at the artifact root: it is dead
+(the Node runtime it delegated to is archived), so serve those with
+`appbox design serve` too; new artifacts do not carry the shim. Import design systems with
 `appbox design ds-import` and record deliverables with
 `appbox design record-asset` as in `built-in-skills/use-design-system.md`.
 
