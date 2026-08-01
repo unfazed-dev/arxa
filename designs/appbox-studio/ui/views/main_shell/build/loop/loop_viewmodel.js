@@ -79,7 +79,7 @@ export const evidenceViewer = (c, h) =>
 // designed screen. In the shipped app this src points at the designer
 // artifact the daemon serves.
 export const screenStub = (c, h) =>
-  h.render(c, STUB_VIEW, facade.screenStub(c.req.param('surface'), c.req.query('vp'), h.prefs(c), h.locale(c), { embed: c.req.query('embed') === '1', inspect: c.req.query('inspect') === '1' }));
+  h.render(c, STUB_VIEW, facade.screenStub(c.req.param('surface'), c.req.query('vp'), h.prefs(c), h.locale(c), { embed: c.req.query('embed') === '1', inspect: c.req.query('inspect') === '1', still: c.req.query('still') === '1' }));
 
 // Stage control (run view): pause | resume | cancel one stage.
 export const stageControl = async (c, h) => {

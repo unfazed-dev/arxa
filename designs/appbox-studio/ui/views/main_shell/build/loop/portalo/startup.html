@@ -1,8 +1,11 @@
-{# Portalo startup — keyframed CSS fill, then a meta refresh to sign-in.
-   Zero JS, same pattern as the splash. #}
-<meta http-equiv="refresh" content="3;url=/build/screens/portalo.access{{ pqs }}">
-<main class="splash">
-  <span class="splash-brand">{{ t('app.brand') }}</span>
+{# Portalo startup — keyframed CSS fill, then the brand lands as the end
+   state (pure CSS: the .startup-done reveal keyframe is timed to the fill).
+   Meta refresh advances in non-still mode; still frames render settled
+   (is-still: bar full, brand shown). Zero JS, same pattern as the splash. #}
+{% if not still %}<meta http-equiv="refresh" content="3;url=/build/screens/portalo.access{{ pqs }}">{% endif %}
+<main class="splash startup {{ 'is-still' if still }}">
+  {% set logoSize = 40 %}{% include "ui/views/main_shell/build/loop/portalo/_logo.html" %}
   <span class="startup-bar" role="progressbar" aria-label="{{ t('startup.loading') }}"></span>
   <p class="splash-tagline">{{ t('startup.loading') }}</p>
+  <span class="startup-done splash-brand">{{ t('app.brand') }}</span>
 </main>

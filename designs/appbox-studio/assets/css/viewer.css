@@ -29,12 +29,20 @@
 
 /* ---------- flow: every screen as a draggable tile ---------- */
 .design-viewer { position: relative; }
-.dv-flow { position: relative; flex: 1; overflow: hidden; }
+/* flex column, min-height:0 — without it the block-child canvas sized to its
+   content height, overflow:auto never engaged vertically and .dv-flow's
+   overflow:hidden just clipped (dead Y-scroll). */
+.dv-flow { position: relative; flex: 1; min-height: 0; overflow: hidden; display: flex; flex-direction: column; }
 .dv-flow-canvas {
   position: relative; overflow: auto; flex: 1; min-height: 32rem;
   /* bottom pad lets the last tile row scroll clear of the floating mini panel */
   padding: 1rem 1rem 11rem; cursor: default;
+  /* Figma canvas: wheel/trackpad pans both axes, no scrollbars — the global
+     `* { scrollbar-width: thin }` (app.css) otherwise renders a horizontal
+     bar right under the floating mini panel */
+  scrollbar-width: none;
 }
+.dv-flow-canvas::-webkit-scrollbar { display: none; }
 .dv-flow-canvas:active { cursor: grabbing; }
 .dv-flow-canvas .dv-zoom {
   position: relative; width: max-content; min-width: 100%;
@@ -154,6 +162,10 @@
 .mini-panel-strip .dv-thumb { width: 5.6rem; }
 .mini-panel-strip .dv-thumb-clip { height: 7.2rem; }
 .mini-panel-strip .dv-thumb-clip iframe { transform: scale(.221); }
+/* long screen ids (portalo.mediamodel3d) overflow the 5.6rem thumb and paint
+   over the neighbor — clip them with an ellipsis instead */
+.dv-thumb-label { min-width: 0; }
+.dv-thumb-label code { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 /* .ico-btn base + :hover live in chrome.css (circular icon button); these add
    the disabled and active-on variants the mini panel controller buttons need */
 .ico-btn:disabled { opacity: .35; cursor: default; }
@@ -205,3 +217,12 @@
 
 /* the active screen's thumb in proto mode (the picker state) */
 .dv-thumb.on .dv-thumb-clip { border-color: var(--accent, #0891b2); box-shadow: 0 0 0 1.5px var(--accent, #0891b2); }
+
+/* ---------- fullscreen: the viewer IS the fullscreen element ----------
+   The close affordance exists only while :fullscreen matches — Esc drops the
+   pseudo-class and hides it again for free, no JS state to keep honest. The
+   hide needs .design-viewer scope: bare .dv-fs-close ties .ico-btn's
+   display:inline-flex (chrome.css) and loses to load order. */
+.design-viewer .dv-fs-close { display: none; position: absolute; top: .8rem; right: .8rem; z-index: 30; }
+.design-viewer:fullscreen { border: none; border-radius: 0; }
+.design-viewer:fullscreen .dv-fs-close { display: inline-grid; }

@@ -1,8 +1,10 @@
-{# Portalo splash — content mockup rendered by screen_stub_view.html.
-   Auto-advances to the startup screen keeping vp/embed (pqs is set by the
-   stub template). Meta refresh + CSS only, zero JS. #}
-<meta http-equiv="refresh" content="2;url=/build/screens/portalo.startup{{ pqs }}">
+{# Portalo splash — content mockup rendered by screen_stub_view.html. The
+   brand's first paint: logo + wordmark hero. Auto-advances to startup
+   keeping vp/embed/still (pqs is set by the stub template); still frames
+   (flow tiles) skip the refresh. Meta refresh + CSS only, zero JS. #}
+{% if not still %}<meta http-equiv="refresh" content="2;url=/build/screens/portalo.startup{{ pqs }}">{% endif %}
 <main class="splash">
+  {% set logoSize = 72 %}{% include "ui/views/main_shell/build/loop/portalo/_logo.html" %}
   <span class="splash-brand">{{ t('app.brand') }}</span>
   <span class="splash-shimmer" role="progressbar"></span>
 </main>

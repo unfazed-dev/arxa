@@ -10,7 +10,7 @@
      pinch (ctrl+wheel)            → zoom around the cursor, 0.25×–4×
      drag on free canvas           → pan (pointer capture)
      double-click on free canvas   → reset zoom to 1×
-     mini-panel zoom-fit button    → fit the content to the stage, centered
+     mini-panel maximize button    → toggle the viewer's fullscreen
 
    Zoom scales the .dv-zoom wrapper (transform-origin 0 0) and re-anchors the
    scroll position so the point under the cursor stays put. Scale is paint-
@@ -20,8 +20,10 @@
    events go to the iframe document) — pan from free canvas space; upgrade
    path is a transparent drag-shield in a held pan mode. Wheel-zoom DOES work
    over the devices: same-origin iframe documents get their own ctrl+wheel
-   listener that forwards into the stage's zoom. Zoom state resets to 1× when
-   htmx swaps the viewer (new element). */
+   listener that forwards into the stage's zoom. Zoom state SURVIVES htmx
+   swaps of the viewer: stashed on htmx:beforeSwap, re-applied on afterSwap
+   (the control toggles re-render #design-viewer; without the stash every
+   toggle snapped back to 1×). */
 (() => {
   const SEL = '.dv-stage, .dv-rungs, .dv-flow-canvas, .dv-proto-stage';
   const clamp = (z) => Math.min(4, Math.max(0.25, z));
@@ -43,27 +45,6 @@
     t.style.transform = `scale(${z1})`;
     el.scrollLeft = (el.scrollLeft + cx) * k - cx;
     el.scrollTop = (el.scrollTop + cy) * k - cy;
-  };
-
-  // zoom-fit (mini panel [data-action="zoom-fit"]): scale the zoom child so
-  // the content fills the stage's padding box, then scroll to center it.
-  // Same _z + transform mechanism as the wheel zoom, so ctrl+wheel/dblclick
-  // pick up from the fitted scale.
-  const zoomFit = (el) => {
-    const t = zoomChild(el);
-    if (!t) return;
-    const z0 = el._z || 1;
-    const cw = t.offsetWidth / z0, ch = t.offsetHeight / z0; // unscaled content size
-    if (!cw || !ch) return;
-    const cs = getComputedStyle(el);
-    const availW = el.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
-    const availH = el.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
-    const z1 = clamp(Math.min(availW / cw, availH / ch));
-    el._z = z1;
-    t.style.transformOrigin = '0 0';
-    t.style.transform = `scale(${z1})`;
-    el.scrollLeft = Math.max(0, t.offsetLeft + (z1 * cw - el.clientWidth) / 2);
-    el.scrollTop = Math.max(0, t.offsetTop + (z1 * ch - el.clientHeight) / 2);
   };
 
   function attach(el) {
@@ -121,13 +102,45 @@
     });
   }
 
-  // zoom-fit is requested from the mini panel, OUTSIDE the stage — a document-
-  // delegated click finds the enclosing viewer's stage. The button renders on
-  // every viewer swap, so delegation never needs re-arming.
+  // viewer fullscreen (mini panel [data-action="viewer-fullscreen"] and the
+  // fullscreen-only close button [data-action="viewer-fullscreen-exit"]) —
+  // requested from buttons INSIDE the viewer, so a delegated click finds the
+  // enclosing .design-viewer. Both actions toggle: exit when anything is
+  // fullscreen, enter otherwise. The buttons render on every viewer swap, so
+  // delegation never needs re-arming; the close button's visibility is pure
+  // CSS (:fullscreen), so Esc needs no listener.
   document.addEventListener('click', (e) => {
-    if (!e.target.closest('[data-action="zoom-fit"]')) return;
-    const stage = e.target.closest('.design-viewer')?.querySelector(SEL);
-    if (stage) zoomFit(stage);
+    const btn = e.target.closest('[data-action="viewer-fullscreen"], [data-action="viewer-fullscreen-exit"]');
+    if (!btn) return;
+    if (document.fullscreenElement) { document.exitFullscreen(); return; }
+    btn.closest('.design-viewer')?.requestFullscreen();
+  });
+
+  // zoom survival across viewer swaps: mode/device/bg/inspect toggles
+  // re-render #design-viewer (outerHTML), which would drop the client-side
+  // _z back to 1×. Stash the outgoing stage's zoom before the swap, re-apply
+  // it to the incoming zoom child after (flow .dv-zoom or proto .device —
+  // same zoomChild helper). A 1× stash is dropped so dblclick-reset sticks.
+  let stashedZoom = null;
+  document.addEventListener('htmx:beforeSwap', (e) => {
+    const target = e.detail.target;
+    if (target?.id !== 'design-viewer') return;
+    const stage = target.querySelector(SEL);
+    const t = stage && zoomChild(stage);
+    stashedZoom = stage?._z && stage._z !== 1 && t
+      ? { z: stage._z, transformOrigin: t.style.transformOrigin }
+      : null;
+  });
+  document.addEventListener('htmx:afterSwap', (e) => {
+    if (!stashedZoom || e.detail.target?.id !== 'design-viewer') return;
+    // detail.target is the DETACHED pre-swap node on an outerHTML swap —
+    // re-resolve the live viewer by id.
+    const stage = document.getElementById('design-viewer')?.querySelector(SEL);
+    const t = stage && zoomChild(stage);
+    if (!t) return;
+    stage._z = stashedZoom.z;
+    t.style.transformOrigin = stashedZoom.transformOrigin || '0 0';
+    t.style.transform = `scale(${stashedZoom.z})`;
   });
 
   const scan = (root) => {

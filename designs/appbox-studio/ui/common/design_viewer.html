@@ -129,7 +129,7 @@
             <span class="dv-tile-label"><strong>{{ s.label or s.id }}</strong> <code>{{ s.id }}</code></span>
           </header>
           <iframe class="dv-tile-frame"
-                  src="{{ v.stubBase }}{{ s.id }}?vp={{ s.tile.vp }}&embed=1{{ '&inspect=1' if v.inspect }}"
+                  src="{{ v.stubBase }}{{ s.id }}?vp={{ s.tile.vp }}&embed=1&still=1{{ '&inspect=1' if v.inspect }}"
                   style="height: {{ s.tile.height }}px"
                   scrolling="no" tabindex="-1" title="{{ s.label or s.id }}"></iframe>
         </div>
@@ -141,6 +141,11 @@
     </div>
   </div>
 {% endif %}
+
+  {# FULLSCREEN CLOSE — visible only while the viewer is :fullscreen (CSS);
+     canvas.js toggles via data-action, Esc drops :fullscreen for free. #}
+  <button class="ico-btn dv-fs-close" data-action="viewer-fullscreen-exit"
+          title="{{ t('miniPanel.fullscreenExit') }}">{{ icon('x', {size: 16}) }}</button>
 
   {# MINI PANEL — bottom-anchored floating controller (Screens / Controller).
      Rendered inside the viewer so it stays in sync on every swap. #}

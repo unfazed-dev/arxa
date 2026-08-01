@@ -19,7 +19,7 @@
   {% endif %}
 </head>
 <body class="stub-body {{ 'stub-embed' if embed }}" data-surface="{{ surface }}" {{ 'data-inspect-armed="true"' if inspect }}>
-{% set pqs = '?vp=' + vp + ('&embed=1' if embed else '') %}
+{% set pqs = '?vp=' + vp + ('&embed=1' if embed else '') + ('&still=1' if still else '') %}
 <div id="app" data-theme="{{ theme }}" data-accent="cyan">
   <div class="stub-screen" style="{{ '' if embed else 'max-width: ' + width + 'px' }}">
     {% if not embed %}

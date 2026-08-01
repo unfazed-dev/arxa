@@ -116,6 +116,11 @@
   // An in-flow tile (no saved layout yet) goes absolute on first grab; setting
   // left/top in the same frame keeps it visually put while its siblings
   // reflow into the gap.
+  // The drop POST is fire-and-forget (swap:'none'): the drag already placed
+  // the tile client-side, the POST only persists {x,y} — a viewer re-render
+  // would reset the canvas.js zoom and reload every screen iframe. Ceiling:
+  // the undo button's enabled state is server-rendered, so it goes stale
+  // until the next natural swap. Accepted, not faked client-side.
   const startTileDrag = (e, tile) => {
     e.preventDefault();
     tile.setPointerCapture(e.pointerId);
@@ -135,7 +140,7 @@
       if (!id) return;
       htmx.ajax('POST', `/design/layout/artboard/${encodeURIComponent(id)}`, {
         values: { x: String(Math.round(tile.offsetLeft)), y: String(Math.round(tile.offsetTop)) },
-        target: '#design-viewer', swap: 'outerHTML',
+        target: '#design-viewer', swap: 'none',
       });
     }, { once: true });
   };

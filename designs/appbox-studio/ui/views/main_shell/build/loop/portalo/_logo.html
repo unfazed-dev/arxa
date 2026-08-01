@@ -1,0 +1,11 @@
+{# Portalo brand mark — a rounded portal/arch glyph in the brand gradient.
+   Shared by the splash/startup/access content mockups (DRY: ONE svg); the
+   caller sizes it via `logoSize` before the include. #}
+<svg class="portalo-logo" width="{{ logoSize or 32 }}" height="{{ logoSize or 32 }}" viewBox="0 0 32 32" role="img" aria-label="{{ t('app.brand') }}">
+  <defs>
+    <linearGradient id="portalo-logo-g" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#21BFE9"/><stop offset="1" stop-color="#4E28D5"/>
+    </linearGradient>
+  </defs>
+  <path fill="url(#portalo-logo-g)" d="M6 28V15a10 10 0 0 1 20 0v13h-6V16a4 4 0 0 0-8 0v12H6Z"/>
+</svg>

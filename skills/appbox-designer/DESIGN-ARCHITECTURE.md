@@ -24,6 +24,16 @@ Every piece of state an Artifact renders travels through five stages, in order:
 
 Each stage only talks to its immediate neighbor. A View never reaches past its ViewModel; a ViewModel never reaches past a Facade.
 
+## Determinism
+
+Every generated artifact — fixtures, `registry.json`/`structure.json`, the story-map and brief emits, goldens — is a **pure function of checked-in inputs** (seeds + registry + config). Same inputs, byte-identical output, on every machine and every run. This is what makes the output triad (prototype / flows / screens) trustworthy as pipeline input: regenerating a design never invents drift.
+
+- **No wall-clock, randomness, environment, or network in generators/emitters** — no `Date.now`, `Math.random`, UUIDs, timestamps, or host-dependent paths. Content that needs a date carries it in the seed, authored.
+- **Stable ordering** — generators emit in sorted/seed order; filesystem or map iteration order never leaks into output.
+- **Regeneration is always safe** — run any generator or emitter twice with unchanged inputs: zero diff. A diff after a no-change regen is a bug in the generator, not a change to commit.
+- **Session state is not content** — user/session mutations (pins, layout, choices) live in the session and never enter seeds, fixtures, or `structure.json`.
+- The mechanical check: regenerate everything (`models/*/generate.mjs`, `appbox emit structure`) twice and diff — empty. The selftest's git-tracked check keeps the committed tree equal to the generated tree.
+
 ### L10n in the spine
 
 Two channels, both locale-aware, neither hardcoded:

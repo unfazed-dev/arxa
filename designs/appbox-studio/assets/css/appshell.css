@@ -42,6 +42,25 @@
   .startup-bar::after { width: 100%; }
 }
 
+/* Brand reveal — the end state once the fill completes: the .startup-done
+   keyframe is timed to the 2.8s fill (same clock as the 3s meta refresh).
+   Still frames (flow tiles) render settled: bar full, brand shown. */
+.startup-done { opacity: 0; font-size: 1.6rem; }
+@media (prefers-reduced-motion: no-preference) {
+  .startup-done { animation: startup-reveal 3s linear forwards; }
+  @keyframes startup-reveal { 0%, 85% { opacity: 0; } 100% { opacity: 1; } }
+}
+@media (prefers-reduced-motion: reduce) {
+  .startup-done { opacity: 1; }
+}
+.startup.is-still .startup-bar::after { animation: none; width: 100%; }
+.startup.is-still .startup-done { animation: none; opacity: 1; }
+.startup.is-still .splash-tagline { display: none; }
+
+/* ---------- shared Portalo logo mark ---------- */
+.portalo-logo { display: block; }
+.auth-card .portalo-logo { margin-bottom: -.2rem; }
+
 /* ---------- centered states (auth / pairing) — centered-state archetype:
    same composition at every rung, width capped, never full-width fields. */
 .centered-state {

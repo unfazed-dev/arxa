@@ -24,11 +24,13 @@ Files:
 - `ui/common/design_viewer.html` — `designViewer(v)` macro (+ `protoStage`,
   `deviceChrome`).
 - `ui/common/mini_panel.html` — the floating Screens / Controller panel; the
-  Controller carries the lens switch (`flow` / `prototype`) and the zoom-fit
-  button (`data-action="zoom-fit"`, implemented client-side by
-  `runtime/vendor/canvas.js` — scales the stage's zoom child to fit, same
-  `_z`/transform mechanism as ctrl+wheel), the bar-right cluster carries the
-  device rung icons (both modes) — divider — bg swatches (every mode).
+  Controller carries the lens switch (`flow` / `prototype`) and the viewer
+  fullscreen button (`data-action="viewer-fullscreen"`, implemented
+  client-side by `runtime/vendor/canvas.js` — requestFullscreen on the
+  enclosing `.design-viewer`; a `data-action="viewer-fullscreen-exit"` close
+  button in `design_viewer.html` shows only under `:fullscreen`), the
+  bar-right cluster carries the device rung icons (both modes) — divider —
+  bg swatches (every mode).
 - `assets/css/viewer.css` — flow canvas, mini panel, `.dv-proto*` + `.device`.
 
 ## The `v` contract (produced by the shell facade's `viewerFor`)

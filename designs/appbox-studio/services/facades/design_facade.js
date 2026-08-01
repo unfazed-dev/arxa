@@ -93,7 +93,7 @@ const stripFor = (d, base, L) =>
     id,
     label: repo.screen(id, L).label,
     tone: toneFor(id, L),
-    src: `/build/screens/${id}?vp=mobile`,
+    src: `/build/screens/${id}?vp=mobile&still=1`,
     removeHref: `${base}/context/${id}?state=off`,
   }));
 
@@ -174,6 +174,8 @@ function viewerFor(d, L, t) {
     // Flow tile dims at the CURRENT rung (fallback: the screen's first
     // authored rung; heights fall back to the rung default).
     const te = viewports.find((e) => e.vp === vp) ?? viewports[0];
+    // Flow tiles request STILL frames (no auto-advance on the canvas) — the
+    // template's tile iframe src carries an explicit &still=1.
     const tile = te ? { vp: te.vp, width: te.width, height: te.height ?? VP_HEIGHTS[te.vp] } : null;
     return {
       id: s.id, label: s.label, state: s.state,
@@ -238,7 +240,7 @@ function viewerFor(d, L, t) {
     },
     screens: screens.map((s) => ({
       id: s.id, label: s.label, tone: s.tone, inContext: s.inContext, dim: s.dim,
-      src: `${STUB_BASE}${s.id}?vp=mobile&embed=1`,
+      src: `${STUB_BASE}${s.id}?vp=mobile&embed=1&still=1`,
       // flow: a thumb toggles chat context; proto: it picks the active screen.
       ...(mode === 'proto'
         ? { protoHref: withParams({ screen: s.id }), active: s.id === active }

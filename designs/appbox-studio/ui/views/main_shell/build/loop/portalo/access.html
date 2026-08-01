@@ -1,6 +1,7 @@
 {# Portalo sign-in — inert content mockup (no working form; static buttons). #}
 <main class="centered-state">
   <section class="auth-card" aria-labelledby="p-auth-h">
+    {% set logoSize = 32 %}{% include "ui/views/main_shell/build/loop/portalo/_logo.html" %}
     <span class="auth-brand">{{ t('app.brand') }}</span>
     <h1 class="display" id="p-auth-h">{{ t('screen.label.app.access') }}</h1>
     <p class="muted">One-tap sign-in — the session persists; no demo ever asks twice.</p>

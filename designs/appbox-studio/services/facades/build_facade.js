@@ -293,6 +293,9 @@ export const screenStub = (surface, vp, prefs = {}, locale = 'en', opts = {}) =>
     theme: prefs.theme ?? 'light',
     embed: opts.embed ?? false,
     inspect: opts.inspect ?? false,
+    // still: freeze frame for canvas tiles — partials skip auto-advance
+    // (meta refresh) so every screen in a chain stays itself on the canvas.
+    still: opts.still ?? false,
   };
 };
 

@@ -56,11 +56,11 @@
 </div>
 {% endmacro %}
 
-{# Controller — mode toggle, inspect, zoom-to-fit, canvas undo/redo.
+{# Controller — mode toggle, inspect, viewer fullscreen, canvas undo/redo.
    Undo/redo swap #panels; the other controls swap #design-viewer.
-   Zoom-to-fit is client-side (canvas.js / drag.js) via a data-action, so it
-   carries no route. (Device rungs + bg swatches live in the bar itself —
-   see miniPanel().) #}
+   Fullscreen is client-side (canvas.js) via a data-action, so it carries no
+   route. (Device rungs + bg swatches live in the bar itself — see
+   miniPanel().) #}
 {% macro controllerPanel(v, pnl) %}
 {% set c = pnl.controller %}
 <div class="mini-panel-body" id="mini-panel-controller">
@@ -71,7 +71,7 @@
   </span>
   <span class="mini-panel-group">
     <a class="ico-btn {{ 'on' if c.inspectOn }}" href="{{ c.inspectHref }}" hx-get="{{ c.inspectHref }}" hx-target="#design-viewer" hx-swap="outerHTML" title="{{ t('miniPanel.inspect') }}">{{ icon('mouse-pointer-click', {size: 16}) }}</a>
-    <button class="ico-btn" data-action="zoom-fit" title="{{ t('miniPanel.zoomFit') }}">{{ icon('maximize', {size: 16}) }}</button>
+    <button class="ico-btn" data-action="viewer-fullscreen" title="{{ t('miniPanel.fullscreen') }}">{{ icon('maximize', {size: 16}) }}</button>
   </span>
   <span class="mini-panel-group" role="group" aria-label="{{ t('miniPanel.historyGroup') }}">
     {% if c.undo.can %}
