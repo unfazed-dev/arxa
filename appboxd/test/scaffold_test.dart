@@ -378,6 +378,83 @@ void main() {
     });
   });
 
+  group('kits', () {
+    Map<String, dynamic> kitsStruct() {
+      final s = clone(baseStruct());
+      (s['screens'] as List)[1]['kits'] = ['maps', 'payments']; // projects.home
+      return s;
+    }
+
+    test('stub headers carry the kits line; surfaces without kits do not', () {
+      final des = plantDesign('${tmp.path}/kd', struct: kitsStruct());
+      final app = '${tmp.path}/appK';
+      expect(scaffold(des, app, ['macos'], derivationPath, configPath), 0);
+      final base = '$app/lib/ui/views/stage_shell/projects_home';
+      expect(File('$base/projects_home_view.dart').readAsStringSync(),
+          contains('//   kits (builder wires): maps, payments'));
+      expect(File('$base/projects_home_viewmodel.dart').readAsStringSync(),
+          contains('//   kits (builder wires): maps, payments'));
+      final other = File('$app/lib/ui/views/stage_shell/settings_kits/'
+              'settings_kits_view.dart')
+          .readAsStringSync();
+      expect(other.contains('kits (builder wires)'), isFalse,
+          reason: 'no kits declared -> no kits line');
+    });
+
+    test('manifest kits section present only when a surface declares kits', () {
+      final des = plantDesign('${tmp.path}/kd2', struct: kitsStruct());
+      final app = '${tmp.path}/appK2';
+      scaffold(des, app, ['macos'], derivationPath, configPath);
+      final mf = jsonDecode(
+          File('$app/lib/ui/views/.shell-structure.json').readAsStringSync())
+          as Map<String, dynamic>;
+      expect(mf['kits'],
+          {'stage_shell_projects_home_view': ['maps', 'payments']});
+
+      final des2 = plantDesign('${tmp.path}/kd3'); // baseStruct: no kits
+      final app2 = '${tmp.path}/appK3';
+      scaffold(des2, app2, ['macos'], derivationPath, configPath);
+      final mf2 = jsonDecode(
+          File('$app2/lib/ui/views/.shell-structure.json').readAsStringSync())
+          as Map<String, dynamic>;
+      expect(mf2.containsKey('kits'), isFalse,
+          reason: 'no kits anywhere -> section omitted (no manifest drift)');
+    });
+
+    test('malformed kits in frozen structure -> exit 1', () {
+      final bad = kitsStruct();
+      (bad['screens'] as List)[1]['kits'] = 'maps';
+      var des = plantDesign('${tmp.path}/kd4', struct: bad);
+      expect(scaffold(des, '${tmp.path}/appK4', ['macos'], derivationPath, configPath),
+          1,
+          reason: 'kits as a bare string -> exit 1');
+
+      final bad2 = kitsStruct();
+      (bad2['screens'] as List)[1]['kits'] = ['maps', 7];
+      des = plantDesign('${tmp.path}/kd5', struct: bad2);
+      expect(scaffold(des, '${tmp.path}/appK5', ['macos'], derivationPath, configPath),
+          1,
+          reason: 'non-string kit entry -> exit 1');
+    });
+
+    test('--check catches kits drift', () {
+      final des = plantDesign('${tmp.path}/kd6', struct: kitsStruct());
+      final app = '${tmp.path}/appK6';
+      scaffold(des, app, ['macos'], derivationPath, configPath);
+      expect(scaffold(des, app, ['macos'], derivationPath, configPath, check: true),
+          0,
+          reason: '--check green when in sync');
+
+      final mfFile = File('$app/lib/ui/views/.shell-structure.json');
+      final mf = jsonDecode(mfFile.readAsStringSync()) as Map<String, dynamic>;
+      mf['kits'] = {'stage_shell_projects_home_view': ['nope']};
+      mfFile.writeAsStringSync(jsonEncode(mf));
+      expect(scaffold(des, app, ['macos'], derivationPath, configPath, check: true),
+          1,
+          reason: 'hand-edited kits section -> --check exit 1');
+    });
+  });
+
   group('self-test', () {
     test('runSelfTest passes', () {
       expect(runSelfTest(), 0);

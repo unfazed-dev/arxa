@@ -1,7 +1,9 @@
 // emit_structure — Dart port of tools/emit_structure/emit_structure.py (385 lines).
 //
 // Derives <design-root>/structure.json from the authored layer:
-//   - models/screens_model/registry.json (id/shell/comp/surface per screen)
+//   - models/screens_model/registry.json (id/shell/comp/surface per screen,
+//     plus an optional `kits` list of kit dir names, validated against
+//     config/kit-registry.json)
 //   - app.routes.js (shellRoots map)
 //   - ui/views/**/*_viewmodel.js (surfaceId + deps)
 //
@@ -11,6 +13,8 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
+
+import 'scaffold.dart' show findRepoRoot;
 
 const banner = 'appbox/structure@1';
 
@@ -135,10 +139,35 @@ Map<String, dynamic>? buildStructure(String designRoot) {
 
   // ---- assemble screens ----
   final screens = <Map<String, dynamic>>[];
+  Set<String>? kitDirs; // lazily loaded from config/kit-registry.json
   for (final e in registry) {
     final entry = e as Map<String, dynamic>;
     final sid = entry['id'] as String?;
     final surface = entry['surface'] as String?;
+
+    // ---- optional per-screen kits declaration ----
+    List<String>? kits;
+    if (entry.containsKey('kits')) {
+      final k = entry['kits'];
+      if (k is! List || k.any((i) => i is! String || i.isEmpty)) {
+        stderr.writeln("FAIL: screen '$sid' declares 'kits' but it is not a "
+            'list of non-empty kit names');
+        return null;
+      }
+      if (kitDirs == null) {
+        kitDirs = _loadKitDirs(designRoot);
+        if (kitDirs == null) return null;
+      }
+      for (final name in k.cast<String>()) {
+        if (!kitDirs.contains(name)) {
+          stderr.writeln("FAIL: screen '$sid' declares unknown kit '$name' — "
+              'not a kits[].dir in config/kit-registry.json');
+          return null;
+        }
+      }
+      kits = k.cast<String>();
+    }
+
     if (surface != null && surface.isNotEmpty) {
       final vm = viewmodels[sid];
       if (vm == null) {
@@ -146,7 +175,7 @@ Map<String, dynamic>? buildStructure(String designRoot) {
             "exports surfaceId '$sid'");
         return null;
       }
-      screens.add({
+      final screen = <String, dynamic>{
         'id': sid,
         'shell': entry['shell'],
         'comp': entry['comp'],
@@ -154,7 +183,9 @@ Map<String, dynamic>? buildStructure(String designRoot) {
         'surface': surface,
         'viewmodel': vm['path'],
         'deps': vm['deps'],
-      });
+      };
+      if (kits != null) screen['kits'] = kits;
+      screens.add(screen);
     } else {
       final group = entry['shell'] as String?;
       screens.add({
@@ -192,6 +223,28 @@ String? shellDir(String surface) {
   final idx = surface.indexOf('_shell_');
   if (idx < 0) return null;
   return '${surface.substring(0, idx)}_shell';
+}
+
+/// Load the valid kit dir names from config/kit-registry.json at the repo root
+/// (located by the shared config/appbox.config.json walk-up). Returns null on
+/// failure (error printed to stderr).
+Set<String>? _loadKitDirs(String designRoot) {
+  final path = '${findRepoRoot(designRoot)}/config/kit-registry.json';
+  final f = File(path);
+  if (!f.existsSync()) {
+    stderr.writeln("FAIL: a screen declares 'kits' but no kit registry exists "
+        'at $path');
+    return null;
+  }
+  try {
+    final decoded = jsonDecode(f.readAsStringSync()) as Map<String, dynamic>;
+    return {
+      for (final k in decoded['kits'] as List) (k as Map)['dir'] as String,
+    };
+  } catch (e) {
+    stderr.writeln('FAIL: $path does not parse as the kit registry — $e');
+    return null;
+  }
 }
 
 /// Serialize structure data as indented JSON + newline (matches Python json.dumps(indent=2)).

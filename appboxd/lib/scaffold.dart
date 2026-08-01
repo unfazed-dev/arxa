@@ -134,6 +134,10 @@ String _stubView(
   final depsLine = deps.isNotEmpty
       ? '//   deps (builder wires): ${deps.join(', ')}\n'
       : '';
+  final kits = (screen['kits'] as List?)?.cast<String>() ?? <String>[];
+  final kitsLine = kits.isNotEmpty
+      ? '//   kits (builder wires): ${kits.join(', ')}\n'
+      : '';
   final surface = screen['surface'] as String;
   final sid = screen['id'] as String;
   final shellDir = screen['shellDir'] as String;
@@ -144,6 +148,7 @@ String _stubView(
       '//   shell:         $shellDir\n'
       '//   targets:       [${targets.join(',')}] -> derived form factors [$fl]\n'
       '$depsLine'
+      '$kitsLine'
       '// The widget tree and the form-factor switch are the builder\'s job (plan 08).\n'
       "import 'package:flutter/material.dart';\n"
       "import 'package:stacked/stacked.dart';\n"
@@ -199,11 +204,16 @@ String _stubViewmodel(Map<String, dynamic> screen) {
   final depsLine = deps.isNotEmpty
       ? '//   deps (builder wires): ${deps.join(', ')}\n'
       : '';
+  final kits = (screen['kits'] as List?)?.cast<String>() ?? <String>[];
+  final kitsLine = kits.isNotEmpty
+      ? '//   kits (builder wires): ${kits.join(', ')}\n'
+      : '';
   final surface = screen['surface'] as String;
   return '// appbox-scaffolder: view model skeleton. STRUCTURE ONLY — builder fills this.\n'
       '//   surface:       $surface\n'
       '//   comp:          ${comp}ViewModel\n'
       '$depsLine'
+      '$kitsLine'
       '// TODO(appbox-builder): wire services from the deps above.\n'
       "import 'package:stacked/stacked.dart';\n"
       '\n'
@@ -367,6 +377,15 @@ Map<String, dynamic> buildManifest(
   if (l10n != null) {
     m['l10n'] = {'arbDir': 'lib/l10n', 'locales': l10nLocales(l10n)};
   }
+  // Per-surface kit declarations (kit dir names only), recorded for the
+  // builder. Omitted entirely when no surface declares kits, so existing
+  // apps' manifests don't drift.
+  final kitsBySurface = <String, List<String>>{
+    for (final s in frozen)
+      if ((s['kits'] as List?)?.isNotEmpty ?? false)
+        s['surface'] as String: (s['kits'] as List).cast<String>(),
+  };
+  if (kitsBySurface.isNotEmpty) m['kits'] = kitsBySurface;
   return m;
 }
 
@@ -424,6 +443,16 @@ bool _validateFrozen(List<Map<String, dynamic>> frozen) {
     if (sid.split('.').length != 2) {
       _fail("screen id '$sid' is not <shell>.<short> — cannot derive a directory");
       return false;
+    }
+    // Optional kits declaration: shape only (the emitter already validated the
+    // names against the kit registry; scaffold consumes frozen output).
+    if (s.containsKey('kits')) {
+      final k = s['kits'];
+      if (k is! List || k.any((i) => i is! String)) {
+        _fail("screen '$sid' carries a malformed 'kits' — must be a list of "
+            'kit name strings');
+        return false;
+      }
     }
   }
   return true;
@@ -622,6 +651,10 @@ int _check(
       if (!_jsonEqual(onDisk['l10n'], want['l10n'])) {
         problems.add('.shell-structure.json l10n drifted from the design\'s l10n/ '
             'catalogs — re-run scaffold');
+      }
+      if (!_jsonEqual(onDisk['kits'], want['kits'])) {
+        problems.add('.shell-structure.json kits drifted from structure.json '
+            '— re-run scaffold');
       }
     } catch (e) {
       problems.add('.shell-structure.json does not parse — $e');

@@ -132,4 +132,79 @@ void main() {
     expect(File('$c/structure.json').existsSync(), isFalse,
         reason: 'failed run leaves no structure.json');
   });
+
+  group('kits passthrough', () {
+    // A design dir nested under a fake repo root carrying config/kit-registry.json
+    // (+ the appbox.config.json marker findRepoRoot walks up for).
+    String plantRepo(String name, String registry) {
+      final repo = '${tmp.path}/$name';
+      Directory('$repo/config').createSync(recursive: true);
+      File('$repo/config/appbox.config.json').writeAsStringSync('{}');
+      File('$repo/config/kit-registry.json').writeAsStringSync(jsonEncode({
+        'kits': [
+          {'dir': 'maps'},
+          {'dir': 'payments'},
+        ],
+      }));
+      final a = '$repo/design';
+      plant(a, registry, routes, {
+        'ui/views/stage_shell/stage_shell_viewmodel.js': shellVm,
+        'ui/views/stage_shell/proj/home/home_viewmodel.js': homeVm,
+      });
+      return a;
+    }
+
+    Map<String, dynamic> screenOf(Map<String, dynamic> d, String id) =>
+        (d['screens'] as List).firstWhere((s) => (s as Map)['id'] == id)
+            as Map<String, dynamic>;
+
+    test('kits pass through; absent -> key omitted; excluded screens unchanged', () {
+      final a = plantRepo('k1', jsonEncode([
+        {'id': 'stage.shell', 'shell': 'stage', 'comp': 'StageShell', 'surface': 'stage_shell_view'},
+        {'id': 'proj.home', 'shell': 'proj', 'comp': 'ProjHome', 'surface': 'stage_shell_proj_home_view', 'kits': ['maps', 'payments']},
+        {'id': 'proj.splash', 'shell': 'proj', 'comp': 'ProjSplash', 'surface': null, 'kits': ['maps']},
+      ]));
+      expect(emitStructure(a), 0);
+
+      final d = jsonDecode(File('$a/structure.json').readAsStringSync())
+          as Map<String, dynamic>;
+      expect(screenOf(d, 'proj.home')['kits'], ['maps', 'payments'],
+          reason: 'declared kits pass through');
+      expect(screenOf(d, 'stage.shell').containsKey('kits'), isFalse,
+          reason: 'no kits declared -> key omitted (no empty arrays)');
+      final splash = screenOf(d, 'proj.splash');
+      expect(splash.containsKey('kits'), isFalse,
+          reason: 'excluded screen keeps its shape (no kits emitted)');
+      expect(splash['surface'], isNull);
+      expect(splash['viewmodel'], isNull);
+
+      expect(emitStructure(a, check: true), 0,
+          reason: '--check stays a pure regeneration-compare (green)');
+    });
+
+    test('unknown kit name -> hard fail naming the screen', () {
+      final a = plantRepo('k2', jsonEncode([
+        {'id': 'stage.shell', 'shell': 'stage', 'comp': 'StageShell', 'surface': 'stage_shell_view'},
+        {'id': 'proj.home', 'shell': 'proj', 'comp': 'ProjHome', 'surface': 'stage_shell_proj_home_view', 'kits': ['maps', 'crypto']},
+      ]));
+      expect(emitStructure(a), 1, reason: 'unknown kit name fails');
+      expect(File('$a/structure.json').existsSync(), isFalse);
+    });
+
+    test('non-list kits -> hard fail', () {
+      final a = plantRepo('k3', jsonEncode([
+        {'id': 'stage.shell', 'shell': 'stage', 'comp': 'StageShell', 'surface': 'stage_shell_view'},
+        {'id': 'proj.home', 'shell': 'proj', 'comp': 'ProjHome', 'surface': 'stage_shell_proj_home_view', 'kits': 'maps'},
+      ]));
+      expect(emitStructure(a), 1, reason: 'kits as a bare string fails');
+    });
+
+    test('wrong item type in kits -> hard fail', () {
+      final a = plantRepo('k4', jsonEncode([
+        {'id': 'stage.shell', 'shell': 'stage', 'comp': 'StageShell', 'surface': 'stage_shell_view'},
+        {'id': 'proj.home', 'shell': 'proj', 'comp': 'ProjHome', 'surface': 'stage_shell_proj_home_view', 'kits': ['maps', 7]},
+      ]));
+      expect(emitStructure(a), 1, reason: 'non-string kit entry fails');
+    });
+  });
 }
