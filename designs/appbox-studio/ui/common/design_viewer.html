@@ -12,7 +12,7 @@
      proto — the wired-app preview: ONE screen live at a REAL rung size
              inside device chrome (phone / tablet / desktop window), the
              rung picked from the mini bar's device icons, the active
-             screen picked from the Screens mini panel.
+             screen picked from the composer tray's filmstrip.
    The per-screen pin stays always-on where the shell passes a contextBase.
    The bottom-anchored mini panel (Screens / Controller panels)
    renders inside the viewer via ui/common/mini_panel.html. Canon markup:
@@ -147,7 +147,8 @@
   <button class="ico-btn dv-fs-close" data-action="viewer-fullscreen-exit"
           title="{{ t('miniPanel.fullscreenExit') }}">{{ icon('x', {size: 16}) }}</button>
 
-  {# MINI PANEL — bottom-anchored floating controller (Screens / Controller).
+  {# MINI PANEL — bottom-anchored floating controller (one panel: mode,
+     inspect, fullscreen, undo/redo + the bar's device/bg clusters).
      Rendered inside the viewer so it stays in sync on every swap. #}
   {{ mn.miniPanel(v) }}
 </div>

@@ -218,7 +218,7 @@ function evidenceWithLevel(lv, L, t = (k) => k) {
 // The evidence canvas shows the designed screens as read-only artboards
 // (flow tiles, static canvas — no pins, no drag). Tile heights come from the
 // viewports the design actually authored (seed truth).
-// B(sessionData).viewer = { bg, inspect, panel }.
+// B(sessionData).viewer = { bg, inspect }.
 export const VIEWPORT_WIDTHS = { mobile: 390, tablet: 744, desktop: 1280 };
 export const VIEWPORT_HEIGHTS = { mobile: 844, tablet: 1133, desktop: 800 };
 export const VIEWER_BGS = ['canvas', 'warm', 'slate'];
@@ -257,18 +257,16 @@ function viewerFor(sessionData, evidence) {
     base,
     // Every tile iframes the stub renderer — see the comment above viewerFor.
     stubBase: '/build/screens/',
-    // The viewer mounts its controls in the mini panel. The Screens panel is
-    // a design-canvas concept (context pins); build leaves it empty and opens
-    // on the Controller. No history stacks here — the pair stays disabled
+    // The viewer mounts its controls in the mini panel — a single controller
+    // panel (the screens filmstrip is a design-composer concept; the evidence
+    // canvas is static). Bar-right cluster: bg swatches only, no devices on a
+    // static canvas. No history stacks here — the pair stays disabled
     // (can:false renders without the hx-post).
     miniPanel: {
-      activePanel: ['screens', 'controller'].includes(v.panel) ? v.panel : 'controller',
-      // Bar-right cluster: bg swatches only — no devices on a static canvas.
       bar: {
         devices: null,
         bgs: VIEWER_BGS.map((value) => ({ value, active: value === bg, href: withParams({ bg: value }) })),
       },
-      screens: [],
       controller: {
         inspectOn: inspect,
         inspectHref: withParams({ inspect: inspect ? null : '1' }),
@@ -301,13 +299,12 @@ export const screenStub = (surface, vp, prefs = {}, locale = 'en', opts = {}) =>
 
 // Viewer toolbar act: bg/inspect are AUTHORITATIVE (every control href echoes
 // both, defaults elided — absent means "back to default", never "keep";
-// merging would strand inspect:'1' on forever). panel stays sticky: the
-// controller chips don't repeat it. Same contract as the design facade's.
+// merging would strand inspect:'1' on forever). Same contract as the design
+// facade's.
 export const setViewer = (sessionData, query, prefs = {}, t = (k) => k, locale = 'en') => {
   const next = {};
   for (const [k, v] of Object.entries(query)) if (v != null) next[k] = v;
-  const panel = next.panel ?? B(sessionData).viewer?.panel;
-  B(sessionData).viewer = panel ? { ...next, panel } : next;
+  B(sessionData).viewer = next;
   return loopContext(sessionData, 'evidence/surfaces', prefs, t, locale);
 };
 

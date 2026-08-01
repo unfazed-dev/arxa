@@ -5,12 +5,14 @@
 {# The composer card — ONE reusable composer for the composer panel of
    every shell (intake / design / build), decomposed from the reference: a
    borderless textarea over an action bar (+ tools, the LLM model menu, the
-   round send). Pinned context (the screens filmstrip) lives in the TRAY at
-   the top of the card: it auto-expands when something is pinned, and its
-   trigger row collapses it again — the expand/collapse height animation
-   rides #panel-composer's view transition, so it is smooth and reversible.
-   Menus are zero-JS <details> and open UPWARD — the composer sits at the
-   stage floor, so a downward menu would spill past the viewport.
+   round send). The screens FILMSTRIP lives in the TRAY at the top of the
+   card (design only): every screen as a live thumb, horizontally scrollable
+   — flow mode toggles a screen's chat context, proto mode picks the wired-app
+   preview's active screen. The tray auto-expands when something is pinned,
+   and its trigger row collapses it again — the expand/collapse height
+   animation rides #panel-composer's view transition, so it is smooth and
+   reversible. Menus are zero-JS <details> and open UPWARD — the composer
+   sits at the stage floor, so a downward menu would spill past the viewport.
    Macro-only file, like composer_panel.html.
 
    spec (travels in c):
@@ -18,18 +20,23 @@
      placeholder    — textarea placeholder
      suggestions    — [{value?, label?} | string], inside the + menu
      modelMenu      — agent_menus.modelMenuFor(...): { label, options }
-     strip          — [{id, label, tone, src, removeHref}] pinned screens
-                      (design only); the tray renders only when non-empty
+     filmstrip      — [{id, label, tone, inContext, dim, src,
+                        contextHref | protoHref, active?}] EVERY screen as a
+                      thumb (design only — design_facade.filmstripFor);
+                      protoHref thumbs swap #design-viewer (screen pick),
+                      contextHref thumbs swap #panels (context toggle)
+     trayContext    — { first, extra } | null: the pinned subset's head
+                      summary ("first +N"); null when nothing is pinned
      elements       — [{screenId, name, kind, tone, removeHref}] pinned
-                      elements (design only); independent of strip — either
-                      one opens the tray on its own
+                      elements (design only); independent of the filmstrip —
+                      either one opens the tray on its own
      undoRedo       — { chat: {canUndo, canRedo} } drives the composer
                       undo/redo pair (chat stack)
-     tray           — { open, toggleHref } the strip tray's collapse state #}
+     tray           — { open, toggleHref } the tray's collapse state #}
 {% macro field(c) %}
 <form class="composer" id="composer" method="post" action="{{ c.composerAction }}"
       hx-post="{{ c.composerAction }}" hx-target="#panels" hx-swap="outerHTML">
-  {% set hasStrip = c.strip and c.strip.length %}
+  {% set hasStrip = c.filmstrip and c.filmstrip.length %}
   {% set hasEls = c.elements and c.elements.length %}
   {% if hasStrip or hasEls %}
   {# The tray: zero-JS AnimatedContainer. The hidden checkbox flips the
@@ -38,24 +45,27 @@
      checkbox's CHANGE event and the route answers 204 — htmx swaps
      nothing, so nothing replaces the element mid-animation; the route
      just mirrors the flip server-side (state=toggle) so the collapse
-     survives the next render. Screen chips and element chips are fully
+     survives the next render. The filmstrip and the element chips are fully
      independent — either one opens the tray on its own. #}
   <input class="cm-tray-cb" type="checkbox" id="cm-tray-cb" {{ 'checked' if c.tray.open }}
          hx-get="{{ c.tray.toggleHref }}" hx-trigger="change" hx-target="#panels" hx-swap="outerHTML" hx-push-url="false"
          aria-label="{{ t('composer.collapseTray') if c.tray.open else t('composer.showTray') }}">
   <label class="cm-tray-head" for="cm-tray-cb" title="{{ t('composer.collapseTray') if c.tray.open else t('composer.showTray') }}">
-    <span class="cm-tray-title">{{ t('composer.context') }} · {% if hasStrip %}{{ c.strip[0].id }}{{ ' +' + (c.strip.length - 1) if c.strip.length > 1 }}{% else %}{{ c.elements[0].name }}{{ ' +' + (c.elements.length - 1) if c.elements.length > 1 }}{% endif %}</span>
+    <span class="cm-tray-title">{{ t('composer.context') }}{% if c.trayContext %} · {{ c.trayContext.first }}{{ ' +' + c.trayContext.extra if c.trayContext.extra }}{% elif hasEls %} · {{ c.elements[0].name }}{{ ' +' + (c.elements.length - 1) if c.elements.length > 1 }}{% endif %}</span>
     {{ icon('chevron-down', {size: 14, cls: 'composer-chev'}) }}
   </label>
   <div class="cm-tray">
     <div class="cm-tray-clip">
       {% if hasStrip %}
       <div class="cs-strip" aria-label="{{ t('composer.screensInContext') }}">
-        {% for s in c.strip %}
-        <span class="dv-thumb cs-thumb ctx-{{ s.tone }}">
-          <span class="dv-thumb-clip"><iframe src="{{ s.src }}" scrolling="no" tabindex="-1" title="{{ s.label }}"></iframe></span>
-          <span class="dv-thumb-label"><code>{{ s.id }}</code>{% if s.removeHref %}<a class="ctx-x" href="{{ s.removeHref }}" hx-get="{{ s.removeHref }}" hx-target="#panels" hx-swap="outerHTML" hx-push-url="false" aria-label="{{ t('chat.removeChip', {label: s.label}) }}">{{ icon('x', {size: 12}) }}</a>{% endif %}</span>
-        </span>
+        {% for s in c.filmstrip %}
+        <a class="dv-thumb cs-thumb {{ 'in-ctx ctx-' + s.tone if s.inContext }} {{ 'is-dim' if s.dim }} {{ 'on' if s.active }}"
+           href="{{ s.protoHref or s.contextHref }}" hx-get="{{ s.protoHref or s.contextHref }}"
+           hx-target="{{ '#design-viewer' if s.protoHref else '#panels' }}" hx-swap="outerHTML" hx-push-url="false"
+           title="{{ s.label or s.id }}">
+          <span class="dv-thumb-clip"><iframe src="{{ s.src }}" scrolling="no" tabindex="-1" title=""></iframe></span>
+          <span class="dv-thumb-label"><code>{{ s.id }}</code></span>
+        </a>
         {% endfor %}
       </div>
       {% endif %}

@@ -85,17 +85,28 @@ const unpin = (d, id, L) => {
   d.context = contextIds(d, L).filter((x) => x !== id);
 };
 
-// The context filmstrip over the composer: one live thumb per pinned screen.
-// base scopes the remove route to the surface being rendered (/design/chat or
-// /design/freeze) so the × swaps THAT surface's stage, never another's.
-const stripFor = (d, base, L) =>
-  contextIds(d, L).map((id) => ({
-    id,
-    label: repo.screen(id, L).label,
-    tone: toneFor(id, L),
-    src: `/build/screens/${id}?vp=mobile&still=1`,
-    removeHref: `${base}/context/${id}?state=off`,
+// The composer tray's filmstrip: EVERY screen as a live thumb, horizontally
+// scrollable. Flow: a thumb toggles that screen's chat-context chip (base
+// scopes the route to the surface being rendered — /design/chat or
+// /design/freeze — so the toggle swaps THAT surface's stage). Proto (the
+// design canvas only): a thumb picks the wired-app preview's active screen,
+// swapping just #design-viewer; the viewer hands those hrefs over as
+// protoPicks (the tray lives outside #design-viewer, in #panels).
+const filmstripFor = (d, base, L, viewer, noProto) => {
+  const ids = contextIds(d, L);
+  const picks = !noProto && viewer.protoPicks;
+  return repo.screens(L).map((s) => ({
+    id: s.id,
+    label: repo.screen(s.id, L).label,
+    tone: toneFor(s.id, L),
+    inContext: ids.includes(s.id),
+    dim: ids.length > 0 && !ids.includes(s.id),
+    src: `${STUB_BASE}${s.id}?vp=mobile&embed=1&still=1`,
+    ...(picks
+      ? { protoHref: picks[s.id], active: s.id === viewer.proto.active }
+      : { contextHref: `${base}/context/${s.id}?state=toggle` }),
   }));
+};
 
 const ctxLabel = (d, L, t) => contextIds(d, L).map((id) => repo.screen(id, L).label).join(' + ') || t('design.ctxFallback');
 
@@ -149,10 +160,10 @@ const applyEntry = (d, entry, dir) => {
 // 'flow' — every screen as a draggable tile grouped by shell, rendered at the
 // CURRENT rung (vp param, default mobile); 'proto' — the wired-app preview,
 // one screen live at a real rung size inside device chrome (screen/vp params;
-// one mobile chrome, no os dimension). The mini panel (screens/controller) +
-// undo/redo + element chips are always produced; in proto mode the Screens
-// panel picks the active screen instead of toggling chat context. Device
-// rung icons + bg swatches live in the panel bar itself (miniPanel.bar).
+// one mobile chrome, no os dimension). The mini panel is a single controller
+// panel (mode/inspect/fullscreen/undo-redo) + the bar's device rung icons and
+// bg swatches; the screens filmstrip lives in the composer tray, where proto
+// mode turns its thumbs into the active-screen picker (protoPicks).
 const RUNG_VP = { 390: 'mobile', 744: 'tablet', 1280: 'desktop' };
 const VP_HEIGHTS = { mobile: 844, tablet: 1133, desktop: 800 };
 
@@ -194,7 +205,6 @@ function viewerFor(d, L, t) {
   });
 
   const bg = ['canvas', 'warm', 'slate'].includes(v.bg) ? v.bg : 'canvas';
-  const panel = ['screens', 'controller'].includes(v.panel) ? v.panel : 'screens';
   const inspect = v.inspect === '1';
   const mode = v.mode === 'proto' ? 'proto' : 'flow';
   const active = screens.some((s) => s.id === v.screen) ? v.screen : screens[0]?.id;
@@ -230,7 +240,6 @@ function viewerFor(d, L, t) {
   } : null;
 
   const miniPanel = {
-    activePanel: panel,
     // The bar-right cluster (always mounted): device rung icons in BOTH
     // modes (in flow they re-render the tiles at that rung) + bg swatches
     // in every mode, a divider between the groups.
@@ -238,14 +247,6 @@ function viewerFor(d, L, t) {
       devices: DEVICES.map((d) => ({ ...d, active: d.key === vp, href: withParams({ vp: d.key === 'mobile' ? null : d.key }) })),
       bgs: ['canvas', 'warm', 'slate'].map((value) => ({ value, active: value === bg, href: withParams({ bg: value }) })),
     },
-    screens: screens.map((s) => ({
-      id: s.id, label: s.label, tone: s.tone, inContext: s.inContext, dim: s.dim,
-      src: `${STUB_BASE}${s.id}?vp=mobile&embed=1&still=1`,
-      // flow: a thumb toggles chat context; proto: it picks the active screen.
-      ...(mode === 'proto'
-        ? { protoHref: withParams({ screen: s.id }), active: s.id === active }
-        : { contextHref: `${contextBase}${s.id}?state=toggle` }),
-    })),
     controller: {
       inspectOn: inspect,
       inspectHref: withParams({ inspect: inspect ? null : '1' }),
@@ -259,6 +260,9 @@ function viewerFor(d, L, t) {
     inspect,
     screens, bg,
     mode, proto, vp,
+    // Proto-mode screen picks for the composer tray's filmstrip (the tray
+    // lives outside #design-viewer, so the viewer hands the hrefs over).
+    protoPicks: mode === 'proto' ? Object.fromEntries(screens.map((s) => [s.id, withParams({ screen: s.id })])) : null,
     strip: true,
     base, stubBase: STUB_BASE, contextBase,
     miniPanel,
@@ -272,17 +276,15 @@ function viewerFor(d, L, t) {
 
 // Viewer toolbar act: the state keys (bg/inspect/mode/screen/vp) are
 // AUTHORITATIVE — every control href echoes the whole viewer state
-// (withParams / the panel-tab q echo), with defaults elided from the URL, so
-// an absent key means "back to default", never "keep". Merging would strand
-// every non-default value (a canvas chip sends no mode=, so a merged
-// mode:'proto' could never flip back). panel is the one sticky key: the
-// controller chips don't repeat it, so it survives a mode/bg/vp toggle.
+// (withParams), with defaults elided from the URL, so an absent key means
+// "back to default", never "keep". Merging would strand every non-default
+// value (a canvas chip sends no mode=, so a merged mode:'proto' could never
+// flip back).
 export const setViewer = (sessionData, query, prefs = {}, t = (k) => k, locale = 'en') => {
   const d = design(sessionData);
   const next = {};
   for (const [k, v] of Object.entries(query)) if (v != null) next[k] = v;
-  const panel = next.panel ?? d.viewer?.panel;
-  d.viewer = panel ? { ...next, panel } : next;
+  d.viewer = next;
   return stageContext(sessionData, {}, prefs, t, locale);
 };
 
@@ -387,7 +389,11 @@ export const stageContext = (sessionData = {}, opts = {}, prefs = {}, t = (k) =>
     composerAction: '/design/chat/messages',
     modelMenu: agent.modelMenuFor(sessionData, base, t),
     tray: { open: d.trayOpen !== false, toggleHref: `${base}/tray?state=toggle` },
-    strip: stripFor(d, base, L),
+    // The tray's filmstrip: every screen as a thumb (see filmstripFor). The
+    // tray head summarizes the PINNED subset ("first +N"); null when the
+    // context is empty — the filmstrip still renders, nothing dimmed.
+    filmstrip: filmstripFor(d, base, L, viewer, opts.noProto),
+    trayContext: ids.length ? { first: ids[0], extra: ids.length - 1 } : null,
     viewer,
     // The shared composer reads these at stage level (composer.html: element
     // chips in the tray, the chat undo/redo pair) — the viewer keeps its own
@@ -594,7 +600,7 @@ export const revertCheckpoint = (sessionData, screenId, cpId, prefs = {}, t = (k
 
 export const freezeContext = (sessionData = {}, prefs = {}, t = (k) => k, locale = 'en', fileArg) => {
   const L = locale;
-  const stage = stageContext(sessionData, { line: 'freeze', base: '/design/freeze', fileBase: '/design/freeze', file: fileArg }, prefs, t, L);
+  const stage = stageContext(sessionData, { line: 'freeze', base: '/design/freeze', fileBase: '/design/freeze', file: fileArg, noProto: true }, prefs, t, L);
   const lv = stage.jargonLevel;
   const d = design(sessionData);
   const ap = repo.approval(L);
@@ -606,7 +612,7 @@ export const freezeContext = (sessionData = {}, prefs = {}, t = (k) => k, locale
     // Element chips and the chat undo/redo pair stay off the freeze composer:
     // their hrefs live under /design/chat + /design/undo and answer with the
     // prototype stage markup — fine on /design surfaces, a wrong-surface swap
-    // here. Re-enable once those hrefs are base-scoped like the strip's.
+    // here. Re-enable once those hrefs are base-scoped like the filmstrip's.
     elements: null,
     undoRedo: null,
     stageEyebrow: t('design.freeze.eyebrow'),

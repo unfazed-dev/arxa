@@ -62,25 +62,28 @@
 #app[data-theme="dark"] .ctx-gate   { --ctx: #D0A215; --ctx-soft: rgba(208, 162, 21, .14); }
 #app[data-theme="dark"] .ctx-violet { --ctx: #9A82F0; --ctx-soft: rgba(154, 130, 240, .18); }
 
-/* ---------- context filmstrip: pinned screens as thumbs, over the composer ----------
+/* ---------- screens filmstrip: every screen as a thumb, over the composer ----------
    Reuses the viewer's .dv-thumb chrome (app.css) at its compact scale; the
-   strip layout itself lives here so any chat can render it. Each thumb carries
-   its screen's ctx tone; the × removes the pin. */
+   strip layout itself lives here so any chat can render it. In-context thumbs
+   carry their screen's ctx tone; a thumb click toggles the pin (flow) or
+   picks the proto screen — no × control. */
 .cs-strip {
   display: flex; gap: .6rem; align-items: flex-start; flex: none;
   overflow-x: auto; scrollbar-width: none;
-  padding: .2rem .2rem .3rem;
+  /* UA-rendered bars are killed STRUCTURALLY (some UAs ignore
+     scrollbar-width): the padding pushes the bar below the content edge and
+     the negative margin pulls it outside .cm-tray-clip's box, whose
+     overflow:hidden clips it. Works in every UA; horizontal scroll native. */
+  padding: .2rem .2rem 1.2rem; margin-bottom: -1.2rem;
 }
 .cs-strip::-webkit-scrollbar { display: none; }
-.cs-strip .dv-thumb { width: 5.6rem; }
+.cs-strip .dv-thumb { width: 5.6rem; flex: none; text-decoration: none; }
 .cs-strip .dv-thumb-clip {
   height: 7.2rem;
   border-color: var(--ctx, var(--border));
   box-shadow: 0 0 0 1.5px var(--ctx, transparent);
 }
 .cs-strip .dv-thumb-clip iframe { transform: scale(.221); }
-.cs-thumb .ctx-x { color: var(--ctx, var(--accent)); flex: none; text-decoration: none; }
-.cs-thumb .ctx-x:hover { background: var(--ctx, var(--accent)); color: var(--on-accent, #FFFCF0); }
 
 /* below expanded the composer is one of the panel bar's three panels:
    full-width when it's the visible one — no resize handle */
@@ -171,7 +174,6 @@ a.composer-opt:hover { background: var(--bg-2); }
 .cm-tray { display: grid; grid-template-rows: 0fr; }
 .cm-tray-cb:checked ~ .cm-tray { grid-template-rows: 1fr; }
 .cm-tray-clip { overflow: hidden; min-height: 0; }
-.cm-tray-clip .cs-strip { border-bottom: 1px solid var(--border); margin-bottom: .15rem; }
 @media (prefers-reduced-motion: no-preference) {
   .cm-tray { transition: grid-template-rows var(--motion-med) var(--motion-ease); }
 }

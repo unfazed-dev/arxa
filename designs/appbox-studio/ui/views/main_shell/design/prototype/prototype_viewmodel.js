@@ -36,7 +36,7 @@ export const panelSize = (c, h) =>
 // The shared design viewer: controller acts swap just the viewer block.
 export const viewer = (c, h) =>
   h.render(c, `${VIEW}#viewerSwap`, facade.setViewer(h.session(c).data, {
-    bg: c.req.query('bg'), inspect: c.req.query('inspect'), panel: c.req.query('panel'),
+    bg: c.req.query('bg'), inspect: c.req.query('inspect'),
     mode: c.req.query('mode'), screen: c.req.query('screen'), vp: c.req.query('vp'),
   }, h.prefs(c), h.t(c), h.locale(c)));
 

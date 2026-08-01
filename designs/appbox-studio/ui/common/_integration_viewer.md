@@ -16,21 +16,23 @@ registry, switched by server-side viewer state and swapped through
   `assets/css/viewer.css`; ONE mobile chrome, no os dimension). The rung
   switches from the device icon buttons in the mini panel's bar-right
   cluster (present in BOTH modes — in flow they re-render the tiles at that
-  rung); the active screen is picked from the Screens mini panel (a
-  thumb is a picker in proto, a chat-context toggle in flow).
+  rung); the active screen is picked from the composer tray's filmstrip
+  (a thumb is a picker in proto — via `protoPicks` — a chat-context
+  toggle in flow).
 
 Files:
 
 - `ui/common/design_viewer.html` — `designViewer(v)` macro (+ `protoStage`,
   `deviceChrome`).
-- `ui/common/mini_panel.html` — the floating Screens / Controller panel; the
-  Controller carries the lens switch (`flow` / `prototype`) and the viewer
+- `ui/common/mini_panel.html` — the floating mini panel: ONE panel, the
+  Controller, carrying the lens switch (`flow` / `prototype`) and the viewer
   fullscreen button (`data-action="viewer-fullscreen"`, implemented
   client-side by `runtime/vendor/canvas.js` — requestFullscreen on the
   enclosing `.design-viewer`; a `data-action="viewer-fullscreen-exit"` close
-  button in `design_viewer.html` shows only under `:fullscreen`), the
+  button in `design_viewer.html` shows only under `:fullscreen`); the
   bar-right cluster carries the device rung icons (both modes) — divider —
-  bg swatches (every mode).
+  bg swatches (every mode). The screens filmstrip lives in the composer
+  tray (`ui/common/composer.html`), not here.
 - `assets/css/viewer.css` — flow canvas, mini panel, `.dv-proto*` + `.device`.
 
 ## The `v` contract (produced by the shell facade's `viewerFor`)
@@ -54,22 +56,24 @@ Files:
                // build/loop/portalo/), never a registry surface or a
                // live studio route.
   contextBase: '/design/chat/context/',// present where tiles pin as context
-  miniPanel: { activePanel,
-               bar: { devices: [{ key, icon, active, href }] | null,
+  miniPanel: { bar: { devices: [{ key, icon, active, href }] | null,
                       bgs: [{ value, active, href }] },
-               screens, controller: { modes, inspect… } },
+               controller: { modes, inspect… } },
+  protoPicks: { <screenId>: '/design/viewer?...&screen=<id>' } | null,
+               // proto mode only — the composer tray's filmstrip turns its
+               // thumbs into the active-screen picker with these hrefs
+               // (the tray lives outside #design-viewer, in #panels).
 }
 ```
 
-- Every viewer action is `GET {{base}}?bg=&inspect=&panel=&mode=&screen=&vp=`
+- Every viewer action is `GET {{base}}?bg=&inspect=&mode=&screen=&vp=`
   with `hx-target="#design-viewer" hx-swap="outerHTML"` — the route records
   the choice and re-renders the viewer fragment. Every control href echoes
   the WHOLE viewer state with defaults elided (`flow`, `mobile`), so
   `setViewer` treats the state keys as authoritative — an absent key means
   "back to default", never "keep" (merging would strand every non-default:
   the canvas chip sends no `mode=`, so a merged `mode:'proto'` could never
-  flip back). `panel` is the one sticky key (controller chips don't repeat
-  it).
+  flip back).
 - A `viewports` entry is a key (`'mobile'`) or an authored object
   `{ vp, width, height?, rung?, note?, shot? }`. Real rung sizes are
   390×844 / 744×1133 / 1280×800; devices render at true size — the proto
@@ -82,11 +86,11 @@ Files:
 
 1. Facade: a `viewerFor` producing the contract above (see
    `services/facades/design_facade.js`), plus a `setViewer` that replaces the
-   state keys in namespaced session state (`sessionData.<shell>.viewer`),
-   keeping only `panel` sticky (see the authoritative-keys rule above).
+   state keys in namespaced session state (`sessionData.<shell>.viewer`) —
+   all keys authoritative, none sticky (see the rule above).
 2. Viewmodel: whitelist the query params into `setViewer` — see
-   `design/prototype/prototype_viewmodel.js` (`bg/inspect/panel/mode/screen/
-   vp`). Forgetting a param silently drops that control (the viewer
+   `design/prototype/prototype_viewmodel.js` (`bg/inspect/mode/screen/vp`).
+   Forgetting a param silently drops that control (the viewer
    renders, the toggle does nothing).
 3. View: a `viewerSwap(c)` fragment macro rendering `dv.designViewer(c.viewer)`;
    the canvas block calls the same macro on full renders.

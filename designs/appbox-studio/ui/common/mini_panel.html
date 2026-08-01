@@ -2,62 +2,33 @@
      generator: appbox  licence: free  project: 662368770980
      Built with appbox (free tier) — https://appbox.dev
 -->
-{# The floating mini panel (replaces dv-toolbar + filmstrip): a
-   bottom-anchored floating bar with icon-tab panels. Same multi-view idiom as
-   panel_views.html: the active panel is server state, a tab click is a GET
-   that swaps #design-viewer. Macro-only file; importing it from a fragment
-   render never emits stray markup.
+{# The floating mini panel: a bottom-anchored floating bar with ONE panel —
+   the controller (mode toggle, inspect, fullscreen, undo/redo). The screens
+   filmstrip moved to the composer tray (ui/common/composer.html): context
+   pinning and proto screen-picking both live there now.
+   Macro-only file; importing it from a fragment render never emits stray
+   markup.
 
    Usage:
      {% import "ui/common/mini_panel.html" as mn %}
      {{ mn.miniPanel(v) }}
 
    v.miniPanel shape (canvas-redesign-contract.md §1/§3):
-     activePanel: 'screens' | 'controller' (default 'screens')
      bar: { devices: [{ key, icon, active, href }] | null,   // rung icons
             bgs: [{ value, active, href }] }                 // swatch buttons
-     screens: [{ id, label, tone, inContext, dim, src, contextHref }]
      controller: {
+       modes: [{ key, active, href }],                       // flow/proto lens
        inspectOn: bool,
        inspectHref: '/design/viewer?...&inspect=1',          // toggles the inspect param
        undo:  { can: bool, href: '/design/undo/canvas' },
        redo:  { can: bool, href: '/design/redo/canvas' },
      }
 
-   The panel-switch GETs echo the full viewer state (bg, inspect) so
-   switching panels never loses it. The active panel is carried by the
-   `panel` query param — zero custom JS. #}
+   The control GETs echo the full viewer state (bg, inspect, mode, vp) so a
+   toggle never loses it — zero custom JS. #}
 
-{# Screens — flow mode: the filmstrip as context picker (a thumb toggles the
-   screen's chat-context chip). Proto mode: the filmstrip as screen picker —
-   a thumb makes that screen the wired-app preview's active screen, swapping
-   only the viewer. #}
-{% macro screensPanel(v, pnl) %}
-<div class="mini-panel-body" id="mini-panel-screens">
-  <div class="mini-panel-strip">
-    {% for s in pnl.screens %}
-    {% if s.protoHref %}
-    <a class="dv-thumb {{ 'on' if s.active }}"
-       href="{{ s.protoHref }}" hx-get="{{ s.protoHref }}" hx-target="#design-viewer" hx-swap="outerHTML"
-       title="{{ s.label or s.id }}">
-      <span class="dv-thumb-clip"><iframe src="{{ s.src }}" scrolling="no" tabindex="-1" title=""></iframe></span>
-      <span class="dv-thumb-label"><code>{{ s.id }}</code></span>
-    </a>
-    {% else %}
-    <a class="dv-thumb {{ 'in-ctx ctx-' + s.tone if s.inContext }} {{ 'is-dim' if s.dim }}"
-       href="{{ s.contextHref }}" hx-get="{{ s.contextHref }}" hx-target="#panels" hx-swap="outerHTML"
-       title="{{ s.label or s.id }}">
-      <span class="dv-thumb-clip"><iframe src="{{ s.src }}" scrolling="no" tabindex="-1" title=""></iframe></span>
-      <span class="dv-thumb-label"><code>{{ s.id }}</code></span>
-    </a>
-    {% endif %}
-    {% endfor %}
-  </div>
-</div>
-{% endmacro %}
-
-{# Controller — mode toggle, inspect, viewer fullscreen, canvas undo/redo.
-   Undo/redo swap #panels; the other controls swap #design-viewer.
+{# The single panel: mode toggle, inspect, viewer fullscreen, canvas
+   undo/redo. Undo/redo swap #panels; the other controls swap #design-viewer.
    Fullscreen is client-side (canvas.js) via a data-action, so it carries no
    route. (Device rungs + bg swatches live in the bar itself — see
    miniPanel().) #}
@@ -88,31 +59,13 @@
 </div>
 {% endmacro %}
 
-{# The bar itself: two icon tabs + the active panel. The `q` query echoes the
-   current viewer state so a panel switch is state-preserving. Bar-right
-   cluster (the green-rect zone): device rung icon buttons — divider — bg
-   swatch buttons (every mode). #}
+{# The bar itself: the bar-right cluster (the green-rect zone) — device rung
+   icon buttons, divider, bg swatch buttons (every mode) — over the single
+   controller panel. #}
 {% macro miniPanel(v) %}
 {% set pnl = v.miniPanel %}
-{% set panel = pnl.activePanel or 'screens' %}
-{% set q = 'bg=' + (v.bg or 'canvas')
-        + ('&inspect=1' if v.inspect else '')
-        + ('&mode=proto' if v.mode == 'proto' else '')
-        + ('&screen=' + v.proto.active if v.proto else '')
-        + ('&vp=' + v.vp if v.vp and v.vp != 'mobile' else '') %}
 <nav class="mini-panel" aria-label="{{ t('miniPanel.aria') }}">
   <div class="mini-panel-bar">
-    <button class="mini-panel-tab {{ 'is-active' if panel == 'screens' }}"
-            data-panel="screens"
-            hx-get="{{ v.base }}?{{ q }}&panel=screens" hx-target="#design-viewer" hx-swap="outerHTML"
-            aria-pressed="{{ 'true' if panel == 'screens' else 'false' }}"
-            title="{{ t('miniPanel.tab.screens') }}">{{ icon('layout-grid', {size: 18}) }}</button>
-    <button class="mini-panel-tab {{ 'is-active' if panel == 'controller' }}"
-            data-panel="controller"
-            hx-get="{{ v.base }}?{{ q }}&panel=controller" hx-target="#design-viewer" hx-swap="outerHTML"
-            aria-pressed="{{ 'true' if panel == 'controller' else 'false' }}"
-            title="{{ t('miniPanel.tab.controller') }}">{{ icon('sliders-horizontal', {size: 18}) }}</button>
-
     <span class="mini-panel-bar-right">
       {% if pnl.bar.devices %}
       <span class="mini-panel-group" role="group" aria-label="{{ t('viewer.viewportGroup') }}">
@@ -132,11 +85,8 @@
     </span>
   </div>
 
-  {# Only the active panel renders — the server picks it from the query param. #}
   <div class="mini-panel-panels">
-    {% if panel == 'screens' %}{{ screensPanel(v, pnl) }}
-    {% elif panel == 'controller' %}{{ controllerPanel(v, pnl) }}
-    {% endif %}
+    {{ controllerPanel(v, pnl) }}
   </div>
 </nav>
 {% endmacro %}

@@ -21,25 +21,33 @@ directory touches shared files.
   the context tray on top, a borderless textarea, an action bar below
   (+ suggestions, LLM model menu, send). Model picks hx-get
   `{base}/model/:id` and mutate `sessionData.agent.model` via
-  services/facades/agent_menus.js. The tray holds the pinned-screens
-  filmstrip: it auto-expands on pin (`d.trayOpen = true` in `pin()`), its
-  head row is a checkbox whose `change` hx-gets `{base}/tray?state=toggle`
-  (answered 204 — the checkbox flips and animates locally; the route only
-  mirrors it), and the height animation is `grid-template-rows: 0fr → 1fr`
-  with a reduced-motion-gated transition — visible both ways.
+  services/facades/agent_menus.js. The tray holds the screens filmstrip
+  (`filmstripFor` — EVERY screen as a live thumb, horizontally scrollable,
+  no visible scrollbar in any UA): in flow mode a thumb toggles that
+  screen's chat context (`{base}/context/:id?state=toggle`, swaps `#panels`),
+  in proto mode a thumb picks the wired-app preview's active screen
+  (`viewer.protoPicks`, swaps `#design-viewer`; freeze passes `noProto` so
+  its thumbs stay context toggles). The tray auto-expands on pin
+  (`d.trayOpen = true` in `pin()`), its head row is a checkbox whose
+  `change` hx-gets `{base}/tray?state=toggle` (answered 204 — the checkbox
+  flips and animates locally; the route only mirrors it), and the height
+  animation is `grid-template-rows: 0fr → 1fr` with a reduced-motion-gated
+  transition — visible both ways.
 - **Activity panel**: `pv.frame` (left side). The design registry is
   screens / artifacts / files; view hrefs (`/design/panel/:view`) swap
   `#panel-left-body` — the id `panel_views.frame` owns. The files view's
   rows open in the main panel (`/design/file?path=`).
-- **Main panel**: `#panel-main`. The artboards (flow tiles — the only
-  viewer mode; the prototype mode's device-chrome preview is retired) fill
-  it by default; a file row replaces them with the file in its server-picked
-  render mode until `?file=none`. Compact/medium rungs show one content
-  panel at a time under the panel bar (`?panel=activity|main|composer`,
-  `mp.panelBar`).
+- **Main panel**: `#panel-main`. The artboards (the design viewer, flow or
+  proto lens) fill it by default; a file row replaces them with the file in
+  its server-picked render mode until `?file=none`. Compact/medium rungs
+  show one content panel at a time under the panel bar
+  (`?panel=activity|main|composer`, `mp.panelBar`).
 - **Viewer**: `ui/common/design_viewer.html` `dv.designViewer(c.viewer)` —
-  flow tiles only. Controller acts (`/design/viewer?bg=/inspect=/panel=`)
-  swap `#design-viewer`. `v.contextBase` enables the tile pins.
+  two lenses: flow tiles (draggable) and the proto wired-app preview.
+  Controller acts (`/design/viewer?bg=/inspect=/mode=/screen=/vp=`) swap
+  `#design-viewer`. The mini panel is a single controller panel; the screens
+  filmstrip lives in the composer tray. `v.contextBase` enables the tile
+  pins.
 
 ## 1. Routes — `designs/appbox-studio/app.routes.js`
 
@@ -67,7 +75,7 @@ Routes (18):
 | GET | `/design/panel/size/:side/:size` | prototype.panelSize | s/m/l width steps |
 | POST | `/design/panel/size/:side` | prototype.panelSizePx | drag-handle px width |
 | GET | `/design/file` | prototype.file | file row → main panel render mode fragment |
-| GET | `/design/viewer` | prototype.viewer | viewer controller acts (bg/inspect/panel), swaps `#design-viewer` |
+| GET | `/design/viewer` | prototype.viewer | viewer controller acts (bg/inspect/mode/screen/vp), swaps `#design-viewer` |
 | GET | `/design/screen/:id` | prototype.screen | legacy artboard deep-link → pins context, swaps panels |
 | POST | `/design/layout/artboard/:id` | prototype.artboardLayout | flow tile drag persist |
 | POST | `/design/undo/:stack` / `/design/redo/:stack` | prototype.undo/redo | canvas + chat stacks |
@@ -124,5 +132,5 @@ shell nav if it isn't there yet:
   idempotently. Seed it `pending` to demo the locked-Build state.
 - Fixture: `models/design_model/run.json` is generated — edit
   `models/design_model/seed.json` and re-run `node generate.mjs` there.
-- The design viewer is flow-only; the build evidence canvas shares it as a
-  read-only static canvas (`v.static`, no pins/drag).
+- The design viewer has two lenses (flow / proto); the build evidence canvas
+  shares it as a read-only static canvas (`v.static`, no pins/drag).
