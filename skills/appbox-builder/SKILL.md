@@ -51,5 +51,21 @@ For each `<Screen>View` + `<Screen>ViewModel`:
 - **Capability wiring:** register `KitI18n` + `KitLocaleStore` (appbox_kit_i18n) in the stacked locator, and give the settings surface a language row — System / English / Polski (system locale + persisted override, live switch).
 - **Generative UI:** every generative-UI prompt includes `kitI18n.llmLocaleDirective()` in the system prompt, so generated copy lands in the active locale.
 
+## Kit wiring (when stub headers declare `kits`)
+
+Stubs carry `//   kits (builder wires): <names>` — the designer's declaration,
+threaded through `structure.json`. For each named kit:
+
+- Wire its **real providers** via locator injection, per the kit's playbook
+  (`kit/<name>/<name>_playbook.mdx`) and the providers + verification tiers in
+  `config/kit-registry.json`.
+- **Never offer a `stub`-tier provider to users.** A provider whose registry
+  tier is `stub` is unproven — wire it only as a dev fallback and flag it; the
+  advertise gate fails a shipped surface that presents one.
+- Required credentials come from `config/credentials.catalog.json` (match by
+  `module: kit/<name>`) and are read from the environment / credential store at
+  runtime — **never hardcoded** in the app. Name the missing keys in your
+  handoff notes instead of inventing values.
+
 ## Output
 - Filled `*_view.dart` / `*_viewmodel.dart` composing the primitive layer. Run `arch_guard` → must PASS before handoff to tester.

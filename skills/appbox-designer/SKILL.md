@@ -47,7 +47,10 @@ for the data spine (seed SSOT → generated fixtures → repositories → facade
 viewmodels/views), the registry canon, the motion vocabulary mapped to CSS/htmx
 mechanisms, and provenance-not-shape fixtures. Then read
 [`references/app-architecture.md`](references/app-architecture.md) for the
-authored layer the pipeline consumes.
+authored layer the pipeline consumes. When the brief mentions
+maps/payments/auth/deploy or any kit capability, also read
+[`references/kit-catalog.md`](references/kit-catalog.md) — the designer-side
+mirror of the kit (declaring `kits`, credentials by name, design-time islands).
 
 **3. Load the viewport ladder.** Read
 [`references/viewport-ladder.md`](references/viewport-ladder.md). **Which widths
@@ -69,6 +72,7 @@ ViewModel), served, and kept JS-free.
 **6. Load the right built-in skill(s)** from `built-in-skills/` (full list at
 the bottom of `system-prompt.md`):
 - **Declare structure** (always, while designing) → `declare-structure.md`
+  (declare `kits` on surfaces that need a kit module — see its `kits` field section)
 - **Wireframes / low-fi** → `wireframe.md`
 - **Default (hi-fi / interactive)** → `hi-fi-design.md` + `interactive-prototype.md`
 - **Mobile form factor** → `mobile-prototype.md`

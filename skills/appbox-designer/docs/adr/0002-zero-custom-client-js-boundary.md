@@ -30,3 +30,15 @@ buttons), `three_island.js` (one demo scene, rotate/wireframe toggles),
 unchanged: no ad-hoc client JS, no inline scripts, enforcement is still
 `allowEval:false` + the vendor-path lint. A new runtime enters only as a
 new named, vendored, documented island amending this ADR.
+
+**Amendment (2026-08-01) — the map island.** One more pair, same two-tier
+shape. Tier one: Leaflet 1.9.4 (`leaflet/leaflet.js` + `leaflet/leaflet.css`,
+vendored with SRI; its marker/layers sprites ride along unpinned under
+`leaflet/images/`, referenced relative by the CSS — never a fetched
+subresource with an integrity attribute). Tier two: `map_island.js`, the
+data-attribute init island (`[data-map]` with lat/lng/zoom/marker/tiles
+attributes; defaults to OSM tiles with the ToS-required attribution, marker
+sprites pinned to the vendored images dir, re-arms on `htmx:load`, no-ops
+when `L` is absent). Leaflet is the design-time visual mirror of kit/maps
+(flutter_map); OSM tiles need no key, so prototypes stay credential-free.
+The boundary otherwise stands unchanged.

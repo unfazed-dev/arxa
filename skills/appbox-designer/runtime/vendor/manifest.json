@@ -82,5 +82,17 @@
     "package": "three",
     "version": "0.185.1",
     "integrity": "sha384-rx+KIp/9ptjArhnFAcpVoOc/ynktDsRtRJKIbC7YVKylEvFu8sgmzk9RmQ+CIV48"
+  },
+  {
+    "file": "leaflet/leaflet.js",
+    "package": "leaflet",
+    "version": "1.9.4",
+    "integrity": "sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH"
+  },
+  {
+    "file": "leaflet/leaflet.css",
+    "package": "leaflet",
+    "version": "1.9.4",
+    "integrity": "sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H"
   }
 ]

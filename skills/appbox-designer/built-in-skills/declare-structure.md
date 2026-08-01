@@ -54,6 +54,24 @@ When absent, it is derived as `/<shell>/<short>`. The prototype's viewer uses
 this for prototype-mode navigation (the device chrome iframe opens the focused
 screen's route). State it explicitly when the path is not the convention.
 
+### `kits` field — declaring kit modules
+
+For each surface, ask: does the **built app** need a kit module here (a login →
+`auth`, a checkout → `payments`, a map → `maps`)? If yes, add `kits` to the
+registry entry:
+
+```json
+{ "id": "shop.locator", "label": "Store Locator", "surface": "shop_shell_locator_view",
+  "shell": "shop", "comp": "ShopLocator", "kits": ["maps"] }
+```
+
+Names must come from `config/kit-registry.json` (`kits[].dir`) — the emitter
+validates them and fails on an unknown name. Declare only on genuine need,
+never decoratively: each name becomes wiring the builder must do and possibly
+credentials the client must supply. Which kits exist, which have design-time
+islands, and how credentials surface:
+[`../references/kit-catalog.md`](../references/kit-catalog.md).
+
 ## Checking yourself
 
 Run `appbox design selftest <artifact-dir>` — or, by hand, before you call any surface

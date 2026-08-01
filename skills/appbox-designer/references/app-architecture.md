@@ -48,6 +48,17 @@ One entry per surface. This is the SSOT for what the app contains.
 | `comp` | yes | component name for the scaffolder |
 | `roles` | no | audience gate; absent = everyone |
 | `route` | no | the surface's URL path (`/<shell>/<short>` by convention). Absent = derive from id. |
+| `kits` | no | kit dir names from `config/kit-registry.json` (`kits[].dir`) — the kit modules the surface's built app will use |
+
+`kits` is the **single sanctioned optional extension** to this contract. It is
+an array of kit dir names (e.g. `"kits": ["maps", "payments"]`) declaring which
+kit modules the surface's built app will use; the emitter validates the names
+against `config/kit-registry.json` and threads them into `structure.json` for
+the scaffolder and builder. Declare it **only when the surface genuinely needs
+the module in the built app** — a login screen → `auth`, a checkout →
+`payments`, a map → `maps`. Never decorative: a declared kit is a promise the
+builder must wire and the client must often supply credentials for. See
+[`kit-catalog.md`](kit-catalog.md).
 
 No other keys. The reference producer also carries a `phase` key on every entry;
 **nothing downstream consumes it**, so it is deliberately not part of this

@@ -41,7 +41,11 @@ It also writes `lib/ui/views/.shell-structure.json` — the manifest the coverag
 gate reads (`selfContained` shells + the `{shell: {surfaceId: dir}}` map). The
 directory name is a scaffolder **decision** (coverage refuses to guess it);
 here it is `<shell>_<short>` from the registry id (the stable key, §18),
-recorded so the gate can check it.
+recorded so the gate can check it. When a frozen surface declares `kits`
+(registry → `structure.json`), the scaffolder records them per surface: a
+`//   kits (builder wires): <names>` line in each stub header and a `kits`
+entry in `.shell-structure.json`. It records, never acts — the builder wires
+the modules.
 
 When the design carries `l10n/*.arb` catalogs (`app_<locale>.arb`), the
 scaffolder also copies them verbatim into `lib/l10n/`, drops a fixed-contract
@@ -55,6 +59,9 @@ unconditionally by `appboxd/lib/blueprint.dart`.
 
 **You do not choose dependencies.** The scaffold never reads or writes a
 `pubspec.yaml`; the dependency set arrives from the kit and the app template.
+This holds for declared `kits` too — the stub header names them for the
+builder, but resolving the actual package deps is the builder's wiring step,
+not yours.
 That means a dependency which cannot be built for a declared target is not
 something you can prevent here — it is caught over the assembled app by
 [`gates/native_deps`](../../gates/native_deps/README.md), which asserts that

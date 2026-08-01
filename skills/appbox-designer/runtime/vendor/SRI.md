@@ -16,3 +16,9 @@
 | rive.js | @rive-app/canvas-single | 2.39.1 | `sha384-jRbQsI9QPjjr+DhiZkP5YCdx71KCDHF8fSu7Ue5lptc4UNv/tMWJmgF1gwzkko5g` |
 | three.module.min.js | three | 0.185.1 | `sha384-QHQk1LzjJlJYNdthXjKCmffpDRZL3EqJ7LfqBzyKyvGgjAYM2ZVuYtFGg42NcAJ/` |
 | three.core.min.js | three | 0.185.1 | `sha384-rx+KIp/9ptjArhnFAcpVoOc/ynktDsRtRJKIbC7YVKylEvFu8sgmzk9RmQ+CIV48` |
+| leaflet/leaflet.js | leaflet | 1.9.4 | `sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH` |
+| leaflet/leaflet.css | leaflet | 1.9.4 | `sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H` |
+
+`leaflet/images/*.png` (marker + layers control sprites, referenced by
+`leaflet.css` relative to itself) ride along unpinned — like the lucide SVGs
+they are never loaded as a subresource with an integrity attribute.
