@@ -282,12 +282,15 @@ export const screenStub = (surface, vp, prefs = {}, locale = 'en', opts = {}) =>
   };
 };
 
-// Viewer toolbar/filmstrip act: merge the choice into stored state (a mode
-// toggle that sends only mode must not reset screen/vp/bg/os).
+// Viewer toolbar act: bg/inspect are AUTHORITATIVE (every control href echoes
+// both, defaults elided — absent means "back to default", never "keep";
+// merging would strand inspect:'1' on forever). panel stays sticky: the
+// controller chips don't repeat it. Same contract as the design facade's.
 export const setViewer = (sessionData, query, prefs = {}, t = (k) => k, locale = 'en') => {
   const next = {};
   for (const [k, v] of Object.entries(query)) if (v != null) next[k] = v;
-  B(sessionData).viewer = { ...B(sessionData).viewer, ...next };
+  const panel = next.panel ?? B(sessionData).viewer?.panel;
+  B(sessionData).viewer = panel ? { ...next, panel } : next;
   return loopContext(sessionData, 'evidence/surfaces', prefs, t, locale);
 };
 

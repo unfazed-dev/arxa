@@ -128,13 +128,13 @@
 }
 .mini-panel-tab:hover { background: var(--bg-2, rgba(0,0,0,.04)); color: var(--tx); }
 .mini-panel-tab.is-active { background: var(--accent-soft, rgba(8,145,178,.12)); color: var(--accent, #0891b2); }
-.mini-panel-bodys { padding: .2rem .5rem; }
+.mini-panel-panels { padding: .5rem .8rem; }
 .mini-panel-body {
-  display: flex; gap: .6rem; align-items: center; flex-wrap: wrap;
+  display: flex; gap: .8rem; align-items: center; flex-wrap: wrap;
   font-size: .78rem;
 }
-.mini-panel-group { display: inline-flex; gap: .2rem; align-items: center; }
-.mini-panel-group + .mini-panel-group { border-left: 1px solid var(--border); padding-left: .6rem; }
+.mini-panel-group { display: inline-flex; gap: .35rem; align-items: center; }
+.mini-panel-group + .mini-panel-group { border-left: 1px solid var(--border); padding-left: .8rem; }
 .mini-panel-strip {
   display: flex; gap: .4rem; overflow-x: auto; max-width: 40rem;
   padding-bottom: .2rem; scrollbar-width: none;
@@ -167,7 +167,7 @@
   padding: .5rem .8rem; border-bottom: 1px solid var(--border);
 }
 .dv-proto-bar .dv-screen { color: var(--tx-3); }
-.dv-proto-bar .dv-group { display: flex; gap: .3rem; }
+.dv-proto-bar .dv-group { display: flex; gap: .45rem; }
 .dv-proto-stage { flex: 1; overflow: auto; display: flex; padding: 1rem 1rem 11rem; }
 .dv-proto-stage > .device { margin: auto; }
 

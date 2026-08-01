@@ -44,8 +44,13 @@ Files:
 
 - Every viewer action is `GET {{base}}?bg=&inspect=&panel=&mode=&screen=&vp=&os=`
   with `hx-target="#design-viewer" hx-swap="outerHTML"` — the route records
-  the choice (`setViewer` merges, never replaces) and re-renders the viewer
-  fragment. Defaults stay out of the URL (`flow`, `mobile`, `ios`).
+  the choice and re-renders the viewer fragment. Every control href echoes
+  the WHOLE viewer state with defaults elided (`flow`, `mobile`, `ios`), so
+  `setViewer` treats the state keys as authoritative — an absent key means
+  "back to default", never "keep" (merging would strand every non-default:
+  the canvas chip sends no `mode=`, so a merged `mode:'proto'` could never
+  flip back). `panel` is the one sticky key (controller chips don't repeat
+  it).
 - A `viewports` entry is a key (`'mobile'`) or an authored object
   `{ vp, width, height?, rung?, note?, shot? }`. Real rung sizes are
   390×844 / 744×1133 / 1280×800; devices render at true size — the proto
@@ -57,8 +62,9 @@ Files:
 ## Wiring a shell
 
 1. Facade: a `viewerFor` producing the contract above (see
-   `services/facades/design_facade.js`), plus a `setViewer` that merges the
-   query into namespaced session state (`sessionData.<shell>.viewer`).
+   `services/facades/design_facade.js`), plus a `setViewer` that replaces the
+   state keys in namespaced session state (`sessionData.<shell>.viewer`),
+   keeping only `panel` sticky (see the authoritative-keys rule above).
 2. Viewmodel: whitelist the query params into `setViewer` — see
    `design/prototype/prototype_viewmodel.js` (`bg/inspect/panel/mode/screen/
    vp/os`). Forgetting a param silently drops that control (the viewer

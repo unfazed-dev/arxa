@@ -251,14 +251,19 @@ function viewerFor(d, L, t) {
   };
 }
 
-// Viewer toolbar act: merge the choice into the stored viewer state (not
-// replace — a bg flip that sends only bg must not reset inspect/panel).
-// Undefined query values are dropped so they don't clobber.
+// Viewer toolbar act: the state keys (bg/inspect/mode/screen/vp/os) are
+// AUTHORITATIVE — every control href echoes the whole viewer state
+// (withParams / the panel-tab q echo), with defaults elided from the URL, so
+// an absent key means "back to default", never "keep". Merging would strand
+// every non-default value (a canvas chip sends no mode=, so a merged
+// mode:'proto' could never flip back). panel is the one sticky key: the
+// controller chips don't repeat it, so it survives a mode/bg/vp toggle.
 export const setViewer = (sessionData, query, prefs = {}, t = (k) => k, locale = 'en') => {
   const d = design(sessionData);
   const next = {};
   for (const [k, v] of Object.entries(query)) if (v != null) next[k] = v;
-  d.viewer = { ...d.viewer, ...next };
+  const panel = next.panel ?? d.viewer?.panel;
+  d.viewer = panel ? { ...next, panel } : next;
   return stageContext(sessionData, {}, prefs, t, locale);
 };
 
