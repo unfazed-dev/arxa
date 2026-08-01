@@ -1,54 +1,230 @@
+import 'dart:async';
+
 import '../models/auth_credentials.dart';
+import '../models/auth_failure.dart';
 import '../models/auth_result.dart';
+import '../models/auth_session.dart';
 import '../models/auth_user.dart';
 import '../service/kit_auth_service.dart';
 
-/// STUB — not implemented. The seam where this package meets the host app's
-/// existing **Seed** auth backend.
+class _SeededUser {
+  final String email;
+  final String password;
+
+  const _SeededUser(this.email, this.password);
+}
+
+class _Session {
+  final String userId;
+  final String email;
+  final String token;
+
+  const _Session(this.userId, this.email, this.token);
+}
+
+/// Default seed — deterministic local showcase credentials. Never a real
+/// credential store.
+const _defaultSeed = <String, _SeededUser>{
+  'seed_alice': _SeededUser('alice@showcase.app', 'seed-alice'),
+  'seed_bob': _SeededUser('bob@showcase.app', 'seed-bob'),
+};
+
+/// In-memory seeded auth backend. No device, no external process, no real
+/// account. Powers the seeded-data story the product promises (the showcase
+/// depends on it). This is the genuine port of the `appboxd/lib/tier1.dart`
+/// SeedAuthBackend spec into the kit's [KitAuthService] interface — same
+/// seeded accounts, same failure semantics, same deterministic token minting.
 ///
-/// TODO(phase-4): implement by delegating to the app's Seed auth service.
-/// Keep this a clean interface seam — DO NOT import app code into this
-/// package. Instead, the host constructs its Seed service and passes the few
-/// operations this needs in via the constructor (a set of function refs or a
-/// tiny host-defined port), so `appbox_kit_auth` stays dependency-free of the
-/// application. When wiring:
-///   1. Define the minimal set of Seed operations needed (resolve identity,
-///      issue/refresh session, revoke) as constructor parameters.
-///   2. Map Seed's errors onto [AuthFailureReason] — expired seed session ⇒
-///      [AuthFailureReason.tokenExpired].
-///   3. Bridge Seed's identity change signal to [authStateChanges].
+/// Determinism is the point: seeded uids (`seed_alice`, `seed_bob`), sign-up
+/// uids (`user_1`, `user_2`, …) and session tokens (`tok_1`, `tok_2`, …) are
+/// minted from monotonic counters, so refresh rotation is observable and
+/// tests never flake. Email matching is exact (after trim), mirroring the
+/// tier1 spec; sign-up applies no password-strength policy.
 class SeedAuthBackend implements KitAuthService {
-  const SeedAuthBackend();
+  final Map<String, _SeededUser> _users = {};
+  final Map<String, _Session> _sessionsByUid = {}; // userId -> session
+  final Map<String, _Session> _sessionsByToken = {}; // token -> session
+  final Map<String, String> _providerByUid = {}; // userId -> provider tag
+  final StreamController<AuthUser?> _controller =
+      StreamController<AuthUser?>.broadcast();
+
+  var _tokenSeq = 0;
+  var _uidSeq = 0;
+  String? _currentUid;
+  bool _disposed = false;
+
+  SeedAuthBackend() {
+    _users.addAll(_defaultSeed);
+  }
 
   @override
-  Stream<AuthUser?> get authStateChanges =>
-      throw UnimplementedError('SeedAuthBackend is a stub (phase-4)');
+  Stream<AuthUser?> get authStateChanges async* {
+    _assertUsable();
+    yield currentUser;
+    yield* _controller.stream;
+  }
+
+  /// The most recently signed-in user, or null. Mirrors the tier1 spec's
+  /// per-uid sessions: sign-ins for other uids do not end earlier sessions,
+  /// but the kit's single-user stream tracks the latest one.
+  @override
+  AuthUser? get currentUser {
+    final uid = _currentUid;
+    if (uid == null) return null;
+    final session = _sessionsByUid[uid];
+    if (session == null) return null;
+    return _userFor(uid, session.email);
+  }
+
+  /// The tier1 spec's `currentUser(uid)`: the signed-in user for [uid], or
+  /// null if that uid has no live session.
+  AuthUser? currentUserFor(String uid) {
+    final session = _sessionsByUid[uid];
+    if (session == null) return null;
+    return _userFor(uid, session.email);
+  }
+
+  /// Read-only view of the seeded users (no passwords), as uid → {email}.
+  Map<String, Map<String, String>> seedUsers() => {
+        for (final e in _users.entries) e.key: {'email': e.value.email},
+      };
 
   @override
-  AuthUser? get currentUser =>
-      throw UnimplementedError('SeedAuthBackend is a stub (phase-4)');
+  Future<AuthResult> signUp(EmailPasswordCredentials credentials) async {
+    _assertUsable();
+    final email = credentials.email.trim();
+    for (final rec in _users.values) {
+      if (rec.email == email) {
+        return const AuthFailure(
+          AuthFailureReason.emailAlreadyInUse,
+          message: 'user already exists',
+        );
+      }
+    }
+    final uid = 'user_${++_uidSeq}';
+    _users[uid] = _SeededUser(email, credentials.password);
+    return _emitSession(_openSession(uid, email));
+  }
 
   @override
-  Future<AuthResult> signUp(EmailPasswordCredentials credentials) =>
-      throw UnimplementedError('SeedAuthBackend.signUp (phase-4)');
+  Future<AuthResult> signIn(EmailPasswordCredentials credentials) async {
+    _assertUsable();
+    final email = credentials.email.trim();
+    String? uid;
+    _SeededUser? rec;
+    for (final entry in _users.entries) {
+      if (entry.value.email == email) {
+        uid = entry.key;
+        rec = entry.value;
+        break;
+      }
+    }
+    if (rec == null) {
+      return const AuthFailure(
+        AuthFailureReason.userNotFound,
+        message: 'unknown user',
+      );
+    }
+    if (rec.password != credentials.password) {
+      return const AuthFailure(
+        AuthFailureReason.invalidCredentials,
+        message: 'wrong password',
+      );
+    }
+    return _emitSession(_openSession(uid!, email));
+  }
+
+  /// Rotate a session token (the tier1 spec's `refreshToken`). The old token
+  /// is invalidated; a fresh one is minted for the same user and becomes the
+  /// current session. Unknown or already-rotated tokens fail with
+  /// [AuthFailureReason.tokenExpired].
+  Future<AuthResult> refreshToken(String token) async {
+    _assertUsable();
+    final prev = _sessionsByToken.remove(token);
+    if (prev == null) {
+      return const AuthFailure(
+        AuthFailureReason.tokenExpired,
+        message: 'invalid or expired token',
+      );
+    }
+    return _emitSession(_openSession(prev.userId, prev.email));
+  }
 
   @override
-  Future<AuthResult> signIn(EmailPasswordCredentials credentials) =>
-      throw UnimplementedError('SeedAuthBackend.signIn (phase-4)');
+  Future<AuthResult> signInWithApple() => _resolveProviderUser(
+        'apple',
+        'apple_demo_user',
+        'relay@apple.example',
+      );
 
   @override
-  Future<AuthResult> signInWithApple() =>
-      throw UnimplementedError('SeedAuthBackend.signInWithApple (phase-4)');
+  Future<AuthResult> signInWithGoogle() => _resolveProviderUser(
+        'google',
+        'google_demo_user',
+        'demo@google.example',
+      );
 
   @override
-  Future<AuthResult> signInWithGoogle() =>
-      throw UnimplementedError('SeedAuthBackend.signInWithGoogle (phase-4)');
+  Future<void> signOut() async {
+    _assertUsable();
+    final uid = _currentUid;
+    if (uid != null) {
+      final session = _sessionsByUid.remove(uid);
+      if (session != null) _sessionsByToken.remove(session.token);
+      _currentUid = null;
+    }
+    _controller.add(null);
+  }
 
   @override
-  Future<void> signOut() =>
-      throw UnimplementedError('SeedAuthBackend.signOut (phase-4)');
+  Future<void> dispose() async {
+    if (_disposed) return;
+    _disposed = true;
+    await _controller.close();
+  }
 
-  @override
-  Future<void> dispose() =>
-      throw UnimplementedError('SeedAuthBackend.dispose (phase-4)');
+  /// The seed backend's OAuth story: deterministic demo identities matching
+  /// the tier1 `appleSignIn` / `googleSignIn` fixtures — a real native flow
+  /// is what the Apple/Google [KitOAuthProvider]s are for.
+  Future<AuthResult> _resolveProviderUser(
+    String provider,
+    String uid,
+    String email,
+  ) async {
+    _assertUsable();
+    _users.putIfAbsent(uid, () => _SeededUser(email, ''));
+    return _emitSession(_openSession(uid, email, provider: provider));
+  }
+
+  _Session _openSession(String uid, String email, {String? provider}) {
+    final token = 'tok_${++_tokenSeq}';
+    final session = _Session(uid, email, token);
+    _sessionsByUid[uid] = session;
+    _sessionsByToken[token] = session;
+    _providerByUid[uid] = provider ?? 'seed';
+    return session;
+  }
+
+  AuthResult _emitSession(_Session session) {
+    final user = _userFor(session.userId, session.email);
+    _currentUid = session.userId;
+    _controller.add(user);
+    return AuthSuccess(AuthSession(
+      user: user,
+      accessToken: session.token,
+      refreshToken: session.token,
+    ));
+  }
+
+  AuthUser _userFor(String uid, String email) => AuthUser(
+        id: uid,
+        email: email,
+        metadata: {'provider': _providerByUid[uid] ?? 'seed'},
+      );
+
+  void _assertUsable() {
+    if (_disposed) {
+      throw StateError('SeedAuthBackend used after dispose()');
+    }
+  }
 }

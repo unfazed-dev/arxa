@@ -27,8 +27,8 @@ export 'src/models/payment_result.dart';
 // Service (the port hosts depend on)
 export 'src/service/kit_payments_service.dart';
 
-// Providers — the native one is implemented; Stripe/PayPal are stubs;
-// SeedPaymentsProvider is a pure-Dart fake for tests/demos.
+// Providers — the native one plus Stripe (PaymentSheet) and PayPal (Orders
+// v2 web checkout); SeedPaymentsProvider is a pure-Dart fake for tests/demos.
 export 'src/providers/kit_payments_provider.dart';
 export 'src/providers/native/pay_payments_provider.dart';
 export 'src/providers/seed/seed_payments_provider.dart';

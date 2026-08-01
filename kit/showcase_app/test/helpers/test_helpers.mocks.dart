@@ -6,11 +6,6 @@
 import 'dart:async' as _i9;
 import 'dart:ui' as _i13;
 
-import 'package:flutter/material.dart' as _i10;
-import 'package:mockito/mockito.dart' as _i1;
-import 'package:mockito/src/dummies.dart' as _i18;
-import 'package:rxdart/rxdart.dart' as _i7;
-import 'package:stacked/stacked.dart' as _i2;
 import 'package:appbox_kit_data/appbox_kit_data.dart' as _i3;
 import 'package:appbox_kit_media/appbox_kit_media.dart' as _i20;
 import 'package:appbox_kit_showcase_app/notes/models/note.dart' as _i4;
@@ -21,6 +16,11 @@ import 'package:appbox_kit_showcase_app/services/facades/notes_facade.dart'
     as _i16;
 import 'package:appbox_kit_showcase_app/services/notes_media_service.dart'
     as _i19;
+import 'package:flutter/material.dart' as _i10;
+import 'package:mockito/mockito.dart' as _i1;
+import 'package:mockito/src/dummies.dart' as _i18;
+import 'package:rxdart/rxdart.dart' as _i7;
+import 'package:stacked/stacked.dart' as _i2;
 import 'package:stacked_services/src/bottom_sheet/bottom_sheet_service.dart'
     as _i11;
 import 'package:stacked_services/src/dialog/dialog_service.dart' as _i14;

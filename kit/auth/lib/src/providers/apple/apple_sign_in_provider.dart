@@ -1,24 +1,137 @@
+import 'dart:convert';
+import 'dart:math';
+
+import 'package:crypto/crypto.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
+
+import '../../models/auth_failure.dart';
 import '../../models/auth_result.dart';
+import '../../models/auth_session.dart';
+import '../../models/auth_user.dart';
 import '../kit_oauth_provider.dart';
 
-/// STUB — not implemented. Native Sign in with Apple.
+/// The plugin's credential call, injectable so unit tests can substitute the
+/// platform channel boundary.
+typedef AppleCredentialFetcher = Future<AuthorizationCredentialAppleID>
+    Function({
+  required List<AppleIDAuthorizationScopes> scopes,
+  String? nonce,
+  WebAuthenticationOptions? webAuthenticationOptions,
+});
+
+/// Native Sign in with Apple, via the `sign_in_with_apple` plugin.
 ///
-/// TODO(phase-later): implement with `sign_in_with_apple: ^8.1.0`. When wiring:
-///   1. Add the dependency (and the "Sign In with Apple" capability on iOS).
-///   2. Generate a raw nonce, SHA-256 it, and pass the hash to
-///      `SignInWithApple.getAppleIDCredential(scopes: [...], nonce: hashed)`.
-///   3. Hand the returned `identityToken` + raw nonce to your backend's
-///      token-exchange, then map the result onto [AuthResult]
-///      (`SignInWithAppleAuthorizationException(code: canceled)` ⇒
-///      [AuthFailureReason.cancelled]).
-/// Do not import app code — this returns an [AuthResult] the caller composes.
+/// Flow: capability probe → fresh raw nonce (SHA-256 hashed into the request)
+/// → `SignInWithApple.getAppleIDCredential` with the email + fullName scopes.
+///
+/// Result mapping (the token handoff a backend consumes):
+/// - `session.accessToken` — the Apple `identityToken` JWT. Verify it
+///   server-side against Apple's JWKS (https://appleid.apple.com/auth/keys)
+///   with iss/aud/exp checks; its `sub` equals `user.id`.
+/// - `session.refreshToken` — the single-use `authorizationCode`, for the
+///   backend's token exchange.
+/// - `user.metadata['rawNonce']` — the raw nonce whose SHA-256 hash was sent;
+///   the backend checks it against the JWT's `nonce` claim.
+///
+/// Apple only returns `email` / `givenName` / `familyName` on the FIRST
+/// authorization for an app — later sign-ins carry only `userIdentifier`
+/// (and the tokens), so a null email/name here is normal, not an error.
+/// Persist them at first auth.
+///
+/// Cancellation maps to [AuthFailureReason.cancelled]; a failed capability
+/// probe or an unsupported device maps to
+/// [AuthFailureReason.operationNotAllowed] (Apple rejects apps whose
+/// Apple-sign-in button silently no-ops).
 class AppleSignInProvider implements KitOAuthProvider {
-  const AppleSignInProvider();
+  /// The OAuth scopes requested from Apple.
+  final List<AppleIDAuthorizationScopes> scopes;
+
+  /// Required on Android/web (web-service flow); ignored on iOS/macOS.
+  final WebAuthenticationOptions? webAuthenticationOptions;
+
+  final Future<bool> Function() _isAvailable;
+  final AppleCredentialFetcher _getCredential;
+  final String Function() _rawNonce;
+
+  AppleSignInProvider({
+    this.scopes = const [
+      AppleIDAuthorizationScopes.email,
+      AppleIDAuthorizationScopes.fullName,
+    ],
+    this.webAuthenticationOptions,
+    Future<bool> Function()? isAvailable,
+    AppleCredentialFetcher? getCredential,
+    String Function()? rawNonce,
+  })  : _isAvailable = isAvailable ?? SignInWithApple.isAvailable,
+        _getCredential = getCredential ?? SignInWithApple.getAppleIDCredential,
+        _rawNonce = rawNonce ?? _generateNonce;
 
   @override
   String get id => 'apple';
 
   @override
-  Future<AuthResult> signIn() =>
-      throw UnimplementedError('AppleSignInProvider.signIn (phase-later)');
+  Future<AuthResult> signIn() async {
+    if (!await _isAvailable()) {
+      return const AuthFailure(
+        AuthFailureReason.operationNotAllowed,
+        message: 'Sign in with Apple is not available on this device',
+      );
+    }
+    final rawNonce = _rawNonce();
+    final hashedNonce = sha256.convert(utf8.encode(rawNonce)).toString();
+    final AuthorizationCredentialAppleID credential;
+    try {
+      credential = await _getCredential(
+        scopes: scopes,
+        nonce: hashedNonce,
+        webAuthenticationOptions: webAuthenticationOptions,
+      );
+    } on SignInWithAppleAuthorizationException catch (e) {
+      if (e.code == AuthorizationErrorCode.canceled) {
+        return AuthFailure(
+          AuthFailureReason.cancelled,
+          message: e.message,
+          cause: e,
+        );
+      }
+      return AuthFailure(
+        AuthFailureReason.unknown,
+        message: e.message,
+        cause: e,
+      );
+    } on SignInWithAppleNotSupportedException catch (e) {
+      return AuthFailure(
+        AuthFailureReason.operationNotAllowed,
+        message: e.message,
+        cause: e,
+      );
+    } on SignInWithAppleException catch (e) {
+      return AuthFailure(AuthFailureReason.unknown, cause: e);
+    }
+
+    final name = [credential.givenName, credential.familyName]
+        .whereType<String>()
+        .where((s) => s.isNotEmpty)
+        .join(' ');
+    final user = AuthUser(
+      id: credential.userIdentifier ?? credential.email ?? 'apple-user',
+      email: credential.email,
+      displayName: name.isEmpty ? null : name,
+      metadata: {'provider': 'apple', 'rawNonce': rawNonce},
+    );
+    return AuthSuccess(AuthSession(
+      user: user,
+      accessToken: credential.identityToken,
+      refreshToken: credential.authorizationCode,
+    ));
+  }
+
+  static String _generateNonce([int length = 32]) {
+    const charset =
+        '0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._';
+    final random = Random.secure();
+    return [
+      for (var i = 0; i < length; i++) charset[random.nextInt(charset.length)],
+    ].join();
+  }
 }

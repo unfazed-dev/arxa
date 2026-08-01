@@ -83,7 +83,7 @@ See `kit_matrix.md` for the full routing + dependency graph.
 
 ### Architecture
 
-Classic ports-and-adapters: `KitMapProvider` is the port (an `abstract interface class` exposing `kind` and `buildMap()`), and each backend is an adapter — `GoogleMapsProvider` and `AppleMapsProvider` are wired today, while `OpenStreetMapProvider` and `MapboxProvider` are stubs that throw `UnimplementedError`. `KitMapView` resolves the adapter via `defaultProviderFor(defaultTargetPlatform)` (Apple on iOS, Google on Android/web/desktop) unless a `provider:` is injected, which is how tests pass a `FakeMapProvider` and how an app forces a specific backend. `KitMapController` is a narrow post-creation camera handle (`moveCamera`/`animateCamera`); markers are declarative, rebuilt via `KitMapConfig.markers`, never mutated through the controller. The dependency direction is one-way and standalone: the package imports only Flutter and the map SDKs, never `stacked`, `stacked_services`, or `appbox_kit` core, so app code depends on Kit-owned value types (`KitLatLng`, `KitCameraPosition`, `KitMapConfig`, `KitMapMarker`) and the port — never on a map SDK.
+Classic ports-and-adapters: `KitMapProvider` is the port (an `abstract interface class` exposing `kind` and `buildMap()`), and each backend is an adapter — all four are wired: `GoogleMapsProvider`, `AppleMapsProvider`, plus `OpenStreetMapProvider` and `MapboxProvider`, which share one flutter_map builder (`src/providers/tiled/tiled_map_view.dart`) and differ only in tile URL, tile geometry (256px vs Mapbox's 512px retina tiles with `zoomOffset: -1`), and attribution. `KitMapView` resolves the adapter via `defaultProviderFor(defaultTargetPlatform)` (Apple on iOS, Google on Android/web/desktop) unless a `provider:` is injected, which is how tests pass a `FakeMapProvider` and how an app forces a specific backend. `KitMapController` is a narrow post-creation camera handle (`moveCamera`/`animateCamera` — the flutter_map backends jump on `animateCamera`, flutter_map core has no animated camera API); markers are declarative, rebuilt via `KitMapConfig.markers`, never mutated through the controller. The dependency direction is one-way and standalone: the package imports only Flutter and the map SDKs, never `stacked`, `stacked_services`, or `appbox_kit` core, so app code depends on Kit-owned value types (`KitLatLng`, `KitCameraPosition`, `KitMapConfig`, `KitMapMarker`) and the port — never on a map SDK.
 
 
 ### Gotchas
@@ -95,6 +95,21 @@ Classic ports-and-adapters: `KitMapProvider` is the port (an `abstract interface
     `AppDelegate`
   - Web: Maps JS script tag in `index.html`
 - **Apple Maps**: no key; MapKit entitlement handled by the plugin.
+- **OpenStreetMap**: no key, but `userAgentPackageName` is a required
+  constructor parameter (the OSM tile-usage policy blocks generic user
+  agents) and attribution is always rendered; flutter_map caches tiles
+  itself since 8.2. `mapType` is ignored — the standard tile server ships
+  one style.
+- **Mapbox**: raster tiles through flutter_map with a public `pk.*` token
+  in the URL (512px tiles, `tileDimension: 512, zoomOffset: -1`) — inject
+  via `--dart-define=MAPBOX_PUBLIC_TOKEN` (see
+  `config/credentials.catalog.json`); the native `mapbox_maps_flutter` SDK
+  is deliberately avoided because it needs a secret `sk.*` downloads token
+  in ~/.netrc. `mapType` selects the Mapbox style.
+- **flutter_map backends**: no support for `myLocationEnabled`,
+  `zoomControlsEnabled`, `compassEnabled`, or camera `tilt`; widget tests
+  must inject a fake `TileProvider` so no HTTP happens (see
+  `test/tiled_providers_test.dart`).
 - **`apple_maps_flutter` staleness**: the plugin publishes slowly (17+ months
   between releases at wiring time). If it breaks against a future Flutter,
   repoint iOS at `GoogleMapsProvider` in `defaultProviderFor` until it is fixed.
@@ -117,7 +132,7 @@ fake.controller;                          // RecordingMapController
 
 ### Decisions / ADRs
 
-Standalone by design: the package declares no `stacked` / `appbox_kit` dependency so it can be adopted without pulling the framework, and so a future backend swap is contained to this one package. Apple Maps is the iOS default because it is the only first-party-MapKit option and needs no API key; Google Maps is the default everywhere else (Android, web, desktop) as the most mature cross-platform SDK. OpenStreetMap (`flutter_map`) and Mapbox (`mapbox_maps_flutter`) are intentionally stubbed and deliberately NOT listed in pubspec.yaml, so a host that never opts into either pulls neither package — each stub's TODO names its target. The accepted trade-off is `apple_maps_flutter`'s slow release cadence (17+ months between publishes at wiring time); if it breaks against a future Flutter, the documented fallback is to repoint the iOS branch of `defaultProviderFor` to `GoogleMapsProvider` until it is fixed.
+Standalone by design: the package declares no `stacked` / `appbox_kit` dependency so it can be adopted without pulling the framework, and so a future backend swap is contained to this one package. Apple Maps is the iOS default because it is the only first-party-MapKit option and needs no API key; Google Maps is the default everywhere else (Android, web, desktop) as the most mature cross-platform SDK. OpenStreetMap and Mapbox are both wired on `flutter_map` (pure Dart — no native SDK, no secret download token, fully simulator/emulator/web-testable); Mapbox deliberately uses 512px raster tiles with a public `pk.*` token rather than `mapbox_maps_flutter`, which would require a secret `sk.*` token in ~/.netrc for SDK downloads. The accepted trade-off is `apple_maps_flutter`'s slow release cadence (17+ months between publishes at wiring time); if it breaks against a future Flutter, the documented fallback is to repoint the iOS branch of `defaultProviderFor` to `GoogleMapsProvider` until it is fixed.
 
 <!-- kb:begin -->
 ### References

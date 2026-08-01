@@ -74,6 +74,8 @@ class PayPaymentsProvider implements KitPaymentsProvider {
   KitPaymentConfig? _configFor(KitPaymentMethod method) => switch (method) {
         KitPaymentMethod.applePay => applePayConfig,
         KitPaymentMethod.googlePay => googlePayConfig,
+        // PayPal is a web rail, not a native wallet — never this provider.
+        KitPaymentMethod.payPal => null,
       };
 
   Future<pay.Pay> _clientForConfig(KitPaymentConfig config) async {
@@ -87,6 +89,9 @@ class PayPaymentsProvider implements KitPaymentsProvider {
       switch (method) {
         KitPaymentMethod.applePay => pay.PayProvider.apple_pay,
         KitPaymentMethod.googlePay => pay.PayProvider.google_pay,
+        // Unreachable: _configFor returns null for payPal before this runs.
+        KitPaymentMethod.payPal =>
+          throw ArgumentError.value(method, 'method', 'not a native wallet'),
       };
 
   /// Pulls the processor token out of the plugin's result map. Apple Pay puts

@@ -3,32 +3,32 @@
     "auth/Apple SignIn": {
       "tier": "port-tested",
       "suite": "appboxd/lib/tier1.dart",
-      "digest": "sha256:9416dd5c30f616fbc5ed61c448922c73d403216455bed6d855c289034b74c79a",
-      "ran_at": "2026-07-27T15:17:31Z"
+      "digest": "sha256:6911339109078f0d860f8e1b83a7ae0ade44d77e5d6b30ddba57cd058fa805ee",
+      "ran_at": "2026-08-01T01:54:19Z"
     },
     "payments/PayPal": {
       "tier": "port-tested",
       "suite": "appboxd/lib/tier1.dart",
-      "digest": "sha256:9416dd5c30f616fbc5ed61c448922c73d403216455bed6d855c289034b74c79a",
-      "ran_at": "2026-07-27T15:17:31Z"
+      "digest": "sha256:6911339109078f0d860f8e1b83a7ae0ade44d77e5d6b30ddba57cd058fa805ee",
+      "ran_at": "2026-08-01T01:54:19Z"
     },
     "payments/Stripe": {
       "tier": "port-tested",
       "suite": "appboxd/lib/tier1.dart",
-      "digest": "sha256:9416dd5c30f616fbc5ed61c448922c73d403216455bed6d855c289034b74c79a",
-      "ran_at": "2026-07-27T15:17:31Z"
+      "digest": "sha256:6911339109078f0d860f8e1b83a7ae0ade44d77e5d6b30ddba57cd058fa805ee",
+      "ran_at": "2026-08-01T01:54:19Z"
     },
     "auth/Google SignIn": {
       "tier": "port-tested",
       "suite": "appboxd/lib/tier1.dart",
-      "digest": "sha256:9416dd5c30f616fbc5ed61c448922c73d403216455bed6d855c289034b74c79a",
-      "ran_at": "2026-07-27T15:17:31Z"
+      "digest": "sha256:6911339109078f0d860f8e1b83a7ae0ade44d77e5d6b30ddba57cd058fa805ee",
+      "ran_at": "2026-08-01T01:54:19Z"
     },
     "auth/SeedAuthBackend": {
       "tier": "port-tested",
       "suite": "appboxd/lib/tier1.dart",
-      "digest": "sha256:9416dd5c30f616fbc5ed61c448922c73d403216455bed6d855c289034b74c79a",
-      "ran_at": "2026-07-27T15:17:31Z"
+      "digest": "sha256:6911339109078f0d860f8e1b83a7ae0ade44d77e5d6b30ddba57cd058fa805ee",
+      "ran_at": "2026-08-01T01:54:19Z"
     }
   }
 }

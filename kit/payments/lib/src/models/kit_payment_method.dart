@@ -1,10 +1,14 @@
-/// The wallet a payment runs through. Native-first: only the two the `pay`
-/// plugin implements today. Additional rails (card, PayPal balance) arrive
-/// with their provider stubs and get their own members then — keep this enum
-/// the single source of truth so `canPay(method)` stays exhaustive.
+/// The wallet a payment runs through. Native-first: Apple/Google Pay through
+/// the `pay` plugin; [payPal] arrived with its provider (web approval, no
+/// native sheet). Keep this enum the single source of truth so
+/// `canPay(method)` stays exhaustive.
 enum KitPaymentMethod {
   applePay,
   googlePay,
+
+  /// PayPal web checkout (Orders v2 approval redirect) — served only by
+  /// [PayPalPaymentsProvider]; the native provider never reports it.
+  payPal,
 }
 
 extension KitPaymentMethodX on KitPaymentMethod {
@@ -14,5 +18,6 @@ extension KitPaymentMethodX on KitPaymentMethod {
   String get wireId => switch (this) {
         KitPaymentMethod.applePay => 'apple_pay',
         KitPaymentMethod.googlePay => 'google_pay',
+        KitPaymentMethod.payPal => 'paypal',
       };
 }

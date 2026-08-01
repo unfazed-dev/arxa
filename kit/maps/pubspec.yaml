@@ -11,17 +11,20 @@ environment:
 
 # NATIVE-FIRST / STANDALONE: this package intentionally depends on neither
 # appbox_kit (core), stacked, nor stacked_services. It is a pure port with
-# two real, wired providers — google_maps_flutter and apple_maps_flutter —
-# chosen because they are each platform's first-party map SDK with no API
-# key friction beyond platform config. OpenStreetMap (flutter_map) and
-# Mapbox (mapbox_maps_flutter) are file stubs — they name their target
-# package+version in a TODO but are NOT added as dependencies here, so a
-# host that never opts into them pulls neither dependency.
+# four wired providers: google_maps_flutter and apple_maps_flutter (each
+# platform's first-party SDK), plus flutter_map for OpenStreetMap and Mapbox.
+# flutter_map is pure Dart (no native SDK, no secret download token), so the
+# OSM and Mapbox backends run on simulators, emulators, and widget tests.
+# Mapbox is served as 512px raster tiles through flutter_map with a public
+# pk.* token — the native mapbox_maps_flutter SDK (which needs a secret sk.*
+# token in ~/.netrc) is deliberately NOT used.
 dependencies:
   flutter:
     sdk: flutter
   google_maps_flutter: ^2.17.1
   apple_maps_flutter: ^1.4.0
+  flutter_map: ^8.3.1
+  latlong2: ^0.10.1
 
 dev_dependencies:
   flutter_lints: ^6.0.0

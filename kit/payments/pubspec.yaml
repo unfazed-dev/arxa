@@ -4,7 +4,8 @@ version: 0.1.0
 publish_to: 'none'
 
 environment:
-  sdk: '>=3.0.3 <4.0.0'
+  sdk: '>=3.8.1 <4.0.0'
+  flutter: '>=3.41.0'
 
 dependencies:
   flutter:
@@ -13,11 +14,20 @@ dependencies:
   # The native-first choice; ships the ApplePayButton/GooglePayButton widgets
   # this package re-exports behind KitPayButton. Android + iOS only.
   pay: ^3.3.0
+  # Stripe PaymentSheet (card + Apple Pay / Google Pay + 3DS) behind
+  # StripePaymentsProvider. CardField/CardForm are sunset; PaymentSheet is the
+  # supported surface. The publishable key only — secrets stay server-side.
+  flutter_stripe: ^13.1.0
+  # ASWebAuthenticationSession / Chrome Auth Tab for PayPal's web approval
+  # redirect (Orders v2 has no healthy first-party Flutter SDK in 2026).
+  flutter_web_auth_2: ^5.0.3
 
 dev_dependencies:
   flutter_lints: ^6.0.0
   flutter_test:
     sdk: flutter
+  # Mocking at the provider's Port/gateway boundary (repo pattern: mocktail).
+  mocktail: ^1.0.5
 
 # No assets declared here — payment profile JSON lives under example/ and is
 # meant to be copied into the host app's own assets/ (or fetched at runtime).

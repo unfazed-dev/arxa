@@ -2,7 +2,9 @@
 ///
 /// Depend on [KitAuthService]; branch on the sealed [AuthResult]. The
 /// in-memory default ([InMemoryKitAuthService]) is real enough to build the
-/// full auth UI against; the Seed backend and native OAuth are later phases.
+/// full auth UI against; [SeedAuthBackend] adds the deterministic seeded
+/// accounts the showcase promises, and the Apple/Google [KitOAuthProvider]s
+/// run the native OAuth flows.
 library;
 
 // Models
@@ -16,12 +18,12 @@ export 'src/models/auth_user.dart';
 export 'src/service/kit_auth_service.dart';
 export 'src/service/in_memory_auth_service.dart';
 
-// OAuth providers — port + stubs (phase-later)
+// OAuth providers — port + native implementations (Apple / Google)
 export 'src/providers/kit_oauth_provider.dart';
 export 'src/providers/apple/apple_sign_in_provider.dart';
 export 'src/providers/google/google_sign_in_provider.dart';
 
-// Seed backend seam — stub (phase-4)
+// Seed backend — deterministic seeded accounts (port of the tier1 spec)
 export 'src/backends/seed_auth_backend.dart';
 
 // Access policy — claims-based RBAC (role claim on AuthUser.metadata).

@@ -10,14 +10,57 @@ and depends only on Kit-owned value types (`KitLatLng`, `KitCameraPosition`,
 | --- | --- | --- |
 | `google` | google_maps_flutter | **Wired** — default on Android, web, desktop |
 | `apple` | apple_maps_flutter | **Wired** — default on iOS (no API key) |
-| `openStreetMap` | flutter_map (planned) | Stub — throws `UnimplementedError` |
-| `mapbox` | mapbox_maps_flutter (planned) | Stub — throws `UnimplementedError` |
+| `openStreetMap` | flutter_map | **Wired** — pure Dart, no key, simulator/web-testable |
+| `mapbox` | flutter_map + Mapbox raster tiles | **Wired** — pure Dart, public `pk.*` token |
 
 Backend selection is `defaultProviderFor(defaultTargetPlatform)`; pass
 `provider:` to `KitMapView` to force one.
 
-Stubs are **not** dependencies — a host that never opts into OSM/Mapbox
-pulls neither package. Each stub's TODO names its target package.
+### OpenStreetMap
+
+```dart
+OpenStreetMapProvider(
+  // REQUIRED by the OSM tile-usage policy (generic user agents are blocked)
+  // — pass the host app's real package ID.
+  userAgentPackageName: 'com.example.myapp',
+)
+```
+
+Attribution is always rendered (`SimpleAttributionWidget`), and flutter_map
+caches tiles itself (built-in since 8.2), satisfying the other two OSM
+tile-usage-policy requirements. `KitMapConfig.mapType` is ignored — the
+standard OSM tile server ships one style.
+
+### Mapbox
+
+flutter_map + Mapbox **raster tiles** — deliberately not the native
+`mapbox_maps_flutter` SDK (which needs a secret `sk.*` downloads token in
+~/.netrc and platform setup). A public `pk.*` token rides in the tile URL
+against the 512px retina endpoint, so it runs on simulators, emulators, and
+web with zero native config.
+
+```dart
+// flutter run --dart-define=MAPBOX_PUBLIC_TOKEN=pk....
+MapboxProvider(
+  accessToken: const String.fromEnvironment('MAPBOX_PUBLIC_TOKEN'),
+  userAgentPackageName: 'com.example.myapp',
+)
+```
+
+Never hardcode the token — the `MAPBOX_PUBLIC_TOKEN` entry in
+`config/credentials.catalog.json` is the publishable key this provider
+uses; the optional `MAPBOX_SECRET_TOKEN` entry is NOT needed here.
+`KitMapConfig.mapType` selects the Mapbox style (normal → streets-v12,
+satellite → satellite-v9, hybrid → satellite-streets-v12,
+terrain → outdoors-v12).
+
+### flutter_map limitations (OSM + Mapbox providers)
+
+No flutter_map equivalent exists for `myLocationEnabled`,
+`zoomControlsEnabled`, `compassEnabled`, or camera `tilt` — those
+`KitMapConfig` fields are honored only by the native Google/Apple
+providers. `animateCamera` jumps (no animated camera API in flutter_map
+core).
 
 ## Usage
 
@@ -66,6 +109,10 @@ import 'package:appbox_kit_maps/testing.dart';
 final fake = FakeMapProvider();          // captures built configs
 fake.controller;                          // RecordingMapController
 ```
+
+For widget tests against the real OSM/Mapbox providers, inject a fake
+`TileProvider` (one that serves in-memory images) so no HTTP happens — see
+`test/tiled_providers_test.dart` for the pattern.
 
 ## Maintenance notes
 

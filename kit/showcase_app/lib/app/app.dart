@@ -10,6 +10,7 @@ import 'package:appbox_kit_showcase_app/ui/views/showcase_search_shell/showcase_
 import 'package:appbox_kit_showcase_app/ui/views/showcase_profile_shell/showcase_profile_shell_view.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_profile_shell/showcase_profile/showcase_profile_view.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_profile_shell/showcase_motion/showcase_motion_view.dart';
+import 'package:appbox_kit_showcase_app/ui/views/showcase_profile_shell/showcase_maps/showcase_maps_view.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_profile_shell/showcase_components/showcase_components_view.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_shell_view.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes/showcase_notes_view.dart';
@@ -50,6 +51,9 @@ import 'package:appbox_kit_showcase_app/services/notes_media_service.dart';
         // route-driven KitMotionScope rides the native push animation and the
         // iOS swipe-back scrub (same rationale as the note editor below).
         AdaptiveRoute(page: ShowcaseMotionView, path: 'motion'),
+        // appbox_kit_maps showcase — OpenStreetMap by default (no key),
+        // Mapbox raster tiles when MAPBOX_PUBLIC_TOKEN is dart-defined.
+        AdaptiveRoute(page: ShowcaseMapsView, path: 'maps'),
         // ADR 0011 video-parity components — same AdaptiveRoute rationale as
         // the motion demo above.
         AdaptiveRoute(page: ShowcaseComponentsView, path: 'components'),

@@ -1,5 +1,5 @@
 name: appbox_kit_auth
-description: API-first auth seam for appbox_kit apps — a KitAuthService port (email/password + OAuth), typed AuthResult with failure reasons, an in-memory default backend, and scriptable fakes. Seed-backend and native OAuth wiring are later phases.
+description: API-first auth seam for appbox_kit apps — a KitAuthService port (email/password + OAuth), typed AuthResult with failure reasons, an in-memory default backend, a deterministic Seed backend, native Apple/Google OAuth providers, and scriptable fakes.
 version: 0.1.0
 publish_to: 'none'
 
@@ -7,13 +7,20 @@ environment:
   sdk: '>=3.0.3 <4.0.0'
 
 dependencies:
-  # No UI here today, but the OAuth provider stubs will wire the Flutter
-  # plugins google_sign_in / sign_in_with_apple in a later phase — declaring
-  # the Flutter SDK now keeps that a non-breaking add.
   flutter:
     sdk: flutter
+  # SHA-256 of the Apple sign-in nonce.
+  crypto: ^3.0.6
+  # Native OAuth flows behind the KitOAuthProvider port.
+  google_sign_in: ^7.2.0
+  sign_in_with_apple: ^8.1.0
 
 dev_dependencies:
   flutter_lints: ^6.0.0
   flutter_test:
     sdk: flutter
+  # Mock the plugin platform boundary (GoogleSignInPlatform.instance) — the
+  # v7-era replacement for the 6.x-era google_sign_in_mocks.
+  mocktail: ^1.0.4
+  plugin_platform_interface: ^2.1.8
+  google_sign_in_platform_interface: ^3.1.0

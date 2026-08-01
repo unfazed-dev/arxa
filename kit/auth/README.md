@@ -6,8 +6,9 @@ that's real enough to build the whole auth UI against before any real backend
 lands.
 
 - **Version:** 0.1.0 · `publish_to: 'none'` · Dart `>=3.0.3 <4.0.0`
-- **Depends on:** the Flutter SDK only. **No** dependency on `appbox_kit`,
-  `stacked`, `stacked_services`, or any app code.
+- **Depends on:** the Flutter SDK, `crypto`, `sign_in_with_apple`, and
+  `google_sign_in` (v7 API). **No** dependency on `appbox_kit`, `stacked`,
+  `stacked_services`, or any app code.
 
 > Naming note: `appbox_kit_data` also ships a `KitAuthService` (a
 > backend-identity-coupled variant with `session$`/`currentSession`). This
@@ -34,12 +35,18 @@ lands.
   deterministic ids, optional session TTL). **Not secure — never production.**
 - Scriptable fake (`testing.dart`), including token-expiry.
 
-**Stubs (`UnimplementedError` + TODO):**
-- `SeedAuthBackend` (**phase-4**) — the seam onto the app's existing Seed auth
-  service. Kept a clean interface seam: it will NOT import app code; the host
-  injects the operations it needs.
-- `AppleSignInProvider` / `GoogleSignInProvider` (**phase-later**) — native
-  OAuth via `sign_in_with_apple ^8.1.0` / `google_sign_in ^7.2.0`.
+**Implemented backends:**
+- `SeedAuthBackend` — deterministic seeded accounts
+  (`alice@showcase.app`/`seed-alice`, `bob@showcase.app`/`seed-bob`), a
+  faithful port of the `appboxd/lib/tier1.dart` spec: exact-email matching,
+  monotonic uids (`user_1`, …) and tokens (`tok_1`, …), and a public
+  `refreshToken` that rotates tokens (old token dies ⇒ `tokenExpired`).
+- `AppleSignInProvider` / `GoogleSignInProvider` — native OAuth via
+  `sign_in_with_apple ^8.1.0` / `google_sign_in ^7.2.0` (the v7 API:
+  `instance` + `initialize` + `authenticate`). Cancellation maps to
+  `AuthFailureReason.cancelled`; the JWT (`identityToken` / `idToken`) rides
+  on `AuthSession.accessToken` for backend verification. Platform/client-id
+  setup is documented in each provider's doc comment.
 
 **Non-goals:** real credential storage/hashing, session persistence, RBAC,
 account recovery. The default backend is a build-time convenience, not a
@@ -87,9 +94,11 @@ already-expired `AuthSession` for `AuthSession.isExpiredAt` assertions.
 
 ## Phases
 
-1. **Now:** port + in-memory default + fakes (this package).
-2. **Phase-later:** native OAuth providers (Apple / Google).
-3. **Phase-4:** `SeedAuthBackend` wired to the app's Seed auth service.
+1. **Done:** port + in-memory default + fakes; `SeedAuthBackend` (tier1
+   port); native Apple/Google OAuth providers.
+2. **Phase-4 (remaining):** fold `appbox_kit_data/lib/auth/` (seed/appwrite/
+   supabase backends) into this package behind the API-first seam, retiring
+   the duplicate `KitAuthService` name.
 
 Workspace wiring (path deps, locator registration, the `KitAuthService`
 name reconciliation with `appbox_kit_data`) is a downstream pass.

@@ -12,10 +12,10 @@ class ShowcaseProfileViewMobile
   @override
   Widget build(BuildContext context, ShowcaseProfileViewModel viewModel) {
     return ListView(
-      // Bottom = safe-area + tab-bar block so the last card ('Motion
-      // showcase') can scroll clear of the floating KitNativeTabBar — the
-      // shell extends the body under it (extendBody) and previously the
-      // button laid out unreachable beneath the bar.
+      // Bottom = safe-area + tab-bar block so the last card can scroll
+      // clear of the floating KitNativeTabBar — the shell extends the body
+      // under it (extendBody) and previously the button laid out
+      // unreachable beneath the bar.
       padding: EdgeInsets.fromLTRB(
           kSize16,
           kSize16,
@@ -162,6 +162,28 @@ class ShowcaseProfileViewMobile
                   // KitMotionScope (wake on push, scrubbed set-down on
                   // iOS swipe-back).
                   onPressed: () => context.router.pushNamed('motion'),
+                ),
+              ),
+            ],
+          ),
+        ).scrollEdgeEffect(
+          edge: KitScrollEdge.bottom,
+          occlusionPadding: kShowcaseTabBarBlockHeight,
+        ),
+        verticalSpaceMedium,
+        KitGlassCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const ShowcaseSectionLabel('Maps'),
+              verticalSpaceSmall,
+              SizedBox(
+                height: kButtonHeightMedium,
+                child: KitNativeButton(
+                  label: 'Maps showcase',
+                  // appbox_kit_maps port — OpenStreetMap out of the box,
+                  // Mapbox tiles via --dart-define=MAPBOX_PUBLIC_TOKEN.
+                  onPressed: () => context.router.pushNamed('maps'),
                 ),
               ),
             ],

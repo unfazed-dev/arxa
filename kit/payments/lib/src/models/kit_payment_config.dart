@@ -53,3 +53,24 @@ final class GooglePayConfig extends KitPaymentConfig {
   @override
   KitPaymentMethod get method => KitPaymentMethod.googlePay;
 }
+
+/// A PayPal profile. PayPal has no `pay`-plugin-style JSON document (order
+/// creation happens server-side via Orders v2), so the config carries only
+/// what a single payment needs: the ISO 4217 [currencyCode] the order is
+/// created in. [json] / [asset] are always null — they exist only because the
+/// sealed base declares them.
+final class PayPalConfig extends KitPaymentConfig {
+  /// ISO 4217 currency code for the order (e.g. `'USD'`, `'EUR'`).
+  final String currencyCode;
+
+  const PayPalConfig({this.currencyCode = 'USD'});
+
+  @override
+  String? get json => null;
+
+  @override
+  String? get asset => null;
+
+  @override
+  KitPaymentMethod get method => KitPaymentMethod.payPal;
+}

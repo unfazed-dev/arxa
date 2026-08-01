@@ -139,15 +139,18 @@
       "providers": [
         {
           "name": "SeedAuthBackend",
-          "verification": "port-tested"
+          "verification": "port-tested",
+          "notes": "implemented 2026-08-01 — kit/auth/lib/src/backends/seed_auth_backend.dart is a genuine port of the tier1 spec (no UnimplementedError); behavior suite green at kit/auth/test/backends/seed_auth_backend_test.dart. tier1.dart remains the pure-Dart paired spec (appboxd cannot depend on the Flutter kit). No device surface — port-tested is the honest ceiling."
         },
         {
           "name": "Apple SignIn",
-          "verification": "port-tested"
+          "verification": "port-tested",
+          "notes": "implemented 2026-08-01 — kit/auth Apple provider wraps sign_in_with_apple 8.1.0; unit tests green at the mocked platform boundary. Simulator smoke (Apple ID signed into Simulator; a missing capability fails silently) documented in docs/plans/stub-remediation.md Tier 2, not yet run — tier stays port-tested."
         },
         {
           "name": "Google SignIn",
-          "verification": "port-tested"
+          "verification": "port-tested",
+          "notes": "implemented 2026-08-01 — kit/auth Google provider wraps google_sign_in 7.2.0; unit tests green at the mocked platform boundary. Simulator smoke (ASWebAuthenticationSession on iOS sim; Play Services image + registered debug SHA-1 on Android emu) documented in docs/plans/stub-remediation.md Tier 2, not yet run — tier stays port-tested."
         }
       ]
     },
@@ -260,15 +263,18 @@
       "providers": [
         {
           "name": "Stripe",
-          "verification": "port-tested"
+          "verification": "port-tested",
+          "notes": "implemented 2026-08-01 — kit/payments Stripe provider runs flutter_stripe 13.1.0 PaymentSheet behind the KitStripeBackend port; unit tests green at the mocked backend boundary. device-verified needs a physical device with test keys (plan seq 4) — tier stays port-tested."
         },
         {
           "name": "PayPal",
-          "verification": "port-tested"
+          "verification": "port-tested",
+          "notes": "implemented 2026-08-01 — kit/payments PayPal provider runs Orders v2 create -> approve (flutter_web_auth_2 redirect) -> capture behind the KitPayPalBackend port; unit tests green at the mocked backend boundary. Sandbox smoke with real keys not yet run — tier stays port-tested."
         },
         {
           "name": "Apple Pay",
-          "verification": "stub"
+          "verification": "stub",
+          "notes": "wired but unproven above Tier 2 — kit implementation + unit tests done 2026-08-01; device-verified needs a physical device (merchant ID + CSR/certificate, one CSR issues exactly one certificate). Device run not attempted; tier stays stub."
         }
       ]
     },
@@ -279,7 +285,7 @@
         "native maps",
         "KitMapView"
       ],
-      "backing": "google/apple maps; OSM/Mapbox stub",
+      "backing": "google/apple maps; OSM/Mapbox on flutter_map",
       "topology": "standalone",
       "phase": "native-first-partial",
       "playbook": "maps/maps_playbook.mdx",
@@ -292,11 +298,13 @@
       "providers": [
         {
           "name": "OpenStreetMap",
-          "verification": "stub"
+          "verification": "stub",
+          "notes": "implemented 2026-08-01 — kit/maps OSM provider on flutter_map 8.3.1; unit+widget tests green, showcase demo wired (profile -> maps). Tier stays stub: no Tier-1 suite covers maps yet, and a tier is set only by a suite that ran (13.3). Simulator smoke not yet run."
         },
         {
           "name": "Mapbox",
-          "verification": "stub"
+          "verification": "stub",
+          "notes": "implemented 2026-08-01 — kit/maps Mapbox provider on flutter_map 8.3.1 (512px raster tiles, public pk token); unit+widget tests green. Tier stays stub: no Tier-1 suite covers maps yet (13.3). Simulator smoke not yet run."
         }
       ]
     },
