@@ -9,8 +9,11 @@
    emits stray markup.
    Assumes ui/common/composer_panel.html's cp.frame({ eyebrow, docked,
    collapseHref, bottom }) via call/caller (nunjucks — panel_views.html
-   already relies on caller); the composer's tray owns the screens
-   filmstrip. #}
+   already relies on caller). The screens filmstrip is NOT here: it is the
+   viewer's right-hand column (ui/common/design_viewer.html, .dv-vstrip) and
+   only in the views lens. The composer
+   keeps a one-line summary of what is pinned, and its own tray only on
+   surfaces with no viewer (freeze). #}
 {% import "ui/common/primitives.html" as prim %}
 {% import "ui/common/facts_bar.html" as fb %}
 {% import "ui/common/panel_views.html" as pv %}

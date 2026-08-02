@@ -46,8 +46,8 @@ directory touches shared files.
   two lenses: flow tiles (draggable) and the proto wired-app preview.
   Controller acts (`/design/viewer?bg=/inspect=/mode=/screen=/vp=`) swap
   `#design-viewer`. The mini panel is a single controller panel; the screens
-  filmstrip lives in the composer tray. `v.contextBase` enables the tile
-  pins.
+  filmstrip is the viewer's right-hand column (`.dv-vstrip`, views lens only).
+  `v.contextBase` enables the tile pins.
 
 ## 1. Routes — `designs/appbox-studio/app.routes.js`
 

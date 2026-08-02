@@ -2,12 +2,14 @@
      generator: appbox  licence: free  project: 662368770980
      Built with appbox (free tier) — https://appbox.dev
 -->
-{# The floating mini panel: a bottom-anchored floating bar with ONE panel —
-   the controller (mode toggle, inspect, fullscreen, undo/redo). The screens
-   filmstrip moved to the composer tray (ui/common/composer.html): context
-   pinning and proto screen-picking both live there now.
-   Macro-only file; importing it from a fragment render never emits stray
-   markup.
+{# The mini panel: a bottom-docked bar, ONE ROW — the controller (lens
+   toggle, fullscreen, undo/redo) and the bar-right cluster (device rungs,
+   divider, bg swatches) share a single flex line. Half the viewer's width,
+   centred (viewer.css). The screens filmstrip is NOT here: it is the viewer's
+   right-hand column in the views lens (design_viewer.html, fed by
+   v.filmstrip); the composer tray keeps its own copy only on surfaces with no
+   viewer (freeze). Macro-only file; importing it from a fragment render never
+   emits stray markup.
 
    Usage:
      {% import "ui/common/mini_panel.html" as mn %}
@@ -57,13 +59,16 @@
 </div>
 {% endmacro %}
 
-{# The bar itself: the bar-right cluster (the green-rect zone) — device rung
-   icon buttons, divider, bg swatch buttons (every mode) — over the single
-   controller panel. #}
+{# The bar itself: ONE row — the controller (lens chips, fullscreen,
+   undo/redo) then the bar-right cluster (device rung icon buttons, divider,
+   bg swatch buttons — every mode) pushed right by margin-left:auto. The
+   second row (.mini-panel-panels) is gone; the controller body is now a
+   sibling of the bar-right cluster inside .mini-panel-bar. #}
 {% macro miniPanel(v) %}
 {% set pnl = v.miniPanel %}
 <nav class="mini-panel" aria-label="{{ t('miniPanel.aria') }}">
   <div class="mini-panel-bar">
+    {{ controllerPanel(v, pnl) }}
     <span class="mini-panel-bar-right">
       {% if pnl.bar.devices %}
       <span class="mini-panel-group" role="group" aria-label="{{ t('viewer.viewportGroup') }}">
@@ -81,10 +86,6 @@
         {% endfor %}
       </span>
     </span>
-  </div>
-
-  <div class="mini-panel-panels">
-    {{ controllerPanel(v, pnl) }}
   </div>
 </nav>
 {% endmacro %}

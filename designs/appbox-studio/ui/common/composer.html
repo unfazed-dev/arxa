@@ -21,11 +21,18 @@
      suggestions    — [{value?, label?} | string], inside the + menu
      modelMenu      — agent_menus.modelMenuFor(...): { label, options }
      filmstrip      — [{id, label, tone, inContext, dim, src,
-                        contextHref | protoHref, active?}] EVERY screen as a
-                      thumb (design only — design_facade.filmstripFor);
-                      protoHref thumbs swap #design-viewer (screen pick),
-                      contextHref thumbs swap #panels (context toggle)
+                        contextHref | protoHref, active?}] | null. EVERY
+                      screen as a thumb — but ONLY on surfaces with no design
+                      viewer (today: freeze, which opts in via stageContext's
+                      composerStrip). The canvas surfaces put the strip in the
+                      viewer's own right-hand column instead, so they pass
+                      null and the tray body is skipped; the summary below
+                      still renders. protoHref thumbs swap #design-viewer
+                      (screen pick), contextHref thumbs swap #panels (toggle)
      trayContext    — { first, extra } | null: the pinned subset's head
+                      summary. This ALONE is enough to render the summary
+                      line — it is what the composer says about the context
+                      when the thumbs live in the viewer
                       summary ("first +N"); null when nothing is pinned
      elements       — [{screenId, name, kind, tone, removeHref}] pinned
                       elements (design only); independent of the filmstrip —
@@ -38,7 +45,17 @@
       hx-post="{{ c.composerAction }}" hx-target="#panels" hx-swap="morph:outerHTML">
   {% set hasStrip = c.filmstrip and c.filmstrip.length %}
   {% set hasEls = c.elements and c.elements.length %}
-  {% if hasStrip or hasEls %}
+  {# The SUMMARY and the tray BODY are gated separately. They used to share one
+     `hasStrip or hasEls` gate, which was only ever right by accident: the
+     filmstrip was non-empty on every design surface, so the gate was always
+     true. Once the strip moved out of the tray and into the viewer, that gate
+     went false on the canvas surfaces and the composer stopped naming pinned
+     screens at all — you could pin two, watch the tiles and the viewer strip
+     mark them, and the composer would say nothing. The summary's real
+     condition is "something is pinned", which is `trayContext`. #}
+  {% set hasBody = hasStrip or hasEls %}
+  {% set hasChips = c.contextChips and c.contextChips.length %}
+  {% if hasBody or hasChips %}
   {# The tray: zero-JS AnimatedContainer. The hidden checkbox flips the
      grid rows on the SAME element (CSS-Tricks' grid auto-height idiom), so
      the height transition visibly runs both ways. The hx trigger rides the
@@ -47,6 +64,7 @@
      just mirrors the flip server-side (state=toggle) so the collapse
      survives the next render. The filmstrip and the element chips are fully
      independent — either one opens the tray on its own. #}
+  {% if hasBody %}
   <input class="cm-tray-cb" type="checkbox" id="cm-tray-cb" {{ 'checked' if c.tray.open }}
          hx-get="{{ c.tray.toggleHref }}" hx-trigger="change" hx-target="#panels" hx-swap="morph:outerHTML" hx-push-url="false"
          aria-label="{{ t('composer.collapseTray') if c.tray.open else t('composer.showTray') }}">
@@ -54,6 +72,34 @@
     <span class="cm-tray-title">{{ t('composer.context') }}{% if c.trayContext %} · {{ c.trayContext.first }}{{ ' +' + c.trayContext.extra if c.trayContext.extra }}{% elif hasEls %} · {{ c.elements[0].name }}{{ ' +' + (c.elements.length - 1) if c.elements.length > 1 }}{% endif %}</span>
     {{ icon('chevron-down', {size: 14, cls: 'composer-chev'}) }}
   </label>
+  {% else %}
+  {# No tray body to disclose (the canvas surfaces: the thumbs live in the
+     viewer now and no element is pinned). Just the label — a disclosure
+     control that opens an empty box is worse than no control. What is pinned
+     is named by the chips below, not by a "+N" count. #}
+  <p class="cm-tray-head is-static">
+    <span class="cm-tray-title">{{ t('composer.context') }}</span>
+  </p>
+  {% endif %}
+  {% if hasChips %}
+  {# The pinned screens, one chip each: ONE row, scrolls sideways, never
+     wraps — the composer is a fixed-height card and a wrapping chip list
+     grows it under the thread. Each chip wears its screen's ctx tone, the
+     same tone the canvas tile and the viewer thumb wear (toneFor is keyed on
+     the screen id, so they cannot drift). The × unpins: a GET to the
+     surface-scoped context route with state=off, swapping #panels — the same
+     one swap that re-tones the tiles and the viewer strip. #}
+  <div class="cs-ctx-strip" role="group" aria-label="{{ t('composer.screensInContext') }}">
+    {% for s in c.contextChips %}
+    <span class="cs-ctx-chip ctx-{{ s.tone }}" title="{{ s.id }}">
+      <span class="cs-ctx-name">{{ s.label }}</span>
+      <a class="ctx-x" href="{{ s.removeHref }}" hx-get="{{ s.removeHref }}" hx-target="#panels" hx-swap="morph:outerHTML" hx-push-url="false"
+         aria-label="{{ t('chat.removeChip', {label: s.label}) }}">{{ icon('x', {size: 12}) }}</a>
+    </span>
+    {% endfor %}
+  </div>
+  {% endif %}
+  {% if hasBody %}
   <div class="cm-tray">
     <div class="cm-tray-clip">
       {% if hasStrip %}
@@ -88,6 +134,7 @@
       {% endif %}
     </div>
   </div>
+  {% endif %}
   {% endif %}
   {# hx-preserve keeps a half-typed message across the swaps that unrelated
      interactions cause — morph keeps the NODE, but still applies the server's

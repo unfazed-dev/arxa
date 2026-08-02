@@ -35,24 +35,41 @@ registry, switched by server-side viewer state and swapped through
   `assets/css/viewer.css`; ONE mobile chrome, no os dimension). The rung
   switches from the device icon buttons in the mini panel's bar-right
   cluster (present in ALL modes — in views/flows they re-render the tiles at
-  that rung); the active screen is picked from the composer tray's filmstrip
-  (a thumb is a picker in proto — via `protoPicks` — a chat-context
-  toggle in views/flows).
+  that rung). Proto has NO active-screen picker: the filmstrip that used to
+  serve as one is views-only now (see below), so proto renders the facade's
+  default screen. `protoPicks` still ships the hrefs a new picker would use.
 
 Files:
 
 - `ui/common/design_viewer.html` — `designViewer(v)` macro (+ `protoStage`,
   `deviceChrome`).
-- `ui/common/mini_panel.html` — the floating mini panel: ONE panel, the
-  Controller, carrying the lens switch (`views` / `flows` / `proto`), the
-  canvas undo/redo pair and the viewer
-  fullscreen button (`data-action="viewer-fullscreen"`, implemented
-  client-side by `runtime/vendor/canvas.js` — requestFullscreen on the
-  enclosing `.design-viewer`; a `data-action="viewer-fullscreen-exit"` close
-  button in `design_viewer.html` shows only under `:fullscreen`); the
-  bar-right cluster carries the device rung icons (both modes) — divider —
-  bg swatches (every mode). The screens filmstrip lives in the composer
-  tray (`ui/common/composer.html`), not here.
+- `ui/common/mini_panel.html` — the docked mini panel: **ONE ROW**, half the
+  viewer's content width, centred. The Controller (lens switch `views` /
+  `flows` / `proto`, the canvas undo/redo pair, the viewer fullscreen button
+  — `data-action="viewer-fullscreen"`, implemented client-side by
+  `runtime/vendor/canvas.js` as requestFullscreen on the enclosing
+  `.design-viewer`; a `data-action="viewer-fullscreen-exit"` close button in
+  `design_viewer.html` shows only under `:fullscreen`) and the bar-right
+  cluster (device rung icons in both modes — divider — bg swatches in every
+  mode) share that single flex line; cramped, it scrolls sideways rather than
+  wrapping back into two rows.
+- **The screens filmstrip is the viewer's RIGHT COLUMN, VIEWS LENS ONLY**
+  (`design_viewer.html`, `.dv-vstrip`), fed by `v.filmstrip` at the composer
+  tray's original thumb scale. Not an overlay: `.dv-flow` is a row flex and
+  the rail is its last child, `flex: none; align-self: stretch` — so it takes
+  real width off `.dv-flow-canvas` (which needs `min-width: 0` to give it up)
+  and every `.dv-views-row`'s second column (`minmax(16rem, 1fr)`) narrows to
+  absorb it. Full height of the rows, scrolling on its own Y axis, and outside
+  the canvas's scroll box so it stays put while the canvas pans. Below ~1440px
+  the explode column hits its 16rem floor and the canvas scrolls sideways
+  instead — the rail is unaffected. The facade returns `null` for `flows` and
+  `proto`, which also
+  means **proto has no active-screen picker any more** (the strip was it);
+  `protoPicks` still carries the hrefs if one is needed. A thumb toggles the
+  pin (`#panels`). The composer tray (`ui/common/composer.html`)
+  keeps its own copy ONLY on surfaces that have a composer and no viewer —
+  today just freeze, which opts in with `stageContext`'s `composerStrip`.
+  Two copies would be two sets of thumb iframes for the same screens.
 - `assets/css/viewer.css` — flow canvas, mini panel, `.dv-proto*` + `.device`.
 
 ## The `v` contract (produced by the shell facade's `viewerFor`)
@@ -119,10 +136,18 @@ Files:
   miniPanel: { bar: { devices: [{ key, icon, active, href }] | null,
                       bgs: [{ value, active, href }] },
                controller: { modes, undo, redo } },
+  filmstrip:  [{ id, label, tone, inContext, dim, src,
+                 contextHref, active? }] | null,
+               // every screen as a thumb, in the viewer's right-hand column
+               // (.dv-vstrip). NON-NULL IN THE VIEWS LENS ONLY — null in
+               // flows, in proto, and on viewers with no design context
+               // (build loop's evidence viewer).
   protoPicks: { <screenId>: '/design/viewer?...&screen=<id>' } | null,
-               // proto mode only — the composer tray's filmstrip turns its
-               // thumbs into the active-screen picker with these hrefs
-               // (the tray lives outside #design-viewer, in #panels).
+               // proto mode only. Nothing in #design-viewer reads these any
+               // more (the strip that did is views-only now, so proto sits on
+               // whatever screen the facade defaults to). Still exposed
+               // because freeze's composer tray builds its own strip outside
+               // #design-viewer, in #panels.
 }
 ```
 

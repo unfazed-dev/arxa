@@ -45,15 +45,23 @@
 .dv-topbar-actions { margin-left: auto; display: flex; gap: .35rem; align-items: center; }
 .dv-botbar {
   flex: none; display: flex; flex-direction: column; align-items: center; gap: .3rem;
-  padding: .5rem .8rem .6rem; border-top: 1px solid var(--border);
+  /* No side padding: the mini panel is sized at 50% and centred, and side
+     padding here would make that 50% of the PADDED box — i.e. visibly
+     narrower than half the viewer. The foot line is centred text, so it
+     loses nothing. */
+  padding: .5rem 0 .6rem; border-top: 1px solid var(--border);
 }
 .dv-botbar-foot { margin: 0; font-size: .64rem; text-align: center; }
-/* flex column, min-height:0 — without it the block-child canvas sized to its
+/* flex ROW: the canvas, then the screens rail (.dv-vstrip) as a real column
+   on the right. min-height:0 — without it the block-child canvas sized to its
    content height, overflow:auto never engaged vertically and .dv-flow's
    overflow:hidden just clipped (dead Y-scroll). */
-.dv-flow { position: relative; flex: 1; min-height: 0; overflow: hidden; display: flex; flex-direction: column; }
+.dv-flow { position: relative; flex: 1; min-height: 0; overflow: hidden; display: flex; flex-direction: row; }
 .dv-flow-canvas {
-  position: relative; overflow: auto; flex: 1; min-height: 32rem;
+  /* min-width:0 lets the rail take its width off the canvas. Without it the
+     canvas's min-content floor (a tile + the explode panel) wins and the rail
+     is pushed out of the viewer instead. */
+  position: relative; overflow: auto; flex: 1; min-width: 0; min-height: 32rem;
   /* even padding: the 11rem bottom pad existed ONLY to let the last tile row
      scroll clear of the floating mini panel. The panel is docked in .dv-botbar
      now and consumes real layout height, so the hack is dead. */
@@ -279,16 +287,37 @@
    forced `.dv-flow-canvas { padding-bottom: 11rem }`; that padding is deleted
    with it. Still a card radius, NOT a 999px pill: with a panel open the bar is
    far taller than it is deep, and a pill radius renders as an ellipse. */
+/* ONE ROW, half the viewer's width, centred: .dv-botbar is a centring flex
+   column, so width:50% is half the viewer. min-width floors it so narrow
+   viewports don't crush the controls; max-width keeps it inside the bar. */
 .mini-panel {
-  max-width: 100%;
+  /* Half the bar's width, with a floor at the row's natural content width
+     (measured 517px / ~32rem at `en`). Half is the target; the floor is what
+     stops half from HIDING a control — at a 791px viewer half is 383px and
+     the row needs 517px, so the bg swatches would sit off-screen behind an
+     invisible scroll. Above ~1090px of bar the 50% wins outright.
+     CSS cannot derive this: the bar is a scroll container, so min-content /
+     max-content on the panel both resolve to 0 (measured — every
+     `width: max(50%, min-content)` variant returned exactly the 50% box).
+     Hence the literal. Consequence: a locale wider than the floor (qps-ploc)
+     scrolls again — raise the floor if a real locale needs it. */
+  width: 50%; min-width: min(33rem, 100%); max-width: 100%;
   background: var(--bg); border: 1px solid var(--border);
   border-radius: var(--radius);
   overflow: hidden;
 }
+/* nowrap is load-bearing: at 50% width the default wrap re-creates the second
+   row this change deleted. Cramped => scroll sideways, never stack. The bar
+   scrolls with no visible scrollbar, like .cs-strip. */
 .mini-panel-bar {
-  display: flex; gap: .15rem; padding: .5rem .8rem;
-  border-bottom: 1px solid var(--border);
+  display: flex; gap: .15rem; align-items: center; padding: .5rem .55rem;
+  flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none;
+  /* Eleven controls do not fit in half a viewer at every layout. No mask/fade
+     affordance: a mask paints unconditionally, so it would dim the last
+     swatch even when everything fits. The clipped-mid-control edge is the
+     cue, and the groups below are compacted so fewer layouts need it. */
 }
+.mini-panel-bar::-webkit-scrollbar { display: none; }
 .mini-panel-tab {
   display: inline-flex; align-items: center; justify-content: center;
   /* padding:0 — the app.css global button rule's .45rem/1.05rem padding eats
@@ -309,13 +338,46 @@
 .mini-swatch-canvas { background: var(--bg-2); }
 .mini-swatch-warm { background: #f4ead8; }
 .mini-swatch-slate { background: #2b3038; }
-.mini-panel-panels { padding: .5rem .8rem .2rem; overflow: hidden; }
+/* The controller is now a flex CHILD of .mini-panel-bar, not its own row:
+   no padding of its own, and nowrap for the same reason the bar has it. */
+/* Gaps and divider padding halved from the two-row layout: at half width the
+   whole row is the budget, and .8rem × 5 separators was 64px of it. */
 .mini-panel-body {
-  display: flex; gap: .8rem; align-items: center; flex-wrap: wrap;
+  display: flex; gap: .4rem; align-items: center; flex-wrap: nowrap;
   font-size: .78rem;
 }
-.mini-panel-group { display: inline-flex; gap: .35rem; align-items: center; }
-.mini-panel-group + .mini-panel-group { border-left: 1px solid var(--border); padding-left: .8rem; }
+.mini-panel-group { display: inline-flex; gap: .25rem; align-items: center; flex: none; }
+.mini-panel-group + .mini-panel-group { border-left: 1px solid var(--border); padding-left: .4rem; }
+.mini-panel-bar-right { gap: .4rem; }
+
+/* ---------- screens filmstrip: the viewer's RIGHT COLUMN ----------
+   Not an overlay — a real flex child of .dv-flow, last in source order so the
+   row flex puts it on the right. It is IN the viewer, so it takes real width
+   from the canvas and every .dv-views-row's second column (the explode panel,
+   minmax(16rem, 1fr)) narrows to match; align-self:stretch gives it exactly
+   the rows' height. Views lens only.
+   It keeps .cs-strip's thumb sizing (7.2rem clip / 5.6rem thumb / scale .221)
+   — the tray's original size, only the axis and the mount changed.
+   All rules carry the .dv-flow ancestor: composer.css loads AFTER viewer.css,
+   so a bare .dv-vstrip would lose every tie to .cs-strip on source order. */
+.dv-flow .dv-vstrip {
+  flex: none; align-self: stretch;
+  flex-direction: column; align-items: center;
+  overflow-x: hidden; overflow-y: auto;
+  /* .cs-strip hides the UA scrollbar with a 1.2rem pad + matching negative
+     margin, which only works inside .cm-tray-clip's overflow:hidden. There is
+     no clip here — reset the pair; scrollbar-width:none carries the hiding. */
+  padding: .6rem .5rem;
+  /* Same card idiom as .mini-panel and .panel-composer: full border + the
+     shared radius. The margin is what the radius needs — flush against the
+     viewer's edge the rounded corners have nothing to round against, and it
+     doubles as the seam between the rail and the canvas. Overrides
+     .cs-strip's negative margin-bottom, which only works inside a clip. */
+  margin: .6rem;
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.dv-flow .dv-vstrip::-webkit-scrollbar { display: none; }
 /* long screen ids (portalo.mediamodel3d) overflow the 5.6rem thumb and paint
    over the neighbor — clip them with an ellipsis instead */
 .dv-thumb-label { min-width: 0; }

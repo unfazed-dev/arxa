@@ -339,6 +339,33 @@
       </div>
       {% endif %}
     </div>
+    {# SCREENS FILMSTRIP — a REAL COLUMN of the viewer, not an overlay: the
+       right-hand flex child of .dv-flow, full height of the rows beside it,
+       scrolling on its own Y axis. Because it takes real layout width, the
+       canvas gets what's left and every .dv-views-row's second column
+       (the explode panel, minmax(16rem, 1fr)) narrows to match — which is the
+       point, and why this is in flow rather than absolutely positioned.
+       LAST in the DOM because .dv-flow is a row flex: source order is column
+       order. VIEWS ONLY — the facade returns null for flows and proto
+       (v.filmstrip), so this guard is the whole gate; no mode test here.
+       Own id namespace on the thumb iframes — morph pairs by id, and
+       `dvt-views--` is already taken by the canvas tiles. The container's own
+       id matters too: thumb clicks swap #panels, and without a stable id
+       morph would replace the scroller and throw away its scroll position on
+       every pin. #}
+    {% if v.filmstrip and v.filmstrip.length %}
+    <aside class="dv-vstrip cs-strip" id="dv-vstrip" aria-label="{{ t('composer.screensInContext') }}">
+      {% for s in v.filmstrip %}
+      <a class="dv-thumb cs-thumb {{ 'in-ctx ctx-' + s.tone if s.inContext }} {{ 'is-dim' if s.dim }} {{ 'on' if s.active }}"
+         href="{{ s.contextHref }}" hx-get="{{ s.contextHref }}"
+         hx-target="#panels" hx-swap="morph:outerHTML" hx-push-url="false"
+         title="{{ s.label or s.id }}">
+        <span class="dv-thumb-clip"><iframe id="dvf-vstrip--{{ s.id }}" src="{{ s.src }}" scrolling="no" tabindex="-1" title=""></iframe></span>
+        <span class="dv-thumb-label"><code>{{ s.id }}</code></span>
+      </a>
+      {% endfor %}
+    </aside>
+    {% endif %}
   </div>
 {% endif %}
 

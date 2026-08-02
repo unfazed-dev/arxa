@@ -17,8 +17,9 @@
                     cycling by index when absent; removeHref adds the unpin
                     (x) action
 
-   The context filmstrip lives in the composer's tray
-   (ui/common/composer.html), not here. #}
+   The context filmstrip is not here. It is the viewer's right-hand column in
+   the views lens (ui/common/design_viewer.html); the composer's own tray
+   (ui/common/composer.html) carries one only on surfaces with no viewer. #}
 
 {% macro head(spec) %}
 {% set tones = ['cyan', 'olive', 'amber', 'violet'] %}

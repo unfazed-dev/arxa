@@ -169,6 +169,11 @@ a.composer-opt:hover { background: var(--bg-2); }
   font-size: .7rem; color: var(--tx-2); cursor: pointer;
 }
 .cm-tray-head:hover { color: var(--tx); }
+/* The summary with nothing to expand (canvas surfaces: the thumbs are in the
+   viewer's right-hand column and no element is pinned). Same line, no
+   affordance. */
+.cm-tray-head.is-static { margin: 0; cursor: default; }
+.cm-tray-head.is-static:hover { color: var(--tx-2); }
 .cm-tray-head .composer-chev { transition: rotate var(--motion-med) var(--motion-ease); }
 .cm-tray-cb:checked ~ .cm-tray-head .composer-chev { rotate: 180deg; }
 .cm-tray { display: grid; grid-template-rows: 0fr; }
@@ -177,6 +182,30 @@ a.composer-opt:hover { background: var(--bg-2); }
 @media (prefers-reduced-motion: no-preference) {
   .cm-tray { transition: grid-template-rows var(--motion-med) var(--motion-ease); }
 }
+
+/* ---------- pinned-screen context chips ----------
+   ONE row, horizontal scroll, never wrap: the composer is a fixed-height card
+   in the panel stack, and a wrapping chip list pushes the thread up as pins
+   accumulate. Same scrollbar-hiding pair as .cs-strip — `scrollbar-width` for
+   the UAs that honour it, and the padding/negative-margin trick pushes a
+   UA-drawn bar out of the visible box for the ones that don't (here the clip
+   is .composer's own overflow, not .cm-tray-clip's).
+   Tone comes from `.ctx-<tone>` on the chip (the --ctx / --ctx-soft pair at
+   the top of this file), so the chip, the canvas tile and the viewer thumb
+   are the same colour for the same screen. */
+.cs-ctx-strip {
+  display: flex; gap: .3rem; align-items: center; flex-wrap: nowrap;
+  overflow-x: auto; scrollbar-width: none;
+  padding: .15rem .55rem 1.2rem; margin-bottom: -1.1rem;
+}
+.cs-ctx-strip::-webkit-scrollbar { display: none; }
+.cs-ctx-chip {
+  display: inline-flex; gap: .2rem; align-items: center; flex: none;
+  padding: .15rem .3rem .15rem .55rem; border-radius: 999px; font-size: .72rem;
+  background: var(--ctx-soft); color: var(--ctx);
+  box-shadow: inset 0 0 0 1px var(--ctx);
+}
+.cs-ctx-name { white-space: nowrap; }
 
 /* ---------- element context chips ---------- */
 .cs-el-strip {

@@ -150,7 +150,11 @@ const chainOf = (flow) => {
 // next, so undoing a move that demoted a screen to chain tail still restores
 // the trigger the file no longer carries; continue/push is the last fallback
 // (an appended screen, or the old chain head).
-const rewire = (flow, order, memory) => {
+// Exported for tools/check-flow-element.mjs, on the check-flow-guard.mjs
+// precedent: it is PURE (mutates only the flow object handed to it, never
+// reaches writeProjectFixture), so a node self-check can pin the element
+// invariant without a server and without touching the live studio on :4319.
+export const rewire = (flow, order, memory) => {
   const edges = flow.edges ?? [];
   const byPair = new Map(edges.map((e) => [`${e.from}→${e.to}`, e]));
   const outByFrom = new Map(edges.map((e) => [e.from, e]));
@@ -547,6 +551,11 @@ function viewerFor(d, L, t) {
     src: `${STUB_BASE}${active}?vp=${vp}&embed=1`,
   } : null;
 
+  // Kept even though the viewer's own filmstrip no longer reads it (that strip
+  // is VIEWS-ONLY now, so it never renders in proto): freeze's composer tray
+  // builds a strip outside #design-viewer and still consumes these hrefs.
+  const protoPicks = mode === 'proto' ? Object.fromEntries(screens.map((s) => [s.id, withParams({ screen: s.id })])) : null;
+
   const miniPanel = {
     // The bar-right cluster (always mounted): device rung icons in ALL
     // lenses (in views/flows they re-render the tiles at that rung) + bg
@@ -566,9 +575,22 @@ function viewerFor(d, L, t) {
     inspect, live, active,
     screens, flows, bg,
     mode, proto, vp,
-    // Proto-mode screen picks for the composer tray's filmstrip (the tray
-    // lives outside #design-viewer, so the viewer hands the hrefs over).
-    protoPicks: mode === 'proto' ? Object.fromEntries(screens.map((s) => [s.id, withParams({ screen: s.id })])) : null,
+    // The screens filmstrip: the viewer's RIGHT-HAND COLUMN in the VIEWS lens
+    // only (design_viewer.html) — not a mini-panel member any more, and
+    // deliberately absent in flows and proto. Same builder the composer tray
+    // uses. contextBase is '<surface>/context/', so the surface prefix it
+    // wants is that minus the trailing segment — the viewer only mounts on
+    // /design.
+    //
+    // Consequence of the views-only gate: this strip was ALSO proto's only
+    // active-screen picker, so proto now shows whatever screen the facade
+    // defaults to. Give proto its own picker if that becomes a problem —
+    // protoPicks below still carries the hrefs.
+    filmstrip: mode === 'views' ? filmstripFor(d, contextBase.replace(/\/context\/$/, ''), L, { protoPicks, proto }, false) : null,
+    // Proto-mode screen picks. No longer read by the viewer's own strip (see
+    // above), but freeze's composer tray still builds one outside
+    // #design-viewer, so the viewer keeps handing the hrefs over.
+    protoPicks,
     base, stubBase: STUB_BASE, contextBase,
     miniPanel,
     undoRedo: {
@@ -857,11 +879,27 @@ export const stageContext = (sessionData = {}, opts = {}, prefs = {}, t = (k) =>
     composerAction: '/design/chat/messages',
     modelMenu: agent.modelMenuFor(sessionData, base, t),
     tray: { open: d.trayOpen !== false, toggleHref: `${base}/tray?state=toggle` },
-    // The tray's filmstrip: every screen as a thumb (see filmstripFor). The
-    // tray head summarizes the PINNED subset ("first +N"); null when the
+    // The tray's filmstrip: every screen as a thumb (see filmstripFor). Only
+    // on surfaces with NO design viewer — the canvas surfaces float the strip
+    // over the views canvas instead (viewerFor -> viewer.filmstrip), and two
+    // copies would be two sets of thumb iframes for the same screens.
+    // Freeze opts in (composerStrip); its stage has a composer and no viewer.
+    // The tray head summarizes the PINNED subset ("first +N"); null when the
     // context is empty — the filmstrip still renders, nothing dimmed.
-    filmstrip: filmstripFor(d, base, L, viewer, opts.noProto),
+    filmstrip: opts.composerStrip ? filmstripFor(d, base, L, viewer, opts.noProto) : null,
     trayContext: ids.length ? { first: ids[0], extra: ids.length - 1 } : null,
+    // The pinned screens themselves, one chip each — what the composer SAYS
+    // about the context now that the thumbs live in the viewer. Same tone as
+    // the screen's canvas tile and filmstrip thumb (toneFor is id-keyed, so
+    // the three agree by construction, not by copying a value around).
+    // removeHref is base-scoped like the filmstrip's toggle, so the unpin
+    // swaps the surface being rendered rather than always /design/chat.
+    contextChips: ids.map((id) => ({
+      id,
+      label: repo.screen(id, L).label,
+      tone: toneFor(id, L),
+      removeHref: `${base}/context/${id}?state=off`,
+    })),
     viewer,
     // The shared composer reads these at stage level (composer.html: element
     // chips in the tray, the chat undo/redo pair) — the viewer keeps its own
@@ -969,7 +1007,7 @@ export const moveInFlow = async (sessionData, flowId, screenId, to = {}, prefs =
       // to chain tail drops its outgoing edge from the file, and undo replays
       // by re-deriving from the then-current file — this memory lets that
       // replay restore the trigger verbatim (see rewire).
-      const triggers = Object.fromEntries((flow.edges ?? []).map((e) => [e.from, { trigger: e.trigger, action: e.action ?? 'push' }]));
+      const triggers = moveMemory(flow);
       rewire(flow, after, triggers);
       await proj.writeFlowsDual(flows, [flowId]);
       pushCanvasUndo(d, { type: 'flow-move', flowId, before, after, triggers });
@@ -1136,7 +1174,10 @@ export const revertCheckpoint = (sessionData, screenId, cpId, prefs = {}, t = (k
 
 export const freezeContext = (sessionData = {}, prefs = {}, t = (k) => k, locale = 'en', fileArg) => {
   const L = locale;
-  const stage = stageContext(sessionData, { line: 'freeze', base: '/design/freeze', fileBase: '/design/freeze', file: fileArg, noProto: true }, prefs, t, L);
+  // composerStrip: freeze renders a composer but NO design viewer, so the
+  // filmstrip stays in its tray (every /design canvas surface docks it under
+  // the viewer's mini panel instead).
+  const stage = stageContext(sessionData, { line: 'freeze', base: '/design/freeze', fileBase: '/design/freeze', file: fileArg, noProto: true, composerStrip: true }, prefs, t, L);
   const lv = stage.jargonLevel;
   const d = design(sessionData);
   const ap = repo.approval(L);
