@@ -141,7 +141,7 @@ Future<GateResult?> _tryDartGate(String name, GateContext ctx) async {
     case 'advertise':
       return advertiseGate(ctx);
     case 'intake':
-      return intakeGate(ctx);
+      return intakeGate(ctx, project: ctx.project);
     case 'structure':
       return structureGate(ctx);
     case 'deploy':

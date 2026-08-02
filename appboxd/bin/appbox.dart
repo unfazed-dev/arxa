@@ -293,6 +293,7 @@ Future<void> _runGate(List<String> args) async {
 Future<void> _runAllGates(List<String> args) async {
   String? repoRoot;
   String? appRoot;
+  String? project;
   for (var i = 0; i < args.length; i++) {
     switch (args[i]) {
       case '--app':
@@ -301,6 +302,13 @@ Future<void> _runAllGates(List<String> args) async {
       case '--repo':
         repoRoot = args[++i];
         break;
+      // Parsed and carried, not dropped. The single-gate path already refuses
+      // --project on gates that cannot use it; --all used to accept the flag
+      // and silently gate the studio instead of the project asked for, which
+      // is worse than either answer.
+      case '--project':
+        project = args[++i];
+        break;
     }
   }
   repoRoot ??= _findRepoRoot();
@@ -308,7 +316,7 @@ Future<void> _runAllGates(List<String> args) async {
     stderr.writeln('appbox gate --all: cannot find repo root');
     exit(2);
   }
-  final ctx = GateContext(repoRoot: repoRoot, appRoot: appRoot);
+  final ctx = GateContext(repoRoot: repoRoot, appRoot: appRoot, project: project);
   final suite = await runAllGates(ctx);
   for (final s in suite.summaries) {
     print(s);

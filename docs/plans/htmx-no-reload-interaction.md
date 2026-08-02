@@ -118,20 +118,52 @@ shipping (thread went 4 → 6 messages while the box kept its contents). So
 Freeze needed the flag threaded explicitly: it shares the composer textarea but
 renders `freezeContext`, so `sendChat`'s own flag never reached the template.
 
-**Still open — the actual refactor.** A pin toggle still ships every panel over
-the wire. The seam is already established in this codebase: several macros take
-`{% if oob %}hx-swap-oob="outerHTML"{% endif %}`, and ids exist for
-`#design-viewer`, `#composer`, `#facts-bar`, `#timeline`, `#av-list`. A pin
-toggle should target `#design-viewer` and OOB the composer tray.
+### The refactor: CLOSED, because the premise was wrong
 
-One blocker to design around before starting, found while scoping: the tray is
-rendered under `{% if hasStrip or hasEls %}`, so pinning the *first* element
-must **create** it — and an OOB swap cannot target an element that does not yet
-exist. Either the tray container renders always (a visible empty "Context" bar
-— a UX decision, not a mechanical one), or that first transition falls back to
-a wider swap. That choice is why this was not bulldozed through.
+The refactor was justified by one number — "84 KB to toggle a class" — and that
+number does not survive being broken down. Measured against the live studio
+(10 screens, portalo), one pin response is **84,965 bytes**:
 
-### Original Lever 2 specification
+| region | bytes | share | does a pin change it? |
+|---|---|---|---|
+| `#design-viewer` | 49,115 | 58% | **yes** — tile tone + `is-dim` on every tile |
+| `#av-list` | 15,608 | 18% | **yes** — every screen card's active state |
+| composer tray | 11,589 | 14% | **yes** — every filmstrip thumb's tone |
+| chat head chips | ~150 | <1% | yes |
+| everything else (panel frames, panel bar, thread, composer bar) | ~8,500 | 10% | no |
+
+**90% of the payload is regions a pin genuinely changes.** Panel-level
+retargeting — the exact plan below — therefore saves ~10%, and the "several
+panels shipped for a class change" story it rested on is simply not what is on
+the wire. The studio renders each screen three times (canvas tile, activity
+card, filmstrip thumb) and a pin re-tones all three; that is the cost, and
+moving targets around does not touch it.
+
+The only lever with real leverage is **per-element OOB**: send just the toggled
+screen's tile, card and thumb (~10 KB, an 88% cut). It was rejected on cost, not
+on taste. It needs stable per-tile ids across lenses (the flows lens renders one
+screen in several rows), new per-card and per-thumb ids, and a server-side
+wide/narrow branch — because the 0↔1 context transition re-dims *every* tile,
+so the narrow path is wrong exactly when the context becomes non-empty or
+empties. Its failure mode is a silently stale tile, on localhost, in a tool
+where morph already removed the symptom the user reported.
+
+`tools/probe-no-reload.mjs` now asserts a 200 KB ceiling on the pin response —
+a blow-up detector, not a target, so a future change that starts shipping whole
+extra panels goes red.
+
+**`<details>` open state: won't-fix, with the reason.** Since the viewer is
+still re-fed on a pin, `dv-tool-menu` still closes. A menu closing when you
+interact with something else is conventional behaviour, and the two available
+fixes both cost more than the wart: `hx-preserve` freezes the menu's contents
+(a stale flow list), and an idiomorph `beforeAttributeUpdated` callback means a
+new client-side island under ADR-0002. What the probe asserts instead is the
+thing morph actually guarantees and that *can* regress: the `<details>` **node**
+survives the swap rather than being destroyed. The old line was a
+`console.log` labelled `KNOWN-OPEN` — a check that could not fail, which is the
+defect this whole slice exists to remove.
+
+### Original Lever 2 specification (not implemented — see above)
 
 Morph stops the *damage* from an 84 KB re-render; it does not stop the
 re-render. A pin toggle still ships every panel over the wire.

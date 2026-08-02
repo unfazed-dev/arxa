@@ -191,7 +191,13 @@ class CdpClient {
   }
 
   /// Find Chrome at the default platform path.
+  ///
+  /// `APPBOX_CHROME` overrides it — the same escape hatch `tools/probe-*.mjs`
+  /// already honours, for machines where Chrome is not at the platform default
+  /// and for exercising the launch-failure paths against a stub binary.
   static String defaultChromePath() {
+    final override = Platform.environment['APPBOX_CHROME'];
+    if (override != null && override.isNotEmpty) return override;
     if (Platform.isMacOS) {
       return '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
     }

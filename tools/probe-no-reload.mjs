@@ -36,6 +36,17 @@ try {
   page.on('pageerror', (e) => errs.push(e.message));
   let navs = [];
   page.on('framenavigated', (f) => { if (f !== page.mainFrame()) navs.push(f.url().replace(BASE, '')); });
+  // Pin-response sizes, so the cost of the highest-frequency interaction stays
+  // visible. The ceiling is a blow-up detector, not a target: the response was
+  // measured at ~85 KB and is irreducible by retargeting (see Lever 2 in
+  // docs/plans/htmx-no-reload-interaction.md — the three regions a pin really
+  // changes are 90% of it). If this goes red, something started shipping whole
+  // extra panels again.
+  const pinBytes = [];
+  page.on('response', async (r) => {
+    if (!/\/context\//.test(r.url())) return;
+    try { pinBytes.push((await r.body()).length); } catch { /* body gone; ignore */ }
+  });
 
   await page.goto(BASE + '/design', { waitUntil: 'networkidle' });
   await page.waitForSelector('iframe.dv-tile-frame', { timeout: 15000 });
@@ -62,30 +73,28 @@ try {
   check('iframes survive as the same DOM nodes', after.marked >= before - 1, `${after.marked}/${before}`);
   check('no iframe re-navigation', navs.length === 0, `${navs.length} navigations`);
 
-  console.log('\n=== D2. <details> open state + typed text survive a swap ===');
-  await page.evaluate(`(() => { const d=document.querySelector('details.dv-tool-menu'); if(d) d.open=true; })()`);
-  const hadDetails = await page.evaluate(`!!document.querySelector('details.dv-tool-menu')`);
+  console.log('\n=== D2. node identity + typed text survive a swap ===');
+  // Mark the <details> NODE. What morph guarantees, and therefore what is worth
+  // asserting, is that this node is not destroyed — at baseline it was replaced
+  // outright. Its `open` state is a separate matter: the server renders
+  // <details> without `open`, so morph faithfully closes it. That is deliberate
+  // and documented as won't-fix in docs/plans/htmx-no-reload-interaction.md (a
+  // menu closing on an unrelated interaction is conventional, and preserving it
+  // would cost a stale flow list), so there is nothing here to assert about it
+  // — an assertion either encodes the wart or fails on purpose. Node survival
+  // is the check that can actually go red if morph regresses.
+  const hadDetails = await page.evaluate(`(() => { const d=document.querySelector('details.dv-tool-menu'); if(!d) return false; d.__probeNode=1; return true; })()`);
   await page.evaluate(`(() => { const t=document.querySelector('.composer-card textarea, textarea[name="text"]'); if(t){ t.value='DRAFT-KEEP-ME'; } })()`);
   const hadTextarea = await page.evaluate(`!!document.querySelector('textarea[name="text"]')`);
   await page.$eval('.dv-tile[data-id="portalo.cart"] .dv-tile-tools a[hx-get*="context"]', (el) => el.click());
   await settle(page);
-  // DEFERRED, not fixed by morph, and NOT a regression — verified by stashing
-  // the templates and re-running: at baseline these nodes were DESTROYED
-  // (sameNode:false) and lost the same state. Morph now keeps the node but
-  // still applies the server's content, and the server echoes neither `open`
-  // nor the draft text. The real fix is Lever 2 (a pin toggle should not
-  // re-render the composer at all), not a bigger hammer here. Reported, and
-  // deliberately excluded from this slice's pass/fail.
-  const detailsOpen = hadDetails && await page.evaluate(`(()=>{const d=document.querySelector('details.dv-tool-menu'); return !!(d&&d.open);})()`);
+  const detailsSameNode = hadDetails && await page.evaluate(`(()=>{const d=document.querySelector('details.dv-tool-menu'); return !!(d&&d.__probeNode===1);})()`);
   const textKept = hadTextarea && await page.evaluate(`(()=>{const t=document.querySelector('textarea[name="text"]'); return !!(t&&t.value==='DRAFT-KEEP-ME');})()`);
+  if (hadDetails) check('<details> menu survives as the same node', detailsSameNode);
   // Fixed: the textarea is hx-preserve'd (dropped only on the render after a
   // send, so the sent text cannot linger and be sent twice). tools/… has no
   // send coverage; that pairing is asserted separately.
   if (hadTextarea) check('typed composer draft preserved', textKept);
-  // Still open: the server echoes <details> without `open`, so morph closes it.
-  // Not a regression — at baseline the node was destroyed outright.
-  console.log(`  [KNOWN-OPEN] <details> stayed open      : ${detailsOpen} (baseline: false — node destroyed)`);
-  console.log('               server does not echo `open`; morph applies server state faithfully.');
 
   console.log('\n=== B. navigation INSIDE a live tile survives (THE complaint) ===');
   await page.$eval('.dv-tile[data-id="portalo.home"] a[hx-get*="live="]', (el) => el.click());
@@ -119,6 +128,11 @@ try {
     return out;
   })()`);
   console.log('  ', JSON.stringify(wc), '(shell-level; portalo web components live inside iframes)');
+
+  console.log('\n=== E. pin payload cost ===');
+  const worstPin = pinBytes.length ? Math.max(...pinBytes) : 0;
+  console.log(`  pin responses: ${pinBytes.length}, largest ${worstPin} bytes`);
+  if (pinBytes.length) check('pin response under the 200 KB blow-up ceiling', worstPin < 200_000, `${worstPin} bytes`);
 
   console.log('\n=== page errors ===');
   console.log(errs.length ? errs.slice(0, 5).map(e => '  ! ' + e).join('\n') : '  none');

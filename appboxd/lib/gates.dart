@@ -29,6 +29,14 @@ class GateContext {
   final bool check;
   final bool selfTest;
 
+  /// The `~/.appbox/projects/<name>` shell a gate should read instead of the
+  /// studio's own design root. It lives on the context rather than as a named
+  /// parameter on each gate so that `gate --all` can carry it: the suite runner
+  /// takes only a context, so a per-gate parameter was unreachable from there
+  /// and `--all --project x` silently ignored the flag. Only gates that
+  /// actually read a project shell consume it (intake, today).
+  final String? project;
+
   GateContext({
     required this.repoRoot,
     this.appRoot,
@@ -36,6 +44,7 @@ class GateContext {
     SarifBuilder? sarif,
     this.check = false,
     this.selfTest = false,
+    this.project,
   })  : state = state ?? StateReader(repoRoot),
         sarif = sarif ?? SarifBuilder();
 

@@ -18,6 +18,14 @@ try{
   const reqs=[]; p.on('request',r=>{ if(/inspect|context\/element/.test(r.url())) reqs.push(r.method()+' '+r.url().replace(BASE,'')); });
   const errs=[]; p.on('pageerror',e=>errs.push('page: '+e.message));
   p.on('console',m=>{ if(m.type()==='error') errs.push('console: '+m.text().slice(0,120)); });
+  // Chrome's console line for a failed request names no URL, so a bare
+  // "Failed to load resource: 404" is unactionable on its own. Name it.
+  // Known exception: a console 404 with NO matching line here is Chrome's
+  // automatic /favicon.ico fetch — the browser issues it, not the renderer, so
+  // it reaches the console but never the CDP network events (verified: page-,
+  // context- and requestfailed-level listeners all see nothing, and
+  // GET /favicon.ico is a real 404 on this server). Cosmetic, not inspect.
+  p.on('response',r=>{ if(r.status()>=400) errs.push(`http ${r.status()} ${r.url().replace(BASE,'')}`); });
 
   await p.goto(BASE+'/design',{waitUntil:'networkidle'}); await s(p);
 

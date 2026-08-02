@@ -114,7 +114,19 @@ mechanism each named was still real.
    artifact of a retired convention. A generated file with no record of
    what generated it is the thing the check existed to prevent, which
    argues for the former.
-11. **A skipped check reads as a pass.** When the JS worker fails to boot,
+11. **A skipped check reads as a pass** — **CLOSED.** Both halves landed.
+    (a) A render boot failure is now `CheckOutcome.fail`, not `.skip`
+    (`design_selftest.dart`) — `--skip-render` remains the way to opt out on
+    purpose, and a crash is not an opt-out. (b) The summary line carries the
+    skipped count and the total: `passed 24, failed 0, skipped 0 of 24`, so a
+    run that quietly stopped executing a check no longer prints what a full
+    green run prints. Proven red-first: injecting a duplicate `export const`
+    into `build_facade.js` now yields
+    `FAIL every GET route answers 200 — render boot failed: …` and
+    `passed 23, failed 1`, where it previously reported `passed 23, failed 0`
+    and exit 0. Original report below.
+
+    When the JS worker fails to boot,
     `design selftest` emits
     `skip  every GET route answers 200 — render boot failed: …` and still
     reports **`passed 23, failed 0`** — exit 0, nothing red. Reproduced
@@ -160,11 +172,18 @@ mechanism each named was still real.
     orphan is reaped by the next boot with
     `design serve: reaped orphaned worker chrome <pid>`; and a concurrently
     running server on another port survived three sweeps untouched.
-9. **`gate --all` silently drops `--project`.** `_runAllGates`
-   (`appboxd/bin/appbox.dart`) parses only `--app`/`--repo`, so
-   `appbox gate --all --project x` ignores the flag without warning.
-   Cleanest fix: promote `project` onto `GateContext` so every gate can
-   carry it, rather than threading a named param per gate.
+9. **`gate --all` silently drops `--project`** — **CLOSED.** `_runAllGates`
+   (`appboxd/bin/appbox.dart`) parsed only `--app`/`--repo`, so
+   `appbox gate --all --project x` gated the studio and reported on it as
+   though it were the project — the worst of the three possible answers, since
+   the summary was green for the wrong tree. `project` is now a `GateContext`
+   field rather than a per-gate named param, because the suite runner takes
+   only a context: a named param was structurally unreachable from `--all`,
+   which is why the flag had nowhere to ride. Verified live —
+   `gate --all --project portalo` now passes intake against the project shell
+   while a bare `gate --all` fails against the studio, i.e. the flag visibly
+   changes the outcome. `runGate carries ctx.project into the intake gate`
+   (`test/gate_runner_test.dart`) goes red when the pass-through is dropped.
 
 13. **Every interaction destroyed every screen iframe** — **CLOSED**, see
     `docs/plans/htmx-no-reload-interaction.md`. 50 of 68 `hx-target`s point at
@@ -228,7 +247,25 @@ mechanism each named was still real.
     ADR-0002 lint rule that includes an explicit vacuous-pass guard, because
     the per-element half alone was green on a surface annotating nothing —
     the same defect it exists to catch.
-16. **`design_server_test.dart` "serving (Chrome worker)" is flaky.** Its
+16. **`design_server_test.dart` "serving (Chrome worker)" is flaky** —
+    **INSTRUMENTED, not fixed, and deliberately so.** The cause is still
+    unknown, and a retry would convert a flaky test into a slow test that never
+    reports. What was fixed is the reason it stayed unknown: `_readWsUrl`
+    matched `ws://` and **discarded every other line of Chrome's stderr**, so a
+    stalled launch raised a bare `TimeoutException after 0:00:30` with no cause
+    attached — undiagnosable by construction, and re-running it could never
+    have helped. A bounded `StderrTail` now rides both failure paths (exit
+    without a URL, and the 30s timeout), and `CdpClient.defaultChromePath()`
+    honours `APPBOX_CHROME`, the same escape hatch `tools/probe-*.mjs` already
+    used. Verified end to end against a stub Chrome:
+    `render boot failed: Bad state: Chrome exited before printing its DevTools
+    URL — last 2 line(s) of Chrome stderr: FATAL:cannot create user data dir…`.
+    `test/worker_launch_diag_test.dart` pins the cap and the empty-tail
+    message, since "Chrome said nothing" and "we dropped what Chrome said" are
+    different diagnoses that must not look alike. **Next occurrence should be
+    read, not re-run.** Original report below.
+
+    Its
     `setUpAll` failed in 2 of 6 full-suite runs, and the failures do not
     correlate with the change under test — it failed once *with* the morph
     change and once with that change stashed, while passing 4 other runs
@@ -236,6 +273,17 @@ mechanism each named was still real.
     file was run alone. Consistent with Chrome start-up contention when test
     files run concurrently. A test that fails ~1 run in 3 for reasons
     unrelated to the code trains people to re-run rather than read.
+
+18. **`GET /favicon.ico` 404s** — cosmetic, but it costs diagnosis time.
+    Chrome requests a favicon for every top-level document and reports the
+    failure to the console, so every probe run ends with
+    `Failed to load resource: … 404` and no URL. It is not attributable from a
+    probe: the request is issued by the browser, not the renderer, so
+    page-level, context-level and `requestfailed` listeners all see nothing
+    (verified — all three were tried). `tools/probe-inspect.mjs` now records
+    the URL of any real 4xx and carries a comment naming this one exception, so
+    the next reader does not re-derive it. Fix is a favicon route or an asset;
+    left alone because it touches nothing functional.
 
 ## Verified NOT debt (checked, closing)
 

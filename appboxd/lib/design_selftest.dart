@@ -613,7 +613,14 @@ List<_Check> _buildChecks({required bool skipRender}) {
             : '${swept.length} GET routes swept; $held held back — no project '
                 'mounted (${_projectBackedModules.join(", ")})');
       } catch (e) {
-        return CheckOutcome.skip('render boot failed: $e');
+        // FAIL, not skip. A boot failure means the render half of the suite
+        // never ran, and a skip is reported green: a duplicate `export const`
+        // in a facade took the whole artifact down, made every route
+        // unreachable, and the run still summarised `passed 23, failed 0`,
+        // exit 0. The only signal was the check count quietly dropping by one.
+        // `--skip-render` remains the way to opt out of this section on
+        // purpose; a crash is not an opt-out.
+        return CheckOutcome.fail('render boot failed: $e');
       } finally {
         await srv?.stop();
       }
@@ -927,7 +934,12 @@ Future<SelftestResult> _runPositive({
     }
   }
   out.add('');
-  out.add('passed ${ok.length}, failed ${fail.length}');
+  // The skipped count and the total ride on the summary line on purpose: a run
+  // that quietly stopped executing a check used to print exactly what a full
+  // green run prints. `passed 23, failed 0, skipped 1 of 24` cannot be mistaken
+  // for `passed 24, failed 0, skipped 0 of 24` at a glance or in a log grep.
+  out.add('passed ${ok.length}, failed ${fail.length}, '
+      'skipped ${skip.length} of ${checks.length}');
   return SelftestResult(
     exitCode: fail.isEmpty ? 0 : 1,
     stdoutLines: out,

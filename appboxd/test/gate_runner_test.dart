@@ -61,6 +61,20 @@ void main() {
     expect(read.events.single.payload['passed'], false);
   });
 
+  // The runner takes only a GateContext, so a gate's project had nowhere to
+  // ride and `gate --all --project x` gated the studio instead — silently, with
+  // a green summary for the wrong tree. The name guard is the cheapest proof
+  // the value actually arrives: a project the gate refuses can only be refused
+  // if the runner passed it on. Drop `project: ctx.project` in
+  // gate_runner.dart and this goes red.
+  test('runGate carries ctx.project into the intake gate', () async {
+    final scoped = GateContext(repoRoot: tmp.path, project: 'Bad Name');
+    final result = await runGate('intake', scoped);
+    expect(result, isNotNull);
+    expect(result!.summary, contains('bad project name'),
+        reason: 'the runner dropped ctx.project: ${result.summary}');
+  });
+
   test('an unknown gate writes no event', () async {
     final result = await runGate('not-a-gate', ctx);
     expect(result, isNull);

@@ -25,6 +25,41 @@ import 'package:appboxd/cdp.dart';
 import 'package:appboxd/design_server/l10n.dart' show parseArb;
 import 'package:path/path.dart' as p;
 
+/// A bounded tail of a child process's stderr, plus the note that carries it
+/// into an error message.
+///
+/// Chrome's stderr is the only account of why a launch failed. `_readWsUrl`
+/// used to match `ws://` and discard every other line, so a worker that never
+/// printed a DevTools URL raised a bare `TimeoutException after 0:00:30` with
+/// no cause attached — the intermittent `design_server_test` boot failure
+/// (finding 16) was undiagnosable by construction, and re-running it could
+/// never have said why. Bounded because a chatty Chrome must not turn one
+/// failure into a megabyte of log.
+///
+/// This is instrumentation, not a fix: nothing here retries the boot, so a real
+/// failure still fails — just legibly.
+class StderrTail {
+  StderrTail({this.max = 20});
+
+  final int max;
+  final List<String> _lines = [];
+
+  List<String> get lines => List.unmodifiable(_lines);
+
+  void add(String line) {
+    _lines.add(line);
+    if (_lines.length > max) _lines.removeAt(0);
+  }
+
+  /// Empty is reported explicitly: "Chrome said nothing" and "we dropped what
+  /// Chrome said" are different diagnoses, and silence must not read as the
+  /// second one.
+  String get note => _lines.isEmpty
+      ? ' (Chrome wrote nothing to stderr)'
+      : ' — last ${_lines.length} line(s) of Chrome stderr:\n  '
+          '${_lines.join('\n  ')}';
+}
+
 /// `ps` elapsed time (`[[dd-]hh:]mm:ss`) to seconds. macOS `ps` has no
 /// `etimes` keyword (that is procps-only), so this formatted field is all we
 /// get and it has to be parsed by hand.
@@ -438,18 +473,28 @@ class _ChromeHandle {
 
   static Future<String> _readWsUrl(Process proc) async {
     final completer = Completer<String>();
+    // Every stderr line that was not the DevTools URL used to be dropped on the
+    // floor, so a launch that stalled surfaced as a bare
+    // `TimeoutException after 0:00:30` with no cause attached — which is why
+    // the intermittent `design_server_test` worker boot (finding 16) has never
+    // been diagnosable. Keep a bounded tail and attach it to every failure
+    // path. This is instrumentation, not a fix: the boot is not retried, so a
+    // real failure still fails, just legibly.
+    final tail = StderrTail();
     late StreamSubscription sub;
     sub = proc.stderr
         .transform(utf8.decoder)
         .transform(const LineSplitter())
         .listen(
       (line) {
+        tail.add(line);
         final m = RegExp(r'ws://\S+').firstMatch(line);
         if (m != null && !completer.isCompleted) completer.complete(m.group(0)!);
       },
       onDone: () {
         if (!completer.isCompleted) {
-          completer.completeError(StateError('Chrome exited before DevTools URL'));
+          completer.completeError(StateError(
+              'Chrome exited before printing its DevTools URL${tail.note}'));
         }
       },
       onError: (e) {
@@ -457,7 +502,11 @@ class _ChromeHandle {
       },
     );
     try {
-      return await completer.future.timeout(const Duration(seconds: 30));
+      return await completer.future.timeout(
+        const Duration(seconds: 30),
+        onTimeout: () => throw StateError(
+            'Chrome printed no DevTools URL within 30s${tail.note}'),
+      );
     } finally {
       await sub.cancel();
     }
