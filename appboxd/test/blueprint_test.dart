@@ -296,4 +296,150 @@ void main() {
     File(badPath).writeAsStringSync('{not valid json');
     expect(buildBlueprint(badPath, outDir), 1);
   });
+
+  // ─── feedback surface (D18/D19) ───
+  //
+  // Intake's `feedbackKinds` is closed at THREE (success/error/info,
+  // intake.dart:64). The dispatcher used to take `isError: bool`, which carries
+  // only TWO — so an `info` feedback that intake permits could not render at
+  // all. These pin the three kinds, the optional action, and the standing
+  // no-raw-error-object rule.
+
+  /// The two files that carry the whole feedback surface.
+  ({String feedback, String primitives}) feedbackSources() {
+    final bdPath = _writeBreakdown(_authFlowBreakdown());
+    expect(buildBlueprint(bdPath, outDir), 0);
+    final tdir = p.join(outDir, 'templates');
+    return (
+      feedback:
+          File(p.join(tdir, 'lib', 'ui', 'feedback_service.dart')).readAsStringSync(),
+      primitives:
+          File(p.join(tdir, 'lib', 'ui', 'primitives.dart')).readAsStringSync(),
+    );
+  }
+
+  test('feedback of kind `info` renders as info — not as an error, not dropped',
+      () {
+    final src = feedbackSources();
+
+    // The three kinds intake permits must all be representable. A bool cannot
+    // carry three — this is the kind-drift red.
+    expect(src.primitives, contains('enum FeedbackKind { success, error, info }'),
+        reason: 'the closed three-kind vocabulary must exist in the emitted code');
+
+    // `info` must have its own dispatch arm in every render family.
+    expect(RegExp(r'case FeedbackKind\.info:').allMatches(src.primitives).length,
+        greaterThanOrEqualTo(1),
+        reason: 'info must reach a real dispatch arm, not fall through to error');
+
+    // …and a caller-facing entry point, alongside the two that already existed.
+    expect(src.feedback, contains('void info(String message'));
+    expect(src.feedback, contains('void error(String message'),
+        reason: 'existing callers (generate_view.dart:1139) must keep working');
+    expect(src.feedback, contains('void success(String message'));
+    // the pre-existing one-arg calls must still bind — action args are optional.
+    expect(src.feedback, contains('{String? actionLabel, VoidCallback? onAction}'),
+        reason: 'action must be OPTIONAL or generate_view.dart:1139 stops compiling');
+
+    // The collapsing bool must be gone from the dispatch surface — in CODE.
+    // (The doc comments still name `isError` to explain the drift; that's the
+    // point of them, so scan only non-comment lines.)
+    String code(String src) => src
+        .split('\n')
+        .where((l) => !l.trimLeft().startsWith('//') && !l.trimLeft().startsWith('///'))
+        .join('\n');
+    expect(code(src.primitives), isNot(contains('isError')),
+        reason: 'isError collapses three kinds to two — that IS the drift');
+    expect(code(src.feedback), isNot(contains('isError')));
+
+    // info must NOT be coloured as an error.
+    expect(src.primitives, isNot(contains('FeedbackKind.info ? _kFeedbackError')));
+  });
+
+  test('feedback declaring an action emits the action label and callback', () {
+    final src = feedbackSources();
+
+    // A snackbar's ACTION is its defining feature (Material: a recoverable
+    // error + Retry is core snackbar material). Optional — label + callback.
+    expect(src.primitives, contains('String? actionLabel'));
+    expect(src.primitives, contains('VoidCallback? onAction'));
+
+    // Each family must actually render it, not just accept it.
+    expect(src.primitives, contains('SnackBarAction('),
+        reason: 'Material family must render the action');
+    expect(src.primitives, contains('label: actionLabel'));
+    expect(src.primitives, contains('onPressed: onAction'));
+
+    // shadcn's ShadToast takes an `action` widget (shadcn_ui 0.55 toast.dart:298).
+    expect(src.primitives, contains('action: actionLabel == null'),
+        reason: 'shadcn family must pass the action through, conditionally');
+
+    // FeedbackService must expose it so ViewModels (no BuildContext) can use it.
+    expect(src.feedback, contains('actionLabel'));
+    expect(src.feedback, contains('onAction'));
+  });
+
+  test('no emitted path interpolates a raw exception object into a message', () {
+    final bdPath = _writeBreakdown(_authFlowBreakdown());
+    expect(buildBlueprint(bdPath, outDir), 0);
+
+    // Standing scan over EVERY emitted Dart file: a user-visible message is
+    // always a HUMAN string, never a raw error object (the bad-state leak).
+    // `${e}` / `$e` / `${viewModel.error}` inside a quoted message is the leak.
+    final leak = RegExp(
+        r'''\$\{?(e|err|error|ex|exception|viewModel\.error|_error)\}?''');
+    final offenders = <String>[];
+
+    for (final f in Directory(outDir)
+        .listSync(recursive: true)
+        .whereType<File>()
+        .where((f) => f.path.endsWith('.dart'))) {
+      final lines = f.readAsLinesSync();
+      for (var i = 0; i < lines.length; i++) {
+        final line = lines[i];
+        if (line.trimLeft().startsWith('//')) continue;
+        // only lines that build a user-visible message
+        if (!RegExp(r'''Text\(|message|description:|content:''').hasMatch(line)) {
+          continue;
+        }
+        if (leak.hasMatch(line)) {
+          offenders.add('${p.relative(f.path, from: outDir)}:${i + 1}: $line');
+        }
+      }
+    }
+
+    expect(offenders, isEmpty,
+        reason: 'raw error object reached a user-visible message:\n'
+            '${offenders.join('\n')}');
+  });
+
+  test('showAdaptiveToast honours the Material snackbar constraints', () {
+    final src = feedbackSources();
+
+    // one at a time — the Material family already hid the current bar; the
+    // glass family used to stack a new OverlayEntry per call.
+    expect(src.primitives, contains('hideCurrentSnackBar()'));
+    expect(src.primitives, contains('_activeGlassToast'),
+        reason: 'glass family must replace, not stack — one toast at a time');
+
+    // ~4s, not the 3s the glass family used and not shadcn's 5s default. ONE
+    // shared constant, referenced by all three families — so the timing cannot
+    // drift per platform the way it had.
+    expect(src.primitives,
+        contains('const Duration _kFeedbackDuration = Duration(milliseconds: 4000);'));
+    expect(RegExp(r'_kFeedbackDuration').allMatches(src.primitives).length,
+        greaterThanOrEqualTo(4),
+        reason: 'declaration + every family must share the ~4s Material duration');
+    expect(src.primitives, isNot(contains('Duration(seconds: 3)')));
+
+    // announced to assistive tech.
+    expect(src.primitives, contains('Semantics('),
+        reason: 'the glass overlay is not a native toast — it must announce itself');
+    expect(src.primitives, contains('liveRegion: true'));
+
+    // an action must be tappable — the glass overlay wrapped everything in
+    // IgnorePointer, which silently swallows the tap.
+    expect(src.primitives, isNot(contains('child: IgnorePointer(\n            child: Center(')),
+        reason: 'IgnorePointer over the whole overlay makes an action untappable');
+  });
 }

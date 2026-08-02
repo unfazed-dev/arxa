@@ -483,7 +483,30 @@ class HomeView extends StackedView<HomeViewModel> {
       return const AdaptiveScaffold(body: SizedBox.shrink());
     }
     if (viewModel.hasError) {
-      return AdaptiveScaffold(body: Center(child: Text('Could not load sessions: \${viewModel.error}')));
+      // TWO affordances, deliberately: the pull gesture is NOT discoverable on an
+      // error screen, so an explicit button has to carry the retry too. And the
+      // child must be SCROLLABLE — RefreshIndicator can only detect a pull over a
+      // scrollable, so the bare Center() this used to be silently defeated it.
+      return AdaptiveScaffold(
+        body: AdaptiveRefresh(
+          onRefresh: viewModel.refresh,
+          child: ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.fromLTRB(20, 120, 20, 32),
+            children: [
+              // A HUMAN message — never the raw error object (the bad-state leak).
+              Text('Could not load your sessions.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: AppTokens.ink3, fontSize: 15)),
+              const SizedBox(height: 16),
+              Center(
+                child: AdaptiveButton(
+                    label: 'Try again', onPressed: viewModel.refresh),
+              ),
+            ],
+          ),
+        ),
+      );
     }
     final sessions = viewModel.filtered;
     // Light paper surface → DARK status-bar icons, declared HERE (not just globally) so
@@ -508,8 +531,20 @@ class HomeView extends StackedView<HomeViewModel> {
               const SizedBox(height: 16),
               for (var i = 0; i < sessions.length; i++)
                 RiseIn(delayMs: 70 * i, child: Padding(padding: const EdgeInsets.only(bottom: 12), child: _sessionCard(sessions[i]))),
+              // The empty state already scrolled correctly (this ListView +
+              // AlwaysScrollableScrollPhysics under AdaptiveRefresh) — it only
+              // lacked the explicit retry affordance, so only that is added.
               if (sessions.isEmpty)
-                Padding(padding: const EdgeInsets.all(40), child: Center(child: Text('No sessions yet.', style: TextStyle(color: AppTokens.ink3)))),
+                Padding(
+                  padding: const EdgeInsets.all(40),
+                  child: Column(
+                    children: [
+                      Text('No sessions yet.', style: TextStyle(color: AppTokens.ink3)),
+                      const SizedBox(height: 16),
+                      AdaptiveButton(label: 'Refresh', onPressed: viewModel.refresh),
+                    ],
+                  ),
+                ),
             ],
           ),
         ),
@@ -1136,7 +1171,9 @@ $cases        default:
       await _nav.clearStackAndShow(Routes.$homeRoute);
     } catch (e) {
       setError(e);
-      locator<FeedbackService>().error('Sign-in failed: \$e');
+      // A HUMAN message — never the raw exception (the bad-state leak). The
+      // object stays on setError for logging/debug; only this string is shown.
+      locator<FeedbackService>().error('Could not sign you in. Please try again.');
     } finally {
       setBusy(false);
     }''';
@@ -2745,7 +2782,20 @@ class GenerateView {
   // ── home assembly ──
 
   String statsDeckMethod(Node spec) {
-    final cards = statCards(spec).map((c) => emit(c, false)).toList();
+    final cards = statCards(spec)
+        .map((c) => emit(c, false))
+        .where((c) => c.isNotEmpty)
+        .toList();
+    // A design with no `.stat-card` nodes has no deck. Emitting the carousel
+    // anyway produced `cards: [\n            ,\n    ]` — the trailing comma
+    // belongs to the template, not to the list, so an empty $body left a bare
+    // comma and the whole file stopped parsing (task #45). Same answer as
+    // sessionCardMethod below, for the same reason: no source nodes, no widget.
+    if (cards.isEmpty) {
+      return '  Widget _statsDeck(HomeViewModel vm) {\n'
+          '    // The design declares no stat-cards.\n'
+          '    return const SizedBox.shrink();\n  }';
+    }
     final body = cards.join(',\n            ');
     return '  Widget _statsDeck(HomeViewModel vm) {\n'
         '    // Spec-driven: the 4 cards (eyebrow/note/big/unit + chart kind +\n'
@@ -2996,10 +3046,28 @@ class GenerateView {
     final fields = model ? '  final Session workout;\n' : '';
     final modelLocal = model ? '    final s = workout;\n' : '';
     final vmArgs = (model && timer != null) ? 'workout' : '';
+    // Splash is the one screen with no states: it IS the loading screen, so a
+    // busy gate there would replace it with a blank one.
+    //
+    // Loading AND error, but no retry and no empty (task #43):
+    //  * `isBusy` / `hasError` are both on Stacked's BaseViewModel, so every
+    //    generated view compiles against them with no new ViewModel surface.
+    //  * NO retry button. It would have to call `viewModel.refresh`, which only
+    //    tplVmHomeBase declares — the generic VM templates have no such method,
+    //    so emitting one here would produce a view that does not compile. The
+    //    blueprint/scaffold generators emit view+ViewModel as a pair and DO get
+    //    a retry; this path emits the view alone and therefore cannot.
+    //  * NO empty state. Nothing here binds a collection, and a generated
+    //    `isEmpty` branch over nothing can only ever pass.
     final busyGate = snake == 'splash'
         ? ''
         : '    if (viewModel.isBusy) {\n'
             '      return const AdaptiveScaffold($scaffoldBg body: SizedBox.shrink());\n'
+            '    }\n'
+            '    if (viewModel.hasError) {\n'
+            '      return const AdaptiveScaffold($scaffoldBg body: Center(\n'
+            "        child: Text('Something went wrong loading this screen.'),\n"
+            '      ));\n'
             '    }\n';
     String ready = '';
     if (startup != null && startup.isNotEmpty) {

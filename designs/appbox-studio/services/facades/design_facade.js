@@ -168,8 +168,39 @@ const rewire = (flow, order, memory) => {
       trigger: prev?.trigger ?? 'continue',
       action: prev?.action ?? 'push',
       ...(prev?.element ? { element: prev.element } : {}),
+      // `feedback` rides with the trigger too, and for a second reason: emit
+      // DERIVES a feedback from the trigger when none is declared
+      // (intake.dart:481), so a re-derived edge that kept the trigger but dropped
+      // the feedback would have it re-grown by the next emit — and the answers
+      // dual-write would stop round-tripping. Carrying the declared value is the
+      // opposite of restating that rule: declared always wins (:480). Copied
+      // WHOLE, so the optional `feedback.action` button rides along too.
+      ...(prev?.feedback ? { feedback: prev.feedback } : {}),
     };
   });
+};
+
+// Would excising screenId leave the flow with any edges? A 0-edge flow is
+// INVALID — appboxd/lib/intake.dart:283 hard-errors '$where: edges must be a
+// non-empty list (a flow is a chain)' — and it is also a PERMANENT dead end,
+// because appendTo bails on `!chain.length` so nothing can ever refill it.
+// Removing either screen of a 2-screen flow does exactly that.
+//
+// Deliberately the POST-EXCISE COUNT, not a `chain.length <= 2` precondition.
+// That shorthand is wrong twice over: it also refuses a screen the flow does not
+// contain (excise's own no-op case, which changes nothing and so cannot empty
+// anything), and it reads as a rule about flow size rather than about the
+// invariant it protects. A non-member returns the CURRENT count, which is why it
+// stays true. ONE definition, two consumers — the removeFromFlow guard and the
+// `canRemove` each flows-lens tile carries — so the greyed-out toolbar button and
+// the refusal can never drift apart.
+export const canRemoveFrom = (flow, screenId) => {
+  const edges = flow?.edges ?? [];
+  const incoming = edges.find((e) => e.to === screenId) ?? null;
+  const outgoing = edges.find((e) => e.from === screenId) ?? null;
+  if (!incoming && !outgoing) return edges.length > 0;
+  const rest = edges.filter((e) => e !== incoming && e !== outgoing).length;
+  return rest + (incoming && outgoing ? 1 : 0) > 0;
 };
 
 // Cut screenId out of the chain, stitching the gap: the incoming edge's from
@@ -191,6 +222,12 @@ const excise = (flow, screenId) => {
       // element, because the element lives on the `from` screen and that
       // screen is unchanged by the excision.
       ...(incoming.element ? { element: incoming.element } : {}),
+      // ...and its `feedback`, same reason as in rewire: emit re-derives a
+      // dropped feedback from the trigger the stitch just kept
+      // (intake.dart:481), so dropping it here would break the answers
+      // round-trip. Declared wins (:480), so carrying it restates no emit rule,
+      // and copying it whole carries any `feedback.action` with it.
+      ...(incoming.feedback ? { feedback: incoming.feedback } : {}),
     }]
     : [];
   flow.edges = [...rest.slice(0, at), ...stitch, ...rest.slice(at)];
@@ -228,10 +265,20 @@ const applyEntry = async (d, entry, dir) => {
     if (!flow) return;
     if (entry.type === 'flow-move') rewire(flow, dir === 'undo' ? entry.before : entry.after, entry.triggers);
     else if (entry.type === 'flow-add') {
-      if (dir === 'undo') excise(flow, entry.screenId); else appendTo(flow, entry.screenId);
+      // This canRemoveFrom is DEFENSIVE, not load-bearing — say so rather than
+      // let a future reader assume it protects something. appendTo refuses an
+      // empty chain, so a flow-add entry always has an edge left to fall back
+      // to and the guard cannot fire here. It exists so that NO replay path can
+      // reach the 0-edge state, not because this one could.
+      if (dir === 'undo') { if (!canRemoveFrom(flow, entry.screenId)) return; excise(flow, entry.screenId); }
+      else appendTo(flow, entry.screenId);
     } else if (dir === 'undo') restore(flow, entry);
+    // Redo of a flow-remove re-runs the same excise, so it inherits the same
+    // refusal: an entry recorded when the flow was longer must not replay into
+    // a chain that has since shrunk to its last edge.
+    else if (!canRemoveFrom(flow, entry.screenId)) return;
     else excise(flow, entry.screenId);
-    await proj.writeFlows(flows);
+    await proj.writeFlowsDual(flows, [entry.flowId]);
   } else if (entry.type === 'pin' || entry.type === 'unpin') {
     // A 'pin' entry means a pin happened: undo unpins, redo re-pins. 'unpin' is
     // the mirror. Membership is toggled directly on d.context (the same array
@@ -378,6 +425,18 @@ function viewerFor(d, L, t) {
       // than merely unrendered.
       inspecting: s.id === inspect,
       inspectHref: withParams({ inspect: s.id === inspect ? null : s.id }),
+      // ---- explode column joins (views lens, column 2) ----
+      // The element INVENTORY is deliberately absent: `data-el` values are
+      // templated (`data-el="card:{{ t('portalo.cat.' ~ pair[0]) }}"` inside a
+      // {% for %}, and the tab bar arrives via {% include %}), so the only
+      // honest source is the rendered DOM, which explode.js reads same-origin.
+      // What the DOM canNOT know is authored project data — that is these two.
+      //
+      // Every outgoing edge, not just the ones with `element`: the island
+      // matches exact `element` first and falls back to fuzzy `trigger`,
+      // exactly as flowwalk.js does. Two lenses, one matching rule.
+      fires: proj.edgesFrom(s.id),
+      kits: proj.registryEntry(s.id)?.kits ?? [],
     };
   });
 
@@ -417,6 +476,12 @@ function viewerFor(d, L, t) {
             return {
               ...t,
               conn: edge ? edge.trigger : null,
+              // Can this tile's remove control do anything? False on both tiles
+              // of a 2-screen flow, where removing either would leave 0 edges —
+              // an invalid flow that nothing can refill. The SAME helper backs
+              // removeFromFlow's refusal, so the greyed-out button and the
+              // server's answer are one decision, not two that can disagree.
+              canRemove: canRemoveFrom(f, id),
               // `live` = this tile is the current step, so it renders
               // interactive (still=1 dropped). Only ever true inside the
               // walked row — a screen in two flows cannot be "live" in both.
@@ -427,6 +492,25 @@ function viewerFor(d, L, t) {
               // ends rather than wrapping. This is what the tile-chrome
               // advance control and the flow-walk island both target.
               advanceHref: edge ? withParams({ flow: f.id, step: edge.to, live: edge.to }) : null,
+              // Row end only: the OTHER flows that continue from this screen.
+              // This is the whole of the inter-flow story — flows are joined by
+              // shared ids, so the terminal screen of one row is the head of
+              // another and the hand-off needs no authored key. A list, never a
+              // single value: portalo.home hands off to two flows, and picking
+              // for the user would be the same guess that scoping nextEdge
+              // removed. Empty on every non-terminal tile.
+              // The toast this TRANSITION raises (D2's second axis). It hangs
+              // off the edge, not off either screen, because a toast is a
+              // consequence of moving — `states` on a screen says how that
+              // screen can look instead of its content, which is a different
+              // question. Null when the edge raises nothing; most do not.
+              feedback: edge?.feedback ?? null,
+              handoffs: edge ? [] : proj.handoffs(id, f.id).map((h) => ({
+                ...h,
+                // Continue in that flow AT THIS SCREEN — it is the head of the
+                // target row, so the walk lands where the eye already is.
+                href: withParams({ flow: h.flow, step: id, live: id }),
+              })),
               // What fires this edge, for the island's click matcher:
               // `element` is the authored join to a data-el value, `trigger`
               // is the prose fallback it fuzzy-matches when element is absent.
@@ -479,7 +563,7 @@ function viewerFor(d, L, t) {
   };
 
   return {
-    inspect, live,
+    inspect, live, active,
     screens, flows, bg,
     mode, proto, vp,
     // Proto-mode screen picks for the composer tray's filmstrip (the tray
@@ -550,6 +634,161 @@ function screenCard(s, d, L, t) {
 
 // opts: { line (timeline current id), pin (screenId | 'none'), base (route
 // prefix for the strip × and the close act — the surface being rendered) }
+// ── The inspector pane (D14–D17) ────────────────────────────────────────────
+//
+// The split of responsibility here is forced, not stylistic. Everything about
+// an ELEMENT comes from the client; everything about a SCREEN comes from the
+// server. `data-el="hero:{{ t('portalo.product.aurelia') }}"` is unresolved
+// server-side and per-locale — the same wall that keeps an element inventory
+// out of the views lens above — so the island measures the rendered node and
+// POSTs what it read, and this file renders what it was told plus the joins
+// only the server can make (registry, flows, chat context).
+//
+// The server therefore owns exactly three things the client cannot: the
+// `inferred` provenance flags, `pinned`, and the hrefs.
+const CONTEXT_BASE = '/design/chat/context/';
+
+const elementCard = (d, p, L) => {
+  // role falls back to the data-el prefix — the same fallback inspect.js used
+  // to do in the overlay. The fallback IS the inference, which is why the flag
+  // is computed here: the island posts the attribute or nothing, and never
+  // claims a provenance it cannot know.
+  const roleValue = p.role || String(p.name ?? '').split(':')[0] || '';
+  return {
+    name: p.name,
+    kind: p.kind ?? '',
+    screenId: p.screen,
+    tone: toneFor(p.screen, L),
+    role: { value: roleValue, inferred: !p.role && !!roleValue },
+    style: p.style || null,
+    motion: p.motion || null,
+    // D9's fn derivation lives in the Dart lint, which reads SOURCE. Nothing
+    // here can infer a function from a rendered node, so an absent fn is
+    // reported absent rather than guessed — a wrong provenance flag is worse
+    // than a missing card line.
+    fn: p.fn ? { value: p.fn, inferred: false } : null,
+    pinned: (d.elementContext ?? []).some((e) => e.screenId === p.screen && e.name === p.name),
+    pinHref: `${CONTEXT_BASE}element`,
+    unpinHref: `${CONTEXT_BASE}element/remove?screen=${encodeURIComponent(p.screen)}&name=${encodeURIComponent(p.name)}`,
+  };
+};
+
+const screenCardFor = (d, L, fallbackScreenId = null) => {
+  // fallbackScreenId is the viewer's currently-active screen (viewerFor's
+  // `active`) — inspectorScreenId only gets set by a real element hover
+  // (selectElement), so without this fallback the pane stays 'empty' until
+  // the user hovers an element at least once. D17 specifies the screen card
+  // for "nothing hovered/locked", i.e. the moment the pane opens, not after.
+  const id = d.inspectorScreenId ?? fallbackScreenId ?? null;
+  const entry = id ? proj.registryEntry(id) : null;
+  if (!entry) return null;
+  const edges = [];
+  for (const f of proj.flows()) {
+    for (const e of f.edges ?? []) {
+      if (e.from !== id) continue;
+      edges.push({
+        flow: f.id,
+        flowLabel: f.label ?? f.id,
+        trigger: e.trigger ?? '',
+        to: e.to,
+        element: e.element ?? null,
+      });
+    }
+  }
+  // epic/state are NOT registry fields — the registry carries
+  // {id,label,shell,comp,route,surface,states,kits}. They live on the screens
+  // repo, so they are joined from there; reading entry.epic would render a
+  // permanently blank row that looks like "this screen has no epic".
+  const screen = repo.screens(L).find((s) => s.id === id) ?? {};
+  return {
+    id,
+    label: entry.label ?? id,
+    epic: screen.epic ?? '',
+    state: screen.state ?? '',
+    tone: toneFor(id, L),
+    // All 'declared': deriving states from kits needs the kit→state map, which
+    // is authored in the designer's kit-catalog and mirrored in Dart. Marking
+    // a declared state 'derived' here would be a guess, so nothing is.
+    states: (entry.states ?? []).map((n) => ({ name: n, source: 'declared' })),
+    // Empty until the kit→state map is readable from JS. An empty list renders
+    // no section, which is the honest result — NOT "nothing is missing".
+    missingStates: [],
+    kits: (entry.kits ?? []).map((k) => ({ id: k, label: k })),
+    edges,
+    // null, deliberately: annotation coverage counts [data-el] occurrences in
+    // SOURCE, and those values are templated (see the wall above). The Dart
+    // lint computes this; this file would have to guess. null renders nothing.
+    annotations: null,
+  };
+};
+
+const inspectorFor = (d, L, fallbackScreenId = null, active = true) => {
+  // `active` (activityView === 'inspector') gates the expensive path: since
+  // the #47 fix, screenCardFor almost always resolves an id (fallbackScreenId
+  // is nearly always set) and walks proj.flows() — a fresh disk read+parse —
+  // to build the edges list. That cost is only worth paying when the pane is
+  // actually visible; every other render (canvas edits, chat, flow moves)
+  // would otherwise redo it for nothing. `c.inspector` is consumed ONLY by
+  // inspector_pane.html, so a cheap placeholder here is unobserved elsewhere
+  // — it does not need to be exact, only present (see the comment at its
+  // call site on why the key itself can never be conditional).
+  if (!active) {
+    return { mode: 'empty', locked: !!d.inspectorLock, element: null, screen: null, unlockHref: '/design/inspector/unlock', hint: null };
+  }
+  const shown = d.inspectorLock ?? d.inspectorHover ?? null;
+  const element = shown && shown.name ? elementCard(d, shown, L) : null;
+  const screen = element ? null : screenCardFor(d, L, fallbackScreenId);
+  return {
+    mode: element ? 'element' : screen ? 'screen' : 'empty',
+    locked: !!d.inspectorLock,
+    element,
+    screen,
+    unlockHref: '/design/inspector/unlock',
+    hint: null,
+  };
+};
+
+// The island fires one request per element change. While locked, a hover must
+// cost nothing: return the stage unchanged so the pane re-renders identically
+// and the morph is a no-op.
+export const selectElement = (sessionData, payload = {}, prefs = {}, t = (k) => k, locale = 'en') => {
+  const d = design(sessionData);
+  // "Locked wins" (D16): while a lock is held a hover changes NOTHING. The lock
+  // is a deliberate pick; an element merely brushed past while it is held must
+  // not displace it — and must not become what unlock falls back to either.
+  if (d.inspectorLock && payload.lock !== '1') return stageContext(sessionData, {}, prefs, t, locale);
+  const p = {
+    screen: payload.screen ?? '',
+    name: payload.name ?? '',
+    kind: payload.kind ?? '',
+    role: payload.role ?? '',
+    style: payload.style ?? '',
+    motion: payload.motion ?? '',
+    fn: payload.fn ?? '',
+  };
+  if (payload.lock === '1') d.inspectorLock = p; else d.inspectorHover = p;
+  // Remembered so the screen card still has a subject once the pointer leaves
+  // every element — mode 'screen' is the state between hovers, not a dead end.
+  if (p.screen) d.inspectorScreenId = p.screen;
+  return stageContext(sessionData, {}, prefs, t, locale);
+};
+
+// Clears the lock, KEEPS the hover — D16: the lock is session state precisely
+// so it survives htmx morphs, and clearing it should fall back to live hover
+// rather than to empty.
+export const unlockInspector = (sessionData, prefs = {}, t = (k) => k, locale = 'en') => {
+  const d = design(sessionData);
+  // Promote the lock into the hover slot before dropping it. Unlocking should
+  // LEAVE the element you were studying on screen and resume live tracking from
+  // the NEXT hover — not blank the pane back to the screen card. Without this,
+  // locking an element that was never hovered first (the island posts lock=1 on
+  // a click, and a click need not be preceded by a hover post) left nothing to
+  // fall back to, so unlock emptied the pane.
+  if (d.inspectorLock) d.inspectorHover = d.inspectorLock;
+  delete d.inspectorLock;
+  return stageContext(sessionData, {}, prefs, t, locale);
+};
+
 export const stageContext = (sessionData = {}, opts = {}, prefs = {}, t = (k) => k, locale = 'en') => {
   const L = locale;
   const lv = jargon.level(prefs);
@@ -569,7 +808,7 @@ export const stageContext = (sessionData = {}, opts = {}, prefs = {}, t = (k) =>
   const drafted = d.drafted === true;
   const ids = contextIds(d, L);
   const filter = d.activityFilter ?? 'all';
-  const activityView = ['screens', 'artifacts', 'files'].includes(d.activityView) ? d.activityView : 'screens';
+  const activityView = ['screens', 'artifacts', 'files', 'inspector'].includes(d.activityView) ? d.activityView : 'screens';
   const thread = threadFor(d, lv, L);
   const viewer = viewerFor(d, L, t);
   const screens = repo.screens(L)
@@ -595,10 +834,18 @@ export const stageContext = (sessionData = {}, opts = {}, prefs = {}, t = (k) =>
     panelSizeHref: '/design/panel/size/left/',
     panelSizePx: d.panelSizePx?.left ?? null,
     activityViews: [
-      { id: 'screens', icon: 'layout-grid' },
-      { id: 'artifacts', icon: 'package' },
-      { id: 'files', icon: 'folder' },
-    ].map((v) => ({ ...v, label: t('activityView.' + v.id), href: `/design/panel/${v.id}`, active: v.id === activityView })),
+      { id: 'screens', icon: 'layout-grid', href: '/design/panel/screens' },
+      { id: 'artifacts', icon: 'package', href: '/design/panel/artifacts' },
+      { id: 'files', icon: 'folder', href: '/design/panel/files' },
+      // The inspector renders from prototype_view.html#inspectorSwap, not from
+      // _shared.html#activityBody, so it carries its OWN href rather than
+      // riding the /design/panel/:view map like the other three.
+      { id: 'inspector', icon: 'scan-search', href: '/design/inspector' },
+    ].map((v) => ({ ...v, label: t('activityView.' + v.id), active: v.id === activityView })),
+    // D14–D17. Present on EVERY render: the pane re-renders from fragment
+    // swaps that carry the whole stage context, so it must never be
+    // conditional on activityView.
+    inspector: inspectorFor(d, L, viewer.active, activityView === 'inspector'),
     screens,
     artifacts: repo.artifacts(L),
     files: repo.files(L).map((f) => ({ ...f, ...fv.fileLink(f.path, fileBase) })),
@@ -724,7 +971,7 @@ export const moveInFlow = async (sessionData, flowId, screenId, to = {}, prefs =
       // replay restore the trigger verbatim (see rewire).
       const triggers = Object.fromEntries((flow.edges ?? []).map((e) => [e.from, { trigger: e.trigger, action: e.action ?? 'push' }]));
       rewire(flow, after, triggers);
-      await proj.writeFlows(flows);
+      await proj.writeFlowsDual(flows, [flowId]);
       pushCanvasUndo(d, { type: 'flow-move', flowId, before, after, triggers });
     }
   } catch { /* no project overlaid / unknown flow — no-op re-render */ }
@@ -739,7 +986,7 @@ export const addToFlow = async (sessionData, flowId, screenId, prefs = {}, t = (
     const flows = proj.flows();
     const flow = flows.find((f) => f.id === flowId);
     if (flow && proj.registryEntry(screenId) && appendTo(flow, screenId)) {
-      await proj.writeFlows(flows);
+      await proj.writeFlowsDual(flows, [flowId]);
       pushCanvasUndo(d, { type: 'flow-add', flowId, screenId });
     }
   } catch { /* no project overlaid / unknown flow — no-op re-render */ }
@@ -754,9 +1001,13 @@ export const removeFromFlow = async (sessionData, flowId, screenId, prefs = {}, 
     const flows = proj.flows();
     const flow = flows.find((f) => f.id === flowId);
     const index = chainOf(flow).indexOf(screenId);
-    const removed = flow ? excise(flow, screenId) : null;
+    // REFUSED when the removal would empty the chain — no write, unchanged
+    // viewmodel. The tile's `canRemove` (same helper) greys the button out first,
+    // but this is the one that has to hold: a 0-edge flow cannot be undone into
+    // existence again (see canRemoveFrom).
+    const removed = flow && canRemoveFrom(flow, screenId) ? excise(flow, screenId) : null;
     if (removed) {
-      await proj.writeFlows(flows);
+      await proj.writeFlowsDual(flows, [flowId]);
       pushCanvasUndo(d, { type: 'flow-remove', flowId, screenId, index, ...removed });
     }
   } catch { /* no project overlaid / unknown flow — no-op re-render */ }

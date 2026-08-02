@@ -10,6 +10,7 @@ import 'dart:io';
 
 import 'package:appboxd/intake.dart';
 import 'package:appboxd/intake_cli.dart';
+import 'package:appboxd/project.dart';
 import 'package:test/test.dart';
 
 Map<String, dynamic> goodAnswers() => {
@@ -136,12 +137,16 @@ _Not stated._
 
 | id | shell | comp | label | states | surface |
 |---|---|---|---|---|---|
-| `projects.home` | projects | ProjectsHome | Home |  | _null_ |
-| `projects.new` | projects | ProjectsNew | New |  | _null_ |
+| `projects.home` | projects | ProjectsHome | Home | loading, empty [inferred] | _null_ |
+| `projects.new` | projects | ProjectsNew | New | error [inferred] | _null_ |
 
 Every `surface` is `null` — intake names what the client asked for; design binds a surface to each.
 ''';
 
+// Slice 3 (D3): neither fixture surface DECLARES states, so both are derived
+// from shape and stamped `statesProvenance: inferred` — "home" is a collection
+// (loading, empty), "new" is a create form (error). The stamp is what keeps
+// this legal under §22: the confirm step can strike either row.
 const expectedRegistry = '''[
   {
     "id": "projects.home",
@@ -149,7 +154,12 @@ const expectedRegistry = '''[
     "shell": "projects",
     "comp": "ProjectsHome",
     "route": "/home",
-    "surface": null
+    "surface": null,
+    "states": [
+      "loading",
+      "empty"
+    ],
+    "statesProvenance": "inferred"
   },
   {
     "id": "projects.new",
@@ -157,7 +167,11 @@ const expectedRegistry = '''[
     "shell": "projects",
     "comp": "ProjectsNew",
     "route": "/new",
-    "surface": null
+    "surface": null,
+    "states": [
+      "error"
+    ],
+    "statesProvenance": "inferred"
   }
 ]
 ''';
@@ -193,6 +207,8 @@ const expectedSeed = '''[
 ''';
 
 void main() {
+  _mergeRegistryTests();
+
   group('deriveComp', () {
     test('PascalCase(shell) + PascalCase(short) by the declare-structure convention', () {
       expect(deriveComp('shop.cart'), 'ShopCart');
@@ -474,9 +490,12 @@ void main() {
           'states': ['empty', 'loading'],
           'provenance': 'client',
         },
+        // Slice 3: this row carries the additive-only assertion, so it must be
+        // a surface with NO shape signal — "credits" is neither a collection
+        // nor a form, so nothing is derived and no key appears.
         {
-          'id': 'projects.new',
-          'label': 'New',
+          'id': 'projects.credits',
+          'label': 'Credits',
           'shell': 'projects',
           'provenance': 'client',
         },
@@ -489,10 +508,16 @@ void main() {
       expect(validateIntake(a).errors, isEmpty);
       final reg = emitRegistry(a);
       expect(reg[0]['states'], ['empty', 'loading']);
-      expect(reg[0].keys.toList(),
-          ['id', 'label', 'shell', 'comp', 'route', 'surface', 'states']);
-      // absent states -> no key at all (additive only)
+      // DECLARED states are stamped with the surface's own provenance, never
+      // with 'inferred' — that stamp is reserved for what intake derived.
+      expect(reg[0]['statesProvenance'], 'client');
+      expect(reg[0].keys.toList(), [
+        'id', 'label', 'shell', 'comp', 'route', 'surface', 'states',
+        'statesProvenance',
+      ]);
+      // no declared states AND no shape signal -> no key at all (additive only)
       expect(reg[1].containsKey('states'), isFalse);
+      expect(reg[1].containsKey('statesProvenance'), isFalse);
     });
 
     test('the brief surface table carries the states column', () {
@@ -631,4 +656,796 @@ void main() {
       expect(intakeMain(['--self-test']), 0);
     });
   });
+
+  // ------------------------------------------------- Slice 3: the two axes
+  //
+  // `states` is screen-level and CLOSED (loading|empty|error). `feedback` is
+  // EDGE-level, because a toast is a consequence of a transition, not a way a
+  // screen can look. Mirrors kit/state vs kit/ui_library.
+
+  group('states — closed vocabulary (D2)', () {
+    Map<String, dynamic> withSurfaceStates(List<String> states) {
+      final a = goodAnswers();
+      a['surfaces'] = [
+        {
+          'id': 'projects.home',
+          'label': 'Home',
+          'shell': 'projects',
+          'states': states,
+          'provenance': 'client',
+        },
+      ];
+      return a;
+    }
+
+    test('every in-vocabulary state passes (portalo declares only these)', () {
+      expect(validateIntake(withSurfaceStates(surfaceStates)).errors, isEmpty);
+    });
+
+    test('an out-of-vocabulary state is rejected and the message names the '
+        'allowed set', () {
+      final errs = validateIntake(withSurfaceStates(['loading', 'skeleton'])).errors;
+      expect(errs.any((e) => e.contains('surfaces[0]') && e.contains('skeleton')),
+          isTrue,
+          reason: 'the offending value must be named');
+      expect(
+          errs.any((e) =>
+              e.contains('loading') && e.contains('empty') && e.contains('error')),
+          isTrue,
+          reason: 'the message must carry the fix — the whole allowed set');
+    });
+
+    test('a non-string states list is still rejected', () {
+      final a = goodAnswers();
+      ((a['surfaces'] as List)[0] as Map)['states'] = 'empty';
+      expect(
+          validateIntake(a).errors.any(
+              (e) => e.contains('surfaces[0]') && e.contains('states')),
+          isTrue);
+    });
+  });
+
+  group('states — derivation is marked and confirmable (D3)', () {
+    Map<String, dynamic> surfacesOnly(List<Map<String, dynamic>> surfaces) {
+      final a = goodAnswers();
+      a['surfaces'] = surfaces;
+      return a;
+    }
+
+    test('a collection surface with no declared states emits [loading, empty] '
+        "stamped statesProvenance 'inferred'", () {
+      final reg = emitRegistry(surfacesOnly([
+        {
+          'id': 'projects.list',
+          'label': 'All projects',
+          'shell': 'projects',
+          'provenance': 'client',
+        },
+      ]));
+      expect(reg[0]['states'], ['loading', 'empty']);
+      expect(reg[0]['statesProvenance'], 'inferred');
+    });
+
+    test('a form/auth surface with no declared states adds error', () {
+      final reg = emitRegistry(surfacesOnly([
+        {
+          'id': 'account.login',
+          'label': 'Sign in',
+          'shell': 'account',
+          'provenance': 'client',
+        },
+      ]));
+      expect(reg[0]['states'], ['error']);
+      expect(reg[0]['statesProvenance'], 'inferred');
+    });
+
+    test('requiresAuth alone marks a surface as network-shaped (adds error)', () {
+      final reg = emitRegistry(surfacesOnly([
+        {
+          'id': 'billing.overview',
+          'label': 'Overview',
+          'shell': 'billing',
+          'requiresAuth': true,
+          'provenance': 'client',
+        },
+      ]));
+      expect(reg[0]['states'], ['error']);
+      expect(reg[0]['statesProvenance'], 'inferred');
+    });
+
+    test('a surface that is both collection- and form-shaped emits all three '
+        'in vocabulary order', () {
+      final reg = emitRegistry(surfacesOnly([
+        {
+          'id': 'shop.checkout',
+          'label': 'Checkout',
+          'shell': 'shop',
+          'requiresAuth': true,
+          'provenance': 'client',
+        },
+      ]));
+      expect(reg[0]['states'], ['error']);
+      // A single id short segment is one token (`_idRe` forbids separators),
+      // so "both buckets" is reachable only as collection-word + requiresAuth.
+      final reg2 = emitRegistry(surfacesOnly([
+        {
+          'id': 'orders.history',
+          'label': 'Order history',
+          'shell': 'orders',
+          'requiresAuth': true,
+          'provenance': 'client',
+        },
+      ]));
+      expect(reg2[0]['states'], ['loading', 'empty', 'error']);
+    });
+
+    test('DECLARED states are never overwritten and keep the surface provenance',
+        () {
+      final reg = emitRegistry(surfacesOnly([
+        {
+          'id': 'projects.list',
+          'label': 'All projects',
+          'shell': 'projects',
+          // a collection surface: the heuristic WOULD say [loading, empty]
+          'states': ['error'],
+          'provenance': 'founder',
+        },
+      ]));
+      expect(reg[0]['states'], ['error'], reason: 'the client declared this');
+      expect(reg[0]['statesProvenance'], 'founder');
+    });
+
+    test('a surface with no shape signal gets no states key at all '
+        '(additive only)', () {
+      final reg = emitRegistry(surfacesOnly([
+        {
+          'id': 'about.credits',
+          'label': 'Credits',
+          'shell': 'about',
+          'provenance': 'client',
+        },
+      ]));
+      expect(reg[0].containsKey('states'), isFalse);
+      expect(reg[0].containsKey('statesProvenance'), isFalse);
+    });
+
+    test('derivation is deterministic across runs', () {
+      final a = surfacesOnly([
+        {
+          'id': 'projects.list',
+          'label': 'All',
+          'shell': 'projects',
+          'provenance': 'client',
+        },
+        {
+          'id': 'account.login',
+          'label': 'Sign in',
+          'shell': 'account',
+          'provenance': 'client',
+        },
+      ]);
+      expect(jsonEncode(emitRegistry(a)), jsonEncode(emitRegistry(a)));
+    });
+  });
+
+  group('feedback — an edge key, never a screen key (D2)', () {
+    Map<String, dynamic> withEdge(Map<String, dynamic> extra) {
+      final a = goodAnswers();
+      a['flows'] = [
+        {
+          'id': 'flow-main',
+          'name': 'Main',
+          'provenance': 'client',
+          'edges': [
+            {
+              'from': 'projects.home',
+              'to': 'projects.new',
+              'trigger': 'Save project',
+              ...extra,
+            },
+          ],
+        },
+      ];
+      return a;
+    }
+
+    test('a well-formed feedback passes', () {
+      final a = withEdge({
+        'feedback': {'kind': 'success', 'text': 'Project saved'},
+      });
+      expect(validateIntake(a).errors, isEmpty);
+    });
+
+    test('a feedback.kind outside the enum is rejected and names the set', () {
+      final errs = validateIntake(withEdge({
+        'feedback': {'kind': 'warning', 'text': 'Careful'},
+      })).errors;
+      expect(errs.any((e) => e.contains('warning')), isTrue);
+      expect(
+          errs.any((e) =>
+              e.contains('success') && e.contains('error') && e.contains('info')),
+          isTrue,
+          reason: 'the message must name the allowed kinds');
+    });
+
+    test('a feedback with an empty or non-string text is rejected', () {
+      expect(
+          validateIntake(withEdge({
+            'feedback': {'kind': 'success', 'text': ''},
+          })).errors.any((e) => e.contains('text')),
+          isTrue);
+      expect(
+          validateIntake(withEdge({
+            'feedback': {'kind': 'success', 'text': 42},
+          })).errors.any((e) => e.contains('text')),
+          isTrue);
+    });
+
+    test('an unknown edge key is rejected and names the allowed set', () {
+      // The closed set is the GATE that makes the spread safe: emitFlows now
+      // carries every authored key through, so a typo'd key would otherwise
+      // ride along into flows.json and be silently honoured by nobody.
+      final errs = validateIntake(withEdge({'elment': 'button:Continue'})).errors;
+      expect(errs.any((e) => e.contains('elment')), isTrue,
+          reason: 'the typo must be named');
+      expect(
+          errs.any((e) =>
+              e.contains('element') && e.contains('trigger') && e.contains('feedback')),
+          isTrue,
+          reason: 'the message must carry the fix — the whole allowed set');
+    });
+
+    test('an unknown key INSIDE feedback is rejected', () {
+      // The schema closes feedback to {kind, text, inferred}; the Dart
+      // validator is what actually enforces it. The two must agree or the
+      // schema is decoration.
+      final errs = validateIntake(withEdge({
+        'feedback': {'kind': 'success', 'text': 'Saved', 'icon': 'check'},
+      })).errors;
+      expect(errs.any((e) => e.contains('icon')), isTrue);
+    });
+
+    test('an unknown FLOW key is rejected', () {
+      final a = withEdge(const {});
+      (a['flows'] as List)[0]['persona'] = 'shopper';
+      expect(
+          validateIntake(a)
+              .errors
+              .any((e) => e.contains('flows[0]') && e.contains('persona')),
+          isTrue);
+    });
+
+    test('a non-string element is rejected at intake, not downstream', () {
+      // emitFlows now EMITS element, so intake must type-check it. Without
+      // this the bad value reaches flows.json and only emit_structure fails,
+      // naming a file the author never edited.
+      final errs = validateIntake(withEdge({'element': 42})).errors;
+      expect(errs.any((e) => e.contains('element')), isTrue);
+    });
+
+    test('a feedback that is not an object is rejected', () {
+      expect(
+          validateIntake(withEdge({'feedback': 'Saved!'}))
+              .errors
+              .any((e) => e.contains('feedback')),
+          isTrue);
+    });
+
+    test('feedback on a SURFACE is rejected — a toast is not a screen state', () {
+      final a = goodAnswers();
+      // Replace the surfaces wholesale — the fixture's literal maps are
+      // reified Map<String, String> and reject a Map value on mutation.
+      a['surfaces'] = [
+        {
+          'id': 'projects.home',
+          'label': 'Home',
+          'shell': 'projects',
+          'provenance': 'client',
+          'feedback': {'kind': 'success', 'text': 'Saved'},
+        },
+      ];
+      final errs = validateIntake(a).errors;
+      expect(errs.any((e) => e.contains('surfaces[0]') && e.contains('feedback')),
+          isTrue);
+      expect(errs.any((e) => e.contains('edge')), isTrue,
+          reason: 'the message must say where feedback DOES belong');
+    });
+
+    test('feedback on a FLOW (not an edge) is rejected', () {
+      final a = withEdge(const {});
+      (a['flows'] as List)[0]['feedback'] = {'kind': 'info', 'text': 'Done'};
+      expect(
+          validateIntake(a)
+              .errors
+              .any((e) => e.contains('flows[0]') && e.contains('feedback')),
+          isTrue);
+    });
+  });
+
+  group('feedback — derived on mutation edges, stamped inferred (D3)', () {
+    Map<String, dynamic> withFlow(List<Map<String, dynamic>> edges) {
+      final a = goodAnswers();
+      a['flows'] = [
+        {
+          'id': 'flow-main',
+          'name': 'Main',
+          'provenance': 'client',
+          'edges': edges,
+        },
+      ];
+      return a;
+    }
+
+    test('a mutation edge gets a derived feedback stamped inferred', () {
+      final flows = emitFlows(withFlow([
+        {'from': 'projects.home', 'to': 'projects.new', 'trigger': 'Save project'},
+      ]));
+      final fb = flows[0]['edges'][0]['feedback'] as Map;
+      expect(fb['kind'], 'success');
+      expect(fb['text'], 'Save project',
+          reason: 'text is a mechanical transform of the trigger, never invented '
+              'copy — §22');
+      expect(fb['inferred'], isTrue);
+    });
+
+    test('a non-mutation edge gets NO feedback', () {
+      final flows = emitFlows(withFlow([
+        {'from': 'projects.home', 'to': 'projects.new', 'trigger': 'Category tile'},
+      ]));
+      expect((flows[0]['edges'][0] as Map).containsKey('feedback'), isFalse);
+    });
+
+    test('an authored element survives emitFlows verbatim', () {
+      // `element` is the EXACT join from a flow edge to a `data-el` on the
+      // surface. flowwalk.js matches it exactly and falls back to a FUZZY
+      // trigger match without it, and the views explode lens resolves each
+      // component's `fires` line through it. Dropping it on re-emit degrades
+      // an exact join to a guess, silently.
+      final flows = emitFlows(withFlow([
+        {
+          'from': 'projects.home',
+          'to': 'projects.new',
+          'trigger': 'continue',
+          'element': 'button:Continue',
+        },
+      ]));
+      expect(flows[0]['edges'][0]['element'], 'button:Continue');
+    });
+
+    test('an absent element stays absent — no invented empty string', () {
+      final flows = emitFlows(withFlow([
+        {'from': 'projects.home', 'to': 'projects.new', 'trigger': 'continue'},
+      ]));
+      expect((flows[0]['edges'][0] as Map).containsKey('element'), isFalse);
+    });
+
+    test('every key the validator accepts on an edge survives emitFlows', () {
+      // Regression net for the WHOLE passthrough, not just today's gap:
+      // `element` and `feedback` were each found by accident. This fails the
+      // moment a new authorable edge key is added without being carried.
+      final flows = emitFlows(withFlow([
+        {
+          'from': 'projects.home',
+          'to': 'projects.new',
+          'trigger': 'continue',
+          'action': 'replace',
+          'element': 'button:Continue',
+          'feedback': {'kind': 'info', 'text': 'On your way'},
+        },
+      ]));
+      final edge = flows[0]['edges'][0] as Map;
+      expect(edge['from'], 'projects.home');
+      expect(edge['to'], 'projects.new');
+      expect(edge['trigger'], 'continue');
+      expect(edge['action'], 'replace');
+      expect(edge['element'], 'button:Continue');
+      expect(edge['feedback'], {'kind': 'info', 'text': 'On your way'});
+    });
+
+    test('a DECLARED feedback passes through unstamped and unmodified', () {
+      final flows = emitFlows(withFlow([
+        {
+          'from': 'projects.home',
+          'to': 'projects.new',
+          'trigger': 'Save project',
+          'feedback': {'kind': 'info', 'text': 'Queued for review'},
+        },
+      ]));
+      final fb = flows[0]['edges'][0]['feedback'] as Map;
+      expect(fb['kind'], 'info');
+      expect(fb['text'], 'Queued for review');
+      expect(fb.containsKey('inferred'), isFalse);
+    });
+
+    test('feedback derivation is deterministic across runs', () {
+      final a = withFlow([
+        {'from': 'projects.home', 'to': 'projects.new', 'trigger': 'Add to bag'},
+      ]);
+      expect(jsonEncode(emitFlows(a)), jsonEncode(emitFlows(a)));
+    });
+  });
+
+  group('brief — derived states and feedback are visibly marked', () {
+    test('a derived states cell carries the [inferred] mark', () {
+      final a = goodAnswers();
+      a['surfaces'] = [
+        {
+          'id': 'projects.list',
+          'label': 'All',
+          'shell': 'projects',
+          'provenance': 'client',
+        },
+      ];
+      final brief = emitBrief(a);
+      expect(brief.contains('loading, empty [inferred]'), isTrue,
+          reason: 'the confirm step needs something to confirm');
+    });
+
+    test('a DECLARED states cell carries no mark', () {
+      final a = goodAnswers();
+      a['surfaces'] = [
+        {
+          'id': 'projects.list',
+          'label': 'All',
+          'shell': 'projects',
+          'states': ['empty'],
+          'provenance': 'client',
+        },
+      ];
+      final brief = emitBrief(a);
+      expect(brief.contains('| empty |'), isTrue);
+      expect(brief.contains('empty [inferred]'), isFalse);
+    });
+
+    test('no declared flows -> no phantom feedback section', () {
+      // _feedbackSection runs over emitFlows, which DERIVES a draft flow per
+      // shell when none is declared. Those derived edges carry trigger
+      // 'continue' — no mutation — so nothing may be reported. Three surfaces
+      // in one shell, so emitFlows really does emit a derived flow.
+      final a = goodAnswers();
+      a['surfaces'] = [
+        {'id': 'shop.home', 'label': 'Home', 'shell': 'shop', 'provenance': 'client'},
+        {'id': 'shop.cart', 'label': 'Cart', 'shell': 'shop', 'provenance': 'client'},
+        {'id': 'shop.pay', 'label': 'Pay', 'shell': 'shop', 'provenance': 'client'},
+      ];
+      expect(emitFlows(a), hasLength(1),
+          reason: 'the fixture must actually exercise the derived-flow path');
+      final brief = emitBrief(a);
+      expect(brief.contains('Transition feedback'), isFalse,
+          reason: 'deriving a toast on top of an already-derived edge would be '
+              'inventing on top of inventing');
+    });
+
+    test('a derived edge feedback is listed and marked', () {
+      final a = goodAnswers();
+      a['flows'] = [
+        {
+          'id': 'flow-main',
+          'name': 'Main',
+          'provenance': 'client',
+          'edges': [
+            {
+              'from': 'projects.home',
+              'to': 'projects.new',
+              'trigger': 'Save project',
+            },
+          ],
+        },
+      ];
+      final brief = emitBrief(a);
+      expect(brief.contains('Save project'), isTrue);
+      expect(brief.contains('[inferred]'), isTrue);
+    });
+  });
+
+  // Every closed Dart set above has a twin in intake.schema.json, and NOTHING
+  // loads that schema at runtime — so when the two drift, the drift is
+  // invisible. This group is the only thing in the repo that reads both and
+  // compares them. It is deliberately mechanical: a new closed set gets a new
+  // case here, or it drifts silently like `states` did.
+  group('contract pairs — schema vs the Dart closed sets', () {
+    final schema = jsonDecode(File(_schemaPath()).readAsStringSync()) as Map<String, dynamic>;
+    Map<String, dynamic> def(String name) =>
+        (schema['definitions'] as Map)[name] as Map<String, dynamic>;
+    Map<String, dynamic> props(Map<String, dynamic> node) =>
+        (node['properties'] as Map).cast<String, dynamic>();
+
+    final edge = def('edge');
+    final feedback = props(edge)['feedback'] as Map<String, dynamic>;
+
+    test('surfaceStates == surface.states.items.enum, in order', () {
+      // Ordered, not a set: [surfaceStates]'s doc comment makes emission order
+      // load-bearing (deriveStates emits in this order).
+      final states = props(def('surface'))['states'] as Map<String, dynamic>;
+      expect((states['items'] as Map)['enum'], surfaceStates,
+          reason: 'the schema leaves `states` an open string list while Dart '
+              'closes it — the drift this pair exists to catch');
+    });
+
+    test('feedbackKinds == feedback.kind.enum', () {
+      expect(((props(feedback)['kind'] as Map)['enum'] as List).toSet(), feedbackKinds.toSet());
+    });
+
+    test('feedbackKeys == the feedback object\'s properties', () {
+      expect(props(feedback).keys.toSet(), feedbackKeys.toSet());
+      expect(feedback['additionalProperties'], isFalse,
+          reason: 'a listed property set only closes the object when '
+              'additionalProperties is false');
+    });
+
+    test('edgeKeys == the edge object\'s properties', () {
+      expect(props(edge).keys.toSet(), edgeKeys.toSet());
+      expect(edge['additionalProperties'], isFalse);
+    });
+
+    test('feedbackActionKeys == the feedback.action object\'s properties', () {
+      final action = props(feedback)['action'] as Map<String, dynamic>;
+      expect(props(action).keys.toSet(), feedbackActionKeys.toSet());
+      expect(action['additionalProperties'], isFalse);
+    });
+  });
+
+  // D18: a snackbar's action is its defining feature, so `feedback` carries an
+  // optional one. Declared feedback wins outright — `_edgeFeedback` only fires
+  // when NOTHING is declared — so the action must survive emit untouched.
+  group('feedback.action — optional, elicited, survives emit (D18)', () {
+    Map<String, dynamic> withFeedback(Object fb) {
+      final a = goodAnswers();
+      a['flows'] = [
+        <String, dynamic>{
+          'id': 'flow-main',
+          'name': 'Main',
+          'provenance': 'client',
+          'edges': [
+            <String, dynamic>{
+              'from': 'projects.home',
+              'to': 'projects.new',
+              'trigger': 'Open new',
+              'feedback': fb,
+            },
+          ],
+        },
+      ];
+      return a;
+    }
+
+    test('an absent action stays absent — existing data is still valid', () {
+      final a = withFeedback({'kind': 'success', 'text': 'Saved'});
+      expect(validateIntake(a).errors, isEmpty);
+      final fb = emitFlows(a)[0]['edges'][0]['feedback'] as Map;
+      expect(fb.containsKey('action'), isFalse);
+    });
+
+    test('a declared error+action survives emitFlows verbatim', () {
+      // The Retry case: `error` is CORE snackbar material, not a kind to
+      // narrow away, and Retry is exactly why `action` had to exist.
+      const fb = {
+        'kind': 'error',
+        'text': 'Upload failed',
+        'action': {'label': 'Retry', 'trigger': 'Retry the upload'},
+      };
+      final a = withFeedback(fb);
+      expect(validateIntake(a).errors, isEmpty);
+      expect(emitFlows(a)[0]['edges'][0]['feedback'], fb,
+          reason: 'a declared feedback passes through untouched, action and all');
+    });
+
+    test('a declared feedback still suppresses derivation', () {
+      // `Save` is a mutation word: with nothing declared this edge would get a
+      // derived toast. Declaring one — action included — must silence that.
+      const fb = {
+        'kind': 'info',
+        'text': 'Queued',
+        'action': {'label': 'View', 'trigger': 'Open the queue'},
+      };
+      final a = withFeedback(fb);
+      (a['flows'] as List)[0]['edges'][0]['trigger'] = 'Save project';
+      final emitted = emitFlows(a)[0]['edges'][0]['feedback'] as Map;
+      expect(emitted, fb);
+      expect(emitted.containsKey('inferred'), isFalse,
+          reason: '_edgeFeedback must not fire over a declared feedback');
+    });
+
+    test('a malformed action is rejected and names the closed key set', () {
+      for (final bad in [
+        'Retry',
+        {'label': 'Retry'},
+        {'label': 'Retry', 'trigger': ''},
+        {'label': 'Retry', 'trigger': 'again', 'icon': 'refresh'},
+      ]) {
+        final errs = validateIntake(withFeedback({
+          'kind': 'error',
+          'text': 'Upload failed',
+          'action': bad,
+        })).errors;
+        expect(errs.any((e) => e.contains('feedback.action')), isTrue,
+            reason: 'must be rejected and say where: $bad');
+      }
+    });
+
+    test('an action on a SURFACE state is still not a thing', () {
+      // feedback lives on the edge; adding `action` changes nothing about that.
+      final a = goodAnswers();
+      a['surfaces'] = [
+        <String, dynamic>{
+          'id': 'projects.home',
+          'label': 'Home',
+          'shell': 'projects',
+          'provenance': 'client',
+          'feedback': {
+            'kind': 'error',
+            'text': 'Failed',
+            'action': {'label': 'Retry', 'trigger': 'again'},
+          },
+        },
+      ];
+      expect(validateIntake(a).errors.any((e) => e.contains('surfaces[0]')), isTrue);
+    });
+  });
+
+  // D2 site 7: answers.json is the flows SSOT. confirmFlow writing only
+  // flows.json means the next emit regenerates from answers and REVERTS the
+  // confirmation — so it must dual-write.
+  group('confirmFlow — dual-writes answers.json (D2 site 7)', () {
+    late Directory tmp;
+
+    setUp(() {
+      tmp = Directory.systemTemp.createTempSync('appbox-intake-confirm-');
+      appboxHomeOverride = tmp.path;
+    });
+    tearDown(() {
+      appboxHomeOverride = null;
+      tmp.deleteSync(recursive: true);
+    });
+
+    const project = 'confirmfixture';
+    const engine = IntakeEngine();
+
+    List<dynamic> readJson(String file) =>
+        jsonDecode(File('${shellDir(project, 'intake')}/$file').readAsStringSync()) as List;
+
+    Map<String, dynamic> readAnswers() =>
+        jsonDecode(File('${shellDir(project, 'intake')}/answers.json').readAsStringSync())
+            as Map<String, dynamic>;
+
+    test('a confirmed DERIVED flow survives the next re-emit', () {
+      // goodAnswers declares no flows, so emit derives `flow-projects`
+      // provenance inferred — exactly what the confirm step is for.
+      expect(engine.emit(goodAnswers(), project: project).ok, isTrue);
+      expect(readJson('flows.json')[0]['provenance'], 'inferred');
+
+      expect(engine.confirmFlow(project, 'flow-projects', 'client'), isNull);
+
+      final answers = readAnswers();
+      expect(validateIntake(answers).errors, isEmpty,
+          reason: 'a dual-write that writes INVALID answers is worse than the '
+              'revert it fixes — the next emit would write nothing at all');
+      expect(emitFlows(answers), readJson('flows.json'),
+          reason: 'answers.json is the SSOT: re-emitting it must reproduce the '
+              'flows.json confirmFlow just wrote, not revert to inferred');
+      expect(engine.emit(answers, project: project).ok, isTrue);
+      expect(readJson('flows.json')[0]['provenance'], 'client',
+          reason: 'the confirmation must not be undone by a plain re-emit');
+    });
+
+    test('a confirmed DECLARED flow keeps its edges, feedback and all', () {
+      final a = goodAnswers();
+      a['flows'] = [
+        {
+          'id': 'flow-main',
+          'name': 'Main',
+          'provenance': 'inferred',
+          'edges': [
+            {
+              'from': 'projects.home',
+              'to': 'projects.new',
+              'trigger': 'Save project',
+              'feedback': {
+                'kind': 'error',
+                'text': 'Save failed',
+                'action': {'label': 'Retry', 'trigger': 'Save project'},
+              },
+            },
+          ],
+        },
+      ];
+      expect(engine.emit(a, project: project).ok, isTrue);
+      expect(engine.confirmFlow(project, 'flow-main', 'founder'), isNull);
+
+      final answers = readAnswers();
+      expect(validateIntake(answers).errors, isEmpty);
+      expect(emitFlows(answers), readJson('flows.json'));
+      expect(
+        (answers['flows'] as List)[0]['edges'][0]['feedback']['action'],
+        {'label': 'Retry', 'trigger': 'Save project'},
+        reason: 'the dual-write persists the flow, it does not rewrite it',
+      );
+    });
+
+    test('an unknown flow id changes neither file', () {
+      expect(engine.emit(goodAnswers(), project: project).ok, isTrue);
+      final before = readAnswers();
+      expect(engine.confirmFlow(project, 'flow-nope', 'client'), isNotNull);
+      expect(readAnswers(), before);
+      expect(readJson('flows.json')[0]['provenance'], 'inferred');
+    });
+  });
+}
+
+/// mergeRegistry — a re-emit must not delete what emit does not own.
+///
+/// Regression guard for a REAL data loss: `intake emit` regenerated portalo's
+/// registry.json and dropped `kits` from all 10 entries. `kits` appears nowhere
+/// in answers.json and nowhere in emitRegistry, so it lived only in the
+/// generated file and nothing could restore it. gate_intake's repair message
+/// tells users to run that exact command, so the tool's own advice destroyed
+/// data.
+void _mergeRegistryTests() {
+  group('mergeRegistry — foreign keys survive a re-emit', () {
+    late Directory tmp;
+    late String path;
+    setUp(() {
+      tmp = Directory.systemTemp.createTempSync('appbox_merge_reg');
+      path = '${tmp.path}/registry.json';
+    });
+    tearDown(() => tmp.deleteSync(recursive: true));
+
+    test('carries kits forward per id', () {
+      File(path).writeAsStringSync(jsonEncode([
+        {'id': 'p.auth', 'label': 'stale', 'kits': ['auth']},
+        {'id': 'p.home', 'label': 'stale', 'kits': ['data', 'media']},
+      ]));
+      final merged = mergeRegistry([
+        {'id': 'p.auth', 'label': 'Sign In', 'states': ['error']},
+        {'id': 'p.home', 'label': 'Home', 'states': <String>[]},
+      ], path);
+      expect(merged[0]['kits'], ['auth']);
+      expect(merged[1]['kits'], ['data', 'media']);
+    });
+
+    test("emit's OWN keys always win over the stale file", () {
+      File(path).writeAsStringSync(jsonEncode([
+        {'id': 'p.auth', 'label': 'stale', 'states': ['loading'], 'kits': ['auth']},
+      ]));
+      final merged = mergeRegistry([
+        {'id': 'p.auth', 'label': 'Sign In', 'states': ['error']},
+      ], path);
+      expect(merged[0]['label'], 'Sign In', reason: 'emit owns label');
+      expect(merged[0]['states'], ['error'], reason: 'emit owns states');
+      expect(merged[0]['kits'], ['auth'], reason: 'but not kits');
+    });
+
+    test('an id absent from the old file gains nothing', () {
+      File(path).writeAsStringSync(jsonEncode([
+        {'id': 'p.gone', 'kits': ['ghost']},
+      ]));
+      final merged = mergeRegistry([
+        {'id': 'p.new', 'label': 'New'},
+      ], path);
+      expect(merged.single.containsKey('kits'), isFalse);
+    });
+
+    test('no file, or a corrupt one, returns the pure result unchanged', () {
+      final pure = [
+        {'id': 'p.auth', 'label': 'Sign In'}
+      ];
+      expect(mergeRegistry(pure, '${tmp.path}/does-not-exist.json'), pure);
+      File(path).writeAsStringSync('{ not json');
+      expect(mergeRegistry(pure, path), pure,
+          reason: 'a mangled registry must never block a re-emit');
+      File(path).writeAsStringSync(jsonEncode({'not': 'a list'}));
+      expect(mergeRegistry(pure, path), pure);
+    });
+  });
+}
+
+/// The published schema, found from wherever `dart test` was invoked. Mirrors
+/// `_skillDir()` in design_selftest_test.dart: walk up to the repo root marker.
+String _schemaPath() {
+  var dir = Directory.current;
+  while (dir.parent.path != dir.path) {
+    if (File('${dir.path}/config/appbox.config.json').existsSync()) break;
+    dir = dir.parent;
+  }
+  return '${dir.path}/skills/appbox-intake/intake.schema.json';
 }

@@ -7,6 +7,8 @@
 {% import "ui/common/timeline.html" as tl %}
 {% import "ui/common/design_viewer.html" as dv %}
 {% import "ui/views/main_shell/design/_shared.html" as sh %}
+{% import "ui/views/main_shell/design/inspector_pane.html" as ins %}
+{% import "ui/common/panel_views.html" as pv %}
 {% block title %}{{ t('design.pageTitle') }}{% endblock %}
 {% block main_class %}shell-main-loop{% endblock %}
 
@@ -20,15 +22,32 @@
 
 {# ---------- The main panel: every designed screen as an artboard ---------- #}
 
+{# The chrome is defined HERE and only here. Both render paths — the full page
+   (canvasBoard) and the fragment swap (#viewerSwap) — go through this macro,
+   because a viewer rendered without chrome loses its whole top panel: the
+   topbar is guarded by `{% if chrome %}` (design_viewer.html) and #viewerSwap
+   used to pass no second arg at all, so every lens chip, device rung and bg
+   swatch (they all swap #design-viewer) silently deleted the bar until the
+   next full reload. The bottom panel survived only because .dv-botbar is
+   unguarded — its foot line, which IS chrome, vanished with the top bar.
+   `actions` carries exactly the two canvas history steps; the rest of the
+   viewer's controls belong to the tile toolbar, the mini panel or the
+   composer, and are deliberately not duplicated here. #}
+{% macro stageViewer(c) %}{{ dv.designViewer(c.viewer, {
+     title: t('design.artboardsEyebrow', {count: c.counts.screens}),
+     state: c.run.state,
+     foot: t('protoFoot'),
+     actions: [
+       {key: 'undo', icon: 'undo-2', href: '/design/undo/canvas', can: c.undoRedo.canvas.canUndo, label: t('viewer.undo')},
+       {key: 'redo', icon: 'redo-2', href: '/design/redo/canvas', can: c.undoRedo.canvas.canRedo, label: t('viewer.redo')}
+     ] }) }}{% endmacro %}
+
 {% macro canvasBoard(c) %}
 <section class="mp-content" id="mp-content" aria-live="polite">
+  {# The artifact head/foot are gone: they are now the viewer's two panels, so
+     they survive fullscreen with the rest of the controls. #}
   <article class="artifact screen-artifact evidence-artifact">
-    <header class="artifact-head">
-      <span class="eyebrow">{{ t('design.artboardsEyebrow', {count: c.counts.screens}) }}</span>
-      {{ prim.statusPill(c.run.state) }}
-    </header>
-    {{ dv.designViewer(c.viewer) }}
-    <p class="artifact-foot muted">{{ t('protoFoot') }}</p>
+    {{ stageViewer(c) }}
   </article>
 </section>
 {% endmacro %}
@@ -53,11 +72,28 @@
 
 {% macro activitySwap(c) %}{{ sh.activitySwap(c) }}{% endmacro %}
 
+{# The inspector pane (activity panel, 4th view). Two fragments, because the
+   two callers need different amounts of the frame:
+     inspectorSwap — the carousel icon: body + head/bar out-of-band, so the
+                     active icon and the panel label track the server state.
+                     Mirrors sh.activitySwap, which cannot host this pane
+                     (it dispatches on c.activityView inside _shared.html).
+     inspectorPane — the island's hover/lock POSTs: the body ONLY. Re-feeding
+                     head and bar on every pointer move would swap two more
+                     nodes per hovered element for no state change. #}
+{% macro inspectorPane(c) %}{{ ins.pane(c) }}{% endmacro %}
+
+{% macro inspectorSwap(c) %}
+{{ ins.pane(c) }}
+{{ pv.head({ side: 'left', label: c.activityLabel, views: c.activityViews, size: c.panelSize, sizeHref: c.panelSizeHref }, true) }}
+{{ pv.bar({ side: 'left', label: c.activityLabel, views: c.activityViews, size: c.panelSize, sizeHref: c.panelSizeHref }, true) }}
+{% endmacro %}
+
 {# The drag handle's response: the whole activity panel re-rendered at its
    new persisted size (the aside is server state, so replacing it loses nothing). #}
 {% macro activityFrameSwap(c) %}{{ sh.activityPanel(c) }}{% endmacro %}
 
-{% macro viewerSwap(c) %}{{ dv.designViewer(c.viewer) }}{% endmacro %}
+{% macro viewerSwap(c) %}{{ stageViewer(c) }}{% endmacro %}
 
 {# A file row's response: the main panel renders the file in the mode the
    server picked from its extension. #}

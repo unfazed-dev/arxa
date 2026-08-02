@@ -11,6 +11,7 @@ import 'dart:io';
 
 import 'package:appboxd/gate_intake.dart';
 import 'package:appboxd/gates.dart';
+import 'package:appboxd/intake.dart' show emitFlows;
 import 'package:test/test.dart';
 
 void main() {
@@ -110,6 +111,90 @@ void main() {
       writeAnswers(answers());
       final res = run();
       expect(res.passed, isTrue, reason: res.details.join('\n'));
+    });
+  });
+
+  // The flows check compares parsed structures, never bytes. The comparison is
+  // the unit under test: the gate's own wiring (project shell → flows.json) is
+  // covered by running it against a real project.
+  group('flows ≡ emitFlows(answers)', () {
+    Map<String, dynamic> flowAnswers() => {
+          'flows': [
+            {
+              'id': 'flow-onboarding',
+              'name': 'Onboarding',
+              'provenance': 'founder',
+              'edges': [
+                {'from': 'a.splash', 'to': 'a.auth', 'trigger': 'App launch'},
+                {'from': 'a.auth', 'to': 'a.home', 'trigger': 'Sign-in success'},
+              ],
+            },
+          ],
+        };
+
+    test('passes when the same data is written in a different KEY ORDER', () {
+      final projected = emitFlows(flowAnswers());
+      // A second writer, same data, keys emitted in the opposite order — the
+      // legitimate excise-vs-appendTo variation in design_facade.js.
+      final onDisk = [
+        {
+          'edges': [
+            {'trigger': 'App launch', 'action': 'push', 'to': 'a.auth', 'from': 'a.splash'},
+            {'trigger': 'Sign-in success', 'action': 'push', 'to': 'a.home', 'from': 'a.auth'},
+          ],
+          'provenance': 'founder',
+          'name': 'Onboarding',
+          'id': 'flow-onboarding',
+        },
+      ];
+      // Guard the guard: a byte/JSON-string compare WOULD flap on this input,
+      // so this assertion fails loudly if anyone swaps one in later.
+      expect(jsonEncode(onDisk), isNot(equals(jsonEncode(projected))),
+          reason: 'fixture no longer differs by key order — it proves nothing');
+      expect(diffFlows(onDisk, projected), isEmpty);
+    });
+
+    test('fails on a differing trigger, naming flow, edge index and both values',
+        () {
+      final projected = emitFlows(flowAnswers());
+      final onDisk = jsonDecode(jsonEncode(projected)) as List;
+      (onDisk[0]['edges'][1] as Map)['trigger'] = 'continue';
+      final diffs = diffFlows(onDisk, projected);
+      expect(diffs, hasLength(1));
+      expect(diffs.single, contains("flow 'flow-onboarding'"));
+      expect(diffs.single, contains('edge 1'));
+      expect(diffs.single, contains("key 'trigger'"));
+      expect(diffs.single, contains('continue'));
+      expect(diffs.single, contains('Sign-in success'));
+    });
+
+    test('fails when the EDGES are reordered — a flow is a chain', () {
+      final projected = emitFlows(flowAnswers());
+      final onDisk = jsonDecode(jsonEncode(projected)) as List;
+      final edges = onDisk[0]['edges'] as List;
+      onDisk[0]['edges'] = [edges[1], edges[0]];
+      expect(diffFlows(onDisk, projected), isNotEmpty);
+    });
+
+    test('passes when an optional key is absent on BOTH sides', () {
+      // Neither side carries `element` or `feedback`; absence must not diff.
+      final projected = emitFlows(flowAnswers());
+      final onDisk = jsonDecode(jsonEncode(projected)) as List;
+      expect(
+          (onDisk[0]['edges'][0] as Map).containsKey('element'), isFalse,
+          reason: 'fixture must not carry the optional key it is testing');
+      expect(diffFlows(onDisk, projected), isEmpty);
+    });
+
+    test('reports an optional key present on one side only', () {
+      final projected = emitFlows(flowAnswers());
+      final onDisk = jsonDecode(jsonEncode(projected)) as List;
+      (onDisk[0]['edges'][0] as Map)['element'] = 'button:Continue';
+      final diffs = diffFlows(onDisk, projected);
+      expect(diffs, hasLength(1));
+      expect(diffs.single, contains("key 'element'"));
+      expect(diffs.single, contains('button:Continue'));
+      expect(diffs.single, contains('(absent)'));
     });
   });
 }

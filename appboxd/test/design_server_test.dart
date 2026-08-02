@@ -48,12 +48,14 @@ Future<_Resp> _get(String url, {Map<String, String>? headers}) async {
   }
 }
 
-Future<_Resp> _post(String url, String body) async {
+Future<_Resp> _post(String url, String body,
+    {Map<String, String>? headers}) async {
   final client = HttpClient();
   try {
     final req = await client.postUrl(Uri.parse(url));
     req.headers.contentType =
         ContentType.parse('application/x-www-form-urlencoded');
+    headers?.forEach((k, v) => req.headers.add(k, v));
     req.add(utf8.encode(body));
     final res = await req.close();
     final b = await utf8.decoder.bind(res).join();
@@ -229,6 +231,49 @@ void main() {
       expect(srv!.pid, isNot(equals(srv!.workerPid)));
     });
 
+    // ── task #51: a worker tab that lost its globals must heal ────────────
+    // Before this, a tab whose realm was replaced (the concurrent-reload race
+    // below) answered every subsequent request with a 500 forever: nothing in
+    // JsWorker reboots except reload(), and reload() only runs on a file
+    // change. The server stayed up and stayed dead, which is why it read as
+    // "the studio crashed" rather than "one request failed".
+    test('51: a lost __dispatch is rebooted and the request still succeeds',
+        () async {
+      final before = await _get(srv!.url);
+      expect(before.status, 200, reason: 'sanity: healthy before the break');
+
+      await srv!.breakWorkerForTest();
+
+      final after = await _get(srv!.url);
+      expect(after.status, 200, reason: 'the worker must self-heal, not 500');
+      expect(after.body.toLowerCase(), contains('<html'));
+      // Healed for good, not just for the one retry.
+      expect((await _get(srv!.url)).status, 200);
+    });
+
+    // The race that produces the lost realm in the first place: two reloads in
+    // flight on one tab interleave navigate/inject/__boot, and A's __boot can
+    // run against B's half-loaded page.
+    //
+    // This asserts the COUNT, not "the tab still works afterwards". The
+    // outcome-shaped version of this test passed with the single-flight guard
+    // deleted — three concurrent reloads on an idle machine interleave benignly
+    // often enough to be useless as evidence. The count is the contract and
+    // cannot pass by luck: 3 calls must produce 2 runs (the one in flight, plus
+    // exactly one trailing re-run so an edit that landed mid-reload is not
+    // silently dropped), never 3.
+    test('51: concurrent reloads coalesce to one in-flight run + one trailing',
+        () async {
+      final before = srv!.workerReloadRunsForTest;
+      await Future.wait([srv!.reload(), srv!.reload(), srv!.reload()]);
+      expect(srv!.workerReloadRunsForTest - before, 2);
+
+      final r = await _get(srv!.url);
+      expect(r.status, 200);
+      expect(r.body, contains('hello-hda'),
+          reason: 'templates + l10n survived the coalesced reload');
+    });
+
     test('5: record URL answers 200 + renders <html>', () async {
       final r = await _get(srv!.url);
       expect(r.status, 200);
@@ -328,6 +373,177 @@ void main() {
       final r = await _get('${srv!.url}no-such-route');
       expect(r.status, 404);
       expect(r.body, contains('no route for'));
+    });
+  });
+
+  // ── the error surface: a failed request must SAY something, and must not
+  //    say what the exception said (own boot) ─────────────────────────────
+  group('error surface', () {
+    late Directory tmp;
+    late DesignServer srv;
+    late String base;
+
+    setUpAll(() async {
+      tmp = await Directory.systemTemp.createTemp('design-err-');
+      await _copyDir(_fixture, tmp.path);
+      srv = await DesignServer.start(artifactDir: tmp.path, port: 0);
+      // srv.url ends in '/' — a second one would make the path '//…', which
+      // matches no route and lands in the 404 branch instead of the one
+      // under test.
+      base = srv.url.substring(0, srv.url.length - 1);
+    });
+    tearDownAll(() async {
+      await srv.stop();
+      await tmp.delete(recursive: true);
+    });
+
+    // The 500 trigger: a truncated UTF-8 percent-escape. Uri.decodeComponent
+    // on the vendor path throws FormatException into the top-level catch —
+    // deterministic, server-side, and needs no Chrome route.
+    const throwUrl = '/assets/vendor/%E0%A4%A';
+
+    test('a throwing handler → 500', () async {
+      final r = await _get('$base$throwUrl');
+      expect(r.status, 500);
+    });
+
+    // ── task #46: the error surface is translatable ──────────────────────
+    // It could not be, before: design_server.dart hard-coded English consts,
+    // and the obvious fix — call the worker's t() — is the wrong one, because
+    // the worker is a thing that can BE the failure. ErrorCatalog reads the
+    // ARB files off disk instead, sharing no state with the tab.
+
+    test('46: an untranslated key still renders the authored English', () async {
+      // hello-hda's catalogs carry no errorSurface.* keys at all, so this is
+      // the miss path — and a miss must produce the real sentence, never the
+      // raw key. "errorSurface.notFound" on screen would be a second failure
+      // stacked on the first.
+      final r = await _get('$base/design/definitely-not-a-route');
+      expect(r.status, 404);
+      expect(r.body, contains('no route for GET /design/definitely-not-a-route'));
+      expect(r.body, isNot(contains('errorSurface.')));
+    });
+
+    test('46: a translated key wins, and lang= drives the <html lang>', () async {
+      // Written AFTER the server booted, which also pins the no-cache choice:
+      // ErrorCatalog re-reads on every render, so this needs no reload. If a
+      // cache is ever added, this test is what fails.
+      File(p.join(tmp.path, 'l10n', 'app_pl.arb')).writeAsStringSync(jsonEncode({
+        '@@locale': 'pl',
+        'errorSurface.notFound': 'brak trasy dla {method} {path}',
+        'errorSurface.pageHint': 'Nic nie zostało utracone.',
+        'errorSurface.backHome': 'Powrót do pulpitu',
+      }));
+
+      final r = await _get('$base/design/nope?lang=pl');
+      expect(r.status, 404);
+      expect(r.body, contains('brak trasy dla GET /design/nope'),
+          reason: 'both placeholders substituted, in the Polish string');
+      expect(r.body, contains('Powrót do pulpitu'));
+      // A Polish page announcing lang="en" mis-pronounces every word.
+      expect(r.body, contains('<html lang="pl">'));
+      expect(r.body, isNot(contains('no route for')));
+    });
+
+    test('46: the locale-dependent body declares Vary: Accept-Language',
+        () async {
+      // Without it a shared cache serves one visitor's language to the next.
+      final r = await _get('$base/design/nope');
+      expect(r.headers['vary']?.toLowerCase(), contains('accept-language'));
+      expect(r.headers['vary']?.toLowerCase(), contains('hx-request'));
+    });
+
+    test('46: an unreadable catalog degrades to English, it does not crash',
+        () async {
+      final f = File(p.join(tmp.path, 'l10n', 'app_pl.arb'));
+      final good = f.readAsStringSync();
+      f.writeAsStringSync('{ this is not json');
+      try {
+        final r = await _get('$base/design/nope?lang=pl');
+        expect(r.status, 404, reason: 'a broken catalog must not become a 500');
+        expect(r.body, contains('no route for GET /design/nope'));
+      } finally {
+        f.writeAsStringSync(good);
+      }
+    });
+
+    // A malformed body is the CLIENT's mistake. /__project_write already
+    // classified it 400; /__project_use reported the identical failure as a
+    // 500 until this slice.
+    test('a malformed body is a 400, not a 500', () async {
+      for (final bad in ['not-json', 'null', '[]', '"x"']) {
+        final r = await _post('$base/__project_use', bad);
+        expect(r.status, 400, reason: 'body: $bad');
+        expect(jsonDecode(r.body), {'ok': false, 'error': 'bad JSON body'});
+        // the raw parser message must not ride along
+        expect(r.body, isNot(contains('FormatException')));
+      }
+    });
+
+    test('500 body carries NO raw exception text (the bad-state leak)',
+        () async {
+      final r = await _get('$base$throwUrl');
+      // Red-first: today's `'500 — $e'` writes the exception's toString
+      // straight to the client. None of it may reach the wire.
+      expect(r.body, isNot(contains('FormatException')));
+      expect(r.body, isNot(contains('Missing extension byte')));
+      // nor any stack, if the handler is ever changed to write one
+      expect(r.body, isNot(contains('package:appboxd')));
+      // and it must still say something human
+      expect(r.body, contains('appbox server'));
+    });
+
+    test('500: full-page request → an HTML page, HX-Request → a fragment',
+        () async {
+      final page = await _get('$base$throwUrl');
+      expect(page.status, 500);
+      expect(page.body, startsWith('<!doctype html>'));
+      expect(page.body, contains('error-page'));
+      expect(page.headers['content-type'], contains('text/html'));
+
+      final frag =
+          await _get('$base$throwUrl', headers: {'HX-Request': 'true'});
+      expect(frag.status, 500);
+      // The fragment is toast-only: no page shell, or htmx would swap a whole
+      // document into the tray.
+      expect(frag.body, isNot(contains('<!doctype')));
+      expect(frag.body, isNot(contains('<html')));
+      expect(frag.body, contains('toast-error'));
+      // both shapes come off the same URL → the cache must vary on it
+      expect(frag.headers['vary'], contains('HX-Request'));
+    });
+
+    test('404 uses the same surface (page vs fragment), still human',
+        () async {
+      final page = await _get('$base/no-such-route-zzz');
+      expect(page.status, 404);
+      expect(page.body, startsWith('<!doctype html>'));
+      expect(page.body, contains('no route for'));
+
+      final frag = await _get('$base/no-such-route-zzz',
+          headers: {'HX-Request': 'true'});
+      expect(frag.status, 404);
+      expect(frag.body, contains('toast-error'));
+      expect(frag.body, isNot(contains('<html')));
+    });
+
+    test('a user-controlled path cannot inject markup into the 404', () async {
+      final r = await _get('$base/%3Cimg%20src=x%20onerror=alert(1)%3E');
+      expect(r.status, 404);
+      // The message echoes the path, so the page is only safe because the
+      // path is inert: req.uri.path keeps it percent-encoded, and _esc()
+      // covers it if that ever stops being true.
+      expect(r.body, isNot(contains('<img')));
+      expect(r.body, contains('%3Cimg'));
+    });
+
+    test('an asset miss stays plain text, not the HTML surface', () async {
+      // /assets/vendor/* is fetched by <script>/<link>, never by htmx — an
+      // HTML body for a missing .js would be worse than none.
+      final r = await _get('$base/assets/vendor/no-such-file-zzz.js');
+      expect(r.status, 404);
+      expect(r.headers['content-type'], contains('text/plain'));
+      expect(r.body, isNot(contains('<html')));
     });
   });
 

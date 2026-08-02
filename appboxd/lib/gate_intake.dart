@@ -23,15 +23,23 @@
 //
 // `--project <name>` points the gate at a project's own intake shell
 // (~/.appbox/projects/<name>/intake) instead of the studio: answers.json,
-// brief.md, registry.json — the flat layout IntakeEngine.emit writes. The
-// shell layout is fixed, so structure.json plays no part in project mode.
-// Without the flag nothing changes: the gate reads the studio's design root
-// and the repo's pipeline state exactly as before.
+// brief.md, registry.json, flows.json — the flat layout IntakeEngine.emit
+// writes. The shell layout is fixed, so structure.json plays no part in
+// project mode. Without the flag nothing changes: the gate reads the studio's
+// design root and the repo's pipeline state exactly as before.
+//
+// Project mode also runs the FLOWS check: answers.json is the SSOT for flows
+// and flows.json is its projection, so `flows.json ≡ emitFlows(answers)` must
+// hold. Studio edits dual-write both files; this check is what stops the two
+// from drifting apart silently. It is project-only by construction — the
+// studio's own models/screens_model/flows.json is a hand-authored triad lens,
+// not a projection of any answers document.
 
 import 'dart:convert';
 import 'dart:io';
 
 import 'package:appboxd/gates.dart';
+import 'package:appboxd/intake.dart' show emitFlows;
 import 'package:appboxd/project.dart';
 
 GateResult intakeGate(GateContext ctx, {String? project}) {
@@ -44,6 +52,7 @@ GateResult intakeGate(GateContext ctx, {String? project}) {
   final String? answersPath;
   final String registryPath;
   final String? briefPath;
+  final String? flowsPath;
   final String sourceHome;
 
   if (project != null) {
@@ -61,11 +70,13 @@ GateResult intakeGate(GateContext ctx, {String? project}) {
     answersPath = _emitted('$intakeDir/answers.json');
     registryPath = '$intakeDir/registry.json';
     briefPath = _emitted('$intakeDir/brief.md');
+    flowsPath = _emitted('$intakeDir/flows.json');
     sourceHome = intakeDir;
   } else {
     answersPath = _resolveAnswers(repoRoot);
     registryPath = _resolveRegistry(designRoot);
     briefPath = _resolveBrief(designRoot, repoRoot);
+    flowsPath = null; // studio flows.json is authored, not projected — see header
     sourceHome = designRoot;
   }
 
@@ -134,6 +145,56 @@ GateResult intakeGate(GateContext ctx, {String? project}) {
         !hasHeading('## Layout template')) {
       fail('answers declare a layoutTemplate but brief $briefPath has no '
           "'## Layout template' heading — $chainHint");
+    }
+  }
+
+  // ---- flows ≡ emitFlows(answers) -------------------------------------------
+  // answers.json is the SSOT; flows.json is its projection. Studio edits
+  // dual-write both, so the two must AGREE — this is the check that catches a
+  // write that landed in one file and not the other.
+  if (answersDoc != null && flowsPath != null) {
+    Object? flowsDoc;
+    var parsed = false;
+    try {
+      flowsDoc = jsonDecode(File(flowsPath).readAsStringSync());
+      parsed = true;
+    } catch (e) {
+      fail('flows file $flowsPath does not parse — $e');
+    }
+    if (parsed && flowsDoc is! List) {
+      fail('flows $flowsPath must be a list of flows, got '
+          '${_jsonTypeName(flowsDoc)}');
+    } else if (parsed) {
+      List<Map<String, dynamic>>? projected;
+      try {
+        projected = emitFlows(answersDoc.cast<String, dynamic>());
+      } catch (e) {
+        fail('answers $answersPath do not project to flows — $e');
+      }
+      if (projected != null) {
+        final diffs = diffFlows(flowsDoc as List, projected);
+        if (diffs.isEmpty) {
+          ok('flows.json agrees with emitFlows(answers) — '
+              '${flowsDoc.length} flow(s), no divergence');
+        } else {
+          // Name the repair command outright. Whoever trips this in six
+          // months should not have to reconstruct it — and must be told which
+          // way the projection runs, because `intake emit` REWRITES flows.json
+          // from the answers: an edit living only in flows.json is destroyed
+          // by the very command that fixes the divergence.
+          final flag = project == null ? '' : ' --project $project';
+          fail('$flowsPath disagrees with emitFlows(answers) in '
+              '${diffs.length} place(s) — answers.json is the SSOT. Port each '
+              'difference below into the ANSWERS, then re-project with: '
+              '`appbox intake emit --answers $answersPath$flag`. That command '
+              'OVERWRITES flows.json from the answers, so an edit that only '
+              'ever reached flows.json will be lost unless you carry it over '
+              'first. Re-check with: `appbox gate intake$flag`');
+          for (final d in diffs) {
+            fail(d);
+          }
+        }
+      }
     }
   }
 
@@ -265,6 +326,116 @@ String? _resolveBrief(String designRoot, String repoRoot) {
 /// Project-shell artifacts are at fixed flat paths (IntakeEngine.emit writes
 /// them) — no search order, so "resolve" is just "has it been emitted yet?".
 String? _emitted(String path) => File(path).existsSync() ? path : null;
+
+// ── flows ≡ emitFlows(answers) ───────────────────────────────────────────────
+
+/// Structural diff of [onDisk] (parsed flows.json) against [projected]
+/// (`emitFlows(answers)`). Empty means they agree.
+///
+/// STRUCTURAL, never a byte or JSON-string compare — that would flap. Two
+/// correct writers legitimately disagree on presentation: the studio's `excise`
+/// path emits an edge as `{from, to, trigger, action, element}` while its
+/// `appendTo` path emits `{from, to, trigger, action}`, so both key ORDER and
+/// which optional keys are carried vary between honest writers. Hence:
+///   - map keys are compared as a SET, order-insensitive;
+///   - lists are compared IN ORDER — a flow is a chain, so edge order is
+///     meaning, and two edges swapped is a real divergence;
+///   - a key absent on BOTH sides is not a difference (it never enters the
+///     key union), so an optional key nobody uses yet costs nothing.
+///
+/// Each message names the flow, the edge index, the key and both values —
+/// enough to repair the data from the gate output alone.
+List<String> diffFlows(List<Object?> onDisk, List<Object?> projected) {
+  final out = <String>[];
+  if (onDisk.length != projected.length) {
+    out.add('flows.json has ${onDisk.length} flow(s), the answers project '
+        '${projected.length}');
+  }
+  final flows = onDisk.length < projected.length ? onDisk.length : projected.length;
+  for (var i = 0; i < flows; i++) {
+    final disk = onDisk[i], want = projected[i];
+    final id = (disk is Map ? disk['id'] : null) ??
+        (want is Map ? want['id'] : null) ??
+        i;
+    final at = "flow '$id'";
+    if (disk is! Map || want is! Map) {
+      _diff(at, disk, want, out);
+      continue;
+    }
+    for (final k in _keyUnion(disk, want)) {
+      if (k == 'edges') continue;
+      _diff("$at key '$k'", _keyed(disk, k), _keyed(want, k), out);
+    }
+    final diskEdges = disk['edges'], wantEdges = want['edges'];
+    if (diskEdges is! List || wantEdges is! List) {
+      _diff("$at key 'edges'", diskEdges, wantEdges, out);
+      continue;
+    }
+    if (diskEdges.length != wantEdges.length) {
+      out.add('$at has ${diskEdges.length} edge(s) in flows.json, '
+          '${wantEdges.length} from the answers');
+    }
+    final edges = diskEdges.length < wantEdges.length
+        ? diskEdges.length
+        : wantEdges.length;
+    for (var j = 0; j < edges; j++) {
+      final d = diskEdges[j], w = wantEdges[j];
+      if (d is! Map || w is! Map) {
+        _diff('$at edge $j', d, w, out);
+        continue;
+      }
+      for (final k in _keyUnion(d, w)) {
+        _diff("$at edge $j key '$k'", _keyed(d, k), _keyed(w, k), out);
+      }
+    }
+  }
+  return out;
+}
+
+/// "not present on this side" — distinct from a JSON `null`, which is a value.
+class _Absent {
+  const _Absent();
+}
+
+const _absent = _Absent();
+
+Object? _keyed(Map m, Object? k) => m.containsKey(k) ? m[k] : _absent;
+
+List<Object?> _keyUnion(Map a, Map b) =>
+    <Object?>{...a.keys, ...b.keys}.toList()
+      ..sort((x, y) => '$x'.compareTo('$y'));
+
+void _diff(String at, Object? disk, Object? want, List<String> out) {
+  if (disk is Map && want is Map) {
+    for (final k in _keyUnion(disk, want)) {
+      _diff('$at.$k', _keyed(disk, k), _keyed(want, k), out);
+    }
+    return;
+  }
+  if (disk is List && want is List) {
+    if (disk.length != want.length) {
+      out.add('$at: flows.json has ${disk.length} item(s), the answers give '
+          '${want.length}');
+    }
+    final n = disk.length < want.length ? disk.length : want.length;
+    for (var i = 0; i < n; i++) {
+      _diff('$at[$i]', disk[i], want[i], out);
+    }
+    return;
+  }
+  if (disk != want) {
+    out.add('$at: flows.json has ${_show(disk)}, the answers give ${_show(want)}');
+  }
+}
+
+String _show(Object? v) {
+  if (v is _Absent) return '(absent)';
+  try {
+    return jsonEncode(v);
+  } catch (_) {
+    return '$v';
+  }
+}
 
 // ── brief surface-table parsing (10.7) ───────────────────────────────────────
 

@@ -24,8 +24,8 @@ const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const { chromium } = await import(
   path.join(REPO, 'skills/appbox-designer/runtime/node_modules/playwright-core/index.mjs'));
 const CHROME = process.env.APPBOX_CHROME || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
-const BASE = process.env.APPBOX_BASE || 'http://localhost:4319';
-
+import { resolveBase, waitFor, trackTransitions } from './_probe_base.mjs';
+const BASE = resolveBase();
 const FLOW = 'flow-onboarding';
 const FROM = 'portalo.auth';   // the screen with the Continue button
 const TO = 'portalo.home';     // where flow-onboarding's "continue" edge points
@@ -40,6 +40,7 @@ let b;
 try {
   b = await chromium.launch({ executablePath: CHROME, headless: true });
   const p = await b.newPage({ viewport: { width: 1600, height: 1000 } });
+  await trackTransitions(p);
   const errs = [];
   const http4xx = [];
   p.on('pageerror', (e) => errs.push('page: ' + e.message));
@@ -59,7 +60,10 @@ try {
   // also the only way this probe tests what a user actually does.
   console.log('\n=== A. views lens offers no interactive mode ===');
   await p.goto(`${BASE}/design`, { waitUntil: 'networkidle' });
-  await p.waitForTimeout(900);
+  // The viewer arrives with the page, so wait for the thing the checks read —
+  // the tiles — not for a number of milliseconds someone measured once.
+  await waitFor(p, () => document.querySelectorAll('.dv-tile').length > 0,
+    { label: 'the viewer to render its tiles' });
   const viewsTools = await p.$$eval('.dv-tile-tools a', (as) => as.map((a) => a.getAttribute('title') || ''));
   check('no walk control in views', !viewsTools.some((t) => /walk the flow/i.test(t)),
     `titles: ${[...new Set(viewsTools)].join(' | ') || '(none)'}`);
@@ -69,7 +73,12 @@ try {
   // the parent's own htmx so the page (and its htmx global) stay intact.
   await p.evaluate((u) => window.htmx.ajax('GET', u, { target: '#design-viewer', swap: 'morph:outerHTML' }),
     `/design/viewer?mode=views&flow=${FLOW}&step=${FROM}&live=${FROM}`);
-  await p.waitForTimeout(900);
+  // Nothing to poll FOR here — the assertion is an absence, and "wait until
+  // zero tiles are live" is satisfied instantly by a page that has not rendered
+  // yet, which would make the check vacuous. Wait for the tiles to exist (the
+  // precondition), then assert none of them is live.
+  await waitFor(p, () => document.querySelectorAll('.dv-tile').length > 0,
+    { label: 'the views lens to re-render' });
   check('stale walk params cannot arm a views tile',
     (await p.$$('.dv-tile.is-live')).length === 0);
 
@@ -78,10 +87,23 @@ try {
   // own hover toolbar — the user's path, not a hand-built URL.
   await p.evaluate((u) => window.htmx.ajax('GET', u, { target: '#design-viewer', swap: 'morph:outerHTML' }),
     '/design/viewer?mode=flows');
-  await p.waitForTimeout(900);
+  await waitFor(p, () => !!document.querySelector('.dv-flow-row'),
+    { label: 'the flows lens to render its rows' });
   const walkBtn = await p.$(`.dv-tile[data-id="${FROM}"] a[title*="Walk the flow"]`);
   check('flows lens offers the walk control', !!walkBtn);
-  if (walkBtn) { await walkBtn.click({ force: true }); await p.waitForTimeout(1200); }
+  // Real hover on the tile opens the CSS gate (dv-tile-chrome), then a plain
+  // click exercises the actual reveal — not force:true, which would bypass
+  // the actionability check and keep passing even if the reveal broke (#49).
+  if (walkBtn) {
+    await p.hover(`.dv-tile[data-id="${FROM}"]`);
+    await walkBtn.click();
+    // Arming the walk is a server round-trip + a stage re-render. Poll for the
+    // exact post-condition the next two checks assert on.
+    await waitFor(p, (id) => {
+      const live = document.querySelectorAll('.dv-tile.is-live');
+      return live.length === 1 && live[0].dataset.id === id;
+    }, { arg: FROM, label: `${FROM} to become the live step` });
+  }
   const activeBefore = await p.$$eval('.dv-tile.is-live', (ts) => ts.map((t) => t.dataset.id));
   check('exactly one tile is the current step', activeBefore.length === 1, activeBefore.join(','));
   check(`the step is ${FROM}`, activeBefore[0] === FROM, String(activeBefore[0]));
@@ -106,7 +128,13 @@ try {
 
   if (target) {
     await target.click({ force: true });
-    await p.waitForTimeout(1800);
+    // The advance crosses an iframe boundary (island → window.parent.htmx →
+    // row swap), so it is the slowest step in the probe and was the one most
+    // likely to be read mid-flight. Poll for the row having actually advanced.
+    await waitFor(p, (id) => {
+      const live = document.querySelectorAll('.dv-tile.is-live');
+      return live.length === 1 && live[0].dataset.id === id;
+    }, { arg: TO, label: `the row to advance to ${TO}` });
   }
 
   console.log('\n=== D. the ROW advanced, the grid survived ===');

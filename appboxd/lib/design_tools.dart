@@ -87,31 +87,211 @@ const _inspectRequired = ['data-inspect-role', 'data-inspect-style', 'data-inspe
 /// nothing is the failure that let inspect rot; the studio's own chrome links
 /// are not designed elements of a client app, so only files under `surfaces/`
 /// are held to "if you render interactive elements, annotate them".
-final _interactiveRe = RegExp(r'<(?:a\s[^>]*\bhref|button\b)', dotAll: true);
+///
+/// D7 — the coverage bar is **C**: EVERY interactive element carries `data-el`.
+/// The bar it replaces was literally "at least one" (`interactive > 0 &&
+/// annotated == 0`), which `home.html` passed with one annotation on eleven
+/// elements. `coverageB` drops to **B** — only the element KINDS a reviewer
+/// expects to be inspectable — the bar you sit at while a surface is being
+/// brought up, not the bar you ship.
+///
+/// Rule C's interactive set is what designers actually author, not what the
+/// first cut could see: `<a href>|<button>` missed every form control,
+/// ARIA-promoted div, focusable and htmx-driven element on the page. Applied
+/// per TAG inside the `_tagRe` loop, so a `<button hx-post>` satisfying two
+/// alternatives still counts once, and a nested match counts once per opening
+/// tag rather than once per enclosing element.
+final _interactiveRe = RegExp(
+    r"""^<(?:a\s[^>]*\bhref|button|input|select|textarea|summary|label)\b"""
+    r"""|\brole\s*=\s*["'](?:button|link|tab|switch)["']"""
+    r"""|\btabindex\s*=\s*["']\d"""
+    r"""|\bhx-(?:get|post|put|patch|delete|trigger|target|swap|confirm)\b""",
+    caseSensitive: false, dotAll: true);
 
-List<String> inspectFindings(String src, {bool isSurface = false}) {
+/// Rule B — the `coverageB` target: the element KINDS a reviewer expects to be
+/// inspectable. It is a strict SUBSET of C, deliberately: a lower bar that
+/// flagged something the higher bar did not would be incoherent, and an
+/// earlier cut that matched `class~="card|hero"` did exactly that — C sees
+/// interactive elements, and a decorative `<div class="card">` is not one.
+/// The vocabulary in use (`button` 9 · `card` 6 · `hero` 5 · `summary` 4) is
+/// already covered by the tags below: portalo's cards are `<a href>` anchors
+/// and its summaries are `<summary>`.
+final _interactiveBRe = RegExp(
+    r"""^<(?:a\s[^>]*\bhref|button|summary|input|select|textarea)\b"""
+    r"""|\brole\s*=\s*["'](?:button|link)["']""",
+    caseSensitive: false, dotAll: true);
+
+/// D9 — a DERIVED `data-inspect-fn`. `fn` is prose ("Opens the category
+/// listing"); `role`, `style` and `data-el` are mechanical. A generated `fn` is
+/// therefore a guess and must say so, which is the house *derive + confirm*
+/// pattern already worn three times: `_edgeFeedback` stamps `inferred: true`,
+/// derived flows carry `provenance: 'inferred'`, `emitRegistry` carries
+/// `statesProvenance`. The lint ACCEPTS an inferred fn — it is not missing —
+/// and reports it on the advisory channel, never as a finding, so coverage
+/// (how much is annotated) and confidence (how much is confirmed) stay
+/// separable numbers.
+const _inspectFnProvenance = 'data-inspect-fn-provenance';
+final _inferredFnRe = RegExp(
+    """\\b$_inspectFnProvenance\\s*=\\s*["']inferred["']""",
+    caseSensitive: false);
+
+/// D10 — a declared state is a `{% if state == '<name>' %}` branch in the SAME
+/// surface file. `?state=loading` swaps regions in place: separate variant
+/// files duplicate every annotation with no sync mechanism, and a viewer-side
+/// overlay has none at all. The registry declares, the surface must branch —
+/// and a branch nobody declared is that drift read the other way.
+final _stateBranchRe = RegExp(
+    r"""\{%-?\s*if\s+state\s*==\s*["']([a-z]+)["']""",
+    caseSensitive: false);
+
+/// D13 — retry is an affordance, not a fourth state. An `error`/`empty` region
+/// needs BOTH affordances, because the pull gesture is not discoverable on an
+/// error screen and the button alone throws away the gesture; and it must
+/// SCROLL, because `RefreshIndicator` cannot detect a pull inside an
+/// unscrollable box — a bare `Center()` silently defeats the pull it
+/// advertises. The region names itself with `data-state`; these markers are
+/// the contract the designer emits against.
+const _stateRegionAttr = 'data-state';
+const _scrollMarker = 'data-scroll';
+const _pullMarker = 'data-refresh';
+const _retryMarker = 'data-retry';
+
+/// Findings for [src]. [declaredStates] turns D10 on (null = no registry
+/// reachable, rule off); [notes] collects the advisory, non-failing D9 channel.
+List<String> inspectFindings(String src,
+    {bool isSurface = false,
+    bool coverageB = false,
+    List<String>? declaredStates,
+    List<String>? notes}) {
   final out = <String>[];
+  final hasEl = RegExp(r'\bdata-el\s*=');
+  final interactive = coverageB ? _interactiveBRe : _interactiveRe;
+  var unannotated = 0;
   for (final m in _tagRe.allMatches(src)) {
     final tag = m[0]!;
-    if (!RegExp(r'\bdata-el\s*=').hasMatch(tag)) continue;
+    if (!hasEl.hasMatch(tag)) {
+      // D7 rule C/B — an interactive element with no `data-el` is invisible to
+      // inspect. Counted here rather than over the whole file so that one tag
+      // is one element however many alternatives it happens to satisfy.
+      if (isSurface && interactive.hasMatch(tag)) unannotated++;
+      continue;
+    }
     final missing = _inspectRequired.where((a) => !tag.contains(a)).toList();
     if (missing.isEmpty) continue;
     final name = RegExp(r'''data-el\s*=\s*["']([^"']{0,40})''').firstMatch(tag)?[1] ?? '?';
     out.add('[data-el="$name"] missing ${missing.join(", ")}');
   }
-  // The vacuous-pass guard. Without this the rule above is green on a surface
-  // with no annotations at all — which is precisely how 12 of 12 surfaces
-  // shipped unannotated and inspect had nothing to bind to.
-  if (isSurface) {
-    final interactive = _interactiveRe.allMatches(src).length;
-    final annotated = RegExp(r'\bdata-el\s*=').allMatches(src).length;
-    if (interactive > 0 && annotated == 0) {
-      out.add('surface renders $interactive interactive element(s) but carries '
-          'no data-el — inspect has nothing to bind to');
+  if (isSurface && unannotated > 0) {
+    out.add('$unannotated interactive element(s) carry no data-el — inspect '
+        'has nothing to bind to (coverage bar ${coverageB ? "B" : "C"})');
+  }
+  // D9 — inferred fns are counted, never failed. An authored fn contributes
+  // nothing here, so the two are distinguishable at a glance.
+  final inferred = _inferredFnRe.allMatches(src).length;
+  if (inferred > 0) {
+    notes?.add('$inferred data-inspect-fn value(s) marked inferred — derived, '
+        'not authored; confirm before shipping');
+  }
+  if (isSurface && declaredStates != null) {
+    final branched =
+        _stateBranchRe.allMatches(src).map((m) => m[1]!.toLowerCase()).toSet();
+    for (final s in declaredStates) {
+      if (!branched.contains(s)) {
+        out.add("registry declares state '$s' but the surface has no "
+            "{% if state == '$s' %} branch");
+      }
+    }
+    for (final s in branched) {
+      if (!declaredStates.contains(s)) {
+        out.add("surface branches on state '$s' that the registry does not "
+            'declare');
+      }
+    }
+  }
+  if (isSurface) out.addAll(_retryFindings(src));
+  return out;
+}
+
+/// D13's two rules over the `error`/`empty` regions of [src]. A region is the
+/// slice from its `data-state="…"` opening tag to the next one (or EOF) —
+/// regex depth, like every other rule in this file, and sufficient because a
+/// state region is a sibling block and never nests inside another.
+List<String> _retryFindings(String src) {
+  final out = <String>[];
+  final regions = RegExp(
+          """<[a-zA-Z][^>]*\\b$_stateRegionAttr\\s*=\\s*["'](error|empty)["'][^>]*>""",
+          caseSensitive: false, dotAll: true)
+      .allMatches(src)
+      .toList();
+  for (var i = 0; i < regions.length; i++) {
+    final m = regions[i];
+    final state = m[1]!.toLowerCase();
+    final region =
+        src.substring(m.start, i + 1 < regions.length ? regions[i + 1].start : src.length);
+    if (!RegExp("""\\b$_scrollMarker\\s*=\\s*["'](?!none)""", caseSensitive: false)
+        .hasMatch(m[0]!)) {
+      out.add("'$state' region is not scrollable ($_scrollMarker missing) — "
+          'RefreshIndicator cannot detect a pull inside an unscrollable box');
+    }
+    final affordances = <String>[
+      if (RegExp("""\\b$_pullMarker\\s*=\\s*["']pull["']""", caseSensitive: false)
+          .hasMatch(region))
+        'pull-to-refresh',
+      if (RegExp('\\b$_retryMarker\\b', caseSensitive: false).hasMatch(region))
+        'retry control',
+    ];
+    if (affordances.length < 2) {
+      out.add("'$state' region offers "
+          '${affordances.isEmpty ? "no retry affordance" : affordances.single} '
+          '— BOTH $_pullMarker="pull" and a $_retryMarker control are required; '
+          'the pull gesture is not discoverable on an error screen');
     }
   }
   return out;
 }
+
+/// The states `intake/registry.json` declares for the screen [htmlPath]
+/// renders. The join is filename → the registry id ending `.<short>`: registry
+/// `surface` is null until the designer fills it, so the name is the only link
+/// that exists at lint time. Returns null — D10 off — for a partial
+/// (`_name.html`), when no registry is reachable, or when no entry matches, so
+/// a bare directory of loose HTML stays lintable.
+List<String>? _declaredStates(String htmlPath, Map<String, List<dynamic>?> cache) {
+  final short = p.basenameWithoutExtension(htmlPath);
+  if (short.startsWith('_')) return null;
+  final reg = _nearestRegistry(p.dirname(htmlPath), cache);
+  if (reg == null) return null;
+  for (final e in reg) {
+    if (e is! Map) continue;
+    final id = e['id'];
+    if (id is! String || !id.endsWith('.$short')) continue;
+    final st = e['states'];
+    return st is List ? st.whereType<String>().toList() : const <String>[];
+  }
+  return null;
+}
+
+/// Walk up from [dir] for `intake/registry.json` (same shape as
+/// `_findRepoRoot`), memoised per directory — a 12-surface project would
+/// otherwise read and parse the same registry twelve times.
+List<dynamic>? _nearestRegistry(String dir, Map<String, List<dynamic>?> cache) =>
+    cache.putIfAbsent(dir, () {
+      var d = Directory(dir);
+      while (true) {
+        final f = File(p.join(d.path, 'intake', 'registry.json'));
+        if (f.existsSync()) {
+          try {
+            final j = jsonDecode(f.readAsStringSync());
+            return j is List ? j : null;
+          } catch (_) {
+            return null;
+          }
+        }
+        final parent = d.parent;
+        if (parent.path == d.path) return null;
+        d = parent;
+      }
+    });
 
 List<File> _walk(Directory d) => d
     .listSync(recursive: true)
@@ -119,9 +299,13 @@ List<File> _walk(Directory d) => d
     .toList();
 
 /// Scan every `.html` under [artifactDir] for the four rules. Returns findings
-/// in walk order, rule order within each file (mirrors lint.mjs).
-List<LintFinding> lintArtifact(String artifactDir) {
+/// in walk order, rule order within each file (mirrors lint.mjs). [coverageB]
+/// drops D7's bar from C to B; [notes] collects the advisory D9 channel, which
+/// never affects the exit code.
+List<LintFinding> lintArtifact(String artifactDir,
+    {bool coverageB = false, List<LintFinding>? notes}) {
   final findings = <LintFinding>[];
+  final registries = <String, List<dynamic>?>{};
   for (final f in _walk(Directory(artifactDir))) {
     if (!f.path.endsWith('.html')) continue;
     final src = stripComments(f.readAsStringSync());
@@ -131,26 +315,53 @@ List<LintFinding> lintArtifact(String artifactDir) {
       }
     }
     final isSurface = f.path.contains('${p.separator}surfaces${p.separator}');
-    for (final msg in inspectFindings(src, isSurface: isSurface)) {
+    final fileNotes = <String>[];
+    for (final msg in inspectFindings(src,
+        isSurface: isSurface,
+        coverageB: coverageB,
+        declaredStates: isSurface ? _declaredStates(f.path, registries) : null,
+        notes: fileNotes)) {
       findings.add(LintFinding(f.path, msg));
+    }
+    for (final msg in fileNotes) {
+      notes?.add(LintFinding(f.path, msg));
     }
   }
   return findings;
 }
 
-/// `appbox design lint <artifact-dir>` — exit 0 clean / 1 findings / 2 usage.
+/// `appbox design lint <artifact-dir> [--coverage-b]` — exit 0 clean /
+/// 1 findings / 2 usage. `--coverage-b` drops D7's inspection bar from C
+/// (every interactive element annotated) to B (button · card · hero · summary
+/// and kin only); the default is C. D9's inferred-fn notes ride stdout in both
+/// outcomes — an inferred annotation is reported, never failed, so it can
+/// never move the exit code.
 CmdResult designLint(List<String> args) {
-  if (args.isEmpty) {
+  var coverageB = false;
+  final rest = <String>[];
+  for (final a in args) {
+    if (a == '--coverage-b') {
+      coverageB = true;
+      continue;
+    }
+    rest.add(a);
+  }
+  if (rest.isEmpty) {
     return CmdResult(2, stderrLines: const ['usage: appbox design lint <artifact-dir>']);
   }
-  final dir = p.absolute(args.first);
-  final findings = lintArtifact(dir);
+  final dir = p.absolute(rest.first);
+  final notes = <LintFinding>[];
+  final findings = lintArtifact(dir, coverageB: coverageB, notes: notes);
+  final noteLines = notes.map((n) => 'note: $n').toList();
   if (findings.isNotEmpty) {
     final lines = <String>['client-JS lint failed:'];
     lines.addAll(findings.map((f) => f.toString()));
-    return CmdResult(1, stderrLines: lines);
+    return CmdResult(1, stdoutLines: noteLines, stderrLines: lines);
   }
-  return CmdResult(0, stdoutLines: ['lint clean: no custom client-side JS in $dir']);
+  return CmdResult(0, stdoutLines: [
+    'lint clean: no custom client-side JS in $dir',
+    ...noteLines,
+  ]);
 }
 
 // ══ check-ladder ════════════════════════════════════════════════════════

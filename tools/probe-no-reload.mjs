@@ -14,8 +14,11 @@ const { chromium } = await import(
   path.join(REPO, 'skills/appbox-designer/runtime/node_modules/playwright-core/index.mjs'));
 
 const CHROME = process.env.APPBOX_CHROME || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
-const BASE = process.env.APPBOX_BASE || 'http://localhost:4319';
-const settle = (p) => p.waitForTimeout(900);
+import { resolveBase, waitFor, waitQuiet, trackTransitions } from './_probe_base.mjs';
+const BASE = resolveBase();
+// See probe-inspect: a fixed settle read the DOM mid-swap under load. Wait for
+// the page to stop changing instead (#48/#50).
+const settle = (p) => waitQuiet(p);
 const ok = (b) => (b ? 'PASS' : 'FAIL');
 
 const mark = `(() => { const f=[...document.querySelectorAll('iframe')]; f.forEach((x,i)=>x.__probe='p'+i); return f.length; })()`;
@@ -32,6 +35,7 @@ const check = (name, pass, extra = '') => { if (!pass) fails++; console.log(`  [
 try {
   browser = await chromium.launch({ executablePath: CHROME, headless: true });
   const page = await browser.newPage({ viewport: { width: 1600, height: 1000 } });
+  await trackTransitions(page);
   const errs = [];
   page.on('pageerror', (e) => errs.push(e.message));
   let navs = [];

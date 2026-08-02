@@ -125,6 +125,14 @@ String _pascal(String snake) =>
 /// viewmodel. Does NOT wire the form-factor switch: that is the builder's job
 /// (plan 08), so the derived factors are recorded in the header, not faked with
 /// imports the stub does not yet use.
+/// Test seams — see [tplViewForTest] in blueprint.dart for why generator
+/// templates need them (the output is a string; analyze cannot look inside it).
+String stubViewForTest(
+        Map<String, dynamic> screen, List<String> factors, List<String> targets) =>
+    _stubView(screen, factors, targets);
+String stubViewModelForTest(Map<String, dynamic> screen) =>
+    _stubViewmodel(screen);
+
 String _stubView(
     Map<String, dynamic> screen, List<String> factors, List<String> targets) {
   final comp = screen['comp'] as String;
@@ -159,9 +167,48 @@ String _stubView(
       '  const ${comp}View({super.key});\n'
       '\n'
       '  @override\n'
-      '  Widget builder(context, viewModel, child) => const Scaffold(\n'
-      "        body: Center(child: Text('$sid')),\n"
+      // TYPED, and it matters now. The signature used to be
+      // `builder(context, viewModel, child)` — untyped, which was harmless
+      // while the body touched no ViewModel members. The states below call
+      // three of them, and on a dynamic parameter a typo in `isBusy`,
+      // `hasError` or `refresh` is a RUNTIME failure in the generated app
+      // rather than a compile error. Nothing in this repo runs `dart analyze`
+      // over materialized scaffold output (checked), and the parse gate only
+      // parses — so the type annotation is the only thing standing between a
+      // renamed ViewModel member and a crash in someone else's app.
+      '  Widget builder(\n'
+      '      BuildContext context, ${comp}ViewModel viewModel, Widget? child) {\n'
+      '    // ADR-0003: no async without a busy/error surface. Emitted here so the\n'
+      '    // mandate has an emission point rather than only a comment (task #43).\n'
+      '    // No empty state: this skeleton binds no collection, and a generated\n'
+      "    // `isEmpty` over nothing is a check that can only ever pass.\n"
+      '    if (viewModel.isBusy) {\n'
+      '      return const Scaffold(\n'
+      '          body: Center(child: CircularProgressIndicator()));\n'
+      '    }\n'
+      '    if (viewModel.hasError) {\n'
+      '      // A sentence, never viewModel.modelError — the raw object leaks\n'
+      '      // internals and reads as a crash. Log it; show this.\n'
+      '      return Scaffold(\n'
+      '        body: Center(\n'
+      '          child: Column(\n'
+      '            mainAxisSize: MainAxisSize.min,\n'
+      '            children: [\n'
+      "              const Text('Something went wrong loading this screen.'),\n"
+      '              const SizedBox(height: 12),\n'
+      '              FilledButton(\n'
+      '                onPressed: viewModel.refresh,\n'
+      "                child: const Text('Try again'),\n"
+      '              ),\n'
+      '            ],\n'
+      '          ),\n'
+      '        ),\n'
       '      );\n'
+      '    }\n'
+      '    return const Scaffold(\n'
+      "      body: Center(child: Text('$sid')),\n"
+      '    );\n'
+      '  }\n'
       '\n'
       '  @override\n'
       '  ${comp}ViewModel viewModelBuilder(context) => ${comp}ViewModel();\n'
@@ -217,7 +264,12 @@ String _stubViewmodel(Map<String, dynamic> screen) {
       '// TODO(appbox-builder): wire services from the deps above.\n'
       "import 'package:stacked/stacked.dart';\n"
       '\n'
-      'class ${comp}ViewModel extends BaseViewModel {}\n';
+      'class ${comp}ViewModel extends BaseViewModel {\n'
+      "  /// What the view's error retry calls. Emitted by the same generator as\n"
+      '  /// that view, so the button can never point at a missing method.\n'
+      '  /// Wrap the real load in setBusy/setError so the branches light up.\n'
+      '  Future<void> refresh() async {}\n'
+      '}\n';
 }
 
 /// The design-system.md every surface dir must carry (the review gate's

@@ -7,7 +7,17 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="htmx-config" content='{"allowEval":false,"allowScriptTags":false,"globalViewTransitions":true,"historyRestoreAsHxRequest":false,"responseHandling":[{"code":"204","swap":false},{"code":"[23]..","swap":true},{"code":"422","swap":true},{"code":"[45]..","swap":false,"error":true},{"code":"...","swap":true}]}'>
+  {# responseHandling, first match wins. 404 and 5xx are retargeted into the
+     always-rendered #toasts tray (swapOverride innerHTML → one at a time)
+     instead of the element that made the request: the server sends a toast
+     fragment, the good panel is never overwritten. Without this a failed
+     request showed the user NOTHING, because the blanket [45].. rule below
+     is swap:false — which stays, deliberately, for every other error code.
+     `target`/`swapOverride` are htmx 2.0.10 responseHandling fields; with
+     allowEval:false the hx-on: escape hatch is dead, so config is the only
+     declarative channel here (no client JS — ADR-0002). 422 still swaps in
+     place so form validation renders where the form is. #}
+  <meta name="htmx-config" content='{"allowEval":false,"allowScriptTags":false,"globalViewTransitions":true,"historyRestoreAsHxRequest":false,"responseHandling":[{"code":"204","swap":false},{"code":"[23]..","swap":true},{"code":"422","swap":true},{"code":"404","swap":true,"error":true,"target":"#toasts","swapOverride":"innerHTML"},{"code":"5..","swap":true,"error":true,"target":"#toasts","swapOverride":"innerHTML"},{"code":"[45]..","swap":false,"error":true},{"code":"...","swap":true}]}'>
   <title>{% block title %}appbox{% endblock %}</title>
   <script src="/assets/vendor/htmx.min.js" integrity="sha384-H5SrcfygHmAuTDZphMHqBJLc3FhssKjG7w/CeCpFReSfwBWDTKpkzPP8c+cLsK+V" crossorigin="anonymous"></script>
   <script src="/assets/vendor/preload.min.js" integrity="sha384-PRIcY6hH1Y5784C76/Y8SqLyTanY9rnI3B8F3+hKZFNED55hsEqMJyqWhp95lgfk" crossorigin="anonymous"></script>
@@ -20,6 +30,7 @@
   <script src="/assets/vendor/idiomorph-ext.min.js" integrity="sha384-SsScJKzATF/w6suEEdLbgYGsYFLzeKfOA6PY+/C5ZPxOSuA+ARquqtz/BZz9JWU8" crossorigin="anonymous"></script>
   <script src="/assets/vendor/canvas.js" defer></script>
   <script src="/assets/vendor/drag.js" defer></script>
+  <script src="/assets/vendor/explode.js" defer></script>
   <link rel="stylesheet" href="/assets/css/app.css">
   <link rel="stylesheet" href="/assets/css/intake.css">
   <link rel="stylesheet" href="/assets/css/design.css">
@@ -29,12 +40,15 @@
   <link rel="stylesheet" href="/assets/css/composer.css">
   <link rel="stylesheet" href="/assets/css/build.css">
   <link rel="stylesheet" href="/assets/css/appshell.css">
+  <link rel="stylesheet" href="/assets/css/error_surface.css">
   {% block head_extra %}{% endblock %}
 </head>
 <body hx-boost="true" hx-sync="this:replace" hx-ext="head-support,preload,morph">
   <div id="app" data-theme="{{ prefs.theme or 'light' }}" data-accent="{{ prefs.accent or 'cyan' }}">
     {% block content %}{% endblock %}
   </div>
-  <div id="toasts"></div>
+  {# The OOB/retarget tray. aria-live so a toast swapped in here is announced
+     — polite, per Material: a snackbar must not interrupt. #}
+  <div id="toasts" aria-live="polite" aria-atomic="true"></div>
 </body>
 </html>

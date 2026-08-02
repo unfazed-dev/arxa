@@ -4,10 +4,22 @@ The shared screen-stage component: three lenses over the shell's screen
 registry, switched by server-side viewer state and swapped through
 `#design-viewer`.
 
-- `views` (default; legacy `mode=flow` aliases here) — every screen as a
-  chromeless tile (`?embed=1`) at the CURRENT rung (`vp` param, default
-  mobile; `s.tile` carries the per-screen width/height at that rung, falling
-  back to the first authored rung), a flat wrapping grid in REGISTRY order.
+- `views` (default; legacy `mode=flow` aliases here) — ONE ROW PER SCREEN in
+  REGISTRY order, each row two columns: the chromeless tile (`?embed=1`) at the
+  CURRENT rung (`vp` param, default mobile; `s.tile` carries the per-screen
+  width/height at that rung, falling back to the first authored rung), and
+  `.dv-explode` — that screen decomposed into its inspectable components.
+  (It was a flat wrapping grid until 2026-08-02. It never actually wrapped:
+  `.dv-flow-canvas .dv-zoom` (0,2,0) beat `.dv-zoom-views` (0,1,0) on
+  `flex-direction`, so the computed value was `column` and every tile got its
+  own line. The rule was deleted, not fixed.)
+  The explode column's element list is filled CLIENT-SIDE by
+  `runtime/vendor/explode.js`, and that is not a shortcut: `data-el` values are
+  templated (`data-el="card:{{ t('portalo.cat.' ~ pair[0]) }}"` inside a
+  `{% for %}`, tab bar via `{% include %}`), so the authored source has no
+  resolved inventory to render from — only the rendered iframe does, and it is
+  same-origin. The server supplies exactly what the DOM cannot know: `s.fires`
+  (the flow edges this screen's elements take) and `s.kits`.
 - `flows` — one dashed `.dv-flow-row` per project flow, tiles in edge-chain
   order with a `.dv-connector` (trigger label + line + arrowhead) between
   consecutive tiles. Flow edits WRITE the project's flows.json:
@@ -50,14 +62,30 @@ Files:
   screens:  [{ id, label?, state?, chips?, viewports, inContext?, dim?,
                tone?, primaryWidth,
                tile: { vp, width, height },       // dims at the CURRENT rung
-               inspecting?, inspectHref? }],
+               inspecting?, inspectHref?,
+               fires: [{ flow, flowName, to, trigger, element }],
+               kits:  ['auth', 'payments', …] }],
                // NOTE: no live/walk fields here. The views lens has no
                // interactive mode — without a row there is no flow to scope
                // nextEdge by, so the destination would be a guess. They are
                // added PER ROW by the flows builder below.
+               // `fires` is EVERY outgoing edge across every flow, unscoped and
+               // plural on purpose: the explode column asks "what can this
+               // screen's elements do", and nothing here picks a winner, so
+               // nothing here can guess wrong. The island matches an element to
+               // one of these by exact `element` then fuzzy `trigger` —
+               // flowwalk.js's rule, so the two lenses cannot disagree.
+               // NOTE: the element INVENTORY is deliberately absent — see the
+               // views bullet above; it exists only in the rendered DOM.
   flows:    [{ id, name, walking?, tiles: [...screens entries +
                conn?, live?, liveHref?, liveCloseHref?,
-               advanceHref?, edge?, walkQs? }],
+               advanceHref?, edge?, walkQs?, handoffs? }],
+               // handoffs = LAST TILE ONLY: [{ flow, flowName, to, trigger,
+               //   href }] — the other flows that continue from this screen.
+               //   Flows are joined by SHARED SCREEN IDS (portalo.home ends
+               //   Onboarding and heads both Browse-and-buy and Account), so
+               //   the hand-off needs no authored key and nothing can disagree
+               //   with the ids. A list: picking one would be a guess.
                // flows lens rows; conn = trigger label to the NEXT tile.
                // walking   = this row is the one being walked
                // live      = this tile is the current step (interactive)
@@ -116,6 +144,29 @@ Files:
   shape with `s.tile.vp` (`{stubBase}{s.id}?vp={tile.vp}&embed=1&still=1` —
   the live tile drops `still`, the inspected tile appends `&inspect=1`).
 
+## The second arg: `designViewer(v, chrome)` — the two shell panels
+
+The viewer renders three stacked panels inside `.design-viewer`: `.dv-topbar`,
+the canvas, and `.dv-botbar` (which hosts the mini panel, docked — it used to
+float, which is why `.dv-flow-canvas` carried `padding-bottom: 11rem` purely as
+clearance; both are gone). All three are INSIDE `.design-viewer` because
+`canvas.js` fullscreens that element — anything outside it disappears on
+fullscreen, including the exit button, which would strand the user.
+
+```js
+chrome = { title, state, foot, actions: [{ key, icon, href, label, danger? }] }
+```
+
+`chrome` is **optional, and that is the mechanism, not an oversight.** The two
+bars belong to the design shell, not to the viewer component — and the same
+component renders build evidence with `static: true`. Evidence passes no
+`chrome`, so it gets no title bar and no actions structurally, instead of
+relying on a `static` guard on every individual control that someone would
+eventually forget to add. Only `prototype_view.html` passes it.
+
+`actions` is currently `[]`: shell-scoped actions have not been named, and
+inventing plausible buttons is worse than an honest empty slot.
+
 ## Wiring a shell
 
 1. Facade: a `viewerFor` producing the contract above (see
@@ -126,8 +177,19 @@ Files:
    `design/prototype/prototype_viewmodel.js` (`bg/inspect/mode/screen/vp`).
    Forgetting a param silently drops that control (the viewer
    renders, the toggle does nothing).
-3. View: a `viewerSwap(c)` fragment macro rendering `dv.designViewer(c.viewer)`;
-   the canvas block calls the same macro on full renders.
+3. View: ONE macro that builds the chrome and calls
+   `dv.designViewer(c.viewer, chrome)` — see `stageViewer(c)` in
+   `design/prototype/prototype_view.html`. Both the full render AND the
+   `viewerSwap(c)` fragment must call that same macro, so the two paths
+   cannot drift.
+
+   This is a rule, not a style note. `design_viewer.html` guards the whole
+   `.dv-topbar` (and `.dv-botbar-foot`) with `{% if chrome %}`, so a swap
+   path that passes no chrome renders the viewer with no top panel and no
+   foot line — and it never comes back without a full page reload. That
+   shipped once: `viewerSwap` called `dv.designViewer(c.viewer)` with one
+   argument while the full render passed chrome inline, so every mini-panel
+   tab, viewport tab and lens switch silently destroyed the top panel.
 4. `ui/common/base.html` links `assets/css/viewer.css`.
 
 Build evidence uses the same component with `static: true` (read-only

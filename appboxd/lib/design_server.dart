@@ -23,6 +23,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:appboxd/design_server/l10n.dart';
 import 'package:appboxd/design_server/worker.dart';
 import 'package:appboxd/project.dart';
 import 'package:path/path.dart' as p;
@@ -39,6 +40,74 @@ final _ignoreRe = RegExp(
 /// The current process pid (dart:io's top-level `pid`). Wrapped so the
 /// `DesignServer.pid` instance getter can read it without shadowing itself.
 int get _osPid => pid;
+
+// ── the error surface ────────────────────────────────────────────────────
+// What the user is told when a request fails. The raw exception never gets
+// here: it goes to stderr in the catch block.
+//
+// These constants are no longer the strings the user sees — they are the
+// FALLBACKS behind the ARB lookup (task #46). [ErrorCatalog] reads
+// `l10n/app_<locale>.arb` off disk and only lands on one of these when the key
+// is missing from every catalog or a catalog is unreadable. Translation here
+// deliberately does NOT go through the worker's `t()`: this surface exists for
+// the case where a request could not be served, and the worker may be exactly
+// what failed, so the error page must not depend on it.
+
+/// Fallback for t('errorSurface.serverError')
+const _msgServerError =
+    'Something went wrong on the appbox server. The serve log has the detail.';
+
+/// Fallback for t('errorSurface.pageHint')
+const _msgErrorHint = 'Nothing you had open was lost — this request alone failed.';
+
+/// Fallback for t('errorSurface.backHome')
+const _msgBackHome = 'Back to the dashboard';
+
+/// Fallback for t('errorSurface.dismiss')
+const _msgDismiss = 'Dismiss';
+
+/// Fallback for t('errorSurface.notFound')
+const _msgNotFound = 'no route for {method} {path}';
+
+String _esc(String s) => s
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;');
+
+/// The htmx fragment. htmx retargets it into `#toasts` with swapOverride
+/// innerHTML (base.html) — so it lands in the always-rendered tray without
+/// touching whatever panel the request came from, and only one shows at a
+/// time. The checkbox is the dismiss control: pure CSS, no client JS.
+String _errorToast(String message, String dismiss) =>
+    '<div class="toast toast-error">'
+    '<input type="checkbox" id="toast-error-cb" class="toast-error-cb" '
+    'aria-label="${_esc(dismiss)}">'
+    '<span class="toast-error-msg">${_esc(message)}</span>'
+    '<label for="toast-error-cb" class="toast-error-x" aria-hidden="true">'
+    '&times;</label>'
+    '</div>';
+
+/// The full-page (non-htmx) failure: a real page, not a bare string.
+///
+/// `<html lang>` carries the resolved locale, not a hard-coded "en" — a page
+/// whose text is Polish while its lang attribute claims English mis-announces
+/// every word to a screen reader.
+String _errorPage(int status, String message, String locale, String hint,
+        String backHome) =>
+    '<!doctype html>\n'
+    '<html lang="${_esc(locale)}"><head><meta charset="utf-8">'
+    '<meta name="viewport" content="width=device-width, initial-scale=1">'
+    '<title>$status — appbox</title>'
+    '<link rel="stylesheet" href="/assets/css/app.css">'
+    '<link rel="stylesheet" href="/assets/css/error_surface.css">'
+    '</head><body><div id="app" data-theme="light">'
+    '<main class="error-page">'
+    '<p class="error-page-code">$status</p>'
+    '<h1 class="error-page-msg">${_esc(message)}</h1>'
+    '<p class="error-page-hint">${_esc(hint)}</p>'
+    '<a class="error-page-home" href="/">${_esc(backHome)}</a>'
+    '</main></div></body></html>';
 
 /// The artifact the user asked to serve, plus the candidates searched.
 class ResolvedTarget {
@@ -139,6 +208,16 @@ class DesignServer {
   final _timers = <String, Map<String, dynamic>>{};
   late final Set<String> locales;
 
+  /// Translation for the error surface only, read straight off disk so a dead
+  /// worker cannot take the error page down with it (task #46).
+  late final ErrorCatalog _errorCatalog;
+
+  static Map<String, String> _headerMap(HttpRequest req) {
+    final h = <String, String>{};
+    req.headers.forEach((k, v) => h[k] = v.join(','));
+    return h;
+  }
+
   String artifactDir = '';
   String? projectRoot;
   String host = '127.0.0.1';
@@ -174,7 +253,9 @@ class DesignServer {
       .._pidValue = _osPid
       ..host = host
       ..noWatch = noWatch
-      ..locales = _scanLocales(artifactDir, projectDir: projectDir);
+      ..locales = _scanLocales(artifactDir, projectDir: projectDir)
+      .._errorCatalog =
+          ErrorCatalog(_l10nDirs(artifactDir, projectDir: projectDir));
     // Let SocketException propagate (EADDRINUSE/EACCES) — designServe maps it
     // via bindExitCode; tests assert the bind path directly.
     srv._http = await HttpServer.bind(_bindAddress(host), port);
@@ -244,13 +325,32 @@ class DesignServer {
       // Point `current` at another project (the overlay itself rebinds on the
       // next serve — the marker + grid update immediately).
       if (method == 'POST' && path == '/__project_use') {
-        final payload =
-            jsonDecode(await utf8.decoder.bind(req).join()) as Map<String, dynamic>;
+        // Same guard as _handleProjectWrite: a body the client got wrong is a
+        // 400, not a 500. Unguarded, jsonDecode threw on a malformed body and
+        // the cast threw on valid-but-non-object JSON (null, [], "x") — both
+        // landed in the catch-all and were reported as a server fault.
+        final Map<String, dynamic> payload;
+        try {
+          payload = jsonDecode(await utf8.decoder.bind(req).join())
+              as Map<String, dynamic>;
+        } catch (_) {
+          req.response.statusCode = 400;
+          req.response.headers.contentType =
+              ContentType.parse('application/json; charset=utf-8');
+          req.response.write(jsonEncode({'ok': false, 'error': 'bad JSON body'}));
+          await req.response.close();
+          return;
+        }
         final name = (payload['name'] ?? '').toString();
         try {
           useProject(name);
         } on ArgumentError catch (e) {
+          // e.message here is authored prose from project.dart (`no such
+          // project: …`), not a raw error object — safe on the wire. It only
+          // ever lacked a content type.
           req.response.statusCode = 404;
+          req.response.headers.contentType =
+              ContentType.parse('text/plain; charset=utf-8');
           req.response.write(e.message);
           await req.response.close();
           return;
@@ -271,22 +371,72 @@ class DesignServer {
       }
       if (method == 'GET' && _tryServeArtifactFile(req, path)) return;
 
-      req.response.statusCode = 404;
-      req.response.headers.contentType =
-          ContentType.parse('text/plain; charset=utf-8');
-      req.response.headers.add('Vary', 'HX-Request');
-      req.response.write('404 — no route for $method $path');
-      await req.response.close();
+      await _writeError(req, 404, 'errorSurface.notFound', _msgNotFound,
+          vars: {'method': method, 'path': path});
     } catch (e, st) {
+      // The full detail — exception AND stack — is for the serve log only.
       stderr.writeln('[design-server] $e\n$st');
       try {
-        req.response.statusCode = 500;
-        req.response.headers.contentType =
-            ContentType.parse('text/plain; charset=utf-8');
-        req.response.write('500 — $e');
-        await req.response.close();
-      } catch (_) {}
+        await _writeError(
+            req, 500, 'errorSurface.serverError', _msgServerError);
+      } catch (_) {
+        // Headers already went out (a mid-stream _serveFile, say). Nothing
+        // left to say on this socket.
+      }
     }
+  }
+
+  /// True when htmx issued this request (a fragment fetch or a boosted nav)
+  /// rather than the browser loading a whole page.
+  static bool _isHtmx(HttpRequest req) =>
+      req.headers.value('HX-Request') != null;
+
+  /// The user-facing error channel. What lands on the wire is always a HUMAN
+  /// message — never a raw error object (the bad-state leak; see
+  /// blueprint.dart:589).
+  ///
+  /// [key] is looked up in the ARB catalogs for the request's resolved locale
+  /// (task #46); [fallbackEn] is the authored English used when the key is
+  /// absent or a catalog is unreadable, so the worst case is exactly the
+  /// pre-l10n behaviour rather than a raw key on screen.
+  ///
+  /// htmx is configured (ui/common/base.html) to retarget 404/5xx into the
+  /// always-rendered `#toasts` tray; the blanket `[45]..` rule stays
+  /// swap:false, so an error can never overwrite a good panel. A full-page
+  /// request gets a real page instead of a bare string.
+  ///
+  /// `Vary: Accept-Language` joins `Vary: HX-Request` now that the body depends
+  /// on the negotiated locale — without it a cache would serve one visitor's
+  /// language to the next.
+  Future<void> _writeError(
+    HttpRequest req,
+    int status,
+    String key,
+    String fallbackEn, {
+    Map<String, String> vars = const {},
+  }) async {
+    final headers = _headerMap(req);
+    final prefs = _parsePrefs(_parseCookies(headers)['kdh_prefs']);
+    final locale = _resolveLocale(
+        locales, req.uri.queryParameters, prefs, headers['accept-language']);
+    final cat = _errorCatalog;
+    final message = cat.t(locale, key, fallbackEn, vars);
+
+    req.response.statusCode = status;
+    req.response.headers.contentType =
+        ContentType.parse('text/html; charset=utf-8');
+    req.response.headers.add('Vary', 'HX-Request');
+    req.response.headers.add('Vary', 'Accept-Language');
+    req.response.write(_isHtmx(req)
+        ? _errorToast(
+            message, cat.t(locale, 'errorSurface.dismiss', _msgDismiss))
+        : _errorPage(
+            status,
+            message,
+            locale,
+            cat.t(locale, 'errorSurface.pageHint', _msgErrorHint),
+            cat.t(locale, 'errorSurface.backHome', _msgBackHome)));
+    await req.response.close();
   }
 
   List<String>? _matchRoute(String method, String path) {
@@ -458,13 +608,23 @@ class DesignServer {
   Future<void> _serveFile(HttpRequest req, String absPath, String contentType,
       {String? root}) async {
     final f = File(absPath);
+    // These two serve assets (/assets/vendor/*, artifact files), never htmx
+    // targets — so they stay plain text, not the HTML surface. They were
+    // silent (empty body, no content type), which is not the same defect as
+    // leaking; the path is deliberately NOT echoed back.
     if (root != null && !_isInside(root, absPath)) {
       req.response.statusCode = 403;
+      req.response.headers.contentType =
+          ContentType.parse('text/plain; charset=utf-8');
+      req.response.write('403 — outside the served root');
       await req.response.close();
       return;
     }
     if (!f.existsSync()) {
       req.response.statusCode = 404;
+      req.response.headers.contentType =
+          ContentType.parse('text/plain; charset=utf-8');
+      req.response.write('404 — no such file');
       await req.response.close();
       return;
     }
@@ -505,6 +665,13 @@ class DesignServer {
 
   /// Reload the worker now (used by tests; production uses the file watcher).
   Future<void> reload() => _worker.reload();
+
+  /// Put the worker tab into the lost-realm state task #51 recovers from.
+  /// Test-only; see [JsWorker.breakDispatchForTest].
+  Future<void> breakWorkerForTest() => _worker.breakDispatchForTest();
+
+  /// Test-only; see [JsWorker.reloadRunsForTest].
+  int get workerReloadRunsForTest => _worker.reloadRunsForTest;
 
   Future<void> stop() async {
     if (_stopped) return;
@@ -668,6 +835,14 @@ InternetAddress _bindAddress(String host) {
   if (host == '::') return InternetAddress.anyIPv6;
   return InternetAddress(host);
 }
+
+/// The l10n directories the error surface reads, in precedence order (project
+/// last, so a project's catalog wins) — the same pair [_scanLocales] scans, so
+/// a locale that resolves is always a locale the catalog can be read for.
+List<String> _l10nDirs(String artifactDir, {String? projectDir}) => [
+      p.join(artifactDir, 'l10n'),
+      if (projectDir != null) p.join(projectDir, 'design', 'l10n'),
+    ];
 
 Set<String> _scanLocales(String artifactDir, {String? projectDir}) {
   final out = <String>{};

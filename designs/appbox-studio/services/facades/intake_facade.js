@@ -23,7 +23,6 @@
 import * as repo from '../repositories/intake_repository.js';
 import * as screens from '../repositories/screens_repository.js';
 import * as proj from '../repositories/project_repository.js';
-import { writeProjectFixture } from '../repositories/fixture_reader.js';
 import * as jargon from './jargon.js';
 import * as agent from './agent_menus.js';
 import * as fv from './file_views.js';
@@ -607,7 +606,10 @@ export const confirmFlowProvenance = async (flowId) => {
     const f = flows.find((x) => x.id === flowId);
     if (f && f.provenance !== 'founder') {
       f.provenance = 'founder';
-      await writeProjectFixture('intake/flows.json', flows);
+      // `['provenance']` — the ONLY field this confirm touched. Syncing `edges`
+      // as well would quietly adopt whatever edge drift the flow already had,
+      // which is a data change the user never asked for (see writeFlowsDual).
+      await proj.writeFlowsDual(flows, [flowId], ['provenance']);
     }
   } catch {
     // no project overlaid — nothing to write
@@ -618,8 +620,11 @@ export const confirmAllFlows = async () => {
   try {
     const flows = proj.flows();
     if (flows.some((f) => f.provenance === 'inferred')) {
+      const confirmed = flows.filter((f) => f.provenance === 'inferred').map((f) => f.id);
       for (const f of flows) if (f.provenance === 'inferred') f.provenance = 'founder';
-      await writeProjectFixture('intake/flows.json', flows);
+      // Only the ids this pass actually flipped, and only their `provenance` —
+      // a flow already marked founder is untouched in answers too.
+      await proj.writeFlowsDual(flows, confirmed, ['provenance']);
     }
   } catch {
     // no project overlaid — nothing to write

@@ -125,6 +125,151 @@ void main() {
     });
   });
 
+  // ── inspect coverage / states / retry (D7, D9, D10, D13) ─────────────
+
+  group('design lint — inspection coverage', () {
+    // A fully-annotated control: carries data-el AND the whole required set,
+    // so it satisfies the per-tag rule and never counts as unannotated.
+    const annotatedButton = '<button data-el="button:Go" '
+        'data-inspect-role="button" data-inspect-style="filled" '
+        'data-inspect-fn="Starts checkout">Go</button>';
+
+    test('D7 — 11 interactive elements, 1 annotation: fails C, passes B', () {
+      final d = _tmpDir();
+      addTearDown(() => d.deleteSync(recursive: true));
+      // Ten unannotated controls, every one of them invisible to the OLD
+      // `<a href>|<button>` regex and to bar B, so this single fixture proves
+      // the widened detector and the C→B toggle at once.
+      _write(d, 'surfaces/home.html', '$annotatedButton'
+          '<label>Name</label><label>Email</label>'
+          '<div role="tab">One</div><div role="tab">Two</div>'
+          '<div role="switch">Dark</div>'
+          '<div tabindex="0">Focusable</div><div tabindex="2">Also</div>'
+          '<div hx-get="/x">Load</div><div hx-post="/y">Send</div>'
+          '<div hx-trigger="click">Trig</div>'
+          // tabindex="-1" is programmatic focus, NOT an affordance — it must
+          // not inflate the count.
+          '<div tabindex="-1">Not a control</div>');
+
+      final c = designLint([d.path]);
+      expect(c.exitCode, 1, reason: c.stdoutLines.join('\n'));
+      expect(c.stderrLines.skip(1).single,
+          endsWith('10 interactive element(s) carry no data-el — inspect has '
+              'nothing to bind to (coverage bar C)'));
+
+      final b = designLint([d.path, '--coverage-b']);
+      expect(b.exitCode, 0, reason: b.stderrLines.join('\n'));
+    });
+
+    test('D7 — input / hx-post / role=button are SEEN by the detector', () {
+      final d = _tmpDir();
+      addTearDown(() => d.deleteSync(recursive: true));
+      _write(d, 'surfaces/form.html',
+          '<input type="email" placeholder="you@example.com">'
+          '<div hx-post="/subscribe">Subscribe</div>'
+          '<div role="button">Dismiss</div>');
+
+      final r = designLint([d.path]);
+      expect(r.exitCode, 1, reason: 'the old regex saw none of these');
+      expect(r.stderrLines.skip(1).single,
+          endsWith('3 interactive element(s) carry no data-el — inspect has '
+              'nothing to bind to (coverage bar C)'));
+    });
+
+    test('D9 — an inferred fn passes, and is reported apart from an authored '
+        'one', () {
+      final authored = _tmpDir();
+      final inferred = _tmpDir();
+      addTearDown(() => authored.deleteSync(recursive: true));
+      addTearDown(() => inferred.deleteSync(recursive: true));
+      _write(authored, 'surfaces/a.html', annotatedButton);
+      _write(inferred, 'surfaces/a.html',
+          annotatedButton.replaceFirst('<button ',
+              '<button data-inspect-fn-provenance="inferred" '));
+
+      final a = designLint([authored.path]);
+      final i = designLint([inferred.path]);
+      // Both PASS — inferred is legitimate, not missing.
+      expect(a.exitCode, 0, reason: a.stderrLines.join('\n'));
+      expect(i.exitCode, 0, reason: i.stderrLines.join('\n'));
+      // …but only one of them is reported, so coverage and confidence stay
+      // separable numbers.
+      expect(a.stdoutLines.where((l) => l.startsWith('note:')), isEmpty);
+      expect(i.stdoutLines.where((l) => l.startsWith('note:')).single,
+          endsWith('1 data-inspect-fn value(s) marked inferred — derived, not '
+              'authored; confirm before shipping'));
+    });
+
+    test('D10 — a declared state with no branch fails; an undeclared branch '
+        'fails too', () {
+      final d = _tmpDir();
+      addTearDown(() => d.deleteSync(recursive: true));
+      _write(d, 'intake/registry.json', jsonEncode([
+        {'id': 'portalo.home', 'states': ['loading', 'empty']},
+        {'id': 'portalo.cart', 'states': ['loading']},
+      ]));
+      _write(d, 'design/surfaces/home.html',
+          "{% if state == 'loading' %}<p>…</p>{% endif %}");
+      _write(d, 'design/surfaces/cart.html',
+          "{% if state == 'loading' %}<p>…</p>{% endif %}"
+          "{% if state == 'error' %}<p>oops</p>{% endif %}");
+
+      final r = designLint([d.path]);
+      expect(r.exitCode, 1);
+      expect(r.stderrLines.skip(1), containsAll([
+        endsWith("registry declares state 'empty' but the surface has no "
+            "{% if state == 'empty' %} branch"),
+        endsWith("surface branches on state 'error' that the registry does "
+            'not declare'),
+      ]));
+    });
+
+    test('D10 — no registry reachable leaves the rule off', () {
+      final d = _tmpDir();
+      addTearDown(() => d.deleteSync(recursive: true));
+      _write(d, 'surfaces/loose.html',
+          "{% if state == 'error' %}<p>oops</p>{% endif %}");
+      expect(designLint([d.path]).exitCode, 0);
+    });
+
+    test('D13 — an unscrollable error region fails; a scrollable one with a '
+        'single affordance fails too', () {
+      // A retry control that is itself fully annotated, so the only findings
+      // left are D13's.
+      const retry = '<button data-el="button:Retry" data-inspect-role="button" '
+          'data-inspect-style="ghost" data-inspect-fn="Refetches the page" '
+          'data-retry>Retry</button>';
+      final d = _tmpDir();
+      addTearDown(() => d.deleteSync(recursive: true));
+      // Both affordances, but a box that cannot scroll: RefreshIndicator never
+      // sees the pull it advertises.
+      _write(d, 'surfaces/unscrollable.html',
+          '<div data-state="error" data-refresh="pull">$retry</div>');
+      // Scrolls, but offers the button alone.
+      _write(d, 'surfaces/one_affordance.html',
+          '<div data-state="empty" data-scroll="y">$retry</div>');
+      // Scrolls and offers both — the shape the designer must emit.
+      _write(d, 'surfaces/ok.html',
+          '<div data-state="error" data-scroll="y" data-refresh="pull">'
+          '$retry</div>');
+
+      final r = designLint([d.path]);
+      expect(r.exitCode, 1);
+      final msgs = r.stderrLines.skip(1).toList();
+      expect(msgs, containsAll([
+        allOf(contains('unscrollable.html'),
+            endsWith("'error' region is not scrollable (data-scroll missing) — "
+                'RefreshIndicator cannot detect a pull inside an unscrollable '
+                'box')),
+        allOf(contains('one_affordance.html'),
+            endsWith("'empty' region offers retry control — BOTH "
+                'data-refresh="pull" and a data-retry control are required; '
+                'the pull gesture is not discoverable on an error screen')),
+      ]));
+      expect(msgs.where((m) => m.contains('ok.html')), isEmpty);
+    });
+  });
+
   // ── check-ladder ────────────────────────────────────────────────────
 
   group('design check-ladder', () {

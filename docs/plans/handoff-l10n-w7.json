@@ -1,0 +1,17 @@
+{
+  "_note": "W7 studio error surface. Keys + English values for the .arb owner to merge. NOTE: appboxd/lib/design_server.dart has no t() binding — the Nunjucks worker owns translation and the worker may be the very thing that failed, so these strings are emitted as authored English from Dart today. Merging the keys does not yet localize them; wiring a locale lookup into Dart is follow-up work.",
+  "_source": "appboxd/lib/design_server.dart (_msgServerError, _msgErrorHint, _msgBackHome, _msgDismiss) and the 404 message built at the route-miss branch",
+  "keys": {
+    "errorSurface.serverError": "Something went wrong on the appbox server. The serve log has the detail.",
+    "errorSurface.notFound": "no route for {method} {path}",
+    "errorSurface.pageHint": "Nothing you had open was lost — this request alone failed.",
+    "errorSurface.backHome": "Back to the dashboard",
+    "errorSurface.dismiss": "Dismiss"
+  },
+  "placeholders": {
+    "errorSurface.notFound": {
+      "method": { "type": "String", "example": "GET" },
+      "path": { "type": "String", "example": "/design/nope" }
+    }
+  }
+}

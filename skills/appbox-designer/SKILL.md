@@ -58,7 +58,11 @@ suggestion.
 [`DESIGN-ARCHITECTURE.md`](DESIGN-ARCHITECTURE.md) — the **binding** contract
 for the data spine (seed SSOT → generated fixtures → repositories → facades →
 viewmodels/views), the registry canon, the motion vocabulary mapped to CSS/htmx
-mechanisms, and provenance-not-shape fixtures. Then read
+mechanisms, provenance-not-shape fixtures, and **feedback & state placement**
+("Feedback & state placement") — loading, retry, error and toast/snackbar
+placement is decided automatically from the registry and flow edges on
+*every* artifact this skill produces, never left for the brief to request.
+Then read
 [`references/app-architecture.md`](references/app-architecture.md) for the
 authored layer the pipeline consumes. When the brief mentions
 maps/payments/auth/deploy or any kit capability, also read

@@ -56,8 +56,13 @@ void main() {
     final skillSrc = _skillDir();
     final tmp = await Directory.systemTemp.createTemp('selftest-clean-skill-');
     _cleanSkill = tmp.path;
-    for (final rel
-        in [p.join('references', 'viewport-ladder.md'), p.join('runtime', 'ladder.json')]) {
+    // kit-catalog.md rides along: the kit-mirror check reads it out of the
+    // skill under test, so a clean skill without it cannot be a green baseline.
+    for (final rel in [
+      p.join('references', 'viewport-ladder.md'),
+      p.join('runtime', 'ladder.json'),
+      p.join('references', 'kit-catalog.md'),
+    ]) {
       final src = File(p.join(skillSrc, rel));
       final out = File(p.join(tmp.path, rel))..createSync(recursive: true);
       out.writeAsBytesSync(src.readAsBytesSync());

@@ -372,8 +372,18 @@ List<String> _unifiedSurfaceTable(
     final surf = s as Map;
     final sid = surf['id'].toString();
     declaredIds.add(sid);
+    // Same rule as emitBrief's surface inventory: declared states are shown
+    // bare, derived states are marked [inferred]. The two briefs are built off
+    // the same answers, so they must not disagree about this column — the
+    // operator confirms against whichever one they are handed.
     final states = surf['states'];
-    final statesCell = (states is List && states.isNotEmpty) ? states.join(', ') : '';
+    final String statesCell;
+    if (states is List && states.isNotEmpty) {
+      statesCell = states.join(', ');
+    } else {
+      final derived = deriveStates(surf);
+      statesCell = derived.isEmpty ? '' : '${derived.join(', ')} [inferred]';
+    }
     final deriv = explicitIds.contains(sid) ? byId[sid] : null;
     lines.add('| `$sid` | ${surf['label']} | $statesCell | '
         '${deriv?.priority ?? ''} | ${deriv?.release ?? ''} |');

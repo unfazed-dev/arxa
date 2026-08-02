@@ -581,6 +581,7 @@ linter:
 
 String _tplFeedbackService() {
   return '$genMarker\n' r'''
+import 'package:flutter/foundation.dart' show VoidCallback;
 import 'package:stacked_services/stacked_services.dart';
 
 import 'primitives.dart';
@@ -589,14 +590,28 @@ import 'primitives.dart';
 /// HUMAN message — never a raw error object (the bad-state leak). Dispatch +
 /// native family live in showAdaptiveToast (primitives.dart); this resolves the
 /// active context from the Stacked global navigator key.
+///
+/// THREE kinds, not a boolean. Intake's `feedbackKinds` vocabulary is closed at
+/// success/error/info; the old `isError: bool` carried only TWO, so an `info`
+/// feedback that intake happily validated could not be rendered at all.
+///
+/// `actionLabel`/`onAction` are OPTIONAL: a snackbar's action is its defining
+/// feature, and Material treats "recoverable error + Retry" as core snackbar
+/// material. Omit both for a plain informational toast.
 class FeedbackService {
-  void error(String message) => _show(message, isError: true);
-  void success(String message) => _show(message, isError: false);
+  void error(String message, {String? actionLabel, VoidCallback? onAction}) =>
+      _show(message, FeedbackKind.error, actionLabel, onAction);
+  void success(String message, {String? actionLabel, VoidCallback? onAction}) =>
+      _show(message, FeedbackKind.success, actionLabel, onAction);
+  void info(String message, {String? actionLabel, VoidCallback? onAction}) =>
+      _show(message, FeedbackKind.info, actionLabel, onAction);
 
-  void _show(String message, {required bool isError}) {
+  void _show(String message, FeedbackKind kind, String? actionLabel,
+      VoidCallback? onAction) {
     final context = StackedService.navigatorKey?.currentContext;
     if (context == null) return; // nothing mounted yet — ponytail: drop, no queue
-    showAdaptiveToast(context, message, isError: isError);
+    showAdaptiveToast(context, message,
+        kind: kind, actionLabel: actionLabel, onAction: onAction);
   }
 }
 ''';
@@ -1296,8 +1311,8 @@ class AdaptiveButton extends StatelessWidget {
             OutlinedButton(onPressed: cb, child: child),
           AdaptiveButtonVariant.ghost => TextButton(onPressed: cb, child: child),
           // destructive busy-fallback: a high-emphasis red CTA (Sign out / Cancel
-          // subscription). Tinted with the file's error-red literal so it reads as
-          // destructive (no AppTokens.danger token is compiled — see _kFeedbackError).
+          // subscription). Tinted with the semantic danger token so it reads as
+          // destructive (AppTokens.danger, aliased as _kFeedbackError).
           AdaptiveButtonVariant.destructive => FilledButton(
               onPressed: cb,
               style: FilledButton.styleFrom(
@@ -2387,69 +2402,164 @@ class _ExpressiveViewState extends State<_ExpressiveView> {
   }
 }
 
-// ponytail: literal error red — no semantic danger token is extracted by the token
-// compiler; promote to AppTokens.danger if/when it emits one.
-const Color _kFeedbackError = Color(0xFFE53935);
+// The semantic danger token IS compiled: `danger` sits in transform_tokens'
+// _canonBaseline, whose contract is "guarantees these compile even when a design
+// defines no tokens for them" — the same map that backs AppTokens.accent and
+// AppTokens.ink, both already referenced unconditionally below.
+const Color _kFeedbackError = AppTokens.danger;
+
+/// The CLOSED feedback vocabulary, mirroring intake's `feedbackKinds`. THREE
+/// kinds, never a bool: a bool carries two, so `info` — which intake validates
+/// and permits — had no way to render. Switch over this EXHAUSTIVELY (never a
+/// `default:`) so a future fourth kind is a compile error rather than a silent
+/// collapse into `error`, which is exactly how `info` was lost.
+enum FeedbackKind { success, error, info }
+
+/// Material's snackbar duration (~4s). Shared by all three families so dismissal
+/// timing doesn't drift per platform (shadcn's own default is 5s).
+const Duration _kFeedbackDuration = Duration(milliseconds: 4000);
+
+/// The single live glass toast. Material shows ONE snackbar at a time and the
+/// glass capsule must match; the glass family has no native messenger to dedupe
+/// for us, so we hold the entry and replace it instead of stacking overlays.
+OverlayEntry? _activeGlassToast;
+
+/// Kind → tint, for the families that tint (Material background, glass text).
+/// EXHAUSTIVE by design. `success` returns null because the token canon has no
+/// `success`/`good` colour — inventing one here would fabricate a token the
+/// compiler never emits, so success renders on the default surface.
+Color? _feedbackTint(FeedbackKind kind) {
+  switch (kind) {
+    case FeedbackKind.error:
+      return _kFeedbackError;
+    case FeedbackKind.success:
+      return null; // no semantic success token is compiled — default surface
+    case FeedbackKind.info:
+      return null; // informational — the default surface, never the error red
+  }
+}
 
 /// Transient feedback — native per family (catalog feedback.toast): shadcn (web/
 /// desktop) ShadToaster, expressive (Android) ScaffoldMessenger SnackBar, glass
 /// (iOS) a glass-capsule OverlayEntry (no native toast — design-systems/liquid-glass).
 /// ONE dispatch; FeedbackService composes it so views/viewmodels never branch on
 /// platform. Always a HUMAN message — never a raw error object (the bad-state leak).
+///
+/// Material snackbar constraints honoured here: one at a time, single line, no
+/// icons, ~4s, announced to assistive tech, positioned ABOVE the bottom nav.
+/// A FATAL error belongs in a dialog, not a toast — see showAdaptiveActions.
 void showAdaptiveToast(BuildContext context, String message,
-    {bool isError = false}) {
+    {FeedbackKind kind = FeedbackKind.info,
+    String? actionLabel,
+    VoidCallback? onAction}) {
   switch (currentStrategy()) {
     case RenderStrategy.shadcn:
-      ShadToaster.of(context).show(isError
-          ? ShadToast.destructive(description: Text(message))
-          : ShadToast(description: Text(message)));
+      final action = actionLabel == null
+          ? null
+          : ShadButton.outline(onPressed: onAction, child: Text(actionLabel));
+      ShadToaster.of(context).show(kind == FeedbackKind.error
+          ? ShadToast.destructive(
+              description: Text(message),
+              duration: _kFeedbackDuration,
+              action: action)
+          : ShadToast(
+              description: Text(message),
+              duration: _kFeedbackDuration,
+              action: action));
       return;
     case RenderStrategy.expressive:
+      // floating + a Scaffold-scoped messenger puts the bar ABOVE the bottom nav.
       ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
+        ..hideCurrentSnackBar() // one at a time
         ..showSnackBar(SnackBar(
-          content: Text(message),
+          content: Text(message, maxLines: 1, overflow: TextOverflow.ellipsis),
           behavior: SnackBarBehavior.floating,
-          backgroundColor: isError ? _kFeedbackError : null,
+          duration: _kFeedbackDuration,
+          backgroundColor: _feedbackTint(kind),
+          action: actionLabel == null
+              ? null
+              : SnackBarAction(label: actionLabel, onPressed: onAction ?? () {}),
         ));
       return;
     case RenderStrategy.glass:
+      _activeGlassToast?.remove(); // one at a time — replace, never stack
       final overlay = Overlay.of(context);
       late OverlayEntry entry;
-      entry = OverlayEntry(
-        builder: (c) => Positioned(
-          left: 24,
-          right: 24,
-          bottom: MediaQuery.of(c).padding.bottom + 32,
-          child: IgnorePointer(
-            child: Center(
-              child: LiquidGlassContainer(
-                config: const LiquidGlassConfig(
-                  effect: LiquidGlassEffect.regular,
-                  shape: LiquidGlassEffectShape.rect,
-                ),
-                child: Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 20, vertical: 13),
+      void dismiss() {
+        if (identical(_activeGlassToast, entry)) _activeGlassToast = null;
+        if (entry.mounted) entry.remove();
+      }
+
+      final capsule = Center(
+        child: LiquidGlassContainer(
+          config: const LiquidGlassConfig(
+            effect: LiquidGlassEffect.regular,
+            shape: LiquidGlassEffectShape.rect,
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 13),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Flexible(
                   child: Text(
                     message,
+                    maxLines: 1, // single line, like a snackbar
+                    overflow: TextOverflow.ellipsis,
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      color: isError ? _kFeedbackError : AppTokens.ink,
+                      color: _feedbackTint(kind) ?? AppTokens.ink,
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
-              ),
+                if (actionLabel != null) ...[
+                  const SizedBox(width: 14),
+                  GestureDetector(
+                    onTap: () {
+                      dismiss();
+                      onAction?.call();
+                    },
+                    child: Text(
+                      actionLabel,
+                      style: TextStyle(
+                        color: AppTokens.accent,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
         ),
       );
+      entry = OverlayEntry(
+        builder: (c) => Positioned(
+          left: 24,
+          right: 24,
+          // above the home indicator / bottom nav, never over it
+          bottom: MediaQuery.of(c).padding.bottom + 32,
+          // liveRegion so VoiceOver announces it: this is a bare overlay, not a
+          // native toast, so nothing announces it for us.
+          child: Semantics(
+            liveRegion: true,
+            container: true,
+            label: message,
+            // A plain toast stays pass-through; one WITH an action must NOT, or
+            // IgnorePointer swallows the tap that is the action's whole point.
+            child: IgnorePointer(
+              ignoring: actionLabel == null,
+              child: capsule,
+            ),
+          ),
+        ),
+      );
+      _activeGlassToast = entry;
       overlay.insert(entry);
-      Future.delayed(const Duration(seconds: 3), () {
-        if (entry.mounted) entry.remove();
-      });
+      Future.delayed(_kFeedbackDuration, dismiss);
       return;
   }
 }
@@ -2724,6 +2834,13 @@ String _tplNavShellVm(List tabScreens, Map<String, dynamic> primaryNav) {
       '}\n';
 }
 
+/// Test seams for the two per-screen templates. Generator output is a STRING,
+/// so `dart analyze` cannot see the Dart inside it — the only way to check that
+/// these templates emit the ADR-0003 states (task #43) and still parse is to
+/// call them and read the result. See test/states_emission_test.dart.
+String tplViewForTest(Map screen) => _tplView(screen);
+String tplViewModelForTest(Map screen) => _tplViewModel(screen);
+
 String _tplView(Map screen) {
   final cls = _pascal(screen['id'] as String);
   final snakeId = _snake(screen['id'] as String);
@@ -2742,7 +2859,45 @@ String _tplView(Map screen) {
       '  @override\n'
       '  Widget builder(\n'
       '      BuildContext context, ${cls}ViewModel viewModel, Widget? child) {\n'
+      '    // ADR-0003: no async without a busy/error surface. These two branches\n'
+      '    // are emitted so that mandate has an emission point — until now it was\n'
+      '    // stated in the ViewModel comment below and in the builder skill, and\n'
+      '    // produced by nothing, so every screen started life with a contract it\n'
+      '    // did not satisfy and no failing check to say so (task #43).\n'
+      '    //\n'
+      '    // Delete these ONLY if the screen has no async work at all. If it has\n'
+      '    // any, the loading and error branches are the contract, not decoration.\n'
+      '    if (viewModel.isBusy) {\n'
+      '      return const Scaffold(\n'
+      '          body: Center(child: CircularProgressIndicator()));\n'
+      '    }\n'
+      '    if (viewModel.hasError) {\n'
+      '      // The raw error object is NOT shown: it leaks internals to the user\n'
+      "      // and reads as a crash. Log viewModel.modelError; show a sentence.\n"
+      '      return Scaffold(\n'
+      '        appBar: AppBar(title: const Text($nameJson)),\n'
+      '        body: Center(\n'
+      '          child: Column(\n'
+      '            mainAxisSize: MainAxisSize.min,\n'
+      '            children: [\n'
+      "              const Text('Something went wrong loading this screen.'),\n"
+      '              const SizedBox(height: 12),\n'
+      '              // A retry the user can SEE. A pull-to-refresh alone is not\n'
+      '              // discoverable, and an error screen with no way forward is a\n'
+      '              // dead end.\n'
+      '              FilledButton(\n'
+      '                onPressed: viewModel.refresh,\n'
+      "                child: const Text('Try again'),\n"
+      '              ),\n'
+      '            ],\n'
+      '          ),\n'
+      '        ),\n'
+      '      );\n'
+      '    }\n'
       '    // TODO(builder): render native primitives for this screen per breakdown.\n'
+      '    // NOTE: no empty state is emitted — this body binds no collection, and a\n'
+      '    // generated `if (items.isEmpty)` over nothing is an assertion that can\n'
+      '    // only ever pass. Add one WITH the list you bind.\n'
       '    return Scaffold(\n'
       '      appBar: AppBar(title: const Text($nameJson)),\n'
       '      body: const Center(child: Text($nameJson)),\n'
@@ -2770,6 +2925,16 @@ String _tplViewModel(Map screen) {
       '  // TODO(builder): screen state + actions. Use busy/error for any async\n'
       '  // (ADR-0003: no async without a busy/error surface). Repository Ports are\n'
       '  // locator-injected; Supabase stays in infrastructure.\n'
+      '\n'
+      "  /// What the error surface's retry calls, and what a pull-to-refresh\n"
+      '  /// should call once this screen loads anything. Emitted alongside the\n'
+      '  /// view that references it — the two templates are one pair, so the\n'
+      '  /// retry button can never point at a method that does not exist.\n'
+      '  ///\n'
+      '  /// Wrap the real load in setBusy/setError (or runBusyFuture) so the\n'
+      '  /// branches in the view actually light up; an empty body here means the\n'
+      '  /// retry silently does nothing.\n'
+      '  Future<void> refresh() async {}\n'
       '}\n';
 }
 

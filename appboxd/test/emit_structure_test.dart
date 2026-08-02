@@ -208,6 +208,143 @@ void main() {
     });
   });
 
+  // ---------------------------------------------- Slice 3: the two axes
+  //
+  // `states` is screen-level and CLOSED; `feedback` is edge-level. structure.json
+  // is the contract the viewer reads, so both are validated HERE too — the
+  // authored layer can be hand-edited without ever going through intake.
+  group('states + feedback pass through to structure.json', () {
+    void plantFlows(String dir, Object flows) {
+      File('$dir/models/screens_model/flows.json').writeAsStringSync(jsonEncode(flows));
+    }
+
+    test('registry states and statesProvenance thread through to the screen', () {
+      final a = '${tmp.path}/s1';
+      plant(
+          a,
+          jsonEncode([
+            {
+              'id': 'stage.shell',
+              'shell': 'stage',
+              'comp': 'StageShell',
+              'surface': 'stage_shell_view',
+            },
+            {
+              'id': 'proj.home',
+              'shell': 'proj',
+              'comp': 'ProjHome',
+              'surface': 'stage_shell_proj_home_view',
+              'states': ['loading', 'empty'],
+              'statesProvenance': 'inferred',
+            },
+          ]),
+          routes,
+          {
+            'ui/views/stage_shell/stage_shell_viewmodel.js': shellVm,
+            'ui/views/stage_shell/proj/home/home_viewmodel.js': homeVm,
+          });
+      expect(emitStructure(a), 0);
+      final d = jsonDecode(File('$a/structure.json').readAsStringSync())
+          as Map<String, dynamic>;
+      final screens = d['screens'] as List;
+      final home = screens.firstWhere((s) => (s as Map)['id'] == 'proj.home') as Map;
+      expect(home['states'], ['loading', 'empty']);
+      expect(home['statesProvenance'], 'inferred');
+      final shell =
+          screens.firstWhere((s) => (s as Map)['id'] == 'stage.shell') as Map;
+      expect(shell.containsKey('states'), isFalse,
+          reason: 'no states declared -> no key (additive only)');
+    });
+
+    test('an out-of-vocabulary state is a hard fail naming the allowed set', () {
+      final a = '${tmp.path}/s2';
+      plant(
+          a,
+          jsonEncode([
+            {
+              'id': 'stage.shell',
+              'shell': 'stage',
+              'comp': 'StageShell',
+              'surface': 'stage_shell_view',
+              'states': ['skeleton'],
+            },
+          ]),
+          routes,
+          {'ui/views/stage_shell/stage_shell_viewmodel.js': shellVm});
+      expect(emitStructure(a), isNot(0));
+      expect(File('$a/structure.json').existsSync(), isFalse,
+          reason: 'a hard fail writes nothing');
+    });
+
+    test('a well-formed edge feedback threads through verbatim', () {
+      final a = '${tmp.path}/s3';
+      plant(a, reg, routes, {
+        'ui/views/stage_shell/stage_shell_viewmodel.js': shellVm,
+        'ui/views/stage_shell/proj/home/home_viewmodel.js': homeVm,
+      });
+      final flows = [
+        {
+          'id': 'flow-main',
+          'edges': [
+            {
+              'from': 'proj.home',
+              'to': 'stage.shell',
+              'trigger': 'Place order',
+              'feedback': {'kind': 'success', 'text': 'Order placed'},
+            },
+          ],
+        },
+      ];
+      plantFlows(a, flows);
+      expect(emitStructure(a), 0);
+      final d = jsonDecode(File('$a/structure.json').readAsStringSync())
+          as Map<String, dynamic>;
+      expect(d['flows'], flows);
+    });
+
+    test('a feedback.kind outside the enum is a hard fail', () {
+      final a = '${tmp.path}/s4';
+      plant(a, reg, routes, {
+        'ui/views/stage_shell/stage_shell_viewmodel.js': shellVm,
+        'ui/views/stage_shell/proj/home/home_viewmodel.js': homeVm,
+      });
+      plantFlows(a, [
+        {
+          'id': 'flow-main',
+          'edges': [
+            {
+              'from': 'proj.home',
+              'to': 'stage.shell',
+              'trigger': 'Place order',
+              'feedback': {'kind': 'warning', 'text': 'Hmm'},
+            },
+          ],
+        },
+      ]);
+      expect(emitStructure(a), isNot(0));
+      expect(File('$a/structure.json').existsSync(), isFalse);
+    });
+
+    test('feedback on a SCREEN is a hard fail — it is an edge key', () {
+      final a = '${tmp.path}/s5';
+      plant(
+          a,
+          jsonEncode([
+            {
+              'id': 'stage.shell',
+              'shell': 'stage',
+              'comp': 'StageShell',
+              'surface': 'stage_shell_view',
+              'feedback': {'kind': 'success', 'text': 'Saved'},
+            },
+          ]),
+          routes,
+          {'ui/views/stage_shell/stage_shell_viewmodel.js': shellVm});
+      expect(emitStructure(a), isNot(0));
+      expect(File('$a/structure.json').existsSync(), isFalse);
+    });
+  });
+
   group('flows passthrough', () {
     void plantFlows(String dir, Object flows) {
       File('$dir/models/screens_model/flows.json').writeAsStringSync(jsonEncode(flows));

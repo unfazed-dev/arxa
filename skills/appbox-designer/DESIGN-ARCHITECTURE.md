@@ -80,7 +80,11 @@ Writes travel one confined channel: `POST /__project_write` (JS side: `writeProj
 
 ## The output triad: views / flows / proto
 
-One Artifact, three lenses. `structure.json` is the single screen registry; the design surface exposes three switchable views over it — **views** (the inventory: every screen as a flat wrapping grid in registry order), **flows** (the journeys: one row per flow, tiles in edge-chain order), and **proto** (the wired app: a device-chrome live preview navigating each entry's `route`). Three lenses over one registry — never three separate artifacts, and never a flows document that can drift from the screens it names.
+One Artifact, three lenses. `structure.json` is the single screen registry; the design surface exposes three switchable views over it — **views** (the inventory: one row per screen in registry order, two columns — the screen, and the screen exploded into its components), **flows** (the journeys: one row per flow, tiles in edge-chain order, with hand-off chips at the row end), and **proto** (the wired app: a device-chrome live preview navigating each entry's `route`). Three lenses over one registry — never three separate artifacts, and never a flows document that can drift from the screens it names.
+
+**The views lens is an inventory AND a spec sheet (amended 2026-08-02 — it used to be a flat wrapping grid).** Each row's second column lists every `[data-el]` on that screen with its role, function, style, motion, the flow edge it fires, the kit that will implement it, and — on click — its measured box, with the element flashed in the tile. Two facts govern how it is built. First, the element inventory **cannot be produced on the server**: `data-el` values are templated (`data-el="card:{{ t('portalo.cat.' ~ pair[0]) }}"` inside a `{% for %}`, tab bars arriving via `{% include %}`), so the authored source carries one unresolved string where the screen shows four resolved names. The only resolved copy is the rendered document, which the parent reads same-origin (`explode.js`, ADR-0002 amendment). Second, **box size is read on click, never pre-rendered**, because it does not exist until layout — publishing an authored guess as a measurement would be a fabrication. What the DOM cannot know — `fires` and `kits` — comes from the server. A screen with no `[data-el]` (a splash, a bare loading screen) renders an explicit empty state, not an empty box.
+
+**The two shell panels.** The viewer renders three stacked panels inside `.design-viewer`: a top bar (what this canvas is, run state, shell-scoped actions), the canvas, and a bottom bar hosting the mini panel — docked, not floating. All three are *inside* the fullscreen target, because `canvas.js` fullscreens `.design-viewer` and anything outside it vanishes on fullscreen, including the exit button. The panels are passed as an optional second macro argument rather than added to the viewer contract, so build evidence — which renders the same component with `static: true` — omits them structurally instead of relying on a `static` guard on every control.
 
 **Flows are data, not markup (flows.json v2).** A flow is authored as an array of edges over registry ids:
 
@@ -94,6 +98,10 @@ One Artifact, three lenses. `structure.json` is the single screen registry; the 
 The edge contract is `from` / `to` / `trigger` / `action`, plus optional `element`. `from`/`to` are not negotiable: registry ids, and an edge naming an id the registry does not declare is a bug the same mechanical style of check as the surface join catches. `trigger` names what the user does ON the from screen to advance — it travels with the screen on reorder. `element` is optional and names the thing a user touches to take the edge, joining to a `data-el` value on the surface (`"button:Continue"`); it is what the flow-walk island matches on, and its absence degrades that to a fuzzy match against `trigger` rather than breaking anything. It rides with `trigger` through reorder and stitch for the same reason `trigger` does. `action` is a typed navigation op: `push` (default) | `replace` | `back` | `modal` | `system`. A `system` edge (auth-success, deep-link) is not user navigation — it becomes a **route guard** downstream. Flow-level metadata (`id`, `name`, `persona`, `provenance`) is allowed. Flows travel the data spine like any other content — seed → fixture → repository → facade — and render through a server template macro or named island. Never bespoke per-flow markup, never a separate file format: the flows lens is a projection of the registry plus the edges.
 
 **Flows are linear chains.** Each screen has at most one outgoing edge per flow — no branches, no loops (a screen needing two successors is two flows, or a `system` edge). Chain order is derived by walking the edges from the head — the edge whose `from` has no incoming edge. A screen may belong to several flows at once (multi-flow membership); it renders once per flow row, and row order in the flows lens is the flow order in `flows.json`.
+
+**Flows connect through shared screen ids — there is no cross-flow edge key.** Multi-flow membership already *is* the inter-flow graph: a screen that terminates one flow and heads another is the join, by identity. `portalo.home` ends Onboarding and heads both Browse-and-buy and Account; `portalo.orders` terminates two. So the last tile of a row renders **hand-off chips** naming the other flows that continue from it, and the flow walk offers those chips instead of dead-ending. A `toFlow` field was considered and rejected: it would duplicate what the ids already encode, and the two could then disagree with no rule for which wins. The hand-off is deliberately a LIST — `portalo.home` hands off to two flows, and collapsing that to one would reintroduce exactly the first-match-across-all-flows guess that scoping `nextEdge` removed.
+
+**A reorder preserves structure, not meaning — and nothing can tell the difference.** `trigger` travels with its `from` screen through a reorder, which is the defensible rule (the alternative, travelling with the slot, is strictly worse). But moving a screen changes its *destination* while its trigger stays attached, so labels remain structurally valid and can become semantically wrong: drag a confirmation screen to position 2 and the row reads `home --"Category tile"--> Order placed`. No general check can catch this — the label is well-formed and its element still exists. The flows lens renders every trigger, so the condition is visible to a designer who looks; do not add a lint that claims to catch it.
 
 **Intake derives, the human confirms.** When intake answers carry no flows, the engine derives drafts — one per story-map epic, screens in story order, `provenance: inferred`, deterministically. Confirming a flow flips provenance to `founder`/`client`. Inferred structure is a draft, never silently shipped as decided.
 
@@ -127,7 +135,7 @@ The `element` field is optional on a v2 edge and exists because `trigger` is pro
 
 **Handoff.** `appbox-scaffolder` consumes the frozen `structure.json`'s registry screens (with `shellRoots`, `kits`, `deps`) and emits the per-surface Flutter file sets plus the `.shell-structure.json` manifest. From the same authored layer it compiles **one go_router-shaped route table** — no separate nav graph: registry `route` values become paths, flow edges become typed navigation ops (`push|replace|back|modal`), guards come from `requiresAuth` entries plus `system` edges, and the tab shell from `tab` flags (tab order = registry order). One registry, three lenses, one route table — the pipeline reads all of it from the same authored layer.
 
-Reference implementation: `designs/appbox-studio` — the current project's flows live-read from `~/.appbox/projects/<name>/intake/flows.json` (`services/repositories/project_repository.js`), rendered by the design viewer (`ui/common/design_viewer.html` + `viewerFor` in `services/facades/design_facade.js`): the views lens as a flat registry-order grid, the flows lens as dashed rows with trigger-labelled connectors, proto as the device-chrome preview.
+Reference implementation: `designs/appbox-studio` — the current project's flows live-read from `~/.appbox/projects/<name>/intake/flows.json` (`services/repositories/project_repository.js`), rendered by the design viewer (`ui/common/design_viewer.html` + `viewerFor` in `services/facades/design_facade.js`): the views lens as registry-order screen+explode rows, the flows lens as dashed rows with trigger-labelled connectors and row-end hand-off chips, proto as the device-chrome preview.
 
 ## Services split
 
@@ -223,6 +231,51 @@ Rules:
 - Keep the text reader-level plain: these strings surface to the user in the inspect readout and to the LLM as element context; write them like the brief, not like CSS.
 - Reference implementation: the appbox design shell's own stub screens (`screen_stub_view.html`) carry the full set.
 
+### Coverage bar: policy C, with a toggle to B (D7)
+
+The coverage check that gates a surface (`design_tools.dart:107`) currently
+requires only "at least one annotated element" — a smoke test, not a
+coverage bar: `home.html` passes it with 1 of ~11 interactive elements
+annotated. Two real policies replace it:
+
+- **C — full coverage (default).** Every element that renders a leaf text
+  node or an icon must carry the four-attribute set from above.
+- **B — interactive + text-bearing whitelist (toggle).** A narrower bar —
+  only elements that are both interactive *and* text-bearing must be
+  annotated — for surfaces mid-migration or hand-authored outside the
+  generator.
+
+The toggle lives in the mini panel, in a **reusable "advanced flags"
+slot** — one place for this and future advanced/debug toggles to land,
+rather than each accreting its own bespoke control. D9's inferred marker
+gives this toggle something to filter on later ("show only unconfirmed
+annotations") without inventing new state to track it.
+
+### Generated, not authored (D8)
+
+These four attributes are **generated by appbox-designer for every element it emits** — never left as optional hand-authoring. Measured cost of "optional": portalo has 32 annotations across 12 surfaces total, and `home` carries exactly 1 on ~11 interactive elements, because the coverage rule that gates this (`design_tools.dart:107`) only requires "at least one annotated element," not full coverage. Annotation left to a human author rots to that floor on every real surface; a generated one does not have a floor to rot to.
+
+The generator derives `data-el`, `data-inspect-role`, `data-inspect-style` and `data-inspect-fn` deterministically from the element's tag, text content and class, **at author time** — in the same template pass that emits the element, not at render/stub time. A hand-authored value on any of the four wins over the generated one where one is present; lint verifies the set is complete, not that it was hand-written.
+
+Rejected: generating at **render** time in the stub renderer. It breaks the `element` join — `flows.json` edges point at `data-el` values, and `emit_structure.dart:100` validates them against the registry; a value that exists only after render cannot be referenced by an edge authored earlier in the pipeline.
+
+### The inferred marker (D9)
+
+`data-inspect-role`, `data-inspect-style` and `data-el` are mechanical — they follow directly from tag/class/text. `data-inspect-fn` is not: it is prose ("Explains the material and care details for this piece"), and prose the generator writes without a human confirming it is an inference, not a stated fact.
+
+A generator-derived `data-inspect-fn` MUST carry `data-inspect-fn-provenance="inferred"` on the same element. Lint (`design_tools.dart`) accepts an inferred `fn` as present, not missing, and counts it separately in its coverage notes; the inspect readout shows it as unconfirmed rather than presenting generated prose as authored truth.
+
+This is not a new pattern — it is the same **derive + confirm** shape used three other places in this pipeline, and D9 is that pattern's fourth application:
+
+| where | inferred marker |
+|---|---|
+| `_edgeFeedback` (derived edge feedback) | stamps `inferred: true` |
+| derived flows | carry `provenance: 'inferred'` |
+| `emitRegistry`-derived surface states | carry `statesProvenance: 'inferred'` |
+| generator-derived `data-inspect-fn` (D9) | carries the inferred marker above |
+
+The marker also gives an "advanced" coverage toggle (D7) something to filter on — "show only unconfirmed annotations" — without inventing new state to track it.
+
 ## Component state
 
 All interactive state is server state. The session holds it, namespaced per shell (`sessionData.<shell>` — the intake/design/build precedent: each shell manages its own data, and two shells never read each other's keys); the facade validates it and exposes it in the context bag; templates render it as classes and attributes. The DOM is never a store.
@@ -232,6 +285,98 @@ All interactive state is server state. The session holds it, namespaced per shel
 - **Part macros with OOB chrome.** A component with chrome + content (a rail, a panel, a card with a toolbar) splits into part macros (`head`/`body`/`bar`) carrying their own ids and an `oob` flag. A targeted action's response is the new content (targeted) plus the chrome parts with `hx-swap-oob` — so the label and the active state always track the server — while the owner element itself, which may hold live user state (scroll, a width class), is never replaced. And when an act changes data another component renders, the same response re-feeds that component OOB: no stale copies anywhere.
 - **OOB parts are response-only markup.** The page render calls the layout macro without OOB parts; only fragment responses add them. `hx-swap-oob` does not hide an element on initial render — emit it in the page and the component mounts twice (duplicate ids, phantom layout).
 - State changes animate: the state class carries a CSS transition; content swaps ride the motion vocabulary below.
+
+## Feedback & state placement
+
+**Standing rule — automatic, not requested.** appbox-designer decides where loading, retry, error and toast/snackbar feedback go for every app it designs, from intake alone, with no user request. A brief that never mentions error handling still gets it: the designer derives placement from the registry's declared/derived `states` (D12, `references/kit-catalog.md`) and from `flows.json` edges carrying `feedback` — never from an explicit ask. This applies to every app appbox-designer designs, without exception.
+
+### Three placements, not one
+
+Every piece of feedback resolves to exactly one of three placements, chosen mechanically by what the feedback is about — never a style choice:
+
+| placement | for | mechanism |
+|---|---|---|
+| **1. inline field error** | a single form field failed validation | `AdaptiveTextField.errorText` (`appboxd/lib/blueprint.dart:1584-1620`) — VM-driven, re-validated on `onChanged`, rendered in the field's native error slot where the strategy has one, appended below otherwise |
+| **2. screen-level state** | the whole surface can't show its normal content (`loading` / `empty` / `error`) | the surface's own state region — a `?state=` variant of the same surface file (D10) |
+| **3. transient toast / snackbar** | a consequence of an action just taken, not a property of the screen itself | `showAdaptiveToast` (`:2398-2440`) dispatched via `FeedbackService.error`/`.success` → `_show` (`:589-599`) |
+
+The choosing rule: if the feedback is about *a field the user is editing*, it's (1). If it's about *whether the screen has content to show at all*, it's (2). If it's about *a consequence of something the user just did*, it's (3) — landing on the **destination** surface (D11): a flow walk that takes an edge carrying `feedback` appends `?toast=` to the edge's target, not its source, because the schema's own wording for `feedback` — "a consequence of moving" — belongs where you land.
+
+A **fatal** error — one the user cannot recover from without leaving the flow — is never (3). It routes to a dialog, or if the surface is unusable without it, to (2)'s `error` state. Material's snackbar is scoped to *recoverable* errors with an optional retry; a fatal error through a 4-second auto-dismissing strip is how the user loses the message.
+
+### D10 — state views
+
+Every state a surface's registry entry declares or derives (D12) MUST render. Portalo declares 12 state variants across its 10 screens and renders none of them today — that gap is the generator's to close, not the author's, once D10 lands.
+
+Mechanism: a query param on the **same surface file** — `product.html?state=loading` swaps the affected region(s) via server-side conditional branches the designer emits alongside the surface, never a second file. (`product.loading.html` duplicates every `data-el` annotation the surface carries — under mandatory generation (D8) that duplication compounds on every edit, and a base edit silently skips the variant.) Transport is the existing tile channel — the same query string the viewer already threads through (`…?vp={vp}&embed=1&still=1&inspect=1`), one more param.
+
+Three artefacts make the rule structural, not a habit:
+
+1. **appbox-designer emits** the state-conditional regions for every declared/derived state.
+2. **appbox-lint fails** a surface whose registry entry declares a state with no matching region, and the reverse — a region for an undeclared state.
+3. **This document is the rule** — the reason intake never has to ask "what should the loading state look like."
+
+### D11 — toast placement
+
+`feedback` lives on the flow edge (`flows.json`), not on a surface, so a toast is never a `state` variant — it renders on the **destination** of the edge that carries it, via the same query-string channel state views use (`?toast=`), emitted alongside the state regions per the three artefacts above (D10's list applies unchanged to `feedback`).
+
+Material snackbar constraints, binding on every toast the designer emits:
+
+- **one at a time** — a second toast replaces, never stacks, the first
+- **single line** — no multi-line snackbar body
+- **no icons**
+- **auto-dismiss ~4s** (the Motion Vocabulary's `notify` entry, below)
+- **announced via `aria-live`** / the platform-native semantics equivalent — a toast that only paints is inaccessible
+- **dismissible with Escape**
+- **positioned above the bottom navigation** where one exists (portalo's tab bar is live, not hypothetical)
+- **the action is the toast's defining feature** — a toast with no action is a status ping; a toast offering Retry/Undo is doing its job. The earlier idea of narrowing `feedback.kind` to `success | info` (dropping `error`) was researched and **overturned**: Material treats a recoverable error paired with a Retry action as core snackbar material, not an edge case to exclude.
+- **fatal errors go to a dialog, never a toast** — see the placement-choosing rule above.
+
+### Retry — RefreshIndicator, always both affordances
+
+Retry is a **control**, not a fourth surface state. `AsyncValue` (and this pipeline's own `surfaceStates`, `appboxd/lib/intake.dart:59`) models exactly three states — `loading | error | data`; `empty` is `data` where the collection is empty, not a fourth peer, and the designer emits `empty` *inside* the `data` branch, never as a sibling. A **refresh is not the loading state**: without `skipLoadingOnRefresh: true`, a pull-to-refresh on an already-loaded screen flashes the full loading skeleton over content the user can still see.
+
+`AdaptiveRefresh` (`appboxd/lib/blueprint.dart:2230`, wrapping `RefreshIndicator.adaptive`) already exists and gives a screen pull-to-refresh with a native spinner per platform; its one call site repo-wide is `generate_view.dart:497`. It is necessary but not sufficient: the `error` state requires **both** the pull gesture **and** an explicit retry button, because the pull is not discoverable on a screen that is currently showing an error rather than content. The `error` and `empty` regions must additionally be **scrollable** — `RefreshIndicator` detects a pull only inside a scrollable ancestor, so a non-scrolling error/empty layout silently strands the user with a gesture that can never fire.
+
+Lint enforces all three:
+
+1. an `error` region with no retry control fails
+2. a surface declaring an async state (`loading`/`error`) with no `AdaptiveRefresh` wrapper fails
+3. `error` and `empty` regions that are not scrollable fail
+
+**Open implementation question, not this document's to settle:** `_tplView`/`_tplViewModel` (`blueprint.dart:2715` area) currently emit a bare `Center(child: Text(name))` behind an extension-point TODO and a `BaseViewModel` with no refresh method — the real states scaffold lives only in `generate_view.dart`, `AdaptiveRefresh`'s sole call site. Whether the states/retry scaffold belongs in `_tplView`/`_tplViewModel` or stays `generate_view.dart`'s job permanently is a build-side decision (tracked separately); this taxonomy is unchanged either way.
+
+### D17/D19 — the error-manager taxonomy, as a published contract
+
+Most of the Flutter half of this taxonomy **already exists**, undocumented, in `appboxd/lib/blueprint.dart`. This section is a **consolidation and a published contract**, not a green-field build:
+
+| piece | where |
+|---|---|
+| feedback dispatcher — `FeedbackService.error(msg)` / `.success(msg)` → `_show(msg, isError:)` | `:589-599` |
+| `showAdaptiveToast` — `ShadToaster` on the shadcn strategy, Material `SnackBar` elsewhere | `:2398-2440` |
+| inline field error — `AdaptiveTextField.errorText`, VM-driven, strategy-dependent render | `:1584-1620` |
+| `AdaptiveRefresh` | `:2230` |
+| the standing rule at every site above: **a HUMAN message, never a raw error object** (the bad-state leak) | doc comments at each site |
+
+**The published contract** that the actors below emit against, enforce, consume and check:
+
+- the three placements above (inline field / screen state / toast), and the choosing rule between them
+- `feedback: { kind, text, action?, inferred? }` (D18) — `kind ∈ success | error | info` (`feedbackKinds`, `appboxd/lib/intake.dart:64`); narrowing it to drop `error` was researched and overturned (see D11). `action`, when present, is `{ label, trigger }` (`feedbackActionKeys`, `intake.dart:94`) — the button ON the toast, distinct from an edge's own `action` (the typed nav op, `edgeActions`) despite the shared name. `trigger` here is deliberately **prose, not a surface id and not a shared vocabulary with an edge's `trigger`** — it's what taking the action does, in the client's words. The canonical case is Retry, which re-runs the failed operation rather than navigating anywhere; `_validateFeedbackAction` (`intake.dart:383-404`) only requires it be a non-empty string, no closed set. Both `feedbackKeys` and `feedbackActionKeys` are CLOSED and already implemented in `intake.dart` (`_validateFeedback`/`_validateFeedbackAction`, `intake.dart:350-404`) and mirrored in `intake.schema.json` — the two are a contract pair, changed together, not independently.
+- the standing rule: a HUMAN-authored message, never a raw error object surfaced to the user
+
+Actors:
+
+| actor | does |
+|---|---|
+| `appbox-designer` | **emits** against this taxonomy — state regions, toast query-string hooks, inline `errorText` wiring |
+| `appbox-lint` | **enforces** it — the three retry rules above, the state/region parity check (D10), the inferred-marker check (D9) |
+| `appbox-scaffolder` / `appbox-builder` | **consume** it via kits — `kit/core` already owns *"error/theme services"*, `kit/state` already owns *"async state vocabulary (idle/loading/error); retry policy"*; the kit update **exposes those against this written taxonomy**, it does not invent a new service |
+| `appbox-reviewer` / `appbox-tester` | **check** it |
+
+Two real gaps this consolidation found. One is closed, one is open — checked against the live repo, not the plan doc that first found them:
+
+1. **Kind drift — open.** `feedbackKinds = ['success', 'error', 'info']` (intake) vs. blueprint's boolean `isError` (`:593-599`, `:2400`) — the design layer permits `info` that the Flutter layer cannot render today. `_kFeedbackError = Color(0xFFE53935)` (`:2392`) is a literal because no semantic danger token is compiled; a typed-severity taxonomy needs that token.
+2. **The studio's HTML+JS half failing silently — closed.** `designs/appbox-studio/ui/common/base.html:10`'s htmx-config now retargets `404`/`5..` into the always-rendered `#toasts` tray (`swapOverride: innerHTML`, one at a time); `422` still swaps in place so form validation renders where the form is. (This was an open gap when D19 was first written; it is fixed in the current tree.)
 
 ## Motion vocabulary
 

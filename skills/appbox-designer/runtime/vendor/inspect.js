@@ -6,18 +6,29 @@
    DOM and reach window.parent.
 
    While armed (data-inspect-armed on <body>): hover outlines any [data-el]
-   element with an accent-tinted overlay + a readout card; click pins it to
-   the parent's chat context (navigation suppressed) via a POST to the
-   parent's element-context endpoint, then triggers a parent htmx re-swap of
-   #panels so the chat tray picks up the new element chip. Stays armed for
-   multi-pick until disarmed.
+   element with an accent-tinted overlay carrying the element's NAME, and
+   POSTs what it measured to the parent's inspector endpoint so the inspector
+   pane (activity panel, 4th view) shows the element's full story. Click LOCKS
+   the pane to that element (navigation suppressed) so it survives further
+   hovers. Stays armed for multi-pick until disarmed.
 
-   The readout card is the element's own story (see DESIGN-ARCHITECTURE.md
-   "Inspect metadata"), read off its data-attributes: data-el (name), plus
-   data-inspect-role / -style / -motion / -fn — what it is, its key styles,
-   its motion (Motion Vocabulary closed set, or none), its function. Only the
-   lines the element carries are shown; the role falls back to the data-el
-   prefix.
+   The overlay badge is the name and nothing else. The metadata this island
+   reads off the element's data-attributes (data-inspect-role / -style /
+   -motion / -fn — see DESIGN-ARCHITECTURE.md "Inspect metadata") is no longer
+   drawn on the screen: it travels in the POST and is RENDERED BY THE SERVER
+   in the pane, joined there with registry states, kits and flow edges the
+   client cannot see. The server cannot derive the client half either —
+   data-el="hero:{{ t(…) }}" is unresolved and per-locale server-side — so the
+   client measures and the server renders. That split is why the pane needs no
+   second ADR-0002 amendment: this island still only POSTs and asks the parent
+   to swap, exactly as before.
+
+   The name in the badge is `el.dataset.el`, the same string the composer's
+   context chip renders (composer.html, .cs-el-name) — what you see on the
+   screen is what gets pinned.
+
+   Clicking no longer pins: pin is an explicit button on the pane. Multi-pick
+   is unchanged — lock one, pin it, lock the next, pin it.
 
    The overlay tint follows the document's data-accent: app.css maps
    [data-accent] on #app to the --accent custom property, so the island reads
@@ -73,28 +84,45 @@
     lastHovered = null;
   };
 
-  // The readout card: name + the inspect metadata lines the element carries
-  // (role / style / motion / fn — role falls back to the data-el prefix).
+  // The badge: the element's name, nothing else. The role/style/motion/fn
+  // rows moved to the inspector pane, where there is room for them and for
+  // the server-side joins that give them meaning.
   const fillReadout = (el) => {
     labelEl.replaceChildren();
     const name = document.createElement('div');
     name.style.cssText = 'font-weight:600;';
     name.textContent = el.dataset.el;
     labelEl.appendChild(name);
-    const role = el.dataset.inspectRole || (el.dataset.el || '').split(':')[0];
-    const rows = [
-      ['role', role],
-      ['style', el.dataset.inspectStyle],
-      ['motion', el.dataset.inspectMotion],
-      ['fn', el.dataset.inspectFn],
-    ];
-    for (const [k, v] of rows) {
-      if (!v) continue;
-      const line = document.createElement('div');
-      line.style.cssText = 'font-weight:400;opacity:.92;';
-      line.textContent = `${k}: ${v}`;
-      labelEl.appendChild(line);
-    }
+  };
+
+  // What the pane renders. Only what the element actually declares is sent —
+  // the SERVER owns the inferred/authored distinction, so a value this island
+  // guessed would be indistinguishable from an authored one.
+  const measure = (el, lock) => {
+    const v = {
+      screen: document.body.dataset.surface || '',
+      name: el.dataset.el,
+      kind: el.tagName.toLowerCase(),
+    };
+    if (el.dataset.inspectRole) v.role = el.dataset.inspectRole;
+    if (el.dataset.inspectStyle) v.style = el.dataset.inspectStyle;
+    if (el.dataset.inspectMotion) v.motion = el.dataset.inspectMotion;
+    if (el.dataset.inspectFn) v.fn = el.dataset.inspectFn;
+    if (lock) v.lock = '1';
+    return v;
+  };
+
+  // Feed the pane. Targets #panel-left-body, NEVER #panels: re-swapping the
+  // stage rebuilds every screen iframe including the one under the pointer
+  // (the bug the click handler's comment records), and a hover doing that
+  // would hit it on every element. The route answers 204 when the inspector
+  // is not the active view, so this can fire freely.
+  const feedPane = (el, lock) => {
+    const p = window.parent;
+    if (!p || !p.htmx) return;
+    p.htmx.ajax('POST', '/design/inspector/select', {
+      target: '#panel-left-body', swap: 'innerHTML', values: measure(el, lock),
+    });
   };
 
   const showOverlay = (el) => {
@@ -122,43 +150,25 @@
     const el = e.target.closest('[data-el]');
     if (el !== lastHovered) {
       lastHovered = el;
-      if (el) showOverlay(el); else hideOverlay();
+      // One request per element CHANGE, not per pointer move — the identity
+      // check above is the whole throttle. Hovering while the pane is locked
+      // is a no-op server-side, so it costs a request and swaps nothing.
+      if (el) { showOverlay(el); feedPane(el, false); } else hideOverlay();
     }
   });
 
-  // click to pin — capture phase so we run before any navigation handler
+  // click to LOCK — capture phase so we run before any navigation handler.
+  // Clicking used to pin to chat context; pinning is now an explicit button on
+  // the pane, so a click here only says "hold this one". The lock is stored in
+  // the SESSION by the route, never in this document or the parent's DOM,
+  // which is what lets it survive the htmx morphs that rebuild the panel.
   document.addEventListener('click', (e) => {
     if (!armed()) return;
     const el = e.target.closest('[data-el]');
     if (!el) return;
     e.preventDefault();
     e.stopPropagation();
-    const name = el.dataset.el;
-    const screen = document.body.dataset.surface || '';
-    const kind = el.tagName.toLowerCase();
-    fetch('/design/chat/context/element', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: `screen=${encodeURIComponent(screen)}` +
-            `&name=${encodeURIComponent(name)}` +
-            `&kind=${encodeURIComponent(kind)}`,
-    }).then(() => {
-      // re-swap the parent stage so the chat tray picks up the element chip.
-      // htmx lives on the parent (the stub document need not load it). The
-      // pin is session state, so re-GETting the parent's own URL re-renders
-      // it; select: extracts #panels out of the full-page response.
-      // morph:outerHTML, not outerHTML — a replace-style swap here rebuilds
-      // every screen iframe INCLUDING the one being inspected, so pinning an
-      // element reloaded the screen out from under the user mid-inspection.
-      // Programmatic htmx.ajax() takes its swap style from this option, not
-      // from the hx-swap attributes in the templates, so it has to be named
-      // here too.
-      const p = window.parent;
-      if (p && p.htmx) {
-        p.htmx.ajax('GET', p.location.pathname + p.location.search,
-          { target: '#panels', swap: 'morph:outerHTML', select: '#panels' });
-      }
-    });
+    feedPane(el, true);
   }, true);
 
   // momentary mode: hold Alt to arm, release to disarm. Only engages when the

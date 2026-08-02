@@ -281,9 +281,14 @@
         "states": {
           "type": "array",
           "items": {
-            "type": "string"
+            "type": "string",
+            "enum": [
+              "loading",
+              "empty",
+              "error"
+            ]
           },
-          "description": "Optional per-surface states (e.g. empty, loading, error). Carried into the registry seed as an additive key when non-empty."
+          "description": "Optional per-surface states. CONTRACT PAIR: this enum is the same closed set, in the same order, as `surfaceStates` in appboxd/lib/intake.dart, which is what actually rejects a synonym — nothing loads this schema, so drift here is invisible. Closed on purpose: an open list let every project invent 'skeleton'/'pending'/'blank' that no kit implements. Carried into the registry seed as an additive key when non-empty."
         },
         "provenance": {
           "$ref": "#/definitions/provenance"
@@ -292,6 +297,7 @@
     },
     "edge": {
       "type": "object",
+      "description": "One transition in a flow. CONTRACT PAIR: this property set is the same closed set as `edgeKeys` in appboxd/lib/intake.dart, which is what actually rejects unknown keys — nothing loads this schema, so drift here is invisible. Change both together, or emitted flows.json will violate its own published schema (it already did for `element` and `feedback`).",
       "required": [
         "from",
         "to",
@@ -321,6 +327,61 @@
             "system"
           ],
           "description": "Typed nav op (default push). system = non-gesture edge (auth-success, deep-link) — a route guard downstream, never a button."
+        },
+        "element": {
+          "type": "string",
+          "minLength": 1,
+          "description": "OPTIONAL. The thing a user touches to take this edge, joining to a `data-el` value on the surface (e.g. \"button:Continue\"). It exists because `trigger` is prose written for a human reader. The flow-walk island matches this EXACTLY and falls back to a fuzzy `trigger` match when it is absent, so omitting it degrades matching rather than breaking the flow. Never derived — guessing which button an edge fires is generation (§22)."
+        },
+        "feedback": {
+          "type": "object",
+          "required": [
+            "kind",
+            "text"
+          ],
+          "additionalProperties": false,
+          "description": "OPTIONAL. The toast this transition fires. It lives on the EDGE and never in a screen's `states`, because a toast is a consequence of moving, not a way a screen can look (maps to kit/ui_library; `states` maps to kit/state).",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "enum": [
+                "success",
+                "error",
+                "info"
+              ],
+              "description": "Closed set. The renderer derives the tick/styling from this — the text never carries them."
+            },
+            "text": {
+              "type": "string",
+              "minLength": 1,
+              "description": "The words the user actually reads. When intake DERIVES a feedback it copies the trigger verbatim and stamps `inferred: true`; rewriting the trigger into nicer copy would be generation (§22)."
+            },
+            "inferred": {
+              "type": "boolean",
+              "description": "Present and true only on a feedback intake derived rather than elicited. The confirm step exists to strike it."
+            },
+            "action": {
+              "type": "object",
+              "required": [
+                "label",
+                "trigger"
+              ],
+              "additionalProperties": false,
+              "description": "OPTIONAL. The button ON the toast — a snackbar's defining feature (a recoverable error with a Retry is core snackbar material, which is why `error` is a legitimate kind). NOT the same thing as the edge's own `action`, which is the typed nav op. CONTRACT PAIR with `feedbackActionKeys` in appboxd/lib/intake.dart. Never derived — inventing a button the client did not ask for is generation (§22).",
+              "properties": {
+                "label": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "The words on the button, e.g. \"Retry\"."
+                },
+                "trigger": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "What taking it does, in the client's words — same prose vocabulary as the edge's `trigger`, and deliberately NOT a surface id: the canonical case (Retry) re-runs the failed operation rather than navigating anywhere."
+                }
+              }
+            }
+          }
         }
       }
     },

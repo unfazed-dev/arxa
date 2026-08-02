@@ -9,13 +9,17 @@ const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const { chromium } = await import(
   path.join(REPO, 'skills/appbox-designer/runtime/node_modules/playwright-core/index.mjs'));
 const CHROME=process.env.APPBOX_CHROME||'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
-const BASE=process.env.APPBOX_BASE||'http://localhost:4319';
+import { resolveBase, waitFor, trackTransitions } from './_probe_base.mjs';
+const BASE = resolveBase();
 let b, fails=0;
 const check=(n,ok,x='')=>{ if(!ok)fails++; console.log(`  [${ok?'PASS':'FAIL'}] ${n}${x?' — '+x:''}`); };
 try{
   b=await chromium.launch({executablePath:CHROME,headless:true});
   const p=await b.newPage({viewport:{width:1600,height:1000}});
-  await p.goto(BASE+'/design',{waitUntil:'networkidle'}); await p.waitForTimeout(900);
+  await trackTransitions(p);
+  await p.goto(BASE+'/design',{waitUntil:'networkidle'});
+  await waitFor(p, () => !!document.querySelector('.dv-tile[data-id="portalo.cart"] iframe'),
+    { label: 'the canvas tiles', timeout: 15000 });
 
   console.log('=== still tiles stay script-free ===');
   const stillDoc=await (await p.$('.dv-tile[data-id="portalo.cart"] iframe')).contentFrame();
@@ -25,9 +29,15 @@ try{
   // Arming an interactive tile is a FLOWS-lens affordance now (the views lens
   // has no row to scope nextEdge, so it offers no interactive mode at all).
   await p.evaluate((u)=>window.htmx.ajax('GET',u,{target:'#design-viewer',swap:'morph:outerHTML'}),'/design/viewer?mode=flows');
-  await p.waitForTimeout(1200);
+  await waitFor(p, () => !!document.querySelector('.dv-tile[data-id="portalo.home"] a[hx-get*="step="]'),
+    { label: 'the flows lens + its arm control' });
   await p.$eval('.dv-tile[data-id="portalo.home"] a[hx-get*="step="]',e=>e.click());
-  await p.waitForTimeout(1400);
+  // Arming swaps the tile for a live iframe whose src carries ?live= — the
+  // attribute is the post-condition, so poll it instead of guessing 1400ms.
+  await waitFor(p, () => {
+    const f = document.querySelector('.dv-tile[data-id="portalo.home"] iframe');
+    return !!f && /live=|step=/.test(f.getAttribute('src') || '');
+  }, { label: 'the home tile to become live' });
   const sel='.dv-tile[data-id="portalo.home"] iframe';
   let doc=await (await p.$(sel)).contentFrame();
   console.log('  src:', (await (await p.$(sel)).evaluate(e=>e.getAttribute('src'))));
@@ -41,7 +51,14 @@ try{
   check('found in-frame link', !!link);
   if(link){
     await link.click();
-    await p.waitForTimeout(1600);
+    // The boosted swap happens INSIDE the iframe, so the condition lives in the
+    // frame's own document, not the host page's.
+    const t0 = Date.now();
+    while (Date.now() - t0 < 8000) {
+      const d = await (await p.$(sel)).contentFrame();
+      if (d && d.url().includes('portalo.category')) break;
+      await p.waitForTimeout(150);
+    }
     doc=await (await p.$(sel)).contentFrame();
     const after=doc.url().replace(BASE,'');
     const tok=await doc.evaluate(`window.__tok || null`);

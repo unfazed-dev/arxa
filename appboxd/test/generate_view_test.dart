@@ -304,6 +304,95 @@ void main() {
     expect(out.split('(').length, out.split(')').length);
   });
 
+  // ──────────── 5b. home error / empty states (D13 retry affordances) ────────────
+  //
+  // NOTE ON SCOPE: these assert `headTpl`, the HOME-ONLY bespoke template
+  // (`buildView` gates it on `sid == 'home'`; every other screen goes through
+  // `genericHead`, which emits no error/empty state at all). Fixing these fixes
+  // ONE screen — see the generalisation gap recorded in the W8 report.
+
+  /// The emitted home view, for the state-region assertions below.
+  String homeViewSrc() {
+    final g = GenerateView();
+    return g.buildView(_node({
+      'entry': 'Home',
+      'tokens': <String, dynamic>{},
+      'tree': <dynamic>[
+        _node({
+          'prim': 'Box',
+          'class': <String>['root'],
+          'style': <String, dynamic>{},
+          'children': <dynamic>[
+            _node({
+              'prim': 'Text',
+              'class': <String>['workouts-title'],
+              'style': <String, dynamic>{},
+              'text': 'Your workouts',
+            }),
+          ],
+        }),
+      ],
+    }));
+  }
+
+  test('home error state is SCROLLABLE — a RefreshIndicator over an unscrollable '
+      'child silently never fires', () {
+    final out = homeViewSrc();
+    final err = out.substring(out.indexOf('if (viewModel.hasError)'),
+        out.indexOf('final sessions = viewModel.filtered;'));
+
+    // The subtle bug: AdaptiveRefresh wrapping a bare Center() cannot detect a
+    // pull at all. Assert the CHILD, not merely that AdaptiveRefresh appears.
+    expect(err, contains('AdaptiveRefresh('),
+        reason: 'the error region needs a pull-to-refresh path');
+    expect(err, contains('ListView('),
+        reason: 'RefreshIndicator only detects a pull over a SCROLLABLE child');
+    expect(err, contains('AlwaysScrollableScrollPhysics()'),
+        reason: 'a short list must still accept the pull gesture');
+    expect(err, isNot(contains('body: Center(')),
+        reason: 'a bare Center is exactly the silent defeat');
+  });
+
+  test('home error and empty states BOTH offer an explicit retry button', () {
+    final out = homeViewSrc();
+    final err = out.substring(out.indexOf('if (viewModel.hasError)'),
+        out.indexOf('final sessions = viewModel.filtered;'));
+
+    // Two affordances, not one: the pull gesture is NOT discoverable on an
+    // error screen, so a visible button has to carry it too.
+    expect(err, contains('AdaptiveButton('));
+    expect(err, contains('onPressed: viewModel.refresh'));
+
+    // The empty state already scrolled correctly (ListView +
+    // AlwaysScrollableScrollPhysics under AdaptiveRefresh) — it only lacked the
+    // button. D13's premise held for `error` but NOT for `empty`.
+    final empty = out.substring(out.indexOf('if (sessions.isEmpty)'));
+    expect(empty, contains('AdaptiveButton('),
+        reason: 'the empty state needs the retry affordance too');
+  });
+
+  test('no emitted home path interpolates a raw exception into a user message', () {
+    final out = homeViewSrc();
+
+    // Same standing rule blueprint.dart:2398 already documents: "Always a HUMAN
+    // message — never a raw error object (the bad-state leak)."
+    final leak =
+        RegExp(r'''\$\{?(e|err|error|ex|exception|viewModel\.error)\}?''');
+    final offenders = <String>[];
+    final lines = out.split('\n');
+    for (var i = 0; i < lines.length; i++) {
+      final line = lines[i];
+      if (line.trimLeft().startsWith('//')) continue;
+      if (!RegExp(r'''Text\(|message|description:|content:''').hasMatch(line)) {
+        continue;
+      }
+      if (leak.hasMatch(line)) offenders.add('${i + 1}: $line');
+    }
+    expect(offenders, isEmpty,
+        reason: 'raw error object reached a user-visible message:\n'
+            '${offenders.join('\n')}');
+  });
+
   // ──────────── 6. buildView — generic screen translation ────────────
 
   test('buildView generic: SafeArea + CSS padding → EdgeInsets', () {
@@ -428,4 +517,94 @@ void main() {
     expect(dart.contains('color: AppTokens.accent'), isTrue);
     expect(dart.contains('const Color(0xFFD2522B)'), isFalse);
   });
+
+  // ──────────── 8. the output is Dart the Dart parser accepts ────────────
+  _parseGateTests();
+}
+
+/// Nothing in this suite ever parsed generator output. Every other assertion is
+/// `out.contains('some substring')`, which a file with a syntax error passes
+/// just as happily as a good one — that is how task #45 survived: a design with
+/// no `.stat-card` nodes emitted `StatsCarousel(cards: [\n  ,\n])` and no test
+/// noticed, because the substring checks all still matched.
+///
+/// `dart format` is the check, not `dart analyze`. format PARSES and stops;
+/// analyze also RESOLVES, and generated views import `package:stacked`,
+/// `package:flutter/...` and sibling files that do not exist next to a temp
+/// file — so analyze would drown in unresolved-import noise and tell us nothing
+/// about syntax. Exit 65 with "could not be parsed" is exactly the signal.
+///
+/// The SDK is addressed via [Platform.resolvedExecutable] rather than a bare
+/// `dart` on PATH: the binary running this test is by definition the right one.
+void _parseGateTests() {
+  Node mkBox(List<dynamic> children, {List<String> cls = const ['screen']}) =>
+      <String, dynamic>{
+        'prim': 'Box',
+        'class': cls,
+        'style': <String, dynamic>{},
+        'children': children,
+      };
+
+  Node mkText(String t, {List<String> cls = const ['title']}) =>
+      <String, dynamic>{
+        'prim': 'Text',
+        'class': cls,
+        'style': <String, dynamic>{},
+        'text': t,
+      };
+
+  Node mkStatCard() => mkBox([
+        mkText('Steps', cls: ['eyebrow']),
+        mkText('1200', cls: ['big']),
+      ], cls: [
+        'stat-card'
+      ]);
+
+  Node mkSpec(String entry, List<dynamic> tree) => <String, dynamic>{
+        'entry': entry,
+        'tokens': <String, dynamic>{},
+        'tree': tree,
+      };
+
+  // Each case is a spec shape the generator must survive. The home shapes with
+  // no `.stat-card` are the #45 reproduction; the rest guard the sites that
+  // already handle emptiness (emit() returns '' for an empty child list;
+  // sessionCardMethod returns SizedBox.shrink when there is no workout-card)
+  // so a future "simplification" of those guards fails here instead of in a
+  // downstream Flutter build.
+  final cases = <String, Node>{
+    'home with no stat-cards (#45)': mkSpec('HomeView', [
+      mkBox([mkText('Home')])
+    ]),
+    'home with an empty tree': mkSpec('HomeView', <dynamic>[]),
+    'home with stat-cards': mkSpec('HomeView', [
+      mkBox([mkStatCard(), mkStatCard()])
+    ]),
+    'generic screen with one text': mkSpec('SettingsView', [
+      mkBox([mkText('Settings')])
+    ]),
+    'generic screen with an empty box': mkSpec('SettingsView', [
+      mkBox(<dynamic>[])
+    ]),
+    'generic screen with an empty tree': mkSpec('SettingsView', <dynamic>[]),
+    'splash with an empty box': mkSpec('SplashView', [
+      mkBox(<dynamic>[])
+    ]),
+  };
+
+  for (final entry in cases.entries) {
+    test('generated Dart parses: ${entry.key}', () {
+      final out = GenerateView().buildView(entry.value);
+      final dir = Directory.systemTemp.createTempSync('gv-parse-');
+      try {
+        final f = File('${dir.path}/out.dart')..writeAsStringSync(out);
+        final r = Process.runSync(
+            Platform.resolvedExecutable, ['format', '--output=none', f.path]);
+        expect(r.exitCode, 0,
+            reason: 'generator emitted unparseable Dart:\n${r.stderr}');
+      } finally {
+        dir.deleteSync(recursive: true);
+      }
+    });
+  }
 }

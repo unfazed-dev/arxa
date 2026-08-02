@@ -238,8 +238,14 @@ class JsWorker {
     required String artifactDir,
     String? iconsDir,
     String? projectDir,
+    // Both exist so the boot-failure path (task #31) is reachable from a test
+    // without needing a real Chrome to fail on cue; [chromePath] also lets a
+    // caller pin a specific Chrome build.
+    int launchAttempts = 2,
+    String? chromePath,
   }) async {
-    final handle = await _ChromeHandle.launch();
+    final handle = await _ChromeHandle.launch(
+        attempts: launchAttempts, chromePath: chromePath);
     try {
       final tab = await handle.client.newTab();
       await tab.enable();
@@ -286,12 +292,56 @@ class JsWorker {
   /// Dispatch one request through the artifact's viewmodel layer. [state]
   /// carries sessions/timers/locale so the JS side stays stateless across
   /// reloads.
+  /// A tab that has lost `globalThis.__dispatch` (or whose execution context
+  /// died mid-call) is not serving anything ever again on its own: nothing in
+  /// this class re-boots except [reload], and [reload] only ever runs when a
+  /// file changes. So one bad moment used to end the studio permanently — the
+  /// server stayed up, answered every request with a 500, and only a manual
+  /// restart brought it back (task #51).
+  ///
+  /// Recovery is one reboot and one retry. Not a loop: if the tab is broken for
+  /// a reason a reboot cannot fix, retrying forever converts a dead worker into
+  /// a hang, which is strictly worse to diagnose than a fast 500.
   Future<WorkerResponse> dispatch(
     String method,
     String fullPath, {
     Map<String, String> headers = const {},
     String? body,
     Map<String, dynamic> state = const {},
+  }) async {
+    try {
+      return await _dispatchOnce(method, fullPath,
+          headers: headers, body: body, state: state);
+    } catch (e) {
+      if (!_isLostRealm(e)) rethrow;
+      stderr.writeln('[worker] the tab lost its globals ($e) — rebooting once');
+      await reload();
+      return _dispatchOnce(method, fullPath,
+          headers: headers, body: body, state: state);
+    }
+  }
+
+  /// True when the failure is "the page is not the worker page any more",
+  /// rather than "the artifact's own JS threw".
+  ///
+  /// Deliberately narrow. Matching bare `__dispatch` would also swallow a
+  /// genuine bug thrown *inside* the dispatch handler, and rebooting the tab on
+  /// every artifact-level exception would hide real errors behind an 850ms
+  /// reload — so the missing-global case must match the callee-is-gone shape,
+  /// not merely mention the name.
+  static bool _isLostRealm(Object e) {
+    final s = e.toString();
+    return (s.contains('__dispatch') && s.contains('is not a function')) ||
+        s.contains('Execution context was destroyed') ||
+        s.contains('Cannot find context with specified id');
+  }
+
+  Future<WorkerResponse> _dispatchOnce(
+    String method,
+    String fullPath, {
+    required Map<String, String> headers,
+    required String? body,
+    required Map<String, dynamic> state,
   }) async {
     final raw = await _tab.evaluateFunction(
       '(req) => globalThis.__dispatch(req.method, req.path, req.headers, req.body, req.state)',
@@ -322,7 +372,60 @@ class JsWorker {
   /// Cost is per reload (watcher-triggered), not per request — one navigation
   /// plus a re-parse of the worker page's scripts, ~850ms measured, most of it
   /// the navigateAndSettle wait. Dispatch is untouched.
+  ///
+  /// SINGLE-FLIGHT, because concurrent reloads corrupt the tab (task #51).
+  /// The watchers call this unawaited from a 200ms-debounced Timer, but the
+  /// debounce only spaces out the *scheduling* — the reload itself takes ~850ms,
+  /// so any save-storm longer than the debounce (a `POST /__project_write`
+  /// writes answers.json AND flows.json: two events) starts a second reload
+  /// while the first is between its navigate and its `__boot`. Two navigations
+  /// on one tab interleave: A's [_inject] writes globals into a realm B then
+  /// navigates away from, and A's `__boot` runs against B's half-loaded page.
+  /// The tab can be left with no `__dispatch` at all, and since nothing reboots
+  /// except this method, it stays that way until a human restarts the server.
+  ///
+  /// A queued flag rather than a plain join: a file that changed *during* a
+  /// reload may have been missed by the in-flight [_scanArtifact], so simply
+  /// returning the in-flight future would silently drop that edit. One trailing
+  /// re-run, however many requests arrived, coalesces the storm without losing
+  /// the last write.
+  Future<void>? _reloading;
+  bool _reloadQueued = false;
+
   Future<void> reload() async {
+    final inFlight = _reloading;
+    if (inFlight != null) {
+      _reloadQueued = true;
+      return inFlight;
+    }
+    // This assignment runs synchronously on call (an async body executes up to
+    // its first await eagerly), so no second caller can observe a null.
+    final done = Completer<void>();
+    _reloading = done.future;
+    try {
+      do {
+        _reloadQueued = false;
+        await _reloadOnce();
+      } while (_reloadQueued);
+    } finally {
+      _reloading = null;
+      _reloadQueued = false;
+      // Joiners only need "the reload finished". The error, if any, propagates
+      // to the caller that owned this run — completing them with it too would
+      // raise an unhandled async error in the watcher's Timer.
+      done.complete();
+    }
+  }
+
+  /// How many times the navigate→inject→boot sequence has actually run.
+  /// The single-flight contract is a *count*, and counting is the only way to
+  /// assert it that is not vacuous: three concurrent reloads on an idle machine
+  /// interleave harmlessly often enough that "the tab still serves afterwards"
+  /// passes with the guard removed. Measured, not assumed.
+  int reloadRunsForTest = 0;
+
+  Future<void> _reloadOnce() async {
+    reloadRunsForTest++;
     await _tab.navigateAndSettle(_workerPageUrl, settleMs: 600);
     await _inject(_scanArtifact(_artifactDir, _origin, _iconsDir,
         projectDir: _projectDir));
@@ -333,6 +436,19 @@ class JsWorker {
     // re-imported nothing stayed invisible. Keep serving, but say so.
     if (ok != true) stderr.writeln('worker reload failed: $ok');
   }
+
+  /// Boot attempts made by the most recent launch. The retry contract is a
+  /// COUNT: a test that asserted only "a dead Chrome eventually throws" passes
+  /// just as well with the retry loop deleted, and would have let #31's whole
+  /// fix rot silently.
+  static int get lastLaunchAttempts => _ChromeHandle.lastLaunchAttempts;
+
+  /// Drop `globalThis.__dispatch`, reproducing the lost-realm state a racing
+  /// navigation leaves behind. Test-only seam: the real trigger is a timing
+  /// race, and a test that reproduces it by racing would be exactly the kind of
+  /// load-dependent flake this work is trying to remove.
+  Future<void> breakDispatchForTest() =>
+      _tab.evaluate('delete globalThis.__dispatch');
 
   Future<void> dispose() async {
     await _chrome?.close();
@@ -445,30 +561,86 @@ class _ChromeHandle {
     }
   }
 
-  static Future<_ChromeHandle> launch() async {
-    final chromePath = CdpClient.defaultChromePath();
-    if (!await File(chromePath).exists()) {
-      throw StateError('Chrome not found at: $chromePath');
+  /// Counts boot attempts made by the most recent [launch] call. See
+  /// [JsWorker.lastLaunchAttempts].
+  static int lastLaunchAttempts = 0;
+
+  /// Boot Chrome, retrying a bounded number of times (task #31).
+  ///
+  /// HONESTY NOTE: this is HANDLING, not a root-cause fix. The failure it
+  /// addresses — `design_server_test`'s worker boot dying under parallel load —
+  /// has never been reproduced on demand, and nothing here explains WHY Chrome
+  /// occasionally never prints its DevTools URL. What is certain is the second
+  /// half: [_readWsUrl]'s own comment records that "the boot is not retried, so
+  /// a real failure still fails", so a single unlucky launch took the whole
+  /// server (or test file) down with it. A transient failure that is never
+  /// retried is a guaranteed failure.
+  ///
+  /// Two attempts, not more: each failed attempt can cost the full 30s
+  /// no-DevTools-URL timeout, and turning a 30s failure into a 90s one makes a
+  /// genuinely-dead Chrome much worse to diagnose for a shrinking benefit.
+  ///
+  /// Every attempt cleans up after itself. A retry loop that leaked the
+  /// half-started Chrome would manufacture exactly the orphans [sweepOrphans]
+  /// exists to reap — one failure becoming N strays.
+  ///
+  /// [chromePath] is injectable so the failure path is testable at all: point it
+  /// at a binary that exits immediately and the retry runs in milliseconds
+  /// instead of needing a real Chrome to misbehave on cue.
+  static Future<_ChromeHandle> launch({
+    int attempts = 2,
+    String? chromePath,
+  }) async {
+    final exe = chromePath ?? CdpClient.defaultChromePath();
+    if (!await File(exe).exists()) {
+      throw StateError('Chrome not found at: $exe');
     }
     sweepOrphans();
-    final tmpDir = await Directory.systemTemp.createTemp('appbox-design-worker-');
-    final args = [
-      '--headless=new',
-      '--remote-debugging-port=0',
-      '--user-data-dir=${tmpDir.path}',
-      '--no-first-run',
-      '--no-default-browser-check',
-      '--use-gl=angle',
-      '--use-angle=swiftshader',
-      '--enable-unsafe-swiftshader',
-      '--ignore-gpu-blocklist',
-      '--hide-scrollbars',
-      'about:blank',
-    ];
-    final proc = await Process.start(chromePath, args);
-    final wsUrl = await _readWsUrl(proc);
-    final client = await CdpClient.connect(wsUrl);
-    return _ChromeHandle(client, proc, tmpDir);
+    lastLaunchAttempts = 0;
+    Object? lastError;
+    for (var attempt = 1; attempt <= attempts; attempt++) {
+      lastLaunchAttempts = attempt;
+      Process? proc;
+      Directory? tmpDir;
+      try {
+        tmpDir =
+            await Directory.systemTemp.createTemp('appbox-design-worker-');
+        proc = await Process.start(exe, [
+          '--headless=new',
+          '--remote-debugging-port=0',
+          '--user-data-dir=${tmpDir.path}',
+          '--no-first-run',
+          '--no-default-browser-check',
+          '--use-gl=angle',
+          '--use-angle=swiftshader',
+          '--enable-unsafe-swiftshader',
+          '--ignore-gpu-blocklist',
+          '--hide-scrollbars',
+          'about:blank',
+        ]);
+        final wsUrl = await _readWsUrl(proc);
+        final client = await CdpClient.connect(wsUrl);
+        return _ChromeHandle(client, proc, tmpDir);
+      } catch (e) {
+        lastError = e;
+        try {
+          proc?.kill(ProcessSignal.sigkill);
+        } catch (_) {}
+        try {
+          tmpDir?.deleteSync(recursive: true);
+        } catch (_) {}
+        if (attempt < attempts) {
+          // Announced, because a silent retry would hide a Chrome that is
+          // failing every other boot behind an apparently healthy server.
+          stderr.writeln('design serve: Chrome boot attempt $attempt of '
+              '$attempts failed ($e) — retrying');
+          await Future.delayed(Duration(milliseconds: 250 * attempt));
+        }
+      }
+    }
+    // The tail is already inside lastError (see [_readWsUrl]); keep it.
+    throw StateError(
+        'Chrome failed to boot after $attempts attempts — $lastError');
   }
 
   static Future<String> _readWsUrl(Process proc) async {

@@ -73,3 +73,39 @@ export const undo = async (c, h) =>
 
 export const redo = async (c, h) =>
   h.render(c, `${VIEW}#panelsSwap`, await facade.redo(h.session(c).data, c.req.param('stack'), h.prefs(c), h.t(c), h.locale(c)));
+
+// The inspector pane (activity panel, 4th view). Its carousel icon does NOT
+// go through /design/panel/:view — that route renders _shared.html's
+// activityBody, which dispatches on c.activityView and knows nothing about
+// this pane. Switching the view here and rendering our own fragment keeps the
+// pane out of the shared body without a shared-file edit.
+export const inspector = (c, h) =>
+  h.render(c, `${VIEW}#inspectorSwap`, facade.setActivityView(h.session(c).data, 'inspector', h.prefs(c), h.t(c), h.locale(c)));
+
+// The island's measurements: hover updates the pane, click (lock=1) locks it.
+// 204 when the inspector is not the active view — the island fires on every
+// hovered element regardless of which pane is open, and a swap would overwrite
+// the screens list with an inspector card. htmx-config maps 204 to swap:false.
+// Body only (#inspectorPane, not #inspectorSwap): re-feeding head and bar per
+// pointer move swaps two more nodes for no state change.
+export const inspectorSelect = async (c, h) => {
+  const d = h.session(c).data;
+  const form = await h.form(c);
+  const next = facade.selectElement(d, {
+    screen: form.screen, name: form.name, kind: form.kind,
+    role: form.role, style: form.style, motion: form.motion, fn: form.fn,
+    lock: form.lock,
+  }, h.prefs(c), h.t(c), h.locale(c));
+  if (next.activityView !== 'inspector') return h.noContent(c);
+  return h.render(c, `${VIEW}#inspectorPane`, next);
+};
+
+// The pane's own unlock button: drop the lock, keep the last hover. Same
+// activityView guard as inspectorSelect — unreachable today (the button only
+// renders inside the pane itself), but a swap to #inspectorPane while another
+// view is active would otherwise blank it via #47's empty-mode placeholder.
+export const inspectorUnlock = (c, h) => {
+  const next = facade.unlockInspector(h.session(c).data, h.prefs(c), h.t(c), h.locale(c));
+  if (next.activityView !== 'inspector') return h.noContent(c);
+  return h.render(c, `${VIEW}#inspectorPane`, next);
+};

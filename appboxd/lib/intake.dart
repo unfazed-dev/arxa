@@ -51,6 +51,48 @@ final _flowIdRe = RegExp(r'^flow-[a-z0-9]+(-[a-z0-9]+)*$');
 /// them to route guards, never to buttons.
 const edgeActions = ['push', 'replace', 'back', 'modal', 'system'];
 
+/// The CLOSED vocabulary of screen-level states (D2). A state is a way the
+/// SCREEN can look while it waits, has nothing, or has failed — it maps to
+/// `kit/state`. The list is closed on purpose: an open vocabulary let every
+/// project invent a synonym ('skeleton', 'pending', 'blank') that no kit
+/// implements. Emitted in THIS order wherever states are derived.
+const surfaceStates = ['loading', 'empty', 'error'];
+
+/// The CLOSED vocabulary of edge-level feedback kinds (D2). Feedback is a
+/// consequence of a TRANSITION — a toast — so it lives on the edge, not in
+/// `states`; it maps to `kit/ui_library`, not `kit/state`.
+const feedbackKinds = ['success', 'error', 'info'];
+
+/// Every key a flow edge may carry. CLOSED, and it works as a PAIR with the
+/// spread in [emitFlows]: the spread guarantees no authored key is ever
+/// dropped, and this set guarantees nothing unauthorised rides along on it.
+/// Change one and you must change the other — plus `/definitions/edge` in
+/// `skills/appbox-intake/intake.schema.json`, which nothing loads and so
+/// drifts invisibly.
+///
+/// Closing this set does NOT catch the bug it was added alongside: `element`
+/// and `feedback` were both *validated and then dropped* — legal keys the
+/// emitter forgot. Only the spread (and the passthrough test) catch that.
+const edgeKeys = ['from', 'to', 'trigger', 'action', 'element', 'feedback'];
+
+/// Every key a flow may carry. CLOSED, same reasoning as [edgeKeys].
+const flowKeys = ['id', 'name', 'provenance', 'edges'];
+
+/// Every key a `feedback` object may carry. CLOSED. `inferred` is the
+/// derivation stamp intake adds, never authored copy. `action` is the
+/// snackbar's button — optional, because most toasts are only read.
+const feedbackKeys = ['kind', 'text', 'inferred', 'action'];
+
+/// Every key a `feedback.action` object may carry. CLOSED, same reasoning as
+/// [edgeKeys] — an open sub-object in this file would be the one unclosed set.
+///
+/// NOT the same thing as an edge's `action` (the typed nav op in
+/// [edgeActions]): this one is the button ON the toast. `trigger` is what
+/// taking it does, in the client's words — deliberately prose and NOT a
+/// surface id, because the canonical case is Retry, which re-runs the failed
+/// operation rather than navigating anywhere.
+const feedbackActionKeys = ['label', 'trigger'];
+
 /// The visible marker the emitted brief puts on any `inferred` field. A reader
 /// who skims must not miss it — that is the entire point of marking inference.
 const inferredMark = '> **[inferred]** — not stated by the client; confirm or correct.';
@@ -159,6 +201,22 @@ ValidationResult validateIntake(Map<String, dynamic> answers) {
     final states = s['states'];
     if (states != null && (states is! List || states.any((x) => x is! String))) {
       errs.add("$where: states must be a list of strings (e.g. empty, loading, error)");
+    } else if (states is List) {
+      // The vocabulary is CLOSED (D2). Name the offender AND the whole allowed
+      // set — the message has to carry the fix, because the only way out is to
+      // pick a different word.
+      for (final st in states) {
+        if (!surfaceStates.contains(st)) {
+          errs.add("$where: state '$st' is not one of $surfaceStates — the "
+              'screen-state vocabulary is closed (a toast is not a screen '
+              "state; put it on a flow edge as `feedback`)");
+        }
+      }
+    }
+    if (s.containsKey('feedback')) {
+      errs.add("$where: feedback does not belong on a surface — a toast is a "
+          'consequence of a TRANSITION, so it belongs on a flow edge '
+          '(flows[].edges[].feedback)');
     }
     if (seen.contains(sid)) {
       errs.add("$where: duplicate id '$sid' (ids are permanent — add a new "
@@ -211,6 +269,15 @@ List<String> _validateFlows(Map<String, dynamic> answers, Set<String> surfaceIds
     if (!provenance.contains(f['provenance'])) {
       errs.add("$where: provenance '${f['provenance']}' is not one of $provenance");
     }
+    if (f.containsKey('feedback')) {
+      errs.add('$where: feedback belongs on an EDGE, not on the flow — a toast '
+          'fires on one transition, not for a whole journey');
+    }
+    for (final k in f.keys) {
+      if (k != 'feedback' && !flowKeys.contains(k)) {
+        errs.add("$where: unknown key '$k' — a flow carries only $flowKeys");
+      }
+    }
     final edges = f['edges'];
     if (edges is! List || edges.isEmpty) {
       errs.add('$where: edges must be a non-empty list (a flow is a chain)');
@@ -241,6 +308,25 @@ List<String> _validateFlows(Map<String, dynamic> answers, Set<String> surfaceIds
       if (action != null && !edgeActions.contains(action)) {
         errs.add("$ew: action '$action' is not one of $edgeActions");
       }
+      // `element` names the thing a user touches to take this edge — it joins
+      // to a `data-el` value on the surface (e.g. "button:Continue"). Type only:
+      // whether it resolves to a real data-el lives in the rendered surface,
+      // which intake cannot see. Optional — absent means the flow walk falls
+      // back to a fuzzy trigger match.
+      final element = e['element'];
+      if (element != null && (element is! String || element.isEmpty)) {
+        errs.add('$ew: element must be a non-empty string naming a data-el '
+            '(e.g. "button:Continue") — omit it to fuzzy-match the trigger');
+      }
+      errs.addAll(_validateFeedback(e['feedback'], ew));
+      // The gate that makes emitFlows' spread safe: every authored key is
+      // carried through, so an unrecognised one must be refused HERE or it
+      // rides along into flows.json and is honoured by nobody.
+      for (final k in e.keys) {
+        if (!edgeKeys.contains(k)) {
+          errs.add("$ew: unknown key '$k' — an edge carries only $edgeKeys");
+        }
+      }
       final from = e['from']?.toString() ?? '';
       final to = e['to']?.toString() ?? '';
       if (from == to) errs.add("$ew: self-edge '$from' (loops are not drawn)");
@@ -255,6 +341,156 @@ List<String> _validateFlows(Map<String, dynamic> answers, Set<String> surfaceIds
     }
   }
   return errs;
+}
+
+/// Shape-check an edge's optional `feedback` value: `{kind, text}` with
+/// `kind` in [feedbackKinds] and `text` a non-empty string. Absent is fine —
+/// most transitions say nothing. [where] is the edge label so the message
+/// points at one edge, not at the flow.
+List<String> _validateFeedback(Object? val, String where) {
+  if (val == null) return const [];
+  if (val is! Map) {
+    return [
+      '$where: feedback must be an object {kind, text} — got '
+          '${val.runtimeType}'
+    ];
+  }
+  final errs = <String>[];
+  final kind = val['kind'];
+  if (!feedbackKinds.contains(kind)) {
+    errs.add("$where: feedback.kind '$kind' is not one of $feedbackKinds");
+  }
+  final text = val['text'];
+  if (text is! String || text.trim().isEmpty) {
+    errs.add('$where: feedback.text must be a non-empty string (the words the '
+        'user actually reads)');
+  }
+  errs.addAll(_validateFeedbackAction(val['action'], where));
+  // Closed, and kept in step with `/definitions/edge/properties/feedback` in
+  // intake.schema.json. `inferred` is the derivation stamp, not authored copy.
+  for (final k in val.keys) {
+    if (!feedbackKeys.contains(k)) {
+      errs.add("$where: feedback has unknown key '$k' — it carries only "
+          '$feedbackKeys');
+    }
+  }
+  return errs;
+}
+
+/// Shape-check a feedback's optional `action`: `{label, trigger}`, both
+/// non-empty strings. Absent is fine — most toasts are only read. Never
+/// derived: inventing a button the client did not ask for is generation (§22).
+List<String> _validateFeedbackAction(Object? val, String where) {
+  if (val == null) return const [];
+  if (val is! Map) {
+    return [
+      '$where: feedback.action must be an object {label, trigger} — got '
+          '${val.runtimeType}'
+    ];
+  }
+  final errs = <String>[];
+  for (final k in feedbackActionKeys) {
+    final v = val[k];
+    if (v is! String || v.trim().isEmpty) {
+      errs.add("$where: feedback.action.$k must be a non-empty string");
+    }
+  }
+  for (final k in val.keys) {
+    if (!feedbackActionKeys.contains(k)) {
+      errs.add("$where: feedback.action has unknown key '$k' — it carries "
+          'only $feedbackActionKeys');
+    }
+  }
+  return errs;
+}
+
+/// Words in a surface's short id segment that mark it as a COLLECTION — a
+/// screen that shows many of something, so it can be waiting or have none.
+/// Derives `loading` + `empty`.
+const _collectionWords = {
+  'all', 'browse', 'cart', 'catalog', 'category', 'feed', 'gallery', 'history',
+  'home', 'inbox', 'index', 'library', 'list', 'notifications', 'orders',
+  'results', 'search', 'timeline',
+};
+
+/// Words in a surface's short id segment that mark it as a FORM, AUTH or
+/// NETWORK screen — one that submits something and can therefore fail.
+/// Derives `error`.
+const _formWords = {
+  'auth', 'checkout', 'compose', 'create', 'edit', 'form', 'login', 'new',
+  'password', 'pay', 'payment', 'profile', 'register', 'reset', 'settings',
+  'signin', 'signup', 'startup', 'sync', 'upload',
+};
+
+/// Verbs in an edge's trigger that mark it as a MUTATION — a transition that
+/// changes server state, so the user needs telling it worked. Derives a
+/// `feedback` toast.
+const _mutationWords = {
+  'add', 'apply', 'book', 'buy', 'checkout', 'confirm', 'create', 'delete',
+  'pay', 'place', 'post', 'publish', 'remove', 'save', 'send', 'submit',
+  'update', 'upload',
+};
+
+/// Split a string into lowercase word tokens for heuristic matching.
+/// Deterministic and allocation-cheap; no locale rules, no stemming.
+Set<String> _words(String s) => s
+    .toLowerCase()
+    .split(RegExp(r'[^a-z0-9]+'))
+    .where((w) => w.isNotEmpty)
+    .toSet();
+
+/// DERIVE a surface's states from the shape its own declaration implies.
+///
+/// Intake elicits; it does not generate (architecture §22) — so this is legal
+/// only because every derived value is stamped `statesProvenance: 'inferred'`
+/// and rendered `[inferred]` in the brief, exactly as `emitFlows` already does
+/// for derived flows. The confirm step is what makes it honest.
+///
+/// The signal is the id's SHORT SEGMENT plus `requiresAuth` — a surface at
+/// intake has no other shape to read. Returns states in [surfaceStates] order;
+/// an empty result means "no signal", and the caller omits the key entirely.
+List<String> deriveStates(Map surf) {
+  final short = _idRe.firstMatch(surf['id'].toString())?.group(2) ?? '';
+  final tokens = _words(short);
+  final out = <String>{};
+  if (tokens.any(_collectionWords.contains)) {
+    out.addAll(['loading', 'empty']);
+  }
+  if (tokens.any(_formWords.contains) || surf['requiresAuth'] == true) {
+    out.add('error');
+  }
+  return [
+    for (final s in surfaceStates)
+      if (out.contains(s)) s,
+  ];
+}
+
+/// DERIVE an edge's feedback when its trigger names a mutation.
+///
+/// `text` is the trigger VERBATIM — a mechanical transform, never invented
+/// copy. Writing a verb→noun table to make "Add to bag" read as "Added to bag"
+/// would be generation, which §22 forbids; the tick and the styling belong to
+/// the renderer, which reads `kind`. Returns null when the trigger names no
+/// mutation.
+/// The `feedback` entry an emitted edge should carry, as a spreadable map:
+/// the declared value verbatim, else a derived one, else nothing at all.
+Map<String, dynamic>? _edgeFeedback(Object? edge) {
+  if (edge is! Map) return null;
+  final declared = edge['feedback'];
+  if (declared != null) return {'feedback': declared};
+  final derived = deriveFeedback(edge);
+  return derived == null ? null : {'feedback': derived};
+}
+
+Map<String, dynamic>? deriveFeedback(Map edge) {
+  final trigger = edge['trigger'];
+  if (trigger is! String) return null;
+  if (!_words(trigger).any(_mutationWords.contains)) return null;
+  return <String, dynamic>{
+    'kind': 'success',
+    'text': trigger,
+    'inferred': true,
+  };
 }
 
 List<String> _validateDirection(Object? val) {
@@ -345,6 +581,62 @@ String _cap(String seg) => seg[0].toUpperCase() + seg.substring(1);
 /// ADDITIVE keys after `surface` when declared: `states`, `requiresAuth`,
 /// `tab` (bottom-tab membership — the scaffolder's shell group). No entry
 /// is invented and none is dropped: `out.length == answers['surfaces'].length`.
+/// The keys [emitRegistry] OWNS. Anything else present in an existing
+/// registry.json was put there by a later stage and must survive a re-emit.
+const registryEmittedKeys = [
+  'id',
+  'label',
+  'shell',
+  'comp',
+  'route',
+  'surface',
+  'states',
+  'statesProvenance',
+  'requiresAuth',
+  'tab',
+];
+
+/// Carry forward the registry fields emit does not own.
+///
+/// [emitRegistry] is a PURE function of the answers and must stay that way — it
+/// may not invent a field nobody elicited, so it cannot emit `kits`. But
+/// `intake emit` WRITES the file, and later stages add keys the answers have no
+/// home for — `kits` above all. Writing the pure result straight over the file
+/// therefore DELETED those keys with nothing to restore them from: the data
+/// lived ONLY in the generated file. That is exactly what happened to portalo
+/// (all 10 entries lost their kits), and gate_intake's own repair message tells
+/// users to run this command — so the tool's advice destroyed data.
+///
+/// Merging here breaks no contract: this is the write step, not the pure step.
+/// Emit's own keys always win; every foreign key is carried across per id.
+List<Map<String, dynamic>> mergeRegistry(
+    List<Map<String, dynamic>> emitted, String existingPath) {
+  final f = File(existingPath);
+  if (!f.existsSync()) return emitted;
+  Map<String, Map<String, dynamic>> prior;
+  try {
+    final raw = jsonDecode(f.readAsStringSync());
+    if (raw is! List) return emitted;
+    prior = {
+      for (final e in raw)
+        if (e is Map && e['id'] is String)
+          e['id'] as String: e.cast<String, dynamic>(),
+    };
+  } catch (_) {
+    // A corrupt or hand-mangled registry must never block a re-emit. The pure
+    // result is still correct; it just carries nothing forward.
+    return emitted;
+  }
+  return [
+    for (final entry in emitted)
+      {
+        ...entry,
+        for (final kv in (prior[entry['id']] ?? const <String, dynamic>{}).entries)
+          if (!registryEmittedKeys.contains(kv.key)) kv.key: kv.value,
+      }
+  ];
+}
+
 List<Map<String, dynamic>> emitRegistry(Map<String, dynamic> answers) {
   final out = <Map<String, dynamic>>[];
   final surfaces = answers['surfaces'];
@@ -359,8 +651,21 @@ List<Map<String, dynamic>> emitRegistry(Map<String, dynamic> answers) {
       'route': surf['route'] ?? deriveRoute(surf['id'] as String),
       'surface': null, // intake names; design binds. Never non-null here.
     };
+    // states: DECLARED wins, always. Only when the client said nothing do we
+    // derive from shape — and then the entry says so, so the confirm step can
+    // correct it (§22: intake elicits; derivation is legal only when marked).
     final states = surf['states'];
-    if (states is List && states.isNotEmpty) entry['states'] = states;
+    if (states is List && states.isNotEmpty) {
+      entry['states'] = states;
+      entry['statesProvenance'] = surf['provenance'];
+    } else {
+      final derived = deriveStates(surf);
+      if (derived.isNotEmpty) {
+        entry['states'] = derived;
+        entry['statesProvenance'] = 'inferred';
+      }
+      // No signal -> no key at all. `states` stays additive-only.
+    }
     if (surf['requiresAuth'] == true) entry['requiresAuth'] = true;
     if (surf['tab'] == true) entry['tab'] = true;
     out.add(entry);
@@ -385,10 +690,24 @@ List<Map<String, dynamic>> emitFlows(Map<String, dynamic> answers) {
           'edges': [
             for (final e in (f['edges'] as List))
               <String, dynamic>{
-                'from': e['from'],
-                'to': e['to'],
-                'trigger': e['trigger'],
+                // SPREAD, not an enumeration. Listing keys here is what silently
+                // dropped `element` and `feedback`: both were validated and then
+                // forgotten by this literal. Copying the edge means a key added
+                // to `edgeKeys` cannot be lost by omission ever again. The
+                // closed `edgeKeys` set is the other half — it refuses anything
+                // unrecognised before it can ride along on this spread.
+                ...(e as Map).cast<String, dynamic>(),
+                // Re-assigning an existing key keeps its authored position, so
+                // output order stays the author's and is stable per input.
                 'action': e['action'] ?? 'push',
+                // feedback: DECLARED wins and passes through untouched. Only a
+                // mutation trigger with nothing declared gets a derived toast,
+                // and that one carries `inferred: true` so the confirm step
+                // can strike it (§22 — same rule as the derived flows below).
+                // `element` needs no clause at all now: the spread carries it,
+                // absent stays absent, and it is never derived (guessing which
+                // button an edge fires is exactly what §22 forbids).
+                ...?_edgeFeedback(e),
               },
           ],
         },
@@ -568,8 +887,16 @@ String emitBrief(Map<String, dynamic> answers) {
     lines.add('|---|---|---|---|---|---|');
     for (final s in surfaceList) {
       final surf = s as Map;
+      // A derived states cell is marked [inferred] so the confirm step has
+      // something to confirm — declared states are shown bare.
       final states = surf['states'];
-      final statesCell = (states is List && states.isNotEmpty) ? states.join(', ') : '';
+      final String statesCell;
+      if (states is List && states.isNotEmpty) {
+        statesCell = states.join(', ');
+      } else {
+        final derived = deriveStates(surf);
+        statesCell = derived.isEmpty ? '' : '${derived.join(', ')} [inferred]';
+      }
       lines.add('| `${surf['id']}` | ${surf['shell']} | '
           '${deriveComp(surf['id'] as String)} | ${surf['label']} | $statesCell | _null_ |');
     }
@@ -578,7 +905,38 @@ String emitBrief(Map<String, dynamic> answers) {
         'design binds a surface to each.');
   }
   lines.add('');
+  lines.addAll(_feedbackSection(answers));
   return lines.join('\n');
+}
+
+/// Render the transition-feedback table: every edge that carries a toast,
+/// declared or derived. It is a SEPARATE section from the surface inventory
+/// because feedback is the other axis — a consequence of a transition, not a
+/// way a screen can look (D2). Derived rows are marked `[inferred]`.
+/// Deterministic: flows and edges in declaration order, no clock.
+List<String> _feedbackSection(Map<String, dynamic> answers) {
+  final rows = <String>[];
+  for (final f in emitFlows(answers)) {
+    for (final e in (f['edges'] as List)) {
+      final fb = e['feedback'];
+      if (fb is! Map) continue;
+      final mark = fb['inferred'] == true ? ' [inferred]' : '';
+      rows.add('| `${f['id']}` | `${e['from']}` → `${e['to']}` | '
+          '${fb['kind']} | ${fb['text']}$mark |');
+    }
+  }
+  if (rows.isEmpty) return const [];
+  return [
+    '## Transition feedback — the other axis',
+    '',
+    'A toast is a consequence of a TRANSITION, not a way a screen can look, so',
+    'it lives on the flow edge and never in `states`.',
+    '',
+    '| flow | edge | kind | text |',
+    '|---|---|---|---|',
+    ...rows,
+    '',
+  ];
 }
 
 Map<String, dynamic>? _asNode(Object? v) => v is Map ? Map<String, dynamic>.from(v) : null;
@@ -755,7 +1113,8 @@ class IntakeEngine {
       registryPath = registryOut ?? defaultRegistryOut();
     }
     _write(briefPath, emitBrief(answers));
-    _write(registryPath, '${json.convert(emitRegistry(answers))}\n');
+    _write(registryPath,
+        '${json.convert(mergeRegistry(emitRegistry(answers), registryPath))}\n');
     return EmitResult.ok(
       briefPath: briefPath,
       registryPath: registryPath,
@@ -768,6 +1127,14 @@ class IntakeEngine {
   /// Flip one flow's provenance to client/founder in the project's
   /// flows.json (the confirm half of derive + confirm). Returns the error
   /// string, or null on success.
+  ///
+  /// DUAL-WRITE. answers.json is the SSOT and flows.json is regenerated from
+  /// it by `emitFlows`, so writing only flows.json means the next emit REVERTS
+  /// the confirmation. Persisting the confirmed list back as `answers.flows`
+  /// is what makes it stick — and it is safe to persist EMITTED flows because
+  /// `emitFlows` is idempotent over its own output (the spread carries every
+  /// key, `action` is already defaulted, and a declared feedback suppresses
+  /// derivation).
   String? confirmFlow(String project, String flowId, String as) {
     if (!['client', 'founder'].contains(as)) {
       return "confirmFlow: as must be client|founder, got '$as'";
@@ -785,7 +1152,29 @@ class IntakeEngine {
       }
     }
     if (!found) return "confirmFlow: no flow '$flowId' in $path";
-    _write(path, '${const JsonEncoder.withIndent('  ').convert(flows)}\n');
+    const json = JsonEncoder.withIndent('  ');
+    // Back into the SSOT, or the next emit undoes what we just wrote. Validate
+    // BEFORE either write: refusing here after flows.json was already updated
+    // would leave the two files diverged — the exact failure this dual-write
+    // exists to close. Invalid answers also make the next emit write NOTHING,
+    // which is worse than the revert.
+    final answersPath = '${shellDir(project, 'intake')}/answers.json';
+    final af = File(answersPath);
+    Map<String, dynamic>? answers;
+    if (af.existsSync()) {
+      final decoded = jsonDecode(af.readAsStringSync());
+      if (decoded is Map<String, dynamic>) {
+        decoded['flows'] = flows;
+        final errs = validateIntake(decoded).errors;
+        if (errs.isNotEmpty) {
+          return 'confirmFlow: confirming would make $answersPath invalid — '
+              '${errs.first}';
+        }
+        answers = decoded;
+      }
+    }
+    _write(path, '${json.convert(flows)}\n');
+    if (answers != null) _write(answersPath, '${json.convert(answers)}\n');
     return null;
   }
 

@@ -14,6 +14,114 @@ design declares), its Dart `package`, its `capabilities`, its `providers` with
 playbook. If a capability is not in the registry, it does not exist — do not
 design around an imagined module.
 
+## The 24 kits
+
+Generated from `config/kit-registry.json` (`version: 1`). Providers carry a
+verification tier: `stub` (declared, not implemented against a real backend),
+`port-tested` (real port, tests green, no device surface run), or
+`device-verified` (run on simulator/device). A kit with no `providers` entry
+has none to tier — it is a plain module, not a provider seam.
+
+| dir | package | capabilities | providers (tier) |
+|---|---|---|---|
+| `core` | `appbox_kit_core` | MVVM plumbing; error/theme services; design tokens; locator; input formatters; KitGlyphs; KitPlatform | — |
+| `ui_library` | `ui_library` | Kit* adaptive port widgets; KitNative* widgets; UI-coupled services (navigation / sheet / notifications toast) | — |
+| `state` | `appbox_kit_state` | async state vocabulary (idle/loading/error); retry policy; persistence | — |
+| `data` | `appbox_kit_data` | repositories; schema descriptors; seed/Supabase/Appwrite backends; canonical IDs; codecs; seeder | — |
+| `auth` | `appbox_kit_auth` | email/OAuth auth seam; typed AuthResult; session stream | SeedAuthBackend: port-tested; Apple SignIn: port-tested; Google SignIn: port-tested |
+| `forms` | `appbox_kit_forms` | form field state; sync/async validation; KitFieldController; error messages | — |
+| `permissions` | `appbox_kit_permissions` | OS permissions (camera/location/...); typed permission + status | — |
+| `media` | `appbox_kit_media` | camera/photos; audio record; audio+video playback | — |
+| `documents` | `appbox_kit_documents` | doc pick; scan (stub); OCR (stub); PDF | — |
+| `notifications` | `appbox_kit_notifications` | device push/local notifications; tokens; badge | — |
+| `analytics` | `appbox_kit_analytics` | analytics event fan-out | — |
+| `payments` | `appbox_kit_payments` | Apple Pay; Google Pay | Stripe: port-tested; PayPal: port-tested; Apple Pay: stub |
+| `maps` | `appbox_kit_maps` | native maps; KitMapView | OpenStreetMap: port-tested; Mapbox: port-tested |
+| `deploy` | `appbox_kit_deploy` | release automation (fastlane/shorebird/CF Pages+Workers/Vercel) | Vercel: port-tested; Cloudflare Pages: port-tested; Cloudflare Workers: port-tested; fastlane: port-tested; Shorebird: port-tested |
+| `haptics` | `appbox_kit_haptics` | haptic feedback | — |
+| `bluetooth` | `appbox_kit_bluetooth` | bluetooth adapter state; BLE scan/GATT (stub) | — |
+| `wifi` | `appbox_kit_wifi` | Wi-Fi state; network info; settings escort | — |
+| `support` | `appbox_kit_support` | in-app support; feedback + Talker export; submission sinks | — |
+| `security` | `appbox_kit_security` | biometrics; secure storage; crypto; app-lock; device integrity (stub) | — |
+| `compliance` | `appbox_kit_compliance` | ToS/privacy/EULA; consent gates; OSS licenses | — |
+| `branding` | `branding` | app icons; native/in-Flutter splash; brand colors (codegen); BrandSplash | — |
+| `motion` | `appbox_kit_motion` | entrance/exit choreography; gesture drivers; motion scopes; KitWake | — |
+| `i18n` | `appbox_kit_i18n` | i18n | — |
+| `showcase_app` | `appbox_kit_showcase_app` | integration surface / reference app (proves every kit) | — |
+
+This table is checked against the registry by `kitCatalogMirrorCheck`
+(`appboxd/lib/design_selftest_kit_catalog_mirror.dart`) — every `dir` in
+`config/kit-registry.json` must appear here as `` `dir` ``, or the check
+fails. Add a kit to the registry, add its row here in the same change.
+
+## Kit → surface-state map (D12)
+
+A kit implies a **floor**, not a ceiling: the minimum `surfaceStates`
+(`appboxd/lib/intake.dart:59` — `loading | empty | error`) a surface
+declaring that kit must have, whether or not the registry entry says so
+explicitly. This is the source appbox-designer reads for D10 ("Feedback &
+state placement" in `DESIGN-ARCHITECTURE.md`) to decide which state regions
+a surface needs, without the brief naming any of them. It never caps what
+can be authored — a state with no kit behind it at all is simply authored,
+not derived (see `startup` below), and derive+confirm marks only the
+derived ones `inferred`.
+
+Verified against portalo's real registry (`~/.appbox/projects/portalo/intake/registry.json`),
+screen → declared states / kits:
+
+| screen | declared | kits | derived (this map) | under-declares? |
+|---|---|---|---|---|
+| `splash` | 0 | — | — | no (nothing to derive) |
+| `startup` | 1 | — | — | **no kit produces this state** — see below |
+| `auth` | 1 | `auth` | `error` | no — matches exactly |
+| `home` | 2 | `data` | `loading,empty,error` | yes |
+| `category` | 2 | `data` | `loading,empty,error` | yes |
+| `product` | 2 | `data,media` | `loading,empty,error` | yes |
+| `cart` | 1 | `data` | `loading,empty,error` | yes |
+| `checkout` | 2 | `payments,data` | `loading,empty,error` | yes |
+| `orders` | 1 | `data` | `loading,empty,error` | yes |
+| `account` | **0** | `auth,data` | `loading,empty,error` | yes — worst case, 2 kits imply the full triad and 0 are declared |
+
+That's 7 of 10 screens under-declaring relative to the derived floor
+(`home`, `category`, `product`, `cart`, `checkout`, `orders`, `account`) —
+matches the measured figure exactly. `auth` matches its own floor with no
+gap. `splash` has no kits, derives nothing, trivially matches its 0.
+
+**`startup` is the case this map cannot — and must not try to — explain.**
+It declares 1 state with zero kits attached. No kit→state rule can produce
+that state, because it isn't derived from a kit at all: an asset-preload or
+splash-animation loading state exists before any kit call happens. This is
+the derive+confirm point exactly (see D9) — the map derives a floor;
+whatever a human authors on top of or outside that floor is simply
+authored, never overwritten, and never something a "the map failed to
+predict this" complaint applies to.
+
+| kit | implies | why |
+|---|---|---|
+| `data` | `loading`, `empty`, `error` | any repository read can be slow, return nothing, or fail — all three every time |
+| `auth` | `error` | a credential check fails or succeeds; nothing to load, nothing to be empty |
+| `payments` | `loading`, `error` | a charge is a network round-trip that can fail; no empty reading |
+| `media`, `permissions` | `error` | device/OS access can be denied or unavailable; no server round-trip to be `loading`/`empty` |
+| `security` | `error` | biometric/app-lock checks fail or succeed, same shape as `auth` |
+| `maps` | `loading`, `error` | tile/geocode fetch is a round-trip that can fail; no empty reading (an empty map is still a map) |
+
+`payments`, `media`, `security`, `maps` are reasoned by analogy to the
+`data`/`auth` shapes above, not independently measured against portalo (which
+declares no screens with those kits) — treat those four rows as a starting
+rule, not ground truth, until a design with those kits is measured.
+
+A kit not listed here (`core`, `ui_library`, `state`, `forms`,
+`documents`, `notifications`, `analytics`, `deploy`, `haptics`, `bluetooth`,
+`wifi`, `support`, `compliance`, `branding`, `motion`, `i18n`,
+`showcase_app`) implies no surface state on its own — it's plumbing, a
+device sensor with no async surface, or a build-time concern.
+
+**Flag, not fixed here:** `intake.dart:59` closes `surfaceStates` to three
+values in Dart; `skills/appbox-intake/intake.schema.json` (owned by another
+agent) does not enforce the same closed set. This map assumes the Dart
+enum is the real contract — the schema-owning agent should either close the
+schema to match or this table drifts from what intake actually accepts.
+
 ## How a design declares kit usage
 
 Add the optional `kits` key to the surface's registry entry — an array of kit

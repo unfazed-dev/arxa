@@ -359,6 +359,28 @@
   "activityView.artifacts": "[!! Åřţïfåçţš ~̷~~̷~ !!]",
   "activityView.files": "[!! Fïłëš ~̷~~̷~ !!]",
   "activityView.thread": "[!! Ţhřëåð ~̷~~̷~ !!]",
+  "activityView.inspector": "[!! Ïñšpëçţöř ~̷~~̷~ !!]",
+  "inspector.empty": "[!! Hövëř åñ ëłëmëñţ öñ ţhë çåñvåš ţö ïñšpëçţ ïţ — çłïçk ţö höłð ïţ hëřë ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+  "inspector.locked": "[!! hëłð ~̷~~̷~ !!]",
+  "inspector.lockedTitle": "[!! Hëłð hëřë — hövëřïñg åñöţhëř ëłëmëñţ wïłł ñöţ řëpłåçë ïţ ~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+  "inspector.unlock": "[!! Řëłëåšë ~̷~~̷~ !!]",
+  "inspector.inferred": "[!! ïñfëřřëð ~̷~~̷~ !!]",
+  "inspector.role": "[!! řöłë ~̷~~̷~ !!]",
+  "inspector.style": "[!! šţÿłë ~̷~~̷~ !!]",
+  "inspector.motion": "[!! möţïöñ ~̷~~̷~ !!]",
+  "inspector.fn": "[!! füñçţïöñ ~̷~~̷~ !!]",
+  "inspector.states": "[!! Šţåţëš ~̷~~̷~ !!]",
+  "inspector.derived": "[!! ðëřïvëð ~̷~~̷~ !!]",
+  "inspector.source.declared": "[!! Ðëçłåřëð öñ ţhë šçřëëñ ~̷~~̷~~̷~ !!]",
+  "inspector.source.derived": "[!! Ðëřïvëð fřöm ţhë kïţ, ñöţ ðëçłåřëð ~̷~~̷~~̷~~̷~ !!]",
+  "inspector.noStates": "[!! Ñö šţåţëš ðëçłåřëð ~̷~~̷~~̷~ !!]",
+  "inspector.missingStates": "[!! Šhöüłð ðëçłåřë ~̷~~̷~ !!]",
+  "inspector.kits": "[!! Kïţš ~̷~~̷~ !!]",
+  "inspector.noKits": "[!! Ñö kïţ ðëçłåřëð ~̷~~̷~ !!]",
+  "inspector.edges": "[!! Łëåðš ţö ~̷~~̷~ !!]",
+  "inspector.noEdges": "[!! Ñö öüţgöïñg fłöw ëðgëš ~̷~~̷~~̷~ !!]",
+  "inspector.coverage": "[!! åññöţåţëð {covered}/{total} ({pct}%) ~̷~~̷~~̷~ !!]",
+  "inspector.uncovered": "[!! Ñöţ åññöţåţëð ~̷~~̷~ !!]",
   "design.revertToast": "[!! Çhëçkpöïñţ řëvëřţëð — ţhë šçřëëñ ïš båçk, ţhë řëçöřð šţåÿš ~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
   "freeze.approvalEyebrow": "[!! ðëšïgñ åppřövåł · ţhë hümåñ gåţë ~̷~~̷~~̷~~̷~ !!]",
   "freeze.unlocked": "[!! Büïłð üñłöçkëð ~̷~~̷~ !!]",
@@ -393,6 +415,20 @@
   "viewer.moveLater": "[!! Mövë {id} łåţëř ïñ ţhë fłöw ~̷~~̷~~̷~~̷~ !!]",
   "viewer.removeFromFlow": "[!! Řëmövë fřöm fłöw ~̷~~̷~ !!]",
   "viewer.removeFromFlowAria": "[!! Řëmövë {id} fřöm ţhë fłöw ~̷~~̷~~̷~ !!]",
+  "viewer.undo": "[!! Üñðö ţhë łåšţ çåñvåš çhåñgë ~̷~~̷~~̷~~̷~ !!]",
+  "viewer.redo": "[!! Řëðö ţhë łåšţ çåñvåš çhåñgë ~̷~~̷~~̷~~̷~ !!]",
+  "viewer.explodeTitle": "[!! Çömpöñëñţš ~̷~~̷~ !!]",
+  "viewer.exRole": "[!! řöłë ~̷~~̷~ !!]",
+  "viewer.exStyle": "[!! šţÿłë ~̷~~̷~ !!]",
+  "viewer.exMotion": "[!! möţïöñ ~̷~~̷~ !!]",
+  "viewer.exFn": "[!! füñçţïöñ ~̷~~̷~ !!]",
+  "viewer.exFires": "[!! fïřëš ~̷~~̷~ !!]",
+  "viewer.exKit": "[!! kïţ ~̷~~̷~ !!]",
+  "viewer.exBox": "[!! böx ~̷~~̷~ !!]",
+  "viewer.exEmpty": "[!! Ñö ïñšpëçţåbłë çömpöñëñţš öñ ţhïš šçřëëñ ~̷~~̷~~̷~~̷~~̷~ !!]",
+  "viewer.continuesIn": "[!! çöñţïñüëš ïñ ~̷~~̷~ !!]",
+  "viewer.handoff": "[!! Çöñţïñüë ïñ {flow} — ñëxţ: {id} ~̷~~̷~~̷~~̷~ !!]",
+  "viewer.handoffAria": "[!! Çöñţïñüë ţhïš jöüřñëÿ ïñ ţhë {flow} fłöw, ñëxţ šçřëëñ {id} ~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
   "composer.collapseTray": "[!! Çöłłåpšë ţhë šçřëëñš fïłmšţřïp ~̷~~̷~~̷~~̷~ !!]",
   "composer.showTray": "[!! Šhöw ţhë šçřëëñš fïłmšţřïp ~̷~~̷~~̷~~̷~ !!]",
   "composer.context": "[!! çöñţëxţ ~̷~~̷~ !!]",
@@ -802,5 +838,22 @@
   "intake.form.frustrations": "[!! Fřüšţřåţïöñš — öñë pëř łïñë ~̷~~̷~~̷~~̷~ !!]",
   "intake.form.contexts": "[!! Çöñţëxţš — öñë pëř łïñë ~̷~~̷~~̷~ !!]",
   "intake.form.values": "[!! Våłüëš — öñë pëř łïñë ~̷~~̷~~̷~ !!]",
-  "intake.form.save": "[!! šåvë çöřřëçţïöñ ~̷~~̷~ !!]"
+  "intake.form.save": "[!! šåvë çöřřëçţïöñ ~̷~~̷~ !!]",
+  "errorSurface.serverError": "[!! Šömëţhïñg wëñţ wřöñg öñ ţhë åppböx šëřvëř. Ţhë šëřvë łög håš ţhë ðëţåïł. ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+  "errorSurface.notFound": "[!! ñö řöüţë föř {method} {path} ~̷~~̷~~̷~ !!]",
+  "@errorSurface.notFound": {
+    "placeholders": {
+      "method": {
+        "type": "String",
+        "example": "GET"
+      },
+      "path": {
+        "type": "String",
+        "example": "/design/nope"
+      }
+    }
+  },
+  "errorSurface.pageHint": "[!! Ñöţhïñg ÿöü håð öpëñ wåš łöšţ — ţhïš řëqüëšţ åłöñë fåïłëð. ~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+  "errorSurface.backHome": "[!! Båçk ţö ţhë ðåšhböåřð ~̷~~̷~~̷~ !!]",
+  "errorSurface.dismiss": "[!! Ðïšmïšš ~̷~~̷~ !!]"
 }

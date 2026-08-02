@@ -1,0 +1,148 @@
+<!-- appbox:provenance
+     generator: appbox  licence: free  project: 662368770980
+     Built with appbox (free tier) — https://appbox.dev
+-->
+{# The inspector pane: the activity panel's 4th view, alongside
+   screens / artifacts / files. What used to be crammed into the overlay card
+   drawn on the screen itself now lives here, at panel width, where it can
+   carry the server-side joins the client cannot see (registry states, kits,
+   flow edges, annotation coverage).
+
+   Two cards, one at a time — c.inspector.mode picks:
+     element — an element is hovered (transient) or LOCKED (click). The card
+               is the element's own story: role / style / motion / fn, each
+               marked when the server INFERRED it rather than read it off an
+               authored data-attribute (derive+confirm).
+     screen  — nothing hovered or locked: the screen the canvas is showing.
+     empty   — neither.
+   The lock lives in the session, never in the DOM, so it survives every htmx
+   morph. Hovering while locked changes nothing (the facade returns the same
+   context) — that is what "locked" means.
+
+   Pinning is NO LONGER what a click does: click locks, and the pin is its own
+   button on this card. It POSTs the same /design/chat/context/element the
+   island used to POST directly, so multi-pick still works — lock one, pin it,
+   lock the next, pin it.
+
+   Macro-only, so importing it never emits stray markup. Read defensively
+   throughout: every scalar behind {% if %}, every list behind
+   {% for %}…{% else %}, so a viewmodel field the facade has not built yet
+   renders an empty-but-valid pane instead of throwing mid-fragment.
+
+   Usage:
+     {% import "ui/views/main_shell/design/inspector_pane.html" as ins %}
+     {{ ins.pane(c) }}
+   Shape: docs/plans/handoff-inspector-viewmodel.md #}
+{% import "ui/common/primitives.html" as prim %}
+
+{# A metadata row. `mark` renders the inferred badge — the value is the
+   server's guess, not something the element declares. #}
+{% macro metaRow(label, value, mark) %}
+{% if value %}
+<span class="msg-detail"><b>{{ label }}</b> {{ value }}{% if mark %} <em class="thread-badge">{{ t('inspector.inferred') }}</em>{% endif %}</span>
+{% endif %}
+{% endmacro %}
+
+{% macro elementCard(el, locked, unlockHref) %}
+<div class="msg msg-agent {{ 'is-active msg-ctx ctx-' + el.tone if locked }}">
+  <header class="msg-meta">
+    {% if el.kind %}{{ prim.typeBadge(el.kind) }}{% endif %}
+    {% if locked %}<span class="thread-badge" title="{{ t('inspector.lockedTitle') }}">{{ icon('lock', {size: 12}) }} {{ t('inspector.locked') }}</span>{% endif %}
+  </header>
+  <span class="msg-text"><code>{{ el.name }}</code></span>
+  {% if el.screenId %}<span class="msg-detail muted">{{ el.screenId }}</span>{% endif %}
+  {{ metaRow(t('inspector.role'), el.role.value, el.role.inferred) }}
+  {{ metaRow(t('inspector.style'), el.style, false) }}
+  {{ metaRow(t('inspector.motion'), el.motion, false) }}
+  {{ metaRow(t('inspector.fn'), el.fn.value, el.fn.inferred) }}
+  <footer class="msg-foot">
+    <span class="msg-cta">
+      {# Pin is now an explicit control, not a side effect of clicking. A form,
+         not a link: the endpoint reads the measured name/kind off the body. #}
+      {% if el.pinned and el.unpinHref %}
+      <a class="cta-main" href="{{ el.unpinHref }}" hx-get="{{ el.unpinHref }}" hx-target="#panels" hx-swap="morph:outerHTML" hx-push-url="false">
+        {{ t('design.inContext') }} {{ icon('check', {size: 14}) }}</a>
+      {% elif el.pinHref %}
+      <form hx-post="{{ el.pinHref }}" hx-target="#panels" hx-swap="morph:outerHTML" hx-push-url="false">
+        <input type="hidden" name="screen" value="{{ el.screenId }}">
+        <input type="hidden" name="name" value="{{ el.name }}">
+        <input type="hidden" name="kind" value="{{ el.kind }}">
+        <button class="cta-main" type="submit">{{ t('design.pinToContext') }} {{ icon('pin', {size: 14}) }}</button>
+      </form>
+      {% endif %}
+      {% if locked and unlockHref %}
+      <button class="cta-main" type="button" hx-post="{{ unlockHref }}" hx-target="#panel-left-body" hx-swap="innerHTML" hx-push-url="false">
+        {{ t('inspector.unlock') }} {{ icon('lock-open', {size: 14}) }}</button>
+      {% endif %}
+    </span>
+  </footer>
+</div>
+{% endmacro %}
+
+{% macro screenCard(sc) %}
+<div class="msg msg-agent">
+  <header class="msg-meta">
+    {{ prim.typeBadge('screen', sc.epic) }}
+    {% if sc.state %}{{ prim.statusPill(sc.state) }}{% endif %}
+  </header>
+  <span class="msg-text"><code>{{ sc.id }}</code></span>
+
+  <span class="msg-detail"><b>{{ t('inspector.states') }}</b></span>
+  <span class="msg-meta">
+    {% for st in sc.states %}
+    <span class="thread-badge" title="{{ t('inspector.source.' ~ (st.source or 'declared')) }}">{{ st.name }}{% if st.source == 'derived' %} · {{ t('inspector.derived') }}{% endif %}</span>
+    {% else %}
+    <span class="msg-detail muted">{{ t('inspector.noStates') }}</span>
+    {% endfor %}
+  </span>
+
+  {# States the kit implies but the screen never declares — the honest gap,
+     rendered only when there is one. #}
+  {% for ms in sc.missingStates %}
+  {% if loop.first %}<span class="msg-detail"><b>{{ t('inspector.missingStates') }}</b></span>{% endif %}
+  <span class="msg-detail">{{ ms.name }}{% if ms.why %} — {{ ms.why }}{% endif %}</span>
+  {% endfor %}
+
+  <span class="msg-detail"><b>{{ t('inspector.kits') }}</b></span>
+  <span class="msg-meta">
+    {% for k in sc.kits %}
+    <span class="thread-badge">{{ k.label or k.id }}</span>
+    {% else %}
+    <span class="msg-detail muted">{{ t('inspector.noKits') }}</span>
+    {% endfor %}
+  </span>
+
+  <span class="msg-detail"><b>{{ t('inspector.edges') }}</b></span>
+  {% for e in sc.edges %}
+  <span class="msg-detail">{{ e.flowLabel or e.flow }} · {{ e.trigger }} {{ icon('arrow-right', {size: 12}) }} <code>{{ e.to }}</code>{% if e.element %} <span class="muted">({{ e.element }})</span>{% endif %}</span>
+  {% else %}
+  <span class="msg-detail muted">{{ t('inspector.noEdges') }}</span>
+  {% endfor %}
+
+  {% if sc.annotations %}
+  <footer class="msg-foot">
+    <span class="msg-detail">{{ t('inspector.coverage', {covered: sc.annotations.covered, total: sc.annotations.total, pct: sc.annotations.pct}) }}</span>
+  </footer>
+  {% for m in sc.annotations.missing %}
+  {% if loop.first %}<span class="msg-detail"><b>{{ t('inspector.uncovered') }}</b></span>{% endif %}
+  <span class="msg-detail"><code>{{ m }}</code></span>
+  {% endfor %}
+  {% endif %}
+</div>
+{% endmacro %}
+
+{# The pane body. The id is the swap handle for the island's hover POSTs; the
+   route answers 204 when the inspector is not the active view, so a hover can
+   never overwrite the screens list. #}
+{% macro pane(c) %}
+{% set ins = c.inspector %}
+<div class="av-list" id="av-list">
+  {% if ins and ins.mode == 'element' and ins.element %}
+  {{ elementCard(ins.element, ins.locked, ins.unlockHref) }}
+  {% elif ins and ins.mode == 'screen' and ins.screen %}
+  {{ screenCard(ins.screen) }}
+  {% else %}
+  <p class="muted">{{ (ins.hint if ins and ins.hint) or t('inspector.empty') }}</p>
+  {% endif %}
+</div>
+{% endmacro %}

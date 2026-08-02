@@ -17,6 +17,8 @@
 {% import "ui/common/composer_panel.html" as cp %}
 {% import "ui/common/composer.html" as cm %}
 {% import "ui/common/main_panel.html" as mp %}
+{# macro-only, so importing it emits nothing #}
+{% import "ui/views/main_shell/design/inspector_pane.html" as ins %}
 
 {# ---------- the composer panel: thread + composer inside the shared frame ----
    The composer is the shared card (ui/common/composer.html): every
@@ -169,6 +171,11 @@
   {% endif %}
   {% endfor %}
 </div>
+{% elif c.activityView == 'inspector' %}
+{# Fragment swaps reach the pane through prototype_view.html#inspectorSwap;
+   this branch is what a FULL page load (GET /design) needs — without it the
+   4th pane silently falls through to the screens list. #}
+{{ ins.pane(c) }}
 {% else %}
 {{ runBar(c, false) }}
 {{ screenList(c, false) }}
