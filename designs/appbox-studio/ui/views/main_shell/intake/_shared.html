@@ -28,6 +28,33 @@
 {# The open file, rendered by the main panel's automatic mode. #}
 {% macro fileView(c) %}{{ mp.view(c.fileView) }}{% endmacro %}
 
+{# The honest empty state for a project artifact that has not been produced —
+   and the error state for one that exists but would not parse (ADR-0003).
+
+   This macro exists so that mapping / brief / moodboard cannot quietly fall
+   back to the studio's own story map, brief or moodboard when the current
+   project has none. A fallback renders identically to the real thing, so the
+   reader has no way to know whose product plan they are looking at; naming the
+   missing file and the command that writes it is the only version of this
+   screen that is true. Every string arrives pre-translated from the facade. #}
+{% macro missingArtifact(c, a) %}
+<article class="artifact missing-artifact is-{{ a.tone }}" aria-live="polite">
+  <header class="artifact-head">
+    <span class="eyebrow">{{ c.eyebrow }}</span>
+    <span class="rv-badge {% if a.tone == 'error' %}rv-warn{% endif %}">{{ a.badge }}</span>
+  </header>
+  <h2 class="display">{{ a.headline }}</h2>
+  <p class="artifact-lede">{{ a.lede }}</p>
+  {% if a.steps.length %}
+  <p class="fact-label">{{ a.howLabel }}</p>
+  <ol class="missing-steps">
+    {% for step in a.steps %}<li>{{ step }}</li>{% endfor %}
+  </ol>
+  {% endif %}
+  {% if a.file %}<p class="artifact-detail muted"><code>{{ a.file }}</code></p>{% endif %}
+</article>
+{% endmacro %}
+
 {# ---------- the interview: horizontal question carousel ---------- #}
 
 {# One question card. current/editing carry the answer form (a text field
@@ -215,9 +242,12 @@
 {% macro panels(c) %}
 <div class="panels" id="panels" data-panel="{{ c.panel }}">
   {{ mp.panelBar(c) }}
-  {{ activityPanel(c) }}
-  <div class="panel-main" id="panel-main">{{ caller() }}</div>
+  {# Composer LEFT, activity RIGHT — same order as every other shell. Swapped
+     in the DOM, not with CSS `order`, so tab order and screen-reader order
+     still match what you see. #}
   {{ composerPanel(c) }}
+  <div class="panel-main" id="panel-main">{{ caller() }}</div>
+  {{ activityPanel(c) }}
 </div>
 {% endmacro %}
 

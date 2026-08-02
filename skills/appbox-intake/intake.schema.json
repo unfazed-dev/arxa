@@ -68,6 +68,23 @@
       },
       "description": "The user journeys, wiring declared surfaces into linear chains. Optional: when absent the engine DERIVES one draft flow per shell, marked provenance inferred — confirm with `appbox intake flows confirm`."
     },
+    "personas": {
+      "type": "array",
+      "description": "The user types the client named — VARIABLE N, as many as they have. Optional and ABSENT on every project created before Slice B, which must keep emitting: absent yields personas.json = [], never an error. Do NOT derive these from `audience`: that field is one JTBD sentence with no name, role or goals, so a persona built from it would be invention wearing the authority of elicitation (§22). Never padded to three — a padded persona is indistinguishable from an elicited one once it is on a card.",
+      "items": {
+        "$ref": "#/definitions/persona"
+      }
+    },
+    "map": {
+      "type": "object",
+      "description": "Where appbox-story-mapper DEPOSITS its story map: {releases, epics[{name, features[{name, stories[{name, priority, release}]}]}]}. Intake does not elicit this and does not own it — it republishes it to intake/map.json with content-derived ids and counts baked in. Shape: skills/appbox-story-mapper/story-map.schema.json. Declared here because this schema is additionalProperties:false at the top level, so an answers document carrying the group would otherwise be schema-illegal while the Dart validator accepted it — silent drift between the two.",
+      "additionalProperties": true
+    },
+    "moodboard": {
+      "type": "object",
+      "description": "Where appbox-moodboarder DEPOSITS its moodboard: {provenance (free-text method), boards[{id, title, slice, informs, references[...]}]}. Republished to intake/moodboard.json with shot id/src precomputed. Shape: skills/appbox-moodboarder/moodboard.schema.json. Declared here for the same reason as `map`.",
+      "additionalProperties": true
+    },
     "surfaces": {
       "type": "array",
       "description": "The registry seed — what the client wants named. surface is ALWAYS null in a seed: intake names, it never designs (§22). comp is derived by convention at emit time, never authored here.",
@@ -99,6 +116,58 @@
             "string",
             "array"
           ]
+        },
+        "provenance": {
+          "$ref": "#/definitions/provenance"
+        }
+      }
+    },
+    "persona": {
+      "type": "object",
+      "description": "One user type, as the client described them. Slice B2.",
+      "required": [
+        "name",
+        "provenance"
+      ],
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "DERIVED at emit time as `persona-<slug(name)>` — do not author it. An explicit id still wins, the same override story_map.dart allows a feature to pin its surface id."
+        },
+        "name": {
+          "type": "string",
+          "description": "What the client calls this user type, in their words. Must be unique: two personas with the same name derive the same id and one would shadow the other."
+        },
+        "role": {
+          "type": "string"
+        },
+        "goals": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "frustrations": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "contexts": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Where and when they use it ('phone between meetings')."
+        },
+        "proficiency": {
+          "type": "string",
+          "description": "Deliberately NOT a closed vocabulary. `states` is closed because a gate matches on it; nothing matches on proficiency, and a three-word scale invented here would reject a client who said 'power user'."
+        },
+        "accessibility": {
+          "type": "string",
+          "description": "Access needs the client stated. Absent means unstated, which must not be read as 'none'."
         },
         "provenance": {
           "$ref": "#/definitions/provenance"

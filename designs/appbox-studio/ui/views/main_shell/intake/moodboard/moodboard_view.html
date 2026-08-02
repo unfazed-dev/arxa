@@ -19,18 +19,28 @@
   <header class="artifact-head">
     <span class="eyebrow">{{ t('mood.eyebrow') }}</span>
     {% if c.approval.stale %}<span class="rv-badge rv-warn">{{ t('badge.stale') }}</span>{% endif %}
-    <span class="chip">{{ t('mood.boardsCount', {count: a.boards | length}) }} · {{ t('mood.curated', {date: a.curated}) }}</span>
+    {# `curated` (a date) is gone: project.dart:13 bans clock fields, because an
+       emitted artifact must be byte-identical for identical input, so
+       emitMoodboard never writes one. Nothing is substituted for it. #}
+    <span class="chip">{{ t('mood.boardsCount', {count: a.boards | length}) }}</span>
   </header>
   <h2 class="display">{{ a.headline }}</h2>
   <p class="artifact-lede">{{ a.lede }}</p>
-  <p class="artifact-detail muted">{{ a.provenance }}</p>
+  {# `method`, not `provenance`: the value is free-text methodology ("captured
+     on the warehouse floor · …"), not the client|founder|inferred enum. The
+     emitter renamed it so no reader parses prose as an enum; real per-reference
+     provenance is a separate, enumerated field. #}
+  {% if a.method %}<p class="artifact-detail muted">{{ a.method }}</p>{% endif %}
   {% for b in a.boards %}
   <section class="board">
     <header class="board-head">
       <h3 class="board-title">{{ b.title }}</h3>
       <span class="chip">{{ t('mood.informs', {epic: b.informs}) }}</span>
     </header>
-    <p class="board-slice muted">{{ b.slice }} · <code>{{ b.file }}</code></p>
+    {# `b.file` (the moodboarder's authoring markdown) is dropped by the
+       emitter: it points inside the studio's own docs tree and does not exist
+       in a user project, so printing it would name a file nobody can open. #}
+    <p class="board-slice muted">{{ b.slice }}</p>
     <div class="shot-grid">
       {% for r in b.references %}
       <a class="shot-card" href="{{ c.base }}/artifact/shot/{{ r.shot.id }}"
@@ -72,7 +82,8 @@
 
 {% macro canvasArtifact(c) %}
 {% set a = c.artifact %}
-{% if a.kind == 'shot' %}{{ shotCanvas(c, a) }}
+{% if a.kind == 'missing' %}{{ sh.missingArtifact(c, a) }}
+{% elif a.kind == 'shot' %}{{ shotCanvas(c, a) }}
 {% else %}{{ galleryCanvas(c, a) }}
 {% endif %}
 {% endmacro %}

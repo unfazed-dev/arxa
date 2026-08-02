@@ -118,8 +118,15 @@ Give story-mapper and moodboarder a project-side home:
   feeding `answers.json` — generating personas from `audience` would be
   exactly the confident fiction §22 forbids
 
-Until then those three panels legitimately show studio content, and the
-findings doc should say so rather than calling them unfinished migration.
+~~Until then those three panels legitimately show studio content, and the
+findings doc should say so rather than calling them unfinished migration.~~
+**No longer true — B3 landed 2026-08-02.** `mapping`, `brief` and `moodboard`
+read the current project (`project_repository.js`'s `personas()` / `storyMap()`
+/ `moodboard()` / `direction()`), and a project that has never run the
+story-mapper or moodboarder gets an honest empty state naming the missing file
+and the commands that write it — not the studio's copy of the same document.
+See `slice-b-story-map-moodboard-prd-adr.md` for what the rewiring turned up
+that the schema spec below did not anticipate.
 
 ### Slice B schema spec (designed 2026-08-02, not implemented)
 

@@ -14,12 +14,15 @@
 <span class="status-dot st-{{ s.status }}" title="{{ t('status.name.' ~ s.status) }}" aria-label="{{ t('status.name.' ~ s.status) }}"></span>
 {% endmacro %}
 
+{# `priority` is optional on an emitted story — emitStoryMap writes null when
+   the story-mapper did not grade it. Guarded, not defaulted: a `must` chip on
+   an ungraded story is a priority nobody set. #}
 {% macro storyCard(c, s) %}
-<a class="story-card pri-{{ s.priority }}" href="{{ c.base }}/artifact/story/{{ s.id }}"
+<a class="story-card{% if s.priority %} pri-{{ s.priority }}{% endif %}" href="{{ c.base }}/artifact/story/{{ s.id }}"
    hx-get="{{ c.base }}/artifact/story/{{ s.id }}" hx-target="#panels" hx-swap="morph:outerHTML" hx-push-url="false">
   {{ statusDot(s) }}
   <span class="story-text">{{ s.name }}</span>
-  <span class="pri-chip pri-{{ s.priority }}">{{ t('pri.name.' ~ s.priority) }}</span>
+  {% if s.priority %}<span class="pri-chip pri-{{ s.priority }}">{{ t('pri.name.' ~ s.priority) }}</span>{% endif %}
 </a>
 {% endmacro %}
 
@@ -87,16 +90,23 @@
 </article>
 {% endmacro %}
 
-{# One story, large: status, priority, release, and its trace to surfaces. #}
-{% macro storyCanvas(c, s) %}
+{# One story, large: status, priority, release, and its trace to surfaces.
+
+   Everything optional here is guarded rather than defaulted. `epic`/`feature`
+   ride the artifact (the story's position in map.json, not fields on it);
+   `priority`, `release` and `surfaces` are optional on an emitted story, and
+   an unguarded chip would render `pri-undefined` with a missing translation
+   key — a made-up MoSCoW grade nobody assigned. #}
+{% macro storyCanvas(c, a) %}
+{% set s = a.story %}
 <article class="artifact story-artifact">
   <header class="artifact-head">
-    <span class="eyebrow">{{ t('story.eyebrow', {epic: s.epic, feature: s.feature}) }}</span>
+    {% if a.epic %}<span class="eyebrow">{{ t('story.eyebrow', {epic: a.epic, feature: a.feature}) }}</span>{% endif %}
     <span class="story-status">{{ statusDot(s) }} {{ t('status.name.' ~ s.status) }}</span>
-    <span class="pri-chip pri-{{ s.priority }}">{{ t('pri.name.' ~ s.priority) }}</span>
+    {% if s.priority %}<span class="pri-chip pri-{{ s.priority }}">{{ t('pri.name.' ~ s.priority) }}</span>{% endif %}
   </header>
   <h2 class="display">{{ s.name }}</h2>
-  <p class="artifact-lede"><span class="chip">{{ s.release }}</span></p>
+  {% if s.release %}<p class="artifact-lede"><span class="chip">{{ s.release }}</span></p>{% endif %}
   {% if s.surfaces.length %}
   <p class="fact-label">{{ t('storyTrace') }}</p>
   <ul class="trace-list">
@@ -112,7 +122,8 @@
 
 {% macro canvasArtifact(c) %}
 {% set a = c.artifact %}
-{% if a.kind == 'story' %}{{ storyCanvas(c, a.story) }}
+{% if a.kind == 'missing' %}{{ sh.missingArtifact(c, a) }}
+{% elif a.kind == 'story' %}{{ storyCanvas(c, a) }}
 {% else %}{{ mapCanvas(c, a) }}
 {% endif %}
 {% endmacro %}

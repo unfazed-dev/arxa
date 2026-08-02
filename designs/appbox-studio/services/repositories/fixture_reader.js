@@ -9,7 +9,7 @@
 //   readProjectFixture — the CURRENT PROJECT (~/.appbox/projects/<name>),
 //                        overlaid by the design server at /project/<rel>
 //                        (see _scanArtifact in appboxd/lib/design_server/worker.dart)
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 
 const cache = new Map();
 
@@ -24,6 +24,27 @@ export function readFixture(relFromThisFile) {
 // ('design/models/design_model/run.en.json', 'intake/flows.json').
 export function readProjectFixture(rel) {
   return readFixture(`../../project/${rel}`);
+}
+
+// A project fixture that MAY LEGITIMATELY NOT EXIST — absent → null, present
+// but unparseable → still throws.
+//
+// That split is the whole point of the function. A project whose story-mapper
+// or moodboarder has never run has no intake/map.json AT ALL — the state every
+// project made before Slice B is in — and the surface must say so plainly.
+// A map.json that exists but does not parse is a FAULT; folding it into the
+// same reassuring "nothing here yet" sentence would hide a real break behind
+// an explanation of a different problem.
+//
+// existsSync rather than try/catch on the read because the two environments
+// throw differently: real node throws ENOENT with a `.code`, the worker's
+// fs_shim throws a bare Error (worker_assets/fs_shim.js:9). Both implement
+// existsSync over the same key, so probing is the only test that agrees.
+export function readOptionalProjectFixture(rel) {
+  const key = `../../project/${rel}`;
+  if (cache.has(key)) return cache.get(key);
+  if (!existsSync(new URL(key, import.meta.url))) return null;
+  return readFixture(key);
 }
 
 // Write one project fixture through the design server's confined channel

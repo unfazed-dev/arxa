@@ -1,0 +1,90 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "skills/appbox-moodboarder/moodboard.schema.json",
+  "title": "appbox moodboard (intake/moodboard.json)",
+  "$comment": "DRAFT, Slice B1. Describes what appboxd/lib/intake_artifacts.dart emitMoodboard WRITES, not what any loader enforces: nothing reads this file at runtime, exactly like skills/appbox-intake/intake.schema.json (see the note at intake.dart:70) — so it can drift invisibly. Change emitMoodboard and you must change this by hand. Do NOT build a loader for it on the strength of its existing.",
+  "type": "object",
+  "required": ["method", "boards", "counts"],
+  "properties": {
+    "method": {
+      "type": ["string", "null"],
+      "$comment": "FREE-TEXT methodology ('appbox lens captures · every shot verified on disk'), renamed from the seed's top-level `provenance` because that name promised the client|founder|inferred enum and delivered prose. A reader that parsed it as an enum would be wrong on every real moodboard. Real provenance is per-reference and does use the enum."
+    },
+    "boards": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "references"],
+        "properties": {
+          "id": { "type": "string" },
+          "title": { "type": "string" },
+          "slice": { "type": "string" },
+          "informs": { "type": "string" },
+          "references": {
+            "type": "array",
+            "items": { "$ref": "#/definitions/reference" }
+          }
+        },
+        "not": { "required": ["file"] },
+        "$comment": "No `file`. It points at the studio's authoring markdown, which does not exist inside a user project — a link that is dead by construction. No `curated` at the top level either: it is a date, and project.dart:13 bans clock fields so identical input yields identical bytes.",
+        "additionalProperties": true
+      }
+    },
+    "counts": {
+      "type": "object",
+      "required": ["boards", "references", "shots"],
+      "properties": {
+        "boards": { "type": "integer", "minimum": 0 },
+        "references": { "type": "integer", "minimum": 0 },
+        "shots": {
+          "type": "integer",
+          "minimum": 0,
+          "$comment": "References that actually carry a shot file — never equal to `references` by assumption. A reference with no capture is legal."
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": true,
+  "definitions": {
+    "provenance": {
+      "enum": ["client", "founder", "inferred"],
+      "$comment": "The same three values as intake.schema.json. A reference with no stated provenance is emitted as 'inferred' — not elicited IS inferred, and §22 requires that be visible rather than absent."
+    },
+    "reference": {
+      "type": "object",
+      "required": ["name", "provenance"],
+      "properties": {
+        "name": { "type": "string" },
+        "url": { "type": "string" },
+        "grade": {
+          "type": "string",
+          "$comment": "hot / warm / cold by convention. Not enumerated here: appbox-moodboarder owns the vocabulary and intake only republishes."
+        },
+        "shot": { "$ref": "#/definitions/shot" },
+        "steal": { "type": "string" },
+        "why": { "type": "string" },
+        "provenance": { "$ref": "#/definitions/provenance" }
+      },
+      "additionalProperties": true,
+      "$comment": "OPEN on purpose. appbox-moodboarder owns this document; intake republishes it with ids, src paths and counts added. A closed set would delete a field the owning skill legitimately added — task #29's failure mode."
+    },
+    "shot": {
+      "type": "object",
+      "required": ["file", "id", "src"],
+      "properties": {
+        "file": { "type": "string" },
+        "caption": { "type": "string" },
+        "id": {
+          "type": "string",
+          "$comment": "PRECOMPUTED at emit time as `<boardId>--<file without extension>`."
+        },
+        "src": {
+          "type": "string",
+          "$comment": "PRECOMPUTED at emit time as `/assets/images/moodboard/<boardId>/<file>`. Baking the path in here is the job generate.mjs does for the studio fixture: every reader stays a dumb field selector and no JS has to learn the convention."
+        }
+      },
+      "additionalProperties": true
+    }
+  }
+}

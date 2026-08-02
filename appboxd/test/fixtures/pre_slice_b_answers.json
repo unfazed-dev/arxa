@@ -1,0 +1,307 @@
+{
+  "product": {
+    "value": "Portalo — a design-forward ecommerce app: curated objects, 3D product views, one-tap checkout",
+    "provenance": "founder"
+  },
+  "audience": {
+    "value": "When I discover a beautiful object, I want to inspect it closely and buy it in a few taps, so I can shop by taste without a desktop",
+    "provenance": "founder"
+  },
+  "appMustDo": {
+    "value": [
+      "browse a curated catalogue by category",
+      "inspect a product in 3D before buying",
+      "check out with a saved payment in one flow",
+      "track orders after purchase",
+      "sign in once and stay signed in"
+    ],
+    "provenance": "founder"
+  },
+  "existingSystems": {
+    "value": "Stripe for payments; none for catalogue or accounts",
+    "provenance": "founder"
+  },
+  "targets": {
+    "value": [
+      "ios",
+      "android",
+      "macos"
+    ],
+    "provenance": "founder"
+  },
+  "locales": {
+    "value": [
+      "en",
+      "pl"
+    ],
+    "provenance": "founder"
+  },
+  "brand": {
+    "value": "Portalo wordmark with the portal-gate glyph; cyan accent on warm paper",
+    "provenance": "founder"
+  },
+  "direction": {
+    "value": {
+      "adjectives": [
+        "calm",
+        "curated",
+        "tactile",
+        "premium"
+      ],
+      "avoids": [
+        "marketplace clutter",
+        "shouting discounts",
+        "playful gradients"
+      ]
+    },
+    "provenance": "founder"
+  },
+  "contentAnchors": {
+    "value": [
+      "Aurelia Vase — stoneware, 3D turntable",
+      "Nomad Chair — oak + canvas",
+      "Order #PT-1042 out for delivery",
+      "Cart: 2 items, $348"
+    ],
+    "provenance": "founder"
+  },
+  "constraints": {
+    "value": [
+      "every screen ships at 390, 744 and 1280",
+      "no marketplace features (no sellers, no reviews v1)"
+    ],
+    "provenance": "founder"
+  },
+  "outOfScope": {
+    "value": [
+      "search and wishlist (v2)",
+      "sellers, reviews, promotions",
+      "web storefront"
+    ],
+    "provenance": "founder"
+  },
+  "layoutTemplate": {
+    "value": {
+      "category": "ecommerce",
+      "archetype": "detail-column",
+      "areas": {
+        "compact": [
+          "app-bar",
+          "detail",
+          "tab-bar"
+        ],
+        "medium": [
+          "app-bar app-bar",
+          "nav-rail detail"
+        ],
+        "expanded": [
+          "app-bar app-bar app-bar",
+          "nav-rail detail sidebar"
+        ]
+      },
+      "containers": {
+        "app-bar": {
+          "type": "chrome",
+          "hints": "title, search, cart / save entry"
+        },
+        "nav-rail": {
+          "type": "navigation",
+          "hints": "shell switcher at medium and up"
+        },
+        "tab-bar": {
+          "type": "navigation",
+          "hints": "shell switcher at compact only"
+        },
+        "detail": {
+          "type": "content",
+          "hints": "the thing itself — gallery, price, description, body"
+        },
+        "fab": {
+          "type": "action",
+          "hints": "the primary buy / save action; floats over the detail column"
+        },
+        "sidebar": {
+          "type": "content",
+          "hints": "related items, recommendations; expanded rung only"
+        }
+      }
+    },
+    "provenance": "founder"
+  },
+  "surfaces": [
+    {
+      "id": "portalo.splash",
+      "label": "Splash",
+      "shell": "portalo",
+      "provenance": "founder"
+    },
+    {
+      "id": "portalo.startup",
+      "label": "Startup",
+      "shell": "portalo",
+      "states": [
+        "loading"
+      ],
+      "provenance": "founder"
+    },
+    {
+      "id": "portalo.auth",
+      "label": "Sign In",
+      "shell": "portalo",
+      "states": [
+        "error"
+      ],
+      "provenance": "founder"
+    },
+    {
+      "id": "portalo.home",
+      "label": "Home",
+      "shell": "portalo",
+      "tab": true,
+      "states": [
+        "loading",
+        "empty"
+      ],
+      "provenance": "founder"
+    },
+    {
+      "id": "portalo.category",
+      "label": "Category",
+      "shell": "portalo",
+      "states": [
+        "loading",
+        "empty"
+      ],
+      "provenance": "founder"
+    },
+    {
+      "id": "portalo.product",
+      "label": "Product",
+      "shell": "portalo",
+      "route": "/product/:id",
+      "states": [
+        "loading",
+        "error"
+      ],
+      "provenance": "founder"
+    },
+    {
+      "id": "portalo.cart",
+      "label": "Cart",
+      "shell": "portalo",
+      "requiresAuth": true,
+      "states": [
+        "empty"
+      ],
+      "provenance": "founder"
+    },
+    {
+      "id": "portalo.checkout",
+      "label": "Checkout",
+      "shell": "portalo",
+      "requiresAuth": true,
+      "states": [
+        "loading",
+        "error"
+      ],
+      "provenance": "founder"
+    },
+    {
+      "id": "portalo.orders",
+      "label": "Orders",
+      "shell": "portalo",
+      "requiresAuth": true,
+      "tab": true,
+      "states": [
+        "empty"
+      ],
+      "provenance": "founder"
+    },
+    {
+      "id": "portalo.account",
+      "label": "Account",
+      "shell": "portalo",
+      "requiresAuth": true,
+      "tab": true,
+      "provenance": "founder"
+    }
+  ],
+  "flows": [
+    {
+      "id": "flow-onboarding",
+      "name": "Onboarding",
+      "provenance": "founder",
+      "edges": [
+        {
+          "from": "portalo.splash",
+          "to": "portalo.startup",
+          "trigger": "App launch",
+          "action": "push"
+        },
+        {
+          "from": "portalo.startup",
+          "to": "portalo.auth",
+          "trigger": "Kits loaded",
+          "action": "push"
+        },
+        {
+          "from": "portalo.auth",
+          "to": "portalo.home",
+          "trigger": "continue",
+          "action": "push",
+          "element": "button:Continue"
+        }
+      ]
+    },
+    {
+      "id": "flow-browse-buy",
+      "name": "Browse and buy",
+      "provenance": "founder",
+      "edges": [
+        {
+          "from": "portalo.home",
+          "to": "portalo.category",
+          "trigger": "Category tile"
+        },
+        {
+          "from": "portalo.category",
+          "to": "portalo.product",
+          "trigger": "Product card"
+        },
+        {
+          "from": "portalo.product",
+          "to": "portalo.cart",
+          "trigger": "Add to bag, then review bag"
+        },
+        {
+          "from": "portalo.cart",
+          "to": "portalo.checkout",
+          "trigger": "Checkout"
+        },
+        {
+          "from": "portalo.checkout",
+          "to": "portalo.orders",
+          "trigger": "Track your order",
+          "action": "push"
+        }
+      ]
+    },
+    {
+      "id": "flow-account",
+      "name": "Account",
+      "provenance": "founder",
+      "edges": [
+        {
+          "from": "portalo.home",
+          "to": "portalo.account",
+          "trigger": "Account tab"
+        },
+        {
+          "from": "portalo.account",
+          "to": "portalo.orders",
+          "trigger": "Order history"
+        }
+      ]
+    }
+  ]
+}

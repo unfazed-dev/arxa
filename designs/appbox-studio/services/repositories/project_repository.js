@@ -5,7 +5,11 @@
 // answers) and surface partials, live-read through the server overlay. The design
 // viewer's flows lens, the flow-driven stub chrome (tab bar, advance links)
 // and the intake flows surface all read from here.
-import { readProjectFixture, writeProjectFixture } from './fixture_reader.js';
+import {
+  readOptionalProjectFixture,
+  readProjectFixture,
+  writeProjectFixture,
+} from './fixture_reader.js';
 
 export const registry = () => readProjectFixture('intake/registry.json');
 export const flows = () => readProjectFixture('intake/flows.json');
@@ -13,6 +17,32 @@ export const flows = () => readProjectFixture('intake/flows.json');
 // each {value, provenance}) — the intake surfaces prefill from here.
 export const answers = () => readProjectFixture('intake/answers.json');
 export const registryEntry = (id) => registry().find((e) => e.id === id);
+
+// ---- the Slice B intake artifacts (personas / story map / moodboard / direction)
+//
+// Written by `appbox intake emit --project <name>` from the SAME answers.json
+// (appboxd/lib/intake.dart:1144-1148, emitters in intake_artifacts.dart). The
+// `mapping`, `brief` and `moodboard` panels read these; before Slice B3 they
+// read the studio's own intake fixture, which showed appbox's product plan
+// under a client's project name.
+//
+// EVERY ONE OF THESE IS A FIELD SELECTOR AND NOTHING MORE. The denormalisation
+// a reader would otherwise do is already baked in at emit: story/epic/feature
+// ids are content-derived slugs, `counts` (including the MoSCoW buckets and
+// byRelease) are totalled there, and each moodboard shot carries its own `id`
+// and served `src`. If a caller finds itself deriving one of those in JS, the
+// emitter is the thing to fix — a second derivation here is how the emitted
+// file and the rendered page start disagreeing with nobody noticing.
+//
+// null means NOT PRODUCED YET, which is the ordinary state of every project
+// whose story-mapper or moodboarder has never run, and of every project that
+// predates Slice B. It is not an error and must never render as one — but it
+// must not render as studio content either. See readOptionalProjectFixture for
+// why a malformed file still throws instead of reading as null.
+export const personas = () => readOptionalProjectFixture('intake/personas.json');
+export const storyMap = () => readOptionalProjectFixture('intake/map.json');
+export const moodboard = () => readOptionalProjectFixture('intake/moodboard.json');
+export const direction = () => readOptionalProjectFixture('intake/direction.json');
 
 // Flow edits (move/add/remove from the viewer) write the whole flows.json
 // back through the server's confined channel; writeProjectFixture busts the

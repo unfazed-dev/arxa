@@ -49,7 +49,32 @@ with `--project <name>` writes ALL intake outputs there:
   brief.md         the emitted brief (inferred fields marked)
   registry.json    the seeded registry (see below)
   flows.json       declared flows, or derived drafts marked inferred
+  personas.json    the elicited user types ([] when none were named)
+  map.json         the story map, ids content-derived, counts baked in
+  moodboard.json   boards/references/shots, shot src precomputed
+  direction.json   adjectives/avoids, field provenance promoted per item
 ```
+
+The last four are Slice B1. All four are pure functions of `answers.json` and
+all four degrade to their EMPTY shape when the answering group is absent — every
+project that existed before Slice B has all four groups missing, and re-emitting
+one of those must keep working rather than fail.
+
+**Where the last three get their input.** `direction.json` and `personas.json`
+come from groups intake elicits itself (`direction`, `personas`). The other two
+come from documents intake does NOT own:
+
+| artifact | answers group | written by |
+|---|---|---|
+| `map.json` | `answers.map` | `appbox-story-mapper` |
+| `moodboard.json` | `answers.moodboard` | `appbox-moodboarder` |
+
+Those two skills deposit their document into `answers.json` under that key;
+intake republishes it with ids, counts and `shot.src` baked in, and carries
+every field it does not recognise through untouched — intake is a republisher
+here, and a republisher that drops the author's fields is the bug. Shapes:
+`skills/appbox-story-mapper/story-map.schema.json` and
+`skills/appbox-moodboarder/moodboard.schema.json`.
 
 ## What you produce (and what you do not)
 
@@ -71,6 +96,24 @@ Two artefacts, written by the chain:
      group), booleans carried into the registry.
    The **audience** is elicited in JTBD form: *"When [situation], I want
    [motivation], so I can [outcome]."*
+
+   **`personas`** — the user types, asked as its own question (Slice B2):
+
+   > **Who are the main types of people who will use this?**
+   > Name each one as you'd describe them to a new hire — as many as you
+   > actually have, not a round number. For each, if you know it: what are
+   > they trying to get done, what makes it painful today, where and when
+   > do they use it, how comfortable are they with tools like this, and do
+   > any of them have access needs?
+
+   **Variable N.** Take as many as the client names and stop — one is a
+   valid answer, so is seven. Do not pad to three, do not prompt for "a
+   couple more", and do NOT synthesise one from `audience`: that field is a
+   single JTBD sentence with no name, role or goals, so anything built from
+   it is invention wearing the authority of elicitation (§22). If the
+   client names none, omit the key — `personas.json` is then `[]`, which
+   truthfully says nobody was named. Per-persona sub-answers left blank stay
+   absent; a blank `accessibility` means unstated, never "none".
 2. **The seeded registry + flows** — `appbox intake emit` seeds them in the
    project's `intake/` dir (with `--project`), or at the design root
    (`designs/<app>/models/screens_model/registry.json`, or whatever

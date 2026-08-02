@@ -88,7 +88,19 @@ let LABELS = null;
 const labelOf = (id) => (LABELS ??= Object.fromEntries(screens.all().map((e) => [e.id, e.label])))[id] ?? id;
 
 function stepItems(step, L) {
-  if (step === 'personas') return repo.personas(L);
+  if (step === 'personas') {
+    // The CURRENT PROJECT's elicited user types (intake/personas.json), the
+    // same rule the mapping/brief/moodboard panels now follow: appbox's own
+    // personas are appbox's, and walking a client through them as if they were
+    // the client's own is the §22 fiction. Absent → [], never the studio's set;
+    // emitPersonas writes [] for every project that has not answered the
+    // personas question, so the step simply has nothing to confirm yet.
+    //
+    // With NO project overlaid the studio is showing itself and its own
+    // fixture IS its content, so the seed still stands there.
+    if (proj.currentName()) return proj.personas() ?? [];
+    return repo.personas(L);
+  }
   if (step === 'surfaces') {
     // The CURRENT PROJECT's screen registry, grouped by shell — the studio's
     // own brief.surfaces is its design brief, never this project's inventory.
@@ -121,14 +133,29 @@ function stepItems(step, L) {
       return []; // no project overlaid — nothing to confirm
     }
   }
-  // direction: the CURRENT PROJECT's direction answer (intake/answers.json),
-  // one group per axis. The studio's own adjectives are its design brief —
-  // never this project's. The answer holds bare strings under a single
-  // provenance; the chips want {value, provenance}, so they are stamped here.
+  // direction: the CURRENT PROJECT's design direction, one group per axis.
+  //
+  // PREFERRED SOURCE is intake/direction.json, because emitDirection already
+  // promotes the field's single provenance onto each item — exactly the
+  // {value, provenance} shape the chips want. Reading it means this file does
+  // no stamping at all: the derivation belongs to the emitter, and doing it
+  // twice is how the emitted file and the rendered chip start disagreeing.
+  //
   // A group only exists when the project supplies it, so a project with no
-  // moodboard pulls simply has no `references` group rather than an empty
-  // card — the references rows read {board, note}, which answers.json has no
-  // field for. Absent it stays; the moment the answer grows one, it appears.
+  // moodboard pulls has no `references` group rather than an empty card.
+  const emitted = proj.direction();
+  if (emitted) {
+    const groups = [];
+    for (const id of ['adjectives', 'avoids', 'references']) {
+      const values = emitted[id] ?? [];
+      if (values.length) groups.push({ id, values });
+    }
+    return groups;
+  }
+  // FALLBACK for a project emitted before Slice B, which has answers.json but
+  // no direction.json. Here the stamping is unavoidable — the answer holds
+  // bare strings under one field-level provenance and nothing else has
+  // promoted it — and it disappears the moment that project is re-emitted.
   try {
     const d = proj.answers().direction;
     const prov = d.provenance ?? 'inferred';
@@ -270,11 +297,60 @@ function approvalChatBits(sd, t, L) {
 }
 
 // ---------- canvas artifacts ----------
+// mapping / brief / moodboard read the CURRENT PROJECT — intake/map.json,
+// intake/moodboard.json and intake/registry.json, live-read through the server
+// overlay (Slice B3). They used to read the studio's own intake fixture: the
+// appbox product plan and appbox's own reference captures, rendered under the
+// client's project name with nothing on screen to tell them apart. That is the
+// confident fiction §22 forbids, and it is why every branch below ends in
+// `artifactMissing` rather than in a fallback to something that renders.
+//
+// Nothing here recomputes what the emitter baked in. Story/epic/feature ids,
+// `counts` (MoSCoW buckets and byRelease included) and each shot's `id` and
+// served `src` all arrive precomputed from intake_artifacts.dart and are read
+// as-is. The one thing this file does compute is the swimlane grouping, which
+// is presentation: a lane is not a stored fact and map.json has no lane list.
+
+// Where each artifact would live, named in the empty state so the message is
+// actionable rather than merely apologetic.
+const ARTIFACT_FILE = {
+  map: 'intake/map.json',
+  brief: 'intake/registry.json',
+  moodboard: 'intake/moodboard.json',
+};
+
+// The honest empty state: what is missing, the file it would live in, and the
+// steps that produce it. Never a placeholder, never the studio's copy of the
+// same document — a reader must be able to tell "this project has no moodboard"
+// from "here is a moodboard", and a fallback makes those two look identical.
+function artifactMissing(what, t, ref) {
+  const project = proj.currentName();
+  const file = ARTIFACT_FILE[what];
+  const base = { kind: 'missing', what, ref, file, tone: 'empty', badge: t('intake.missing.badge'), howLabel: t('intake.missing.howLabel') };
+  // No project overlaid at all (artifact-only serving) is a different fact
+  // from "this project has not run the story-mapper", and saying the second
+  // when the first is true would send the reader after the wrong command.
+  if (!project) {
+    return { ...base, headline: t('intake.missing.noProject.headline'), lede: t('intake.missing.noProject.lede'), steps: [t('intake.missing.step.open')] };
+  }
+  const artifact = t('intake.missing.name.' + what);
+  return {
+    ...base,
+    headline: t('intake.missing.headline', { artifact, project }),
+    lede: t('intake.missing.lede', { artifact, file }),
+    steps: [t('intake.missing.step.' + what), t('intake.missing.stepEmit', { project })],
+  };
+}
+
 // The live map: release swimlanes × epic columns, stories carrying pipeline
-// status dots, rollups per epic and per release. Display data only —
-// docs/design/story-map.json's schema is untouched.
-function mapLanes(L) {
-  const statuses = repo.statuses(L);
+// status dots, rollups per epic and per release.
+//
+// `statuses` come off map.json itself — the studio writes them there (a
+// reviewer marking a story done) and `mergeStoryMap` carries them across each
+// re-emit, so the map and its progress are one document, never two that can
+// drift apart.
+function mapLanes(map, t) {
+  const statuses = map.statuses ?? {};
   const withStatus = (s) => ({ ...s, status: statuses[s.id] ?? 'pending' });
   const rollup = (stories) => ({
     total: stories.length,
@@ -282,50 +358,184 @@ function mapLanes(L) {
     active: stories.filter((s) => s.status === 'in-progress').length,
     blocked: stories.filter((s) => s.status === 'blocked').length,
   });
-  const lanes = [];
-  for (const rel of repo.releases(L)) {
+  const laneFor = (release, keep) => {
     const epics = [];
     const laneStories = [];
-    for (const e of repo.epics(L)) {
+    for (const e of map.epics ?? []) {
       const features = [];
       const epicStories = [];
-      for (const f of e.features) {
-        const stories = f.stories.filter((s) => s.release === rel.name).map(withStatus);
+      for (const f of e.features ?? []) {
+        const stories = (f.stories ?? []).filter(keep).map(withStatus);
         if (stories.length) { features.push({ name: f.name, stories }); epicStories.push(...stories); }
       }
       if (features.length) epics.push({ name: e.name, features, rollup: rollup(epicStories) });
       laneStories.push(...epicStories);
     }
-    lanes.push({ release: { ...rel, rollup: rollup(laneStories) }, epics });
-  }
+    return { release: { ...release, rollup: rollup(laneStories) }, epics };
+  };
+  const releases = map.releases ?? [];
+  const lanes = releases.map((rel) => laneFor(rel, (s) => s.release === rel.name));
+  // A story with `release: null` — which emitStoryMap writes whenever the
+  // story-mapper did not slot it — or one naming a release the map never
+  // declared is STILL A STORY. Filtering it into nothing would leave the
+  // canvas disagreeing with `counts.stories`, which is a stored fact, and a
+  // project with epics but no declared releases would render as a blank map
+  // that reads like a rendering failure. So it gets a lane of its own.
+  const declared = new Set(releases.map((r) => r.name));
+  const rest = laneFor({ name: t('map.unassignedLane'), description: t('map.unassignedLaneDesc') }, (s) => !declared.has(s.release));
+  if (rest.epics.length) lanes.push(rest);
   return lanes;
 }
 
+// One story by id, plus the epic and feature it sits under. Those two are the
+// story's POSITION in the document, not fields on it: emitStoryMap does not
+// write `epic`/`feature` onto a story, so reading them off the walk is the
+// only non-inventing way to render the breadcrumb.
+function storyAt(map, id) {
+  for (const e of map.epics ?? []) {
+    for (const f of e.features ?? []) {
+      for (const s of f.stories ?? []) {
+        if (s.id === id) return { story: s, epic: e.name, feature: f.name };
+      }
+    }
+  }
+  return null;
+}
+
+function shotAt(mb, id) {
+  for (const b of mb.boards ?? []) {
+    for (const r of b.references ?? []) {
+      if (r.shot?.id === id) return { board: b, reference: r, shot: r.shot };
+    }
+  }
+  return null;
+}
+
 function resolveArtifact(surface, ref, t, L) {
-  const c = repo.counts(L);
   const [kind, id] = ref.split('/');
   if (surface === 'mapping') {
+    const map = proj.storyMap();
+    // No file, or a file with no epics, is the same fact to a reader: this
+    // project has no story map. One branch, one message.
+    if (!map?.epics?.length) return artifactMissing('map', t, ref);
     if (kind === 'story') {
-      const s = repo.story(id, L);
-      if (s) return { kind, story: { ...s, status: repo.statuses(L)[s.id] ?? 'pending' }, ref, backRef: 'map/full' };
+      const hit = storyAt(map, id);
+      if (hit) {
+        return {
+          kind,
+          story: { ...hit.story, status: (map.statuses ?? {})[hit.story.id] ?? 'pending' },
+          epic: hit.epic, feature: hit.feature,
+          ref, backRef: 'map/full',
+        };
+      }
     }
-    const head = id === 'priorities' ? [t('priHeadline'), t('priLede')] : id === 'releases' ? [t('relHeadline'), t('relLede')] : [t('mapHeadline'), t('mapLede')];
-    return { kind: 'map', variant: id || 'full', headline: head[0], lede: head[1], lanes: mapLanes(L), counts: c, ref: `map/${id || 'full'}` };
+    // The map/priorities/releases headlines used to be FIXED SENTENCES about
+    // the studio's own plan — "66 stories across 9 epics", "Three releases: R1
+    // Dogfood · R2 Anywhere · R3 Delight" — printed verbatim above a client
+    // project's map. Reading right and being false is the worst failure mode
+    // this surface has, so the catalog strings now take the project's own
+    // counts. The numbers are READ from `map.counts`, which the emitter
+    // totalled; nothing is re-counted here.
+    const c = map.counts ?? {};
+    const releases = map.releases ?? [];
+    const relVars = { count: String(releases.length), names: releases.map((r) => r.name).join(' · ') };
+    const mapVars = { stories: String(c.stories ?? 0), epics: String(c.epics ?? 0), features: String(c.features ?? 0) };
+    const priVars = { must: String(c.must ?? 0), should: String(c.should ?? 0), could: String(c.could ?? 0) };
+    const head = id === 'priorities' ? [t('priHeadline', priVars), t('priLede', priVars)]
+      : id === 'releases' ? [t('relHeadline', relVars), t('relLede', relVars)]
+      : [t('mapHeadline'), t('mapLede', mapVars)];
+    return { kind: 'map', variant: id || 'full', headline: head[0], lede: head[1], lanes: mapLanes(map, t), counts: c, ref: `map/${id || 'full'}` };
   }
   if (surface === 'brief') {
+    // The project's surface inventory IS its screen registry — the same list
+    // the scaffolder builds from. `priority`/`release` are additive columns
+    // the story-mapper fills in; a project without them shows blank cells,
+    // which is true, rather than a MoSCoW chip nobody assigned.
+    const surfaces = projectSurfaces();
     if (kind === 'doc' && id === 'surfaces') {
-      return { kind: 'surfaces', headline: t('surfacesHeadline'), lede: t('surfacesLede'), surfaces: repo.brief(L).surfaces, ref };
+      if (!surfaces.length) return artifactMissing('brief', t, ref);
+      return { kind: 'surfaces', headline: t('surfaces.headlineN', { count: surfaces.length }), lede: t('surfacesLede'), surfaces, ref };
     }
-    return { kind: 'doc', headline: t('briefHeadline'), lede: t('briefLede'), brief: repo.brief(L), releases: repo.releases(L), epics: repo.epics(L), ref: 'doc/full' };
+    const map = proj.storyMap();
+    if (!surfaces.length && !map?.epics?.length) return artifactMissing('brief', t, ref);
+    // There is no project-side brief OBJECT — intake writes intake/brief.md,
+    // prose this reader cannot parse into sections. So the document is
+    // assembled from what the project does state: its name, its registry, its
+    // story map. The studio brief's `provenance` line ("Elicited via
+    // appbox-story-mapper · …") is deliberately NOT reproduced: it is a
+    // specific claim about how a document was made, and no project-side source
+    // states it. Inventing one would be exactly the fiction this slice removes.
+    const name = proj.currentName();
+    return {
+      kind: 'doc',
+      headline: t('briefHeadline'),
+      lede: t('briefLede'),
+      brief: {
+        title: name ? t('brief.projectTitle', { name }) : t('brief.untitledTitle'),
+        surfaceNote: t('brief.surfaceNoteProject'),
+        surfaces,
+      },
+      releases: map?.releases ?? [],
+      epics: map?.epics ?? [],
+      // The brief has TWO project sources and they arrive independently: the
+      // registry (present as soon as the interview names surfaces) and the
+      // story map (only once the story-mapper has run). With surfaces but no
+      // map, the releases and must-do sections would render as bare headings
+      // over nothing — which reads as a broken page, not as a missing input.
+      // This carries the same explanation the standalone empty state gives.
+      mapMissing: map?.epics?.length ? null : artifactMissing('map', t, ref),
+      ref: 'doc/full',
+    };
   }
   // moodboard
+  const mb = proj.moodboard();
+  if (!mb?.boards?.length) return artifactMissing('moodboard', t, ref);
   if (kind === 'shot') {
-    const hit = repo.shot(id, L);
+    const hit = shotAt(mb, id);
     if (hit) return { kind, ...hit, ref, backRef: `gallery/${hit.board.id}` };
   }
-  const mb = repo.moodboard(L);
   const boards = id && id !== 'all' && id !== 'highlights' ? mb.boards.filter((b) => b.id === id) : mb.boards;
-  return { kind: 'gallery', headline: t('galleryHeadline'), lede: t('galleryLede'), boards, curated: mb.curated, provenance: mb.provenance, ref: `gallery/${id || 'all'}` };
+  // `method` not `provenance`: the emitter renamed it because the seed's value
+  // is free-text methodology, not the client|founder|inferred enum, and a
+  // reader that called it provenance would invite parsing prose as an enum.
+  // `curated` is gone entirely — it was a date, and emitted artifacts must be
+  // byte-identical for identical input (project.dart:13).
+  // Counts READ off `mb.counts` (the emitter totalled them), never re-counted
+  // here — and the lede no longer hard-codes "3 boards curated 2026-07-28 · 12
+  // captured screens", which was the studio's own tally printed above whatever
+  // the project actually had.
+  const mc = mb.counts ?? {};
+  const galleryVars = { boards: String(mc.boards ?? 0), references: String(mc.references ?? 0), shots: String(mc.shots ?? 0) };
+  return { kind: 'gallery', headline: t('galleryHeadline'), lede: t('galleryLede', galleryVars), boards, method: mb.method ?? null, ref: `gallery/${id || 'all'}` };
+}
+
+// The CURRENT PROJECT's screen registry, or [] when nothing is overlaid.
+const projectSurfaces = () => {
+  try {
+    return proj.registry();
+  } catch {
+    return [];
+  }
+};
+
+// ADR-0003: an artifact read that can fail needs a visible failure state, not
+// a 500 and not a silently blank panel. These reads are synchronous (the
+// server prefetches every project .json before the render), so there is no
+// busy state to show — but a project file that EXISTS and does not parse is a
+// real, reachable failure, and readOptionalProjectFixture deliberately lets it
+// through rather than disguising it as "not produced yet".
+function artifactFor(surface, ref, t, L) {
+  try {
+    return resolveArtifact(surface, ref, t, L);
+  } catch (e) {
+    return {
+      kind: 'missing', tone: 'error', ref, what: null, file: null,
+      badge: t('intake.missing.broken.badge'),
+      headline: t('intake.missing.broken.headline'),
+      lede: t('intake.missing.broken.lede', { error: String(e?.message ?? e) }),
+      howLabel: null, steps: [],
+    };
+  }
 }
 
 // Short chip label per artifact ref — the chat-head context chip.
@@ -383,27 +593,45 @@ function activityViewFor(sd, surface, base, lv, t, L) {
   const viewLinks = views.map((v) => ({ ...v, label: t('activityView.' + v.id), href: `${base}/panel?view=${v.id}`, active: v.id === active }));
   let body;
   if (active === 'artifacts') {
-    const c = repo.counts(L);
+    // Every count on this list comes off the PROJECT's artifacts, and each
+    // list is empty-safe on its own: this panel is reachable on a project with
+    // no map and no moodboard, and reading `.boards.length` unconditionally is
+    // how that page used to 500 before the main panel ever got a chance to
+    // explain itself.
     const ap = approvalFor(sd, L);
     const mapBadges = [
       ap.approved && !ap.stale ? { tone: 'ok', label: t('map.approvedBadge', { version: ap.approvedVersion }) } : null,
       ap.stale ? { tone: 'warn', label: t('badge.stale') } : null,
     ].filter(Boolean);
+    const notYet = [{ tone: 'warn', label: t('intake.missing.badge') }];
+    const map = proj.storyMap();
+    const mb = proj.moodboard();
+    const surfaces = projectSurfaces();
+    const c = map?.counts ?? {};
     body = {
       artifacts: {
-        mapping: [
-          { ref: 'map/full', title: t('intake.activity.liveStoryMap.title'), detail: t('intake.activity.liveStoryMap.detail', { stories: c.stories, epics: c.epics }), badges: mapBadges },
-          { ref: 'map/priorities', title: t('intake.activity.moscow.title'), detail: t('intake.activity.moscow.detail', { must: c.must, should: c.should, could: c.could }), badges: [] },
-          { ref: 'map/releases', title: t('intake.activity.releases.title'), detail: repo.releases(L).map((r) => r.name).join(' · '), badges: [] },
-        ],
-        brief: [
-          { ref: 'doc/full', title: t('intake.activity.designBrief.title'), detail: t('intake.activity.designBrief.detail', { count: repo.brief(L).surfaces.length }), badges: [] },
-          { ref: 'doc/surfaces', title: t('intake.activity.surfaceInventory.title'), detail: t('intake.activity.surfaceInventory.detail'), badges: [] },
-        ],
-        moodboard: [
-          { ref: 'gallery/all', title: t('intake.activity.moodboard.title'), detail: t('intake.activity.moodboard.detail', { boards: repo.moodboard(L).boards.length, shots: repo.moodboard(L).counts.shots }), badges: [] },
-          ...repo.moodboard(L).boards.map((b) => ({ ref: `gallery/${b.id}`, title: b.title, detail: t('intake.activity.board.detail', { count: b.references.length, informs: b.informs }), badges: [] })),
-        ],
+        mapping: map?.epics?.length
+          ? [
+            { ref: 'map/full', title: t('intake.activity.liveStoryMap.title'), detail: t('intake.activity.liveStoryMap.detail', { stories: c.stories ?? 0, epics: c.epics ?? 0 }), badges: mapBadges },
+            { ref: 'map/priorities', title: t('intake.activity.moscow.title'), detail: t('intake.activity.moscow.detail', { must: c.must ?? 0, should: c.should ?? 0, could: c.could ?? 0 }), badges: [] },
+            { ref: 'map/releases', title: t('intake.activity.releases.title'), detail: (map.releases ?? []).map((r) => r.name).join(' · '), badges: [] },
+          ]
+          // One row, not zero: an empty artifacts list looks like a panel that
+          // failed to load. The row opens the same explanation the main panel
+          // shows, so the missing artifact stays reachable from here.
+          : [{ ref: 'map/full', title: t('intake.activity.liveStoryMap.title'), detail: t('intake.missing.activityDetail', { file: ARTIFACT_FILE.map }), badges: notYet }],
+        brief: surfaces.length
+          ? [
+            { ref: 'doc/full', title: t('intake.activity.designBrief.title'), detail: t('intake.activity.designBrief.detail', { count: surfaces.length }), badges: [] },
+            { ref: 'doc/surfaces', title: t('intake.activity.surfaceInventory.title'), detail: t('intake.activity.surfaceInventory.detail'), badges: [] },
+          ]
+          : [{ ref: 'doc/full', title: t('intake.activity.designBrief.title'), detail: t('intake.missing.activityDetail', { file: ARTIFACT_FILE.brief }), badges: notYet }],
+        moodboard: mb?.boards?.length
+          ? [
+            { ref: 'gallery/all', title: t('intake.activity.moodboard.title'), detail: t('intake.activity.moodboard.detail', { boards: mb.counts?.boards ?? mb.boards.length, shots: mb.counts?.shots ?? 0 }), badges: [] },
+            ...mb.boards.map((b) => ({ ref: `gallery/${b.id}`, title: b.title, detail: t('intake.activity.board.detail', { count: (b.references ?? []).length, informs: b.informs }), badges: [] })),
+          ]
+          : [{ ref: 'gallery/all', title: t('intake.activity.moodboard.title'), detail: t('intake.missing.activityDetail', { file: ARTIFACT_FILE.moodboard }), badges: notYet }],
       }[surface] ?? [],
     };
   } else if (active === 'files') {
@@ -411,9 +639,24 @@ function activityViewFor(sd, surface, base, lv, t, L) {
   } else {
     // Seeded narrative + this session's own messages — the activity thread
     // is live, it reacts to what the chat is fed, not a frozen copy.
+    //
+    // The SEEDED half is the studio's own: its messages assert facts ("R1
+    // Dogfood carries 49 stories", "Dreamflow is the structural sibling") about
+    // appbox's story map and appbox's moodboard. Rendered beside a client
+    // project's real map they read as statements about THAT project, which is
+    // the same confident fiction the main panel now refuses — so on the three
+    // artifact surfaces the seed is dropped whenever a project is overlaid, and
+    // the thread carries only what this session actually produced.
+    //
+    // With no project overlaid the studio is showing itself, the seed IS its
+    // own content, and it stays. Scoped to these three surfaces on purpose: the
+    // item-engine steps are a separate migration and not this slice's to make.
+    const seeded = ARTIFACT_SURFACES.includes(surface) && proj.currentName()
+      ? []
+      : repo.narrative(surface, L);
     body = {
       thread: [
-        ...repo.narrative(surface, L).map((m) => ({
+        ...seeded.map((m) => ({
           at: m.at,
           text: jargon.pick(m, 'text', lv),
           artifact: m.artifact ?? null,
@@ -475,7 +718,7 @@ export const context = (sd, surface, ref, prefs = {}, t = (k) => k, locale = 'en
       moodboard: [t('intake.sug.whatToSteal'), t('intake.sug.whichReferences')],
     }[surface],
     chat,
-    artifact: activeArtifact ? resolveArtifact(surface, activeArtifact, t, L) : null,
+    artifact: activeArtifact ? artifactFor(surface, activeArtifact, t, L) : null,
     activeArtifact,
     fileView: currentFile ? fv.fileViewFor(currentFile, `${base}?file=none`) : null,
     panel,

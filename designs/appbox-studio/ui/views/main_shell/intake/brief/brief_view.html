@@ -9,7 +9,14 @@
 
 {# ---------- Canvas artifacts ---------- #}
 
-{# The surface inventory table — standalone artifact and the brief's last section. #}
+{# The surface inventory table — standalone artifact and the brief's last
+   section. Rows are the CURRENT PROJECT's screen registry.
+
+   `priority` and `release` are ADDITIVE registry columns the story-mapper
+   fills in (intake.dart's seedFromBrief) — a project whose story-mapper has
+   not run has neither, so those cells stay empty. Guarded, not defaulted: an
+   unguarded chip renders `pri-undefined` with a missing translation key, and
+   any default we picked would be a MoSCoW grade nobody assigned. #}
 {% macro inventory(c, surfaces) %}
 <table class="inv-table">
   <thead>
@@ -20,8 +27,8 @@
     <tr>
       <td><code class="surface-id">{{ s.id }}</code></td>
       <td>{{ s.label }}</td>
-      <td><span class="pri-chip pri-{{ s.priority }}">{{ t('pri.name.' ~ s.priority) }}</span></td>
-      <td><span class="chip">{{ s.release }}</span></td>
+      <td>{% if s.priority %}<span class="pri-chip pri-{{ s.priority }}">{{ t('pri.name.' ~ s.priority) }}</span>{% else %}<span class="muted">{{ t('inv.unset') }}</span>{% endif %}</td>
+      <td>{% if s.release %}<span class="chip">{{ s.release }}</span>{% else %}<span class="muted">{{ t('inv.unset') }}</span>{% endif %}</td>
     </tr>
     {% endfor %}
   </tbody>
@@ -37,9 +44,19 @@
     <span class="chip">{{ t('brief.surfacesTraced', {count: a.brief.surfaces | length}) }}</span>
   </header>
   <h2 class="display">{{ a.brief.title }}</h2>
-  <p class="artifact-detail muted">{{ a.brief.provenance }}</p>
+  {# The studio brief's provenance line ("Elicited via appbox-story-mapper · …")
+     is deliberately absent. It is a specific claim about how a document was
+     produced, and no project-side file states it — synthesising an equivalent
+     would be the confident fiction this surface exists to remove. #}
   <p class="artifact-lede">{{ a.lede }}</p>
 
+  {# Releases and the must-do list both come from the story map. Without one
+     these two sections have nothing to list, so they are replaced by the same
+     explanation the standalone empty state gives — never left as bare headings
+     over nothing, which reads as a broken page rather than a missing input. #}
+  {% if a.mapMissing %}
+  {{ sh.missingArtifact(c, a.mapMissing) }}
+  {% else %}
   <section class="doc-section">
     <h3>{{ t('brief.releasesH') }}</h3>
     {% for r in a.releases %}
@@ -62,9 +79,9 @@
           <ul class="doc-stories">
             {% for s in f.stories %}
             <li>
-              <span class="pri-chip pri-{{ s.priority }}">{{ t('pri.name.' ~ s.priority) }}</span>
+              {% if s.priority %}<span class="pri-chip pri-{{ s.priority }}">{{ t('pri.name.' ~ s.priority) }}</span>{% endif %}
               <span class="doc-story-text">{{ s.name }}</span>
-              <span class="chip">{{ s.release }}</span>
+              {% if s.release %}<span class="chip">{{ s.release }}</span>{% endif %}
             </li>
             {% endfor %}
           </ul>
@@ -74,6 +91,7 @@
     </details>
     {% endfor %}
   </section>
+  {% endif %}
 
   <section class="doc-section">
     <h3>{{ t('brief.surfacesH') }}</h3>
@@ -102,7 +120,8 @@
 
 {% macro canvasArtifact(c) %}
 {% set a = c.artifact %}
-{% if a.kind == 'surfaces' %}{{ surfacesCanvas(c, a) }}
+{% if a.kind == 'missing' %}{{ sh.missingArtifact(c, a) }}
+{% elif a.kind == 'surfaces' %}{{ surfacesCanvas(c, a) }}
 {% else %}{{ docCanvas(c, a) }}
 {% endif %}
 {% endmacro %}

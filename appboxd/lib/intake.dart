@@ -32,6 +32,9 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:appboxd/decision_log.dart';
+import 'package:appboxd/intake_artifacts.dart';
+import 'package:appboxd/prd_adr.dart';
 import 'package:appboxd/project.dart';
 
 /// Who supplied a field. `inferred` = NOT elicited; a placeholder the brief must
@@ -236,6 +239,11 @@ ValidationResult validateIntake(Map<String, dynamic> answers) {
   }
 
   errs.addAll(_validateFlows(answers, seen));
+  // personas (Slice B2) is checked on its own, NOT through the _fieldTitles
+  // loop: that loop demands {value, provenance} and drives the brief's section
+  // order, and a list-shaped group there would be reported as a type error on
+  // every valid answers document. Absent is valid — see [validatePersonas].
+  errs.addAll(validatePersonas(answers));
 
   return ValidationResult(errs);
 }
@@ -493,6 +501,45 @@ Map<String, dynamic>? deriveFeedback(Map edge) {
   };
 }
 
+// ─────────────────────────────────────────── which rule actually fired
+//
+// [deriveStates] and [deriveFeedback] answer WHAT was inferred and throw away
+// WHY. `decision_log.dart` has to state the reason in an ADR, and an ADR whose
+// reason was reconstructed rather than observed is the §22 failure this whole
+// layer exists to prevent. So the evidence is read out of the SAME private
+// word sets and the SAME tokenizer the rules use — a second copy of
+// `_collectionWords` or of `_words` in the collector could drift from these
+// and then confidently report a reason that never fired.
+//
+// Each returns the matched words SORTED (set iteration order is not a
+// contract, and an ADR must be byte-identical across emissions).
+
+/// The collection words in [surf]'s short id segment — the tokens that made
+/// [deriveStates] add `loading` + `empty`. Empty means that branch did not fire.
+List<String> matchedCollectionWords(Map surf) =>
+    _matchedShortIdWords(surf, _collectionWords);
+
+/// The form/auth/network words in [surf]'s short id segment — the LEFT disjunct
+/// of [deriveStates]'s `error` branch. Empty means that disjunct did not fire,
+/// which does NOT mean `error` was not added: `requiresAuth == true` is the
+/// right disjunct and `||` short-circuits, so the two must be reported
+/// separately or an ADR will name a cause that never ran.
+List<String> matchedFormWords(Map surf) =>
+    _matchedShortIdWords(surf, _formWords);
+
+List<String> _matchedShortIdWords(Map surf, Set<String> vocabulary) {
+  final short = _idRe.firstMatch(surf['id'].toString())?.group(2) ?? '';
+  return (_words(short).where(vocabulary.contains).toList()..sort());
+}
+
+/// The mutation verbs in [edge]'s trigger — the tokens that made
+/// [deriveFeedback] return a toast. Empty means it returned null.
+List<String> matchedMutationWords(Map edge) {
+  final trigger = edge['trigger'];
+  if (trigger is! String) return const [];
+  return (_words(trigger).where(_mutationWords.contains).toList()..sort());
+}
+
 List<String> _validateDirection(Object? val) {
   // Shape-check a direction value: {adjectives: [string], avoids: [string]} —
   // both lists optional, but when present they must be string lists.
@@ -594,6 +641,14 @@ const registryEmittedKeys = [
   'statesProvenance',
   'requiresAuth',
   'tab',
+  // Slice B1. These MUST be listed here, not just emitted: mergeRegistry
+  // spreads the prior entry AFTER the emitted one for every key it does not
+  // recognise, so an emitted-but-unlisted key would be overwritten by its own
+  // stale value and re-emitting after an edit would silently keep the old
+  // priority. `seedFromBrief` already carried both through from a hand-written
+  // story-map table; this is the same two columns arriving via the wizard.
+  'priority',
+  'release',
 ];
 
 /// Carry forward the registry fields emit does not own.
@@ -668,6 +723,15 @@ List<Map<String, dynamic>> emitRegistry(Map<String, dynamic> answers) {
     }
     if (surf['requiresAuth'] == true) entry['requiresAuth'] = true;
     if (surf['tab'] == true) entry['tab'] = true;
+    // priority/release: ADDITIVE columns, absent unless the client ranked the
+    // surface. gate_intake reads only {id,label,shell,comp,route,surface}
+    // (+states/requiresAuth/tab), so adding them cannot fail the gate. No
+    // closed vocabulary is enforced: `seedFromBrief` accepts whatever a
+    // hand-written story-map table says, and a wizard stricter than the brief
+    // path would split the two front ends the "one engine" rule exists to keep
+    // in step.
+    if (surf['priority'] is String) entry['priority'] = surf['priority'];
+    if (surf['release'] is String) entry['release'] = surf['release'];
     out.add(entry);
   }
   return out;
@@ -1108,6 +1172,44 @@ class IntakeEngine {
       flowsPath = '$dir/flows.json';
       _write('$dir/answers.json', '${json.convert(answers)}\n');
       _write(flowsPath, '${json.convert(emitFlows(answers))}\n');
+      // Slice B1 — four more project-shell artifacts, all pure functions of the
+      // same answers (see intake_artifacts.dart). They are written ONLY on the
+      // --project path: the legacy design-root path has no shell to put them
+      // in, and scattering them next to a repo registry.json would give the
+      // studio two sources for the same document.
+      //
+      // map.json goes through mergeStoryMap for the same reason registry.json
+      // goes through mergeRegistry: its `statuses` are authored in the studio
+      // and live only in the generated file, so a straight overwrite would
+      // delete them with nothing to restore from.
+      _write('$dir/personas.json', '${json.convert(emitPersonas(answers))}\n');
+      _write('$dir/map.json',
+          '${json.convert(mergeStoryMap(emitStoryMap(answers), '$dir/map.json'))}\n');
+      _write('$dir/moodboard.json', '${json.convert(emitMoodboard(answers))}\n');
+      _write('$dir/direction.json', '${json.convert(emitDirection(answers))}\n');
+      // The PRD is a SECOND rendering of the same answers, not a second source:
+      // [emitPrd] reads exactly what [emitBrief] reads and invents nothing the
+      // brief would not also carry. It exists because a brief and a PRD are
+      // read by different people for different decisions, not because there is
+      // more information — so a field nobody supplied becomes an open question
+      // in it rather than a confident paragraph.
+      _write('$dir/prd.md', emitPrd(answers));
+      // ADRs, at last (task #67). The note that stood here said none could be
+      // written because nothing in the pipeline records a decision. That was
+      // true of the four sources it named — the kit registry catalogues kits
+      // that exist rather than alternatives weighed, and nothing anywhere
+      // selects one — but wrong about intake itself, which chooses on every
+      // emit and threw the reason away: the draft flow decomposition, the
+      // derived surface states, the derived edge toasts. Each already stamps
+      // its output `inferred`, which is this engine declaring it chose without
+      // being told; `decision_log.dart` now keeps the WHY alongside, read from
+      // the same word sets the rules use so the reason cannot drift from the
+      // rule that fired.
+      //
+      // A project that inferred nothing still writes an EMPTY decisions.json
+      // and no `adr/` at all — [collectDecisions] returns `[]` and `emitAdrs`
+      // renders nothing, which is the honest output rather than a gap.
+      writeDecisionLog(dir, collectDecisions(answers));
     } else {
       briefPath = briefOut ?? defaultBriefOut();
       registryPath = registryOut ?? defaultRegistryOut();
