@@ -91,12 +91,20 @@ const labelOf = (id) => (LABELS ??= Object.fromEntries(screens.all().map((e) => 
 function stepItems(step, L) {
   if (step === 'personas') return repo.personas(L);
   if (step === 'surfaces') {
-    const groups = {};
-    for (const s of repo.brief(L).surfaces) {
-      const shell = s.id.split('.')[0];
-      (groups[shell] ??= { id: shell, label: labelOf(shell + '.shell') === shell + '.shell' ? shell : labelOf(shell + '.shell'), surfaces: [] }).surfaces.push(s);
+    // The CURRENT PROJECT's screen registry, grouped by shell — the studio's
+    // own brief.surfaces is its design brief, never this project's inventory.
+    // Registry entries carry no MoSCoW (priority/release): those live on the
+    // brief, not on the scaffolder's registry, so those chips render empty.
+    try {
+      const groups = {};
+      for (const s of proj.registry()) {
+        const shell = s.shell ?? s.id.split('.')[0];
+        (groups[shell] ??= { id: shell, label: labelOf(shell + '.shell') === shell + '.shell' ? shell : labelOf(shell + '.shell'), surfaces: [] }).surfaces.push(s);
+      }
+      return Object.values(groups);
+    } catch {
+      return []; // no project overlaid — nothing to confirm
     }
-    return Object.values(groups);
   }
   if (step === 'flows') {
     // The CURRENT PROJECT's flows (live-read from its intake/flows.json),
@@ -114,13 +122,28 @@ function stepItems(step, L) {
       return []; // no project overlaid — nothing to confirm
     }
   }
-  // direction: three groups, each one item
-  const d = repo.direction(L);
-  return [
-    { id: 'adjectives', values: d.adjectives },
-    { id: 'avoids', values: d.avoids },
-    { id: 'references', values: d.references },
-  ];
+  // direction: the CURRENT PROJECT's direction answer (intake/answers.json),
+  // one group per axis. The studio's own adjectives are its design brief —
+  // never this project's. The answer holds bare strings under a single
+  // provenance; the chips want {value, provenance}, so they are stamped here.
+  // A group only exists when the project supplies it, so a project with no
+  // moodboard pulls simply has no `references` group rather than an empty
+  // card — the references rows read {board, note}, which answers.json has no
+  // field for. Absent it stays; the moment the answer grows one, it appears.
+  try {
+    const d = proj.answers().direction;
+    const prov = d.provenance ?? 'inferred';
+    const groups = [];
+    for (const id of ['adjectives', 'avoids']) {
+      const values = (d.value?.[id] ?? []).map((value) => ({ value, provenance: prov }));
+      if (values.length) groups.push({ id, values });
+    }
+    const refs = d.value?.references ?? [];
+    if (refs.length) groups.push({ id: 'references', values: refs });
+    return groups;
+  } catch {
+    return []; // no project overlaid, or no direction answered — nothing to confirm
+  }
 }
 
 function withStates(items, st) {
@@ -434,7 +457,9 @@ export const context = (sd, surface, ref, prefs = {}, t = (k) => k, locale = 'en
   return {
     surface,
     base,
-    project: { name: repo.project(L) },
+    // The CURRENT PROJECT's name, null when serving the artifact alone —
+    // the studio's own fixture name is not this project's.
+    project: { name: proj.currentName() },
     eyebrow: t('intake.eyebrow.' + surface),
     composerAction: `${base}/messages`,
     placeholder: t('composer.placeholder.intake'),

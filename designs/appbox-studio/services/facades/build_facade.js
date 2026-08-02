@@ -431,9 +431,64 @@ function artifactIndex({ gates, stages }, t) {
   ];
 }
 
+// The empty stage: this project has no build evidence yet. Same key set as
+// the loaded context below (the surface's one contract, emptied) so every
+// fragment macro renders blank instead of iterating undefined. noEvidence
+// is the flag loop_view branches on; the project name comes from the
+// project itself, since the run fixture that normally carries it is absent.
+const emptyContext = (sessionData = {}, prefs = {}, t = (k) => k) => {
+  const name = proj.currentName();
+  return {
+    noEvidence: true,
+    run: null,
+    project: name ? { name } : null,
+    composerAction: '/build/messages',
+    modelMenu: agent.modelMenuFor(sessionData, '/build', t),
+    threading: false,
+    stages: [],
+    gates: [],
+    counts: { findings: 0, gatesPending: 0, stagesGreen: 0 },
+    messages: [],
+    filter: 'all',
+    timeline: { items: [], currentId: null },
+    activeArtifact: null,
+    artifact: null,
+    fileView: null,
+    panel: B(sessionData).panel ?? 'main',
+    viewer: null,
+    chips: [],
+    noteGate: null,
+    suggestions: [],
+    placeholder: t('composer.placeholder.build'),
+    activityView: 'run',
+    panelSize: panelSizeFor(sessionData, 'left'),
+    panelSizeHref: '/build/panel/size/left/',
+    activityViews: [],
+    artifacts: [],
+    commits: [],
+    files: [],
+    jargonLevel: jargon.level(prefs),
+  };
+};
+
+// Emptiness is a facade question, not a viewmodel one — viewmodels import
+// facades only, never repositories. Returns null when the project HAS
+// evidence (render the real stage); otherwise the whole context the empty
+// stage needs. Callers must check this before entering loopContext: that
+// path dereferences the build.acceptance gate unguarded, so an empty gate
+// list throws a TypeError straight to a 500.
+export const emptyLoopContext = (locale = 'en', sessionData = {}, prefs = {}, t = (k) => k) =>
+  (repo.hasEvidence(locale) ? null : emptyContext(sessionData, prefs, t));
+
 export const loopContext = (sessionData = {}, ref = null, prefs = {}, t = (k) => k, locale = 'en', fileArg, panelArg) => {
   const L = locale;
   const lv = jargon.level(prefs);
+  // Nothing in appboxd writes build evidence yet, so every project reads
+  // empty today. Answer before the pipeline shaping below, which assumes a
+  // real run: runWithState dereferences the build.acceptance gate, and an
+  // empty gate list would throw a TypeError straight to a 500. Every other
+  // export funnels through here, so this one guard covers the whole surface.
+  if (!repo.hasEvidence(L)) return emptyContext(sessionData, prefs, t);
   // The open file (main panel): ?file=<path> opens, ?file=none closes; an
   // artifact open always clears it — the main panel shows one thing.
   if (fileArg === 'none') delete B(sessionData).currentFile;

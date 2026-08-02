@@ -1,14 +1,17 @@
 // appbox:provenance
 // generator: appbox  licence: free  project: 662368770980
 // Built with appbox (free tier) — https://appbox.dev
-// ProjectRepository — the CURRENT PROJECT's intake outputs (registry, flows)
-// and surface partials, live-read through the server overlay. The design
+// ProjectRepository — the CURRENT PROJECT's intake outputs (registry, flows,
+// answers) and surface partials, live-read through the server overlay. The design
 // viewer's flows lens, the flow-driven stub chrome (tab bar, advance links)
 // and the intake flows surface all read from here.
 import { readProjectFixture, writeProjectFixture } from './fixture_reader.js';
 
 export const registry = () => readProjectFixture('intake/registry.json');
 export const flows = () => readProjectFixture('intake/flows.json');
+// The intake interview's recorded answers ({product, audience, direction, …},
+// each {value, provenance}) — the intake surfaces prefill from here.
+export const answers = () => readProjectFixture('intake/answers.json');
 export const registryEntry = (id) => registry().find((e) => e.id === id);
 
 // Flow edits (move/add/remove from the viewer) write the whole flows.json

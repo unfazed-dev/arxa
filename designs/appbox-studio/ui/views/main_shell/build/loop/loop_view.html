@@ -484,10 +484,28 @@
 <div hx-swap-oob="beforeend:#toasts"><div class="toast" id="toast-run">{{ c.run.stateLabel }}</div></div>
 {% endmacro %}
 
+{# ---------- No build evidence yet ----------
+   Nothing in appboxd writes build evidence, so this is what EVERY project
+   shows today. The surface says so plainly rather than rendering an empty
+   run skeleton (which reads as broken) or another project's demo run.
+   Same empty-read language as mp.empty() — mp-content/mp-empty, muted.
+   The copy is literal: l10n/app_en.arb is outside this change's scope, so
+   these two lines are the one untranslated string pair on the surface. #}
+{% macro noEvidence(c) %}
+<div class="panels" id="panels" data-panel="main">
+  <div class="panel-main" id="panel-main">
+    <section class="mp-content mp-empty" id="mp-content">
+      <p>No build evidence yet — run a build to populate this surface.</p>
+      <p class="muted">Stages, human gates, findings and screen evidence appear here once a run has written them.</p>
+    </section>
+  </div>
+</div>
+{% endmacro %}
+
 {# ---------- Page ---------- #}
 
 {% block footer %}
-{{ timeline(c, false) }}
+{% if not c.noEvidence %}{{ timeline(c, false) }}{% endif %}
 {% endblock %}
 
-{% block surface %}{{ panels(c, false) }}{% endblock %}
+{% block surface %}{% if c.noEvidence %}{{ noEvidence(c) }}{% else %}{{ panels(c, false) }}{% endif %}{% endblock %}

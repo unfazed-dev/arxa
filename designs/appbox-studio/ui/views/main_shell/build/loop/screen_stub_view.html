@@ -24,18 +24,12 @@
   <div class="stub-screen" style="{{ '' if embed else 'max-width: ' + width + 'px' }}">
     {% if not embed %}
     <header class="stub-nav" data-el="nav-bar" data-inspect-role="nav" data-inspect-style="app bar · brand + links" data-inspect-motion="none" data-inspect-fn="Top-level navigation and brand for the screen">
-      {% if kind in ['home', 'cart', 'checkout', 'confirmation'] %}
-      <span class="stub-brand">Petal &amp; Stem</span>
-      {% elif partial %}
+      {% if partial %}
       <span class="stub-brand">{{ t('app.brand') }}</span>
       {% else %}
       <span class="stub-brand">appbox</span>
       {% endif %}
-      {% if kind == 'home' %}<span class="stub-nav-links">Shop · Occasions · About</span>{% endif %}
-      {% if kind == 'cart' %}<span class="stub-nav-links">Your cart</span>{% endif %}
-      {% if kind == 'checkout' %}<span class="stub-nav-links">Checkout</span>{% endif %}
-      {% if kind == 'confirmation' %}<span class="stub-nav-links">Order #PS-1042</span>{% endif %}
-      {% if not partial and kind not in ['home', 'cart', 'checkout', 'confirmation'] %}<span class="stub-nav-links">{{ t('stub.kind.' ~ kind) }}</span>{% endif %}
+      {% if not partial %}<span class="stub-nav-links">{{ t('stub.kind.' ~ kind) }}</span>{% endif %}
     </header>
     {% endif %}
 
@@ -43,38 +37,8 @@
     {# The CURRENT PROJECT's bespoke screen (~/.appbox design/surfaces/<kind>.html,
        served as ui/project/<kind>.html through the overlay). #}
     {% include partial %}
-    {% elif kind == 'home' %}
-    <section class="stub-hero" data-el="hero" data-inspect-role="hero" data-inspect-style="display headline + lede" data-inspect-motion="reveal" data-inspect-fn="States the shop's value proposition">
-      <h1>Fresh stems, same day</h1>
-      <p>Hand-tied in the studio this morning.</p>
-    </section>
-    <section class="stub-grid">
-      {% for i in [1, 2, 3, 4, 5, 6] %}
-      <article class="stub-card" data-el="product-card:Bouquet {{ i }}" data-inspect-role="card" data-inspect-style="card grid · thumb + name + price" data-inspect-motion="spotlight" data-inspect-fn="Opens the bouquet detail"><span class="stub-thumb"></span><b>Bouquet {{ i }}</b><span class="stub-price">$4{{ i }}</span></article>
-      {% endfor %}
-    </section>
-    {% elif kind == 'cart' %}
-    <section class="stub-rows">
-      {% for i in [1, 2, 3] %}
-      <div class="stub-row" data-el="cart-item:Bouquet {{ i }}" data-inspect-role="list row" data-inspect-style="row · thumb + name + price" data-inspect-motion="none" data-inspect-fn="One line item in the cart"><span class="stub-thumb sm"></span><span class="stub-row-name">Bouquet {{ i }}</span><span class="stub-price">$4{{ i }}</span></div>
-      {% endfor %}
-    </section>
-    <footer class="stub-summary" data-el="cart-summary" data-inspect-role="summary" data-inspect-style="footer row · total" data-inspect-motion="none" data-inspect-fn="Cart total and checkout entry"><span>Total</span><b>$136</b></footer>
-    {% elif kind == 'checkout' %}
-    <section class="stub-form">
-      {% for f in ['Delivery address', 'Delivery date', 'Card for the occasion', 'Payment'] %}
-      <div class="stub-field" data-el="form-field:{{ f }}" data-inspect-role="form field" data-inspect-style="label + input shell" data-inspect-motion="none" data-inspect-fn="Collects one checkout input"><label>{{ f }}</label><span class="stub-input"></span></div>
-      {% endfor %}
-      <button class="stub-cta" data-el="place-order" data-inspect-role="button" data-inspect-style="primary CTA pill" data-inspect-motion="notify" data-inspect-fn="Submits the order">Place order</button>
-    </section>
-    {% elif kind == 'confirmation' %}
-    <section class="stub-hero center" data-el="hero" data-inspect-role="hero" data-inspect-style="confirmation · check + headline" data-inspect-motion="reveal" data-inspect-fn="Confirms the order went through">
-      <span class="stub-check">{{ icon('check', {size: 22}) }}</span>
-      <h1>Order placed</h1>
-      <p>Bouquets arrive Thursday before noon.</p>
-    </section>
     {% else %}
-    {# Generic fallback: any surface without a bespoke stub renders an honest
+    {# Any surface without a bespoke project partial renders an honest
        labelled placeholder — nav carries the name, a few blocks stand in. #}
     <section class="stub-hero" data-el="hero" data-inspect-role="hero" data-inspect-style="display headline + note" data-inspect-motion="reveal" data-inspect-fn="Names the screen being previewed">
       <h1>{{ t('stub.kind.' ~ kind) }}</h1>
