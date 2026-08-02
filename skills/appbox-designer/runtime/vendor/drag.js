@@ -61,7 +61,7 @@
       || '/design/chat/context/bulk';
     btn.addEventListener('click', () => {
       htmx.ajax('POST', base + '?ids=' + encodeURIComponent(ids.join(',')), {
-        target: '#panels', swap: 'outerHTML',
+        target: '#panels', swap: 'morph:outerHTML',
       });
     });
     el.appendChild(btn);
@@ -148,7 +148,7 @@
       if (index === current) return;
       htmx.ajax('POST', `/design/flows/${encodeURIComponent(flow)}/move/${encodeURIComponent(id)}`, {
         values: { index: String(index) },
-        target: '#panels', swap: 'outerHTML',
+        target: '#panels', swap: 'morph:outerHTML',
       });
     }, { once: true });
   };
@@ -196,7 +196,7 @@
         const w = Math.round(rail.getBoundingClientRect().width);
         badge.remove();
         htmx.ajax('POST', '/design/panel/size/' + encodeURIComponent(side), {
-          values: { width: String(w) }, target: '#panel-' + side, swap: 'outerHTML',
+          values: { width: String(w) }, target: '#panel-' + side, swap: 'morph:outerHTML',
         });
       }, { once: true });
     });
@@ -253,6 +253,6 @@
     if (!location.pathname.startsWith('/design')) return; // undo stacks are design-shell state
     e.preventDefault();
     htmx.ajax('POST', `/design/${e.shiftKey ? 'redo' : 'undo'}/${pointerStack}`,
-      { target: '#panels', swap: 'outerHTML' });
+      { target: '#panels', swap: 'morph:outerHTML' });
   });
 })();

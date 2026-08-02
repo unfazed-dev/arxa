@@ -25,6 +25,37 @@ import 'package:appboxd/cdp.dart';
 import 'package:appboxd/design_server/l10n.dart' show parseArb;
 import 'package:path/path.dart' as p;
 
+/// `ps` elapsed time (`[[dd-]hh:]mm:ss`) to seconds. macOS `ps` has no
+/// `etimes` keyword (that is procps-only), so this formatted field is all we
+/// get and it has to be parsed by hand.
+///
+/// Returns null when unparseable, and every caller must read that as "too
+/// young to touch" rather than "old". Failing open matters: this value is the
+/// only thing separating a live `appbox-cdp-` Chrome from a leaked one, so a
+/// parser that quietly returned a large number on bad input would start
+/// killing live browsers, and one that quietly returned 0 would disable
+/// reaping altogether. Neither failure announces itself, hence the test.
+int? etimeSeconds(String s) {
+  var rest = s.trim();
+  var days = 0;
+  final dash = rest.indexOf('-');
+  if (dash >= 0) {
+    final d = int.tryParse(rest.substring(0, dash));
+    if (d == null) return null;
+    days = d;
+    rest = rest.substring(dash + 1);
+  }
+  final parts = rest.split(':').map(int.tryParse).toList();
+  if (parts.isEmpty || parts.any((p) => p == null)) return null;
+  final v = parts.cast<int>();
+  final hms = switch (v.length) {
+    3 => v[0] * 3600 + v[1] * 60 + v[2],
+    2 => v[0] * 60 + v[1],
+    _ => null,
+  };
+  return hms == null ? null : days * 86400 + hms;
+}
+
 /// One dispatched request's outcome, plus the per-request state the worker
 /// hands back so Dart can persist sessions/timers/locale across reloads.
 class WorkerResponse {
@@ -283,55 +314,95 @@ class _ChromeHandle {
   final Directory tmpDir;
   int get pid => process.pid;
 
-  /// Marker identifying a Chrome this class launched: our own `--user-data-dir`
-  /// under systemTemp. Narrow on purpose — it must never match a Chrome the
-  /// user is running themselves.
-  static String get _udd =>
-      '--user-data-dir=${Directory.systemTemp.path}/appbox-design-worker-';
+  /// Markers identifying a Chrome appbox launched: our own `--user-data-dir`
+  /// prefixes under systemTemp. Narrow on purpose — they must never match a
+  /// Chrome the user is running themselves.
+  ///
+  /// BOTH prefixes, not just this class's. `CdpClient` (`cdp.dart`) opens its
+  /// own Chrome under `appbox-cdp-` and leaks it by exactly the same routes.
+  /// Sweeping only the worker prefix left those orphans resident for days
+  /// while the sweep reported success — the fix was correct for what it
+  /// claimed and narrower than the leak.
+  static const _uddWorker = 'appbox-design-worker-';
+  static const _uddCdp = 'appbox-cdp-';
+  static const _uddNames = [_uddWorker, _uddCdp];
 
-  /// Reap Chrome trees a previous server leaked, and the temp dirs they held.
+  static List<String> get _udds => [
+        for (final n in _uddNames)
+          '--user-data-dir=${Directory.systemTemp.path}/$n',
+      ];
+
+  /// A CDP session lasts seconds to minutes. An hour is far outside that and
+  /// still reaps day-old strays. See [sweepOrphans] for why age is needed at
+  /// all for this prefix and not for the worker one.
+  static const _cdpMinAgeSeconds = 3600;
+
+  /// Reap Chrome trees a previous run leaked, and the temp dirs they held.
   ///
   /// SIGKILL and a hard crash can never run [close], so signal handlers alone
-  /// cannot close this hole — the only cure is to sweep at the next boot. Two
-  /// conditions, both required: the process carries OUR user-data-dir prefix,
-  /// AND it has been reparented to init. A live worker is always a child of
-  /// its own Dart server, never of pid 1, so a running instance cannot match.
+  /// cannot close this hole — the only cure is to sweep at the next boot.
+  ///
+  /// The orphan test is PER PREFIX, because "reparented to init" means
+  /// different things for the two launchers:
+  ///
+  ///  * `appbox-design-worker-` — a live worker is always a child of its own
+  ///    Dart server, so ppid==1 is a sound orphan signal on its own.
+  ///  * `appbox-cdp-` — `CdpClient` launches with `--no-startup-window`, and
+  ///    such a Chrome legitimately reparents to init while perfectly alive.
+  ///    ppid==1 here proves nothing. Treating it as proof killed live Chromes
+  ///    out from under concurrently running CDP work (four test files went red
+  ///    the moment this prefix was added without the age guard). Age is the
+  ///    discriminator that actually separates the two.
+  ///
+  /// Anything not judged an orphan has its profile dir marked live, so the
+  /// directory sweep below cannot delete it either.
+  ///
   /// Reaps are announced — a sweep that killed things silently would be the
   /// same invisible-failure trap this server already had once.
   static void sweepOrphans() {
     final ProcessResult ps;
     try {
-      ps = Process.runSync('ps', ['-eo', 'pid=,ppid=,command=']);
+      ps = Process.runSync('ps', ['-eo', 'pid=,ppid=,etime=,command=']);
     } catch (_) {
       return; // no ps (unlikely) — a leak is better than a crash on boot.
     }
     if (ps.exitCode != 0) return;
     final live = <String>{}; // user-data-dirs still owned by a running Chrome
     final orphans = <int>[];
+    final udds = _udds;
     for (final line in (ps.stdout as String).split('\n')) {
-      final at = line.indexOf(_udd);
+      var at = -1;
+      for (final u in udds) {
+        at = line.indexOf(u);
+        if (at >= 0) break;
+      }
       if (at < 0) continue;
       final dir = line.substring(at + '--user-data-dir='.length).split(' ').first;
       final f = line.trimLeft().split(RegExp(r'\s+'));
-      final pid = f.isEmpty ? null : int.tryParse(f[0]);
-      final ppid = f.length < 2 ? null : int.tryParse(f[1]);
+      if (f.length < 3) continue;
+      final pid = int.tryParse(f[0]);
+      final ppid = int.tryParse(f[1]);
+      final age = etimeSeconds(f[2]);
       if (pid == null) continue;
-      if (ppid == 1) {
+      final isWorker = dir.contains('/$_uddWorker');
+      // Unparseable age counts as young: never kill on a field we failed to read.
+      final oldEnough = age != null && age > _cdpMinAgeSeconds;
+      if (ppid == 1 && (isWorker || oldEnough)) {
         orphans.add(pid);
       } else {
-        live.add(dir); // a server still owns this profile — hands off
+        live.add(dir); // still owned, or too young to call — hands off
       }
     }
     for (final pid in orphans) {
       try {
         Process.killPid(pid, ProcessSignal.sigkill);
-        stderr.writeln('design serve: reaped orphaned worker chrome $pid');
+        stderr.writeln('design serve: reaped orphaned appbox chrome $pid');
       } catch (_) {}
     }
     // Their profile dirs are ours and are never reused. Skip any still claimed
     // by a running Chrome — deleting a live profile would break that server.
     for (final d in Directory.systemTemp.listSync().whereType<Directory>()) {
-      if (!d.path.contains('/appbox-design-worker-')) continue;
+      if (!_uddNames.any((n) => d.path.contains('/$n'))) continue;
       if (live.contains(d.path)) continue;
       try {
         d.deleteSync(recursive: true);

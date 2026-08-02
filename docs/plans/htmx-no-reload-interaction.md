@@ -116,7 +116,81 @@ out-of-band swaps are for.
 Note `globalViewTransitions:true` is already set; view transitions combined
 with heavy fine-grained OOB is a known-fragile combination. Measure it.
 
-## Lever 3 — no reload *inside* generated screens (NOT STARTED)
+## Inspect was dead, for a reason nobody could see (FIXED)
+
+Reported as "cannot click a component to add it to context, highlight it, or
+see its details." Two defects, and the primary one was not the obvious one.
+
+**1. The armed flag never parsed.** `screen_stub_view.html` emitted it as an
+interpolated attribute *string*:
+
+```nunjucks
+<body ... {{ 'data-inspect-armed="true"' if inspect }}>
+```
+
+Nunjucks autoescapes that, so the quotes became `&#34;` and the parser read an
+**unquoted** attribute value that decoded to `"true"` — quote characters
+included. `inspect.js` tests `dataset.inspectArmed === 'true'`, which was
+therefore false on every screen ever rendered. The island loaded, armed
+nothing, and every hover/click handler returned on its first line. Now a real
+conditional attribute (`{% if inspect %} data-inspect-armed="true"{% endif %}`).
+
+Same class as the `pri.name.undefined` chip bug: a template-level rendering
+defect that no test could see, because every check asked whether the *element*
+was present, never whether its *value* was sane.
+
+**2. Nothing to bind to.** `DESIGN-ARCHITECTURE.md:207` makes inspect metadata
+mandatory on anything carrying `data-el` — and all 12 of portalo's surfaces
+carried zero. `e.target.closest('[data-el]')` was always null. The MUST was
+documented and unenforced, which is the same family as findings 8, 11 and 14: a
+rule that cannot fail.
+
+Fixed at the root, not just for portalo: **a 5th ADR-0002 lint rule**
+(`design_tools.dart`). Two halves, because the first half alone was itself a
+check that passes over an empty set —
+
+- any `[data-el]` must carry `role`/`style`/`fn` (`motion` may be absent);
+- **and** a file under `surfaces/` that renders interactive elements while
+  carrying *no* `data-el` at all is a finding. Without this the rule was green
+  on a surface that annotated nothing, which is exactly how 12 of 12 shipped.
+
+Proven falsifiable red-first: 8 surfaces failed, the studio (the reference
+implementation) stayed green, then annotation brought both to clean.
+
+Not a defect, though it looked like one: the overlay CSS. `.inspect-outline`
+lives in `viewer.css`, which the stub never loads — but `inspect.js` sets the
+full styling inline (`position:fixed`, `z-index`, tint). The island is
+deliberately self-contained per ADR-0002; those CSS rules are vestigial.
+
+**Programmatic swaps had to be fixed too.** `htmx.ajax()` takes its swap style
+from its options, not from `hx-swap` attributes, so five island calls
+(`inspect.js` ×1, `drag.js` ×4) still hardcoded `outerHTML` and rebuilt every
+iframe — pinning an element reloaded the very screen being inspected. Now
+`morph:outerHTML`. Verified: pinning keeps 20/20 iframes with 0 re-navigations.
+
+## Lever 3 — no reload *inside* generated screens (DONE)
+
+`screen_stub_view.html` now implements ADR-0003's Boosted MPA, but only for
+frames the user can actually click:
+
+- htmx + `hx-boost="true" hx-sync="this:replace"` + `globalViewTransitions`,
+  loaded under `{% if not still %}`. Static canvas tiles are
+  `pointer-events: none`, so they stay script-free rather than parsing htmx 20
+  times over.
+- `allowEval:false` / `allowScriptTags:false` keep ADR-0002's boundary intact.
+- **`pqs` now carries `inspect`.** It did not, so navigating inside an
+  inspected screen dropped `?inspect=1` on the next hop and inspect died
+  silently after exactly one click.
+- `inspect.js`'s `ensureOverlay` now checks `isConnected`. A boosted swap
+  replaces the body's children, detaching the cached overlay nodes while the
+  references stay live; the old `if (outlineEl) return;` would have handed back
+  an orphan forever after the first in-frame navigation.
+
+Verified (`tools/probe-boost.mjs`): still tiles load no htmx; live tiles carry
+`hx-boost`; `home → category` changes the screen while a `window` token
+survives, proving a same-document swap rather than a full load.
+
+### Original Lever 3 specification (superseded by the above)
 
 Independent of Levers 1–2, and the half that answers "reusable in the designs
 appbox-designer generates."

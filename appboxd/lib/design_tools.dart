@@ -69,6 +69,50 @@ final _lintRules = <(RegExp, String)>[
    '[expr] trigger filter'),
 ];
 
+/// Rule 5 — inspect metadata, per DESIGN-ARCHITECTURE.md "Inspect metadata":
+/// the set is mandatory on anything carrying `data-el`; `data-inspect-motion`
+/// may legitimately be absent (it means "none"), the other three never omit.
+///
+/// This was a documented MUST that nothing enforced, so every one of a real
+/// project's surfaces violated it and the inspect island had nothing to bind
+/// to — hover and click silently did nothing. A rule that cannot fail is the
+/// same defect as a rule that is not written down.
+///
+/// Per-tag rather than per-file: the other four rules ask "does this file
+/// contain X", this one asks "does this element carry its siblings".
+final _tagRe = RegExp(r'<[a-zA-Z][^>]*?>', dotAll: true);
+const _inspectRequired = ['data-inspect-role', 'data-inspect-style', 'data-inspect-fn'];
+
+/// `isSurface` scopes the stricter half. A *designed screen* that annotates
+/// nothing is the failure that let inspect rot; the studio's own chrome links
+/// are not designed elements of a client app, so only files under `surfaces/`
+/// are held to "if you render interactive elements, annotate them".
+final _interactiveRe = RegExp(r'<(?:a\s[^>]*\bhref|button\b)', dotAll: true);
+
+List<String> inspectFindings(String src, {bool isSurface = false}) {
+  final out = <String>[];
+  for (final m in _tagRe.allMatches(src)) {
+    final tag = m[0]!;
+    if (!RegExp(r'\bdata-el\s*=').hasMatch(tag)) continue;
+    final missing = _inspectRequired.where((a) => !tag.contains(a)).toList();
+    if (missing.isEmpty) continue;
+    final name = RegExp(r'''data-el\s*=\s*["']([^"']{0,40})''').firstMatch(tag)?[1] ?? '?';
+    out.add('[data-el="$name"] missing ${missing.join(", ")}');
+  }
+  // The vacuous-pass guard. Without this the rule above is green on a surface
+  // with no annotations at all — which is precisely how 12 of 12 surfaces
+  // shipped unannotated and inspect had nothing to bind to.
+  if (isSurface) {
+    final interactive = _interactiveRe.allMatches(src).length;
+    final annotated = RegExp(r'\bdata-el\s*=').allMatches(src).length;
+    if (interactive > 0 && annotated == 0) {
+      out.add('surface renders $interactive interactive element(s) but carries '
+          'no data-el — inspect has nothing to bind to');
+    }
+  }
+  return out;
+}
+
 List<File> _walk(Directory d) => d
     .listSync(recursive: true)
     .whereType<File>()
@@ -85,6 +129,10 @@ List<LintFinding> lintArtifact(String artifactDir) {
       if (re.hasMatch(src)) {
         findings.add(LintFinding(f.path, msg));
       }
+    }
+    final isSurface = f.path.contains('${p.separator}surfaces${p.separator}');
+    for (final msg in inspectFindings(src, isSurface: isSurface)) {
+      findings.add(LintFinding(f.path, msg));
     }
   }
   return findings;

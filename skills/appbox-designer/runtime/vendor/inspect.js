@@ -47,7 +47,12 @@
   let momentary = false; // true only while Alt is the thing that armed us
 
   const ensureOverlay = () => {
-    if (outlineEl) return;
+    // isConnected, not a plain truthiness check: under boosted navigation htmx
+    // replaces the body's children, which detaches these nodes while our
+    // references stay live. A `if (outlineEl) return;` would then keep handing
+    // back an orphan that renders nowhere, and inspect would silently stop
+    // drawing after the first in-frame navigation.
+    if (outlineEl && outlineEl.isConnected && labelEl && labelEl.isConnected) return;
     outlineEl = document.createElement('div');
     outlineEl.className = 'inspect-outline';
     labelEl = document.createElement('div');
@@ -142,10 +147,16 @@
       // htmx lives on the parent (the stub document need not load it). The
       // pin is session state, so re-GETting the parent's own URL re-renders
       // it; select: extracts #panels out of the full-page response.
+      // morph:outerHTML, not outerHTML — a replace-style swap here rebuilds
+      // every screen iframe INCLUDING the one being inspected, so pinning an
+      // element reloaded the screen out from under the user mid-inspection.
+      // Programmatic htmx.ajax() takes its swap style from this option, not
+      // from the hx-swap attributes in the templates, so it has to be named
+      // here too.
       const p = window.parent;
       if (p && p.htmx) {
         p.htmx.ajax('GET', p.location.pathname + p.location.search,
-          { target: '#panels', swap: 'outerHTML', select: '#panels' });
+          { target: '#panels', swap: 'morph:outerHTML', select: '#panels' });
       }
     });
   }, true);

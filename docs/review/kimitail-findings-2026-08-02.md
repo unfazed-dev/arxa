@@ -193,13 +193,41 @@ mechanism each named was still real.
     a step that silently does not run are the same defect. Fixed by naming the
     real package, pinning it, and **deleting the `optional` mechanism
     entirely** — the analyzer confirmed nothing else used it.
-15. **`appbox-cdp-*` Chrome orphans are outside finding 10's sweep.**
-    `_ChromeHandle.sweepOrphans()` matches the `appbox-design-worker-`
-    user-data-dir prefix only. A second launch path (`CdpClient`) uses
-    `appbox-cdp-` and leaks identically; one such orphan from 2026-08-01
-    (pid 25068, ppid 1) was still resident. The finding-10 fix is correct for
-    what it claimed, but the leak class is wider than the fix. Either widen
-    the sweep to both prefixes or give both launchers a shared owner.
+15. **`appbox-cdp-*` Chrome orphans were outside finding 10's sweep** —
+    **CLOSED**, after the first attempt at the fix broke four test files.
+    `sweepOrphans()` matched the `appbox-design-worker-` prefix only; a second
+    launch path (`CdpClient`) uses `appbox-cdp-` and leaks identically (an
+    orphan from 2026-08-01, pid 25068, was still resident 26h later).
+    Simply adding the prefix was **wrong**, and measurably so: 4 CDP test files
+    went red with the widened sweep and the full suite passed 907/907 with it
+    stashed. Cause: `cdp.dart:127` launches with `--no-startup-window`, and
+    such a Chrome legitimately reparents to init — so `ppid == 1`, which is a
+    sound orphan signal for the worker prefix (a live worker is always a child
+    of its Dart server), proves **nothing** for the CDP prefix. The sweep was
+    killing live browsers out from under concurrent work, and deleting their
+    profile dirs too, since they never entered the "still owned" set.
+    The original comment said *"Narrow on purpose — it must never match a
+    Chrome the user is running themselves"*; widening it broke exactly that
+    invariant. Correct fix: the orphan test is now **per prefix** — `ppid == 1`
+    alone for the worker, `ppid == 1` **and** age > 1h for CDP (a real CDP
+    session is seconds to minutes). Age comes from `ps -o etime=`, since macOS
+    has no `etimes` keyword; an unparseable value counts as *young*, so a
+    parser failure can never license a kill. That parser is the only thing
+    separating live from leaked and fails silently in both directions, so it
+    has its own test (`test/worker_etime_test.dart`).
+    Verified: 913/913 tests; a SIGKILLed server's worker still reaped on next
+    boot; the real 26h-old CDP orphan reaped.
+17. **Inspect was dead on every screen** — **CLOSED**, two defects, see
+    `docs/plans/htmx-no-reload-interaction.md`. (a) `screen_stub_view.html`
+    emitted the armed flag as an interpolated attribute string, so nunjucks
+    autoescaping produced an attribute whose *value* was `"true"` including
+    quote characters; `dataset.inspectArmed === 'true'` was false everywhere
+    and every handler returned immediately. (b) All 12 of a real project's
+    surfaces carried zero `data-el`, so there was nothing to bind to — a
+    `DESIGN-ARCHITECTURE.md` MUST that nothing enforced. Fixed with a 5th
+    ADR-0002 lint rule that includes an explicit vacuous-pass guard, because
+    the per-element half alone was green on a surface annotating nothing —
+    the same defect it exists to catch.
 16. **`design_server_test.dart` "serving (Chrome worker)" is flaky.** Its
     `setUpAll` failed in 2 of 6 full-suite runs, and the failures do not
     correlate with the change under test — it failed once *with* the morph

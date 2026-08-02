@@ -17,9 +17,30 @@
   <link rel="stylesheet" href="/assets/css/appshell.css">
   <link rel="stylesheet" href="/assets/css/media.css">
   {% endif %}
+  {% if not still %}
+  {# Boosted MPA (ADR-0003) for the frames the user can actually click: the
+     live tile and the proto lens. Without it every in-prototype click is a
+     full document load of the iframe — a white flash per interaction.
+     `still` frames are the static canvas tiles (pointer-events: none), so
+     they stay script-free rather than parsing htmx 20 times over.
+     globalViewTransitions animates the body swap with zero JS; allowEval and
+     allowScriptTags stay false so the stub keeps ADR-0002's no-custom-JS
+     boundary. #}
+  <meta name="htmx-config" content='{"allowEval":false,"allowScriptTags":false,"globalViewTransitions":true}'>
+  <script src="/assets/vendor/htmx.min.js" integrity="sha384-H5SrcfygHmAuTDZphMHqBJLc3FhssKjG7w/CeCpFReSfwBWDTKpkzPP8c+cLsK+V" crossorigin="anonymous"></script>
+  {% endif %}
 </head>
-<body class="stub-body {{ 'stub-embed' if embed }}" data-surface="{{ surface }}" {{ 'data-inspect-armed="true"' if inspect }}>
-{% set pqs = '?vp=' + vp + ('&embed=1' if embed else '') + ('&still=1' if still else '') %}
+{# The armed flag MUST be a real conditional attribute, not an interpolated
+   attribute string. `{{ 'data-inspect-armed="true"' if inspect }}` autoescapes
+   the quotes to &#34;, so the parser reads an UNQUOTED value that decodes to
+   `"true"` — quote characters and all — and inspect.js's
+   `dataset.inspectArmed === 'true'` was therefore false on every screen. The
+   island loaded, armed nothing, and every hover/click handler returned early. #}
+<body class="stub-body {{ 'stub-embed' if embed }}" data-surface="{{ surface }}"{% if inspect %} data-inspect-armed="true"{% endif %}{% if not still %} hx-boost="true" hx-sync="this:replace"{% endif %}>
+{# `inspect` rides along in pqs. It did not before, so navigating inside an
+   inspected screen dropped ?inspect=1 on the next hop, the island stopped
+   being served, and inspect died silently after exactly one click. #}
+{% set pqs = '?vp=' + vp + ('&embed=1' if embed else '') + ('&still=1' if still else '') + ('&inspect=1' if inspect else '') %}
 <div id="app" data-theme="{{ theme }}" data-accent="cyan">
   <div class="stub-screen" style="{{ '' if embed else 'max-width: ' + width + 'px' }}">
     {% if not embed %}
