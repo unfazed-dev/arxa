@@ -536,9 +536,8 @@ class _Pkg {
   final List<String> candidates;
   final String out;
   final bool expect; // htmx: SRI must match the recorded pin
-  final bool optional;
   const _Pkg(this.pkg, this.candidates, this.out,
-      {this.version, this.expect = false, this.optional = false});
+      {this.version, this.expect = false});
 }
 
 /// Lucide is pinned like htmx/leaflet: @latest drift would silently rewrite
@@ -579,8 +578,15 @@ const _packages = [
   // before the tarball step) — re-adding them means an npm-tarball extract.
   _Pkg('leaflet', ['dist/leaflet.js'], 'leaflet/leaflet.js', version: '1.9.4'),
   _Pkg('leaflet', ['dist/leaflet.css'], 'leaflet/leaflet.css', version: '1.9.4'),
-  _Pkg('htmx-ext-morph', ['dist/morph.min.js', 'dist/morph.js'], 'morph.js',
-      optional: true),
+  // The htmx `morph` extension ships INSIDE the idiomorph package — there is no
+  // `htmx-ext-morph` on npm (registry 404). The previous entry named that
+  // non-existent package and was `optional: true`, so every vendor-fetch run
+  // printed "– skipped" and carried on green while morph.js never landed.
+  // Pinned and NOT optional: a swap style the templates depend on must fail
+  // loudly if it cannot be vendored. `idiomorph-ext.min.js` is the combined
+  // build (morphing core + the htmx extension registration) — one script tag.
+  _Pkg('idiomorph', ['dist/idiomorph-ext.min.js'], 'idiomorph-ext.min.js',
+      version: '0.7.4'),
 ];
 
 /// Compute the SRI hash of [buf] via `openssl dgst -sha384 -binary`. macOS
@@ -722,12 +728,13 @@ Future<CmdResult> vendorFetch(String vendorDir,
           file: pkg.out, pkg: pkg.pkg, version: v, integrity: integrity));
       out.add('✓ ${pkg.out} ← ${pkg.pkg}@$v (${buf.length} bytes)');
     } catch (e) {
-      if (pkg.optional) {
-        out.add('– ${pkg.pkg}: skipped ($e)');
-      } else {
-        err.add('✗ ${pkg.pkg}: $e');
-        return CmdResult(1, stdoutLines: out, stderrLines: err);
-      }
+      // No optional/skip branch by design. The one entry that used it named a
+      // package that does not exist on npm, so every run printed "– skipped"
+      // and still exited 0 — the vendored file was missing for as long as the
+      // entry existed and nothing went red. A vendored asset is either pinned
+      // in the manifest or it is a failure.
+      err.add('✗ ${pkg.pkg}: $e');
+      return CmdResult(1, stdoutLines: out, stderrLines: err);
     }
   }
 

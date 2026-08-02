@@ -35,7 +35,7 @@
 <div class="mini-panel-body" id="mini-panel-controller">
   <span class="mini-panel-group" role="group" aria-label="{{ t('miniPanel.modeGroup') }}">
     {% for m in c.modes %}
-    <a class="dv-chip {{ 'on' if m.active }}" href="{{ m.href }}" hx-get="{{ m.href }}" hx-target="#design-viewer" hx-swap="outerHTML">{{ t('viewer.modeLabel.' ~ m.key) }}</a>
+    <a class="dv-chip {{ 'on' if m.active }}" href="{{ m.href }}" hx-get="{{ m.href }}" hx-target="#design-viewer" hx-swap="morph:outerHTML">{{ t('viewer.modeLabel.' ~ m.key) }}</a>
     {% endfor %}
   </span>
   <span class="mini-panel-group">
@@ -43,12 +43,12 @@
   </span>
   <span class="mini-panel-group" role="group" aria-label="{{ t('miniPanel.historyGroup') }}">
     {% if c.undo.can %}
-    <button class="ico-btn undo-btn" hx-post="{{ c.undo.href }}" hx-target="#panels" hx-swap="outerHTML" title="{{ t('miniPanel.undo') }}">{{ icon('undo-2', {size: 16}) }}</button>
+    <button class="ico-btn undo-btn" hx-post="{{ c.undo.href }}" hx-target="#panels" hx-swap="morph:outerHTML" title="{{ t('miniPanel.undo') }}">{{ icon('undo-2', {size: 16}) }}</button>
     {% else %}
     <button class="ico-btn undo-btn" disabled title="{{ t('miniPanel.undo') }}">{{ icon('undo-2', {size: 16}) }}</button>
     {% endif %}
     {% if c.redo.can %}
-    <button class="ico-btn redo-btn" hx-post="{{ c.redo.href }}" hx-target="#panels" hx-swap="outerHTML" title="{{ t('miniPanel.redo') }}">{{ icon('redo-2', {size: 16}) }}</button>
+    <button class="ico-btn redo-btn" hx-post="{{ c.redo.href }}" hx-target="#panels" hx-swap="morph:outerHTML" title="{{ t('miniPanel.redo') }}">{{ icon('redo-2', {size: 16}) }}</button>
     {% else %}
     <button class="ico-btn redo-btn" disabled title="{{ t('miniPanel.redo') }}">{{ icon('redo-2', {size: 16}) }}</button>
     {% endif %}
@@ -67,7 +67,7 @@
       {% if pnl.bar.devices %}
       <span class="mini-panel-group" role="group" aria-label="{{ t('viewer.viewportGroup') }}">
         {% for d in pnl.bar.devices %}
-        <a class="mini-panel-tab {{ 'is-active' if d.active }}" href="{{ d.href }}" hx-get="{{ d.href }}" hx-target="#design-viewer" hx-swap="outerHTML"
+        <a class="mini-panel-tab {{ 'is-active' if d.active }}" href="{{ d.href }}" hx-get="{{ d.href }}" hx-target="#design-viewer" hx-swap="morph:outerHTML"
            aria-label="{{ t('viewer.vp.' ~ d.key) }}" title="{{ t('viewer.vp.' ~ d.key) }}">{{ icon(d.icon, {size: 16}) }}</a>
         {% endfor %}
       </span>
@@ -75,7 +75,7 @@
       {% endif %}
       <span class="mini-panel-group" role="group" aria-label="{{ t('miniPanel.bgGroup') }}">
         {% for b in pnl.bar.bgs %}
-        <a class="mini-swatch mini-swatch-{{ b.value }} {{ 'on' if b.active }}" href="{{ b.href }}" hx-get="{{ b.href }}" hx-target="#design-viewer" hx-swap="outerHTML"
+        <a class="mini-swatch mini-swatch-{{ b.value }} {{ 'on' if b.active }}" href="{{ b.href }}" hx-get="{{ b.href }}" hx-target="#design-viewer" hx-swap="morph:outerHTML"
            aria-label="{{ t('miniPanel.bg.' ~ b.value) }}" title="{{ t('miniPanel.bg.' ~ b.value) }}"></a>
         {% endfor %}
       </span>

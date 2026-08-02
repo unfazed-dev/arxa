@@ -38,7 +38,7 @@
    stamps each corrected value as client-provenance. #}
 {% macro valuesForm(c, item) %}
 <form class="values-form" method="post" action="{{ c.base }}/save"
-      hx-post="{{ c.base }}/save" hx-target="#panels" hx-swap="outerHTML">
+      hx-post="{{ c.base }}/save" hx-target="#panels" hx-swap="morph:outerHTML">
   <input type="hidden" name="item" value="{{ item.id }}">
   <label class="fact-label" for="values-{{ item.id }}">{{ t('intake.form.values') }}</label>
   <textarea id="values-{{ item.id }}" name="values" rows="6">{% for v in item.values %}{{ v.value }}

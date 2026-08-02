@@ -48,7 +48,7 @@
   {{ edgeChain(item) }}
   {% if item.state == 'editing' %}
   <form class="q-form" method="post" action="{{ c.base }}/save"
-        hx-post="{{ c.base }}/save" hx-target="#panels" hx-swap="outerHTML">
+        hx-post="{{ c.base }}/save" hx-target="#panels" hx-swap="morph:outerHTML">
     <input type="hidden" name="item" value="{{ item.id }}">
     <label class="fact-label" for="flow-name-{{ item.id }}">{{ t('intake.form.name') }}</label>
     <input type="text" id="flow-name-{{ item.id }}" name="name" value="{{ item.name }}">

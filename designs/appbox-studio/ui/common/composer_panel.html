@@ -27,7 +27,7 @@
   {% if spec.chips %}
   <span class="ctx-row chat-ctx">
     {% for chip in spec.chips %}
-    <span class="ctx-chip ctx-{{ chip.tone or tones[loop.index0 % 4] }}"><code>{{ chip.id }}</code><span class="ctx-label">{{ chip.label }}</span>{% if chip.removeHref %}<a class="ctx-x" href="{{ chip.removeHref }}" hx-get="{{ chip.removeHref }}" hx-target="#panels" hx-swap="outerHTML" hx-push-url="false" aria-label="{{ t('chat.removeChip', {label: chip.label}) }}">{{ icon('x', {size: 12}) }}</a>{% endif %}</span>
+    <span class="ctx-chip ctx-{{ chip.tone or tones[loop.index0 % 4] }}"><code>{{ chip.id }}</code><span class="ctx-label">{{ chip.label }}</span>{% if chip.removeHref %}<a class="ctx-x" href="{{ chip.removeHref }}" hx-get="{{ chip.removeHref }}" hx-target="#panels" hx-swap="morph:outerHTML" hx-push-url="false" aria-label="{{ t('chat.removeChip', {label: chip.label}) }}">{{ icon('x', {size: 12}) }}</a>{% endif %}</span>
     {% endfor %}
   </span>
   {% endif %}

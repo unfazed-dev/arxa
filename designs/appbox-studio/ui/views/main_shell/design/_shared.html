@@ -40,7 +40,7 @@
   <span class="bt-action-done" title="{{ t('checkpoint.revertedTitle') }}">{{ t('checkpoint.reverted') }} {{ icon('check', {size: 14}) }}</span>
   {% else %}
   <form class="cp-revert" method="post" action="/design/chat/screen/{{ e.screen }}/revert/{{ e.id }}"
-        hx-post="/design/chat/screen/{{ e.screen }}/revert/{{ e.id }}" hx-target="#panels" hx-swap="outerHTML">
+        hx-post="/design/chat/screen/{{ e.screen }}/revert/{{ e.id }}" hx-target="#panels" hx-swap="morph:outerHTML">
     <button type="submit" class="ghost">{{ icon('undo-2', {size: 14}) }} {{ t('checkpoint.revert', {id: e.id}) }}</button>
   </form>
   {% endif %}
@@ -121,7 +121,7 @@
   <footer class="msg-foot">
     <span class="msg-cta">
       <a class="cta-main" href="/design/chat/context/{{ s.id }}?state=toggle"
-         hx-get="/design/chat/context/{{ s.id }}?state=toggle" hx-target="#panels" hx-swap="outerHTML" hx-push-url="false">
+         hx-get="/design/chat/context/{{ s.id }}?state=toggle" hx-target="#panels" hx-swap="morph:outerHTML" hx-push-url="false">
         {% if s.inContext %}{{ t('design.inContext') }} {{ icon('check', {size: 14}) }}{% else %}{{ t('design.pinToContext') }} {{ icon('pin', {size: 14}) }}{% endif %}</a>
     </span>
     <span class="msg-time">{{ s.label }}</span>

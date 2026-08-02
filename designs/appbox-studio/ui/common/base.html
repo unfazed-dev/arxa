@@ -12,6 +12,12 @@
   <script src="/assets/vendor/htmx.min.js" integrity="sha384-H5SrcfygHmAuTDZphMHqBJLc3FhssKjG7w/CeCpFReSfwBWDTKpkzPP8c+cLsK+V" crossorigin="anonymous"></script>
   <script src="/assets/vendor/preload.min.js" integrity="sha384-PRIcY6hH1Y5784C76/Y8SqLyTanY9rnI3B8F3+hKZFNED55hsEqMJyqWhp95lgfk" crossorigin="anonymous"></script>
   <script src="/assets/vendor/head-support.js" integrity="sha384-cvMqHzjCJsOHgGuyB3sWXaUSv/Krm0BdzjuI1rtkjCbL1l1oHJx+cHyVRJhyuEz0" crossorigin="anonymous"></script>
+  {# idiomorph: the `morph` swap style. Must load AFTER htmx — it registers
+     itself as an htmx extension. Morphing exists here for one reason: the
+     viewer's screen iframes live INSIDE the swap targets, and a replace-style
+     swap destroys them, so every interaction re-fetched all 20 frames and
+     discarded whatever the user had navigated to inside a live tile. #}
+  <script src="/assets/vendor/idiomorph-ext.min.js" integrity="sha384-SsScJKzATF/w6suEEdLbgYGsYFLzeKfOA6PY+/C5ZPxOSuA+ARquqtz/BZz9JWU8" crossorigin="anonymous"></script>
   <script src="/assets/vendor/canvas.js" defer></script>
   <script src="/assets/vendor/drag.js" defer></script>
   <link rel="stylesheet" href="/assets/css/app.css">
@@ -25,7 +31,7 @@
   <link rel="stylesheet" href="/assets/css/appshell.css">
   {% block head_extra %}{% endblock %}
 </head>
-<body hx-boost="true" hx-sync="this:replace" hx-ext="head-support,preload">
+<body hx-boost="true" hx-sync="this:replace" hx-ext="head-support,preload,morph">
   <div id="app" data-theme="{{ prefs.theme or 'light' }}" data-accent="{{ prefs.accent or 'cyan' }}">
     {% block content %}{% endblock %}
   </div>

@@ -42,7 +42,7 @@
   {% if m.card.type == 'gate' and m.card.state == 'pending' %}
   <span class="gate-quick">
     <form method="post" action="/build/gates/decide"
-          hx-post="/build/gates/decide" hx-target="#panels" hx-swap="outerHTML">
+          hx-post="/build/gates/decide" hx-target="#panels" hx-swap="morph:outerHTML">
       <input type="hidden" name="gate" value="{{ m.card.gateId }}">
       <button type="submit" name="decision" value="approved" class="btn-approve">{{ t('action.approve') }}</button>
       <button type="submit" name="decision" value="rejected" class="btn-reject ghost">{{ t('action.reject') }}</button>
@@ -146,17 +146,17 @@
       <span class="run-stage-acts">
         {% if s.state == 'held' %}
         <form method="post" action="/build/stages/{{ s.id }}/control"
-              hx-post="/build/stages/{{ s.id }}/control" hx-target="#panels" hx-swap="outerHTML">
+              hx-post="/build/stages/{{ s.id }}/control" hx-target="#panels" hx-swap="morph:outerHTML">
           <button type="submit" name="action" value="resume" class="ico-btn" title="{{ t('build.resumeStage', {label: s.label}) }}" aria-label="{{ t('build.resumeStage', {label: s.label}) }}">{{ icon('play', {size: 14}) }}</button>
         </form>
         {% else %}
         <form method="post" action="/build/stages/{{ s.id }}/control"
-              hx-post="/build/stages/{{ s.id }}/control" hx-target="#panels" hx-swap="outerHTML">
+              hx-post="/build/stages/{{ s.id }}/control" hx-target="#panels" hx-swap="morph:outerHTML">
           <button type="submit" name="action" value="pause" class="ico-btn" title="{{ t('build.pauseStage', {label: s.label}) }}" aria-label="{{ t('build.pauseStage', {label: s.label}) }}">{{ icon('pause', {size: 14}) }}</button>
         </form>
         {% endif %}
         <form method="post" action="/build/stages/{{ s.id }}/control"
-              hx-post="/build/stages/{{ s.id }}/control" hx-target="#panels" hx-swap="outerHTML">
+              hx-post="/build/stages/{{ s.id }}/control" hx-target="#panels" hx-swap="morph:outerHTML">
           <button type="submit" name="action" value="cancel" class="ico-btn" title="{{ t('build.cancelStage', {label: s.label}) }}" aria-label="{{ t('build.cancelStage', {label: s.label}) }}">{{ icon('x', {size: 14}) }}</button>
         </form>
       </span>
@@ -187,7 +187,7 @@
     <li>
       <a class="artifact-index-link {{ 'is-active' if c.activeArtifact == a.ref }}"
          href="/build/artifact/{{ a.ref }}"
-         hx-get="/build/artifact/{{ a.ref }}" hx-target="#panels" hx-swap="outerHTML" hx-push-url="false">
+         hx-get="/build/artifact/{{ a.ref }}" hx-target="#panels" hx-swap="morph:outerHTML" hx-push-url="false">
         {{ prim.typeBadge(a.kind) }}
         <span class="artifact-index-label">{{ a.label }}</span>
         {% if a.state %}{{ prim.statusPill(a.state) }}{% endif %}
@@ -288,7 +288,7 @@
   {% if gate.state == 'pending' %}
   <div class="gate-actions" id="gate-actions">
     <form class="gate-buttons" method="post" action="/build/gates/decide"
-          hx-post="/build/gates/decide" hx-target="#panels" hx-swap="outerHTML">
+          hx-post="/build/gates/decide" hx-target="#panels" hx-swap="morph:outerHTML">
       <input type="hidden" name="gate" value="{{ gate.id }}">
       <button type="submit" name="decision" value="approved" class="btn-approve">{{ t('action.approve') }}</button>
       <button type="submit" name="decision" value="rejected" class="btn-reject ghost">{{ t('action.reject') }}</button>

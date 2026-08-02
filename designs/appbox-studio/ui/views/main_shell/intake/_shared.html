@@ -38,7 +38,7 @@
   <p class="q-text">{{ q.text }}</p>
   {% if q.state == 'current' or q.state == 'editing' %}
   <form class="q-form" method="post" action="{{ c.base }}/answer"
-        hx-post="{{ c.base }}/answer" hx-target="#panels" hx-swap="outerHTML">
+        hx-post="{{ c.base }}/answer" hx-target="#panels" hx-swap="morph:outerHTML">
     <input type="hidden" name="q" value="{{ q.id }}">
     <input type="text" name="text" value="{{ q.answer or '' }}" placeholder="{{ t('intake.answerPlaceholder') }}" aria-label="{{ t('intake.answerAria', {question: q.text}) }}">
     <button type="submit" class="composer-send" aria-label="{{ t('intake.sendAnswer') }}">{{ icon('arrow-up', {size: 18}) }}</button>
@@ -46,7 +46,7 @@
   {% if q.suggestions.length %}
   <span class="q-sugs">
     {% for s in q.suggestions %}
-    <form method="post" action="{{ c.base }}/answer" hx-post="{{ c.base }}/answer" hx-target="#panels" hx-swap="outerHTML">
+    <form method="post" action="{{ c.base }}/answer" hx-post="{{ c.base }}/answer" hx-target="#panels" hx-swap="morph:outerHTML">
       <input type="hidden" name="q" value="{{ q.id }}">
       <button type="submit" name="text" value="{{ s }}">{{ s }}</button>
     </form>
@@ -54,18 +54,18 @@
   </span>
   {% endif %}
   <form class="q-skip" method="post" action="{{ c.base }}/skip"
-        hx-post="{{ c.base }}/skip" hx-target="#panels" hx-swap="outerHTML">
+        hx-post="{{ c.base }}/skip" hx-target="#panels" hx-swap="morph:outerHTML">
     <input type="hidden" name="q" value="{{ q.id }}">
     <button type="submit" aria-label="{{ t('intake.skipAria') }}">{{ t('intake.skip') }} {{ icon('chevron-right', {size: 14}) }}</button>
   </form>
   {% elif q.state == 'answered' %}
   <p class="q-answer">{{ q.answer }}</p>
   <a class="q-edit" href="{{ c.base }}/edit?q={{ q.id }}"
-     hx-get="{{ c.base }}/edit?q={{ q.id }}" hx-target="#panels" hx-swap="outerHTML" hx-push-url="false">{{ t('intake.edit') }}</a>
+     hx-get="{{ c.base }}/edit?q={{ q.id }}" hx-target="#panels" hx-swap="morph:outerHTML" hx-push-url="false">{{ t('intake.edit') }}</a>
   {% elif q.state == 'skipped' %}
   <p class="q-answer muted">{{ t('intake.skipped') }}</p>
   <a class="q-edit" href="{{ c.base }}/edit?q={{ q.id }}"
-     hx-get="{{ c.base }}/edit?q={{ q.id }}" hx-target="#panels" hx-swap="outerHTML" hx-push-url="false">{{ t('intake.answerAnyway') }}</a>
+     hx-get="{{ c.base }}/edit?q={{ q.id }}" hx-target="#panels" hx-swap="morph:outerHTML" hx-push-url="false">{{ t('intake.answerAnyway') }}</a>
   {% else %}
   <p class="q-answer muted">{{ t('intake.upNext') }}</p>
   {% endif %}
@@ -83,21 +83,21 @@
 {% macro itemActions(c, item) %}
 {% if item.state == 'current' or item.state == 'editing' %}
 <span class="item-actions">
-  <form method="post" action="{{ c.base }}/confirm" hx-post="{{ c.base }}/confirm" hx-target="#panels" hx-swap="outerHTML">
+  <form method="post" action="{{ c.base }}/confirm" hx-post="{{ c.base }}/confirm" hx-target="#panels" hx-swap="morph:outerHTML">
     <input type="hidden" name="item" value="{{ item.id }}">
     <button type="submit" class="cta-main">{{ t('intake.item.confirm') }} {{ icon('check', {size: 14}) }}</button>
   </form>
-  <form method="post" action="{{ c.base }}/skip" hx-post="{{ c.base }}/skip" hx-target="#panels" hx-swap="outerHTML">
+  <form method="post" action="{{ c.base }}/skip" hx-post="{{ c.base }}/skip" hx-target="#panels" hx-swap="morph:outerHTML">
     <input type="hidden" name="item" value="{{ item.id }}">
     <button type="submit" class="cta-ghost">{{ t('intake.skip') }} {{ icon('chevron-right', {size: 14}) }}</button>
   </form>
 </span>
 {% elif item.state == 'confirmed' %}
 <a class="q-edit" href="{{ c.base }}/edit?item={{ item.id }}"
-   hx-get="{{ c.base }}/edit?item={{ item.id }}" hx-target="#panels" hx-swap="outerHTML" hx-push-url="false">{{ t('intake.edit') }}</a>
+   hx-get="{{ c.base }}/edit?item={{ item.id }}" hx-target="#panels" hx-swap="morph:outerHTML" hx-push-url="false">{{ t('intake.edit') }}</a>
 {% elif item.state == 'skipped' %}
 <a class="q-edit" href="{{ c.base }}/edit?item={{ item.id }}"
-   hx-get="{{ c.base }}/edit?item={{ item.id }}" hx-target="#panels" hx-swap="outerHTML" hx-push-url="false">{{ t('intake.item.reviewAnyway') }}</a>
+   hx-get="{{ c.base }}/edit?item={{ item.id }}" hx-target="#panels" hx-swap="morph:outerHTML" hx-push-url="false">{{ t('intake.item.reviewAnyway') }}</a>
 {% endif %}
 {% endmacro %}
 
@@ -107,7 +107,7 @@
   {% for item in step.items %}
   {% if item.state == 'confirmed' or item.state == 'skipped' %}
   <a class="strip-dot is-{{ item.state }}" href="{{ c.base }}/edit?item={{ item.id }}"
-     hx-get="{{ c.base }}/edit?item={{ item.id }}" hx-target="#panels" hx-swap="outerHTML" hx-push-url="false"
+     hx-get="{{ c.base }}/edit?item={{ item.id }}" hx-target="#panels" hx-swap="morph:outerHTML" hx-push-url="false"
      title="{{ item.name or item.label or item.id }}" aria-label="{{ item.name or item.label or item.id }}"></a>
   {% else %}
   <span class="strip-dot is-{{ item.state }}" title="{{ item.name or item.label or item.id }}"></span>
@@ -123,7 +123,7 @@
   {% if step.complete %}
   {% if step.nextHref %}<a class="cta-main" href="{{ step.nextHref }}">{{ t(step.nextLabel) }} {{ icon('chevron-right', {size: 14}) }}</a>{% endif %}
   {% else %}
-  <form method="post" action="{{ c.base }}/accept-all" hx-post="{{ c.base }}/accept-all" hx-target="#panels" hx-swap="outerHTML">
+  <form method="post" action="{{ c.base }}/accept-all" hx-post="{{ c.base }}/accept-all" hx-target="#panels" hx-swap="morph:outerHTML">
     <button type="submit" class="cta-ghost">{{ t('intake.item.acceptAll') }}</button>
   </form>
   {% endif %}
@@ -152,7 +152,7 @@
   {% for q in car.questions %}
   {% if q.state == 'answered' or q.state == 'skipped' %}
   <a class="strip-dot is-{{ 'confirmed' if q.state == 'answered' else 'skipped' }}" href="{{ c.base }}/edit?q={{ q.id }}"
-     hx-get="{{ c.base }}/edit?q={{ q.id }}" hx-target="#panels" hx-swap="outerHTML" hx-push-url="false"
+     hx-get="{{ c.base }}/edit?q={{ q.id }}" hx-target="#panels" hx-swap="morph:outerHTML" hx-push-url="false"
      title="{{ q.text }}" aria-label="{{ q.text }}"></a>
   {% else %}
   <span class="strip-dot is-{{ 'current' if q.state == 'current' else 'upcoming' }}" title="{{ q.text }}"></span>
@@ -174,7 +174,7 @@
   {% if m.quickReplies %}
   <span class="q-replies">
     {% for r in m.quickReplies %}
-    <form method="post" action="{{ r.action }}" hx-post="{{ r.action }}" hx-target="#panels" hx-swap="outerHTML">
+    <form method="post" action="{{ r.action }}" hx-post="{{ r.action }}" hx-target="#panels" hx-swap="morph:outerHTML">
       <button type="submit" class="qr-chip" name="{{ r.name }}" value="{{ r.value }}">{{ r.label }}</button>
     </form>
     {% endfor %}
@@ -184,7 +184,7 @@
   <span class="msg-cta">
     {% if m.artifactRef %}
     <a class="cta-main" href="{{ c.base }}/artifact/{{ m.artifactRef }}"
-       hx-get="{{ c.base }}/artifact/{{ m.artifactRef }}" hx-target="#panels" hx-swap="outerHTML" hx-push-url="false">{{ m.artifactLabel }} {{ icon('chevron-right', {size: 14}) }}</a>
+       hx-get="{{ c.base }}/artifact/{{ m.artifactRef }}" hx-target="#panels" hx-swap="morph:outerHTML" hx-push-url="false">{{ m.artifactLabel }} {{ icon('chevron-right', {size: 14}) }}</a>
     {% endif %}
     {% if m.nextHref %}<a class="cta-ghost" href="{{ m.nextHref }}">{{ m.nextLabel }} {{ icon('chevron-right', {size: 14}) }}</a>{% endif %}
   </span>
@@ -228,7 +228,7 @@
 <div class="rv-list">
   {% for a in c.activityBody.artifacts %}
   <a class="rv-card" href="{{ c.base }}/artifact/{{ a.ref }}"
-     hx-get="{{ c.base }}/artifact/{{ a.ref }}" hx-target="#panels" hx-swap="outerHTML" hx-push-url="false">
+     hx-get="{{ c.base }}/artifact/{{ a.ref }}" hx-target="#panels" hx-swap="morph:outerHTML" hx-push-url="false">
     <span class="rv-title">{{ a.title }}</span>
     <span class="rv-detail muted">{{ a.detail }}</span>
     {% if a.badges.length %}
@@ -261,7 +261,7 @@
     <span class="rv-foot">
       {% if m.artifact %}
       <a class="cta-ghost" href="{{ c.base }}/artifact/{{ m.artifact }}"
-         hx-get="{{ c.base }}/artifact/{{ m.artifact }}" hx-target="#panels" hx-swap="outerHTML" hx-push-url="false">{{ m.artifactLabel }} {{ icon('chevron-right', {size: 14}) }}</a>
+         hx-get="{{ c.base }}/artifact/{{ m.artifact }}" hx-target="#panels" hx-swap="morph:outerHTML" hx-push-url="false">{{ m.artifactLabel }} {{ icon('chevron-right', {size: 14}) }}</a>
       {% endif %}
       <span class="msg-time">{{ m.at }}</span>
     </span>

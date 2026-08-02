@@ -66,17 +66,17 @@
 {% if vp == 'mobile' %}
 <div class="device device-ios" style="width: {{ w }}px; height: {{ h }}px">
   <span class="device-island" aria-hidden="true"></span>
-  <iframe class="dv-frame" src="{{ src }}" title="{{ title }}"></iframe>
+  <iframe class="dv-frame" id="dvf-proto" src="{{ src }}" title="{{ title }}"></iframe>
   <span class="device-home" aria-hidden="true"></span>
 </div>
 {% elif vp == 'tablet' %}
 <div class="device device-tablet" style="width: {{ w }}px; height: {{ h }}px">
-  <iframe class="dv-frame" src="{{ src }}" title="{{ title }}"></iframe>
+  <iframe class="dv-frame" id="dvf-proto" src="{{ src }}" title="{{ title }}"></iframe>
 </div>
 {% else %}
 <div class="device device-win" style="width: {{ w }}px; height: {{ h }}px">
   <span class="device-titlebar" aria-hidden="true"><i></i><i></i><i></i></span>
-  <iframe class="dv-frame" src="{{ src }}" title="{{ title }}"></iframe>
+  <iframe class="dv-frame" id="dvf-proto" src="{{ src }}" title="{{ title }}"></iframe>
 </div>
 {% endif %}
 {% endmacro %}
@@ -109,30 +109,30 @@
 <span class="dv-tile-tools">
   {% if v.contextBase %}
   <a class="ico-btn dv-tool {{ 'on' if s.inContext }}" href="{{ v.contextBase }}{{ s.id }}?state=toggle"
-     hx-get="{{ v.contextBase }}{{ s.id }}?state=toggle" hx-target="#panels" hx-swap="outerHTML"
+     hx-get="{{ v.contextBase }}{{ s.id }}?state=toggle" hx-target="#panels" hx-swap="morph:outerHTML"
      aria-label="{{ t('viewer.removeCtxAria', {id: s.id}) if s.inContext else t('viewer.pinCtxAria', {id: s.id}) }}"
      title="{{ t('viewer.removeCtx', {id: s.id}) if s.inContext else t('viewer.pinCtx', {id: s.id}) }}">{{ icon('pin', {size: 14}) }}</a>
   {% endif %}
-  <a class="ico-btn dv-tool {{ 'on' if s.inspecting }}" href="{{ s.inspectHref }}" hx-get="{{ s.inspectHref }}" hx-target="#design-viewer" hx-swap="outerHTML"
+  <a class="ico-btn dv-tool {{ 'on' if s.inspecting }}" href="{{ s.inspectHref }}" hx-get="{{ s.inspectHref }}" hx-target="#design-viewer" hx-swap="morph:outerHTML"
      aria-label="{{ t('viewer.inspectAria', {id: s.id}) }}" title="{{ t('viewer.inspect', {id: s.id}) }}">{{ icon('mouse-pointer-click', {size: 14}) }}</a>
-  <a class="ico-btn dv-tool {{ 'on' if s.live }}" href="{{ s.liveHref }}" hx-get="{{ s.liveHref }}" hx-target="#design-viewer" hx-swap="outerHTML"
+  <a class="ico-btn dv-tool {{ 'on' if s.live }}" href="{{ s.liveHref }}" hx-get="{{ s.liveHref }}" hx-target="#design-viewer" hx-swap="morph:outerHTML"
      aria-label="{{ t('viewer.liveAria', {id: s.id}) }}" title="{{ t('viewer.live', {id: s.id}) }}">{{ icon('play', {size: 14}) }}</a>
   {% if v.mode == 'flows' and row %}
   <button class="ico-btn dv-tool" type="button" {{ 'disabled' if first }}
-     hx-post="/design/flows/{{ row.id }}/move/{{ s.id }}" hx-vals='{"dir": -1}' hx-target="#panels" hx-swap="outerHTML"
+     hx-post="/design/flows/{{ row.id }}/move/{{ s.id }}" hx-vals='{"dir": -1}' hx-target="#panels" hx-swap="morph:outerHTML"
      aria-label="{{ t('viewer.moveEarlier', {id: s.id}) }}" title="{{ t('viewer.moveEarlier', {id: s.id}) }}">{{ icon('arrow-left', {size: 14}) }}</button>
   <button class="ico-btn dv-tool" type="button" {{ 'disabled' if last }}
-     hx-post="/design/flows/{{ row.id }}/move/{{ s.id }}" hx-vals='{"dir": 1}' hx-target="#panels" hx-swap="outerHTML"
+     hx-post="/design/flows/{{ row.id }}/move/{{ s.id }}" hx-vals='{"dir": 1}' hx-target="#panels" hx-swap="morph:outerHTML"
      aria-label="{{ t('viewer.moveLater', {id: s.id}) }}" title="{{ t('viewer.moveLater', {id: s.id}) }}">{{ icon('arrow-right', {size: 14}) }}</button>
   <button class="ico-btn dv-tool" type="button"
-     hx-post="/design/flows/{{ row.id }}/remove/{{ s.id }}" hx-target="#panels" hx-swap="outerHTML"
+     hx-post="/design/flows/{{ row.id }}/remove/{{ s.id }}" hx-target="#panels" hx-swap="morph:outerHTML"
      aria-label="{{ t('viewer.removeFromFlowAria', {id: s.id}) }}" title="{{ t('viewer.removeFromFlow') }}">{{ icon('list-x', {size: 14}) }}</button>
   {% elif v.flows %}
   <details class="dv-tool-menu">
     <summary class="ico-btn dv-tool" title="{{ t('viewer.addToFlow') }}" aria-label="{{ t('viewer.addToFlow') }}">{{ icon('list-plus', {size: 14}) }}</summary>
     <span class="dv-menu">
       {% for f in v.flows %}
-      <form hx-post="/design/flows/{{ f.id }}/add/{{ s.id }}" hx-target="#panels" hx-swap="outerHTML">
+      <form hx-post="/design/flows/{{ f.id }}/add/{{ s.id }}" hx-target="#panels" hx-swap="morph:outerHTML">
         <button class="dv-menu-item" type="submit">{{ f.name }}</button>
       </form>
       {% endfor %}
@@ -147,18 +147,33 @@
    inspected tile gains &inspect=1; .is-live/.is-inspecting restore pointer
    events on the frame (viewer.css). #}
 {% macro tile(v, s, row, first, last) %}
+{# Morph matches nodes by id, so every tile needs one that is STABLE across
+   renders and UNIQUE within the page. Screen id alone is neither: the flows
+   lens renders portalo.home in three separate flow rows, and the views lens
+   plus the composer filmstrip render it again. Scoping by the row keeps them
+   distinct; `row` is only passed from the flows lens, so views falls back to
+   a literal. Without this, morph would match the wrong tile and shuffle
+   iframes between rows. #}
+{% set scope = row.id if row else 'views' %}
 <div class="dv-tile {{ 'in-ctx ctx-' + s.tone if s.inContext }} {{ 'is-dim' if s.dim }} {{ 'is-live' if s.live }} {{ 'is-inspecting' if s.inspecting }}"
+     id="dvt-{{ scope }}--{{ s.id }}"
      data-id="{{ s.id }}"
      style="width: {{ s.tile.width }}px">
   <header class="dv-tile-chrome">
     {% if not v.static %}{{ tileTools(v, s, row, first, last) }}{% endif %}
     <span class="dv-tile-label"><strong>{{ s.label or s.id }}</strong> <code>{{ s.id }}</code></span>
     {% if s.live %}
-    <a class="ico-btn dv-live-close" href="{{ s.liveCloseHref }}" hx-get="{{ s.liveCloseHref }}" hx-target="#design-viewer" hx-swap="outerHTML"
+    <a class="ico-btn dv-live-close" href="{{ s.liveCloseHref }}" hx-get="{{ s.liveCloseHref }}" hx-target="#design-viewer" hx-swap="morph:outerHTML"
        aria-label="{{ t('viewer.liveCloseAria') }}" title="{{ t('viewer.liveClose') }}">{{ icon('x', {size: 14}) }}</a>
     {% endif %}
   </header>
+  {# The id carries only the tile identity, never the src params. Morph diffs
+     src as an ordinary attribute: unchanged src → the node is left alone and
+     the frame keeps whatever the user navigated to; changed src (rung swap,
+     going live, arming inspect) → the attribute updates and the browser
+     reloads, which is exactly what those actions mean. #}
   <iframe class="dv-tile-frame"
+          id="dvf-{{ scope }}--{{ s.id }}"
           src="{{ v.stubBase }}{{ s.id }}?vp={{ s.tile.vp }}&embed=1{{ '' if s.live else '&still=1' }}{{ '&inspect=1' if s.inspecting }}"
           style="height: {{ s.tile.height }}px"
           scrolling="no" tabindex="-1" title="{{ s.label or s.id }}"></iframe>

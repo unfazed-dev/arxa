@@ -34,7 +34,7 @@
     <div class="shot-grid">
       {% for r in b.references %}
       <a class="shot-card" href="{{ c.base }}/artifact/shot/{{ r.shot.id }}"
-         hx-get="{{ c.base }}/artifact/shot/{{ r.shot.id }}" hx-target="#panels" hx-swap="outerHTML" hx-push-url="false">
+         hx-get="{{ c.base }}/artifact/shot/{{ r.shot.id }}" hx-target="#panels" hx-swap="morph:outerHTML" hx-push-url="false">
         <img src="{{ r.shot.src }}" alt="{{ r.name }} — {{ r.shot.caption }}" loading="lazy">
         <span class="shot-meta">
           <strong>{{ r.name }}</strong>
@@ -65,7 +65,7 @@
   <p class="artifact-detail">{{ a.reference.why }}</p>
   <p class="artifact-foot">
     <a href="{{ c.base }}/artifact/{{ a.backRef }}"
-       hx-get="{{ c.base }}/artifact/{{ a.backRef }}" hx-target="#panels" hx-swap="outerHTML" hx-push-url="false">{{ icon('chevron-left', {size: 14}) }} {{ t('mood.back') }}</a>
+       hx-get="{{ c.base }}/artifact/{{ a.backRef }}" hx-target="#panels" hx-swap="morph:outerHTML" hx-push-url="false">{{ icon('chevron-left', {size: 14}) }} {{ t('mood.back') }}</a>
   </p>
 </article>
 {% endmacro %}

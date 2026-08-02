@@ -166,6 +166,49 @@ mechanism each named was still real.
    Cleanest fix: promote `project` onto `GateContext` so every gate can
    carry it, rather than threading a named param per gate.
 
+13. **Every interaction destroyed every screen iframe** — **CLOSED**, see
+    `docs/plans/htmx-no-reload-interaction.md`. 50 of 68 `hx-target`s point at
+    `#panels` and 7 more at `#design-viewer`, both `outerHTML`, and both
+    containers hold the 20 screen iframes. Measured with a Playwright probe:
+    one pin toggle destroyed **20 of 20** iframes and fired **20** re-
+    navigations. Because an iframe's `src` attribute does not follow the
+    user's navigation *inside* it, rebuilding the element snapped every frame
+    back to its starting screen — the reported "shows me the first screen
+    again". Fixed by vendoring `idiomorph@0.7.4` and switching those 57 swap
+    tags to `morph:outerHTML` (+ lens-scoped stable ids: `portalo.home`
+    renders in 3 flows plus views plus the filmstrip at once). After: 20/20
+    survive, 0 re-navigations, in-frame navigation retained.
+    The tempting fix — `hx-preserve` — was rejected on evidence, not taste:
+    htmx 2.0.10 really does use the state-preserving `moveBefore` (verified in
+    the vendored source and functionally in Chrome 150), but `moveBefore` is
+    absent in Safari, where htmx falls back to `replaceChild` and the iframe
+    reloads anyway.
+14. **A vendored package entry that could never fail.** `design_tools.dart`
+    listed `_Pkg('htmx-ext-morph', …, optional: true)`. There is no
+    `htmx-ext-morph` on npm (registry 404) — the htmx morph extension ships
+    inside the `idiomorph` package. Because the entry was optional, every
+    `vendor-fetch` run printed `– htmx-ext-morph: skipped (…)` and exited 0,
+    so the intent to vendor morph was recorded, never fulfilled, and never
+    went red. Same family as findings 8 and 11: a check that cannot fail and
+    a step that silently does not run are the same defect. Fixed by naming the
+    real package, pinning it, and **deleting the `optional` mechanism
+    entirely** — the analyzer confirmed nothing else used it.
+15. **`appbox-cdp-*` Chrome orphans are outside finding 10's sweep.**
+    `_ChromeHandle.sweepOrphans()` matches the `appbox-design-worker-`
+    user-data-dir prefix only. A second launch path (`CdpClient`) uses
+    `appbox-cdp-` and leaks identically; one such orphan from 2026-08-01
+    (pid 25068, ppid 1) was still resident. The finding-10 fix is correct for
+    what it claimed, but the leak class is wider than the fix. Either widen
+    the sweep to both prefixes or give both launchers a shared owner.
+16. **`design_server_test.dart` "serving (Chrome worker)" is flaky.** Its
+    `setUpAll` failed in 2 of 6 full-suite runs, and the failures do not
+    correlate with the change under test — it failed once *with* the morph
+    change and once with that change stashed, while passing 4 other runs
+    including a serial `-j 1` run of all 907 tests, and passing every time the
+    file was run alone. Consistent with Chrome start-up contention when test
+    files run concurrently. A test that fails ~1 run in 3 for reasons
+    unrelated to the code trains people to re-run rather than read.
+
 ## Verified NOT debt (checked, closing)
 
 - `models/screens_model/flows.json` vs `structure.json` flow edges:

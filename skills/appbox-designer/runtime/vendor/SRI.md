@@ -18,6 +18,7 @@
 | three.core.min.js | three | 0.185.1 | `sha384-rx+KIp/9ptjArhnFAcpVoOc/ynktDsRtRJKIbC7YVKylEvFu8sgmzk9RmQ+CIV48` |
 | leaflet/leaflet.js | leaflet | 1.9.4 | `sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH` |
 | leaflet/leaflet.css | leaflet | 1.9.4 | `sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H` |
+| idiomorph-ext.min.js | idiomorph | 0.7.4 | `sha384-SsScJKzATF/w6suEEdLbgYGsYFLzeKfOA6PY+/C5ZPxOSuA+ARquqtz/BZz9JWU8` |
 
 `leaflet/images/*.png` (marker + layers control sprites, referenced by
 `leaflet.css` relative to itself) ride along unpinned — like the lucide SVGs

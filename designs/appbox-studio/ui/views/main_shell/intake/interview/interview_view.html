@@ -14,7 +14,7 @@
 {% macro modeCards(c) %}
 <div class="mode-cards">
   {% for d in ['simple', 'normal', 'advanced'] %}
-  <form method="post" action="{{ c.base }}/depth" hx-post="{{ c.base }}/depth" hx-target="#panels" hx-swap="outerHTML">
+  <form method="post" action="{{ c.base }}/depth" hx-post="{{ c.base }}/depth" hx-target="#panels" hx-swap="morph:outerHTML">
     <button type="submit" class="mode-card" name="depth" value="{{ d }}">
       <span class="mode-name">{{ t('intake.bank.' ~ d) }}</span>
       <span class="mode-desc muted">{{ t('intake.mode.desc.' ~ d) }}</span>
@@ -35,11 +35,11 @@
     {% if q.state == 'answered' %}
     <p class="q-answer">{{ q.answer }}</p>
     <a class="q-edit" href="{{ c.base }}/edit?q={{ q.id }}"
-       hx-get="{{ c.base }}/edit?q={{ q.id }}" hx-target="#panels" hx-swap="outerHTML" hx-push-url="false">{{ t('intake.edit') }}</a>
+       hx-get="{{ c.base }}/edit?q={{ q.id }}" hx-target="#panels" hx-swap="morph:outerHTML" hx-push-url="false">{{ t('intake.edit') }}</a>
     {% elif q.state == 'skipped' %}
     <p class="q-answer muted">{{ t('intake.skipped') }}</p>
     <a class="q-edit" href="{{ c.base }}/edit?q={{ q.id }}"
-       hx-get="{{ c.base }}/edit?q={{ q.id }}" hx-target="#panels" hx-swap="outerHTML" hx-push-url="false">{{ t('intake.answerAnyway') }}</a>
+       hx-get="{{ c.base }}/edit?q={{ q.id }}" hx-target="#panels" hx-swap="morph:outerHTML" hx-push-url="false">{{ t('intake.answerAnyway') }}</a>
     {% endif %}
   </div>
   {% endfor %}

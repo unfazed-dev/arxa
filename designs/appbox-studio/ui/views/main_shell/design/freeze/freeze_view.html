@@ -30,7 +30,7 @@
   <p class="approval-note">{{ c.approval.note }}</p>
   {% if not c.approval.approved %}
   <form method="post" action="/design/freeze/messages"
-        hx-post="/design/freeze/messages" hx-target="#panels" hx-swap="outerHTML">
+        hx-post="/design/freeze/messages" hx-target="#panels" hx-swap="morph:outerHTML">
     <button type="submit" name="preset" value="approve" class="cta-main">{{ t('freeze.approveCta') }}</button>
   </form>
   {% endif %}

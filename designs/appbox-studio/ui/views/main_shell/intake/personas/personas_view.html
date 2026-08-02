@@ -45,7 +45,7 @@
    saving confirms the item with the corrected fields. #}
 {% macro correctionForm(c, item) %}
 <form class="persona-form" method="post" action="{{ c.base }}/save"
-      hx-post="{{ c.base }}/save" hx-target="#panels" hx-swap="outerHTML">
+      hx-post="{{ c.base }}/save" hx-target="#panels" hx-swap="morph:outerHTML">
   <input type="hidden" name="item" value="{{ item.id }}">
   <label class="fact-label" for="pf-name">{{ t('intake.form.name') }}</label>
   <input type="text" id="pf-name" name="name" value="{{ item.name }}">

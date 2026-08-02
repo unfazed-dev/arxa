@@ -94,5 +94,11 @@
     "package": "leaflet",
     "version": "1.9.4",
     "integrity": "sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H"
+  },
+  {
+    "file": "idiomorph-ext.min.js",
+    "package": "idiomorph",
+    "version": "0.7.4",
+    "integrity": "sha384-SsScJKzATF/w6suEEdLbgYGsYFLzeKfOA6PY+/C5ZPxOSuA+ARquqtz/BZz9JWU8"
   }
 ]

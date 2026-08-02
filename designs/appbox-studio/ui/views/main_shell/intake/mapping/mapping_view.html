@@ -16,7 +16,7 @@
 
 {% macro storyCard(c, s) %}
 <a class="story-card pri-{{ s.priority }}" href="{{ c.base }}/artifact/story/{{ s.id }}"
-   hx-get="{{ c.base }}/artifact/story/{{ s.id }}" hx-target="#panels" hx-swap="outerHTML" hx-push-url="false">
+   hx-get="{{ c.base }}/artifact/story/{{ s.id }}" hx-target="#panels" hx-swap="morph:outerHTML" hx-push-url="false">
   {{ statusDot(s) }}
   <span class="story-text">{{ s.name }}</span>
   <span class="pri-chip pri-{{ s.priority }}">{{ t('pri.name.' ~ s.priority) }}</span>
@@ -105,7 +105,7 @@
   {% endif %}
   <p class="artifact-foot">
     <a href="{{ c.base }}/artifact/map/full"
-       hx-get="{{ c.base }}/artifact/map/full" hx-target="#panels" hx-swap="outerHTML" hx-push-url="false">{{ icon('chevron-left', {size: 14}) }} {{ t('map.back') }}</a>
+       hx-get="{{ c.base }}/artifact/map/full" hx-target="#panels" hx-swap="morph:outerHTML" hx-push-url="false">{{ icon('chevron-left', {size: 14}) }} {{ t('map.back') }}</a>
   </p>
 </article>
 {% endmacro %}
