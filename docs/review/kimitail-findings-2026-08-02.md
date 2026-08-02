@@ -128,12 +128,38 @@ mechanism each named was still real.
     itself an error. Same family as finding 8 — a check that cannot fail
     and a check that silently doesn't run are the same defect wearing
     different clothes.
-10. **Headless Chrome leaks on server shutdown.** 16 orphaned
-    `appbox-design-worker` Chrome process trees (ppid=1, ages 15-23h) were
-    found on the dev machine, predating this session. `JsWorker.dispose()`
-    and/or the server's shutdown path is not reaping the Chrome handle on
-    every exit route. Each orphan is a multi-process tree holding memory
-    indefinitely. Not reproduced deliberately; found incidentally.
+10. **Headless Chrome leaks on server shutdown** — **CLOSED.** 16 orphaned
+    `appbox-design-worker` Chrome trees (ppid=1, ages 15-23h) were found on
+    the dev machine, predating this session.
+    Measured per signal rather than assumed — `_ChromeHandle.close()` was
+    never the problem:
+
+    | signal | worker after | verdict |
+    |---|---|---|
+    | SIGTERM | dead | already clean |
+    | SIGHUP | **alive** | leaked |
+    | SIGKILL | **alive** | leaked |
+
+    Two causes and two fixes:
+    - **SIGHUP was unhandled** (closing the terminal orphaned a tree every
+      time) and **SIGINT was only wired under `!noWatch`** (so `--no-watch`
+      + ^C leaked the same way). Both now always installed and routed to
+      `shutdown()`. The sibling-sweep stays SIGINT-only — "^C stops every
+      instance serving this artifact" is deliberate and must not spread to
+      SIGTERM/SIGHUP.
+    - **SIGKILL is uncatchable**, so no handler can close that hole.
+      `_ChromeHandle.sweepOrphans()` now runs at boot: it reaps Chromes that
+      carry our own `--user-data-dir` prefix under systemTemp **and** have
+      been reparented to init, then deletes the profile dirs they held
+      (skipping any still claimed by a running Chrome). A live worker is
+      always a child of its own Dart server, never of pid 1, so a running
+      instance cannot match. Each reap is announced on stderr — a silent
+      sweep would be the same invisible-failure trap as findings 8 and 11.
+
+    Verified end to end: SIGHUP now reaps the worker; a SIGKILLed server's
+    orphan is reaped by the next boot with
+    `design serve: reaped orphaned worker chrome <pid>`; and a concurrently
+    running server on another port survived three sweeps untouched.
 9. **`gate --all` silently drops `--project`.** `_runAllGates`
    (`appboxd/bin/appbox.dart`) parses only `--app`/`--repo`, so
    `appbox gate --all --project x` ignores the flag without warning.

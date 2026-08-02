@@ -283,11 +283,68 @@ class _ChromeHandle {
   final Directory tmpDir;
   int get pid => process.pid;
 
+  /// Marker identifying a Chrome this class launched: our own `--user-data-dir`
+  /// under systemTemp. Narrow on purpose — it must never match a Chrome the
+  /// user is running themselves.
+  static String get _udd =>
+      '--user-data-dir=${Directory.systemTemp.path}/appbox-design-worker-';
+
+  /// Reap Chrome trees a previous server leaked, and the temp dirs they held.
+  ///
+  /// SIGKILL and a hard crash can never run [close], so signal handlers alone
+  /// cannot close this hole — the only cure is to sweep at the next boot. Two
+  /// conditions, both required: the process carries OUR user-data-dir prefix,
+  /// AND it has been reparented to init. A live worker is always a child of
+  /// its own Dart server, never of pid 1, so a running instance cannot match.
+  /// Reaps are announced — a sweep that killed things silently would be the
+  /// same invisible-failure trap this server already had once.
+  static void sweepOrphans() {
+    final ProcessResult ps;
+    try {
+      ps = Process.runSync('ps', ['-eo', 'pid=,ppid=,command=']);
+    } catch (_) {
+      return; // no ps (unlikely) — a leak is better than a crash on boot.
+    }
+    if (ps.exitCode != 0) return;
+    final live = <String>{}; // user-data-dirs still owned by a running Chrome
+    final orphans = <int>[];
+    for (final line in (ps.stdout as String).split('\n')) {
+      final at = line.indexOf(_udd);
+      if (at < 0) continue;
+      final dir = line.substring(at + '--user-data-dir='.length).split(' ').first;
+      final f = line.trimLeft().split(RegExp(r'\s+'));
+      final pid = f.isEmpty ? null : int.tryParse(f[0]);
+      final ppid = f.length < 2 ? null : int.tryParse(f[1]);
+      if (pid == null) continue;
+      if (ppid == 1) {
+        orphans.add(pid);
+      } else {
+        live.add(dir); // a server still owns this profile — hands off
+      }
+    }
+    for (final pid in orphans) {
+      try {
+        Process.killPid(pid, ProcessSignal.sigkill);
+        stderr.writeln('design serve: reaped orphaned worker chrome $pid');
+      } catch (_) {}
+    }
+    // Their profile dirs are ours and are never reused. Skip any still claimed
+    // by a running Chrome — deleting a live profile would break that server.
+    for (final d in Directory.systemTemp.listSync().whereType<Directory>()) {
+      if (!d.path.contains('/appbox-design-worker-')) continue;
+      if (live.contains(d.path)) continue;
+      try {
+        d.deleteSync(recursive: true);
+      } catch (_) {}
+    }
+  }
+
   static Future<_ChromeHandle> launch() async {
     final chromePath = CdpClient.defaultChromePath();
     if (!await File(chromePath).exists()) {
       throw StateError('Chrome not found at: $chromePath');
     }
+    sweepOrphans();
     final tmpDir = await Directory.systemTemp.createTemp('appbox-design-worker-');
     final args = [
       '--headless=new',

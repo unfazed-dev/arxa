@@ -608,19 +608,28 @@ Future<int> designServe(List<String> args) async {
     if (!completer.isCompleted) completer.complete(code);
   }
 
-  StreamSubscription? termSub;
-  StreamSubscription? intSub;
-  if (!a.noWatch) {
-    intSub = ProcessSignal.sigint.watch().listen((_) {
-      sweepSiblingInstances(srv.pid, srv.artifactDir);
-      shutdown(0);
-    });
-  }
-  termSub = ProcessSignal.sigterm.watch().listen((_) => shutdown(0));
+  // Every catchable exit must reach shutdown() — that is what disposes the
+  // worker and reaps its Chrome tree. Measured before this change: SIGTERM
+  // exited clean, SIGHUP and SIGKILL each orphaned a Chrome. SIGHUP was
+  // unhandled entirely, so closing the terminal leaked a tree every time,
+  // and SIGINT was only wired under `!noWatch`, so `--no-watch` + ^C leaked
+  // the same way. SIGKILL is uncatchable by definition — _ChromeHandle
+  // sweeps those leftovers at the next boot.
+  //
+  // Only SIGINT sweeps siblings: "^C stops every instance serving this
+  // artifact" is deliberate, and must NOT spread to SIGTERM/SIGHUP, which
+  // stop just this one.
+  final intSub = ProcessSignal.sigint.watch().listen((_) {
+    if (!a.noWatch) sweepSiblingInstances(srv.pid, srv.artifactDir);
+    shutdown(0);
+  });
+  final termSub = ProcessSignal.sigterm.watch().listen((_) => shutdown(0));
+  final hupSub = ProcessSignal.sighup.watch().listen((_) => shutdown(0));
 
   final code = await completer.future;
   await termSub.cancel();
-  await intSub?.cancel();
+  await intSub.cancel();
+  await hupSub.cancel();
   return code;
 }
 
