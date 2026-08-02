@@ -15,8 +15,11 @@
 <li class="surface-row">
   <span class="surface-label">{{ s.label }}</span>
   <code class="surface-id">{{ s.id }}</code>
-  <span class="pri-chip pri-{{ s.priority }}">{{ t('pri.name.' ~ s.priority) }}</span>
-  <span class="chip">{{ s.release }}</span>
+  {# MoSCoW is story-mapper's, not intake's: a project registry entry carries
+     no priority/release until story-mapper has run. Unguarded, `~` stringifies
+     undefined and the chip reads "pri.name.undefined". Absent means absent. #}
+  {% if s.priority %}<span class="pri-chip pri-{{ s.priority }}">{{ t('pri.name.' ~ s.priority) }}</span>{% endif %}
+  {% if s.release %}<span class="chip">{{ s.release }}</span>{% endif %}
   {{ sh.provChip(s.provenance) }}
   <span class="surface-states">
     <span class="fact-label">{{ t('intake.surfaces.statesLabel') }}</span>
