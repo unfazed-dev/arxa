@@ -26,12 +26,13 @@ Each stage only talks to its immediate neighbor. A View never reaches past its V
 
 ## Determinism
 
-Every generated artifact — fixtures, `registry.json`/`structure.json`, the story-map and brief emits, goldens — is a **pure function of checked-in inputs** (seeds + registry + config). Same inputs, byte-identical output, on every machine and every run. This is what makes the output triad (prototype / flows / screens) trustworthy as pipeline input: regenerating a design never invents drift.
+Every generated artifact — fixtures, `registry.json`/`structure.json`, the story-map and brief emits, goldens — is a **pure function of checked-in inputs** (seeds + registry + config). Same inputs, byte-identical output, on every machine and every run. The same holds for the intake emits: identical answers produce a byte-identical registry, flows, and seeds. This is what makes the output triad (views / flows / proto) trustworthy as pipeline input: regenerating a design never invents drift.
 
 - **No wall-clock, randomness, environment, or network in generators/emitters** — no `Date.now`, `Math.random`, UUIDs, timestamps, or host-dependent paths. Content that needs a date carries it in the seed, authored.
+- **Structure is declared while designing** — views, flows, and proto are derived projections of the same registry + flows SSOT; a lens never invents structure of its own, and no structure is back-filled later by inference from the tree.
 - **Stable ordering** — generators emit in sorted/seed order; filesystem or map iteration order never leaks into output.
 - **Regeneration is always safe** — run any generator or emitter twice with unchanged inputs: zero diff. A diff after a no-change regen is a bug in the generator, not a change to commit.
-- **Session state is not content** — user/session mutations (pins, layout, choices) live in the session and never enter seeds, fixtures, or `structure.json`.
+- **Session state is not content** — user/session mutations (pins, viewer choices) live in the session and never enter seeds, fixtures, or `structure.json`. Flow edits are the opposite: they are content, written to the project's `flows.json` through the server's write channel, undoable as file-write replays.
 - The mechanical check: regenerate everything (`models/*/generate.mjs`, `appbox emit structure`) twice and diff — empty. The selftest's git-tracked check keeps the committed tree equal to the generated tree.
 
 ### L10n in the spine
@@ -51,30 +52,68 @@ The Surface registry is a separate inventory, one entry per Surface — never th
 - `shell` — the id's first segment, denormalized for grouping (must equal it — the engines validate the invariant).
 - `comp` — mechanical: `PascalCase(shell) + PascalCase(short)` (`shop.cart` → `ShopCart`), the scaffolder's class name. Derived, never authored.
 - `labelKey` / `route` — the l10n key backing the label, and the Surface's URL.
+- `requiresAuth` / `tab` — optional route-table inputs: an auth guard on the compiled route, bottom-tab membership (tab order = registry order).
 - `kits` — optional; the kits the Surface composes (absent on entries that use none).
 
 A route may reference a registry `id`; the registry does not replace the route table, it indexes the subset of routes that are Surfaces.
 
-## The output triad: prototype / flows / screens
+## The .appbox project (live-read)
 
-One Artifact, three lenses. `structure.json` is the single screen registry; the design surface exposes three switchable views over it — **prototype** (the wired app: device-chrome navigation over each entry's `route`), **flows** (the journeys: an edge graph across screens), and **screens** (the inventory: every screen as a tile, grouped by shell). Three lenses over one registry — never three separate artifacts, and never a flows document that can drift from the screens it names.
+The studio designs a **user project**, not itself. User projects live in `~/.appbox/projects/<name>/` (`APPBOX_HOME` overrides `~/.appbox`; a one-line `~/.appbox/current` names the active project), four shell dirs:
 
-**Flows are data, not markup.** A flow is authored as an array of edges over registry ids:
+- `intake/` — answers, brief, `registry.json`, `flows.json`, story-map outputs
+- `design/` — seeds, `surfaces/` partials, `l10n/`
+- `build/` — evidence
+- `settings/` — `project.json` (`{name, targets, locales}` — no clock fields)
+
+The studio's own design (chrome, shells, its own registry) stays in the repo under `designs/appbox-studio`; `~/.appbox` holds user projects only.
+
+The design server **live-reads** the current project as an overlay on its own artifact scan (`_scanArtifact` in `appboxd/lib/design_server/worker.dart`):
+
+| project file | overlaid as |
+|---|---|
+| `design/surfaces/**.html` | templates `ui/project/<sub>` — screen partials keyed by kind; absent kind → the stub's generic fallback |
+| `**.json` (anywhere) | fixtures served at `/project/<rel>`, read via `readProjectFixture(rel)` |
+| `design/l10n/app_*.arb` | merged **over** the artifact's arb catalogs — the project can restyle copy |
+
+Writes travel one confined channel: `POST /__project_write` (JS side: `writeProjectFixture(rel, value)`), which updates the worker's prefetch and busts the read cache so the re-render sees the new bytes. Templates never write files; repositories never hardcode `../../models` paths to project data — the project is reached only through the overlay. With no project overlaid the studio serves artifact-only: every project read degrades to empty, never a 500.
+
+## The output triad: views / flows / proto
+
+One Artifact, three lenses. `structure.json` is the single screen registry; the design surface exposes three switchable views over it — **views** (the inventory: every screen as a flat wrapping grid in registry order), **flows** (the journeys: one row per flow, tiles in edge-chain order), and **proto** (the wired app: a device-chrome live preview navigating each entry's `route`). Three lenses over one registry — never three separate artifacts, and never a flows document that can drift from the screens it names.
+
+**Flows are data, not markup (flows.json v2).** A flow is authored as an array of edges over registry ids:
 
 ```json
-{ "id": "flow-intake", "name": "New project intake",
+{ "id": "flow-browse", "name": "Browse and buy", "provenance": "founder",
   "edges": [
-    { "from": "intake.interview", "to": "intake.personas", "trigger": "Questions answered" }
+    { "from": "shop.home", "to": "shop.category", "trigger": "Pick a category", "action": "push" }
   ] }
 ```
 
-`from` / `to` / `trigger` are the contract; flow-level metadata (`id`, `name`, `persona`, `provenance`, edge `label`) is allowed. Edge endpoints are not negotiable: they are registry ids (plus any per-screen state the registry already carries), and an edge naming an id the registry does not declare is a bug the same mechanical style of check as the surface join can catch. Flows travel the data spine like any other content — seed → fixture → repository → facade — and render through a server template (a Nunjucks macro, e.g. an edge chain) or a named island. Never bespoke per-flow markup, never a separate file format: the flows lens is a projection of the registry plus the edges.
+The edge contract is `from` / `to` / `trigger` / `action`. `from`/`to` are not negotiable: registry ids, and an edge naming an id the registry does not declare is a bug the same mechanical style of check as the surface join catches. `trigger` names what the user does ON the from screen to advance — it travels with the screen on reorder. `action` is a typed navigation op: `push` (default) | `replace` | `back` | `modal` | `system`. A `system` edge (auth-success, deep-link) is not user navigation — it becomes a **route guard** downstream. Flow-level metadata (`id`, `name`, `persona`, `provenance`) is allowed. Flows travel the data spine like any other content — seed → fixture → repository → facade — and render through a server template macro or named island. Never bespoke per-flow markup, never a separate file format: the flows lens is a projection of the registry plus the edges.
 
-The freeze carries flows into `structure.json` as an optional top-level `flows` array — same edge shape, keyed by registry screen ids. Absent means the Artifact has no flows lens, which is valid for small artifacts; present means every `from`/`to` resolves to a registry entry.
+**Flows are linear chains.** Each screen has at most one outgoing edge per flow — no branches, no loops (a screen needing two successors is two flows, or a `system` edge). Chain order is derived by walking the edges from the head — the edge whose `from` has no incoming edge. A screen may belong to several flows at once (multi-flow membership); it renders once per flow row, and row order in the flows lens is the flow order in `flows.json`.
 
-**Handoff.** `appbox-scaffolder` consumes the frozen `structure.json`'s registry screens (with `shellRoots`, `kits`, `deps`) and emits the per-surface Flutter file sets plus the `.shell-structure.json` manifest — surfaces, never navigation: the scaffolder explicitly does not produce routes. The flows edges are the navigation declaration the builder wires downstream: each edge maps to a navigation call between the two surfaces the scaffolder emitted. One registry, three lenses, and the pipeline reads all three from the same authored layer.
+**Intake derives, the human confirms.** When intake answers carry no flows, the engine derives drafts — one per story-map epic, screens in story order, `provenance: inferred`, deterministically. Confirming a flow flips provenance to `founder`/`client`. Inferred structure is a draft, never silently shipped as decided.
 
-Reference implementation: `designs/appbox-studio` — flows authored in `models/intake_model/intake_seed.*.json` (`flows[]` with `{from,to,trigger}` edges over registry ids), rendered by the intake flows surface (`ui/views/main_shell/intake/flows/flows_view.html`'s `edgeChain` macro, with the facade resolving ids to registry labels); the screens lens is the design viewer's tile canvas (`ui/common/design_viewer.html`), grouping `structure.json` screens by shell.
+The freeze carries flows into `structure.json` as an optional top-level `flows` array — same v2 edge shape, keyed by registry screen ids. Absent means the Artifact has no flows lens, which is valid for small artifacts; present means every `from`/`to` resolves to a registry entry.
+
+**The viewer renders the triad.** The design canvas (`ui/common/design_viewer.html`) switches lenses by the `mode` viewer param — `views` (default) | `flows` | `proto`:
+
+- **views** — the flat registry grid: wrapping rows, registry order, no containers or connector lines.
+- **flows** — one dashed rounded row per flow, rows stacked in a column: flow label chip top-left, tiles in chain order, and pure-CSS connectors BETWEEN consecutive tiles carrying the edge's `trigger` label (line + arrowhead, zero JS measurement, deterministic re-render on reorder).
+- **proto** — one screen live at a real rung size inside device chrome. The tab bar and flow-advance chrome render FROM the project's registry (`tab` flags, registry order) and flows (the screen's next edge) — template macros over the same data, never bespoke per screen.
+
+All three device rungs (390/744/1280) are reachable from the mini bar in every lens.
+
+Per-tile chrome is a single **hover toolbar** (CSS `:hover`/`:focus-within`, zero JS): pin / inspect / select everywhere; add-to-flow (a dropdown of the project's flows) in views; move (←→ nudge, plus axis-locked row drag) and remove-from-flow in flows. Two viewer-state keys arm per-tile behavior: `inspect=<id>` arms the inspect island in that tile's iframe; `live=<id>` (select = live-in-place) drops `still=1` and makes that tile interactive — one live tile at a time by construction, since it is a single key. All viewer state keys are authoritative: every control href echoes the whole state, defaults elided, so an absent key means "back to default".
+
+**Flow edits write the project.** Move/add/remove POST the design server (`/design/flows/<flow>/move|add|remove/<screen>`), which rewrites the project's `flows.json` through `/__project_write` — never a template-side file write. Rewire is deterministic: an already-adjacent pair keeps its edge untouched; a new pair inherits the from screen's previous trigger/action. Undo/redo is a session stack of before/after chain arrays replayed as file writes.
+
+**Handoff.** `appbox-scaffolder` consumes the frozen `structure.json`'s registry screens (with `shellRoots`, `kits`, `deps`) and emits the per-surface Flutter file sets plus the `.shell-structure.json` manifest. From the same authored layer it compiles **one go_router-shaped route table** — no separate nav graph: registry `route` values become paths, flow edges become typed navigation ops (`push|replace|back|modal`), guards come from `requiresAuth` entries plus `system` edges, and the tab shell from `tab` flags (tab order = registry order). One registry, three lenses, one route table — the pipeline reads all of it from the same authored layer.
+
+Reference implementation: `designs/appbox-studio` — the current project's flows live-read from `~/.appbox/projects/<name>/intake/flows.json` (`services/repositories/project_repository.js`), rendered by the design viewer (`ui/common/design_viewer.html` + `viewerFor` in `services/facades/design_facade.js`): the views lens as a flat registry-order grid, the flows lens as dashed rows with trigger-labelled connectors, proto as the device-chrome preview.
 
 ## Services split
 

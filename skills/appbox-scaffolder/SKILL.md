@@ -71,11 +71,38 @@ unmigrated plugin "will become an error in a future version"). If that gate
 fires on an app you scaffolded, the remedy is in its README — do not silence it
 by dropping a target.
 
-You do **not** produce: widget bodies, business logic, routes, platform
+You do **not** produce: widget bodies, business logic, platform
 ceremony files (entitlements, Info.plist — those are the deployer/builder's
 concern), or anything that is design. Every emitted file is a **minimal valid
 Dart skeleton** carrying the class name the builder implements, marked as a
 stub. The builder (plan 08) fills the bodies.
+
+## Route table contract
+
+Besides the file tree, the scaffolder compiles **ONE go_router-shaped route
+table** from the project's `intake/registry.json` + `intake/flows.json`
+(exact shapes per `appboxd/lib/intake.dart`):
+
+- registry entries: `{id, label, shell, comp, route, surface, states?,
+  requiresAuth?, tab?}`
+- flows edges: `{from, to, trigger, action}` with typed actions
+  `push | replace | back | modal | system`
+
+The compile rules:
+
+- **Typed nav ops only** — `push`, `replace`, `back`; `modal` is a
+  presentation flag on the destination, never a fourth verb. `system` edges
+  are non-gesture (auth-success, deep-link): they compile to route guards,
+  never to buttons.
+- **Guards are named predicates** — `requiresAuth: true` entries plus
+  `system` edges compile to ONE `redirect`, not per-route copies.
+- **Tabs are data** — `tab: true` entries form the bottom-tab shell, in
+  registry order.
+- **Flow row order is edge-chain order** — a flow's rows appear exactly as
+  its edges chain; the table adds no reordering.
+
+One table, derived from the two intake artifacts — a flow needing something
+the registry does not declare is a design defect, not a scaffolder branch.
 
 ## Procedure
 

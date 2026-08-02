@@ -1,380 +1,253 @@
 # appbox — System Map
 
-One visual reference for the whole repo. Every node and edge traces to a file;
-`(planned)` marks wiring that is designed but not built. Canonical terms per
-`docs/VOCABULARY.md`; build order per `docs/plans/architecture.md` §21.
+One visual reference for the whole repo. Every node and edge traces to a file.
+Canonical terms per `docs/VOCABULARY.md`. Verified against the code 2026-08;
+`(planned)` marks wiring that is designed but not built.
 
 ## 1. System overview
 
-The operator drives Kimi CLI skills; the skills drive the `appbox` CLI and the
-`appboxd` daemon; the daemon owns the pipeline FSM, gates, emitters, memory,
-vault/licence, and the loopback LLM gateway that fronts all provider traffic.
+The operator drives Kimi CLI skills; skills drive the `appbox` CLI and `appboxd`.
+The design server renders the studio artifact (`designs/appbox-studio/`) plus a
+live overlay of the current user project (`~/.appbox/projects/<name>/`). The
+Flutter app (`appbox-studio/`) is the product shell — today it implements only
+`startup`/`home`/`unknown`; the full surface set exists in the design artifact.
 
 ```mermaid
 flowchart TD
-    user["Operator (Evan) / Buyer (Michelle)"]
+    user["Operator / client"]
 
-    subgraph skills["Kimi CLI skills — skills/ (11)"]
-        sk_intake["appbox-intake / appbox-story-mapper / appbox-moodboarder"]
+    subgraph skills["Kimi CLI skills — skills/"]
+        sk_intake["appbox-intake / story-mapper / moodboarder"]
         sk_design["appbox-designer"]
         sk_build["appbox-scaffolder / appbox-builder / appbox-tester"]
         sk_gate["appbox-reviewer / appbox-lens / appbox-lint"]
         sk_deploy["appbox-deployer"]
     end
 
-    subgraph daemon["appboxd — the daemon (appboxd/)"]
-        cli["appbox CLI (bin/appbox.dart): gate, crud, serve, lens, design, deploy, intake, emit, lint, docs, kb, watermark"]
-        engine["Engine (lib/engine.dart): headless stage runner — spawns kimi -p via temp KIMI_CODE_HOME"]
-        fsm["Pipeline FSM (lib/pipeline_fsm.dart + lib/phases.dart)"]
-        gates["Gates (lib/gate_*.dart + gate_runner.dart; review at gates/review/review.dart)"]
-        emitters["Emitters (emit_structure, scaffold, htmx, synthesize, blueprint, emit_stage, …)"]
-        server["HTTP server (lib/server.dart) :8787 loopback — /api/* + static webRoot"]
-        gateway["LLM gateway (lib/gateway.dart) /llm/v1 — TokenMinter, tier routing, usage ledger"]
-        fabric["Model fabric (lib/fabric.dart + config/model-fabric.json)"]
-        memory["Memory (lib/memory*.dart): event log, response cache, curator"]
-        vault["Vault + SecureStore + Credentials (lib/vault.dart, secure_store.dart, credentials.dart)"]
-        licence["Licence + watermark (lib/licence.dart, watermark.dart) — Ed25519, offline"]
+    subgraph daemon["appboxd — CLI + daemon (appboxd/)"]
+        cli["appbox CLI (bin/appbox.dart): intake, emit, gate, crud, design, lens, deploy, kb, lint, docs, watermark"]
+        fsm["Pipeline FSM (lib/pipeline_fsm.dart + phases.dart)"]
+        gates["Gates (lib/gate_*.dart + gate_runner.dart)"]
+        emitters["Emitters (emit_structure, scaffold, htmx, story-map, …)"]
+        proj["Project model (lib/project.dart) — ~/.appbox resolver"]
+        server["HTTP server (lib/server.dart) :8787 loopback"]
+        gateway["LLM gateway (lib/gateway.dart) /llm/v1 → fabric + vault"]
+        dserver["Design server (lib/design_server.dart + design_server/worker.dart) — artifact JS in headless-Chrome CDP tab"]
     end
 
-    subgraph design["Design surface — designs/appbox-studio/"]
-        artifact["htmx artifact: registry.json, app.routes.js, ui/views/**, structure.json"]
-        dserver["Design server (lib/design_server.dart) — artifact JS in headless-Chrome CDP worker"]
+    subgraph home["~/.appbox (APPBOX_HOME override)"]
+        current["current — one-line active-project marker"]
+        projects["projects/<name>/{intake,design,build,settings}"]
     end
 
-    subgraph studio["appbox-studio/ — the one Flutter app (Stacked MVVM)"]
-        shells["Build shells: web / macos / ios / android"]
-        sec["lib/security/: pairing, channel, pipeline control, prototype"]
+    subgraph design["designs/appbox-studio/ — studio design artifact (in repo)"]
+        shells["Shells: app / main (intake·design·build) / workspace — registry.json + flows.json + ui/views/** + app.routes.js"]
     end
 
-    subgraph kit["kit/ — 25 vendored packages"]
-        kit_groups["core plumbing / device + hardware / platform services / genui_bridge / showcase_app"]
+    subgraph studio["appbox-studio/ — the Flutter app (Stacked MVVM)"]
+        fviews["lib/ui/views: startup, home, unknown (+ security layer)"]
     end
 
-    subgraph external["External"]
-        llm["LLM providers: kimi, zai, anthropic, openai, deepseek, gemini, xai, fugu (optional)"]
-        stores["App stores / OTA / web: fastlane, shorebird, Cloudflare Pages — vercel (planned, stub)"]
-        osvault["OS vault: macOS Keychain — Windows/Linux (planned)"]
-    end
-
-    user --> skills
-    skills --> cli
-    cli --> fsm
-    cli --> gates
-    cli --> emitters
-    cli --> server
-    server --> fsm
-    server --> gateway
-    engine -->|"stage run: kimi CLI pointed at 127.0.0.1/llm with stage-scoped token"| gateway
-    fsm --> gates
-    gates --> emitters
-    gateway --> fabric
-    gateway -->|"provider keys by key_ref"| vault
-    gateway -->|"https"| llm
-    emitters --> artifact
-    dserver --> artifact
-    emitters -->|"scaffold: structure.json + targets → lib/ui/views tree"| studio
-    studio -->|"kit packages (dependencyMode: vendored)"| kit
-    sec -->|"heartbeat + pipeline control over loopback/tailnet"| server
-    server -->|"static webRoot: appbox-studio/build/web"| shells
-    licence --> vault
-    vault --> osvault
-    sk_deploy -->|"fastlane / shorebird / cloudflare CLIs (lib/deploy.dart)"| stores
-    engine --> memory
-    gateway --> memory
-    gates --> memory
+    user --> skills --> cli
+    cli --> fsm --> gates --> emitters
+    cli --> proj
+    proj --> current
+    proj --> projects
+    emitters -->|"intake emit / design seeds / build evidence"| projects
+    dserver -->|"live-read: artifact + project overlay, hot reload"| design
+    dserver -->|"live-read"| projects
+    cli -->|"appbox design serve <dir|name>"| dserver
+    emitters -->|"scaffold: structure.json + targets → lib/ui/views"| studio
+    server -->|"static webRoot: appbox-studio/build/web"| studio
+    cli -->|"fastlane / shorebird / cloudflare (lib/deploy.dart)"| stores["App stores / OTA / web"]
+    gateway --> providers["LLM providers (config/model-fabric.json)"]
 ```
 
-## 2. Pipeline stages, gates, and skills
+## 2. Pipeline stages and user-interaction checkpoints
 
-Phase order from `lib/phases.dart` / `lib/pipeline_fsm.dart`
-(intake → prototype → design → scaffold → review → build → deploy); gates per
-phase from `phaseGates`; the standalone gate suite order (`gateOrder` in
-`lib/gate_runner.dart`) is intake, freeze, structure, scaffold, coverage,
-memory, advertise, review, native_deps, lens, deploy.
+FSM phase order (`lib/phases.dart`): intake → prototype → design → scaffold →
+review → build → deploy, with per-phase gates (`phaseGates`). Human checkpoints
+an agent can reach but never pass are marked ⧗; the studio design surfaces where
+they happen are named under each.
 
 ```mermaid
 flowchart LR
-    subgraph p1["phase: intake"]
-        g_intake["gate: intake — traceability: registry ↔ answers/brief, no orphans"]
+    subgraph p1["intake"]
+        g1["gate: intake — registry ↔ answers/brief traceability"]
+        c1["⧗ intake interview + item-engine confirm steps — /intake, /intake/{personas,surfaces,flows,direction}: confirm / save / skip / edit / accept-all"]
     end
-    subgraph p2["phase: prototype"]
-        g_freeze["gate: freeze — inputs + approval.lock + render clean at derived viewports; writes designHash"]
+    subgraph p2["prototype"]
+        g2["gate: freeze — inputs + approval.lock + clean renders; writes designHash"]
+        c2["⧗ design chat refine loop — /design/chat (context chips, checkpoints, revert)"]
+        c3["⧗ HUMAN GATE 1: manifest approval — /design/freeze (freeze & trace, recheck) → freeze --approve mints approval.lock"]
     end
-    subgraph p3["phase: design"]
-        g_structure["gate: structure — structure.json sync with authored layer + designHash fresh"]
+    subgraph p3["design"]
+        g3["gate: structure — structure.json sync + designHash fresh"]
     end
-    subgraph p4["phase: scaffold"]
-        g_scaffold["gate: scaffold — shell-structure contract S0–S10"]
-        g_coverage["gate: coverage — every frozen surface carries target-derived file set C1–C5"]
+    subgraph p4["scaffold"]
+        g4["gates: scaffold S0–S10 + coverage C1–C5"]
     end
-    subgraph p5["phase: review"]
-        g_review["gate: review — arch_guard + ponytail-review + manifest hash (gates/review/review.dart)"]
-        g_memory["gate: memory — MEMORY.md ≤100 lines, facts parse, lessons ≤200 lines"]
+    subgraph p5["review"]
+        g5["gates: review (arch_guard + ponytail + manifest hash) + memory"]
+        c4["⧗ HUMAN GATE 2: review verdict — POST /api/review/approve|reject"]
     end
-    subgraph p6["phase: build"]
-        g_native["gate: native_deps — SwiftPM packaging for Apple targets"]
-        g_lens["gate: lens — design-vs-built golden compare (byte/pixel/ssim)"]
+    subgraph p6["build"]
+        g6["gates: native_deps + lens (design-vs-built goldens)"]
+        c5["⧗ build gate decisions — POST /build/gates/decide (needs-you strip); stage controls /build/stages/:id/control"]
     end
-    subgraph p7["phase: deploy"]
-        g_deploy["gate: deploy — target/version/account triple + §17 licence, fail-closed"]
-        g_advertise["gate: advertise — no offer above evidence-tier (kit-registry.json vs evidence.json)"]
+    subgraph p7["deploy"]
+        g7["gates: deploy (triple + licence, fail-closed) + advertise"]
+        c6["⧗ HUMAN GATE 3: deploy --approval token — human-supplied, never minted by code (pay-at-deploy)"]
     end
 
     p1 --> p2 --> p3 --> p4 --> p5 --> p6 --> p7
     p5 -.->|"review REJECT rewinds FSM to design"| p3
-
-    sk_i["skills: appbox-intake, appbox-story-mapper, appbox-moodboarder"] -.-> p1
-    sk_d["skills: appbox-designer, appbox-lens"] -.-> p2
-    sk_s["skill: appbox-scaffolder (appbox emit scaffold)"] -.-> p4
-    sk_r["skill: appbox-reviewer"] -.-> p5
-    sk_b["skills: appbox-builder, appbox-tester, appbox-lens"] -.-> p6
-    sk_x["skill: appbox-deployer (appbox deploy)"] -.-> p7
-
-    hg1["HUMAN GATE 1: prototype approval (approvePrototype)"] -.-> p2
-    hg2["HUMAN GATE 2: review verdict (reviewVerdict)"] -.-> p5
-    hg3["HUMAN GATE 3: deploy approval token + licence (pay-at-deploy)"] -.-> p7
+    dash["⧗ dashboard project ops — /dashboard: createProject, projects/use (writes ~/.appbox/current), gates/decide"] -.-> p1
 ```
 
-Also on the CLI but outside the phase loop: `arch`, `gen-freshness`, `trace`,
-`tier1`, `capability`, `api-map` gates (target-driven, bypass repo-root
-discovery); emitters `structure`, `htmx`, `playground`, `transform_tokens`,
-`synthesize`, `blueprint`, `emit_stage`, `generate_view`, `theme-map`,
-`palette`, `story-map`, `scaffold`; `kb` (facts/build/check/lock/playbook/
-conventions), `lint`, `docs`, `watermark`.
+Also on the CLI outside the phase loop: gates `arch`, `gen-freshness`, `trace`,
+`tier1`, `capability`, `api-map`; emitters `structure`, `htmx`, `playground`,
+`synthesize`, `blueprint`, `story-map`, `scaffold`; `kb`, `lint`, `docs`,
+`watermark`.
 
-## 3. User-interaction checkpoints — a full run
+## 3. The ~/.appbox project model
 
-Every point a human must act. Gates an agent can reach but never pass are
-marked HUMAN GATE; the FSM enforces them via `humanApproved` / `approvalTokens`
-/ review state in `pipeline/state/default.state.json`.
+User projects live outside the repo (`lib/project.dart`). The studio's own
+design stays in `designs/appbox-studio/`; `~/.appbox` holds user projects only.
+Stage is derived deterministically from which outputs exist — never stored.
+
+```mermaid
+flowchart TD
+    home["appboxHome() = $APPBOX_HOME ?? ~/.appbox (test hook: appboxHomeOverride)"]
+    cur["~/.appbox/current — one line, active project name (default 'portalo'; useProject() validates + writes)"]
+    subgraph prj["~/.appbox/projects/<name>/ — name: lowercase alnum + dash"]
+        intake["intake/ — answers.json, brief.md, registry.json, flows.json, story-map outputs"]
+        dsgn["design/ — seeds, surfaces/**.html partials, l10n/app_*.arb; models/design_model/run.en.json marks build stage"]
+        bld["build/ — evidence *.json (any json ⇒ stage 'gates')"]
+        stngs["settings/project.json — {name, targets, locales}; no clock fields (byte-identical emit)"]
+    end
+
+    home --> cur
+    home --> prj
+    stage["projectStage(): intake → design (intake/registry.json) → build (design run.en.json) → gates (build/*.json)"]
+    prj --> stage
+    cards["projectCards() → {name, targets, stage, surfaces, flows} — feeds the dashboard grid via GET /__projects"]
+    stage --> cards
+    init["ensureProject(name) — idempotent; never clobbers project.json"] --> prj
+```
+
+## 4. Design server: live-read wiring (artifact + project overlay)
+
+`appbox design serve <dir|name>` (`lib/design_cli.dart` →
+`lib/design_server.dart`) runs the artifact's ES-module JS in a headless-Chrome
+tab over CDP (`design_server/worker.dart`). Dart owns HTTP/sessions/timers; the
+worker tab owns viewmodel dispatch + Nunjucks render. `_scanArtifact` prefetches
+everything into sync in-memory maps; two file watchers hot-reload the worker.
+
+```mermaid
+flowchart TD
+    subgraph repo["Repo artifact — designs/appbox-studio/"]
+        a_tpl["ui/**.html templates + app.routes.js"]
+        a_arb["l10n/app_*.arb"]
+        a_fix["models/**.json fixtures (registry, flows, intake seeds)"]
+    end
+    subgraph overlay["Project overlay — ~/.appbox/projects/<current>/"]
+        p_surf["design/surfaces/**.html → templates ui/project/<sub> (screen partials)"]
+        p_arb["design/l10n/app_*.arb → merged OVER artifact arb (project wins)"]
+        p_json["**.json anywhere → fixtures at /project/<rel> (intake registry+flows, design seeds, build evidence)"]
+    end
+    scan["_scanArtifact(artifactDir, origin, projectDir:) — one _Prefetch {templates, fixtures, arb, icons}"]
+    worker["JsWorker — headless Chrome tab: __templates/__fixtures/__arb/__icons injected, __boot(origin), __dispatch per request"]
+    watch1["artifact watcher → worker.reload() (cache-busted re-import; sessions/timers ride out reload in Dart state)"]
+    watch2["project watcher → worker.reload() — editing a partial or fixture reloads too"]
+    write["POST /__project_write {path, body} — writes ONE file inside the project dir (path-escape rejected); watcher reloads"]
+    list["GET /__projects → projectCards() + current"]
+    use["POST /__project_use {name} → useProject() writes ~/.appbox/current"]
+
+    repo --> scan
+    overlay --> scan
+    scan --> worker
+    repo -.-> watch1 -.-> worker
+    overlay -.-> watch2 -.-> worker
+    write --> overlay
+    use --> cur2["~/.appbox/current"] -.-> overlay
+    list --> cards2["dashboard grid"]
+```
+
+## 5. Design viewer: three lenses, one SSOT
+
+`ui/common/design_viewer.html` is the shared screen stage. All three lenses
+render from the same source of truth — `registry.json` (screens) + `flows.json`
+(flow edges) of the current project, live-read through the overlay. Mode
+`v.mode`: `views` (default) | `flows` | `proto`.
+
+```mermaid
+flowchart TD
+    ssot["SSOT: project intake/registry.json + intake/flows.json (fixtures at /project/intake/*.json)"]
+    views["VIEWS lens — every screen as a flat wrapping grid; add-to-flow menu per tile"]
+    flows["FLOWS lens — one dashed row per flow, tiles in edge-chain order; move ←/→ + remove per tile"]
+    proto["PROTO lens — the wired app: one live screen in device chrome, edges are clickable nav"]
+    edits["Flow edits: POST /design/flows/:flow/{move,add,remove}/:screen (prototype_viewmodel.js)"]
+    facade["facade → fixture_reader.js → POST /__project_write"]
+    back["flows.json written back; project watcher hot-reloads; whole stage (#panels) re-renders"]
+
+    ssot --> views
+    ssot --> flows
+    ssot --> proto
+    views --> edits
+    flows --> edits
+    edits --> facade --> back --> ssot
+```
+
+## 6. Intake chain and studio boot chain
+
+Intake (`lib/intake.dart`, `lib/intake_cli.dart`): answers carry per-field
+provenance (`client | founder | inferred`); `inferred` fields are visibly marked
+in the brief (`> **[inferred]**`) and derived flows get `provenance: inferred`
+so the confirm step has something to confirm. The studio app shell
+(`ui/views/app_shell/`, `routes.app.js`) is the boot chain; root lands on the
+dashboard, whose project grid is live from `~/.appbox`.
 
 ```mermaid
 sequenceDiagram
     autonumber
-    participant H as Human (operator / client)
-    participant S as Kimi CLI + skills
+    participant H as Human
+    participant S as Studio (design server)
     participant C as appbox CLI
-    participant D as appboxd (server + FSM + engine)
-    participant G as Gates
-    participant L as LLM gateway → providers
+    participant P as ~/.appbox/projects/<name>/intake/
 
-    H->>S: intake a project (answers elicitation questions)
-    S->>C: appbox intake emit --answers …
-    C->>C: write docs/design/brief.md + registry seed (pure function of answers)
-    C->>G: gate intake (traceability answers/brief ↔ registry)
-    S->>S: story-mapper / moodboarder (optional pre-design)
-    S->>C: appbox design serve (design_server over CDP worker)
-    H->>S: reviews rendered prototype in browser; requests changes
-    loop design iteration
-        S->>C: CRUD on authored layer (appbox crud …)
-        Note over C: delete and verify --fix REQUIRE --confirm (§18)
-        C->>G: gate freeze (render every surface at derived viewports)
-    end
-    H->>C: freeze --approve (HUMAN GATE 1: mints design/approval.lock)
-    C->>D: POST /api/prototype/approve (or FSM approvePrototype)
-    D->>D: record designHash + humanApproved.prototype in default.state.json
-    D->>D: advance guard: prototype gate passed AND humanApproved
-    S->>C: emit structure → structure.json; gate structure (designHash fresh)
-    S->>C: emit scaffold → lib/ui/views tree per targets
-    C->>G: gates scaffold + coverage
-    S->>S: appbox-builder fills view/VM bodies; appbox-tester TDD
-    D->>L: engine stage runs: kimi -p with stage-scoped token, tier from fabric
-    L-->>D: response + usage.jsonl + llm_request event
-    S->>C: gate review + gate memory
-    H->>D: POST /api/review/approve|reject (HUMAN GATE 2)
-    alt reject
-        D->>D: FSM rewinds to design phase, rejections + 1
-    else approve
-        D->>D: review.approved = true; isDone when not dirty
-    end
-    S->>C: gates native_deps + lens (design-vs-built vs goldens)
-    H->>C: licence present? (pay-at-deploy — everything before is free)
-    C->>G: gate deploy: licence assertion FIRST (fail-closed; APPBOX_DEV_LICENCE=1 dev bypass)
-    H->>C: appbox deploy deploy --target T --version V --account A --approval <tok> (HUMAN GATE 3)
-    C->>C: deploy mechanics (fastlane/shorebird/cloudflare); append deploy-ledger.json
-    Note over C: deploy.dart never mints the approval token — the human supplies it
+    H->>S: /intake interview (answer / skip / depth)
+    S->>C: appbox intake emit --answers a.json --project <name>
+    C->>C: validate {value, provenance} per field; deriveComp/deriveRoute (mechanical naming only)
+    C->>P: write answers.json + brief.md + registry.json + flows.json (undeclared flows derived as inferred)
+    C->>C: appbox emit story-map — unified brief (renderBriefSections answers path) → story-map.json
+    H->>S: item-engine steps personas/surfaces/flows/direction: confirm / save / skip / edit / accept-all
+    H->>C: appbox intake flows confirm --project <name> --flow <id> --as founder|client (derive + confirm)
+    C->>P: flip flow provenance in flows.json
+    Note over H,S: boot chain: / →303 /dashboard; /splash auto-advances → /startup → /auth (POST /auth/signin) → /dashboard
+    S->>S: /dashboard grid ← GET /__projects (projectCards); use → POST /__project_use; new → POST /dashboard/projects creates REAL project, lands on /intake
 ```
 
-## 4. Data and state wiring
+## 7. Glossary (as used in the diagrams)
 
-Who writes, who reads. Runtime state lives in `pipeline/state/` (gitignored);
-curated memory in `memory/`; catalogs in `config/`.
-
-```mermaid
-flowchart TD
-    subgraph state["pipeline/state/"]
-        st_state["default.state.json — FSM: phase, phaseStatus, humanApproved, approvalTokens, designHash, review, dirty (schema 4)"]
-        st_runs["runs/<run_id>.json — per-stage RunManifest"]
-        st_runsjsonl["runs.jsonl — FSM audit trail"]
-        st_score["scorecard.jsonl — per stage run (stage, tier, tokens, gate_pass, cache_hit)"]
-        st_usage["usage.jsonl — per gateway call (consumer, tier, provider, model, tokens)"]
-        st_events["memory/events.jsonl — raw MemoryEvent log (rotates ~50MB)"]
-        st_cache["memory/cache/*.json — exact-match LLM response cache (FNV key, 24h TTL, 500 cap)"]
-        st_intake["default.intake.json — intake answers"]
-        st_targets["targets.derivation.json — targets → viewports/form-factors/ceremonies"]
-        st_ledger["deploy-ledger.json — every deploy attempt, incl. halted"]
-    end
-
-    subgraph mem["memory/ (curated)"]
-        mem_index["MEMORY.md — index, ≤100 lines"]
-        mem_facts["facts/*.json — durable {fact, source, ts}"]
-        mem_lessons["stages/<stage>.LESSONS.md — ≤200 lines, written ONLY on observed gate failure"]
-    end
-
-    subgraph cfg["config/"]
-        cfg_app["appbox.config.json — targets, viewports 390/744/1280, escalationLimit, dependencyMode"]
-        cfg_fabric["model-fabric.json — providers, tiers frontier/standard/fast, stage tiers, escalation rule"]
-        cfg_evid["evidence.json — advertise evidence ledger (suite-written only)"]
-        cfg_reg["kit-registry.json — kit capabilities, phase, verification tier"]
-        cfg_rules["forbidden_abs_prefixes.txt / stripped_names.txt — lint rules"]
-    end
-
-    subgraph design2["designs/appbox-studio/ (authored layer)"]
-        d_reg["models/screens_model/registry.json + migrations.json"]
-        d_views["ui/views/** + app.routes.js"]
-        d_struct["structure.json (GENERATED by emit_structure)"]
-        d_lock["approval.lock (minted by freeze --approve)"]
-        d_brief["docs/design/brief.md + story-map.json"]
-    end
-
-    fsm2["pipeline_fsm.dart"] -->|writes| st_state
-    fsm2 -->|appends| st_runsjsonl
-    srv2["server.dart /api/pipeline/*"] -->|reads/writes via FSM| st_state
-    eng2["engine.dart runStage"] -->|writes| st_runs
-    eng2 -->|appends| st_score
-    eng2 -->|stage_run events| st_events
-    eng2 -->|reads/writes| st_cache
-    eng2 -->|on gate fail ONLY| mem_lessons
-    gw2["gateway.dart"] -->|appends| st_usage
-    gw2 -->|llm_request events| st_events
-    gw2 -->|reads| cfg_fabric
-    eng2 -->|stage tiers| cfg_fabric
-    analytics["memory_analytics.dart (read-only) → /api/memory/briefing"] -->|reads| st_score
-    analytics -->|reads| st_usage
-    analytics -->|reads| st_events
-    curator["memory_curate.dart (sole lesson writer)"] --> mem_lessons
-    kbfacts["appbox kb facts (kit_facts.dart)"] -->|writes| mem_facts
-    g_mem2["gate memory"] -->|asserts| mem_index
-    g_mem2 -->|asserts| mem_facts
-    g_mem2 -->|asserts| mem_lessons
-    intake2["intake.dart emit/seed"] -->|writes| st_intake
-    intake2 -->|writes| d_brief
-    intake2 -->|seeds| d_reg
-    crud2["crud.dart (the one authored-layer write path)"] -->|writes| d_reg
-    crud2 -->|writes| d_views
-    emit2["emit_structure.dart"] -->|reads| d_reg
-    emit2 -->|reads| d_views
-    emit2 -->|writes| d_struct
-    freeze2["gate freeze"] -->|writes on PASS| st_state
-    freeze2 -->|--approve mints| d_lock
-    freeze2 -->|viewport widths| cfg_app
-    freeze2 -->|derived widths| st_targets
-    g_struct2["gates structure/scaffold/coverage"] -->|assert designHash fresh| st_state
-    g_struct2 -->|read| d_struct
-    scaf2["scaffold.dart emit"] -->|reads structure.json + targets| d_struct
-    scaf2 -->|writes lib/ui/views tree| studio2["appbox-studio/lib/"]
-    g_adv["gate advertise"] -->|reads| cfg_evid
-    g_adv -->|reads| cfg_reg
-    deploy2["deploy.dart"] -->|appends| st_ledger
-    g_dep["gate deploy"] -->|asserts triple + licence| st_state
-    lint2["appbox lint"] -->|reads| cfg_rules
-    allgates["all gates"] -->|targets/viewports, never literals| cfg_app
-    studio2 -.->|"MEM-B.md travels with the app (planned — architecture §4, not built)"| mem
-```
-
-## 5. appbox-studio wiring
-
-One Flutter app (Stacked MVVM, `app.router/locator/dialogs/bottomsheets`),
-four build shells. The security layer pairs devices and remote-controls the
-pipeline; l10n ships en + pl. The full five-shell surface set exists only in
-the design artifact so far — the Flutter app today implements `home`,
-`startup`, `unknown` views plus the security widgets.
-
-```mermaid
-flowchart TD
-    subgraph app["appbox-studio (lib/)"]
-        main["main.dart — locator, KitI18n, url strategy"]
-        views["ui/views: home (4 files: view + desktop/mobile/tablet + vm), startup, unknown"]
-        widgets["security/widgets: channel_fab, companion_home_view, prototype_view (WebView)"]
-        subgraph seclayer["lib/security/"]
-            pairing["pairing: qr_payload, pairing_session, fingerprint, cert_pin — one-scan QR, revocable devices"]
-            channel["channel: prototype_channel_service — heartbeat → live/reconnecting/dead; channel_state"]
-            pipe["pipeline: pipeline_control (run phase, SARIF findings, approveGate — paired-device id REQUIRED), gate_status_feed"]
-            proto["prototype: prototype_session, last_render_store"]
-            cfg2["config: companion_config"]
-        end
-    end
-
-    subgraph daemon3["appboxd"]
-        srv3["server.dart :8787 — /api/phases/*/run, /api/pipeline/*, /api/prototype/approve, /api/review/*, static appbox-studio/build/web"]
-        dsrv3["design_server.dart — serves the design artifact (prototype URL)"]
-        gw3["gateway /llm — genui runtime consumer token (E2)"]
-    end
-
-    views --> widgets
-    widgets --> channel
-    widgets --> pipe
-    channel -->|"HTTP heartbeat to prototype URL"| dsrv3
-    pipe -->|"phase run / findings / approvals"| srv3
-    pairing -.->|"approval honored ONLY if device id ∈ pairedDevices; revoke drops it"| pipe
-    app -.->|"genui_bridge A2UI chat surface via scoped gateway token (planned — kit exists, no pubspec dependency yet)"| gw3
-    srv3 -->|"serves the built web shell"| app
-    note["Planned: full shell set from structure.json (intake/design/build/app/workspace) as Flutter views; genui_bridge wiring; MEM-B.md; approval binding to tailnet node identity (VOCABULARY: Daemon)"]
-```
-
-## 6. Glossary (as used in the diagrams)
-
-Phases (FSM order, `lib/phases.dart`):
-
-- **intake** — elicitation only; emits brief + registry seed, never design or
-  code (`lib/intake.dart`). Gate: intake (traceability).
-- **prototype** — the htmx design artifact is built and frozen. Gate: freeze
-  (inputs, `approval.lock`, clean renders at derived viewports; records
-  `designHash`).
-- **design** — structure derivation. Gate: structure (`structure.json` in sync
-  with the authored layer, hash-fresh).
-- **scaffold** — per-surface Flutter file emission; form factors follow
-  targets. Gates: scaffold (shell contract S0–S10), coverage (C1–C5).
-- **review** — QC. Gates: review (arch_guard + ponytail-review + manifest
-  hash), memory (curated-memory caps).
-- **build** — fill + verify. Gates: native_deps (SwiftPM packaging), lens
-  (design-vs-built goldens, byte/pixel/ssim; console errors auto-fail).
-- **deploy** — ship. Gates: deploy (target/version/account triple + §17
-  licence, fail-closed), advertise (no offer above evidence tier).
-
-Terms:
-
-- **Gate** — isolated self-tested assertion unit; exits pass / fail /
-  not-applicable (exit 2, `envExit`); never calls a sibling gate.
-- **Human Gate** — one of three approvals an agent can reach but never pass:
-  prototype approval (`approvePrototype`), review verdict (`reviewVerdict`),
-  deploy approval token (`deploy --approval`, never minted by code).
-- **Freeze / designHash** — hash-locked approval: PASS records sha256 of the
-  design tree into `state.designHash`; structure/scaffold/coverage re-assert
-  freshness (§6).
-- **Authored layer** — `registry.json` + `ui/views/**` + `app.routes.js`;
-  written only by intake seed and `crud`. **Generated**: `structure.json`,
-  `lib/**` — written only by emitters.
-- **Targets** — platform set in `config/appbox.config.json`; derives viewport
-  rungs (390/744/1280), scaffold file counts, ceremonies via
-  `targets.derivation.json`.
-- **Golden** — frozen capture the lens gate compares the built app against;
-  recapture only via the approval-pattern path.
-- **Model fabric** — `config/model-fabric.json`: providers (key_ref → vault),
-  tiers (frontier/standard/fast), stage→tier pins, escalation (gate fail → one
-  tier up, bounded once, never silent downgrade).
-- **Scoped token** — in-memory per-consumer gateway token (`abx_…`) listing
-  the tiers it may request; dies with the daemon (persistence/revocation:
-  planned).
-- **Scorecard / usage ledger** — `pipeline/state/scorecard.jsonl` (per stage
-  run) and `usage.jsonl` (per gateway call); tokens null when unknown, never
-  fabricated; cost null until fabric pricing wiring lands.
-- **Memory (M1)** — deterministic writers append raw events
-  (`memory/events.jsonl`); curated lessons promoted only on observed gate
-  failure; caps enforced by the memory gate. **MEM-B** (`output/MEM-B.md`
-  travelling with the app): planned, not built.
-- **Pay-at-Deploy** — licence (Ed25519, offline-verified, annual/perpetual,
-  30-day grace) hard-blocks first deploy; everything before is free;
-  `APPBOX_DEV_LICENCE=1` is the documented dev bypass.
+- **Authored layer** — `registry.json` + `flows.json` + `ui/views/**` +
+  `app.routes.js`; written by intake emit and the design surfaces.
+  **Generated**: `structure.json`, `appbox-studio/lib/**` — emitters only.
+- **Gate** — isolated assertion unit; exits pass / fail / not-applicable (exit
+  2); never calls a sibling gate. **Human Gate** — prototype approval, review
+  verdict, deploy approval token: an agent can reach, never pass.
+- **Freeze / designHash** — freeze PASS records sha256 of the design tree;
+  structure/scaffold/coverage re-assert freshness. `approval.lock` is minted
+  only by `freeze --approve`.
+- **Provenance** — `client | founder | inferred` on every intake field and
+  flow; `inferred` = not elicited, must be confirmed (`intake flows confirm`).
+- **Project overlay** — the design server's live read of the current
+  `~/.appbox` project merged over the repo artifact (§4); project l10n wins,
+  project JSON serves at `/project/<rel>`.
+- **Targets** — platform set in `settings/project.json` /
+  `config/appbox.config.json`; derives viewport rungs (390/744/1280) and
+  scaffold file counts.
+- **Pay-at-Deploy** — licence (Ed25519, offline-verified) hard-blocks first
+  deploy; everything before is free; `APPBOX_DEV_LICENCE=1` dev bypass.
 - **Stub** — unimplemented provider that throws by design; never offered
-  (vercel deploy target; fugu fabric provider with `base_url: null`).
+  (vercel deploy target; fugu fabric provider).

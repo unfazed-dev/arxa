@@ -12,7 +12,7 @@ description: >-
   flow that will be scaffolded into a real app. Produces an authored
   `registry.json`, a `surfaceId` in every viewmodel and a route table the
   freeze step can read — one screen registry viewed through three lenses
-  (prototype / flows / screens), flows authored as data edges over it. Not for slide decks or printable documents.
+  (views / flows / proto), flows authored as data edges over it. Not for slide decks or printable documents.
 ---
 
 # appbox-designer

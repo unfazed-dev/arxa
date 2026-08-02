@@ -47,18 +47,24 @@ One entry per surface. This is the SSOT for what the app contains.
 | `shell` | yes | which shell group this belongs to (the id's first segment) |
 | `comp` | yes | component name for the scaffolder |
 | `roles` | no | audience gate; absent = everyone |
-| `route` | no | the surface's URL path (`/<shell>/<short>` by convention). Absent = derive from id. |
+| `route` | no | the surface's URL path (`/<shell>/<short>` by convention; detail screens parameterize — `shop.product` → `/product/:id`). Absent = derive from id. |
+| `requiresAuth` | no | truthy = the compiled route table guards this route |
+| `tab` | no | `true` = bottom-tab membership in the built app; tab order = registry order |
 | `kits` | no | kit dir names from `config/kit-registry.json` (`kits[].dir`) — the kit modules the surface's built app will use |
 
-`kits` is the **single sanctioned optional extension** to this contract. It is
-an array of kit dir names (e.g. `"kits": ["maps", "payments"]`) declaring which
-kit modules the surface's built app will use; the emitter validates the names
-against `config/kit-registry.json` and threads them into `structure.json` for
-the scaffolder and builder. Declare it **only when the surface genuinely needs
-the module in the built app** — a login screen → `auth`, a checkout →
-`payments`, a map → `maps`. Never decorative: a declared kit is a promise the
-builder must wire and the client must often supply credentials for. See
-[`kit-catalog.md`](kit-catalog.md).
+`kits`, `requiresAuth`, and `tab` are the sanctioned optional extensions to
+this contract. `kits` is an array of kit dir names (e.g. `"kits": ["maps",
+"payments"]`) declaring which kit modules the surface's built app will use;
+the emitter validates the names against `config/kit-registry.json` and
+threads them into `structure.json` for the scaffolder and builder. Declare it
+**only when the surface genuinely needs the module in the built app** — a
+login screen → `auth`, a checkout → `payments`, a map → `maps`. Never
+decorative: a declared kit is a promise the builder must wire and the client
+must often supply credentials for. See
+[`kit-catalog.md`](kit-catalog.md). `requiresAuth` and `tab` are route-table
+inputs: the scaffolder compiles one go_router-shaped table from registry +
+flows — `route` becomes the path, flow edges the typed ops, `requiresAuth`
+plus `system` edges the guards, `tab` flags the tab shell.
 
 No other keys. The reference producer also carries a `phase` key on every entry;
 **nothing downstream consumes it**, so it is deliberately not part of this
@@ -79,29 +85,38 @@ whole population.
 
 ### Flows — data over the registry (optional)
 
-The registry's output is a triad — prototype / flows / screens — three
+The registry's output is a triad — views / flows / proto — three
 switchable lenses over this one registry, never three artifacts (binding
 contract: [`../DESIGN-ARCHITECTURE.md`](../DESIGN-ARCHITECTURE.md) "The output
 triad"). The flows lens is a **thin data layer**, not an authoring surface:
-journeys are arrays of `{from, to, trigger}` edges keyed by registry ids,
-carried through the data spine (seed → fixture → repository → facade) like any
-other content and rendered by a server template macro or named island — never
-bespoke per-flow markup, never a separate file format. Flow-level metadata
-(`id`, `name`, `persona`, `provenance`, edge `label`) is allowed; the edge
-endpoints are always registry ids. The freeze threads the array into
-`structure.json` as an optional top-level `flows` array — absent means no
-flows lens, which is valid for small artifacts.
+journeys are arrays of `{from, to, trigger, action}` edges keyed by registry
+ids — `action` typed `push` (default) | `replace` | `back` | `modal` |
+`system`, a `system` edge becoming a route guard downstream. Flows are linear
+chains (≤1 outgoing edge per screen per flow); a screen may belong to several
+flows. Intake derives drafts (`provenance: inferred`) when answers carry
+none; confirming flips provenance. Edges travel through the data spine (seed
+→ fixture → repository → facade) like any other content and render by a
+server template macro or named island — never bespoke per-flow markup, never
+a separate file format. Flow-level metadata (`id`, `name`, `persona`,
+`provenance`) is allowed; the edge endpoints are always registry ids. The
+freeze threads the array into `structure.json` as an optional top-level
+`flows` array — absent means no flows lens, which is valid for small
+artifacts.
 
 ### `?embed=1` bare render mode
 
 The stub screen renderer (`screen_stub_view.html`) supports `?embed=1`: a
-chromeless render (no nav, no tag, no max-width) for flow-mode tiles. The
-inspect island is conditionally included when `inspect=1` is also present.
+chromeless render (no nav, no tag, no max-width) for viewer tiles. The
+inspect island is conditionally included when `inspect=1` is also present;
+`still=1` freezes the tile (no auto-advance), and `live=1` renders the same
+stub minus the still frame — the viewer's select (live-in-place) swaps a
+tile's iframe from `still=1` to `live=1`.
 
 ### Undo/redo contract
 
-Two server-side session stacks back the undo/redo buttons: `canvas` (artboard
-moves, screen pin/unpin, bulk-pin) and `chat` (design-change messages +
+Two server-side session stacks back the undo/redo buttons: `canvas` (flow
+edits — move/add/remove — replayed as project `flows.json` file writes, plus
+screen pin/unpin) and `chat` (design-change messages +
 checkpoints). Each entry is self-reversing — it carries enough data to undo
 and redo in both directions. The `canvas` stack is driven by the floating
 controller's undo/redo pair; the `chat` stack by the composer's. Element-

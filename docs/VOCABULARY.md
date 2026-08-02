@@ -363,6 +363,27 @@ with no orphans either way.
 _Avoid_: config (bare), route table, manifest
 _Layer_: Pipeline
 
+**Flow**:
+One journey through the app, screen by screen — sign up, buy something —
+written as a chain of steps a client can read and correct.
+A linear user-journey chain over registry surfaces: `{id, name, provenance,
+edges}` where every endpoint is a declared surface and each screen carries at
+most one outgoing and one incoming edge — no branches, no merges, no loops.
+Declared at intake, or derived one draft per shell and confirmed.
+_Avoid_: navigation map, flowchart, wizard
+_Layer_: Pipeline
+
+**Edge / Trigger / Action**:
+One step in a flow: the screen you leave, the screen you arrive at, what the
+user did to go, and how the app moves.
+A flow edge `{from, to, trigger, action}` — endpoints are registry surface
+ids, the trigger is the user-visible cause label, and the action is one typed
+nav op: `push | replace | back | modal | system` (`modal` is a presentation
+flag; `system` marks non-gesture edges such as auth-success or deep-link that
+compile to route guards, never buttons). The default action is `push`.
+_Avoid_: transition, link, nav event
+_Layer_: Pipeline
+
 **Producer**:
 Whatever generates the design prototype — said with a hint of suspicion,
 because producers are where structure gets invented or thrown away.
@@ -392,6 +413,36 @@ tools come first** — lens (and the `appbox` CLI: gate, crud, serve, emit,
 lint, watermark) before any external or archived tooling. If a capture verb
 is missing, extend lens.dart/cdp.dart; never reach back for probe-runner.
 _Avoid_: screenshot tool, test runner, probe-runner (archived name)
+_Layer_: Pipeline
+
+**Project**:
+One client's app-in-progress: its interview answers, brief, registry, flows,
+design seeds, and build evidence, kept together outside this repo.
+A user project directory at `~/.appbox/projects/<name>/` with four shell dirs
+— `intake/` (answers, brief, registry, flows), `design/` (seeds,
+surfaces/partials, l10n), `build/` (evidence), `settings/` (project.json).
+~/.appbox holds user projects only; the studio's own design stays in the
+repo.
+_Avoid_: workspace, repo (a project is not the repo)
+_Layer_: Pipeline
+
+**Current project**:
+The project appbox is looking at right now — the studio shows it and the
+pipeline writes into it.
+The active project named by the one-line `~/.appbox/current` file (default
+`portalo`); the design server resolves it as `--project` → `APPBOX_PROJECT`
+→ `current`, and `POST /__project_use` repoints it.
+_Avoid_: active project, selected project
+_Layer_: Pipeline
+
+**Project overlay**:
+The studio reading your project's files live as you work — no copying, no
+syncing; edits appear on reload.
+The design server's live-read of the current project over the studio
+artifact: project files are served through the overlay at request time and
+never vendored in, hot-reload watches both trees, and studio surfaces write
+project files only through `POST /__project_write`.
+_Avoid_: sync, import, vendoring
 _Layer_: Pipeline
 
 ---
@@ -638,6 +689,26 @@ disclose, notify, pending) driven by htmx swap-lifecycle classes and native
 browser primitives, all gated on no-preference for reduced motion; the one
 channel that survives the freeze untouched.
 _Avoid_: animation, transition (as new vocabulary names)
+_Layer_: Design medium
+
+**Lens**:
+One way of looking at the same screens — as a flat grid, as journey rows, or
+as one live screen inside a device frame.
+A design-viewer mode over the current project's screens: `views` (a flat
+grid in registry order), `flows` (one row per flow, tiles in edge-chain order
+with trigger-labelled connectors), `proto` (one live screen at a real rung
+inside device chrome). Same word, different thing from the **appbox lens**
+(the capture/compare tool).
+_Avoid_: viewer mode (bare), preview (bare)
+_Layer_: Design medium
+
+**Live tile**:
+The one screen on the canvas you can actually touch and click through; every
+other tile is a still picture.
+The single interactive tile in the design viewer: `live=<screenId>` drops
+`still=1` so the tile renders live; one live tile at a time by construction
+(a single viewer key).
+_Avoid_: preview tile, active screen
 _Layer_: Design medium
 
 ---
