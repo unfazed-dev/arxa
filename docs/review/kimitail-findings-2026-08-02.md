@@ -60,16 +60,38 @@ mechanism each named was still real.
 ## Smells (small, real)
 
 5. **Dead `strip: true` flag** — **CLOSED** (`72c24e9`).
-6. **Petal & Stem generic stubs** — **CLOSED.** Two corrections to the
-   original: the branches are **already unreachable** under portalo's live
-   data (not "reachable until build migrates"), and
-   `screen_stub_view.html` is a **shared** renderer — design's
-   canvas/proto/thumb iframes point at it too (`git show 0faf823`), so it
-   is not evidence-only. The generic `{% else %}` fallback already exists,
-   so deletion leaves no hole. Separate, still-open item: the Petal & Stem
-   fixture text in `files_repository.js:7,38` (`BRIEF_MD`,
-   `STORY_MAP_HTML`), which is wired into build's Files tab via
-   `file_views.js` → `build_facade.js:26`.
+6. **Petal & Stem generic stubs** — **CLOSED**, and it was not all dead
+   code. `screen_stub_view.html` 99 → 63 lines.
+   - The **body** `elif kind == …` chain was dead as the finding said: all
+     10 portalo kinds have partials and `confirmation` exists nowhere.
+   - The **header/nav** chain was a **live user-visible bug**. It tested
+     `kind in ['home','cart','checkout','confirmation']` *before* testing
+     `partial`, so those three surfaces rendered a "Petal & Stem" brand in
+     the header while the body correctly rendered portalo's real screen.
+     Post-fix they render `Portalo` via `t('app.brand')`, matching
+     `portalo.account`'s already-correct behaviour (used as the regression
+     control). Only ever visible on non-embed access: both iframe callers
+     (`design_facade.js:374`, `design_viewer.html:162`) pass `embed=1`, and
+     the header is gated by `{% if not embed %}`.
+   - `screen_stub_view.html` is a **shared** renderer — the design lens's
+     canvas/proto/thumb iframes use it too (`git show 0faf823`) — so it is
+     not evidence-only as the finding implied. Five `embed=1` variants
+     re-verified post-deletion.
+   - Still open, separate: the Petal & Stem fixture text in
+     `files_repository.js:7,38` (`BRIEF_MD`, `STORY_MAP_HTML`), wired into
+     build's Files tab via `file_views.js` → `build_facade.js:26`.
+12. **`pri.name.undefined` rendered on every project surface row.**
+    Introduced and caught within this session, but worth recording as a
+    class of bug: `surfaces_view.html` rendered MoSCoW chips unconditionally
+    (`t('pri.name.' ~ s.priority)`). Project registry entries carry no
+    `priority`/`release` — those are story-mapper's columns — and nunjucks
+    `~` stringifies undefined, so the literal text `pri.name.undefined`
+    appeared in a chip on all 10 rows. Guarded with `{% if s.priority %}` /
+    `{% if s.release %}`. Lesson for the surfaces work generally: when a
+    panel switches from the studio fixture to a project artifact, every
+    field the template reads must be re-checked for absence, not just the
+    ones that changed shape. A sweep of all 13 studio routes for
+    `undefined`/`NaN` now comes back clean.
 7. **Historical plan doc references dead routes** — **CLOSED** (`72c24e9`).
 
 ## New findings (2026-08-02, found while fixing the above)
