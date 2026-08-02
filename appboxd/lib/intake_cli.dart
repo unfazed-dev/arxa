@@ -289,8 +289,82 @@ int _selfTest() {
     if (!_listEq((reg[0]['states'] as List).cast<String>(), ['empty', 'loading'])) {
       throw 'states not carried into the registry: ${reg[0]}';
     }
-    if (reg[1].containsKey('states')) {
-      throw 'states key must be omitted when absent (additive only)';
+    // 6c. DECLARED states keep the surface's provenance — 'inferred' is
+    // reserved for what intake derived (§22).
+    if (reg[0]['statesProvenance'] != 'client') {
+      throw 'declared states must keep the surface provenance: ${reg[0]}';
+    }
+    // 6d. no declared states AND no shape signal -> no key at all.
+    if (reg[1].containsKey('states') || reg[1].containsKey('statesProvenance')) {
+      throw 'states key must be omitted when there is no signal (additive only)';
+    }
+    // 6e. UNdeclared states ARE derived from shape and stamped, so the confirm
+    // step has something to confirm (§22). Built standalone so the shared
+    // fixture's derived draft flow stays a two-surface, one-edge chain.
+    final derivedStates = emitRegistry({
+      'surfaces': [
+        {'id': 'shop.list', 'label': 'All', 'shell': 'shop', 'provenance': 'client'},
+        {'id': 'shop.login', 'label': 'Sign in', 'shell': 'shop', 'provenance': 'client'},
+      ],
+    });
+    if (!_listEq((derivedStates[0]['states'] as List).cast<String>(),
+        ['loading', 'empty'])) {
+      throw 'states not derived for a collection surface: ${derivedStates[0]}';
+    }
+    if (!_listEq((derivedStates[1]['states'] as List).cast<String>(), ['error'])) {
+      throw 'states not derived for a form surface: ${derivedStates[1]}';
+    }
+    if (derivedStates.any((e) => e['statesProvenance'] != 'inferred')) {
+      throw 'derived states must be stamped inferred: $derivedStates';
+    }
+    // 6f. feedback is an EDGE key — derived on a mutation trigger, stamped.
+    final fbFlows = emitFlows({
+      'surfaces': (good['surfaces'] as List),
+      'flows': [
+        {
+          'id': 'flow-x',
+          'name': 'X',
+          'provenance': 'client',
+          'edges': [
+            {'from': 'projects.home', 'to': 'projects.credits', 'trigger': 'Save project'},
+          ],
+        },
+      ],
+    });
+    final fb = (fbFlows[0]['edges'] as List)[0]['feedback'] as Map?;
+    if (fb == null || fb['kind'] != 'success' || fb['inferred'] != true) {
+      throw 'feedback not derived on a mutation edge: ${fbFlows[0]}';
+    }
+    if (fb['text'] != 'Save project') {
+      throw 'feedback.text must be the trigger verbatim, not invented copy: $fb';
+    }
+    // 6g. feedback is rejected on a SURFACE — a toast is not a screen state.
+    final fbOnSurface = goodAnswers();
+    fbOnSurface['surfaces'] = [
+      {
+        'id': 'projects.home',
+        'label': 'Home',
+        'shell': 'projects',
+        'provenance': 'client',
+        'feedback': {'kind': 'success', 'text': 'Saved'},
+      },
+    ];
+    if (!validateIntake(fbOnSurface).errors.any((e) => e.contains('feedback'))) {
+      throw 'feedback on a surface must be rejected';
+    }
+    // 6h. the states vocabulary is CLOSED.
+    final badVocab = goodAnswers();
+    badVocab['surfaces'] = [
+      {
+        'id': 'projects.home',
+        'label': 'Home',
+        'shell': 'projects',
+        'provenance': 'client',
+        'states': ['skeleton'],
+      },
+    ];
+    if (!validateIntake(badVocab).errors.any((e) => e.contains('skeleton'))) {
+      throw 'an out-of-vocabulary state must be rejected';
     }
     // 7. bad direction shape rejected and named
     final badDir = goodAnswers()
@@ -366,7 +440,7 @@ int _selfTest() {
           'name': 'Projects journey',
           'provenance': 'founder',
           'edges': [
-            {'from': 'projects.home', 'to': 'projects.new', 'trigger': 'New project'},
+            {'from': 'projects.home', 'to': 'projects.credits', 'trigger': 'New project'},
           ],
         },
       ];
@@ -385,7 +459,7 @@ int _selfTest() {
           'name': 'x',
           'provenance': 'founder',
           'edges': [
-            {'from': 'projects.home', 'to': 'projects.new', 'trigger': 'x', 'action': 'teleport'},
+            {'from': 'projects.home', 'to': 'projects.credits', 'trigger': 'x', 'action': 'teleport'},
           ],
         },
       ];
@@ -413,8 +487,8 @@ int _selfTest() {
           'name': 'x',
           'provenance': 'founder',
           'edges': [
-            {'from': 'projects.home', 'to': 'projects.new', 'trigger': 'a'},
-            {'from': 'projects.home', 'to': 'projects.new', 'trigger': 'b'},
+            {'from': 'projects.home', 'to': 'projects.credits', 'trigger': 'a'},
+            {'from': 'projects.home', 'to': 'projects.credits', 'trigger': 'b'},
           ],
         },
       ];
@@ -501,7 +575,14 @@ Map<String, dynamic> goodAnswers() => {
           'states': ['empty', 'loading'],
           'provenance': 'client',
         },
-        {'id': 'projects.new', 'label': 'New', 'shell': 'projects', 'provenance': 'client'},
+        // No declared states AND no shape signal ("credits" is neither a
+        // collection nor a form) — carries the additive-only invariant.
+        {
+          'id': 'projects.credits',
+          'label': 'Credits',
+          'shell': 'projects',
+          'provenance': 'client',
+        },
       ],
     };
 

@@ -20,6 +20,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:appboxd/cdp.dart';
+import 'package:appboxd/design_selftest_kit_catalog_mirror.dart';
 import 'package:appboxd/design_server.dart';
 import 'package:appboxd/design_tools.dart';
 import 'package:appboxd/project.dart';
@@ -104,6 +105,7 @@ const _lIcons = 'icons come from the icon() global, never emoji stand-ins';
 const _lGit = 'every artifact file is tracked by git';
 const _lLint = 'zero-custom-client-JS lint';
 const _lRender = 'every GET route answers 200';
+const _lKitCatalogMirror = 'kit-catalog.md mirrors every kit in kit-registry.json';
 
 // ══ internal types ══════════════════════════════════════════════════════
 
@@ -218,7 +220,7 @@ Future<Directory> _copyDirToTemp(String src, String prefix) async {
   return tmp;
 }
 
-// ══ the 24 checks ═══════════════════════════════════════════════════════
+// ══ the 25 checks ═══════════════════════════════════════════════════════
 
 /// Build the check list. [skipRender] is captured by the render check so the
 /// runner can avoid booting Chrome when the caller opts out.
@@ -329,6 +331,10 @@ List<_Check> _buildChecks({required bool skipRender}) {
     }),
 
     // --- 8. fixtures are generated, not authored ---------------------------
+    // The designer-side kit mirror. Lives in its own file (authored while
+    // another agent held appboxd/lib) — the registration is here because
+    // _Check/_Section are library-private.
+    _Check(_lKitCatalogMirror, _Section.structure, kitCatalogMirrorCheck),
     _Check(_lFixtures, _Section.structure, (art, skill, src) async {
       final ungen = _walkFiles(Directory(p.join(art, 'models')))
           .where((f) => RegExp(r'_fixtures.*\.json$').hasMatch(p.basename(f.path)))

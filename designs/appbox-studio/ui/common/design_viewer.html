@@ -58,6 +58,7 @@
    object { vp, width, height?, rung?, note?, shot? }. Wiring:
    ui/common/_integration_viewer.md. #}
 {% import "ui/common/mini_panel.html" as mn %}
+{% import "ui/common/primitives.html" as prim %}
 
 {# Device chrome around the live render at the REAL rung size — width and
    height both fixed by the rung (VP_SIZES). The stage pans when the frame is
@@ -214,9 +215,34 @@
 </div>
 {% endmacro %}
 
-{% macro designViewer(v) %}
+{# `chrome` is OPTIONAL and that is the whole design: the two shell panels are
+   the design shell's, not the viewer component's. Build evidence renders the
+   same component with `static: true` and simply passes no chrome, so read-only
+   artboards get no title bar and no actions WITHOUT a per-control static guard
+   that someone would eventually forget. Shape:
+     { title, state, foot, actions: [{ key, icon, href, label, danger? }] } #}
+{% macro designViewer(v, chrome) %}
 {% set bg = v.bg or 'canvas' %}
 <div class="design-viewer dv-bg-{{ bg }}" id="design-viewer">
+{% if chrome %}
+  {# TOP PANEL — the design shell's own bar: what this canvas is, the run
+     state, and shell-scoped actions. Inside .design-viewer on purpose:
+     canvas.js fullscreens this element, so anything outside it disappears the
+     moment you go fullscreen — including, fatally, the exit button. #}
+  <header class="dv-topbar">
+    <span class="dv-topbar-title">{{ chrome.title }}</span>
+    {% if chrome.state %}{{ prim.statusPill(chrome.state) }}{% endif %}
+    {% if not v.static %}
+    <span class="dv-topbar-actions">
+      {% for a in chrome.actions %}
+      <a class="ico-btn dv-shell-act{{ ' is-danger' if a.danger }}" href="{{ a.href }}"
+         hx-get="{{ a.href }}" hx-target="#panels" hx-swap="morph:outerHTML"
+         aria-label="{{ a.label }}" title="{{ a.label }}">{{ icon(a.icon, {size: 14}) }}</a>
+      {% endfor %}
+    </span>
+    {% endif %}
+  </header>
+{% endif %}
 
 {% if v.mode == 'proto' %}
   {{ protoStage(v) }}
@@ -241,6 +267,30 @@
           <span class="dv-connector" aria-hidden="true">
             <span class="dv-connector-label">{{ s.conn }}</span>
             <span class="dv-connector-line"></span>
+            {# The toast this transition raises. On the CONNECTOR, not on either
+               tile, because that is where it belongs in the contract: `states`
+               is how a screen can look, `feedback` is what a move announces.
+               Rendering it on a screen would re-merge the two axes the kit
+               keeps apart (kit/state vs kit/ui_library). #}
+            {% if s.feedback %}
+            <span class="dv-fb dv-fb-{{ s.feedback.kind or 'info' }}">{{ s.feedback.text }}</span>
+            {% endif %}
+          </span>
+          {% endif %}
+          {# Row end: where this journey continues. Flows share screens, so the
+             last tile of one row is usually the head of another — these chips
+             are that join made visible, and they are what the flow walk offers
+             instead of dead-ending. A list, because a screen can head more than
+             one flow (portalo.home heads two). #}
+          {% if s.handoffs and s.handoffs.length %}
+          <span class="dv-handoffs">
+            <span class="dv-handoff-cap">{{ t('viewer.continuesIn') }}</span>
+            {% for h in s.handoffs %}
+            <a class="dv-handoff" href="{{ h.href }}"
+               hx-get="{{ h.href }}" hx-target="#design-viewer" hx-swap="morph:outerHTML"
+               aria-label="{{ t('viewer.handoffAria', {flow: h.flowName, id: h.to}) }}"
+               title="{{ t('viewer.handoff', {flow: h.flowName, id: h.to}) }}">{{ h.flowName }} {{ icon('arrow-right', {size: 12}) }}</a>
+            {% endfor %}
           </span>
           {% endif %}
           {% endfor %}
@@ -248,8 +298,38 @@
         {% endfor %}
       </div>
       {% else %}
+      {# VIEWS — one row per screen, TWO columns: the screen, and the same
+         screen exploded into its inspectable components. The element list is
+         NOT rendered here on purpose: data-el values are templated
+         (`card:{{ '{{' }} t(...) {{ '}}' }}` inside loops, tab bar via
+         {{ '{%' }} include {{ '%}' }}), so the only resolved copy lives in the
+         rendered iframe. explode.js reads it same-origin and fills .dv-explode-
+         list; the server supplies only what the DOM cannot know — the flow
+         edges this screen's elements fire, and its declared kits. #}
       <div class="dv-zoom dv-zoom-views">
-        {% for s in v.screens %}{{ tile(v, s) }}{% endfor %}
+        {% for s in v.screens %}
+        <div class="dv-views-row" data-explode-row="{{ s.id }}">
+          {{ tile(v, s) }}
+          <div class="dv-explode" data-explode-for="{{ s.id }}"
+               data-joins="{{ s.fires | dump }}"
+               {# One attribute per label, NOT a `| dump`ed dict. t() returns a
+                  nunjucks SafeString; `| dump` serialises that object
+                  ({"val":"role","length":4}) and the island renders
+                  [object Object]. `| string` does not save you either — its
+                  copySafeness re-wraps the result as a SafeString. Plain
+                  interpolation calls toString, which is the whole fix. #}
+               data-l-role="{{ t('viewer.exRole') }}" data-l-style="{{ t('viewer.exStyle') }}"
+               data-l-motion="{{ t('viewer.exMotion') }}" data-l-fn="{{ t('viewer.exFn') }}"
+               data-l-fires="{{ t('viewer.exFires') }}" data-l-kit="{{ t('viewer.exKit') }}"
+               data-l-box="{{ t('viewer.exBox') }}" data-l-empty="{{ t('viewer.exEmpty') }}">
+            <header class="dv-explode-head">
+              <span class="dv-explode-title">{{ t('viewer.explodeTitle') }}</span>
+              {% for k in s.kits %}<code class="dv-explode-kit">kit/{{ k }}</code>{% endfor %}
+            </header>
+            <ol class="dv-explode-list"></ol>
+          </div>
+        </div>
+        {% endfor %}
       </div>
       {% endif %}
     </div>
@@ -261,9 +341,14 @@
   <button class="ico-btn dv-fs-close" data-action="viewer-fullscreen-exit"
           title="{{ t('miniPanel.fullscreenExit') }}">{{ icon('x', {size: 16}) }}</button>
 
-  {# MINI PANEL — bottom-anchored floating controller (one panel: mode,
-     fullscreen, undo/redo + the bar's device/bg clusters).
-     Rendered inside the viewer so it stays in sync on every swap. #}
-  {{ mn.miniPanel(v) }}
+  {# BOTTOM PANEL — hosts the mini panel. It used to float over the canvas,
+     which is why .dv-flow-canvas carried `padding-bottom: 11rem` purely to let
+     the last tile row scroll clear of it; docked, that hack is deleted. Inside
+     .design-viewer for the same reason as the top bar: it survives fullscreen,
+     and the lens switch / undo / rungs / swatches stay reachable there. #}
+  <footer class="dv-botbar">
+    {{ mn.miniPanel(v) }}
+    {% if chrome and chrome.foot %}<p class="dv-botbar-foot muted">{{ chrome.foot }}</p>{% endif %}
+  </footer>
 </div>
 {% endmacro %}

@@ -8,6 +8,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:appboxd/intake.dart' show emitBrief;
 import 'package:appboxd/story_map.dart';
 import 'package:appboxd/story_map_cli.dart';
 import 'package:test/test.dart';
@@ -224,8 +225,29 @@ void main() {
           brief.contains(
               '| `projects.home` | Home | empty, loading | must | Release 1 |'),
           isTrue);
-      // no feature pins projects.new -> blank rollup, empty states
-      expect(brief.contains('| `projects.new` | New |  |  |  |'), isTrue);
+      // no feature pins projects.new -> blank rollup
+      expect(brief.contains('| `projects.new` | New | error [inferred] |  |  |'),
+          isTrue);
+    });
+
+    test('the UNIFIED brief derives states exactly as emitBrief does', () {
+      // Slice 3: emitBrief and the intake -> story-map chain must not disagree
+      // about the states column. Two briefs off the same answers showing
+      // different states would make the confirm step meaningless — the
+      // operator could confirm against the stale one.
+      final brief = renderBrief(data, answers: answers);
+      final standalone = emitBrief(answers);
+      for (final id in const ['projects.home', 'projects.new']) {
+        final row = brief
+            .split('\n')
+            .firstWhere((l) => l.contains('`$id`') && l.startsWith('|'));
+        final states = row.split('|')[3].trim();
+        final soloRow = standalone
+            .split('\n')
+            .firstWhere((l) => l.contains('`$id`') && l.startsWith('|'));
+        expect(states, soloRow.split('|')[5].trim(),
+            reason: 'the two briefs disagree about $id states');
+      }
     });
 
     test('an unattached feature is appended, flagged — [inferred]', () {

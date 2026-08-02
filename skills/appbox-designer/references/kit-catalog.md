@@ -14,6 +14,46 @@ design declares), its Dart `package`, its `capabilities`, its `providers` with
 playbook. If a capability is not in the registry, it does not exist — do not
 design around an imagined module.
 
+## The 24 kits
+
+Generated from `config/kit-registry.json` (`version: 1`). Providers carry a
+verification tier: `stub` (declared, not implemented against a real backend),
+`port-tested` (real port, tests green, no device surface run), or
+`device-verified` (run on simulator/device). A kit with no `providers` entry
+has none to tier — it is a plain module, not a provider seam.
+
+| dir | package | capabilities | providers (tier) |
+|---|---|---|---|
+| `core` | `appbox_kit_core` | MVVM plumbing; error/theme services; design tokens; locator; input formatters; KitGlyphs; KitPlatform | — |
+| `ui_library` | `ui_library` | Kit* adaptive port widgets; KitNative* widgets; UI-coupled services (navigation / sheet / notifications toast) | — |
+| `state` | `appbox_kit_state` | async state vocabulary (idle/loading/error); retry policy; persistence | — |
+| `data` | `appbox_kit_data` | repositories; schema descriptors; seed/Supabase/Appwrite backends; canonical IDs; codecs; seeder | — |
+| `auth` | `appbox_kit_auth` | email/OAuth auth seam; typed AuthResult; session stream | SeedAuthBackend: port-tested; Apple SignIn: port-tested; Google SignIn: port-tested |
+| `forms` | `appbox_kit_forms` | form field state; sync/async validation; KitFieldController; error messages | — |
+| `permissions` | `appbox_kit_permissions` | OS permissions (camera/location/...); typed permission + status | — |
+| `media` | `appbox_kit_media` | camera/photos; audio record; audio+video playback | — |
+| `documents` | `appbox_kit_documents` | doc pick; scan (stub); OCR (stub); PDF | — |
+| `notifications` | `appbox_kit_notifications` | device push/local notifications; tokens; badge | — |
+| `analytics` | `appbox_kit_analytics` | analytics event fan-out | — |
+| `payments` | `appbox_kit_payments` | Apple Pay; Google Pay | Stripe: port-tested; PayPal: port-tested; Apple Pay: stub |
+| `maps` | `appbox_kit_maps` | native maps; KitMapView | OpenStreetMap: port-tested; Mapbox: port-tested |
+| `deploy` | `appbox_kit_deploy` | release automation (fastlane/shorebird/CF Pages+Workers/Vercel) | Vercel: port-tested; Cloudflare Pages: port-tested; Cloudflare Workers: port-tested; fastlane: port-tested; Shorebird: port-tested |
+| `haptics` | `appbox_kit_haptics` | haptic feedback | — |
+| `bluetooth` | `appbox_kit_bluetooth` | bluetooth adapter state; BLE scan/GATT (stub) | — |
+| `wifi` | `appbox_kit_wifi` | Wi-Fi state; network info; settings escort | — |
+| `support` | `appbox_kit_support` | in-app support; feedback + Talker export; submission sinks | — |
+| `security` | `appbox_kit_security` | biometrics; secure storage; crypto; app-lock; device integrity (stub) | — |
+| `compliance` | `appbox_kit_compliance` | ToS/privacy/EULA; consent gates; OSS licenses | — |
+| `branding` | `branding` | app icons; native/in-Flutter splash; brand colors (codegen); BrandSplash | — |
+| `motion` | `appbox_kit_motion` | entrance/exit choreography; gesture drivers; motion scopes; KitWake | — |
+| `i18n` | `appbox_kit_i18n` | i18n | — |
+| `showcase_app` | `appbox_kit_showcase_app` | integration surface / reference app (proves every kit) | — |
+
+This table is checked against the registry by `kitCatalogMirrorCheck`
+(`appboxd/lib/design_selftest_kit_catalog_mirror.dart`) — every `dir` in
+`config/kit-registry.json` must appear here as `` `dir` ``, or the check
+fails. Add a kit to the registry, add its row here in the same change.
+
 ## How a design declares kit usage
 
 Add the optional `kits` key to the surface's registry entry — an array of kit

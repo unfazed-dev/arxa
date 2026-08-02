@@ -292,6 +292,7 @@
     },
     "edge": {
       "type": "object",
+      "description": "One transition in a flow. CONTRACT PAIR: this property set is the same closed set as `edgeKeys` in appboxd/lib/intake.dart, which is what actually rejects unknown keys — nothing loads this schema, so drift here is invisible. Change both together, or emitted flows.json will violate its own published schema (it already did for `element` and `feedback`).",
       "required": [
         "from",
         "to",
@@ -321,6 +322,40 @@
             "system"
           ],
           "description": "Typed nav op (default push). system = non-gesture edge (auth-success, deep-link) — a route guard downstream, never a button."
+        },
+        "element": {
+          "type": "string",
+          "minLength": 1,
+          "description": "OPTIONAL. The thing a user touches to take this edge, joining to a `data-el` value on the surface (e.g. \"button:Continue\"). It exists because `trigger` is prose written for a human reader. The flow-walk island matches this EXACTLY and falls back to a fuzzy `trigger` match when it is absent, so omitting it degrades matching rather than breaking the flow. Never derived — guessing which button an edge fires is generation (§22)."
+        },
+        "feedback": {
+          "type": "object",
+          "required": [
+            "kind",
+            "text"
+          ],
+          "additionalProperties": false,
+          "description": "OPTIONAL. The toast this transition fires. It lives on the EDGE and never in a screen's `states`, because a toast is a consequence of moving, not a way a screen can look (maps to kit/ui_library; `states` maps to kit/state).",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "enum": [
+                "success",
+                "error",
+                "info"
+              ],
+              "description": "Closed set. The renderer derives the tick/styling from this — the text never carries them."
+            },
+            "text": {
+              "type": "string",
+              "minLength": 1,
+              "description": "The words the user actually reads. When intake DERIVES a feedback it copies the trigger verbatim and stamps `inferred: true`; rewriting the trigger into nicer copy would be generation (§22)."
+            },
+            "inferred": {
+              "type": "boolean",
+              "description": "Present and true only on a feedback intake derived rather than elicited. The confirm step exists to strike it."
+            }
+          }
         }
       }
     },

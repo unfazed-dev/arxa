@@ -17,6 +17,7 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 
+import 'intake.dart' show feedbackKinds, surfaceStates;
 import 'scaffold.dart' show findRepoRoot;
 
 const banner = 'appbox/structure@1';
@@ -98,6 +99,32 @@ Map<String, dynamic>? buildStructure(String designRoot) {
               "'${edge['from']}' -> '${edge['to']}' has a non-string element "
               '(expected a data-el value like "button:Continue")');
           return null;
+        }
+        // `feedback` is OPTIONAL and names the toast this TRANSITION fires —
+        // `{kind, text}` with a closed `kind`. It lives on the edge and not in
+        // the screen's `states` because a toast is a consequence of moving,
+        // not a way a screen can look (kit/ui_library vs kit/state).
+        if (edge.containsKey('feedback') && edge['feedback'] != null) {
+          final fb = edge['feedback'];
+          if (fb is! Map) {
+            stderr.writeln("FAIL: flow '${f['id']}' edge '${edge['from']}' -> "
+                "'${edge['to']}' has a non-object feedback (expected "
+                '{kind, text})');
+            return null;
+          }
+          if (!feedbackKinds.contains(fb['kind'])) {
+            stderr.writeln("FAIL: flow '${f['id']}' edge '${edge['from']}' -> "
+                "'${edge['to']}' has feedback.kind '${fb['kind']}' — not one "
+                'of $feedbackKinds');
+            return null;
+          }
+          final text = fb['text'];
+          if (text is! String || text.trim().isEmpty) {
+            stderr.writeln("FAIL: flow '${f['id']}' edge '${edge['from']}' -> "
+                "'${edge['to']}' has an empty feedback.text (the words the "
+                'user actually reads)');
+            return null;
+          }
         }
         for (final k in const ['from', 'to']) {
           final ep = edge[k];
@@ -227,6 +254,37 @@ Map<String, dynamic>? buildStructure(String designRoot) {
       kits = k.cast<String>();
     }
 
+    // ---- optional per-screen states (the CLOSED screen-state vocabulary) ----
+    // A state is a way the SCREEN can look; the vocabulary is closed so that
+    // every value maps to something kit/state actually implements. Validated
+    // here as well as in intake because the authored layer can be hand-edited
+    // without ever passing through intake.
+    List<String>? states;
+    if (entry.containsKey('states')) {
+      final st = entry['states'];
+      if (st is! List || st.any((i) => i is! String)) {
+        stderr.writeln("FAIL: screen '$sid' declares 'states' but it is not a "
+            'list of strings');
+        return null;
+      }
+      for (final s in st) {
+        if (!surfaceStates.contains(s)) {
+          stderr.writeln("FAIL: screen '$sid' declares state '$s' — not one of "
+              '$surfaceStates (the screen-state vocabulary is closed; a toast '
+              'is not a screen state, put it on a flow edge as `feedback`)');
+          return null;
+        }
+      }
+      states = st.cast<String>();
+    }
+    // A toast is a consequence of a TRANSITION, so it never sits on a screen.
+    if (entry.containsKey('feedback')) {
+      stderr.writeln("FAIL: screen '$sid' declares 'feedback' — feedback is an "
+          'EDGE key (flows[].edges[].feedback), not a screen key');
+      return null;
+    }
+    final statesProvenance = entry['statesProvenance'];
+
     if (surface != null && surface.isNotEmpty) {
       final vm = viewmodels[sid];
       if (vm == null) {
@@ -244,6 +302,8 @@ Map<String, dynamic>? buildStructure(String designRoot) {
         'deps': vm['deps'],
       };
       if (kits != null) screen['kits'] = kits;
+      if (states != null) screen['states'] = states;
+      if (statesProvenance != null) screen['statesProvenance'] = statesProvenance;
       screens.add(screen);
     } else {
       final group = entry['shell'] as String?;

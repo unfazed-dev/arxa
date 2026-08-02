@@ -71,3 +71,49 @@ proto lens. `DESIGN-ARCHITECTURE.md` §"The output triad" is amended to match.
 Enforcement is unchanged: `allowEval:false`, no inline scripts, and the island
 lives in the vendored island directory rather than the design artifact — the
 zero-custom-client-JS lint over `designs/appbox-studio` still passes clean.
+
+**Amendment (2026-08-02, second) — the explode island.** One first-party
+island, no vendored runtime: `explode.js`. It is the fifth named island and the
+FIRST that runs in the PARENT document and reads a CHILD's DOM; every previous
+island either stayed in its own document (`inspect.js`, `flowwalk.js`) or
+touched only parent-owned nodes (`canvas.js`, `drag.js`). That inversion is why
+it needs its own amendment rather than riding on the inspect one.
+
+Why it cannot be server-rendered — the load-bearing fact, discovered by reading
+a partial rather than assuming. The views lens now renders one row per screen
+with two columns: the screen, and the same screen exploded into its components.
+The component inventory comes from `data-el`, and **those values are
+templated**:
+
+```
+home.html      data-el="card:{{ t('portalo.cat.' ~ pair[0]) }}"   {% for %} over 4 pairs
+_tabbar.html   data-el="tab:{{ t('portalo.tab.' ~ suffix) }}"     pulled in by {% include %}
+```
+
+Parsing the authored source yields one entry reading literally
+`card:{{ t('portalo.cat.' ~ pair[0]) }}` where the screen shows four resolved
+names, and misses the tab bar entirely because it lives in a second file. A
+static extractor would have to evaluate loops, resolve i18n and follow
+includes — i.e. be nunjucks. The only resolved copy of the inventory is the
+rendered document, and the stub iframe is same-origin, so the parent reads
+`iframe.contentDocument.querySelectorAll('[data-el]')` directly: no
+postMessage, no child-side counterpart, nothing added to the stub.
+
+Shape: dependency-free IIFE, no globals, no build step, re-arms on `htmx:load`,
+binds one `load` listener per frame and guards against rebinding. It never
+writes to the server and never navigates. Truth is split deliberately — name,
+role, style, motion and function come from the rendered node's own
+`data-inspect-*`; **box size is read on click only**, because it does not exist
+until layout and pre-rendering it would be a fabrication; `fires` (which flow
+edge an element takes) and `kit` come from the SERVER as `data-joins` /
+`data-l-*` attributes, because flows.json and the registry are not in the DOM.
+Element→edge matching reuses `flowwalk.js`'s exact rule — authored `element`
+join first, fuzzy `trigger` second, **no match rather than a guess** — so the
+two lenses cannot disagree about what a tap does.
+
+Note it writes inline `style.outline` into the stub document to flash an
+element rather than toggling a class, so the stub ships no CSS for a
+parent-side island. The boundary otherwise stands: five named islands
+(`canvas.js`, `drag.js`, `inspect.js`, `flowwalk.js`, `explode.js`),
+`allowEval:false`, no inline scripts, and the zero-custom-client-JS lint over
+`designs/appbox-studio` still passes clean.

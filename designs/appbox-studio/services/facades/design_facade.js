@@ -378,6 +378,18 @@ function viewerFor(d, L, t) {
       // than merely unrendered.
       inspecting: s.id === inspect,
       inspectHref: withParams({ inspect: s.id === inspect ? null : s.id }),
+      // ---- explode column joins (views lens, column 2) ----
+      // The element INVENTORY is deliberately absent: `data-el` values are
+      // templated (`data-el="card:{{ t('portalo.cat.' ~ pair[0]) }}"` inside a
+      // {% for %}, and the tab bar arrives via {% include %}), so the only
+      // honest source is the rendered DOM, which explode.js reads same-origin.
+      // What the DOM canNOT know is authored project data — that is these two.
+      //
+      // Every outgoing edge, not just the ones with `element`: the island
+      // matches exact `element` first and falls back to fuzzy `trigger`,
+      // exactly as flowwalk.js does. Two lenses, one matching rule.
+      fires: proj.edgesFrom(s.id),
+      kits: proj.registryEntry(s.id)?.kits ?? [],
     };
   });
 
@@ -427,6 +439,25 @@ function viewerFor(d, L, t) {
               // ends rather than wrapping. This is what the tile-chrome
               // advance control and the flow-walk island both target.
               advanceHref: edge ? withParams({ flow: f.id, step: edge.to, live: edge.to }) : null,
+              // Row end only: the OTHER flows that continue from this screen.
+              // This is the whole of the inter-flow story — flows are joined by
+              // shared ids, so the terminal screen of one row is the head of
+              // another and the hand-off needs no authored key. A list, never a
+              // single value: portalo.home hands off to two flows, and picking
+              // for the user would be the same guess that scoping nextEdge
+              // removed. Empty on every non-terminal tile.
+              // The toast this TRANSITION raises (D2's second axis). It hangs
+              // off the edge, not off either screen, because a toast is a
+              // consequence of moving — `states` on a screen says how that
+              // screen can look instead of its content, which is a different
+              // question. Null when the edge raises nothing; most do not.
+              feedback: edge?.feedback ?? null,
+              handoffs: edge ? [] : proj.handoffs(id, f.id).map((h) => ({
+                ...h,
+                // Continue in that flow AT THIS SCREEN — it is the head of the
+                // target row, so the walk lands where the eye already is.
+                href: withParams({ flow: h.flow, step: id, live: id }),
+              })),
               // What fires this edge, for the island's click matcher:
               // `element` is the authored join to a data-el value, `trigger`
               // is the prose fallback it fuzzy-matches when element is absent.
