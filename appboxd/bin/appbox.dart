@@ -1,7 +1,7 @@
 // appbox — the unified binary entry point.
 //
 // Subcommands:
-//   appbox gate <name> [--app <root>] [--check]   — run a gate
+//   appbox gate <name> [--app <root>] [--check] [--project <n>] — run a gate
 //   appbox serve [--port <n>]                      — start the HTTP daemon
 //   appbox lens <verb> <args>                      — visual gate
 //   appbox design <sub> <args>                     — designer runtimes
@@ -161,6 +161,8 @@ Options:
   --self-test    Run the gate's embedded self-test
   --port <n>     Port for serve (default 8787)
   --sarif <path> Write SARIF output to <path>
+  --project <n>  Gate a project's own shell (~/.appbox/projects/<n>) instead of
+                 the studio — intake gate only
 ''');
 }
 
@@ -226,9 +228,17 @@ Future<void> _runGate(List<String> args) async {
   var selfTest = false;
   String? sarifPath;
   String? repoRoot;
+  String? project;
 
   for (var i = 0; i < rest.length; i++) {
     switch (rest[i]) {
+      case '--project':
+        if (i + 1 >= rest.length) {
+          stderr.writeln('appbox gate: --project requires a value');
+          exit(2);
+        }
+        project = rest[++i];
+        break;
       case '--app':
         appRoot = rest[++i];
         break;
@@ -264,7 +274,7 @@ Future<void> _runGate(List<String> args) async {
     selfTest: selfTest,
   );
 
-  final result = await _dispatchGate(gateName, ctx);
+  final result = await _dispatchGate(gateName, ctx, project: project);
 
   // Print details.
   for (final d in result.details) {
@@ -306,14 +316,21 @@ Future<void> _runAllGates(List<String> args) async {
   exit(suite.exitCode);
 }
 
-Future<GateResult> _dispatchGate(String name, GateContext ctx) async {
+Future<GateResult> _dispatchGate(String name, GateContext ctx,
+    {String? project}) async {
+  // Only intake reads a project shell so far — refuse rather than accept the
+  // flag and quietly gate the studio instead of the project asked for.
+  if (project != null && name != 'intake') {
+    return GateResult.env('gate "$name" does not support --project '
+        '(intake only)');
+  }
   switch (name) {
     case 'memory':
       return memoryGate(ctx);
     case 'advertise':
       return advertiseGate(ctx);
     case 'intake':
-      return intakeGate(ctx);
+      return intakeGate(ctx, project: project);
     case 'structure':
       return structureGate(ctx);
     case 'deploy':

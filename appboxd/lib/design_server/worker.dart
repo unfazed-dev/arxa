@@ -150,9 +150,10 @@ List<File> _walk(Directory d) => d
 /// A live headless-Chrome worker tab. Boot it once per server; reload on
 /// artifact change; dispose on shutdown.
 class JsWorker {
-  JsWorker._(this._tab, this._origin, this._artifactDir, this._iconsDir,
-      this._projectDir);
+  JsWorker._(this._tab, this._workerPageUrl, this._origin, this._artifactDir,
+      this._iconsDir, this._projectDir);
   final CdpSession _tab;
+  final String _workerPageUrl;
   final String _origin;
   final String _artifactDir;
   final String? _iconsDir;
@@ -177,7 +178,8 @@ class JsWorker {
       final tab = await handle.client.newTab();
       await tab.enable();
       await tab.navigateAndSettle(workerPageUrl, settleMs: 600);
-      final w = JsWorker._(tab, origin, artifactDir, iconsDir, projectDir)
+      final w = JsWorker._(
+          tab, workerPageUrl, origin, artifactDir, iconsDir, projectDir)
         .._chrome = handle;
       await w._inject(
           _scanArtifact(artifactDir, origin, iconsDir, projectDir: projectDir));
@@ -239,14 +241,31 @@ class JsWorker {
         jsonDecode(raw as String) as Map<String, dynamic>);
   }
 
-  /// Hot reload: refresh the prefetch maps (pick up edits) then re-import the
-  /// artifact modules cache-busted.
+  /// Hot reload: re-navigate the worker page, then re-scan disk and re-boot.
+  ///
+  /// The renavigation is what makes nested modules pick up edits. A dynamic
+  /// `import()` is evaluated once per realm: every module the graph pulls in
+  /// (services/facades, viewmodels, repositories) is keyed in the realm's
+  /// module map by resolved URL and never fetched again. A cache-busting query
+  /// on the entry specifier cannot fix that — relative specifiers resolve
+  /// against the base URL's path, so `./services/x.js` drops the query.
+  /// Only a fresh realm empties the map, so we reboot the page the same way
+  /// [boot] does, in the same order: navigate, then inject (the globals
+  /// _inject writes do not survive a navigation), then __boot.
+  ///
+  /// Cost is per reload (watcher-triggered), not per request — one navigation
+  /// plus a re-parse of the worker page's scripts, ~850ms measured, most of it
+  /// the navigateAndSettle wait. Dispatch is untouched.
   Future<void> reload() async {
+    await _tab.navigateAndSettle(_workerPageUrl, settleMs: 600);
     await _inject(_scanArtifact(_artifactDir, _origin, _iconsDir,
         projectDir: _projectDir));
-    await _tab.evaluateFunction(
-        '(b) => globalThis.__boot(b+"?reload="+Date.now()).then(()=>true).catch(e=>"FAIL:"+(e&&e.message||e))',
+    final ok = await _tab.evaluateFunction(
+        '(b) => globalThis.__boot(b).then(()=>true).catch(e=>"FAIL:"+(e&&e.message||e))',
         _origin);
+    // A failed reboot used to be discarded here — which is how a reload that
+    // re-imported nothing stayed invisible. Keep serving, but say so.
+    if (ok != true) stderr.writeln('worker reload failed: $ok');
   }
 
   Future<void> dispose() async {

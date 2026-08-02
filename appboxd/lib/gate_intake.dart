@@ -20,20 +20,54 @@
 // engine's seed path, never the legacy docs/design/ path. If no source AND no
 // registry exist, the gate passes vacuously (greenfield). A registry with
 // entries but no traceable source is a FAIL: every entry is untraced.
+//
+// `--project <name>` points the gate at a project's own intake shell
+// (~/.appbox/projects/<name>/intake) instead of the studio: answers.json,
+// brief.md, registry.json — the flat layout IntakeEngine.emit writes. The
+// shell layout is fixed, so structure.json plays no part in project mode.
+// Without the flag nothing changes: the gate reads the studio's design root
+// and the repo's pipeline state exactly as before.
 
 import 'dart:convert';
 import 'dart:io';
 
 import 'package:appboxd/gates.dart';
+import 'package:appboxd/project.dart';
 
-GateResult intakeGate(GateContext ctx) {
+GateResult intakeGate(GateContext ctx, {String? project}) {
   final repoRoot = ctx.repoRoot;
   final designRoot = ctx.designRoot;
 
   // ---- resolve inputs (answers → registry → brief) ---------------------------
-  final answersPath = _resolveAnswers(repoRoot);
-  final registryPath = _resolveRegistry(designRoot);
-  final briefPath = _resolveBrief(designRoot, repoRoot);
+  // sourceHome is only for messages — it names *which* tree we traced, so a
+  // project's vacuous PASS can't be misread as the studio's.
+  final String? answersPath;
+  final String registryPath;
+  final String? briefPath;
+  final String sourceHome;
+
+  if (project != null) {
+    // Same guard order as IntakeEngine.emit: name first (it also keeps a
+    // path-traversal name from escaping ~/.appbox/projects), then existence.
+    if (!validProjectName(project)) {
+      return GateResult.env('intake: bad project name "$project" — '
+          'lowercase alnum + dash, like a surface id');
+    }
+    if (!Directory(projectDir(project)).existsSync()) {
+      return GateResult.env('intake: no such project "$project" — nothing at '
+          '${projectDir(project)} (run appbox project init $project)');
+    }
+    final intakeDir = shellDir(project, 'intake');
+    answersPath = _emitted('$intakeDir/answers.json');
+    registryPath = '$intakeDir/registry.json';
+    briefPath = _emitted('$intakeDir/brief.md');
+    sourceHome = intakeDir;
+  } else {
+    answersPath = _resolveAnswers(repoRoot);
+    registryPath = _resolveRegistry(designRoot);
+    briefPath = _resolveBrief(designRoot, repoRoot);
+    sourceHome = designRoot;
+  }
 
   final details = <String>[];
   var fails = 0;
@@ -106,7 +140,10 @@ GateResult intakeGate(GateContext ctx) {
   // ---- collect REGISTRY surface ids -----------------------------------------
   if (!File(registryPath).existsSync()) {
     if (sourceIds.isEmpty) {
-      ok('no intake answers and no registry — nothing to trace (greenfield)');
+      // In project mode say where we looked — an unemitted project shell and
+      // a greenfield studio produce the same PASS otherwise.
+      final where = project == null ? '' : ' under $sourceHome';
+      ok('no intake answers and no registry$where — nothing to trace (greenfield)');
       return GateResult.ok('intake: PASS — nothing to trace (greenfield).', details);
     }
     fail('$sourceLabel has ${sourceIds.length} surface(s) but registry not found '
@@ -224,6 +261,10 @@ String? _resolveBrief(String designRoot, String repoRoot) {
   if (docs.existsSync()) return docs.path;
   return null;
 }
+
+/// Project-shell artifacts are at fixed flat paths (IntakeEngine.emit writes
+/// them) — no search order, so "resolve" is just "has it been emitted yet?".
+String? _emitted(String path) => File(path).existsSync() ? path : null;
 
 // ── brief surface-table parsing (10.7) ───────────────────────────────────────
 

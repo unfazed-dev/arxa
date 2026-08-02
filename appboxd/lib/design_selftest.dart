@@ -137,6 +137,52 @@ List<File> _htmlFiles(String dir) => _walkFiles(Directory(dir))
     .toList()
       ..sort((a, b) => a.path.compareTo(b.path));
 
+/// One swept GET route + the route module that declared it.
+class _Route {
+  final String path;
+  final String module;
+  const _Route(this.path, this.module);
+
+  /// Project-backed shells render from the overlaid `~/.appbox` project, so
+  /// their routes only answer with a project mounted. Named by module, not by
+  /// path prefix, so the set stays right when intake/build go project-aware.
+  bool get projectBacked => _projectBackedModules.contains(module);
+}
+
+/// Route modules whose surfaces render from the live project overlay.
+const _projectBackedModules = {'routes.design.js'};
+
+final _getRouteRe = RegExp(r"""\[\s*['"]GET['"]\s*,\s*['"]([^'"]+)['"]""");
+final _routeImportRe = RegExp(r"""from\s+['"](\.[^'"]+)['"]""");
+
+/// Every GET route the artifact serves: the literals in `app.routes.js` plus
+/// those in the route modules it imports. Regexing app.routes.js alone sees
+/// only the routes spelled there — the shells that `import ... routes.*.js`
+/// would go unswept, which is most of them.
+List<_Route> _getRoutes(String art) {
+  final entry = File(p.join(art, 'app.routes.js'));
+  if (!entry.existsSync()) return const [];
+  final entrySrc = entry.readAsStringSync();
+  final out = <_Route>[
+    for (final m in _getRouteRe.allMatches(entrySrc))
+      _Route(m.group(1)!, 'app.routes.js'),
+  ];
+  // Follow the relative imports whose basename is `routes.*.js` — the naming
+  // convention for a shell's route table.
+  for (final m in _routeImportRe.allMatches(entrySrc)) {
+    final rel = m.group(1)!;
+    final base = p.basename(rel);
+    if (!base.startsWith('routes.') || !base.endsWith('.js')) continue;
+    final f = File(p.normalize(p.join(art, rel)));
+    if (!f.existsSync()) continue;
+    for (final r in _getRouteRe.allMatches(f.readAsStringSync())) {
+      out.add(_Route(r.group(1)!, base));
+    }
+  }
+  final seen = <String>{};
+  return out.where((r) => seen.add(r.path)).toList();
+}
+
 List<File> _viewModels(String dir) => _walkFiles(Directory(p.join(dir, 'ui', 'views')))
     .where((f) => f.path.endsWith('_viewmodel.js'))
     .toList()
@@ -538,25 +584,34 @@ List<_Check> _buildChecks({required bool skipRender}) {
             : null;
         srv = await DesignServer.start(
             artifactDir: art, port: 0, noWatch: true, projectDir: projDir);
-        final routesSrc = File(p.join(art, 'app.routes.js')).readAsStringSync();
-        final getPaths = RegExp(r"""\[\s*['"]GET['"]\s*,\s*['"]([^'"]+)['"]""")
-            .allMatches(routesSrc)
-            .map((m) => m.group(1)!)
-            .toSet();
+        final routes = _getRoutes(art);
+        // With no project mounted the project-backed shells have no model to
+        // render and answer 500. Sweep the rest and name the gap in the summary
+        // — a silently narrowed sweep is the failure this check exists to catch.
+        final swept = projDir != null
+            ? routes
+            : routes.where((r) => !r.projectBacked).toList();
+        final held = routes.length - swept.length;
         final client = HttpClient();
         final bad = <String>[];
         try {
-          for (final path in getPaths) {
-            final req = await client.getUrl(Uri.parse('${srv.url}${path.substring(1)}'));
+          for (final r in swept) {
+            final req = await client.getUrl(Uri.parse('${srv.url}${r.path.substring(1)}'));
             final res = await req.close();
             await utf8.decoder.bind(res).join();
-            if (res.statusCode != 200) bad.add('GET $path -> ${res.statusCode}');
+            // Any 2xx: an empty tray legitimately answers 204, not 200.
+            if (res.statusCode ~/ 100 != 2) {
+              bad.add('GET ${r.path} -> ${res.statusCode}');
+            }
           }
         } finally {
           client.close(force: true);
         }
         if (bad.isNotEmpty) return CheckOutcome.fail(bad.join('; '));
-        return const CheckOutcome.ok();
+        return CheckOutcome.okWithSummary(held == 0
+            ? '${swept.length} GET routes swept'
+            : '${swept.length} GET routes swept; $held held back — no project '
+                'mounted (${_projectBackedModules.join(", ")})');
       } catch (e) {
         return CheckOutcome.skip('render boot failed: $e');
       } finally {
