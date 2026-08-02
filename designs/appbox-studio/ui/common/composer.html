@@ -89,7 +89,12 @@
     </div>
   </div>
   {% endif %}
-  <textarea name="text" rows="1" placeholder="{{ c.placeholder }}" aria-label="{{ c.placeholder }}"></textarea>
+  {# hx-preserve keeps a half-typed message across the swaps that unrelated
+     interactions cause — morph keeps the NODE, but still applies the server's
+     empty value, so the draft died on every pin toggle. Dropped on the render
+     that follows a send (c.draftSent), because preserving there would leave
+     the just-sent text in the box, ready to send twice. #}
+  <textarea id="composer-text"{% if not c.draftSent %} hx-preserve="true"{% endif %} name="text" rows="1" placeholder="{{ c.placeholder }}" aria-label="{{ c.placeholder }}"></textarea>
   <div class="composer-bar">
     {% if c.suggestions and c.suggestions.length %}
     <details class="composer-plus">

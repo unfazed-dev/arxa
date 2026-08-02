@@ -78,9 +78,14 @@ try {
   // deliberately excluded from this slice's pass/fail.
   const detailsOpen = hadDetails && await page.evaluate(`(()=>{const d=document.querySelector('details.dv-tool-menu'); return !!(d&&d.open);})()`);
   const textKept = hadTextarea && await page.evaluate(`(()=>{const t=document.querySelector('textarea[name="text"]'); return !!(t&&t.value==='DRAFT-KEEP-ME');})()`);
+  // Fixed: the textarea is hx-preserve'd (dropped only on the render after a
+  // send, so the sent text cannot linger and be sent twice). tools/… has no
+  // send coverage; that pairing is asserted separately.
+  if (hadTextarea) check('typed composer draft preserved', textKept);
+  // Still open: the server echoes <details> without `open`, so morph closes it.
+  // Not a regression — at baseline the node was destroyed outright.
   console.log(`  [KNOWN-OPEN] <details> stayed open      : ${detailsOpen} (baseline: false — node destroyed)`);
-  console.log(`  [KNOWN-OPEN] typed composer text kept   : ${textKept} (baseline: false — node destroyed)`);
-  console.log('               node identity now survives; server does not echo the state. -> Lever 2');
+  console.log('               server does not echo `open`; morph applies server state faithfully.');
 
   console.log('\n=== B. navigation INSIDE a live tile survives (THE complaint) ===');
   await page.$eval('.dv-tile[data-id="portalo.home"] a[hx-get*="live="]', (el) => el.click());

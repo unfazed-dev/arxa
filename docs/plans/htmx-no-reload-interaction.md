@@ -95,7 +95,43 @@ faithfully applies the server's content, and the server echoes neither `open`
 nor the draft text. The fix is Lever 2 — a pin toggle should not re-render the
 composer at all — not a bigger hammer in Lever 1.
 
-## Lever 2 — swap only what changed (NOT STARTED)
+## Lever 2 — the draft-text half is FIXED; the refactor is NOT
+
+Lever 2 existed to fix one concrete symptom (a half-typed message dying on
+every unrelated click) and one architectural problem (an 84 KB re-render for a
+pin toggle). **The symptom is fixed; the architecture is not.** Saying "Lever 2
+is done" would be false.
+
+What shipped: the composer textarea carries `hx-preserve`, which — measured,
+not assumed — **does** survive a morph swap. Morph keeps the node but still
+applies the server's empty value, which is why the draft died even after
+Lever 1.
+
+The trap, and why the fix is two lines rather than one: preserved
+unconditionally, the textarea also survives the **send**, leaving the text the
+user just sent sitting in the box ready to be sent twice. Reproduced before
+shipping (thread went 4 → 6 messages while the box kept its contents). So
+`hx-preserve` is dropped on exactly the render that follows a send
+(`c.draftSent`). Both halves are asserted together in
+`tools/probe-composer-draft.mjs`, because either alone is misleading.
+
+Freeze needed the flag threaded explicitly: it shares the composer textarea but
+renders `freezeContext`, so `sendChat`'s own flag never reached the template.
+
+**Still open — the actual refactor.** A pin toggle still ships every panel over
+the wire. The seam is already established in this codebase: several macros take
+`{% if oob %}hx-swap-oob="outerHTML"{% endif %}`, and ids exist for
+`#design-viewer`, `#composer`, `#facts-bar`, `#timeline`, `#av-list`. A pin
+toggle should target `#design-viewer` and OOB the composer tray.
+
+One blocker to design around before starting, found while scoping: the tray is
+rendered under `{% if hasStrip or hasEls %}`, so pinning the *first* element
+must **create** it — and an OOB swap cannot target an element that does not yet
+exist. Either the tray container renders always (a visible empty "Context" bar
+— a UX decision, not a mechanical one), or that first transition falls back to
+a wider swap. That choice is why this was not bulldozed through.
+
+### Original Lever 2 specification
 
 Morph stops the *damage* from an 84 KB re-render; it does not stop the
 re-render. A pin toggle still ships every panel over the wire.

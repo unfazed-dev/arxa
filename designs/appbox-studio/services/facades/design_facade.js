@@ -734,7 +734,15 @@ export const sendChat = (sessionData, text, prefs = {}, pinId = null, t = (k) =>
   if (pinId) pin(d, pinId, L);
   const thread = (d.designThread ??= []);
 
-  if (text === 'approve') return approveManifest(sessionData, prefs, t, L);
+  // draftSent marks the ONE render that follows a send. The composer textarea
+  // is hx-preserve'd so an unrelated swap cannot discard a half-typed message;
+  // preserved unconditionally it would also survive the send, leaving the text
+  // the user just sent sitting in the box ready to be sent twice. Every exit
+  // from this function consumes the text, so every exit clears the flag's
+  // absence.
+  if (text === 'approve') {
+    return { ...approveManifest(sessionData, prefs, t, L), draftSent: true };
+  }
 
   const threadLenBefore = thread.length;
   thread.push({ at: 'now', from: 'user', text });
@@ -742,7 +750,7 @@ export const sendChat = (sessionData, text, prefs = {}, pinId = null, t = (k) =>
   if (!ids.length) {
     thread.push({ at: 'now', from: 'agent', text: repo.noContext(L).text, textPlain: repo.noContext(L).textPlain });
     pushUndo(d, 'chat', { type: 'chat', threadLenBefore, checkpointIds: [] });
-    return stageContext(sessionData, {}, prefs, t, L);
+    return { ...stageContext(sessionData, {}, prefs, t, L), draftSent: true };
   }
 
   const first = repo.screen(ids[0], L);
@@ -769,7 +777,7 @@ export const sendChat = (sessionData, text, prefs = {}, pinId = null, t = (k) =>
   }
   thread.push({ at: 'now', from: 'agent', text: reply.text, textBalanced: reply.textBalanced, textPlain: reply.textPlain, link: reply.link, cps });
   pushUndo(d, 'chat', { type: 'chat', threadLenBefore, checkpointIds: cps });
-  return stageContext(sessionData, {}, prefs, t, L);
+  return { ...stageContext(sessionData, {}, prefs, t, L), draftSent: true };
 };
 
 // One-tap revert: the checkpoint stays rendered as history, flagged reverted,

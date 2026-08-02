@@ -25,7 +25,11 @@ export const send = async (c, h) => {
   const text = String(form.preset || form.text || '').trim();
   if (!text) return h.noContent(c);
   facade.sendChat(h.session(c).data, text, h.prefs(c), null, h.t(c), h.locale(c));
-  return h.render(c, `${VIEW}#panelsSwap`, facade.freezeContext(h.session(c).data, h.prefs(c), h.t(c), h.locale(c)));
+  // draftSent explicitly: freeze shares the composer textarea (and therefore
+  // its hx-preserve) but renders freezeContext, so sendChat's own flag never
+  // reaches the template here. Without it the freeze composer keeps the text
+  // it just sent.
+  return h.render(c, `${VIEW}#panelsSwap`, { ...facade.freezeContext(h.session(c).data, h.prefs(c), h.t(c), h.locale(c)), draftSent: true });
 };
 
 // Re-run the drift check: swaps the drift card and toasts the result.
