@@ -167,6 +167,19 @@ export const rewire = (flow, order, memory) => {
     // the element would silently downgrade the flow-walk island from an exact
     // match to a fuzzy one. Only re-derived edges pass through here — an
     // unchanged pair is returned whole above.
+    //
+    // Note this rides with the FROM screen, not with the (from, to) pair, and
+    // that is deliberate: `element` selects a control ON `from` (the island
+    // gets it as `walkel` and the destination separately as `walk`), so a
+    // changed destination does not invalidate it. excise makes the same call
+    // for the same reason (:222-224). Both `prev` sources are keyed by `from`,
+    // so a carried element can never land on a screen that did not author it.
+    //
+    // BOTH `prev` sources must therefore be able to yield an element — the
+    // memory branch is not a lesser fallback. It used to snapshot
+    // `{ trigger, action }` only, which dropped `element` on exactly the path
+    // that needs it most: a screen moved to the chain tail has no outgoing edge
+    // left in the file, so undo re-derives it from memory alone. See moveMemory.
     return {
       from, to: order[i + 1],
       trigger: prev?.trigger ?? 'continue',
@@ -183,6 +196,24 @@ export const rewire = (flow, order, memory) => {
     };
   });
 };
+
+// The per-screen snapshot `rewire` consults as `memory`. Taken BEFORE a move,
+// keyed by the edge's `from` screen. Exported so the self-check can build the
+// same memory the facade does rather than restating its field list — the whole
+// defect this closes was a field list stated in two places and drifting.
+//
+// It snapshots the WHOLE edge, deliberately, rather than naming the fields it
+// wants. `rewire` reads `memory[from]` through exactly the same accessors it
+// reads a live edge through (`prev?.trigger`, `prev?.element`, `prev?.feedback`),
+// so anything an edge can carry is something the memory must be able to hand
+// back. This used to be `{ trigger, action }` only, and that omission is the
+// silent `element` dropper: move a screen to the chain TAIL and its outgoing
+// edge leaves the file, so undo re-derives that edge from a memory that never
+// held the element. Order came back perfect, `element` was gone for good, and
+// the answers dual-write shipped the loss to answers.json. Listing fields here
+// again would just re-arm the same trap for the next field added to an edge.
+export const moveMemory = (flow) =>
+  Object.fromEntries((flow?.edges ?? []).map((e) => [e.from, { ...e, action: e.action ?? 'push' }]));
 
 // Would excising screenId leave the flow with any edges? A 0-edge flow is
 // INVALID — appboxd/lib/intake.dart:283 hard-errors '$where: edges must be a
