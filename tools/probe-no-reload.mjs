@@ -97,7 +97,16 @@ try {
   if (hadTextarea) check('typed composer draft preserved', textKept);
 
   console.log('\n=== B. navigation INSIDE a live tile survives (THE complaint) ===');
-  await page.$eval('.dv-tile[data-id="portalo.home"] a[hx-get*="live="]', (el) => el.click());
+  // The interactive tile is a FLOWS-lens affordance now. It used to sit in the
+  // views lens too, which was unsound: with no row to name the flow, the
+  // destination came from nextEdge's first match across all flows, and
+  // portalo.home is in two of them. Switch lenses before arming it.
+  // (portalo.home appears in more than one flow row here, so the selector
+  // takes the first — either row exercises the same in-frame navigation.)
+  await page.evaluate((u) => window.htmx.ajax('GET', u, { target: '#design-viewer', swap: 'morph:outerHTML' }),
+    '/design/viewer?mode=flows');
+  await settle(page);
+  await page.$eval('.dv-tile[data-id="portalo.home"] a[hx-get*="step="]', (el) => el.click());
   await settle(page);
   const liveSel = '.dv-tile[data-id="portalo.home"] iframe';
   let frame = await (await page.$(liveSel)).contentFrame();

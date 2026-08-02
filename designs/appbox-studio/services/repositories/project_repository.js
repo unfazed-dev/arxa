@@ -43,9 +43,18 @@ export const tabs = () => {
 
 // The flow a screen starts/advances in: the next edge's (to, trigger, action)
 // for splash→startup→auth style auto-advance + tap-through chrome.
-export const nextEdge = (screenId) => {
+//
+// `flowId` scopes the search to ONE flow. Without it the first match across all
+// flows wins — a guess whenever a screen sits in two. portalo.home is in
+// flow-browse-buy (→ checkout) AND flow-account (→ account), so authoring order
+// silently decided where "next" went. The flows lens knows its row and passes
+// it; the views lens has no row, which is why it no longer offers an interactive
+// mode at all rather than advancing along a guessed edge. See
+// docs/plans/design-viewer-per-lens-hover-and-flow-mode.md.
+export const nextEdge = (screenId, flowId = null) => {
   try {
     for (const f of flows()) {
+      if (flowId && f.id !== flowId) continue;
       for (const e of f.edges ?? []) {
         if (e.from === screenId) return { ...e, flow: f.id, flowName: f.name };
       }

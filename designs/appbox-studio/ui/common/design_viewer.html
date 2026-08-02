@@ -22,7 +22,10 @@
    revealed on :hover/:focus-within, pure CSS. Free drag/layout offsets are
    gone (flow edits POST the project write endpoints); the bottom-anchored
    mini panel renders inside the viewer via ui/common/mini_panel.html.
-   Canon markup: canvas-redesign-contract.md §3.
+   Canon markup: skills/appbox-designer/DESIGN-ARCHITECTURE.md §"The output
+   triad: views / flows / proto", plus _integration_viewer.md for the `v`
+   contract. (It said canvas-redesign-contract.md §3 — that doc's own header
+   marks it superseded 2026-07-30 and says not to implement against it.)
    Every parameter travels in v (the shell's facade viewerFor produces it —
    see contract §1):
      v.screens  [{ id, label?, state?, chips? [{text,title}], viewports,
@@ -98,13 +101,34 @@
 
 {# The per-tile hover toolbar — the ONLY per-tile chrome (replaces the old
    always-on pin). Revealed on :hover/:focus-within (viewer.css, zero JS).
-   Pin/inspect/live are GETs echoing the full viewer state (the facade's
-   withParams); pins swap #panels (chat context), inspect/live swap
+
+   PER-LENS, not shared. Each lens has its own hover requirements, and the
+   split is structural so the views lens cannot regain an interactive mode by
+   accident:
+
+     shared  pin + inspect — meaningful in any lens.
+     views   add-to-flow <details> menu (one small form per flow). NO flow
+             mode: nextEdge cannot be resolved without a row to disambiguate,
+             and portalo.home sits in two flows with different destinations,
+             so an interactive tile here would advance along a GUESSED edge.
+             That is why this was removed rather than renamed in place.
+     flows   flow mode (walk the row) + move ←/→ nudges (disabled at the row
+             ends) + remove-from-flow.
+     proto   no tiles at all — one deviceChrome stage, its controls live in
+             the mini panel and the composer filmstrip. Nothing renders here;
+             do not invent a third toolbar.
+
+   Pin/inspect/flow are GETs echoing the full viewer state (the facade's
+   withParams); pins swap #panels (chat context), inspect/flow swap
    #design-viewer. The flow edits are POSTs that WRITE the project's
-   flows.json and re-render the whole stage (#panels): views gets the
-   add-to-flow <details> menu (one small form per flow), flows gets move ←/→
-   nudges (disabled at the row ends) + remove-from-flow. row/first/last are
-   passed only from the flows lens. #}
+   flows.json and re-render the whole stage (#panels). row/first/last are
+   passed only from the flows lens.
+
+   ponytail: the underlying state field is still the facade's `live`/`liveHref`.
+   The row-advance slice reshapes it into flow+step, so renaming it here and
+   again there would be churn — the user-visible label and icon are flow mode
+   now, the plumbing follows. See
+   docs/plans/design-viewer-per-lens-hover-and-flow-mode.md. #}
 {% macro tileTools(v, s, row, first, last) %}
 <span class="dv-tile-tools">
   {% if v.contextBase %}
@@ -115,9 +139,9 @@
   {% endif %}
   <a class="ico-btn dv-tool {{ 'on' if s.inspecting }}" href="{{ s.inspectHref }}" hx-get="{{ s.inspectHref }}" hx-target="#design-viewer" hx-swap="morph:outerHTML"
      aria-label="{{ t('viewer.inspectAria', {id: s.id}) }}" title="{{ t('viewer.inspect', {id: s.id}) }}">{{ icon('mouse-pointer-click', {size: 14}) }}</a>
-  <a class="ico-btn dv-tool {{ 'on' if s.live }}" href="{{ s.liveHref }}" hx-get="{{ s.liveHref }}" hx-target="#design-viewer" hx-swap="morph:outerHTML"
-     aria-label="{{ t('viewer.liveAria', {id: s.id}) }}" title="{{ t('viewer.live', {id: s.id}) }}">{{ icon('play', {size: 14}) }}</a>
   {% if v.mode == 'flows' and row %}
+  <a class="ico-btn dv-tool {{ 'on' if s.live }}" href="{{ s.liveHref }}" hx-get="{{ s.liveHref }}" hx-target="#design-viewer" hx-swap="morph:outerHTML"
+     aria-label="{{ t('viewer.flowModeAria', {id: s.id}) }}" title="{{ t('viewer.flowMode', {id: s.id}) }}">{{ icon('route', {size: 14}) }}</a>
   <button class="ico-btn dv-tool" type="button" {{ 'disabled' if first }}
      hx-post="/design/flows/{{ row.id }}/move/{{ s.id }}" hx-vals='{"dir": -1}' hx-target="#panels" hx-swap="morph:outerHTML"
      aria-label="{{ t('viewer.moveEarlier', {id: s.id}) }}" title="{{ t('viewer.moveEarlier', {id: s.id}) }}">{{ icon('arrow-left', {size: 14}) }}</button>
@@ -163,8 +187,18 @@
     {% if not v.static %}{{ tileTools(v, s, row, first, last) }}{% endif %}
     <span class="dv-tile-label"><strong>{{ s.label or s.id }}</strong> <code>{{ s.id }}</code></span>
     {% if s.live %}
+    {# Advance the walk one step along THIS row. Present whenever the tile is
+       the current step and the row has a next edge (null on the last tile —
+       the walk ends, it does not wrap). This lives in the tile chrome, in the
+       PARENT document, so walking works with no client JS at all; the
+       flow-walk island only adds the in-screen tap on top of it. #}
+    {% if s.advanceHref %}
+    <a class="ico-btn dv-tool" href="{{ s.advanceHref }}" hx-get="{{ s.advanceHref }}" hx-target="#design-viewer" hx-swap="morph:outerHTML"
+       aria-label="{{ t('viewer.flowAdvanceAria', {trigger: s.conn or s.edge.to}) }}"
+       title="{{ t('viewer.flowAdvance', {trigger: s.conn or s.edge.to}) }}">{{ icon('arrow-right', {size: 14}) }}</a>
+    {% endif %}
     <a class="ico-btn dv-live-close" href="{{ s.liveCloseHref }}" hx-get="{{ s.liveCloseHref }}" hx-target="#design-viewer" hx-swap="morph:outerHTML"
-       aria-label="{{ t('viewer.liveCloseAria') }}" title="{{ t('viewer.liveClose') }}">{{ icon('x', {size: 14}) }}</a>
+       aria-label="{{ t('viewer.flowModeCloseAria') }}" title="{{ t('viewer.flowModeClose') }}">{{ icon('x', {size: 14}) }}</a>
     {% endif %}
   </header>
   {# The id carries only the tile identity, never the src params. Morph diffs
@@ -174,7 +208,7 @@
      reloads, which is exactly what those actions mean. #}
   <iframe class="dv-tile-frame"
           id="dvf-{{ scope }}--{{ s.id }}"
-          src="{{ v.stubBase }}{{ s.id }}?vp={{ s.tile.vp }}&embed=1{{ '' if s.live else '&still=1' }}{{ '&inspect=1' if s.inspecting }}"
+          src="{{ v.stubBase }}{{ s.id }}?vp={{ s.tile.vp }}&embed=1{{ '' if s.live else '&still=1' }}{{ '&inspect=1' if s.inspecting }}{{ s.walkQs if s.live and s.walkQs }}"
           style="height: {{ s.tile.height }}px"
           scrolling="no" tabindex="-1" title="{{ s.label or s.id }}"></iframe>
 </div>

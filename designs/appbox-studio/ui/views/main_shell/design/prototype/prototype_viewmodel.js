@@ -38,6 +38,10 @@ export const viewer = (c, h) =>
   h.render(c, `${VIEW}#viewerSwap`, facade.setViewer(h.session(c).data, {
     bg: c.req.query('bg'), inspect: c.req.query('inspect'), live: c.req.query('live'),
     mode: c.req.query('mode'), screen: c.req.query('screen'), vp: c.req.query('vp'),
+    // The flow walk: which row is being walked and where in it. This list is
+    // explicit, not a spread of the query — a new viewer param is invisible
+    // until it is named here.
+    flow: c.req.query('flow'), step: c.req.query('step'),
   }, h.prefs(c), h.t(c), h.locale(c)));
 
 // Flow edits from the per-tile toolbar (nudge arrows / remove / add menu) and

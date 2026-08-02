@@ -42,3 +42,32 @@ sprites pinned to the vendored images dir, re-arms on `htmx:load`, no-ops
 when `L` is absent). Leaflet is the design-time visual mirror of kit/maps
 (flutter_map); OSM tiles need no key, so prototypes stay credential-free.
 The boundary otherwise stands unchanged.
+
+**Amendment (2026-08-02) — the flow-walk island.** One first-party island, no
+vendored runtime: `flowwalk.js`, alongside `inspect.js` and for the same
+structural reason. The viewer's flows lens renders a flow as a row of screen
+tiles; walking it means tapping the element an edge names (Continue on the auth
+screen) and watching the row's ACTIVE tile advance to the screen that edge
+points at. The tap happens inside a tile's iframe — a separate document — and
+the row lives in the parent. No markup crosses that boundary, so without an
+island the flows lens can only be walked from the parent-side tile chrome,
+which is not the interaction being asked for.
+
+Shape: armed only on the tile that is the current step, by the presence of a
+`walk` query param carrying the complete parent viewer URL to advance to (so
+the island never encodes the viewer's param list, and adding a viewer param
+cannot silently break it). On a click it matches the target against the edge's
+`element` when authored, else fuzzy-matches the edge's prose `trigger`;
+an unmatched click falls through to normal behaviour rather than guessing. A
+match calls `preventDefault()` — the in-frame navigation is suppressed on
+purpose, because the tile must keep showing the screen it is labelled with
+while only the row moves — then hands the URL to the parent's htmx
+(`window.parent.htmx.ajax`, exactly as `inspect.js` does). No parent htmx (a
+stub opened standalone) is a silent no-op, not a throw.
+
+This is a genuine widening of the boundary: the flows lens was previously
+specified as a non-navigable projection, with navigability living only in the
+proto lens. `DESIGN-ARCHITECTURE.md` §"The output triad" is amended to match.
+Enforcement is unchanged: `allowEval:false`, no inline scripts, and the island
+lives in the vendored island directory rather than the design artifact — the
+zero-custom-client-JS lint over `designs/appbox-studio` still passes clean.

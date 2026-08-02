@@ -80,5 +80,15 @@
 {% if inspect %}
 <script src="/assets/vendor/inspect.js"></script>
 {% endif %}
+{# The flow-walk island, loaded ONLY on the tile that is the current step of a
+   walked flow row (`walk` carries the parent viewer URL to advance to). The
+   tap that fires a flow edge happens in here, but the row that has to move
+   lives in the parent document — a boundary ordinary markup cannot cross, so
+   this is a named island under ADR-0002 (amendment 2026-08-02), the same
+   escape inspect.js uses. It reads its config from its own query string, so
+   nothing needs to be inlined here. #}
+{% if walk %}
+<script src="/assets/vendor/flowwalk.js"></script>
+{% endif %}
 </body>
 </html>

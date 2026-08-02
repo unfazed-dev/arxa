@@ -123,7 +123,19 @@ export const evidenceViewer = (c, h) => {
 // drives the viewport (build_facade guards the missing evidence entry), so
 // this route keeps working on a project that has never built.
 export const screenStub = (c, h) =>
-  h.render(c, STUB_VIEW, facade.screenStub(c.req.param('surface'), c.req.query('vp'), h.prefs(c), h.locale(c), { embed: c.req.query('embed') === '1', inspect: c.req.query('inspect') === '1', still: c.req.query('still') === '1' }));
+  h.render(c, STUB_VIEW, facade.screenStub(c.req.param('surface'), c.req.query('vp'), h.prefs(c), h.locale(c), {
+    embed: c.req.query('embed') === '1',
+    inspect: c.req.query('inspect') === '1',
+    still: c.req.query('still') === '1',
+    // Flow walk: `walk` is the complete parent viewer URL to advance to, so
+    // the island never needs to know the viewer's param list. Absent = this
+    // is not the walked tile and the island is not loaded at all.
+    walk: c.req.query('walk') ?? null,
+    walkEl: c.req.query('walkel') ?? '',
+    walkTrig: c.req.query('walktrig') ?? '',
+    // Scopes the stub's own `next` edge to the flow being walked.
+    walkFlow: c.req.query('walkflow') ?? null,
+  }));
 
 // Stage control (run view): pause | resume | cancel one stage.
 export const stageControl = async (c, h) => {

@@ -298,7 +298,16 @@ export const screenStub = (surface, vp, prefs = {}, locale = 'en', opts = {}) =>
     still: opts.still ?? false,
     partial: proj.hasPartial(kind) ? `ui/project/${kind}.html` : null,
     tabs: proj.hasPartial(kind) ? proj.tabs() : [],
-    next: proj.hasPartial(kind) ? proj.nextEdge(surface) : null,
+    // Scoped by the walked flow when there is one. A screen can sit in several
+    // flows with different destinations (portalo.home -> checkout in
+    // flow-browse-buy, -> account in flow-account); unscoped, nextEdge returns
+    // whichever flow happens to be authored first, so the surface's own CTA
+    // could point somewhere the walk does not go.
+    next: proj.hasPartial(kind) ? proj.nextEdge(surface, opts.walkFlow ?? null) : null,
+    // Flow walk island config — only present on the walked tile.
+    walk: opts.walk ?? null,
+    walkEl: opts.walkEl ?? '',
+    walkTrig: opts.walkTrig ?? '',
   };
 };
 

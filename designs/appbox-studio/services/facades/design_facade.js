@@ -158,7 +158,17 @@ const rewire = (flow, order, memory) => {
     const kept = byPair.get(`${from}→${order[i + 1]}`);
     if (kept) return kept;
     const prev = outByFrom.get(from) ?? memory?.[from];
-    return { from, to: order[i + 1], trigger: prev?.trigger ?? 'continue', action: prev?.action ?? 'push' };
+    // `element` rides with `trigger`: both describe what the user touches to
+    // take this edge, so a re-derived edge that kept the trigger but dropped
+    // the element would silently downgrade the flow-walk island from an exact
+    // match to a fuzzy one. Only re-derived edges pass through here — an
+    // unchanged pair is returned whole above.
+    return {
+      from, to: order[i + 1],
+      trigger: prev?.trigger ?? 'continue',
+      action: prev?.action ?? 'push',
+      ...(prev?.element ? { element: prev.element } : {}),
+    };
   });
 };
 
@@ -174,7 +184,14 @@ const excise = (flow, screenId) => {
   const at = edges.indexOf(incoming ?? outgoing);
   const rest = edges.filter((e) => e !== incoming && e !== outgoing);
   const stitch = incoming && outgoing
-    ? [{ from: incoming.from, to: outgoing.to, trigger: incoming.trigger, action: incoming.action ?? 'push' }]
+    ? [{
+      from: incoming.from, to: outgoing.to,
+      trigger: incoming.trigger, action: incoming.action ?? 'push',
+      // Same rule as the trigger: the stitch keeps the INCOMING edge's
+      // element, because the element lives on the `from` screen and that
+      // screen is unchanged by the excision.
+      ...(incoming.element ? { element: incoming.element } : {}),
+    }]
     : [];
   flow.edges = [...rest.slice(0, at), ...stitch, ...rest.slice(at)];
   return { incoming, outgoing };
@@ -287,7 +304,28 @@ function viewerFor(d, L, t) {
   const active = ordered.some((s) => s.id === v.screen) ? v.screen : ordered[0]?.id;
   // Per-tile params: the screen id they name, else null (unknown ids drop).
   const inspect = ordered.some((s) => s.id === v.inspect) ? v.inspect : null;
-  const live = ordered.some((s) => s.id === v.live) ? v.live : null;
+  // Flow mode is FLOWS-ONLY. A stale `?live=<id>` carried into views (a shared
+  // URL, a lens switch that kept the param) must not paint .is-live on a views
+  // tile: pointer-events:auto, interactive, and no close control reachable
+  // because the tool that offers one only renders in flows.
+  //
+  // This clamp is ONE of two independent protections — the other is that the
+  // views-lens screens entries below carry no `live` field at all. Either alone
+  // is sufficient, which is worth knowing before "simplifying" one away:
+  // probe-flowwalk's "stale walk params cannot arm a views tile" only goes red
+  // when BOTH are removed (verified by removing each, then both). They are kept
+  // because they do different jobs — this one also stops `live=` persisting
+  // into every views href via withParams, which the structural one does not.
+  const live = mode === 'flows' && ordered.some((s) => s.id === v.live) ? v.live : null;
+
+  // The flow WALK: which flow row is being walked, and which screen in its
+  // chain is the current step. `live` above is only "this tile is interactive";
+  // the walk is what makes the ROW track a position, which is the whole point —
+  // the destination is well-defined here because the row names the flow, and
+  // ambiguous anywhere else (portalo.home advances to checkout in
+  // flow-browse-buy and to account in flow-account).
+  const walkFlow = mode === 'flows' && typeof v.flow === 'string' && v.flow ? v.flow : null;
+  const walkStep = walkFlow && ordered.some((s) => s.id === v.step) ? v.step : null;
 
   // Device rungs as mini-bar icon buttons (lucide names, picked up by the
   // server's template icon scan). One mobile chrome — no os dimension.
@@ -306,6 +344,7 @@ function viewerFor(d, L, t) {
       mode: mode === 'views' ? null : mode,
       screen: active,
       vp: vp === 'mobile' ? null : vp,
+      flow: walkFlow, step: walkStep,
       ...over,
     };
     const qs = Object.entries(merged).filter(([, val]) => val != null).map(([k, val]) => `${k}=${val}`).join('&');
@@ -328,12 +367,17 @@ function viewerFor(d, L, t) {
       primaryWidth: viewports[0]?.width ?? 390,
       tile,
       // Per-tile hover toolbar state + toggle hrefs (inspect toggles off when
-      // re-clicked; live has an explicit on-tile close).
+      // re-clicked).
+      //
+      // NO live/walk fields here on purpose. This is the views-lens entry, and
+      // the views lens has no interactive mode: its destination would have to
+      // come from nextEdge without a flow to scope it, which is a guess. The
+      // flows builder below adds `live`/`liveHref`/`walk*` PER ROW, where the
+      // row names the flow and the answer is well-defined. Leaving them off
+      // here makes the old unsound behaviour structurally unreachable rather
+      // than merely unrendered.
       inspecting: s.id === inspect,
-      live: s.id === live,
       inspectHref: withParams({ inspect: s.id === inspect ? null : s.id }),
-      liveHref: withParams({ live: s.id }),
-      liveCloseHref: withParams({ live: null }),
     };
   });
 
@@ -358,10 +402,55 @@ function viewerFor(d, L, t) {
         cur = edges.find((e) => e.from === cur.to);
       }
       const chainIds = chain.length ? [chain[0].from, ...chain.map((e) => e.to)] : [];
+      // Walk state is PER ROW. Arming a walk without naming a screen starts at
+      // the chain head rather than nowhere, so `?flow=<id>` alone is valid.
+      const walking = f.id === walkFlow;
+      const stepId = walking ? (chainIds.includes(walkStep) ? walkStep : chainIds[0]) : null;
       return {
-        id: f.id, name: f.name,
+        id: f.id, name: f.name, walking,
         tiles: chainIds
-          .map((id, i) => (tileById[id] ? { ...tileById[id], conn: i < chain.length ? chain[i].trigger : null } : null))
+          .map((id, i) => {
+            const t = tileById[id];
+            if (!t) return null;
+            const isStep = walking && id === stepId;
+            const edge = i < chain.length ? chain[i] : null;
+            return {
+              ...t,
+              conn: edge ? edge.trigger : null,
+              // `live` = this tile is the current step, so it renders
+              // interactive (still=1 dropped). Only ever true inside the
+              // walked row — a screen in two flows cannot be "live" in both.
+              live: isStep,
+              liveHref: withParams({ flow: f.id, step: id, live: id }),
+              liveCloseHref: withParams({ flow: null, step: null, live: null }),
+              // The next step in THIS row. Null on the last tile — the walk
+              // ends rather than wrapping. This is what the tile-chrome
+              // advance control and the flow-walk island both target.
+              advanceHref: edge ? withParams({ flow: f.id, step: edge.to, live: edge.to }) : null,
+              // What fires this edge, for the island's click matcher:
+              // `element` is the authored join to a data-el value, `trigger`
+              // is the prose fallback it fuzzy-matches when element is absent.
+              edge: edge ? { to: edge.to, trigger: edge.trigger, element: edge.element ?? null } : null,
+              // Extra stub query for the walked tile: the island inside the
+              // iframe needs the PARENT url to advance to, plus what to match
+              // a click against. Built here because encodeURIComponent in a
+              // nunjucks expression is where this would quietly break.
+              // `advance` is a plain viewer GET, so the island can hand it
+              // straight to the parent's htmx — no new endpoint to keep in
+              // sync with the viewer's param list.
+              // `walkflow` also scopes the stub's OWN `next` edge, so the
+              // surface's built-in CTA (auth.html hrefs to next.to) points at
+              // the same screen the walk advances to. Without it nextEdge
+              // falls back to first-match-across-all-flows and the two can
+              // disagree inside the same tile.
+              walkQs: edge
+                ? `&walkflow=${encodeURIComponent(f.id)}`
+                  + `&walk=${encodeURIComponent(withParams({ flow: f.id, step: edge.to, live: edge.to }))}`
+                  + `&walkel=${encodeURIComponent(edge.element ?? '')}`
+                  + `&walktrig=${encodeURIComponent(edge.trigger ?? '')}`
+                : '',
+            };
+          })
           .filter(Boolean),
       };
     });

@@ -22,7 +22,11 @@ try{
   check('static canvas tile does NOT load htmx', await stillDoc.evaluate(`typeof window.htmx === 'undefined'`));
 
   console.log('\n=== live tile is boosted ===');
-  await p.$eval('.dv-tile[data-id="portalo.home"] a[hx-get*="live="]',e=>e.click());
+  // Arming an interactive tile is a FLOWS-lens affordance now (the views lens
+  // has no row to scope nextEdge, so it offers no interactive mode at all).
+  await p.evaluate((u)=>window.htmx.ajax('GET',u,{target:'#design-viewer',swap:'morph:outerHTML'}),'/design/viewer?mode=flows');
+  await p.waitForTimeout(1200);
+  await p.$eval('.dv-tile[data-id="portalo.home"] a[hx-get*="step="]',e=>e.click());
   await p.waitForTimeout(1400);
   const sel='.dv-tile[data-id="portalo.home"] iframe';
   let doc=await (await p.$(sel)).contentFrame();

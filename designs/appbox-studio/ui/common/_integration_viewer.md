@@ -50,14 +50,34 @@ Files:
   screens:  [{ id, label?, state?, chips?, viewports, inContext?, dim?,
                tone?, primaryWidth,
                tile: { vp, width, height },       // dims at the CURRENT rung
-               inspecting?, live?, inspectHref?, liveHref?, liveCloseHref? }],
-  flows:    [{ id, name, tiles: [...screens entries + conn?] }],
-               // flows lens rows; conn = trigger label to the NEXT tile
+               inspecting?, inspectHref? }],
+               // NOTE: no live/walk fields here. The views lens has no
+               // interactive mode — without a row there is no flow to scope
+               // nextEdge by, so the destination would be a guess. They are
+               // added PER ROW by the flows builder below.
+  flows:    [{ id, name, walking?, tiles: [...screens entries +
+               conn?, live?, liveHref?, liveCloseHref?,
+               advanceHref?, edge?, walkQs? }],
+               // flows lens rows; conn = trigger label to the NEXT tile.
+               // walking   = this row is the one being walked
+               // live      = this tile is the current step (interactive)
+               // liveHref  = arm the walk here / liveCloseHref = stop
+               // advanceHref = next step in THIS row (null on the last tile)
+               // edge      = { to, trigger, element } — what fires the edge
+               // walkQs    = extra stub query for the walked tile, carrying
+               //             the parent url + matchers to the flowwalk island
   mode:     'views' | 'flows' | 'proto',  // default 'views'
   proto:    { active, vp, src },       // proto mode only
   vp:       'mobile' | 'tablet' | 'desktop',   // current rung (default mobile)
   inspect:  screen id | null,          // that tile's inspect island armed
-  live:     screen id | null,          // that tile live + interactive
+  live:     screen id | null,          // that tile live + interactive.
+                                       // CLAMPED to the flows lens in the
+                                       // facade: a stale ?live= carried into
+                                       // views used to paint an interactive
+                                       // tile with no reachable close control.
+  flow:     flow id | null,            // the row being walked (flows only)
+  step:     screen id | null,          // position in that row; defaults to
+                                       // the chain head when flow is set
   static:   bool,                      // build evidence: read-only canvas
   bg:       'canvas' | 'warm' | 'slate',
   base:     '/design/viewer',          // per-shell viewer route

@@ -81,6 +81,24 @@ Map<String, dynamic>? buildStructure(String designRoot) {
           stderr.writeln("FAIL: flow '${f['id']}' has an edge without a trigger");
           return null;
         }
+        // `element` is OPTIONAL and names the thing a user touches to take this
+        // edge — it joins to a `data-el` value on the surface (e.g.
+        // "button:Continue"). It exists because `trigger` is prose written for
+        // a human reader: "continue" happens to name an element, "App launch"
+        // and "Add to bag, then review bag" do not. The flow-walk island uses
+        // element when present and fuzzy-matches trigger when it is absent, so
+        // omitting it degrades matching rather than breaking the flow.
+        // Validated for TYPE only: whether the value resolves to a real
+        // data-el lives in the rendered surface, which structure.json cannot
+        // see from here.
+        if (edge.containsKey('element') &&
+            edge['element'] != null &&
+            edge['element'] is! String) {
+          stderr.writeln("FAIL: flow '${f['id']}' edge "
+              "'${edge['from']}' -> '${edge['to']}' has a non-string element "
+              '(expected a data-el value like "button:Continue")');
+          return null;
+        }
         for (final k in const ['from', 'to']) {
           final ep = edge[k];
           if (!ids.contains(ep)) {
