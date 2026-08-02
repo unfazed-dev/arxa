@@ -253,7 +253,7 @@ function viewerFor(sessionData, evidence) {
   };
 
   return {
-    screens, bg, strip: true, static: true,
+    screens, bg, static: true,
     base,
     // Every tile iframes the stub renderer — see the comment above viewerFor.
     stubBase: '/build/screens/',

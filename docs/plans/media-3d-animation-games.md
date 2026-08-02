@@ -1,5 +1,11 @@
 # Media, 3D, animation & games — rename, designer islands, smoke screens
 
+> **Superseded (2026-08-02):** the graphics-demo "Portalo" this plan built was
+> replaced by the ecommerce Portalo project in `~/.appbox/projects/portalo/`
+> (post flows/.appbox refactor, commits 3f60a48…c70ea8e), and the `/media/*`
+> routes it cites no longer exist. Kept as history; do not follow its routes
+> or screen inventory.
+
 **Status:** **COMPLETE** (2026-07-31). Settled with the operator 2026-07-31;
 landed in commit d327c60. Three JS-runtime sub-steps (2.2, 4.6, 5.6 — the
 serve.test.mjs / lint.mjs edits) were superseded by the Dart port in 4f9c458.

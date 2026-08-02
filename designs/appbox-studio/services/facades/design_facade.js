@@ -396,7 +396,6 @@ function viewerFor(d, L, t) {
     // Proto-mode screen picks for the composer tray's filmstrip (the tray
     // lives outside #design-viewer, so the viewer hands the hrefs over).
     protoPicks: mode === 'proto' ? Object.fromEntries(screens.map((s) => [s.id, withParams({ screen: s.id })])) : null,
-    strip: true,
     base, stubBase: STUB_BASE, contextBase,
     miniPanel,
     undoRedo: {
