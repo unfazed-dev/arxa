@@ -217,13 +217,22 @@ List<File> _walk(Directory d) => d
 /// artifact change; dispose on shutdown.
 class JsWorker {
   JsWorker._(this._tab, this._workerPageUrl, this._origin, this._artifactDir,
-      this._iconsDir, this._projectDir);
-  final CdpSession _tab;
+      this._iconsDir, this._projectDir, this._launchAttempts, this._chromePath);
+  // Not final: recovering from a dead browser means a NEW Chrome and a new
+  // session. [reload] alone cannot do it — it re-navigates this tab, and a tab
+  // whose browser has exited is not navigable, so the studio stayed wedged
+  // behind 500s until a human restarted it (task #64).
+  CdpSession _tab;
   final String _workerPageUrl;
   final String _origin;
   final String _artifactDir;
   final String? _iconsDir;
   final String? _projectDir;
+  // Kept from the boot call because replacing a dead browser has to launch the
+  // same Chrome the same way. [_chromePath] is also the poison point a test
+  // uses to make the replacement fail on cue.
+  final int _launchAttempts;
+  String? _chromePath;
   _ChromeHandle? _chrome;
 
   /// Boot a worker against the artifact served at [origin] (the Dart server's
@@ -250,8 +259,8 @@ class JsWorker {
       final tab = await handle.client.newTab();
       await tab.enable();
       await tab.navigateAndSettle(workerPageUrl, settleMs: 600);
-      final w = JsWorker._(
-          tab, workerPageUrl, origin, artifactDir, iconsDir, projectDir)
+      final w = JsWorker._(tab, workerPageUrl, origin, artifactDir, iconsDir,
+          projectDir, launchAttempts, chromePath)
         .._chrome = handle;
       await w._inject(
           _scanArtifact(artifactDir, origin, iconsDir, projectDir: projectDir));
@@ -312,11 +321,22 @@ class JsWorker {
     try {
       return await _dispatchOnce(method, fullPath,
           headers: headers, body: body, state: state);
-    } catch (e) {
-      if (!_isLostRealm(e)) rethrow;
-      stderr.writeln('[worker] the tab lost its globals ($e) — rebooting once');
-      await reload();
-      return _dispatchOnce(method, fullPath,
+    } catch (e, st) {
+      if (!_isLostRealm(e) && !_isTransportGone(e)) rethrow;
+      stderr.writeln('[worker] the worker stopped answering ($e) — '
+          'rebooting once');
+      try {
+        await reload();
+      } catch (rebootFailure) {
+        // A reboot can itself fail — Chrome is gone and refuses to come back.
+        // Letting that escape replaces the caller's diagnosis with a second,
+        // unrelated one, and on the watcher path it is an unhandled async
+        // error, which kills the whole server. The caller asked about the
+        // dispatch, so the dispatch failure is what it gets (task #64).
+        stderr.writeln('[worker] the reboot failed too ($rebootFailure)');
+        Error.throwWithStackTrace(e, st);
+      }
+      return await _dispatchOnce(method, fullPath,
           headers: headers, body: body, state: state);
     }
   }
@@ -334,6 +354,36 @@ class JsWorker {
     return (s.contains('__dispatch') && s.contains('is not a function')) ||
         s.contains('Execution context was destroyed') ||
         s.contains('Cannot find context with specified id');
+  }
+
+  /// True when the CDP *transport* failed — the browser process is gone, not
+  /// merely the tab's globals.
+  ///
+  /// [_isLostRealm] cannot see this case: a dead Chrome never answers, so what
+  /// comes back is cdp.dart's own 30s timeout (or, once the socket has dropped,
+  /// a closed-client error) with nothing about contexts or `__dispatch` in it.
+  /// That is why killing the worker's Chrome used to leave the studio answering
+  /// 500 to every request forever — the one place that reboots decided this was
+  /// somebody else's error and rethrew (task #64).
+  ///
+  /// Matched by TYPE, which keeps the same narrowness [_isLostRealm] is written
+  /// for by construction rather than by care: a bug thrown inside the artifact's
+  /// own JS arrives as a [CdpException] carrying that JS error, and no artifact
+  /// exception can ever be a socket or a CDP-command timeout. The timeout is
+  /// further pinned to cdp.dart's own message so that some future unrelated
+  /// `.timeout()` elsewhere in the call does not start triggering reboots.
+  static bool _isTransportGone(Object e) {
+    if (e is SocketException || e is WebSocketException) return true;
+    if (e is TimeoutException) {
+      return e.message?.startsWith('CDP command ') ?? false;
+    }
+    if (e is StateError) {
+      final m = e.message;
+      return m.contains('CdpClient is closed') ||
+          m.contains('after closing') ||
+          m.contains('StreamSink is closed');
+    }
+    return false;
   }
 
   Future<WorkerResponse> _dispatchOnce(
@@ -424,8 +474,61 @@ class JsWorker {
   /// passes with the guard removed. Measured, not assumed.
   int reloadRunsForTest = 0;
 
+  /// How many times a dead browser has been replaced with a live one. Same
+  /// reasoning as [reloadRunsForTest]: "the server answered again" also passes
+  /// whenever Chrome happened to survive, so the count is the contract.
+  int relaunchRunsForTest = 0;
+
   Future<void> _reloadOnce() async {
     reloadRunsForTest++;
+    // Navigating a tab whose browser has exited cannot work, and it is not even
+    // cheap to find out: cdp.dart never errors its pending commands when the
+    // socket drops, so each doomed call burns the full 30s timeout first. When
+    // the Chrome process is already reaped we know that before spending it.
+    if (_chrome?.exited ?? false) await _relaunchChrome();
+    try {
+      await _navigateInjectBoot();
+    } catch (e) {
+      // The other order: Chrome died while this reload was mid-flight, or died
+      // so recently that its exit has not been reaped yet. Either way a reload
+      // that gives up here leaves the studio permanently on 500s, which is the
+      // whole of task #64.
+      if (!_isTransportGone(e)) rethrow;
+      stderr.writeln('[worker] chrome is gone ($e) — launching a new one');
+      await _relaunchChrome();
+      await _navigateInjectBoot();
+    }
+  }
+
+  /// Replace the browser process, not just the page. Deliberately does NOT
+  /// re-run [boot]'s validation of `__boot`: [_navigateInjectBoot] does that,
+  /// and it is the caller here.
+  Future<void> _relaunchChrome() async {
+    relaunchRunsForTest++;
+    final dead = _chrome;
+    _chrome = null;
+    try {
+      await dead?.close();
+    } catch (_) {
+      // By hypothesis this browser is already gone; failing to close it
+      // politely must not stop its replacement from starting.
+    }
+    final handle = await _ChromeHandle.launch(
+        attempts: _launchAttempts, chromePath: _chromePath);
+    try {
+      final tab = await handle.client.newTab();
+      await tab.enable();
+      _tab = tab;
+      _chrome = handle;
+    } catch (e) {
+      // Same discipline as [boot]: a handle we cannot finish wiring up is a
+      // leaked Chrome and a leaked profile dir, not a spare.
+      await handle.close();
+      rethrow;
+    }
+  }
+
+  Future<void> _navigateInjectBoot() async {
     await _tab.navigateAndSettle(_workerPageUrl, settleMs: 600);
     await _inject(_scanArtifact(_artifactDir, _origin, _iconsDir,
         projectDir: _projectDir));
@@ -447,6 +550,21 @@ class JsWorker {
   /// navigation leaves behind. Test-only seam: the real trigger is a timing
   /// race, and a test that reproduces it by racing would be exactly the kind of
   /// load-dependent flake this work is trying to remove.
+  /// Kill the worker's Chrome, by pid and only by pid. Test-only: production
+  /// triggers this state by being OOM-killed or crashing, neither of which a
+  /// test can wait for. Never widen this to a pattern kill — the pattern also
+  /// matches every other design server's Chrome on the machine.
+  bool killChromeForTest() {
+    final handle = _chrome;
+    if (handle == null) return false;
+    return Process.killPid(handle.pid, ProcessSignal.sigkill);
+  }
+
+  /// Point every subsequent relaunch at a binary that exits immediately, so the
+  /// "the reboot failed too" branch is reachable without waiting for a real
+  /// Chrome to refuse to start. Same stand-in as the boot-retry tests use.
+  void breakRelaunchForTest() => _chromePath = '/bin/echo';
+
   Future<void> breakDispatchForTest() =>
       _tab.evaluate('delete globalThis.__dispatch');
 
@@ -459,11 +577,26 @@ class JsWorker {
 /// cdp.dart's CdpClient.launch args (keep in sync); launched here so the worker
 /// bridge can report a real Chrome pid without modifying cdp.dart.
 class _ChromeHandle {
-  _ChromeHandle(this.client, this.process, this.tmpDir);
+  _ChromeHandle(this.client, this.process, this.tmpDir) {
+    // The browser's own death is the only advance warning available. cdp.dart
+    // never errors its pending commands when the socket drops (and is not ours
+    // to change), so every call to a browser that is already gone costs the
+    // full 30s timeout before failing. Watching for the exit lets the reload
+    // path skip a navigation it knows cannot succeed (task #64).
+    unawaited(process.exitCode
+        .then((_) => _exited = true, onError: (_) => _exited = true));
+  }
   final CdpClient client;
   final Process process;
   final Directory tmpDir;
   int get pid => process.pid;
+
+  bool _exited = false;
+
+  /// True once the Chrome process has terminated. Never guesses: an unfinished
+  /// [Process.exitCode] means the browser may still be answering, so a false
+  /// here only says "no proof it is dead", not "it is alive".
+  bool get exited => _exited;
 
   /// Markers identifying a Chrome appbox launched: our own `--user-data-dir`
   /// prefixes under systemTemp. Narrow on purpose — they must never match a

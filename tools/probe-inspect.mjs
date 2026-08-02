@@ -15,8 +15,12 @@ const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const { chromium } = await import(
   path.join(REPO, 'skills/appbox-designer/runtime/node_modules/playwright-core/index.mjs'));
 const CHROME = process.env.APPBOX_CHROME || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
-import { resolveBase, waitFor, waitQuiet, trackTransitions } from './_probe_base.mjs';
+import { resolveBase, requireDisposableProject, waitFor, waitQuiet, trackTransitions } from './_probe_base.mjs';
 const BASE = resolveBase();
+// This probe locks/pins/unlocks the inspector and POSTs into chat context —
+// mutates whatever project BASE is serving. See _probe_base.mjs for why
+// this can't just trust --project and what "disposable" means here.
+await requireDisposableProject(BASE);
 // Every call site below reads the DOM immediately after. A flat 700ms was a
 // guess measured on an idle machine; under load the read landed mid-swap and
 // the probe reported regressions that were not there (#48/#50). Waiting for the

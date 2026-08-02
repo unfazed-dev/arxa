@@ -186,3 +186,134 @@ export function resolveBase(argv = process.argv.slice(2)) {
   }
   return resolved;
 }
+
+// ── refusing to mutate a project that isn't disposable ───────────────────
+//
+// WHY THIS EXISTS: probe-shell-chrome.mjs's flow-move (section F) and
+// probe-inspect.mjs both drive real POSTs into whatever project the target
+// server has bound as its projectRoot. `resolveBase` above stops a probe
+// from running against the WRONG SERVER by accident; it does nothing about
+// a probe running against the RIGHT SERVER while it happens to be serving
+// the user's real project — and that has corrupted real `portalo` data
+// three times, because the only defense was an operator remembering to
+// copy the project and pass --base every time. This makes that mechanical:
+// every mutation probe calls requireDisposableProject(BASE) before it goes
+// near Chrome, and it exits non-zero rather than let a click reach a
+// server that isn't demonstrably disposable.
+//
+// GET /__projects -> { current, boundProject, projects }.
+//
+//   `current` is NOT the boot-time-bound projectRoot; it's a live read of
+//   the global ~/.appbox/current marker file (design_server.dart's
+//   /__project_use handler says so outright: "the overlay itself rebinds
+//   on the next serve"). Two ways that lies:
+//     - a server booted with `--project <name>` never touches the marker,
+//       so `current` keeps reporting whatever it already said. Verified:
+//       `design serve ... --project portalo-probe` on a spare port still
+//       returned `current: "portalo"` from /__projects.
+//     - a server's marker can be flipped by ANOTHER process (POST
+//       /__project_use, or `appbox project use`) without restarting it,
+//       so `current` can report a disposable name while the server is
+//       still actually bound to the real project underneath.
+//   This guard used to read `current` anyway (no alternative existed) and
+//   documented that risk as accepted, not solved. It was then proven live:
+//   a server booted `--project portalo-endpointtest` with the marker left
+//   at `portalo` reported `current: "portalo"` — the SAFE-looking value —
+//   while actually bound to the non-disposable copy. `current` is not used
+//   below anymore; it's kept in this comment only as the reason the next
+//   field exists.
+//
+//   `boundProject` is the fix: the project this process resolved ONCE at
+//   boot (--project > APPBOX_PROJECT > the marker as it stood then), read
+//   straight from projectRoot. It is a per-process fact — no other process
+//   can flip it, and a server started with --project is not blind to it
+//   the way it is to `current`. Proven to disagree with `current` in
+//   exactly the dangerous direction (case above): `boundProject` correctly
+//   read "portalo-endpointtest" on that same request. This is what closes
+//   the gap the first paragraph left open — the risk noted above no longer
+//   applies to this guard, only to any other code still reading `current`.
+//
+// Disposable means `boundProject` ends in -probe or -test — the existing
+// convention (the incident writeup already called the safe copy
+// `portalo-probe`), and the one thing an operator can act on immediately:
+// the message below is the exact command that satisfies it.
+//
+// `boundProject: null` is a different case from "unknown": it's the server
+// stating, as a fact, that no project is overlaid (artifact-only serving).
+// Checked what a mutation probe could do to that: /__project_write (the
+// ONE channel every project write goes through — flow-move included; see
+// fixture_reader.js's writeProjectFixture) resolves `base = target project
+// ?? projectRoot` and returns `deny(409, 'no project overlaid')` when
+// `base` is null (design_server.dart _handleProjectWrite). Neither probe's
+// client code sends an explicit `project` override in the write body, so
+// with no project bound there is no file for a write to land in — the
+// server's own contract refuses it before this guard would ever need to.
+// Failing closed here would be refusing a target that literally cannot be
+// corrupted; this guard lets `boundProject: null` proceed, with a printed
+// note, instead of erroring on a state that isn't the danger it exists to
+// stop.
+//
+// A missing `boundProject` key entirely is neither of the above — it means
+// a server binary from before this field existed, and whether IT enforces
+// the same /__project_write refusal is genuinely unknown. That fails
+// closed, same as an unreachable server: absence of the fact is not the
+// fact "no project bound."
+const DISPOSABLE_RE = /-(?:probe|test)$/;
+
+export async function requireDisposableProject(base) {
+  let projects;
+  try {
+    const res = await fetch(`${base}/__projects`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    projects = await res.json();
+  } catch (e) {
+    // Unreachable, non-JSON — either way "cannot confirm," and cannot-
+    // confirm fails closed, same as an unsupported --flag above: a silent
+    // pass here is the exact bug this file exists to prevent, just moved
+    // one level up.
+    console.error(
+      `probe: could not confirm ${base} is serving a disposable project\n` +
+      `       (GET /__projects failed: ${e.message}).\n` +
+      `       Refusing to run a mutation probe against an unverified target.`);
+    process.exit(2);
+  }
+
+  if (!('boundProject' in projects)) {
+    // Older server binary, pre-boundProject. This is unknown, not null —
+    // do not treat it as "no project bound."
+    console.error(
+      `probe: could not confirm ${base} is serving a disposable project\n` +
+      `       (GET /__projects has no "boundProject" field — this server\n` +
+      `       binary predates that field). Refusing to run a mutation\n` +
+      `       probe against a target this guard can't read.`);
+    process.exit(2);
+  }
+
+  const { boundProject } = projects;
+
+  if (boundProject === null) {
+    // Stated fact, not missing information: nothing is overlaid, so
+    // /__project_write has nothing to write into either (see comment
+    // above). Nothing for a mutation probe to corrupt.
+    console.log(`probe target: ${base} has no project bound (artifact-only) — proceeding.`);
+    return;
+  }
+
+  if (typeof boundProject !== 'string' || !DISPOSABLE_RE.test(boundProject)) {
+    console.error(
+      `probe: ${base} is bound to project "${boundProject}", which is not\n` +
+      `       disposable (its name must end in -probe or -test). This\n` +
+      `       probe mutates whatever project it's pointed at — running it\n` +
+      `       here risks the exact corruption this guard exists to stop.\n` +
+      `       Make a disposable copy and serve THAT on a spare port:\n` +
+      `         cp -R ~/.appbox/projects/${boundProject} ~/.appbox/projects/${boundProject}-probe\n` +
+      `         dart run appboxd/bin/appbox.dart design serve designs/appbox-studio --project ${boundProject}-probe --port 4330\n` +
+      `       then run this probe with --base http://localhost:4330\n` +
+      `       (boundProject is fixed at boot and belongs to this process\n` +
+      `       alone, so --project is fine here — nothing to get out of\n` +
+      `       sync with, unlike the old current-marker recipe.)`);
+    process.exit(2);
+  }
+
+  console.log(`probe target: confirmed disposable project "${boundProject}" (boundProject)`);
+}

@@ -27,8 +27,12 @@ const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const { chromium } = await import(
   path.join(REPO, 'skills/appbox-designer/runtime/node_modules/playwright-core/index.mjs'));
 const CHROME = process.env.APPBOX_CHROME || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
-import { resolveBase, waitFor, trackTransitions } from './_probe_base.mjs';
+import { resolveBase, requireDisposableProject, waitFor, trackTransitions } from './_probe_base.mjs';
 const BASE = resolveBase();
+// Section F below clicks a live flow-move control — mutates whatever
+// project BASE is serving. See _probe_base.mjs for why this can't just
+// trust --project and what "disposable" means here.
+await requireDisposableProject(BASE);
 let b, fails = 0;
 const check = (n, ok, x = '') => { if (!ok) fails++; console.log(`  [${ok ? 'PASS' : 'FAIL'}] ${n}${x ? ' — ' + x : ''}`); };
 

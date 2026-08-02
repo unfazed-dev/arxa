@@ -205,12 +205,47 @@ class DesignServer {
   bool _stopped = false;
 
   final _sessions = <String, Map<String, dynamic>>{};
+
+  /// Timers, KEYED BY SESSION ID — the same shape as [_sessions] (task #53).
+  ///
+  /// This used to be a flat `timerId -> record` map shared by the whole
+  /// process, which leaked two ways at once: every request was handed every
+  /// other session's timers, and every response replaced the map wholesale, so
+  /// one user's reply deleted another user's running timer. `_sessions`, three
+  /// lines up, had always been keyed correctly; the timers beside it simply
+  /// never were.
   final _timers = <String, Map<String, dynamic>>{};
   late final Set<String> locales;
 
   /// Translation for the error surface only, read straight off disk so a dead
   /// worker cannot take the error page down with it (task #46).
   late final ErrorCatalog _errorCatalog;
+
+  /// Tail of the pending-request chain per session id — the per-session lock
+  /// behind [_withSessionLock].
+  final _sessionLocks = <String, Future<void>>{};
+
+  /// Run [body] with exclusive access to session [sid]'s stored state.
+  ///
+  /// Requests for DIFFERENT sessions still run concurrently — serializing all
+  /// of them would undo the multi-user separation task #53 just established.
+  ///
+  /// The gate is released in `whenComplete`, not on success: `_worker.dispatch`
+  /// can throw, and since task #51 it can throw *after* an 850ms reboot. A lock
+  /// released only on the happy path would wedge every later request for that
+  /// session — trading a lost update for a permanent hang, which is worse.
+  Future<T> _withSessionLock<T>(String sid, Future<T> Function() body) {
+    final prev = _sessionLocks[sid] ?? Future<void>.value();
+    final gate = Completer<void>();
+    _sessionLocks[sid] = gate.future;
+    return prev.then((_) => body()).whenComplete(() {
+      gate.complete();
+      // Only the tail clears the entry, or a slow request finishing after a
+      // newer one would drop a lock another request is still queued behind,
+      // and the map would leak an entry per session forever.
+      if (identical(_sessionLocks[sid], gate.future)) _sessionLocks.remove(sid);
+    });
+  }
 
   static Map<String, String> _headerMap(HttpRequest req) {
     final h = <String, String>{};
@@ -293,22 +328,29 @@ class DesignServer {
       final path = req.uri.path;
       final method = req.method;
 
+      // Every `return` in this try is `return await` on purpose. `return f();`
+      // inside a try hands the future back before it completes, so the catch
+      // below never sees its error — it escapes as an unhandled async error and
+      // takes the server process down instead of producing a 500. That is how a
+      // dead worker turned one bad request into a dead studio (task #64).
       if (path == '/__worker_page') {
-        return _serveFile(req, p.join(_workerAssetsDir, 'worker_page.html'),
+        return await _serveFile(req,
+            p.join(_workerAssetsDir, 'worker_page.html'),
             'text/html; charset=utf-8');
       }
       if (path.startsWith('/__worker_assets/')) {
         final rel = Uri.decodeComponent(path.substring('/__worker_assets/'.length));
-        return _serveFile(req, p.join(_workerAssetsDir, rel), _contentType(rel),
+        return await _serveFile(
+            req, p.join(_workerAssetsDir, rel), _contentType(rel),
             root: _workerAssetsDir);
       }
       if ((method == 'GET' || method == 'POST') && path == '/prefs/lang') {
-        return _handlePrefsLang(req);
+        return await _handlePrefsLang(req);
       }
       // Project write channel (the studio edits the current project): the JS
       // worker POSTs {path, body}; the write is confined to the project dir.
       if (method == 'POST' && path == '/__project_write') {
-        return _handleProjectWrite(req);
+        return await _handleProjectWrite(req);
       }
       // The dashboard's live project grid: every project in ~/.appbox with
       // its derived stage + honest output counts.
@@ -317,6 +359,20 @@ class DesignServer {
             ContentType.parse('application/json; charset=utf-8');
         req.response.write(jsonEncode({
           'current': currentProject(),
+          // `current` is a live read of the GLOBAL ~/.appbox/current marker,
+          // which is NOT this process's project: a server started with
+          // --project never touches the marker, and any other process can flip
+          // it while this one stays bound underneath. Anything asking "what
+          // would a write here actually hit?" must not use it — the probe
+          // guard (task #63) did, and therefore passed in precisely the case
+          // it existed to prevent.
+          //
+          // `boundProject` is that fact: the project resolved ONCE at boot
+          // (--project > APPBOX_PROJECT > the marker as it stood then) and
+          // held in projectRoot. null means no project is bound and the server
+          // is serving the artifact alone.
+          'boundProject':
+              projectRoot == null ? null : p.basename(projectRoot!),
           'projects': projectCards(),
         }));
         await req.response.close();
@@ -362,11 +418,11 @@ class DesignServer {
         return;
       }
       if (_matchRoute(method, path) != null) {
-        return _dispatch(req, method, path);
+        return await _dispatch(req, method, path);
       }
       if (path.startsWith('/assets/vendor/')) {
         final rel = Uri.decodeComponent(path.substring('/assets/vendor/'.length));
-        return _serveFile(req, p.join(_vendorDir, rel), _contentType(rel),
+        return await _serveFile(req, p.join(_vendorDir, rel), _contentType(rel),
             root: _vendorDir);
       }
       if (method == 'GET' && _tryServeArtifactFile(req, path)) return;
@@ -473,23 +529,46 @@ class DesignServer {
       _sessions[sid] = {};
       minted = true;
     }
-    final sessionData = Map<String, dynamic>.from(_sessions[sid] ?? {});    final prefs = _parsePrefs(cookies['kdh_prefs']);
+    final prefs = _parsePrefs(cookies['kdh_prefs']);
     final locale = _resolveLocale(
         locales, req.uri.queryParameters, prefs, headers['accept-language']);
-    final state = <String, dynamic>{
-      'locale': locale,
-      'session': {'id': sid, 'data': sessionData},
-      'timers': Map<String, dynamic>.from(_timers),
-    };
-    final resp = await _worker.dispatch(method, req.uri.toString(),
-        headers: headers, body: body, state: state);
-    if (resp.session != null) {
-      _sessions[sid] =
-          Map<String, dynamic>.from(resp.session!['data'] as Map? ?? {});
-    }
-    _timers
-      ..clear()
-      ..addAll(resp.timers.cast());
+    // SERIALIZED PER SESSION (task #55). Everything from reading the session to
+    // writing it back is one critical section, because it is a read-modify-write
+    // spanning an await and concurrent requests on one session were silently
+    // losing each other's writes — measured at 1 of 8 surviving.
+    //
+    // The trigger is ordinary studio use, not a stress test: every tile in the
+    // canvas is an iframe, `/build/screens/:surface` is a real route (not a
+    // static file), and one stage re-render fans out into ~20 concurrent GETs
+    // carrying the same session cookie. A canvas mutation pushes onto
+    // undoStacks.canvas and returns; the iframe requests already in flight then
+    // write back their older snapshot and erase the push. Undo afterwards pops
+    // nothing, so redo never enables — while the mutation itself already
+    // reached disk. That is #55's "redo never re-enabled" plus its data loss.
+    //
+    // The body read above stays OUTSIDE the lock deliberately: a slow client
+    // must not be able to hold a session's lock while it dribbles out a body.
+    final resp = await _withSessionLock(sid, () async {
+      final sessionData = Map<String, dynamic>.from(_sessions[sid] ?? {});
+      final state = <String, dynamic>{
+        'locale': locale,
+        'session': {'id': sid, 'data': sessionData},
+        // Only THIS session's timers cross into the worker. Sending the whole
+        // map meant a viewmodel could read a timer belonging to someone else.
+        'timers': Map<String, dynamic>.from(_timers[sid] ?? const {}),
+      };
+      final r = await _worker.dispatch(method, req.uri.toString(),
+          headers: headers, body: body, state: state);
+      if (r.session != null) {
+        _sessions[sid!] =
+            Map<String, dynamic>.from(r.session!['data'] as Map? ?? {});
+      }
+      // Store back under this session only. The old `_timers..clear()..addAll()`
+      // replaced the process-wide map on every single response, so two browsers
+      // using the studio at once destroyed each other's timers continuously.
+      _timers[sid!] = Map<String, dynamic>.from(r.timers);
+      return r;
+    });
 
     req.response.statusCode = resp.status;
     resp.headers.forEach((k, v) => req.response.headers.add(k, v));
@@ -633,14 +712,29 @@ class DesignServer {
     await req.response.close();
   }
 
+  // Both watchers debounce into here. The reload stays unawaited — a watcher
+  // that blocked for the ~850ms of a reboot would coalesce the next save into
+  // this one — but unawaited is not the same as unwatched: a reload that throws
+  // (the worker's Chrome died) is an unhandled async error, and one raised from
+  // a Timer callback has no handler anywhere above it, so it terminates the
+  // whole server. Saving a file could kill the studio outright, entirely
+  // independently of any request (task #64). Report it and keep serving; the
+  // next request through JsWorker.dispatch reboots the worker anyway.
+  void _scheduleReload() {
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 200), () {
+      if (_stopped) return;
+      unawaited(_worker.reload().catchError((Object e) {
+        stderr.writeln('[design-server] hot reload failed: $e');
+      }));
+    });
+  }
+
   void _startWatcher(String dir) {
     try {
       _watcherSub = Directory(dir).watch(recursive: true).listen((e) {
         if (_ignoreRe.hasMatch(e.path)) return;
-        _debounce?.cancel();
-        _debounce = Timer(const Duration(milliseconds: 200), () {
-          if (!_stopped) _worker.reload();
-        });
+        _scheduleReload();
       });
     } catch (_) {
       // watch unsupported — hot reload simply disabled.
@@ -653,10 +747,7 @@ class DesignServer {
     try {
       _projectWatcherSub = Directory(dir).watch(recursive: true).listen((e) {
         if (_ignoreRe.hasMatch(e.path)) return;
-        _debounce?.cancel();
-        _debounce = Timer(const Duration(milliseconds: 200), () {
-          if (!_stopped) _worker.reload();
-        });
+        _scheduleReload();
       });
     } catch (_) {
       // watch unsupported — hot reload simply disabled.
@@ -672,6 +763,20 @@ class DesignServer {
 
   /// Test-only; see [JsWorker.reloadRunsForTest].
   int get workerReloadRunsForTest => _worker.reloadRunsForTest;
+
+  /// Kill the worker's browser, the state task #64 recovers from.
+  /// Test-only; see [JsWorker.killChromeForTest].
+  bool killWorkerChromeForTest() => _worker.killChromeForTest();
+
+  /// Test-only; see [JsWorker.breakRelaunchForTest].
+  void breakWorkerRelaunchForTest() => _worker.breakRelaunchForTest();
+
+  /// Test-only; see [JsWorker.relaunchRunsForTest].
+  int get workerRelaunchRunsForTest => _worker.relaunchRunsForTest;
+
+  /// The worker's pid right now. [workerPid] is the one captured at boot and
+  /// reported in the startup JSON; this one follows a browser replacement.
+  int get currentWorkerPid => _worker.workerPid;
 
   Future<void> stop() async {
     if (_stopped) return;
@@ -721,6 +826,27 @@ Future<int> designServe(List<String> args) async {
       projectName != null && Directory(projectDir(projectName)).existsSync()
           ? projectDir(projectName)
           : null;
+  // Take over from the instance we are actually replacing — same artifact dir
+  // AND same port — and nothing else. Guarded on `a.port != 0` because port 0
+  // means "any free port": there is no incumbent to replace, and matching on a
+  // recorded 0 would make every ephemeral-port server a sibling of every other,
+  // which is the global-kill bug this task exists to remove.
+  if (!a.noWatch && a.port != 0) {
+    // stderr, not stdout: `--json` makes stdout a machine-readable stream (see
+    // the ready record below), and a prose line in front of it breaks every
+    // consumer parsing it. stderr keeps the human told in EVERY mode, which is
+    // the whole point of announcing — and matches how this file already routes
+    // diagnostics.
+    final replaced = sweepSiblingInstances(_osPid, resolved.dir,
+        port: a.port, announce: stderr.writeln);
+    // The incumbent's signal handler disposes a worker and reaps a Chrome tree
+    // before it releases the socket, so the port is NOT free the instant the
+    // signal is delivered. Binding on the same tick raced it and surfaced as a
+    // spurious exit 69. Bounded: if it never frees, fall through and let the
+    // bind below report "already in use" honestly.
+    if (replaced.isNotEmpty) await _awaitPortFree(a.host, a.port);
+  }
+
   try {
     srv = await DesignServer.start(
       artifactDir: resolved.dir,
@@ -748,7 +874,9 @@ Future<int> designServe(List<String> args) async {
   }
 
   if (!a.noWatch) {
-    registerServeInstance(srv.pid, srv.artifactDir);
+    // Register the BOUND port (srv.port), not the requested one — with `--port 0`
+  // the requested value is a placeholder and the bound value is the identity.
+  registerServeInstance(srv.pid, srv.artifactDir, port: srv.port);
   }
 
   if (a.asJson) {
@@ -762,7 +890,10 @@ Future<int> designServe(List<String> args) async {
     }));
   } else {
     for (final line in humanReadyLines(
-        url: srv.url, host: srv.host, artifactDir: srv.artifactDir)) {
+        url: srv.url,
+        host: srv.host,
+        artifactDir: srv.artifactDir,
+        port: srv.port)) {
       stdout.writeln(line);
     }
   }
@@ -783,11 +914,14 @@ Future<int> designServe(List<String> args) async {
   // the same way. SIGKILL is uncatchable by definition — _ChromeHandle
   // sweeps those leftovers at the next boot.
   //
-  // Only SIGINT sweeps siblings: "^C stops every instance serving this
-  // artifact" is deliberate, and must NOT spread to SIGTERM/SIGHUP, which
-  // stop just this one.
+  // Only SIGINT sweeps siblings, and the sweep is scoped to this artifact dir
+  // ON THIS PORT — a duplicate of exactly this instance, nothing else. It must
+  // NOT spread to SIGTERM/SIGHUP, which stop just this one.
   final intSub = ProcessSignal.sigint.watch().listen((_) {
-    if (!a.noWatch) sweepSiblingInstances(srv.pid, srv.artifactDir);
+    if (!a.noWatch) {
+      sweepSiblingInstances(srv.pid, srv.artifactDir,
+          port: srv.port, announce: stderr.writeln);
+    }
     shutdown(0);
   });
   final termSub = ProcessSignal.sigterm.watch().listen((_) => shutdown(0));
@@ -802,7 +936,10 @@ Future<int> designServe(List<String> args) async {
 
 // ── ready output (extracted for testing the --host 0.0.0.0 warning) ────────
 List<String> humanReadyLines(
-    {required String url, required String host, required String artifactDir}) {
+    {required String url,
+    required String host,
+    required String artifactDir,
+    required int port}) {
   final out = <String>[
     'appbox-designer serving $artifactDir',
     '→ $url',
@@ -810,9 +947,33 @@ List<String> humanReadyLines(
   if (host == '0.0.0.0' || host == '::') {
     out.add('  (bound to every interface — reachable from your network)');
   }
-  out.add(
-      '  watching for changes — Ctrl+C stops every instance of this design');
+  // Says what is actually true after task #69. The old line promised "stops
+  // every instance of this design", and the implementation delivered something
+  // even broader than that overclaim — it stopped every design server running,
+  // because the key ignored the port and every server here serves the same dir.
+  // The scope is now one instance, identified by dir AND port, so the banner
+  // names the port too.
+  out.add('  watching for changes — Ctrl+C stops this server, and any other '
+      'instance of this design on port $port');
   return out;
+}
+
+/// Wait (bounded) for [port] to become bindable again after the instance
+/// holding it was signalled. See the call site in [serve]: the incumbent tears
+/// down a Chrome tree before releasing the socket, so "signal delivered" is not
+/// "port free", and racing that produced a spurious exit 69.
+Future<void> _awaitPortFree(String host, int port,
+    {Duration timeout = const Duration(seconds: 5)}) async {
+  final deadline = DateTime.now().add(timeout);
+  while (DateTime.now().isBefore(deadline)) {
+    try {
+      final s = await ServerSocket.bind(host, port);
+      await s.close();
+      return;
+    } catch (_) {
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+    }
+  }
 }
 
 // ── helpers ──────────────────────────────────────────────────────────────
@@ -945,10 +1106,14 @@ String _contentType(String name) {
 Directory get serveRegistryDir =>
     Directory(p.join(Directory.systemTemp.path, 'appbox-designer-serve'));
 
-void registerServeInstance(int pid, String artifactDir) {
+/// Record this instance. [port] is the BOUND port, not the requested one —
+/// `--port 0` asks the OS for any free port, and a registry full of entries
+/// all claiming port 0 would collide with each other exactly the way the
+/// artifactDir-only key used to (see [sweepSiblingInstances]).
+void registerServeInstance(int pid, String artifactDir, {required int port}) {
   serveRegistryDir.createSync(recursive: true);
   File(p.join(serveRegistryDir.path, '$pid.json'))
-      .writeAsStringSync(jsonEncode({'artifactDir': artifactDir}));
+      .writeAsStringSync(jsonEncode({'artifactDir': artifactDir, 'port': port}));
 }
 
 void deregisterServeInstance(int pid) {
@@ -958,11 +1123,29 @@ void deregisterServeInstance(int pid) {
 }
 
 /// SIGINT stops EVERY instance serving the same artifact. For each sibling
-/// pidfile whose artifactDir matches, verify via `ps` that the pid is still a
-/// design-server process (pids get reused) before signalling; sweep stale ones.
-/// Returns the sibling pids that were signalled (for tests).
+/// pidfile whose artifactDir AND port both match, verify via `ps` that the pid
+/// is still a design-server process (pids get reused) before signalling; sweep
+/// stale ones. Returns the sibling pids that were signalled (for tests).
+///
+/// The key is (artifactDir, port), and BOTH halves are load-bearing (task #69).
+/// It used to be artifactDir alone, which sounds narrow and is not: in practice
+/// every server in this repo serves the same `designs/appbox-studio` dir, so
+/// the predicate was a constant and the sweep was global. Measured on the live
+/// registry while writing this: 14 pidfiles, every one of them the identical
+/// artifactDir. One ^C therefore SIGTERMed every design server on the machine —
+/// which is how the user's studio on 4319 died twice with nothing on screen but
+/// an exit code, and how a parallel agent's server was killed 3x from a session
+/// that never touched its path. Two servers on different designs, or the same
+/// design on two ports (comparing a design before/after a change side by side),
+/// are legitimate and must coexist.
+///
+/// [announce] receives a human line for every process actually signalled.
+/// Silently reaping someone else's server is the invisible-failure trap this
+/// codebase keeps getting bitten by, so the kill is always narrated.
 List<int> sweepSiblingInstances(int selfPid, String artifactDir,
-    {void Function(int pid)? kill}) {
+    {required int port,
+    void Function(int pid)? kill,
+    void Function(String line)? announce}) {
   final killed = <int>[];
   final files = serveRegistryDir.existsSync()
       ? serveRegistryDir.listSync().whereType<File>().toList()
@@ -978,6 +1161,16 @@ List<int> sweepSiblingInstances(int selfPid, String artifactDir,
       continue;
     }
     if (entry['artifactDir'] != artifactDir) continue;
+    // `port` round-trips through JSON as a num, so compare as int — a silent
+    // type mismatch here would make the predicate never match and turn the
+    // takeover into a mystery "address already in use".
+    final otherPort = (entry['port'] as num?)?.toInt();
+    // An entry written before the port was recorded cannot be PROVEN to be the
+    // instance we are replacing, and this registry is a graveyard of stale
+    // files — a wrong guess here kills a live server someone is using. So a
+    // portless entry is never signalled; it is only reaped once `ps` says its
+    // pid is gone (handled below).
+    if (otherPort != null && otherPort != port) continue;
     try {
       final r = Process.runSync('ps', ['-p', '$other', '-o', 'command=']);
       if (r.exitCode != 0) {
@@ -986,10 +1179,13 @@ List<int> sweepSiblingInstances(int selfPid, String artifactDir,
         } catch (_) {}
         continue;
       }
+      if (otherPort == null) continue; // alive, but not provably ours
       final cmd = (r.stdout as String).trim();
       if (cmd.contains('appbox') ||
           cmd.contains('design_server') ||
           cmd.contains('design serve')) {
+        announce?.call(
+            'stopping the existing instance of $artifactDir on port $port (pid $other)');
         if (kill != null) {
           kill(other);
         } else {

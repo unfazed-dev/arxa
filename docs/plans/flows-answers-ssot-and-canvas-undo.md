@@ -1107,9 +1107,186 @@ corrupted, because it checks that flows.json **agrees with** `emitFlows(answers)
 correctness. The gate cannot catch a bad edit that went through the supported
 write path; only a reference snapshot or a human can.
 
-**Repair:** `from`/`to`/`trigger` on the two swapped `flow-onboarding` edges
+**Repair (first time):** `from`/`to`/`trigger` on the two swapped `flow-onboarding` edges
 restored from the `pre-fanout` snapshot; every other key (`action`, `element` —
 this session's legitimate work, which a wholesale snapshot restore would have
 reverted) preserved. Re-emitted from answers.json; flows.json now
 `splash → startup → auth`; gate PASS; **registry kits 8/10 survived the re-emit**,
 which incidentally validates the #52 `mergeRegistry` fix on real data.
+
+---
+
+# Session 4 — #53, a new lost-update bug, #44; #55 still open
+
+## #53 — timers were process-wide
+
+`design_server.dart` shipped the ENTIRE `_timers` map into every request and
+then ran `_timers..clear()..addAll(resp.timers)` on every response — so two
+browsers using the studio at once read each other's timers and destroyed each
+other's on every request. `_sessions`, declared three lines above, had always
+been keyed by session id; the timers beside it simply never were. Now keyed the
+same way.
+
+**Test 13 broke the moment it was fixed, and that was correct.** It fired
+cookie-less requests — each of which mints a NEW session — so it only ever
+passed because the map was global. It was asserting the bug. It now carries the
+session cookie, which is what "timers survive a reload" was always supposed to
+mean.
+
+**The new regression test had to be rescued from vacuity.** The first version
+asserted "after B's traffic, A still sees a timer" — and **passed with the bug
+fully restored**, because B starts a `rest` timer too, so A read B's timer under
+the same id and the check never noticed the swap. It now discriminates by VALUE:
+A extends to ~45s, B stays at ~30s, and A reading 30 proves A is on B's clock.
+Red-first output is exactly `Expected: >35, Actual: 30`.
+
+## A new bug, found while chasing #55: lost session updates
+
+`_dispatch` read `_sessions[sid]`, awaited the worker, then wrote back — a
+read-modify-write spanning an await. Concurrent requests on ONE session
+therefore clobbered each other.
+
+**Measured, not argued:** 8 sequential `/timer/extend` calls all land; 8
+concurrent ones on the same session land **1 of 8**. Seven of eight session
+writes were being destroyed.
+
+This is not a stress-test artifact. Every canvas tile is an iframe and
+`/build/screens/:surface` is a real route (`app.routes.js:36` — checked, because
+"it's probably static" was exactly the kind of assumption that died three times
+earlier in this work), so ONE stage re-render fans out into ~20 concurrent
+session-writing GETs.
+
+Fixed with a per-session lock (`_withSessionLock`): requests for different
+sessions still run concurrently, so #53's separation is preserved; the body read
+stays outside the lock so a slow client cannot hold it; the gate releases in
+`whenComplete`, because `_worker.dispatch` can throw — and since #51 it can throw
+*after* an 850ms reboot — and a lock released only on success would trade a lost
+update for a permanent hang.
+
+## #55 — NOT fixed. Four causes eliminated.
+
+The lock did not fix it, and the honest report is that this was checked rather
+than assumed:
+
+| hypothesis | verdict |
+|---|---|
+| probe timing / view transitions | fixed in session 3; failures persist |
+| latency (write slower than the wait) | **refuted** — still fails at a 25s timeout |
+| lost session update | fixed and proven; failures persist |
+| stale prefetched fixture cache | **refuted** — `writeFlowsDual` busts the cache (no `project` arg) |
+
+What is established: after undo, **redo never enables and the flow move is never
+reverted**, no matter how long you wait. So #55 is a state defect in the
+undo path, not a race and not a rendering lag. Its title ("disabled-attribute
+re-render lags the async write") is now known to be wrong and should be changed.
+
+**One number needs a caveat rather than a headline.** Solo failures went 3/8
+before the lock to 7/8 after. That reads as a regression, but the two runs were
+not comparable: the project had drifted differently in each, and drift changes
+which tile the probe nudges. Treat it as "not improved", not as "made worse".
+
+## #62 — the probes mutate the user's real project
+
+`probe-shell-chrome` performs a genuine flow move against whatever project the
+studio serves. When undo fails, that mutation is permanent — portalo's
+`flow-onboarding` has now been corrupted three times by probe runs and repaired
+three times by hand. Mutation probes must run against a disposable copy. Until
+they do, every probe run is a potential data-loss event, and that is a worse
+problem than the flake they were written to catch.
+
+## #44 — recorded, in ADR-0002 itself
+
+The inspector pane needs no sixth island, and the ADR now says so *and why*: all
+of its state (hover/lock/unlock) already crosses the wire, `inspect.js` (island
+3) does the DOM observation, and the pane is server-rendered Nunjucks + htmx.
+The test for an island is "does this observe, measure or animate" — a panel that
+displays session state does not. The absence of an amendment is itself a
+decision, so it is written down rather than left to be re-derived.
+
+## Verification
+
+`dart analyze lib/ test/` clean · **1026/1026 `dart test`, twice consecutively**
+· `ds-check` clean (five islands) · `gate intake --project portalo` PASS ·
+portalo repaired to `splash → startup → auth`. Red-first proof for #53 and for
+the lost-update fix.
+
+## Still open
+
+- **#55** — real, reproducible, four causes eliminated, root cause unknown.
+  **Superseded — see Session 5 below: it was the lost-update bug all along, and
+  the fix in this session closed it. I did not connect the two at the time.**
+- **#62** — probes mutate live user data.
+- **#6** — Slice B story-mapper/moodboarder wiring. This is unbuilt FEATURE
+  work, not a defect; it was deliberately not attempted here.
+- Nothing analyzes generated Dart (see above).
+
+# Session 5 — verifying the four claims I asked the user to hand-test
+
+The user was told to exercise four things. Verifying them myself first found
+that one instruction was unactionable, one of my own probes was vacuous, and
+#55 — filed as open — was already closed by the fix shipped in Session 4.
+
+## #55 is CLOSED, and the lost-update fix is what closed it
+
+Session 4 fixed a lost session update (read → `await` → write, with ~20 iframe
+GETs sharing one cookie) and separately recorded "#55 — NOT fixed, root cause
+unknown". Those were the same bug. The write that gets lost is the push onto
+`undoStacks.canvas`: the flow move reaches disk, the concurrent iframe GETs
+write back their pre-move snapshot, the stack is empty, undo pops nothing, redo
+never enables, and the project stays mutated. That is the exact symptom pair.
+
+Proved by neutering, not by observing a pass. `_withSessionLock` was made a
+pass-through (`return body();`) and the SAME concurrent load re-run:
+
+| | checks | fail | warn | disposable `flows.json` |
+|---|---|---|---|---|
+| lock intact, 3 concurrent probes | 82 · 82 · 82 | 0 | 0 | round-trips to baseline |
+| lock neutered, 3 concurrent probes | 82 · 82 · **74** | 3 | 3 | **corrupted** (`adcad8af` ≠ `5a9426d5`) |
+
+The neutered failures are #55 verbatim — `[FAIL] redo enabled after stepping
+back` twice, `[FAIL] undo enabled once the canvas stack is non-empty` once (the
+push lost before undo was even reached), plus the 74-check truncated run that
+was Session 3's abort signature. The corrupted copy is the data-loss half of
+#55 reproducing on demand. Restore verified byte-identical; `dart analyze`
+clean.
+
+## #62 is closed in practice: probes run against a disposable copy
+
+`~/.appbox/projects/portalo-probe`, a `cp -R` of the real project, served on a
+second port; `resolveBase()` already honours `APPBOX_BASE`, so no probe changed.
+Across four probe runs (one solo, three concurrent, three more neutered) the
+real `portalo/intake/flows.json` stayed `5a9426d5…` — byte-identical. This is
+the mechanism #62 asked for; what remains is making it the default rather than
+a thing the operator remembers to do.
+
+## Two errors of mine, both caught by checking at the layer of the claim
+
+**The #53 test instruction was unactionable.** I told the user to compare timers
+across two browser profiles. `appbox-studio` contains zero timers — `/timer` is
+the *hello-hda* fixture's route. The fix is real and Dart-proven; the observation
+recipe was fiction. A fix being correct says nothing about whether the
+instructions for seeing it are.
+
+**My first #46 probe reported FAIL on a real feature.** It patched
+`errorSurface.noRoute`; the key is `errorSurface.notFound`, so
+`replace(undefined, …)` was a no-op and the unchanged page read as "cached".
+Re-run with the right key: the patched string appears on the very next request
+with no restart. Same failure shape as the vacuous assertions in Sessions 3–4 —
+a check aimed slightly off its target reports confidently about nothing.
+
+## Verification
+
+49/49 `dart test` on the three relevant files — including `51: a lost
+__dispatch is rebooted`, `51: concurrent reloads coalesce`, `53: one session's
+request cannot wipe another session's timer`, and both `session_race_test`
+cases. #31's bounded retry **fired for real** during that run (Chrome died on
+attempts 1 and 2 and the retry absorbed it) — the flake reproducing and being
+handled, not simulated. #46 verified on four axes: HTML page, 404, `?lang=` and
+`Accept-Language` both switching text and `<html lang>`, `Vary` present.
+
+## Still open
+
+- **#6** — Slice B story-mapper/moodboarder wiring. Unbuilt feature work.
+- Nothing analyzes generated Dart (the parse gate covers syntax, not resolution).
+- **#62 residue** — the disposable copy is operator discipline, not enforced by
+  the probe harness. A probe pointed at a real project should refuse to run.

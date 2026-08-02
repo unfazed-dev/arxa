@@ -91,6 +91,17 @@ class CdpClient {
   bool _closed = false;
   Directory? _tmpDir;
 
+  /// Pid of the browser on the `open -g` path, where there is no [Process].
+  /// Resolved from the profile dir at launch — see [launch].
+  int? _chromePid;
+
+  /// The unique `--user-data-dir` this client launched Chrome with, and the pid
+  /// that owns it. Both null for [connect] (someone else's browser, not ours to
+  /// kill). Exposed so the teardown test can assert what actually happened to
+  /// the process and the profile, rather than that `close()` returned.
+  Directory? get userDataDir => _tmpDir;
+  int? get chromePid => _chromePid ?? _chrome?.pid;
+
   CdpClient._(this._chrome, this._ws) {
     _ws.listen(
       _onData,
@@ -144,6 +155,13 @@ class CdpClient {
       final ws = await WebSocket.connect(wsUrl);
       final client = CdpClient._(null, ws);
       client._tmpDir = tmpDir;
+      // `open` hands back no Process, so close() had nothing to kill and fell
+      // back to asking Chrome nicely + a pattern kill — which did not always
+      // land: a 6-launch lens storm left 2 Chromes resident. DevToolsActivePort
+      // is already written by here, so the browser certainly exists, and the
+      // profile dir is unique to this launch, so its pid is resolvable now.
+      final owners = _pidsOwningProfile(tmpDir.path, browserOnly: true);
+      if (owners.isNotEmpty) client._chromePid = owners.first;
       return client;
     }
 
@@ -160,6 +178,69 @@ class CdpClient {
   static String _chromeAppBundle(String exePath) {
     final idx = exePath.indexOf('.app/');
     return idx < 0 ? exePath : exePath.substring(0, idx + 4);
+  }
+
+  /// Pids whose command line carries `--user-data-dir=[dir]`.
+  ///
+  /// Same `ps` shape and same `--type=` exclusion as
+  /// `_ChromeHandle.sweepOrphans`, deliberately: "who owns this profile" should
+  /// have one convention in this codebase, not two. [browserOnly] drops the
+  /// helpers (they all carry `--type=`), leaving the single process that owns
+  /// the profile — that is the one worth remembering as a pid. At teardown we
+  /// want the helpers too, since a live helper still holds files in the dir.
+  static List<int> _pidsOwningProfile(String dir, {bool browserOnly = false}) {
+    final ProcessResult ps;
+    try {
+      ps = Process.runSync('ps', ['-eo', 'pid=,command=']);
+    } catch (_) {
+      return const []; // no ps (unlikely) — degrade, never crash a teardown.
+    }
+    if (ps.exitCode != 0) return const [];
+    final needle = '--user-data-dir=$dir';
+    final out = <int>[];
+    for (final line in (ps.stdout as String).split('\n')) {
+      final at = line.indexOf(needle);
+      if (at < 0) continue;
+      // Whole dir, not a prefix: `appbox-cdp-AB` must not claim `…-ABC`'s pid.
+      final rest = line.substring(at + needle.length);
+      if (rest.isNotEmpty && !rest.startsWith(' ')) continue;
+      if (browserOnly && line.contains('--type=')) continue;
+      final pid = int.tryParse(line.trimLeft().split(RegExp(r'\s+')).first);
+      if (pid != null) out.add(pid);
+    }
+    return out;
+  }
+
+  /// Wait until nothing holds [dir] any more, SIGKILLing by pid whatever still
+  /// does.
+  ///
+  /// This replaces the old `pkill -f <dir>` fallback. The rescan is the whole
+  /// point: it does not depend on launch-time pid resolution having succeeded,
+  /// so it still covers the case the pattern kill existed for — by pid only,
+  /// which the standing rule against broad `pkill -f` requires.
+  ///
+  /// Waiting (rather than firing and returning) is what makes the leak
+  /// observable: `Browser.close` returns on acknowledgement, not on exit, and
+  /// the recursive delete below fails while a process is still writing into the
+  /// profile. Bounded, because a `close()` that can hang forever would be a
+  /// worse bug than the leak — on timeout we delete anyway and leave the
+  /// straggler to `sweepOrphans`.
+  static Future<void> _awaitProfileReleased(
+    String dir, {
+    Duration timeout = const Duration(seconds: 3),
+  }) async {
+    final deadline = DateTime.now().add(timeout);
+    while (true) {
+      final owners = _pidsOwningProfile(dir);
+      if (owners.isEmpty) return;
+      for (final pid in owners) {
+        try {
+          Process.killPid(pid, ProcessSignal.sigkill);
+        } catch (_) {}
+      }
+      if (!DateTime.now().isBefore(deadline)) return;
+      await Future.delayed(const Duration(milliseconds: 25));
+    }
   }
 
   /// Read the DevTools ws URL from the DevToolsActivePort file Chrome writes in
@@ -355,14 +436,18 @@ class CdpClient {
     }
     await _ws.close();
     _chrome?.kill(ProcessSignal.sigkill);
-    // Fallback: if Chrome was open-launched and Browser.close didn't end it,
-    // kill any process still holding our temp user-data-dir.
-    if (_chrome == null && _tmpDir != null) {
+    // The open-launched browser now has a pid too, so it dies the same way the
+    // direct-exec one always could, instead of only being asked to leave.
+    if (_chromePid != null) {
       try {
-        await Process.run('pkill', ['-f', _tmpDir!.path]);
+        Process.killPid(_chromePid!, ProcessSignal.sigkill);
       } catch (_) {}
     }
     if (_tmpDir != null) {
+      // Only ours ever carries this dir, so nothing else can be caught here —
+      // and close() does not return until it is genuinely unowned, which is
+      // both what the delete needs and what makes a leak assertable.
+      await _awaitProfileReleased(_tmpDir!.path);
       try {
         await _tmpDir!.delete(recursive: true);
       } catch (_) {}

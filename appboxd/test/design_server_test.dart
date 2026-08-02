@@ -33,6 +33,17 @@ class _Resp {
   _Resp(this.status, this.body, this.headers);
 }
 
+/// The `kdh_sid` cookie from a response, formatted to send straight back as a
+/// `cookie:` header. Needed because [_get]/[_post] open a fresh HttpClient per
+/// call and keep no cookie jar — so without this, every request is a NEW
+/// session, and any test about per-session state is really testing global state.
+String? _sidCookie(_Resp r) {
+  final sc = r.headers['set-cookie'];
+  if (sc == null) return null;
+  final m = RegExp(r'kdh_sid=([^;,]+)').firstMatch(sc);
+  return m == null ? null : 'kdh_sid=${m.group(1)}';
+}
+
 Future<_Resp> _get(String url, {Map<String, String>? headers}) async {
   final client = HttpClient();
   try {
@@ -150,7 +161,7 @@ void main() {
       final dir = serveRegistryDir;
       // clean any stale entries for this test pid
       deregisterServeInstance(999901);
-      registerServeInstance(999901, '/tmp/art-A');
+      registerServeInstance(999901, '/tmp/art-A', port: 4001);
       expect(File(p.join(dir.path, '999901.json')).existsSync(), isTrue);
       deregisterServeInstance(999901);
       expect(File(p.join(dir.path, '999901.json')).existsSync(), isFalse);
@@ -159,12 +170,13 @@ void main() {
     test('14: sweep targets only same-artifact siblings (no real kill)', () {
       // Use fake pids that no real process owns → sweep deletes the stale
       // pidfiles (the ps check fails) rather than signalling anything live.
-      registerServeInstance(999902, '/tmp/art-sweep');
-      registerServeInstance(999903, '/tmp/art-sweep');
-      registerServeInstance(999904, '/tmp/art-other');
+      registerServeInstance(999902, '/tmp/art-sweep', port: 4001);
+      registerServeInstance(999903, '/tmp/art-sweep', port: 4001);
+      registerServeInstance(999904, '/tmp/art-other', port: 4001);
       final dir = serveRegistryDir;
       try {
-        final killed = sweepSiblingInstances(999902, '/tmp/art-sweep');
+        final killed =
+            sweepSiblingInstances(999902, '/tmp/art-sweep', port: 4001);
         // 999903 is a same-artifact sibling; 999904 is a different artifact
         // (never considered). Neither pid is live → both stale files swept.
         expect(killed, isEmpty);
@@ -173,6 +185,9 @@ void main() {
         expect(File(p.join(dir.path, '999904.json')).existsSync(), isTrue,
             reason: 'different-artifact entry untouched');
       } finally {
+        // 999902 is the sweep's own selfPid, so the sweep skips it and it was
+        // being left behind in the shared registry dir on every run.
+        deregisterServeInstance(999902);
         deregisterServeInstance(999903);
         deregisterServeInstance(999904);
       }
@@ -183,13 +198,19 @@ void main() {
   group('ready output', () {
     test('11: --host 0.0.0.0 prints the every-interface warning', () {
       final lines = humanReadyLines(
-          url: 'http://localhost:5000/', host: '0.0.0.0', artifactDir: '/x');
+          url: 'http://localhost:5000/',
+          host: '0.0.0.0',
+          artifactDir: '/x',
+          port: 5000);
       expect(lines.join('\n'), contains('bound to every interface'));
     });
 
     test('11: loopback host omits the warning', () {
       final lines = humanReadyLines(
-          url: 'http://127.0.0.1:5000/', host: '127.0.0.1', artifactDir: '/x');
+          url: 'http://127.0.0.1:5000/',
+          host: '127.0.0.1',
+          artifactDir: '/x',
+          port: 5000);
       expect(lines.join('\n'), isNot(contains('bound to every interface')));
     });
   });
@@ -349,9 +370,18 @@ void main() {
     });
 
     test('13: server-side timers survive a reload', () async {
-      // /timer starts the 'rest' timer at 30s (Dart-held state).
-      await _get('${srv!.url}timer');
-      final before = await _get('${srv!.url}timer/tick');
+      // NOW CARRIES THE SESSION COOKIE, and that is the point. This test used
+      // to fire cookie-less requests, each of which mints a NEW session — so it
+      // only ever passed because `_timers` was a process-wide map every session
+      // could read (task #53). It was asserting the bug, not the feature.
+      // Keying the timers per session broke it immediately, which is exactly
+      // what a test resting on a defect should do when the defect is fixed.
+      final first = await _get('${srv!.url}timer');
+      final cookie = _sidCookie(first);
+      expect(cookie, isNotNull, reason: 'server must mint a session cookie');
+      final asSessionA = {'cookie': cookie!};
+
+      final before = await _get('${srv!.url}timer/tick', headers: asSessionA);
       expect(before.status, 200);
       final remainRe = RegExp(r'>(\d+)s<');
       final m1 = remainRe.firstMatch(before.body);
@@ -359,7 +389,7 @@ void main() {
       final n1 = int.parse(m1!.group(1)!);
       // Reload (re-imports modules; Dart _timers untouched).
       await srv!.reload();
-      final after = await _get('${srv!.url}timer/tick');
+      final after = await _get('${srv!.url}timer/tick', headers: asSessionA);
       expect(after.status, 200);
       final m2 = remainRe.firstMatch(after.body);
       expect(m2, isNotNull);
@@ -367,6 +397,49 @@ void main() {
       // Timer survived: still ~30 (within the reload window, not 0/reset).
       expect(n2, lessThanOrEqualTo(n1));
       expect(n2, greaterThan(0), reason: 'timer survived the reload');
+    });
+
+    test("53: one session's request cannot wipe another session's timer",
+        () async {
+      // The leak had two halves and this covers the damaging one. Every
+      // response used to run `_timers..clear()..addAll(resp.timers)` — replacing
+      // the WHOLE process-wide map with whatever one session's worker returned.
+      // Two people using the studio at once therefore deleted each other's
+      // running timers on every request, continuously.
+      // The assertion must discriminate by VALUE, not by presence. Checking
+      // only "A still sees a timer" passes with the bug fully restored, because
+      // B starts a 'rest' timer too — A then reads B's timer under the same id
+      // and the check never notices the swap. Verified: that weaker version
+      // stayed green when the process-wide map was put back.
+      //
+      // So A extends its timer to ~45s while B's stays at ~30s. Now A reading
+      // 30 means A is reading B's clock.
+      final remainRe = RegExp(r'>(\d+)s<');
+      int remaining(_Resp r) {
+        final m = remainRe.firstMatch(r.body);
+        expect(m, isNotNull, reason: 'no remaining in body: ${r.body}');
+        return int.parse(m!.group(1)!);
+      }
+
+      final a = await _get('${srv!.url}timer'); // starts 'rest' at 30
+      final aCookie = _sidCookie(a);
+      expect(aCookie, isNotNull);
+      final asA = {'cookie': aCookie!};
+      final aExtended = await _post('${srv!.url}timer/extend', '', headers: asA);
+      final aBefore = remaining(aExtended); // ~45
+      expect(aBefore, greaterThan(35), reason: "A's timer was extended");
+
+      // Session B: a different browser (no cookie → a fresh session, 30s).
+      final b = await _get('${srv!.url}timer');
+      final bCookie = _sidCookie(b);
+      expect(bCookie, isNot(equals(aCookie)), reason: 'B is a distinct session');
+      await _get('${srv!.url}timer/tick', headers: {'cookie': bCookie!});
+
+      // A must still be on ITS OWN clock. Under the process-wide map, B's
+      // response replaced the whole map and A dropped to ~30.
+      final aAfter = remaining(await _get('${srv!.url}timer/tick', headers: asA));
+      expect(aAfter, greaterThan(35),
+          reason: "B's traffic replaced A's timer (A now reads B's clock)");
     });
 
     test('404 for unknown route', () async {

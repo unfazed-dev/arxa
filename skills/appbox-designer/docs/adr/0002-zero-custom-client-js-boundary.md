@@ -117,3 +117,32 @@ parent-side island. The boundary otherwise stands: five named islands
 (`canvas.js`, `drag.js`, `inspect.js`, `flowwalk.js`, `explode.js`),
 `allowEval:false`, no inline scripts, and the zero-custom-client-JS lint over
 `designs/appbox-studio` still passes clean.
+
+**Not an amendment (2026-08-02) — the inspector pane (D16).** Recorded here
+because the absence of an amendment is itself a decision someone will re-open,
+and the reasoning should not have to be reconstructed.
+
+The inspector pane adds a fourth activity-panel view (`/design/inspector`)
+showing the element the user is hovering or has locked. That is new UI with new
+state — hover, lock, unlock — and it would be reasonable to assume new client
+JS, hence a sixth island. It needs none, so the island count stays at five.
+
+Why it needs none: every piece of state it has already crosses the wire.
+`inspect.js` (island 3, already amended in) is what observes the DOM inside the
+stub iframe; it reports hover and click to the parent through the existing
+channel, and the pane is rendered SERVER-SIDE from `d.inspectorHover` /
+`d.inspectorLock` in the session. The pane is Nunjucks and htmx like every other
+panel: an `hx-get` swaps it, `hx-post` unlocks it. Nothing in it observes,
+measures or animates, which is the whole test for whether an island is
+unavoidable (the canvas needed one because cursor-anchored zoom cannot be
+expressed as an HTTP request; a pane that displays session state can).
+
+The behavioural rule the pane encodes — **locked wins**: while a lock is held a
+hover changes nothing, and unlocking promotes the locked element into the hover
+slot — is also server-side, in `design_facade.js`. It is worth naming because it
+was got wrong once: recording hovers while locked meant an element merely
+brushed past on the way to the unlock button became the thing displayed after
+unlocking, discarding the element the user had deliberately locked.
+
+So: five named islands, unchanged. Adding a panel is not adding an island, and
+the boundary only moves when something genuinely cannot be said in hypermedia.
