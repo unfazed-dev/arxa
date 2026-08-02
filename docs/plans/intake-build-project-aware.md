@@ -120,3 +120,75 @@ Give story-mapper and moodboarder a project-side home:
 
 Until then those three panels legitimately show studio content, and the
 findings doc should say so rather than calling them unfinished migration.
+
+### Slice B schema spec (designed 2026-08-02, not implemented)
+
+Design principle: bake denormalisation (ids, counts, computed src paths) in
+at **emit** time, the job `generate.mjs` does for the studio fixture. Every
+new `project_repository.js` reader is then a dumb field-selector and
+`context()`'s output shape cannot change.
+
+All five live under the `intake/` shell — `project.dart:4-6` documents it as
+holding "answers, brief, registry, flows, **story-map outputs**". Same
+`readProjectFixture('intake/X.json')` pattern already used by
+`registry()`/`flows()`. Nothing goes under `build/` (stage trap above).
+
+**1. `personas.json`** — `[{id, name, role, goals[], frustrations[],
+contexts[], proficiency, accessibility, provenance}]`, matching the seed's
+9 keys exactly. **Not derivable from `answers.json`** — `audience` is one
+JTBD sentence with no name/role/goals. **Requires a new interview
+question**; generating personas from `audience` is the confident fiction
+§22 forbids. Empty: `[]`.
+
+**2. `map.json`** — `{releases[{name, stories, provenance}], epics[{id,
+name, storyCount, provenance, features[{id, name, surfaceId,
+stories[{id, name, priority, release, provenance}]}]}], counts{epics,
+features, stories, must, should, could, byRelease}, statuses{storyId:
+state}}`.
+Story ids must be **content-derived** —
+`slug(epic).slug(feature).slug(story)`, not the seed's `s-1..s-34` which is
+sequential across the whole document and renumbers unrelated stories on any
+insert. Collision suffix `-2`/`-3` applies only to colliding entries.
+Not derivable from `answers.json` — story-mapper's own elicitation.
+
+**3. `moodboard.json`** — `{curated, method, boards[{id, title, slice,
+informs, references[{name, url, grade, shot{file, caption, id, src}, steal,
+why, provenance}]}], counts{boards, references, shots}}`. `shot.id` =
+`<boardId>--<file-no-ext>`, `shot.src` =
+`/assets/images/moodboard/<boardId>/<file>`, both precomputed as
+`generate.mjs` does. Note the seed's top-level `moodboard.provenance` is
+free-text methodology, **not** the `client|founder|inferred` enum — renamed
+`method` here, with real per-reference provenance. `board.file` (a
+studio-authoring markdown pointer) is dropped.
+
+**4. `direction.json`** — `{adjectives[{value, provenance}],
+avoids[{value, provenance}], references[{board, note}]}`.
+`answers.json.direction` already matches structurally but carries **one**
+provenance for the whole field while the facade wants per-item; promote the
+field's provenance onto each item at emit time. `references` stays `[]`
+until a moodboard exists. **Largely landed in Slice A** — the facade now
+reads `answers.json` directly; this file only matters if direction grows
+beyond what intake elicits.
+
+**5. Surfaces priority/release — extend `registry.json` entries.** Decided
+by existing shipped intent, not preference: `intake.dart:645-654`
+(`seedFromBrief`) already treats `priority`/`release`/`states` as additive
+optional registry columns, commented *"appbox-story-mapper emits
+priority/release"*. `gate_intake` reads only `id,label,shell,comp,route,
+surface` (+`states`/`requiresAuth`/`tab`), so additive fields are safe. No
+sidecar, no fold into `map.json`.
+
+**Open questions — decide before implementing:**
+1. `moodboard.curated` is a date, but `project.dart:13` bans clock fields
+   for determinism. Options: drop it, make it a non-auto-populated "as of"
+   note, or exempt this file. Leaning drop.
+2. Story-id collision suffixing is invented from the `slug()` precedent —
+   no existing convention to point at.
+3. `map.json`'s `feature.surfaceId` makes story-mapper's
+   "features attach to intake surfaces" rule an explicit stored fact. But
+   no JS currently does that name-matching, so it may solve a problem that
+   doesn't exist yet. Confirm before committing to it.
+4. Personas: fixed N or "how many?" — a product call the docs don't settle.
+5. No `.schema.json` exists for story-mapper or moodboarder. These would be
+   the first, i.e. drafts of `story-map.schema.json` +
+   `moodboard.schema.json`.
