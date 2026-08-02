@@ -44,14 +44,13 @@
 }
 .dv-topbar-actions { margin-left: auto; display: flex; gap: .35rem; align-items: center; }
 .dv-botbar {
-  flex: none; display: flex; flex-direction: column; align-items: center; gap: .3rem;
+  flex: none; display: flex; flex-direction: column; align-items: center;
   /* No side padding: the mini panel is sized at 50% and centred, and side
      padding here would make that 50% of the PADDED box — i.e. visibly
      narrower than half the viewer. The foot line is centred text, so it
      loses nothing. */
-  padding: .5rem 0 .6rem; border-top: 1px solid var(--border);
+  padding: .5rem 0; border-top: 1px solid var(--border);
 }
-.dv-botbar-foot { margin: 0; font-size: .64rem; text-align: center; }
 /* flex ROW: the canvas, then the screens rail (.dv-vstrip) as a real column
    on the right. min-height:0 — without it the block-child canvas sized to its
    content height, overflow:auto never engaged vertically and .dv-flow's

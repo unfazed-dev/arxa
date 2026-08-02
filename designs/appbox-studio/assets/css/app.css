@@ -333,6 +333,13 @@ button:active { transform: translateY(1px); }
 }
 /* the design stage is the exception: it owns the whole canvas */
 .artifact.evidence-artifact { max-width: none; margin: 0; height: 100%; }
+/* A full-bleed artifact brings its own border and radius (the design viewer,
+   the build loop's evidence pane), so .mp-content's 1.2rem/1.4rem pad insets
+   its card 19.2px inside the main panel while the activity and composer cards
+   sit flush to the panel row — three cards, three different edges. Drop the
+   pad for this artifact only; the padded default still applies to docs, code
+   and every other main-panel read. */
+.mp-content:has(> .evidence-artifact) { padding: 0; }
 .artifact .display { font-size: clamp(1.5rem, 2.4vw, 2.2rem); }
 .artifact-head { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; }
 .artifact-lede { font-size: 1rem; color: var(--tx-2); max-width: 40rem; }
@@ -635,7 +642,11 @@ button:active { transform: translateY(1px); }
 .design-viewer {
   display: flex; flex-direction: column; gap: .6rem; flex: 1; min-height: 0;
   border-radius: var(--radius); border: 1px solid var(--border);
-  padding: .7rem;
+  /* No bottom pad: .dv-botbar is always the last child and carries its own
+     symmetric .5rem, so the card's pad would stack under the mini panel only
+     — 8px above the panel, 19.2px below it, visibly bottom-heavy. The bar is
+     the card's floor; it ends where the card ends. */
+  padding: .7rem .7rem 0;
 }
 .dv-bg-canvas { background: var(--bg-2); }
 .dv-bg-warm { background: #f4ead8; }

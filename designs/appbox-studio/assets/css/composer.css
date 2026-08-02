@@ -17,12 +17,13 @@
   background: var(--bg); border: 1px solid var(--border);
   border-radius: var(--radius); box-shadow: var(--shadow-2);
   view-transition-name: panel-composer;
-  /* pure-CSS resize handle, same idiom as .panel-frame: rtl flips the native
-     handle onto the inner (left) edge, children reset to ltr */
-  resize: horizontal; overflow: hidden;
-  direction: rtl;
+  /* Resize is the .panel-frame-handle rail on the inner (right) edge, same as
+     the activity panel — see panels.css. The native `resize: horizontal` it
+     replaces could only ever draw a corner grip, and the old `direction: rtl`
+     trick existed solely to flip that grip to the left edge back when this
+     panel lived on the right. Both are gone. */
+  position: relative; overflow: hidden;
 }
-.panel-composer > * { direction: ltr; }
 .panel-composer .chat-thread { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
 
 /* ---------- chat head: eyebrow + context chips ---------- */
@@ -86,11 +87,14 @@
 .cs-strip .dv-thumb-clip iframe { transform: scale(.221); }
 
 /* below expanded the composer is one of the panel bar's three panels:
-   full-width when it's the visible one — no resize handle */
+   full-width when it's the visible one — and the resize rail goes with the
+   side-by-side layout it exists to arbitrate (panels.css hides the activity
+   panel's for the same reason) */
 @media (max-width: 839px) {
   .panel-composer {
-    width: auto; min-width: 0; max-width: none; resize: none;
+    width: auto; min-width: 0; max-width: none;
   }
+  .panel-composer .panel-frame-handle { display: none; }
 }
 
 /* ---------- the composer card (ui/common/composer.html) ----------

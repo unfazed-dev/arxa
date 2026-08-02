@@ -41,6 +41,13 @@
    panel floor. #}
 {% macro frame(spec) %}
 <aside id="panel-composer" class="panel-composer">
+  {# RESIZE RAIL — same idiom as the activity panel: the inner edge is the
+     handle, no icon. data-edge="right" because the composer is the LEFT
+     column. No data-side, so drag.js resizes and posts nothing — the composer
+     has no server-side width; its inline width rides morph exactly as the
+     native `resize` handle's did before. #}
+  <div class="panel-frame-handle" data-target="panel-composer" data-edge="right"
+       title="{{ t('panelViews.dragHandle') }}" aria-label="{{ t('panelViews.dragHandle') }}"></div>
   {{ head(spec) }}
   {{ caller() }}
 </aside>

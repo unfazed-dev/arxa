@@ -179,7 +179,7 @@ clearance; both are gone). All three are INSIDE `.design-viewer` because
 fullscreen, including the exit button, which would strand the user.
 
 ```js
-chrome = { title, state, foot, actions: [{ key, icon, href, label, danger? }] }
+chrome = { title, state, actions: [{ key, icon, href, label, danger? }] }
 ```
 
 `chrome` is **optional, and that is the mechanism, not an oversight.** The two
@@ -209,9 +209,9 @@ inventing plausible buttons is worse than an honest empty slot.
    cannot drift.
 
    This is a rule, not a style note. `design_viewer.html` guards the whole
-   `.dv-topbar` (and `.dv-botbar-foot`) with `{% if chrome %}`, so a swap
-   path that passes no chrome renders the viewer with no top panel and no
-   foot line — and it never comes back without a full page reload. That
+   `.dv-topbar` with `{% if chrome %}`, so a swap path that passes no chrome
+   renders the viewer with no top panel — and it never comes back without a
+   full page reload. That
    shipped once: `viewerSwap` called `dv.designViewer(c.viewer)` with one
    argument while the full render passed chrome inline, so every mini-panel
    tab, viewport tab and lens switch silently destroyed the top panel.

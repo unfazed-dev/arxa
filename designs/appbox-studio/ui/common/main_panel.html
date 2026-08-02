@@ -18,10 +18,11 @@
    Distinct from the tabbar, which switches shells. Hidden on expanded. #}
 {% macro panelBar(c) %}
 <nav class="panel-bar" aria-label="{{ t('panelBar.aria') }}">
+  {# Rung order mirrors the panel order on expanded: composer, main, activity. #}
   {% for p in [
-    { id: 'activity', icon: 'panel-left', label: t('panelBar.activity') },
+    { id: 'composer', icon: 'messages-square', label: t('panelBar.composer') },
     { id: 'main', icon: 'square', label: t('panelBar.main') },
-    { id: 'composer', icon: 'messages-square', label: t('panelBar.composer') }
+    { id: 'activity', icon: 'panel-left', label: t('panelBar.activity') }
   ] %}
   <a class="panel-bar-item {{ 'is-active' if c.panel == p.id }}" href="?panel={{ p.id }}"
      {% if c.panel == p.id %}aria-current="true"{% endif %}>

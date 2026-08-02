@@ -224,7 +224,7 @@
    same component with `static: true` and simply passes no chrome, so read-only
    artboards get no title bar and no actions WITHOUT a per-control static guard
    that someone would eventually forget. Shape:
-     { title, state, foot, actions: [{ key, icon, href, label, can }] }
+     { title, state, actions: [{ key, icon, href, label, can }] }
    Every shell action is a MUTATION: it POSTs `href` and swaps #panels, and is
    disabled when `can` is false (nothing to step to). #}
 {% macro designViewer(v, chrome) %}
@@ -381,7 +381,6 @@
      and the lens switch / undo / rungs / swatches stay reachable there. #}
   <footer class="dv-botbar">
     {{ mn.miniPanel(v) }}
-    {% if chrome and chrome.foot %}<p class="dv-botbar-foot muted">{{ chrome.foot }}</p>{% endif %}
   </footer>
 </div>
 {% endmacro %}

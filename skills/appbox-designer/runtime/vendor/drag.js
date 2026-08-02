@@ -7,7 +7,15 @@
    Scopes:
      .dv-flow-canvas — marquee select + Space/middle-drag pan; tile drag only
                        inside a .dv-flow-row (flows lens), X-axis locked
-     .panel-frame-handle — drag-resize the panel aside (live width badge, POST px on release)
+     .panel-frame-handle — drag-resize a side panel from its inner EDGE (live
+                       width badge). Attributes:
+                         data-edge   left|right — which edge the rail sits on;
+                                     decides the sign of the drag
+                         data-target element id to resize (default: panel-<side>)
+                         data-side   when present, POST the px width on release
+                                     so it survives a reload; omit for panels
+                                     with no server-side width (the composer,
+                                     whose inline width rides morph as before)
      document        — Cmd/Ctrl+Z / Shift+Cmd/Ctrl+Z undo/redo, routed by
                        pointer focus (canvas vs chat) to /design/undo|redo/:stack
 
@@ -172,12 +180,23 @@
     handle.addEventListener('pointerdown', (e) => {
       if (e.button !== 0) return;
       e.preventDefault();
-      const side = handle.dataset.side || 'left'; // panel_views.html stamps data-side
-      const rail = document.getElementById('panel-' + side);
+      const side = handle.dataset.side || ''; // '' — resize only, nothing to persist
+      const rail = document.getElementById(handle.dataset.target || ('panel-' + (side || 'left')));
       if (!rail) return;
+      // Which edge you grabbed decides the sign. Dragging the RIGHT edge
+      // rightwards widens the panel; dragging the LEFT edge rightwards
+      // NARROWS it. Without this the right-hand panel fought the pointer.
+      const sign = handle.dataset.edge === 'left' ? -1 : 1;
       handle.setPointerCapture(e.pointerId);
       const sx = e.clientX;
       const startW = rail.getBoundingClientRect().width;
+      // .panel-frame animates `width` for the s/m/l steps. Left on during a
+      // drag it makes the edge lag the pointer, and — worse — the release
+      // below used to read the still-animating width and persist THAT, so a
+      // drag to 420px saved 369px. Off for the drag, restored after.
+      const prevTransition = rail.style.transition;
+      rail.style.transition = 'none';
+      let last = startW;
       let badge = handle.querySelector('.panel-frame-width');
       if (!badge) {
         badge = document.createElement('span');
@@ -186,17 +205,30 @@
       }
       badge.textContent = Math.round(startW) + 'px';
       const move = (ev) => {
-        const w = Math.min(600, Math.max(200, startW + ev.clientX - sx));
+        const w = Math.min(600, Math.max(200, startW + sign * (ev.clientX - sx)));
+        last = w;
         rail.style.width = w + 'px';
         badge.textContent = Math.round(w) + 'px';
       };
       handle.addEventListener('pointermove', move);
       handle.addEventListener('pointerup', () => {
         handle.removeEventListener('pointermove', move);
-        const w = Math.round(rail.getBoundingClientRect().width);
+        rail.style.transition = prevTransition;
+        // `last`, not the measured box: the box can be mid-transition, and a
+        // flex row may also be shrinking the panel below the width we asked
+        // for. What the user dragged to is what gets saved.
+        const w = Math.round(last);
         badge.remove();
+        if (!side) return; // no server-side width for this panel; the inline style rides morph
+        // RECORD ONLY — swap:'none'. Swapping the panel back in looked like the
+        // whole app reloading on every release: htmx runs with
+        // globalViewTransitions, and .panel-frame has no view-transition-name,
+        // so it was captured in the ROOT snapshot and the browser cross-faded
+        // the entire page. There is nothing to swap in anyway — the drag
+        // already put the final width on the element, and the server only
+        // needs to remember it for the next full render.
         htmx.ajax('POST', '/design/panel/size/' + encodeURIComponent(side), {
-          values: { width: String(w) }, target: '#panel-' + side, swap: 'morph:outerHTML',
+          values: { width: String(w) }, swap: 'none transition:false',
         });
       }, { once: true });
     });

@@ -36,7 +36,6 @@
 {% macro stageViewer(c) %}{{ dv.designViewer(c.viewer, {
      title: t('design.artboardsEyebrow', {count: c.counts.screens}),
      state: c.run.state,
-     foot: t('protoFoot'),
      actions: [
        {key: 'undo', icon: 'undo-2', href: '/design/undo/canvas', can: c.undoRedo.canvas.canUndo, label: t('viewer.undo')},
        {key: 'redo', icon: 'redo-2', href: '/design/redo/canvas', can: c.undoRedo.canvas.canRedo, label: t('viewer.redo')}

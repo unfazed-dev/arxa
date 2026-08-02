@@ -44,12 +44,6 @@
 {% macro head(spec, oob) %}
 <header class="panel-frame-head" id="panel-{{ spec.side }}-head" {% if oob %}hx-swap-oob="outerHTML"{% endif %}>
   <strong class="panel-frame-label">{{ spec.label }}</strong>
-  {% if spec.sizeHref %}
-  <div class="panel-frame-handle" data-side="{{ spec.side }}" title="{{ t('panelViews.dragHandle') }}" aria-label="{{ t('panelViews.dragHandle') }}">
-    {{ icon('grip-vertical', {size: 16}) }}
-    <span class="panel-frame-width"></span>
-  </div>
-  {% endif %}
 </header>
 {% endmacro %}
 
@@ -69,6 +63,16 @@
 
 {% macro frame(spec) %}
 <aside class="panel-frame panel-frame-{{ spec.side }} {{ 'panel-size-' + (spec.size or 's') if not spec.panelSizePx }}" id="panel-{{ spec.side }}"{% if spec.panelSizePx %} style="width:{{ spec.panelSizePx }}px"{% endif %}>
+  {# RESIZE RAIL — the panel's inner edge IS the handle: no icon, the edge
+     lights up on hover and the cursor turns col-resize. Lives in frame(), not
+     head(), so a head oob swap can't drop it mid-drag. data-edge is 'left'
+     because this panel is the right-hand column (see panels.css) — the sign
+     of the drag depends on which edge you grabbed, not on `side`, which is an
+     identity key for ids and session state, not a position. #}
+  {% if spec.sizeHref %}
+  <div class="panel-frame-handle" data-side="{{ spec.side }}" data-edge="left"
+       title="{{ t('panelViews.dragHandle') }}" aria-label="{{ t('panelViews.dragHandle') }}"></div>
+  {% endif %}
   {{ head(spec, false) }}
   <div class="panel-frame-body" id="panel-{{ spec.side }}-body">
     {{ caller() }}

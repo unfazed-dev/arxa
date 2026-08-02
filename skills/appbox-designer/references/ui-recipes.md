@@ -50,7 +50,7 @@ Actions in a row, never floating solo in text.
   {% for a in c.actions %}
   <button class="btn{% if a.kind %} btn--{{ a.kind }}{% endif %}" type="button"
           hx-post="{{ a.url }}"{% if a.target %} hx-target="{{ a.target }}"{% endif %}
-          {% if not a.target %} hx-swap="none"{% endif %}>{{ a.label }}</button>
+          {% if not a.target %} hx-swap="none transition:false"{% endif %}>{{ a.label }}</button>
   {% endfor %}
 </div>
 {% endmacro %}
@@ -69,9 +69,22 @@ Actions in a row, never floating solo in text.
 @media (max-width: 599.98px) { .action-row--stack { flex-direction: column; align-items: stretch; } }
 ```
 
-**htmx:** `hx-post` + `hx-swap="none"` for fire-and-forget mutations (pair with
-a toast, recipe 14); `hx-target` + Named Fragment when the mutation re-renders
-a region. In-flight state is free: htmx toggles `.htmx-request` on the button.
+**htmx:** `hx-post` + `hx-swap="none transition:false"` for fire-and-forget
+mutations (pair with a toast, recipe 14); `hx-target` + Named Fragment when the
+mutation re-renders a region. In-flight state is free: htmx toggles
+`.htmx-request` on the button.
+
+> `transition:false` is not optional boilerplate. `globalViewTransitions:true`
+> wraps every swap in a view transition, and `hx-swap="none"` alone does not
+> suppress it — the transition rides the swap cycle, not the swap style. A
+> fire-and-forget POST without it cross-fades the whole page, which reads as
+> the app reloading. See ADR-0003's 2026-08-03 amendment.
+>
+> **Which `none` needs it:** the ones that render NOTHING — a pure state write
+> (prefs, a committed drag, a save with only an in-flight indicator). A `none`
+> swap whose response carries **OOB** content (the toast recipes below) does
+> change the DOM, and there the transition is wanted — leave it on. The test is
+> "does anything visible change?", not "is the swap style `none`?".
 
 **Ladder:** compact stacks primary actions full-width (`action-row--stack`);
 medium/expanded keep the end-aligned row.
@@ -643,7 +656,7 @@ it on load:
 Pending on a trigger — the indicator is a child, shown only in flight:
 
 ```html
-<button class="btn" hx-post="/save" hx-swap="none">
+<button class="btn" hx-post="/save" hx-swap="none transition:false">
   {{ icon('loader-circle', {size: 16, cls: 'htmx-indicator indicator-spin'}) }}
   <span>Save</span>
 </button>

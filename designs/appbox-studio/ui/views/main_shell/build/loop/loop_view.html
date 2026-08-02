@@ -105,11 +105,14 @@
 {% macro panels(c, oob) %}
 <div class="panels" id="panels" data-panel="{{ c.panel }}" {% if oob %}hx-swap-oob="outerHTML"{% endif %}>
   {{ mp.panelBar(c) }}
-  {{ activityPanel(c) }}
+  {# Composer LEFT, activity RIGHT — same order as every other shell. Swapped
+     in the DOM, not with CSS `order`, so tab order and screen-reader order
+     still match what you see. #}
+  {{ composerPanel(c) }}
   <div class="panel-main" id="panel-main">
     {{ mainContent(c) }}
   </div>
-  {{ composerPanel(c) }}
+  {{ activityPanel(c) }}
 </div>
 {% endmacro %}
 

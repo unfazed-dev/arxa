@@ -72,7 +72,6 @@
 {% macro composerPanel(c) %}
 {% call cp.frame({ eyebrow: c.stageEyebrow, chips: c.chips }) %}
   {{ thread(c) }}
-  <p class="ctx-note muted">{{ t('ctxNote') }}</p>
   {{ cm.field(c) }}
 {% endcall %}
 {% endmacro %}
@@ -90,9 +89,11 @@
 {% macro panels(c) %}
 <div class="panels" id="panels" data-panel="{{ c.panel }}">
   {{ mp.panelBar(c) }}
-  {{ activityPanel(c) }}
-  <div class="panel-main" id="panel-main">{{ caller() }}</div>
+  {# Composer LEFT, activity RIGHT. Swapped in the DOM, not with CSS `order`,
+     so tab order and screen-reader order still match what you see. #}
   {{ composerPanel(c) }}
+  <div class="panel-main" id="panel-main">{{ caller() }}</div>
+  {{ activityPanel(c) }}
 </div>
 {% endmacro %}
 
