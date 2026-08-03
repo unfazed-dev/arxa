@@ -605,7 +605,23 @@ List<_Check> _buildChecks({required bool skipRender}) {
           .map((f) => p.relative(f.path, from: art).split(p.separator).join('/'))
           .toSet();
       final untracked = artFiles.difference(trackedSet).toList()..sort();
-      if (untracked.isNotEmpty) return CheckOutcome.fail(untracked.join(' '));
+      if (untracked.isNotEmpty) {
+        // Deliberately git-ignored files are not artifact — a hook's scratch
+        // (.claude-flow/) must not be able to fail this check. git itself is
+        // the authority on what "ignored" means; an unignored stray still
+        // fails, which the untracked-file mutation proves.
+        // No -z: it is stdin-only for check-ignore (fatal otherwise), and a
+        // 128 here must not silently exempt nothing — artifact paths are
+        // plain enough for line splitting.
+        final ig = Process.runSync(
+            'git', ['-C', src, 'check-ignore', '--', ...untracked]);
+        final ignored = (ig.stdout as String)
+            .split('\n')
+            .where((s) => s.isNotEmpty)
+            .toSet();
+        final strays = untracked.where((f) => !ignored.contains(f)).toList();
+        if (strays.isNotEmpty) return CheckOutcome.fail(strays.join(' '));
+      }
       return const CheckOutcome.ok();
     }),
 
