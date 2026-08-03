@@ -4,6 +4,7 @@
   "shellRoots": {
     "intake": "/intake",
     "design": "/design",
+    "scaffold": "/scaffold",
     "build": "/build",
     "app": "/dashboard",
     "workspace": "/workspace"
@@ -181,6 +182,28 @@
       "viewmodel": "ui/views/main_shell/design/freeze/freeze_viewmodel.js",
       "deps": [
         "services/facades/design_facade.js"
+      ]
+    },
+    {
+      "id": "scaffold.picker",
+      "shell": "scaffold",
+      "comp": "ScaffoldPicker",
+      "shellDir": "main_shell",
+      "surface": "main_shell_scaffold_picker_view",
+      "viewmodel": "ui/views/main_shell/scaffold/picker/picker_viewmodel.js",
+      "deps": [
+        "services/facades/scaffold_facade.js"
+      ]
+    },
+    {
+      "id": "scaffold.run",
+      "shell": "scaffold",
+      "comp": "ScaffoldRun",
+      "shellDir": "main_shell",
+      "surface": "main_shell_scaffold_run_view",
+      "viewmodel": "ui/views/main_shell/scaffold/run/run_viewmodel.js",
+      "deps": [
+        "services/facades/scaffold_run_facade.js"
       ]
     },
     {
@@ -434,8 +457,18 @@
         },
         {
           "from": "design.freeze",
-          "to": "build.loop",
+          "to": "scaffold.picker",
           "trigger": "Scaffold"
+        },
+        {
+          "from": "scaffold.picker",
+          "to": "scaffold.run",
+          "trigger": "Scaffold selected kits"
+        },
+        {
+          "from": "scaffold.run",
+          "to": "build.loop",
+          "trigger": "Scaffold complete"
         },
         {
           "from": "build.loop",

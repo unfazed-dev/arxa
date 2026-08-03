@@ -1,0 +1,58 @@
+{
+  "_readme": "Scaffold RUN seed. Ids + machine enums ONLY — no display prose. Every label renders through t() from l10n/app_<locale>.arb, so the three locale seeds are structurally identical and parity is trivial. This is a RECEIPT model (D24): the scaffold is a fast deterministic transform of a frozen structure.json, so there are no progress percentages, no per-stage timers and no spinner states to seed — a run either has not happened yet (pre), or it has produced a result (completed / warning / failed). Kit ids are copied by value from the picker's chosen set rather than queried from scaffold_repository: a receipt records what a run saw, it does not re-derive it.",
+  "structure": {
+    "path": "structure.json",
+    "frozen": true,
+    "screens": 11,
+    "shells": 6,
+    "revision": "r7"
+  },
+  "manifest": {
+    "path": "kit-manifest.json",
+    "beside": "structure.json",
+    "sections": ["wishlist", "resolved"]
+  },
+  "kits": [
+    { "id": "core", "provenance": "declared", "phase": "stable", "ready": true, "auto": true },
+    { "id": "router", "provenance": "declared", "phase": "stable", "ready": true, "auto": true },
+    { "id": "l10n", "provenance": "declared", "phase": "stable", "ready": true, "auto": true },
+    { "id": "auth", "provenance": "declared", "phase": "stable", "ready": true, "auto": false },
+    { "id": "payments", "provenance": "requested", "phase": "native-first", "ready": false, "auto": false },
+    { "id": "push", "provenance": "inferred", "phase": "partial", "ready": false, "auto": false }
+  ],
+  "writes": [
+    { "path": "lib/main.dart", "kind": "created", "kitId": "core" },
+    { "path": "lib/router/routes.dart", "kind": "created", "kitId": "router" },
+    { "path": "lib/l10n/app_en.arb", "kind": "created", "kitId": "l10n" },
+    { "path": "lib/features/auth/auth_service.dart", "kind": "created", "kitId": "auth" },
+    { "path": "lib/features/payments/payments_service.dart", "kind": "created", "kitId": "payments" },
+    { "path": "lib/features/push/push_service.dart", "kind": "created", "kitId": "push" },
+    { "path": "pubspec.yaml", "kind": "updated", "kitId": "core" },
+    { "path": "kit-manifest.json", "kind": "created", "kitId": null },
+    { "path": "README.md", "kind": "skipped", "kitId": null }
+  ],
+  "deltas": {
+    "structure": { "path": "structure.json", "added": 0, "changed": 0, "note": "untouched" },
+    "registry": { "path": "kit-manifest.json", "added": 6, "changed": 1, "note": "resolved" }
+  },
+  "warnings": [
+    { "code": "readinessUnmet", "kitId": "payments", "href": "/workspace/credentials" },
+    { "code": "readinessUnmet", "kitId": "push", "href": "/workspace/credentials" }
+  ],
+  "states": {
+    "pre": { "note": "structure frozen, kits chosen, nothing written yet" },
+    "completed": { "note": "every write landed, no unmet readiness" },
+    "warning": { "note": "files written; unmet readiness carried through — inform only, never blocks (D6)" },
+    "failed": {
+      "code": "writeDenied",
+      "path": "lib/features/payments/payments_service.dart",
+      "wrote": 4,
+      "rolledBack": true,
+      "retryHref": "/scaffold/run?state=pre"
+    },
+    "blocked": {
+      "code": "structureNotFrozen",
+      "href": "/design/prototype"
+    }
+  }
+}

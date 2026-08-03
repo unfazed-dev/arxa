@@ -1,0 +1,73 @@
+/* scaffold.css · THE SCAFFOLD SHELL'S LAYOUT CONTRACT.
+
+   The panel VOCABULARY is fixed in ui/common/_integration_panels.md and the
+   panel's own 3×3 section skeleton lives in panels.css — neither is restated
+   here. This file adds one thing: the scaffold shell's panel ROW is a named
+   grid rather than the flex row `.panels` gives every other stage shell.
+
+   Named areas, never positions, so a panel that moves does not get renamed:
+
+     "header  header  header"
+     "compose main    activity"
+     "footer  footer  footer"
+
+   Any panel may render nothing — an area nothing is placed into collapses to
+   zero (the header and footer rows are `auto`), which is why the areas are
+   declared even though main_shell_view.html mounts the header and the footer
+   panels OUTSIDE this row. `mini_panel` is a widget nested in a panel's
+   section, not a sixth area; it never appears here.
+
+   Scoped through `.panels-scaffold` so nothing in this file can reach the
+   intake / design / build shells, whose flex row stays exactly as it was. */
+
+.panels-scaffold {
+  display: grid;
+  /* The brief's literal areas string, all five names. The footer row is
+     declared even though the shell's own footer renders outside this
+     container: an `auto` row with no child collapses to zero, so naming it
+     costs nothing and keeps `grid-area: footer` from landing in an implicit
+     cell the day a surface mounts its own footer panel. */
+  grid-template-areas:
+    "header  header  header"
+    "compose main    activity"
+    "footer  footer  footer";
+  grid-template-columns: minmax(240px, 280px) 1fr minmax(280px, 340px);
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  /* gap and padding repeat `.panels` rather than inherit it: the flex
+     shorthand there is display-dependent and the grid must not read as a
+     different rhythm from the shells beside it. */
+  gap: 1rem; padding: 1rem;
+  min-height: 0;
+}
+
+/* The panel bar (main_panel.html) is the panel-width control strip, and it is
+   a direct child of the row. Placing it in the header area is deliberate:
+   without an explicit area it would land in an implicit cell and push the
+   three content panels out of their columns. */
+.panels-scaffold > .panel-bar { grid-area: header; }
+
+/* Role → area. The two side panels drop the width/max-width the flex row
+   gives them: in a grid the COLUMN owns the width, and leaving `--panel-max-w`
+   in play would cap a track that is already bounded by minmax(). */
+.panels-scaffold > .panel-composer {
+  grid-area: compose; width: auto; min-width: 0; max-width: none;
+}
+.panels-scaffold > .panel-main { grid-area: main; min-width: 0; min-height: 0; }
+.panels-scaffold > .panel-activity {
+  grid-area: activity; width: auto; min-width: 0; max-width: none;
+}
+/* Declared for the contract's sake: if a scaffold surface ever mounts its own
+   header or footer panel INSIDE the row (rather than inheriting the shell's),
+   it lands in the right area instead of an implicit cell. */
+.panels-scaffold > .panel-header { grid-area: header; }
+.panels-scaffold > .panel-footer { grid-area: footer; }
+
+/* Below the breakpoint panels.css already uses, a single panel is full width:
+   one column, source order, every area on its own row. */
+@media (max-width: 840px) {
+  .panels-scaffold {
+    grid-template-areas: "header" "compose" "main" "activity" "footer";
+    grid-template-columns: 1fr;
+    grid-template-rows: auto;
+  }
+}
