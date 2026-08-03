@@ -396,6 +396,47 @@ Only after attempt 3 does the zero carry information:
 | `design_server.dart` reads a `state` param | no occurrences — it never branches on state |
 | `<select>` / `<option>` in `designs/` | 0, with `type="radio"`×1 as that sweep's own control |
 
+### The failure positive control still can't catch: reading the right file in the wrong tree
+
+From run-screen, and it defeats both rules above as written. We work in a
+worktree; `app-box/designs/appbox-studio/` is a **real second checkout**. So
+`cd <main>/... || cd <worktree>/...` is not a fallback — the first path exists,
+it always wins, and the shell silently reads a different file than the one under
+discussion. There is no zero to positive-control and no error to notice: `ls`
+succeeds, `grep` returns content, every line number resolves to something
+plausible. Run-screen nearly sent a confident "your three citations are
+fictional" from the main repo's copy; the citations were exact.
+
+Path-confirmation asks *does the path exist?* Here it does. The missing half is
+**which tree** — and every line number traded in this thread (`_shared.html:113`,
+`scaffold_facade.js:205`, `intake.dart:62`, `scaffold_run_facade.js:82`) is
+meaningful only relative to a checkout none of us was naming.
+
+**Rule: pin trees absolutely; never `cd A || cd B` in a worktree repo.**
+
+**Audit of my own §7 sweep against this failure — clean, but by luck.** I
+re-read every file I cited from both trees, pinned absolutely:
+
+| cited file | worktree | main repo | exposure |
+|---|---|---|---|
+| `scaffold_facade.js` | 250 lines | **absent** | none — fails loudly |
+| `_shared.html` | 121 lines | **absent** | none — fails loudly |
+| `picker_viewmodel.js` | 92 lines | **absent** | none — fails loudly |
+| `intake.dart` | 1398 lines | 1398 lines | **exposed** |
+| `design_tools.dart` | — | — | **exposed** |
+
+Three of the five are net-new in this worktree and don't exist in main at all,
+so a wandered shell would have failed loudly rather than silently. The two Dart
+files that *are* present in both are byte-identical (`md5 4f071aee…` on
+`intake.dart`, matching on both sides), and `:62` and `:260` read the same line
+from either tree. So my citations hold as stated.
+
+But note *why*: two accidents of file distribution, neither of which I checked
+at the time. Correct as stated, unsound as method — the same verdict run-screen
+gave my `git grep` sweep, and the same one I gave chrome-integration's
+assignment-only grep. A clean result obtained by luck is not a clean method, and
+it is the class of pass this whole section exists to distrust.
+
 Verdict: the zero was **correct but undemonstrated**, and two of my three attempts
 to demonstrate it were themselves unsound. Consistent with chrome-integration's
 account — `?state=` is facade-driven at request time, so there is no options list
