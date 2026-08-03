@@ -38,6 +38,10 @@
    (workspace: settings/credentials/config) must own its own scroll. Inert for
    the stage shells — their panels row is flex-sized to fit exactly. */
 .shell-main { width: 100%; max-width: 56rem; margin: 0 auto; padding: 2rem 1.1rem 3rem; flex: 1; min-height: 0; overflow-y: auto; }
+/* workspace shell: the main panel IS the surface, so it takes the full width —
+   only the 56rem reading-column cap is released; padding and scroll ownership
+   stay. Same release the stage shells get via .shell-main-loop below. */
+.shell-main-workspace { max-width: none; }
 /* stage shells (intake/design/build) run full-bleed — the three content
    panels need the whole width; chrome.css must repeat this because it loads
    after app.css and would otherwise cap them at 56rem */
