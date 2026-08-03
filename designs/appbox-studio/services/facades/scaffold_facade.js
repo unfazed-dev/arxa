@@ -153,7 +153,9 @@ export const context = (session = {}, t = (k) => k, locale = 'en', screen = 'suc
 
   return {
     base: '/main/scaffold/picker',
-    state: gated ? 'notEntitled' : screen,
+    // Report the gate we actually applied, so a signedOut lens never reports
+    // itself as notEntitled to a probe or a lens validator.
+    state: gated ? gatedReason : screen,
     loading: screen === 'loading',
     error: screen === 'error' ? { ...states.error, source: states.error.source } : null,
     gated,
@@ -162,7 +164,13 @@ export const context = (session = {}, t = (k) => k, locale = 'en', screen = 'suc
       ...ent,
       signedIn: !signedOut,
       // Signed-out goes to sign-in; not-entitled goes to the upgrade path.
-      ctaHref: signedOut ? ent.signInHref || '/sign-in' : ent.upgradeHref || ent.credentialsHref,
+      // Only the gate retargets this. Ungated, it keeps its prior meaning so
+      // no non-gated consumer is silently redirected to the upgrade path.
+      ctaHref: !gated
+        ? ent.credentialsHref
+        : signedOut
+          ? ent.signInHref || '/sign-in'
+          : ent.upgradeHref || ent.credentialsHref,
     },
     kits,
     groups,
