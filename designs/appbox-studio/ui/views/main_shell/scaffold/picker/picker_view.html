@@ -3,8 +3,8 @@
      Built with appbox (free tier) — https://appbox.dev
 -->
 {% extends "ui/views/main_shell/main_shell_view.html" %}
+{% import "ui/views/main_shell/scaffold/_shared.html" as sh %}
 {% import "ui/common/widgets/primitives.html" as pr %}
-{% import "ui/views/main_shell/shared/widgets/_panel.html" as pn %}
 {% block title %}{{ t('scaffold.picker.pageTitle') }}{% endblock %}
 {% block main_class %}shell-main-picker{% endblock %}
 {% block head_extra %}
@@ -263,22 +263,15 @@
 {% endmacro %}
 
 {# ---------- panels ----------
-   The scaffold shell has no `_shared.html` of its own yet — chrome-integration
-   owns the shell composition (brief (c)) and its scaffold.css already declares
-   the `.panels-scaffold` named-area grid: header / compose main activity /
-   footer. Until a shared `panels(c)` lands, the picker emits that row itself
-   with only the main panel filled; every other area legitimately collapses to
-   zero because an area nothing is placed into has no height. When the shell
-   helper arrives this macro becomes `{% raw %}{% call sh.panels(c) %}{% endraw %}mainContent(c){% raw %}{% endcall %}{% endraw %}`
-   and nothing below it has to change — which is exactly why the stage content
-   lives in `mainContent()` rather than inline here. #}
-{% macro panels(c) %}
-<div class="panels panels-scaffold" id="panels">
-  {{ pn.open({ role: 'main', bodyClass: 'picker-body' }) }}
-  {{ mainContent(c) }}
-  {{ pn.close({ role: 'main' }) }}
-</div>
-{% endmacro %}
+   The shell composition landed (chrome-integration owns
+   ui/views/main_shell/scaffold/_shared.html), so the picker no longer places
+   panels by hand: it fills the main panel through the shell's own `panels(c)`
+   and gets all five areas — header / compose main activity / footer — instead
+   of the one it used to mount itself. This is why the stage content has always
+   lived in `mainContent()` rather than inline here: the swap is one line, and
+   nothing below it changed. The composer and activity panels are fed by the
+   `shell chrome` block at the top of scaffold_facade's context. #}
+{% macro panels(c) %}{% call sh.panels(c) %}{{ mainContent(c) }}{% endcall %}{% endmacro %}
 
 {# ---------- Fragment responses ---------- #}
 

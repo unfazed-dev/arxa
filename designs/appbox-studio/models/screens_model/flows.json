@@ -62,8 +62,18 @@
       },
       {
         "from": "design.freeze",
-        "to": "build.loop",
+        "to": "scaffold.picker",
         "trigger": "Scaffold"
+      },
+      {
+        "from": "scaffold.picker",
+        "to": "scaffold.run",
+        "trigger": "Scaffold selected kits"
+      },
+      {
+        "from": "scaffold.run",
+        "to": "build.loop",
+        "trigger": "Scaffold complete"
       },
       {
         "from": "build.loop",

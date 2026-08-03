@@ -1,0 +1,103 @@
+<!-- appbox:provenance
+     generator: appbox  licence: free  project: 662368770980
+     Built with appbox (free tier) — https://appbox.dev
+-->
+{# THE SCAFFOLD SHELL'S PANEL SET.
+
+   main_shell_view.html mounts the header and the footer for every hosted
+   shell; a hosted shell declares the rest of its panel set here, in its own
+   composition file — the same split intake / design / build already use. This
+   file is the scaffold shell's half of that contract: composer LEFT, main
+   CENTRE, activity RIGHT, laid out by the named grid in
+   assets/css/scaffold.css.
+
+   Why the header and the footer are NOT mounted here: the surfaces extend
+   main_shell_view.html, which already opens and closes both. Mounting them a
+   second time passes the W4 gate (mounts are counted per file) and renders
+   two headers at runtime — a bug no static check catches. The grid still
+   NAMES both areas, because the panel bar sits in the header row and the
+   layout contract is by ROLE, not by what happens to be mounted; an area
+   nothing is placed into collapses to zero.
+
+   Macro-only file — importing it from a fragment render emits nothing.
+   Chrome is REUSED, never forked: every panel below comes from
+   ui/views/main_shell/shared/widgets/, through the same `open(spec)` /
+   `close(spec)` pair from _panel.html that the other stage shells use. #}
+
+{% import "ui/views/main_shell/shared/widgets/activity_panel.html" as pa %}
+{% import "ui/views/main_shell/shared/widgets/composer_panel.html" as cp %}
+{% import "ui/views/main_shell/shared/widgets/composer.html" as cm %}
+{% import "ui/views/main_shell/shared/widgets/main_panel.html" as mp %}
+
+{# ---------- the composer panel: thread + composer inside the shared frame ----
+   Data-driven, exactly as the design shell's is: the surface's facade fills
+   `c.thread` and `c.chips`, this file owns only the frame. The pinned-context
+   chips carrying "kits enabled" state ride in on `c.chips`. #}
+
+{% macro thread(c) %}
+<div class="chat-thread" aria-live="polite">
+  {% for m in c.thread %}
+    {% if m.kind == 'event' %}
+    <p class="bt-event">{{ m.text }}</p>
+    {% elif m.from == 'user' %}
+    <p class="bt-msg bt-user">{{ m.text }}</p>
+    {% else %}
+    <p class="bt-msg bt-agent">{{ m.text }}
+      {%- if m.link %} <a class="bt-link" href="{{ m.link.href }}">{{ m.link.label }}</a>{% endif %}
+    </p>
+    {% endif %}
+  {% endfor %}
+</div>
+{% endmacro %}
+
+{% macro composerPanel(c) %}
+{% set CP = { eyebrow: c.stageEyebrow, chips: c.chips } %}
+{{ cp.open(CP) }}
+  {{ thread(c) }}
+  {{ cm.field(c) }}
+{{ cp.close(CP) }}
+{% endmacro %}
+
+{# ---------- the activity panel: one multi-view frame ----------
+   `c.activity.views` drives the view switch the panel base renders in its
+   bottom section; `c.activity.items` is the rendered list for the selected
+   view (selected kits on the picker, per-surface progress on the run). Both
+   are optional so a surface can mount the frame before its facade is wired. #}
+
+{% macro activityBody(c) %}
+<ul class="panel-activity-body" id="panel-activity-body">
+  {% for it in c.activity.items %}
+  <li class="act-row {{ 'is-active' if it.active }}">
+    <span class="act-label">{{ it.label }}</span>
+    {% if it.meta %}<span class="act-meta">{{ it.meta }}</span>{% endif %}
+  </li>
+  {% endfor %}
+</ul>
+{% endmacro %}
+
+{% macro activityPanel(c) %}
+{% set AP = { label: c.activity.label, views: c.activity.views } %}
+{{ pa.open(AP) }}
+  {{ activityBody(c) }}
+{{ pa.close(AP) }}
+{% endmacro %}
+
+{# ---------- the panel row: one swap unit ----------
+   Every scaffold interaction re-renders #panels outerHTML, so panel widths
+   (server state) and the activity panel ride along without an out-of-band
+   re-feed. The caller fills the main panel. #}
+
+{% macro panels(c) %}
+<div class="panels panels-scaffold" id="panels" data-panel="{{ c.panel }}">
+  {{ mp.panelBar(c) }}
+  {# Composer LEFT, activity RIGHT — swapped in the DOM, not with CSS `order`,
+     so tab order and screen-reader order still match what you see. #}
+  {{ composerPanel(c) }}
+  {% set M = {} %}
+  {{ mp.open(M) }}{{ caller() }}{{ mp.close(M) }}
+  {{ activityPanel(c) }}
+</div>
+{% endmacro %}
+
+{# The main panel's empty read state (nothing selected yet). #}
+{% macro mainEmpty() %}{{ mp.empty() }}{% endmacro %}

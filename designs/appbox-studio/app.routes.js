@@ -8,6 +8,7 @@ import * as config from './ui/views/workspace_shell/config/config_viewmodel.js';
 import * as prefs from './ui/common/prefs_viewmodel.js';
 import intakeRoutes from './ui/views/main_shell/intake/routes.intake.js';
 import designRoutes from './ui/views/main_shell/design/routes.design.js';
+import scaffoldRoutes from './ui/views/main_shell/scaffold/routes.scaffold.js';
 import appRoutes from './ui/views/app_shell/routes.app.js';
 
 // Landing route of each shell. Required and non-empty — the scaffolder
@@ -17,6 +18,7 @@ import appRoutes from './ui/views/app_shell/routes.app.js';
 export const shellRoots = {
   intake: '/intake',
   design: '/design',
+  scaffold: '/scaffold',
   build: '/build',
   app: '/dashboard',
   workspace: '/workspace',
@@ -26,6 +28,7 @@ export default [
   ...appRoutes,
   ...intakeRoutes,
   ...designRoutes,
+  ...scaffoldRoutes,
   ['GET', '/build', buildLoop.page],
   ['GET', '/build/panel', buildLoop.panel],
   ['GET', '/build/panel/size/:side/:size', buildLoop.panelSize],

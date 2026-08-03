@@ -89,7 +89,7 @@ export const context = (session = {}, t = (k) => k, locale = 'en', screen = 'suc
     requiredBy: all.filter((o) => selected.has(o.id) && dependsOf(o).includes(k.id)).map((o) => o.id),
     // Toggle target. add/remove are distinct routes so the remove path can
     // interpose the D2 confirm without a client-side branch.
-    href: selected.has(k.id) ? `/main/scaffold/picker/remove?kit=${k.id}` : `/main/scaffold/picker/add?kit=${k.id}`,
+    href: selected.has(k.id) ? `/scaffold/remove?kit=${k.id}` : `/scaffold/add?kit=${k.id}`,
     credentialsHref: k.readinessAxis && k.readinessAxis.module
       ? `${ent.credentialsHref}?module=${encodeURIComponent(k.readinessAxis.module)}`
       : ent.credentialsHref,
@@ -123,8 +123,8 @@ export const context = (session = {}, t = (k) => k, locale = 'en', screen = 'suc
         // A kit other selected kits depend on cannot be removed at all — the
         // confirm degrades into an explanation.
         blockedBy: kits.filter((k) => k.selected && dependsOf(k).includes(pending.id)).map((k) => k.id),
-        confirmHref: `/main/scaffold/picker/remove/confirm?kit=${pending.id}`,
-        cancelHref: '/main/scaffold/picker',
+        confirmHref: `/scaffold/remove/confirm?kit=${pending.id}`,
+        cancelHref: '/scaffold',
       }
     : null;
 
@@ -152,7 +152,7 @@ export const context = (session = {}, t = (k) => k, locale = 'en', screen = 'suc
   };
 
   return {
-    base: '/main/scaffold/picker',
+    base: '/scaffold',
     // Report the gate we actually applied, so a signedOut lens never reports
     // itself as notEntitled to a probe or a lens validator.
     state: gated ? gatedReason : screen,

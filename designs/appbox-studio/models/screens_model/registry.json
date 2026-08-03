@@ -144,6 +144,24 @@
     "route": "/design/freeze"
   },
   {
+    "id": "scaffold.picker",
+    "label": "Kit Picker",
+    "surface": "main_shell_scaffold_picker_view",
+    "shell": "scaffold",
+    "comp": "ScaffoldPicker",
+    "labelKey": "screen.label.scaffold.picker",
+    "route": "/scaffold"
+  },
+  {
+    "id": "scaffold.run",
+    "label": "Scaffold Run",
+    "surface": "main_shell_scaffold_run_view",
+    "shell": "scaffold",
+    "comp": "ScaffoldRun",
+    "labelKey": "screen.label.scaffold.run",
+    "route": "/scaffold/run"
+  },
+  {
     "id": "chat.chat2",
     "label": "Chat Stage",
     "surface": null,
