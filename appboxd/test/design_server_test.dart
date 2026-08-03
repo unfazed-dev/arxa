@@ -16,6 +16,37 @@ import 'package:test/test.dart';
 final String _fixture =
     p.absolute('../skills/appbox-designer/examples/hello-hda');
 
+/// Make `__boot`'s module import slow, so the reload window is wide enough to
+/// hit on purpose instead of by luck (task #19).
+///
+/// A reload passes through two distinct broken states, and only the second is
+/// the defect under test:
+///   1. navigated, shim not yet injected — `__dispatch` is undefined. The
+///      task-#64 self-heal already catches this and reboots, so requests here
+///      are answered correctly.
+///   2. shim injected, `__boot` still importing — `__dispatch` EXISTS and
+///      `routesTable` is still `[]`, so every request 404s and nothing
+///      notices. This is #19.
+///
+/// State 2's width is the artifact's import cost. `hello-hda` boots almost
+/// instantly, so sampling a live reload lands in state 1 and passes while the
+/// defect is fully present — verified: this group's first test passed against
+/// the unfixed server before this helper existed. The real studio's module
+/// graph makes state 2 ~950ms wide, which is why production 404s.
+///
+/// Top-level `await` (not a busy-wait) so the tab's main thread stays
+/// responsive: the point is that the worker ANSWERS during the window, wrongly.
+Future<void> _widenBootWindow(String artifactDir, {int ms = 2500}) async {
+  final slow = File(p.join(artifactDir, '_slow_boot.js'));
+  await slow.writeAsString(
+      '// test-only: widens the __boot window (see _widenBootWindow)\n'
+      'await new Promise((r) => setTimeout(r, $ms));\n'
+      'export const slowBoot = true;\n');
+  final routes = File(p.join(artifactDir, 'app.routes.js'));
+  await routes.writeAsString(
+      "import './_slow_boot.js';\n${await routes.readAsString()}");
+}
+
 Future<void> _copyDir(String src, String dst) async {
   await Directory(dst).create(recursive: true);
   for (final e in Directory(src).listSync(recursive: true)) {
@@ -446,6 +477,107 @@ void main() {
       final r = await _get('${srv!.url}no-such-route');
       expect(r.status, 404);
       expect(r.body, contains('no route for'));
+    });
+  });
+
+  // ── task #19: the hot-reload window ────────────────────────────────────
+  //
+  // `reload()` re-navigates the worker tab, which wipes the JS realm — so
+  // `worker_shim.js`'s `let routesTable = []` re-runs and stays empty until
+  // `__boot` re-imports app.routes.js. For ~950ms `globalThis.__dispatch`
+  // still EXISTS while the table is EMPTY, and every request 404s. Dart keeps
+  // dispatching because its own boot-time copy still holds all the routes, and
+  // the task-#64 self-heal cannot see it: that matches "__dispatch is not a
+  // function", and here dispatch works fine and has nothing to route.
+  //
+  // Measured live: a canvas mutation writes the project, the watcher schedules
+  // a reload 200ms later, and the undo POST that follows lands inside the
+  // window and 404s — so the user's undo is silently lost, not delayed. Undo
+  // is only the request that always immediately follows a write; EVERY request
+  // in the window is affected, which is what these tests pin.
+  group('#19: the hot-reload window', () {
+    late Directory tmp;
+    late DesignServer srv;
+    late String base;
+
+    setUpAll(() async {
+      tmp = await Directory.systemTemp.createTemp('design-reload-');
+      await _copyDir(_fixture, tmp.path);
+      await _widenBootWindow(tmp.path);
+      // noWatch: the reload under test is triggered explicitly, so the file
+      // watcher would only add nondeterminism.
+      srv = await DesignServer.start(
+          artifactDir: tmp.path, port: 0, noWatch: true);
+      base = srv.url.substring(0, srv.url.length - 1);
+    });
+    tearDownAll(() async {
+      await srv.stop();
+      await tmp.delete(recursive: true);
+    });
+
+    test('19: requests during a hot reload are answered, never 404ed', () async {
+      // Sampling starts AFTER the navigate+settle, not at reload(). A reload
+      // is broken in two different ways in sequence, and only the second is
+      // #19 (see _widenBootWindow). A request in the first phase throws
+      // "__dispatch is not a function", which the task-#64 self-heal catches
+      // and reboots — and that reboot then re-boots the whole worker, so an
+      // early sample MASKS the phase under test. Verified: sampling from t=0
+      // passed against the unfixed server twice.
+      //
+      // navigateAndSettle is 600ms, so 800ms clears it with margin, and
+      // _widenBootWindow holds __boot open for 2500ms after that.
+      final reloading = srv.reload();
+      await Future.delayed(const Duration(milliseconds: 800));
+      final codes = <int>[];
+      for (var i = 0; i < 12; i++) {
+        codes.add((await _get('$base/timer')).status);
+        await Future.delayed(const Duration(milliseconds: 100));
+      }
+      await reloading;
+      expect(codes.where((c) => c == 404), isEmpty,
+          reason: 'a route that EXISTS 404ed while __boot was still importing: '
+              'the worker answered with an empty route table — got $codes');
+    });
+
+    test('19: a genuinely unknown route still 404s — after the wait, not '
+        'instead of it', () async {
+      // The fix must not turn every in-window 404 into a 503: a route that
+      // does not exist has to keep answering 404 once the reload settles, or
+      // the deferral has swallowed a real routing bug.
+      final reloading = srv.reload();
+      final r = await _get('$base/no-such-route-at-all');
+      await reloading;
+      expect(r.status, 404);
+      expect(r.body, contains('no route for'));
+    });
+
+    test('19: a reload that outlives the grace fails loudly and bounded',
+        () async {
+      // A 1ms grace guarantees expiry while the reload is still running. The
+      // requirement is that expiry is LOUD and BOUNDED: a distinct 503 naming
+      // the reload, never a silent 404, and never a hang.
+      final tmp2 = await Directory.systemTemp.createTemp('design-reload-b-');
+      await _copyDir(_fixture, tmp2.path);
+      await _widenBootWindow(tmp2.path);
+      final s = await DesignServer.start(
+          artifactDir: tmp2.path,
+          port: 0,
+          noWatch: true,
+          reloadGrace: const Duration(milliseconds: 1));
+      try {
+        final reloading = s.reload();
+        final sw = Stopwatch()..start();
+        final r = await _get('${s.url}timer');
+        sw.stop();
+        await reloading;
+        expect(r.status, 503, reason: 'expired grace must be its own status');
+        expect(r.status, isNot(404), reason: 'never a silent 404');
+        expect(sw.elapsed, lessThan(const Duration(seconds: 5)),
+            reason: 'the wait is bounded — a stuck reload must not hang a request');
+      } finally {
+        await s.stop();
+        await tmp2.delete(recursive: true);
+      }
     });
   });
 

@@ -69,6 +69,14 @@ const _msgDismiss = 'Dismiss';
 /// Fallback for t('errorSurface.notFound')
 const _msgNotFound = 'no route for {method} {path}';
 
+/// Fallback for t('errorSurface.reloading')
+///
+/// Its own message, not `serverError`: this is a transient state with a known
+/// cause and a useful instruction ("try again"), and telling the user something
+/// went wrong on the server would be both wrong and unactionable.
+const _msgReloading =
+    'The design server is reloading after a file change. Try again in a moment.';
+
 String _esc(String s) => s
     .replaceAll('&', '&amp;')
     .replaceAll('<', '&lt;')
@@ -204,6 +212,29 @@ class DesignServer {
   Timer? _debounce;
   bool _stopped = false;
 
+  /// How long a request waits for an in-flight hot reload before giving up.
+  ///
+  /// From measurement rather than taste: while root-causing task #19 the
+  /// slowest observed reload was 948ms (re-navigate + 600ms settle + re-scan +
+  /// `__boot`), and a reload that hits the worker's boot retry (task #51) adds
+  /// ~850ms on top of that. 3800ms is 4x the slowest observed, which covers the
+  /// retry path with room to spare. Past that point the reload is not coming
+  /// back, and a loud 503 is more use to the caller than a longer stall.
+  static const Duration _kReloadGrace = Duration(milliseconds: 3800);
+
+  late final Duration _reloadGrace;
+
+  /// Completes when the in-flight hot reload settles; null when none is running.
+  ///
+  /// This is the whole fix for task #19. A reload re-navigates the worker tab,
+  /// which wipes the JS realm and leaves `worker_shim.js`'s `routesTable`
+  /// empty until `__boot` repopulates it — so for ~950ms `__dispatch` exists,
+  /// answers, and 404s EVERYTHING. Dart cannot see that by inspecting the
+  /// worker (an empty table is indistinguishable from "this route really does
+  /// not exist"), but it does not need to: Dart OWNS the trigger, so it knows
+  /// exactly when the window opens and closes. Requests wait on this instead.
+  Future<void>? _reloadInFlight;
+
   final _sessions = <String, Map<String, dynamic>>{};
 
   /// Timers, KEYED BY SESSION ID — the same shape as [_sessions] (task #53).
@@ -281,6 +312,7 @@ class DesignServer {
     String? iconsDir,
     String? workerAssetsDir,
     String? projectDir,
+    Duration reloadGrace = _kReloadGrace,
   }) async {
     final srv = DesignServer._()
       ..artifactDir = artifactDir
@@ -288,6 +320,7 @@ class DesignServer {
       .._pidValue = _osPid
       ..host = host
       ..noWatch = noWatch
+      .._reloadGrace = reloadGrace
       ..locales = _scanLocales(artifactDir, projectDir: projectDir)
       .._errorCatalog =
           ErrorCatalog(_l10nDirs(artifactDir, projectDir: projectDir));
@@ -548,6 +581,29 @@ class DesignServer {
     //
     // The body read above stays OUTSIDE the lock deliberately: a slow client
     // must not be able to hold a session's lock while it dribbles out a body.
+    // Task #19: never dispatch into a worker whose route table is empty
+    // because a reload is in flight — see [_reloadInFlight]. Deliberately
+    // OUTSIDE the session lock: a reload is process-wide, and holding one
+    // session's lock while waiting on it would serialize that session behind a
+    // wait it has nothing to do with.
+    //
+    // This defers; it does not translate. A route that genuinely does not
+    // exist still reaches the worker and still answers 404 — after the wait,
+    // not instead of it — so the deferral cannot mask a real routing bug.
+    final reloading = _reloadInFlight;
+    if (reloading != null) {
+      final settled = await reloading
+          .timeout(_reloadGrace)
+          .then((_) => true, onError: (_) => false);
+      if (!settled) {
+        stderr.writeln('[design-server] $method ${req.uri.path}: waited '
+            '${_reloadGrace.inMilliseconds}ms for a hot reload that has not '
+            'finished — answering 503 rather than a 404 from an empty route table');
+        await _writeError(req, 503, 'errorSurface.reloading', _msgReloading);
+        return;
+      }
+    }
+
     final resp = await _withSessionLock(sid, () async {
       final sessionData = Map<String, dynamic>.from(_sessions[sid] ?? {});
       final state = <String, dynamic>{
@@ -724,7 +780,7 @@ class DesignServer {
     _debounce?.cancel();
     _debounce = Timer(const Duration(milliseconds: 200), () {
       if (_stopped) return;
-      unawaited(_worker.reload().catchError((Object e) {
+      unawaited(_trackedReload().catchError((Object e) {
         stderr.writeln('[design-server] hot reload failed: $e');
       }));
     });
@@ -755,7 +811,36 @@ class DesignServer {
   }
 
   /// Reload the worker now (used by tests; production uses the file watcher).
-  Future<void> reload() => _worker.reload();
+  Future<void> reload() => _trackedReload();
+
+  /// Run a hot reload with [_reloadInFlight] held open for its whole duration.
+  ///
+  /// The gate is a [Completer] rather than the reload future itself so that it
+  /// completes NORMALLY even when the reload fails: waiters must resume and
+  /// take their chances with the worker — the task-#64 self-heal is the net
+  /// under them — rather than inherit the reload's error, which would turn one
+  /// failed reload into an error for every request queued behind it.
+  ///
+  /// Cleared under the same tail-identity guard [_withSessionLock] uses, so a
+  /// slow reload finishing after a newer one cannot clear the newer one's gate
+  /// and let requests through into a window that is still open.
+  Future<void> _trackedReload() {
+    final gate = Completer<void>();
+    _reloadInFlight = gate.future;
+    final work = _worker.reload();
+    // The error is neutralised on THIS branch before `whenComplete`, and only
+    // here — the caller still sees it on the returned `work`. A bare
+    // `work.whenComplete(...)` would be a second, unhandled subscription to a
+    // failing reload, and an async error with no handler above it is raised
+    // from the watcher's Timer callback, which terminates the whole server.
+    // Saving a file would kill the studio (task #64's regression, caught by
+    // worker_death_test).
+    unawaited(work.then<void>((_) {}, onError: (Object _) {}).whenComplete(() {
+      if (identical(_reloadInFlight, gate.future)) _reloadInFlight = null;
+      if (!gate.isCompleted) gate.complete();
+    }));
+    return work;
+  }
 
   /// Put the worker tab into the lost-realm state task #51 recovers from.
   /// Test-only; see [JsWorker.breakDispatchForTest].

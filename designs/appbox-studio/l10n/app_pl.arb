@@ -862,6 +862,7 @@
 
   "errorSurface.serverError": "Coś poszło nie tak na serwerze appbox. Szczegóły są w dzienniku serwera.",
   "errorSurface.notFound": "brak trasy dla {method} {path}",
+  "errorSurface.reloading": "Serwer projektowy przeładowuje się po zmianie pliku. Spróbuj ponownie za chwilę.",
   "errorSurface.pageHint": "Nic z tego, co masz otwarte, nie zostało utracone — nie powiodło się tylko to żądanie.",
   "errorSurface.backHome": "Powrót do pulpitu",
   "errorSurface.dismiss": "Zamknij"

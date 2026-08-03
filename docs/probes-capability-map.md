@@ -568,6 +568,87 @@ the plumbing quietly becoming dead weight.
 
 Wiring it into `ProbeContext.newPage` is the harness's call, not this file's.
 
+## The hot-reload window — a live product defect, not a probe flake (task #19)
+
+`shell-chrome`'s `redo enabled after stepping back` used to fail intermittently
+(6/9 on one machine, 5/5 on another). It was **not** a timing tolerance and
+**not** a regression in the undo path. Root-caused 2026-08-03 by measurement and
+**FIXED** the same day — `design_server.dart` now defers dispatch while a hot
+reload is in flight. Acceptance: **shell-chrome 9/9, 70/70 checks each, with the
+watcher on**. The mechanism below is kept because it explains the check, and
+because the same shape can reappear anywhere a request follows a project write.
+
+**Mechanism.** A canvas mutation writes the project → the project watcher fires
+→ a 200ms debounce → `_worker.reload()` re-navigates the worker tab → the JS
+realm is wiped, so `worker_shim.js`'s `let routesTable = []` re-runs. For the
+~900ms until `__boot` re-imports `app.routes.js`, `globalThis.__dispatch` still
+EXISTS but the table is EMPTY, so **every request 404s**. Dart keeps dispatching
+because its own boot-time copy still holds all 142 routes; only the worker's
+table is gone. Measured at the moment of failure:
+`LIVE worker routes=0 (dart copy=142)`. The task-#64 self-heal cannot catch it —
+that matches "`__dispatch` is not a function", and here dispatch works fine and
+simply has nothing to route.
+
+**Evidence.** Two runs, same idle machine, minutes apart:
+
+```
+FAIL  812099 move -> 200 | 812274 RELOAD START | 812572 undo -> 404 | 813178 RELOAD END (904ms)
+PASS  877124 move -> 200 | 877512 undo -> 200  | 877801 RELOAD START
+```
+
+The sole discriminator is whether the undo POST reaches the server before or
+after `RELOAD START`. Causal control: `--no-watch` (no watcher, no reload) gives
+**70/70 PASS across 3 runs** with the undo answering **200 in 32-34ms**, against
+**5/5 FAIL** with the watcher on — both arms under identical load.
+
+**Two pieces of folklore this corrects.** The `.mjs` comment's "fails under
+concurrent load (task #55)" is backwards: load shifts *when* the undo lands
+relative to the window, so heavy load can make it PASS (observed — a `probe all`
+run went 10/10 with `shell-chrome` last). And nothing regressed in the undo
+route, which is healthy at 32ms warm.
+
+**Wave D: keep the 5s wait — decided, not deferred.** It was never the problem
+and raising it could never have helped: once the 404 landed, no wait succeeded.
+It stays 5s now that the fix has landed, because a warm undo is 32-34ms and 5s
+is ~150x that. The check's red was real and pointed at a real defect; treating it
+as a tolerance problem would have hidden a bug that silently discarded a user's
+undo.
+
+**The fix.** `design_server.dart` tracks the in-flight reload
+(`_reloadInFlight`, set by `_trackedReload`) and `_dispatch` waits on it —
+outside the session lock — before dispatching. It defers, it does not translate:
+a route that genuinely does not exist still reaches the worker and still answers
+404 *after* the wait, so the deferral cannot mask a routing bug. The grace is
+3800ms (4x the slowest reload observed, covering the task-#51 boot-retry path);
+beyond it the request answers **503** with a new `errorSurface.reloading` string,
+never a silent 404. Three tests pin it in `design_server_test.dart`, including a
+`_widenBootWindow` helper that holds `__boot` open so the window is hit on
+purpose rather than by luck.
+
+**Which probes are exposed** (analysis by the islands port agent, from the code
+paths). The vulnerable shape is *any* check reading a request issued within
+~1.1s of a **project** write — undo is merely the request that always
+immediately follows one.
+
+- `explode`, `flowwalk` — GET-only (lens swaps, viewer-state reads). No write,
+  no window.
+- `inspect` — declares `mutates: true`, but `chat_viewmodel.js` `elementContext`
+  → `facade.pinElement` writes **session** data, not the project on disk, so it
+  never trips the watcher. The flag is inherited from the `.mjs` original's
+  `requireDisposableProject` call and earns its keep as a disposable-target
+  guard; it is deliberately left set (conservative in the safe direction) and is
+  **not** evidence of a project write.
+- `shell-chrome` — writes the project (flow move). Confirmed exposed; this is
+  the measured case.
+
+Caveat on that analysis, stated rather than glossed: the serve log shows no
+reload lines, but the server does not log reloads without instrumentation, so
+absence of log lines is not confirmation — the code paths are the evidence.
+
+Before the `.mjs` originals are archived, wave D should sweep the remaining
+probes for "writes the project, then asserts on the next request", or this race
+gets rediscovered as a flaky port.
+
 ## Recorded ceilings
 
 - **`waitUntil: 'networkidle'` has no CDP equivalent.** `ProbeContext.goto` uses

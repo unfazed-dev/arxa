@@ -869,6 +869,7 @@
       "path": { "type": "String", "example": "/design/nope" }
     }
   },
+  "errorSurface.reloading": "The design server is reloading after a file change. Try again in a moment.",
   "errorSurface.pageHint": "Nothing you had open was lost — this request alone failed.",
   "errorSurface.backHome": "Back to the dashboard",
   "errorSurface.dismiss": "Dismiss"
