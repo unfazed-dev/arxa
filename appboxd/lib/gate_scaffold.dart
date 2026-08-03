@@ -316,6 +316,7 @@ GateResult scaffoldGate(GateContext ctx) {
 
     // ---- S6: scope truth for <shell>/shared/widgets/ ----
     _runS6Shared(app, s, shells, edges, ok, warn, fail);
+    _runS6View(app, s, shells, edges, ok, warn, fail);
 
     // ---- S7: no layout-swapping in shared widgets ----
     // A shared widget may adapt internals (getValueForScreenType /
@@ -518,6 +519,12 @@ List<_Consumer> _consumersOf(String widget, List<_Edge> edges, String app) {
   return out;
 }
 
+/// Directories directly under a shell that are not surfaces. A widget reached
+/// through one of them is owned by the shell, never by a single surface.
+const _notASurface = {
+  'shared', 'bottom_sheets', 'dialogs', 'snackbars', 'services', 'models',
+};
+
 /// Which tier a consumer file lives in. Overlay dirs and shared/ are shell
 /// scope: a widget reached through them is not owned by any single surface.
 _Consumer _classifyConsumer(String path, String app, bool viaPackage) {
@@ -526,10 +533,7 @@ _Consumer _classifyConsumer(String path, String app, bool viaPackage) {
   final shell = m.group(1)!;
   final segs = m.group(2)!.split('/');
   if (segs.length < 2) return _Consumer(path, shell, null, viaPackage);
-  const notASurface = {
-    'shared', 'bottom_sheets', 'dialogs', 'snackbars', 'services', 'models',
-  };
-  if (notASurface.contains(segs.first)) {
+  if (_notASurface.contains(segs.first)) {
     return _Consumer(path, shell, null, viaPackage);
   }
   return _Consumer(path, shell, segs.first, viaPackage);
@@ -604,13 +608,49 @@ void _runS6Cross(String app, List<_Edge> edges, void Function(String) ok,
   }
 }
 
-/// S6 — scope truth for `<shell>/shared/widgets/`, both directions:
-///   • consumers in 2+ shells  → promote to the cross-shell home;
-///   • consumers in one surface → demote to that surface's widgets/.
-/// The promote failure is suppressed when S2 already reports every foreign
-/// consumer edge (a `package:` import out of another self-contained shell) —
-/// one cause, one failure. Shells outside the manifest are invisible to S2, so
+/// True when S2 already reports every one of these foreign-shell consumer
+/// edges — a `package:` import out of a shell that is itself in the manifest.
+/// One cause, one failure. Shells outside the manifest are invisible to S2, so
 /// S6 stays the only reporter there.
+bool _coveredByS2(Iterable<_Consumer> foreign, List<String> selfContained) =>
+    foreign.every((c) => c.viaPackage && selfContained.contains(c.shell));
+
+/// The promote-out-of-shell branch, shared by BOTH intra-shell tiers so that
+/// "outside the shell" has exactly one definition. A consumer in another shell,
+/// or one outside the views tree entirely (lib/app/, lib/extensions/ — which
+/// makes the widget app-wide), is not covered by any home inside this shell, so
+/// no tier under `<shell>/` is the answer: only lib/ui/widgets/ is.
+///
+/// Returns null when nothing escapes the shell and the narrower rule may speak,
+/// true when it reported, false when S2 already names every escaping edge.
+/// An app-level consumer is never S2-visible, so it always reports.
+bool? _promoteOutOfShell(
+    String rel,
+    String shell,
+    String tier,
+    List<_Consumer> consumers,
+    List<String> selfContained,
+    void Function(String) fail) {
+  final outside = consumers.where((c) => c.shell != shell).toList();
+  if (outside.isEmpty) return null;
+  final foreign = outside.where((c) => c.shell != null).toList();
+  if (foreign.length == outside.length &&
+      _coveredByS2(foreign, selfContained)) {
+    return false;
+  }
+  final names = outside.map((c) => c.shell ?? 'app-level').toSet().toList()
+    ..sort();
+  fail('$shell: widget escapes its shell (S6) — $rel lives in $tier but is '
+      'imported from ${names.join(', ')}; a widget lives at the narrowest scope '
+      'that covers ALL its consumers, and no home inside $shell covers those: '
+      'move it to the cross-shell home lib/ui/widgets/');
+  return true;
+}
+
+/// S6 — scope truth for `<shell>/shared/widgets/`, both directions:
+///   • any consumer outside the shell → promote to the cross-shell home
+///     (_promoteOutOfShell, shared with the per-surface tier);
+///   • consumers in one surface → demote to that surface's widgets/.
 void _runS6Shared(
     String app,
     String shell,
@@ -632,19 +672,10 @@ void _runS6Shared(
           'unconsumed widget (S6)');
       continue;
     }
-    final foreign = consumers.where((c) => c.shell != null && c.shell != shell);
-    final foreignShells = foreign.map((c) => c.shell!).toSet();
-    if (foreignShells.isNotEmpty) {
-      final coveredByS2 = foreign
-          .every((c) => c.viaPackage && selfContained.contains(c.shell));
-      if (!coveredByS2) {
-        final names = foreignShells.toList()..sort();
-        fail('$shell: cross-shell widget in shared/widgets/ (S6) — $rel is '
-            'imported by ${names.length} other shell(s) (${names.join(', ')}); '
-            'a widget imported beyond its own shell belongs in the cross-shell '
-            'home lib/ui/widgets/');
-        bad++;
-      }
+    final escaped = _promoteOutOfShell(
+        rel, shell, 'shared/widgets/', consumers, selfContained, fail);
+    if (escaped != null) {
+      if (escaped) bad++;
       continue; // scope is already wrong upward; demotion is not the fix
     }
     final want = _narrowestHome(consumers);
@@ -658,6 +689,64 @@ void _runS6Shared(
   }
   if (judged > 0 && bad == 0) {
     ok('$shell: shared/widgets/: $judged widget(s) at the right scope (S6)');
+  }
+}
+
+/// S6 — scope truth for `<shell>/<surface>/widgets/`, the promotion side of the
+/// law. The narrowest tier can only be too narrow, so every failure here is a
+/// promotion, and the tier it names is the one that covers the consumers:
+///   • a consumer outside the shell (another shell, or a file outside the views
+///     tree, which makes the widget app-wide) → lib/ui/widgets/;
+///   • a consumer in a sibling surface, or the shell itself → shared/widgets/.
+/// Same no-double-report discipline as the shared tier: a cross-shell failure
+/// is suppressed when S2 already names every foreign edge.
+void _runS6View(
+    String app,
+    String shell,
+    List<String> selfContained,
+    List<_Edge> edges,
+    void Function(String) ok,
+    void Function(String) warn,
+    void Function(String) fail) {
+  final shellDir = Directory('$app/lib/ui/views/$shell');
+  if (!shellDir.existsSync()) return;
+  var bad = 0;
+  var judged = 0;
+  for (final e in shellDir.listSync().whereType<Directory>()) {
+    final surface = _basename(e.path);
+    if (_notASurface.contains(surface)) continue;
+    final dir = Directory('${e.path}/widgets');
+    if (!dir.existsSync()) continue;
+    for (final w in _widgetSubjects(dir)) {
+      judged++;
+      final rel = _rel(w, app);
+      final consumers = _consumersOf(w, edges, app);
+      if (consumers.isEmpty) {
+        warn('$shell: $rel is in $surface/widgets/ but no file imports it — '
+            'unconsumed widget (S6)');
+        continue;
+      }
+      final escaped = _promoteOutOfShell(
+          rel, shell, '$surface/widgets/', consumers, selfContained, fail);
+      if (escaped != null) {
+        if (escaped) bad++;
+        continue; // the broader tier wins: shared/ would not cover them either
+      }
+      final elsewhere = consumers.where((c) => c.view != surface);
+      if (elsewhere.isNotEmpty) {
+        final where = elsewhere.map((c) => c.view ?? 'the shell itself').toSet()
+            .toList()
+          ..sort();
+        fail('$shell: widget shared beyond its surface (S6) — $rel lives in '
+            '$surface/widgets/ but is imported from ${where.join(', ')}; a '
+            'widget lives at the narrowest scope that covers its consumers: '
+            'move it to lib/ui/views/$shell/shared/widgets/');
+        bad++;
+      }
+    }
+  }
+  if (judged > 0 && bad == 0) {
+    ok('$shell: <surface>/widgets/: $judged widget(s) at the right scope (S6)');
   }
 }
 

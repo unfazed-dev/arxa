@@ -104,6 +104,127 @@ void main() {
     });
   });
 
+  group('S6 scope truth: <shell>/<surface>/widgets/', () {
+    // The narrowest tier can only be too narrow, so every failure here is a
+    // promotion. `card` starts correct: home owns it and home alone imports it.
+    setUp(() {
+      write('lib/ui/views/main_shell/home/widgets/card.dart', 'class Card {}\n');
+      write('lib/ui/views/main_shell/home/home_view.dart',
+          "import '../shared/widgets/badge.dart';\n"
+          "import 'widgets/card.dart';\n\nclass View {}\n");
+    });
+
+    test('a widget imported only by its own surface passes', () {
+      final r = run();
+      expect(r.passed, isTrue, reason: detailsOf(r));
+      expect(detailsOf(r),
+          contains('main_shell: <surface>/widgets/: 1 widget(s) at the right scope (S6)'));
+    });
+
+    test('a sibling surface importing it fails, promotion to shared named', () {
+      write('lib/ui/views/main_shell/detail/detail_view.dart',
+          "import '../shared/widgets/badge.dart';\n"
+          "import '../home/widgets/card.dart';\n\nclass View {}\n");
+      final r = run();
+      expect(r.passed, isFalse);
+      expect(detailsOf(r), contains('widget shared beyond its surface (S6)'));
+      expect(detailsOf(r), contains('imported from detail'));
+      expect(detailsOf(r),
+          contains('move it to lib/ui/views/main_shell/shared/widgets/'));
+    });
+
+    test('the shell itself importing it fails, promotion to shared named', () {
+      write('lib/ui/views/main_shell/main_shell_view.dart',
+          "import 'home/widgets/card.dart';\n\nclass MainShellView {}\n");
+      final r = run();
+      expect(r.passed, isFalse);
+      expect(detailsOf(r), contains('imported from the shell itself'));
+      expect(detailsOf(r),
+          contains('move it to lib/ui/views/main_shell/shared/widgets/'));
+    });
+
+    test('a barrel hop does not hide a sibling surface (non-vacuous)', () {
+      write('lib/ui/views/main_shell/home/widgets/widgets.dart',
+          "library;\n\nexport 'card.dart';\n");
+      write('lib/ui/views/main_shell/home/home_view.dart',
+          "import '../shared/widgets/badge.dart';\n"
+          "import 'widgets/widgets.dart';\n\nclass View {}\n");
+      write('lib/ui/views/main_shell/detail/detail_view.dart',
+          "import '../shared/widgets/badge.dart';\n"
+          "import '../home/widgets/widgets.dart';\n\nclass View {}\n");
+      final r = run();
+      expect(r.passed, isFalse, reason: 'the barrel hop must not hide the consumer');
+      expect(detailsOf(r),
+          contains('move it to lib/ui/views/main_shell/shared/widgets/'));
+      expect(
+          r.details.where((d) => d.contains('(S6)') && d.startsWith('FAIL')).length, 1,
+          reason: 'the barrel is an edge, not a second subject');
+    });
+
+    test('another shell importing it names the cross-shell home', () {
+      plantShell('alt_shell', ['gallery']);
+      write('lib/ui/views/alt_shell/gallery/gallery_view.dart',
+          "import 'package:demo/ui/views/main_shell/home/widgets/card.dart';\n\n"
+          'class View {}\n');
+      final r = run();
+      expect(r.passed, isFalse);
+      expect(detailsOf(r), contains('widget escapes its shell (S6)'));
+      expect(detailsOf(r), contains('lib/ui/widgets/'));
+    });
+
+    test('an app-level consumer names the cross-shell home', () {
+      write('lib/extensions/hover_extensions.dart',
+          "import 'package:demo/ui/views/main_shell/home/widgets/card.dart';\n\n"
+          'class Hover {}\n');
+      final r = run();
+      expect(r.passed, isFalse);
+      expect(detailsOf(r), contains('widget escapes its shell (S6)'));
+      expect(detailsOf(r), contains('app-level'));
+    });
+
+    test('the broader tier wins when both promotions apply', () {
+      // Imported by a sibling surface AND from outside the shell. Both rules
+      // match; only the one naming the tier that actually covers the consumers
+      // may speak, and it must speak once.
+      write('lib/ui/views/main_shell/detail/detail_view.dart',
+          "import '../shared/widgets/badge.dart';\n"
+          "import '../home/widgets/card.dart';\n\nclass View {}\n");
+      write('lib/extensions/hover_extensions.dart',
+          "import 'package:demo/ui/views/main_shell/home/widgets/card.dart';\n\n"
+          'class Hover {}\n');
+      final r = run();
+      expect(r.passed, isFalse);
+      expect(detailsOf(r), contains('widget escapes its shell (S6)'));
+      expect(detailsOf(r), isNot(contains('widget shared beyond its surface (S6)')),
+          reason: 'shared/widgets/ does not cover the app-level consumer');
+      expect(
+          r.details
+              .where((d) => d.startsWith('FAIL') && d.contains('home/widgets/card.dart'))
+              .length,
+          1);
+    });
+
+    test('a cross-shell edge S2 already names is not reported twice', () {
+      plantShell('alt_shell', ['gallery']);
+      manifest(['main_shell', 'alt_shell']);
+      write('lib/ui/views/alt_shell/gallery/gallery_view.dart',
+          "import 'package:demo/ui/views/main_shell/home/widgets/card.dart';\n\n"
+          'class View {}\n');
+      final r = run();
+      expect(r.passed, isFalse);
+      expect(detailsOf(r), contains('cross-shell import (S2)'));
+      expect(detailsOf(r), isNot(contains('widget escapes its shell (S6)')));
+    });
+
+    test('unconsumed per-surface widget warns, never fails', () {
+      write('lib/ui/views/main_shell/detail/widgets/orphan.dart',
+          'class Orphan {}\n');
+      final r = run();
+      expect(r.passed, isTrue, reason: detailsOf(r));
+      expect(detailsOf(r), contains('unconsumed widget (S6)'));
+    });
+  });
+
   group('S6 scope truth: cross-shell home lib/ui/widgets/', () {
     test('shared widget imported by another shell fails, promotion named', () {
       // alt_shell is outside the manifest, so S2 never sees the import: S6 is
@@ -114,9 +235,23 @@ void main() {
           'class View {}\n');
       final r = run();
       expect(r.passed, isFalse);
-      expect(detailsOf(r), contains('cross-shell widget in shared/widgets/ (S6)'));
+      expect(detailsOf(r), contains('widget escapes its shell (S6)'));
+      expect(detailsOf(r), contains('lives in shared/widgets/'));
       expect(detailsOf(r), contains('alt_shell'));
       expect(detailsOf(r), contains('lib/ui/widgets/'));
+    });
+
+    test('an app-level consumer is outside the shell too, promotion named', () {
+      // shared/widgets/ covers the shell, not lib/extensions/. Same rule, same
+      // message as the per-surface tier: one definition of "outside the shell".
+      write('lib/extensions/hover_extensions.dart',
+          "import 'package:demo/ui/views/main_shell/shared/widgets/badge.dart';\n\n"
+          'class Hover {}\n');
+      final r = run();
+      expect(r.passed, isFalse);
+      expect(detailsOf(r), contains('widget escapes its shell (S6)'));
+      expect(detailsOf(r), contains('app-level'));
+      expect(detailsOf(r), contains('move it to the cross-shell home lib/ui/widgets/'));
     });
 
     test('the same widget at lib/ui/widgets/ passes', () {
@@ -198,7 +333,7 @@ void main() {
       final r = run();
       expect(r.passed, isFalse);
       expect(detailsOf(r), contains('cross-shell import (S2)'));
-      expect(detailsOf(r), isNot(contains('cross-shell widget in shared/widgets/ (S6)')),
+      expect(detailsOf(r), isNot(contains('widget escapes its shell (S6)')),
           reason: 'S2 already names this edge; S6 must not double-report it');
     });
   });
