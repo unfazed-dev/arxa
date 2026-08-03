@@ -387,7 +387,7 @@ function viewerFor(d, L, t) {
     ? registryIds.map((id) => fixture.find((s) => s.id === id)).filter(Boolean)
     : fixture;
 
-  const bg = ['canvas', 'warm', 'slate'].includes(v.bg) ? v.bg : 'canvas';
+  const bg = ['canvas', 'warm', 'ink'].includes(v.bg) ? v.bg : 'canvas';
   // Canvas app theme OVERRIDE: light/dark restyle the designed app's stubs
   // ONLY (never the studio chrome); null = auto — the stubs keep following
   // the studio theme, which is screenStub's default (build_facade), so auto
@@ -605,7 +605,7 @@ function viewerFor(d, L, t) {
   // top bar's duplicate undo/redo pair was retired (the bottom controller
   // keeps the only history buttons).
   const themes = ['auto', 'light', 'dark'].map((key) => ({ key, active: (theme ?? 'auto') === key, href: withParams({ theme: key === 'auto' ? null : key }) }));
-  const bgs = ['canvas', 'warm', 'slate'].map((value) => ({ value, active: value === bg, href: withParams({ bg: value }) }));
+  const bgs = ['canvas', 'warm', 'ink'].map((value) => ({ value, active: value === bg, href: withParams({ bg: value }) }));
 
   const miniPanel = {
     // The bar-right cluster (always mounted): device rung icons in ALL

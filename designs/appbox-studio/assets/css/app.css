@@ -587,19 +587,35 @@ button:active { transform: translateY(1px); }
    compensating for exactly the thing the section contract removes: a card pad
    that stacked under the bottom bar but not above it. Sections own their own
    padding and sit flush to the card edge, so the asymmetry cannot recur. */
-/* Compound with .panel-viewer, deliberately: the viewer panel also carries
-   `.panel`, whose surface background ties these at (0,1,0) and loads later —
-   so a bare .dv-bg-* loses the cascade tie and the swatches paint nothing
-   (the light-theme bug; the dark variants below always outranked .panel,
-   which is why only light mode looked dead). */
-.panel-viewer.dv-bg-canvas { background: var(--bg-2); }
-.panel-viewer.dv-bg-warm { background: #f4ead8; }
-[data-theme="dark"] .panel-viewer.dv-bg-warm { background: #3a3126; }
-.panel-viewer.dv-bg-slate { background: #2b3038; }
-[data-theme="dark"] .panel-viewer.dv-bg-slate { background: #14171c; }
+/* Canvas field tones — Flexoki steps only, this design's own palette (the
+   old #f4ead8 cream and cool #2b3038 slate were foreign hues against the
+   warm scale, and "slate" became "ink" when the hue did). Tokens live on
+   .panel-viewer per theme; the BODY stage rules below and the topbar
+   swatches (viewer.css) consume the same tokens — one source for both.
+   `warm` is an amber wash over the canvas step: the palette's own accent
+   via color-mix, so it re-derives in each theme instead of hardcoding a
+   second pair of hexes. */
+.panel-viewer {
+  --dv-bg-canvas: #E6E4D9;                                       /* base-100 */
+  --dv-bg-warm: color-mix(in oklab, var(--amber) 18%, #E6E4D9);
+  --dv-bg-ink: #343331;                                          /* base-850 */
+}
+[data-theme="dark"] .panel-viewer {
+  --dv-bg-canvas: #282726;                                       /* base-900 */
+  --dv-bg-warm: color-mix(in oklab, var(--amber) 18%, #282726);
+  --dv-bg-ink: #100F0F;                                          /* black */
+}
+/* The bg paints ONLY the panel body — the scrollable stage the artboards
+   sit on (all four lens stages; canvas.js's own selector list) — never the
+   card itself, so the top and bottom bars keep the .panel surface. */
+.dv-bg-canvas :is(.dv-stage, .dv-rungs, .dv-flow-canvas, .dv-proto-stage) { background: var(--dv-bg-canvas); }
+.dv-bg-warm :is(.dv-stage, .dv-rungs, .dv-flow-canvas, .dv-proto-stage) { background: var(--dv-bg-warm); }
+.dv-bg-ink :is(.dv-stage, .dv-rungs, .dv-flow-canvas, .dv-proto-stage) { background: var(--dv-bg-ink); }
 .dv-toolbar { display: flex; align-items: center; gap: .8rem; flex-wrap: wrap; }
 .dv-screen { font-weight: 600; font-size: .82rem; }
-[data-theme="dark"] .dv-bg-warm .dv-screen, .dv-bg-slate .dv-screen, .dv-bg-slate .dv-chip { color: #e8e4da; }
+/* ink is a dark field in EITHER theme (and warm goes dark in dark theme):
+   tile labels/chips on those fields flip to base-200. */
+.dv-bg-ink .dv-screen, .dv-bg-ink .dv-chip, [data-theme="dark"] .dv-bg-warm .dv-screen { color: #CECDC3; }
 .dv-group { display: inline-flex; gap: .3rem; margin-left: auto; }
 .dv-group + .dv-group { margin-left: 0; }
 .dv-body { display: flex; gap: .7rem; flex: 1; min-height: 0; }

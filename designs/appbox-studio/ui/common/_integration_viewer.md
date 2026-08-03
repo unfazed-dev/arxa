@@ -130,7 +130,8 @@ Files:
   step:     screen id | null,          // position in that row; defaults to
                                        // the chain head when flow is set
   static:   bool,                      // build evidence: read-only canvas
-  bg:       'canvas' | 'warm' | 'slate',
+  bg:       'canvas' | 'warm' | 'ink', // Flexoki field tones; paints the
+               // BODY stage only — the panel's bars keep the card surface.
   base:     '/design/viewer',          // per-shell viewer route
   stubBase: '/build/screens/',         // iframe src prefix — every tile,
                // thumb and proto frame renders the STUB, always. The

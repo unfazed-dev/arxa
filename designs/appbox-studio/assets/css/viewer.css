@@ -304,9 +304,11 @@
   box-shadow: inset 0 0 0 1px var(--border);
 }
 .mini-swatch.on { box-shadow: inset 0 0 0 1px var(--border), 0 0 0 2px var(--accent, #0891b2); }
-.mini-swatch-canvas { background: var(--bg-2); }
-.mini-swatch-warm { background: #f4ead8; }
-.mini-swatch-slate { background: #2b3038; }
+/* Dots show the same tokens the canvas paints (app.css, .panel-viewer);
+   fallbacks are the light-theme values for standalone renders. */
+.mini-swatch-canvas { background: var(--dv-bg-canvas, #E6E4D9); }
+.mini-swatch-warm { background: var(--dv-bg-warm, #DFD3BA); }
+.mini-swatch-ink { background: var(--dv-bg-ink, #343331); }
 /* The controller is now a flex CHILD of .mini-panel-bar, not its own row:
    no padding of its own, and nowrap for the same reason the bar has it. */
 /* Gaps and divider padding halved from the two-row layout: at half width the
