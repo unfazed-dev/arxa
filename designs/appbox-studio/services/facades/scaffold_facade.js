@@ -132,7 +132,10 @@ export const context = (session = {}, t = (k) => k, locale = 'en', screen = 'suc
         // confirm degrades into an explanation.
         blockedBy: kits.filter((k) => k.selected && dependsOf(k).includes(pending.id)).map((k) => k.id),
         confirmHref: `/scaffold/remove/confirm?kit=${pending.id}`,
-        cancelHref: '/scaffold',
+        // Not '/scaffold': cancelling has to clear the staged removal on the
+        // server (picker.cancelRemove). Pointing this at the page would
+        // re-render with pendingRemove still set — cancel that never cancels.
+        cancelHref: '/scaffold/remove/cancel',
       }
     : null;
 

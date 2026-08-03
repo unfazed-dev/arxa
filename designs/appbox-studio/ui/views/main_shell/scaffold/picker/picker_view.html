@@ -147,7 +147,13 @@
   <h3 class="display" id="confirm-title">{{ t('scaffold.picker.confirm.title', {kit: c.confirm.kit.id}) }}</h3>
   {% if c.confirm.blockedBy.length %}
     <p class="confirm-blocked">{{ icon('circle-alert', {size: 14}) }} {{ t('scaffold.picker.confirm.blocked', {kits: c.confirm.blockedBy | join(', ')}) }}</p>
-    {{ pr.ctaLink(c.confirm.cancelHref, t('scaffold.picker.confirm.cancel'), 'chevron-left', 'main') }}
+    {# Cancel clears the staged removal server-side, so it must reach
+       picker.cancelRemove — a plain link to the page would leave
+       pendingRemove set and re-open this dialog. #}
+    <form method="post" action="{{ c.confirm.cancelHref }}"
+          hx-post="{{ c.confirm.cancelHref }}" hx-target="#picker-grid" hx-swap="outerHTML">
+      <button type="submit" class="cta-ghost">{{ icon('chevron-left', {size: 14}) }} {{ t('scaffold.picker.confirm.cancel') }}</button>
+    </form>
   {% else %}
     {% if c.confirm.screens.length %}
     <p>{{ t('scaffold.picker.confirm.declared', {screens: c.confirm.screens | join(', ')}) }}</p>
@@ -160,7 +166,10 @@
             hx-post="{{ c.confirm.confirmHref }}" hx-target="#panels" hx-swap="morph:outerHTML">
         <button type="submit" class="cta-ghost is-destructive">{{ t('scaffold.picker.confirm.yes') }}</button>
       </form>
-      {{ pr.ctaLink(c.confirm.cancelHref, t('scaffold.picker.confirm.cancel'), false, 'main') }}
+      <form method="post" action="{{ c.confirm.cancelHref }}"
+            hx-post="{{ c.confirm.cancelHref }}" hx-target="#picker-grid" hx-swap="outerHTML">
+        <button type="submit" class="cta-ghost">{{ t('scaffold.picker.confirm.cancel') }}</button>
+      </form>
     </div>
   {% endif %}
 </aside>
