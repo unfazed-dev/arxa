@@ -1,0 +1,244 @@
+<!-- appbox:provenance
+     generator: appbox  licence: free  project: 662368770980
+     Built with appbox (free tier) — https://appbox.dev
+-->
+{% extends "ui/views/main_shell/main_shell_view.html" %}
+{% import "ui/views/main_shell/scaffold/_shared.html" as sh %}
+{% import "ui/common/widgets/primitives.html" as pr %}
+
+{% block title %}{{ t('scaffold.run.pageTitle') }}{% endblock %}
+{% block main_class %}shell-main-scaffold-run{% endblock %}
+{% block head_extra %}
+<link rel="stylesheet" href="/assets/css/scaffold-run.css">
+{% endblock %}
+
+{# ============================================================================
+   scaffold.run — the scaffold execution RECEIPT.
+
+   THE ONE DECISION THAT SHAPES THIS FILE (D24): scaffolding is a fast,
+   deterministic, purely local transform of an already-frozen structure.json.
+   No model call, no subprocess, no network, no user input mid-flight. It
+   finishes in milliseconds.
+
+   Therefore this screen is NOT a progress screen. There is no spinner ring, no
+   stage timeline, no percentage, no live region ticking through steps — and
+   the moodboard's spinner-ring motif is deliberately NOT reproduced here. A
+   progress indicator for a synchronous function call is a lie about where time
+   goes: it invents a wait so the machine looks busy, and it teaches the reader
+   that scaffolding is the slow part of the pipeline when it is the fastest.
+
+   What a reader actually needs is the opposite of motion: a RECEIPT they can
+   audit after the fact. So every state below answers exactly three questions —
+   what was the input, what landed on disk, and what (if anything) needs a
+   human. Files, deltas and reasons; never elapsed time.
+
+   Five read states, no sixth "running" one:
+     pre       — the gate: frozen input + chosen kits, nothing written yet
+     completed — everything landed clean
+     warning   — everything landed, one or more kits carried unmet readiness
+     failed    — a write was refused, the run rolled back
+     blocked   — the precondition is missing (structure not frozen)
+
+   No client JS (W1-W6): the only interactions are links and hx-get swaps.
+============================================================================ #}
+
+{# ---------- the state banner ----------
+   One line that names the outcome, coloured by severity. `warning` is
+   deliberately NOT red: unmet readiness never blocked this run (D6), it only
+   matters later at deploy, so it reads as a note on a success. #}
+{% macro banner(c) %}
+<div class="run-banner run-banner--{{ c.state }}" role="status">
+  <span class="run-banner-icon">
+    {{ icon('file-check' if c.isDone and not c.hasWarnings else ('alert-triangle' if c.hasWarnings else ('x-octagon' if c.isFailed else ('lock' if c.isBlocked else 'play'))), {size: 18}) }}
+  </span>
+  <div class="run-banner-text">
+    <p class="run-banner-title">{{ t('scaffold.run.state.' ~ c.state ~ '.title') }}</p>
+    <p class="run-banner-note">{{ t('scaffold.run.state.' ~ c.state ~ '.note') }}</p>
+  </div>
+</div>
+{% endmacro %}
+
+{# ---------- the input summary ----------
+   Shown in EVERY state, not just `pre`. A receipt that hides its input is not
+   auditable: "which structure revision produced these files" is the first
+   question anyone asks when the output looks wrong. #}
+{% macro inputSummary(c) %}
+<section class="run-card run-input" aria-labelledby="run-input-h">
+  <h3 class="run-card-h" id="run-input-h">{{ t('scaffold.run.input.heading') }}</h3>
+  <dl class="run-facts">
+    <div class="run-fact">
+      <dt>{{ t('scaffold.run.input.structure') }}</dt>
+      <dd>
+        <code class="run-path">{{ c.structure.path }}</code>
+        <span class="chip chip--sm run-frozen">{{ icon('lock', {size: 12}) }} {{ t('scaffold.run.input.frozen', {revision: c.structure.revision}) }}</span>
+      </dd>
+    </div>
+    <div class="run-fact">
+      <dt>{{ t('scaffold.run.input.scope') }}</dt>
+      <dd>{{ t('scaffold.run.input.scopeValue', {screens: c.structure.screens, shells: c.structure.shells}) }}</dd>
+    </div>
+    <div class="run-fact">
+      <dt>{{ t('scaffold.run.input.kits') }}</dt>
+      <dd>{{ t('scaffold.run.input.kitsValue', {count: c.counts.kits}) }}</dd>
+    </div>
+  </dl>
+  <ul class="run-kitset">
+    {% for k in c.kits %}
+    <li class="chip run-kit {{ 'run-kit--unready' if not k.ready }}">
+      <span class="run-kit-name">{{ t('scaffold.kit.' ~ k.id) }}</span>
+      {% if k.auto %}<span class="chip chip--sm run-kit-auto">{{ t('scaffold.run.kit.auto') }}</span>{% endif %}
+      {% if not k.ready %}<span class="chip chip--sm run-kit-keys">{{ t('scaffold.run.kit.needsKeys') }}</span>{% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endmacro %}
+
+{# ---------- the gate (pre) ----------
+   The only screen state with a primary action. It is a plain link, not a
+   form-with-spinner, because the transform is synchronous: the next paint is
+   already the receipt. #}
+{% macro gate(c) %}
+<section class="run-card run-gate">
+  <p class="run-gate-note">{{ t('scaffold.run.gate.note') }}</p>
+  <div class="run-actions">
+    <a class="cta-link cta-link--main" href="{{ c.runHref }}">{{ icon('play', {size: 14}) }} {{ t('scaffold.run.gate.action') }}</a>
+    <a class="cta-link cta-link--ghost" href="{{ c.backHref }}">{{ t('scaffold.run.gate.back') }}</a>
+  </div>
+</section>
+{% endmacro %}
+
+{# ---------- what landed ----------
+   A flat, static list — NOT a timeline. Ordering is file order, not time
+   order, because the writes are not observably sequential. `skipped` rows stay
+   visible: a file the scaffolder chose not to touch is a decision the reader
+   needs, and hiding it makes the count and the list disagree. #}
+{% macro writes(c) %}
+<section class="run-card run-writes" aria-labelledby="run-writes-h">
+  <h3 class="run-card-h" id="run-writes-h">{{ t('scaffold.run.writes.heading') }}</h3>
+  <p class="run-counts">
+    {{ t('scaffold.run.writes.counts', {created: c.counts.created, updated: c.counts.updated, skipped: c.counts.skipped}) }}
+  </p>
+  <ul class="run-filelist">
+    {% for w in c.writes %}
+    <li class="run-file run-file--{{ w.kind }}">
+      <span class="run-file-kind">{{ t('scaffold.run.writes.kind.' ~ w.kind) }}</span>
+      <code class="run-path">{{ w.path }}</code>
+      {% if not w.ready %}<span class="chip chip--sm run-kit-keys">{{ t('scaffold.run.kit.needsKeys') }}</span>{% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endmacro %}
+
+{# ---------- the manifest sidecar (D8) ----------
+   kit-manifest.json is written BESIDE structure.json, never merged into it.
+   Calling that out explicitly is the point: the reader must be able to see
+   that their frozen structure was not rewritten by the scaffolder. #}
+{% macro sidecar(c) %}
+<section class="run-card run-sidecar" aria-labelledby="run-sidecar-h">
+  <h3 class="run-card-h" id="run-sidecar-h">{{ t('scaffold.run.manifest.heading') }}</h3>
+  <p class="run-sidecar-line">
+    <code class="run-path">{{ c.manifest.path }}</code>
+    <span class="run-beside">{{ t('scaffold.run.manifest.beside', {path: c.manifest.beside}) }}</span>
+  </p>
+  <ul class="run-sections">
+    {% for s in c.manifest.sections %}
+    <li>{{ t('scaffold.run.manifest.section.' ~ s) }}</li>
+    {% endfor %}
+  </ul>
+  <dl class="run-facts run-deltas">
+    <div class="run-fact">
+      <dt><code class="run-path">{{ c.deltas.structure.path }}</code></dt>
+      <dd>{{ t('scaffold.run.delta.untouched') }}</dd>
+    </div>
+    <div class="run-fact">
+      <dt><code class="run-path">{{ c.deltas.registry.path }}</code></dt>
+      <dd>{{ t('scaffold.run.delta.counts', {added: c.deltas.registry.added, changed: c.deltas.registry.changed}) }}</dd>
+    </div>
+  </dl>
+</section>
+{% endmacro %}
+
+{# ---------- readiness warnings (D6 — inform only) ----------
+   Never a gate, never an error. The files were written; these kits simply
+   cannot DEPLOY until their keys exist. The deep link is the whole payload. #}
+{% macro warnings(c) %}
+<section class="run-card run-warnings" aria-labelledby="run-warn-h">
+  <h3 class="run-card-h" id="run-warn-h">{{ t('scaffold.run.warn.heading') }}</h3>
+  <p class="run-warn-note">{{ t('scaffold.run.warn.note') }}</p>
+  <ul class="run-warnlist">
+    {% for w in c.warnings %}
+    <li class="run-warn">
+      {{ icon('alert-triangle', {size: 13}) }}
+      <span>{{ t('scaffold.run.warn.' ~ w.code, {kit: t('scaffold.kit.' ~ w.kitId)}) }}</span>
+      <a class="bt-link" href="{{ w.href }}">{{ t('scaffold.run.warn.fix') }}</a>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endmacro %}
+
+{# ---------- failure ----------
+   Names the refused path and states the rollback plainly. A partial scaffold
+   left on disk would be worse than none, so the receipt says which files were
+   undone rather than leaving the reader to diff. #}
+{% macro failure(c) %}
+<section class="run-card run-failure" aria-labelledby="run-fail-h">
+  <h3 class="run-card-h" id="run-fail-h">{{ t('scaffold.run.fail.heading') }}</h3>
+  <p class="run-fail-reason">{{ t('scaffold.run.fail.' ~ c.failure.code) }}</p>
+  <p class="run-fail-path"><code class="run-path">{{ c.failure.path }}</code></p>
+  {% if c.failure.rolledBack %}
+  <p class="run-fail-rollback">{{ t('scaffold.run.fail.rolledBack', {count: c.failure.wrote}) }}</p>
+  {% endif %}
+  <div class="run-actions">
+    <a class="cta-link cta-link--main" href="{{ c.failure.retryHref }}">{{ t('scaffold.run.fail.retry') }}</a>
+    <a class="cta-link cta-link--ghost" href="{{ c.backHref }}">{{ t('scaffold.run.gate.back') }}</a>
+  </div>
+</section>
+{% endmacro %}
+
+{# ---------- blocked ----------
+   The precondition, not an error: structure.json is not frozen, so there is
+   nothing deterministic to transform. Sends the reader back to freeze it. #}
+{% macro blocked(c) %}
+<section class="run-card run-blocked">
+  <p class="run-blocked-note">{{ t('scaffold.run.blocked.' ~ c.blocked.code) }}</p>
+  <div class="run-actions">
+    <a class="cta-link cta-link--main" href="{{ c.blocked.href }}">{{ t('scaffold.run.blocked.action') }}</a>
+  </div>
+</section>
+{% endmacro %}
+
+{# ---------- main ---------- #}
+{% macro mainContent(c) %}
+<div class="run-body">
+  {{ banner(c) }}
+  {% if c.isBlocked %}
+    {{ blocked(c) }}
+  {% else %}
+    {{ inputSummary(c) }}
+    {% if c.isPre %}
+      {{ gate(c) }}
+    {% elif c.isFailed %}
+      {{ failure(c) }}
+      {{ writes(c) }}
+    {% else %}
+      {{ writes(c) }}
+      {{ sidecar(c) }}
+      {% if c.hasWarnings %}{{ warnings(c) }}{% endif %}
+      <div class="run-actions run-next">
+        <a class="cta-link cta-link--main" href="/build">{{ t('scaffold.run.next.build') }}</a>
+      </div>
+    {% endif %}
+  {% endif %}
+</div>
+{% endmacro %}
+
+{% macro panels(c) %}{% call sh.panels(c) %}{{ mainContent(c) }}{% endcall %}{% endmacro %}
+
+{# ---------- Fragment responses ---------- #}
+{% macro panelsSwap(c) %}{{ panels(c) }}{% endmacro %}
+
+{# ---------- Page ---------- #}
+{% block surface %}{{ panels(c) }}{% endblock %}

@@ -1,0 +1,180 @@
+{
+  "_generated": "DO NOT EDIT — run: node models/scaffold_run_model/generate.mjs",
+  "locale": "qps-ploc",
+  "structure": {
+    "path": "structure.json",
+    "frozen": true,
+    "screens": 11,
+    "shells": 6,
+    "revision": "r7"
+  },
+  "manifest": {
+    "path": "kit-manifest.json",
+    "beside": "structure.json",
+    "sections": [
+      "wishlist",
+      "resolved"
+    ]
+  },
+  "kits": [
+    {
+      "id": "core",
+      "provenance": "declared",
+      "phase": "stable",
+      "ready": true,
+      "auto": true
+    },
+    {
+      "id": "router",
+      "provenance": "declared",
+      "phase": "stable",
+      "ready": true,
+      "auto": true
+    },
+    {
+      "id": "l10n",
+      "provenance": "declared",
+      "phase": "stable",
+      "ready": true,
+      "auto": true
+    },
+    {
+      "id": "auth",
+      "provenance": "declared",
+      "phase": "stable",
+      "ready": true,
+      "auto": false
+    },
+    {
+      "id": "payments",
+      "provenance": "requested",
+      "phase": "native-first",
+      "ready": false,
+      "auto": false
+    },
+    {
+      "id": "push",
+      "provenance": "inferred",
+      "phase": "partial",
+      "ready": false,
+      "auto": false
+    }
+  ],
+  "writes": [
+    {
+      "path": "lib/main.dart",
+      "kind": "created",
+      "kitId": "core",
+      "ready": true
+    },
+    {
+      "path": "lib/router/routes.dart",
+      "kind": "created",
+      "kitId": "router",
+      "ready": true
+    },
+    {
+      "path": "lib/l10n/app_en.arb",
+      "kind": "created",
+      "kitId": "l10n",
+      "ready": true
+    },
+    {
+      "path": "lib/features/auth/auth_service.dart",
+      "kind": "created",
+      "kitId": "auth",
+      "ready": true
+    },
+    {
+      "path": "lib/features/payments/payments_service.dart",
+      "kind": "created",
+      "kitId": "payments",
+      "ready": false
+    },
+    {
+      "path": "lib/features/push/push_service.dart",
+      "kind": "created",
+      "kitId": "push",
+      "ready": false
+    },
+    {
+      "path": "pubspec.yaml",
+      "kind": "updated",
+      "kitId": "core",
+      "ready": true
+    },
+    {
+      "path": "kit-manifest.json",
+      "kind": "created",
+      "kitId": null,
+      "ready": true
+    },
+    {
+      "path": "README.md",
+      "kind": "skipped",
+      "kitId": null,
+      "ready": true
+    }
+  ],
+  "deltas": {
+    "structure": {
+      "path": "structure.json",
+      "added": 0,
+      "changed": 0,
+      "note": "untouched"
+    },
+    "registry": {
+      "path": "kit-manifest.json",
+      "added": 6,
+      "changed": 1,
+      "note": "resolved"
+    }
+  },
+  "warnings": [
+    {
+      "code": "readinessUnmet",
+      "kitId": "payments",
+      "href": "/workspace/credentials"
+    },
+    {
+      "code": "readinessUnmet",
+      "kitId": "push",
+      "href": "/workspace/credentials"
+    }
+  ],
+  "states": {
+    "pre": {
+      "note": "structure frozen, kits chosen, nothing written yet"
+    },
+    "completed": {
+      "note": "every write landed, no unmet readiness"
+    },
+    "warning": {
+      "note": "files written; unmet readiness carried through — inform only, never blocks (D6)"
+    },
+    "failed": {
+      "code": "writeDenied",
+      "path": "lib/features/payments/payments_service.dart",
+      "wrote": 4,
+      "rolledBack": true,
+      "retryHref": "/scaffold/run?state=pre"
+    },
+    "blocked": {
+      "code": "structureNotFrozen",
+      "href": "/design/prototype"
+    }
+  },
+  "counts": {
+    "created": 7,
+    "updated": 1,
+    "skipped": 1,
+    "total": 9,
+    "kits": 6,
+    "warnings": 2,
+    "wroteBeforeFailure": 4
+  },
+  "unready": [
+    "payments",
+    "push"
+  ]
+}

@@ -56,21 +56,8 @@
       "detailPlain": "Zatwierdzony projekt jest teraz wzorcem. Jeśli cokolwiek zbudowane później od niego odbiegnie, przebieg się zatrzyma i Ci pokaże."
     },
     {
-      "id": "scaffold",
-      "n": 4,
-      "label": "Scaffold",
-      "kind": "auto",
-      "state": "green",
-      "duration": "2m 10s",
-      "durationSec": 130,
-      "summary": "44 pliki · 11 powierzchni × 4 na platformę ios",
-      "summaryPlain": "44 pliki utworzone — 4 dla każdego z 11 ekranów iPhone'a",
-      "detail": "Punkty rozszerzeń View/ViewModel wyemitowane per powierzchnia; nic pustego.",
-      "detailPlain": "Każdy ekran dostał swój kod, logikę, testy i przykładowe dane — nic nie zostało puste."
-    },
-    {
       "id": "coverage",
-      "n": 5,
+      "n": 4,
       "label": "Kontrola",
       "kind": "auto",
       "state": "recovered",
@@ -97,7 +84,7 @@
     },
     {
       "id": "review",
-      "n": 6,
+      "n": 5,
       "label": "Recenzja",
       "kind": "auto",
       "state": "green",
@@ -111,7 +98,7 @@
     },
     {
       "id": "deploy",
-      "n": 7,
+      "n": 6,
       "label": "Wdrożenie",
       "kind": "auto",
       "state": "queued",
@@ -346,15 +333,15 @@
     {
       "id": "n-02",
       "at": "09:18",
-      "text": "Etap 1/7 intake zielony w 3m 48s — 42 historyjki zmapowane z briefu, MoSCoW zastosowane.",
-      "textPlain": "Etap 1/7 intake skończony w 3m 48s — 42 historyjki użytkownika zmapowane z briefu, posortowane must/could/won't.",
+      "text": "Etap 1/6 intake zielony w 3m 48s — 42 historyjki zmapowane z briefu, MoSCoW zastosowane.",
+      "textPlain": "Etap 1/6 intake skończony w 3m 48s — 42 historyjki użytkownika zmapowane z briefu, posortowane must/could/won't.",
       "artifact": "stage/intake"
     },
     {
       "id": "n-03",
       "at": "09:39",
-      "text": "Etap 2/7 projektowanie zielony w 21m 05s — 11 powierzchni × 3 rozmiary, 33 ujęcia zamrożone.",
-      "textPlain": "Etap 2/7 projektowanie skończone w 21m 05s — 11 ekranów, 33 migawki rozmiarów zablokowane.",
+      "text": "Etap 2/6 projektowanie zielony w 21m 05s — 11 powierzchni × 3 rozmiary, 33 ujęcia zamrożone.",
+      "textPlain": "Etap 2/6 projektowanie skończone w 21m 05s — 11 ekranów, 33 migawki rozmiarów zablokowane.",
       "artifact": "stage/design"
     },
     {
@@ -366,23 +353,16 @@
     {
       "id": "n-05",
       "at": "09:41",
-      "text": "Etap 3/7 zamrożenie zielone w 12s — manifest frz_9c41e2, 33 wzorce zahashowane.",
-      "textBalanced": "Etap 3/7 zamrożenie zielone w 12s — 33 wzorce zablokowane (manifest frz_9c41e2).",
-      "textPlain": "Etap 3/7 zamrożenie skończone w 12s — wszystkie 33 zatwierdzone migawki projektu są zablokowane.",
+      "text": "Etap 3/6 zamrożenie zielone w 12s — manifest frz_9c41e2, 33 wzorce zahashowane.",
+      "textBalanced": "Etap 3/6 zamrożenie zielone w 12s — 33 wzorce zablokowane (manifest frz_9c41e2).",
+      "textPlain": "Etap 3/6 zamrożenie skończone w 12s — wszystkie 33 zatwierdzone migawki projektu są zablokowane.",
       "artifact": "stage/freeze"
-    },
-    {
-      "id": "n-06",
-      "at": "09:43",
-      "text": "Etap 4/7 scaffold zielony w 2m 10s — 44 pliki, 11 powierzchni × 4 na platformę ios.",
-      "textPlain": "Etap 4/7 scaffold skończony w 2m 10s — 44 pliki utworzone dla 11 ekranów iPhone'a.",
-      "artifact": "stage/scaffold"
     },
     {
       "id": "n-07",
       "at": "09:50",
-      "text": "Etap 5/7 kontrola czerwona w próbie 1 — 3 wyniki, przebieg wstrzymany przez stop-on-red.",
-      "textPlain": "Etap 5/7 kontrola nie przeszła pierwszego testu — 3 wyniki; przebieg zatrzymał się sam.",
+      "text": "Etap 4/6 kontrola czerwona w próbie 1 — 3 wyniki, przebieg wstrzymany przez stop-on-red.",
+      "textPlain": "Etap 4/6 kontrola nie przeszła pierwszego testu — 3 wyniki; przebieg zatrzymał się sam.",
       "artifact": "findings/coverage",
       "tone": "fail"
     },
@@ -397,9 +377,9 @@
     {
       "id": "n-09",
       "at": "09:59",
-      "text": "Etap 6/7 recenzja zielona w 1m 54s — arch_guard czysty, ponytail-review 0 wyników.",
-      "textBalanced": "Etap 6/7 recenzja zielona w 1m 54s — arch_guard + ponytail-review oba czyste.",
-      "textPlain": "Etap 6/7 recenzja skończona w 1m 54s — kontrole kontraktu i recenzja kodu obie czyste.",
+      "text": "Etap 5/6 recenzja zielona w 1m 54s — arch_guard czysty, ponytail-review 0 wyników.",
+      "textBalanced": "Etap 5/6 recenzja zielona w 1m 54s — arch_guard + ponytail-review oba czyste.",
+      "textPlain": "Etap 5/6 recenzja skończona w 1m 54s — kontrole kontraktu i recenzja kodu obie czyste.",
       "artifact": "stage/review"
     },
     {
@@ -610,13 +590,6 @@
         "state": "green"
       },
       {
-        "id": "scaffold",
-        "label": "Scaffold",
-        "duration": "2m 10s",
-        "pct": 10,
-        "state": "green"
-      },
-      {
         "id": "coverage",
         "label": "Kontrola",
         "duration": "6m 33s",
@@ -635,6 +608,6 @@
   "counts": {
     "findings": 3,
     "gatesPending": 1,
-    "stagesGreen": 5
+    "stagesGreen": 4
   }
 }

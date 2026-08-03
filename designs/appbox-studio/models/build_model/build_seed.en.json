@@ -38,15 +38,7 @@
       "detailPlain": "The approved design is now the reference. If anything built later drifts from it, the run stops and shows you."
     },
     {
-      "id": "scaffold", "n": 4, "label": "Scaffold", "kind": "auto", "state": "green",
-      "duration": "2m 10s", "durationSec": 130,
-      "summary": "44 files · 11 surfaces × 4 per ios target",
-      "summaryPlain": "44 files created — 4 for each of the 11 iPhone screens",
-      "detail": "View/ViewModel extension points emitted per surface; nothing empty.",
-      "detailPlain": "Every screen got its code, its logic, its tests and its sample data — nothing left empty."
-    },
-    {
-      "id": "coverage", "n": 5, "label": "Coverage", "kind": "auto", "state": "recovered",
+      "id": "coverage", "n": 4, "label": "Coverage", "kind": "auto", "state": "recovered",
       "duration": "6m 33s", "durationSec": 393,
       "summary": "Red on attempt 1 — 3 findings · green on attempt 2",
       "summaryPlain": "Failed the first check with 3 findings — fixed itself on the second try",
@@ -58,7 +50,7 @@
       ]
     },
     {
-      "id": "review", "n": 6, "label": "Review", "kind": "auto", "state": "green",
+      "id": "review", "n": 5, "label": "Review", "kind": "auto", "state": "green",
       "duration": "1m 54s", "durationSec": 114,
       "summary": "arch_guard clean · ponytail-review 0 findings",
       "summaryBalanced": "arch_guard + ponytail-review both clean",
@@ -67,7 +59,7 @@
       "detailPlain": "The structure matches what was approved, and a simplicity review found nothing to remove."
     },
     {
-      "id": "deploy", "n": 7, "label": "Deploy", "kind": "auto", "state": "queued",
+      "id": "deploy", "n": 6, "label": "Deploy", "kind": "auto", "state": "queued",
       "duration": "—", "durationSec": 0,
       "summary": "Waits on build acceptance · ship.confirm gates release",
       "summaryPlain": "Waiting for your build approval · a second approval confirms release",
@@ -204,14 +196,13 @@
   ],
   "narrative": [
     { "id": "n-01", "at": "09:14", "text": "Run #47 on the line — appbox, the R1 dogfood build for ios + macos. Stop-on-red is on, escalation limit 3.", "textPlain": "Run #47 is on the line — appbox, the R1 dogfood build for iPhone and Mac. The run stops itself at the first failure; up to 3 automatic fix attempts.", "artifact": null },
-    { "id": "n-02", "at": "09:18", "text": "Stage 1/7 intake green in 3m 48s — 42 stories mapped from the brief, MoSCoW applied.", "textPlain": "Stage 1/7 intake done in 3m 48s — 42 user stories mapped from the brief, sorted must/could/won't.", "artifact": "stage/intake" },
-    { "id": "n-03", "at": "09:39", "text": "Stage 2/7 design green in 21m 05s — 11 surfaces × 3 rungs, 33 shots frozen.", "textPlain": "Stage 2/7 design done in 21m 05s — 11 screens, 33 size snapshots locked.", "artifact": "stage/design" },
+    { "id": "n-02", "at": "09:18", "text": "Stage 1/6 intake green in 3m 48s — 42 stories mapped from the brief, MoSCoW applied.", "textPlain": "Stage 1/6 intake done in 3m 48s — 42 user stories mapped from the brief, sorted must/could/won't.", "artifact": "stage/intake" },
+    { "id": "n-03", "at": "09:39", "text": "Stage 2/6 design green in 21m 05s — 11 surfaces × 3 rungs, 33 shots frozen.", "textPlain": "Stage 2/6 design done in 21m 05s — 11 screens, 33 size snapshots locked.", "artifact": "stage/design" },
     { "id": "n-04", "at": "16:42", "text": "Design approval passed — Evan, Touch ID on studio-mac. The signed look is now the frozen one.", "artifact": "gate/design.approval" },
-    { "id": "n-05", "at": "09:41", "text": "Stage 3/7 freeze green in 12s — manifest frz_9c41e2, 33 goldens hashed.", "textBalanced": "Stage 3/7 freeze green in 12s — 33 goldens locked (manifest frz_9c41e2).", "textPlain": "Stage 3/7 freeze done in 12s — all 33 approved design snapshots are locked in.", "artifact": "stage/freeze" },
-    { "id": "n-06", "at": "09:43", "text": "Stage 4/7 scaffold green in 2m 10s — 44 files, 11 surfaces × 4 per ios target.", "textPlain": "Stage 4/7 scaffold done in 2m 10s — 44 files created for the 11 iPhone screens.", "artifact": "stage/scaffold" },
-    { "id": "n-07", "at": "09:50", "text": "Stage 5/7 coverage red on attempt 1 — 3 findings, run held by stop-on-red.", "textPlain": "Stage 5/7 coverage failed its first check — 3 findings; the run stopped itself.", "artifact": "findings/coverage", "tone": "fail" },
+    { "id": "n-05", "at": "09:41", "text": "Stage 3/6 freeze green in 12s — manifest frz_9c41e2, 33 goldens hashed.", "textBalanced": "Stage 3/6 freeze green in 12s — 33 goldens locked (manifest frz_9c41e2).", "textPlain": "Stage 3/6 freeze done in 12s — all 33 approved design snapshots are locked in.", "artifact": "stage/freeze" },
+    { "id": "n-07", "at": "09:50", "text": "Stage 4/6 coverage red on attempt 1 — 3 findings, run held by stop-on-red.", "textPlain": "Stage 4/6 coverage failed its first check — 3 findings; the run stopped itself.", "artifact": "findings/coverage", "tone": "fail" },
     { "id": "n-08", "at": "09:57", "text": "Coverage recovered on attempt 2 — the fixer rewrote the build.loop authored layer and re-ran the gate.", "textPlain": "Coverage recovered on the second try — the build.loop screen code was rewritten and the checks re-run.", "artifact": "stage/coverage", "tone": "warn" },
-    { "id": "n-09", "at": "09:59", "text": "Stage 6/7 review green in 1m 54s — arch_guard clean, ponytail-review 0 findings.", "textBalanced": "Stage 6/7 review green in 1m 54s — arch_guard + ponytail-review both clean.", "textPlain": "Stage 6/7 review done in 1m 54s — contract checks and code review both clean.", "artifact": "stage/review" },
+    { "id": "n-09", "at": "09:59", "text": "Stage 5/6 review green in 1m 54s — arch_guard clean, ponytail-review 0 findings.", "textBalanced": "Stage 5/6 review green in 1m 54s — arch_guard + ponytail-review both clean.", "textPlain": "Stage 5/6 review done in 1m 54s — contract checks and code review both clean.", "artifact": "stage/review" },
     { "id": "n-10", "at": "10:00", "text": "Surface evidence in — 4 surfaces probed against their frozen goldens, all within ΔE 2.2.", "textBalanced": "Surface evidence in — 4 screens compared with their goldens, all ≥ 94/100 (ΔE ≤ 2.2).", "textPlain": "Surface evidence in — all 4 screens look nearly identical to the designs you approved (94/100 or better).", "artifact": "evidence/surfaces" },
     { "id": "n-11", "at": "10:01", "text": "For the record: design took two-thirds of the automated line. Stage durations on the canvas.", "artifact": "chart/durations" },
     { "id": "n-12", "at": "10:02", "text": "Build acceptance is yours. The automated line is done — deploy is staged behind your call.", "textPlain": "Build approval is yours. Everything automatic is done — shipping waits for your call.", "artifact": "gate/build.acceptance", "tone": "action" }
