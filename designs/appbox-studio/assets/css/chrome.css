@@ -33,15 +33,19 @@
 .panel-header-spacer { flex: 1; }
 .channel { display: flex; gap: .45rem; align-items: center; font-size: .78rem; color: var(--tx-2); }
 .channel-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 0 3px var(--ok-soft); }
-/* min-height + overflow: at the expanded rung #app is height-locked and the
-   document never scrolls, so a shell whose content is taller than the leftover
-   (workspace: settings/credentials/config) must own its own scroll. Inert for
-   the stage shells — their panels row is flex-sized to fit exactly. */
-.shell-main { width: 100%; max-width: 56rem; margin: 0 auto; padding: 2rem 1.1rem 3rem; flex: 1; min-height: 0; overflow-y: auto; }
-/* workspace shell: the main panel IS the surface, so it takes the full width —
-   only the 56rem reading-column cap is released; padding and scroll ownership
-   stay. Same release the stage shells get via .shell-main-loop below. */
-.shell-main-workspace { max-width: none; }
+/* No overflow here, ever: shell regions are LAYOUT, and scrolling belongs to
+   the panels (app.css, "the shell is viewport-locked") — the scroller for a
+   shell's overgrowth is the panel card inside it, never the region itself. */
+.shell-main { width: 100%; max-width: 56rem; margin: 0 auto; padding: 2rem 1.1rem 3rem; flex: 1; }
+/* workspace shell: the main panel IS the surface — full width (the 56rem
+   reading column is a main_shell concern), and a flex column so the height
+   chain reaches the panel: #app hands this region the leftover, .panel-main
+   fills it (panels.css), and .mp-content — already overflow-y: auto in
+   app.css — is the one scroller, per the panel scroll-ownership doctrine. */
+.shell-main-workspace {
+  max-width: none;
+  display: flex; flex-direction: column; min-height: 0;
+}
 /* stage shells (intake/design/build) run full-bleed — the three content
    panels need the whole width; chrome.css must repeat this because it loads
    after app.css and would otherwise cap them at 56rem */
