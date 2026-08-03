@@ -148,20 +148,39 @@ lead — see §6a. Nothing here is actionable by me unilaterally.
 
 ## 6a. Input to the disposition — the compose column is a fixed grid track
 
-`assets/css/scaffold.css:34` declares
-`grid-template-columns: minmax(240px, 280px) 1fr minmax(280px, 340px)` — three
-**fixed** tracks, with `compose` a named area (line 30). Grid allocates a track
-whether or not a child occupies it.
+First stated here as an unverified inference. I had *not* read the desktop
+areas block — I inferred the track position from the mobile row order and a
+prose comment, which is the same "source that cannot settle the claim" error
+corrected in §6. Now read verbatim and settled:
 
-So gating the *whole* `composerPanel` on `c.composerAction` is predicted to
-leave a 240–280 px empty column on both scaffold screens at desktop widths,
-collapsing only at the mobile stack (line 69). The surgical alternative is to
-gate the **field** (`cm.field(c)`) and keep `cp.open`/`thread`/`chips`, which
-keeps the column populated.
+```css
+grid-template-areas:
+  "header  header  header"
+  "compose main    activity"
+  "footer  footer  footer";
+grid-template-columns: minmax(240px, 280px) 1fr minmax(280px, 340px);
+```
 
-Flagged as a CSS-level prediction: I have **not** rendered the gated variant, so
-this is unverified by measurement. Whoever takes the fix should render it before
-choosing between the two shapes.
+- `compose` is the **first** track: `minmax(240px, 280px)`. Confirmed, not inferred.
+- The area is carried by `.panels-scaffold > .panel-composer` (line 52–53).
+- `.panel-composer` is emitted by `cp.open` (`PID = 'panel-composer'`,
+  `composer_panel.html:32/68`) — i.e. from **inside** the `composerPanel` macro.
+- Live check: `.panel-composer` is PRESENT on both `/scaffold` and
+  `/scaffold/run`, ordered `panel-composer > panel-main > panel-activity`.
+
+Consequence, now determined rather than predicted: explicit grid tracks are
+always created regardless of occupancy, and this track's `minmax()` **minimum
+is a fixed 240 px**. Gating the whole `composerPanel` removes the only element
+carrying `grid-area: compose`, so both scaffold screens keep a ≥240 px empty
+first column at desktop, collapsing only at the mobile stack (line 69).
+
+Gating only the field (`cm.field(c)`) keeps `cp.open`'s `.panel-composer` with
+its thread and chips, so the column stays populated. That is the surgical shape.
+
+Scope of the remaining uncertainty, stated precisely: the track geometry is
+settled by the CSS and the emitter is settled by the live render; what has
+**not** been done is a screenshot of the gated variant, so visual judgment about
+whether a thread-without-field column reads as broken is still open.
 
 ## Lane note — the unlanded edit, preserved verbatim
 
