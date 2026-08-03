@@ -332,6 +332,17 @@ String _shellDesignSystemDoc(String shell) {
 
 /// The *_chrome.dart every self-contained shell owns (scaffold gate S6).
 /// STRUCTURE ONLY.
+//
+// ponytail: the three-tier widget law (lib/ui/widgets/ cross-shell,
+// <shell>/shared/widgets/ intra-shell, <view>/widgets/ per-surface) is enforced
+// by gate_scaffold S6/S6c but NOT emitted here, because structure.json carries
+// no widget map: its screen records are id/comp/shellDir/surface/viewmodel/kits
+// and nothing says which widget serves which surfaces. Emitting a widgets tier
+// today would mean inventing that signal in the scaffolder, and an empty tier
+// created speculatively is itself a placement-law violation. Ceiling: emission
+// lands when the design-side widget map reaches structure.json (emit_structure),
+// at which point a widget with consumers in 2+ shells emits into lib/ui/widgets/
+// and the rest into the narrowest shell/surface tier.
 String _shellChrome(String shell) {
   final comp = _pascal(shell);
   return '// appbox-scaffolder: shell chrome skeleton. STRUCTURE ONLY — builder fills this.\n'

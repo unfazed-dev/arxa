@@ -18,13 +18,17 @@
 //         peers are also registered; setupKitSnackbars() called when used)
 //   S10 — overlay ownership by enum reference (a sole-consumer overlay belongs
 //         in its shell; consumers reference the generated enum, never an import)
+//   S6c — cross-shell widget scope: lib/ui/widgets/ holds only widgets imported
+//         by the views of 2+ shells (app-level, runs with no manifest)
 //   S0  — manifest shape (parses; every named shell dir exists)
 //   S1  — ≥ 1 *_view.dart with a matching *_viewmodel.dart
 //   S4  — design-system.md carries a ## Palette / ## Tokens heading + kit color
 //   S2  — locality (no relocated global-overlay leaks; no cross-shell view imports)
-//   S6  — shell owns its widgets (shared/widgets/, <view>/widgets/, or *_chrome.dart)
+//   S6  — shell owns its widgets (shared/widgets/, <view>/widgets/, or
+//         *_chrome.dart) AND each widget sits at the narrowest scope covering
+//         its consumers (scope truth, the import graph is the authority)
 //   S7  — no ScreenTypeLayout in shared widgets (adapt internals, don't swap layouts)
-//   S9  — no form-factor variant cherry-picking another variant's components
+//   S9  — no form-factor variant cherry-picking another variant's widgets
 //   S3  — overlay barrel integrity (<n>/<n>_sheet.dart, <n>/<n>_dialog.dart)
 
 import 'dart:convert';
@@ -119,6 +123,12 @@ GateResult scaffoldGate(GateContext ctx) {
 
   // ---- S10: overlay ownership by enum reference ----
   _runS10(app, ok, warn, fail);
+
+  // ---- S6 scope truth: the import graph, built once, drives every tier ----
+  final edges = _buildImportGraph(app, pkg);
+
+  // ---- S6c: cross-shell widget home (app-level, needs no manifest) ----
+  _runS6Cross(app, edges, ok, fail);
 
   // ---- S0: manifest shape ----
   if (!manifest.existsSync()) {
@@ -304,6 +314,9 @@ GateResult scaffoldGate(GateContext ctx) {
           '*_chrome.dart (a bare $s/widgets/ is rejected by review check 1o/D)');
     }
 
+    // ---- S6: scope truth for <shell>/shared/widgets/ ----
+    _runS6Shared(app, s, shells, edges, ok, warn, fail);
+
     // ---- S7: no layout-swapping in shared widgets ----
     // A shared widget may adapt internals (getValueForScreenType /
     // ResponsiveBuilder) but must never SWAP layouts via ScreenTypeLayout.
@@ -325,8 +338,8 @@ GateResult scaffoldGate(GateContext ctx) {
     }
     if (!s7Bad) ok('$s: no layout-swapping in shared widgets (S7)');
 
-    // ---- S9: no variant-to-variant component imports ----
-    // A form-factor variant is ONE layout, never a component library. Wholesale
+    // ---- S9: no variant-to-variant widget imports ----
+    // A form-factor variant is ONE layout, never a widget library. Wholesale
     // delegation to the imported variant's own View class is allowed; cherry-
     // picking any OTHER symbol is the defect. The dispatcher (<surface>_view.dart)
     // importing its variants is required and exempt by construction.
@@ -377,13 +390,13 @@ GateResult scaffoldGate(GateContext ctx) {
         }
         fail('$s: form-factor variant imports another variant (S9): '
             '${_rel(vf.path, app)} -> ${m.group(0)}$annotation; move the shared '
-            'component into widgets/ or *_chrome.dart — a '
-            '*_view.{mobile,tablet,desktop}.dart is one layout, not a component '
+            'widget into widgets/ or *_chrome.dart — a '
+            '*_view.{mobile,tablet,desktop}.dart is one layout, not a widget '
             'library');
         s9Bad = true;
       }
     }
-    if (!s9Bad) ok('$s: no variant-to-variant component imports (S9)');
+    if (!s9Bad) ok('$s: no variant-to-variant widget imports (S9)');
 
     // ---- S3: overlay barrel integrity ----
     for (final kind in [('bottom_sheets', 'sheet'), ('dialogs', 'dialog')]) {
@@ -404,6 +417,248 @@ GateResult scaffoldGate(GateContext ctx) {
 
   if (fails > 0) return failResult();
   return passResult();
+}
+
+// ── S6 scope truth: widget placement follows the import graph ────────────────
+//
+// Placement law (one sentence): a widget lives at the narrowest scope that
+// covers all its consumers, and the import graph is the only authority,
+// enforced in both directions. Three tiers, narrowest last:
+//
+//   lib/ui/widgets/                       cross-shell — views of 2+ shells
+//   lib/ui/views/<shell>/shared/widgets/  intra-shell — 2+ surfaces of one shell
+//   lib/ui/views/<shell>/<view>/widgets/  per-surface — exactly one surface
+//
+// This generalizes S10 (sole-consumer overlays) from the enum registry to the
+// import graph. Two file kinds are EDGES but never SUBJECTS:
+//   • pure barrels (only `export` directives, no declaration) — a barrel is a
+//     re-export hop, so a widget's consumers are the barrel's consumers; making
+//     the barrel itself a subject turns one misplaced widget into N+1 failures;
+//   • *_chrome.dart — the scaffolder emits it as an ownership stub before any
+//     view imports it, so a zero-consumer chrome file is expected, not a defect.
+
+/// One resolved `import`/`export` directive. [viaPackage] records the `package:`
+/// form, which is what S2 sees — used to avoid double-reporting one cross-shell
+/// edge as both an S2 import violation and an S6 placement violation.
+class _Edge {
+  final String importer;
+  final String target;
+  final bool isExport;
+  final bool viaPackage;
+  const _Edge(this.importer, this.target, this.isExport, this.viaPackage);
+}
+
+/// A file that imports a widget, classified into the tier it belongs to.
+/// [shell] is null for app-level consumers (outside lib/ui/views/); [view] is
+/// null when the consumer is the shell itself (shared/, overlays, shell files).
+class _Consumer {
+  final String path;
+  final String? shell;
+  final String? view;
+  final bool viaPackage;
+  const _Consumer(this.path, this.shell, this.view, this.viaPackage);
+}
+
+final _directiveRe = RegExp(r"""^[ \t]*(import|export)[ \t]+'([^']+)'""",
+    multiLine: true);
+
+/// Every intra-package import/export edge under `lib/`, both spellings:
+/// `package:<pkg>/x.dart` and a relative `../x.dart`. `dart:`/foreign-package
+/// targets carry no placement information and are dropped. Read comment-free so
+/// a commented-out import is not a consumer edge (same reason as S8).
+List<_Edge> _buildImportGraph(String app, String pkg) {
+  final out = <_Edge>[];
+  final prefix = 'package:$pkg/';
+  for (final f
+      in _findFiles(Directory('$app/lib'), (f) => f.path.endsWith('.dart'))) {
+    final src = _stripComments(_readOrEmpty(f));
+    for (final m in _directiveRe.allMatches(src)) {
+      final raw = m.group(2)!;
+      String target;
+      bool viaPackage;
+      if (raw.startsWith(prefix)) {
+        target = '$app/lib/${raw.substring(prefix.length)}';
+        viaPackage = true;
+      } else if (!raw.contains(':')) {
+        target = _normalize('${f.parent.path}/$raw');
+        viaPackage = false;
+      } else {
+        continue; // dart: or another package — no placement signal
+      }
+      out.add(_Edge(f.path, target, m.group(1) == 'export', viaPackage));
+    }
+  }
+  return out;
+}
+
+/// Files that import [widget], following re-export hops: a file importing a
+/// barrel that (transitively) exports [widget] is a consumer of [widget].
+/// The re-exporters themselves are not consumers — they are the hop.
+List<_Consumer> _consumersOf(String widget, List<_Edge> edges, String app) {
+  final reach = <String>{widget};
+  var grew = true;
+  while (grew) {
+    grew = false;
+    for (final e in edges) {
+      if (e.isExport && reach.contains(e.target) && !reach.contains(e.importer)) {
+        reach.add(e.importer);
+        grew = true;
+      }
+    }
+  }
+  final byPath = <String, _Consumer>{};
+  for (final e in edges) {
+    if (e.isExport) continue;
+    if (!reach.contains(e.target)) continue;
+    if (reach.contains(e.importer)) continue;
+    byPath.putIfAbsent(
+        e.importer, () => _classifyConsumer(e.importer, app, e.viaPackage));
+  }
+  final out = byPath.values.toList()..sort((a, b) => a.path.compareTo(b.path));
+  return out;
+}
+
+/// Which tier a consumer file lives in. Overlay dirs and shared/ are shell
+/// scope: a widget reached through them is not owned by any single surface.
+_Consumer _classifyConsumer(String path, String app, bool viaPackage) {
+  final m = RegExp(r'^lib/ui/views/([^/]+)/(.+)$').firstMatch(_rel(path, app));
+  if (m == null) return _Consumer(path, null, null, viaPackage);
+  final shell = m.group(1)!;
+  final segs = m.group(2)!.split('/');
+  if (segs.length < 2) return _Consumer(path, shell, null, viaPackage);
+  const notASurface = {
+    'shared', 'bottom_sheets', 'dialogs', 'snackbars', 'services', 'models',
+  };
+  if (notASurface.contains(segs.first)) {
+    return _Consumer(path, shell, null, viaPackage);
+  }
+  return _Consumer(path, shell, segs.first, viaPackage);
+}
+
+/// A pure re-export file: at least one `export`, no declaration of its own.
+bool _isBarrel(String path) {
+  final src = _stripComments(_readOrEmpty(File(path)));
+  if (!RegExp(r"^[ \t]*export[ \t]+'", multiLine: true).hasMatch(src)) {
+    return false;
+  }
+  return !RegExp(r'^[ \t]*(abstract[ \t]+)?(class|mixin|enum|extension|typedef)[ \t]',
+          multiLine: true)
+      .hasMatch(src);
+}
+
+/// Widget files under [dir] that scope truth judges — barrels and chrome stubs
+/// are edges, not subjects.
+List<String> _widgetSubjects(Directory dir) => [
+      for (final f in _findFiles(dir, (f) => f.path.endsWith('.dart')))
+        if (!_basename(f.path).endsWith('_chrome.dart') && !_isBarrel(f.path))
+          f.path,
+    ];
+
+/// The narrowest legal home for a widget with these consumers, or null when the
+/// consumers span shells (then the cross-shell home is the answer).
+String? _narrowestHome(List<_Consumer> consumers) {
+  final shells = consumers.map((c) => c.shell).whereType<String>().toSet();
+  if (shells.length != 1) return null;
+  final shell = shells.first;
+  final views = consumers.map((c) => c.view).whereType<String>().toSet();
+  final shellScoped = consumers.any((c) => c.shell != null && c.view == null);
+  if (views.length == 1 && !shellScoped) {
+    return 'lib/ui/views/$shell/${views.first}/widgets/';
+  }
+  return 'lib/ui/views/$shell/shared/widgets/';
+}
+
+/// S6c — the cross-shell home. `lib/ui/widgets/` is legal ONLY for widgets the
+/// views of 2+ shells import; anything narrower belongs in the shell that owns
+/// it. App-level consumers (lib/app/, lib/extensions/, …) make a widget app-wide
+/// by construction, so they exempt it, exactly as S10 exempts app-level overlay
+/// consumers.
+void _runS6Cross(String app, List<_Edge> edges, void Function(String) ok,
+    void Function(String) fail) {
+  final dir = Directory('$app/lib/ui/widgets');
+  if (!dir.existsSync()) return; // empty tiers are never created speculatively
+  var bad = 0;
+  var judged = 0;
+  for (final w in _widgetSubjects(dir)) {
+    judged++;
+    final rel = _rel(w, app);
+    final consumers = _consumersOf(w, edges, app);
+    if (consumers.any((c) => c.shell == null)) continue; // app-wide → exempt
+    final shells = consumers.map((c) => c.shell).whereType<String>().toSet();
+    if (shells.length >= 2) continue; // genuinely cross-shell → correctly placed
+    if (consumers.isEmpty) {
+      fail('unconsumed cross-shell widget (S6): $rel — no file imports it; '
+          'lib/ui/widgets/ is for widgets imported by the views of 2+ shells, '
+          'and empty tiers are never created speculatively');
+    } else {
+      final want = _narrowestHome(consumers)!;
+      fail('$rel is imported by one shell only (${shells.first}) but lives in '
+          'the cross-shell home (S6) — a widget lives at the narrowest scope '
+          'that covers its consumers: move it to $want');
+    }
+    bad++;
+  }
+  if (judged > 0 && bad == 0) {
+    ok('lib/ui/widgets/: $judged cross-shell widget(s), each imported by 2+ '
+        'shells or app-level (S6)');
+  }
+}
+
+/// S6 — scope truth for `<shell>/shared/widgets/`, both directions:
+///   • consumers in 2+ shells  → promote to the cross-shell home;
+///   • consumers in one surface → demote to that surface's widgets/.
+/// The promote failure is suppressed when S2 already reports every foreign
+/// consumer edge (a `package:` import out of another self-contained shell) —
+/// one cause, one failure. Shells outside the manifest are invisible to S2, so
+/// S6 stays the only reporter there.
+void _runS6Shared(
+    String app,
+    String shell,
+    List<String> selfContained,
+    List<_Edge> edges,
+    void Function(String) ok,
+    void Function(String) warn,
+    void Function(String) fail) {
+  final dir = Directory('$app/lib/ui/views/$shell/shared/widgets');
+  if (!dir.existsSync()) return;
+  var bad = 0;
+  var judged = 0;
+  for (final w in _widgetSubjects(dir)) {
+    judged++;
+    final rel = _rel(w, app);
+    final consumers = _consumersOf(w, edges, app);
+    if (consumers.isEmpty) {
+      warn('$shell: $rel is in shared/widgets/ but no file imports it — '
+          'unconsumed widget (S6)');
+      continue;
+    }
+    final foreign = consumers.where((c) => c.shell != null && c.shell != shell);
+    final foreignShells = foreign.map((c) => c.shell!).toSet();
+    if (foreignShells.isNotEmpty) {
+      final coveredByS2 = foreign
+          .every((c) => c.viaPackage && selfContained.contains(c.shell));
+      if (!coveredByS2) {
+        final names = foreignShells.toList()..sort();
+        fail('$shell: cross-shell widget in shared/widgets/ (S6) — $rel is '
+            'imported by ${names.length} other shell(s) (${names.join(', ')}); '
+            'a widget imported beyond its own shell belongs in the cross-shell '
+            'home lib/ui/widgets/');
+        bad++;
+      }
+      continue; // scope is already wrong upward; demotion is not the fix
+    }
+    final want = _narrowestHome(consumers);
+    if (want != null && want.endsWith('/widgets/') && !want.contains('/shared/')) {
+      fail('$shell: sole-consumer widget in shared/widgets/ (S6) — $rel is '
+          'imported only by the ${consumers.map((c) => c.view).whereType<String>().first} '
+          'surface; a widget lives at the narrowest scope that covers its '
+          'consumers: move it to $want');
+      bad++;
+    }
+  }
+  if (judged > 0 && bad == 0) {
+    ok('$shell: shared/widgets/: $judged widget(s) at the right scope (S6)');
+  }
 }
 
 // ── S8: peer-service registration (port of the embedded Python) ──────────────

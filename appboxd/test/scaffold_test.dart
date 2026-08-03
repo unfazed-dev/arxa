@@ -7,6 +7,8 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:appboxd/gate_scaffold.dart';
+import 'package:appboxd/gates.dart';
 import 'package:appboxd/scaffold.dart';
 import 'package:test/test.dart';
 
@@ -452,6 +454,28 @@ void main() {
       expect(scaffold(des, app, ['macos'], derivationPath, configPath, check: true),
           1,
           reason: 'hand-edited kits section -> --check exit 1');
+    });
+  });
+
+  group('scaffolder output satisfies the scaffold gate', () {
+    // The emitter and the gate share one opinion; this is where they meet. In
+    // particular the widget tiers (lib/ui/widgets/, <shell>/shared/widgets/,
+    // <view>/widgets/) are never emitted speculatively, so scope truth (S6)
+    // has nothing to judge and must not manufacture a failure.
+    test('a freshly scaffolded app passes scaffoldGate', () {
+      final des = plantDesign('${tmp.path}/d');
+      final app = '${tmp.path}/app1';
+      expect(scaffold(des, app, ['macos'], derivationPath, configPath), 0);
+      File('$app/pubspec.yaml').writeAsStringSync('name: demo\n');
+
+      final r = scaffoldGate(GateContext(repoRoot: app, appRoot: app));
+      expect(r.passed, isTrue, reason: r.details.join('\n'));
+      expect(Directory('$app/lib/ui/widgets').existsSync(), isFalse,
+          reason: 'the cross-shell tier is not created speculatively');
+      expect(
+          Directory('$app/lib/ui/views/stage_shell/shared/widgets').existsSync(),
+          isFalse,
+          reason: 'the intra-shell tier is not created speculatively');
     });
   });
 
