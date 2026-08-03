@@ -359,6 +359,36 @@ void main() {
       expect(r.body, contains('id="timer"'));
     });
 
+    // Task #21: contract probes derive their targets from the design instead
+    // of hard-coding studio routes, so the server has to be able to say what
+    // it serves. These pin the shape they depend on.
+    test('21: /__routes lists the served routes as method/path JSON', () async {
+      final r = await _get('${srv!.url}__routes');
+      expect(r.status, 200);
+      expect(r.headers['content-type'], contains('application/json'));
+      final routes = (jsonDecode(r.body) as Map)['routes'] as List;
+      expect(routes, isNotEmpty);
+      for (final e in routes) {
+        expect(e, isA<Map>());
+        expect((e as Map)['method'], isNotEmpty);
+        expect(e['path'], startsWith('/'));
+      }
+    });
+
+    test('21: /__routes reports THIS design, not a hard-coded set', () async {
+      // The hello-hda fixture serves `/` and `/timer`; it has no `/design`.
+      // A contract probe pointed at it must discover those and nothing
+      // studio-shaped, which is the whole basis of design-agnosticism.
+      final routes =
+          (jsonDecode((await _get('${srv!.url}__routes')).body) as Map)['routes']
+              as List;
+      final paths = [for (final e in routes) (e as Map)['path'] as String];
+      expect(paths, contains('/timer'));
+      expect(paths.where((p) => p.startsWith('/design')), isEmpty,
+          reason: 'hello-hda has no design shell — a route list that claims '
+              'otherwise is reporting the engine, not the design');
+    });
+
     test('static artifact file served (app.routes.js)', () async {
       final r = await _get('${srv!.url}app.routes.js');
       expect(r.status, 200);

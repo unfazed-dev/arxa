@@ -376,6 +376,39 @@ class DesignServer {
       }
       // The dashboard's live project grid: every project in ~/.appbox with
       // its derived stage + honest output counts.
+      // GET /__routes -> {"routes":[{"method":"GET","path":"/design"}, …]}
+      //
+      // Design-agnostic route discovery for the contract probe suite (task
+      // #21): a contract probe asserts the appbox opinion against ANY served
+      // design, so it cannot hard-code `/design` or `/intake` — it has to ask
+      // the design what it serves.
+      //
+      // This exposes [_routeTable], which the server already resolved once at
+      // boot from `_worker.routes()`. Two alternatives were rejected on
+      // evidence:
+      //   - parsing the served `app.routes.js` from Dart: its default export
+      //     is assembled from imports and spreads (`...appRoutes`), so reading
+      //     it means re-implementing JS module evaluation that the worker
+      //     already performed to build this very table. Two parsers for one
+      //     fact is the duplication this consolidation exists to remove.
+      //   - keying off `registry.json`: the `hello-hda` example has none, and
+      //     the contract suite must pass against it to prove it is not
+      //     studio-specific. That option fails the acceptance bar by
+      //     construction.
+      //
+      // Read-only introspection, same family as /__projects.
+      if (method == 'GET' && path == '/__routes') {
+        req.response.headers.contentType =
+            ContentType.parse('application/json; charset=utf-8');
+        req.response.write(jsonEncode({
+          'routes': [
+            for (final r in _routeTable)
+              if (r.length >= 2) {'method': r[0], 'path': r[1]},
+          ],
+        }));
+        await req.response.close();
+        return;
+      }
       if (method == 'GET' && path == '/__projects') {
         req.response.headers.contentType =
             ContentType.parse('application/json; charset=utf-8');
