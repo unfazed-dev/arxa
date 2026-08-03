@@ -417,6 +417,67 @@ List<LintFinding> _panelReimplementationFindings(
 
 // ══ W4 — shell composition ══════════════════════════════════════════════
 
+/// Macro names that OPEN a panel, and the names that CLOSE it.
+///
+/// The panel base is a balanced pair rather than a `{% call %}` wrapper because
+/// nunjucks binds `caller()` to the NEAREST enclosing `{% call %}`: a base that
+/// wrapped `{{ caller() }}` could not be invoked from inside a role that is
+/// itself called, which is how every panel is written. So the base cannot be
+/// one entry point, and W4 counts mounts by entry point instead of by use.
+const _mountOpenMacros = <String>['open', 'mount'];
+const _mountCloseMacros = <String>['close', 'end'];
+
+/// Occurrences of `alias.<name>(` for any [names], on a word boundary.
+int _aliasCalls(String src, String alias, List<String> names) {
+  var n = 0;
+  final a = RegExp.escape(alias);
+  for (final name in names) {
+    n += RegExp('(?<![A-Za-z_0-9])$a\\s*\\.\\s*${RegExp.escape(name)}\\s*\\(')
+        .allMatches(src)
+        .length;
+  }
+  return n;
+}
+
+/// Occurrences of `alias.` — any member access on the alias.
+int _aliasUses(String src, String alias) =>
+    RegExp('(?<![A-Za-z_0-9])${RegExp.escape(alias)}\\s*\\.')
+        .allMatches(src)
+        .length;
+
+/// An alias bound to the panel base or to a role panel widget.
+bool _isPanelRef(TemplateRef ref) =>
+    ref.path == panelBaseWidget || p.basename(ref.path).endsWith('_panel.html');
+
+/// W4 balance: an opened panel must be closed in the same template.
+///
+/// The one safety the open/close pair loses against `{% call %}…{% endcall %}`
+/// is that the pair can go unbalanced — `{% call %}` cannot. An imbalance emits
+/// broken nesting that no other rule sees, so it is caught here, statically,
+/// rather than left to a DOM assertion after render.
+///
+/// Swept over EVERY template, not just shell views: the base is opened wherever
+/// a panel is composed, and a role widget that opens without closing is exactly
+/// as broken as a shell that does.
+List<LintFinding> _panelBalanceFindings(String artifactDir) {
+  final findings = <LintFinding>[];
+  for (final rel in _htmlFiles(artifactDir)) {
+    final src = stripComments(File(p.join(artifactDir, rel)).readAsStringSync());
+    for (final ref in parseTemplateRefs(src)) {
+      final alias = ref.alias;
+      if (alias == null || !_isPanelRef(ref)) continue;
+      final opens = _aliasCalls(src, alias, _mountOpenMacros);
+      final closes = _aliasCalls(src, alias, _mountCloseMacros);
+      if (opens == closes) continue;
+      findings.add(LintFinding(rel,
+          'W4: `$alias` (${ref.path}) opens $opens time(s) but closes $closes — '
+          'every `$alias.open(…)` needs a matching `$alias.close(…)` in the same '
+          'template, or the panel emits unbalanced markup'));
+    }
+  }
+  return findings;
+}
+
 /// Role panels a shell view mounts, counted by macro-call site.
 ///
 /// ponytail: a mount inside `{% if %}`/`{% else %}` branches counts once per
@@ -465,12 +526,21 @@ List<LintFinding> _shellCompositionFindings(
             'it from the shell view'));
         continue;
       }
-      // An `import … as X` mounts once per macro call; a bare include mounts once.
-      final count = ref.alias == null
-          ? 1
-          : RegExp('(?<![A-Za-z_0-9])${RegExp.escape(ref.alias!)}\\s*\\.')
-              .allMatches(src)
-              .length;
+      // A bare include mounts once. An `import … as X` mounts once per ENTRY
+      // POINT — `X.open(` / `X.mount(` — not once per alias use, because the
+      // panel base is a balanced pair: one mounted panel is `X.open(…)` plus
+      // `X.close(…)`, and counting every alias use would read that correct
+      // markup as a double mount. Roles that expose a single all-in-one macro
+      // have no entry point to find, so those fall back to alias uses.
+      if (ref.alias == null) {
+        mounts[role] = (mounts[role] ?? 0) + 1;
+        continue;
+      }
+      final opens = _aliasCalls(src, ref.alias!, _mountOpenMacros);
+      final closes = _aliasCalls(src, ref.alias!, _mountCloseMacros);
+      final count = (opens > 0 || closes > 0)
+          ? opens
+          : _aliasUses(src, ref.alias!);
       mounts[role] = (mounts[role] ?? 0) + count;
     }
     for (final role in panelRoles) {
@@ -655,6 +725,7 @@ List<LintFinding> gateDesignWidgets(String artifactDir,
     ..._placementFindings(artifactDir, graph),
     ..._panelReimplementationFindings(artifactDir, notes),
     ..._shellCompositionFindings(artifactDir, notes),
+    ..._panelBalanceFindings(artifactDir),
     ..._pillRadiusFindings(artifactDir),
     ..._stateNamespaceFindings(artifactDir, notes),
   ];
