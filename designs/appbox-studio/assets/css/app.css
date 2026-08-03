@@ -594,23 +594,36 @@ button:active { transform: translateY(1px); }
    swatches (viewer.css) consume the same tokens — one source for both.
    `warm` is an amber wash over the canvas step: the palette's own accent
    via color-mix, so it re-derives in each theme instead of hardcoding a
-   second pair of hexes. */
+   second pair of hexes.
+   Each tone is a GRADIENT, stored as its two stops (-a top, -b bottom) so
+   the topbar swatch dots can preview the exact same ramp. Kept static and
+   low-chroma on purpose: mesh/aurora belongs to landing pages, a working
+   canvas stays quiet so the artboards are the loud part. Interpolated in
+   oklab (sRGB midpoints go muddy). */
 .panel-viewer {
-  --dv-bg-canvas: #E6E4D9;                                       /* base-100 */
-  --dv-bg-warm: color-mix(in oklab, var(--amber) 18%, #E6E4D9);
-  --dv-bg-ink: #343331;                                          /* base-850 */
+  --dv-bg-canvas-a: #E6E4D9;                                     /* base-100 */
+  --dv-bg-canvas-b: #DAD8CE;                                     /* base-150 */
+  --dv-bg-warm-a: color-mix(in oklab, var(--amber) 24%, #E6E4D9);
+  --dv-bg-warm-b: #E6E4D9;
+  --dv-bg-ink-a: #403E3C;                                        /* base-800 */
+  --dv-bg-ink-b: #282726;                                        /* base-900 */
 }
 [data-theme="dark"] .panel-viewer {
-  --dv-bg-canvas: #282726;                                       /* base-900 */
-  --dv-bg-warm: color-mix(in oklab, var(--amber) 18%, #282726);
-  --dv-bg-ink: #100F0F;                                          /* black */
+  --dv-bg-canvas-a: #282726;                                     /* base-900 */
+  --dv-bg-canvas-b: #1C1B1A;                                     /* base-950 */
+  --dv-bg-warm-a: color-mix(in oklab, var(--amber) 20%, #282726);
+  --dv-bg-warm-b: #1C1B1A;
+  --dv-bg-ink-a: #1C1B1A;                                        /* base-950 */
+  --dv-bg-ink-b: #100F0F;                                        /* black */
 }
 /* The bg paints ONLY the panel body — the scrollable stage the artboards
    sit on (all four lens stages; canvas.js's own selector list) — never the
-   card itself, so the top and bottom bars keep the .panel surface. */
-.dv-bg-canvas :is(.dv-stage, .dv-rungs, .dv-flow-canvas, .dv-proto-stage) { background: var(--dv-bg-canvas); }
-.dv-bg-warm :is(.dv-stage, .dv-rungs, .dv-flow-canvas, .dv-proto-stage) { background: var(--dv-bg-warm); }
-.dv-bg-ink :is(.dv-stage, .dv-rungs, .dv-flow-canvas, .dv-proto-stage) { background: var(--dv-bg-ink); }
+   card itself, so the top and bottom bars keep the .panel surface. The
+   gradient pins to the stage's visible box (default attachment on a scroll
+   container), so panning never slides the field. */
+.dv-bg-canvas :is(.dv-stage, .dv-rungs, .dv-flow-canvas, .dv-proto-stage) { background: linear-gradient(180deg in oklab, var(--dv-bg-canvas-a), var(--dv-bg-canvas-b)); }
+.dv-bg-warm :is(.dv-stage, .dv-rungs, .dv-flow-canvas, .dv-proto-stage) { background: linear-gradient(160deg in oklab, var(--dv-bg-warm-a), var(--dv-bg-warm-b)); }
+.dv-bg-ink :is(.dv-stage, .dv-rungs, .dv-flow-canvas, .dv-proto-stage) { background: linear-gradient(180deg in oklab, var(--dv-bg-ink-a), var(--dv-bg-ink-b)); }
 .dv-toolbar { display: flex; align-items: center; gap: .8rem; flex-wrap: wrap; }
 .dv-screen { font-weight: 600; font-size: .82rem; }
 /* ink is a dark field in EITHER theme (and warm goes dark in dark theme):
