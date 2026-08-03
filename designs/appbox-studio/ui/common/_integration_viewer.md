@@ -65,8 +65,14 @@ Files:
   instead — the rail is unaffected. The facade returns `null` for `flows` and
   `proto`, which also
   means **proto has no active-screen picker any more** (the strip was it);
-  `protoPicks` still carries the hrefs if one is needed. A thumb toggles the
-  pin (`#panels`). The composer tray (`ui/common/composer.html`)
+  `protoPicks` still carries the hrefs if one is needed. A thumb NAVIGATES:
+  its href targets the canvas tile (`#dvt-views--<id>`; JS-off degrades to
+  native fragment scroll — hx-boost skips local anchors), and canvas.js
+  strip-sync upgrades the click to a smooth center plus a two-sided `.on`
+  accent mark; canvas scrolling tracks back onto the strip, so the sync is
+  both ways. Pinning lives on the tile's hover toolbar; `contextHref` is
+  still emitted but the strip no longer consumes it. The composer tray
+  (`ui/common/composer.html`)
   keeps its own copy ONLY on surfaces that have a composer and no viewer —
   today just freeze, which opts in with `stageContext`'s `composerStrip`.
   Two copies would be two sets of thumb iframes for the same screens.

@@ -617,6 +617,8 @@ button:active { transform: translateY(1px); }
   border: 1px solid var(--border); display: block; background: #fff;
 }
 .dv-thumb.on .dv-thumb-clip { border-color: var(--accent); box-shadow: 0 0 0 1.5px var(--accent); }
+/* strip-sync's other half: canvas.js puts the same `.on` on the current tile */
+.dv-tile.on { outline: 2px solid var(--accent); outline-offset: 3px; }
 .dv-thumb-clip iframe {
   width: 390px; height: 562px; border: 0; pointer-events: none;
   transform: scale(.36); transform-origin: top left;

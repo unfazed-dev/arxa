@@ -146,3 +146,20 @@ unlocking, discarding the element the user had deliberately locked.
 
 So: five named islands, unchanged. Adding a panel is not adding an island, and
 the boundary only moves when something genuinely cannot be said in hypermedia.
+
+**Amendment (2026-08-04) — strip-sync joins the canvas island's charter.** The
+views-lens filmstrip now syncs both ways with the canvas viewport: scrolling
+marks the screen whose center is nearest the viewport center with `.on`
+(accent) on BOTH the tile and its thumb and keeps that thumb in the strip's
+view; clicking a thumb smooth-centers its tile. This is canvas view-state —
+scroll-position observation and programmatic scrolling, the same faculties the
+island already owns — so it lives in `canvas.js` (island 1), not a sixth
+island. It passes the unavoidability test the inspector pane failed: which
+screen currently occupies the viewport center exists only in the client's
+scroll geometry, changes per frame, and cannot be expressed as an HTTP request
+any more than cursor-anchored zoom could. View-state-only stands: nothing
+syncs to the server. The DOM contract is deliberately thin — a thumb's `href`
+is the fragment id of its tile (`#dvt-views--<id>`), which also gives the
+JS-off fallback for free (native fragment scroll; hx-boost skips local
+anchors). Thumb click previously toggled pin-to-context; pinning lives on the
+tile hover toolbar, where it remains. Island count: five, unchanged.

@@ -402,6 +402,8 @@
 
 /* the active screen's thumb in proto mode (the picker state) */
 .dv-thumb.on .dv-thumb-clip { border-color: var(--accent, #0891b2); box-shadow: 0 0 0 1.5px var(--accent, #0891b2); }
+/* strip-sync's other half: canvas.js puts the same `.on` on the current tile */
+.dv-tile.on { outline: 2px solid var(--accent, #0891b2); outline-offset: 3px; }
 
 /* ---------- fullscreen: the viewer IS the fullscreen element ----------
    The close affordance exists only while :fullscreen matches — Esc drops the

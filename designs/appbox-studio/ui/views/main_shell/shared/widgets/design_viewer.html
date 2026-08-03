@@ -259,16 +259,21 @@
    in the markup no longer decides its column.
    VIEWS ONLY — the facade returns null for flows and proto (v.filmstrip), so
    that guard is the whole gate; no mode test here.
+   A thumb NAVIGATES: its href targets the canvas tile (#dvt-views--<id>), so
+   with JS off the fragment scrolls the canvas natively (hx-boost skips local
+   anchors), and canvas.js upgrades the click to a smooth center plus the
+   two-sided `.on` accent mark (strip-sync). Pin-to-context is no longer the
+   thumb's click — it lives on the tile's hover toolbar; a strip that mutates
+   chat context on click can't also be a navigator.
    Own id namespace on the thumb iframes — morph pairs by id, and
    `dvt-views--` is already taken by the canvas tiles. The container's own id
-   matters too (kept via the base's `sideEndId`): thumb clicks swap #panels,
-   and without a stable id morph would replace the scroller and throw away its
-   scroll position on every pin. #}
+   matters too (kept via the base's `sideEndId`): other controls still morph
+   #panels, and without a stable id morph would replace the scroller and
+   throw away its scroll position on every swap. #}
 {% macro filmstrip(v) %}
       {% for s in v.filmstrip %}
       <a class="dv-thumb cs-thumb {{ 'in-ctx ctx-' + s.tone if s.inContext }} {{ 'is-dim' if s.dim }} {{ 'on' if s.active }}"
-         href="{{ s.contextHref }}" hx-get="{{ s.contextHref }}"
-         hx-target="#panels" hx-swap="morph:outerHTML" hx-push-url="false"
+         href="#dvt-views--{{ s.id }}"
          title="{{ s.label or s.id }}">
         <span class="dv-thumb-clip"><iframe id="dvf-vstrip--{{ s.id }}" src="{{ s.src }}" scrolling="no" tabindex="-1" title=""></iframe></span>
         <span class="dv-thumb-label"><code>{{ s.id }}</code></span>

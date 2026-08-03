@@ -1,9 +1,9 @@
-/* canvas.js — the ONE sanctioned island (ADR-0002 amendment, 2026-07).
-   The only first-party script an artifact may carry: a dependency-free
-   pan/zoom module scoped to the design canvas (.dv-stage / .dv-rungs inside
-   #design-viewer). It exposes no globals, talks to no server, and touches
-   nothing outside the canvas — the "island" shape from htmx's
-   hypermedia-friendly-scripting essay. Everything else stays zero-custom-JS.
+/* canvas.js — sanctioned island (ADR-0002 amendment, 2026-07; first of the
+   named set). A dependency-free pan/zoom-and-sync module scoped to the design
+   canvas (.dv-stage / .dv-rungs inside #design-viewer). It exposes no
+   globals, talks to no server, and touches nothing outside the viewer
+   panel — the "island" shape from htmx's hypermedia-friendly-scripting
+   essay. Everything else stays zero-custom-JS.
 
    Figma idiom:
      scroll / two-finger trackpad  → native pan (overflow:auto, untouched)
@@ -11,6 +11,9 @@
      drag on free canvas           → pan (pointer capture)
      double-click on free canvas   → reset zoom to 1×
      mini-panel maximize button    → toggle the viewer's fullscreen
+     filmstrip thumb click         → smooth-center that screen (views lens)
+     scroll (views lens)           → strip tracks the current screen, `.on`
+                                     accent mark on tile and thumb alike
 
    Zoom scales the .dv-zoom wrapper (transform-origin 0 0) and re-anchors the
    scroll position so the point under the cursor stays put. Scale is paint-
@@ -102,6 +105,69 @@
     });
   }
 
+  // filmstrip ↔ canvas sync (views lens). The strip's thumbs point at their
+  // tiles by fragment href (#dvt-views--<id>) — the DOM id is the whole
+  // contract, no data attributes. "Current screen" = the tile whose center
+  // sits nearest the canvas viewport's center; `.on` marks it on BOTH sides
+  // (the accent vocabulary the thumbs already carry). A click smooth-centers
+  // the tile and latches scroll detection until the glide settles, so the
+  // screens passed on the way don't flash. Morphs wipe client-set classes,
+  // so sync() re-derives the mark on every scan (htmx.onLoad); the armed
+  // listeners survive on morph-preserved nodes behind the _ss guards.
+  const stripOf = (el) => el.closest('.panel-viewer')?.querySelector('.dv-vstrip');
+  const thumbTile = (a) => document.getElementById((a.getAttribute('href') || '#').slice(1));
+  const markCurrent = (el, strip, id) => {
+    el.querySelectorAll('.dv-tile').forEach((t) => t.classList.toggle('on', t.id === id));
+    strip.querySelectorAll('.dv-thumb').forEach((a) => {
+      const on = thumbTile(a)?.id === id;
+      a.classList.toggle('on', on);
+      if (on) a.scrollIntoView({ block: 'nearest' });
+    });
+  };
+  const nearestTile = (el) => {
+    const mid = ((r) => r.top + r.height / 2)(el.getBoundingClientRect());
+    let best = null, gap = Infinity;
+    el.querySelectorAll('.dv-tile').forEach((t) => {
+      const b = t.getBoundingClientRect();
+      const d = Math.abs(b.top + b.height / 2 - mid);
+      if (d < gap) { gap = d; best = t; }
+    });
+    return best;
+  };
+  const sync = (el) => {
+    const strip = stripOf(el);
+    if (!strip) return; // flows lens shares the canvas class but has no strip
+    if (!el._ss) {
+      el._ss = 1;
+      let raf = 0;
+      el.addEventListener('scroll', () => {
+        if (el._latch || raf) return;
+        raf = requestAnimationFrame(() => {
+          raf = 0;
+          const t = nearestTile(el);
+          if (t) markCurrent(el, stripOf(el) || strip, t.id);
+        });
+      }, { passive: true });
+    }
+    if (!strip._ss) {
+      strip._ss = 1;
+      strip.addEventListener('click', (e) => {
+        const a = e.target.closest('.dv-thumb');
+        const tile = a && thumbTile(a);
+        if (!tile) return; // no tile → let the fragment navigation try
+        e.preventDefault();
+        el._latch = 1;
+        markCurrent(el, strip, tile.id);
+        tile.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        const settle = () => { el._latch = 0; el.removeEventListener('scrollend', settle); };
+        el.addEventListener('scrollend', settle);
+        setTimeout(settle, 900); // scrollend fallback (long glides, old engines)
+      });
+    }
+    const t = nearestTile(el);
+    if (t) markCurrent(el, strip, t.id);
+  };
+
   // viewer fullscreen (mini panel [data-action="viewer-fullscreen"] and the
   // fullscreen-only close button [data-action="viewer-fullscreen-exit"]) —
   // requested from buttons INSIDE the viewer, so a delegated click finds the
@@ -143,9 +209,10 @@
     t.style.transform = `scale(${stashedZoom.z})`;
   });
 
+  const arm = (el) => { attach(el); if (el.matches('.dv-flow-canvas')) sync(el); };
   const scan = (root) => {
-    if (root.matches?.(SEL)) attach(root);
-    root.querySelectorAll?.(SEL).forEach(attach);
+    if (root.matches?.(SEL)) arm(root);
+    root.querySelectorAll?.(SEL).forEach(arm);
   };
   document.addEventListener('DOMContentLoaded', () => scan(document));
   htmx.onLoad(scan); // re-arm after every htmx swap — the viewer re-renders
