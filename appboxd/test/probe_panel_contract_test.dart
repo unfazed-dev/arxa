@@ -7,7 +7,7 @@
 // different from the JS the `.mjs` relies on — and each difference reaches the
 // printed output, so a silent regression here is a silent parity break.
 
-import 'package:appboxd/probes/probe_panel_contract.dart';
+import 'package:appboxd/probes/studio/probe_panel_contract.dart';
 import 'package:appboxd/probes/registry.dart';
 import 'package:test/test.dart';
 

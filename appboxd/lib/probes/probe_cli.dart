@@ -20,9 +20,15 @@ String _usage() {
       .map((p) => '  ${p.name.padRight(18)} ${p.summary}${p.mutates ? ' [mutates]' : ''}')
       .join('\n');
   return '''
-Usage: appbox design probe <name…|all> [--port <n> | --base <url>] [--project <name>]
+Usage: appbox design probe <suite|name…|all> [--port <n> | --base <url>] [--project <name>]
 
-Probes (run order for `all`):
+Suites:
+  contract          Asserts the appbox opinion against ANY served design,
+                    deriving its targets from what the design declares.
+  studio            The engine's smoke test, through its reference design.
+  all               Every suite, contract first.
+
+Probes (run order within a suite):
 $rows
 
 Target (exactly one of --port/--base; APPBOX_BASE is the fallback):
@@ -103,21 +109,44 @@ Future<int> runProbeCli(List<String> args) async {
     return 2;
   }
 
+  // A name is a suite, `all`, or a probe — resolved in that order, because a
+  // suite selects many and a probe selects one, and `all` is every suite in
+  // kSuiteOrder (contract first). Duplicates are dropped rather than run
+  // twice: `probe contract contract-chips` should mean "the suite", not "the
+  // suite plus that probe again".
   final selected = <Probe>[];
-  if (names.length == 1 && names.first == 'all') {
-    selected.addAll(kProbes);
-  } else {
-    for (final n in names) {
-      final p = probeByName(n);
-      if (p == null) {
-        // Rule 1's spirit: a name that cannot be honoured is a hard error, and
-        // the error says what WOULD have worked.
-        stderr.writeln("probe: unknown probe '$n'.");
-        stderr.writeln('       Available: ${kProbes.map((p) => p.name).join(', ')}, all');
+  void add(Probe p) {
+    if (!selected.any((s) => s.name == p.name)) selected.add(p);
+  }
+
+  for (final n in names) {
+    if (n == 'all') {
+      for (final suite in kSuiteOrder) {
+        kProbes.where((p) => p.suite == suite).forEach(add);
+      }
+      continue;
+    }
+    if (kSuiteOrder.contains(n)) {
+      final inSuite = kProbes.where((p) => p.suite == n).toList();
+      if (inSuite.isEmpty) {
+        // An empty suite is a hard error, not a silent no-op run that exits 0
+        // having asserted nothing — the same rule as an unhonoured flag.
+        stderr.writeln("probe: suite '$n' has no probes registered.");
         return 2;
       }
-      selected.add(p);
+      inSuite.forEach(add);
+      continue;
     }
+    final p = probeByName(n);
+    if (p == null) {
+      // Rule 1's spirit: a name that cannot be honoured is a hard error, and
+      // the error says what WOULD have worked.
+      stderr.writeln("probe: unknown probe or suite '$n'.");
+      stderr.writeln('       Suites: ${kSuiteOrder.join(', ')}, all');
+      stderr.writeln('       Probes: ${kProbes.map((p) => p.name).join(', ')}');
+      return 2;
+    }
+    add(p);
   }
 
   final base = target.base!;

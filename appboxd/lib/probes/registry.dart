@@ -12,16 +12,16 @@
 // than after the slow interaction-heavy ones.
 
 import 'package:appboxd/probes/probe_base.dart';
-import 'package:appboxd/probes/probe_boost.dart';
-import 'package:appboxd/probes/probe_composer_draft.dart';
-import 'package:appboxd/probes/probe_context_sync.dart';
-import 'package:appboxd/probes/probe_explode.dart';
-import 'package:appboxd/probes/probe_flowwalk.dart';
-import 'package:appboxd/probes/probe_inspect.dart';
-import 'package:appboxd/probes/probe_no_reload.dart';
-import 'package:appboxd/probes/probe_panel_contract.dart';
-import 'package:appboxd/probes/probe_panel_resize.dart';
-import 'package:appboxd/probes/probe_shell_chrome.dart';
+import 'package:appboxd/probes/studio/probe_boost.dart';
+import 'package:appboxd/probes/studio/probe_composer_draft.dart';
+import 'package:appboxd/probes/studio/probe_context_sync.dart';
+import 'package:appboxd/probes/studio/probe_explode.dart';
+import 'package:appboxd/probes/studio/probe_flowwalk.dart';
+import 'package:appboxd/probes/studio/probe_inspect.dart';
+import 'package:appboxd/probes/studio/probe_no_reload.dart';
+import 'package:appboxd/probes/studio/probe_panel_contract.dart';
+import 'package:appboxd/probes/studio/probe_panel_resize.dart';
+import 'package:appboxd/probes/studio/probe_shell_chrome.dart';
 
 /// Every probe, in `probe all` run order.
 const List<Probe> kProbes = <Probe>[

@@ -2,7 +2,7 @@
 // independent of a live server: it is a pure regex parser over rendered HTML,
 // so this exercises it against fixture markup shaped like the real render.
 
-import 'package:appboxd/probes/probe_context_sync.dart';
+import 'package:appboxd/probes/studio/probe_context_sync.dart';
 import 'package:test/test.dart';
 
 const String _twoPinsHtml = '''

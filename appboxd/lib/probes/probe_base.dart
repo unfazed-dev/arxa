@@ -45,6 +45,17 @@ import 'package:appboxd/cdp.dart';
 /// The shared dev server. Rule 3's last resort — loud, never silent.
 const String kDefaultBase = 'http://localhost:4319';
 
+/// Suite names (task #21). See [Probe.suite] for what each one means.
+const String kSuiteContract = 'contract';
+const String kSuiteStudio = 'studio';
+
+/// Run order for `probe all`: contract first.
+///
+/// Same doctrine as the probe order inside a suite — the cheap, broadly
+/// applicable checks lead, so a design that violates the appbox opinion fails
+/// on that rather than deep inside a studio-specific interaction.
+const List<String> kSuiteOrder = <String>[kSuiteContract, kSuiteStudio];
+
 /// Disposable means the bound project's name ends in `-probe` or `-test`.
 final RegExp _disposableRe = RegExp(r'-(?:probe|test)$');
 
@@ -572,6 +583,21 @@ class Probe {
   /// Forwarded to [ProbeReport.bareVerdicts] by the runner — see there.
   final bool bareVerdicts;
 
+  /// Which suite this probe belongs to (task #21).
+  ///
+  /// [kSuiteContract] — asserts the appbox opinion against ANY served design,
+  /// deriving its targets from what the design declares (`GET /__routes`).
+  /// The behavioural sibling of the W-gate. A contract probe that names a
+  /// route is miscategorised by construction.
+  ///
+  /// [kSuiteStudio] — the engine's smoke test, run through its reference
+  /// design. Free to know `/design` and `/intake`, because knowing the studio
+  /// IS its job. The ten ported probes are all of these.
+  ///
+  /// The distinction is what the probe is ABOUT, not where its file sits: the
+  /// directories follow the field, not the other way round.
+  final String suite;
+
   /// The checks.
   final ProbeBody body;
 
@@ -580,6 +606,7 @@ class Probe {
     required this.summary,
     required this.mutates,
     required this.body,
+    this.suite = kSuiteStudio,
     this.needsBrowser = true,
     this.bareVerdicts = false,
   });
