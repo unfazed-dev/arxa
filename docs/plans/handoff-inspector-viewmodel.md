@@ -48,9 +48,19 @@ activityViews: [
 > `setActivityView(…, 'inspector')` falls back to `'screens'`, so **every hover 204s
 > forever and the pane looks dead with no error anywhere**. Land §0a first.
 
-### 0c. BLOCKER — a file neither of us owns
+### 0c. ~~BLOCKER — a file neither of us owns~~ — RESOLVED (verified 2026-08-03)
 
-`ui/views/main_shell/design/_shared.html:144` `activityBody(c)` is the **full-page**
+**This blocker no longer exists.** Both edits below landed in `be9ea3c`. Verified in-tree:
+the branch is at `ui/views/main_shell/design/_shared.html:180` (with an explanatory
+comment at 181-183 and `{{ ins.pane(c) }}` at 184), and the import is at line 24.
+Nothing to do here. The original text is kept below for the record.
+
+> Note on the original citation: this section cited `_shared.html:144`, which was wrong
+> even when written — line 144 sits *before* the `activityBody` macro, which opens at 152.
+> Cite by symbol + verified line, and re-verify line numbers before a handoff is read.
+
+`ui/views/main_shell/design/_shared.html` `activityBody(c)` (macro opens at **152**) is
+the **full-page**
 dispatch. After any full render (`GET /design`) with `activityView === 'inspector'` it
 falls through to the screens list. It needs exactly one branch added before the final
 `{% else %}`:

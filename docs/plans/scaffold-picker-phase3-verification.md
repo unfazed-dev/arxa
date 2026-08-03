@@ -133,7 +133,7 @@ I re-measured; the corrected facts:
 - The path string is supplied by **my** file: `scaffold_facade.js:205` sets
   `composerAction: '/scaffold/messages'`, with a `needs-route:` comment I wrote
   myself and then failed to recall.
-- `ui/views/main_shell/scaffold/_shared.html:95` mounts `composerPanel(c)`
+- `ui/views/main_shell/scaffold/_shared.html:113` mounts `composerPanel(c)`
   unconditionally, so the surface is chrome-integration's; the value is mine.
 
 **Why the original claim was unsound:** I grepped `ui/` for the literal
@@ -182,6 +182,66 @@ settled by the CSS and the emitter is settled by the live render; what has
 **not** been done is a screenshot of the gated variant, so visual judgment about
 whether a thread-without-field column reads as broken is still open.
 
+### 6a.1 Gated variant measured — the column is populated, and "empty" was too weak
+
+The field-only gate now exists in the working tree (`_shared.html:74`,
+uncommitted). Measured against :4319, contents of
+`<section class="panel panel-composer">` on each screen:
+
+| screen | panel bytes | thread rows | `<form>` | `<textarea>` |
+|---|---|---|---|---|
+| `/scaffold?state=success` | 2754 | 2 | 1 | 1 |
+| `/scaffold/run?state=completed` | 916 | 2 | 0 | 0 |
+
+Run's gated column is **not** empty — it retains eyebrow `Scaffold`, ctx chips
+`structure r7` / `6 kits`, and two `bt-event` rows:
+
+- "Your design was frozen at 11 screens. Nothing below changed it."
+- "Files are on disk. Nothing needs you."
+
+Picker retains its two rows (`7 kits detected in your project`,
+`Add or remove anything — nothing here is locked in.`) and still emits the form.
+
+This corrects the framing above, in the direction that strengthens the
+conclusion: gating the whole `composerPanel` would not merely leave a ≥240 px
+**empty** track — it would **delete real orientation content on both screens**,
+including the entirety of run's 916 B receipt. The layout argument was the weaker
+of the two available arguments and I led with it.
+
+Also settled: gating the field does not strand run's forward path — but my
+first mechanism for it was inverted, and the corrected version is below
+(run-screen caught this; the file citations in the original were wrong).
+
+Measured on `/scaffold/run?state=completed`, gate active:
+
+| `/build` occurrences | count | source |
+|---|---|---|
+| inside `<section class="panel panel-composer">` | 1 | `scaffold_run_facade.js:82` |
+| outside it | 6 | `run_view.html:231` |
+| **total on page** | **7** | |
+
+What I originally wrote — "6×, rendering from `scaffold_run_facade.js:82`
+inside `mainContent` (`_shared.html:214`)" — was wrong three ways. The count
+6 belongs to the *other* source; `_shared.html` is 121 lines long so `:214`
+cites nothing; and facade:82 is not in `mainContent` at all. It is an entry in
+the `thread:` array (`scaffold_run_facade.js:77–84`), rendered by
+`{{ thread(c) }}` at `_shared.html:73` — **inside** `composerPanel`
+(macro `71–77`), one line above the field guard at `:74`. It sits in the very
+916 B column measured in §6a.1 and survives only because the gate is
+field-level; panel-gating would take it.
+
+The affordance that is genuinely independent is the literal CTA at
+`run_view.html:231`, inside `mainContent` (macro `214–236`) and the only
+`/build` literal in that file. It is untouchable by any composer gating, and
+the no-stranding conclusion rests on it alone.
+
+(The 6× multiplicity of a single literal is unexplained — plausibly repeat
+renders via the `panels` / `panelsSwap` fragment paths, but I have not
+verified that and nothing here depends on it.)
+
+Still open, and only this: pixel judgment on the gated variant. Content
+occupancy is now measured, not predicted.
+
 ## Lane note — the unlanded edit, preserved verbatim
 
 The **four** route tuples in §4 are an edit to `routes.scaffold.js`, which
@@ -211,3 +271,35 @@ uncommitted, the exact tuples are recorded here so they survive a clean:
 `confirmHref` with it), so a single route serves both entry paths; see the
 precedence measurement in §4. `cancelRemove` must stay a server route for the
 reason given in §4.
+
+## Composer gate — live measurement (uncommitted working tree)
+
+Gate applied at `ui/views/main_shell/scaffold/_shared.html:74` wraps the composer
+**field** only, not `composerPanel(c)` (which is mounted at `:113`). Measured
+against design server :4319:
+
+| URL | `<form class="composer">` | `panel-composer` |
+|---|---|---|
+| `/scaffold?state=success` | `action="/scaffold/messages"` | PRESENT |
+| `/scaffold/run?state=completed` | ABSENT (gated) | PRESENT |
+
+Stranding check (run-screen's concern): the conclusion holds — the forward path
+is not stranded — but see §6a.1 for the corrected mechanism. Measured split on
+`/scaffold/run?state=completed`, gate active: **7** `/build` occurrences, **1**
+inside `panel-composer` (from `scaffold_run_facade.js:82`, which renders via
+`{{ thread(c) }}` at `_shared.html:73`, *inside* `composerPanel`) and **6**
+outside it (from the literal CTA at `run_view.html:231`, inside `mainContent`,
+macro `214–236`). The earlier claim here — 6× from facade:82 inside
+`mainContent` at `_shared.html:214` — was wrong on count attribution, on
+location, and cited a line past the end of a 121-line file. No-stranding rests
+on `run_view.html:231`, which no composer gating can reach.
+
+Picker thread rows survive the gate: `scaffold.picker.thread.detected` and
+`scaffold.picker.thread.help` both render.
+
+Unfixed by the gate: picker's own field still renders and `POST /scaffold/messages`
+still returns **404**, because `scaffold_facade.js:205` sets `composerAction`
+unconditionally. That line is the lead's call (task #16).
+
+Note: `docs/plans/scaffold-composer-contract.md`, cited in coordination, does not
+exist in the repo. This file holds the measurements.
