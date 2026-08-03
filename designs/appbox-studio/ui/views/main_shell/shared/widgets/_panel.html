@@ -46,7 +46,14 @@
                  base and the out-of-band part macros cannot drift apart.
      class?    — extra classes on the panel (a lens modifier, e.g.
                  'panel-viewer dv-bg-canvas').
-     attrs?    — raw attribute string for the caller's own hooks.
+     attrs?    — raw attribute string for the caller's own hooks. Emitted
+                 through `| safe`, because "raw" is the whole contract: without
+                 it Nunjucks escapes the quotes and `aria-label="x y"` reaches
+                 the DOM as `aria-label=&quot;x` plus a stray `y&quot;`
+                 attribute — markup that parses, renders, and is silently
+                 wrong. It is markup the TEMPLATE author wrote, never user
+                 input; anything interpolated into it must be escaped by the
+                 caller.
      width?    — px width, applied inline. Server state; see resize().
      size?     — 's' | 'm' | 'l' → panel-size-*. The width fallback when no
                  persisted px width exists.
@@ -87,7 +94,7 @@
 {%- set tag = spec.tag or 'section' -%}
 <{{ tag }} class="panel panel-{{ spec.role }}{% if spec.size %} panel-size-{{ spec.size }}{% endif %}{% if spec.class %} {{ spec.class }}{% endif %}" id="{{ pid }}"
   {%- if spec.width or spec.vt %} style="{% if spec.width %}width:{{ spec.width }}px;{% endif %}{% if spec.vt %}view-transition-name:{{ spec.vt }};{% endif %}"{% endif %}
-  {{- ' ' + spec.attrs if spec.attrs }}>
+  {{- (' ' + spec.attrs) | safe if spec.attrs }}>
 {%- if spec.resize %}{{ resize(pid, spec.resize) }}{% endif -%}
 {%- if spec.overlay %}<div class="panel-overlay">{{ spec.overlay | safe }}</div>{% endif -%}
 {{ top(pid, spec.top, { cls: spec.topClass, attrs: spec.topAttrs, id: spec.topId }) }}
@@ -123,21 +130,21 @@
      o.oob    hx-swap-oob="outerHTML" for a standalone re-render #}
 
 {% macro top(pid, content, o) %}
-{%- if content %}<header class="panel-top{% if o.cls %} {{ o.cls }}{% endif %}" {% if o.id %} id="{{ o.id }}"{% else %} id="{{ pid }}-top"{% endif %}{% if o.oob %} hx-swap-oob="outerHTML"{% endif %}{{ ' ' + o.attrs if o.attrs }}>{{ content | safe }}</header>{% endif -%}
+{%- if content %}<header class="panel-top{% if o.cls %} {{ o.cls }}{% endif %}" {% if o.id %} id="{{ o.id }}"{% else %} id="{{ pid }}-top"{% endif %}{% if o.oob %} hx-swap-oob="outerHTML"{% endif %}{{ (' ' + o.attrs) | safe if o.attrs }}>{{ content | safe }}</header>{% endif -%}
 {% endmacro %}
 
 {% macro bottom(pid, content, o) %}
-{%- if content %}<footer class="panel-bottom{% if o.cls %} {{ o.cls }}{% endif %}" {% if o.id %} id="{{ o.id }}"{% else %} id="{{ pid }}-bottom"{% endif %}{% if o.oob %} hx-swap-oob="outerHTML"{% endif %}{{ ' ' + o.attrs if o.attrs }}>{{ content | safe }}</footer>{% endif -%}
+{%- if content %}<footer class="panel-bottom{% if o.cls %} {{ o.cls }}{% endif %}" {% if o.id %} id="{{ o.id }}"{% else %} id="{{ pid }}-bottom"{% endif %}{% if o.oob %} hx-swap-oob="outerHTML"{% endif %}{{ (' ' + o.attrs) | safe if o.attrs }}>{{ content | safe }}</footer>{% endif -%}
 {% endmacro %}
 
 {# The sides flank the body inside the band between top and bottom. `start`/
    `end` rather than `left`/`right` so the names survive an RTL locale. #}
 {% macro sideStart(pid, content, o) %}
-{%- if content %}<aside class="panel-side-start{% if o.cls %} {{ o.cls }}{% endif %}" {% if o.id %} id="{{ o.id }}"{% else %} id="{{ pid }}-side-start"{% endif %}{% if o.oob %} hx-swap-oob="outerHTML"{% endif %}{{ ' ' + o.attrs if o.attrs }}>{{ content | safe }}</aside>{% endif -%}
+{%- if content %}<aside class="panel-side-start{% if o.cls %} {{ o.cls }}{% endif %}" {% if o.id %} id="{{ o.id }}"{% else %} id="{{ pid }}-side-start"{% endif %}{% if o.oob %} hx-swap-oob="outerHTML"{% endif %}{{ (' ' + o.attrs) | safe if o.attrs }}>{{ content | safe }}</aside>{% endif -%}
 {% endmacro %}
 
 {% macro sideEnd(pid, content, o) %}
-{%- if content %}<aside class="panel-side-end{% if o.cls %} {{ o.cls }}{% endif %}" {% if o.id %} id="{{ o.id }}"{% else %} id="{{ pid }}-side-end"{% endif %}{% if o.oob %} hx-swap-oob="outerHTML"{% endif %}{{ ' ' + o.attrs if o.attrs }}>{{ content | safe }}</aside>{% endif -%}
+{%- if content %}<aside class="panel-side-end{% if o.cls %} {{ o.cls }}{% endif %}" {% if o.id %} id="{{ o.id }}"{% else %} id="{{ pid }}-side-end"{% endif %}{% if o.oob %} hx-swap-oob="outerHTML"{% endif %}{{ (' ' + o.attrs) | safe if o.attrs }}>{{ content | safe }}</aside>{% endif -%}
 {% endmacro %}
 
 {# The body is split in two so open()/close() can stream the caller's content
@@ -146,13 +153,13 @@
 {# `o.tag` lets the body be the element its content needs — the footer's body is
    the timeline <ol>, and an <ol> wrapping a <div> wrapping the <li> items would
    be invalid. Default 'div'. #}
-{% macro body(pid, o) %}<{{ o.tag or 'div' }} class="panel-body{% if o.cls %} {{ o.cls }}{% endif %}" {% if o.id %} id="{{ o.id }}"{% else %} id="{{ pid }}-body"{% endif %}{{ ' ' + o.attrs if o.attrs }}>{% endmacro %}
+{% macro body(pid, o) %}<{{ o.tag or 'div' }} class="panel-body{% if o.cls %} {{ o.cls }}{% endif %}" {% if o.id %} id="{{ o.id }}"{% else %} id="{{ pid }}-body"{% endif %}{{ (' ' + o.attrs) | safe if o.attrs }}>{% endmacro %}
 {% macro bodyEnd(tag) %}</{{ tag or 'div' }}>{% endmacro %}
 
 {# Whole-section oob refresh, for callers that re-feed a section from a
    fragment route rather than through open()/close(). Same [o] as the sections. #}
 {% macro bodyOob(pid, content, o) %}
-<{{ o.tag or 'div' }} class="panel-body{% if o.cls %} {{ o.cls }}{% endif %}" {% if o.id %} id="{{ o.id }}"{% else %} id="{{ pid }}-body"{% endif %} hx-swap-oob="outerHTML"{{ ' ' + o.attrs if o.attrs }}>{{ content | safe }}</{{ o.tag or 'div' }}>
+<{{ o.tag or 'div' }} class="panel-body{% if o.cls %} {{ o.cls }}{% endif %}" {% if o.id %} id="{{ o.id }}"{% else %} id="{{ pid }}-body"{% endif %} hx-swap-oob="outerHTML"{{ (' ' + o.attrs) | safe if o.attrs }}>{{ content | safe }}</{{ o.tag or 'div' }}>
 {% endmacro %}
 
 {% macro topOob(pid, content, o) %}{{ top(pid, content, { cls: o.cls, attrs: o.attrs, id: o.id, oob: true }) }}{% endmacro %}

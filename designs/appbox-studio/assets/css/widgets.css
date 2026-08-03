@@ -316,3 +316,60 @@ button.chip, a.chip { cursor: pointer; }
   background: var(--bg); border: 1px solid var(--border);
   border-radius: 999px; box-shadow: var(--shadow-2);
 }
+
+/* ---------- the design viewer's pills (phase 5, W5) ----------
+   Five pills that used to carry their own `border-radius: 999px` in
+   viewer.css. The rules moved here whole; the CLASS NAMES did not change,
+   because islands and probes resolve them by name — explode.js reads
+   `.dv-explode-kit`, probe-explode asserts on `.dv-fb` and `.dv-handoff`, and
+   drag.js CREATES `.dv-bulk-pin` at runtime, so it can never be given a
+   `.chip` class from a template.
+
+   ponytail: these are chips in everything but composition — the next step is
+   `class="chip chip--sm dv-fb"` in the markup, dropping the duplicated radius
+   and padding entirely. Not done here because chip's tokens differ from these
+   by fractions of a rem (.6rem vs .62rem font, .05rem vs .12rem pad-y), so it
+   is a visual change, and phase 5 is a structural one. Whoever takes it should
+   expect four pills to shift a hair and should look at them.
+
+   Placement stays with the thing being placed: `.dv-flow-label`'s absolute
+   offset and `.dv-bulk-pin`'s canvas coordinates are still in viewer.css. */
+.dv-explode-kit {
+  font-size: .6rem; padding: .05rem .4rem; border-radius: 999px;
+  box-shadow: inset 0 0 0 1px var(--border); color: var(--tx-2);
+}
+
+.dv-flow-label {
+  padding: .1rem .6rem; border-radius: 999px;
+  background: var(--bg); box-shadow: inset 0 0 0 1px var(--border);
+  font-size: .68rem; text-transform: uppercase; letter-spacing: .06em;
+  color: var(--tx-2);
+}
+
+/* the toast a transition raises — sits under the trigger label on the
+   connector. Deliberately shaped like the real thing (pill, tinted by kind)
+   so a designer reads it as "this move says something to the user", not as
+   another edge label. The tints (.dv-fb-success/-error/-info) stay in
+   viewer.css with the connector. */
+.dv-fb {
+  display: inline-flex; align-items: center; gap: .25rem;
+  padding: .1rem .45rem; border-radius: 999px;
+  font-size: .6rem; line-height: 1.4; text-align: center;
+  box-shadow: inset 0 0 0 1px currentColor;
+}
+
+.dv-handoff {
+  display: inline-flex; align-items: center; gap: .3rem;
+  padding: .2rem .55rem; border-radius: 999px;
+  box-shadow: inset 0 0 0 1px var(--border);
+  font-size: .68rem; color: var(--tx-2); text-decoration: none;
+  white-space: nowrap;
+}
+
+/* marquee bulk-pin: drag.js appends it to .dv-flow-canvas and positions it in
+   canvas content coordinates (viewer.css keeps the absolute placement). */
+.dv-bulk-pin {
+  padding: .4rem .8rem; border-radius: 999px;
+  background: var(--accent, #0891b2); color: #fff; border: none; cursor: pointer;
+  font-size: .78rem; box-shadow: var(--shadow-1);
+}

@@ -615,10 +615,20 @@ List<String> checkWiringArtifact(String artifactDir, String property) {
       // is a wildcard when matching an hx-target against them. An unanchored
       // templated value ({{ s.id }}) proves nothing — it is not evidence.
       // (Leading \s so data-id is not mistaken for an element id.)
+      // An id also counts when it is HANDED to a widget that emits it. The
+      // panel base writes `id="{{ pid }}"` — unanchored, so it is no evidence
+      // on its own — and every caller supplies the literal in its spec
+      // (`id: 'design-viewer'`). Without this the demoted design viewer, and
+      // any other panel given a non-default id, is invisible here while being
+      // perfectly real in the DOM.
       final ids = <String>[];
       final idRe = RegExp(r'\sid\s*=\s*"([^"]+)"');
+      final specIdRe = RegExp(r"""\bid\s*:\s*'([^'{]+)'""");
       for (final (_, t) in markup) {
         for (final m in idRe.allMatches(t)) {
+          ids.add(m.group(1)!);
+        }
+        for (final m in specIdRe.allMatches(t)) {
           ids.add(m.group(1)!);
         }
       }

@@ -57,6 +57,7 @@
    A viewport entry is a key ('mobile'|'tablet'|'desktop') or an authored
    object { vp, width, height?, rung?, note?, shot? }. Wiring:
    ui/common/_integration_viewer.md. #}
+{% import "ui/views/main_shell/shared/widgets/_panel.html" as base %}
 {% import "ui/views/main_shell/shared/widgets/mini_panel.html" as mn %}
 {% import "ui/common/widgets/primitives.html" as prim %}
 
@@ -88,16 +89,16 @@
 {# PROTO — the wired-app lens: one live screen in device chrome. The rung
    icons + the active screen picker live in the mini panel (bar + Screens
    panel); the bar here just names the screen. #}
+{# Body CONTENT only: the body element itself is the panel base's, opened with
+   `bodyClass: 'dv-proto'`. #}
 {% macro protoStage(v) %}
 {% set p = v.proto %}
-<div class="panel-body dv-proto">
   <div class="dv-proto-bar">
     <code class="dv-screen">{{ p.active }}</code>
   </div>
   <div class="dv-proto-stage">
     {{ deviceChrome(p.src, p.vp, t('viewer.frameTitle', {id: p.active, size: p.vp})) }}
   </div>
-</div>
 {% endmacro %}
 
 {# The per-tile hover toolbar — the ONLY per-tile chrome (replaces the old
@@ -227,15 +228,16 @@
      { title, state, actions: [{ key, icon, href, label, can }] }
    Every shell action is a MUTATION: it POSTs `href` and swaps #panels, and is
    disabled when `can` is false (nothing to step to). #}
-{% macro designViewer(v, chrome) %}
-{% set bg = v.bg or 'canvas' %}
-<div class="panel panel-viewer dv-bg-{{ bg }}" id="design-viewer">
-{% if chrome %}
-  {# TOP PANEL — the design shell's own bar: what this canvas is, the run
-     state, and shell-scoped actions. Inside the viewer panel on purpose:
-     canvas.js fullscreens this element, so anything outside it disappears the
-     moment you go fullscreen — including, fatally, the exit button. #}
-  <header class="panel-top dv-topbar">
+{# ---------- the three section CONTENTS, as strings for the base ----------
+   The base takes section content, a class hook and an attrs/id escape per
+   section; these macros supply the content. Nothing here writes a `panel-*`
+   structural class — that is the whole point of the demotion (W3). #}
+
+{# TOP — the design shell's own bar: what this canvas is, the run state, and
+   shell-scoped actions. It is a section of the viewer's own card on purpose:
+   canvas.js fullscreens that element, so anything outside it disappears the
+   moment you go fullscreen — including, fatally, the exit button. #}
+{% macro topbar(v, chrome) %}
     <span class="dv-topbar-title">{{ chrome.title }}</span>
     {% if chrome.state %}{{ prim.statusPill(chrome.state) }}{% endif %}
     {% if not v.static %}
@@ -247,10 +249,85 @@
       {% endfor %}
     </span>
     {% endif %}
-  </header>
-{% endif %}
+{% endmacro %}
 
-{% if v.mode == 'proto' %}
+{# SCREENS FILMSTRIP — the side-end SECTION, not an overlay. It takes real
+   layout width, so the canvas gets what is left and every .dv-views-row's
+   second column (the explode panel, minmax(16rem, 1fr)) narrows to match —
+   which is the point, and why this is in flow rather than absolutely
+   positioned. The base places it into the side-end grid area, so its position
+   in the markup no longer decides its column.
+   VIEWS ONLY — the facade returns null for flows and proto (v.filmstrip), so
+   that guard is the whole gate; no mode test here.
+   Own id namespace on the thumb iframes — morph pairs by id, and
+   `dvt-views--` is already taken by the canvas tiles. The container's own id
+   matters too (kept via the base's `sideEndId`): thumb clicks swap #panels,
+   and without a stable id morph would replace the scroller and throw away its
+   scroll position on every pin. #}
+{% macro filmstrip(v) %}
+      {% for s in v.filmstrip %}
+      <a class="dv-thumb cs-thumb {{ 'in-ctx ctx-' + s.tone if s.inContext }} {{ 'is-dim' if s.dim }} {{ 'on' if s.active }}"
+         href="{{ s.contextHref }}" hx-get="{{ s.contextHref }}"
+         hx-target="#panels" hx-swap="morph:outerHTML" hx-push-url="false"
+         title="{{ s.label or s.id }}">
+        <span class="dv-thumb-clip"><iframe id="dvf-vstrip--{{ s.id }}" src="{{ s.src }}" scrolling="no" tabindex="-1" title=""></iframe></span>
+        <span class="dv-thumb-label"><code>{{ s.id }}</code></span>
+      </a>
+      {% endfor %}
+{% endmacro %}
+
+{# Fullscreen-only exit. It is a direct child of the PANEL with no grid area,
+   which is exactly what once took 33px off the canvas by auto-placing into the
+   side-start track — so it goes in the base's `overlay` slot, which takes it
+   out of flow. canvas.js toggles via data-action; Esc drops :fullscreen for
+   free. #}
+{% macro fsClose() %}
+  <button class="ico-btn dv-fs-close" data-action="viewer-fullscreen-exit"
+          title="{{ t('miniPanel.fullscreenExit') }}">{{ icon('x', {size: 16}) }}</button>
+{% endmacro %}
+
+{# ---------- the viewer: CONTENT of the main panel, not a panel ----------
+   Demoted in phase 5. The card is a `_panel.html` instantiation in the main
+   role; this file passes section params and streams the canvas between
+   open/close. `.panel-main` (the transparent slot) is still main_panel's, and
+   the card sits inside it exactly as `.mp-content` does on a file read.
+
+   `id="design-viewer"` stays on the CARD, deliberately. Nine controls swap it
+   with `morph:outerHTML` (the lens chips, device rungs and bg swatches in
+   mini_panel, plus inspect/live/advance/live-close/handoff here and the
+   composer's proto thumbs), and every one of them expects the topbar and
+   botbar to be re-rendered with the body — `prototype_view.html` carries the
+   post-mortem of the one time they were not. Keeping the id on the panel
+   element preserves that boundary exactly, so no control needs an out-of-band
+   chrome refresh and `probe-shell-chrome` keeps its meaning.
+
+   BOTTOM hosts the mini panel. It used to float over the canvas, which is why
+   .dv-flow-canvas carried `padding-bottom: 11rem` purely to let the last tile
+   row scroll clear of it; docked, that hack is gone. It is a section of this
+   card for the same reason as the top — it survives fullscreen, so the lens
+   switch / undo / rungs / swatches stay reachable. `dv-botbar` rides alongside
+   the canonical `panel-bottom` through the base's class hook, which is the
+   `class="panel-bottom dv-botbar"` composition the canon mandates. #}
+{% macro designViewer(v, chrome) %}
+{% set proto = v.mode == 'proto' %}
+{% set P = {
+     role: 'main',
+     id: 'design-viewer',
+     class: 'panel-viewer dv-bg-' + (v.bg or 'canvas'),
+     top: topbar(v, chrome) if chrome else false,
+     topClass: 'dv-topbar',
+     bodyClass: 'dv-proto' if proto else 'dv-flow-canvas',
+     bodyAttrs: 'data-static="1"' if (v.static and not proto) else '',
+     sideEnd: filmstrip(v) if (not proto and v.filmstrip and v.filmstrip.length) else false,
+     sideEndClass: 'dv-vstrip cs-strip',
+     sideEndId: 'dv-vstrip',
+     sideEndAttrs: 'aria-label="' + t('composer.screensInContext') + '"',
+     bottom: mn.miniPanel(v),
+     bottomClass: 'dv-botbar',
+     overlay: fsClose()
+   } %}
+{{ base.open(P) }}
+{% if proto %}
   {{ protoStage(v) }}
 {% else %}
   {# VIEWS — the flat registry grid: every screen, wrapping rows, no
@@ -259,8 +336,8 @@
      .dv-connector between consecutive tiles (the row order arrives from the
      facade — no template-side grouping). v.static (build evidence):
      data-static disarms drag.js on this canvas — read-only artboards, no
-     marquee, no tile drag, no hover toolbar. #}
-    <div class="panel-body dv-flow-canvas"{% if v.static %} data-static="1"{% endif %}>
+     marquee, no tile drag, no hover toolbar. It rides the body through the
+     base's `bodyAttrs`, since the body element is no longer written here. #}
       {% if v.mode == 'flows' %}
       <div class="dv-zoom dv-zoom-flows">
         {% for row in v.flows %}
@@ -337,49 +414,6 @@
         {% endfor %}
       </div>
       {% endif %}
-    </div>
-    {# SCREENS FILMSTRIP — the main panel's SIDE-END SECTION, not an overlay.
-       It takes real layout width, so the canvas gets what's left and every
-       .dv-views-row's second column (the explode panel, minmax(16rem, 1fr))
-       narrows to match — which is the point, and why this is in flow rather
-       than absolutely positioned.
-       Source order no longer decides its column: .panel is a grid and this
-       places itself into the side-end area, so it can sit anywhere in the
-       markup and still land right of the body and clear of both bars.
-       VIEWS ONLY — the facade returns null for flows and proto
-       (v.filmstrip), so this guard is the whole gate; no mode test here.
-       Own id namespace on the thumb iframes — morph pairs by id, and
-       `dvt-views--` is already taken by the canvas tiles. The container's own
-       id matters too: thumb clicks swap #panels, and without a stable id
-       morph would replace the scroller and throw away its scroll position on
-       every pin. #}
-    {% if v.filmstrip and v.filmstrip.length %}
-    <aside class="panel-side-end dv-vstrip cs-strip" id="dv-vstrip" aria-label="{{ t('composer.screensInContext') }}">
-      {% for s in v.filmstrip %}
-      <a class="dv-thumb cs-thumb {{ 'in-ctx ctx-' + s.tone if s.inContext }} {{ 'is-dim' if s.dim }} {{ 'on' if s.active }}"
-         href="{{ s.contextHref }}" hx-get="{{ s.contextHref }}"
-         hx-target="#panels" hx-swap="morph:outerHTML" hx-push-url="false"
-         title="{{ s.label or s.id }}">
-        <span class="dv-thumb-clip"><iframe id="dvf-vstrip--{{ s.id }}" src="{{ s.src }}" scrolling="no" tabindex="-1" title=""></iframe></span>
-        <span class="dv-thumb-label"><code>{{ s.id }}</code></span>
-      </a>
-      {% endfor %}
-    </aside>
-    {% endif %}
 {% endif %}
-
-  {# FULLSCREEN CLOSE — visible only while the viewer is :fullscreen (CSS);
-     canvas.js toggles via data-action, Esc drops :fullscreen for free. #}
-  <button class="ico-btn dv-fs-close" data-action="viewer-fullscreen-exit"
-          title="{{ t('miniPanel.fullscreenExit') }}">{{ icon('x', {size: 16}) }}</button>
-
-  {# BOTTOM PANEL — hosts the mini panel. It used to float over the canvas,
-     which is why .dv-flow-canvas carried `padding-bottom: 11rem` purely to let
-     the last tile row scroll clear of it; docked, that hack is deleted. Inside
-     the viewer panel for the same reason as the top section: it survives fullscreen,
-     and the lens switch / undo / rungs / swatches stay reachable there. #}
-  <footer class="panel-bottom dv-botbar">
-    {{ mn.miniPanel(v) }}
-  </footer>
-</div>
+{{ base.close(P) }}
 {% endmacro %}

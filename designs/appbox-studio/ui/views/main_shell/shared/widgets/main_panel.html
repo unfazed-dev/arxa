@@ -32,7 +32,7 @@
 
      {% set M = {} %}
      {{ mp.open(M) }}…whatever fills main…{{ mp.close(M) }} #}
-{% macro open(spec) %}<div class="panel-main" id="{{ spec.id or 'panel-main' }}"{{ ' ' + spec.attrs if spec.attrs }}>{% endmacro %}
+{% macro open(spec) %}<div class="panel-main" id="{{ spec.id or 'panel-main' }}"{{ (' ' + spec.attrs) | safe if spec.attrs }}>{% endmacro %}
 {% macro close(spec) %}</div>{% endmacro %}
 
 {% macro panelBar(c) %}

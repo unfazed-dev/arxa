@@ -125,10 +125,17 @@
      column and push the footer off-screen instead of scrolling internally. */
   flex: 1; min-height: 0;
 }
+/* `.panel-main` names TWO things, and they are both correct: the transparent
+   SLOT (main_panel.html) and the main ROLE MARKER the base puts on the card
+   that fills it (design_viewer.html's demoted viewer, phase 5). Fill, measure
+   and positioning are right for both, so they stay unscoped. The column flex
+   is NOT: the card is also a `.panel`, whose `display: grid` builds the 3×3
+   section skeleton, and this rule wins on source order at equal specificity —
+   unscoped it silently collapses every panel section into a flex column. */
 .panel-main {
-  flex: 1; min-width: 0; min-height: 0;
-  display: flex; flex-direction: column; position: relative;
+  flex: 1; min-width: 0; min-height: 0; position: relative;
 }
+.panel-main:not(.panel) { display: flex; flex-direction: column; }
 .panel-main .mp-content { flex: 1 1 auto; min-height: 0; }
 .mp-empty { align-items: center; justify-content: center; }
 
