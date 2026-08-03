@@ -9,6 +9,40 @@ dart run appboxd/bin/appbox.dart design serve designs/appbox-studio --port 4319
 run from the worktree root
 (`.kimi-code/worktrees/scaffold-shell-worktree`).
 
+## 0b. Task 13 final review — verdict on my own screen
+
+Reviewed the files I own, not the citations about them.
+
+| check | result |
+|---|---|
+| user-visible strings routed through `t()` | 0 hardcoded |
+| interactive controls with accessible names | 5/5 buttons carry `t()` text; no icon-only controls |
+| `picker_viewmodel.js` exports vs `routes.scaffold.js` | exact match on all 6 handlers; `surfaceId` is the registry contract, not a route |
+| TODO / FIXME / placeholder | none |
+| lint (W1–W6) | clean |
+| six-state ladder | distinct bytes, zero `undefined` |
+
+**One finding, and it is the thread's own lesson turned on me.** The template
+declares `aria-labelledby="confirm-title"` against a real `id="confirm-title"`,
+so a source-level check passes. Measured against the rendered page, **all six
+`?state=` renders contain zero `aria-*` references** — the D2 confirm dialog is
+reachable only by mutation, so my six-state sweep never once exercised its a11y
+wiring. A clean report from an instrument that cannot reach the subject: the
+`state-unreached` category, mine this time.
+
+Validated the only way that works — through the mutation:
+
+```
+POST /scaffold/remove  kit=auth   -> 57372 B
+  role="alertdialog"              present
+  aria-labelledby="confirm-title" -> resolves to id in the SAME render
+POST /scaffold/remove/cancel      -> dialog gone (regression check on 4d0ece8)
+```
+
+The wiring is correct. What was wrong was believing six green states covered it.
+**Any surface behind a mutation is outside the `?state=` ladder and needs its own
+positive control.** That is the rule generalised past this screen.
+
 ## 0a. Process violation: I measured with a shared-stack `git stash`
 
 To establish §3 (guard inert on `/scaffold`) I stashed chrome-integration's
