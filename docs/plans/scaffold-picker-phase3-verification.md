@@ -321,23 +321,35 @@ has no literal to find. That one cost this thread the most time.
 
 ### Applied to my own live absence claim
 
-Claim: *there is no lens/preview state-picker UI in the repo* — the sweep
-chrome-integration relied on to withdraw their "edit the dropdown in your UI"
-redirect. It had never been positive-controlled.
+Claim: *no lens/preview state-picker UI exists under `appboxd/lib/` (the dart
+tool) or `designs/` (the design tree)* — the sweep chrome-integration relied on
+to withdraw their "edit the dropdown in your UI" redirect. Scope is those two
+directories; my earlier phrasing said "the repo" and overclaimed. It had never
+been positive-controlled.
 
-The first control attempt **failed, and caught a broken instrument**:
+It took **three attempts** to build a control that discriminates. Both failures
+were the rule's own subject matter:
 
-| step | result |
+| # | attempt | outcome |
+|---|---|---|
+| 1 | grep `surfaceStates` under `appbox/lib/` | 0 hits — but known-present. **No dir named `appbox`; it is `appboxd/`.** Fictional path — run-screen's failure #1/#2 |
+| 2 | re-run under `appboxd/lib/` → `intake.dart:62` hits | Instrument proven for *dart identifiers*. But the claim is about `<select>` **markup** — a different instrument. Wrong-control, i.e. failure #3, committed inside the demonstration of the rule |
+| 3 | control on markup literals in `.dart` | `<div`×31, `<button`×3, `<a href`×2 → proven capable of finding HTML controls in dart |
+
+Only after attempt 3 does the zero carry information:
+
+| check | result |
 |---|---|
-| grep `surfaceStates` under `appbox/lib/` | 0 hits — but it is known-present |
-| cause | no directory named `appbox` exists; it is **`appboxd/`** |
-| re-run under `appboxd/lib/` | `intake.dart:62` hit — instrument now proven |
-| re-run absence claim, proven instrument | 0 `<select>`/`<option>` in tool **and** designs |
-| independent control on the designs sweep | 1 `type="radio"` found → can see form controls |
+| `<select>` / `<option>` in `appboxd/lib/**.dart` | 0 — **meaningful**, instrument proven |
+| `design_server.dart` reads a `state` param | no occurrences — it never branches on state |
+| `<select>` / `<option>` in `designs/` | 0, with `type="radio"`×1 as that sweep's own control |
 
-Verdict: the zero was **correct but undemonstrated**. Right answer, unsound
-method — and the very first attempt to make it sound was itself broken. That is
-the case for the rule, not against it.
+Verdict: the zero was **correct but undemonstrated**, and two of my three attempts
+to demonstrate it were themselves unsound. Consistent with chrome-integration's
+account — `?state=` is facade-driven at request time, so there is no options list
+to author anywhere. That is the case for the rule, not against it: a claim I was
+confident in, that happened to be true, survived on luck through two bad
+instruments.
 
 Second instance, same session: this finding nearly became a false broadcast. From
 `appbox/` ≠ `appboxd/` I inferred that every lane's `appbox/lib/intake.dart:62`
