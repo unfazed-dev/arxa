@@ -437,6 +437,65 @@ gave my `git grep` sweep, and the same one I gave chrome-integration's
 assignment-only grep. A clean result obtained by luck is not a clean method, and
 it is the class of pass this whole section exists to distrust.
 
+### Four ways to get a false absence — they produce identical output
+
+Consolidating run-screen's three with a fourth I measured today. All four return
+a clean empty result; only the first is visible to casual inspection.
+
+| # | mechanism | why the zero looks clean | rule |
+|---|---|---|---|
+| 1 | path doesn't exist | `grep` complains, but only if you read stderr | confirm the path |
+| 2 | path exists **in the wrong checkout** | no error at all; every line resolves | pin trees absolutely |
+| 3 | stderr suppressed (`2>/dev/null`, `\|\| true`, `find \| grep`) | the complaint is deleted | never suppress stderr on a search |
+| 4 | **right file, wrong scope** | file is correct, string genuinely absent *from it* | follow the inheritance chain |
+
+Mechanism 3 is run-screen's, hit 20 minutes after they warned me about 2 — it
+disables the very mechanism rule 1 depends on. **Audit: my own zeros do not rest
+on it.** Re-ran both surviving §7 sweeps with stderr visible and a positive
+control inside the same invocation:
+
+```
+grep -rn -e '<select' -e '<option' appboxd/lib --include=*.dart   -> exit 1
+  control (same invocation): <div  -> design_server.dart:2, synthesize.dart:5
+grep -rn -e '<select' -e '<option' designs/                       -> exit 1
+  control: type="radio" -> workspace_shell/config/config_view.html:1
+ls -d appboxd/lib designs/                                        -> both exist
+```
+
+Both hold. The doc contains zero instances of `2>/dev/null`.
+
+### Mechanism 4, measured: a source-side check that inverts on the live defect
+
+chrome-integration proposed distinguishing `no-form` (template mounts no
+composer → pass) from `state-unreached` (mounts one, fixture never rendered it →
+fail), detectable via `grep -c "composerPanel(" <view>`. The distinction is
+right; the instrument is scoped to the view file, and the scaffold screens
+inherit their composer rather than mounting it:
+
+```
+picker_view.html:6   {% import ".../scaffold/_shared.html" as sh %}
+_shared.html:113     {{ composerPanel(c) }}      <- unconditional
+```
+
+Scoring the check against ground truth:
+
+| view | `grep -c composerPanel(` | verdict | composer forms actually rendered |
+|---|---|---|---|
+| `picker_view.html` | 0 | **pass** | **1** ← the live 404 defect |
+| `run_view.html` | 0 | pass | 0 |
+| `loop/loop_view.html` | 2 | flagged | 0 |
+
+**Exactly inverted.** The one screen carrying the defect scores clean; the two
+clean ones are flagged or ignored. Not the wrong file, not the wrong tree, not
+suppressed stderr — the right file read at the wrong *scope*, blind to template
+inheritance. A view-local grep cannot see a shell-mounted macro.
+
+Found because the ground-truth render was carried in the same command as the
+grep — run-screen's positive-control rule catching a fourth family member on its
+first outing. Note also that the mistyped path in my first attempt
+(`build/loop_view.html`, real path `build/loop/loop_view.html`) failed **loudly**
+and self-corrected, because stderr was not suppressed.
+
 Verdict: the zero was **correct but undemonstrated**, and two of my three attempts
 to demonstrate it were themselves unsound. Consistent with chrome-integration's
 account — `?state=` is facade-driven at request time, so there is no options list
