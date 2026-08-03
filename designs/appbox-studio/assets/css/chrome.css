@@ -24,11 +24,7 @@
   letter-spacing: .01em; color: var(--tx); text-decoration: none;
 }
 .shell-links { display: flex; gap: .25rem; }
-.shell-link {
-  padding: .3rem .75rem; border-radius: 999px;
-  color: var(--tx-2); text-decoration: none; font-weight: 500; font-size: .84rem;
-}
-.shell-link.is-active { color: var(--tx); background: var(--bg-2); box-shadow: inset 0 0 0 1px var(--border); }
+/* .shell-link box model lives in assets/css/widgets.css (W5 sweep). */
 .panel-header-spacer { flex: 1; }
 .channel { display: flex; gap: .45rem; align-items: center; font-size: .78rem; color: var(--tx-2); }
 .channel-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 0 3px var(--ok-soft); }
@@ -56,14 +52,8 @@
 }
 .ico-btn:hover { color: var(--tx); filter: none; box-shadow: inset 0 0 0 1px var(--tx-3); }
 
-/* project info cluster — only rendered when a project context exists */
-.shell-project {
-  display: flex; gap: .5rem; align-items: baseline; min-width: 0;
-  padding: .3rem .75rem; border-radius: 999px;
-  color: var(--tx); text-decoration: none; font-size: .84rem;
-  box-shadow: inset 0 0 0 1px var(--border);
-}
-.shell-project:hover { box-shadow: inset 0 0 0 1px var(--tx-3); }
+/* project info cluster — only rendered when a project context exists.
+   .shell-project box model lives in assets/css/widgets.css (W5 sweep). */
 .shell-project-name { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .shell-project-shell { color: var(--accent); font-weight: 500; }
 .shell-project-shell::before { content: '· '; color: var(--tx-3); }
@@ -139,14 +129,7 @@
   margin-bottom: .7rem;
 }
 .fab-menu[open] .fab-actions { display: flex; }
-.fab-action {
-  padding: .42rem .9rem; border-radius: 999px;
-  background: var(--bg); border: 1px solid var(--border);
-  box-shadow: var(--shadow-2);
-  color: var(--tx); text-decoration: none; font-size: .82rem; font-weight: 500;
-  white-space: nowrap;
-}
-.fab-action:hover { color: var(--accent); box-shadow: var(--shadow-2), inset 0 0 0 1px var(--accent); }
+/* .fab-action box model lives in assets/css/widgets.css (W5 sweep). */
 
 /* ---------- medium: the railbar (the drawer, docked) ---------- */
 .railbar {
@@ -155,12 +138,9 @@
 }
 .railbar summary { list-style: none; }
 .railbar summary::-webkit-details-marker { display: none; }
-.railbar-strip {
-  display: flex; flex-direction: column; gap: .15rem;
-  padding: .35rem; cursor: pointer;
-  background: var(--bg); border: 1px solid var(--border);
-  border-radius: 999px; box-shadow: var(--shadow-2);
-}
+/* .railbar-strip box model lives in assets/css/widgets.css (W5 sweep) —
+   same disclosure-trigger-pill idiom as .composer-model/.facts-filter
+   summary; not named in the follow-on brief but matches the pattern. */
 .railbar-ico {
   width: 1.9rem; height: 1.9rem; display: grid; place-items: center;
   border-radius: 50%; color: var(--tx-2); font-size: .85rem;
