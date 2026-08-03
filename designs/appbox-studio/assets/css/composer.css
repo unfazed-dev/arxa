@@ -128,18 +128,6 @@
 
 /* the model chip: one summary idiom */
 .composer-model { position: relative; flex: none; }
-.composer-model summary {
-  display: inline-flex; align-items: center; gap: .3rem;
-  padding: .32rem .6rem; border-radius: 999px;
-  font-size: .76rem; line-height: 1; cursor: pointer; list-style: none;
-  color: var(--tx-2); white-space: nowrap;
-}
-.composer-model summary::-webkit-details-marker { display: none; }
-.composer-model summary {
-  color: var(--tx); background: var(--bg-2);
-  box-shadow: inset 0 0 0 1px var(--border);
-}
-.composer-model summary:hover { box-shadow: inset 0 0 0 1px var(--tx-3); }
 .composer-chev { font-size: .66rem; opacity: .65; }
 
 /* the dropdown menu: one card idiom, opening UP from the bar */

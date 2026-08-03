@@ -136,7 +136,7 @@ body {
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
   background: color-mix(in oklab, var(--tx, currentColor) 22%, transparent);
-  border-radius: 999px;
+  border-radius: 999px; /* w5:not-a-chip */
   /* The thumb stays as short as the UA will draw it. Chromium's own floor is
      around 20px; this releases that floor so a long thread or file reads as a
      small nub rather than a bar. Note what this canNOT do: min-height is a
@@ -174,7 +174,7 @@ a { color: var(--accent); }
 /* ---------- shell chrome lives in shell.css ---------- */
 
 button, .btn {
-  background: var(--accent); color: var(--on-accent, #FFFCF0); border: 0; border-radius: 999px;
+  background: var(--accent); color: var(--on-accent, #FFFCF0); border: 0; border-radius: 999px; /* w5:not-a-chip */
   padding: .45rem 1.05rem; font: inherit; font-weight: 500; cursor: pointer;
 }
 button.ghost, .btn.ghost {
@@ -212,14 +212,6 @@ button:active { transform: translateY(1px); }
 
 /* filter dropdown (details/summary — no JS) */
 .facts-filter { position: relative; }
-.facts-filter summary {
-  display: inline-flex; gap: .25rem; align-items: center;
-  padding: .32rem .65rem; border-radius: 999px; cursor: pointer; list-style: none;
-  font-size: .72rem; color: var(--tx-2);
-  box-shadow: inset 0 0 0 1px var(--border);
-}
-.facts-filter summary::-webkit-details-marker { display: none; }
-.facts-filter summary:hover { color: var(--tx); }
 .facts-filter .caret { font-size: .6rem; }
 .filter-menu {
   position: absolute; top: calc(100% + .4rem); right: 0; z-index: 6;
@@ -263,32 +255,6 @@ button:active { transform: translateY(1px); }
 .msg-foot { display: flex; justify-content: space-between; align-items: center; gap: .45rem; margin-top: .12rem; }
 .msg-foot .msg-time { margin-left: auto; }
 .msg-cta { display: flex; gap: .45rem; align-items: center; }
-.cta-main, .cta-ghost {
-  font-family: 'Lexend Deca', 'Lexend', sans-serif;
-  font-size: .62rem; letter-spacing: .08em; text-transform: uppercase;
-  padding: .28rem .65rem; border-radius: 999px; text-decoration: none;
-}
-.cta-main { color: var(--tx-3); box-shadow: inset 0 0 0 1px var(--border); }
-.cta-main:hover { color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
-.msg.is-active .cta-main { color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
-.cta-ghost { color: var(--tx-2); }
-.cta-ghost:hover { color: var(--tx); background: var(--bg-2); }
-/* ctaLink macro (ui/common/primitives.html): label + trailing glyph link.
-   Plain = accent inline link (card footers, cross-links); --main/--ghost
-   mirror the pill CTAs above. */
-.cta-link { display: inline-flex; align-items: center; gap: .2rem; color: var(--accent); font-weight: 500; text-decoration: none; }
-.cta-link:hover { text-decoration: underline; }
-.cta-link--main, .cta-link--ghost {
-  gap: .3rem;
-  font-family: 'Lexend Deca', 'Lexend', sans-serif;
-  font-size: .62rem; letter-spacing: .08em; text-transform: uppercase;
-  padding: .28rem .65rem; border-radius: 999px; text-decoration: none;
-}
-.cta-link--main { color: var(--tx-3); box-shadow: inset 0 0 0 1px var(--border); }
-.cta-link--main:hover { color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); text-decoration: none; }
-.msg.is-active .cta-link--main { color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
-.cta-link--ghost { color: var(--tx-2); }
-.cta-link--ghost:hover { color: var(--tx); background: var(--bg-2); text-decoration: none; }
 .msg-user {
   align-self: flex-end; max-width: 88%;
   background: var(--accent); color: var(--on-accent, #FFFCF0);
@@ -326,11 +292,6 @@ button:active { transform: translateY(1px); }
   border-radius: 14px; box-shadow: var(--shadow-2);
 }
 .composer-plus[open] .composer-sugs { display: flex; }
-.composer-sugs button {
-  background: var(--bg-2); color: var(--tx); box-shadow: none;
-  border: 1px solid var(--border); border-radius: 999px;
-  padding: .32rem .7rem; font-size: .76rem; font-weight: 400; text-align: left;
-}
 .composer-send {
   flex: none; width: 2rem; height: 2rem; padding: 0;
   border-radius: 50%; display: grid; place-items: center;
@@ -387,7 +348,7 @@ button:active { transform: translateY(1px); }
 .gate-actions { display: flex; flex-direction: column; gap: .7rem; max-width: 26rem; }
 .gate-note-input {
   font: inherit; font-size: .85rem; color: var(--tx);
-  padding: .55rem .8rem; border-radius: 999px;
+  padding: .55rem .8rem; border-radius: 999px; /* w5:not-a-chip */
   background: var(--bg); border: 1px solid var(--border);
 }
 .gate-note-input:focus { outline: none; border-color: var(--accent); }
@@ -422,13 +383,6 @@ button:active { transform: translateY(1px); }
   background: var(--bg-2); border: 1px solid var(--border);
 }
 .finding-head { display: flex; gap: .6rem; align-items: baseline; flex-wrap: wrap; }
-.sev {
-  font-family: 'Lexend Deca', 'Lexend', sans-serif;
-  font-size: .62rem; font-weight: 500; letter-spacing: .09em; text-transform: uppercase;
-  padding: .14rem .55rem; border-radius: 999px;
-}
-.sev-error { color: var(--fail); background: var(--fail-soft); }
-.sev-warning { color: var(--amber); background: var(--amber-soft); }
 .finding-loc { font-weight: 600; overflow-wrap: anywhere; }
 .finding-check { font-size: .74rem; }
 .finding-body { margin: 0; display: flex; flex-direction: column; gap: .3rem; }
@@ -497,12 +451,6 @@ button:active { transform: translateY(1px); }
 
 /* evidence facts (shared with design/freeze) */
 .evidence-chain { display: flex; gap: .45rem; flex-wrap: wrap; }
-.fact {
-  display: inline-flex; gap: .4rem; align-items: center;
-  font-size: .76rem; font-weight: 500;
-  padding: .24rem .6rem; border-radius: 999px;
-  background: var(--bg); box-shadow: inset 0 0 0 1px var(--border);
-}
 .probe-chips { display: flex; gap: .4rem; flex-wrap: wrap; }
 
 /* ---------- the stage bar: FAB → floating toolbar over the canvas ---------- */
@@ -533,7 +481,7 @@ button:active { transform: translateY(1px); }
 .bar-chat {
   display: flex; gap: .4rem; align-items: center;
   padding: .28rem .35rem .28rem .9rem;
-  background: var(--bg); border: 1px solid var(--border); border-radius: 999px;
+  background: var(--bg); border: 1px solid var(--border); border-radius: 999px; /* w5:not-a-chip */
 }
 .bar-chat:focus-within { border-color: var(--accent); }
 .bar-chat input {
@@ -568,21 +516,8 @@ button:active { transform: translateY(1px); }
   border-bottom-left-radius: 4px;
 }
 .bt-link { font-size: .74rem; white-space: nowrap; }
-.bt-event {
-  align-self: center; text-align: center;
-  font-family: 'Lexend Deca', 'Lexend', sans-serif;
-  font-size: .62rem; letter-spacing: .06em; text-transform: uppercase;
-  color: var(--tx-2); background: var(--bg-2);
-  padding: .24rem .7rem; border-radius: 999px;
-}
 .bt-action { align-self: flex-start; }
 .bt-action button { padding: .4rem .95rem; font-size: .78rem; }
-.bt-action-done {
-  align-self: flex-start;
-  font-size: .72rem; color: var(--tx-3);
-  padding: .3rem .8rem; border-radius: 999px;
-  box-shadow: inset 0 0 0 1px var(--border);
-}
 
 /* ---------- workspace.settings: theme / accent / jargon pickers ---------- */
 .settings-section {
@@ -593,19 +528,10 @@ button:active { transform: translateY(1px); }
 .settings-section h2 { margin: 0; }
 .settings-note { font-size: .84rem; color: var(--tx-2); max-width: 40rem; }
 .swatch-row { display: flex; gap: .6rem; flex-wrap: wrap; }
-.swatch {
-  display: flex; gap: .5rem; align-items: center;
-  padding: .45rem .85rem .45rem .5rem; border-radius: 999px;
-  border: 1px solid var(--border); background: var(--bg);
-  color: var(--tx); box-shadow: none;
-  font: inherit; font-size: .84rem; font-weight: 400; cursor: pointer;
-}
-.swatch:hover { filter: none; border-color: var(--tx-3); }
 .swatch-dot {
   width: 1.15rem; height: 1.15rem; border-radius: 50%;
   background: var(--swatch); box-shadow: inset 0 0 0 1px rgb(0 0 0 / .10);
 }
-.swatch.is-active { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); font-weight: 500; }
 .level-row { display: grid; gap: .7rem; grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr)); }
 .level-card {
   display: flex; flex-direction: column; gap: .45rem; align-items: flex-start;
@@ -672,7 +598,7 @@ button:active { transform: translateY(1px); }
 /* the sim affordance — desktop hosts only, hidden on compact/medium rungs */
 .dv-sim {
   font-size: .72rem; font-weight: 600; color: var(--tx-3, var(--tx-2));
-  padding: .22rem .6rem; border-radius: 999px;
+  padding: .22rem .6rem; border-radius: 999px; /* w5:not-a-chip */
   box-shadow: inset 0 0 0 1px dashed var(--tx-3, var(--border));
   cursor: help; white-space: nowrap;
 }
@@ -721,7 +647,6 @@ button:active { transform: translateY(1px); }
 .stub-form { display: flex; flex-direction: column; gap: .7rem; max-width: 26rem; }
 .stub-field { display: flex; flex-direction: column; gap: .3rem; font-size: .78rem; color: var(--tx-2); }
 .stub-input { display: block; height: 2.1rem; border: 1px solid var(--border); border-radius: var(--radius-s); background: var(--bg-2); }
-.stub-cta { margin-top: .4rem; padding: .6rem 1rem; border: 0; border-radius: 999px; background: var(--accent); color: var(--on-accent, #fff); font-weight: 600; }
 .stub-tag {
   position: absolute; right: .8rem; bottom: .6rem;
   font-size: .64rem; color: var(--tx-3, var(--tx-2)); font-family: ui-monospace, "SF Mono", monospace;

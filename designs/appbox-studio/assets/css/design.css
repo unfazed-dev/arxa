@@ -50,11 +50,6 @@ a.av-row:hover { border-color: var(--tx-3); }
 .approval-note { font-size: .88rem; color: var(--tx-2); }
 .approval-card.is-approved .approval-note { color: var(--ok); }
 .approval-card form { margin: 0; }
-.approval-card .cta-main {
-  display: inline-block; padding: .55rem 1.2rem; border: 0; border-radius: 999px;
-  background: var(--accent); color: var(--on-accent, #FFFCF0); font-weight: 600;
-  cursor: pointer;
-}
 
 .trace-rows { display: flex; flex-direction: column; }
 .trace-row {

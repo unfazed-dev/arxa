@@ -18,18 +18,12 @@
 .q-form { display: flex; gap: .4rem; }
 .q-form input[type="text"] {
   flex: 1; min-width: 0; font: inherit; font-size: .84rem;
-  padding: .45rem .7rem; border-radius: 999px;
+  padding: .45rem .7rem; border-radius: 999px; /* w5:not-a-chip */
   border: 1px solid var(--border); background: var(--bg); color: var(--tx);
 }
 .q-form input[type="text"]:focus { outline: none; border-color: var(--accent); }
 .q-sugs { display: flex; gap: .35rem; flex-wrap: wrap; }
 .q-sugs form, .q-replies form { display: inline; }
-.q-sugs button {
-  font: inherit; font-size: .76rem; cursor: pointer;
-  padding: .28rem .65rem; border-radius: 999px;
-  border: 1px solid var(--border); background: var(--bg); color: var(--tx-2);
-}
-.q-sugs button:hover { border-color: var(--accent); color: var(--accent); }
 .q-skip { margin-top: auto; }
 .q-skip button {
   font: inherit; font-size: .74rem; cursor: pointer;
@@ -103,11 +97,6 @@
   list-style: none; margin: .3rem 0 0; padding: 0;
   display: flex; gap: .45rem; flex-wrap: wrap;
 }
-.trace-list li {
-  padding: .3rem .65rem; border-radius: 999px;
-  background: var(--bg-2); box-shadow: inset 0 0 0 1px var(--border);
-}
-
 /* ---------- the activity views: thread / artifacts / files ---------- */
 .rv-list { display: flex; flex-direction: column; gap: .6rem; padding: .8rem .9rem; }
 .rv-card {
@@ -121,29 +110,12 @@ a.rv-card:hover { border-color: var(--accent); filter: none; }
 .rv-detail { font-size: .74rem; }
 .rv-foot { display: flex; gap: .45rem; align-items: center; justify-content: space-between; }
 .rv-badges { display: flex; gap: .35rem; flex-wrap: wrap; }
-.rv-badge {
-  font-family: 'Lexend Deca', 'Lexend', sans-serif;
-  font-size: .6rem; font-weight: 500; letter-spacing: .08em; text-transform: uppercase;
-  padding: .12rem .5rem; border-radius: 999px; white-space: nowrap;
-  color: var(--tx-2); background: var(--bg-2); box-shadow: inset 0 0 0 1px var(--border);
-}
-.rv-badge.rv-ok { color: var(--ok); background: var(--ok-soft); box-shadow: none; }
-.rv-badge.rv-warn { color: var(--amber); background: var(--amber-soft); box-shadow: none; }
 .rv-files {
   list-style: none; margin: 0; padding: .8rem .9rem;
   display: flex; flex-direction: column; gap: .5rem;
 }
 .rv-files li { display: flex; gap: .5rem; align-items: baseline; justify-content: space-between; font-size: .78rem; }
 .rv-path { overflow-wrap: anywhere; }
-.file-badge {
-  flex: none;
-  font-family: 'Lexend Deca', 'Lexend', sans-serif;
-  font-size: .58rem; font-weight: 500; letter-spacing: .08em; text-transform: uppercase;
-  padding: .1rem .45rem; border-radius: 999px;
-}
-.fb-new { color: var(--accent); background: var(--accent-soft); }
-.fb-changed { color: var(--amber); background: var(--amber-soft); }
-.fb-frozen { color: var(--ok); background: var(--ok-soft); }
 
 /* ---------- intake.brief: the document ---------- */
 .doc-section { margin-top: 1.6rem; display: flex; flex-direction: column; gap: .6rem; }

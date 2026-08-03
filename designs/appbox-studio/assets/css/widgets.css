@@ -133,3 +133,153 @@ button.chip, a.chip { cursor: pointer; }
    server-rendered, no risk in leaving it). ---------- */
 .dv-chip { --chip-pad-y: .22rem; font-weight: 500; text-decoration: none; color: var(--tx-2); box-shadow: inset 0 0 0 1px var(--border); }
 .dv-chip.on { color: var(--accent); box-shadow: inset 0 0 0 1.5px var(--accent); font-weight: 600; }
+
+/* ============================================================
+   Follow-on sweep (studio W5 zero-unexplained-findings pass).
+   Relocated verbatim from app.css/intake.css/design.css/composer.css —
+   call sites are untouched (see phase-2-chips follow-on report), so
+   these keep their original class names rather than becoming .chip
+   modifiers. Named widget blocks below (category 1: label pills);
+   widget rules further down (category 2: interactive CTAs/toggles).
+   ============================================================ */
+
+/* ---------- named widget blocks: static label pills ---------- */
+.sev {
+  font-family: 'Lexend Deca', 'Lexend', sans-serif;
+  font-size: .62rem; font-weight: 500; letter-spacing: .09em; text-transform: uppercase;
+  padding: .14rem .55rem; border-radius: 999px;
+}
+.sev-error { color: var(--fail); background: var(--fail-soft); }
+.sev-warning { color: var(--amber); background: var(--amber-soft); }
+
+.fact {
+  display: inline-flex; gap: .4rem; align-items: center;
+  font-size: .76rem; font-weight: 500;
+  padding: .24rem .6rem; border-radius: 999px;
+  background: var(--bg); box-shadow: inset 0 0 0 1px var(--border);
+}
+
+.bt-event {
+  align-self: center; text-align: center;
+  font-family: 'Lexend Deca', 'Lexend', sans-serif;
+  font-size: .62rem; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--tx-2); background: var(--bg-2);
+  padding: .24rem .7rem; border-radius: 999px;
+}
+
+.bt-action-done {
+  align-self: flex-start;
+  font-size: .72rem; color: var(--tx-3);
+  padding: .3rem .8rem; border-radius: 999px;
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+
+.rv-badge {
+  font-family: 'Lexend Deca', 'Lexend', sans-serif;
+  font-size: .6rem; font-weight: 500; letter-spacing: .08em; text-transform: uppercase;
+  padding: .12rem .5rem; border-radius: 999px; white-space: nowrap;
+  color: var(--tx-2); background: var(--bg-2); box-shadow: inset 0 0 0 1px var(--border);
+}
+.rv-badge.rv-ok { color: var(--ok); background: var(--ok-soft); box-shadow: none; }
+.rv-badge.rv-warn { color: var(--amber); background: var(--amber-soft); box-shadow: none; }
+
+.file-badge {
+  flex: none;
+  font-family: 'Lexend Deca', 'Lexend', sans-serif;
+  font-size: .58rem; font-weight: 500; letter-spacing: .08em; text-transform: uppercase;
+  padding: .1rem .45rem; border-radius: 999px;
+}
+.fb-new { color: var(--accent); background: var(--accent-soft); }
+.fb-changed { color: var(--amber); background: var(--amber-soft); }
+.fb-frozen { color: var(--ok); background: var(--ok-soft); }
+
+.trace-list li {
+  padding: .3rem .65rem; border-radius: 999px;
+  background: var(--bg-2); box-shadow: inset 0 0 0 1px var(--border);
+}
+
+/* ---------- widget rules: interactive CTAs / pill buttons / disclosure toggles ---------- */
+.facts-filter summary {
+  display: inline-flex; gap: .25rem; align-items: center;
+  padding: .32rem .65rem; border-radius: 999px; cursor: pointer; list-style: none;
+  font-size: .72rem; color: var(--tx-2);
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+.facts-filter summary::-webkit-details-marker { display: none; }
+.facts-filter summary:hover { color: var(--tx); }
+
+.cta-main, .cta-ghost {
+  font-family: 'Lexend Deca', 'Lexend', sans-serif;
+  font-size: .62rem; letter-spacing: .08em; text-transform: uppercase;
+  padding: .28rem .65rem; border-radius: 999px; text-decoration: none;
+}
+.cta-main { color: var(--tx-3); box-shadow: inset 0 0 0 1px var(--border); }
+.cta-main:hover { color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.msg.is-active .cta-main { color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.cta-ghost { color: var(--tx-2); }
+.cta-ghost:hover { color: var(--tx); background: var(--bg-2); }
+/* ctaLink macro (ui/common/primitives.html): label + trailing glyph link.
+   Plain = accent inline link (card footers, cross-links); --main/--ghost
+   mirror the pill CTAs above. */
+.cta-link { display: inline-flex; align-items: center; gap: .2rem; color: var(--accent); font-weight: 500; text-decoration: none; }
+.cta-link:hover { text-decoration: underline; }
+.cta-link--main, .cta-link--ghost {
+  gap: .3rem;
+  font-family: 'Lexend Deca', 'Lexend', sans-serif;
+  font-size: .62rem; letter-spacing: .08em; text-transform: uppercase;
+  padding: .28rem .65rem; border-radius: 999px; text-decoration: none;
+}
+.cta-link--main { color: var(--tx-3); box-shadow: inset 0 0 0 1px var(--border); }
+.cta-link--main:hover { color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); text-decoration: none; }
+.msg.is-active .cta-link--main { color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.cta-link--ghost { color: var(--tx-2); }
+.cta-link--ghost:hover { color: var(--tx); background: var(--bg-2); text-decoration: none; }
+
+/* .approval-card .cta-main: design.css's solid-fill override of the pill CTA,
+   scoped to the approval card only — higher specificity than .cta-main above,
+   so relocation here doesn't change which rule wins. */
+.approval-card .cta-main {
+  display: inline-block; padding: .55rem 1.2rem; border: 0; border-radius: 999px;
+  background: var(--accent); color: var(--on-accent, #FFFCF0); font-weight: 600;
+  cursor: pointer;
+}
+
+.composer-sugs button {
+  background: var(--bg-2); color: var(--tx); box-shadow: none;
+  border: 1px solid var(--border); border-radius: 999px;
+  padding: .32rem .7rem; font-size: .76rem; font-weight: 400; text-align: left;
+}
+
+/* .swatch: clickable color-picker option. Class name kept — probe-explode.mjs:
+   check('bg swatches inside the fullscreen target', panels.swatch) targets it. */
+.swatch {
+  display: flex; gap: .5rem; align-items: center;
+  padding: .45rem .85rem .45rem .5rem; border-radius: 999px;
+  border: 1px solid var(--border); background: var(--bg);
+  color: var(--tx); box-shadow: none;
+  font: inherit; font-size: .84rem; font-weight: 400; cursor: pointer;
+}
+.swatch:hover { filter: none; border-color: var(--tx-3); }
+.swatch.is-active { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); font-weight: 500; }
+
+.stub-cta { margin-top: .4rem; padding: .6rem 1rem; border: 0; border-radius: 999px; background: var(--accent); color: var(--on-accent, #fff); font-weight: 600; }
+
+.composer-model summary {
+  display: inline-flex; align-items: center; gap: .3rem;
+  padding: .32rem .6rem; border-radius: 999px;
+  font-size: .76rem; line-height: 1; cursor: pointer; list-style: none;
+  color: var(--tx-2); white-space: nowrap;
+}
+.composer-model summary::-webkit-details-marker { display: none; }
+.composer-model summary {
+  color: var(--tx); background: var(--bg-2);
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+.composer-model summary:hover { box-shadow: inset 0 0 0 1px var(--tx-3); }
+
+.q-sugs button {
+  font: inherit; font-size: .76rem; cursor: pointer;
+  padding: .28rem .65rem; border-radius: 999px;
+  border: 1px solid var(--border); background: var(--bg); color: var(--tx-2);
+}
+.q-sugs button:hover { border-color: var(--accent); color: var(--accent); }
