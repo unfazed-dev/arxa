@@ -79,3 +79,7 @@ Thumbs.db
 
 # designer runtime deps — installed at setup, never vendored (plan 01 step 1.11b)
 skills/**/node_modules/
+
+
+# 
+.claude/skills
