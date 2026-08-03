@@ -164,13 +164,8 @@ export const context = (session = {}, t = (k) => k, locale = 'en', screen = 'suc
       ...ent,
       signedIn: !signedOut,
       // Signed-out goes to sign-in; not-entitled goes to the upgrade path.
-      // Only the gate retargets this. Ungated, it keeps its prior meaning so
-      // no non-gated consumer is silently redirected to the upgrade path.
-      ctaHref: !gated
-        ? ent.credentialsHref
-        : signedOut
-          ? ent.signInHref || '/sign-in'
-          : ent.upgradeHref || ent.credentialsHref,
+      // Read only by gatedNotice, so signedOut is the only split that matters.
+      ctaHref: signedOut ? ent.signInHref || '/sign-in' : ent.upgradeHref || ent.credentialsHref,
     },
     kits,
     groups,
