@@ -603,6 +603,33 @@ List<LintFinding> _shellCompositionFindings(
 final _pillRadiusRe =
     RegExp(r'border-radius\s*:\s*[^;{}]*?9{3,4}px', caseSensitive: false);
 
+/// The one deliberate escape from W5: a radius that is a SHAPE, not a chip —
+/// a progress track, a swatch, device chrome, a form input. Annotate the rule's
+/// own line and it is skipped.
+///
+/// Deliberate-and-trail-leaving by construction: the escape is greppable, sits
+/// on the line it excuses, and shows up in review as an addition. What it
+/// replaces is worse — a blanket allowance, or the rule quietly not applying to
+/// whole files.
+///
+/// CSS only. An inline `style=` has no escape hatch, on purpose: the structural
+/// radii this exists for all live in stylesheets, and inline is where a chip
+/// gets re-implemented by hand.
+const w5Exemption = 'w5:not-a-chip';
+
+/// The whole line(s) of [src] spanned by [start]..[end], so a trailing
+/// annotation after the semicolon is seen.
+String _lineSpan(String src, int start, int end) {
+  var a = src.lastIndexOf('\n', start);
+  a = a < 0 ? 0 : a + 1;
+  var b = src.indexOf('\n', end);
+  if (b < 0) b = src.length;
+  return src.substring(a, b);
+}
+
+int _lineNumberAt(String src, int offset) =>
+    '\n'.allMatches(src.substring(0, offset)).length + 1;
+
 List<LintFinding> _pillRadiusFindings(String artifactDir) {
   final findings = <LintFinding>[];
   final dir = Directory(artifactDir);
@@ -616,11 +643,20 @@ List<LintFinding> _pillRadiusFindings(String artifactDir) {
     if (rel.startsWith('assets/vendor/')) continue;
     if (rel.endsWith('.css')) {
       if (rel == widgetsCssPath) continue;
-      if (_pillRadiusRe.hasMatch(e.readAsStringSync())) {
+      final src = e.readAsStringSync();
+      final unexempt = _pillRadiusRe
+          .allMatches(src)
+          .where((m) => !_lineSpan(src, m.start, m.end).contains(w5Exemption))
+          .toList();
+      if (unexempt.isNotEmpty) {
+        final lines =
+            unexempt.map((m) => _lineNumberAt(src, m.start)).join(', ');
         findings.add(LintFinding(rel,
-            'W5: pill radius (999px/9999px) outside `$widgetsCssPath` — the '
-            'chip widget owns the pill; move the rule there and use the chip '
-            '(`50%` circles are exempt)'));
+            'W5: pill radius (999px/9999px) outside `$widgetsCssPath` at line '
+            '$lines — the chip widget owns the pill; move the rule there and '
+            'use the chip. If it is a shape and not a chip (progress track, '
+            'swatch, device chrome, form input), annotate that line '
+            '`/* $w5Exemption */` (`50%` circles are exempt and never match)'));
       }
       continue;
     }
