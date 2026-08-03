@@ -2,7 +2,7 @@
 
 "No JS" scopes to the client rendering stack — htmx + CSS replaces React; the server is Node. Permitted in Artifacts: htmx 2.0.10 core plus Allowlisted official extensions (preload, head-support, sse; client-side-templates allowed but unrecommended — it inverts the HDA architecture), all vendored locally with SRI. Banned: `<script>` blocks, `hx-on:*`, `js:`-prefixed `hx-vals`/`hx-headers`, `[expr]` trigger filters. Enforcement is mechanical, not honor-system: `<meta name="htmx-config">` sets `allowEval:false` + `allowScriptTags:false` (banned features fail inert), plus a lint rule over generated HTML. Considered and rejected: htmx-core-only (loses preload snappiness and head merging), permitting `hx-on` (hand-written JS by another name, unprovable cleanliness).
 
-**Amendment (2026-07) — the canvas island.** ONE named first-party exception: `assets/vendor/canvas.js`, a dependency-free pan/zoom module (~70 LOC) scoped to the design-canvas component (`.dv-stage` / `.dv-rungs`). Shape: the "island" from htmx's hypermedia-friendly-scripting essay — view-state-only (zoom/pan never sync to the server), no globals, no framework, no build step; the same pattern as htmx's official SortableJS example. It lives in `runtime/vendor/` (the allowlist), ships in the starter, and loads `defer` from `base.html`; no SRI (first-party, not tracked by `fetch.mjs`/`manifest.json`). It is the ONLY first-party script an artifact may carry — everything else about the boundary stands unchanged. Research basis: continuous cursor-anchored zoom, drag-pan and drag-drop are impossible declaratively (htmx can hear `wheel`/`pointermove` but can only answer with HTTP requests), so the choice was this bounded island or no Figma-style canvas at all.
+**Amendment (2026-07) — the canvas island.** ONE named first-party exception: `assets/vendor/canvas.js`, a dependency-free pan/zoom module (~70 LOC) scoped to the design-canvas widget (`.dv-stage` / `.dv-rungs`). Shape: the "island" from htmx's hypermedia-friendly-scripting essay — view-state-only (zoom/pan never sync to the server), no globals, no framework, no build step; the same pattern as htmx's official SortableJS example. It lives in `runtime/vendor/` (the allowlist), ships in the starter, and loads `defer` from `base.html`; no SRI (first-party, not tracked by `fetch.mjs`/`manifest.json`). It is the ONLY first-party script an artifact may carry — everything else about the boundary stands unchanged. Research basis: continuous cursor-anchored zoom, drag-pan and drag-drop are impossible declaratively (htmx can hear `wheel`/`pointermove` but can only answer with HTTP requests), so the choice was this bounded island or no Figma-style canvas at all.
 
 **Amendment (2026-07, canvas redesign) — inspect.js and drag.js islands.** Two
 further named first-party exceptions, same island shape as canvas.js:
@@ -81,8 +81,8 @@ it needs its own amendment rather than riding on the inspect one.
 
 Why it cannot be server-rendered — the load-bearing fact, discovered by reading
 a partial rather than assuming. The views lens now renders one row per screen
-with two columns: the screen, and the same screen exploded into its components.
-The component inventory comes from `data-el`, and **those values are
+with two columns: the screen, and the same screen exploded into its widgets.
+The widget inventory comes from `data-el`, and **those values are
 templated**:
 
 ```

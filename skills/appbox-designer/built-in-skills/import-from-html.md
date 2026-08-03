@@ -18,7 +18,7 @@ Use **existing HTML/CSS pages as a design reference** — the look to match, rec
 
 The source page is reference material, like a mounted `_fig/` tree — never move its markup/CSS wholesale into deliverables:
 
-- Pull the lifted values into the project's own CSS custom properties; rebuild components to the project's conventions.
+- Pull the lifted values into the project's own CSS custom properties; rebuild widgets to the project's conventions.
 - Keep the source's class names/structure only when the user asks for a faithful port of that page.
 - Record the source paths/URLs in the project (e.g. its readme) so later sessions know where the look came from.
 

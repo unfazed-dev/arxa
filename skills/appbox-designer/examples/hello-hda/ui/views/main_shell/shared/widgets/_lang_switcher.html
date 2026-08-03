@@ -5,7 +5,7 @@
    gets a 302 back. No custom JS, no form — a GET is enough because the
    cookie is the state.
 
-       {% include "ui/common/_lang_switcher.html" %}
+       {% include "ui/views/main_shell/shared/widgets/_lang_switcher.html" %}
 
    Reads `locales` and `locale` from the context bag — both merged into every
    render by the runtime (h.render), so no viewmodel wiring is needed. Renders

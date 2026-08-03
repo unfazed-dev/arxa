@@ -2,7 +2,7 @@
    _bottom-sheet.html — server-driven action sheet (Partial)
    Zero JavaScript. Same host/swap mechanics as _dialog.html: a trigger swaps
    this include into an empty host; the sheet renders OPEN and slides in
-   (`reveal` motion, components.css):
+   (`reveal` motion, widgets.css):
 
        <button class="btn" hx-get="/share-sheet" hx-target="#sheet-host" hx-swap="innerHTML">Share</button>
        <div id="sheet-host"></div>
@@ -22,7 +22,7 @@
 
    Ladder: bottom-anchored sheet on compact; from the medium rung up it
    presents as a centered dialog (M3 behaviour — CSS only, same markup).
-   Styles: assets/css/components.css (blocks: .sheet, .overlay-scrim).
+   Styles: assets/css/widgets.css (blocks: .sheet, .overlay-scrim).
    Flutter: ui_library sheet service.
    ============================================================================ #}
 <div class="overlay-scrim" aria-hidden="true"></div>

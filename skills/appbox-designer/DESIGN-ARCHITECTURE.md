@@ -80,11 +80,11 @@ Writes travel one confined channel: `POST /__project_write` (JS side: `writeProj
 
 ## The output triad: views / flows / proto
 
-One Artifact, three lenses. `structure.json` is the single screen registry; the design surface exposes three switchable views over it — **views** (the inventory: one row per screen in registry order, two columns — the screen, and the screen exploded into its components), **flows** (the journeys: one row per flow, tiles in edge-chain order, with hand-off chips at the row end), and **proto** (the wired app: a device-chrome live preview navigating each entry's `route`). Three lenses over one registry — never three separate artifacts, and never a flows document that can drift from the screens it names.
+One Artifact, three lenses. `structure.json` is the single screen registry; the design surface exposes three switchable views over it — **views** (the inventory: one row per screen in registry order, two columns — the screen, and the screen exploded into its widgets), **flows** (the journeys: one row per flow, tiles in edge-chain order, with hand-off chips at the row end), and **proto** (the wired app: a device-chrome live preview navigating each entry's `route`). Three lenses over one registry — never three separate artifacts, and never a flows document that can drift from the screens it names.
 
 **The views lens is an inventory AND a spec sheet (amended 2026-08-02 — it used to be a flat wrapping grid).** Each row's second column lists every `[data-el]` on that screen with its role, function, style, motion, the flow edge it fires, the kit that will implement it, and — on click — its measured box, with the element flashed in the tile. Two facts govern how it is built. First, the element inventory **cannot be produced on the server**: `data-el` values are templated (`data-el="card:{{ t('portalo.cat.' ~ pair[0]) }}"` inside a `{% for %}`, tab bars arriving via `{% include %}`), so the authored source carries one unresolved string where the screen shows four resolved names. The only resolved copy is the rendered document, which the parent reads same-origin (`explode.js`, ADR-0002 amendment). Second, **box size is read on click, never pre-rendered**, because it does not exist until layout — publishing an authored guess as a measurement would be a fabrication. What the DOM cannot know — `fires` and `kits` — comes from the server. A screen with no `[data-el]` (a splash, a bare loading screen) renders an explicit empty state, not an empty box.
 
-**The viewer's two optional sections.** The viewer renders three stacked sections inside `.design-viewer`: a top section (what this canvas is, run state, shell-scoped actions), the canvas as the body, and a bottom section hosting the mini panel — docked, not floating. `.design-viewer` is itself one panel (the card); the top/bottom bars are its sections, not panels of their own — see `designs/appbox-studio/ui/common/_integration_panels.md`. All three are *inside* the fullscreen target, because `canvas.js` fullscreens `.design-viewer` and anything outside it vanishes on fullscreen, including the exit button. The top and bottom sections are passed as an optional second macro argument rather than added to the viewer contract, so build evidence — which renders the same component with `static: true` — omits them structurally instead of relying on a `static` guard on every control.
+**The viewer's two optional sections.** The viewer renders three stacked sections inside `.design-viewer`: a top section (what this canvas is, run state, shell-scoped actions), the canvas as the body, and a bottom section hosting the mini panel — docked, not floating. `.design-viewer` is itself one panel (the card); the top/bottom bars are its sections, not panels of their own — see `designs/appbox-studio/ui/common/_integration_panels.md`. All three are *inside* the fullscreen target, because `canvas.js` fullscreens `.design-viewer` and anything outside it vanishes on fullscreen, including the exit button. The top and bottom sections are passed as an optional second macro argument rather than added to the viewer contract, so build evidence — which renders the same widget with `static: true` — omits them structurally instead of relying on a `static` guard on every control.
 
 **Flows are data, not markup (flows.json v2).** A flow is authored as an array of edges over registry ids:
 
@@ -154,23 +154,23 @@ A ViewModel is its own artifact, not a section of a View. `*_viewmodel.js` co-lo
 
 A ViewModel never renders a template string itself and never touches a repository — both are boundary violations.
 
-## Shared components (views)
+## Shared widgets (views)
 
-Components come first. Before any surface is composed, the design's repeated patterns are inventoried and authored as parameterized macros — the artifact's component library — and surfaces are then composed only from that library. Start from the catalog in `references/ui-recipes.md` (drop-in partials: `starter-partials/components/`): each recipe is a macro + its CSS + its htmx wiring, viewport-ladder aware. A pattern the catalog doesn't cover is authored new, once, in the same shape. The rule holds after the first pass too: a UI pattern that appears on two surfaces is extracted, never copied. The moment a second surface needs a rail, a card, a timeline bar, a shell nav, a composer, a viewer — it moves to a shared partial under `ui/common/` as a parameterized macro, and both surfaces call it. Three near-identical implementations of the same widget is the most expensive drift this medium allows: each copy silently diverges (the rail that pauses differently, the scrollbar that tints differently) and the scaffold downstream inherits the divergence.
+Widgets come first. Before any surface is composed, the design's repeated patterns are inventoried and authored as parameterized macros — the artifact's widget library — and surfaces are then composed only from that library. Start from the catalog in `references/ui-recipes.md` (drop-in partials: `starter-partials/widgets/`): each recipe is a macro + its CSS + its htmx wiring, viewport-ladder aware. A pattern the catalog doesn't cover is authored new, once, in the same shape. The rule holds after the first pass too: a UI pattern that appears on two surfaces is extracted, never copied. The moment a second surface needs a rail, a card, a timeline bar, a shell nav, a composer, a viewer — it moves to a shared partial under `ui/common/` as a parameterized macro, and both surfaces call it. Three near-identical implementations of the same widget is the most expensive drift this medium allows: each copy silently diverges (the rail that pauses differently, the scrollbar that tints differently) and the scaffold downstream inherits the divergence.
 
 - `ui/common/` owns cross-surface macros: shell chrome (nav, timeline), the rail (top bar, card shell, composer), the design viewer, primitives. `ui/widgets|dialogs|bottomsheets/` owns the `_name.html` include partials (see the runtime contract).
 - Per-surface views keep only what is genuinely theirs: the card's domain content, the canvas artifact's body.
 - Parameters travel through the macro's context (e.g. a `base` path prefix); session state stays namespaced per shell in the facade.
-- The same rule applies to CSS: shared component styles live in the artifact's main stylesheet, not duplicated across per-surface CSS files. Scrollbars always blend (transparent track, theme-ink thumb) — see the starter's `app.css`.
+- The same rule applies to CSS: shared widget styles live in the artifact's main stylesheet, not duplicated across per-surface CSS files. Scrollbars always blend (transparent track, theme-ink thumb) — see the starter's `app.css`.
 - Icons are vocabulary, not pixels: `{{ icon('name') }}` inlines a vendored Lucide glyph server-side (see the runtime contract) — emoji or hand-drawn stand-ins are never shipped as icons.
 
 ## Auto Layout
 
-Auto Layout is the medium's default layout discipline for component-library components — the Figma-equivalent property set, emitted as pure static CSS keyed on data-attributes. It needs no client JavaScript and gets none: the whole layer is attribute selectors in `starter-partials/components/components.css`, so the Client-JS-Free rule is untouched. The same holds for the named media islands (ADR-0002's 2026-07-31 amendment): 3D, animation and game runtimes are vendored web components or data-attribute islands — a surface uses them by writing markup, never script.
+Auto Layout is the medium's default layout discipline for widget-library widgets — the Figma-equivalent property set, emitted as pure static CSS keyed on data-attributes. It needs no client JavaScript and gets none: the whole layer is attribute selectors in `starter-partials/widgets/widgets.css`, so the Client-JS-Free rule is untouched. The same holds for the named media islands (ADR-0002's 2026-07-31 amendment): 3D, animation and game runtimes are vendored web components or data-attribute islands — a surface uses them by writing markup, never script.
 
-**Property set.** A container carries: flow (horizontal | vertical), wrap, gap (a spacing value, or `auto` to push children apart), padding, 9-point alignment (main axis × cross axis: start / center / end, plus stretch on the cross axis), and clip. Each child carries a resizing mode per axis: **hug** (size to content), **fill** (take the remaining space), **fixed** (explicit size, never shrinks). Min/max modifiers are design constraints, not layout choices — they live in the component's own class CSS, not in attributes.
+**Property set.** A container carries: flow (horizontal | vertical), wrap, gap (a spacing value, or `auto` to push children apart), padding, 9-point alignment (main axis × cross axis: start / center / end, plus stretch on the cross axis), and clip. Each child carries a resizing mode per axis: **hug** (size to content), **fill** (take the remaining space), **fixed** (explicit size, never shrinks). Min/max modifiers are design constraints, not layout choices — they live in the widget's own class CSS, not in attributes.
 
-**Data-attribute spelling** (the full rule set lives in components.css, under "Auto Layout"):
+**Data-attribute spelling** (the full rule set lives in widgets.css, under "Auto Layout"):
 
 | Concern | Attribute | Values |
 |---|---|---|
@@ -198,7 +198,7 @@ Auto Layout is the medium's default layout discipline for component-library comp
 
 `data-gap="auto"` *is* the main-axis alignment — never combine it with `data-align-x`.
 
-**Default scope — ON vs OFF.** Auto Layout is **default-ON** for every component-library component: buttons, cards, inputs, list rows, navs, modals, forms, toolbars. A macro authored without `data-layout` on its container is a bug in the component-library pass. It is **default-OFF** at the screen/artboard level and wherever layout is art direction rather than relationship:
+**Default scope — ON vs OFF.** Auto Layout is **default-ON** for every widget-library widget: buttons, cards, inputs, list rows, navs, modals, forms, toolbars. A macro authored without `data-layout` on its container is a bug in the widget-library pass. It is **default-OFF** at the screen/artboard level and wherever layout is art direction rather than relationship:
 
 - top-level surfaces and artboards — they compose the Layout Template's named containers via `grid-template-areas`, not flow;
 - scroll-clipped containers (the clip is the point, not the flow);
@@ -219,7 +219,7 @@ Four attributes, all server-rendered alongside `data-el`:
 
 | attribute | content |
 |---|---|
-| `data-inspect-role` | what it is — the named-container / component role (`nav`, `hero`, `card`, `list row`, `form field`, `button`) |
+| `data-inspect-role` | what it is — the named-container / widget role (`nav`, `hero`, `card`, `list row`, `form field`, `button`) |
 | `data-inspect-style` | its key styles in shorthand (`card grid · thumb + name + price`) |
 | `data-inspect-motion` | its motion, from the Motion Vocabulary closed set (`swap` / `traverse` / `spotlight` / `reveal` / `disclose` / `notify` / `pending`) — or `none` |
 | `data-inspect-fn` | its function/behavior — what it does for the user, one clause |
@@ -276,14 +276,14 @@ This is not a new pattern — it is the same **derive + confirm** shape used thr
 
 The marker also gives an "advanced" coverage toggle (D7) something to filter on — "show only unconfirmed annotations" — without inventing new state to track it.
 
-## Component state
+## Widget state
 
 All interactive state is server state. The session holds it, namespaced per shell (`sessionData.<shell>` — the intake/design/build precedent: each shell manages its own data, and two shells never read each other's keys); the facade validates it and exposes it in the context bag; templates render it as classes and attributes. The DOM is never a store.
 
 - **Persisted = round-tripped.** Anything the user expects to keep — the active view, a panel width, a filter, pinned items — lives in the session and re-renders from it on every swap and navigation. CSS/DOM-only affordances (`resize`, `<details open>`, the `:checked` hack, scroll position) are transient: they survive only their element's lifetime, and any `outerHTML` swap or navigation silently resets them. Use them for ephemeral comfort, never for state.
 - **Persisted values are discrete and server-validated** (an enum — `s|m|l` — never a free-form gesture value). A browser gesture like a CSS `resize` drag produces a pixel value a JS-free page cannot report to the server: it adjusts but can never persist. Offer steps instead — a cycling affordance hitting a route (`…/size/<role>/<step>`), the server stores the step, the template renders the state class.
-- **Part macros with OOB chrome.** A component with chrome + content (a rail, a panel, a card with a toolbar) splits into part macros (`head`/`body`/`bar`) carrying their own ids and an `oob` flag. A targeted action's response is the new content (targeted) plus the chrome parts with `hx-swap-oob` — so the label and the active state always track the server — while the owner element itself, which may hold live user state (scroll, a width class), is never replaced. And when an act changes data another component renders, the same response re-feeds that component OOB: no stale copies anywhere.
-- **OOB parts are response-only markup.** The page render calls the layout macro without OOB parts; only fragment responses add them. `hx-swap-oob` does not hide an element on initial render — emit it in the page and the component mounts twice (duplicate ids, phantom layout).
+- **Part macros with OOB chrome.** A widget with chrome + content (a rail, a panel, a card with a toolbar) splits into part macros (`head`/`body`/`bar`) carrying their own ids and an `oob` flag. A targeted action's response is the new content (targeted) plus the chrome parts with `hx-swap-oob` — so the label and the active state always track the server — while the owner element itself, which may hold live user state (scroll, a width class), is never replaced. And when an act changes data another widget renders, the same response re-feeds that widget OOB: no stale copies anywhere.
+- **OOB parts are response-only markup.** The page render calls the layout macro without OOB parts; only fragment responses add them. `hx-swap-oob` does not hide an element on initial render — emit it in the page and the widget mounts twice (duplicate ids, phantom layout).
 - State changes animate: the state class carries a CSS transition; content swaps ride the motion vocabulary below.
 
 ## Feedback & state placement

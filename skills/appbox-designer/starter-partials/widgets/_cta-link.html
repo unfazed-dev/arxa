@@ -18,9 +18,9 @@
      }
 
        {% set cta = { href: "/projects/" ~ p.id, label: "Open" } %}
-       {% include "ui/widgets/components/_cta-link.html" %}
+       {% include "ui/common/widgets/_cta-link.html" %}
 
-   Styles: assets/css/components.css (block: .cta-link).
+   Styles: assets/css/widgets.css (block: .cta-link).
    Flutter: KitListTile trailing chevron / KitNativeButton(link).
    ============================================================================ #}
 <a class="cta-link" href="{{ cta.href }}"

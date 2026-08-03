@@ -1,7 +1,7 @@
 :root {
   color-scheme: light dark;
   /* Motion timing tokens — the artifact's row of the closed vocabulary
-     (DESIGN-ARCHITECTURE "Motion vocabulary"). Component blocks below consume
+     (DESIGN-ARCHITECTURE "Motion vocabulary"). Widget blocks below consume
      them; every animated rule stays gated behind
      (prefers-reduced-motion: no-preference). */
   --motion-fast: 150ms;
@@ -10,8 +10,8 @@
   --motion-vt: 240ms;
   --motion-ease: cubic-bezier(.2, .6, .2, 1);
   --toast-ttl: 5s;
-  /* Type: one CJK-friendly stack shared by every component block
-     (components.css convention) — override here to re-voice the artifact. */
+  /* Type: one CJK-friendly stack shared by every widget block
+     (widgets.css convention) — override here to re-voice the artifact. */
   --c-font: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
     "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC",
     sans-serif;
@@ -36,12 +36,12 @@ form { display: flex; gap: .5rem; align-items: end; margin: 1rem 0; }
 .shell__col { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .shell-main { flex: 1; width: 100%; max-width: 42rem; padding: 2rem 1rem; }
 
-/* ── component library ──────────────────────────────────────────────────────
+/* ── widget library ──────────────────────────────────────────────────────
    The blocks below are this artifact's copies from
-   starter-partials/components/components.css — one per adopted partial in
-   ui/widgets/components/. The contract: shared component styles live in the
+   starter-partials/widgets/widgets.css — one per adopted partial in
+   this artifact's widget tree (ui/views/main_shell/shared/widgets/, ui/views/main_shell/home/widgets/). The contract: shared widget styles live in the
    main stylesheet, never duplicated across per-surface CSS. Colors/geometry
-   are custom properties scoped per block; components read var(--accent) off
+   are custom properties scoped per block; widgets read var(--accent) off
    the #app wrapper like everything else. Ladder branches live on the
    window-size-class boundaries 600px/840px, never on freeze widths. */
 
@@ -87,7 +87,7 @@ form { display: flex; gap: .5rem; align-items: end; margin: 1rem 0; }
   }
 }
 
-/* ── nav rail (ui/widgets/components/_nav-rail.html) ────────────────────── */
+/* ── nav rail (ui/views/main_shell/shared/widgets/_nav-rail.html) ────────────────────── */
 .nav-rail {
   --nr-bg: color-mix(in srgb, CanvasText 5%, Canvas);
   --nr-dim: color-mix(in srgb, CanvasText 55%, Canvas);
@@ -157,7 +157,7 @@ form { display: flex; gap: .5rem; align-items: end; margin: 1rem 0; }
   }
 }
 
-/* ── bottom nav (ui/widgets/components/_bottom-nav.html) ────────────────── */
+/* ── bottom nav (ui/views/main_shell/shared/widgets/_bottom-nav.html) ────────────────── */
 .bottom-nav {
   --bn-bg: color-mix(in srgb, CanvasText 4%, Canvas);
   --bn-dim: color-mix(in srgb, CanvasText 55%, Canvas);
@@ -191,7 +191,7 @@ form { display: flex; gap: .5rem; align-items: end; margin: 1rem 0; }
   .bottom-nav__link { transition: color var(--motion-fast) var(--motion-ease); }
 }
 
-/* ── list rows & sections (ui/widgets/components/_list-row.html) ────────── */
+/* ── list rows & sections (ui/views/main_shell/home/widgets/_list-row.html) ────────── */
 .list-section { margin-bottom: 24px; font-family: var(--c-font); }
 .list-section__header {
   margin: 0;
@@ -257,7 +257,7 @@ a.list-row:hover { background: color-mix(in srgb, currentColor 6%, transparent);
 .list-row__detail { font-size: 14px; color: var(--row-dim); }
 .list-row__chevron { color: color-mix(in srgb, CanvasText 30%, Canvas); }
 
-/* ── form field (ui/widgets/components/_form-field.html) ────────────────── */
+/* ── form field (ui/views/main_shell/home/widgets/_form-field.html) ────────────────── */
 .field {
   --field-border: color-mix(in srgb, CanvasText 25%, transparent);
   --field-error: #dc2626;

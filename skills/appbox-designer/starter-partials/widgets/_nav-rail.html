@@ -3,7 +3,7 @@
    Zero JavaScript: items are plain boosted links; traverse motion comes from
    globalViewTransitions. Include once in the shell view:
 
-       {% include "ui/widgets/components/_nav-rail.html" %}
+       {% include "ui/common/widgets/_nav-rail.html" %}
 
    Reads `nav` from the context bag:
 
@@ -17,7 +17,7 @@
    marks the active destination (viewmodel derives it from the route) and
    renders aria-current="page".
 
-   Ladder (CSS, .nav-rail in components.css): hidden on compact — the tabbar
+   Ladder (CSS, .nav-rail in widgets.css): hidden on compact — the tabbar
    (_tabbar.html) is primary there; floating icon-only rail on medium;
    icon+label rail on expanded.
 
@@ -27,7 +27,7 @@
    inside a popover, and the app bar opens it with popovertarget:
 
        <div id="nav-drawer" class="drawer" popover>
-         {% set nav = nav_drawer %}{% include "ui/widgets/components/_nav-rail.html" %}
+         {% set nav = nav_drawer %}{% include "ui/common/widgets/_nav-rail.html" %}
        </div>
        {% set nav = nav_main %}
 
@@ -35,9 +35,9 @@
    The {% set %} shadows the context key from the bag — a fragment render
    {% import %}s the view, and imported macros see only `c` + globals:
 
-       {% macro nav_rail(c) %}{% set nav = c.nav %}{% include "ui/widgets/components/_nav-rail.html" %}{% endmacro %}
+       {% macro nav_rail(c) %}{% set nav = c.nav %}{% include "ui/common/widgets/_nav-rail.html" %}{% endmacro %}
 
-   Styles: assets/css/components.css (block: .nav-rail).
+   Styles: assets/css/widgets.css (block: .nav-rail).
    Flutter: KitNativeNavigationRail (medium+), KitDrawer (compact drawer).
    ============================================================================ #}
 {% if nav %}

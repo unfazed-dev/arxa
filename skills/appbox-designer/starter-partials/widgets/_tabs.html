@@ -2,7 +2,7 @@
    _tabs.html — tab bar for in-surface switching (Partial)
    Zero JavaScript. Include once in the surface view, above its panel:
 
-       {% include "ui/widgets/components/_tabs.html" %}
+       {% include "ui/common/widgets/_tabs.html" %}
        <div id="tab-panel" class="tabs__panel">…active panel content…</div>
 
    Reads `tabs` from the context bag:
@@ -25,7 +25,7 @@
          });
 
        {% macro tab_panel(c) %}
-       {% set tabs = c.tabs %}{% include "ui/widgets/components/_tabs.html" %}
+       {% set tabs = c.tabs %}{% include "ui/common/widgets/_tabs.html" %}
        <div id="tab-panel" class="tabs__panel">…render c.panel…</div>
        {% endmacro %}
 
@@ -35,7 +35,7 @@
    the page path and the fragment path.
 
    Panel content rides the `swap` motion (.htmx-added fade from motion.css).
-   Styles: assets/css/components.css (block: .tabs).
+   Styles: assets/css/widgets.css (block: .tabs).
    Flutter: KitAnimatedTabStack (+ KitDirectionalTabTransition).
    ============================================================================ #}
 {% if tabs %}

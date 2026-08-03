@@ -198,6 +198,26 @@ needs the same scope. Asserted by `probe-panel-contract` section I.
 - **Ids are load-bearing, classes are not.** `drag.js` resolves the resize
   rail's target by id and oob view-switches target the section ids. Renaming a
   class is free; renaming an id is a server change.
+- **A panel owns its internal UI state; a shell owns its own state plus
+  panel-level state.** Which panels are mounted and their sizes belong to the
+  shell, not the panel — a panel never asks whether it is on screen. Both are
+  server-side, per ADR-0004: the DOM is a projection, so panel and shell state
+  live in the session, not in client-side JS. Session keys are namespaced by
+  owner: `<shell>.<panel>.*` for a panel's own state, `<shell>.*` for the
+  shell's state (mounted panels, sizes — e.g. today's `panelSize.activity`,
+  see the Ids and server contracts table), `app.*` for state that is
+  genuinely cross-shell. A key written outside its owner's namespace is the
+  same bug as a class renamed without updating the rename map: it works until
+  two owners write the same key for different reasons.
+- **Rows that hold chips align items by `center`, never `baseline`.** A row
+  mixing a chip with plain text baseline-aligns the chip's padded box against
+  the text's baseline, not its optical center, so the chip reads as floating
+  or clipped depending on font metrics. `.surface-row` in
+  `assets/css/intake.css:322` ships `align-items: baseline` — the incident
+  that generalized into the chip contract (D2 of the widget/panel vocabulary
+  reconciliation). The fix lands with the shared `.chip` widget (chip-widget
+  migration phase); until every row is migrated, any new or touched chip row
+  gets `align-items: center` on sight, not baseline.
 
 ## The rename map — authoritative
 

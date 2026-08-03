@@ -51,10 +51,10 @@ A block inside a Surface's view template that the Runtime can render alone for `
 _Avoid_: partial (that word means the shared kind)
 
 **Partial**:
-A shared `_name.html` fragment file under `ui/widgets|dialogs|bottomsheets/`, used across Surfaces.
+A shared `_name.html` fragment file living at its placement-law tier (`references/app-architecture.md`), used across Surfaces.
 
-**Component Library**:
-The artifact's own set of parameterized macros/partials (`ui/common/` + `ui/widgets|dialogs|bottomsheets/`), authored in the component-library pass BEFORE any Surface is composed; Surfaces compose only from it. Seeded from `references/ui-recipes.md` (the Recipe catalog) and `starter-partials/components/`.
+**Widget Library**:
+The artifact's own set of parameterized macros/partials, placed per the three-tier placement law (`references/app-architecture.md`: `ui/common/widgets/` cross-shell, `ui/views/<shell>/shared/widgets/` intra-shell, `<surface>/widgets/` per-surface), authored in the widget-library pass BEFORE any Surface is composed; Surfaces compose only from it. Seeded from `references/ui-recipes.md` (the Recipe catalog) and `starter-partials/widgets/`.
 _Avoid_: widget set, UI kit (that word means a design system)
 
 **Boosted MPA**:

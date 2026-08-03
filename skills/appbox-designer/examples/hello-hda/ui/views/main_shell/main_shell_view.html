@@ -1,17 +1,17 @@
 {% extends "ui/common/base.html" %}
 {% block content %}
-{# Shell chrome composes the component library: one `rail` context (built by
+{# Shell chrome composes the widget library: one `rail` context (built by
    main_shell_viewmodel.chrome) feeds both nav partials — the rail shows from
    the medium rung up, the bottom nav on compact (ladder CSS lives in
    assets/css/app.css). #}
 <div class="shell">
-  {% include "ui/widgets/components/_nav-rail.html" %}
+  {% include "ui/views/main_shell/shared/widgets/_nav-rail.html" %}
   <div class="shell__col">
-    {% include "ui/common/_lang_switcher.html" %}
+    {% include "ui/views/main_shell/shared/widgets/_lang_switcher.html" %}
     <main class="shell-main">
       {% block surface %}{% endblock %}
     </main>
-    {% include "ui/widgets/components/_bottom-nav.html" %}
+    {% include "ui/views/main_shell/shared/widgets/_bottom-nav.html" %}
   </div>
 </div>
 {% endblock %}

@@ -7,9 +7,9 @@
    hx-swapping the body. Self-contained: this file does not import the
    studio's ui/common/panel.html — it copies that file's section shape
    (.panel-top / .panel-body / .panel-bottom on a 3×3 grid, see
-   components.css) rather than reaching across repos for it.
+   widgets.css) rather than reaching across repos for it.
 
-   THE STATEFUL-COMPONENT REFERENCE (DESIGN-ARCHITECTURE, "Component state"):
+   THE STATEFUL-WIDGET REFERENCE (DESIGN-ARCHITECTURE, "Widget state"):
    all panel state is server session state, namespaced per shell — the DOM is
    never a store.
      · view switch → carousel targets #panel-activity-body; the response is
@@ -29,7 +29,7 @@
    stage, and neither fact belongs in its name.
 
    Usage:
-     {% import "ui/widgets/components/_panel-activity.html" as pa %}
+     {% import "ui/common/widgets/_panel-activity.html" as pa %}
      {% call pa.frame(spec) %}
        …markup for the active view…
      {% endcall %}
@@ -50,7 +50,7 @@
 
    Required l10n keys: panel.activity.views, panel.resize (only with
    sizeHref).
-   CSS: the .panel grid + .panel-activity family in components.css. Recipe 19
+   CSS: the .panel grid + .panel-activity family in widgets.css. Recipe 19
    in ui-recipes.md. #}
 
 {% macro label(spec) %}<strong class="panel-label">{{ spec.label }}</strong>{% endmacro %}

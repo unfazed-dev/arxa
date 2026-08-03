@@ -7,7 +7,7 @@ import * as greetings from '../repositories/greeting_repository.js';
 export const homeContext = (locale = 'en') => {
   const all = greetings.all(locale);
   return {
-    // rows: greetings projected onto the shared list-row component's shape
+    // rows: greetings projected onto the shared list-row widget's shape
     rows: all.map((g) => ({ id: g.id, title: g.text, icon: 'message-circle' })),
     count: all.length,
   };

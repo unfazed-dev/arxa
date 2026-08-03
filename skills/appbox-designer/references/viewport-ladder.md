@@ -86,7 +86,7 @@ the resolved ladder at session start.
 | FAB | **staggered action menu**, animated fan-out | same as compact | — |
 
 - The compact/medium drawer carries whatever the expanded activity panel
-  carries; the railbar is the drawer's docked form, not a second component.
+  carries; the railbar is the drawer's docked form, not a second widget.
 - Chrome *contents* (which destinations, which activity views, which FAB
   actions) come from the surface's viewmodel — this contract fixes placement
   and behaviour, not items.

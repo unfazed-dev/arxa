@@ -180,14 +180,14 @@ _Layer_: Product
 
 **Tabbar**:
 The bottom switcher on the phone for jumping between the app's sections.
-The mobile bottom shell-switcher component; a chrome component of the compact
+The mobile bottom shell-switcher widget; a chrome widget of the compact
 rung, not a navigation concept — Shell remains the grouping word.
 _Avoid_: bottom navigation, tab bar (bare)
 _Layer_: Product
 
 **Railbar**:
 The slim icon strip on the left of the tablet for jumping between sections.
-The tablet left shell-switcher component; the medium-rung counterpart of the
+The tablet left shell-switcher widget; the medium-rung counterpart of the
 mobile tabbar.
 _Avoid_: rail (bare), nav rail (as app chrome — it stays a container name)
 _Layer_: Product
@@ -456,7 +456,7 @@ One box of ready-made app machinery — auth, data, UI widgets — that a
 generated app carries with it.
 A single vendored package of the stacked_kit: one directory, one Dart
 package, a declared capability list, a stability phase, and a playbook. Never
-use "kit" for a design system's component set.
+use "kit" for a design system's widget set.
 _Avoid_: library (bare), package (bare), UI kit
 _Layer_: Kit
 
@@ -586,16 +586,18 @@ _Layer_: Design medium
 A shared snippet of markup used by many surfaces.
 A shared fragment file in the artifact's shared UI folders, included across
 surfaces — distinct from a Named Fragment, which is private to one surface.
-_Avoid_: component (that word belongs to the Component Library)
+_Avoid_: component (retired — see Widget)
 _Layer_: Design medium
 
-**Component Library**:
+**Widget Library**:
 The artifact's own kit of reusable building blocks, built before any screen
-is composed — components first, always.
+is composed — widgets first, always.
 The artifact-local set of parameterized macros/partials authored in the
-component-library pass *before* surfaces compose; surfaces compose only from
-it, and a pattern appearing twice is extracted, never copied.
-_Avoid_: widget set, UI kit (a kit is a vendored package — see Kit)
+widget-library pass *before* surfaces compose; surfaces compose only from
+it, and a pattern appearing twice is extracted, never copied. Placed per the
+Placement Law: narrowest scope that covers all its consumers.
+_Avoid_: component library (retired — see Widget), UI kit (a kit is a
+vendored package — see Kit)
 _Layer_: Design medium
 
 **Boosted MPA**:
@@ -671,9 +673,9 @@ _Avoid_: slot, region (bare), placeholder
 _Layer_: Design medium
 
 **Auto Layout**:
-Components keep themselves tidy: a button grows with its label, a card
+Widgets keep themselves tidy: a button grows with its label, a card
 stretches to fill its row — unless the designer turns it off for that piece.
-The designer's default-on layout mode for component-library components
+The designer's default-on layout mode for widget-library widgets
 (buttons, cards, inputs, list rows, navs, modals, forms, toolbars): the
 Figma-equivalent property set (flow, gap, padding, alignment; child
 hug/fill/fixed) emitted as flexbox data-attributes, zero client JS. Off by
@@ -711,6 +713,58 @@ The single interactive tile in the design viewer: `live=<screenId>` drops
 _Avoid_: preview tile, active screen
 _Layer_: Design medium
 
+**Widget**:
+A reusable piece of UI — a button, a card, a panel — built once and used
+wherever it's needed, instead of redrawn from scratch each time.
+One concept, two mediums: an HTML macro/partial in the design medium, a Dart
+class in the build medium. Placed per the Placement Law. THE canonical term
+for a reusable UI piece — "component" is retired, in every doc and every
+path, on both sides of the pipeline.
+_Avoid_: component, component library (see Widget Library)
+_Layer_: Design medium
+
+**Panel**:
+One of the five fixed roles of app chrome — header, main, activity,
+composer, footer — that every shell mounts from.
+The five role panels are thin instantiations of one base widget
+(`_panel.html`), never re-implemented per shell. A panel owns its own
+internal UI state; the shell owns its own state plus which panels it mounts
+and their sizes — all server-side per ADR-0004.
+_Avoid_: re-implementing panel chrome per shell
+_Layer_: Design medium
+
+**Placement Law**:
+Where a reusable piece of UI lives: as close to the screens that use it as
+possible, and no closer.
+A widget lives at the narrowest scope that covers all its consumers; the
+include/import graph is the only authority, checked in both directions
+(generalizes gate S10's sole-consumer overlay rule). Three tiers, identical
+shape on both mediums:
+
+| scope | design medium | build medium |
+|---|---|---|
+| cross-shell (2+ shells) | `ui/common/widgets/` | `lib/ui/widgets/` |
+| intra-shell (2+ surfaces) | `ui/views/<shell>/shared/widgets/` | `<shell>/shared/widgets/` |
+| per-surface (1 surface) | `<surface>/widgets/` | `<view>/widgets/` |
+
+Bare `<shell>/widgets/` is illegal on both sides. Empty tiers are never
+created speculatively.
+_Avoid_: downward-only placement (rejected — leaves placement co-managed by
+graph + discretion)
+_Layer_: Design medium
+
+---
+
+## Brand Glossary
+
+Presentation-layer aliases only. Product copy may draw display names from
+this table; nothing mechanical — code, file names, gates, docs — ever reads
+it. No box-themed aliases anywhere else in the codebase.
+
+| term | display name |
+|---|---|
+| _(none yet)_ | |
+
 ---
 
 ## Legacy / retired terms
@@ -719,6 +773,7 @@ Dead words and what replaced them. Never reintroduce the left column.
 
 | retired | canonical | why |
 |---|---|---|
+| component / component library | **Widget** / **Widget Library** | one term everywhere, in every doc and path — D1 of the widget/panel vocabulary reconciliation |
 | tab | **Shell** | Shell is THE grouping/navigation unit; the code rename is landing alongside this entry |
 | tab-group / tab-group shell | **Shell** | same retirement; older flow docs still say it |
 | top stage strip | **Footer Panel** | the read-only stage timeline moved to the bottom strip, which is now the footer panel; the top strip is removed |

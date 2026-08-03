@@ -75,7 +75,7 @@ build if pipeline-critical names vanish upstream).
    extract-on-second-use rule becomes the floor, not the workflow.
 2. **Recipes as doc + partials.** `references/ui-recipes.md` (18 core app-UI
    recipes, Flutter-primitive-aligned) plus drop-ins in
-   `starter-partials/components/`.
+   `starter-partials/widgets/`.
 3. **Lucide, full set vendored** in the skill (`runtime/vendor/lucide/icons/`,
    2,007 SVGs, lucide-static@1.27.0), inlined server-side by the `icon()`
    Nunjucks global. No sprite, no webfont, no CDN, works offline.

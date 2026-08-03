@@ -1,17 +1,17 @@
-# UI recipes — the component catalog
+# UI recipes — the widget catalog
 
 The app-UI patterns a Surface is allowed to be composed from. Each recipe is
 copy-adapt ready: the macro takes the context bag `c`, the CSS is flex/grid
 with `gap` (never inline-flow spacing), tokens are CSS custom properties,
 naming is BEM-ish (`.block__el--mod`, matching `frames.css`).
 
-**How to use this catalog — components-first.** Before composing any surface,
+**How to use this catalog — widgets-first.** Before composing any surface,
 inventory the design's repeated patterns and define them as macros/partials in
 `ui/common/` + `ui/widgets/` (dialogs/bottomsheets under their own folders) —
-start by copying the drop-ins from [`starter-partials/components/`](../starter-partials/components/)
+start by copying the drop-ins from [`starter-partials/widgets/`](../starter-partials/widgets/)
 and adapt. *Then* compose surfaces, only from that library. A pattern used on
 two surfaces is never copied: the second use extracts it (DESIGN-ARCHITECTURE,
-"Shared components"). Three near-identical implementations of the same widget
+"Shared widgets"). Three near-identical implementations of the same widget
 is the most expensive drift this medium allows.
 
 **Conventions every recipe assumes**
@@ -30,8 +30,9 @@ is the most expensive drift this medium allows.
   (`min-width: 600px` / `840px`); never hardcode the freeze widths 390/744/1280
   anywhere — those are for shooting (see `references/viewport-ladder.md`).
 - **Partials** referenced below (`_name.html`) live in
-  `starter-partials/components/`; copy them to `ui/widgets/components/` and
-  `assets/css/components.css` into your artifact. Shared cross-surface
+  `starter-partials/widgets/`; copy them to the placement-law tier their
+  consumers require (`references/app-architecture.md`) and
+  `assets/css/widgets.css` into your artifact. Shared cross-surface
   fragments are pulled with `{% include %}`; a surface re-renders one
   independently by wrapping the include in a Named Fragment macro.
 
@@ -126,11 +127,11 @@ Lucide SVGs server-side — decorative by default, meaningful with `label`.
 .icon-btn:hover { background: color-mix(in srgb, currentColor 10%, transparent); }
 ```
 
-**htmx:** none — icons ride whatever component carries them. Unknown names
+**htmx:** none — icons ride whatever widget carries them. Unknown names
 render a dashed placeholder + server-side warning, so a typo is visible in
 the prototype, not silent.
 
-**Ladder:** size is per-component (22 nav-rail, 20 toolbar, 18 list/menu); never
+**Ladder:** size is per-widget (22 nav-rail, 20 toolbar, 18 list/menu); never
 scale icons between rungs — composition changes, not glyph size.
 
 **Motion:** none of its own; `pending` spinners add `.indicator-spin` (recipe 17).
@@ -148,7 +149,7 @@ items: [{ id, label, icon, href, current? }] }`). Include in the shell; wrap
 for fragment re-render:
 
 ```html
-{% macro nav_rail(c) %}{% set nav = c.nav %}{% include "ui/widgets/components/_nav-rail.html" %}{% endmacro %}
+{% macro nav_rail(c) %}{% set nav = c.nav %}{% include "ui/common/widgets/_nav-rail.html" %}{% endmacro %}
 ```
 
 (The `{% set %}` shadows the context key from the bag: a fragment render
@@ -156,7 +157,7 @@ for fragment re-render:
 + globals — not the render context. Includes under a `{% extends %}` page
 see the full context either way.)
 
-**CSS:** `.nav-rail` in components.css — `display: none` on compact; floating
+**CSS:** `.nav-rail` in widgets.css — `display: none` on compact; floating
 icon-only nav-rail (76px, sticky) at ≥600; icon+label (224px) at ≥840.
 Active item: `.is-active` + `aria-current="page"`.
 
@@ -182,12 +183,12 @@ archetype) — not primary navigation. 2–5 tabs.
 
 ```html
 {% macro tab_panel(c) %}
-{% set tabs = c.tabs %}{% include "ui/widgets/components/_tabs.html" %}
+{% set tabs = c.tabs %}{% include "ui/common/widgets/_tabs.html" %}
 <div id="tab-panel" class="tabs__panel">{{ c.panel.body }}</div>
 {% endmacro %}
 ```
 
-**CSS:** `.tabs` in components.css — flex row, `overflow-x: auto`, active tab
+**CSS:** `.tabs` in widgets.css — flex row, `overflow-x: auto`, active tab
 underlined via `.is-active::after`.
 
 **htmx:** each tab: `hx-get="<endpoint>?tab=<id>" hx-target="#tab-panel"
@@ -215,10 +216,10 @@ nav-rail's compact form). Include as the last element of the shell's
 scrolling column — it is sticky-bottom.
 
 ```html
-{% macro tabbar(c) %}{% set nav = c.nav %}{% include "ui/widgets/components/_tabbar.html" %}{% endmacro %}
+{% macro tabbar(c) %}{% set nav = c.nav %}{% include "ui/common/widgets/_tabbar.html" %}{% endmacro %}
 ```
 
-**CSS:** `.tabbar` in components.css — flex row, icon over label,
+**CSS:** `.tabbar` in widgets.css — flex row, icon over label,
 `env(safe-area-inset-bottom)` padding; `display: none` from 600px up.
 
 **htmx:** none — boosted links; `current` marks the active destination.
@@ -242,10 +243,10 @@ inline row (≥840) and inside a native `<details>` dropdown (<840) — the
 zero-JS responsive menu; CSS shows exactly one.
 
 ```html
-{% macro appbar(c) %}{% set bar = c.bar %}{% include "ui/widgets/components/_appbar.html" %}{% endmacro %}
+{% macro appbar(c) %}{% set bar = c.bar %}{% include "ui/common/widgets/_appbar.html" %}{% endmacro %}
 ```
 
-**CSS:** `.appbar` in components.css — sticky top, flex row with gap, title
+**CSS:** `.appbar` in widgets.css — sticky top, flex row with gap, title
 ellipsis; `.appbar__menu-list` is the absolutely-positioned dropdown card.
 
 **htmx:** actions are boosted links; the dropdown needs no htmx (`<details>`
@@ -273,13 +274,13 @@ surface:
 <section class="list-section">
   <h2 class="list-section__header">{{ c.section.title }}</h2>
   <div class="list-section__card">
-    {% for row in c.section.rows %}{% include "ui/widgets/components/_list-row.html" %}{% endfor %}
+    {% for row in c.section.rows %}{% include "ui/common/widgets/_list-row.html" %}{% endfor %}
   </div>
 </section>
 {% endmacro %}
 ```
 
-**CSS:** `.list-section` / `.list-row` in components.css — rounded section
+**CSS:** `.list-section` / `.list-row` in widgets.css — rounded section
 card, 1px separators between rows, leading icon tile, trailing
 detail/chevron; whole-row `<a>` when `href` is set.
 
@@ -306,11 +307,11 @@ subtitle?, body?, actions?, vt? }`):
 
 ```html
 <div class="card-grid">
-  {% for card in cards %}{% include "ui/widgets/components/_card.html" %}{% endfor %}
+  {% for card in cards %}{% include "ui/common/widgets/_card.html" %}{% endfor %}
 </div>
 ```
 
-**CSS:** `.card` in components.css — flex column with gap, radius + hairline
+**CSS:** `.card` in widgets.css — flex column with gap, radius + hairline
 ring, actions pinned to the bottom; `.card-grid` is the ladder: 1 column → 2
 (≥600) → 3 (≥840).
 
@@ -382,13 +383,13 @@ type?, value?, placeholder?, autocomplete?, required?, hint?, error? }`):
 ```html
 {% macro profile_form(c) %}
 <form id="profile-form" hx-post="/profile" hx-swap="outerHTML">
-  {% for field in c.fields %}{% include "ui/widgets/components/_form-field.html" %}{% endfor %}
+  {% for field in c.fields %}{% include "ui/common/widgets/_form-field.html" %}{% endfor %}
   <div class="action-row"><button class="btn" type="submit">Save</button></div>
 </form>
 {% endmacro %}
 ```
 
-**CSS:** `.field` in components.css — label/input/hint column with gap;
+**CSS:** `.field` in widgets.css — label/input/hint column with gap;
 `.field--invalid` paints the error state; focus ring via `:focus` outline.
 
 **htmx:** the POST handler validates server-side; on failure it re-renders
@@ -480,7 +481,7 @@ outside closes) and the card floats above it. `body` is trusted HTML composed
 in the surface (`{% set %}` capture), rendered `|safe`. Esc does not close
 (no JS) — note it in the surface's design notes if the product expects it.
 
-**CSS:** `.dialog` in components.css — fixed, centered, radius + shadow;
+**CSS:** `.dialog` in widgets.css — fixed, centered, radius + shadow;
 `.overlay-scrim` dims. `.modal` is the declarative variant: `<details>` root,
 the open `<summary>` doubles as the fixed scrim, `.modal-card` centers like
 `.dialog`. Popover styling and its open/close transitions are
@@ -507,7 +508,7 @@ form of recipe 12's overlay.
 [{ icon?, label, href, danger? }], dismiss? }`), swapped into
 `<div id="sheet-host">` like the dialog.
 
-**CSS:** `.sheet` in components.css — fixed bottom, top radius, grab handle,
+**CSS:** `.sheet` in widgets.css — fixed bottom, top radius, grab handle,
 safe-area padding. From 600px up the SAME markup presents as a centered
 dialog (M3 behaviour) and the grab handle hides.
 
@@ -533,12 +534,12 @@ mutation endpoint renders ONLY the toast:
 ```js
 export const del = (c, h) => {
   facade.delete(c.req.param('id'));
-  return h.render(c, 'ui/widgets/components/_toast.html',
+  return h.render(c, 'ui/common/widgets/_toast.html',
     { toast: { text: 'Item deleted', kind: 'success', linger: true } });
 };
 ```
 
-**CSS:** `.toast` + `#toasts` in components.css — pill, fixed bottom-center
+**CSS:** `.toast` + `#toasts` in widgets.css — pill, fixed bottom-center
 host, `pointer-events: none` on the host / `auto` on the toast. Enter/exit
 motion is motion.css §5; `toast--linger` fades after `--toast-ttl`.
 
@@ -614,14 +615,14 @@ body?, action? }`). The view branches server-side:
 
 ```html
 {% if rows | length %}… list …{% else %}
-{% include "ui/widgets/components/_empty-state.html" %}
+{% include "ui/common/widgets/_empty-state.html" %}
 {% endif %}
 ```
 
 (Empty arrays are truthy in Nunjucks — always test `| length`, never the
 bare array.)
 
-**CSS:** `.empty-state` in components.css — centered column with gap, width
+**CSS:** `.empty-state` in widgets.css — centered column with gap, width
 capped at 360px (centered-state archetype).
 
 **htmx:** the optional action is a boosted link; in fragment contexts the
@@ -732,15 +733,15 @@ up; never infinite-scroll — no JS.
 
 **Flutter:** KitLazyIndexedStack.
 
-## 19. Multi-view panel (the stateful component)
+## 19. Multi-view panel (the stateful widget)
 
 **Use:** a secondary panel beside the stage that switches between several
 registered views (thread / artifacts / files / runs…) from an icon carousel —
 the Chat-Centric Layout's activity and composer panels. Not primary navigation
 (recipe 3).
 
-This is the reference implementation of the Component-state contract
-(DESIGN-ARCHITECTURE, "Component state"): every piece of panel UI state is
+This is the reference implementation of the Widget-state contract
+(DESIGN-ARCHITECTURE, "Widget state"): every piece of panel UI state is
 server session state, namespaced per shell, rendered back as classes — and
 the panel's parts refresh out-of-band so nothing ever shows a stale copy.
 
@@ -800,10 +801,10 @@ driving an adaptive panel — no single kit primitive, compose.
 
 ## 20. Auto Layout (the attribute layer)
 
-**Use:** the default layout discipline of every component-library component
+**Use:** the default layout discipline of every widget-library widget
 (DESIGN-ARCHITECTURE, "Auto Layout"). A container opts in with `data-layout`;
 its children size per axis with `data-resize-x` / `data-resize-y`. The rules
-ship in `starter-partials/components/components.css` ("Auto Layout" block) —
+ship in `starter-partials/widgets/widgets.css` ("Auto Layout" block) —
 static attribute selectors, zero client JS. Never hand-write one-off flex
 classes for what the attributes already say; reach for a class only for what
 the attributes deliberately don't cover (colors, radius, min/max constraints).
@@ -857,10 +858,10 @@ that frame entirely — it's an art-directed composition, not a flow.
 from server state like any other attribute.
 
 **Ladder:** attributes are rung-independent; when composition itself changes
-across the ladder, branch in the component's class CSS on the
+across the ladder, branch in the widget's class CSS on the
 window-size-class boundaries, same as every other recipe.
 
-**Motion:** none of its own — children ride whatever motion the component
+**Motion:** none of its own — children ride whatever motion the widget
 already owns.
 
 **Flutter:** Row/Column (flow) + Expanded (fill) / SizedBox (fixed);
@@ -891,4 +892,4 @@ Stack + Positioned for the escape hatch.
 | Loading / skeleton | — (motion.css) | KitNativeLoadingIndicator, KitNativeProgress, KitLazyIndexedStack |
 | Pagination / load-more | — (macros) | KitLazyIndexedStack |
 | Multi-view panel | `_panel-views.html` | per-shell panel controller (view/size/filter) + adaptive panel — compose |
-| Auto Layout | — (attribute layer in components.css) | Row/Column + Expanded (fill) / SizedBox (fixed); Stack + Positioned (ignore) |
+| Auto Layout | — (attribute layer in widgets.css) | Row/Column + Expanded (fill) / SizedBox (fixed); Stack + Positioned (ignore) |

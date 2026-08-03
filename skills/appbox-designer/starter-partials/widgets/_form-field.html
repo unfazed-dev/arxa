@@ -3,7 +3,7 @@
    Zero JavaScript. Include per field inside the surface's form:
 
        <form id="profile-form" hx-post="/profile" hx-swap="outerHTML">
-         {% for field in fields %}{% include "ui/widgets/components/_form-field.html" %}{% endfor %}
+         {% for field in fields %}{% include "ui/common/widgets/_form-field.html" %}{% endfor %}
          <div class="action-row"><button class="btn" type="submit">Save</button></div>
        </form>
 
@@ -30,7 +30,7 @@
 
    In-flight state is `pending` motion: htmx toggles .htmx-request on the
    submit button; add an indicator child (recipe: loading/pending).
-   Styles: assets/css/components.css (block: .field).
+   Styles: assets/css/widgets.css (block: .field).
    Flutter: KitNativeTextField + KitFieldController (forms kit).
    ============================================================================ #}
 <div id="field-{{ field.name }}" class="field{% if field.error %} field--invalid{% endif %}">

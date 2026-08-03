@@ -4,7 +4,7 @@ export const surfaceId = 'main.shell';
 export const page = (c, h) =>
   h.render(c, 'ui/views/main_shell/main_shell_view.html');
 
-// One `rail` context feeds both nav components — the rail (medium+) and the
+// One `rail` context feeds both nav widgets — the rail (medium+) and the
 // bottom nav (compact) are the same destinations at different rungs of the
 // ladder. Every surface merges chrome(<its id>, h.t(c)) so `current` follows
 // the route and the labels follow the request locale.

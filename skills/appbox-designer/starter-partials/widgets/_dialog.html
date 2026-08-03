@@ -2,7 +2,7 @@
    _dialog.html — server-driven modal dialog (Partial)
    Zero JavaScript. The shell owns an empty host; a trigger swaps this include
    into it; the dialog renders OPEN (<dialog open>) and the entry keyframe
-   plays on insertion (`reveal` motion, components.css):
+   plays on insertion (`reveal` motion, widgets.css):
 
        <button class="btn" hx-get="/confirm" hx-target="#dialog-host" hx-swap="innerHTML">Delete</button>
        <div id="dialog-host"></div>
@@ -29,7 +29,7 @@
    For stateless popovers/menus that never need the server, use the native
    popover form instead (button popovertarget + <div popover>, animated by
    motion.css §3) — no endpoint at all.
-   Styles: assets/css/components.css (blocks: .dialog, .overlay-scrim).
+   Styles: assets/css/widgets.css (blocks: .dialog, .overlay-scrim).
    Flutter: ui_library sheet/dialog services.
    ============================================================================ #}
 {% if dialog.scrim is not defined or dialog.scrim %}

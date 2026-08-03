@@ -9,7 +9,7 @@
 <section class="list-section">
   <h2 class="list-section__header">{{ t('home.greetingsHeader') }}</h2>
   <div class="list-section__card">
-    {% for row in rows %}{% include "ui/widgets/components/_list-row.html" %}{% endfor %}
+    {% for row in rows %}{% include "ui/views/main_shell/home/widgets/_list-row.html" %}{% endfor %}
   </div>
 </section>
 {# Plural demo: itemCount runs the ICU plural subset against demoCount —
@@ -29,7 +29,7 @@
       { value: 'tomato', label: t('accent.option.signal') }
     ]
   } %}
-  {% include "ui/widgets/components/_form-field.html" %}
+  {% include "ui/views/main_shell/home/widgets/_form-field.html" %}
   <button class="btn" type="submit">{{ t('accent.apply') }}</button>
 </form>
 <p>{{ t('accent.current') }}: <span class="swatch"></span> <code>{{ prefs.accent or 'blueviolet' }}</code></p>

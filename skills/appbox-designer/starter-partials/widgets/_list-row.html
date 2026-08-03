@@ -5,7 +5,7 @@
        <section class="list-section">
          <h2 class="list-section__header">General</h2>
          <div class="list-section__card">
-           {% for row in rows %}{% include "ui/widgets/components/_list-row.html" %}{% endfor %}
+           {% for row in rows %}{% include "ui/common/widgets/_list-row.html" %}{% endfor %}
          </div>
        </section>
 
@@ -26,7 +26,7 @@
    hx-swap="none" + renders this include with row.oob = true — htmx swaps the
    updated row over the old one in place (`swap` motion).
 
-   Styles: assets/css/components.css (blocks: .list-section, .list-row).
+   Styles: assets/css/widgets.css (blocks: .list-section, .list-row).
    Flutter: KitListTile (row), KitListSection (grouped card + header).
    ============================================================================ #}
 {% if row.href %}<a {% else %}<div {% endif %}id="row-{{ row.id }}" class="list-row"

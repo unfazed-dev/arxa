@@ -138,7 +138,18 @@ subgroup is the shell's own organization, not a second registry concept.
 Shell-level surfaces sit one level up:
 `ui/views/<shell>/<shell>_view.html` + `<shell>_viewmodel.js`.
 
-Shared partials go in `ui/common/`.
+Widgets place at the narrowest scope that covers all their consumers; the
+include graph is the only authority, checked in both directions:
+
+| scope | design medium |
+|---|---|
+| cross-shell (2+ shells) | `ui/common/widgets/` |
+| intra-shell (2+ surfaces) | `ui/views/<shell>/shared/widgets/` |
+| per-surface (1 surface) | `<surface>/widgets/` |
+
+Bare `<shell>/widgets/` is illegal. Empty tiers are never created
+speculatively — a widget with one consumer lives with that consumer until a
+second consumer justifies promoting it.
 
 ### Every viewmodel declares its surface
 

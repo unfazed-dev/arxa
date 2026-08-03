@@ -4,23 +4,23 @@
    globalViewTransitions. Include once in the shell view, as the LAST element
    of the scrolling column (it is sticky to the bottom):
 
-       {% include "ui/widgets/components/_bottom-nav.html" %}
+       {% include "ui/views/main_shell/shared/widgets/_bottom-nav.html" %}
 
    Reads `rail` from the context bag — the SAME shape as _nav-rail.html (the
-   bottom nav is the rail's compact form, not a second component; one
+   bottom nav is the rail's compact form, not a second widget; one
    viewmodel key feeds both):
 
      rail = { items: [{ id, label, icon, href, current? }] }
 
    Keep items to 3–5 destinations (viewmodel's concern). Ladder: visible on
    compact only; display:none from the medium rung up, where the rail takes
-   over (components.css, block: .bottom-nav).
+   over (widgets.css, block: .bottom-nav).
 
    Re-render: wrap the include in a Named Fragment to make it an htmx target
    (the {% set %} shadows the key from the bag — imported macros see only
    `c` + globals, see _nav-rail.html):
 
-       {% macro bottom_nav(c) %}{% set rail = c.rail %}{% include "ui/widgets/components/_bottom-nav.html" %}{% endmacro %}
+       {% macro bottom_nav(c) %}{% set rail = c.rail %}{% include "ui/views/main_shell/shared/widgets/_bottom-nav.html" %}{% endmacro %}
 
    Flutter: KitBottomNavScaffold.
    ============================================================================ #}

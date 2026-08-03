@@ -5,7 +5,7 @@
    every rung, width capped by CSS):
 
        {% if rows | length %}… the list …{% else %}
-         {% include "ui/widgets/components/_empty-state.html" %}
+         {% include "ui/common/widgets/_empty-state.html" %}
        {% endif %}
 
    (Empty arrays are truthy in Nunjucks — always test `| length`.)
@@ -18,7 +18,7 @@
        action: { label, href }      -- optional primary action (boosted link)
      }
 
-   Styles: assets/css/components.css (block: .empty-state).
+   Styles: assets/css/widgets.css (block: .empty-state).
    Flutter: none — compose icon + copy + KitNativeButton.
    ============================================================================ #}
 <div class="empty-state">

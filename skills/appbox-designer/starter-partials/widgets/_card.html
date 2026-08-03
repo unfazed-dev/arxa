@@ -4,7 +4,7 @@
    dashboard-stack archetype: 1 → 2 → 3 columns across the ladder):
 
        <div class="card-grid">
-         {% for card in cards %}{% include "ui/widgets/components/_card.html" %}{% endfor %}
+         {% for card in cards %}{% include "ui/common/widgets/_card.html" %}{% endfor %}
        </div>
 
    Reads `card` from the context bag:
@@ -21,7 +21,7 @@
                                 -- (name derived per-record, per motion.css §2)
      }
 
-   Styles: assets/css/components.css (blocks: .card, .card-grid).
+   Styles: assets/css/widgets.css (blocks: .card, .card-grid).
    Flutter: KitGlassCard / KitFrostedSurface.
    ============================================================================ #}
 <article id="card-{{ card.id }}" class="card"{% if card.vt %} style="view-transition-name: card-{{ card.id }};"{% endif %}>

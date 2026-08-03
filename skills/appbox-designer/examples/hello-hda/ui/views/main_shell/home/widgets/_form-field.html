@@ -3,7 +3,7 @@
    Zero JavaScript. Include per field inside the surface's form:
 
        <form id="profile-form" hx-post="/profile" hx-swap="outerHTML">
-         {% for field in fields %}{% include "ui/widgets/components/_form-field.html" %}{% endfor %}
+         {% for field in fields %}{% include "ui/views/main_shell/home/widgets/_form-field.html" %}{% endfor %}
          <div class="action-row"><button class="btn" type="submit">Save</button></div>
        </form>
 
@@ -32,7 +32,7 @@
 
    In-flight state is `pending` motion: htmx toggles .htmx-request on the
    submit button; add an indicator child (recipe: loading/pending).
-   Adapted from starter-partials/components/_form-field.html: the `options`
+   Adapted from starter-partials/widgets/_form-field.html: the `options`
    branch (select) is the local addition.
    Styles: assets/css/app.css (block: .field).
    Flutter: KitNativeTextField + KitFieldController (forms kit).

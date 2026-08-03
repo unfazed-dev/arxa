@@ -112,12 +112,14 @@ designs may still carry a `serve.mjs` shim at the artifact root: it is dead
 `appbox design ds-import` and record deliverables with
 `appbox design record-asset` as in `built-in-skills/use-design-system.md`.
 
-**9. Build components-first, then serve and verify.** Before composing any
-surface, author the artifact's component library: inventory the design's
-repeated patterns and define them as macros/partials in `ui/common/` +
-`ui/widgets/`, starting from [`references/ui-recipes.md`](references/ui-recipes.md)
-and the drop-in partials in `starter-partials/components/` — surfaces compose
-only from that library. **Auto Layout is default-ON for every component in
+**9. Build widgets-first, then serve and verify.** Before composing any
+surface, author the artifact's widget library: inventory the design's
+repeated patterns and define them as macros/partials at the tier their
+consumers require (`ui/common/widgets/` cross-shell, `ui/views/<shell>/shared/widgets/`
+intra-shell, `<surface>/widgets/` per-surface — see `references/app-architecture.md`),
+starting from [`references/ui-recipes.md`](references/ui-recipes.md)
+and the drop-in partials in `starter-partials/widgets/` — surfaces compose
+only from that library. **Auto Layout is default-ON for every widget in
 the library** (DESIGN-ARCHITECTURE, "Auto Layout"): each macro's container
 carries the `data-layout` attribute set and its children size with
 `data-resize-x` / `data-resize-y`. To turn it off per frame, omit
@@ -157,7 +159,7 @@ applications.
 ## Notes
 
 - `system-prompt.md` is the craft SSOT; `runtime/README.md` is the artifact
-  contract; `references/ui-recipes.md` is the component catalog; `CONTEXT.md`
+  contract; `references/ui-recipes.md` is the widget catalog; `CONTEXT.md`
   is the vocabulary; `docs/adr/` holds the runtime decisions.
 - **i18n**: when an artifact is localized, every chrome/surface string lives in
   `l10n/app_<locale>.arb` and renders via the `t` global — never hardcode copy
