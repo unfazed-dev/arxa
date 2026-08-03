@@ -281,3 +281,21 @@ v1 is BYO-LLM only (custody per Decision 29). Credits exist only if/when Totem s
 ## Decision 33 — Shorebird install billing: pooled on Totem org
 
 Totem owns the Shorebird org; 50k installs bundled in SCALE; overage passed through at $1/2,500 (first-party-verified rate). PRE-SHIP GATE: confirm real per-tier Shorebird prices in the console — current tier dollar figures are aggregator-sourced (flagged in docs/research/scale-pricing-and-credits.md).
+
+## Registry `states` cannot carry `signedOut` / `notEntitled` / `success`
+
+picker-screen asked (t=197) for `signedOut` to be added to the `scaffold.picker`
+lens-state list in `models/screens_model/registry.json`. It cannot go there.
+
+- `states` on a screens_model registry entry is a CLOSED vocabulary:
+  `const surfaceStates = ['loading', 'empty', 'error']` (appboxd/lib/intake.dart:62).
+- `appbox emit structure` hard-FAILs on any other value
+  (appboxd/lib/emit_structure.dart:271) — "the screen-state vocabulary is closed".
+- No screen in appbox-studio's registry declares `states` today; the field is
+  optional passthrough into structure.json, not the preview source.
+- Preview of gated variants works through the free-form `?state=` query param,
+  which picker_viewmodel.js already reads and forwards to the facade. Both
+  `?state=signedOut` and `?state=notEntitled` resolve without a registry change.
+
+Registry entries for `scaffold.picker` / `scaffold.run` therefore stay as
+authored (id/label/surface/shell/comp/labelKey/route), with no `states` key.
