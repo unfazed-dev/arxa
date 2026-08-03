@@ -167,11 +167,19 @@ Future<int> runProbeCli(List<String> args) async {
   try {
     for (final probe in selected) {
       if (selected.length > 1) stdout.writeln('\n--- probe: ${probe.name} ---');
-      final report = ProbeReport();
+      final report = ProbeReport(bareVerdicts: probe.bareVerdicts);
+      // One browser context per probe — its own cookie jar, so its own studio
+      // session. Without it every probe's tabs share `kdh_sid` and a probe's
+      // result depends on which probe ran before it; see ProbeContext.newPage
+      // for the measured case. One per probe rather than per page because that
+      // is the isolation the .mjs suite had: one node process per probe.
+      final browserContextId =
+          probe.needsBrowser ? await browser!.createBrowserContext() : null;
       final ctx = ProbeContext(
         base: base,
         browser: probe.needsBrowser ? browser : null,
         report: report,
+        browserContextId: browserContextId,
       );
       try {
         await probe.body(ctx);
@@ -180,6 +188,12 @@ Future<int> runProbeCli(List<String> args) async {
         // a thrown probe still prints a trailer and still reports the checks it
         // managed to run.
         report.error(e);
+      } finally {
+        // In a finally so a thrown probe cannot leak its context into the next
+        // one — a leaked context is the very state bleed this exists to stop.
+        if (browserContextId != null) {
+          await browser!.disposeBrowserContext(browserContextId);
+        }
       }
       final code = report.finish();
       if (code == 0) passed++;

@@ -26,7 +26,9 @@ Status legend:
 | `waitQuiet(page, {quietMs,timeout})` | `waitQuiet(session, quietMs:, timeoutMs:)` | ported — same two-identical-samples rule, same `count:length` sample |
 | `trackTransitions(page)` | `trackTransitions(session)` over `CdpSession.addInitScript` | ported — same `__hxSettled` / `__vtBusy` counters, same skipped-transition settle |
 | `ck(name, ok, extra)` | `ProbeReport.check(name, ok, [detail])` | ported — byte-identical line shape, asserted in `probe_base_test.dart` |
+| `flowwalk`'s bare `check` (its line 35) | `ProbeReport(bareVerdicts: true)`, declared per probe via `Probe.bareVerdicts` | ported — emits `  PASS  label` (two spaces, word, two spaces) instead of `  [PASS] label`. A flag rather than letting the probe write to the sink itself: bypassing `check` bypasses the failure count, and a probe that prints FAIL while exiting 0 is the one outcome a suite must never produce. Pinned by a test that asserts bare mode still counts and still exits 1. Applies to verdicts only — `skip`/`warn`/`error` keep harness shape |
 | suite trailer | `ProbeReport.finish()` | ported — `==== ALL PASSED ====` / `==== N FAILED ====`, exit 1 on any fail |
+| one `node` process per probe (implicit isolation) | one browser context per probe — `CdpClient.createBrowserContext()`, `newTab(browserContextId:)`, disposed in a `finally` by the runner; carried on `ProbeContext.browserContextId` and used by `newPage` | ported — the `.mjs` suite got a fresh cookie jar per probe for free by running a separate process each time. The Dart runner shares one browser, so without this every probe's tabs shared `kdh_sid` and a probe's result depended on which probe ran before it: with `explode` finishing on the flows lens, a second tab saw 13 walk controls where a fresh context sees 0, and `flowwalk`'s section A failed while asserting about the views lens. Per probe, not per page — pages within one `.mjs` probe shared a browser (composer-draft opens two shells), so a page-scoped context would be stricter than the original |
 
 ### Verbs added to `cdp.dart` for the harness
 
@@ -38,34 +40,70 @@ existing method changed, so `lens.dart` / `gate_lens.dart` are untouched.
 | `waitForFunction(expr, {timeout, polling})` | condition polling with a bounded timeout — the engine had only `navigateAndSettle`'s fixed `Future.delayed` |
 | `waitForSelector(sel, {timeout, visible})` | presence/visibility wait; `clickSelector`'s precondition |
 | `hover(x, y)` | pointer arrival without a press; `:hover` reveals act on it |
+| `hoverSelector(sel, {timeout})` | hover a container to open a `:hover`-gated reveal, then act on what it exposed (shell-chrome section F: hover a tile, click the tool). Distinct from `clickSelector`'s internal hover, which lands on the element being clicked rather than on its container — aiming at the revealed child instead works by accident on a rail that overlaps its container and not at all on one that does not. Does not wait for the reveal; it cannot know what the reveal is, so follow it with `clickSelector`/`waitForSelector` on the revealed element |
 | `clickSelector(sel, {timeout, synthetic})` | click by selector. **Hover-then-click is the uniform default, not an option** — CDP has no equivalent of Playwright's actionability checks, and several studio controls are `:hover`-revealed. The element box is re-measured *after* the hover, because revealing a rail shifts layout and the pre-hover centre can point at something else by press time. `synthetic` dispatches the element's own `click()` for controls no pointer can reach |
-| `drag(fromX, fromY, toX, toY, {steps = 14})` | press → N interpolated moves → release. `steps` is a correctness knob, not smoothness: a two-point drag is invisible to drag-threshold detection, so a resize probe built on one reports a working divider broken. Default matches what the studio's resize interactions were tuned against |
-| `dragSelector(sel, {dx, dy, steps})` | the same, from an element's centre by a delta |
+| `drag(fromX, fromY, toX, toY, {steps = 14, beforeRelease})` | press → N interpolated moves → release. `steps` is a correctness knob, not smoothness: a two-point drag is invisible to drag-threshold detection, so a resize probe built on one reports a working divider broken. Default matches what the studio's resize interactions were tuned against. `beforeRelease` runs after the final move with the button still down — some state exists only during a drag (a size badge `pointerup` removes, a request attributable to the release specifically), and reading it afterwards finds nothing, which is worse than failing because the assertion then passes vacuously. The release sits in a `finally`, so a throw from the observer or from any move cannot leave the button down — one stuck button would corrupt every later interaction in the shared browser and be diagnosed inside some unrelated probe |
+| `dragSelector(sel, {dx, dy, steps, beforeRelease})` | the same, from an element's centre by a delta |
 | `fillSelector(sel, value)` | set value **and** fire `input`/`change` — assigning `.value` alone is invisible to htmx and `hx-preserve` |
 | `computedStyle(sel, props)` | computed-style read, null when the element is absent |
 | `getResponseBody(requestId)` | one body by id; null when Chrome no longer has it |
 | `recordNetworkBodies()` → `CdpNetworkBodies` | bodies captured on `Network.loadingFinished` — the earliest moment one exists and the latest it is guaranteed to. Collecting events and fetching bodies at the end is the obvious shape and the broken one: the page has navigated by then and the buffer is dropped, so the bodies that matter are exactly the missing ones. Records carry `encodedLength` (wire bytes) alongside the body, since a payload-size assertion wants the former and `body.length` is post-decompression |
 | `addInitScript(source)` | `Page.addScriptToEvaluateOnNewDocument`; `trackTransitions` cannot exist without it |
 
-**Not added**: iframe/frame piercing. No ported probe needs it yet and its shape
-is not yet specified; `inspect`/`explode` in wave C are the likely first callers.
-(Drag was on this list until wave A2's inventory specified it — `steps: 14` from
-`panel-resize` — at which point it stopped being speculative and went in.)
+(Drag was on the "not added" list until wave A2's inventory specified it —
+`steps: 14` from `panel-resize` — at which point it stopped being speculative
+and went in. Frame piercing followed the same route in wave C, below.)
+
+### Frame verbs added to `cdp.dart` (wave C — `inspect`, `flowwalk`)
+
+The engine addressed one document: the main frame's. The studio renders every
+screen inside an `<iframe>`, so without these a probe can assert on the box
+around a screen but never on the screen. Reading a same-origin child through
+the parent's `contentDocument` is the apparent way around all of this, and for
+a plain DOM read it is one — `explode` section B still does exactly that, on
+purpose. It is wrong for the two things island probes actually ask, and both
+failure modes are silent:
+
+- `window.parent.htmx` evaluated in the PARENT resolves against the parent's
+  own window, so flowwalk's bridge check would pass whether or not code inside
+  the frame could reach it — an assertion that cannot fail;
+- the viewer CSS-`scale`s its tiles, so `iframeRect.left + elementRect.left` is
+  off by the scale factor and the pointer lands beside the element it was
+  aimed at. `test/cdp_frames_test.dart` scales its fixture by 0.5 for this
+  reason: an implementation built on that arithmetic passes every unscaled
+  test and fails there.
+
+| verb | why it had to be in the engine |
+|---|---|
+| `frames()` → `List<CdpFrame>` | `Page.getFrameTree`, flattened root-first. Frame ids are also how a probe tells the main frame navigating (the page working) from a CHILD frame navigating (`inspect` section 7's regression: the inspected iframe reloading on pin) |
+| `frameForSelector(sel, {timeout})` | resolve an `<iframe>` ELEMENT to its frame, via `DOM.describeNode`. Not by matching `frames()` on URL: two tiles routinely show the same screen, and a URL match returns whichever the tree listed first. Null for a missing element and for an element that frames nothing |
+| `evaluateInFrame(frame, expr, {awaitPromise})` | `Runtime.evaluate` in the frame's own DEFAULT world. CDP has no "evaluate in this frame" command — the frame↔context pairing exists only in `Runtime.executionContext*` events, so the session now tracks them. The default world, never an isolated one: an isolated world shares the DOM but not the page's JavaScript, so `document._inspect` and `window.parent.htmx` are simply absent there and a probe pointed at one reports a working island broken. Retries once on a stale context, because arming a tile re-navigates its iframe and "resolve the frame, then read it" has a real window in between |
+| `waitForFunctionInFrame(frame, expr, {timeout, polling})` | `waitForFunction`, scoped to a frame; swallows the mid-navigation errors that are ordinary while waiting |
+| `hoverSelectorInFrame(frame, sel, {timeout})` | a pointer arriving on an in-frame element, which is harder than it looks and cost most of wave C's debugging. Three things had to be true together, and each was measured failing on its own: (1) coordinates come from `DOM.getContentQuads`, which reports in the MAIN frame's space with every transform applied — see the scale note above; (2) the pointer must arrive along a PATH. The first `mouseMoved` into a child document delivers `pointerover`/`mouseover` and **no `pointermove`**, because the child's pointer state is created by that very event, so an island listening for `pointermove` hears nothing; (3) the moves must be SPACED. Chrome coalesces moves landing in the same compositor frame, so a two-point approach dispatched back to back arrives as the single move it was meant not to be. Measured against the studio's inspect island: one bare dispatch produced 1 `pointerover` and 0 `pointermove`, and the inspector pane never updated |
+| `clickSelectorInFrame(frame, sel, {timeout, synthetic})` | `clickSelector`'s contract inside a frame — hover-then-click with a re-measure, `synthetic` for a target no pointer can reach |
+
+Both in-frame pointer verbs wait for a **settled** box, not merely a present
+element: arming re-navigates the iframe and the studio brings the tile back
+through a view transition, so an element can be present and still report a box
+on its way to where it will end up. Two identical non-zero measurements 60ms
+apart is the test. Without it, `inspect` section 3 failed roughly one run in
+three — measured too early, pointer beside the card, and a green section 4
+right after it proving the coordinates were fine by then.
 
 ## Probes
 
 | `.mjs` probe | sections | Dart module | status |
 |---|---|---|---|
 | `probe-composer-draft.mjs` | 2 shells × 2 checks: draft survives an unrelated swap; textarea clears after send | `probe_composer_draft.dart` (`composer-draft`) | **ported** — see parity evidence below |
-| `probe-panel-contract.mjs` | 12 | — | pending (wave C) |
-| `probe-panel-resize.mjs` | — | — | pending (wave C) |
-| `probe-shell-chrome.mjs` | — | — | pending (wave C) |
-| `probe-no-reload.mjs` | — | — | pending (wave C) |
-| `probe-boost.mjs` | — | — | pending (wave C) |
-| `probe-context-sync.mjs` | — | — | pending (wave C) |
-| `probe-inspect.mjs` | — | — | pending (wave C) |
-| `probe-explode.mjs` | — | — | pending (wave C) |
-| `probe-flowwalk.mjs` | — | — | pending (wave C) |
+| `probe-panel-contract.mjs` | A–L, 45 static → 63 runtime checks | `probe_panel_contract.dart` (`panel-contract`) | **ported** — see parity evidence below |
+| `probe-panel-resize.mjs` | A–E, 17 static → 32 runtime checks | `probe_panel_resize.dart` (`panel-resize`) | **ported** — see parity evidence below |
+| `probe-shell-chrome.mjs` | A–F, 16 static → 71 runtime checks (12× `panelsOk`) | `probe_shell_chrome.dart` (`shell-chrome`) | **ported** — see parity evidence below |
+| `probe-no-reload.mjs` | A–D + capability + payload cost, 10 checks | `probe_no_reload.dart` (`no-reload`) | **ported** — see parity evidence below |
+| `probe-boost.mjs` | 3 sections, 7 checks | `probe_boost.dart` (`boost`) | **ported** — see parity evidence below |
+| `probe-context-sync.mjs` | 30 checks, 1 section | `probe_context_sync.dart` (`context-sync`) | **ported** — see parity evidence below |
+| `probe-inspect.mjs` | 1–9, 21 checks | `probe_inspect.dart` (`inspect`) | **ported** — see parity evidence below |
+| `probe-explode.mjs` | A–D, 29 checks | `probe_explode.dart` (`explode`) | **ported** — see parity evidence below |
+| `probe-flowwalk.mjs` | A–D + errors, 14 checks | `probe_flowwalk.dart` (`flowwalk`) | **ported** — see parity evidence below |
 
 ## Parity evidence
 
@@ -129,6 +167,406 @@ vacuously.
 The `~/.appbox/current` marker read `portalo` before, during and after both
 runs — `--project` binds the server process without touching it, which is the
 reason the guard reads `boundProject` instead.
+
+### `panel-resize` and `shell-chrome` — 2026-08-03
+
+Two fresh `cp -R` copies of `portalo` and two server boots, per the correction
+recorded above: the Dart side on port 4383 bound to `portalo-c2-probe`, the
+`.mjs` side on 4384 bound to `portalo-c2mjs-probe`. Both probes mutate, so a
+shared tree would have meant the second suite started from what the first left.
+
+**`panel-resize` — 32 checks, identical on both sides.** Every check name, every
+PASS, and every detail string matched byte-for-byte, including the mid-drag
+numbers (`badge=390 box=390`, `badge=500 box=500`, `badge=340 box=340`), the
+node census (`276/276 original nodes still live`) and the recorded request
+(`["POST /design/panel/size/activity"]`). Only the summary line differs —
+`==== ALL PASSED ====` (harness house style) against `==== ALL CHECKS PASSED ====`
+— plus the guard line the Dart side prints and the `.mjs` original never had.
+
+**`shell-chrome` — 70 checks, and the one FAILURE is identical too.** Both
+suites, on independent fresh trees, produced the same warn and the same single
+red:
+
+```
+  [warn] timed out after 5000ms waiting for redo to re-enable after undo
+  [FAIL] redo enabled after stepping back
+```
+
+This is the known intermittent (task #55), and **failing is the more common
+outcome, not the rare one**. Measured over nine Dart runs on this machine: six
+failed, three passed at 70/70. The single `.mjs` run failed. An earlier note
+here claimed a green run as the settled result on the strength of one sample;
+that was wrong, and the corrected rate is recorded instead. Anyone treating a
+single green `shell-chrome` run as verification of an unrelated change should
+read this row first.
+
+What is stable across every run, pass or fail, is where it breaks: **the undo
+always lands.** `undo enabled once the canvas stack is non-empty` passed in
+9/9 runs, and the post-undo panel census passed in 9/9. Only the redo
+re-enable inside the 5s wait is unreliable. So the arming half of section F —
+including the `:hover`-gated flow-move tool that has to be revealed and clicked
+for the stack to arm at all — is exercised and green every single run.
+
+**Whether 5s is simply too tight is not answered here, and is not a parity
+question.** Both suites use the same 5s, so the port matches the original
+either way; the wait was ported as written because the timeout value is part of
+what the check documents. Settling it needs an in-browser measurement of how
+long the redo re-enable actually takes past 5s, which belongs with whoever owns
+the undo/redo path. Raising the timeout in the port alone would diverge from
+the original and convert a reported signal into silence.
+
+An attempt to reproduce the sequence over raw HTTP (session cookie, POST the
+flow move, POST the undo, poll `/design`) did **not** reproduce it — undo never
+armed at all that way, contradicting the browser result. That is a fidelity
+failure of the HTTP mimicry, not evidence about the studio, and no conclusion
+is drawn from it.
+
+> **Instruction to wave D — read before acting on a red here.**
+>
+> 1. **A red on `redo enabled after stepping back` is NOT a port regression.**
+>    The `.mjs` original fails it too, with the same warn and the same single
+>    red. Both suites agreeing *in failure* is parity evidence — arguably
+>    stronger than agreeing on a pass, because it shows the Dart port
+>    reproduces the original's timing sensitivity and not merely its happy
+>    path.
+> 2. **Do not re-run until green to "prove" parity.** This row differs
+>    run-to-run on BOTH sides. Re-rolling until both land green selects for the
+>    3-in-9 outcome and manufactures agreement that says nothing; the honest
+>    comparison is the one already recorded here.
+> 3. **Do not raise the 5s timeout to clear it.** Both suites use the same 5s.
+>    Changing it on the Dart side alone diverges from the original and converts
+>    a reported signal into silence.
+> 4. The underlying behaviour is tracked separately as *"Root-cause: redo
+>    re-enable latency after canvas undo"* — that is where a fix belongs, not
+>    in either probe.
+
+A check that fails identically on both sides is stronger parity evidence than a
+green run: it shows the port reproduces behaviour rather than merely reaching
+the same verdict. Both sides also ran the eight assertions *after* the timed-out
+wait, which is the warn-don't-throw contract the original's own comment calls
+load-bearing — on both sides the post-undo panel census, the redo assertion and
+the page-error check all executed and reported. **Not chased, per the port
+brief** — the 5s timeout is part of what the check documents, and raising it
+would convert a reported defect into silence.
+
+**Divergence — exit code.** `probe-shell-chrome.mjs` calls `process.exit`
+nowhere, so it exits **0** while printing `==== 1 FAILED ====` (observed, not
+inferred). The Dart port exits 1. The same omission is present in
+`probe-boost.mjs`, `probe-composer-draft.mjs` and `probe-explode.mjs` — four of
+the ten probes cannot currently fail a CI gate. Verified by grep across the
+suite; only `shell-chrome` was confirmed empirically. **Wave D should treat this
+as a finding about the retiring suite, not a port bug.**
+
+### `panel-resize`'s two mid-drag observations
+
+`CdpSession.drag` is atomic — press, N interpolated moves, release — and the
+original observes state *between* the last move and the release, twice. This is
+the gap `drag`'s `beforeRelease` was added for (see the verb table above); both
+call sites use it and neither reconstructs the moment from anything else:
+
+| original | port | status |
+|---|---|---|
+| section E reads the width badge with the button still down | `beforeRelease` evaluates `{badge, box, min, max}` in the page | ported — verified with real values (390/500/340/500) matching the CSS limits, not nulls |
+| section C brackets `p.on('request')` around `mouse.up()` | `beforeRelease` attaches the `Network.requestWillBeSent` listener; it is cancelled after the post-release settle | ported — same bracket, and every request rather than only XHR, since one assertion is "no request at all" |
+
+Both were first landed as substitutions built from public verbs only (a
+capture-phase `pointerup` listener for E, `wallTime` correlation for C) while
+the verb was being added. Those produced byte-identical output to the versions
+recorded here, which is worth knowing if `beforeRelease` ever has to be backed
+out — but the verb is the honest mechanism and the substitutions are gone.
+
+**Other documented divergences.** `_swapNth` reports a missing control as a
+failed check where the original threw and sent the whole run into its catch
+(same rationale as section F's warn-don't-throw comment). Section E's vacuity
+guard is a `check`, never a `skip`: a missing sample must read red, since that
+check existing is the only thing standing between a null badge and twelve
+passes that assert nothing.
+
+### `panel-contract` — 2026-08-03
+
+Method: `designs/appbox-studio` on port 4382, bound to `portalo-c1-probe` (a
+fresh `cp -R` of `portalo`), both suites against that one server. Boot readiness
+was polled on `/design` actually rendering `.panel-viewer` + `.panel-composer`,
+never on `/__projects` — the render worker answers the API several seconds
+before a shell exists, the trap recorded under `composer-draft`.
+
+Parity: **63 checks on each side, identical per section** — A 2 · B 8 · C 5 ·
+D 1 · E 4 · F 1 · G 1 · H 4 · I 15 · J 5 · K 11 · L 6. Section headers and check
+labels diff clean; the only textual difference in the whole run is the trailer.
+
+**Documented divergences**
+
+1. Trailer — `==== ALL CHECKS PASSED ====` (`.mjs`) vs `==== ALL PASSED ====`
+   (`ProbeReport.finish`). A wave-B decision every port shares, not this probe's.
+2. `mutates: true` and the guard line it prints. The `.mjs` never guards, though
+   G clicks into the activity panel's FILES view and follows a file link, and
+   which surface `/design` shows is server-side session state — K exists
+   precisely to navigate back out of it. Same omission the guard was written for.
+3. `[skip]` vs the `.mjs`'s `[SKIP]` — `ProbeReport.skip`'s casing, harness-wide.
+   G's no-file-link path, which did not fire here (a file link was present).
+4. Section G waited a fixed 700ms in the `.mjs`; the port waits on the file link
+   itself, with no report attached so that a legitimate "no file link on this
+   surface" stays silent instead of printing a `[warn]` the `.mjs` never prints.
+   On a slow first render the `.mjs` can SKIP G where the port runs it — a
+   one-check difference that is the port being the more correct of the two, and
+   should be read that way rather than "fixed" with a reintroduced sleep.
+5. Section K's comment credited "Section D" for the file read that forces the
+   `.mp-file-back` navigation. It is Section G. The dependency was real, the
+   label was wrong; corrected in the port.
+
+**Interpreted rather than copied**
+
+- Section L's "fresh isolated page" is where Playwright and CDP genuinely part
+  company. `browser.newPage()` opens a new browser CONTEXT — its own cookie jar
+  and storage; `Target.createTarget`, which `ProbeContext.newPage` is built on,
+  opens a tab in the DEFAULT context. The straight port therefore inherited the
+  session G's file read left behind: `/design` rendered that read and L counted
+  **4** chips against its `>= 20` coverage floor. Restored with
+  `Network.clearBrowserCookies` + `Storage.clearDataForOrigin` on the fresh page
+  before the first navigation. That is a workaround at the call site, not a
+  primitive: the honest fix is a `newPage` that can open its own browser context
+  (`Target.createBrowserContext`), which `cdp.dart` does not expose today. Any
+  ported probe whose `.mjs` called `browser.newPage()` for isolation — rather
+  than merely for a second tab — inherits this same trap.
+- Predicates that were a regex literal or `parseFloat` in JS moved into Dart,
+  raw values still crossing the boundary so details print identically. This is
+  not cosmetic for `parseFloat`: `double.tryParse('0px')` is null, which would
+  quietly invert `parseFloat(min) === 0`. Conversely every `Math.round` stays
+  inside the JS where the `.mjs` had it, because Dart prints `640.0` where JS
+  prints `640`.
+
+**Falsifiability** (a check that cannot fail is not evidence): not asserted by
+inspection here — L's coverage check actually reported
+`[FAIL] … found only 4` on the first run and `[PASS] … found 25` after the
+isolation fix, same binary, same server. Section L's own mutation self-test also
+fires as designed: disabling `widgets.css` in-page flips the pill contract and
+reports `confirmed: chips lost their box model`, so L is not vacuous.
+
+### `boost` and `no-reload` — 2026-08-03
+
+**Method**: two fresh `cp -R ~/.appbox/projects/portalo` disposable copies
+(`portalo-wc-probe`, `portalo-wc-test`), two independent `design serve
+designs/appbox-studio` boots on dedicated ports — 4374 (`.mjs`/Node side, bound
+to `portalo-wc-probe`) and 4376 (Dart side, bound to `portalo-wc-test`), each
+confirmed via `GET /__projects` before running anything. `boost` (read-only)
+run before `no-reload` (mutates) on each server, so `boost` never sees pinned
+context-state left by `no-reload`. `~/.appbox/current` was never touched by
+either boot — `--project` resolves the server's data directly from parsed
+args, with precedence over `APPBOX_PROJECT` and the current-file fallback, and
+never calls `useProject()`; confirmed via `/__projects` on both servers
+throughout (`current: portalo` on both, unchanged by the `--project` flag).
+
+**`boost`** — `node tools/probe-boost.mjs` against :4374 and
+`design probe boost --port 4376 --project portalo-wc-test` against :4376:
+check names, verdicts, and every interpolated value (`src`, `href` pairs, the
+window token) are byte-for-byte identical between the two runs, including the
+benign `[warn] timed out after 8000ms waiting for the home tile to become
+live` — the `.mjs` original tolerates this race as warn-not-fail (proceeds
+regardless, the checks after it report the real state either way), and the
+Dart port's `probeWaitFor` is uniformly soft (warns via `report.warn(...)` and
+returns `false` rather than throwing) — confirmed by reading
+`probe_base.dart:399-414` directly, not inferred: there is no separate
+hard-fail wait primitive in the harness, so `boost`'s one `probeWaitFor` call
+needed no special-casing to match the `.mjs`'s tolerance. `==== ALL PASSED
+====` on both sides.
+
+**`no-reload`** — `node tools/probe-no-reload.mjs` against :4374 and
+`design probe no-reload --port 4376 --project portalo-wc-test` against :4376:
+all 10 checks match in name, verdict, and count on both sides (iframes
+`20 -> 20` survivors, `0` re-navigations, `3` pin responses, all `[PASS]`).
+One deliberate divergence, by design: section E's largest-pin-response byte
+count — `115842` (`.mjs`, decoded `body.length`, post-decompression) vs
+`116073` (Dart, `encodedLength`, actual wire bytes) — different numbers
+because they measure different things; both land well under the 200 KB
+ceiling so both `[PASS]`. `mutates: true` is declared on the Dart port where
+the `.mjs` original never guarded at all (see "Registry — adding a probe
+(wave C)" below) — a strengthening, not drift: `no-reload` clicks controls
+that `hx-get*="context"` (POSTs into chat-context state) and one in-tile
+navigation, none of which the `.mjs` ever fenced against running on a live
+project.
+
+**Falsifiability**: the guard itself was exercised, not just read. Running
+`design probe no-reload --port 4319` (the live server, bound to the
+non-disposable `portalo`, `current` marker untouched) refused before any
+mutation with exit 2 and the guard's own remediation text (`cp -R
+~/.appbox/projects/portalo ~/.appbox/projects/portalo-probe`, `--project
+<name> --port <n>`, `boundProject is fixed at boot`) — confirming the
+regex-gated refusal is live, not vestigial, and that a probe author pointing
+`no-reload` at the wrong project gets stopped before it writes anything.
+
+### `context-sync` — 2026-08-03
+
+Method: `designs/appbox-studio`, two fresh `cp -R` copies of `portalo` and two
+independent server boots — `.mjs` side on port 4372 bound to
+`portalo-cs-a-probe`, Dart side on port 4373 bound to `portalo-cs-b-test`.
+`needsBrowser: false`: no Chrome is launched for this probe at all, HTTP-only
+GETs against a cookie-jar session, matching the harness note that
+`context-sync` is the one case `Probe.needsBrowser`'s doc comment names by
+name.
+
+`.mjs`, port 4372, `portalo-cs-a-probe` (`/tmp/cs-mjs-clean.log`):
+
+```
+probe target: http://localhost:4372  (via --port)
+probe target: confirmed disposable project "portalo-cs-a-probe" (boundProject)
+
+=== the composer names every pinned screen the canvas marks ===
+  [PASS] 1 pinned: the composer shows a context label — "context"
+  [PASS] 1 pinned: one chip per pin — ["portalo.home"]
+  ...
+  [PASS] cleared: the composer drops the context label — null
+
+==== ALL CHECKS PASSED ====
+```
+
+Dart, port 4373, `portalo-cs-b-test` (`/tmp/cs-dart-final.log`):
+
+```
+probe target: http://localhost:4373  (via --port)
+probe target: confirmed disposable project "portalo-cs-b-test" (boundProject)
+
+=== the composer names every pinned screen the canvas marks ===
+  [PASS] 1 pinned: the composer shows a context label — "context"
+  [PASS] 1 pinned: one chip per pin — ["portalo.home"]
+  ...
+  [PASS] cleared: the composer drops the context label — null
+
+==== ALL PASSED ====
+```
+
+(`...` above elides checks 2–29 of 30 — the middle of the one/two-pin loop,
+the unpin-via-chip block, and the views/flows/proto filmstrip loop. The next
+paragraph covers what those elided checks showed, not by reprinting them but
+by the `diff` result described below.)
+
+All 30 checks — one pin, two pins, unpin-via-chip, the views/flows/proto
+filmstrip-gating loop, and the final clear — matched name-for-name and
+detail-string-for-detail-string (`diff` on the two runs' check bodies, target
+and trailer lines stripped, is empty). One real gap turned up along the way
+and was fixed rather than logged as a divergence: the three post-unpin detail
+strings (`chips.length`, `stripPinned`, `tilesPinned` counts) used the
+original's `→` glyph in `.mjs` but a plain ASCII `->` in the first Dart draft
+— an unintended miss, not a decision, so `probe_context_sync.dart` now emits
+`→` to match byte-for-byte.
+
+Two divergences remain, both **deliberate** and both already covered by this
+document's general rules rather than specific to this probe:
+
+- **Guard line.** `.mjs` prints its own ad hoc confirmation string;
+  `probe_context_sync.dart` prints `checkDisposableProject`'s line via the
+  shared harness. Same fact, same enforcement, different sentence — the
+  `composer-draft` section above covers why the port always prints the
+  harness's line.
+- **Suite trailer.** `probe-context-sync.mjs` never used `_probe_base.mjs`'s
+  shared trailer to begin with — it has its own bespoke
+  `` `\n==== ${fails} CHECK(S) FAILED ====` `` / `'\n==== ALL CHECKS
+  PASSED ===='` printed inline (line 132), unlike
+  `composer-draft`/`panel-resize`, which happened to already agree with the
+  harness wording. The Dart port
+  standardizes on `ProbeReport.finish()`'s `==== ALL PASSED ====` /
+  `==== N FAILED ====` for every probe uniformly, per the harness table
+  above — this is the same normalization, just visible here because this
+  particular `.mjs` diverged from its own harness's own convention too.
+
+**Falsifiability**: with `pins`'s first label deliberately swapped to
+`'WRONGLABEL'` in the Dart port, the run reported
+`[FAIL] 1 pinned: the new chip names the screen` and
+`[FAIL] 1 pinned: the placeholder agrees`, exited 1, and printed
+`==== 2 FAILED ====` — reverted immediately after. The checks read live
+server state; they do not pass vacuously. (`readContext`'s pure-parser layer
+has its own fixture-based falsifiability independent of any server —
+`test/probe_context_sync_test.dart`, including a regression fixture for the
+`tileTone` lookahead window matching the wrong tile when two `dv-tile`s sit
+within its 80-character scan.)
+
+### `inspect`, `explode` and `flowwalk` — 2026-08-03
+
+The three island/iframe probes. Run against one disposable studio
+(`--port 4385`, project `portalo-c4-probe`), with the server restarted onto a
+fresh copy of the project between the two suites: the pin in `inspect` section
+7 and the walk position left by `flowwalk` are both server state, and a second
+suite inheriting them produces an asymmetric diff that reads as a port bug.
+
+| probe | `.mjs` | Dart | check labels |
+|---|---|---|---|
+| `inspect` | 21 PASS, 0 FAIL, exit 0 | 21 PASS, 0 FAIL, exit 0 | identical, in order |
+| `explode` | 29 PASS, 0 FAIL, exit 0 | 29 PASS, 0 FAIL, exit 0 | identical, in order |
+| `flowwalk` | 14 PASS, 0 FAIL, exit 0 | 14 PASS, 0 FAIL, exit 0 | identical, in order |
+
+Compared with the verdict prefix and the ` — detail` suffix stripped, so the
+comparison is of what was asserted rather than of numbers that legitimately
+differ between runs (request counters, measured boxes).
+
+`flowwalk` sets `bareVerdicts: true`, so its 14 verdict lines match the
+original byte for byte **including the prefix** — bare `  PASS  `, not
+`  [PASS] `. Verified by diffing the lines with only the ` — detail` suffix
+stripped. It is a harness flag rather than this probe writing to the report's
+sink because `check()` is the only path to the failure count: bare lines
+written directly would print `FAIL` and still exit 0.
+
+One divergence remains, in output rather than in what is asserted:
+
+- **Trailers are the harness's.** `==== ALL PASSED ====` for all three, where
+  the originals print `ALL PASS` (inspect), `==== ALL CHECKS PASSED ====`
+  (explode) and `ALL CHECKS PASSED` (flowwalk). One suite needs one scannable
+  closing line, or `probe all` ends with a different trailer per probe.
+
+Two ports are STRONGER than their originals rather than equal:
+
+- **`inspect` waits for the island's request, not for the DOM to go quiet.**
+  The island POSTs from a `pointermove` handler, and between the pointer
+  arriving and the response swapping the panel the DOM does not change at all —
+  `waitQuiet` samples that gap, sees two identical samples and returns before
+  the request it is meant to be waiting for has been sent. The `.mjs` calls the
+  same `waitQuiet` and gets away with it because Playwright's `hover()` spends
+  longer on actionability checks than the round trip takes, which is a race it
+  happens to win rather than a wait. The port waits on the request counter it
+  already keeps, then settles.
+- **`inspect` declares `mutates: true`** (section 7 pins into chat context), so
+  the disposable-project guard runs from the declaration before Chrome starts,
+  where the original calls `requireDisposableProject` by hand. `explode` and
+  `flowwalk` declare `mutates: false`: every interaction in them is a GET —
+  lens swaps via `htmx.ajax('GET', …)` and viewer-state route reads — and
+  nothing is written into the served project.
+
+`flowwalk` was ported first on purpose. Its "active tile moved to
+portalo.home" check is a free oracle for the in-frame coordinate math — wrong
+coordinates mean no advance, and the check goes red — so the pointer path was
+validated there before `inspect`, which has 21 checks depending on it, was
+allowed to rest on it.
+
+### The isolation the `.mjs` suite had by accident
+
+All three pass standalone. Under `probe all` they did not, and the reason is
+not in any of them: **the runner shares one browser, and the studio keys its
+session off a `kdh_sid` cookie**, so every probe in a run shares one server
+session. Whichever viewer lens is showing, where a flow walk has advanced to,
+whether the inspector is locked and what is pinned into chat context all travel
+with that cookie.
+
+The `.mjs` suite never had to think about this — one `node` process per probe
+meant one browser per probe, hence one cookie jar per probe. The Dart runner is
+a regression in isolation relative to it, and the first casualty was concrete:
+`explode` finishes with the viewer on the flows lens, `flowwalk` runs next, and
+its opening section reads flows-lens toolbars while asserting about the views
+lens. Measured directly — a second tab in the shared context sees 13 "Walk the
+flow" controls where a fresh one sees 0.
+
+`cdp.dart` now has the two verbs that close it, additive and in the same style
+as the frame verbs:
+
+| verb | why |
+|---|---|
+| `createBrowserContext()` → `browserContextId` | `Target.createBrowserContext` — Chrome's incognito-profile equivalent, with its own cookie jar. A fresh cookie jar is a fresh `kdh_sid`, hence a fresh server session |
+| `disposeBrowserContext(id)` | `Target.disposeBrowserContext`, closing every tab in it. Best-effort, so a double dispose at teardown never becomes the error a passing probe reports |
+| `newTab({url, browserContextId})` | additive optional parameter; omitted, behaviour is exactly as before (the shared default context) |
+
+Covered by `test/cdp_browser_context_test.dart`, whose first case asserts that
+two default-context tabs DO share a session — so that if tabs ever isolate on
+their own, the test that proves the plumbing is needed fails first rather than
+the plumbing quietly becoming dead weight.
+
+Wiring it into `ProbeContext.newPage` is the harness's call, not this file's.
 
 ## Recorded ceilings
 

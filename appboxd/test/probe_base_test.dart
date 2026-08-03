@@ -311,6 +311,28 @@ void main() {
           reason: 'bracketed is the house shape; bare is the exception');
     });
 
+    test('a probe context carries the isolated browser context it opens in', () {
+      // Pages open in this context, not the default one. `probe all` was
+      // order-dependent without it: the studio keys its session off kdh_sid,
+      // so a shared cookie jar carried viewer lens and walk position from one
+      // probe into the next.
+      final ctx = ProbeContext(
+        base: 'http://x',
+        browser: null,
+        report: ProbeReport(out: StringBuffer()),
+        browserContextId: 'BC-1',
+      );
+      expect(ctx.browserContextId, 'BC-1');
+      // Browserless probes have no browser and so no context to open in.
+      expect(
+          ProbeContext(
+                  base: 'http://x',
+                  browser: null,
+                  report: ProbeReport(out: StringBuffer()))
+              .browserContextId,
+          isNull);
+    });
+
     test('probes default to needing a browser', () {
       expect(
           const Probe(name: 'x', summary: 's', mutates: false, body: _noop)

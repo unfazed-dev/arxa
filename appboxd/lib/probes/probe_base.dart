@@ -473,10 +473,22 @@ class ProbeContext {
   /// Where checks are recorded.
   final ProbeReport report;
 
+  /// The isolated browser context this probe's pages open in — its own cookie
+  /// jar, and so its own studio session. Null only for a browserless probe.
+  ///
+  /// One per probe, created and disposed by the runner. Not per page: the
+  /// `.mjs` suite ran one `node` process per probe, so pages WITHIN a probe
+  /// shared a browser (composer-draft opens `/design` and `/design/freeze` in
+  /// one), and a page-scoped context would be stricter than the original — it
+  /// would break any probe that deliberately carries state from one of its own
+  /// pages to the next.
+  final String? browserContextId;
+
   ProbeContext({
     required this.base,
     required this.browser,
     required this.report,
+    this.browserContextId,
   });
 
   /// True when this probe has a browser available.
@@ -488,13 +500,24 @@ class ProbeContext {
           ' was launched — set needsBrowser: true in its Probe, or drop the'
           ' browser call'));
 
-  /// Open a fresh target, size it, and install the swap counters.
+  /// Open a fresh target in this probe's context, size it, and install the
+  /// swap counters.
   ///
   /// One target per section, not one per run: state leaks between sections
   /// otherwise (a preserved draft, a pinned panel), and a section that depends
   /// on the section before it cannot be run or read on its own.
+  ///
+  /// The tab opens in [browserContextId] so the probe gets its own cookie jar.
+  /// A fresh target is NOT a fresh session — the studio keys its session off
+  /// `kdh_sid`, so tabs in one context share viewer lens, walk position,
+  /// inspector lock and pinned chat context. Under `probe all` that made a
+  /// probe's result depend on which probe ran before it: with `explode`
+  /// finishing on the flows lens, a second tab saw 13 walk controls where a
+  /// fresh context sees 0, and `flowwalk`'s section A failed while asserting
+  /// about the views lens. The `.mjs` suite never hit this because one `node`
+  /// process per probe meant one browser per probe; this is what restores it.
   Future<CdpSession> newPage({int width = 1600, int height = 1000}) async {
-    final session = await _browser.newTab();
+    final session = await _browser.newTab(browserContextId: browserContextId);
     await session.setViewport(width, height);
     await trackTransitions(session);
     return session;

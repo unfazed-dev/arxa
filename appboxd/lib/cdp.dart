@@ -214,6 +214,11 @@ class CdpClient {
   /// Wait until nothing holds [dir] any more, SIGKILLing by pid whatever still
   /// does.
   ///
+  /// Public because the design worker's launch-failure path needs the same
+  /// guarantee for its own profile dirs (`worker.dart`). Shared rather than
+  /// reimplemented there: a second copy of a kill-and-wait loop is how the two
+  /// drift, and this one already encodes the bounded-wait reasoning below.
+  ///
   /// This replaces the old `pkill -f <dir>` fallback. The rescan is the whole
   /// point: it does not depend on launch-time pid resolution having succeeded,
   /// so it still covers the case the pattern kill existed for — by pid only,
@@ -225,7 +230,7 @@ class CdpClient {
   /// profile. Bounded, because a `close()` that can hang forever would be a
   /// worse bug than the leak — on timeout we delete anyway and leave the
   /// straggler to `sweepOrphans`.
-  static Future<void> _awaitProfileReleased(
+  static Future<void> awaitProfileReleased(
     String dir, {
     Duration timeout = const Duration(seconds: 3),
   }) async {
@@ -403,9 +408,56 @@ class CdpClient {
 
   // ── tab / session management ──────────────────────────────────────
 
+  /// An isolated browser context — Chrome's incognito-profile equivalent, with
+  /// its own cookie jar, storage and cache.
+  ///
+  /// The cookie jar is the point. The studio keys its session off a `kdh_sid`
+  /// cookie, so everything a probe leaves behind that is neither DOM nor disk —
+  /// which viewer lens is showing, where a flow walk has advanced to, whether
+  /// the inspector is locked, what is pinned into chat context — travels with
+  /// that cookie. Tabs opened by [newTab] with no context share the default one
+  /// and therefore share all of it.
+  ///
+  /// The `.mjs` suite got this isolation for free by running each probe in its
+  /// own `node` process, hence its own browser. A Dart runner that shares one
+  /// browser across `probe all` loses it, and the loss is not hypothetical:
+  /// `explode` leaves the viewer on the flows lens, and `flowwalk`'s first
+  /// section then reads flows-lens toolbars while asserting about the views
+  /// lens, reporting a walk control the views lens does not offer.
+  ///
+  /// Pair with [disposeBrowserContext] — contexts outlive the tabs in them.
+  Future<String> createBrowserContext() async {
+    final res = await send('Target.createBrowserContext');
+    return res['result']['browserContextId'] as String;
+  }
+
+  /// Dispose a context created by [createBrowserContext], closing every tab
+  /// still in it.
+  ///
+  /// Best-effort: a context whose tabs are already gone is a normal state at
+  /// teardown, and failing there would turn cleanup into the reported error of
+  /// a probe whose actual work succeeded.
+  Future<void> disposeBrowserContext(String browserContextId) async {
+    try {
+      await send('Target.disposeBrowserContext',
+          {'browserContextId': browserContextId});
+    } on CdpException {
+      // already gone
+    }
+  }
+
   /// Create a new browser tab and return a session attached to it.
-  Future<CdpSession> newTab({String url = 'about:blank'}) async {
-    final res = await send('Target.createTarget', {'url': url});
+  ///
+  /// [browserContextId] puts the tab in an isolated context from
+  /// [createBrowserContext]; omitted, it opens in the shared default context.
+  Future<CdpSession> newTab({
+    String url = 'about:blank',
+    String? browserContextId,
+  }) async {
+    final res = await send('Target.createTarget', {
+      'url': url,
+      'browserContextId': ?browserContextId,
+    });
     final targetId = res['result']['targetId'] as String;
 
     final att = await send('Target.attachToTarget', {
@@ -447,7 +499,7 @@ class CdpClient {
       // Only ours ever carries this dir, so nothing else can be caught here —
       // and close() does not return until it is genuinely unowned, which is
       // both what the delete needs and what makes a leak assertable.
-      await _awaitProfileReleased(_tmpDir!.path);
+      await awaitProfileReleased(_tmpDir!.path);
       try {
         await _tmpDir!.delete(recursive: true);
       } catch (_) {}
@@ -468,6 +520,14 @@ class CdpSession {
   final consoleErrors = <String>[];
   final pageErrors = <String>[];
   bool _enabled = false;
+  bool _domEnabled = false;
+
+  /// frameId → the id of that frame's DEFAULT (page-world) execution context.
+  ///
+  /// Maintained from `Runtime.executionContext*` events rather than asked for
+  /// on demand, because CDP has no "give me this frame's context" command —
+  /// the events are the only place the frame↔context pairing is stated.
+  final _frameContexts = <String, int>{};
 
   CdpSession._(this._client, this.sessionId, this.targetId);
 
@@ -702,6 +762,33 @@ class CdpSession {
     });
   }
 
+  /// Move the pointer onto the first element matching [selector], without
+  /// clicking. Returns false if it never appeared.
+  ///
+  /// The reveal-then-act shape: hover a tile to bring out its tool rail, then
+  /// click a tool that did not exist as a hit target a moment ago. [clickSelector]
+  /// hovers its own target, which is not the same thing — there the pointer
+  /// lands on the element being clicked, and here it lands on that element's
+  /// container.
+  ///
+  /// [selector] should target the container, not the revealed child: aiming
+  /// at the child instead works by accident on a rail that overlaps its
+  /// container and not at all on one that does not.
+  ///
+  /// Deliberately does not wait for whatever the hover reveals: this verb
+  /// cannot know what that is. Follow it with the [clickSelector] or
+  /// [waitForSelector] for the revealed element, which waits on its own.
+  Future<bool> hoverSelector(
+    String selector, {
+    Duration timeout = const Duration(seconds: 8),
+  }) async {
+    if (!await waitForSelector(selector, timeout: timeout)) return false;
+    final centre = await _centreOf(jsonEncode(selector), scroll: true);
+    if (centre == null) return false;
+    await hover(centre.$1, centre.$2);
+    return true;
+  }
+
   /// Click the first element matching [selector], waiting up to [timeout] for
   /// it to appear. Returns false if it never did.
   ///
@@ -764,6 +851,373 @@ class CdpSession {
     return ((box['x'] as num).round(), (box['y'] as num).round());
   }
 
+  // ── frames ───────────────────────────────────────────────────────────────
+  //
+  // Everything above this line addresses the top-level document. The studio
+  // renders every screen inside an `<iframe>`, so without these a probe can
+  // assert on the box around a screen but never on the screen.
+  //
+  // Reading a same-origin child through the parent's `contentDocument` looks
+  // like a way around all of this, and for a plain DOM read it is one. It is
+  // wrong for the two things in-frame checks actually ask:
+  //
+  // - `window.parent.htmx` evaluated in the PARENT resolves against the
+  //   parent's own window, so the bridge check passes whether or not code
+  //   inside the frame can reach it. The assertion becomes vacuous, which is
+  //   the failure mode this whole suite exists to avoid.
+  // - the viewer CSS-`scale`s its tiles. `iframeRect.left + elementRect.left`
+  //   is the obvious arithmetic and it is off by that scale factor, so the
+  //   pointer lands outside the element it was aimed at.
+
+  /// Enable the DOM domain, once per session.
+  ///
+  /// Not folded into [enable]: only the quad lookup below needs it, and every
+  /// session that never touches a frame would otherwise pay for the node
+  /// bookkeeping it turns on.
+  Future<void> _enableDom() async {
+    if (_domEnabled) return;
+    await send('DOM.enable');
+    _domEnabled = true;
+  }
+
+  /// Release a remote object handle, ignoring a failure to.
+  ///
+  /// Best-effort on purpose: the handle is already unreachable if the frame
+  /// navigated out from under it, and turning that into a thrown error would
+  /// fail a probe on cleanup after its actual work succeeded.
+  Future<void> _releaseObject(String objectId) async {
+    try {
+      await send('Runtime.releaseObject', {'objectId': objectId});
+    } on CdpException {
+      // already gone
+    }
+  }
+
+  /// Every frame in this page, root first, each parent before its children.
+  Future<List<CdpFrame>> frames() async {
+    final res = await send('Page.getFrameTree');
+    final out = <CdpFrame>[];
+    void walk(Map<String, dynamic> node) {
+      final f = node['frame'] as Map<String, dynamic>;
+      out.add(CdpFrame(
+        id: '${f['id']}',
+        parentId: f['parentId'] as String?,
+        url: '${f['url'] ?? ''}',
+        name: '${f['name'] ?? ''}',
+      ));
+      for (final child in (node['childFrames'] as List? ?? const [])) {
+        walk((child as Map).cast<String, dynamic>());
+      }
+    }
+
+    walk((res['result']['frameTree'] as Map).cast<String, dynamic>());
+    return out;
+  }
+
+  /// The frame owned by the `<iframe>` matching [selector], or null when no
+  /// such element is on the page or it owns no frame.
+  ///
+  /// Resolved through the element rather than by matching [frames] on URL:
+  /// two tiles routinely show the same screen, and a URL match would return
+  /// whichever of them the frame tree happened to list first.
+  Future<CdpFrame?> frameForSelector(
+    String selector, {
+    Duration timeout = const Duration(seconds: 8),
+  }) async {
+    if (!await waitForSelector(selector, timeout: timeout, visible: false)) {
+      return null;
+    }
+    await _enableDom();
+    final handle = await send('Runtime.evaluate', {
+      'expression': 'document.querySelector(${jsonEncode(selector)})',
+      'returnByValue': false,
+    });
+    final objectId =
+        (handle['result']['result'] as Map?)?['objectId'] as String?;
+    if (objectId == null) return null;
+    String? frameId;
+    try {
+      final described = await send('DOM.describeNode', {'objectId': objectId});
+      frameId = ((described['result']['node'] as Map?)?['frameId']) as String?;
+    } on CdpException {
+      frameId = null;
+    } finally {
+      await _releaseObject(objectId);
+    }
+    if (frameId == null) return null;
+    for (final f in await frames()) {
+      if (f.id == frameId) return f;
+    }
+    return null;
+  }
+
+  /// The execution context [frame] currently runs in.
+  ///
+  /// Polls rather than reading the map once: a frame is announced in the frame
+  /// tree before its context exists, so resolving a frame and immediately
+  /// evaluating in it is a race that a single lookup loses.
+  Future<int> _contextIdFor(CdpFrame frame,
+      {Duration timeout = const Duration(seconds: 5)}) async {
+    final deadline = DateTime.now().add(timeout);
+    while (true) {
+      final id = _frameContexts[frame.id];
+      if (id != null) return id;
+      if (!DateTime.now().isBefore(deadline)) {
+        throw CdpException(
+            'frame ${frame.id} (${frame.url}) has no execution context after'
+            ' ${timeout.inMilliseconds}ms — it never finished loading, or it is'
+            ' cross-origin and runs in a target this session is not attached to',
+            -32000);
+      }
+      await Future.delayed(const Duration(milliseconds: 50));
+    }
+  }
+
+  /// True when [e] is Chrome refusing a context id it has already torn down.
+  static bool _isStaleContext(CdpException e) =>
+      e.message.contains('Cannot find context');
+
+  /// Evaluate [expression] inside [frame]'s own page world.
+  ///
+  /// Retries once on a stale context. The studio arms a tile by re-navigating
+  /// its iframe, so "resolve the frame, then read it" has a real window in
+  /// which the context named by the first step no longer exists by the second.
+  /// One retry closes that window; a second failure is a genuine one and
+  /// propagates.
+  Future<dynamic> evaluateInFrame(
+    CdpFrame frame,
+    String expression, {
+    bool awaitPromise = true,
+  }) async {
+    try {
+      return await _evaluateInFrameOnce(frame, expression, awaitPromise);
+    } on CdpException catch (e) {
+      if (!_isStaleContext(e)) rethrow;
+      _frameContexts.remove(frame.id);
+      return await _evaluateInFrameOnce(frame, expression, awaitPromise);
+    }
+  }
+
+  Future<dynamic> _evaluateInFrameOnce(
+      CdpFrame frame, String expression, bool awaitPromise) async {
+    final res = await send('Runtime.evaluate', {
+      'expression': expression,
+      'returnByValue': true,
+      'awaitPromise': awaitPromise,
+      'contextId': await _contextIdFor(frame),
+    });
+    final result = res['result'] as Map<String, dynamic>;
+    if (result['exceptionDetails'] != null) {
+      final details = result['exceptionDetails'] as Map<String, dynamic>;
+      throw CdpException(
+          'evaluateInFrame threw: ${details['text']} ${details['exception']?['description'] ?? ''}',
+          -32000);
+    }
+    return (result['result'] as Map<String, dynamic>)['value'];
+  }
+
+  /// [waitForFunction], scoped to [frame].
+  Future<bool> waitForFunctionInFrame(
+    CdpFrame frame,
+    String expression, {
+    Duration timeout = const Duration(seconds: 8),
+    Duration polling = const Duration(milliseconds: 100),
+  }) async {
+    final deadline = DateTime.now().add(timeout);
+    while (DateTime.now().isBefore(deadline)) {
+      try {
+        if (await evaluateInFrame(frame, expression) == true) return true;
+      } on CdpException {
+        // The frame is mid-navigation, or the expression touched something not
+        // there yet. Both are ordinary while waiting; keep polling.
+      }
+      await Future.delayed(polling);
+    }
+    return false;
+  }
+
+  /// Top-level viewport centre of [selector] inside [frame], or null if gone.
+  ///
+  /// The quads come from `DOM.getContentQuads`, which reports in the main
+  /// frame's coordinate space with every transform between the element and the
+  /// top document already applied. That is the whole reason this is not
+  /// in-frame `getBoundingClientRect()` plus the iframe's offset: the viewer
+  /// scales its tiles, and the two spaces differ by exactly that scale.
+  /// Centre and size of [sel] inside [frame], in top-level viewport pixels.
+  ///
+  /// [sel] is a JSON-encoded selector, matching [_centreOf]'s contract. The
+  /// size comes back because [hoverSelectorInFrame] needs a second point that
+  /// is provably still inside the same element, and the element's own extent
+  /// is the only thing that can say how far away that may be.
+  Future<({int x, int y, int w, int h})?> _boxOfInFrame(
+    CdpFrame frame,
+    String sel, {
+    required bool scroll,
+  }) async {
+    await _enableDom();
+    final handle = await send('Runtime.evaluate', {
+      'expression': '(() => { const e = document.querySelector($sel);'
+          ' if (!e) return null;'
+          "${scroll ? " e.scrollIntoView({block: 'center', inline: 'center'});" : ''}"
+          ' return e; })()',
+      'returnByValue': false,
+      'contextId': await _contextIdFor(frame),
+    });
+    final objectId =
+        (handle['result']['result'] as Map?)?['objectId'] as String?;
+    if (objectId == null) return null;
+    try {
+      final res = await send('DOM.getContentQuads', {'objectId': objectId});
+      final quads = res['result']['quads'] as List?;
+      if (quads == null || quads.isEmpty) return null;
+      final q = (quads.first as List).cast<num>();
+      // A quad is x1,y1,x2,y2,x3,y3,x4,y4; its centre is the mean of the four
+      // corners, which is right for a rotated box as well as an upright one.
+      var x = 0.0, y = 0.0;
+      var minX = double.infinity, maxX = -double.infinity;
+      var minY = double.infinity, maxY = -double.infinity;
+      for (var i = 0; i < 8; i += 2) {
+        x += q[i];
+        y += q[i + 1];
+        minX = q[i] < minX ? q[i].toDouble() : minX;
+        maxX = q[i] > maxX ? q[i].toDouble() : maxX;
+        minY = q[i + 1] < minY ? q[i + 1].toDouble() : minY;
+        maxY = q[i + 1] > maxY ? q[i + 1].toDouble() : maxY;
+      }
+      return (
+        x: (x / 4).round(),
+        y: (y / 4).round(),
+        w: (maxX - minX).round(),
+        h: (maxY - minY).round(),
+      );
+    } on CdpException {
+      // No layout box: display:none, or detached between the two calls.
+      return null;
+    } finally {
+      await _releaseObject(objectId);
+    }
+  }
+
+  /// Wait for [selector] inside [frame] to have a layout box that has stopped
+  /// moving, and return it.
+  ///
+  /// Existence is not enough, and this is where the top-level verbs' use of
+  /// `waitForSelector(visible: true)` has to be re-earned for frames. Arming a
+  /// tile re-navigates its iframe, and the studio brings the tile back through
+  /// a view transition, so an element can be present and answer with a box
+  /// that is still on its way to where it will end up. A pointer aimed at that
+  /// box lands next to the element rather than on it — no `pointermove` on any
+  /// `[data-el]`, no island reaction, and a probe that reports a broken
+  /// inspector because it measured too early.
+  ///
+  /// Two identical measurements [settleMs] apart is the test. Zero-sized boxes
+  /// never count as settled: an element that is present but not yet laid out
+  /// reports 0×0 consistently, which a bare equality check would accept.
+  Future<({int x, int y, int w, int h})?> _settledBoxInFrame(
+    CdpFrame frame,
+    String selector, {
+    required Duration timeout,
+    required bool scroll,
+    int settleMs = 60,
+  }) async {
+    final sel = jsonEncode(selector);
+    final deadline = DateTime.now().add(timeout);
+    ({int x, int y, int w, int h})? prev;
+    while (DateTime.now().isBefore(deadline)) {
+      ({int x, int y, int w, int h})? now;
+      try {
+        now = await _boxOfInFrame(frame, sel, scroll: scroll);
+      } on CdpException {
+        now = null; // frame mid-navigation; keep waiting
+      }
+      if (now != null && now.w > 0 && now.h > 0 && now == prev) return now;
+      prev = now;
+      await Future.delayed(Duration(milliseconds: settleMs));
+    }
+    return prev != null && prev.w > 0 && prev.h > 0 ? prev : null;
+  }
+
+  /// [hover], on an element inside [frame]. False when it never appeared.
+  Future<bool> hoverSelectorInFrame(
+    CdpFrame frame,
+    String selector, {
+    Duration timeout = const Duration(seconds: 8),
+  }) async {
+    final box = await _settledBoxInFrame(frame, selector,
+        timeout: timeout, scroll: true);
+    if (box == null) return false;
+    // TWO moves, and the offset on the first is load-bearing.
+    //
+    // The first `mouseMoved` that crosses into a child document delivers
+    // pointerover/mouseover to it but NO pointermove: the child's pointer
+    // state is created by that very event, so there is no previous position to
+    // have moved from. An island that tracks hovers the ordinary way — by
+    // listening for `pointermove` — therefore never hears a single-dispatch
+    // hover arrive. Measured against the studio's inspect island on a frame
+    // the pointer had not yet entered: one move in produced 1 pointerover and
+    // 0 pointermove, and the inspector pane never updated.
+    //
+    // Approaching in two steps makes the second dispatch a move WITHIN the
+    // frame, which is what a real pointer does: it arrives along a path rather
+    // than teleporting. The step must be big enough not to be coalesced away —
+    // a 1px approach measured the same 0 pointermove as no approach at all —
+    // and small enough to stay inside the element, or the two points hit
+    // different targets and the hover reports on the wrong one. A quarter of
+    // the element's shorter side is inside it by construction; the 2px floor
+    // keeps the step real for an element too small for that to matter.
+    final step = [(box.w < box.h ? box.w : box.h) ~/ 4, 2]
+        .reduce((a, b) => a > b ? a : b);
+    // Chrome also coalesces moves that land in the same compositor frame, so
+    // the dispatches are spaced: back to back they arrive as the one move this
+    // is here to avoid being. A frame is ~16ms; 40 leaves room on a loaded
+    // machine. Three points rather than two because a single approach was
+    // measured landing both ways on the same machine — with one intermediate
+    // point the arrival is a move from a position the frame already knows,
+    // whichever of them registered first.
+    for (var i = 2; i >= 0; i--) {
+      await hover(box.x - step * i ~/ 2, box.y - step * i ~/ 2);
+      await Future.delayed(const Duration(milliseconds: 40));
+    }
+    return true;
+  }
+
+  /// [clickSelector], on an element inside [frame]. False when it never
+  /// appeared.
+  ///
+  /// Hover-then-click for the same reason the top-level version is: the box is
+  /// re-measured after the hover, because a hover can move what it revealed.
+  /// [synthetic] dispatches the DOM event instead of steering the pointer, for
+  /// a target a real pointer cannot reach in a headless run.
+  Future<bool> clickSelectorInFrame(
+    CdpFrame frame,
+    String selector, {
+    Duration timeout = const Duration(seconds: 8),
+    bool synthetic = false,
+  }) async {
+    if (!await waitForFunctionInFrame(
+        frame, 'document.querySelector(${jsonEncode(selector)}) !== null',
+        timeout: timeout)) {
+      return false;
+    }
+    if (synthetic) {
+      return await evaluateInFrame(
+              frame,
+              '(() => { const e = document.querySelector(${jsonEncode(selector)});'
+              ' if (!e) return false; e.click(); return true; })()') ==
+          true;
+    }
+    if (!await hoverSelectorInFrame(frame, selector, timeout: timeout)) {
+      return false;
+    }
+    // Re-measured after the hover, for the same reason clickSelector does it:
+    // revealing something can move it.
+    final box = await _settledBoxInFrame(frame, selector,
+        timeout: timeout, scroll: false);
+    if (box == null) return false;
+    await click(box.x, box.y);
+    return true;
+  }
+
   /// Press at (from), move to (to) in [steps] increments, release.
   ///
   /// [steps] is not a smoothness knob — it is a correctness one. A drag
@@ -773,6 +1227,26 @@ class CdpSession {
   /// built on a two-point drag reports the divider broken when the divider is
   /// fine. The default is what the studio's resize interactions were tuned
   /// against; raise it for a longer travel, never lower it to 1.
+  ///
+  /// [beforeRelease] runs after the final move and before the release, with
+  /// the button still down. Some state only exists during a drag — a size
+  /// badge that `pointerup` removes, a request attributable to the release
+  /// specifically — and reading it afterwards finds nothing, which is worse
+  /// than failing: an assertion against a vanished element passes vacuously.
+  /// Capture what you need through a closure:
+  ///
+  /// ```dart
+  /// String? badge;
+  /// await session.drag(x1, y1, x2, y2, beforeRelease: () async {
+  ///   badge = await session.evaluate("document.querySelector('.badge')?.textContent");
+  /// });
+  /// ```
+  ///
+  /// The release is in a `finally`: a throw from [beforeRelease], or from any
+  /// move, must not leave the button down. One stuck button would corrupt
+  /// every later interaction in the same browser — and the probe runner shares
+  /// one browser across a whole suite, so that damage would land on some other
+  /// probe and be diagnosed there.
   Future<void> drag(
     int fromX,
     int fromY,
@@ -780,6 +1254,7 @@ class CdpSession {
     int toY, {
     int steps = 14,
     Duration stepDelay = const Duration(milliseconds: 16),
+    Future<void> Function()? beforeRelease,
   }) async {
     if (steps < 1) throw ArgumentError.value(steps, 'steps', 'must be >= 1');
     // Arrive before pressing, same reason as clickSelector: a press at a point
@@ -794,41 +1269,49 @@ class CdpSession {
       'buttons': 1,
       'clickCount': 1,
     });
-    for (var i = 1; i <= steps; i++) {
+    try {
+      for (var i = 1; i <= steps; i++) {
+        await send('Input.dispatchMouseEvent', {
+          'type': 'mouseMoved',
+          'x': fromX + ((toX - fromX) * i / steps).round(),
+          'y': fromY + ((toY - fromY) * i / steps).round(),
+          // `buttons: 1` is what marks these as a drag rather than a hover; a
+          // move without it is dispatched as though the button came back up.
+          'button': 'left',
+          'buttons': 1,
+        });
+        await Future.delayed(stepDelay);
+      }
+      if (beforeRelease != null) await beforeRelease();
+    } finally {
       await send('Input.dispatchMouseEvent', {
-        'type': 'mouseMoved',
-        'x': fromX + ((toX - fromX) * i / steps).round(),
-        'y': fromY + ((toY - fromY) * i / steps).round(),
-        // `buttons: 1` is what marks these as a drag rather than a hover; a
-        // move without it is dispatched as though the button came back up.
+        'type': 'mouseReleased',
+        'x': toX,
+        'y': toY,
         'button': 'left',
-        'buttons': 1,
+        'buttons': 0,
+        'clickCount': 1,
       });
-      await Future.delayed(stepDelay);
     }
-    await send('Input.dispatchMouseEvent', {
-      'type': 'mouseReleased',
-      'x': toX,
-      'y': toY,
-      'button': 'left',
-      'buttons': 0,
-      'clickCount': 1,
-    });
   }
 
   /// Drag the element matching [selector] by ([dx], [dy]) viewport pixels.
   /// Returns false if the element is not there to grab.
+  ///
+  /// [beforeRelease] is forwarded to [drag] — see there for what it is for.
   Future<bool> dragSelector(
     String selector, {
     required int dx,
     required int dy,
     int steps = 14,
     Duration timeout = const Duration(seconds: 8),
+    Future<void> Function()? beforeRelease,
   }) async {
     if (!await waitForSelector(selector, timeout: timeout)) return false;
     final from = await _centreOf(jsonEncode(selector), scroll: true);
     if (from == null) return false;
-    await drag(from.$1, from.$2, from.$1 + dx, from.$2 + dy, steps: steps);
+    await drag(from.$1, from.$2, from.$1 + dx, from.$2 + dy,
+        steps: steps, beforeRelease: beforeRelease);
     return true;
   }
 
@@ -1062,6 +1545,29 @@ class CdpSession {
           }
         }
         break;
+      case 'Runtime.executionContextCreated':
+        final context = event.params['context'] as Map<String, dynamic>?;
+        final aux = context?['auxData'] as Map<String, dynamic>?;
+        // Only the default world is recorded. An isolated world shares the
+        // frame's DOM but not its JavaScript, so page globals an in-frame
+        // check reads — `document._inspect`, `window.parent.htmx` — are simply
+        // absent there. A probe pointed at an isolated world would report a
+        // working island broken, which is worse than not reaching the frame.
+        if (context != null &&
+            aux != null &&
+            aux['isDefault'] == true &&
+            aux['frameId'] is String &&
+            context['id'] is num) {
+          _frameContexts['${aux['frameId']}'] = (context['id'] as num).toInt();
+        }
+        break;
+      case 'Runtime.executionContextDestroyed':
+        final gone = (event.params['executionContextId'] as num?)?.toInt();
+        if (gone != null) _frameContexts.removeWhere((_, id) => id == gone);
+        break;
+      case 'Runtime.executionContextsCleared':
+        _frameContexts.clear();
+        break;
       case 'Runtime.exceptionThrown':
         final details = event.params['exceptionDetails'];
         if (details != null) {
@@ -1083,6 +1589,39 @@ class CdpSession {
   Future<void> _close() async {
     await _events.close();
   }
+}
+
+/// One frame in a page's frame tree.
+///
+/// A handle, not a snapshot of state: [id] is stable across the frame's
+/// navigations, which is what makes it usable to re-resolve an execution
+/// context after the frame reloads. [url] is the URL at the moment [frames]
+/// was called and can be stale by the next line.
+class CdpFrame {
+  /// Chrome's frame id. Stable for the life of the frame.
+  final String id;
+
+  /// The parent frame's id, or null for the main frame.
+  final String? parentId;
+
+  /// The frame's URL when it was enumerated.
+  final String url;
+
+  /// The `name`/`id` attribute of the owning `<iframe>`, or ''.
+  final String name;
+
+  const CdpFrame({
+    required this.id,
+    required this.parentId,
+    required this.url,
+    required this.name,
+  });
+
+  /// True for the page's top-level frame.
+  bool get isMain => parentId == null;
+
+  @override
+  String toString() => 'CdpFrame($id${isMain ? ', main' : ''}, $url)';
 }
 
 /// One screencast frame delivered by Chrome.
