@@ -1,0 +1,91 @@
+<!-- appbox:provenance
+     generator: appbox  licence: free  project: 662368770980
+     Built with appbox (free tier) — https://appbox.dev
+-->
+{# THE PANEL — one frame for all five panels of a shell.
+   Vocabulary is fixed in ui/common/_integration_panels.md; read it before
+   adding a name here. A shell is built from panels, a panel is built from
+   sections.
+
+   Macro-only file, so importing it never emits stray markup.
+
+   HOW A PANEL IS ASSEMBLED. There is deliberately no all-in-one `frame()`
+   macro here. Nunjucks resolves `caller()` to the nearest enclosing
+   `{% call %}`, so a `frame()` that wrapped `{{ caller() }}` could not be
+   invoked from inside another macro's call block without the two callers
+   becoming ambiguous — which is exactly how every panel is written. A single
+   entry point would therefore have been unreachable from the only places that
+   need it, and an unreachable entry point is worse than none: it looks like
+   the contract while nothing verifies it.
+
+   So a panel writes its own element and composes the sections from the parts
+   below. The element is three lines and belongs to the panel anyway (its
+   role class, its id, its width); what must not be re-invented per panel is
+   the SECTION markup and the id derivation, and that is what lives here:
+
+     {% import "ui/common/panel.html" as pn %}
+     {% set PID = 'panel-composer' %}
+     <section class="panel panel-composer" id="{{ PID }}">
+       {{ pn.resize(PID, { edge: 'end' }) }}
+       {{ pn.top(PID, headContent(spec)) }}
+       {{ pn.body(PID) }}{{ caller() }}{{ pn.bodyEnd() }}
+     </section>
+
+   SECTIONS TURN ON BY HAVING CONTENT. `top`/`bottom` render when given
+   content and render nothing when not, so an empty bordered strip cannot be
+   produced by accident. Passing `false` is therefore also how you force a
+   section off when content exists — one truthiness test covers both, which is
+   why there is no separate on/off flag to keep in sync with the content.
+   See ui/common/panel_activity.html and composer_panel.html for the two live
+   assemblies. #}
+
+{# ---------- sections as standalone parts ----------
+   A view switch re-renders one section and refreshes its siblings
+   out-of-band, so every section has to be renderable on its own, with the
+   SAME id the frame would have given it. That is why the id is derived from
+   the panel id in one place instead of being passed in at each call site —
+   an oob swap that targets an id the frame never emitted is a silent no-op,
+   and htmx reports nothing when it happens. #}
+
+{% macro top(pid, content, oob) %}
+{%- if content %}<header class="panel-top" id="{{ pid }}-top" {% if oob %}hx-swap-oob="outerHTML"{% endif %}>{{ content | safe }}</header>{% endif -%}
+{% endmacro %}
+
+{% macro bottom(pid, content, oob) %}
+{%- if content %}<footer class="panel-bottom" id="{{ pid }}-bottom" {% if oob %}hx-swap-oob="outerHTML"{% endif %}>{{ content | safe }}</footer>{% endif -%}
+{% endmacro %}
+
+{# The body is split in two so frame() can wrap caller() without forcing every
+   caller to pre-render its content into a string — the sections above take
+   strings because they are small, but a body can be an entire canvas. #}
+{% macro body(pid, attrs) %}<div class="panel-body" id="{{ pid }}-body" {{ attrs | safe if attrs }}>{% endmacro %}
+{% macro bodyEnd() %}</div>{% endmacro %}
+
+{# Whole-body oob refresh, for callers that re-feed a section from a fragment
+   route rather than through frame(). #}
+{% macro bodyOob(pid, content) %}
+<div class="panel-body" id="{{ pid }}-body" hx-swap-oob="outerHTML">{{ content | safe }}</div>
+{% endmacro %}
+
+{# ---------- the resize rail: the panel's inner EDGE is the handle ----------
+   No icon. A full-height strip pinned to one edge; the cursor turns
+   col-resize on hover and the edge lights up in the accent, so the
+   affordance is the thing you actually grab.
+
+   Three attributes, and the split between them is the point:
+     data-target  — the element to resize, BY ID. drag.js resolves it here, so
+                    this is a server contract.
+     data-edge    — 'start' or 'end'. Which edge you grabbed decides the SIGN
+                    of the drag: dragging an end edge rightwards widens the
+                    panel, dragging a start edge rightwards narrows it. This
+                    is the only attribute that may describe a position, and it
+                    describes a position WITHIN a panel, never the panel's own
+                    place in the shell.
+     data-persist — the server key to POST the new width to. Absent means the
+                    width is client-only and rides the swap; present means
+                    drag.js records it. Never a position word. #}
+{% macro resize(pid, cfg) %}
+<div class="panel-resize" data-target="{{ pid }}" data-edge="{{ cfg.edge }}"
+     {% if cfg.persist %}data-persist="{{ cfg.persist }}"{% endif %}
+     title="{{ t('panel.resize') }}" aria-label="{{ t('panel.resize') }}"></div>
+{% endmacro %}

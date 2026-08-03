@@ -42,9 +42,9 @@ try {
   await p.goto(BASE + '/design', { waitUntil: 'networkidle' }); await s(p);
 
   console.log('=== 1. switch the activity panel to the inspector view ===');
-  await p.click('a.pv-icon[href="/design/inspector"]'); await s(p);
-  check('carousel icon is active', await p.$eval('a.pv-icon[href="/design/inspector"]', (e) => e.classList.contains('is-active')));
-  check('#av-list is rendered', !!(await p.$('#panel-left-body #av-list')));
+  await p.click('a.panel-views-icon[href="/design/inspector"]'); await s(p);
+  check('carousel icon is active', await p.$eval('a.panel-views-icon[href="/design/inspector"]', (e) => e.classList.contains('is-active')));
+  check('#av-list is rendered', !!(await p.$('#panel-activity-body #av-list')));
   // D17 / task #47: screenCardFor falls back to the viewer's active screen
   // (viewerFor's `active`) when inspectorScreenId is unset, so a fresh
   // session shows the screen card the moment the pane opens — nothing has
@@ -91,8 +91,8 @@ try {
     && !!(await p.$('#av-list .msg.is-active')));
 
   console.log('\n=== 6. lock survives a full panel morph (session state, not DOM state — D16) ===');
-  await p.click('a.pv-icon[href="/design/panel/screens"]'); await s(p);
-  await p.click('a.pv-icon[href="/design/inspector"]'); await s(p);
+  await p.click('a.panel-views-icon[href="/design/panel/screens"]'); await s(p);
+  await p.click('a.panel-views-icon[href="/design/inspector"]'); await s(p);
   check('still locked to card:Ceramics after the round trip', await p.$eval('#av-list .msg-text code', (e) => e.textContent.trim()) === 'card:Ceramics'
     && !!(await p.$('#av-list .msg.is-active')));
 
@@ -116,11 +116,11 @@ try {
     && !(await p.$('#av-list .msg.is-active')));
 
   console.log('\n=== 9. hover while the inspector is NOT the active view -> 204, no-op ===');
-  await p.click('a.pv-icon[href="/design/panel/screens"]'); await s(p);
-  const before = await p.$eval('#panel-left-body', (e) => e.innerHTML);
+  await p.click('a.panel-views-icon[href="/design/panel/screens"]'); await s(p);
+  const before = await p.$eval('#panel-activity-body', (e) => e.innerHTML);
   const reqsBefore9 = reqs.length;
   await doc.hover('[data-el="card:Lighting"]'); await s(p);
-  const after = await p.$eval('#panel-left-body', (e) => e.innerHTML);
+  const after = await p.$eval('#panel-activity-body', (e) => e.innerHTML);
   // The island posts on every hover regardless of which pane is open — the
   // 204 guard is server-side (prototype_viewmodel.js: inspectorSelect). If the
   // request never fired, "untouched" would be vacuously true with nothing

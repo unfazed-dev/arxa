@@ -41,7 +41,7 @@ bank (`POST answer` · `POST skip` · `GET edit?q=`).
 ## Layout contract
 
 - `ui/common/composer_panel.html` (`cp.frame`) and
-  `ui/common/panel_views.html` (`pv.frame`) are consumed with
+  `ui/common/panel_activity.html` (`pa.frame`) are consumed with
   **call/caller** — both ship `caller()` bodies. The composer is the shared
   card `ui/common/composer.html` (`cm.field`): a borderless textarea over an
   action bar (+ suggestions, LLM model menu, send). The model options hx-get

@@ -57,7 +57,7 @@ const KNOWN = new Set(['--base', '--port', '-b', '-p']);
 export async function trackTransitions(page) {
   await page.addInitScript(() => {
     // htmx's own "this swap is done" event, counted. A probe that needs to know
-    // a swap landed should ask htmx, not guess from the DOM: "is .design-viewer
+    // a swap landed should ask htmx, not guess from the DOM: "is .panel-viewer
     // present" is true before the click as well as after, so a wait built on it
     // returns instantly and asserts nothing (that mistake is what this counter
     // replaces).

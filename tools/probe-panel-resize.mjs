@@ -1,18 +1,20 @@
-// probe-panel-resize.mjs — the side panels resize from their inner EDGE, and
+// probe-panel-resize.mjs — panels resize from their inner EDGE, and
 // releasing the drag must not disturb anything else on the page.
 //
 // WHY THIS EXISTS: two bugs, both invisible to a server-render probe.
 //
 // 1. DIRECTION. drag.js computed `startW + (clientX - sx)`, which silently
-//    assumes you grabbed a RIGHT edge. Once the activity panel moved to the
-//    right column its rail sits on its LEFT edge, and the panel fought the
-//    pointer — drag right, panel grows, edge runs away from the cursor. The
-//    sign has to come from which edge you grabbed (`data-edge`), never from
-//    `side`, which is an identity key for ids and session state.
+//    assumes you grabbed an END edge. The composer's rail sits on its end
+//    edge, the activity panel's on its start edge — a single fixed sign is
+//    wrong for whichever panel doesn't match it, and the panel fought the
+//    pointer: drag right, panel grows, edge runs away from the cursor. The
+//    sign has to come from which edge you grabbed (`data-edge`, start|end),
+//    never from `data-persist`, which is an opaque server key, not a
+//    position.
 //
 // 2. THE FLASH. On release drag.js POSTed the new width and swapped the whole
 //    panel back in. htmx runs with globalViewTransitions:true, and
-//    `.panel-frame` has no `view-transition-name` of its own — so it was
+//    `.panel-activity` has no `view-transition-name` of its own — so it was
 //    captured in the ROOT snapshot and the browser cross-faded the ENTIRE
 //    page. Letting go of the drag looked like the app reloading itself. The
 //    client already holds the final width; the server only needs to record
@@ -41,15 +43,15 @@ const instrument = (p) => p.evaluate(() => {
   // Tag the live nodes. htmx still EMITS beforeSwap for a swap:'none' request,
   // so counting that event proves nothing — what matters is whether any node
   // was actually replaced. Morph keeps nodes; a re-render does not.
-  document.querySelectorAll('.panel-frame *, .panel-composer *').forEach((n) => { n.__orig = 1; });
+  document.querySelectorAll('.panel-activity *, .panel-composer *').forEach((n) => { n.__orig = 1; });
 });
 const nodesKept = (p) => p.evaluate(() => {
-  const live = [...document.querySelectorAll('.panel-frame *, .panel-composer *')];
+  const live = [...document.querySelectorAll('.panel-activity *, .panel-composer *')];
   return { kept: live.filter((n) => n.__orig).length, total: live.length };
 });
 
 const rail = (p, panel) => p.evaluate((s) => {
-  const e = document.querySelector(s + ' .panel-frame-handle');
+  const e = document.querySelector(s + ' .panel-resize');
   if (!e) return null;
   const r = e.getBoundingClientRect();
   return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
@@ -84,7 +86,7 @@ try {
 
   console.log('\n=== A. the rail is the edge, not an icon ===');
   await p.goto(BASE + '/design', { waitUntil: 'networkidle' });
-  const rails = await p.evaluate(() => [...document.querySelectorAll('.panel-frame-handle')].map((e) => ({
+  const rails = await p.evaluate(() => [...document.querySelectorAll('.panel-resize')].map((e) => ({
     host: e.closest('.panel-composer') ? 'composer' : 'activity',
     cursor: getComputedStyle(e).cursor,
     edge: e.dataset.edge,
@@ -92,7 +94,7 @@ try {
     aria: !!e.getAttribute('aria-label'),
     atInnerEdge: e.closest('.panel-composer')
       ? Math.abs(e.getBoundingClientRect().right - e.closest('.panel-composer').getBoundingClientRect().right) < 2
-      : Math.abs(e.getBoundingClientRect().left - e.closest('.panel-frame').getBoundingClientRect().left) < 2,
+      : Math.abs(e.getBoundingClientRect().left - e.closest('.panel-activity').getBoundingClientRect().left) < 2,
   })));
   check('both panels expose a rail', rails.length === 2, JSON.stringify(rails.map((r) => r.host)));
   check('rails carry no icon', rails.every((r) => r.kids === 0), JSON.stringify(rails.map((r) => r.kids)));
@@ -100,16 +102,16 @@ try {
   check('rails show a col-resize cursor', rails.every((r) => r.cursor === 'col-resize'), '');
   check('each rail sits on its panel INNER edge', rails.every((r) => r.atInnerEdge),
     JSON.stringify(rails.map((r) => `${r.host}:${r.edge}=${r.atInnerEdge}`)));
-  check('composer rail is its right edge, activity rail its left',
-    rails.find((r) => r.host === 'composer')?.edge === 'right' && rails.find((r) => r.host === 'activity')?.edge === 'left',
+  check('composer rail is its end edge, activity rail its start',
+    rails.find((r) => r.host === 'composer')?.edge === 'end' && rails.find((r) => r.host === 'activity')?.edge === 'start',
     JSON.stringify(rails.map((r) => `${r.host}=${r.edge}`)));
 
   console.log('\n=== B. the edge follows the pointer (sign per edge) ===');
   for (const [label, panel, dx, want] of [
-    ['composer right-edge', '.panel-composer', +90, 'wider'],
-    ['composer right-edge', '.panel-composer', -90, 'narrower'],
-    ['activity left-edge', '.panel-frame', +90, 'narrower'],
-    ['activity left-edge', '.panel-frame', -90, 'wider'],
+    ['composer end-edge', '.panel-composer', +90, 'wider'],
+    ['composer end-edge', '.panel-composer', -90, 'narrower'],
+    ['activity start-edge', '.panel-activity', +90, 'narrower'],
+    ['activity start-edge', '.panel-activity', -90, 'wider'],
   ]) {
     const r = await dragRail(p, panel, dx);
     const got = r.after > r.before + 5 ? 'wider' : r.after < r.before - 5 ? 'narrower' : 'unchanged';
@@ -120,9 +122,9 @@ try {
 
   console.log('\n=== C. releasing must not refresh the page ===');
   {
-    const r = await dragRail(p, '.panel-frame', -70);
+    const r = await dragRail(p, '.panel-activity', -70);
     // THE REGRESSION: a swap here cross-fades the whole document, because
-    // .panel-frame has no view-transition-name and lands in the root snapshot.
+    // .panel-activity has no view-transition-name and lands in the root snapshot.
     check('release starts NO view transition', r.vt === 0, `${r.vt} started`);
     check('release replaces no panel node', r.nodes.kept === r.nodes.total,
       `${r.nodes.kept}/${r.nodes.total} original nodes still live`);
@@ -138,10 +140,10 @@ try {
 
   console.log('\n=== D. the width survives a reload ===');
   {
-    await dragRail(p, '.panel-frame', -80);
-    const dragged = await widthOf(p, '.panel-frame');
+    await dragRail(p, '.panel-activity', -80);
+    const dragged = await widthOf(p, '.panel-activity');
     await p.goto(BASE + '/design', { waitUntil: 'networkidle' });
-    const reloaded = await widthOf(p, '.panel-frame');
+    const reloaded = await widthOf(p, '.panel-activity');
     check('activity width persists across a reload', Math.abs(reloaded - dragged) < 3, `${dragged} -> ${reloaded}`);
   }
 } catch (e) {

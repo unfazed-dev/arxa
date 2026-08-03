@@ -22,7 +22,8 @@
   { id: 'workspace', label: t('tab.settings'), icon: 'settings',     href: '/workspace' }
 ] %}
 {% set shellNames = { intake: t('tab.intake'), design: t('tab.design'), build: t('tab.build'), workspace: t('tab.settings') } %}
-<nav class="panel-header">
+<nav class="panel panel-header">
+  <div class="panel-body">
   <details class="shell-drawer shell-chrome-touch">
     <summary class="ico-btn" aria-label="{{ t('nav.open') }}">{{ icon('menu', {size: 20}) }}</summary>
     <div class="drawer-panel" role="menu">
@@ -72,6 +73,7 @@
       <a class="overflow-item" href="/workspace">{{ t('tab.settings') }}</a>
     </div>
   </details>
+  </div>
 </nav>
 
 {# compact: primary nav leaves the header panel and becomes the tabbar #}

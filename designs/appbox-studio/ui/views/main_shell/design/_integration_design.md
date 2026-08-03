@@ -12,7 +12,7 @@ directory touches shared files.
   the facade (`timeline(d, L, t)`).
 - **Panels**: every stage interaction swaps `#panels` **outerHTML** — the
   three content panels are one swap unit: the activity panel
-  (`ui/common/panel_views.html` `pv.frame`, side left), the main panel
+  (`ui/common/panel_activity.html` `pa.frame`, side left), the main panel
   (`#panel-main`, filled per surface), and the permanent composer panel
   (`ui/common/composer_panel.html` `cp.frame`). The retired two-state chat
   (is-centered/is-docked), the close routes and `collapseHref` are gone —
@@ -33,9 +33,9 @@ directory touches shared files.
   flips and animates locally; the route only mirrors it), and the height
   animation is `grid-template-rows: 0fr → 1fr` with a reduced-motion-gated
   transition — visible both ways.
-- **Activity panel**: `pv.frame` (left side). The design registry is
+- **Activity panel**: `pa.frame` (left side). The design registry is
   screens / artifacts / files; view hrefs (`/design/panel/:view`) swap
-  `#panel-left-body` — the id `panel_views.frame` owns. The files view's
+  `#panel-activity-body` — the id `panel_activity.frame` owns. The files view's
   rows open in the main panel (`/design/file?path=`).
 - **Main panel**: `#panel-main`. The artboards (the design viewer, flow or
   proto lens) fill it by default; a file row replaces them with the file in

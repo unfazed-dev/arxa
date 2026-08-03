@@ -746,32 +746,34 @@ the panel's parts refresh out-of-band so nothing ever shows a stale copy.
 
 **Macro:** partial — `_panel-views.html`. `frame(spec)` wraps a caller
 body; part macros `head` / `body` / `bar` carry their own ids
-(`#panel-<side>-head|-body|-bar`) and an `oob` flag:
+(`#panel-activity-top|-body|-bottom`) and an `oob` flag — the macro hardcodes
+the activity ids rather than templating a retired `side` param (canon:
+`designs/appbox-studio/ui/common/_integration_panels.md`):
 
 ```html
-{% call pv.frame({ side: 'left', label: c.activityLabel, views: c.activityViews,
+{% call pv.frame({ label: c.activityLabel, views: c.activityViews,
                    size: c.panelSize, sizeHref: c.panelSizeHref }) %}
   …markup for the active view…
 {% endcall %}
 ```
 
 `spec.views`: `[{ id, icon, label, href, active }]` — one carousel button per
-registered view, `href` targets `#panel-<side>-body`. `spec.size` is `'s'|'m'|
-'l'`; `spec.sizeHref` marks the panel resizable — the head renders a drag
-handle (`panel-frame-handle`) that the vendored drag.js island wires to POST
-the px width (`…/panel/size/<side>`). Requires l10n keys
-`panelViews.aria.<side>`, `panelViews.dragHandle` (only with `sizeHref`).
+registered view, `href` targets `#panel-activity-body`. `spec.size` is `'s'|'m'|
+'l'`; `spec.sizeHref` marks the panel resizable — the top section renders a drag
+handle (`.panel-resize`) that the vendored drag.js island wires to POST
+the px width (`…/panel/size/activity`). Requires l10n keys
+`panel.activity.views`, `panel.resize` (only with `sizeHref`).
 
-**State (facade, per shell, per side):** `activityView` (active view id),
+**State (facade, per shell):** `activityView` (active view id),
 `panelSize` (width step enum — discrete and server-validated, never a dragged
 pixel value), `panelSizePx` (px width from the drag handle), plus whatever
 domain filter the shell owns. All under `sessionData.<shell>`; routes
-`<base>/panel?view=…` and `<base>/panel/size/<side>/<step>` mutate and
+`<base>/panel?view=…` and `<base>/panel/size/activity/<step>` mutate and
 re-render.
 
 **htmx wiring:**
 
-- **view switch** — carousel targets `#panel-<side>-body`; the response is
+- **view switch** — carousel targets `#panel-activity-body`; the response is
   the body content PLUS head and bar rendered with `oob: true`, so the active
   icon and the head label track the server. The `<aside>` itself (user's
   scroll, width class) is never replaced.
@@ -783,8 +785,8 @@ re-render.
   decisions) re-feeds body + head + bar OOB in the same response.
 - **page render** — emits `frame` only; OOB parts are response-only markup.
 
-**CSS:** `.panel-frame` + `.panel-size-s|m|l` width classes (`transition:
-width` on `--panel-w`); `.pv-icon.is-active` takes the accent ring. Below the
+**CSS:** `.panel .panel-activity` + `.panel-size-s|m|l` width classes (`transition:
+width` on `--panel-w`); `.panel-views-icon.is-active` takes the accent ring. Below the
 expanded rung the panel bar picks the single visible content panel (recipe:
 the `?panel=` switcher).
 

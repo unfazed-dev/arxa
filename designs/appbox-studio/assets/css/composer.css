@@ -12,22 +12,28 @@
   width: var(--composer-w);
   min-width: var(--composer-w);
   max-width: calc(var(--composer-w) * 1.6);
-  display: flex; flex-direction: column; gap: .5rem; min-height: 0;
-  padding: .7rem .9rem .9rem;
-  background: var(--bg); border: 1px solid var(--border);
-  border-radius: var(--radius); box-shadow: var(--shadow-2);
+  /* The card chrome, the section grid, overflow and position:relative all
+     come from .panel (panels.css). What survives here is only what is true of
+     THIS panel: its width, and its own view-transition name.
+
+     The name must stay unique per panel and must never move onto .panel — a
+     view-transition-name duplicated across two simultaneously-rendered
+     elements makes the browser abort the entire transition, which would
+     silently disable view transitions app-wide rather than just here. */
   view-transition-name: panel-composer;
-  /* Resize is the .panel-frame-handle rail on the inner (right) edge, same as
-     the activity panel — see panels.css. The native `resize: horizontal` it
-     replaces could only ever draw a corner grip, and the old `direction: rtl`
-     trick existed solely to flip that grip to the left edge back when this
-     panel lived on the right. Both are gone. */
-  position: relative; overflow: hidden;
 }
+/* The body carries this panel's padding, not the panel. A pad on .panel would
+   inset the top section's bottom border away from the card's edges, so the
+   rule would float in space instead of spanning the panel. */
+.panel-composer .panel-body { padding: .7rem .9rem .9rem; gap: .5rem; }
 .panel-composer .chat-thread { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
 
-/* ---------- chat head: eyebrow + context chips ---------- */
-.chat-head { display: flex; align-items: center; gap: .6rem .9rem; flex-wrap: wrap; }
+/* ---------- the top section: eyebrow + context chips ----------
+   Was `.chat-head`, a bare flex row that happened to sit at the top of this
+   panel while the activity panel's equivalent was a bordered <header> with a
+   different class. They are the same box now; only the wrap differs, because
+   pinned chips can run to a second line. */
+.panel-composer .panel-top { flex-wrap: wrap; gap: .6rem .9rem; }
 .chat-ctx { flex: 1 1 auto; }
 
 /* ---------- context chips: one tone per pinned artifact, cycling ---------- */
@@ -46,12 +52,16 @@
 .ctx-chip code { font-size: .76rem; }
 .ctx-chip .ctx-label { font-size: .76rem; color: var(--tx-2); }
 
-.chat-head .ctx-chip {
+/* Scoped to the composer's TOP SECTION, not to the retired `.chat-head`.
+   These carry the per-screen tone, so losing the scope silently drops every
+   pinned chip back to the generic accent — a miss that renders fine and is
+   only wrong if you know what colour it should have been. */
+.panel-composer .panel-top .ctx-chip {
   background: var(--ctx-soft, var(--accent-soft));
   box-shadow: inset 0 0 0 1px var(--ctx, var(--accent));
 }
-.chat-head .ctx-x { color: var(--ctx, var(--accent)); }
-.chat-head .ctx-x:hover { background: var(--ctx, var(--accent)); color: var(--on-accent, #FFFCF0); }
+.panel-composer .panel-top .ctx-x { color: var(--ctx, var(--accent)); }
+.panel-composer .panel-top .ctx-x:hover { background: var(--ctx, var(--accent)); color: var(--on-accent, #FFFCF0); }
 
 .ctx-cyan   { --ctx: #0C87A8; --ctx-soft: rgba(12, 135, 168, .12); }
 .ctx-olive  { --ctx: #66800B; --ctx-soft: rgba(102, 128, 11, .11); }
@@ -91,10 +101,8 @@
    side-by-side layout it exists to arbitrate (panels.css hides the activity
    panel's for the same reason) */
 @media (max-width: 839px) {
-  .panel-composer {
-    width: auto; min-width: 0; max-width: none;
-  }
-  .panel-composer .panel-frame-handle { display: none; }
+  /* width and the rail are both handled once in panels.css for every panel;
+     nothing composer-specific is left to say down here. */
 }
 
 /* ---------- the composer card (ui/common/composer.html) ----------

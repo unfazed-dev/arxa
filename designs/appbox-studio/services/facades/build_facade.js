@@ -47,9 +47,12 @@ export const ACTIVITY_VIEWS = [
 ];
 const ACTIVITY_VIEW_IDS = ACTIVITY_VIEWS.map((v) => v.id);
 
-// Panel width steps, per side — the build shell's own persisted sizing.
+// Panel width steps, per panel — the build shell's own persisted sizing.
 const PANEL_SIZES = ['s', 'm', 'l'];
-const panelSizeFor = (sd, side) => (PANEL_SIZES.includes(B(sd).panelSize?.[side]) ? B(sd).panelSize[side] : 's');
+// Panels whose width is server state. Only the activity panel persists one:
+// the composer's width is client-only and rides morph (see drag.js data-persist).
+const PERSISTABLE_PANELS = ['activity'];
+const panelSizeFor = (sd, panel) => (PANEL_SIZES.includes(B(sd).panelSize?.[panel]) ? B(sd).panelSize[panel] : 's');
 
 // Where each human gate sits on the timeline: it docks after this stage.
 const GATE_AFTER = { 'design.approval': 'design', 'build.acceptance': 'review', 'ship.confirm': 'deploy' };
@@ -470,8 +473,8 @@ const emptyContext = (sessionData = {}, prefs = {}, t = (k) => k) => {
     suggestions: [],
     placeholder: t('composer.placeholder.build'),
     activityView: 'run',
-    panelSize: panelSizeFor(sessionData, 'left'),
-    panelSizeHref: '/build/panel/size/left/',
+    panelSize: panelSizeFor(sessionData, 'activity'),
+    panelSizeHref: '/build/panel/size/activity/',
     activityViews: [],
     artifacts: [],
     commits: [],
@@ -542,8 +545,8 @@ export const loopContext = (sessionData = {}, ref = null, prefs = {}, t = (k) =>
       : [t('build.composer.sugCoverage'), t('build.composer.sugDurations'), t('build.composer.sugLog')],
     placeholder: noteGate ? t('composer.placeholder.buildNote') : t('composer.placeholder.build'),
     activityView,
-    panelSize: panelSizeFor(sessionData, 'left'),
-    panelSizeHref: '/build/panel/size/left/',
+    panelSize: panelSizeFor(sessionData, 'activity'),
+    panelSizeHref: '/build/panel/size/activity/',
     activityViews: ACTIVITY_VIEWS.map((v) => ({ ...v, label: t('activityView.' + v.id), href: `/build/panel?view=${v.id}`, active: v.id === activityView })),
     artifacts: artifactIndex(parts, t),
     commits: repo.commits(L),
@@ -601,10 +604,10 @@ export const setThreadFilter = (sessionData, filter, prefs = {}, t = (k) => k, l
   return loopContext(sessionData, null, prefs, t, locale);
 };
 
-// Panel width grip: cycle persisted per side (the shell's own sizing state).
-export const setPanelSize = (sessionData, side, size, prefs = {}, t = (k) => k, locale = 'en') => {
-  if (['left', 'right'].includes(side) && PANEL_SIZES.includes(size)) {
-    (B(sessionData).panelSize ??= {})[side] = size;
+// Panel width grip: cycle persisted per panel (the shell's own sizing state).
+export const setPanelSize = (sessionData, panel, size, prefs = {}, t = (k) => k, locale = 'en') => {
+  if (PERSISTABLE_PANELS.includes(panel) && PANEL_SIZES.includes(size)) {
+    (B(sessionData).panelSize ??= {})[panel] = size;
   }
   return loopContext(sessionData, null, prefs, t, locale);
 };

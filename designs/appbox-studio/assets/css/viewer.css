@@ -31,36 +31,35 @@
 /* Three stacked panels: the shell's top bar, the canvas, the docked bottom bar.
    A flex column so the canvas takes the slack and both bars keep their natural
    height — and so the two bars are INSIDE the fullscreen target (canvas.js
-   fullscreens .design-viewer), which is why the lens switch and the exit
+   fullscreens .panel-viewer), which is why the lens switch and the exit
    button do not vanish when you go fullscreen. */
-.design-viewer { position: relative; display: flex; flex-direction: column; min-height: 0; }
-.dv-topbar {
-  display: flex; align-items: center; gap: .5rem; flex: none;
-  padding: .5rem .8rem; border-bottom: 1px solid var(--border);
-}
+/* The viewer IS the main panel's card — .panel (panels.css) supplies the
+   section grid, the card chrome and position:relative. Nothing about the
+   stacking is restated here; the sections place themselves. */
+.dv-topbar { padding: .5rem .8rem; }   /* tighter than the default top section */
 .dv-topbar-title {
   font-size: .68rem; text-transform: uppercase; letter-spacing: .06em;
   color: var(--tx-3);
 }
 .dv-topbar-actions { margin-left: auto; display: flex; gap: .35rem; align-items: center; }
 .dv-botbar {
-  flex: none; display: flex; flex-direction: column; align-items: center;
+  display: flex; flex-direction: column; align-items: center;
   /* No side padding: the mini panel is sized at 50% and centred, and side
      padding here would make that 50% of the PADDED box — i.e. visibly
      narrower than half the viewer. The foot line is centred text, so it
-     loses nothing. */
-  padding: .5rem 0; border-top: 1px solid var(--border);
+     loses nothing. This is the one thing a generic bottom section must not
+     inherit, and the reason `dv-botbar` survives as a modifier at all. */
+  padding: .5rem 0;
 }
-/* flex ROW: the canvas, then the screens rail (.dv-vstrip) as a real column
-   on the right. min-height:0 — without it the block-child canvas sized to its
-   content height, overflow:auto never engaged vertically and .dv-flow's
-   overflow:hidden just clipped (dead Y-scroll). */
-.dv-flow { position: relative; flex: 1; min-height: 0; overflow: hidden; display: flex; flex-direction: row; }
+/* The canvas is the panel's BODY section. It used to sit inside a `.dv-flow`
+   wrapper whose only job was to be a flex row holding the canvas and the
+   screens rail side by side; the panel grid places both directly, so the
+   wrapper is gone. */
 .dv-flow-canvas {
   /* min-width:0 lets the rail take its width off the canvas. Without it the
      canvas's min-content floor (a tile + the explode panel) wins and the rail
      is pushed out of the viewer instead. */
-  position: relative; overflow: auto; flex: 1; min-width: 0; min-height: 32rem;
+  position: relative; overflow: auto; min-width: 0; min-height: 32rem;
   /* even padding: the 11rem bottom pad existed ONLY to let the last tile row
      scroll clear of the floating mini panel. The panel is docked in .dv-botbar
      now and consumes real layout height, so the hack is dead. */
@@ -359,7 +358,7 @@
    — the tray's original size, only the axis and the mount changed.
    All rules carry the .dv-flow ancestor: composer.css loads AFTER viewer.css,
    so a bare .dv-vstrip would lose every tie to .cs-strip on source order. */
-.dv-flow .dv-vstrip {
+.panel-viewer .dv-vstrip {
   flex: none; align-self: stretch;
   flex-direction: column; align-items: center;
   overflow-x: hidden; overflow-y: auto;
@@ -376,7 +375,7 @@
   background: var(--bg); border: 1px solid var(--border);
   border-radius: var(--radius);
 }
-.dv-flow .dv-vstrip::-webkit-scrollbar { display: none; }
+.panel-viewer .dv-vstrip::-webkit-scrollbar { display: none; }
 /* long screen ids (portalo.mediamodel3d) overflow the 5.6rem thumb and paint
    over the neighbor — clip them with an ellipsis instead */
 .dv-thumb-label { min-width: 0; }
@@ -436,8 +435,8 @@
 /* ---------- fullscreen: the viewer IS the fullscreen element ----------
    The close affordance exists only while :fullscreen matches — Esc drops the
    pseudo-class and hides it again for free, no JS state to keep honest. The
-   hide needs .design-viewer scope: bare .dv-fs-close ties .ico-btn's
+   hide needs .panel-viewer scope: bare .dv-fs-close ties .ico-btn's
    display:inline-flex (chrome.css) and loses to load order. */
-.design-viewer .dv-fs-close { display: none; position: absolute; top: .8rem; right: .8rem; z-index: 30; }
-.design-viewer:fullscreen { border: none; border-radius: 0; }
-.design-viewer:fullscreen .dv-fs-close { display: inline-grid; }
+.panel-viewer .dv-fs-close { display: none; position: absolute; top: .8rem; right: .8rem; z-index: 30; }
+.panel-viewer:fullscreen { border: none; border-radius: 0; }
+.panel-viewer:fullscreen .dv-fs-close { display: inline-grid; }

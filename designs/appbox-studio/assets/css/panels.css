@@ -1,18 +1,106 @@
-/* panels.css · the multi-view panel frame (ui/common/panel_views.html —
-   pv.frame): the Activity Panel's chrome. Width is SERVER state, not a CSS
-   drag: three steps (s = default min, m ≈ 1.25×, l ≈ 1.5×) rendered as
-   panel-size-* classes from the shell's session (facades keep
-   panelSize[side]) — so the width persists across swaps, navigations and
-   reloads, per shell, per side. A CSS resize handle can't persist without
-   client JS, which the artifact contract forbids. The width transition
-   animates the step change; htmx's global view transitions do the rest. */
+/* panels.css · THE PANEL CONTRACT.
+   Vocabulary is fixed in ui/common/_integration_panels.md — read it before
+   adding a name here. In one line: a shell is built from panels, a panel is
+   built from sections.
+
+   Five panels per shell, each named by ROLE, never by position, so a panel
+   that moves does not get renamed: header, composer, main, activity, footer.
+   Five sections per panel: top, side-start, body, side-end, bottom. Only body
+   is required.
+
+   Width is SERVER state, not a CSS drag: three steps (s = default min,
+   m ≈ 1.25×, l ≈ 1.5×) rendered as panel-size-* classes from the shell's
+   session — so the width persists across swaps, navigations and reloads. A
+   CSS resize handle can't persist without client JS, which the artifact
+   contract forbids. */
+
+/* ---------- the panel: a card, laid out as a 3×3 grid ----------
+   GRID, not nested flex. The sides have to be full height of the body while
+   the top and bottom span the whole panel — as flex that needs a wrapper row
+   around [side-start | body | side-end], i.e. a DOM level that exists purely
+   to hold a layout. As grid the sections place themselves by area and an
+   absent section leaves its track at zero width, so the markup is identical
+   whether or not a side is present. That is what makes "any section can be
+   turned off" true structurally rather than by a stack of :has() rules. */
+.panel {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    "top        top    top"
+    "side-start body   side-end"
+    "bottom     bottom bottom";
+  min-width: 0; min-height: 0;
+  /* Indirected through a custom property so a panel can restate its fill
+     without fighting the cascade: panels.css loads after chrome.css, so a
+     plain `background` here would beat .panel-header's own rule at equal
+     specificity and silently flatten the header's translucent backdrop.
+     Setting a VARIABLE means the two files touch different properties and
+     neither can clobber the other, whatever the link order becomes. */
+  background: var(--panel-bg, var(--bg));
+  border: 1px solid var(--border); border-radius: var(--radius);
+  box-shadow: var(--shadow-2);
+  overflow: hidden;
+  position: relative; /* anchors .panel-resize to the panel's own edge */
+}
+
+.panel-top    { grid-area: top; }
+.panel-body   { grid-area: body; }
+.panel-bottom { grid-area: bottom; }
+.panel-side-start { grid-area: side-start; }
+.panel-side-end   { grid-area: side-end; }
+
+/* top / bottom: full width, natural height, a rule against the body */
+.panel-top {
+  display: flex; gap: .6rem; align-items: center;
+  padding: .7rem .9rem; border-bottom: 1px solid var(--border);
+}
+.panel-bottom { padding: .55rem .7rem; border-top: 1px solid var(--border); }
+
+/* body: the panel's content scrolls HERE, never the page */
+.panel-body {
+  min-width: 0; min-height: 0; overflow-y: auto;
+  display: flex; flex-direction: column;
+}
+
+/* sides: natural width, full height of the body row — they stop short of the
+   top and bottom bars by construction, which is the geometry the screens
+   filmstrip already had before it had a name. */
+.panel-side-start, .panel-side-end {
+  min-height: 0; overflow-y: auto; overflow-x: hidden;
+}
+
+/* Header and footer are full-bleed chrome, not floating cards: they span the
+   viewport edge to edge, so a radius and a drop shadow would be drawing a
+   card that has nowhere to float. They keep the grid and the section names;
+   they drop the card. */
+.panel-header, .panel-footer {
+  border-radius: 0; box-shadow: none; border-width: 0;
+}
+.panel-header { border-bottom-width: 1px; }
+.panel-footer { border-top-width: 1px; }
+/* CLIPPING MUST BE OFF for these two. .panel sets overflow:hidden so a tall
+   panel's sections scroll inside the card instead of spilling past its
+   rounded corners — correct there, fatal here: the header is exactly
+   var(--nav-h) tall and hosts two <details> menus (the drawer and the
+   overflow), which open DOWNWARD out of that 3.4rem box. Inherit the clip and
+   both menus are invisible — and only at ≤839px, where they're the entire
+   navigation, so a desktop render looks perfectly fine while small screens
+   have no way to move between shells. */
+.panel-header, .panel-footer { overflow: visible; }
+/* Both are single-strip panels whose body runs horizontally; .panel-body's
+   column default is for the tall panels. Overflow visible for the same
+   reason as above — the menus are children of this box. */
+.panel-header > .panel-body, .panel-footer > .panel-body {
+  flex-direction: row; align-items: center; overflow: visible;
+}
 
 /* ---------- the three content panels (composer / main / activity) ----------
    One full-bleed row per stage shell, left to right: composer, main, activity.
    That order is DOM order in each shell's `.panels` block, not a CSS `order`
    — visual order and focus order must not disagree. #panels is the htmx swap
    unit for every stage interaction. The activity panel's width comes from
-   .panel-frame, the composer panel's from .panel-composer — the main panel
+   .panel-activity, the composer panel's from .panel-composer — the main panel
    takes the rest. */
 .panels {
   display: flex; gap: 1rem; padding: 1rem;
@@ -62,12 +150,12 @@ video.mp-media { width: 100%; background: #000; }
 @media (max-width: 839px) {
   .panels { flex-direction: column; height: auto; }
   .panel-main .mp-content { overflow: visible; }
-  .panel-frame { width: auto; min-width: 0; }
+  .panel-activity, .panel-composer { width: auto; min-width: 0; max-width: none; }
   /* one panel at a time down here — there is no neighbour to resize against */
-  .panel-frame .panel-frame-handle { display: none; }
+  .panel-resize { display: none; }
   .panels[data-panel="activity"] .panel-main, .panels[data-panel="activity"] .panel-composer { display: none; }
-  .panels[data-panel="main"] .panel-frame, .panels[data-panel="main"] .panel-composer { display: none; }
-  .panels[data-panel="composer"] .panel-frame, .panels[data-panel="composer"] .panel-main { display: none; }
+  .panels[data-panel="main"] .panel-activity, .panels[data-panel="main"] .panel-composer { display: none; }
+  .panels[data-panel="composer"] .panel-activity, .panels[data-panel="composer"] .panel-main { display: none; }
 }
 
 /* ---------- the panel bar (compact/medium segmented switcher) ---------- */
@@ -86,51 +174,37 @@ video.mp-media { width: 100%; background: #000; }
   .panel-bar-item.is-active { background: var(--bg); color: var(--tx); box-shadow: var(--shadow-1); }
 }
 
-.panel-frame {
+.panel-activity {
   --panel-w: 340px;                       /* s: default = minimum width */
   width: var(--panel-w);
   min-width: var(--panel-w);
-  display: flex; flex-direction: column; min-height: 0;
-  background: var(--bg-2);
-  border: 1px solid var(--border); border-radius: var(--radius);
-  box-shadow: var(--shadow-1);
-  overflow: hidden;
-  position: relative; /* anchors .panel-frame-handle to the inner edge */
   transition: width .18s ease;
 }
 .panel-size-m { --panel-w: 425px; }       /* ≈1.25× */
 .panel-size-l { --panel-w: 510px; }       /* ≈1.5× — the old drag ceiling */
 
-/* head: active view label left, resize handle right */
-.panel-frame-head {
-  display: flex; gap: .6rem; align-items: center; justify-content: space-between;
-  padding: .7rem .9rem; border-bottom: 1px solid var(--border); flex: none;
-}
-.panel-frame-label { font-weight: 500; font-size: .92rem; min-width: 0; }
+/* The active view's label. Lives in the panel's top section; the resize
+   affordance is the panel's own edge, not something the top section hosts. */
+.panel-label { font-weight: 500; font-size: .92rem; min-width: 0; }
+.panel-top { justify-content: space-between; }
 
-/* body: the caller's active-view content scrolls here, never the page */
-.panel-frame-body {
-  flex: 1; min-height: 0; overflow-y: auto;
-  display: flex; flex-direction: column;
-}
-
-/* views bar: the icon carousel — one button per registered view, scrolls
-   sideways when crowded, its scrollbar never shows */
-.panel-frame-bar {
-  display: flex; gap: .35rem; align-items: center; flex: none;
-  padding: .55rem .7rem; border-top: 1px solid var(--border);
+/* the views carousel — one button per registered view, in the activity
+   panel's bottom section. Scrolls sideways when crowded; its own scrollbar
+   never shows. */
+.panel-views {
+  display: flex; gap: .35rem; align-items: center;
   overflow-x: auto; scrollbar-width: none;
 }
-.panel-frame-bar::-webkit-scrollbar { display: none; }
-.pv-icon {
+.panel-views::-webkit-scrollbar { display: none; }
+.panel-views-icon {
   flex: none; width: 2rem; height: 2rem; border-radius: 50%;
   display: inline-grid; place-items: center;
   background: transparent; color: var(--tx-2);
   box-shadow: inset 0 0 0 1px var(--border);
   font-size: .85rem; line-height: 1; text-decoration: none;
 }
-.pv-icon:hover { color: var(--tx); box-shadow: inset 0 0 0 1px var(--tx-3); }
-.pv-icon.is-active {
+.panel-views-icon:hover { color: var(--tx); box-shadow: inset 0 0 0 1px var(--tx-3); }
+.panel-views-icon.is-active {
   color: var(--accent); background: var(--accent-soft);
   box-shadow: inset 0 0 0 1.5px var(--accent);
 }
@@ -139,14 +213,22 @@ video.mp-media { width: 100%; background: #000; }
    the .panels[data-panel=…] rules above) — the activity panel is reachable
    on every rung */
 
-/* ---------- panel resize rail: the inner EDGE is the handle ----------
-   No icon. A full-height strip pinned to the panel's inner edge: the cursor
+/* ---------- panel resize rail: the panel's own EDGE is the handle ----------
+   No icon. A full-height strip pinned to one edge of the panel: the cursor
    turns col-resize on hover and the edge itself lights up in the accent, so
-   the affordance is the thing you actually grab. Hosted by both side panels —
-   .panel-frame (right column, rail on its LEFT edge) and .panel-composer
-   (left column, rail on its RIGHT edge); `data-edge` tells drag.js which sign
-   the drag carries. Both panels must be position:relative for this. */
-.panel-frame-handle {
+   the affordance is the thing you actually grab.
+
+   Keyed on [data-edge], NOT on which panel hosts it. That is the whole point
+   of the attribute: the previous rules named `.panel-frame` and
+   `.panel-composer` explicitly, so swapping the two panels' columns silently
+   left both rails on the wrong edges and the drag sign inverted. An edge is a
+   property of the rail, so the rail is what carries it — a panel can move
+   columns now without a single CSS change.
+
+   `start`/`end` are the panel's own edges, resolved through logical
+   properties, so this survives an RTL locale for free. The host panel must be
+   position:relative; `.panel` sets that for every panel. */
+.panel-resize {
   position: absolute; top: 0; bottom: 0; width: 7px; z-index: 6;
   cursor: col-resize;
   /* The lit edge is an inset shadow, not a background: it paints a crisp 2px
@@ -154,17 +236,18 @@ video.mp-media { width: 100%; background: #000; }
      stays wide so the pointer target is comfortable. */
   transition: box-shadow .12s ease;
 }
-.panel-frame .panel-frame-handle { left: 0; }
-.panel-composer .panel-frame-handle { right: 0; }
-.panel-frame .panel-frame-handle:hover { box-shadow: inset 2px 0 0 var(--accent); }
-.panel-composer .panel-frame-handle:hover { box-shadow: inset -2px 0 0 var(--accent); }
+.panel-resize[data-edge="start"] { inset-inline-start: 0; }
+.panel-resize[data-edge="end"]   { inset-inline-end: 0; }
+.panel-resize[data-edge="start"]:hover { box-shadow: inset 2px 0 0 var(--accent); }
+.panel-resize[data-edge="end"]:hover   { box-shadow: inset -2px 0 0 var(--accent); }
+
 /* live width readout while dragging (drag.js appends it) — floated off the
    rail so a 7px strip doesn't have to contain it */
-.panel-frame-width {
+.panel-resize-width {
   position: absolute; top: 50%; translate: 0 -50%;
   padding: .1rem .3rem; border-radius: var(--radius);
   background: var(--accent); color: var(--on-accent, #FFFCF0);
   font-size: .64rem; white-space: nowrap;
 }
-.panel-frame .panel-frame-width { left: .6rem; }
-.panel-composer .panel-frame-width { right: .6rem; }
+.panel-resize[data-edge="start"] .panel-resize-width { inset-inline-start: .6rem; }
+.panel-resize[data-edge="end"]   .panel-resize-width { inset-inline-end: .6rem; }

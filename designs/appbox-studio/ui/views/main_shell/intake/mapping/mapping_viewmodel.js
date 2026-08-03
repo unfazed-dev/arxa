@@ -31,7 +31,7 @@ export const panel = (c, h) =>
 
 // Panel width grip: s/m/l persisted per side for the whole intake shell.
 export const panelSize = (c, h) =>
-  h.render(c, `${VIEW}#activityFrameSwap`, facade.setPanelSize(h.session(c).data, S, c.req.param('side'), c.req.param('size'), h.prefs(c), h.t(c), h.locale(c)));
+  h.render(c, `${VIEW}#activityFrameSwap`, facade.setPanelSize(h.session(c).data, S, c.req.param('panel'), c.req.param('size'), h.prefs(c), h.t(c), h.locale(c)));
 
 // The composer: append the user's message and a simulated agent reply.
 export const sendMessage = async (c, h) => {

@@ -8,7 +8,7 @@
 {% import "ui/common/design_viewer.html" as dv %}
 {% import "ui/common/composer_panel.html" as cp %}
 {% import "ui/common/main_panel.html" as mp %}
-{% import "ui/common/panel_views.html" as pv %}
+{% import "ui/common/panel_activity.html" as pa %}
 {% import "ui/common/composer.html" as cm %}
 {% block title %}{{ t('build.pageTitle') }}{% endblock %}
 {% block main_class %}shell-main-loop{% endblock %}
@@ -131,7 +131,7 @@
     </span>
   </header>
   <form class="run-controls" method="post" action="/build/run/control"
-        hx-post="/build/run/control" hx-target="#panel-left-body" hx-swap="innerHTML">
+        hx-post="/build/run/control" hx-target="#panel-activity-body" hx-swap="innerHTML">
     {% if c.run.pausedByYou %}
     <button type="submit" name="action" value="resume" class="btn-approve">{{ icon('play', {size: 14}) }} {{ t('build.resumeRun') }}</button>
     {% else %}
@@ -177,7 +177,7 @@
     {% for o in [{id: 'all', label: t('build.filter.all')}, {id: 'stage', label: t('build.filter.stage')}, {id: 'gate', label: t('build.filter.gate')}, {id: 'findings', label: t('build.filter.findings')}, {id: 'evidence', label: t('build.filter.evidence')}, {id: 'note', label: t('build.filter.note')}] %}
     <a class="filter-item {{ 'is-active' if c.filter == o.id }}"
        href="/build/panel?type={{ o.id }}"
-       hx-get="/build/panel?type={{ o.id }}" hx-target="#panel-left-body" hx-swap="innerHTML" hx-push-url="false">{{ o.label }}</a>
+       hx-get="/build/panel?type={{ o.id }}" hx-target="#panel-activity-body" hx-swap="innerHTML" hx-push-url="false">{{ o.label }}</a>
     {% endfor %}
   </nav>
 </div>
@@ -249,12 +249,12 @@
    macros with their own ids, refreshed out-of-band on every panel-affecting
    act — the <aside> itself (and the user's resized width) is never replaced. #}
 {% macro activityChrome(c) %}
-{{ pv.head({ side: 'left', label: t('activityView.' + c.activityView), views: c.activityViews, size: c.panelSize, sizeHref: c.panelSizeHref }, true) }}
-{{ pv.bar({ side: 'left', label: t('activityView.' + c.activityView), views: c.activityViews, size: c.panelSize, sizeHref: c.panelSizeHref }, true) }}
+{{ pa.top({ label: t('activityView.' + c.activityView), views: c.activityViews, size: c.panelSize, sizeHref: c.panelSizeHref }, true) }}
+{{ pa.bottom({ label: t('activityView.' + c.activityView), views: c.activityViews, size: c.panelSize, sizeHref: c.panelSizeHref }, true) }}
 {% endmacro %}
 
 {# Targeted response for acts initiated inside the panel (view switch,
-   thread filter, run control — all target #panel-left-body): new body
+   thread filter, run control — all target #panel-activity-body): new body
    content plus head + bar out-of-band. #}
 {% macro activityTarget(c) %}
 {{ activityBody(c) }}
@@ -262,7 +262,7 @@
 {% endmacro %}
 
 {% macro activityPanel(c) %}
-{% call pv.frame({ side: 'left', label: t('activityView.' + c.activityView), views: c.activityViews, size: c.panelSize, sizeHref: c.panelSizeHref }) %}
+{% call pa.frame({ label: t('activityView.' + c.activityView), views: c.activityViews, size: c.panelSize, sizeHref: c.panelSizeHref }) %}
 {{ activityBody(c) }}
 {% endcall %}
 {% endmacro %}
@@ -441,7 +441,7 @@
 {# ---------- Fragment responses ----------
    The panels block (#panels) is the swap unit for everything that touches
    the chat or the artifact. Actions initiated inside the activity panel
-   target #panel-left-body and refresh the panels OOB where they change the
+   target #panel-activity-body and refresh the panels OOB where they change the
    stage (filter, run control). Decisions and stage controls also refresh
    the footer-panel timeline. #}
 {% macro panelsSwap(c) %}

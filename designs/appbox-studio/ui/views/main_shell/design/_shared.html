@@ -8,7 +8,7 @@
    checkpoints. Macro-only file — importing it from a fragment render never
    emits stray markup.
    Assumes ui/common/composer_panel.html's cp.frame({ eyebrow, docked,
-   collapseHref, bottom }) via call/caller (nunjucks — panel_views.html
+   collapseHref, bottom }) via call/caller (nunjucks — panel_activity.html
    already relies on caller). The screens filmstrip is NOT here: it is the
    viewer's right-hand column (ui/common/design_viewer.html, .dv-vstrip) and
    only in the views lens. The composer
@@ -16,7 +16,7 @@
    surfaces with no viewer (freeze). #}
 {% import "ui/common/primitives.html" as prim %}
 {% import "ui/common/facts_bar.html" as fb %}
-{% import "ui/common/panel_views.html" as pv %}
+{% import "ui/common/panel_activity.html" as pa %}
 {% import "ui/common/composer_panel.html" as cp %}
 {% import "ui/common/composer.html" as cm %}
 {% import "ui/common/main_panel.html" as mp %}
@@ -146,7 +146,7 @@
 {% endmacro %}
 
 {# The active view's body — /design/panel/:view hx-swaps this into
-   #panel-left-body (the id panel_views.frame owns). #}
+   #panel-activity-body (the id panel_activity.frame owns). #}
 {% macro activityBody(c) %}
 {% if c.activityView == 'artifacts' %}
 <div class="av-list" id="av-list">
@@ -187,18 +187,18 @@
 {% endmacro %}
 
 {% macro activityPanel(c) %}
-{% call pv.frame({ side: 'left', label: c.activityLabel, views: c.activityViews, size: c.panelSize, sizeHref: c.panelSizeHref, panelSizePx: c.panelSizePx }) %}
+{% call pa.frame({ label: c.activityLabel, views: c.activityViews, size: c.panelSize, sizeHref: c.panelSizeHref, panelSizePx: c.panelSizePx }) %}
   {{ activityBody(c) }}
 {% endcall %}
 {% endmacro %}
 
-{# Targeted view-switch response (/design/panel/:view → #panel-left-body): the
+{# Targeted view-switch response (/design/panel/:view → #panel-activity-body): the
    new body plus head + bar out-of-band, so the label and the active accent
    icon track the server's panel state. #}
 {% macro activitySwap(c) %}
 {{ activityBody(c) }}
-{{ pv.head({ side: 'left', label: c.activityLabel, views: c.activityViews, size: c.panelSize, sizeHref: c.panelSizeHref }, true) }}
-{{ pv.bar({ side: 'left', label: c.activityLabel, views: c.activityViews, size: c.panelSize, sizeHref: c.panelSizeHref }, true) }}
+{{ pa.top({ label: c.activityLabel, views: c.activityViews, size: c.panelSize, sizeHref: c.panelSizeHref }, true) }}
+{{ pa.bottom({ label: c.activityLabel, views: c.activityViews, size: c.panelSize, sizeHref: c.panelSizeHref }, true) }}
 {% endmacro %}
 
 

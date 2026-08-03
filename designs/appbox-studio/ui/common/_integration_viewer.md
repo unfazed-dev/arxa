@@ -48,7 +48,7 @@ Files:
   `flows` / `proto`, the canvas undo/redo pair, the viewer fullscreen button
   — `data-action="viewer-fullscreen"`, implemented client-side by
   `runtime/vendor/canvas.js` as requestFullscreen on the enclosing
-  `.design-viewer`; a `data-action="viewer-fullscreen-exit"` close button in
+  `#design-viewer`; a `data-action="viewer-fullscreen-exit"` close button in
   `design_viewer.html` shows only under `:fullscreen`) and the bar-right
   cluster (device rung icons in both modes — divider — bg swatches in every
   mode) share that single flex line; cramped, it scrolls sideways rather than
@@ -171,10 +171,10 @@ Files:
 
 ## The second arg: `designViewer(v, chrome)` — the two shell panels
 
-The viewer renders three stacked panels inside `.design-viewer`: `.dv-topbar`,
+The viewer IS one panel (the main panel's card); it renders three stacked SECTIONS inside `#design-viewer`: `.dv-topbar`,
 the canvas, and `.dv-botbar` (which hosts the mini panel, docked — it used to
 float, which is why `.dv-flow-canvas` carried `padding-bottom: 11rem` purely as
-clearance; both are gone). All three are INSIDE `.design-viewer` because
+clearance; both are gone). All three are INSIDE `#design-viewer` because
 `canvas.js` fullscreens that element — anything outside it disappears on
 fullscreen, including the exit button, which would strand the user.
 

@@ -6,9 +6,9 @@
 // `{% if chrome %}`. Every control that swaps #design-viewer — the lens chips
 // (.dv-chip), the device rungs (.mini-panel-tab) and the bg swatches
 // (.mini-swatch) — therefore went through the ONE render path with no chrome
-// and deleted the top panel, permanently, until a full page reload. .dv-botbar
-// is unguarded so the bar itself stayed, but its foot line (.dv-botbar-foot)
-// is chrome and went with the header.
+// and deleted the top section, permanently, until a full page reload. The
+// bottom section is unguarded so the bar itself stayed, which is what made the
+// loss easy to miss: the viewer still looked furnished.
 //
 // Why probe-explode.mjs section D never saw it: section D opens with
 // `await p.goto(BASE + '/design')` — a FRESH full-page navigation — and only
@@ -36,16 +36,15 @@ await requireDisposableProject(BASE);
 let b, fails = 0;
 const check = (n, ok, x = '') => { if (!ok) fails++; console.log(`  [${ok ? 'PASS' : 'FAIL'}] ${n}${x ? ' — ' + x : ''}`); };
 
-// The panel census, read from inside .design-viewer (the fullscreen target).
+// The panel census, read from inside .panel-viewer (the fullscreen target).
 const census = (p) => p.evaluate(() => {
-  const v = document.querySelector('.design-viewer');
+  const v = document.querySelector('.panel-viewer');
   if (!v) return null;
   const inside = (s) => !!v.querySelector(s);
   return {
     topbar: inside('.dv-topbar'),
     title: inside('.dv-topbar-title'),
     botbar: inside('.dv-botbar'),
-    foot: inside('.dv-botbar-foot'),
     miniDocked: inside('.dv-botbar .mini-panel'),
     acts: [...v.querySelectorAll('.dv-shell-act')].map((a) => ({
       tag: a.tagName, disabled: a.disabled === true, label: a.getAttribute('aria-label'),
@@ -62,7 +61,7 @@ const census = (p) => p.evaluate(() => {
 // order is mobile/tablet/desktop, lens order views/flows/proto.
 // A swap re-renders #panelsSwap, and every caller below reads the panels right
 // afterwards. The old fixed 1200ms guessed how long that takes; the DOM offers
-// no honest post-condition (the stage and .design-viewer are present both
+// no honest post-condition (the stage and .panel-viewer are present both
 // before and after, so any check on them is satisfied instantly and waits for
 // nothing). htmx's own afterSettle counter is the unambiguous signal, and
 // waitFor then drains the view transition the swap runs inside.
@@ -92,7 +91,7 @@ try {
   p.on('pageerror', (e) => pageErrors.push(e.message));
   await p.goto(BASE + '/design', { waitUntil: 'networkidle' });
   await waitFor(p, () => {
-    const v = document.querySelector('.design-viewer');
+    const v = document.querySelector('.panel-viewer');
     return !!v && !!v.querySelector('.dv-shell-act');
   }, { label: 'the viewer shell + its chrome actions', timeout: 15000 });
 
@@ -101,7 +100,12 @@ try {
     check(`${label}: top panel present`, !!s && s.topbar);
     check(`${label}: title present`, !!s && s.title);
     check(`${label}: bottom panel present`, !!s && s.botbar);
-    check(`${label}: foot line present`, !!s && s.foot);
+    // The foot line (.dv-botbar-foot) that used to be asserted here is GONE by
+    // request — removed from design_viewer.html in 5bb8850 along with the chat
+    // context note. It was a genuine chrome-loss signal when it existed; the
+    // top panel checks above now carry that job alone. Deleting the assertion
+    // rather than relaxing it: an element that no longer exists cannot regress,
+    // and a check that can only fail is noise that trains you to ignore reds.
     check(`${label}: mini panel docked in the bottom panel`, !!s && s.miniDocked);
     check(`${label}: zero is-danger nodes`, !!s && s.danger === 0, s ? String(s.danger) : 'no viewer');
   };
@@ -171,7 +175,7 @@ try {
     // A probe must report what it found, not stop at the first surprise.
     await waitFor(
       p,
-      () => document.querySelector('.design-viewer .dv-shell-act[hx-post="/design/undo/canvas"]')?.disabled === false,
+      () => document.querySelector('.panel-viewer .dv-shell-act[hx-post="/design/undo/canvas"]')?.disabled === false,
       { label: 'undo to become enabled after a flow move', timeout: 5000 },
     );
     const armed = await census(p);
@@ -186,7 +190,7 @@ try {
     // next reader sees a product defect or a broken probe.
     await waitFor(
       p,
-      () => document.querySelector('.design-viewer .dv-shell-act[hx-post="/design/redo/canvas"]')?.disabled === false,
+      () => document.querySelector('.panel-viewer .dv-shell-act[hx-post="/design/redo/canvas"]')?.disabled === false,
       { label: 'redo to re-enable after undo', timeout: 5000 },
     );
     const stepped = await census(p);

@@ -31,7 +31,7 @@ export const panelView = (c, h) =>
 
 // Panel width grip: s/m/l persisted per side, whole-panel re-render.
 export const panelSize = (c, h) =>
-  h.render(c, `${VIEW}#activityFrameSwap`, facade.setPanelSize(h.session(c).data, c.req.param('side'), c.req.param('size'), h.prefs(c), h.t(c), h.locale(c)));
+  h.render(c, `${VIEW}#activityFrameSwap`, facade.setPanelSize(h.session(c).data, c.req.param('panel'), c.req.param('size'), h.prefs(c), h.t(c), h.locale(c)));
 
 // The shared design viewer: controller acts swap just the viewer block.
 export const viewer = (c, h) =>
@@ -62,7 +62,7 @@ export const flowRemove = async (c, h) =>
 // Panel drag handle: px width persisted per side, re-render the panel frame.
 export const panelSizePx = async (c, h) => {
   const form = await h.form(c);
-  return h.render(c, `${VIEW}#activityFrameSwap`, facade.setPanelSizePx(h.session(c).data, c.req.param('side'), Number(form.width), h.prefs(c), h.t(c), h.locale(c)));
+  return h.render(c, `${VIEW}#activityFrameSwap`, facade.setPanelSizePx(h.session(c).data, c.req.param('panel'), Number(form.width), h.prefs(c), h.t(c), h.locale(c)));
 };
 
 // Canvas/chat undo+redo: stepping a stack re-renders the whole stage (chat +

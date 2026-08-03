@@ -581,10 +581,13 @@ const ACTIVITY_VIEWS = [
   { id: 'files', icon: 'folder', label: 'Files' },
 ];
 
-// Panel width steps, per side — one sizing state for the whole intake shell
+// Panel width steps, per panel — one sizing state for the whole intake shell
 // (unlike activityView, which is per surface).
 const PANEL_SIZES = ['s', 'm', 'l'];
-const panelSizeFor = (sd, side) => (PANEL_SIZES.includes(S(sd).panelSize?.[side]) ? S(sd).panelSize[side] : 's');
+// Panels whose width is server state. Only the activity panel persists one:
+// the composer's width is client-only and rides morph (see drag.js data-persist).
+const PERSISTABLE_PANELS = ['activity'];
+const panelSizeFor = (sd, panel) => (PANEL_SIZES.includes(S(sd).panelSize?.[panel]) ? S(sd).panelSize[panel] : 's');
 
 function activityViewFor(sd, surface, base, lv, t, L) {
   const views = ARTIFACT_SURFACES.includes(surface) ? ACTIVITY_VIEWS : ACTIVITY_VIEWS.filter((v) => v.id !== 'artifacts');
@@ -725,8 +728,8 @@ export const context = (sd, surface, ref, prefs = {}, t = (k) => k, locale = 'en
     activityViews: activity.views,
     activityView: activity.active,
     activityLabel: activity.label,
-    panelSize: panelSizeFor(sd, 'left'),
-    panelSizeHref: `${base}/panel/size/left/`,
+    panelSize: panelSizeFor(sd, 'activity'),
+    panelSizeHref: `${base}/panel/size/activity/`,
     activityBody: activity.body,
     timeline: timelineFor(sd, surface, t, L),
     approval: approvalFor(sd, L),
@@ -764,10 +767,10 @@ export const setActivityView = (sd, surface, view, prefs = {}, t = (k) => k, loc
   return context(sd, surface, null, prefs, t, locale);
 };
 
-// Panel width grip: one persisted size per side for the whole intake shell.
-export const setPanelSize = (sd, surface, side, size, prefs = {}, t = (k) => k, locale = 'en') => {
-  if (['left', 'right'].includes(side) && PANEL_SIZES.includes(size)) {
-    (S(sd).panelSize ??= {})[side] = size;
+// Panel width grip: one persisted size per panel for the whole intake shell.
+export const setPanelSize = (sd, surface, panel, size, prefs = {}, t = (k) => k, locale = 'en') => {
+  if (PERSISTABLE_PANELS.includes(panel) && PANEL_SIZES.includes(size)) {
+    (S(sd).panelSize ??= {})[panel] = size;
   }
   return context(sd, surface, null, prefs, t, locale);
 };

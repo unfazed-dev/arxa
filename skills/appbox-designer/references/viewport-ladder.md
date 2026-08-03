@@ -82,7 +82,7 @@ the resolved ladder at session start.
 |---|---|---|---|
 | header panel | always — title + **drawer action** + **dropdown menu** | same as compact | always — full action row |
 | primary nav | **tabbar** | **railbar**, collapsible/expandable | **activity panel + composer panel**, the composer permanent |
-| footer panel | — | — | the read-only stage timeline |
+| footer panel | — | — | body: the read-only stage timeline |
 | FAB | **staggered action menu**, animated fan-out | same as compact | — |
 
 - The compact/medium drawer carries whatever the expanded activity panel

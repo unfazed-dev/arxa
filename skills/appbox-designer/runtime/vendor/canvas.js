@@ -105,7 +105,7 @@
   // viewer fullscreen (mini panel [data-action="viewer-fullscreen"] and the
   // fullscreen-only close button [data-action="viewer-fullscreen-exit"]) —
   // requested from buttons INSIDE the viewer, so a delegated click finds the
-  // enclosing .design-viewer. Both actions toggle: exit when anything is
+  // enclosing .panel-viewer (the main panel's card). Both actions toggle: exit when anything is
   // fullscreen, enter otherwise. The buttons render on every viewer swap, so
   // delegation never needs re-arming; the close button's visibility is pure
   // CSS (:fullscreen), so Esc needs no listener.
@@ -113,7 +113,7 @@
     const btn = e.target.closest('[data-action="viewer-fullscreen"], [data-action="viewer-fullscreen-exit"]');
     if (!btn) return;
     if (document.fullscreenElement) { document.exitFullscreen(); return; }
-    btn.closest('.design-viewer')?.requestFullscreen();
+    btn.closest('.panel-viewer')?.requestFullscreen();
   });
 
   // zoom survival across viewer swaps: mode/device/bg/inspect toggles

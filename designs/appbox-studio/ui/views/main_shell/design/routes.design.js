@@ -12,7 +12,7 @@ export default [
   // design.prototype — the design stage (shell root: /design)
   ['GET', '/design', prototype.page],
   ['GET', '/design/panel', prototype.panel],
-  ['GET', '/design/panel/size/:side/:size', prototype.panelSize],
+  ['GET', '/design/panel/size/:panel/:size', prototype.panelSize],
   ['GET', '/design/panel/:view', prototype.panelView],
   ['GET', '/design/viewer', prototype.viewer],
   ['GET', '/design/file', prototype.file],
@@ -20,7 +20,7 @@ export default [
   ['POST', '/design/flows/:flow/move/:screen', prototype.flowMove], // sent-by: tile toolbar (hx-post, dir) + drag.js island (htmx.ajax, index)
   ['POST', '/design/flows/:flow/add/:screen', prototype.flowAdd],
   ['POST', '/design/flows/:flow/remove/:screen', prototype.flowRemove],
-  ['POST', '/design/panel/size/:side', prototype.panelSizePx], // posted-by: drag.js island (htmx.ajax)
+  ['POST', '/design/panel/size/:panel', prototype.panelSizePx], // posted-by: drag.js island (htmx.ajax)
   ['POST', '/design/undo/:stack', prototype.undo],
   ['POST', '/design/redo/:stack', prototype.redo],
   ['GET', '/design/inspector', prototype.inspector], // activity panel's 4th view (own route: not /design/panel/:view)

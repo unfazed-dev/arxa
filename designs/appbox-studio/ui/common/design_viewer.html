@@ -90,7 +90,7 @@
    panel); the bar here just names the screen. #}
 {% macro protoStage(v) %}
 {% set p = v.proto %}
-<div class="dv-proto">
+<div class="panel-body dv-proto">
   <div class="dv-proto-bar">
     <code class="dv-screen">{{ p.active }}</code>
   </div>
@@ -229,13 +229,13 @@
    disabled when `can` is false (nothing to step to). #}
 {% macro designViewer(v, chrome) %}
 {% set bg = v.bg or 'canvas' %}
-<div class="design-viewer dv-bg-{{ bg }}" id="design-viewer">
+<div class="panel panel-viewer dv-bg-{{ bg }}" id="design-viewer">
 {% if chrome %}
   {# TOP PANEL — the design shell's own bar: what this canvas is, the run
-     state, and shell-scoped actions. Inside .design-viewer on purpose:
+     state, and shell-scoped actions. Inside the viewer panel on purpose:
      canvas.js fullscreens this element, so anything outside it disappears the
      moment you go fullscreen — including, fatally, the exit button. #}
-  <header class="dv-topbar">
+  <header class="panel-top dv-topbar">
     <span class="dv-topbar-title">{{ chrome.title }}</span>
     {% if chrome.state %}{{ prim.statusPill(chrome.state) }}{% endif %}
     {% if not v.static %}
@@ -260,8 +260,7 @@
      facade — no template-side grouping). v.static (build evidence):
      data-static disarms drag.js on this canvas — read-only artboards, no
      marquee, no tile drag, no hover toolbar. #}
-  <div class="dv-flow">
-    <div class="dv-flow-canvas"{% if v.static %} data-static="1"{% endif %}>
+    <div class="panel-body dv-flow-canvas"{% if v.static %} data-static="1"{% endif %}>
       {% if v.mode == 'flows' %}
       <div class="dv-zoom dv-zoom-flows">
         {% for row in v.flows %}
@@ -339,14 +338,15 @@
       </div>
       {% endif %}
     </div>
-    {# SCREENS FILMSTRIP — a REAL COLUMN of the viewer, not an overlay: the
-       right-hand flex child of .dv-flow, full height of the rows beside it,
-       scrolling on its own Y axis. Because it takes real layout width, the
-       canvas gets what's left and every .dv-views-row's second column
-       (the explode panel, minmax(16rem, 1fr)) narrows to match — which is the
-       point, and why this is in flow rather than absolutely positioned.
-       LAST in the DOM because .dv-flow is a row flex: source order is column
-       order. VIEWS ONLY — the facade returns null for flows and proto
+    {# SCREENS FILMSTRIP — the main panel's SIDE-END SECTION, not an overlay.
+       It takes real layout width, so the canvas gets what's left and every
+       .dv-views-row's second column (the explode panel, minmax(16rem, 1fr))
+       narrows to match — which is the point, and why this is in flow rather
+       than absolutely positioned.
+       Source order no longer decides its column: .panel is a grid and this
+       places itself into the side-end area, so it can sit anywhere in the
+       markup and still land right of the body and clear of both bars.
+       VIEWS ONLY — the facade returns null for flows and proto
        (v.filmstrip), so this guard is the whole gate; no mode test here.
        Own id namespace on the thumb iframes — morph pairs by id, and
        `dvt-views--` is already taken by the canvas tiles. The container's own
@@ -354,7 +354,7 @@
        morph would replace the scroller and throw away its scroll position on
        every pin. #}
     {% if v.filmstrip and v.filmstrip.length %}
-    <aside class="dv-vstrip cs-strip" id="dv-vstrip" aria-label="{{ t('composer.screensInContext') }}">
+    <aside class="panel-side-end dv-vstrip cs-strip" id="dv-vstrip" aria-label="{{ t('composer.screensInContext') }}">
       {% for s in v.filmstrip %}
       <a class="dv-thumb cs-thumb {{ 'in-ctx ctx-' + s.tone if s.inContext }} {{ 'is-dim' if s.dim }} {{ 'on' if s.active }}"
          href="{{ s.contextHref }}" hx-get="{{ s.contextHref }}"
@@ -366,7 +366,6 @@
       {% endfor %}
     </aside>
     {% endif %}
-  </div>
 {% endif %}
 
   {# FULLSCREEN CLOSE — visible only while the viewer is :fullscreen (CSS);
@@ -377,9 +376,9 @@
   {# BOTTOM PANEL — hosts the mini panel. It used to float over the canvas,
      which is why .dv-flow-canvas carried `padding-bottom: 11rem` purely to let
      the last tile row scroll clear of it; docked, that hack is deleted. Inside
-     .design-viewer for the same reason as the top bar: it survives fullscreen,
+     the viewer panel for the same reason as the top section: it survives fullscreen,
      and the lens switch / undo / rungs / swatches stay reachable there. #}
-  <footer class="dv-botbar">
+  <footer class="panel-bottom dv-botbar">
     {{ mn.miniPanel(v) }}
   </footer>
 </div>

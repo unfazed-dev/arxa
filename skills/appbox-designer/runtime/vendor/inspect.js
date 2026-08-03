@@ -112,16 +112,24 @@
     return v;
   };
 
-  // Feed the pane. Targets #panel-left-body, NEVER #panels: re-swapping the
-  // stage rebuilds every screen iframe including the one under the pointer
-  // (the bug the click handler's comment records), and a hover doing that
-  // would hit it on every element. The route answers 204 when the inspector
-  // is not the active view, so this can fire freely.
+  // Feed the pane. Targets the ACTIVITY PANEL'S BODY SECTION, never #panels:
+  // re-swapping the stage rebuilds every screen iframe including the one under
+  // the pointer (the bug the click handler's comment records), and a hover
+  // doing that would hit it on every element. The route answers 204 when the
+  // inspector is not the active view, so this can fire freely.
+  //
+  // This id is a SERVER CONTRACT and it is silent when it breaks: htmx.ajax
+  // resolves the target before it sends, so a stale selector here makes the
+  // request never happen — no console error, no failed fetch, just an
+  // inspector that quietly stops updating. It was `#panel-left-body` until the
+  // panels were renamed by role; if you rename a panel again, this line is one
+  // of the two places outside the templates that must move with it (drag.js's
+  // data-target is the other).
   const feedPane = (el, lock) => {
     const p = window.parent;
     if (!p || !p.htmx) return;
     p.htmx.ajax('POST', '/design/inspector/select', {
-      target: '#panel-left-body', swap: 'innerHTML', values: measure(el, lock),
+      target: '#panel-activity-body', swap: 'innerHTML', values: measure(el, lock),
     });
   };
 

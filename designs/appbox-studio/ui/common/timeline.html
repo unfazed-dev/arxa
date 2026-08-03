@@ -10,7 +10,7 @@
    plainly and href-less items render inert — the footer-panel stage timeline
    uses this inert form. `label` is the aria-label. #}
 {% macro timeline(c, oob, label, base) %}
-<ol class="timeline" id="timeline" aria-label="{{ label }}" {% if oob %}hx-swap-oob="outerHTML"{% endif %}>
+<ol class="panel-body timeline" id="timeline" aria-label="{{ label }}" {% if oob %}hx-swap-oob="outerHTML"{% endif %}>
   {% for i in c.timeline.items %}
   <li class="tl-item tl-{{ i.kind }} tl-state-{{ i.state }} {{ 'is-current' if c.timeline.currentId == i.ref }}">
     {% if i.href %}

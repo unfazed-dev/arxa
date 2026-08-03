@@ -1,0 +1,99 @@
+# Smart panels: one vocabulary, one contract
+
+**Status: delivered.** The canonical vocabulary lives in
+`designs/appbox-studio/ui/common/_integration_panels.md` — that file is the
+SSOT and carries the full rename map. This plan records why the work happened
+and what it cost.
+
+## The problem
+
+The shell had one layout idea drawn three times under three sets of names, and
+the drift had become load-bearing:
+
+- The **card** was `.panel-composer`, `.panel-frame`, or `.design-viewer`
+  depending on which panel you were in — while `.panel-main`, sharing the
+  prefix, was not a card at all but a transparent layout slot.
+- The **top strip** was `.chat-head`, `.dv-topbar`, or `.panel-frame-head`.
+- `.panel-bar` (which panel is visible) sat one character away from
+  `.panel-frame-bar` (which view is showing inside a panel).
+- `side` was a *position* word holding an *identity* key. Every call site in
+  the artifact passed the literal `'left'` — one value — for the panel that
+  had been on the right since the columns were swapped. It was baked into
+  element ids, a route, session state, an l10n key, and a facade whitelist.
+
+## The model
+
+> A **shell** is built from **panels**. A panel is built from **sections**.
+
+Five panels, named by role, never by position: header, composer, main,
+activity, footer. Five sections: top, side-start, body, side-end, bottom. Only
+body is required; a section renders when given content, so an empty bordered
+strip cannot be produced by accident.
+
+Four of the five panels already existed under the right name — `.panel-header`
+in `chrome.html`, `#panel-footer` in `main_shell_view.html`. Only the activity
+panel was misnamed. The section model was not invented either: the design
+viewer already drew exactly it, and `viewer.css` already called its three
+parts "three stacked panels".
+
+## Decisions worth keeping
+
+- **`.panel` is a 3×3 CSS grid, not nested flex.** Sides must be full height
+  of the body while top and bottom span the whole card; as flex that needs a
+  wrapper row whose only job is layout. As grid, sections place themselves by
+  area and an absent section leaves its track at zero. That is what makes "any
+  section can be turned off" structural rather than a stack of `:has()` rules.
+  It let `.dv-flow` — a wrapper that existed solely to be that row — be
+  deleted.
+- **The panel is the card, never the layout slot.** `canvas.js` fullscreens
+  `#design-viewer`; anything outside that element vanishes in fullscreen,
+  including the exit button. So the viewer *is* the main panel's card and its
+  bars stay inside it.
+- **`--panel-bg`, not `background`.** `panels.css` loads after `chrome.css`, so
+  a plain `background` on `.panel` would beat `.panel-header`'s own rule at
+  equal specificity and flatten its translucent backdrop. The two files now
+  touch different properties and cannot fight.
+- **The resize rail is keyed on `[data-edge]`, not on a panel class.** An edge
+  is a property of the rail. This is what previously broke when the panels
+  swapped columns.
+- **`view-transition-name` stays per panel and never moves onto `.panel`.** A
+  duplicate across simultaneously-rendered elements makes Chrome abort the
+  whole transition, disabling view transitions app-wide (ADR-0003).
+
+## Three silent breakages this refactor caused and fixed
+
+All three rendered fine and failed invisibly — worth recording as the failure
+mode a class rename actually has:
+
+1. `inspect.js` posted with `target: '#panel-left-body'`. htmx resolves the
+   target *before* sending, so a stale selector makes the request never
+   happen — no console error, no failed fetch, just an inspector that stops
+   updating. Caught by `probe-inspect`.
+2. `canvas.js` and `drag.js` both used `closest('.design-viewer')` — a class
+   that had been replaced by `.panel-viewer`. Fullscreen and undo-stack
+   routing were dead.
+3. `composer.css` still scoped the context-chip tones to `.chat-head`, so
+   every pinned chip silently fell back to the generic accent.
+
+Also fixed: the facades guarded on `['left','right'].includes(side)`, which
+would have rejected the role key and made every drag-release a no-op.
+
+## Verification
+
+`design lint` clean; 19/19 geometry checks (shadow parity, grid placement,
+section on/off, transition-name uniqueness, header chrome, thumb floor);
+`probe-panel-resize` 21/21 including `POST /design/panel/size/activity` and
+width persistence; `probe-inspect`, `probe-shell-chrome`, `probe-explode`,
+`probe-no-reload`, `probe-flowwalk`, `probe-boost`, `probe-composer-draft`,
+`probe-context-sync` all pass.
+
+One stale assertion was deleted rather than relaxed: `probe-shell-chrome`
+checked for a `.dv-botbar-foot` line that was removed by request in `5bb8850`.
+A check that can only fail is noise that trains you to ignore reds.
+
+## Known gap
+
+`.appbox-provenance.json` still lists the deleted `panel_views.html` and
+carries pre-refactor hashes. It is regenerated by the separate `watermark`
+pass at emit time, not per edit, so it was left alone rather than running a
+tree-wide pass mid-refactor.

@@ -1,0 +1,89 @@
+{# ============================================================================
+   _panel-activity.html — the activity panel (Partial, macro-only)
+   THE ACTIVITY PANEL: one of the studio's five ROLE-named panels (header /
+   composer / main / activity / footer) — the shell's multi-view panel. It
+   owns a top (active view label + resize rail), a body the caller fills via
+   call/caller, and a bottom views bar whose icon carousel switches views by
+   hx-swapping the body. Self-contained: this file does not import the
+   studio's ui/common/panel.html — it copies that file's section shape
+   (.panel-top / .panel-body / .panel-bottom on a 3×3 grid, see
+   components.css) rather than reaching across repos for it.
+
+   THE STATEFUL-COMPONENT REFERENCE (DESIGN-ARCHITECTURE, "Component state"):
+   all panel state is server session state, namespaced per shell — the DOM is
+   never a store.
+     · view switch → carousel targets #panel-activity-body; the response is
+       the body content PLUS top + bottom rendered with oob=true, so the
+       active icon and label track the server; the panel itself (scroll,
+       width class) is never replaced
+     · width → s|m|l steps rendered as panel-size-* classes from the shell's
+       session (discrete, server-validated — a CSS `resize` drag can never
+       persist without client JS, which the contract forbids); optionally a
+       resize rail (.panel-resize) that the vendored drag.js island wires to
+       POST a px width
+     · stage acts → re-feed body + top + bottom OOB in the same response
+     · page render → frame only; OOB parts are response-only markup
+
+   There is no `side` argument. This panel is identified by its ROLE, and its
+   id is the constant `panel-activity`; it may sit on either edge of the
+   stage, and neither fact belongs in its name.
+
+   Usage:
+     {% import "ui/widgets/components/_panel-activity.html" as pa %}
+     {% call pa.frame(spec) %}
+       …markup for the active view…
+     {% endcall %}
+
+   spec:
+     label        — the active view's label, shown in the top section
+     views        — [{ id, icon, label, href, active }], one carousel button
+                    each; icon is a Lucide name for the icon() global, href
+                    hx-swaps that view's fragment into #panel-activity-body
+     size?        — 's' | 'm' | 'l' (default 's'): the shell's persisted panel
+                    width (facade session state, panelSize.activity); used as
+                    the panel-size-* class fallback when panelSizePx is unset
+     sizeHref?    — present when the panel can be resized; renders the resize
+                    rail on the panel's start edge (drag.js wires it to POST
+                    px width; live width shown in .panel-resize-width)
+     panelSizePx? — persisted px width; when set, applied as an inline width
+                    style on the panel instead of the panel-size-* fallback
+
+   Required l10n keys: panel.activity.views, panel.resize (only with
+   sizeHref).
+   CSS: the .panel grid + .panel-activity family in components.css. Recipe 19
+   in ui-recipes.md. #}
+
+{% macro label(spec) %}<strong class="panel-label">{{ spec.label }}</strong>{% endmacro %}
+
+{% macro views(spec) %}
+<nav class="panel-views" aria-label="{{ t('panel.activity.views') }}">
+  {% for v in spec.views %}
+  <a class="panel-views-icon {{ 'is-active' if v.active }}" href="{{ v.href }}" hx-get="{{ v.href }}" hx-target="#panel-activity-body" hx-swap="innerHTML" hx-push-url="false" title="{{ v.label }}" aria-label="{{ v.label }}">{{ icon(v.icon, {size: 18}) }}</a>
+  {% endfor %}
+</nav>
+{% endmacro %}
+
+{% macro top(spec, oob) %}
+<header class="panel-top" id="panel-activity-top" {% if oob %}hx-swap-oob="outerHTML"{% endif %}>
+  {{ label(spec) }}
+</header>
+{% endmacro %}
+
+{% macro bottom(spec, oob) %}
+<footer class="panel-bottom" id="panel-activity-bottom" {% if oob %}hx-swap-oob="outerHTML"{% endif %}>
+  {{ views(spec) }}
+</footer>
+{% endmacro %}
+
+{% macro frame(spec) %}
+<section class="panel panel-activity {{ 'panel-size-' + (spec.size or 's') if not spec.panelSizePx }}" id="panel-activity"{% if spec.panelSizePx %} style="width:{{ spec.panelSizePx }}px"{% endif %}>
+  {% if spec.sizeHref %}
+  <div class="panel-resize" data-target="panel-activity" data-edge="start" data-persist="activity" title="{{ t('panel.resize') }}" aria-label="{{ t('panel.resize') }}"></div>
+  {% endif %}
+  {{ top(spec, false) }}
+  <div class="panel-body" id="panel-activity-body">
+    {{ caller() }}
+  </div>
+  {{ bottom(spec, false) }}
+</section>
+{% endmacro %}

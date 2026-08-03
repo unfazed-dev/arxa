@@ -15,9 +15,15 @@ import * as jargon from './jargon.js';
 import * as agent from './agent_menus.js';
 import * as fv from './file_views.js';
 
-// Panel width steps, per side — the shell's own persisted panel sizing.
+// Panel width steps, per panel — the shell's own persisted panel sizing.
 export const PANEL_SIZES = ['s', 'm', 'l'];
-const panelSizeFor = (d, side) => (PANEL_SIZES.includes(d.panelSize?.[side]) ? d.panelSize[side] : 's');
+// Panels whose width is server state, keyed by ROLE. Only the activity panel
+// persists one; the composer's width is client-only and rides morph (drag.js
+// omits data-persist for it). This list was `['left', 'right']` — a position
+// whitelist for a value that was always the literal 'left', which would have
+// silently rejected the role key and made every drag-release a no-op.
+const PERSISTABLE_PANELS = ['activity'];
+const panelSizeFor = (d, panel) => (PANEL_SIZES.includes(d.panelSize?.[panel]) ? d.panelSize[panel] : 's');
 
 // All design-tab ephemeral UI state lives behind one namespace so it never
 // collides with the build/intake surfaces sharing the session.
@@ -883,9 +889,9 @@ export const stageContext = (sessionData = {}, opts = {}, prefs = {}, t = (k) =>
     filter,
     activityView,
     activityLabel: t('activityView.' + activityView),
-    panelSize: panelSizeFor(d, 'left'),
-    panelSizeHref: '/design/panel/size/left/',
-    panelSizePx: d.panelSizePx?.left ?? null,
+    panelSize: panelSizeFor(d, 'activity'),
+    panelSizeHref: '/design/panel/size/activity/',
+    panelSizePx: d.panelSizePx?.activity ?? null,
     activityViews: [
       { id: 'screens', icon: 'layout-grid', href: '/design/panel/screens' },
       { id: 'artifacts', icon: 'package', href: '/design/panel/artifacts' },
@@ -999,18 +1005,18 @@ export const setActivityView = (sessionData, view, prefs = {}, t = (k) => k, loc
   return stageContext(sessionData, {}, prefs, t, locale);
 };
 
-// Panel width grip: cycle persisted per side (the shell's own sizing state).
-export const setPanelSize = (sessionData, side, size, prefs = {}, t = (k) => k, locale = 'en') => {
-  if (['left', 'right'].includes(side) && PANEL_SIZES.includes(size)) {
-    (design(sessionData).panelSize ??= {})[side] = size;
+// Panel width grip: cycle persisted per panel (the shell's own sizing state).
+export const setPanelSize = (sessionData, panel, size, prefs = {}, t = (k) => k, locale = 'en') => {
+  if (PERSISTABLE_PANELS.includes(panel) && PANEL_SIZES.includes(size)) {
+    (design(sessionData).panelSize ??= {})[panel] = size;
   }
   return stageContext(sessionData, {}, prefs, t, locale);
 };
 
-// Panel drag handle: px width persisted per side, clamped to a sane band.
-export const setPanelSizePx = (sessionData, side, width, prefs = {}, t = (k) => k, locale = 'en') => {
+// Panel drag handle: px width persisted per panel, clamped to a sane band.
+export const setPanelSizePx = (sessionData, panel, width, prefs = {}, t = (k) => k, locale = 'en') => {
   const d = design(sessionData);
-  (d.panelSizePx ??= {})[side] = Math.max(200, Math.min(600, Number(width) || 280));
+  (d.panelSizePx ??= {})[panel] = Math.max(200, Math.min(600, Number(width) || 280));
   return stageContext(sessionData, {}, prefs, t, locale);
 };
 

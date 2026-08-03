@@ -3,7 +3,7 @@
    holds the open artifact, and the activity panel carries run controls, the
    thread filter, the artifact index, and the seeded commits/files views.
    Shared chrome (.msg, .composer, .filter-item, .mp-content, .artifact, …) lives
-   in app.css; composer_panel / panel_views component styles live in
+   in app.css; composer_panel / panel_activity component styles live in
    composer.css / panels.css. Only build-specific selectors live here. */
 
 /* gate quick-replies inline on a pending-gate thread card */

@@ -95,7 +95,7 @@ export const panel = (c, h) => {
 export const panelSize = (c, h) => {
   const e = empty(c, h);
   if (e) return emptyPage(c, h, e);
-  return h.render(c, `${VIEW}#activityFrameSwap`, facade.setPanelSize(h.session(c).data, c.req.param('side'), c.req.param('size'), h.prefs(c), h.t(c), h.locale(c)));
+  return h.render(c, `${VIEW}#activityFrameSwap`, facade.setPanelSize(h.session(c).data, c.req.param('panel'), c.req.param('size'), h.prefs(c), h.t(c), h.locale(c)));
 };
 
 // Run control (run view): pause | resume the whole line.

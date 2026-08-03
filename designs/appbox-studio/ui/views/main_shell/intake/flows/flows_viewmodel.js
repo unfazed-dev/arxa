@@ -21,7 +21,7 @@ export const panel = (c, h) =>
   h.render(c, `${VIEW}#activitySwap`, facade.setActivityView(h.session(c).data, S, c.req.query('view'), h.prefs(c), h.t(c), h.locale(c)));
 
 export const panelSize = (c, h) =>
-  h.render(c, `${VIEW}#activityFrameSwap`, facade.setPanelSize(h.session(c).data, S, c.req.param('side'), c.req.param('size'), h.prefs(c), h.t(c), h.locale(c)));
+  h.render(c, `${VIEW}#activityFrameSwap`, facade.setPanelSize(h.session(c).data, S, c.req.param('panel'), c.req.param('size'), h.prefs(c), h.t(c), h.locale(c)));
 
 export const sendMessage = async (c, h) => {
   const form = await h.form(c);

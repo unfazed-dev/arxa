@@ -745,65 +745,122 @@ a.list-row:hover { background: color-mix(in srgb, currentColor 6%, transparent);
 .empty-state__title { margin: 0; font-size: 17px; font-weight: 700; color: CanvasText; }
 .empty-state__body { margin: 0; font-size: 14px; line-height: 1.5; }
 
-/* ── multi-view panel frame (_panel-views.html) ──────────────────────────
-   Width is server state: three steps rendered as panel-size-* from the shell's
-   session (panelSize[side]) — never a CSS drag, which cannot persist
-   without client JS. */
-.panel-frame {
-  --panel-w: 340px;                        /* s: default = minimum width */
-  width: var(--panel-w);
-  min-width: var(--panel-w);
-  display: flex; flex-direction: column; min-height: 0;
+/* ── panel (_panel-activity.html) · the shared panel contract ────────────
+   THE PANEL CONTRACT: a shell is built from panels, a panel from sections.
+   Panels are named by ROLE, never position (header/composer/main/activity/
+   footer) — a panel that moves does not get renamed. Sections: top,
+   side-start, body, side-end, bottom; only body is required. GRID, not
+   nested flex: the sides need full body height while top/bottom span the
+   whole card — as flex that needs an extra wrapper row that exists purely
+   to hold a layout; as grid an absent section just leaves its track at zero
+   width, so "any section can be turned off" is true structurally rather
+   than a stack of :has() rules. This scaffold only ships the activity role;
+   .panel stays the shared grid so other roles can drop in beside it without
+   a rewrite. */
+.panel {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    "top        top    top"
+    "side-start body   side-end"
+    "bottom     bottom bottom";
+  min-width: 0; min-height: 0;
   background: color-mix(in srgb, CanvasText 4%, Canvas);
   border: 1px solid color-mix(in srgb, CanvasText 14%, Canvas);
   border-radius: 12px;
   overflow: hidden;
+  position: relative; /* anchors .panel-resize to the inner edge */
+}
+.panel-top    { grid-area: top; }
+.panel-body   { grid-area: body; }
+.panel-bottom { grid-area: bottom; }
+.panel-side-start { grid-area: side-start; }
+.panel-side-end   { grid-area: side-end; }
+
+/* top / bottom: full width, natural height, a rule against the body */
+.panel-top {
+  display: flex; gap: .6rem; align-items: center; justify-content: space-between;
+  padding: .7rem .9rem;
+  border-bottom: 1px solid color-mix(in srgb, CanvasText 14%, Canvas);
+}
+.panel-bottom {
+  padding: .55rem .7rem;
+  border-top: 1px solid color-mix(in srgb, CanvasText 14%, Canvas);
+}
+
+/* body: the caller's active-view content scrolls here, never the page */
+.panel-body {
+  min-width: 0; min-height: 0; overflow-y: auto;
+  display: flex; flex-direction: column;
+}
+
+/* the activity panel: width is SERVER state, not a CSS drag — three steps
+   (s = default min, m ≈ 1.25×, l ≈ 1.5×) rendered as panel-size-* classes
+   from the shell's session (panelSize.activity), so the width survives
+   swaps and reloads; a CSS resize handle can't persist without client JS,
+   which the artifact contract forbids. */
+.panel-activity {
+  --panel-w: 340px;                        /* s: default = minimum width */
+  width: var(--panel-w);
+  min-width: var(--panel-w);
   transition: width .18s ease;
 }
 .panel-size-m { --panel-w: 425px; }        /* ≈1.25× */
 .panel-size-l { --panel-w: 510px; }        /* ≈1.5× */
-.panel-frame-handle { flex: none; }
+.panel-label { font-weight: 500; font-size: .92rem; min-width: 0; }
 
-/* head: active view label left, resize handle right */
-.panel-frame-head {
-  display: flex; gap: .6rem; align-items: center; justify-content: space-between;
-  padding: .7rem .9rem;
-  border-bottom: 1px solid color-mix(in srgb, CanvasText 14%, Canvas);
-  flex: none;
-}
-.panel-frame-label { font-weight: 500; font-size: .92rem; min-width: 0; }
-
-/* body: the caller's active-view content scrolls here, never the page */
-.panel-frame-body {
-  flex: 1; min-height: 0; overflow-y: auto;
-  display: flex; flex-direction: column;
-}
-
-/* views bar: the icon carousel — one button per registered view, scrolls
-   sideways when crowded, its scrollbar never shows */
-.panel-frame-bar {
-  display: flex; gap: .35rem; align-items: center; flex: none;
-  padding: .55rem .7rem;
-  border-top: 1px solid color-mix(in srgb, CanvasText 14%, Canvas);
+/* views bar: the icon carousel — one button per registered view, in the
+   activity panel's bottom section. Scrolls sideways when crowded; its own
+   scrollbar never shows. */
+.panel-views {
+  display: flex; gap: .35rem; align-items: center;
   overflow-x: auto; scrollbar-width: none;
 }
-.panel-frame-bar::-webkit-scrollbar { display: none; }
-.pv-icon {
+.panel-views::-webkit-scrollbar { display: none; }
+.panel-views-icon {
   flex: none; width: 2rem; height: 2rem; border-radius: 50%;
   display: inline-grid; place-items: center;
   background: transparent; color: color-mix(in srgb, CanvasText 60%, Canvas);
   box-shadow: inset 0 0 0 1px color-mix(in srgb, CanvasText 14%, Canvas);
   font-size: .85rem; line-height: 1; text-decoration: none;
 }
-.pv-icon:hover { color: CanvasText; box-shadow: inset 0 0 0 1px color-mix(in srgb, CanvasText 35%, Canvas); }
-.pv-icon.is-active {
+.panel-views-icon:hover { color: CanvasText; box-shadow: inset 0 0 0 1px color-mix(in srgb, CanvasText 35%, Canvas); }
+.panel-views-icon.is-active {
   color: var(--accent, LinkText);
   background: color-mix(in srgb, var(--accent, LinkText) 12%, Canvas);
   box-shadow: inset 0 0 0 1.5px var(--accent, LinkText);
 }
 
+/* resize rail: the panel's own EDGE is the handle, keyed on [data-edge] not
+   on which panel hosts it — an edge is a property of the rail, not the
+   panel, so the rail carries it and the panel can move columns with zero
+   CSS changes. No icon; the cursor turns col-resize and the edge itself
+   lights up in the accent, so the affordance is the thing you actually
+   grab. */
+.panel-resize {
+  position: absolute; top: 0; bottom: 0; width: 7px; z-index: 6;
+  cursor: col-resize;
+  transition: box-shadow .12s ease;
+}
+.panel-resize[data-edge="start"] { inset-inline-start: 0; }
+.panel-resize[data-edge="end"]   { inset-inline-end: 0; }
+.panel-resize[data-edge="start"]:hover { box-shadow: inset 2px 0 0 var(--accent, LinkText); }
+.panel-resize[data-edge="end"]:hover   { box-shadow: inset -2px 0 0 var(--accent, LinkText); }
+
+/* live width readout while dragging (drag.js appends it) — floated off the
+   rail so a 7px strip doesn't have to contain it */
+.panel-resize-width {
+  position: absolute; top: 50%; translate: 0 -50%;
+  padding: .1rem .3rem; border-radius: 6px;
+  background: var(--accent, LinkText); color: #FFFCF0;
+  font-size: .64rem; white-space: nowrap;
+}
+.panel-resize[data-edge="start"] .panel-resize-width { inset-inline-start: .6rem; }
+.panel-resize[data-edge="end"]   .panel-resize-width { inset-inline-end: .6rem; }
+
 /* below expanded, the shell's drawer/railbar is the panel's undocked form —
    the in-flow panel would duplicate it and squeeze the stage */
 @media (max-width: 839px) {
-  .panel-frame { display: none; }
+  .panel-activity { display: none; }
 }

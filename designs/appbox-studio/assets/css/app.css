@@ -115,7 +115,20 @@ body {
 * { scrollbar-width: thin; scrollbar-color: color-mix(in oklab, var(--tx, currentColor) 22%, transparent) transparent; }
 ::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: color-mix(in oklab, var(--tx, currentColor) 22%, transparent); border-radius: 999px; }
+::-webkit-scrollbar-thumb {
+  background: color-mix(in oklab, var(--tx, currentColor) 22%, transparent);
+  border-radius: 999px;
+  /* The thumb stays as short as the UA will draw it. Chromium's own floor is
+     around 20px; this releases that floor so a long thread or file reads as a
+     small nub rather than a bar. Note what this canNOT do: min-height is a
+     FLOOR, so it only bites on long content — on short content the thumb is
+     proportional and near-full-track, and nothing in CSS shrinks it. Making
+     the thumb a fixed size at every scroll length needs a scripted custom
+     scrollbar, which the zero-custom-JS boundary (ADR-0002) forbids.
+     Chromium-only: Firefox's `scrollbar-width: thin` above has no
+     thumb-length control at all, so it keeps the UA default there. */
+  min-height: .75rem;
+}
 
 code { font-family: ui-monospace, "SF Mono", monospace; font-size: .88em; }
 .muted { color: var(--tx-2); }
@@ -326,7 +339,16 @@ button:active { transform: translateY(1px); }
 }
 
 /* ---------- the main panel content: artifact stage, full-bleed ---------- */
-.mp-content { overflow-y: auto; padding: 1.2rem 1.4rem; display: flex; flex-direction: column; border-radius: var(--radius); }
+/* The main panel's card for everything that is NOT a full-bleed artifact — a
+   doc, a code read, an image. It is a panel like the composer and the activity
+   panel, so it carries the same card chrome; without this, main matched its
+   neighbours on the design canvas and then visibly did not on a file read. */
+.mp-content {
+  overflow-y: auto; padding: 1.2rem 1.4rem;
+  display: flex; flex-direction: column;
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: var(--radius); box-shadow: var(--shadow-2);
+}
 .artifact {
   width: 100%; max-width: 45rem; margin: auto; /* reading artifacts stay centered in the stage */
   display: flex; flex-direction: column; gap: .9rem;
@@ -339,7 +361,13 @@ button:active { transform: translateY(1px); }
    sit flush to the panel row — three cards, three different edges. Drop the
    pad for this artifact only; the padded default still applies to docs, code
    and every other main-panel read. */
-.mp-content:has(> .evidence-artifact) { padding: 0; }
+/* ...except when the artifact inside IS the panel (the design viewer, the
+   build loop's evidence pane). Then this element is a pass-through wrapper,
+   not a card: it drops the pad AND the chrome, or you get a card inside a
+   card with two borders and two shadows. */
+.mp-content:has(> .evidence-artifact) {
+  padding: 0; background: none; border: 0; box-shadow: none;
+}
 .artifact .display { font-size: clamp(1.5rem, 2.4vw, 2.2rem); }
 .artifact-head { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; }
 .artifact-lede { font-size: 1rem; color: var(--tx-2); max-width: 40rem; }
@@ -639,15 +667,12 @@ button:active { transform: translateY(1px); }
 }
 
 /* ---------- the design viewer: live iframe + toolbar + filmstrip ---------- */
-.design-viewer {
-  display: flex; flex-direction: column; gap: .6rem; flex: 1; min-height: 0;
-  border-radius: var(--radius); border: 1px solid var(--border);
-  /* No bottom pad: .dv-botbar is always the last child and carries its own
-     symmetric .5rem, so the card's pad would stack under the mini panel only
-     — 8px above the panel, 19.2px below it, visibly bottom-heavy. The bar is
-     the card's floor; it ends where the card ends. */
-  padding: .7rem .7rem 0;
-}
+/* The viewer's card chrome now comes from .panel (panels.css) like every
+   other panel's, so the border, radius and the hand-tuned asymmetric padding
+   that used to live here are all gone. The old `padding: .7rem .7rem 0` was
+   compensating for exactly the thing the section contract removes: a card pad
+   that stacked under the bottom bar but not above it. Sections own their own
+   padding and sit flush to the card edge, so the asymmetry cannot recur. */
 .dv-bg-canvas { background: var(--bg-2); }
 .dv-bg-warm { background: #f4ead8; }
 [data-theme="dark"] .dv-bg-warm { background: #3a3126; }

@@ -3,18 +3,18 @@
      Built with appbox (free tier) — https://appbox.dev
 -->
 {# Shared intake macros — the panel layout applied to the intake shell:
-   the activity panel (pv.frame: thread / artifacts / files) on the left, the
+   the activity panel (pa.frame: thread / artifacts / files) on the left, the
    main panel in the center (the caller fills it), the composer panel
    (cp.frame) permanently on the right, and the read-only timeline in the
    footer panel. Follow-ups are plain chat; the open artifact rides the main
    panel until another one replaces it.
 
-   Assumed call/caller for cp.frame + pv.frame — both shared components ship
+   Assumed call/caller for cp.frame + pa.frame — both shared components ship
    caller() bodies. The composer is the shared card (ui/common/composer.html)
    — same markup on every shell; per-surface data (action, placeholder,
    agent menus) travels in the facade context. #}
 {% import "ui/common/composer_panel.html" as cp %}
-{% import "ui/common/panel_views.html" as pv %}
+{% import "ui/common/panel_activity.html" as pa %}
 {% import "ui/common/timeline.html" as tl %}
 {% import "ui/common/composer.html" as cm %}
 {% import "ui/common/main_panel.html" as mp %}
@@ -302,18 +302,18 @@
 {% endmacro %}
 
 {% macro activityPanel(c) %}
-{% call pv.frame({ side: 'left', label: c.activityLabel, views: c.activityViews, size: c.panelSize, sizeHref: c.panelSizeHref }) %}
+{% call pa.frame({ label: c.activityLabel, views: c.activityViews, size: c.panelSize, sizeHref: c.panelSizeHref }) %}
   {{ activityBody(c) }}
 {% endcall %}
 {% endmacro %}
 
-{# Targeted view-switch response (<base>/panel?view= → #panel-left-body): the
+{# Targeted view-switch response (<base>/panel?view= → #panel-activity-body): the
    new body plus head + bar out-of-band, so the label and the active accent
    icon track the server's panel state. #}
 {% macro activitySwap(c) %}
 {{ activityBody(c) }}
-{{ pv.head({ side: 'left', label: c.activityLabel, views: c.activityViews, size: c.panelSize, sizeHref: c.panelSizeHref }, true) }}
-{{ pv.bar({ side: 'left', label: c.activityLabel, views: c.activityViews, size: c.panelSize, sizeHref: c.panelSizeHref }, true) }}
+{{ pa.top({ label: c.activityLabel, views: c.activityViews, size: c.panelSize, sizeHref: c.panelSizeHref }, true) }}
+{{ pa.bottom({ label: c.activityLabel, views: c.activityViews, size: c.panelSize, sizeHref: c.panelSizeHref }, true) }}
 {% endmacro %}
 
 

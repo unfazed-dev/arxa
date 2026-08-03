@@ -8,7 +8,7 @@
 {% import "ui/common/design_viewer.html" as dv %}
 {% import "ui/views/main_shell/design/_shared.html" as sh %}
 {% import "ui/views/main_shell/design/inspector_pane.html" as ins %}
-{% import "ui/common/panel_views.html" as pv %}
+{% import "ui/common/panel_activity.html" as pa %}
 {% block title %}{{ t('design.pageTitle') }}{% endblock %}
 {% block main_class %}shell-main-loop{% endblock %}
 
@@ -84,8 +84,8 @@
 
 {% macro inspectorSwap(c) %}
 {{ ins.pane(c) }}
-{{ pv.head({ side: 'left', label: c.activityLabel, views: c.activityViews, size: c.panelSize, sizeHref: c.panelSizeHref }, true) }}
-{{ pv.bar({ side: 'left', label: c.activityLabel, views: c.activityViews, size: c.panelSize, sizeHref: c.panelSizeHref }, true) }}
+{{ pa.top({ label: c.activityLabel, views: c.activityViews, size: c.panelSize, sizeHref: c.panelSizeHref }, true) }}
+{{ pa.bottom({ label: c.activityLabel, views: c.activityViews, size: c.panelSize, sizeHref: c.panelSizeHref }, true) }}
 {% endmacro %}
 
 {# The drag handle's response: the whole activity panel re-rendered at its

@@ -71,7 +71,7 @@
       </form>
       {% endif %}
       {% if locked and unlockHref %}
-      <button class="cta-main" type="button" hx-post="{{ unlockHref }}" hx-target="#panel-left-body" hx-swap="innerHTML" hx-push-url="false">
+      <button class="cta-main" type="button" hx-post="{{ unlockHref }}" hx-target="#panel-activity-body" hx-swap="innerHTML" hx-push-url="false">
         {{ t('inspector.unlock') }} {{ icon('lock-open', {size: 14}) }}</button>
       {% endif %}
     </span>

@@ -7,22 +7,28 @@
    Scopes:
      .dv-flow-canvas — marquee select + Space/middle-drag pan; tile drag only
                        inside a .dv-flow-row (flows lens), X-axis locked
-     .panel-frame-handle — drag-resize a side panel from its inner EDGE (live
-                       width badge). Attributes:
-                         data-edge   left|right — which edge the rail sits on;
-                                     decides the sign of the drag
-                         data-target element id to resize (default: panel-<side>)
-                         data-side   when present, POST the px width on release
-                                     so it survives a reload; omit for panels
-                                     with no server-side width (the composer,
-                                     whose inline width rides morph as before)
+     .panel-resize   — drag-resize a panel from one of its own EDGES (live
+                       width badge). Three attributes, and the split between
+                       them is deliberate: none of them names a panel's place
+                       in the shell, so panels can swap columns without this
+                       island changing.
+                         data-target  element id of the panel to resize.
+                                      Required — there is no default.
+                         data-edge    start|end — which of the panel's own
+                                      edges the rail sits on. Decides the SIGN
+                                      of the drag, and nothing else.
+                         data-persist when present, the server key to POST the
+                                      px width to on release so it survives a
+                                      reload; omit for panels with no
+                                      server-side width (the composer, whose
+                                      inline width rides morph as before)
      document        — Cmd/Ctrl+Z / Shift+Cmd/Ctrl+Z undo/redo, routed by
                        pointer focus (canvas vs chat) to /design/undo|redo/:stack
 
    Re-arms on every htmx swap (htmx.onLoad). */
 (() => {
   const CANVAS = '.dv-flow-canvas';
-  const RAIL = '.panel-frame-handle';
+  const RAIL = '.panel-resize';
   const TILE = '.dv-tile';
   const ROW = '.dv-flow-row';
   // let these keep their native behaviour; don't start a gesture over them
@@ -180,54 +186,59 @@
     handle.addEventListener('pointerdown', (e) => {
       if (e.button !== 0) return;
       e.preventDefault();
-      const side = handle.dataset.side || ''; // '' — resize only, nothing to persist
-      const rail = document.getElementById(handle.dataset.target || ('panel-' + (side || 'left')));
-      if (!rail) return;
-      // Which edge you grabbed decides the sign. Dragging the RIGHT edge
-      // rightwards widens the panel; dragging the LEFT edge rightwards
-      // NARROWS it. Without this the right-hand panel fought the pointer.
-      const sign = handle.dataset.edge === 'left' ? -1 : 1;
+      const persist = handle.dataset.persist || ''; // '' — resize only, nothing to record
+      // No default target. The old fallback composed an id from a position
+      // word, so a rail that forgot the attribute still resolved to a REAL
+      // panel — a typo resized the wrong one instead of failing. Explicit id
+      // or nothing.
+      const panel = document.getElementById(handle.dataset.target);
+      if (!panel) return;
+      // Which edge you grabbed decides the sign. Dragging a panel's END edge
+      // rightwards widens it; dragging its START edge rightwards NARROWS it.
+      // The sign comes from the edge, never from which column the panel is in
+      // — that is what let the two panels swap columns without touching this.
+      const sign = handle.dataset.edge === 'start' ? -1 : 1;
       handle.setPointerCapture(e.pointerId);
       const sx = e.clientX;
-      const startW = rail.getBoundingClientRect().width;
-      // .panel-frame animates `width` for the s/m/l steps. Left on during a
+      const startW = panel.getBoundingClientRect().width;
+      // .panel-activity animates `width` for the s/m/l steps. Left on during a
       // drag it makes the edge lag the pointer, and — worse — the release
       // below used to read the still-animating width and persist THAT, so a
       // drag to 420px saved 369px. Off for the drag, restored after.
-      const prevTransition = rail.style.transition;
-      rail.style.transition = 'none';
+      const prevTransition = panel.style.transition;
+      panel.style.transition = 'none';
       let last = startW;
-      let badge = handle.querySelector('.panel-frame-width');
+      let badge = handle.querySelector('.panel-resize-width');
       if (!badge) {
         badge = document.createElement('span');
-        badge.className = 'panel-frame-width';
+        badge.className = 'panel-resize-width';
         handle.appendChild(badge);
       }
       badge.textContent = Math.round(startW) + 'px';
       const move = (ev) => {
         const w = Math.min(600, Math.max(200, startW + sign * (ev.clientX - sx)));
         last = w;
-        rail.style.width = w + 'px';
+        panel.style.width = w + 'px';
         badge.textContent = Math.round(w) + 'px';
       };
       handle.addEventListener('pointermove', move);
       handle.addEventListener('pointerup', () => {
         handle.removeEventListener('pointermove', move);
-        rail.style.transition = prevTransition;
+        panel.style.transition = prevTransition;
         // `last`, not the measured box: the box can be mid-transition, and a
         // flex row may also be shrinking the panel below the width we asked
         // for. What the user dragged to is what gets saved.
         const w = Math.round(last);
         badge.remove();
-        if (!side) return; // no server-side width for this panel; the inline style rides morph
+        if (!persist) return; // no server-side width for this panel; the inline style rides morph
         // RECORD ONLY — swap:'none'. Swapping the panel back in looked like the
         // whole app reloading on every release: htmx runs with
-        // globalViewTransitions, and .panel-frame has no view-transition-name,
+        // globalViewTransitions, and .panel-activity has no view-transition-name,
         // so it was captured in the ROOT snapshot and the browser cross-faded
         // the entire page. There is nothing to swap in anyway — the drag
         // already put the final width on the element, and the server only
         // needs to remember it for the next full render.
-        htmx.ajax('POST', '/design/panel/size/' + encodeURIComponent(side), {
+        htmx.ajax('POST', '/design/panel/size/' + encodeURIComponent(persist), {
           values: { width: String(w) }, swap: 'none transition:false',
         });
       }, { once: true });
@@ -277,7 +288,7 @@
   let pointerStack = 'canvas';
   document.addEventListener('pointerover', (e) => {
     if (e.target.closest?.('.panel-composer')) pointerStack = 'chat';
-    else if (e.target.closest?.('.design-viewer')) pointerStack = 'canvas';
+    else if (e.target.closest?.('.panel-viewer')) pointerStack = 'canvas';
   });
   document.addEventListener('keydown', (e) => {
     if (!(e.metaKey || e.ctrlKey) || e.altKey || e.key.toLowerCase() !== 'z') return;

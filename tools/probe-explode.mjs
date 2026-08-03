@@ -111,18 +111,18 @@ try {
   console.log('\n=== D. the two shell panels survive fullscreen ===');
   await p.goto(BASE + '/design', { waitUntil: 'networkidle' });
   await waitFor(p, () => {
-    const v = document.querySelector('.design-viewer');
+    const v = document.querySelector('.panel-viewer');
     return !!v && !!v.querySelector('.dv-topbar') && !!v.querySelector('.dv-botbar');
   }, { label: 'both shell panels', timeout: 15000 });
   const panels = await p.evaluate(() => {
-    const v = document.querySelector('.design-viewer');
+    const v = document.querySelector('.panel-viewer');
     const inside = (s) => !!v.querySelector(s);
     return {
       topbar: inside('.dv-topbar'), botbar: inside('.dv-botbar'),
       miniDocked: inside('.dv-botbar .mini-panel'),
       miniStatic: getComputedStyle(v.querySelector('.mini-panel')).position === 'static',
       padBottom: getComputedStyle(v.querySelector('.dv-flow-canvas')).paddingBottom,
-      // canvas.js fullscreens .design-viewer; anything outside it vanishes on
+      // canvas.js fullscreens #design-viewer; anything outside it vanishes on
       // fullscreen, so these four MUST be inside or the user is stranded.
       lens: inside('.mini-panel-tab'), exit: inside('.dv-fs-close'),
       swatch: inside('.mini-swatch'), title: inside('.dv-topbar-title'),
