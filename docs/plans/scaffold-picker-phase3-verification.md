@@ -264,6 +264,76 @@ Three distinct states worth separating, since this thread keeps conflating the l
 **Rule:** a zero, a failure, or a refusal is data until proven otherwise. "Probably the
 sandbox" is a hypothesis, and it costs one command to test. I never ran it.
 
+### §7c — the checker predicate is backwards; the correct one is a cross-artifact join
+
+run-screen sent chrome-integration a blocking review of the proposed checker
+("every facade behind a gated mount declares `composerAction`"). Verified at source,
+their objection holds, and the predicate is inverted on **both** scaffold screens:
+
+| facade | declares `composerAction` | screen's actual state | proposed checker says |
+|---|---|---|---|
+| `scaffold_facade.js` (mine) | **yes** (`:205`) | **live 404** | passes — *false negative on the open defect* |
+| `scaffold_run_facade.js` | no | correct, no composer | fails — *false positive* |
+
+Declaration is not the discriminating variable. Six actions are declared across the
+studio and five resolve; mine is the only one that doesn't. The variable is whether the
+**declared string joins to a route**, which no per-file grep can see, because routes are
+registered across **seven** files.
+
+```
+DECLARED composerAction          ROUTED?          facade
+/build/messages                  ROUTE OK         build_facade.js
+/design/chat/messages            ROUTE OK         design_facade.js
+/design/freeze/messages          ROUTE OK         design_facade.js
+/intake/{brief,moodboard,...}    ROUTE OK         intake_facade.js
+/scaffold/messages               ** UNROUTED **   scaffold_facade.js
+```
+
+**Correct predicate:** for every `composerAction: '<path>'` in `services/facades/*.js`,
+assert some `['POST', '<path>', …]` exists across *all* route files. It flags mine (true
+positive), passes run-screen's (nothing declared, nothing to join), and passes all five
+working surfaces. The repo already carries the convention as a machine-readable marker —
+every routed action has `// posted-by: c.composerAction (<facade>)` beside it, 6/6.
+
+**This section was drafted wrong twice before it was right**, both times by me, both
+times the same mechanism:
+
+1. Searched `ui/services/facades/` — no such directory. Glob didn't expand; clean empty
+   output. Bad path (mechanism 1).
+2. Joined against `app.routes.js` alone — 1 of 7 route files. Produced a confident table
+   reporting `NO ROUTE` for four live endpoints. Wrong scope (mechanism 4).
+
+Draft 2 was caught by a **ground-truth control**, not by inspection: I included
+`/intake/brief/messages`, which run-screen had *measured* returning 200. My table said it
+was unrouted. A known-live endpoint reading as absent proves the instrument wrong
+regardless of how plausible the rest of the table looks. Without that one row I would
+have shipped a false indictment of four surfaces.
+
+That is the whole argument for ground-truth controls in one incident: draft 2 was
+internally consistent, correctly formatted, and entirely false.
+
+### §7d — the defect is self-documented, which is decisive for the ruling
+
+`scaffold_facade.js:203-205`, unchanged since I wrote it:
+
+```js
+// It posts here; the binding is the shell's to declare.
+// needs-route: POST /scaffold/messages (see routes.scaffold.js)
+composerAction: '/scaffold/messages',
+```
+
+`routes.scaffold.js` contains zero `messages` routes. I wrote the marker naming the exact
+file and never added the line.
+
+This makes the lead's (a)-vs-(b) choice **asymmetric**, where it has been presented as
+balanced. Option (b) is not new design: the convention exists 6 times over, the target
+file is named in my own comment, and the shape is one route line plus a viewmodel export.
+Option (a) — gate the render, delete `:205` — remains defensible, but on *product*
+grounds (should a kit-picker have a composer at all?), not on cost. The engineering cost
+argument, which is the one I originally raised, does not survive the evidence.
+
+Still the lead's call. Recording the correction because I supplied the bad framing.
+
 ### Scope limit on the lens shoot
 
 The 3-rung ladder shoot predates both the guard landing and the composer ruling. It
