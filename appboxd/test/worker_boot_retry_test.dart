@@ -79,14 +79,24 @@ void main() {
     });
 
     test('each failed attempt cleans up its own profile dir', () async {
+      // A PREFIX ONLY THIS TEST USES. The default `appbox-design-worker-` is
+      // shared by every worker on the machine, so counting it counts whatever
+      // else is booting: under full-suite load this assertion passed or failed
+      // on other test files' timing rather than on the retry loop. Measured
+      // over repeated full-suite runs the baseline read 2, then 4, then 3, and
+      // the failures were real workers appearing mid-window — never a dir this
+      // test leaked. Owning the prefix makes the count exact by construction
+      // instead of quiet when the machine happens to be idle.
+      final prefix = 'appbox-boot-retry-test-${DateTime.now()
+          .microsecondsSinceEpoch}-';
       final tmp = Directory.systemTemp;
-      int workerDirs() => tmp
+      int ownDirs() => tmp
           .listSync()
           .whereType<Directory>()
-          .where((d) => d.path.contains('appbox-design-worker-'))
+          .where((d) => d.path.contains(prefix))
           .length;
 
-      final before = workerDirs();
+      expect(ownDirs(), 0, reason: 'the prefix must be unused before the boot');
       try {
         await JsWorker.boot(
           workerPageUrl: 'http://127.0.0.1:1/__worker_page',
@@ -94,12 +104,16 @@ void main() {
           artifactDir: Directory.systemTemp.path,
           chromePath: deadBrowser,
           launchAttempts: 3,
+          profilePrefix: prefix,
         );
       } catch (_) {}
       // Three attempts must not leave three profile dirs behind. A retry loop
       // that leaks per attempt manufactures the very orphans sweepOrphans
-      // exists to reap — one failure becoming N strays.
-      expect(workerDirs(), lessThanOrEqualTo(before));
+      // exists to reap — one failure becoming N strays. Exactly zero, not
+      // "no more than before": these dirs are the test's own, nothing else can
+      // create them, and sweepOrphans does not know this prefix, so anything
+      // left here was leaked by the loop under test.
+      expect(ownDirs(), 0);
     });
   });
 }

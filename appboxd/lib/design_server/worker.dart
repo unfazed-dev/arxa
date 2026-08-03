@@ -217,7 +217,8 @@ List<File> _walk(Directory d) => d
 /// artifact change; dispose on shutdown.
 class JsWorker {
   JsWorker._(this._tab, this._workerPageUrl, this._origin, this._artifactDir,
-      this._iconsDir, this._projectDir, this._launchAttempts, this._chromePath);
+      this._iconsDir, this._projectDir, this._launchAttempts, this._chromePath,
+      this._profilePrefix);
   // Not final: recovering from a dead browser means a NEW Chrome and a new
   // session. [reload] alone cannot do it — it re-navigates this tab, and a tab
   // whose browser has exited is not navigable, so the studio stayed wedged
@@ -233,6 +234,12 @@ class JsWorker {
   // uses to make the replacement fail on cue.
   final int _launchAttempts;
   String? _chromePath;
+
+  /// Carried so a relaunch lands under the same prefix the boot used —
+  /// otherwise a worker booted under a caller-owned prefix would silently
+  /// start creating dirs under the default one, which is exactly the kind of
+  /// drift the prefix exists to remove.
+  final String? _profilePrefix;
   _ChromeHandle? _chrome;
 
   /// Boot a worker against the artifact served at [origin] (the Dart server's
@@ -252,15 +259,20 @@ class JsWorker {
     // caller pin a specific Chrome build.
     int launchAttempts = 2,
     String? chromePath,
+    // Lets a test own the profile-dir prefix so it can count only its own —
+    // see [_ChromeHandle.launch].
+    String? profilePrefix,
   }) async {
     final handle = await _ChromeHandle.launch(
-        attempts: launchAttempts, chromePath: chromePath);
+        attempts: launchAttempts,
+        chromePath: chromePath,
+        profilePrefix: profilePrefix);
     try {
       final tab = await handle.client.newTab();
       await tab.enable();
       await tab.navigateAndSettle(workerPageUrl, settleMs: 600);
       final w = JsWorker._(tab, workerPageUrl, origin, artifactDir, iconsDir,
-          projectDir, launchAttempts, chromePath)
+          projectDir, launchAttempts, chromePath, profilePrefix)
         .._chrome = handle;
       await w._inject(
           _scanArtifact(artifactDir, origin, iconsDir, projectDir: projectDir));
@@ -514,7 +526,9 @@ class JsWorker {
       // politely must not stop its replacement from starting.
     }
     final handle = await _ChromeHandle.launch(
-        attempts: _launchAttempts, chromePath: _chromePath);
+        attempts: _launchAttempts,
+        chromePath: _chromePath,
+        profilePrefix: _profilePrefix);
     try {
       final tab = await handle.client.newTab();
       await tab.enable();
@@ -720,9 +734,20 @@ class _ChromeHandle {
   /// [chromePath] is injectable so the failure path is testable at all: point it
   /// at a binary that exits immediately and the retry runs in milliseconds
   /// instead of needing a real Chrome to misbehave on cue.
+  ///
+  /// [profilePrefix] names the `systemTemp` prefix each attempt's profile dir
+  /// is created under, defaulting to the one [sweepOrphans] knows. It exists
+  /// so a test can assert on *its own* dirs: the default prefix is shared by
+  /// every worker on the machine, so counting it means counting whatever else
+  /// happens to be booting, and the assertion passes or fails on other tests'
+  /// timing rather than on the behaviour under test. A prefix the caller owns
+  /// makes that count exact by construction. Note the trade: dirs under a
+  /// custom prefix are invisible to [sweepOrphans], so a caller passing one
+  /// owns their cleanup — which is precisely what such a test asserts.
   static Future<_ChromeHandle> launch({
     int attempts = 2,
     String? chromePath,
+    String? profilePrefix,
   }) async {
     final exe = chromePath ?? CdpClient.defaultChromePath();
     if (!await File(exe).exists()) {
@@ -736,8 +761,8 @@ class _ChromeHandle {
       Process? proc;
       Directory? tmpDir;
       try {
-        tmpDir =
-            await Directory.systemTemp.createTemp('appbox-design-worker-');
+        tmpDir = await Directory.systemTemp
+            .createTemp(profilePrefix ?? _uddWorker);
         proc = await Process.start(exe, [
           '--headless=new',
           '--remote-debugging-port=0',
@@ -759,9 +784,24 @@ class _ChromeHandle {
         try {
           proc?.kill(ProcessSignal.sigkill);
         } catch (_) {}
-        try {
-          tmpDir?.deleteSync(recursive: true);
-        } catch (_) {}
+        if (tmpDir != null) {
+          // SIGKILL is a request, not a completion. A Chrome that got far
+          // enough to open its profile still holds those files for a moment
+          // after the signal, and on macOS the recursive delete throws while
+          // it does — into a bare `catch (_)`, so the directory leaks silently
+          // and this retry loop manufactures exactly the orphans sweepOrphans
+          // exists to reap. Wait for the profile to be genuinely unowned
+          // first, the same guarantee CdpClient.close gives its own dir.
+          //
+          // Inert when the launched binary never opened the profile (a boot
+          // that died instantly, or the `/bin/echo` stand-in the retry tests
+          // use): nothing owns the dir, so the wait returns at once. This
+          // hardens the real-Chrome path; it is not what makes any test pass.
+          await CdpClient.awaitProfileReleased(tmpDir.path);
+          try {
+            tmpDir.deleteSync(recursive: true);
+          } catch (_) {}
+        }
         if (attempt < attempts) {
           // Announced, because a silent retry would hide a Chrome that is
           // failing every other boot behind an apparently healthy server.
