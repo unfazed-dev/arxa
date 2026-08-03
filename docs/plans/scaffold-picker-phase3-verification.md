@@ -71,6 +71,18 @@ lens shoot: 3 rung(s), 0 problem(s)
 
 ## 4. Mutation routes — live, 200, 0 `undefined`
 
+> **Conditional — read before trusting this section.** These four routes exist
+> **only in an uncommitted working-tree edit** to `routes.scaffold.js` (a
+> chrome-integration file, see Lane note). In the committed tree all four POSTs
+> **404**. Neither `design lint` nor the lens ladder catches that, because
+> neither exercises a POST — this is precisely the §0 "looks like a pass" class.
+> Everything below is verified *with the unlanded spine edit applied*.
+>
+> The method is also **not ratified**: chrome-integration proposed
+> `GET /scaffold/add?kit=`; I implemented **POST with a form body** and told
+> them. If they land the GET form instead, the view's `<form method="post">`
+> elements break and this section must be re-measured.
+
 All mutations are **POST with a form body** (`kit=<id>`); the kit id never
 travels in the query string from the view.
 
@@ -112,9 +124,29 @@ GET-addressable state param or a CDP click step; neither exists today.
 nothing in `ui/` references the path. Scaffold surfaces run the shared composer
 disabled. It should not be registered until it has an owner.
 
-## Lane note
+## Lane note — the unlanded edit, preserved verbatim
 
-The five route tuples are an edit to `routes.scaffold.js`, which belongs to
-chrome-integration. It was made to get the mutations testable and has been
-reported to them for accept-or-revert; it should not land in the Phase 3 commit
-unacknowledged.
+The **four** route tuples in §4 are an edit to `routes.scaffold.js`, which
+belongs to chrome-integration. It was made to get the mutations testable and has
+been reported to them for accept-or-revert; it should not land in the Phase 3
+commit unacknowledged.
+
+It deliberately does **not** register `POST /scaffold/messages` — consistent
+with §6, that route has no owner and should stay unregistered.
+
+Because this worktree is shared with concurrent sessions and the edit is
+uncommitted, the exact tuples are recorded here so they survive a clean:
+
+```js
+// in designs/appbox-studio/ui/views/main_shell/scaffold/routes.scaffold.js,
+// immediately after: ['GET', '/scaffold/panel/size/:panel/:size', picker.panelSize],
+['POST', '/scaffold/add',            picker.add],
+['POST', '/scaffold/remove',         picker.remove],
+['POST', '/scaffold/remove/confirm', picker.removeConfirm],
+['POST', '/scaffold/remove/cancel',  picker.cancelRemove],
+```
+
+`removeConfirm` is the one route that also reads `?kit=` (the facade emits
+`confirmHref` with it), so a single route serves both entry paths; see the
+precedence measurement in §4. `cancelRemove` must stay a server route for the
+reason given in §4.
