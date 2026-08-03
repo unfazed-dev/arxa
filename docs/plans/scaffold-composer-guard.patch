@@ -1,0 +1,35 @@
+diff --git a/designs/appbox-studio/ui/views/main_shell/scaffold/_shared.html b/designs/appbox-studio/ui/views/main_shell/scaffold/_shared.html
+index e0aeacc..d4dcc58 100644
+--- a/designs/appbox-studio/ui/views/main_shell/scaffold/_shared.html
++++ b/designs/appbox-studio/ui/views/main_shell/scaffold/_shared.html
+@@ -50,11 +50,29 @@
+ </div>
+ {% endmacro %}
+ 
++{# The thread is unconditional — it is narrative, and every scaffold surface has
++   something to say. The input field is not: `cm.field` hardcodes
++   action="{{ c.composerAction }}" with no guard of its own, so a facade that
++   sets no action renders `action=""`, which posts the page to itself. A surface
++   with no mutation (scaffold.run is a read receipt over a frozen run) must
++   render no field rather than a field wired to nowhere. Gating on the action
++   makes `action=""` structurally unreachable here.
++
++   This gate is deliberately NOT in shared widgets/composer.html: intake and
++   design import that file too, and it would be a no-op for them while changing
++   a file their owners depend on.
++
++   Known cost: a facade that forgets composerAction now loses its composer
++   silently instead of visibly breaking. The check that catches the other half
++   (action set, nobody routed it — a rendered-markup sweep, since the selftest
++   reads template source where this attribute is never a literal) is written up
++   in docs/plans/composer-action-integrity.md. That defect is live on
++   /scaffold today: action="/scaffold/messages" renders, POST returns 404. #}
+ {% macro composerPanel(c) %}
+ {% set CP = { eyebrow: c.stageEyebrow, chips: c.chips } %}
+ {{ cp.open(CP) }}
+   {{ thread(c) }}
+-  {{ cm.field(c) }}
++  {% if c.composerAction %}{{ cm.field(c) }}{% endif %}
+ {{ cp.close(CP) }}
+ {% endmacro %}
+ 

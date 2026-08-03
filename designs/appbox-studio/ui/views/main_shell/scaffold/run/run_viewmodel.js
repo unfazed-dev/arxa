@@ -22,6 +22,25 @@ const ctx = (c, h, screen) => ({
 // the event. Nothing on this screen polls, ticks, or animates.
 export const page = (c, h) => h.render(c, VIEW, ctx(c, h));
 
+// The composer records the user's own words onto the receipt thread; the
+// facade adds no reply. Empty text answers 204 so htmx swaps nothing, which is
+// the same contract the intake and design composers already use.
+export const sendMessage = async (c, h) => {
+  const form = await h.form(c);
+  const text = String(form.text || '').trim();
+  if (!text) return h.noContent(c);
+  return h.render(c, `${VIEW}#panelsSwap`, {
+    activeShell: 'scaffold',
+    ...facade.sendMessage(
+      h.session(c).data,
+      text,
+      h.t(c),
+      h.locale(c),
+      c.req.query('state') || 'completed',
+    ),
+  });
+};
+
 // Panel width grip: s/m/l persisted per side, whole-panel re-render.
 export const panelSize = (c, h) =>
   h.render(c, `${VIEW}#panelsSwap`, {

@@ -14,16 +14,15 @@ Three tiers (D19), confirmed:
 
 - **Free, forever, written into licence text:** design + eject (htmx artifact) and BYO-LLM. Free tier is unlimited local design/build/export — no identity, no metering (D16: anonymous work is free by construction).
 - **Pro (~$20–40/seat/mo):** unlocks the scaffold entitlement (D17/D18 gate) — local builds, web deploys. Web deploy margin is thin and explicitly **not metered**.
-- **Scale ($149/mo per org — D30):** unlimited seats, 3 released apps, 50,000 bundled patch installs across the fleet; store releases; Shorebird OTA; fleet management; custom domains. Per-org pricing, never per-seat — deliberate anti-FlutterFlow positioning (research: competitors' loudest complaint is FlutterFlow's $150/seat).
+- **Scale ($149/mo per org — D30):** unlimited seats, 3 released apps, +$49/app/mo beyond 3, 50,000 bundled patch installs across the fleet, overage at $1.50/2,500 installs (1.5x markup on Shorebird's raw rate); store releases; Shorebird OTA on a Totem-owned, pooled Shorebird org; fleet management; custom domains. Per-org pricing, never per-seat — deliberate anti-FlutterFlow positioning (research: competitors' loudest complaint is FlutterFlow's $150/seat).
 
 Scale add-ons resolved since D19 was written: managed-kit resale is **out of v1** (D31); credits/metered inference is **deferred to next version** (D32, BYO-LLM keeps full parity forever per zero-markup principles — no expiring credits, no per-plan credit revaluation).
 
-**Two conflicts between the decision log and the research it cites — flag before ship:**
+Both figures below were previously flagged as conflicts against the decision log's own cited research; both are now amended and resolved:
 
-1. **Per-app overage above 3 apps.** D30 says "+$9/app beyond 3." The research it cites for the SCALE band (`scale-pricing-and-credits.md`, Q1 recommendation) says "+$49/app/mo beyond 3 apps." A 5.4x gap. The $49 figure is the one load-bearing in the research's own margin logic (positioned under Codemagic's $299, over Bitrise's $99 floor); $9 looks like a transcription error but nothing in the decision log explains the divergence. **Confirm which figure ships before pricing pages go live.**
-2. **Shorebird overage margin.** D33 settles on "$1/2,500 (first-party-verified rate)" with no markup — a flat passthrough. The research (`scale-pricing-and-credits.md` Q1) explicitly recommends a **1.5x markup ($1.50/2,500)** specifically because Shorebird's raw cost is $0.0004/install and the doc names negative-margin OTA resale as "the single biggest financial hazard identified." Shipping D33's flat rate means Scale's OTA line carries **zero margin** — the exact risk the research was written to avoid. Also per D33: current per-tier Shorebird console prices are aggregator-sourced, not confirmed — pre-ship gate regardless of which rate is chosen.
-
-One resolved (not a live conflict, but undocumented as such in the log): D19 originally states Shorebird orgs are "per-customer or customer-owned — never pooled on Totem Labs' plan." D33 (later, confirmed) reverses this: "Totem owns the Shorebird org... 50k installs bundled in SCALE." D33 supersedes D19 on this point; the log doesn't mark D19's clause as superseded, so a reader scanning decisions in order hits a direct contradiction. Worth a one-line correction in the decision log itself.
+1. **Per-app overage above 3 apps: $49/app/mo** (D30, amended — the research figure from `scale-pricing-and-credits.md` Q1 is adopted; the earlier $9 was a transcription error, since corrected in the log).
+2. **Shorebird overage rate: $1.50/2,500 installs**, a 1.5x markup on Shorebird's $1/2,500 raw rate (D33, amended — the research's margin-protecting recommendation is adopted; the flat zero-margin passthrough is rejected). Per-tier Shorebird console prices remain aggregator-sourced and still need first-party confirmation pre-ship.
+3. **Shorebird org ownership: Totem-owned, pooled** (D33) stands. D19's earlier "never pooled on Totem Labs' plan" clause is struck and annotated SUPERSEDED-by-D33 in the log — no remaining contradiction between the two decisions.
 
 ## Enforcement architecture
 
@@ -53,8 +52,8 @@ Machine fingerprinting follows documented per-OS conventions (macOS `IOPlatformU
 4. **Local verification + refresh.** Pinned public key embedded in the client; cache at `~/.appbox/entitlement.jwt`; silent refresh inside last 48h; offline continuation logic reusing/replacing `licence.dart`'s grace-period math.
 5. **Move the gate.** Insert entitlement assertion into `scaffoldMain` (`appbox.dart:606-607`) as primary; keep `scaffoldGate` (`:352-353`) as a redundant second layer. Retire `watermark.dart` and its call sites.
 6. **Compile out `APPBOX_DEV_LICENCE`** from release builds; keep it dev-only.
-7. **Stripe Checkout + pricing page.** Three tiers per the resolved pricing structure above, pending the two conflicts being settled.
-8. **Shorebird overage billing.** Pooled-org install metering against whichever rate (D33's $1/2,500 vs research's $1.50/2,500) is confirmed pre-ship.
+7. **Stripe Checkout + pricing page.** Three tiers per the resolved pricing structure above: Free / Pro / Scale at $149/mo + $49/app beyond 3.
+8. **Shorebird overage billing.** Pooled-org (Totem-owned) install metering at $1.50/2,500 installs beyond the 50k bundle, including the 1.5x margin over Shorebird's raw $1/2,500 rate.
 
 ## Risks
 
@@ -63,13 +62,10 @@ Machine fingerprinting follows documented per-OS conventions (macOS `IOPlatformU
 - **Air-gapped users are unaddressed.** The entitlement architecture assumes periodic connectivity (silent refresh, 7-day JWT). A genuinely air-gapped buyer needs a manual license-file checkout path (Keygen's model) or must be explicitly declared out of scope — not currently decided.
 - **Org-pooling / seat abuse.** 3 seats/machines with self-service deactivation is the only stated control; no strategy is chosen yet for `machineUniquenessStrategy`-equivalent abuse (e.g., rapid activate/deactivate cycling to exceed the seat cap). Keygen's `overageStrategy`/`requireFingerprintScope` patterns are documented in research but not adopted as decisions.
 - **Dunning clock mismatch.** Stripe's ~8 retries/2 weeks is deliberately kept separate from the client offline-grace clock (D18) — the two clocks drifting out of sync (e.g., Stripe cancels before the local JWT expires, or vice versa) is an integration risk, not yet a tested path.
-- **Margin risk on Scale OTA overage** if D33's flat $1/2,500 ships as-is (see pricing conflict #2 above) — this is the exact hazard the research was written to flag.
 - **Q4 (anti-tamper) is under-sourced** per `entitlement-enforcement-practices.md` — grade C, inference only, should not be treated as settled practice.
 
 ## Open questions
 
-- Which per-app overage rate ships: D30's $9 or research's $49?
-- Which Shorebird overage rate ships: D33's flat $1/2,500 or research's 1.5x $1.50/2,500?
 - Is air-gapped/offline-forever use explicitly out of scope, or does it need a manual license-file path?
 - What abuse-detection strategy (if any) backs the 3-seat cap beyond self-service deactivation?
 - Pre-ship gate (D33): confirm real per-tier Shorebird console prices — current figures are aggregator-sourced.

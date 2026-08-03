@@ -18,6 +18,23 @@ export default [
   // scaffold.picker — kit selection (shell root: /scaffold)
   ['GET', '/scaffold', picker.page],
   ['GET', '/scaffold/panel/size/:panel/:size', picker.panelSize],
+  // Kit mutations. Every one is a POST: the view posts `<form method="post">`
+  // + hx-post, and the kit id travels in the form body as `kit`, never in the
+  // query string. `removeConfirm` is the single exception that also reads
+  // `?kit=` — the facade emits `confirmHref` with it — so one route serves
+  // both entry paths. Measured precedence: `session.pendingRemove` WINS when
+  // set, and `?kit=` is only consulted when it is absent (fresh session
+  // `?kit=auth` and `?kit=payments` render differently; with pendingRemove
+  // set both render the pending kit). The two agree in every real flow.
+  // posted-by: picker_view.html forms; targets #picker-grid (outerHTML),
+  // except removeConfirm which targets #panels (morph:outerHTML).
+  ['POST', '/scaffold/add', picker.add],
+  ['POST', '/scaffold/remove', picker.remove],
+  ['POST', '/scaffold/remove/confirm', picker.removeConfirm],
+  // Cancel is a server route, not a link back to the page: clearing
+  // `session.pendingRemove` is what ends the confirm, and re-rendering
+  // `/scaffold` would leave it set and show the dialog again forever.
+  ['POST', '/scaffold/remove/cancel', picker.cancelRemove], // posted-by: c.cancelHref (scaffold_facade)
   // scaffold.run — the scaffold execution surface
   ['GET', '/scaffold/run', run.page],
   ['GET', '/scaffold/run/panel/size/:panel/:size', run.panelSize],

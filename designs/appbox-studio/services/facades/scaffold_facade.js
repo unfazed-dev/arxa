@@ -179,9 +179,14 @@ export const context = (session = {}, t = (k) => k, locale = 'en', screen = 'suc
       { label: t('scaffold.picker.chip.selected', { count: chosen.length }) },
       ...(unready.length ? [{ label: t('scaffold.picker.chip.unready', { count: unready.length }) }] : []),
     ],
+    // The two opening rows are orientation and are always present; anything
+    // the user has actually said follows them, in order. The session slot is
+    // the same persistence shape as `scaffoldPanelSize` above — a plain field
+    // on session data, so a re-render at any lens replays the same thread.
     thread: [
       { kind: 'event', text: t('scaffold.picker.thread.detected', { count: counts.declared + counts.inferred }) },
       { from: 'agent', text: t('scaffold.picker.thread.help') },
+      ...(session.scaffoldThread || []),
     ],
     activity: {
       label: t('scaffold.picker.activity.label'),
@@ -243,6 +248,31 @@ const PANEL_SIZES = ['s', 'm', 'l'];
 export const setPanelSize = (session = {}, panel, size, t = (k) => k, locale = 'en', screen = 'success') => {
   if (PERSISTABLE_PANELS.includes(panel) && PANEL_SIZES.includes(size)) {
     (session.scaffoldPanelSize ??= {})[panel] = size;
+  }
+  return context(session, t, locale, screen);
+};
+
+/**
+ * Append a user turn and the agent's acknowledgement to the picker thread.
+ *
+ * Same argument order as `setPanelSize` — session first, `screen` last — so
+ * the POST re-render keeps the lens it was posted from. Dropping `screen`
+ * here would collapse all six states to `success` on every message, which no
+ * selftest would catch: the route would still answer 200.
+ *
+ * The reply is a fixed acknowledgement from the ARB rather than a generated
+ * one. This screen picks kits; it has no reply corpus of its own (unlike
+ * intake, whose `replies`/`replyFallback` come from its repository), and
+ * inventing one here would put words in the agent's mouth that no seed backs.
+ */
+export const sendMessage = (session = {}, text, t = (k) => k, locale = 'en', screen = 'success') => {
+  const body = String(text ?? '').trim();
+  if (body) {
+    const seq = (session.scaffoldThreadSeq = (session.scaffoldThreadSeq || 0) + 1);
+    (session.scaffoldThread ??= []).push(
+      { id: `u-${seq}`, from: 'user', text: body },
+      { id: `a-${seq}`, from: 'agent', text: t('scaffold.picker.thread.reply') },
+    );
   }
   return context(session, t, locale, screen);
 };

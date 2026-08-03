@@ -19,11 +19,20 @@ none exists):
   today makes macOS the only native target (deploy-machinery.md Q1 confirms
   neither `deploy.dart` nor `kit/deploy/` has ever had a Windows/Linux
   target — this would be genuinely new work, not dormant code).
-- Windows packaging specifics — **no decision record exists for MSIX,
-  winget, or Azure Trusted Signing**; none of it is captured in
-  `docs/plans/scaffold-shell-kit-picker-decisions.md` or
-  `docs/research/deploy-machinery.md`. Treat as unresearched, not decided —
-  a Windows revisit starts with that research.
+- Windows packaging specifics — research now exists:
+  `docs/research/windows-packaging.md` (D34, research-only; no decision
+  taken). Key corrections it establishes for the eventual revisit: MSIX
+  does NOT sandbox by default (Desktop-Bridge apps run full trust —
+  local server + headless Chrome CDP survive); winget treats
+  exe/Inno/MSI/MSIX as equally first-class; Azure Trusted Signing's real
+  gate is eligibility (US/Canada orgs, 3+ years history; individual
+  onboarding paused Apr 2025) — Totem Labs eligibility UNVERIFIED, needs
+  an in-portal check before any signing decision; SmartScreen no longer
+  favors EV (since 2024), so OV certs (~$220-300/yr) are the fallback.
+  Precedent (VS Code, Figma): classic installer + self-built updater as
+  consumer default, mirroring the macOS D22 posture — recommended default
+  is Inno/WiX, not MSIX. A Windows revisit starts from that report, not
+  from scratch.
 
 Also out of scope (owned by sibling plans): the deploy shell UI and
 patch/release classifier (`docs/plans/deploy-engine-unification.md`,

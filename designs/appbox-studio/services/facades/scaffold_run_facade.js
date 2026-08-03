@@ -27,6 +27,14 @@ const PANEL_SIZES = ['s', 'm', 'l'];
 
 const run = (sessionData = {}) => (sessionData.scaffoldRun ??= {});
 
+// Sibling convention (design/intake/build): the facade resolves the persisted
+// map down to ONE scalar for the panel the spec describes, and the template
+// passes `size:`/`sizeHref:`. The template never reads the map. Emitting a map
+// (`panelSizes`) instead is why this screen's grip never appeared: the persist
+// route was live the whole time, but `activity_panel.open()` gates `resize` on
+// `spec.sizeHref`, so with no href there was no grip, and width fell to 's'.
+const panelSizeFor = (s, panel) => (PANEL_SIZES.includes(s.panelSize?.[panel]) ? s.panelSize[panel] : 's');
+
 /**
  * context — the `c` object every scaffold.run template macro reads.
  *
@@ -66,9 +74,10 @@ export const context = (session = {}, t = (k) => k, locale = 'en', screen = 'com
   return {
     // --- shell chrome (read by _shared.html) ------------------------------
     // `panel` is the grid's data-panel string (which panel is emphasised);
-    // the persisted s/m/l widths are a separate map, not the same field.
+    // `panelSize` is the activity panel's persisted width — a different field.
     panel: s.panel || 'main',
-    panelSizes: s.panelSize || {},
+    panelSize: panelSizeFor(s, 'activity'),
+    panelSizeHref: '/scaffold/run/panel/size/activity/',
     stageEyebrow: t('scaffold.run.eyebrow'),
     chips: [
       { label: t('scaffold.run.chip.structure', { revision: structure.revision }) },
@@ -81,6 +90,11 @@ export const context = (session = {}, t = (k) => k, locale = 'en', screen = 'com
         text: t(`scaffold.run.thread.${state}`),
         link: done ? { href: '/build', label: t('scaffold.run.thread.toBuild') } : null,
       },
+      // The user's own words, and nothing after them. A frozen receipt has no
+      // agent left to answer: synthesising a reply would claim the run read a
+      // message that arrived after it finished (D24 — the transform already ran
+      // to completion before this screen could be rendered at all).
+      ...(s.messages || []).map((text) => ({ from: 'user', text })),
     ],
     activity: {
       label: t('scaffold.run.activity.label'),
@@ -124,4 +138,13 @@ export const setPanelSize = (sessionData, panel, size, t = (k) => k, locale = 'e
   return context(sessionData, t, locale, screen);
 };
 
-export default { context, setPanelSize };
+// The composer on a read receipt records what the user said and stops there.
+// Persisted per session so the note survives the next whole-panel re-render;
+// no reply is synthesised (see the thread comment in `context`).
+export const sendMessage = (sessionData, text, t = (k) => k, locale = 'en', screen = 'completed') => {
+  const body = String(text ?? '').trim();
+  if (body) (run(sessionData).messages ??= []).push(body);
+  return context(sessionData, t, locale, screen);
+};
+
+export default { context, setPanelSize, sendMessage };

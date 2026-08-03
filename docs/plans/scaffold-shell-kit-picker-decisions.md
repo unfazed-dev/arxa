@@ -129,8 +129,10 @@ entry points: intake (optional), design (declarations), scaffold (final pick).
       local builds, web deploys (web margin thin — not metered).
     - *Scale (price TBD — web research running):* store releases, Shorebird
       OTA with metered install overage passed through at cost+margin
-      ($1/2500 installs base), fleet, custom domains. Shorebird orgs
-      per-customer or customer-owned — never pooled on Totem Labs' plan.
+      ($1/2500 installs base), fleet, custom domains. ~~Shorebird orgs
+      per-customer or customer-owned — never pooled on Totem Labs' plan.~~
+      *(SUPERSEDED by Decision 33: Totem owns a pooled Shorebird org;
+      overage at $1.50/2,500. User-confirmed 2026-08-03.)*
     - *Scale add-on direction (user):* managed kit features — e.g. appbox
       manages the customer's database (Supabase or future Totem Labs
       offering). Billing shape under research.
@@ -268,7 +270,7 @@ Evidence: docs/research/byok-cors-practices.md (CORS table + empirical verificat
 
 ## Decision 30 — SCALE tier price: $149/mo per org
 
-Unlimited seats, 3 released apps, 50k bundled patch installs, +$9/app beyond 3. Per-org, never per-seat (deliberate anti-FlutterFlow positioning). Band evidence: docs/research/scale-pricing-and-credits.md.
+Unlimited seats, 3 released apps, 50k bundled patch installs, +$49/app/mo beyond 3. Per-org, never per-seat (deliberate anti-FlutterFlow positioning). Band evidence: docs/research/scale-pricing-and-credits.md. *(AMENDED 2026-08-03: was +$9/app — no cost basis; $49 is the load-bearing figure in the cited research's margin logic. User-confirmed.)*
 
 ## Decision 31 — Managed Supabase kit: NOT in v1
 
@@ -280,7 +282,11 @@ v1 is BYO-LLM only (custody per Decision 29). Credits exist only if/when Totem s
 
 ## Decision 33 — Shorebird install billing: pooled on Totem org
 
-Totem owns the Shorebird org; 50k installs bundled in SCALE; overage passed through at $1/2,500 (first-party-verified rate). PRE-SHIP GATE: confirm real per-tier Shorebird prices in the console — current tier dollar figures are aggregator-sourced (flagged in docs/research/scale-pricing-and-credits.md).
+Totem owns the Shorebird org; 50k installs bundled in SCALE; overage billed at $1.50/2,500 (1.5x markup over Shorebird's first-party $1/2,500 rate). PRE-SHIP GATE: confirm real per-tier Shorebird prices in the console — current tier dollar figures are aggregator-sourced (flagged in docs/research/scale-pricing-and-credits.md). *(AMENDED 2026-08-03: was zero-margin passthrough — research flags negative-margin OTA resale as the single biggest financial hazard; 1.5x buffer adopted. User-confirmed. Supersedes D19's "never pooled" clause — see annotation there.)*
+
+## Decision 34 — Windows packaging: research commissioned, not decided
+
+No prior record exists for Windows packaging (MSIX/winget/Azure Trusted Signing) — an earlier "decision recorded" framing was wrong (verified 2026-08-03). Windows/Linux distribution remains deferred per D23, but the user commissioned the packaging research NOW rather than at revisit time. Research agent tasked with: MSIX vs installer trade-offs, winget submission mechanics, Azure Trusted Signing cost/requirements, Flutter-on-Windows packaging precedent. Output: docs/research/windows-packaging.md. No shipping decision until that lands.
 
 ## Registry `states` cannot carry `signedOut` / `notEntitled` / `success`
 
