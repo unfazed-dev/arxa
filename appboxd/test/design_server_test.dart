@@ -551,6 +551,38 @@ void main() {
       expect(r.body, contains('no route for'));
     });
 
+    test('19: a SELF-HEAL reboot also defers — not just the watcher\'s reload',
+        () async {
+      // The window opens on two paths, and this is the second. `JsWorker`
+      // reboots itself when it finds a lost realm (task #64), and that reboot
+      // re-navigates the tab exactly as a watcher reload does. The request
+      // that TRIGGERS the reboot is safe — dispatch awaits the reboot before
+      // retrying — but any OTHER request arriving during it hits the same
+      // empty table.
+      //
+      // An earlier version of this fix tracked the reload in DesignServer
+      // itself, which could only ever see the watcher's; this case is why the
+      // wait is on JsWorker.reloadInFlight, the one signal both paths set.
+      await _get('$base/timer'); // control: worker is healthy
+      await srv.breakWorkerForTest();
+
+      // First request finds the lost realm and starts the self-heal; the
+      // others pile in while the tab is mid-reboot.
+      final all = await Future.wait([
+        _get('$base/timer'),
+        Future.delayed(const Duration(milliseconds: 120))
+            .then((_) => _get('$base/timer')),
+        Future.delayed(const Duration(milliseconds: 400))
+            .then((_) => _get('$base/timer')),
+        Future.delayed(const Duration(milliseconds: 900))
+            .then((_) => _get('$base/timer')),
+      ]);
+
+      expect(all.map((r) => r.status).where((c) => c == 404), isEmpty,
+          reason: 'a request concurrent with a self-heal reboot got a 404 from '
+              'an empty route table — got ${all.map((r) => r.status).toList()}');
+    });
+
     test('19: a reload that outlives the grace fails loudly and bounded',
         () async {
       // A 1ms grace guarantees expiry while the reload is still running. The

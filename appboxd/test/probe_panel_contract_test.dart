@@ -1,7 +1,7 @@
 // The panel-contract port's parity contract with JavaScript.
 //
 // Sections A–L are browser-driven and are verified by running the probe against
-// a served tree and diffing its output against `tools/probe-panel-contract.mjs`
+// a served tree and diffing its output against `archives/tooling-pre-dart/tools/studio-probes/probe-panel-contract.mjs`
 // (see docs/probes-capability-map.md). What IS unit-testable is the handful of
 // pure functions the port needed because the obvious Dart equivalent is subtly
 // different from the JS the `.mjs` relies on — and each difference reaches the

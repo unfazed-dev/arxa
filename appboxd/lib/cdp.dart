@@ -278,7 +278,7 @@ class CdpClient {
 
   /// Find Chrome at the default platform path.
   ///
-  /// `APPBOX_CHROME` overrides it — the same escape hatch `tools/probe-*.mjs`
+  /// `APPBOX_CHROME` overrides it — the same escape hatch `archives/tooling-pre-dart/tools/studio-probes/probe-*.mjs`
   /// already honours, for machines where Chrome is not at the platform default
   /// and for exercising the launch-failure paths against a stub binary.
   static String defaultChromePath() {

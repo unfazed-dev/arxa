@@ -224,17 +224,6 @@ class DesignServer {
 
   late final Duration _reloadGrace;
 
-  /// Completes when the in-flight hot reload settles; null when none is running.
-  ///
-  /// This is the whole fix for task #19. A reload re-navigates the worker tab,
-  /// which wipes the JS realm and leaves `worker_shim.js`'s `routesTable`
-  /// empty until `__boot` repopulates it — so for ~950ms `__dispatch` exists,
-  /// answers, and 404s EVERYTHING. Dart cannot see that by inspecting the
-  /// worker (an empty table is indistinguishable from "this route really does
-  /// not exist"), but it does not need to: Dart OWNS the trigger, so it knows
-  /// exactly when the window opens and closes. Requests wait on this instead.
-  Future<void>? _reloadInFlight;
-
   final _sessions = <String, Map<String, dynamic>>{};
 
   /// Timers, KEYED BY SESSION ID — the same shape as [_sessions] (task #53).
@@ -582,15 +571,20 @@ class DesignServer {
     // The body read above stays OUTSIDE the lock deliberately: a slow client
     // must not be able to hold a session's lock while it dribbles out a body.
     // Task #19: never dispatch into a worker whose route table is empty
-    // because a reload is in flight — see [_reloadInFlight]. Deliberately
-    // OUTSIDE the session lock: a reload is process-wide, and holding one
-    // session's lock while waiting on it would serialize that session behind a
-    // wait it has nothing to do with.
+    // because a reload is in flight — see [JsWorker.reloadInFlight], which is
+    // the one signal for BOTH reload paths: the watcher's, and the self-heal
+    // reboot `JsWorker.dispatch` performs when it finds a lost realm. Tracking
+    // it here instead would only ever see the watcher's, so a self-heal reboot
+    // would leave concurrent requests 404ing exactly as before.
+    //
+    // Deliberately OUTSIDE the session lock: a reload is process-wide, and
+    // holding one session's lock while waiting on it would serialize that
+    // session behind a wait it has nothing to do with.
     //
     // This defers; it does not translate. A route that genuinely does not
     // exist still reaches the worker and still answers 404 — after the wait,
     // not instead of it — so the deferral cannot mask a real routing bug.
-    final reloading = _reloadInFlight;
+    final reloading = _worker.reloadInFlight;
     if (reloading != null) {
       final settled = await reloading
           .timeout(_reloadGrace)
@@ -780,7 +774,7 @@ class DesignServer {
     _debounce?.cancel();
     _debounce = Timer(const Duration(milliseconds: 200), () {
       if (_stopped) return;
-      unawaited(_trackedReload().catchError((Object e) {
+      unawaited(_worker.reload().catchError((Object e) {
         stderr.writeln('[design-server] hot reload failed: $e');
       }));
     });
@@ -811,36 +805,7 @@ class DesignServer {
   }
 
   /// Reload the worker now (used by tests; production uses the file watcher).
-  Future<void> reload() => _trackedReload();
-
-  /// Run a hot reload with [_reloadInFlight] held open for its whole duration.
-  ///
-  /// The gate is a [Completer] rather than the reload future itself so that it
-  /// completes NORMALLY even when the reload fails: waiters must resume and
-  /// take their chances with the worker — the task-#64 self-heal is the net
-  /// under them — rather than inherit the reload's error, which would turn one
-  /// failed reload into an error for every request queued behind it.
-  ///
-  /// Cleared under the same tail-identity guard [_withSessionLock] uses, so a
-  /// slow reload finishing after a newer one cannot clear the newer one's gate
-  /// and let requests through into a window that is still open.
-  Future<void> _trackedReload() {
-    final gate = Completer<void>();
-    _reloadInFlight = gate.future;
-    final work = _worker.reload();
-    // The error is neutralised on THIS branch before `whenComplete`, and only
-    // here — the caller still sees it on the returned `work`. A bare
-    // `work.whenComplete(...)` would be a second, unhandled subscription to a
-    // failing reload, and an async error with no handler above it is raised
-    // from the watcher's Timer callback, which terminates the whole server.
-    // Saving a file would kill the studio (task #64's regression, caught by
-    // worker_death_test).
-    unawaited(work.then<void>((_) {}, onError: (Object _) {}).whenComplete(() {
-      if (identical(_reloadInFlight, gate.future)) _reloadInFlight = null;
-      if (!gate.isCompleted) gate.complete();
-    }));
-    return work;
-  }
+  Future<void> reload() => _worker.reload();
 
   /// Put the worker tab into the lost-realm state task #51 recovers from.
   /// Test-only; see [JsWorker.breakDispatchForTest].

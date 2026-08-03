@@ -37,7 +37,10 @@ must commit with a non-swapping request. Asking the server to re-render what
 the island just rendered is both a wasted round trip and, under this config, a
 visible full-page flash.
 
-Regression cover: `tools/probe-panel-resize.mjs` counts
+Regression cover: `appbox design probe panel-resize` counts
 `document.startViewTransition` calls across a drag-release and fails if any
 fire. Note that a node-identity check does NOT catch this — morph preserves
 nodes either way, so the transition counter is the load-bearing assertion.
+(The check began life in `tools/probe-panel-resize.mjs`, retired to
+`archives/tooling-pre-dart/tools/studio-probes/`; see
+`docs/probes-capability-map.md`.)

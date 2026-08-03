@@ -1,6 +1,6 @@
 // probe_panel_resize.dart — panels resize from their inner EDGE, and releasing
 // the drag must not disturb anything else on the page.
-// Ported from `tools/probe-panel-resize.mjs`.
+// Ported from `archives/tooling-pre-dart/tools/studio-probes/probe-panel-resize.mjs`.
 //
 // WHY THIS EXISTS: two bugs, both invisible to a server-render probe.
 //

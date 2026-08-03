@@ -2,7 +2,7 @@
 // script-free, a live tile boosts and keeps in-frame navigation
 // same-document.
 //
-// Dart port of `tools/probe-boost.mjs` (7 checks, 3 sections). Read-only:
+// Dart port of `archives/tooling-pre-dart/tools/studio-probes/probe-boost.mjs` (7 checks, 3 sections). Read-only:
 // nothing here submits or mutates project state.
 
 import 'package:appboxd/probes/probe_base.dart';

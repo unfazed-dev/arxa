@@ -1,7 +1,7 @@
 // panel-contract — the three content panels are ONE card, not five hand-rolled
 // ones, and each section lands where its grid area says it does.
 //
-// Dart port of `tools/probe-panel-contract.mjs` (sections A–L) onto the lens
+// Dart port of `archives/tooling-pre-dart/tools/studio-probes/probe-panel-contract.mjs` (sections A–L) onto the lens
 // CDP stack. Section letters, check labels and the `[PASS]`/`[FAIL]` shape are
 // preserved verbatim so the two suites diff textually while both exist.
 //

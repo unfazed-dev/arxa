@@ -6,7 +6,7 @@
 // POSTs to chat context WITHOUT reloading the inspected iframe, and a hover
 // while the inspector is not the active view is a no-op (204 guard — D14).
 //
-// Dart port of `tools/probe-inspect.mjs` (21 checks, 9 sections).
+// Dart port of `archives/tooling-pre-dart/tools/studio-probes/probe-inspect.mjs` (21 checks, 9 sections).
 //
 // Every hover and click on an element of the inspected SCREEN goes through the
 // frame-scoped verbs rather than the parent's `contentDocument`. That is not

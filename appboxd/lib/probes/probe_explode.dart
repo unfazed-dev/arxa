@@ -3,7 +3,7 @@
 // docs/plans/views-explode-lens-interflow-and-shell-panels.md that the
 // pre-existing probes do not touch.
 //
-// Dart port of `tools/probe-explode.mjs` (29 checks, 4 sections).
+// Dart port of `archives/tooling-pre-dart/tools/studio-probes/probe-explode.mjs` (29 checks, 4 sections).
 //
 // Section B reaches into a tile's iframe from the parent through
 // `contentDocument`, and that is deliberate rather than an oversight in the

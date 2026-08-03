@@ -14,7 +14,7 @@
 //   2. a tap inside the walked tile moves the PARENT row, keeps the tile
 //      showing the screen it is labelled with, and does not destroy the grid.
 //
-// Dart port of `tools/probe-flowwalk.mjs` (14 checks, 5 sections).
+// Dart port of `archives/tooling-pre-dart/tools/studio-probes/probe-flowwalk.mjs` (14 checks, 5 sections).
 //
 // One deliberate divergence from the original, in output rather than in what
 // is asserted: the trailer is the harness's (`==== ALL PASSED ====`), not this

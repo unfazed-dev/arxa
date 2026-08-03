@@ -1,6 +1,6 @@
 // The design-probe harness, on the one browser engine (`cdp.dart`).
 //
-// This is the Dart port of `tools/_probe_base.mjs`. Its target rules are not
+// This is the Dart port of `archives/tooling-pre-dart/tools/studio-probes/_probe_base.mjs`. Its target rules are not
 // style — they are the residue of two incidents, quoted below from the file
 // they came from so the next reader does not have to go find it:
 //

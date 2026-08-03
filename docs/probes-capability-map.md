@@ -1,11 +1,20 @@
-# Capability map — `tools/probe-*.mjs` → `appbox design probe`
+# Capability map — studio probes → `appbox design probe`
 
-Full audit of every studio probe (`tools/probe-*.mjs` + the shared
-`tools/_probe_base.mjs`) against the Dart harness — `appboxd/lib/probes/` over
-`appboxd/lib/cdp.dart`, dispatched by `appbox design probe <name…|all>`.
+> **RETIRED 2026-08-03.** The ten Node/playwright-core studio probes and their
+> shared `_probe_base.mjs` are archived at
+> `archives/tooling-pre-dart/tools/studio-probes/`. The live suite is
+> `appbox design probe <names…|all> --port N --project P`
+> (`appboxd/lib/probes/`, over the one CDP engine in `appboxd/lib/cdp.dart`).
+> Nothing was deleted — the originals stay readable, and this map is the audit
+> trail that approved the swap.
 
-This map is the audit trail for the retirement: no `.mjs` file is archived
-until its row here says where every one of its sections went. A section that is
+Full audit of every studio probe (originally `tools/probe-*.mjs` + the shared
+`tools/_probe_base.mjs`, now under `archives/tooling-pre-dart/tools/studio-probes/`)
+against the Dart harness — `appboxd/lib/probes/` over `appboxd/lib/cdp.dart`,
+dispatched by `appbox design probe <name…|all>`.
+
+This map is the audit trail for the retirement: no `.mjs` file was archived
+until its row here said where every one of its sections went. A section that is
 not ported gets a written reason, not silence.
 
 Status legend:
@@ -14,9 +23,42 @@ Status legend:
   the same served tree.
 - **ported (partial: …)** — landed with a recorded ceiling, named in the row.
 - **dropped** — not ported, with a one-line reason.
-- **pending** — not yet attempted (wave C).
 
-## Harness — `tools/_probe_base.mjs` → `appboxd/lib/probes/probe_base.dart`
+## Wave-D decisions — each decided, with the reason
+
+Four questions were settled at retirement rather than left to whoever reads
+this next. All four are cases where the ports deliberately do NOT reproduce the
+original's behaviour, and each is a strengthening rather than drift.
+
+1. **The 5s redo wait stays 5s.** It never was the problem. `shell-chrome`'s
+   `redo enabled after stepping back` failed intermittently because the undo
+   POST was answered **404** inside a hot-reload window, not because it was
+   slow — and once that 404 landed, no wait of any length could have succeeded.
+   A warm undo costs 32-34ms, so 5s is ~150x the real cost. Raising it would
+   have hidden a defect that silently discarded a user's undo. Root cause and
+   fix: see "The hot-reload window" below.
+2. **Non-zero exit on failure is uniform in Dart.** Four of the ten `.mjs`
+   probes print a failure trailer and still exit 0. The ports all exit non-zero.
+   See the exit-code section for which four, and for why the evidence that
+   appeared to contradict it never bore on the question.
+3. **The disposable-project guard is uniform in Dart.** Several `.mjs` probes
+   mutate the served project without calling `requireDisposableProject`; every
+   mutating port declares `mutates: true` and the harness enforces the guard.
+   The extra output line is documented divergence, not drift.
+4. **The trailer is harness-owned.** `flowwalk`'s bare `PASS`/`FAIL` verdict
+   shape is reproduced exactly (`bareVerdicts`), but its
+   `ALL CHECKS PASSED` trailer is not: one suite gets one scannable closing
+   line, or `probe all` ends with a different trailer per probe.
+
+## Harness — `_probe_base.mjs` → `appboxd/lib/probes/probe_base.dart`
+
+> Command lines in the dated evidence blocks below are reproduced **as they
+> were run**, with the pre-retirement `tools/…` paths. They are records of
+> executed commands, not instructions — rewriting them would misreport what
+> was run. To re-run anything today, use the archived path:
+> `node archives/tooling-pre-dart/tools/studio-probes/probe-<name>.mjs --port N`
+> (and note it rejects `--project`, unlike the Dart suite — see the archive's
+> README).
 
 | `_probe_base.mjs` export | Dart | status |
 |---|---|---|
@@ -249,13 +291,26 @@ the page-error check all executed and reported. **Not chased, per the port
 brief** — the 5s timeout is part of what the check documents, and raising it
 would convert a reported defect into silence.
 
-**Divergence — exit code.** `probe-shell-chrome.mjs` calls `process.exit`
-nowhere, so it exits **0** while printing `==== 1 FAILED ====` (observed, not
-inferred). The Dart port exits 1. The same omission is present in
-`probe-boost.mjs`, `probe-composer-draft.mjs` and `probe-explode.mjs` — four of
-the ten probes cannot currently fail a CI gate. Verified by grep across the
-suite; only `shell-chrome` was confirmed empirically. **Wave D should treat this
-as a finding about the retiring suite, not a port bug.**
+**Divergence — exit code. SETTLED IN WAVE D.** Four of the ten `.mjs` probes
+print a failure trailer and still exit **0**: `probe-boost.mjs`,
+`probe-composer-draft.mjs`, `probe-explode.mjs`, `probe-shell-chrome.mjs`. None
+of them calls `process.exit` or sets `process.exitCode` anywhere, so node exits
+0 on normal completion no matter what was printed. The other six do set a
+non-zero code — `context-sync`, `no-reload`, `panel-contract` and
+`panel-resize` via `process.exit(fails ? 1 : 0)`, `flowwalk` and `inspect` via
+`process.exitCode`. Every Dart port exits non-zero on any failure, uniformly.
+
+The evidence that appeared to contradict this **was never evidence about it.**
+An earlier parity row recorded `explode | 29 PASS, 0 FAIL, exit 0` and was read
+as "explode's exit code is fine" — but that is a *passing* run, where exit 0 is
+correct for both suites. A green run cannot distinguish "exits 0 because it
+passed" from "exits 0 regardless"; only a failing run can, which is why the
+mutation runs below were made to fail a probe from the exit-0 set on purpose.
+
+This is a defect in the RETIRING suite, not a port bug: four of ten probes could
+not fail a CI gate. The Dart suite's uniform non-zero-on-failure is recorded as
+a deliberate **strengthening**, in the same class as the uniform disposable
+guard — the ports do not reproduce a bug for the sake of byte parity.
 
 ### `panel-resize`'s two mid-drag observations
 
@@ -567,6 +622,127 @@ their own, the test that proves the plumbing is needed fails first rather than
 the plumbing quietly becoming dead weight.
 
 Wiring it into `ProbeContext.newPage` is the harness's call, not this file's.
+
+## Retirement evidence
+
+Two things had to hold before a single `.mjs` file moved: the suites agree on a
+healthy tree, and they agree on a BROKEN one. Agreement on green alone is weak
+evidence — two suites that both assert nothing would also agree.
+
+### How these runs must be taken, and why
+
+Four rules, each of which was learned by a run that violated it and produced a
+number nobody could trust:
+
+1. **Sequential, one server, quiet machine.** Two measurement runs overlapped
+   once; the second was executing probes while the first was DELIBERATELY
+   MUTATING `designs/appbox-studio/`. Its output recorded probes run against a
+   knowingly broken studio, so it was discarded outright rather than treated as
+   noisy-but-usable. Concurrency does not merely add variance here — it can
+   invert what is being measured.
+2. **A fresh disposable project per run.** Probes mutate the project, so a
+   shared copy makes the second run start from a tree the first one changed.
+   An early comparison did exactly that and had to be redone.
+3. **Readiness is the control you are about to touch**, not `/__projects`
+   answering. The API responds several seconds before a shell renders; polling
+   it made BOTH suites fail identically for a reason that had nothing to do
+   with either suite.
+4. **A contaminated run is disclosed and re-run, never averaged in.** A
+   disposable project was deleted mid-run by an unrelated cleanup; every run
+   spanning that window is named as affected and repeated. A verdict resting on
+   a contaminated run does not count, and "it probably still holds" is not a
+   substitute for repeating it.
+
+Durable evidence lives in this file. An earlier baseline was verified as 52
+artifacts in the session scratchpad, reported truthfully, and then silently
+expired when tmp was wiped — a verified-at-the-time claim about ephemeral
+storage has a shelf life, and this file is what outlives it.
+
+### Final parity — both suites, settled tree
+
+Run 2026-08-03 on the settled tree (post-unification, all wave-D edits in
+place), sequentially on a quiet machine, a fresh `cp -R` disposable per run —
+20 runs, each probe once per suite, no re-rolls.
+
+| probe | checks | `.mjs` | Dart | verdict lines |
+|---|---|---|---|---|
+| `boost` | 7 | 7 PASS / 0 FAIL | 7 PASS / 0 FAIL | identical |
+| `composer-draft` | 4 | 4 / 0 | 4 / 0 | identical |
+| `context-sync` | 30 | 30 / 0 | 30 / 0 | identical |
+| `explode` | 29 | 29 / 0 | 29 / 0 | identical |
+| `flowwalk` | 14 | 14 / 0 | 14 / 0 | identical |
+| `inspect` | 21 | 21 / 0 | 21 / 0 | identical |
+| `no-reload` | 9 | 9 / 0 | 9 / 0 | 1 line differs — see below |
+| `panel-contract` | 63 | 63 / 0 | 63 / 0 | identical |
+| `panel-resize` | 32 | 32 / 0 | 32 / 0 | identical |
+| `shell-chrome` | 70 | 70 / 0 | 70 / 0 | identical |
+| **total** | **279** | **279 / 0** | **279 / 0** | **10/10 agree** |
+
+279 checks per suite, matching the pre-unification baseline's recorded 279
+exactly — so the reload-tracking unification is **probe-invisible**, which is
+what that comparison existed to establish.
+
+**The one differing verdict line, stated rather than rounded away.**
+`no-reload`'s payload-size check reads:
+
+```
+.mjs   [PASS] pin response under the 200 KB blow-up ceiling — 115842 bytes
+Dart   [PASS] pin response under the 200 KB blow-up ceiling — 116073 bytes
+```
+
+Both PASS, both far under the ceiling; the 231-byte (0.2%) gap is a *measured
+quantity* that legitimately varies between two independently booted servers,
+not an assertion outcome. The check's verdict is identical. This is the only
+non-identical verdict line in 279.
+
+**`[warn]` lines match too.** `boost` emits
+`[warn] timed out after 8000ms waiting for the home tile to become live` in
+BOTH suites, byte for byte — including wording hand-ported into
+`probe_base.dart`. The warn path was never exercised by the earlier parity
+runs; it agrees.
+
+**Trailer banners diverge in 8 of 10 — broader than first recorded.** Only
+`boost` and `composer-draft` match exactly (`ALL PASSED` both sides). The other
+eight print `ALL CHECKS PASSED` on the `.mjs` side against the harness's
+`==== ALL PASSED ====`, and `inspect` prints no `====` trailer at all. This is
+consistent with the byte-identity claim, which was always scoped to *verdict
+lines*; the banner is harness-owned by decision 4 above. Recording the real
+count because "panel-contract's banner differs" understates it.
+
+### Mutation equivalence — do both suites catch the same break?
+
+Two deliberate breakages, each run against BOTH suites, restorations verified
+green afterwards.
+
+**M1 — the chip contract kill (`panel-contract` §L).** The section's own
+built-in mutation: disable the `widgets.css` `<link>` in-page and assert the
+pill contract collapses. Both suites reported **2 FAILs**, and the FAIL lines
+were diff-verified byte-identical *including their JSON payloads*. Exit: Dart 1,
+Node 1 (`probe-panel-contract.mjs` has a `process.exit` at line 402).
+
+**M2 — `hx-preserve` stripped from the composer textarea** (`composer.html`,
+the `{% if not c.draftSent %}` guard). Both suites reported **2 FAILs**, the
+same check twice — `draft survives an unrelated swap`, once per shell — with
+identical failure lines. Exit: **Dart 1, Node 0.**
+
+That last number is the point of choosing M2. `composer-draft` is one of the
+four probes with no `process.exit` anywhere, so this is the **empirical**
+confirmation of the exit-code defect on a second probe, reproduced twice on
+independently built servers. The finding moves from "one observed, three
+inferred by grep" to two observed — and it could only ever be obtained from a
+*failing* run, which is exactly why a green run's exit 0 never settled it.
+
+Both suites therefore agree on a healthy tree AND on a broken one, in both the
+checks that fail and the lines they print. That pairing is the retirement
+evidence; the green run alone would not have been.
+
+**Contamination disclosed, not averaged in.** One run was invalidated when an
+unrelated cleanup deleted the disposable project mid-flight (a
+`PathNotFoundException` then a `CdpException`). That run was discarded and
+counted nowhere; the graded runs were rebuilt from scratch on a separate
+disposable copy, with all six probe sources md5-pinned before and after —
+identical, HEAD `4c7d8fb` throughout. One re-run per suite is disclosed, for
+exit-code capture rather than for a greener result.
 
 ## The hot-reload window — a live product defect, not a probe flake (task #19)
 

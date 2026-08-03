@@ -17,7 +17,7 @@
 // in the viewer strip at the same time. No browser needed — this is a
 // server-render contract, and each check is one GET.
 //
-// Dart port of `tools/probe-context-sync.mjs` (30 checks, 1 section — the
+// Dart port of `archives/tooling-pre-dart/tools/studio-probes/probe-context-sync.mjs` (30 checks, 1 section — the
 // original prints exactly one `=== ... ===` header and runs every later
 // block under it; this port does not add sections the original never had, so
 // the parity diff reads the same shape). `needsBrowser: false`: this is the

@@ -579,6 +579,22 @@ class JsWorker {
   /// Chrome to refuse to start. Same stand-in as the boot-retry tests use.
   void breakRelaunchForTest() => _chromePath = '/bin/echo';
 
+  /// Completes when the in-flight reload settles; null when none is running.
+  ///
+  /// The single authoritative "is the route table being rebuilt" signal, for
+  /// EVERY path that rebuilds it: the watcher's [reload] and [dispatch]'s own
+  /// self-heal reboot alike. `design_server` waits on this before dispatching,
+  /// because a reload re-navigates this tab and `worker_shim.js` re-runs
+  /// `let routesTable = []` — leaving `__dispatch` defined, answering, and
+  /// 404ing everything until `__boot` repopulates it (task #19).
+  ///
+  /// Two properties the waiter depends on, both already true of [_reloading]:
+  /// it is assigned before the first `await` in [reload], so it is set
+  /// synchronously on call and no request can slip past a null; and its
+  /// completer completes NORMALLY on failure, so a failed reload releases
+  /// waiters instead of erroring every request queued behind it.
+  Future<void>? get reloadInFlight => _reloading;
+
   Future<void> breakDispatchForTest() =>
       _tab.evaluate('delete globalThis.__dispatch');
 

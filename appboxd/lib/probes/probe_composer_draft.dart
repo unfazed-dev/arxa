@@ -3,7 +3,7 @@
 // CLEARED by a send. Preserving on send would leave the sent text sitting there
 // ready to be sent twice, so these two assertions only mean anything together.
 //
-// Dart port of `tools/probe-composer-draft.mjs` (4 checks, 2 sections). The
+// Dart port of `archives/tooling-pre-dart/tools/studio-probes/probe-composer-draft.mjs` (4 checks, 2 sections). The
 // reference port for the harness: the smallest real probe, ported verbatim so
 // its output diffs textually against the original during the parity window.
 

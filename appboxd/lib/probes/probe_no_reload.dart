@@ -6,7 +6,7 @@
 //   D  morph hazards: duplicate ids, <details> open state, typed text, web
 //      components
 //
-// Dart port of `tools/probe-no-reload.mjs` (10 checks in the pass case, one
+// Dart port of `archives/tooling-pre-dart/tools/studio-probes/probe-no-reload.mjs` (10 checks in the pass case, one
 // page for the whole run — state has to carry across sections).
 
 import 'dart:convert';

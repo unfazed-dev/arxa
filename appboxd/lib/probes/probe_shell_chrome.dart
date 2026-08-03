@@ -1,5 +1,5 @@
 // probe_shell_chrome.dart — the viewer's two shell panels SURVIVE every swap.
-// Ported from `tools/probe-shell-chrome.mjs`.
+// Ported from `archives/tooling-pre-dart/tools/studio-probes/probe-shell-chrome.mjs`.
 //
 // The regression this locks down: #viewerSwap rendered `dv.designViewer(c.viewer)`
 // with no second arg while the full page rendered it WITH a chrome object, and
