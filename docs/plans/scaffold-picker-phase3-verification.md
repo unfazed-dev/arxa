@@ -130,6 +130,42 @@ merely lose these numbers — deleting `:205` without `:75` yields a composer wi
 action, i.e. run-screen's exact defect transplanted onto my screen. **(a) is
 two edits or neither.**
 
+### The counterfactual already existed — in a file I wrote myself
+
+chrome-integration returned a non-mutating form of my §0c control, and verifying it
+cost me the nicer story. Their point: `/scaffold/run`'s facade sets no
+`composerAction`, so the guard's false branch fires there *naturally*. Verified
+independently:
+
+```
+/scaffold      thread=1  forms=1   82715 B
+/scaffold/run  thread=1  forms=0   26800 B     (0 0 0 0 0 across 5 runs)
+```
+
+Same guard instance — both views import `scaffold/_shared.html`, which mounts
+`composerPanel`. Thread markup present proves the macro body executed; zero forms
+proves `:75` took the false branch. Identical conclusion to §0c, no mutation, no
+apply/revert against a live tree.
+
+**And `run_view.html` was committed at `97d3444` — one of my own commits, earlier in
+this same task.** I authored the control surface, then manufactured a counterfactual
+that my own prior work already provided. The mutation wasn't wrong and it wasn't
+unsafe — my file, clean preflight, verified revert — but it was unnecessary, and I
+reached for it without first asking whether the repo already contained the state I
+wanted to observe.
+
+**Rule, and it generalises past this thread:** before mutating anything to create a
+counterfactual, check whether some existing surface is already in that state. A
+system with N screens usually contains its own control group. The instinct to
+*construct* evidence ran ahead of the cheaper habit of *locating* it.
+
+### A third number that isn't a disagreement
+
+They report `rows:2`, I measure `thread=1`. Different greps — theirs counts thread
+rows, mine counts the container. Recording it because this thread has already burned
+real time on 916 vs 1900 turning out to be two questions rather than two answers.
+Same class, caught before it propagated.
+
 ### Scope limit on the lens shoot
 
 The 3-rung ladder shoot predates both the guard landing and the composer ruling. It
