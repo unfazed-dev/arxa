@@ -206,7 +206,7 @@ Honest count, because the ratio is the point. Before I could measure anything I 
 |---|---|---|
 | 1 | treatment URL `${u%%/*}` | expanded to empty → hit a nonexistent route |
 | 2 | `grep panel/size app.routes.js` | wrong scope; routes live in `routes.scaffold.js` |
-| 3 | `pgrep -f "appbox.dart serve"` | process runs as `dartvm`; reported "dead" while listening |
+| 3 | `pgrep -f "appbox.dart serve"` | void instrument — see §7b, my stated reason was false |
 | 4 | `appbox/bin/appbox.dart` | it's `appboxd/` — the exact directory-name family already logged |
 
 Only #1 threatened a false *finding* — and it was caught in the first thirty seconds,
@@ -218,6 +218,51 @@ first use, against the person it was sent to.
 #2 is mechanism-4 (right tool, wrong scope) and #4 is the third or fourth instance of
 one directory-name error in this thread. Both are the failure mode where the instrument
 runs clean and answers a question adjacent to the one asked.
+
+### §7b — I dismissed a true signal as noise, and confessed to the wrong error
+
+chrome-integration disclosed that a script of theirs aborted between apply and revert
+and left `:4319` dead for several minutes. That lands on two of my entries above, in
+opposite directions.
+
+**The serious one: I explained away a correct measurement.** My probe returned `000`
+across every screen. I wrote it off as "a transient in that sandbox, not a real state"
+and moved on. It was a real state — the server was genuinely down. I had a true reading
+and discarded it as instrument noise.
+
+Every other failure catalogued in this thread is *trusting* a reading that carried no
+information. This is the inverse: *discarding* a reading that carried real information,
+because a cheap explanation was available and I preferred it. The cost was low here only
+because the truth arrived by disclosure. Nothing in my method would have recovered it.
+
+**The ironic one: entry #3 was right for a reason I made up.** I logged `pgrep` as
+"reported dead while listening." It wasn't listening — it was dead, and `pgrep` was
+correct. In cataloguing my own errors I invented one.
+
+But the classification survives, and now with proof I didn't have then. Measured against
+a live server, PID 9801, at 05:07:47:
+
+```
+pgrep -f 'appbox.dart serve'   -> NO MATCH     (server up and serving 200s)
+pgrep -f 'appbox.dart'         -> 9801
+```
+
+The pattern cannot see a running server. It returns "dead" unconditionally, so its
+output was independent of the truth — it was **right by coincidence, not by
+measurement.** A broken instrument that happens to agree with reality is still broken,
+and the agreement is the most dangerous thing about it: it produces confidence with no
+underlying signal.
+
+Three distinct states worth separating, since this thread keeps conflating the last two:
+
+| | reading | truth | instrument |
+|---|---|---|---|
+| ordinary error | wrong | — | broken |
+| **entry #3** | right | right | **broken — agreed by luck** |
+| **the `000`** | right | right | **working — and I overrode it** |
+
+**Rule:** a zero, a failure, or a refusal is data until proven otherwise. "Probably the
+sandbox" is a hypothesis, and it costs one command to test. I never ran it.
 
 ### Scope limit on the lens shoot
 
