@@ -31,8 +31,23 @@ project.
 
 ## Running them (if you ever need to)
 
+**They do not run from this directory.** Each probe resolves the repo root as
+`../` from its own location and loads playwright-core from
+`skills/appbox-designer/runtime/node_modules/`. That was correct while they
+lived in `tools/`; from here `../` is `archives/tooling-pre-dart/tools`, and
+the import fails. Verified, not assumed.
+
+They are deliberately left **exactly as they were retired** rather than patched
+to work from the archive — an archive that has been edited is no longer the
+thing it is an archive of, and these files are the reference for what each
+check meant.
+
+To run one, copy it back beside its `_probe_base.mjs` first:
+
 ```
-node archives/tooling-pre-dart/tools/studio-probes/probe-<name>.mjs --port N
+cp archives/tooling-pre-dart/tools/studio-probes/{probe-<name>.mjs,_probe_base.mjs} tools/
+node tools/probe-<name>.mjs --port N
+rm tools/probe-<name>.mjs tools/_probe_base.mjs
 ```
 
 **The invocation is NOT symmetric with the Dart suite.** These probes *reject*

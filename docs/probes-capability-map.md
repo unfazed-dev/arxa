@@ -24,6 +24,36 @@ Status legend:
 - **ported (partial: …)** — landed with a recorded ceiling, named in the row.
 - **dropped** — not ported, with a one-line reason.
 
+## Suites — contract vs studio (task #21, IN PROGRESS)
+
+Plan: `docs/plans/design-derived-contract-probes.md`. The ten probes catalogued
+below are the **studio suite** — the engine's smoke test, run through its
+reference design. A **contract suite** is being added: probes that assert the
+appbox opinion against ANY served design by deriving their targets from the
+design's own declarations, rather than hard-coding studio routes.
+
+### Decision: route discovery uses a new `/__routes` endpoint
+
+The plan left this open with a preference order — (a) parse an already-served
+artifact, else (b) add a small introspection endpoint. Resolved to **(b)**, on
+evidence rather than taste:
+
+- **The server already holds the answer.** `DesignServer._routeTable` is
+  populated at boot from `_worker.routes()` (`design_server.dart:340`) as
+  `List<List<String>>` of `[method, path]`. `/__routes` only has to serialize
+  what is already in memory, joining `/__projects`, `/__project_use` and
+  `/__project_write` in the existing introspection family.
+- **(a) does not parse cleanly from Dart.** `app.routes.js` *is* served
+  (asserted at `design_server_test.dart:362`), but it is an ES module whose
+  default export is built from imports and spreads (`...appRoutes`,
+  `...intakeRoutes`, `...designRoutes`). Reading it from Dart means
+  re-implementing JS module evaluation — which the worker already did once, at
+  boot, to produce `_routeTable`. Two parsers for one fact is the shape this
+  consolidation exists to remove.
+- **`registry.json` is not universal.** `hello-hda` — the design the contract
+  suite MUST pass against to prove design-agnosticism — has no `registry.json`
+  at all. Keying discovery on it would fail the acceptance bar by construction.
+
 ## Wave-D decisions — each decided, with the reason
 
 Four questions were settled at retirement rather than left to whoever reads
@@ -55,10 +85,11 @@ original's behaviour, and each is a strengthening rather than drift.
 > Command lines in the dated evidence blocks below are reproduced **as they
 > were run**, with the pre-retirement `tools/…` paths. They are records of
 > executed commands, not instructions — rewriting them would misreport what
-> was run. To re-run anything today, use the archived path:
-> `node archives/tooling-pre-dart/tools/studio-probes/probe-<name>.mjs --port N`
-> (and note it rejects `--project`, unlike the Dart suite — see the archive's
-> README).
+> was run. The archived probes do **not** run in place — each resolves the repo
+> root as `../` from its own location, so playwright-core no longer resolves.
+> To run one, copy it and `_probe_base.mjs` back into `tools/` first; the
+> archive's README has the recipe, and notes that they reject `--project`,
+> unlike the Dart suite.
 
 | `_probe_base.mjs` export | Dart | status |
 |---|---|---|
@@ -660,9 +691,16 @@ storage has a shelf life, and this file is what outlives it.
 
 ### Final parity — both suites, settled tree
 
-Run 2026-08-03 on the settled tree (post-unification, all wave-D edits in
-place), sequentially on a quiet machine, a fresh `cp -R` disposable per run —
-20 runs, each probe once per suite, no re-rolls.
+Run 2026-08-03 on the settled tree — post-unification, all wave-D edits in
+place, **including the chip icon-alignment fix** to `app.css` / `intake.css` /
+`widgets.css` — sequentially on a quiet machine, a fresh `cp -R` disposable per
+run, 20 runs, each probe once per suite, no re-rolls.
+
+An earlier run of this same comparison, taken before that CSS fix landed, was
+re-run rather than kept: a parity claim has to be about the tree being
+retired, and CSS is part of what the probes assert against. Both runs produced
+the same 279/279, so the fix is probe-invisible — but that is a result, not an
+assumption that licensed skipping the re-run.
 
 | probe | checks | `.mjs` | Dart | verdict lines |
 |---|---|---|---|---|
