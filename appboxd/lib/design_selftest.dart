@@ -23,6 +23,11 @@ import 'package:appboxd/cdp.dart';
 import 'package:appboxd/design_selftest_kit_catalog_mirror.dart';
 import 'package:appboxd/design_server.dart';
 import 'package:appboxd/design_tools.dart';
+// The W-gate owns the placement vocabulary (homes, the include graph). Reusing
+// it keeps ONE parser for `{% include %}`/`{% import %}` rather than a second
+// that can drift from the gate the same artifacts are linted against.
+import 'package:appboxd/gate_design_widgets.dart'
+    show WidgetHome, buildIncludeGraph, isWidget, widgetHomeOf;
 import 'package:appboxd/project.dart';
 import 'package:path/path.dart' as p;
 
@@ -100,7 +105,7 @@ const _lFragments = 'every rendered fragment exists as a macro';
 const _lMutationsPosted = 'every mutation route is reachable from markup';
 const _lUrlsResolve = 'every static URL in markup resolves to a route';
 const _lTargetsExist = 'every hx-target names an element that exists';
-const _lWidgets = 'surfaces compose shared partials from ui/widgets';
+const _lWidgets = 'widgets live in the three-tier homes and surfaces compose them';
 const _lIcons = 'icons come from the icon() global, never emoji stand-ins';
 const _lGit = 'every artifact file is tracked by git';
 const _lLint = 'zero-custom-client-JS lint';
@@ -133,6 +138,39 @@ class _Mutation {
 
 List<File> _walkFiles(Directory d) =>
     d.listSync(recursive: true).whereType<File>().toList();
+
+/// Artifact-root-relative POSIX path of [f] under [art].
+String _relOf(String art, File f) =>
+    p.split(p.relative(f.path, from: art)).join('/');
+
+/// The retired flat tier: `ui/widgets|dialogs|bottomsheets` at the artifact
+/// root (historically with a `components/` subfolder inside).
+bool _isLegacyFlatWidget(String rel) =>
+    rel.startsWith('ui/widgets/') ||
+    rel.startsWith('ui/dialogs/') ||
+    rel.startsWith('ui/bottomsheets/');
+
+/// Widgets sitting in one of the three legal homes: `ui/common/widgets/`,
+/// `ui/views/<shell>/shared/widgets/`, `<surface>/widgets/`.
+///
+/// The home must be checked, not just the presence of a `widgets/` ancestor:
+/// [widgetHomeOf] maps the flat `ui/widgets/…` to a SURFACE home keyed `ui`,
+/// so `isWidget` alone would quietly count the retired tier as compliant and
+/// make the mixed-state branch unreachable.
+bool _isThreeTierWidget(String rel) {
+  if (!isWidget(rel)) return false;
+  final home = widgetHomeOf(rel);
+  if (home == null) return false;
+  return home.home == WidgetHome.common || home.key.startsWith('ui/views/');
+}
+
+List<String> _threeTierWidgets(String art) =>
+    (_htmlFiles(art).map((f) => _relOf(art, f)).where(_isThreeTierWidget).toList()
+      ..sort());
+
+List<String> _legacyFlatWidgets(String art) =>
+    (_htmlFiles(art).map((f) => _relOf(art, f)).where(_isLegacyFlatWidget).toList()
+      ..sort());
 
 List<File> _htmlFiles(String dir) => _walkFiles(Directory(dir))
     .where((f) => f.path.endsWith('.html'))
@@ -491,31 +529,52 @@ List<_Check> _buildChecks({required bool skipRender}) {
 
     // --- 16-17. component library + icons ----------------------------------
     _Check(_lWidgets, _Section.structure, (art, skill, src) async {
-      bool hasPartial() {
-        for (final d in ['widgets', 'dialogs', 'bottomsheets']) {
-          final dp = Directory(p.join(art, 'ui', d));
-          if (dp.existsSync()) {
-            for (final f in _walkFiles(dp)) {
-              if (p.basename(f.path).startsWith('_') && f.path.endsWith('.html')) return true;
-            }
-          }
+      final tiered = _threeTierWidgets(art);
+      final legacy = _legacyFlatWidgets(art);
+
+      if (tiered.isNotEmpty) {
+        // Mixed is the dangerous state: half the tree has moved and half has
+        // not, so neither the law nor the old shape describes it. Name the
+        // stragglers — whoever is mid-migration should see they are theirs.
+        if (legacy.isNotEmpty) {
+          return CheckOutcome.fail(
+              'widgets in the three-tier homes AND in the retired flat tier: '
+              '${legacy.join(', ')} — move each to ui/common/widgets/, '
+              'ui/views/<shell>/shared/widgets/ or <surface>/widgets/');
         }
-        return false;
+        final graph = buildIncludeGraph(art);
+        final composed =
+            tiered.where((w) => (graph[w] ?? const <String>{}).isNotEmpty).length;
+        if (composed == 0) {
+          return CheckOutcome.fail(
+              'widgets exist in the three-tier homes but nothing includes or '
+              'imports any of them: ${tiered.join(', ')}');
+        }
+        return CheckOutcome.ok(
+            '${tiered.length} widget(s) in three-tier homes, $composed composed');
       }
-      if (hasPartial()) {
-        final found = _walkFiles(Directory(p.join(art, 'ui', 'views')))
-            .where((f) => f.path.endsWith('.html'))
-            .any((f) => f.readAsStringSync().contains('{% include "ui/'));
-        if (!found) return const CheckOutcome.fail('no {% include "ui/..." found in views');
-        return const CheckOutcome.ok();
+
+      if (legacy.isNotEmpty) {
+        // Transition tolerance, deliberately not a failure: `design lint` W1
+        // already fails each of these and names its three-tier destination, so
+        // hard-failing here would only duplicate that with a worse message.
+        return CheckOutcome.ok(
+            '${legacy.length} widget(s) still in the retired flat tier — '
+            '`design lint` W1 names the three-tier destination for each');
       }
+
+      // No widgets anywhere: the artifact must at least carry a shared macro
+      // library under ui/common (the pre-widget generation's shape).
       final commonDir = Directory(p.join(art, 'ui', 'common'));
       final found = commonDir.existsSync() &&
           _walkFiles(commonDir)
               .where((f) => f.path.endsWith('.html'))
               .any((f) => RegExp(r'\{%\s*macro').hasMatch(f.readAsStringSync()));
       if (!found) {
-        return const CheckOutcome.fail('no shared partials and no macro in ui/common');
+        return const CheckOutcome.fail(
+            'no widgets in the three-tier homes (ui/common/widgets/, '
+            'ui/views/<shell>/shared/widgets/, <surface>/widgets/) and no macro '
+            'in ui/common');
       }
       return const CheckOutcome.ok();
     }),
@@ -843,13 +902,29 @@ void _mutateEmojiIcon(String art, String skill) {
 }
 
 void _mutateWidgetPartials(String art, String skill) {
-  // Delete the shared-partials dir the artifact actually uses — ui/widgets
-  // when present, else the ui/common macro library this generation composes.
-  for (final d in ['widgets', 'dialogs', 'bottomsheets', 'common']) {
-    final dir = Directory(p.join(art, 'ui', d));
-    if (dir.existsSync()) {
-      dir.deleteSync(recursive: true);
-      return;
+  // Remove the widget layer wherever it lives — the three-tier homes and the
+  // retired flat tier both — so the mutation keeps biting through the
+  // migration, not just while the artifact is still flat.
+  //
+  // FILES, not directories: deleting `ui/common/` would take `base.html` with
+  // it and redden neighbouring checks, which masks whether THIS check flipped.
+  var removed = 0;
+  for (final f in _htmlFiles(art)) {
+    final rel = _relOf(art, f);
+    if (_isThreeTierWidget(rel) || _isLegacyFlatWidget(rel)) {
+      f.deleteSync();
+      removed++;
+    }
+  }
+  // An artifact with no widget layer at all falls through to the ui/common
+  // macro-library branch; strip its macros so the mutation still lands.
+  if (removed > 0) return;
+  final common = Directory(p.join(art, 'ui', 'common'));
+  if (!common.existsSync()) return;
+  for (final f in _walkFiles(common).where((f) => f.path.endsWith('.html'))) {
+    final src = f.readAsStringSync();
+    if (RegExp(r'\{%\s*macro').hasMatch(src)) {
+      f.writeAsStringSync(src.replaceAll(RegExp(r'\{%\s*macro'), '{# macro'));
     }
   }
 }

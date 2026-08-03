@@ -140,6 +140,11 @@ void main() {
       'dead-url': 'every static URL in markup resolves to a route',
       'emoji-icon': 'icons come from the icon() global, never emoji stand-ins',
       'client-js': 'zero-custom-client-JS lint',
+      // Pinned by label, not just by exit code: the mutation deletes the widget
+      // layer, which reddens neighbouring checks too, and an exit-code-only
+      // assertion would still pass if THIS check had quietly stopped biting.
+      'widget-partials':
+          'widgets live in the three-tier homes and surfaces compose them',
     };
     for (final entry in cases.entries) {
       test('${entry.key} flips "${entry.value}"', () async {
@@ -160,6 +165,47 @@ void main() {
         }
       });
     }
+  });
+
+  // ── 2b. the half-migrated tree ─────────────────────────────────────────
+  // The fixture is fully three-tier, so the mixed state — some widgets moved,
+  // some still in the retired flat tier — has no fixture of its own. It is the
+  // state that actually occurs during a migration and the one neither shape
+  // describes, so it gets planted explicitly rather than left to a rerun.
+  group('three-tier widget law', () {
+    test('a leftover flat widget alongside three-tier homes fails, named',
+        () async {
+      final tmp = await _copyFixture('selftest-mixed-tier-');
+      try {
+        File(p.join(tmp, 'ui', 'widgets', 'components', '_stale.html'))
+          ..createSync(recursive: true)
+          ..writeAsStringSync('<nav class="stale">left behind</nav>\n');
+        final r = await runSelftest(
+            artifactDir: tmp, skillDir: _cleanSkill, skipRender: true);
+        expect(
+            r.failLabels,
+            contains(
+                'widgets live in the three-tier homes and surfaces compose them'),
+            reason: 'mixed tier should fail, got: ${r.failLabels}');
+      } finally {
+        await Directory(tmp).delete(recursive: true);
+      }
+    });
+
+    test('the fixture itself passes via the three-tier branch', () async {
+      // Guards the branch from going vacuous: if the fixture ever regressed to
+      // the flat tier this would still pass through the transition-tolerance
+      // branch, so assert the tree really has no flat widgets left.
+      expect(
+          Directory(p.join(_fixture, 'ui', 'widgets')).existsSync(), isFalse,
+          reason: 'fixture should be fully migrated off the flat tier');
+      final r = await runSelftest(
+          artifactDir: _fixture, skillDir: _cleanSkill, skipRender: true);
+      expect(
+          r.failLabels,
+          isNot(contains(
+              'widgets live in the three-tier homes and surfaces compose them')));
+    });
   });
 
   // ── 3. negative mode (falsifiability over a provable subset) ───────────
