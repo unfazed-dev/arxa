@@ -11,6 +11,8 @@
 // read-only probes first, so a broken server fails the suite in seconds rather
 // than after the slow interaction-heavy ones.
 
+import 'package:appboxd/probes/contract/probe_contract_chips.dart';
+import 'package:appboxd/probes/contract/probe_contract_panels.dart';
 import 'package:appboxd/probes/probe_base.dart';
 import 'package:appboxd/probes/studio/probe_boost.dart';
 import 'package:appboxd/probes/studio/probe_composer_draft.dart';
@@ -25,6 +27,11 @@ import 'package:appboxd/probes/studio/probe_shell_chrome.dart';
 
 /// Every probe, in `probe all` run order.
 const List<Probe> kProbes = <Probe>[
+  // Contract suite first: these assert the appbox opinion against ANY served
+  // design, so a design that violates it fails here rather than deep inside a
+  // studio-specific interaction. Same doctrine as kSuiteOrder.
+  contractPanelsProbe,
+  contractChipsProbe,
   boostProbe,
   composerDraftProbe,
   contextSyncProbe,

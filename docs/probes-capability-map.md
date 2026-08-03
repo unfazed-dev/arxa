@@ -24,13 +24,108 @@ Status legend:
 - **ported (partial: …)** — landed with a recorded ceiling, named in the row.
 - **dropped** — not ported, with a one-line reason.
 
-## Suites — contract vs studio (task #21, IN PROGRESS)
+## Suites — contract vs studio (task #21)
 
 Plan: `docs/plans/design-derived-contract-probes.md`. The ten probes catalogued
 below are the **studio suite** — the engine's smoke test, run through its
-reference design. A **contract suite** is being added: probes that assert the
-appbox opinion against ANY served design by deriving their targets from the
-design's own declarations, rather than hard-coding studio routes.
+reference design. The **contract suite** asserts the appbox opinion against ANY
+served design by deriving its targets from the design's own declarations,
+rather than hard-coding studio routes.
+
+### The contract v1 set
+
+`contract-panels` and `contract-chips`, both registered ahead of the studio ten
+so `probe all` leads with them. Both walk `GET /__routes` and load every
+parameterless GET route the design declares; both print per-surface counts, so
+a green run states its own denominator instead of implying one.
+
+Two exclusions, counted and printed rather than applied silently:
+
+- **Parameterized routes** (31 of 85 GET routes in appbox-studio). A value for
+  `:id` can only come from knowing the design, and inventing one asserts about
+  a 404 page. Deferred to v2, where the scaffolder's per-app manifest can
+  supply real values.
+- **Fragment responses** (27 of 54 parameterless GETs). A partial served
+  standalone has no `<head>`, therefore no stylesheet, so `getComputedStyle`
+  returns UA defaults and every chip reads `display: inline`. A check that
+  fails there is measuring a page that never exists in the product. Detected
+  via `document.doctype`.
+
+Two calibrations were forced by evidence and are worth keeping in mind, because
+both look like leniency and neither is:
+
+- **A mounted panel is `.panel.panel-<role>`, not `.panel-<role>`.** The base
+  emits both classes; the bare role class alone is the layout SLOT the card
+  fills. `/design` carries `<div class="panel-main" id="panel-main">` wrapping
+  `<section class="panel panel-main panel-viewer">`, while `/intake` and
+  `/build` carry the slot with no card. Counting the bare class reads that pair
+  as two main panels and reds a correct composition.
+- **A chip may compute `display: flex` as well as `inline-flex`.** CSS
+  blockifies a flex/grid item, so a chip inside a flex container computes
+  `flex` however it was authored — 161 correct chips in appbox-studio alone. An
+  unstyled chip computes `inline`/`block` and still fails.
+
+The centring rule holds a glyph only to a control that DECLARES centring
+(a flex/grid container with `align-items: center`). A card-shaped button that
+stacks an icon above a heading never promised to centre it vertically —
+`button.level-card` sits 24px off, correctly. On appbox-studio this excludes
+exactly 1 glyph of 121; the other 120 are held, worst offset 0.01px.
+
+### Deferred to v2: `contract-no-reload`
+
+Not built, deliberately. The plan allowed it as a stretch and required that a
+version too design-variable be deferred with the reason recorded rather than
+shipped vacuous — this is that record. The generic form ("plant a window
+marker, click the first boosted link, assert the marker survives") needs a
+boosted link that navigates, and nothing in a design's own declarations says
+which link that is: route discovery yields paths, not affordances. Picking
+"the first `a[href]`" would silently select a `#` anchor, an external link or a
+control that opens a panel on most designs, and a marker that survives because
+nothing navigated is a check that cannot fail. Revisit in v2 alongside the
+scaffolder's per-app probe manifest, which can name the boosted navigation the
+way the design already names its routes.
+
+### Mutation evidence — contract suite, 2026-08-03
+
+Each mutation was applied to the served design, the probe re-run, and the file
+restored with `git checkout --` (`git status --short -- designs/` clean after
+each). A check that cannot fail is not a check; these are the runs that show
+these can.
+
+| # | mutation | probe | verdict | the line it produced |
+|---|---|---|---|---|
+| a | commented out the base `.chip` rule in `assets/css/widgets.css` | `contract-chips` | exit 1 | `[FAIL] every chip keeps the pill box model — 175 bad: /: .chip.proj-stage.proj-stage-build — display=block, align-items=normal, radius=0.0 for height 21.8` |
+| b | re-added `margin-top: .3rem` to `.status-dot` (the a02ceaa defect) | `contract-chips` | exit 1 | `[FAIL] every glyph centres within 1px of its control — 17 off: /design: span.status-dot in span.chip off by 2.39px` |
+| c | duplicated the header panel mount in `ui/views/main_shell/main_shell_view.html` | `contract-panels` | exit 1 | `[FAIL] each role panel is mounted at most once per surface — /: header mounted 2 times; /dashboard: header mounted 2 times; …` |
+
+Mutation (b) is the load-bearing one: it re-introduces the exact regression
+commit a02ceaa fixed, and the gate now catches it on every surface of any
+design rather than nowhere. Mutation (c) keeps the base's open/close pair
+balanced, so W4 is satisfied and no static check objects — only a runtime probe
+can see two header panels, which is what makes the contract suite the
+behavioural sibling of the W-gate rather than a duplicate of it.
+
+**Green runs, same binary, both designs:**
+
+| target | result |
+|---|---|
+| `appbox-studio` (port 4390, project `c21-probe`) | 2/2 probes — 25 document surfaces, 68 role panels, 107 sections, 185 chips, 120 glyphs held (worst 0.01px) |
+| `hello-hda` (port 4391, project `c21-hda-probe`) | 2/2 probes — discovers `/` and `/timer`, 0 panels and 0 chips, passes with loud `[skip]` vacuity lines |
+| `appbox design probe all` (appbox-studio) | 12/12 probes, contract first |
+
+`hello-hda` is the design-agnosticism proof: no `registry.json`, no panels, no
+chips, and the same compiled probes pass against it without a per-design code
+path. Its zero counts are printed, not hidden — the probe says out loud that it
+asserted about an empty set.
+
+**Cost to note: both contract probes are `mutates: true`.** They issue only
+GETs and never click, but a design may DECLARE a state-changing GET, and
+appbox-studio does (`/build/chips/pin` and its unpin sibling answer 200 and
+change pinned state). Walking every declared GET surface therefore leaves the
+served project changed, which is the same reasoning `probe_panel_contract.dart`
+records for itself. The consequence is real and may be worth revisiting: a
+universal contract gate now refuses any target not bound to a `-probe`/`-test`
+project.
 
 ### Decision: route discovery uses a new `/__routes` endpoint
 

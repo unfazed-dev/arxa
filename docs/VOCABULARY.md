@@ -415,6 +415,29 @@ is missing, extend lens.dart/cdp.dart; never reach back for probe-runner.
 _Avoid_: screenshot tool, test runner, probe-runner (archived name)
 _Layer_: Pipeline
 
+**Contract probe**:
+A probe that holds any appbox-built app to the appbox opinion, not one that
+knows this app.
+Asserts the appbox opinion (panels, chips, no-reload HDA behavior) against ANY
+served design, deriving its targets from the design's own declarations. The
+behavioral sibling of the W-gate. Route discovery is `GET /__routes`, the
+served design's own route table: a contract probe that names a route is
+miscategorised by construction, and that is greppable — no `/design`,
+`/intake` or `/build` literal may appear under
+`appboxd/lib/probes/contract/`. Run with `appbox design probe contract`; the
+v1 set is `contract-panels` and `contract-chips`.
+_Avoid_: generic probe, universal probe
+_Layer_: Pipeline
+
+**Studio suite**:
+The engine's own smoke test, run through the one design it is allowed to know.
+The existing ten probes: the engine's smoke test, run through its reference
+design (appbox-studio). Legitimate engine concern, named for what it is —
+free to hard-code studio routes, because knowing the studio IS its job. Run
+with `appbox design probe studio`; `probe all` runs contract first, then this.
+_Avoid_: the probe suite (bare), smoke suite (bare)
+_Layer_: Pipeline
+
 **Project**:
 One client's app-in-progress: its interview answers, brief, registry, flows,
 design seeds, and build evidence, kept together outside this repo.

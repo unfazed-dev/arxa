@@ -267,6 +267,73 @@ Future<DisposableVerdict> checkDisposableProject(String base) async {
   return disposableVerdict(res.body, base, fetchError: res.error);
 }
 
+// ── route discovery: what does THIS design serve? ────────────────────────
+
+/// One route the served design declares, from `GET /__routes`.
+class DesignRoute {
+  /// HTTP method, e.g. `GET`.
+  final String method;
+
+  /// Path as the design declared it, e.g. `/design/panel/:view`.
+  final String path;
+
+  const DesignRoute(this.method, this.path);
+
+  /// True when the path carries a `:param` segment.
+  ///
+  /// Contract probe v1 loads only parameterless routes: a value for `:id` can
+  /// only come from knowing the design, which is the one thing a contract
+  /// probe may not do. Inventing one yields a 404 and an assertion about an
+  /// error page. Skipped routes are counted and printed rather than dropped
+  /// silently, so the reduced denominator is visible in the output.
+  bool get isParameterized => path.split('/').any((s) => s.startsWith(':'));
+}
+
+/// `GET $base/__routes`, or null [routes] with [error] set.
+class RoutesResponse {
+  /// The declared routes, null when unreadable.
+  final List<DesignRoute>? routes;
+
+  /// Why it was unreadable, null on success.
+  final String? error;
+
+  const RoutesResponse(this.routes, this.error);
+
+  /// The parameterless GET routes — the surfaces a contract probe can load.
+  List<DesignRoute> get loadableGets => [
+        for (final r in routes ?? const <DesignRoute>[])
+          if (r.method.toUpperCase() == 'GET' && !r.isParameterized) r,
+      ];
+}
+
+/// Fetch the served design's own route table.
+///
+/// The ONLY source of surfaces a contract probe may use. Sibling of
+/// [fetchProjects] in the `/__*` introspection family; see design_server.dart
+/// for why the table is exposed rather than parsed out of `app.routes.js`.
+Future<RoutesResponse> fetchRoutes(String base) async {
+  final client = HttpClient();
+  try {
+    final req = await client.getUrl(Uri.parse('$base/__routes'));
+    final res = await req.close();
+    if (res.statusCode != 200) {
+      return RoutesResponse(null, 'HTTP ${res.statusCode}');
+    }
+    final body = jsonDecode(await res.transform(utf8.decoder).join());
+    final raw = (body as Map<String, dynamic>)['routes'];
+    if (raw is! List) return RoutesResponse(null, 'no "routes" list in body');
+    return RoutesResponse([
+      for (final e in raw)
+        if (e is Map && e['method'] is String && e['path'] is String)
+          DesignRoute(e['method'] as String, e['path'] as String),
+    ], null);
+  } catch (e) {
+    return RoutesResponse(null, '$e');
+  } finally {
+    client.close(force: true);
+  }
+}
+
 // ── check + section reporting ────────────────────────────────────────────
 
 /// Accumulates check results and prints them in the probes' output shape.
