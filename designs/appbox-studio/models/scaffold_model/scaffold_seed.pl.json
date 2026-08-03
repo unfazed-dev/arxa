@@ -1,0 +1,47 @@
+{
+  "_readme": "Scaffold picker seed (pl). Ids + machine enums ONLY — no display prose. Every label renders through t() from l10n/app_<locale>.arb, so the three locale seeds are structurally identical and parity is trivial. Kit ids/phase/topology are copied by value from config/kit-registry.json (24 kits); capability prose is deliberately NOT copied (brief (a): reference by id/tier only). The registry declares no dependency edges, so every edge shown is a design assertion: written explicitly as a depends field on the depending kit (payments -> data), or defaulted by topology. See generate.mjs. A kit reached only through closure is flagged auto (D5) and is NOT pre-selected in this seed.",
+  "entitlement": {
+    "signedIn": true,
+    "entitled": true,
+    "plan": "studio",
+    "credentialsHref": "/workspace/credentials"
+  },
+  "manifest": {
+    "path": "kit-manifest.json",
+    "beside": "structure.json",
+    "sections": ["wishlist", "resolved"]
+  },
+  "essentials": ["core", "ui_library", "state"],
+  "kits": [
+    { "id": "core", "package": "appbox_kit_core", "phase": "stable", "topology": "core", "provenance": "declared", "selected": true, "origin": "essential", "readiness": "ready", "missing": [], "declaredBy": [] },
+    { "id": "ui_library", "package": "ui_library", "phase": "stable", "topology": "ui-tier", "provenance": "declared", "selected": true, "origin": "essential", "readiness": "ready", "missing": [], "declaredBy": [] },
+    { "id": "state", "package": "appbox_kit_state", "phase": "stable", "topology": "standalone", "provenance": "declared", "selected": true, "origin": "essential", "readiness": "ready", "missing": [], "declaredBy": [] },
+    { "id": "data", "package": "appbox_kit_data", "phase": "stable", "topology": "core-coupled", "provenance": "declared", "selected": false, "origin": "dependency", "readiness": "ready", "missing": [], "declaredBy": ["app.orders"] },
+    { "id": "auth", "package": "appbox_kit_auth", "phase": "stable", "topology": "standalone", "provenance": "declared", "selected": true, "origin": "picked", "readiness": "ready", "missing": [], "declaredBy": ["app.signin", "app.account"] },
+    { "id": "payments", "package": "appbox_kit_payments", "depends": ["data"], "phase": "native-first", "topology": "standalone", "provenance": "inferred", "confidence": "high", "evidenceScreen": "app.checkout", "selected": true, "origin": "picked", "readiness": "missing-keys", "missing": ["STRIPE_SECRET_KEY", "STRIPE_PUBLISHABLE_KEY"], "credentialModule": "kit/payments", "declaredBy": [] },
+    { "id": "forms", "package": "appbox_kit_forms", "phase": "stable", "topology": "standalone", "provenance": "declared", "selected": true, "origin": "picked", "readiness": "ready", "missing": [], "declaredBy": ["app.checkout"] },
+    { "id": "notifications", "package": "appbox_kit_notifications", "phase": "native-first-partial", "topology": "standalone", "provenance": "requested", "selected": true, "origin": "picked", "readiness": "partial", "missing": ["FCM_SERVER_KEY"], "credentialModule": "kit/notifications", "declaredBy": [] },
+    { "id": "analytics", "package": "appbox_kit_analytics", "phase": "stable", "topology": "standalone", "provenance": "inferred", "confidence": "low", "evidenceScreen": "app.dashboard", "selected": false, "origin": "candidate", "readiness": "ready", "missing": [], "declaredBy": [] },
+    { "id": "media", "package": "appbox_kit_media", "phase": "native-first", "topology": "standalone", "provenance": "requested", "selected": false, "origin": "candidate", "readiness": "ready", "missing": [], "declaredBy": [] },
+    { "id": "maps", "package": "appbox_kit_maps", "phase": "native-first-partial", "topology": "standalone", "provenance": "requested", "selected": false, "origin": "candidate", "readiness": "missing-keys", "missing": ["GOOGLE_MAPS_API_KEY"], "credentialModule": "kit/maps", "declaredBy": [] },
+    { "id": "permissions", "package": "appbox_kit_permissions", "phase": "native-first", "topology": "standalone", "provenance": "requested", "selected": false, "origin": "candidate", "readiness": "ready", "missing": [], "declaredBy": [] },
+    { "id": "documents", "package": "appbox_kit_documents", "phase": "native-first-partial", "topology": "standalone", "provenance": "requested", "selected": false, "origin": "candidate", "readiness": "ready", "missing": [], "declaredBy": [] },
+    { "id": "security", "package": "appbox_kit_security", "phase": "native-first-partial", "topology": "standalone", "provenance": "requested", "selected": false, "origin": "candidate", "readiness": "ready", "missing": [], "declaredBy": [] },
+    { "id": "haptics", "package": "appbox_kit_haptics", "phase": "stable", "topology": "standalone", "provenance": "requested", "selected": false, "origin": "candidate", "readiness": "ready", "missing": [], "declaredBy": [] },
+    { "id": "motion", "package": "appbox_kit_motion", "phase": "stable", "topology": "standalone", "provenance": "requested", "selected": false, "origin": "candidate", "readiness": "ready", "missing": [], "declaredBy": [] },
+    { "id": "i18n", "package": "appbox_kit_i18n", "phase": "stable", "topology": "standalone", "provenance": "requested", "selected": false, "origin": "candidate", "readiness": "ready", "missing": [], "declaredBy": [] },
+    { "id": "support", "package": "appbox_kit_support", "phase": "stable", "topology": "standalone", "provenance": "requested", "selected": false, "origin": "candidate", "readiness": "ready", "missing": [], "declaredBy": [] },
+    { "id": "compliance", "package": "appbox_kit_compliance", "phase": "stable", "topology": "standalone", "provenance": "requested", "selected": false, "origin": "candidate", "readiness": "ready", "missing": [], "declaredBy": [] },
+    { "id": "branding", "package": "branding", "phase": "stable", "topology": "standalone", "provenance": "requested", "selected": false, "origin": "candidate", "readiness": "ready", "missing": [], "declaredBy": [] },
+    { "id": "bluetooth", "package": "appbox_kit_bluetooth", "phase": "native-first-partial", "topology": "standalone", "provenance": "requested", "selected": false, "origin": "candidate", "readiness": "ready", "missing": [], "declaredBy": [] },
+    { "id": "wifi", "package": "appbox_kit_wifi", "phase": "stable", "topology": "standalone", "provenance": "requested", "selected": false, "origin": "candidate", "readiness": "ready", "missing": [], "declaredBy": [] },
+    { "id": "deploy", "package": "appbox_kit_deploy", "phase": "stable", "topology": "standalone", "provenance": "requested", "selected": false, "origin": "candidate", "readiness": "ready", "missing": [], "declaredBy": [] },
+    { "id": "showcase_app", "package": "appbox_kit_showcase_app", "phase": "n/a", "topology": "app-integration", "provenance": "requested", "selected": false, "origin": "candidate", "readiness": "ready", "missing": [], "declaredBy": [] }
+  ],
+  "states": {
+    "empty": { "note": "no prior selection — essentials pre-applied per D5, never a blank grid" },
+    "loading": { "pending": ["registry", "credentials"] },
+    "error": { "source": "registry", "retryHref": "/main/scaffold/picker?state=success" },
+    "notEntitled": { "signedIn": false, "entitled": false, "route": "/workspace/credentials" }
+  }
+}
