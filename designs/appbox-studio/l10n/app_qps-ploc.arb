@@ -942,6 +942,12 @@
   "scaffold.picker.gated.body": "[!! Ÿöü çäñ šëë ëvëřÿ ķïţ äñð ŵĥäţ ÿöüř ðëšïğñ ñëëðš. Þïçķïñğ ţĥëm äñð šçäƒƒöłðïñğ ñëëðš äñ äççöüñţ. ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
   "scaffold.picker.gated.cta": "[!! Šïğñ ïñ ~̷~~̷~ !!]",
   "scaffold.picker.gated.badge": "[!! þřëvïëŵ ~̷~~̷~ !!]",
+  "scaffold.picker.gated.signedOut.title": "[!! Šïğñ ïñ ţö çĥööšë ķïţš ~̷~~̷~~̷~~̷~ !!]",
+  "scaffold.picker.gated.signedOut.body": "[!! Ÿöü çäñ šëë ëvëřÿ ķïţ äñð ŵĥäţ ÿöüř ðëšïğñ ñëëðš. Þïçķïñğ ţĥëm äñð šçäƒƒöłðïñğ ñëëðš äñ äççöüñţ. ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+  "scaffold.picker.gated.signedOut.cta": "[!! Šïğñ ïñ ~̷~~̷~ !!]",
+  "scaffold.picker.gated.notEntitled.title": "[!! Šçäƒƒöłðïñğ ïš öñ ä þäïð þłäñ ~̷~~̷~~̷~ !!]",
+  "scaffold.picker.gated.notEntitled.body": "[!! Ÿöüř ðëšïğñ äłřëäðÿ ķñöŵš ŵĥïçĥ ķïţš ïţ ñëëðš. Ĝëñëřäţïñğ ţĥë þřöĵëçţ ƒřöm ţĥëm ñëëðš äñ üþğřäðëð þłäñ. ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+  "scaffold.picker.gated.notEntitled.cta": "[!! Šëë þłäñš ~̷~~̷~ !!]",
   "scaffold.picker.continue": "[!! Çöñţïñüë ţö ţĥë þłäñ ~̷~~̷~~̷~ !!]",
   "scaffold.picker.continue.blocked": "[!! Þïçķ äţ łëäšţ öñë ķïţ ~̷~~̷~~̷~~̷~ !!]"
 }

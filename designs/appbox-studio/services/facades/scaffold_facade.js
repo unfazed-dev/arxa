@@ -56,7 +56,7 @@ const pickedFrom = (session, locale) => {
  * @param session  server-held session (holds scaffoldPicked, pendingRemove)
  * @param t        translator
  * @param locale   active locale
- * @param screen   requested lens state: success | empty | loading | error | notEntitled
+ * @param screen   requested lens state: success | empty | loading | error | notEntitled | signedOut
  */
 export const context = (session = {}, t = (k) => k, locale = 'en', screen = 'success') => {
   const all = repo.kits(locale);
@@ -68,7 +68,12 @@ export const context = (session = {}, t = (k) => k, locale = 'en', screen = 'suc
   // --- entitlement gate (brief (a): signed-out / not-entitled state) --------
   // Signed-out shows the same picker, read-only, with the real kit list
   // visible — the value is legible before the paywall, never a blank wall.
-  const gated = screen === 'notEntitled' || !ent.signedIn || !ent.entitled;
+  // Two distinct gates that happen to share one read-only presentation:
+  // signed-out is answered by signing in, not-entitled by upgrading. The
+  // copy and the CTA must differ, or we send a signed-out user to a paywall.
+  const signedOut = screen === 'signedOut' || !ent.signedIn;
+  const gated = signedOut || screen === 'notEntitled' || !ent.entitled;
+  const gatedReason = signedOut ? 'signedOut' : 'notEntitled';
 
   const picked = screen === 'empty' ? new Set(essentials) : pickedFrom(session, locale);
   const { selected, auto } = closure(picked, byId);
@@ -152,7 +157,13 @@ export const context = (session = {}, t = (k) => k, locale = 'en', screen = 'suc
     loading: screen === 'loading',
     error: screen === 'error' ? { ...states.error, source: states.error.source } : null,
     gated,
-    entitlement: { ...ent, ctaHref: ent.credentialsHref },
+    gatedReason,
+    entitlement: {
+      ...ent,
+      signedIn: !signedOut,
+      // Signed-out goes to sign-in; not-entitled goes to the upgrade path.
+      ctaHref: signedOut ? ent.signInHref || '/sign-in' : ent.upgradeHref || ent.credentialsHref,
+    },
     kits,
     groups,
     chosen,

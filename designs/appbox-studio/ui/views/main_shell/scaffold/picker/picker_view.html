@@ -171,10 +171,11 @@
    The grid stays visible and honest: you can see every kit your design needs
    before you are asked to sign in. Only the toggles are withdrawn. #}
 {% macro gatedNotice(c) %}
-<aside class="picker-notice picker-notice--gated">
-  <h4 class="fact-label">{{ icon('lock', {size: 14}) }} {{ t('scaffold.picker.gated.title') }}</h4>
-  <p>{{ t('scaffold.picker.gated.body') }}</p>
-  {{ pr.ctaLink(c.entitlement.ctaHref, t('scaffold.picker.gated.cta'), 'chevron-right', 'main') }}
+{% set k = 'scaffold.picker.gated.' + (c.gatedReason or 'notEntitled') %}
+<aside class="picker-notice picker-notice--gated" data-gated="{{ c.gatedReason }}">
+  <h4 class="fact-label">{{ icon('lock', {size: 14}) }} {{ t(k + '.title') }}</h4>
+  <p>{{ t(k + '.body') }}</p>
+  {{ pr.ctaLink(c.entitlement.ctaHref, t(k + '.cta'), 'chevron-right', 'main') }}
 </aside>
 {% endmacro %}
 

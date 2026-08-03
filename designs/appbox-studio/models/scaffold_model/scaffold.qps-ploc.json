@@ -3,7 +3,9 @@
     "signedIn": true,
     "entitled": true,
     "plan": "studio",
-    "credentialsHref": "/workspace/credentials"
+    "credentialsHref": "/workspace/credentials",
+    "signInHref": "/sign-in",
+    "upgradeHref": "/workspace/plans"
   },
   "essentials": [
     "core",

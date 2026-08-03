@@ -929,6 +929,12 @@
   "scaffold.picker.gated.body": "Widzisz każdy zestaw i to, czego wymaga Twój projekt. Wybór i rusztowanie wymagają konta.",
   "scaffold.picker.gated.cta": "Zaloguj się",
   "scaffold.picker.gated.badge": "podgląd",
+  "scaffold.picker.gated.signedOut.title": "Zaloguj się, aby wybrać zestawy",
+  "scaffold.picker.gated.signedOut.body": "Widzisz każdy zestaw i to, czego wymaga Twój projekt. Wybór i rusztowanie wymagają konta.",
+  "scaffold.picker.gated.signedOut.cta": "Zaloguj się",
+  "scaffold.picker.gated.notEntitled.title": "Rusztowanie jest w płatnym planie",
+  "scaffold.picker.gated.notEntitled.body": "Twój projekt już wie, jakich zestawów potrzebuje. Wygenerowanie z nich projektu wymaga wyższego planu.",
+  "scaffold.picker.gated.notEntitled.cta": "Zobacz plany",
   "scaffold.picker.continue": "Przejdź do planu",
   "scaffold.picker.continue.blocked": "Wybierz co najmniej jeden zestaw"
 }

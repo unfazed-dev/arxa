@@ -942,6 +942,12 @@
   "scaffold.picker.gated.body": "You can see every kit and what your design needs. Picking them and scaffolding needs an account.",
   "scaffold.picker.gated.cta": "Sign in",
   "scaffold.picker.gated.badge": "preview",
+  "scaffold.picker.gated.signedOut.title": "Sign in to choose kits",
+  "scaffold.picker.gated.signedOut.body": "You can see every kit and what your design needs. Picking them and scaffolding needs an account.",
+  "scaffold.picker.gated.signedOut.cta": "Sign in",
+  "scaffold.picker.gated.notEntitled.title": "Scaffolding is on a paid plan",
+  "scaffold.picker.gated.notEntitled.body": "Your design already knows which kits it needs. Generating the project from them needs an upgraded plan.",
+  "scaffold.picker.gated.notEntitled.cta": "See plans",
   "scaffold.picker.continue": "Continue to the plan",
   "scaffold.picker.continue.blocked": "Pick at least one kit"
 }
