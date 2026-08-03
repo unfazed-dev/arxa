@@ -84,6 +84,52 @@ convention. Two true facts about two different artifacts: absent from `registry.
 present in every viewmodel. The right conclusion with the wrong premise is still
 worth catching — a correct call I could not have defended.
 
+## 0c. Disposition (a) measured, not predicted — before the ruling
+
+I owed the lead a re-shoot *after* a disposition (a) ruling. Cheaper to hand them
+the number *before* it. `scaffold_facade.js` is mine and committed, so this is a
+local apply → measure → revert on my own file — no stash, no shared stack, no
+teammate's work touched. Preflight asserted the file clean; revert verified
+byte-identical to HEAD.
+
+Applied: delete `:205` (`composerAction: '/scaffold/messages'`), leaving
+chrome-integration's `:75` guard to take its false branch.
+
+| state | status quo | disposition (a) | Δ | composer forms | thread rows | `undefined` |
+|---|---|---|---|---|---|---|
+| success | 82715 | 80815 | −1900 | 1 → **0** | 1 → **1** | 0 |
+| empty | 80957 | 79057 | −1900 | 1 → **0** | 1 → **1** | 0 |
+| loading | — | 25523 | | 0 | 1 | 0 |
+| error | — | 26109 | | 0 | 1 | 0 |
+| notentitled | — | 79346 | | 0 | 1 | 0 |
+| signedout | — | 79320 | | 0 | 1 | 0 |
+
+**Four things settled by measurement:**
+
+1. **Cost is 1900 B, uniform.** Not the 916 B figure — that was what *survives*
+   panel-level gating; this is what *disappears* under field-level gating.
+2. **Thread rows survive in all six states.** The orientation copy
+   (`thread.detected` / `thread.help`) that run-screen argued for is preserved,
+   because `:75` wraps `cm.field(c)` only and `thread(c)` at `:74` sits outside it.
+3. **The 240–280px empty column does not occur.** It was the risk I raised as
+   unverified-by-render. The track stays populated by the surviving rows —
+   `grep -c` for the composer action returns 0 while thread rows return 1.
+4. **No empty `action=""`.** Run-screen's failure mode — a composer that renders
+   with no action and POSTs to itself — does not appear here. The guard suppresses
+   the field rather than emitting a hollow form.
+
+**Bonus positive control.** Until now the guard was only ever observed *inert* on
+my screen, which is consistent both with "it works" and with "it is broken and the
+action masked it." Deleting `:205` drove the false branch and the composer vanished
+— the first evidence that the guard is **functional**, not merely present. An
+absence that finally has its known-present counterpart.
+
+**Conditional on the same unstaged tree.** This measurement requires `:75` to be in
+the working tree. If the Phase 3 commit drops the guard, disposition (a) does not
+merely lose these numbers — deleting `:205` without `:75` yields a composer with no
+action, i.e. run-screen's exact defect transplanted onto my screen. **(a) is
+two edits or neither.**
+
 ### Scope limit on the lens shoot
 
 The 3-rung ladder shoot predates both the guard landing and the composer ruling. It
