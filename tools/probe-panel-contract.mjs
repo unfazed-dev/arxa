@@ -333,6 +333,70 @@ for (const w of [839, 599]) {
   check(`@${w}px the shell still fills the viewport`, parseFloat(r.minH) >= 699, `min-height=${r.minH}`);
 }
 
+console.log('\n=== L. the chip contract holds (D2) ===');
+// THE BUG THIS CATCHES: .chip's box model (inline-flex, radius 999px, inset
+// box-shadow border, never a real border) lives in ONE file, widgets.css —
+// every one of the 11 migrated classes is now a thin tone hook that assumes
+// that base is already on the element. If widgets.css stopped loading (link
+// order regression, a typo'd href, base.html losing the tag), every chip on
+// the page would silently fall back to browser defaults: an unstyled inline
+// span with square corners and no border at all. Nothing throws; it just
+// stops looking like a chip everywhere at once.
+// Sections A-K run their whole sequence on the ONE shared page `p` — by the
+// time L runs, that page's session/localStorage may carry selection state
+// left over from earlier sections (e.g. G's "file read" picks a specific
+// artifact), which changes what /design shows regardless of viewport. Use a
+// fresh, isolated page so L always sees the same default /design view.
+const lp = await b.newPage({ viewport: { width: 1400, height: 1000 } });
+await lp.goto(BASE + '/design', { waitUntil: 'networkidle' });
+const chipContract = () => [...document.querySelectorAll('.chip')].map((e) => {
+  const cs = getComputedStyle(e);
+  return { cls: e.className, display: cs.display, radius: cs.borderRadius, borderW: cs.borderWidth, shadow: cs.boxShadow };
+});
+const chips = await lp.evaluate(chipContract);
+check('at least one .chip renders on /design', chips.length > 0, `found ${chips.length}`);
+check('coverage: at least 20 .chip instances render (not a viewport fluke)', chips.length >= 20,
+  `found only ${chips.length} — panels that carry chips may not be rendering at this viewport`);
+// A .chip that is itself a flex/grid item gets its outer display "blockified"
+// per the CSS Display spec — inline-flex resolves to flex in getComputedStyle
+// even though the authored rule (and the actual box model) is inline-flex.
+// That's expected here since nearly every chip sits inside a flex toolbar/row;
+// accept both keywords as passing and rely on the radius/border/shadow checks
+// below (plus the mutation test) to prove the box model is really from
+// widgets.css and not a spec-mandated relabeling of a correctly-styled chip.
+check('every .chip resolves to a flex box (inline-flex, blockified to flex when a flex/grid item)',
+  chips.every((c) => c.display === 'inline-flex' || c.display === 'flex'),
+  JSON.stringify(chips.filter((c) => c.display !== 'inline-flex' && c.display !== 'flex').map((c) => `${c.cls}=${c.display}`)));
+check('every .chip is a full pill (radius: 999px)', chips.every((c) => c.radius === '999px'),
+  JSON.stringify(chips.filter((c) => c.radius !== '999px').map((c) => `${c.cls}=${c.radius}`)));
+check('no .chip carries a real border (inset box-shadow only)', chips.every((c) => c.borderW === '0px'),
+  JSON.stringify(chips.filter((c) => c.borderW !== '0px').map((c) => `${c.cls}=${c.borderW}`)));
+
+// MUTATION TEST: prove the checks above are actually exercising widgets.css
+// and not just restating a browser default that would pass either way. Kill
+// the stylesheet in-page and require the SAME assertion to flip to failing.
+const killed = await lp.evaluate(() => {
+  const link = [...document.querySelectorAll('link[rel=stylesheet]')].find((l) => l.href.includes('widgets.css'));
+  if (!link) return false;
+  link.disabled = true;
+  return true;
+});
+if (!killed) {
+  check('mutation test: widgets.css link found to disable', false, 'no <link> with widgets.css — cannot prove the check is live');
+} else {
+  const mutated = await lp.evaluate(chipContract);
+  // radius/borderW alone are true for a bare unstyled span too (0 border,
+  // browser-default radius can coincidentally read '0px'/'999px' is not one
+  // of them, but don't rely on radius+border being sufficient on their own);
+  // require the flex/inline-flex layout to also survive, since a plain span
+  // reverts to display:inline the moment widgets.css stops applying.
+  const stillPills = mutated.length > 0 && mutated.every((c) =>
+    c.radius === '999px' && c.borderW === '0px' && (c.display === 'inline-flex' || c.display === 'flex'));
+  check('mutation test: killing widgets.css breaks the pill contract (proves L is not vacuous)',
+    !stillPills, stillPills ? 'chips STILL look like pills with widgets.css disabled — this section is not testing what it claims to' : 'confirmed: chips lost their box model');
+}
+await lp.close();
+
 await b.close();
 console.log(fails ? `\n==== ${fails} CHECK(S) FAILED ====` : '\n==== ALL CHECKS PASSED ====');
 process.exit(fails ? 1 : 0);

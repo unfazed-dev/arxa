@@ -1,22 +1,22 @@
 /* ============================================================================
-   components.css — shared styles for starter-partials/components (appbox-designer)
+   widgets.css — shared styles for starter-partials/widgets (appbox-designer)
 
-   One stylesheet for the whole drop-in component set. Zero JavaScript. Copy
-   the whole components/ directory into your artifact (artifacts are
+   One stylesheet for the whole drop-in widget set. Zero JavaScript. Copy
+   the whole widgets/ directory into your artifact (artifacts are
    self-contained):
 
-     ui/widgets/components/_*.html  → {% include "ui/widgets/components/_nav-rail.html" %}
-     assets/css/components.css      → <link rel="stylesheet" href="/assets/css/components.css">
+     ui/common/widgets/_*.html   → {% include "ui/common/widgets/_nav-rail.html" %}
+     assets/css/widgets.css      → <link rel="stylesheet" href="/assets/css/widgets.css">
 
    Pair it with starter-partials/motion.css (loaded after app.css, before this
    file): motion.css owns the --motion-* timing tokens, the swap/traverse/
    reveal/notify/pending keyframes, the [popover] recipe, and .skeleton. This
-   file owns component geometry and color. Every animated rule below lives
+   file owns widget geometry and color. Every animated rule below lives
    inside `@media (prefers-reduced-motion: no-preference)`; reduced-motion
    users get the same end states instantly.
 
    Tokens: colors/geometry are CSS custom properties scoped to each block
-   (frames.css convention) — re-theme per block root or globally. Components
+   (frames.css convention) — re-theme per block root or globally. Widgets
    reference var(--accent, …) exactly like the rest of the medium; set it on
    the #app wrapper (state playbook), never on <body>/<html>.
 
@@ -25,7 +25,7 @@
    those are for shooting, not for code. See references/viewport-ladder.md.
 
    Type: text styles use the CJK-friendly --c-font stack; override once in
-   :root to re-voice every component.
+   :root to re-voice every widget.
    ============================================================================ */
 
 :root {
@@ -35,7 +35,7 @@
 }
 
 /* ── Auto Layout — the static attribute-keyed layer ───────────────────────
-   Component-library components carry Auto Layout by default (DESIGN-
+   Widget-library widgets carry Auto Layout by default (DESIGN-
    ARCHITECTURE, "Auto Layout"): pure CSS keyed on data-attributes, zero
    client JS. A container opts in with [data-layout]; its children size per
    axis with [data-resize-x] / [data-resize-y]; [data-layout-ignore] is the
@@ -863,4 +863,36 @@ a.list-row:hover { background: color-mix(in srgb, currentColor 6%, transparent);
    the in-flow panel would duplicate it and squeeze the stage */
 @media (max-width: 839px) {
   .panel-activity { display: none; }
+}
+
+/* ── chip (_chip.html) · Flutter: KitChip / KitFilterChip ───────────────── */
+.chip-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip {
+  --chip-fg: var(--accent, #4f46e5);
+  --chip-bg: color-mix(in srgb, var(--accent, #4f46e5) 12%, transparent);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--chip-bg);
+  color: var(--chip-fg);
+  font-family: var(--c-font);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+.chip--muted {
+  --chip-fg: color-mix(in srgb, CanvasText 60%, Canvas);
+  --chip-bg: color-mix(in srgb, CanvasText 6%, Canvas);
+}
+.chip--sm { padding: 2px 8px; font-size: 11px; gap: 3px; }
+.chip__remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
 }

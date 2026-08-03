@@ -195,10 +195,6 @@ button:active { transform: translateY(1px); }
 }
 .surface-label { font-weight: 500; }
 .surface-id { color: var(--tx-2); overflow-wrap: anywhere; }
-.chip {
-  font-size: .72rem; padding: .16rem .6rem; border-radius: 999px;
-  border: 1px solid var(--border); color: var(--tx-2); background: var(--bg-2);
-}
 .surface-list .chip { margin-left: auto; }
 
 /* ---------- the shell timeline lives in chrome.css (footer panel) ---------- */
@@ -254,16 +250,6 @@ button:active { transform: translateY(1px); }
 }
 .msg.is-active { border-color: var(--accent); background: var(--accent-soft); }
 .msg-meta { display: flex; gap: .45rem; align-items: center; flex-wrap: wrap; }
-.type-badge {
-  font-family: 'Lexend Deca', 'Lexend', sans-serif;
-  font-size: .58rem; font-weight: 500; letter-spacing: .09em; text-transform: uppercase;
-  padding: .12rem .5rem; border-radius: 999px;
-}
-.tb-stage { color: var(--accent); background: var(--accent-soft); }
-.tb-gate { color: var(--bg); background: var(--tx); } /* decisions wear solid ink */
-.tb-findings { color: var(--fail); background: var(--fail-soft); }
-.tb-evidence { color: var(--ok); background: var(--ok-soft); }
-.tb-chart, .tb-log, .tb-note { color: var(--tx-2); background: var(--bg-2); box-shadow: inset 0 0 0 1px var(--border); }
 .msg-time {
   font-family: 'Lexend Deca', 'Lexend', sans-serif;
   font-size: .64rem; letter-spacing: .06em; color: var(--tx-3);
@@ -272,17 +258,11 @@ button:active { transform: translateY(1px); }
 .msg-tone-fail .msg-time { color: var(--fail); }
 .msg-tone-warn .msg-time { color: var(--amber); }
 .msg-tone-action .msg-time { color: var(--accent); }
-.msg-meta .status-pill { margin-left: auto; font-size: .6rem; padding: .1rem .5rem; }
+.msg-meta .status-pill { margin-left: auto; }
 .msg-detail { font-size: .72rem; color: var(--tx-2); font-variant-numeric: tabular-nums; }
 .msg-foot { display: flex; justify-content: space-between; align-items: center; gap: .45rem; margin-top: .12rem; }
 .msg-foot .msg-time { margin-left: auto; }
 .msg-cta { display: flex; gap: .45rem; align-items: center; }
-.thread-badge {
-  font-family: 'Lexend Deca', 'Lexend', sans-serif;
-  font-size: .58rem; font-weight: 500; letter-spacing: .05em;
-  padding: .12rem .45rem; border-radius: 999px;
-  color: var(--accent); background: var(--accent-soft);
-}
 .cta-main, .cta-ghost {
   font-family: 'Lexend Deca', 'Lexend', sans-serif;
   font-size: .62rem; letter-spacing: .08em; text-transform: uppercase;
@@ -424,20 +404,6 @@ button:active { transform: translateY(1px); }
 .provenance dd { margin: 0; }
 .gate-note { font-size: .85rem; }
 
-/* status pills */
-.status-pill {
-  display: inline-flex; gap: .38rem; align-items: center;
-  font-family: 'Lexend Deca', 'Lexend', sans-serif;
-  font-size: .68rem; font-weight: 500; letter-spacing: .04em;
-  padding: .18rem .65rem; border-radius: 999px; white-space: nowrap;
-  color: var(--tx-2); background: var(--bg-2);
-}
-.status-dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
-.status-green, .status-approved, .status-pass { color: var(--ok); background: var(--ok-soft); }
-.status-recovered, .status-watch, .status-held { color: var(--amber); background: var(--amber-soft); }
-.status-pending, .status-active { color: var(--accent); background: var(--accent-soft); }
-.status-red, .status-rejected { color: var(--fail); background: var(--fail-soft); }
-
 /* stage artifact */
 .attempts { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: .45rem; }
 .attempt {
@@ -538,11 +504,6 @@ button:active { transform: translateY(1px); }
   background: var(--bg); box-shadow: inset 0 0 0 1px var(--border);
 }
 .probe-chips { display: flex; gap: .4rem; flex-wrap: wrap; }
-.probe-chip {
-  font-family: ui-monospace, "SF Mono", monospace; font-size: .72rem;
-  padding: .2rem .55rem; border-radius: 999px;
-  color: var(--accent); background: var(--accent-soft);
-}
 
 /* ---------- the stage bar: FAB → floating toolbar over the canvas ---------- */
 .stage-bar-wrap {
@@ -702,12 +663,6 @@ button:active { transform: translateY(1px); }
 [data-theme="dark"] .dv-bg-warm .dv-screen, .dv-bg-slate .dv-screen, .dv-bg-slate .dv-chip { color: #e8e4da; }
 .dv-group { display: inline-flex; gap: .3rem; margin-left: auto; }
 .dv-group + .dv-group { margin-left: 0; }
-.dv-chip {
-  font-size: .72rem; font-weight: 500; text-decoration: none; color: var(--tx-2);
-  padding: .22rem .6rem; border-radius: 999px;
-  box-shadow: inset 0 0 0 1px var(--border);
-}
-.dv-chip.on { color: var(--accent); box-shadow: inset 0 0 0 1.5px var(--accent); font-weight: 600; }
 .dv-body { display: flex; gap: .7rem; flex: 1; min-height: 0; }
 .dv-strip {
   width: 9.2rem; flex: none; overflow-y: auto; min-height: 0;
@@ -733,9 +688,7 @@ button:active { transform: translateY(1px); }
   transform: scale(.36); transform-origin: top left;
 }
 .dv-thumb-label { font-size: .68rem; display: flex; gap: .3rem; align-items: center; justify-content: space-between; }
-.dv-thumb-label .status-pill { font-size: .6rem; padding: .1rem .4rem; }
 .dv-thumb-score { display: flex; gap: .25rem; flex-wrap: wrap; }
-.dv-thumb-score .probe-chip { font-size: .62rem; padding: .12rem .4rem; }
 
 /* the iframe document: stand-in render of a client design screen */
 .stub-body { margin: 0; }
