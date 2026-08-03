@@ -171,7 +171,167 @@ for (const w of [599, 800]) {
   check(`@${w}px every header menu renders with real height`,
     r.menus.length > 0 && r.menus.every((m) => m.visible), JSON.stringify(r.menus));
 }
+console.log('\n=== I. the side panels shed their desktop width below 840px ===');
+// The composer and the activity panel carry a fixed width, a floor and a
+// shared 500px cap on desktop. Below 840px they stack one at a time and must
+// release all three — and the @media rule that releases them lost on source
+// order twice over: `.panel-activity` is declared later in panels.css, and
+// `.panel-composer` is declared in composer.css, which loads after it. So the
+// rule silently did nothing and the composer sat at its 390px desktop width
+// inside a ~700px column. Desktop rendered perfectly throughout, which is why
+// this is asserted rather than eyeballed.
+for (const vw of [1900, 839, 800, 599]) {
+  await p.setViewportSize({ width: vw, height: 900 });
+  for (const role of ['composer', 'activity']) {
+    await p.goto(`${BASE}/design?panel=${role}`, { waitUntil: 'networkidle' });
+    const r = await p.evaluate((sel) => {
+      const row = document.querySelector('.panels');
+      const e = document.querySelector(sel);
+      if (!e || !row) return null;
+      const cs = getComputedStyle(e);
+      const rs = getComputedStyle(row);
+      const inner = row.getBoundingClientRect().width
+        - parseFloat(rs.paddingLeft) - parseFloat(rs.paddingRight);
+      return { w: e.getBoundingClientRect().width, inner,
+               min: cs.minWidth, max: cs.maxWidth };
+    }, '.panel-' + role);
+    if (!r) { check(`@${vw}px ${role} panel present`, false, 'not found'); continue; }
+    if (vw < 840) {
+      // A mismatch here means a desktop width leaked past the media query.
+      check(`@${vw}px ${role} fills the stacked column`, Math.abs(r.w - r.inner) <= 2,
+        `panel=${Math.round(r.w)} column=${Math.round(r.inner)}`);
+      check(`@${vw}px ${role} releases its floor and cap`, parseFloat(r.min) === 0 && r.max === 'none',
+        `min=${r.min} max=${r.max}`);
+    } else {
+      check(`@${vw}px ${role} keeps the shared 500px cap`, r.max === '500px', `max=${r.max}`);
+    }
+  }
+}
+// Both side panels cap at the SAME width — the whole point of --panel-max-w.
 await p.setViewportSize({ width: 1900, height: 1000 });
+await p.goto(BASE + '/design', { waitUntil: 'networkidle' });
+const caps = await p.evaluate(() => ['.panel-composer', '.panel-activity']
+  .map((s) => getComputedStyle(document.querySelector(s)).maxWidth));
+check('composer and activity share ONE ceiling', new Set(caps).size === 1, JSON.stringify(caps));
+
+console.log('\n=== J. the main panel FILLS its slot on every shell ===');
+// THE BUG THIS CATCHES: `.step-stage` is `.mp-content` — the main panel's own
+// card — and it carried `max-width: 44rem; margin: 0 auto`. So on intake the
+// card shrank to 44rem and floated mid-slot with ~200px of dead space either
+// side, while the design shell's card filled the same slot edge to edge. Two
+// shells, two visibly different main panels, from one property on the wrong
+// element. The rule: the CARD fills the slot; the reading measure belongs to
+// the CONTENT inside it.
+//
+// Asserted against the SLOT, not against a number: the slot is whatever the
+// composer and the activity panel leave behind, so this keeps holding when a
+// side panel is resized, and it is the same check on a shell that renders no
+// side panels at all (the card then takes the whole row).
+for (const route of ['/intake', '/design', '/build']) {
+  await p.goto(BASE + route, { waitUntil: 'networkidle' });
+  const r = await p.evaluate(() => {
+    const slot = document.querySelector('.panel-main');
+    // .panel-viewer when the viewer IS the card, .mp-content otherwise.
+    const card = slot && slot.querySelector('.panel-viewer, .mp-content');
+    if (!slot || !card) return null;
+    const measured = document.querySelector('.artifact-lede');
+    return { slot: slot.getBoundingClientRect().width,
+             card: card.getBoundingClientRect().width,
+             lede: measured ? measured.getBoundingClientRect().width : null };
+  });
+  if (!r) { check(`${route}: main panel has a card`, false, 'slot or card missing'); continue; }
+  check(`${route}: the card fills the main slot`, Math.abs(r.card - r.slot) <= 2,
+    `card=${Math.round(r.card)} slot=${Math.round(r.slot)}`);
+  // The payoff for capping with a grid track instead of `> * { max-width }`:
+  // a child's own, narrower measure survives. 40rem = 640px at the 16px root.
+  if (r.lede !== null) {
+    check(`${route}: content keeps its own narrower measure`, Math.round(r.lede) === 640,
+      `.artifact-lede=${Math.round(r.lede)} (want 640)`);
+  }
+}
+// Same slot, same card width, whatever the shell — the user-visible claim.
+const cards = [];
+for (const route of ['/intake', '/design']) {
+  await p.goto(BASE + route, { waitUntil: 'networkidle' });
+  cards.push(await p.evaluate(() => {
+    const c = document.querySelector('.panel-main .panel-viewer, .panel-main .mp-content');
+    return c ? Math.round(c.getBoundingClientRect().width) : null;
+  }));
+}
+check('intake and design main panels are the SAME width', cards[0] !== null && cards[0] === cards[1],
+  JSON.stringify(cards));
+
+console.log('\n=== K. the page never scrolls; the panels do ===');
+// THE BUG THIS CATCHES: the shell was `min-height: 100dvh` with the panels row
+// sized `calc(100dvh - var(--nav-h) - var(--tl-h))` — a height derived from
+// tokens describing two SIBLINGS the row does not own. `--tl-h` measures
+// .timeline, the strip; the footer PANEL around it adds a border, so the
+// column summed to 100.97dvh. One pixel: a real document scrollbar, and far
+// too small to read as anything but a rendering artefact.
+//
+// Asserted as `scrollHeight === clientHeight`, which catches ANY overflow,
+// not the specific pixel — the row is flex-sized now precisely so no future
+// chrome change can re-derive itself out of sync.
+await p.setViewportSize({ width: 1900, height: 1000 });
+// Section D opened a FILE into the main panel, and which surface /design shows
+// is server-side session state — so by now /design renders that read, not the
+// canvas, and the reachability check below would measure a doc with nothing to
+// scroll and blame the layout. Back out of it first: `.mp-file-back` is the
+// file view's own close affordance, so this restores whatever surface the
+// shell was on rather than assuming one.
+await p.goto(BASE + '/design', { waitUntil: 'networkidle' });
+const back = await p.evaluate(() => {
+  const a = document.querySelector('.mp-file-back');
+  return a ? a.getAttribute('href') : null;
+});
+if (back) await p.goto(BASE + back, { waitUntil: 'networkidle' });
+
+for (const route of ['/intake', '/design', '/build']) {
+  await p.goto(BASE + route, { waitUntil: 'networkidle' });
+  const r = await p.evaluate(() => {
+    const de = document.documentElement, f = document.querySelector('#panel-footer');
+    // The scroll containers that MUST keep working — the lock is only correct
+    // if the content it stops the page from scrolling is reachable elsewhere.
+    const inner = [...document.querySelectorAll('.panels *')]
+      .filter((e) => e.scrollHeight > e.clientHeight + 1).length;
+    return { scrollH: de.scrollHeight, clientH: de.clientHeight, inner,
+             tallest: Math.max(0, ...[...document.querySelectorAll('.panels *')]
+               .map((e) => e.scrollHeight - e.clientHeight)),
+             footerOnScreen: f ? Math.round(f.getBoundingClientRect().bottom) <= window.innerHeight : null };
+  });
+  check(`${route}: the page cannot scroll`, r.scrollH === r.clientH,
+    `document ${r.scrollH}/${r.clientH}`);
+  check(`${route}: the footer stays on screen`, r.footerOnScreen !== false,
+    'a scrolling page drags the chrome out of view');
+  // THE LOCK MUST NOT BE A CLIP. /design carries far more content than the
+  // viewport — its canvas alone runs ~9× — so if the page stops scrolling and
+  // nothing inside scrolls either, that content is simply unreachable.
+  // Asserted on "some container inside .panels", NOT on .dv-flow-canvas by
+  // name: which lens /design renders is session state that earlier sections
+  // change, and a probe that hard-codes one lens' class reports a null and
+  // blames the layout. The invariant is that the overflow moved INTO a panel,
+  // not which element caught it.
+  if (route === '/design') {
+    check('the overflow moved into a panel, not off the page',
+      r.inner >= 1 && r.tallest > 500, `${r.inner} inner scroller(s), tallest overflow ${r.tallest}px`);
+  }
+}
+
+// And the release below 840px must be LIVE, not dead — the stacked layout
+// hands scrolling BACK to the page (.mp-content gives up its own overflow
+// down there), so a lock left on would clip whatever did not fit. A dead
+// media rule is this file's recurring failure mode; assert the computed value.
+for (const w of [839, 599]) {
+  await p.setViewportSize({ width: w, height: 700 });
+  await p.goto(BASE + '/intake', { waitUntil: 'networkidle' });
+  const r = await p.evaluate(() => {
+    const app = document.querySelector('#app');
+    return { overflow: getComputedStyle(app).overflowY, minH: getComputedStyle(app).minHeight };
+  });
+  check(`@${w}px the page is the scroller again`, r.overflow === 'visible',
+    `#app overflow-y=${r.overflow}`);
+  check(`@${w}px the shell still fills the viewport`, parseFloat(r.minH) >= 699, `min-height=${r.minH}`);
+}
 
 await b.close();
 console.log(fails ? `\n==== ${fails} CHECK(S) FAILED ====` : '\n==== ALL CHECKS PASSED ====');

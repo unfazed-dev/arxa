@@ -36,7 +36,15 @@
 /* stage shells (intake/design/build) run full-bleed — the three content
    panels need the whole width; chrome.css must repeat this because it loads
    after app.css and would otherwise cap them at 56rem */
-.shell-main-loop { max-width: none; padding: 0; }
+/* It is also the flex parent that hands the panels row its height: #app is a
+   fixed-height column, this is its `flex: 1` middle, and `min-height: 0` lets
+   it shrink below its content instead of pushing the footer off-screen (the
+   flex default is min-height: auto, which refuses to shrink). Without the
+   column here, `.panels { flex: 1 }` has nothing to be flexible in. */
+.shell-main-loop {
+  max-width: none; padding: 0;
+  display: flex; flex-direction: column; min-height: 0;
+}
 
 /* circular icon button — shell / panel frame / chrome */
 .ico-btn {

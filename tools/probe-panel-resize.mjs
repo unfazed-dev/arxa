@@ -107,13 +107,18 @@ try {
     JSON.stringify(rails.map((r) => `${r.host}=${r.edge}`)));
 
   console.log('\n=== B. the edge follows the pointer (sign per edge) ===');
+  // This section measures the SIGN and the distance, so every drag must stay
+  // strictly inside both panels' limits — a clamp here would look identical to
+  // an inverted or ignored drag. The tightest range is the composer's
+  // [390, 500]; 445 ± 45 sits 10px clear of both ends of it. Section E is where
+  // the limits themselves get tested, by overshooting them on purpose.
   for (const [label, panel, dx, want] of [
-    ['composer end-edge', '.panel-composer', +90, 'wider'],
-    ['composer end-edge', '.panel-composer', -90, 'narrower'],
-    ['activity start-edge', '.panel-activity', +90, 'narrower'],
-    ['activity start-edge', '.panel-activity', -90, 'wider'],
+    ['composer end-edge', '.panel-composer', +45, 'wider'],
+    ['composer end-edge', '.panel-composer', -45, 'narrower'],
+    ['activity start-edge', '.panel-activity', +45, 'narrower'],
+    ['activity start-edge', '.panel-activity', -45, 'wider'],
   ]) {
-    const r = await dragRail(p, panel, dx);
+    const r = await dragRail(p, panel, dx, 445);
     const got = r.after > r.before + 5 ? 'wider' : r.after < r.before - 5 ? 'narrower' : 'unchanged';
     check(`${label}: drag ${dx > 0 ? '+' : ''}${dx} makes it ${want}`, got === want, `${r.before} -> ${r.after}`);
     check(`${label}: honours the dragged distance`,
@@ -122,7 +127,7 @@ try {
 
   console.log('\n=== C. releasing must not refresh the page ===');
   {
-    const r = await dragRail(p, '.panel-activity', -70);
+    const r = await dragRail(p, '.panel-activity', -40);
     // THE REGRESSION: a swap here cross-fades the whole document, because
     // .panel-activity has no view-transition-name and lands in the root snapshot.
     check('release starts NO view transition', r.vt === 0, `${r.vt} started`);
@@ -140,12 +145,68 @@ try {
 
   console.log('\n=== D. the width survives a reload ===');
   {
-    await dragRail(p, '.panel-activity', -80);
+    // -40 from 450 lands on 490, clear of the 500 cap: a drag that clamped
+    // would still "persist across a reload" while proving nothing about the
+    // drag, since both sides of the comparison would be the ceiling.
+    await dragRail(p, '.panel-activity', -40);
     const dragged = await widthOf(p, '.panel-activity');
     await p.goto(BASE + '/design', { waitUntil: 'networkidle' });
     const reloaded = await widthOf(p, '.panel-activity');
     check('activity width persists across a reload', Math.abs(reloaded - dragged) < 3, `${dragged} -> ${reloaded}`);
   }
+
+  // LAST, deliberately: every drag below overshoots a limit, so it leaves the
+  // activity panel pinned at 340 or 600. A section that ran after this one
+  // would start from an extreme and its own drag would clamp to a no-op —
+  // passing while testing nothing.
+  console.log('\n=== E. the readout equals the panel (badge maths) ===');
+  // THE BUG THIS CATCHES: drag.js clamped to a hardcoded [200, 600] — a pair of
+  // numbers that matched NO panel. The composer floors at 360px and ceilings at
+  // 576px; the activity panel floors at 340px. Past a limit, min/max-width held
+  // the element still while the badge kept counting, so the readout reported
+  // 160px of travel that never happened. The limits live in CSS now and drag.js
+  // reads them, so the invariant is simply: the number equals the box.
+  //
+  // Every drag below OVERSHOOTS its limit deliberately — a drag that stays in
+  // range agrees with a hardcoded clamp too, and would have passed all along.
+  const badgeVsBox = async (panel, dx, from = 450) => {
+    await p.goto(BASE + '/design', { waitUntil: 'networkidle' });
+    await p.evaluate(({ s, w }) => { document.querySelector(s).style.width = w + 'px'; }, { s: panel, w: from });
+    await p.waitForTimeout(250);
+    const r = await rail(p, panel);
+    await p.mouse.move(r.x, r.y);
+    await p.mouse.down();
+    await p.mouse.move(r.x + dx, r.y, { steps: 14 });
+    // READ WHILE THE BUTTON IS STILL DOWN. pointerup removes the badge, so a
+    // post-release read finds null and every assertion below passes vacuously.
+    const seen = await p.evaluate((s) => {
+      const el = document.querySelector(s);
+      const b = el.querySelector('.panel-resize-width');
+      const cs = getComputedStyle(el);
+      return { badge: b ? parseFloat(b.textContent) : null,
+               box: Math.round(el.getBoundingClientRect().width),
+               min: parseFloat(cs.minWidth), max: parseFloat(cs.maxWidth) };
+    }, panel);
+    await p.mouse.up();
+    await p.waitForTimeout(800);
+    return seen;
+  };
+  for (const [label, panel, dx, end] of [
+    ['composer past its floor',   '.panel-composer', -260, 'min'],
+    ['composer past its ceiling', '.panel-composer', +300, 'max'],
+    ['activity past its floor',   '.panel-activity', +260, 'min'],
+    ['activity past its ceiling', '.panel-activity', -300, 'max'],
+  ]) {
+    const r = await badgeVsBox(panel, dx);
+    check(`${label}: badge exists mid-drag`, r.badge !== null,
+      'null badge would make the checks below vacuous');
+    check(`${label}: badge equals the rendered width`,
+      r.badge !== null && Math.abs(r.badge - r.box) <= 1, `badge=${r.badge} box=${r.box}`);
+    check(`${label}: stops AT the CSS ${end}-width`,
+      r.badge !== null && Math.abs(r.badge - r[end]) <= 1,
+      `badge=${r.badge} css ${end}-width=${r[end]}`);
+  }
+
 } catch (e) {
   fails++; console.log('  [FAIL] probe threw — ' + e.message);
 } finally { if (b) await b.close(); }

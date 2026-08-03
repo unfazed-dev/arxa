@@ -55,8 +55,27 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* THE SHELL IS VIEWPORT-LOCKED: exactly 100dvh, and the PAGE never scrolls.
+   Scrolling belongs to the panels — the canvas, the thread, the filmstrip —
+   each of which owns its own scroll container. A document-level scrollbar in
+   this app is always a bug: it drags the header and the timeline out of view,
+   and those are chrome, not content.
+   `height`, not `min-height`, and `overflow: hidden` as the guarantee. The
+   height alone is not enough — the shell used to be `min-height: 100dvh` with
+   the panels row sized by `calc(100dvh - var(--nav-h) - var(--tl-h))`, which
+   made the row's height depend on tokens describing two SIBLINGS it does not
+   own. The footer panel renders 1px taller than `--tl-h` (the token measures
+   .timeline, the strip inside; the panel adds a border), so the column summed
+   to 100.97dvh and the whole app scrolled by one pixel — enough for a real
+   scrollbar, too little to look like anything but a rendering artefact.
+   The row is sized by flex now (see .panels in panels.css), so it is whatever
+   the header and footer leave over — no arithmetic, nothing to drift. The
+   `overflow: hidden` is what keeps the next such drift from being visible at
+   all. Released below 840px, where the layout stacks and the page IS the
+   scroller — see the media block in panels.css. */
 #app {
-  min-height: 100dvh; display: flex; flex-direction: column;
+  height: 100dvh; overflow: hidden;
+  display: flex; flex-direction: column;
   /* Flexoki light — "Paper" */
   --bg: #FFFCF0;
   --bg-2: #F2F0E5;

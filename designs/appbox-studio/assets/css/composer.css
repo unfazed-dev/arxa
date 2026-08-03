@@ -7,11 +7,18 @@
    uses .chat-thread, the composer card is ui/common/composer.html. */
 
 .panel-composer {
-  --composer-w: 22.5rem; /* ~360px */
+  --composer-w: 390px;
   flex: none;
   width: var(--composer-w);
+  /* Floor = the starting width: this panel widens from its default, it does
+     not narrow below it (the activity panel is built the same way — see
+     `--panel-w`, "default = minimum width"). */
   min-width: var(--composer-w);
-  max-width: calc(var(--composer-w) * 1.6);
+  /* The SAME ceiling as the activity panel, from panels.css. It used to be
+     `calc(var(--composer-w) * 1.6)` — a multiplier, so the cap silently moved
+     whenever the default did, and landed on 576px against the activity
+     panel's 600px for no reason either number could explain. */
+  max-width: var(--panel-max-w);
   /* The card chrome, the section grid, overflow and position:relative all
      come from .panel (panels.css). What survives here is only what is true of
      THIS panel: its width, and its own view-transition name.
@@ -101,8 +108,12 @@
    side-by-side layout it exists to arbitrate (panels.css hides the activity
    panel's for the same reason) */
 @media (max-width: 839px) {
-  /* width and the rail are both handled once in panels.css for every panel;
-     nothing composer-specific is left to say down here. */
+  /* Width and the rail are handled once in panels.css for every panel — but
+     only because that rule is scoped `.panels .panel-composer` to outrank the
+     `.panel-composer` block at the top of THIS file, which the document loads
+     after panels.css. It did not used to be, and this comment used to claim
+     the release worked while the panel kept its desktop width. If you add a
+     width to .panel-composer above, check that block still wins. */
 }
 
 /* ---------- the composer card (ui/common/composer.html) ----------

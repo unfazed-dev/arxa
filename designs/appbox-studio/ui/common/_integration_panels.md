@@ -116,11 +116,82 @@ padded box).
 ## Fixed rules
 
 - **The panel is the card, never the layout slot.** `.panel-main` stays a
-  transparent flex slot; the card that fills it (`.design-viewer`,
+  transparent flex slot; the card that fills it (`.panel-viewer`,
   `.mp-content`) is the panel. This is not a style choice — `canvas.js`
-  fullscreens `.design-viewer`, and anything outside that element vanishes in
+  fullscreens `#design-viewer`, and anything outside that element vanishes in
   fullscreen, including the exit button. The top, bottom and side sections
   must stay inside it.
+- **The shell is viewport-locked; the panels scroll, the page never does.**
+  `#app` is `height: 100dvh; overflow: hidden` and a flex column, so the
+  panels row is `flex: 1; min-height: 0` — whatever the header and footer
+  leave. A document scrollbar in this app is always a bug: it drags the header
+  and the timeline, which are chrome, out of view. Never size the row by
+  arithmetic over chrome tokens: it used to be
+  `calc(100dvh - var(--nav-h) - var(--tl-h))`, deriving its height from two
+  tokens that describe *siblings it does not own*, and `--tl-h` measures
+  `.timeline` while the footer **panel** around it adds a border — so the
+  column summed to 100.97dvh and the whole app scrolled by one pixel. Ask the
+  layout, don't re-derive it. `min-height: 0` is load-bearing on both the row
+  and `.shell-main-loop`: a flex item defaults to `min-height: auto` and would
+  push the footer off-screen rather than scroll inside itself. The lock is
+  **desktop-only** — below 840px the panels stack, `.mp-content` deliberately
+  gives up its own overflow, and the page is the scroller, so `#app` is
+  released in the same media block. Asserted by `probe-panel-contract`
+  section K, including that the release is live.
+- **The card fills the slot; the reading measure belongs to the content
+  inside it.** `.panel-main` is `flex: 1`, so the main panel always takes
+  whatever the composer and activity panels leave — the whole row when both
+  are off, the remainder when they are on. A `max-width` on the card itself
+  breaks that, and breaks it *per shell*: `.step-stage` is `.mp-content`, and
+  it carried `max-width: 44rem; margin: 0 auto`, so intake's main panel shrank
+  to 44rem and floated mid-slot while design's viewer filled the identical
+  slot edge to edge. Cap the **content**: either a child's own `max-width`
+  (`.artifact` 45rem, `.mp-doc` 42rem, `.artifact-lede` 40rem) or a centred
+  grid track on the card (`grid-template-columns: min(44rem, 100%)` +
+  `justify-content: center`). Prefer the track over
+  `.stage > * { max-width }` — the track leaves each child's own, narrower
+  measure intact, and a `> *` rule loses to any one-class child rule declared
+  below it. A grid also needs `align-content: start`, or it stretches its auto
+  rows to fill a card that is `flex: 1 1 auto`. Asserted by
+  `probe-panel-contract` section J, against the *slot* rather than a number,
+  so it keeps holding when a side panel is resized or switched off.
+- **CSS owns a panel's width limits; the island reads them.** A panel states
+  its own `min-width`/`max-width`; `drag.js` resolves the drag range from
+  `getComputedStyle` rather than carrying constants. A limit written twice is
+  a limit that will disagree with itself — it already did: the rail clamped to
+  a hardcoded `[200, 600]` while the composer floored at 360px and the
+  activity panel at 340px, so past the floor `min-width` held the panel still
+  while the px readout kept counting down. Nothing rendered wrong; the number
+  simply described a drag the element never made. The server's band in
+  `setPanelSizePx` is a malformed-POST guard, **not** a limit — it cannot read
+  CSS and must stay wider than every panel's real range.
+
+### Panel widths (desktop, ≥840px)
+
+| panel | start = floor | ceiling |
+|---|---|---|
+| composer | 390px (`--composer-w`, composer.css) | `--panel-max-w` |
+| activity | 340px (`--panel-w`, panels.css) | `--panel-max-w` |
+
+`--panel-max-w: 500px` is declared once on `.panel` and shared by both. One
+value because there was never a reason for two — the composer's old 576px was
+just its width times 1.6, and the activity panel's 600px was a constant in
+`drag.js`. Neither was chosen.
+
+Both panels **widen only**: the start width is also the floor, by design
+(`--panel-w` is commented "default = minimum width"). The activity panel's
+`panel-size-s|m|l` steps are 340 / 425 / `--panel-max-w`; the largest step must
+never exceed the cap, because `--panel-w` also feeds `min-width` and a
+`min-width` outranks a `max-width` — a wider step would not be clamped, it
+would silently win.
+
+Below 840px all three are released and the panel fills the stacked column.
+That rule is scoped `.panels .panel-activity, .panels .panel-composer` to win
+on **specificity, not source order**: at one class it lost both ways round —
+`.panel-activity` is declared later in `panels.css`, and `.panel-composer`
+lives in `composer.css`, which loads after it. The rule did nothing at all,
+and desktop looked perfect the whole time. Anything added to that media block
+needs the same scope. Asserted by `probe-panel-contract` section I.
 - **`view-transition-name` is per panel, never on `.panel`.** A name
   duplicated across simultaneously-rendered elements makes Chrome abort the
   whole transition, silently disabling view transitions app-wide (ADR-0003).

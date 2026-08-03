@@ -208,6 +208,23 @@
       const prevTransition = panel.style.transition;
       panel.style.transition = 'none';
       let last = startW;
+      // The drag range is the panel's OWN CSS min/max width, read live. This
+      // used to clamp to a hardcoded [200, 600] — a pair of numbers that
+      // matched NO panel: the composer floors at 360px and ceilings at 576px,
+      // the activity panel floors at 340px. Below the floor `min-width` held
+      // the element still while the badge kept counting down to 200, so the
+      // readout reported 160px of travel that never happened. The badge was
+      // never wrong about the drag; the drag was wrong about the panel.
+      //
+      // CSS owns the limits — one source of truth, and a panel can restyle its
+      // width without a matching edit here. An unstated bound (`auto`/`none`,
+      // both NaN) means the panel declares no limit at that end, so fall
+      // through to none rather than inventing one: a constant here is exactly
+      // the bug above.
+      const cs = getComputedStyle(panel);
+      const bound = (v, fallback) => (Number.isFinite(parseFloat(v)) ? parseFloat(v) : fallback);
+      const lo = bound(cs.minWidth, 0);
+      const hi = bound(cs.maxWidth, Infinity);
       let badge = handle.querySelector('.panel-resize-width');
       if (!badge) {
         badge = document.createElement('span');
@@ -216,7 +233,7 @@
       }
       badge.textContent = Math.round(startW) + 'px';
       const move = (ev) => {
-        const w = Math.min(600, Math.max(200, startW + sign * (ev.clientX - sx)));
+        const w = Math.min(hi, Math.max(lo, startW + sign * (ev.clientX - sx)));
         last = w;
         panel.style.width = w + 'px';
         badge.textContent = Math.round(w) + 'px';

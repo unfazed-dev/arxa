@@ -218,9 +218,26 @@ a.rv-card:hover { border-color: var(--accent); filter: none; }
 }
 
 /* ---------- the typeform journey: step stage, strip, provenance ---------- */
+/* THE CARD FILLS THE SLOT; THE READING MEASURE BELONGS TO THE CONTENT INSIDE
+   IT. This used to be `max-width: 44rem; margin: 0 auto` on .step-stage —
+   which IS .mp-content, the main panel's card. So the card itself shrank to
+   44rem and floated in the middle of the slot, while the design shell's
+   viewer filled the same slot edge to edge. Two shells, two different main
+   panels, from one property on the wrong element.
+   GRID, not `flex` + `.step-stage > * { max-width }`: a single centred track
+   caps the content without touching the children, so per-child measures
+   survive (.artifact-lede stays 40rem, .display stays 30ch). The `> *` form
+   would have flattened all of them to 44rem — and lost to `.step-foot`'s own
+   rule four lines below on source order at equal specificity.
+   `min(44rem, 100%)` is a definite length: `minmax(0, 44rem)` may size to
+   content, which reads as a pass (the card fills) while the content silently
+   narrows. `align-content: start` because a grid stretches auto rows to fill
+   the card, and this card is `flex: 1 1 auto` (panels.css) — flex column
+   packed rows at the start and the vertical rhythm must not change. */
 .step-stage {
-  display: flex; flex-direction: column; gap: 1.1rem;
-  max-width: 44rem; margin: 0 auto; padding: 1.4rem 1.2rem 2rem;
+  display: grid; grid-template-columns: min(44rem, 100%);
+  justify-content: center; align-content: start;
+  gap: 1.1rem; padding: 1.4rem 1.2rem 2rem;
 }
 .step-head { display: flex; gap: .5rem; align-items: center; flex-wrap: wrap; }
 .step-head .chip { margin-left: auto; }

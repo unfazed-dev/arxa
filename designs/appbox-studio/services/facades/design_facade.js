@@ -1013,10 +1013,22 @@ export const setPanelSize = (sessionData, panel, size, prefs = {}, t = (k) => k,
   return stageContext(sessionData, {}, prefs, t, locale);
 };
 
-// Panel drag handle: px width persisted per panel, clamped to a sane band.
+// Panel drag handle: px width persisted per panel.
+//
+// The band here is a SANITY GUARD against a malformed POST, not the panel's
+// real limits — those are its CSS min/max width, which the server cannot read
+// and does not need to: drag.js clamps to them before posting and `min-width`
+// re-clamps on render, so every legitimate value already falls inside this
+// band. Do not treat these numbers as the layout's limits; that confusion is
+// what made the drag readout count down to a width no panel could render.
 export const setPanelSizePx = (sessionData, panel, width, prefs = {}, t = (k) => k, locale = 'en') => {
   const d = design(sessionData);
-  (d.panelSizePx ??= {})[panel] = Math.max(200, Math.min(600, Number(width) || 280));
+  const w = Number(width);
+  // A junk width is DROPPED, not defaulted. The old `|| 280` persisted a width
+  // below every panel's floor, so the stored number and the rendered panel
+  // disagreed permanently — and silently, because min-width quietly fixes the
+  // render while the session keeps the bad value.
+  if (Number.isFinite(w)) (d.panelSizePx ??= {})[panel] = Math.max(200, Math.min(600, w));
   return stageContext(sessionData, {}, prefs, t, locale);
 };
 
