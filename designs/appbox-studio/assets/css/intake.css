@@ -77,19 +77,16 @@
 .story-card .pri-chip { margin-left: auto; }
 .story-text { min-width: 0; }
 
-/* live status dots, fed by the seeded pipeline statuses */
-.status-dot {
-  flex: none; display: inline-block;
-  width: .55rem; height: .55rem; margin-top: .3rem;
-  border-radius: 50%; background: var(--tx-3);
-}
-.map-legend-dots .status-dot { margin-top: 0; }
+/* live status dots: base .status-dot lives in widgets.css (chip contract) —
+   only the intake tone hooks and the one layout exception live here */
+/* story-card rows are align-items:flex-start (text wraps); center the dot on
+   the FIRST line: (1.4 line-height x .8rem - 7px) / 2 */
+.story-card .status-dot { margin-top: .34rem; }
 .st-done { background: var(--ok); }
 .st-in-progress { background: var(--accent); }
 .st-blocked { background: var(--fail); }
 .st-pending { background: var(--tx-3); }
 .story-status { display: inline-flex; gap: .35rem; align-items: center; font-size: .74rem; color: var(--tx-2); }
-.story-status .status-dot { margin-top: 0; }
 
 /* one story, large */
 .story-artifact .display { max-width: 30ch; }

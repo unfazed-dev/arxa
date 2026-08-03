@@ -176,6 +176,9 @@ a { color: var(--accent); }
 button, .btn {
   background: var(--accent); color: var(--on-accent, #FFFCF0); border: 0; border-radius: 999px; /* w5:not-a-chip */
   padding: .45rem 1.05rem; font: inherit; font-weight: 500; cursor: pointer;
+  /* icon-bearing controls center their glyph like chips do — flex, never
+     baseline (a 14px svg on the text baseline rides visibly high) */
+  display: inline-flex; align-items: center; justify-content: center; gap: .35rem;
 }
 button.ghost, .btn.ghost {
   background: transparent; color: var(--tx-2);
@@ -212,7 +215,6 @@ button:active { transform: translateY(1px); }
 
 /* filter dropdown (details/summary — no JS) */
 .facts-filter { position: relative; }
-.facts-filter .caret { font-size: .6rem; }
 .filter-menu {
   position: absolute; top: calc(100% + .4rem); right: 0; z-index: 6;
   display: none; flex-direction: column; gap: .15rem;
