@@ -24,7 +24,7 @@
 {# Alias is `pn`, NOT `base`: `base` is already this file's macro
    parameter (the build shell's artifact URL prefix), and an import
    alias silently shadows it — every item href became [object Object]. #}
-{% import "ui/views/main_shell/shared/widgets/_panel.html" as pn %}
+{% import "ui/common/widgets/_panel.html" as pn %}
 
 {% macro items(c, base) %}
   {% for i in c.timeline.items %}

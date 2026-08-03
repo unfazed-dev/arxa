@@ -28,7 +28,7 @@ A card. Five per shell, each named by its **role**. There is no position word
 in a panel's name: a panel that moves does not get renamed.
 
 The skeleton is implemented once, in
-`ui/views/main_shell/shared/widgets/_panel.html`, and the five roles are thin
+`ui/common/widgets/_panel.html`, and the five roles are thin
 instantiations that add none of it. **The base is a balanced `open(spec)` /
 `close(spec)` pair, not a single `{% call %}` wrapper** — nunjucks binds
 `caller()` to the nearest enclosing `{% call %}`, so a wrapping base could not

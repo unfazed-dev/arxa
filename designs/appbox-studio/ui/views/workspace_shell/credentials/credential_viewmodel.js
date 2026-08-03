@@ -10,6 +10,8 @@ const VIEW = 'ui/views/workspace_shell/credentials/credential_view.html';
 export const page = (c, h) =>
   h.render(c, VIEW, {
     activeShell: 'workspace',
+    prefs: h.prefs(c),
+    project: facade.chromeProject(),
     ...facade.credentialsContext(h.session(c).data, h.t(c)),
   });
 

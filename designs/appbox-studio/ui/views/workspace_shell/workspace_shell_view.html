@@ -1,0 +1,28 @@
+<!-- appbox:provenance
+     generator: appbox  licence: free  project: 662368770980
+     Built with appbox (free tier) — https://appbox.dev
+-->
+{% extends "ui/common/base.html" %}
+{% import "ui/common/widgets/chrome.html" as chrome %}
+{% import "ui/common/widgets/header_panel.html" as hp %}
+{% import "ui/common/widgets/main_panel.html" as mp %}
+{% block title %}{{ t('settings.pageTitle') }}{% endblock %}
+{% block content %}
+{# THE WORKSPACE SHELL'S PANEL SET — header and main, nothing else. The
+   footer timeline narrates the pipeline; workspace surfaces are device-local
+   prefs and keys, so a footer here would narrate a pipeline that is not
+   running. A panel this shell does not mount does not exist in it — no empty
+   box, no reserved height. (Before this file existed the three workspace
+   views extended main_shell_view.html and inherited that shell's header
+   context and footer — the broken-header/stray-footer bug this composition
+   removes.) #}
+{% set HP = {} %}
+{{ hp.open(HP) }}{{ chrome.headerBody(activeShell, prefs, project) }}{{ hp.close(HP) }}
+{{ chrome.offCanvas(activeShell, prefs, project) }}
+<main class="shell-main">
+  {% set M = {} %}
+  {{ mp.open(M) }}
+  <section class="mp-content">{% block surface %}{% endblock %}</section>
+  {{ mp.close(M) }}
+</main>
+{% endblock %}

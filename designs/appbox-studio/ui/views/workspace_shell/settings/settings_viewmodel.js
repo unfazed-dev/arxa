@@ -16,6 +16,8 @@ const ACCENTS = [
 // One real string (the ΔE finding) at each level — the honest preview.
 const LEVELS = [{ id: 'plain' }, { id: 'balanced' }, { id: 'technical' }];
 
+import * as facade from '../../../../services/facades/app_facade.js';
+
 const VIEW = 'ui/views/workspace_shell/settings/settings_view.html';
 
 export const page = (c, h) => {
@@ -23,6 +25,8 @@ export const page = (c, h) => {
   const t = h.t(c);
   return h.render(c, VIEW, {
     activeShell: 'workspace',
+    prefs,
+    project: facade.chromeProject(),
     theme: prefs.theme || 'light',
     accent: prefs.accent || 'cyan',
     jargon: prefs.jargon || 'balanced',

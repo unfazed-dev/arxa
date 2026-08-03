@@ -97,6 +97,13 @@ export const createProject = async (sd, name, targets, t = (k) => k) => {
 // A dashboard project card picks the current project (writes ~/.appbox/current).
 export const useProject = (name) => proj.useProject(name);
 
+// The chrome macro's `project` argument for shells outside the pipeline —
+// the current project's name chip, or null when none is picked.
+export const chromeProject = () => {
+  const name = proj.currentName();
+  return name ? { name } : null;
+};
+
 // ---------- credentials ----------
 // The one surface where a user manages every credential their generated app
 // needs — the design-side mirror of config/credentials.catalog.json (the

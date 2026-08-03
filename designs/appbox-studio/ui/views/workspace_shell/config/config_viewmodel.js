@@ -10,6 +10,8 @@ const VIEW = 'ui/views/workspace_shell/config/config_view.html';
 export const page = (c, h) =>
   h.render(c, VIEW, {
     activeShell: 'workspace',
+    prefs: h.prefs(c),
+    project: facade.chromeProject(),
     ...facade.configContext(h.session(c).data, h.t(c), h.prefs(c)),
   });
 

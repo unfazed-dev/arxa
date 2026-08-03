@@ -22,7 +22,7 @@
    which also means a body can be an entire canvas without being pre-rendered
    into a string — the reason the old file already split body()/bodyEnd().
 
-     {% import "ui/views/main_shell/shared/widgets/_panel.html" as base %}
+     {% import "ui/common/widgets/_panel.html" as base %}
      {% set P = { role: 'composer', top: head(spec), bottom: false } %}
      {{ base.open(P) }}
        …the body…

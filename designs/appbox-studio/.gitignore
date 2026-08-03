@@ -1,0 +1,3 @@
+# Machine-local tool caches are not artifact — the selftest's "every artifact
+# file is tracked by git" check must not be able to fail on a hook's scratch.
+.claude-flow/

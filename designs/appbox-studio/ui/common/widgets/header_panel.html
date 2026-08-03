@@ -13,7 +13,7 @@
    The element is a <nav>, not a <section> — the base is a layout contract, not
    an opinion about semantics.
 
-     {% import "ui/views/main_shell/shared/widgets/header_panel.html" as hp %}
+     {% import "ui/common/widgets/header_panel.html" as hp %}
      {% set HP = {} %}
      {{ hp.open(HP) }}{{ chrome.headerBody(...) }}{{ hp.close(HP) }}
 
@@ -24,7 +24,7 @@
 
    spec:
      class? attrs? vt? — passed through to the base. #}
-{% import "ui/views/main_shell/shared/widgets/_panel.html" as base %}
+{% import "ui/common/widgets/_panel.html" as base %}
 
 {% set PID = 'panel-header' %}
 
