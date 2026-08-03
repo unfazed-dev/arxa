@@ -166,6 +166,59 @@ rows, mine counts the container. Recording it because this thread has already bu
 real time on 916 vs 1900 turning out to be two questions rather than two answers.
 Same class, caught before it propagated.
 
+### §7 — Panel-size grip is inert on both scaffold screens (run-screen's finding, confirmed)
+
+Measured independently with session continuity (`-c/-b`; the value is session-scoped
+at `scaffold_facade.js:245`), controls first:
+
+```
+/design/freeze    treat=200  panel-size-s -> panel-size-l   MOVED   (control valid)
+/intake/brief     treat=200  panel-size-s -> panel-size-l   MOVED   (control valid)
+/scaffold         treat=200  panel-size-s -> panel-size-s   inert   (mine)
+/scaffold/run     treat=200  panel-size-s -> panel-size-s   inert
+```
+
+Route works (`routes.scaffold.js:20`, 200). Storage works
+(`session.scaffoldPanelSize[panel] = size`). The break is downstream, and it is two
+faults stacked:
+
+1. **The shell never passes size into the macro.**
+   `design/_shared.html:192` → `AP = { label, views, size: c.panelSize, sizeHref:
+   c.panelSizeHref, panelSizePx: c.panelSizePx }`
+   `scaffold/_shared.html:97` → `AP = { label: c.activity.label, views: c.activity.views }`
+   Three keys absent, so `pa.open(AP)` renders size `'s'` forever.
+2. **Key-name mismatch.** My facade emits `panelSizes` (map). Across `ui/views/`:
+   `panelSizes` = 0 references, `panelSize` = 56.
+
+**Refinement to run-screen's mechanism.** They read this as scaffold picking the wrong
+convention. Closer: `design_facade.js:26` *stores* a per-panel map and *emits a resolved
+scalar* (`panelSizeFor(d,'activity')` → `panelSize:` at :892). The convention is
+store-map/emit-scalar. Scaffold having two persistable panels
+(`PERSISTABLE_PANELS = ['composer','activity']`) doesn't justify emitting the raw map —
+it means emitting one resolved scalar *per panel*. So the fix is smaller than "pick a
+convention": facade emits resolved scalars, shell AP passes them through.
+
+### §7a — Four void instruments in one investigation, all mine
+
+Honest count, because the ratio is the point. Before I could measure anything I produced:
+
+| # | Instrument | Failure |
+|---|---|---|
+| 1 | treatment URL `${u%%/*}` | expanded to empty → hit a nonexistent route |
+| 2 | `grep panel/size app.routes.js` | wrong scope; routes live in `routes.scaffold.js` |
+| 3 | `pgrep -f "appbox.dart serve"` | process runs as `dartvm`; reported "dead" while listening |
+| 4 | `appbox/bin/appbox.dart` | it's `appboxd/` — the exact directory-name family already logged |
+
+Only #1 threatened a false *finding* — and it was caught in the first thirty seconds,
+because run-screen's Void 2 rule made me run the control **before** the subject. My
+controls came back inert, which is impossible if the feature works anywhere, so I
+stopped instead of reporting. The rule was written this hour and it paid out on its
+first use, against the person it was sent to.
+
+#2 is mechanism-4 (right tool, wrong scope) and #4 is the third or fourth instance of
+one directory-name error in this thread. Both are the failure mode where the instrument
+runs clean and answers a question adjacent to the one asked.
+
 ### Scope limit on the lens shoot
 
 The 3-rung ladder shoot predates both the guard landing and the composer ruling. It
