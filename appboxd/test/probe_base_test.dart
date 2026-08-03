@@ -184,6 +184,60 @@ void main() {
       expect(buf.toString(), contains('  [warn] the DOM never went quiet\n'));
     });
 
+    test('bareVerdicts prints flowwalk\'s unbracketed shape', () {
+      final buf = StringBuffer();
+      ProbeReport(out: buf, bareVerdicts: true)
+        ..check('flows lens offers the walk control', true)
+        ..check('exactly one tile is the current step', true, 'S1')
+        ..check('the source tile is no longer the active step', false);
+      // probe-flowwalk.mjs line 35: two spaces, the word, TWO spaces, label.
+      expect(
+          buf.toString(),
+          '  PASS  flows lens offers the walk control\n'
+          '  PASS  exactly one tile is the current step — S1\n'
+          '  FAIL  the source tile is no longer the active step\n');
+    });
+
+    test('bareVerdicts is opt-in — the bracketed shape is unchanged', () {
+      final buf = StringBuffer();
+      ProbeReport(out: buf).check('a', true, 'd');
+      expect(buf.toString(), '  [PASS] a — d\n');
+    });
+
+    test('bare mode still counts failures and still exits non-zero', () {
+      // The reason this is a flag rather than "write to out yourself": a probe
+      // that bypasses check() to get the shape it wants also bypasses the
+      // count, and then prints FAIL while exiting 0. That is the one outcome a
+      // probe suite must never produce, so it gets pinned here.
+      final buf = StringBuffer();
+      final r = ProbeReport(out: buf, bareVerdicts: true)
+        ..check('a', false)
+        ..check('b', true)
+        ..check('c', false);
+      expect(r.fails, 2);
+      expect(r.finish(), 1);
+      expect(buf.toString(), contains('  FAIL  a\n'));
+      expect(buf.toString(), endsWith('\n==== 2 FAILED ====\n'));
+    });
+
+    test('the trailer stays harness-owned under bareVerdicts', () {
+      // flowwalk's original ends `ALL CHECKS PASSED`; the ports do not follow,
+      // so `probe all` has one scannable closing line rather than one per probe.
+      final buf = StringBuffer();
+      final r = ProbeReport(out: buf, bareVerdicts: true)..check('a', true);
+      expect(r.finish(), 0);
+      expect(buf.toString(), endsWith('\n==== ALL PASSED ====\n'));
+    });
+
+    test('skip and warn keep harness shape even in bare mode', () {
+      final buf = StringBuffer();
+      ProbeReport(out: buf, bareVerdicts: true)
+        ..skip('not on this shell')
+        ..warn('did not settle');
+      expect(buf.toString(), contains('  [skip] not on this shell\n'));
+      expect(buf.toString(), contains('  [warn] did not settle\n'));
+    });
+
     test('a thrown probe still counts as a failure', () {
       final buf = StringBuffer();
       final r = ProbeReport(out: buf)..error(StateError('boom'));
@@ -241,6 +295,20 @@ void main() {
           ctx.newPage(),
           throwsA(predicate((e) => '$e'.contains('needsBrowser: false'),
               'names the declaration that caused it')));
+    });
+
+    test('the runner forwards each probe\'s verdict shape', () {
+      // The flag lives on Probe so the CLI can construct the report correctly
+      // before the body runs; a probe cannot reach back and re-shape it later.
+      for (final p in kProbes) {
+        expect(ProbeReport(out: StringBuffer(), bareVerdicts: p.bareVerdicts)
+            .bareVerdicts, p.bareVerdicts, reason: p.name);
+      }
+      expect(
+          const Probe(name: 'x', summary: 's', mutates: false, body: _noop)
+              .bareVerdicts,
+          isFalse,
+          reason: 'bracketed is the house shape; bare is the exception');
     });
 
     test('probes default to needing a browser', () {

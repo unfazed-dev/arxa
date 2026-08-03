@@ -268,9 +268,27 @@ class ProbeReport {
   /// Where output goes. Injectable so a test can read what was printed.
   final StringSink out;
 
+  /// Print verdicts as `  PASS  name` instead of `  [PASS] name`.
+  ///
+  /// `probe-flowwalk.mjs` prints its verdicts unbracketed (its line 35:
+  /// `` `  ${ok ? 'PASS' : 'FAIL'}  ${label}` `` — two spaces, the word, two
+  /// spaces). That is cosmetic, but the parity window diffs these suites
+  /// textually, so a port that quietly re-shaped its own output would show up
+  /// as a diff on every line and bury any real disagreement in the noise.
+  ///
+  /// The flag exists rather than letting a probe write to [out] directly:
+  /// bypassing [check] means bypassing the failure count, and a probe whose
+  /// failures do not reach [finish] exits 0 while printing FAIL — the one
+  /// outcome a probe suite must never produce.
+  ///
+  /// Verdicts only. [skip], [warn], [error] and the trailer stay in harness
+  /// shape — see [finish] for why the trailer does not follow.
+  final bool bareVerdicts;
+
   int _fails = 0;
 
-  ProbeReport({StringSink? out}) : out = out ?? stdout;
+  ProbeReport({StringSink? out, this.bareVerdicts = false})
+      : out = out ?? stdout;
 
   /// Failed checks so far.
   int get fails => _fails;
@@ -281,8 +299,9 @@ class ProbeReport {
   /// Record a check. [detail] is appended after an em dash when non-empty.
   void check(String name, bool ok, [String detail = '']) {
     if (!ok) _fails++;
-    out.writeln(
-        '  [${ok ? 'PASS' : 'FAIL'}] $name${detail.isNotEmpty ? ' — $detail' : ''}');
+    final verdict = ok ? 'PASS' : 'FAIL';
+    out.writeln('  ${bareVerdicts ? '$verdict ' : '[$verdict]'} $name'
+        '${detail.isNotEmpty ? ' — $detail' : ''}');
   }
 
   /// A check that does not apply here — not a pass and not a failure.
@@ -299,6 +318,13 @@ class ProbeReport {
   }
 
   /// Print the trailer and return the process exit code (0 clean, 1 failures).
+  ///
+  /// The trailer is harness-owned even under [bareVerdicts]: `flowwalk`'s
+  /// original ends with `ALL CHECKS PASSED` / `N CHECK(S) FAILED`, and the
+  /// ports deliberately do not reproduce that. One suite gets one trailer, or
+  /// `probe all` ends with a different closing line per probe and nothing can
+  /// scan the run for a single verdict. Recorded as accepted divergence in
+  /// docs/probes-capability-map.md.
   int finish() {
     out.writeln('\n==== ${_fails != 0 ? '$_fails FAILED' : 'ALL PASSED'} ====');
     return _fails != 0 ? 1 : 0;
@@ -519,6 +545,10 @@ class Probe {
   /// is an ingredient rather than the frame.
   final bool needsBrowser;
 
+  /// Print verdicts unbracketed, for a probe whose `.mjs` original did.
+  /// Forwarded to [ProbeReport.bareVerdicts] by the runner — see there.
+  final bool bareVerdicts;
+
   /// The checks.
   final ProbeBody body;
 
@@ -528,5 +558,6 @@ class Probe {
     required this.mutates,
     required this.body,
     this.needsBrowser = true,
+    this.bareVerdicts = false,
   });
 }
