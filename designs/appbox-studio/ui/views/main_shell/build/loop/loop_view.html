@@ -3,13 +3,13 @@
      Built with app-box (free tier) — https://appbox.dev
 -->
 {% extends "ui/views/main_shell/main_shell_view.html" %}
-{% import "ui/common/primitives.html" as prim %}
+{% import "ui/common/widgets/primitives.html" as prim %}
 {% import "ui/common/timeline.html" as tl %}
-{% import "ui/common/design_viewer.html" as dv %}
-{% import "ui/common/composer_panel.html" as cp %}
-{% import "ui/common/main_panel.html" as mp %}
+{% import "ui/views/main_shell/shared/widgets/design_viewer.html" as dv %}
+{% import "ui/views/main_shell/shared/widgets/composer_panel.html" as cp %}
+{% import "ui/views/main_shell/shared/widgets/main_panel.html" as mp %}
 {% import "ui/common/panel_activity.html" as pa %}
-{% import "ui/common/composer.html" as cm %}
+{% import "ui/views/main_shell/shared/widgets/composer.html" as cm %}
 {% block title %}{{ t('build.pageTitle') }}{% endblock %}
 {% block main_class %}shell-main-loop{% endblock %}
 

@@ -7,24 +7,24 @@
    panel with context chips, and the design thread with per-screen
    checkpoints. Macro-only file — importing it from a fragment render never
    emits stray markup.
-   Assumes ui/common/composer_panel.html's cp.frame({ eyebrow, docked,
+   Assumes ui/views/main_shell/shared/widgets/composer_panel.html's cp.frame({ eyebrow, docked,
    collapseHref, bottom }) via call/caller (nunjucks — panel_activity.html
    already relies on caller). The screens filmstrip is NOT here: it is the
-   viewer's right-hand column (ui/common/design_viewer.html, .dv-vstrip) and
+   viewer's right-hand column (ui/views/main_shell/shared/widgets/design_viewer.html, .dv-vstrip) and
    only in the views lens. The composer
    keeps a one-line summary of what is pinned, and its own tray only on
    surfaces with no viewer (freeze). #}
-{% import "ui/common/primitives.html" as prim %}
+{% import "ui/common/widgets/primitives.html" as prim %}
 {% import "ui/common/facts_bar.html" as fb %}
 {% import "ui/common/panel_activity.html" as pa %}
-{% import "ui/common/composer_panel.html" as cp %}
-{% import "ui/common/composer.html" as cm %}
-{% import "ui/common/main_panel.html" as mp %}
+{% import "ui/views/main_shell/shared/widgets/composer_panel.html" as cp %}
+{% import "ui/views/main_shell/shared/widgets/composer.html" as cm %}
+{% import "ui/views/main_shell/shared/widgets/main_panel.html" as mp %}
 {# macro-only, so importing it emits nothing #}
 {% import "ui/views/main_shell/design/inspector_pane.html" as ins %}
 
 {# ---------- the composer panel: thread + composer inside the shared frame ----
-   The composer is the shared card (ui/common/composer.html): every
+   The composer is the shared card (ui/views/main_shell/shared/widgets/composer.html): every
    design-stage swap — composer, context toggle, revert — targets the one
    container the chat and the artifact share, #panels. #}
 

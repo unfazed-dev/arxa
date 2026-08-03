@@ -347,7 +347,7 @@ const applyEntry = async (d, entry, dir) => {
   }
 };
 
-// ---------- the shared design viewer (ui/common/design_viewer.html) ----------
+// ---------- the shared design viewer (ui/views/main_shell/shared/widgets/design_viewer.html) ----------
 // Three lenses over the current project's screens, switched by the `mode`
 // viewer param: 'views' (default; legacy mode=flow falls through to it) —
 // every screen as a flat wrapping grid in REGISTRY order; 'flows' — one

@@ -23,7 +23,7 @@
    role class, its id, its width); what must not be re-invented per panel is
    the SECTION markup and the id derivation, and that is what lives here:
 
-     {% import "ui/common/panel.html" as pn %}
+     {% import "ui/views/main_shell/shared/widgets/panel.html" as pn %}
      {% set PID = 'panel-composer' %}
      <section class="panel panel-composer" id="{{ PID }}">
        {{ pn.resize(PID, { edge: 'end' }) }}

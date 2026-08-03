@@ -21,7 +21,7 @@
    views, move ←→ + remove-from-flow in flows) is the ONLY per-tile chrome,
    revealed on :hover/:focus-within, pure CSS. Free drag/layout offsets are
    gone (flow edits POST the project write endpoints); the bottom-anchored
-   mini panel renders inside the viewer via ui/common/mini_panel.html.
+   mini panel renders inside the viewer via ui/views/main_shell/shared/widgets/mini_panel.html.
    Canon markup: skills/appbox-designer/DESIGN-ARCHITECTURE.md §"The output
    triad: views / flows / proto", plus _integration_viewer.md for the `v`
    contract. (It said canvas-redesign-contract.md §3 — that doc's own header
@@ -57,8 +57,8 @@
    A viewport entry is a key ('mobile'|'tablet'|'desktop') or an authored
    object { vp, width, height?, rung?, note?, shot? }. Wiring:
    ui/common/_integration_viewer.md. #}
-{% import "ui/common/mini_panel.html" as mn %}
-{% import "ui/common/primitives.html" as prim %}
+{% import "ui/views/main_shell/shared/widgets/mini_panel.html" as mn %}
+{% import "ui/common/widgets/primitives.html" as prim %}
 
 {# Device chrome around the live render at the REAL rung size — width and
    height both fixed by the rung (VP_SIZES). The stage pans when the frame is

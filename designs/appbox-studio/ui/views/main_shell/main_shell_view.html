@@ -3,7 +3,7 @@
      Built with appbox (free tier) — https://appbox.dev
 -->
 {% extends "ui/common/base.html" %}
-{% import "ui/common/chrome.html" as chrome %}
+{% import "ui/common/widgets/chrome.html" as chrome %}
 {% block title %}{{ t('index.pageTitle') }}{% endblock %}
 {% block content %}
 {{ chrome.chrome(activeShell, prefs, project) }}

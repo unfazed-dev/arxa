@@ -10,14 +10,14 @@
    panel until another one replaces it.
 
    Assumed call/caller for cp.frame + pa.frame — both shared components ship
-   caller() bodies. The composer is the shared card (ui/common/composer.html)
+   caller() bodies. The composer is the shared card (ui/views/main_shell/shared/widgets/composer.html)
    — same markup on every shell; per-surface data (action, placeholder,
    agent menus) travels in the facade context. #}
-{% import "ui/common/composer_panel.html" as cp %}
+{% import "ui/views/main_shell/shared/widgets/composer_panel.html" as cp %}
 {% import "ui/common/panel_activity.html" as pa %}
 {% import "ui/common/timeline.html" as tl %}
-{% import "ui/common/composer.html" as cm %}
-{% import "ui/common/main_panel.html" as mp %}
+{% import "ui/views/main_shell/shared/widgets/composer.html" as cm %}
+{% import "ui/views/main_shell/shared/widgets/main_panel.html" as mp %}
 
 {# The footer-panel timeline: read-only stage line, intake item current. #}
 {% macro timeline(c, oob) %}{{ tl.timeline(c, oob, t('intake.timelineLabel')) }}{% endmacro %}
@@ -227,7 +227,7 @@
 {% endmacro %}
 
 {# The composer panel proper — permanent, right, single-state; the composer
-   is the shared card (ui/common/composer.html). #}
+   is the shared card (ui/views/main_shell/shared/widgets/composer.html). #}
 {% macro composerPanel(c) %}
 {% call cp.frame({ eyebrow: c.eyebrow, chips: c.chips }) %}
   {{ chatThread(c) }}
