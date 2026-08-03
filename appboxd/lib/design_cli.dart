@@ -36,6 +36,7 @@ import 'dart:io';
 import 'package:appboxd/design_server.dart';
 import 'package:appboxd/design_selftest.dart';
 import 'package:appboxd/design_tools.dart';
+import 'package:appboxd/probes/probe_cli.dart';
 
 const String _usage = '''
 Usage: appbox design <subcommand> [options]
@@ -60,6 +61,9 @@ Subcommands:
                                      Index a UI deliverable in _d_meta.json
   ds-import <dsDir> <projectDir> [--primary]
                                      Sync a compiled DS into _ds/<slug>/
+  probe <name…|all> [--port <n> | --base <url>] [--project <name>]
+                                     Behavioural probes against a served design
+                                     (appbox design probe --help)
   --self-test                        Run the embedded invariant self-test
 
 Note: `appbox design serve` runs the Dart design server (Task 20);
@@ -101,6 +105,8 @@ Future<int> designMain(List<String> args) async {
       return _emit(designDsImport(rest));
     case 'selftest':
       return designSelftestMain(rest);
+    case 'probe':
+      return runProbeCli(rest);
     default:
       stderr.writeln("appbox design: unknown subcommand '$cmd'");
       stderr.writeln(_usage);

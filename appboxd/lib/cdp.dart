@@ -625,6 +625,301 @@ class CdpSession {
     }
   }
 
+  // ── waiting on a condition instead of on the clock ─────────────────
+
+  /// Poll [expression] in the page until it is truthy, or [timeout] elapses.
+  ///
+  /// Returns true when the condition held, false on timeout — it does NOT
+  /// throw. A caller driving a suite of checks has to be able to report every
+  /// one of them, so a slow condition must not abort the checks behind it the
+  /// way a thrown timeout does; the check that follows a false return reads
+  /// the real state and fails on its own terms.
+  ///
+  /// The alternative this replaces is `Future.delayed` on a number picked on
+  /// an idle machine: under load that reads the DOM mid-transition and reports
+  /// a regression that is not there, and on a fast machine it is dead time in
+  /// which a genuinely broken feature can still settle into a passing state.
+  /// The timeout is bounded rather than open because an unbounded wait turns a
+  /// real regression into a hang, which is harder to diagnose than a failure.
+  ///
+  /// [polling] is an interval, not an animation-frame hook: a rAF-driven poll
+  /// runs its callback every frame, contending with the frames a running
+  /// transition needs to finish.
+  Future<bool> waitForFunction(
+    String expression, {
+    Duration timeout = const Duration(seconds: 8),
+    Duration polling = const Duration(milliseconds: 100),
+  }) async {
+    if (!_enabled) await enable();
+    // `!!` so the caller gets JavaScript truthiness rather than Dart's
+    // stricter `== true` — a condition returning an element or a length is
+    // idiomatic and must not read as false here.
+    final expr = '!!($expression)';
+    final deadline = DateTime.now().add(timeout);
+    while (DateTime.now().isBefore(deadline)) {
+      try {
+        if (await evaluate(expr) == true) return true;
+      } on CdpException {
+        // Not yet false — unreadable. A navigation tears down the execution
+        // context and the next evaluate in the new one throws; the deadline,
+        // not the first exception, decides.
+      }
+      await Future.delayed(polling);
+    }
+    return false;
+  }
+
+  /// Wait for [selector] to be present, and by default to occupy space.
+  ///
+  /// `visible: false` asks only about presence — use it when the element is
+  /// deliberately collapsed, or when the next act is a synthetic click that
+  /// does not need pointer geometry.
+  Future<bool> waitForSelector(
+    String selector, {
+    Duration timeout = const Duration(seconds: 8),
+    bool visible = true,
+  }) {
+    final sel = jsonEncode(selector);
+    // display:none, a zero-height rail and a detached node all report a 0×0
+    // rect, and a pointer can be aimed at none of them.
+    final expr = visible
+        ? '(() => { const e = document.querySelector($sel); if (!e) return false;'
+            ' const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0; })()'
+        : 'document.querySelector($sel) !== null';
+    return waitForFunction(expr, timeout: timeout);
+  }
+
+  /// Move the pointer to viewport coordinates without pressing anything.
+  ///
+  /// A real pointer arrives before it clicks, and CSS `:hover` rules act on
+  /// that arrival. Dispatching a click with no preceding move asks the page to
+  /// respond to a pointer that was never anywhere.
+  Future<void> hover(int x, int y) async {
+    await send('Input.dispatchMouseEvent', {
+      'type': 'mouseMoved',
+      'x': x,
+      'y': y,
+    });
+  }
+
+  /// Click the first element matching [selector], waiting up to [timeout] for
+  /// it to appear. Returns false if it never did.
+  ///
+  /// The pointer path is hover-then-click, always — not an option, because
+  /// CDP has no equivalent of Playwright's actionability checks, and half the
+  /// controls worth probing are revealed by `:hover` on an ancestor (tile tool
+  /// rails, panel chrome). Clicking without hovering first lands on whatever
+  /// occupied that point while the control was still hidden.
+  ///
+  /// The box is measured AGAIN after the hover: revealing a rail changes
+  /// layout, so the pre-hover centre can be the wrong target — or another
+  /// element entirely — by the time the press is dispatched.
+  ///
+  /// Two dispatch modes, because the elements a probe drives come in both
+  /// shapes:
+  /// - default — scroll into view, hover, re-measure, [click] at the centre.
+  ///   The only mode that exercises hit-testing, z-order and `pointer-events`.
+  /// - [synthetic] — dispatch the element's own `click()`. For controls no
+  ///   pointer can reach in a headless run, where the page listens for the
+  ///   click event rather than for the pointer that produced it. Presence, not
+  ///   visibility, is the precondition. It cannot see an overlay covering the
+  ///   control — that blind spot is the price of reaching the control at all.
+  Future<bool> clickSelector(
+    String selector, {
+    Duration timeout = const Duration(seconds: 8),
+    bool synthetic = false,
+  }) async {
+    final present = await waitForSelector(selector,
+        timeout: timeout, visible: !synthetic);
+    if (!present) return false;
+    final sel = jsonEncode(selector);
+    if (synthetic) {
+      final hit = await evaluate(
+          '(() => { const e = document.querySelector($sel);'
+          ' if (!e) return false; e.click(); return true; })()');
+      return hit == true;
+    }
+    final before = await _centreOf(sel, scroll: true);
+    if (before == null) return false;
+    await hover(before.$1, before.$2);
+    // Let the reveal transition run before re-measuring; a rail that is still
+    // animating open reports a box that is about to be wrong.
+    await waitForFunction('(window.__vtBusy || 0) === 0',
+        timeout: const Duration(seconds: 2),
+        polling: const Duration(milliseconds: 25));
+    final after = await _centreOf(sel, scroll: false);
+    if (after == null) return false;
+    await click(after.$1, after.$2);
+    return true;
+  }
+
+  /// Viewport centre of [sel] (already JSON-encoded), or null if it is gone.
+  Future<(int, int)?> _centreOf(String sel, {required bool scroll}) async {
+    final box = await evaluate('(() => { const e = document.querySelector($sel);'
+        ' if (!e) return null;'
+        "${scroll ? " e.scrollIntoView({block: 'center', inline: 'center'});" : ''}"
+        ' const r = e.getBoundingClientRect();'
+        ' return {x: r.left + r.width / 2, y: r.top + r.height / 2}; })()');
+    if (box == null) return null;
+    return ((box['x'] as num).round(), (box['y'] as num).round());
+  }
+
+  /// Press at (from), move to (to) in [steps] increments, release.
+  ///
+  /// [steps] is not a smoothness knob — it is a correctness one. A drag
+  /// dispatched as press → one move → release is invisible to anything that
+  /// detects a drag by accumulating pointer movement over a threshold: the
+  /// listener sees a single jump and treats it as a click, so a resize probe
+  /// built on a two-point drag reports the divider broken when the divider is
+  /// fine. The default is what the studio's resize interactions were tuned
+  /// against; raise it for a longer travel, never lower it to 1.
+  Future<void> drag(
+    int fromX,
+    int fromY,
+    int toX,
+    int toY, {
+    int steps = 14,
+    Duration stepDelay = const Duration(milliseconds: 16),
+  }) async {
+    if (steps < 1) throw ArgumentError.value(steps, 'steps', 'must be >= 1');
+    // Arrive before pressing, same reason as clickSelector: a press at a point
+    // the pointer never moved to skips every :hover and pointerenter handler
+    // between here and the drag starting.
+    await hover(fromX, fromY);
+    await send('Input.dispatchMouseEvent', {
+      'type': 'mousePressed',
+      'x': fromX,
+      'y': fromY,
+      'button': 'left',
+      'buttons': 1,
+      'clickCount': 1,
+    });
+    for (var i = 1; i <= steps; i++) {
+      await send('Input.dispatchMouseEvent', {
+        'type': 'mouseMoved',
+        'x': fromX + ((toX - fromX) * i / steps).round(),
+        'y': fromY + ((toY - fromY) * i / steps).round(),
+        // `buttons: 1` is what marks these as a drag rather than a hover; a
+        // move without it is dispatched as though the button came back up.
+        'button': 'left',
+        'buttons': 1,
+      });
+      await Future.delayed(stepDelay);
+    }
+    await send('Input.dispatchMouseEvent', {
+      'type': 'mouseReleased',
+      'x': toX,
+      'y': toY,
+      'button': 'left',
+      'buttons': 0,
+      'clickCount': 1,
+    });
+  }
+
+  /// Drag the element matching [selector] by ([dx], [dy]) viewport pixels.
+  /// Returns false if the element is not there to grab.
+  Future<bool> dragSelector(
+    String selector, {
+    required int dx,
+    required int dy,
+    int steps = 14,
+    Duration timeout = const Duration(seconds: 8),
+  }) async {
+    if (!await waitForSelector(selector, timeout: timeout)) return false;
+    final from = await _centreOf(jsonEncode(selector), scroll: true);
+    if (from == null) return false;
+    await drag(from.$1, from.$2, from.$1 + dx, from.$2 + dy, steps: steps);
+    return true;
+  }
+
+  /// Set the value of the input/textarea matching [selector] and fire the
+  /// events a real edit fires. Returns false if the element is absent.
+  ///
+  /// Assigning `.value` alone is invisible to everything that cares: htmx
+  /// triggers, `hx-preserve` bookkeeping and framework bindings all key off
+  /// the `input`/`change` events, so a probe that only assigns the property
+  /// asserts on a state the user can never actually produce.
+  Future<bool> fillSelector(String selector, String value) async {
+    final sel = jsonEncode(selector);
+    final val = jsonEncode(value);
+    final ok = await evaluate('(() => { const e = document.querySelector($sel);'
+        ' if (!e) return false; e.focus(); e.value = $val;'
+        " e.dispatchEvent(new Event('input', {bubbles: true}));"
+        " e.dispatchEvent(new Event('change', {bubbles: true}));"
+        ' return true; })()');
+    return ok == true;
+  }
+
+  /// Read [properties] off the computed style of [selector], or null when the
+  /// element is absent — an assertion on a style has to be able to tell "this
+  /// property is wrong" from "this element is not there".
+  Future<Map<String, String>?> computedStyle(
+    String selector,
+    List<String> properties,
+  ) async {
+    final res = await evaluateFunction('''(a) => {
+  const el = document.querySelector(a.selector);
+  if (!el) return null;
+  const cs = getComputedStyle(el);
+  const out = {};
+  for (const p of a.properties) out[p] = cs.getPropertyValue(p);
+  return out;
+}''', {'selector': selector, 'properties': properties});
+    if (res == null) return null;
+    return (res as Map).map((k, v) => MapEntry('$k', '$v'));
+  }
+
+  /// Fetch a response body by [requestId], or null if Chrome no longer has it.
+  ///
+  /// Null is a routine outcome, not an error: Chrome keeps response bodies in
+  /// a bounded per-page buffer and drops them on navigation, so a body asked
+  /// for after the fact may simply be gone. Callers that need bodies reliably
+  /// should not poll for them — use [recordNetworkBodies], which fetches each
+  /// one while it is still there.
+  Future<String?> getResponseBody(String requestId) async {
+    try {
+      final res =
+          await send('Network.getResponseBody', {'requestId': requestId});
+      final result = res['result'] as Map<String, dynamic>;
+      final body = result['body'] as String?;
+      if (body == null) return null;
+      return result['base64Encoded'] == true
+          ? utf8.decode(base64Decode(body), allowMalformed: true)
+          : body;
+    } on CdpException {
+      // "No resource with given identifier found" — evicted, or a request with
+      // no body to begin with (a redirect, a 204). Indistinguishable here and
+      // not worth distinguishing: both mean there is nothing to read.
+      return null;
+    }
+  }
+
+  /// Start recording response bodies, keyed by URL.
+  ///
+  /// Bodies are fetched on `Network.loadingFinished` — the earliest moment one
+  /// exists and the latest moment it is still guaranteed to. Collecting the
+  /// events first and fetching bodies at the end is the obvious shape and the
+  /// broken one: by then the page has usually navigated and the buffer has
+  /// been dropped, so the bodies that matter are exactly the ones missing.
+  ///
+  /// Caller stops it; [close] also ends it.
+  Future<CdpNetworkBodies> recordNetworkBodies() async {
+    await send('Network.enable');
+    return CdpNetworkBodies._(this).._start();
+  }
+
+  /// Evaluate [source] in every document this target loads, before any of the
+  /// page's own script runs — and across navigations, unlike [evaluate], which
+  /// dies with the document it ran in.
+  ///
+  /// Must be installed BEFORE the first navigate: instrumentation that wraps a
+  /// page API (counting swaps, shimming a browser hook) has to be in place
+  /// before the page reads that API, or it wraps nothing.
+  Future<void> addInitScript(String source) async {
+    if (!_enabled) await enable();
+    await send('Page.addScriptToEvaluateOnNewDocument', {'source': source});
+  }
+
   // ── CDP domain extensions ─────────────────────────────────────────
 
   /// Start a screencast. Caller must stop() it; client.close() also ends it.
@@ -791,6 +1086,94 @@ class CdpSession {
 }
 
 /// One screencast frame delivered by Chrome.
+/// One captured response: what was asked for, and what came back.
+class CdpResponseRecord {
+  /// Request URL.
+  final String url;
+
+  /// HTTP status, or null if the response never arrived.
+  final int? status;
+
+  /// MIME type as Chrome reported it.
+  final String? mimeType;
+
+  /// Decoded body, null when Chrome had nothing to give (evicted, or a
+  /// response that never had one).
+  final String? body;
+
+  /// `encodedDataLength` — bytes on the wire, which is what a payload-size
+  /// assertion should read. [body] length is post-decompression and will
+  /// disagree, usually by a lot.
+  final int? encodedLength;
+
+  CdpResponseRecord({
+    required this.url,
+    this.status,
+    this.mimeType,
+    this.body,
+    this.encodedLength,
+  });
+}
+
+/// Response bodies captured as they land. See
+/// [CdpSession.recordNetworkBodies].
+class CdpNetworkBodies {
+  final CdpSession _session;
+  final _records = <CdpResponseRecord>[];
+  final _meta = <String, Map<String, dynamic>>{};
+  final _inFlight = <Future<void>>[];
+  StreamSubscription? _responseSub;
+  StreamSubscription? _finishedSub;
+
+  CdpNetworkBodies._(this._session);
+
+  void _start() {
+    _responseSub = _session.on('Network.responseReceived').listen((e) {
+      final response = e.params['response'] as Map<String, dynamic>?;
+      if (response == null) return;
+      _meta['${e.params['requestId']}'] = response;
+    });
+    _finishedSub = _session.on('Network.loadingFinished').listen((e) {
+      final requestId = '${e.params['requestId']}';
+      final response = _meta.remove(requestId);
+      if (response == null) return;
+      // Fetch now, while the body is still in the buffer. Held so [stop] can
+      // await the ones already started rather than truncating them.
+      final pending = () async {
+        final body = await _session.getResponseBody(requestId);
+        _records.add(CdpResponseRecord(
+          url: '${response['url']}',
+          status: (response['status'] as num?)?.toInt(),
+          mimeType: response['mimeType'] as String?,
+          body: body,
+          encodedLength: (e.params['encodedDataLength'] as num?)?.toInt(),
+        ));
+      }();
+      _inFlight.add(pending);
+    });
+  }
+
+  /// Everything captured so far.
+  List<CdpResponseRecord> get records => List.unmodifiable(_records);
+
+  /// The first record whose URL contains [fragment], or null.
+  CdpResponseRecord? firstMatching(String fragment) {
+    for (final r in _records) {
+      if (r.url.contains(fragment)) return r;
+    }
+    return null;
+  }
+
+  /// Stop recording and return what was captured, including bodies whose fetch
+  /// was already in flight.
+  Future<List<CdpResponseRecord>> stop() async {
+    await _responseSub?.cancel();
+    await _finishedSub?.cancel();
+    await Future.wait(_inFlight);
+    return records;
+  }
+}
+
 class ScreencastFrame {
   ScreencastFrame(this.bytes, this.timestamp);
   final List<int> bytes; // jpeg or png, per the start() format
