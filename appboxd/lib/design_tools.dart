@@ -22,6 +22,7 @@ import 'package:path/path.dart' as p;
 import 'package:appboxd/cdp.dart';
 import 'package:appboxd/crypto_aead.dart';
 import 'package:appboxd/design_server/l10n.dart';
+import 'package:appboxd/gate_design_widgets.dart' show gateDesignWidgets;
 
 // The l10n primitives are part of the design-tools public surface (pseudolocalize
 // uses parsePlural/parseArb; Task 20 extends the l10n submodule further).
@@ -352,14 +353,23 @@ CmdResult designLint(List<String> args) {
   final dir = p.absolute(rest.first);
   final notes = <LintFinding>[];
   final findings = lintArtifact(dir, coverageB: coverageB, notes: notes);
+  final widgetFindings = gateDesignWidgets(dir, notes: notes);
   final noteLines = notes.map((n) => 'note: $n').toList();
-  if (findings.isNotEmpty) {
-    final lines = <String>['client-JS lint failed:'];
-    lines.addAll(findings.map((f) => f.toString()));
+  if (findings.isNotEmpty || widgetFindings.isNotEmpty) {
+    final lines = <String>[];
+    if (findings.isNotEmpty) {
+      lines.add('client-JS lint failed:');
+      lines.addAll(findings.map((f) => f.toString()));
+    }
+    if (widgetFindings.isNotEmpty) {
+      lines.add('widget/panel gate failed (W1–W6):');
+      lines.addAll(widgetFindings.map((f) => f.toString()));
+    }
     return CmdResult(1, stdoutLines: noteLines, stderrLines: lines);
   }
   return CmdResult(0, stdoutLines: [
     'lint clean: no custom client-side JS in $dir',
+    'widget/panel gate clean: W1–W6 in $dir',
     ...noteLines,
   ]);
 }

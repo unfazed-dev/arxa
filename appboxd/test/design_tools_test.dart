@@ -79,8 +79,13 @@ void main() {
       final r = designLint([d.path]);
       expect(r.exitCode, 0);
       expect(r.stderrLines, isEmpty);
-      expect(r.stdoutLines.single,
-          'lint clean: no custom client-side JS in ${d.path}');
+      // Two gates run under `design lint`, so a clean run says so twice: the
+      // ADR-0002 client-JS lint and the W1–W6 widget/panel gate. A silent gate
+      // is indistinguishable from a gate that never ran.
+      expect(r.stdoutLines, [
+        'lint clean: no custom client-side JS in ${d.path}',
+        'widget/panel gate clean: W1–W6 in ${d.path}',
+      ]);
     });
 
     test('each of the 4 rules fires → exit 1, findings on stderr', () {

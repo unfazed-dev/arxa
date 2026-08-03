@@ -42,6 +42,7 @@ Usage: appbox design <subcommand> [options]
 
 Subcommands:
   lint <artifact-dir>                No-ad-hoc-client-JS lint (ADR-0002)
+                                     + widget/panel gate (W1–W6)
   check-ladder [--config <p>] [--doc <p>]
                                      Ladder config ↔ doctrine drift check
   check-wiring <dir> <property>      Wiring joins (fragments|mutations-posted|
