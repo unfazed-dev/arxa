@@ -72,11 +72,39 @@ lens shoot: 3 rung(s), 0 problem(s)
 ## 4. Mutation routes — live, 200, 0 `undefined`
 
 > **Conditional — read before trusting this section.** These four routes exist
-> **only in an uncommitted working-tree edit** to `routes.scaffold.js` (a
-> chrome-integration file, see Lane note). In the committed tree all four POSTs
-> **404**. Neither `design lint` nor the lens ladder catches that, because
-> neither exercises a POST — this is precisely the §0 "looks like a pass" class.
-> Everything below is verified *with the unlanded spine edit applied*.
+> **only in an uncommitted working-tree edit** to `routes.scaffold.js`. In the
+> committed tree all four POSTs **404**. Neither `design lint` nor the lens
+> ladder catches that, because neither exercises a POST — this is precisely the
+> §0 "looks like a pass" class. Everything below is verified *with the unlanded
+> spine edit applied*.
+>
+> **Authorship — corrected.** I previously called `routes.scaffold.js` "a
+> chrome-integration file" and left it unstaged on that basis. The *file* is
+> theirs; the **17-line hunk is mine**, which they stated plainly: "Your
+> `routes.scaffold.js` edit: keep it, don't revert. I read all 17 lines… you
+> even carried the `posted-by` convention. I've told the lead that 17 lines of
+> the file are yours." My disclosure had it backwards and under-claimed my own
+> work — the opposite error to the over-claiming `git add` of `528ac71`, from
+> the same root: attribution asserted without checking.
+>
+> **Substrate is backed up (both halves).** As of `docs/plans/`:
+>
+> | at-risk change | owner | backup | bytes |
+> |---|---|---|---|
+> | `_shared.html` composer guard | chrome-integration | `scaffold-composer-guard.patch` | 1791 |
+> | `routes.scaffold.js` +17 routes | **mine** | `scaffold-routes.patch` | 1941 |
+> | | | **live `git diff`** | **3732** |
+>
+> 1791 + 1941 = 3732 exactly, so coverage is total, and
+> `git apply --check --reverse` passes on mine. Before this, the guard was
+> patch-backed and my routes were not — a `git restore designs/` would have
+> erased the substrate of every number in this section while leaving the
+> composer half recoverable.
+>
+> Not committed: three agents share one branch (`scaffold-shell-worktree`) and
+> Phase 3's commit is the lead's. A patch protects the work without pre-empting
+> that call; whether the code lands stays a deliberate decision, not an
+> oversight.
 >
 > The method is also **not ratified**: chrome-integration proposed
 > `GET /scaffold/add?kit=`; I implemented **POST with a form body** and told
