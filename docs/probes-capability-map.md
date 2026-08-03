@@ -32,6 +32,19 @@ reference design. The **contract suite** asserts the appbox opinion against ANY
 served design by deriving its targets from the design's own declarations,
 rather than hard-coding studio routes.
 
+### scroll-ownership (studio suite, added after the workspace scroll fixes)
+
+Walks the same `/__routes`-derived surface set as the contract pair (so it
+inherits the same skip/unreadable accounting) but asserts the STUDIO's own
+doctrine, written in `assets/css/app.css`: the shell is viewport-locked at the
+expanded rung, the page never scrolls, no shell region is a scroll container,
+and any content taller than the lock must live inside a panel scroller —
+including invisibly ("nothing is clipped": `#app.scrollHeight` exposes
+overgrowth that `overflow: hidden` merely hides, which is how its first run
+caught `/` and `/dashboard` clipping 220px that no screenshot showed). Studio
+suite, not contract: the doctrine is this design's stylesheet, not (yet) the
+appbox opinion — hello-hda is free to scroll its page.
+
 ### The contract v1 set
 
 `contract-panels` and `contract-chips`, both registered ahead of the studio ten
@@ -97,6 +110,8 @@ these can.
 | a | commented out the base `.chip` rule in `assets/css/widgets.css` | `contract-chips` | exit 1 | `[FAIL] every chip keeps the pill box model — 175 bad: /: .chip.proj-stage.proj-stage-build — display=block, align-items=normal, radius=0.0 for height 21.8` |
 | b | re-added `margin-top: .3rem` to `.status-dot` (the a02ceaa defect) | `contract-chips` | exit 1 | `[FAIL] every glyph centres within 1px of its control — 17 off: /design: span.status-dot in span.chip off by 2.39px` |
 | c | duplicated the header panel mount in `ui/views/main_shell/main_shell_view.html` | `contract-panels` | exit 1 | `[FAIL] each role panel is mounted at most once per surface — /: header mounted 2 times; /dashboard: header mounted 2 times; …` |
+| d | re-added `overflow-y: auto` to `.shell-main` (`assets/css/chrome.css`) | `scroll-ownership` | exit 1 | `[FAIL] /: no shell region is a scroll container — shell-main shell-main-col` |
+| e | removed the `.shell-main-col` flex column (the height chain to the panel) | `scroll-ownership` | exit 1 | `[FAIL] /dashboard: nothing is clipped inside the lock (overgrowth must live in a panel scroller) — 277px over` |
 
 Mutation (b) is the load-bearing one: it re-introduces the exact regression
 commit a02ceaa fixed, and the gate now catches it on every surface of any
