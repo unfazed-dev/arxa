@@ -4,10 +4,22 @@
 -->
 {% extends "ui/views/main_shell/main_shell_view.html" %}
 {% import "ui/common/widgets/primitives.html" as prim %}
+{% import "ui/common/widgets/main_panel.html" as mp %}
 {% import "ui/common/modal.html" as modal %}
 {% block title %}{{ t('dash.pageTitle') }}{% endblock %}
 
+{# shell-main-col, because this surface mounts the main panel below: the
+   column hands the region's height to the panel so .mp-content is the
+   scroller. Without a mounted panel this surface has nowhere legal to
+   scroll — the page scrolled and the lock clipped it (scroll-ownership
+   probe, first run). #}
+{% block main_class %}shell-main-col{% endblock %}
+
 {% block surface %}
+{% set M = {} %}
+{{ mp.open(M) }}
+<section class="mp-content">
+
 <span class="eyebrow">{{ t('dash.eyebrow') }}</span>
 <div class="dash-head">
   <div>
@@ -131,4 +143,6 @@
     </form>
   </div>
 </section>
+</section>
+{{ mp.close(M) }}
 {% endblock %}

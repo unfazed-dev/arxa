@@ -310,6 +310,12 @@ button:active { transform: translateY(1px); }
   display: flex; flex-direction: column;
   background: var(--bg); border: 1px solid var(--border);
   border-radius: var(--radius); box-shadow: var(--shadow-2);
+  /* The card is the containing block for its own absolute descendants (the
+     wizard's visually-hidden checkboxes, any future overlay). Without this
+     they resolve at .panel-main and their static-position boxes escape the
+     scroller — invisible overgrowth past the viewport lock, caught by the
+     scroll-ownership probe. */
+  position: relative;
 }
 .artifact {
   width: 100%; max-width: 45rem; margin: auto; /* reading artifacts stay centered in the stage */

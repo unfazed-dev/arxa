@@ -37,15 +37,15 @@
    the panels (app.css, "the shell is viewport-locked") — the scroller for a
    shell's overgrowth is the panel card inside it, never the region itself. */
 .shell-main { width: 100%; max-width: 56rem; margin: 0 auto; padding: 2rem 1.1rem 3rem; flex: 1; }
-/* workspace shell: the main panel IS the surface — full width (the 56rem
-   reading column is a main_shell concern), and a flex column so the height
-   chain reaches the panel: #app hands this region the leftover, .panel-main
-   fills it (panels.css), and .mp-content — already overflow-y: auto in
-   app.css — is the one scroller, per the panel scroll-ownership doctrine. */
-.shell-main-workspace {
-  max-width: none;
-  display: flex; flex-direction: column; min-height: 0;
-}
+/* The height chain for a shell whose surface lives in a mounted main panel:
+   #app hands this region the leftover, .panel-main fills it (panels.css), and
+   .mp-content — already overflow-y: auto in app.css — is the one scroller,
+   per the panel scroll-ownership doctrine. Any shell that mounts the main
+   panel directly in .shell-main (workspace, dashboard) needs this column. */
+.shell-main-col { display: flex; flex-direction: column; min-height: 0; }
+/* workspace shell: the main panel IS the surface — full width; the 56rem
+   reading column is a main_shell/dashboard concern. */
+.shell-main-workspace { max-width: none; }
 /* stage shells (intake/design/build) run full-bleed — the three content
    panels need the whole width; chrome.css must repeat this because it loads
    after app.css and would otherwise cap them at 56rem */

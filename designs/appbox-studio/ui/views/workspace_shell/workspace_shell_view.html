@@ -19,7 +19,7 @@
 {% set HP = {} %}
 {{ hp.open(HP) }}{{ chrome.headerBody(activeShell, prefs, project) }}{{ hp.close(HP) }}
 {{ chrome.offCanvas(activeShell, prefs, project) }}
-<main class="shell-main shell-main-workspace">
+<main class="shell-main shell-main-col shell-main-workspace">
   {% set M = {} %}
   {{ mp.open(M) }}
   <section class="mp-content">{% block surface %}{% endblock %}</section>
