@@ -120,7 +120,7 @@ appbox
 - [must/R1 Dogfood] Every surface designed at 390/744/1280 from targets alone (literal parity)
 - [must/R1 Dogfood] Target selection labels buildability on this machine (requires macOS)
 - [must/R1 Dogfood] The daemon drafts all screens from the approved story map in one pass; refining happens exclusively in the centered chat
-- [must/R1 Dogfood] Component-library components are Auto Layout by default (flow, gap, padding, alignment; child hug/fill/fixed emitted as flexbox data-attributes); off by default at artboard level, per-frame opt-out
+- [must/R1 Dogfood] Widget-library widgets are Auto Layout by default (flow, gap, padding, alignment; child hug/fill/fixed emitted as flexbox data-attributes); off by default at artboard level, per-frame opt-out
 
 #### Chat
 
