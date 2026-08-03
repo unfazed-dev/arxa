@@ -117,12 +117,51 @@ GET, so the dialog layout is **not** covered by the 3-rung pass in §3. "3 rungs
 0 problems" refers to the picker grid only. Laddering the dialog needs either a
 GET-addressable state param or a CDP click step; neither exists today.
 
-## 6. Unowned route
+## 6. Unowned route — CORRECTED
 
-`POST /scaffold/messages` → `composerAction` has **no owner**: no
-`sendMessage`/`composerAction` export exists in the picker or run viewmodel, and
-nothing in `ui/` references the path. Scaffold surfaces run the shared composer
-disabled. It should not be registered until it has an owner.
+An earlier revision of this section claimed the scaffold surfaces "run the
+shared composer disabled" and that nothing references `/scaffold/messages`.
+**Both claims were wrong.** chrome-integration supplied the rendered markup and
+I re-measured; the corrected facts:
+
+- The composer renders **live** on `/scaffold`, with a live `textarea`:
+  ```html
+  <form class="composer" id="composer" method="post" action="/scaffold/messages"
+        hx-post="/scaffold/messages" hx-target="#panels" hx-swap="morph:outerHTML">
+  ```
+- `POST /scaffold/messages` returns **404**. Measured, not inferred.
+- The path string is supplied by **my** file: `scaffold_facade.js:205` sets
+  `composerAction: '/scaffold/messages'`, with a `needs-route:` comment I wrote
+  myself and then failed to recall.
+- `ui/views/main_shell/scaffold/_shared.html:95` mounts `composerPanel(c)`
+  unconditionally, so the surface is chrome-integration's; the value is mine.
+
+**Why the original claim was unsound:** I grepped `ui/` for the literal
+`/scaffold/messages`. The template reads `{{ c.composerAction }}`, so a
+facade-computed action can never match a literal-path grep. The method could
+not have detected the defect it was used to rule out. The same blind spot
+applies to the selftest, which scans template *source*: no rendered form action
+is checked anywhere today.
+
+The disposition (gate the render vs. wire a handler) is a product call with the
+lead — see §6a. Nothing here is actionable by me unilaterally.
+
+## 6a. Input to the disposition — the compose column is a fixed grid track
+
+`assets/css/scaffold.css:34` declares
+`grid-template-columns: minmax(240px, 280px) 1fr minmax(280px, 340px)` — three
+**fixed** tracks, with `compose` a named area (line 30). Grid allocates a track
+whether or not a child occupies it.
+
+So gating the *whole* `composerPanel` on `c.composerAction` is predicted to
+leave a 240–280 px empty column on both scaffold screens at desktop widths,
+collapsing only at the mobile stack (line 69). The surgical alternative is to
+gate the **field** (`cm.field(c)`) and keep `cp.open`/`thread`/`chips`, which
+keeps the column populated.
+
+Flagged as a CSS-level prediction: I have **not** rendered the gated variant, so
+this is unverified by measurement. Whoever takes the fix should render it before
+choosing between the two shapes.
 
 ## Lane note — the unlanded edit, preserved verbatim
 
@@ -131,8 +170,11 @@ belongs to chrome-integration. It was made to get the mutations testable and has
 been reported to them for accept-or-revert; it should not land in the Phase 3
 commit unacknowledged.
 
-It deliberately does **not** register `POST /scaffold/messages` — consistent
-with §6, that route has no owner and should stay unregistered.
+It deliberately does **not** register `POST /scaffold/messages`. Note that the
+*reason* recorded here originally ("no owner") was wrong — see the correction in
+§6. The route is still unregistered and still 404s; what changed is that this is
+now a known live defect awaiting a product call, not a route that was correctly
+left out.
 
 Because this worktree is shared with concurrent sessions and the edit is
 uncommitted, the exact tuples are recorded here so they survive a clean:
