@@ -23,6 +23,7 @@ import 'package:appboxd/probes/studio/probe_inspect.dart';
 import 'package:appboxd/probes/studio/probe_no_reload.dart';
 import 'package:appboxd/probes/studio/probe_panel_contract.dart';
 import 'package:appboxd/probes/studio/probe_panel_resize.dart';
+import 'package:appboxd/probes/studio/probe_scroll_ownership.dart';
 import 'package:appboxd/probes/studio/probe_shell_chrome.dart';
 
 /// Every probe, in `probe all` run order.
@@ -32,6 +33,9 @@ const List<Probe> kProbes = <Probe>[
   // studio-specific interaction. Same doctrine as kSuiteOrder.
   contractPanelsProbe,
   contractChipsProbe,
+  // First studio probe: a read-mostly walk like the contract pair above it, so
+  // a scroll-doctrine break fails before the interaction-heavy probes run.
+  scrollOwnershipProbe,
   boostProbe,
   composerDraftProbe,
   contextSyncProbe,
