@@ -303,3 +303,47 @@ unconditionally. That line is the lead's call (task #16).
 
 Note: `docs/plans/scaffold-composer-contract.md`, cited in coordination, does not
 exist in the repo. This file holds the measurements.
+
+## 7. Method — an absence claim needs a positive control
+
+Adopted from run-screen; their four-failure table is in
+`docs/plans/composer-action-integrity.md`. The rule:
+
+> Before trusting a zero, show the same check finds a known-present instance.
+> A check that has never once produced a hit hasn't been demonstrated capable
+> of one.
+
+This supersedes my weaker "confirm the search path exists", which catches only
+the two failures where the path was fictional. It would have passed my
+`/scaffold/messages` literal grep — a real search of real files that could never
+match, because the template emits `{{ c.composerAction }}` and a computed value
+has no literal to find. That one cost this thread the most time.
+
+### Applied to my own live absence claim
+
+Claim: *there is no lens/preview state-picker UI in the repo* — the sweep
+chrome-integration relied on to withdraw their "edit the dropdown in your UI"
+redirect. It had never been positive-controlled.
+
+The first control attempt **failed, and caught a broken instrument**:
+
+| step | result |
+|---|---|
+| grep `surfaceStates` under `appbox/lib/` | 0 hits — but it is known-present |
+| cause | no directory named `appbox` exists; it is **`appboxd/`** |
+| re-run under `appboxd/lib/` | `intake.dart:62` hit — instrument now proven |
+| re-run absence claim, proven instrument | 0 `<select>`/`<option>` in tool **and** designs |
+| independent control on the designs sweep | 1 `type="radio"` found → can see form controls |
+
+Verdict: the zero was **correct but undemonstrated**. Right answer, unsound
+method — and the very first attempt to make it sound was itself broken. That is
+the case for the rule, not against it.
+
+Second instance, same session: this finding nearly became a false broadcast. From
+`appbox/` ≠ `appboxd/` I inferred that every lane's `appbox/lib/intake.dart:62`
+citation was one character wrong, and started drafting the correction. Checked
+first: this thread's docs already use `appboxd/lib/` and all three cited lines
+resolve (`intake.dart:62`, `design_tools.dart:260`, `emit_structure.dart:263`).
+The only two `appbox/lib` strings in `docs/plans/` are in unrelated pre-existing
+files. A confident correction, aimed at teammates, built on one unverified
+inference — caught by the same rule one step before sending.
