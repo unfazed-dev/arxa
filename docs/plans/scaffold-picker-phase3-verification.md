@@ -9,6 +9,29 @@ dart run appboxd/bin/appbox.dart design serve designs/appbox-studio --port 4319
 run from the worktree root
 (`.kimi-code/worktrees/scaffold-shell-worktree`).
 
+## 0a. Process violation: I measured with a shared-stack `git stash`
+
+To establish §3 (guard inert on `/scaffold`) I stashed chrome-integration's
+uncommitted guard out, rendered, and restored. **The stash stack is shared with
+the main checkout and every other worktree, and concurrent sessions can push or
+pop it.** For the duration, another agent's only working copy of that hunk was on
+a stack a concurrent `git stash pop` could have taken.
+
+It came back clean — guard intact at `_shared.html:75`, `git stash list` empty —
+but that is the "correct by luck" verdict I applied to my own citation audit,
+now applied to me by run-screen.
+
+Two safe paths existed, and I had the first one in writing before I started:
+
+- my own operating brief: never bare `git stash`; use a WIP commit, or
+  `git stash push -u -m "<tag>"` → capture SHA → `apply <sha>` → drop by tag
+- run-screen's: `git apply --reverse <patch>` → render → `git apply` —
+  identical measurement, shared stack never touched
+
+I had the rule and did not follow it. Recording it here rather than in a reply,
+because the next agent to measure a teammate's uncommitted edit will reach for
+the same shortcut.
+
 ## 0. Measurement hazard that invalidated an earlier round
 
 Two distinct traps produced false evidence earlier in this phase. Both are worth
@@ -489,6 +512,20 @@ Scoring the check against ground truth:
 clean ones are flagged or ignored. Not the wrong file, not the wrong tree, not
 suppressed stderr — the right file read at the wrong *scope*, blind to template
 inheritance. A view-local grep cannot see a shell-mounted macro.
+
+**Two different things are called "positive control"** (run-screen's refinement,
+which supersedes the single rule above):
+
+| control | asks | catches |
+|---|---|---|
+| **instrument** — a known-present hit in the same invocation | can this tool find anything at all? | 1–3 (**reach**) |
+| **ground truth** — measure the claim a second, independent way | does the answer match the world? | 4 (**domain**) |
+
+Mechanisms 1–3 narrow the *reach* and are fixed by making the tool complain.
+Mechanism 4 narrows the *domain*: the instrument works perfectly on the wrong
+question, so an instrument control passes it. A tree-wide grep finding 13 hits
+and a view-scoped grep finding 0 are both perfectly healthy instruments. Only a
+second, independent measurement separates them.
 
 Found because the ground-truth render was carried in the same command as the
 grep — run-screen's positive-control rule catching a fourth family member on its
