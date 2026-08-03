@@ -121,7 +121,7 @@
       {% if hasEls %}
       <div class="cs-el-strip" aria-label="{{ t('composer.elsInContext') }}">
         {% for el in c.elements %}
-        <span class="cs-el-chip ctx-{{ el.tone }}">
+        <span class="chip cs-el-chip ctx-{{ el.tone }}">
           <code class="cs-el-name">{{ el.name }}</code>
           <span class="cs-el-kind">{{ el.kind }}</span>
           <span class="cs-el-screen muted">{{ el.screenId }}</span>

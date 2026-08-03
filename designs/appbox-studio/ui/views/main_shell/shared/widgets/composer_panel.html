@@ -27,7 +27,7 @@
    The context filmstrip is not here. It is the main panel's side-end section
    in the views lens (ui/views/main_shell/shared/widgets/design_viewer.html); the composer's own tray
    (ui/views/main_shell/shared/widgets/composer.html) carries one only on surfaces with no viewer. #}
-{% import "ui/views/main_shell/shared/widgets/panel.html" as pn %}
+{% import "ui/views/main_shell/shared/widgets/_panel.html" as base %}
 
 {% set PID = 'panel-composer' %}
 
@@ -42,24 +42,38 @@
 {% if spec.chips %}
 <span class="ctx-row chat-ctx">
   {% for chip in spec.chips %}
-  <span class="ctx-chip ctx-{{ chip.tone or tones[loop.index0 % 4] }}"><code>{{ chip.id }}</code><span class="ctx-label">{{ chip.label }}</span>{% if chip.removeHref %}<a class="ctx-x" href="{{ chip.removeHref }}" hx-get="{{ chip.removeHref }}" hx-target="#panels" hx-swap="morph:outerHTML" hx-push-url="false" aria-label="{{ t('chat.removeChip', {label: chip.label}) }}">{{ icon('x', {size: 12}) }}</a>{% endif %}</span>
+  <span class="chip ctx-chip ctx-{{ chip.tone or tones[loop.index0 % 4] }}"><code>{{ chip.id }}</code><span class="ctx-label">{{ chip.label }}</span>{% if chip.removeHref %}<a class="ctx-x" href="{{ chip.removeHref }}" hx-get="{{ chip.removeHref }}" hx-target="#panels" hx-swap="morph:outerHTML" hx-push-url="false" aria-label="{{ t('chat.removeChip', {label: chip.label}) }}">{{ icon('x', {size: 12}) }}</a>{% endif %}</span>
   {% endfor %}
 </span>
 {% endif %}
 {% endmacro %}
 
-{% macro top(spec, oob) %}{{ pn.top(PID, headContent(spec), oob) }}{% endmacro %}
+{% macro top(spec, oob) %}{{ base.top(PID, headContent(spec), { oob: oob }) }}{% endmacro %}
 
-{# Wrap with call/caller:
-     {% call cp.frame(spec) %}thread + composer card{% endcall %} #}
-{% macro frame(spec) %}
-<section id="{{ PID }}" class="panel panel-composer">
-  {# RESIZE RAIL — the same contract as the activity panel: the panel's own
-     edge is the handle, no icon. edge:'end' is a fact about this rail and
-     nothing else; no persist key, so drag.js resizes and posts nothing — the
-     composer has no server-side width and its inline width rides morph. #}
-  {{ pn.resize(PID, { edge: 'end' }) }}
-  {{ pn.top(PID, headContent(spec)) }}
-  {{ pn.body(PID) }}{{ caller() }}{{ pn.bodyEnd() }}
-</section>
+{# The composer's sections: top (the head) and body. `bottom: false` is the
+   canon's fixed rule for this panel — forced off, so a caller cannot grow one
+   by accident.
+
+   Open/close rather than {% call %}: nunjucks binds caller() to the nearest
+   enclosing {% call %}, so this panel could not forward its body to the base
+   while itself being called. `appbox design lint` (W4) checks the pair is
+   balanced per template.
+
+     {% set C = spec %}
+     {{ cp.open(C) }}thread + composer card{{ cp.close(C) }} #}
+{# RESIZE RAIL — the same contract as the activity panel: the panel's own edge
+   is the handle, no icon. edge:'end' is a fact about this rail and nothing
+   else; no persist key, so drag.js resizes and posts nothing — the composer
+   has no server-side width and its inline width rides morph. #}
+{% macro open(spec) %}
+{{- base.open({
+      role: 'composer', id: PID,
+      top: headContent(spec),
+      bottom: false,
+      resize: { edge: 'end' }
+    }) -}}
+{% endmacro %}
+
+{% macro close(spec) %}
+{{- base.close({ role: 'composer', id: PID, bottom: false }) -}}
 {% endmacro %}

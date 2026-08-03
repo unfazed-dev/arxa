@@ -39,7 +39,7 @@
    server's guess, not something the element declares. #}
 {% macro metaRow(label, value, mark) %}
 {% if value %}
-<span class="msg-detail"><b>{{ label }}</b> {{ value }}{% if mark %} <em class="thread-badge">{{ t('inspector.inferred') }}</em>{% endif %}</span>
+<span class="msg-detail"><b>{{ label }}</b> {{ value }}{% if mark %} <em class="chip thread-badge">{{ t('inspector.inferred') }}</em>{% endif %}</span>
 {% endif %}
 {% endmacro %}
 
@@ -47,7 +47,7 @@
 <div class="msg msg-agent {{ 'is-active msg-ctx ctx-' + el.tone if locked }}">
   <header class="msg-meta">
     {% if el.kind %}{{ prim.typeBadge(el.kind) }}{% endif %}
-    {% if locked %}<span class="thread-badge" title="{{ t('inspector.lockedTitle') }}">{{ icon('lock', {size: 12}) }} {{ t('inspector.locked') }}</span>{% endif %}
+    {% if locked %}<span class="chip thread-badge" title="{{ t('inspector.lockedTitle') }}">{{ icon('lock', {size: 12}) }} {{ t('inspector.locked') }}</span>{% endif %}
   </header>
   <span class="msg-text"><code>{{ el.name }}</code></span>
   {% if el.screenId %}<span class="msg-detail muted">{{ el.screenId }}</span>{% endif %}
@@ -83,14 +83,14 @@
 <div class="msg msg-agent">
   <header class="msg-meta">
     {{ prim.typeBadge('screen', sc.epic) }}
-    {% if sc.state %}{{ prim.statusPill(sc.state) }}{% endif %}
+    {% if sc.state %}{{ prim.statusPill(sc.state, 'sm') }}{% endif %}
   </header>
   <span class="msg-text"><code>{{ sc.id }}</code></span>
 
   <span class="msg-detail"><b>{{ t('inspector.states') }}</b></span>
   <span class="msg-meta">
     {% for st in sc.states %}
-    <span class="thread-badge" title="{{ t('inspector.source.' ~ (st.source or 'declared')) }}">{{ st.name }}{% if st.source == 'derived' %} · {{ t('inspector.derived') }}{% endif %}</span>
+    <span class="chip thread-badge" title="{{ t('inspector.source.' ~ (st.source or 'declared')) }}">{{ st.name }}{% if st.source == 'derived' %} · {{ t('inspector.derived') }}{% endif %}</span>
     {% else %}
     <span class="msg-detail muted">{{ t('inspector.noStates') }}</span>
     {% endfor %}
@@ -106,7 +106,7 @@
   <span class="msg-detail"><b>{{ t('inspector.kits') }}</b></span>
   <span class="msg-meta">
     {% for k in sc.kits %}
-    <span class="thread-badge">{{ k.label or k.id }}</span>
+    <span class="chip thread-badge">{{ k.label or k.id }}</span>
     {% else %}
     <span class="msg-detail muted">{{ t('inspector.noKits') }}</span>
     {% endfor %}

@@ -38,7 +38,7 @@
 <div class="mini-panel-body" id="mini-panel-controller">
   <span class="mini-panel-group" role="group" aria-label="{{ t('miniPanel.modeGroup') }}">
     {% for m in c.modes %}
-    <a class="dv-chip {{ 'on' if m.active }}" href="{{ m.href }}" hx-get="{{ m.href }}" hx-target="#design-viewer" hx-swap="morph:outerHTML">{{ t('viewer.modeLabel.' ~ m.key) }}</a>
+    <a class="chip dv-chip {{ 'on' if m.active }}" href="{{ m.href }}" hx-get="{{ m.href }}" hx-target="#design-viewer" hx-swap="morph:outerHTML">{{ t('viewer.modeLabel.' ~ m.key) }}</a>
     {% endfor %}
   </span>
   <span class="mini-panel-group">

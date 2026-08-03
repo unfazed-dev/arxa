@@ -16,6 +16,25 @@
    that picks the single visible content panel. Server-rendered links, state
    via ?panel= (the facade persists it); plain boosted navigation — zero JS.
    Distinct from the tabbar, which switches shells. Hidden on expanded. #}
+{# ---------- the main panel's MOUNT ----------
+   `.panel-main` is the transparent flex SLOT, not the card: the canon is
+   explicit that the panel is the card which fills it (`.panel-viewer`, the
+   file read, the build evidence), never the layout slot. So this pair
+   deliberately does NOT go through _panel.html — routing it through the base
+   would paint `.panel` card styling onto a slot that must stay transparent.
+
+   It is still the shell's declared mount point for the main role, which is why
+   it is an open/close pair like every other role: `appbox design lint` (W4)
+   counts the mount here and checks the pair balances.
+
+   The card inside becomes a real base instantiation when the viewer is demoted
+   from panel to content (phase 5); this slot is unchanged by that.
+
+     {% set M = {} %}
+     {{ mp.open(M) }}…whatever fills main…{{ mp.close(M) }} #}
+{% macro open(spec) %}<div class="panel-main" id="{{ spec.id or 'panel-main' }}"{{ ' ' + spec.attrs if spec.attrs }}>{% endmacro %}
+{% macro close(spec) %}</div>{% endmacro %}
+
 {% macro panelBar(c) %}
 <nav class="panel-bar" aria-label="{{ t('panelBar.aria') }}">
   {# Rung order mirrors the panel order on expanded: composer, main, activity. #}
@@ -56,7 +75,7 @@
 <section class="mp-content mp-file" id="mp-content" aria-live="polite">
   <header class="mp-file-head">
     <code class="mp-file-path">{{ f.path }}</code>
-    <span class="chip">{{ t('mainPanel.mode.' + f.modeName) }}</span>
+    <span class="chip chip--muted">{{ t('mainPanel.mode.' + f.modeName) }}</span>
     <a class="mp-file-back" href="{{ f.backHref }}">{{ icon('chevron-left', {size: 14}) }} {{ t('mainPanel.back') }}</a>
   </header>
   {% if f.mode == 'render:code' %}{{ renderCode(f) }}

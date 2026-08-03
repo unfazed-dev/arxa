@@ -12,17 +12,43 @@ in the **Canon** below, it is not a term. Three words do all the work:
 A top-level surface of appbox studio — `intake`, `design`, `build`. A shell is
 a composition of panels and nothing else.
 
+**A shell declares its panel set in its own composition file, and for a HOSTED
+shell that file is not a `<shell>_view.html`.** `main_shell` hosts intake,
+design and build; each declares its panels in `<group>/_shared.html` (build in
+`build/loop/loop_view.html`), while `main_shell_view.html` declares only the
+header and footer it owns. That is where the mounts actually are, so that is
+where the rule looks: `appbox design lint` (W4) checks every `<shell>_view.html`
+plus every composition template under a hosted-shell group dir, and the
+"each role at most once" limit is per file — two sibling composition files each
+mounting one activity panel are two shells with one panel, not a duplicate.
+
 ### Panel
 
 A card. Five per shell, each named by its **role**. There is no position word
 in a panel's name: a panel that moves does not get renamed.
+
+The skeleton is implemented once, in
+`ui/views/main_shell/shared/widgets/_panel.html`, and the five roles are thin
+instantiations that add none of it. **The base is a balanced `open(spec)` /
+`close(spec)` pair, not a single `{% call %}` wrapper** — nunjucks binds
+`caller()` to the nearest enclosing `{% call %}`, so a wrapping base could not
+be invoked from inside a role that is itself called, which is how every panel
+is written. The pair also lets a body stream rather than be pre-rendered into a
+string, which a canvas-sized body needs. Its one cost against `{% call %}` is
+that it can go unbalanced, so that is checked statically: W4 requires the open
+and close counts of a panel-bound alias to match, per template.
+
+The base lives in `main_shell/shared/widgets/` rather than `ui/common/widgets/`
+because placement follows consumers (the widget placement law), and every role
+that imports it is a main_shell widget. The rule is "the skeleton lives in the
+base", not "the base lives at a fixed path".
 
 | panel | class / id | is today |
 |---|---|---|
 | header | `.panel-header` | `ui/common/chrome.html:25` — already named |
 | composer | `.panel-composer` | `ui/common/composer_panel.html` — already named |
 | main | `.panel-main` | the layout slot; the card is what fills it |
-| activity | `.panel-activity` | `ui/common/panel_activity.html` — **was `.panel-frame`**, the only panel that was misnamed |
+| activity | `.panel-activity` | `ui/views/main_shell/shared/widgets/activity_panel.html` — **was `.panel-frame`**, the only panel that was misnamed |
 | footer | `#panel-footer` | `ui/views/main_shell/main_shell_view.html:13` — already named |
 
 Four of the five were already correct. `.timeline` is **not** the footer panel

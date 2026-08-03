@@ -23,7 +23,7 @@
     <span class="edge-link">
       {{ icon('move-right', {size: 16}) }}
       <span class="edge-trigger">{{ e.trigger }}</span>
-      {% if e.label %}<span class="chip">{{ e.label }}</span>{% endif %}
+      {% if e.label %}<span class="chip chip--muted">{{ e.label }}</span>{% endif %}
     </span>
     <span class="edge-node">
       <span class="edge-label">{{ e.toLabel }}</span>
@@ -40,9 +40,9 @@
 {% macro flowCard(c, item) %}
 <article class="artifact flow-artifact is-{{ item.state }}">
   <header class="artifact-head">
-    {% if item.personaName %}<span class="chip">{{ icon('user', {size: 14}) }} {{ t('intake.flows.personaLabel', {name: item.personaName}) }}</span>{% endif %}
+    {% if item.personaName %}<span class="chip chip--muted">{{ icon('user', {size: 14}) }} {{ t('intake.flows.personaLabel', {name: item.personaName}) }}</span>{% endif %}
     {{ sh.provChip(item.provenance) }}
-    <span class="chip">{{ icon('waypoints', {size: 14}) }} {{ t('intake.flows.edgeCount', {count: item.edges.length}) }}</span>
+    <span class="chip chip--muted">{{ icon('waypoints', {size: 14}) }} {{ t('intake.flows.edgeCount', {count: item.edges.length}) }}</span>
   </header>
   <h2 class="display">{{ item.name }}</h2>
   {{ edgeChain(item) }}
@@ -64,9 +64,9 @@
 <div class="q-card is-{{ item.state }}">
   <p class="q-text">{{ item.name }}</p>
   <span class="rv-badges">
-    {% if item.personaName %}<span class="chip">{{ icon('user', {size: 14}) }} {{ t('intake.flows.personaLabel', {name: item.personaName}) }}</span>{% endif %}
-    <span class="chip">{{ t('intake.flows.edgeCount', {count: item.edges.length}) }}</span>
-    {% if item.edited %}<span class="chip">{{ t('intake.item.edited') }}</span>{% endif %}
+    {% if item.personaName %}<span class="chip chip--muted">{{ icon('user', {size: 14}) }} {{ t('intake.flows.personaLabel', {name: item.personaName}) }}</span>{% endif %}
+    <span class="chip chip--muted">{{ t('intake.flows.edgeCount', {count: item.edges.length}) }}</span>
+    {% if item.edited %}<span class="chip chip--muted">{{ t('intake.item.edited') }}</span>{% endif %}
   </span>
   {{ sh.itemActions(c, item) }}
 </div>

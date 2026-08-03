@@ -68,7 +68,7 @@
         <span class="chip proj-stage proj-stage-{{ p.stage }}">{{ t('dash.stage.' ~ p.stage) }}</span>
       </div>
       <p class="proj-targets">
-        {% for t in p.targets %}<span class="chip">{{ t }}</span>{% endfor %}
+        {% for t in p.targets %}<span class="chip chip--muted">{{ t }}</span>{% endfor %}
         {% if p.current %}<span class="chip proj-current">{{ t('dash.current') }}</span>{% endif %}
       </p>
       <div class="proj-card-foot">
@@ -120,7 +120,7 @@
         {% for t in wizard.targets %}
         <label class="wizard-chip">
           <input type="checkbox" name="targets" value="{{ t }}" {{ 'checked' if t == 'web' }}>
-          <span>{{ t }}</span>
+          <span class="chip chip--lg chip--muted">{{ t }}</span>
         </label>
         {% endfor %}
       </fieldset>

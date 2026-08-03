@@ -22,12 +22,12 @@
    hx-get="{{ c.base }}/artifact/story/{{ s.id }}" hx-target="#panels" hx-swap="morph:outerHTML" hx-push-url="false">
   {{ statusDot(s) }}
   <span class="story-text">{{ s.name }}</span>
-  {% if s.priority %}<span class="pri-chip pri-{{ s.priority }}">{{ t('pri.name.' ~ s.priority) }}</span>{% endif %}
+  {% if s.priority %}<span class="chip pri-chip pri-{{ s.priority }}">{{ t('pri.name.' ~ s.priority) }}</span>{% endif %}
 </a>
 {% endmacro %}
 
 {% macro rollupChip(r) %}
-<span class="chip">{{ t('map.rollupDone', {done: r.done, total: r.total}) }}{% if r.active %} · {{ t('map.rollupActive', {count: r.active}) }}{% endif %}{% if r.blocked %} · {{ t('map.rollupBlocked', {count: r.blocked}) }}{% endif %}</span>
+<span class="chip chip--muted">{{ t('map.rollupDone', {done: r.done, total: r.total}) }}{% if r.active %} · {{ t('map.rollupActive', {count: r.active}) }}{% endif %}{% if r.blocked %} · {{ t('map.rollupBlocked', {count: r.blocked}) }}{% endif %}</span>
 {% endmacro %}
 
 {# Approval state on the map artifact: the gate chip, and the versioned
@@ -49,14 +49,14 @@
   <header class="artifact-head">
     <span class="eyebrow">{{ t('map.eyebrow') }}</span>
     {{ approvalBadge(c) }}
-    <span class="chip">{{ t('map.storiesCount', {count: a.counts.stories}) }} · {{ t('map.epicsCount', {count: a.counts.epics}) }} · {{ t('map.featuresCount', {count: a.counts.features}) }}</span>
+    <span class="chip chip--muted">{{ t('map.storiesCount', {count: a.counts.stories}) }} · {{ t('map.epicsCount', {count: a.counts.epics}) }} · {{ t('map.featuresCount', {count: a.counts.features}) }}</span>
   </header>
   <h2 class="display">{{ a.headline }}</h2>
   <p class="artifact-lede">{{ a.lede }}</p>
   <p class="map-legend">
-    <span class="pri-chip pri-must">{{ t('pri.must', {count: a.counts.must}) }}</span>
-    <span class="pri-chip pri-should">{{ t('pri.should', {count: a.counts.should}) }}</span>
-    <span class="pri-chip pri-could">{{ t('pri.could', {count: a.counts.could}) }}</span>
+    <span class="chip pri-chip pri-must">{{ t('pri.must', {count: a.counts.must}) }}</span>
+    <span class="chip pri-chip pri-should">{{ t('pri.should', {count: a.counts.should}) }}</span>
+    <span class="chip pri-chip pri-could">{{ t('pri.could', {count: a.counts.could}) }}</span>
     <span class="map-legend-dots">
       <span class="status-dot st-done"></span> {{ t('status.name.done') }}
       <span class="status-dot st-in-progress"></span> {{ t('status.name.in-progress') }}
@@ -103,10 +103,10 @@
   <header class="artifact-head">
     {% if a.epic %}<span class="eyebrow">{{ t('story.eyebrow', {epic: a.epic, feature: a.feature}) }}</span>{% endif %}
     <span class="story-status">{{ statusDot(s) }} {{ t('status.name.' ~ s.status) }}</span>
-    {% if s.priority %}<span class="pri-chip pri-{{ s.priority }}">{{ t('pri.name.' ~ s.priority) }}</span>{% endif %}
+    {% if s.priority %}<span class="chip pri-chip pri-{{ s.priority }}">{{ t('pri.name.' ~ s.priority) }}</span>{% endif %}
   </header>
   <h2 class="display">{{ s.name }}</h2>
-  {% if s.release %}<p class="artifact-lede"><span class="chip">{{ s.release }}</span></p>{% endif %}
+  {% if s.release %}<p class="artifact-lede"><span class="chip chip--muted">{{ s.release }}</span></p>{% endif %}
   {% if s.surfaces.length %}
   <p class="fact-label">{{ t('storyTrace') }}</p>
   <ul class="trace-list">

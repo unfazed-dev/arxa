@@ -1,0 +1,183 @@
+<!-- appbox:provenance
+     generator: appbox  licence: free  project: 662368770980
+     Built with appbox (free tier) — https://appbox.dev
+-->
+{# THE PANEL BASE — the skeleton, implemented once.
+   Vocabulary is fixed in ui/common/_integration_panels.md; read it before
+   adding a name here. A shell is built from panels, a panel is built from
+   sections. The five roles (header · main · activity · composer · footer) are
+   thin instantiations of this file and add no skeleton of their own.
+
+   Macro-only file, so importing it never emits stray markup.
+
+   WHY open/close AND NOT ONE `frame()`. Nunjucks resolves `caller()` to the
+   nearest enclosing `{% call %}`, so a `frame()` that wrapped `{{ caller() }}`
+   could not be invoked from inside another macro's call block without the two
+   callers becoming ambiguous — which is exactly how every panel is written. A
+   single call/caller entry point would be unreachable from the only places
+   that need it, and an unreachable entry point is worse than none: it looks
+   like the contract while nothing verifies it.
+
+   So the base is a BALANCED PAIR. The body streams between the two calls,
+   which also means a body can be an entire canvas without being pre-rendered
+   into a string — the reason the old file already split body()/bodyEnd().
+
+     {% import "ui/views/main_shell/shared/widgets/_panel.html" as base %}
+     {% set P = { role: 'composer', top: head(spec), bottom: false } %}
+     {{ base.open(P) }}
+       …the body…
+     {{ base.close(P) }}
+
+   Pass the SAME spec to both — `close` needs to know which trailing sections
+   exist. Bind it once with {% set %} and the two calls cannot drift.
+
+   The pair's one weakness against {% call %} is that it can go unbalanced.
+   That is checked statically: `appbox design lint` (W4) requires the open and
+   close counts of a panel-bound alias to match, per template.
+
+   spec:
+     role      — 'header' | 'main' | 'activity' | 'composer' | 'footer'.
+                 Drives the class and the default id. A ROLE, never a position:
+                 a panel that moves does not get renamed.
+     tag?      — element to emit (default 'section'). The header panel is a
+                 <nav>, the footer an <ol> — the base is a layout contract, not
+                 an opinion about semantics.
+     id?       — defaults to 'panel-<role>'. Section ids derive from it, so the
+                 base and the out-of-band part macros cannot drift apart.
+     class?    — extra classes on the panel (a lens modifier, e.g.
+                 'panel-viewer dv-bg-canvas').
+     attrs?    — raw attribute string for the caller's own hooks.
+     width?    — px width, applied inline. Server state; see resize().
+     size?     — 's' | 'm' | 'l' → panel-size-*. The width fallback when no
+                 persisted px width exists.
+     vt?       — view-transition-name. PER PANEL, never on `.panel` itself: a
+                 name duplicated across simultaneously-rendered elements makes
+                 Chrome abort the whole transition, silently disabling view
+                 transitions app-wide (ADR-0003).
+     resize?   — { edge: 'start'|'end', persist?: <server key> } → the rail.
+     overlay?  — content that is a direct child of the PANEL, outside the
+                 section grid. It is taken out of flow by `.panel-overlay`
+                 (panels.css) so it cannot steal height from the body — a
+                 direct child with no grid area is what once took 33px off the
+                 viewer canvas.
+
+   SECTIONS. Content per section, plus a class and an attrs escape for each:
+     top / sideStart / sideEnd / bottom   — content; the section renders only
+                                            when given content.
+     topClass / sideStartClass / bodyClass / sideEndClass / bottomClass
+     topAttrs / sideStartAttrs / bodyAttrs / sideEndAttrs / bottomAttrs
+
+   The class hooks are not decoration. The canon mandates
+   `class="panel-bottom dv-botbar"` — the canonical section class carrying a
+   behaviour modifier alongside it — and three islands resolve `.dv-flow-canvas`
+   by name. Without a modifier hook the caller would have to hand-write section
+   markup, which is precisely what this file exists to prevent. The attrs hooks
+   exist for the same reason: `data-static` must ride the viewer's body and
+   `id="dv-vstrip"` must stay on its side-end.
+
+   SECTIONS TURN ON BY HAVING CONTENT. A section renders when given content and
+   renders nothing when not, so an empty bordered strip cannot be produced by
+   accident. Passing `false` is therefore also how you force a section off when
+   content exists — one truthiness test covers both, which is why there is no
+   separate on/off flag to keep in sync with the content. #}
+
+{# ---------- the panel element + the leading sections ---------- #}
+{% macro open(spec) %}
+{%- set pid = spec.id or 'panel-' + spec.role -%}
+{%- set tag = spec.tag or 'section' -%}
+<{{ tag }} class="panel panel-{{ spec.role }}{% if spec.size %} panel-size-{{ spec.size }}{% endif %}{% if spec.class %} {{ spec.class }}{% endif %}" id="{{ pid }}"
+  {%- if spec.width or spec.vt %} style="{% if spec.width %}width:{{ spec.width }}px;{% endif %}{% if spec.vt %}view-transition-name:{{ spec.vt }};{% endif %}"{% endif %}
+  {{- ' ' + spec.attrs if spec.attrs }}>
+{%- if spec.resize %}{{ resize(pid, spec.resize) }}{% endif -%}
+{%- if spec.overlay %}<div class="panel-overlay">{{ spec.overlay | safe }}</div>{% endif -%}
+{{ top(pid, spec.top, { cls: spec.topClass, attrs: spec.topAttrs, id: spec.topId }) }}
+{{- sideStart(pid, spec.sideStart, { cls: spec.sideStartClass, attrs: spec.sideStartAttrs, id: spec.sideStartId }) }}
+{{- body(pid, { cls: spec.bodyClass, attrs: spec.bodyAttrs, id: spec.bodyId, tag: spec.bodyTag }) }}
+{%- endmacro %}
+
+{# ---------- close the body, then the trailing sections ---------- #}
+{% macro close(spec) %}
+{%- set pid = spec.id or 'panel-' + spec.role -%}
+{%- set tag = spec.tag or 'section' -%}
+{{ bodyEnd(spec.bodyTag) }}
+{{- sideEnd(pid, spec.sideEnd, { cls: spec.sideEndClass, attrs: spec.sideEndAttrs, id: spec.sideEndId }) }}
+{{- bottom(pid, spec.bottom, { cls: spec.bottomClass, attrs: spec.bottomAttrs, id: spec.bottomId }) }}
+</{{ tag }}>
+{%- endmacro %}
+
+{# ---------- sections as standalone parts ----------
+   A view switch re-renders one section and refreshes its siblings
+   out-of-band, so every section has to be renderable on its own, with the
+   SAME id the base would have given it. That is why the id is derived from
+   the panel id in one place instead of being passed in at each call site —
+   an oob swap that targets an id the base never emitted is a silent no-op,
+   and htmx reports nothing when it happens. #}
+
+{# Every section takes (pid, content, o) where o carries the escapes:
+     o.cls    extra classes alongside the canonical section class
+     o.attrs  raw attributes (never an id — see o.id)
+     o.id     REPLACES the derived id. Passing an id through o.attrs would emit
+              a second id attribute and the browser keeps the first, silently
+              ignoring yours; the viewer's `id="dv-vstrip"` has to win, so the
+              override is explicit.
+     o.oob    hx-swap-oob="outerHTML" for a standalone re-render #}
+
+{% macro top(pid, content, o) %}
+{%- if content %}<header class="panel-top{% if o.cls %} {{ o.cls }}{% endif %}" {% if o.id %} id="{{ o.id }}"{% else %} id="{{ pid }}-top"{% endif %}{% if o.oob %} hx-swap-oob="outerHTML"{% endif %}{{ ' ' + o.attrs if o.attrs }}>{{ content | safe }}</header>{% endif -%}
+{% endmacro %}
+
+{% macro bottom(pid, content, o) %}
+{%- if content %}<footer class="panel-bottom{% if o.cls %} {{ o.cls }}{% endif %}" {% if o.id %} id="{{ o.id }}"{% else %} id="{{ pid }}-bottom"{% endif %}{% if o.oob %} hx-swap-oob="outerHTML"{% endif %}{{ ' ' + o.attrs if o.attrs }}>{{ content | safe }}</footer>{% endif -%}
+{% endmacro %}
+
+{# The sides flank the body inside the band between top and bottom. `start`/
+   `end` rather than `left`/`right` so the names survive an RTL locale. #}
+{% macro sideStart(pid, content, o) %}
+{%- if content %}<aside class="panel-side-start{% if o.cls %} {{ o.cls }}{% endif %}" {% if o.id %} id="{{ o.id }}"{% else %} id="{{ pid }}-side-start"{% endif %}{% if o.oob %} hx-swap-oob="outerHTML"{% endif %}{{ ' ' + o.attrs if o.attrs }}>{{ content | safe }}</aside>{% endif -%}
+{% endmacro %}
+
+{% macro sideEnd(pid, content, o) %}
+{%- if content %}<aside class="panel-side-end{% if o.cls %} {{ o.cls }}{% endif %}" {% if o.id %} id="{{ o.id }}"{% else %} id="{{ pid }}-side-end"{% endif %}{% if o.oob %} hx-swap-oob="outerHTML"{% endif %}{{ ' ' + o.attrs if o.attrs }}>{{ content | safe }}</aside>{% endif -%}
+{% endmacro %}
+
+{# The body is split in two so open()/close() can stream the caller's content
+   without forcing it to be pre-rendered into a string — the sections above
+   take strings because they are small, but a body can be an entire canvas. #}
+{# `o.tag` lets the body be the element its content needs — the footer's body is
+   the timeline <ol>, and an <ol> wrapping a <div> wrapping the <li> items would
+   be invalid. Default 'div'. #}
+{% macro body(pid, o) %}<{{ o.tag or 'div' }} class="panel-body{% if o.cls %} {{ o.cls }}{% endif %}" {% if o.id %} id="{{ o.id }}"{% else %} id="{{ pid }}-body"{% endif %}{{ ' ' + o.attrs if o.attrs }}>{% endmacro %}
+{% macro bodyEnd(tag) %}</{{ tag or 'div' }}>{% endmacro %}
+
+{# Whole-section oob refresh, for callers that re-feed a section from a
+   fragment route rather than through open()/close(). Same [o] as the sections. #}
+{% macro bodyOob(pid, content, o) %}
+<{{ o.tag or 'div' }} class="panel-body{% if o.cls %} {{ o.cls }}{% endif %}" {% if o.id %} id="{{ o.id }}"{% else %} id="{{ pid }}-body"{% endif %} hx-swap-oob="outerHTML"{{ ' ' + o.attrs if o.attrs }}>{{ content | safe }}</{{ o.tag or 'div' }}>
+{% endmacro %}
+
+{% macro topOob(pid, content, o) %}{{ top(pid, content, { cls: o.cls, attrs: o.attrs, id: o.id, oob: true }) }}{% endmacro %}
+{% macro bottomOob(pid, content, o) %}{{ bottom(pid, content, { cls: o.cls, attrs: o.attrs, id: o.id, oob: true }) }}{% endmacro %}
+{% macro sideEndOob(pid, content, o) %}{{ sideEnd(pid, content, { cls: o.cls, attrs: o.attrs, id: o.id, oob: true }) }}{% endmacro %}
+
+{# ---------- the resize rail: the panel's inner EDGE is the handle ----------
+   No icon. A full-height strip pinned to one edge; the cursor turns
+   col-resize on hover and the edge lights up in the accent, so the
+   affordance is the thing you actually grab.
+
+   Three attributes, and the split between them is the point:
+     data-target  — the element to resize, BY ID. drag.js resolves it here, so
+                    this is a server contract.
+     data-edge    — 'start' or 'end'. Which edge you grabbed decides the SIGN
+                    of the drag: dragging an end edge rightwards widens the
+                    panel, dragging a start edge rightwards narrows it. This
+                    is the only attribute that may describe a position, and it
+                    describes a position WITHIN a panel, never the panel's own
+                    place in the shell.
+     data-persist — the server key to POST the new width to. Absent means the
+                    width is client-only and rides the swap; present means
+                    drag.js records it. Never a position word. #}
+{% macro resize(pid, cfg) %}
+<div class="panel-resize" data-target="{{ pid }}" data-edge="{{ cfg.edge }}"
+     {% if cfg.persist %}data-persist="{{ cfg.persist }}"{% endif %}
+     title="{{ t('panel.resize') }}" aria-label="{{ t('panel.resize') }}"></div>
+{% endmacro %}

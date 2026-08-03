@@ -3,12 +3,25 @@
      Built with appbox (free tier) — https://appbox.dev
 -->
 {% extends "ui/common/base.html" %}
-{% import "ui/common/widgets/chrome.html" as chrome %}
+{% import "ui/views/main_shell/shared/widgets/chrome.html" as chrome %}
+{% import "ui/views/main_shell/shared/widgets/header_panel.html" as hp %}
+{% import "ui/views/main_shell/shared/widgets/footer_panel.html" as fp %}
 {% block title %}{{ t('index.pageTitle') }}{% endblock %}
 {% block content %}
-{{ chrome.chrome(activeShell, prefs, project) }}
+{# THE SHELL'S PANEL SET. main_shell mounts the header and the footer here; the
+   main, activity and composer panels are mounted by the hosted shells
+   (intake / design / build), each in its own composition file. A panel this
+   shell does not mount does not exist in it — there is no empty box and no
+   reserved height. #}
+{% set HP = {} %}
+{{ hp.open(HP) }}{{ chrome.headerBody(activeShell, prefs, project) }}{{ hp.close(HP) }}
+{{ chrome.offCanvas(activeShell, prefs, project) }}
 <main class="shell-main {% block main_class %}{% endblock %}">
   {% block surface %}{# every shell overrides this — there is no catalog page #}{% endblock %}
 </main>
-<footer class="panel panel-footer" id="panel-footer">{% block footer %}{% endblock %}</footer>
+{# The panel is a <footer>; its BODY is the timeline <ol>. Passing `tag` here
+   instead of `bodyTag` makes the panel itself the list and leaves a <div>
+   inside an <ol> — invalid, and invisible to every static check. #}
+{% set FP = { bodyTag: 'ol', bodyClass: 'timeline', bodyId: 'timeline' } %}
+{{ fp.open(FP) }}{% block footer %}{% endblock %}{{ fp.close(FP) }}
 {% endblock %}

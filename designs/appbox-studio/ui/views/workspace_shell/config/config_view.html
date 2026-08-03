@@ -43,16 +43,16 @@
 <section class="settings-section">
   <h2>{{ t('cfg.section.creds') }}</h2>
   {% if credMissing > 0 %}
-  <p class="cred-missing"><span class="type-badge tb-findings">{{ t('creds.missing', {count: credMissing}) }}</span></p>
+  <p class="cred-missing"><span class="chip type-badge tb-findings">{{ t('creds.missing', {count: credMissing}) }}</span></p>
   {% else %}
-  <p class="cred-missing"><span class="type-badge tb-evidence">{{ t('creds.allSet') }}</span></p>
+  <p class="cred-missing"><span class="chip type-badge tb-evidence">{{ t('creds.allSet') }}</span></p>
   {% endif %}
   {% for g in credGroups %}
   <div class="cred-row">
     <div class="cred-row-head">
       <span class="cred-key">{{ g.label }}</span>
       <span class="chip {{ 'is-set' if g.missing == 0 }}">{{ t('cfg.creds.setOf', {set: g.set, total: g.total}) }}</span>
-      {% if g.missing > 0 %}<span class="type-badge tb-findings">{{ t('cfg.creds.missing', {count: g.missing}) }}</span>{% endif %}
+      {% if g.missing > 0 %}<span class="chip type-badge tb-findings">{{ t('cfg.creds.missing', {count: g.missing}) }}</span>{% endif %}
       <a class="cred-where" href="/workspace/credentials">{{ t('cfg.creds.manage') }}</a>
     </div>
   </div>

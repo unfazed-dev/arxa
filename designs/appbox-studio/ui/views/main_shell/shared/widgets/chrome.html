@@ -14,7 +14,7 @@
    Icons are the runtime icon() global (Lucide) — never glyphs or emoji.
    project = { name, savedLabel }; absent → no project cluster (backward
    compatible with chrome(activeShell, prefs)). #}
-{% macro chrome(activeShell, prefs, project) %}
+{% macro headerBody(activeShell, prefs, project) %}
 {% set destinations = [
   { id: 'intake',    label: t('tab.intake'),   icon: 'square-pen',   href: '/intake' },
   { id: 'design',    label: t('tab.design'),   icon: 'pen-tool',     href: '/design' },
@@ -22,8 +22,8 @@
   { id: 'workspace', label: t('tab.settings'), icon: 'settings',     href: '/workspace' }
 ] %}
 {% set shellNames = { intake: t('tab.intake'), design: t('tab.design'), build: t('tab.build'), workspace: t('tab.settings') } %}
-<nav class="panel panel-header">
-  <div class="panel-body">
+
+
   <details class="shell-drawer shell-chrome-touch">
     <summary class="ico-btn" aria-label="{{ t('nav.open') }}">{{ icon('menu', {size: 20}) }}</summary>
     <div class="drawer-panel" role="menu">
@@ -73,8 +73,21 @@
       <a class="overflow-item" href="/workspace">{{ t('tab.settings') }}</a>
     </div>
   </details>
-  </div>
-</nav>
+{% endmacro %}
+
+{# Everything the header panel does NOT contain: the compact tabbar, the FAB
+   and the medium railbar are siblings of the panel, not sections of it.
+   `destinations` is rebuilt here rather than hoisted to module scope: a
+   module-level {% set %} is evaluated once at import and would freeze the
+   first request's locale into every later one. Duplication is the cheaper
+   bug. #}
+{% macro offCanvas(activeShell, prefs, project) %}
+{% set destinations = [
+  { id: 'intake',    label: t('tab.intake'),   icon: 'square-pen',   href: '/intake' },
+  { id: 'design',    label: t('tab.design'),   icon: 'pen-tool',     href: '/design' },
+  { id: 'build',     label: t('tab.build'),    icon: 'hammer',       href: '/build' },
+  { id: 'workspace', label: t('tab.settings'), icon: 'settings',     href: '/workspace' }
+] %}
 
 {# compact: primary nav leaves the header panel and becomes the tabbar #}
 <nav class="tabbar" aria-label="{{ t('nav.primary') }}">

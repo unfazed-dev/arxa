@@ -4,11 +4,11 @@
 -->
 {% extends "ui/views/main_shell/main_shell_view.html" %}
 {% import "ui/common/widgets/primitives.html" as prim %}
-{% import "ui/common/timeline.html" as tl %}
+{% import "ui/views/main_shell/shared/widgets/timeline.html" as tl %}
 {% import "ui/views/main_shell/shared/widgets/design_viewer.html" as dv %}
 {% import "ui/views/main_shell/design/_shared.html" as sh %}
 {% import "ui/views/main_shell/design/inspector_pane.html" as ins %}
-{% import "ui/common/panel_activity.html" as pa %}
+{% import "ui/views/main_shell/shared/widgets/activity_panel.html" as pa %}
 {% block title %}{{ t('design.pageTitle') }}{% endblock %}
 {% block main_class %}shell-main-loop{% endblock %}
 

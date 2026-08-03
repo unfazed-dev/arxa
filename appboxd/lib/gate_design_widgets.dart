@@ -60,10 +60,24 @@ const panelStructuralClasses = <String>[
   'panel-resize-width',
 ];
 
-/// The base widget that owns the panel skeleton. If a tree has no `_panel.html`
-/// it has not reached D4 yet, and W3 reports skipped-with-note rather than a
-/// vacuous pass.
-const panelBaseWidget = 'ui/common/widgets/_panel.html';
+/// The base widget that owns the panel skeleton, identified by NAME rather than
+/// by a fixed path: `_panel.html` in any legal widget home.
+///
+/// A fixed `ui/common/widgets/_panel.html` would put W3 in direct conflict with
+/// W1. W1 judges placement by real consumers, so a base whose only consumers are
+/// one shell's role panels belongs in that shell's `shared/widgets/` — and a W3
+/// that only ever looked in `ui/common/widgets/` would then report "no base" for
+/// a tree that has one, correctly placed. The rule is "the skeleton lives in the
+/// base", not "the base lives at this path".
+const panelBaseName = '_panel.html';
+
+/// Every legal widget home holding a `_panel.html`.
+List<String> panelBaseWidgets(String artifactDir) => _htmlFiles(artifactDir)
+    .where((rel) =>
+        p.basename(rel) == panelBaseName &&
+        isWidget(rel) &&
+        widgetHomeOf(rel) != null)
+    .toList();
 
 /// Where the pill radius is allowed to live (W5). The chip widget's rules are
 /// consolidated here; no per-widget CSS files.
@@ -378,8 +392,8 @@ final _classAttrRe = RegExp(r'''class\s*=\s*(?:"([^"]*)"|'([^']*)')''');
 
 List<LintFinding> _panelReimplementationFindings(
     String artifactDir, List<LintFinding>? notes) {
-  final base = File(p.join(artifactDir, panelBaseWidget));
-  if (!base.existsSync()) {
+  final bases = panelBaseWidgets(artifactDir).toSet();
+  if (bases.isEmpty) {
     // Transition tolerance: a tree that has not reached D4 has nowhere legal to
     // put the skeleton, so flagging every use would be noise. Skipped, not passed.
     //
@@ -388,16 +402,16 @@ List<LintFinding> _panelReimplementationFindings(
     // the rule simply does not address it, and a note there is noise in the
     // channel the ADR-0002 lint uses for its own advisories.
     if (Directory(p.join(artifactDir, 'ui')).existsSync()) {
-      notes?.add(LintFinding(panelBaseWidget,
-          'W3 skipped: no panel base widget in this artifact — the rule cannot '
-          'distinguish instantiation from re-implementation until one exists'));
+      notes?.add(LintFinding('ui',
+          'W3 skipped: no `$panelBaseName` in any widget home — the rule cannot '
+          'distinguish instantiation from re-implementation until a base exists'));
     }
     return const [];
   }
   final findings = <LintFinding>[];
   final structural = panelStructuralClasses.toSet();
   for (final rel in _htmlFiles(artifactDir)) {
-    if (rel == panelBaseWidget) continue;
+    if (bases.contains(rel)) continue;
     final src = stripComments(File(p.join(artifactDir, rel)).readAsStringSync());
     final hits = <String>{};
     for (final m in _classAttrRe.allMatches(src)) {
@@ -409,8 +423,9 @@ List<LintFinding> _panelReimplementationFindings(
     if (hits.isEmpty) continue;
     final named = (hits.toList()..sort()).join(', ');
     findings.add(LintFinding(rel,
-        'W3: panel skeleton classes ($named) outside `$panelBaseWidget` — '
-        'instantiate the panel base instead of re-implementing it'));
+        'W3: panel skeleton classes ($named) outside the panel base '
+        '(${bases.join(', ')}) — instantiate the base instead of '
+        're-implementing it'));
   }
   return findings;
 }
@@ -441,6 +456,23 @@ bool _underHostedGroup(String rel, Set<String> surfaceDirs) {
 const _mountOpenMacros = <String>['open', 'mount'];
 const _mountCloseMacros = <String>['close', 'end'];
 
+/// Section and out-of-band macros. Calling one is explicitly NOT a mount: a
+/// surface that re-feeds a panel's top and bottom from a fragment route is
+/// refreshing sections of a panel someone else mounted. Without this the
+/// "uncounted mount" note fires on every oob refresh site and cries wolf.
+const _sectionMacros = <String>[
+  'top',
+  'bottom',
+  'sideStart',
+  'sideEnd',
+  'body',
+  'bodyEnd',
+  'topOob',
+  'bottomOob',
+  'sideEndOob',
+  'bodyOob',
+];
+
 /// Occurrences of `alias.<name>(` for any [names], on a word boundary.
 int _aliasCalls(String src, String alias, List<String> names) {
   var n = 0;
@@ -455,7 +487,8 @@ int _aliasCalls(String src, String alias, List<String> names) {
 
 /// An alias bound to the panel base or to a role panel widget.
 bool _isPanelRef(TemplateRef ref) =>
-    ref.path == panelBaseWidget || p.basename(ref.path).endsWith('_panel.html');
+    p.basename(ref.path) == panelBaseName ||
+    p.basename(ref.path).endsWith('_panel.html');
 
 /// W4 balance: an opened panel must be closed in the same template.
 ///
@@ -571,6 +604,10 @@ List<LintFinding> _shellCompositionFindings(
       final count = _aliasCalls(
           src, ref.alias!, [..._mountOpenMacros, '${role}_panel', role]);
       if (count == 0) {
+        // Only a SECTION refresh? Then this file is not mounting the panel at
+        // all — it is re-feeding sections of one another file mounted — and
+        // there is nothing uncounted to report.
+        if (_aliasCalls(src, ref.alias!, _sectionMacros) > 0) continue;
         // The file composes this panel through some other macro, so W4 cannot
         // tell which call is the mount. Reported, never guessed — a guess here
         // is what produced the false positive above.

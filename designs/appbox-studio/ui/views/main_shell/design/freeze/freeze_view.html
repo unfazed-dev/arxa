@@ -4,7 +4,7 @@
 -->
 {% extends "ui/views/main_shell/main_shell_view.html" %}
 {% import "ui/common/widgets/primitives.html" as prim %}
-{% import "ui/common/timeline.html" as tl %}
+{% import "ui/views/main_shell/shared/widgets/timeline.html" as tl %}
 {% import "ui/views/main_shell/design/_shared.html" as sh %}
 {% block title %}{{ t('design.freeze.pageTitle') }}{% endblock %}
 {% block main_class %}shell-main-loop{% endblock %}
@@ -87,7 +87,7 @@
 <article class="artifact">
   <header class="artifact-head">
     <span class="eyebrow">{{ t('traceabilityEyebrow') }}</span>
-    <span class="chip">{{ t('freeze.tracedCount', {count: c.traceability | length}) }}</span>
+    <span class="chip chip--muted">{{ t('freeze.tracedCount', {count: c.traceability | length}) }}</span>
   </header>
   <div class="trace-rows">
     {% for r in c.traceability %}

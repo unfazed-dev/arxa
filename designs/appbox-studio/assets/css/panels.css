@@ -202,11 +202,11 @@ video.mp-media { width: 100%; background: #000; }
   .panel-bar {
     display: flex; gap: .25rem; flex: none;
     padding: .2rem; margin: 0 0 .25rem;
-    background: var(--bg-2); border-radius: 999px;
+    background: var(--bg-2); border-radius: 999px; /* w5:not-a-chip */
   }
   .panel-bar-item {
     flex: 1; display: flex; gap: .35rem; align-items: center; justify-content: center;
-    padding: .42rem .6rem; border-radius: 999px;
+    padding: .42rem .6rem; border-radius: 999px; /* w5:not-a-chip */
     color: var(--tx-2); text-decoration: none; font-size: .78rem; white-space: nowrap;
   }
   .panel-bar-item.is-active { background: var(--bg); color: var(--tx); box-shadow: var(--shadow-1); }
@@ -277,6 +277,17 @@ video.mp-media { width: 100%; background: #000; }
    `start`/`end` are the panel's own edges, resolved through logical
    properties, so this survives an RTL locale for free. The host panel must be
    position:relative; `.panel` sets that for every panel. */
+/* Panel-level chrome that belongs to the panel but to none of its five
+   sections — today the viewer's fullscreen-exit button. Taken OUT OF FLOW on
+   purpose: a direct child of the panel with no grid area is a grid item, and
+   as a grid item it once claimed a row and took 33px off the viewer canvas
+   (recorded in probe-panel-contract's header). Absolute positioning gives it a
+   home without a share of the layout. Same anchor as .panel-resize: `.panel`
+   is position:relative for every panel. */
+.panel-overlay {
+  position: absolute; top: 0; inset-inline-end: 0; z-index: 7;
+}
+
 .panel-resize {
   position: absolute; top: 0; bottom: 0; width: 7px; z-index: 6;
   cursor: col-resize;

@@ -12,7 +12,7 @@ directory touches shared files.
   the facade (`timeline(d, L, t)`).
 - **Panels**: every stage interaction swaps `#panels` **outerHTML** — the
   three content panels are one swap unit: the activity panel
-  (`ui/common/panel_activity.html` `pa.frame`, side left), the main panel
+  (`ui/views/main_shell/shared/widgets/activity_panel.html` `pa.frame`, side left), the main panel
   (`#panel-main`, filled per surface), and the permanent composer panel
   (`ui/common/composer_panel.html` `cp.frame`). The retired two-state chat
   (is-centered/is-docked), the close routes and `collapseHref` are gone —

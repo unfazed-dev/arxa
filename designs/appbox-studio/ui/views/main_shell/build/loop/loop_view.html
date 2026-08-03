@@ -4,11 +4,11 @@
 -->
 {% extends "ui/views/main_shell/main_shell_view.html" %}
 {% import "ui/common/widgets/primitives.html" as prim %}
-{% import "ui/common/timeline.html" as tl %}
+{% import "ui/views/main_shell/shared/widgets/timeline.html" as tl %}
 {% import "ui/views/main_shell/shared/widgets/design_viewer.html" as dv %}
 {% import "ui/views/main_shell/shared/widgets/composer_panel.html" as cp %}
 {% import "ui/views/main_shell/shared/widgets/main_panel.html" as mp %}
-{% import "ui/common/panel_activity.html" as pa %}
+{% import "ui/views/main_shell/shared/widgets/activity_panel.html" as pa %}
 {% import "ui/views/main_shell/shared/widgets/composer.html" as cm %}
 {% block title %}{{ t('build.pageTitle') }}{% endblock %}
 {% block main_class %}shell-main-loop{% endblock %}
@@ -35,7 +35,7 @@
 <div class="msg msg-agent {{ 'is-active' if m.active }} {{ 'msg-tone-' + m.tone if m.tone }}">
   <header class="msg-meta">
     {{ prim.typeBadge(m.card.type, m.card.label) }}
-    {% if m.card.state %}{{ prim.statusPill(m.card.state) }}{% endif %}
+    {% if m.card.state %}{{ prim.statusPill(m.card.state, 'sm') }}{% endif %}
   </header>
   <span class="msg-text">{{ m.text }}</span>
   {% if m.card.detail %}<span class="msg-detail">{{ m.card.detail }}</span>{% endif %}
@@ -80,10 +80,11 @@
    pinned, this is the note input; the facade swaps placeholder +
    suggestions to say so. #}
 {% macro composerPanel(c) %}
-{% call cp.frame({ eyebrow: t('build.runEyebrow', {number: c.run.number, brief: c.run.brief}), chips: c.chips }) %}
+{% set CP = { eyebrow: t('build.runEyebrow', {number: c.run.number, brief: c.run.brief}), chips: c.chips } %}
+{{ cp.open(CP) }}
   {{ chatThread(c) }}
   {{ cm.field(c) }}
-{% endcall %}
+{{ cp.close(CP) }}
 {% endmacro %}
 
 {# The three content panels, one swap unit: every stage interaction
@@ -109,9 +110,10 @@
      in the DOM, not with CSS `order`, so tab order and screen-reader order
      still match what you see. #}
   {{ composerPanel(c) }}
-  <div class="panel-main" id="panel-main">
+  {% set M = {} %}
+  {{ mp.open(M) }}
     {{ mainContent(c) }}
-  </div>
+  {{ mp.close(M) }}
   {{ activityPanel(c) }}
 </div>
 {% endmacro %}
@@ -225,10 +227,10 @@
       <a class="file-link {{ 'is-active' if c.fileView and c.fileView.path == f.path }}" href="{{ f.href }}"
          hx-get="{{ f.get }}" hx-target="#panel-main" hx-swap="innerHTML" hx-push-url="{{ f.href }}">
         <code class="file-path">{{ f.path }}</code>
-        <span class="chip file-status-{{ f.status }}">{{ t('build.fileStatus.' ~ f.status) }}</span></a>
+        <span class="chip chip--muted file-status-{{ f.status }}">{{ t('build.fileStatus.' ~ f.status) }}</span></a>
       {% else %}
       <code class="file-path">{{ f.path }}</code>
-      <span class="chip file-status-{{ f.status }}">{{ t('build.fileStatus.' ~ f.status) }}</span>
+      <span class="chip chip--muted file-status-{{ f.status }}">{{ t('build.fileStatus.' ~ f.status) }}</span>
       {% endif %}
     </li>
     {% endfor %}
@@ -262,9 +264,10 @@
 {% endmacro %}
 
 {% macro activityPanel(c) %}
-{% call pa.frame({ label: t('activityView.' + c.activityView), views: c.activityViews, size: c.panelSize, sizeHref: c.panelSizeHref }) %}
+{% set AP = { label: t('activityView.' + c.activityView), views: c.activityViews, size: c.panelSize, sizeHref: c.panelSizeHref } %}
+{{ pa.open(AP) }}
 {{ activityBody(c) }}
-{% endcall %}
+{{ pa.close(AP) }}
 {% endmacro %}
 
 {# The width grip's response: the whole activity panel re-rendered at its
@@ -347,7 +350,7 @@
 <article class="artifact findings-artifact">
   <header class="artifact-head">
     <span class="eyebrow">{{ t('build.findingsEyebrow', {gate: a.gate}) }}</span>
-    <span class="chip">{{ t('build.findingsChip', {count: a.list | length}) }}</span>
+    <span class="chip chip--muted">{{ t('build.findingsChip', {count: a.list | length}) }}</span>
   </header>
   <h2 class="display">{{ t('findingsHeadline') }}</h2>
   <p class="artifact-lede">{{ t('findingsLede') }}</p>
@@ -365,7 +368,7 @@
       </dl>
       <p class="reproduce"><span class="fact-label">{{ t('finding.reproduce') }}</span><code>{{ f.reproduce }}</code></p>
       <footer class="finding-foot">
-        <span class="chip">{{ f.state }}</span>
+        <span class="chip chip--muted">{{ f.state }}</span>
         <span class="muted">{{ t('finding.fingerprint') }} <code>{{ f.fingerprint }}</code></span>
       </footer>
       <p class="finding-note muted">{{ f.note }}</p>
@@ -399,7 +402,7 @@
 <article class="artifact log-artifact">
   <header class="artifact-head">
     <span class="eyebrow">{{ t('logEyebrow') }} · {{ t('build.runShort', {number: c.run.number}) }}</span>
-    <span class="chip">{{ t('build.elapsedChip', {elapsed: c.run.elapsed}) }}</span>
+    <span class="chip chip--muted">{{ t('build.elapsedChip', {elapsed: c.run.elapsed}) }}</span>
   </header>
   <h2 class="display">{{ t('build.logHeadline') }}</h2>
   <div class="log-lines">

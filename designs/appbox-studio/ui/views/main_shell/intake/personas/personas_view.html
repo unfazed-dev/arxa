@@ -27,8 +27,8 @@
 <article class="artifact persona-card is-{{ item.state }}">
   <header class="artifact-head">
     {{ sh.provChip(item.provenance) }}
-    <span class="chip">{{ icon('user', {size: 14}) }} {{ t('intake.personas.proficiency') }}: {{ t('intake.personas.prof.' ~ item.proficiency) }}</span>
-    {% if item.edited %}<span class="chip">{{ t('intake.item.edited') }}</span>{% endif %}
+    <span class="chip chip--muted">{{ icon('user', {size: 14}) }} {{ t('intake.personas.proficiency') }}: {{ t('intake.personas.prof.' ~ item.proficiency) }}</span>
+    {% if item.edited %}<span class="chip chip--muted">{{ t('intake.item.edited') }}</span>{% endif %}
   </header>
   <h2 class="display">{{ item.name }}</h2>
   <p class="artifact-lede">{{ item.role }}</p>
@@ -67,10 +67,10 @@
   <h2 class="display">{{ t('intake.step.allConfirmed', {total: c.step.total}) }}</h2>
   {% for item in c.step.items %}
   <div class="q-card is-{{ item.state }}">
-    <p class="q-text">{{ item.name }} <span class="muted">— {{ item.role }}</span> {% if item.edited %}<span class="chip">{{ t('intake.item.edited') }}</span>{% endif %}</p>
+    <p class="q-text">{{ item.name }} <span class="muted">— {{ item.role }}</span> {% if item.edited %}<span class="chip chip--muted">{{ t('intake.item.edited') }}</span>{% endif %}</p>
     <p class="q-answer">
       {{ sh.provChip(item.provenance) }}
-      <span class="chip">{{ icon('target', {size: 14}) }} {{ item.goals.length }} {{ t('intake.personas.goals') }}</span>
+      <span class="chip chip--muted">{{ icon('target', {size: 14}) }} {{ item.goals.length }} {{ t('intake.personas.goals') }}</span>
     </p>
     {{ sh.itemActions(c, item) }}
   </div>

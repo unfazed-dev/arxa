@@ -3,8 +3,9 @@
      Built with appbox (free tier) — https://appbox.dev
 -->
 {# THE ACTIVITY PANEL — the shell's multi-view panel.
-   Vocabulary is fixed in ui/common/_integration_panels.md. This panel uses
-   all three of the stacked sections and neither side:
+   Vocabulary is fixed in ui/common/_integration_panels.md. A thin
+   instantiation of _panel.html: it owns its content and its state, and none of
+   the skeleton. This panel uses all three stacked sections and neither side:
 
      top     the active view's label
      body    the caller's content for that view
@@ -15,10 +16,16 @@
 
    Macro-only, so importing it never emits stray markup.
 
-     {% import "ui/common/panel_activity.html" as pa %}
-     {% call pa.frame(spec) %}
+     {% import "ui/views/main_shell/shared/widgets/activity_panel.html" as pa %}
+     {% set A = spec %}
+     {{ pa.open(A) }}
        …markup for the active view…
-     {% endcall %}
+     {{ pa.close(A) }}
+
+   Open/close rather than {% call %}: nunjucks binds caller() to the nearest
+   enclosing {% call %}, so this panel could not forward its body to the base
+   while itself being called. `appbox design lint` (W4) checks the pair is
+   balanced per template.
 
    spec:
      label        — the active view's label, shown in the top section
@@ -37,12 +44,12 @@
    drag-resized width is never replaced. A view switch swaps the BODY in place
    and refreshes the top and bottom sections out-of-band, so the active icon
    and the label always track the server. That is why top() and bottom() are
-   standalone macros with an `oob` flag as well as parts of frame().
+   standalone macros with an `oob` flag as well as parts of open()/close().
 
    There is no `side` argument. This panel is identified by its ROLE, and its
    id is the constant `panel-activity`; it sat on the left when it was written
    and on the right now, and neither fact belongs in its name. #}
-{% import "ui/views/main_shell/shared/widgets/panel.html" as pn %}
+{% import "ui/views/main_shell/shared/widgets/_panel.html" as base %}
 
 {% set PID = 'panel-activity' %}
 
@@ -59,20 +66,22 @@
 {% endmacro %}
 
 {# ---------- the sections, standalone (for out-of-band refresh) ---------- #}
-{% macro top(spec, oob) %}{{ pn.top(PID, label(spec), oob) }}{% endmacro %}
-{% macro bottom(spec, oob) %}{{ pn.bottom(PID, views(spec), oob) }}{% endmacro %}
+{% macro top(spec, oob) %}{{ base.top(PID, label(spec), { oob: oob }) }}{% endmacro %}
+{% macro bottom(spec, oob) %}{{ base.bottom(PID, views(spec), { oob: oob }) }}{% endmacro %}
 
-{% macro frame(spec) %}
-<section class="panel panel-activity {{ 'panel-size-' + (spec.size or 's') if not spec.panelSizePx }}"
-   id="{{ PID }}"{% if spec.panelSizePx %} style="width:{{ spec.panelSizePx }}px"{% endif %}>
-  {# RESIZE RAIL — the panel's own edge IS the handle: no icon, the edge lights
-     up on hover and the cursor turns col-resize. Rendered by frame(), never by
-     a section, so an out-of-band section refresh cannot drop it mid-drag.
-     edge:'start' is a fact about this rail, not about the shell — see
-     panels.css, which keys the rail entirely on [data-edge]. #}
-  {% if spec.sizeHref %}{{ pn.resize(PID, { edge: 'start', persist: 'activity' }) }}{% endif %}
-  {{ pn.top(PID, label(spec)) }}
-  {{ pn.body(PID) }}{{ caller() }}{{ pn.bodyEnd() }}
-  {{ pn.bottom(PID, views(spec)) }}
-</section>
+{# open() and close() each derive the base spec from the SAME caller spec, so
+   the two cannot disagree about which trailing sections exist. #}
+{% macro open(spec) %}
+{{- base.open({
+      role: 'activity', id: PID,
+      size: (spec.size or 's') if not spec.panelSizePx,
+      width: spec.panelSizePx,
+      top: label(spec),
+      bottom: views(spec),
+      resize: { edge: 'start', persist: 'activity' } if spec.sizeHref
+    }) -}}
+{% endmacro %}
+
+{% macro close(spec) %}
+{{- base.close({ role: 'activity', id: PID, bottom: views(spec) }) -}}
 {% endmacro %}

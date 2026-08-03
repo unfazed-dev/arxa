@@ -16,7 +16,7 @@
    surfaces with no viewer (freeze). #}
 {% import "ui/common/widgets/primitives.html" as prim %}
 {% import "ui/common/facts_bar.html" as fb %}
-{% import "ui/common/panel_activity.html" as pa %}
+{% import "ui/views/main_shell/shared/widgets/activity_panel.html" as pa %}
 {% import "ui/views/main_shell/shared/widgets/composer_panel.html" as cp %}
 {% import "ui/views/main_shell/shared/widgets/composer.html" as cm %}
 {% import "ui/views/main_shell/shared/widgets/main_panel.html" as mp %}
@@ -70,10 +70,11 @@
 {% endmacro %}
 
 {% macro composerPanel(c) %}
-{% call cp.frame({ eyebrow: c.stageEyebrow, chips: c.chips }) %}
+{% set CP = { eyebrow: c.stageEyebrow, chips: c.chips } %}
+{{ cp.open(CP) }}
   {{ thread(c) }}
   {{ cm.field(c) }}
-{% endcall %}
+{{ cp.close(CP) }}
 {% endmacro %}
 
 {# The main panel's empty read state (nothing open yet). #}
@@ -92,7 +93,8 @@
   {# Composer LEFT, activity RIGHT. Swapped in the DOM, not with CSS `order`,
      so tab order and screen-reader order still match what you see. #}
   {{ composerPanel(c) }}
-  <div class="panel-main" id="panel-main">{{ caller() }}</div>
+  {% set M = {} %}
+  {{ mp.open(M) }}{{ caller() }}{{ mp.close(M) }}
   {{ activityPanel(c) }}
 </div>
 {% endmacro %}
@@ -119,7 +121,7 @@
 <div class="msg msg-agent {{ 'is-active msg-ctx ctx-' + s.tone if s.inContext }}">
   <header class="msg-meta">
     {{ prim.typeBadge('screen', s.epic) }}
-    {% if s.card.threadCount %}<span class="thread-badge" title="{{ t('design.checkpointsTitle', {count: s.card.threadCount}) }}">{{ icon('history', {size: 12}) }} {{ s.card.threadCount }}</span>{% endif %}
+    {% if s.card.threadCount %}<span class="chip thread-badge" title="{{ t('design.checkpointsTitle', {count: s.card.threadCount}) }}">{{ icon('history', {size: 12}) }} {{ s.card.threadCount }}</span>{% endif %}
     {{ prim.statusPill(s.card.state) }}
   </header>
   <span class="msg-text">{{ s.summary }}</span>
@@ -187,9 +189,10 @@
 {% endmacro %}
 
 {% macro activityPanel(c) %}
-{% call pa.frame({ label: c.activityLabel, views: c.activityViews, size: c.panelSize, sizeHref: c.panelSizeHref, panelSizePx: c.panelSizePx }) %}
+{% set AP = { label: c.activityLabel, views: c.activityViews, size: c.panelSize, sizeHref: c.panelSizeHref, panelSizePx: c.panelSizePx } %}
+{{ pa.open(AP) }}
   {{ activityBody(c) }}
-{% endcall %}
+{{ pa.close(AP) }}
 {% endmacro %}
 
 {# Targeted view-switch response (/design/panel/:view → #panel-activity-body): the

@@ -14,8 +14,8 @@
    — same markup on every shell; per-surface data (action, placeholder,
    agent menus) travels in the facade context. #}
 {% import "ui/views/main_shell/shared/widgets/composer_panel.html" as cp %}
-{% import "ui/common/panel_activity.html" as pa %}
-{% import "ui/common/timeline.html" as tl %}
+{% import "ui/views/main_shell/shared/widgets/activity_panel.html" as pa %}
+{% import "ui/views/main_shell/shared/widgets/timeline.html" as tl %}
 {% import "ui/views/main_shell/shared/widgets/composer.html" as cm %}
 {% import "ui/views/main_shell/shared/widgets/main_panel.html" as mp %}
 
@@ -103,7 +103,7 @@
 
 {# Provenance chip: where a prefill came from (client / founder / inferred). #}
 {% macro provChip(p) %}
-{% if p %}<span class="prov-chip prov-{{ p }}">{{ t('intake.prov.' ~ p) }}</span>{% endif %}
+{% if p %}<span class="chip prov-chip prov-{{ p }}">{{ t('intake.prov.' ~ p) }}</span>{% endif %}
 {% endmacro %}
 
 {# The current item's action bar: confirm the prefill as-is, or skip. #}
@@ -163,8 +163,8 @@
 <section class="mp-content step-stage" id="mp-content" aria-live="polite">
   <header class="step-head">
     <span class="eyebrow">{{ c.eyebrow }}</span>
-    <span class="chip">{{ t('intake.step.progress', {done: c.step.done, total: c.step.total}) }}</span>
-    {% if c.step.mode %}<span class="chip">{{ t('intake.bank.' ~ c.step.mode) }}</span>{% endif %}
+    <span class="chip chip--muted">{{ t('intake.step.progress', {done: c.step.done, total: c.step.total}) }}</span>
+    {% if c.step.mode %}<span class="chip chip--muted">{{ t('intake.bank.' ~ c.step.mode) }}</span>{% endif %}
   </header>
   {{ caller() }}
   {{ itemStrip(c, c.step) }}
@@ -202,7 +202,7 @@
   <span class="q-replies">
     {% for r in m.quickReplies %}
     <form method="post" action="{{ r.action }}" hx-post="{{ r.action }}" hx-target="#panels" hx-swap="morph:outerHTML">
-      <button type="submit" class="qr-chip" name="{{ r.name }}" value="{{ r.value }}">{{ r.label }}</button>
+      <button type="submit" class="chip chip--accent qr-chip" name="{{ r.name }}" value="{{ r.value }}">{{ r.label }}</button>
     </form>
     {% endfor %}
   </span>
@@ -229,10 +229,11 @@
 {# The composer panel proper — permanent, right, single-state; the composer
    is the shared card (ui/views/main_shell/shared/widgets/composer.html). #}
 {% macro composerPanel(c) %}
-{% call cp.frame({ eyebrow: c.eyebrow, chips: c.chips }) %}
+{% set CP = { eyebrow: c.eyebrow, chips: c.chips } %}
+{{ cp.open(CP) }}
   {{ chatThread(c) }}
   {{ cm.field(c) }}
-{% endcall %}
+{{ cp.close(CP) }}
 {% endmacro %}
 
 {# The three content panels, one swap unit: every stage interaction
@@ -246,7 +247,8 @@
      in the DOM, not with CSS `order`, so tab order and screen-reader order
      still match what you see. #}
   {{ composerPanel(c) }}
-  <div class="panel-main" id="panel-main">{{ caller() }}</div>
+  {% set M = {} %}
+  {{ mp.open(M) }}{{ caller() }}{{ mp.close(M) }}
   {{ activityPanel(c) }}
 </div>
 {% endmacro %}
@@ -302,9 +304,10 @@
 {% endmacro %}
 
 {% macro activityPanel(c) %}
-{% call pa.frame({ label: c.activityLabel, views: c.activityViews, size: c.panelSize, sizeHref: c.panelSizeHref }) %}
+{% set AP = { label: c.activityLabel, views: c.activityViews, size: c.panelSize, sizeHref: c.panelSizeHref } %}
+{{ pa.open(AP) }}
   {{ activityBody(c) }}
-{% endcall %}
+{{ pa.close(AP) }}
 {% endmacro %}
 
 {# Targeted view-switch response (<base>/panel?view= → #panel-activity-body): the

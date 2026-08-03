@@ -22,7 +22,7 @@
     {# `curated` (a date) is gone: project.dart:13 bans clock fields, because an
        emitted artifact must be byte-identical for identical input, so
        emitMoodboard never writes one. Nothing is substituted for it. #}
-    <span class="chip">{{ t('mood.boardsCount', {count: a.boards | length}) }}</span>
+    <span class="chip chip--muted">{{ t('mood.boardsCount', {count: a.boards | length}) }}</span>
   </header>
   <h2 class="display">{{ a.headline }}</h2>
   <p class="artifact-lede">{{ a.lede }}</p>
@@ -35,7 +35,7 @@
   <section class="board">
     <header class="board-head">
       <h3 class="board-title">{{ b.title }}</h3>
-      <span class="chip">{{ t('mood.informs', {epic: b.informs}) }}</span>
+      <span class="chip chip--muted">{{ t('mood.informs', {epic: b.informs}) }}</span>
     </header>
     {# `b.file` (the moodboarder's authoring markdown) is dropped by the
        emitter: it points inside the studio's own docs tree and does not exist

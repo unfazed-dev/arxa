@@ -50,8 +50,8 @@
 <section class="mp-content step-stage" id="mp-content" aria-live="polite">
   <header class="step-head">
     <span class="eyebrow">{{ c.eyebrow }}</span>
-    {% if c.carousel %}<span class="chip">{{ c.carousel.bankLabel }}</span>{% endif %}
-    {% if c.step.total %}<span class="chip">{{ t('intake.step.progress', {done: c.step.done, total: c.step.total}) }}</span>{% endif %}
+    {% if c.carousel %}<span class="chip chip--muted">{{ c.carousel.bankLabel }}</span>{% endif %}
+    {% if c.step.total %}<span class="chip chip--muted">{{ t('intake.step.progress', {done: c.step.done, total: c.step.total}) }}</span>{% endif %}
   </header>
   {% if not c.carousel %}
   <h2 class="display">{{ t('intake.interview.modeTitle') }}</h2>
