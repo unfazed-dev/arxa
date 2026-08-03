@@ -214,7 +214,7 @@
      reloads, which is exactly what those actions mean. #}
   <iframe class="dv-tile-frame"
           id="dvf-{{ scope }}--{{ s.id }}"
-          src="{{ v.stubBase }}{{ s.id }}?vp={{ s.tile.vp }}&embed=1{{ '' if s.live else '&still=1' }}{{ '&inspect=1' if s.inspecting }}{{ s.walkQs if s.live and s.walkQs }}"
+          src="{{ v.stubBase }}{{ s.id }}?vp={{ s.tile.vp }}&embed=1{{ '' if s.live else '&still=1' }}{{ '&inspect=1' if s.inspecting }}{{ '&theme=' + v.theme if v.theme }}{{ s.walkQs if s.live and s.walkQs }}"
           style="height: {{ s.tile.height }}px"
           scrolling="no" tabindex="-1" title="{{ s.label or s.id }}"></iframe>
 </div>
@@ -223,30 +223,44 @@
 {# `chrome` is OPTIONAL and that is the whole design: the two shell panels are
    the design shell's, not the viewer component's. Build evidence renders the
    same component with `static: true` and simply passes no chrome, so read-only
-   artboards get no title bar and no actions WITHOUT a per-control static guard
-   that someone would eventually forget. Shape:
-     { title, state, actions: [{ key, icon, href, label, can }] }
-   Every shell action is a MUTATION: it POSTs `href` and swaps #panels, and is
-   disabled when `can` is false (nothing to step to). #}
+   artboards get no title bar and no controls WITHOUT a per-control static
+   guard that someone would eventually forget. Shape:
+     { title, state }
+   `actions` is gone (2026-08-04): the only actions were the canvas undo/redo
+   pair, a duplicate of the mini panel's history group — the bottom controller
+   keeps the only history buttons. The topbar's right side now hosts the
+   canvas APPEARANCE cluster instead, and that state lives on `v` (v.themes,
+   v.bgs), not on chrome: it is viewer state like every other toggle — GETs
+   that echo the full state and swap #design-viewer. #}
 {# ---------- the three section CONTENTS, as strings for the base ----------
    The base takes section content, a class hook and an attrs/id escape per
    section; these macros supply the content. Nothing here writes a `panel-*`
    structural class — that is the whole point of the demotion (W3). #}
 
 {# TOP — the design shell's own bar: what this canvas is, the run state, and
-   shell-scoped actions. It is a section of the viewer's own card on purpose:
-   canvas.js fullscreens that element, so anything outside it disappears the
-   moment you go fullscreen — including, fatally, the exit button. #}
+   the canvas appearance cluster (app-theme auto/light/dark + bg swatches).
+   Auto follows the studio theme; light/dark restyle ONLY the designed app's
+   stubs (the theme param rides every stub iframe src). It is a section of
+   the viewer's own card on purpose: canvas.js fullscreens that element, so
+   anything outside it disappears the moment you go fullscreen — including,
+   fatally, the exit button. #}
 {% macro topbar(v, chrome) %}
     <span class="dv-topbar-title">{{ chrome.title }}</span>
     {% if chrome.state %}{{ prim.statusPill(chrome.state) }}{% endif %}
     {% if not v.static %}
     <span class="dv-topbar-actions">
-      {% for a in chrome.actions %}
-      <button type="button" class="ico-btn dv-shell-act" {{ 'disabled' if not a.can }}
-         hx-post="{{ a.href }}" hx-target="#panels" hx-swap="morph:outerHTML"
-         aria-label="{{ a.label }}" title="{{ a.label }}">{{ icon(a.icon, {size: 14}) }}</button>
-      {% endfor %}
+      <span class="mini-panel-group" role="group" aria-label="{{ t('viewer.themeGroup') }}">
+        {% for th in v.themes %}
+        <a class="chip dv-chip {{ 'on' if th.active }}" href="{{ th.href }}" hx-get="{{ th.href }}" hx-target="#design-viewer" hx-swap="morph:outerHTML">{{ t('viewer.theme.' ~ th.key) }}</a>
+        {% endfor %}
+      </span>
+      <span class="mini-panel-divider" aria-hidden="true"></span>
+      <span class="mini-panel-group" role="group" aria-label="{{ t('miniPanel.bgGroup') }}">
+        {% for b in v.bgs %}
+        <a class="mini-swatch mini-swatch-{{ b.value }} {{ 'on' if b.active }}" href="{{ b.href }}" hx-get="{{ b.href }}" hx-target="#design-viewer" hx-swap="morph:outerHTML"
+           aria-label="{{ t('miniPanel.bg.' ~ b.value) }}" title="{{ t('miniPanel.bg.' ~ b.value) }}"></a>
+        {% endfor %}
+      </span>
     </span>
     {% endif %}
 {% endmacro %}

@@ -108,7 +108,7 @@ const filmstripFor = (d, base, L, viewer, noProto) => {
     tone: toneFor(s.id, L),
     inContext: ids.includes(s.id),
     dim: ids.length > 0 && !ids.includes(s.id),
-    src: `${STUB_BASE}${s.id}?vp=mobile&embed=1&still=1`,
+    src: `${STUB_BASE}${s.id}?vp=mobile&embed=1&still=1${viewer.theme ? `&theme=${viewer.theme}` : ''}`,
     ...(picks
       ? { protoHref: picks[s.id], active: s.id === viewer.proto.active }
       : { contextHref: `${base}/context/${s.id}?state=toggle` }),
@@ -388,6 +388,11 @@ function viewerFor(d, L, t) {
     : fixture;
 
   const bg = ['canvas', 'warm', 'slate'].includes(v.bg) ? v.bg : 'canvas';
+  // Canvas app theme OVERRIDE: light/dark restyle the designed app's stubs
+  // ONLY (never the studio chrome); null = auto — the stubs keep following
+  // the studio theme, which is screenStub's default (build_facade), so auto
+  // stays out of every URL like the other elided defaults below.
+  const theme = ['light', 'dark'].includes(v.theme) ? v.theme : null;
   const mode = ['views', 'flows', 'proto'].includes(v.mode) ? v.mode : 'views';
   const active = ordered.some((s) => s.id === v.screen) ? v.screen : ordered[0]?.id;
   // Per-tile params: the screen id they name, else null (unknown ids drop).
@@ -428,7 +433,7 @@ function viewerFor(d, L, t) {
   // Defaults (views mode, mobile rung) stay out of the URL.
   const withParams = (over) => {
     const merged = {
-      bg, inspect, live,
+      bg, theme, inspect, live,
       mode: mode === 'views' ? null : mode,
       screen: active,
       vp: vp === 'mobile' ? null : vp,
@@ -585,7 +590,7 @@ function viewerFor(d, L, t) {
   // rung size. Only produced in proto mode.
   const proto = mode === 'proto' ? {
     active, vp,
-    src: `${STUB_BASE}${active}?vp=${vp}&embed=1`,
+    src: `${STUB_BASE}${active}?vp=${vp}&embed=1${theme ? `&theme=${theme}` : ''}`,
   } : null;
 
   // Kept even though the viewer's own filmstrip no longer reads it (that strip
@@ -593,13 +598,21 @@ function viewerFor(d, L, t) {
   // builds a strip outside #design-viewer and still consumes these hrefs.
   const protoPicks = mode === 'proto' ? Object.fromEntries(screens.map((s) => [s.id, withParams({ screen: s.id })])) : null;
 
+  // Canvas appearance cluster — rendered in the viewer's TOP bar
+  // (design_viewer.html topbar), not the mini panel: the app-theme segmented
+  // control (auto follows the studio theme; light/dark override the stubs
+  // only) and the bg swatches, moved up from the mini-panel bar when the
+  // top bar's duplicate undo/redo pair was retired (the bottom controller
+  // keeps the only history buttons).
+  const themes = ['auto', 'light', 'dark'].map((key) => ({ key, active: (theme ?? 'auto') === key, href: withParams({ theme: key === 'auto' ? null : key }) }));
+  const bgs = ['canvas', 'warm', 'slate'].map((value) => ({ value, active: value === bg, href: withParams({ bg: value }) }));
+
   const miniPanel = {
     // The bar-right cluster (always mounted): device rung icons in ALL
-    // lenses (in views/flows they re-render the tiles at that rung) + bg
-    // swatches in every mode, a divider between the groups.
+    // lenses (in views/flows they re-render the tiles at that rung). The bg
+    // swatches moved to the viewer topbar (`bgs` above).
     bar: {
       devices: DEVICES.map((d) => ({ ...d, active: d.key === vp, href: withParams({ vp: d.key === 'mobile' ? null : d.key }) })),
-      bgs: ['canvas', 'warm', 'slate'].map((value) => ({ value, active: value === bg, href: withParams({ bg: value }) })),
     },
     controller: {
       modes: ['views', 'flows', 'proto'].map((key) => ({ key, active: key === mode, href: withParams({ mode: key === 'views' ? null : key }) })),
@@ -610,7 +623,7 @@ function viewerFor(d, L, t) {
 
   return {
     inspect, live, active,
-    screens, flows, bg,
+    screens, flows, bg, theme, themes, bgs,
     mode, proto, vp,
     // The screens filmstrip: the viewer's RIGHT-HAND COLUMN in the VIEWS lens
     // only (design_viewer.html) — not a mini-panel member any more, and
@@ -623,7 +636,7 @@ function viewerFor(d, L, t) {
     // active-screen picker, so proto now shows whatever screen the facade
     // defaults to. Give proto its own picker if that becomes a problem —
     // protoPicks below still carries the hrefs.
-    filmstrip: mode === 'views' ? filmstripFor(d, contextBase.replace(/\/context\/$/, ''), L, { protoPicks, proto }, false) : null,
+    filmstrip: mode === 'views' ? filmstripFor(d, contextBase.replace(/\/context\/$/, ''), L, { protoPicks, proto, theme }, false) : null,
     // Proto-mode screen picks. No longer read by the viewer's own strip (see
     // above), but freeze's composer tray still builds one outside
     // #design-viewer, so the viewer keeps handing the hrefs over.

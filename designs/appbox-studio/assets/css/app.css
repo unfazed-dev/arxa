@@ -587,11 +587,16 @@ button:active { transform: translateY(1px); }
    compensating for exactly the thing the section contract removes: a card pad
    that stacked under the bottom bar but not above it. Sections own their own
    padding and sit flush to the card edge, so the asymmetry cannot recur. */
-.dv-bg-canvas { background: var(--bg-2); }
-.dv-bg-warm { background: #f4ead8; }
-[data-theme="dark"] .dv-bg-warm { background: #3a3126; }
-.dv-bg-slate { background: #2b3038; }
-[data-theme="dark"] .dv-bg-slate { background: #14171c; }
+/* Compound with .panel-viewer, deliberately: the viewer panel also carries
+   `.panel`, whose surface background ties these at (0,1,0) and loads later —
+   so a bare .dv-bg-* loses the cascade tie and the swatches paint nothing
+   (the light-theme bug; the dark variants below always outranked .panel,
+   which is why only light mode looked dead). */
+.panel-viewer.dv-bg-canvas { background: var(--bg-2); }
+.panel-viewer.dv-bg-warm { background: #f4ead8; }
+[data-theme="dark"] .panel-viewer.dv-bg-warm { background: #3a3126; }
+.panel-viewer.dv-bg-slate { background: #2b3038; }
+[data-theme="dark"] .panel-viewer.dv-bg-slate { background: #14171c; }
 .dv-toolbar { display: flex; align-items: center; gap: .8rem; flex-wrap: wrap; }
 .dv-screen { font-weight: 600; font-size: .82rem; }
 [data-theme="dark"] .dv-bg-warm .dv-screen, .dv-bg-slate .dv-screen, .dv-bg-slate .dv-chip { color: #e8e4da; }

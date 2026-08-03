@@ -3,13 +3,16 @@
      Built with appbox (free tier) — https://appbox.dev
 -->
 {# The mini panel: a bottom-docked bar, ONE ROW — the controller (lens
-   toggle, fullscreen, undo/redo) and the bar-right cluster (device rungs,
-   divider, bg swatches) share a single flex line. Half the viewer's width,
-   centred (viewer.css). The screens filmstrip is NOT here: it is the viewer's
-   right-hand column in the views lens (design_viewer.html, fed by
-   v.filmstrip); the composer tray keeps its own copy only on surfaces with no
-   viewer (freeze). Macro-only file; importing it from a fragment render never
-   emits stray markup.
+   toggle, fullscreen, undo/redo) and the bar-right cluster (device rungs)
+   share a single flex line. Half the viewer's width, centred (viewer.css).
+   The bg swatches are NOT here anymore: they moved to the viewer topbar's
+   appearance cluster with the app-theme control (design_viewer.html topbar,
+   2026-08-04) when the topbar's duplicate undo/redo pair was retired — this
+   controller keeps the ONLY history buttons. The screens filmstrip is NOT
+   here either: it is the viewer's right-hand column in the views lens
+   (design_viewer.html, fed by v.filmstrip); the composer tray keeps its own
+   copy only on surfaces with no viewer (freeze). Macro-only file; importing
+   it from a fragment render never emits stray markup.
 
    Usage:
      {% import "ui/views/main_shell/shared/widgets/mini_panel.html" as mn %}
@@ -17,8 +20,7 @@
 
    v.miniPanel shape (_integration_viewer.md — the live `v` contract; the old
    pointer here named canvas-redesign-contract.md §1/§3, superseded 2026-07-30):
-     bar: { devices: [{ key, icon, active, href }] | null,   // rung icons
-            bgs: [{ value, active, href }] }                 // swatch buttons
+     bar: { devices: [{ key, icon, active, href }] | null }  // rung icons
      controller: {
        modes: [{ key, active, href }],                       // views/flows/proto lens
        undo:  { can: bool, href: '/design/undo/canvas' },
@@ -60,10 +62,10 @@
 {% endmacro %}
 
 {# The bar itself: ONE row — the controller (lens chips, fullscreen,
-   undo/redo) then the bar-right cluster (device rung icon buttons, divider,
-   bg swatch buttons — every mode) pushed right by margin-left:auto. The
-   second row (.mini-panel-panels) is gone; the controller body is now a
-   sibling of the bar-right cluster inside .mini-panel-bar. #}
+   undo/redo) then the bar-right cluster (device rung icon buttons — every
+   mode) pushed right by margin-left:auto. The second row (.mini-panel-panels)
+   is gone; the controller body is now a sibling of the bar-right cluster
+   inside .mini-panel-bar. #}
 {% macro miniPanel(v) %}
 {% set pnl = v.miniPanel %}
 <nav class="mini-panel" aria-label="{{ t('miniPanel.aria') }}">
@@ -77,14 +79,7 @@
            aria-label="{{ t('viewer.vp.' ~ d.key) }}" title="{{ t('viewer.vp.' ~ d.key) }}">{{ icon(d.icon, {size: 16}) }}</a>
         {% endfor %}
       </span>
-      <span class="mini-panel-divider" aria-hidden="true"></span>
       {% endif %}
-      <span class="mini-panel-group" role="group" aria-label="{{ t('miniPanel.bgGroup') }}">
-        {% for b in pnl.bar.bgs %}
-        <a class="mini-swatch mini-swatch-{{ b.value }} {{ 'on' if b.active }}" href="{{ b.href }}" hx-get="{{ b.href }}" hx-target="#design-viewer" hx-swap="morph:outerHTML"
-           aria-label="{{ t('miniPanel.bg.' ~ b.value) }}" title="{{ t('miniPanel.bg.' ~ b.value) }}"></a>
-        {% endfor %}
-      </span>
     </span>
   </div>
 </nav>

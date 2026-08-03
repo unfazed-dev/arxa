@@ -30,16 +30,13 @@
    swatch (they all swap #design-viewer) silently deleted the bar until the
    next full reload. The bottom panel survived only because .dv-botbar is
    unguarded — its foot line, which IS chrome, vanished with the top bar.
-   `actions` carries exactly the two canvas history steps; the rest of the
-   viewer's controls belong to the tile toolbar, the mini panel or the
-   composer, and are deliberately not duplicated here. #}
+   Chrome is title + run state only: the old `actions` undo/redo pair was a
+   duplicate of the mini panel's history group (the bottom controller keeps
+   the only history buttons, routes unchanged); the topbar's appearance
+   cluster (theme + bg) is viewer state and renders from `v` itself. #}
 {% macro stageViewer(c) %}{{ dv.designViewer(c.viewer, {
      title: t('design.artboardsEyebrow', {count: c.counts.screens}),
-     state: c.run.state,
-     actions: [
-       {key: 'undo', icon: 'undo-2', href: '/design/undo/canvas', can: c.undoRedo.canvas.canUndo, label: t('viewer.undo')},
-       {key: 'redo', icon: 'redo-2', href: '/design/redo/canvas', can: c.undoRedo.canvas.canRedo, label: t('viewer.redo')}
-     ] }) }}{% endmacro %}
+     state: c.run.state }) }}{% endmacro %}
 
 {% macro canvasBoard(c) %}
 <section class="mp-content" id="mp-content" aria-live="polite">

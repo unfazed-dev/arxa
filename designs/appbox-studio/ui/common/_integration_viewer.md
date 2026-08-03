@@ -139,8 +139,15 @@ Files:
                // build/loop/portalo/), never a registry surface or a
                // live studio route.
   contextBase: '/design/chat/context/',// present where tiles pin as context
-  miniPanel: { bar: { devices: [{ key, icon, active, href }] | null,
-                      bgs: [{ value, active, href }] },
+  theme:  'light' | 'dark' | null,     // canvas APP-theme override; null =
+               // auto — stubs follow the studio theme. Never touches the
+               // studio chrome; rides every stub iframe src as &theme=.
+  themes: [{ key: 'auto'|'light'|'dark', active, href }],
+  bgs:    [{ value, active, href }],   // canvas bg swatches. themes+bgs are
+               // the topbar's APPEARANCE CLUSTER (design_viewer.html topbar,
+               // 2026-08-04) — they replaced the topbar's undo/redo pair,
+               // which duplicated the mini panel's history group.
+  miniPanel: { bar: { devices: [{ key, icon, active, href }] | null },
                controller: { modes, undo, redo } },
   filmstrip:  [{ id, label, tone, inContext, dim, src,
                  contextHref, active? }] | null,
@@ -157,7 +164,7 @@ Files:
 }
 ```
 
-- Every viewer CONTROLLER action is `GET {{base}}?bg=&inspect=&live=&mode=&screen=&vp=`
+- Every viewer CONTROLLER action is `GET {{base}}?bg=&theme=&inspect=&live=&mode=&screen=&vp=`
   with `hx-target="#design-viewer" hx-swap="outerHTML"` — the route records
   the choice and re-renders the viewer fragment. Every control href echoes
   the WHOLE viewer state with defaults elided (`views`, `mobile`), so
@@ -174,6 +181,10 @@ Files:
   `GET /build/screens/:surface` stub renderer. Canvas tiles use the same
   shape with `s.tile.vp` (`{stubBase}{s.id}?vp={tile.vp}&embed=1&still=1` —
   the live tile drops `still`, the inspected tile appends `&inspect=1`).
+  When `v.theme` is set, EVERY stub src (tiles, filmstrip thumbs, proto)
+  appends `&theme={v.theme}`; the stub resolves override-else-studio-theme
+  (build_facade.screenStub) and its own nav links re-propagate the raw
+  override only, so "auto" never gets pinned.
 
 ## The second arg: `designViewer(v, chrome)` — the two shell panels
 
@@ -185,18 +196,22 @@ clearance; both are gone). All three are INSIDE `#design-viewer` because
 fullscreen, including the exit button, which would strand the user.
 
 ```js
-chrome = { title, state, actions: [{ key, icon, href, label, danger? }] }
+chrome = { title, state }
 ```
 
 `chrome` is **optional, and that is the mechanism, not an oversight.** The two
 bars belong to the design shell, not to the viewer component — and the same
 component renders build evidence with `static: true`. Evidence passes no
-`chrome`, so it gets no title bar and no actions structurally, instead of
+`chrome`, so it gets no title bar and no controls structurally, instead of
 relying on a `static` guard on every individual control that someone would
 eventually forget to add. Only `prototype_view.html` passes it.
 
-`actions` is currently `[]`: shell-scoped actions have not been named, and
-inventing plausible buttons is worse than an honest empty slot.
+`actions` was removed (2026-08-04): the only entries it ever carried were the
+canvas undo/redo pair, a duplicate of the mini panel's history group — the
+bottom controller keeps the only history buttons (routes unchanged). The
+topbar's right side now renders the appearance cluster (v.themes + v.bgs)
+straight from `v`, because it is viewer STATE like every other toggle, not
+shell chrome.
 
 ## Wiring a shell
 

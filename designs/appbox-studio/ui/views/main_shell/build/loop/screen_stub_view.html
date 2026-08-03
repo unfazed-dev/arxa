@@ -40,7 +40,9 @@
 {# `inspect` rides along in pqs. It did not before, so navigating inside an
    inspected screen dropped ?inspect=1 on the next hop, the island stopped
    being served, and inspect died silently after exactly one click. #}
-{% set pqs = '?vp=' + vp + ('&embed=1' if embed else '') + ('&still=1' if still else '') + ('&inspect=1' if inspect else '') %}
+{# `themeOverride` rides too (raw override only — the resolved theme would pin
+   "auto" to the studio theme at render time; see build_facade.screenStub). #}
+{% set pqs = '?vp=' + vp + ('&embed=1' if embed else '') + ('&still=1' if still else '') + ('&inspect=1' if inspect else '') + ('&theme=' + themeOverride if themeOverride else '') %}
 <div id="app" data-theme="{{ theme }}" data-accent="cyan">
   <div class="stub-screen" style="{{ '' if embed else 'max-width: ' + width + 'px' }}">
     {% if not embed %}

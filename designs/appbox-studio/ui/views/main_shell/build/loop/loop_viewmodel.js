@@ -127,6 +127,9 @@ export const screenStub = (c, h) =>
     embed: c.req.query('embed') === '1',
     inspect: c.req.query('inspect') === '1',
     still: c.req.query('still') === '1',
+    // Canvas app-theme override (viewer topbar control): light/dark restyle
+    // this stub; absent = follow the studio theme (the facade default).
+    theme: c.req.query('theme') ?? null,
     // Flow walk: `walk` is the complete parent viewer URL to advance to, so
     // the island never needs to know the viewer's param list. Absent = this
     // is not the walked tile and the island is not loaded at all.

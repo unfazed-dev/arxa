@@ -293,7 +293,12 @@ export const screenStub = (surface, vp, prefs = {}, locale = 'en', opts = {}) =>
   return {
     surface, vp: v, width: VIEWPORT_WIDTHS[v],
     kind,
-    theme: prefs.theme ?? 'light',
+    // The viewer's app-theme override wins; otherwise the stub follows the
+    // studio theme (= the viewer's "auto"). themeOverride is kept raw so the
+    // stub's own nav links (pqs) re-propagate the OVERRIDE only — echoing the
+    // resolved theme would pin "auto" to whatever the studio was at render.
+    theme: (opts.theme === 'light' || opts.theme === 'dark') ? opts.theme : (prefs.theme ?? 'light'),
+    themeOverride: (opts.theme === 'light' || opts.theme === 'dark') ? opts.theme : null,
     embed: opts.embed ?? false,
     inspect: opts.inspect ?? false,
     // still: freeze frame for canvas tiles — partials skip auto-advance

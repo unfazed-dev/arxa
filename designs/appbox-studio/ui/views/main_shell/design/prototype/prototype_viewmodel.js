@@ -36,7 +36,7 @@ export const panelSize = (c, h) =>
 // The shared design viewer: controller acts swap just the viewer block.
 export const viewer = (c, h) =>
   h.render(c, `${VIEW}#viewerSwap`, facade.setViewer(h.session(c).data, {
-    bg: c.req.query('bg'), inspect: c.req.query('inspect'), live: c.req.query('live'),
+    bg: c.req.query('bg'), theme: c.req.query('theme'), inspect: c.req.query('inspect'), live: c.req.query('live'),
     mode: c.req.query('mode'), screen: c.req.query('screen'), vp: c.req.query('vp'),
     // The flow walk: which row is being walked and where in it. This list is
     // explicit, not a spread of the query — a new viewer param is invisible
