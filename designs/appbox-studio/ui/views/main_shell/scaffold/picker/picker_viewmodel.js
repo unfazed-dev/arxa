@@ -7,10 +7,13 @@ import * as facade from '../../../../../services/facades/scaffold_facade.js';
 
 const VIEW = 'ui/views/main_shell/scaffold/picker/picker_view.html';
 
-/** The template reads `c.*`; the facade builds it, the viewmodel wraps it. */
+// The template reads `c.*`, but the context is spread top-level, never nested
+// under a literal `c` key: the runtime does `bag.c = bag` after merging (see
+// runtime/lib/helpers.mjs), so a `c:` we passed would be overwritten and the
+// whole facade context silently dropped. Every other viewmodel spreads.
 const ctx = (c, h, screen) => ({
   activeShell: 'scaffold',
-  c: facade.context(h.session(c).data, h.t(c), h.locale(c), screen || c.req.query('state') || 'success'),
+  ...facade.context(h.session(c).data, h.t(c), h.locale(c), screen || c.req.query('state') || 'success'),
 });
 
 /** Session-held selection. Seeded from the fixture on first touch. */
@@ -26,6 +29,22 @@ const picked = (c, h) => {
 };
 
 export const page = (c, h) => h.render(c, VIEW, ctx(c, h));
+
+// Panel width grip: s/m/l persisted per side, whole-panel re-render. Mirrors
+// the run surface exactly — same shell chrome, same swap target — so the grip
+// does not behave differently depending on which scaffold screen you are on.
+export const panelSize = (c, h) =>
+  h.render(c, `${VIEW}#panelsSwap`, {
+    activeShell: 'scaffold',
+    ...facade.setPanelSize(
+      h.session(c).data,
+      c.req.param('panel'),
+      c.req.param('size'),
+      h.t(c),
+      h.locale(c),
+      c.req.query('state') || 'success',
+    ),
+  });
 
 // --- add ---------------------------------------------------------------
 // Adding is unconditional: D5 dependency pull-in happens in the facade's
