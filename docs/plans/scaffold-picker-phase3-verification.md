@@ -43,14 +43,38 @@ composition rather than mounting the partial directly.
 
 ## 2. Six read states — 0 `undefined`, all differentiate
 
-| state | bytes | `undefined` |
-|---|---|---|
-| success | 82702 | 0 |
-| empty | 80944 | 0 |
-| loading | 27416 | 0 |
-| error | 28004 | 0 |
-| notentitled | 81233 | 0 |
-| signedout | 81207 | 0 |
+| state | bytes | `undefined` | superseded |
+|---|---|---|---|
+| success | 82716 | 0 | was 82702 |
+| empty | 80958 | 0 | was 80944 |
+| loading | 27424 | 0 | was 27416 |
+| error | 28010 | 0 | was 28004 |
+| notentitled | 81247 | 0 | was 81233 |
+| signedout | 81221 | 0 | was 81207 |
+
+**Re-measured after the fact — the first table was stale.** On a re-run in the
+tree as it now stands, every one of the six numbers had moved (+6…+14). Cause is
+mine, not drift or noise: the original table was taken *before* my own commits
+`1647f67` (lowercase state tokens) and `4d0ece8` (remove-cancel → `cancelRemove`)
+landed. Both change the rendered markup, so of course the bytes moved.
+
+The instrument is sound — three consecutive fetches of the same state return
+byte-identical bodies, so size is deterministic and the deltas are real content,
+not jitter. What actually load-bears is unchanged and re-verified: **six states,
+all distinct, zero `undefined` in every one**, and `design lint` exit 0 with
+W1–W6 clean (grep positive-controlled against the clean message itself).
+
+The lesson is the one this doc keeps re-learning: a measured number is only true
+of the tree it was measured in, and I let mine go stale across my own commits
+while auditing teammates for the same thing.
+
+**Positive control on the composer guard.** Stashing the guard hunk out of
+`_shared.html` and re-measuring gives `success 82716` / `loading 27424` —
+byte-identical to the guarded tree. The guard is currently **inert**, because
+`scaffold_facade.js:205` sets `composerAction` unconditionally, so
+`{% if c.composerAction %}` never takes its false branch. This is direct render
+evidence for the disposition below: option (a) is not a one-line change — the
+guard alone does nothing until `:205` also goes.
 
 Root cause of the earlier `undefined` tokens was the shim's
 `const bag = Object.assign(...); bag.c = bag` self-reference: screen data must
