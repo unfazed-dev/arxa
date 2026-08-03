@@ -17,7 +17,7 @@ Reviewed the files I own, not the citations about them.
 |---|---|
 | user-visible strings routed through `t()` | 0 hardcoded |
 | interactive controls with accessible names | 5/5 buttons carry `t()` text; no icon-only controls |
-| `picker_viewmodel.js` exports vs `routes.scaffold.js` | exact match on all 6 handlers; `surfaceId` is the registry contract, not a route |
+| `picker_viewmodel.js` exports vs `routes.scaffold.js` | exact match on all 6 handlers; `surfaceId` is a viewmodel-export convention (see below), not a route |
 | TODO / FIXME / placeholder | none |
 | lint (W1–W6) | clean |
 | six-state ladder | distinct bytes, zero `undefined` |
@@ -42,6 +42,53 @@ POST /scaffold/remove/cancel      -> dialog gone (regression check on 4d0ece8)
 The wiring is correct. What was wrong was believing six green states covered it.
 **Any surface behind a mutation is outside the `?state=` ladder and needs its own
 positive control.** That is the rule generalised past this screen.
+
+### Every row above is working-tree-conditional
+
+`git status --porcelain` at sign-off:
+
+```
+ M ui/views/main_shell/scaffold/_shared.html        (+20 -1)   chrome-integration's guard
+ M ui/views/main_shell/scaffold/routes.scaffold.js  (+17)      mutation routes, backup 3ddb189
+```
+
+The lint row and the six-state ladder rest on `_shared.html`; the mutation row
+(`POST /scaffold/remove` → dialog → cancel) rests on `routes.scaffold.js`. Neither
+is committed. **This table describes a working tree, not the repo** — the exact
+shape I flagged in three teammates, and I nearly signed it off without the check.
+If the Phase 3 commit does not carry both files, every green row above reverts to
+unmeasured. Not committing: the lead owns that commit and chrome-integration owns
+the guard hunk. Flagged, not assumed.
+
+### Correction to my own review: `surfaceId` is canon, and I justified it wrongly
+
+I first waved `surfaceId` through as "the registry contract." That was rationalising
+an unrouted export, and the reasoning was wrong — `registry.json` contains **zero**
+occurrences of `surfaceId`; the key union is
+`['comp','id','label','labelKey','route','shell','surface']`. Had that been the whole
+story it would have been an invented field, the same class the lead rejected for
+`shellDir`/`deps`.
+
+Positive control says otherwise. `surfaceId` is exported **at line 4 of 19 other
+viewmodels**, every shell:
+
+```
+app_shell:       splash, auth, dashboard, startup
+workspace_shell: settings, config, credentials
+main_shell:      brief, interview, surfaces, direction, moodboard, personas,
+                 mapping, flows, freeze, chat, prototype, loop
+```
+
+`scaffold/picker` and `scaffold/run` are instances 20 and 21 of a universal
+convention. Two true facts about two different artifacts: absent from `registry.json`,
+present in every viewmodel. The right conclusion with the wrong premise is still
+worth catching — a correct call I could not have defended.
+
+### Scope limit on the lens shoot
+
+The 3-rung ladder shoot predates both the guard landing and the composer ruling. It
+holds for the status quo and for disposition (b) route-the-POST. Disposition (a)
+gate-the-render changes the rendered column count and **needs a re-shoot**.
 
 ## 0a. Process violation: I measured with a shared-stack `git stash`
 
