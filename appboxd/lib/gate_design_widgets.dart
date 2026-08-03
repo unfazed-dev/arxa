@@ -417,6 +417,20 @@ List<LintFinding> _panelReimplementationFindings(
 
 // ══ W4 — shell composition ══════════════════════════════════════════════
 
+/// True when [rel] sits under a hosted-shell GROUP dir — an immediate child of
+/// a shell that is neither a surface nor a structural overlay.
+///
+/// The same tier W6 treats as a namespace owner (`main_shell/intake`,
+/// `main_shell/design`, `main_shell/build`): a shell hosting other shells. One
+/// definition of "hosted shell" across both rules, so a dir cannot be a shell
+/// for state and not a shell for composition.
+bool _underHostedGroup(String rel, Set<String> surfaceDirs) {
+  final segs = rel.split('/');
+  if (segs.length < 5 || segs[0] != 'ui' || segs[1] != 'views') return false;
+  if (_overlayDirNames.contains(segs[3])) return false;
+  return !surfaceDirs.contains('ui/views/${segs[2]}/${segs[3]}');
+}
+
 /// Macro names that OPEN a panel, and the names that CLOSE it.
 ///
 /// The panel base is a balanced pair rather than a `{% call %}` wrapper because
@@ -438,12 +452,6 @@ int _aliasCalls(String src, String alias, List<String> names) {
   }
   return n;
 }
-
-/// Occurrences of `alias.` — any member access on the alias.
-int _aliasUses(String src, String alias) =>
-    RegExp('(?<![A-Za-z_0-9])${RegExp.escape(alias)}\\s*\\.')
-        .allMatches(src)
-        .length;
 
 /// An alias bound to the panel base or to a role panel widget.
 bool _isPanelRef(TemplateRef ref) =>
@@ -503,18 +511,37 @@ List<LintFinding> _shellCompositionFindings(
     }
     return const [];
   }
+  final surfaceDirs = _surfaceDirs(all);
+  final unmeasured = <String>[];
   for (final rel in all) {
     final name = p.basename(rel);
-    if (!name.endsWith('_shell_view.html') && !name.endsWith('_view.html')) {
-      continue;
-    }
     final shell = shellOf(rel);
-    // Only a shell's own view composes panels: ui/views/<shell>/<shell>_view.html.
-    if (shell == null || name != '${shell}_view.html') continue;
+    final isShellView = shell != null && name == '${shell}_view.html';
 
     final src = stripComments(File(p.join(artifactDir, rel)).readAsStringSync());
+    final refs = parseTemplateRefs(src);
+    final mountsPanels = refs.any((r) =>
+        isWidget(r.path) && p.basename(r.path).endsWith('_panel.html'));
+
+    // A top-level shell declares its panel set in `<shell>_view.html`; a HOSTED
+    // shell declares its own in whatever template composes it. Both are shell
+    // views in the sense that matters, so both are checked.
+    //
+    // Detection is structural, not by filename: build's composition lives in a
+    // surface view (`build/loop/loop_view.html`), so a `_shared.html` naming
+    // rule would miss it. The scope is bounded to hosted-shell GROUP dirs so a
+    // content widget that happens to compose a non-role panel — design_viewer
+    // mounting mini_panel from `shared/widgets/` — is not read as a shell
+    // declaring its panel set.
+    if (!isShellView && !(mountsPanels && _underHostedGroup(rel, surfaceDirs))) {
+      continue;
+    }
+
+    // Counted PER FILE: two sibling composition files each mounting the
+    // activity panel once are two shells with one activity panel, not a double
+    // mount. Alternative layouts of one hosted shell are the same story.
     final mounts = <String, int>{};
-    for (final ref in parseTemplateRefs(src)) {
+    for (final ref in refs) {
       final refName = p.basename(ref.path);
       if (!refName.endsWith('_panel.html')) continue;
       if (!isWidget(ref.path)) continue;
@@ -536,11 +563,20 @@ List<LintFinding> _shellCompositionFindings(
         mounts[role] = (mounts[role] ?? 0) + 1;
         continue;
       }
-      final opens = _aliasCalls(src, ref.alias!, _mountOpenMacros);
-      final closes = _aliasCalls(src, ref.alias!, _mountCloseMacros);
-      final count = (opens > 0 || closes > 0)
-          ? opens
-          : _aliasUses(src, ref.alias!);
+      // ENTRY POINTS ONLY. A role file is a macro LIBRARY, not a single macro:
+      // the studio's main_panel.html exports empty / panelBar / view /
+      // renderCode / renderDoc / …, and a composition file legitimately calls
+      // three of them. Counting every `mp.` use counted render helpers as
+      // mounts and reported a shell mounting ONE main panel as mounting three.
+      final count = _aliasCalls(
+          src, ref.alias!, [..._mountOpenMacros, '${role}_panel', role]);
+      if (count == 0) {
+        // The file composes this panel through some other macro, so W4 cannot
+        // tell which call is the mount. Reported, never guessed — a guess here
+        // is what produced the false positive above.
+        unmeasured.add('$name → ${p.basename(ref.path)} via `${ref.alias}`');
+        continue;
+      }
       mounts[role] = (mounts[role] ?? 0) + count;
     }
     for (final role in panelRoles) {
@@ -551,6 +587,12 @@ List<LintFinding> _shellCompositionFindings(
             'most once; keep one mount and move the variation inside the panel'));
       }
     }
+  }
+  if (unmeasured.isNotEmpty) {
+    notes?.add(LintFinding('ui/views',
+        'W4 partial: ${unmeasured.length} panel mount(s) not counted — no '
+        '`open(`/`mount(` or role-named macro at the call site, so which macro '
+        'is the mount is unknowable: ${unmeasured.join('; ')}'));
   }
   return findings;
 }
