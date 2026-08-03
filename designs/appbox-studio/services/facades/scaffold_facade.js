@@ -56,7 +56,14 @@ const pickedFrom = (session, locale) => {
  * @param session  server-held session (holds scaffoldPicked, pendingRemove)
  * @param t        translator
  * @param locale   active locale
- * @param screen   requested lens state: success | empty | loading | error | notEntitled | signedOut
+ * @param screen   requested lens state: success | empty | loading | error | notEntitled | signedout
+ *
+ * Lens tokens arrive from `?state=` and are matched case-insensitively. The
+ * repo spells this vocabulary two ways — the registry and the lens probes use
+ * lowercase `signedout`, this facade emitted camelCase `signedOut` — and an
+ * exact match silently fell through to `success`, rendering an ungated picker
+ * for a signed-out probe. Normalise the input; keep `gatedReason` camelCase,
+ * which is what the view and the l10n keys already branch on.
  */
 export const context = (session = {}, t = (k) => k, locale = 'en', screen = 'success') => {
   const all = repo.kits(locale);
@@ -71,11 +78,12 @@ export const context = (session = {}, t = (k) => k, locale = 'en', screen = 'suc
   // Two distinct gates that happen to share one read-only presentation:
   // signed-out is answered by signing in, not-entitled by upgrading. The
   // copy and the CTA must differ, or we send a signed-out user to a paywall.
-  const signedOut = screen === 'signedOut' || !ent.signedIn;
-  const gated = signedOut || screen === 'notEntitled' || !ent.entitled;
+  const lens = String(screen).toLowerCase();
+  const signedOut = lens === 'signedout' || !ent.signedIn;
+  const gated = signedOut || lens === 'notentitled' || !ent.entitled;
   const gatedReason = signedOut ? 'signedOut' : 'notEntitled';
 
-  const picked = screen === 'empty' ? new Set(essentials) : pickedFrom(session, locale);
+  const picked = lens === 'empty' ? new Set(essentials) : pickedFrom(session, locale);
   const { selected, auto } = closure(picked, byId);
 
   const kits = all.map((k) => ({
@@ -152,12 +160,53 @@ export const context = (session = {}, t = (k) => k, locale = 'en', screen = 'suc
   };
 
   return {
+    // --- shell chrome (read by ui/views/main_shell/scaffold/_shared.html) ---
+    // The scaffold shell composes its own panel row; a surface hosted in it
+    // must fill the fields that composition reads. Every one is set
+    // explicitly, including the empty cases: a missing `c.thread` renders a
+    // composer with nothing above it and no error, which reads as "there is
+    // nothing to say here" instead of "this facade forgot to say it".
+    panel: session.scaffoldPanel || 'main',
+    panelSizes: session.scaffoldPanelSize || {},
+    stageEyebrow: t('scaffold.picker.eyebrow'),
+    // The chips are the pinned context the composer carries: what is picked,
+    // and how much of it still wants keys. Counts, not prose — the grid is
+    // the place that explains itself.
+    chips: [
+      { label: t('scaffold.picker.chip.selected', { count: chosen.length }) },
+      ...(unready.length ? [{ label: t('scaffold.picker.chip.unready', { count: unready.length }) }] : []),
+    ],
+    thread: [
+      { kind: 'event', text: t('scaffold.picker.thread.detected', { count: counts.declared + counts.inferred }) },
+      { from: 'agent', text: t('scaffold.picker.thread.help') },
+    ],
+    activity: {
+      label: t('scaffold.picker.activity.label'),
+      views: [],
+      // The selection, in the order the grid shows it, each row naming WHY it
+      // is in the list — the same provenance vocabulary as the badge (D4), so
+      // the panel and the card never disagree about a kit.
+      // The label is `k.id`, exactly what kitCard's <h3> prints. Translating
+      // it here would make the panel and the card name the same kit two
+      // different ways; the display-name gap is real but it is one gap, and
+      // it gets closed in both places at once or not at all.
+      items: chosen.map((k) => ({
+        label: k.id,
+        meta: t(`scaffold.picker.prov.${k.provenance}`),
+        active: !k.readinessAxis.ready,
+      })),
+    },
+    // The composer form lives in the shell's composition, not in this screen.
+    // It posts here; the binding is the shell's to declare.
+    // needs-route: POST /scaffold/messages (see routes.scaffold.js)
+    composerAction: '/scaffold/messages',
+
     base: '/scaffold',
     // Report the gate we actually applied, so a signedOut lens never reports
     // itself as notEntitled to a probe or a lens validator.
     state: gated ? gatedReason : screen,
-    loading: screen === 'loading',
-    error: screen === 'error' ? { ...states.error, source: states.error.source } : null,
+    loading: lens === 'loading',
+    error: lens === 'error' ? { ...states.error, source: states.error.source } : null,
     gated,
     gatedReason,
     entitlement: {
@@ -177,8 +226,22 @@ export const context = (session = {}, t = (k) => k, locale = 'en', screen = 'suc
     manifest,
     // Forward is never blocked by readiness (D6) — only by having nothing.
     canContinue: !gated && chosen.length > 0,
-    continueHref: '/main/scaffold/plan',
+    // Forward is the run receipt — the only bound next step in this shell.
+    continueHref: '/scaffold/run',
   };
 };
 
-export default { context };
+// Panel width grip: s/m/l persisted per side, whole-panel re-render. Same
+// shape as the run surface's, because it is the same shell chrome; the sizes
+// live under a picker-scoped session key so the two surfaces do not fight.
+const PERSISTABLE_PANELS = ['composer', 'activity'];
+const PANEL_SIZES = ['s', 'm', 'l'];
+
+export const setPanelSize = (session = {}, panel, size, t = (k) => k, locale = 'en', screen = 'success') => {
+  if (PERSISTABLE_PANELS.includes(panel) && PANEL_SIZES.includes(size)) {
+    (session.scaffoldPanelSize ??= {})[panel] = size;
+  }
+  return context(session, t, locale, screen);
+};
+
+export default { context, setPanelSize };

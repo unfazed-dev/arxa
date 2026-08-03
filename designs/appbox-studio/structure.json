@@ -202,7 +202,9 @@
       "shellDir": "main_shell",
       "surface": "main_shell_scaffold_run_view",
       "viewmodel": "ui/views/main_shell/scaffold/run/run_viewmodel.js",
-      "deps": []
+      "deps": [
+        "services/facades/scaffold_run_facade.js"
+      ]
     },
     {
       "id": "chat.chat2",
