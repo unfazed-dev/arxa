@@ -27,7 +27,7 @@ import 'package:appboxd/design_tools.dart';
 // it keeps ONE parser for `{% include %}`/`{% import %}` rather than a second
 // that can drift from the gate the same artifacts are linted against.
 import 'package:appboxd/gate_design_widgets.dart'
-    show WidgetHome, buildIncludeGraph, isWidget, widgetHomeOf;
+    show buildIncludeGraph, isRetiredFlatWidget, isWidget, widgetHomeOf;
 import 'package:appboxd/project.dart';
 import 'package:path/path.dart' as p;
 
@@ -143,33 +143,22 @@ List<File> _walkFiles(Directory d) =>
 String _relOf(String art, File f) =>
     p.split(p.relative(f.path, from: art)).join('/');
 
-/// The retired flat tier: `ui/widgets|dialogs|bottomsheets` at the artifact
-/// root (historically with a `components/` subfolder inside).
-bool _isLegacyFlatWidget(String rel) =>
-    rel.startsWith('ui/widgets/') ||
-    rel.startsWith('ui/dialogs/') ||
-    rel.startsWith('ui/bottomsheets/');
-
 /// Widgets sitting in one of the three legal homes: `ui/common/widgets/`,
 /// `ui/views/<shell>/shared/widgets/`, `<surface>/widgets/`.
 ///
-/// The home must be checked, not just the presence of a `widgets/` ancestor:
-/// [widgetHomeOf] maps the flat `ui/widgets/…` to a SURFACE home keyed `ui`,
-/// so `isWidget` alone would quietly count the retired tier as compliant and
-/// make the mixed-state branch unreachable.
-bool _isThreeTierWidget(String rel) {
-  if (!isWidget(rel)) return false;
-  final home = widgetHomeOf(rel);
-  if (home == null) return false;
-  return home.home == WidgetHome.common || home.key.startsWith('ui/views/');
-}
+/// [widgetHomeOf] returns null for every non-home, the retired flat tier
+/// included, so this is exactly "is a widget AND has a home". The retired-tier
+/// predicate is imported rather than restated: two spellings of the same list
+/// drift, and W1 and this check must agree on what counts as migrated.
+bool _isThreeTierWidget(String rel) =>
+    isWidget(rel) && widgetHomeOf(rel) != null;
 
 List<String> _threeTierWidgets(String art) =>
     (_htmlFiles(art).map((f) => _relOf(art, f)).where(_isThreeTierWidget).toList()
       ..sort());
 
 List<String> _legacyFlatWidgets(String art) =>
-    (_htmlFiles(art).map((f) => _relOf(art, f)).where(_isLegacyFlatWidget).toList()
+    (_htmlFiles(art).map((f) => _relOf(art, f)).where(isRetiredFlatWidget).toList()
       ..sort());
 
 List<File> _htmlFiles(String dir) => _walkFiles(Directory(dir))
@@ -911,7 +900,7 @@ void _mutateWidgetPartials(String art, String skill) {
   var removed = 0;
   for (final f in _htmlFiles(art)) {
     final rel = _relOf(art, f);
-    if (_isThreeTierWidget(rel) || _isLegacyFlatWidget(rel)) {
+    if (_isThreeTierWidget(rel) || isRetiredFlatWidget(rel)) {
       f.deleteSync();
       removed++;
     }

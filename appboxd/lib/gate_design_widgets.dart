@@ -139,6 +139,22 @@ Map<String, Set<String>> buildIncludeGraph(String artifactDir) {
 /// A widget file: any `.html` under a directory literally named `widgets`.
 bool isWidget(String rel) => rel.split('/').contains('widgets');
 
+/// The retired flat tier — `ui/widgets/`, `ui/dialogs/`, `ui/bottomsheets/` at
+/// the artifact root, historically with a `components/` subfolder inside.
+///
+/// `ui/dialogs/` and `ui/bottomsheets/` hold no `widgets/` segment, so they are
+/// invisible to [isWidget]; they are named here so the placement pass can see
+/// the whole retired family rather than only the third of it that happens to be
+/// spelled `widgets`.
+const retiredFlatWidgetDirs = <String>[
+  'ui/widgets/',
+  'ui/dialogs/',
+  'ui/bottomsheets/',
+];
+
+bool isRetiredFlatWidget(String rel) =>
+    retiredFlatWidgetDirs.any(rel.startsWith);
+
 /// The three legal widget homes, widest first. [dir] is the widget's parent
 /// directory (the `widgets/` dir itself), root-relative POSIX.
 enum WidgetHome { common, shell, surface }
@@ -149,8 +165,15 @@ enum WidgetHome { common, shell, surface }
 /// - `ui/views/<shell>/shared/widgets/**` → shell, key `ui/views/<shell>`
 /// - `<dir>/widgets/**`                → surface, key `<dir>`
 ///
-/// Returns null when the path is under a `widgets/` dir that fits no home —
-/// `ui/views/<shell>/widgets/` is the illegal bare case W1 reports by name.
+/// Returns null when the path is under a `widgets/` dir that fits no home. Two
+/// such cases exist and W1 reports each BY NAME rather than as a scope problem:
+/// the bare `ui/views/<shell>/widgets/`, and the retired flat `ui/widgets/`.
+///
+/// A surface home must live under `ui/views/`. Returning one for any unmatched
+/// directory is what used to map the flat `ui/widgets/x.html` onto a surface
+/// home keyed `ui`, so a legacy tree drew "every consumer is confined to
+/// ui/views/main_shell — move to …" (a scope complaint about a file whose real
+/// problem is that it sits in a retired tier) instead of being told to migrate.
 ({WidgetHome home, String key})? widgetHomeOf(String rel) {
   final segs = rel.split('/');
   final wi = segs.indexOf('widgets');
@@ -164,8 +187,9 @@ enum WidgetHome { common, shell, surface }
     if (d.length == 4 && d[3] == 'shared') {
       return (home: WidgetHome.shell, key: 'ui/views/${d[2]}');
     }
+    return (home: WidgetHome.surface, key: dir);
   }
-  return (home: WidgetHome.surface, key: dir);
+  return null;
 }
 
 /// The shell a path belongs to, or null for `ui/common/**` and anything outside
@@ -199,7 +223,7 @@ List<LintFinding> _placementFindings(
   final all = _htmlFiles(artifactDir);
   final surfaceDirs = _surfaceDirs(all);
   for (final rel in all) {
-    if (!isWidget(rel)) continue;
+    if (!isWidget(rel) && !isRetiredFlatWidget(rel)) continue;
     final consumers = graph[rel] ?? const <String>{};
 
     // ── W2: a widget nobody includes is a deletion, not a widget.
@@ -207,6 +231,19 @@ List<LintFinding> _placementFindings(
       findings.add(LintFinding(rel,
           'W2: widget has zero includers (dead) — delete it, or include it '
           'from the surface that needs it'));
+      continue;
+    }
+
+    // ── W1: the retired flat tier, named as such. Its problem is the tier, not
+    // the scope, so say so — a scope message here sends the reader to measure
+    // consumers when the fix is a migration.
+    if (isRetiredFlatWidget(rel)) {
+      final tier = retiredFlatWidgetDirs.firstWhere(rel.startsWith);
+      findings.add(LintFinding(rel,
+          'W1: `$tier` is the retired flat widget tier, not a legal home — move '
+          'to `ui/common/widgets/` (consumers in 2+ shells), '
+          '`ui/views/<shell>/shared/widgets/` (2+ surfaces of one shell), or '
+          '`<surface>/widgets/` (one surface)'));
       continue;
     }
 
