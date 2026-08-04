@@ -20,7 +20,33 @@ import 'package:path/path.dart' as p;
 import 'intake.dart' show feedbackKinds, surfaceStates;
 import 'scaffold.dart' show findRepoRoot;
 
-const banner = 'appbox/structure@1';
+const banner = 'appbox/structure@2';
+
+// ── structure@2 ───────────────────────────────────────────────────────────
+// @2 adds three OPTIONAL top-level keys, each emitted only when its authored
+// source exists (same optionality contract as `flows`, so a design root that
+// authors none of them still emits a valid document):
+//
+//   theme    — models/theme.json, the accent-swatch SSOT: 5 swatches x 5
+//              semantic roles. Two colors are AUTHORED per mode (accent, soft)
+//              plus on-accent; the other three roles (accent-surface,
+//              accent-text, accent-muted) are DERIVED by color-mix from the
+//              `roles` mix percentages. We pass the mixes through rather than
+//              resolving them: resolution needs oklab against a --bg/--tx the
+//              design root owns per mode, and baking one number here would
+//              fork the SSOT that services/theme_tokens.js already owns.
+//   fonts    — models/fonts.json when present (declared families, never the
+//              assets/fonts/ filenames: subset+weight names like
+//              `lexend-deca-500-latin-ext` are build detail, not contract).
+//   widgets  — design/surfaces/**.html, the authored surface partials. Widget
+//              identity is (file, kind, occurrence index) — the same identity
+//              services/repositories/widget_repository.js resolves against, so
+//              a designer edit and a pipeline read name the same element.
+//
+// Widget note: `widgets` is present only for design roots that ARE live-read
+// projects (~/.appbox/projects/<name>, which carry design/surfaces/). The
+// studio's own root authors no surface partials, so its structure.json has no
+// `widgets` key — absent, not empty.
 
 // export const surfaceId = 'stage.shell'
 final _surfaceIdRe = RegExp("export\\s+const\\s+surfaceId\\s*=\\s*['\"]([^'\"]+)['\"]");
@@ -329,13 +355,287 @@ Map<String, dynamic>? buildStructure(String designRoot) {
     return null;
   }
 
+  // ---- structure@2: theme / fonts / widgets (each optional) ----
+  // Hard-fail on a source that EXISTS but is malformed; stay silent when it is
+  // simply absent. A typo in theme.json must not silently drop the theme key
+  // and let the gate call the result "in sync".
+  final theme = loadTheme(designRoot);
+  if (theme == null && File('$designRoot/models/theme.json').existsSync()) {
+    return null; // loadTheme already explained why on stderr
+  }
+  final fonts = loadFonts(designRoot);
+  if (fonts == null && File('$designRoot/models/fonts.json').existsSync()) {
+    return null;
+  }
+  final widgets = scanWidgets(designRoot);
+
   return {
     r'$schema': banner,
     'registry': 'models/screens_model/registry.json',
     'shellRoots': shellRoots,
     'screens': screens,
     'flows': ?flows,
+    'theme': ?theme,
+    'fonts': ?fonts,
+    'widgets': ?widgets,
   };
+}
+
+/// The accent-swatch SSOT (models/theme.json) lifted into structure@2.
+///
+/// Passed through by VALUE, not reinterpreted: theme.json is the SSOT and
+/// services/theme_tokens.js is its only other reader. We validate the shape a
+/// consumer depends on (5 roles resolvable per swatch per mode) and drop the
+/// designer-only `comment`/`$schema` noise.
+///
+/// Returns null when the file is absent (caller omits the key) OR malformed
+/// (caller hard-fails) — the two are distinguished by the caller testing
+/// existsSync, so a malformed theme can never be mistaken for an absent one.
+Map<String, dynamic>? loadTheme(String designRoot) {
+  final f = File('$designRoot/models/theme.json');
+  if (!f.existsSync()) return null;
+
+  Map<String, dynamic> raw;
+  try {
+    final decoded = jsonDecode(f.readAsStringSync());
+    if (decoded is! Map<String, dynamic>) {
+      stderr.writeln('FAIL: models/theme.json is not a JSON object');
+      return null;
+    }
+    raw = decoded;
+  } catch (e) {
+    stderr.writeln('FAIL: models/theme.json does not parse — $e');
+    return null;
+  }
+
+  final roles = raw['roles'];
+  if (roles is! Map) {
+    stderr.writeln('FAIL: models/theme.json has no `roles` mix map '
+        '(surfaceMix/textMix/mutedMix)');
+    return null;
+  }
+  for (final k in const ['surfaceMix', 'textMix', 'mutedMix']) {
+    if (roles[k] is! num) {
+      stderr.writeln('FAIL: models/theme.json roles.$k must be a number '
+          '(a color-mix percentage)');
+      return null;
+    }
+  }
+
+  final swatches = raw['swatches'];
+  if (swatches is! List || swatches.isEmpty) {
+    stderr.writeln('FAIL: models/theme.json has no `swatches` list');
+    return null;
+  }
+  final names = <String>[];
+  final out = <Map<String, dynamic>>[];
+  for (final s in swatches) {
+    if (s is! Map || s['name'] is! String) {
+      stderr.writeln('FAIL: models/theme.json swatch without a `name`');
+      return null;
+    }
+    final name = s['name'] as String;
+    if (names.contains(name)) {
+      stderr.writeln("FAIL: models/theme.json declares swatch '$name' twice");
+      return null;
+    }
+    names.add(name);
+    final modes = <String, dynamic>{};
+    for (final mode in const ['light', 'dark']) {
+      final m = s[mode];
+      if (m is! Map) {
+        stderr.writeln("FAIL: models/theme.json swatch '$name' has no "
+            "`$mode` mode — every swatch is a light+dark pair");
+        return null;
+      }
+      // accent + soft are authored; `on` is the on-accent of role 1.
+      for (final key in const ['accent', 'soft', 'on']) {
+        if (m[key] is! String) {
+          stderr.writeln("FAIL: models/theme.json swatch '$name'.$mode "
+              "is missing the `$key` color");
+          return null;
+        }
+      }
+      modes[mode] = {
+        'accent': m['accent'],
+        'soft': m['soft'],
+        'on': m['on'],
+      };
+    }
+    out.add({
+      'name': name,
+      if (s['dot'] is String) 'dot': s['dot'],
+      'light': modes['light'],
+      'dark': modes['dark'],
+    });
+  }
+
+  final def = raw['default'];
+  if (def is! String || !names.contains(def)) {
+    stderr.writeln("FAIL: models/theme.json `default` must name one of "
+        "its swatches (${names.join(', ')})");
+    return null;
+  }
+
+  return {
+    'default': def,
+    'roles': {
+      'surfaceMix': roles['surfaceMix'],
+      'textMix': roles['textMix'],
+      'mutedMix': roles['mutedMix'],
+    },
+    'swatches': out,
+  };
+}
+
+/// Declared font families (models/fonts.json) lifted into structure@2.
+///
+/// DECLARED, never scanned: emitting from assets/fonts/ filenames would put
+/// subset and weight detail (`lexend-deca-500-latin-ext`) into the pipeline
+/// contract, and a re-subset would then read as a structure change.
+Map<String, dynamic>? loadFonts(String designRoot) {
+  final f = File('$designRoot/models/fonts.json');
+  if (!f.existsSync()) return null;
+
+  Map<String, dynamic> raw;
+  try {
+    final decoded = jsonDecode(f.readAsStringSync());
+    if (decoded is! Map<String, dynamic>) {
+      stderr.writeln('FAIL: models/fonts.json is not a JSON object');
+      return null;
+    }
+    raw = decoded;
+  } catch (e) {
+    stderr.writeln('FAIL: models/fonts.json does not parse — $e');
+    return null;
+  }
+
+  final families = raw['families'];
+  if (families is! List || families.isEmpty) {
+    stderr.writeln('FAIL: models/fonts.json has no `families` list');
+    return null;
+  }
+  final out = <Map<String, dynamic>>[];
+  final seen = <String>[];
+  for (final fam in families) {
+    // `id` is the contract key (the [data-font] attribute value), NOT `label`:
+    // a menu label may be renamed without breaking anything downstream.
+    if (fam is! Map || fam['id'] is! String) {
+      stderr.writeln('FAIL: models/fonts.json family without an `id`');
+      return null;
+    }
+    final id = fam['id'] as String;
+    if (seen.contains(id)) {
+      stderr.writeln("FAIL: models/fonts.json declares family id '$id' twice");
+      return null;
+    }
+    seen.add(id);
+    if (fam['cssName'] is! String) {
+      stderr.writeln("FAIL: models/fonts.json family '$id' has no `cssName`");
+      return null;
+    }
+    // Emitted: identity + the name a renderer resolves + the role slot.
+    // Deliberately NOT emitted: files[], stack/displayStack/monoStack,
+    // declaredIn, vendored — vendoring and CSS cascade are design-side build
+    // detail owned by inc4; a re-subset or a stylesheet move must not read as
+    // a structure change.
+    out.add({
+      'id': id,
+      if (fam['label'] is String) 'label': fam['label'],
+      'cssName': fam['cssName'],
+      if (fam['role'] is String) 'role': fam['role'],
+      if (fam['license'] is String) 'license': fam['license'],
+    });
+  }
+
+  final def = raw['default'];
+  if (def is! String || !seen.contains(def)) {
+    stderr.writeln("FAIL: models/fonts.json `default` must name one of its "
+        "family ids (${seen.join(', ')})");
+    return null;
+  }
+  return {'default': def, 'families': out};
+}
+
+// Every open tag carrying data-el, in source order. Nunjucks-templated HTML is
+// not strictly parseable as HTML, but an OPEN TAG is: attributes may hold
+// {{ }} but never a bare `>`. Ported from widget_repository.js `elsIn` — the
+// two MUST agree on identity or a designer edit and a pipeline read would name
+// different elements.
+final _tagRe = RegExp(r'<([a-zA-Z][\w-]*)((?:"[^"]*"|' "'[^']*'" r'|[^>"' "'" r'])*)>');
+final _elRe = RegExp('data-el="([^":]+)(:|")');
+
+/// The auto-layout attributes the widget manager reads and writes.
+/// Ported verbatim from widget_repository.js LAYOUT_ATTRS.
+const layoutAttrs = <String>[
+  'data-layout',
+  'data-flow',
+  'data-wrap',
+  'data-clip',
+  'data-gap',
+  'data-pad',
+  'data-resize-x',
+  'data-resize-y',
+];
+
+/// Widget definitions scanned from the authored surface partials.
+///
+/// Returns null when this design root authors no design/surfaces/ (the studio's
+/// own root, and any root that is not a live-read project) — the caller then
+/// omits the key entirely rather than emitting an empty list, so "no widget
+/// layer" and "a widget layer that is empty" stay distinguishable.
+///
+/// Identity is (file, kind, index), matching widget_repository.resolveWidget:
+/// `index` disambiguates repeated same-kind elements in one file.
+List<Map<String, dynamic>>? scanWidgets(String designRoot) {
+  final dir = Directory('$designRoot/design/surfaces');
+  if (!dir.existsSync()) return null;
+
+  final files = dir
+      .listSync(recursive: true)
+      .whereType<File>()
+      .where((f) => f.path.endsWith('.html'))
+      .toList()
+    ..sort((a, b) => a.path.compareTo(b.path));
+
+  final out = <Map<String, dynamic>>[];
+  for (final f in files) {
+    final rel = p
+        .relative(f.path, from: designRoot)
+        .split(p.separator)
+        .join('/');
+    final src = f.readAsStringSync();
+    final perKind = <String, int>{};
+    for (final m in _tagRe.allMatches(src)) {
+      final attrs = m.group(2)!;
+      final el = _elRe.firstMatch(attrs);
+      if (el == null) continue;
+      final kind = el.group(1)!;
+      final index = perKind[kind] ?? 0;
+      perKind[kind] = index + 1;
+
+      final layout = <String, String>{};
+      for (final a in layoutAttrs) {
+        final am = RegExp('$a(?:="([^"]*)")?(?=[\\s>/]|\$)').firstMatch(attrs);
+        if (am != null) layout[a] = am.group(1) ?? '';
+      }
+      out.add({
+        'file': rel,
+        'kind': kind,
+        'index': index,
+        'tag': m.group(1),
+        'layout': layout,
+      });
+    }
+  }
+  out.sort((a, b) {
+    final f = (a['file'] as String).compareTo(b['file'] as String);
+    if (f != 0) return f;
+    final k = (a['kind'] as String).compareTo(b['kind'] as String);
+    if (k != 0) return k;
+    return (a['index'] as int).compareTo(b['index'] as int);
+  });
+  return out;
 }
 
 /// Derive shell dir from surface: "stage_shell_projects_home_view" → "stage_shell".

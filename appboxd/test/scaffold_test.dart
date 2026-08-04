@@ -30,7 +30,7 @@ void main() {
   // 3 frozen + 1 excluded (surface:null). Mirrors the Python self-test's
   // stage_shell shape; all three frozen surfaces share shellDir 'stage_shell'.
   Map<String, dynamic> baseStruct() => {
-        r'$schema': 'appbox/structure@1',
+        r'$schema': 'appbox/structure@2',
         'registry': 'models/screens_model/registry.json',
         'shellRoots': {'projects': '/', 'settings': '/settings'},
         'screens': [
@@ -93,6 +93,107 @@ void main() {
 
   Map<String, dynamic> clone(Map<String, dynamic> s) =>
       jsonDecode(jsonEncode(s)) as Map<String, dynamic>;
+
+  group('design-system.md: token-exact emission from structure@2', () {
+    // A theme block shaped like the authored designs/*/structure.json.
+    Map<String, dynamic> themed() {
+      final st = baseStruct();
+      st['theme'] = {
+        'default': 'cyan',
+        'swatches': [
+          {'name': 'cyan'},
+          {'name': 'amber'},
+        ],
+      };
+      st['fonts'] = {
+        'default': 'lexend',
+        'families': [
+          {'id': 'lexend'},
+          {'id': 'space-grotesk'},
+        ],
+      };
+      return st;
+    }
+
+    String surfaceDoc(String app) => File(
+            '$app/lib/ui/views/stage_shell/projects_home/design-system.md')
+        .readAsStringSync();
+
+    String shellDoc(String app) =>
+        File('$app/lib/ui/views/stage_shell/design-system.md')
+            .readAsStringSync();
+
+    test('theme present -> authored swatches + accent API, no placeholder', () {
+      final des = plantDesign('${tmp.path}/d', struct: themed());
+      final app = '${tmp.path}/app1';
+      expect(scaffold(des, app, ['macos'], derivationPath, configPath), 0);
+
+      for (final doc in [surfaceDoc(app), shellDoc(app)]) {
+        expect(doc, contains('`cyan`'), reason: 'authored swatch named');
+        expect(doc, contains('`amber`'), reason: 'every authored swatch named');
+        expect(doc, contains("kitAccentByName('cyan')"),
+            reason: 'default swatch reachable through the real API');
+        expect(doc, contains('kitDefaultAccent'));
+        // The placeholder must be GONE — that is the whole point of Inc 6.
+        expect(doc,
+            isNot(contains('<!-- builder: KitColors.* tokens this surface uses -->')),
+            reason: 'placeholder replaced by token-exact guidance');
+      }
+    });
+
+    test('fonts present -> declared families + kitFontById, no placeholder', () {
+      final des = plantDesign('${tmp.path}/d', struct: themed());
+      final app = '${tmp.path}/app1';
+      expect(scaffold(des, app, ['macos'], derivationPath, configPath), 0);
+
+      for (final doc in [surfaceDoc(app), shellDoc(app)]) {
+        expect(doc, contains('`lexend`'));
+        expect(doc, contains('`space-grotesk`'));
+        expect(doc, contains("kitFontById('lexend').cssName"));
+        // The BARE placeholder must be gone. The populated section keeps its
+        // own trailing builder prompt ("...roles this surface uses"), which is
+        // a superstring — so assert the exact bare form, not a prefix.
+        expect(doc, isNot(contains('<!-- builder: KitTypography.* roles -->')),
+            reason: 'placeholder replaced by token-exact guidance');
+      }
+    });
+
+    // The live designs/appbox-studio/structure.json carries `theme` but NO
+    // `fonts`. The fallback is on the real path, not hypothetical: a doc must
+    // never emit a face the design has not declared.
+    test('fonts absent -> Type placeholder survives verbatim', () {
+      final st = themed()..remove('fonts');
+      final des = plantDesign('${tmp.path}/d', struct: st);
+      final app = '${tmp.path}/app1';
+      expect(scaffold(des, app, ['macos'], derivationPath, configPath), 0);
+
+      for (final doc in [surfaceDoc(app), shellDoc(app)]) {
+        expect(doc, contains('<!-- builder: KitTypography.* roles -->'),
+            reason: 'no fonts block -> placeholder, never invented faces');
+        expect(doc, isNot(contains('kitFontById')),
+            reason: 'never names a face the design has not declared');
+        // theme is still present, so the Palette half stays token-exact.
+        expect(doc, contains("kitAccentByName('cyan')"));
+      }
+    });
+
+    test('structure@1 (no theme, no fonts) -> both placeholders survive', () {
+      final st = baseStruct()
+        ..remove('theme')
+        ..remove('fonts');
+      final des = plantDesign('${tmp.path}/d', struct: st);
+      final app = '${tmp.path}/app1';
+      expect(scaffold(des, app, ['macos'], derivationPath, configPath), 0);
+
+      for (final doc in [surfaceDoc(app), shellDoc(app)]) {
+        expect(doc,
+            contains('<!-- builder: KitColors.* tokens this surface uses -->'));
+        expect(doc, contains('<!-- builder: KitTypography.* roles -->'));
+        expect(doc, isNot(contains('kitAccentByName')),
+            reason: 'a structure@1 design invents no tokens');
+      }
+    });
+  });
 
   group('deriveFactors (P06): targets -> viewports', () {
     test('macos -> [desktop] only', () {

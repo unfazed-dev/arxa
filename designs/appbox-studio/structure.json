@@ -1,5 +1,5 @@
 {
-  "$schema": "appbox/structure@1",
+  "$schema": "appbox/structure@2",
   "registry": "models/screens_model/registry.json",
   "shellRoots": {
     "intake": "/intake",
@@ -332,7 +332,9 @@
       "shellDir": "workspace_shell",
       "surface": "workspace_shell_workspace_settings_view",
       "viewmodel": "ui/views/workspace_shell/settings/settings_viewmodel.js",
-      "deps": []
+      "deps": [
+        "services/facades/app_facade.js"
+      ]
     },
     {
       "id": "workspace.credentials",
@@ -505,5 +507,85 @@
         }
       ]
     }
-  ]
+  ],
+  "theme": {
+    "default": "cyan",
+    "roles": {
+      "surfaceMix": 8,
+      "textMix": 30,
+      "mutedMix": 20
+    },
+    "swatches": [
+      {
+        "name": "cyan",
+        "dot": "#21BFE9",
+        "light": {
+          "accent": "#0C87A8",
+          "soft": "rgba(12, 135, 168, .12)",
+          "on": "#FFFCF0"
+        },
+        "dark": {
+          "accent": "#45D5F5",
+          "soft": "rgba(69, 213, 245, .16)",
+          "on": "#100F0F"
+        }
+      },
+      {
+        "name": "violet",
+        "dot": "#4E28D5",
+        "light": {
+          "accent": "#4E28D5",
+          "soft": "rgba(78, 40, 213, .10)",
+          "on": "#FFFCF0"
+        },
+        "dark": {
+          "accent": "#9A82F0",
+          "soft": "rgba(154, 130, 240, .18)",
+          "on": "#100F0F"
+        }
+      },
+      {
+        "name": "blue",
+        "dot": "#3473DF",
+        "light": {
+          "accent": "#3473DF",
+          "soft": "rgba(52, 115, 223, .12)",
+          "on": "#FFFCF0"
+        },
+        "dark": {
+          "accent": "#7FA5F0",
+          "soft": "rgba(127, 165, 240, .18)",
+          "on": "#100F0F"
+        }
+      },
+      {
+        "name": "ember",
+        "dot": "#DA702C",
+        "light": {
+          "accent": "#BC5215",
+          "soft": "rgba(188, 82, 21, .09)",
+          "on": "#FFFCF0"
+        },
+        "dark": {
+          "accent": "#DA702C",
+          "soft": "rgba(218, 112, 44, .13)",
+          "on": "#100F0F"
+        }
+      },
+      {
+        "name": "moss",
+        "dot": "#879A39",
+        "light": {
+          "accent": "#66800B",
+          "soft": "rgba(102, 128, 11, .10)",
+          "on": "#FFFCF0"
+        },
+        "dark": {
+          "accent": "#879A39",
+          "soft": "rgba(135, 154, 57, .16)",
+          "on": "#100F0F"
+        }
+      }
+    ]
+  }
 }

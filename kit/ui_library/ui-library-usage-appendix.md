@@ -564,6 +564,29 @@ External usage per family:
   `main.dart:5,77`; p2 test/: `kit_native_segmented_control_test.dart:16`
 - **`kitDarkTheme()`** — p2 lib/: `lib/main.dart:15,74`; showcase lib/:
   `main.dart:5,78`
+- **`KitAccentRoles` / `KitAccentSwatch` / `kitAccentByName` /
+  `kitDefaultAccent`** — **no external usage yet.** The 5-role accent bundles
+  (designer five, mirroring `models/theme.json` `swatches`); read a swatch only
+  via `forBrightness()`.
+- **`fontFamily:` param on `kitLightTheme()` / `kitDarkTheme()`** — **no
+  external usage yet.** Applies a face across `textTheme` +
+  `primaryTextTheme`; an unbundled family name falls back silently.
+
+### `core/common/kit_fonts.dart`
+
+*New surface — nothing consumes it yet; it exists so the pipeline and the kit
+name the same faces. The catalogue is inert until a host bundles the binaries.*
+
+- **`kitFontOptions` / `KitFontFamily` / `KitFontRole`** — **no external
+  usage.** The catalogue: `lexend` (default), `grotesk`, `lora`, `mono`.
+  Mirrors `designs/appbox-studio/models/fonts.json`, which Increment 4 authors
+  — that file is not in the repo yet.
+- **`kitFontById` / `kitFontForRole` / `kitDefaultFont`** — **no external
+  usage.** `kitFontById` falls back to the default for an unknown id.
+- **`kitFontIsBundled`** — **no external usage.** The honest test for whether a
+  face's binary is actually present; false for every face today.
+- **`registerKitFontLicenses`** — **no external usage.** A host calls this once
+  it bundles the OFL binaries, to register the licences with Flutter.
 
 ### `core/common/kit_glyphs.dart`
 

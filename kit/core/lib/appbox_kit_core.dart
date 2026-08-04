@@ -29,6 +29,7 @@ export 'common/kit_app_constants.dart';
 export 'common/kit_glyphs.dart';
 export 'common/kit_glyphs_lucide.dart';
 export 'common/kit_colors.dart';
+export 'common/kit_fonts.dart';
 export 'common/kit_ui_helpers.dart';
 
 // --- Enums ---

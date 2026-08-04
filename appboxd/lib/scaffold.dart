@@ -278,7 +278,12 @@ String _stubViewmodel(Map<String, dynamic> screen) {
 
 /// The design-system.md every surface dir must carry (the review gate's
 /// design_system_doc check). STRUCTURE ONLY — the builder fills the real intent.
-String _designSystemDoc(Map<String, dynamic> screen, List<String> factors) {
+String _designSystemDoc(
+  Map<String, dynamic> screen,
+  List<String> factors, {
+  Map<String, dynamic>? theme,
+  Map<String, dynamic>? fonts,
+}) {
   final surface = screen['surface'] as String;
   final sid = screen['id'] as String;
   final shellDir = screen['shellDir'] as String;
@@ -291,11 +296,9 @@ String _designSystemDoc(Map<String, dynamic> screen, List<String> factors) {
       '- **shell:**  $shellDir\n'
       '- **derived form factors:** $fl\n'
       '\n'
-      '## Palette\n'
-      '<!-- builder: KitColors.* tokens this surface uses -->\n'
+      '${_paletteSection(theme)}'
       '\n'
-      '## Type\n'
-      '<!-- builder: KitTypography.* roles -->\n'
+      '${_typeSection(fonts)}'
       '\n'
       '## Spacing\n'
       '<!-- builder: spacing tokens (no ad-hoc SizedBox gaps) -->\n'
@@ -309,18 +312,99 @@ String _designSystemDoc(Map<String, dynamic> screen, List<String> factors) {
       '- stock `ElevatedButton`/`FilledButton`/`TextButton` CTAs (use `KitNativeButton`)\n';
 }
 
+/// Token-exact Palette guidance from structure@2's `theme` block.
+///
+/// The scaffolder names the ACCENT API and the authored swatches; it does not
+/// guess which role this surface uses — that stays the builder's call. When
+/// structure.json carries no `theme` (a structure@1 design), the placeholder is
+/// emitted unchanged rather than inventing tokens.
+String _paletteSection(Map<String, dynamic>? theme) {
+  if (theme == null) {
+    return '## Palette\n'
+        '<!-- builder: KitColors.* tokens this surface uses -->\n';
+  }
+  final swatches = (theme['swatches'] as List?) ?? const [];
+  final names = swatches
+      .whereType<Map>()
+      .map((s) => s['name'])
+      .whereType<String>()
+      .toList();
+  final def = theme['default'] as String?;
+  final b = StringBuffer('## Palette\n');
+  b.write('\n');
+  b.write('The ramp is `KitColors` (light) / `KitDarkColors` (dark). The brand\n'
+      'accent is NOT a constant — it is a user setting, so read it through the\n'
+      'swatch API and never hard-code one of the hexes below.\n');
+  b.write('\n');
+  if (names.isNotEmpty) {
+    b.write('- **authored swatches:** ${names.map((n) => '`$n`').join(', ')}\n');
+  }
+  if (def != null) {
+    b.write('- **default:** `$def` — `kitAccentByName(\'$def\')`, '
+        'or `kitDefaultAccent` for the same value\n');
+  }
+  b.write('- **read a swatch:** `kitAccentByName(name)'
+      '.forBrightness(Theme.of(context).brightness)` — the 5 roles are\n'
+      '  `.accent` `.soft` `.surface` `.text` `.muted`\n');
+  b.write('- **theme:** `kitLightTheme(accent: …)` / `kitDarkTheme(accent: …)` —\n'
+      '  `accent` is a `Color`, not a swatch: pass a role off the swatch\n'
+      '  (e.g. `kitAccentByName(n).forBrightness(b).accent`)\n');
+  b.write('\n');
+  b.write('<!-- builder: which of the 5 roles this surface uses, and where -->\n');
+  return b.toString();
+}
+
+/// Token-exact Type guidance from structure@2's `fonts` block.
+///
+/// Absent until the design side authors `models/fonts.json`; the placeholder is
+/// emitted unchanged rather than naming faces the design has not declared.
+String _typeSection(Map<String, dynamic>? fonts) {
+  if (fonts == null) {
+    return '## Type\n'
+        '<!-- builder: KitTypography.* roles -->\n';
+  }
+  final families = (fonts['families'] as List?) ?? const [];
+  final ids = families
+      .whereType<Map>()
+      .map((f) => f['id'])
+      .whereType<String>()
+      .toList();
+  final def = fonts['default'] as String?;
+  final b = StringBuffer('## Type\n');
+  b.write('\n');
+  b.write('Sizes come from the k-scale (`KitTypography.*` roles) — the font\n'
+      'block chooses the FACE only, never the size.\n');
+  b.write('\n');
+  if (ids.isNotEmpty) {
+    b.write('- **declared families:** ${ids.map((i) => '`$i`').join(', ')}\n');
+  }
+  if (def != null) {
+    b.write('- **default:** `$def` — `kitFontById(\'$def\').cssName`\n');
+  }
+  b.write('- **apply:** pass that css name to '
+      '`kitLightTheme(fontFamily: …)` / `kitDarkTheme(fontFamily: …)`\n');
+  b.write('- **NOTE:** a family name whose binary is not bundled falls back to\n'
+      '  the platform default SILENTLY — check `kitFontIsBundled` before\n'
+      '  trusting a face, and call `registerKitFontLicenses()` once bundled\n');
+  b.write('\n');
+  b.write('<!-- builder: KitTypography.* roles this surface uses -->\n');
+  return b.toString();
+}
+
 /// The shell-level design-system.md the scaffold gate (S4) requires at
 /// views/`<shell>`/design-system.md. STRUCTURE ONLY.
-String _shellDesignSystemDoc(String shell) {
+String _shellDesignSystemDoc(
+  String shell, {
+  Map<String, dynamic>? theme,
+  Map<String, dynamic>? fonts,
+}) {
   return '# design-system — $shell (shell)\n'
       '\n'
       '> appbox-scaffolder: STRUCTURE ONLY. The builder (plan 08) fills the real intent.\n'
       '\n'
-      '## Palette\n'
-      "- `KitColors` — the shell's palette source (builder: name the kc* tokens)\n"
+      '${_paletteSection(theme)}'
       '\n'
-      '## Type\n'
-      '<!-- builder: KitTypography.* roles -->\n'
+      '${_typeSection(fonts)}'
       '\n'
       '## Spacing\n'
       '<!-- builder: spacing tokens (no ad-hoc SizedBox gaps) -->\n'
@@ -612,6 +696,11 @@ int scaffold(
   final per = 2 + factors.length; // base + viewmodel + one per derived factor
   if (_dirCollisions(frozen)) return 1;
 
+  // structure@2 design blocks — optional; a structure@1 design has neither and
+  // the emitted docs keep their placeholders rather than inventing tokens.
+  final themeBlock = loaded.data!['theme'] as Map<String, dynamic>?;
+  final fontsBlock = loaded.data!['fonts'] as Map<String, dynamic>?;
+
   var written = 0;
   for (final s in frozen) {
     final d = surfaceDir(s);
@@ -622,7 +711,7 @@ int scaffold(
       File('$base/${d}_view.$f.dart').writeAsStringSync(_stubFactor(s, f, targets));
     }
     File('$base/${d}_viewmodel.dart').writeAsStringSync(_stubViewmodel(s));
-    File('$base/design-system.md').writeAsStringSync(_designSystemDoc(s, factors));
+    File('$base/design-system.md').writeAsStringSync(_designSystemDoc(s, factors, theme: themeBlock, fonts: fontsBlock));
     written++;
   }
 
@@ -635,7 +724,7 @@ int scaffold(
   for (final sh in shells.toList()..sort()) {
     final shDir = '$views/$sh';
     Directory(shDir).createSync(recursive: true);
-    File('$shDir/design-system.md').writeAsStringSync(_shellDesignSystemDoc(sh));
+    File('$shDir/design-system.md').writeAsStringSync(_shellDesignSystemDoc(sh, theme: themeBlock, fonts: fontsBlock));
     File('$shDir/${sh}_chrome.dart').writeAsStringSync(_shellChrome(sh));
   }
 
