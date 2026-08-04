@@ -891,7 +891,7 @@ Ruling (b) executed: the composer is wired, not gated. `scaffold_facade.js:205`
 |---|---|---|
 | facade | `sendMessage(session, text, t, locale, screen)` | argument order mirrors its sibling `setPanelSize`, **not** intake's `(sd, surface, text, prefs, t, locale)` |
 | facade | `thread: [...static two, ...session.scaffoldThread]` | session slot mirrors `scaffoldPanelSize` persistence shape |
-| viewmodel | `export const sendMessage` (picker_viewmodel.js:55) | thin, mirrors `panelSize`; empty input → 204 |
+| viewmodel | `export const sendMessage` (picker_viewmodel.js:55) | thin, mirrors `panelSize`; empty input → `h.noContent` (see boundary) |
 | l10n | `scaffold.picker.thread.reply` | en / pl / qps-ploc |
 
 **The `screen` argument is load-bearing.** It is the last parameter and is
@@ -927,14 +927,45 @@ Provable now, and measured:
 the ruling. Green above describes the export's shape and the facade's
 behaviour, *not* a round-trip. The 404 stands until the route lands.
 
+Specifically, **the 204 has never been observed.** `h.noContent` is
+*code-path-present-unexercised*: the helper exists (`runtime/lib/helpers.mjs:42`)
+and my line is byte-identical to the established convention in
+`freeze_viewmodel.js:26` and `chat_viewmodel.js:49`, but no request has ever
+reached it. Helper-exists + convention-matches is the strongest claim available
+before the route lands; it is not a measured status code, and I am not
+reporting it as one.
+
+### Key-count reconciliation (against the ruling's "996 baseline")
+
+The ruling cited a 996-key baseline; HEAD is 1009. That is **not** drift
+introduced by this work, and the delta is fully attributed:
+
+| ref | en keys | note |
+|---|---|---|
+| `b4661bc~1` | 1008 | already 1008 *before* any composer work |
+| `b4661bc` | 1008 | unchanged by the sweep commit |
+| `HEAD` (`9c77c10`) | 1009 | **+1, mine: `scaffold.picker.thread.reply`** |
+
+So 996 → 1008 predates the ruling and belongs to earlier work (mine and
+teammates'); the composer ruling's execution added exactly one key, at parity
+across en / pl / qps-ploc. The `.detected` and `.help` keys named in the table
+above landed earlier in the session, not here.
+
 ### Two notes on the shared branch
 
 1. The two RED items assigned to me were **already satisfied** when I received
-   them: `picker_view.html:6` imports `_shared.html` and `:288` is
-   byte-identical to `run_view.html:238` (zero `pn.open` anywhere in
-   `main_shell/`), and `picker_viewmodel.js:36` already exported `panelSize`.
-   Lint and selftest were 0 / 25-of-25 *before* I touched anything; the
-   "23/25" in the assignment was stale.
+   them, and this part is checkable in HEAD today: `picker_view.html:6`
+   imports `_shared.html`, `:288` is byte-identical to `run_view.html:238`,
+   there is zero `pn.open` anywhere in `main_shell/`, and
+   `picker_viewmodel.js:36` already exported `panelSize`. The assignment's
+   "23/25" and its `~line 274` citation do not correspond to the file.
+
+   I originally also wrote that "lint and selftest were 0 / 25-of-25 before I
+   touched anything." **Cut as unpinnable.** I did measure it, but on a
+   working tree, not a commit — and on a branch three agents were writing to,
+   so there is no SHA I can hand anyone to re-run it against. An unverifiable
+   counterfactual is exactly the pattern this thread has already retracted
+   three times; the file-level facts above carry the point without it.
 2. My facade edits reached `HEAD` via `b4661bc` without my running `git
    commit` — another agent committed the shared working tree while my work was
    in flight. Flagging per run-screen's standing warning that green results on
