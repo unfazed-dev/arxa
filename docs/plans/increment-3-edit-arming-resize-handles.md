@@ -162,8 +162,27 @@ PASS  clicking the chip ARMS the canvas
 PASS  clicking a widget SELECTS it (server-side)
 PASS  resize handles are hung on the selection (found 8)
 PASS  hug/fill/fixed chips render
-PASS  tiles preserved across the selection morph (not reloaded)
+PASS  tiles preserved across the selection morph (same frame, not reloaded)
+PASS  explode row click RE-SELECTS via the same route
+PASS  handles follow the row selection (found 8)
+PASS  editor is bound after a row click (found 6 chips)
 ```
+
+Both entry points are covered deliberately. The explode row posts a different
+`name` argument (`label(name)`) than the canvas click (the raw `data-el`
+suffix); now that select returns a full `stageContext`, a mismatch would fail
+*silently* — a viewer with no editor bound rather than an error — so the row
+path asserts the editor is bound, not merely that the route answered.
+
+Preservation is asserted by stamping `contentWindow` before the morph and
+comparing identity after. The `_cw`/`_cz` guards cannot evidence this: they
+are set once and never cleared, so they read true even for a fresh frame.
+
+`widgetAttr` deliberately still returns `widgetEditorContext` into
+`#widgetEditor`: applying an attribute does not change *which* widget is
+selected, so the canvas attrs it would re-render are already correct, and the
+narrower swap avoids morphing the viewer on every step-chip press. It is now
+the only handler on that path, and that asymmetry is intentional.
 
 Screenshots in `docs/plans/increment-3-evidence/`. The third shows the
 Ceramics card selected with its handles and the editor bound to

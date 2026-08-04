@@ -2,6 +2,7 @@
 // Drives the REAL UI in Chrome — clicks the arm chip and a card the way a user
 // would — rather than poking the HTTP endpoints, so the screenshots are
 // evidence that the interaction works, not just that the routes respond.
+import 'dart:convert';
 import 'dart:io';
 import 'package:appboxd/cdp.dart';
 
@@ -16,6 +17,9 @@ Future<void> shot(CdpSession s, String name) async {
 
 void check(String label, bool ok) =>
     print('${ok ? "PASS" : "FAIL"}  $label');
+
+/// JSON-quote a value for embedding in a page expression.
+String _js(Object? v) => jsonEncode(v);
 
 Future<void> main() async {
   final client = await CdpClient.launch();
@@ -55,6 +59,17 @@ Future<void> main() async {
   // click silently lands on nothing — let the swap settle first.
   await Future.delayed(const Duration(milliseconds: 1200));
   await shot(page, '2-armed');
+
+  // Stamp the live frame so "preserved" means THIS iframe survived. drag.js's
+  // _cw/_cz guards are set once and never cleared, so they read true even for
+  // a freshly swapped-in frame — they cannot evidence preservation.
+  await page.evaluate("""
+    (() => {
+      const f = document.querySelector('iframe[data-screen="portalo.home"]');
+      f.contentWindow.__stamp = 'inc3-' + Math.random();
+      window.__stamp = f.contentWindow.__stamp;
+    })()
+  """);
 
   // --- click a real widget inside a tile iframe ---
   // Tiles are CSS-scaled, so content coords must be scaled into viewport space.
@@ -119,16 +134,59 @@ Future<void> main() async {
 
   // Tiles must survive the selection morph — a swap that reloaded every
   // iframe would be a regression even with handles working.
-  final framesLive = await page.evaluate("""
+  final preserved = await page.evaluate("""
     (() => {
       const f = document.querySelector('iframe[data-screen="portalo.home"]');
-      return {wired: !!(f && f._cw), doc: !!(f && f.contentDocument && f.contentDocument._cz)};
+      return !!(f && f.contentWindow && f.contentWindow.__stamp === window.__stamp);
     })()
   """);
-  check('tiles preserved across the selection morph (not reloaded)',
-      framesLive['wired'] == true && framesLive['doc'] == true);
+  check('tiles preserved across the selection morph (same frame, not reloaded)',
+      preserved == true);
 
   await shot(page, '3-armed-selected-handles');
+
+  // --- second entry point: the explode row. It posts the same route with a
+  // DIFFERENT name argument (label(name), not the raw data-el suffix), and
+  // now that select returns a full stageContext a mismatch would fail
+  // silently — a viewer with no editor bound rather than an error.
+  final selBefore = await page.evaluate(
+      "document.querySelector('[data-wedit-sel]').getAttribute('data-wedit-sel')");
+  // Dispatched on the element, not by coordinate: explode.js binds its own
+  // click listener, so this exercises the real wire while staying immune to
+  // the mid-morph rect race that already bit the canvas phase once.
+  final row = await page.evaluate("""
+    (() => {
+      window.__posted = null;
+      document.body.addEventListener('htmx:beforeRequest', (e) => {
+        window.__posted = e.detail.pathInfo?.requestPath || '?';
+      }, {once: true});
+      const rows = Array.from(document.querySelectorAll('.dv-explode-el'));
+      if (!rows.length) return {err: 'no explode rows rendered'};
+      const r = rows.find(x => !/Ceramics/.test(x.textContent)) || rows[0];
+      const panel = r.closest('.dv-explode');
+      r.click();
+      return {label: r.textContent.trim().slice(0, 24),
+              explodeFor: panel ? panel.dataset.explodeFor : null};
+    })()
+  """);
+  if (row is Map && row['err'] != null) {
+    print('FAIL  ${row['err']}');
+  } else {
+    print('  clicked explode row: ${row['label']} (panel: ${row['explodeFor']})');
+    final changed = await page.waitForFunction(
+        "document.querySelector('[data-wedit-sel]') && "
+        "document.querySelector('[data-wedit-sel]').getAttribute('data-wedit-sel') !== ${_js(selBefore)}");
+    print('  row posted to: ${await page.evaluate("window.__posted")}');
+    check('explode row click RE-SELECTS via the same route', changed);
+    final h2 = await page.evaluate(
+        "document.querySelectorAll('.dv-wedit-handles .dv-wh').length");
+    check('handles follow the row selection (found $h2)', (h2 as int) > 0);
+    final c2 = await page.evaluate(
+        "document.querySelectorAll('.dv-wedit-mode').length");
+    check('editor is bound after a row click (found $c2 chips)', (c2 as int) > 0);
+    await shot(page, '4-explode-row-selected');
+  }
+
   await client.close();
   print('done');
 }
