@@ -50,7 +50,7 @@
 {# accent comes from the facade (theme.json's default until per-screen swatch
    switching lands) — it was hardcoded "cyan" here, which silently pinned every
    designed screen to one swatch. #}
-<div id="app" data-theme="{{ theme }}" data-accent="{{ accent }}">
+<div id="app" data-theme="{{ theme }}" data-accent="{{ accent }}" data-font="{{ font }}">
   <div class="stub-screen" style="{{ '' if embed else 'max-width: ' + width + 'px' }}">
     {% if not embed %}
     <header class="stub-nav" data-el="nav-bar" data-inspect-role="nav" data-inspect-style="app bar · brand + links" data-inspect-motion="none" data-inspect-fn="Top-level navigation and brand for the screen">
