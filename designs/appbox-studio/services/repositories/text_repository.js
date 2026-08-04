@@ -91,15 +91,9 @@ export const textProvenance = (screenId, kind, index = 0) => {
   if (!w) return null;
   const src = readSource(w.file);
   if (!src) return null;
-  // resolveWidget re-derives start/end internally; re-find the same occurrence.
-  const openRe = new RegExp(`<${w.tag}(?:"[^"]*"|'[^']*'|[^>"'])*>`, 'g');
-  let m, seen = -1, openEnd = null;
-  while ((m = openRe.exec(src))) {
-    if (!m[0].includes(`data-el="${kind}`)) continue;
-    if (++seen === index) { openEnd = m.index + m[0].length; break; }
-  }
-  if (openEnd == null) return null;
-  const r = innerRange(src, w.tag, openEnd);
+  // The open tag's range comes FROM resolveWidget — one identity rule, so this
+  // module can never select a different element than the layout editor does.
+  const r = innerRange(src, w.tag, w.end);
   if (!r) return null;
   const text = src.slice(r.start, r.end);
   return {
