@@ -453,8 +453,12 @@
    post-transform, so living inside the zoomed subtree would scale it twice.
    pointer-events stay off the frame itself — only the eight grips take the
    pointer, so the tile underneath keeps hover/scroll while armed. */
-.dv-wedit-handles { position: fixed; z-index: 40; pointer-events: none; outline: 1px solid var(--accent); outline-offset: 1px; }
-.dv-wedit-handles .dv-wh { position: absolute; width: 9px; height: 9px; background: var(--bg); border: 1.5px solid var(--accent); border-radius: 2px; pointer-events: auto; }
+   The box is parented to #app (where --accent/--bg are declared), but the
+   literal fallbacks stay: a custom property that fails to resolve makes the
+   whole declaration invalid at computed-value time, which would silently
+   give transparent grips rather than an obvious break. */
+.dv-wedit-handles { position: fixed; z-index: 40; pointer-events: none; outline: 1px solid var(--accent, #0891b2); outline-offset: 1px; }
+.dv-wedit-handles .dv-wh { position: absolute; width: 9px; height: 9px; background: var(--bg, #fffcf0); border: 1.5px solid var(--accent, #0891b2); border-radius: 2px; pointer-events: auto; }
 .dv-wh-nw { top: -5px; left: -5px; cursor: nwse-resize; }
 .dv-wh-n  { top: -5px; left: 50%; margin-left: -4.5px; cursor: ns-resize; }
 .dv-wh-ne { top: -5px; right: -5px; cursor: nesw-resize; }
@@ -466,5 +470,5 @@
 /* Live intent readout: the commit is a MODE, not a measurement, so the drag
    names the mode it will write instead of showing a pixel figure it has no
    attribute to store. */
-.dv-wedit-handles.is-dragging::after { content: attr(data-intent); position: absolute; top: -1.35rem; left: 0; font-size: .65rem; padding: .05rem .35rem; border-radius: 4px; background: var(--accent); color: var(--on-accent); }
+.dv-wedit-handles.is-dragging::after { content: attr(data-intent); position: absolute; top: -1.35rem; left: 0; font-size: .65rem; padding: .05rem .35rem; border-radius: 4px; background: var(--accent, #0891b2); color: var(--on-accent, #fffcf0); }
 .dv-wedit-handles.is-dragging[data-intent=""]::after { content: none; }

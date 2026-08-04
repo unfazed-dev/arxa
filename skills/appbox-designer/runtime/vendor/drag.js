@@ -368,7 +368,14 @@
         h.dataset.sign = String(sign);
         hbox.appendChild(h);
       }
-      document.body.appendChild(hbox);
+      // Parent to #app, NOT <body>: the theme custom properties (--accent,
+      // --bg) are declared on #app, and custom properties only inherit
+      // DOWNWARD — a body-parented overlay sits above that declaration and
+      // would render with no border colour and a transparent fill, i.e.
+      // handles present in the DOM and invisible on screen. Nothing in the
+      // chain sets transform/filter/contain, so position:fixed still
+      // resolves against the viewport here.
+      (document.getElementById('app') || document.body).appendChild(hbox);
       wireBox(canvas);
     }
     Object.assign(hbox.style, {
