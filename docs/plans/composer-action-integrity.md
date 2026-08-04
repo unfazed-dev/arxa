@@ -1193,3 +1193,31 @@ strike it. (2) A note is session-held and therefore visible from every lens stat
 `?state=completed` included. That is a property of the run, not of the view, so I
 believe it is right — but it was measured, not designed, and is stated so it can be
 overruled.
+
+## Instance 14 — "committed" is not a location, and master is half-present
+
+The lead reported no movement on two items I had verified. Both readings were correct;
+they were taken in different trees.
+
+```
+git branch -a --contains 97a3301   -> scaffold-shell-worktree ONLY
+git branch -a --contains b4661bc   -> master AND scaffold-shell-worktree
+master: grep -c composerAction scaffold_run_facade.js -> 0
+```
+
+I had also told a teammate `_shared.html` was "committed," meaning it. It is — on this
+branch (`9c77c10`), not on `master`. **"Committed" is a claim about reachability from a
+named ref, and it is worthless without the ref.** The same word covered two different
+facts in the same thread and only the branch query separated them.
+
+**Operational consequence, worth more than the vocabulary point.** The panel-size pair is
+split across trees: `master` has the facade half (`panelSizeHref`, `b4661bc`) but not the
+template half that consumes it (`_shared.html:105`, `9c77c10`). Anything gated from the
+main checkout is measuring a half-present convention and cannot know it. Any suite that
+reports green from a tree that lacks half the change is a positive control for the tree,
+not for the change.
+
+Corollary to the standing rule: an instrument must be proven capable of non-zero for that
+subject, at that moment, **and in that tree**. Three coordinates, not two. The first two
+were learned by measuring; the third arrived as a status ping that read as a false alarm
+and wasn't one.
