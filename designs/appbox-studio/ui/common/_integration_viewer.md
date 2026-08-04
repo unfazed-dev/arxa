@@ -186,6 +186,13 @@ Files:
   appends `&theme={v.theme}`; the stub resolves override-else-studio-theme
   (build_facade.screenStub) and its own nav links re-propagate the raw
   override only, so "auto" never gets pinned.
+- Interact-in-place: on views/flows canvases (`.dv-flow-canvas` without
+  `data-static`) every tile frame takes pointer input and scrolls its own
+  screen (no `scrolling="no"`). Still frames stay script-free — canvas.js
+  cancels anchor clicks and form submits inside them from the parent, so
+  taps give native feedback but never navigate. Live (`still` dropped) and
+  inspected (`&inspect=1`) frames keep real navigation; the `data-static`
+  evidence canvas keeps `pointer-events: none`.
 
 ## The second arg: `designViewer(v, chrome)` — the two shell panels
 

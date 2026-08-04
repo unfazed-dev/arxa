@@ -21,8 +21,10 @@
   {# Boosted MPA (ADR-0003) for the frames the user can actually click: the
      live tile and the proto lens. Without it every in-prototype click is a
      full document load of the iframe — a white flash per interaction.
-     `still` frames are the static canvas tiles (pointer-events: none), so
-     they stay script-free rather than parsing htmx 20 times over.
+     `still` frames are the canvas tiles: interactive in place (scroll, taps,
+     inputs) but with navigation rendered inert by canvas.js from the parent
+     (same-origin), so they stay script-free rather than parsing htmx 20
+     times over.
      globalViewTransitions animates the body swap with zero JS; allowEval and
      allowScriptTags stay false so the stub keeps ADR-0002's no-custom-JS
      boundary. #}

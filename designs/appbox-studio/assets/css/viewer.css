@@ -207,6 +207,11 @@
    hover/click) */
 .dv-tile.is-live .dv-tile-frame,
 .dv-tile.is-inspecting .dv-tile-frame { pointer-events: auto; }
+/* interact-in-place (views + flows lenses): every tile frame takes pointer
+   input — scroll, hover, taps — while canvas.js cancels navigation inside
+   still frames from the parent (stubs stay script-free). The data-static
+   evidence canvas keeps the base fence above. */
+.dv-flow-canvas:not([data-static]) .dv-tile-frame { pointer-events: auto; }
 
 /* ---------- per-tile hover toolbar (the only per-tile chrome) ----------
    Revealed on :hover/:focus-within, pure CSS; opacity-only so the header

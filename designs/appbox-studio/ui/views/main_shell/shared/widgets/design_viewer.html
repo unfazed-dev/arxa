@@ -175,8 +175,10 @@
 
 {# One screen tile: chrome header (hover toolbar + label + live close) over
    the stub-render iframe. The live tile drops &still=1 (live render) and the
-   inspected tile gains &inspect=1; .is-live/.is-inspecting restore pointer
-   events on the frame (viewer.css). #}
+   inspected tile gains &inspect=1. Every frame on a non-static canvas takes
+   pointer input (interact-in-place, viewer.css): still frames scroll and tap
+   natively — no `scrolling="no"` — while canvas.js cancels their navigation
+   from the parent, so a tap never walks the tile to another screen. #}
 {% macro tile(v, s, row, first, last) %}
 {# Morph matches nodes by id, so every tile needs one that is STABLE across
    renders and UNIQUE within the page. Screen id alone is neither: the flows
@@ -217,7 +219,7 @@
           id="dvf-{{ scope }}--{{ s.id }}"
           src="{{ v.stubBase }}{{ s.id }}?vp={{ s.tile.vp }}&embed=1{{ '' if s.live else '&still=1' }}{{ '&inspect=1' if s.inspecting }}{{ '&theme=' + v.theme if v.theme }}{{ s.walkQs if s.live and s.walkQs }}"
           style="height: {{ s.tile.height }}px"
-          scrolling="no" tabindex="-1" title="{{ s.label or s.id }}"></iframe>
+          tabindex="-1" title="{{ s.label or s.id }}"></iframe>
 </div>
 {% endmacro %}
 

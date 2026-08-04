@@ -76,6 +76,9 @@ body {
 #app {
   height: 100dvh; overflow: hidden;
   display: flex; flex-direction: column;
+  /* (stub documents release this clamp — see `.stub-body #app` by the stub
+     rules: a screen must scroll like the designed app, and the clamp was
+     silently clipping every screen taller than the frame.) */
   /* Flexoki light — "Paper" */
   --bg: #FFFCF0;
   --bg-2: #F2F0E5;
@@ -649,6 +652,14 @@ button:active { transform: translateY(1px); }
 
 /* the iframe document: stand-in render of a client design screen */
 .stub-body { margin: 0; }
+/* Stubs reuse #app for the TOKEN scope (data-theme/data-accent), not the
+   shell's geometry: the studio clamps #app to the viewport (100dvh,
+   overflow hidden) to keep panel drift invisible, which silently clipped
+   every stub screen taller than its frame (portalo.home: 1333px content in
+   an 844px clamp) and made scroll-in-place impossible. Release it here —
+   the document scroller takes over, min-height keeps full-viewport screens
+   (splash centering) intact. */
+.stub-body #app { height: auto; min-height: 100dvh; overflow: visible; }
 .stub-screen {
   margin: 0 auto; min-height: 100vh; position: relative;
   display: flex; flex-direction: column; gap: 1rem;

@@ -14,6 +14,13 @@
      filmstrip thumb click         → smooth-center that screen (views lens)
      scroll (views lens)           → strip tracks the current screen, `.on`
                                      accent mark on tile and thumb alike
+     tap/scroll inside a tile      → interact-in-place (views/flows): still
+                                     frames take taps, hover and scroll
+                                     natively, but navigation is inert —
+                                     anchor clicks and form submits are
+                                     cancelled from here (same-origin), so
+                                     the stub stays script-free and a tap
+                                     never walks the tile to another screen
 
    Zoom scales the .dv-zoom wrapper (transform-origin 0 0) and re-anchors the
    scroll position so the point under the cursor stays put. Scale is paint-
@@ -62,25 +69,6 @@
       e.preventDefault();
       zoomAt(el, t, e.clientX, e.clientY, e.deltaY);
     }, { passive: false });
-
-    // pinch-over-the-device: iframe documents swallow the wheel before the
-    // stage sees it. The stubs are same-origin, so listen inside each frame
-    // and forward into the stage zoom, translated to page coordinates.
-    t?.querySelectorAll('iframe').forEach((f) => {
-      const wire = () => {
-        const doc = f.contentDocument;
-        if (!doc || doc._cz) return;
-        doc._cz = 1;
-        doc.addEventListener('wheel', (e) => {
-          if (!e.ctrlKey) return;
-          e.preventDefault();
-          const fr = f.getBoundingClientRect();
-          zoomAt(el, t, e.clientX + fr.left, e.clientY + fr.top, e.deltaY);
-        }, { passive: false });
-      };
-      if (f.contentDocument) wire();
-      f.addEventListener('load', wire);
-    });
 
     el.addEventListener('pointerdown', (e) => {
       // .dv-flow-canvas pointer gestures belong to drag.js (tile drag,
@@ -209,7 +197,52 @@
     t.style.transform = `scale(${stashedZoom.z})`;
   });
 
-  const arm = (el) => { attach(el); if (el.matches('.dv-flow-canvas')) sync(el); };
+  // per-frame same-origin wiring. Runs on EVERY scan, not inside attach():
+  // attach's el._cz one-shot guard skips morph-preserved canvases, so frames
+  // ADDED by a swap (a lens switch morphs new tiles in) would never be wired
+  // — pinch forwarding and inert navigation both went dead on them. The
+  // per-iframe _cw guard keeps re-scans idempotent; the per-document _cz
+  // guard keeps re-loads idempotent.
+  const wireFrames = (el) => {
+    const t = zoomChild(el);
+    t?.querySelectorAll('iframe').forEach((f) => {
+      if (f._cw) return;
+      f._cw = 1;
+      const wire = () => {
+        const doc = f.contentDocument;
+        if (!doc || doc._cz) return;
+        doc._cz = 1;
+        // pinch-over-the-device: iframe documents swallow the wheel before
+        // the stage sees it. The stubs are same-origin, so listen inside
+        // each frame and forward into the stage zoom, in page coordinates.
+        doc.addEventListener('wheel', (e) => {
+          if (!e.ctrlKey) return;
+          e.preventDefault();
+          const fr = f.getBoundingClientRect();
+          zoomAt(el, t, e.clientX + fr.left, e.clientY + fr.top, e.deltaY);
+        }, { passive: false });
+        // interact-in-place: still frames (canvas tiles) take taps, hover
+        // and scroll natively, but navigation stays inert — anchors and
+        // form submits are cancelled here in the parent (same-origin), so
+        // the stub stays script-free and a tap never full-loads another
+        // screen into the tile. Gate on the DOCUMENT url, not the src
+        // attribute: it stays correct if a frame ever re-navigates. Live
+        // tiles drop still=1 (real prototype nav) and inspected frames keep
+        // navigation (pqs deliberately carries inspect=1 across hops).
+        const q = f.contentWindow?.location?.search || '';
+        if (q.includes('still=1') && !q.includes('inspect=1')) {
+          doc.addEventListener('click', (e) => {
+            if (e.target.closest('a[href]')) e.preventDefault();
+          }, true);
+          doc.addEventListener('submit', (e) => e.preventDefault(), true);
+        }
+      };
+      if (f.contentDocument) wire();
+      f.addEventListener('load', wire);
+    });
+  };
+
+  const arm = (el) => { attach(el); wireFrames(el); if (el.matches('.dv-flow-canvas')) sync(el); };
   const scan = (root) => {
     if (root.matches?.(SEL)) arm(root);
     root.querySelectorAll?.(SEL).forEach(arm);
