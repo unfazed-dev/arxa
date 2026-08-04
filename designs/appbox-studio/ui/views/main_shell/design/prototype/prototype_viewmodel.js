@@ -122,12 +122,20 @@ export const inspectorUnlock = (c, h) => {
 export const widgetArm = (c, h) =>
   h.render(c, `${VIEW}#viewerSwap`, facade.armWidgetEdit(h.session(c).data, h.prefs(c), h.t(c), h.locale(c)));
 
+// Swaps the WHOLE viewer for the same reason arming does. The editor fragment
+// alone cannot carry the selection: drag.js hangs the resize handles off
+// `[data-wedit-armed][data-wedit-sel]` on the CANVAS BODY, and those attrs are
+// rendered by the viewer's bodyAttrs — a slot-only swap left the canvas
+// attribute stale, so the editor opened but the handles never appeared. The
+// viewer fragment re-renders the open editor inline (stage context `wedit`),
+// so one response updates both, and the selection keeps a single vocabulary:
+// server state read off the canvas, never a client-painted marker.
 export const widgetSelect = async (c, h) => {
   const form = await h.form(c);
   const next = facade.selectWidget(h.session(c).data, {
     screen: form.screen, kind: form.kind, name: form.name, index: form.index,
-  }, h.t(c));
-  return h.render(c, `${VIEW}#widgetEditor`, next);
+  }, h.prefs(c), h.t(c), h.locale(c));
+  return h.render(c, `${VIEW}#viewerSwap`, next);
 };
 
 // Step-chip posts (data-pad / data-gap, k scale). Off-contract values are a
@@ -143,5 +151,8 @@ export const widgetAttr = async (c, h) => {
   }
 };
 
+// Viewer swap, not the editor slot: clearing must also DROP `data-wedit-sel`
+// from the canvas, or drag.js keeps the handles hung on a widget the session
+// no longer has selected.
 export const widgetClear = (c, h) =>
-  h.render(c, `${VIEW}#widgetEditor`, facade.clearWidget(h.session(c).data, h.t(c)));
+  h.render(c, `${VIEW}#viewerSwap`, facade.clearWidget(h.session(c).data, h.prefs(c), h.t(c), h.locale(c)));

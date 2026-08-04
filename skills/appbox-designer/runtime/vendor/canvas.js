@@ -266,9 +266,14 @@
           // this reason), and anything set at click time dies when the
           // write-through reloads the frame. drag.js paints the selection
           // instead, re-derived from server state on every scan.
+          // Same target/swap as the arm chip: the selection lives in the
+          // canvas body's data-wedit-sel, which only the viewer fragment
+          // renders. Swapping just the editor slot opened the editor but left
+          // the canvas attribute stale, so drag.js never hung the handles.
+          // morph (not outerHTML) is what keeps the tiles from reloading.
           htmx.ajax('POST', '/design/widget/select', {
-            target: '#dv-wedit-' + sid.replace(/\./g, '-'),
-            swap: 'innerHTML',
+            target: '#design-viewer',
+            swap: 'morph:outerHTML',
             values: {
               screen: sid,
               kind: ci < 0 ? raw : raw.slice(0, ci),

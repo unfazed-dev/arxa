@@ -946,9 +946,15 @@ export const armWidgetEdit = (sessionData, prefs = {}, t = (k) => k, locale = 'e
   return stageContext(sessionData, {}, prefs, t, locale);
 };
 
-// Posted by explode.js on a row click (parent-side htmx.ajax, the inspect.js
-// pattern). Selection is session state so it survives viewer morphs.
-export const selectWidget = (sessionData, payload = {}, t = (k) => k) => {
+// Posted by explode.js on a row click and by canvas.js on an armed tile click.
+// Selection is session state so it survives viewer morphs.
+//
+// Returns the full stageContext, exactly like armWidgetEdit above, because
+// selection has to reach TWO places: the editor fragment AND the canvas body's
+// data-wedit-sel that drag.js hangs the resize handles off. The slim
+// widgetEditorContext only fed the former, so the editor opened while the
+// handles stayed invisible.
+export const selectWidget = (sessionData, payload = {}, prefs = {}, t = (k) => k, locale = 'en') => {
   const d = design(sessionData);
   d.widgetSel = {
     screen: payload.screen ?? '',
@@ -956,13 +962,15 @@ export const selectWidget = (sessionData, payload = {}, t = (k) => k) => {
     name: payload.name ?? '',
     index: Number(payload.index ?? 0) || 0,
   };
-  return widgetEditorContext(d, t);
+  return stageContext(sessionData, {}, prefs, t, locale);
 };
 
-export const clearWidget = (sessionData, t = (k) => k) => {
+// Full context for the same reason: dropping the selection has to drop
+// data-wedit-sel from the canvas, or the handles outlive the selection.
+export const clearWidget = (sessionData, prefs = {}, t = (k) => k, locale = 'en') => {
   const d = design(sessionData);
   delete d.widgetSel;
-  return widgetEditorContext(d, t);
+  return stageContext(sessionData, {}, prefs, t, locale);
 };
 
 // Write-through: mutates the widget's SOURCE element (its definition), so

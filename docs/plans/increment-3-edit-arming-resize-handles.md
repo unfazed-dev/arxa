@@ -129,14 +129,58 @@ static build    -> …dv-flow-canvas" id="design-viewer" data-static="1">
 The last row matters: the pre-existing `data-static="1"` path is unchanged by
 the concatenation.
 
-Not verified end-to-end in a browser: see the blocker above — a tile cannot
-visibly reflow on a mode change, so a screenshot would not have evidenced the
-sizing modes even if taken.
+## Browser verification (added after the offline pass)
+
+The offline pass above was not sufficient, and skipping the browser hid three
+defects — two of which made the increment non-functional:
+
+1. **The design view did not render at all.** The `bodyAttrs` rationale was
+   written as a `{# … #}` comment *inside* the `{% set P = { … } %}` dict
+   literal. That is a parse error, not a no-op: every `/design` request was a
+   500. The offline check rendered the `bodyAttrs` *expression* in isolation,
+   which is exactly why it passed while the page it lives on could not load.
+2. **Selection never reached the canvas.** `widgetSelect`/`clearWidget`
+   returned the slim `widgetEditorContext` and the client swapped it into the
+   per-screen `.dv-wedit` slot. So the editor opened, but the canvas body's
+   `data-wedit-sel` — the attribute `drag.js` hangs the handles off — was
+   never refreshed, and **no resize handle ever appeared**, from either the
+   canvas or the explode-row entry point. Fixed by following the arm path's
+   own precedent: select and clear now return the full `stageContext` and the
+   posters use the arm chip's `#design-viewer` / `morph:outerHTML` contract,
+   so one response carries both the editor and the canvas attrs. `morph`
+   keeps the tiles from reloading (asserted in the harness).
+3. A stale-rect race in the harness, not the app: measuring click coordinates
+   mid-morph aimed the click at nothing.
+
+Verified in headless Chrome against the real `portalo` project by
+`appboxd/tool/shot_increment3.dart`, which drives the actual UI (clicks the
+arm chip, then clicks a real `[data-el]` widget) rather than poking routes:
+
+```
+PASS  baseline is DISARMED
+PASS  clicking the chip ARMS the canvas
+PASS  clicking a widget SELECTS it (server-side)
+PASS  resize handles are hung on the selection (found 8)
+PASS  hug/fill/fixed chips render
+PASS  tiles preserved across the selection morph (not reloaded)
+```
+
+Screenshots in `docs/plans/increment-3-evidence/`. The third shows the
+Ceramics card selected with its handles and the editor bound to
+`design/surfaces/home.html`.
+
+The write-through and the validator were also exercised over the wire against
+the real project: `data-resize-x=fill` reached `surfaces/home.html`, and
+`stretch`, `data-pad=10` and `data-bogus` were each refused with a 400. The
+test mutation was reverted through the app's own toggle-off (`value=""`), so
+the project is byte-identical to where it started.
 
 ## Consequence for this increment
 
-Arming, selection, the per-attribute validator and the mode chips are real and
-enforced end-to-end. What cannot be demonstrated in a screenshot is a tile
-visibly reflowing when a mode is applied — because nothing in the tile
-implements the contract yet. Any screenshot claiming otherwise would be
-claiming a capability the served CSS does not have.
+Arming, selection, the resize handles, the per-attribute validator and the
+mode chips now work end-to-end in a browser. What still cannot be shown is a
+tile **visibly reflowing** when a mode is applied — nothing in the tile
+implements the sizing contract yet, so the mode is recorded in the source and
+reflected in the chips, but the rendered tile does not change shape. A
+screenshot claiming otherwise would be claiming a capability the served CSS
+does not have.
