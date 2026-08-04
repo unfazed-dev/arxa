@@ -444,7 +444,7 @@
   "viewer.theme.dark": "Dark",
   "viewer.explodeTitle": "Components",
   "viewer.compose.phScreen": "Describe a change to {screen} — applies to this screen",
-  "viewer.compose.phWidget": "Describe a change to {widget} — applies to {n} screens",
+  "viewer.compose.phWidget": "{n, plural, one{Describe a change to {widget} — applies to 1 screen} other{Describe a change to {widget} — applies to {n} screens}}",
   "viewer.compose.send": "Add to plan",
   "viewer.compose.empty": "No planned edits for this screen yet.",
   "viewer.compose.remove": "Remove this edit",

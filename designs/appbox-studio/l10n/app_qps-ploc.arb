@@ -444,7 +444,7 @@
   "viewer.theme.dark": "[!! Ðåřk ~̷~ !!]",
   "viewer.explodeTitle": "[!! Çömpöñëñţš ~̷~~̷~ !!]",
   "viewer.compose.phScreen": "[!! Ðëšçřïbë å çhåñgë ţö {screen} — åppłïëš ţö ţhïš šçřëëñ ~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
-  "viewer.compose.phWidget": "[!! Ðëšçřïbë å çhåñgë ţö {widget} — åppłïëš ţö {n} šçřëëñš ~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+  "viewer.compose.phWidget": "{n, plural, one{[!! Ðëšçřïbë å çhåñgë ţö {widget} — åppłïëš ţö 1 šçřëëñ ~̷~~̷~~̷~~̷~~̷~~̷~ !!]} other{[!! Ðëšçřïbë å çhåñgë ţö {widget} — åppłïëš ţö {n} šçřëëñš ~̷~~̷~~̷~~̷~~̷~~̷~ !!]}}",
   "viewer.compose.send": "[!! Åðð ţö płåñ ~̷~ !!]",
   "viewer.compose.empty": "[!! Ñö płåññëð ëðïţš föř ţhïš šçřëëñ ÿëţ. ~̷~~̷~~̷~~̷~~̷~ !!]",
   "viewer.compose.remove": "[!! Řëmövë ţhïš ëðïţ ~̷~~̷~ !!]",
