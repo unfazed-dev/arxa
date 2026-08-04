@@ -16,6 +16,12 @@
 //
 // Dart port of `archives/tooling-pre-dart/tools/studio-probes/probe-flowwalk.mjs` (14 checks, 5 sections).
 //
+// Amendment (2026-08-05, components-container removal): probe-explode was
+// retired with the container; its FLOWS-lens assertions — the inter-flow
+// hand-off chips, the on-connector feedback chips, and the
+// click-a-chip-continues-the-walk check — migrated here as section E rather
+// than dying with the views-lens column they were filed beside.
+//
 // One deliberate divergence from the original, in output rather than in what
 // is asserted: the trailer is the harness's (`==== ALL PASSED ====`), not this
 // probe's own `ALL CHECKS PASSED`. One suite needs one scannable closing line,
@@ -243,6 +249,48 @@ Future<void> _run(ProbeContext ctx) async {
   _check(ctx, 'the source tile is no longer the active step',
       !activeAfter.contains(_from));
 
+  ctx.report.section('E. inter-flow hand-offs + feedback chips (migrated from probe-explode)');
+  // probe-explode died with the components container (Screen Reveal-Drawer
+  // plan, increment 5), but these assertions are flows-lens, not container —
+  // they live here now, unchanged in what they assert.
+  // Flows are joined by shared screen ids: portalo.home ends Onboarding and
+  // heads BOTH browse-buy and account, so the count is 2 — a single-valued
+  // hand-off would be a guess.
+  final ho = _map(await page.evaluate('Object.fromEntries('
+      "[...document.querySelectorAll('.dv-flow-row')].map((r) => [r.dataset.flow, r.querySelectorAll('.dv-handoff').length]))"));
+  _check(ctx, 'flow-onboarding ends with 2 hand-off chips',
+      ho['flow-onboarding'] == 2, jsonEncode(ho));
+  _check(ctx, 'flow-browse-buy has none (nothing continues from orders)',
+      ho['flow-browse-buy'] == 0, '${ho['flow-browse-buy']}');
+  _check(ctx, 'flow-account has none', ho['flow-account'] == 0,
+      '${ho['flow-account']}');
+  // D2's second axis made visible: a toast hangs off the TRANSITION, so the
+  // chip must live on the connector, never on a tile. If it ever renders inside
+  // .dv-tile the two axes have been re-merged and this goes red.
+  final fb = _map(await page.evaluate('''
+(() => ({
+  onConnector: [...document.querySelectorAll('.dv-connector .dv-fb')].map((e) => e.className.replace('dv-fb dv-fb-', '') + ':' + e.textContent),
+  onTile: document.querySelectorAll('.dv-tile .dv-fb').length,
+}))()'''));
+  final onConnector = (fb['onConnector'] as List? ?? const []);
+  _check(ctx, 'mutation edges show a feedback chip', onConnector.length == 2,
+      jsonEncode(onConnector));
+  _check(ctx, 'feedback lives on the connector, never on a tile',
+      fb['onTile'] == 0, '${fb['onTile']}');
+  // The hand-off chip is the walk's inter-flow continuation: clicking it
+  // re-arms the walk at the SAME screen as the head of the target flow.
+  await page.evaluate(
+      "document.querySelector('.dv-flow-row[data-flow=\"flow-onboarding\"] .dv-handoff').click()");
+  await probeWaitFor(
+    page,
+    _liveIs(_to),
+    label: 'the hand-off to continue the walk at $_to',
+    report: ctx.report,
+  );
+  final jumped = await _liveIds(page);
+  _check(ctx, 'clicking a chip continues the walk in that flow',
+      jumped.length == 1 && jumped.first == _to, jsonEncode(jumped));
+
   ctx.report.section('errors');
   final named4xx =
       http4xx.where((e) => !RegExp('favicon', caseSensitive: false).hasMatch(e))
@@ -304,3 +352,9 @@ Future<int> _count(CdpSession page, String selector) async {
       .evaluate('document.querySelectorAll(${jsonEncode(selector)}).length');
   return n is num ? n.toInt() : 0;
 }
+
+/// Narrow an `evaluate` result to a map — same contract as the other studio
+/// probes: an empty map fails every check in the section with real values
+/// shown, rather than aborting the run.
+Map<String, dynamic> _map(dynamic value) =>
+    value is Map ? value.cast<String, dynamic>() : <String, dynamic>{};

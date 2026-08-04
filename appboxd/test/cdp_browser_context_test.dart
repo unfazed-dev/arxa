@@ -9,9 +9,9 @@
 // and whether the inspector is locked all travel with that cookie. The `.mjs`
 // suite isolated probes by accident — one `node` process each, so one browser
 // each. A Dart runner sharing one browser across `probe all` loses that, and
-// the first casualty was real: `explode` leaves the viewer on the flows lens,
-// and `flowwalk`'s opening section then read flows-lens toolbars while
-// asserting about the views lens.
+// the first casualty was real: the retired `explode` probe left the viewer on
+// the flows lens, and `flowwalk`'s opening section then read flows-lens
+// toolbars while asserting about the views lens.
 
 import 'dart:io';
 

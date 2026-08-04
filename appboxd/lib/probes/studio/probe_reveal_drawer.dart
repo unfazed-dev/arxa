@@ -36,9 +36,8 @@ const Probe revealDrawerProbe = Probe(
   body: _run,
 );
 
-// The screen the end states are asserted on (portalo.auth, same pick as
-// probe-screen-composer): the slug is the id with dots CSS-escaped to dashes,
-// exactly like the .dv-wedit slot.
+// The screen the end states are asserted on (portalo.auth): the slug is the
+// id with dots CSS-escaped to dashes.
 const _slug = 'portalo-auth';
 const _drawerId = 'dv-drawer-$_slug';
 const _drawerSel = '#$_drawerId';
@@ -228,6 +227,48 @@ Future<void> _run(ProbeContext ctx) async {
       await page.evaluate(
               "getComputedStyle(document.querySelector('$_drawerSel')).visibility") ==
           'visible');
+
+  ctx.report.section('F. qps-ploc: pseudo-expanded strings fit the drawer chrome (D9)');
+  // Read on the INITIAL render, no swaps: the drawer (tabs + first-open
+  // Composer tab) is server-rendered even tucked, and a swap would re-render
+  // in en anyway — the ?lang= param does not ride the drawer's own GETs.
+  await ctx.goto(page, '/design?lang=qps-ploc');
+  await probeWaitFor(
+    page,
+    "document.querySelectorAll('.dv-reveal').length > 0",
+    timeout: const Duration(seconds: 15),
+    label: 'the qps-ploc render',
+    report: ctx.report,
+  );
+  final ploc = _map(await page.evaluate('''
+(() => {
+  const aside = document.querySelector('$_drawerSel');
+  const tabs = [...aside.querySelectorAll('.dv-drawer-tab')];
+  const ar = aside.getBoundingClientRect();
+  const body = aside.querySelector('.dv-drawer-body');
+  return {
+    lang: document.documentElement.lang,
+    nTabs: tabs.length,
+    tabsFit: tabs.every((t) => {
+      const r = t.getBoundingClientRect();
+      return r.width > 0 && r.right <= ar.right + 1 && r.left >= ar.left - 1;
+    }),
+    scrollFits: aside.scrollWidth <= aside.clientWidth + 1,
+    bodyFits: body.scrollWidth <= body.clientWidth + 1,
+  };
+})()'''));
+  ctx.report
+    // The locale guard first: without it the three fits below would pass on
+    // the EN render and the section would assert nothing.
+    ..check('the page is actually qps-ploc', ploc['lang'] == 'qps-ploc',
+        '${ploc['lang']}')
+    ..check('all three tabs render', ploc['nTabs'] == 3, '${ploc['nTabs']}')
+    ..check('pseudo-expanded tab labels stay inside the drawer',
+        ploc['tabsFit'] == true)
+    ..check('no horizontal overflow in the drawer chrome',
+        ploc['scrollFits'] == true)
+    ..check('no horizontal overflow in the drawer body',
+        ploc['bodyFits'] == true);
 
   ctx.report.check('no page errors', page.pageErrors.isEmpty,
       page.pageErrors.join(' | '));

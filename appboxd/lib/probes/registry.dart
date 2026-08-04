@@ -17,14 +17,12 @@ import 'package:appboxd/probes/probe_base.dart';
 import 'package:appboxd/probes/studio/probe_boost.dart';
 import 'package:appboxd/probes/studio/probe_composer_draft.dart';
 import 'package:appboxd/probes/studio/probe_context_sync.dart';
-import 'package:appboxd/probes/studio/probe_explode.dart';
 import 'package:appboxd/probes/studio/probe_flowwalk.dart';
 import 'package:appboxd/probes/studio/probe_inspect.dart';
 import 'package:appboxd/probes/studio/probe_no_reload.dart';
 import 'package:appboxd/probes/studio/probe_panel_contract.dart';
 import 'package:appboxd/probes/studio/probe_panel_resize.dart';
 import 'package:appboxd/probes/studio/probe_reveal_drawer.dart';
-import 'package:appboxd/probes/studio/probe_screen_composer.dart';
 import 'package:appboxd/probes/studio/probe_scroll_ownership.dart';
 import 'package:appboxd/probes/studio/probe_shell_chrome.dart';
 import 'package:appboxd/probes/studio/probe_widget_logic.dart';
@@ -43,14 +41,12 @@ const List<Probe> kProbes = <Probe>[
   boostProbe,
   composerDraftProbe,
   contextSyncProbe,
-  explodeProbe,
   flowwalkProbe,
   inspectProbe,
   noReloadProbe,
   panelContractProbe,
   panelResizeProbe,
   revealDrawerProbe,
-  screenComposerProbe,
   shellChromeProbe,
   widgetLogicProbe,
   widgetToolsProbe,

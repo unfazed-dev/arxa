@@ -11,12 +11,13 @@
 // bottom section is unguarded so the bar itself stayed, which is what made the
 // loss easy to miss: the viewer still looked furnished.
 //
-// Why probe-explode section D never saw it: section D opens with a FRESH
-// full-page navigation to /design and only then reads .dv-topbar. A full page
-// render is the one state where chrome is guaranteed present, so section D
-// samples the only passing case and never exercises a fragment swap at all.
+// Why the old probe-explode section D never saw it: that section opened with a
+// FRESH full-page navigation to /design and only then read .dv-topbar. A full
+// page render is the one state where chrome is guaranteed present, so section D
+// sampled the only passing case and never exercised a fragment swap at all.
 // This probe asserts the panels AFTER each swap, which is the state the user
-// is actually in.
+// is actually in. (probe-explode was retired with the components container —
+// its non-container checks live on as section A2 below.)
 import 'dart:convert';
 
 import 'package:appboxd/cdp.dart';
@@ -108,6 +109,37 @@ Future<void> _run(ProbeContext ctx) async {
 
     report.section('A. first load');
     _panelsOk(report, 'first load', await _census(page));
+
+    report.section(
+        'A2. fullscreen containment + the retired float-clearance hack');
+    // Migrated from probe-explode section D (retired with the components
+    // container): canvas.js fullscreens #design-viewer, so every control the
+    // user needs at fullscreen must live INSIDE .panel-viewer — anything
+    // outside vanishes on fullscreen, including the exit button.
+    final fs = await page.evaluate(r'''
+(() => {
+  const v = document.querySelector('.panel-viewer');
+  const inside = (s) => !!v && !!v.querySelector(s);
+  return {
+    miniStatic: !!v && getComputedStyle(v.querySelector('.mini-panel')).position === 'static',
+    padBottom: v ? getComputedStyle(v.querySelector('.dv-flow-canvas')).paddingBottom : null,
+    lens: inside('.mini-panel-tab'), exit: inside('.dv-fs-close'),
+    swatch: inside('.mini-swatch'), title: inside('.dv-topbar-title'),
+    oldHead: !!document.querySelector('.artifact-head'),
+  };
+})()''') as Map?;
+    report
+      ..check('mini panel is docked (static, not floating)',
+          fs?['miniStatic'] == true)
+      ..check('float-clearance hack deleted (padding-bottom != 11rem)',
+          fs?['padBottom'] != '176px', '${fs?['padBottom']}')
+      ..check('lens switch inside the fullscreen target', fs?['lens'] == true)
+      ..check(
+          'fullscreen EXIT button inside the fullscreen target',
+          fs?['exit'] == true)
+      ..check('bg swatches inside the fullscreen target', fs?['swatch'] == true)
+      ..check('title inside the fullscreen target', fs?['title'] == true)
+      ..check('old artifact-head removed', fs?['oldHead'] != true);
 
     report.section(
         'B. viewport rungs (.mini-panel-tab) — each one used to delete the top panel');

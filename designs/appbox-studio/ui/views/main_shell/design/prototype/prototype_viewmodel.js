@@ -99,30 +99,6 @@ export const drawer = (c, h) =>
 export const inspector = (c, h) =>
   h.render(c, `${VIEW}#inspectorSwap`, facade.setActivityView(h.session(c).data, 'inspector', h.prefs(c), h.t(c), h.locale(c)));
 
-// Per-screen edit composer (views lens): append one structured intent to that
-// screen's plan sidecar. Swaps the whole panels tree rather than a per-screen
-// fragment — the pending list, the scope placeholder and the plan editor all
-// live inside it, and a project write can change any of them (same reasoning
-// as the flow mutations above).
-export const screenCompose = async (c, h) => {
-  const form = await h.form(c);
-  return h.render(c, `${VIEW}#panelsSwap`, await facade.composeIntent(h.session(c).data, form, h.prefs(c), h.t(c), h.locale(c)));
-};
-
-// ONE screen's composer, no write. The widget editor lands in a sibling slot,
-// so nothing re-renders the composer beside it and its scope placeholder would
-// go on saying "this screen" while a component was selected. The composer's own
-// hx-get asks for this after that swap settles.
-export const screenComposer = (c, h) =>
-  h.render(c, `${VIEW}#composeSwap`, facade.composerFor(h.session(c).data, c.req.query('screen'), h.t(c)));
-
-// The plan editor, same swap: `remove=<i>` drops one entry, otherwise `plan`
-// round-trips the whole sidecar.
-export const screenPlan = async (c, h) => {
-  const form = await h.form(c);
-  return h.render(c, `${VIEW}#panelsSwap`, await facade.editPlan(h.session(c).data, form, h.prefs(c), h.t(c), h.locale(c)));
-};
-
 // The island's measurements: hover updates the pane, click (lock=1) locks it.
 // 204 when the inspector is not the active view — the island fires on every
 // hovered element regardless of which pane is open, and a swap would overwrite
@@ -151,11 +127,11 @@ export const inspectorUnlock = (c, h) => {
   return h.render(c, `${VIEW}#inspectorPane`, next);
 };
 
-// ---------- widget manager (components column, views lens) ----------
-// Posted by explode.js on a row click (parent-side htmx.ajax, the inspect.js
-// pattern) — the response swaps the editor fragment into the selected
-// screen's .dv-wedit slot. Selection is session state, so a full viewer
-// morph re-renders the open editor inline (see stage context `wedit`).
+// ---------- widget manager (drawer Tools tab, views lens) ----------
+// Posted by canvas.js on an armed tile click (parent-side htmx.ajax, the
+// inspect.js pattern) and by the drawer strip's chips. Selection is session
+// state, so a full viewer morph re-renders the open editor (see stage context
+// `wedit` feeding the canvas body's data-wedit-sel).
 // Edit-arming toggle. Swaps the WHOLE viewer (#viewerSwap, the setViewer
 // fragment), not just the editor: arming changes how every tile reads a
 // click, and the tiles live in the viewer — a narrower swap would leave

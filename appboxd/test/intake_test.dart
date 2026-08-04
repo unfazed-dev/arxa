@@ -998,8 +998,8 @@ void main() {
     test('an authored element survives emitFlows verbatim', () {
       // `element` is the EXACT join from a flow edge to a `data-el` on the
       // surface. flowwalk.js matches it exactly and falls back to a FUZZY
-      // trigger match without it, and the views explode lens resolves each
-      // component's `fires` line through it. Dropping it on re-emit degrades
+      // trigger match without it, and the drawer's Logic tab resolves each
+      // widget's wiring through it. Dropping it on re-emit degrades
       // an exact join to a guess, silently.
       final flows = emitFlows(withFlow([
         {

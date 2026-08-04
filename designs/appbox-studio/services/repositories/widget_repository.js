@@ -2,7 +2,7 @@
 // generator: appbox  licence: free  project: 662368770980
 // Built with appbox (free tier) — https://appbox.dev
 // Widget repository — SOURCE truth for the widget manager. The rendered DOM
-// (explode.js's territory) is the only place resolved names exist, but edits
+// is the only place resolved names exist, but edits
 // target the DEFINITION: the authored element in the project's surface
 // partials. The static `data-el` KIND prefix ("card:", "tab:") survives
 // templating, so identity here is (file, kind, occurrence) — a loop rendering
@@ -80,7 +80,7 @@ const attrsOf = (attrString) => {
 // Resolve a widget definition for (screen, kind): the screen's own file first,
 // then its included partials — deterministic, mirroring how the render composes.
 // index picks among multiple same-kind SOURCE elements in one file (rare;
-// explode.js posts 0 today — ponytail: per-DOM-node disambiguation lands with
+// canvas.js posts 0 today — ponytail: per-DOM-node disambiguation lands with
 // the canvas handles increment, where geometry identifies the node).
 export const resolveWidget = (screenId, kind, index = 0) => {
   const own = screenFile(screenId);

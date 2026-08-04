@@ -3,11 +3,12 @@
 //
 // D5's claim under test is singularity: a selection made anywhere shows up
 // everywhere. The strip in the Tools tab posts the SAME /design/widget/select
-// route explode.js rows and armed canvas clicks post, and the session key it
-// writes (d.widgetSel) feeds BOTH the drawer's Tools pane and the components
-// column's inline editor slot — so section B asserts the two mounts render
-// from one pick, which is the reconciliation evidence the plan asks for
-// (no parallel selection state was invented).
+// route an armed canvas click posts, and the session key it writes
+// (d.widgetSel) feeds the drawer's Tools pane — the components column and its
+// inline editor slot were removed (increment 5), so the drawer mount is the
+// only one; the singularity evidence is now the canvas-side half (section F:
+// the same pick arms drag.js's resize handles off the canvas body's
+// data-wedit-sel).
 //
 // D7's claim is honesty: every copy class renders EXACTLY ONE of {an editable
 // form, a read-only reason} — never both, never a dead control, never a bare
@@ -82,7 +83,7 @@ Future<void> _run(ProbeContext ctx) async {
     ..check('the empty state says so instead of rendering blank',
         empty['hint'] is String && (empty['hint'] as String).isNotEmpty, '${empty['hint']}');
 
-  ctx.report.section('B. one strip pick, two mounts: drawer pane and column slot agree');
+  ctx.report.section('B. one strip pick renders the drawer editor for that pick');
   final firstKind =
       await page.evaluate("document.querySelector('$_sibSel')?.textContent.trim() ?? ''");
   await page.clickSelector(_sibSel, synthetic: true);
@@ -98,13 +99,11 @@ Future<void> _run(ProbeContext ctx) async {
   const on = aside.querySelector('.dv-tools-sib.on');
   const head = aside.querySelector('.dv-wedit-card .dv-wedit-head b');
   const crumb = aside.querySelector('.dv-tools-crumb');
-  const slot = document.querySelector('#dv-wedit-$_slug');
   return {
     stillOpen: !!aside.closest('.dv-reveal.is-open'),
     onChip: on ? on.textContent.trim() : null,
     head: head ? head.textContent.trim() : null,
     crumb: crumb ? crumb.textContent.trim() : null,
-    slotCard: !!(slot && slot.querySelector('.dv-wedit-card')),
     prov: aside.querySelector('.dv-wedit-prov')?.textContent.trim() ?? null,
   };
 })()'''));
@@ -118,8 +117,6 @@ Future<void> _run(ProbeContext ctx) async {
     ..check('the breadcrumb carries screen › selection',
         sync['crumb'] is String && (sync['crumb'] as String).contains('portalo.auth'),
         '${sync['crumb']}')
-    ..check('the components column slot renders the SAME selection (one state, two mounts)',
-        sync['slotCard'] == true)
     ..check('provenance stated before any edit (applies-to)',
         sync['prov'] is String && (sync['prov'] as String).isNotEmpty, '${sync['prov']}');
 
@@ -211,6 +208,55 @@ Future<void> _run(ProbeContext ctx) async {
   ctx.report
     ..check('the selected chip is still selected', back['onChip'] == true)
     ..check('the editor re-renders for the kept selection', back['card'] == true);
+
+  ctx.report.section('F. armed canvas click selects, and drag.js hangs the handles');
+  // Replaces tool/shot_increment3.dart (retired with the container): the arm
+  // chip → in-frame click → server selection → resize handles chain, end to
+  // end. The static half pins drag.js's commit target to the drawer's Tools
+  // mount — the old #dv-wedit-<screen> slot is gone, and a commit aimed at it
+  // would swap into nothing while reporting success.
+  final dragSrc = '${await page.evaluate(
+      "fetch('/assets/vendor/drag.js').then((r) => r.text())")}';
+  ctx.report
+    ..check('drag.js commits into the drawer mount, not the dead slot',
+        dragSrc.contains("'#dv-drawer-'") && !dragSrc.contains("'#dv-wedit-'"),
+        '${dragSrc.length} bytes')
+    ..check('explode.js is no longer served a script tag',
+        await page.evaluate(
+                "!!document.querySelector('script[src*=\"explode.js\"]')") ==
+            false);
+
+  await page.clickSelector('.dv-arm-chip');
+  await probeWaitFor(
+    page,
+    "!!document.querySelector('[data-wedit-armed=\"1\"]')",
+    label: 'the canvas to arm',
+    report: ctx.report,
+  );
+  final tileFrame =
+      await page.frameForSelector('.dv-tile[data-id="portalo.auth"] iframe');
+  if (tileFrame == null) {
+    ctx.report.check('the portalo.auth tile frame exists', false);
+  } else {
+    await page.clickSelectorInFrame(tileFrame, '[data-el]');
+    await probeWaitFor(
+      page,
+      "(document.querySelector('[data-wedit-sel]')?.getAttribute('data-wedit-sel') || '')"
+      ".includes('portalo.auth')",
+      label: 'the armed click to select server-side',
+      report: ctx.report,
+    );
+    await probeWaitFor(
+      page,
+      "document.querySelectorAll('.dv-wedit-handles .dv-wh').length > 0",
+      label: 'drag.js to hang the resize handles',
+      report: ctx.report,
+    );
+    final handles = await page
+        .evaluate("document.querySelectorAll('.dv-wedit-handles .dv-wh').length");
+    ctx.report.check('resize handles hang on the selection',
+        handles is num && handles > 0, '$handles grips');
+  }
 
   ctx.report.check('no page errors', page.pageErrors.isEmpty,
       page.pageErrors.join(' | '));

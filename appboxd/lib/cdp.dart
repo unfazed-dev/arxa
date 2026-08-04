@@ -421,9 +421,10 @@ class CdpClient {
   /// The `.mjs` suite got this isolation for free by running each probe in its
   /// own `node` process, hence its own browser. A Dart runner that shares one
   /// browser across `probe all` loses it, and the loss is not hypothetical:
-  /// `explode` leaves the viewer on the flows lens, and `flowwalk`'s first
-  /// section then reads flows-lens toolbars while asserting about the views
-  /// lens, reporting a walk control the views lens does not offer.
+  /// the retired `explode` probe left the viewer on the flows lens, and
+  /// `flowwalk`'s first section then read flows-lens toolbars while asserting
+  /// about the views lens, reporting a walk control the views lens does not
+  /// offer.
   ///
   /// Pair with [disposeBrowserContext] — contexts outlive the tabs in them.
   Future<String> createBrowserContext() async {

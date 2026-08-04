@@ -13,7 +13,6 @@ import * as repo from '../repositories/design_repository.js';
 import * as proj from '../repositories/project_repository.js';
 import * as widgets from '../repositories/widget_repository.js';
 import * as texts from '../repositories/text_repository.js';
-import * as plans from '../repositories/plan_repository.js';
 import * as jargon from './jargon.js';
 import * as agent from './agent_menus.js';
 import * as fv from './file_views.js';
@@ -474,18 +473,6 @@ function viewerFor(d, L, t) {
       // than merely unrendered.
       inspecting: s.id === inspect,
       inspectHref: withParams({ inspect: s.id === inspect ? null : s.id }),
-      // ---- explode column joins (views lens, column 2) ----
-      // The element INVENTORY is deliberately absent: `data-el` values are
-      // templated (`data-el="card:{{ t('portalo.cat.' ~ pair[0]) }}"` inside a
-      // {% for %}, and the tab bar arrives via {% include %}), so the only
-      // honest source is the rendered DOM, which explode.js reads same-origin.
-      // What the DOM canNOT know is authored project data — that is these two.
-      //
-      // Every outgoing edge, not just the ones with `element`: the island
-      // matches exact `element` first and falls back to fuzzy `trigger`,
-      // exactly as flowwalk.js does. Two lenses, one matching rule.
-      fires: proj.edgesFrom(s.id),
-      kits: proj.registryEntry(s.id)?.kits ?? [],
     };
   });
 
@@ -664,13 +651,10 @@ function viewerFor(d, L, t) {
     // viewer morph never silently disarms mid-edit (D16's reasoning).
     weditArmed: !!d.weditArmed,
     weditArmHref: '/design/widget/arm',
-    // Per-screen edit composer + plan editor (views lens). Keyed by screen id
-    // because the template renders one row per screen and needs its own
-    // scope/pending state; a list would force an O(n) lookup per row in the
-    // template language.
-    plans: mode === 'views' ? planContexts(d, screens, t) : null,
     // Per-screen reveal-drawer (Screen Reveal-Drawer plan, increment 2). Keyed
-    // by screen id for the same reason as `plans`. Views lens only: the drawer
+    // by screen id because the template renders one card per screen and needs
+    // its own drawer state; a list would force an O(n) lookup per row in the
+    // template language. Views lens only: the drawer
     // is the screen card's own back panel, and only the views lens renders one
     // card per designed screen.
     drawers: mode === 'views' ? drawerContexts(d, screens, t, L) : null,
@@ -1026,7 +1010,7 @@ export const armWidgetEdit = (sessionData, prefs = {}, t = (k) => k, locale = 'e
   return stageContext(sessionData, {}, prefs, t, locale);
 };
 
-// Posted by explode.js on a row click and by canvas.js on an armed tile click.
+// Posted by canvas.js on an armed tile click and by the drawer Tools strip.
 // Selection is session state so it survives viewer morphs.
 //
 // Returns the full stageContext, exactly like armWidgetEdit above, because
@@ -1036,13 +1020,6 @@ export const armWidgetEdit = (sessionData, prefs = {}, t = (k) => k, locale = 'e
 // handles stayed invisible.
 export const selectWidget = (sessionData, payload = {}, prefs = {}, t = (k) => k, locale = 'en') => {
   const d = design(sessionData);
-  // NOTE(merge inc5+inc3): the branch returned a slim widgetEditorContext and
-  // ferried the LEAVING screen's composer out-of-band (prevComposer) because
-  // its fragment swap landed only in the NEW screen's slot. This response now
-  // drives a full #viewerSwap morph (the resize-handles fix), which re-renders
-  // every screen row's composer from `plans` — so the OOB passenger is
-  // unnecessary here. The template hook (widgetEditor macro) still honours
-  // prevComposer for any future fragment path.
   d.widgetSel = {
     screen: payload.screen ?? '',
     kind: payload.kind ?? '',
@@ -1080,10 +1057,10 @@ export const setWidgetAttr = async (sessionData, payload = {}, t = (k) => k) => 
 
 // ---------- the Tools tab (Screen Reveal-Drawer plan, increment 3) ----------
 // ONE shared selection state (D5): d.widgetSel — the same session key an
-// explode.js row click and an armed canvas click already write through
-// selectWidget — is the only selection the drawer consumes, and the strip
-// below posts the same /design/widget/select route. No parallel vocabulary:
-// a Tools pick shows up in the components column's editor slot and vice versa.
+// armed canvas click writes through selectWidget — is the only selection the
+// drawer consumes, and the strip below posts the same /design/widget/select
+// route. No parallel vocabulary: a Tools pick arms the same canvas handles
+// and vice versa.
 const toolsContext = (d, s, t, L = 'en') => {
   const selRaw = d.widgetSel ?? null;
   const sel = selRaw && selRaw.screen === s.id ? selRaw : null;
@@ -1141,9 +1118,9 @@ const copyContext = (sel, t, L = 'en') => {
 // entry (route / build class / kits / states), the flows (edgesFrom), and the
 // source element's own inspect annotations (data-inspect-role/fn, read by
 // widget_repository). The edge join is the EXACT authored `element` match
-// only: explode.js's fuzzy trigger fallback is a click matcher for prose
-// triggers, and a graph that guesses is worse than one that admits it cannot
-// know. What the facts cannot prove renders an honest state — 'unwired' when
+// only: the fuzzy trigger fallback flowwalk.js uses is a click matcher for
+// prose triggers, and a graph that guesses is worse than one that admits it
+// cannot know. What the facts cannot prove renders an honest state — 'unwired' when
 // a static data-el is named by no flow edge, 'unknown' when the data-el is
 // templated and static analysis cannot resolve it. No LLM, no fabricated
 // edges; the widget-logic probe asserts the fabrication-free shape.
@@ -1636,93 +1613,3 @@ export const recheckDrift = (sessionData, prefs = {}, t = (k) => k, locale = 'en
   return freezeContext(sessionData, prefs, t, locale);
 };
 
-// ── Per-screen edit composer + plan editor (views lens) ─────────────────────
-// TWO inputs per screen, deliberately not one (decision 7): the COMPOSER takes
-// free text and APPENDS one intent; the PLAN EDITOR edits the accumulated plan
-// as a whole. A single merged input would make "type here" mean two different
-// things depending on invisible state.
-const planContexts = (d, screens, t = (k) => k) => {
-  const wedit = widgetEditorContext(d, t);
-  const out = {};
-  for (const s of screens ?? []) {
-    let entries = [];
-    try { ({ entries } = plans.readPlan(s.id)); } catch { entries = []; }
-    // Decision 8: the placeholder STATES scope and consequence, so the user
-    // knows what a submission will touch before typing. Widget scope only
-    // when the selection is on THIS screen — every other row stays
-    // screen-scoped, which is why this is computed per row and not once.
-    const onThis = Boolean(wedit.sel && wedit.sel.screen === s.id);
-    const widget = onThis ? (wedit.sel.name || wedit.tag) : null;
-    out[s.id] = {
-      screen: s.id,
-      slot: String(s.id).replace(/\./g, '-'),
-      scope: onThis ? 'widget' : 'screen',
-      widget,
-      // The provenance count the widget editor already computes: editing a
-      // shared widget through this composer hits every screen that includes
-      // it, and the placeholder says so before the user commits.
-      screenCount: onThis ? (wedit.screens?.length ?? 1) : 0,
-      placeholder: onThis
-        ? t('viewer.compose.phWidget', { widget, n: wedit.screens?.length ?? 1 })
-        : t('viewer.compose.phScreen', { screen: s.id }),
-      entries: entries.map((e, i) => ({ ...e, i })),
-      count: entries.length,
-      raw: JSON.stringify({ screen: s.id, entries }, null, 2),
-      // A rejected plan edit is reported, not swallowed: the sidecar is
-      // unchanged and the user's text is still in the textarea they typed it
-      // into. Session-held so it survives the panels morph that shows it.
-      err: d.planErr && d.planErr.screen === s.id ? t(d.planErr.key) : null,
-      composeHref: '/design/screen/compose',
-      planHref: '/design/screen/plan',
-      // Re-fetch of THIS composer alone, fired when the widget-editor slot
-      // beside it settles — see the macro comment in design_viewer.html.
-      composerHref: '/design/screen/composer',
-      // Decision 15's arm route, owned by a concurrent agent. Fired
-      // declaratively on first focus; 404s harmlessly until that lands.
-      armHref: '/design/widget/arm',
-    };
-  }
-  return out;
-};
-
-// ONE screen's composer, for the fragment that refreshes it when the
-// selection changes. Same builder as the full viewer, so the scope placeholder
-// cannot drift between the two render paths.
-export const composerFor = (sessionData, screenId, t = (k) => k) => {
-  const d = design(sessionData);
-  const plan = planContexts(d, [{ id: String(screenId ?? '') }], t)[String(screenId ?? '')];
-  return { plan };
-};
-
-// Composer submit: append one structured intent to this screen's sidecar.
-// Scope is read from the SELECTION at submit time (not from the form), so the
-// entry records what the placeholder promised.
-export const composeIntent = async (sessionData, form = {}, prefs = {}, t = (k) => k, locale = 'en') => {
-  const d = design(sessionData);
-  const screenId = String(form.screen ?? '');
-  delete d.planErr;
-  try {
-    const sel = d.widgetSel;
-    const scope = sel && sel.screen === screenId
-      ? { widget: sel.name || widgets.resolveWidget(sel.screen, sel.kind, sel.index ?? 0)?.tag || sel.kind }
-      : {};
-    if (screenId) await plans.appendIntent(screenId, form.text, scope);
-  } catch { /* empty text or no project overlaid — plain re-render, input kept */ }
-  return stageContext(sessionData, {}, prefs, t, locale);
-};
-
-// Plan editor: `remove=<i>` drops one entry, otherwise `plan` replaces the
-// whole sidecar (the raw round-trip).
-export const editPlan = async (sessionData, form = {}, prefs = {}, t = (k) => k, locale = 'en') => {
-  const d = design(sessionData);
-  const screenId = String(form.screen ?? '');
-  delete d.planErr;
-  try {
-    if (!screenId) throw new Error('no screen');
-    if (form.remove != null && String(form.remove) !== '') await plans.removeIntent(screenId, form.remove);
-    else await plans.replacePlan(screenId, form.plan);
-  } catch {
-    d.planErr = { screen: screenId, key: 'viewer.compose.errPlan' };
-  }
-  return stageContext(sessionData, {}, prefs, t, locale);
-};

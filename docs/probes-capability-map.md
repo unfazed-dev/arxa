@@ -8,6 +8,17 @@
 > Nothing was deleted — the originals stay readable, and this map is the audit
 > trail that approved the swap.
 
+> **Amendment 2026-08-05 (components-container removal).** The `explode` and
+> `screen-composer` probes retired with the views-lens components container
+> (screen reveal-drawer plan, increment 5). Coverage was migrated, not lost:
+> explode's flows-lens assertions (hand-off chips, on-connector feedback
+> chips, click-continues-the-walk) live in `probe_flowwalk.dart` section E;
+> its fullscreen-containment / float-clearance checks live in
+> `probe_shell_chrome.dart` section A2. The armed-click → selection →
+> resize-handles chain from `tool/shot_increment3.dart` (also retired) is
+> `probe_widget_tools.dart` section F. The parity tables below are historical
+> and keep their `explode` rows unchanged.
+
 Full audit of every studio probe (originally `tools/probe-*.mjs` + the shared
 `tools/_probe_base.mjs`, now under `archives/tooling-pre-dart/tools/studio-probes/`)
 against the Dart harness — `appboxd/lib/probes/` over `appboxd/lib/cdp.dart`,

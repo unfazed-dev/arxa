@@ -256,13 +256,13 @@
           if (!node || !sid || typeof htmx === 'undefined') return;
           // Identity on the wire is the STATIC data-el kind prefix — the
           // part that survives templating and names the SOURCE element every
-          // screen shares. Same shape explode.js posts, so a row click and a
-          // canvas click select the same thing.
+          // screen shares. Same shape the drawer strip posts, so a strip pick
+          // and a canvas click select the same thing.
           const raw = node.getAttribute('data-el') || '';
           const ci = raw.indexOf(':');
           // No selection marker is painted here on purpose. The frame
           // document carries none of the studio's CSS, so a class would style
-          // nothing (explode.js reaches inside with inline styles for exactly
+          // nothing (drag.js marks with inline styles for exactly
           // this reason), and anything set at click time dies when the
           // write-through reloads the frame. drag.js paints the selection
           // instead, re-derived from server state on every scan.

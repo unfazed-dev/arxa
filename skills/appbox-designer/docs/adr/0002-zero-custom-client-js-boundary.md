@@ -245,3 +245,18 @@ the `data-pad`/`data-gap` chips already shipped. It is not fixed here because
 every available fix either forks the contract into a second copy or changes
 what scaffolded projects link, and neither is a decision to make in passing.
 See `docs/plans/increment-3-edit-arming-resize-handles.md`.
+
+**Amendment (2026-08-05) — the explode island retires with the components
+container.** The screen reveal-drawer plan (D2) removed the views lens's
+components container — the element list, the per-screen edit composer and the
+plan sidecar — and `explode.js` existed only to fill that column, so the
+island and its script tag are deleted, not replaced. Its selection charter had
+already moved: armed canvas clicks post `/design/widget/select` from
+`canvas.js`, the drawer Tools strip posts the same route from plain htmx, and
+the widget editor now mounts in the drawer's `.dv-tools-wedit` — which is also
+where `drag.js`'s resize-handle commits now target their swaps (the old
+`#dv-wedit-<screen>` slot is gone). The client-side element inventory it
+proved necessary is not lost: the drawer's Tools/Logic tabs derive theirs
+server-side from `widget_repository` over the same `data-el` kind prefixes.
+Island count: four (`canvas.js`, `drag.js`, `inspect.js`, `flowwalk.js`),
+`allowEval:false`, no inline scripts, lint unchanged.

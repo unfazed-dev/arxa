@@ -333,7 +333,7 @@
 
   // Selection outline, INSIDE the frame document. Inline styles, not a class:
   // the stub carries none of the studio's stylesheets, so a class would name
-  // a rule that does not exist there (explode.js marks the same way).
+  // a rule that does not exist there.
   let marked = null;
   const markSel = (node) => {
     if (marked === node) return;
@@ -389,8 +389,13 @@
 
   const commit = (canvas, sel, attr, value) => {
     if (typeof htmx === 'undefined') return;
+    // The response is the #widgetEditor fragment (wed.pane); it lands in the
+    // drawer's Tools mount — the same `.dv-wedit` wrap the pane's own step
+    // chips target with `closest .dv-wedit`. Drawer closed or on another tab:
+    // the selector matches nothing, the write still lands server-side, and
+    // the editor re-renders from session state on the next viewer morph.
     htmx.ajax('POST', '/design/widget/attr', {
-      target: '#dv-wedit-' + String(sel.screen).replace(/\./g, '-'),
+      target: '#dv-drawer-' + String(sel.screen).replace(/\./g, '-') + ' .dv-wedit',
       swap: 'innerHTML',
       values: { attr, value },
     }).catch((e) => { if (e !== undefined) console.error('appbox island htmx.ajax:', e); }); // superseded-request abort; see bulk-pin note

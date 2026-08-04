@@ -5,21 +5,19 @@ registry, switched by server-side viewer state and swapped through
 `#design-viewer`.
 
 - `views` (default; legacy `mode=flow` aliases here) — ONE ROW PER SCREEN in
-  REGISTRY order, each row two columns: the chromeless tile (`?embed=1`) at the
+  REGISTRY order: the screen card (`?embed=1` tile) at the
   CURRENT rung (`vp` param, default mobile; `s.tile` carries the per-screen
-  width/height at that rung, falling back to the first authored rung), and
-  `.dv-explode` — that screen decomposed into its inspectable components.
+  width/height at that rung, falling back to the first authored rung), with a
+  reveal-drawer tucked behind it (Composer / Tools / Logic tabs — see
+  `docs/plans/screen-reveal-drawer-composer-tools-logic.md`).
   (It was a flat wrapping grid until 2026-08-02. It never actually wrapped:
   `.dv-flow-canvas .dv-zoom` (0,2,0) beat `.dv-zoom-views` (0,1,0) on
   `flex-direction`, so the computed value was `column` and every tile got its
-  own line. The rule was deleted, not fixed.)
-  The explode column's element list is filled CLIENT-SIDE by
-  `runtime/vendor/explode.js`, and that is not a shortcut: `data-el` values are
-  templated (`data-el="card:{{ t('portalo.cat.' ~ pair[0]) }}"` inside a
-  `{% for %}`, tab bar via `{% include %}`), so the authored source has no
-  resolved inventory to render from — only the rendered iframe does, and it is
-  same-origin. The server supplies exactly what the DOM cannot know: `s.fires`
-  (the flow edges this screen's elements take) and `s.kits`.
+  own line. The rule was deleted, not fixed. It then carried a second column —
+  the components container: element list, per-screen edit composer, plan
+  sidecar — until 2026-08-05, when the reveal-drawer plan's increment 5
+  removed it and the drawer's Tools/Logic tabs took over selection, editing
+  and wiring.)
 - `flows` — one dashed `.dv-flow-row` per project flow, tiles in edge-chain
   order with a `.dv-connector` (trigger label + line + arrowhead) between
   consecutive tiles. Flow edits WRITE the project's flows.json:
@@ -57,13 +55,11 @@ Files:
   (`design_viewer.html`, `.dv-vstrip`), fed by `v.filmstrip` at the composer
   tray's original thumb scale. Not an overlay: `.dv-flow` is a row flex and
   the rail is its last child, `flex: none; align-self: stretch` — so it takes
-  real width off `.dv-flow-canvas` (which needs `min-width: 0` to give it up)
-  and every `.dv-views-row`'s second column (`minmax(16rem, 1fr)`) narrows to
-  absorb it. Full height of the rows, scrolling on its own Y axis, and outside
+  real width off `.dv-flow-canvas` (which needs `min-width: 0` to give it up).
+  Full height of the rows, scrolling on its own Y axis, and outside
   the canvas's scroll box so it stays put while the canvas pans. Below ~1440px
-  the explode column hits its 16rem floor and the canvas scrolls sideways
-  instead — the rail is unaffected. The facade returns `null` for `flows` and
-  `proto`, which also
+  the canvas scrolls sideways instead — the rail is unaffected. The facade
+  returns `null` for `flows` and `proto`, which also
   means **proto has no active-screen picker any more** (the strip was it);
   `protoPicks` still carries the hrefs if one is needed. A thumb NAVIGATES:
   its href targets the canvas tile (`#dvt-views--<id>`; JS-off degrades to
@@ -85,21 +81,11 @@ Files:
   screens:  [{ id, label?, state?, chips?, viewports, inContext?, dim?,
                tone?, primaryWidth,
                tile: { vp, width, height },       // dims at the CURRENT rung
-               inspecting?, inspectHref?,
-               fires: [{ flow, flowName, to, trigger, element }],
-               kits:  ['auth', 'payments', …] }],
+               inspecting?, inspectHref? }],
                // NOTE: no live/walk fields here. The views lens has no
                // interactive mode — without a row there is no flow to scope
                // nextEdge by, so the destination would be a guess. They are
                // added PER ROW by the flows builder below.
-               // `fires` is EVERY outgoing edge across every flow, unscoped and
-               // plural on purpose: the explode column asks "what can this
-               // screen's elements do", and nothing here picks a winner, so
-               // nothing here can guess wrong. The island matches an element to
-               // one of these by exact `element` then fuzzy `trigger` —
-               // flowwalk.js's rule, so the two lenses cannot disagree.
-               // NOTE: the element INVENTORY is deliberately absent — see the
-               // views bullet above; it exists only in the rendered DOM.
   flows:    [{ id, name, walking?, tiles: [...screens entries +
                conn?, live?, liveHref?, liveCloseHref?,
                advanceHref?, edge?, walkQs?, handoffs? }],

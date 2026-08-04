@@ -66,12 +66,6 @@
 
 {% macro panelsSwap(c) %}{{ panels(c) }}{% endmacro %}
 
-{# ONE screen's edit composer. Its own fragment because the widget editor is
-   swapped into #dv-wedit-<slot> alone: without this, selecting a component
-   would leave the composer's scope placeholder claiming "this screen" while a
-   widget was selected. The composer carries the hx-get that asks for it. #}
-{% macro composeSwap(c) %}{{ dv.composer(c.plan) }}{% endmacro %}
-
 {% macro activitySwap(c) %}{{ sh.activitySwap(c) }}{% endmacro %}
 
 {# The inspector pane (activity panel, 4th view). Two fragments, because the
@@ -85,13 +79,11 @@
                      nodes per hovered element for no state change. #}
 {% macro inspectorPane(c) %}{{ ins.pane(c) }}{% endmacro %}
 
-{# The widget editor fragment (components column, views lens): the response to
-   explode.js's selection POST and the step-chip posts. Body only — it swaps
-   into the selected screen's .dv-wedit slot. #}
+{# The widget editor fragment: the response to the step-chip posts. Body only —
+   it swaps into the drawer's .dv-tools-wedit mount (the chips target
+   `closest .dv-wedit`). #}
 {% import "ui/views/main_shell/shared/widgets/widget_editor.html" as wed %}
-{# The pane, plus (when the selection moved off another screen) that screen's
-   composer as an out-of-band passenger — see the facade's selectWidget. #}
-{% macro widgetEditor(c) %}{{ wed.pane(c) }}{% if c.prevComposer %}{{ dv.composer(c.prevComposer, true) }}{% endif %}{% endmacro %}
+{% macro widgetEditor(c) %}{{ wed.pane(c) }}{% endmacro %}
 
 {% macro inspectorSwap(c) %}
 {{ ins.pane(c) }}

@@ -2,71 +2,6 @@
      generator: appbox  licence: free  project: 662368770980
      Built with appbox (free tier) — https://appbox.dev
 -->
-{# The per-screen EDIT COMPOSER + PLAN EDITOR (views lens, components column).
-   A macro, not inline markup, because two callers render it: the views row
-   below, and the #composeSwap fragment that refreshes ONE composer when the
-   selection changes.
-
-   Why that fragment exists: explode.js swaps the widget editor into
-   #dv-wedit-<slot> ALONE, so selecting a component never re-renders this
-   composer — its scope placeholder would keep saying "this screen" while a
-   widget was selected. Rather than reach into an island's response or a route
-   another agent owns, the composer declares its OWN dependency: when that
-   slot settles, re-fetch the scope-aware version of me. Pure htmx. #}
-{# `oob` renders this composer as an out-of-band passenger on someone else's
-   response — the widget editor uses it to un-scope the screen the selection
-   just LEFT. That screen's own trigger cannot do it: the swap lands in the
-   newly-selected screen's slot, so nothing settles beside the old one and it
-   would go on offering "applies to <widget>" for a widget no longer selected. #}
-{% macro composer(pl, oob=false) %}
-<div class="dv-compose" id="dv-compose-{{ pl.slot }}" data-compose-for="{{ pl.screen }}"
-     data-compose-scope="{{ pl.scope }}" data-compose-screens="{{ pl.screenCount }}"
-     {% if oob %}hx-swap-oob="true"{% endif %}
-     hx-get="{{ pl.composerHref }}?screen={{ pl.screen }}"
-     hx-trigger="htmx:afterSettle from:#dv-wedit-{{ pl.slot }}"
-     hx-target="this" hx-swap="outerHTML">
-  <form class="dv-compose-form" hx-post="{{ pl.composeHref }}"
-        hx-target="#panels" hx-swap="morph:outerHTML">
-    <input type="hidden" name="screen" value="{{ pl.screen }}">
-    {# Decision 15: typing in a screen's composer arms that screen. The arm
-       route is owned by a concurrent agent and 404s until it lands; `once`
-       plus hx-swap="none" makes that failure silent and unrepeated. #}
-    <input class="dv-compose-input" type="text" name="text" autocomplete="off"
-           placeholder="{{ pl.placeholder }}" aria-label="{{ pl.placeholder }}"
-           hx-post="{{ pl.armHref }}" hx-trigger="focus once" hx-swap="none"
-           hx-vals='{"screen": "{{ pl.screen }}"}'>
-    <button class="dv-compose-send" type="submit">{{ t('viewer.compose.send') }}</button>
-  </form>
-  {% if pl.count %}
-  <ol class="dv-compose-list">
-    {% for e in pl.entries %}
-    <li class="dv-compose-entry" data-entry-status="{{ e.status }}">
-      <span class="dv-compose-entry-text">{{ e.text }}</span>
-      {% if e.scope and e.scope.widget %}<code class="dv-compose-entry-scope">{{ e.scope.widget }}</code>{% endif %}
-      <button class="ico-btn dv-compose-drop" type="button"
-              hx-post="{{ pl.planHref }}" hx-target="#panels" hx-swap="morph:outerHTML"
-              hx-vals='{"screen": "{{ pl.screen }}", "remove": "{{ e.i }}"}'
-              aria-label="{{ t('viewer.compose.removeAria', {n: e.i + 1}) }}"
-              title="{{ t('viewer.compose.remove') }}">{{ icon('list-x', {size: 12}) }}</button>
-    </li>
-    {% endfor %}
-  </ol>
-  {% else %}
-  <p class="dv-compose-empty">{{ t('viewer.compose.empty') }}</p>
-  {% endif %}
-  <details class="dv-compose-plan">
-    <summary class="dv-compose-plan-head">{{ t('viewer.compose.planTitle', {n: pl.count}) }}</summary>
-    {% if pl.err %}<p class="dv-compose-err" role="alert">{{ pl.err }}</p>{% endif %}
-    <form class="dv-compose-plan-form" hx-post="{{ pl.planHref }}"
-          hx-target="#panels" hx-swap="morph:outerHTML">
-      <input type="hidden" name="screen" value="{{ pl.screen }}">
-      <textarea class="dv-compose-raw" name="plan" rows="6" spellcheck="false"
-                aria-label="{{ t('viewer.compose.planAria', {id: pl.screen}) }}">{{ pl.raw }}</textarea>
-      <button class="dv-compose-save" type="submit">{{ t('viewer.compose.save') }}</button>
-    </form>
-  </details>
-</div>
-{% endmacro %}
 {# ---------- Shared screen stage: three lenses over the project screens ----
    Lens switch is server state (v.mode), swapped through #design-viewer:
      views — every screen of the current project as a flat wrapping grid in
@@ -314,14 +249,14 @@
    The aside is also the morph root for `#drawerSwap` — every swap the mounted
    composer issues answers with THIS element (routed by ?drawer=<id>), so its
    id must be stable and unique: `dv-drawer-<slug>`, dots CSS-escaped to
-   dashes exactly like the .dv-wedit slot above.
+   dashes.
    The Composer tab mounts the reusable composer card (composer.html field)
    with scope `drawer-<slug>` — every id inside gains `--drawer-<slug>`, so
    the panel instance and N drawer instances coexist with zero duplicate ids
    (probe-no-reload D1 is the gate). #}
 {# The Tools tab (Screen Reveal-Drawer plan, increment 3). ONE shared
    selection (D5): everything here reads/writes d.widgetSel through the SAME
-   routes the components column and the armed canvas use — the strip posts
+   routes the armed canvas uses — the strip posts
    /design/widget/select with the exact values shape canvas.js posts, and the
    editable card IS widget_editor.html's pane wrapped in a .dv-wedit so its
    step chips (hx-target="closest .dv-wedit", response #widgetEditor) keep
@@ -345,8 +280,7 @@
   </nav>
   {% if tl.sel %}
   {# The wrapper class is the CONTRACT: wed.pane's chips target
-     `closest .dv-wedit` and the #widgetEditor response swaps its innerHTML —
-     same wiring as the components column slot, one editor, two mounts. #}
+     `closest .dv-wedit` and the #widgetEditor response swaps its innerHTML. #}
   <div class="dv-wedit dv-tools-wedit">{{ wed.pane(tl.wedit) }}</div>
   {% if tl.roAttrs and tl.roAttrs | length %}
   <section class="dv-tools-ro-attrs">
@@ -508,10 +442,10 @@
          state is the only cue telling a user why their next tile click
          selects a widget instead of tapping the app under design.
 
-         VIEWS LENS ONLY, and not for tidiness: the widget editor swaps into
-         a per-screen `.dv-wedit` slot that only the views lens renders (it
-         lives in the explode column). In flows/proto an armed click would
-         post a selection whose response has no target to land in — a control
+         VIEWS LENS ONLY, and not for tidiness: the widget editor mounts in
+         the screen card's reveal-drawer (the Tools tab's `.dv-tools-wedit`),
+         which only the views lens renders. In flows/proto an armed click would
+         post a selection whose editor has no mount to land in — a control
          that presses and does nothing. The lens that owns the editor is the
          lens that gets the arming. #}
       {% if v.mode == 'views' %}
@@ -540,9 +474,8 @@
 {% endmacro %}
 
 {# SCREENS FILMSTRIP — the side-end SECTION, not an overlay. It takes real
-   layout width, so the canvas gets what is left and every .dv-views-row's
-   second column (the explode panel, minmax(16rem, 1fr)) narrows to match —
-   which is the point, and why this is in flow rather than absolutely
+   layout width, so the canvas gets what is left — which is the point, and
+   why this is in flow rather than absolutely
    positioned. The base places it into the side-end grid area, so its position
    in the markup no longer decides its column.
    VIEWS ONLY — the facade returns null for flows and proto (v.filmstrip), so
@@ -690,22 +623,19 @@
         {% endfor %}
       </div>
       {% else %}
-      {# VIEWS — one row per screen, TWO columns: the screen, and the same
-         screen exploded into its inspectable components. The element list is
-         NOT rendered here on purpose: data-el values are templated
-         (`card:{{ '{{' }} t(...) {{ '}}' }}` inside loops, tab bar via
-         {{ '{%' }} include {{ '%}' }}), so the only resolved copy lives in the
-         rendered iframe. explode.js reads it same-origin and fills .dv-explode-
-         list; the server supplies only what the DOM cannot know — the flow
-         edges this screen's elements fire, and its declared kits. #}
+      {# VIEWS — one row per screen: the screen card (tile + its tucked
+         reveal-drawer). The components container that used to sit in a second
+         column (element list, per-screen edit composer, plan editor) was
+         removed (Screen Reveal-Drawer plan, increment 5, D2): the drawer's
+         Tools and Logic tabs carry selection, editing and wiring now. #}
       <div class="dv-zoom dv-zoom-views">
         {% for s in v.screens %}
-        <div class="dv-views-row" data-explode-row="{{ s.id }}">
+        <div class="dv-views-row">
           {# The serve-time wrapper (D1): screen card + its back drawer share
              one positioning context, so the drawer's translateX is measured
              against the card it hides behind. The screen stays the always-
-             visible primary (z2 over z1); the wrapper takes the row's first
-             grid column exactly as the bare tile did. #}
+             visible primary (z2 over z1); the wrapper takes the row's grid
+             column exactly as the bare tile did. #}
           {% set dr = v.drawers[s.id] if v.drawers else null %}
           {% if dr %}
           <div class="dv-reveal {{ 'is-open' if dr.open }}" id="dv-reveal--{{ s.id }}" data-reveal-for="{{ s.id }}">
@@ -715,36 +645,6 @@
           {% else %}
           {{ tile(v, s) }}
           {% endif %}
-          <div class="dv-explode" data-explode-for="{{ s.id }}"
-               data-joins="{{ s.fires | dump }}"
-               {# One attribute per label, NOT a `| dump`ed dict. t() returns a
-                  nunjucks SafeString; `| dump` serialises that object
-                  ({"val":"role","length":4}) and the island renders
-                  [object Object]. `| string` does not save you either — its
-                  copySafeness re-wraps the result as a SafeString. Plain
-                  interpolation calls toString, which is the whole fix. #}
-               data-l-role="{{ t('viewer.exRole') }}" data-l-style="{{ t('viewer.exStyle') }}"
-               data-l-motion="{{ t('viewer.exMotion') }}" data-l-fn="{{ t('viewer.exFn') }}"
-               data-l-fires="{{ t('viewer.exFires') }}" data-l-kit="{{ t('viewer.exKit') }}"
-               data-l-box="{{ t('viewer.exBox') }}" data-l-empty="{{ t('viewer.exEmpty') }}">
-            <header class="dv-explode-head">
-              <span class="dv-explode-title">{{ t('viewer.explodeTitle') }}</span>
-              {% for k in s.kits %}<code class="dv-explode-kit">kit/{{ k }}</code>{% endfor %}
-            </header>
-            <ol class="dv-explode-list"></ol>
-            {# widget-editor slot: explode.js swaps the property editor here on
-               row select (target #dv-wedit-<id>, dots CSS-escaped to dashes);
-               a full viewer morph re-renders it inline whenever the session
-               selection targets this screen (v.wedit on the stage context). #}
-            <div class="dv-wedit" id="dv-wedit-{{ s.id | replace('.', '-') }}">{% if v.wedit and v.wedit.sel and v.wedit.sel.screen == s.id %}{{ wed.pane(v.wedit) }}{% endif %}</div>
-            {# TWO inputs per screen, not one (decision 7): the COMPOSER appends
-               a single edit-intent, the PLAN EDITOR edits the accumulated plan.
-               Both post to /design/screen/* and morph #panels, so one write
-               refreshes the scope placeholder, the pending list and the raw
-               form together. Pure htmx — no island owns this. #}
-            {% set pl = v.plans[s.id] if v.plans else null %}
-            {% if pl %}{{ composer(pl) }}{% endif %}
-          </div>
         </div>
         {% endfor %}
       </div>
