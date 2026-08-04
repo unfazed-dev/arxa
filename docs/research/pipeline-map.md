@@ -26,10 +26,10 @@ stages...") groups the FSM phases with their gates and human checkpoints
 | 1 | intake | `gate: intake` — registry ↔ answers/brief traceability | intake interview + confirm steps (`/intake`, `/intake/{personas,surfaces,flows,direction}`) |
 | 2 | prototype | `gate: freeze` — inputs + `approval.lock` + clean renders; writes `designHash` | design chat refine loop (`/design/chat`); **HUMAN GATE 1**: manifest approval (`/design/freeze` → `freeze --approve` mints `approval.lock`) |
 | 3 | design | `gate: structure` — `structure.json` sync + `designHash` fresh | — |
-| 4 | scaffold | `gates: scaffold S0–S10 + coverage C1–C5` | — |
+| 4 | scaffold | `gates: scaffold S0–S10 + coverage C1–C5` + entitlement (machine-bound JWT, fail-closed — paywall lives here since 2026-08-05, `0a9c87b`) | — |
 | 5 | review | `gates: review` (arch_guard + ponytail + manifest hash) + memory | **HUMAN GATE 2**: review verdict (`POST /api/review/approve\|reject`) |
 | 6 | build | `gates: native_deps + lens` (design-vs-built goldens) | build gate decisions (`POST /build/gates/decide`); stage controls (`/build/stages/:id/control`) |
-| 7 | deploy | `gates: deploy` (triple + licence, fail-closed) + advertise | **HUMAN GATE 3**: `deploy --approval` token, human-supplied, never minted by code (pay-at-deploy) |
+| 7 | deploy | `gates: deploy` (triple, fail-closed — licence check retired with the move to scaffold) + advertise | **HUMAN GATE 3**: `deploy --approval` token, human-supplied, never minted by code |
 
 Review REJECT rewinds the FSM to `design` (same diagram, `p5 -.->|"review
 REJECT rewinds FSM to design"| p3`).
@@ -155,7 +155,8 @@ REJECT rewinds FSM to design"| p3`).
 - Skill: `skills/appbox-deployer/SKILL.md` ("stores (fastlane) + OTA patches
   (shorebird) + web (Cloudflare Pages/Workers, Vercel)").
 - Gates: `native_deps` (phase "build" — asserts every plugin is packaged for
-  each target's native toolchain) + `deploy` (triple + licence, fail-closed).
+  each target's native toolchain) + `deploy` (triple, fail-closed; the licence
+  check moved to the scaffold boundary as the entitlement JWT, 2026-08-05).
   **HUMAN GATE 3**: `deploy --approval` token, human-supplied
   ("Deploy is the only outward-facing pipeline action — confirm with the
   operator before pushing," `skills/appbox-deployer/SKILL.md` "Output").

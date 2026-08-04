@@ -817,7 +817,7 @@
           "name": "Site",
           "stories": [
             {
-              "name": "A visitor gets appbox in 30 seconds: gated pipeline, own-your-code export, pay-at-deploy",
+              "name": "A visitor gets appbox in 30 seconds: gated pipeline, own-your-code export, pay-at-scaffold",
               "priority": "must",
               "release": "R2 Anywhere"
             },
@@ -877,7 +877,7 @@
               "release": "R2 Anywhere"
             },
             {
-              "name": "Licence purchase and activation, pay-at-deploy explained before checkout",
+              "name": "Licence purchase and activation, pay-at-scaffold explained before checkout",
               "priority": "must",
               "release": "R2 Anywhere"
             },

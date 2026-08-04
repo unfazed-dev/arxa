@@ -271,11 +271,14 @@ not a discount tier.
 _Avoid_: API key (as a product concept), credits, tokens (billing sense)
 _Layer_: Product
 
-**Pay-at-Deploy**:
-Everything is free until you actually ship; the licence is due at first
-deploy, never per seat.
-The payment-gate model: a flat licence hard-blocks the first deploy, and all
-stages before it run free — the anti-credit-rage pricing story.
+**Pay-at-Scaffold** (was **Pay-at-Deploy** — renamed 2026-08-05, `0a9c87b`):
+Everything is free until the app is actually generated; the entitlement is due
+at first scaffold, never per seat.
+The payment-gate model per `monetization-and-entitlements.md` D17/D18: an
+offline, machine-bound entitlement JWT hard-blocks `emit scaffold` (fail-closed
+at both `scaffoldMain` and the scaffold gate), and all stages before it run
+free — the anti-credit-rage pricing story. The deploy-gate licence check and
+the watermark pass are retired.
 _Avoid_: subscription, per-seat, trial
 _Layer_: Product
 

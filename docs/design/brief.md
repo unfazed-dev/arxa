@@ -261,7 +261,7 @@ appbox
 
 #### Site
 
-- [must/R2 Anywhere] A visitor gets appbox in 30 seconds: gated pipeline, own-your-code export, pay-at-deploy
+- [must/R2 Anywhere] A visitor gets appbox in 30 seconds: gated pipeline, own-your-code export, pay-at-scaffold
 - [should/R2 Anywhere] The three human gates are the headline, shown not told (recorded gate flow)
 - [must/R2 Anywhere] Pricing page: flat licence, never per-seat, BYO key, pay at first deploy (the anti-credit-rage page)
 
@@ -279,7 +279,7 @@ appbox
 #### Download
 
 - [must/R2 Anywhere] Download per platform: macOS dmg, daemon CLI for Windows/Linux, mobile apps, with the honest build matrix
-- [must/R2 Anywhere] Licence purchase and activation, pay-at-deploy explained before checkout
+- [must/R2 Anywhere] Licence purchase and activation, pay-at-scaffold explained before checkout
 - [should/R2 Anywhere] Changelog and release notes per version
 
 ## Surface inventory

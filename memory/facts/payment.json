@@ -28,5 +28,10 @@
     "fact": "P3: cloud generation parked, not adopted — Docker-on-VPS generation kills the standalone/BYO-key promise (the Cursor-credit trap). An optional hosted tier for teams is a v2 expansion, decided separately, never a replacement for the local product.",
     "source": "docs/plans/appbox-memory-and-payment.md",
     "ts": "2026-07-30"
+  },
+  {
+    "fact": "D17/D18 SUPERSEDE the pay-at-deploy facts above: the paywall moved from the deploy gate to the scaffold boundary — an offline, machine-bound entitlement JWT (~/.appbox/entitlement.jwt, 7-day exp + 30-day grace) verified fail-closed by appboxd/lib/entitlement.dart, enforced in scaffoldMain and gate_scaffold. The Ed25519 licence file, the deploy-gate licence assertion, the APPBOX_DEV_LICENCE bypass, and watermark.dart are all retired (deleted in 0a9c87b). Hosted backend (Supabase entitlements + Stripe) is a deployment runbook, not yet built: docs/plans/entitlement-backend-runbook.md.",
+    "source": "docs/plans/monetization-and-entitlements.md",
+    "ts": "2026-08-05"
   }
 ]
