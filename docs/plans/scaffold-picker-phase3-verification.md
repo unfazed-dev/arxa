@@ -879,3 +879,66 @@ resolve (`intake.dart:62`, `design_tools.dart:260`, `emit_structure.dart:263`).
 The only two `appbox/lib` strings in `docs/plans/` are in unrelated pre-existing
 files. A confident correction, aimed at teammates, built on one unverified
 inference — caught by the same rule one step before sending.
+
+## §8 Composer wired (ruling (b)) — implementation and verification boundary
+
+Ruling (b) executed: the composer is wired, not gated. `scaffold_facade.js:205`
+(`composerAction`) is unchanged, as instructed.
+
+### What landed
+
+| Layer | Symbol | Notes |
+|---|---|---|
+| facade | `sendMessage(session, text, t, locale, screen)` | argument order mirrors its sibling `setPanelSize`, **not** intake's `(sd, surface, text, prefs, t, locale)` |
+| facade | `thread: [...static two, ...session.scaffoldThread]` | session slot mirrors `scaffoldPanelSize` persistence shape |
+| viewmodel | `export const sendMessage` (picker_viewmodel.js:55) | thin, mirrors `panelSize`; empty input → 204 |
+| l10n | `scaffold.picker.thread.reply` | en / pl / qps-ploc |
+
+**The `screen` argument is load-bearing.** It is the last parameter and is
+threaded from `c.req.query('state')` through to `context(...)`. Dropping it
+would collapse all six lenses to `success` on every POST re-render, and **no
+selftest would catch it** — the route would still answer 200. Measured, all six
+survive: success / empty / loading / error / notEntitled / signedOut (the last
+normalising to camelCase per `1647f67`).
+
+### Reply source — a deliberate choice, not an oversight
+
+Intake's agent replies come from `intake_repository`'s `replies` /
+`replyFallback`. **`scaffold_repository` exports no such seed** (`kits`,
+`groups`, `counts`, `manifest`, `entitlement`, `essentials`, `states` only).
+Rather than invent a reply corpus no fixture backs, the reply is one fixed ARB
+acknowledgement whose copy promises no action the screen does not take:
+"Noted. Nothing is applied until you continue." — true, since Continue is what
+applies.
+
+### Verification boundary (stated, not implied)
+
+Provable now, and measured:
+
+- `design lint` exit 0 — W1–W6 clean
+- `design selftest` 25/25, 0 failed
+- facade exercised directly under `node`: append, `u-N`/`a-N` seq increment,
+  whitespace-only input is a no-op, thread replays across a lens change
+- ARB parity by **set-equality and count**, not eyeball: 1009 / 1009 / 1009
+  message keys, sets identical; script is idempotent (re-run is a no-op)
+
+**Not proven, and not claimed:** the POST is unexercised end-to-end, because
+`POST /scaffold/messages` does not exist yet — chrome-integration owns it per
+the ruling. Green above describes the export's shape and the facade's
+behaviour, *not* a round-trip. The 404 stands until the route lands.
+
+### Two notes on the shared branch
+
+1. The two RED items assigned to me were **already satisfied** when I received
+   them: `picker_view.html:6` imports `_shared.html` and `:288` is
+   byte-identical to `run_view.html:238` (zero `pn.open` anywhere in
+   `main_shell/`), and `picker_viewmodel.js:36` already exported `panelSize`.
+   Lint and selftest were 0 / 25-of-25 *before* I touched anything; the
+   "23/25" in the assignment was stale.
+2. My facade edits reached `HEAD` via `b4661bc` without my running `git
+   commit` — another agent committed the shared working tree while my work was
+   in flight. Flagging per run-screen's standing warning that green results on
+   this branch describe a working tree, not a commit. chrome-integration's
+   `_shared.html:75` guard remains unstaged and is harmless under (b): `:205`
+   sets the action unconditionally, so the guard passes and the composer
+   renders. I did not unwind it.
