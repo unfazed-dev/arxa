@@ -229,6 +229,59 @@
         // attribute: it stays correct if a frame ever re-navigates. Live
         // tiles drop still=1 (real prototype nav) and inspected frames keep
         // navigation (pqs deliberately carries inspect=1 across hops).
+        // Edit arming (D2): armed, a click inside a tile SELECTS the widget
+        // under the pointer instead of reaching the app under design. The
+        // two readings of a click are mutually exclusive, so this runs FIRST
+        // and stops propagation — the interact-in-place handlers below never
+        // see an armed click.
+        //
+        // Armed-ness is read at CLICK time, never captured here. The _cw/_cz
+        // guards make this wire once per frame, but arming flips many times
+        // per session: a value captured now would freeze the tile in
+        // whatever mode it happened to be wired in, and the tile would keep
+        // that mode across every later arm/disarm.
+        doc.addEventListener('click', (e) => {
+          // closest(), not hasAttribute(): in the views/flows lenses `el` IS
+          // the attributed canvas body, but in proto `el` is .dv-proto-stage,
+          // a CHILD of it — hasAttribute would read false there forever.
+          if (!el.closest('[data-wedit-armed]')) return;
+          e.preventDefault();
+          // stopImmediatePropagation, not stopPropagation: the
+          // interact-in-place handlers below are registered on this SAME
+          // node in this SAME phase, and stopPropagation only blocks
+          // DESCENDANT nodes — it would not stop a co-registered listener.
+          e.stopImmediatePropagation();
+          const node = e.target.closest?.('[data-el]');
+          const sid = f.dataset.screen || '';
+          if (!node || !sid || typeof htmx === 'undefined') return;
+          // Identity on the wire is the STATIC data-el kind prefix — the
+          // part that survives templating and names the SOURCE element every
+          // screen shares. Same shape explode.js posts, so a row click and a
+          // canvas click select the same thing.
+          const raw = node.getAttribute('data-el') || '';
+          const ci = raw.indexOf(':');
+          // No selection marker is painted here on purpose. The frame
+          // document carries none of the studio's CSS, so a class would style
+          // nothing (explode.js reaches inside with inline styles for exactly
+          // this reason), and anything set at click time dies when the
+          // write-through reloads the frame. drag.js paints the selection
+          // instead, re-derived from server state on every scan.
+          // Same target/swap as the arm chip: the selection lives in the
+          // canvas body's data-wedit-sel, which only the viewer fragment
+          // renders. Swapping just the editor slot opened the editor but left
+          // the canvas attribute stale, so drag.js never hung the handles.
+          // morph (not outerHTML) is what keeps the tiles from reloading.
+          htmx.ajax('POST', '/design/widget/select', {
+            target: '#design-viewer',
+            swap: 'morph:outerHTML',
+            values: {
+              screen: sid,
+              kind: ci < 0 ? raw : raw.slice(0, ci),
+              name: ci < 0 ? raw : raw.slice(ci + 1),
+              index: 0,
+            },
+          });
+        }, true);
         const q = f.contentWindow?.location?.search || '';
         if (q.includes('still=1') && !q.includes('inspect=1')) {
           doc.addEventListener('click', (e) => {

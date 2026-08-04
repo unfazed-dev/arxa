@@ -437,3 +437,38 @@
 .dv-wedit-step { font-size: .7rem; padding: .1rem .5rem; }
 .dv-wedit-step.on { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
 .dv-explode-el.is-selected { background: var(--accent-soft); }
+
+/* Sizing-mode chips reuse .dv-wedit-step wholesale — same control, same
+   toggle-off rule, so they get no visual dialect of their own. Only the label
+   column widens, because "Width"/"Height" sit beside word chips, not digits. */
+.dv-wedit-mode { text-transform: lowercase; }
+
+/* Edit arming (D2). The armed chip is the ONLY persistent cue that a canvas
+   click now selects instead of reaching the app, so it takes the full accent
+   treatment rather than a subtle outline. */
+.dv-arm-chip[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+
+/* Resize handles. position: fixed and parented to <body>, OUTSIDE .dv-zoom:
+   the box is placed from getBoundingClientRect, which is already
+   post-transform, so living inside the zoomed subtree would scale it twice.
+   pointer-events stay off the frame itself — only the eight grips take the
+   pointer, so the tile underneath keeps hover/scroll while armed. */
+   The box is parented to #app (where --accent/--bg are declared), but the
+   literal fallbacks stay: a custom property that fails to resolve makes the
+   whole declaration invalid at computed-value time, which would silently
+   give transparent grips rather than an obvious break. */
+.dv-wedit-handles { position: fixed; z-index: 40; pointer-events: none; outline: 1px solid var(--accent, #0891b2); outline-offset: 1px; }
+.dv-wedit-handles .dv-wh { position: absolute; width: 9px; height: 9px; background: var(--bg, #fffcf0); border: 1.5px solid var(--accent, #0891b2); border-radius: 2px; pointer-events: auto; }
+.dv-wh-nw { top: -5px; left: -5px; cursor: nwse-resize; }
+.dv-wh-n  { top: -5px; left: 50%; margin-left: -4.5px; cursor: ns-resize; }
+.dv-wh-ne { top: -5px; right: -5px; cursor: nesw-resize; }
+.dv-wh-w  { top: 50%; left: -5px; margin-top: -4.5px; cursor: ew-resize; }
+.dv-wh-e  { top: 50%; right: -5px; margin-top: -4.5px; cursor: ew-resize; }
+.dv-wh-sw { bottom: -5px; left: -5px; cursor: nesw-resize; }
+.dv-wh-s  { bottom: -5px; left: 50%; margin-left: -4.5px; cursor: ns-resize; }
+.dv-wh-se { bottom: -5px; right: -5px; cursor: nwse-resize; }
+/* Live intent readout: the commit is a MODE, not a measurement, so the drag
+   names the mode it will write instead of showing a pixel figure it has no
+   attribute to store. */
+.dv-wedit-handles.is-dragging::after { content: attr(data-intent); position: absolute; top: -1.35rem; left: 0; font-size: .65rem; padding: .05rem .35rem; border-radius: 4px; background: var(--accent, #0891b2); color: var(--on-accent, #fffcf0); }
+.dv-wedit-handles.is-dragging[data-intent=""]::after { content: none; }

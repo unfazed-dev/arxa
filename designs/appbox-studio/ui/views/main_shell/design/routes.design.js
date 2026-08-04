@@ -26,7 +26,8 @@ export default [
   ['GET', '/design/inspector', prototype.inspector], // activity panel's 4th view (own route: not /design/panel/:view)
   ['POST', '/design/inspector/select', prototype.inspectorSelect], // posted-by: inspect.js island (htmx.ajax, values)
   ['POST', '/design/inspector/unlock', prototype.inspectorUnlock], // posted-by: inspector_pane.html elementCard footer (hx-post="{{ unlockHref }}")
-  ['POST', '/design/widget/select', prototype.widgetSelect], // posted-by: explode.js island (htmx.ajax, values)
+  ['POST', '/design/widget/arm', prototype.widgetArm], // posted-by: design_viewer.html toolbar arm chip (hx-post="{{ v.weditArmHref }}")
+  ['POST', '/design/widget/select', prototype.widgetSelect], // posted-by: explode.js island (htmx.ajax, values); armed tile clicks via canvas.js
   ['POST', '/design/widget/attr', prototype.widgetAttr], // posted-by: widget_editor.html step chips (hx-post)
   ['POST', '/design/widget/clear', prototype.widgetClear],
 

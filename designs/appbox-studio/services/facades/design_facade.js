@@ -654,6 +654,14 @@ function viewerFor(d, L, t) {
     // keeps the open editor — same session-survival reasoning as the
     // inspector lock (D16).
     wedit: widgetEditorContext(d, t),
+    // Edit arming (D2). Disarmed is the default and the safe state: tiles
+    // keep interact-in-place (tap/scroll/hover reach the app under design).
+    // Armed, a tile click SELECTS the widget instead of reaching the app —
+    // the two readings of a click are mutually exclusive, so the mode is
+    // explicit rather than inferred from a modifier key. Session state, so a
+    // viewer morph never silently disarms mid-edit (D16's reasoning).
+    weditArmed: !!d.weditArmed,
+    weditArmHref: '/design/widget/arm',
   };
 }
 
@@ -874,7 +882,23 @@ export const unlockInspector = (sessionData, prefs = {}, t = (k) => k, locale = 
 // by decision: the NUMBERS are the contract — the Dart constant names stay
 // kit-internal — and anything off-scale is rejected below, never written.
 const K_STEPS = [4, 8, 12, 16, 24];
-const W_ATTRS = ['data-pad', 'data-gap'];
+// Per-axis sizing modes: the widgets.css Auto Layout contract's OWN values
+// ([data-resize-x|y]="hug|fill|fixed"), not a parallel vocabulary. Fixed is a
+// MODE, not a measurement — the contract carries no size-bearing attribute
+// (no data-w/data-h), so an edge-drag commits `fixed` and the pixel figure it
+// snapped to lives only in the drag preview. Inventing a size attr here would
+// fork the contract, so we don't.
+const RESIZE_MODES = ['hug', 'fill', 'fixed'];
+// One table = one enforcement point. Every writable attribute names its own
+// legal values, so a mode never validates against the k scale (and vice
+// versa); anything not listed is a 400 at the facade, never written.
+const W_ATTR_VALUES = {
+  'data-pad': K_STEPS.map(String),
+  'data-gap': K_STEPS.map(String),
+  'data-resize-x': RESIZE_MODES,
+  'data-resize-y': RESIZE_MODES,
+};
+const W_ATTRS = Object.keys(W_ATTR_VALUES);
 
 export const widgetEditorContext = (d, t = (k) => k) => {
   const sel = d.widgetSel;
@@ -888,6 +912,14 @@ export const widgetEditorContext = (d, t = (k) => k) => {
     on: (w.attrs[attr] ?? '') === String(v),
     val: (w.attrs[attr] ?? '') === String(v) ? '' : String(v),
   }));
+  // Same toggle-off rule as the k chips: re-posting the active mode clears
+  // the attribute, so "no explicit mode" stays reachable without a second
+  // control. Keeps the editor's whole vocabulary one interaction shape.
+  const mode = (attr) => RESIZE_MODES.map((m) => ({
+    m,
+    on: (w.attrs[attr] ?? '') === m,
+    val: (w.attrs[attr] ?? '') === m ? '' : m,
+  }));
   return {
     sel: { ...sel, name: sel.name ?? '' },
     file: w.file,
@@ -896,14 +928,33 @@ export const widgetEditorContext = (d, t = (k) => k) => {
     screens: widgets.screensUsing(w.file),
     pads: step('data-pad'),
     gaps: step('data-gap'),
+    resizeX: mode('data-resize-x'),
+    resizeY: mode('data-resize-y'),
     attrHref: '/design/widget/attr',
     clearHref: '/design/widget/clear',
   };
 };
 
-// Posted by explode.js on a row click (parent-side htmx.ajax, the inspect.js
-// pattern). Selection is session state so it survives viewer morphs.
-export const selectWidget = (sessionData, payload = {}, t = (k) => k) => {
+// Edit arming toggle (viewer toolbar). Returns the whole stage: arming flips
+// how every tile reads a click, and the tiles are rendered by the viewer, so
+// a partial swap would leave stale tiles armed. Disarming also drops the
+// selection — a lingering editor for a widget you can no longer click is a
+// dead panel, and "disarm" reads as "leave edit mode" to a user.
+export const armWidgetEdit = (sessionData, prefs = {}, t = (k) => k, locale = 'en') => {
+  const d = design(sessionData);
+  if (d.weditArmed) { delete d.weditArmed; delete d.widgetSel; } else d.weditArmed = 1;
+  return stageContext(sessionData, {}, prefs, t, locale);
+};
+
+// Posted by explode.js on a row click and by canvas.js on an armed tile click.
+// Selection is session state so it survives viewer morphs.
+//
+// Returns the full stageContext, exactly like armWidgetEdit above, because
+// selection has to reach TWO places: the editor fragment AND the canvas body's
+// data-wedit-sel that drag.js hangs the resize handles off. The slim
+// widgetEditorContext only fed the former, so the editor opened while the
+// handles stayed invisible.
+export const selectWidget = (sessionData, payload = {}, prefs = {}, t = (k) => k, locale = 'en') => {
   const d = design(sessionData);
   d.widgetSel = {
     screen: payload.screen ?? '',
@@ -911,13 +962,15 @@ export const selectWidget = (sessionData, payload = {}, t = (k) => k) => {
     name: payload.name ?? '',
     index: Number(payload.index ?? 0) || 0,
   };
-  return widgetEditorContext(d, t);
+  return stageContext(sessionData, {}, prefs, t, locale);
 };
 
-export const clearWidget = (sessionData, t = (k) => k) => {
+// Full context for the same reason: dropping the selection has to drop
+// data-wedit-sel from the canvas, or the handles outlive the selection.
+export const clearWidget = (sessionData, prefs = {}, t = (k) => k, locale = 'en') => {
   const d = design(sessionData);
   delete d.widgetSel;
-  return widgetEditorContext(d, t);
+  return stageContext(sessionData, {}, prefs, t, locale);
 };
 
 // Write-through: mutates the widget's SOURCE element (its definition), so
@@ -929,7 +982,7 @@ export const setWidgetAttr = async (sessionData, payload = {}, t = (k) => k) => 
   const sel = d.widgetSel;
   const attr = String(payload.attr ?? '');
   const value = String(payload.value ?? '');
-  if (!sel || !W_ATTRS.includes(attr) || (value !== '' && !K_STEPS.includes(Number(value)))) {
+  if (!sel || !W_ATTRS.includes(attr) || (value !== '' && !W_ATTR_VALUES[attr].includes(value))) {
     const err = new Error('off-contract widget attr');
     err.status = 400;
     throw err;

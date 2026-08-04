@@ -132,8 +132,10 @@
       put(L.motion, node.getAttribute('data-inspect-motion'));
       flash(node);
       // Widget-manager selection (charter extension, 2026-08): the same click
-      // selects the widget server-side and swaps its property editor into
-      // this screen's .dv-wedit slot. Identity crossing the wire is the
+      // selects the widget server-side and morphs the viewer, which re-renders
+      // this screen's .dv-wedit slot inline AND refreshes the canvas body's
+      // data-wedit-sel that drag.js hangs the handles off — a slot-only swap
+      // opened the editor with no handles. Identity crossing the wire is the
       // STATIC data-el kind prefix — the piece that survives templating and
       // names the SOURCE element (the definition every screen shares).
       // index 0 = first source element of that kind in the file; per-node
@@ -145,8 +147,8 @@
       const ci = name.indexOf(':');
       if (sid && typeof htmx !== 'undefined') {
         htmx.ajax('POST', '/design/widget/select', {
-          target: '#dv-wedit-' + sid.replace(/\./g, '-'),
-          swap: 'innerHTML',
+          target: '#design-viewer',
+          swap: 'morph:outerHTML',
           values: { screen: sid, kind: ci < 0 ? name : name.slice(0, ci), name: label(name), index: 0 },
         });
       }
