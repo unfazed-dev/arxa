@@ -49,6 +49,10 @@ nullable-getter: false
 
 final _arbRe = RegExp(r'app_([A-Za-z0-9_]+)\.arb$');
 
+/// BCP-47 pseudolocale catalogs (qps-ploc, qps-plocm, ...) emitted by the
+/// design-server pseudolocalize tool into the same l10n/ dir.
+final _pseudoArbRe = RegExp(r'^app_qps-[A-Za-z0-9-]+\.arb$');
+
 // ----------------------------------------------------------- derivation
 
 /// The P06 rule: union each target's viewports (resolving `inherits`), ordered
@@ -371,6 +375,11 @@ List<String>? designL10n(String designRoot) {
       .whereType<File>()
       .map((f) => f.path.split('/').last)
       .where((fn) => fn.endsWith('.arb'))
+      // Pseudolocale catalogs (app_qps-*.arb, written by the design server's
+      // pseudolocalize tool) are design-time QA artifacts, not shippable app
+      // locales: Flutter gen-l10n cannot parse a hyphenated filename suffix,
+      // so they are skipped here rather than copied into the app or rejected.
+      .where((fn) => !_pseudoArbRe.hasMatch(fn))
       .toList()
     ..sort();
   if (files.isEmpty) return null; // kimitail: an empty l10n/ dir = absent

@@ -378,6 +378,40 @@ void main() {
           scaffold(des, '${tmp.path}/appBL', ['macos'], derivationPath, configPath);
       expect(rc, 1);
     });
+
+    test('pseudolocale catalog (app_qps-ploc.arb) is skipped, not rejected',
+        () {
+      final des = plantDesign('${tmp.path}/lq', l10n: {
+        'app_en.arb': '{"appTitle": "Demo"}',
+        'app_pl.arb': '{"appTitle": "Demo pl"}',
+        'app_qps-ploc.arb': '{"appTitle": "[!!Ḓḗḿǿ!!]"}',
+      });
+      final app = '${tmp.path}/appQ';
+      expect(scaffold(des, app, ['macos'], derivationPath, configPath), 0,
+          reason: 'design-server pseudolocalize output must not break emit');
+      expect(File('$app/lib/l10n/app_qps-ploc.arb').existsSync(), isFalse,
+          reason: 'QA artifact is not copied into the app');
+      final mf = jsonDecode(
+              File('$app/lib/ui/views/.shell-structure.json').readAsStringSync())
+          as Map<String, dynamic>;
+      expect(mf['l10n'], {'arbDir': 'lib/l10n', 'locales': ['en', 'pl']},
+          reason: 'qps-ploc is not a shippable locale');
+      expect(
+          scaffold(des, app, ['macos'], derivationPath, configPath, check: true),
+          0,
+          reason: '--check green with the pseudolocale present in the design');
+    });
+
+    test('a truly malformed catalog name still throws', () {
+      final des = plantDesign('${tmp.path}/lm', l10n: {
+        'app_en.arb': '{}',
+        'strings.arb': '{}',
+      });
+      expect(
+          scaffold(des, '${tmp.path}/appM', ['macos'], derivationPath,
+              configPath),
+          1);
+    });
   });
 
   group('kits', () {
