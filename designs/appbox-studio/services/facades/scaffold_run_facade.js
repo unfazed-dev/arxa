@@ -127,6 +127,7 @@ export const context = (session = {}, t = (k) => k, locale = 'en', screen = 'com
     blocked: state === 'blocked' ? states.blocked : null,
     runHref: '/scaffold/run?state=completed',
     backHref: '/scaffold',
+    composerAction: null, // read-only receipt: no mutation surface
   };
 };
 

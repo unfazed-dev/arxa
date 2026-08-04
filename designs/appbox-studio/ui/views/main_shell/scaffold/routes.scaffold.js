@@ -31,6 +31,9 @@ export default [
   ['POST', '/scaffold/add', picker.add],
   ['POST', '/scaffold/remove', picker.remove],
   ['POST', '/scaffold/remove/confirm', picker.removeConfirm],
+  // Composer post target. Was declared, unrouted, live 404 — see
+  // docs/plans/composer-action-integrity.md.
+  ['POST', '/scaffold/messages', picker.sendMessage], // posted-by: c.composerAction (scaffold_facade)
   // Cancel is a server route, not a link back to the page: clearing
   // `session.pendingRemove` is what ends the confirm, and re-rendering
   // `/scaffold` would leave it set and show the dialog again forever.

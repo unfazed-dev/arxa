@@ -93,8 +93,16 @@
 </ul>
 {% endmacro %}
 
+{# The panel spec carries the persisted width as SIBLING SCALARS, not a map:
+   activity_panel.html:77 reads `spec.size` and :81 gates the resize grip on
+   `spec.sizeHref`. A facade emitting a `panelSizes` map satisfies neither, so
+   the grip never renders and the width falls back to 's' — silently, because a
+   missing key is indistinguishable from a deliberate default. Mirrors
+   design/_shared.html:192. `panelSizePx` is deliberately not passed: scaffold
+   has no pixel-width surface, so `size` always applies. #}
 {% macro activityPanel(c) %}
-{% set AP = { label: c.activity.label, views: c.activity.views } %}
+{% set AP = { label: c.activity.label, views: c.activity.views,
+              size: c.panelSize, sizeHref: c.panelSizeHref } %}
 {{ pa.open(AP) }}
   {{ activityBody(c) }}
 {{ pa.close(AP) }}
