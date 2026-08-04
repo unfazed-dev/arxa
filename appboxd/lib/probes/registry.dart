@@ -23,6 +23,7 @@ import 'package:appboxd/probes/studio/probe_inspect.dart';
 import 'package:appboxd/probes/studio/probe_no_reload.dart';
 import 'package:appboxd/probes/studio/probe_panel_contract.dart';
 import 'package:appboxd/probes/studio/probe_panel_resize.dart';
+import 'package:appboxd/probes/studio/probe_screen_composer.dart';
 import 'package:appboxd/probes/studio/probe_scroll_ownership.dart';
 import 'package:appboxd/probes/studio/probe_shell_chrome.dart';
 
@@ -45,6 +46,7 @@ const List<Probe> kProbes = <Probe>[
   noReloadProbe,
   panelContractProbe,
   panelResizeProbe,
+  screenComposerProbe,
   shellChromeProbe,
 ];
 

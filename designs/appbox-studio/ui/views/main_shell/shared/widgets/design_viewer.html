@@ -2,6 +2,71 @@
      generator: appbox  licence: free  project: 662368770980
      Built with appbox (free tier) — https://appbox.dev
 -->
+{# The per-screen EDIT COMPOSER + PLAN EDITOR (views lens, components column).
+   A macro, not inline markup, because two callers render it: the views row
+   below, and the #composeSwap fragment that refreshes ONE composer when the
+   selection changes.
+
+   Why that fragment exists: explode.js swaps the widget editor into
+   #dv-wedit-<slot> ALONE, so selecting a component never re-renders this
+   composer — its scope placeholder would keep saying "this screen" while a
+   widget was selected. Rather than reach into an island's response or a route
+   another agent owns, the composer declares its OWN dependency: when that
+   slot settles, re-fetch the scope-aware version of me. Pure htmx. #}
+{# `oob` renders this composer as an out-of-band passenger on someone else's
+   response — the widget editor uses it to un-scope the screen the selection
+   just LEFT. That screen's own trigger cannot do it: the swap lands in the
+   newly-selected screen's slot, so nothing settles beside the old one and it
+   would go on offering "applies to <widget>" for a widget no longer selected. #}
+{% macro composer(pl, oob=false) %}
+<div class="dv-compose" id="dv-compose-{{ pl.slot }}" data-compose-for="{{ pl.screen }}"
+     data-compose-scope="{{ pl.scope }}" data-compose-screens="{{ pl.screenCount }}"
+     {% if oob %}hx-swap-oob="true"{% endif %}
+     hx-get="{{ pl.composerHref }}?screen={{ pl.screen }}"
+     hx-trigger="htmx:afterSettle from:#dv-wedit-{{ pl.slot }}"
+     hx-target="this" hx-swap="outerHTML">
+  <form class="dv-compose-form" hx-post="{{ pl.composeHref }}"
+        hx-target="#panels" hx-swap="morph:outerHTML">
+    <input type="hidden" name="screen" value="{{ pl.screen }}">
+    {# Decision 15: typing in a screen's composer arms that screen. The arm
+       route is owned by a concurrent agent and 404s until it lands; `once`
+       plus hx-swap="none" makes that failure silent and unrepeated. #}
+    <input class="dv-compose-input" type="text" name="text" autocomplete="off"
+           placeholder="{{ pl.placeholder }}" aria-label="{{ pl.placeholder }}"
+           hx-post="{{ pl.armHref }}" hx-trigger="focus once" hx-swap="none"
+           hx-vals='{"screen": "{{ pl.screen }}"}'>
+    <button class="dv-compose-send" type="submit">{{ t('viewer.compose.send') }}</button>
+  </form>
+  {% if pl.count %}
+  <ol class="dv-compose-list">
+    {% for e in pl.entries %}
+    <li class="dv-compose-entry" data-entry-status="{{ e.status }}">
+      <span class="dv-compose-entry-text">{{ e.text }}</span>
+      {% if e.scope and e.scope.widget %}<code class="dv-compose-entry-scope">{{ e.scope.widget }}</code>{% endif %}
+      <button class="ico-btn dv-compose-drop" type="button"
+              hx-post="{{ pl.planHref }}" hx-target="#panels" hx-swap="morph:outerHTML"
+              hx-vals='{"screen": "{{ pl.screen }}", "remove": "{{ e.i }}"}'
+              aria-label="{{ t('viewer.compose.removeAria', {n: e.i + 1}) }}"
+              title="{{ t('viewer.compose.remove') }}">{{ icon('list-x', {size: 12}) }}</button>
+    </li>
+    {% endfor %}
+  </ol>
+  {% else %}
+  <p class="dv-compose-empty">{{ t('viewer.compose.empty') }}</p>
+  {% endif %}
+  <details class="dv-compose-plan">
+    <summary class="dv-compose-plan-head">{{ t('viewer.compose.planTitle', {n: pl.count}) }}</summary>
+    {% if pl.err %}<p class="dv-compose-err" role="alert">{{ pl.err }}</p>{% endif %}
+    <form class="dv-compose-plan-form" hx-post="{{ pl.planHref }}"
+          hx-target="#panels" hx-swap="morph:outerHTML">
+      <input type="hidden" name="screen" value="{{ pl.screen }}">
+      <textarea class="dv-compose-raw" name="plan" rows="6" spellcheck="false"
+                aria-label="{{ t('viewer.compose.planAria', {id: pl.screen}) }}">{{ pl.raw }}</textarea>
+      <button class="dv-compose-save" type="submit">{{ t('viewer.compose.save') }}</button>
+    </form>
+  </details>
+</div>
+{% endmacro %}
 {# ---------- Shared screen stage: three lenses over the project screens ----
    Lens switch is server state (v.mode), swapped through #design-viewer:
      views — every screen of the current project as a flat wrapping grid in
@@ -475,6 +540,13 @@
                a full viewer morph re-renders it inline whenever the session
                selection targets this screen (v.wedit on the stage context). #}
             <div class="dv-wedit" id="dv-wedit-{{ s.id | replace('.', '-') }}">{% if v.wedit and v.wedit.sel and v.wedit.sel.screen == s.id %}{{ wed.pane(v.wedit) }}{% endif %}</div>
+            {# TWO inputs per screen, not one (decision 7): the COMPOSER appends
+               a single edit-intent, the PLAN EDITOR edits the accumulated plan.
+               Both post to /design/screen/* and morph #panels, so one write
+               refreshes the scope placeholder, the pending list and the raw
+               form together. Pure htmx — no island owns this. #}
+            {% set pl = v.plans[s.id] if v.plans else null %}
+            {% if pl %}{{ composer(pl) }}{% endif %}
           </div>
         </div>
         {% endfor %}
