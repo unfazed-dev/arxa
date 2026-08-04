@@ -735,6 +735,7 @@ const drawerContexts = (d, screens, t, L = 'en') =>
       // source reads (one resolveWidget per addressable widget), and a tab
       // the session has never picked must not pay them.
       tools: st.tab === 'tools' ? toolsContext(d, s, t, L) : null,
+      logic: st.tab === 'logic' ? logicContext(d, s, t, L) : null,
       composer: {
         // ?screen= pins this screen before the send (screen-scoped send);
         // ?drawer= routes the response back to this drawer's container.
@@ -1133,6 +1134,51 @@ const copyContext = (sel, t, L = 'en') => {
   if (p.source === 'literal') return { editable: true, text: p.text, note: t('viewer.tools.copyLiteral', { file: p.file }), textHref };
   if (p.source === 'bound') return { editable: false, text: p.text, reason: t('viewer.tools.roBound', { expr: p.expr }) };
   return { editable: false, text: p.text, reason: t('viewer.tools.roMixed') };
+};
+
+// ---------- the Logic tab (Screen Reveal-Drawer plan, increment 4) ----------
+// D6: a deterministic connection graph from repo facts only — the registry
+// entry (route / build class / kits / states), the flows (edgesFrom), and the
+// source element's own inspect annotations (data-inspect-role/fn, read by
+// widget_repository). The edge join is the EXACT authored `element` match
+// only: explode.js's fuzzy trigger fallback is a click matcher for prose
+// triggers, and a graph that guesses is worse than one that admits it cannot
+// know. What the facts cannot prove renders an honest state — 'unwired' when
+// a static data-el is named by no flow edge, 'unknown' when the data-el is
+// templated and static analysis cannot resolve it. No LLM, no fabricated
+// edges; the widget-logic probe asserts the fabrication-free shape.
+// Selection is the same shared d.widgetSel the Tools tab consumes (D5): it
+// only MARKS the matching row here, no parallel mechanism.
+const logicContext = (d, s, t, L = 'en') => {
+  const reg = proj.registryEntry(s.id) ?? {};
+  const edges = proj.edgesFrom(s.id);
+  const selRaw = d.widgetSel ?? null;
+  const sel = selRaw && selRaw.screen === s.id ? selRaw : null;
+  const labelOf = (id) => proj.registryEntry(id)?.label ?? id;
+  return {
+    screen: {
+      route: reg.route ?? null,
+      comp: reg.comp ?? null,
+      kits: reg.kits ?? [],
+      states: reg.states ?? [],
+      // Screen-level wiring: edges that name no element belong to the screen
+      // (chrome taps, auto-advance). Element-named edges are attributed to
+      // their widget below, so nothing renders twice.
+      edges: edges.filter((e) => !e.element).map((e) => ({ ...e, toLabel: labelOf(e.to) })),
+    },
+    widgets: widgets.widgetsOn(s.id).map((w) => {
+      const templated = !w.el || w.el.includes('{{');
+      const edge = templated ? null : edges.find((e) => e.element === w.el) ?? null;
+      return {
+        kind: w.kind, index: w.index, el: w.el ?? null,
+        role: w.inspect?.role ?? null,
+        fn: w.inspect?.fn ?? null,
+        wiring: edge ? 'edge' : templated ? 'unknown' : 'unwired',
+        edge: edge ? { ...edge, toLabel: labelOf(edge.to) } : null,
+        on: !!sel && sel.kind === w.kind && (sel.index ?? 0) === w.index,
+      };
+    }),
+  };
 };
 
 // Copy write-through (increment 3): the provenance-routed text pipeline D7

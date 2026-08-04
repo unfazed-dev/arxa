@@ -44,8 +44,25 @@ const elsIn = (src) => {
   const out = [];
   for (const m of src.matchAll(TAG_RE)) {
     const attrs = m[2];
-    const el = attrs.match(/data-el="([^":]+)(:|")/);
-    if (el) out.push({ tag: m[1], attrs, kind: el[1], start: m.index, end: m.index + m[0].length });
+    const el = attrs.match(/data-el="([^"]*)"/);
+    // `el` keeps the FULL data-el value (the Logic tab joins it against the
+    // flows' authored `element`); `kind` stays the static prefix the widget
+    // manager's identity rule has always used.
+    if (el && el[1]) out.push({ tag: m[1], attrs, el: el[1], kind: el[1].split(':')[0], start: m.index, end: m.index + m[0].length });
+  }
+  return out;
+};
+
+// The inspect annotations that are LOGIC facts (Screen Reveal-Drawer plan,
+// increment 4): what the element is for. Deliberately NOT folded into
+// attrsOf — wed.attrs feeds the Tools tab's read-only-extras section, and
+// role/fn belong to the Logic graph, not to that contract gap list.
+const INSPECT_ATTRS = ['data-inspect-role', 'data-inspect-fn'];
+const inspectOf = (attrString) => {
+  const out = {};
+  for (const a of INSPECT_ATTRS) {
+    const m = attrString.match(new RegExp(`${a}="([^"]*)"`));
+    if (m) out[a.slice('data-inspect-'.length)] = m[1];
   }
   return out;
 };
@@ -79,7 +96,7 @@ export const resolveWidget = (screenId, kind, index = 0) => {
       // `:` or `"` — a re-find that scanned only `<${tag}` would disagree the
       // moment one kind appears on two different tags, and a prefix match
       // would let kind "tab" select a "tabbar:" element.
-      return { file: rel, kind, index, tag: e.tag, attrs: attrsOf(e.attrs), start: e.start, end: e.end };
+      return { file: rel, kind, index, tag: e.tag, el: e.el, attrs: attrsOf(e.attrs), inspect: inspectOf(e.attrs), start: e.start, end: e.end };
     }
   }
   return null;
@@ -105,7 +122,7 @@ export const widgetsOn = (screenId) => {
     for (let i = 0; ; i++) {
       const w = resolveWidget(screenId, kind, i);
       if (!w) break;
-      out.push({ kind, index: i, tag: w.tag, file: w.file });
+      out.push({ kind, index: i, tag: w.tag, file: w.file, el: w.el, inspect: w.inspect });
     }
   }
   return out;

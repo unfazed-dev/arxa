@@ -197,6 +197,9 @@ export const edgesFrom = (screenId) => {
         out.push({
           flow: f.id, flowName: f.name, to: e.to,
           trigger: e.trigger ?? null, element: e.element ?? null,
+          // The nav op (push/replace/…) — the Logic tab's technical edge
+          // rendering names it; the explode join simply never reads it.
+          action: e.action ?? null,
         });
       }
     }

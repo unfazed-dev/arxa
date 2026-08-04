@@ -594,3 +594,24 @@
 .dv-tools-copy-text { margin: 0; font-size: .72rem; }
 .dv-tools-prov { margin: 0; font-size: .65rem; color: var(--tx-3); }
 .dv-tools-wedit .dv-wedit-card { margin-top: 0; }
+/* Logic tab (reveal-drawer increment 4): the deterministic wiring graph.
+   Each fact renders as a technical code line over a plain sentence; the
+   honest states (unwired / unknown) share the .is-honest muted treatment. */
+.dv-logic { margin-bottom: auto; width: 100%; min-width: 0; display: flex; flex-direction: column; gap: .55rem; }
+.dv-logic-screen, .dv-logic-widgets { display: flex; flex-direction: column; gap: .3rem; }
+.dv-logic-facts { margin: 0; display: flex; flex-direction: column; gap: .15rem; }
+.dv-logic-fact { display: flex; gap: .5rem; font-size: .7rem; }
+.dv-logic-fact dt { color: var(--tx-2); flex: none; }
+.dv-logic-fact dd { margin: 0; display: flex; gap: .3rem; flex-wrap: wrap; min-width: 0; }
+.dv-logic-none { color: var(--tx-3); }
+.dv-logic-plain { display: block; font-size: .7rem; }
+p.dv-logic-plain { margin: 0; }
+.dv-logic-tech { display: block; font-size: .65rem; color: var(--tx-2); overflow-wrap: anywhere; }
+.dv-logic-widget { border-top: 1px solid var(--border); padding-top: .35rem; display: flex; flex-direction: column; gap: .15rem; }
+.dv-logic-widget.on { box-shadow: inset 2px 0 0 var(--accent); padding-left: .4rem; }
+.dv-logic-widget-head { display: flex; gap: .4rem; align-items: baseline; font-size: .72rem; min-width: 0; }
+.dv-logic-widget-head code { overflow-wrap: anywhere; }
+.dv-logic-widget-head em { color: var(--tx-2); font-size: .68rem; font-style: normal; }
+.dv-logic-fn, .dv-logic-edge { margin: 0; }
+.dv-logic-fn .dv-logic-tech { display: inline; }
+.dv-logic-edge.is-honest .dv-logic-plain { color: var(--tx-3); }

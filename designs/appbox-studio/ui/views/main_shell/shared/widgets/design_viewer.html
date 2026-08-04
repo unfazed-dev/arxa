@@ -381,6 +381,71 @@
 </div>
 {% endmacro %}
 
+{# The Logic tab (Screen Reveal-Drawer plan, increment 4, D6). A deterministic
+   connection graph over repo facts — registry (route / build class / kits /
+   states), flows (exact authored `element` joins only), and the source
+   element's inspect annotations. Every edge renders TWICE from the same
+   facts: a technical line (ids, nav op, flow id) and a plain sentence
+   (template over the same values). What static analysis cannot derive renders
+   an honest state — 'unwired' (a static data-el no edge names) or 'unknown'
+   (a templated data-el it cannot resolve) — never a fabricated edge.
+   Selection is the shared d.widgetSel: it marks the matching row (.on), the
+   same state the Tools tab edits. #}
+{% macro logicPane(s, dr) %}
+{% set lg = dr.logic %}
+<div class="dv-logic">
+  <section class="dv-logic-screen">
+    <h4 class="dv-tools-h">{{ t('viewer.logic.screen') }}</h4>
+    <dl class="dv-logic-facts">
+      <div class="dv-logic-fact"><dt>{{ t('viewer.logic.route') }}</dt><dd><code>{{ lg.screen.route or '—' }}</code></dd></div>
+      <div class="dv-logic-fact"><dt>{{ t('viewer.logic.comp') }}</dt><dd><code>{{ lg.screen.comp or '—' }}</code></dd></div>
+      <div class="dv-logic-fact"><dt>{{ t('viewer.logic.kits') }}</dt><dd>{% if lg.screen.kits | length %}{% for k in lg.screen.kits %}<code>kit/{{ k }}</code>{% endfor %}{% else %}<span class="dv-logic-none">{{ t('viewer.logic.noneDeclared') }}</span>{% endif %}</dd></div>
+      <div class="dv-logic-fact"><dt>{{ t('viewer.logic.states') }}</dt><dd>{% if lg.screen.states | length %}{% for st in lg.screen.states %}<code>{{ st }}</code>{% endfor %}{% else %}<span class="dv-logic-none">{{ t('viewer.logic.noneDeclared') }}</span>{% endif %}</dd></div>
+    </dl>
+    <p class="dv-logic-plain">{{ t('viewer.logic.screenPlain', {label: s.label or s.id, route: lg.screen.route or '—'}) }}</p>
+    {% for e in lg.screen.edges %}
+    <p class="dv-logic-edge">
+      <code class="dv-logic-tech">{{ s.id }} → {{ e.action or 'push' }} {{ e.to }} · {{ e.flow }}</code>
+      <span class="dv-logic-plain">{{ t('viewer.logic.edgePlain', {trigger: e.trigger or '—', to: e.toLabel, flow: e.flowName}) }}</span>
+    </p>
+    {% endfor %}
+  </section>
+  <section class="dv-logic-widgets">
+    <h4 class="dv-tools-h">{{ t('viewer.logic.widgets') }}</h4>
+    {% if lg.widgets | length %}
+    {% for w in lg.widgets %}
+    <div class="dv-logic-widget {{ 'on' if w.on }}" data-wiring="{{ w.wiring }}"{% if w.on %} aria-current="true"{% endif %}>
+      <header class="dv-logic-widget-head"><code>{{ w.el or w.kind }}</code>{% if w.role %}<em>{{ w.role }}</em>{% endif %}</header>
+      {% if w.fn %}
+      <p class="dv-logic-fn"><code class="dv-logic-tech">data-inspect-fn</code> <span class="dv-logic-plain">{{ w.fn }}</span></p>
+      {% else %}
+      <p class="dv-logic-fn is-honest"><span class="dv-logic-plain">{{ t('viewer.logic.fnUnknown') }}</span></p>
+      {% endif %}
+      {% if w.wiring == 'edge' %}
+      <p class="dv-logic-edge">
+        <code class="dv-logic-tech">{{ w.el }} → {{ w.edge.action or 'push' }} {{ w.edge.to }} · {{ w.edge.flow }}</code>
+        <span class="dv-logic-plain">{{ t('viewer.logic.edgePlain', {trigger: w.edge.trigger or w.el, to: w.edge.toLabel, flow: w.edge.flowName}) }}</span>
+      </p>
+      {% elif w.wiring == 'unknown' %}
+      <p class="dv-logic-edge is-honest">
+        <code class="dv-logic-tech">{{ t('viewer.logic.unknownTech') }}</code>
+        <span class="dv-logic-plain">{{ t('viewer.logic.unknown') }}</span>
+      </p>
+      {% else %}
+      <p class="dv-logic-edge is-honest">
+        <code class="dv-logic-tech">{{ t('viewer.logic.unwiredTech') }}</code>
+        <span class="dv-logic-plain">{{ t('viewer.logic.unwired') }}</span>
+      </p>
+      {% endif %}
+    </div>
+    {% endfor %}
+    {% else %}
+    <p class="dv-drawer-stub">{{ t('viewer.logic.noWidgets') }}</p>
+    {% endif %}
+  </section>
+</div>
+{% endmacro %}
+
 {% macro revealDrawer(v, s) %}
 {% set dr = v.drawers[s.id] %}
 <aside class="dv-drawer" id="dv-drawer-{{ dr.slug }}" data-drawer-for="{{ s.id }}" tabindex="-1"
@@ -401,7 +466,7 @@
     {% if dr.tab == 'tools' %}
     {{ toolsPane(s, dr) }}
     {% elif dr.tab == 'logic' %}
-    <p class="dv-drawer-stub">{{ t('viewer.drawer.logicStub') }}</p>
+    {{ logicPane(s, dr) }}
     {% else %}
     {{ cm.field(dr.composer, 'drawer-' ~ dr.slug) }}
     {% endif %}
