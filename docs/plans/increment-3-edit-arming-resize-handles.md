@@ -112,6 +112,23 @@ old single-table check would have got wrong:
 All five changed JS files pass `node --check`; all three ARB files parse and
 carry the eight new keys (`en`, `pl`, `qps-ploc`).
 
+The `bodyAttrs` expression was rendered through the real Nunjucks build
+(`worker_assets/nunjucks.min.js`) and the real `_panel.html` `body()` macro
+shape, in all four states — the `| safe` emission means the JSON survives raw
+inside the single-quoted attribute, and `JSON.parse` of the emitted value
+round-trips:
+
+```
+armed+selected  -> …dv-flow-canvas" id="design-viewer" data-wedit-armed="1"
+                   data-wedit-sel='{"screen":"portalo.home","kind":"card","index":0}'
+disarmed        -> …dv-flow-canvas" id="design-viewer">
+armed,no sel    -> …dv-flow-canvas" id="design-viewer" data-wedit-armed="1">
+static build    -> …dv-flow-canvas" id="design-viewer" data-static="1">
+```
+
+The last row matters: the pre-existing `data-static="1"` path is unchanged by
+the concatenation.
+
 Not verified end-to-end in a browser: see the blocker above — a tile cannot
 visibly reflow on a mode change, so a screenshot would not have evidenced the
 sizing modes even if taken.
