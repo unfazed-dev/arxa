@@ -7,6 +7,10 @@
 //   --check            compare the on-disk tree against structure.json + targets (drift)
 //   --self-test        run the negative-case self-test (R5)
 //
+// D8: a kit-manifest.json sidecar beside structure.json (written by the
+// studio's scaffold picker) is picked up automatically — no flag; the sidecar
+// location is the contract, exactly like structure.json itself.
+//
 // Env fallbacks (preserved verbatim from the Python):
 //   KIT_DESIGN_DIR (default 'design'), APPBOX_APP (default '.'), APPBOX_TARGETS.
 //

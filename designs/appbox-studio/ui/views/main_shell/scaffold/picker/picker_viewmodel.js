@@ -71,6 +71,7 @@ export const sendMessage = async (c, h) => {
 // --- add ---------------------------------------------------------------
 // Adding is unconditional: D5 dependency pull-in happens in the facade's
 // closure pass, so the caller never has to know what a kit drags along.
+// D8: every confirmed selection change persists the kit-manifest sidecar.
 export const add = async (c, h) => {
   const form = await h.form(c);
   const kit = String(form.kit || '').trim();
@@ -78,6 +79,7 @@ export const add = async (c, h) => {
   const s = picked(c, h);
   if (!s.scaffoldPicked.includes(kit)) s.scaffoldPicked.push(kit);
   s.pendingRemove = null;
+  await facade.persistKitManifest(s, h.t(c), h.locale(c));
   return h.render(c, `${VIEW}#gridSwap`, ctx(c, h));
 };
 
@@ -96,13 +98,18 @@ export const remove = async (c, h) => {
 
 // Step 2 commits it. Essentials and kits others still depend on are refused
 // here as well as in the template — the server never trusts the markup.
-export const removeConfirm = (c, h) => {
+// D8: a committed removal persists the kit-manifest sidecar; a refused one
+// changed nothing, so it writes nothing.
+export const removeConfirm = async (c, h) => {
   const s = picked(c, h);
   const kit = c.req.query('kit') || s.pendingRemove;
   const view = facade.context(s, h.t(c), h.locale(c));
   const target = view.kits.find((k) => k.id === kit);
   const blocked = !target || target.essential || (view.confirm && view.confirm.blockedBy.length > 0);
-  if (!blocked) s.scaffoldPicked = s.scaffoldPicked.filter((id) => id !== kit);
+  if (!blocked) {
+    s.scaffoldPicked = s.scaffoldPicked.filter((id) => id !== kit);
+    await facade.persistKitManifest(s, h.t(c), h.locale(c));
+  }
   s.pendingRemove = null;
   return h.render(c, `${VIEW}#panelsSwap`, ctx(c, h));
 };

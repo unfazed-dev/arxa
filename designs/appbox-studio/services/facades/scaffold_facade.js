@@ -294,3 +294,26 @@ export const sendMessage = (session = {}, text, t = (k) => k, locale = 'en', scr
 };
 
 export default { context, setPanelSize };
+
+/**
+ * D8: persist the picker-confirmed selection as the kit-manifest.json sidecar
+ * beside the project's frozen structure.json. Called by the mutation routes
+ * (add / removeConfirm) AFTER the session selection changes, so the sidecar
+ * always reflects the last confirmed set — scaffold is the single
+ * authoritative merge point (D1), and only this set reaches the build.
+ *
+ * The sidecar carries the two sections D8 pins — `wishlist` (intake intent)
+ * and `resolved` (picker-confirmed, provenance-labeled) — plus the D6
+ * readiness `todos`. The descriptive fixture keys (`path`/`beside`/`sections`)
+ * stay in the fixture: the sidecar IS the file they describe.
+ *
+ * Same argument order as `setPanelSize`/`sendMessage` (D36 local canon),
+ * minus `screen`: the persisted set never depends on the preview lens.
+ * Async — the write goes through the project's one confined write channel;
+ * a failure throws (the widget writes' contract), because a picker that
+ * confirms a set it cannot persist would silently ship the wrong kits.
+ */
+export const persistKitManifest = async (session = {}, t = (k) => k, locale = 'en') => {
+  const m = context(session, t, locale).manifest;
+  await repo.writeKitManifest({ wishlist: m.wishlist, resolved: m.resolved, todos: m.todos });
+};
