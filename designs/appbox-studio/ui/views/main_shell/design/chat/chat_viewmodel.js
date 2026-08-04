@@ -47,7 +47,21 @@ export const send = async (c, h) => {
   const form = await h.form(c);
   const text = String(form.preset || form.text || '').trim();
   if (!text) return h.noContent(c);
-  return h.render(c, `${VIEW}#panelsSwap`, facade.sendChat(h.session(c).data, text, h.prefs(c), c.req.param('id') ?? null, h.t(c), h.locale(c)));
+  // The drawer-mounted composer (Screen Reveal-Drawer plan): ?screen= pins
+  // the drawer's screen first (screen-scoped send), ?drawer= routes the
+  // response back to that drawer's own container instead of #panels.
+  const pin = c.req.param('id') ?? c.req.query('screen') ?? null;
+  const data = facade.sendChat(h.session(c).data, text, h.prefs(c), pin, h.t(c), h.locale(c));
+  const drawer = c.req.query('drawer');
+  if (drawer) {
+    // draftSent is read per composer INSTANCE (composer.html drops
+    // hx-preserve on the render that follows a send); only the drawer's own
+    // spec gets it — the panel composer keeps any half-typed draft.
+    const spec = data.viewer?.drawers?.[drawer]?.composer;
+    if (spec) spec.draftSent = true;
+    return h.render(c, `${VIEW}#drawerSwap`, { ...data, drawerScreen: drawer });
+  }
+  return h.render(c, `${VIEW}#panelsSwap`, data);
 };
 
 // Composer agent chrome: the model pick swaps the stage.

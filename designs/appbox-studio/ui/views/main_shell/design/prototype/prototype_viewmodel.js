@@ -68,11 +68,28 @@ export const panelSizePx = async (c, h) => {
 // Canvas/chat undo+redo: stepping a stack re-renders the whole stage (chat +
 // canvas share it), so a moved tile or toggled pin updates in both at once.
 // Async: replaying a flow entry rewrites the project's flows.json.
-export const undo = async (c, h) =>
-  h.render(c, `${VIEW}#panelsSwap`, await facade.undo(h.session(c).data, c.req.param('stack'), h.prefs(c), h.t(c), h.locale(c)));
+// ?drawer=<screen id>: the send came from that screen's drawer-mounted
+// composer, whose swaps land in its OWN container (composer.html swapTarget)
+// — answer with that drawer's fragment instead of the panels tree.
+export const undo = async (c, h) => {
+  const data = await facade.undo(h.session(c).data, c.req.param('stack'), h.prefs(c), h.t(c), h.locale(c));
+  const drawer = c.req.query('drawer');
+  if (drawer) return h.render(c, `${VIEW}#drawerSwap`, { ...data, drawerScreen: drawer });
+  return h.render(c, `${VIEW}#panelsSwap`, data);
+};
 
-export const redo = async (c, h) =>
-  h.render(c, `${VIEW}#panelsSwap`, await facade.redo(h.session(c).data, c.req.param('stack'), h.prefs(c), h.t(c), h.locale(c)));
+export const redo = async (c, h) => {
+  const data = await facade.redo(h.session(c).data, c.req.param('stack'), h.prefs(c), h.t(c), h.locale(c));
+  const drawer = c.req.query('drawer');
+  if (drawer) return h.render(c, `${VIEW}#drawerSwap`, { ...data, drawerScreen: drawer });
+  return h.render(c, `${VIEW}#panelsSwap`, data);
+};
+
+// The reveal-drawer trigger + tabs (Screen Reveal-Drawer plan, increment 2):
+// session view state (open/tab per screen), whole-viewer swap — morph keeps
+// the drawer node, so the is-open class change runs the CSS reveal transition.
+export const drawer = (c, h) =>
+  h.render(c, `${VIEW}#viewerSwap`, facade.setDrawer(h.session(c).data, c.req.param('screen'), { state: c.req.query('state'), tab: c.req.query('tab') }, h.prefs(c), h.t(c), h.locale(c)));
 
 // The inspector pane (activity panel, 4th view). Its carousel icon does NOT
 // go through /design/panel/:view — that route renders _shared.html's

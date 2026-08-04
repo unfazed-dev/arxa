@@ -28,6 +28,7 @@ export default [
   ['POST', '/design/panel/size/:panel', prototype.panelSizePx], // posted-by: drag.js island (htmx.ajax)
   ['POST', '/design/undo/:stack', prototype.undo],
   ['POST', '/design/redo/:stack', prototype.redo],
+  ['GET', '/design/drawer/:screen', prototype.drawer], // sent-by: tile toolbar reveal-drawer trigger + drawer tabs (hx-get, ?state= / ?tab=)
   ['GET', '/design/inspector', prototype.inspector], // activity panel's 4th view (own route: not /design/panel/:view)
   ['POST', '/design/inspector/select', prototype.inspectorSelect], // posted-by: inspect.js island (htmx.ajax, values)
   ['POST', '/design/inspector/unlock', prototype.inspectorUnlock], // posted-by: inspector_pane.html elementCard footer (hx-post="{{ unlockHref }}")

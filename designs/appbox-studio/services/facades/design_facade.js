@@ -668,6 +668,11 @@ function viewerFor(d, L, t) {
     // scope/pending state; a list would force an O(n) lookup per row in the
     // template language.
     plans: mode === 'views' ? planContexts(d, screens, t) : null,
+    // Per-screen reveal-drawer (Screen Reveal-Drawer plan, increment 2). Keyed
+    // by screen id for the same reason as `plans`. Views lens only: the drawer
+    // is the screen card's own back panel, and only the views lens renders one
+    // card per designed screen.
+    drawers: mode === 'views' ? drawerContexts(d, screens, t) : null,
   };
 }
 
@@ -684,6 +689,69 @@ export const setViewer = (sessionData, query, prefs = {}, t = (k) => k, locale =
   d.viewer = next;
   return stageContext(sessionData, {}, prefs, t, locale);
 };
+
+// ---------- the per-screen reveal-drawer (Screen Reveal-Drawer plan) --------
+// Session-scoped VIEW state only (D8): closed by default, Composer first-open,
+// per-screen memory of open/tab within the session, nothing persisted to
+// project files. It lives under d.drawer, NOT d.viewer — setViewer REPLACES
+// d.viewer wholesale on every toolbar act, and an open drawer must survive a
+// rung/bg/theme toggle.
+const DRAWER_TABS = ['composer', 'tools', 'logic'];
+const drawerEntry = (d, id) => ({ open: false, tab: 'composer', ...(d.drawer?.[id] ?? {}) });
+
+export const setDrawer = (sessionData, screenId, { state, tab } = {}, prefs = {}, t = (k) => k, locale = 'en') => {
+  const d = design(sessionData);
+  const cur = drawerEntry(d, screenId);
+  const next = { ...cur };
+  if (state != null) next.open = state === 'toggle' ? !cur.open : state === 'on';
+  // A tab pick implies the drawer is out — the tabs are unreachable tucked.
+  if (tab != null && DRAWER_TABS.includes(tab)) { next.tab = tab; next.open = true; }
+  (d.drawer ??= {})[screenId] = next;
+  return stageContext(sessionData, {}, prefs, t, locale);
+};
+
+// One drawer context per views-lens screen. The composer spec mounts the SAME
+// reusable card as the composer panel (composer.html field), with a distinct
+// scope + swapTarget so two instances cannot collide on one page: every swap
+// this instance issues lands in its own container, routed by ?drawer=<id>
+// (the viewmodels render `#drawerSwap` when they see it). Undo/redo ride the
+// same global chat stack; only the RESPONSE routing is screen-scoped.
+const drawerContexts = (d, screens, t) =>
+  Object.fromEntries(screens.map((s) => {
+    const st = drawerEntry(d, s.id);
+    const slug = s.id.replace(/\./g, '-');
+    const base = `/design/drawer/${s.id}`;
+    const chat = {
+      canUndo: (d.undoStacks?.chat?.length ?? 0) > 0,
+      canRedo: (d.redoStacks?.chat?.length ?? 0) > 0,
+    };
+    return [s.id, {
+      ...st,
+      slug,
+      toggleHref: `${base}?state=toggle`,
+      tabs: DRAWER_TABS.map((key) => ({ key, active: key === st.tab, href: `${base}?tab=${key}` })),
+      composer: {
+        // ?screen= pins this screen before the send (screen-scoped send);
+        // ?drawer= routes the response back to this drawer's container.
+        composerAction: `/design/chat/messages?screen=${encodeURIComponent(s.id)}&drawer=${encodeURIComponent(s.id)}`,
+        placeholder: t('composer.placeholder.refine', { label: s.label ?? s.id }),
+        suggestions: refineSuggestions(t),
+        // No model menu / filmstrip / chips / tray body: their hrefs all swap
+        // the composer's target, and rendering them here would demand a
+        // drawer-scoped route per control for chrome the drawer does not need.
+        modelMenu: null,
+        filmstrip: null,
+        contextChips: null,
+        trayContext: null,
+        elements: null,
+        tray: { open: false, toggleHref: '' },
+        undoRedo: { chat },
+        undoHref: `/design/undo/chat?drawer=${encodeURIComponent(s.id)}`,
+        redoHref: `/design/redo/chat?drawer=${encodeURIComponent(s.id)}`,
+        swapTarget: `#dv-drawer-${slug}`,
+      },
+    }];
+  }));
 
 // ---------- the design thread (seeded history + session messages) ----------
 

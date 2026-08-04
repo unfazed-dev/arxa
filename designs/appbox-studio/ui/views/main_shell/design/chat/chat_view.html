@@ -22,6 +22,10 @@
 
 {% macro panelsSwap(c) %}{{ pv.panelsSwap(c) }}{% endmacro %}
 
+{# The drawer-mounted composer posts its sends here (?drawer=<id>); the
+   response is that drawer's own fragment, delegated like panelsSwap. #}
+{% macro drawerSwap(c) %}{{ pv.drawerSwap(c) }}{% endmacro %}
+
 {% macro revertSwap(c) %}
 {{ pv.panelsSwap(c) }}
 <div hx-swap-oob="beforeend:#toasts"><div class="toast" id="toast-revert">{{ t('design.revertToast') }}</div></div>

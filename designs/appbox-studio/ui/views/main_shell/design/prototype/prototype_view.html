@@ -105,6 +105,17 @@
 
 {% macro viewerSwap(c) %}{{ stageViewer(c) }}{% endmacro %}
 
+{# ONE screen's reveal-drawer (the aside alone). The response to every swap
+   the drawer-mounted composer issues — its swapTarget is its own container
+   (#dv-drawer-<slug>), so the fragment must BE that element, not the panels
+   tree. Routed by ?drawer=<id> in chat send / undo / redo. Renders nothing
+   when the viewer left the views lens (v.drawers null): htmx treats an empty
+   response as a no-op, which is the honest answer for a drawer that is no
+   longer on the page. #}
+{% macro drawerSwap(c) %}
+{% if c.viewer.drawers %}{% for s in c.viewer.screens %}{% if s.id == c.drawerScreen %}{{ dv.revealDrawer(c.viewer, s) }}{% endif %}{% endfor %}{% endif %}
+{% endmacro %}
+
 {# A file row's response: the main panel renders the file in the mode the
    server picked from its extension. #}
 {% macro fileSwap(c) %}{{ mainContent(c) }}{% endmacro %}
