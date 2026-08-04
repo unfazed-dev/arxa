@@ -247,8 +247,22 @@ Color _kitAccentDark(Color accent) =>
 
 /// Light [ThemeData] built from [KitColors]. Pass [accent] to override the
 /// brand primary (defaults to [KitColors.accent]).
-ThemeData kitLightTheme({Color accent = KitColors.accent}) {
-  final base = ThemeData.light(useMaterial3: true);
+/// Pass [fontFamily] to set the app-wide face — give it a
+/// `KitFontFamily.cssName` from `kit_fonts.dart`. NOTE: Flutter resolves a
+/// family name only if its binary is bundled; an unbundled name falls back to
+/// the platform default SILENTLY. See `kitFontIsBundled`.
+ThemeData kitLightTheme({
+  Color accent = KitColors.accent,
+  String? fontFamily,
+}) {
+  var base = ThemeData.light(useMaterial3: true);
+  if (fontFamily != null) {
+    // ThemeData.light() takes no fontFamily; apply it across the ramp.
+    base = base.copyWith(
+      textTheme: base.textTheme.apply(fontFamily: fontFamily),
+      primaryTextTheme: base.primaryTextTheme.apply(fontFamily: fontFamily),
+    );
+  }
   final scheme = base.colorScheme.copyWith(
     primary: accent,
     onPrimary: KitColors.paper,
@@ -309,8 +323,22 @@ ThemeData kitLightTheme({Color accent = KitColors.accent}) {
 
 /// Dark [ThemeData] built from [KitDarkColors]. Pass [accent] to override the
 /// brand primary (defaults to [KitColors.accent]).
-ThemeData kitDarkTheme({Color accent = KitColors.accent}) {
-  final base = ThemeData.dark(useMaterial3: true);
+/// Pass [fontFamily] to set the app-wide face — give it a
+/// `KitFontFamily.cssName` from `kit_fonts.dart`. NOTE: Flutter resolves a
+/// family name only if its binary is bundled; an unbundled name falls back to
+/// the platform default SILENTLY. See `kitFontIsBundled`.
+ThemeData kitDarkTheme({
+  Color accent = KitColors.accent,
+  String? fontFamily,
+}) {
+  var base = ThemeData.dark(useMaterial3: true);
+  if (fontFamily != null) {
+    // ThemeData.dark() takes no fontFamily; apply it across the ramp.
+    base = base.copyWith(
+      textTheme: base.textTheme.apply(fontFamily: fontFamily),
+      primaryTextTheme: base.primaryTextTheme.apply(fontFamily: fontFamily),
+    );
+  }
   final scheme = ColorScheme(
     brightness: Brightness.dark,
     primary: accent,
