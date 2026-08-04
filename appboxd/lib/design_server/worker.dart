@@ -138,6 +138,7 @@ _Prefetch _scanArtifact(String artifactDir, String origin, String? iconsDir,
   final fixtures = <String, String>{};
   final arb = <String, Map<String, dynamic>>{};
   final iconNames = <String>{};
+  final surfaceSrcIndex = <String>[];
 
   String posixRel(String f) =>
       p.relative(f, from: artifactDir).split(p.separator).join('/');
@@ -188,14 +189,25 @@ _Prefetch _scanArtifact(String artifactDir, String origin, String? iconsDir,
       final rel = p.relative(f.path, from: projectDir).split(p.separator).join('/');
       if (rel.endsWith('.html') || rel.endsWith('.js')) iconScan(f.readAsStringSync());
       if (rel.startsWith('design/surfaces/') && rel.endsWith('.html')) {
-        templates['ui/project/${rel.substring('design/surfaces/'.length)}'] =
-            f.readAsStringSync();
+        final src = f.readAsStringSync();
+        templates['ui/project/${rel.substring('design/surfaces/'.length)}'] = src;
+        // Raw SOURCE text too, for the widget manager: services scan the
+        // authored surface partials (data-el containers, layout attrs) via
+        // fs_shim, which can only see prefetched keys. /project-src/ is that
+        // read-only window; writes still go through /__project_write and the
+        // watcher re-prefetches (~200ms) like every other project edit.
+        fixtures['$origin/project-src/$rel'] = src;
+        surfaceSrcIndex.add(rel);
       }
       if (rel.endsWith('.json')) {
         fixtures['$origin/project/$rel'] = f.readAsStringSync();
       }
     }
     scanArbDir(Directory(p.join(projectDir, 'design', 'l10n')));
+    // fs_shim has no readdir, so the surface list itself must be a fixture —
+    // without it the widget manager could not discover included partials
+    // (_tabbar.html) that no registry entry names.
+    fixtures['$origin/project-src/index.json'] = jsonEncode(surfaceSrcIndex);
   }
   final icons = <String, String>{};
   if (iconsDir != null) {

@@ -59,6 +59,7 @@
    object { vp, width, height?, rung?, note?, shot? }. Wiring:
    ui/common/_integration_viewer.md. #}
 {% import "ui/common/widgets/_panel.html" as base %}
+{% import "ui/views/main_shell/shared/widgets/widget_editor.html" as wed %}
 {% import "ui/views/main_shell/shared/widgets/mini_panel.html" as mn %}
 {% import "ui/common/widgets/primitives.html" as prim %}
 
@@ -431,6 +432,11 @@
               {% for k in s.kits %}<code class="dv-explode-kit">kit/{{ k }}</code>{% endfor %}
             </header>
             <ol class="dv-explode-list"></ol>
+            {# widget-editor slot: explode.js swaps the property editor here on
+               row select (target #dv-wedit-<id>, dots CSS-escaped to dashes);
+               a full viewer morph re-renders it inline whenever the session
+               selection targets this screen (v.wedit on the stage context). #}
+            <div class="dv-wedit" id="dv-wedit-{{ s.id | replace('.', '-') }}">{% if v.wedit and v.wedit.sel and v.wedit.sel.screen == s.id %}{{ wed.pane(v.wedit) }}{% endif %}</div>
           </div>
         </div>
         {% endfor %}

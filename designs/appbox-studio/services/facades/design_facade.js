@@ -11,6 +11,7 @@
 // fixture, en fallback.
 import * as repo from '../repositories/design_repository.js';
 import * as proj from '../repositories/project_repository.js';
+import * as widgets from '../repositories/widget_repository.js';
 import * as jargon from './jargon.js';
 import * as agent from './agent_menus.js';
 import * as fv from './file_views.js';
@@ -648,6 +649,11 @@ function viewerFor(d, L, t) {
       chat:   { canUndo: (d.undoStacks?.chat?.length ?? 0) > 0, canRedo: (d.redoStacks?.chat?.length ?? 0) > 0 },
     },
     elements: (d.elementContext ?? []).map((e) => ({ ...e, removeHref: `${contextBase}element/remove?screen=${encodeURIComponent(e.screenId)}&name=${encodeURIComponent(e.name)}` })),
+    // Widget-manager selection (components column, views lens): rendered
+    // inline in the selected screen's editor slot so a full viewer morph
+    // keeps the open editor — same session-survival reasoning as the
+    // inspector lock (D16).
+    wedit: widgetEditorContext(d, t),
   };
 }
 
@@ -859,6 +865,77 @@ export const unlockInspector = (sessionData, prefs = {}, t = (k) => k, locale = 
   if (d.inspectorLock) d.inspectorHover = d.inspectorLock;
   delete d.inspectorLock;
   return stageContext(sessionData, {}, prefs, t, locale);
+};
+
+// ---------- widget manager (components column, views lens only) ----------
+// The k spacing steps the editor may write: the widgets.css Auto Layout
+// contract (data-gap/data-pad: 4|8|12|16|24), the designer-side subset of the
+// kit scale (kPad*/kGap* in kit_app_constants.dart). Scale-level enforcement
+// by decision: the NUMBERS are the contract — the Dart constant names stay
+// kit-internal — and anything off-scale is rejected below, never written.
+const K_STEPS = [4, 8, 12, 16, 24];
+const W_ATTRS = ['data-pad', 'data-gap'];
+
+export const widgetEditorContext = (d, t = (k) => k) => {
+  const sel = d.widgetSel;
+  if (!sel) return { sel: null };
+  const w = widgets.resolveWidget(sel.screen, sel.kind, sel.index ?? 0);
+  if (!w) return { sel: null };
+  // posting a chip's own current value toggles the attribute OFF (val ''):
+  // one control, no separate "clear" affordance per attribute.
+  const step = (attr) => K_STEPS.map((v) => ({
+    v,
+    on: (w.attrs[attr] ?? '') === String(v),
+    val: (w.attrs[attr] ?? '') === String(v) ? '' : String(v),
+  }));
+  return {
+    sel: { ...sel, name: sel.name ?? '' },
+    file: w.file,
+    tag: w.tag,
+    attrs: w.attrs,
+    screens: widgets.screensUsing(w.file),
+    pads: step('data-pad'),
+    gaps: step('data-gap'),
+    attrHref: '/design/widget/attr',
+    clearHref: '/design/widget/clear',
+  };
+};
+
+// Posted by explode.js on a row click (parent-side htmx.ajax, the inspect.js
+// pattern). Selection is session state so it survives viewer morphs.
+export const selectWidget = (sessionData, payload = {}, t = (k) => k) => {
+  const d = design(sessionData);
+  d.widgetSel = {
+    screen: payload.screen ?? '',
+    kind: payload.kind ?? '',
+    name: payload.name ?? '',
+    index: Number(payload.index ?? 0) || 0,
+  };
+  return widgetEditorContext(d, t);
+};
+
+export const clearWidget = (sessionData, t = (k) => k) => {
+  const d = design(sessionData);
+  delete d.widgetSel;
+  return widgetEditorContext(d, t);
+};
+
+// Write-through: mutates the widget's SOURCE element (its definition), so
+// every screen composing it re-renders on the watcher reload — cross-screen
+// sync is emergent, not plumbed. Off-scale values are a 400, not a clamp:
+// clamping would silently teach users a scale that isn't the contract.
+export const setWidgetAttr = async (sessionData, payload = {}, t = (k) => k) => {
+  const d = design(sessionData);
+  const sel = d.widgetSel;
+  const attr = String(payload.attr ?? '');
+  const value = String(payload.value ?? '');
+  if (!sel || !W_ATTRS.includes(attr) || (value !== '' && !K_STEPS.includes(Number(value)))) {
+    const err = new Error('off-contract widget attr');
+    err.status = 400;
+    throw err;
+  }
+  await widgets.setWidgetAttr(sel.screen, sel.kind, sel.index ?? 0, attr, value);
+  return widgetEditorContext(d, t);
 };
 
 export const stageContext = (sessionData = {}, opts = {}, prefs = {}, t = (k) => k, locale = 'en') => {

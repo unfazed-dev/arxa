@@ -109,3 +109,32 @@ export const inspectorUnlock = (c, h) => {
   if (next.activityView !== 'inspector') return h.noContent(c);
   return h.render(c, `${VIEW}#inspectorPane`, next);
 };
+
+// ---------- widget manager (components column, views lens) ----------
+// Posted by explode.js on a row click (parent-side htmx.ajax, the inspect.js
+// pattern) — the response swaps the editor fragment into the selected
+// screen's .dv-wedit slot. Selection is session state, so a full viewer
+// morph re-renders the open editor inline (see stage context `wedit`).
+export const widgetSelect = async (c, h) => {
+  const form = await h.form(c);
+  const next = facade.selectWidget(h.session(c).data, {
+    screen: form.screen, kind: form.kind, name: form.name, index: form.index,
+  }, h.t(c));
+  return h.render(c, `${VIEW}#widgetEditor`, next);
+};
+
+// Step-chip posts (data-pad / data-gap, k scale). Off-contract values are a
+// 400 by design — the write-through path must never learn to clamp.
+export const widgetAttr = async (c, h) => {
+  const form = await h.form(c);
+  try {
+    const next = await facade.setWidgetAttr(h.session(c).data, { attr: form.attr, value: form.value }, h.t(c));
+    return h.render(c, `${VIEW}#widgetEditor`, next);
+  } catch (e) {
+    if (e.status === 400) return c.text(e.message, 400);
+    throw e;
+  }
+};
+
+export const widgetClear = (c, h) =>
+  h.render(c, `${VIEW}#widgetEditor`, facade.clearWidget(h.session(c).data, h.t(c)));

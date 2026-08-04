@@ -420,3 +420,20 @@
 .panel-viewer .dv-fs-close { display: none; position: absolute; top: .8rem; right: .8rem; z-index: 30; }
 .panel-viewer:fullscreen { border: none; border-radius: 0; }
 .panel-viewer:fullscreen .dv-fs-close { display: inline-grid; }
+
+/* ---------- widget editor (components column, views lens) ---------- */
+/* The inline property editor swapped into .dv-wedit by explode.js's selection
+   post. Chips are the k steps (widgets.css Auto Layout contract); `.on` marks
+   the source element's current value — accent vocabulary, same as the strip. */
+.dv-wedit:empty { display: none; }
+.dv-wedit-card { margin-top: .5rem; border: 1px solid var(--border); border-radius: 10px; padding: .55rem .65rem; background: var(--bg); display: flex; flex-direction: column; gap: .45rem; }
+.dv-wedit-head { display: flex; align-items: baseline; gap: .5rem; min-width: 0; }
+.dv-wedit-head b { font-size: .8rem; }
+.dv-wedit-file { font-size: .65rem; color: var(--tx-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dv-wedit-prov { margin: 0; font-size: .68rem; color: var(--tx-2); }
+.dv-wedit-row { display: flex; align-items: center; gap: .5rem; }
+.dv-wedit-label { font-size: .7rem; color: var(--tx-2); min-width: 3.5rem; }
+.dv-wedit-steps { display: flex; gap: .25rem; }
+.dv-wedit-step { font-size: .7rem; padding: .1rem .5rem; }
+.dv-wedit-step.on { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.dv-explode-el.is-selected { background: var(--accent-soft); }

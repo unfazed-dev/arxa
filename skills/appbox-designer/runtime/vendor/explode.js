@@ -30,7 +30,11 @@
 
    Island shape (per ADR-0002): dependency-free IIFE, no globals, no framework,
    no build step, re-arms on htmx:load, and no-ops on anything it does not
-   understand. It never writes to the server and never navigates. */
+   understand. It never navigates and holds no truth of its own; since the
+   widget-manager charter extension (2026-08) a row click ALSO posts the
+   selection to the session and swaps the server-rendered property editor into
+   the row's .dv-wedit slot — parent-side htmx.ajax, exactly the inspect.js
+   channel, with every value and every write still server-side. */
 (() => {
   if (window._explode) return; // guard against double-include
   window._explode = 1;
@@ -127,6 +131,25 @@
       put(L.style, node.getAttribute('data-inspect-style'));
       put(L.motion, node.getAttribute('data-inspect-motion'));
       flash(node);
+      // Widget-manager selection (charter extension, 2026-08): the same click
+      // selects the widget server-side and swaps its property editor into
+      // this screen's .dv-wedit slot. Identity crossing the wire is the
+      // STATIC data-el kind prefix — the piece that survives templating and
+      // names the SOURCE element (the definition every screen shares).
+      // index 0 = first source element of that kind in the file; per-node
+      // disambiguation arrives with the canvas resize handles.
+      const panel = li.closest('.dv-explode');
+      const sid = panel?.dataset.explodeFor || '';
+      panel?.querySelectorAll('.dv-explode-el.is-selected').forEach((s) => s.classList.remove('is-selected'));
+      li.classList.add('is-selected');
+      const ci = name.indexOf(':');
+      if (sid && typeof htmx !== 'undefined') {
+        htmx.ajax('POST', '/design/widget/select', {
+          target: '#dv-wedit-' + sid.replace(/\./g, '-'),
+          swap: 'innerHTML',
+          values: { screen: sid, kind: ci < 0 ? name : name.slice(0, ci), name: label(name), index: 0 },
+        });
+      }
     };
     li.addEventListener('click', open);
     li.addEventListener('keydown', (ev) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); open(); } });

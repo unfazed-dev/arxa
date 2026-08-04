@@ -167,3 +167,19 @@ is the fragment id of its tile (`#dvt-views--<id>`), which also gives the
 JS-off fallback for free (native fragment scroll; hx-boost skips local
 anchors). Thumb click previously toggled pin-to-context; pinning lives on the
 tile hover toolbar, where it remains. Island count: five, unchanged.
+
+**Amendment (2026-08-04, second) — widget-manager selection joins the explode
+island's charter.** The views lens's components column becomes the widget
+manager: clicking a row now ALSO posts the selection to the server
+(`POST /design/widget/select`, parent-side `htmx.ajax` — the exact channel
+inspect.js already owns) and swaps a SERVER-RENDERED property editor fragment
+into the row's screen slot (`.dv-wedit`). The island contributes only the
+gesture and the swap; identity crossing the wire is the static `data-el` kind
+prefix (the piece that survives templating and names the source element — the
+widget's definition), and every property value, every k-scale step, and every
+write-through edit (`/design/widget/attr` → the project's surface source via
+`/__project_write`) is server-side. This passes the same test strip-sync
+passed: which rendered row was clicked exists only in the client, but nothing
+else moved client-side. Editor controls are plain htmx (`hx-post` chips);
+the k scale is enforced by the facade (400 on off-scale values, never a
+clamp). Island count: five, unchanged.

@@ -79,6 +79,12 @@
                      nodes per hovered element for no state change. #}
 {% macro inspectorPane(c) %}{{ ins.pane(c) }}{% endmacro %}
 
+{# The widget editor fragment (components column, views lens): the response to
+   explode.js's selection POST and the step-chip posts. Body only — it swaps
+   into the selected screen's .dv-wedit slot. #}
+{% import "ui/views/main_shell/shared/widgets/widget_editor.html" as wed %}
+{% macro widgetEditor(c) %}{{ wed.pane(c) }}{% endmacro %}
+
 {% macro inspectorSwap(c) %}
 {{ ins.pane(c) }}
 {{ pa.top({ label: c.activityLabel, views: c.activityViews, size: c.panelSize, sizeHref: c.panelSizeHref }, true) }}

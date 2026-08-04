@@ -26,6 +26,9 @@ export default [
   ['GET', '/design/inspector', prototype.inspector], // activity panel's 4th view (own route: not /design/panel/:view)
   ['POST', '/design/inspector/select', prototype.inspectorSelect], // posted-by: inspect.js island (htmx.ajax, values)
   ['POST', '/design/inspector/unlock', prototype.inspectorUnlock], // posted-by: inspector_pane.html elementCard footer (hx-post="{{ unlockHref }}")
+  ['POST', '/design/widget/select', prototype.widgetSelect], // posted-by: explode.js island (htmx.ajax, values)
+  ['POST', '/design/widget/attr', prototype.widgetAttr], // posted-by: widget_editor.html step chips (hx-post)
+  ['POST', '/design/widget/clear', prototype.widgetClear],
 
   // design.chat — the one design chat; context chips replace per-screen pages
   ['GET', '/design/chat', chat.page],
