@@ -574,3 +574,23 @@
 /* The mounted composer card is the tab's whole content; keep it from
    inheriting the panel-composer's fixed-stage assumptions. */
 .dv-drawer-body .composer { width: 100%; box-sizing: border-box; }
+
+/* The Tools tab (Screen Reveal-Drawer plan, increment 3). The body's flex-end
+   serves the composer; margin-bottom:auto docks the tools pane to the TOP
+   without a second body variant. The wedit card reuses the components
+   column's .dv-wedit-* styles wholesale — same pane, second mount. */
+.dv-tools { margin-bottom: auto; width: 100%; min-width: 0; display: flex; flex-direction: column; gap: .55rem; }
+.dv-tools-strip { display: flex; flex-wrap: wrap; align-items: center; gap: .25rem; }
+.dv-tools-crumb { font-size: .68rem; color: var(--tx-2); margin-right: .25rem; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dv-tools-sib { font-size: .7rem; padding: .1rem .5rem; }
+.dv-tools-sib.on { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.dv-tools-h { margin: 0; font-size: .68rem; text-transform: uppercase; letter-spacing: .04em; color: var(--tx-2); }
+.dv-tools-ro-attrs, .dv-tools-copy { display: flex; flex-direction: column; gap: .3rem; }
+.dv-tools-ro-row { margin: 0; display: flex; gap: .5rem; font-size: .7rem; }
+.dv-tools-ro-row code { color: var(--tx-2); }
+.dv-tools-ro { margin: 0; font-size: .68rem; color: var(--tx-3); }
+.dv-tools-copy-form { display: flex; gap: .3rem; }
+.dv-tools-copy-input { flex: 1; min-width: 0; font-size: .72rem; padding: .25rem .4rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: inherit; }
+.dv-tools-copy-text { margin: 0; font-size: .72rem; }
+.dv-tools-prov { margin: 0; font-size: .65rem; color: var(--tx-3); }
+.dv-tools-wedit .dv-wedit-card { margin-top: 0; }

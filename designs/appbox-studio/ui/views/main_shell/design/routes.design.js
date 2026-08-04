@@ -35,6 +35,7 @@ export default [
   ['POST', '/design/widget/arm', prototype.widgetArm], // posted-by: design_viewer.html toolbar arm chip (hx-post="{{ v.weditArmHref }}")
   ['POST', '/design/widget/select', prototype.widgetSelect], // posted-by: explode.js island (htmx.ajax, values); armed tile clicks via canvas.js
   ['POST', '/design/widget/attr', prototype.widgetAttr], // posted-by: widget_editor.html step chips (hx-post)
+  ['POST', '/design/widget/text', prototype.widgetText], // posted-by: design_viewer.html .dv-tools-copy-form (hx-post, drawer field routes the #drawerSwap response)
   ['POST', '/design/widget/clear', prototype.widgetClear],
   ['POST', '/design/screen/compose', prototype.screenCompose], // posted-by: design_viewer.html .dv-compose-form (hx-post)
   ['POST', '/design/screen/plan', prototype.screenPlan], // posted-by: design_viewer.html .dv-compose-plan form + entry remove buttons
