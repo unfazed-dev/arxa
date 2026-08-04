@@ -1,8 +1,10 @@
 /* appbox · artifact family — narrative cards + one artifact large.
    Flexoki both themes first-class: light "Paper" default, dark "Warm charcoal"
    via [data-theme="dark"] on #app (prefs toggle).
-   Accent is brand-selectable via [data-accent] on #app (prefs): cyan (default,
-   from the appbox logo gradient) / violet / blue / ember.
+   Accent is brand-selectable via [data-accent] on #app (prefs); the swatch
+   set (cyan default / violet / blue / ember / moss) lives in
+   models/theme.json — the SSOT — generated into assets/css/theme.css by
+   services/theme_tokens.js (linked right after this file).
    Motion tokens are the DESIGN-ARCHITECTURE contract (closed vocabulary). */
 
 /* ---------- fonts: Lexend superfamily, vendored (see assets/fonts/FONTS.md) ---------- */
@@ -117,17 +119,13 @@ body {
   --shadow-2: 0 4px 14px rgba(0, 0, 0, .4), 0 14px 36px rgba(0, 0, 0, .45);
 }
 
-/* ---------- accent: brand gradient family (appbox logo) + ember ---------- */
-/* light steps read on paper with paper text; dark steps are brighter and
-   take dark text via --on-accent. */
-#app[data-accent="cyan"]   { --accent: #0C87A8; --accent-soft: rgba(12, 135, 168, .12); --on-accent: #FFFCF0; }
-#app[data-accent="violet"] { --accent: #4E28D5; --accent-soft: rgba(78, 40, 213, .10); --on-accent: #FFFCF0; }
-#app[data-accent="blue"]   { --accent: #3473DF; --accent-soft: rgba(52, 115, 223, .12); --on-accent: #FFFCF0; }
-#app[data-accent="ember"]  { --accent: #BC5215; --accent-soft: rgba(188, 82, 21, .09); --on-accent: #FFFCF0; }
-#app[data-theme="dark"][data-accent="cyan"]   { --accent: #45D5F5; --accent-soft: rgba(69, 213, 245, .16); --on-accent: #100F0F; }
-#app[data-theme="dark"][data-accent="violet"] { --accent: #9A82F0; --accent-soft: rgba(154, 130, 240, .18); --on-accent: #100F0F; }
-#app[data-theme="dark"][data-accent="blue"]   { --accent: #7FA5F0; --accent-soft: rgba(127, 165, 240, .18); --on-accent: #100F0F; }
-#app[data-theme="dark"][data-accent="ember"]  { --accent: #DA702C; --accent-soft: rgba(218, 112, 44, .13); --on-accent: #100F0F; }
+/* ---------- accent swatches: generated, see theme.css ---------- */
+/* The accent blocks that lived here moved to assets/css/theme.css, GENERATED
+   from models/theme.json (the swatch SSOT: 5 swatches × 5 semantic roles —
+   accent/+on-accent, accent-soft, and color-mix-derived accent-surface /
+   accent-text / accent-muted). Regenerate with `node services/theme_tokens.js`
+   after editing theme.json; base.html and the screen stub link theme.css
+   immediately after this file. */
 
 /* scrollbars blend into the active theme: transparent track, thumb = theme ink
    at 22%. var(--tx), NOT currentColor — one consistent tint across containers

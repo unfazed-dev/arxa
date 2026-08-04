@@ -197,7 +197,7 @@ export const unsetCredential = (sd, key) => {
 // posted to the shared /prefs/* endpoints — no duplicate mutations here).
 const CONFIG_TARGETS = ['macos', 'ios', 'android', 'web'];
 const CONFIG_LOCALES = ['en', 'pl'];
-const CONFIG_ACCENTS = ['cyan', 'violet', 'blue', 'ember'];
+import { swatchNames } from '../theme_tokens.js'; // accent set = swatch SSOT
 const CONFIG_JARGONS = ['plain', 'balanced', 'technical'];
 
 export const configContext = (sd, t = (k) => k, prefs = {}) => {
@@ -219,7 +219,7 @@ export const configContext = (sd, t = (k) => k, prefs = {}) => {
     })),
     credMissing: creds.missing,
     prefs: { theme, accent, jargon },
-    accents: CONFIG_ACCENTS.map((id) => ({ id, label: t(`cfg.accent.${id}`), on: accent === id })),
+    accents: swatchNames().map((id) => ({ id, label: t(`cfg.accent.${id}`), on: accent === id })),
     jargons: CONFIG_JARGONS.map((id) => ({ id, label: t(`cfg.jargon.${id}`), on: jargon === id })),
   };
 };

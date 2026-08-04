@@ -283,6 +283,7 @@ function viewerFor(sessionData, evidence) {
 // ships a bespoke partial for the kind (design/surfaces/<kind>.html), the
 // stub renders it with the project's flow context (tabs, next edge) — the
 // prototype chrome is flow-driven (project_repository).
+import { defaultSwatch } from '../theme_tokens.js';
 export const screenStub = (surface, vp, prefs = {}, locale = 'en', opts = {}) => {
   const e = repo.evidence(locale).find((x) => x.surface === surface);
   // No evidence entry (design-content ids like portalo.*): every rung is
@@ -299,6 +300,9 @@ export const screenStub = (surface, vp, prefs = {}, locale = 'en', opts = {}) =>
     // resolved theme would pin "auto" to whatever the studio was at render.
     theme: (opts.theme === 'light' || opts.theme === 'dark') ? opts.theme : (prefs.theme ?? 'light'),
     themeOverride: (opts.theme === 'light' || opts.theme === 'dark') ? opts.theme : null,
+    // the designed app's swatch — theme.json's default until per-screen
+    // swatch switching arrives (the stub used to hardcode cyan).
+    accent: opts.accent ?? defaultSwatch(),
     embed: opts.embed ?? false,
     inspect: opts.inspect ?? false,
     // still: freeze frame for canvas tiles — partials skip auto-advance

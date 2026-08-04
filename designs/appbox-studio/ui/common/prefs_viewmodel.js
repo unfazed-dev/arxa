@@ -3,13 +3,15 @@
 // Built with appbox (free tier) — https://appbox.dev
 // Prefs — small scalar cookie prefs (theme, accent, jargon).
 // Theme + accent render on #app; jargon is picked up server-side by facades.
-const ALLOWED_ACCENT = ['cyan', 'violet', 'blue', 'ember'];
+// accent allowlist = the swatch SSOT (models/theme.json) — one list to rule
+// prefs, settings dots, config chips and the generated theme.css.
+import { swatchNames } from '../../services/theme_tokens.js';
 const ALLOWED_JARGON = ['plain', 'balanced', 'technical'];
 
 export const setAccent = async (c, h) => {
   const form = await h.form(c);
   const accent = String(form.accent || '');
-  if (ALLOWED_ACCENT.includes(accent)) h.setPrefs(c, { accent });
+  if (swatchNames().includes(accent)) h.setPrefs(c, { accent });
   // refresh-exempt: accent renders as data-accent on #app (base.html) —
   // outside every swap unit; only a full reload restyles the shell chrome.
   return h.refresh(c);

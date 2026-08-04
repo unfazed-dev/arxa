@@ -1,0 +1,25 @@
+/* GENERATED from models/theme.json by services/theme_tokens.js — do not edit
+   by hand. Edit theme.json, run `node services/theme_tokens.js`, commit both.
+   A swatch is 5 semantic roles, not 5 loose colors: accent (+ --on-accent),
+   accent-soft, and three derived below with color-mix so they re-key
+   automatically for every swatch and both themes (Radix natural-pairing:
+   neutrals tinted toward the accent hue). Widgets bind to ROLES — switching
+   data-accent re-themes everything coherently. */
+#app[data-accent="cyan"] { --accent: #0C87A8; --accent-soft: rgba(12, 135, 168, .12); --on-accent: #FFFCF0; }
+#app[data-accent="violet"] { --accent: #4E28D5; --accent-soft: rgba(78, 40, 213, .10); --on-accent: #FFFCF0; }
+#app[data-accent="blue"] { --accent: #3473DF; --accent-soft: rgba(52, 115, 223, .12); --on-accent: #FFFCF0; }
+#app[data-accent="ember"] { --accent: #BC5215; --accent-soft: rgba(188, 82, 21, .09); --on-accent: #FFFCF0; }
+#app[data-accent="moss"] { --accent: #66800B; --accent-soft: rgba(102, 128, 11, .10); --on-accent: #FFFCF0; }
+#app[data-theme="dark"][data-accent="cyan"] { --accent: #45D5F5; --accent-soft: rgba(69, 213, 245, .16); --on-accent: #100F0F; }
+#app[data-theme="dark"][data-accent="violet"] { --accent: #9A82F0; --accent-soft: rgba(154, 130, 240, .18); --on-accent: #100F0F; }
+#app[data-theme="dark"][data-accent="blue"] { --accent: #7FA5F0; --accent-soft: rgba(127, 165, 240, .18); --on-accent: #100F0F; }
+#app[data-theme="dark"][data-accent="ember"] { --accent: #DA702C; --accent-soft: rgba(218, 112, 44, .13); --on-accent: #100F0F; }
+#app[data-theme="dark"][data-accent="moss"] { --accent: #879A39; --accent-soft: rgba(135, 154, 57, .16); --on-accent: #100F0F; }
+
+/* derived roles — one rule serves all swatches in both modes, because
+   --accent/--bg/--tx vary by cascade above. */
+#app {
+  --accent-surface: color-mix(in oklab, var(--accent) 8%, var(--bg));
+  --accent-text: color-mix(in oklab, var(--accent) 30%, var(--tx));
+  --accent-muted: color-mix(in oklab, var(--accent) 20%, var(--tx-2));
+}

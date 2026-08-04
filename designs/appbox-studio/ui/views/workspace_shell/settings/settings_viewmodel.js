@@ -6,12 +6,9 @@ export const surfaceId = 'workspace.settings';
 // Settings: three cookie prefs (theme / accent / jargon), each with its own
 // POST. The cards show the live pref and a same-string example per level.
 // Labels/examples live in l10n/app_*.arb — translated here via h.t(c).
-const ACCENTS = [
-  { id: 'cyan', dot: '#21BFE9' },
-  { id: 'violet', dot: '#4E28D5' },
-  { id: 'blue', dot: '#3473DF' },
-  { id: 'ember', dot: '#DA702C' },
-];
+// Swatch list + display dots come from the SSOT (models/theme.json).
+import { swatches } from '../../../../services/theme_tokens.js';
+const ACCENTS = () => swatches().map((s) => ({ id: s.name, dot: s.dot }));
 
 // One real string (the ΔE finding) at each level — the honest preview.
 const LEVELS = [{ id: 'plain' }, { id: 'balanced' }, { id: 'technical' }];
@@ -30,7 +27,7 @@ export const page = (c, h) => {
     theme: prefs.theme || 'light',
     accent: prefs.accent || 'cyan',
     jargon: prefs.jargon || 'balanced',
-    accents: ACCENTS.map((a) => ({ ...a, label: t('settings.accent.' + a.id) })),
+    accents: ACCENTS().map((a) => ({ ...a, label: t('settings.accent.' + a.id) })),
     levels: LEVELS.map((l) => ({
       ...l,
       label: t('settings.level.' + l.id + '.label'),
