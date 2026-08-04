@@ -183,3 +183,65 @@ passed: which rendered row was clicked exists only in the client, but nothing
 else moved client-side. Editor controls are plain htmx (`hx-post` chips);
 the k scale is enforced by the facade (400 on off-scale values, never a
 clamp). Island count: five, unchanged.
+
+**Amendment (2026-08-04, third) — edit arming and resize handles join the
+canvas and drag charters.** The widget manager becomes editable ON the canvas,
+and no sixth island is created: the two gestures land in the two islands that
+already own their surfaces. `canvas.js` (which already wires every tile frame)
+gains ARMING — while the canvas carries `data-wedit-armed`, a click inside a
+tile selects the widget under the pointer instead of reaching the app under
+design, posting the same `/design/widget/select` with the same static `data-el`
+kind prefix the explode column posts. `drag.js` (which already owns pointer
+gestures) gains the eight resize handles over the selected widget. Both pass
+the unavoidability test: which element is under the pointer inside a
+same-origin frame, and the rendered rect to hang handles on, exist only in the
+client's layout and cannot be expressed as an HTTP request. Island count:
+five, unchanged.
+
+Three decisions are load-bearing and were nearly got wrong:
+
+*Arming is explicit, not inferred.* A click on a tile has exactly two possible
+readings — "use the app" or "select this widget" — and they are mutually
+exclusive. Rather than overload a modifier key, the mode is a toggle in the
+viewer toolbar with a real `aria-pressed` button, and the armed listener runs
+first with `stopImmediatePropagation` (not `stopPropagation`: the
+interact-in-place handlers are registered on the SAME node in the SAME phase,
+where stopPropagation would not have stopped them). Arming is session state,
+so a viewer morph cannot silently disarm mid-edit; armed-ness is read at CLICK
+time rather than captured at wire time, because the per-frame wiring guards run
+once while arming flips many times.
+
+*Handles express a MODE, never a measurement.* The Auto Layout contract has no
+size-bearing attribute — there is no `data-w`/`data-h`, only
+`[data-resize-x|y] = hug|fill|fixed`. A drag therefore cannot commit a pixel
+figure without inventing a second vocabulary, and forking the contract to make
+a gesture feel familiar is a bad trade (ADR-0006). The gesture expresses
+intent instead: drag outward → `fill`, drag inward → `hug`, under the dead
+zone → nothing. `fixed` is deliberately unreachable by drag, because it means
+"keep the size you have", which is what the user already sees, so no direction
+honestly denotes it; it stays an explicit chip. Handles commit through the
+EXISTING `/design/widget/attr`, so the facade's one value table remains the
+single enforcement point — a handle cannot write a value a chip could not.
+
+*Selection is re-derived from the server, never remembered by the client.* A
+committed edit rewrites the source, the watcher reloads the frame ~200ms
+later, and anything the client marked on the old node dies with the old
+document. So the canvas carries the server's selection (`data-wedit-sel`) and
+drag.js re-finds the node and re-places the handles on every scan — the same
+discipline strip-sync already uses for the filmstrip's current mark. The
+selection outline is set as an INLINE style, because the stub document carries
+none of the studio's stylesheets and a class would name a rule that does not
+exist there (explode.js reaches inside the same way).
+
+*Known gap, recorded rather than papered over.* No stylesheet loaded by a
+canvas tile currently implements the Auto Layout contract, so these attributes
+are written through correctly and render no visible change. The rules live
+only in `starter-partials/widgets/widgets.css` (installed into scaffolded
+projects); the tile document links `app/theme/appshell/media.css` and never
+`widgets.css`; the studio's same-named `assets/css/widgets.css` is an
+unrelated chrome stylesheet; and the worker's project overlay serves HTML,
+ARB and JSON but no CSS. This predates the increment — it applies equally to
+the `data-pad`/`data-gap` chips already shipped. It is not fixed here because
+every available fix either forks the contract into a second copy or changes
+what scaffolded projects link, and neither is a decision to make in passing.
+See `docs/plans/increment-3-edit-arming-resize-handles.md`.

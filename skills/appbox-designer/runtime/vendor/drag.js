@@ -276,6 +276,169 @@
   document.addEventListener('DOMContentLoaded', () => scan(document));
   htmx.onLoad(scan); // re-arm after every htmx swap — the viewer re-renders
 
+  /* ---------- widget resize handles (edit arming, D2) -------------------
+     Eight handles hung over the SELECTED widget while the canvas is armed.
+
+     MODE, not measurement. The Auto Layout contract has no size-bearing
+     attribute — there is no data-w/data-h, only [data-resize-x|y] =
+     hug|fill|fixed. So a drag cannot commit a pixel figure without inventing
+     a second vocabulary, and forking the contract to make a gesture feel
+     familiar is a bad trade. The gesture therefore expresses INTENT and the
+     direction picks the mode:
+
+       drag outward  → fill  (grow into the space the parent gives you)
+       drag inward   → hug   (shrink to your own content)
+       under DEAD_PX → nothing (a click that wobbled is not an edit)
+
+     `fixed` is deliberately NOT reachable by drag: it means "keep the size
+     you have", which is what you already see, so no drag direction honestly
+     denotes it. It stays an explicit chip in the editor.
+
+     Everything commits through the EXISTING /design/widget/attr, so the
+     facade's W_ATTR_VALUES table stays the single enforcement point — the
+     handles cannot write a value the chips could not. */
+  const DEAD_PX = 6;
+  const HANDLES = [
+    ['nw', 'y', -1], ['n', 'y', -1], ['ne', 'y', -1],
+    ['w', 'x', -1], ['e', 'x', 1],
+    ['sw', 'y', 1], ['s', 'y', 1], ['se', 'y', 1],
+  ];
+  let hbox = null;
+
+  const selOf = (canvas) => {
+    try { return JSON.parse(canvas.getAttribute('data-wedit-sel') || 'null'); }
+    catch { return null; }
+  };
+
+  // Re-find the node from the SERVER's selection every time. A committed edit
+  // rewrites the source, the watcher reloads the frame ~200ms later, and any
+  // marker we had put on the old node dies with the old document — handles
+  // that hung off a client-side class would disappear after every edit.
+  const findSel = (canvas, sel) => {
+    const f = canvas.querySelector(`iframe[data-screen="${sel.screen}"]`);
+    const doc = f?.contentDocument;
+    if (!doc) return null;
+    const kindOf = (n) => {
+      const raw = n.getAttribute('data-el') || '';
+      const ci = raw.indexOf(':');
+      return ci < 0 ? raw : raw.slice(0, ci);
+    };
+    const hits = [...doc.querySelectorAll('[data-el]')].filter((n) => kindOf(n) === sel.kind);
+    const node = hits[sel.index || 0];
+    return node ? { f, node } : null;
+  };
+
+  // Selection outline, INSIDE the frame document. Inline styles, not a class:
+  // the stub carries none of the studio's stylesheets, so a class would name
+  // a rule that does not exist there (explode.js marks the same way).
+  let marked = null;
+  const markSel = (node) => {
+    if (marked === node) return;
+    try { if (marked) { marked.style.outline = ''; marked.style.outlineOffset = ''; } } catch { /* frame gone */ }
+    marked = node;
+    try {
+      if (node) { node.style.outline = '2px solid var(--accent, #0891b2)'; node.style.outlineOffset = '2px'; }
+    } catch { /* frame gone */ }
+  };
+
+  const killBox = () => { hbox?.remove(); hbox = null; markSel(null); };
+
+  // The overlay is position:fixed on <body>, in VIEWPORT coordinates, and
+  // lives OUTSIDE .dv-zoom on purpose: inside the transformed subtree the
+  // browser would apply the canvas zoom to it a second time, because
+  // getBoundingClientRect already returns post-transform pixels.
+  const place = (canvas, sel) => {
+    const hit = findSel(canvas, sel);
+    if (!hit) return killBox();
+    markSel(hit.node);
+    const fr = hit.f.getBoundingClientRect();
+    const r = hit.node.getBoundingClientRect();
+    const top = fr.top + r.top;
+    const left = fr.left + r.left;
+    // Clipped out of view by the tile's own scroll/overflow — don't float a
+    // detached box over unrelated chrome.
+    if (r.width <= 0 || r.height <= 0 || top > fr.bottom || top + r.height < fr.top) return killBox();
+    if (!hbox) {
+      hbox = document.createElement('div');
+      hbox.className = 'dv-wedit-handles';
+      for (const [dir, axis, sign] of HANDLES) {
+        const h = document.createElement('span');
+        h.className = `dv-wh dv-wh-${dir}`;
+        h.dataset.axis = axis;
+        h.dataset.sign = String(sign);
+        hbox.appendChild(h);
+      }
+      document.body.appendChild(hbox);
+      wireBox(canvas);
+    }
+    Object.assign(hbox.style, {
+      top: `${top}px`, left: `${left}px`,
+      width: `${r.width}px`, height: `${r.height}px`,
+    });
+  };
+
+  const commit = (canvas, sel, attr, value) => {
+    if (typeof htmx === 'undefined') return;
+    htmx.ajax('POST', '/design/widget/attr', {
+      target: '#dv-wedit-' + String(sel.screen).replace(/\./g, '-'),
+      swap: 'innerHTML',
+      values: { attr, value },
+    });
+  };
+
+  function wireBox(canvas) {
+    hbox.addEventListener('pointerdown', (e) => {
+      const h = e.target.closest('.dv-wh');
+      if (!h) return;
+      e.preventDefault();
+      const sel = selOf(canvas);
+      if (!sel) return;
+      const axis = h.dataset.axis;
+      const sign = Number(h.dataset.sign);
+      const start = axis === 'x' ? e.clientX : e.clientY;
+      h.setPointerCapture(e.pointerId);
+      hbox.classList.add('is-dragging');
+      const move = (ev) => {
+        const d = ((axis === 'x' ? ev.clientX : ev.clientY) - start) * sign;
+        // Live intent readout: the user sees which mode the release commits
+        // BEFORE releasing, which is the only honest preview available when
+        // the commit is a mode rather than a measurement.
+        hbox.dataset.intent = Math.abs(d) < DEAD_PX ? '' : (d > 0 ? 'fill' : 'hug');
+      };
+      const up = (ev) => {
+        h.removeEventListener('pointermove', move);
+        h.removeEventListener('pointerup', up);
+        hbox.classList.remove('is-dragging');
+        const intent = hbox.dataset.intent;
+        delete hbox.dataset.intent;
+        const d = ((axis === 'x' ? ev.clientX : ev.clientY) - start) * sign;
+        if (Math.abs(d) < DEAD_PX || !intent) return;
+        commit(canvas, sel, axis === 'x' ? 'data-resize-x' : 'data-resize-y', intent);
+      };
+      h.addEventListener('pointermove', move);
+      h.addEventListener('pointerup', up);
+    });
+  }
+
+  // One re-derive path for every reason the box could be stale: a swap, a
+  // frame reload after a write-through, a pan/zoom, a window resize.
+  const syncHandles = () => {
+    const canvas = document.querySelector(`${CANVAS}[data-wedit-armed][data-wedit-sel]`);
+    const sel = canvas && selOf(canvas);
+    if (!canvas || !sel) return killBox();
+    place(canvas, sel);
+  };
+  htmx.onLoad(syncHandles);
+  document.addEventListener('DOMContentLoaded', syncHandles);
+  addEventListener('resize', syncHandles);
+  addEventListener('scroll', syncHandles, true);
+  // The frame reloads on its own clock (~200ms watcher re-prefetch), long
+  // after the htmx swap that caused it, so a swap-time sync alone would
+  // measure the OLD layout. Re-place on the tile's own load event too.
+  document.addEventListener('load', (e) => {
+    if (e.target?.classList?.contains('dv-tile-frame')) syncHandles();
+  }, true);
+
   // Inspect keyboard shortcut: "i" toggles armed state on all same-origin
   // iframe bodies (the stubs are same-origin so we can reach into them). This
   // is the parent-page arming path the plan names alongside the server-param

@@ -115,6 +115,13 @@ export const inspectorUnlock = (c, h) => {
 // pattern) — the response swaps the editor fragment into the selected
 // screen's .dv-wedit slot. Selection is session state, so a full viewer
 // morph re-renders the open editor inline (see stage context `wedit`).
+// Edit-arming toggle. Swaps the WHOLE viewer (#viewerSwap, the setViewer
+// fragment), not just the editor: arming changes how every tile reads a
+// click, and the tiles live in the viewer — a narrower swap would leave
+// stale tiles behind still reading clicks the old way.
+export const widgetArm = (c, h) =>
+  h.render(c, `${VIEW}#viewerSwap`, facade.armWidgetEdit(h.session(c).data, h.prefs(c), h.t(c), h.locale(c)));
+
 export const widgetSelect = async (c, h) => {
   const form = await h.form(c);
   const next = facade.selectWidget(h.session(c).data, {

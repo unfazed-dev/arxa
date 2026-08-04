@@ -218,6 +218,7 @@
      reloads, which is exactly what those actions mean. #}
   <iframe class="dv-tile-frame"
           id="dvf-{{ scope }}--{{ s.id }}"
+          data-screen="{{ s.id }}"
           src="{{ v.stubBase }}{{ s.id }}?vp={{ s.tile.vp }}&embed=1{{ '' if s.live else '&still=1' }}{{ '&inspect=1' if s.inspecting }}{{ '&theme=' + v.theme if v.theme }}{{ s.walkQs if s.live and s.walkQs }}"
           style="height: {{ s.tile.height }}px"
           tabindex="-1" title="{{ s.label or s.id }}"></iframe>
@@ -253,6 +254,26 @@
     {% if chrome.state %}{{ prim.statusPill(chrome.state) }}{% endif %}
     {% if not v.static %}
     <span class="dv-topbar-actions">
+      {# Edit arming (D2). A real <button aria-pressed> rather than a chip
+         <a>: this toggles a MODE, it does not navigate, and the pressed
+         state is the only cue telling a user why their next tile click
+         selects a widget instead of tapping the app under design.
+
+         VIEWS LENS ONLY, and not for tidiness: the widget editor swaps into
+         a per-screen `.dv-wedit` slot that only the views lens renders (it
+         lives in the explode column). In flows/proto an armed click would
+         post a selection whose response has no target to land in — a control
+         that presses and does nothing. The lens that owns the editor is the
+         lens that gets the arming. #}
+      {% if v.mode == 'views' %}
+      <span class="mini-panel-group" role="group" aria-label="{{ t('viewer.weditGroup') }}">
+        <button type="button" class="chip dv-chip dv-arm-chip {{ 'on' if v.weditArmed }}"
+                hx-post="{{ v.weditArmHref }}" hx-target="#design-viewer" hx-swap="morph:outerHTML"
+                aria-pressed="{{ 'true' if v.weditArmed else 'false' }}"
+                title="{{ t('viewer.wedit.armHint') }}">{{ t('viewer.wedit.arm') }}</button>
+      </span>
+      <span class="mini-panel-divider" aria-hidden="true"></span>
+      {% endif %}
       <span class="mini-panel-group" role="group" aria-label="{{ t('viewer.themeGroup') }}">
         {% for th in v.themes %}
         <a class="chip dv-chip {{ 'on' if th.active }}" href="{{ th.href }}" hx-get="{{ th.href }}" hx-target="#design-viewer" hx-swap="morph:outerHTML">{{ t('viewer.theme.' ~ th.key) }}</a>
@@ -340,7 +361,20 @@
      top: topbar(v, chrome) if chrome else false,
      topClass: 'dv-topbar',
      bodyClass: 'dv-proto' if proto else 'dv-flow-canvas',
-     bodyAttrs: 'data-static="1"' if (v.static and not proto) else '',
+     {# Arming rides the canvas body, not each tile: canvas.js already wires
+        every frame from the canvas element, so one attribute flips the whole
+        surface and no tile can be left half-armed by a partial morph.
+
+        data-wedit-sel carries the SERVER's selection so drag.js can re-find
+        the node and re-hang its handles on every scan. Deliberately not a
+        class set on the node at click time: committing an edit rewrites the
+        source, the watcher reloads the frame, and any client-only marker
+        dies with the old document — the handles would vanish after every
+        single edit. Re-deriving from server state is the same discipline
+        sync() already uses for the filmstrip's current mark. #}
+     bodyAttrs: ('data-static="1"' if (v.static and not proto) else '')
+                ~ (' data-wedit-armed="1"' if v.weditArmed else '')
+                ~ ((' data-wedit-sel=\'' ~ {'screen': v.wedit.sel.screen, 'kind': v.wedit.sel.kind, 'index': v.wedit.sel.index} | dump ~ '\'') if (v.weditArmed and v.wedit and v.wedit.sel) else ''),
      sideEnd: filmstrip(v) if (not proto and v.filmstrip and v.filmstrip.length) else false,
      sideEndClass: 'dv-vstrip cs-strip',
      sideEndId: 'dv-vstrip',

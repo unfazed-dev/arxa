@@ -41,6 +41,31 @@
       {% endfor %}
     </span>
   </div>
+  {# Per-axis sizing modes. Same chip shape and same toggle-off rule as the k
+     steps above, because they are the same KIND of thing — one attribute on
+     the source element, written through to every screen. The canvas handles
+     reach `hug`/`fill` by gesture; `fixed` is only here, because no drag
+     direction honestly means "keep the size you already have". #}
+  <div class="dv-wedit-row">
+    <span class="dv-wedit-label">{{ t('viewer.wedit.resizeX') }}</span>
+    <span class="dv-wedit-steps">
+      {% for s in c.resizeX %}
+      <button type="button" class="chip dv-wedit-step dv-wedit-mode {{ 'on' if s.on }}"
+        hx-post="{{ c.attrHref }}" hx-vals='{"attr": "data-resize-x", "value": "{{ s.val }}"}'
+        hx-target="closest .dv-wedit" hx-swap="innerHTML">{{ t('viewer.wedit.mode.' ~ s.m) }}</button>
+      {% endfor %}
+    </span>
+  </div>
+  <div class="dv-wedit-row">
+    <span class="dv-wedit-label">{{ t('viewer.wedit.resizeY') }}</span>
+    <span class="dv-wedit-steps">
+      {% for s in c.resizeY %}
+      <button type="button" class="chip dv-wedit-step dv-wedit-mode {{ 'on' if s.on }}"
+        hx-post="{{ c.attrHref }}" hx-vals='{"attr": "data-resize-y", "value": "{{ s.val }}"}'
+        hx-target="closest .dv-wedit" hx-swap="innerHTML">{{ t('viewer.wedit.mode.' ~ s.m) }}</button>
+      {% endfor %}
+    </span>
+  </div>
 </div>
 {% endif %}
 {% endmacro %}
