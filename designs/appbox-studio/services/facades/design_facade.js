@@ -12,6 +12,7 @@
 import * as repo from '../repositories/design_repository.js';
 import * as proj from '../repositories/project_repository.js';
 import * as widgets from '../repositories/widget_repository.js';
+import * as plans from '../repositories/plan_repository.js';
 import * as jargon from './jargon.js';
 import * as agent from './agent_menus.js';
 import * as fv from './file_views.js';
@@ -654,6 +655,11 @@ function viewerFor(d, L, t) {
     // keeps the open editor — same session-survival reasoning as the
     // inspector lock (D16).
     wedit: widgetEditorContext(d, t),
+    // Per-screen edit composer + plan editor (views lens). Keyed by screen id
+    // because the template renders one row per screen and needs its own
+    // scope/pending state; a list would force an O(n) lookup per row in the
+    // template language.
+    plans: mode === 'views' ? planContexts(d, screens, t) : null,
   };
 }
 
@@ -1367,4 +1373,83 @@ export const recheckDrift = (sessionData, prefs = {}, t = (k) => k, locale = 'en
   const d = design(sessionData);
   d.driftRechecks = (d.driftRechecks ?? 0) + 1;
   return freezeContext(sessionData, prefs, t, locale);
+};
+
+// ── Per-screen edit composer + plan editor (views lens) ─────────────────────
+// TWO inputs per screen, deliberately not one (decision 7): the COMPOSER takes
+// free text and APPENDS one intent; the PLAN EDITOR edits the accumulated plan
+// as a whole. A single merged input would make "type here" mean two different
+// things depending on invisible state.
+const planContexts = (d, screens, t = (k) => k) => {
+  const wedit = widgetEditorContext(d, t);
+  const out = {};
+  for (const s of screens ?? []) {
+    let entries = [];
+    try { ({ entries } = plans.readPlan(s.id)); } catch { entries = []; }
+    // Decision 8: the placeholder STATES scope and consequence, so the user
+    // knows what a submission will touch before typing. Widget scope only
+    // when the selection is on THIS screen — every other row stays
+    // screen-scoped, which is why this is computed per row and not once.
+    const onThis = Boolean(wedit.sel && wedit.sel.screen === s.id);
+    const widget = onThis ? (wedit.sel.name || wedit.tag) : null;
+    out[s.id] = {
+      screen: s.id,
+      slot: String(s.id).replace(/\./g, '-'),
+      scope: onThis ? 'widget' : 'screen',
+      widget,
+      // The provenance count the widget editor already computes: editing a
+      // shared widget through this composer hits every screen that includes
+      // it, and the placeholder says so before the user commits.
+      screenCount: onThis ? (wedit.screens?.length ?? 1) : 0,
+      placeholder: onThis
+        ? t('viewer.compose.phWidget', { widget, n: wedit.screens?.length ?? 1 })
+        : t('viewer.compose.phScreen', { screen: s.id }),
+      entries: entries.map((e, i) => ({ ...e, i })),
+      count: entries.length,
+      raw: JSON.stringify({ screen: s.id, entries }, null, 2),
+      // A rejected plan edit is reported, not swallowed: the sidecar is
+      // unchanged and the user's text is still in the textarea they typed it
+      // into. Session-held so it survives the panels morph that shows it.
+      err: d.planErr && d.planErr.screen === s.id ? t(d.planErr.key) : null,
+      composeHref: '/design/screen/compose',
+      planHref: '/design/screen/plan',
+      // Decision 15's arm route, owned by a concurrent agent. Fired
+      // declaratively on first focus; 404s harmlessly until that lands.
+      armHref: '/design/widget/arm',
+    };
+  }
+  return out;
+};
+
+// Composer submit: append one structured intent to this screen's sidecar.
+// Scope is read from the SELECTION at submit time (not from the form), so the
+// entry records what the placeholder promised.
+export const composeIntent = async (sessionData, form = {}, prefs = {}, t = (k) => k, locale = 'en') => {
+  const d = design(sessionData);
+  const screenId = String(form.screen ?? '');
+  delete d.planErr;
+  try {
+    const sel = d.widgetSel;
+    const scope = sel && sel.screen === screenId
+      ? { widget: sel.name || widgets.resolveWidget(sel.screen, sel.kind, sel.index ?? 0)?.tag || sel.kind }
+      : {};
+    if (screenId) await plans.appendIntent(screenId, form.text, scope);
+  } catch { /* empty text or no project overlaid — plain re-render, input kept */ }
+  return stageContext(sessionData, {}, prefs, t, locale);
+};
+
+// Plan editor: `remove=<i>` drops one entry, otherwise `plan` replaces the
+// whole sidecar (the raw round-trip).
+export const editPlan = async (sessionData, form = {}, prefs = {}, t = (k) => k, locale = 'en') => {
+  const d = design(sessionData);
+  const screenId = String(form.screen ?? '');
+  delete d.planErr;
+  try {
+    if (!screenId) throw new Error('no screen');
+    if (form.remove != null && String(form.remove) !== '') await plans.removeIntent(screenId, form.remove);
+    else await plans.replacePlan(screenId, form.plan);
+  } catch {
+    d.planErr = { screen: screenId, key: 'viewer.compose.errPlan' };
+  }
+  return stageContext(sessionData, {}, prefs, t, locale);
 };

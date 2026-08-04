@@ -437,3 +437,60 @@
 .dv-wedit-step { font-size: .7rem; padding: .1rem .5rem; }
 .dv-wedit-step.on { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
 .dv-explode-el.is-selected { background: var(--accent-soft); }
+/* EDIT COMPOSER + PLAN EDITOR (views lens, components column) — the two
+   per-screen inputs, stacked under the widget-editor slot. Plain htmx forms:
+   no island owns anything below. */
+.dv-compose {
+  margin-top: .5rem; padding-top: .5rem;
+  border-top: 1px solid var(--border);
+  display: flex; flex-direction: column; gap: .4rem;
+}
+.dv-compose-form { display: flex; align-items: center; gap: .35rem; }
+.dv-compose-input {
+  flex: 1; min-width: 0; font: inherit; font-size: .7rem;
+  padding: .3rem .45rem; color: var(--tx-1);
+  background: var(--bg-2, rgba(0,0,0,.04));
+  border: 1px solid var(--border); border-radius: var(--radius-s, .35rem);
+}
+.dv-compose-input:focus-visible { outline: none; border-color: var(--accent); }
+/* the placeholder carries the scope AND its consequence ("applies to N
+   screens"), so it is load-bearing text, not a hint — keep it legible */
+.dv-compose-input::placeholder { color: var(--tx-3); opacity: 1; }
+/* a widget-scoped composer reads as a different thing before you parse the
+   placeholder, because submitting it can touch screens you are not looking at */
+.dv-compose[data-compose-scope="widget"] .dv-compose-input { border-color: var(--accent); }
+.dv-compose-send, .dv-compose-save {
+  flex: none; font: inherit; font-size: .66rem; cursor: pointer;
+  padding: .3rem .55rem; border-radius: var(--radius-s, .35rem);
+  border: 1px solid var(--border); background: var(--bg); color: var(--tx-2);
+}
+.dv-compose-send:hover, .dv-compose-save:hover,
+.dv-compose-send:focus-visible, .dv-compose-save:focus-visible {
+  background: var(--accent-soft); border-color: var(--accent); color: var(--tx-1);
+}
+.dv-compose-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .15rem; }
+.dv-compose-entry {
+  display: flex; align-items: center; gap: .4rem; min-width: 0;
+  font-size: .68rem; color: var(--tx-2);
+  padding: .2rem .3rem; border-radius: var(--radius-s, .35rem);
+  background: var(--bg-2, rgba(0,0,0,.04));
+}
+.dv-compose-entry-text { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.dv-compose-entry-scope { flex: none; font-size: .6rem; color: var(--tx-3); }
+.dv-compose-entry[data-entry-status="done"] .dv-compose-entry-text { text-decoration: line-through; color: var(--tx-3); }
+.dv-compose-drop { flex: none; }
+.dv-compose-empty { font-size: .66rem; color: var(--tx-3); margin: 0; padding: .1rem .3rem; }
+.dv-compose-plan > summary {
+  font-size: .64rem; color: var(--tx-3); cursor: pointer;
+  text-transform: uppercase; letter-spacing: .04em;
+}
+.dv-compose-plan-form { display: flex; flex-direction: column; gap: .35rem; margin-top: .35rem; }
+.dv-compose-raw {
+  width: 100%; box-sizing: border-box; resize: vertical;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: .62rem; line-height: 1.5; padding: .4rem .5rem;
+  color: var(--tx-1); background: var(--bg-2, rgba(0,0,0,.04));
+  border: 1px solid var(--border); border-radius: var(--radius-s, .35rem);
+}
+.dv-compose-save { align-self: flex-start; }
+.dv-compose-err { font-size: .66rem; color: var(--danger, #c0392b); margin: .3rem 0 0; }

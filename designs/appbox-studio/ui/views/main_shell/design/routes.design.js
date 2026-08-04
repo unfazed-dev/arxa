@@ -29,6 +29,8 @@ export default [
   ['POST', '/design/widget/select', prototype.widgetSelect], // posted-by: explode.js island (htmx.ajax, values)
   ['POST', '/design/widget/attr', prototype.widgetAttr], // posted-by: widget_editor.html step chips (hx-post)
   ['POST', '/design/widget/clear', prototype.widgetClear],
+  ['POST', '/design/screen/compose', prototype.screenCompose], // posted-by: design_viewer.html .dv-compose-form (hx-post)
+  ['POST', '/design/screen/plan', prototype.screenPlan], // posted-by: design_viewer.html .dv-compose-plan form + entry remove buttons
 
   // design.chat — the one design chat; context chips replace per-screen pages
   ['GET', '/design/chat', chat.page],

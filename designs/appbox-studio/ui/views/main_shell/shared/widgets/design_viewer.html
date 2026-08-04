@@ -437,6 +437,58 @@
                a full viewer morph re-renders it inline whenever the session
                selection targets this screen (v.wedit on the stage context). #}
             <div class="dv-wedit" id="dv-wedit-{{ s.id | replace('.', '-') }}">{% if v.wedit and v.wedit.sel and v.wedit.sel.screen == s.id %}{{ wed.pane(v.wedit) }}{% endif %}</div>
+            {# TWO inputs per screen, not one (decision 7): the COMPOSER appends
+               a single edit-intent, the PLAN EDITOR edits the accumulated plan.
+               Both post to /design/screen/* and morph #panels, so one write
+               refreshes the scope placeholder, the pending list and the raw
+               form together. Pure htmx — no island owns this. #}
+            {% set pl = v.plans[s.id] if v.plans else null %}
+            {% if pl %}
+            <div class="dv-compose" data-compose-for="{{ s.id }}" data-compose-scope="{{ pl.scope }}"
+                 data-compose-screens="{{ pl.screenCount }}">
+              <form class="dv-compose-form" hx-post="{{ pl.composeHref }}"
+                    hx-target="#panels" hx-swap="morph:outerHTML">
+                <input type="hidden" name="screen" value="{{ s.id }}">
+                {# Decision 15: typing in a screen's composer arms that screen.
+                   The arm route is owned by a concurrent agent and 404s until
+                   it lands; `once` + hx-swap="none" makes that failure silent
+                   and unrepeated. #}
+                <input class="dv-compose-input" type="text" name="text" autocomplete="off"
+                       placeholder="{{ pl.placeholder }}" aria-label="{{ pl.placeholder }}"
+                       hx-post="{{ pl.armHref }}" hx-trigger="focus once" hx-swap="none"
+                       hx-vals='{"screen": "{{ s.id }}"}'>
+                <button class="dv-compose-send" type="submit">{{ t('viewer.compose.send') }}</button>
+              </form>
+              {% if pl.count %}
+              <ol class="dv-compose-list">
+                {% for e in pl.entries %}
+                <li class="dv-compose-entry" data-entry-status="{{ e.status }}">
+                  <span class="dv-compose-entry-text">{{ e.text }}</span>
+                  {% if e.scope and e.scope.widget %}<code class="dv-compose-entry-scope">{{ e.scope.widget }}</code>{% endif %}
+                  <button class="ico-btn dv-compose-drop" type="button"
+                          hx-post="{{ pl.planHref }}" hx-target="#panels" hx-swap="morph:outerHTML"
+                          hx-vals='{"screen": "{{ s.id }}", "remove": "{{ e.i }}"}'
+                          aria-label="{{ t('viewer.compose.removeAria', {n: e.i + 1}) }}"
+                          title="{{ t('viewer.compose.remove') }}">{{ icon('list-x', {size: 12}) }}</button>
+                </li>
+                {% endfor %}
+              </ol>
+              {% else %}
+              <p class="dv-compose-empty">{{ t('viewer.compose.empty') }}</p>
+              {% endif %}
+              <details class="dv-compose-plan">
+                <summary class="dv-compose-plan-head">{{ t('viewer.compose.planTitle', {n: pl.count}) }}</summary>
+                {% if pl.err %}<p class="dv-compose-err" role="alert">{{ pl.err }}</p>{% endif %}
+                <form class="dv-compose-plan-form" hx-post="{{ pl.planHref }}"
+                      hx-target="#panels" hx-swap="morph:outerHTML">
+                  <input type="hidden" name="screen" value="{{ s.id }}">
+                  <textarea class="dv-compose-raw" name="plan" rows="6" spellcheck="false"
+                            aria-label="{{ t('viewer.compose.planAria', {id: s.id}) }}">{{ pl.raw }}</textarea>
+                  <button class="dv-compose-save" type="submit">{{ t('viewer.compose.save') }}</button>
+                </form>
+              </details>
+            </div>
+            {% endif %}
           </div>
         </div>
         {% endfor %}
