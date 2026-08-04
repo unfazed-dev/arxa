@@ -305,3 +305,29 @@ lens-state list in `models/screens_model/registry.json`. It cannot go there.
 
 Registry entries for `scaffold.picker` / `scaffold.run` therefore stay as
 authored (id/label/surface/shell/comp/labelKey/route), with no `states` key.
+
+## Decision 35 — Composer reply source: fixed ARB acknowledgement, not a reply corpus
+
+Ratified post-hoc. `scaffold_repository` exports no reply seed (`kits`, `groups`,
+`counts`, `manifest`, `entitlement`, `essentials`, `states` only), so the picker
+composer's agent reply is one fixed ARB string ("Noted. Nothing is applied until
+you continue.") whose copy promises nothing the screen does not do. Inventing a
+reply corpus no fixture backs would violate the seed-SSOT discipline. Generated
+replies, if ever wanted, are a `scaffold_repository` change — scoped separately,
+not assumed.
+
+## Decision 36 — Facade signature convention: local canon wins over cross-surface
+
+Ratified post-hoc. `sendMessage(session, text, t, locale, screen)` mirrors its
+sibling `setPanelSize` inside `scaffold_facade.js`, not intake's
+`(sd, surface, text, prefs, t, locale)`. Same rule as prior local-canon rulings.
+Known hazard, recorded: the trailing `screen` arg is load-bearing — transposing
+it silently collapses all six lenses to `success` on POST re-render and no gate
+catches it (documented in scaffold-picker-phase3-verification.md §8).
+
+## Decision 37 — Checker matches rendered composer actions by pathname
+
+The render-bound checker phase compares the emitted `action` to registered POST
+routes by pathname only, because the runtime router strips the query before
+lookup (`worker_shim.js:149,235`). Full-string comparison produced a false
+"RENDERED BUT UNROUTED" on `/scaffold/run/messages?state=…` (fixed in f8d8e65).
