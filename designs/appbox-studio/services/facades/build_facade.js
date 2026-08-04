@@ -284,6 +284,7 @@ function viewerFor(sessionData, evidence) {
 // stub renders it with the project's flow context (tabs, next edge) — the
 // prototype chrome is flow-driven (project_repository).
 import { defaultSwatch } from '../theme_tokens.js';
+import { defaultFont } from '../font_tokens.js';
 export const screenStub = (surface, vp, prefs = {}, locale = 'en', opts = {}) => {
   const e = repo.evidence(locale).find((x) => x.surface === surface);
   // No evidence entry (design-content ids like portalo.*): every rung is
@@ -303,6 +304,12 @@ export const screenStub = (surface, vp, prefs = {}, locale = 'en', opts = {}) =>
     // the designed app's swatch — theme.json's default until per-screen
     // swatch switching arrives (the stub used to hardcode cyan).
     accent: opts.accent ?? defaultSwatch(),
+    // the designed app's TYPEFACE — fonts.json's default, resolved exactly
+    // like accent above and deliberately NOT from prefs.font. The studio's
+    // font menu restyles the studio chrome; this stub is a picture of the
+    // user's app, and letting the operator's menu choice leak in here would
+    // silently re-typeset their design (and every screenshot taken of it).
+    font: opts.font ?? defaultFont(),
     embed: opts.embed ?? false,
     inspect: opts.inspect ?? false,
     // still: freeze frame for canvas tiles — partials skip auto-advance

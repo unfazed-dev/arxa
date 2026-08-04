@@ -27,7 +27,7 @@ button.chip, a.chip { cursor: pointer; }
 
 /* ---------- type badge: card kind, tb-{type} tone hook ---------- */
 .type-badge {
-  font-family: 'Lexend Deca', 'Lexend', sans-serif;
+  font-family: var(--font-label);
   --chip-font: .58rem; font-weight: 500; letter-spacing: .09em; text-transform: uppercase;
   --chip-pad-y: .12rem; --chip-pad-x: .5rem;
 }
@@ -39,7 +39,7 @@ button.chip, a.chip { cursor: pointer; }
 
 /* ---------- thread badge: single accent-tone hook, no state variants ---------- */
 .thread-badge {
-  font-family: 'Lexend Deca', 'Lexend', sans-serif;
+  font-family: var(--font-label);
   --chip-font: .58rem; font-weight: 500; letter-spacing: .05em;
   --chip-pad-y: .12rem; --chip-pad-x: .45rem;
   color: var(--accent); background: var(--accent-soft);
@@ -47,7 +47,7 @@ button.chip, a.chip { cursor: pointer; }
 
 /* ---------- status pill: neutral default + status-{state} tone hooks ---------- */
 .status-pill {
-  font-family: 'Lexend Deca', 'Lexend', sans-serif;
+  font-family: var(--font-label);
   --chip-font: .68rem; color: var(--tx-2); background: var(--bg-2);
 }
 .status-green, .status-approved, .status-pass { color: var(--ok); background: var(--ok-soft); }
@@ -58,7 +58,7 @@ button.chip, a.chip { cursor: pointer; }
 
 /* ---------- MoSCoW priority chips: pri-{must/should/could} tone hooks ---------- */
 .pri-chip {
-  font-family: 'Lexend Deca', 'Lexend', sans-serif;
+  font-family: var(--font-label);
   --chip-font: .62rem; font-weight: 500; letter-spacing: .08em; text-transform: uppercase;
   --chip-pad-y: .14rem; --chip-pad-x: .55rem;
 }
@@ -68,7 +68,7 @@ button.chip, a.chip { cursor: pointer; }
 
 /* ---------- provenance chips: prov-{client/founder/inferred} tone hooks ---------- */
 .prov-chip {
-  font-family: 'Lexend Deca', 'Lexend', sans-serif;
+  font-family: var(--font-label);
   --chip-font: .6rem; font-weight: 500; letter-spacing: .08em; text-transform: uppercase;
   --chip-pad-y: .12rem; --chip-pad-x: .5rem;
 }
@@ -86,7 +86,7 @@ button.chip, a.chip { cursor: pointer; }
 
 /* ---------- probe chip: monospace reading, accent tone baked in ---------- */
 .probe-chip {
-  font-family: ui-monospace, "SF Mono", monospace;
+  font-family: var(--font-mono);
   --chip-pad-y: .2rem; --chip-pad-x: .55rem;
   color: var(--accent); background: var(--accent-soft);
 }
@@ -145,7 +145,7 @@ button.chip, a.chip { cursor: pointer; }
 
 /* ---------- named widget blocks: static label pills ---------- */
 .sev {
-  font-family: 'Lexend Deca', 'Lexend', sans-serif;
+  font-family: var(--font-label);
   font-size: .62rem; font-weight: 500; letter-spacing: .09em; text-transform: uppercase;
   padding: .14rem .55rem; border-radius: 999px;
 }
@@ -161,7 +161,7 @@ button.chip, a.chip { cursor: pointer; }
 
 .bt-event {
   align-self: center; text-align: center;
-  font-family: 'Lexend Deca', 'Lexend', sans-serif;
+  font-family: var(--font-label);
   font-size: .62rem; letter-spacing: .06em; text-transform: uppercase;
   color: var(--tx-2); background: var(--bg-2);
   padding: .24rem .7rem; border-radius: 999px;
@@ -175,7 +175,7 @@ button.chip, a.chip { cursor: pointer; }
 }
 
 .rv-badge {
-  font-family: 'Lexend Deca', 'Lexend', sans-serif;
+  font-family: var(--font-label);
   font-size: .6rem; font-weight: 500; letter-spacing: .08em; text-transform: uppercase;
   padding: .12rem .5rem; border-radius: 999px; white-space: nowrap;
   color: var(--tx-2); background: var(--bg-2); box-shadow: inset 0 0 0 1px var(--border);
@@ -185,7 +185,7 @@ button.chip, a.chip { cursor: pointer; }
 
 .file-badge {
   flex: none;
-  font-family: 'Lexend Deca', 'Lexend', sans-serif;
+  font-family: var(--font-label);
   font-size: .58rem; font-weight: 500; letter-spacing: .08em; text-transform: uppercase;
   padding: .1rem .45rem; border-radius: 999px;
 }
@@ -209,7 +209,7 @@ button.chip, a.chip { cursor: pointer; }
 .facts-filter summary:hover { color: var(--tx); }
 
 .cta-main, .cta-ghost {
-  font-family: 'Lexend Deca', 'Lexend', sans-serif;
+  font-family: var(--font-label);
   font-size: .62rem; letter-spacing: .08em; text-transform: uppercase;
   padding: .28rem .65rem; border-radius: 999px; text-decoration: none;
 }
@@ -225,7 +225,7 @@ button.chip, a.chip { cursor: pointer; }
 .cta-link:hover { text-decoration: underline; }
 .cta-link--main, .cta-link--ghost {
   gap: .3rem;
-  font-family: 'Lexend Deca', 'Lexend', sans-serif;
+  font-family: var(--font-label);
   font-size: .62rem; letter-spacing: .08em; text-transform: uppercase;
   padding: .28rem .65rem; border-radius: 999px; text-decoration: none;
 }

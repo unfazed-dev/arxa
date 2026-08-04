@@ -94,6 +94,8 @@
   "settings.themeTo.dark": "Switch to dark",
   "settings.accentH": "Accent",
   "settings.accentNote": "The colour of every action and active marker. Cyan and violet come from the Appbox Studio logo; ember is the warm classic.",
+  "settings.fontH": "Typeface",
+  "settings.fontNote": "The family the studio is set in. Lexend is the default; all four are vendored locally, so switching never fetches a webfont.",
   "settings.accent.cyan": "Cyan — brand",
   "settings.accent.violet": "Violet — brand",
   "settings.accent.blue": "Blue — blend",

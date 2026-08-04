@@ -7,48 +7,13 @@
    services/theme_tokens.js (linked right after this file).
    Motion tokens are the DESIGN-ARCHITECTURE contract (closed vocabulary). */
 
-/* ---------- fonts: Lexend superfamily, vendored (see assets/fonts/FONTS.md) ---------- */
-@font-face {
-  font-family: 'Lexend'; font-weight: 300 700; font-display: swap;
-  src: url('/assets/fonts/lexend-var-latin-ext.woff2') format('woff2');
-  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
-}
-@font-face {
-  font-family: 'Lexend'; font-weight: 300 700; font-display: swap;
-  src: url('/assets/fonts/lexend-var-latin.woff2') format('woff2');
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
-@font-face {
-  font-family: 'Lexend Giga'; font-weight: 300 400; font-display: swap;
-  src: url('/assets/fonts/lexend-giga-latin-ext.woff2') format('woff2');
-  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
-}
-@font-face {
-  font-family: 'Lexend Giga'; font-weight: 300 400; font-display: swap;
-  src: url('/assets/fonts/lexend-giga-latin.woff2') format('woff2');
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
-@font-face {
-  font-family: 'Lexend Deca'; font-weight: 500; font-display: swap;
-  src: url('/assets/fonts/lexend-deca-500-latin-ext.woff2') format('woff2');
-  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
-}
-@font-face {
-  font-family: 'Lexend Deca'; font-weight: 500; font-display: swap;
-  src: url('/assets/fonts/lexend-deca-500-latin.woff2') format('woff2');
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
+/* ---------- fonts ----------
+   @font-face for every family now lives in assets/css/fonts.css (linked
+   BEFORE this file), together with the [data-font] menu that swaps them.
+   models/fonts.json is the SSOT for which families exist. Declarations
+   below read var(--font-ui|display|label|mono) so one attribute on #app
+   retypes the whole shell — do not hardcode a family name here again. */
 
-:root {
-  color-scheme: light dark;
-  --motion-fast: 150ms;
-  --motion-med: 250ms;
-  --motion-slow: 400ms;
-  --motion-vt: 240ms;
-  --motion-ease: cubic-bezier(.2, .6, .2, 1);
-  --toast-ttl: 5s;
-  --tl-h: 3.4rem;
-}
 * { box-sizing: border-box; }
 body {
   margin: 0;
@@ -150,7 +115,7 @@ body {
   min-height: .75rem;
 }
 
-code { font-family: ui-monospace, "SF Mono", monospace; font-size: .88em; }
+code { font-family: var(--font-mono); font-size: .88em; }
 .muted { color: var(--tx-2); }
 h1 { font-size: 1.6rem; margin: 0 0 .25rem; }
 h2 { font-size: 1.1rem; margin: 1.5rem 0 .5rem; }
@@ -159,15 +124,16 @@ p { margin: 0; text-wrap: pretty; }
 a { color: var(--accent); }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
 
-/* Lexend Giga display headlines · Lexend Deca tracked-caps labels */
+/* display headlines · tracked-caps labels — families come from
+   var(--font-display) / var(--font-label), see assets/css/fonts.css */
 .display {
-  font-family: 'Lexend Giga', 'Lexend', sans-serif;
+  font-family: var(--font-display);
   font-weight: 300; letter-spacing: -.015em; line-height: 1.16;
   font-size: clamp(1.65rem, 3vw, 2.5rem);
   margin: 0;
 }
 .eyebrow {
-  font-family: 'Lexend Deca', 'Lexend', sans-serif;
+  font-family: var(--font-label);
   font-size: .68rem; font-weight: 500; letter-spacing: .1em;
   text-transform: uppercase; color: var(--tx-2);
 }
@@ -246,7 +212,7 @@ button:active { transform: translateY(1px); }
 .msg.is-active { border-color: var(--accent); background: var(--accent-soft); }
 .msg-meta { display: flex; gap: .45rem; align-items: center; flex-wrap: wrap; }
 .msg-time {
-  font-family: 'Lexend Deca', 'Lexend', sans-serif;
+  font-family: var(--font-label);
   font-size: .64rem; letter-spacing: .06em; color: var(--tx-3);
   font-variant-numeric: tabular-nums;
 }
@@ -343,12 +309,12 @@ button:active { transform: translateY(1px); }
 .artifact-detail { font-size: .88rem; }
 .artifact-foot { font-size: .82rem; }
 .big-metric {
-  font-family: 'Lexend Giga', 'Lexend', sans-serif; font-weight: 300;
+  font-family: var(--font-display); font-weight: 300;
   font-size: clamp(2.4rem, 5.5vw, 4rem); line-height: 1.05; letter-spacing: -.02em;
   display: flex; align-items: baseline; gap: .8rem;
 }
 .big-metric-label {
-  font-family: 'Lexend Deca', 'Lexend', sans-serif;
+  font-family: var(--font-label);
   font-size: .7rem; letter-spacing: .1em; text-transform: uppercase; color: var(--tx-2);
 }
 
@@ -367,7 +333,7 @@ button:active { transform: translateY(1px); }
 .provenance div { display: flex; gap: .8rem; font-size: .95rem; }
 .provenance dt {
   width: 7rem; flex: none; padding-top: .1em;
-  font-family: 'Lexend Deca', 'Lexend', sans-serif;
+  font-family: var(--font-label);
   font-size: .66rem; font-weight: 500; letter-spacing: .09em; text-transform: uppercase;
   color: var(--tx-2);
 }
@@ -398,14 +364,14 @@ button:active { transform: translateY(1px); }
 .finding-body div { display: flex; gap: .7rem; font-size: .84rem; }
 .finding-body dt {
   width: 4.2rem; flex: none; padding-top: .14em;
-  font-family: 'Lexend Deca', 'Lexend', sans-serif;
+  font-family: var(--font-label);
   font-size: .62rem; font-weight: 500; letter-spacing: .08em; text-transform: uppercase;
   color: var(--tx-2);
 }
 .finding-body dd { margin: 0; }
 .reproduce { display: flex; flex-direction: column; gap: .35rem; font-size: .8rem; }
 .fact-label {
-  font-family: 'Lexend Deca', 'Lexend', sans-serif;
+  font-family: var(--font-label);
   font-weight: 500; font-size: .62rem; letter-spacing: .08em; text-transform: uppercase; color: var(--tx-2);
 }
 .reproduce code {
@@ -447,9 +413,9 @@ button:active { transform: translateY(1px); }
   border-bottom: 1px solid var(--border); font-size: .84rem;
 }
 .log-line:last-child { border-bottom: 0; }
-.log-time { font-family: ui-monospace, "SF Mono", monospace; font-size: .76rem; color: var(--tx-3); padding-top: .1em; }
+.log-time { font-family: var(--font-mono); font-size: .76rem; color: var(--tx-3); padding-top: .1em; }
 .log-who {
-  font-family: 'Lexend Deca', 'Lexend', sans-serif;
+  font-family: var(--font-label);
   font-size: .62rem; letter-spacing: .08em; text-transform: uppercase;
   color: var(--tx-2); padding-top: .2em;
 }
@@ -689,7 +655,7 @@ button:active { transform: translateY(1px); }
 .stub-input { display: block; height: 2.1rem; border: 1px solid var(--border); border-radius: var(--radius-s); background: var(--bg-2); }
 .stub-tag {
   position: absolute; right: .8rem; bottom: .6rem;
-  font-size: .64rem; color: var(--tx-3, var(--tx-2)); font-family: ui-monospace, "SF Mono", monospace;
+  font-size: .64rem; color: var(--tx-3, var(--tx-2)); font-family: var(--font-mono);
 }
 
 /* smart FAB chooser */

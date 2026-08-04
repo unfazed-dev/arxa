@@ -1,0 +1,133 @@
+/* appbox · fonts — @font-face for every vendored family + the [data-font] menu.
+   models/fonts.json is the SSOT for WHICH families exist; this file is its CSS
+   projection. Add a family there, vendor its woff2 (assets/fonts/, see NOTICE
+   and OFL-*.txt), then add its faces + one [data-font] block here.
+
+   All four families' faces live HERE, not split across stylesheets: Lexend's
+   six blocks moved out of app.css in this increment so there is exactly one
+   place a face is declared. Link this file BEFORE app.css.
+
+   The menu works through FOUR variables rather than by restating font-family
+   on every component: app.css had the family hardcoded a dozen times
+   ('Lexend Deca' on labels, 'Lexend Giga' on display type), so a bare
+   [data-font] rule would have re-skinned body copy and left every heading and
+   chip on Lexend. Those declarations now read var(--font-*), and switching a
+   font is one variable swap.
+
+     --font-ui       body copy, controls, everything unmarked
+     --font-display  the shell's large type (was 'Lexend Giga')
+     --font-label    chips, tabs, section labels (was 'Lexend Deca')
+     --font-mono     code, log timestamps (only the `mono` family changes it)
+
+   Scope note: [data-font] sits on #app, the same element that carries
+   data-theme and data-accent — one token scope, one specificity model
+   (#app[data-font=...] beats the :root defaults the way #app[data-theme] does).
+   body keeps a literal Lexend stack as the pre-boot fallback: it is the one
+   element OUTSIDE #app, so it cannot read a variable set on #app. */
+
+/* ---------- Lexend — UI default. Vendored 2026-07-28, OFL 1.1 (FONTS.md). ---------- */
+@font-face {
+  font-family: 'Lexend'; font-weight: 300 700; font-display: swap;
+  src: url('/assets/fonts/lexend-var-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Lexend'; font-weight: 300 700; font-display: swap;
+  src: url('/assets/fonts/lexend-var-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Lexend Giga'; font-weight: 300 400; font-display: swap;
+  src: url('/assets/fonts/lexend-giga-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Lexend Giga'; font-weight: 300 400; font-display: swap;
+  src: url('/assets/fonts/lexend-giga-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Lexend Deca'; font-weight: 500; font-display: swap;
+  src: url('/assets/fonts/lexend-deca-500-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Lexend Deca'; font-weight: 500; font-display: swap;
+  src: url('/assets/fonts/lexend-deca-500-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* ---------- Space Grotesk — geometric display sans. OFL-space-grotesk.txt ---------- */
+@font-face {
+  font-family: 'Space Grotesk'; font-weight: 300 700; font-display: swap;
+  src: url('/assets/fonts/space-grotesk-var-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Space Grotesk'; font-weight: 300 700; font-display: swap;
+  src: url('/assets/fonts/space-grotesk-var-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* ---------- Lora — serif. OFL-lora.txt ---------- */
+@font-face {
+  font-family: 'Lora'; font-weight: 400 700; font-display: swap;
+  src: url('/assets/fonts/lora-var-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Lora'; font-weight: 400 700; font-display: swap;
+  src: url('/assets/fonts/lora-var-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* ---------- JetBrains Mono — the one family that also retypes code. OFL-jetbrains-mono.txt ---------- */
+@font-face {
+  font-family: 'JetBrains Mono'; font-weight: 300 700; font-display: swap;
+  src: url('/assets/fonts/jetbrains-mono-var-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'JetBrains Mono'; font-weight: 300 700; font-display: swap;
+  src: url('/assets/fonts/jetbrains-mono-var-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* ---------- defaults = the `lexend` entry of models/fonts.json ----------
+   Kept at :root so anything rendered outside #app (modal.html, the widget
+   primitives gallery) still resolves the variables instead of inheriting an
+   unset value and falling back to Times. */
+:root {
+  --font-ui: 'Lexend', -apple-system, "PingFang SC", "Noto Sans SC", sans-serif;
+  --font-display: 'Lexend Giga', 'Lexend', sans-serif;
+  --font-label: 'Lexend Deca', 'Lexend', sans-serif;
+  --font-mono: ui-monospace, "SF Mono", monospace;
+}
+
+/* #app carries the choice, exactly as it carries data-theme / data-accent. */
+#app { font-family: var(--font-ui); }
+
+#app[data-font="lexend"] {
+  --font-ui: 'Lexend', -apple-system, "PingFang SC", "Noto Sans SC", sans-serif;
+  --font-display: 'Lexend Giga', 'Lexend', sans-serif;
+  --font-label: 'Lexend Deca', 'Lexend', sans-serif;
+  --font-mono: ui-monospace, "SF Mono", monospace;
+}
+#app[data-font="grotesk"] {
+  --font-ui: 'Space Grotesk', -apple-system, "PingFang SC", "Noto Sans SC", sans-serif;
+  --font-display: 'Space Grotesk', sans-serif;
+  --font-label: 'Space Grotesk', sans-serif;
+  --font-mono: ui-monospace, "SF Mono", monospace;
+}
+#app[data-font="lora"] {
+  --font-ui: 'Lora', Georgia, "Songti SC", serif;
+  --font-display: 'Lora', Georgia, serif;
+  --font-label: 'Lora', Georgia, serif;
+  --font-mono: ui-monospace, "SF Mono", monospace;
+}
+#app[data-font="mono"] {
+  --font-ui: 'JetBrains Mono', ui-monospace, "SF Mono", monospace;
+  --font-display: 'JetBrains Mono', ui-monospace, monospace;
+  --font-label: 'JetBrains Mono', ui-monospace, monospace;
+  --font-mono: 'JetBrains Mono', ui-monospace, "SF Mono", monospace;
+}

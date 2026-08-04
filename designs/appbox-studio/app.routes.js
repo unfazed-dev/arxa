@@ -52,6 +52,7 @@ export default [
   ['GET', '/workspace/config', config.page],
   ['POST', '/workspace/config/set', config.set],
   ['POST', '/prefs/accent', prefs.setAccent],
+  ['POST', '/prefs/font', prefs.setFont],
   ['POST', '/prefs/theme', prefs.setTheme],
   ['POST', '/prefs/jargon', prefs.setJargon],
 ];

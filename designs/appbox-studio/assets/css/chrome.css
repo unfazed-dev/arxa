@@ -25,7 +25,7 @@
 /* The nav is the panel; its single body section is the row of chrome. */
 .panel-header > .panel-body { gap: .9rem; padding: 0 1.1rem; }
 .shell-brand {
-  font-family: 'Lexend Giga', 'Lexend', sans-serif; font-weight: 400;
+  font-family: var(--font-display); font-weight: 400;
   letter-spacing: .01em; color: var(--tx); text-decoration: none;
 }
 .shell-links { display: flex; gap: .25rem; }
@@ -126,7 +126,7 @@
 }
 .tabbar__icon { display: block; }
 .tabbar__label {
-  font-family: 'Lexend Deca', 'Lexend', sans-serif;
+  font-family: var(--font-label);
   font-size: .58rem; letter-spacing: .07em; text-transform: uppercase;
 }
 .tabbar__link.is-active { color: var(--accent); }
@@ -203,7 +203,7 @@
 .tl-state-red .tl-mark, .tl-state-rejected .tl-mark { background: var(--fail); box-shadow: none; }
 .tl-state-cancelled .tl-mark { background: var(--tx-3); box-shadow: none; }
 .tl-label {
-  font-family: 'Lexend Deca', 'Lexend', sans-serif;
+  font-family: var(--font-label);
   font-size: .6rem; letter-spacing: .07em; text-transform: uppercase; white-space: nowrap;
 }
 .tl-item.is-current .tl-link { color: var(--tx); }

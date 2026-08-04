@@ -30,6 +30,21 @@
   </form>
 </section>
 
+{# Typeface — same shape as the accent row above (one POST, no swap: the pref
+   renders as data-font on #app, outside every swap unit). Each button is set
+   in the family it selects, so the row is its own specimen sheet. #}
+<section class="settings-section">
+  <h2>{{ t('settings.fontH') }}</h2>
+  <p class="settings-note">{{ t('settings.fontNote') }}</p>
+  <form class="swatch-row" method="post" action="/prefs/font" hx-post="/prefs/font" hx-swap="none">
+    {% for f in fonts %}
+    <button type="submit" name="font" value="{{ f.id }}" class="swatch {{ 'is-active' if f.id == font }}" style="font-family: {{ f.stack }}">
+      {{ f.label }}{% if f.id == font %} {{ icon('check', {size: 13}) }}{% endif %}
+    </button>
+    {% endfor %}
+  </form>
+</section>
+
 <section class="settings-section">
   <h2>{{ t('settings.languageH') }}</h2>
   <p class="settings-note">{{ t('settings.languageNote') }}</p>

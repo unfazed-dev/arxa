@@ -73,7 +73,13 @@ export const resolveWidget = (screenId, kind, index = 0) => {
     const hits = elsIn(src).filter((e) => e.kind === kind);
     if (hits.length > index) {
       const e = hits[index];
-      return { file: rel, kind, index, tag: e.tag, attrs: attrsOf(e.attrs) };
+      // start/end of the OPEN TAG ride along so no caller has to re-derive
+      // element identity with a second, subtly different rule. elsIn() counts
+      // occurrences of a kind across EVERY tag name and delimits the kind with
+      // `:` or `"` — a re-find that scanned only `<${tag}` would disagree the
+      // moment one kind appears on two different tags, and a prefix match
+      // would let kind "tab" select a "tabbar:" element.
+      return { file: rel, kind, index, tag: e.tag, attrs: attrsOf(e.attrs), start: e.start, end: e.end };
     }
   }
   return null;

@@ -31,6 +31,7 @@
   <script src="/assets/vendor/canvas.js" defer></script>
   <script src="/assets/vendor/drag.js" defer></script>
   <script src="/assets/vendor/explode.js" defer></script>
+  <link rel="stylesheet" href="/assets/css/fonts.css">
   <link rel="stylesheet" href="/assets/css/app.css">
   <link rel="stylesheet" href="/assets/css/theme.css">
   <link rel="stylesheet" href="/assets/css/intake.css">
@@ -47,7 +48,7 @@
   {% block head_extra %}{% endblock %}
 </head>
 <body hx-boost="true" hx-sync="this:replace" hx-ext="head-support,preload,morph">
-  <div id="app" data-theme="{{ prefs.theme or 'light' }}" data-accent="{{ prefs.accent or 'cyan' }}">
+  <div id="app" data-theme="{{ prefs.theme or 'light' }}" data-accent="{{ prefs.accent or 'cyan' }}" data-font="{{ prefs.font or 'lexend' }}">
     {% block content %}{% endblock %}
   </div>
   {# The OOB/retarget tray. aria-live so a toast swapped in here is announced
