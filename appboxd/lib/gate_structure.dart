@@ -14,6 +14,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:appboxd/emit_structure.dart';
 import 'package:appboxd/gates.dart';
 
 GateResult structureGate(GateContext ctx) {
@@ -64,6 +65,29 @@ GateResult structureGate(GateContext ctx) {
   } else {
     fail('structure: $designRel/structure.json drifted from the authored '
         'registry — re-run emit_structure.py');
+  }
+
+  // ---- S1c: the structure@2 design blocks match their authored SSOTs ----
+  // S1a only compares screens/shellRoots, so without this an edit to
+  // models/theme.json (or fonts.json) followed by no re-emit would ship a
+  // generated app disagreeing with the designer about its own palette —
+  // exactly the split-brain structure@2 exists to close.
+  for (final block in _designBlocks) {
+    final authored = block.load(designRoot);
+    final emitted = structure[block.key];
+    if (authored == null && emitted == null) continue; // block not in use
+    if (authored == null) {
+      fail('structure: $designRel/structure.json carries a `${block.key}` block '
+          'but ${block.source} no longer resolves — re-run `appbox emit structure`');
+    } else if (emitted == null) {
+      fail('structure: ${block.source} exists but $designRel/structure.json has '
+          'no `${block.key}` block — re-run `appbox emit structure`');
+    } else if (jsonEncode(emitted) != jsonEncode(authored)) {
+      fail('structure: $designRel/structure.json `${block.key}` drifted from '
+          '${block.source} — re-run `appbox emit structure`');
+    } else {
+      ok('structure: `${block.key}` matches ${block.source}');
+    }
   }
 
   // ---- S1b: tracked + committed (porcelain, NEVER git diff --exit-code) ----
@@ -246,3 +270,23 @@ String? _porcelainCode(List<String> dirty, String rel) {
     exclusions: excl.isNotEmpty ? 'exclusions (surface:null): ${excl.join(', ')}' : null,
   );
 }
+
+// ── S1c: the structure@2 design blocks and their authored SSOTs ───────────
+// One row per optional block. The loaders are the EMITTER's own, so the gate
+// can never disagree with emit about what "in sync" means — a second
+// re-implementation here is exactly the drift this check exists to catch.
+// `theme`/`fonts` load as maps, `widgets` as a list — hence Object?.
+typedef _BlockLoader = Object? Function(String designRoot);
+
+class _DesignBlock {
+  final String key;
+  final String source;
+  final _BlockLoader load;
+  const _DesignBlock(this.key, this.source, this.load);
+}
+
+const List<_DesignBlock> _designBlocks = [
+  _DesignBlock('theme', 'models/theme.json', loadTheme),
+  _DesignBlock('fonts', 'models/fonts.json', loadFonts),
+  _DesignBlock('widgets', 'the authored widget sources', scanWidgets),
+];

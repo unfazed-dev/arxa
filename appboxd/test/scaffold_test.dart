@@ -30,7 +30,7 @@ void main() {
   // 3 frozen + 1 excluded (surface:null). Mirrors the Python self-test's
   // stage_shell shape; all three frozen surfaces share shellDir 'stage_shell'.
   Map<String, dynamic> baseStruct() => {
-        r'$schema': 'appbox/structure@1',
+        r'$schema': 'appbox/structure@2',
         'registry': 'models/screens_model/registry.json',
         'shellRoots': {'projects': '/', 'settings': '/settings'},
         'screens': [
