@@ -50,8 +50,19 @@ const String _moveAttr = 'data-probe-move';
 /// onto the undo stack and fail the undo-enabled check spuriously.
 const String _moveToolSel = '.dv-tool[hx-post*="/move/"]:not([disabled])';
 
-const String _undoSel = '.dv-shell-act[hx-post="/design/undo/canvas"]';
-const String _redoSel = '.dv-shell-act[hx-post="/design/redo/canvas"]';
+/// History moved to the bottom mini-panel when the topbar's duplicate pair
+/// was retired for the appearance cluster (design_viewer.html topbar,
+/// 2026-08-04). The disabled variant renders WITHOUT hx-post, so the class —
+/// not the route — is the stable handle across both states; the route is
+/// asserted in section F where an armed undo actually carries one.
+const String _undoSel = '.dv-botbar .mini-panel .undo-btn';
+const String _redoSel = '.dv-botbar .mini-panel .redo-btn';
+
+/// Lens switching lives in the bottom controller. Bare `.dv-chip` is no
+/// longer unambiguous: the topbar appearance cluster (theme chips) reuses the
+/// class and precedes the botbar in document order, so an unscoped nth-click
+/// lands on a theme chip and silently never leaves the views lens.
+const String _lensChipSel = '.dv-botbar .mini-panel .dv-chip';
 
 /// The panel census, read from inside `.panel-viewer` (the fullscreen target).
 const String _censusJs = r'''
@@ -64,12 +75,18 @@ const String _censusJs = r'''
     title: inside('.dv-topbar-title'),
     botbar: inside('.dv-botbar'),
     miniDocked: inside('.dv-botbar .mini-panel'),
-    acts: [...v.querySelectorAll('.dv-shell-act')].map((a) => ({
+    acts: [...v.querySelectorAll(
+      '.dv-botbar .mini-panel .undo-btn, .dv-botbar .mini-panel .redo-btn'
+    )].map((a) => ({
       tag: a.tagName,
       disabled: a.disabled === true,
-      label: a.getAttribute('aria-label'),
       post: a.getAttribute('hx-post'),
     })),
+    shellActs: v.querySelectorAll('.dv-shell-act').length,
+    themeChips: v.querySelectorAll(
+      '.dv-topbar-actions .dv-chip:not(.dv-arm-chip)').length,
+    swatches: [...v.querySelectorAll('.dv-topbar-actions .mini-swatch')]
+      .map((s) => (s.className.match(/mini-swatch-([a-z]+)/) || [])[1] || ''),
     danger: v.querySelectorAll('.is-danger').length,
   };
 })()
@@ -83,9 +100,9 @@ Future<void> _run(ProbeContext ctx) async {
     await probeWaitFor(
       page,
       "(() => { const v = document.querySelector('.panel-viewer');"
-      " return !!v && !!v.querySelector('.dv-shell-act'); })()",
+      " return !!v && !!v.querySelector('.dv-botbar .mini-panel .undo-btn'); })()",
       timeout: const Duration(seconds: 15),
-      label: 'the viewer shell + its chrome actions',
+      label: 'the viewer shell + its history buttons',
       report: report,
     );
 
@@ -100,28 +117,42 @@ Future<void> _run(ProbeContext ctx) async {
     }
 
     report.section('C. bg swatches (.mini-swatch) — same swap target, same defect');
-    for (final bg in const ['warm', 'slate', 'canvas']) {
+    for (final bg in const ['warm', 'ink', 'canvas']) {
       await _swap(ctx, page, '.mini-swatch-$bg', 'bg $bg');
       _panelsOk(report, 'bg $bg', await _census(page));
     }
 
     report.section('D. lens switches (.dv-chip) — views / flows / proto');
     for (final lens in const [(1, 'flows'), (2, 'proto'), (0, 'views')]) {
-      await _swapNth(ctx, page, '.dv-chip', lens.$1, 'lens ${lens.$2}');
+      await _swapNth(ctx, page, _lensChipSel, lens.$1, 'lens ${lens.$2}');
       _panelsOk(report, 'lens ${lens.$2}', await _census(page));
     }
 
-    report.section('E. chrome.actions is exactly canvas undo + redo');
-    final acts = _acts(await _census(page));
-    report.check('exactly two shell actions', acts.length == 2, '${acts.length}');
+    report.section(
+        'E. chrome contract — topbar appearance cluster, history in the mini-panel');
+    // The topbar's undo/redo pair was retired with the appearance cluster
+    // (0df3081): theme chips + bg swatches moved up, the bottom controller
+    // keeps the ONLY history buttons. `.dv-shell-act` is the retired vocabulary
+    // and must count zero — its reappearance means the duplicate pair is back.
+    final fresh = await _census(page);
+    report.check('no legacy .dv-shell-act chrome actions',
+        fresh?['shellActs'] == 0, '${fresh?['shellActs']}');
+    report.check('topbar has three theme chips',
+        fresh?['themeChips'] == 3, '${fresh?['themeChips']}');
+    final swatches =
+        ((fresh?['swatches'] as List?) ?? const []).cast<String>().toList()
+          ..sort();
+    report.check('topbar swatches are canvas/warm/ink',
+        swatches.join(',') == 'canvas,ink,warm', '$swatches');
+    final acts = _acts(fresh);
+    report.check('exactly undo + redo in the mini-panel history group',
+        acts.length == 2, '${acts.length}');
     report.check('both are buttons (mutations, not links)',
         acts.every((a) => a['tag'] == 'BUTTON'),
         acts.map((a) => a['tag']).join(','));
-    report.check('action 1 POSTs canvas undo',
-        _at(acts, 0)?['post'] == '/design/undo/canvas', '${_at(acts, 0)?['post']}');
-    report.check('action 2 POSTs canvas redo',
-        _at(acts, 1)?['post'] == '/design/redo/canvas', '${_at(acts, 1)?['post']}');
     // A fresh session has stepped nothing, so BOTH ends of the stack are empty.
+    // Disabled buttons render without hx-post; the routes are asserted in
+    // section F once a mutation arms them.
     report.check('undo disabled at the bottom of the stack',
         _at(acts, 0)?['disabled'] == true);
     report.check('redo disabled at the top of the stack',
@@ -141,7 +172,7 @@ Future<void> _run(ProbeContext ctx) async {
 /// `undoStacks.canvas`.
 Future<void> _armAndStepBack(ProbeContext ctx, CdpSession page) async {
   final report = ctx.report;
-  await _swapNth(ctx, page, '.dv-chip', 1, 'lens flows');
+  await _swapNth(ctx, page, _lensChipSel, 1, 'lens flows');
 
   // Tag the move tool and learn which tile hosts it, in one read: the tool is
   // hover-revealed, and the tile is what has to be hovered to reveal it.
@@ -200,6 +231,9 @@ Future<void> _armAndStepBack(ProbeContext ctx, CdpSession page) async {
   final armedActs = _acts(armed);
   report.check('undo enabled once the canvas stack is non-empty',
       _at(armedActs, 0)?['disabled'] == false);
+  report.check('armed undo POSTs canvas undo',
+      _at(armedActs, 0)?['post'] == '/design/undo/canvas',
+      '${_at(armedActs, 0)?['post']}');
   report.check('redo still disabled (nothing stepped back yet)',
       _at(armedActs, 1)?['disabled'] == true);
 
@@ -220,6 +254,9 @@ Future<void> _armAndStepBack(ProbeContext ctx, CdpSession page) async {
   _panelsOk(report, 'after undo', stepped);
   report.check('redo enabled after stepping back',
       _at(_acts(stepped), 1)?['disabled'] == false);
+  report.check('re-armed redo POSTs canvas redo',
+      _at(_acts(stepped), 1)?['post'] == '/design/redo/canvas',
+      '${_at(_acts(stepped), 1)?['post']}');
 }
 
 /// The five-check shape asserted in every state above, so it lives here once.
