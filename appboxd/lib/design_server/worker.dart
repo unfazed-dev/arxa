@@ -25,6 +25,13 @@ import 'package:appboxd/cdp.dart';
 import 'package:appboxd/design_server/l10n.dart' show parseArb;
 import 'package:path/path.dart' as p;
 
+/// A localized SEED file: `<...>models/<x>_model/<x>_seed.<locale>.json`,
+/// with the leading `design/` optional (the artifact roots models/ at the
+/// top level, a project nests it under design/). Deliberately narrower than
+/// `models/**.json` so SSOT config that shares the directory — theme.json,
+/// fonts.json — can never be offered as a text-edit target.
+final _seedRel = RegExp(r'(^|/)models/[^/]+/[^/]+_seed\.[A-Za-z0-9-]+\.json$');
+
 /// A bounded tail of a child process's stderr, plus the note that carries it
 /// into an error message.
 ///
@@ -139,6 +146,8 @@ _Prefetch _scanArtifact(String artifactDir, String origin, String? iconsDir,
   final arb = <String, Map<String, dynamic>>{};
   final iconNames = <String>{};
   final surfaceSrcIndex = <String>[];
+  final arbSrcIndex = <String>[];
+  final seedSrcIndex = <String>[];
 
   String posixRel(String f) =>
       p.relative(f, from: artifactDir).split(p.separator).join('/');
@@ -199,6 +208,25 @@ _Prefetch _scanArtifact(String artifactDir, String origin, String? iconsDir,
         fixtures['$origin/project-src/$rel'] = src;
         surfaceSrcIndex.add(rel);
       }
+      // Text editing routes a widget's copy by PROVENANCE, so the two write
+      // targets need the same raw-source window the surfaces have. The parsed
+      // /project/<rel> fixture above cannot serve: re-serialising a decoded map
+      // would reorder keys and drop the @-metadata siblings an ARB carries.
+      if (rel.startsWith('design/l10n/') && rel.endsWith('.arb')) {
+        fixtures['$origin/project-src/$rel'] = f.readAsStringSync();
+        arbSrcIndex.add(rel);
+      }
+      // Seeds ONLY — not every json under models/. theme.json and fonts.json
+      // are SSOT config files that live in the same directory, and a router
+      // that proposed them as text-edit targets would offer to rewrite the
+      // accent palette when the user retitles a card. The `_seed.<locale>`
+      // basename is the discriminator; the leading `design/` is optional
+      // because the artifact lays models/ out at its root and a project nests
+      // it under design/.
+      if (_seedRel.hasMatch(rel)) {
+        fixtures['$origin/project-src/$rel'] = f.readAsStringSync();
+        seedSrcIndex.add(rel);
+      }
       if (rel.endsWith('.json')) {
         fixtures['$origin/project/$rel'] = f.readAsStringSync();
       }
@@ -208,6 +236,13 @@ _Prefetch _scanArtifact(String artifactDir, String origin, String? iconsDir,
     // without it the widget manager could not discover included partials
     // (_tabbar.html) that no registry entry names.
     fixtures['$origin/project-src/index.json'] = jsonEncode(surfaceSrcIndex);
+    // Separate indices, not extra members of index.json: that file is already
+    // an ARRAY the widget manager reads, and which locales/seeds exist is a
+    // question only the index can answer (no readdir). A project may ship any
+    // locale set — app_qps-ploc.arb exists in the studio and not in portalo —
+    // so the editor reports the locales it FOUND rather than guessing names.
+    fixtures['$origin/project-src/l10n-index.json'] = jsonEncode(arbSrcIndex);
+    fixtures['$origin/project-src/seed-index.json'] = jsonEncode(seedSrcIndex);
   }
   final icons = <String, String>{};
   if (iconsDir != null) {

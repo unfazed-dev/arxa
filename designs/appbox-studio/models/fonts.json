@@ -1,0 +1,80 @@
+{
+  "$schema": "appbox/fonts@1",
+  "comment": "Font SSOT — the declared list of families the studio can switch between, mirroring models/theme.json. Nothing may derive the font set from assets/fonts/ filenames: those names carry subset/weight detail (lexend-deca-500-latin-ext.woff2) that is a vendoring artifact, NOT contract. Readers: assets/css/fonts.css (@font-face + [data-font] rules), the font menu in prefs, and emit_structure (structure@2 `fonts` field). `id` is the [data-font] attribute value and the menu key; `cssName` is the CSS font-family name; `stack` is the full family stack to assign. Add a family here, vendor its woff2, and add its @font-face to the file named in `declaredIn` — in that order.",
+  "default": "lexend",
+  "roles": {
+    "ui": "body copy, controls, everything unmarked",
+    "display": "headings and the shell's large type",
+    "mono": "code, log timestamps, tabular figures"
+  },
+  "families": [
+    {
+      "id": "lexend",
+      "label": "Lexend",
+      "cssName": "Lexend",
+      "role": "ui",
+      "stack": "'Lexend', -apple-system, \"PingFang SC\", \"Noto Sans SC\", sans-serif",
+      "displayStack": "'Lexend Giga', 'Lexend', sans-serif",
+      "monoStack": "ui-monospace, \"SF Mono\", monospace",
+      "declaredIn": "assets/css/app.css",
+      "vendored": true,
+      "license": "OFL-1.1",
+      "files": [
+        { "file": "lexend-var-latin.woff2", "subset": "latin", "weight": "300 700" },
+        { "file": "lexend-var-latin-ext.woff2", "subset": "latin-ext", "weight": "300 700" },
+        { "file": "lexend-giga-latin.woff2", "subset": "latin", "weight": "300 400", "cssName": "Lexend Giga" },
+        { "file": "lexend-giga-latin-ext.woff2", "subset": "latin-ext", "weight": "300 400", "cssName": "Lexend Giga" },
+        { "file": "lexend-deca-500-latin.woff2", "subset": "latin", "weight": "500", "cssName": "Lexend Deca" },
+        { "file": "lexend-deca-500-latin-ext.woff2", "subset": "latin-ext", "weight": "500", "cssName": "Lexend Deca" }
+      ]
+    },
+    {
+      "id": "grotesk",
+      "label": "Space Grotesk",
+      "cssName": "Space Grotesk",
+      "role": "display",
+      "stack": "'Space Grotesk', -apple-system, \"PingFang SC\", \"Noto Sans SC\", sans-serif",
+      "displayStack": "'Space Grotesk', sans-serif",
+      "monoStack": "ui-monospace, \"SF Mono\", monospace",
+      "declaredIn": "assets/css/fonts.css",
+      "vendored": true,
+      "license": "OFL-1.1",
+      "files": [
+        { "file": "space-grotesk-var-latin.woff2", "subset": "latin", "weight": "300 700" },
+        { "file": "space-grotesk-var-latin-ext.woff2", "subset": "latin-ext", "weight": "300 700" }
+      ]
+    },
+    {
+      "id": "lora",
+      "label": "Lora",
+      "cssName": "Lora",
+      "role": "ui",
+      "stack": "'Lora', Georgia, \"Songti SC\", serif",
+      "displayStack": "'Lora', Georgia, serif",
+      "monoStack": "ui-monospace, \"SF Mono\", monospace",
+      "declaredIn": "assets/css/fonts.css",
+      "vendored": true,
+      "license": "OFL-1.1",
+      "files": [
+        { "file": "lora-var-latin.woff2", "subset": "latin", "weight": "400 700" },
+        { "file": "lora-var-latin-ext.woff2", "subset": "latin-ext", "weight": "400 700" }
+      ]
+    },
+    {
+      "id": "mono",
+      "label": "JetBrains Mono",
+      "cssName": "JetBrains Mono",
+      "role": "mono",
+      "stack": "'JetBrains Mono', ui-monospace, \"SF Mono\", monospace",
+      "displayStack": "'JetBrains Mono', ui-monospace, monospace",
+      "monoStack": "'JetBrains Mono', ui-monospace, \"SF Mono\", monospace",
+      "declaredIn": "assets/css/fonts.css",
+      "vendored": true,
+      "license": "OFL-1.1",
+      "files": [
+        { "file": "jetbrains-mono-var-latin.woff2", "subset": "latin", "weight": "300 700" },
+        { "file": "jetbrains-mono-var-latin-ext.woff2", "subset": "latin-ext", "weight": "300 700" }
+      ]
+    }
+  ]
+}

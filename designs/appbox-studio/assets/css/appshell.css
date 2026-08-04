@@ -11,7 +11,7 @@
   gap: .9rem; padding: 2rem; text-align: center;
 }
 .splash-brand {
-  font-family: 'Lexend Giga', 'Lexend', sans-serif; font-size: 2.6rem;
+  font-family: var(--font-display); font-size: 2.6rem;
   background: linear-gradient(100deg, #21BFE9, #4E28D5);
   -webkit-background-clip: text; background-clip: text; color: transparent;
 }
@@ -80,7 +80,7 @@
   box-shadow: var(--shadow-2); padding: 1.6rem;
 }
 .auth-brand {
-  font-family: 'Lexend Giga', 'Lexend', sans-serif; font-size: 1.15rem;
+  font-family: var(--font-display); font-size: 1.15rem;
   background: linear-gradient(100deg, #21BFE9, #4E28D5);
   -webkit-background-clip: text; background-clip: text; color: transparent;
 }
