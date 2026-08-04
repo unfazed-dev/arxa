@@ -75,3 +75,33 @@ and a kit-side `flutter test` for the new theme/font API.
 4. Text editing (provenance-routed) + font menu (vendored families).
 5. Edit composer + plan editor (per-screen sidecar).
 6. Pipeline: structure@2 schema + scaffolder token-exact emissions + kit API (accents, fonts).
+
+## Components-container 2-col split (2026-08-04, supersedes container layout in increments 2/5)
+
+> **SUPERSEDED (2026-08-04, later same day):** this entire section — and the
+> components container itself — is superseded by
+> `docs/plans/screen-reveal-drawer-composer-tools-logic.md` (per-screen
+> reveal-drawer with Composer/Tools/Logic tabs; container removed outright).
+> The composer-macro extraction idea below survives as Increment 1 of that plan.
+
+The views-lens components container becomes a 2-column layout:
+
+- **Column 1 — thread composer.** The composer card + chat input (textarea, send,
+  context-chips tray, undo/redo, plan tray) is extracted from `composer.html`
+  into a shared, reusable macro. The macro is parameterized by a `scope` prefix
+  that namespaces DOM ids and htmx target urls so the composer panel and the
+  per-screen container instance can coexist in one DOM without id collisions or
+  cross-wired `hx-target`s. Behavior is identical to the composer panel (same
+  endpoints; no new islands).
+- **Column 2 — widgets editor.** The existing widget-editing section
+  (`widget_editor.html`) unchanged in behavior, hosted as the second column.
+- **Rename.** User-facing "components" → "widgets" in l10n **values only**
+  (`viewer.explodeTitle`, `viewer.exEmpty`, related strings); the `viewer.ex*`
+  keys stay — they are code identifiers, and renaming them churns every locale
+  and probe for zero user benefit.
+- **Ordering (advisor-reviewed).** 1) l10n value rename + probe label updates
+  (clean probe-verified baseline, label churn isolated from structure churn);
+  2) composer macro extraction with panel call site switched over
+  (behavior-identical, probes green); 3) 2-col container + per-screen composer
+  instance + `viewer.css` grid, with probe DOM updates in the same commit.
+  Every DOM-changing commit carries its probe updates.
