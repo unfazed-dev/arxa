@@ -130,7 +130,9 @@
     if (!p || !p.htmx) return;
     p.htmx.ajax('POST', '/design/inspector/select', {
       target: '#panel-activity-body', swap: 'innerHTML', values: measure(el, lock),
-    });
+      // hx-sync="this:replace" on <body> aborts superseded XHRs; htmx rejects
+      // the promise with undefined on abort. Real failures still log.
+    }).catch((e) => { if (e !== undefined) console.error('appbox island htmx.ajax:', e); });
   };
 
   const showOverlay = (el) => {

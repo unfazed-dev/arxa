@@ -153,7 +153,7 @@
           // hx-sync="this:replace" on <body> aborts this XHR whenever a newer
           // request supersedes it; htmx rejects the returned promise with
           // undefined on abort. Superseded selection is not an error.
-        }).catch(() => {});
+        }).catch((e) => { if (e !== undefined) console.error('appbox island htmx.ajax:', e); });
       }
     };
     li.addEventListener('click', open);

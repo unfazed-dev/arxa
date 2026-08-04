@@ -88,6 +88,8 @@
     p.htmx.ajax('GET', advance, {
       target: '#design-viewer',
       swap: 'morph:outerHTML',
-    });
+      // hx-sync="this:replace" on <body> aborts superseded XHRs; htmx rejects
+      // the promise with undefined on abort. Real failures still log.
+    }).catch((e) => { if (e !== undefined) console.error('appbox island htmx.ajax:', e); });
   }, true); // capture: beat the surface's own boosted link handler
 })();
