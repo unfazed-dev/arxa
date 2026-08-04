@@ -13,7 +13,7 @@ Session date: 2026-08-04. Repo: `/Volumes/developer_ssd/Developer/totem_labs/app
 |---|---|---|
 | 1 — composer fragment `field(c, scope='')` | merged (`d9b8bd9`, merge `9f95f2b`) | served DOM byte-identical; probes 14/14 |
 | 2 — reveal-drawer shell + Composer tab | merged (`abc0bbc`, master HEAD = fast-forward) | probes 15/15 (incl new `probe_reveal_drawer.dart`); analyze/ADR-0002 lint/W1–W6/check-wiring clean |
-| 3 — selection + Tools tab | **subagent running** (name `inc3-tools-tab`, worktree branch `worktree-agent-aaa202d4683c1a349`) | not yet reported |
+| 3 — selection + Tools tab | merged (`3128fe2`, merge `cf30ee7`) | probes 16/16 (incl new `probe_widget_tools.dart`); analyze/lint/wiring clean; selection reconciled with existing `d.widgetSel`/`POST /design/widget/select`; copy writes via new `POST /design/widget/text` → `facade.setWidgetCopy` |
 | 4 — Logic tab | not started | — |
 | 5 — remove components container + cleanup | not started | — |
 
@@ -29,10 +29,7 @@ Task tracker: task #4 (in_progress) tracks the whole plan.
 
 ## Remaining increments (execute in order, one worktree subagent each)
 
-### Inc 3 — shared selection + Tools tab (in flight; if the running agent dies, restart with this scope)
-Widget click → highlight; selection lives with drawer/session state; reconcile with existing inspect/selection machinery (search first, no parallel mechanism). Tools tab renders ONLY the selected widget's full details; edits go through the existing provenance-routed write path; non-editable → read-only + honest reason; NEVER write generated/derived files. Extend the reveal-drawer probe: highlight, single-widget render, editable round-trip, read-only case.
-
-### Inc 4 — Logic tab
+### Inc 4 — Logic tab (NEXT — no agent running; session ended after inc 3 merge)
 Deterministic graph from repo facts (function/facade/repository wiring for the selected widget/screen), technical + plain-human rendering, honest "unknown" for what static analysis can't prove — no LLM guessing, no fabricated edges. Templates only; deterministic template/probe pair. Probe: known widget → expected edges; unknown case renders the honest-unknown state.
 
 ### Inc 5 — remove components container + cleanup
