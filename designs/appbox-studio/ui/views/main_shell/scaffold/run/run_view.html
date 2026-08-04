@@ -7,7 +7,7 @@
 {% import "ui/common/widgets/primitives.html" as pr %}
 
 {% block title %}{{ t('scaffold.run.pageTitle') }}{% endblock %}
-{% block main_class %}shell-main-scaffold-run{% endblock %}
+{% block main_class %}shell-main-loop shell-main-scaffold-run{% endblock %}
 {% block head_extra %}
 <link rel="stylesheet" href="/assets/css/scaffold-run.css">
 {% endblock %}
@@ -212,6 +212,7 @@
 
 {# ---------- main ---------- #}
 {% macro mainContent(c) %}
+<section class="mp-content" id="mp-content" aria-live="polite">
 <div class="run-body">
   {{ banner(c) }}
   {% if c.isBlocked %}
@@ -233,6 +234,7 @@
     {% endif %}
   {% endif %}
 </div>
+</section>
 {% endmacro %}
 
 {% macro panels(c) %}{% call sh.panels(c) %}{{ mainContent(c) }}{% endcall %}{% endmacro %}

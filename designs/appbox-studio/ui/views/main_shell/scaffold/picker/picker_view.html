@@ -6,7 +6,7 @@
 {% import "ui/views/main_shell/scaffold/_shared.html" as sh %}
 {% import "ui/common/widgets/primitives.html" as pr %}
 {% block title %}{{ t('scaffold.picker.pageTitle') }}{% endblock %}
-{% block main_class %}shell-main-picker{% endblock %}
+{% block main_class %}shell-main-loop shell-main-picker{% endblock %}
 {% block head_extra %}
 <link rel="stylesheet" href="/assets/css/scaffold-picker.css">
 {% endblock %}
@@ -245,6 +245,7 @@
 
 {# ---------- the stage ---------- #}
 {% macro mainContent(c) %}
+<section class="mp-content" id="mp-content" aria-live="polite">
 <div class="picker-stage">
   <header class="picker-head">
     <h1 class="display">{{ t('scaffold.picker.pageTitle') }}</h1>
@@ -269,6 +270,7 @@
     {% endif %}
   </footer>
 </div>
+</section>
 {% endmacro %}
 
 {# ---------- panels ----------

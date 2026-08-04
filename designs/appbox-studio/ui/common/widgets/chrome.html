@@ -18,10 +18,11 @@
 {% set destinations = [
   { id: 'intake',    label: t('tab.intake'),   icon: 'square-pen',   href: '/intake' },
   { id: 'design',    label: t('tab.design'),   icon: 'pen-tool',     href: '/design' },
+  { id: 'scaffold',  label: t('tab.scaffold'), icon: 'blocks',       href: '/scaffold' },
   { id: 'build',     label: t('tab.build'),    icon: 'hammer',       href: '/build' },
   { id: 'workspace', label: t('tab.settings'), icon: 'settings',     href: '/workspace' }
 ] %}
-{% set shellNames = { intake: t('tab.intake'), design: t('tab.design'), build: t('tab.build'), workspace: t('tab.settings') } %}
+{% set shellNames = { intake: t('tab.intake'), design: t('tab.design'), scaffold: t('tab.scaffold'), build: t('tab.build'), workspace: t('tab.settings') } %}
 
 
   <details class="shell-drawer shell-chrome-touch">
@@ -85,6 +86,7 @@
 {% set destinations = [
   { id: 'intake',    label: t('tab.intake'),   icon: 'square-pen',   href: '/intake' },
   { id: 'design',    label: t('tab.design'),   icon: 'pen-tool',     href: '/design' },
+  { id: 'scaffold',  label: t('tab.scaffold'), icon: 'blocks',       href: '/scaffold' },
   { id: 'build',     label: t('tab.build'),    icon: 'hammer',       href: '/build' },
   { id: 'workspace', label: t('tab.settings'), icon: 'settings',     href: '/workspace' }
 ] %}

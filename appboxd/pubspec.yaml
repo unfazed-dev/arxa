@@ -1,6 +1,7 @@
 name: appboxd
 description: The appbox daemon — runs pipeline phases and serves the web builder UI.
 version: 1.0.0
+publish_to: 'none'
 # repository: https://github.com/my_org/my_repo
 
 environment:

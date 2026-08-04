@@ -20,14 +20,16 @@
    nothing is placed into collapses to zero.
 
    Macro-only file — importing it from a fragment render emits nothing.
-   Chrome is REUSED, never forked: every panel below comes from
-   ui/views/main_shell/shared/widgets/, through the same `open(spec)` /
-   `close(spec)` pair from _panel.html that the other stage shells use. #}
+   Chrome is REUSED, never forked: every panel below comes from the shared
+   widget homes — ui/views/main_shell/shared/widgets/, plus ui/common/widgets/
+   for the main panel promoted there with the workspace shell — through the
+   same `open(spec)` / `close(spec)` pair from _panel.html that the other
+   stage shells use. #}
 
 {% import "ui/views/main_shell/shared/widgets/activity_panel.html" as pa %}
 {% import "ui/views/main_shell/shared/widgets/composer_panel.html" as cp %}
 {% import "ui/views/main_shell/shared/widgets/composer.html" as cm %}
-{% import "ui/views/main_shell/shared/widgets/main_panel.html" as mp %}
+{% import "ui/common/widgets/main_panel.html" as mp %}
 
 {# ---------- the composer panel: thread + composer inside the shared frame ----
    Data-driven, exactly as the design shell's is: the surface's facade fills
@@ -66,8 +68,8 @@
    silently instead of visibly breaking. The check that catches the other half
    (action set, nobody routed it — a rendered-markup sweep, since the selftest
    reads template source where this attribute is never a literal) is written up
-   in docs/plans/composer-action-integrity.md. That defect is live on
-   /scaffold today: action="/scaffold/messages" renders, POST returns 404. #}
+   in docs/plans/composer-action-integrity.md. The scaffold half of that defect
+   is closed: POST /scaffold/messages is routed (routes.scaffold.js). #}
 {% macro composerPanel(c) %}
 {% set CP = { eyebrow: c.stageEyebrow, chips: c.chips } %}
 {{ cp.open(CP) }}
