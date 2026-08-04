@@ -41,11 +41,13 @@
    #app hands this region the leftover, .panel-main fills it (panels.css), and
    .mp-content — already overflow-y: auto in app.css — is the one scroller,
    per the panel scroll-ownership doctrine. Any shell that mounts the main
-   panel directly in .shell-main (workspace, dashboard) needs this column. */
-.shell-main-col { display: flex; flex-direction: column; min-height: 0; }
-/* workspace shell: the main panel IS the surface — full width; the 56rem
-   reading column is a main_shell/dashboard concern. */
-.shell-main-workspace { max-width: none; }
+   panel directly in .shell-main (workspace, dashboard) needs this column.
+
+   Width rides the same marker: a mounted main panel with no composer/activity
+   side panels IS the surface and takes the max width available, so the 56rem
+   reading column is lifted here — not per-shell. The cap stays only on prose
+   surfaces that render straight into .shell-main without mounting the panel. */
+.shell-main-col { display: flex; flex-direction: column; min-height: 0; max-width: none; }
 /* stage shells (intake/design/build) run full-bleed — the three content
    panels need the whole width; chrome.css must repeat this because it loads
    after app.css and would otherwise cap them at 56rem */
