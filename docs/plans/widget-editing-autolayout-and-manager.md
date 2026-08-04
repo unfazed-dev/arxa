@@ -34,6 +34,8 @@ sync with everything the designer enforces.
 | 15 | Edit arming | **Hybrid.** Edit toggle on the tile hover toolbar flips the tile into edit mode (interact-in-place pauses; handles + selection appear); typing in that screen's edit composer auto-arms it. Esc/toggle restores interact-in-place. |
 | 16 | Sync depth | **Schema + kit API, no codegen.** `structure.json@2` gains `widgets` (definitions + layout/sizing/pad/gap), `theme` (5 swatches × 5 roles), `fonts`; scaffolder placeholders become token-exact emissions; kit gains consuming API. Flutter widget-tree codegen stays the builder's job — a named next increment. |
 
+> **Increment 5 deviation (ruled, coordinator).** Decision 13's `design/plans/<screen-id>.md` was illustrative ("e.g."), not a format commitment: the sidecar ships as **`design/plans/<screen-id>.json`**. The entries are load-bearing structure, not prose — the composer appends machine-readable intents (text, scope, status) and the plan editor round-trips them — which markdown cannot carry without a parser this increment has no reason to own.
+
 ## Load-bearing facts (from research)
 
 - **k constants** live in `kit/core/lib/common/kit_app_constants.dart` (`kPad1–80`, `kGap0–100` even ramp, `kFont2–80` + semantic aliases, `kRad*`, `kSize*`); `kit/ui_library/ui-library-usage-appendix.md:546-551` marks `kPad*`/`kGap*`/etc. **kit-internal only** → decision 3. Designer's 4/8/12/16/24 steps sit inside the kit scale 1:1.
