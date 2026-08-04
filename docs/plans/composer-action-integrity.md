@@ -1221,3 +1221,50 @@ Corollary to the standing rule: an instrument must be proven capable of non-zero
 subject, at that moment, **and in that tree**. Three coordinates, not two. The first two
 were learned by measuring; the third arrived as a status ping that read as a false alarm
 and wasn't one.
+
+## Lens-threading control, and four instrument defects that preceded it
+
+picker-screen asked for a positive control on `sendMessage`'s 5th argument
+(`screen`), warning that a dropped or transposed arg collapses all six lenses
+to `success` with no gate catching it. Result, measured with a proven
+instrument:
+
+| state | POST | render delta | probe rendered |
+|---|---|---|---|
+| success | 200 | 160 | yes |
+| error | 200 | 158 | yes |
+| signedOut | 200 | 162 | yes |
+
+Three distinct deltas. **The lens is threaded; the feared collapse is not live.**
+
+The value here is not the result — it is that four consecutive instruments
+said otherwise, and each was wrong in a different way:
+
+1. **Wrong layer.** Read the POST *response* for lens information. All six
+   returned `204`/0 bytes, and the script printed "ALL LENSES COLLAPSED —
+   FAILURE MODE IS LIVE". A zero-byte body cannot carry lens data by design
+   (`h.noContent`); this measured the absence of a channel, not a collapse.
+2. **Wrong field name.** Posted `composer-text=` — that is the textarea's
+   `id`; its `name` is `text`. Every POST therefore carried an *empty*
+   message, which correctly short-circuits to `204`. The identical responses
+   that looked like collapse were manufactured by the request body.
+3. **Lens override as confound.** Read back through `?state=`, which pins the
+   render to a fixture and is structurally incapable of showing a session
+   mutation.
+4. **No-op control.** Chose `add kit=auth` as the positive control; `auth` is
+   already in the default picked set, so the control was a genuine no-op and
+   "proved" blindness that did not exist. This is the same trap run-screen
+   documented at t=463.
+
+Only defect 4 was caught by the rule already in this doc (require a positive
+control). Defects 1–3 were caught by the control *failing* — the instrument
+declared itself broken before it could declare a teammate broken.
+
+**Disproven en route:** run-screen's standing suspicion that the design server
+re-issues `kdh_sid` per request. Measured: one sid issued, honored across four
+requests. Session persistence works; the blindness had other causes. Worth
+retiring that hypothesis before it explains away a real result.
+
+**Constraint added:** a positive control must be *shown to move*. A control
+that could be a no-op is not a control. Report its delta alongside the result,
+so a flat control is visible as instrument failure rather than read as evidence.
