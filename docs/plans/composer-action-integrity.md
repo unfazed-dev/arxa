@@ -1164,3 +1164,32 @@ the time under test, not a neighbour of it.
 Standing form of the rule, now paid out four times: a zero is admissible only from an instrument
 proven capable of non-zero **for that subject, at that moment**. Restart-after-edit is the
 mechanical way to buy the "at that moment" half, and it stays the default.
+
+## Ruling compliance for `/scaffold/run` — measured, not asserted
+
+Instruments proved capable of non-zero before each zero was admitted. Two of my
+first-pass selectors (`run-thread-row`, `href=*size*`) were incapable and their
+zeros were discarded, not reported.
+
+| ruled requirement | measurement | result |
+|---|---|---|
+| thread append, user's own text only | `bt-user` 0→1, `bt-agent` 1→1 across POST | +1 exactly, no invented reply |
+| append persists | re-GET, same jar | marker present |
+| `h.render(c, VIEW#panelsSwap)` | POST body | no `<!DOCTYPE`, no `<html>` — fragment |
+| empty text → `h.noContent(c)` | POST `text=` | 204 |
+| zero new l10n keys | 5 states swept for `MISSING`/`undefined`/raw `scaffold.run.*` | 0 |
+| scalar `size` + `sizeHref` | facade `:79`,`:80` vs design `:893`, intake `:732`, build `:477` | identical shape |
+| five states unchanged until action set | pre-flip baseline vs post | byte-identical, 0 forms |
+
+**Positive control that mattered:** my "no resize href renders" finding reproduced
+exactly on `/design/freeze` — a known-good sibling. A defect that reproduces on the
+control is not a defect; it is the convention, and my grep was aimed at markup the
+grip does not use. Reported as parity, not as a bug.
+
+**Two disclosures.** (1) The action carries `?state=` — a deviation from the ruling's
+literal `'/scaffold/run/messages'`. Behavior is the ruled one; the suffix exists so a
+note left on the `failed` receipt is not answered with the `completed` one. Lead may
+strike it. (2) A note is session-held and therefore visible from every lens state,
+`?state=completed` included. That is a property of the run, not of the view, so I
+believe it is right — but it was measured, not designed, and is stated so it can be
+overruled.
