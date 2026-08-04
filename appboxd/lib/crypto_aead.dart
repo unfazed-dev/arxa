@@ -1,5 +1,5 @@
 /// Pure-Dart cryptographic primitives for appboxd's encryption-at-rest
-/// (plan P1: vault material, licence file, memory/analytics store).
+/// (plan P1: vault material, entitlement file, memory/analytics store).
 ///
 /// `dart:core`/`dart:typed_data`/`dart:math` only — no third-party crypto,
 /// matching the daemon's zero-dependency constraint (appboxd/README.md).

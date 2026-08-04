@@ -1,12 +1,12 @@
 import 'vault.dart';
 
 /// How the daemon reaches an **LLM provider**. One axis and one axis only —
-/// deliberately NOT where the licence lives: a licence is a purchase
-/// precondition (8.12) and says nothing about provider auth.
+/// deliberately NOT where the entitlement lives: an entitlement is a purchase
+/// precondition and says nothing about provider auth.
 enum CredentialTier { none, byoKey, harness, oauth }
 
-/// A provider credential the daemon holds. The licence is not one of these,
-/// and neither is an internal flag.
+/// A provider credential the daemon holds. An internal flag is not one of
+/// these either.
 class StoredCredential {
   final String id;
   final CredentialTier tier;
@@ -26,7 +26,6 @@ class StoredCredential {
 /// ```
 /// <prefix>key.<id>     a BYO provider API key
 /// <prefix>oauth.<id>   an OAuth token (standalone case only, 8.10)
-/// <prefix>licence      the licence string (a precondition, not a tier)
 /// <prefix>flag.<name>  an internal boolean; never a credential
 /// ```
 ///
@@ -41,15 +40,8 @@ class CredentialStore {
   final _credentials = <StoredCredential>[];
   List<StoredCredential> get credentials => List.unmodifiable(_credentials);
 
-  bool _hasLicence = false;
-
-  /// Whether a licence is held. Read after [hydrate] so a restart does not
-  /// forget a licence the user already paid for.
-  bool get hasLicence => _hasLicence;
-
   String _keyKey(String id) => '${keyPrefix}key.$id';
   String _oauthKey(String id) => '${keyPrefix}oauth.$id';
-  String get _licenceKey => '${keyPrefix}licence';
   String _flagKey(String name) => '${keyPrefix}flag.$name';
 
   /// Rebuilds in-memory state from the vault. Must be awaited during startup:
@@ -58,13 +50,10 @@ class CredentialStore {
   Future<void> hydrate() async {
     final all = await vault.readAllKeys();
     _credentials.clear();
-    _hasLicence = false;
     for (final k in all) {
       if (!k.startsWith(keyPrefix)) continue;
       final rest = k.substring(keyPrefix.length);
-      if (rest == 'licence') {
-        _hasLicence = true;
-      } else if (rest.startsWith('key.')) {
+      if (rest.startsWith('key.')) {
         final id = rest.substring(4);
         _credentials.add(StoredCredential(id, CredentialTier.byoKey, id));
       } else if (rest.startsWith('oauth.')) {
@@ -98,19 +87,6 @@ class CredentialStore {
     _credentials
       ..removeWhere((c) => c.id == id && c.tier == CredentialTier.oauth)
       ..add(StoredCredential(id, CredentialTier.oauth, id));
-  }
-
-  /// Stores the licence (a precondition, 8.12 — not a gate and not a tier).
-  Future<void> storeLicence(String licence) async {
-    await vault.write(_licenceKey, licence);
-    _hasLicence = true;
-  }
-
-  Future<String?> readLicence() => vault.read(_licenceKey);
-
-  Future<void> deleteLicence() async {
-    await vault.delete(_licenceKey);
-    _hasLicence = false;
   }
 
   /// Reads a provider credential's secret back. Harness entries have no secret.

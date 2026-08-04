@@ -19,14 +19,6 @@ void main() {
     expect(store.activeTier, CredentialTier.byoKey);
   });
 
-  test('a licence is a precondition, not a credential', () async {
-    await store.storeLicence('LIC-123');
-    expect(store.hasLicence, isTrue);
-    expect(await store.readLicence(), 'LIC-123');
-    expect(store.credentials, isEmpty);
-    expect(store.activeTier, CredentialTier.none);
-  });
-
   test('flags persist in the vault but are never credentials', () async {
     await store.setFlag('first_run_done');
     expect(await store.readFlag('first_run_done'), isTrue);
@@ -38,13 +30,11 @@ void main() {
   test('hydrate rebuilds tiers from the vault key layout', () async {
     await vault.write('appbox.key.openai', 'sk-2');
     await vault.write('appbox.oauth.google', 'tok');
-    await vault.write('appbox.licence', 'LIC');
     await vault.write('appbox.flag.x', '1');
     await vault.write('foreign.key', 'nope');
 
     await store.hydrate();
 
-    expect(store.hasLicence, isTrue);
     expect(store.credentials.map((c) => c.id),
         containsAll(['openai', 'google']));
     // oauth outranks byoKey; the foreign key and the flag are invisible.

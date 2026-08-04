@@ -8,7 +8,6 @@ abstract final class MemoryKinds {
   static const gateRun = 'gate_run';
   static const stageRun = 'stage_run';
   static const llmRequest = 'llm_request';
-  static const licence = 'licence';
   static const deploy = 'deploy';
   static const note = 'note';
 }

@@ -172,6 +172,19 @@ class Entitlement {
       return const EntitlementVerdict(
           status: EntitlementStatus.invalid, reason: 'malformed claims');
     }
+    // Range-check BEFORE constructing DateTimes (the contract above is
+    // "never throws"): DateTime accepts ±8640000000000000 ms. Compare in
+    // seconds, before multiplying, so a huge exp/nbf can neither overflow
+    // DateTime nor wrap `* 1000` into a plausible 1969/1970 instant.
+    const maxEpochSeconds = 8640000000000; // 8640000000000000 ms
+    if (exp > maxEpochSeconds ||
+        exp < -maxEpochSeconds ||
+        nbf > maxEpochSeconds ||
+        nbf < -maxEpochSeconds) {
+      return const EntitlementVerdict(
+          status: EntitlementStatus.invalid,
+          reason: 'malformed claims (exp/nbf out of range)');
+    }
     final expires =
         DateTime.fromMillisecondsSinceEpoch(exp * 1000, isUtc: true);
 
@@ -239,17 +252,24 @@ class Entitlement {
   }
 
   /// Verifies the token file at [path]; [EntitlementStatus.none] when the
-  /// file does not exist, `invalid` when it cannot be read.
+  /// file does not exist, `invalid` when it cannot be read or is not a
+  /// regular file (a directory is a tampered/operator-error path, not a
+  /// missing token).
   static EntitlementVerdict verifyFile(String path,
       {DateTime? now, String? fingerprint}) {
-    final file = File(path);
-    if (!file.existsSync()) {
+    final type = FileSystemEntity.typeSync(path);
+    if (type == FileSystemEntityType.notFound) {
       return const EntitlementVerdict(
           status: EntitlementStatus.none, reason: 'no entitlement token');
     }
+    if (type != FileSystemEntityType.file) {
+      return const EntitlementVerdict(
+          status: EntitlementStatus.invalid,
+          reason: 'entitlement path is not a file');
+    }
     final String token;
     try {
-      token = file.readAsStringSync();
+      token = File(path).readAsStringSync();
     } catch (_) {
       return const EntitlementVerdict(
           status: EntitlementStatus.invalid,
@@ -283,14 +303,18 @@ class Entitlement {
   static String? _rawMachineId() {
     try {
       if (Platform.isMacOS) {
+        // Absolute path: resolving `ioreg` through PATH lets a spoofed
+        // earlier PATH entry supply a fake IOPlatformUUID and unlock tokens
+        // bound to another machine.
         final res = Process.runSync(
-            'ioreg', const ['-rd1', '-c', 'IOPlatformExpertDevice']);
+            '/usr/sbin/ioreg', const ['-rd1', '-c', 'IOPlatformExpertDevice']);
         final m = RegExp(r'"IOPlatformUUID"\s*=\s*"([^"]+)"')
             .firstMatch(res.stdout as String);
         return m?.group(1);
       }
       if (Platform.isWindows) {
-        final res = Process.runSync('reg', const [
+        final sysRoot = Platform.environment['SystemRoot'] ?? r'C:\Windows';
+        final res = Process.runSync('$sysRoot\\System32\\reg.exe', const [
           'query',
           r'HKLM\SOFTWARE\Microsoft\Cryptography',
           '/v',

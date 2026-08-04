@@ -8,7 +8,7 @@ import 'dart:io';
 ///
 /// The repo-level `config/appbox.config.json` stays the pipeline's SSOT for
 /// targets/kit SHA; this loader holds runtime values only (credential,
-/// pipeline, harness, mcp, launch, licence, prototype, intake, companion).
+/// pipeline, harness, mcp, launch, prototype, intake, companion).
 class RuntimeConfig {
   RuntimeConfig(this._cfg);
 
@@ -79,10 +79,6 @@ class RuntimeConfig {
   // intake (10) — headless elicitation engine via the ProcessRunner seam
   String get intakeCommand => _section('intake')['command'] as String;
   String get intakeScript => _section('intake')['script'] as String;
-
-  // licence (8.12) — a precondition, never a gate
-  String get licencePreconditionMessage =>
-      _section('licence')['preconditionMessage'] as String;
 
   // launch (8.13) — first-run flag lives in the vault, not a credential
   bool get autoLaunchDemo => _section('launch')['autoLaunchDemo'] as bool;

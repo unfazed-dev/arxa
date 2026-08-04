@@ -189,7 +189,10 @@ offline-verdict semantics decide.
   named before the first paid release.
 - **Dev key swap.** Replace `Entitlement.publicKey` with the production
   public key; regenerate test fixtures' expectations if any pin it (none do —
-  fixtures carry their own dev seed).
+  fixtures carry their own dev seed). Also delete `_devSeed` / `mint --dev`
+  from `lib/entitlement_cli.dart` and flip `test/release_gate_test.dart`
+  (the release-gate checklist artifact — it passing means the dev keypair is
+  still embedded and shipping).
 - **Air-gapped buyers are unaddressed** (open question in the plan): a
   genuinely offline-forever customer needs a manual license-file checkout
   path or an explicit out-of-scope declaration. Decide before launch.

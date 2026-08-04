@@ -53,7 +53,6 @@ void main() {
         },
         'harness': {'command': 'appbox-harness', 'envHint': 'APPBOX_HARNESS_PATH'},
         'intake': {'command': 'python3', 'script': 'skills/appbox-intake/intake.py'},
-        'licence': {'preconditionMessage': 'A licence is required.'},
         'launch': {'autoLaunchDemo': true, 'firstRunKey': 'appbox.first_run_done'},
         'prototype': {'host': '127.0.0.1', 'port': 0},
         'mcp': {
@@ -80,7 +79,6 @@ void main() {
       expect(cfg.pipelineArgs, ['pipeline/pipeline.sh']);
       expect(cfg.harnessCommand, 'appbox-harness');
       expect(cfg.intakeScript, 'skills/appbox-intake/intake.py');
-      expect(cfg.licencePreconditionMessage, 'A licence is required.');
       expect(cfg.autoLaunchDemo, isTrue);
       expect(cfg.mcpServers.single['id'], 'local');
       // companion section

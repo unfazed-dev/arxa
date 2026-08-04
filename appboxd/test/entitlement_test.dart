@@ -10,7 +10,9 @@
 
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
+import 'package:appboxd/crypto_aead.dart';
 import 'package:appboxd/ed25519.dart';
 import 'package:appboxd/entitlement.dart';
 import 'package:test/test.dart';
@@ -213,6 +215,56 @@ void main() {
       expect(verdict.unlocks, isFalse);
     });
 
+    test('directory as token path is invalid, not none', () {
+      final verdict = Entitlement.verifyFile(Directory.systemTemp.path);
+      expect(verdict.status, EntitlementStatus.invalid);
+      expect(verdict.reason, contains('not a file'));
+      expect(verdict.unlocks, isFalse);
+    });
+
+    test('huge exp is invalid — verify never throws (RangeError regression)',
+        () {
+      // Validly signed, but exp * 1000 overflows DateTime's valid range;
+      // this used to throw RangeError out of verify (contract: never throws).
+      final claims = entitlementClaims(
+          fpr: testFingerprint,
+          nbf: _epoch(DateTime.utc(2026)),
+          exp: _epoch(DateTime.utc(2030)))
+        ..['exp'] = 99999999999999;
+      final verdict =
+          verifyAt(makeEntitlementJwt(devEntitlementKey, claims), DateTime.utc(2029, 6, 1));
+      expect(verdict.status, EntitlementStatus.invalid);
+      expect(verdict.reason, contains('out of range'));
+      expect(verdict.unlocks, isFalse);
+    });
+
+    test('exp near 2^62 cannot wrap into a plausible 1970 expiry', () {
+      // 2^62 * 1000 wraps int64 to a small negative ms value; the range check
+      // (in seconds, before multiplying) must reject it instead.
+      final claims = entitlementClaims(
+          fpr: testFingerprint,
+          nbf: _epoch(DateTime.utc(1969)),
+          exp: _epoch(DateTime.utc(2030)))
+        ..['nbf'] = 0
+        ..['exp'] = 4611686018427387904; // 2^62
+      final verdict =
+          verifyAt(makeEntitlementJwt(devEntitlementKey, claims), DateTime.utc(1970, 6, 1));
+      expect(verdict.status, EntitlementStatus.invalid);
+      expect(verdict.unlocks, isFalse);
+    });
+
+    test('huge nbf is invalid (same range guard as exp)', () {
+      final claims = entitlementClaims(
+          fpr: testFingerprint,
+          nbf: _epoch(DateTime.utc(2026)),
+          exp: _epoch(DateTime.utc(2030)))
+        ..['nbf'] = 99999999999999;
+      final verdict =
+          verifyAt(makeEntitlementJwt(devEntitlementKey, claims), DateTime.utc(2029, 6, 1));
+      expect(verdict.status, EntitlementStatus.invalid);
+      expect(verdict.unlocks, isFalse);
+    });
+
     test('machine fingerprint is a 64-char sha256 hex on this platform', () {
       final fpr = localFingerprint();
       expect(fpr, matches(RegExp(r'^[0-9a-f]{64}$')));
@@ -271,6 +323,98 @@ void main() {
         expect(out['reason'], contains('different machine'));
       } finally {
         await tmp.delete();
+      }
+    });
+
+    test('mint --dev writes a token this machine verifies as entitled',
+        () async {
+      final tmp =
+          '${Directory.systemTemp.path}/entitlement_mint_test_${DateTime.now().microsecondsSinceEpoch}.jwt';
+      try {
+        final mint = await Process.run('dart', [
+          'run',
+          'bin/appbox.dart',
+          'entitlement',
+          'mint',
+          '--dev',
+          '--token',
+          tmp,
+        ]);
+        expect(mint.exitCode, 0, reason: '${mint.stderr}');
+        expect(mint.stderr as String, contains('DEV entitlement'));
+        final minted = jsonDecode((mint.stdout as String).trim());
+        expect(minted['status'], 'minted');
+        expect(minted['dev'], isTrue);
+
+        // The minted token is valid right now, bound to this machine.
+        final verdict = Entitlement.verifyFile(tmp);
+        expect(verdict.status, EntitlementStatus.valid,
+            reason: verdict.reason);
+        expect(verdict.unlocks, isTrue);
+        expect(verdict.features, ['emit.scaffold']);
+
+        // …and the status contract reports entitled / exit 0 on it.
+        final status = await Process.run('dart',
+            ['run', 'bin/appbox.dart', 'entitlement', 'status', '--token', tmp]);
+        expect(status.exitCode, 0, reason: '${status.stderr}');
+        expect(jsonDecode((status.stdout as String).trim())['status'],
+            'entitled');
+      } finally {
+        final f = File(tmp);
+        if (f.existsSync()) await f.delete();
+      }
+    });
+
+    test('mint without --dev refuses (no production mint path)', () async {
+      final res = await Process.run(
+          'dart', ['run', 'bin/appbox.dart', 'entitlement', 'mint']);
+      expect(res.exitCode, 64);
+      expect(res.stderr as String, contains('--dev is required'));
+    });
+
+    test('a PATH-spoofed ioreg cannot fake the machine binding', () async {
+      // Regression: `ioreg` used to be resolved through PATH, so a fake
+      // earlier PATH entry reporting an attacker-chosen IOPlatformUUID
+      // unlocked tokens bound to that fake "machine". The verifier now
+      // invokes /usr/sbin/ioreg by absolute path, so the spoof fails closed.
+      if (!Platform.isMacOS) return; // the spoof targets the macOS lookup
+      final fakeBin =
+          await Directory.systemTemp.createTemp('entitlement_fakebin_');
+      final tokenFile = File(
+          '${fakeBin.path}/victim_${DateTime.now().microsecondsSinceEpoch}.jwt');
+      try {
+        const fakeUuid = 'DEADBEEF-0000-0000-0000-000000000000';
+        final fakeIoreg = File('${fakeBin.path}/ioreg');
+        await fakeIoreg.writeAsString(
+            '#!/bin/sh\necho \'    "IOPlatformUUID" = "$fakeUuid"\'\n');
+        await Process.run('chmod', ['+x', fakeIoreg.path]);
+
+        // A token bound to the fingerprint OF THE FAKE UUID — it verifies as
+        // entitled only if the spoofed ioreg output is trusted.
+        final fakeFpr =
+            hexEncode(sha256(Uint8List.fromList(utf8.encode(fakeUuid))));
+        final token = makeEntitlementJwt(
+            devEntitlementKey,
+            entitlementClaims(
+              fpr: fakeFpr,
+              nbf: _epoch(DateTime.now().subtract(const Duration(days: 1))),
+              exp: _epoch(DateTime.now().add(const Duration(days: 7))),
+            ));
+        await tokenFile.writeAsString(token);
+
+        final res = await Process.run(
+          'dart',
+          ['run', 'bin/appbox.dart', 'entitlement', 'status', '--token', tokenFile.path],
+          environment: {
+            'PATH': '${fakeBin.path}:${Platform.environment['PATH']}',
+          },
+        );
+        expect(res.exitCode, 1, reason: '${res.stdout}\n${res.stderr}');
+        final out = jsonDecode((res.stdout as String).trim());
+        expect(out['status'], 'unentitled');
+        expect(out['reason'], contains('different machine'));
+      } finally {
+        await fakeBin.delete(recursive: true);
       }
     });
   });

@@ -1,5 +1,5 @@
 /// Encryption-at-rest for appboxd's own sensitive state (plan P1): vault
-/// material, licence file, memory/analytics store. XChaCha20-Poly1305 —
+/// material, entitlement file, memory/analytics store. XChaCha20-Poly1305 —
 /// the age-class construction the plan names.
 ///
 /// File format (single envelope, no header fields beyond what's needed):

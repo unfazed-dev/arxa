@@ -59,7 +59,7 @@ List<int> sha512(List<int> data) {
   var h6 = 0x1f83d9abfb41bd6b, h7 = 0x5be0cd19137e2179;
 
   // Padding: message || 0x80 || zeros || 128-bit big-endian bit length.
-  // Licence payloads are tiny; the high 64 length bits are always zero.
+  // Entitlement payloads are tiny; the high 64 length bits are always zero.
   final bytes = List<int>.of(data)..add(0x80);
   while (bytes.length % 128 != 112) {
     bytes.add(0);
