@@ -694,6 +694,16 @@ deleted, not maintained.
 
 ### The payment gate sits at `appbox-builder`
 
+> **Amended twice — current placement: pay at scaffold.** This section placed
+> the gate at the builder. `consolidate-one-app-plus-daemon.md` (2026-07-28)
+> moved it to **first deploy**, and `monetization-and-entitlements.md`
+> D17/D18 (2026-08-04) moved the boundary to **scaffold** — "the moat is the
+> automated design→Flutter conversion." That document is now authoritative for
+> placement, tiers and the entitlement backend (and retires `watermark.dart`).
+> The constraint below survives both moves: the licence check is a
+> **precondition, never a gate check** — the deploy paywall shipped in
+> `8d0080b` already honours it, and D17/D18 keep the same rule at scaffold.
+
 Free: **designer and prototype.** Paid: **builder** — scaffolding against real
 kits (data, auth, notifications) — **and bundle** (build + deploy).
 
@@ -718,7 +728,8 @@ stacked_kit dependency"*), registry `phase: stable`, `topology: standalone`:
 | `fastlane-android` / `fastlane-ios` | **wired** |
 | `shorebird-release` / `shorebird-patch` | **wired** |
 | `cloudflare-pages` | **wired** |
-| `vercel` | **stub — throws `UnimplementedError`** |
+| `vercel` | **wired** (real target since 2026-08-01, `261b2ad`; opt-in live smoke tests `93cf1ef` — was a stub throwing `UnimplementedError` when this table was written) |
+| `cloudflare-workers` | **wired** (added 2026-08-01, `261b2ad`) |
 
 It already has `bin/stacked_kit_deploy.dart` and a `doctor(config)` preflight.
 
@@ -732,8 +743,9 @@ it.
 
 Caveats, stated: registry says `hasSkill: false`, so `appbox-deployer` would
 be its first phase skill; `doctor()` is preflight, not an assertion, so the
-gate still has to check a *value*; and **vercel must not be advertised** while
-it throws.
+gate still has to check a *value*. ~~and **vercel must not be advertised**
+while it throws~~ — moot since 2026-08-01 (`261b2ad`): the vercel target is
+real, with opt-in live smoke tests (`93cf1ef`).
 
 ### The tension deploy introduces — resolved
 
@@ -866,6 +878,13 @@ Every decision above is settled. Sequencing for the agents:
 **Two things are blocked and should not be discovered late:** payments and auth
 providers are stubs (`stub-inventory.md`), and appbox needs both for itself.
 Remediation plan and the three test tiers: `stub-remediation.md`.
+
+> **Amendment (2026-08-04) on step 10.** Payments are no longer an
+> unplaced block: `monetization-and-entitlements.md` settles the tiers
+> (Free/Pro/Scale), the Supabase entitlement backend, and the Stripe
+> Checkout workstream — and D17/D18 move the paywall itself from deploy to
+> scaffold. Step 8's deployer is also closer than written: the vercel and
+> cloudflare-workers targets are real since 2026-08-01 (`261b2ad`).
 
 ## 22. Intake — yes, and it is a phase, not a step
 

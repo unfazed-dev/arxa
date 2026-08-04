@@ -5,6 +5,20 @@ Supersedes nothing. Builds directly on
 `docs/plans/design-viewer-per-lens-hover-and-flow-mode.md` (Slice 7, shipped
 but uncommitted at the time of writing).
 
+> **Superseded in part (2026-08-05, `7babc79`).** Slice 4's shipped UI — the
+> views-lens components container (the explode column), its `explode.js`
+> island, and the per-screen composer / plan-editor later housed in that
+> column — is **removed** by the screen reveal-drawer plan
+> (`screen-reveal-drawer-composer-tools-logic.md`, increment 5); per-widget
+> detail now lives in the per-screen reveal-drawer's Tools/Logic tabs. The
+> `probe_explode` / `probe_screen_composer` probes and the
+> `shot_increment3` harness were deleted with it; their coverage migrated to
+> `probe_flowwalk.dart` §E, `probe_shell_chrome.dart` §A2 and
+> `probe_widget_tools.dart` §F. Slices 1 (hand-offs), 3 (state/feedback
+> chips), 5 (shell panels) and 6 (kit mirror) survive as shipped. The
+> `tools/probe-explode.mjs` check named below had already been archived to
+> `archives/tooling-pre-dart/` (2026-08-03, `97df1b5`).
+
 ---
 
 ## Evidence gathered before planning

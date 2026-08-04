@@ -1,10 +1,20 @@
 # appbox memory + payment — decisions record
 
-Status: **decided 2026-07-30, not yet built.** Companion to
+Status: **decided 2026-07-30; shipped the same day** in `8d0080b` — licence,
+watermark, secure store, deploy paywall, event store, curator, memory gate,
+cache and analytics all landed. Companion to
 `appbox-engine-llm-fabric.md` (engine). Decisions were grilled out with the
 operator against `docs/research/agent-memory-and-caching.md`,
 `docs/research/monetization-and-licensing.md`, and
 `docs/research/engine-decision-digest.md`.
+
+> **Superseded in part (2026-08-04).** The P1/P2 payment boundary — free until
+> first deploy, offline licence with no machine limits — is replaced by
+> `monetization-and-entitlements.md` D17/D18: the paywall moves to
+> **scaffold**, the Ed25519 licence is demoted to a TTL offline-continuation
+> artifact under a Supabase entitlement backend with machine binding, and
+> `watermark.dart` (still in `appboxd/lib/` as of 2026-08-05) is to be
+> retired. M1/M2 (the memory module) stand as built.
 
 ## M1 — appbox-memory: dedicated appboxd module
 

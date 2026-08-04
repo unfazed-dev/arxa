@@ -153,7 +153,9 @@ defects — two of which made the increment non-functional:
    mid-morph aimed the click at nothing.
 
 Verified in headless Chrome against the real `portalo` project by
-`appboxd/tool/shot_increment3.dart`, which drives the actual UI (clicks the
+`appboxd/tool/shot_increment3.dart` (harness retired 2026-08-05 in `7babc79`;
+the armed-click → selection → resize-handles chain lives on in
+`probe_widget_tools.dart` §F), which drives the actual UI (clicks the
 arm chip, then clicks a real `[data-el]` widget) rather than poking routes:
 
 ```

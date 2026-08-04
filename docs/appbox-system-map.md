@@ -250,4 +250,6 @@ sequenceDiagram
 - **Pay-at-Deploy** — licence (Ed25519, offline-verified) hard-blocks first
   deploy; everything before is free; `APPBOX_DEV_LICENCE=1` dev bypass.
 - **Stub** — unimplemented provider that throws by design; never offered
-  (vercel deploy target; fugu fabric provider).
+  (fugu fabric provider — optional catalog entry, no endpoint yet). The
+  vercel deploy target was one until 2026-08-01, when `261b2ad` made it real
+  (live smoke tests in `93cf1ef`).

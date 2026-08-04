@@ -2,6 +2,11 @@
 
 **Scope:** repo `unfazed-dev/app-box`, worktree `scaffold-shell-worktree`, 2026-08-03. Read-only survey. `archives/` excluded from all "what ships today" claims.
 
+> **Amendment (2026-08-05).** `explode.js`, listed below among the first-party
+> islands, retired with the views-lens components container (`7babc79`); four
+> islands remain (`canvas.js`, `drag.js`, `inspect.js`, `flowwalk.js`). The
+> rest of this snapshot stands as surveyed.
+
 ## Summary (≤150 words)
 
 Little prevents redistribution of the appbox system, and one thing actively permits it. The repo is **private** (GitHub returns 404 anonymously), which is today's only real control. There is **no root LICENSE** — all-rights-reserved by default, but never asserted. Against that, two skill directories carry **root-level MIT LICENSE files** (`skills/appbox-designer/LICENSE`, `skills/appbox-story-mapper/LICENSE.txt`). Both are legitimately inbound (declared in `THIRD-PARTY-NOTICES.md`), but neither carves out appbox's own additions beneath them — `system-prompt.md`, `references/app-architecture.md`, `kit-catalog.md`, `ui-recipes.md`, `starter-partials/`. Read plainly they grant "use, copy, modify, publish, distribute… and/or sell" over the methodology IP. Nothing is compiled: `dart compile exe` is *planned only*, so appbox ships as readable Dart plus a repo tree the design server reads at runtime. `appbox design eject` is narrow. No EULA exists. Existing gates are inbound-compliance and anti-rot; none is a redistribution control.
