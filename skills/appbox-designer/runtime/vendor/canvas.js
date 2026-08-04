@@ -280,7 +280,10 @@
               name: ci < 0 ? raw : raw.slice(ci + 1),
               index: 0,
             },
-          });
+            // hx-sync="this:replace" on <body> aborts this XHR whenever a
+            // newer request supersedes it; htmx rejects the returned promise
+            // with undefined on abort. Superseded selection is not an error.
+          }).catch(() => {});
         }, true);
         const q = f.contentWindow?.location?.search || '';
         if (q.includes('still=1') && !q.includes('inspect=1')) {

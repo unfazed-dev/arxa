@@ -74,9 +74,12 @@
     const base = document.querySelector('#mini-panel-actions .dv-bulk-pin')?.dataset.href
       || '/design/chat/context/bulk';
     btn.addEventListener('click', () => {
+      // Every htmx.ajax promise here catches: hx-sync="this:replace" on
+      // <body> aborts in-flight XHRs when a newer request supersedes them,
+      // and htmx rejects the promise with undefined. Not an error.
       htmx.ajax('POST', base + '?ids=' + encodeURIComponent(ids.join(',')), {
         target: '#panels', swap: 'morph:outerHTML',
-      });
+      }).catch(() => {});
     });
     el.appendChild(btn);
   };
@@ -163,7 +166,7 @@
       htmx.ajax('POST', `/design/flows/${encodeURIComponent(flow)}/move/${encodeURIComponent(id)}`, {
         values: { index: String(index) },
         target: '#panels', swap: 'morph:outerHTML',
-      });
+      }).catch(() => {}); // superseded-request abort; see bulk-pin note
     }, { once: true });
   };
 
@@ -257,7 +260,7 @@
         // needs to remember it for the next full render.
         htmx.ajax('POST', '/design/panel/size/' + encodeURIComponent(persist), {
           values: { width: String(w) }, swap: 'none transition:false',
-        });
+        }).catch(() => {}); // superseded-request abort; see bulk-pin note
       }, { once: true });
     });
   }
@@ -390,7 +393,7 @@
       target: '#dv-wedit-' + String(sel.screen).replace(/\./g, '-'),
       swap: 'innerHTML',
       values: { attr, value },
-    });
+    }).catch(() => {}); // superseded-request abort; see bulk-pin note
   };
 
   function wireBox(canvas) {
@@ -483,6 +486,7 @@
     if (!location.pathname.startsWith('/design')) return; // undo stacks are design-shell state
     e.preventDefault();
     htmx.ajax('POST', `/design/${e.shiftKey ? 'redo' : 'undo'}/${pointerStack}`,
-      { target: '#panels', swap: 'morph:outerHTML' });
+      { target: '#panels', swap: 'morph:outerHTML' })
+      .catch(() => {}); // superseded-request abort; see bulk-pin note
   });
 })();

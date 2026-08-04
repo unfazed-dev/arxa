@@ -150,7 +150,10 @@
           target: '#design-viewer',
           swap: 'morph:outerHTML',
           values: { screen: sid, kind: ci < 0 ? name : name.slice(0, ci), name: label(name), index: 0 },
-        });
+          // hx-sync="this:replace" on <body> aborts this XHR whenever a newer
+          // request supersedes it; htmx rejects the returned promise with
+          // undefined on abort. Superseded selection is not an error.
+        }).catch(() => {});
       }
     };
     li.addEventListener('click', open);
