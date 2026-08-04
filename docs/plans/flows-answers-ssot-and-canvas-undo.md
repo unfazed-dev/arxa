@@ -5,6 +5,13 @@ Closes task #30 and fills the `chrome.actions` slot left empty by
 
 Settled by grill, 2026-08-02. Six decisions, all confirmed.
 
+> **Note (2026-08-05).** The `probe-explode.mjs` checks cited below were
+> archived to `archives/tooling-pre-dart/` (2026-08-03, `97df1b5`), and their
+> Dart successor `probe_explode.dart` was deleted with the views-lens
+> components container (`7babc79`); the hand-off/feedback assertions live on
+> in `probe_flowwalk.dart` §E. `explode.js` is likewise deleted (ADR-0002
+> amendment 2026-08-05).
+
 ---
 
 ## The premise #30 was written on was wrong
