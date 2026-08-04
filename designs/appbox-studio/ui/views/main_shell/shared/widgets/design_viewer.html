@@ -352,6 +352,21 @@
    switch / undo / rungs / swatches stay reachable. `dv-botbar` rides alongside
    the canonical `panel-bottom` through the base's class hook, which is the
    `class="panel-bottom dv-botbar"` composition the canon mandates. #}
+{# `bodyAttrs` below carries the edit-arming state. Arming rides the canvas
+   body, not each tile: canvas.js already wires every frame from the canvas
+   element, so one attribute flips the whole surface and no tile can be left
+   half-armed by a partial morph.
+
+   data-wedit-sel carries the SERVER's selection so drag.js can re-find the
+   node and re-hang its handles on every scan. Deliberately not a class set on
+   the node at click time: committing an edit rewrites the source, the watcher
+   reloads the frame, and any client-only marker dies with the old document —
+   the handles would vanish after every single edit. Re-deriving from server
+   state is the same discipline sync() already uses for the filmstrip's
+   current mark.
+
+   (Kept OUT of the set-block below on purpose: a Nunjucks comment inside a
+   dict literal is a parse error, not a no-op.) #}
 {% macro designViewer(v, chrome) %}
 {% set proto = v.mode == 'proto' %}
 {% set P = {
@@ -361,17 +376,6 @@
      top: topbar(v, chrome) if chrome else false,
      topClass: 'dv-topbar',
      bodyClass: 'dv-proto' if proto else 'dv-flow-canvas',
-     {# Arming rides the canvas body, not each tile: canvas.js already wires
-        every frame from the canvas element, so one attribute flips the whole
-        surface and no tile can be left half-armed by a partial morph.
-
-        data-wedit-sel carries the SERVER's selection so drag.js can re-find
-        the node and re-hang its handles on every scan. Deliberately not a
-        class set on the node at click time: committing an edit rewrites the
-        source, the watcher reloads the frame, and any client-only marker
-        dies with the old document — the handles would vanish after every
-        single edit. Re-deriving from server state is the same discipline
-        sync() already uses for the filmstrip's current mark. #}
      bodyAttrs: ('data-static="1"' if (v.static and not proto) else '')
                 ~ (' data-wedit-armed="1"' if v.weditArmed else '')
                 ~ ((' data-wedit-sel=\'' ~ {'screen': v.wedit.sel.screen, 'kind': v.wedit.sel.kind, 'index': v.wedit.sel.index} | dump ~ '\'') if (v.weditArmed and v.wedit and v.wedit.sel) else ''),
