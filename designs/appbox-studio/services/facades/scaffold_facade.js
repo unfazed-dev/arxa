@@ -170,7 +170,16 @@ export const context = (session = {}, t = (k) => k, locale = 'en', screen = 'suc
     // composer with nothing above it and no error, which reads as "there is
     // nothing to say here" instead of "this facade forgot to say it".
     panel: session.scaffoldPanel || 'main',
-    panelSizes: session.scaffoldPanelSize || {},
+    // Store is the map (`setPanelSize` below writes scaffoldPanelSize[panel]);
+    // emit is the resolved scalar for the one panel the shell resizes — the
+    // same store-map/emit-scalar split as run's facade (panelSizeFor). The
+    // shared chrome reads `panelSize`/`panelSizeHref`; the `panelSizes` map
+    // had zero consumers. (Applied by team lead; picker-screen's fix, owners
+    // unreachable at time of landing.)
+    panelSize: PANEL_SIZES.includes(session.scaffoldPanelSize?.activity)
+      ? session.scaffoldPanelSize.activity
+      : 's',
+    panelSizeHref: '/scaffold/panel/size/activity/',
     stageEyebrow: t('scaffold.picker.eyebrow'),
     // The chips are the pinned context the composer carries: what is picked,
     // and how much of it still wants keys. Counts, not prose — the grid is
