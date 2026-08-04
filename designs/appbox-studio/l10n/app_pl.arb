@@ -93,6 +93,8 @@
   "settings.themeTo.dark": "Przełącz na ciemny",
   "settings.accentH": "Akcent",
   "settings.accentNote": "Kolor każdej akcji i aktywnego znacznika. Cyjan i fiolet pochodzą z logo Appbox Studio; ember to ciepła klasyka.",
+  "settings.fontH": "Krój pisma",
+  "settings.fontNote": "Rodzina, którą złożone jest studio. Lexend jest domyślny; wszystkie cztery są dołączone lokalnie, więc zmiana nigdy nie pobiera webfontu.",
   "settings.accent.cyan": "Cyjan — marka",
   "settings.accent.violet": "Fiolet — marka",
   "settings.accent.blue": "Niebieski — mieszany",

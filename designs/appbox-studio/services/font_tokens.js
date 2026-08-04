@@ -32,5 +32,9 @@ export const families = () => fonts().families;
 export const fontIds = () => fonts().families.map((f) => f.id);
 export const defaultFont = () => fonts().default;
 
-// The menu rows the settings UI renders: id + human label, in SSOT order.
-export const fontMenu = () => fonts().families.map(({ id, label }) => ({ id, label }));
+// The menu rows the settings UI renders, in SSOT order. `stack` rides along so
+// each button can be set IN the family it selects — an honest preview, and the
+// one place a literal font stack is allowed outside fonts.css, because the
+// button must escape the --font-* variables the rest of the shell binds to.
+export const fontMenu = () =>
+  fonts().families.map(({ id, label, stack }) => ({ id, label, stack }));
