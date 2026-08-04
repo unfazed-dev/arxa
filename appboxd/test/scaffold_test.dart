@@ -592,6 +592,125 @@ void main() {
     });
   });
 
+  group('kit-manifest sidecar (D8)', () {
+    Map<String, dynamic> kitsStruct() {
+      final s = clone(baseStruct());
+      (s['screens'] as List)[1]['kits'] = ['maps', 'payments']; // projects.home
+      return s;
+    }
+
+    const resolved = [
+      {'id': 'core', 'package': 'appbox_kit_core', 'provenance': 'declared', 'auto': false},
+      {'id': 'maps', 'package': 'appbox_kit_maps', 'provenance': 'declared', 'auto': false},
+      {'id': 'data', 'package': 'appbox_kit_data', 'provenance': 'inferred', 'auto': true},
+    ];
+
+    String plantSidecar(String dir, Object? manifest) {
+      final f = File('$dir/kit-manifest.json');
+      f.writeAsStringSync(manifest is String ? manifest : jsonEncode(manifest));
+      return f.path;
+    }
+
+    test('absent sidecar -> kits section unchanged (flat per-surface map)', () {
+      final des = plantDesign('${tmp.path}/sd0', struct: kitsStruct());
+      final app = '${tmp.path}/appS0';
+      expect(scaffold(des, app, ['macos'], derivationPath, configPath), 0);
+      final mf = jsonDecode(
+          File('$app/lib/ui/views/.shell-structure.json').readAsStringSync())
+          as Map<String, dynamic>;
+      expect(mf['kits'],
+          {'stage_shell_projects_home_view': ['maps', 'payments']},
+          reason: 'no picker selection -> the pre-D8 shape, untouched');
+    });
+
+    test('present sidecar -> resolved consumed verbatim, surfaces kept', () {
+      final des = plantDesign('${tmp.path}/sd1', struct: kitsStruct());
+      plantSidecar(des, {'wishlist': ['maps'], 'resolved': resolved, 'todos': []});
+      final app = '${tmp.path}/appS1';
+      expect(scaffold(des, app, ['macos'], derivationPath, configPath), 0);
+      final mf = jsonDecode(
+          File('$app/lib/ui/views/.shell-structure.json').readAsStringSync())
+          as Map<String, dynamic>;
+      expect(mf['kits'], {
+        'resolved': resolved,
+        'surfaces': {'stage_shell_projects_home_view': ['maps', 'payments']},
+      }, reason: 'the picker-confirmed set lands verbatim; per-surface '
+          'declarations stay visible for the builder (D2 fallback wiring)');
+      expect(scaffold(des, app, ['macos'], derivationPath, configPath, check: true),
+          0,
+          reason: '--check green with the sidecar present');
+    });
+
+    test('sidecar drift -> --check exit 1', () {
+      final des = plantDesign('${tmp.path}/sd2', struct: kitsStruct());
+      plantSidecar(des, {'wishlist': <String>[], 'resolved': resolved});
+      final app = '${tmp.path}/appS2';
+      scaffold(des, app, ['macos'], derivationPath, configPath);
+      // The picker removes maps: the sidecar changes, the tree no longer
+      // matches what the inputs imply.
+      plantSidecar(des, {
+        'wishlist': <String>[],
+        'resolved': [resolved[0], resolved[2]],
+      });
+      expect(scaffold(des, app, ['macos'], derivationPath, configPath, check: true),
+          1,
+          reason: 'kits section no longer matches the sidecar -> drift');
+      expect(scaffold(des, app, ['macos'], derivationPath, configPath), 0,
+          reason: 're-emit converges on the new confirmed set');
+    });
+
+    test('sidecar without resolved -> treated as absent', () {
+      final des = plantDesign('${tmp.path}/sd3', struct: kitsStruct());
+      plantSidecar(des, {'wishlist': ['maps']}); // intake-only, picker never ran
+      final app = '${tmp.path}/appS3';
+      expect(scaffold(des, app, ['macos'], derivationPath, configPath), 0);
+      final mf = jsonDecode(
+          File('$app/lib/ui/views/.shell-structure.json').readAsStringSync())
+          as Map<String, dynamic>;
+      expect(mf['kits'],
+          {'stage_shell_projects_home_view': ['maps', 'payments']},
+          reason: 'nothing picker-confirmed -> derive from structure.json');
+    });
+
+    test('malformed sidecar -> exit 1, never a silent fallback', () {
+      var des = plantDesign('${tmp.path}/sd4', struct: kitsStruct());
+      plantSidecar(des, '{not json');
+      expect(scaffold(des, '${tmp.path}/appS4', ['macos'], derivationPath, configPath),
+          1,
+          reason: 'unparseable sidecar -> FAIL');
+
+      des = plantDesign('${tmp.path}/sd5', struct: kitsStruct());
+      plantSidecar(des, {'resolved': 'maps'});
+      expect(scaffold(des, '${tmp.path}/appS5', ['macos'], derivationPath, configPath),
+          1,
+          reason: 'resolved as a bare string -> FAIL');
+
+      des = plantDesign('${tmp.path}/sd6', struct: kitsStruct());
+      plantSidecar(des, {
+        'resolved': [
+          {'package': 'appbox_kit_core'}, // no id
+        ],
+      });
+      expect(scaffold(des, '${tmp.path}/appS6', ['macos'], derivationPath, configPath),
+          1,
+          reason: 'entry without a string id -> FAIL');
+    });
+
+    test('explicit kitManifestPath overrides the beside-structure default', () {
+      final des = plantDesign('${tmp.path}/sd7', struct: kitsStruct());
+      final elsewhere = plantSidecar(tmp.path, {'resolved': resolved});
+      final app = '${tmp.path}/appS7';
+      expect(
+          scaffold(des, app, ['macos'], derivationPath, configPath,
+              kitManifestPath: elsewhere),
+          0);
+      final mf = jsonDecode(
+          File('$app/lib/ui/views/.shell-structure.json').readAsStringSync())
+          as Map<String, dynamic>;
+      expect((mf['kits'] as Map)['resolved'], resolved);
+    });
+  });
+
   group('scaffolder output satisfies the scaffold gate', () {
     // The emitter and the gate share one opinion; this is where they meet. In
     // particular the widget tiers (lib/ui/widgets/, <shell>/shared/widgets/,

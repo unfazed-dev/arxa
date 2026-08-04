@@ -30,6 +30,13 @@
 //   dropped at the app root; the manifest records the locale set so gates can read
 //   it. A design with no l10n/ dir gets NO l10n artifacts (backward compat).
 //
+//   The OPTIONAL kit-manifest sidecar (D8): the studio's scaffold picker persists
+//   its confirmed kit selection as kit-manifest.json BESIDE the frozen
+//   structure.json. When present, `resolved` is consumed verbatim (plan/apply
+//   semantics) and written into .shell-structure.json's `kits` map as the final
+//   set that reaches the build. Absent: kits derive from structure.json exactly
+//   as before. Malformed: FAIL — never silently fall back to an unconfirmed set.
+//
 // Pure stdlib (dart:io + dart:convert). Exit: 0 emitted / in-sync ·
 // 1 missing input, drift, wrong count.
 
@@ -503,9 +510,18 @@ void _emitL10n(String designRoot, String appRoot, List<String> files) {
 /// The .shell-structure.json the coverage gate reads: selfContained shells +
 /// the {shell: {surfaceId: dir}} map. The dir is the scaffolder's recorded
 /// decision.
+///
+/// D8: when the picker's kit-manifest.json sidecar supplied [resolved], the
+/// `kits` section carries that picker-confirmed set VERBATIM under `resolved`
+/// (the final set that reaches the build — D1: scaffold is the single
+/// authoritative merge point), with the per-surface declarations kept under
+/// `surfaces` so the builder can still see which screen asked for what (a
+/// declared kit missing from `resolved` is a D2 removal — the builder wires
+/// the forced fallback). Without a sidecar the section stays the flat
+/// per-surface map it has always been: no picker selection, no new shape.
 Map<String, dynamic> buildManifest(
     List<Map<String, dynamic>> frozen, List<String> factors, List<String> targets,
-    [List<String>? l10n]) {
+    [List<String>? l10n, List<dynamic>? resolved]) {
   final shells = <String>{};
   for (final s in frozen) {
     shells.add(s['shellDir'] as String);
@@ -541,7 +557,14 @@ Map<String, dynamic> buildManifest(
       if ((s['kits'] as List?)?.isNotEmpty ?? false)
         s['surface'] as String: (s['kits'] as List).cast<String>(),
   };
-  if (kitsBySurface.isNotEmpty) m['kits'] = kitsBySurface;
+  if (resolved != null) {
+    m['kits'] = {
+      'resolved': resolved,
+      if (kitsBySurface.isNotEmpty) 'surfaces': kitsBySurface,
+    };
+  } else if (kitsBySurface.isNotEmpty) {
+    m['kits'] = kitsBySurface;
+  }
   return m;
 }
 
@@ -576,6 +599,43 @@ void _fail(String msg) => stderr.writeln('FAIL: $msg');
     );
   }
   return (data: data, error: null);
+}
+
+/// D8: the optional kit-manifest.json sidecar the studio's scaffold picker
+/// persists BESIDE the frozen structure.json. Three states, deliberately
+/// distinct:
+///   absent           -> (resolved: null, error: null): no picker selection,
+///                       behavior unchanged (kits derive from structure.json)
+///   present, valid   -> `resolved` consumed VERBATIM (plan/apply semantics)
+///   present, broken  -> FAIL: a sidecar that does not parse or whose
+///                       `resolved` is the wrong shape must never silently
+///                       fall back to a kit set the picker did not confirm
+/// A sidecar with no `resolved` section yet (intake wrote a wishlist, the
+/// picker never ran) is the absent case — nothing confirmed, nothing applied.
+({List<dynamic>? resolved, String? error}) loadKitManifest(String path) {
+  final f = File(path);
+  if (!f.existsSync()) return (resolved: null, error: null);
+  Map<String, dynamic> data;
+  try {
+    data = jsonDecode(f.readAsStringSync()) as Map<String, dynamic>;
+  } catch (e) {
+    return (
+      resolved: null,
+      error: 'kit-manifest.json does not parse as a JSON object — $e',
+    );
+  }
+  final resolved = data['resolved'];
+  if (resolved == null) return (resolved: null, error: null);
+  if (resolved is! List ||
+      resolved.any((k) => k is! Map || k['id'] is! String)) {
+    return (
+      resolved: null,
+      error: "kit-manifest.json 'resolved' must be a list of kit entries "
+          '({id, package, provenance, auto}) — the picker writes this file; '
+          'fix it through the studio, not by hand',
+    );
+  }
+  return (resolved: resolved, error: null);
 }
 
 /// Every frozen surface must carry the keys the scaffold emits from. Also
@@ -646,6 +706,10 @@ bool _dirCollisions(List<Map<String, dynamic>> frozen) {
 /// Emit (or drift-check) the per-surface Dart tree from a frozen structure.json
 /// + the target set. Mirrors scaffold.py `scaffold(...)`. Returns 0 on
 /// success / in-sync, 1 on any failure (FAIL: line on stderr).
+///
+/// D8: [kitManifestPath] is an extra input like [derivationPath] — the picker
+/// sidecar. Defaults to kit-manifest.json beside structure.json; pass it
+/// explicitly to point elsewhere. Absent sidecar: behavior unchanged.
 int scaffold(
   String designRoot,
   String appRoot,
@@ -653,12 +717,21 @@ int scaffold(
   String derivationPath,
   String configPath, {
   bool check = false,
+  String? kitManifestPath,
 }) {
   final loaded = loadStructure(designRoot);
   if (loaded.error != null) {
     _fail(loaded.error!);
     return 1;
   }
+
+  final sidecarPath = kitManifestPath ?? '$designRoot/kit-manifest.json';
+  final sidecar = loadKitManifest(sidecarPath);
+  if (sidecar.error != null) {
+    _fail(sidecar.error!);
+    return 1;
+  }
+  final resolved = sidecar.resolved;
 
   List<String> factors;
   try {
@@ -690,7 +763,7 @@ int scaffold(
   final views = '$appRoot/lib/ui/views';
 
   if (check) {
-    return _check(views, frozen, factors, targets, appRoot, l10n);
+    return _check(views, frozen, factors, targets, appRoot, l10n, resolved);
   }
 
   final per = 2 + factors.length; // base + viewmodel + one per derived factor
@@ -728,7 +801,7 @@ int scaffold(
     File('$shDir/${sh}_chrome.dart').writeAsStringSync(_shellChrome(sh));
   }
 
-  final manifest = buildManifest(frozen, factors, targets, l10n);
+  final manifest = buildManifest(frozen, factors, targets, l10n, resolved);
   Directory(views).createSync(recursive: true);
   final mfPath = '$views/.shell-structure.json';
   File(mfPath).writeAsStringSync(
@@ -764,6 +837,10 @@ int scaffold(
     print('  l10n: ${l10n.length} catalog(s) -> lib/l10n/ + l10n.yaml '
         '(locales: ${l10nLocales(l10n).join(', ')})');
   }
+  if (resolved != null) {
+    print('  kit-manifest: ${resolved.length} resolved kit(s) from '
+        '${_relPath(sidecarPath, appRoot)} (D8 picker-confirmed set)');
+  }
   print('  manifest -> ${_relPath(mfPath, appRoot)}');
   return 0;
 }
@@ -777,6 +854,7 @@ int _check(
   List<String> targets,
   String appRoot,
   List<String>? l10n,
+  List<dynamic>? resolved,
 ) {
   final problems = <String>[];
   for (final s in frozen) {
@@ -792,7 +870,7 @@ int _check(
     }
   }
   final mf = File('$views/.shell-structure.json');
-  final want = buildManifest(frozen, factors, targets, l10n);
+  final want = buildManifest(frozen, factors, targets, l10n, resolved);
   if (!mf.existsSync()) {
     problems.add('lib/ui/views/.shell-structure.json missing — the manifest the '
         'coverage gate reads');
@@ -814,7 +892,8 @@ int _check(
             'catalogs — re-run scaffold');
       }
       if (!_jsonEqual(onDisk['kits'], want['kits'])) {
-        problems.add('.shell-structure.json kits drifted from structure.json '
+        problems.add('.shell-structure.json kits drifted from structure.json'
+            '${resolved != null ? ' + kit-manifest.json' : ''} '
             '— re-run scaffold');
       }
     } catch (e) {
