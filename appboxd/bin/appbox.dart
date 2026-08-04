@@ -52,9 +52,9 @@ import 'package:appboxd/server.dart' as server;
 import 'package:appboxd/scaffold_cli.dart';
 import 'package:appboxd/story_map_cli.dart';
 import 'package:appboxd/tier1.dart';
-import 'package:appboxd/watermark.dart';
 import 'package:appboxd/api_map_scan.dart';
 import 'package:appboxd/capability_scan.dart';
+import 'package:appboxd/entitlement_cli.dart';
 import 'package:appboxd/gen_playbook.dart';
 import 'package:appboxd/intake_cli.dart';
 import 'package:appboxd/project_cli.dart';
@@ -102,9 +102,8 @@ Future<void> main(List<String> args) async {
     case 'serve':
       _runServe(rest);
       break;
-    case 'watermark':
-      _runWatermark(rest);
-      break;
+    case 'entitlement':
+      exit(entitlementMain(rest));
     case 'lint':
       _runLint(rest);
       break;
@@ -153,7 +152,8 @@ Commands:
                  unindexed docs + KB-lint orphans warn)
   kb <sub>       Kit introspection: facts, build, check, lock, playbook,
                  conventions
-  watermark <root>  Post-emit provenance/watermark pass on an emitted tree
+  entitlement <sub>  Cached entitlement JWT — status/verify (the D17 scaffold
+                 paywall's operator surface)
 
 Options:
   --app <root>   App root (defaults to repo root)
@@ -686,25 +686,6 @@ int _emitPalette(String seedHex, List<String> rest) {
     stdout.write(blob);
   }
   return 0;
-}
-
-// ── serve ──────────────────────────────────────────────────────────
-
-void _runWatermark(List<String> args) {
-  if (args.isEmpty) {
-    stderr.writeln('usage: appbox watermark <rootDir> [--licence <path>]');
-    exit(64);
-  }
-  String? licencePath;
-  for (var i = 1; i < args.length; i++) {
-    if (args[i] == '--licence' && i + 1 < args.length) {
-      licencePath = args[++i];
-    }
-  }
-  final manifest = runPass(args.first, licencePath: licencePath);
-  print(
-      'provenance pass: tier=${manifest['tier']} files=${(manifest['files'] as List).length} -> ${args.first}/$manifestName');
-  exit(0);
 }
 
 // ── lint ───────────────────────────────────────────────────────────

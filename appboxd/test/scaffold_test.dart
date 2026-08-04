@@ -12,6 +12,8 @@ import 'package:appboxd/gates.dart';
 import 'package:appboxd/scaffold.dart';
 import 'package:test/test.dart';
 
+import 'entitlement_fixture.dart';
+
 void main() {
   late Directory tmp;
   late String derivationPath;
@@ -722,7 +724,17 @@ void main() {
       expect(scaffold(des, app, ['macos'], derivationPath, configPath), 0);
       File('$app/pubspec.yaml').writeAsStringSync('name: demo\n');
 
-      final r = scaffoldGate(GateContext(repoRoot: app, appRoot: app));
+      // D17: the gate asserts entitlement first — run it with a dev token
+      // bound to this machine.
+      final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+      final entitlementFile = '${tmp.path}/.test-entitlement.jwt';
+      File(entitlementFile).writeAsStringSync(makeEntitlementJwt(
+          devEntitlementKey,
+          entitlementClaims(
+              fpr: localFingerprint(), nbf: now - 3600, exp: now + 7 * 86400)));
+
+      final r = scaffoldGate(GateContext(
+          repoRoot: app, appRoot: app, entitlementPath: entitlementFile));
       expect(r.passed, isTrue, reason: r.details.join('\n'));
       expect(Directory('$app/lib/ui/widgets').existsSync(), isFalse,
           reason: 'the cross-shell tier is not created speculatively');

@@ -111,6 +111,7 @@ wave.
 | [plans/composer-action-integrity.md](plans/composer-action-integrity.md) | proposed — composer action integrity defect class |
 | [plans/deploy-engine-unification.md](plans/deploy-engine-unification.md) | D13 — unify deploy engine: kit runtime + appboxd governance |
 | [plans/distribution-and-platforms.md](plans/distribution-and-platforms.md) | D23 — v1 surfaces: macOS app+daemon, iOS/Android controller, Totem-hosted web |
+| [plans/entitlement-backend-runbook.md](plans/entitlement-backend-runbook.md) | D17/D18 backend half as a deployment runbook — Supabase schema, `/activate` contract, the exact JWT claims the local verifier expects |
 | [plans/filmstrip-viewport-sync.md](plans/filmstrip-viewport-sync.md) | filmstrip ↔ viewport two-way sync (views lens) |
 | [plans/handoff-inspector-viewmodel.md](plans/handoff-inspector-viewmodel.md) | the `design_facade.js` viewmodel contract for the inspector pane (D14–D17) |
 | [plans/handoff-reveal-drawer-remaining.md](plans/handoff-reveal-drawer-remaining.md) | **DONE 2026-08-05** — all five reveal-drawer increments merged |

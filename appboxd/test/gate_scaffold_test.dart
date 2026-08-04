@@ -10,9 +10,12 @@ import 'package:appboxd/gate_scaffold.dart';
 import 'package:appboxd/gates.dart';
 import 'package:test/test.dart';
 
+import 'entitlement_fixture.dart';
+
 void main() {
   late Directory tmp;
   late String app;
+  late String entitlementFile;
 
   void write(String rel, String body) {
     final f = File('$app/$rel');
@@ -21,6 +24,17 @@ void main() {
   }
 
   void rm(String rel) => File('$app/$rel').deleteSync();
+
+  /// Mints a dev entitlement token bound to this machine (D17: the scaffold
+  /// gate asserts entitlement FIRST, so every case below runs entitled).
+  void plantEntitlement() {
+    final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+    entitlementFile = '$app/.test-entitlement.jwt';
+    File(entitlementFile).writeAsStringSync(makeEntitlementJwt(
+        devEntitlementKey,
+        entitlementClaims(
+            fpr: localFingerprint(), nbf: now - 3600, exp: now + 7 * 86400)));
+  }
 
   /// A shell that satisfies S1/S4 on its own; widgets are added per test.
   void plantShell(String shell, List<String> views) {
@@ -35,13 +49,15 @@ void main() {
   void manifest(List<String> shells) => write('lib/ui/views/.shell-structure.json',
       '{"selfContained":[${shells.map((s) => '"$s"').join(',')}]}');
 
-  GateResult run() => scaffoldGate(GateContext(repoRoot: app, appRoot: app));
+  GateResult run() => scaffoldGate(
+      GateContext(repoRoot: app, appRoot: app, entitlementPath: entitlementFile));
   String detailsOf(GateResult r) => r.details.join('\n');
 
   setUp(() {
     tmp = Directory.systemTemp.createTempSync('gate-scaffold-test-');
     app = tmp.path;
     write('pubspec.yaml', 'name: demo\n');
+    plantEntitlement();
     manifest(['main_shell']);
     plantShell('main_shell', ['home', 'detail']);
     // Canonical: one shared widget, imported by two surfaces of one shell.
@@ -53,6 +69,27 @@ void main() {
   });
 
   tearDown(() => tmp.deleteSync(recursive: true));
+
+  group('D17 entitlement assertion (fail-closed, first)', () {
+    test('a missing token halts the gate before any structural check', () {
+      rm('.test-entitlement.jwt');
+      final r = run();
+      expect(r.passed, isFalse);
+      expect(r.summary, contains('entitlement'));
+      expect(detailsOf(r), contains('PRECONDITION NOT MET'));
+    });
+
+    test('a token bound to another machine halts the gate', () {
+      final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+      File(entitlementFile).writeAsStringSync(makeEntitlementJwt(
+          devEntitlementKey,
+          entitlementClaims(
+              fpr: testFingerprint, nbf: now - 3600, exp: now + 7 * 86400)));
+      final r = run();
+      expect(r.passed, isFalse);
+      expect(detailsOf(r), contains('different machine'));
+    });
+  });
 
   group('S6 scope truth: <shell>/shared/widgets/', () {
     test('canonical tree passes — two surfaces share one widget', () {

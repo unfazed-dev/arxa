@@ -25,7 +25,7 @@ flowchart TD
     end
 
     subgraph daemon["appboxd — CLI + daemon (appboxd/)"]
-        cli["appbox CLI (bin/appbox.dart): intake, emit, gate, crud, design, lens, deploy, kb, lint, docs, watermark"]
+        cli["appbox CLI (bin/appbox.dart): intake, emit, gate, crud, design, lens, deploy, kb, lint, docs, entitlement"]
         fsm["Pipeline FSM (lib/pipeline_fsm.dart + phases.dart)"]
         gates["Gates (lib/gate_*.dart + gate_runner.dart)"]
         emitters["Emitters (emit_structure, scaffold, htmx, story-map, …)"]
@@ -96,8 +96,8 @@ flowchart LR
         c5["⧗ build gate decisions — POST /build/gates/decide (needs-you strip); stage controls /build/stages/:id/control"]
     end
     subgraph p7["deploy"]
-        g7["gates: deploy (triple + licence, fail-closed) + advertise"]
-        c6["⧗ HUMAN GATE 3: deploy --approval token — human-supplied, never minted by code (pay-at-deploy)"]
+        g7["gates: deploy (triple, fail-closed) + advertise — D17: payment moved to scaffold"]
+        c6["⧗ HUMAN GATE 3: deploy --approval token — human-supplied, never minted by code"]
     end
 
     p1 --> p2 --> p3 --> p4 --> p5 --> p6 --> p7
@@ -108,7 +108,7 @@ flowchart LR
 Also on the CLI outside the phase loop: gates `arch`, `gen-freshness`, `trace`,
 `tier1`, `capability`, `api-map`; emitters `structure`, `htmx`, `playground`,
 `synthesize`, `blueprint`, `story-map`, `scaffold`; `kb`, `lint`, `docs`,
-`watermark`.
+`entitlement`.
 
 ## 3. The ~/.appbox project model
 
@@ -247,8 +247,10 @@ sequenceDiagram
 - **Targets** — platform set in `settings/project.json` /
   `config/appbox.config.json`; derives viewport rungs (390/744/1280) and
   scaffold file counts.
-- **Pay-at-Deploy** — licence (Ed25519, offline-verified) hard-blocks first
-  deploy; everything before is free; `APPBOX_DEV_LICENCE=1` dev bypass.
+- **Pay-at-Scaffold** (D17/D18) — an entitlement JWT (Ed25519, offline-verified,
+  machine-bound, `~/.appbox/entitlement.jwt`) hard-blocks `emit scaffold` and the
+  scaffold gate; design + eject stay free. The old deploy-gate licence and its
+  `APPBOX_DEV_LICENCE=1` bypass are removed; `watermark.dart` is retired.
 - **Stub** — unimplemented provider that throws by design; never offered
   (fugu fabric provider — optional catalog entry, no endpoint yet). The
   vercel deploy target was one until 2026-08-01, when `261b2ad` made it real

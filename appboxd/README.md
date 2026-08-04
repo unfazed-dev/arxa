@@ -11,7 +11,7 @@ does the first two at their simplest.
 
 For anything regarding appbox, use appbox's own tools before any external or
 archived tooling: the `appbox` CLI (`bin/appbox.dart` — gate, crud, serve,
-emit, lint, watermark) and the **appbox lens** (`lib/lens.dart` over
+emit, lint, entitlement) and the **appbox lens** (`lib/lens.dart` over
 `lib/cdp.dart`, the promoted probe-runner port). If a capability is missing,
 extend the appbox tool — never reach back for the archived probe-runner
 (`archives/tooling-pre-dart/`).

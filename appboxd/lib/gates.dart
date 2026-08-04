@@ -37,6 +37,13 @@ class GateContext {
   /// actually read a project shell consume it (intake, today).
   final String? project;
 
+  /// Override for the entitlement token path (default
+  /// `~/.appbox/entitlement.jwt`). Same on-the-context rationale as [project];
+  /// only gates with an entitlement assertion consume it (scaffold, today).
+  /// NOT a bypass — the file it names still must verify, be unexpired, and be
+  /// bound to this machine's fingerprint.
+  final String? entitlementPath;
+
   GateContext({
     required this.repoRoot,
     this.appRoot,
@@ -45,6 +52,7 @@ class GateContext {
     this.check = false,
     this.selfTest = false,
     this.project,
+    this.entitlementPath,
   })  : state = state ?? StateReader(repoRoot),
         sarif = sarif ?? SarifBuilder();
 

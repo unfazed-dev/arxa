@@ -8,12 +8,12 @@
 /// equation [S]B == R + [k]A per Section 5.1.7.
 ///
 /// Proven against the RFC 8032 Section 7.1 test vectors in
-/// test/licence_test.dart — those vectors are the acceptance bar.
+/// test/entitlement_test.dart — those vectors are the acceptance bar.
 ///
 /// Signing is deliberately NOT in this library: the daemon only ever
-/// verifies licences against the embedded public key. The two helpers at
-/// the bottom ([ed25519ScalarMultBase], [sha512]) are exposed for test and
-/// licence-issuance tooling; the daemon's runtime path uses only
+/// verifies entitlement tokens against the embedded public key. The two
+/// helpers at the bottom ([ed25519ScalarMultBase], [sha512]) are exposed for
+/// test and token-issuance tooling; the daemon's runtime path uses only
 /// [ed25519Verify].
 ///
 /// VM-only: SHA-512 below relies on 64-bit wrapping integer arithmetic,
@@ -51,7 +51,7 @@ const List<int> _sha512K = [
 
 int _rotr64(int x, int n) => (x >>> n) | (x << (64 - n));
 
-/// SHA-512 digest of [data] (FIPS 180-4). Exposed for licence tooling/tests.
+/// SHA-512 digest of [data] (FIPS 180-4). Exposed for token tooling/tests.
 List<int> sha512(List<int> data) {
   var h0 = 0x6a09e667f3bcc908, h1 = 0xbb67ae8584caa73b;
   var h2 = 0x3c6ef372fe94f82b, h3 = 0xa54ff53a5f1d36f1;
@@ -242,6 +242,6 @@ bool ed25519Verify(
 }
 
 /// Encoded point [scalar]B. Exposed for the test-only signing helper and
-/// licence-issuance tooling — the daemon itself never signs.
+/// token-issuance tooling — the daemon itself never signs.
 List<int> ed25519ScalarMultBase(BigInt scalar) =>
     _pointCompress(_pointMul(scalar % _l, _basePoint));

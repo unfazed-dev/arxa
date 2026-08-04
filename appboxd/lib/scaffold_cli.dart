@@ -18,6 +18,7 @@
 
 import 'dart:io';
 
+import 'package:appboxd/entitlement.dart';
 import 'package:appboxd/scaffold.dart';
 import 'package:path/path.dart' as p;
 
@@ -61,6 +62,18 @@ int scaffoldMain(List<String> args) {
 
   if (selfTest) {
     return runSelfTest();
+  }
+
+  // D17 entitlement assertion FIRST (fail-closed): the paywall sits at
+  // scaffold — this is the primary hook, in the emitter's execution path so
+  // it cannot be skipped via the gate path. --self-test/--help stay free
+  // (diagnostics; gating them teaches distrust of red).
+  final ent = entitlementAssertion();
+  if (!ent.passed) {
+    for (final line in ent.failLines) {
+      stderr.writeln(line);
+    }
+    return 1;
   }
 
   // Explicit --targets wins; APPBOX_TARGETS env is the deterministic fallback.

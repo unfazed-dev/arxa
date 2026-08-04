@@ -10,6 +10,8 @@
 // false-fails and never rubber-stamps).
 //
 // Checks, cheapest first (the exact bash order):
+//   D17 — entitlement assertion FIRST (fail-closed, never a sarif finding;
+//         redundant second layer behind scaffoldMain's primary hook)
 //   §6 fresh — design tree matches the frozen hash (hash-bound approval)
 //   SN  — snackbars/ placement (app-level or shell-local, nowhere else)
 //   S5  — *_facade.dart / *_repository.dart live under services/facades/ /
@@ -34,14 +36,27 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:appboxd/entitlement.dart';
 import 'package:appboxd/gates.dart';
 
 GateResult scaffoldGate(GateContext ctx) {
+  // ---- D17 entitlement assertion FIRST (fail-closed, never a sarif finding) ----
+  // Redundant second layer behind scaffoldMain's primary hook: bypassable by
+  // invoking the emitter directly, so the emitter is the authority — this
+  // layer keeps `appbox gate scaffold` / phase runs honest.
+  final ent = entitlementAssertion(path: ctx.entitlementPath);
+  if (!ent.passed) {
+    return GateResult.fail(
+      'scaffold: HALTED — D17 entitlement assertion failed (see above).',
+      ent.failLines,
+    );
+  }
+
   final app = ctx.appRoot ?? ctx.repoRoot;
   final viewsDir = Directory('$app/lib/ui/views');
   final manifestPath = '${viewsDir.path}/.shell-structure.json';
   final manifest = File(manifestPath);
-  final details = <String>[];
+  final details = <String>['  ✓ ${ent.okLine}'];
   var fails = 0;
 
   void ok(String m) => details.add('  ✓ $m');
