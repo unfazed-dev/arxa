@@ -101,15 +101,45 @@ so cannot read a variable set on it.
 `fonts.json`, so generating it would mean inventing SSOT data and embedding prose
 in a template literal.
 
-## 4. Remaining
+## 4. The router (`services/repositories/text_repository.js`)
 
-1. `services/font_tokens.js` — **reader only**: `fonts()`, `fontIds()`,
-   `defaultFont()`. Must copy `theme_tokens.js`'s worker constraints verbatim:
-   `node:fs` only (no `node:url`/`node:path` — the worker's import map shims only
-   `node:fs`, exporting just `readFileSync`/`existsSync`), and read per call — a
-   module-load cache would pin the first render's value for the process lifetime.
-2. `prefs_viewmodel.js` — `font` handler, allowlist = `fontIds()`, mirroring the
-   existing `accent` handler (refresh-exempt).
-3. `data-font` on `#app` in **both** `ui/common/base.html` and
-   `ui/views/main_shell/build/loop/screen_stub_view.html`.
-4. The ARB/seed/surface router, honouring §1's constraint.
+Classifies a widget's copy before writing, because writing to the wrong file is
+silent: the studio would show the edit (its own `/project-src/` key is updated
+immediately) while the real owner kept the old string and the next build
+reverted it.
+
+| class | test | write target |
+|---|---|---|
+| `arb` | the element *is* `{{ t('k') }}`, **or** contains exactly one `t()` key | that key in `design/l10n/app_<locale>.arb` |
+| `mixed` | two or more distinct `t()` keys | refused — which one did the user click? |
+| `bound` | a lone `{{ a.b }}` binding | refused, with the seed list — see §1 |
+| `literal` | no template syntax | the surface partial itself |
+
+The "exactly one key" rule matters: most real widgets are
+`{{ icon('user') }} {{ t('k') }}`. Measured on portalo's 26 widgets, whole-element
+matching alone routed 6; adding the single-key rule routes **11**, leaves 13
+genuinely ambiguous, 1 with no text, 1 literal.
+
+ARB writes never re-serialise. `setArbValue` swaps only the value's own JSON
+string literal by regex, re-escaped with `JSON.stringify` — verified against
+portalo's real 84-key catalogue: key count, key order, and every other value
+unchanged.
+
+**The override case.** 57 of the 64 keys portalo's surfaces reference are in its
+own catalogue; 7 (`app.brand`, `auth.continue`, `auth.email`, …) resolve from the
+artifact's base catalogue, which worker.dart merges *under* the project. Editing
+those means adding a project override. `addArbValue` does that, but only behind
+an explicit `allowOverride` flag — otherwise a typo'd key would silently create a
+dead entry. The default is a precise error naming the file and the reason.
+
+`screensUsing()` is wrapped: a project with no intake registry still edits, since
+that list is provenance commentary, not a write target.
+
+### Not yet wired
+
+The router is a repository with no route or view yet. Wiring it means a facade
+method + a POST beside `setWidgetAttr` (`prototype_viewmodel.js:131` →
+`design_facade.setWidgetAttr` → `widget_repository.setWidgetAttr`), which is the
+exact shape to copy. The seed writer is deliberately absent — §1 shows the seed
+key is not recoverable from the template, so it needs the viewmodel's value
+lookup, not another regex.
