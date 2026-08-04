@@ -319,6 +319,68 @@
    with scope `drawer-<slug>` — every id inside gains `--drawer-<slug>`, so
    the panel instance and N drawer instances coexist with zero duplicate ids
    (probe-no-reload D1 is the gate). #}
+{# The Tools tab (Screen Reveal-Drawer plan, increment 3). ONE shared
+   selection (D5): everything here reads/writes d.widgetSel through the SAME
+   routes the components column and the armed canvas use — the strip posts
+   /design/widget/select with the exact values shape canvas.js posts, and the
+   editable card IS widget_editor.html's pane wrapped in a .dv-wedit so its
+   step chips (hx-target="closest .dv-wedit", response #widgetEditor) keep
+   their contract unchanged inside the drawer.
+   D7 honesty: what the write path cannot address renders read-only WITH the
+   reason — extra source attributes name the missing contract entry, refused
+   copy classes carry the classifier's own sentence. Never a dead control. #}
+{% macro toolsPane(s, dr) %}
+{% set tl = dr.tools %}
+<div class="dv-tools">
+  <nav class="dv-tools-strip" aria-label="{{ t('viewer.tools.strip') }}">
+    <span class="dv-tools-crumb">{{ s.id }}{% if tl.sel %} <span aria-hidden="true">›</span> {{ tl.sel.name or tl.sel.kind }}{% endif %}</span>
+    {% for w in tl.strip %}
+    <button type="button" class="chip dv-chip dv-tools-sib {{ 'on' if w.on }}"
+            aria-pressed="{{ 'true' if w.on else 'false' }}"
+            hx-post="{{ tl.selectHref }}"
+            hx-vals='{"screen": "{{ s.id }}", "kind": "{{ w.kind }}", "name": "", "index": "{{ w.index }}"}'
+            hx-target="#design-viewer" hx-swap="morph:outerHTML"
+            hx-push-url="false">{{ w.kind }}{% if w.index %} #{{ w.index + 1 }}{% endif %}</button>
+    {% endfor %}
+  </nav>
+  {% if tl.sel %}
+  {# The wrapper class is the CONTRACT: wed.pane's chips target
+     `closest .dv-wedit` and the #widgetEditor response swaps its innerHTML —
+     same wiring as the components column slot, one editor, two mounts. #}
+  <div class="dv-wedit dv-tools-wedit">{{ wed.pane(tl.wedit) }}</div>
+  {% if tl.roAttrs and tl.roAttrs | length %}
+  <section class="dv-tools-ro-attrs">
+    <h4 class="dv-tools-h">{{ t('viewer.tools.roAttrs') }}</h4>
+    {% for a in tl.roAttrs %}
+    <p class="dv-tools-ro-row"><code>{{ a.attr }}</code><span>{{ a.value or '—' }}</span></p>
+    {% endfor %}
+    <p class="dv-tools-ro">{{ t('viewer.tools.roContract') }}</p>
+  </section>
+  {% endif %}
+  <section class="dv-tools-copy">
+    <h4 class="dv-tools-h">{{ t('viewer.tools.copy') }}</h4>
+    {% if tl.copy.editable %}
+    <form class="dv-tools-copy-form" hx-post="{{ tl.copy.textHref }}"
+          hx-target="#dv-drawer-{{ dr.slug }}" hx-swap="morph:outerHTML" hx-push-url="false">
+      <input type="hidden" name="drawer" value="{{ s.id }}">
+      <input class="dv-tools-copy-input" name="value" value="{{ tl.copy.text }}"
+             aria-label="{{ t('viewer.tools.copyAria') }}">
+      <button type="submit" class="chip dv-chip">{{ t('viewer.tools.copySave') }}</button>
+    </form>
+    <p class="dv-tools-prov">{{ tl.copy.note }}</p>
+    {% else %}
+    {% if tl.copy.text %}<p class="dv-tools-copy-text">{{ tl.copy.text }}</p>{% endif %}
+    <p class="dv-tools-ro">{{ tl.copy.reason }}</p>
+    {% endif %}
+  </section>
+  {% elif tl.elsewhere %}
+  <p class="dv-drawer-stub">{{ t('viewer.tools.elsewhere', {id: tl.elsewhere}) }}</p>
+  {% else %}
+  <p class="dv-drawer-stub">{{ t('viewer.tools.empty') }}</p>
+  {% endif %}
+</div>
+{% endmacro %}
+
 {% macro revealDrawer(v, s) %}
 {% set dr = v.drawers[s.id] %}
 <aside class="dv-drawer" id="dv-drawer-{{ dr.slug }}" data-drawer-for="{{ s.id }}" tabindex="-1"
@@ -337,9 +399,7 @@
   <div class="dv-drawer-body" id="dv-drawer-panel--{{ dr.slug }}" role="tabpanel"
        aria-labelledby="dv-drawer-tab-{{ dr.tab }}--{{ dr.slug }}">
     {% if dr.tab == 'tools' %}
-    {# Inert placeholders, per the increment ordering: the tabs exist in this
-       increment, their content arrives in increments 3 and 4. #}
-    <p class="dv-drawer-stub">{{ t('viewer.drawer.toolsStub') }}</p>
+    {{ toolsPane(s, dr) }}
     {% elif dr.tab == 'logic' %}
     <p class="dv-drawer-stub">{{ t('viewer.drawer.logicStub') }}</p>
     {% else %}

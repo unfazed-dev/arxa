@@ -27,6 +27,7 @@ import 'package:appboxd/probes/studio/probe_reveal_drawer.dart';
 import 'package:appboxd/probes/studio/probe_screen_composer.dart';
 import 'package:appboxd/probes/studio/probe_scroll_ownership.dart';
 import 'package:appboxd/probes/studio/probe_shell_chrome.dart';
+import 'package:appboxd/probes/studio/probe_widget_tools.dart';
 
 /// Every probe, in `probe all` run order.
 const List<Probe> kProbes = <Probe>[
@@ -50,6 +51,7 @@ const List<Probe> kProbes = <Probe>[
   revealDrawerProbe,
   screenComposerProbe,
   shellChromeProbe,
+  widgetToolsProbe,
 ];
 
 /// Look up a probe by CLI name, or null if there is no such probe.

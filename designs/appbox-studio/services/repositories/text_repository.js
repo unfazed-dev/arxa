@@ -110,6 +110,23 @@ export const textProvenance = (screenId, kind, index = 0) => {
   };
 };
 
+// The key's CURRENT value in one locale's PROJECT catalogue, or null when the
+// project does not declare it there (it then resolves from the artifact's base
+// catalogue on merge — the override case, see addArbValue). A parse is fine on
+// the READ side; only writes must preserve raw key order / @-metadata.
+export const arbValue = (key, locale = 'en') => {
+  const rel = arbFiles().find((f) => f.match(LOCALE_OF_ARB)?.[1] === locale);
+  if (!rel) return null;
+  const raw = readSource(rel);
+  if (raw == null) return null;
+  try {
+    const o = JSON.parse(raw);
+    return typeof o[key] === 'string' ? o[key] : null;
+  } catch {
+    return null;
+  }
+};
+
 // --------------------------------------------------------------- write side
 // Replace one ARB value in RAW text. The key order and every @-metadata
 // sibling survive because nothing is re-serialised — only the value's own

@@ -192,6 +192,22 @@ export const widgetAttr = async (c, h) => {
   }
 };
 
+// Copy write from the drawer's Tools tab (Screen Reveal-Drawer plan,
+// increment 3): provenance-routed through the text pipeline, then that
+// drawer's aside re-rendered (#drawerSwap, routed by the form's drawer field
+// — same routing undo/redo use). Refused classes are a 400 carrying the
+// classifier's reason, same shape as widgetAttr: never silently clamped.
+export const widgetText = async (c, h) => {
+  const form = await h.form(c);
+  try {
+    const next = await facade.setWidgetCopy(h.session(c).data, { value: form.value }, h.prefs(c), h.t(c), h.locale(c));
+    return h.render(c, `${VIEW}#drawerSwap`, { ...next, drawerScreen: form.drawer });
+  } catch (e) {
+    if (e.status === 400) return c.text(e.message, 400);
+    throw e;
+  }
+};
+
 // Viewer swap, not the editor slot: clearing must also DROP `data-wedit-sel`
 // from the canvas, or drag.js keeps the handles hung on a widget the session
 // no longer has selected.

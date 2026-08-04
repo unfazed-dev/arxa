@@ -12,6 +12,7 @@
 import * as repo from '../repositories/design_repository.js';
 import * as proj from '../repositories/project_repository.js';
 import * as widgets from '../repositories/widget_repository.js';
+import * as texts from '../repositories/text_repository.js';
 import * as plans from '../repositories/plan_repository.js';
 import * as jargon from './jargon.js';
 import * as agent from './agent_menus.js';
@@ -672,7 +673,7 @@ function viewerFor(d, L, t) {
     // by screen id for the same reason as `plans`. Views lens only: the drawer
     // is the screen card's own back panel, and only the views lens renders one
     // card per designed screen.
-    drawers: mode === 'views' ? drawerContexts(d, screens, t) : null,
+    drawers: mode === 'views' ? drawerContexts(d, screens, t, L) : null,
   };
 }
 
@@ -716,7 +717,7 @@ export const setDrawer = (sessionData, screenId, { state, tab } = {}, prefs = {}
 // this instance issues lands in its own container, routed by ?drawer=<id>
 // (the viewmodels render `#drawerSwap` when they see it). Undo/redo ride the
 // same global chat stack; only the RESPONSE routing is screen-scoped.
-const drawerContexts = (d, screens, t) =>
+const drawerContexts = (d, screens, t, L = 'en') =>
   Object.fromEntries(screens.map((s) => {
     const st = drawerEntry(d, s.id);
     const slug = s.id.replace(/\./g, '-');
@@ -730,6 +731,10 @@ const drawerContexts = (d, screens, t) =>
       slug,
       toggleHref: `${base}?state=toggle`,
       tabs: DRAWER_TABS.map((key) => ({ key, active: key === st.tab, href: `${base}?tab=${key}` })),
+      // Built only while THIS screen's drawer shows Tools: each entry costs
+      // source reads (one resolveWidget per addressable widget), and a tab
+      // the session has never picked must not pay them.
+      tools: st.tab === 'tools' ? toolsContext(d, s, t, L) : null,
       composer: {
         // ?screen= pins this screen before the send (screen-scoped send);
         // ?drawer= routes the response back to this drawer's container.
@@ -1070,6 +1075,88 @@ export const setWidgetAttr = async (sessionData, payload = {}, t = (k) => k) => 
   }
   await widgets.setWidgetAttr(sel.screen, sel.kind, sel.index ?? 0, attr, value);
   return widgetEditorContext(d, t);
+};
+
+// ---------- the Tools tab (Screen Reveal-Drawer plan, increment 3) ----------
+// ONE shared selection state (D5): d.widgetSel — the same session key an
+// explode.js row click and an armed canvas click already write through
+// selectWidget — is the only selection the drawer consumes, and the strip
+// below posts the same /design/widget/select route. No parallel vocabulary:
+// a Tools pick shows up in the components column's editor slot and vice versa.
+const toolsContext = (d, s, t, L = 'en') => {
+  const selRaw = d.widgetSel ?? null;
+  const sel = selRaw && selRaw.screen === s.id ? selRaw : null;
+  // The hierarchy strip (D5): this screen's addressable widgets, enumerated
+  // with resolveWidget's own rule so the strip can never offer a selection
+  // the editor cannot resolve.
+  const strip = widgets.widgetsOn(s.id).map((w) => ({
+    ...w,
+    on: !!sel && sel.kind === w.kind && (sel.index ?? 0) === w.index,
+  }));
+  const base = {
+    strip,
+    selectHref: '/design/widget/select',
+    // Selection parked on ANOTHER screen: named, not blanked — an empty pane
+    // that secretly depends on which screen was clicked last reads as broken.
+    elsewhere: selRaw && !sel ? selRaw.screen : null,
+  };
+  if (!sel) return { ...base, sel: null };
+  const wed = widgetEditorContext(d, t);
+  if (!wed.sel) return { ...base, sel: null };
+  // Attributes the source element declares beyond the writable contract
+  // (data-layout, data-flow, …): shown read-only WITH the reason (D7 —
+  // unresolvable renders read-only, never a dead control).
+  const roAttrs = Object.entries(wed.attrs ?? {})
+    .filter(([a]) => !W_ATTRS.includes(a))
+    .map(([attr, value]) => ({ attr, value }));
+  return { ...base, sel: wed.sel, wedit: wed, roAttrs, copy: copyContext(sel, t, L) };
+};
+
+// Copy provenance for the Tools tab, one honest class per D7: editable where
+// the pipeline can address the owner (a project-declared ARB key in the
+// CURRENT locale, or a literal in the surface partial), read-only WITH THE
+// REASON otherwise. The classes come from text_repository.classify — this
+// only phrases them.
+const copyContext = (sel, t, L = 'en') => {
+  let p = null;
+  try { p = texts.textProvenance(sel.screen, sel.kind, sel.index ?? 0); } catch { p = null; }
+  if (!p) return { editable: false, text: null, reason: t('viewer.tools.noCopy') };
+  const textHref = '/design/widget/text';
+  if (p.source === 'arb') {
+    const value = texts.arbValue(p.key, L);
+    // Key resolves from the artifact's base catalogue (or another locale):
+    // writing would mint an override the user has not asked for, which
+    // text_repository gates behind allowOverride — so reported, not written.
+    if (value == null) return { editable: false, text: null, reason: t('viewer.tools.roOverride', { key: p.key }) };
+    return { editable: true, text: value, note: t('viewer.tools.copyArb', { key: p.key }), textHref };
+  }
+  if (p.source === 'literal') return { editable: true, text: p.text, note: t('viewer.tools.copyLiteral', { file: p.file }), textHref };
+  if (p.source === 'bound') return { editable: false, text: p.text, reason: t('viewer.tools.roBound', { expr: p.expr }) };
+  return { editable: false, text: p.text, reason: t('viewer.tools.roMixed') };
+};
+
+// Copy write-through (increment 3): the provenance-routed text pipeline D7
+// names as the proven pattern. The locale is the one being VIEWED — editing
+// the string on screen must not silently rewrite another catalogue. Refused
+// classes are a 400 carrying the classifier's own reason, mirror of
+// setWidgetAttr: the write path never learns to guess.
+export const setWidgetCopy = async (sessionData, payload = {}, prefs = {}, t = (k) => k, locale = 'en') => {
+  const d = design(sessionData);
+  const sel = d.widgetSel;
+  if (!sel) {
+    const err = new Error('no widget selected');
+    err.status = 400;
+    throw err;
+  }
+  try {
+    await texts.setWidgetText(sel.screen, sel.kind, sel.index ?? 0, String(payload.value ?? ''), locale);
+  } catch (e) {
+    // Classified refusals and unroutable targets are user-visible facts, not
+    // crashes; a failed project WRITE (the fetch inside) stays a 500.
+    if (e.provenance || /^no catalogue|^widget not found/.test(String(e.message))) e.status = 400;
+    throw e;
+  }
+  return stageContext(sessionData, {}, prefs, t, locale);
 };
 
 export const stageContext = (sessionData = {}, opts = {}, prefs = {}, t = (k) => k, locale = 'en') => {

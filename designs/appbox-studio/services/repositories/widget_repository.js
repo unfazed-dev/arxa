@@ -85,6 +85,32 @@ export const resolveWidget = (screenId, kind, index = 0) => {
   return null;
 };
 
+// Every widget ADDRESSABLE on a screen, enumerated with the exact rule
+// resolveWidget applies — (kind, i) for i = 0.. until resolution fails. This
+// mirrors rather than re-derives: a per-file listing would disagree with
+// resolveWidget the moment one kind appears in both the screen's own file and
+// an include (the per-file index rule can shadow an include's earlier
+// occurrence), and the Tools strip must only ever offer selections the editor
+// can actually resolve.
+export const widgetsOn = (screenId) => {
+  const own = screenFile(screenId);
+  const kinds = [];
+  for (const rel of [own, ...includesOf(own)]) {
+    const src = readSource(rel);
+    if (!src) continue;
+    for (const e of elsIn(src)) if (!kinds.includes(e.kind)) kinds.push(e.kind);
+  }
+  const out = [];
+  for (const kind of kinds) {
+    for (let i = 0; ; i++) {
+      const w = resolveWidget(screenId, kind, i);
+      if (!w) break;
+      out.push({ kind, index: i, tag: w.tag, file: w.file });
+    }
+  }
+  return out;
+};
+
 // Screens whose render includes this file — the "applies to N screens"
 // provenance the editor must state before an edit lands.
 export const screensUsing = (rel) =>
