@@ -16,6 +16,11 @@ export default [
   ['GET', '/design/panel/:view', prototype.panelView],
   ['GET', '/design/viewer', prototype.viewer],
   ['GET', '/design/file', prototype.file],
+  // MUST stay above /design/screen/:id — this router dispatches in
+  // registration order, so the param route swallows the literal "composer"
+  // segment and answers a whole page where a fragment was asked for.
+  // fetched-by: design_viewer.html .dv-compose (hx-get, after a widget-editor swap)
+  ['GET', '/design/screen/composer', prototype.screenComposer],
   ['GET', '/design/screen/:id', prototype.screen],
   ['POST', '/design/flows/:flow/move/:screen', prototype.flowMove], // sent-by: tile toolbar (hx-post, dir) + drag.js island (htmx.ajax, index)
   ['POST', '/design/flows/:flow/add/:screen', prototype.flowAdd],

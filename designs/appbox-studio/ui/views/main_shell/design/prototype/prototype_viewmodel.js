@@ -92,6 +92,13 @@ export const screenCompose = async (c, h) => {
   return h.render(c, `${VIEW}#panelsSwap`, await facade.composeIntent(h.session(c).data, form, h.prefs(c), h.t(c), h.locale(c)));
 };
 
+// ONE screen's composer, no write. The widget editor lands in a sibling slot,
+// so nothing re-renders the composer beside it and its scope placeholder would
+// go on saying "this screen" while a component was selected. The composer's own
+// hx-get asks for this after that swap settles.
+export const screenComposer = (c, h) =>
+  h.render(c, `${VIEW}#composeSwap`, facade.composerFor(h.session(c).data, c.req.query('screen'), h.t(c)));
+
 // The plan editor, same swap: `remove=<i>` drops one entry, otherwise `plan`
 // round-trips the whole sidecar.
 export const screenPlan = async (c, h) => {

@@ -1413,12 +1413,24 @@ const planContexts = (d, screens, t = (k) => k) => {
       err: d.planErr && d.planErr.screen === s.id ? t(d.planErr.key) : null,
       composeHref: '/design/screen/compose',
       planHref: '/design/screen/plan',
+      // Re-fetch of THIS composer alone, fired when the widget-editor slot
+      // beside it settles — see the macro comment in design_viewer.html.
+      composerHref: '/design/screen/composer',
       // Decision 15's arm route, owned by a concurrent agent. Fired
       // declaratively on first focus; 404s harmlessly until that lands.
       armHref: '/design/widget/arm',
     };
   }
   return out;
+};
+
+// ONE screen's composer, for the fragment that refreshes it when the
+// selection changes. Same builder as the full viewer, so the scope placeholder
+// cannot drift between the two render paths.
+export const composerFor = (sessionData, screenId, t = (k) => k) => {
+  const d = design(sessionData);
+  const plan = planContexts(d, [{ id: String(screenId ?? '') }], t)[String(screenId ?? '')];
+  return { plan };
 };
 
 // Composer submit: append one structured intent to this screen's sidecar.

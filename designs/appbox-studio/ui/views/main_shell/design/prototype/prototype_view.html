@@ -66,6 +66,12 @@
 
 {% macro panelsSwap(c) %}{{ panels(c) }}{% endmacro %}
 
+{# ONE screen's edit composer. Its own fragment because the widget editor is
+   swapped into #dv-wedit-<slot> alone: without this, selecting a component
+   would leave the composer's scope placeholder claiming "this screen" while a
+   widget was selected. The composer carries the hx-get that asks for it. #}
+{% macro composeSwap(c) %}{{ dv.composer(c.plan) }}{% endmacro %}
+
 {% macro activitySwap(c) %}{{ sh.activitySwap(c) }}{% endmacro %}
 
 {# The inspector pane (activity panel, 4th view). Two fragments, because the
