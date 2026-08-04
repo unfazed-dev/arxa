@@ -271,7 +271,14 @@ export const sendMessage = (session = {}, text, t = (k) => k, locale = 'en', scr
     const seq = (session.scaffoldThreadSeq = (session.scaffoldThreadSeq || 0) + 1);
     (session.scaffoldThread ??= []).push(
       { id: `u-${seq}`, from: 'user', text: body },
-      { id: `a-${seq}`, from: 'agent', text: t('scaffold.picker.thread.reply') },
+      // `t()` may return a lazy message object rather than a string. It
+      // stringifies correctly on the request that creates it, so the newest
+      // reply always looks right; but the session round-trips through JSON,
+      // so an unresolved value replays as "[object Object]" on every later
+      // render — every reply except the last one. Resolve the scalar before
+      // storing it. Same store-map/emit-resolved-scalar split that
+      // `panelSizeFor` was built for one screen over.
+      { id: `a-${seq}`, from: 'agent', text: String(t('scaffold.picker.thread.reply')) },
     );
   }
   return context(session, t, locale, screen);
