@@ -60,6 +60,8 @@ The kit is a standalone leaf tier — it depends only on Flutter, `stacked`/`sta
 
 ### Testing
 
+Run this package's tests with `flutter test` (not `dart test`): the suite imports `flutter_test` and widget-bound services, so the plain Dart test runner cannot load it. From the repo root: `cd kit/core && flutter test`.
+
 Inject deterministic identity with `KitPlatformOverride({isIOS, isAndroid, iosMajor, targetPlatform})` in `setUp` and clear it with `KitPlatform.reset()` in `tearDown` — the only way to exercise the native-chrome gating branches without a real device. The reactive services are Stacked `ListenableServiceMixin`s backed by rxdart `BehaviorSubject`s, so register a fake through `locator` (or seed the real service) and await emissions from `KitErrorService.unreadCount$` / `widgetEventCounts$` / `loadingWidgets$` to assert call counts and state. `KitSelectableService` exposes a synchronous `selectedIDs` getter (plus the `selectedIDs$` stream) for direct selection assertions, and `KitTimeUtils.getPersonalizedGreeting` takes an optional `DateTime` so greeting logic is fully deterministic. The package ships only `flutter_test` (no dedicated recording double), so assertions lean on the exposed streams and getters above.
 
 
