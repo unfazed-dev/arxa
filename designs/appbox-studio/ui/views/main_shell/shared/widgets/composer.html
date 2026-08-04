@@ -39,10 +39,19 @@
                       either one opens the tray on its own
      undoRedo       — { chat: {canUndo, canRedo} } drives the composer
                       undo/redo pair (chat stack)
-     tray           — { open, toggleHref } the tray's collapse state #}
-{% macro field(c) %}
-<form class="composer" id="composer" method="post" action="{{ c.composerAction }}"
-      hx-post="{{ c.composerAction }}" hx-target="#panels" hx-swap="morph:outerHTML">
+     tray           — { open, toggleHref } the tray's collapse state
+     swapTarget     — optional hx-target override for every swap this card
+                      issues (default '#panels'); a second mount (e.g. a
+                      screen-scoped drawer) points it at its own container
+   scope — optional instance suffix: when set, every element id in the card
+     gains `--<scope>` and the form carries data-composer-scope, so two
+     instances can coexist on one page without id collisions; the default ''
+     renders the current composer panel unchanged #}
+{% macro field(c, scope='') %}
+{%- set sfx = ('--' ~ scope) if scope else '' %}
+{%- set tgt = c.swapTarget or '#panels' %}
+<form class="composer" id="composer{{ sfx }}"{% if scope %} data-composer-scope="{{ scope }}"{% endif %} method="post" action="{{ c.composerAction }}"
+      hx-post="{{ c.composerAction }}" hx-target="{{ tgt }}" hx-swap="morph:outerHTML">
   {% set hasStrip = c.filmstrip and c.filmstrip.length %}
   {% set hasEls = c.elements and c.elements.length %}
   {# The SUMMARY and the tray BODY are gated separately. They used to share one
@@ -65,10 +74,10 @@
      survives the next render. The filmstrip and the element chips are fully
      independent — either one opens the tray on its own. #}
   {% if hasBody %}
-  <input class="cm-tray-cb" type="checkbox" id="cm-tray-cb" {{ 'checked' if c.tray.open }}
-         hx-get="{{ c.tray.toggleHref }}" hx-trigger="change" hx-target="#panels" hx-swap="morph:outerHTML" hx-push-url="false"
+  <input class="cm-tray-cb" type="checkbox" id="cm-tray-cb{{ sfx }}" {{ 'checked' if c.tray.open }}
+         hx-get="{{ c.tray.toggleHref }}" hx-trigger="change" hx-target="{{ tgt }}" hx-swap="morph:outerHTML" hx-push-url="false"
          aria-label="{{ t('composer.collapseTray') if c.tray.open else t('composer.showTray') }}">
-  <label class="cm-tray-head" for="cm-tray-cb" title="{{ t('composer.collapseTray') if c.tray.open else t('composer.showTray') }}">
+  <label class="cm-tray-head" for="cm-tray-cb{{ sfx }}" title="{{ t('composer.collapseTray') if c.tray.open else t('composer.showTray') }}">
     <span class="cm-tray-title">{{ t('composer.context') }}{% if c.trayContext %} · {{ c.trayContext.first }}{{ ' +' + c.trayContext.extra if c.trayContext.extra }}{% elif hasEls %} · {{ c.elements[0].name }}{{ ' +' + (c.elements.length - 1) if c.elements.length > 1 }}{% endif %}</span>
     {{ icon('chevron-down', {size: 14, cls: 'composer-chev'}) }}
   </label>
@@ -93,7 +102,7 @@
     {% for s in c.contextChips %}
     <span class="cs-ctx-chip ctx-{{ s.tone }}" title="{{ s.id }}">
       <span class="cs-ctx-name">{{ s.label }}</span>
-      <a class="ctx-x" href="{{ s.removeHref }}" hx-get="{{ s.removeHref }}" hx-target="#panels" hx-swap="morph:outerHTML" hx-push-url="false"
+      <a class="ctx-x" href="{{ s.removeHref }}" hx-get="{{ s.removeHref }}" hx-target="{{ tgt }}" hx-swap="morph:outerHTML" hx-push-url="false"
          aria-label="{{ t('chat.removeChip', {label: s.label}) }}">{{ icon('x', {size: 12}) }}</a>
     </span>
     {% endfor %}
@@ -107,12 +116,12 @@
         {% for s in c.filmstrip %}
         <a class="dv-thumb cs-thumb {{ 'in-ctx ctx-' + s.tone if s.inContext }} {{ 'is-dim' if s.dim }} {{ 'on' if s.active }}"
            href="{{ s.protoHref or s.contextHref }}" hx-get="{{ s.protoHref or s.contextHref }}"
-           hx-target="{{ '#design-viewer' if s.protoHref else '#panels' }}" hx-swap="morph:outerHTML" hx-push-url="false"
+           hx-target="{{ '#design-viewer' if s.protoHref else tgt }}" hx-swap="morph:outerHTML" hx-push-url="false"
            title="{{ s.label or s.id }}">
           {# Filmstrip thumbs render the same screens as the canvas tiles, so
              they need their own id namespace or morph would pair a thumb with
              a tile of the same screen. #}
-          <span class="dv-thumb-clip"><iframe id="dvf-thumb--{{ s.id }}" src="{{ s.src }}" scrolling="no" tabindex="-1" title=""></iframe></span>
+          <span class="dv-thumb-clip"><iframe id="dvf-thumb--{{ s.id }}{{ sfx }}" src="{{ s.src }}" scrolling="no" tabindex="-1" title=""></iframe></span>
           <span class="dv-thumb-label"><code>{{ s.id }}</code></span>
         </a>
         {% endfor %}
@@ -126,7 +135,7 @@
           <span class="cs-el-kind">{{ el.kind }}</span>
           <span class="cs-el-screen muted">{{ el.screenId }}</span>
           {% if el.removeHref %}
-          <a class="ctx-x" href="{{ el.removeHref }}" hx-get="{{ el.removeHref }}" hx-target="#panels" hx-swap="morph:outerHTML" hx-push-url="false" aria-label="{{ t('chat.removeChip', {label: el.name}) }}">{{ icon('x', {size: 12}) }}</a>
+          <a class="ctx-x" href="{{ el.removeHref }}" hx-get="{{ el.removeHref }}" hx-target="{{ tgt }}" hx-swap="morph:outerHTML" hx-push-url="false" aria-label="{{ t('chat.removeChip', {label: el.name}) }}">{{ icon('x', {size: 12}) }}</a>
           {% endif %}
         </span>
         {% endfor %}
@@ -141,7 +150,7 @@
      empty value, so the draft died on every pin toggle. Dropped on the render
      that follows a send (c.draftSent), because preserving there would leave
      the just-sent text in the box, ready to send twice. #}
-  <textarea id="composer-text"{% if not c.draftSent %} hx-preserve="true"{% endif %} name="text" rows="1" placeholder="{{ c.placeholder }}" aria-label="{{ c.placeholder }}"></textarea>
+  <textarea id="composer-text{{ sfx }}"{% if not c.draftSent %} hx-preserve="true"{% endif %} name="text" rows="1" placeholder="{{ c.placeholder }}" aria-label="{{ c.placeholder }}"></textarea>
   <div class="composer-bar">
     {% if c.suggestions and c.suggestions.length %}
     <details class="composer-plus">
@@ -156,12 +165,12 @@
     <span class="composer-undo-redo" role="group" aria-label="{{ t('miniPanel.historyGroup') }}">
       <button type="button" class="ico-btn undo-btn" {{ '' if c.undoRedo and c.undoRedo.chat.canUndo else 'disabled' }}
               {% if c.undoRedo and c.undoRedo.chat.canUndo %}
-              hx-post="/design/undo/chat" hx-target="#panels" hx-swap="morph:outerHTML"
+              hx-post="/design/undo/chat" hx-target="{{ tgt }}" hx-swap="morph:outerHTML"
               {% endif %}
               title="{{ t('miniPanel.undo') }}">{{ icon('undo-2', {size: 16}) }}</button>
       <button type="button" class="ico-btn redo-btn" {{ '' if c.undoRedo and c.undoRedo.chat.canRedo else 'disabled' }}
               {% if c.undoRedo and c.undoRedo.chat.canRedo %}
-              hx-post="/design/redo/chat" hx-target="#panels" hx-swap="morph:outerHTML"
+              hx-post="/design/redo/chat" hx-target="{{ tgt }}" hx-swap="morph:outerHTML"
               {% endif %}
               title="{{ t('miniPanel.redo') }}">{{ icon('redo-2', {size: 16}) }}</button>
     </span>
@@ -171,7 +180,7 @@
       <summary aria-label="{{ t('composer.agentModel') }}" title="{{ t('composer.agentModel') }}">{{ c.modelMenu.label }} {{ icon('chevron-down', {size: 14, cls: 'composer-chev'}) }}</summary>
       <span class="composer-menu composer-menu-right">
         {% for o in c.modelMenu.options %}
-        <a class="composer-opt {{ 'on' if o.active }}" href="{{ o.href }}" hx-get="{{ o.href }}" hx-target="#panels" hx-swap="morph:outerHTML" hx-push-url="false">
+        <a class="composer-opt {{ 'on' if o.active }}" href="{{ o.href }}" hx-get="{{ o.href }}" hx-target="{{ tgt }}" hx-swap="morph:outerHTML" hx-push-url="false">
           <span class="composer-opt-label">{{ o.label }}</span>
           <span class="composer-opt-blurb">{{ o.blurb }}</span>
           {% if o.active %}{{ icon('check', {size: 14, cls: 'composer-opt-check'}) }}{% endif %}
