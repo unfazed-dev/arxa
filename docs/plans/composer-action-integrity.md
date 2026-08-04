@@ -1143,3 +1143,24 @@ error was `appbox/` for `appboxd/`, which fails loudly.
 
 Rule this adds to the sweep: *never read `$?` through a pipe.* It silently
 substitutes the wrong process's verdict, which is this document's entire subject.
+
+## Instance 13 — a stale server nearly manufactured a defect on someone else's screen (mine)
+
+After committing my route I measured `POST /scaffold/messages -> 404` and was one message away
+from telling picker their composer was broken again. The route line was correct in the tree AND
+in HEAD, and `export const sendMessage` was present at `picker_viewmodel.js:55` — three static
+reads all agreed the wiring was sound, against one dynamic read that said it wasn't.
+
+The static reads were right. The server predated picker's commit; ESM cache. After a restart
+with a real readiness gate, `POST /scaffold/messages -> 200`.
+
+What makes this the sharpest instance so far: my own route returned 200 from the same file in the
+same request cycle, which read as proof the file was loaded and therefore that the 404 was about
+picker's half specifically. It wasn't — my route entered the process at a different time than
+theirs did. A live 200 next to a live 404 in one file is not evidence the file is current; it is
+only evidence that *something* is loaded. The positive control has to be the thing under test at
+the time under test, not a neighbour of it.
+
+Standing form of the rule, now paid out four times: a zero is admissible only from an instrument
+proven capable of non-zero **for that subject, at that moment**. Restart-after-edit is the
+mechanical way to buy the "at that moment" half, and it stays the default.
