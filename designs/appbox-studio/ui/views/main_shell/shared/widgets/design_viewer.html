@@ -13,9 +13,15 @@
    widget was selected. Rather than reach into an island's response or a route
    another agent owns, the composer declares its OWN dependency: when that
    slot settles, re-fetch the scope-aware version of me. Pure htmx. #}
-{% macro composer(pl) %}
+{# `oob` renders this composer as an out-of-band passenger on someone else's
+   response — the widget editor uses it to un-scope the screen the selection
+   just LEFT. That screen's own trigger cannot do it: the swap lands in the
+   newly-selected screen's slot, so nothing settles beside the old one and it
+   would go on offering "applies to <widget>" for a widget no longer selected. #}
+{% macro composer(pl, oob=false) %}
 <div class="dv-compose" id="dv-compose-{{ pl.slot }}" data-compose-for="{{ pl.screen }}"
      data-compose-scope="{{ pl.scope }}" data-compose-screens="{{ pl.screenCount }}"
+     {% if oob %}hx-swap-oob="true"{% endif %}
      hx-get="{{ pl.composerHref }}?screen={{ pl.screen }}"
      hx-trigger="htmx:afterSettle from:#dv-wedit-{{ pl.slot }}"
      hx-target="this" hx-swap="outerHTML">

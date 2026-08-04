@@ -38,6 +38,10 @@ const Probe screenComposerProbe = Probe(
 const _screen = 'portalo.auth';
 const _slot = 'portalo-auth';
 
+// A second screen with real widgets, for the selection-moved case in section C.
+const _second = 'portalo.home';
+const _secondSlot = 'portalo-home';
+
 Future<void> _run(ProbeContext ctx) async {
   final page = await ctx.newPage(width: 1800, height: 1100);
   await ctx.goto(page, '/design');
@@ -139,6 +143,54 @@ Future<void> _run(ProbeContext ctx) async {
         after['othersStillScreen'] == true)
     ..check('no page reload', after['noReload'] == true)
     ..check('the replacement composer is re-armed', after['rearmed'] == true);
+
+  ctx.report.section('C. moving the selection to another screen un-scopes the first');
+  // The inverse of section B, and the one the per-slot trigger cannot see on
+  // its own: this click settles #dv-wedit-<other>, so nothing about the
+  // exchange touches the composer we just scoped. If it stays widget-scoped it
+  // is lying in the other direction — offering "applies to <widget>" for a
+  // widget that is no longer selected, which submits a widget-scoped intent
+  // the user did not choose.
+  final moved = _map(await page.evaluate('''
+(() => {
+  const row = document.querySelector('[data-explode-row="$_second"] .dv-explode-el');
+  if (row) row.click();
+  return { clicked: !!row };
+})()'''));
+  ctx.report.check('an explode row to click on $_second', moved['clicked'] == true);
+
+  await probeWaitFor(
+    page,
+    "document.getElementById('dv-compose-$_secondSlot')"
+    "?.dataset.composeScope === 'widget'",
+    timeout: const Duration(seconds: 10),
+    label: 'the second screen taking the selection',
+    report: ctx.report,
+  );
+
+  final unscoped = _map(await page.evaluate('''
+(() => {
+  const first = document.getElementById('dv-compose-$_slot');
+  const input = first && first.querySelector('.dv-compose-input');
+  return {
+    scope: first && first.dataset.composeScope,
+    placeholder: input && input.getAttribute('placeholder'),
+    widgetScoped: [...document.querySelectorAll('.dv-compose')]
+      .filter((n) => n.dataset.composeScope === 'widget').map((n) => n.id),
+    noReload: window.__composerProbe === 'alive',
+  };
+})()'''));
+  ctx.report
+    ..check('the first composer is screen-scoped again',
+        unscoped['scope'] == 'screen', '${unscoped['scope']}')
+    ..check('its placeholder stops naming the old widget',
+        unscoped['placeholder'] is String &&
+            (unscoped['placeholder'] as String).contains(_screen),
+        '${unscoped['placeholder']}')
+    ..check('exactly one composer is widget-scoped',
+        (unscoped['widgetScoped'] as List?)?.length == 1,
+        jsonEncode(unscoped['widgetScoped']))
+    ..check('still no page reload', unscoped['noReload'] == true);
 
   ctx.report.check('no page errors', page.pageErrors.isEmpty,
       page.pageErrors.join(' | '));

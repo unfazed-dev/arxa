@@ -89,7 +89,9 @@
    explode.js's selection POST and the step-chip posts. Body only — it swaps
    into the selected screen's .dv-wedit slot. #}
 {% import "ui/views/main_shell/shared/widgets/widget_editor.html" as wed %}
-{% macro widgetEditor(c) %}{{ wed.pane(c) }}{% endmacro %}
+{# The pane, plus (when the selection moved off another screen) that screen's
+   composer as an out-of-band passenger — see the facade's selectWidget. #}
+{% macro widgetEditor(c) %}{{ wed.pane(c) }}{% if c.prevComposer %}{{ dv.composer(c.prevComposer, true) }}{% endif %}{% endmacro %}
 
 {% macro inspectorSwap(c) %}
 {{ ins.pane(c) }}

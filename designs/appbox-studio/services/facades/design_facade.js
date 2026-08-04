@@ -911,13 +911,24 @@ export const widgetEditorContext = (d, t = (k) => k) => {
 // pattern). Selection is session state so it survives viewer morphs.
 export const selectWidget = (sessionData, payload = {}, t = (k) => k) => {
   const d = design(sessionData);
+  // The screen the selection is LEAVING, captured before the overwrite. Its
+  // composer is scoped to a widget that is about to stop being selected, and
+  // the swap this response drives lands in the NEW screen's slot — so nothing
+  // settles beside the old composer and its own trigger never fires. It rides
+  // back out-of-band instead. Only one selection exists at a time, so this is
+  // at most one extra composer, not a re-render of the column.
+  const prev = d.widgetSel?.screen ?? null;
   d.widgetSel = {
     screen: payload.screen ?? '',
     kind: payload.kind ?? '',
     name: payload.name ?? '',
     index: Number(payload.index ?? 0) || 0,
   };
-  return widgetEditorContext(d, t);
+  const ctx = widgetEditorContext(d, t);
+  if (prev && prev !== d.widgetSel.screen) {
+    ctx.prevComposer = planContexts(d, [{ id: prev }], t)[prev];
+  }
+  return ctx;
 };
 
 export const clearWidget = (sessionData, t = (k) => k) => {
