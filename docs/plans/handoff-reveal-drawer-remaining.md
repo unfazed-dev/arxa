@@ -1,5 +1,15 @@
 # Handoff — screen reveal-drawer plan, remaining work
 
+**DONE 2026-08-05 — all five increments merged.** Inc 4 (Logic tab) merged as
+`a3f0f97` (probes 17/17 incl. `widget-logic`); Inc 5 (container removal +
+cleanup) merged as `7babc79` (probes 15/15 — explode/screen-composer deleted,
+coverage migrated to flowwalk/shell-chrome/widget-tools/reveal-drawer).
+Plan-level definition of done below is met; this file is kept as the record.
+Follow-ups handed to the operator: real `~/.appbox/projects/portalo` carries a
+stale qps-ploc fixture (regenerate via `design pseudolocalize` + the project's
+generator, as was done for the Inc-5 disposable); stray `inc5-portalo` project
+dir in `~/.appbox/projects/` is leftover clutter, safe to remove.
+
 Session date: 2026-08-04. Repo: `/Volumes/developer_ssd/Developer/totem_labs/app-box`, branch `master`.
 
 ## Authority

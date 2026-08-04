@@ -1,6 +1,6 @@
 # Screen Reveal-Drawer: Composer / Tools / Logic
 
-Date: 2026-08-04. Status: planned.
+Date: 2026-08-04. Status: shipped 2026-08-05 (increments 1–5 merged; see `handoff-reveal-drawer-remaining.md`).
 Supersedes: `widget-editing-autolayout-and-manager.md` § "Components-container 2-col split" (that section is dead; a supersession note points here). Task #4 is replaced by the increments below.
 
 ## Requirement (operator's intent)
