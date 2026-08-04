@@ -41,4 +41,9 @@ export default [
   // scaffold.run — the scaffold execution surface
   ['GET', '/scaffold/run', run.page],
   ['GET', '/scaffold/run/panel/size/:panel/:size', run.panelSize],
+  // Landed BEFORE the facade sets `composerAction`, so it is provably inert on
+  // arrival: the guard at _shared.html:75 renders no form while the action is
+  // falsy. The reverse order is the class-1 defect this shell already shipped
+  // once — see docs/plans/composer-action-integrity.md.
+  ['POST', '/scaffold/run/messages', run.sendMessage], // posted-by: c.composerAction (scaffold_run_facade)
 ];
