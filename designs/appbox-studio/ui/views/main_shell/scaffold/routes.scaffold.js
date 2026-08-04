@@ -31,6 +31,9 @@ export default [
   ['POST', '/scaffold/add', picker.add],
   ['POST', '/scaffold/remove', picker.remove],
   ['POST', '/scaffold/remove/confirm', picker.removeConfirm],
+  // Composer post target. Was declared, unrouted, live 404 — see
+  // docs/plans/composer-action-integrity.md.
+  ['POST', '/scaffold/messages', picker.sendMessage], // posted-by: c.composerAction (scaffold_facade)
   // Cancel is a server route, not a link back to the page: clearing
   // `session.pendingRemove` is what ends the confirm, and re-rendering
   // `/scaffold` would leave it set and show the dialog again forever.
@@ -38,4 +41,9 @@ export default [
   // scaffold.run — the scaffold execution surface
   ['GET', '/scaffold/run', run.page],
   ['GET', '/scaffold/run/panel/size/:panel/:size', run.panelSize],
+  // Landed BEFORE the facade sets `composerAction`, so it is provably inert on
+  // arrival: the guard at _shared.html:75 renders no form while the action is
+  // falsy. The reverse order is the class-1 defect this shell already shipped
+  // once — see docs/plans/composer-action-integrity.md.
+  ['POST', '/scaffold/run/messages', run.sendMessage], // posted-by: c.composerAction (scaffold_run_facade)
 ];

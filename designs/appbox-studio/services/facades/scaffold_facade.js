@@ -170,7 +170,16 @@ export const context = (session = {}, t = (k) => k, locale = 'en', screen = 'suc
     // composer with nothing above it and no error, which reads as "there is
     // nothing to say here" instead of "this facade forgot to say it".
     panel: session.scaffoldPanel || 'main',
-    panelSizes: session.scaffoldPanelSize || {},
+    // Store is the map (`setPanelSize` below writes scaffoldPanelSize[panel]);
+    // emit is the resolved scalar for the one panel the shell resizes — the
+    // same store-map/emit-scalar split as run's facade (panelSizeFor). The
+    // shared chrome reads `panelSize`/`panelSizeHref`; the `panelSizes` map
+    // had zero consumers. (Applied by team lead; picker-screen's fix, owners
+    // unreachable at time of landing.)
+    panelSize: PANEL_SIZES.includes(session.scaffoldPanelSize?.activity)
+      ? session.scaffoldPanelSize.activity
+      : 's',
+    panelSizeHref: '/scaffold/panel/size/activity/',
     stageEyebrow: t('scaffold.picker.eyebrow'),
     // The chips are the pinned context the composer carries: what is picked,
     // and how much of it still wants keys. Counts, not prose — the grid is
@@ -271,7 +280,14 @@ export const sendMessage = (session = {}, text, t = (k) => k, locale = 'en', scr
     const seq = (session.scaffoldThreadSeq = (session.scaffoldThreadSeq || 0) + 1);
     (session.scaffoldThread ??= []).push(
       { id: `u-${seq}`, from: 'user', text: body },
-      { id: `a-${seq}`, from: 'agent', text: t('scaffold.picker.thread.reply') },
+      // `t()` may return a lazy message object rather than a string. It
+      // stringifies correctly on the request that creates it, so the newest
+      // reply always looks right; but the session round-trips through JSON,
+      // so an unresolved value replays as "[object Object]" on every later
+      // render — every reply except the last one. Resolve the scalar before
+      // storing it. Same store-map/emit-resolved-scalar split that
+      // `panelSizeFor` was built for one screen over.
+      { id: `a-${seq}`, from: 'agent', text: String(t('scaffold.picker.thread.reply')) },
     );
   }
   return context(session, t, locale, screen);

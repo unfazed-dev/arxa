@@ -46,6 +46,28 @@ export const panelSize = (c, h) =>
     ),
   });
 
+// --- composer ----------------------------------------------------------
+// The shell mounts a composer on every scaffold surface (_shared.html), and
+// scaffold_facade sets its action unconditionally, so this screen posts a
+// real form. This is the handler that receives it. Empty input is a no-op
+// (204), matching every other composer in the shell; anything else appends a
+// turn and swaps the panels back, carrying the lens it was posted from.
+export const sendMessage = async (c, h) => {
+  const form = await h.form(c);
+  const text = String(form.text || '').trim();
+  if (!text) return h.noContent(c);
+  return h.render(c, `${VIEW}#panelsSwap`, {
+    activeShell: 'scaffold',
+    ...facade.sendMessage(
+      h.session(c).data,
+      text,
+      h.t(c),
+      h.locale(c),
+      c.req.query('state') || 'success',
+    ),
+  });
+};
+
 // --- add ---------------------------------------------------------------
 // Adding is unconditional: D5 dependency pull-in happens in the facade's
 // closure pass, so the caller never has to know what a kit drags along.

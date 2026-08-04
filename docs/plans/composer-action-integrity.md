@@ -1143,3 +1143,128 @@ error was `appbox/` for `appboxd/`, which fails loudly.
 
 Rule this adds to the sweep: *never read `$?` through a pipe.* It silently
 substitutes the wrong process's verdict, which is this document's entire subject.
+
+## Instance 13 — a stale server nearly manufactured a defect on someone else's screen (mine)
+
+After committing my route I measured `POST /scaffold/messages -> 404` and was one message away
+from telling picker their composer was broken again. The route line was correct in the tree AND
+in HEAD, and `export const sendMessage` was present at `picker_viewmodel.js:55` — three static
+reads all agreed the wiring was sound, against one dynamic read that said it wasn't.
+
+The static reads were right. The server predated picker's commit; ESM cache. After a restart
+with a real readiness gate, `POST /scaffold/messages -> 200`.
+
+What makes this the sharpest instance so far: my own route returned 200 from the same file in the
+same request cycle, which read as proof the file was loaded and therefore that the 404 was about
+picker's half specifically. It wasn't — my route entered the process at a different time than
+theirs did. A live 200 next to a live 404 in one file is not evidence the file is current; it is
+only evidence that *something* is loaded. The positive control has to be the thing under test at
+the time under test, not a neighbour of it.
+
+Standing form of the rule, now paid out four times: a zero is admissible only from an instrument
+proven capable of non-zero **for that subject, at that moment**. Restart-after-edit is the
+mechanical way to buy the "at that moment" half, and it stays the default.
+
+## Ruling compliance for `/scaffold/run` — measured, not asserted
+
+Instruments proved capable of non-zero before each zero was admitted. Two of my
+first-pass selectors (`run-thread-row`, `href=*size*`) were incapable and their
+zeros were discarded, not reported.
+
+| ruled requirement | measurement | result |
+|---|---|---|
+| thread append, user's own text only | `bt-user` 0→1, `bt-agent` 1→1 across POST | +1 exactly, no invented reply |
+| append persists | re-GET, same jar | marker present |
+| `h.render(c, VIEW#panelsSwap)` | POST body | no `<!DOCTYPE`, no `<html>` — fragment |
+| empty text → `h.noContent(c)` | POST `text=` | 204 |
+| zero new l10n keys | 5 states swept for `MISSING`/`undefined`/raw `scaffold.run.*` | 0 |
+| scalar `size` + `sizeHref` | facade `:79`,`:80` vs design `:893`, intake `:732`, build `:477` | identical shape |
+| five states unchanged until action set | pre-flip baseline vs post | byte-identical, 0 forms |
+
+**Positive control that mattered:** my "no resize href renders" finding reproduced
+exactly on `/design/freeze` — a known-good sibling. A defect that reproduces on the
+control is not a defect; it is the convention, and my grep was aimed at markup the
+grip does not use. Reported as parity, not as a bug.
+
+**Two disclosures.** (1) The action carries `?state=` — a deviation from the ruling's
+literal `'/scaffold/run/messages'`. Behavior is the ruled one; the suffix exists so a
+note left on the `failed` receipt is not answered with the `completed` one. Lead may
+strike it. (2) A note is session-held and therefore visible from every lens state,
+`?state=completed` included. That is a property of the run, not of the view, so I
+believe it is right — but it was measured, not designed, and is stated so it can be
+overruled.
+
+## Instance 14 — "committed" is not a location, and master is half-present
+
+The lead reported no movement on two items I had verified. Both readings were correct;
+they were taken in different trees.
+
+```
+git branch -a --contains 97a3301   -> scaffold-shell-worktree ONLY
+git branch -a --contains b4661bc   -> master AND scaffold-shell-worktree
+master: grep -c composerAction scaffold_run_facade.js -> 0
+```
+
+I had also told a teammate `_shared.html` was "committed," meaning it. It is — on this
+branch (`9c77c10`), not on `master`. **"Committed" is a claim about reachability from a
+named ref, and it is worthless without the ref.** The same word covered two different
+facts in the same thread and only the branch query separated them.
+
+**Operational consequence, worth more than the vocabulary point.** The panel-size pair is
+split across trees: `master` has the facade half (`panelSizeHref`, `b4661bc`) but not the
+template half that consumes it (`_shared.html:105`, `9c77c10`). Anything gated from the
+main checkout is measuring a half-present convention and cannot know it. Any suite that
+reports green from a tree that lacks half the change is a positive control for the tree,
+not for the change.
+
+Corollary to the standing rule: an instrument must be proven capable of non-zero for that
+subject, at that moment, **and in that tree**. Three coordinates, not two. The first two
+were learned by measuring; the third arrived as a status ping that read as a false alarm
+and wasn't one.
+
+## Lens-threading control, and four instrument defects that preceded it
+
+picker-screen asked for a positive control on `sendMessage`'s 5th argument
+(`screen`), warning that a dropped or transposed arg collapses all six lenses
+to `success` with no gate catching it. Result, measured with a proven
+instrument:
+
+| state | POST | render delta | probe rendered |
+|---|---|---|---|
+| success | 200 | 160 | yes |
+| error | 200 | 158 | yes |
+| signedOut | 200 | 162 | yes |
+
+Three distinct deltas. **The lens is threaded; the feared collapse is not live.**
+
+The value here is not the result — it is that four consecutive instruments
+said otherwise, and each was wrong in a different way:
+
+1. **Wrong layer.** Read the POST *response* for lens information. All six
+   returned `204`/0 bytes, and the script printed "ALL LENSES COLLAPSED —
+   FAILURE MODE IS LIVE". A zero-byte body cannot carry lens data by design
+   (`h.noContent`); this measured the absence of a channel, not a collapse.
+2. **Wrong field name.** Posted `composer-text=` — that is the textarea's
+   `id`; its `name` is `text`. Every POST therefore carried an *empty*
+   message, which correctly short-circuits to `204`. The identical responses
+   that looked like collapse were manufactured by the request body.
+3. **Lens override as confound.** Read back through `?state=`, which pins the
+   render to a fixture and is structurally incapable of showing a session
+   mutation.
+4. **No-op control.** Chose `add kit=auth` as the positive control; `auth` is
+   already in the default picked set, so the control was a genuine no-op and
+   "proved" blindness that did not exist. This is the same trap run-screen
+   documented at t=463.
+
+Only defect 4 was caught by the rule already in this doc (require a positive
+control). Defects 1–3 were caught by the control *failing* — the instrument
+declared itself broken before it could declare a teammate broken.
+
+**Disproven en route:** run-screen's standing suspicion that the design server
+re-issues `kdh_sid` per request. Measured: one sid issued, honored across four
+requests. Session persistence works; the blindness had other causes. Worth
+retiring that hypothesis before it explains away a real result.
+
+**Constraint added:** a positive control must be *shown to move*. A control
+that could be a no-op is not a control. Report its delta alongside the result,
+so a flat control is visible as instrument failure rather than read as evidence.

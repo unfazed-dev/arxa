@@ -1044,5 +1044,6 @@
   "scaffold.run.fail.retry": "Try again",
   "scaffold.run.blocked.structureNotFrozen": "Scaffolding copies a frozen design into code. Yours is still being edited, so there is no fixed thing to copy.",
   "scaffold.run.blocked.action": "Freeze the design",
-  "scaffold.run.next.build": "Continue to build"
+  "scaffold.run.next.build": "Continue to build",
+  "scaffold.picker.thread.reply": "Noted. Nothing is applied until you continue."
 }

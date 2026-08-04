@@ -133,5 +133,64 @@ if (undeclared.length) {
   console.log('  adopt `composerAction: null` to make this decidable.');
 }
 
-console.log(`\n${fail} failure(s), ${unresolved} unresolved`);
-process.exit(fail ? 1 : 0);
+// --- RENDER-BOUND PHASE: ask the server, not the source ---
+// Two failure modes were demonstrated live in this task, and both are invisible
+// to source reading: (a) a template literal (`${base}/messages`) has no single
+// value to check, and (b) a view-local grep cannot see a composer inherited from
+// a shell-mounted macro, so it reports clean on the file that actually renders
+// the form. The authoritative question is what the server EMITS. So pull the
+// `action` off every rendered composer form and require it to resolve to a
+// registered POST route. One instrument, both classes: action="" (facade
+// assigned nothing) and set-but-unrouted (assigned, no route → live 404).
+// A skip is reported as a skip. It is never scored as a pass.
+const ORIGIN = process.env.APPBOX_ORIGIN || 'http://127.0.0.1:4319';
+(async () => {
+  const gets = routes.filter(r => r.method === 'GET' && !r.p.includes(':'));
+  let up = true;
+  try { await fetch(ORIGIN + '/'); } catch { up = false; }
+
+  if (!up) {
+    console.log(`\nrender phase SKIPPED — no server at ${ORIGIN}.`);
+    console.log('  Template literals stay UNRESOLVED. A skip is not a pass.');
+  } else {
+    const seen = new Map();
+    let swept = 0, unreachable = 0;
+    for (const g of gets) {
+      try {
+        const html = await (await fetch(ORIGIN + g.p)).text();
+        swept++;
+        for (const m of html.matchAll(/<form[^>]*class="[^"]*composer[^"]*"[^>]*>/g)) {
+          const a = m[0].match(/action="([^"]*)"/);
+          if (a && !seen.has(a[1])) seen.set(a[1], g.p);
+        }
+      } catch { unreachable++; }
+    }
+    console.log(`\nrender phase: swept ${swept} concrete GET route(s)` +
+      `${unreachable ? `, ${unreachable} UNREACHABLE (reported, not skipped silently)` : ''};` +
+      ` ${seen.size} distinct composer action(s) emitted`);
+
+    let rf = 0;
+    for (const [act, where] of seen) {
+      const tag = (act === '' ? '(empty)' : act).padEnd(30);
+      // Match on path only: the runtime router strips the query before route
+      // lookup (worker_shim.js:149,235 — `fullPath.split('?')[0]`), so an
+      // action carrying `?state=` is routed by its pathname. Comparing the
+      // full string here would fail actions the server actually serves.
+      const actPath = act.split('?')[0];
+      if (act === '') { rf++; console.log(`  ${tag}*** action="" — facade assigned nothing; posts to itself *** (${where})`); }
+      else if (!posts.has(actPath)) { rf++; console.log(`  ${tag}*** RENDERED BUT UNROUTED — live 404 *** (${where})`); }
+      else console.log(`  ${tag}routed (${posts.get(actPath)})  [seen at ${where}]`);
+    }
+    fail += rf;
+
+    if (!rf && unresolved && seen.size) {
+      console.log(`\n  ${unresolved} template-literal declaration(s) RESOLVED by render:`);
+      console.log('  every composer action the server actually emitted resolves to a POST');
+      console.log('  route, so no reachable expansion of the literal is unrouted.');
+      unresolved = 0;
+    }
+  }
+
+  console.log(`\n${fail} failure(s), ${unresolved} unresolved`);
+  process.exit(fail ? 1 : 0);
+})();

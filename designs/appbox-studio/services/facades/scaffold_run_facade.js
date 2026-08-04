@@ -127,6 +127,13 @@ export const context = (session = {}, t = (k) => k, locale = 'en', screen = 'com
     blocked: state === 'blocked' ? states.blocked : null,
     runHref: '/scaffold/run?state=completed',
     backHref: '/scaffold',
+    // The receipt is read-only about the RUN — nothing here re-runs it — but the
+    // user can still record a note against the outcome they are reading. The
+    // lens state travels IN the action because `sendMessage` re-renders the
+    // panel from `?state=`: posting from a bare path would answer a note left on
+    // the `failed` receipt with the `completed` one. Routed at
+    // routes.scaffold.js (POST /scaffold/run/messages) BEFORE this line was set.
+    composerAction: `/scaffold/run/messages?state=${state}`,
   };
 };
 

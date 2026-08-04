@@ -1031,5 +1031,6 @@
   "scaffold.run.fail.retry": "Spróbuj ponownie",
   "scaffold.run.blocked.structureNotFrozen": "Rusztowanie przepisuje zamrożony projekt na kod. Twój wciąż jest edytowany, więc nie ma stałego punktu odniesienia.",
   "scaffold.run.blocked.action": "Zamroź projekt",
-  "scaffold.run.next.build": "Przejdź do budowania"
+  "scaffold.run.next.build": "Przejdź do budowania",
+  "scaffold.picker.thread.reply": "Zanotowane. Nic nie zostaje zastosowane, dopóki nie przejdziesz dalej."
 }
