@@ -1,8 +1,14 @@
 # NOTICE — vendored webfonts (Increment 4: font menu)
 
-Lexend is NOT listed here: it was already vendored (see FONTS.md) and its
-@font-face blocks live in assets/css/app.css. fonts.css declares only the
-three families added for the font menu, so no face is declared twice.
+Lexend is NOT listed here: it was already vendored before this increment and
+its provenance is recorded in FONTS.md alongside the other pre-existing assets.
+
+Its @font-face blocks did live in assets/css/app.css; this increment MOVED all
+six (Lexend, Lexend Giga, Lexend Deca × latin/latin-ext) into assets/css/fonts.css
+so that every family the menu offers is declared in exactly one file. app.css
+now carries no @font-face at all — only a pointer comment. The twelve faces in
+fonts.css are the complete set: four menu families, six css families, two
+subsets each.
 
 ## Space Grotesk
 css2: https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&display=swap
