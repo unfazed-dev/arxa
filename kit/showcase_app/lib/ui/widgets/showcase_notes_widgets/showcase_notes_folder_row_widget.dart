@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:stacked/stacked.dart';
 import 'package:ui_library/ui_library.dart';
 import 'package:appbox_kit_showcase_app/models/showcase_note_folder.dart';
-import 'package:appbox_kit_showcase_app/ui/common/showcase_notes_shared.dart';
+import 'package:stacked_services/stacked_services.dart';
+import 'package:appbox_kit_showcase_app/app/app.dialogs.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes/showcase_notes_viewmodel.dart';
 import 'package:appbox_kit_showcase_app/ui/widgets/showcase_notes_widgets/widgets.dart';
 
@@ -24,7 +25,7 @@ class ShowcaseNotesFolderRowWidget extends StatelessWidget {
   final ShowcaseNotesViewModel viewModel;
 
   /// Long-press handler — the view owns the rename dialog plumbing
-  /// (`textInputDialog` + `renameFolder`).
+  /// (DialogType.showcaseTextInput + `renameFolder`).
   final VoidCallback onRename;
 
   @override
@@ -40,11 +41,14 @@ class ShowcaseNotesFolderRowWidget extends StatelessWidget {
         child: Icon(KitGlyphs.delete.icon, color: theme.colorScheme.onError),
       ),
       confirmDismiss: (_) async {
-        if (await confirmDialog(context,
-            title: 'Delete Folder',
-            message: 'Notes in "${folder.name}" will move to Recently Deleted.',
-            actionLabel: 'Delete',
-            destructive: true)) {
+        final res = await locator<DialogService>().showCustomDialog(
+          variant: DialogType.showcaseConfirm,
+          title: 'Delete Folder',
+          description:
+              'Notes in "${folder.name}" will move to Recently Deleted.',
+          data: (actionLabel: 'Delete', destructive: true),
+        );
+        if (res?.confirmed == true) {
           await viewModel.deleteFolder(folder);
         }
         return false;

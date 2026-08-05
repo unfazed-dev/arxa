@@ -1,2 +1,6 @@
+export 'showcase_confirm_dialog/showcase_confirm_dialog.dart';
+export 'showcase_confirm_dialog/showcase_confirm_dialog_model.dart';
 export 'showcase_info_alert_dialog/showcase_info_alert_dialog.dart';
 export 'showcase_info_alert_dialog/showcase_info_alert_dialog_model.dart';
+export 'showcase_text_input_dialog/showcase_text_input_dialog.dart';
+export 'showcase_text_input_dialog/showcase_text_input_dialog_model.dart';

@@ -8,7 +8,8 @@ import 'package:appbox_kit_showcase_app/ui/widgets/common/showcase_tabs_shared/w
 import 'package:appbox_kit_showcase_app/ui/widgets/showcase_notes_widgets/widgets.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_folder/showcase_notes_folder_viewmodel.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_note_editor/showcase_note_editor_viewmodel.dart';
-import 'package:appbox_kit_showcase_app/ui/common/showcase_notes_shared.dart';
+import 'package:stacked_services/stacked_services.dart';
+import 'package:appbox_kit_showcase_app/app/app.dialogs.dart';
 
 class ShowcaseNotesFolderViewMobile
     extends ViewModelWidget<ShowcaseNotesFolderViewModel> {
@@ -167,22 +168,26 @@ class ShowcaseNotesFolderViewMobile
 
 Future<void> _confirmEmptyTrash(
     BuildContext context, ShowcaseNotesFolderViewModel viewModel) async {
-  if (await confirmDialog(context,
-      title: 'Empty Recently Deleted',
-      message: 'Notes will be permanently deleted. This cannot be undone.',
-      actionLabel: 'Delete All',
-      destructive: true)) {
+  final res = await locator<DialogService>().showCustomDialog(
+    variant: DialogType.showcaseConfirm,
+    title: 'Empty Recently Deleted',
+    description: 'Notes will be permanently deleted. This cannot be undone.',
+    data: (actionLabel: 'Delete All', destructive: true),
+  );
+  if (res?.confirmed == true) {
     await viewModel.emptyTrash();
   }
 }
 
 Future<void> _confirmDeletePermanently(BuildContext context,
     ShowcaseNotesFolderViewModel viewModel, ShowcaseNote note) async {
-  if (await confirmDialog(context,
-      title: 'Delete Note',
-      message: 'This note will be permanently deleted.',
-      actionLabel: 'Delete',
-      destructive: true)) {
+  final res = await locator<DialogService>().showCustomDialog(
+    variant: DialogType.showcaseConfirm,
+    title: 'Delete Note',
+    description: 'This note will be permanently deleted.',
+    data: (actionLabel: 'Delete', destructive: true),
+  );
+  if (res?.confirmed == true) {
     await viewModel.deletePermanently(note);
   }
 }

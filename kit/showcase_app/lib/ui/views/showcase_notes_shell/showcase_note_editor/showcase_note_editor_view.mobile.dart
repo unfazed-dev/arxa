@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:stacked/stacked.dart';
 import 'package:ui_library/ui_library.dart';
 import 'package:appbox_kit_showcase_app/models/showcase_note_attachment.dart';
-import 'package:appbox_kit_showcase_app/ui/common/showcase_notes_shared.dart';
+import 'package:stacked_services/stacked_services.dart';
+import 'package:appbox_kit_showcase_app/app/app.dialogs.dart';
 import 'package:appbox_kit_showcase_app/ui/widgets/showcase_notes_widgets/widgets.dart';
 
 import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_note_editor/showcase_note_editor_viewmodel.dart';
@@ -89,8 +90,12 @@ Future<void> _confirmRemove(
   ShowcaseNoteEditorViewModel viewModel,
   ShowcaseNoteAttachment attachment,
 ) async {
-  if (await confirmDialog(context,
-      title: 'Remove attachment?', actionLabel: 'Remove')) {
+  final res = await locator<DialogService>().showCustomDialog(
+    variant: DialogType.showcaseConfirm,
+    title: 'Remove attachment?',
+    data: (actionLabel: 'Remove', destructive: false),
+  );
+  if (res?.confirmed == true) {
     await viewModel.removeAttachment(attachment);
   }
 }

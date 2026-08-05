@@ -1,5 +1,7 @@
 import 'package:appbox_kit_showcase_app/ui/bottom_sheets/showcase_notice_sheet/showcase_notice_sheet.dart';
 import 'package:appbox_kit_showcase_app/ui/dialogs/showcase_info_alert_dialog/showcase_info_alert_dialog.dart';
+import 'package:appbox_kit_showcase_app/ui/dialogs/showcase_confirm_dialog/showcase_confirm_dialog.dart';
+import 'package:appbox_kit_showcase_app/ui/dialogs/showcase_text_input_dialog/showcase_text_input_dialog.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_unknown_shell/showcase_unknown_shell_view.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_unknown_shell/showcase_unknown/showcase_unknown_view.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_startup_shell/showcase_startup_shell_view.dart';
@@ -114,6 +116,8 @@ import 'package:appbox_kit_showcase_app/services/adapters/showcase_notes_media_s
   ],
   dialogs: [
     StackedDialog(classType: ShowcaseInfoAlertDialog),
+    StackedDialog(classType: ShowcaseConfirmDialog),
+    StackedDialog(classType: ShowcaseTextInputDialog),
     // @stacked-dialog
   ],
 )

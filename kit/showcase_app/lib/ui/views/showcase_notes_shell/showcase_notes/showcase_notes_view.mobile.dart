@@ -5,7 +5,8 @@ import 'package:ui_library/ui_library.dart';
 import 'package:appbox_kit_showcase_app/models/showcase_note_folder.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_auth/showcase_notes_auth_view.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_create_account/showcase_notes_create_account_view.dart';
-import 'package:appbox_kit_showcase_app/ui/common/showcase_notes_shared.dart';
+import 'package:stacked_services/stacked_services.dart';
+import 'package:appbox_kit_showcase_app/app/app.dialogs.dart';
 import 'package:appbox_kit_showcase_app/ui/widgets/common/showcase_tabs_shared/widgets.dart';
 import 'package:appbox_kit_showcase_app/ui/widgets/showcase_notes_widgets/widgets.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes/showcase_notes_viewmodel.dart';
@@ -254,14 +255,24 @@ class ShowcaseNotesViewMobile extends ViewModelWidget<ShowcaseNotesViewModel> {
 
 Future<void> _showNewFolderDialog(
     BuildContext context, ShowcaseNotesViewModel viewModel) async {
-  final name =
-      await textInputDialog(context, title: 'New Folder', hint: 'Name');
-  if (name != null) await viewModel.createFolder(name);
+  final res = await locator<DialogService>().showCustomDialog(
+    variant: DialogType.showcaseTextInput,
+    title: 'New Folder',
+    data: (initial: null, hint: 'Name'),
+  );
+  if (res?.confirmed == true) {
+    await viewModel.createFolder(res!.data as String);
+  }
 }
 
 Future<void> _showRenameDialog(BuildContext context,
     ShowcaseNotesViewModel viewModel, ShowcaseNoteFolder folder) async {
-  final name = await textInputDialog(context,
-      title: 'Rename Folder', initial: folder.name);
-  if (name != null) await viewModel.renameFolder(folder, name);
+  final res = await locator<DialogService>().showCustomDialog(
+    variant: DialogType.showcaseTextInput,
+    title: 'Rename Folder',
+    data: (initial: folder.name, hint: null),
+  );
+  if (res?.confirmed == true) {
+    await viewModel.renameFolder(folder, res!.data as String);
+  }
 }
