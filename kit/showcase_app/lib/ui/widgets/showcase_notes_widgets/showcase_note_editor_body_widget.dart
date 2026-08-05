@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:ui_library/ui_library.dart';
-import 'package:appbox_kit_showcase_app/notes/models/note.dart';
-import 'package:appbox_kit_showcase_app/notes/models/note_attachment.dart';
+import 'package:appbox_kit_showcase_app/models/showcase_note.dart';
+import 'package:appbox_kit_showcase_app/models/showcase_note_attachment.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_note_editor/showcase_note_editor_viewmodel.dart';
 import 'package:appbox_kit_showcase_app/ui/widgets/showcase_notes_widgets/widgets.dart';
 
@@ -24,11 +24,11 @@ class ShowcaseNoteEditorBodyWidget extends StatefulWidget {
     required this.formatDuration,
   });
   final ShowcaseNoteEditorViewModel viewModel;
-  final Note note;
+  final ShowcaseNote note;
 
   /// Long-press handler for an attachment — the view owns the
   /// remove-confirmation dialog plumbing.
-  final Future<void> Function(NoteAttachment attachment) onRemoveAttachment;
+  final Future<void> Function(ShowcaseNoteAttachment attachment) onRemoveAttachment;
 
   /// Duration label formatter — the view owns the formatting helper.
   final String Function(Duration duration) formatDuration;
@@ -62,10 +62,10 @@ class _ShowcaseNoteEditorBodyState extends State<ShowcaseNoteEditorBodyWidget> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final photos = widget.note.attachments
-        .where((a) => a.kind == NoteAttachmentKind.photo)
+        .where((a) => a.kind == ShowcaseNoteAttachmentKind.photo)
         .toList();
     final audio = widget.note.attachments
-        .where((a) => a.kind == NoteAttachmentKind.audio)
+        .where((a) => a.kind == ShowcaseNoteAttachmentKind.audio)
         .toList();
 
     return SingleChildScrollView(

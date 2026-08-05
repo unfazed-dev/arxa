@@ -4,7 +4,7 @@ import 'package:ui_library/ui_library.dart';
 import 'package:appbox_kit_showcase_app/ui/widgets/common/showcase_tabs_shared/widgets.dart';
 import 'package:appbox_kit_showcase_app/ui/widgets/showcase_profile_widgets/widgets.dart';
 
-import 'showcase_components_viewmodel.dart';
+import 'package:appbox_kit_showcase_app/ui/views/showcase_profile_shell/showcase_components/showcase_components_viewmodel.dart';
 
 /// The video-parity components (ADR 0011) on one pushed surface:
 ///

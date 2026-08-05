@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:stacked/stacked.dart';
 import 'package:ui_library/ui_library.dart';
 
-import '../../views/showcase_application_shell/showcase_application_shell_view.dart';
+import 'package:appbox_kit_showcase_app/ui/views/showcase_application_shell/showcase_application_shell_view.dart';
 
 class ShowcaseApplicationTabHostWidget extends StatelessWidget {
   const ShowcaseApplicationTabHostWidget({super.key});

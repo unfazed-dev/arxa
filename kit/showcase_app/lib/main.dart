@@ -6,12 +6,12 @@ import 'package:ui_library/ui_library.dart'
         CNTransitionObserver,
         KitThemeService,
         kitDarkTheme,
-        kitLightTheme,
-        setupKitSnackbars;
+        kitLightTheme;
 import 'package:appbox_kit_showcase_app/app/app.bottomsheets.dart';
 import 'package:appbox_kit_showcase_app/app/app.dialogs.dart';
 import 'package:appbox_kit_showcase_app/app/app.locator.dart';
 import 'package:appbox_kit_showcase_app/app/kit_platform_router.dart';
+import 'package:appbox_kit_showcase_app/ui/snackbars/snackbars.dart';
 import 'package:url_strategy/url_strategy.dart';
 
 Future<void> main() async {
@@ -23,7 +23,7 @@ Future<void> main() async {
   // Restore the persisted ThemeMode (defaults to `system`) and sync the status
   // bar before the first frame. KitThemeService owns ThemeMode + system UI.
   await locator<KitThemeService>().initialize();
-  setupKitSnackbars();
+  setupShowcaseSnackbars();
   setupDialogUi();
   setupBottomSheetUi();
   runApp(const ShowcaseApp());

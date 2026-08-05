@@ -5,10 +5,10 @@ import 'package:stacked/stacked.dart';
 import 'package:appbox_kit_media/appbox_kit_media.dart' show PlaybackState;
 import 'package:appbox_kit_core/kit_locator.dart';
 
-import 'package:appbox_kit_showcase_app/notes/models/note.dart';
-import 'package:appbox_kit_showcase_app/notes/models/note_attachment.dart';
-import 'package:appbox_kit_showcase_app/services/notes_media_service.dart';
-import 'package:appbox_kit_showcase_app/services/facades/notes_facade.dart';
+import 'package:appbox_kit_showcase_app/models/showcase_note.dart';
+import 'package:appbox_kit_showcase_app/models/showcase_note_attachment.dart';
+import 'package:appbox_kit_showcase_app/services/adapters/showcase_notes_media_service.dart';
+import 'package:appbox_kit_showcase_app/services/facades/showcase_notes_facade.dart';
 
 /// Live playback progress for the audio scrubber — position paired with the
 /// player-reported track length. Consumed by the view via [KitStreamBuilder]
@@ -21,7 +21,7 @@ typedef NotePlaybackProgress = ({Duration position, Duration? duration});
 /// which would drag a `package:flutter/*` import in here, kit-reviewer 1m).
 /// The view's body field owns its own [TextEditingController] for IME/cursor
 /// lifecycle and seeds from [body]; the value mirror here drives debounced
-/// autosave. Mirrors [NotesMediaService]'s recording/playback streams for the
+/// autosave. Mirrors [ShowcaseNotesMediaService]'s recording/playback streams for the
 /// editor chrome.
 class ShowcaseNoteEditorViewModel extends BaseViewModel {
   ShowcaseNoteEditorViewModel({required this.noteId}) {
@@ -42,8 +42,8 @@ class ShowcaseNoteEditorViewModel extends BaseViewModel {
 
   final String noteId;
 
-  final NotesFacade _notes = locator<NotesFacade>();
-  final NotesMediaService _media = locator<NotesMediaService>();
+  final ShowcaseNotesFacade _notes = locator<ShowcaseNotesFacade>();
+  final ShowcaseNotesMediaService _media = locator<ShowcaseNotesMediaService>();
 
   /// The note body. Seeded once from the first note$ emit; subsequent emits
   /// (attachment add/remove, pin toggle, autosave write-back) must not clobber
@@ -52,7 +52,7 @@ class ShowcaseNoteEditorViewModel extends BaseViewModel {
   String _body = '';
   String get body => _body;
 
-  late final StreamSubscription<Note?> _noteSub;
+  late final StreamSubscription<ShowcaseNote?> _noteSub;
   late final StreamSubscription<Duration?> _recordingSub;
   late final StreamSubscription<String?> _playingSub;
   late final StreamSubscription<PlaybackState> _playerStateSub;
@@ -69,7 +69,7 @@ class ShowcaseNoteEditorViewModel extends BaseViewModel {
   static String? pendingAction;
   bool _pendingHandled = false;
 
-  Note? note;
+  ShowcaseNote? note;
   Duration? recordingElapsed;
   String? playingAttachmentId;
   PlaybackState? playerState;
@@ -80,7 +80,7 @@ class ShowcaseNoteEditorViewModel extends BaseViewModel {
       playingAttachmentId == attachmentId && (playerState?.playing ?? false);
 
   /// Combined position + track length for the audio scrubber. Both back onto
-  /// seeded [BehaviorSubject]s in [NotesMediaService], so this replays the
+  /// seeded [BehaviorSubject]s in [ShowcaseNotesMediaService], so this replays the
   /// current values on subscribe; the view seeds [KitStreamBuilder] with a
   /// zeroed record to paint the first frame without a loading flash.
   Stream<NotePlaybackProgress> get playbackProgress$ => Rx.combineLatest2(
@@ -89,7 +89,7 @@ class ShowcaseNoteEditorViewModel extends BaseViewModel {
         (Duration p, Duration? d) => (position: p, duration: d),
       );
 
-  void _onNote(Note? n) {
+  void _onNote(ShowcaseNote? n) {
     note = n;
     if (!_textInitialized) {
       _body = n?.body ?? '';
@@ -114,7 +114,7 @@ class ShowcaseNoteEditorViewModel extends BaseViewModel {
     }
   }
 
-  Future<String> resolvePath(NoteAttachment attachment) =>
+  Future<String> resolvePath(ShowcaseNoteAttachment attachment) =>
       _media.resolvePath(attachment);
 
   void onBodyChanged(String value) {
@@ -152,7 +152,7 @@ class ShowcaseNoteEditorViewModel extends BaseViewModel {
     await _notes.addAttachment(current, attachment);
   }
 
-  Future<void> removeAttachment(NoteAttachment attachment) async {
+  Future<void> removeAttachment(ShowcaseNoteAttachment attachment) async {
     final current = note;
     if (current == null) return;
     await _notes.removeAttachment(current, attachment.id);
@@ -171,7 +171,7 @@ class ShowcaseNoteEditorViewModel extends BaseViewModel {
 
   Future<void> cancelRecording() => _media.cancelRecording();
 
-  Future<void> togglePlayback(NoteAttachment attachment) =>
+  Future<void> togglePlayback(ShowcaseNoteAttachment attachment) =>
       _media.togglePlayback(attachment);
 
   @override

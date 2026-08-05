@@ -3,7 +3,7 @@ import 'package:stacked/stacked.dart';
 
 import 'package:appbox_kit_showcase_app/ui/widgets/showcase_startup_widgets/widgets.dart';
 
-import 'showcase_startup_viewmodel.dart';
+import 'package:appbox_kit_showcase_app/ui/views/showcase_startup_shell/showcase_startup/showcase_startup_viewmodel.dart';
 
 class ShowcaseStartupViewMobile
     extends ViewModelWidget<ShowcaseStartupViewModel> {

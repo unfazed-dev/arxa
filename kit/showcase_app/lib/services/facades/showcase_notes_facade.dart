@@ -2,20 +2,20 @@ import 'package:rxdart/rxdart.dart';
 import 'package:appbox_kit_data/appbox_kit_data.dart';
 import 'package:ui_library/ui_library.dart' show locator;
 
-import 'package:appbox_kit_showcase_app/notes/models/note.dart';
-import 'package:appbox_kit_showcase_app/notes/models/note_attachment.dart';
-import 'package:appbox_kit_showcase_app/notes/models/note_folder.dart';
-import 'package:appbox_kit_showcase_app/services/repositories/notes_repository.dart';
+import 'package:appbox_kit_showcase_app/models/showcase_note.dart';
+import 'package:appbox_kit_showcase_app/models/showcase_note_attachment.dart';
+import 'package:appbox_kit_showcase_app/models/showcase_note_folder.dart';
+import 'package:appbox_kit_showcase_app/services/repositories/showcase_notes_repository.dart';
 
 /// Everything the folders screen needs, derived from two repository streams.
 /// Counts are facade work — never query work (swap rule 2).
-class NotesOverview {
-  final List<NoteFolder> folders;
+class ShowcaseNotesOverview {
+  final List<ShowcaseNoteFolder> folders;
   final Map<String, int> liveCountByFolder;
   final int allCount;
   final int trashCount;
 
-  const NotesOverview({
+  const ShowcaseNotesOverview({
     required this.folders,
     required this.liveCountByFolder,
     required this.allCount,
@@ -27,31 +27,31 @@ class NotesOverview {
 /// counts, unfiltered. Showcase-only — the seed backend is fake and entirely
 /// client-side, so this demonstrates role-gated *visibility*, not a security
 /// boundary.
-class AdminOverview {
-  final List<NoteFolder> folders;
+class ShowcaseNotesAdminOverview {
+  final List<ShowcaseNoteFolder> folders;
   final Map<String, int> liveCountByFolder;
 
-  const AdminOverview({
+  const ShowcaseNotesAdminOverview({
     required this.folders,
     required this.liveCountByFolder,
   });
 }
 
 /// One section of the notes list ("Pinned", "Today", "Previous 7 Days", …).
-class NoteGroup {
+class ShowcaseNoteGroup {
   final String label;
-  final List<Note> notes;
+  final List<ShowcaseNote> notes;
 
-  const NoteGroup(this.label, this.notes);
+  const ShowcaseNoteGroup(this.label, this.notes);
 }
 
-/// Facade over [NotesRepository] — the only layer the Notes viewmodels talk to.
+/// Facade over [ShowcaseNotesRepository] — the only layer the Notes viewmodels talk to.
 /// Reads and writes flow through the repository; this layer adds the derived,
 /// UI-facing composition (counts, sectioning, search) and routes every mutation
 /// through [mutate] so writes inherit the kit's action automation. Streams are
 /// per-owner (auth-gated app).
-class NotesFacade extends KitDataFacade {
-  NotesRepository get _repo => locator<NotesRepository>();
+class ShowcaseNotesFacade extends KitDataFacade {
+  ShowcaseNotesRepository get _repo => locator<ShowcaseNotesRepository>();
 
   Stream<KitAuthSession?> get session$ => auth.session$;
   KitAuthSession? get currentSession => auth.currentSession;
@@ -66,14 +66,14 @@ class NotesFacade extends KitDataFacade {
 
   // -- Reads (composition over repository streams) ---------------------------
 
-  Stream<List<NoteFolder>> folders$(String owner) => _repo.foldersOf(owner);
+  Stream<List<ShowcaseNoteFolder>> folders$(String owner) => _repo.foldersOf(owner);
 
-  Stream<List<Note>> _allNotes$(String owner) => _repo.allNotesOf(owner);
+  Stream<List<ShowcaseNote>> _allNotes$(String owner) => _repo.allNotesOf(owner);
 
-  Stream<NotesOverview> overview$(String owner) => Rx.combineLatest2(
+  Stream<ShowcaseNotesOverview> overview$(String owner) => Rx.combineLatest2(
         folders$(owner),
         _allNotes$(owner),
-        (List<NoteFolder> folders, List<Note> notes) {
+        (List<ShowcaseNoteFolder> folders, List<ShowcaseNote> notes) {
           final counts = <String, int>{};
           var live = 0;
           var trash = 0;
@@ -85,7 +85,7 @@ class NotesFacade extends KitDataFacade {
               counts[note.folderId] = (counts[note.folderId] ?? 0) + 1;
             }
           }
-          return NotesOverview(
+          return ShowcaseNotesOverview(
             folders: folders,
             liveCountByFolder: counts,
             allCount: live,
@@ -97,34 +97,34 @@ class NotesFacade extends KitDataFacade {
   /// Every owner's folders with live note counts — deliberately **no owner
   /// filter**. Admin visibility on a fake backend is a client-side showcase
   /// of role metadata; there is no security boundary to enforce, and the doc
-  /// on [AdminOverview] says so. Callers gate on [isAdmin] / [isAdminSession].
-  Stream<AdminOverview> adminOverview$() => Rx.combineLatest2(
+  /// on [ShowcaseNotesAdminOverview] says so. Callers gate on [isAdmin] / [isAdminSession].
+  Stream<ShowcaseNotesAdminOverview> adminOverview$() => Rx.combineLatest2(
         _repo.allFolders(),
         _repo.allNotes(),
-        (List<NoteFolder> folders, List<Note> notes) {
+        (List<ShowcaseNoteFolder> folders, List<ShowcaseNote> notes) {
           final counts = <String, int>{};
           for (final note in notes.where((n) => !n.isDeleted)) {
             counts[note.folderId] = (counts[note.folderId] ?? 0) + 1;
           }
-          return AdminOverview(folders: folders, liveCountByFolder: counts);
+          return ShowcaseNotesAdminOverview(folders: folders, liveCountByFolder: counts);
         },
       );
 
   /// Live notes, optionally scoped to a folder (null = All Notes).
-  Stream<List<Note>> notesIn$(String owner, {String? folderId}) =>
+  Stream<List<ShowcaseNote>> notesIn$(String owner, {String? folderId}) =>
       _allNotes$(owner).map((notes) => notes
           .where((n) =>
               !n.isDeleted && (folderId == null || n.folderId == folderId))
           .toList());
 
-  Stream<List<Note>> trash$(String owner) => _allNotes$(owner)
+  Stream<List<ShowcaseNote>> trash$(String owner) => _allNotes$(owner)
       .map((notes) => notes.where((n) => n.isDeleted).toList());
 
-  Stream<Note?> note$(String id) => _repo.watchNote(id);
+  Stream<ShowcaseNote?> note$(String id) => _repo.watchNote(id);
 
   /// Case-insensitive body search over live notes — client-side by design
   /// (the query surface is eq/gt/lt only; text search is facade work).
-  Stream<List<Note>> search$(String owner, String query) {
+  Stream<List<ShowcaseNote>> search$(String owner, String query) {
     final needle = query.trim().toLowerCase();
     return notesIn$(owner).map((notes) => needle.isEmpty
         ? notes
@@ -134,15 +134,15 @@ class NotesFacade extends KitDataFacade {
   /// iOS Notes sectioning: Pinned first, then Today / Yesterday / Previous 7
   /// Days / Previous 30 Days / month names (current year) / year buckets.
   /// Pure and static so tests can pin `now`.
-  static List<NoteGroup> groupNotes(List<Note> notes, DateTime now) {
+  static List<ShowcaseNoteGroup> groupNotes(List<ShowcaseNote> notes, DateTime now) {
     final pinned = notes.where((n) => n.pinned).toList();
     final rest = notes.where((n) => !n.pinned).toList();
 
     final today = DateTime(now.year, now.month, now.day);
-    final buckets = <String, List<Note>>{};
+    final buckets = <String, List<ShowcaseNote>>{};
     final order = <String>[];
 
-    void add(String label, Note note) {
+    void add(String label, ShowcaseNote note) {
       if (!buckets.containsKey(label)) {
         buckets[label] = [];
         order.add(label);
@@ -170,8 +170,8 @@ class NotesFacade extends KitDataFacade {
     }
 
     return [
-      if (pinned.isNotEmpty) NoteGroup('Pinned', pinned),
-      for (final label in order) NoteGroup(label, buckets[label]!),
+      if (pinned.isNotEmpty) ShowcaseNoteGroup('Pinned', pinned),
+      for (final label in order) ShowcaseNoteGroup(label, buckets[label]!),
     ];
   }
 
@@ -192,25 +192,25 @@ class NotesFacade extends KitDataFacade {
 
   // -- Mutations (all through the KitAction chain, over repository writes) ----
 
-  Future<Note> createNote(String owner, String folderId) => mutate<Note>(
+  Future<ShowcaseNote> createNote(String owner, String folderId) => mutate<ShowcaseNote>(
         operation: () => _repo.upsertNote(_repo.newNote(owner, folderId)),
         widgetId: 'notes.create',
       ).execute();
 
-  Future<Note> saveBody(Note note, String body) => mutate<Note>(
+  Future<ShowcaseNote> saveBody(ShowcaseNote note, String body) => mutate<ShowcaseNote>(
         operation: () => _repo.upsertNote(
           note.copyWith(body: body, updatedAt: DateTime.now().toUtc()),
         ),
         widgetId: 'notes.save',
       ).execute();
 
-  Future<Note> togglePin(Note note) => mutate<Note>(
+  Future<ShowcaseNote> togglePin(ShowcaseNote note) => mutate<ShowcaseNote>(
         operation: () => _repo.upsertNote(note.copyWith(pinned: !note.pinned)),
         widgetId: 'notes.pin',
       ).execute();
 
-  Future<Note> addAttachment(Note note, NoteAttachment attachment) =>
-      mutate<Note>(
+  Future<ShowcaseNote> addAttachment(ShowcaseNote note, ShowcaseNoteAttachment attachment) =>
+      mutate<ShowcaseNote>(
         operation: () => _repo.upsertNote(note.copyWith(
           attachments: [...note.attachments, attachment],
           updatedAt: DateTime.now().toUtc(),
@@ -218,7 +218,7 @@ class NotesFacade extends KitDataFacade {
         widgetId: 'notes.attach',
       ).execute();
 
-  Future<Note> removeAttachment(Note note, String attachmentId) => mutate<Note>(
+  Future<ShowcaseNote> removeAttachment(ShowcaseNote note, String attachmentId) => mutate<ShowcaseNote>(
         operation: () => _repo.upsertNote(note.copyWith(
           attachments:
               note.attachments.where((a) => a.id != attachmentId).toList(),
@@ -227,7 +227,7 @@ class NotesFacade extends KitDataFacade {
         widgetId: 'notes.detach',
       ).execute();
 
-  Future<Note> moveToTrash(Note note) => mutate<Note>(
+  Future<ShowcaseNote> moveToTrash(ShowcaseNote note) => mutate<ShowcaseNote>(
         operation: () => _repo.upsertNote(note.copyWith(
           deletedAt: () => DateTime.now().toUtc(),
           pinned: false,
@@ -235,12 +235,12 @@ class NotesFacade extends KitDataFacade {
         widgetId: 'notes.trash',
       ).execute();
 
-  Future<Note> restore(Note note) => mutate<Note>(
+  Future<ShowcaseNote> restore(ShowcaseNote note) => mutate<ShowcaseNote>(
         operation: () => _repo.upsertNote(note.copyWith(deletedAt: () => null)),
         widgetId: 'notes.restore',
       ).execute();
 
-  Future<void> deletePermanently(Note note) => mutate<void>(
+  Future<void> deletePermanently(ShowcaseNote note) => mutate<void>(
         operation: () => _repo.deleteNote(note.id),
         widgetId: 'notes.purge',
       ).execute();
@@ -255,23 +255,23 @@ class NotesFacade extends KitDataFacade {
         widgetId: 'notes.emptyTrash',
       ).withSuccessSnackbar('Recently Deleted emptied').execute();
 
-  Future<NoteFolder> createFolder(String owner, String name,
+  Future<ShowcaseNoteFolder> createFolder(String owner, String name,
           {required int sortOrder}) =>
-      mutate<NoteFolder>(
+      mutate<ShowcaseNoteFolder>(
         operation: () =>
             _repo.upsertFolder(_repo.newFolder(owner, name, sortOrder: sortOrder)),
         widgetId: 'notes.folder.create',
       ).execute();
 
-  Future<NoteFolder> renameFolder(NoteFolder folder, String name) =>
-      mutate<NoteFolder>(
+  Future<ShowcaseNoteFolder> renameFolder(ShowcaseNoteFolder folder, String name) =>
+      mutate<ShowcaseNoteFolder>(
         operation: () => _repo.upsertFolder(folder.copyWith(name: name)),
         widgetId: 'notes.folder.rename',
       ).execute();
 
   /// iOS behavior: deleting a folder sends its live notes to Recently
   /// Deleted, then removes the folder row.
-  Future<void> deleteFolder(NoteFolder folder) => mutate<void>(
+  Future<void> deleteFolder(ShowcaseNoteFolder folder) => mutate<void>(
         operation: () async {
           final notes = await _repo.notesInFolder(folder.id);
           final now = DateTime.now().toUtc();

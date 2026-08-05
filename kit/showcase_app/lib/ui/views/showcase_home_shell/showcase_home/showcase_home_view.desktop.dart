@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:stacked/stacked.dart';
 
-import 'showcase_home_viewmodel.dart';
+import 'package:appbox_kit_showcase_app/ui/views/showcase_home_shell/showcase_home/showcase_home_viewmodel.dart';
 
 class ShowcaseHomeViewDesktop extends ViewModelWidget<ShowcaseHomeViewModel> {
   const ShowcaseHomeViewDesktop({super.key});

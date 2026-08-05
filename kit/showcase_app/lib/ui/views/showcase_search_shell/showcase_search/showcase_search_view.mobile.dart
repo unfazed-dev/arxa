@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:stacked/stacked.dart';
 import 'package:ui_library/ui_library.dart';
 import 'package:appbox_kit_showcase_app/ui/widgets/showcase_search_widgets/widgets.dart';
-import 'showcase_search_viewmodel.dart';
+import 'package:appbox_kit_showcase_app/ui/views/showcase_search_shell/showcase_search/showcase_search_viewmodel.dart';
 
 class ShowcaseSearchViewMobile
     extends ViewModelWidget<ShowcaseSearchViewModel> {

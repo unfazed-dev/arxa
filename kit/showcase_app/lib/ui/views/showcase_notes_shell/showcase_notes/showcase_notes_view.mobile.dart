@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:stacked/stacked.dart';
 import 'package:appbox_kit_motion/appbox_kit_motion.dart';
 import 'package:ui_library/ui_library.dart';
-import 'package:appbox_kit_showcase_app/notes/models/note_folder.dart';
+import 'package:appbox_kit_showcase_app/models/showcase_note_folder.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_auth/showcase_notes_auth_view.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_create_account/showcase_notes_create_account_view.dart';
 import 'package:appbox_kit_showcase_app/ui/common/showcase_notes_shared.dart';
 import 'package:appbox_kit_showcase_app/ui/widgets/common/showcase_tabs_shared/widgets.dart';
 import 'package:appbox_kit_showcase_app/ui/widgets/showcase_notes_widgets/widgets.dart';
-import 'showcase_notes_viewmodel.dart';
+import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes/showcase_notes_viewmodel.dart';
 
 class ShowcaseNotesViewMobile extends ViewModelWidget<ShowcaseNotesViewModel> {
   const ShowcaseNotesViewMobile({super.key});
@@ -260,7 +260,7 @@ Future<void> _showNewFolderDialog(
 }
 
 Future<void> _showRenameDialog(BuildContext context,
-    ShowcaseNotesViewModel viewModel, NoteFolder folder) async {
+    ShowcaseNotesViewModel viewModel, ShowcaseNoteFolder folder) async {
   final name = await textInputDialog(context,
       title: 'Rename Folder', initial: folder.name);
   if (name != null) await viewModel.renameFolder(folder, name);

@@ -1,7 +1,7 @@
 import 'package:ui_library/ui_library.dart' show KitPlatformPagesMixin;
 import 'package:stacked_services/stacked_services.dart' show StackedService;
 
-import 'app.router.dart' show StackedRouterWeb;
+import 'package:appbox_kit_showcase_app/app/app.router.dart' show StackedRouterWeb;
 
 /// Per-platform native route pages for the showcase — cupertino on iOS (slide
 /// + edge-swipe-back), material on Android (→ predictive back), no-animation on

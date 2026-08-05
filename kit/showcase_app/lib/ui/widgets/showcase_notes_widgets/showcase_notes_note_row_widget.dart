@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:stacked/stacked.dart';
 import 'package:ui_library/ui_library.dart';
-import 'package:appbox_kit_showcase_app/notes/models/note.dart';
+import 'package:appbox_kit_showcase_app/models/showcase_note.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_folder/showcase_notes_folder_viewmodel.dart';
 
 /// One note row: swipe actions differ by scope (trash vs. live folder), tap
@@ -16,7 +16,7 @@ class ShowcaseNotesNoteRowWidget extends StatelessWidget {
     required this.formatDate,
   });
 
-  final Note note;
+  final ShowcaseNote note;
   final ShowcaseNotesFolderViewModel viewModel;
 
   /// Trash-scope end-to-start swipe handler — the view owns the

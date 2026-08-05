@@ -4,22 +4,22 @@ import 'package:stacked/stacked.dart';
 import 'package:appbox_kit_core/kit_locator.dart';
 import 'package:appbox_kit_data/appbox_kit_data.dart';
 
-import 'package:appbox_kit_showcase_app/notes/models/note_folder.dart';
-import 'package:appbox_kit_showcase_app/services/facades/notes_facade.dart';
+import 'package:appbox_kit_showcase_app/models/showcase_note_folder.dart';
+import 'package:appbox_kit_showcase_app/services/facades/showcase_notes_facade.dart';
 
-/// The "Folders" screen viewmodel. Subscribes to [NotesFacade.session$] and,
-/// once signed in, to [NotesFacade.overview$] — both fields are plain and
+/// The "Folders" screen viewmodel. Subscribes to [ShowcaseNotesFacade.session$] and,
+/// once signed in, to [ShowcaseNotesFacade.overview$] — both fields are plain and
 /// pushed via `notifyListeners`, no double-buffering through a second stream
 /// layer.
 class ShowcaseNotesViewModel extends BaseViewModel {
-  final _service = locator<NotesFacade>();
+  final _service = locator<ShowcaseNotesFacade>();
 
   StreamSubscription<KitAuthSession?>? _sessionSub;
-  StreamSubscription<NotesOverview>? _overviewSub;
-  StreamSubscription<AdminOverview>? _adminSub;
+  StreamSubscription<ShowcaseNotesOverview>? _overviewSub;
+  StreamSubscription<ShowcaseNotesAdminOverview>? _adminSub;
 
   KitAuthSession? session;
-  NotesOverview? overview;
+  ShowcaseNotesOverview? overview;
 
   /// Cross-owner folders + counts; non-null only while an admin session is
   /// live, so the views can gate the "All users (admin)" section on presence.
@@ -27,7 +27,7 @@ class ShowcaseNotesViewModel extends BaseViewModel {
   /// DEMO ONLY — not a security boundary. The admin role comes from seeded
   /// identity metadata on a fake local backend; real apps must enforce
   /// authorization server-side, never via client-side gating like this.
-  AdminOverview? adminOverview;
+  ShowcaseNotesAdminOverview? adminOverview;
 
   /// When signed out, the Notes tab shows the create-account panel instead of
   /// the sign-in panel. Owner-held here (not in the transient views) and reset
@@ -50,7 +50,7 @@ class ShowcaseNotesViewModel extends BaseViewModel {
           this.overview = overview;
           notifyListeners();
         });
-        if (NotesFacade.isAdminSession(session)) {
+        if (ShowcaseNotesFacade.isAdminSession(session)) {
           _adminSub = _service.adminOverview$().listen((admin) {
             adminOverview = admin;
             notifyListeners();
@@ -82,13 +82,13 @@ class ShowcaseNotesViewModel extends BaseViewModel {
     );
   }
 
-  Future<void> renameFolder(NoteFolder folder, String name) async {
+  Future<void> renameFolder(ShowcaseNoteFolder folder, String name) async {
     final trimmed = name.trim();
     if (trimmed.isEmpty) return;
     await _service.renameFolder(folder, trimmed);
   }
 
-  Future<void> deleteFolder(NoteFolder folder) => _service.deleteFolder(folder);
+  Future<void> deleteFolder(ShowcaseNoteFolder folder) => _service.deleteFolder(folder);
 
   Future<void> signOut() => _service.signOut();
 

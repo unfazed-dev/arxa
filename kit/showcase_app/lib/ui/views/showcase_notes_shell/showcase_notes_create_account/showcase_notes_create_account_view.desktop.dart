@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:stacked/stacked.dart';
 
-import 'showcase_notes_create_account_view.mobile.dart';
-import 'showcase_notes_create_account_viewmodel.dart';
+import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_create_account/showcase_notes_create_account_view.mobile.dart';
+import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_create_account/showcase_notes_create_account_viewmodel.dart';
 
 /// Desktop mirrors tablet: centered mobile column at form width.
 class ShowcaseNotesCreateAccountViewDesktop

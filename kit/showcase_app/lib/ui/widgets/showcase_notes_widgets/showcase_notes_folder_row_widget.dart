@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:stacked/stacked.dart';
 import 'package:ui_library/ui_library.dart';
-import 'package:appbox_kit_showcase_app/notes/models/note_folder.dart';
+import 'package:appbox_kit_showcase_app/models/showcase_note_folder.dart';
 import 'package:appbox_kit_showcase_app/ui/common/showcase_notes_shared.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes/showcase_notes_viewmodel.dart';
 import 'package:appbox_kit_showcase_app/ui/widgets/showcase_notes_widgets/widgets.dart';
@@ -19,7 +19,7 @@ class ShowcaseNotesFolderRowWidget extends StatelessWidget {
     required this.onRename,
   });
 
-  final NoteFolder folder;
+  final ShowcaseNoteFolder folder;
   final int count;
   final ShowcaseNotesViewModel viewModel;
 

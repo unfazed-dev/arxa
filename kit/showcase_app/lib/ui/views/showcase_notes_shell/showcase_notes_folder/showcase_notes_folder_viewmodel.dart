@@ -3,14 +3,14 @@ import 'dart:async';
 import 'package:stacked/stacked.dart';
 import 'package:appbox_kit_core/kit_locator.dart';
 
-import 'package:appbox_kit_showcase_app/notes/models/note.dart';
-import 'package:appbox_kit_showcase_app/notes/models/note_folder.dart';
-import 'package:appbox_kit_showcase_app/services/facades/notes_facade.dart';
+import 'package:appbox_kit_showcase_app/models/showcase_note.dart';
+import 'package:appbox_kit_showcase_app/models/showcase_note_folder.dart';
+import 'package:appbox_kit_showcase_app/services/facades/showcase_notes_facade.dart';
 
 /// The notes-list screen viewmodel. [folderKey] is `'all'`, `'trash'`, or a
 /// folder uuid, resolved by the view from the route's `:id` path param.
 ///
-/// Owner comes from [NotesFacade.currentSession] at construction time — the
+/// Owner comes from [ShowcaseNotesFacade.currentSession] at construction time — the
 /// Folders screen gates auth, so by the time this viewmodel exists a session
 /// is expected to be live; if not, the streams simply never start and the
 /// view renders nothing (matches the folders screen's gate contract).
@@ -34,13 +34,13 @@ class ShowcaseNotesFolderViewModel extends BaseViewModel {
   }
 
   final String folderKey;
-  final _service = locator<NotesFacade>();
+  final _service = locator<ShowcaseNotesFacade>();
 
-  StreamSubscription<List<Note>>? _notesSub;
-  StreamSubscription<List<NoteFolder>>? _foldersSub;
+  StreamSubscription<List<ShowcaseNote>>? _notesSub;
+  StreamSubscription<List<ShowcaseNoteFolder>>? _foldersSub;
 
-  List<Note> _notes = const [];
-  List<NoteFolder> _folders = const [];
+  List<ShowcaseNote> _notes = const [];
+  List<ShowcaseNoteFolder> _folders = const [];
 
   String query = '';
 
@@ -58,11 +58,11 @@ class ShowcaseNotesFolderViewModel extends BaseViewModel {
 
   /// The first user folder, used as the compose target when creating a note
   /// from 'all' or 'trash' (there is no natural folder to write into there).
-  NoteFolder? get _firstFolder => _folders.isEmpty ? null : _folders.first;
+  ShowcaseNoteFolder? get _firstFolder => _folders.isEmpty ? null : _folders.first;
 
-  List<NoteGroup> get groups {
+  List<ShowcaseNoteGroup> get groups {
     // Search filters the already-held scope — no second stream needed
-    // (NotesFacade.search$ exists for facade callers; here the notes are
+    // (ShowcaseNotesFacade.search$ exists for facade callers; here the notes are
     // in hand).
     final needle = query.trim().toLowerCase();
     final source = needle.isEmpty
@@ -73,9 +73,9 @@ class ShowcaseNotesFolderViewModel extends BaseViewModel {
         ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
       return sorted.isEmpty
           ? const []
-          : [NoteGroup('Recently Deleted', sorted)];
+          : [ShowcaseNoteGroup('Recently Deleted', sorted)];
     }
-    return NotesFacade.groupNotes(source, DateTime.now());
+    return ShowcaseNotesFacade.groupNotes(source, DateTime.now());
   }
 
   void setQuery(String value) {
@@ -83,10 +83,10 @@ class ShowcaseNotesFolderViewModel extends BaseViewModel {
     notifyListeners();
   }
 
-  Future<void> togglePin(Note note) => _service.togglePin(note);
-  Future<void> moveToTrash(Note note) => _service.moveToTrash(note);
-  Future<void> restore(Note note) => _service.restore(note);
-  Future<void> deletePermanently(Note note) => _service.deletePermanently(note);
+  Future<void> togglePin(ShowcaseNote note) => _service.togglePin(note);
+  Future<void> moveToTrash(ShowcaseNote note) => _service.moveToTrash(note);
+  Future<void> restore(ShowcaseNote note) => _service.restore(note);
+  Future<void> deletePermanently(ShowcaseNote note) => _service.deletePermanently(note);
 
   Future<void> emptyTrash() async {
     final owner = _service.currentSession?.user.id;

@@ -7,8 +7,8 @@ import 'package:appbox_kit_data/schema/kit_table_schema.dart';
 
 /// A user folder ("Notes", "Work", …). Recently Deleted is NOT a folder row —
 /// it's the virtual set of notes with `deleted_at` set, computed by
-/// `NotesFacade`, matching how iOS treats it as a system view.
-class NoteFolder {
+/// `ShowcaseNotesFacade`, matching how iOS treats it as a system view.
+class ShowcaseNoteFolder {
   final String id;
   final String name;
   final int sortOrder;
@@ -18,7 +18,7 @@ class NoteFolder {
   final String owner;
   final DateTime createdAt;
 
-  const NoteFolder({
+  const ShowcaseNoteFolder({
     required this.id,
     required this.name,
     required this.sortOrder,
@@ -26,7 +26,7 @@ class NoteFolder {
     required this.createdAt,
   });
 
-  NoteFolder copyWith({String? name}) => NoteFolder(
+  ShowcaseNoteFolder copyWith({String? name}) => ShowcaseNoteFolder(
         id: id,
         name: name ?? this.name,
         sortOrder: sortOrder,
@@ -34,7 +34,7 @@ class NoteFolder {
         createdAt: createdAt,
       );
 
-  factory NoteFolder.fromJson(Map<String, dynamic> json) => NoteFolder(
+  factory ShowcaseNoteFolder.fromJson(Map<String, dynamic> json) => ShowcaseNoteFolder(
         id: json['id'] as String,
         name: json['name'] as String,
         sortOrder: json['sort_order'] as int,
@@ -68,8 +68,8 @@ const noteFolderSchema = KitTableSchema(
   ],
 );
 
-final noteFolderRegistration = KitEntityRegistration<NoteFolder>(
+final showcaseNoteFolderRegistration = KitEntityRegistration<ShowcaseNoteFolder>(
   schema: noteFolderSchema,
-  fromJson: NoteFolder.fromJson,
+  fromJson: ShowcaseNoteFolder.fromJson,
   toJson: (folder) => folder.toJson(),
 );

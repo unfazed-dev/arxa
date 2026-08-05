@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 import 'package:stacked/stacked.dart';
 
-import 'showcase_notes_folder_view.desktop.dart';
-import 'showcase_notes_folder_view.tablet.dart';
-import 'showcase_notes_folder_view.mobile.dart';
-import 'showcase_notes_folder_viewmodel.dart';
+import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_folder/showcase_notes_folder_view.desktop.dart';
+import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_folder/showcase_notes_folder_view.tablet.dart';
+import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_folder/showcase_notes_folder_view.mobile.dart';
+import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_folder/showcase_notes_folder_viewmodel.dart';
 
 /// The notes-list screen for one scope — 'all', 'trash', or a folder id (see
 /// [ShowcaseNotesFolderViewModel.folderKey]). iOS Notes look: back + large title,

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:stacked/stacked.dart';
 
-import 'showcase_note_editor_viewmodel.dart';
+import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_note_editor/showcase_note_editor_viewmodel.dart';
 
 class ShowcaseNoteEditorViewTablet
     extends ViewModelWidget<ShowcaseNoteEditorViewModel> {

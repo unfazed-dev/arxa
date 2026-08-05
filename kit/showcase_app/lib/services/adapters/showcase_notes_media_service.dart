@@ -6,27 +6,27 @@ import 'package:rxdart/rxdart.dart';
 import 'package:appbox_kit_media/appbox_kit_media.dart';
 import 'package:uuid/uuid.dart';
 
-import 'package:appbox_kit_showcase_app/notes/models/note_attachment.dart';
+import 'package:appbox_kit_showcase_app/models/showcase_note_attachment.dart';
 
 /// Owns attachment binaries and the recording/playback hardware for Notes.
 ///
 /// A thin app-layer adapter over `appbox_kit_media`'s framework-free ports
 /// ([MediaCaptureService], [AudioRecorderService], [AudioPlayerService]) — it
 /// keeps the Notes-specific bits the kit deliberately stays out of: the
-/// attachments directory, [NoteAttachment] mapping, "which memo is playing"
+/// attachments directory, [ShowcaseNoteAttachment] mapping, "which memo is playing"
 /// tracking, and the "starting a recording stops playback" orchestration.
 ///
 /// Files live under `<documents>/appbox_kit_showcase_app/attachments/`; rows
-/// only carry the file NAME ([NoteAttachment.fileName]) because the iOS app
+/// only carry the file NAME ([ShowcaseNoteAttachment.fileName]) because the iOS app
 /// container path changes across reinstalls — [resolvePath] re-derives the
 /// absolute path each session.
 ///
 /// One recorder and one player for the whole app: iOS Notes plays a single
 /// memo at a time, and starting a recording stops playback.
-class NotesMediaService {
+class ShowcaseNotesMediaService {
   /// Ports default to their real plugin-backed implementations; inject fakes
   /// (from `package:appbox_kit_media/testing.dart`) in tests.
-  NotesMediaService({
+  ShowcaseNotesMediaService({
     MediaCaptureService? capture,
     AudioRecorderService? recorder,
     AudioPlayerService? player,
@@ -86,7 +86,7 @@ class NotesMediaService {
     return dir;
   }
 
-  Future<String> resolvePath(NoteAttachment attachment) async {
+  Future<String> resolvePath(ShowcaseNoteAttachment attachment) async {
     final dir = await _attachmentsDir();
     return '${dir.path}/${attachment.fileName}';
   }
@@ -97,7 +97,7 @@ class NotesMediaService {
   /// into the attachments dir or it would vanish with the cache. Permission
   /// denial, cancellation and missing hardware all collapse to null here (the
   /// UI already gates the camera via [isCameraAvailable]).
-  Future<NoteAttachment?> pickPhoto({required bool fromCamera}) async {
+  Future<ShowcaseNoteAttachment?> pickPhoto({required bool fromCamera}) async {
     // Degrade to the library on simulators rather than crash — mirrors how
     // the UI hides the camera action via [isCameraAvailable].
     final source = (fromCamera && _capture.hasCamera)
@@ -120,9 +120,9 @@ class NotesMediaService {
     final dir = await _attachmentsDir();
     await media.saveTo('${dir.path}/$fileName');
 
-    return NoteAttachment(
+    return ShowcaseNoteAttachment(
       id: id,
-      kind: NoteAttachmentKind.photo,
+      kind: ShowcaseNoteAttachmentKind.photo,
       fileName: fileName,
       createdAt: DateTime.now().toUtc(),
     );
@@ -141,12 +141,12 @@ class NotesMediaService {
     return true;
   }
 
-  Future<NoteAttachment?> stopRecording() async {
+  Future<ShowcaseNoteAttachment?> stopRecording() async {
     final result = await _recorder.stop();
     if (result == null) return null;
-    return NoteAttachment(
+    return ShowcaseNoteAttachment(
       id: _uuid.v4(),
-      kind: NoteAttachmentKind.audio,
+      kind: ShowcaseNoteAttachmentKind.audio,
       fileName: result.path.substring(result.path.lastIndexOf('/') + 1),
       durationMs: result.duration.inMilliseconds,
       createdAt: DateTime.now().toUtc(),
@@ -159,7 +159,7 @@ class NotesMediaService {
 
   /// Play [attachment] from the start, or toggle pause/resume when it is the
   /// one already loaded.
-  Future<void> togglePlayback(NoteAttachment attachment) async {
+  Future<void> togglePlayback(ShowcaseNoteAttachment attachment) async {
     if (playingAttachmentId$.value == attachment.id) {
       _player.isPlaying ? await _player.pause() : await _player.play();
       return;
@@ -176,7 +176,7 @@ class NotesMediaService {
   }
 
   /// Best-effort binary cleanup when an attachment is removed from a note.
-  Future<void> deleteFile(NoteAttachment attachment) async {
+  Future<void> deleteFile(ShowcaseNoteAttachment attachment) async {
     if (playingAttachmentId$.value == attachment.id) await stopPlayback();
     final file = File(await resolvePath(attachment));
     if (await file.exists()) await file.delete();

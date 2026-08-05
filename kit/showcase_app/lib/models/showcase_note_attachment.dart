@@ -1,19 +1,19 @@
-/// One media attachment on a [Note], stored inside the note row's
+/// One media attachment on a [ShowcaseNote], stored inside the note row's
 /// `attachments` jsonb column (swap rule 2: nested collections are jsonb,
 /// never child tables).
 ///
 /// Binaries themselves live in the app-documents directory —
-/// `NotesMediaService` owns the files; rows carry only [fileName] (relative,
+/// `ShowcaseNotesMediaService` owns the files; rows carry only [fileName] (relative,
 /// because the iOS app container path changes across reinstalls) plus
 /// metadata. Rows therefore sync to any backend while files stay local — the
 /// documented ceiling until a storage seam exists.
 library;
 
-enum NoteAttachmentKind { photo, audio }
+enum ShowcaseNoteAttachmentKind { photo, audio }
 
-class NoteAttachment {
+class ShowcaseNoteAttachment {
   final String id;
-  final NoteAttachmentKind kind;
+  final ShowcaseNoteAttachmentKind kind;
 
   /// File name relative to the showcase attachments directory.
   final String fileName;
@@ -22,7 +22,7 @@ class NoteAttachment {
   final int? durationMs;
   final DateTime createdAt;
 
-  const NoteAttachment({
+  const ShowcaseNoteAttachment({
     required this.id,
     required this.kind,
     required this.fileName,
@@ -30,9 +30,9 @@ class NoteAttachment {
     required this.createdAt,
   });
 
-  factory NoteAttachment.fromJson(Map<String, dynamic> json) => NoteAttachment(
+  factory ShowcaseNoteAttachment.fromJson(Map<String, dynamic> json) => ShowcaseNoteAttachment(
         id: json['id'] as String,
-        kind: NoteAttachmentKind.values.byName(json['kind'] as String),
+        kind: ShowcaseNoteAttachmentKind.values.byName(json['kind'] as String),
         fileName: json['file_name'] as String,
         durationMs: json['duration_ms'] as int?,
         createdAt: DateTime.parse(json['created_at'] as String),

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:ui_library/ui_library.dart';
-import 'package:appbox_kit_showcase_app/notes/models/note_folder.dart';
+import 'package:appbox_kit_showcase_app/models/showcase_note_folder.dart';
 
 /// Admin-section row: folder name + owner id subtitle + live count. Read-only
 /// by design — folder detail streams are owner-scoped, so navigating into
@@ -13,7 +13,7 @@ class ShowcaseNotesAdminFolderRowWidget extends StatelessWidget {
     required this.count,
   });
 
-  final NoteFolder folder;
+  final ShowcaseNoteFolder folder;
   final int count;
 
   @override

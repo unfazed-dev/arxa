@@ -1,1 +1,1 @@
-export 'showcase_startup_loading_widget.dart';
+export 'package:appbox_kit_showcase_app/ui/widgets/showcase_startup_widgets/showcase_startup_loading_widget.dart';

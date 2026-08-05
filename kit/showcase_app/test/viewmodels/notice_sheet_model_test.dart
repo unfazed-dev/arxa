@@ -4,7 +4,7 @@ import 'package:appbox_kit_showcase_app/app/app.locator.dart';
 import '../helpers/test_helpers.dart';
 
 void main() {
-  group('InfoAlertDialogModel Tests -', () {
+  group('ShowcaseShowcaseInfoAlertDialogModel Tests -', () {
     setUp(() => registerServices());
     tearDown(() => locator.reset());
   });

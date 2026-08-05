@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 import 'package:stacked/stacked.dart';
 
-import 'showcase_notes_view.desktop.dart';
-import 'showcase_notes_view.tablet.dart';
-import 'showcase_notes_view.mobile.dart';
-import 'showcase_notes_viewmodel.dart';
+import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes/showcase_notes_view.desktop.dart';
+import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes/showcase_notes_view.tablet.dart';
+import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes/showcase_notes_view.mobile.dart';
+import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes/showcase_notes_viewmodel.dart';
 
 /// The "Folders" screen — Notes tab root. Signed-out state embeds
 /// [NotesAuthPanel] directly (seamless, no navigation); signed-in state is

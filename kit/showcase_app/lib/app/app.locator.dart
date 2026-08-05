@@ -22,9 +22,9 @@ import 'package:ui_library/services/navigation/kit_navigation_controller_service
 import 'package:ui_library/services/notifications/kit_notification_service.dart';
 import 'package:ui_library/services/sheet/kit_bottom_sheet_service.dart';
 
-import '../services/facades/notes_facade.dart';
-import '../services/notes_media_service.dart';
-import '../services/repositories/notes_repository.dart';
+import '../services/adapters/showcase_notes_media_service.dart';
+import '../services/facades/showcase_notes_facade.dart';
+import '../services/repositories/showcase_notes_repository.dart';
 import 'app.router.dart';
 
 final locator = StackedLocator.instance;
@@ -51,9 +51,9 @@ Future<void> setupLocator(
   locator.registerLazySingleton(() => KitNavigationControllerService());
   locator.registerLazySingleton(() => KitOverlayService());
   locator.registerLazySingleton(() => KitSelectableService());
-  locator.registerLazySingleton(() => NotesRepository());
-  locator.registerLazySingleton(() => NotesFacade());
-  locator.registerLazySingleton(() => NotesMediaService());
+  locator.registerLazySingleton(() => ShowcaseNotesRepository());
+  locator.registerLazySingleton(() => ShowcaseNotesFacade());
+  locator.registerLazySingleton(() => ShowcaseNotesMediaService());
   if (stackedRouter == null) {
     throw Exception(
         'Stacked is building to use the Router (Navigator 2.0) navigation but no stackedRouter is supplied. Pass the stackedRouter to the setupLocator function in main.dart');

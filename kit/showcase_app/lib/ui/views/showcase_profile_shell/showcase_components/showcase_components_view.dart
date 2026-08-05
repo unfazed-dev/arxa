@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 import 'package:stacked/stacked.dart';
 
-import 'showcase_components_view.desktop.dart';
-import 'showcase_components_view.tablet.dart';
-import 'showcase_components_view.mobile.dart';
-import 'showcase_components_viewmodel.dart';
+import 'package:appbox_kit_showcase_app/ui/views/showcase_profile_shell/showcase_components/showcase_components_view.desktop.dart';
+import 'package:appbox_kit_showcase_app/ui/views/showcase_profile_shell/showcase_components/showcase_components_view.tablet.dart';
+import 'package:appbox_kit_showcase_app/ui/views/showcase_profile_shell/showcase_components/showcase_components_view.mobile.dart';
+import 'package:appbox_kit_showcase_app/ui/views/showcase_profile_shell/showcase_components/showcase_components_viewmodel.dart';
 
 /// Video-parity components showcase (ADR 0011) — one pushed surface proving
 /// each wave-1/2 ui_library capability: [KitFrostedSurface], [KitChip] +

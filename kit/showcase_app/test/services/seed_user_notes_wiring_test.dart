@@ -5,8 +5,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ui_library/ui_library.dart';
 import 'package:appbox_kit_data/appbox_kit_data.dart';
 import 'package:appbox_kit_showcase_app/app/app_data.dart';
-import 'package:appbox_kit_showcase_app/services/facades/notes_facade.dart';
-import 'package:appbox_kit_showcase_app/services/repositories/notes_repository.dart';
+import 'package:appbox_kit_showcase_app/services/facades/showcase_notes_facade.dart';
+import 'package:appbox_kit_showcase_app/services/repositories/showcase_notes_repository.dart';
 import 'package:stacked_services/stacked_services.dart';
 import 'package:talker_flutter/talker_flutter.dart';
 
@@ -33,7 +33,7 @@ List<Map<String, dynamic>> _rows(String path) {
 }
 
 void main() {
-  late NotesFacade notes;
+  late ShowcaseNotesFacade notes;
 
   // ownerSeedKey -> (live, trashed), derived from the shipped fixture.
   final expectedLive = <String, int>{};
@@ -56,8 +56,8 @@ void main() {
       ..registerLazySingleton(() => BottomSheetService())
       ..registerLazySingleton(() => SnackbarService())
       ..registerLazySingleton(() => KitNotificationService())
-      ..registerLazySingleton<NotesRepository>(() => NotesRepository())
-      ..registerLazySingleton<NotesFacade>(() => NotesFacade());
+      ..registerLazySingleton<ShowcaseNotesRepository>(() => ShowcaseNotesRepository())
+      ..registerLazySingleton<ShowcaseNotesFacade>(() => ShowcaseNotesFacade());
 
     await AppData.initialize(
       config: const KitDataConfig(
@@ -66,10 +66,10 @@ void main() {
       ),
       assetReader: _DiskAssetReader(),
     );
-    notes = locator<NotesFacade>();
+    notes = locator<ShowcaseNotesFacade>();
   });
 
-  Future<NotesOverview> overviewFor(KitAuthSession session) =>
+  Future<ShowcaseNotesOverview> overviewFor(KitAuthSession session) =>
       notes.overview$(session.user.id).first;
 
   test('fixture sanity: every seed user owns at least one live note', () {

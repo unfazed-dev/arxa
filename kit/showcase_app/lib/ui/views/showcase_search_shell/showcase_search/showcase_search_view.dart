@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 import 'package:stacked/stacked.dart';
 
-import 'showcase_search_view.desktop.dart';
-import 'showcase_search_view.tablet.dart';
-import 'showcase_search_view.mobile.dart';
-import 'showcase_search_viewmodel.dart';
+import 'package:appbox_kit_showcase_app/ui/views/showcase_search_shell/showcase_search/showcase_search_view.desktop.dart';
+import 'package:appbox_kit_showcase_app/ui/views/showcase_search_shell/showcase_search/showcase_search_view.tablet.dart';
+import 'package:appbox_kit_showcase_app/ui/views/showcase_search_shell/showcase_search/showcase_search_view.mobile.dart';
+import 'package:appbox_kit_showcase_app/ui/views/showcase_search_shell/showcase_search/showcase_search_viewmodel.dart';
 
 /// Search-tab showcase: [KitNativeSearchBar], [KitNativeSlider],
 /// [KitNativeRangeSlider], [KitNativeSwitch] — all state-driven so the native

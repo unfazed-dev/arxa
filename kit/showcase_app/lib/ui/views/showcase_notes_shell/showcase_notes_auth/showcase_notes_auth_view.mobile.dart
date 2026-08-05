@@ -5,7 +5,7 @@ import 'package:appbox_kit_showcase_app/ui/widgets/common/showcase_tabs_shared/w
 import 'package:appbox_kit_showcase_app/ui/widgets/showcase_notes_widgets/widgets.dart';
 import 'package:ui_library/ui_library.dart';
 
-import 'showcase_notes_auth_viewmodel.dart';
+import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_auth/showcase_notes_auth_viewmodel.dart';
 
 class ShowcaseNotesAuthViewMobile
     extends ViewModelWidget<ShowcaseNotesAuthViewModel> {

@@ -4,7 +4,7 @@ import 'package:appbox_kit_showcase_app/app/app.locator.dart';
 import '../helpers/test_helpers.dart';
 
 void main() {
-  group('NotesMediaServiceTest -', () {
+  group('ShowcaseNotesMediaServiceTest -', () {
     setUp(() => registerServices());
     tearDown(() => locator.reset());
   });

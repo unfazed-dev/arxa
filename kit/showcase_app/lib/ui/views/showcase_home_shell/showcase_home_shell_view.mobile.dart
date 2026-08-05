@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:stacked/stacked.dart';
 import 'package:appbox_kit_showcase_app/ui/widgets/common/showcase_gallery_chrome/showcase_gallery_chrome_widget.dart';
-import 'showcase_home_shell_viewmodel.dart';
+import 'package:appbox_kit_showcase_app/ui/views/showcase_home_shell/showcase_home_shell_viewmodel.dart';
 
 class ShowcaseHomeShellViewMobile
     extends ViewModelWidget<ShowcaseHomeShellViewModel> {

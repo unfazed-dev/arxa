@@ -2,8 +2,8 @@ import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:appbox_kit_showcase_app/app/app.locator.dart';
 import 'package:stacked_services/stacked_services.dart';
-import 'package:appbox_kit_showcase_app/services/facades/notes_facade.dart';
-import 'package:appbox_kit_showcase_app/services/notes_media_service.dart';
+import 'package:appbox_kit_showcase_app/services/facades/showcase_notes_facade.dart';
+import 'package:appbox_kit_showcase_app/services/adapters/showcase_notes_media_service.dart';
 // @stacked-import
 
 import 'test_helpers.mocks.dart';
@@ -14,8 +14,8 @@ import 'test_helpers.mocks.dart';
     MockSpec<RouterService>(onMissingStub: OnMissingStub.returnDefault),
     MockSpec<BottomSheetService>(onMissingStub: OnMissingStub.returnDefault),
     MockSpec<DialogService>(onMissingStub: OnMissingStub.returnDefault),
-    MockSpec<NotesFacade>(onMissingStub: OnMissingStub.returnDefault),
-    MockSpec<NotesMediaService>(onMissingStub: OnMissingStub.returnDefault),
+    MockSpec<ShowcaseNotesFacade>(onMissingStub: OnMissingStub.returnDefault),
+    MockSpec<ShowcaseNotesMediaService>(onMissingStub: OnMissingStub.returnDefault),
 // @stacked-mock-spec
   ],
 )
@@ -23,8 +23,8 @@ void registerServices() {
   getAndRegisterRouterService();
   getAndRegisterBottomSheetService();
   getAndRegisterDialogService();
-  getAndRegisterNotesFacade();
-  getAndRegisterNotesMediaService();
+  getAndRegisterShowcaseNotesFacade();
+  getAndRegisterShowcaseNotesMediaService();
 // @stacked-mock-register
 }
 
@@ -82,17 +82,17 @@ MockDialogService getAndRegisterDialogService() {
   return service;
 }
 
-MockNotesFacade getAndRegisterNotesFacade() {
-  _removeRegistrationIfExists<NotesFacade>();
-  final service = MockNotesFacade();
-  locator.registerSingleton<NotesFacade>(service);
+MockShowcaseNotesFacade getAndRegisterShowcaseNotesFacade() {
+  _removeRegistrationIfExists<ShowcaseNotesFacade>();
+  final service = MockShowcaseNotesFacade();
+  locator.registerSingleton<ShowcaseNotesFacade>(service);
   return service;
 }
 
-MockNotesMediaService getAndRegisterNotesMediaService() {
-  _removeRegistrationIfExists<NotesMediaService>();
-  final service = MockNotesMediaService();
-  locator.registerSingleton<NotesMediaService>(service);
+MockShowcaseNotesMediaService getAndRegisterShowcaseNotesMediaService() {
+  _removeRegistrationIfExists<ShowcaseNotesMediaService>();
+  final service = MockShowcaseNotesMediaService();
+  locator.registerSingleton<ShowcaseNotesMediaService>(service);
   return service;
 }
 // @stacked-mock-create

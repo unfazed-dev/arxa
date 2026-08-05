@@ -4,15 +4,15 @@ import 'package:appbox_kit_showcase_app/ui/common/ui_helpers.dart';
 import 'package:stacked/stacked.dart';
 import 'package:stacked_services/stacked_services.dart';
 
-import 'info_alert_dialog_model.dart';
+import 'package:appbox_kit_showcase_app/ui/dialogs/showcase_info_alert_dialog/showcase_info_alert_dialog_model.dart';
 
 const double _graphicSize = 60;
 
-class InfoAlertDialog extends StackedView<InfoAlertDialogModel> {
+class ShowcaseInfoAlertDialog extends StackedView<ShowcaseShowcaseInfoAlertDialogModel> {
   final DialogRequest request;
   final Function(DialogResponse) completer;
 
-  const InfoAlertDialog({
+  const ShowcaseInfoAlertDialog({
     super.key,
     required this.request,
     required this.completer,
@@ -21,7 +21,7 @@ class InfoAlertDialog extends StackedView<InfoAlertDialogModel> {
   @override
   Widget builder(
     BuildContext context,
-    InfoAlertDialogModel viewModel,
+    ShowcaseShowcaseInfoAlertDialogModel viewModel,
     Widget? child,
   ) {
     return Dialog(
@@ -102,6 +102,6 @@ class InfoAlertDialog extends StackedView<InfoAlertDialogModel> {
   }
 
   @override
-  InfoAlertDialogModel viewModelBuilder(BuildContext context) =>
-      InfoAlertDialogModel();
+  ShowcaseShowcaseInfoAlertDialogModel viewModelBuilder(BuildContext context) =>
+      ShowcaseShowcaseInfoAlertDialogModel();
 }

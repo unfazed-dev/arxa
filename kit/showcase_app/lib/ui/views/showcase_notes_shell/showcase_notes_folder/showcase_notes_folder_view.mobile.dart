@@ -3,11 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:stacked/stacked.dart';
 import 'package:appbox_kit_motion/appbox_kit_motion.dart';
 import 'package:ui_library/ui_library.dart';
-import 'package:appbox_kit_showcase_app/notes/models/note.dart';
+import 'package:appbox_kit_showcase_app/models/showcase_note.dart';
 import 'package:appbox_kit_showcase_app/ui/widgets/common/showcase_tabs_shared/widgets.dart';
 import 'package:appbox_kit_showcase_app/ui/widgets/showcase_notes_widgets/widgets.dart';
-import 'showcase_notes_folder_viewmodel.dart';
-import '../showcase_note_editor/showcase_note_editor_viewmodel.dart';
+import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_folder/showcase_notes_folder_viewmodel.dart';
+import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_note_editor/showcase_note_editor_viewmodel.dart';
 import 'package:appbox_kit_showcase_app/ui/common/showcase_notes_shared.dart';
 
 class ShowcaseNotesFolderViewMobile
@@ -177,7 +177,7 @@ Future<void> _confirmEmptyTrash(
 }
 
 Future<void> _confirmDeletePermanently(BuildContext context,
-    ShowcaseNotesFolderViewModel viewModel, Note note) async {
+    ShowcaseNotesFolderViewModel viewModel, ShowcaseNote note) async {
   if (await confirmDialog(context,
       title: 'Delete Note',
       message: 'This note will be permanently deleted.',

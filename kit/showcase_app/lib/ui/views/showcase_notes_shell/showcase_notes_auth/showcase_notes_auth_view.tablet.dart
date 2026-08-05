@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:stacked/stacked.dart';
 
-import 'showcase_notes_auth_viewmodel.dart';
+import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_auth/showcase_notes_auth_viewmodel.dart';
 
 class ShowcaseNotesAuthViewTablet
     extends ViewModelWidget<ShowcaseNotesAuthViewModel> {

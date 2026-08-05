@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:ui_library/ui_library.dart';
-import 'package:appbox_kit_showcase_app/notes/models/note_attachment.dart';
+import 'package:appbox_kit_showcase_app/models/showcase_note_attachment.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_note_editor/showcase_note_editor_viewmodel.dart';
 
 /// One audio attachment row: play/pause, live progress bar, duration label.
@@ -13,11 +13,11 @@ class ShowcaseNoteAudioRowWidget extends StatelessWidget {
     required this.formatDuration,
   });
   final ShowcaseNoteEditorViewModel viewModel;
-  final NoteAttachment attachment;
+  final ShowcaseNoteAttachment attachment;
 
   /// Long-press handler — the view owns the remove-confirmation dialog
   /// plumbing.
-  final Future<void> Function(NoteAttachment attachment) onRemoveAttachment;
+  final Future<void> Function(ShowcaseNoteAttachment attachment) onRemoveAttachment;
 
   /// Duration label formatter — the view owns the formatting helper.
   final String Function(Duration duration) formatDuration;

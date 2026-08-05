@@ -1,5 +1,5 @@
-import 'package:appbox_kit_showcase_app/ui/bottom_sheets/notice/notice_sheet.dart';
-import 'package:appbox_kit_showcase_app/ui/dialogs/info_alert/info_alert_dialog.dart';
+import 'package:appbox_kit_showcase_app/ui/bottom_sheets/showcase_notice_sheet/showcase_notice_sheet.dart';
+import 'package:appbox_kit_showcase_app/ui/dialogs/showcase_info_alert_dialog/showcase_info_alert_dialog.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_unknown_shell/showcase_unknown_shell_view.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_unknown_shell/showcase_unknown/showcase_unknown_view.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_startup_shell/showcase_startup_shell_view.dart';
@@ -23,9 +23,9 @@ import 'package:stacked_services/stacked_services.dart';
 import 'package:talker_flutter/talker_flutter.dart';
 import 'package:appbox_kit_haptics/appbox_kit_haptics.dart';
 import 'package:ui_library/ui_library.dart';
-import 'package:appbox_kit_showcase_app/services/repositories/notes_repository.dart';
-import 'package:appbox_kit_showcase_app/services/facades/notes_facade.dart';
-import 'package:appbox_kit_showcase_app/services/notes_media_service.dart';
+import 'package:appbox_kit_showcase_app/services/repositories/showcase_notes_repository.dart';
+import 'package:appbox_kit_showcase_app/services/facades/showcase_notes_facade.dart';
+import 'package:appbox_kit_showcase_app/services/adapters/showcase_notes_media_service.dart';
 // @stacked-import
 
 @StackedApp(
@@ -101,19 +101,19 @@ import 'package:appbox_kit_showcase_app/services/notes_media_service.dart';
     LazySingleton(classType: KitOverlayService),
     LazySingleton(classType: KitSelectableService),
     // Data layer (appbox_kit_data layering): the Notes Repository — the
-    // notes-domain gateway over the kit's KitRepository<Note>/<NoteFolder> —
+    // notes-domain gateway over the kit's KitRepository<ShowcaseNote>/<ShowcaseNoteFolder> —
     // then the Facade, the only layer viewmodels talk to.
-    LazySingleton(classType: NotesRepository),
-    LazySingleton(classType: NotesFacade),
-    LazySingleton(classType: NotesMediaService),
+    LazySingleton(classType: ShowcaseNotesRepository),
+    LazySingleton(classType: ShowcaseNotesFacade),
+    LazySingleton(classType: ShowcaseNotesMediaService),
 // @stacked-service
   ],
   bottomsheets: [
-    StackedBottomsheet(classType: NoticeSheet),
+    StackedBottomsheet(classType: ShowcaseNoticeSheet),
     // @stacked-bottom-sheet
   ],
   dialogs: [
-    StackedDialog(classType: InfoAlertDialog),
+    StackedDialog(classType: ShowcaseInfoAlertDialog),
     // @stacked-dialog
   ],
 )

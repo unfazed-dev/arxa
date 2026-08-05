@@ -5,7 +5,7 @@ import 'package:appbox_kit_core/common/kit_glyphs.dart';
 import 'package:appbox_kit_core/common/kit_ui_helpers.dart';
 import 'package:appbox_kit_showcase_app/ui/widgets/showcase_notes_widgets/widgets.dart';
 
-import 'showcase_notes_create_account_viewmodel.dart';
+import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_create_account/showcase_notes_create_account_viewmodel.dart';
 
 class ShowcaseNotesCreateAccountViewMobile
     extends ViewModelWidget<ShowcaseNotesCreateAccountViewModel> {

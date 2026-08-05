@@ -3,7 +3,7 @@ import 'package:stacked/stacked.dart';
 
 import 'package:appbox_kit_showcase_app/ui/widgets/showcase_unknown_widgets/widgets.dart';
 
-import 'showcase_unknown_viewmodel.dart';
+import 'package:appbox_kit_showcase_app/ui/views/showcase_unknown_shell/showcase_unknown/showcase_unknown_viewmodel.dart';
 
 class ShowcaseUnknownViewTablet
     extends ViewModelWidget<ShowcaseUnknownViewModel> {

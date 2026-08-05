@@ -62,8 +62,8 @@ await KitData.initialize(
 <!-- PORTED — §7.3 DONE 2026-07-12. Boot lives in `lib/app/app_data.dart`:
 `AppData.initialize({config, assetReader})` (renamed from the source's
 `AppboxKitShowcase` — that name referenced the old package). It boots KitData
-over the 3 seed fixtures AND registers the two Notes services (NotesService,
-NotesMediaService) via the shared `locator` — the data slice boots itself (one
+over the 3 seed fixtures AND registers the two Notes services (ShowcaseNotesFacade,
+ShowcaseNotesMediaService) via the shared `locator` — the data slice boots itself (one
 call = data layer usable). `main.dart` calls it after `setupLocator()`; a
 `ThemeMode` StreamBuilder drives kitLightTheme/kitDarkTheme. The 12 kit
 *infrastructure* services stay in `@StackedApp` (lib/app/app.dart). VERIFIED:
@@ -94,10 +94,8 @@ procedure:
 (2) pass the registrations to `KitData.initialize(entities: [...])` — typed
     `KitRepository<T>` then comes FREE via `KitDataFacade.repository<T>()`; that
     IS the swap seam (no per-table Repository class to author);
-(3) the Facade is a hand-authored `class NotesService extends KitDataFacade`
-    (kept the source name — the `Service` suffix is Stacked's locator
-    convention and `extends KitDataFacade` already names the pattern; renaming
-    to NotesFacade would be an 8-file cascade for zero behavior change). It
+(3) the Facade is a hand-authored `class ShowcaseNotesFacade extends KitDataFacade`
+    (prefixed per the showcase naming convention, 2026-08-05). It
     composes `repository<Note>()` / `repository<NoteFolder>()`, derives rxdart
     streams, and routes writes through `mutate()`.
 The stacked CLI cannot scaffold a KitDataFacade subclass — hand-author it. -->
@@ -117,7 +115,7 @@ ViewModel subscribes to the Facade's streams (reactive); no direct Repository ac
 stacked create view showcase_startup showcase_shell showcase_<tab>_shell showcase_<leaf_view> … --exclude-route
 ```
 
-- **NAMING CONVENTION — every showcase-app view is `showcase_`-prefixed** (`showcase_startup`, `showcase_unknown`, `showcase_notes_shell`, `showcase_notes`, `showcase_note_editor`, …), including the scaffold's startup/unknown views, the shared helpers in `lib/ui/common` (`showcase_notes_shared.dart`, `showcase_tabs_shared.dart`), and the root widget in `main.dart` (`ShowcaseApp`, not `MainApp`). This makes every showcase artifact instantly distinguishable from any other app's views. Pass the prefixed name to `stacked create view` so classes, files, routes, and tests all come out prefixed. CLI-template boilerplate stays canonical (notice sheet, info_alert dialog, `app_colors`/`ui_helpers`, `main.dart` filename — Flutter requires it).
+- **NAMING CONVENTION — every showcase-app view is `showcase_`-prefixed** (`showcase_startup`, `showcase_unknown`, `showcase_notes_shell`, `showcase_notes`, `showcase_note_editor`, …), including the scaffold's startup/unknown views, the shared helpers in `lib/ui/common` (`showcase_notes_shared.dart`, `showcase_tabs_shared.dart`), and the root widget in `main.dart` (`ShowcaseApp`, not `MainApp`). This makes every showcase artifact instantly distinguishable from any other app's views. Pass the prefixed name to `stacked create view` so classes, files, routes, and tests all come out prefixed. The scaffold's sheet/dialog boilerplate is prefixed too (`showcase_notice_sheet/`, `showcase_info_alert_dialog/` under `lib/ui/bottom_sheets`/`lib/ui/dialogs`, files ending `_sheet.dart`/`_dialog.dart` with matching `…Sheet`/`…Dialog` class names; barrels live one level up as `bottom_sheets.dart`/`dialogs.dart` since a folder-named barrel would collide with the artifact file); what stays canonical is `app_colors`/`ui_helpers` and the `main.dart` filename — Flutter requires it.
 - Each **shell is a full CLI view folder** (`<name>_shell/` with view + mobile/tablet/desktop variants + viewmodel), never an inline `StatelessWidget` outlet class.
 - **Leaf views nest inside their shell's folder** after generation: `lib/ui/views/showcase_notes_shell/showcase_notes_folder/showcase_notes_folder_view.dart` (host example: `account_shell/account_home/`). The CLI generates flat; move the folder under its shell — sibling-relative imports survive the move, only `app.dart`/cross-view absolute imports change. Viewmodel tests stay FLAT in `test/viewmodels/` (host convention).
 - **`--exclude-route` for every view in the shell tree**, then hand-place the routes in `app.dart`: `CustomRoute(page: ShowcaseStartupView, initial: true)` + `CustomRoute(page: ShowcaseShellView, path: '/', children: [CustomRoute(page: <Tab>ShellView, children: [CustomRoute(page: <TabView>, path: '', initial: true), …])])`. Route-tree layout is hand-edited (normal development); file creation is not.

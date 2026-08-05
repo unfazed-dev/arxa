@@ -4,18 +4,18 @@ import 'package:appbox_kit_showcase_app/ui/common/ui_helpers.dart';
 import 'package:stacked/stacked.dart';
 import 'package:stacked_services/stacked_services.dart';
 
-import 'notice_sheet_model.dart';
+import 'package:appbox_kit_showcase_app/ui/bottom_sheets/showcase_notice_sheet/showcase_notice_sheet_model.dart';
 
-class NoticeSheet extends StackedView<NoticeSheetModel> {
+class ShowcaseNoticeSheet extends StackedView<ShowcaseShowcaseNoticeSheetModel> {
   final Function(SheetResponse)? completer;
   final SheetRequest request;
-  const NoticeSheet(
+  const ShowcaseNoticeSheet(
       {super.key, required this.completer, required this.request});
 
   @override
   Widget builder(
     BuildContext context,
-    NoticeSheetModel viewModel,
+    ShowcaseShowcaseNoticeSheetModel viewModel,
     Widget? child,
   ) {
     return Container(
@@ -49,5 +49,5 @@ class NoticeSheet extends StackedView<NoticeSheetModel> {
   }
 
   @override
-  NoticeSheetModel viewModelBuilder(BuildContext context) => NoticeSheetModel();
+  ShowcaseShowcaseNoticeSheetModel viewModelBuilder(BuildContext context) => ShowcaseShowcaseNoticeSheetModel();
 }

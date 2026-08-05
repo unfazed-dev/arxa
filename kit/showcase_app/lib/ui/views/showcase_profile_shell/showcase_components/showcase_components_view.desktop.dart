@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:stacked/stacked.dart';
 
-import 'showcase_components_view.mobile.dart';
-import 'showcase_components_viewmodel.dart';
+import 'package:appbox_kit_showcase_app/ui/views/showcase_profile_shell/showcase_components/showcase_components_view.mobile.dart';
+import 'package:appbox_kit_showcase_app/ui/views/showcase_profile_shell/showcase_components/showcase_components_viewmodel.dart';
 
 /// Desktop reuses the mobile components surface (same rationale as the
 /// Motion showcase — the demos are form-factor-independent).

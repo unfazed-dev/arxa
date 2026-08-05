@@ -5,24 +5,24 @@ import 'package:appbox_kit_data/auth/kit_auth_types.dart';
 import 'package:appbox_kit_data/models/kit_entity_registration.dart';
 import 'package:appbox_kit_data/schema/kit_table_schema.dart';
 
-import 'note_attachment.dart';
-import 'note_folder.dart';
+import 'package:appbox_kit_showcase_app/models/showcase_note_attachment.dart';
+import 'package:appbox_kit_showcase_app/models/showcase_note_folder.dart';
 
 /// A note. iOS-style: no separate title column — [title] and [snippet] derive
 /// from [body]'s first lines; `deleted_at` implements Recently Deleted
 /// (soft delete, restorable) without a second table.
-class Note {
+class ShowcaseNote {
   final String id;
   final String folderId;
   final String owner;
   final String body;
   final bool pinned;
-  final List<NoteAttachment> attachments;
+  final List<ShowcaseNoteAttachment> attachments;
   final DateTime? deletedAt;
   final DateTime createdAt;
   final DateTime updatedAt;
 
-  const Note({
+  const ShowcaseNote({
     required this.id,
     required this.folderId,
     required this.owner,
@@ -61,23 +61,23 @@ class Note {
   }
 
   String get _attachmentSummary {
-    final photos = attachments.where((a) => a.kind == NoteAttachmentKind.photo);
-    final audio = attachments.where((a) => a.kind == NoteAttachmentKind.audio);
+    final photos = attachments.where((a) => a.kind == ShowcaseNoteAttachmentKind.photo);
+    final audio = attachments.where((a) => a.kind == ShowcaseNoteAttachmentKind.audio);
     return [
       if (photos.isNotEmpty) '📷 ${photos.length}',
       if (audio.isNotEmpty) '🎙 ${audio.length}',
     ].join('  ');
   }
 
-  Note copyWith({
+  ShowcaseNote copyWith({
     String? folderId,
     String? body,
     bool? pinned,
-    List<NoteAttachment>? attachments,
+    List<ShowcaseNoteAttachment>? attachments,
     DateTime? Function()? deletedAt,
     DateTime? updatedAt,
   }) =>
-      Note(
+      ShowcaseNote(
         id: id,
         folderId: folderId ?? this.folderId,
         owner: owner,
@@ -90,7 +90,7 @@ class Note {
         updatedAt: updatedAt ?? this.updatedAt,
       );
 
-  factory Note.fromJson(Map<String, dynamic> json) => Note(
+  factory ShowcaseNote.fromJson(Map<String, dynamic> json) => ShowcaseNote(
         id: json['id'] as String,
         folderId: json['folder_id'] as String,
         owner: json['owner'] as String,
@@ -98,7 +98,7 @@ class Note {
         pinned: json['pinned'] as bool? ?? false,
         attachments: (json['attachments'] as List? ?? const [])
             .map((a) =>
-                NoteAttachment.fromJson(Map<String, dynamic>.from(a as Map)))
+                ShowcaseNoteAttachment.fromJson(Map<String, dynamic>.from(a as Map)))
             .toList(),
         deletedAt: json['deleted_at'] == null
             ? null
@@ -138,8 +138,8 @@ const noteSchema = KitTableSchema(
   ],
 );
 
-final noteRegistration = KitEntityRegistration<Note>(
+final showcaseNoteRegistration = KitEntityRegistration<ShowcaseNote>(
   schema: noteSchema,
-  fromJson: Note.fromJson,
+  fromJson: ShowcaseNote.fromJson,
   toJson: (note) => note.toJson(),
 );
