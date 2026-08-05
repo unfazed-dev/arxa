@@ -1,10 +1,20 @@
 # Entitlement backend — deployment runbook
 
-Status: **runbook, not code** (2026-08-05). The local half of D17/D18 —
-`appboxd/lib/entitlement.dart` (offline JWT verification), the scaffold-boundary
-assertion in `scaffoldMain` + `scaffoldGate`, and `appbox entitlement
-status/verify` — is shipped. This document is the contract the hosted half
-must implement so the two cannot drift. Source of decisions:
+Status: **hosted-half source code-complete, not deployed** (2026-08-05).
+The local half of D17/D18 — `appboxd/lib/entitlement.dart` (offline JWT
+verification), the scaffold-boundary assertion in `scaffoldMain` +
+`scaffoldGate`, and `appbox entitlement status/verify` — is shipped, and the
+hosted half now exists as undeployed source under `deploy/supabase/`:
+
+| piece | file | state |
+|---|---|---|
+| `/activate` + `DELETE /machines/:fpr` Edge Function | `deploy/supabase/functions/activate/index.ts` | code-complete; **not deployed, not run against a live Supabase** |
+| JWT minter (the exact token-contract code) | `deploy/supabase/functions/_shared/entitlement_jwt.ts` | code-complete; **locally cross-verified against the Dart verifier** (8/8 scenarios, `deploy/supabase/scripts/local_mint_check.mjs`) |
+| Schema (§2 tables + RLS policies) | `deploy/supabase/schema.sql` | code-complete; **not applied** to any project |
+| Round-2 schema extension (orgs/org_members, tickets, feedback, metadata-only analytics_events, audit_log, chat — `docs/plans/appbox-data-model-decisions.md`) | `deploy/supabase/schema.sql` | code-complete; **not applied** to any project; DDL + RLS verified against a scratch local Postgres |
+| Production issuer keygen | `deploy/supabase/scripts/keygen.mjs` | code-complete; output goes to gitignored `deploy/supabase/secrets/` — **run it only at deploy time** |
+
+Remaining manual/deploy steps are collected in §9. Source of decisions:
 `docs/plans/monetization-and-entitlements.md` (D17–D20, D29–D33).
 
 The golden rule: **the client verifier is the authority on the token format.**
@@ -75,9 +85,13 @@ lowercase sha256 hex of the raw id string.
 
 ## 2. Supabase schema
 
-Three tables (D18). RLS: users read their own rows; **all writes are
-service-role-only** (the Edge Functions and the Stripe webhook, never the
-client).
+**Code-complete as `deploy/supabase/schema.sql`** (the SQL below plus the
+read-own-rows RLS policies). Applying it to a project is a manual deploy step
+(§9). Three tables (D18), plus the round-2 extension (orgs, support,
+feedback, analytics, audit, chat — see
+`docs/plans/appbox-data-model-decisions.md`; not reproduced here). RLS: users
+read their own rows; **all writes are service-role-only** (the Edge Functions
+and the Stripe webhook, never the client).
 
 ```sql
 -- Stripe mirror; the webhook is the only writer.
@@ -119,6 +133,24 @@ alter table machines enable row level security;
 ```
 
 ## 3. `POST /activate` Edge Function
+
+**Code-complete as `deploy/supabase/functions/activate/index.ts`** (minting
+factored into `deploy/supabase/functions/_shared/entitlement_jwt.ts`, pure Web
+APIs, so the same file runs in the Edge Runtime and in the local Node
+harness). The router also serves `DELETE /machines/:fpr` (step 3's
+self-service deactivation). Not yet deployed or exercised against a live
+Supabase — the DB-touching steps (1–4) are verified by code review only; the
+minting step (5) is verified end-to-end locally:
+
+```bash
+node --experimental-strip-types deploy/supabase/scripts/local_mint_check.mjs
+```
+
+mints tokens with the DEV keypair through the exact shared minter and runs the
+real client verifier (`appbox entitlement status/verify --token`) against
+them — 8 scenarios (valid, grace, expired-past-grace, missing feature,
+wrong-machine, future nbf, tampered payload, wrong key), all matching the §1
+verdict table.
 
 Request (authenticated — Supabase Auth JWT in the `Authorization` header):
 
@@ -186,7 +218,12 @@ offline-verdict semantics decide.
 
 - **Key management.** The issuer keypair is appbox's first owned trust
   surface: rotation procedure, compromise response, and uptime ownership
-  named before the first paid release.
+  named before the first paid release. Keygen is code-complete:
+  `node deploy/supabase/scripts/keygen.mjs` writes the issuer JWK (chmod 600)
+  to the gitignored `deploy/supabase/secrets/` and prints the public-key hex
+  for `Entitlement.publicKey`; it refuses to overwrite without `--force`.
+  The function reads the private half from the `ENTITLEMENT_ISSUER_JWK`
+  Supabase secret — never from the repo.
 - **Dev key swap.** Replace `Entitlement.publicKey` with the production
   public key; regenerate test fixtures' expectations if any pin it (none do —
   fixtures carry their own dev seed). Also delete `_devSeed` / `mint --dev`
@@ -209,3 +246,32 @@ signed+TTL offline-continuation artifact the plan demotes the licence to —
 nothing else issues or consumes licence files, so keeping the parser was dead
 code. The deploy gate keeps only its pipeline-state contract
 (target/version/account); the payment boundary lives at scaffold.
+
+## 9. Remaining manual / deploy steps (nothing below is code-complete)
+
+Everything in §1–§3 now has source; the rest needs external accounts and
+human decisions, in order:
+
+1. **Create the Supabase project** (`supabase init` / `link` — manual; no
+   `config.toml` is committed because the project ref doesn't exist yet).
+2. **Apply the schema:** run `deploy/supabase/schema.sql` (SQL editor or a
+   migration). Until this lands the function's steps 2–4 are untested against
+   a real database — they are code-reviewed only.
+3. **Generate the production issuer key:**
+   `node deploy/supabase/scripts/keygen.mjs`, then
+   `supabase secrets set ENTITLEMENT_ISSUER_JWK="$(cat deploy/supabase/secrets/entitlement-issuer.jwk.json)"`.
+4. **Deploy the function:** `supabase functions deploy activate` from the
+   linked project (the functions dir layout under `deploy/supabase/functions/`
+   follows the CLI convention — copy or symlink into the project root, or
+   point `--project-ref` at it per CLI version).
+5. **Smoke-test live:** one real authenticated `POST /activate` against the
+   deployed function, then `appbox entitlement verify ~/.appbox/entitlement.jwt`.
+6. **Dev key swap** (§7): replace `Entitlement.publicKey` with the printed
+   production hex, delete `mint --dev`, flip `test/release_gate_test.dart`.
+   Until then the release-gate test MUST stay green — it is the tripwire.
+7. **Stripe** (§5): products/prices per tier, webhook endpoint writing
+   `subscriptions`/`entitlements`. Not started.
+8. **Client auth + refresh** (§4, §6): `appbox login` (PKCE loopback),
+   silent 48h refresh. Not started.
+9. **Pre-launch decisions** (§7): rotation/compromise ownership, rate-limit
+   on activate/deactivate cycling, air-gapped buyers, Shorebird pricing.
