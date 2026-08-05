@@ -126,7 +126,7 @@ Future<T?> kitShowNativeDialog<T>({
     return await showDialog<T>(
       context: context,
       barrierDismissible: barrierDismissible,
-      builder: (_) => _KitFrostedAlertDialog<T>(
+      builder: (_) => KitFrostedAlertDialog<T>(
         title: title,
         message: message,
         actions: actions,
@@ -141,17 +141,50 @@ Future<T?> kitShowNativeDialog<T>({
 
 /// The iOS-tier dialog panel: a [KitFrostedSurface] body (radius 24, ~300pt
 /// wide) with centered title/message and a stacked full-width action column.
-/// Private — hosts go through [kitShowNativeDialog].
-class _KitFrostedAlertDialog<T> extends StatelessWidget {
-  const _KitFrostedAlertDialog({
+///
+/// Hosts usually go through [kitShowNativeDialog]. Embed it directly when a
+/// dialog framework owns the route (e.g. stacked's DialogService builders):
+/// pass `popOnAction: false` so the framework's completer owns dismissal, and
+/// pair each action's [KitNativeDialogAction.onPressed] with that completer.
+/// The widget self-brackets the shared modal depth (initState/dispose), so
+/// embedded use keeps native glass compositing correct; the bracket pairs
+/// harmlessly with [kitShowNativeDialog]'s own pre-push mark (the depth is a
+/// clamped counter).
+class KitFrostedAlertDialog<T> extends StatefulWidget {
+  const KitFrostedAlertDialog({
+    super.key,
     required this.title,
     required this.message,
     required this.actions,
+    this.popOnAction = true,
   });
 
   final String title;
   final String? message;
   final List<KitNativeDialogAction<T>> actions;
+
+  /// Whether tapping an action pops the route with the action's value.
+  /// [kitShowNativeDialog] wants the pop; embedded hosts (stacked
+  /// DialogService) set false and dismiss via their own completer.
+  final bool popOnAction;
+
+  @override
+  State<KitFrostedAlertDialog<T>> createState() =>
+      _KitFrostedAlertDialogState<T>();
+}
+
+class _KitFrostedAlertDialogState<T> extends State<KitFrostedAlertDialog<T>> {
+  @override
+  void initState() {
+    super.initState();
+    CNTabBarRouteObserver.markAnyModalActive();
+  }
+
+  @override
+  void dispose() {
+    CNTabBarRouteObserver.markAnyModalInactive();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -172,30 +205,30 @@ class _KitFrostedAlertDialog<T> extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                title,
+                widget.title,
                 textAlign: TextAlign.center,
                 style: theme.textTheme.titleMedium
                     ?.copyWith(fontWeight: FontWeight.w700),
               ),
-              if (message != null) ...[
+              if (widget.message != null) ...[
                 const SizedBox(height: 6),
                 Text(
-                  message!,
+                  widget.message!,
                   textAlign: TextAlign.center,
                   style: theme.textTheme.bodyMedium
                       ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                 ),
               ],
               const SizedBox(height: 20),
-              for (var i = 0; i < actions.length; i++) ...[
+              for (var i = 0; i < widget.actions.length; i++) ...[
                 // Tight full-width constraint — the stacked-pill look on every
                 // tier (a tight parent width wins over KitNativeButton's
                 // content-sized shrinkWrap).
                 SizedBox(
                   width: double.infinity,
-                  child: _actionButton(context, actions[i]),
+                  child: _actionButton(context, widget.actions[i]),
                 ),
-                if (i < actions.length - 1) const SizedBox(height: 8),
+                if (i < widget.actions.length - 1) const SizedBox(height: 8),
               ],
             ],
           ),
@@ -225,7 +258,7 @@ class _KitFrostedAlertDialog<T> extends StatelessWidget {
           : null,
       onPressed: () {
         action.onPressed?.call();
-        Navigator.of(context).pop(action.value);
+        if (widget.popOnAction) Navigator.of(context).pop(action.value);
       },
     );
   }
