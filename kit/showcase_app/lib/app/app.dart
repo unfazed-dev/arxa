@@ -1,7 +1,9 @@
 import 'package:appbox_kit_showcase_app/ui/bottom_sheets/notice/notice_sheet.dart';
 import 'package:appbox_kit_showcase_app/ui/dialogs/info_alert/info_alert_dialog.dart';
-import 'package:appbox_kit_showcase_app/ui/views/showcase_unknown/showcase_unknown_view.dart';
-import 'package:appbox_kit_showcase_app/ui/views/showcase_startup/showcase_startup_view.dart';
+import 'package:appbox_kit_showcase_app/ui/views/showcase_unknown_shell/showcase_unknown_shell_view.dart';
+import 'package:appbox_kit_showcase_app/ui/views/showcase_unknown_shell/showcase_unknown/showcase_unknown_view.dart';
+import 'package:appbox_kit_showcase_app/ui/views/showcase_startup_shell/showcase_startup_shell_view.dart';
+import 'package:appbox_kit_showcase_app/ui/views/showcase_startup_shell/showcase_startup/showcase_startup_view.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_application_shell/showcase_application_shell_view.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_home_shell/showcase_home_shell_view.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_home_shell/showcase_home/showcase_home_view.dart';
@@ -32,7 +34,9 @@ import 'package:appbox_kit_showcase_app/services/notes_media_service.dart';
     // StackedTabsRouter (IndexedStack — every stack stays alive). Each tab file
     // defines both a `*ShellView` router outlet and its leaf view. Ported from
     // the source showcase; names/paths must match ShowcaseApplicationShellView.tabs.
-    AdaptiveRoute(page: ShowcaseStartupView, initial: true),
+    AdaptiveRoute(page: ShowcaseStartupShellView, initial: true, children: [
+      AdaptiveRoute(page: ShowcaseStartupView, path: '', initial: true),
+    ]),
 
     AdaptiveRoute(page: ShowcaseApplicationShellView, path: '/', children: [
       AdaptiveRoute(
@@ -71,7 +75,9 @@ import 'package:appbox_kit_showcase_app/services/notes_media_service.dart';
     ]),
 
     // @stacked-route
-    AdaptiveRoute(page: ShowcaseUnknownView, path: '/404'),
+    AdaptiveRoute(page: ShowcaseUnknownShellView, path: '/404', children: [
+      AdaptiveRoute(page: ShowcaseUnknownView, path: '', initial: true),
+    ]),
 
     /// When none of the above routes match, redirect to ShowcaseUnknownView
     RedirectRoute(path: '*', redirectTo: '/404'),

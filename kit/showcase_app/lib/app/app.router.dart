@@ -6,277 +6,309 @@
 // **************************************************************************
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
-import 'package:flutter/material.dart' as _i19;
-import 'package:stacked/stacked.dart' as _i18;
-import 'package:stacked_services/stacked_services.dart' as _i17;
+import 'package:flutter/material.dart' as _i21;
+import 'package:stacked/stacked.dart' as _i20;
+import 'package:stacked_services/stacked_services.dart' as _i19;
 
+import '../ui/views/showcase_application_shell/showcase_application_shell_view.dart'
+    as _i2;
 import '../ui/views/showcase_home_shell/showcase_home/showcase_home_view.dart'
-    as _i8;
-import '../ui/views/showcase_home_shell/showcase_home_shell_view.dart' as _i4;
-import '../ui/views/showcase_notes_shell/showcase_note_editor/showcase_note_editor_view.dart'
-    as _i16;
-import '../ui/views/showcase_notes_shell/showcase_notes/showcase_notes_view.dart'
-    as _i14;
-import '../ui/views/showcase_notes_shell/showcase_notes_folder/showcase_notes_folder_view.dart'
-    as _i15;
-import '../ui/views/showcase_notes_shell/showcase_notes_shell_view.dart' as _i7;
-import '../ui/views/showcase_profile_shell/showcase_components/showcase_components_view.dart'
-    as _i13;
-import '../ui/views/showcase_profile_shell/showcase_maps/showcase_maps_view.dart'
-    as _i12;
-import '../ui/views/showcase_profile_shell/showcase_motion/showcase_motion_view.dart'
-    as _i11;
-import '../ui/views/showcase_profile_shell/showcase_profile/showcase_profile_view.dart'
-    as _i10;
-import '../ui/views/showcase_profile_shell/showcase_profile_shell_view.dart'
-    as _i6;
-import '../ui/views/showcase_search_shell/showcase_search/showcase_search_view.dart'
     as _i9;
+import '../ui/views/showcase_home_shell/showcase_home_shell_view.dart' as _i5;
+import '../ui/views/showcase_notes_shell/showcase_note_editor/showcase_note_editor_view.dart'
+    as _i17;
+import '../ui/views/showcase_notes_shell/showcase_notes/showcase_notes_view.dart'
+    as _i15;
+import '../ui/views/showcase_notes_shell/showcase_notes_folder/showcase_notes_folder_view.dart'
+    as _i16;
+import '../ui/views/showcase_notes_shell/showcase_notes_shell_view.dart' as _i8;
+import '../ui/views/showcase_profile_shell/showcase_components/showcase_components_view.dart'
+    as _i14;
+import '../ui/views/showcase_profile_shell/showcase_maps/showcase_maps_view.dart'
+    as _i13;
+import '../ui/views/showcase_profile_shell/showcase_motion/showcase_motion_view.dart'
+    as _i12;
+import '../ui/views/showcase_profile_shell/showcase_profile/showcase_profile_view.dart'
+    as _i11;
+import '../ui/views/showcase_profile_shell/showcase_profile_shell_view.dart'
+    as _i7;
+import '../ui/views/showcase_search_shell/showcase_search/showcase_search_view.dart'
+    as _i10;
 import '../ui/views/showcase_search_shell/showcase_search_shell_view.dart'
-    as _i5;
-import '../ui/views/showcase_application_shell/showcase_application_shell_view.dart' as _i2;
-import '../ui/views/showcase_startup/showcase_startup_view.dart' as _i1;
-import '../ui/views/showcase_unknown/showcase_unknown_view.dart' as _i3;
+    as _i6;
+import '../ui/views/showcase_startup_shell/showcase_startup/showcase_startup_view.dart'
+    as _i4;
+import '../ui/views/showcase_startup_shell/showcase_startup_shell_view.dart'
+    as _i1;
+import '../ui/views/showcase_unknown_shell/showcase_unknown/showcase_unknown_view.dart'
+    as _i18;
+import '../ui/views/showcase_unknown_shell/showcase_unknown_shell_view.dart'
+    as _i3;
 
 final stackedRouter =
-    StackedRouterWeb(navigatorKey: _i17.StackedService.navigatorKey);
+    StackedRouterWeb(navigatorKey: _i19.StackedService.navigatorKey);
 
-class StackedRouterWeb extends _i18.RootStackRouter {
-  StackedRouterWeb({_i19.GlobalKey<_i19.NavigatorState>? navigatorKey})
+class StackedRouterWeb extends _i20.RootStackRouter {
+  StackedRouterWeb({_i21.GlobalKey<_i21.NavigatorState>? navigatorKey})
       : super(navigatorKey);
 
   @override
-  final Map<String, _i18.PageFactory> pagesMap = {
-    ShowcaseStartupViewRoute.name: (routeData) {
-      final args = routeData.argsAs<ShowcaseStartupViewArgs>(
-          orElse: () => const ShowcaseStartupViewArgs());
-      return _i18.AdaptivePage<dynamic>(
+  final Map<String, _i20.PageFactory> pagesMap = {
+    ShowcaseStartupShellViewRoute.name: (routeData) {
+      final args = routeData.argsAs<ShowcaseStartupShellViewArgs>(
+          orElse: () => const ShowcaseStartupShellViewArgs());
+      return _i20.AdaptivePage<dynamic>(
         routeData: routeData,
-        child: _i1.ShowcaseStartupView(key: args.key),
+        child: _i1.ShowcaseStartupShellView(key: args.key),
         opaque: true,
       );
     },
     ShowcaseApplicationShellViewRoute.name: (routeData) {
       final args = routeData.argsAs<ShowcaseApplicationShellViewArgs>(
           orElse: () => const ShowcaseApplicationShellViewArgs());
-      return _i18.AdaptivePage<dynamic>(
+      return _i20.AdaptivePage<dynamic>(
         routeData: routeData,
         child: _i2.ShowcaseApplicationShellView(key: args.key),
         opaque: true,
       );
     },
-    ShowcaseUnknownViewRoute.name: (routeData) {
-      final args = routeData.argsAs<ShowcaseUnknownViewArgs>(
-          orElse: () => const ShowcaseUnknownViewArgs());
-      return _i18.AdaptivePage<dynamic>(
+    ShowcaseUnknownShellViewRoute.name: (routeData) {
+      final args = routeData.argsAs<ShowcaseUnknownShellViewArgs>(
+          orElse: () => const ShowcaseUnknownShellViewArgs());
+      return _i20.AdaptivePage<dynamic>(
         routeData: routeData,
-        child: _i3.ShowcaseUnknownView(key: args.key),
+        child: _i3.ShowcaseUnknownShellView(key: args.key),
+        opaque: true,
+      );
+    },
+    ShowcaseStartupViewRoute.name: (routeData) {
+      final args = routeData.argsAs<ShowcaseStartupViewArgs>(
+          orElse: () => const ShowcaseStartupViewArgs());
+      return _i20.AdaptivePage<dynamic>(
+        routeData: routeData,
+        child: _i4.ShowcaseStartupView(key: args.key),
         opaque: true,
       );
     },
     ShowcaseHomeShellViewRoute.name: (routeData) {
       final args = routeData.argsAs<ShowcaseHomeShellViewArgs>(
           orElse: () => const ShowcaseHomeShellViewArgs());
-      return _i18.AdaptivePage<dynamic>(
+      return _i20.AdaptivePage<dynamic>(
         routeData: routeData,
-        child: _i4.ShowcaseHomeShellView(key: args.key),
+        child: _i5.ShowcaseHomeShellView(key: args.key),
         opaque: true,
       );
     },
     ShowcaseSearchShellViewRoute.name: (routeData) {
       final args = routeData.argsAs<ShowcaseSearchShellViewArgs>(
           orElse: () => const ShowcaseSearchShellViewArgs());
-      return _i18.AdaptivePage<dynamic>(
+      return _i20.AdaptivePage<dynamic>(
         routeData: routeData,
-        child: _i5.ShowcaseSearchShellView(key: args.key),
+        child: _i6.ShowcaseSearchShellView(key: args.key),
         opaque: true,
       );
     },
     ShowcaseProfileShellViewRoute.name: (routeData) {
       final args = routeData.argsAs<ShowcaseProfileShellViewArgs>(
           orElse: () => const ShowcaseProfileShellViewArgs());
-      return _i18.AdaptivePage<dynamic>(
+      return _i20.AdaptivePage<dynamic>(
         routeData: routeData,
-        child: _i6.ShowcaseProfileShellView(key: args.key),
+        child: _i7.ShowcaseProfileShellView(key: args.key),
         opaque: true,
       );
     },
     ShowcaseNotesShellViewRoute.name: (routeData) {
       final args = routeData.argsAs<ShowcaseNotesShellViewArgs>(
           orElse: () => const ShowcaseNotesShellViewArgs());
-      return _i18.AdaptivePage<dynamic>(
+      return _i20.AdaptivePage<dynamic>(
         routeData: routeData,
-        child: _i7.ShowcaseNotesShellView(key: args.key),
+        child: _i8.ShowcaseNotesShellView(key: args.key),
         opaque: true,
       );
     },
     ShowcaseHomeViewRoute.name: (routeData) {
       final args = routeData.argsAs<ShowcaseHomeViewArgs>(
           orElse: () => const ShowcaseHomeViewArgs());
-      return _i18.AdaptivePage<dynamic>(
+      return _i20.AdaptivePage<dynamic>(
         routeData: routeData,
-        child: _i8.ShowcaseHomeView(key: args.key),
+        child: _i9.ShowcaseHomeView(key: args.key),
         opaque: true,
       );
     },
     ShowcaseSearchViewRoute.name: (routeData) {
       final args = routeData.argsAs<ShowcaseSearchViewArgs>(
           orElse: () => const ShowcaseSearchViewArgs());
-      return _i18.AdaptivePage<dynamic>(
+      return _i20.AdaptivePage<dynamic>(
         routeData: routeData,
-        child: _i9.ShowcaseSearchView(key: args.key),
+        child: _i10.ShowcaseSearchView(key: args.key),
         opaque: true,
       );
     },
     ShowcaseProfileViewRoute.name: (routeData) {
       final args = routeData.argsAs<ShowcaseProfileViewArgs>(
           orElse: () => const ShowcaseProfileViewArgs());
-      return _i18.AdaptivePage<dynamic>(
+      return _i20.AdaptivePage<dynamic>(
         routeData: routeData,
-        child: _i10.ShowcaseProfileView(key: args.key),
+        child: _i11.ShowcaseProfileView(key: args.key),
         opaque: true,
       );
     },
     ShowcaseMotionViewRoute.name: (routeData) {
       final args = routeData.argsAs<ShowcaseMotionViewArgs>(
           orElse: () => const ShowcaseMotionViewArgs());
-      return _i18.AdaptivePage<dynamic>(
+      return _i20.AdaptivePage<dynamic>(
         routeData: routeData,
-        child: _i11.ShowcaseMotionView(key: args.key),
+        child: _i12.ShowcaseMotionView(key: args.key),
         opaque: true,
       );
     },
     ShowcaseMapsViewRoute.name: (routeData) {
       final args = routeData.argsAs<ShowcaseMapsViewArgs>(
           orElse: () => const ShowcaseMapsViewArgs());
-      return _i18.AdaptivePage<dynamic>(
+      return _i20.AdaptivePage<dynamic>(
         routeData: routeData,
-        child: _i12.ShowcaseMapsView(key: args.key),
+        child: _i13.ShowcaseMapsView(key: args.key),
         opaque: true,
       );
     },
     ShowcaseComponentsViewRoute.name: (routeData) {
       final args = routeData.argsAs<ShowcaseComponentsViewArgs>(
           orElse: () => const ShowcaseComponentsViewArgs());
-      return _i18.AdaptivePage<dynamic>(
+      return _i20.AdaptivePage<dynamic>(
         routeData: routeData,
-        child: _i13.ShowcaseComponentsView(key: args.key),
+        child: _i14.ShowcaseComponentsView(key: args.key),
         opaque: true,
       );
     },
     ShowcaseNotesViewRoute.name: (routeData) {
       final args = routeData.argsAs<ShowcaseNotesViewArgs>(
           orElse: () => const ShowcaseNotesViewArgs());
-      return _i18.AdaptivePage<dynamic>(
+      return _i20.AdaptivePage<dynamic>(
         routeData: routeData,
-        child: _i14.ShowcaseNotesView(key: args.key),
+        child: _i15.ShowcaseNotesView(key: args.key),
         opaque: true,
       );
     },
     ShowcaseNotesFolderViewRoute.name: (routeData) {
       final args = routeData.argsAs<ShowcaseNotesFolderViewArgs>(
           orElse: () => const ShowcaseNotesFolderViewArgs());
-      return _i18.AdaptivePage<dynamic>(
+      return _i20.AdaptivePage<dynamic>(
         routeData: routeData,
-        child: _i15.ShowcaseNotesFolderView(key: args.key),
+        child: _i16.ShowcaseNotesFolderView(key: args.key),
         opaque: true,
       );
     },
     ShowcaseNoteEditorViewRoute.name: (routeData) {
       final args = routeData.argsAs<ShowcaseNoteEditorViewArgs>(
           orElse: () => const ShowcaseNoteEditorViewArgs());
-      return _i18.AdaptivePage<dynamic>(
+      return _i20.AdaptivePage<dynamic>(
         routeData: routeData,
-        child: _i16.ShowcaseNoteEditorView(key: args.key),
+        child: _i17.ShowcaseNoteEditorView(key: args.key),
+        opaque: true,
+      );
+    },
+    ShowcaseUnknownViewRoute.name: (routeData) {
+      final args = routeData.argsAs<ShowcaseUnknownViewArgs>(
+          orElse: () => const ShowcaseUnknownViewArgs());
+      return _i20.AdaptivePage<dynamic>(
+        routeData: routeData,
+        child: _i18.ShowcaseUnknownView(key: args.key),
         opaque: true,
       );
     },
   };
 
   @override
-  List<_i18.RouteConfig> get routes => [
-        _i18.RouteConfig(
-          ShowcaseStartupViewRoute.name,
+  List<_i20.RouteConfig> get routes => [
+        _i20.RouteConfig(
+          ShowcaseStartupShellViewRoute.name,
           path: '/',
+          children: [
+            _i20.RouteConfig(
+              ShowcaseStartupViewRoute.name,
+              path: '',
+              parent: ShowcaseStartupShellViewRoute.name,
+            )
+          ],
         ),
-        _i18.RouteConfig(
+        _i20.RouteConfig(
           ShowcaseApplicationShellViewRoute.name,
           path: '/',
           children: [
-            _i18.RouteConfig(
+            _i20.RouteConfig(
               '#redirect',
               path: '',
               parent: ShowcaseApplicationShellViewRoute.name,
               redirectTo: 'home',
               fullMatch: true,
             ),
-            _i18.RouteConfig(
+            _i20.RouteConfig(
               ShowcaseHomeShellViewRoute.name,
               path: 'home',
               parent: ShowcaseApplicationShellViewRoute.name,
               children: [
-                _i18.RouteConfig(
+                _i20.RouteConfig(
                   ShowcaseHomeViewRoute.name,
                   path: '',
                   parent: ShowcaseHomeShellViewRoute.name,
                 )
               ],
             ),
-            _i18.RouteConfig(
+            _i20.RouteConfig(
               ShowcaseSearchShellViewRoute.name,
               path: 'search',
               parent: ShowcaseApplicationShellViewRoute.name,
               children: [
-                _i18.RouteConfig(
+                _i20.RouteConfig(
                   ShowcaseSearchViewRoute.name,
                   path: '',
                   parent: ShowcaseSearchShellViewRoute.name,
                 )
               ],
             ),
-            _i18.RouteConfig(
+            _i20.RouteConfig(
               ShowcaseProfileShellViewRoute.name,
               path: 'profile',
               parent: ShowcaseApplicationShellViewRoute.name,
               children: [
-                _i18.RouteConfig(
+                _i20.RouteConfig(
                   ShowcaseProfileViewRoute.name,
                   path: '',
                   parent: ShowcaseProfileShellViewRoute.name,
                 ),
-                _i18.RouteConfig(
+                _i20.RouteConfig(
                   ShowcaseMotionViewRoute.name,
                   path: 'motion',
                   parent: ShowcaseProfileShellViewRoute.name,
                 ),
-                _i18.RouteConfig(
+                _i20.RouteConfig(
                   ShowcaseMapsViewRoute.name,
                   path: 'maps',
                   parent: ShowcaseProfileShellViewRoute.name,
                 ),
-                _i18.RouteConfig(
+                _i20.RouteConfig(
                   ShowcaseComponentsViewRoute.name,
                   path: 'components',
                   parent: ShowcaseProfileShellViewRoute.name,
                 ),
               ],
             ),
-            _i18.RouteConfig(
+            _i20.RouteConfig(
               ShowcaseNotesShellViewRoute.name,
               path: 'notes',
               parent: ShowcaseApplicationShellViewRoute.name,
               children: [
-                _i18.RouteConfig(
+                _i20.RouteConfig(
                   ShowcaseNotesViewRoute.name,
                   path: '',
                   parent: ShowcaseNotesShellViewRoute.name,
                 ),
-                _i18.RouteConfig(
+                _i20.RouteConfig(
                   ShowcaseNotesFolderViewRoute.name,
                   path: 'folder/:id',
                   parent: ShowcaseNotesShellViewRoute.name,
                 ),
-                _i18.RouteConfig(
+                _i20.RouteConfig(
                   ShowcaseNoteEditorViewRoute.name,
                   path: 'note/:id',
                   parent: ShowcaseNotesShellViewRoute.name,
@@ -285,11 +317,18 @@ class StackedRouterWeb extends _i18.RootStackRouter {
             ),
           ],
         ),
-        _i18.RouteConfig(
-          ShowcaseUnknownViewRoute.name,
+        _i20.RouteConfig(
+          ShowcaseUnknownShellViewRoute.name,
           path: '/404',
+          children: [
+            _i20.RouteConfig(
+              ShowcaseUnknownViewRoute.name,
+              path: '',
+              parent: ShowcaseUnknownShellViewRoute.name,
+            )
+          ],
         ),
-        _i18.RouteConfig(
+        _i20.RouteConfig(
           '*#redirect',
           path: '*',
           redirectTo: '/404',
@@ -299,36 +338,40 @@ class StackedRouterWeb extends _i18.RootStackRouter {
 }
 
 /// generated route for
-/// [_i1.ShowcaseStartupView]
-class ShowcaseStartupViewRoute
-    extends _i18.PageRouteInfo<ShowcaseStartupViewArgs> {
-  ShowcaseStartupViewRoute({_i19.Key? key})
-      : super(
-          ShowcaseStartupViewRoute.name,
+/// [_i1.ShowcaseStartupShellView]
+class ShowcaseStartupShellViewRoute
+    extends _i20.PageRouteInfo<ShowcaseStartupShellViewArgs> {
+  ShowcaseStartupShellViewRoute({
+    _i21.Key? key,
+    List<_i20.PageRouteInfo>? children,
+  }) : super(
+          ShowcaseStartupShellViewRoute.name,
           path: '/',
-          args: ShowcaseStartupViewArgs(key: key),
+          args: ShowcaseStartupShellViewArgs(key: key),
+          initialChildren: children,
         );
 
-  static const String name = 'ShowcaseStartupView';
+  static const String name = 'ShowcaseStartupShellView';
 }
 
-class ShowcaseStartupViewArgs {
-  const ShowcaseStartupViewArgs({this.key});
+class ShowcaseStartupShellViewArgs {
+  const ShowcaseStartupShellViewArgs({this.key});
 
-  final _i19.Key? key;
+  final _i21.Key? key;
 
   @override
   String toString() {
-    return 'ShowcaseStartupViewArgs{key: $key}';
+    return 'ShowcaseStartupShellViewArgs{key: $key}';
   }
 }
 
 /// generated route for
 /// [_i2.ShowcaseApplicationShellView]
-class ShowcaseApplicationShellViewRoute extends _i18.PageRouteInfo<ShowcaseApplicationShellViewArgs> {
+class ShowcaseApplicationShellViewRoute
+    extends _i20.PageRouteInfo<ShowcaseApplicationShellViewArgs> {
   ShowcaseApplicationShellViewRoute({
-    _i19.Key? key,
-    List<_i18.PageRouteInfo>? children,
+    _i21.Key? key,
+    List<_i20.PageRouteInfo>? children,
   }) : super(
           ShowcaseApplicationShellViewRoute.name,
           path: '/',
@@ -342,7 +385,7 @@ class ShowcaseApplicationShellViewRoute extends _i18.PageRouteInfo<ShowcaseAppli
 class ShowcaseApplicationShellViewArgs {
   const ShowcaseApplicationShellViewArgs({this.key});
 
-  final _i19.Key? key;
+  final _i21.Key? key;
 
   @override
   String toString() {
@@ -351,37 +394,65 @@ class ShowcaseApplicationShellViewArgs {
 }
 
 /// generated route for
-/// [_i3.ShowcaseUnknownView]
-class ShowcaseUnknownViewRoute
-    extends _i18.PageRouteInfo<ShowcaseUnknownViewArgs> {
-  ShowcaseUnknownViewRoute({_i19.Key? key})
-      : super(
-          ShowcaseUnknownViewRoute.name,
+/// [_i3.ShowcaseUnknownShellView]
+class ShowcaseUnknownShellViewRoute
+    extends _i20.PageRouteInfo<ShowcaseUnknownShellViewArgs> {
+  ShowcaseUnknownShellViewRoute({
+    _i21.Key? key,
+    List<_i20.PageRouteInfo>? children,
+  }) : super(
+          ShowcaseUnknownShellViewRoute.name,
           path: '/404',
-          args: ShowcaseUnknownViewArgs(key: key),
+          args: ShowcaseUnknownShellViewArgs(key: key),
+          initialChildren: children,
         );
 
-  static const String name = 'ShowcaseUnknownView';
+  static const String name = 'ShowcaseUnknownShellView';
 }
 
-class ShowcaseUnknownViewArgs {
-  const ShowcaseUnknownViewArgs({this.key});
+class ShowcaseUnknownShellViewArgs {
+  const ShowcaseUnknownShellViewArgs({this.key});
 
-  final _i19.Key? key;
+  final _i21.Key? key;
 
   @override
   String toString() {
-    return 'ShowcaseUnknownViewArgs{key: $key}';
+    return 'ShowcaseUnknownShellViewArgs{key: $key}';
   }
 }
 
 /// generated route for
-/// [_i4.ShowcaseHomeShellView]
+/// [_i4.ShowcaseStartupView]
+class ShowcaseStartupViewRoute
+    extends _i20.PageRouteInfo<ShowcaseStartupViewArgs> {
+  ShowcaseStartupViewRoute({_i21.Key? key})
+      : super(
+          ShowcaseStartupViewRoute.name,
+          path: '',
+          args: ShowcaseStartupViewArgs(key: key),
+        );
+
+  static const String name = 'ShowcaseStartupView';
+}
+
+class ShowcaseStartupViewArgs {
+  const ShowcaseStartupViewArgs({this.key});
+
+  final _i21.Key? key;
+
+  @override
+  String toString() {
+    return 'ShowcaseStartupViewArgs{key: $key}';
+  }
+}
+
+/// generated route for
+/// [_i5.ShowcaseHomeShellView]
 class ShowcaseHomeShellViewRoute
-    extends _i18.PageRouteInfo<ShowcaseHomeShellViewArgs> {
+    extends _i20.PageRouteInfo<ShowcaseHomeShellViewArgs> {
   ShowcaseHomeShellViewRoute({
-    _i19.Key? key,
-    List<_i18.PageRouteInfo>? children,
+    _i21.Key? key,
+    List<_i20.PageRouteInfo>? children,
   }) : super(
           ShowcaseHomeShellViewRoute.name,
           path: 'home',
@@ -395,7 +466,7 @@ class ShowcaseHomeShellViewRoute
 class ShowcaseHomeShellViewArgs {
   const ShowcaseHomeShellViewArgs({this.key});
 
-  final _i19.Key? key;
+  final _i21.Key? key;
 
   @override
   String toString() {
@@ -404,12 +475,12 @@ class ShowcaseHomeShellViewArgs {
 }
 
 /// generated route for
-/// [_i5.ShowcaseSearchShellView]
+/// [_i6.ShowcaseSearchShellView]
 class ShowcaseSearchShellViewRoute
-    extends _i18.PageRouteInfo<ShowcaseSearchShellViewArgs> {
+    extends _i20.PageRouteInfo<ShowcaseSearchShellViewArgs> {
   ShowcaseSearchShellViewRoute({
-    _i19.Key? key,
-    List<_i18.PageRouteInfo>? children,
+    _i21.Key? key,
+    List<_i20.PageRouteInfo>? children,
   }) : super(
           ShowcaseSearchShellViewRoute.name,
           path: 'search',
@@ -423,7 +494,7 @@ class ShowcaseSearchShellViewRoute
 class ShowcaseSearchShellViewArgs {
   const ShowcaseSearchShellViewArgs({this.key});
 
-  final _i19.Key? key;
+  final _i21.Key? key;
 
   @override
   String toString() {
@@ -432,12 +503,12 @@ class ShowcaseSearchShellViewArgs {
 }
 
 /// generated route for
-/// [_i6.ShowcaseProfileShellView]
+/// [_i7.ShowcaseProfileShellView]
 class ShowcaseProfileShellViewRoute
-    extends _i18.PageRouteInfo<ShowcaseProfileShellViewArgs> {
+    extends _i20.PageRouteInfo<ShowcaseProfileShellViewArgs> {
   ShowcaseProfileShellViewRoute({
-    _i19.Key? key,
-    List<_i18.PageRouteInfo>? children,
+    _i21.Key? key,
+    List<_i20.PageRouteInfo>? children,
   }) : super(
           ShowcaseProfileShellViewRoute.name,
           path: 'profile',
@@ -451,7 +522,7 @@ class ShowcaseProfileShellViewRoute
 class ShowcaseProfileShellViewArgs {
   const ShowcaseProfileShellViewArgs({this.key});
 
-  final _i19.Key? key;
+  final _i21.Key? key;
 
   @override
   String toString() {
@@ -460,12 +531,12 @@ class ShowcaseProfileShellViewArgs {
 }
 
 /// generated route for
-/// [_i7.ShowcaseNotesShellView]
+/// [_i8.ShowcaseNotesShellView]
 class ShowcaseNotesShellViewRoute
-    extends _i18.PageRouteInfo<ShowcaseNotesShellViewArgs> {
+    extends _i20.PageRouteInfo<ShowcaseNotesShellViewArgs> {
   ShowcaseNotesShellViewRoute({
-    _i19.Key? key,
-    List<_i18.PageRouteInfo>? children,
+    _i21.Key? key,
+    List<_i20.PageRouteInfo>? children,
   }) : super(
           ShowcaseNotesShellViewRoute.name,
           path: 'notes',
@@ -479,7 +550,7 @@ class ShowcaseNotesShellViewRoute
 class ShowcaseNotesShellViewArgs {
   const ShowcaseNotesShellViewArgs({this.key});
 
-  final _i19.Key? key;
+  final _i21.Key? key;
 
   @override
   String toString() {
@@ -488,9 +559,9 @@ class ShowcaseNotesShellViewArgs {
 }
 
 /// generated route for
-/// [_i8.ShowcaseHomeView]
-class ShowcaseHomeViewRoute extends _i18.PageRouteInfo<ShowcaseHomeViewArgs> {
-  ShowcaseHomeViewRoute({_i19.Key? key})
+/// [_i9.ShowcaseHomeView]
+class ShowcaseHomeViewRoute extends _i20.PageRouteInfo<ShowcaseHomeViewArgs> {
+  ShowcaseHomeViewRoute({_i21.Key? key})
       : super(
           ShowcaseHomeViewRoute.name,
           path: '',
@@ -503,7 +574,7 @@ class ShowcaseHomeViewRoute extends _i18.PageRouteInfo<ShowcaseHomeViewArgs> {
 class ShowcaseHomeViewArgs {
   const ShowcaseHomeViewArgs({this.key});
 
-  final _i19.Key? key;
+  final _i21.Key? key;
 
   @override
   String toString() {
@@ -512,10 +583,10 @@ class ShowcaseHomeViewArgs {
 }
 
 /// generated route for
-/// [_i9.ShowcaseSearchView]
+/// [_i10.ShowcaseSearchView]
 class ShowcaseSearchViewRoute
-    extends _i18.PageRouteInfo<ShowcaseSearchViewArgs> {
-  ShowcaseSearchViewRoute({_i19.Key? key})
+    extends _i20.PageRouteInfo<ShowcaseSearchViewArgs> {
+  ShowcaseSearchViewRoute({_i21.Key? key})
       : super(
           ShowcaseSearchViewRoute.name,
           path: '',
@@ -528,7 +599,7 @@ class ShowcaseSearchViewRoute
 class ShowcaseSearchViewArgs {
   const ShowcaseSearchViewArgs({this.key});
 
-  final _i19.Key? key;
+  final _i21.Key? key;
 
   @override
   String toString() {
@@ -537,10 +608,10 @@ class ShowcaseSearchViewArgs {
 }
 
 /// generated route for
-/// [_i10.ShowcaseProfileView]
+/// [_i11.ShowcaseProfileView]
 class ShowcaseProfileViewRoute
-    extends _i18.PageRouteInfo<ShowcaseProfileViewArgs> {
-  ShowcaseProfileViewRoute({_i19.Key? key})
+    extends _i20.PageRouteInfo<ShowcaseProfileViewArgs> {
+  ShowcaseProfileViewRoute({_i21.Key? key})
       : super(
           ShowcaseProfileViewRoute.name,
           path: '',
@@ -553,7 +624,7 @@ class ShowcaseProfileViewRoute
 class ShowcaseProfileViewArgs {
   const ShowcaseProfileViewArgs({this.key});
 
-  final _i19.Key? key;
+  final _i21.Key? key;
 
   @override
   String toString() {
@@ -562,10 +633,10 @@ class ShowcaseProfileViewArgs {
 }
 
 /// generated route for
-/// [_i11.ShowcaseMotionView]
+/// [_i12.ShowcaseMotionView]
 class ShowcaseMotionViewRoute
-    extends _i18.PageRouteInfo<ShowcaseMotionViewArgs> {
-  ShowcaseMotionViewRoute({_i19.Key? key})
+    extends _i20.PageRouteInfo<ShowcaseMotionViewArgs> {
+  ShowcaseMotionViewRoute({_i21.Key? key})
       : super(
           ShowcaseMotionViewRoute.name,
           path: 'motion',
@@ -578,7 +649,7 @@ class ShowcaseMotionViewRoute
 class ShowcaseMotionViewArgs {
   const ShowcaseMotionViewArgs({this.key});
 
-  final _i19.Key? key;
+  final _i21.Key? key;
 
   @override
   String toString() {
@@ -587,9 +658,9 @@ class ShowcaseMotionViewArgs {
 }
 
 /// generated route for
-/// [_i12.ShowcaseMapsView]
-class ShowcaseMapsViewRoute extends _i18.PageRouteInfo<ShowcaseMapsViewArgs> {
-  ShowcaseMapsViewRoute({_i19.Key? key})
+/// [_i13.ShowcaseMapsView]
+class ShowcaseMapsViewRoute extends _i20.PageRouteInfo<ShowcaseMapsViewArgs> {
+  ShowcaseMapsViewRoute({_i21.Key? key})
       : super(
           ShowcaseMapsViewRoute.name,
           path: 'maps',
@@ -602,7 +673,7 @@ class ShowcaseMapsViewRoute extends _i18.PageRouteInfo<ShowcaseMapsViewArgs> {
 class ShowcaseMapsViewArgs {
   const ShowcaseMapsViewArgs({this.key});
 
-  final _i19.Key? key;
+  final _i21.Key? key;
 
   @override
   String toString() {
@@ -611,10 +682,10 @@ class ShowcaseMapsViewArgs {
 }
 
 /// generated route for
-/// [_i13.ShowcaseComponentsView]
+/// [_i14.ShowcaseComponentsView]
 class ShowcaseComponentsViewRoute
-    extends _i18.PageRouteInfo<ShowcaseComponentsViewArgs> {
-  ShowcaseComponentsViewRoute({_i19.Key? key})
+    extends _i20.PageRouteInfo<ShowcaseComponentsViewArgs> {
+  ShowcaseComponentsViewRoute({_i21.Key? key})
       : super(
           ShowcaseComponentsViewRoute.name,
           path: 'components',
@@ -627,7 +698,7 @@ class ShowcaseComponentsViewRoute
 class ShowcaseComponentsViewArgs {
   const ShowcaseComponentsViewArgs({this.key});
 
-  final _i19.Key? key;
+  final _i21.Key? key;
 
   @override
   String toString() {
@@ -636,9 +707,9 @@ class ShowcaseComponentsViewArgs {
 }
 
 /// generated route for
-/// [_i14.ShowcaseNotesView]
-class ShowcaseNotesViewRoute extends _i18.PageRouteInfo<ShowcaseNotesViewArgs> {
-  ShowcaseNotesViewRoute({_i19.Key? key})
+/// [_i15.ShowcaseNotesView]
+class ShowcaseNotesViewRoute extends _i20.PageRouteInfo<ShowcaseNotesViewArgs> {
+  ShowcaseNotesViewRoute({_i21.Key? key})
       : super(
           ShowcaseNotesViewRoute.name,
           path: '',
@@ -651,7 +722,7 @@ class ShowcaseNotesViewRoute extends _i18.PageRouteInfo<ShowcaseNotesViewArgs> {
 class ShowcaseNotesViewArgs {
   const ShowcaseNotesViewArgs({this.key});
 
-  final _i19.Key? key;
+  final _i21.Key? key;
 
   @override
   String toString() {
@@ -660,10 +731,10 @@ class ShowcaseNotesViewArgs {
 }
 
 /// generated route for
-/// [_i15.ShowcaseNotesFolderView]
+/// [_i16.ShowcaseNotesFolderView]
 class ShowcaseNotesFolderViewRoute
-    extends _i18.PageRouteInfo<ShowcaseNotesFolderViewArgs> {
-  ShowcaseNotesFolderViewRoute({_i19.Key? key})
+    extends _i20.PageRouteInfo<ShowcaseNotesFolderViewArgs> {
+  ShowcaseNotesFolderViewRoute({_i21.Key? key})
       : super(
           ShowcaseNotesFolderViewRoute.name,
           path: 'folder/:id',
@@ -676,7 +747,7 @@ class ShowcaseNotesFolderViewRoute
 class ShowcaseNotesFolderViewArgs {
   const ShowcaseNotesFolderViewArgs({this.key});
 
-  final _i19.Key? key;
+  final _i21.Key? key;
 
   @override
   String toString() {
@@ -685,10 +756,10 @@ class ShowcaseNotesFolderViewArgs {
 }
 
 /// generated route for
-/// [_i16.ShowcaseNoteEditorView]
+/// [_i17.ShowcaseNoteEditorView]
 class ShowcaseNoteEditorViewRoute
-    extends _i18.PageRouteInfo<ShowcaseNoteEditorViewArgs> {
-  ShowcaseNoteEditorViewRoute({_i19.Key? key})
+    extends _i20.PageRouteInfo<ShowcaseNoteEditorViewArgs> {
+  ShowcaseNoteEditorViewRoute({_i21.Key? key})
       : super(
           ShowcaseNoteEditorViewRoute.name,
           path: 'note/:id',
@@ -701,7 +772,7 @@ class ShowcaseNoteEditorViewRoute
 class ShowcaseNoteEditorViewArgs {
   const ShowcaseNoteEditorViewArgs({this.key});
 
-  final _i19.Key? key;
+  final _i21.Key? key;
 
   @override
   String toString() {
@@ -709,13 +780,38 @@ class ShowcaseNoteEditorViewArgs {
   }
 }
 
-extension RouterStateExtension on _i17.RouterService {
-  Future<dynamic> navigateToShowcaseStartupView({
-    _i19.Key? key,
-    void Function(_i18.NavigationFailure)? onFailure,
+/// generated route for
+/// [_i18.ShowcaseUnknownView]
+class ShowcaseUnknownViewRoute
+    extends _i20.PageRouteInfo<ShowcaseUnknownViewArgs> {
+  ShowcaseUnknownViewRoute({_i21.Key? key})
+      : super(
+          ShowcaseUnknownViewRoute.name,
+          path: '',
+          args: ShowcaseUnknownViewArgs(key: key),
+        );
+
+  static const String name = 'ShowcaseUnknownView';
+}
+
+class ShowcaseUnknownViewArgs {
+  const ShowcaseUnknownViewArgs({this.key});
+
+  final _i21.Key? key;
+
+  @override
+  String toString() {
+    return 'ShowcaseUnknownViewArgs{key: $key}';
+  }
+}
+
+extension RouterStateExtension on _i19.RouterService {
+  Future<dynamic> navigateToShowcaseStartupShellView({
+    _i21.Key? key,
+    void Function(_i20.NavigationFailure)? onFailure,
   }) async {
     return navigateTo(
-      ShowcaseStartupViewRoute(
+      ShowcaseStartupShellViewRoute(
         key: key,
       ),
       onFailure: onFailure,
@@ -723,8 +819,8 @@ extension RouterStateExtension on _i17.RouterService {
   }
 
   Future<dynamic> navigateToShowcaseApplicationShellView({
-    _i19.Key? key,
-    void Function(_i18.NavigationFailure)? onFailure,
+    _i21.Key? key,
+    void Function(_i20.NavigationFailure)? onFailure,
   }) async {
     return navigateTo(
       ShowcaseApplicationShellViewRoute(
@@ -734,12 +830,25 @@ extension RouterStateExtension on _i17.RouterService {
     );
   }
 
-  Future<dynamic> navigateToShowcaseUnknownView({
-    _i19.Key? key,
-    void Function(_i18.NavigationFailure)? onFailure,
+  Future<dynamic> navigateToShowcaseUnknownShellView({
+    _i21.Key? key,
+    void Function(_i20.NavigationFailure)? onFailure,
   }) async {
     return navigateTo(
-      ShowcaseUnknownViewRoute(
+      ShowcaseUnknownShellViewRoute(
+        key: key,
+      ),
+      onFailure: onFailure,
+    );
+  }
+
+  Future<dynamic>
+      navigateToNestedShowcaseStartupViewInShowcaseStartupShellViewRouter({
+    _i21.Key? key,
+    void Function(_i20.NavigationFailure)? onFailure,
+  }) async {
+    return navigateTo(
+      ShowcaseStartupViewRoute(
         key: key,
       ),
       onFailure: onFailure,
@@ -747,8 +856,8 @@ extension RouterStateExtension on _i17.RouterService {
   }
 
   Future<dynamic> navigateToShowcaseHomeShellView({
-    _i19.Key? key,
-    void Function(_i18.NavigationFailure)? onFailure,
+    _i21.Key? key,
+    void Function(_i20.NavigationFailure)? onFailure,
   }) async {
     return navigateTo(
       ShowcaseHomeShellViewRoute(
@@ -759,8 +868,8 @@ extension RouterStateExtension on _i17.RouterService {
   }
 
   Future<dynamic> navigateToShowcaseSearchShellView({
-    _i19.Key? key,
-    void Function(_i18.NavigationFailure)? onFailure,
+    _i21.Key? key,
+    void Function(_i20.NavigationFailure)? onFailure,
   }) async {
     return navigateTo(
       ShowcaseSearchShellViewRoute(
@@ -771,8 +880,8 @@ extension RouterStateExtension on _i17.RouterService {
   }
 
   Future<dynamic> navigateToShowcaseProfileShellView({
-    _i19.Key? key,
-    void Function(_i18.NavigationFailure)? onFailure,
+    _i21.Key? key,
+    void Function(_i20.NavigationFailure)? onFailure,
   }) async {
     return navigateTo(
       ShowcaseProfileShellViewRoute(
@@ -783,8 +892,8 @@ extension RouterStateExtension on _i17.RouterService {
   }
 
   Future<dynamic> navigateToShowcaseNotesShellView({
-    _i19.Key? key,
-    void Function(_i18.NavigationFailure)? onFailure,
+    _i21.Key? key,
+    void Function(_i20.NavigationFailure)? onFailure,
   }) async {
     return navigateTo(
       ShowcaseNotesShellViewRoute(
@@ -796,8 +905,8 @@ extension RouterStateExtension on _i17.RouterService {
 
   Future<dynamic>
       navigateToNestedShowcaseHomeViewInShowcaseHomeShellViewRouter({
-    _i19.Key? key,
-    void Function(_i18.NavigationFailure)? onFailure,
+    _i21.Key? key,
+    void Function(_i20.NavigationFailure)? onFailure,
   }) async {
     return navigateTo(
       ShowcaseHomeViewRoute(
@@ -809,8 +918,8 @@ extension RouterStateExtension on _i17.RouterService {
 
   Future<dynamic>
       navigateToNestedShowcaseSearchViewInShowcaseSearchShellViewRouter({
-    _i19.Key? key,
-    void Function(_i18.NavigationFailure)? onFailure,
+    _i21.Key? key,
+    void Function(_i20.NavigationFailure)? onFailure,
   }) async {
     return navigateTo(
       ShowcaseSearchViewRoute(
@@ -822,8 +931,8 @@ extension RouterStateExtension on _i17.RouterService {
 
   Future<dynamic>
       navigateToNestedShowcaseProfileViewInShowcaseProfileShellViewRouter({
-    _i19.Key? key,
-    void Function(_i18.NavigationFailure)? onFailure,
+    _i21.Key? key,
+    void Function(_i20.NavigationFailure)? onFailure,
   }) async {
     return navigateTo(
       ShowcaseProfileViewRoute(
@@ -835,8 +944,8 @@ extension RouterStateExtension on _i17.RouterService {
 
   Future<dynamic>
       navigateToNestedShowcaseMotionViewInShowcaseProfileShellViewRouter({
-    _i19.Key? key,
-    void Function(_i18.NavigationFailure)? onFailure,
+    _i21.Key? key,
+    void Function(_i20.NavigationFailure)? onFailure,
   }) async {
     return navigateTo(
       ShowcaseMotionViewRoute(
@@ -848,8 +957,8 @@ extension RouterStateExtension on _i17.RouterService {
 
   Future<dynamic>
       navigateToNestedShowcaseMapsViewInShowcaseProfileShellViewRouter({
-    _i19.Key? key,
-    void Function(_i18.NavigationFailure)? onFailure,
+    _i21.Key? key,
+    void Function(_i20.NavigationFailure)? onFailure,
   }) async {
     return navigateTo(
       ShowcaseMapsViewRoute(
@@ -861,8 +970,8 @@ extension RouterStateExtension on _i17.RouterService {
 
   Future<dynamic>
       navigateToNestedShowcaseComponentsViewInShowcaseProfileShellViewRouter({
-    _i19.Key? key,
-    void Function(_i18.NavigationFailure)? onFailure,
+    _i21.Key? key,
+    void Function(_i20.NavigationFailure)? onFailure,
   }) async {
     return navigateTo(
       ShowcaseComponentsViewRoute(
@@ -874,8 +983,8 @@ extension RouterStateExtension on _i17.RouterService {
 
   Future<dynamic>
       navigateToNestedShowcaseNotesViewInShowcaseNotesShellViewRouter({
-    _i19.Key? key,
-    void Function(_i18.NavigationFailure)? onFailure,
+    _i21.Key? key,
+    void Function(_i20.NavigationFailure)? onFailure,
   }) async {
     return navigateTo(
       ShowcaseNotesViewRoute(
@@ -887,8 +996,8 @@ extension RouterStateExtension on _i17.RouterService {
 
   Future<dynamic>
       navigateToNestedShowcaseNotesFolderViewInShowcaseNotesShellViewRouter({
-    _i19.Key? key,
-    void Function(_i18.NavigationFailure)? onFailure,
+    _i21.Key? key,
+    void Function(_i20.NavigationFailure)? onFailure,
   }) async {
     return navigateTo(
       ShowcaseNotesFolderViewRoute(
@@ -900,8 +1009,8 @@ extension RouterStateExtension on _i17.RouterService {
 
   Future<dynamic>
       navigateToNestedShowcaseNoteEditorViewInShowcaseNotesShellViewRouter({
-    _i19.Key? key,
-    void Function(_i18.NavigationFailure)? onFailure,
+    _i21.Key? key,
+    void Function(_i20.NavigationFailure)? onFailure,
   }) async {
     return navigateTo(
       ShowcaseNoteEditorViewRoute(
@@ -911,12 +1020,25 @@ extension RouterStateExtension on _i17.RouterService {
     );
   }
 
-  Future<dynamic> replaceWithShowcaseStartupView({
-    _i19.Key? key,
-    void Function(_i18.NavigationFailure)? onFailure,
+  Future<dynamic>
+      navigateToNestedShowcaseUnknownViewInShowcaseUnknownShellViewRouter({
+    _i21.Key? key,
+    void Function(_i20.NavigationFailure)? onFailure,
+  }) async {
+    return navigateTo(
+      ShowcaseUnknownViewRoute(
+        key: key,
+      ),
+      onFailure: onFailure,
+    );
+  }
+
+  Future<dynamic> replaceWithShowcaseStartupShellView({
+    _i21.Key? key,
+    void Function(_i20.NavigationFailure)? onFailure,
   }) async {
     return replaceWith(
-      ShowcaseStartupViewRoute(
+      ShowcaseStartupShellViewRoute(
         key: key,
       ),
       onFailure: onFailure,
@@ -924,8 +1046,8 @@ extension RouterStateExtension on _i17.RouterService {
   }
 
   Future<dynamic> replaceWithShowcaseApplicationShellView({
-    _i19.Key? key,
-    void Function(_i18.NavigationFailure)? onFailure,
+    _i21.Key? key,
+    void Function(_i20.NavigationFailure)? onFailure,
   }) async {
     return replaceWith(
       ShowcaseApplicationShellViewRoute(
@@ -935,12 +1057,25 @@ extension RouterStateExtension on _i17.RouterService {
     );
   }
 
-  Future<dynamic> replaceWithShowcaseUnknownView({
-    _i19.Key? key,
-    void Function(_i18.NavigationFailure)? onFailure,
+  Future<dynamic> replaceWithShowcaseUnknownShellView({
+    _i21.Key? key,
+    void Function(_i20.NavigationFailure)? onFailure,
   }) async {
     return replaceWith(
-      ShowcaseUnknownViewRoute(
+      ShowcaseUnknownShellViewRoute(
+        key: key,
+      ),
+      onFailure: onFailure,
+    );
+  }
+
+  Future<dynamic>
+      replaceWithNestedShowcaseStartupViewInShowcaseStartupShellViewRouter({
+    _i21.Key? key,
+    void Function(_i20.NavigationFailure)? onFailure,
+  }) async {
+    return replaceWith(
+      ShowcaseStartupViewRoute(
         key: key,
       ),
       onFailure: onFailure,
@@ -948,8 +1083,8 @@ extension RouterStateExtension on _i17.RouterService {
   }
 
   Future<dynamic> replaceWithShowcaseHomeShellView({
-    _i19.Key? key,
-    void Function(_i18.NavigationFailure)? onFailure,
+    _i21.Key? key,
+    void Function(_i20.NavigationFailure)? onFailure,
   }) async {
     return replaceWith(
       ShowcaseHomeShellViewRoute(
@@ -960,8 +1095,8 @@ extension RouterStateExtension on _i17.RouterService {
   }
 
   Future<dynamic> replaceWithShowcaseSearchShellView({
-    _i19.Key? key,
-    void Function(_i18.NavigationFailure)? onFailure,
+    _i21.Key? key,
+    void Function(_i20.NavigationFailure)? onFailure,
   }) async {
     return replaceWith(
       ShowcaseSearchShellViewRoute(
@@ -972,8 +1107,8 @@ extension RouterStateExtension on _i17.RouterService {
   }
 
   Future<dynamic> replaceWithShowcaseProfileShellView({
-    _i19.Key? key,
-    void Function(_i18.NavigationFailure)? onFailure,
+    _i21.Key? key,
+    void Function(_i20.NavigationFailure)? onFailure,
   }) async {
     return replaceWith(
       ShowcaseProfileShellViewRoute(
@@ -984,8 +1119,8 @@ extension RouterStateExtension on _i17.RouterService {
   }
 
   Future<dynamic> replaceWithShowcaseNotesShellView({
-    _i19.Key? key,
-    void Function(_i18.NavigationFailure)? onFailure,
+    _i21.Key? key,
+    void Function(_i20.NavigationFailure)? onFailure,
   }) async {
     return replaceWith(
       ShowcaseNotesShellViewRoute(
@@ -997,8 +1132,8 @@ extension RouterStateExtension on _i17.RouterService {
 
   Future<dynamic>
       replaceWithNestedShowcaseHomeViewInShowcaseHomeShellViewRouter({
-    _i19.Key? key,
-    void Function(_i18.NavigationFailure)? onFailure,
+    _i21.Key? key,
+    void Function(_i20.NavigationFailure)? onFailure,
   }) async {
     return replaceWith(
       ShowcaseHomeViewRoute(
@@ -1010,8 +1145,8 @@ extension RouterStateExtension on _i17.RouterService {
 
   Future<dynamic>
       replaceWithNestedShowcaseSearchViewInShowcaseSearchShellViewRouter({
-    _i19.Key? key,
-    void Function(_i18.NavigationFailure)? onFailure,
+    _i21.Key? key,
+    void Function(_i20.NavigationFailure)? onFailure,
   }) async {
     return replaceWith(
       ShowcaseSearchViewRoute(
@@ -1023,8 +1158,8 @@ extension RouterStateExtension on _i17.RouterService {
 
   Future<dynamic>
       replaceWithNestedShowcaseProfileViewInShowcaseProfileShellViewRouter({
-    _i19.Key? key,
-    void Function(_i18.NavigationFailure)? onFailure,
+    _i21.Key? key,
+    void Function(_i20.NavigationFailure)? onFailure,
   }) async {
     return replaceWith(
       ShowcaseProfileViewRoute(
@@ -1036,8 +1171,8 @@ extension RouterStateExtension on _i17.RouterService {
 
   Future<dynamic>
       replaceWithNestedShowcaseMotionViewInShowcaseProfileShellViewRouter({
-    _i19.Key? key,
-    void Function(_i18.NavigationFailure)? onFailure,
+    _i21.Key? key,
+    void Function(_i20.NavigationFailure)? onFailure,
   }) async {
     return replaceWith(
       ShowcaseMotionViewRoute(
@@ -1049,8 +1184,8 @@ extension RouterStateExtension on _i17.RouterService {
 
   Future<dynamic>
       replaceWithNestedShowcaseMapsViewInShowcaseProfileShellViewRouter({
-    _i19.Key? key,
-    void Function(_i18.NavigationFailure)? onFailure,
+    _i21.Key? key,
+    void Function(_i20.NavigationFailure)? onFailure,
   }) async {
     return replaceWith(
       ShowcaseMapsViewRoute(
@@ -1062,8 +1197,8 @@ extension RouterStateExtension on _i17.RouterService {
 
   Future<dynamic>
       replaceWithNestedShowcaseComponentsViewInShowcaseProfileShellViewRouter({
-    _i19.Key? key,
-    void Function(_i18.NavigationFailure)? onFailure,
+    _i21.Key? key,
+    void Function(_i20.NavigationFailure)? onFailure,
   }) async {
     return replaceWith(
       ShowcaseComponentsViewRoute(
@@ -1075,8 +1210,8 @@ extension RouterStateExtension on _i17.RouterService {
 
   Future<dynamic>
       replaceWithNestedShowcaseNotesViewInShowcaseNotesShellViewRouter({
-    _i19.Key? key,
-    void Function(_i18.NavigationFailure)? onFailure,
+    _i21.Key? key,
+    void Function(_i20.NavigationFailure)? onFailure,
   }) async {
     return replaceWith(
       ShowcaseNotesViewRoute(
@@ -1088,8 +1223,8 @@ extension RouterStateExtension on _i17.RouterService {
 
   Future<dynamic>
       replaceWithNestedShowcaseNotesFolderViewInShowcaseNotesShellViewRouter({
-    _i19.Key? key,
-    void Function(_i18.NavigationFailure)? onFailure,
+    _i21.Key? key,
+    void Function(_i20.NavigationFailure)? onFailure,
   }) async {
     return replaceWith(
       ShowcaseNotesFolderViewRoute(
@@ -1101,11 +1236,24 @@ extension RouterStateExtension on _i17.RouterService {
 
   Future<dynamic>
       replaceWithNestedShowcaseNoteEditorViewInShowcaseNotesShellViewRouter({
-    _i19.Key? key,
-    void Function(_i18.NavigationFailure)? onFailure,
+    _i21.Key? key,
+    void Function(_i20.NavigationFailure)? onFailure,
   }) async {
     return replaceWith(
       ShowcaseNoteEditorViewRoute(
+        key: key,
+      ),
+      onFailure: onFailure,
+    );
+  }
+
+  Future<dynamic>
+      replaceWithNestedShowcaseUnknownViewInShowcaseUnknownShellViewRouter({
+    _i21.Key? key,
+    void Function(_i20.NavigationFailure)? onFailure,
+  }) async {
+    return replaceWith(
+      ShowcaseUnknownViewRoute(
         key: key,
       ),
       onFailure: onFailure,
