@@ -5,7 +5,7 @@
     "entitled": true,
     "plan": "studio",
     "credentialsHref": "/workspace/credentials",
-    "signInHref": "/sign-in",
+    "signInHref": "/auth",
     "upgradeHref": "/workspace/plans"
   },
   "manifest": {
@@ -352,7 +352,7 @@
     "notEntitled": {
       "signedIn": false,
       "entitled": false,
-      "route": "/workspace/credentials"
+      "route": "/workspace/plans"
     }
   }
 }

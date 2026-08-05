@@ -16,7 +16,18 @@
         "id": "google",
         "label": "Continue with Google"
       }
-    ]
+    ],
+    "states": {
+      "signup": {
+        "headline": "Create your account",
+        "lede": "One account for every project on your tailnet. Prototype build — any input signs you in, seeded like sign-in."
+      },
+      "expired": {
+        "headline": "Session expired",
+        "lede": "Your session on this machine timed out. Sign in again to get back to your projects.",
+        "note": "Nothing was lost — the dashboard picks up where you left off."
+      }
+    }
   },
   "gates": [
     {

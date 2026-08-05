@@ -30,6 +30,7 @@
   "screen.label.app.startup": "[!! Šţåřţüp ~̷~~̷~ !!]",
   "screen.label.app.access": "[!! Åççëšš ~̷~~̷~ !!]",
   "screen.label.app.dashboard": "[!! Ðåšhböåřð ~̷~~̷~ !!]",
+  "screen.label.app.unknown": "[!! Ñöţ Föüñð ~̷~~̷~ !!]",
   "screen.label.intake.interview": "[!! Ïñţëřvïëw ~̷~~̷~ !!]",
   "screen.label.intake.mapping": "[!! Måppïñg ~̷~~̷~ !!]",
   "screen.label.intake.live": "[!! Łïvë Måp ~̷~~̷~ !!]",
@@ -84,6 +85,7 @@
   "auth.pageTitle": "[!! Åppböx Šţüðïö — Šïgñ ïñ ~̷~~̷~~̷~ !!]",
   "auth.email": "[!! Ëmåïł ~̷~~̷~ !!]",
   "auth.continue": "[!! Çöñţïñüë ~̷~~̷~ !!]",
+  "auth.createAccount": "[!! Çřëåţë åççöüñţ ~̷~~̷~ !!]",
   "auth.or": "[!! öř ~̷~~̷~ !!]",
   "splash.connecting": "[!! Çöññëçţïñg ţö ţhë åppböx ðåëmöñ ~̷~~̷~~̷~~̷~ !!]",
   "settings.pageTitle": "[!! Åppböx Šţüðïö — Šëţţïñgš ~̷~~̷~~̷~ !!]",
@@ -410,7 +412,7 @@
   "design.revertToast": "[!! Çhëçkpöïñţ řëvëřţëð — ţhë šçřëëñ ïš båçk, ţhë řëçöřð šţåÿš ~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
   "freeze.approvalEyebrow": "[!! ðëšïgñ åppřövåł · ţhë hümåñ gåţë ~̷~~̷~~̷~~̷~ !!]",
   "freeze.unlocked": "[!! Büïłð üñłöçkëð ~̷~~̷~ !!]",
-  "freeze.continueScaffold": "[!! Çöñţïñüë ţö šçåfföłð ~̷~~̷~ !!]",
+  "freeze.continueScaffold": "[!! Çöñţïñüë ţö šçåfföłð ~̷~~̷~~̷~ !!]",
   "freeze.approveH": "[!! Åppřövë ţhë fřöžëñ måñïfëšţ ~̷~~̷~~̷~~̷~ !!]",
   "freeze.approveCta": "[!! åppřövë ţhë måñïfëšţ ~̷~~̷~~̷~ !!]",
   "freeze.manifestEyebrow": "[!! fřëëžë måñïfëšţ · {id} ~̷~~̷~~̷~ !!]",
@@ -834,6 +836,94 @@
   "cfg.jargon.plain": "[!! płåïñ ~̷~~̷~ !!]",
   "cfg.jargon.balanced": "[!! båłåñçëð ~̷~~̷~ !!]",
   "cfg.jargon.technical": "[!! ţëçhñïçåł ~̷~~̷~ !!]",
+  "screen.label.workspace.plans": "[!! Płåñš ~̷~~̷~ !!]",
+  "plans.pageTitle": "[!! Åppböx Šţüðïö — Płåñš ~̷~~̷~~̷~ !!]",
+  "plans.eyebrow": "[!! wöřkšpåçë ~̷~~̷~ !!]",
+  "plans.title": "[!! Płåñš ~̷~~̷~ !!]",
+  "plans.lede": "[!! Whåţ ëåçh ţïëř büÿš, åñð whåţ ţhïš åççöüñţ ïš öñ. Ţhë çhëçköüţ bëłöw ïš šëëðëð — ïţ wåłkš ëvëřÿ öüţçömë ţhë påÿmëñţš kïţ çåñ řëţüřñ. ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+  "plans.plansH": "[!! Płåñš ~̷~~̷~ !!]",
+  "plans.price": "[!! ${amount}/mö ~̷~~̷~ !!]",
+  "@plans.price": {
+    "placeholders": {
+      "amount": {
+        "type": "int",
+        "example": "29"
+      }
+    }
+  },
+  "plans.seats": "{count, plural, one{[!! {count} måçhïñë šëåţ ~̷~~̷~ !!]} other{[!! {count} måçhïñë šëåţš ~̷~~̷~ !!]}}",
+  "plans.seats.used": "[!! {used} öf {total} måçhïñë šëåţš ïñ üšë ~̷~~̷~~̷~~̷~ !!]",
+  "@plans.seats.used": {
+    "placeholders": {
+      "used": {
+        "type": "int",
+        "example": "2"
+      },
+      "total": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "plans.current": "[!! Çüřřëñţ płåñ ~̷~~̷~ !!]",
+  "plans.upgrade": "[!! Üpgřåðë ţö {plan} ~̷~~̷~ !!]",
+  "@plans.upgrade": {
+    "placeholders": {
+      "plan": {
+        "type": "String",
+        "example": "Studio"
+      }
+    }
+  },
+  "plans.plan.free.name": "[!! Fřëë ~̷~~̷~ !!]",
+  "plans.plan.free.blurb": "[!! Ëvëřÿ pïpëłïñë šţågë öñ ţhïš måçhïñë, öñë přöjëçţ åţ å ţïmë. ~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+  "plans.plan.free.feature.1": "[!! Ïñţåkë, ðëšïgñ, šçåfföłð åñð büïłð ~̷~~̷~~̷~~̷~ !!]",
+  "plans.plan.free.feature.2": "[!! 1 måçhïñë šëåţ ~̷~~̷~ !!]",
+  "plans.plan.free.feature.3": "[!! Çömmüñïţÿ šüppöřţ ~̷~~̷~ !!]",
+  "plans.plan.studio.name": "[!! Šţüðïö ~̷~~̷~ !!]",
+  "plans.plan.studio.blurb": "[!! Ţhë whöłë ţåïłñëţ: ëvëřÿ måçhïñë, ëvëřÿ přöjëçţ, gåţëš fřöm ÿöüř phöñë. ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+  "plans.plan.studio.feature.1": "[!! Ëvëřÿţhïñg ïñ Fřëë ~̷~~̷~~̷~ !!]",
+  "plans.plan.studio.feature.2": "[!! 3 måçhïñë šëåţš ~̷~~̷~ !!]",
+  "plans.plan.studio.feature.3": "[!! Řëmöţë gåţë åppřövåłš ~̷~~̷~~̷~ !!]",
+  "plans.signedOut.title": "[!! Šïgñ ïñ ţö måñågë ÿöüř płåñ ~̷~~̷~~̷~~̷~ !!]",
+  "plans.signedOut.body": "[!! Ţhë ţïëřš åřë bëłöw — ţhë våłüë ïš łëgïbłë bëföřë ţhë påÿwåłł. Šïgñïñg ïñ ïš whåţ çöññëçţš öñë ţö ţhïš åççöüñţ. ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+  "plans.signedOut.cta": "[!! Šïgñ ïñ ~̷~~̷~ !!]",
+  "plans.accountH": "[!! Åççöüñţ ~̷~~̷~ !!]",
+  "plans.signOut": "[!! Šïgñ öüţ ~̷~~̷~ !!]",
+  "plans.checkoutH": "[!! Çhëçköüţ ~̷~~̷~ !!]",
+  "plans.checkout.seeded": "[!! Šëëðëð: ëvëřÿ öüţçömë ïš šçřïpţëð — ëåçh öñë ñåmëš ţhë kïţ/påÿmëñţš šëëð přöfïłë åñð ţhë PåÿmëñţŘëšüłţ břåñçh ïţ řëšöłvëš ţö. ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+  "plans.checkout.summary": "[!! Šţüðïö płåñ — {amount} vïå Åppłë Påÿ (šëëð) ~̷~~̷~~̷~~̷~~̷~ !!]",
+  "@plans.checkout.summary": {
+    "placeholders": {
+      "amount": {
+        "type": "String",
+        "example": "$29/mo"
+      }
+    }
+  },
+  "plans.checkout.outcomesAria": "[!! Šëëðëð çhëçköüţ öüţçömëš ~̷~~̷~~̷~ !!]",
+  "plans.checkout.outcome.succeed.label": "[!! Šüççëëð ~̷~~̷~ !!]",
+  "plans.checkout.outcome.succeed.title": "[!! Påÿmëñţ šhëëţ řëţüřñëð å ţökëñ ~̷~~̷~~̷~~̷~ !!]",
+  "plans.checkout.outcome.succeed.body": "[!! PåÿmëñţŠüççëšš — ţhë wåłłëţ mïñţëð šëëð_ţökëñ_åppłëPåÿ. Ñöţhïñg ïš çhåřgëð ÿëţ; ţhë ţökëñ göëš ţö ÿöüř šëřvëř ţö çåpţüřë. ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+  "plans.checkout.outcome.decline.label": "[!! Ðëçłïñë ~̷~~̷~ !!]",
+  "plans.checkout.outcome.decline.title": "[!! Çåřð ðëçłïñëð ~̷~~̷~ !!]",
+  "plans.checkout.outcome.decline.body": "[!! PåÿmëñţÐëçłïñëð — ţhë ïñšţřümëñţ ïţšëłf wåš řëjëçţëð (ïñšüffïçïëñţ füñðš). Řëţřÿ wïţh å ðïffëřëñţ mëţhöð; ţhïš ïš ñöţ å büg ţö řëpöřţ. ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+  "plans.checkout.outcome.cancel.label": "[!! Çåñçëł ~̷~~̷~ !!]",
+  "plans.checkout.outcome.cancel.title": "[!! Šhëëţ ðïšmïššëð ~̷~~̷~ !!]",
+  "plans.checkout.outcome.cancel.body": "[!! PåÿmëñţÇåñçëłłëð — ţhë üšëř ðïšmïššëð ţhë šhëëţ. Ñöţ åñ ëřřöř; ţhë kïţ'š öwñ güïðåñçë ïš ţö šhöw ñöţhïñg. ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+  "plans.checkout.outcome.error.label": "[!! Ëřřöř ~̷~~̷~ !!]",
+  "plans.checkout.outcome.error.title": "[!! Šömëţhïñg břökë ~̷~~̷~ !!]",
+  "plans.checkout.outcome.error.body": "[!! PåÿmëñţËřřöř — mïšçöñfïgüřåţïöñ, ñëţwöřk, öř å płügïñ ëxçëpţïöñ. Ţhë üšëř çåññöţ fïx ţhïš bÿ řëţřÿïñg; łög ïţ åñð šåÿ šö płåïñłÿ. ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+  "plans.checkout.outcome.timeout.label": "[!! Ţïmëöüţ ~̷~~̷~ !!]",
+  "plans.checkout.outcome.timeout.title": "[!! Ţïmëð öüţ ~̷~~̷~ !!]",
+  "plans.checkout.outcome.timeout.body": "[!! ŠëëðŢïmëöüţ — ţhë šhëëţ ñëvëř šëţţłëð, åñð åfţëř ïţš ðëłåÿ ţhë kïţ řëšöłvëš PåÿmëñţËřřöř('Šëëð påÿmëñţ ţïmëð öüţ'). Å ţïmëöüţ ïš åñ ëřřöř, ñöţ å ðëçłïñë åñð ñöţ å çåñçëł. ~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+  "plans.checkout.retry": "[!! Řëţřÿ wïţh åñöţhëř mëţhöð ~̷~~̷~~̷~ !!]",
+  "plans.checkout.apply": "[!! Åppłÿ ţö ţhïš åççöüñţ (šëëðëð) ~̷~~̷~~̷~~̷~ !!]",
+  "unknown.pageTitle": "[!! Åppböx Šţüðïö — Ñöţ föüñð ~̷~~̷~~̷~ !!]",
+  "unknown.code": "[!! 404 ~̷~~̷~ !!]",
+  "unknown.msg": "[!! Ñö řöüţë föř ţhïš påţh. ~̷~~̷~~̷~ !!]",
+  "unknown.hint": "[!! Ñöţhïñg ÿöü håð öpëñ wåš łöšţ — ţhïš řëqüëšţ åłöñë mïššëð. ~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+  "unknown.home": "[!! Båçk ţö ţhë ðåšhböåřð ~̷~~̷~~̷~ !!]",
   "screen.label.intake.personas": "[!! Pëřšöñåš ~̷~~̷~ !!]",
   "screen.label.intake.surfaces": "[!! Šüřfåçëš ~̷~~̷~ !!]",
   "screen.label.intake.flows": "[!! Fłöwš ~̷~~̷~ !!]",
@@ -958,6 +1048,9 @@
   "scaffold.picker.autoCount": "[!! {count} åððëð åüţömåţïçåłłÿ ~̷~~̷~~̷~ !!]",
   "scaffold.picker.unreadyCount": "[!! {count} šţïłł ñëëð këÿš ~̷~~̷~~̷~ !!]",
   "scaffold.picker.eyebrow": "[!! Kïţ pïçkëř ~̷~~̷~ !!]",
+  "scaffold.chrome.signIn": "[!! Šïgñ ïñ ~̷~~̷~ !!]",
+  "scaffold.chrome.upgrade": "[!! Üpgřåðë ~̷~~̷~ !!]",
+  "scaffold.chrome.accountTitle": "[!! Płåñ åñð åççöüñţ — wöřkšpåçë płåñš ~̷~~̷~~̷~~̷~ !!]",
   "scaffold.picker.chip.selected": "[!! {count} šëłëçţëð ~̷~~̷~ !!]",
   "scaffold.picker.chip.unready": "[!! {count} ñëëð këÿš ~̷~~̷~ !!]",
   "scaffold.picker.thread.detected": "[!! {count} kïţš ðëţëçţëð ïñ ÿöüř přöjëçţ ~̷~~̷~~̷~~̷~ !!]",

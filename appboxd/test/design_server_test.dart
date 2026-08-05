@@ -814,6 +814,60 @@ void main() {
     });
   });
 
+  // ── 404 catch-all: the artifact's own unknown surface ──────────────────
+  // An artifact that registers a GET /unknown route (appbox-studio's
+  // app.unknown surface) has authored its not-found page, so a whole-page
+  // miss renders THAT under a 404 — dispatched internally to the registered
+  // route, not redirected. The fallback for an artifact WITHOUT such a route
+  // (hello-hda) is pinned by the 'error surface' group above: its unmatched
+  // GETs still get the server's own _errorPage.
+  group('404 catch-all (artifact unknown surface)', () {
+    late DesignServer srv;
+    late String base;
+
+    setUpAll(() async {
+      // The real studio design, not a fixture: the wiring only matters if
+      // the shipped artifact's surface actually renders through it.
+      srv = await DesignServer.start(
+          artifactDir: p.absolute('../designs/appbox-studio'),
+          port: 0,
+          noWatch: true);
+      // srv.url ends in '/' — see the 'error surface' group.
+      base = srv.url.substring(0, srv.url.length - 1);
+    });
+    tearDownAll(() async {
+      await srv.stop();
+    });
+
+    test('an unmatched GET renders the artifact surface, status 404',
+        () async {
+      final r = await _get('$base/definitely-not-a-studio-route');
+      expect(r.status, 404);
+      // The surface's own authored strings (l10n app_en.arb unknown.*), not
+      // the server's errorSurface.* page.
+      expect(r.body, contains('No route for this path.'));
+      expect(r.body, isNot(contains('no route for GET')));
+      expect(r.headers['content-type'], contains('text/html'));
+    });
+
+    test('GET /unknown itself still answers 200', () async {
+      final r = await _get('$base/unknown');
+      expect(r.status, 200);
+      expect(r.body, contains('No route for this path.'));
+    });
+
+    test('an htmx fragment miss keeps the toast, not the page', () async {
+      // The catch-all is for whole-page GETs only; a fragment fetch that
+      // misses must still land in #toasts via the 404 retarget in base.html.
+      final r = await _get('$base/definitely-not-a-studio-route',
+          headers: {'HX-Request': 'true'});
+      expect(r.status, 404);
+      expect(r.body, contains('toast-error'));
+      expect(r.body, isNot(contains('<html')));
+      expect(r.body, isNot(contains('No route for this path.')));
+    });
+  });
+
   // ── behavior 8: stop releases the port (own boot) ──────────────────────
   group('lifecycle', () {
     test('8: stop() releases the port (rebind succeeds)', () async {

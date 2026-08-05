@@ -55,6 +55,15 @@
       ]
     },
     {
+      "id": "app.unknown",
+      "shell": "app",
+      "comp": "AppUnknown",
+      "shellDir": "app_shell",
+      "surface": "app_shell_app_unknown_view",
+      "viewmodel": "ui/views/app_shell/unknown/unknown_viewmodel.js",
+      "deps": []
+    },
+    {
       "id": "intake.interview",
       "shell": "intake",
       "comp": "IntakeInterview",
@@ -359,6 +368,17 @@
       ]
     },
     {
+      "id": "workspace.plans",
+      "shell": "workspace",
+      "comp": "WorkspacePlans",
+      "shellDir": "workspace_shell",
+      "surface": "workspace_shell_workspace_plans_view",
+      "viewmodel": "ui/views/workspace_shell/plans/plans_viewmodel.js",
+      "deps": [
+        "services/facades/app_facade.js"
+      ]
+    },
+    {
       "id": "website.site",
       "shell": "website",
       "comp": "WebsiteSite",
@@ -585,6 +605,39 @@
           "soft": "rgba(135, 154, 57, .16)",
           "on": "#100F0F"
         }
+      }
+    ]
+  },
+  "fonts": {
+    "default": "lexend",
+    "families": [
+      {
+        "id": "lexend",
+        "label": "Lexend",
+        "cssName": "Lexend",
+        "role": "ui",
+        "license": "OFL-1.1"
+      },
+      {
+        "id": "grotesk",
+        "label": "Space Grotesk",
+        "cssName": "Space Grotesk",
+        "role": "display",
+        "license": "OFL-1.1"
+      },
+      {
+        "id": "lora",
+        "label": "Lora",
+        "cssName": "Lora",
+        "role": "ui",
+        "license": "OFL-1.1"
+      },
+      {
+        "id": "mono",
+        "label": "JetBrains Mono",
+        "cssName": "JetBrains Mono",
+        "role": "mono",
+        "license": "OFL-1.1"
       }
     ]
   }

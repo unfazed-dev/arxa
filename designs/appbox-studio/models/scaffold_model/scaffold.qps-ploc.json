@@ -4,7 +4,7 @@
     "entitled": true,
     "plan": "studio",
     "credentialsHref": "/workspace/credentials",
-    "signInHref": "/sign-in",
+    "signInHref": "/auth",
     "upgradeHref": "/workspace/plans"
   },
   "essentials": [
@@ -2225,7 +2225,7 @@
     "notEntitled": {
       "signedIn": false,
       "entitled": false,
-      "route": "/workspace/credentials"
+      "route": "/workspace/plans"
     }
   }
 }

@@ -30,6 +30,7 @@
   "screen.label.app.startup": "Startup",
   "screen.label.app.access": "Access",
   "screen.label.app.dashboard": "Dashboard",
+  "screen.label.app.unknown": "Not Found",
   "screen.label.intake.interview": "Interview",
   "screen.label.intake.mapping": "Mapping",
   "screen.label.intake.live": "Live Map",
@@ -84,6 +85,7 @@
   "auth.pageTitle": "Appbox Studio — Sign in",
   "auth.email": "Email",
   "auth.continue": "Continue",
+  "auth.createAccount": "Create account",
   "auth.or": "or",
   "splash.connecting": "Connecting to the appbox daemon",
   "settings.pageTitle": "Appbox Studio — Settings",
@@ -834,6 +836,94 @@
   "cfg.jargon.plain": "plain",
   "cfg.jargon.balanced": "balanced",
   "cfg.jargon.technical": "technical",
+  "screen.label.workspace.plans": "Plans",
+  "plans.pageTitle": "Appbox Studio — Plans",
+  "plans.eyebrow": "workspace",
+  "plans.title": "Plans",
+  "plans.lede": "What each tier buys, and what this account is on. The checkout below is seeded — it walks every outcome the payments kit can return.",
+  "plans.plansH": "Plans",
+  "plans.price": "${amount}/mo",
+  "@plans.price": {
+    "placeholders": {
+      "amount": {
+        "type": "int",
+        "example": "29"
+      }
+    }
+  },
+  "plans.seats": "{count, plural, one{{count} machine seat} other{{count} machine seats}}",
+  "plans.seats.used": "{used} of {total} machine seats in use",
+  "@plans.seats.used": {
+    "placeholders": {
+      "used": {
+        "type": "int",
+        "example": "2"
+      },
+      "total": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "plans.current": "Current plan",
+  "plans.upgrade": "Upgrade to {plan}",
+  "@plans.upgrade": {
+    "placeholders": {
+      "plan": {
+        "type": "String",
+        "example": "Studio"
+      }
+    }
+  },
+  "plans.plan.free.name": "Free",
+  "plans.plan.free.blurb": "Every pipeline stage on this machine, one project at a time.",
+  "plans.plan.free.feature.1": "Intake, design, scaffold and build",
+  "plans.plan.free.feature.2": "1 machine seat",
+  "plans.plan.free.feature.3": "Community support",
+  "plans.plan.studio.name": "Studio",
+  "plans.plan.studio.blurb": "The whole tailnet: every machine, every project, gates from your phone.",
+  "plans.plan.studio.feature.1": "Everything in Free",
+  "plans.plan.studio.feature.2": "3 machine seats",
+  "plans.plan.studio.feature.3": "Remote gate approvals",
+  "plans.signedOut.title": "Sign in to manage your plan",
+  "plans.signedOut.body": "The tiers are below — the value is legible before the paywall. Signing in is what connects one to this account.",
+  "plans.signedOut.cta": "Sign in",
+  "plans.accountH": "Account",
+  "plans.signOut": "Sign out",
+  "plans.checkoutH": "Checkout",
+  "plans.checkout.seeded": "Seeded: every outcome is scripted — each one names the kit/payments seed profile and the PaymentResult branch it resolves to.",
+  "plans.checkout.summary": "Studio plan — {amount} via Apple Pay (seed)",
+  "@plans.checkout.summary": {
+    "placeholders": {
+      "amount": {
+        "type": "String",
+        "example": "$29/mo"
+      }
+    }
+  },
+  "plans.checkout.outcomesAria": "Seeded checkout outcomes",
+  "plans.checkout.outcome.succeed.label": "Succeed",
+  "plans.checkout.outcome.succeed.title": "Payment sheet returned a token",
+  "plans.checkout.outcome.succeed.body": "PaymentSuccess — the wallet minted seed_token_applePay. Nothing is charged yet; the token goes to your server to capture.",
+  "plans.checkout.outcome.decline.label": "Decline",
+  "plans.checkout.outcome.decline.title": "Card declined",
+  "plans.checkout.outcome.decline.body": "PaymentDeclined — the instrument itself was rejected (insufficient funds). Retry with a different method; this is not a bug to report.",
+  "plans.checkout.outcome.cancel.label": "Cancel",
+  "plans.checkout.outcome.cancel.title": "Sheet dismissed",
+  "plans.checkout.outcome.cancel.body": "PaymentCancelled — the user dismissed the sheet. Not an error; the kit's own guidance is to show nothing.",
+  "plans.checkout.outcome.error.label": "Error",
+  "plans.checkout.outcome.error.title": "Something broke",
+  "plans.checkout.outcome.error.body": "PaymentError — misconfiguration, network, or a plugin exception. The user cannot fix this by retrying; log it and say so plainly.",
+  "plans.checkout.outcome.timeout.label": "Timeout",
+  "plans.checkout.outcome.timeout.title": "Timed out",
+  "plans.checkout.outcome.timeout.body": "SeedTimeout — the sheet never settled, and after its delay the kit resolves PaymentError('Seed payment timed out'). A timeout is an error, not a decline and not a cancel.",
+  "plans.checkout.retry": "Retry with another method",
+  "plans.checkout.apply": "Apply to this account (seeded)",
+  "unknown.pageTitle": "Appbox Studio — Not found",
+  "unknown.code": "404",
+  "unknown.msg": "No route for this path.",
+  "unknown.hint": "Nothing you had open was lost — this request alone missed.",
+  "unknown.home": "Back to the dashboard",
   "screen.label.intake.personas": "Personas",
   "screen.label.intake.surfaces": "Surfaces",
   "screen.label.intake.flows": "Flows",
@@ -958,6 +1048,9 @@
   "scaffold.picker.autoCount": "{count} added automatically",
   "scaffold.picker.unreadyCount": "{count} still need keys",
   "scaffold.picker.eyebrow": "Kit picker",
+  "scaffold.chrome.signIn": "Sign in",
+  "scaffold.chrome.upgrade": "Upgrade",
+  "scaffold.chrome.accountTitle": "Plan and account — workspace plans",
   "scaffold.picker.chip.selected": "{count} selected",
   "scaffold.picker.chip.unready": "{count} need keys",
   "scaffold.picker.thread.detected": "{count} kits detected in your project",

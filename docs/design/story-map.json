@@ -29,10 +29,31 @@
           ]
         },
         {
+          "name": "Startup",
+          "id": "app.startup",
+          "stories": [
+            {
+              "name": "Boot chain splash → startup → /auth: startup resolves the daemon handshake and session state, routing signed-out users to sign-in and signed-in users to the dashboard — the boot chain is the signed-out guard, no per-surface signed-out states",
+              "priority": "must",
+              "release": "R1 Dogfood"
+            }
+          ]
+        },
+        {
           "name": "Access",
           "stories": [
             {
               "name": "Splash screen while the daemon connects, then sign-in (email + Sign in with Apple + Google, seeded accounts) landing on the dashboard; sign-up, sign-out and session-expired states seeded",
+              "priority": "must",
+              "release": "R1 Dogfood"
+            },
+            {
+              "name": "Sign-up state seeded on /auth alongside sign-in: email + Sign in with Apple + Google account creation",
+              "priority": "must",
+              "release": "R1 Dogfood"
+            },
+            {
+              "name": "Session-expired state seeded: an expired session routes back through the boot chain to /auth with an expired-session notice, then returns to the original destination",
               "priority": "must",
               "release": "R1 Dogfood"
             }
@@ -64,7 +85,7 @@
           ]
         },
         {
-          "name": "Projects",
+          "name": "Projects (not yet in registry)",
           "stories": [
             {
               "name": "Project creation is a GenUI wizard generated inline in the chat thread (name + platform targets: iOS/Android/macOS/web)",
@@ -89,7 +110,7 @@
           ]
         },
         {
-          "name": "Pairing",
+          "name": "Pairing (not yet in registry)",
           "stories": [
             {
               "name": "One-scan QR pairing: single-use short-lived tailnet pre-auth key + host/nonce/key fingerprint; relayed QR fails the pin",
@@ -114,7 +135,7 @@
           ]
         },
         {
-          "name": "Notifications",
+          "name": "Notifications (not yet in registry)",
           "stories": [
             {
               "name": "Push when a gate goes red (deduped per transition), deep-link into the gate card",
@@ -129,7 +150,7 @@
           ]
         },
         {
-          "name": "Remote",
+          "name": "Remote (not yet in registry)",
           "stories": [
             {
               "name": "Self-host tailnet (compose file) or hosted Tailscale from day one; daemon and apps are tailnet nodes in-process; approvals bind to WireGuard node identity",
@@ -140,6 +161,17 @@
               "name": "Private mesh CA gives trusted HTTPS origins over the mesh (arxa ADR-0036 pattern)",
               "priority": "should",
               "release": "R2 Anywhere"
+            }
+          ]
+        },
+        {
+          "name": "Unknown Route",
+          "id": "app.unknown",
+          "stories": [
+            {
+              "name": "404 shell surface: any unmatched route lands on a branded not-found page inside the app shell with a path back to the dashboard — never a bare router error",
+              "priority": "should",
+              "release": "R1 Dogfood"
             }
           ]
         }
@@ -501,11 +533,38 @@
           "id": "shell.footer"
         },
         {
-          "name": "Main Chrome",
+          "name": "Main Chrome (not yet in registry)",
           "id": "main.chrome",
           "stories": [
             {
               "name": "The main chrome (tab bar, shell switcher, daemon status) is one shared frame across every shell — intake, design, build, surfaces, settings",
+              "priority": "must",
+              "release": "R1 Dogfood"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Scaffold",
+      "features": [
+        {
+          "name": "Kit Picker",
+          "id": "scaffold.picker",
+          "stories": [
+            {
+              "name": "Kit picker at scaffold: per-surface kit selection from targets + capabilities, validated against the kit registry before the paid scaffold run",
+              "priority": "must",
+              "release": "R1 Dogfood"
+            }
+          ]
+        },
+        {
+          "name": "Scaffold Run",
+          "id": "scaffold.run",
+          "stories": [
+            {
+              "name": "Scaffold run surface: live per-file emission progress; the licence check (D17/D18) blocks the run before the first file write when unpaid",
               "priority": "must",
               "release": "R1 Dogfood"
             }
@@ -665,7 +724,7 @@
               "release": "R1 Dogfood"
             },
             {
-              "name": "Payment gate at first deploy: licence required to ship; everything before it free",
+              "name": "Payment gate at scaffold (D17/D18): licence required to emit the Flutter shell; design + eject before it free",
               "priority": "must",
               "release": "R1 Dogfood"
             },
@@ -745,7 +804,7 @@
               "release": "R1 Dogfood"
             },
             {
-              "name": "Flat licence, never per-seat; pay at first deploy",
+              "name": "Flat licence, never per-seat; pay at scaffold",
               "priority": "must",
               "release": "R1 Dogfood"
             },
@@ -761,6 +820,27 @@
             },
             {
               "name": "Language level plain/balanced/technical — every user-facing string written three ways; visual metrics render as X/100 match scores (ΔE 2.0 = 95/100 pass bar), technical level keeps raw values",
+              "priority": "must",
+              "release": "R1 Dogfood"
+            }
+          ]
+        },
+        {
+          "name": "Plans",
+          "id": "workspace.plans",
+          "stories": [
+            {
+              "name": "Plans and pricing surface: flat licence tiers with per-plan entitlement comparison, reachable from settings and from the scaffold paywall",
+              "priority": "must",
+              "release": "R1 Dogfood"
+            },
+            {
+              "name": "Account and entitlement home: current plan, machine/seat activations with self-service deactivation, renewal date",
+              "priority": "must",
+              "release": "R1 Dogfood"
+            },
+            {
+              "name": "Mock checkout with five seeded outcome states mirroring kit/payments: success, declined, cancelled, error, timeout",
               "priority": "must",
               "release": "R1 Dogfood"
             }
@@ -827,7 +907,7 @@
               "release": "R2 Anywhere"
             },
             {
-              "name": "Pricing page: flat licence, never per-seat, BYO key, pay at first deploy (the anti-credit-rage page)",
+              "name": "Pricing page: flat licence, never per-seat, BYO key, pay at scaffold (the anti-credit-rage page)",
               "priority": "must",
               "release": "R2 Anywhere"
             }
@@ -877,7 +957,7 @@
               "release": "R2 Anywhere"
             },
             {
-              "name": "Licence purchase and activation, pay-at-scaffold explained before checkout",
+              "name": "Licence purchase and activation on the website — purchase and activation explained before checkout; the gate itself sits at scaffold",
               "priority": "must",
               "release": "R2 Anywhere"
             },

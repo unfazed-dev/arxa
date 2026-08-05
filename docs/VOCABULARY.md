@@ -572,6 +572,10 @@ one section's chrome and one nav destination. THE canonical grouping word —
 The layout tier between the base page template and surfaces: section chrome
 (nav, device frame) shared by a group of surfaces, and the unit the app's
 navigation and the pipeline's stage grouping speak in.
+The app-level shell — surfaces with ids `app.*` — carries a mandated roster
+every frozen design declares: `app.splash`, `app.startup`, `app.unknown`,
+plus `app.access` iff any surface requires auth; the freeze refuses a design
+that omits one.
 _Avoid_: tab (legacy — retired), tab-group (legacy), layout (reserved for the
 base template)
 _Layer_: Design medium

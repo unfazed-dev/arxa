@@ -1,0 +1,55 @@
+{
+  "account": {
+    "plan": "studio",
+    "machineSeats": {
+      "used": 2,
+      "total": 3
+    }
+  },
+  "plans": [
+    {
+      "id": "free",
+      "monthly": 0,
+      "machineSeats": 1
+    },
+    {
+      "id": "studio",
+      "monthly": 29,
+      "machineSeats": 3
+    }
+  ],
+  "checkout": {
+    "plan": "studio",
+    "amount": 29,
+    "currency": "USD",
+    "method": "applePay",
+    "token": "seed_token_applePay",
+    "outcomes": [
+      {
+        "id": "succeed",
+        "profile": "SeedSucceed",
+        "result": "PaymentSuccess"
+      },
+      {
+        "id": "decline",
+        "profile": "SeedDecline",
+        "result": "PaymentDeclined"
+      },
+      {
+        "id": "cancel",
+        "profile": "SeedCancel",
+        "result": "PaymentCancelled"
+      },
+      {
+        "id": "error",
+        "profile": null,
+        "result": "PaymentError"
+      },
+      {
+        "id": "timeout",
+        "profile": "SeedTimeout",
+        "result": "PaymentError"
+      }
+    ]
+  }
+}

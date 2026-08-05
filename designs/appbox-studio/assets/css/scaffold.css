@@ -71,3 +71,11 @@
     grid-template-rows: auto;
   }
 }
+
+/* The header's entitlement/account element (brief (c), _shared.html
+   accountChip) — one compact chip mounted through main_shell's
+   header_extra block, fed by the facade's c.entitlement. It stays visible
+   at every rung: the compact header hides the links/channel/forms, but the
+   account state is the one thing a gated surface must never lose. */
+.shell-account { display: inline-flex; align-items: center; }
+.shell-account-chip { text-decoration: none; white-space: nowrap; }

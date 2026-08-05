@@ -129,3 +129,23 @@
 
 {# The main panel's empty read state (nothing selected yet). #}
 {% macro mainEmpty() %}{{ mp.empty() }}{% endmacro %}
+
+{# ---------- the header's entitlement/account element ----------
+   brief (c): the scaffold shell's header carries the entitlement/account
+   state. One compact chip, fed by the facade's `c.entitlement` (the same
+   object gatedNotice reads), mounted through main_shell's `header_extra`
+   block by both scaffold surfaces. Three states, three destinations:
+   signed-out → Sign in → /auth; free → Upgrade → /workspace/plans;
+   entitled → the plan badge → /workspace/plans. #}
+{% macro accountChip(c) %}
+{% set ent = c.entitlement %}
+<span class="shell-account" data-entitlement="{{ 'signedOut' if not ent.signedIn else ('entitled' if ent.entitled else 'free') }}">
+  {% if not ent.signedIn %}
+  <a class="chip chip--muted shell-account-chip" href="/auth">{{ icon('log-in', {size: 13}) }} {{ t('scaffold.chrome.signIn') }}</a>
+  {% elif not ent.entitled %}
+  <a class="chip chip--accent shell-account-chip" href="{{ ent.accountHref }}">{{ icon('sparkles', {size: 13}) }} {{ t('scaffold.chrome.upgrade') }}</a>
+  {% else %}
+  <a class="chip chip--accent shell-account-chip" href="{{ ent.accountHref }}" title="{{ t('scaffold.chrome.accountTitle') }}">{{ icon('badge-check', {size: 13}) }} {{ t('plans.plan.' ~ ent.plan ~ '.name') }}</a>
+  {% endif %}
+</span>
+{% endmacro %}

@@ -5,6 +5,7 @@ import * as buildLoop from './ui/views/main_shell/build/loop/loop_viewmodel.js';
 import * as settings from './ui/views/workspace_shell/settings/settings_viewmodel.js';
 import * as credentials from './ui/views/workspace_shell/credentials/credential_viewmodel.js';
 import * as config from './ui/views/workspace_shell/config/config_viewmodel.js';
+import * as plans from './ui/views/workspace_shell/plans/plans_viewmodel.js';
 import * as prefs from './ui/common/prefs_viewmodel.js';
 import intakeRoutes from './ui/views/main_shell/intake/routes.intake.js';
 import designRoutes from './ui/views/main_shell/design/routes.design.js';
@@ -51,6 +52,13 @@ export default [
   // workspace.config — targets/locale (config.json mirror), credentials summary, prefs
   ['GET', '/workspace/config', config.page],
   ['POST', '/workspace/config/set', config.set],
+  // workspace.plans — pricing + entitlement state, with the seeded mock
+  // checkout (five outcomes mirroring kit/payments). Sign-out flips the
+  // seeded session and routes to /auth; checkout/apply is the seeded
+  // PaymentSuccess applied to the account.
+  ['GET', '/workspace/plans', plans.page],
+  ['POST', '/workspace/plans/signout', plans.signOut],
+  ['POST', '/workspace/plans/checkout/apply', plans.applyCheckout],
   ['POST', '/prefs/accent', prefs.setAccent],
   ['POST', '/prefs/font', prefs.setFont],
   ['POST', '/prefs/theme', prefs.setTheme],

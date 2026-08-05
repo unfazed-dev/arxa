@@ -55,6 +55,8 @@ The Surface registry is a separate inventory, one entry per Surface — never th
 - `requiresAuth` / `tab` — optional route-table inputs: an auth guard on the compiled route, bottom-tab membership (tab order = registry order).
 - `kits` — optional; the kits the Surface composes (absent on entries that use none).
 
+**The app-shell roster is law.** Every Artifact's registry declares `app.splash` (branded splash), `app.startup` (startup/loading), and `app.unknown` (unknown-route) as real surfaces in its app-level shell — the shell whose surfaces route at top level, ids `app.*` — plus `app.access` (the sign-in gate) iff any entry carries `requiresAuth`. A `surface: null` roster entry does not count: an excluded splash routes to nothing. The freeze enforces the roster — `appbox emit structure` fails naming each missing surface, and the structure gate mirrors the check — so a design without the roster cannot freeze.
+
 A route may reference a registry `id`; the registry does not replace the route table, it indexes the subset of routes that are Surfaces.
 
 ## The .appbox project (live-read)

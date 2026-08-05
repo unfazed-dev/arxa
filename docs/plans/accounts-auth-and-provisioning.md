@@ -28,8 +28,10 @@ noting they bind to the same Supabase identity this plan establishes.
 identity and nothing metered — "anonymous work is free by construction." Sign-in is
 demanded only at the first identity-needing action: GitHub sync, a provider connect
 (Supabase or any kit-backed service), or a paid feature (the scaffold gate — D17, "scaffold
-IS paid"). "Sign-in required up-front" was explicitly rejected. The dashboard/home shell
-renders a signed-out state with a "sign in to sync" affordance rather than blocking entry.
+IS paid"). "Sign-in required up-front" was explicitly rejected. ~~The dashboard/home shell
+renders a signed-out state with a "sign in to sync" affordance rather than blocking entry.~~
+SUPERSEDED: the boot chain (splash → startup → /auth) is the signed-out guard — signed-out
+sessions route to /auth at boot; no surface renders a per-surface signed-out state.
 On web, D27 carries the same local-first principle: anonymous design runs entirely in
 IndexedDB/OPFS, Totem stores nothing for anonymous users, and signed-in users additionally
 get opt-in server-side project sync.

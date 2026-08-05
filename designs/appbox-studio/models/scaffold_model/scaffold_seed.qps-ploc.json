@@ -1,11 +1,11 @@
 {
-  "_readme": "Scaffold picker seed (qps-ploc). Ids + machine enums ONLY — no display prose. Every label renders through t() from l10n/app_<locale>.arb, so the three locale seeds are structurally identical and parity is trivial. Kit ids/phase/topology are copied by value from config/kit-registry.json (24 kits); capability prose is deliberately NOT copied (brief (a): reference by id/tier only). The registry declares no dependency edges, so every edge shown is a design assertion: written explicitly as a depends field on the depending kit (payments -> data), or defaulted by topology. See generate.mjs. A kit reached only through closure is flagged auto (D5) and is NOT pre-selected in this seed.",
+  "_readme": "Scaffold picker seed. Ids + machine enums ONLY — no display prose. Every label renders through t() from l10n/app_<locale>.arb, so the three locale seeds are structurally identical and parity is trivial. Kit ids/phase/topology are copied by value from config/kit-registry.json (24 kits); capability prose is deliberately NOT copied (brief (a): reference by id/tier only). The registry declares no dependency edges, so every edge shown is a design assertion: written explicitly as a depends field on the depending kit (payments -> data), or defaulted by topology. See generate.mjs. A kit reached only through closure is flagged auto (D5) and is NOT pre-selected in this seed.",
   "entitlement": {
     "signedIn": true,
     "entitled": true,
     "plan": "studio",
     "credentialsHref": "/workspace/credentials",
-    "signInHref": "/sign-in",
+    "signInHref": "/auth",
     "upgradeHref": "/workspace/plans"
   },
   "manifest": {
@@ -352,7 +352,7 @@
     "notEntitled": {
       "signedIn": false,
       "entitled": false,
-      "route": "/workspace/credentials"
+      "route": "/workspace/plans"
     }
   }
 }

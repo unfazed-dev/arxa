@@ -16,7 +16,18 @@
         "id": "google",
         "label": "Kontynuuj z Google"
       }
-    ]
+    ],
+    "states": {
+      "signup": {
+        "headline": "Utwórz konto",
+        "lede": "Jedno konto dla każdego projektu w Twoim tailnecie. Wersja prototypowa — każde wejście Cię zaloguje, tak jak logowanie."
+      },
+      "expired": {
+        "headline": "Sesja wygasła",
+        "lede": "Twoja sesja na tej maszynie wygasła. Zaloguj się ponownie, aby wrócić do projektów.",
+        "note": "Nic nie przepadło — panel wraca do miejsca, w którym skończyłeś."
+      }
+    }
   },
   "gates": [
     {

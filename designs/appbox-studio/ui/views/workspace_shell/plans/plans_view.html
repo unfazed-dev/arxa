@@ -1,0 +1,113 @@
+<!-- appbox:provenance
+     generator: appbox  licence: free  project: 662368770980
+     Built with appbox (free tier) — https://appbox.dev
+-->
+{% extends "ui/views/workspace_shell/workspace_shell_view.html" %}
+{% import "ui/common/widgets/primitives.html" as pr %}
+{% block title %}{{ t('plans.pageTitle') }}{% endblock %}
+{% block head_extra %}
+<link rel="stylesheet" href="/assets/css/plans.css">
+{% endblock %}
+
+{# ============================================================================
+   workspace.plans — pricing + account/entitlement state, with the seeded
+   mock checkout.
+
+   Three entitlement lenses (?state=signedout|free|entitled), same facade
+   pattern as scaffold.picker:
+     signedOut — the plans stay visible (the value is legible before the
+                 paywall); the only action is the CTA to /auth.
+     free      — upgrade CTAs on the payable plan.
+     entitled  — current-plan badge, machine seats, the sign-out affordance.
+
+   The checkout card is SEEDED and says so, the way auth says "any input signs
+   in": its five outcomes mirror kit/payments one-for-one — each carries the
+   SeedPaymentsProvider profile that scripts it and the PaymentResult case it
+   resolves to (the fixture's kit mirror), so walking this card walks every
+   branch the built app's kit layer handles.
+============================================================================ #}
+
+{% block surface %}
+<span class="eyebrow">{{ t('plans.eyebrow') }}</span>
+<h1 class="display">{{ t('plans.title') }}</h1>
+<p class="muted">{{ t('plans.lede') }}</p>
+
+{% if signedOut %}
+<aside class="plans-notice" data-lens="signedOut">
+  <h4 class="fact-label">{{ icon('lock', {size: 14}) }} {{ t('plans.signedOut.title') }}</h4>
+  <p>{{ t('plans.signedOut.body') }}</p>
+  {{ pr.ctaLink(signInHref, t('plans.signedOut.cta'), 'chevron-right', 'main') }}
+</aside>
+{% endif %}
+
+<section class="settings-section">
+  <h2>{{ t('plans.plansH') }}</h2>
+  <div class="plan-grid">
+    {% for p in plans %}
+    <article class="plan-card {{ 'is-current' if p.current }}">
+      <header class="plan-head">
+        <h3 class="plan-name">{{ p.name }}</h3>
+        {% if p.current %}<span class="chip chip--accent">{{ icon('badge-check', {size: 13}) }} {{ t('plans.current') }}</span>{% endif %}
+      </header>
+      <p class="plan-price">{{ p.priceLabel }}</p>
+      <p class="muted">{{ p.blurb }}</p>
+      <p class="plan-seats">{{ icon('laptop', {size: 13}) }} {{ p.seatsLabel }}</p>
+      <ul class="plan-features">
+        {% for f in p.features %}<li>{{ icon('check', {size: 13}) }} {{ f }}</li>{% endfor %}
+      </ul>
+      {% if p.upgradeable %}
+      <a class="cta-main plan-upgrade" href="#plans-checkout">{{ t('plans.upgrade', {plan: p.name}) }}</a>
+      {% endif %}
+    </article>
+    {% endfor %}
+  </div>
+</section>
+
+{% if entitled %}
+<section class="settings-section">
+  <h2>{{ t('plans.accountH') }}</h2>
+  <div class="plan-account">
+    <p>
+      <span class="chip chip--accent">{{ icon('badge-check', {size: 13}) }} {{ t('plans.plan.' ~ currentPlan ~ '.name') }}</span>
+      <span class="chip chip--muted">{{ icon('laptop', {size: 13}) }} {{ t('plans.seats.used', {used: machineSeats.used, total: machineSeats.total}) }}</span>
+    </p>
+    <form method="post" action="/workspace/plans/signout">
+      <button type="submit" class="ghost">{{ icon('log-out', {size: 14}) }} {{ t('plans.signOut') }}</button>
+    </form>
+  </div>
+</section>
+{% endif %}
+
+{% if checkout %}
+<section class="settings-section" id="plans-checkout">
+  <h2>{{ t('plans.checkoutH') }}</h2>
+  <p class="settings-note">{{ t('plans.checkout.seeded') }}</p>
+  <p class="checkout-summary">{{ icon('credit-card', {size: 14}) }} {{ t('plans.checkout.summary', {amount: checkout.amountLabel}) }}</p>
+
+  <div class="checkout-outcomes" role="group" aria-label="{{ t('plans.checkout.outcomesAria') }}">
+    {% for o in checkout.outcomes %}
+    <a class="chip {{ 'chip--accent' if o.active else 'chip--muted' }}" href="{{ o.href }}"
+       title="{% if o.profile %}{{ o.profile }} -> {% endif %}{{ o.result }}">{{ o.label }}</a>
+    {% endfor %}
+  </div>
+
+  {% if checkout.active %}
+  <aside class="plans-notice checkout-result checkout-result--{{ checkout.active.id }}" role="status">
+    <h4 class="fact-label">
+      {{ icon('check' if checkout.active.id == 'succeed' else ('timer' if checkout.active.id == 'timeout' else ('circle-alert' if checkout.active.id == 'error' or checkout.active.id == 'decline' else 'x-circle')), {size: 14}) }}
+      {{ checkout.active.title }}
+    </h4>
+    <p class="checkout-kit">{% if checkout.active.profile %}{{ checkout.active.profile }} {{ icon('arrow-right', {size: 12}) }} {% endif %}{{ checkout.active.result }}</p>
+    <p>{{ checkout.active.body }}</p>
+    {% if checkout.active.id == 'succeed' %}
+    <form method="post" action="/workspace/plans/checkout/apply">
+      <button type="submit" class="cta-main">{{ checkout.active.applyLabel }}</button>
+    </form>
+    {% elif checkout.active.id == 'decline' or checkout.active.id == 'timeout' %}
+    {{ pr.ctaLink(checkout.active.retryHref, checkout.active.retryLabel, 'refresh-cw', 'main') }}
+    {% endif %}
+  </aside>
+  {% endif %}
+</section>
+{% endif %}
+{% endblock %}

@@ -17,11 +17,31 @@ void main() {
     tmp.deleteSync(recursive: true);
   });
 
-  void plant(String dir, String registry, String routes, Map<String, String> viewmodels) {
+  // The app-shell roster every compliant fixture design declares (the
+  // freeze-time law): surfaced entries + their viewmodels. `plant` merges
+  // these in by default; pass `roster: false` to test the law itself.
+  final appShellEntries = [
+    {'id': 'app.splash', 'shell': 'app', 'comp': 'AppSplash', 'surface': 'app_shell_app_splash_view'},
+    {'id': 'app.startup', 'shell': 'app', 'comp': 'AppStartup', 'surface': 'app_shell_app_startup_view'},
+    {'id': 'app.unknown', 'shell': 'app', 'comp': 'AppUnknown', 'surface': 'app_shell_app_unknown_view'},
+  ];
+  final appShellVms = {
+    'ui/views/app_shell/splash/splash_viewmodel.js': "export const surfaceId = 'app.splash';\n",
+    'ui/views/app_shell/startup/startup_viewmodel.js': "export const surfaceId = 'app.startup';\n",
+    'ui/views/app_shell/unknown/unknown_viewmodel.js': "export const surfaceId = 'app.unknown';\n",
+  };
+
+  void plant(String dir, String registry, String routes, Map<String, String> viewmodels,
+      {bool roster = true}) {
     Directory('$dir/models/screens_model').createSync(recursive: true);
-    File('$dir/models/screens_model/registry.json').writeAsStringSync(registry);
+    final reg = jsonDecode(registry) as List;
+    if (roster) {
+      reg.addAll(appShellEntries.map((e) => jsonDecode(jsonEncode(e))));
+    }
+    File('$dir/models/screens_model/registry.json').writeAsStringSync(jsonEncode(reg));
     File('$dir/app.routes.js').writeAsStringSync(routes);
-    for (final entry in viewmodels.entries) {
+    final vms = {...viewmodels, if (roster) ...appShellVms};
+    for (final entry in vms.entries) {
       final p = '$dir/${entry.key}';
       File(p).parent.createSync(recursive: true);
       File(p).writeAsStringSync(entry.value);
@@ -53,7 +73,7 @@ void main() {
 
     final d = jsonDecode(File('$a/structure.json').readAsStringSync()) as Map<String, dynamic>;
     final screens = d['screens'] as List;
-    expect(screens.length, 3, reason: 'all three screens emitted (null NOT dropped)');
+    expect(screens.length, 6, reason: 'all screens emitted, roster included (null NOT dropped)');
 
     final splash = screens.firstWhere((s) => (s as Map)['id'] == 'proj.splash') as Map<String, dynamic>;
     expect(splash['surface'], isNull, reason: 'surface:null preserved as the exclusion');
@@ -397,6 +417,90 @@ void main() {
         },
       ]);
       expect(emitStructure(a), 1, reason: 'unresolved edge endpoint fails');
+      expect(File('$a/structure.json').existsSync(), isFalse);
+    });
+  });
+
+  // ---------------------------------------------- the app-shell roster law
+  //
+  // Every frozen design declares app.splash / app.startup / app.unknown in its
+  // app-level shell; app.access joins the roster iff any surface carries
+  // requiresAuth. These plants carry ONLY the app shell (roster: false) so a
+  // failure is attributable to the roster and nothing else.
+  group('app-shell roster law', () {
+    Map<String, Object?> rosterEntry(String id, {bool nullSurface = false}) {
+      final short = id.split('.').last;
+      return {
+        'id': id,
+        'shell': 'app',
+        'comp': 'App${short[0].toUpperCase()}${short.substring(1)}',
+        'surface': nullSurface ? null : 'app_shell_${id.replaceAll('.', '_')}_view',
+      };
+    }
+
+    void plantAppShell(String dir, List<Map<String, Object?>> entries) {
+      plant(
+        dir,
+        jsonEncode(entries),
+        routes,
+        {
+          for (final e in entries)
+            if (e['surface'] != null)
+              'ui/views/app_shell/${e['id']}/${(e['id'] as String).split('.').last}_viewmodel.js':
+                  "export const surfaceId = '${e['id']}';\n",
+        },
+        roster: false,
+      );
+    }
+
+    const trio = ['app.splash', 'app.startup', 'app.unknown'];
+
+    test('a compliant roster passes (requiresAuth: false pulls nothing)', () {
+      final a = '${tmp.path}/r0';
+      plantAppShell(a, [
+        for (final id in trio) rosterEntry(id),
+        {...rosterEntry('app.home'), 'requiresAuth': false},
+      ]);
+      expect(emitStructure(a), 0, reason: 'full roster, no requiresAuth -> green');
+    });
+
+    for (final missing in trio) {
+      test('missing $missing fails the freeze, writes nothing', () {
+        final a = '${tmp.path}/r-no-${missing.split('.').last}';
+        plantAppShell(a, [
+          for (final id in trio)
+            if (id != missing) rosterEntry(id),
+        ]);
+        expect(emitStructure(a), 1, reason: 'roster is hard-required');
+        expect(File('$a/structure.json').existsSync(), isFalse);
+      });
+    }
+
+    test('requiresAuth pulls app.access into the roster — both directions', () {
+      final dash = {...rosterEntry('app.dashboard'), 'requiresAuth': true};
+
+      final noAccess = '${tmp.path}/r-auth-noaccess';
+      plantAppShell(noAccess, [for (final id in trio) rosterEntry(id), dash]);
+      expect(emitStructure(noAccess), 1,
+          reason: 'requiresAuth with no app.access fails');
+      expect(File('$noAccess/structure.json').existsSync(), isFalse);
+
+      final withAccess = '${tmp.path}/r-auth-access';
+      plantAppShell(withAccess,
+          [for (final id in trio) rosterEntry(id), dash, rosterEntry('app.access')]);
+      expect(emitStructure(withAccess), 0,
+          reason: 'app.access satisfies the conditional roster');
+    });
+
+    test('a surface:null roster entry does not satisfy the law', () {
+      final a = '${tmp.path}/r-null';
+      plantAppShell(a, [
+        rosterEntry('app.splash'),
+        rosterEntry('app.startup'),
+        rosterEntry('app.unknown', nullSurface: true),
+      ]);
+      expect(emitStructure(a), 1,
+          reason: 'an excluded app.unknown routes to nothing');
       expect(File('$a/structure.json').existsSync(), isFalse);
     });
   });

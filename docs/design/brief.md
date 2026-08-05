@@ -23,9 +23,15 @@ appbox
 
 - [should/R1 Dogfood] Splash holds while the daemon handshake resolves — brand mark and live status, never a dead-end spinner
 
+#### Startup
+
+- [must/R1 Dogfood] Boot chain splash → startup → /auth: startup resolves the daemon handshake and session state, routing signed-out users to sign-in and signed-in users to the dashboard — the boot chain is the signed-out guard, no per-surface signed-out states
+
 #### Access
 
 - [must/R1 Dogfood] Splash screen while the daemon connects, then sign-in (email + Sign in with Apple + Google, seeded accounts) landing on the dashboard; sign-up, sign-out and session-expired states seeded
+- [must/R1 Dogfood] Sign-up state seeded on /auth alongside sign-in: email + Sign in with Apple + Google account creation
+- [must/R1 Dogfood] Session-expired state seeded: an expired session routes back through the boot chain to /auth with an expired-session notice, then returns to the original destination
 
 #### Dashboard
 
@@ -34,29 +40,33 @@ appbox
 - [must/R1 Dogfood] Pair-a-device entry point on the dashboard opens the safely generated QR pairing modal (short-lived, single-use)
 - [should/R2 Anywhere] Analytics trio: runs/week, stage durations, gate latency
 
-#### Projects
+#### Projects (not yet in registry)
 
 - [must/R1 Dogfood] Project creation is a GenUI wizard generated inline in the chat thread (name + platform targets: iOS/Android/macOS/web)
 - [should/R2 Anywhere] Repo connect (GitHub default, other hosts) deferred to first gate approval; also available in settings
 - [must/R1 Dogfood] Auto-save of every chat action with a saved/saving indicator
 - [must/R1 Dogfood] Header panel shows project name + current stage chip, with click-through to the dashboard/project switcher
 
-#### Pairing
+#### Pairing (not yet in registry)
 
 - [must/R1 Dogfood] One-scan QR pairing: single-use short-lived tailnet pre-auth key + host/nonce/key fingerprint; relayed QR fails the pin
 - [must/R1 Dogfood] Device list with last-seen + revoke; revoke drops the session immediately
 - [must/R1 Dogfood] No third-party cloud relay — self-hosted tailnet only; an agent can never mint an approval
 - [must/R1 Dogfood] Phone/tablet auth view is the pairing flow (scan QR or enter code) — no sign-in forms on touch devices; account sign-in lives on desktop
 
-#### Notifications
+#### Notifications (not yet in registry)
 
 - [must/R1 Dogfood] Push when a gate goes red (deduped per transition), deep-link into the gate card
 - [should/R1 Dogfood] Actionable notification: approve/reject without opening the app
 
-#### Remote
+#### Remote (not yet in registry)
 
 - [must/R1 Dogfood] Self-host tailnet (compose file) or hosted Tailscale from day one; daemon and apps are tailnet nodes in-process; approvals bind to WireGuard node identity
 - [should/R2 Anywhere] Private mesh CA gives trusted HTTPS origins over the mesh (arxa ADR-0036 pattern)
+
+#### Unknown Route
+
+- [should/R1 Dogfood] 404 shell surface: any unmatched route lands on a branded not-found page inside the app shell with a path back to the dashboard — never a bare router error
 
 ### Intake & Story Mapping
 
@@ -120,7 +130,7 @@ appbox
 - [must/R1 Dogfood] Every surface designed at 390/744/1280 from targets alone (literal parity)
 - [must/R1 Dogfood] Target selection labels buildability on this machine (requires macOS)
 - [must/R1 Dogfood] The daemon drafts all screens from the approved story map in one pass; refining happens exclusively in the centered chat
-- [must/R1 Dogfood] Widget-library widgets are Auto Layout by default (flow, gap, padding, alignment; child hug/fill/fixed emitted as flexbox data-attributes); off by default at artboard level, per-frame opt-out
+- [must/R1 Dogfood] Component-library components are Auto Layout by default (flow, gap, padding, alignment; child hug/fill/fixed emitted as flexbox data-attributes); off by default at artboard level, per-frame opt-out
 
 #### Chat
 
@@ -162,9 +172,19 @@ appbox
 
 - [must/R1 Dogfood] Footer panel: read-only stage timeline with proper labels (not clickable; animation kept), project + run state, daemon status + pending-gate dots; in the design shell it also shows the design sub-steps (artboards → inspect · fine-tune → approval → freeze); the old top stage strip is removed
 
-#### Main Chrome
+#### Main Chrome (not yet in registry)
 
 - [must/R1 Dogfood] The main chrome (tab bar, shell switcher, daemon status) is one shared frame across every shell — intake, design, build, surfaces, settings
+
+### Scaffold
+
+#### Kit Picker
+
+- [must/R1 Dogfood] Kit picker at scaffold: per-surface kit selection from targets + capabilities, validated against the kit registry before the paid scaffold run
+
+#### Scaffold Run
+
+- [must/R1 Dogfood] Scaffold run surface: live per-file emission progress; the licence check (D17/D18) blocks the run before the first file write when unpaid
 
 ### Build & Gates
 
@@ -214,7 +234,7 @@ appbox
 #### Deploy
 
 - [must/R1 Dogfood] Per-platform builds from one codebase; unbuildable targets hard-block as a named precondition, never a red gate
-- [must/R1 Dogfood] Payment gate at first deploy: licence required to ship; everything before it free
+- [must/R1 Dogfood] Payment gate at scaffold (D17/D18): licence required to emit the Flutter shell; design + eject before it free
 - [must/R1 Dogfood] Export-always: ordinary Stacked MVVM in my own repo, no export tier
 - [should/R2 Anywhere] Guided store submission (most-cited unmet gap in every builder)
 
@@ -240,10 +260,16 @@ appbox
 #### Settings
 
 - [must/R1 Dogfood] BYO key in OS vault, never logged; no inference metering, cost is yours and visible
-- [must/R1 Dogfood] Flat licence, never per-seat; pay at first deploy
+- [must/R1 Dogfood] Flat licence, never per-seat; pay at scaffold
 - [should/R1 Dogfood] Kit vendoring from targets + capabilities; dependencyMode config from day one
 - [should/R1 Dogfood] Appearance prefs per device: warm light/dark theme + brand accent picker (cyan/violet/blue/ember from the logo)
 - [must/R1 Dogfood] Language level plain/balanced/technical — every user-facing string written three ways; visual metrics render as X/100 match scores (ΔE 2.0 = 95/100 pass bar), technical level keeps raw values
+
+#### Plans
+
+- [must/R1 Dogfood] Plans and pricing surface: flat licence tiers with per-plan entitlement comparison, reachable from settings and from the scaffold paywall
+- [must/R1 Dogfood] Account and entitlement home: current plan, machine/seat activations with self-service deactivation, renewal date
+- [must/R1 Dogfood] Mock checkout with five seeded outcome states mirroring kit/payments: success, declined, cancelled, error, timeout
 
 #### Credentials
 
@@ -263,7 +289,7 @@ appbox
 
 - [must/R2 Anywhere] A visitor gets appbox in 30 seconds: gated pipeline, own-your-code export, pay-at-scaffold
 - [should/R2 Anywhere] The three human gates are the headline, shown not told (recorded gate flow)
-- [must/R2 Anywhere] Pricing page: flat licence, never per-seat, BYO key, pay at first deploy (the anti-credit-rage page)
+- [must/R2 Anywhere] Pricing page: flat licence, never per-seat, BYO key, pay at scaffold (the anti-credit-rage page)
 
 #### Docs
 
@@ -279,7 +305,7 @@ appbox
 #### Download
 
 - [must/R2 Anywhere] Download per platform: macOS dmg, daemon CLI for Windows/Linux, mobile apps, with the honest build matrix
-- [must/R2 Anywhere] Licence purchase and activation, pay-at-scaffold explained before checkout
+- [must/R2 Anywhere] Licence purchase and activation on the website — purchase and activation explained before checkout; the gate itself sits at scaffold
 - [should/R2 Anywhere] Changelog and release notes per version
 
 ## Surface inventory
@@ -287,12 +313,14 @@ appbox
 | id | label | priority | release |
 |----|-------|----------|---------|
 | `app.splash` | Splash | should | R1 Dogfood |
+| `app.startup` | Startup | must | R1 Dogfood |
 | `app.access` | Access | must | R1 Dogfood |
 | `app.dashboard` | Dashboard | must | R1 Dogfood |
-| `app.projects` | Projects | must | R1 Dogfood |
-| `app.pairing` | Pairing | must | R1 Dogfood |
-| `app.notifications` | Notifications | must | R1 Dogfood |
-| `app.remote` | Remote | must | R1 Dogfood |
+| `app.projects` | Projects (not yet in registry) | must | R1 Dogfood |
+| `app.pairing` | Pairing (not yet in registry) | must | R1 Dogfood |
+| `app.notifications` | Notifications (not yet in registry) | must | R1 Dogfood |
+| `app.remote` | Remote (not yet in registry) | must | R1 Dogfood |
+| `app.unknown` | Unknown Route | should | R1 Dogfood |
 | `intake.interview` | Interview | must | R1 Dogfood |
 | `intake.personas` | Personas | must | R1 Dogfood |
 | `intake.surfaces` | Surfaces | must | R1 Dogfood |
@@ -308,7 +336,9 @@ appbox
 | `chat.chat2` | Chat Stage | must | R1 Dogfood |
 | `shell.composer` | Panels | must | R1 Dogfood |
 | `shell.footer` | Footer Panel | must | R1 Dogfood |
-| `main.chrome` | Main Chrome | must | R1 Dogfood |
+| `main.chrome` | Main Chrome (not yet in registry) | must | R1 Dogfood |
+| `scaffold.picker` | Kit Picker | must | R1 Dogfood |
+| `scaffold.run` | Scaffold Run | must | R1 Dogfood |
 | `build.loop` | Loop | must | R1 Dogfood |
 | `build.gates` | Gates | must | R1 Dogfood |
 | `build.visual` | Visual | must | R1 Dogfood |
@@ -320,6 +350,7 @@ appbox
 | `first.honesty` | Honesty | must | R1 Dogfood |
 | `workspace.projects2` | Projects | must | R1 Dogfood |
 | `workspace.settings` | Settings | must | R1 Dogfood |
+| `workspace.plans` | Plans | must | R1 Dogfood |
 | `workspace.credentials` | Credentials | must | R1 Dogfood |
 | `workspace.config` | Config | must | R1 Dogfood |
 | `website.site` | Site | must | R2 Anywhere |

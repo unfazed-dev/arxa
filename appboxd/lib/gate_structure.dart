@@ -10,6 +10,10 @@
 //   S1b tracked — structure.json committed (porcelain clean for it; git diff
 //                 --exit-code cannot see a new file)
 //   S2  resolve — every shell root lands on a screen WITH a surface
+//   S3  roster  — the app-shell roster law: app.splash / app.startup /
+//                 app.unknown declared (plus app.access when any surface
+//                 carries requiresAuth) — mirrors the freeze check in
+//                 emit_structure.dart via the same shared function
 
 import 'dart:convert';
 import 'dart:io';
@@ -118,6 +122,35 @@ GateResult structureGate(GateContext ctx) {
     if (s2.exclusions != null) details.add('    ${s2.exclusions}');
   } else {
     groupFails++;
+  }
+
+  // ---- S3: the app-shell roster law (mirrors emit_structure's freeze check) ----
+  // Runs the EMITTER's own roster function against the authored registry —
+  // the same trick as the S1c block loaders, so gate and freeze can never
+  // disagree on what the roster demands. requiresAuth never reaches
+  // structure.json, which is why this reads the registry, not the screens
+  // list; S1a has already proven the two in sync.
+  final rosterRegFile =
+      File('$designRoot/models/screens_model/registry.json');
+  if (rosterRegFile.existsSync()) {
+    try {
+      final reg = jsonDecode(rosterRegFile.readAsStringSync());
+      if (reg is List) {
+        final missing = missingAppShellRoster(reg);
+        if (missing.isEmpty) {
+          ok('structure: the app-shell roster is declared '
+              '(app.splash / app.startup / app.unknown, app.access when '
+              'requiresAuth is in play)');
+        } else {
+          fail('structure: registry is missing mandated app-shell surfaces: '
+              '${missing.join(', ')} — every frozen design declares app.splash, '
+              'app.startup and app.unknown in its app-level shell (plus '
+              'app.access when any surface carries requiresAuth)');
+        }
+      }
+    } catch (_) {
+      // An unparsable registry is already a S1a drift failure above.
+    }
   }
 
   if (groupFails > 0) {

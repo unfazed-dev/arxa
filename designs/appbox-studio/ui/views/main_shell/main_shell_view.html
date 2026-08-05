@@ -14,7 +14,7 @@
    shell does not mount does not exist in it — there is no empty box and no
    reserved height. #}
 {% set HP = {} %}
-{{ hp.open(HP) }}{{ chrome.headerBody(activeShell, prefs, project) }}{{ hp.close(HP) }}
+{{ hp.open(HP) }}{{ chrome.headerBody(activeShell, prefs, project) }}{% block header_extra %}{# a hosted shell's compact header addition (scaffold mounts its account chip here) #}{% endblock %}{{ hp.close(HP) }}
 {{ chrome.offCanvas(activeShell, prefs, project) }}
 <main class="shell-main {% block main_class %}{% endblock %}">
   {% block surface %}{# every shell overrides this — there is no catalog page #}{% endblock %}

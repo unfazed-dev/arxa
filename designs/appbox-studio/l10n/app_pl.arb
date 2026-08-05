@@ -29,6 +29,7 @@
   "screen.label.app.startup": "Uruchamianie",
   "screen.label.app.access": "Dostęp",
   "screen.label.app.dashboard": "Panel",
+  "screen.label.app.unknown": "Nie znaleziono",
   "screen.label.intake.interview": "Wywiad",
   "screen.label.intake.mapping": "Mapowanie",
   "screen.label.intake.live": "Mapa na żywo",
@@ -83,6 +84,7 @@
   "auth.pageTitle": "Appbox Studio — Logowanie",
   "auth.email": "E-mail",
   "auth.continue": "Kontynuuj",
+  "auth.createAccount": "Utwórz konto",
   "auth.or": "lub",
   "splash.connecting": "Łączenie z daemonem appbox",
   "settings.pageTitle": "Appbox Studio — Ustawienia",
@@ -833,6 +835,94 @@
   "cfg.jargon.plain": "prosty",
   "cfg.jargon.balanced": "zbalansowany",
   "cfg.jargon.technical": "techniczny",
+  "screen.label.workspace.plans": "Plany",
+  "plans.pageTitle": "Appbox Studio — Plany",
+  "plans.eyebrow": "obszar roboczy",
+  "plans.title": "Plany",
+  "plans.lede": "Co daje każdy poziom i na którym jest to konto. Kasowanie poniżej jest sztuczne — przechodzi przez każdy wynik, jaki może zwrócić zestaw płatności.",
+  "plans.plansH": "Plany",
+  "plans.price": "{amount} USD/mies.",
+  "@plans.price": {
+    "placeholders": {
+      "amount": {
+        "type": "int",
+        "example": "29"
+      }
+    }
+  },
+  "plans.seats": "{count, plural, one{{count} stanowisko maszynowe} few{{count} stanowiska maszynowe} many{{count} stanowisk maszynowych} other{{count} stanowiska maszynowego}}",
+  "plans.seats.used": "używane {used} z {total} stanowisk maszynowych",
+  "@plans.seats.used": {
+    "placeholders": {
+      "used": {
+        "type": "int",
+        "example": "2"
+      },
+      "total": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "plans.current": "Bieżący plan",
+  "plans.upgrade": "Przejdź na {plan}",
+  "@plans.upgrade": {
+    "placeholders": {
+      "plan": {
+        "type": "String",
+        "example": "Studio"
+      }
+    }
+  },
+  "plans.plan.free.name": "Bezpłatny",
+  "plans.plan.free.blurb": "Każdy etap potoku na tej maszynie, jeden projekt naraz.",
+  "plans.plan.free.feature.1": "Intake, projektowanie, rusztowanie i budowa",
+  "plans.plan.free.feature.2": "1 stanowisko maszynowe",
+  "plans.plan.free.feature.3": "Wsparcie społeczności",
+  "plans.plan.studio.name": "Studio",
+  "plans.plan.studio.blurb": "Cały tailnet: każda maszyna, każdy projekt, bramki z telefonu.",
+  "plans.plan.studio.feature.1": "Wszystko z planu Bezpłatnego",
+  "plans.plan.studio.feature.2": "3 stanowiska maszynowe",
+  "plans.plan.studio.feature.3": "Zdalne zatwierdzanie bramek",
+  "plans.signedOut.title": "Zaloguj się, aby zarządzać planem",
+  "plans.signedOut.body": "Poziomy są poniżej — wartość widać przed płatnym murem. Zalogowanie wiąże jeden z nich z tym kontem.",
+  "plans.signedOut.cta": "Zaloguj się",
+  "plans.accountH": "Konto",
+  "plans.signOut": "Wyloguj się",
+  "plans.checkoutH": "Kasa",
+  "plans.checkout.seeded": "Sztuczne: każdy wynik jest zaprogramowany — każdy wskazuje profil początkowy kit/payments i gałąź PaymentResult, do której prowadzi.",
+  "plans.checkout.summary": "Plan Studio — {amount} przez Apple Pay (sztuczne)",
+  "@plans.checkout.summary": {
+    "placeholders": {
+      "amount": {
+        "type": "String",
+        "example": "29 USD/mies."
+      }
+    }
+  },
+  "plans.checkout.outcomesAria": "Sztuczne wyniki płatności",
+  "plans.checkout.outcome.succeed.label": "Sukces",
+  "plans.checkout.outcome.succeed.title": "Arkusz płatności zwrócił token",
+  "plans.checkout.outcome.succeed.body": "PaymentSuccess — portfel wyemitował seed_token_applePay. Nic jeszcze nie obciążono; token trafia na Twój serwer do realizacji.",
+  "plans.checkout.outcome.decline.label": "Odrzucenie",
+  "plans.checkout.outcome.decline.title": "Karta odrzucona",
+  "plans.checkout.outcome.decline.body": "PaymentDeclined — sam instrument został odrzucony (niewystarczające środki). Spróbuj ponownie inną metodą; to nie błąd do zgłoszenia.",
+  "plans.checkout.outcome.cancel.label": "Anulowanie",
+  "plans.checkout.outcome.cancel.title": "Arkusz zamknięty",
+  "plans.checkout.outcome.cancel.body": "PaymentCancelled — użytkownik zamknął arkusz. To nie błąd; wskazówka zestawu brzmi: nic nie pokazuj.",
+  "plans.checkout.outcome.error.label": "Błąd",
+  "plans.checkout.outcome.error.title": "Coś się zepsuło",
+  "plans.checkout.outcome.error.body": "PaymentError — błędna konfiguracja, sieć lub wyjątek wtyczki. Użytkownik nie naprawi tego ponowną próbą; zaloguj i powiedz to wprost.",
+  "plans.checkout.outcome.timeout.label": "Przekroczenie czasu",
+  "plans.checkout.outcome.timeout.title": "Przekroczono czas",
+  "plans.checkout.outcome.timeout.body": "SeedTimeout — arkusz nigdy się nie domknął, a po opóźnieniu zestaw zwraca PaymentError('Seed payment timed out'). Przekroczenie czasu to błąd, nie odrzucenie ani anulowanie.",
+  "plans.checkout.retry": "Spróbuj ponownie inną metodą",
+  "plans.checkout.apply": "Zastosuj do tego konta (sztuczne)",
+  "unknown.pageTitle": "Appbox Studio — Nie znaleziono",
+  "unknown.code": "404",
+  "unknown.msg": "Brak trasy dla tej ścieżki.",
+  "unknown.hint": "Nic z otwartego nie przepadło — chybiło tylko to żądanie.",
+  "unknown.home": "Wróć do panelu",
   "screen.label.intake.personas": "Persony",
   "screen.label.intake.surfaces": "Powierzchnie",
   "screen.label.intake.flows": "Przepływy",
@@ -945,6 +1035,9 @@
   "scaffold.picker.autoCount": "{count} dodano automatycznie",
   "scaffold.picker.unreadyCount": "{count} wciąż wymaga kluczy",
   "scaffold.picker.eyebrow": "Wybór zestawów",
+  "scaffold.chrome.signIn": "Zaloguj się",
+  "scaffold.chrome.upgrade": "Ulepsz",
+  "scaffold.chrome.accountTitle": "Plan i konto — plany obszaru roboczego",
   "scaffold.picker.chip.selected": "{count} wybranych",
   "scaffold.picker.chip.unready": "{count} wymaga kluczy",
   "scaffold.picker.thread.detected": "{count} zestawów wykrytych w Twoim projekcie",

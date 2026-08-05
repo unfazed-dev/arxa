@@ -36,6 +36,15 @@
     "route": "/dashboard"
   },
   {
+    "id": "app.unknown",
+    "label": "Not Found",
+    "surface": "app_shell_app_unknown_view",
+    "shell": "app",
+    "comp": "AppUnknown",
+    "labelKey": "screen.label.app.unknown",
+    "route": "/unknown"
+  },
+  {
     "id": "intake.interview",
     "label": "Interview",
     "surface": "main_shell_intake_interview_view",
@@ -304,6 +313,15 @@
     "comp": "WorkspaceConfig",
     "labelKey": "screen.label.workspace.config",
     "route": "/workspace/config"
+  },
+  {
+    "id": "workspace.plans",
+    "label": "Plans",
+    "surface": "workspace_shell_workspace_plans_view",
+    "shell": "workspace",
+    "comp": "WorkspacePlans",
+    "labelKey": "screen.label.workspace.plans",
+    "route": "/workspace/plans"
   },
   {
     "id": "website.site",

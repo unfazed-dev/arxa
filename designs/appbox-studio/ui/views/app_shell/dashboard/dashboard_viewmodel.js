@@ -10,9 +10,10 @@ const VIEW = 'ui/views/app_shell/dashboard/dashboard_view.html';
 export const page = async (c, h) =>
   h.render(c, VIEW, { activeShell: 'app', ...(await facade.dashboardContext(h.session(c).data, h.locale(c))) });
 
-// The Surfaces catalog shell is retired — the app shell's dashboard IS the
-// studio home, so the root lands there.
-export const root = (c, h) => c.redirect('/dashboard', 303);
+// The app shell's dashboard IS the studio home, but the ENTRY is the real
+// chain: root lands on /splash, which auto-advances splash → startup, and
+// startup branches to /auth (signed out) or /dashboard (signed in).
+export const root = (c, h) => c.redirect('/splash', 303);
 
 // A project card picks the current project (writes ~/.appbox/current), 303
 // back to the dashboard.

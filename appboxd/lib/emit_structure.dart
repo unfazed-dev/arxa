@@ -82,6 +82,16 @@ Map<String, dynamic>? buildStructure(String designRoot) {
     return null;
   }
 
+  // ---- the app-shell roster law ----
+  final missingRoster = missingAppShellRoster(registry);
+  if (missingRoster.isNotEmpty) {
+    stderr.writeln('FAIL: registry is missing mandated app-shell surfaces: '
+        '${missingRoster.join(', ')} — every frozen design declares app.splash, '
+        'app.startup and app.unknown in its app-level shell (plus app.access '
+        'when any surface carries requiresAuth)');
+    return null;
+  }
+
   // ---- flows (optional): the triad's flows lens, edges over registry ids ----
   List? flows;
   final flowsFile = File('${root.path}/models/screens_model/flows.json');
@@ -643,6 +653,39 @@ String? shellDir(String surface) {
   final idx = surface.indexOf('_shell_');
   if (idx < 0) return null;
   return '${surface.substring(0, idx)}_shell';
+}
+
+// ── the app-shell roster law ──────────────────────────────────────────────
+// Every frozen design declares these surfaces in its app-level shell — the
+// shell whose surfaces route at top level, registry ids `app.*`:
+//   app.splash  — the branded splash view
+//   app.startup — the startup/loading view
+//   app.unknown — the unknown-route (404) view
+// `app.access` (the sign-in gate) joins the roster iff any registry surface
+// carries `requiresAuth`. Enforced here at freeze and mirrored in the
+// structure gate, which calls this same function so the two can never
+// disagree on what the roster demands.
+const appShellRoster = ['app.splash', 'app.startup', 'app.unknown'];
+
+/// Roster ids [registry] fails to declare — absent, or declared with
+/// `surface: null` (an excluded splash routes to nothing, so exclusion does
+/// not satisfy the law). Empty when the design is compliant.
+List<String> missingAppShellRoster(List registry) {
+  final surfaced = <String>{};
+  var needsAccess = false;
+  for (final e in registry) {
+    if (e is! Map) continue;
+    final ra = e['requiresAuth'];
+    if (ra != null && ra != false) needsAccess = true;
+    final surface = e['surface'];
+    if (e['id'] is String && surface is String && surface.isNotEmpty) {
+      surfaced.add(e['id'] as String);
+    }
+  }
+  return [
+    for (final id in [...appShellRoster, if (needsAccess) 'app.access'])
+      if (!surfaced.contains(id)) id,
+  ];
 }
 
 /// Load the valid kit dir names from config/kit-registry.json at the repo root

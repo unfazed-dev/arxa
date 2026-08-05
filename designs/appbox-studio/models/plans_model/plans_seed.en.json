@@ -1,0 +1,36 @@
+{
+  "_readme": "Plans + mock-checkout seed. Ids + machine enums + numbers ONLY — no display prose (every label renders through t() from l10n/app_<locale>.arb, so the three locale seeds are structurally identical and parity is trivial; hrefs are computed in the facade, never seeded, the same split scaffold_facade uses). The checkout outcomes mirror kit/payments one-for-one: succeed/decline/cancel/timeout are the SeedPaymentsProvider profiles (SeedSucceed/SeedDecline/SeedCancel/SeedTimeout, kit/payments/lib/src/providers/seed/seed_payments_provider.dart) and error is the plain PaymentError branch — SeedTimeout itself RESOLVES to PaymentError('Seed payment timed out'), which is why the design shows five states over the kit's four PaymentResult cases. See generate.mjs.",
+  "account": {
+    "plan": "studio",
+    "machineSeats": {
+      "used": 2,
+      "total": 3
+    }
+  },
+  "plans": [
+    {
+      "id": "free",
+      "monthly": 0,
+      "machineSeats": 1
+    },
+    {
+      "id": "studio",
+      "monthly": 29,
+      "machineSeats": 3
+    }
+  ],
+  "checkout": {
+    "plan": "studio",
+    "amount": 29,
+    "currency": "USD",
+    "method": "applePay",
+    "token": "seed_token_applePay",
+    "outcomes": [
+      "succeed",
+      "decline",
+      "cancel",
+      "error",
+      "timeout"
+    ]
+  }
+}

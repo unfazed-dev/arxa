@@ -20,6 +20,11 @@
 //   failed    — a write was refused; the run rolled back
 //   blocked   — the precondition is absent (structure not frozen)
 import * as repo from '../repositories/scaffold_run_repository.js';
+// The header's account chip (_shared.html accountChip) reads the picker
+// fixture's seeded entitlement — composing a second repository is exactly
+// what a facade is for. Run has no entitlement lens of its own; the seeded
+// default (signed-in, studio plan) is the state this surface renders.
+import * as pickerRepo from '../repositories/scaffold_repository.js';
 
 const STATES = ['pre', 'completed', 'warning', 'failed', 'blocked'];
 const PERSISTABLE_PANELS = ['composer', 'activity'];
@@ -79,6 +84,8 @@ export const context = (session = {}, t = (k) => k, locale = 'en', screen = 'com
     panelSize: panelSizeFor(s, 'activity'),
     panelSizeHref: '/scaffold/run/panel/size/activity/',
     stageEyebrow: t('scaffold.run.eyebrow'),
+    // brief (c): the shell header carries the entitlement/account element.
+    entitlement: { ...pickerRepo.entitlement(locale), signedIn: true, accountHref: '/workspace/plans' },
     chips: [
       { label: t('scaffold.run.chip.structure', { revision: structure.revision }) },
       { label: t('scaffold.run.chip.kits', { count: counts.kits }) },

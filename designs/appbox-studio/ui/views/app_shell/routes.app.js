@@ -7,6 +7,7 @@
 import * as splash from './splash/splash_viewmodel.js';
 import * as startup from './startup/startup_viewmodel.js';
 import * as auth from './auth/auth_viewmodel.js';
+import * as unknown from './unknown/unknown_viewmodel.js';
 import * as dashboard from './dashboard/dashboard_viewmodel.js';
 
 export default [
@@ -18,6 +19,10 @@ export default [
   ['GET', '/startup', startup.page],
   ['GET', '/auth', auth.page],
   ['POST', '/auth/signin', auth.signIn],
+
+  // app.unknown — the full-page 404 landing. The htmx 404 toast retarget
+  // (base.html) stays for interactions; this is where a whole-page miss lands.
+  ['GET', '/unknown', unknown.page],
 
   // app.dashboard — needs-you strip, LIVE ~/.appbox project grid, analytics,
   // QR modal, wizard

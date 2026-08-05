@@ -7,6 +7,7 @@
 {% import "ui/common/widgets/primitives.html" as pr %}
 {% block title %}{{ t('scaffold.picker.pageTitle') }}{% endblock %}
 {% block main_class %}shell-main-loop shell-main-picker{% endblock %}
+{% block header_extra %}{{ sh.accountChip(c) }}{% endblock %}
 {% block head_extra %}
 <link rel="stylesheet" href="/assets/css/scaffold-picker.css">
 {% endblock %}

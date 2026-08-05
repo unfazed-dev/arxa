@@ -229,9 +229,13 @@ export const context = (session = {}, t = (k) => k, locale = 'en', screen = 'suc
     entitlement: {
       ...ent,
       signedIn: !signedOut,
-      // Signed-out goes to sign-in; not-entitled goes to the upgrade path.
-      // Read only by gatedNotice, so signedOut is the only split that matters.
-      ctaHref: signedOut ? ent.signInHref || '/sign-in' : ent.upgradeHref || ent.credentialsHref,
+      // Signed-out goes to auth; not-entitled goes to the upgrade path. Read
+      // by gatedNotice and the shell header's account chip, so signedOut is
+      // the only split that matters. /auth and /workspace/plans both resolve.
+      ctaHref: signedOut ? ent.signInHref || '/auth' : ent.upgradeHref || '/workspace/plans',
+      // The account/plans surface is the header chip's destination in every
+      // signed-in state — entitled or not.
+      accountHref: '/workspace/plans',
     },
     kits,
     groups,

@@ -482,6 +482,21 @@ class DesignServer {
       }
       if (method == 'GET' && _tryServeArtifactFile(req, path)) return;
 
+      // The artifact's own not-found surface. A design that registers a
+      // GET /unknown route (the '<shell>.unknown' surface — e.g.
+      // appbox-studio's app.unknown) has authored where a whole-page miss
+      // should land, so render THAT under a 404 by dispatching internally to
+      // its registered route. Fragment (htmx) misses fall through to the
+      // toast retarget below: a retargeted panel fragment must not be a whole
+      // page. An artifact with no such route gets the server's own error
+      // page, exactly as before.
+      if (method == 'GET' &&
+          !_isHtmx(req) &&
+          _matchRoute('GET', '/unknown') != null) {
+        return await _dispatch(req, method, path,
+            dispatchPath: '/unknown', statusOverride: 404);
+      }
+
       await _writeError(req, 404, 'errorSurface.notFound', _msgNotFound,
           vars: {'method': method, 'path': path});
     } catch (e, st) {
@@ -569,7 +584,13 @@ class DesignServer {
     return true;
   }
 
-  Future<void> _dispatch(HttpRequest req, String method, String path) async {
+  /// [dispatchPath] forwards the request to a DIFFERENT worker route than the
+  /// one asked for (the 404 catch-all rendering the artifact's `/unknown`
+  /// surface); [statusOverride] pins the wire status regardless of what the
+  /// handler answered, because that surface's own route correctly answers 200
+  /// while a miss must say 404.
+  Future<void> _dispatch(HttpRequest req, String method, String path,
+      {String? dispatchPath, int? statusOverride}) async {
     final headers = <String, String>{};
     req.headers.forEach((k, v) => headers[k] = v.join(','));
     String? body;
@@ -640,7 +661,7 @@ class DesignServer {
         // map meant a viewmodel could read a timer belonging to someone else.
         'timers': Map<String, dynamic>.from(_timers[sid] ?? const {}),
       };
-      final r = await _worker.dispatch(method, req.uri.toString(),
+      final r = await _worker.dispatch(method, dispatchPath ?? req.uri.toString(),
           headers: headers, body: body, state: state);
       if (r.session != null) {
         _sessions[sid!] =
@@ -653,7 +674,7 @@ class DesignServer {
       return r;
     });
 
-    req.response.statusCode = resp.status;
+    req.response.statusCode = statusOverride ?? resp.status;
     resp.headers.forEach((k, v) => req.response.headers.add(k, v));
     if (minted) {
       req.response.headers.add(

@@ -7,7 +7,8 @@ import * as facade from '../../../../services/facades/app_facade.js';
 
 const VIEW = 'ui/views/app_shell/auth/auth_view.html';
 
-export const page = (c, h) => h.render(c, VIEW, facade.authContext(h.locale(c)));
+export const page = (c, h) =>
+  h.render(c, VIEW, facade.authContext(h.locale(c), c.req.query('state')));
 
 // Seeded auth: any input signs in. 303 to the dashboard (hx-boost follows it).
 export const signIn = async (c, h) => {

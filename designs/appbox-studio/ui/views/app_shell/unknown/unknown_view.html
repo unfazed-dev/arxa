@@ -1,0 +1,21 @@
+<!-- appbox:provenance
+     generator: appbox  licence: free  project: 662368770980
+     Built with appbox (free tier) — https://appbox.dev
+-->
+{% extends "ui/common/base.html" %}
+{% block title %}{{ t('unknown.pageTitle') }}{% endblock %}
+
+{% block content %}
+{# Chromeless 404 landing — the full-page counterpart of the htmx 404 toast
+   retarget (base.html htmx-config, which STAYS for interactions: a fragment
+   that misses still lands in #toasts, never this page). Same error-page
+   classes the design server's own error page renders (error_surface.css is
+   loaded by base.html), so a missing route reads identically whether the
+   server or this surface answers it. #}
+<main class="error-page">
+  <p class="error-page-code">{{ t('unknown.code') }}</p>
+  <h1 class="error-page-msg">{{ t('unknown.msg') }}</h1>
+  <p class="error-page-hint">{{ t('unknown.hint') }}</p>
+  <a class="error-page-home" href="/">{{ t('unknown.home') }}</a>
+</main>
+{% endblock %}

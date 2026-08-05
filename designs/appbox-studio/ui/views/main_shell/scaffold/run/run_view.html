@@ -8,6 +8,7 @@
 
 {% block title %}{{ t('scaffold.run.pageTitle') }}{% endblock %}
 {% block main_class %}shell-main-loop shell-main-scaffold-run{% endblock %}
+{% block header_extra %}{{ sh.accountChip(c) }}{% endblock %}
 {% block head_extra %}
 <link rel="stylesheet" href="/assets/css/scaffold-run.css">
 {% endblock %}

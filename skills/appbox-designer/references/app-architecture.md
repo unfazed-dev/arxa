@@ -166,6 +166,25 @@ Declare it while designing. Back-filling `surfaceId` after the fact means
 guessing which entry a file was meant to be — that is the same inference the
 export exists to replace.
 
+### The app-shell roster is law
+
+Every appbox design — no exceptions — declares these surfaces in its
+app-level shell (the shell whose surfaces route at top level, registry ids
+`app.*`):
+
+| id | what it is |
+|---|---|
+| `app.splash` | the branded splash view |
+| `app.startup` | the startup/loading view |
+| `app.unknown` | the unknown-route (404) view |
+| `app.access` | the sign-in gate — required **iff** any registry surface carries `requiresAuth` |
+
+Each must be a real surface (`surface` set, viewmodel declaring the
+`surfaceId`) — a `surface: null` roster entry routes to nothing and does not
+satisfy the law. The freeze enforces this: `appbox emit structure` fails
+naming each missing mandated surface, and the structure gate mirrors the
+same check, so a design without the roster cannot freeze.
+
 ## 3. Routes — `app.routes.js`
 
 Exports two things:
@@ -220,6 +239,7 @@ mechanical — and each one **can fail**, which is the point:
 | surface join | a viewmodel's `surfaceId` matches no registry entry |
 | coverage | a registry entry with a non-null `surface` has no directory |
 | orphan | a surface directory no entry declares |
+| app-shell roster | `app.splash`/`app.startup`/`app.unknown` missing (or `surface: null`), or `app.access` missing while a surface carries `requiresAuth` |
 | `shellRoots` | empty, or names a shell absent from the registry |
 | ladder | a surface never rendered at an active rung |
 | flows join | a `flows` edge's `from`/`to` matches no registry entry |

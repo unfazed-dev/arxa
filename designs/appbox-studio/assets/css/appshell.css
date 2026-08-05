@@ -86,6 +86,7 @@
 }
 .auth-card .display { margin: 0; font-size: 1.5rem; }
 .auth-card > .muted { margin: 0; }
+.auth-note { display: inline-flex; align-items: center; gap: .35rem; }
 .auth-form { display: flex; flex-direction: column; gap: .5rem; margin: 0; }
 .auth-label { font-size: .78rem; font-weight: 500; color: var(--tx-2); }
 .auth-card input[type="email"], .auth-card input[type="text"], .wizard-form input[type="text"] {

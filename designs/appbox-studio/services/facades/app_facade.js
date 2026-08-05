@@ -28,7 +28,27 @@ export const startupContext = (sd, t = (k) => k, locale = 'en') => ({
   advanceHref: S(sd).user ? '/dashboard' : '/auth',
 });
 
-export const authContext = (locale = 'en') => ({ account: repo.account(locale), auth: repo.auth(locale) });
+// Auth gains two seeded lens states via ?state=, same pattern as the picker:
+// signup (the sign-up pitch) and expired (session timed out — the entry
+// chain's signed-out branch lands here). Both keep the seeded contract:
+// any input signs in. An unknown state falls back to plain sign-in.
+const AUTH_STATES = ['signup', 'expired'];
+
+export const authContext = (locale = 'en', state) => {
+  const base = repo.auth(locale);
+  const lens = AUTH_STATES.includes(String(state || '').toLowerCase()) ? String(state).toLowerCase() : null;
+  const variant = lens ? base.states[lens] : null;
+  return {
+    account: repo.account(locale),
+    auth: {
+      ...base,
+      headline: variant?.headline ?? base.headline,
+      lede: variant?.lede ?? base.lede,
+      note: variant?.note ?? null,
+      mode: lens ?? 'signin',
+    },
+  };
+};
 
 export const signIn = (sd, email, provider, locale = 'en') => {
   S(sd).user = { email: email || repo.account(locale).email, via: provider || 'email' };
@@ -231,4 +251,107 @@ export const setConfig = (sd, form) => {
   cfg.targets = targets.length ? targets : ['macos']; // at least one target
   const locale = String(form.defaultLocale || '');
   if (CONFIG_LOCALES.includes(locale)) cfg.defaultLocale = locale;
+};
+
+// ---------- plans + mock checkout ----------
+// workspace.plans — pricing + account/entitlement state, and the seeded
+// checkout that walks every branch kit/payments handles. Same lens pattern as
+// the scaffold picker: `?state=` picks the entitlement lens, `?pay=` picks
+// the checkout outcome; an explicit lens wins over the session, and the
+// session wins over the seeded default (signed-in, free).
+import * as plansRepo from '../repositories/plans_repository.js';
+
+const PLAN_LENSES = ['signedout', 'free', 'entitled'];
+
+// The effective lens: explicit ?state= > session (signed-out / upgraded) >
+// seeded default (free — the surface's main job is the upgrade pitch).
+const planLens = (s, state) => {
+  const lens = String(state || '').toLowerCase();
+  if (PLAN_LENSES.includes(lens)) return lens;
+  if (!s.user) return 'signedout';
+  return s.plan === 'studio' ? 'entitled' : 'free';
+};
+
+export const plansContext = (sd, t = (k) => k, locale = 'en', { state, pay } = {}) => {
+  const s = S(sd);
+  const lens = planLens(s, state);
+  const signedOut = lens === 'signedout';
+  const entitled = lens === 'entitled';
+  const seedAccount = plansRepo.account(locale);
+
+  const plans = plansRepo.plans(locale).map((p) => ({
+    ...p,
+    name: t(`plans.plan.${p.id}.name`),
+    blurb: t(`plans.plan.${p.id}.blurb`),
+    features: [1, 2, 3].map((i) => t(`plans.plan.${p.id}.feature.${i}`)),
+    priceLabel: t('plans.price', { amount: p.monthly }),
+    seatsLabel: t('plans.seats', { count: p.machineSeats }),
+    current: entitled && p.id === seedAccount.plan,
+    // The upgrade CTA lives on the payable plan only, and only while there is
+    // something to upgrade FROM. Signed-out gets the sign-in CTA instead —
+    // same split as the picker's gatedNotice.
+    upgradeable: !signedOut && !entitled && p.id === plansRepo.checkout(locale).plan,
+  }));
+
+  // The mock checkout: five seeded outcomes mirroring kit/payments one-for-one
+  // (the fixture carries each outcome's SeedPaymentProfile + PaymentResult
+  // case). Only meaningful to a signed-in user with something to buy.
+  const checkout = plansRepo.checkout(locale);
+  const activePay = checkout.outcomes.some((o) => o.id === pay) ? pay : null;
+  const checkoutCtx = {
+    ...checkout,
+    amountLabel: t('plans.price', { amount: checkout.amount }),
+    outcomes: checkout.outcomes.map((o) => ({
+      ...o,
+      label: t(`plans.checkout.outcome.${o.id}.label`),
+      href: `/workspace/plans?state=${lens}&pay=${o.id}`,
+      active: o.id === activePay,
+    })),
+    active: activePay
+      ? {
+          id: activePay,
+          ...checkout.outcomes.find((o) => o.id === activePay),
+          title: t(`plans.checkout.outcome.${activePay}.title`),
+          body: t(`plans.checkout.outcome.${activePay}.body`),
+          // The retry path a PaymentDeclined branch offers: try again (the
+          // seed flips to succeed — the kit's own profile-flip idiom).
+          retryHref: `/workspace/plans?state=${lens}&pay=succeed`,
+          retryLabel: t('plans.checkout.retry'),
+          // Only the success branch mutates anything: applying the seeded
+          // token flips the session to the paid plan. The form's action is a
+          // literal in the view (the wiring selftest reads markup), so there
+          // is no applyHref here.
+          applyLabel: t('plans.checkout.apply'),
+        }
+      : null,
+  };
+
+  return {
+    state: lens,
+    signedOut,
+    entitled,
+    user: s.user,
+    plans,
+    currentPlan: entitled ? seedAccount.plan : null,
+    machineSeats: entitled ? seedAccount.machineSeats : null,
+    checkout: signedOut ? null : checkoutCtx,
+    signInHref: '/auth',
+  };
+};
+
+// Sign-out flips the seeded session to signed-out (and drops the seeded
+// upgrade) and the route handler 303s to /auth — the mirror of auth's
+// "any input signs in".
+export const signOut = (sd) => {
+  const s = S(sd);
+  s.user = null;
+  delete s.plan;
+};
+
+// The seeded PaymentSuccess applied: the wallet token "captured", the account
+// now on the paid plan. Session state, never seed state.
+export const applyUpgrade = (sd, locale = 'en') => {
+  const s = S(sd);
+  if (!s.user) s.user = { email: repo.account(locale).email, via: 'seed' };
+  s.plan = plansRepo.account(locale).plan;
 };
