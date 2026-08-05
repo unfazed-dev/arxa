@@ -14,14 +14,20 @@
 //         redundant second layer behind scaffoldMain's primary hook)
 //   §6 fresh — design tree matches the frozen hash (hash-bound approval)
 //   SN  — snackbars/ placement (app-level or shell-local, nowhere else)
-//   S5  — *_facade.dart / *_repository.dart live under services/facades/ /
-//         services/repositories/ (placement, not existence — runs with no manifest)
+//   S5  — *_facade(,_service).dart / *_repository(,_service).dart /
+//         *_adapter_service.dart live under services/**/facades|repositories|
+//         adapters/ (placement, not existence — runs with no manifest)
+//   D1  — app data layer: data/seed + data/generated layout,
+//         tool/generate_data.dart --check proves generated artifacts are fresh,
+//         and the declared KitDataBackend has its artifacts (apps without the
+//         tool have no data layer — skip, never false-fail)
 //   S8  — peer-service registration (a registered Kit* service's locator<Y>()
 //         peers are also registered; setupKitSnackbars() called when used)
 //   S10 — overlay ownership by enum reference (a sole-consumer overlay belongs
 //         in its shell; consumers reference the generated enum, never an import)
-//   S6c — cross-shell widget scope: lib/ui/widgets/ holds only widgets imported
-//         by the views of 2+ shells (app-level, runs with no manifest)
+//   S6c — widget homes under lib/ui/widgets/: showcase_<shell>_widgets/ is the
+//         shell-owned tier (consumed by that shell only); common/ and other
+//         folders are the cross-shell tier (2+ shells) — runs with no manifest
 //   S0  — manifest shape (parses; every named shell dir exists)
 //   S1  — ≥ 1 *_view.dart with a matching *_viewmodel.dart
 //   S4  — design-system.md carries a ## Palette / ## Tokens heading + kit color
@@ -114,23 +120,104 @@ GateResult scaffoldGate(GateContext ctx) {
   if (snBad == 0) ok('snackbars/ dirs correctly placed or absent (SN)');
 
   // ---- S5: services placement — placement, not existence ----
+  // Both namings are legal: legacy *_facade.dart / *_repository.dart and the
+  // role-suffixed *_facade_service.dart / *_repository_service.dart /
+  // *_adapter_service.dart. Either way the file must live under services/
+  // in a directory named for its role (facades/ repositories/ adapters/) —
+  // per-shell grouping (services/<shell>_services/<role>/) is fine.
   var s5Bad = 0;
-  for (final f
-      in _findFiles(Directory('$app/lib'), (f) => f.path.endsWith('_facade.dart'))) {
-    if (f.path.contains('/services/facades/')) continue;
-    fail('misplaced facade (S5): ${_rel(f.path, app)} — '
-        '*_facade.dart must live under services/facades/');
-    s5Bad++;
-  }
-  for (final f in _findFiles(
-      Directory('$app/lib'), (f) => f.path.endsWith('_repository.dart'))) {
-    if (f.path.contains('/services/repositories/')) continue;
-    fail('misplaced repository (S5): ${_rel(f.path, app)} — '
-        '*_repository.dart must live under services/repositories/');
-    s5Bad++;
+  const roleHomes = {
+    'facade': 'facades',
+    'repository': 'repositories',
+    'adapter': 'adapters',
+  };
+  for (final entry in roleHomes.entries) {
+    final role = entry.key;
+    final home = entry.value;
+    for (final f in _findFiles(
+        Directory('$app/lib'),
+        (f) =>
+            f.path.endsWith('_$role.dart') ||
+            f.path.endsWith('_${role}_service.dart'))) {
+      if (f.path.contains('/services/') && f.path.contains('/$home/')) {
+        continue;
+      }
+      fail('misplaced $role (S5): ${_rel(f.path, app)} — '
+          '*_$role.dart / *_${role}_service.dart must live under '
+          'services/**/$home/');
+      s5Bad++;
+    }
   }
   if (s5Bad == 0) {
-    ok('services placement: facades/repositories correctly placed or absent (S5)');
+    ok('services placement: facades/repositories/adapters correctly placed or absent (S5)');
+  }
+
+  // ---- D1: app data layer — layout + generated-artifact freshness ----
+  // Apps with a data layer declare KitTableSchemas under lib/data/schemas/
+  // and own tool/generate_data.dart, which renders data/generated/ from those
+  // schemas + data/seed/ fixtures. The schemas are the SSOT; the generated
+  // artifacts must never drift. Apps without tool/generate_data.dart have no
+  // app-owned data layer — skip, never false-fail.
+  final generateTool = File('$app/tool/generate_data.dart');
+  if (!generateTool.existsSync()) {
+    ok('no app data layer (no tool/generate_data.dart); data checks skipped (D1)');
+  } else {
+    var d1Bad = 0;
+    for (final dir in ['data/seed', 'data/generated']) {
+      if (!Directory('$app/$dir').existsSync()) {
+        fail('missing $dir/ (D1) — the app data layer expects data/seed/ '
+            '(runtime fixtures) and data/generated/ (emitter output)');
+        d1Bad++;
+      }
+    }
+    if (d1Bad == 0) {
+      final check = Process.runSync(
+        'dart',
+        ['run', 'tool/generate_data.dart', '--check'],
+        workingDirectory: app,
+      );
+      if (check.exitCode != 0) {
+        fail('data/generated/ is stale (D1): '
+            '${(check.stderr as String).trim()}');
+        d1Bad++;
+      }
+    }
+    if (d1Bad == 0) {
+      // Backend coherence: the app's declared default backend (the
+      // KitDataConfig in lib/app/app_data.dart) must have its artifacts in
+      // data/generated/. seed needs none beyond the fixtures (--check already
+      // proves those readable); supabase needs both SQL files; appwrite its
+      // tables fragment.
+      const backendArtifacts = {
+        'supabase': ['supabase_migration.sql', 'supabase_seed.sql'],
+        'appwrite': ['appwrite.tables.json'],
+      };
+      final appData = File('$app/lib/app/app_data.dart');
+      final backend = appData.existsSync()
+          ? RegExp(r'KitDataBackend\.(\w+)')
+              .firstMatch(appData.readAsStringSync())
+              ?.group(1)
+          : null;
+      if (backend == null) {
+        ok('data layer: backend not declared in app_data.dart; coherence '
+            'check skipped (D1)');
+      } else {
+        for (final artifact in backendArtifacts[backend] ?? const <String>[]) {
+          if (!File('$app/data/generated/$artifact').existsSync()) {
+            fail('backend coherence (D1): app boots KitDataBackend.$backend '
+                'but data/generated/$artifact is missing — run '
+                '`dart run tool/generate_data.dart`');
+            d1Bad++;
+          }
+        }
+        if (d1Bad == 0) {
+          ok('data layer: backend $backend has its generated artifacts (D1)');
+        }
+      }
+    }
+    if (d1Bad == 0) {
+      ok('data layer: data/ layout present, generated artifacts fresh (D1)');
+    }
   }
 
   // ---- S8: peer-service registration via the locator graph ----
@@ -587,11 +674,17 @@ String? _narrowestHome(List<_Consumer> consumers) {
   return 'lib/ui/views/$shell/shared/widgets/';
 }
 
-/// S6c — the cross-shell home. `lib/ui/widgets/` is legal ONLY for widgets the
-/// views of 2+ shells import; anything narrower belongs in the shell that owns
-/// it. App-level consumers (lib/app/, lib/extensions/, …) make a widget app-wide
-/// by construction, so they exempt it, exactly as S10 exempts app-level overlay
-/// consumers.
+/// S6c — the widget homes under `lib/ui/widgets/`. Two sanctioned tiers:
+///
+///   * `showcase_<shell>_widgets/` — shell-owned widgets; consumed by that
+///     shell's views only. The folder's owner is the shell of the same stem
+///     (`showcase_profile_widgets/` ↔ `views/showcase_profile_shell/`).
+///   * anything else (`common/`, loose files, non-shell folders) — the
+///     cross-shell tier, legal ONLY for widgets the views of 2+ shells import.
+///
+/// App-level consumers (lib/app/, lib/extensions/, another widget, …) make a
+/// widget app-wide by construction, so they exempt it, exactly as S10 exempts
+/// app-level overlay consumers.
 void _runS6Cross(String app, List<_Edge> edges, void Function(String) ok,
     void Function(String) fail) {
   final dir = Directory('$app/lib/ui/widgets');
@@ -604,22 +697,49 @@ void _runS6Cross(String app, List<_Edge> edges, void Function(String) ok,
     final consumers = _consumersOf(w, edges, app);
     if (consumers.any((c) => c.shell == null)) continue; // app-wide → exempt
     final shells = consumers.map((c) => c.shell).whereType<String>().toSet();
+
+    // Shell-owned tier: lib/ui/widgets/showcase_<shell>_widgets/.
+    final folder = rel.split('/')[3];
+    final owner = folder.endsWith('_widgets')
+        ? '${folder.substring(0, folder.length - '_widgets'.length)}_shell'
+        : null;
+    if (owner != null &&
+        Directory('$app/lib/ui/views/$owner').existsSync()) {
+      final home = 'lib/ui/widgets/$folder/';
+      if (consumers.isEmpty) {
+        fail('unconsumed widget (S6): $rel — no file imports it; empty tiers '
+            'are never created speculatively');
+        bad++;
+      } else if (!(shells.length == 1 && shells.first == owner)) {
+        fail('$rel lives in the $owner widget home ($home) but is imported by '
+            '${shells.join(', ')} (S6) — a shell-owned widget is consumed by '
+            'its shell only; a widget shared across shells belongs in '
+            'lib/ui/widgets/common/');
+        bad++;
+      }
+      continue;
+    }
+
+    // Cross-shell tier: common/, loose files, non-shell folders.
     if (shells.length >= 2) continue; // genuinely cross-shell → correctly placed
     if (consumers.isEmpty) {
       fail('unconsumed cross-shell widget (S6): $rel — no file imports it; '
-          'lib/ui/widgets/ is for widgets imported by the views of 2+ shells, '
-          'and empty tiers are never created speculatively');
+          'the cross-shell tier is for widgets imported by the views of 2+ '
+          'shells, and empty tiers are never created speculatively');
     } else {
-      final want = _narrowestHome(consumers)!;
+      final stem = shells.first.endsWith('_shell')
+          ? shells.first.substring(0, shells.first.length - '_shell'.length)
+          : shells.first;
       fail('$rel is imported by one shell only (${shells.first}) but lives in '
-          'the cross-shell home (S6) — a widget lives at the narrowest scope '
-          'that covers its consumers: move it to $want');
+          'the cross-shell tier (S6) — a widget lives at the narrowest scope '
+          'that covers its consumers: move it to '
+          'lib/ui/widgets/${stem}_widgets/');
     }
     bad++;
   }
   if (judged > 0 && bad == 0) {
-    ok('lib/ui/widgets/: $judged cross-shell widget(s), each imported by 2+ '
-        'shells or app-level (S6)');
+    ok('lib/ui/widgets/: $judged widget(s), each in its shell home, imported '
+        'by 2+ shells, or app-level (S6)');
   }
 }
 

@@ -304,7 +304,7 @@ void main() {
       final r = run();
       expect(r.passed, isTrue, reason: detailsOf(r));
       expect(detailsOf(r),
-          contains('lib/ui/widgets/: 1 cross-shell widget(s)'));
+          contains('lib/ui/widgets/: 1 widget(s), each in its shell home'));
     });
 
     test('lib/ui/widgets/ file with one-shell consumers fails, demotion named', () {
@@ -317,10 +317,10 @@ void main() {
       expect(r.passed, isFalse);
       expect(detailsOf(r), contains('imported by one shell only (main_shell)'));
       expect(detailsOf(r),
-          contains('move it to lib/ui/views/main_shell/shared/widgets/'));
+          contains('move it to lib/ui/widgets/main_widgets/'));
     });
 
-    test('lib/ui/widgets/ file with one-surface consumers demotes to that surface',
+    test('lib/ui/widgets/ file with one-surface consumers demotes to that shell\'s widget home',
         () {
       write('lib/ui/widgets/badge.dart', 'class Badge {}\n');
       write('lib/ui/views/main_shell/home/home_view.dart',
@@ -328,7 +328,7 @@ void main() {
       final r = run();
       expect(r.passed, isFalse);
       expect(detailsOf(r),
-          contains('move it to lib/ui/views/main_shell/home/widgets/'));
+          contains('move it to lib/ui/widgets/main_widgets/'));
     });
 
     test('an app-level consumer keeps a widget app-wide (exemption is load-bearing)',
