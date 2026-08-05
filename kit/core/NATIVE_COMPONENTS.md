@@ -251,16 +251,23 @@ change how one looks, reach for these **in order**; stop at the first that holds
 
 ## Full-screen overlays / blur over the iOS native (CN) tier
 
-> **ADR 0010 updates this section two ways.** (1) The kit's own overlays no
-> longer raise blur scrims — the GetX `overlayBlur` was removed from
-> `kit_snackbar_setup.dart`, and kit sheet barriers are plain dims — so kit
-> chrome stays mounted behind kit-owned overlays; plain translucent fills
-> cover platform views correctly on post-2019 Flutter. (2) Where a hide *is*
-> still required (a blur that must cover a platform view), the gate now
-> performs a **dematerialize** (fade + slight scale) for content-layer glass
-> rather than an instant alpha-0, matching Apple's `effect = nil` semantic.
-> The rule below remains in force for host overlays that present a
+> **ADR 0010 updates this section two ways.** (1) Kit sheet barriers are plain
+> dims — plain translucent fills cover platform views correctly on post-2019
+> Flutter, so kit chrome stays mounted behind kit-owned sheets. (2) Where a
+> hide *is* still required (a blur that must cover a platform view), the gate
+> now performs a **dematerialize** (fade + slight scale) for content-layer
+> glass rather than an instant alpha-0, matching Apple's `effect = nil`
+> semantic. The rule below remains in force for host overlays that present a
 > `BackdropFilter`/blur over the native tier.
+>
+> **ADR 0010 amendment (snackbar blur scrim).** The kit snackbar's GetX
+> `overlayBlur` — initially removed under (1) — is restored at sigma 20
+> (Apple's regular material) with a `black54` dim: the presentation seat
+> (`KitNotificationService.show`) wraps every stacked-snackbar in
+> `withNativeChromeHidden`, so the CN chrome dematerializes for the snackbar's
+> full lifetime and the blur never has to cover a platform view. The dim
+> value is a deliberate deviation — neither HIG nor M3 scrims a transient
+> snackbar; `black54` matches the kit's sheet/dialog barriers.
 
 On iOS, the CN widgets (`CNButton`, `CNSegmentedControl`, `CNTabBar`) are
 `UiKitView`s composited **above** the Flutter scene. A Flutter `BackdropFilter`

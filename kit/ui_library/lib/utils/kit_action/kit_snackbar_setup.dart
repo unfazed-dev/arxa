@@ -29,11 +29,19 @@ void setupKitSnackbars() {
   const padding = EdgeInsets.symmetric(horizontal: kPad8, vertical: kPad16);
   const borderRadius = kRad8;
   const position = SnackPosition.BOTTOM;
-  // ADR 0010 (plain-dim scrims): no blur scrim. GetX renders its scrim entry
-  // only when overlayBlur > 0 and always as a BackdropFilter — which cannot
-  // cover iOS platform views (the original bleed bug) and forces chrome to
-  // hide. With no scrim, native chrome can stay mounted behind the snackbar.
-  // Cost: tap-outside-to-dismiss goes away (swipe + auto-dismiss remain).
+  // ADR 0010 amendment: the scrim is a REAL blur (sigma 20 ≈ Apple's regular
+  // material, the KitFrostedSurface default) + a plain-dim color fill. GetX
+  // only mounts its scrim entry when overlayBlur > 0, always as a
+  // BackdropFilter — which cannot cover iOS platform views, so the CN chrome
+  // would bleed through the blur sharp. The notification seat
+  // (KitNotificationService.show) therefore wraps every stacked-snackbar
+  // presentation in withNativeChromeHidden: the native chrome dematerializes
+  // (fade + scale) for the snackbar's full lifetime, the blur covers the
+  // Flutter scene, and the scrim entry's gesture restores
+  // tap-outside-to-dismiss. Callers using SnackbarService directly (bypassing
+  // KitNotificationService) get the blur WITHOUT the chrome hide — don't.
+  const scrimBlur = 20.0;
+  const scrimColor = Colors.black54;
 
   SnackbarConfig kitConfig({
     required Color backgroundColor,
@@ -43,6 +51,8 @@ void setupKitSnackbars() {
       SnackbarConfig(
         snackPosition: position,
         backgroundColor: backgroundColor,
+        overlayBlur: scrimBlur,
+        overlayColor: scrimColor,
         messageColor: foreground,
         messageTextAlign: TextAlign.center,
         titleColor: foreground,
