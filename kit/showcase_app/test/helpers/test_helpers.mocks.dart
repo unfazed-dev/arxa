@@ -8,15 +8,16 @@ import 'dart:ui' as _i13;
 
 import 'package:appbox_kit_data/appbox_kit_data.dart' as _i3;
 import 'package:appbox_kit_media/appbox_kit_media.dart' as _i20;
-import 'package:appbox_kit_showcase_app/models/showcase_note.dart' as _i4;
-import 'package:appbox_kit_showcase_app/models/showcase_note_attachment.dart'
+import 'package:appbox_kit_showcase_app/models/showcase_notes_models/showcase_note_attachment_model.dart'
     as _i17;
-import 'package:appbox_kit_showcase_app/models/showcase_note_folder.dart'
+import 'package:appbox_kit_showcase_app/models/showcase_notes_models/showcase_note_folder_model.dart'
     as _i5;
-import 'package:appbox_kit_showcase_app/services/adapters/showcase_notes_media_service.dart'
-    as _i19;
-import 'package:appbox_kit_showcase_app/services/facades/showcase_notes_facade.dart'
+import 'package:appbox_kit_showcase_app/models/showcase_notes_models/showcase_note_model.dart'
+    as _i4;
+import 'package:appbox_kit_showcase_app/services/showcase_notes_services/facades/showcase_notes_facade_service.dart'
     as _i16;
+import 'package:appbox_kit_showcase_app/services/showcase_notes_services/adapters/showcase_notes_media_adapter_service.dart'
+    as _i19;
 import 'package:flutter/material.dart' as _i10;
 import 'package:mockito/mockito.dart' as _i1;
 import 'package:mockito/src/dummies.dart' as _i18;
@@ -88,8 +89,9 @@ class _FakeKitAuthService_3 extends _i1.SmartFake
         );
 }
 
-class _FakeShowcaseNote_4 extends _i1.SmartFake implements _i4.ShowcaseNote {
-  _FakeShowcaseNote_4(
+class _FakeShowcaseNoteModel_4 extends _i1.SmartFake
+    implements _i4.ShowcaseNoteModel {
+  _FakeShowcaseNoteModel_4(
     Object parent,
     Invocation parentInvocation,
   ) : super(
@@ -98,9 +100,9 @@ class _FakeShowcaseNote_4 extends _i1.SmartFake implements _i4.ShowcaseNote {
         );
 }
 
-class _FakeShowcaseNoteFolder_5 extends _i1.SmartFake
-    implements _i5.ShowcaseNoteFolder {
-  _FakeShowcaseNoteFolder_5(
+class _FakeShowcaseNoteFolderModel_5 extends _i1.SmartFake
+    implements _i5.ShowcaseNoteFolderModel {
+  _FakeShowcaseNoteFolderModel_5(
     Object parent,
     Invocation parentInvocation,
   ) : super(
@@ -669,11 +671,11 @@ class MockDialogService extends _i1.Mock implements _i14.DialogService {
       );
 }
 
-/// A class which mocks [ShowcaseNotesFacade].
+/// A class which mocks [ShowcaseNotesFacadeService].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockShowcaseNotesFacade extends _i1.Mock
-    implements _i16.ShowcaseNotesFacade {
+class MockShowcaseNotesFacadeService extends _i1.Mock
+    implements _i16.ShowcaseNotesFacadeService {
   @override
   _i9.Stream<_i3.KitAuthSession?> get session$ => (super.noSuchMethod(
         Invocation.getter(#session$),
@@ -702,16 +704,16 @@ class MockShowcaseNotesFacade extends _i1.Mock
       ) as _i3.KitAuthService);
 
   @override
-  _i9.Stream<List<_i5.ShowcaseNoteFolder>> folders$(String? owner) =>
+  _i9.Stream<List<_i5.ShowcaseNoteFolderModel>> folders$(String? owner) =>
       (super.noSuchMethod(
         Invocation.method(
           #folders$,
           [owner],
         ),
-        returnValue: _i9.Stream<List<_i5.ShowcaseNoteFolder>>.empty(),
+        returnValue: _i9.Stream<List<_i5.ShowcaseNoteFolderModel>>.empty(),
         returnValueForMissingStub:
-            _i9.Stream<List<_i5.ShowcaseNoteFolder>>.empty(),
-      ) as _i9.Stream<List<_i5.ShowcaseNoteFolder>>);
+            _i9.Stream<List<_i5.ShowcaseNoteFolderModel>>.empty(),
+      ) as _i9.Stream<List<_i5.ShowcaseNoteFolderModel>>);
 
   @override
   _i9.Stream<_i16.ShowcaseNotesOverview> overview$(String? owner) =>
@@ -738,7 +740,7 @@ class MockShowcaseNotesFacade extends _i1.Mock
       ) as _i9.Stream<_i16.ShowcaseNotesAdminOverview>);
 
   @override
-  _i9.Stream<List<_i4.ShowcaseNote>> notesIn$(
+  _i9.Stream<List<_i4.ShowcaseNoteModel>> notesIn$(
     String? owner, {
     String? folderId,
   }) =>
@@ -748,33 +750,35 @@ class MockShowcaseNotesFacade extends _i1.Mock
           [owner],
           {#folderId: folderId},
         ),
-        returnValue: _i9.Stream<List<_i4.ShowcaseNote>>.empty(),
-        returnValueForMissingStub: _i9.Stream<List<_i4.ShowcaseNote>>.empty(),
-      ) as _i9.Stream<List<_i4.ShowcaseNote>>);
+        returnValue: _i9.Stream<List<_i4.ShowcaseNoteModel>>.empty(),
+        returnValueForMissingStub:
+            _i9.Stream<List<_i4.ShowcaseNoteModel>>.empty(),
+      ) as _i9.Stream<List<_i4.ShowcaseNoteModel>>);
 
   @override
-  _i9.Stream<List<_i4.ShowcaseNote>> trash$(String? owner) =>
+  _i9.Stream<List<_i4.ShowcaseNoteModel>> trash$(String? owner) =>
       (super.noSuchMethod(
         Invocation.method(
           #trash$,
           [owner],
         ),
-        returnValue: _i9.Stream<List<_i4.ShowcaseNote>>.empty(),
-        returnValueForMissingStub: _i9.Stream<List<_i4.ShowcaseNote>>.empty(),
-      ) as _i9.Stream<List<_i4.ShowcaseNote>>);
+        returnValue: _i9.Stream<List<_i4.ShowcaseNoteModel>>.empty(),
+        returnValueForMissingStub:
+            _i9.Stream<List<_i4.ShowcaseNoteModel>>.empty(),
+      ) as _i9.Stream<List<_i4.ShowcaseNoteModel>>);
 
   @override
-  _i9.Stream<_i4.ShowcaseNote?> note$(String? id) => (super.noSuchMethod(
+  _i9.Stream<_i4.ShowcaseNoteModel?> note$(String? id) => (super.noSuchMethod(
         Invocation.method(
           #note$,
           [id],
         ),
-        returnValue: _i9.Stream<_i4.ShowcaseNote?>.empty(),
-        returnValueForMissingStub: _i9.Stream<_i4.ShowcaseNote?>.empty(),
-      ) as _i9.Stream<_i4.ShowcaseNote?>);
+        returnValue: _i9.Stream<_i4.ShowcaseNoteModel?>.empty(),
+        returnValueForMissingStub: _i9.Stream<_i4.ShowcaseNoteModel?>.empty(),
+      ) as _i9.Stream<_i4.ShowcaseNoteModel?>);
 
   @override
-  _i9.Stream<List<_i4.ShowcaseNote>> search$(
+  _i9.Stream<List<_i4.ShowcaseNoteModel>> search$(
     String? owner,
     String? query,
   ) =>
@@ -786,12 +790,13 @@ class MockShowcaseNotesFacade extends _i1.Mock
             query,
           ],
         ),
-        returnValue: _i9.Stream<List<_i4.ShowcaseNote>>.empty(),
-        returnValueForMissingStub: _i9.Stream<List<_i4.ShowcaseNote>>.empty(),
-      ) as _i9.Stream<List<_i4.ShowcaseNote>>);
+        returnValue: _i9.Stream<List<_i4.ShowcaseNoteModel>>.empty(),
+        returnValueForMissingStub:
+            _i9.Stream<List<_i4.ShowcaseNoteModel>>.empty(),
+      ) as _i9.Stream<List<_i4.ShowcaseNoteModel>>);
 
   @override
-  _i9.Future<_i4.ShowcaseNote> createNote(
+  _i9.Future<_i4.ShowcaseNoteModel> createNote(
     String? owner,
     String? folderId,
   ) =>
@@ -803,7 +808,8 @@ class MockShowcaseNotesFacade extends _i1.Mock
             folderId,
           ],
         ),
-        returnValue: _i9.Future<_i4.ShowcaseNote>.value(_FakeShowcaseNote_4(
+        returnValue:
+            _i9.Future<_i4.ShowcaseNoteModel>.value(_FakeShowcaseNoteModel_4(
           this,
           Invocation.method(
             #createNote,
@@ -814,7 +820,7 @@ class MockShowcaseNotesFacade extends _i1.Mock
           ),
         )),
         returnValueForMissingStub:
-            _i9.Future<_i4.ShowcaseNote>.value(_FakeShowcaseNote_4(
+            _i9.Future<_i4.ShowcaseNoteModel>.value(_FakeShowcaseNoteModel_4(
           this,
           Invocation.method(
             #createNote,
@@ -824,11 +830,11 @@ class MockShowcaseNotesFacade extends _i1.Mock
             ],
           ),
         )),
-      ) as _i9.Future<_i4.ShowcaseNote>);
+      ) as _i9.Future<_i4.ShowcaseNoteModel>);
 
   @override
-  _i9.Future<_i4.ShowcaseNote> saveBody(
-    _i4.ShowcaseNote? note,
+  _i9.Future<_i4.ShowcaseNoteModel> saveBody(
+    _i4.ShowcaseNoteModel? note,
     String? body,
   ) =>
       (super.noSuchMethod(
@@ -839,7 +845,8 @@ class MockShowcaseNotesFacade extends _i1.Mock
             body,
           ],
         ),
-        returnValue: _i9.Future<_i4.ShowcaseNote>.value(_FakeShowcaseNote_4(
+        returnValue:
+            _i9.Future<_i4.ShowcaseNoteModel>.value(_FakeShowcaseNoteModel_4(
           this,
           Invocation.method(
             #saveBody,
@@ -850,7 +857,7 @@ class MockShowcaseNotesFacade extends _i1.Mock
           ),
         )),
         returnValueForMissingStub:
-            _i9.Future<_i4.ShowcaseNote>.value(_FakeShowcaseNote_4(
+            _i9.Future<_i4.ShowcaseNoteModel>.value(_FakeShowcaseNoteModel_4(
           this,
           Invocation.method(
             #saveBody,
@@ -860,16 +867,17 @@ class MockShowcaseNotesFacade extends _i1.Mock
             ],
           ),
         )),
-      ) as _i9.Future<_i4.ShowcaseNote>);
+      ) as _i9.Future<_i4.ShowcaseNoteModel>);
 
   @override
-  _i9.Future<_i4.ShowcaseNote> togglePin(_i4.ShowcaseNote? note) =>
+  _i9.Future<_i4.ShowcaseNoteModel> togglePin(_i4.ShowcaseNoteModel? note) =>
       (super.noSuchMethod(
         Invocation.method(
           #togglePin,
           [note],
         ),
-        returnValue: _i9.Future<_i4.ShowcaseNote>.value(_FakeShowcaseNote_4(
+        returnValue:
+            _i9.Future<_i4.ShowcaseNoteModel>.value(_FakeShowcaseNoteModel_4(
           this,
           Invocation.method(
             #togglePin,
@@ -877,19 +885,19 @@ class MockShowcaseNotesFacade extends _i1.Mock
           ),
         )),
         returnValueForMissingStub:
-            _i9.Future<_i4.ShowcaseNote>.value(_FakeShowcaseNote_4(
+            _i9.Future<_i4.ShowcaseNoteModel>.value(_FakeShowcaseNoteModel_4(
           this,
           Invocation.method(
             #togglePin,
             [note],
           ),
         )),
-      ) as _i9.Future<_i4.ShowcaseNote>);
+      ) as _i9.Future<_i4.ShowcaseNoteModel>);
 
   @override
-  _i9.Future<_i4.ShowcaseNote> addAttachment(
-    _i4.ShowcaseNote? note,
-    _i17.ShowcaseNoteAttachment? attachment,
+  _i9.Future<_i4.ShowcaseNoteModel> addAttachment(
+    _i4.ShowcaseNoteModel? note,
+    _i17.ShowcaseNoteAttachmentModel? attachment,
   ) =>
       (super.noSuchMethod(
         Invocation.method(
@@ -899,7 +907,8 @@ class MockShowcaseNotesFacade extends _i1.Mock
             attachment,
           ],
         ),
-        returnValue: _i9.Future<_i4.ShowcaseNote>.value(_FakeShowcaseNote_4(
+        returnValue:
+            _i9.Future<_i4.ShowcaseNoteModel>.value(_FakeShowcaseNoteModel_4(
           this,
           Invocation.method(
             #addAttachment,
@@ -910,7 +919,7 @@ class MockShowcaseNotesFacade extends _i1.Mock
           ),
         )),
         returnValueForMissingStub:
-            _i9.Future<_i4.ShowcaseNote>.value(_FakeShowcaseNote_4(
+            _i9.Future<_i4.ShowcaseNoteModel>.value(_FakeShowcaseNoteModel_4(
           this,
           Invocation.method(
             #addAttachment,
@@ -920,11 +929,11 @@ class MockShowcaseNotesFacade extends _i1.Mock
             ],
           ),
         )),
-      ) as _i9.Future<_i4.ShowcaseNote>);
+      ) as _i9.Future<_i4.ShowcaseNoteModel>);
 
   @override
-  _i9.Future<_i4.ShowcaseNote> removeAttachment(
-    _i4.ShowcaseNote? note,
+  _i9.Future<_i4.ShowcaseNoteModel> removeAttachment(
+    _i4.ShowcaseNoteModel? note,
     String? attachmentId,
   ) =>
       (super.noSuchMethod(
@@ -935,7 +944,8 @@ class MockShowcaseNotesFacade extends _i1.Mock
             attachmentId,
           ],
         ),
-        returnValue: _i9.Future<_i4.ShowcaseNote>.value(_FakeShowcaseNote_4(
+        returnValue:
+            _i9.Future<_i4.ShowcaseNoteModel>.value(_FakeShowcaseNoteModel_4(
           this,
           Invocation.method(
             #removeAttachment,
@@ -946,7 +956,7 @@ class MockShowcaseNotesFacade extends _i1.Mock
           ),
         )),
         returnValueForMissingStub:
-            _i9.Future<_i4.ShowcaseNote>.value(_FakeShowcaseNote_4(
+            _i9.Future<_i4.ShowcaseNoteModel>.value(_FakeShowcaseNoteModel_4(
           this,
           Invocation.method(
             #removeAttachment,
@@ -956,16 +966,17 @@ class MockShowcaseNotesFacade extends _i1.Mock
             ],
           ),
         )),
-      ) as _i9.Future<_i4.ShowcaseNote>);
+      ) as _i9.Future<_i4.ShowcaseNoteModel>);
 
   @override
-  _i9.Future<_i4.ShowcaseNote> moveToTrash(_i4.ShowcaseNote? note) =>
+  _i9.Future<_i4.ShowcaseNoteModel> moveToTrash(_i4.ShowcaseNoteModel? note) =>
       (super.noSuchMethod(
         Invocation.method(
           #moveToTrash,
           [note],
         ),
-        returnValue: _i9.Future<_i4.ShowcaseNote>.value(_FakeShowcaseNote_4(
+        returnValue:
+            _i9.Future<_i4.ShowcaseNoteModel>.value(_FakeShowcaseNoteModel_4(
           this,
           Invocation.method(
             #moveToTrash,
@@ -973,23 +984,24 @@ class MockShowcaseNotesFacade extends _i1.Mock
           ),
         )),
         returnValueForMissingStub:
-            _i9.Future<_i4.ShowcaseNote>.value(_FakeShowcaseNote_4(
+            _i9.Future<_i4.ShowcaseNoteModel>.value(_FakeShowcaseNoteModel_4(
           this,
           Invocation.method(
             #moveToTrash,
             [note],
           ),
         )),
-      ) as _i9.Future<_i4.ShowcaseNote>);
+      ) as _i9.Future<_i4.ShowcaseNoteModel>);
 
   @override
-  _i9.Future<_i4.ShowcaseNote> restore(_i4.ShowcaseNote? note) =>
+  _i9.Future<_i4.ShowcaseNoteModel> restore(_i4.ShowcaseNoteModel? note) =>
       (super.noSuchMethod(
         Invocation.method(
           #restore,
           [note],
         ),
-        returnValue: _i9.Future<_i4.ShowcaseNote>.value(_FakeShowcaseNote_4(
+        returnValue:
+            _i9.Future<_i4.ShowcaseNoteModel>.value(_FakeShowcaseNoteModel_4(
           this,
           Invocation.method(
             #restore,
@@ -997,17 +1009,17 @@ class MockShowcaseNotesFacade extends _i1.Mock
           ),
         )),
         returnValueForMissingStub:
-            _i9.Future<_i4.ShowcaseNote>.value(_FakeShowcaseNote_4(
+            _i9.Future<_i4.ShowcaseNoteModel>.value(_FakeShowcaseNoteModel_4(
           this,
           Invocation.method(
             #restore,
             [note],
           ),
         )),
-      ) as _i9.Future<_i4.ShowcaseNote>);
+      ) as _i9.Future<_i4.ShowcaseNoteModel>);
 
   @override
-  _i9.Future<void> deletePermanently(_i4.ShowcaseNote? note) =>
+  _i9.Future<void> deletePermanently(_i4.ShowcaseNoteModel? note) =>
       (super.noSuchMethod(
         Invocation.method(
           #deletePermanently,
@@ -1028,7 +1040,7 @@ class MockShowcaseNotesFacade extends _i1.Mock
       ) as _i9.Future<void>);
 
   @override
-  _i9.Future<_i5.ShowcaseNoteFolder> createFolder(
+  _i9.Future<_i5.ShowcaseNoteFolderModel> createFolder(
     String? owner,
     String? name, {
     required int? sortOrder,
@@ -1042,8 +1054,8 @@ class MockShowcaseNotesFacade extends _i1.Mock
           ],
           {#sortOrder: sortOrder},
         ),
-        returnValue:
-            _i9.Future<_i5.ShowcaseNoteFolder>.value(_FakeShowcaseNoteFolder_5(
+        returnValue: _i9.Future<_i5.ShowcaseNoteFolderModel>.value(
+            _FakeShowcaseNoteFolderModel_5(
           this,
           Invocation.method(
             #createFolder,
@@ -1055,7 +1067,8 @@ class MockShowcaseNotesFacade extends _i1.Mock
           ),
         )),
         returnValueForMissingStub:
-            _i9.Future<_i5.ShowcaseNoteFolder>.value(_FakeShowcaseNoteFolder_5(
+            _i9.Future<_i5.ShowcaseNoteFolderModel>.value(
+                _FakeShowcaseNoteFolderModel_5(
           this,
           Invocation.method(
             #createFolder,
@@ -1066,11 +1079,11 @@ class MockShowcaseNotesFacade extends _i1.Mock
             {#sortOrder: sortOrder},
           ),
         )),
-      ) as _i9.Future<_i5.ShowcaseNoteFolder>);
+      ) as _i9.Future<_i5.ShowcaseNoteFolderModel>);
 
   @override
-  _i9.Future<_i5.ShowcaseNoteFolder> renameFolder(
-    _i5.ShowcaseNoteFolder? folder,
+  _i9.Future<_i5.ShowcaseNoteFolderModel> renameFolder(
+    _i5.ShowcaseNoteFolderModel? folder,
     String? name,
   ) =>
       (super.noSuchMethod(
@@ -1081,8 +1094,8 @@ class MockShowcaseNotesFacade extends _i1.Mock
             name,
           ],
         ),
-        returnValue:
-            _i9.Future<_i5.ShowcaseNoteFolder>.value(_FakeShowcaseNoteFolder_5(
+        returnValue: _i9.Future<_i5.ShowcaseNoteFolderModel>.value(
+            _FakeShowcaseNoteFolderModel_5(
           this,
           Invocation.method(
             #renameFolder,
@@ -1093,7 +1106,8 @@ class MockShowcaseNotesFacade extends _i1.Mock
           ),
         )),
         returnValueForMissingStub:
-            _i9.Future<_i5.ShowcaseNoteFolder>.value(_FakeShowcaseNoteFolder_5(
+            _i9.Future<_i5.ShowcaseNoteFolderModel>.value(
+                _FakeShowcaseNoteFolderModel_5(
           this,
           Invocation.method(
             #renameFolder,
@@ -1103,10 +1117,10 @@ class MockShowcaseNotesFacade extends _i1.Mock
             ],
           ),
         )),
-      ) as _i9.Future<_i5.ShowcaseNoteFolder>);
+      ) as _i9.Future<_i5.ShowcaseNoteFolderModel>);
 
   @override
-  _i9.Future<void> deleteFolder(_i5.ShowcaseNoteFolder? folder) =>
+  _i9.Future<void> deleteFolder(_i5.ShowcaseNoteFolderModel? folder) =>
       (super.noSuchMethod(
         Invocation.method(
           #deleteFolder,
@@ -1220,11 +1234,11 @@ class MockShowcaseNotesFacade extends _i1.Mock
       ) as _i9.Future<void>);
 }
 
-/// A class which mocks [ShowcaseNotesMediaService].
+/// A class which mocks [ShowcaseNotesMediaAdapterService].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockShowcaseNotesMediaService extends _i1.Mock
-    implements _i19.ShowcaseNotesMediaService {
+class MockShowcaseNotesMediaAdapterService extends _i1.Mock
+    implements _i19.ShowcaseNotesMediaAdapterService {
   @override
   _i7.BehaviorSubject<Duration?> get recording$ => (super.noSuchMethod(
         Invocation.getter(#recording$),
@@ -1280,7 +1294,8 @@ class MockShowcaseNotesMediaService extends _i1.Mock
       ) as bool);
 
   @override
-  _i9.Future<String> resolvePath(_i17.ShowcaseNoteAttachment? attachment) =>
+  _i9.Future<String> resolvePath(
+          _i17.ShowcaseNoteAttachmentModel? attachment) =>
       (super.noSuchMethod(
         Invocation.method(
           #resolvePath,
@@ -1304,7 +1319,7 @@ class MockShowcaseNotesMediaService extends _i1.Mock
       ) as _i9.Future<String>);
 
   @override
-  _i9.Future<_i17.ShowcaseNoteAttachment?> pickPhoto(
+  _i9.Future<_i17.ShowcaseNoteAttachmentModel?> pickPhoto(
           {required bool? fromCamera}) =>
       (super.noSuchMethod(
         Invocation.method(
@@ -1312,10 +1327,10 @@ class MockShowcaseNotesMediaService extends _i1.Mock
           [],
           {#fromCamera: fromCamera},
         ),
-        returnValue: _i9.Future<_i17.ShowcaseNoteAttachment?>.value(),
+        returnValue: _i9.Future<_i17.ShowcaseNoteAttachmentModel?>.value(),
         returnValueForMissingStub:
-            _i9.Future<_i17.ShowcaseNoteAttachment?>.value(),
-      ) as _i9.Future<_i17.ShowcaseNoteAttachment?>);
+            _i9.Future<_i17.ShowcaseNoteAttachmentModel?>.value(),
+      ) as _i9.Future<_i17.ShowcaseNoteAttachmentModel?>);
 
   @override
   _i9.Future<bool> startRecording() => (super.noSuchMethod(
@@ -1328,16 +1343,16 @@ class MockShowcaseNotesMediaService extends _i1.Mock
       ) as _i9.Future<bool>);
 
   @override
-  _i9.Future<_i17.ShowcaseNoteAttachment?> stopRecording() =>
+  _i9.Future<_i17.ShowcaseNoteAttachmentModel?> stopRecording() =>
       (super.noSuchMethod(
         Invocation.method(
           #stopRecording,
           [],
         ),
-        returnValue: _i9.Future<_i17.ShowcaseNoteAttachment?>.value(),
+        returnValue: _i9.Future<_i17.ShowcaseNoteAttachmentModel?>.value(),
         returnValueForMissingStub:
-            _i9.Future<_i17.ShowcaseNoteAttachment?>.value(),
-      ) as _i9.Future<_i17.ShowcaseNoteAttachment?>);
+            _i9.Future<_i17.ShowcaseNoteAttachmentModel?>.value(),
+      ) as _i9.Future<_i17.ShowcaseNoteAttachmentModel?>);
 
   @override
   _i9.Future<void> cancelRecording() => (super.noSuchMethod(
@@ -1350,7 +1365,8 @@ class MockShowcaseNotesMediaService extends _i1.Mock
       ) as _i9.Future<void>);
 
   @override
-  _i9.Future<void> togglePlayback(_i17.ShowcaseNoteAttachment? attachment) =>
+  _i9.Future<void> togglePlayback(
+          _i17.ShowcaseNoteAttachmentModel? attachment) =>
       (super.noSuchMethod(
         Invocation.method(
           #togglePlayback,
@@ -1371,7 +1387,7 @@ class MockShowcaseNotesMediaService extends _i1.Mock
       ) as _i9.Future<void>);
 
   @override
-  _i9.Future<void> deleteFile(_i17.ShowcaseNoteAttachment? attachment) =>
+  _i9.Future<void> deleteFile(_i17.ShowcaseNoteAttachmentModel? attachment) =>
       (super.noSuchMethod(
         Invocation.method(
           #deleteFile,

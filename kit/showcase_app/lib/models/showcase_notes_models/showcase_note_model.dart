@@ -5,24 +5,24 @@ import 'package:appbox_kit_data/auth/kit_auth_types.dart';
 import 'package:appbox_kit_data/models/kit_entity_registration.dart';
 import 'package:appbox_kit_data/schema/kit_table_schema.dart';
 
-import 'package:appbox_kit_showcase_app/models/showcase_note_attachment.dart';
-import 'package:appbox_kit_showcase_app/models/showcase_note_folder.dart';
+import 'package:appbox_kit_showcase_app/models/showcase_notes_models/showcase_note_attachment_model.dart';
+import 'package:appbox_kit_showcase_app/models/showcase_notes_models/showcase_note_folder_model.dart';
 
 /// A note. iOS-style: no separate title column — [title] and [snippet] derive
 /// from [body]'s first lines; `deleted_at` implements Recently Deleted
 /// (soft delete, restorable) without a second table.
-class ShowcaseNote {
+class ShowcaseNoteModel {
   final String id;
   final String folderId;
   final String owner;
   final String body;
   final bool pinned;
-  final List<ShowcaseNoteAttachment> attachments;
+  final List<ShowcaseNoteAttachmentModel> attachments;
   final DateTime? deletedAt;
   final DateTime createdAt;
   final DateTime updatedAt;
 
-  const ShowcaseNote({
+  const ShowcaseNoteModel({
     required this.id,
     required this.folderId,
     required this.owner,
@@ -69,15 +69,15 @@ class ShowcaseNote {
     ].join('  ');
   }
 
-  ShowcaseNote copyWith({
+  ShowcaseNoteModel copyWith({
     String? folderId,
     String? body,
     bool? pinned,
-    List<ShowcaseNoteAttachment>? attachments,
+    List<ShowcaseNoteAttachmentModel>? attachments,
     DateTime? Function()? deletedAt,
     DateTime? updatedAt,
   }) =>
-      ShowcaseNote(
+      ShowcaseNoteModel(
         id: id,
         folderId: folderId ?? this.folderId,
         owner: owner,
@@ -90,7 +90,7 @@ class ShowcaseNote {
         updatedAt: updatedAt ?? this.updatedAt,
       );
 
-  factory ShowcaseNote.fromJson(Map<String, dynamic> json) => ShowcaseNote(
+  factory ShowcaseNoteModel.fromJson(Map<String, dynamic> json) => ShowcaseNoteModel(
         id: json['id'] as String,
         folderId: json['folder_id'] as String,
         owner: json['owner'] as String,
@@ -98,7 +98,7 @@ class ShowcaseNote {
         pinned: json['pinned'] as bool? ?? false,
         attachments: (json['attachments'] as List? ?? const [])
             .map((a) =>
-                ShowcaseNoteAttachment.fromJson(Map<String, dynamic>.from(a as Map)))
+                ShowcaseNoteAttachmentModel.fromJson(Map<String, dynamic>.from(a as Map)))
             .toList(),
         deletedAt: json['deleted_at'] == null
             ? null
@@ -138,8 +138,8 @@ const noteSchema = KitTableSchema(
   ],
 );
 
-final showcaseNoteRegistration = KitEntityRegistration<ShowcaseNote>(
+final showcaseNoteRegistration = KitEntityRegistration<ShowcaseNoteModel>(
   schema: noteSchema,
-  fromJson: ShowcaseNote.fromJson,
+  fromJson: ShowcaseNoteModel.fromJson,
   toJson: (note) => note.toJson(),
 );

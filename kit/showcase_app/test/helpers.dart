@@ -11,7 +11,7 @@ import 'package:appbox_kit_showcase_app/app/app.router.dart';
 import 'package:ui_library/ui_library.dart';
 import 'package:appbox_kit_data/appbox_kit_data.dart';
 import 'package:appbox_kit_showcase_app/app/app_data.dart';
-import 'package:appbox_kit_showcase_app/services/facades/showcase_notes_facade.dart';
+import 'package:appbox_kit_showcase_app/services/showcase_notes_services/facades/showcase_notes_facade_service.dart';
 import 'package:stacked_services/stacked_services.dart';
 
 /// Package-asset keys map straight onto this package's source tree.
@@ -42,7 +42,7 @@ Future<void> initShowcase({bool signedIn = false}) async {
   if (signedIn) await signInEvan();
 }
 
-Future<void> signInEvan() => locator<ShowcaseNotesFacade>()
+Future<void> signInEvan() => locator<ShowcaseNotesFacadeService>()
     .auth
     .signInWithEmailPassword(email: 'evan@seed.local', password: 'x');
 

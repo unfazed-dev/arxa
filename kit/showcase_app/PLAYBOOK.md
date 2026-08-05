@@ -62,8 +62,8 @@ await KitData.initialize(
 <!-- PORTED — §7.3 DONE 2026-07-12. Boot lives in `lib/app/app_data.dart`:
 `AppData.initialize({config, assetReader})` (renamed from the source's
 `AppboxKitShowcase` — that name referenced the old package). It boots KitData
-over the 3 seed fixtures AND registers the two Notes services (ShowcaseNotesFacade,
-ShowcaseNotesMediaService) via the shared `locator` — the data slice boots itself (one
+over the 3 seed fixtures AND registers the two Notes services (ShowcaseNotesFacadeService,
+ShowcaseNotesMediaAdapterService) via the shared `locator` — the data slice boots itself (one
 call = data layer usable). `main.dart` calls it after `setupLocator()`; a
 `ThemeMode` StreamBuilder drives kitLightTheme/kitDarkTheme. The 12 kit
 *infrastructure* services stay in `@StackedApp` (lib/app/app.dart). VERIFIED:
@@ -94,7 +94,7 @@ procedure:
 (2) pass the registrations to `KitData.initialize(entities: [...])` — typed
     `KitRepository<T>` then comes FREE via `KitDataFacade.repository<T>()`; that
     IS the swap seam (no per-table Repository class to author);
-(3) the Facade is a hand-authored `class ShowcaseNotesFacade extends KitDataFacade`
+(3) the Facade is a hand-authored `class ShowcaseNotesFacadeService extends KitDataFacade`
     (prefixed per the showcase naming convention, 2026-08-05). It
     composes `repository<Note>()` / `repository<NoteFolder>()`, derives rxdart
     streams, and routes writes through `mutate()`.

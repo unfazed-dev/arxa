@@ -4,17 +4,17 @@ import 'package:stacked/stacked.dart';
 import 'package:appbox_kit_core/kit_locator.dart';
 import 'package:appbox_kit_data/appbox_kit_data.dart';
 
-import 'package:appbox_kit_showcase_app/services/facades/showcase_notes_facade.dart';
+import 'package:appbox_kit_showcase_app/services/showcase_notes_services/facades/showcase_notes_facade_service.dart';
 
 /// Which credential flow the auth screen shows. Owner-held, mirrors
 /// [KitNativeSegmentedControl]'s index convention (see the view).
 enum NotesAuthMode { password, otp }
 
 /// Sign-in screen for the seed-backend smoke surface. Talks only to
-/// [ShowcaseNotesFacade.auth] — when a session appears, the signed-out ShowcaseNotesView
+/// [ShowcaseNotesFacadeService.auth] — when a session appears, the signed-out ShowcaseNotesView
 /// swaps the embedded panel for the Folders list in place.
 class ShowcaseNotesAuthViewModel extends BaseViewModel {
-  final ShowcaseNotesFacade _notes = locator<ShowcaseNotesFacade>();
+  final ShowcaseNotesFacadeService _notes = locator<ShowcaseNotesFacadeService>();
 
   KitAuthService get auth => _notes.auth;
 

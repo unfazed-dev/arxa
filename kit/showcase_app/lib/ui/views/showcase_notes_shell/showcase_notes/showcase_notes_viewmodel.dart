@@ -4,15 +4,15 @@ import 'package:stacked/stacked.dart';
 import 'package:appbox_kit_core/kit_locator.dart';
 import 'package:appbox_kit_data/appbox_kit_data.dart';
 
-import 'package:appbox_kit_showcase_app/models/showcase_note_folder.dart';
-import 'package:appbox_kit_showcase_app/services/facades/showcase_notes_facade.dart';
+import 'package:appbox_kit_showcase_app/models/showcase_notes_models/showcase_note_folder_model.dart';
+import 'package:appbox_kit_showcase_app/services/showcase_notes_services/facades/showcase_notes_facade_service.dart';
 
-/// The "Folders" screen viewmodel. Subscribes to [ShowcaseNotesFacade.session$] and,
-/// once signed in, to [ShowcaseNotesFacade.overview$] — both fields are plain and
+/// The "Folders" screen viewmodel. Subscribes to [ShowcaseNotesFacadeService.session$] and,
+/// once signed in, to [ShowcaseNotesFacadeService.overview$] — both fields are plain and
 /// pushed via `notifyListeners`, no double-buffering through a second stream
 /// layer.
 class ShowcaseNotesViewModel extends BaseViewModel {
-  final _service = locator<ShowcaseNotesFacade>();
+  final _service = locator<ShowcaseNotesFacadeService>();
 
   StreamSubscription<KitAuthSession?>? _sessionSub;
   StreamSubscription<ShowcaseNotesOverview>? _overviewSub;
@@ -50,7 +50,7 @@ class ShowcaseNotesViewModel extends BaseViewModel {
           this.overview = overview;
           notifyListeners();
         });
-        if (ShowcaseNotesFacade.isAdminSession(session)) {
+        if (ShowcaseNotesFacadeService.isAdminSession(session)) {
           _adminSub = _service.adminOverview$().listen((admin) {
             adminOverview = admin;
             notifyListeners();
@@ -82,13 +82,13 @@ class ShowcaseNotesViewModel extends BaseViewModel {
     );
   }
 
-  Future<void> renameFolder(ShowcaseNoteFolder folder, String name) async {
+  Future<void> renameFolder(ShowcaseNoteFolderModel folder, String name) async {
     final trimmed = name.trim();
     if (trimmed.isEmpty) return;
     await _service.renameFolder(folder, trimmed);
   }
 
-  Future<void> deleteFolder(ShowcaseNoteFolder folder) => _service.deleteFolder(folder);
+  Future<void> deleteFolder(ShowcaseNoteFolderModel folder) => _service.deleteFolder(folder);
 
   Future<void> signOut() => _service.signOut();
 

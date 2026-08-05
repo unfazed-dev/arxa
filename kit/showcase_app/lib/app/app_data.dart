@@ -1,12 +1,12 @@
 import 'package:appbox_kit_data/appbox_kit_data.dart';
 
-import 'package:appbox_kit_showcase_app/models/showcase_note.dart';
-import 'package:appbox_kit_showcase_app/models/showcase_note_folder.dart';
+import 'package:appbox_kit_showcase_app/models/showcase_notes_models/showcase_note_model.dart';
+import 'package:appbox_kit_showcase_app/models/showcase_notes_models/showcase_note_folder_model.dart';
 
 /// The app's data-layer boot. Called once from `main()` after `setupLocator()`.
 ///
 /// Boots `appbox_kit_data` with the Notes entities + fixtures. Service
-/// registration (ShowcaseNotesFacade, ShowcaseNotesMediaService — like every other service)
+/// registration (ShowcaseNotesFacadeService, ShowcaseNotesMediaAdapterService — like every other service)
 /// lives in the `@StackedApp` dependencies (lib/app/app.dart), created via
 /// `stacked create service …`; they're lazy singletons, so they construct on
 /// first use — safely after this boot completes.

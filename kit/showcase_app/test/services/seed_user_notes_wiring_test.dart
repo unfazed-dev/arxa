@@ -5,8 +5,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ui_library/ui_library.dart';
 import 'package:appbox_kit_data/appbox_kit_data.dart';
 import 'package:appbox_kit_showcase_app/app/app_data.dart';
-import 'package:appbox_kit_showcase_app/services/facades/showcase_notes_facade.dart';
-import 'package:appbox_kit_showcase_app/services/repositories/showcase_notes_repository.dart';
+import 'package:appbox_kit_showcase_app/services/showcase_notes_services/facades/showcase_notes_facade_service.dart';
+import 'package:appbox_kit_showcase_app/services/showcase_notes_services/repositories/showcase_notes_repository_service.dart';
 import 'package:stacked_services/stacked_services.dart';
 import 'package:talker_flutter/talker_flutter.dart';
 
@@ -33,7 +33,7 @@ List<Map<String, dynamic>> _rows(String path) {
 }
 
 void main() {
-  late ShowcaseNotesFacade notes;
+  late ShowcaseNotesFacadeService notes;
 
   // ownerSeedKey -> (live, trashed), derived from the shipped fixture.
   final expectedLive = <String, int>{};
@@ -56,8 +56,8 @@ void main() {
       ..registerLazySingleton(() => BottomSheetService())
       ..registerLazySingleton(() => SnackbarService())
       ..registerLazySingleton(() => KitNotificationService())
-      ..registerLazySingleton<ShowcaseNotesRepository>(() => ShowcaseNotesRepository())
-      ..registerLazySingleton<ShowcaseNotesFacade>(() => ShowcaseNotesFacade());
+      ..registerLazySingleton<ShowcaseNotesRepositoryService>(() => ShowcaseNotesRepositoryService())
+      ..registerLazySingleton<ShowcaseNotesFacadeService>(() => ShowcaseNotesFacadeService());
 
     await AppData.initialize(
       config: const KitDataConfig(
@@ -66,7 +66,7 @@ void main() {
       ),
       assetReader: _DiskAssetReader(),
     );
-    notes = locator<ShowcaseNotesFacade>();
+    notes = locator<ShowcaseNotesFacadeService>();
   });
 
   Future<ShowcaseNotesOverview> overviewFor(KitAuthSession session) =>

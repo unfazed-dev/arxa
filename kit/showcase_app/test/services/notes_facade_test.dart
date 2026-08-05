@@ -3,10 +3,10 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ui_library/ui_library.dart';
 import 'package:appbox_kit_data/appbox_kit_data.dart';
-import 'package:appbox_kit_showcase_app/models/showcase_note.dart';
-import 'package:appbox_kit_showcase_app/models/showcase_note_folder.dart';
-import 'package:appbox_kit_showcase_app/services/facades/showcase_notes_facade.dart';
-import 'package:appbox_kit_showcase_app/services/repositories/showcase_notes_repository.dart';
+import 'package:appbox_kit_showcase_app/models/showcase_notes_models/showcase_note_model.dart';
+import 'package:appbox_kit_showcase_app/models/showcase_notes_models/showcase_note_folder_model.dart';
+import 'package:appbox_kit_showcase_app/services/showcase_notes_services/facades/showcase_notes_facade_service.dart';
+import 'package:appbox_kit_showcase_app/services/showcase_notes_services/repositories/showcase_notes_repository_service.dart';
 import 'package:appbox_kit_showcase_app/app/app_data.dart';
 import 'package:stacked_services/stacked_services.dart';
 import 'package:talker_flutter/talker_flutter.dart';
@@ -29,7 +29,7 @@ class _DiskAssetReader implements KitAssetReader {
 }
 
 void main() {
-  late ShowcaseNotesFacade notes;
+  late ShowcaseNotesFacadeService notes;
   late String evanId;
 
   setUpAll(() async {
@@ -43,8 +43,8 @@ void main() {
       ..registerLazySingleton(() => KitNotificationService())
       // Registered by the @StackedApp locator in the app; this suite stays
       // self-contained (data layer only), so it registers them itself.
-      ..registerLazySingleton<ShowcaseNotesRepository>(() => ShowcaseNotesRepository())
-      ..registerLazySingleton<ShowcaseNotesFacade>(() => ShowcaseNotesFacade());
+      ..registerLazySingleton<ShowcaseNotesRepositoryService>(() => ShowcaseNotesRepositoryService())
+      ..registerLazySingleton<ShowcaseNotesFacadeService>(() => ShowcaseNotesFacadeService());
 
     await AppData.initialize(
       // Snapshot persistence needs a platform channel; tests run in-memory.
@@ -55,7 +55,7 @@ void main() {
       assetReader: _DiskAssetReader(),
     );
 
-    notes = locator<ShowcaseNotesFacade>();
+    notes = locator<ShowcaseNotesFacadeService>();
     final session = await notes.auth
         .signInWithEmailPassword(email: 'evan@seed.local', password: 'x');
     evanId = session.user.id;
@@ -104,7 +104,7 @@ void main() {
 
   test('groupNotes buckets by iOS Notes sections, pinned first', () {
     final now = DateTime(2026, 7, 12, 12);
-    ShowcaseNote note(String id, DateTime updatedAt, {bool pinned = false}) => ShowcaseNote(
+    ShowcaseNoteModel note(String id, DateTime updatedAt, {bool pinned = false}) => ShowcaseNoteModel(
           id: id,
           folderId: 'f',
           owner: 'o',
@@ -114,7 +114,7 @@ void main() {
           updatedAt: updatedAt,
         );
 
-    final groups = ShowcaseNotesFacade.groupNotes([
+    final groups = ShowcaseNotesFacadeService.groupNotes([
       note('pinned-old', DateTime(2024, 1, 1), pinned: true),
       note('today', DateTime(2026, 7, 12, 8)),
       note('yesterday', DateTime(2026, 7, 11, 23)),

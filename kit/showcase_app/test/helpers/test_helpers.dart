@@ -2,8 +2,8 @@ import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:appbox_kit_showcase_app/app/app.locator.dart';
 import 'package:stacked_services/stacked_services.dart';
-import 'package:appbox_kit_showcase_app/services/facades/showcase_notes_facade.dart';
-import 'package:appbox_kit_showcase_app/services/adapters/showcase_notes_media_service.dart';
+import 'package:appbox_kit_showcase_app/services/showcase_notes_services/facades/showcase_notes_facade_service.dart';
+import 'package:appbox_kit_showcase_app/services/showcase_notes_services/adapters/showcase_notes_media_adapter_service.dart';
 // @stacked-import
 
 import 'test_helpers.mocks.dart';
@@ -14,8 +14,8 @@ import 'test_helpers.mocks.dart';
     MockSpec<RouterService>(onMissingStub: OnMissingStub.returnDefault),
     MockSpec<BottomSheetService>(onMissingStub: OnMissingStub.returnDefault),
     MockSpec<DialogService>(onMissingStub: OnMissingStub.returnDefault),
-    MockSpec<ShowcaseNotesFacade>(onMissingStub: OnMissingStub.returnDefault),
-    MockSpec<ShowcaseNotesMediaService>(onMissingStub: OnMissingStub.returnDefault),
+    MockSpec<ShowcaseNotesFacadeService>(onMissingStub: OnMissingStub.returnDefault),
+    MockSpec<ShowcaseNotesMediaAdapterService>(onMissingStub: OnMissingStub.returnDefault),
 // @stacked-mock-spec
   ],
 )
@@ -23,8 +23,8 @@ void registerServices() {
   getAndRegisterRouterService();
   getAndRegisterBottomSheetService();
   getAndRegisterDialogService();
-  getAndRegisterShowcaseNotesFacade();
-  getAndRegisterShowcaseNotesMediaService();
+  getAndRegisterShowcaseNotesFacadeService();
+  getAndRegisterShowcaseNotesMediaAdapterService();
 // @stacked-mock-register
 }
 
@@ -82,17 +82,17 @@ MockDialogService getAndRegisterDialogService() {
   return service;
 }
 
-MockShowcaseNotesFacade getAndRegisterShowcaseNotesFacade() {
-  _removeRegistrationIfExists<ShowcaseNotesFacade>();
-  final service = MockShowcaseNotesFacade();
-  locator.registerSingleton<ShowcaseNotesFacade>(service);
+MockShowcaseNotesFacadeService getAndRegisterShowcaseNotesFacadeService() {
+  _removeRegistrationIfExists<ShowcaseNotesFacadeService>();
+  final service = MockShowcaseNotesFacadeService();
+  locator.registerSingleton<ShowcaseNotesFacadeService>(service);
   return service;
 }
 
-MockShowcaseNotesMediaService getAndRegisterShowcaseNotesMediaService() {
-  _removeRegistrationIfExists<ShowcaseNotesMediaService>();
-  final service = MockShowcaseNotesMediaService();
-  locator.registerSingleton<ShowcaseNotesMediaService>(service);
+MockShowcaseNotesMediaAdapterService getAndRegisterShowcaseNotesMediaAdapterService() {
+  _removeRegistrationIfExists<ShowcaseNotesMediaAdapterService>();
+  final service = MockShowcaseNotesMediaAdapterService();
+  locator.registerSingleton<ShowcaseNotesMediaAdapterService>(service);
   return service;
 }
 // @stacked-mock-create

@@ -2,14 +2,14 @@ import 'package:stacked/stacked.dart';
 import 'package:appbox_kit_core/kit_locator.dart';
 import 'package:appbox_kit_data/appbox_kit_data.dart';
 
-import 'package:appbox_kit_showcase_app/services/facades/showcase_notes_facade.dart';
+import 'package:appbox_kit_showcase_app/services/showcase_notes_services/facades/showcase_notes_facade_service.dart';
 
 /// Create-account panel for the seed-backend smoke surface. Talks only to
-/// [ShowcaseNotesFacade.auth] — when sign-up succeeds a session appears on the
+/// [ShowcaseNotesFacadeService.auth] — when sign-up succeeds a session appears on the
 /// stream and the signed-out ShowcaseNotesView swaps this panel away in
 /// place; the view itself never navigates.
 class ShowcaseNotesCreateAccountViewModel extends BaseViewModel {
-  final ShowcaseNotesFacade _notes = locator<ShowcaseNotesFacade>();
+  final ShowcaseNotesFacadeService _notes = locator<ShowcaseNotesFacadeService>();
 
   KitAuthService get auth => _notes.auth;
 

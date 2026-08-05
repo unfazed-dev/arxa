@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:stacked/stacked.dart';
 import 'package:ui_library/ui_library.dart';
-import 'package:appbox_kit_showcase_app/models/showcase_note_attachment.dart';
+import 'package:appbox_kit_showcase_app/models/showcase_notes_models/showcase_note_attachment_model.dart';
 import 'package:stacked_services/stacked_services.dart';
 import 'package:appbox_kit_showcase_app/app/app.dialogs.dart';
 import 'package:appbox_kit_showcase_app/ui/widgets/showcase_notes_widgets/widgets.dart';
@@ -88,7 +88,7 @@ class ShowcaseNoteEditorViewMobile
 Future<void> _confirmRemove(
   BuildContext context,
   ShowcaseNoteEditorViewModel viewModel,
-  ShowcaseNoteAttachment attachment,
+  ShowcaseNoteAttachmentModel attachment,
 ) async {
   final res = await locator<DialogService>().showCustomDialog(
     variant: DialogType.showcaseConfirm,

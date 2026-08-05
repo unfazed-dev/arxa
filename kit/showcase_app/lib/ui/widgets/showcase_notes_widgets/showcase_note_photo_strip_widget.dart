@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:ui_library/ui_library.dart';
-import 'package:appbox_kit_showcase_app/models/showcase_note_attachment.dart';
+import 'package:appbox_kit_showcase_app/models/showcase_notes_models/showcase_note_attachment_model.dart';
 import 'package:appbox_kit_showcase_app/ui/common/app_colors.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_note_editor/showcase_note_editor_viewmodel.dart';
 
@@ -16,11 +16,11 @@ class ShowcaseNotePhotoStripWidget extends StatelessWidget {
     required this.onRemoveAttachment,
   });
   final ShowcaseNoteEditorViewModel viewModel;
-  final List<ShowcaseNoteAttachment> photos;
+  final List<ShowcaseNoteAttachmentModel> photos;
 
   /// Long-press handler — the view owns the remove-confirmation dialog
   /// plumbing.
-  final Future<void> Function(ShowcaseNoteAttachment attachment) onRemoveAttachment;
+  final Future<void> Function(ShowcaseNoteAttachmentModel attachment) onRemoveAttachment;
 
   @override
   Widget build(BuildContext context) => SizedBox(

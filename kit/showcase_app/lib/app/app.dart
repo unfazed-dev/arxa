@@ -25,9 +25,9 @@ import 'package:stacked_services/stacked_services.dart';
 import 'package:talker_flutter/talker_flutter.dart';
 import 'package:appbox_kit_haptics/appbox_kit_haptics.dart';
 import 'package:ui_library/ui_library.dart';
-import 'package:appbox_kit_showcase_app/services/repositories/showcase_notes_repository.dart';
-import 'package:appbox_kit_showcase_app/services/facades/showcase_notes_facade.dart';
-import 'package:appbox_kit_showcase_app/services/adapters/showcase_notes_media_service.dart';
+import 'package:appbox_kit_showcase_app/services/showcase_notes_services/repositories/showcase_notes_repository_service.dart';
+import 'package:appbox_kit_showcase_app/services/showcase_notes_services/facades/showcase_notes_facade_service.dart';
+import 'package:appbox_kit_showcase_app/services/showcase_notes_services/adapters/showcase_notes_media_adapter_service.dart';
 // @stacked-import
 
 @StackedApp(
@@ -103,11 +103,11 @@ import 'package:appbox_kit_showcase_app/services/adapters/showcase_notes_media_s
     LazySingleton(classType: KitOverlayService),
     LazySingleton(classType: KitSelectableService),
     // Data layer (appbox_kit_data layering): the Notes Repository — the
-    // notes-domain gateway over the kit's KitRepository<ShowcaseNote>/<ShowcaseNoteFolder> —
+    // notes-domain gateway over the kit's KitRepository<ShowcaseNoteModel>/<ShowcaseNoteFolderModel> —
     // then the Facade, the only layer viewmodels talk to.
-    LazySingleton(classType: ShowcaseNotesRepository),
-    LazySingleton(classType: ShowcaseNotesFacade),
-    LazySingleton(classType: ShowcaseNotesMediaService),
+    LazySingleton(classType: ShowcaseNotesRepositoryService),
+    LazySingleton(classType: ShowcaseNotesFacadeService),
+    LazySingleton(classType: ShowcaseNotesMediaAdapterService),
 // @stacked-service
   ],
   bottomsheets: [
