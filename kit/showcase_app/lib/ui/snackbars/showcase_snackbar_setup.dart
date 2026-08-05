@@ -21,6 +21,11 @@ void setupShowcaseSnackbars() {
     SnackbarConfig(
       snackPosition: SnackPosition.BOTTOM,
       backgroundColor: kcDarkGreyColor,
+      // Real blur + plain dim (see setupKitSnackbars: blur 20 ≈ Apple's
+      // regular material; chrome dematerializes via withNativeChromeHidden
+      // at the KitNotificationService seat).
+      overlayBlur: 20,
+      overlayColor: Colors.black54,
       messageColor: kcWhite,
       messageTextAlign: TextAlign.center,
       titleColor: kcWhite,
