@@ -2,7 +2,7 @@ import 'package:appbox_kit_showcase_app/ui/bottom_sheets/notice/notice_sheet.dar
 import 'package:appbox_kit_showcase_app/ui/dialogs/info_alert/info_alert_dialog.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_unknown/showcase_unknown_view.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_startup/showcase_startup_view.dart';
-import 'package:appbox_kit_showcase_app/ui/views/showcase_shell/showcase_shell_view.dart';
+import 'package:appbox_kit_showcase_app/ui/views/showcase_application_shell/showcase_application_shell_view.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_home_shell/showcase_home_shell_view.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_home_shell/showcase_home/showcase_home_view.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_search_shell/showcase_search_shell_view.dart';
@@ -28,13 +28,13 @@ import 'package:appbox_kit_showcase_app/services/notes_media_service.dart';
 
 @StackedApp(
   routes: [
-    // Shell-per-tab (navigator2): ShowcaseShellView hosts four tab stacks in a
+    // Shell-per-tab (navigator2): ShowcaseApplicationShellView hosts four tab stacks in a
     // StackedTabsRouter (IndexedStack — every stack stays alive). Each tab file
     // defines both a `*ShellView` router outlet and its leaf view. Ported from
-    // the source showcase; names/paths must match ShowcaseShellView.tabs.
+    // the source showcase; names/paths must match ShowcaseApplicationShellView.tabs.
     AdaptiveRoute(page: ShowcaseStartupView, initial: true),
 
-    AdaptiveRoute(page: ShowcaseShellView, path: '/', children: [
+    AdaptiveRoute(page: ShowcaseApplicationShellView, path: '/', children: [
       AdaptiveRoute(
           page: ShowcaseHomeShellView,
           path: 'home',

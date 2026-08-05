@@ -12,6 +12,6 @@ class ShowcaseStartupViewModel extends BaseViewModel {
   // replaces to the tab shell — the canonical Stacked startup flow.
   Future runStartupLogic() async {
     await AppData.initialize();
-    await _routerService.replaceWith(ShowcaseShellViewRoute());
+    await _routerService.replaceWith(ShowcaseApplicationShellViewRoute());
   }
 }

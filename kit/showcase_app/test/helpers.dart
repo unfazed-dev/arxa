@@ -59,7 +59,7 @@ Future<void> settle(WidgetTester tester, [int frames = 12]) async {
   }
 }
 
-/// Pumps a fresh [StackedRouterWeb] app showing [ShowcaseShellView].
+/// Pumps a fresh [StackedRouterWeb] app showing [ShowcaseApplicationShellView].
 Future<StackedRouterWeb> bootShell(WidgetTester tester) async {
   // Phone-sized surface (390×844@3x): the default 800×600 test view makes
   // ScreenTypeLayout pick the TABLET variant — which is an intentional v1
@@ -75,7 +75,7 @@ Future<StackedRouterWeb> bootShell(WidgetTester tester) async {
       // Boot straight into the shell — ShowcaseStartupView (the app's real initial
       // route) would re-run AppData.initialize on its post-frame callback.
       routerDelegate: router.delegate(
-        initialRoutes: [ShowcaseShellViewRoute()],
+        initialRoutes: [ShowcaseApplicationShellViewRoute()],
       ),
       routeInformationParser: router.defaultRouteParser(),
     ),

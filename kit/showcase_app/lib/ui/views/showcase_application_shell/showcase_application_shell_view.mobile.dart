@@ -2,16 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:stacked/stacked.dart';
 import 'package:ui_library/ui_library.dart';
 
-import 'showcase_shell_view.dart';
-import 'showcase_shell_viewmodel.dart';
+import 'showcase_application_shell_view.dart';
+import 'showcase_application_shell_viewmodel.dart';
 
-class ShowcaseShellViewMobile extends ViewModelWidget<ShowcaseShellViewModel> {
-  const ShowcaseShellViewMobile({super.key});
+class ShowcaseApplicationShellViewMobile extends ViewModelWidget<ShowcaseApplicationShellViewModel> {
+  const ShowcaseApplicationShellViewMobile({super.key});
 
   @override
-  Widget build(BuildContext context, ShowcaseShellViewModel viewModel) {
+  Widget build(BuildContext context, ShowcaseApplicationShellViewModel viewModel) {
     return StackedTabsRouter.builder(
-      routes: ShowcaseShellView.tabs,
+      routes: ShowcaseApplicationShellView.tabs,
       homeIndex: 0,
       // `children` are the four tab shells — each already a full chrome
       // Scaffold. No app bar / FAB / fade here: the host stays structurally

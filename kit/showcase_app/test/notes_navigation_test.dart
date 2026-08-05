@@ -6,14 +6,14 @@
 //    reads as a visual "jump" and must not return.
 // 2. Nested pushes: navigation between Notes children is the notes branch's
 //    OWN concern. The original code navigated the ROOT router by absolute
-//    path, which pushed a second ShowcaseShellView (booting at the Home tab)
+//    path, which pushed a second ShowcaseApplicationShellView (booting at the Home tab)
 //    and leaked a back button into every tab's chrome.
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_auth/showcase_notes_auth_view.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_folder/showcase_notes_folder_view.dart';
-import 'package:appbox_kit_showcase_app/ui/views/showcase_shell/showcase_shell_view.dart';
+import 'package:appbox_kit_showcase_app/ui/views/showcase_application_shell/showcase_application_shell_view.dart';
 
 import 'helpers.dart';
 
@@ -62,7 +62,7 @@ void main() {
 
     expect(find.byType(ShowcaseNotesFolderView), findsOneWidget,
         reason: 'tapping All Notes must open the folder view');
-    expect(find.byType(ShowcaseShellView), findsOneWidget,
+    expect(find.byType(ShowcaseApplicationShellView), findsOneWidget,
         reason: 'the push must stay inside the notes branch — a second shell '
             'instance means it landed on the root stack');
     // ignoreChildRoutes: plain canPop() includes nested routers, and the

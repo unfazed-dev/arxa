@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 import 'package:stacked/stacked.dart';
 
-import 'showcase_shell_view.desktop.dart';
-import 'showcase_shell_view.tablet.dart';
-import 'showcase_shell_view.mobile.dart';
-import 'showcase_shell_viewmodel.dart';
+import 'showcase_application_shell_view.desktop.dart';
+import 'showcase_application_shell_view.tablet.dart';
+import 'showcase_application_shell_view.mobile.dart';
+import 'showcase_application_shell_viewmodel.dart';
 
 /// The showcase's routed shell — the template for how a bespoke appbox_kit
 /// app hangs tab SHELLS off the router, mirroring the host `app.dart` pattern
@@ -32,8 +32,8 @@ import 'showcase_shell_viewmodel.dart';
 /// class names, which this package owns), so the shell never imports the
 /// generated router — the route block just has to declare the same four
 /// children (see `lib/app/app.dart`).
-class ShowcaseShellView extends StackedView<ShowcaseShellViewModel> {
-  const ShowcaseShellView({super.key});
+class ShowcaseApplicationShellView extends StackedView<ShowcaseApplicationShellViewModel> {
+  const ShowcaseApplicationShellView({super.key});
 
   /// One entry per tab, in tab order. Names/paths must match the shell's
   /// children in `app.dart` — the single contract between shell and routes.
@@ -47,19 +47,19 @@ class ShowcaseShellView extends StackedView<ShowcaseShellViewModel> {
   @override
   Widget builder(
     BuildContext context,
-    ShowcaseShellViewModel viewModel,
+    ShowcaseApplicationShellViewModel viewModel,
     Widget? child,
   ) {
     return ScreenTypeLayout.builder(
-      mobile: (_) => const ShowcaseShellViewMobile(),
-      tablet: (_) => const ShowcaseShellViewTablet(),
-      desktop: (_) => const ShowcaseShellViewDesktop(),
+      mobile: (_) => const ShowcaseApplicationShellViewMobile(),
+      tablet: (_) => const ShowcaseApplicationShellViewTablet(),
+      desktop: (_) => const ShowcaseApplicationShellViewDesktop(),
     );
   }
 
   @override
-  ShowcaseShellViewModel viewModelBuilder(
+  ShowcaseApplicationShellViewModel viewModelBuilder(
     BuildContext context,
   ) =>
-      ShowcaseShellViewModel();
+      ShowcaseApplicationShellViewModel();
 }
