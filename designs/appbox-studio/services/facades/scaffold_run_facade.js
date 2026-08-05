@@ -22,9 +22,11 @@
 import * as repo from '../repositories/scaffold_run_repository.js';
 // The header's account chip (_shared.html accountChip) reads the picker
 // fixture's seeded entitlement — composing a second repository is exactly
-// what a facade is for. Run has no entitlement lens of its own; the seeded
-// default (signed-in, studio plan) is the state this surface renders.
+// what a facade is for. Run has no entitlement lens of its own; the chip
+// follows the REAL seeded session (same accountState helper the picker
+// gate derives from), falling back to the fixture's plan label.
 import * as pickerRepo from '../repositories/scaffold_repository.js';
+import { accountState } from './app_facade.js';
 
 const STATES = ['pre', 'completed', 'warning', 'failed', 'blocked'];
 const PERSISTABLE_PANELS = ['composer', 'activity'];
@@ -85,7 +87,11 @@ export const context = (session = {}, t = (k) => k, locale = 'en', screen = 'com
     panelSizeHref: '/scaffold/run/panel/size/activity/',
     stageEyebrow: t('scaffold.run.eyebrow'),
     // brief (c): the shell header carries the entitlement/account element.
-    entitlement: { ...pickerRepo.entitlement(locale), signedIn: true, accountHref: '/workspace/plans' },
+    entitlement: {
+      ...pickerRepo.entitlement(locale),
+      ...accountState(session),
+      accountHref: '/workspace/plans',
+    },
     chips: [
       { label: t('scaffold.run.chip.structure', { revision: structure.revision }) },
       { label: t('scaffold.run.chip.kits', { count: counts.kits }) },

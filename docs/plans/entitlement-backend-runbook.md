@@ -261,15 +261,18 @@ human decisions, in order:
    users, Totem Labs org with the full role matrix, Michelle individual;
    all seed users share the dev password recorded in the seed file header).
    The function's DB steps are still untested against real data until step 5.
-3. **Generate the production issuer key:**
-   `node deploy/supabase/scripts/keygen.mjs`, then
-   `supabase secrets set ENTITLEMENT_ISSUER_JWK="$(cat deploy/supabase/secrets/entitlement-issuer.jwk.json)"`.
-4. **Deploy the function:** `supabase functions deploy activate` from the
-   linked project (the functions dir layout under `deploy/supabase/functions/`
-   follows the CLI convention — copy or symlink into the project root, or
-   point `--project-ref` at it per CLI version).
-5. **Smoke-test live:** one real authenticated `POST /activate` against the
-   deployed function, then `appbox entitlement verify ~/.appbox/entitlement.jwt`.
+3. ~~**Generate the production issuer key**~~ — DONE (2026-08-05): keygen ran,
+   JWK at the gitignored `deploy/supabase/secrets/` (chmod 600), and
+   `ENTITLEMENT_ISSUER_JWK` set via `supabase secrets set`.
+4. ~~**Deploy the function**~~ — DONE (2026-08-05): `activate` v1 ACTIVE on the
+   project, `verify_jwt: true` (deployed via MCP; the `_shared/` file must be
+   passed as `../_shared/entitlement_jwt.ts` for the bundler).
+5. ~~**Smoke-test live**~~ — DONE (2026-08-05): seed user password sign-in →
+   `POST /activate` 200 with a compact JWS; negatives all correct (401 no
+   auth / 400 bad fpr / 402 no entitlement); machine row written; signature
+   verified against the production public key with the repo's own ed25519 —
+   and the dev-key client correctly rejects the prod token (`bad signature`)
+   until step 6.
 6. **Dev key swap** (§7): replace `Entitlement.publicKey` with the printed
    production hex, delete `mint --dev`, flip `test/release_gate_test.dart`.
    Until then the release-gate test MUST stay green — it is the tripwire.

@@ -58,6 +58,7 @@ export default [
   // PaymentSuccess applied to the account.
   ['GET', '/workspace/plans', plans.page],
   ['POST', '/workspace/plans/signout', plans.signOut],
+  ['POST', '/workspace/plans/checkout/attempt', plans.attemptCheckout],
   ['POST', '/workspace/plans/checkout/apply', plans.applyCheckout],
   ['POST', '/prefs/accent', prefs.setAccent],
   ['POST', '/prefs/font', prefs.setFont],

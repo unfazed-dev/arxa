@@ -7,6 +7,10 @@
 // remove, and the D2 removal confirm resolved from the fixture's `removal`
 // block. Pure projection: no I/O beyond the repository, no client-side JS.
 import * as repo from '../repositories/scaffold_repository.js';
+// The gate and the header chip read the REAL seeded session (sign-in,
+// checkout-apply, sign-out all flip it) — the app shell owns those session
+// keys, so the shape is read through its one helper, never re-derived here.
+import { accountState } from './app_facade.js';
 
 // Same derivation the fixture generator uses — the registry declares no
 // `depends` field, so topology is the coupling signal. Kept in sync by shape,
@@ -56,7 +60,7 @@ const pickedFrom = (session, locale) => {
  * @param session  server-held session (holds scaffoldPicked, pendingRemove)
  * @param t        translator
  * @param locale   active locale
- * @param screen   requested lens state: success | empty | loading | error | notEntitled | signedout
+ * @param screen  requested lens state: success | empty | loading | error | notEntitled | signedout
  *
  * Lens tokens arrive from `?state=` and are matched case-insensitively. The
  * repo spells this vocabulary two ways — the registry and the lens probes use
@@ -64,8 +68,13 @@ const pickedFrom = (session, locale) => {
  * exact match silently fell through to `success`, rendering an ungated picker
  * for a signed-out probe. Normalise the input; keep `gatedReason` camelCase,
  * which is what the view and the l10n keys already branch on.
+ *
+ * `?state=` is a DEBUG OVERRIDE: any explicit value renders exactly that lens
+ * (gate states included) regardless of session. With NO override the gate
+ * follows the real seeded session — signed-out → signedOut gate, signed-in
+ * without a plan → notEntitled gate, entitled → ungated.
  */
-export const context = (session = {}, t = (k) => k, locale = 'en', screen = 'success') => {
+export const context = (session = {}, t = (k) => k, locale = 'en', screen) => {
   const all = repo.kits(locale);
   const byId = Object.fromEntries(all.map((k) => [k.id, k]));
   const ent = repo.entitlement(locale);
@@ -78,9 +87,15 @@ export const context = (session = {}, t = (k) => k, locale = 'en', screen = 'suc
   // Two distinct gates that happen to share one read-only presentation:
   // signed-out is answered by signing in, not-entitled by upgrading. The
   // copy and the CTA must differ, or we send a signed-out user to a paywall.
-  const lens = String(screen).toLowerCase();
-  const signedOut = lens === 'signedout' || !ent.signedIn;
-  const gated = signedOut || lens === 'notentitled' || !ent.entitled;
+  const lens = String(screen ?? '').toLowerCase();
+  const gateOverride = lens === 'signedout' || lens === 'notentitled';
+  const acct = accountState(session);
+  // An explicit non-gate lens keeps the fixture's seeded entitlement (the
+  // debug override); gate lenses force theirs; no lens → the session.
+  const effSignedIn = gateOverride ? lens === 'notentitled' : lens !== '' || acct.signedIn;
+  const effEntitled = gateOverride ? false : lens !== '' || acct.entitled;
+  const signedOut = !effSignedIn;
+  const gated = !effSignedIn || !effEntitled;
   const gatedReason = signedOut ? 'signedOut' : 'notEntitled';
 
   const picked = lens === 'empty' ? new Set(essentials) : pickedFrom(session, locale);
@@ -221,14 +236,18 @@ export const context = (session = {}, t = (k) => k, locale = 'en', screen = 'suc
     base: '/scaffold',
     // Report the gate we actually applied, so a signedOut lens never reports
     // itself as notEntitled to a probe or a lens validator.
-    state: gated ? gatedReason : screen,
+    state: gated ? gatedReason : lens || 'success',
     loading: lens === 'loading',
     error: lens === 'error' ? { ...states.error, source: states.error.source } : null,
     gated,
     gatedReason,
     entitlement: {
       ...ent,
-      signedIn: !signedOut,
+      signedIn: effSignedIn,
+      // Session-derived (or the debug override's): the header chip reads this
+      // to pick Sign in / Upgrade / plan badge.
+      entitled: effEntitled,
+      plan: acct.plan || ent.plan,
       // Signed-out goes to auth; not-entitled goes to the upgrade path. Read
       // by gatedNotice and the shell header's account chip, so signedOut is
       // the only split that matters. /auth and /workspace/plans both resolve.

@@ -13,7 +13,7 @@ const VIEW = 'ui/views/main_shell/scaffold/picker/picker_view.html';
 // whole facade context silently dropped. Every other viewmodel spreads.
 const ctx = (c, h, screen) => ({
   activeShell: 'scaffold',
-  ...facade.context(h.session(c).data, h.t(c), h.locale(c), screen || c.req.query('state') || 'success'),
+  ...facade.context(h.session(c).data, h.t(c), h.locale(c), screen || c.req.query('state')),
 });
 
 /** Session-held selection. Seeded from the fixture on first touch. */
@@ -42,7 +42,7 @@ export const panelSize = (c, h) =>
       c.req.param('size'),
       h.t(c),
       h.locale(c),
-      c.req.query('state') || 'success',
+      c.req.query('state'),
     ),
   });
 
@@ -63,7 +63,7 @@ export const sendMessage = async (c, h) => {
       text,
       h.t(c),
       h.locale(c),
-      c.req.query('state') || 'success',
+      c.req.query('state'),
     ),
   });
 };

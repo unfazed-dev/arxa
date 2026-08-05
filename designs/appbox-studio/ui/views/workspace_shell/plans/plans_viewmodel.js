@@ -28,6 +28,15 @@ export const signOut = (c, h) => {
   return c.redirect('/auth', 303);
 };
 
+// A seeded checkout attempt: the chosen outcome is persisted in the session
+// and the 303 lands back on /workspace/plans, which renders that outcome's
+// result panel — the whole journey drives by click, no URL hacking.
+export const attemptCheckout = async (c, h) => {
+  const form = await h.form(c);
+  facade.attemptCheckout(h.session(c).data, String(form.outcome || ''), h.locale(c));
+  return c.redirect('/workspace/plans', 303);
+};
+
 // The seeded PaymentSuccess applied to the account: session flips to the paid
 // plan, 303 back to /workspace/plans which now renders the entitled lens.
 export const applyCheckout = (c, h) => {

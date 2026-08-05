@@ -84,10 +84,18 @@
   <p class="settings-note">{{ t('plans.checkout.seeded') }}</p>
   <p class="checkout-summary">{{ icon('credit-card', {size: 14}) }} {{ t('plans.checkout.summary', {amount: checkout.amountLabel}) }}</p>
 
+  {# The seeded outcome chooser — Stripe's test-card idiom: the checkout
+     offers the scripted payment outcomes, each a real POST that the session
+     remembers (POST /workspace/plans/checkout/attempt), so the result panel
+     survives navigation with zero URL hacking. ?pay= stays as a debug
+     override. #}
   <div class="checkout-outcomes" role="group" aria-label="{{ t('plans.checkout.outcomesAria') }}">
     {% for o in checkout.outcomes %}
-    <a class="chip {{ 'chip--accent' if o.active else 'chip--muted' }}" href="{{ o.href }}"
-       title="{% if o.profile %}{{ o.profile }} -> {% endif %}{{ o.result }}">{{ o.label }}</a>
+    <form method="post" action="/workspace/plans/checkout/attempt">
+      <button type="submit" name="outcome" value="{{ o.id }}"
+              class="chip {{ 'chip--accent' if o.active else 'chip--muted' }}"
+              title="{% if o.profile %}{{ o.profile }} -> {% endif %}{{ o.result }}">{{ o.label }}</button>
+    </form>
     {% endfor %}
   </div>
 
@@ -104,7 +112,11 @@
       <button type="submit" class="cta-main">{{ checkout.active.applyLabel }}</button>
     </form>
     {% elif checkout.active.id == 'decline' or checkout.active.id == 'timeout' %}
-    {{ pr.ctaLink(checkout.active.retryHref, checkout.active.retryLabel, 'refresh-cw', 'main') }}
+    {# The retry path, by click: another seeded attempt whose outcome is the
+       kit's own profile-flip (decline → succeed). #}
+    <form method="post" action="/workspace/plans/checkout/attempt">
+      <button type="submit" name="outcome" value="succeed" class="cta-main">{{ icon('refresh-cw', {size: 14}) }} {{ checkout.active.retryLabel }}</button>
+    </form>
     {% endif %}
   </aside>
   {% endif %}

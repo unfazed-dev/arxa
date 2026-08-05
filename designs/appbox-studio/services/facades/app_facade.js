@@ -261,6 +261,14 @@ export const setConfig = (sd, form) => {
 // session wins over the seeded default (signed-in, free).
 import * as plansRepo from '../repositories/plans_repository.js';
 
+// The seeded account session, one read for every shell that needs it (the
+// scaffold picker's gate and both header chips derive from this — the app
+// shell owns the session keys, so the shape lives here exactly once).
+export const accountState = (sd) => {
+  const s = S(sd);
+  return { signedIn: !!s.user, entitled: s.plan === 'studio', plan: s.plan || null };
+};
+
 const PLAN_LENSES = ['signedout', 'free', 'entitled'];
 
 // The effective lens: explicit ?state= > session (signed-out / upgraded) >
@@ -296,15 +304,21 @@ export const plansContext = (sd, t = (k) => k, locale = 'en', { state, pay } = {
   // The mock checkout: five seeded outcomes mirroring kit/payments one-for-one
   // (the fixture carries each outcome's SeedPaymentProfile + PaymentResult
   // case). Only meaningful to a signed-in user with something to buy.
+  // The active outcome is SESSION state (set by POST /checkout/attempt — the
+  // Stripe test-card idiom: you pick the seeded method, the result follows);
+  // ?pay= stays as the debug override. Navigation keeps the last outcome.
   const checkout = plansRepo.checkout(locale);
-  const activePay = checkout.outcomes.some((o) => o.id === pay) ? pay : null;
+  const activePay = checkout.outcomes.some((o) => o.id === pay)
+    ? pay
+    : checkout.outcomes.some((o) => o.id === s.checkoutOutcome)
+      ? s.checkoutOutcome
+      : null;
   const checkoutCtx = {
     ...checkout,
     amountLabel: t('plans.price', { amount: checkout.amount }),
     outcomes: checkout.outcomes.map((o) => ({
       ...o,
       label: t(`plans.checkout.outcome.${o.id}.label`),
-      href: `/workspace/plans?state=${lens}&pay=${o.id}`,
       active: o.id === activePay,
     })),
     active: activePay
@@ -313,9 +327,9 @@ export const plansContext = (sd, t = (k) => k, locale = 'en', { state, pay } = {
           ...checkout.outcomes.find((o) => o.id === activePay),
           title: t(`plans.checkout.outcome.${activePay}.title`),
           body: t(`plans.checkout.outcome.${activePay}.body`),
-          // The retry path a PaymentDeclined branch offers: try again (the
-          // seed flips to succeed — the kit's own profile-flip idiom).
-          retryHref: `/workspace/plans?state=${lens}&pay=succeed`,
+          // The retry path a PaymentDeclined branch offers: another seeded
+          // attempt (the kit's own profile-flip idiom), wired as a real form
+          // in the view — no href here.
           retryLabel: t('plans.checkout.retry'),
           // Only the success branch mutates anything: applying the seeded
           // token flips the session to the paid plan. The form's action is a
@@ -339,19 +353,33 @@ export const plansContext = (sd, t = (k) => k, locale = 'en', { state, pay } = {
   };
 };
 
+// A seeded checkout attempt: the user picks one of the scripted outcomes
+// (the kit's SeedPaymentsProvider profiles + the plain PaymentError branch)
+// and the session remembers it, so the result panel survives navigation.
+// An unknown outcome is a no-op — the server never trusts the markup.
+export const attemptCheckout = (sd, outcome, locale = 'en') => {
+  const o = String(outcome || '').toLowerCase();
+  if (plansRepo.checkout(locale).outcomes.some((x) => x.id === o)) {
+    S(sd).checkoutOutcome = o;
+  }
+};
+
 // Sign-out flips the seeded session to signed-out (and drops the seeded
-// upgrade) and the route handler 303s to /auth — the mirror of auth's
-// "any input signs in".
+// upgrade and any scripted checkout outcome) and the route handler 303s to
+// /auth — the mirror of auth's "any input signs in".
 export const signOut = (sd) => {
   const s = S(sd);
   s.user = null;
   delete s.plan;
+  delete s.checkoutOutcome;
 };
 
 // The seeded PaymentSuccess applied: the wallet token "captured", the account
-// now on the paid plan. Session state, never seed state.
+// now on the paid plan. Session state, never seed state. The outcome is
+// consumed — an entitled account re-opening the checkout sees no stale panel.
 export const applyUpgrade = (sd, locale = 'en') => {
   const s = S(sd);
   if (!s.user) s.user = { email: repo.account(locale).email, via: 'seed' };
   s.plan = plansRepo.account(locale).plan;
+  delete s.checkoutOutcome;
 };
