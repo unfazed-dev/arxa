@@ -847,7 +847,7 @@ void _runS8(String app, void Function(String) ok, void Function(String) warn,
       fail('KitNotificationService is registered but setupKitSnackbars() is never '
           'called in lib/ (S8) — the KitSnackbarType SnackbarConfig variants stay '
           'unregistered, so severity/position render as bare defaults '
-          '(showcase_app/lib/main.dart:26 is the reference call site)');
+          '(showcase_app/lib/ui/snackbars/showcase_snackbar_setup.dart is the reference call site)');
       bad++;
     }
   }
