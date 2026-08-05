@@ -252,11 +252,15 @@ code. The deploy gate keeps only its pipeline-state contract
 Everything in §1–§3 now has source; the rest needs external accounts and
 human decisions, in order:
 
-1. **Create the Supabase project** (`supabase init` / `link` — manual; no
-   `config.toml` is committed because the project ref doesn't exist yet).
-2. **Apply the schema:** run `deploy/supabase/schema.sql` (SQL editor or a
-   migration). Until this lands the function's steps 2–4 are untested against
-   a real database — they are code-reviewed only.
+1. ~~**Create the Supabase project**~~ — DONE (2026-08-05): project
+   `smjuargdrbpaptduqdgf`, wired via the repo-local MCP
+   (`.kimi-code/mcp.json`).
+2. ~~**Apply the schema**~~ — DONE (2026-08-05): `deploy/supabase/schema.sql`
+   applied as migration `appbox_schema_rounds_1_and_2`; 13 tables + 13 RLS
+   policies verified live, and seeded (`deploy/supabase/seed.sql` — persona
+   users, Totem Labs org with the full role matrix, Michelle individual;
+   all seed users share the dev password recorded in the seed file header).
+   The function's DB steps are still untested against real data until step 5.
 3. **Generate the production issuer key:**
    `node deploy/supabase/scripts/keygen.mjs`, then
    `supabase secrets set ENTITLEMENT_ISSUER_JWK="$(cat deploy/supabase/secrets/entitlement-issuer.jwk.json)"`.
@@ -275,3 +279,53 @@ human decisions, in order:
    silent 48h refresh. Not started.
 9. **Pre-launch decisions** (§7): rotation/compromise ownership, rate-limit
    on activate/deactivate cycling, air-gapped buyers, Shorebird pricing.
+
+## 10. OAuth providers (Google + Apple) — from-scratch guide
+
+Supabase project callback URL (both providers need it):
+`https://smjuargdrbpaptduqdgf.supabase.co/auth/v1/callback`
+
+Provider config lives in the Supabase dashboard (Authentication → Sign In /
+Providers); the MCP has no auth-config tool, so these steps are manual.
+Client IDs/secrets go NOWHERE in the repo.
+
+### Google
+
+1. Google Cloud Console → create a project (e.g. "appbox") → APIs & Services
+   → OAuth consent screen: External, app name "appbox", Totem support email;
+   no extra scopes needed (email/profile are default).
+2. APIs & Services → Credentials → Create Credentials → OAuth client ID →
+   type **Web application**. Authorized redirect URI: the callback URL above.
+3. Copy the Client ID + Client Secret → Supabase dashboard → Authentication
+   → Providers → Google → enable, paste both, save.
+4. Test: sign in with Google from the studio auth surface (or the hosted
+   `/auth/v1/authorize?provider=google` URL) and confirm a row lands in
+   `auth.users`.
+
+### Apple
+
+Requires a paid Apple Developer account (~USD 99/yr) — Sign in with Apple
+cannot be tested without one.
+
+1. developer.apple.com → Certificates, Identifiers & Profiles → Identifiers
+   → register an **App ID** for the appbox app (bundle id, e.g.
+   `dev.totemlabs.appbox`), enable "Sign in with Apple" on it.
+2. Register a **Services ID** (e.g. `dev.totemlabs.appbox.signin`) → enable
+   Sign in with Apple → Configure: domain `smjuargdrbpaptduqdgf.supabase.co`,
+   return URL = the callback URL above.
+3. Create a Sign in with Apple **Key** (Keys → new key, enable the
+   capability) — download the `.p8` (shown once); note the Key ID, Team ID.
+4. Supabase dashboard → Authentication → Providers → Apple → enable. Client
+   ID = the **Services ID**; Secret = the JWT Apple expects — the dashboard
+   accepts the Secret Key fields (Services ID, Team ID, Key ID, `.p8`
+   contents) and generates it, or paste a pre-generated secret JWT.
+5. Test the flow end-to-end; Apple is the stricter provider — check the
+   return URL matches character-for-character if it rejects.
+
+### After both
+
+- The studio design's auth surface already renders provider buttons; wire the
+  real client calls when `appbox login` (§4) lands.
+- Update the seeded auth users only if real OAuth logins should link to them
+  (identity linking by email is on by default — a Google login with a seed
+  email would attach to the seed user; use non-seed addresses for tests).
