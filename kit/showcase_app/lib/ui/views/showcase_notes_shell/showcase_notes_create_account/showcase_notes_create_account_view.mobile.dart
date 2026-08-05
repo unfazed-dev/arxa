@@ -3,8 +3,8 @@ import 'package:stacked/stacked.dart';
 import 'package:appbox_kit_core/common/kit_app_constants.dart';
 import 'package:appbox_kit_core/common/kit_glyphs.dart';
 import 'package:appbox_kit_core/common/kit_ui_helpers.dart';
+import 'package:appbox_kit_showcase_app/ui/widgets/showcase_notes_widgets/widgets.dart';
 
-import 'widgets/widgets.dart';
 import 'showcase_notes_create_account_viewmodel.dart';
 
 class ShowcaseNotesCreateAccountViewMobile
@@ -46,10 +46,9 @@ class ShowcaseNotesCreateAccountViewMobile
               ],
             ),
             verticalSpaceLarge,
-            // The form lives in this view's `widgets/` barrel; its reusable
-            // field/error pieces come from the shell's `shared/widgets/` barrel
-            // (folder-org gate check C/D).
-            CreateAccountForm(
+            // The form and its reusable field/error pieces come from the
+            // central `showcase_notes_widgets` barrel.
+            ShowcaseNotesCreateAccountFormWidget(
                 viewModel: viewModel, onBackToSignIn: onBackToSignIn),
           ],
         ),

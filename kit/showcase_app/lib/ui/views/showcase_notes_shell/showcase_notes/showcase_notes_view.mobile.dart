@@ -6,7 +6,8 @@ import 'package:appbox_kit_showcase_app/notes/models/note_folder.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_auth/showcase_notes_auth_view.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_create_account/showcase_notes_create_account_view.dart';
 import 'package:appbox_kit_showcase_app/ui/common/showcase_notes_shared.dart';
-import 'package:appbox_kit_showcase_app/ui/common/showcase_tabs_shared.dart';
+import 'package:appbox_kit_showcase_app/ui/widgets/common/showcase_tabs_shared/widgets.dart';
+import 'package:appbox_kit_showcase_app/ui/widgets/showcase_notes_widgets/widgets.dart';
 import 'showcase_notes_viewmodel.dart';
 
 class ShowcaseNotesViewMobile extends ViewModelWidget<ShowcaseNotesViewModel> {
@@ -134,7 +135,7 @@ class ShowcaseNotesViewMobile extends ViewModelWidget<ShowcaseNotesViewModel> {
     Widget allNotesSection() => KitListSection(
           margin: EdgeInsets.zero,
           children: [
-            _Row(
+            ShowcaseNotesRowWidget(
               glyph: KitGlyphs.notes,
               label: 'All Notes',
               trailingCount: overview.allCount,
@@ -147,10 +148,11 @@ class ShowcaseNotesViewMobile extends ViewModelWidget<ShowcaseNotesViewModel> {
           margin: EdgeInsets.zero,
           children: [
             for (final folder in overview.folders)
-              _FolderRow(
+              ShowcaseNotesFolderRowWidget(
                 folder: folder,
                 count: overview.liveCountByFolder[folder.id] ?? 0,
                 viewModel: viewModel,
+                onRename: () => _showRenameDialog(context, viewModel, folder),
               ),
           ],
         );
@@ -158,7 +160,7 @@ class ShowcaseNotesViewMobile extends ViewModelWidget<ShowcaseNotesViewModel> {
     Widget trashSection() => KitListSection(
           margin: EdgeInsets.zero,
           children: [
-            _Row(
+            ShowcaseNotesRowWidget(
               glyph: KitGlyphs.delete,
               label: 'Recently Deleted',
               trailingCount: overview.trashCount,
@@ -199,7 +201,7 @@ class ShowcaseNotesViewMobile extends ViewModelWidget<ShowcaseNotesViewModel> {
           margin: EdgeInsets.zero,
           children: [
             for (final folder in admin!.folders)
-              _AdminFolderRow(
+              ShowcaseNotesAdminFolderRowWidget(
                 folder: folder,
                 count: admin.liveCountByFolder[folder.id] ?? 0,
               ),
@@ -262,99 +264,4 @@ Future<void> _showRenameDialog(BuildContext context,
   final name = await textInputDialog(context,
       title: 'Rename Folder', initial: folder.name);
   if (name != null) await viewModel.renameFolder(folder, name);
-}
-
-/// A single tappable folder-list row: glyph, label, trailing count, chevron.
-/// A thin adapter over [KitListTile] (the kit's grouped-list row idiom) so
-/// call sites keep passing the count as an int.
-class _Row extends StatelessWidget {
-  const _Row({
-    required this.glyph,
-    required this.label,
-    required this.trailingCount,
-    required this.onTap,
-  });
-
-  final KitGlyph glyph;
-  final String label;
-  final int trailingCount;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) => KitListTile(
-        glyph: glyph,
-        title: label,
-        trailingValue: '$trailingCount',
-        showChevron: true,
-        onTap: onTap,
-      );
-}
-
-/// Admin-section row: folder name + owner id subtitle + live count. Read-only
-/// by design — folder detail streams are owner-scoped, so navigating into
-/// another user's folder would show an empty list and read as a bug. The
-/// section demonstrates role-gated *visibility*, nothing more.
-class _AdminFolderRow extends StatelessWidget {
-  const _AdminFolderRow({required this.folder, required this.count});
-
-  final NoteFolder folder;
-  final int count;
-
-  @override
-  Widget build(BuildContext context) => KitListTile(
-        glyph: KitGlyphs.folder,
-        title: folder.name,
-        subtitle: folder.owner,
-        trailingValue: '$count',
-      );
-}
-
-/// A folder row: swipe-to-delete (confirmed), long-press-to-rename, tap to
-/// open. `confirmDismiss` always returns false — the section rebuilds off
-/// [ShowcaseNotesViewModel.overview]'s stream once the mutation lands, so the
-/// Dismissible never needs to remove the row itself.
-class _FolderRow extends StatelessWidget {
-  const _FolderRow({
-    required this.folder,
-    required this.count,
-    required this.viewModel,
-  });
-
-  final NoteFolder folder;
-  final int count;
-  final ShowcaseNotesViewModel viewModel;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Dismissible(
-      key: ValueKey(folder.id),
-      direction: DismissDirection.endToStart,
-      background: Container(
-        color: theme.colorScheme.error,
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.symmetric(horizontal: kSize20),
-        child: Icon(KitGlyphs.delete.icon, color: theme.colorScheme.onError),
-      ),
-      confirmDismiss: (_) async {
-        if (await confirmDialog(context,
-            title: 'Delete Folder',
-            message: 'Notes in "${folder.name}" will move to Recently Deleted.',
-            actionLabel: 'Delete',
-            destructive: true)) {
-          await viewModel.deleteFolder(folder);
-        }
-        return false;
-      },
-      child: GestureDetector(
-        onLongPress: () => _showRenameDialog(context, viewModel, folder),
-        child: _Row(
-          glyph: KitGlyphs.folder,
-          label: folder.name,
-          trailingCount: count,
-          onTap: () => context.router.pushNamed('folder/${folder.id}'),
-        ),
-      ),
-    );
-  }
 }

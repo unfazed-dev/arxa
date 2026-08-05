@@ -1,0 +1,40 @@
+import 'package:flutter/material.dart';
+import 'package:appbox_kit_core/common/kit_app_constants.dart';
+import 'package:appbox_kit_core/common/kit_glyphs.dart';
+import 'package:appbox_kit_core/common/kit_ui_helpers.dart';
+
+/// Inline error row — glyph + message in the error color, placed between the
+/// fields and the primary CTA so a failed attempt is read in context.
+///
+/// **Shared (shell-wide):** previously the duplicated top-level
+/// `Widget _errorRow(...)` in both `showcase_notes_auth` and
+/// `showcase_notes_create_account`. Lives in the central
+/// `showcase_notes_widgets` home.
+class ShowcaseNotesFormErrorRowWidget extends StatelessWidget {
+  const ShowcaseNotesFormErrorRowWidget({super.key, required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(top: kSize12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(KitGlyphs.error.icon,
+              size: kSize18, color: theme.colorScheme.error),
+          horizontalSpaceSmall,
+          Expanded(
+            child: Text(
+              message,
+              style: theme.textTheme.bodyMedium
+                  ?.copyWith(color: theme.colorScheme.error),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

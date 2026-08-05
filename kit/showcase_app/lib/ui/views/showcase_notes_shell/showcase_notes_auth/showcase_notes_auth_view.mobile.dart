@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:stacked/stacked.dart';
 import 'package:appbox_kit_motion/appbox_kit_motion.dart';
-import 'package:appbox_kit_showcase_app/ui/common/showcase_tabs_shared.dart';
+import 'package:appbox_kit_showcase_app/ui/widgets/common/showcase_tabs_shared/widgets.dart';
+import 'package:appbox_kit_showcase_app/ui/widgets/showcase_notes_widgets/widgets.dart';
 import 'package:ui_library/ui_library.dart';
 
-import 'widgets/widgets.dart';
 import 'showcase_notes_auth_viewmodel.dart';
 
 class ShowcaseNotesAuthViewMobile
@@ -64,9 +64,8 @@ class ShowcaseNotesAuthViewMobile
               verticalSpaceLarge,
 
               // (1) Credential block: mode toggle + the form the mode selects.
-              // The form widgets live in this view's `widgets/` barrel; their
-              // reusable field/error pieces come from the shell's
-              // `shared/widgets/` barrel (folder-org gate check C/D).
+              // The form widgets and their reusable field/error pieces come
+              // from the central `showcase_notes_widgets` barrel.
               Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -78,10 +77,10 @@ class ShowcaseNotesAuthViewMobile
                   ),
                   verticalSpaceMedium,
                   if (viewModel.mode == NotesAuthMode.password)
-                    PasswordForm(
+                    ShowcaseNotesPasswordFormWidget(
                         viewModel: viewModel, onCreateAccount: onCreateAccount)
                   else
-                    OtpForm(viewModel: viewModel),
+                    ShowcaseNotesOtpFormWidget(viewModel: viewModel),
                 ],
               ).wake(order: 1),
 

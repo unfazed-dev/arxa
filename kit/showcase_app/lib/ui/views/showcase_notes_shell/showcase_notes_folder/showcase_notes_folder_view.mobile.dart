@@ -4,7 +4,8 @@ import 'package:stacked/stacked.dart';
 import 'package:appbox_kit_motion/appbox_kit_motion.dart';
 import 'package:ui_library/ui_library.dart';
 import 'package:appbox_kit_showcase_app/notes/models/note.dart';
-import 'package:appbox_kit_showcase_app/ui/common/showcase_tabs_shared.dart';
+import 'package:appbox_kit_showcase_app/ui/widgets/common/showcase_tabs_shared/widgets.dart';
+import 'package:appbox_kit_showcase_app/ui/widgets/showcase_notes_widgets/widgets.dart';
 import 'showcase_notes_folder_viewmodel.dart';
 import '../showcase_note_editor/showcase_note_editor_viewmodel.dart';
 import 'package:appbox_kit_showcase_app/ui/common/showcase_notes_shared.dart';
@@ -58,17 +59,14 @@ class ShowcaseNotesFolderViewMobile
               // for a pinned header (never covered ⇒ alpha stays 1) but keeps
               // the glass surface safe if this header ever loses `pinned`.
               if (!viewModel.isTrash)
-                SliverPersistentHeader(
-                  pinned: true,
-                  delegate: _PinnedSearchDelegate(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: kSize16, vertical: kSize8),
-                      child: KitNativeSearchBar(
-                        hint: 'Search',
-                        onChanged: viewModel.setQuery,
-                      ).scrollOcclusion(),
-                    ),
+                ShowcaseNotesPinnedSearchBarWidget(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: kSize16, vertical: kSize8),
+                    child: KitNativeSearchBar(
+                      hint: 'Search',
+                      onChanged: viewModel.setQuery,
+                    ).scrollOcclusion(),
                   ),
                 ),
               if (groups.isEmpty)
@@ -94,7 +92,7 @@ class ShowcaseNotesFolderViewMobile
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            ShowcaseSectionLabel(group.label),
+                            ShowcaseSectionLabelWidget(group.label),
                             verticalSpaceSmall,
                             // The kit's grouped-inset section owns the group
                             // card + hairline dividers (replacing the app's
@@ -104,10 +102,14 @@ class ShowcaseNotesFolderViewMobile
                               margin: EdgeInsets.zero,
                               children: [
                                 for (final note in group.notes)
-                                  _NoteRow(
+                                  ShowcaseNotesNoteRowWidget(
                                     key: ValueKey(note.id),
                                     note: note,
                                     viewModel: viewModel,
+                                    onDeletePermanently: () =>
+                                        _confirmDeletePermanently(
+                                            context, viewModel, note),
+                                    formatDate: _relativeDate,
                                   ),
                               ],
                             ),
@@ -163,33 +165,6 @@ class ShowcaseNotesFolderViewMobile
   }
 }
 
-/// Pinned search-bar header. Min height keeps the bar tappable when collapsed;
-/// max height gives it breathing room at the top of the scroll.
-class _PinnedSearchDelegate extends SliverPersistentHeaderDelegate {
-  _PinnedSearchDelegate({required this.child});
-  final Widget child;
-
-  static const _min = 56.0;
-  static const _max = 72.0;
-
-  @override
-  double get minExtent => _min;
-  @override
-  double get maxExtent => _max;
-  @override
-  Widget build(
-      BuildContext context, double shrinkOffset, bool overlapsContent) {
-    return Material(
-      color: Theme.of(context).scaffoldBackgroundColor,
-      child: SizedBox(height: _max, child: child),
-    );
-  }
-
-  @override
-  bool shouldRebuild(_PinnedSearchDelegate oldDelegate) =>
-      child != oldDelegate.child;
-}
-
 Future<void> _confirmEmptyTrash(
     BuildContext context, ShowcaseNotesFolderViewModel viewModel) async {
   if (await confirmDialog(context,
@@ -229,99 +204,4 @@ String _relativeDate(DateTime updatedAt) {
   final mm = local.month.toString().padLeft(2, '0');
   final yy = (local.year % 100).toString().padLeft(2, '0');
   return '$dd/$mm/$yy';
-}
-
-/// One note row: swipe actions differ by scope (trash vs. live folder), tap
-/// always opens the editor. `confirmDismiss` always returns false — the
-/// stream rebuild moves/removes the row once the mutation lands.
-class _NoteRow extends StatelessWidget {
-  const _NoteRow({super.key, required this.note, required this.viewModel});
-
-  final Note note;
-  final ShowcaseNotesFolderViewModel viewModel;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isTrash = viewModel.isTrash;
-
-    return Dismissible(
-      key: ValueKey(note.id),
-      direction: DismissDirection.horizontal,
-      background: Container(
-        color: isTrash ? theme.colorScheme.tertiary : theme.colorScheme.primary,
-        alignment: Alignment.centerLeft,
-        padding: const EdgeInsets.symmetric(horizontal: kSize20),
-        child: Icon(
-          isTrash
-              ? KitGlyphs.restore.icon
-              : (note.pinned ? KitGlyphs.unpin.icon : KitGlyphs.pin.icon),
-          color: isTrash
-              ? theme.colorScheme.onTertiary
-              : theme.colorScheme.onPrimary,
-        ),
-      ),
-      secondaryBackground: Container(
-        color: theme.colorScheme.error,
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.symmetric(horizontal: kSize20),
-        child: Icon(KitGlyphs.delete.icon, color: theme.colorScheme.onError),
-      ),
-      confirmDismiss: (direction) async {
-        if (isTrash) {
-          if (direction == DismissDirection.endToStart) {
-            await _confirmDeletePermanently(context, viewModel, note);
-          } else {
-            await viewModel.restore(note);
-          }
-        } else {
-          if (direction == DismissDirection.endToStart) {
-            await viewModel.moveToTrash(note);
-          } else {
-            await viewModel.togglePin(note);
-          }
-        }
-        return false;
-      },
-      child: InkWell(
-        onTap: () => context.router.pushNamed('note/${note.id}'),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-              horizontal: kSize16, vertical: kSize12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      note.title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.bodyLarge
-                          ?.copyWith(fontWeight: FontWeight.w600),
-                    ),
-                  ),
-                  if (note.pinned) ...[
-                    horizontalSpaceTiny,
-                    Icon(KitGlyphs.pin.icon,
-                        size: kSize14, color: theme.colorScheme.primary),
-                  ],
-                ],
-              ),
-              verticalSpaceTiny,
-              Text(
-                '${_relativeDate(note.updatedAt)}  ${note.snippet}',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                    fontFeatures: const [FontFeature.tabularFigures()]),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 }

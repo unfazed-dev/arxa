@@ -3,11 +3,11 @@
 Descriptive, not aspirational: every token below was read out of this shell's
 own source. Nothing here is a target the code has yet to meet.
 
-This shell is the kit's worked example of the **self-contained shell** pattern,
-and the corpus `kit-feature-implementer/SKILL.md:82,87` and
-`kit-reviewer/SKILL.md:45` cite by path. It is the first shell in `showcase_app`
-listed in `lib/ui/views/.shell-structure.json`, so `shell_structure_gate.sh`
-S1–S9 actually run against it.
+This shell was the kit's worked example of the **self-contained shell** pattern
+until 2026-08-05, when the pattern was retired: every widget moved to the
+central `lib/ui/widgets/showcase_notes_widgets/` home (with its own
+`widgets.dart` barrel) and the shell was removed from
+`lib/ui/views/.shell-structure.json`.
 
 ## Architecture
 
@@ -16,17 +16,20 @@ Four surfaces under one shell — `showcase_notes` (list), `showcase_note_editor
 `showcase_notes_create_account`. The shell view splits by form factor
 (`_view.{mobile,tablet,desktop}.dart`) behind `showcase_notes_shell_view.dart`.
 
-Widget homes, both in use here — this shell is why the split exists:
+Widget home — the in-shell split (`shared/widgets/` + `<surface>/widgets/`)
+was retired on 2026-08-05 in favor of the central widgets home:
 
-- `shared/widgets/` — cross-surface: `AuthTextField`, `FormErrorRow`.
-- `<surface>/widgets/` — surface-local: `OtpForm` + `PasswordForm` under
-  `showcase_notes_auth/`, `CreateAccountForm` under
-  `showcase_notes_create_account/`.
+- `lib/ui/widgets/showcase_notes_widgets/` — all of the shell's widgets:
+  cross-surface (`ShowcaseNotesAuthTextFieldWidget`, `ShowcaseNotesFormErrorRowWidget`), surface composites
+  (`ShowcaseNotesOtpFormWidget` + `ShowcaseNotesPasswordFormWidget`, `ShowcaseNotesCreateAccountFormWidget`), and the rows/delegates
+  extracted from the mobile views (`ShowcaseNotesRowWidget` / `ShowcaseNotesFolderRowWidget`
+  / `ShowcaseNotesAdminFolderRowWidget`, `ShowcaseNotesPinnedSearchBarWidget` /
+  `ShowcaseNotesNoteRowWidget`, `ShowcaseNoteEditorBodyWidget` / `ShowcaseNotePhotoStripWidget` /
+  `ShowcaseNoteAudioRowWidget` / `ShowcaseNoteEditorBottomToolbarWidget` /
+  `ShowcaseNoteRecordingRowWidget`).
 
-Each `widgets/` carries a `widgets.dart` barrel (review check 1n/C); surfaces
-import the barrel, never the individual files (1p). A bare
-`showcase_notes_shell/widgets/` would be **rejected** by check 1o/D — it leaks
-widgets across the shell's surfaces.
+The home carries a `widgets.dart` barrel; surfaces import the barrel, never the
+individual files.
 
 ## Palette
 
@@ -62,8 +65,8 @@ Chrome and inputs are kit-native throughout: `KitNativeAppBar`,
 
 ## Forbidden (enforced by the gates)
 
-- A bare `<shell>/widgets/` — 1o/D; use `shared/widgets/` or
-  `<surface>/widgets/`.
+- In-shell widget homes — the `shared/widgets/` / `<surface>/widgets/` split
+  is retired; widgets live in `lib/ui/widgets/showcase_notes_widgets/`.
 - `ScreenTypeLayout` inside a shared widget (S7) — widgets adapt their internals
   via `getValueForScreenType`; whole-layout dispatch belongs to
   `<surface>_view.dart`.
@@ -76,7 +79,7 @@ Chrome and inputs are kit-native throughout: `KitNativeAppBar`,
 ## Known gaps
 
 The other four showcase shells (`home`, `profile`, `search`, `showcase_shell`)
-are **not** listed in `.shell-structure.json`: none has a widget home or a
-`design-system.md`, so they have not migrated to this pattern. Listing them
-would assert a migration that has not happened — the manifest is deliberately
-incremental.
+were never listed in `.shell-structure.json`: none has a widget home or a
+`design-system.md`. With the self-contained pattern retired (2026-08-05) the
+manifest's `selfContained` list is now empty — no shell carries in-shell
+widgets.

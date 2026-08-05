@@ -1,0 +1,41 @@
+import 'package:appbox_kit_showcase_app/ui/common/app_colors.dart';
+import 'package:appbox_kit_showcase_app/ui/common/ui_helpers.dart';
+import 'package:flutter/material.dart';
+
+class ShowcaseUnknownBodyWidget extends StatelessWidget {
+  const ShowcaseUnknownBodyWidget({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      backgroundColor: kcBackgroundColor,
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              '404',
+              style: TextStyle(
+                color: kcWhite,
+                fontSize: 80,
+                fontWeight: FontWeight.w800,
+                height: 0.95,
+                letterSpacing: 20.0,
+              ),
+            ),
+            verticalSpaceSmall,
+            Text(
+              'PAGE NOT FOUND',
+              style: TextStyle(
+                color: kcWhite,
+                fontSize: 20,
+                letterSpacing: 20.0,
+                wordSpacing: 10.0,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

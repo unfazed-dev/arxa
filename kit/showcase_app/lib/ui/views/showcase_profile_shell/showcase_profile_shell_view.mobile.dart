@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:stacked/stacked.dart';
-import 'package:appbox_kit_showcase_app/ui/widgets/common/showcase_gallery_chrome/showcase_gallery_chrome.dart';
+import 'package:appbox_kit_showcase_app/ui/widgets/common/showcase_gallery_chrome/showcase_gallery_chrome_widget.dart';
 import 'showcase_profile_shell_viewmodel.dart';
 
 class ShowcaseProfileShellViewMobile
@@ -9,6 +9,6 @@ class ShowcaseProfileShellViewMobile
 
   @override
   Widget build(BuildContext context, ShowcaseProfileShellViewModel viewModel) {
-    return const ShowcaseGalleryChrome(child: NestedRouter());
+    return const ShowcaseGalleryChromeWidget(child: NestedRouter());
   }
 }
