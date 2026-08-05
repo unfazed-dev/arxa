@@ -3,8 +3,8 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ui_library/ui_library.dart';
 import 'package:appbox_kit_data/appbox_kit_data.dart';
-import 'package:appbox_kit_showcase_app/models/showcase_notes_models/showcase_note_model.dart';
-import 'package:appbox_kit_showcase_app/models/showcase_notes_models/showcase_note_folder_model.dart';
+import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/showcase_note_model.dart';
+import 'package:appbox_kit_showcase_app/data/schemas/showcase_notes_schemas/showcase_note_folder_schema.dart';
 import 'package:appbox_kit_showcase_app/services/showcase_notes_services/facades/showcase_notes_facade_service.dart';
 import 'package:appbox_kit_showcase_app/services/showcase_notes_services/repositories/showcase_notes_repository_service.dart';
 import 'package:appbox_kit_showcase_app/app/app_data.dart';
@@ -86,7 +86,7 @@ void main() {
     expect(overview.trashCount, 1);
 
     final idService = locator<KitIdService>();
-    String fid(String key) => idService.canonicalId(kNoteFoldersTable, key);
+    String fid(String key) => idService.canonicalId(kShowcaseNoteFoldersTable, key);
     expect(overview.liveCountByFolder[fid('folder-work')], 3);
     expect(overview.liveCountByFolder[fid('folder-personal')], 3);
     expect(overview.liveCountByFolder[fid('folder-notes')], 1);
@@ -139,7 +139,7 @@ void main() {
   test('mutation round-trip: create → save → pin → trash → restore → purge',
       () async {
     final idService = locator<KitIdService>();
-    final folderId = idService.canonicalId(kNoteFoldersTable, 'folder-notes');
+    final folderId = idService.canonicalId(kShowcaseNoteFoldersTable, 'folder-notes');
 
     final created = await notes.createNote(evanId, folderId);
     expect(created.body, isEmpty);

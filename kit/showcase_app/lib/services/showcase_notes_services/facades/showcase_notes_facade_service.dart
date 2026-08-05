@@ -2,9 +2,9 @@ import 'package:rxdart/rxdart.dart';
 import 'package:appbox_kit_data/appbox_kit_data.dart';
 import 'package:ui_library/ui_library.dart' show locator;
 
-import 'package:appbox_kit_showcase_app/models/showcase_notes_models/showcase_note_model.dart';
-import 'package:appbox_kit_showcase_app/models/showcase_notes_models/showcase_note_attachment_model.dart';
-import 'package:appbox_kit_showcase_app/models/showcase_notes_models/showcase_note_folder_model.dart';
+import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/showcase_note_model.dart';
+import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/showcase_note_attachment_model.dart';
+import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/showcase_note_folder_model.dart';
 import 'package:appbox_kit_showcase_app/services/showcase_notes_services/repositories/showcase_notes_repository_service.dart';
 
 /// Everything the folders screen needs, derived from two repository streams.

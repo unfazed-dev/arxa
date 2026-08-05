@@ -1,5 +1,5 @@
 // Regression guard: the showcase is a STANDALONE app, so its asset constants
-// must be plain keys ('assets/seed/...'). The 'packages/appbox_kit_showcase_app/'
+// must be plain keys ('data/seed/...'). The 'packages/appbox_kit_showcase_app/'
 // prefix is only valid when a host app bundles this package as a dependency —
 // with the prefixed keys the standalone app white-screens at boot
 // (initialize() throws "Unable to load asset" before runApp).

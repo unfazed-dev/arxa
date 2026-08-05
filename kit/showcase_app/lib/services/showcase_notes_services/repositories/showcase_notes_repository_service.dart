@@ -2,8 +2,8 @@ import 'package:appbox_kit_data/appbox_kit_data.dart';
 import 'package:ui_library/ui_library.dart' show locator;
 import 'package:uuid/uuid.dart';
 
-import 'package:appbox_kit_showcase_app/models/showcase_notes_models/showcase_note_model.dart';
-import 'package:appbox_kit_showcase_app/models/showcase_notes_models/showcase_note_folder_model.dart';
+import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/showcase_note_model.dart';
+import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/showcase_note_folder_model.dart';
 
 /// Notes-domain gateway over the kit's `KitRepository<ShowcaseNoteModel>` / `<ShowcaseNoteFolderModel>`
 /// (registered by `KitData.initialize`). This is the app-level repository seam:

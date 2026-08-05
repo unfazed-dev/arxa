@@ -52,12 +52,41 @@ await KitData.initialize(
   config: const KitDataConfig(
     backend: KitDataBackend.seed,
     seedPersistence: KitSeedPersistenceMode.snapshot,
-    auth: KitAuthConfig(fakeUsersAsset: 'assets/seed/kit_auth_users.json'),
+    auth: KitAuthConfig(fakeUsersAsset: 'data/seed/kit_auth_users.json'),
   ),
   entities: [/* KitEntityRegistration per table */],
-  fixtureAssets: ['assets/seed/<table>.json'],
+  fixtureAssets: ['data/seed/<table>.json'],
 );
 ```
+
+## 7.3.1 The data/ contract (schemas → generated artifacts)
+
+The app owns its data layer; the kit owns the machinery. Layout:
+
+```
+lib/data/
+├── data.dart                     # barrel, chains only
+├── models/<shell>_models/        # pure data classes (*_model.dart)
+└── schemas/<shell>_schemas/      # KitTableSchema + KitEntityRegistration (*_schema.dart)
+data/
+├── seed/<table>.json             # runtime fixtures (pubspec-declared assets)
+└── generated/                    # emitter output — NEVER hand-edit
+    ├── supabase_migration.sql
+    ├── supabase_seed.sql
+    └── appwrite.tables.json
+tool/generate_data.dart           # dart run tool/generate_data.dart [--check]
+```
+
+- **Schemas are the SSOT.** Edit a `*_schema.dart`, then regenerate:
+  `dart run tool/generate_data.dart`. Schema files use targeted imports
+  (never the kit barrel) so the tool compiles as a pure-Dart CLI.
+- **`--check`** regenerates in memory and exits 1 on drift — the scaffold
+  gate's **D1** section runs it, so a stale `data/generated/` fails the gate.
+- **Backend coherence (D1):** the `KitDataBackend` declared in
+  `lib/app/app_data.dart` must have its artifacts — supabase → both SQL files,
+  appwrite → the tables fragment, seed → the fixtures (proven by `--check`).
+- Fixtures keep the kit's `<table>.json` naming; the Appwrite `databaseId` is
+  the package name (derived, never hardcoded).
 
 <!-- PORTED — §7.3 DONE 2026-07-12. Boot lives in `lib/app/app_data.dart`:
 `AppData.initialize({config, assetReader})` (renamed from the source's

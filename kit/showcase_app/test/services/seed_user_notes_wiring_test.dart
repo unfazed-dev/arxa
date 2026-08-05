@@ -40,7 +40,7 @@ void main() {
   final expectedTrash = <String, int>{};
 
   setUpAll(() async {
-    for (final row in _rows('assets/seed/notes.json')) {
+    for (final row in _rows('data/seed/notes.json')) {
       final owner = row['owner'] as String;
       if (row['deleted_at'] != null) {
         expectedTrash[owner] = (expectedTrash[owner] ?? 0) + 1;
@@ -73,7 +73,7 @@ void main() {
       notes.overview$(session.user.id).first;
 
   test('fixture sanity: every seed user owns at least one live note', () {
-    for (final row in _rows('assets/seed/kit_auth_users.json')) {
+    for (final row in _rows('data/seed/kit_auth_users.json')) {
       final id = row['id'] as String;
       expect(expectedLive[id], isNotNull,
           reason: 'seed user $id owns no live notes in notes.json — '

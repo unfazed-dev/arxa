@@ -127,4 +127,4 @@ flutter:
   # packages require it, else Material icons render as tofu).
   uses-material-design: true
   assets:
-    - assets/seed/
+    - data/seed/

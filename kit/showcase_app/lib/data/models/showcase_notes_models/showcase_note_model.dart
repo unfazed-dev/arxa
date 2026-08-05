@@ -1,12 +1,4 @@
-// Targeted imports (not the barrel) keep this file pure-Dart so
-// `tool/generate.dart` can compile it as a CLI — the barrel pulls in the
-// Supabase/Appwrite clients and their FFI deps.
-import 'package:appbox_kit_data/auth/kit_auth_types.dart';
-import 'package:appbox_kit_data/models/kit_entity_registration.dart';
-import 'package:appbox_kit_data/schema/kit_table_schema.dart';
-
-import 'package:appbox_kit_showcase_app/models/showcase_notes_models/showcase_note_attachment_model.dart';
-import 'package:appbox_kit_showcase_app/models/showcase_notes_models/showcase_note_folder_model.dart';
+import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/showcase_note_attachment_model.dart';
 
 /// A note. iOS-style: no separate title column — [title] and [snippet] derive
 /// from [body]'s first lines; `deleted_at` implements Recently Deleted
@@ -119,27 +111,3 @@ class ShowcaseNoteModel {
         'updated_at': updatedAt.toIso8601String(),
       };
 }
-
-const kNotesTable = 'notes';
-
-const noteSchema = KitTableSchema(
-  table: kNotesTable,
-  columns: [
-    KitColumn.id(),
-    KitColumn('folder_id', KitColumnType.reference,
-        references: kNoteFoldersTable),
-    KitColumn('owner', KitColumnType.reference, references: kKitAuthUsersTable),
-    KitColumn('body', KitColumnType.text),
-    KitColumn('pinned', KitColumnType.boolean),
-    KitColumn('attachments', KitColumnType.jsonb),
-    KitColumn('deleted_at', KitColumnType.timestamptz, nullable: true),
-    KitColumn('created_at', KitColumnType.timestamptz),
-    KitColumn('updated_at', KitColumnType.timestamptz),
-  ],
-);
-
-final showcaseNoteRegistration = KitEntityRegistration<ShowcaseNoteModel>(
-  schema: noteSchema,
-  fromJson: ShowcaseNoteModel.fromJson,
-  toJson: (note) => note.toJson(),
-);

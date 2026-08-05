@@ -5,8 +5,8 @@ import 'package:stacked/stacked.dart';
 import 'package:appbox_kit_media/appbox_kit_media.dart' show PlaybackState;
 import 'package:appbox_kit_core/kit_locator.dart';
 
-import 'package:appbox_kit_showcase_app/models/showcase_notes_models/showcase_note_model.dart';
-import 'package:appbox_kit_showcase_app/models/showcase_notes_models/showcase_note_attachment_model.dart';
+import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/showcase_note_model.dart';
+import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/showcase_note_attachment_model.dart';
 import 'package:appbox_kit_showcase_app/services/showcase_notes_services/adapters/showcase_notes_media_adapter_service.dart';
 import 'package:appbox_kit_showcase_app/services/showcase_notes_services/facades/showcase_notes_facade_service.dart';
 

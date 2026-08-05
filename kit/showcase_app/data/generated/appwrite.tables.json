@@ -1,0 +1,102 @@
+{
+  "tables": [
+    {
+      "$id": "notes_folders",
+      "databaseId": "appbox_kit_showcase_app",
+      "name": "notes_folders",
+      "enabled": true,
+      "rowSecurity": false,
+      "$permissions": [],
+      "columns": [
+        {
+          "key": "name",
+          "type": "string",
+          "required": true,
+          "array": false,
+          "size": 4096
+        },
+        {
+          "key": "sort_order",
+          "type": "integer",
+          "required": true,
+          "array": false
+        },
+        {
+          "key": "owner",
+          "type": "string",
+          "required": true,
+          "array": false,
+          "size": 36
+        },
+        {
+          "key": "created_at",
+          "type": "datetime",
+          "required": true,
+          "array": false
+        }
+      ]
+    },
+    {
+      "$id": "notes",
+      "databaseId": "appbox_kit_showcase_app",
+      "name": "notes",
+      "enabled": true,
+      "rowSecurity": false,
+      "$permissions": [],
+      "columns": [
+        {
+          "key": "folder_id",
+          "type": "string",
+          "required": true,
+          "array": false,
+          "size": 36
+        },
+        {
+          "key": "owner",
+          "type": "string",
+          "required": true,
+          "array": false,
+          "size": 36
+        },
+        {
+          "key": "body",
+          "type": "string",
+          "required": true,
+          "array": false,
+          "size": 4096
+        },
+        {
+          "key": "pinned",
+          "type": "boolean",
+          "required": true,
+          "array": false
+        },
+        {
+          "key": "attachments",
+          "type": "string",
+          "required": true,
+          "array": false,
+          "size": 1048576
+        },
+        {
+          "key": "deleted_at",
+          "type": "datetime",
+          "required": false,
+          "array": false
+        },
+        {
+          "key": "created_at",
+          "type": "datetime",
+          "required": true,
+          "array": false
+        },
+        {
+          "key": "updated_at",
+          "type": "datetime",
+          "required": true,
+          "array": false
+        }
+      ]
+    }
+  ]
+}

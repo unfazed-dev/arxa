@@ -8,11 +8,11 @@ import 'dart:ui' as _i13;
 
 import 'package:appbox_kit_data/appbox_kit_data.dart' as _i3;
 import 'package:appbox_kit_media/appbox_kit_media.dart' as _i20;
-import 'package:appbox_kit_showcase_app/models/showcase_notes_models/showcase_note_attachment_model.dart'
+import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/showcase_note_attachment_model.dart'
     as _i17;
-import 'package:appbox_kit_showcase_app/models/showcase_notes_models/showcase_note_folder_model.dart'
+import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/showcase_note_folder_model.dart'
     as _i5;
-import 'package:appbox_kit_showcase_app/models/showcase_notes_models/showcase_note_model.dart'
+import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/showcase_note_model.dart'
     as _i4;
 import 'package:appbox_kit_showcase_app/services/showcase_notes_services/facades/showcase_notes_facade_service.dart'
     as _i16;

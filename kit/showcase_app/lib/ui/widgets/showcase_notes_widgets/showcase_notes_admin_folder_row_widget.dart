@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:ui_library/ui_library.dart';
-import 'package:appbox_kit_showcase_app/models/showcase_notes_models/showcase_note_folder_model.dart';
+import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/showcase_note_folder_model.dart';
 
 /// Admin-section row: folder name + owner id subtitle + live count. Read-only
 /// by design — folder detail streams are owner-scoped, so navigating into

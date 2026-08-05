@@ -1,7 +1,7 @@
 import 'package:appbox_kit_data/appbox_kit_data.dart';
 
-import 'package:appbox_kit_showcase_app/models/showcase_notes_models/showcase_note_model.dart';
-import 'package:appbox_kit_showcase_app/models/showcase_notes_models/showcase_note_folder_model.dart';
+import 'package:appbox_kit_showcase_app/data/schemas/showcase_notes_schemas/showcase_note_schema.dart';
+import 'package:appbox_kit_showcase_app/data/schemas/showcase_notes_schemas/showcase_note_folder_schema.dart';
 
 /// The app's data-layer boot. Called once from `main()` after `setupLocator()`.
 ///
@@ -16,7 +16,7 @@ class AppData {
   /// Asset key prefix. This package IS the app, so its own pubspec-declared
   /// assets bundle under plain keys — the `packages/<name>/` prefix only
   /// exists when another app depends on this one.
-  static const _assets = 'assets/seed';
+  static const _assets = 'data/seed';
 
   /// The bundled fake-users fixture, public so a custom [KitDataConfig] (or a
   /// test) can point [KitAuthConfig.fakeUsersAsset] at the same file.
