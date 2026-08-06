@@ -1,34 +1,34 @@
 import 'package:flutter/material.dart';
-import 'package:ui_library/ui_library.dart';
+import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 
-/// Settings-style grouped list — [KitListSection] of [KitListTile]s, each
+/// Settings-style grouped list — [AppBoxKitListSection] of [AppBoxKitListTile]s, each
 /// toasting its title.
 class ShowcaseComponentsSettingsSectionWidget extends StatelessWidget {
   const ShowcaseComponentsSettingsSectionWidget({super.key});
 
   static void _toast(BuildContext context, String message) =>
-      locator<KitNotificationService>().show(message, context: context);
+      appBoxKitLocator<AppBoxKitNotificationService>().show(message, context: context);
 
   @override
   Widget build(BuildContext context) {
-    return KitListSection(
+    return AppBoxKitListSection(
       header: 'Settings',
       children: [
-        KitListTile(
-          glyph: KitGlyphs.person,
+        AppBoxKitListTile(
+          glyph: AppBoxKitGlyphs.person,
           title: 'Account',
           trailingValue: 'Evan',
           showChevron: true,
           onTap: () => _toast(context, 'Account'),
         ),
-        KitListTile(
-          glyph: KitGlyphs.lock,
+        AppBoxKitListTile(
+          glyph: AppBoxKitGlyphs.lock,
           title: 'Privacy',
           showChevron: true,
           onTap: () => _toast(context, 'Privacy'),
         ),
-        KitListTile(
-          glyph: KitGlyphs.alerts,
+        AppBoxKitListTile(
+          glyph: AppBoxKitGlyphs.alerts,
           title: 'Notifications',
           trailingValue: 'On',
           showChevron: true,

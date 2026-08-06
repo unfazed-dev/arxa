@@ -1,8 +1,8 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ui_library/ui_library.dart';
-import 'package:ui_library/testing.dart';
+import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
+import 'package:appbox_kit_ui_library/appbox_kit_testing.dart';
 import 'package:appbox_kit_data/appbox_kit_data.dart';
 import 'package:appbox_kit_showcase_app/app/app_data.dart';
 import 'package:appbox_kit_showcase_app/services/showcase_notes_services/facades/showcase_notes_facade_service.dart';
@@ -12,10 +12,10 @@ import 'package:stacked_services/stacked_services.dart';
 import 'package:talker_flutter/talker_flutter.dart';
 
 /// The notes-shell cascade: session → overview/admin streams, composed with
-/// rxdart switchMap and bound via KitStreamBuilder in the views. This is the
+/// rxdart switchMap and bound via AppBoxKitStreamBuilder in the views. This is the
 /// one non-trivial wiring the streams-only conversion introduced, so it gets
 /// the check: overview appears with a session and nulls out on sign-out.
-class _DiskAssetReader implements KitAssetReader {
+class _DiskAssetReader implements AppBoxKitAssetReader {
   static const _prefix = 'packages/appbox_kit_showcase_app/';
 
   @override
@@ -30,33 +30,33 @@ void main() {
   late ShowcaseNotesFacadeService notes;
 
   setUpAll(() async {
-    locator
+    appBoxKitLocator
       ..registerLazySingleton(() => Talker())
-      ..registerLazySingleton(() => KitErrorService())
+      ..registerLazySingleton(() => AppBoxKitErrorService())
       ..registerLazySingleton(() => DialogService())
       ..registerLazySingleton(() => BottomSheetService())
       ..registerLazySingleton(() => SnackbarService())
-      ..registerLazySingleton<KitNotificationService>(
-          () => FakeKitNotificationService())
+      ..registerLazySingleton<AppBoxKitNotificationService>(
+          () => FakeAppBoxKitNotificationService())
       ..registerLazySingleton<ShowcaseNotesRepositoryService>(
           () => ShowcaseNotesRepositoryService())
       ..registerLazySingleton<ShowcaseNotesFacadeService>(
           () => ShowcaseNotesFacadeService());
 
     await AppData.initialize(
-      config: const KitDataConfig(
-        backend: KitDataBackend.seed,
-        auth: KitAuthConfig(fakeUsersAsset: AppData.fakeUsersAsset),
+      config: const AppBoxKitDataConfig(
+        backend: AppBoxKitDataBackend.seed,
+        auth: AppBoxKitAuthConfig(fakeUsersAsset: AppData.fakeUsersAsset),
       ),
       assetReader: _DiskAssetReader(),
     );
 
-    notes = locator<ShowcaseNotesFacadeService>();
+    notes = appBoxKitLocator<ShowcaseNotesFacadeService>();
   });
 
   tearDownAll(() async {
-    KitData.resetForTesting();
-    await locator.reset();
+    AppBoxKitData.resetForTesting();
+    await appBoxKitLocator.reset();
   });
 
   Future<void> until(bool Function() cond) async {
@@ -73,7 +73,7 @@ void main() {
     addTearDown(vm.dispose);
 
     // Streams-only VM: capture the latest emission of each stream getter.
-    KitAuthSession? session;
+    AppBoxKitAuthSession? session;
     ShowcaseNotesOverview? overview;
     final subscriptions = [
       vm.session$.listen((s) => session = s),

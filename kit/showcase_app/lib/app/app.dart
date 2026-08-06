@@ -24,7 +24,7 @@ import 'package:stacked/stacked_annotations.dart';
 import 'package:stacked_services/stacked_services.dart';
 import 'package:talker_flutter/talker_flutter.dart';
 import 'package:appbox_kit_haptics/appbox_kit_haptics.dart';
-import 'package:ui_library/ui_library.dart';
+import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 import 'package:appbox_kit_showcase_app/services/showcase_notes_services/repositories/showcase_notes_repository_service.dart';
 import 'package:appbox_kit_showcase_app/services/showcase_notes_services/facades/showcase_notes_facade_service.dart';
 import 'package:appbox_kit_showcase_app/services/showcase_notes_services/adapters/showcase_notes_media_adapter_service.dart';
@@ -54,7 +54,7 @@ import 'package:appbox_kit_showcase_app/services/showcase_notes_services/adapter
       AdaptiveRoute(page: ShowcaseProfileShellView, path: 'profile', children: [
         AdaptiveRoute(page: ShowcaseProfileView, path: '', initial: true),
         // appbox_kit_motion showcase — AdaptiveRoute on purpose: the demo's
-        // route-driven KitMotionScope rides the native push animation and the
+        // route-driven AppBoxKitMotionScope rides the native push animation and the
         // iOS swipe-back scrub (same rationale as the note editor below).
         AdaptiveRoute(page: ShowcaseMotionView, path: 'motion'),
         // appbox_kit_maps showcase — OpenStreetMap by default (no key),
@@ -85,25 +85,25 @@ import 'package:appbox_kit_showcase_app/services/showcase_notes_services/adapter
     RedirectRoute(path: '*', redirectTo: '/404'),
   ],
   dependencies: [
-    // KitBottomSheetService presents stacked sheets through kitShowNativeSheet
+    // AppBoxKitBottomSheetService presents stacked sheets through appBoxKitShowNativeSheet
     // (CNBottomSheet on iOS, M3 modal sheet on Android) — registered as the
     // base type so every BottomSheetService call site stays untouched.
-    LazySingleton(classType: KitBottomSheetService, asType: BottomSheetService),
+    LazySingleton(classType: AppBoxKitBottomSheetService, asType: BottomSheetService),
     LazySingleton(classType: DialogService),
     LazySingleton(classType: RouterService),
     LazySingleton(classType: SnackbarService),
 
     // Kit services — registration lives in the app, decoupled from the kit.
     LazySingleton(classType: Talker),
-    LazySingleton(classType: KitErrorService),
-    LazySingleton(classType: KitNotificationService),
-    LazySingleton(classType: KitHapticService),
-    LazySingleton(classType: KitThemeService),
-    LazySingleton(classType: KitNavigationControllerService),
-    LazySingleton(classType: KitOverlayService),
-    LazySingleton(classType: KitSelectableService),
+    LazySingleton(classType: AppBoxKitErrorService),
+    LazySingleton(classType: AppBoxKitNotificationService),
+    LazySingleton(classType: AppBoxKitHapticService),
+    LazySingleton(classType: AppBoxKitThemeService),
+    LazySingleton(classType: AppBoxKitNavigationControllerService),
+    LazySingleton(classType: AppBoxKitOverlayService),
+    LazySingleton(classType: AppBoxKitSelectableService),
     // Data layer (appbox_kit_data layering): the Notes Repository — the
-    // notes-domain gateway over the kit's KitRepository<ShowcaseNoteModel>/<ShowcaseNoteFolderModel> —
+    // notes-domain gateway over the kit's AppBoxKitRepository<ShowcaseNoteModel>/<ShowcaseNoteFolderModel> —
     // then the Facade, the only layer viewmodels talk to.
     LazySingleton(classType: ShowcaseNotesRepositoryService),
     LazySingleton(classType: ShowcaseNotesFacadeService),

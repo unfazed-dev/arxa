@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:stacked/stacked.dart';
-import 'package:appbox_kit_core/common/kit_app_constants.dart';
-import 'package:appbox_kit_core/common/kit_glyphs.dart';
-import 'package:appbox_kit_core/common/kit_ui_helpers.dart';
+import 'package:appbox_kit_core/common/appbox_kit_app_constants.dart';
+import 'package:appbox_kit_core/common/appbox_kit_glyphs.dart';
+import 'package:appbox_kit_core/common/appbox_kit_ui_helpers.dart';
 import 'package:appbox_kit_showcase_app/ui/widgets/showcase_notes_widgets/widgets.dart';
 
 import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_create_account/showcase_notes_create_account_viewmodel.dart';
@@ -26,17 +26,17 @@ class ShowcaseNotesCreateAccountViewMobile
       // the floating tab bar; clearance folded into the scroll padding.
       bottom: false,
       child: SingleChildScrollView(
-        padding: EdgeInsets.fromLTRB(kSize24, kSize24, kSize24,
-            kSize24 + MediaQuery.paddingOf(context).bottom),
+        padding: EdgeInsets.fromLTRB(axSize24, axSize24, axSize24,
+            axSize24 + MediaQuery.paddingOf(context).bottom),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            verticalSpaceLarge,
+            appBoxKitVerticalSpaceLarge,
             Column(
               children: [
-                Icon(KitGlyphs.notes.icon,
-                    size: kSize60, color: theme.colorScheme.primary),
-                verticalSpaceSmall,
+                Icon(AppBoxKitGlyphs.notes.icon,
+                    size: axSize60, color: theme.colorScheme.primary),
+                appBoxKitVerticalSpaceSmall,
                 Text(
                   'Create your account',
                   textAlign: TextAlign.center,
@@ -45,7 +45,7 @@ class ShowcaseNotesCreateAccountViewMobile
                 ),
               ],
             ),
-            verticalSpaceLarge,
+            appBoxKitVerticalSpaceLarge,
             // The form and its reusable field/error pieces come from the
             // central `showcase_notes_widgets` barrel.
             ShowcaseNotesCreateAccountFormWidget(

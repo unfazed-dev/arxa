@@ -1,6 +1,6 @@
 import 'package:rxdart/rxdart.dart';
 import 'package:appbox_kit_data/appbox_kit_data.dart';
-import 'package:ui_library/ui_library.dart';
+import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 
 import 'package:appbox_kit_showcase_app/services/showcase_notes_services/facades/showcase_notes_facade_service.dart';
 
@@ -9,20 +9,20 @@ import 'package:appbox_kit_showcase_app/services/showcase_notes_services/facades
 /// via StackedView), never a rebuild mechanism — `notifyListeners` is not
 /// called. The views bind [errorMessage$] (VM-owned seeded [BehaviorSubject];
 /// inline form errors stay inline, no snackbars) and [signUpState$] (the
-/// KitAction op's busy/error stream) with [KitStreamBuilder].
+/// AppBoxKitAction op's busy/error stream) with [AppBoxKitStreamBuilder].
 ///
 /// Talks only to [ShowcaseNotesFacadeService.auth] — when sign-up succeeds a
 /// session appears on the stream and the signed-out ShowcaseNotesView swaps
 /// this panel away in place; the view itself never navigates.
-class ShowcaseNotesCreateAccountViewModel extends KitViewModel {
-  final ShowcaseNotesFacadeService _notes = locator<ShowcaseNotesFacadeService>();
+class ShowcaseNotesCreateAccountViewModel extends AppBoxKitViewModel {
+  final ShowcaseNotesFacadeService _notes = appBoxKitLocator<ShowcaseNotesFacadeService>();
 
-  KitAuthService get auth => _notes.auth;
+  AppBoxKitAuthService get auth => _notes.auth;
 
   /// Live busy/error state of the sign-up op — the stream form of the old
   /// `.withLoading(setBusy)`: the form binds it to disable buttons and show
   /// the inline spinner while sign-up runs.
-  ValueStream<KitActionState> get signUpState$ => actionState$('signUp');
+  ValueStream<AppBoxKitActionState> get signUpState$ => actionState$('signUp');
 
   // Never-prefill credential capture: plain string fields written one-way from
   // the view's onChanged, read at submit. No TextEditingController in the
@@ -31,15 +31,15 @@ class ShowcaseNotesCreateAccountViewModel extends KitViewModel {
   String email = '';
   String password = '';
 
-  /// Inline form error (seeded null = none). [KitAuthException] shows its
+  /// Inline form error (seeded null = none). [AppBoxKitAuthException] shows its
   /// message, anything unexpected gets the generic one — set from the
-  /// KitAction chain's handleError, never a snackbar.
+  /// AppBoxKitAction chain's handleError, never a snackbar.
   final BehaviorSubject<String?> _errorMessage =
       BehaviorSubject<String?>.seeded(null);
   ValueStream<String?> get errorMessage$ => _errorMessage.stream;
 
-  /// Same KitAction guard as the auth viewmodel: per-op busy state (bound via
-  /// [signUpState$]), re-entry guard, [KitAuthException] surfaced inline as
+  /// Same AppBoxKitAction guard as the auth viewmodel: per-op busy state (bound via
+  /// [signUpState$]), re-entry guard, [AppBoxKitAuthException] surfaced inline as
   /// [errorMessage$].
   Future<void> createAccount(String email, String password) {
     _errorMessage.add(null);
@@ -49,7 +49,7 @@ class ShowcaseNotesCreateAccountViewModel extends KitViewModel {
     )
         .completeOnError('Sign-up failed')
         .handleError((error) {
-          _errorMessage.add(error is KitAuthException
+          _errorMessage.add(error is AppBoxKitAuthException
               ? error.message
               : 'Something went wrong. Try again.');
         });

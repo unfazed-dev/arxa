@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:ui_library/ui_library.dart';
+import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 
 /// A single tappable folder-list row: glyph, label, trailing count, chevron.
-/// A thin adapter over [KitListTile] (the kit's grouped-list row idiom) so
+/// A thin adapter over [AppBoxKitListTile] (the kit's grouped-list row idiom) so
 /// call sites keep passing the count as an int.
 class ShowcaseNotesRowWidget extends StatelessWidget {
   const ShowcaseNotesRowWidget({
@@ -13,13 +13,13 @@ class ShowcaseNotesRowWidget extends StatelessWidget {
     required this.onTap,
   });
 
-  final KitGlyph glyph;
+  final AppBoxKitGlyph glyph;
   final String label;
   final int trailingCount;
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) => KitListTile(
+  Widget build(BuildContext context) => AppBoxKitListTile(
         glyph: glyph,
         title: label,
         trailingValue: '$trailingCount',

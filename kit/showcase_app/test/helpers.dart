@@ -8,14 +8,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:appbox_kit_showcase_app/app/app.locator.dart'
     show setupLocator;
 import 'package:appbox_kit_showcase_app/app/app.router.dart';
-import 'package:ui_library/ui_library.dart';
+import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 import 'package:appbox_kit_data/appbox_kit_data.dart';
 import 'package:appbox_kit_showcase_app/app/app_data.dart';
 import 'package:appbox_kit_showcase_app/services/showcase_notes_services/facades/showcase_notes_facade_service.dart';
 import 'package:stacked_services/stacked_services.dart';
 
 /// Package-asset keys map straight onto this package's source tree.
-class DiskAssetReader implements KitAssetReader {
+class DiskAssetReader implements AppBoxKitAssetReader {
   static const _prefix = 'packages/appbox_kit_showcase_app/';
   @override
   Future<String> readString(String path) async {
@@ -33,22 +33,22 @@ Future<void> registerKitTestServices() =>
 /// Boots appbox_kit_data off the bundled fixtures (seed backend, fake auth).
 Future<void> initShowcase({bool signedIn = false}) async {
   await AppData.initialize(
-    config: const KitDataConfig(
-      backend: KitDataBackend.seed,
-      auth: KitAuthConfig(fakeUsersAsset: AppData.fakeUsersAsset),
+    config: const AppBoxKitDataConfig(
+      backend: AppBoxKitDataBackend.seed,
+      auth: AppBoxKitAuthConfig(fakeUsersAsset: AppData.fakeUsersAsset),
     ),
     assetReader: DiskAssetReader(),
   );
   if (signedIn) await signInEvan();
 }
 
-Future<void> signInEvan() => locator<ShowcaseNotesFacadeService>()
+Future<void> signInEvan() => appBoxKitLocator<ShowcaseNotesFacadeService>()
     .auth
     .signInWithEmailPassword(email: 'evan@seed.local', password: 'x');
 
 Future<void> teardownShowcase() async {
-  KitData.resetForTesting();
-  await locator.reset();
+  AppBoxKitData.resetForTesting();
+  await appBoxKitLocator.reset();
 }
 
 /// Router futures only complete when their route pops — never await them
@@ -69,7 +69,7 @@ Future<StackedRouterWeb> bootShell(WidgetTester tester) async {
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
   final router = StackedRouterWeb();
-  locator<RouterService>().setRouter(router);
+  appBoxKitLocator<RouterService>().setRouter(router);
   await tester.pumpWidget(
     MaterialApp.router(
       // Boot straight into the shell — ShowcaseStartupView (the app's real initial

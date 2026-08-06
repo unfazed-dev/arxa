@@ -1,31 +1,31 @@
 import 'package:flutter/material.dart';
-import 'package:ui_library/ui_library.dart';
+import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 
-/// [KitNativeToolbar] demo — every action toasts through the located
-/// [KitNotificationService] (the delete action uses the error kind).
+/// [AppBoxKitNativeToolbar] demo — every action toasts through the located
+/// [AppBoxKitNotificationService] (the delete action uses the error kind).
 class ShowcaseProfileToolbarDemoWidget extends StatelessWidget {
   const ShowcaseProfileToolbarDemoWidget({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return KitNativeToolbar(
+    return AppBoxKitNativeToolbar(
       actions: [
-        KitToolbarAction(
+        AppBoxKitToolbarAction(
             label: 'Share',
-            glyph: KitGlyphs.share,
-            onPressed: () => locator<KitNotificationService>()
+            glyph: AppBoxKitGlyphs.share,
+            onPressed: () => appBoxKitLocator<AppBoxKitNotificationService>()
                 .show('Shared', context: context)),
-        KitToolbarAction(
+        AppBoxKitToolbarAction(
             label: 'Edit',
-            glyph: KitGlyphs.edit,
-            onPressed: () => locator<KitNotificationService>()
+            glyph: AppBoxKitGlyphs.edit,
+            onPressed: () => appBoxKitLocator<AppBoxKitNotificationService>()
                 .show('Edit', context: context)),
-        KitToolbarAction(
+        AppBoxKitToolbarAction(
             label: 'Delete',
-            glyph: KitGlyphs.delete,
+            glyph: AppBoxKitGlyphs.delete,
             isDestructive: true,
-            onPressed: () => locator<KitNotificationService>().show('Deleted',
-                kind: KitNotificationKind.error, context: context)),
+            onPressed: () => appBoxKitLocator<AppBoxKitNotificationService>().show('Deleted',
+                kind: AppBoxKitNotificationKind.error, context: context)),
       ],
     );
   }

@@ -1,14 +1,14 @@
 import 'package:flutter/foundation.dart' show defaultTargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:stacked/stacked.dart';
-import 'package:ui_library/ui_library.dart';
+import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 
 /// The chrome every widget-gallery tab shares: the 'Kit Showcase' app bar
-/// (search shortcut + overflow menu) and the compose [KitNativeFabMenu],
-/// built from the reusable [KitNativeAppBar] (a `PreferredSizeWidget`, so it
+/// (search shortcut + overflow menu) and the compose [AppBoxKitNativeFabMenu],
+/// built from the reusable [AppBoxKitNativeAppBar] (a `PreferredSizeWidget`, so it
 /// slots straight into `Scaffold.appBar` with no wrapper). Notes renders its
-/// own per-view `KitNativeAppBar`s in that same slot (compact nav bar, leading
-/// back via `KitGlyphs.back`, compose [KitNativeFabMenu]) instead of this chrome.
+/// own per-view `AppBoxKitNativeAppBar`s in that same slot (compact nav bar, leading
+/// back via `AppBoxKitGlyphs.back`, compose [AppBoxKitNativeFabMenu]) instead of this chrome.
 ///
 /// Each gallery shell wraps its `NestedRouter` in this so the tab is a
 /// self-contained chrome Scaffold, created once on first visit and kept
@@ -21,24 +21,24 @@ class ShowcaseGalleryChromeWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final tabsRouter = context.tabsRouter;
     return Scaffold(
-      appBar: KitNativeAppBar(
+      appBar: AppBoxKitNativeAppBar(
         title: 'Kit Showcase',
         actions: [
-          KitNativeIconButton(
-            glyph: KitGlyphs.search,
+          AppBoxKitNativeIconButton(
+            glyph: AppBoxKitGlyphs.search,
             onPressed: () => tabsRouter.setActiveIndex(1),
           ),
-          KitNativePopupMenu(
-            glyph: KitGlyphs.more,
+          AppBoxKitNativePopupMenu(
+            glyph: AppBoxKitGlyphs.more,
             items: const [
-              KitMenuItem(label: 'Refresh', glyph: KitGlyphs.refresh),
-              KitMenuItem(label: 'Settings', glyph: KitGlyphs.settings),
-              KitMenuItem(
+              AppBoxKitMenuItem(label: 'Refresh', glyph: AppBoxKitGlyphs.refresh),
+              AppBoxKitMenuItem(label: 'Settings', glyph: AppBoxKitGlyphs.settings),
+              AppBoxKitMenuItem(
                   label: 'Sign out',
-                  glyph: KitGlyphs.signOut,
+                  glyph: AppBoxKitGlyphs.signOut,
                   isDestructive: true),
             ],
-            onSelect: (item) => locator<KitNotificationService>()
+            onSelect: (item) => appBoxKitLocator<AppBoxKitNotificationService>()
                 .show(item.label, context: context),
           ),
         ],
@@ -47,14 +47,14 @@ class ShowcaseGalleryChromeWidget extends StatelessWidget {
       // Headroom shim: see the M3E clipping note on the kit widget.
       floatingActionButton: SizedBox(
         height: defaultTargetPlatform == TargetPlatform.android ? 280 : null,
-        child: KitNativeFabMenu(
-          glyph: KitGlyphs.add,
+        child: AppBoxKitNativeFabMenu(
+          glyph: AppBoxKitGlyphs.add,
           items: const [
-            KitMenuItem(label: 'New post', glyph: KitGlyphs.compose),
-            KitMenuItem(label: 'New photo', glyph: KitGlyphs.camera),
-            KitMenuItem(label: 'New event', glyph: KitGlyphs.newEvent),
+            AppBoxKitMenuItem(label: 'New post', glyph: AppBoxKitGlyphs.compose),
+            AppBoxKitMenuItem(label: 'New photo', glyph: AppBoxKitGlyphs.camera),
+            AppBoxKitMenuItem(label: 'New event', glyph: AppBoxKitGlyphs.newEvent),
           ],
-          onSelect: (item) => locator<KitNotificationService>()
+          onSelect: (item) => appBoxKitLocator<AppBoxKitNotificationService>()
               .show(item.label, context: context),
         ),
       ),

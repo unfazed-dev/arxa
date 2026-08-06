@@ -16,7 +16,7 @@ class ShowcaseNotesFolderView
 
   /// Streams-only house convention: the view never rebuilds off
   /// `notifyListeners` (the viewmodel never calls it) — every live value is
-  /// bound with [KitStreamBuilder] at the subtree that needs it.
+  /// bound with [AppBoxKitStreamBuilder] at the subtree that needs it.
   @override
   bool get reactive => false;
 

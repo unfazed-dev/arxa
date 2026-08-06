@@ -1,6 +1,6 @@
 import 'package:rxdart/rxdart.dart';
 import 'package:appbox_kit_data/appbox_kit_data.dart';
-import 'package:ui_library/ui_library.dart';
+import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 
 import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/showcase_note_folder_model.dart';
 import 'package:appbox_kit_showcase_app/services/showcase_notes_services/facades/showcase_notes_facade_service.dart';
@@ -8,27 +8,27 @@ import 'package:appbox_kit_showcase_app/services/showcase_notes_services/facades
 // The view knows its viewmodel ONLY — every type a view needs to name (the
 // stream payloads) is re-exported here so view files never import services,
 // repositories, or data/model packages directly.
-export 'package:appbox_kit_data/appbox_kit_data.dart' show KitAuthSession;
+export 'package:appbox_kit_data/appbox_kit_data.dart' show AppBoxKitAuthSession;
 export 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/showcase_note_folder_model.dart';
 export 'package:appbox_kit_showcase_app/services/showcase_notes_services/facades/showcase_notes_facade_service.dart'
     show ShowcaseNotesAdminOverview, ShowcaseNotesOverview;
 
 /// The "Folders" screen viewmodel — streams-only (house convention): all
-/// state is exposed as streams and the views bind them with [KitStreamBuilder];
+/// state is exposed as streams and the views bind them with [AppBoxKitStreamBuilder];
 /// `BaseViewModel` is a lifecycle token (creation/disposal via StackedView),
 /// never a rebuild mechanism — `notifyListeners` is not called.
 ///
 /// Data streams are facade pass-throughs composed with rxdart `switchMap`
 /// (session → owner-scoped reads), so the VM holds no relay fields and no
-/// subscription bookkeeping for them — each [KitStreamBuilder] owns its
+/// subscription bookkeeping for them — each [AppBoxKitStreamBuilder] owns its
 /// subscription. The one VM-owned UI state, [showCreateAccount$], is a
-/// seeded [BehaviorSubject]; the only [KitAction.watch] left is the
+/// seeded [BehaviorSubject]; the only [AppBoxKitAction.watch] left is the
 /// VM-internal side effect that resets it when a session appears.
-class ShowcaseNotesViewModel extends KitViewModel {
-  final _service = locator<ShowcaseNotesFacadeService>();
+class ShowcaseNotesViewModel extends AppBoxKitViewModel {
+  final _service = appBoxKitLocator<ShowcaseNotesFacadeService>();
 
   /// Null while signed out — the views swap to the auth surface on null.
-  Stream<KitAuthSession?> get session$ => _service.session$;
+  Stream<AppBoxKitAuthSession?> get session$ => _service.session$;
 
   /// Owner-scoped folder overview; null while signed out.
   Stream<ShowcaseNotesOverview?> get overview$ => _service.session$.switchMap(

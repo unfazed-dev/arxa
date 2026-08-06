@@ -18,24 +18,24 @@ library;
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:appbox_kit_data/emitters/kit_appwrite_json_emitter.dart';
-import 'package:appbox_kit_data/emitters/kit_supabase_seed_emitter.dart';
-import 'package:appbox_kit_data/emitters/kit_supabase_sql_emitter.dart';
-import 'package:appbox_kit_data/ids/kit_id_service.dart';
-import 'package:appbox_kit_data/schema/kit_table_schema.dart';
+import 'package:appbox_kit_data/emitters/appbox_kit_appwrite_json_emitter.dart';
+import 'package:appbox_kit_data/emitters/appbox_kit_supabase_seed_emitter.dart';
+import 'package:appbox_kit_data/emitters/appbox_kit_supabase_sql_emitter.dart';
+import 'package:appbox_kit_data/ids/appbox_kit_id_service.dart';
+import 'package:appbox_kit_data/schema/appbox_kit_table_schema.dart';
 
 import 'package:appbox_kit_showcase_app/data/schemas/showcase_notes_schemas/showcase_note_folder_schema.dart';
 import 'package:appbox_kit_showcase_app/data/schemas/showcase_notes_schemas/showcase_note_schema.dart';
 
 /// The app's tables, reference order (the emitters re-derive it anyway).
-final List<KitTableSchema> showcaseSchemas = [
+final List<AppBoxKitTableSchema> showcaseSchemas = [
   showcaseNoteFolderSchema,
   showcaseNoteSchema,
 ];
 
 Future<Map<String, String>> _emitAll(Directory seedDir, String databaseId) async {
   final fixturesByTable = <String, List<Map<String, dynamic>>>{};
-  final schemasByTable = <String, KitTableSchema>{};
+  final schemasByTable = <String, AppBoxKitTableSchema>{};
   for (final schema in showcaseSchemas) {
     schemasByTable[schema.table] = schema;
     final fixtureFile = File('${seedDir.path}/${schema.table}.json');
@@ -44,10 +44,10 @@ Future<Map<String, String>> _emitAll(Directory seedDir, String databaseId) async
   }
 
   return {
-    'supabase_migration.sql': KitSupabaseSqlEmitter().emit(showcaseSchemas),
-    'supabase_seed.sql': KitSupabaseSeedEmitter(idService: KitIdService())
+    'supabase_migration.sql': AppBoxKitSupabaseSqlEmitter().emit(showcaseSchemas),
+    'supabase_seed.sql': AppBoxKitSupabaseSeedEmitter(idService: AppBoxKitIdService())
         .emit(fixturesByTable: fixturesByTable, schemasByTable: schemasByTable),
-    'appwrite.tables.json': KitAppwriteJsonEmitter()
+    'appwrite.tables.json': AppBoxKitAppwriteJsonEmitter()
         .emit(schemas: showcaseSchemas, databaseId: databaseId),
   };
 }

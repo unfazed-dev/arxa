@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:ui_library/ui_library.dart';
+import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 
 /// Small live-value pill shown beside a slider label so the current value is
 /// visible while dragging. Tabular figures keep the digits from jittering.
@@ -15,7 +15,7 @@ class ShowcaseValueChipWidget extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
         color: theme.colorScheme.primary.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(kRad10),
+        borderRadius: BorderRadius.circular(axRad10),
       ),
       child: Text(
         value,

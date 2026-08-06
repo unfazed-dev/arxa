@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 import 'package:appbox_kit_motion/appbox_kit_motion.dart';
-import 'package:ui_library/ui_library.dart'
+import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart'
     show
         CNTransitionObserver,
-        KitAction,
-        KitErrorService,
-        KitThemeService,
-        kitDarkTheme,
-        kitLightTheme;
+        AppBoxKitAction,
+        AppBoxKitErrorService,
+        AppBoxKitThemeService,
+        appBoxKitDarkTheme,
+        appBoxKitLightTheme;
 import 'package:appbox_kit_showcase_app/app/app.bottomsheets.dart';
 import 'package:appbox_kit_showcase_app/app/app.dialogs.dart';
 import 'package:appbox_kit_showcase_app/app/app.locator.dart';
@@ -20,16 +20,16 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   setPathUrlStrategy();
   await setupLocator(stackedRouter: kitPlatformRouter);
-  // KitAction's error/notification managers log through KitErrorService —
+  // AppBoxKitAction's error/notification managers log through AppBoxKitErrorService —
   // initialize it first or the first handled error dies on the late Talker.
-  await locator<KitErrorService>().initialize();
+  await locator<AppBoxKitErrorService>().initialize();
   // App boot (appbox_kit_data seed backend + fake auth) happens in
   // ShowcaseStartupViewModel.runStartupLogic() — the canonical Stacked startup flow.
   // Restore the persisted ThemeMode (defaults to `system`) and sync the status
-  // bar before the first frame. KitThemeService owns ThemeMode + system UI.
-  // Through KitAction so a restore failure logs instead of killing main().
-  await KitAction.run<void>(
-    () => locator<KitThemeService>().initialize(),
+  // bar before the first frame. AppBoxKitThemeService owns ThemeMode + system UI.
+  // Through AppBoxKitAction so a restore failure logs instead of killing main().
+  await AppBoxKitAction.run<void>(
+    () => locator<AppBoxKitThemeService>().initialize(),
     widgetId: 'main.themeInit',
   ).completeOnError('Theme restore failed');
   setupShowcaseSnackbars();
@@ -55,7 +55,7 @@ class _ShowcaseAppState extends State<ShowcaseApp>
   );
 
   /// Fade-only: a rise/slide at the app root would shift the entire UI.
-  static const _bootSpec = KitMotionSpec(offset: Offset.zero);
+  static const _bootSpec = AppBoxKitMotionSpec(offset: Offset.zero);
 
   @override
   void initState() {
@@ -71,8 +71,8 @@ class _ShowcaseAppState extends State<ShowcaseApp>
 
   @override
   Widget build(BuildContext context) {
-    final theme = locator<KitThemeService>();
-    return KitMotionScope(
+    final theme = locator<AppBoxKitThemeService>();
+    return AppBoxKitMotionScope(
       driver: _boot,
       spec: _bootSpec,
       child: StreamBuilder<ThemeMode>(
@@ -92,10 +92,10 @@ class _ShowcaseAppState extends State<ShowcaseApp>
             // predictive back) flows into the stacked Router — the legacy
             // routerDelegate API needs it explicit or back events don't reach the
             // router. iOS edge-swipe-back is handled by the cupertino page type
-            // KitPlatformRouter emits, not by this dispatcher.
+            // AppBoxKitPlatformRouter emits, not by this dispatcher.
             backButtonDispatcher: RootBackButtonDispatcher(),
-            theme: kitLightTheme(),
-            darkTheme: kitDarkTheme(),
+            theme: appBoxKitLightTheme(),
+            darkTheme: appBoxKitDarkTheme(),
             themeMode: snapshot.data ?? ThemeMode.system,
           ),
         ),

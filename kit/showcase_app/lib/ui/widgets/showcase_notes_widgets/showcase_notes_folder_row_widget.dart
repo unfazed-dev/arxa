@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:stacked/stacked.dart';
-import 'package:ui_library/ui_library.dart';
+import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 import 'package:stacked_services/stacked_services.dart';
 import 'package:appbox_kit_showcase_app/app/app.dialogs.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes/showcase_notes_viewmodel.dart';
@@ -36,11 +36,11 @@ class ShowcaseNotesFolderRowWidget extends StatelessWidget {
       background: Container(
         color: theme.colorScheme.error,
         alignment: Alignment.centerRight,
-        padding: const EdgeInsets.symmetric(horizontal: kSize20),
-        child: Icon(KitGlyphs.delete.icon, color: theme.colorScheme.onError),
+        padding: const EdgeInsets.symmetric(horizontal: axSize20),
+        child: Icon(AppBoxKitGlyphs.delete.icon, color: theme.colorScheme.onError),
       ),
       confirmDismiss: (_) async {
-        final res = await locator<DialogService>().showCustomDialog(
+        final res = await appBoxKitLocator<DialogService>().showCustomDialog(
           variant: DialogType.showcaseConfirm,
           title: 'Delete Folder',
           description:
@@ -55,7 +55,7 @@ class ShowcaseNotesFolderRowWidget extends StatelessWidget {
       child: GestureDetector(
         onLongPress: onRename,
         child: ShowcaseNotesRowWidget(
-          glyph: KitGlyphs.folder,
+          glyph: AppBoxKitGlyphs.folder,
           label: folder.name,
           trailingCount: count,
           onTap: () => context.router.pushNamed('folder/${folder.id}'),

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:ui_library/ui_library.dart';
+import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_note_editor/showcase_note_editor_viewmodel.dart';
 
 /// The in-progress voice-recording row: cancel, elapsed pill, stop.
@@ -13,7 +13,7 @@ class ShowcaseNoteRecordingRowWidget extends StatelessWidget {
   final ShowcaseNoteEditorViewModel viewModel;
 
   /// Live elapsed time — arrives as a builder param from the toolbar's
-  /// [KitStreamBuilder] binding, never re-read off the viewmodel here.
+  /// [AppBoxKitStreamBuilder] binding, never re-read off the viewmodel here.
   final Duration elapsed;
 
   /// Duration label formatter — the view owns the formatting helper.
@@ -24,26 +24,26 @@ class ShowcaseNoteRecordingRowWidget extends StatelessWidget {
     final theme = Theme.of(context);
     return Row(
       children: [
-        KitNativeIconButton(
-          glyph: KitGlyphs.close,
+        AppBoxKitNativeIconButton(
+          glyph: AppBoxKitGlyphs.close,
           color: theme.colorScheme.onSurfaceVariant,
           onPressed: viewModel.cancelRecording,
         ),
-        horizontalSpaceSmall,
+        appBoxKitHorizontalSpaceSmall,
         Expanded(
           child: Container(
             padding: const EdgeInsets.symmetric(
-                horizontal: kSize12, vertical: kSize8),
+                horizontal: axSize12, vertical: axSize8),
             decoration: BoxDecoration(
               color: theme.colorScheme.error.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(kRad20),
+              borderRadius: BorderRadius.circular(axRad20),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(Icons.fiber_manual_record,
                     color: theme.colorScheme.error, size: 12),
-                horizontalSpaceXSmall,
+                appBoxKitHorizontalSpaceXSmall,
                 Text(
                   formatDuration(elapsed),
                   style: TextStyle(
@@ -55,9 +55,9 @@ class ShowcaseNoteRecordingRowWidget extends StatelessWidget {
             ),
           ),
         ),
-        horizontalSpaceSmall,
-        KitNativeIconButton(
-          glyph: KitGlyphs.stop,
+        appBoxKitHorizontalSpaceSmall,
+        AppBoxKitNativeIconButton(
+          glyph: AppBoxKitGlyphs.stop,
           color: theme.colorScheme.error,
           onPressed: viewModel.stopRecording,
         ),

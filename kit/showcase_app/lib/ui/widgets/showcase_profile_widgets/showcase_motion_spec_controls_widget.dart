@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:ui_library/ui_library.dart';
+import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_profile_shell/showcase_motion/showcase_motion_viewmodel.dart';
 
 /// Spec presets segmented control plus the motion master switch, bound to
@@ -13,12 +13,12 @@ class ShowcaseMotionSpecControlsWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        KitNativeSegmentedControl(
+        AppBoxKitNativeSegmentedControl(
           segments: ShowcaseMotionViewModel.presetLabels,
           selectedIndex: viewModel.presetIndex,
           onChanged: viewModel.setPreset,
         ),
-        verticalSpaceSmall,
+        appBoxKitVerticalSpaceSmall,
         Row(
           children: [
             Expanded(
@@ -27,7 +27,7 @@ class ShowcaseMotionSpecControlsWidget extends StatelessWidget {
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
             ),
-            KitNativeSwitch(
+            AppBoxKitNativeSwitch(
               value: viewModel.enabled,
               onChanged: viewModel.setEnabled,
               semanticLabel: 'Motion enabled',

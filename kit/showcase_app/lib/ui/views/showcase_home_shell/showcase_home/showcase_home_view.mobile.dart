@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:stacked/stacked.dart';
-import 'package:ui_library/ui_library.dart';
+import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 import 'package:appbox_kit_showcase_app/ui/widgets/common/showcase_tabs_shared/widgets.dart';
 import 'package:appbox_kit_showcase_app/ui/widgets/showcase_home_widgets/widgets.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_home_shell/showcase_home/showcase_home_viewmodel.dart';
@@ -12,28 +12,28 @@ class ShowcaseHomeViewMobile extends ViewModelWidget<ShowcaseHomeViewModel> {
   Widget build(BuildContext context, ShowcaseHomeViewModel viewModel) {
     return ListView(
       padding:
-          const EdgeInsets.symmetric(horizontal: kSize16, vertical: kSize16),
+          const EdgeInsets.symmetric(horizontal: axSize16, vertical: axSize16),
       children: [
         const Center(
           child: Text(
             'Kit Showcase',
             style:
-                TextStyle(fontSize: kFontXXXLarge, fontWeight: FontWeight.w900),
+                TextStyle(fontSize: axFontXXXLarge, fontWeight: FontWeight.w900),
           ),
         ),
-        verticalSpaceMedium,
+        appBoxKitVerticalSpaceMedium,
         const ShowcaseSnackbarSmokeRowWidget(),
-        verticalSpaceMedium,
+        appBoxKitVerticalSpaceMedium,
         const ShowcaseGlassCtaButtonWidget(),
-        verticalSpaceMedium,
-        // Native segmented control that drives KitThemeService's theme mode
+        appBoxKitVerticalSpaceMedium,
+        // Native segmented control that drives AppBoxKitThemeService's theme mode
         // — proves the kit theme is wired end-to-end (see swatch below).
         const ShowcaseThemeModeSegmentedDemoWidget(),
-        verticalSpaceLarge,
+        appBoxKitVerticalSpaceLarge,
 
         // --- Showcase: feedback tier (progress / loading / split button) ---
         const ShowcaseProgressLoadingCardWidget(),
-        verticalSpaceMedium,
+        appBoxKitVerticalSpaceMedium,
         const ShowcaseSplitButtonCardWidget(),
       ],
     );

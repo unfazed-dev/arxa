@@ -1,20 +1,20 @@
 import 'package:flutter/material.dart';
-import 'package:ui_library/ui_library.dart';
+import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 
 /// Smoke-test rows for the kit's transient-feedback surface, routed through
-/// KitNotificationService so Android renders the M3E snackbar (variant
-/// derived from kind, configs from setupKitSnackbars) and iOS renders CNToast
+/// AppBoxKitNotificationService so Android renders the M3E snackbar (variant
+/// derived from kind, configs from setupAppBoxKitSnackbars) and iOS renders CNToast
 /// — no Material snackbar leaks on iOS.
 ///
-/// Row 1: one notification per [KitNotificationKind] (warning rides
+/// Row 1: one notification per [AppBoxKitNotificationKind] (warning rides
 /// `position: center` to demo the kit-owned center pill overlay).
 ///
 /// Row 2: the stacked-SnackbarService tiers. `actionLabel` is the ONLY thing
 /// that promotes iOS from CNToast to the stacked snackbar (CNToast is
 /// fire-and-forget and cannot host an action), so the Undo button shows the
 /// real `showCustomSnackBar` path on both platforms; Titled adds `title:`;
-/// Bottom pins to `KitToastPosition.bottom`.
-/// KitNativeIconButton so each button shape-morphs on press (Android M3E)
+/// Bottom pins to `AppBoxKitToastPosition.bottom`.
+/// AppBoxKitNativeIconButton so each button shape-morphs on press (Android M3E)
 /// and renders liquid glass on iOS 26 — matching every other kit icon
 /// button. The semantic tint (muted/good/danger/warn) flows through `color`.
 class ShowcaseSnackbarSmokeRowWidget extends StatelessWidget {
@@ -22,17 +22,17 @@ class ShowcaseSnackbarSmokeRowWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final notifications = locator<KitNotificationService>();
+    final notifications = appBoxKitLocator<AppBoxKitNotificationService>();
     Widget snackbarButton(
-      KitGlyph glyph,
+      AppBoxKitGlyph glyph,
       Color color,
-      KitNotificationKind kind,
+      AppBoxKitNotificationKind kind,
       String label, {
-      KitToastPosition position = KitToastPosition.top,
+      AppBoxKitToastPosition position = AppBoxKitToastPosition.top,
       String? title,
       String? actionLabel,
     }) =>
-        KitNativeIconButton(
+        AppBoxKitNativeIconButton(
           glyph: glyph,
           color: color,
           onPressed: () => notifications.show(
@@ -44,7 +44,7 @@ class ShowcaseSnackbarSmokeRowWidget extends StatelessWidget {
             onAction: actionLabel == null
                 ? null
                 : () => notifications.show('Undo tapped',
-                    kind: KitNotificationKind.info, context: context),
+                    kind: AppBoxKitNotificationKind.info, context: context),
             context: context,
           ),
         );
@@ -54,35 +54,35 @@ class ShowcaseSnackbarSmokeRowWidget extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            snackbarButton(KitGlyphs.info, KitColors.muted,
-                KitNotificationKind.info, 'Info'),
-            horizontalSpaceSmall,
-            snackbarButton(KitGlyphs.success, KitColors.good,
-                KitNotificationKind.success, 'Success'),
-            horizontalSpaceSmall,
-            snackbarButton(KitGlyphs.error, KitColors.danger,
-                KitNotificationKind.error, 'Error'),
-            horizontalSpaceSmall,
-            snackbarButton(KitGlyphs.warning, KitColors.warn,
-                KitNotificationKind.warning, 'Warning',
-                position: KitToastPosition.center),
+            snackbarButton(AppBoxKitGlyphs.info, AppBoxKitColors.muted,
+                AppBoxKitNotificationKind.info, 'Info'),
+            appBoxKitHorizontalSpaceSmall,
+            snackbarButton(AppBoxKitGlyphs.success, AppBoxKitColors.good,
+                AppBoxKitNotificationKind.success, 'Success'),
+            appBoxKitHorizontalSpaceSmall,
+            snackbarButton(AppBoxKitGlyphs.error, AppBoxKitColors.danger,
+                AppBoxKitNotificationKind.error, 'Error'),
+            appBoxKitHorizontalSpaceSmall,
+            snackbarButton(AppBoxKitGlyphs.warning, AppBoxKitColors.warn,
+                AppBoxKitNotificationKind.warning, 'Warning',
+                position: AppBoxKitToastPosition.center),
           ],
         ),
-        verticalSpaceSmall,
+        appBoxKitVerticalSpaceSmall,
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            snackbarButton(KitGlyphs.compose, KitColors.muted,
-                KitNotificationKind.success, 'Changes saved',
+            snackbarButton(AppBoxKitGlyphs.compose, AppBoxKitColors.muted,
+                AppBoxKitNotificationKind.success, 'Changes saved',
                 title: 'Notes'),
-            horizontalSpaceSmall,
-            snackbarButton(KitGlyphs.error, KitColors.danger,
-                KitNotificationKind.error, 'Note deleted',
+            appBoxKitHorizontalSpaceSmall,
+            snackbarButton(AppBoxKitGlyphs.error, AppBoxKitColors.danger,
+                AppBoxKitNotificationKind.error, 'Note deleted',
                 actionLabel: 'Undo'),
-            horizontalSpaceSmall,
-            snackbarButton(KitGlyphs.info, KitColors.muted,
-                KitNotificationKind.info, 'Bottom',
-                position: KitToastPosition.bottom),
+            appBoxKitHorizontalSpaceSmall,
+            snackbarButton(AppBoxKitGlyphs.info, AppBoxKitColors.muted,
+                AppBoxKitNotificationKind.info, 'Bottom',
+                position: AppBoxKitToastPosition.bottom),
           ],
         ),
       ],

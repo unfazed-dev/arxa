@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:ui_library/ui_library.dart';
+import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_search_shell/showcase_search/showcase_search_viewmodel.dart';
 import 'package:appbox_kit_showcase_app/ui/widgets/common/showcase_tabs_shared/widgets.dart';
 
@@ -12,7 +12,7 @@ class ShowcaseSearchFilterCardWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return KitGlassCard(
+    return AppBoxKitGlassCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -23,12 +23,12 @@ class ShowcaseSearchFilterCardWidget extends StatelessWidget {
               ShowcaseValueChipWidget(viewModel.radius.toStringAsFixed(2)),
             ],
           ),
-          KitNativeSlider(
+          AppBoxKitNativeSlider(
             value: viewModel.radius,
             divisions: 10,
             onChanged: viewModel.setRadius,
           ),
-          verticalSpaceSmall,
+          appBoxKitVerticalSpaceSmall,
           Row(
             children: [
               const ShowcaseSectionLabelWidget('Price range'),
@@ -37,7 +37,7 @@ class ShowcaseSearchFilterCardWidget extends StatelessWidget {
                   '${viewModel.priceStart.toStringAsFixed(2)} – ${viewModel.priceEnd.toStringAsFixed(2)}'),
             ],
           ),
-          KitNativeRangeSlider(
+          AppBoxKitNativeRangeSlider(
             values: RangeValues(viewModel.priceStart, viewModel.priceEnd),
             onChanged: (RangeValues v) =>
                 viewModel.setPrice(v.start, v.end),
@@ -49,7 +49,7 @@ class ShowcaseSearchFilterCardWidget extends StatelessWidget {
         // slides under the floating tab bar — external to this scrollable,
         // so the occlusion is explicit (same as the notes folder view).
         .scrollEdgeEffect(
-      edge: KitScrollEdge.bottom,
+      edge: AppBoxKitScrollEdge.bottom,
       occlusionPadding: kShowcaseTabBarBlockHeight,
     );
   }

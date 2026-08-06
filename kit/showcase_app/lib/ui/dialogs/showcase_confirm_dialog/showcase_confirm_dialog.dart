@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:stacked/stacked.dart';
 import 'package:stacked_services/stacked_services.dart';
-import 'package:ui_library/ui_library.dart';
+import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 
 import 'showcase_confirm_dialog_model.dart';
 
@@ -12,8 +12,8 @@ import 'showcase_confirm_dialog_model.dart';
 ///
 /// Was `confirmDialog()` in ui/common/showcase_notes_shared.dart — converted
 /// to a registered DialogService dialog (dialogs live in ui/dialogs/).
-/// Presentation mirrors kitShowNativeDialog's routing: stock M3 AlertDialog
-/// on Android, the kit's [KitFrostedAlertDialog] (iOS 26 alert idiom)
+/// Presentation mirrors appBoxKitShowNativeDialog's routing: stock M3 AlertDialog
+/// on Android, the kit's [AppBoxKitFrostedAlertDialog] (iOS 26 alert idiom)
 /// elsewhere — embedded with popOnAction: false so the DialogService
 /// completer owns dismissal.
 class ShowcaseConfirmDialog extends StackedView<ShowcaseConfirmDialogModel> {
@@ -36,21 +36,21 @@ class ShowcaseConfirmDialog extends StackedView<ShowcaseConfirmDialogModel> {
     void done(bool confirmed) =>
         completer(DialogResponse(confirmed: confirmed));
 
-    if (!KitPlatform.supportsComposeM3E) {
-      return KitFrostedAlertDialog<bool>(
+    if (!AppBoxKitPlatform.supportsComposeM3E) {
+      return AppBoxKitFrostedAlertDialog<bool>(
         title: request.title ?? '',
         message: request.description,
         popOnAction: false,
         actions: [
-          KitNativeDialogAction(
+          AppBoxKitNativeDialogAction(
             label: 'Cancel',
             onPressed: () => done(false),
           ),
-          KitNativeDialogAction(
+          AppBoxKitNativeDialogAction(
             label: params.actionLabel,
             role: params.destructive
-                ? KitDialogActionRole.destructive
-                : KitDialogActionRole.primary,
+                ? AppBoxKitDialogActionRole.destructive
+                : AppBoxKitDialogActionRole.primary,
             onPressed: () => done(true),
           ),
         ],

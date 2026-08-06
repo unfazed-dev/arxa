@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:appbox_kit_media/appbox_kit_media.dart';
-import 'package:ui_library/ui_library.dart' show KitActionOwner;
+import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart' show AppBoxKitActionOwner;
 import 'package:uuid/uuid.dart';
 
 import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/showcase_note_attachment_model.dart';
@@ -12,7 +12,7 @@ import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/showca
 /// Owns attachment binaries and the recording/playback hardware for Notes.
 ///
 /// A thin app-layer adapter over `appbox_kit_media`'s framework-free ports
-/// ([MediaCaptureService], [AudioRecorderService], [AudioPlayerService]) — it
+/// ([AppBoxKitMediaCaptureService], [AppBoxKitAudioRecorderService], [AppBoxKitAudioPlayerService]) — it
 /// keeps the Notes-specific bits the kit deliberately stays out of: the
 /// attachments directory, [ShowcaseNoteAttachmentModel] mapping, "which memo is playing"
 /// tracking, and the "starting a recording stops playback" orchestration.
@@ -25,38 +25,38 @@ import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/showca
 /// One recorder and one player for the whole app: iOS Notes plays a single
 /// memo at a time, and starting a recording stops playback.
 ///
-/// Every hardware/IO operation runs through a KitAction chain: a plugin or
+/// Every hardware/IO operation runs through a AppBoxKitAction chain: a plugin or
 /// file-system failure surfaces as an error snackbar and collapses to the
 /// method's existing null/false contract (fallback) instead of escaping
 /// uncaught. Expected non-error outcomes (permission denial, user cancel)
 /// stay plain returns — no snackbar. [resolvePath] stays raw: it is a pure
 /// path derivation on the per-attachment render path, where a snackbar per
 /// failed row would storm.
-class ShowcaseNotesMediaAdapterService with KitActionOwner {
+class ShowcaseNotesMediaAdapterService with AppBoxKitActionOwner {
   /// Ports default to their real plugin-backed implementations; inject fakes
-  /// (from `package:appbox_kit_media/testing.dart`) in tests.
+  /// (from `package:appbox_kit_media/appbox_kit_testing.dart`) in tests.
   ShowcaseNotesMediaAdapterService({
-    MediaCaptureService? capture,
-    AudioRecorderService? recorder,
-    AudioPlayerService? player,
-  })  : _capture = capture ?? ImagePickerMediaCaptureService(),
-        _recorder = recorder ?? RecordAudioRecorderService(),
-        _player = player ?? JustAudioPlayerService() {
+    AppBoxKitMediaCaptureService? capture,
+    AppBoxKitAudioRecorderService? recorder,
+    AppBoxKitAudioPlayerService? player,
+  })  : _capture = capture ?? AppBoxKitImagePickerMediaCaptureService(),
+        _recorder = recorder ?? AppBoxKitRecordAudioRecorderService(),
+        _player = player ?? AppBoxKitJustAudioPlayerService() {
     // Mirror the kit ports' streams onto app-owned BehaviorSubjects, subscribed
     // here at construction so late-binding viewmodels still get the last value.
     // One watch per stream (each pipes to a different subject) — all
-    // owner-keyed, so [dispose]'s disposeKitActions() cancels them.
+    // owner-keyed, so [dispose]'s disposeAppBoxKitActions() cancels them.
     watch('bridge.elapsed', streams: [_recorder.elapsed$], callback: (value) => recording$.add(value as Duration?));
     watch('bridge.position', streams: [_player.position$], callback: (value) => _position.add(value as Duration));
     watch('bridge.duration', streams: [_player.duration$], callback: (value) => _duration.add(value as Duration?));
-    watch('bridge.state', streams: [_player.state$], callback: (value) => _playerState.add(value as PlaybackState));
+    watch('bridge.state', streams: [_player.state$], callback: (value) => _playerState.add(value as AppBoxKitPlaybackState));
   }
 
   static const _uuid = Uuid();
 
-  final MediaCaptureService _capture;
-  final AudioRecorderService _recorder;
-  final AudioPlayerService _player;
+  final AppBoxKitMediaCaptureService _capture;
+  final AppBoxKitAudioRecorderService _recorder;
+  final AppBoxKitAudioPlayerService _player;
 
   /// Elapsed recording time while recording, null otherwise — drives the
   /// editor's red recording pill.
@@ -72,15 +72,15 @@ class ShowcaseNotesMediaAdapterService with KitActionOwner {
       BehaviorSubject<Duration>.seeded(Duration.zero);
   final BehaviorSubject<Duration?> _duration =
       BehaviorSubject<Duration?>.seeded(null);
-  final BehaviorSubject<PlaybackState> _playerState =
-      BehaviorSubject<PlaybackState>.seeded(PlaybackState.idle);
+  final BehaviorSubject<AppBoxKitPlaybackState> _playerState =
+      BehaviorSubject<AppBoxKitPlaybackState>.seeded(AppBoxKitPlaybackState.idle);
 
   Stream<Duration> get position$ => _position.stream;
   Stream<Duration?> get duration$ => _duration.stream;
-  Stream<PlaybackState> get playerState$ => _playerState.stream;
+  Stream<AppBoxKitPlaybackState> get playerState$ => _playerState.stream;
 
   /// The iOS Simulator has no camera hardware, and capture throws when asked
-  /// for the camera there. The kit's [MediaCaptureService.hasCamera] detects
+  /// for the camera there. The kit's [AppBoxKitMediaCaptureService.hasCamera] detects
   /// this (via the injected `SIMULATOR_*` env vars) without a MethodChannel.
   /// ViewModels use this to hide the "Take Photo" action so the demo stays
   /// testable end-to-end on simulators.
@@ -104,7 +104,7 @@ class ShowcaseNotesMediaAdapterService with KitActionOwner {
   /// into the attachments dir or it would vanish with the cache. Permission
   /// denial, cancellation and missing hardware all collapse to null here (the
   /// UI already gates the camera via [isCameraAvailable]); a plugin/IO throw
-  /// collapses to null too, via the KitAction fallback, after an error
+  /// collapses to null too, via the AppBoxKitAction fallback, after an error
   /// snackbar.
   Future<ShowcaseNoteAttachmentModel?> pickPhoto({required bool fromCamera}) =>
       action<ShowcaseNoteAttachmentModel?>(
@@ -113,15 +113,15 @@ class ShowcaseNotesMediaAdapterService with KitActionOwner {
           // Degrade to the library on simulators rather than crash — mirrors how
           // the UI hides the camera action via [isCameraAvailable].
           final source = (fromCamera && _capture.hasCamera)
-              ? MediaSource.camera
-              : MediaSource.gallery;
+              ? AppBoxKitMediaSource.camera
+              : AppBoxKitMediaSource.gallery;
           final result = await _capture.capturePhoto(
             source: source,
             // Bounded so seed-snapshot-era demo photos don't balloon the docs dir.
             maxWidth: 2048,
             imageQuality: 85,
           );
-          if (result is! MediaCaptured) return null; // cancelled / denied / failed
+          if (result is! AppBoxKitMediaCaptured) return null; // cancelled / denied / failed
           final media = result.media;
 
           final id = _uuid.v4();
@@ -229,7 +229,7 @@ class ShowcaseNotesMediaAdapterService with KitActionOwner {
           .completeOnError('Attachment cleanup failed');
 
   Future<void> dispose() async {
-    disposeKitActions();
+    disposeAppBoxKitActions();
     await _recorder.dispose();
     await _player.dispose();
     await recording$.close();

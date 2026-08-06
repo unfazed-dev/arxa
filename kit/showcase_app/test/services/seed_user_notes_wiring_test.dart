@@ -2,8 +2,8 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ui_library/ui_library.dart';
-import 'package:ui_library/testing.dart';
+import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
+import 'package:appbox_kit_ui_library/appbox_kit_testing.dart';
 import 'package:appbox_kit_data/appbox_kit_data.dart';
 import 'package:appbox_kit_showcase_app/app/app_data.dart';
 import 'package:appbox_kit_showcase_app/services/showcase_notes_services/facades/showcase_notes_facade_service.dart';
@@ -16,7 +16,7 @@ import 'package:talker_flutter/talker_flutter.dart';
 /// the shipped fixtures assign them. Expected counts are computed from the
 /// fixture JSON itself — not hardcoded — so this fails if seeding, owner
 /// canonicalization, or auth resolution ever drift apart.
-class _DiskAssetReader implements KitAssetReader {
+class _DiskAssetReader implements AppBoxKitAssetReader {
   static const _prefix = 'packages/appbox_kit_showcase_app/';
 
   @override
@@ -50,29 +50,29 @@ void main() {
       }
     }
 
-    locator
+    appBoxKitLocator
       ..registerLazySingleton(() => Talker())
-      ..registerLazySingleton(() => KitErrorService())
+      ..registerLazySingleton(() => AppBoxKitErrorService())
       ..registerLazySingleton(() => DialogService())
       ..registerLazySingleton(() => BottomSheetService())
       ..registerLazySingleton(() => SnackbarService())
       // Fake: the real service's CNToast path needs a mounted navigator
       // context, which a data-layer suite doesn't have.
-      ..registerLazySingleton<KitNotificationService>(() => FakeKitNotificationService())
+      ..registerLazySingleton<AppBoxKitNotificationService>(() => FakeAppBoxKitNotificationService())
       ..registerLazySingleton<ShowcaseNotesRepositoryService>(() => ShowcaseNotesRepositoryService())
       ..registerLazySingleton<ShowcaseNotesFacadeService>(() => ShowcaseNotesFacadeService());
 
     await AppData.initialize(
-      config: const KitDataConfig(
-        backend: KitDataBackend.seed,
-        auth: KitAuthConfig(fakeUsersAsset: AppData.fakeUsersAsset),
+      config: const AppBoxKitDataConfig(
+        backend: AppBoxKitDataBackend.seed,
+        auth: AppBoxKitAuthConfig(fakeUsersAsset: AppData.fakeUsersAsset),
       ),
       assetReader: _DiskAssetReader(),
     );
-    notes = locator<ShowcaseNotesFacadeService>();
+    notes = appBoxKitLocator<ShowcaseNotesFacadeService>();
   });
 
-  Future<ShowcaseNotesOverview> overviewFor(KitAuthSession session) =>
+  Future<ShowcaseNotesOverview> overviewFor(AppBoxKitAuthSession session) =>
       notes.overview$(session.user.id).first;
 
   test('fixture sanity: every seed user owns at least one live note', () {

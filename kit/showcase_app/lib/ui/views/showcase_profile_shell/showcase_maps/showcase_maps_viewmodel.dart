@@ -1,10 +1,10 @@
 import 'package:appbox_kit_maps/appbox_kit_maps.dart';
 import 'package:stacked/stacked.dart';
 
-/// Maps showcase — appbox_kit_maps through the plugin-neutral KitMapView.
+/// Maps showcase — appbox_kit_maps through the plugin-neutral AppBoxKitMapView.
 ///
 /// Backend: OpenStreetMap by default (no key). Pass
-/// `--dart-define=MAPBOX_PUBLIC_TOKEN=pk....` to flip the same KitMapView to
+/// `--dart-define=MAPBOX_PUBLIC_TOKEN=pk....` to flip the same AppBoxKitMapView to
 /// Mapbox raster tiles — nothing else changes, which is the point of the port.
 class ShowcaseMapsViewModel extends BaseViewModel {
   static const _packageId = 'com.appboxkit.appbox_kit_showcase_app';
@@ -15,27 +15,27 @@ class ShowcaseMapsViewModel extends BaseViewModel {
   String get backendLabel =>
       mapboxAvailable ? 'Mapbox raster tiles' : 'OpenStreetMap';
 
-  KitMapProvider get provider => mapboxAvailable
-      ? MapboxProvider(
+  AppBoxKitMapProvider get provider => mapboxAvailable
+      ? AppBoxKitMapboxProvider(
           accessToken: _mapboxToken,
           userAgentPackageName: _packageId,
         )
-      : OpenStreetMapProvider(userAgentPackageName: _packageId);
+      : AppBoxKitOpenStreetMapProvider(userAgentPackageName: _packageId);
 
-  KitMapConfig get config => KitMapConfig(
-        initialCameraPosition: const KitCameraPosition(
-          target: KitLatLng(51.5074, -0.1278), // London
+  AppBoxKitMapConfig get config => AppBoxKitMapConfig(
+        initialCameraPosition: const AppBoxKitCameraPosition(
+          target: AppBoxKitLatLng(51.5074, -0.1278), // London
           zoom: 11,
         ),
         markers: {
-          const KitMapMarker(
+          const AppBoxKitMapMarker(
             id: 'london-eye',
-            position: KitLatLng(51.5033, -0.1196),
+            position: AppBoxKitLatLng(51.5033, -0.1196),
             title: 'London Eye',
           ),
-          const KitMapMarker(
+          const AppBoxKitMapMarker(
             id: 'tower-bridge',
-            position: KitLatLng(51.5055, -0.0754),
+            position: AppBoxKitLatLng(51.5055, -0.0754),
             title: 'Tower Bridge',
           ),
         },

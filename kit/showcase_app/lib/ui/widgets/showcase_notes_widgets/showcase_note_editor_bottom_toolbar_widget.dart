@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:appbox_kit_motion/appbox_kit_motion.dart';
-import 'package:ui_library/ui_library.dart';
+import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_note_editor/showcase_note_editor_viewmodel.dart';
 import 'package:appbox_kit_showcase_app/ui/widgets/showcase_notes_widgets/widgets.dart';
 
@@ -24,14 +24,14 @@ class ShowcaseNoteEditorBottomToolbarWidget extends StatelessWidget {
         // a recording session ends the Row re-mounts AFTER the scope timeline
         // has finished, so it renders settled — no entrance replay (the old
         // unkeyed flutter_animate chain replayed on every toggle-back).
-        child: KitMotionScope(
+        child: AppBoxKitMotionScope(
           child: Padding(
             padding: const EdgeInsets.symmetric(
-                horizontal: kSize16, vertical: kSize8),
+                horizontal: axSize16, vertical: axSize8),
             // Streams-only: recordingElapsed$ (a seeded BehaviorSubject on the
             // media adapter, passed through the VM) swaps the action row for
             // the recording row and feeds the live elapsed pill.
-            child: KitStreamBuilder<Duration?>(
+            child: AppBoxKitStreamBuilder<Duration?>(
               stream: viewModel.recordingElapsed$,
               builder: (context, elapsed) => elapsed != null
                   ? ShowcaseNoteRecordingRowWidget(
@@ -42,26 +42,26 @@ class ShowcaseNoteEditorBottomToolbarWidget extends StatelessWidget {
                   : Row(
                       children: [
                         if (viewModel.isCameraAvailable) ...[
-                          KitNativeIconButton(
-                            glyph: KitGlyphs.camera,
+                          AppBoxKitNativeIconButton(
+                            glyph: AppBoxKitGlyphs.camera,
                             onPressed: () =>
                                 viewModel.addPhoto(fromCamera: true),
                           ),
-                          horizontalSpaceSmall,
+                          appBoxKitHorizontalSpaceSmall,
                         ],
-                        KitNativeIconButton(
-                          glyph: KitGlyphs.photo,
+                        AppBoxKitNativeIconButton(
+                          glyph: AppBoxKitGlyphs.photo,
                           onPressed: () => viewModel.addPhoto(fromCamera: false),
                         ),
                         const Spacer(),
-                        KitNativeIconButton(
-                          glyph: KitGlyphs.mic,
+                        AppBoxKitNativeIconButton(
+                          glyph: AppBoxKitGlyphs.mic,
                           onPressed: () async {
                             final started = await viewModel.startRecording();
                             if (!started && context.mounted) {
-                              locator<KitNotificationService>().show(
+                              appBoxKitLocator<AppBoxKitNotificationService>().show(
                                 'Microphone permission needed',
-                                kind: KitNotificationKind.warning,
+                                kind: AppBoxKitNotificationKind.warning,
                                 context: context,
                               );
                             }

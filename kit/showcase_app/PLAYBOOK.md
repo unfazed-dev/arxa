@@ -44,17 +44,17 @@ dependencies:
   appbox_kit_native: { path: ../../appbox_kit_native }   # if used directly
   rxdart: ^0.28.0
 ```
-In `lib/app/app.dart` register kit services as `LazySingleton` (KitErrorService, KitNotificationService, KitHapticService, KitThemeService, KitNavigationControllerService, KitOverlayService, KitSelectableService, Talker). Mirror the old showcase `app.dart`.
+In `lib/app/app.dart` register kit services as `LazySingleton` (AppBoxKitErrorService, AppBoxKitNotificationService, AppBoxKitHapticService, AppBoxKitThemeService, AppBoxKitNavigationControllerService, AppBoxKitOverlayService, AppBoxKitSelectableService, Talker). Mirror the old showcase `app.dart`.
 
 ## 7.3 Boot the data layer
 ```dart
-await KitData.initialize(
-  config: const KitDataConfig(
-    backend: KitDataBackend.seed,
-    seedPersistence: KitSeedPersistenceMode.snapshot,
-    auth: KitAuthConfig(fakeUsersAsset: 'data/seed/kit_auth_users.json'),
+await AppBoxKitData.initialize(
+  config: const AppBoxKitDataConfig(
+    backend: AppBoxKitDataBackend.seed,
+    seedPersistence: AppBoxKitSeedPersistenceMode.snapshot,
+    auth: AppBoxKitAuthConfig(fakeUsersAsset: 'data/seed/kit_auth_users.json'),
   ),
-  entities: [/* KitEntityRegistration per table */],
+  entities: [/* AppBoxKitEntityRegistration per table */],
   fixtureAssets: ['data/seed/<table>.json'],
 );
 ```
@@ -67,7 +67,7 @@ The app owns its data layer; the kit owns the machinery. Layout:
 lib/data/
 ├── data.dart                     # barrel, chains only
 ├── models/<shell>_models/        # pure data classes (*_model.dart)
-└── schemas/<shell>_schemas/      # KitTableSchema + KitEntityRegistration (*_schema.dart)
+└── schemas/<shell>_schemas/      # AppBoxKitTableSchema + AppBoxKitEntityRegistration (*_schema.dart)
 data/
 ├── seed/<table>.json             # runtime fixtures (pubspec-declared assets)
 └── generated/                    # emitter output — NEVER hand-edit
@@ -82,7 +82,7 @@ tool/generate_data.dart           # dart run tool/generate_data.dart [--check]
   (never the kit barrel) so the tool compiles as a pure-Dart CLI.
 - **`--check`** regenerates in memory and exits 1 on drift — the scaffold
   gate's **D1** section runs it, so a stale `data/generated/` fails the gate.
-- **Backend coherence (D1):** the `KitDataBackend` declared in
+- **Backend coherence (D1):** the `AppBoxKitDataBackend` declared in
   `lib/app/app_data.dart` must have its artifacts — supabase → both SQL files,
   appwrite → the tables fragment, seed → the fixtures (proven by `--check`).
 - Fixtures keep the kit's `<table>.json` naming; the Appwrite `databaseId` is
@@ -90,11 +90,11 @@ tool/generate_data.dart           # dart run tool/generate_data.dart [--check]
 
 <!-- PORTED — §7.3 DONE 2026-07-12. Boot lives in `lib/app/app_data.dart`:
 `AppData.initialize({config, assetReader})` (renamed from the source's
-`AppboxKitShowcase` — that name referenced the old package). It boots KitData
+`AppboxKitShowcase` — that name referenced the old package). It boots AppBoxKitData
 over the 3 seed fixtures AND registers the two Notes services (ShowcaseNotesFacadeService,
 ShowcaseNotesMediaAdapterService) via the shared `locator` — the data slice boots itself (one
 call = data layer usable). `main.dart` calls it after `setupLocator()`; a
-`ThemeMode` StreamBuilder drives kitLightTheme/kitDarkTheme. The 12 kit
+`ThemeMode` StreamBuilder drives appBoxKitLightTheme/appBoxKitDarkTheme. The 12 kit
 *infrastructure* services stay in `@StackedApp` (lib/app/app.dart). VERIFIED:
 9 ported data-layer tests green (boot→seed→fake-auth→facade streams→mutation
 round-trip→per-owner isolation) — `test/notes_service_test.dart`. -->
@@ -115,19 +115,19 @@ stacked create service notes_facade
 above are INACCURATE for the appbox_kit_data architecture. There is NO
 hand-written Repository (and no `notes_repository`/`notes_facade` services).
 2026-07-13 update: the services ARE now CLI-created — `stacked create service
-notes / notes_media` scaffolds + registrations, with the KitDataFacade body
+notes / notes_media` scaffolds + registrations, with the AppBoxKitDataFacade body
 hand-authored INTO the CLI-created file (the documented exception). Correct
 procedure:
-(1) define the entity + `KitTableSchema` + `KitEntityRegistration` in the model
+(1) define the entity + `AppBoxKitTableSchema` + `AppBoxKitEntityRegistration` in the model
     file (lib/notes/models/*.dart);
-(2) pass the registrations to `KitData.initialize(entities: [...])` — typed
-    `KitRepository<T>` then comes FREE via `KitDataFacade.repository<T>()`; that
+(2) pass the registrations to `AppBoxKitData.initialize(entities: [...])` — typed
+    `AppBoxKitRepository<T>` then comes FREE via `AppBoxKitDataFacade.repository<T>()`; that
     IS the swap seam (no per-table Repository class to author);
-(3) the Facade is a hand-authored `class ShowcaseNotesFacadeService extends KitDataFacade`
+(3) the Facade is a hand-authored `class ShowcaseNotesFacadeService extends AppBoxKitDataFacade`
     (prefixed per the showcase naming convention, 2026-08-05). It
     composes `repository<Note>()` / `repository<NoteFolder>()`, derives rxdart
     streams, and routes writes through `mutate()`.
-The stacked CLI cannot scaffold a KitDataFacade subclass — hand-author it. -->
+The stacked CLI cannot scaffold a AppBoxKitDataFacade subclass — hand-author it. -->
 
 ## 7.6 Bind a ViewModel to a Facade
 ```bash
@@ -135,7 +135,7 @@ stacked create view notes
 ```
 ViewModels expose the Facade's streams as getters (streams-only — see below); no direct Repository access.
 
-**Streams-only convention (hard):** viewmodels `extends KitViewModel` (ui_library), expose all state as `Stream`/`ValueStream` getters (facade pass-throughs, rxdart `switchMap` compositions, seeded `BehaviorSubject`s for UI-owned state) and NEVER call `notifyListeners`. Views add `@override bool get reactive => false;` to the CLI-generated `StackedView` and bind live values with `KitStreamBuilder` at the right subtree. Ops run `action('<verb>', () => ...)` (the `KitActionOwner` helper on `KitViewModel`) — no widgetId strings, no manual `KitAction.dispose` (KitViewModel auto-disposes via `disposeKitActions`). A view file imports ONLY its viewmodel (+ kit packages + sibling views/widgets); the viewmodel re-exports every payload type the view names. Reference: `showcase_notes_shell/showcase_notes/`.
+**Streams-only convention (hard):** viewmodels `extends AppBoxKitViewModel` (appbox_kit_ui_library), expose all state as `Stream`/`ValueStream` getters (facade pass-throughs, rxdart `switchMap` compositions, seeded `BehaviorSubject`s for UI-owned state) and NEVER call `notifyListeners`. Views add `@override bool get reactive => false;` to the CLI-generated `StackedView` and bind live values with `AppBoxKitStreamBuilder` at the right subtree. Ops run `action('<verb>', () => ...)` (the `AppBoxKitActionOwner` helper on `AppBoxKitViewModel`) — no widgetId strings, no manual `AppBoxKitAction.dispose` (AppBoxKitViewModel auto-disposes via `disposeAppBoxKitActions`). A view file imports ONLY its viewmodel (+ kit packages + sibling views/widgets); the viewmodel re-exports every payload type the view names. Reference: `showcase_notes_shell/showcase_notes/`.
 
 ## 7.7 Lay out the shell route tree (IndexedStack tabs)
 
@@ -155,13 +155,13 @@ stacked create view showcase_startup showcase_shell showcase_<tab>_shell showcas
 Run `stacked generate` after the route tree edit.
 
 ## 7.8 Use native-chrome widgets (`appbox_kit`)
-`KitNativeAppBar`, `KitNativeFab`, `KitNativeFabMenu`, `KitNativeSheet`, `KitNativeSwitch`, `KitNativeSearchBar`, `KitNativeNavigationRail`, `KitGlassCard`, … — adaptive per platform; gated by `KitPlatform` / `KitNativeChromeGate`.
+`AppBoxKitNativeAppBar`, `AppBoxKitNativeFab`, `AppBoxKitNativeFabMenu`, `AppBoxKitNativeSheet`, `AppBoxKitNativeSwitch`, `AppBoxKitNativeSearchBar`, `AppBoxKitNativeNavigationRail`, `AppBoxKitGlassCard`, … — adaptive per platform; gated by `AppBoxKitPlatform` / `AppBoxKitNativeChromeGate`.
 
 **Reuse mandates (hard — every showcase view, every host view built on the kit):**
 
-- **Top bars → `KitNativeAppBar` in the `Scaffold.appBar` slot.** `KitNativeAppBar` implements `PreferredSizeWidget`, so it drops straight into `Scaffold.appBar` (no `PreferredSize` wrapper) — the exact pattern `ShowcaseGalleryChrome` and every notes view use. Never a hand-rolled `Row`/`Padding` bar, and never place the bar *inside* the scroll body. For scrollable content use `Scaffold(appBar: KitNativeAppBar(...), body: <scrollable>)`, **not** `KitNativeAppBar.sliver()` — the `.sliver()` variant's iOS tier is a Material `SliverAppBar` (no native nav-bar look), so it renders as a floating title instead of a bar (this is the exact bug the notes views hit). The leading back affordance is `leading: KitNativeIconButton(glyph: KitGlyphs.back, …)` with `automaticallyImplyLeading: false` (explicit leading keeps every tier consistent). iOS has **no** native nav bar in `cupertino_native_better`, so `KitNativeAppBar` wraps `CupertinoNavigationBar` itself — never reach for one directly. The bar owns its bottom edge on every tier; drop any hand-rolled `Divider(height: 1)` beneath it.
-- **FABs → `KitNativeFab` / `KitNativeFabMenu`.** Never a hand-rolled `Container(BoxShape.circle) + IconButton`. The kit FAB owns its tier-correct size (56pt circle, 22pt glyph) and derives `colorScheme.primary` internally on both the iOS-glass and Android-M3E tiers — pass **no** color. Entrance animations chain on the widget (`.animate()`).
-- **Glyphs → `KitGlyphs.<x>`.** Never hand-roll `icon:` + `sfSymbol:` pairs at a call site. When the same action appears in ≥2 places (or any native chrome), add a semantic entry to `common/kit_glyphs.dart` (`KitGlyph(materialIcon, 'sf.symbol')`) and pass `glyph:`. `KitGlyph` exposes `.icon` / `.sfSymbol` for the few widgets (`KitNativeFab`) that take them separately. The leading back glyph is `KitGlyphs.back` (`arrow_back_ios_new` / `chevron.backward` — the iOS back symbol; don't use ad-hoc `chevron.left`).
+- **Top bars → `AppBoxKitNativeAppBar` in the `Scaffold.appBar` slot.** `AppBoxKitNativeAppBar` implements `PreferredSizeWidget`, so it drops straight into `Scaffold.appBar` (no `PreferredSize` wrapper) — the exact pattern `ShowcaseGalleryChrome` and every notes view use. Never a hand-rolled `Row`/`Padding` bar, and never place the bar *inside* the scroll body. For scrollable content use `Scaffold(appBar: AppBoxKitNativeAppBar(...), body: <scrollable>)`, **not** `AppBoxKitNativeAppBar.sliver()` — the `.sliver()` variant's iOS tier is a Material `SliverAppBar` (no native nav-bar look), so it renders as a floating title instead of a bar (this is the exact bug the notes views hit). The leading back affordance is `leading: AppBoxKitNativeIconButton(glyph: AppBoxKitGlyphs.back, …)` with `automaticallyImplyLeading: false` (explicit leading keeps every tier consistent). iOS has **no** native nav bar in `cupertino_native_better`, so `AppBoxKitNativeAppBar` wraps `CupertinoNavigationBar` itself — never reach for one directly. The bar owns its bottom edge on every tier; drop any hand-rolled `Divider(height: 1)` beneath it.
+- **FABs → `AppBoxKitNativeFab` / `AppBoxKitNativeFabMenu`.** Never a hand-rolled `Container(BoxShape.circle) + IconButton`. The kit FAB owns its tier-correct size (56pt circle, 22pt glyph) and derives `colorScheme.primary` internally on both the iOS-glass and Android-M3E tiers — pass **no** color. Entrance animations chain on the widget (`.animate()`).
+- **Glyphs → `AppBoxKitGlyphs.<x>`.** Never hand-roll `icon:` + `sfSymbol:` pairs at a call site. When the same action appears in ≥2 places (or any native chrome), add a semantic entry to `common/kit_glyphs.dart` (`AppBoxKitGlyph(materialIcon, 'sf.symbol')`) and pass `glyph:`. `AppBoxKitGlyph` exposes `.icon` / `.sfSymbol` for the few widgets (`AppBoxKitNativeFab`) that take them separately. The leading back glyph is `AppBoxKitGlyphs.back` (`arrow_back_ios_new` / `chevron.backward` — the iOS back symbol; don't use ad-hoc `chevron.left`).
 - **Colors → `Theme.of(context).colorScheme.*` roles only.** No per-feature accent constants (e.g. `kFeatureAccent = Color(0x…)`) and no raw `Color(0x…)` / `CupertinoColors.*` for themeable values. Filled accent surfaces pair the container role with its `on*` foreground (`primary`/`onPrimary`, `tertiary`/`onTertiary`, `error`/`onError`). The only exception is a genuine platform constant (e.g. a media lightbox that is always black) — extract it to a named `const` with a `ponytail:` comment naming the platform token and why a theme role would regress.
 - **Sibling parity first.** Before adding chrome to a view, check the sibling showcases (home/search/profile) and reuse their pattern rather than inventing a parallel one. Reusability is the point of the kit — every new view should look like the existing ones because it's built from the same primitives.
 
@@ -184,7 +184,7 @@ stacked create widget    note_card      # ui/widgets/common/note_card/ + WidgetM
 #        --no-test (skip test file generation)
 ```
 
-**Widget post-scaffold rule (per-shell structure):** the CLI only writes to `ui/widgets/common` with a `WidgetModel` — after `stacked create widget`, RELOCATE the widget into its shell home (`ui/widgets/<shell>_widgets/`), rename the file to `*_widget.dart` with the matching class name, drop the WidgetModel (widgets are dumb — state comes via constructor params or `KitStreamBuilder` bindings on the VM), and export it from the shell widgets barrel. `common/` is only for genuinely cross-shell widgets.
+**Widget post-scaffold rule (per-shell structure):** the CLI only writes to `ui/widgets/common` with a `WidgetModel` — after `stacked create widget`, RELOCATE the widget into its shell home (`ui/widgets/<shell>_widgets/`), rename the file to `*_widget.dart` with the matching class name, drop the WidgetModel (widgets are dumb — state comes via constructor params or `AppBoxKitStreamBuilder` bindings on the VM), and export it from the shell widgets barrel. `common/` is only for genuinely cross-shell widgets.
 
 ## 7.11 v2 web (route divergence + chrome fallback) — placeholder
 Web v2 gets its own route tree (different navigation model). Native chrome falls back to Flutter widgets on web; media plugins are web-incompatible and stay ios/android-only. Filled in v2.
@@ -195,7 +195,7 @@ Web v2 gets its own route tree (different navigation model). Native chrome falls
 
 Every route (root, tabs, grandchildren) renders native per platform through the
 stacked router: cupertino slide + edge-swipe-back on iOS, Material + predictive
-back on Android, no-animation on web. Mix the kit's `KitPlatformPagesMixin`
+back on Android, no-animation on web. Mix the kit's `AppBoxKitPlatformPagesMixin`
 into a host router shell, wire it in `main.dart` (+ `RootBackButtonDispatcher`),
 and add `enableOnBackInvokedCallback` to the Android manifest. Full how-to +
 why-a-kit-helper-is-required (stacked 3.5.0 `AdaptivePage` is material on all

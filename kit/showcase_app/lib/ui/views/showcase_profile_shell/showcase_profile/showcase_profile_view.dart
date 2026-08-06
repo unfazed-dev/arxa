@@ -7,10 +7,10 @@ import 'package:appbox_kit_showcase_app/ui/views/showcase_profile_shell/showcase
 import 'package:appbox_kit_showcase_app/ui/views/showcase_profile_shell/showcase_profile/showcase_profile_view.mobile.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_profile_shell/showcase_profile/showcase_profile_viewmodel.dart';
 
-/// Profile-tab showcase: [KitNativeNavigationRail], [KitNativeToolbar],
+/// Profile-tab showcase: [AppBoxKitNativeNavigationRail], [AppBoxKitNativeToolbar],
 /// and the two imperative surfaces —
-/// [KitNotificationService] + the stacked [BottomSheetService] (backed by
-/// KitBottomSheetService → kitShowNativeSheet) — wired to buttons.
+/// [AppBoxKitNotificationService] + the stacked [BottomSheetService] (backed by
+/// AppBoxKitBottomSheetService → appBoxKitShowNativeSheet) — wired to buttons.
 class ShowcaseProfileView extends StackedView<ShowcaseProfileViewModel> {
   const ShowcaseProfileView({super.key});
 

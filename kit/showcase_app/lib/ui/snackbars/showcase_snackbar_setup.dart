@@ -1,29 +1,29 @@
 import 'package:flutter/material.dart';
 import 'package:stacked_services/stacked_services.dart';
-import 'package:ui_library/ui_library.dart';
+import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 
 import 'package:appbox_kit_showcase_app/ui/common/app_colors.dart';
 
 /// The app's snackbar seat. The kit supplies the severity VARIANTS
-/// (`setupKitSnackbars` — one SnackbarConfig per KitSnackbarType); what the
+/// (`setupAppBoxKitSnackbars` — one SnackbarConfig per AppBoxKitSnackbarType); what the
 /// APP owns lives here: the default SnackbarConfig in the app's own palette,
 /// and any future showcase-specific variants. Registration management sits in
 /// the app's ui/ layer alongside bottom_sheets/ and dialogs/ — the kit removes
 /// setup boilerplate, it does not take over app presentation.
 ///
 /// Call once from `main()` after `setupLocator` (replaces the bare
-/// `setupKitSnackbars()` call; the scaffold gate greps lib/ for that call,
+/// `setupAppBoxKitSnackbars()` call; the scaffold gate greps lib/ for that call,
 /// which happens inside this function).
 void setupShowcaseSnackbars() {
-  setupKitSnackbars();
+  setupAppBoxKitSnackbars();
 
-  locator<SnackbarService>().registerSnackbarConfig(
+  appBoxKitLocator<SnackbarService>().registerSnackbarConfig(
     SnackbarConfig(
       snackPosition: SnackPosition.BOTTOM,
       backgroundColor: kcDarkGreyColor,
-      // Real blur + plain dim (see setupKitSnackbars: blur 20 ≈ Apple's
+      // Real blur + plain dim (see setupAppBoxKitSnackbars: blur 20 ≈ Apple's
       // regular material; chrome dematerializes via withNativeChromeHidden
-      // at the KitNotificationService seat).
+      // at the AppBoxKitNotificationService seat).
       overlayBlur: 20,
       overlayColor: Colors.black54,
       messageColor: kcWhite,

@@ -1,6 +1,6 @@
 import 'package:rxdart/rxdart.dart';
 import 'package:stacked/stacked.dart';
-import 'package:ui_library/ui_library.dart';
+import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 
 import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/showcase_note_model.dart';
 import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/showcase_note_folder_model.dart';
@@ -14,7 +14,7 @@ export 'package:appbox_kit_showcase_app/services/showcase_notes_services/facades
     show ShowcaseNoteGroup;
 
 /// The notes-list screen viewmodel — streams-only (house convention): all
-/// state is exposed as streams and the views bind them with [KitStreamBuilder];
+/// state is exposed as streams and the views bind them with [AppBoxKitStreamBuilder];
 /// `BaseViewModel` is a lifecycle token (creation/disposal via StackedView),
 /// never a rebuild mechanism — `notifyListeners` is not called.
 ///
@@ -23,7 +23,7 @@ export 'package:appbox_kit_showcase_app/services/showcase_notes_services/facades
 ///
 /// Data streams are facade pass-throughs composed with rxdart `switchMap`
 /// (session → owner-scoped reads), so the VM holds no relay fields and no
-/// subscription bookkeeping for them — each [KitStreamBuilder] owns its
+/// subscription bookkeeping for them — each [AppBoxKitStreamBuilder] owns its
 /// subscription. While signed out the streams emit empty lists (the Folders
 /// screen gates auth, so by the time this viewmodel exists a session is
 /// expected to be live). The one VM-owned UI state, [query$], is a seeded
@@ -32,7 +32,7 @@ class ShowcaseNotesFolderViewModel extends BaseViewModel {
   ShowcaseNotesFolderViewModel({required this.folderKey});
 
   final String folderKey;
-  final _service = locator<ShowcaseNotesFacadeService>();
+  final _service = appBoxKitLocator<ShowcaseNotesFacadeService>();
 
   bool get isTrash => folderKey == 'trash';
   bool get isAll => folderKey == 'all';

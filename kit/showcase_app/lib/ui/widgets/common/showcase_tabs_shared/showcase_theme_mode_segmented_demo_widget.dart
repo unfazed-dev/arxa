@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:ui_library/ui_library.dart';
+import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 
-/// Drives [KitThemeService]'s theme mode via a native segmented control and
+/// Drives [AppBoxKitThemeService]'s theme mode via a native segmented control and
 /// proves the kit theme is live: the swatch reads the *active*
-/// `Theme.of(context).colorScheme` (not static `KitColors`), so it repaints the
+/// `Theme.of(context).colorScheme` (not static `AppBoxKitColors`), so it repaints the
 /// instant a segment is tapped — `main.dart` rebuilds `MaterialApp` on
 /// `themeMode$`. `ThemeMode.values` is `[system, light, dark]`, so the segment
 /// index maps 1:1 to the mode.
@@ -12,8 +12,8 @@ class ShowcaseThemeModeSegmentedDemoWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = locator<KitThemeService>();
-    return KitStreamBuilder<ThemeMode>(
+    final theme = appBoxKitLocator<AppBoxKitThemeService>();
+    return AppBoxKitStreamBuilder<ThemeMode>(
       stream: theme.themeMode$,
       initialData: theme.themeMode$.value,
       builder: (context, mode) {
@@ -24,18 +24,18 @@ class ShowcaseThemeModeSegmentedDemoWidget extends StatelessWidget {
             // Intrinsic width/height: SegmentedButton sizes to its labels + the
             // 48px tap target, so the active fill is never clipped. No fixed
             // SizedBox (that was what "cut" the rounded active segment).
-            KitNativeSegmentedControl(
+            AppBoxKitNativeSegmentedControl(
               segments: const ['Auto', 'Light', 'Dark'],
               selectedIndex: mode.index,
               onChanged: (i) => theme.setTheme(ThemeMode.values[i]),
             ),
-            verticalSpaceXSmall,
+            appBoxKitVerticalSpaceXSmall,
             Container(
               padding: const EdgeInsets.symmetric(
-                  horizontal: kSize16, vertical: kSize10),
+                  horizontal: axSize16, vertical: axSize10),
               decoration: BoxDecoration(
                 color: scheme.primaryContainer,
-                borderRadius: BorderRadius.circular(kRad10),
+                borderRadius: BorderRadius.circular(axRad10),
               ),
               child: Text(
                 'theme: ${mode.name}',

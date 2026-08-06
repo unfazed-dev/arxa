@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:stacked/stacked.dart';
-import 'package:ui_library/ui_library.dart';
+import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_folder/showcase_notes_folder_viewmodel.dart';
 
 /// One note row: swipe actions differ by scope (trash vs. live folder), tap
@@ -36,11 +36,11 @@ class ShowcaseNotesNoteRowWidget extends StatelessWidget {
       background: Container(
         color: isTrash ? theme.colorScheme.tertiary : theme.colorScheme.primary,
         alignment: Alignment.centerLeft,
-        padding: const EdgeInsets.symmetric(horizontal: kSize20),
+        padding: const EdgeInsets.symmetric(horizontal: axSize20),
         child: Icon(
           isTrash
-              ? KitGlyphs.restore.icon
-              : (note.pinned ? KitGlyphs.unpin.icon : KitGlyphs.pin.icon),
+              ? AppBoxKitGlyphs.restore.icon
+              : (note.pinned ? AppBoxKitGlyphs.unpin.icon : AppBoxKitGlyphs.pin.icon),
           color: isTrash
               ? theme.colorScheme.onTertiary
               : theme.colorScheme.onPrimary,
@@ -49,8 +49,8 @@ class ShowcaseNotesNoteRowWidget extends StatelessWidget {
       secondaryBackground: Container(
         color: theme.colorScheme.error,
         alignment: Alignment.centerRight,
-        padding: const EdgeInsets.symmetric(horizontal: kSize20),
-        child: Icon(KitGlyphs.delete.icon, color: theme.colorScheme.onError),
+        padding: const EdgeInsets.symmetric(horizontal: axSize20),
+        child: Icon(AppBoxKitGlyphs.delete.icon, color: theme.colorScheme.onError),
       ),
       confirmDismiss: (direction) async {
         if (isTrash) {
@@ -72,7 +72,7 @@ class ShowcaseNotesNoteRowWidget extends StatelessWidget {
         onTap: () => context.router.pushNamed('note/${note.id}'),
         child: Padding(
           padding: const EdgeInsets.symmetric(
-              horizontal: kSize16, vertical: kSize12),
+              horizontal: axSize16, vertical: axSize12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -88,13 +88,13 @@ class ShowcaseNotesNoteRowWidget extends StatelessWidget {
                     ),
                   ),
                   if (note.pinned) ...[
-                    horizontalSpaceTiny,
-                    Icon(KitGlyphs.pin.icon,
-                        size: kSize14, color: theme.colorScheme.primary),
+                    appBoxKitHorizontalSpaceTiny,
+                    Icon(AppBoxKitGlyphs.pin.icon,
+                        size: axSize14, color: theme.colorScheme.primary),
                   ],
                 ],
               ),
-              verticalSpaceTiny,
+              appBoxKitVerticalSpaceTiny,
               Text(
                 '${formatDate(note.updatedAt)}  ${note.snippet}',
                 maxLines: 1,

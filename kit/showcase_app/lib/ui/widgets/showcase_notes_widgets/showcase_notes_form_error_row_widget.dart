@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:appbox_kit_core/common/kit_app_constants.dart';
-import 'package:appbox_kit_core/common/kit_glyphs.dart';
-import 'package:appbox_kit_core/common/kit_ui_helpers.dart';
+import 'package:appbox_kit_core/common/appbox_kit_app_constants.dart';
+import 'package:appbox_kit_core/common/appbox_kit_glyphs.dart';
+import 'package:appbox_kit_core/common/appbox_kit_ui_helpers.dart';
 
 /// Inline error row — glyph + message in the error color, placed between the
 /// fields and the primary CTA so a failed attempt is read in context.
@@ -19,13 +19,13 @@ class ShowcaseNotesFormErrorRowWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.only(top: kSize12),
+      padding: const EdgeInsets.only(top: axSize12),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(KitGlyphs.error.icon,
-              size: kSize18, color: theme.colorScheme.error),
-          horizontalSpaceSmall,
+          Icon(AppBoxKitGlyphs.error.icon,
+              size: axSize18, color: theme.colorScheme.error),
+          appBoxKitHorizontalSpaceSmall,
           Expanded(
             child: Text(
               message,

@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:ui_library/ui_library.dart';
+import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 import 'package:appbox_kit_showcase_app/ui/common/app_colors.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_note_editor/showcase_note_editor_viewmodel.dart';
 
@@ -27,7 +27,7 @@ class ShowcaseNotePhotoStripWidget extends StatelessWidget {
         child: ListView.separated(
           scrollDirection: Axis.horizontal,
           itemCount: photos.length,
-          separatorBuilder: (_, __) => horizontalSpaceSmall,
+          separatorBuilder: (_, __) => appBoxKitHorizontalSpaceSmall,
           itemBuilder: (context, i) {
             final attachment = photos[i];
             return FutureBuilder<String>(
@@ -37,7 +37,7 @@ class ShowcaseNotePhotoStripWidget extends StatelessWidget {
                   return const SizedBox(
                     width: 84,
                     height: 84,
-                    child: Center(child: KitNativeLoadingIndicator(size: 20)),
+                    child: Center(child: AppBoxKitNativeLoadingIndicator(size: 20)),
                   );
                 }
                 final file = File(snap.data!);
@@ -45,7 +45,7 @@ class ShowcaseNotePhotoStripWidget extends StatelessWidget {
                   onTap: () => _openViewer(context, file),
                   onLongPress: () => onRemoveAttachment(attachment),
                   child: ClipRRect(
-                    borderRadius: BorderRadius.circular(kRad12),
+                    borderRadius: BorderRadius.circular(axRad12),
                     child: Image.file(
                       file,
                       width: 84,
@@ -73,10 +73,10 @@ class ShowcaseNotePhotoStripWidget extends StatelessWidget {
                 child: InteractiveViewer(child: Image.file(file)),
               ),
               Positioned(
-                top: kSize8,
-                right: kSize8,
-                child: KitNativeIconButton(
-                  glyph: KitGlyphs.close,
+                top: axSize8,
+                right: axSize8,
+                child: AppBoxKitNativeIconButton(
+                  glyph: AppBoxKitGlyphs.close,
                   color: kcWhite,
                   onPressed: () => Navigator.of(context).pop(),
                 ),

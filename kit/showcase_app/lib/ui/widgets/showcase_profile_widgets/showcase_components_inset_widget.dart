@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:ui_library/ui_library.dart';
+import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 
 /// Horizontal inset for full-bleed ListView children (the carousel and the
 /// list section carry their own 16dp margins).
@@ -10,7 +10,7 @@ class ShowcaseComponentsInsetWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.symmetric(horizontal: kSize16),
+        padding: const EdgeInsets.symmetric(horizontal: axSize16),
         child: child,
       );
 }

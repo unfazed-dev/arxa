@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:ui_library/ui_library.dart';
+import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 
 /// Accessibility note card: reduce-motion (or the master switch) renders
 /// every scope settled with no consuming-view changes.
@@ -8,9 +8,9 @@ class ShowcaseMotionA11yCardWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return KitGlassCard(
+    return AppBoxKitGlassCard(
       child: Padding(
-        padding: const EdgeInsets.all(kSize16),
+        padding: const EdgeInsets.all(axSize16),
         child: Text(
           'With OS reduce-motion on (or the switch above off), every '
           'scope renders its children settled — no code changes in '

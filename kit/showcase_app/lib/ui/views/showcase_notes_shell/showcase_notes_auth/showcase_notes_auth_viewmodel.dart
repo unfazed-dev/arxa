@@ -1,22 +1,22 @@
 import 'package:rxdart/rxdart.dart';
 import 'package:appbox_kit_data/appbox_kit_data.dart';
-import 'package:ui_library/ui_library.dart';
+import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 
 import 'package:appbox_kit_showcase_app/services/showcase_notes_services/facades/showcase_notes_facade_service.dart';
 
 /// Which credential flow the auth screen shows. Owner-held, mirrors
-/// [KitNativeSegmentedControl]'s index convention (see the view).
+/// [AppBoxKitNativeSegmentedControl]'s index convention (see the view).
 enum NotesAuthMode { password, otp }
 
 /// Sign-in screen for the seed-backend smoke surface — streams-only (house
 /// convention): `BaseViewModel` is a lifecycle token (creation/disposal via
 /// StackedView), never a rebuild mechanism — `notifyListeners` is not called.
 /// All live state is exposed as streams and the views bind them with
-/// [KitStreamBuilder]:
+/// [AppBoxKitStreamBuilder]:
 ///
 /// - UI-owned state ([mode$], [otpRequested$], [errorMessage$]) is a seeded
 ///   [BehaviorSubject]; inline form errors stay inline (no snackbars).
-/// - [busy$] is an rxdart composition over the per-op [KitAction.state$]
+/// - [busy$] is an rxdart composition over the per-op [AppBoxKitAction.state$]
 ///   streams — the stream form of the old `.withLoading(setBusy)`, preserving
 ///   the "every button disabled while any auth op runs" behavior exactly.
 ///
@@ -24,13 +24,13 @@ enum NotesAuthMode { password, otp }
 /// the signed-out ShowcaseNotesView swaps this panel for the Folders list in
 /// place (that binding lives on the parent VM; this one holds no session
 /// state).
-class ShowcaseNotesAuthViewModel extends KitViewModel {
-  final ShowcaseNotesFacadeService _notes = locator<ShowcaseNotesFacadeService>();
+class ShowcaseNotesAuthViewModel extends AppBoxKitViewModel {
+  final ShowcaseNotesFacadeService _notes = appBoxKitLocator<ShowcaseNotesFacadeService>();
 
-  KitAuthService get auth => _notes.auth;
+  AppBoxKitAuthService get auth => _notes.auth;
 
   /// Op labels of the auth ops — [busy$] composes their
-  /// [KitAction.state$] streams; KitViewModel.dispose releases them.
+  /// [AppBoxKitAction.state$] streams; AppBoxKitViewModel.dispose releases them.
   static const _ops = [
     'signIn',
     'signUp',
@@ -57,9 +57,9 @@ class ShowcaseNotesAuthViewModel extends KitViewModel {
   final BehaviorSubject<bool> _otpRequested = BehaviorSubject<bool>.seeded(false);
   ValueStream<bool> get otpRequested$ => _otpRequested.stream;
 
-  /// Inline form error (seeded null = none). [KitAuthException] shows its
+  /// Inline form error (seeded null = none). [AppBoxKitAuthException] shows its
   /// message, anything unexpected gets the generic one — set from the
-  /// KitAction chain's handleError, never a snackbar.
+  /// AppBoxKitAction chain's handleError, never a snackbar.
   final BehaviorSubject<String?> _errorMessage =
       BehaviorSubject<String?>.seeded(null);
   ValueStream<String?> get errorMessage$ => _errorMessage.stream;
@@ -81,7 +81,7 @@ class ShowcaseNotesAuthViewModel extends KitViewModel {
     _errorMessage.add(null);
   }
 
-  /// Every auth call runs through KitAction: per-op busy state (bound via
+  /// Every auth call runs through AppBoxKitAction: per-op busy state (bound via
   /// [busy$]), re-entry guard (double-tap dropped silently via the fallback),
   /// and errors surfaced inline as [errorMessage$].
   Future<void> _guard(String name, Future<void> Function() operation) {
@@ -89,7 +89,7 @@ class ShowcaseNotesAuthViewModel extends KitViewModel {
     return action<void>(name, operation)
         .completeOnError('Authentication failed')
         .handleError((error) {
-          _errorMessage.add(error is KitAuthException
+          _errorMessage.add(error is AppBoxKitAuthException
               ? error.message
               : 'Something went wrong. Try again.');
         });

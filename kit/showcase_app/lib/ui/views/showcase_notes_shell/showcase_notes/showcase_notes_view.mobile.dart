@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:stacked/stacked.dart';
 import 'package:appbox_kit_motion/appbox_kit_motion.dart';
-import 'package:ui_library/ui_library.dart';
+import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_auth/showcase_notes_auth_view.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_create_account/showcase_notes_create_account_view.dart';
 import 'package:stacked_services/stacked_services.dart';
@@ -15,10 +15,10 @@ class ShowcaseNotesViewMobile extends ViewModelWidget<ShowcaseNotesViewModel> {
 
   @override
   Widget build(BuildContext context, ShowcaseNotesViewModel viewModel) {
-    // Streams-only: every live value binds via KitStreamBuilder — session
+    // Streams-only: every live value binds via AppBoxKitStreamBuilder — session
     // gates auth-vs-folders, showCreateAccount picks the signed-out panel,
     // overview/admin drive the list. The viewmodel holds no relay fields.
-    return KitStreamBuilder<KitAuthSession?>(
+    return AppBoxKitStreamBuilder<AppBoxKitAuthSession?>(
       stream: viewModel.session$,
       builder: (context, session) {
         // Signed out: the tab root IS the auth surface — no gate card, no
@@ -26,7 +26,7 @@ class ShowcaseNotesViewMobile extends ViewModelWidget<ShowcaseNotesViewModel> {
         // place. The create-account panel is the same in-place swap, owned by
         // the VM so the choice survives the transient views rebuilding.
         if (session == null) {
-          return KitStreamBuilder<bool>(
+          return AppBoxKitStreamBuilder<bool>(
             stream: viewModel.showCreateAccount$,
             builder: (context, showCreateAccount) {
               if (showCreateAccount) {
@@ -46,21 +46,21 @@ class ShowcaseNotesViewMobile extends ViewModelWidget<ShowcaseNotesViewModel> {
         }
 
         return Scaffold(
-          // THE one app bar — KitNativeAppBar in Scaffold.appBar (never a sliver,
+          // THE one app bar — AppBoxKitNativeAppBar in Scaffold.appBar (never a sliver,
           // never a stock AppBar) — with the new-folder + overflow actions on it.
-          appBar: KitNativeAppBar(
+          appBar: AppBoxKitNativeAppBar(
             title: 'Folders',
             actions: [
-              KitNativeIconButton(
-                glyph: KitGlyphs.newFolder,
+              AppBoxKitNativeIconButton(
+                glyph: AppBoxKitGlyphs.newFolder,
                 onPressed: () => _showNewFolderDialog(context, viewModel),
               ),
-              KitNativePopupMenu(
-                glyph: KitGlyphs.more,
+              AppBoxKitNativePopupMenu(
+                glyph: AppBoxKitGlyphs.more,
                 items: const [
-                  KitMenuItem(
+                  AppBoxKitMenuItem(
                     label: 'Sign Out',
-                    glyph: KitGlyphs.signOut,
+                    glyph: AppBoxKitGlyphs.signOut,
                     isDestructive: true,
                   ),
                 ],
@@ -77,14 +77,14 @@ class ShowcaseNotesViewMobile extends ViewModelWidget<ShowcaseNotesViewModel> {
             // instead of insetting the whole viewport (which produces a hard cut).
             top: false,
             bottom: false,
-            child: KitStreamBuilder<ShowcaseNotesOverview?>(
+            child: AppBoxKitStreamBuilder<ShowcaseNotesOverview?>(
               stream: viewModel.overview$,
               builder: (context, overview) {
                 if (overview == null) {
                   // Signed in, first overview emission pending.
-                  return const Center(child: KitNativeLoadingIndicator());
+                  return const Center(child: AppBoxKitNativeLoadingIndicator());
                 }
-                return KitStreamBuilder<ShowcaseNotesAdminOverview?>(
+                return AppBoxKitStreamBuilder<ShowcaseNotesAdminOverview?>(
                   stream: viewModel.adminOverview$,
                   builder: (context, admin) =>
                       _foldersScrollView(context, viewModel, session, overview, admin),
@@ -99,25 +99,25 @@ class ShowcaseNotesViewMobile extends ViewModelWidget<ShowcaseNotesViewModel> {
 
   /// The signed-in scroll view: grouped rounded sections mirroring iOS Notes'
   /// Folders list (All Notes / user folders / Recently Deleted / admin).
-  /// KitMotionScope establishes the choreography boundary — sections
+  /// AppBoxKitMotionScope establishes the choreography boundary — sections
   /// below register with .wake(order: n) and rise in on the shared
   /// spec's stagger ramp (spec-owned tokens; no local durations).
   Widget _foldersScrollView(
     BuildContext context,
     ShowcaseNotesViewModel viewModel,
-    KitAuthSession session,
+    AppBoxKitAuthSession session,
     ShowcaseNotesOverview overview,
     ShowcaseNotesAdminOverview? admin,
   ) {
     final theme = Theme.of(context);
-    return KitMotionScope(
+    return AppBoxKitMotionScope(
       child: CustomScrollView(
         slivers: [
           // Account subtitle — a thin sliver at the top of the list.
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.symmetric(
-                  horizontal: kSize16, vertical: kSize4),
+                  horizontal: axSize16, vertical: axSize4),
               child: Text(
                 session.user.displayName ?? session.user.email ?? '',
                 style: theme.textTheme.bodySmall
@@ -138,12 +138,12 @@ class ShowcaseNotesViewMobile extends ViewModelWidget<ShowcaseNotesViewModel> {
 
   /// Build the sections (All Notes / user folders / Recently Deleted / admin)
   /// as slivers that stagger in. Each section is a SliverToBoxAdapter holding a
-  /// [KitListSection]; the stagger index counts sections, not rows, so the rhythm
+  /// [AppBoxKitListSection]; the stagger index counts sections, not rows, so the rhythm
   /// reads as one rise per group. Data arrives as parameters from the
-  /// [KitStreamBuilder] bindings — never re-read off the viewmodel here.
+  /// [AppBoxKitStreamBuilder] bindings — never re-read off the viewmodel here.
   ///
-  /// The rise-in (`.wake()`) is applied to the [KitListSection] BOX inside the
-  /// `SliverToBoxAdapter`, never to the sliver itself — `KitWake` choreographs
+  /// The rise-in (`.wake()`) is applied to the [AppBoxKitListSection] BOX inside the
+  /// `SliverToBoxAdapter`, never to the sliver itself — `AppBoxKitWake` choreographs
   /// box children only (it inserts box render-objects), so waking a
   /// `SliverPadding` would hand the Viewport a non-sliver child and trip
   /// "RenderViewport expected a RenderSliver". Waking the inner box preserves
@@ -156,11 +156,11 @@ class ShowcaseNotesViewMobile extends ViewModelWidget<ShowcaseNotesViewModel> {
   ) {
     final theme = Theme.of(context);
 
-    Widget allNotesSection() => KitListSection(
+    Widget allNotesSection() => AppBoxKitListSection(
           margin: EdgeInsets.zero,
           children: [
             ShowcaseNotesRowWidget(
-              glyph: KitGlyphs.notes,
+              glyph: AppBoxKitGlyphs.notes,
               label: 'All Notes',
               trailingCount: overview.allCount,
               onTap: () => context.router.pushNamed('folder/all'),
@@ -168,7 +168,7 @@ class ShowcaseNotesViewMobile extends ViewModelWidget<ShowcaseNotesViewModel> {
           ],
         );
 
-    Widget foldersSection() => KitListSection(
+    Widget foldersSection() => AppBoxKitListSection(
           margin: EdgeInsets.zero,
           children: [
             for (final folder in overview.folders)
@@ -181,11 +181,11 @@ class ShowcaseNotesViewMobile extends ViewModelWidget<ShowcaseNotesViewModel> {
           ],
         );
 
-    Widget trashSection() => KitListSection(
+    Widget trashSection() => AppBoxKitListSection(
           margin: EdgeInsets.zero,
           children: [
             ShowcaseNotesRowWidget(
-              glyph: KitGlyphs.delete,
+              glyph: AppBoxKitGlyphs.delete,
               label: 'Recently Deleted',
               trailingCount: overview.trashCount,
               onTap: () => context.router.pushNamed('folder/trash'),
@@ -193,14 +193,14 @@ class ShowcaseNotesViewMobile extends ViewModelWidget<ShowcaseNotesViewModel> {
           ],
         );
 
-    /// Wraps a [KitListSection] box in the bottom scroll edge effect (ADR
+    /// Wraps a [AppBoxKitListSection] box in the bottom scroll edge effect (ADR
     /// 0010: content softens where it slides under the floating tab bar —
     /// external to the scrollable, so the occlusion is explicit; no top edge,
     /// the fixed app bar never underlaps this scrollable), then in a
     /// staggered rise-in (`.wake`), then in the sliver padding that positions
     /// it. Waking the box (not the sliver) is what keeps the viewport happy —
     /// see the method doc. Timing/stagger come from the enclosing
-    /// [KitMotionScope]'s spec, not local tokens.
+    /// [AppBoxKitMotionScope]'s spec, not local tokens.
     SliverPadding staggeredSliver({
       required EdgeInsetsGeometry padding,
       required Widget section,
@@ -211,7 +211,7 @@ class ShowcaseNotesViewMobile extends ViewModelWidget<ShowcaseNotesViewModel> {
           sliver: SliverToBoxAdapter(
             child: section
                 .scrollEdgeEffect(
-                  edge: KitScrollEdge.bottom,
+                  edge: AppBoxKitScrollEdge.bottom,
                   occlusionPadding: kShowcaseTabBarBlockHeight,
                 )
                 .wake(order: index),
@@ -221,7 +221,7 @@ class ShowcaseNotesViewMobile extends ViewModelWidget<ShowcaseNotesViewModel> {
     // Admin-only: every folder across every owner, read-only. Rendered as one
     // more grouped section in the same stagger ramp — presence of the data
     // (adminOverview != null) is the only gate, the view adds no role logic.
-    Widget adminSection() => KitListSection(
+    Widget adminSection() => AppBoxKitListSection(
           margin: EdgeInsets.zero,
           children: [
             for (final folder in admin!.folders)
@@ -235,21 +235,21 @@ class ShowcaseNotesViewMobile extends ViewModelWidget<ShowcaseNotesViewModel> {
     final trashIndex = overview.folders.isNotEmpty ? 2 : 1;
     final slivers = <Widget>[
       staggeredSliver(
-        padding: const EdgeInsets.fromLTRB(kSize16, kSize12, kSize16, kSize4),
+        padding: const EdgeInsets.fromLTRB(axSize16, axSize12, axSize16, axSize4),
         section: allNotesSection(),
         index: 0,
       ),
       if (overview.folders.isNotEmpty)
         staggeredSliver(
           padding:
-              const EdgeInsets.symmetric(horizontal: kSize16, vertical: kSize4),
+              const EdgeInsets.symmetric(horizontal: axSize16, vertical: axSize4),
           section: foldersSection(),
           index: 1,
         ),
       staggeredSliver(
         padding: admin == null
-            ? const EdgeInsets.fromLTRB(kSize16, kSize4, kSize16, kSize80)
-            : const EdgeInsets.symmetric(horizontal: kSize16, vertical: kSize4),
+            ? const EdgeInsets.fromLTRB(axSize16, axSize4, axSize16, axSize80)
+            : const EdgeInsets.symmetric(horizontal: axSize16, vertical: axSize4),
         section: trashSection(),
         index: trashIndex,
       ),
@@ -257,7 +257,7 @@ class ShowcaseNotesViewMobile extends ViewModelWidget<ShowcaseNotesViewModel> {
         SliverToBoxAdapter(
           child: Padding(
             padding:
-                const EdgeInsets.fromLTRB(kSize16, kSize12, kSize16, kSize4),
+                const EdgeInsets.fromLTRB(axSize16, axSize12, axSize16, axSize4),
             child: Text(
               'All users (admin)',
               style: theme.textTheme.bodySmall
@@ -266,7 +266,7 @@ class ShowcaseNotesViewMobile extends ViewModelWidget<ShowcaseNotesViewModel> {
           ),
         ),
         staggeredSliver(
-          padding: const EdgeInsets.fromLTRB(kSize16, kSize4, kSize16, kSize80),
+          padding: const EdgeInsets.fromLTRB(axSize16, axSize4, axSize16, axSize80),
           section: adminSection(),
           index: trashIndex + 1,
         ),
@@ -278,7 +278,7 @@ class ShowcaseNotesViewMobile extends ViewModelWidget<ShowcaseNotesViewModel> {
 
 Future<void> _showNewFolderDialog(
     BuildContext context, ShowcaseNotesViewModel viewModel) async {
-  final res = await locator<DialogService>().showCustomDialog(
+  final res = await appBoxKitLocator<DialogService>().showCustomDialog(
     variant: DialogType.showcaseTextInput,
     title: 'New Folder',
     data: (initial: null, hint: 'Name'),
@@ -290,7 +290,7 @@ Future<void> _showNewFolderDialog(
 
 Future<void> _showRenameDialog(BuildContext context,
     ShowcaseNotesViewModel viewModel, ShowcaseNoteFolderModel folder) async {
-  final res = await locator<DialogService>().showCustomDialog(
+  final res = await appBoxKitLocator<DialogService>().showCustomDialog(
     variant: DialogType.showcaseTextInput,
     title: 'Rename Folder',
     data: (initial: folder.name, hint: null),

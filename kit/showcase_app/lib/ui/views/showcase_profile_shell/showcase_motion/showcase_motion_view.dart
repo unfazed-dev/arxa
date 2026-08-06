@@ -8,7 +8,7 @@ import 'package:appbox_kit_showcase_app/ui/views/showcase_profile_shell/showcase
 import 'package:appbox_kit_showcase_app/ui/views/showcase_profile_shell/showcase_motion/showcase_motion_viewmodel.dart';
 
 /// appbox_kit_motion showcase — route-driven wake/set-down choreography
-/// (KitMotionScope + KitWake), spec presets, manual replay, and the
+/// (AppBoxKitMotionScope + AppBoxKitWake), spec presets, manual replay, and the
 /// flutter_animate adapter, on one pushed surface so the route push/pop
 /// (and iOS swipe-back scrub) *is* the demo driver.
 class ShowcaseMotionView extends StackedView<ShowcaseMotionViewModel> {

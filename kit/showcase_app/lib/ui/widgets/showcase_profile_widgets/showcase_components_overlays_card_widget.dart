@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:stacked_services/stacked_services.dart' show StackedService;
-import 'package:ui_library/ui_library.dart';
+import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 import 'package:appbox_kit_showcase_app/ui/widgets/common/showcase_tabs_shared/widgets.dart';
 
 /// Overlays card: native dialog, frosted sheet, center toast, and a button
@@ -13,40 +13,40 @@ class ShowcaseComponentsOverlaysCardWidget extends StatelessWidget {
       StackedService.navigatorKey?.currentContext ?? fallback;
 
   static void _toast(BuildContext context, String message) =>
-      locator<KitNotificationService>().show(message, context: context);
+      appBoxKitLocator<AppBoxKitNotificationService>().show(message, context: context);
 
   @override
   Widget build(BuildContext context) {
-    return KitGlassCard(
+    return AppBoxKitGlassCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const ShowcaseSectionLabelWidget('Overlays'),
-          verticalSpaceSmall,
+          appBoxKitVerticalSpaceSmall,
           SizedBox(
-            height: kButtonHeightMedium,
-            child: KitNativeButton(
+            height: axButtonHeightMedium,
+            child: AppBoxKitNativeButton(
               label: 'Show dialog',
-              glyph: KitGlyphs.info,
+              glyph: AppBoxKitGlyphs.info,
               onPressed: () async {
-                final result = await kitShowNativeDialog<String>(
+                final result = await appBoxKitShowNativeDialog<String>(
                   context: _modalContext(context),
                   title: 'Delete note?',
                   message: 'This cannot be undone.',
                   actions: [
-                    const KitNativeDialogAction<String>(
+                    const AppBoxKitNativeDialogAction<String>(
                       label: 'Keep note',
-                      role: KitDialogActionRole.primary,
+                      role: AppBoxKitDialogActionRole.primary,
                       value: 'kept',
                     ),
-                    const KitNativeDialogAction<String>(
+                    const AppBoxKitNativeDialogAction<String>(
                       label: 'Cancel',
                       value: 'cancelled',
                     ),
-                    const KitNativeDialogAction<String>(
+                    const AppBoxKitNativeDialogAction<String>(
                       label: 'Delete',
-                      glyph: KitGlyphs.delete,
-                      role: KitDialogActionRole.destructive,
+                      glyph: AppBoxKitGlyphs.delete,
+                      role: AppBoxKitDialogActionRole.destructive,
                       value: 'deleted',
                     ),
                   ],
@@ -57,13 +57,13 @@ class ShowcaseComponentsOverlaysCardWidget extends StatelessWidget {
               },
             ),
           ),
-          verticalSpaceSmall,
+          appBoxKitVerticalSpaceSmall,
           SizedBox(
-            height: kButtonHeightMedium,
-            child: KitNativeButton(
+            height: axButtonHeightMedium,
+            child: AppBoxKitNativeButton(
               label: 'Show frosted sheet',
-              glyph: KitGlyphs.sheet,
-              onPressed: () => kitShowNativeSheet(
+              glyph: AppBoxKitGlyphs.sheet,
+              onPressed: () => appBoxKitShowNativeSheet(
                 context: _modalContext(context),
                 builder: (sheetContext) => Padding(
                   padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
@@ -75,10 +75,10 @@ class ShowcaseComponentsOverlaysCardWidget extends StatelessWidget {
                         'Frosted sheet body',
                         style: Theme.of(sheetContext).textTheme.titleLarge,
                       ),
-                      verticalSpaceXSmall,
+                      appBoxKitVerticalSpaceXSmall,
                       Text(
                         'The grabber above and this body are one '
-                        'KitFrostedSurface panel (blur 30, 28dp '
+                        'AppBoxKitFrostedSurface panel (blur 30, 28dp '
                         'corners) floating over the dimmed host page.',
                         style: Theme.of(sheetContext).textTheme.bodyMedium,
                       ),
@@ -88,27 +88,27 @@ class ShowcaseComponentsOverlaysCardWidget extends StatelessWidget {
               ),
             ),
           ),
-          verticalSpaceSmall,
+          appBoxKitVerticalSpaceSmall,
           SizedBox(
-            height: kButtonHeightMedium,
-            child: KitNativeButton(
+            height: axButtonHeightMedium,
+            child: AppBoxKitNativeButton(
               label: 'Show center toast',
-              glyph: KitGlyphs.alertsBadge,
-              onPressed: () => locator<KitNotificationService>().show(
+              glyph: AppBoxKitGlyphs.alertsBadge,
+              onPressed: () => appBoxKitLocator<AppBoxKitNotificationService>().show(
                 'Centered',
-                position: KitToastPosition.center,
+                position: AppBoxKitToastPosition.center,
                 context: context,
               ),
             ),
           ),
-          verticalSpaceSmall,
+          appBoxKitVerticalSpaceSmall,
           SizedBox(
-            height: kButtonHeightMedium,
+            height: axButtonHeightMedium,
             // Builder: openDrawer needs a context UNDER this Scaffold.
             child: Builder(
-              builder: (scaffoldContext) => KitNativeButton(
+              builder: (scaffoldContext) => AppBoxKitNativeButton(
                 label: 'Open drawer',
-                glyph: KitGlyphs.more,
+                glyph: AppBoxKitGlyphs.more,
                 onPressed: () => Scaffold.of(scaffoldContext).openDrawer(),
               ),
             ),

@@ -18,8 +18,8 @@ class AppData {
   /// exists when another app depends on this one.
   static const _assets = 'data/seed';
 
-  /// The bundled fake-users fixture, public so a custom [KitDataConfig] (or a
-  /// test) can point [KitAuthConfig.fakeUsersAsset] at the same file.
+  /// The bundled fake-users fixture, public so a custom [AppBoxKitDataConfig] (or a
+  /// test) can point [AppBoxKitAuthConfig.fakeUsersAsset] at the same file.
   static const fakeUsersAsset = '$_assets/kit_auth_users.json';
 
   /// The bundled Notes fixtures, in load order.
@@ -32,17 +32,17 @@ class AppData {
   /// write-through snapshot persistence and fake auth pre-seeded from the
   /// bundled users fixture — pass a supabase/appwrite config to smoke-test a
   /// real backend with zero other changes (that absence of change is the
-  /// point). [assetReader] is a test seam, forwarded to `KitData.initialize`.
+  /// point). [assetReader] is a test seam, forwarded to `AppBoxKitData.initialize`.
   static Future<void> initialize({
-    KitDataConfig? config,
-    KitAssetReader? assetReader,
+    AppBoxKitDataConfig? config,
+    AppBoxKitAssetReader? assetReader,
   }) async {
-    await KitData.initialize(
+    await AppBoxKitData.initialize(
       config: config ??
-          const KitDataConfig(
-            backend: KitDataBackend.seed,
-            seedPersistence: KitSeedPersistenceMode.snapshot,
-            auth: KitAuthConfig(fakeUsersAsset: fakeUsersAsset),
+          const AppBoxKitDataConfig(
+            backend: AppBoxKitDataBackend.seed,
+            seedPersistence: AppBoxKitSeedPersistenceMode.snapshot,
+            auth: AppBoxKitAuthConfig(fakeUsersAsset: fakeUsersAsset),
           ),
       entities: [showcaseNoteFolderRegistration, showcaseNoteRegistration],
       fixtureAssets: fixtureAssets,

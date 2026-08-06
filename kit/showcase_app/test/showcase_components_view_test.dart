@@ -1,5 +1,5 @@
 // Widget tests for the ADR 0011 components showcase surface — the demos
-// themselves are proven in ui_library's per-component tests; these pin the
+// themselves are proven in appbox_kit_ui_library's per-component tests; these pin the
 // showcase wiring (sections render, dialog/sheet/center-toast/drawer
 // presentation paths fire from this surface).
 //
@@ -11,13 +11,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_profile_shell/showcase_components/showcase_components_view.dart';
 import 'package:stacked_services/stacked_services.dart';
-import 'package:ui_library/ui_library.dart';
+import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 
 import 'helpers.dart';
 
 /// The Android toast tier renders through stacked_services' GetX snackbar,
 /// which needs a GetMaterialApp the test harness doesn't have — stub it (same
-/// pattern as ui_library's own notification-service tests) and record calls
+/// pattern as appbox_kit_ui_library's own notification-service tests) and record calls
 /// so the feedback paths stay assertable.
 class _StubSnackbarService extends SnackbarService {
   final shown = <String>[];
@@ -44,17 +44,17 @@ void main() {
   late _StubSnackbarService snackbar;
 
   setUpAll(registerKitTestServices);
-  tearDownAll(() => locator.reset());
+  tearDownAll(() => appBoxKitLocator.reset());
 
   setUp(() {
-    KitPlatform.override = const KitPlatformOverride(isAndroid: true);
-    if (locator.isRegistered<SnackbarService>()) {
-      locator.unregister<SnackbarService>();
+    AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isAndroid: true);
+    if (appBoxKitLocator.isRegistered<SnackbarService>()) {
+      appBoxKitLocator.unregister<SnackbarService>();
     }
     snackbar = _StubSnackbarService();
-    locator.registerSingleton<SnackbarService>(snackbar);
+    appBoxKitLocator.registerSingleton<SnackbarService>(snackbar);
   });
-  tearDown(KitPlatform.reset);
+  tearDown(AppBoxKitPlatform.reset);
 
   Future<void> pumpView(WidgetTester tester) async {
     // Tall surface so the whole demo list is built and tappable — the default
@@ -71,17 +71,17 @@ void main() {
   testWidgets('renders every demo section', (tester) async {
     await pumpView(tester);
 
-    expect(find.byType(KitFrostedSurface), findsWidgets,
+    expect(find.byType(AppBoxKitFrostedSurface), findsWidgets,
         reason: 'the explicit frosted content-tier card');
-    expect(find.byType(KitChipCarousel), findsOneWidget);
-    expect(find.byType(KitChip), findsNWidgets(10));
-    expect(find.byType(KitListSection), findsOneWidget,
+    expect(find.byType(AppBoxKitChipCarousel), findsOneWidget);
+    expect(find.byType(AppBoxKitChip), findsNWidgets(10));
+    expect(find.byType(AppBoxKitListSection), findsOneWidget,
         reason: 'the settings group in the body (the drawer menu group only '
             'builds once the drawer first opens)');
     expect(tester.widget<Scaffold>(find.byType(Scaffold)).drawer, isNotNull,
-        reason: 'the glassPeek KitDrawer is configured on the Scaffold '
+        reason: 'the glassPeek AppBoxKitDrawer is configured on the Scaffold '
             '(its subtree only builds once opened)');
-    expect(find.byType(KitNativeInputBar), findsOneWidget);
+    expect(find.byType(AppBoxKitNativeInputBar), findsOneWidget);
   });
 
   testWidgets('Show dialog presents the native dialog and pops on action',
@@ -103,7 +103,7 @@ void main() {
             'the result');
   });
 
-  testWidgets('Show frosted sheet presents kitShowNativeSheet', (tester) async {
+  testWidgets('Show frosted sheet presents appBoxKitShowNativeSheet', (tester) async {
     await pumpView(tester);
 
     await tester.tap(find.text('Show frosted sheet'));
@@ -120,13 +120,13 @@ void main() {
 
     await tester.tap(find.text('Show center toast'));
     await tester.pump(); // mount the pill's overlay entry
-    expect(find.byKey(const Key('kitCenterToastPill')), findsOneWidget);
+    expect(find.byKey(const Key('appBoxKitCenterToastPill')), findsOneWidget);
     expect(find.text('Centered'), findsOneWidget);
 
     // Auto-dismiss (3s default) — elapse fake time so no timer is pending.
     await tester.pump(const Duration(seconds: 4));
     await tester.pumpAndSettle();
-    expect(find.byKey(const Key('kitCenterToastPill')), findsNothing);
+    expect(find.byKey(const Key('appBoxKitCenterToastPill')), findsNothing);
   });
 
   testWidgets('drawer opens via the button and closes on scrim tap',
@@ -140,16 +140,16 @@ void main() {
     await tester.pumpAndSettle();
     expect(scaffold.isDrawerOpen, isTrue,
         reason: 'Open drawer calls Scaffold.of(context).openDrawer()');
-    expect(find.byType(KitDrawer), findsOneWidget,
-        reason: 'the opened drawer builds the KitDrawer (glassPeek) subtree');
+    expect(find.byType(AppBoxKitDrawer), findsOneWidget,
+        reason: 'the opened drawer builds the AppBoxKitDrawer (glassPeek) subtree');
     expect(find.text('About'), findsOneWidget,
-        reason: 'menu rows are KitListTiles inside a KitListSection');
-    expect(find.byType(KitListSection), findsNWidgets(2),
+        reason: 'menu rows are AppBoxKitListTiles inside a AppBoxKitListSection');
+    expect(find.byType(AppBoxKitListSection), findsNWidgets(2),
         reason: 'the drawer menu group builds on first open');
 
     // Stock Drawer machinery: tapping the scrim beside the peek closes it.
-    final drawerLeft = tester.getTopLeft(find.byType(KitDrawer));
-    final drawerWidth = tester.getSize(find.byType(KitDrawer)).width;
+    final drawerLeft = tester.getTopLeft(find.byType(AppBoxKitDrawer));
+    final drawerWidth = tester.getSize(find.byType(AppBoxKitDrawer)).width;
     await tester.tapAt(Offset(drawerLeft.dx + drawerWidth + 40, 500));
     await tester.pumpAndSettle();
     expect(scaffold.isDrawerOpen, isFalse);

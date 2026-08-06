@@ -8,10 +8,10 @@ import 'package:appbox_kit_showcase_app/ui/views/showcase_profile_shell/showcase
 import 'package:appbox_kit_showcase_app/ui/views/showcase_profile_shell/showcase_components/showcase_components_viewmodel.dart';
 
 /// Video-parity components showcase (ADR 0011) — one pushed surface proving
-/// each wave-1/2 ui_library capability: [KitFrostedSurface], [KitChip] +
-/// [KitChipCarousel], [KitListSection] + [KitListTile], [KitDrawer]
-/// (glassPeek), [kitShowNativeDialog], [kitShowNativeSheet]'s frosted body,
-/// [KitNativeInputBar], and the center toast via [KitNotificationService].
+/// each wave-1/2 appbox_kit_ui_library capability: [AppBoxKitFrostedSurface], [AppBoxKitChip] +
+/// [AppBoxKitChipCarousel], [AppBoxKitListSection] + [AppBoxKitListTile], [AppBoxKitDrawer]
+/// (glassPeek), [appBoxKitShowNativeDialog], [appBoxKitShowNativeSheet]'s frosted body,
+/// [AppBoxKitNativeInputBar], and the center toast via [AppBoxKitNotificationService].
 class ShowcaseComponentsView extends StackedView<ShowcaseComponentsViewModel> {
   const ShowcaseComponentsView({super.key});
 

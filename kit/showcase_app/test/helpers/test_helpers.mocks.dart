@@ -18,6 +18,7 @@ import 'package:appbox_kit_showcase_app/services/showcase_notes_services/adapter
     as _i19;
 import 'package:appbox_kit_showcase_app/services/showcase_notes_services/facades/showcase_notes_facade_service.dart'
     as _i16;
+import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart' as _i6;
 import 'package:flutter/material.dart' as _i10;
 import 'package:mockito/mockito.dart' as _i1;
 import 'package:mockito/src/dummies.dart' as _i18;
@@ -29,7 +30,6 @@ import 'package:stacked_services/src/dialog/dialog_service.dart' as _i14;
 import 'package:stacked_services/src/models/overlay_request.dart' as _i15;
 import 'package:stacked_services/src/models/overlay_response.dart' as _i12;
 import 'package:stacked_services/src/navigation/router_service.dart' as _i8;
-import 'package:ui_library/ui_library.dart' as _i6;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values
@@ -78,9 +78,9 @@ class _FakeRoutingController_2 extends _i1.SmartFake
         );
 }
 
-class _FakeKitAuthService_3 extends _i1.SmartFake
-    implements _i3.KitAuthService {
-  _FakeKitAuthService_3(
+class _FakeAppBoxKitAuthService_3 extends _i1.SmartFake
+    implements _i3.AppBoxKitAuthService {
+  _FakeAppBoxKitAuthService_3(
     Object parent,
     Invocation parentInvocation,
   ) : super(
@@ -111,9 +111,9 @@ class _FakeShowcaseNoteFolderModel_5 extends _i1.SmartFake
         );
 }
 
-class _FakeKitRepository_6<T1> extends _i1.SmartFake
-    implements _i3.KitRepository<T1> {
-  _FakeKitRepository_6(
+class _FakeAppBoxKitRepository_6<T1> extends _i1.SmartFake
+    implements _i3.AppBoxKitRepository<T1> {
+  _FakeAppBoxKitRepository_6(
     Object parent,
     Invocation parentInvocation,
   ) : super(
@@ -122,9 +122,9 @@ class _FakeKitRepository_6<T1> extends _i1.SmartFake
         );
 }
 
-class _FakeKitActionBuilder_7<T1> extends _i1.SmartFake
-    implements _i6.KitActionBuilder<T1> {
-  _FakeKitActionBuilder_7(
+class _FakeAppBoxKitActionBuilder_7<T1> extends _i1.SmartFake
+    implements _i6.AppBoxKitActionBuilder<T1> {
+  _FakeAppBoxKitActionBuilder_7(
     Object parent,
     Invocation parentInvocation,
   ) : super(
@@ -688,11 +688,12 @@ class MockDialogService extends _i1.Mock implements _i14.DialogService {
 class MockShowcaseNotesFacadeService extends _i1.Mock
     implements _i16.ShowcaseNotesFacadeService {
   @override
-  _i9.Stream<_i3.KitAuthSession?> get session$ => (super.noSuchMethod(
+  _i9.Stream<_i3.AppBoxKitAuthSession?> get session$ => (super.noSuchMethod(
         Invocation.getter(#session$),
-        returnValue: _i9.Stream<_i3.KitAuthSession?>.empty(),
-        returnValueForMissingStub: _i9.Stream<_i3.KitAuthSession?>.empty(),
-      ) as _i9.Stream<_i3.KitAuthSession?>);
+        returnValue: _i9.Stream<_i3.AppBoxKitAuthSession?>.empty(),
+        returnValueForMissingStub:
+            _i9.Stream<_i3.AppBoxKitAuthSession?>.empty(),
+      ) as _i9.Stream<_i3.AppBoxKitAuthSession?>);
 
   @override
   bool get isAdmin => (super.noSuchMethod(
@@ -702,17 +703,17 @@ class MockShowcaseNotesFacadeService extends _i1.Mock
       ) as bool);
 
   @override
-  _i3.KitAuthService get auth => (super.noSuchMethod(
+  _i3.AppBoxKitAuthService get auth => (super.noSuchMethod(
         Invocation.getter(#auth),
-        returnValue: _FakeKitAuthService_3(
+        returnValue: _FakeAppBoxKitAuthService_3(
           this,
           Invocation.getter(#auth),
         ),
-        returnValueForMissingStub: _FakeKitAuthService_3(
+        returnValueForMissingStub: _FakeAppBoxKitAuthService_3(
           this,
           Invocation.getter(#auth),
         ),
-      ) as _i3.KitAuthService);
+      ) as _i3.AppBoxKitAuthService);
 
   @override
   _i9.Stream<List<_i5.ShowcaseNoteFolderModel>> folders$(String? owner) =>
@@ -1152,26 +1153,26 @@ class MockShowcaseNotesFacadeService extends _i1.Mock
       ) as _i9.Future<void>);
 
   @override
-  _i3.KitRepository<T> repository<T>() => (super.noSuchMethod(
+  _i3.AppBoxKitRepository<T> repository<T>() => (super.noSuchMethod(
         Invocation.method(
           #repository,
           [],
         ),
-        returnValue: _FakeKitRepository_6<T>(
+        returnValue: _FakeAppBoxKitRepository_6<T>(
           this,
           Invocation.method(
             #repository,
             [],
           ),
         ),
-        returnValueForMissingStub: _FakeKitRepository_6<T>(
+        returnValueForMissingStub: _FakeAppBoxKitRepository_6<T>(
           this,
           Invocation.method(
             #repository,
             [],
           ),
         ),
-      ) as _i3.KitRepository<T>);
+      ) as _i3.AppBoxKitRepository<T>);
 
   @override
   S registerSubject<S extends _i7.Subject<dynamic>>(S? subject) =>
@@ -1197,7 +1198,7 @@ class MockShowcaseNotesFacadeService extends _i1.Mock
       ) as S);
 
   @override
-  _i6.KitActionBuilder<T> mutate<T>(
+  _i6.AppBoxKitActionBuilder<T> mutate<T>(
     _i9.FutureOr<T> Function()? operation, {
     String? name,
     String? entity,
@@ -1215,7 +1216,7 @@ class MockShowcaseNotesFacadeService extends _i1.Mock
             #success: success,
           },
         ),
-        returnValue: _FakeKitActionBuilder_7<T>(
+        returnValue: _FakeAppBoxKitActionBuilder_7<T>(
           this,
           Invocation.method(
             #mutate,
@@ -1228,7 +1229,7 @@ class MockShowcaseNotesFacadeService extends _i1.Mock
             },
           ),
         ),
-        returnValueForMissingStub: _FakeKitActionBuilder_7<T>(
+        returnValueForMissingStub: _FakeAppBoxKitActionBuilder_7<T>(
           this,
           Invocation.method(
             #mutate,
@@ -1241,7 +1242,7 @@ class MockShowcaseNotesFacadeService extends _i1.Mock
             },
           ),
         ),
-      ) as _i6.KitActionBuilder<T>);
+      ) as _i6.AppBoxKitActionBuilder<T>);
 
   @override
   _i9.Future<void> dispose() => (super.noSuchMethod(
@@ -1254,7 +1255,7 @@ class MockShowcaseNotesFacadeService extends _i1.Mock
       ) as _i9.Future<void>);
 
   @override
-  _i6.KitActionBuilder<T> action<T>(
+  _i6.AppBoxKitActionBuilder<T> action<T>(
     String? name,
     _i9.FutureOr<T> Function()? operation,
   ) =>
@@ -1266,7 +1267,7 @@ class MockShowcaseNotesFacadeService extends _i1.Mock
             operation,
           ],
         ),
-        returnValue: _FakeKitActionBuilder_7<T>(
+        returnValue: _FakeAppBoxKitActionBuilder_7<T>(
           this,
           Invocation.method(
             #action,
@@ -1276,7 +1277,7 @@ class MockShowcaseNotesFacadeService extends _i1.Mock
             ],
           ),
         ),
-        returnValueForMissingStub: _FakeKitActionBuilder_7<T>(
+        returnValueForMissingStub: _FakeAppBoxKitActionBuilder_7<T>(
           this,
           Invocation.method(
             #action,
@@ -1286,7 +1287,7 @@ class MockShowcaseNotesFacadeService extends _i1.Mock
             ],
           ),
         ),
-      ) as _i6.KitActionBuilder<T>);
+      ) as _i6.AppBoxKitActionBuilder<T>);
 
   @override
   void watch(
@@ -1311,32 +1312,32 @@ class MockShowcaseNotesFacadeService extends _i1.Mock
       );
 
   @override
-  _i7.ValueStream<_i6.KitActionState> actionState$(String? name) =>
+  _i7.ValueStream<_i6.AppBoxKitActionState> actionState$(String? name) =>
       (super.noSuchMethod(
         Invocation.method(
           #actionState$,
           [name],
         ),
-        returnValue: _FakeValueStream_8<_i6.KitActionState>(
+        returnValue: _FakeValueStream_8<_i6.AppBoxKitActionState>(
           this,
           Invocation.method(
             #actionState$,
             [name],
           ),
         ),
-        returnValueForMissingStub: _FakeValueStream_8<_i6.KitActionState>(
+        returnValueForMissingStub: _FakeValueStream_8<_i6.AppBoxKitActionState>(
           this,
           Invocation.method(
             #actionState$,
             [name],
           ),
         ),
-      ) as _i7.ValueStream<_i6.KitActionState>);
+      ) as _i7.ValueStream<_i6.AppBoxKitActionState>);
 
   @override
-  void disposeKitActions() => super.noSuchMethod(
+  void disposeAppBoxKitActions() => super.noSuchMethod(
         Invocation.method(
-          #disposeKitActions,
+          #disposeAppBoxKitActions,
           [],
         ),
         returnValueForMissingStub: null,
@@ -1389,11 +1390,13 @@ class MockShowcaseNotesMediaAdapterService extends _i1.Mock
       ) as _i9.Stream<Duration?>);
 
   @override
-  _i9.Stream<_i20.PlaybackState> get playerState$ => (super.noSuchMethod(
+  _i9.Stream<_i20.AppBoxKitPlaybackState> get playerState$ =>
+      (super.noSuchMethod(
         Invocation.getter(#playerState$),
-        returnValue: _i9.Stream<_i20.PlaybackState>.empty(),
-        returnValueForMissingStub: _i9.Stream<_i20.PlaybackState>.empty(),
-      ) as _i9.Stream<_i20.PlaybackState>);
+        returnValue: _i9.Stream<_i20.AppBoxKitPlaybackState>.empty(),
+        returnValueForMissingStub:
+            _i9.Stream<_i20.AppBoxKitPlaybackState>.empty(),
+      ) as _i9.Stream<_i20.AppBoxKitPlaybackState>);
 
   @override
   bool get isCameraAvailable => (super.noSuchMethod(
@@ -1517,7 +1520,7 @@ class MockShowcaseNotesMediaAdapterService extends _i1.Mock
       ) as _i9.Future<void>);
 
   @override
-  _i6.KitActionBuilder<T> action<T>(
+  _i6.AppBoxKitActionBuilder<T> action<T>(
     String? name,
     _i9.FutureOr<T> Function()? operation,
   ) =>
@@ -1529,7 +1532,7 @@ class MockShowcaseNotesMediaAdapterService extends _i1.Mock
             operation,
           ],
         ),
-        returnValue: _FakeKitActionBuilder_7<T>(
+        returnValue: _FakeAppBoxKitActionBuilder_7<T>(
           this,
           Invocation.method(
             #action,
@@ -1539,7 +1542,7 @@ class MockShowcaseNotesMediaAdapterService extends _i1.Mock
             ],
           ),
         ),
-        returnValueForMissingStub: _FakeKitActionBuilder_7<T>(
+        returnValueForMissingStub: _FakeAppBoxKitActionBuilder_7<T>(
           this,
           Invocation.method(
             #action,
@@ -1549,7 +1552,7 @@ class MockShowcaseNotesMediaAdapterService extends _i1.Mock
             ],
           ),
         ),
-      ) as _i6.KitActionBuilder<T>);
+      ) as _i6.AppBoxKitActionBuilder<T>);
 
   @override
   void watch(
@@ -1574,32 +1577,32 @@ class MockShowcaseNotesMediaAdapterService extends _i1.Mock
       );
 
   @override
-  _i7.ValueStream<_i6.KitActionState> actionState$(String? name) =>
+  _i7.ValueStream<_i6.AppBoxKitActionState> actionState$(String? name) =>
       (super.noSuchMethod(
         Invocation.method(
           #actionState$,
           [name],
         ),
-        returnValue: _FakeValueStream_8<_i6.KitActionState>(
+        returnValue: _FakeValueStream_8<_i6.AppBoxKitActionState>(
           this,
           Invocation.method(
             #actionState$,
             [name],
           ),
         ),
-        returnValueForMissingStub: _FakeValueStream_8<_i6.KitActionState>(
+        returnValueForMissingStub: _FakeValueStream_8<_i6.AppBoxKitActionState>(
           this,
           Invocation.method(
             #actionState$,
             [name],
           ),
         ),
-      ) as _i7.ValueStream<_i6.KitActionState>);
+      ) as _i7.ValueStream<_i6.AppBoxKitActionState>);
 
   @override
-  void disposeKitActions() => super.noSuchMethod(
+  void disposeAppBoxKitActions() => super.noSuchMethod(
         Invocation.method(
-          #disposeKitActions,
+          #disposeAppBoxKitActions,
           [],
         ),
         returnValueForMissingStub: null,

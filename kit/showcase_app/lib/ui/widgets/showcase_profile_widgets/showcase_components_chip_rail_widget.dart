@@ -1,32 +1,32 @@
 import 'package:flutter/material.dart';
-import 'package:ui_library/ui_library.dart';
+import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 
-/// Snapping capability rail — [KitChipCarousel] of [KitChip]s, each
+/// Snapping capability rail — [AppBoxKitChipCarousel] of [AppBoxKitChip]s, each
 /// toasting its label.
 class ShowcaseComponentsChipRailWidget extends StatelessWidget {
   const ShowcaseComponentsChipRailWidget({super.key});
 
   static void _toast(BuildContext context, String message) =>
-      locator<KitNotificationService>().show(message, context: context);
+      appBoxKitLocator<AppBoxKitNotificationService>().show(message, context: context);
 
   @override
   Widget build(BuildContext context) {
-    return KitChipCarousel(
+    return AppBoxKitChipCarousel(
       snap: true,
       children: [
         for (final (glyph, label) in [
-          (KitGlyphs.home, 'Home'),
-          (KitGlyphs.search, 'Search'),
-          (KitGlyphs.notes, 'Notes'),
-          (KitGlyphs.camera, 'Camera'),
-          (KitGlyphs.mic, 'Voice'),
-          (KitGlyphs.share, 'Share'),
-          (KitGlyphs.edit, 'Edit'),
-          (KitGlyphs.star, 'Star'),
-          (KitGlyphs.tag, 'Tag'),
-          (KitGlyphs.settings, 'Settings'),
+          (AppBoxKitGlyphs.home, 'Home'),
+          (AppBoxKitGlyphs.search, 'Search'),
+          (AppBoxKitGlyphs.notes, 'Notes'),
+          (AppBoxKitGlyphs.camera, 'Camera'),
+          (AppBoxKitGlyphs.mic, 'Voice'),
+          (AppBoxKitGlyphs.share, 'Share'),
+          (AppBoxKitGlyphs.edit, 'Edit'),
+          (AppBoxKitGlyphs.star, 'Star'),
+          (AppBoxKitGlyphs.tag, 'Tag'),
+          (AppBoxKitGlyphs.settings, 'Settings'),
         ])
-          KitChip(
+          AppBoxKitChip(
             glyph: glyph,
             label: label,
             onTap: () => _toast(context, label),

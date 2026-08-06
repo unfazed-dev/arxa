@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:ui_library/ui_library.dart';
+import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 
 /// Header card explaining the route-driven wake demo.
 class ShowcaseMotionHeaderCardWidget extends StatelessWidget {
@@ -7,9 +7,9 @@ class ShowcaseMotionHeaderCardWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return KitGlassCard(
+    return AppBoxKitGlassCard(
       child: Padding(
-        padding: const EdgeInsets.all(kSize16),
+        padding: const EdgeInsets.all(axSize16),
         child: Text(
           'This screen woke under the route\'s own animation — no '
           'controller in the view. Pop with the edge-swipe and watch '

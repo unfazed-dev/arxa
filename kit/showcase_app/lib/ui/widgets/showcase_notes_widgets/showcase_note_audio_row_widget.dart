@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:ui_library/ui_library.dart';
+import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_note_editor/showcase_note_editor_viewmodel.dart';
 
 /// One audio attachment row: play/pause, live progress bar, duration label.
@@ -25,7 +25,7 @@ class ShowcaseNoteAudioRowWidget extends StatelessWidget {
     if (progressTotal == null || progressTotal.inMilliseconds == 0) {
       return const SizedBox.shrink();
     }
-    return KitNativeProgress.linear(
+    return AppBoxKitNativeProgress.linear(
       value: (progress.inMilliseconds / progressTotal.inMilliseconds)
           .clamp(0.0, 1.0),
     );
@@ -41,29 +41,29 @@ class ShowcaseNoteAudioRowWidget extends StatelessWidget {
     // swaps play/pause and starts/stops its progress subscription off it.
     // Seeded false: the composed stream's first event lands a frame after
     // subscribe; the seed paints the play glyph for that first frame.
-    return KitStreamBuilder<bool>(
+    return AppBoxKitStreamBuilder<bool>(
       stream: viewModel.isAttachmentPlaying$(attachment.id),
       initialData: false,
       builder: (context, playing) {
         return GestureDetector(
           onLongPress: () => onRemoveAttachment(attachment),
-          child: KitGlassCard(
+          child: AppBoxKitGlassCard(
             padding: const EdgeInsets.symmetric(
-                horizontal: kSize12, vertical: kSize8),
+                horizontal: axSize12, vertical: axSize8),
             child: Row(
               children: [
-                KitNativeIconButton(
-                  glyph: playing ? KitGlyphs.pause : KitGlyphs.play,
+                AppBoxKitNativeIconButton(
+                  glyph: playing ? AppBoxKitGlyphs.pause : AppBoxKitGlyphs.play,
                   onPressed: () => viewModel.togglePlayback(attachment),
                 ),
-                horizontalSpaceSmall,
+                appBoxKitHorizontalSpaceSmall,
                 // Only the playing row subscribes to live progress, so position
                 // ticks rebuild this bar alone — not the whole editor. Seeded so
                 // the first frame paints at 0 without a loading flash.
                 Expanded(
                   child: !playing
                       ? _progressBar(Duration.zero, total)
-                      : KitStreamBuilder<NotePlaybackProgress>(
+                      : AppBoxKitStreamBuilder<NotePlaybackProgress>(
                           stream: viewModel.playbackProgress$,
                           initialData: const (
                             position: Duration.zero,
@@ -73,7 +73,7 @@ class ShowcaseNoteAudioRowWidget extends StatelessWidget {
                               prog.position, prog.duration ?? total),
                         ),
                 ),
-                horizontalSpaceSmall,
+                appBoxKitHorizontalSpaceSmall,
                 Text(total == null ? '--:--' : formatDuration(total)),
               ],
             ),

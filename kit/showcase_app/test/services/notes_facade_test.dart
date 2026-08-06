@@ -1,8 +1,8 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ui_library/ui_library.dart';
-import 'package:ui_library/testing.dart';
+import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
+import 'package:appbox_kit_ui_library/appbox_kit_testing.dart';
 import 'package:appbox_kit_data/appbox_kit_data.dart';
 import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/showcase_note_model.dart';
 import 'package:appbox_kit_showcase_app/data/schemas/showcase_notes_schemas/showcase_note_folder_schema.dart';
@@ -14,10 +14,10 @@ import 'package:talker_flutter/talker_flutter.dart';
 
 /// Smoke tests for the Notes data slice over the REAL shipped fixtures —
 /// the same JSON the app seeds from, loaded off disk. One initialize for the
-/// whole file (KitData is static state; see kit_data_initialize_test.dart in
+/// whole file (AppBoxKitData is static state; see kit_data_initialize_test.dart in
 /// appbox_kit_data for the reasoning) — tests share the store and stay
 /// order-independent by only mutating rows they create.
-class _DiskAssetReader implements KitAssetReader {
+class _DiskAssetReader implements AppBoxKitAssetReader {
   static const _prefix = 'packages/appbox_kit_showcase_app/';
 
   @override
@@ -34,46 +34,46 @@ void main() {
   late String evanId;
 
   setUpAll(() async {
-    // KitAction managers resolve these lazily on first execute().
-    locator
+    // AppBoxKitAction managers resolve these lazily on first execute().
+    appBoxKitLocator
       ..registerLazySingleton(() => Talker())
-      ..registerLazySingleton(() => KitErrorService())
+      ..registerLazySingleton(() => AppBoxKitErrorService())
       ..registerLazySingleton(() => DialogService())
       ..registerLazySingleton(() => BottomSheetService())
       ..registerLazySingleton(() => SnackbarService())
       // Fake: the real service's CNToast path needs a mounted navigator
       // context, which a data-layer suite doesn't have. Recording double from
-      // package:ui_library/testing.dart.
-      ..registerLazySingleton<KitNotificationService>(() => FakeKitNotificationService())
+      // package:appbox_kit_ui_library/appbox_kit_testing.dart.
+      ..registerLazySingleton<AppBoxKitNotificationService>(() => FakeAppBoxKitNotificationService())
 
-      // Registered by the @StackedApp locator in the app; this suite stays
+      // Registered by the @StackedApp appBoxKitLocator in the app; this suite stays
       // self-contained (data layer only), so it registers them itself.
       ..registerLazySingleton<ShowcaseNotesRepositoryService>(() => ShowcaseNotesRepositoryService())
       ..registerLazySingleton<ShowcaseNotesFacadeService>(() => ShowcaseNotesFacadeService());
 
     await AppData.initialize(
       // Snapshot persistence needs a platform channel; tests run in-memory.
-      config: const KitDataConfig(
-        backend: KitDataBackend.seed,
-        auth: KitAuthConfig(fakeUsersAsset: AppData.fakeUsersAsset),
+      config: const AppBoxKitDataConfig(
+        backend: AppBoxKitDataBackend.seed,
+        auth: AppBoxKitAuthConfig(fakeUsersAsset: AppData.fakeUsersAsset),
       ),
       assetReader: _DiskAssetReader(),
     );
 
-    notes = locator<ShowcaseNotesFacadeService>();
+    notes = appBoxKitLocator<ShowcaseNotesFacadeService>();
     final session = await notes.auth
         .signInWithEmailPassword(email: 'evan@seed.local', password: 'x');
     evanId = session.user.id;
   });
 
   tearDownAll(() async {
-    KitData.resetForTesting();
-    await locator.reset();
+    AppBoxKitData.resetForTesting();
+    await appBoxKitLocator.reset();
   });
 
   test('fake sign-in resolves the fixture user and its canonical id', () {
-    final idService = locator<KitIdService>();
-    expect(evanId, idService.canonicalId(kKitAuthUsersTable, 'user-1'));
+    final idService = appBoxKitLocator<AppBoxKitIdService>();
+    expect(evanId, idService.canonicalId(kAppBoxKitAuthUsersTable, 'user-1'));
   });
 
   test('notesIn\$ emits only the owner\'s live notes', () async {
@@ -90,7 +90,7 @@ void main() {
     expect(overview.allCount, 7);
     expect(overview.trashCount, 1);
 
-    final idService = locator<KitIdService>();
+    final idService = appBoxKitLocator<AppBoxKitIdService>();
     String fid(String key) => idService.canonicalId(kShowcaseNoteFoldersTable, key);
     expect(overview.liveCountByFolder[fid('folder-work')], 3);
     expect(overview.liveCountByFolder[fid('folder-personal')], 3);
@@ -143,7 +143,7 @@ void main() {
 
   test('mutation round-trip: create → save → pin → trash → restore → purge',
       () async {
-    final idService = locator<KitIdService>();
+    final idService = appBoxKitLocator<AppBoxKitIdService>();
     final folderId = idService.canonicalId(kShowcaseNoteFoldersTable, 'folder-notes');
 
     final created = await notes.createNote(evanId, folderId);

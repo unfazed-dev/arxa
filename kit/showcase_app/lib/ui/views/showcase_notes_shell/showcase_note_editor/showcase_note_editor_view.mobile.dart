@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:stacked/stacked.dart';
-import 'package:ui_library/ui_library.dart';
+import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 import 'package:stacked_services/stacked_services.dart';
 import 'package:appbox_kit_showcase_app/app/app.dialogs.dart';
 import 'package:appbox_kit_showcase_app/ui/widgets/showcase_notes_widgets/widgets.dart';
@@ -37,9 +37,9 @@ class ShowcaseNoteEditorViewMobile
     // the back button never drops out while note$'s first event is pending.
     Scaffold shell({String? title, List<Widget>? actions, required Widget body}) =>
         Scaffold(
-          appBar: KitNativeAppBar(
-            leading: KitNativeIconButton(
-              glyph: KitGlyphs.back,
+          appBar: AppBoxKitNativeAppBar(
+            leading: AppBoxKitNativeIconButton(
+              glyph: AppBoxKitGlyphs.back,
               onPressed: () => context.popRoute(),
             ),
             title: title,
@@ -51,22 +51,22 @@ class ShowcaseNoteEditorViewMobile
 
     // Streams-only: note$ feeds the app bar (edited label, pin/delete) and the
     // body swap. Media chrome binds its own streams inside the widgets.
-    return KitStreamBuilder<ShowcaseNoteModel?>(
+    return AppBoxKitStreamBuilder<ShowcaseNoteModel?>(
       stream: viewModel.note$,
       loadingBuilder: (context) =>
-          shell(body: const Center(child: KitNativeLoadingIndicator())),
+          shell(body: const Center(child: AppBoxKitNativeLoadingIndicator())),
       builder: (context, note) => shell(
         title: note == null ? null : _editedLabel(context, note.updatedAt),
         actions: note == null
             ? null
             : [
-                KitNativeIconButton(
-                  glyph: note.pinned ? KitGlyphs.pin : KitGlyphs.unpin,
+                AppBoxKitNativeIconButton(
+                  glyph: note.pinned ? AppBoxKitGlyphs.pin : AppBoxKitGlyphs.unpin,
                   color: note.pinned ? theme.colorScheme.primary : null,
                   onPressed: viewModel.togglePin,
                 ),
-                KitNativeIconButton(
-                  glyph: KitGlyphs.delete,
+                AppBoxKitNativeIconButton(
+                  glyph: AppBoxKitGlyphs.delete,
                   color: theme.colorScheme.error,
                   onPressed: () async {
                     await viewModel.delete();
@@ -78,7 +78,7 @@ class ShowcaseNoteEditorViewMobile
           children: [
             Expanded(
               child: note == null
-                  ? const Center(child: KitNativeLoadingIndicator())
+                  ? const Center(child: AppBoxKitNativeLoadingIndicator())
                   : ShowcaseNoteEditorBodyWidget(
                       viewModel: viewModel,
                       note: note,
@@ -103,7 +103,7 @@ Future<void> _confirmRemove(
   ShowcaseNoteEditorViewModel viewModel,
   ShowcaseNoteAttachmentModel attachment,
 ) async {
-  final res = await locator<DialogService>().showCustomDialog(
+  final res = await appBoxKitLocator<DialogService>().showCustomDialog(
     variant: DialogType.showcaseConfirm,
     title: 'Remove attachment?',
     data: (actionLabel: 'Remove', destructive: false),

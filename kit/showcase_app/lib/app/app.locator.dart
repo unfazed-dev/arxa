@@ -7,20 +7,20 @@
 
 // ignore_for_file: public_member_api_docs, implementation_imports, depend_on_referenced_packages
 
-import 'package:appbox_kit_core/extensions/kit_selectable_extension.dart';
-import 'package:appbox_kit_core/services/error/kit_error_service.dart';
-import 'package:appbox_kit_core/services/theme/kit_theme_service.dart';
-import 'package:appbox_kit_haptics/src/kit_haptic_service.dart';
+import 'package:appbox_kit_core/extensions/appbox_kit_selectable_extension.dart';
+import 'package:appbox_kit_core/services/error/appbox_kit_error_service.dart';
+import 'package:appbox_kit_core/services/theme/appbox_kit_theme_service.dart';
+import 'package:appbox_kit_haptics/src/appbox_kit_haptic_service.dart';
+import 'package:appbox_kit_ui_library/extensions/appbox_kit_overlay_extension.dart';
+import 'package:appbox_kit_ui_library/services/navigation/appbox_kit_navigation_controller_service.dart';
+import 'package:appbox_kit_ui_library/services/notifications/appbox_kit_notification_service.dart';
+import 'package:appbox_kit_ui_library/services/sheet/appbox_kit_bottom_sheet_service.dart';
 import 'package:stacked_services/src/bottom_sheet/bottom_sheet_service.dart';
 import 'package:stacked_services/src/dialog/dialog_service.dart';
 import 'package:stacked_services/src/navigation/router_service.dart';
 import 'package:stacked_services/src/snackbar/snackbar_service.dart';
 import 'package:stacked_shared/stacked_shared.dart';
 import 'package:talker/src/talker.dart';
-import 'package:ui_library/extensions/kit_overlay_extension.dart';
-import 'package:ui_library/services/navigation/kit_navigation_controller_service.dart';
-import 'package:ui_library/services/notifications/kit_notification_service.dart';
-import 'package:ui_library/services/sheet/kit_bottom_sheet_service.dart';
 
 import '../services/showcase_notes_services/adapters/showcase_notes_media_adapter_service.dart';
 import '../services/showcase_notes_services/facades/showcase_notes_facade_service.dart';
@@ -38,19 +38,19 @@ Future<void> setupLocator(
       environment: environment, environmentFilter: environmentFilter);
 
 // Register dependencies
-  locator
-      .registerLazySingleton<BottomSheetService>(() => KitBottomSheetService());
+  locator.registerLazySingleton<BottomSheetService>(
+      () => AppBoxKitBottomSheetService());
   locator.registerLazySingleton(() => DialogService());
   locator.registerLazySingleton(() => RouterService());
   locator.registerLazySingleton(() => SnackbarService());
   locator.registerLazySingleton(() => Talker());
-  locator.registerLazySingleton(() => KitErrorService());
-  locator.registerLazySingleton(() => KitNotificationService());
-  locator.registerLazySingleton(() => KitHapticService());
-  locator.registerLazySingleton(() => KitThemeService());
-  locator.registerLazySingleton(() => KitNavigationControllerService());
-  locator.registerLazySingleton(() => KitOverlayService());
-  locator.registerLazySingleton(() => KitSelectableService());
+  locator.registerLazySingleton(() => AppBoxKitErrorService());
+  locator.registerLazySingleton(() => AppBoxKitNotificationService());
+  locator.registerLazySingleton(() => AppBoxKitHapticService());
+  locator.registerLazySingleton(() => AppBoxKitThemeService());
+  locator.registerLazySingleton(() => AppBoxKitNavigationControllerService());
+  locator.registerLazySingleton(() => AppBoxKitOverlayService());
+  locator.registerLazySingleton(() => AppBoxKitSelectableService());
   locator.registerLazySingleton(() => ShowcaseNotesRepositoryService());
   locator.registerLazySingleton(() => ShowcaseNotesFacadeService());
   locator.registerLazySingleton(() => ShowcaseNotesMediaAdapterService());

@@ -14,7 +14,7 @@ dependencies:
   # The kit under test — path deps to the sibling packages.
   appbox_kit_core:
     path: ../core
-  ui_library:
+  appbox_kit_ui_library:
     path: ../ui_library
   appbox_kit_data:
     path: ../data

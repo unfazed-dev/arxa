@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:appbox_kit_motion/appbox_kit_motion.dart';
-import 'package:ui_library/ui_library.dart';
+import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 
-/// Drag-scrubbed choreography: a [KitGestureDriver] maps the horizontal drag
+/// Drag-scrubbed choreography: a [AppBoxKitGestureDriver] maps the horizontal drag
 /// to the scope's 0→1 timeline (wake-choreographed chips + a scrubbing
-/// handle), and release settles with a [KitSprings] preset — the same driver
-/// `KitDrawer` consumes for custom open/close choreography.
+/// handle), and release settles with a [AppBoxKitSprings] preset — the same driver
+/// `AppBoxKitDrawer` consumes for custom open/close choreography.
 class ShowcaseMotionDragScrubCardWidget extends StatefulWidget {
   const ShowcaseMotionDragScrubCardWidget({required this.spec, super.key});
 
-  final KitMotionSpec spec;
+  final AppBoxKitMotionSpec spec;
 
   @override
   State<ShowcaseMotionDragScrubCardWidget> createState() =>
@@ -19,11 +19,11 @@ class ShowcaseMotionDragScrubCardWidget extends StatefulWidget {
 class _ShowcaseMotionDragScrubCardState
     extends State<ShowcaseMotionDragScrubCardWidget>
     with SingleTickerProviderStateMixin {
-  // The drawer-settle preset, passed explicitly so the demo names KitSprings
+  // The drawer-settle preset, passed explicitly so the demo names AppBoxKitSprings
   // (it is also the driver's default).
-  late final KitGestureDriver _driver = KitGestureDriver(
+  late final AppBoxKitGestureDriver _driver = AppBoxKitGestureDriver(
     vsync: this,
-    settleSpring: KitSprings.snappy,
+    settleSpring: AppBoxKitSprings.snappy,
   );
 
   @override
@@ -34,9 +34,9 @@ class _ShowcaseMotionDragScrubCardState
 
   Widget _chip(BuildContext context, String label, int order) => Expanded(
         // Same Expanded-inside-wake rule as ShowcaseMotionManualReplayCardWidget.
-        child: KitGlassCard(
+        child: AppBoxKitGlassCard(
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: kSize16),
+            padding: const EdgeInsets.symmetric(vertical: axSize16),
             child: Center(
               child: Text(
                 label,
@@ -61,19 +61,19 @@ class _ShowcaseMotionDragScrubCardState
               _driver.scrubBy(details.primaryDelta! / extent),
           onHorizontalDragEnd: (details) =>
               _driver.settle(velocity: (details.primaryVelocity ?? 0) / extent),
-          child: KitGlassCard(
+          child: AppBoxKitGlassCard(
             child: Padding(
-              padding: const EdgeInsets.all(kSize16),
+              padding: const EdgeInsets.all(axSize16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text(
                     'Drag this card horizontally: the drag scrubs the scope '
                     '0→1, release settles to the nearest end with '
-                    'KitSprings.snappy (re-grab mid-settle just works).',
+                    'AppBoxKitSprings.snappy (re-grab mid-settle just works).',
                     style: Theme.of(context).textTheme.bodyMedium,
                   ),
-                  verticalSpaceSmall,
+                  appBoxKitVerticalSpaceSmall,
                   // Scrub handle — its position IS the driver value.
                   Container(
                     height: 32,
@@ -99,16 +99,16 @@ class _ShowcaseMotionDragScrubCardState
                       ),
                     ),
                   ),
-                  verticalSpaceSmall,
-                  KitMotionScope(
+                  appBoxKitVerticalSpaceSmall,
+                  AppBoxKitMotionScope(
                     driver: _driver,
                     spec: widget.spec,
                     child: Row(
                       children: <Widget>[
                         _chip(context, 'One', 0),
-                        horizontalSpace(kSize16 / 2),
+                        appBoxKitHorizontalSpace(axSize16 / 2),
                         _chip(context, 'Two', 1),
-                        horizontalSpace(kSize16 / 2),
+                        appBoxKitHorizontalSpace(axSize16 / 2),
                         _chip(context, 'Three', 2),
                       ],
                     ),

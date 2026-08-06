@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:ui_library/ui_library.dart';
+import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_note_editor/showcase_note_editor_viewmodel.dart';
 import 'package:appbox_kit_showcase_app/ui/widgets/showcase_notes_widgets/widgets.dart';
 
 /// Owns the body field's [TextEditingController] — the editor is a *document*
 /// (borderless multiline), not a capsule form field, so the kit's
-/// [KitFieldTextField] bridge (which wraps [KitNativeTextField]) is the wrong
+/// [AppBoxKitFieldTextField] bridge (which wraps [AppBoxKitNativeTextField]) is the wrong
 /// widget here. This leaf applies the bridge's *rationale* instead: the view
 /// owns the controller's lifecycle (create/seed/dispose for IME + cursor),
 /// the value mirror stays in the viewmodel (`ShowcaseNoteEditorViewModel.body`)
@@ -67,7 +67,7 @@ class _ShowcaseNoteEditorBodyState extends State<ShowcaseNoteEditorBodyWidget> {
         .toList();
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(kSize16),
+      padding: const EdgeInsets.all(axSize16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -77,7 +77,7 @@ class _ShowcaseNoteEditorBodyState extends State<ShowcaseNoteEditorBodyWidget> {
               photos: photos,
               onRemoveAttachment: widget.onRemoveAttachment,
             ),
-            verticalSpaceSmall,
+            appBoxKitVerticalSpaceSmall,
           ],
           for (final a in audio) ...[
             ShowcaseNoteAudioRowWidget(
@@ -86,10 +86,10 @@ class _ShowcaseNoteEditorBodyState extends State<ShowcaseNoteEditorBodyWidget> {
               onRemoveAttachment: widget.onRemoveAttachment,
               formatDuration: widget.formatDuration,
             ),
-            verticalSpaceSmall,
+            appBoxKitVerticalSpaceSmall,
           ],
           // flutter-only: multiline note body (maxLines: null, borderless custom
-          // style). KitNativeTextField is a single-line credential/search field —
+          // style). AppBoxKitNativeTextField is a single-line credential/search field —
           // a scrolling note body is outside the native text-field's scope.
           // ponytail: uniform body style for the whole field — a real title/body
           // split would need a rich-text controller; iOS Notes just bolds line 1.

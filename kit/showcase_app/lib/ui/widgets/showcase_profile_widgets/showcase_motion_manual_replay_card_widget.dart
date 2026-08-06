@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:appbox_kit_motion/appbox_kit_motion.dart';
-import 'package:ui_library/ui_library.dart';
+import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 
 /// Nested scope with an explicit controller driver — wake/set-down replayed
 /// on demand, independent of the route animation above it.
 class ShowcaseMotionManualReplayCardWidget extends StatefulWidget {
   const ShowcaseMotionManualReplayCardWidget({required this.spec, super.key});
 
-  final KitMotionSpec spec;
+  final AppBoxKitMotionSpec spec;
 
   @override
   State<ShowcaseMotionManualReplayCardWidget> createState() =>
@@ -29,13 +29,13 @@ class _ShowcaseMotionManualReplayCardState
   }
 
   Widget _chip(BuildContext context, String label, int order) => Expanded(
-        // KitWake wraps the card INSIDE the Expanded — wakeAll() on the Row's
+        // AppBoxKitWake wraps the card INSIDE the Expanded — wakeAll() on the Row's
         // children list put the Fade/Slide transition between the Row and
         // each Expanded, breaking the FlexParentData contract (ParentDataWidget
         // assertion on route push).
-        child: KitGlassCard(
+        child: AppBoxKitGlassCard(
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: kSize16),
+            padding: const EdgeInsets.symmetric(vertical: axSize16),
             child: Center(
               child: Text(
                 label,
@@ -48,7 +48,7 @@ class _ShowcaseMotionManualReplayCardState
 
   @override
   Widget build(BuildContext context) {
-    return KitMotionScope(
+    return AppBoxKitMotionScope(
       driver: _controller,
       spec: widget.spec,
       child: Column(
@@ -57,22 +57,22 @@ class _ShowcaseMotionManualReplayCardState
           Row(
             children: <Widget>[
               _chip(context, 'One', 0),
-              horizontalSpace(kSize16 / 2),
+              appBoxKitHorizontalSpace(axSize16 / 2),
               _chip(context, 'Two', 1),
-              horizontalSpace(kSize16 / 2),
+              appBoxKitHorizontalSpace(axSize16 / 2),
               _chip(context, 'Three', 2),
             ],
           ),
-          verticalSpaceSmall,
+          appBoxKitVerticalSpaceSmall,
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              KitNativeButton(
+              AppBoxKitNativeButton(
                 label: 'Set down',
                 onPressed: () => _controller.reverse(),
               ),
-              horizontalSpace(kSize16 / 2),
-              KitNativeButton(
+              appBoxKitHorizontalSpace(axSize16 / 2),
+              AppBoxKitNativeButton(
                 label: 'Replay',
                 onPressed: () => _controller.forward(from: 0),
               ),

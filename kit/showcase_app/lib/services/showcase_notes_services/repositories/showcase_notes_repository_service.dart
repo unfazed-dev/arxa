@@ -1,12 +1,12 @@
 import 'package:appbox_kit_data/appbox_kit_data.dart';
-import 'package:ui_library/ui_library.dart' show locator;
+import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart' show appBoxKitLocator;
 import 'package:uuid/uuid.dart';
 
 import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/showcase_note_model.dart';
 import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/showcase_note_folder_model.dart';
 
-/// Notes-domain gateway over the kit's `KitRepository<ShowcaseNoteModel>` / `<ShowcaseNoteFolderModel>`
-/// (registered by `KitData.initialize`). This is the app-level repository seam:
+/// Notes-domain gateway over the kit's `AppBoxKitRepository<ShowcaseNoteModel>` / `<ShowcaseNoteFolderModel>`
+/// (registered by `AppBoxKitData.initialize`). This is the app-level repository seam:
 /// it owns query construction and id minting, and exposes raw single-table
 /// writes. It never aggregates or derives — counts, sectioning and cross-table
 /// composition are facade work (swap rule 2). See ADR / DESIGN-ARCHITECTURE:
@@ -14,41 +14,41 @@ import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/showca
 class ShowcaseNotesRepositoryService {
   static const _uuid = Uuid();
 
-  KitRepository<ShowcaseNoteModel> get _notes => locator<KitRepository<ShowcaseNoteModel>>();
-  KitRepository<ShowcaseNoteFolderModel> get _folders => locator<KitRepository<ShowcaseNoteFolderModel>>();
+  AppBoxKitRepository<ShowcaseNoteModel> get _notes => appBoxKitLocator<AppBoxKitRepository<ShowcaseNoteModel>>();
+  AppBoxKitRepository<ShowcaseNoteFolderModel> get _folders => appBoxKitLocator<AppBoxKitRepository<ShowcaseNoteFolderModel>>();
 
-  // -- Reads (own the KitQuery) ----------------------------------------------
+  // -- Reads (own the AppBoxKitQuery) ----------------------------------------------
 
   /// The owner's folders, in display order.
-  Stream<List<ShowcaseNoteFolderModel>> foldersOf(String owner) => _folders.watchAll(KitQuery(
-        filters: [KitFilter.eq('owner', owner)],
+  Stream<List<ShowcaseNoteFolderModel>> foldersOf(String owner) => _folders.watchAll(AppBoxKitQuery(
+        filters: [AppBoxKitFilter.eq('owner', owner)],
         orderBy: 'sort_order',
       ));
 
   /// Every note the owner has, live and deleted, newest-edited first — the
   /// single upstream the facade's derived streams map over.
-  Stream<List<ShowcaseNoteModel>> allNotesOf(String owner) => _notes.watchAll(KitQuery(
-        filters: [KitFilter.eq('owner', owner)],
+  Stream<List<ShowcaseNoteModel>> allNotesOf(String owner) => _notes.watchAll(AppBoxKitQuery(
+        filters: [AppBoxKitFilter.eq('owner', owner)],
         orderBy: 'updated_at',
         descending: true,
       ));
 
   /// Every owner's folders (admin visibility — deliberately unfiltered).
   Stream<List<ShowcaseNoteFolderModel>> allFolders() =>
-      _folders.watchAll(const KitQuery(orderBy: 'created_at'));
+      _folders.watchAll(const AppBoxKitQuery(orderBy: 'created_at'));
 
   /// Every owner's notes (admin visibility — deliberately unfiltered).
-  Stream<List<ShowcaseNoteModel>> allNotes() => _notes.watchAll(const KitQuery());
+  Stream<List<ShowcaseNoteModel>> allNotes() => _notes.watchAll(const AppBoxKitQuery());
 
   Stream<ShowcaseNoteModel?> watchNote(String id) => _notes.watchById(id);
 
   /// One-shot fetch of the owner's notes (for multi-step mutations).
   Future<List<ShowcaseNoteModel>> notesOf(String owner) =>
-      _notes.getAll(KitQuery(filters: [KitFilter.eq('owner', owner)]));
+      _notes.getAll(AppBoxKitQuery(filters: [AppBoxKitFilter.eq('owner', owner)]));
 
   /// One-shot fetch of a folder's notes (for cascade delete).
   Future<List<ShowcaseNoteModel>> notesInFolder(String folderId) =>
-      _notes.getAll(KitQuery(filters: [KitFilter.eq('folder_id', folderId)]));
+      _notes.getAll(AppBoxKitQuery(filters: [AppBoxKitFilter.eq('folder_id', folderId)]));
 
   // -- Id minting ------------------------------------------------------------
 

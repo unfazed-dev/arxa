@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:ui_library/ui_library.dart';
+import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 import 'package:appbox_kit_showcase_app/ui/widgets/common/showcase_tabs_shared/widgets.dart';
 
 /// Feedback-tier card: determinate/indeterminate progress plus the loading
@@ -9,23 +9,23 @@ class ShowcaseProgressLoadingCardWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return KitGlassCard(
+    return AppBoxKitGlassCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const ShowcaseSectionLabelWidget('Progress & loading'),
-          verticalSpaceSmall,
+          appBoxKitVerticalSpaceSmall,
           Row(
             children: [
               Expanded(
                 // ponytail: determinate 0.6 shows the fill; indeterminate
                 // circular animates; loading indicator is the 3rd tier.
-                child: KitNativeProgress.linear(value: 0.6),
+                child: AppBoxKitNativeProgress.linear(value: 0.6),
               ),
-              horizontalSpaceSmall,
-              KitNativeProgress.circular(), // factory, not const-able
-              horizontalSpaceSmall,
-              const KitNativeLoadingIndicator(size: 32),
+              appBoxKitHorizontalSpaceSmall,
+              AppBoxKitNativeProgress.circular(), // factory, not const-able
+              appBoxKitHorizontalSpaceSmall,
+              const AppBoxKitNativeLoadingIndicator(size: 32),
             ],
           ),
         ],
@@ -37,7 +37,7 @@ class ShowcaseProgressLoadingCardWidget extends StatelessWidget {
         // the exemplar). Content-only: the native chrome demos above
         // (buttons/segmented) are never edge-effected.
         .scrollEdgeEffect(
-      edge: KitScrollEdge.bottom,
+      edge: AppBoxKitScrollEdge.bottom,
       occlusionPadding: kShowcaseTabBarBlockHeight,
     );
   }

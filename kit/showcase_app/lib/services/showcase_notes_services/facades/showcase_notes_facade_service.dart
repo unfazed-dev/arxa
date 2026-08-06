@@ -1,6 +1,6 @@
 import 'package:rxdart/rxdart.dart';
 import 'package:appbox_kit_data/appbox_kit_data.dart';
-import 'package:ui_library/ui_library.dart' show locator;
+import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart' show appBoxKitLocator;
 
 import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/showcase_note_model.dart';
 import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/showcase_note_attachment_model.dart';
@@ -50,18 +50,18 @@ class ShowcaseNoteGroup {
 /// UI-facing composition (counts, sectioning, search) and routes every mutation
 /// through [mutate] so writes inherit the kit's action automation. Streams are
 /// per-owner (auth-gated app).
-class ShowcaseNotesFacadeService extends KitDataFacade {
-  ShowcaseNotesRepositoryService get _repo => locator<ShowcaseNotesRepositoryService>();
+class ShowcaseNotesFacadeService extends AppBoxKitDataFacade {
+  ShowcaseNotesRepositoryService get _repo => appBoxKitLocator<ShowcaseNotesRepositoryService>();
 
-  Stream<KitAuthSession?> get session$ => auth.session$;
-  KitAuthSession? get currentSession => auth.currentSession;
+  Stream<AppBoxKitAuthSession?> get session$ => auth.session$;
+  AppBoxKitAuthSession? get currentSession => auth.currentSession;
 
   /// Whether the signed-in user carries the admin role in its seed metadata.
   bool get isAdmin => isAdminSession(currentSession);
 
   /// Role check on an arbitrary session — for viewmodels reacting to
   /// [session$] events, where [currentSession] may already have moved on.
-  static bool isAdminSession(KitAuthSession? session) =>
+  static bool isAdminSession(AppBoxKitAuthSession? session) =>
       session?.user.metadata['role'] == 'admin';
 
   // -- Reads (composition over repository streams) ---------------------------
@@ -190,11 +190,11 @@ class ShowcaseNotesFacadeService extends KitDataFacade {
     'December',
   ];
 
-  // -- Mutations (all through the KitAction chain, over repository writes) ----
+  // -- Mutations (all through the AppBoxKitAction chain, over repository writes) ----
   //
   // Notification policy (appbox convention): every chain shows an error
   // snackbar; destructive chains also confirm with a success snackbar.
-  // Ops carry the entity id, so KitAction's re-entry guard only ever
+  // Ops carry the entity id, so AppBoxKitAction's re-entry guard only ever
   // drops a genuine same-op double-fire — never a concurrent op on another
   // entity. Value-returning chains rethrow after the snackbar (callers await
   // the value); void chains swallow post-snackbar via completeOnError.

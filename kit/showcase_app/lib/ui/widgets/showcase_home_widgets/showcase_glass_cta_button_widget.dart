@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:ui_library/ui_library.dart';
+import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 
-/// Phase 2b (option B): KitNativeButton delegates to CNButton →
+/// Phase 2b (option B): AppBoxKitNativeButton delegates to CNButton →
 /// real Liquid Glass on iOS 26. Height from the kit's button token;
 /// width is intrinsic (no magic numbers).
 class ShowcaseGlassCtaButtonWidget extends StatelessWidget {
@@ -10,13 +10,13 @@ class ShowcaseGlassCtaButtonWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: kButtonHeightMedium,
-      child: KitNativeButton(
+      height: axButtonHeightMedium,
+      child: AppBoxKitNativeButton(
         label: 'Glass CTA',
-        glyph: KitGlyphs.star,
-        onPressed: () => locator<KitNotificationService>().show(
+        glyph: AppBoxKitGlyphs.star,
+        onPressed: () => appBoxKitLocator<AppBoxKitNotificationService>().show(
             'native button tapped',
-            position: KitToastPosition.bottom,
+            position: AppBoxKitToastPosition.bottom,
             context: context),
       ),
     );

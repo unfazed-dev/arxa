@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:ui_library/ui_library.dart';
+import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 
 /// Shared, value-based credential text field for the notes auth + create-account
-/// forms. A thin pass-through to [KitNativeTextField], which now owns the full
+/// forms. A thin pass-through to [AppBoxKitNativeTextField], which now owns the full
 /// native tiering itself (iOS 26 Liquid Glass CNTextField / Android M3E
 /// TextFieldM3E / Material fallback) — so this wrapper no longer branches per
 /// platform. (Previously it hand-routed Android to `TextFieldM3E` because the kit
@@ -36,7 +36,7 @@ class ShowcaseNotesAuthTextFieldWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return KitNativeTextField(
+    return AppBoxKitNativeTextField(
       onChanged: onChanged,
       placeholder: placeholder,
       keyboardType: keyboardType,

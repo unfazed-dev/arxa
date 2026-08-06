@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:ui_library/ui_library.dart';
+import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 
 import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_auth/showcase_notes_auth_viewmodel.dart';
 import 'package:appbox_kit_showcase_app/ui/widgets/showcase_notes_widgets/widgets.dart';
@@ -18,7 +18,7 @@ class ShowcaseNotesOtpFormWidget extends StatelessWidget {
     // Streams-only: the OTP step (email locked / code field / Verify vs Send
     // Code), the inline error, and busy each bind a VM stream — nothing here
     // rebuilds off notifyListeners.
-    return KitStreamBuilder<bool>(
+    return AppBoxKitStreamBuilder<bool>(
       stream: vm.otpRequested$,
       builder: (context, otpRequested) => Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -31,30 +31,30 @@ class ShowcaseNotesOtpFormWidget extends StatelessWidget {
             keyboardType: TextInputType.emailAddress,
           ),
           if (otpRequested) ...[
-            verticalSpaceSmall,
+            appBoxKitVerticalSpaceSmall,
             ShowcaseNotesAuthTextFieldWidget(
               onChanged: (v) => vm.code = v,
               placeholder: '000000',
               keyboardType: TextInputType.number,
             ),
           ],
-          KitStreamBuilder<String?>(
+          AppBoxKitStreamBuilder<String?>(
             stream: vm.errorMessage$,
             builder: (context, errorMessage) => errorMessage == null
                 ? const SizedBox.shrink()
                 : ShowcaseNotesFormErrorRowWidget(message: errorMessage),
           ),
-          verticalSpaceMedium,
-          KitStreamBuilder<bool>(
+          appBoxKitVerticalSpaceMedium,
+          AppBoxKitStreamBuilder<bool>(
             stream: vm.busy$,
             builder: (context, busy) => Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 SizedBox(
-                  height: kButtonHeightMedium,
-                  child: KitNativeButton(
+                  height: axButtonHeightMedium,
+                  child: AppBoxKitNativeButton(
                     label: otpRequested ? 'Verify' : 'Send Code',
-                    style: KitButtonStyle.prominentGlass,
+                    style: AppBoxKitButtonStyle.prominentGlass,
                     onPressed: busy
                         ? null
                         : () => otpRequested
@@ -63,8 +63,8 @@ class ShowcaseNotesOtpFormWidget extends StatelessWidget {
                   ),
                 ),
                 if (busy) ...[
-                  verticalSpaceSmall,
-                  const Center(child: KitNativeLoadingIndicator(size: 20)),
+                  appBoxKitVerticalSpaceSmall,
+                  const Center(child: AppBoxKitNativeLoadingIndicator(size: 20)),
                 ],
               ],
             ),

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:ui_library/ui_library.dart';
+import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 
 /// Section header used across the showcase tabs.
 class ShowcaseSectionLabelWidget extends StatelessWidget {
@@ -13,7 +13,7 @@ class ShowcaseSectionLabelWidget extends StatelessWidget {
           fontSize: 13,
           fontWeight: FontWeight.w700,
           letterSpacing: 0.4,
-          color: KitColors.muted,
+          color: AppBoxKitColors.muted,
         ),
       );
 }

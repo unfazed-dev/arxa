@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:ui_library/ui_library.dart';
+import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 
 import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_auth/showcase_notes_auth_viewmodel.dart';
 import 'package:appbox_kit_showcase_app/ui/widgets/showcase_notes_widgets/widgets.dart';
@@ -25,7 +25,7 @@ class ShowcaseNotesPasswordFormWidget extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         // No grouped section here: CNTextField renders its own native capsule,
-        // so a KitListSection container + divider produces double chrome
+        // so a AppBoxKitListSection container + divider produces double chrome
         // around the fields. Standalone capsules with plain spacing is the
         // iOS 26 look.
         ShowcaseNotesAuthTextFieldWidget(
@@ -33,7 +33,7 @@ class ShowcaseNotesPasswordFormWidget extends StatelessWidget {
           placeholder: 'Email',
           keyboardType: TextInputType.emailAddress,
         ),
-        verticalSpaceSmall,
+        appBoxKitVerticalSpaceSmall,
         ShowcaseNotesAuthTextFieldWidget(
           onChanged: (v) => vm.password = v,
           placeholder: 'Password',
@@ -41,33 +41,33 @@ class ShowcaseNotesPasswordFormWidget extends StatelessWidget {
         ),
         // Streams-only: inline error and busy bind the VM's streams — nothing
         // here rebuilds off notifyListeners.
-        KitStreamBuilder<String?>(
+        AppBoxKitStreamBuilder<String?>(
           stream: vm.errorMessage$,
           builder: (context, errorMessage) => errorMessage == null
               ? const SizedBox.shrink()
               : ShowcaseNotesFormErrorRowWidget(message: errorMessage),
         ),
-        verticalSpaceMedium,
-        KitStreamBuilder<bool>(
+        appBoxKitVerticalSpaceMedium,
+        AppBoxKitStreamBuilder<bool>(
           stream: vm.busy$,
           builder: (context, busy) => Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               SizedBox(
-                height: kButtonHeightMedium,
-                child: KitNativeButton(
+                height: axButtonHeightMedium,
+                child: AppBoxKitNativeButton(
                   label: 'Sign In',
-                  style: KitButtonStyle.prominentGlass,
+                  style: AppBoxKitButtonStyle.prominentGlass,
                   onPressed:
                       busy ? null : () => vm.signInEmail(vm.email, vm.password),
                 ),
               ),
-              verticalSpaceSmall,
+              appBoxKitVerticalSpaceSmall,
               SizedBox(
-                height: kButtonHeightMedium,
-                child: KitNativeButton(
+                height: axButtonHeightMedium,
+                child: AppBoxKitNativeButton(
                   label: 'Create Account',
-                  style: KitButtonStyle.plain,
+                  style: AppBoxKitButtonStyle.plain,
                   // Prefer the owner's panel swap (dedicated create-account view);
                   // inline fake sign-up remains the fallback for bare embeddings.
                   onPressed: busy
@@ -77,8 +77,8 @@ class ShowcaseNotesPasswordFormWidget extends StatelessWidget {
                 ),
               ),
               if (busy) ...[
-                verticalSpaceSmall,
-                const Center(child: KitNativeLoadingIndicator(size: 20)),
+                appBoxKitVerticalSpaceSmall,
+                const Center(child: AppBoxKitNativeLoadingIndicator(size: 20)),
               ],
             ],
           ),

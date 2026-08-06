@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:stacked/stacked.dart';
 import 'package:appbox_kit_motion/appbox_kit_motion.dart';
-import 'package:ui_library/ui_library.dart';
+import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 import 'package:appbox_kit_showcase_app/ui/widgets/common/showcase_tabs_shared/widgets.dart';
 import 'package:appbox_kit_showcase_app/ui/widgets/showcase_notes_widgets/widgets.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_folder/showcase_notes_folder_viewmodel.dart';
@@ -20,8 +20,8 @@ class ShowcaseNotesFolderViewMobile
 
     final actions = [
       if (viewModel.isTrash)
-        KitNativeIconButton(
-          glyph: KitGlyphs.delete,
+        AppBoxKitNativeIconButton(
+          glyph: AppBoxKitGlyphs.delete,
           color: theme.colorScheme.error,
           onPressed: () => _confirmEmptyTrash(context, viewModel),
         ),
@@ -29,16 +29,16 @@ class ShowcaseNotesFolderViewMobile
 
     // Streams-only: title$ feeds the app bar (a rename lands in place),
     // groups$ feeds the list — the viewmodel holds no relay fields.
-    return KitStreamBuilder<String>(
+    return AppBoxKitStreamBuilder<String>(
       stream: viewModel.title$,
       builder: (context, title) => Scaffold(
-        // THE one app bar — KitNativeAppBar in Scaffold.appBar (never a sliver,
+        // THE one app bar — AppBoxKitNativeAppBar in Scaffold.appBar (never a sliver,
         // never a stock AppBar) — with the explicit back button + (trash-only)
         // empty-trash action riding on it.
-        appBar: KitNativeAppBar(
+        appBar: AppBoxKitNativeAppBar(
           title: title,
-          leading: KitNativeIconButton(
-            glyph: KitGlyphs.back,
+          leading: AppBoxKitNativeIconButton(
+            glyph: AppBoxKitGlyphs.back,
             onPressed: () => context.popRoute(),
           ),
           actions: actions,
@@ -50,14 +50,14 @@ class ShowcaseNotesFolderViewMobile
           // the floating tab bar; clearance lives in the trailing padding.
           top: false,
           bottom: false,
-          child: KitStreamBuilder<List<ShowcaseNoteGroup>>(
+          child: AppBoxKitStreamBuilder<List<ShowcaseNoteGroup>>(
             stream: viewModel.groups$,
             builder: (context, groups) =>
-                // KitMotionScope establishes the choreography boundary — group
+                // AppBoxKitMotionScope establishes the choreography boundary — group
                 // rows below register with .wake(order: i) and rise in on the
                 // shared spec's stagger ramp (spec-owned tokens; no local
                 // durations).
-                KitMotionScope(
+                AppBoxKitMotionScope(
               child: CustomScrollView(
                 slivers: [
                   // Pinned search — sticks under the bar while the list scrolls.
@@ -69,8 +69,8 @@ class ShowcaseNotesFolderViewMobile
                     ShowcaseNotesPinnedSearchBarWidget(
                       child: Padding(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: kSize16, vertical: kSize8),
-                        child: KitNativeSearchBar(
+                            horizontal: axSize16, vertical: axSize8),
+                        child: AppBoxKitNativeSearchBar(
                           hint: 'Search',
                           onChanged: viewModel.setQuery,
                         ).scrollOcclusion(),
@@ -81,31 +81,31 @@ class ShowcaseNotesFolderViewMobile
                       hasScrollBody: false,
                       child: Center(
                         child: Padding(
-                          padding: EdgeInsets.symmetric(vertical: kSize80),
+                          padding: EdgeInsets.symmetric(vertical: axSize80),
                           child: Text('No Notes'),
                         ),
                       ),
                     )
                   else
                     SliverPadding(
-                      padding: EdgeInsets.fromLTRB(kSize16, kSize8, kSize16,
-                          kSize80 + MediaQuery.paddingOf(context).bottom),
+                      padding: EdgeInsets.fromLTRB(axSize16, axSize8, axSize16,
+                          axSize80 + MediaQuery.paddingOf(context).bottom),
                       sliver: SliverList.builder(
                         itemCount: groups.length,
                         itemBuilder: (context, i) {
                           final group = groups[i];
                           return Padding(
-                            padding: const EdgeInsets.only(bottom: kSize16),
+                            padding: const EdgeInsets.only(bottom: axSize16),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 ShowcaseSectionLabelWidget(group.label),
-                                verticalSpaceSmall,
+                                appBoxKitVerticalSpaceSmall,
                                 // The kit's grouped-inset section owns the group
                                 // card + hairline dividers (replacing the app's
                                 // hand-rolled NotesSection); margin zero — the
                                 // enclosing SliverPadding already insets 16.
-                                KitListSection(
+                                AppBoxKitListSection(
                                   margin: EdgeInsets.zero,
                                   children: [
                                     for (final note in group.notes)
@@ -130,7 +130,7 @@ class ShowcaseNotesFolderViewMobile
                               // the scrollable, so it needs an explicit occlusion.
                               .scrollEdgeEffect()
                               .scrollEdgeEffect(
-                                edge: KitScrollEdge.bottom,
+                                edge: AppBoxKitScrollEdge.bottom,
                                 occlusionPadding: kShowcaseTabBarBlockHeight,
                               )
                               // Lazy list: rows wake in build (≈viewport) order —
@@ -146,12 +146,12 @@ class ShowcaseNotesFolderViewMobile
         ),
         floatingActionButton: viewModel.isTrash
             ? null
-            : KitNativeFabMenu(
-                glyph: KitGlyphs.add,
+            : AppBoxKitNativeFabMenu(
+                glyph: AppBoxKitGlyphs.add,
                 items: const [
-                  KitMenuItem(label: 'New Note', glyph: KitGlyphs.compose),
-                  KitMenuItem(label: 'New Photo', glyph: KitGlyphs.camera),
-                  KitMenuItem(label: 'New Voice', glyph: KitGlyphs.mic),
+                  AppBoxKitMenuItem(label: 'New Note', glyph: AppBoxKitGlyphs.compose),
+                  AppBoxKitMenuItem(label: 'New Photo', glyph: AppBoxKitGlyphs.camera),
+                  AppBoxKitMenuItem(label: 'New Voice', glyph: AppBoxKitGlyphs.mic),
                 ],
                 onSelect: (item) async {
                   // ponytail: a module-level intent slot on the editor viewmodel
@@ -176,7 +176,7 @@ class ShowcaseNotesFolderViewMobile
 
 Future<void> _confirmEmptyTrash(
     BuildContext context, ShowcaseNotesFolderViewModel viewModel) async {
-  final res = await locator<DialogService>().showCustomDialog(
+  final res = await appBoxKitLocator<DialogService>().showCustomDialog(
     variant: DialogType.showcaseConfirm,
     title: 'Empty Recently Deleted',
     description: 'Notes will be permanently deleted. This cannot be undone.',
@@ -189,7 +189,7 @@ Future<void> _confirmEmptyTrash(
 
 Future<void> _confirmDeletePermanently(BuildContext context,
     ShowcaseNotesFolderViewModel viewModel, ShowcaseNoteModel note) async {
-  final res = await locator<DialogService>().showCustomDialog(
+  final res = await appBoxKitLocator<DialogService>().showCustomDialog(
     variant: DialogType.showcaseConfirm,
     title: 'Delete Note',
     description: 'This note will be permanently deleted.',

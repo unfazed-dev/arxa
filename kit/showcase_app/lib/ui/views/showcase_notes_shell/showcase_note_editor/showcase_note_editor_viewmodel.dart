@@ -1,6 +1,6 @@
 import 'package:rxdart/rxdart.dart';
-import 'package:appbox_kit_media/appbox_kit_media.dart' show PlaybackState;
-import 'package:ui_library/ui_library.dart';
+import 'package:appbox_kit_media/appbox_kit_media.dart' show AppBoxKitPlaybackState;
+import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 
 import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/showcase_note_model.dart';
 import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/showcase_note_attachment_model.dart';
@@ -14,14 +14,14 @@ export 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/showca
 export 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/showcase_note_attachment_model.dart';
 
 /// Live playback progress for the audio scrubber — position paired with the
-/// player-reported track length. Consumed by the view via [KitStreamBuilder]
+/// player-reported track length. Consumed by the view via [AppBoxKitStreamBuilder]
 /// so high-frequency position ticks rebuild only the progress bar, not the
 /// whole editor.
 typedef NotePlaybackProgress = ({Duration position, Duration? duration});
 
 /// The note editor, route `/showcase/notes/note/:id` — streams-only (house
 /// convention): all state is exposed as streams and the views bind them with
-/// [KitStreamBuilder]; `BaseViewModel` is a lifecycle token (creation/disposal
+/// [AppBoxKitStreamBuilder]; `BaseViewModel` is a lifecycle token (creation/disposal
 /// via StackedView), never a rebuild mechanism — `notifyListeners` is not
 /// called.
 ///
@@ -33,11 +33,11 @@ typedef NotePlaybackProgress = ({Duration position, Duration? duration});
 ///
 /// [note$] is a facade pass-through; the media state streams are
 /// pass-throughs of [ShowcaseNotesMediaAdapterService]'s seeded
-/// [BehaviorSubject]s. The one [KitAction.watch] left runs VM-internal side
+/// [BehaviorSubject]s. The one [AppBoxKitAction.watch] left runs VM-internal side
 /// effects only (the one-shot body seed and the pending New Photo/New Voice
-/// intent) — it feeds no view data. Autosave debounce is KitAction's
+/// intent) — it feeds no view data. Autosave debounce is AppBoxKitAction's
 /// `withDebounce`, not a hand-rolled Timer.
-class ShowcaseNoteEditorViewModel extends KitViewModel {
+class ShowcaseNoteEditorViewModel extends AppBoxKitViewModel {
   ShowcaseNoteEditorViewModel({required this.noteId}) {
     watch(
       'note.sideEffects',
@@ -49,9 +49,9 @@ class ShowcaseNoteEditorViewModel extends KitViewModel {
   final String noteId;
 
   final ShowcaseNotesFacadeService _notes =
-      locator<ShowcaseNotesFacadeService>();
+      appBoxKitLocator<ShowcaseNotesFacadeService>();
   final ShowcaseNotesMediaAdapterService _media =
-      locator<ShowcaseNotesMediaAdapterService>();
+      appBoxKitLocator<ShowcaseNotesMediaAdapterService>();
 
   /// The loaded note — null while loading or once deleted. The view binds the
   /// app bar and body to it.
@@ -59,7 +59,7 @@ class ShowcaseNoteEditorViewModel extends KitViewModel {
 
   // -- Media adapter pass-throughs --------------------------------------------
   // The adapter's state already lives on seeded BehaviorSubjects, so these
-  // replay their current value to every KitStreamBuilder that subscribes.
+  // replay their current value to every AppBoxKitStreamBuilder that subscribes.
 
   /// Elapsed recording time while capturing, null otherwise — drives the
   /// toolbar's recording-row swap and the red elapsed pill.
@@ -68,19 +68,19 @@ class ShowcaseNoteEditorViewModel extends KitViewModel {
   /// Attachment id currently loaded in the player, null when idle.
   ValueStream<String?> get playingAttachmentId$ => _media.playingAttachmentId$;
 
-  Stream<PlaybackState> get playerState$ => _media.playerState$;
+  Stream<AppBoxKitPlaybackState> get playerState$ => _media.playerState$;
 
   /// Whether [attachmentId] is the loaded attachment AND playing — drives the
   /// row's play/pause glyph and gates its live progress subscription.
   Stream<bool> isAttachmentPlaying$(String attachmentId) => Rx.combineLatest2(
         playingAttachmentId$,
         playerState$,
-        (String? id, PlaybackState state) => id == attachmentId && state.playing,
+        (String? id, AppBoxKitPlaybackState state) => id == attachmentId && state.playing,
       );
 
   /// Combined position + track length for the audio scrubber. Both back onto
   /// seeded [BehaviorSubject]s in [ShowcaseNotesMediaAdapterService], so this replays the
-  /// current values on subscribe; the view seeds [KitStreamBuilder] with a
+  /// current values on subscribe; the view seeds [AppBoxKitStreamBuilder] with a
   /// zeroed record to paint the first frame without a loading flash.
   Stream<NotePlaybackProgress> get playbackProgress$ => Rx.combineLatest2(
         _media.position$,
@@ -143,7 +143,7 @@ class ShowcaseNoteEditorViewModel extends KitViewModel {
 
   void onBodyChanged(String value) {
     _body = value;
-    // Debounced autosave through KitAction: rapid keystrokes supersede the
+    // Debounced autosave through AppBoxKitAction: rapid keystrokes supersede the
     // pending save, and superseded calls complete silently via the fallback
     // (a real write failure is snackbar'd by the facade's own chain).
     action<void>('save.$noteId', _flushSave)

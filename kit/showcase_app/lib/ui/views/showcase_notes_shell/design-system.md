@@ -43,7 +43,7 @@ No raw `Color(0x…)` literals — the review gate's raw-colour check owns that.
 
 ## Glyphs (kit tokens)
 
-`KitGlyphs.` only, never a bare `Icons.`: `add`, `back`, `camera`, `close`,
+`AppBoxKitGlyphs.` only, never a bare `Icons.`: `add`, `back`, `camera`, `close`,
 `compose`, `delete`, `error`, `folder`, `info`, `mic`, `more`, `newFolder`,
 `notes`, `pause`, `photo`, `pin`, `play`, `restore`, `signOut`, `stop`, `unpin`.
 
@@ -51,17 +51,17 @@ No raw `Color(0x…)` literals — the review gate's raw-colour check owns that.
 
 Named helpers over magic numbers: `verticalSpace{Tiny,Small,Medium,Large}` and
 `horizontalSpace{Tiny,XSmall,Small}` from `kit_ui_helpers.dart`. Fixed
-dimensions use the `kSize*` scale (`kSize4` … `kSize80`), never bare doubles.
+dimensions use the `axSize*` scale (`axSize4` … `axSize80`), never bare doubles.
 
 ## Kit surface
 
-Chrome and inputs are kit-native throughout: `KitNativeAppBar`,
-`KitNativeTextField`, `KitFieldTextField`, `KitNativeButton`,
-`KitNativeIconButton`, `KitNativeSearchBar`, `KitNativeSegmentedControl`,
-`KitNativePopupMenu`, `KitNativeFabMenu`, `KitNativeProgress`,
-`KitNativeLoadingIndicator`. Content surfaces compose on `KitGlassCard`,
-`KitListSection`, `KitListTile`, `KitMenuItem`. Streams render through
-`KitStreamBuilder`. Motion is `KitMotionScope`-owned.
+Chrome and inputs are kit-native throughout: `AppBoxKitNativeAppBar`,
+`AppBoxKitNativeTextField`, `AppBoxKitFieldTextField`, `AppBoxKitNativeButton`,
+`AppBoxKitNativeIconButton`, `AppBoxKitNativeSearchBar`, `AppBoxKitNativeSegmentedControl`,
+`AppBoxKitNativePopupMenu`, `AppBoxKitNativeFabMenu`, `AppBoxKitNativeProgress`,
+`AppBoxKitNativeLoadingIndicator`. Content surfaces compose on `AppBoxKitGlassCard`,
+`AppBoxKitListSection`, `AppBoxKitListTile`, `AppBoxKitMenuItem`. Streams render through
+`AppBoxKitStreamBuilder`. Motion is `AppBoxKitMotionScope`-owned.
 
 ## Forbidden (enforced by the gates)
 
@@ -72,7 +72,7 @@ Chrome and inputs are kit-native throughout: `KitNativeAppBar`,
   `<surface>_view.dart`.
 - A form-factor variant importing another variant (S9) — a variant is one
   layout, not a component library.
-- `ui_library` or `flutter/{material,widgets,cupertino}` in a `*viewmodel.dart`
+- `appbox_kit_ui_library` or `flutter/{material,widgets,cupertino}` in a `*viewmodel.dart`
   (check 1m). Toasts fire from the view layer; see
   `showcase_profile_view.mobile.dart:86`.
 

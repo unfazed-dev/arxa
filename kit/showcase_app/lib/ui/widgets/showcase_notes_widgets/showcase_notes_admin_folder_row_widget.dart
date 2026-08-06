@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:ui_library/ui_library.dart';
+import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/showcase_note_folder_model.dart';
 
 /// Admin-section row: folder name + owner id subtitle + live count. Read-only
@@ -17,8 +17,8 @@ class ShowcaseNotesAdminFolderRowWidget extends StatelessWidget {
   final int count;
 
   @override
-  Widget build(BuildContext context) => KitListTile(
-        glyph: KitGlyphs.folder,
+  Widget build(BuildContext context) => AppBoxKitListTile(
+        glyph: AppBoxKitGlyphs.folder,
         title: folder.name,
         subtitle: folder.owner,
         trailingValue: '$count',

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:ui_library/ui_library.dart';
+import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_search_shell/showcase_search/showcase_search_viewmodel.dart';
 import 'package:appbox_kit_showcase_app/ui/widgets/common/showcase_tabs_shared/widgets.dart';
 
@@ -13,22 +13,22 @@ class ShowcaseSearchOptionsSectionWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // The kit's grouped-list idiom (replacing the hand-composed
-    // KitGlassCard + Divider + ShowcaseLabeledSwitch rows): margin zero —
+    // AppBoxKitGlassCard + Divider + ShowcaseLabeledSwitch rows): margin zero —
     // the ListView padding already insets 16.
-    return KitListSection(
+    return AppBoxKitListSection(
       margin: EdgeInsets.zero,
       children: [
-        KitListTile(
+        AppBoxKitListTile(
           title: 'Open now',
-          trailing: KitNativeSwitch(
+          trailing: AppBoxKitNativeSwitch(
             value: viewModel.openNow,
             onChanged: viewModel.setOpenNow,
             semanticLabel: 'Open now',
           ),
         ),
-        KitListTile(
+        AppBoxKitListTile(
           title: 'Outdoor seating',
-          trailing: KitNativeSwitch(
+          trailing: AppBoxKitNativeSwitch(
             value: viewModel.outdoor,
             onChanged: viewModel.setOutdoor,
             semanticLabel: 'Outdoor seating',
@@ -36,7 +36,7 @@ class ShowcaseSearchOptionsSectionWidget extends StatelessWidget {
         ),
       ],
     ).scrollEdgeEffect(
-      edge: KitScrollEdge.bottom,
+      edge: AppBoxKitScrollEdge.bottom,
       occlusionPadding: kShowcaseTabBarBlockHeight,
     );
   }

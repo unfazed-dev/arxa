@@ -1,4 +1,4 @@
-/// Height the floating [KitNativeTabBar] occupies above the system safe area
+/// Height the floating [AppBoxKitNativeTabBar] occupies above the system safe area
 /// (M3E "small" bar = 64dp; the iOS Liquid Glass pill measures ~61pt plus its
 /// float margin). The host shell's `extendBody` lets tab content slide under
 /// the bar, so scrollable tab bodies add `MediaQuery.paddingOf(context)

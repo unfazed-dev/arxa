@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:stacked/stacked.dart';
-import 'package:ui_library/ui_library.dart';
+import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 import 'package:appbox_kit_showcase_app/ui/widgets/common/showcase_tabs_shared/widgets.dart';
 
 /// Section-labeled card with a single button that pushes a named route —
@@ -19,15 +19,15 @@ class ShowcaseProfileNavCardWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return KitGlassCard(
+    return AppBoxKitGlassCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           ShowcaseSectionLabelWidget(title),
-          verticalSpaceSmall,
+          appBoxKitVerticalSpaceSmall,
           SizedBox(
-            height: kButtonHeightMedium,
-            child: KitNativeButton(
+            height: axButtonHeightMedium,
+            child: AppBoxKitNativeButton(
               label: buttonLabel,
               onPressed: () => context.router.pushNamed(routeName),
             ),
@@ -35,7 +35,7 @@ class ShowcaseProfileNavCardWidget extends StatelessWidget {
         ],
       ),
     ).scrollEdgeEffect(
-      edge: KitScrollEdge.bottom,
+      edge: AppBoxKitScrollEdge.bottom,
       occlusionPadding: kShowcaseTabBarBlockHeight,
     );
   }
