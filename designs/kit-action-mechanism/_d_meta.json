@@ -1,0 +1,18 @@
+{
+  "type": "design",
+  "designSystems": [],
+  "primaryDesignSystem": null,
+  "assets": {
+    "AppBoxKitAction Mechanism": {
+      "versions": [
+        {
+          "path": "AppBoxKitAction Mechanism.html",
+          "createdAt": "2026-08-06T15:50:13.052Z",
+          "status": "needs-review"
+        }
+      ]
+    }
+  },
+  "createdAt": "2026-08-06T15:50:13.053Z",
+  "updatedAt": "2026-08-06T15:50:13.053Z"
+}

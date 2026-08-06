@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AppBoxKitAction — Commands Out, Reactions In</title>
+<style>
+  :root {
+    --bg: #0c0f14;
+    --bg-panel: #12161d;
+    --bg-code: #0a0d12;
+    --line: #232a36;
+    --text: #e8edf4;
+    --text-dim: #9aa7b8;
+    --text-faint: #5c6a7e;
+    --cmd: #f5a524;          /* outbound commands — amber */
+    --cmd-dim: rgba(245, 165, 36, 0.14);
+    --data: #3ddc97;         /* inbound data — teal-green */
+    --data-dim: rgba(61, 220, 151, 0.12);
+    --accent: #7c6cf5;       /* hub purple */
+    --accent-dim: rgba(124, 108, 245, 0.14);
+    --type-title: 72px;
+    --type-subtitle: 40px;
+    --type-body: 32px;
+    --type-small: 26px;
+    --type-code: 25px;
+    --pad-top: 84px;
+    --pad-x: 96px;
+    --gap-item: 28px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { background: #000; }
+  body {
+    font-family: -apple-system, "SF Pro Text", "Helvetica Neue", sans-serif;
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+  }
+  code, .mono {
+    font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+  }
+  /* deck-stage stretches each slide <section> but not the wrapper inside it. */
+  section[data-label] > *:not(img):not(picture):not(video):not(svg):not(canvas) {
+    height: 100%;
+    box-sizing: border-box;
+  }
+  .slide {
+    background: var(--bg);
+    padding: var(--pad-top) var(--pad-x) 72px;
+    display: flex;
+    flex-direction: column;
+  }
+  .kicker {
+    font-size: var(--type-small);
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    font-weight: 600;
+  }
+  .title {
+    font-size: var(--type-title);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.08;
+    margin-top: 18px;
+  }
+  .subtitle {
+    font-size: var(--type-subtitle);
+    color: var(--text-dim);
+    line-height: 1.35;
+    margin-top: 26px;
+    max-width: 1500px;
+    text-wrap: pretty;
+  }
+  .cmd-word { color: var(--cmd); }
+  .data-word { color: var(--data); }
+  .hub-word { color: var(--accent); }
+  /* ---------- flow diagram ---------- */
+  .flow {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    margin-top: 8px;
+  }
+  .flow-grid {
+    display: grid;
+    grid-template-columns: 1fr 1.25fr 1fr 1fr 1fr;
+    gap: 22px;
+    width: 100%;
+    align-items: stretch;
+  }
+  .node {
+    background: var(--bg-panel);
+    border: 1.5px solid var(--line);
+    border-radius: 18px;
+    padding: 30px 26px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    position: relative;
+  }
+  .node .layer {
+    font-size: 24px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    font-weight: 600;
+  }
+  .node .name {
+    font-size: 34px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+  .node .verbs {
+    font-size: var(--type-code);
+    line-height: 1.5;
+    color: var(--text-dim);
+  }
+  .node.hub-node {
+    border-color: var(--accent);
+    background: linear-gradient(180deg, var(--accent-dim), var(--bg-panel) 70%);
+  }
+  .node.hub-node .name { color: var(--accent); }
+  .hub-chip-row { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip {
+    font-size: 22px;
+    padding: 6px 14px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    color: var(--text-dim);
+  }
+  /* arrow bands above/below the node row */
+  .band {
+    display: grid;
+    grid-template-columns: 1fr 1.25fr 1fr 1fr 1fr;
+    gap: 22px;
+    width: 100%;
+    padding: 0 40px;
+  }
+  .band .seg {
+    position: relative;
+    height: 74px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .seg .arrow-line {
+    position: absolute;
+    left: -30px; right: -30px;
+    top: 50%;
+    border-top: 3px solid;
+  }
+  .seg .arrow-head {
+    position: absolute;
+    top: 50%;
+    width: 0; height: 0;
+    border-top: 12px solid transparent;
+    border-bottom: 12px solid transparent;
+    transform: translateY(-50%);
+  }
+  .seg .arrow-label {
+    position: relative;
+    font-size: 24px;
+    padding: 4px 16px;
+    background: var(--bg);
+    z-index: 1;
+    color: var(--text-dim);
+  }
+  .seg .arrow-label code { font-size: 24px; }
+  .seg.cmd-seg .arrow-line { border-color: var(--cmd); }
+  .seg.cmd-seg .arrow-head { right: -38px; border-left: 18px solid var(--cmd); }
+  .seg.cmd-seg .arrow-label { color: var(--cmd); }
+  .seg.data-seg .arrow-line { border-color: var(--data); }
+  .seg.data-seg .arrow-head { left: -38px; border-right: 18px solid var(--data); }
+  .seg.data-seg .arrow-label { color: var(--data); }
+  .band-caption {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    padding: 0 6px;
+    margin-bottom: 6px;
+  }
+  .band-caption span {
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+  .fork {
+    display: flex;
+    gap: 18px;
+    margin-top: 6px;
+  }
+  .fork .branch {
+    flex: 1;
+    border: 1.5px dashed var(--data);
+    border-radius: 14px;
+    padding: 18px 20px;
+    font-size: 24px;
+    color: var(--text-dim);
+    line-height: 1.4;
+  }
+  .fork .branch code { color: var(--data); font-size: 24px; }
+  /* ---------- anatomy cards ---------- */
+  .cards {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 26px;
+    align-content: center;
+    margin-top: 12px;
+  }
+  .card {
+    background: var(--bg-panel);
+    border: 1.5px solid var(--line);
+    border-radius: 18px;
+    padding: 34px 30px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+  .card h3 {
+    font-size: 32px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+  .card h3 .mono { font-size: 30px; }
+  .card ul { list-style: none; display: flex; flex-direction: column; gap: 14px; }
+  .card li {
+    font-size: var(--type-small);
+    color: var(--text-dim);
+    line-height: 1.4;
+    padding-left: 26px;
+    position: relative;
+    text-wrap: pretty;
+  }
+  .card li::before {
+    content: "";
+    position: absolute;
+    left: 0; top: 12px;
+    width: 10px; height: 10px;
+    border-radius: 3px;
+    background: var(--text-faint);
+  }
+  .card.cmd-card { border-top: 4px solid var(--cmd); }
+  .card.cmd-card li::before { background: var(--cmd); }
+  .card.hub-card { border-top: 4px solid var(--accent); }
+  .card.hub-card li::before { background: var(--accent); }
+  .card.data-card { border-top: 4px solid var(--data); }
+  .card.data-card li::before { background: var(--data); }
+  /* ---------- verb map ---------- */
+  .verb-cols {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+    margin-top: 20px;
+    align-content: start;
+  }
+  .verb-col h3 {
+    font-size: 36px;
+    font-weight: 700;
+    padding-bottom: 16px;
+    border-bottom: 3px solid;
+    margin-bottom: 22px;
+  }
+  .verb-col.out h3 { color: var(--cmd); border-color: var(--cmd); }
+  .verb-col.in h3 { color: var(--data); border-color: var(--data); }
+  .code-block {
+    background: var(--bg-code);
+    border: 1.5px solid var(--line);
+    border-radius: 14px;
+    padding: 26px 28px;
+    font-size: var(--type-code);
+    line-height: 1.55;
+    white-space: pre;
+    overflow: hidden;
+    margin-bottom: 22px;
+  }
+  .code-block .c-comment { color: var(--text-faint); }
+  .code-block .c-cmd { color: var(--cmd); }
+  .code-block .c-data { color: var(--data); }
+  .code-block .c-hub { color: var(--accent); }
+  .code-block .c-str { color: #e5c07b; }
+  .verb-note {
+    font-size: var(--type-small);
+    color: var(--text-dim);
+    line-height: 1.45;
+    text-wrap: pretty;
+  }
+  .verb-note strong { color: var(--text); }
+  /* ---------- title slide ---------- */
+  .title-slide { justify-content: center; }
+  .brand {
+    font-size: 30px;
+    font-weight: 700;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    gap: 18px;
+  }
+  .brand::before {
+    content: "";
+    width: 20px; height: 20px;
+    border-radius: 6px;
+    background: var(--accent);
+  }
+  .hero-verbs {
+    display: flex;
+    gap: 60px;
+    margin-top: 64px;
+  }
+  .hero-verb {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .hero-verb .v {
+    font-size: 56px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+  .hero-verb .d {
+    font-size: var(--type-small);
+    color: var(--text-dim);
+  }
+  .foot {
+    margin-top: auto;
+    padding-top: 28px;
+    display: flex;
+    justify-content: space-between;
+    font-size: 24px;
+    color: var(--text-faint);
+  }
+</style>
+</head>
+<body>
+<deck-stage width="1920" height="1080">
+
+  <!-- ── Slide 1 · Title ─────────────────────────────────────────── -->
+  <section data-label="Title">
+    <div class="slide title-slide">
+      <span class="brand">appbox · ui_library</span>
+      <h1 class="title">AppBoxKitAction</h1>
+      <p class="subtitle">
+        <span class="cmd-word">Commands</span> flow out through the
+        <span class="hub-word">hub</span>.
+        <span class="data-word">Data</span> flows back through streams.
+        One vocabulary a new dev can trace end-to-end.
+      </p>
+      <div class="hero-verbs">
+        <div class="hero-verb">
+          <span class="v cmd-word">on · send</span>
+          <span class="d">register a command, trigger it</span>
+        </div>
+        <div class="hero-verb">
+          <span class="v data-word">watch · listen</span>
+          <span class="d">streams in, side effects out</span>
+        </div>
+        <div class="hero-verb">
+          <span class="v hub-word">hub</span>
+          <span class="d">the owner-scoped command executor</span>
+        </div>
+      </div>
+      <div class="foot">
+        <span>mechanism &amp; verb reference</span>
+        <span>kit / ui_library / kit_action</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Slide 2 · The Data-Flow Loop ────────────────────────────── -->
+  <section data-label="The Data-Flow Loop">
+    <div class="slide">
+      <span class="kicker">Architecture</span>
+      <h2 class="title" style="font-size:60px;">The Data-Flow Loop</h2>
+
+      <div class="band-caption" style="margin-top:36px;">
+        <span class="cmd-word">outbound — commands</span>
+        <span class="cmd-word" style="opacity:.55;">view → backend</span>
+      </div>
+      <div class="band">
+        <div class="seg cmd-seg">
+          <div class="arrow-line"></div><div class="arrow-head"></div>
+          <span class="arrow-label"><code>vm.save(note)</code></span>
+        </div>
+        <div class="seg cmd-seg">
+          <div class="arrow-line"></div><div class="arrow-head"></div>
+          <span class="arrow-label"><code>_save.send(note)</code></span>
+        </div>
+        <div class="seg cmd-seg">
+          <div class="arrow-line"></div><div class="arrow-head"></div>
+          <span class="arrow-label"><code>mutate(...)</code></span>
+        </div>
+        <div class="seg cmd-seg">
+          <div class="arrow-line"></div><div class="arrow-head"></div>
+          <span class="arrow-label"><code>patch · upsert</code></span>
+        </div>
+        <div class="seg cmd-seg"></div>
+      </div>
+
+      <div class="flow">
+        <div class="flow-grid">
+          <div class="node">
+            <span class="layer">Layer 1</span>
+            <span class="name">View</span>
+            <div class="verbs">calls VM methods<br>binds streams with<br><code>AppBoxKitStreamBuilder</code></div>
+          </div>
+          <div class="node hub-node">
+            <span class="layer">Layer 2 · ViewModel</span>
+            <span class="name">hub</span>
+            <div class="verbs"><code>abxActionHub.on('save', op)</code> registers<br><code>_save.send(note)</code> triggers<br><code>abxActionHub.send('pin', op)</code> one-shot</div>
+            <div class="hub-chip-row">
+              <span class="chip">guard</span><span class="chip">debounce</span>
+              <span class="chip">throttle</span><span class="chip">retry</span>
+              <span class="chip">timeout</span><span class="chip">state$</span>
+            </div>
+          </div>
+          <div class="node">
+            <span class="layer">Layer 3</span>
+            <span class="name">Facade</span>
+            <div class="verbs">composes repositories<br>writes via <code>mutate()</code><br>derives <code>note$ · notesIn$</code></div>
+          </div>
+          <div class="node">
+            <span class="layer">Layer 4</span>
+            <span class="name">Repository</span>
+            <div class="verbs"><code>patch · upsert · delete</code><br><code>getById · getAll</code><br><code>watchById · watchAll</code></div>
+          </div>
+          <div class="node">
+            <span class="layer">Layer 5</span>
+            <span class="name">Backend</span>
+            <div class="verbs">seed · Supabase · Appwrite<br>one swap seam,<br>three implementations</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="band">
+        <div class="seg data-seg"></div>
+        <div class="seg data-seg">
+          <div class="arrow-line"></div><div class="arrow-head"></div>
+          <span class="arrow-label"><code>listen(to:, onData:)</code></span>
+        </div>
+        <div class="seg data-seg">
+          <div class="arrow-line"></div><div class="arrow-head"></div>
+          <span class="arrow-label"><code>note$ · notesIn$</code></span>
+        </div>
+        <div class="seg data-seg">
+          <div class="arrow-line"></div><div class="arrow-head"></div>
+          <span class="arrow-label"><code>watchAll · watchById</code></span>
+        </div>
+        <div class="seg data-seg"></div>
+      </div>
+      <div class="band-caption">
+        <span class="data-word" style="opacity:.55;">backend → view</span>
+        <span class="data-word">inbound — reactions</span>
+      </div>
+
+      <div class="fork" style="margin-top:14px;">
+        <div class="branch"><strong>View fork</strong> — binds facade streams directly: <code>AppBoxKitStreamBuilder(stream: vm.note$)</code>. No VM plumbing.</div>
+        <div class="branch"><strong>ViewModel fork</strong> — taps streams for side effects only: <code>listen('note.sideEffects', to: [note$], onData: _onNote)</code>.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Slide 3 · Inside the Hub ────────────────────────────────── -->
+  <section data-label="Inside the Hub">
+    <div class="slide">
+      <span class="kicker">Mechanism</span>
+      <h2 class="title" style="font-size:60px;">Inside the Hub</h2>
+      <p class="subtitle" style="font-size:32px;">One <code class="hub-word">send()</code> lands on a hot command channel — execution, state, and routing are already subscribed.</p>
+
+      <div class="cards">
+        <div class="card cmd-card">
+          <h3>Command channel</h3>
+          <ul>
+            <li><code>PublishSubject(sync: true)</code> — the run starts inside the <code>send()</code> call, so a same-frame double-tap always meets the guard.</li>
+            <li><strong>Re-entry guard</strong> — a second <code>send</code> while in flight never re-runs; its handle completes with the in-flight result.</li>
+            <li><code>debounce</code> drops events, never callers — superseded handles complete with the eventual run.</li>
+            <li><code>throttle</code> is leading-edge, window anchored at run start.</li>
+          </ul>
+        </div>
+        <div class="card hub-card">
+          <h3>Execution</h3>
+          <ul>
+            <li>The op runs <strong>hot</strong> — awaiting the returned <code>Future</code> is optional; dropping it is harmless (errors pre-observed, never unhandled).</li>
+            <li><code>retry</code> re-runs the attempt factory with backoff; <code>timeout</code> applies per attempt.</li>
+            <li><code>flushOnDispose</code> — a pending debounced send executes on dispose: the last write always lands (autosave).</li>
+            <li>Disposed hub stops accepting sends; in-flight ops run to completion (cooperative-only).</li>
+          </ul>
+        </div>
+        <div class="card data-card">
+          <h3>Routing out</h3>
+          <ul>
+            <li><code>state$</code> — seeded <code>BehaviorSubject</code> of busy + last error; views bind it with <code>AppBoxKitStreamBuilder</code>.</li>
+            <li><code>errorMessage</code> — swallow + fallback value; unset, the handle rethrows.</li>
+            <li><code>loading · success · errorNotification</code> — routed to snackbar, dialog, or bottomSheet.</li>
+            <li><code>onError · onSuccess · onSend</code> — side-effect taps at each transition.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="foot">
+        <span>owner-scoped — created lazily by AppBoxKitActionOwner, dies with the ViewModel</span>
+        <span>async_redux dispatch / dispatchAndWait model</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Slide 4 · The Verb Map ──────────────────────────────────── -->
+  <section data-label="The Verb Map">
+    <div class="slide">
+      <span class="kicker">Reference</span>
+      <h2 class="title" style="font-size:60px;">The Verb Map</h2>
+
+      <div class="verb-cols">
+        <div class="verb-col out">
+          <h3>Commands out</h3>
+          <div class="code-block"><span class="c-comment">// register once, send many</span>
+<span class="c-keyword">late final</span> _save = <span class="c-hub">abxActionHub</span>.<span class="c-cmd">on</span>&lt;Note, void&gt;(
+  <span class="c-str">'save'</span>, (note) =&gt; _repo.put(note),
+  errorMessage: <span class="c-str">'Could not save'</span>,
+);
+
+<span class="c-keyword">Future&lt;void&gt;</span> save(Note note) =&gt; _save.<span class="c-cmd">send</span>(note);</div>
+          <div class="code-block"><span class="c-comment">// one-shot, no long-lived op</span>
+<span class="c-hub">abxActionHub</span>.<span class="c-cmd">send</span>(<span class="c-str">'pin'</span>, () =&gt; _repo.patchNote(o, p));
+
+<span class="c-comment">// facade writes — one policy door</span>
+<span class="c-cmd">mutate</span>(() =&gt; _repo.<span class="c-cmd">patch</span>(o, p),
+  name: <span class="c-str">'pin'</span>, entity: note.id,
+  error: <span class="c-str">'Could not update'</span>);</div>
+          <p class="verb-note"><strong>patch for existing rows, upsert for creates.</strong> patch writes only the columns that changed — a concurrent edit to any other column survives.</p>
+        </div>
+
+        <div class="verb-col in">
+          <h3>Reactions in</h3>
+          <div class="code-block"><span class="c-comment">// repository — the data sources</span>
+<span class="c-data">watchAll</span>(query) · <span class="c-data">watchById</span>(id)
+
+<span class="c-comment">// facade — derived, composed</span>
+Stream&lt;Note?&gt; <span class="c-data">note$</span>(String id)</div>
+          <div class="code-block"><span class="c-comment">// viewmodel — side effects only</span>
+<span class="c-data">listen</span>(
+  <span class="c-str">'note.sideEffects'</span>,
+  to: [_notes.note$(noteId)],
+  onData: (note) =&gt; _onNote(note),
+);
+
+<span class="c-comment">// view — binds streams directly</span>
+<span class="c-data">AppBoxKitStreamBuilder</span>(stream: vm.note$)</div>
+          <p class="verb-note"><strong>watch names a data source, listen names a side effect</strong> — Riverpod's codified split, applied to the whole layer stack. The view never listens; it binds.</p>
+        </div>
+      </div>
+
+      <div class="foot">
+        <span>state$ · actionState$(name) — busy + error as a seeded stream</span>
+        <span>dispose is automatic with the owner</span>
+      </div>
+    </div>
+  </section>
+
+</deck-stage>
+<script src="deck-stage.js"></script>
+</body>
+</html>
