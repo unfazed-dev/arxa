@@ -10,25 +10,25 @@ void main() {
       p.requestPayment(config: config, items: items);
 
   group('AppBoxKitSeedPaymentsProvider — contract', () {
-    test('id is "seed"', () {
+    test('kit.payments.seed — id is "seed"', () {
       expect(AppBoxKitSeedPaymentsProvider().id, 'seed');
     });
 
-    test('supports both wallets by default', () {
+    test('kit.payments.seed — supports both wallets by default', () {
       expect(
         AppBoxKitSeedPaymentsProvider().supportedMethods,
         {AppBoxKitPaymentMethod.applePay, AppBoxKitPaymentMethod.googlePay},
       );
     });
 
-    test('supportedMethods is constrained to the override', () {
+    test('kit.payments.seed — supportedMethods is constrained to the override', () {
       final provider = AppBoxKitSeedPaymentsProvider(
         supportedMethods: {AppBoxKitPaymentMethod.googlePay},
       );
       expect(provider.supportedMethods, {AppBoxKitPaymentMethod.googlePay});
     });
 
-    test('canPay is true for supported, false for unsupported', () async {
+    test('kit.payments.seed — canPay is true for supported, false for unsupported', () async {
       final provider = AppBoxKitSeedPaymentsProvider(
         supportedMethods: {AppBoxKitPaymentMethod.applePay},
       );
@@ -38,7 +38,7 @@ void main() {
   });
 
   group('AppBoxKitSeedPaymentsProvider — profiles', () {
-    test('succeed (default) returns AppBoxKitPaymentSuccess mirroring native shape',
+    test('kit.payments.seed — succeed (default) returns AppBoxKitPaymentSuccess mirroring native shape',
         () async {
       final provider = AppBoxKitSeedPaymentsProvider(profile: const AppBoxKitSeedSucceed());
       final result = await request(provider);
@@ -51,7 +51,7 @@ void main() {
       expect(success.raw['profile'], 'succeed');
     });
 
-    test('decline returns AppBoxKitPaymentDeclined with the given reason', () async {
+    test('kit.payments.seed — decline returns AppBoxKitPaymentDeclined with the given reason', () async {
       final provider = AppBoxKitSeedPaymentsProvider(
         profile: const AppBoxKitSeedDecline(reason: 'insufficient_funds'),
       );
@@ -61,20 +61,20 @@ void main() {
       expect((result as AppBoxKitPaymentDeclined).reason, 'insufficient_funds');
     });
 
-    test('decline defaults to a null reason', () async {
+    test('kit.payments.seed — decline defaults to a null reason', () async {
       final provider = AppBoxKitSeedPaymentsProvider(profile: const AppBoxKitSeedDecline());
       final result = await request(provider);
       expect(result, isA<AppBoxKitPaymentDeclined>());
       expect((result as AppBoxKitPaymentDeclined).reason, isNull);
     });
 
-    test('cancel returns AppBoxKitPaymentCancelled', () async {
+    test('kit.payments.seed — cancel returns AppBoxKitPaymentCancelled', () async {
       final provider = AppBoxKitSeedPaymentsProvider(profile: const AppBoxKitSeedCancel());
       final result = await request(provider);
       expect(result, isA<AppBoxKitPaymentCancelled>());
     });
 
-    test('timeout resolves to AppBoxKitPaymentError after the duration', () async {
+    test('kit.payments.seed — timeout resolves to AppBoxKitPaymentError after the duration', () async {
       final provider = AppBoxKitSeedPaymentsProvider(
         profile: const AppBoxKitSeedTimeout(Duration(milliseconds: 5)),
       );
@@ -89,7 +89,7 @@ void main() {
   });
 
   group('AppBoxKitSeedPaymentsProvider — runtime mutation', () {
-    test('flipping the profile changes the next result', () async {
+    test('kit.payments.seed — flipping the profile changes the next result', () async {
       final provider = AppBoxKitSeedPaymentsProvider(profile: const AppBoxKitSeedSucceed());
 
       expect(await request(provider), isA<AppBoxKitPaymentSuccess>());
@@ -108,7 +108,7 @@ void main() {
       expect(await request(provider), isA<AppBoxKitPaymentSuccess>());
     });
 
-    test('two providers hold independent profiles', () async {
+    test('kit.payments.seed — two providers hold independent profiles', () async {
       final a = AppBoxKitSeedPaymentsProvider(profile: const AppBoxKitSeedSucceed());
       final b = AppBoxKitSeedPaymentsProvider(profile: const AppBoxKitSeedCancel());
 
@@ -123,7 +123,7 @@ void main() {
   });
 
   group('AppBoxKitSeedPaymentsProvider — registry integration', () {
-    test('plugs into DefaultAppBoxKitPaymentsService like a real provider', () async {
+    test('kit.payments.seed — plugs into DefaultAppBoxKitPaymentsService like a real provider', () async {
       final service = DefaultAppBoxKitPaymentsService(
         AppBoxKitPaymentsProviderRegistry([
           AppBoxKitSeedPaymentsProvider(profile: const AppBoxKitSeedSucceed()),
@@ -136,7 +136,7 @@ void main() {
       );
     });
 
-    test('canPay flows through the service', () async {
+    test('kit.payments.seed — canPay flows through the service', () async {
       final service = DefaultAppBoxKitPaymentsService(
         AppBoxKitPaymentsProviderRegistry([AppBoxKitSeedPaymentsProvider()]),
       );
