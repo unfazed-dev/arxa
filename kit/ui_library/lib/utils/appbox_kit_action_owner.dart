@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:rxdart/rxdart.dart' show ValueStream;
 
 import 'kit_action/appbox_kit_action.dart';
-import 'kit_action/appbox_kit_action_pipeline.dart';
+import 'kit_action/appbox_kit_action_bus.dart';
 
 /// Mixin that makes any object a AppBoxKitAction owner — viewmodels (via
 /// [AppBoxKitViewModel]), facades, adapters, and services get the same ergonomic
@@ -11,8 +11,8 @@ import 'kit_action/appbox_kit_action_pipeline.dart';
 ///
 /// ```dart
 /// class NotesFacade with AppBoxKitActionOwner {
-///   Future<void> save(Note note) => pipeline
-///       .pipe<Note, void>('save', (n) => _repo.put(n))
+///   Future<void> save(Note note) => bus
+///       .define<Note, void>('save', (n) => _repo.put(n))
 ///       .dispatch(note);
 /// }
 /// ```
@@ -20,25 +20,25 @@ import 'kit_action/appbox_kit_action_pipeline.dart';
 /// Owners registered in get_it must call [disposeAppBoxKitActions] from their own
 /// dispose; [AppBoxKitViewModel.dispose] already does.
 mixin AppBoxKitActionOwner {
-  AppBoxKitActionPipeline? _pipeline;
+  AppBoxKitActionBus? _bus;
 
-  /// The owner's hot-dispatch pipeline — the app-level KitAction API.
-  /// Lazily created on first use (override [createPipeline] to set
-  /// pipeline-level defaults) and disposed by [disposeAppBoxKitActions],
+  /// The owner's hot-dispatch bus — the app-level KitAction API.
+  /// Lazily created on first use (override [createBus] to set
+  /// bus-level defaults) and disposed by [disposeAppBoxKitActions],
   /// which `AppBoxKitViewModel.dispose` calls — no manual wiring.
-  AppBoxKitActionPipeline get pipeline => _pipeline ??= createPipeline();
+  AppBoxKitActionBus get bus => _bus ??= createBus();
 
-  /// Factory for [pipeline] — override to configure pipeline-level defaults
-  /// (`errorMessage`, `onDispatch`, `onError`) shared by every pipe.
-  AppBoxKitActionPipeline createPipeline() =>
-      AppBoxKitActionPipeline(owner: this);
+  /// Factory for [bus] — override to configure bus-level defaults
+  /// (`errorMessage`, `onDispatch`, `onError`) shared by every dispatcher.
+  AppBoxKitActionBus createBus() =>
+      AppBoxKitActionBus(owner: this);
 
   /// Run an operation owned by this object. The [name] label combines with
   /// the owner's identity into the registry key (`RuntimeType#hash.name`), so
   /// state subjects, in-flight guards, and subscriptions are scoped to this
   /// instance and die with [disposeAppBoxKitActions].
   ///
-  /// Low-level API — prefer [pipeline] pipes in app code; `action` remains
+  /// Low-level API — prefer [bus] dispatchers in app code; `action` remains
   /// for the builder-only forms (`toStream`, `toCancellable`, …).
   AppBoxKitActionBuilder<T> action<T>(
     String name,
@@ -65,15 +65,15 @@ mixin AppBoxKitActionOwner {
       );
 
   /// Live busy/error state of one of this owner's ops, addressed by the same
-  /// [name] the pipe/`action` chain used — views bind it with `AppBoxKitStreamBuilder`.
+  /// [name] the dispatcher/`action` chain used — views bind it with `AppBoxKitStreamBuilder`.
   ValueStream<AppBoxKitActionState> actionState$(String name) =>
       AppBoxKitAction.state$(owner: this, name: name);
 
-  /// Dispose EVERYTHING this owner created — the pipeline (pipe
+  /// Dispose EVERYTHING this owner created — the bus (dispatcher
   /// subscriptions, subjects, state subjects), every builder op's
   /// subscriptions, and tracked streams.
   void disposeAppBoxKitActions() {
-    _pipeline?.dispose();
+    _bus?.dispose();
     AppBoxKitAction.disposeOwner(this);
   }
 }

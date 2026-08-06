@@ -24,9 +24,9 @@ export 'appbox_kit_action_builder.dart' show AppBoxKitActionBuilder;
 /// Main entry point for AppBoxKitAction - a fluent API for executing operations
 ///
 /// **Low-level API.** App code (viewmodels, facades) should prefer
-/// [AppBoxKitActionPipeline] pipes via `AppBoxKitActionOwner.pipeline` — hot
+/// [AppBoxKitActionBus] dispatchers via `AppBoxKitActionOwner.bus` — hot
 /// dispatch with observation handles. This builder remains for the advanced
-/// forms pipes don't cover: `toStream`, `toCancellable`, per-call
+/// forms dispatchers don't cover: `toStream`, `toCancellable`, per-call
 /// throttle/debounce timers, and parallel execution.
 ///
 /// AppBoxKitAction provides automatic error handling, loading state management,
@@ -102,7 +102,7 @@ class AppBoxKitAction {
   /// object, so the pair always resolves to the same key. The string is a
   /// diagnostic label and registry key, never hand-written at call sites.
   ///
-  /// Public so [AppBoxKitActionPipeline] derives byte-identical keys — pipe
+  /// Public so [AppBoxKitActionBus] derives byte-identical keys — dispatcher
   /// and builder ops with the same owner+name share one state subject.
   static String deriveKey(Object owner, String? name) {
     final base = '${owner.runtimeType}#${identityHashCode(owner)}';

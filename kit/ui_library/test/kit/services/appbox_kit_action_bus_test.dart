@@ -10,9 +10,9 @@ import 'package:appbox_kit_core/services/error/appbox_kit_error_service.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_testing.dart';
 import 'package:appbox_kit_ui_library/utils/kit_action/appbox_kit_action.dart';
 import 'package:appbox_kit_ui_library/utils/kit_action/appbox_kit_notification_type.dart';
-import 'package:appbox_kit_ui_library/utils/kit_action/appbox_kit_action_pipeline.dart';
+import 'package:appbox_kit_ui_library/utils/kit_action/appbox_kit_action_bus.dart';
 
-/// Behavior tests for the AppBoxKitActionPipeline — the app-level KitAction API
+/// Behavior tests for the AppBoxKitActionBus — the app-level KitAction API
 /// (hot dispatch + observation handles).
 ///
 /// The observation-handle contract under test:
@@ -85,19 +85,19 @@ void main() {
 
   tearDown(() => appBoxKitLocator.reset());
 
-  AppBoxKitActionPipeline pipeline() =>
-      AppBoxKitActionPipeline(owner: Object());
+  AppBoxKitActionBus bus() =>
+      AppBoxKitActionBus(owner: Object());
 
-  group('kit.ui-library.action-pipeline — dispatch handles', () {
+  group('kit.ui-library.action-bus — dispatch handles', () {
     test('dispatch executes hot and the handle completes with the result', () async {
-      final p = pipeline();
+      final p = bus();
       var ran = 0;
-      final pipe = p.pipe<String, String>('op', (payload) async {
+      final dispatcher = p.define<String, String>('op', (payload) async {
         ran++;
         return 'ran:$payload';
       });
 
-      final handle = pipe.dispatch('x');
+      final handle = dispatcher.dispatch('x');
       // Hot: the run started on dispatch — no await of the handle needed.
       await pumpEventQueue();
       expect(ran, 1);
@@ -106,36 +106,36 @@ void main() {
     });
 
     test('a dropped handle never surfaces an unhandled error', () async {
-      final p = pipeline();
-      final pipe = p.pipe<Null, String>('op', (_) async => throw 'boom');
-      pipe.dispatch(null); // handle dropped, no fallback configured
+      final p = bus();
+      final dispatcher = p.define<Null, String>('op', (_) async => throw 'boom');
+      dispatcher.dispatch(null); // handle dropped, no fallback configured
       // If the handle's error were unhandled the test zone would fail here.
       await pumpEventQueue();
       p.dispose();
     });
 
     test('sequential dispatches both execute', () async {
-      final p = pipeline();
+      final p = bus();
       var runs = 0;
-      final pipe = p.pipe<Null, String>('op', (_) async => 'run ${++runs}');
-      expect(await pipe.dispatch(null), 'run 1');
-      expect(await pipe.dispatch(null), 'run 2');
+      final dispatcher = p.define<Null, String>('op', (_) async => 'run ${++runs}');
+      expect(await dispatcher.dispatch(null), 'run 1');
+      expect(await dispatcher.dispatch(null), 'run 2');
       p.dispose();
     });
   });
 
-  group('kit.ui-library.action-pipeline — re-entry guard', () {
+  group('kit.ui-library.action-bus — re-entry guard', () {
     test('a guarded dispatch handle completes with the in-flight result', () async {
-      final p = pipeline();
+      final p = bus();
       final gate = Completer<String>();
       var runs = 0;
-      final pipe = p.pipe<String, String>('op', (payload) async {
+      final dispatcher = p.define<String, String>('op', (payload) async {
         runs++;
         return gate.future;
       });
 
-      final first = pipe.dispatch('a');
-      final second = pipe.dispatch('b'); // same frame, run in flight
+      final first = dispatcher.dispatch('a');
+      final second = dispatcher.dispatch('b'); // same frame, run in flight
       gate.complete('shared');
 
       expect(await first, 'shared');
@@ -149,28 +149,28 @@ void main() {
       // Regression: async command delivery let a fast op complete before the
       // second command was processed, defeating the double-tap guard. The
       // sync command channel starts the run inside dispatch.
-      final p = pipeline();
+      final p = bus();
       var runs = 0;
-      final pipe = p.pipe<Null, String>('op', (_) async {
+      final dispatcher = p.define<Null, String>('op', (_) async {
         runs++;
         return 'fast';
       });
 
-      final first = pipe.dispatch(null);
-      final second = pipe.dispatch(null);
+      final first = dispatcher.dispatch(null);
+      final second = dispatcher.dispatch(null);
       expect(await first, 'fast');
       expect(await second, 'fast');
       expect(runs, 1);
       p.dispose();
     });
 
-    test('the guard is keyed across pipes and one-shot runs of the same owner', () async {
-      final p = pipeline();
+    test('the guard is keyed across dispatchers and one-shot runs of the same owner', () async {
+      final p = bus();
       final gate = Completer<void>();
       var runs = 0;
-      final pipe = p.pipe<Null, void>('op', (_) => gate.future);
+      final dispatcher = p.define<Null, void>('op', (_) => gate.future);
 
-      final viaPipe = pipe.dispatch(null);
+      final viaPipe = dispatcher.dispatch(null);
       final viaRun = p.run<void>('op', () async {
         runs++;
       });
@@ -178,16 +178,16 @@ void main() {
       await viaPipe;
       await viaRun;
       expect(runs, 0,
-          reason: 'the one-shot run observed the pipe run already in flight');
+          reason: 'the one-shot run observed the dispatcher run already in flight');
       p.dispose();
     });
   });
 
-  group('kit.ui-library.action-pipeline — debounce', () {
+  group('kit.ui-library.action-bus — debounce', () {
     test('superseded handles complete with the eventual run (last payload)', () async {
-      final p = pipeline();
+      final p = bus();
       final seen = <String>[];
-      final pipe = p.pipe<String, String>(
+      final dispatcher = p.define<String, String>(
         'op',
         (payload) async {
           seen.add(payload);
@@ -196,9 +196,9 @@ void main() {
         debounce: const Duration(milliseconds: 50),
       );
 
-      final h1 = pipe.dispatch('one');
-      final h2 = pipe.dispatch('two');
-      final h3 = pipe.dispatch('three');
+      final h1 = dispatcher.dispatch('one');
+      final h2 = dispatcher.dispatch('two');
+      final h3 = dispatcher.dispatch('three');
 
       expect(await h1, 'done:three');
       expect(await h2, 'done:three');
@@ -209,11 +209,11 @@ void main() {
     });
   });
 
-  group('kit.ui-library.action-pipeline — retry and timeout', () {
+  group('kit.ui-library.action-bus — retry and timeout', () {
     test('retry re-runs the operation until success within maxAttempts', () async {
-      final p = pipeline();
+      final p = bus();
       var attempts = 0;
-      final pipe = p.pipe<Null, String>(
+      final dispatcher = p.define<Null, String>(
         'op',
         (_) async {
           attempts++;
@@ -223,16 +223,16 @@ void main() {
         retry: (maxAttempts: 3, delay: null, shouldRetry: null),
       );
 
-      expect(await pipe.dispatch(null), 'ok');
+      expect(await dispatcher.dispatch(null), 'ok');
       expect(attempts, 3);
       p.dispose();
     });
 
     test('retry exhaustion routes the last failure into the error path', () async {
-      final p = pipeline();
+      final p = bus();
       var attempts = 0;
       final errors = <Object>[];
-      final pipe = p.pipe<Null, String>(
+      final dispatcher = p.define<Null, String>(
         'op',
         (_) async {
           attempts++;
@@ -242,16 +242,16 @@ void main() {
         onError: errors.add,
       );
 
-      await expectLater(pipe.dispatch(null), throwsException);
+      await expectLater(dispatcher.dispatch(null), throwsException);
       expect(attempts, 2);
       expect(errors, hasLength(1), reason: 'onError taps once, on the final failure');
       p.dispose();
     });
 
     test('shouldRetry veto stops retrying immediately', () async {
-      final p = pipeline();
+      final p = bus();
       var attempts = 0;
-      final pipe = p.pipe<Null, String>(
+      final dispatcher = p.define<Null, String>(
         'op',
         (_) async {
           attempts++;
@@ -268,16 +268,16 @@ void main() {
         withValue: 'swallowed',
       );
 
-      expect(await pipe.dispatch(null), 'swallowed',
+      expect(await dispatcher.dispatch(null), 'swallowed',
           reason: 'errorMessage swallows with the fallback value');
       expect(attempts, 1);
       p.dispose();
     });
 
     test('timeout raises TimeoutException into the error path', () async {
-      final p = pipeline();
+      final p = bus();
       final errors = <Object>[];
-      final pipe = p.pipe<Null, String>(
+      final dispatcher = p.define<Null, String>(
         'op',
         (_) async {
           await Future<void>.delayed(const Duration(seconds: 5));
@@ -287,44 +287,44 @@ void main() {
         onError: errors.add,
       );
 
-      await expectLater(pipe.dispatch(null), throwsA(isA<TimeoutException>()));
+      await expectLater(dispatcher.dispatch(null), throwsA(isA<TimeoutException>()));
       expect(errors.single, isA<TimeoutException>());
       p.dispose();
     });
   });
 
-  group('kit.ui-library.action-pipeline — error routing and notifications', () {
+  group('kit.ui-library.action-bus — error routing and notifications', () {
     test('errorMessage swallows with the fallback value', () async {
-      final p = pipeline();
-      final pipe = p.pipe<Null, String>(
+      final p = bus();
+      final dispatcher = p.define<Null, String>(
         'op',
         (_) async => throw Exception('boom'),
         errorMessage: 'Op failed',
         withValue: 'fallback',
       );
-      expect(await pipe.dispatch(null), 'fallback');
+      expect(await dispatcher.dispatch(null), 'fallback');
       p.dispose();
     });
 
     test('without errorMessage the handle completes with the original error', () async {
-      final p = pipeline();
-      final pipe = p.pipe<Null, String>(
+      final p = bus();
+      final dispatcher = p.define<Null, String>(
         'op',
         (_) async => throw StateError('boom'),
       );
-      await expectLater(pipe.dispatch(null), throwsA(isA<StateError>()));
+      await expectLater(dispatcher.dispatch(null), throwsA(isA<StateError>()));
       p.dispose();
     });
 
     test('error notification defaults to the snackbar kind', () async {
-      final p = pipeline();
-      final pipe = p.pipe<Null, void>(
+      final p = bus();
+      final dispatcher = p.define<Null, void>(
         'op',
         (_) async => throw Exception('boom'),
         errorNotification: 'Could not save',
         errorMessage: 'Save failed',
       );
-      await pipe.dispatch(null);
+      await dispatcher.dispatch(null);
       expect(notifications.calls, hasLength(1));
       expect(notifications.calls.single.message, 'Could not save');
       expect(notifications.calls.single.kind, AppBoxKitNotificationKind.error);
@@ -332,15 +332,15 @@ void main() {
     });
 
     test('error notification routes to dialog and bottomSheet kinds', () async {
-      final p = pipeline();
-      final dialogPipe = p.pipe<Null, void>(
+      final p = bus();
+      final dialogPipe = p.define<Null, void>(
         'dialogOp',
         (_) async => throw Exception('boom'),
         errorNotification: 'Dialog says no',
         errorNotificationType: AppBoxKitNotificationType.dialog,
         errorMessage: 'failed',
       );
-      final sheetPipe = p.pipe<Null, void>(
+      final sheetPipe = p.define<Null, void>(
         'sheetOp',
         (_) async => throw Exception('boom'),
         errorNotification: 'Sheet says no',
@@ -360,30 +360,30 @@ void main() {
     });
 
     test('success notification fires on completion only', () async {
-      final p = pipeline();
-      final pipe = p.pipe<Null, String>(
+      final p = bus();
+      final dispatcher = p.define<Null, String>(
         'op',
         (_) async => 'ok',
         successNotification: 'Saved',
       );
-      await pipe.dispatch(null);
+      await dispatcher.dispatch(null);
       expect(notifications.calls.single.message, 'Saved');
       expect(notifications.calls.single.kind, AppBoxKitNotificationKind.success);
       p.dispose();
     });
 
     test('state\$ carries busy transitions and the error identity', () async {
-      final p = pipeline();
-      final pipe = p.pipe<Null, void>(
+      final p = bus();
+      final dispatcher = p.define<Null, void>(
         'op',
         (_) async => throw Exception('boom'),
         errorNotification: 'Snackbar message',
       );
       final states = <String>[];
-      final sub = pipe.state$.listen(
+      final sub = dispatcher.state$.listen(
           (state) => states.add('${state.busy}:${state.errorMessage}'));
 
-      await expectLater(pipe.dispatch(null), throwsException);
+      await expectLater(dispatcher.dispatch(null), throwsException);
       await pumpEventQueue();
 
       expect(states, [
@@ -397,18 +397,18 @@ void main() {
     });
   });
 
-  group('kit.ui-library.action-pipeline — key sharing and dispose', () {
-    test('pipe state shares the AppBoxKitAction registry key (deriveKey)', () async {
+  group('kit.ui-library.action-bus — key sharing and dispose', () {
+    test('dispatcher state shares the AppBoxKitAction registry key (deriveKey)', () async {
       final owner = Object();
-      final p = AppBoxKitActionPipeline(owner: owner);
+      final p = AppBoxKitActionBus(owner: owner);
       // Bound via the builder-side entry point — one subject, one key.
       final builderSide = AppBoxKitAction.state$(owner: owner, name: 'op');
       final gate = Completer<void>();
-      final pipe = p.pipe<Null, void>('op', (_) => gate.future);
+      final dispatcher = p.define<Null, void>('op', (_) => gate.future);
 
-      pipe.dispatch(null);
+      dispatcher.dispatch(null);
       expect(builderSide.value.busy, isTrue,
-          reason: 'the pipe writes the same derived key actionState\$ reads');
+          reason: 'the dispatcher writes the same derived key actionState\$ reads');
       gate.complete();
       await pumpEventQueue();
       expect(builderSide.value.busy, isFalse);
@@ -416,42 +416,42 @@ void main() {
     });
 
     test('dispatch after dispose drops silently and the handle reports it', () async {
-      final p = pipeline();
+      final p = bus();
       var runs = 0;
-      final pipe = p.pipe<Null, void>('op', (_) async => runs++);
+      final dispatcher = p.define<Null, void>('op', (_) async => runs++);
       p.dispose();
 
-      final handle = pipe.dispatch(null);
+      final handle = dispatcher.dispatch(null);
       await expectLater(handle, throwsA(isA<StateError>()));
       await pumpEventQueue();
       expect(runs, 0);
     });
 
     test('dispose completes pending debounced handles and cancels the timer', () async {
-      final p = pipeline();
+      final p = bus();
       var runs = 0;
-      final pipe = p.pipe<Null, void>(
+      final dispatcher = p.define<Null, void>(
         'op',
         (_) async => runs++,
         debounce: const Duration(seconds: 5),
       );
-      final handle = pipe.dispatch(null);
+      final handle = dispatcher.dispatch(null);
       p.dispose();
 
       await expectLater(handle, throwsA(isA<StateError>()));
       await pumpEventQueue();
-      expect(runs, 0, reason: 'the pending timer died with the pipeline');
+      expect(runs, 0, reason: 'the pending timer died with the bus');
     });
 
     test('an in-flight op runs to completion after dispose (cooperative-only)', () async {
-      final p = pipeline();
+      final p = bus();
       final gate = Completer<void>();
       var finished = false;
-      final pipe = p.pipe<Null, void>('op', (_) async {
+      final dispatcher = p.define<Null, void>('op', (_) async {
         await gate.future;
         finished = true;
       });
-      final handle = pipe.dispatch(null);
+      final handle = dispatcher.dispatch(null);
       p.dispose();
 
       gate.complete();
@@ -461,9 +461,9 @@ void main() {
     });
 
     test('flushOnDispose executes a pending debounced dispatch immediately', () async {
-      final p = pipeline();
+      final p = bus();
       final seen = <String>[];
-      final pipe = p.pipe<String, String>(
+      final dispatcher = p.define<String, String>(
         'op',
         (payload) async {
           seen.add(payload);
@@ -472,7 +472,7 @@ void main() {
         debounce: const Duration(seconds: 5),
         flushOnDispose: true,
       );
-      final handle = pipe.dispatch('final draft');
+      final handle = dispatcher.dispatch('final draft');
 
       await p.dispose(); // awaits the flush
 
@@ -482,10 +482,10 @@ void main() {
     });
 
     test('flushOnDispose attaches to an in-flight run (guard semantics)', () async {
-      final p = pipeline();
+      final p = bus();
       final gate = Completer<String>();
       final debouncedRuns = <String>[];
-      final pipe = p.pipe<String, String>(
+      final dispatcher = p.define<String, String>(
         'op',
         (payload) async {
           debouncedRuns.add(payload);
@@ -496,7 +496,7 @@ void main() {
       );
       // A non-debounced run on the same key is in flight when dispose hits.
       final inFlight = p.run<String>('op', () => gate.future);
-      final pending = pipe.dispatch('dropped payload');
+      final pending = dispatcher.dispatch('dropped payload');
 
       final disposeDone = p.dispose();
       gate.complete('in-flight result');
@@ -509,11 +509,11 @@ void main() {
     });
   });
 
-  group('kit.ui-library.action-pipeline — throttle and parallel execution', () {
+  group('kit.ui-library.action-bus — throttle and parallel execution', () {
     test('throttle is leading-edge: dispatches inside the window share the run', () async {
-      final p = pipeline();
+      final p = bus();
       var runs = 0;
-      final pipe = p.pipe<String, String>(
+      final dispatcher = p.define<String, String>(
         'op',
         (payload) async {
           runs++;
@@ -522,8 +522,8 @@ void main() {
         throttle: const Duration(milliseconds: 150),
       );
 
-      final first = pipe.dispatch('one');
-      final second = pipe.dispatch('two'); // inside the window
+      final first = dispatcher.dispatch('one');
+      final second = dispatcher.dispatch('two'); // inside the window
       expect(await first, 'ran:one');
       expect(await second, 'ran:one',
           reason: 'throttled-away handle observes the previous run');
@@ -531,16 +531,16 @@ void main() {
 
       // After the window the next dispatch runs again.
       await Future<void>.delayed(const Duration(milliseconds: 200));
-      expect(await pipe.dispatch('three'), 'ran:three');
+      expect(await dispatcher.dispatch('three'), 'ran:three');
       expect(runs, 2);
       p.dispose();
     });
 
     test('throttle window anchors at the run start (builder parity)', () async {
-      final p = pipeline();
+      final p = bus();
       final gate = Completer<String>();
       var runs = 0;
-      final pipe = p.pipe<Null, String>(
+      final dispatcher = p.define<Null, String>(
         'op',
         (_) async {
           runs++;
@@ -549,8 +549,8 @@ void main() {
         throttle: const Duration(seconds: 30),
       );
 
-      final first = pipe.dispatch(null);
-      final second = pipe.dispatch(null); // in flight, inside the window
+      final first = dispatcher.dispatch(null);
+      final second = dispatcher.dispatch(null); // in flight, inside the window
       gate.complete('shared');
       expect(await first, 'shared');
       expect(await second, 'shared',
@@ -560,10 +560,10 @@ void main() {
     });
 
     test('parallelExecution opts out of the guard — every dispatch runs', () async {
-      final p = pipeline();
+      final p = bus();
       final gate = Completer<void>();
       var runs = 0;
-      final pipe = p.pipe<String, String>(
+      final dispatcher = p.define<String, String>(
         'op',
         (payload) async {
           runs++;
@@ -573,8 +573,8 @@ void main() {
         parallelExecution: true,
       );
 
-      final first = pipe.dispatch('a');
-      final second = pipe.dispatch('b');
+      final first = dispatcher.dispatch('a');
+      final second = dispatcher.dispatch('b');
       await pumpEventQueue();
       expect(runs, 2, reason: 'flatMap — no in-flight sharing');
       gate.complete();
@@ -585,17 +585,17 @@ void main() {
     });
   });
 
-  group('kit.ui-library.action-pipeline — success and loading taps', () {
+  group('kit.ui-library.action-bus — success and loading taps', () {
     test('onSuccess runs after the op and before the handle completes', () async {
-      final p = pipeline();
+      final p = bus();
       final order = <String>[];
-      final pipe = p.pipe<Null, String>(
+      final dispatcher = p.define<Null, String>(
         'op',
         (_) async => 'result',
         onSuccess: (result) => order.add('tap:$result'),
       );
 
-      final handle = pipe.dispatch(null).then((result) {
+      final handle = dispatcher.dispatch(null).then((result) {
         order.add('handle:$result');
         return result;
       });
@@ -606,25 +606,25 @@ void main() {
     });
 
     test('an onSuccess tap error logs a warning and never fails the run', () async {
-      final p = pipeline();
-      final pipe = p.pipe<Null, String>(
+      final p = bus();
+      final dispatcher = p.define<Null, String>(
         'op',
         (_) async => 'result',
         onSuccess: (_) => throw Exception('tap exploded'),
       );
-      expect(await pipe.dispatch(null), 'result');
+      expect(await dispatcher.dispatch(null), 'result');
       p.dispose();
     });
 
     test('loading notification fires at run start', () async {
-      final p = pipeline();
+      final p = bus();
       final gate = Completer<String>();
-      final pipe = p.pipe<Null, String>(
+      final dispatcher = p.define<Null, String>(
         'op',
         (_) => gate.future,
         loadingNotification: 'Working…',
       );
-      pipe.dispatch(null);
+      dispatcher.dispatch(null);
       expect(notifications.calls.single.message, 'Working…');
       expect(notifications.calls.single.kind, AppBoxKitNotificationKind.info,
           reason: 'shown while the op is still in flight');
