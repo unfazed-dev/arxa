@@ -1,33 +1,33 @@
 import 'package:permission_handler/permission_handler.dart' as ph;
 
-import 'kit_permission.dart';
-import 'kit_permission_status.dart';
-import 'kit_permissions_service.dart';
+import 'appbox_kit_permission.dart';
+import 'appbox_kit_permission_status.dart';
+import 'appbox_kit_permissions_service.dart';
 
-/// Production [KitPermissionsService] backed by `permission_handler`.
+/// Production [AppBoxKitPermissionsService] backed by `permission_handler`.
 ///
-/// Thin adapter: it maps the neutral [KitPermission] enum to a concrete
+/// Thin adapter: it maps the neutral [AppBoxKitPermission] enum to a concrete
 /// `permission_handler` [ph.Permission] and projects the plugin's
-/// [ph.PermissionStatus] onto the four-state [KitPermissionStatus]. It holds
+/// [ph.PermissionStatus] onto the four-state [AppBoxKitPermissionStatus]. It holds
 /// no state of its own — every call is a live OS query.
-class PermissionHandlerKitPermissionsService implements KitPermissionsService {
-  const PermissionHandlerKitPermissionsService();
+class PermissionHandlerAppBoxKitPermissionsService implements AppBoxKitPermissionsService {
+  const PermissionHandlerAppBoxKitPermissionsService();
 
   @override
-  Future<KitPermissionStatus> status(KitPermission permission) async {
+  Future<AppBoxKitPermissionStatus> status(AppBoxKitPermission permission) async {
     final status = await _permissionFor(permission).status;
     return _map(status);
   }
 
   @override
-  Future<KitPermissionStatus> request(KitPermission permission) async {
+  Future<AppBoxKitPermissionStatus> request(AppBoxKitPermission permission) async {
     final status = await _permissionFor(permission).request();
     return _map(status);
   }
 
   @override
-  Future<Map<KitPermission, KitPermissionStatus>> requestEach(
-    List<KitPermission> permissions,
+  Future<Map<AppBoxKitPermission, AppBoxKitPermissionStatus>> requestEach(
+    List<AppBoxKitPermission> permissions,
   ) async {
     final results = await permissions
         .map(_permissionFor)
@@ -40,7 +40,7 @@ class PermissionHandlerKitPermissionsService implements KitPermissionsService {
   }
 
   @override
-  Future<bool> shouldShowRationale(KitPermission permission) {
+  Future<bool> shouldShowRationale(AppBoxKitPermission permission) {
     // iOS has no rationale concept; the plugin returns false there.
     return _permissionFor(permission).shouldShowRequestRationale;
   }
@@ -49,19 +49,19 @@ class PermissionHandlerKitPermissionsService implements KitPermissionsService {
   Future<bool> openAppSettings() => ph.openAppSettings();
 
   /// Maps the neutral kit enum to the plugin permission.
-  ph.Permission _permissionFor(KitPermission permission) {
+  ph.Permission _permissionFor(AppBoxKitPermission permission) {
     switch (permission) {
-      case KitPermission.camera:
+      case AppBoxKitPermission.camera:
         return ph.Permission.camera;
-      case KitPermission.microphone:
+      case AppBoxKitPermission.microphone:
         return ph.Permission.microphone;
-      case KitPermission.photos:
+      case AppBoxKitPermission.photos:
         return ph.Permission.photos;
-      case KitPermission.bluetooth:
+      case AppBoxKitPermission.bluetooth:
         return ph.Permission.bluetooth;
-      case KitPermission.location:
+      case AppBoxKitPermission.location:
         return ph.Permission.location;
-      case KitPermission.notifications:
+      case AppBoxKitPermission.notifications:
         return ph.Permission.notification;
     }
   }
@@ -70,19 +70,19 @@ class PermissionHandlerKitPermissionsService implements KitPermissionsService {
   ///
   /// `limited` (partial iOS photo access) and `provisional` (quiet iOS
   /// notifications) both mean the feature has usable access, so they map to
-  /// [KitPermissionStatus.granted].
-  KitPermissionStatus _map(ph.PermissionStatus status) {
+  /// [AppBoxKitPermissionStatus.granted].
+  AppBoxKitPermissionStatus _map(ph.PermissionStatus status) {
     switch (status) {
       case ph.PermissionStatus.granted:
       case ph.PermissionStatus.limited:
       case ph.PermissionStatus.provisional:
-        return KitPermissionStatus.granted;
+        return AppBoxKitPermissionStatus.granted;
       case ph.PermissionStatus.denied:
-        return KitPermissionStatus.denied;
+        return AppBoxKitPermissionStatus.denied;
       case ph.PermissionStatus.permanentlyDenied:
-        return KitPermissionStatus.permanentlyDenied;
+        return AppBoxKitPermissionStatus.permanentlyDenied;
       case ph.PermissionStatus.restricted:
-        return KitPermissionStatus.restricted;
+        return AppBoxKitPermissionStatus.restricted;
     }
   }
 }

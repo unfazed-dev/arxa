@@ -3,7 +3,7 @@
 /// Deliberately small and platform-neutral: each value maps to one concrete
 /// backing permission on iOS and Android. Consumers switch on this enum in
 /// UI without importing `permission_handler` (or any plugin) directly.
-enum KitPermission {
+enum AppBoxKitPermission {
   /// Camera capture (photo/video).
   camera,
 

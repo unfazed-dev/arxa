@@ -5,7 +5,7 @@
 /// photo access) and "provisional" (quiet notifications) both collapse to
 /// [granted] — the app has usable access — while the caller can still inspect
 /// the platform directly if it needs the finer grain.
-enum KitPermissionStatus {
+enum AppBoxKitPermissionStatus {
   /// The permission is granted; the feature may proceed.
   granted,
 
@@ -15,7 +15,7 @@ enum KitPermissionStatus {
 
   /// Denied and the OS will no longer show the prompt. The only recovery is
   /// to escort the user into the app settings screen (see
-  /// `KitPermissionsService.openAppSettings`).
+  /// `AppBoxKitPermissionsService.openAppSettings`).
   permanentlyDenied,
 
   /// Blocked by the platform outside the user's control (e.g. parental
@@ -23,10 +23,10 @@ enum KitPermissionStatus {
   restricted;
 
   /// True when the feature guarded by this permission may run.
-  bool get isUsable => this == KitPermissionStatus.granted;
+  bool get isUsable => this == AppBoxKitPermissionStatus.granted;
 
   /// True when the only path forward is the OS settings screen.
   bool get requiresSettingsEscort =>
-      this == KitPermissionStatus.permanentlyDenied ||
-      this == KitPermissionStatus.restricted;
+      this == AppBoxKitPermissionStatus.permanentlyDenied ||
+      this == AppBoxKitPermissionStatus.restricted;
 }
