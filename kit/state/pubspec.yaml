@@ -1,5 +1,5 @@
 name: appbox_kit_state
-description: Pure-Dart async state vocabulary for appbox_kit apps — a sealed KitState (idle/pending/loading/success/error) with when/map combinators, a KitStateNotifier (current value + broadcast stream) with a guarded track helper, and a legal-transition matrix. Zero Flutter dependency.
+description: Pure-Dart async state vocabulary for appbox_kit apps — a sealed AppBoxKitState (idle/pending/loading/success/error) with when/map combinators, a AppBoxKitStateNotifier (current value + broadcast stream) with a guarded track helper, and a legal-transition matrix. Zero Flutter dependency.
 version: 0.1.0
 publish_to: 'none'
 

@@ -2,10 +2,10 @@
 ///
 /// Describes how a failed tracked operation should be retried. The value object
 /// and its delay curve are defined now (and unit-testable); wiring it into
-/// `KitStateNotifier.track` (attempt accounting, jitter, cancellation) lands in
+/// `AppBoxKitStateNotifier.track` (attempt accounting, jitter, cancellation) lands in
 /// a later phase.
-class KitRetryPolicy {
-  const KitRetryPolicy({
+class AppBoxKitRetryPolicy {
+  const AppBoxKitRetryPolicy({
     this.maxAttempts = 3,
     this.initialDelay = const Duration(milliseconds: 300),
     this.backoffFactor = 2.0,
@@ -14,7 +14,7 @@ class KitRetryPolicy {
         assert(backoffFactor >= 1.0, 'backoffFactor must be >= 1.0');
 
   /// A policy that never retries (a single attempt).
-  static const KitRetryPolicy none = KitRetryPolicy(maxAttempts: 1);
+  static const AppBoxKitRetryPolicy none = AppBoxKitRetryPolicy(maxAttempts: 1);
 
   /// Total attempts allowed, including the first (>= 1).
   final int maxAttempts;
