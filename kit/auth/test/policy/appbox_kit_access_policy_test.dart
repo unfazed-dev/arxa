@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:appbox_kit_auth/src/models/auth_user.dart';
-import 'package:appbox_kit_auth/src/policy/kit_access_policy.dart';
+import 'package:appbox_kit_auth/src/models/appbox_kit_auth_user.dart';
+import 'package:appbox_kit_auth/src/policy/appbox_kit_access_policy.dart';
 
-const _policy = KitAccessPolicy(
+const _policy = AppBoxKitAccessPolicy(
   roles: {'customer', 'admin'},
   defaultRole: 'customer',
   routes: {
@@ -17,8 +17,8 @@ const _policy = KitAccessPolicy(
   },
 );
 
-AuthUser _user({String? role, String id = 'u1'}) =>
-    AuthUser(id: id, email: '$id@x', metadata: role == null ? {} : {'role': role});
+AppBoxKitAuthUser _user({String? role, String id = 'u1'}) =>
+    AppBoxKitAuthUser(id: id, email: '$id@x', metadata: role == null ? {} : {'role': role});
 
 void main() {
   group('roleOf', () {
@@ -75,7 +75,7 @@ void main() {
     test('throws for customer on admin action, naming role', () {
       expect(
         () => _policy.enforce('product.update', _user(role: 'customer')),
-        throwsA(isA<KitAccessDeniedError>()),
+        throwsA(isA<AppBoxKitAccessDeniedError>()),
       );
     });
     test('throws for signed-out, naming signed-out', () {
@@ -83,7 +83,7 @@ void main() {
         () => _policy.enforce('product.update', null),
         throwsA(
           predicate(
-            (e) => e is KitAccessDeniedError && e.role == null,
+            (e) => e is AppBoxKitAccessDeniedError && e.role == null,
           ),
         ),
       );
@@ -97,20 +97,20 @@ void main() {
       // This is the exact scenario C15 asserts must fail.
       expect(
         () => _policy.enforce('order.fulfill', _user(role: 'customer')),
-        throwsA(isA<KitAccessDeniedError>()),
+        throwsA(isA<AppBoxKitAccessDeniedError>()),
       );
     });
   });
 
   group('defaults asymmetry', () {
     test('custom roleMetadataKey', () {
-      const p = KitAccessPolicy(
+      const p = AppBoxKitAccessPolicy(
         roles: {'a', 'b'},
         defaultRole: 'a',
         roleMetadataKey: 'level',
       );
-      expect(p.roleOf(AuthUser(id: 'x', metadata: {'level': 'b'})), 'b');
-      expect(p.roleOf(AuthUser(id: 'x', metadata: {'role': 'b'})), 'a');
+      expect(p.roleOf(AppBoxKitAuthUser(id: 'x', metadata: {'level': 'b'})), 'b');
+      expect(p.roleOf(AppBoxKitAuthUser(id: 'x', metadata: {'role': 'b'})), 'a');
     });
   });
 }

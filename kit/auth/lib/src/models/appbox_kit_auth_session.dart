@@ -1,16 +1,16 @@
-import 'auth_user.dart';
+import 'appbox_kit_auth_user.dart';
 
 /// A live session: the [user] plus the tokens a real backend issues. Token
 /// fields are null on the in-memory default (nothing local needs to verify
 /// them). [expiresAt] is what makes token-expiry testable — see
 /// [isExpiredAt].
-class AuthSession {
-  final AuthUser user;
+class AppBoxKitAuthSession {
+  final AppBoxKitAuthUser user;
   final String? accessToken;
   final String? refreshToken;
   final DateTime? expiresAt;
 
-  const AuthSession({
+  const AppBoxKitAuthSession({
     required this.user,
     this.accessToken,
     this.refreshToken,
@@ -23,13 +23,13 @@ class AuthSession {
   bool isExpiredAt(DateTime now) =>
       expiresAt != null && !now.isBefore(expiresAt!);
 
-  AuthSession copyWith({
-    AuthUser? user,
+  AppBoxKitAuthSession copyWith({
+    AppBoxKitAuthUser? user,
     String? accessToken,
     String? refreshToken,
     DateTime? expiresAt,
   }) =>
-      AuthSession(
+      AppBoxKitAuthSession(
         user: user ?? this.user,
         accessToken: accessToken ?? this.accessToken,
         refreshToken: refreshToken ?? this.refreshToken,

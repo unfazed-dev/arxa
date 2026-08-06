@@ -1,4 +1,4 @@
-import '../models/auth_user.dart';
+import '../models/appbox_kit_auth_user.dart';
 
 /// Claims-based RBAC for a appbox_kit app — one declarative object consumed by
 /// three enforcement layers (route guard, UI affordance gating, facade
@@ -15,8 +15,8 @@ import '../models/auth_user.dart';
 ///   - [routes] is ALLOW-by-default: an unlisted route is open. Only
 ///     role-gated routes (e.g. admin) are listed.
 /// A signed-out user (null) is denied every action and every listed route.
-class KitAccessPolicy {
-  const KitAccessPolicy({
+class AppBoxKitAccessPolicy {
+  const AppBoxKitAccessPolicy({
     required this.roles,
     required this.defaultRole,
     this.routes = const {},
@@ -40,13 +40,13 @@ class KitAccessPolicy {
   /// e.g. `{'product.update': {'admin'}}`.
   final Map<String, Set<String>> actions;
 
-  /// The [AuthUser.metadata] key holding the role claim.
+  /// The [AppBoxKitAuthUser.metadata] key holding the role claim.
   final String roleMetadataKey;
 
   /// The role a user acts under, or [defaultRole] if their claim is absent or
   /// unrecognised. Returns `null` for a signed-out user — callers treat null
   /// as "no role, deny listed things."
-  String? roleOf(AuthUser? user) {
+  String? roleOf(AppBoxKitAuthUser? user) {
     if (user == null) return null;
     final claim = user.metadata[roleMetadataKey];
     if (claim is String && roles.contains(claim)) return claim;
@@ -54,7 +54,7 @@ class KitAccessPolicy {
   }
 
   /// May [user] perform [action]? Deny-by-default; signed-out always false.
-  bool can(String action, AuthUser? user) {
+  bool can(String action, AppBoxKitAuthUser? user) {
     final allowed = actions[action];
     if (allowed == null) return false;
     final role = roleOf(user);
@@ -63,33 +63,33 @@ class KitAccessPolicy {
 
   /// May [user] navigate to [routeName]? Allow-by-default; signed-out blocked
   /// only from explicitly listed routes.
-  bool canRoute(String routeName, AuthUser? user) {
+  bool canRoute(String routeName, AppBoxKitAuthUser? user) {
     final allowed = routes[routeName];
     if (allowed == null) return true;
     final role = roleOf(user);
     return role != null && allowed.contains(role);
   }
 
-  /// Authority: throw [KitAccessDeniedError] if [user] may not perform
+  /// Authority: throw [AppBoxKitAccessDeniedError] if [user] may not perform
   /// [action]. Facades call this on every mutating op so a bypassed UI still
   /// fails — the C15 bypass test proves it.
-  void enforce(String action, AuthUser? user) {
+  void enforce(String action, AppBoxKitAuthUser? user) {
     if (!can(action, user)) {
-      throw KitAccessDeniedError(action: action, role: roleOf(user));
+      throw AppBoxKitAccessDeniedError(action: action, role: roleOf(user));
     }
   }
 }
 
-/// Typed denial from [KitAccessPolicy.enforce]. Facades let this propagate or
-/// map it onto [KitFeedback] (CONTEXT.md) — never swallow it silently.
-class KitAccessDeniedError implements Exception {
+/// Typed denial from [AppBoxKitAccessPolicy.enforce]. Facades let this propagate or
+/// map it onto [AppBoxKitFeedback] (CONTEXT.md) — never swallow it silently.
+class AppBoxKitAccessDeniedError implements Exception {
   final String action;
   final String? role;
-  const KitAccessDeniedError({required this.action, required this.role});
+  const AppBoxKitAccessDeniedError({required this.action, required this.role});
 
   @override
   String toString() =>
       role == null
-          ? 'KitAccessDeniedError: signed-out user cannot perform "$action"'
-          : 'KitAccessDeniedError: role "$role" cannot perform "$action"';
+          ? 'AppBoxKitAccessDeniedError: signed-out user cannot perform "$action"'
+          : 'AppBoxKitAccessDeniedError: role "$role" cannot perform "$action"';
 }

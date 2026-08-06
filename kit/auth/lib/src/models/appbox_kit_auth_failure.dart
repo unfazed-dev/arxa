@@ -1,7 +1,7 @@
 /// Why a sign-in / sign-up failed, normalised across backends so UI can branch
 /// without matching on backend-specific error strings. A backend maps its own
 /// error codes onto these; anything unrecognised becomes [unknown].
-enum AuthFailureReason {
+enum AppBoxKitAuthFailureReason {
   /// Password (or OTP) did not match the identity.
   invalidCredentials,
 

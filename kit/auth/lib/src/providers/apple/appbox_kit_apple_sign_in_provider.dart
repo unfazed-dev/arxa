@@ -4,15 +4,15 @@ import 'dart:math';
 import 'package:crypto/crypto.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
-import '../../models/auth_failure.dart';
-import '../../models/auth_result.dart';
-import '../../models/auth_session.dart';
-import '../../models/auth_user.dart';
-import '../kit_oauth_provider.dart';
+import '../../models/appbox_kit_auth_failure.dart';
+import '../../models/appbox_kit_auth_result.dart';
+import '../../models/appbox_kit_auth_session.dart';
+import '../../models/appbox_kit_auth_user.dart';
+import '../appbox_kit_oauth_provider.dart';
 
 /// The plugin's credential call, injectable so unit tests can substitute the
 /// platform channel boundary.
-typedef AppleCredentialFetcher = Future<AuthorizationCredentialAppleID>
+typedef AppBoxKitAppleCredentialFetcher = Future<AuthorizationCredentialAppleID>
     Function({
   required List<AppleIDAuthorizationScopes> scopes,
   String? nonce,
@@ -38,11 +38,11 @@ typedef AppleCredentialFetcher = Future<AuthorizationCredentialAppleID>
 /// (and the tokens), so a null email/name here is normal, not an error.
 /// Persist them at first auth.
 ///
-/// Cancellation maps to [AuthFailureReason.cancelled]; a failed capability
+/// Cancellation maps to [AppBoxKitAuthFailureReason.cancelled]; a failed capability
 /// probe or an unsupported device maps to
-/// [AuthFailureReason.operationNotAllowed] (Apple rejects apps whose
+/// [AppBoxKitAuthFailureReason.operationNotAllowed] (Apple rejects apps whose
 /// Apple-sign-in button silently no-ops).
-class AppleSignInProvider implements KitOAuthProvider {
+class AppBoxKitAppleSignInProvider implements AppBoxKitOAuthProvider {
   /// The OAuth scopes requested from Apple.
   final List<AppleIDAuthorizationScopes> scopes;
 
@@ -50,17 +50,17 @@ class AppleSignInProvider implements KitOAuthProvider {
   final WebAuthenticationOptions? webAuthenticationOptions;
 
   final Future<bool> Function() _isAvailable;
-  final AppleCredentialFetcher _getCredential;
+  final AppBoxKitAppleCredentialFetcher _getCredential;
   final String Function() _rawNonce;
 
-  AppleSignInProvider({
+  AppBoxKitAppleSignInProvider({
     this.scopes = const [
       AppleIDAuthorizationScopes.email,
       AppleIDAuthorizationScopes.fullName,
     ],
     this.webAuthenticationOptions,
     Future<bool> Function()? isAvailable,
-    AppleCredentialFetcher? getCredential,
+    AppBoxKitAppleCredentialFetcher? getCredential,
     String Function()? rawNonce,
   })  : _isAvailable = isAvailable ?? SignInWithApple.isAvailable,
         _getCredential = getCredential ?? SignInWithApple.getAppleIDCredential,
@@ -70,10 +70,10 @@ class AppleSignInProvider implements KitOAuthProvider {
   String get id => 'apple';
 
   @override
-  Future<AuthResult> signIn() async {
+  Future<AppBoxKitAuthResult> signIn() async {
     if (!await _isAvailable()) {
-      return const AuthFailure(
-        AuthFailureReason.operationNotAllowed,
+      return const AppBoxKitAuthFailure(
+        AppBoxKitAuthFailureReason.operationNotAllowed,
         message: 'Sign in with Apple is not available on this device',
       );
     }
@@ -88,38 +88,38 @@ class AppleSignInProvider implements KitOAuthProvider {
       );
     } on SignInWithAppleAuthorizationException catch (e) {
       if (e.code == AuthorizationErrorCode.canceled) {
-        return AuthFailure(
-          AuthFailureReason.cancelled,
+        return AppBoxKitAuthFailure(
+          AppBoxKitAuthFailureReason.cancelled,
           message: e.message,
           cause: e,
         );
       }
-      return AuthFailure(
-        AuthFailureReason.unknown,
+      return AppBoxKitAuthFailure(
+        AppBoxKitAuthFailureReason.unknown,
         message: e.message,
         cause: e,
       );
     } on SignInWithAppleNotSupportedException catch (e) {
-      return AuthFailure(
-        AuthFailureReason.operationNotAllowed,
+      return AppBoxKitAuthFailure(
+        AppBoxKitAuthFailureReason.operationNotAllowed,
         message: e.message,
         cause: e,
       );
     } on SignInWithAppleException catch (e) {
-      return AuthFailure(AuthFailureReason.unknown, cause: e);
+      return AppBoxKitAuthFailure(AppBoxKitAuthFailureReason.unknown, cause: e);
     }
 
     final name = [credential.givenName, credential.familyName]
         .whereType<String>()
         .where((s) => s.isNotEmpty)
         .join(' ');
-    final user = AuthUser(
+    final user = AppBoxKitAuthUser(
       id: credential.userIdentifier ?? credential.email ?? 'apple-user',
       email: credential.email,
       displayName: name.isEmpty ? null : name,
       metadata: {'provider': 'apple', 'rawNonce': rawNonce},
     );
-    return AuthSuccess(AuthSession(
+    return AppBoxKitAuthSuccess(AppBoxKitAuthSession(
       user: user,
       accessToken: credential.identityToken,
       refreshToken: credential.authorizationCode,

@@ -1,16 +1,16 @@
 /// The signed-in identity, backend-agnostic. [id] is whatever the backend
 /// considers a stable primary key (a uid on a real backend; a deterministic
 /// local key on the in-memory default). Nothing here carries a token — that
-/// lives on [AuthSession] — so a `null` [AuthUser] is the only "signed out"
+/// lives on [AppBoxKitAuthSession] — so a `null` [AppBoxKitAuthUser] is the only "signed out"
 /// signal the stream needs to emit.
-class AuthUser {
+class AppBoxKitAuthUser {
   final String id;
   final String? email;
   final String? displayName;
   final bool isAnonymous;
   final Map<String, dynamic> metadata;
 
-  const AuthUser({
+  const AppBoxKitAuthUser({
     required this.id,
     this.email,
     this.displayName,
@@ -20,7 +20,7 @@ class AuthUser {
 
   @override
   bool operator ==(Object other) =>
-      other is AuthUser &&
+      other is AppBoxKitAuthUser &&
       other.id == id &&
       other.email == email &&
       other.displayName == displayName &&
@@ -31,5 +31,5 @@ class AuthUser {
 
   @override
   String toString() =>
-      'AuthUser(id: $id, email: $email, isAnonymous: $isAnonymous)';
+      'AppBoxKitAuthUser(id: $id, email: $email, isAnonymous: $isAnonymous)';
 }

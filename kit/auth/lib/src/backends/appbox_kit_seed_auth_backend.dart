@@ -1,11 +1,11 @@
 import 'dart:async';
 
-import '../models/auth_credentials.dart';
-import '../models/auth_failure.dart';
-import '../models/auth_result.dart';
-import '../models/auth_session.dart';
-import '../models/auth_user.dart';
-import '../service/kit_auth_service.dart';
+import '../models/appbox_kit_auth_credentials.dart';
+import '../models/appbox_kit_auth_failure.dart';
+import '../models/appbox_kit_auth_result.dart';
+import '../models/appbox_kit_auth_session.dart';
+import '../models/appbox_kit_auth_user.dart';
+import '../service/appbox_kit_auth_service.dart';
 
 class _SeededUser {
   final String email;
@@ -32,7 +32,7 @@ const _defaultSeed = <String, _SeededUser>{
 /// In-memory seeded auth backend. No device, no external process, no real
 /// account. Powers the seeded-data story the product promises (the showcase
 /// depends on it). This is the genuine port of the `appboxd/lib/tier1.dart`
-/// SeedAuthBackend spec into the kit's [KitAuthService] interface — same
+/// AppBoxKitSeedAuthBackend spec into the kit's [AppBoxKitAuthService] interface — same
 /// seeded accounts, same failure semantics, same deterministic token minting.
 ///
 /// Determinism is the point: seeded uids (`seed_alice`, `seed_bob`), sign-up
@@ -40,25 +40,25 @@ const _defaultSeed = <String, _SeededUser>{
 /// minted from monotonic counters, so refresh rotation is observable and
 /// tests never flake. Email matching is exact (after trim), mirroring the
 /// tier1 spec; sign-up applies no password-strength policy.
-class SeedAuthBackend implements KitAuthService {
+class AppBoxKitSeedAuthBackend implements AppBoxKitAuthService {
   final Map<String, _SeededUser> _users = {};
   final Map<String, _Session> _sessionsByUid = {}; // userId -> session
   final Map<String, _Session> _sessionsByToken = {}; // token -> session
   final Map<String, String> _providerByUid = {}; // userId -> provider tag
-  final StreamController<AuthUser?> _controller =
-      StreamController<AuthUser?>.broadcast();
+  final StreamController<AppBoxKitAuthUser?> _controller =
+      StreamController<AppBoxKitAuthUser?>.broadcast();
 
   var _tokenSeq = 0;
   var _uidSeq = 0;
   String? _currentUid;
   bool _disposed = false;
 
-  SeedAuthBackend() {
+  AppBoxKitSeedAuthBackend() {
     _users.addAll(_defaultSeed);
   }
 
   @override
-  Stream<AuthUser?> get authStateChanges async* {
+  Stream<AppBoxKitAuthUser?> get authStateChanges async* {
     _assertUsable();
     yield currentUser;
     yield* _controller.stream;
@@ -68,7 +68,7 @@ class SeedAuthBackend implements KitAuthService {
   /// per-uid sessions: sign-ins for other uids do not end earlier sessions,
   /// but the kit's single-user stream tracks the latest one.
   @override
-  AuthUser? get currentUser {
+  AppBoxKitAuthUser? get currentUser {
     final uid = _currentUid;
     if (uid == null) return null;
     final session = _sessionsByUid[uid];
@@ -78,7 +78,7 @@ class SeedAuthBackend implements KitAuthService {
 
   /// The tier1 spec's `currentUser(uid)`: the signed-in user for [uid], or
   /// null if that uid has no live session.
-  AuthUser? currentUserFor(String uid) {
+  AppBoxKitAuthUser? currentUserFor(String uid) {
     final session = _sessionsByUid[uid];
     if (session == null) return null;
     return _userFor(uid, session.email);
@@ -90,13 +90,13 @@ class SeedAuthBackend implements KitAuthService {
       };
 
   @override
-  Future<AuthResult> signUp(EmailPasswordCredentials credentials) async {
+  Future<AppBoxKitAuthResult> signUp(AppBoxKitEmailPasswordCredentials credentials) async {
     _assertUsable();
     final email = credentials.email.trim();
     for (final rec in _users.values) {
       if (rec.email == email) {
-        return const AuthFailure(
-          AuthFailureReason.emailAlreadyInUse,
+        return const AppBoxKitAuthFailure(
+          AppBoxKitAuthFailureReason.emailAlreadyInUse,
           message: 'user already exists',
         );
       }
@@ -107,7 +107,7 @@ class SeedAuthBackend implements KitAuthService {
   }
 
   @override
-  Future<AuthResult> signIn(EmailPasswordCredentials credentials) async {
+  Future<AppBoxKitAuthResult> signIn(AppBoxKitEmailPasswordCredentials credentials) async {
     _assertUsable();
     final email = credentials.email.trim();
     String? uid;
@@ -120,14 +120,14 @@ class SeedAuthBackend implements KitAuthService {
       }
     }
     if (rec == null) {
-      return const AuthFailure(
-        AuthFailureReason.userNotFound,
+      return const AppBoxKitAuthFailure(
+        AppBoxKitAuthFailureReason.userNotFound,
         message: 'unknown user',
       );
     }
     if (rec.password != credentials.password) {
-      return const AuthFailure(
-        AuthFailureReason.invalidCredentials,
+      return const AppBoxKitAuthFailure(
+        AppBoxKitAuthFailureReason.invalidCredentials,
         message: 'wrong password',
       );
     }
@@ -137,13 +137,13 @@ class SeedAuthBackend implements KitAuthService {
   /// Rotate a session token (the tier1 spec's `refreshToken`). The old token
   /// is invalidated; a fresh one is minted for the same user and becomes the
   /// current session. Unknown or already-rotated tokens fail with
-  /// [AuthFailureReason.tokenExpired].
-  Future<AuthResult> refreshToken(String token) async {
+  /// [AppBoxKitAuthFailureReason.tokenExpired].
+  Future<AppBoxKitAuthResult> refreshToken(String token) async {
     _assertUsable();
     final prev = _sessionsByToken.remove(token);
     if (prev == null) {
-      return const AuthFailure(
-        AuthFailureReason.tokenExpired,
+      return const AppBoxKitAuthFailure(
+        AppBoxKitAuthFailureReason.tokenExpired,
         message: 'invalid or expired token',
       );
     }
@@ -151,14 +151,14 @@ class SeedAuthBackend implements KitAuthService {
   }
 
   @override
-  Future<AuthResult> signInWithApple() => _resolveProviderUser(
+  Future<AppBoxKitAuthResult> signInWithApple() => _resolveProviderUser(
         'apple',
         'apple_demo_user',
         'relay@apple.example',
       );
 
   @override
-  Future<AuthResult> signInWithGoogle() => _resolveProviderUser(
+  Future<AppBoxKitAuthResult> signInWithGoogle() => _resolveProviderUser(
         'google',
         'google_demo_user',
         'demo@google.example',
@@ -185,8 +185,8 @@ class SeedAuthBackend implements KitAuthService {
 
   /// The seed backend's OAuth story: deterministic demo identities matching
   /// the tier1 `appleSignIn` / `googleSignIn` fixtures — a real native flow
-  /// is what the Apple/Google [KitOAuthProvider]s are for.
-  Future<AuthResult> _resolveProviderUser(
+  /// is what the Apple/Google [AppBoxKitOAuthProvider]s are for.
+  Future<AppBoxKitAuthResult> _resolveProviderUser(
     String provider,
     String uid,
     String email,
@@ -205,18 +205,18 @@ class SeedAuthBackend implements KitAuthService {
     return session;
   }
 
-  AuthResult _emitSession(_Session session) {
+  AppBoxKitAuthResult _emitSession(_Session session) {
     final user = _userFor(session.userId, session.email);
     _currentUid = session.userId;
     _controller.add(user);
-    return AuthSuccess(AuthSession(
+    return AppBoxKitAuthSuccess(AppBoxKitAuthSession(
       user: user,
       accessToken: session.token,
       refreshToken: session.token,
     ));
   }
 
-  AuthUser _userFor(String uid, String email) => AuthUser(
+  AppBoxKitAuthUser _userFor(String uid, String email) => AppBoxKitAuthUser(
         id: uid,
         email: email,
         metadata: {'provider': _providerByUid[uid] ?? 'seed'},
@@ -224,7 +224,7 @@ class SeedAuthBackend implements KitAuthService {
 
   void _assertUsable() {
     if (_disposed) {
-      throw StateError('SeedAuthBackend used after dispose()');
+      throw StateError('AppBoxKitSeedAuthBackend used after dispose()');
     }
   }
 }

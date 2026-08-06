@@ -40,9 +40,9 @@ void main() {
         authenticationTokens: AuthenticationTokenData(idToken: idToken),
       );
 
-  group('GoogleSignInProvider', () {
+  group('AppBoxKitGoogleSignInProvider', () {
     test('id is google', () {
-      expect(GoogleSignInProvider().id, 'google');
+      expect(AppBoxKitGoogleSignInProvider().id, 'google');
     });
 
     test('success: initialize → probe → authenticate, session mapped',
@@ -50,14 +50,14 @@ void main() {
       when(() => platform.authenticate(any()))
           .thenAnswer((_) async => results(photoUrl: 'https://x/p.png'));
 
-      final provider = GoogleSignInProvider(
+      final provider = AppBoxKitGoogleSignInProvider(
         clientId: 'ios-client-id',
         serverClientId: 'web-client-id',
       );
       final res = await provider.signIn();
 
-      expect(res, isA<AuthSuccess>());
-      final session = (res as AuthSuccess).session;
+      expect(res, isA<AppBoxKitAuthSuccess>());
+      final session = (res as AppBoxKitAuthSuccess).session;
       expect(session.user.id, 'google-sub-1');
       expect(session.user.email, 'ada@gmail.com');
       expect(session.user.displayName, 'Ada');
@@ -73,7 +73,7 @@ void main() {
       verify(() => platform.supportsAuthenticate()).called(1);
     });
 
-    test('cancellation → AuthFailure(cancelled), not an exception', () async {
+    test('cancellation → AppBoxKitAuthFailure(cancelled), not an exception', () async {
       when(() => platform.authenticate(any())).thenThrow(
         const GoogleSignInException(
           code: GoogleSignInExceptionCode.canceled,
@@ -81,10 +81,10 @@ void main() {
         ),
       );
 
-      final res = await GoogleSignInProvider().signIn();
+      final res = await AppBoxKitGoogleSignInProvider().signIn();
 
-      expect(res, isA<AuthFailure>());
-      expect((res as AuthFailure).reason, AuthFailureReason.cancelled);
+      expect(res, isA<AppBoxKitAuthFailure>());
+      expect((res as AppBoxKitAuthFailure).reason, AppBoxKitAuthFailureReason.cancelled);
       expect(res.message, 'user backed out');
     });
 
@@ -96,11 +96,11 @@ void main() {
         ),
       );
 
-      final res = await GoogleSignInProvider().signIn();
+      final res = await AppBoxKitGoogleSignInProvider().signIn();
 
-      expect(res, isA<AuthFailure>());
-      expect((res as AuthFailure).reason,
-          AuthFailureReason.operationNotAllowed);
+      expect(res, isA<AppBoxKitAuthFailure>());
+      expect((res as AppBoxKitAuthFailure).reason,
+          AppBoxKitAuthFailureReason.operationNotAllowed);
     });
 
     test('other error codes → unknown, cause retained', () async {
@@ -110,10 +110,10 @@ void main() {
       );
       when(() => platform.authenticate(any())).thenThrow(error);
 
-      final res = await GoogleSignInProvider().signIn();
+      final res = await AppBoxKitGoogleSignInProvider().signIn();
 
-      expect(res, isA<AuthFailure>());
-      expect((res as AuthFailure).reason, AuthFailureReason.unknown);
+      expect(res, isA<AppBoxKitAuthFailure>());
+      expect((res as AppBoxKitAuthFailure).reason, AppBoxKitAuthFailureReason.unknown);
       expect(identical(res.cause, error), isTrue);
     });
 
@@ -121,11 +121,11 @@ void main() {
         'authenticate never called', () async {
       when(() => platform.supportsAuthenticate()).thenReturn(false);
 
-      final res = await GoogleSignInProvider().signIn();
+      final res = await AppBoxKitGoogleSignInProvider().signIn();
 
-      expect(res, isA<AuthFailure>());
-      expect((res as AuthFailure).reason,
-          AuthFailureReason.operationNotAllowed);
+      expect(res, isA<AppBoxKitAuthFailure>());
+      expect((res as AppBoxKitAuthFailure).reason,
+          AppBoxKitAuthFailureReason.operationNotAllowed);
       verifyNever(() => platform.authenticate(any()));
     });
 
@@ -133,7 +133,7 @@ void main() {
       when(() => platform.authenticate(any()))
           .thenAnswer((_) async => results());
 
-      await GoogleSignInProvider(scopeHint: const ['email', 'openid'])
+      await AppBoxKitGoogleSignInProvider(scopeHint: const ['email', 'openid'])
           .signIn();
 
       final params = verify(() => platform.authenticate(captureAny()))

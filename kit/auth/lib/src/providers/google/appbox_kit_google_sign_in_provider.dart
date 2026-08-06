@@ -1,10 +1,10 @@
 import 'package:google_sign_in/google_sign_in.dart';
 
-import '../../models/auth_failure.dart';
-import '../../models/auth_result.dart';
-import '../../models/auth_session.dart';
-import '../../models/auth_user.dart';
-import '../kit_oauth_provider.dart';
+import '../../models/appbox_kit_auth_failure.dart';
+import '../../models/appbox_kit_auth_result.dart';
+import '../../models/appbox_kit_auth_session.dart';
+import '../../models/appbox_kit_auth_user.dart';
+import '../appbox_kit_oauth_provider.dart';
 
 /// Native Google sign-in, via the `google_sign_in` v7 plugin. NOTE: v7 is a
 /// breaking rewrite of the pre-v7 API many guides still show — it is
@@ -31,9 +31,9 @@ import '../kit_oauth_provider.dart';
 /// it to the backend, which verifies it against Google's certs with
 /// iss/aud/exp checks (`sub` equals `user.id`). A user back-out throws a
 /// [GoogleSignInException] with `code == canceled`, mapped to
-/// [AuthFailureReason.cancelled]; configuration problems map to
-/// [AuthFailureReason.operationNotAllowed].
-class GoogleSignInProvider implements KitOAuthProvider {
+/// [AppBoxKitAuthFailureReason.cancelled]; configuration problems map to
+/// [AppBoxKitAuthFailureReason.operationNotAllowed].
+class AppBoxKitGoogleSignInProvider implements AppBoxKitOAuthProvider {
   /// Platform OAuth client id (iOS / web). See the class doc.
   final String? clientId;
 
@@ -47,7 +47,7 @@ class GoogleSignInProvider implements KitOAuthProvider {
 
   final GoogleSignIn _googleSignIn;
 
-  GoogleSignInProvider({
+  AppBoxKitGoogleSignInProvider({
     this.clientId,
     this.serverClientId,
     this.scopeHint = const [],
@@ -58,22 +58,22 @@ class GoogleSignInProvider implements KitOAuthProvider {
   String get id => 'google';
 
   @override
-  Future<AuthResult> signIn() async {
+  Future<AppBoxKitAuthResult> signIn() async {
     try {
       await _googleSignIn.initialize(
         clientId: clientId,
         serverClientId: serverClientId,
       );
       if (!_googleSignIn.supportsAuthenticate()) {
-        return const AuthFailure(
-          AuthFailureReason.operationNotAllowed,
+        return const AppBoxKitAuthFailure(
+          AppBoxKitAuthFailureReason.operationNotAllowed,
           message:
               'This platform does not support authenticate() — use its '
               'platform-controlled sign-in UI instead',
         );
       }
       final account = await _googleSignIn.authenticate(scopeHint: scopeHint);
-      final user = AuthUser(
+      final user = AppBoxKitAuthUser(
         id: account.id,
         email: account.email,
         displayName: account.displayName,
@@ -82,26 +82,26 @@ class GoogleSignInProvider implements KitOAuthProvider {
           if (account.photoUrl != null) 'photoUrl': account.photoUrl!,
         },
       );
-      return AuthSuccess(AuthSession(
+      return AppBoxKitAuthSuccess(AppBoxKitAuthSession(
         user: user,
         accessToken: account.authentication.idToken,
       ));
     } on GoogleSignInException catch (e) {
       return switch (e.code) {
-        GoogleSignInExceptionCode.canceled => AuthFailure(
-            AuthFailureReason.cancelled,
+        GoogleSignInExceptionCode.canceled => AppBoxKitAuthFailure(
+            AppBoxKitAuthFailureReason.cancelled,
             message: e.description ?? 'Sign-in cancelled',
             cause: e,
           ),
         GoogleSignInExceptionCode.clientConfigurationError ||
         GoogleSignInExceptionCode.providerConfigurationError =>
-          AuthFailure(
-            AuthFailureReason.operationNotAllowed,
+          AppBoxKitAuthFailure(
+            AppBoxKitAuthFailureReason.operationNotAllowed,
             message: e.description ?? 'Google sign-in is misconfigured',
             cause: e,
           ),
-        _ => AuthFailure(
-            AuthFailureReason.unknown,
+        _ => AppBoxKitAuthFailure(
+            AppBoxKitAuthFailureReason.unknown,
             message: e.description ?? 'Google sign-in failed',
             cause: e,
           ),

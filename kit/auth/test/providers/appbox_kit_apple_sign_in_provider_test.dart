@@ -25,7 +25,7 @@ AuthorizationCredentialAppleID _credential({
 
 /// Builds a provider whose platform boundary is scripted: [available] for the
 /// capability probe, [onFetch] for the credential call (return or throw).
-AppleSignInProvider _provider({
+AppBoxKitAppleSignInProvider _provider({
   bool available = true,
   required Future<AuthorizationCredentialAppleID> Function(
     List<AppleIDAuthorizationScopes> scopes,
@@ -33,7 +33,7 @@ AppleSignInProvider _provider({
   ) onFetch,
   String nonce = 'fixed-raw-nonce',
 }) =>
-    AppleSignInProvider(
+    AppBoxKitAppleSignInProvider(
       isAvailable: () async => available,
       getCredential: ({required scopes, nonce, webAuthenticationOptions}) =>
           onFetch(scopes, nonce),
@@ -41,7 +41,7 @@ AppleSignInProvider _provider({
     );
 
 void main() {
-  group('AppleSignInProvider', () {
+  group('AppBoxKitAppleSignInProvider', () {
     test('id is apple', () {
       expect(_provider(onFetch: (_, __) => throw UnimplementedError()).id,
           'apple');
@@ -63,8 +63,8 @@ void main() {
 
       final res = await provider.signIn();
 
-      expect(res, isA<AuthSuccess>());
-      final session = (res as AuthSuccess).session;
+      expect(res, isA<AppBoxKitAuthSuccess>());
+      final session = (res as AppBoxKitAuthSuccess).session;
       expect(session.user.id, 'apple-sub-123');
       expect(session.user.email, 'relay@privaterelay.appleid.com');
       expect(session.user.displayName, 'Ada L');
@@ -86,14 +86,14 @@ void main() {
 
       final res = await provider.signIn();
 
-      expect(res, isA<AuthSuccess>());
-      final user = (res as AuthSuccess).user;
+      expect(res, isA<AppBoxKitAuthSuccess>());
+      final user = (res as AppBoxKitAuthSuccess).user;
       expect(user.id, 'apple-sub-123');
       expect(user.email, isNull);
       expect(user.displayName, isNull);
     });
 
-    test('cancellation → AuthFailure(cancelled), not an exception', () async {
+    test('cancellation → AppBoxKitAuthFailure(cancelled), not an exception', () async {
       final provider = _provider(
         onFetch: (_, __) => throw const SignInWithAppleAuthorizationException(
           code: AuthorizationErrorCode.canceled,
@@ -103,8 +103,8 @@ void main() {
 
       final res = await provider.signIn();
 
-      expect(res, isA<AuthFailure>());
-      expect((res as AuthFailure).reason, AuthFailureReason.cancelled);
+      expect(res, isA<AppBoxKitAuthFailure>());
+      expect((res as AppBoxKitAuthFailure).reason, AppBoxKitAuthFailureReason.cancelled);
     });
 
     test('capability probe failure → operationNotAllowed', () async {
@@ -119,9 +119,9 @@ void main() {
 
       final res = await provider.signIn();
 
-      expect(res, isA<AuthFailure>());
-      expect((res as AuthFailure).reason,
-          AuthFailureReason.operationNotAllowed);
+      expect(res, isA<AppBoxKitAuthFailure>());
+      expect((res as AppBoxKitAuthFailure).reason,
+          AppBoxKitAuthFailureReason.operationNotAllowed);
       expect(fetchCalled, isFalse); // never reaches the platform flow
     });
 
@@ -135,9 +135,9 @@ void main() {
 
       final res = await provider.signIn();
 
-      expect(res, isA<AuthFailure>());
-      expect((res as AuthFailure).reason,
-          AuthFailureReason.operationNotAllowed);
+      expect(res, isA<AppBoxKitAuthFailure>());
+      expect((res as AppBoxKitAuthFailure).reason,
+          AppBoxKitAuthFailureReason.operationNotAllowed);
     });
 
     test('other authorization error → unknown, cause retained', () async {
@@ -149,8 +149,8 @@ void main() {
 
       final res = await provider.signIn();
 
-      expect(res, isA<AuthFailure>());
-      expect((res as AuthFailure).reason, AuthFailureReason.unknown);
+      expect(res, isA<AppBoxKitAuthFailure>());
+      expect((res as AppBoxKitAuthFailure).reason, AppBoxKitAuthFailureReason.unknown);
       expect(res.message, 'something failed');
       expect(identical(res.cause, error), isTrue);
     });

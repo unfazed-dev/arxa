@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:appbox_kit_auth/src/models/auth_user.dart';
-import 'package:appbox_kit_auth/src/policy/kit_access_policy.dart';
-import 'package:appbox_kit_auth/src/policy/kit_can.dart';
+import 'package:appbox_kit_auth/src/models/appbox_kit_auth_user.dart';
+import 'package:appbox_kit_auth/src/policy/appbox_kit_access_policy.dart';
+import 'package:appbox_kit_auth/src/policy/appbox_kit_can.dart';
 
-const _policy = KitAccessPolicy(
+const _policy = AppBoxKitAccessPolicy(
   roles: {'customer', 'admin'},
   defaultRole: 'customer',
   actions: {'product.update': {'admin'}},
 );
 
-AuthUser _user(String role) =>
-    AuthUser(id: role, email: '$role@x', metadata: {'role': role});
+AppBoxKitAuthUser _user(String role) =>
+    AppBoxKitAuthUser(id: role, email: '$role@x', metadata: {'role': role});
 
 Widget _host(Widget child) =>
     MaterialApp(home: Scaffold(body: child));
@@ -19,7 +19,7 @@ Widget _host(Widget child) =>
 void main() {
   testWidgets('renders child when allowed', (t) async {
     await t.pumpWidget(_host(
-      KitCan(
+      AppBoxKitCan(
         action: 'product.update',
         policy: _policy,
         user: _user('admin'),
@@ -31,7 +31,7 @@ void main() {
 
   testWidgets('renders nothing (shrink) when denied — C14', (t) async {
     await t.pumpWidget(_host(
-      KitCan(
+      AppBoxKitCan(
         action: 'product.update',
         policy: _policy,
         user: _user('customer'),
@@ -43,7 +43,7 @@ void main() {
 
   testWidgets('renders nothing when signed out', (t) async {
     await t.pumpWidget(_host(
-      KitCan(
+      AppBoxKitCan(
         action: 'product.update',
         policy: _policy,
         user: null,
@@ -55,7 +55,7 @@ void main() {
 
   testWidgets('renders fallback when provided and denied', (t) async {
     await t.pumpWidget(_host(
-      KitCan(
+      AppBoxKitCan(
         action: 'product.update',
         policy: _policy,
         user: _user('customer'),

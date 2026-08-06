@@ -1,19 +1,19 @@
 import 'package:flutter/widgets.dart';
 
-import '../models/auth_user.dart';
-import 'kit_access_policy.dart';
+import '../models/appbox_kit_auth_user.dart';
+import 'appbox_kit_access_policy.dart';
 
-/// Hides or replaces its [child] based on the [KitAccessPolicy]. This is the
+/// Hides or replaces its [child] based on the [AppBoxKitAccessPolicy]. This is the
 /// UI-affordance layer (C14): admin-only edit buttons wrap their content in
-/// [KitCan] so they simply don't render for customers. It is DECORATIVE
-/// enforcement — the authoritative check is [KitAccessPolicy.enforce] in the
+/// [AppBoxKitCan] so they simply don't render for customers. It is DECORATIVE
+/// enforcement — the authoritative check is [AppBoxKitAccessPolicy.enforce] in the
 /// facade (C15). Never rely on this alone for security.
 ///
 /// Pure widget by design: the host passes the current [user] (from its auth
 /// stream) and the [policy]. No locator coupling, no side effects — fully
 /// testable in isolation.
-class KitCan extends StatelessWidget {
-  const KitCan({
+class AppBoxKitCan extends StatelessWidget {
+  const AppBoxKitCan({
     super.key,
     required this.action,
     required this.policy,
@@ -22,13 +22,13 @@ class KitCan extends StatelessWidget {
     this.fallback,
   });
 
-  /// The action id to check against [KitAccessPolicy.actions].
+  /// The action id to check against [AppBoxKitAccessPolicy.actions].
   final String action;
 
-  final KitAccessPolicy policy;
+  final AppBoxKitAccessPolicy policy;
 
   /// The current user, or null if signed out.
-  final AuthUser? user;
+  final AppBoxKitAuthUser? user;
 
   /// Rendered when the user MAY perform [action].
   final Widget child;

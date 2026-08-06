@@ -1,7 +1,7 @@
 # appbox_kit_auth
 
 An **API-first** identity seam for `appbox_kit` apps. One port
-(`KitAuthService`), a typed `AuthResult`, and an in-memory default backend
+(`AppBoxKitAuthService`), a typed `AppBoxKitAuthResult`, and an in-memory default backend
 that's real enough to build the whole auth UI against before any real backend
 lands.
 
@@ -10,10 +10,10 @@ lands.
   `google_sign_in` (v7 API). **No** dependency on `appbox_kit`, `stacked`,
   `stacked_services`, or any app code.
 
-> Naming note: `appbox_kit_data` also ships a `KitAuthService` (a
+> Naming note: `appbox_kit_data` also ships a `AppBoxKitAuthService` (a
 > backend-identity-coupled variant with `session$`/`currentSession`). This
 > package is the standalone, API-first seam (`authStateChanges`/`currentUser`,
-> sealed `AuthResult`). The two are independent today; if a workspace ever
+> sealed `AppBoxKitAuthResult`). The two are independent today; if a workspace ever
 > imports both, one must be namespaced. That reconciliation is a downstream
 > (workspace-wiring) decision, not this package's.
 >
@@ -26,26 +26,26 @@ lands.
 ## Scope
 
 **In (implemented):**
-- `KitAuthService` port — `authStateChanges` stream, `currentUser`, `signUp`,
+- `AppBoxKitAuthService` port — `authStateChanges` stream, `currentUser`, `signUp`,
   `signIn`, `signInWithApple`, `signInWithGoogle`, `signOut`, `dispose`.
-- Typed models — `AuthUser`, `AuthSession` (with `expiresAt`),
-  `EmailPasswordCredentials`, sealed `AuthResult` (`AuthSuccess` /
-  `AuthFailure`) with a normalised `AuthFailureReason`.
-- `InMemoryKitAuthService` — the default local backend (real password checks,
+- Typed models — `AppBoxKitAuthUser`, `AppBoxKitAuthSession` (with `expiresAt`),
+  `AppBoxKitEmailPasswordCredentials`, sealed `AppBoxKitAuthResult` (`AppBoxKitAuthSuccess` /
+  `AppBoxKitAuthFailure`) with a normalised `AppBoxKitAuthFailureReason`.
+- `InMemoryAppBoxKitAuthService` — the default local backend (real password checks,
   deterministic ids, optional session TTL). **Not secure — never production.**
-- Scriptable fake (`testing.dart`), including token-expiry.
+- Scriptable fake (`appbox_kit_testing.dart`), including token-expiry.
 
 **Implemented backends:**
-- `SeedAuthBackend` — deterministic seeded accounts
+- `AppBoxKitSeedAuthBackend` — deterministic seeded accounts
   (`alice@showcase.app`/`seed-alice`, `bob@showcase.app`/`seed-bob`), a
   faithful port of the `appboxd/lib/tier1.dart` spec: exact-email matching,
   monotonic uids (`user_1`, …) and tokens (`tok_1`, …), and a public
   `refreshToken` that rotates tokens (old token dies ⇒ `tokenExpired`).
-- `AppleSignInProvider` / `GoogleSignInProvider` — native OAuth via
+- `AppBoxKitAppleSignInProvider` / `AppBoxKitGoogleSignInProvider` — native OAuth via
   `sign_in_with_apple ^8.1.0` / `google_sign_in ^7.2.0` (the v7 API:
   `instance` + `initialize` + `authenticate`). Cancellation maps to
-  `AuthFailureReason.cancelled`; the JWT (`identityToken` / `idToken`) rides
-  on `AuthSession.accessToken` for backend verification. Platform/client-id
+  `AppBoxKitAuthFailureReason.cancelled`; the JWT (`identityToken` / `idToken`) rides
+  on `AppBoxKitAuthSession.accessToken` for backend verification. Platform/client-id
   setup is documented in each provider's doc comment.
 
 **Non-goals:** real credential storage/hashing, session persistence, RBAC,
@@ -57,30 +57,30 @@ security boundary.
 ```dart
 import 'package:appbox_kit_auth/appbox_kit_auth.dart';
 
-final auth = InMemoryKitAuthService();
+final auth = InMemoryAppBoxKitAuthService();
 
 auth.authStateChanges.listen((user) {
   // null = signed out (also how token-expiry surfaces).
 });
 
 final result = await auth.signIn(
-  const EmailPasswordCredentials(email: 'a@b.com', password: 'hunter2'),
+  const AppBoxKitEmailPasswordCredentials(email: 'a@b.com', password: 'hunter2'),
 );
 switch (result) {
-  case AuthSuccess(:final user):    // signed in
-  case AuthFailure(:final reason):  // branch on reason (userNotFound, …)
+  case AppBoxKitAuthSuccess(:final user):    // signed in
+  case AppBoxKitAuthFailure(:final reason):  // branch on reason (userNotFound, …)
 }
 ```
 
 ## Testing
 
 ```dart
-import 'package:appbox_kit_auth/testing.dart';
+import 'package:appbox_kit_auth/appbox_kit_testing.dart';
 
-final auth = FakeKitAuthService(
+final auth = FakeAppBoxKitAuthService(
   scriptedResults: [
-    AuthSuccess(AuthSession(user: AuthUser(id: 'u1', email: 'a@b.com'))),
-    const AuthFailure(AuthFailureReason.tokenExpired),
+    AppBoxKitAuthSuccess(AppBoxKitAuthSession(user: AppBoxKitAuthUser(id: 'u1', email: 'a@b.com'))),
+    const AppBoxKitAuthFailure(AppBoxKitAuthFailureReason.tokenExpired),
   ],
 );
 
@@ -88,17 +88,17 @@ final auth = FakeKitAuthService(
 auth.expireSession();               // emits signed-out on authStateChanges
 ```
 
-Factories: `FakeKitAuthService.signedIn(user)`, `.signedOut()`,
-`.alwaysFails(reason)`. `FakeKitAuthService.expiredSession(user)` builds an
-already-expired `AuthSession` for `AuthSession.isExpiredAt` assertions.
+Factories: `FakeAppBoxKitAuthService.signedIn(user)`, `.signedOut()`,
+`.alwaysFails(reason)`. `FakeAppBoxKitAuthService.expiredSession(user)` builds an
+already-expired `AppBoxKitAuthSession` for `AppBoxKitAuthSession.isExpiredAt` assertions.
 
 ## Phases
 
-1. **Done:** port + in-memory default + fakes; `SeedAuthBackend` (tier1
+1. **Done:** port + in-memory default + fakes; `AppBoxKitSeedAuthBackend` (tier1
    port); native Apple/Google OAuth providers.
 2. **Phase-4 (remaining):** fold `appbox_kit_data/lib/auth/` (seed/appwrite/
    supabase backends) into this package behind the API-first seam, retiring
-   the duplicate `KitAuthService` name.
+   the duplicate `AppBoxKitAuthService` name.
 
-Workspace wiring (path deps, locator registration, the `KitAuthService`
+Workspace wiring (path deps, locator registration, the `AppBoxKitAuthService`
 name reconciliation with `appbox_kit_data`) is a downstream pass.

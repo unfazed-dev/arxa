@@ -1,5 +1,5 @@
 name: appbox_kit_auth
-description: API-first auth seam for appbox_kit apps — a KitAuthService port (email/password + OAuth), typed AuthResult with failure reasons, an in-memory default backend, a deterministic Seed backend, native Apple/Google OAuth providers, and scriptable fakes.
+description: API-first auth seam for appbox_kit apps — a AppBoxKitAuthService port (email/password + OAuth), typed AppBoxKitAuthResult with failure reasons, an in-memory default backend, a deterministic Seed backend, native Apple/Google OAuth providers, and scriptable fakes.
 version: 0.1.0
 publish_to: 'none'
 
@@ -11,7 +11,7 @@ dependencies:
     sdk: flutter
   # SHA-256 of the Apple sign-in nonce.
   crypto: ^3.0.6
-  # Native OAuth flows behind the KitOAuthProvider port.
+  # Native OAuth flows behind the AppBoxKitOAuthProvider port.
   google_sign_in: ^7.2.0
   sign_in_with_apple: ^8.1.0
 
