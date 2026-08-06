@@ -1,6 +1,6 @@
 // Tests for the kit structural-contract checker — barrel files, publish_to,
 // SDK pin consistency, and dependency-topology violation detection. Fixtures
-// build a throwaway kit/ tree and assert checkKitConventions flags or passes.
+// build a throwaway kit/ tree and assert checkAppBoxKitConventions flags or passes.
 
 import 'dart:io';
 
@@ -47,7 +47,7 @@ void main() {
   group('barrel files', () {
     test('errors when a library kit is missing its barrel lib/<name>.dart', () {
       kit('core', name: 'appbox_kit_core', barrel: false);
-      final r = checkKitConventions(kitRoot());
+      final r = checkAppBoxKitConventions(kitRoot());
       expect(r.ok, isFalse);
       expect(r.errors,
           anyElement(contains('core missing barrel lib/appbox_kit_core.dart')));
@@ -55,7 +55,7 @@ void main() {
 
     test('showcase_app is exempt from the barrel check', () {
       kit('showcase_app', name: 'showcase_app', barrel: false, testing: false);
-      final r = checkKitConventions(kitRoot());
+      final r = checkAppBoxKitConventions(kitRoot());
       expect(r.errors, isEmpty);
     });
   });
@@ -65,7 +65,7 @@ void main() {
       kit('core',
           name: 'appbox_kit_core',
           pubspec: "name: appbox_kit_core\nenvironment:\n  sdk: '>=3.0.0 <4.0.0'\n");
-      final r = checkKitConventions(kitRoot());
+      final r = checkAppBoxKitConventions(kitRoot());
       expect(r.ok, isFalse);
       expect(r.errors, anyElement(contains("missing publish_to: 'none'")));
     });
@@ -74,7 +74,7 @@ void main() {
       kit('core',
           name: 'appbox_kit_core',
           pubspec: 'name: appbox_kit_core\npublish_to: "none"\n\nenvironment:\n  sdk: \'>=3.0.0 <4.0.0\'\n');
-      expect(checkKitConventions(kitRoot()).ok, isTrue);
+      expect(checkAppBoxKitConventions(kitRoot()).ok, isTrue);
     });
   });
 
@@ -86,7 +86,7 @@ void main() {
       kit('auth',
           name: 'appbox_kit_auth',
           pubspec: "name: appbox_kit_auth\npublish_to: 'none'\n\nenvironment:\n  sdk: '>=3.0.3 <4.0.0'\n");
-      final r = checkKitConventions(kitRoot());
+      final r = checkAppBoxKitConventions(kitRoot());
       expect(r.ok, isFalse);
       expect(r.errors, anyElement(contains('SDK pins differ across kits')));
     });
@@ -94,7 +94,7 @@ void main() {
     test('passes when every kit shares the same SDK pin', () {
       kit('core', name: 'appbox_kit_core');
       kit('auth', name: 'appbox_kit_auth');
-      expect(checkKitConventions(kitRoot()).ok, isTrue);
+      expect(checkAppBoxKitConventions(kitRoot()).ok, isTrue);
     });
   });
 
@@ -107,7 +107,7 @@ void main() {
           pubspec: "name: appbox_kit_auth\npublish_to: 'none'\n\n"
               "environment:\n  sdk: '>=3.0.0 <4.0.0'\n\n"
               "dependencies:\n  appbox_kit_core:\n    path: ../core\n");
-      final r = checkKitConventions(kitRoot());
+      final r = checkAppBoxKitConventions(kitRoot());
       expect(r.ok, isFalse);
       expect(r.errors,
           anyElement(contains('auth -> appbox_kit_core')));
@@ -120,7 +120,7 @@ void main() {
           pubspec: "name: appbox_kit_data\npublish_to: 'none'\n\n"
               "environment:\n  sdk: '>=3.0.0 <4.0.0'\n\n"
               "dependencies:\n  appbox_kit_core:\n    path: ../core\n");
-      expect(checkKitConventions(kitRoot()).ok, isTrue);
+      expect(checkAppBoxKitConventions(kitRoot()).ok, isTrue);
     });
 
     test('allows ui_library -> appbox_kit_core and appbox_kit_motion', () {
@@ -132,7 +132,7 @@ void main() {
               "environment:\n  sdk: '>=3.0.0 <4.0.0'\n\n"
               "dependencies:\n  appbox_kit_core:\n    path: ../core\n"
               "  appbox_kit_motion:\n    path: ../motion\n");
-      expect(checkKitConventions(kitRoot()).ok, isTrue);
+      expect(checkAppBoxKitConventions(kitRoot()).ok, isTrue);
     });
   });
 }

@@ -20,11 +20,11 @@ void main() {
         'name': 'appbox_kit_core',
         'version': '0.1.0',
         'description':
-            'Reusable Stacked MVVM toolkit. Holds KitAction and reactive services.',
+            'Reusable Stacked MVVM toolkit. Holds AppBoxKitAction and reactive services.',
         'hasTesting': true,
         'publicSurface': [
-          {'name': 'KitPlatform', 'kind': 'class', 'file': 'platform/kit_platform.dart'},
-          {'name': 'KitTier', 'kind': 'enum', 'file': 'platform/kit_platform.dart'},
+          {'name': 'AppBoxKitPlatform', 'kind': 'class', 'file': 'platform/appbox_kit_platform.dart'},
+          {'name': 'AppBoxKitTier', 'kind': 'enum', 'file': 'platform/appbox_kit_platform.dart'},
         ],
         'frameworkDeps': ['stacked', 'stacked_services'],
         'backingPackages': ['get', 'rxdart'],
@@ -41,8 +41,8 @@ void main() {
       expect(mdx, contains('**Role (one line):** Reusable Stacked MVVM toolkit'));
 
       // Key symbols land in the API table; the slug-derived block id is core.
-      expect(mdx, contains('KitPlatform'));
-      expect(mdx, contains('KitTier'));
+      expect(mdx, contains('AppBoxKitPlatform'));
+      expect(mdx, contains('AppBoxKitTier'));
       expect(mdx, contains('id="core-api"'));
 
       // Integration map carries the framework + backing deps verbatim.
@@ -69,7 +69,7 @@ Plugin-neutral maps port for appbox_kit apps.
 
 ## Usage
 
-Render `KitMapView` and pass a `KitMapConfig`.
+Render `AppBoxKitMapView` and pass a `AppBoxKitMapConfig`.
 
 ## Architecture
 
@@ -83,7 +83,7 @@ Standalone leaf — no sibling-kit dependency.
         'version': '0.2.0',
         'description': 'Plugin-neutral maps port.',
         'publicSurface': [
-          {'name': 'KitMapView', 'kind': 'class', 'file': 'kit_map_view.dart'},
+          {'name': 'AppBoxKitMapView', 'kind': 'class', 'file': 'appbox_kit_map_view.dart'},
         ],
       }));
 
@@ -95,7 +95,7 @@ Standalone leaf — no sibling-kit dependency.
 
       // The README was attached and its sections mined into prose.
       expect(facts['readme'], isA<String>());
-      expect(mdx, contains('Render `KitMapView` and pass a `KitMapConfig`.'));
+      expect(mdx, contains('Render `AppBoxKitMapView` and pass a `AppBoxKitMapConfig`.'));
       expect(mdx, contains('Standalone leaf — no sibling-kit dependency.'));
       expect(mdx, contains('### Usage & wiring'));
       expect(mdx, contains('### Architecture'));
@@ -121,7 +121,7 @@ Standalone leaf — no sibling-kit dependency.
         'version': '1.0.0',
         'description': 'Auth kit.',
         'publicSurface': [
-          {'name': 'KitAuth', 'kind': 'class', 'file': 'kit_auth.dart'},
+          {'name': 'AppBoxKitAuth', 'kind': 'class', 'file': 'appbox_kit_auth.dart'},
         ],
         'frameworkDeps': ['stacked'],
         'backingPackages': <String>[],
@@ -146,7 +146,7 @@ Standalone leaf — no sibling-kit dependency.
         'description': 'Haptics kit.',
         'hasTesting': true,
         'publicSurface': [
-          {'name': 'KitHaptics', 'kind': 'class', 'file': 'kit_haptics.dart'},
+          {'name': 'AppBoxKitHaptics', 'kind': 'class', 'file': 'appbox_kit_haptics.dart'},
           {'name': 'FakeHaptics', 'kind': 'class', 'file': 'testing.dart'},
           {'name': 'RecordingHapticCounter', 'kind': 'class', 'file': 'testing.dart'},
         ],
@@ -155,7 +155,7 @@ Standalone leaf — no sibling-kit dependency.
       final mdx = generatePlaybook(facts);
 
       // The real symbol stays in the API table.
-      expect(mdx, contains('KitHaptics'));
+      expect(mdx, contains('AppBoxKitHaptics'));
 
       // Fakes route to the test-doubles line, not the API columns; the
       // hasTesting flag adds the call-count note.

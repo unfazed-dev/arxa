@@ -16,7 +16,7 @@ void main() {
     Directory('${tmp.path}/memory/stages').createSync(recursive: true);
     File('${tmp.path}/memory/stages/review.LESSONS.md').writeAsStringSync(
         '# review — lessons\n\n## Lessons\n'
-        '- gate review failed because Icons.* leaked; use KitGlyphs\n');
+        '- gate review failed because Icons.* leaked; use AppBoxKitGlyphs\n');
     File('${tmp.path}/memory/stages/intake.LESSONS.md').writeAsStringSync(
         '# intake — lessons\n\n## Lessons\n');
     Directory('${tmp.path}/pipeline/state').createSync(recursive: true);

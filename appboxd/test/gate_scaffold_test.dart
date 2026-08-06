@@ -38,7 +38,7 @@ void main() {
 
   /// A shell that satisfies S1/S4 on its own; widgets are added per test.
   void plantShell(String shell, List<String> views) {
-    write('lib/ui/views/$shell/design-system.md', '## Palette\n\nkcPrimary\n');
+    write('lib/ui/views/$shell/design-system.md', '## Palette\n\nAppBoxKitColors\n');
     write('lib/ui/views/$shell/${shell}_chrome.dart', 'class Chrome {}\n');
     for (final v in views) {
       write('lib/ui/views/$shell/$v/${v}_view.dart', 'class View {}\n');

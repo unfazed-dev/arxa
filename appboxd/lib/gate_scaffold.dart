@@ -19,10 +19,11 @@
 //         adapters/ (placement, not existence — runs with no manifest)
 //   D1  — app data layer: data/seed + data/generated layout,
 //         tool/generate_data.dart --check proves generated artifacts are fresh,
-//         and the declared KitDataBackend has its artifacts (apps without the
+//         and the declared AppBoxKitDataBackend has its artifacts (apps without the
 //         tool have no data layer — skip, never false-fail)
-//   S8  — peer-service registration (a registered Kit* service's locator<Y>()
-//         peers are also registered; setupKitSnackbars() called when used)
+//   S8  — peer-service registration (a registered AppBoxKit* service's
+//         appBoxKitLocator<Y>() peers are also registered;
+//         setupAppBoxKitSnackbars() called when used)
 //   S10 — overlay ownership by enum reference (a sole-consumer overlay belongs
 //         in its shell; consumers reference the generated enum, never an import)
 //   S6c — widget homes under lib/ui/widgets/: showcase_<shell>_widgets/ is the
@@ -153,7 +154,7 @@ GateResult scaffoldGate(GateContext ctx) {
   }
 
   // ---- D1: app data layer — layout + generated-artifact freshness ----
-  // Apps with a data layer declare KitTableSchemas under lib/data/schemas/
+  // Apps with a data layer declare AppBoxKitTableSchema(s) under lib/data/schemas/
   // and own tool/generate_data.dart, which renders data/generated/ from those
   // schemas + data/seed/ fixtures. The schemas are the SSOT; the generated
   // artifacts must never drift. Apps without tool/generate_data.dart have no
@@ -184,7 +185,7 @@ GateResult scaffoldGate(GateContext ctx) {
     }
     if (d1Bad == 0) {
       // Backend coherence: the app's declared default backend (the
-      // KitDataConfig in lib/app/app_data.dart) must have its artifacts in
+      // AppBoxKitDataConfig in lib/app/app_data.dart) must have its artifacts in
       // data/generated/. seed needs none beyond the fixtures (--check already
       // proves those readable); supabase needs both SQL files; appwrite its
       // tables fragment.
@@ -194,7 +195,7 @@ GateResult scaffoldGate(GateContext ctx) {
       };
       final appData = File('$app/lib/app/app_data.dart');
       final backend = appData.existsSync()
-          ? RegExp(r'KitDataBackend\.(\w+)')
+          ? RegExp(r'AppBoxKitDataBackend\.(\w+)')
               .firstMatch(appData.readAsStringSync())
               ?.group(1)
           : null;
@@ -204,7 +205,7 @@ GateResult scaffoldGate(GateContext ctx) {
       } else {
         for (final artifact in backendArtifacts[backend] ?? const <String>[]) {
           if (!File('$app/data/generated/$artifact').existsSync()) {
-            fail('backend coherence (D1): app boots KitDataBackend.$backend '
+            fail('backend coherence (D1): app boots AppBoxKitDataBackend.$backend '
                 'but data/generated/$artifact is missing — run '
                 '`dart run tool/generate_data.dart`');
             d1Bad++;
@@ -301,12 +302,12 @@ GateResult scaffoldGate(GateContext ctx) {
       final dst = _readOrEmpty(ds);
       final hasHeading =
           RegExp(r'^##[ \t]+(Palette|Tokens)', multiLine: true).hasMatch(dst);
-      final hasColor = RegExp(r'kc[A-Z][A-Za-z0-9]*|KitColors').hasMatch(dst);
+      final hasColor = RegExp(r'ax[A-Z][A-Za-z0-9]*|AppBoxKitColors').hasMatch(dst);
       if (hasHeading && hasColor) {
         ok('$s: design-system.md carries the palette vocabulary');
       } else {
         fail("$s: design-system.md lacks a '## Palette' / '## Tokens' heading "
-            'with a kit color reference (kc*/KitColors) (S4)');
+            'with a kit color reference (ax*/AppBoxKitColors) (S4)');
       }
     }
 
@@ -921,7 +922,7 @@ void _runS8(String app, void Function(String) ok, void Function(String) warn,
   final index = <String, _Src>{};
   for (final p in pkgs.cast<Map<String, dynamic>>()) {
     final name = (p['name'] ?? '') as String;
-    if (!name.startsWith('kit') && name != 'ui_library') continue;
+    if (!name.startsWith('appbox_kit_')) continue;
     final kitRoot = _resolveRootUri((p['rootUri'] ?? '') as String, app);
     for (final f in _findFiles(
         Directory('$kitRoot/lib'), (f) => f.path.endsWith('.dart'))) {
@@ -934,45 +935,45 @@ void _runS8(String app, void Function(String) ok, void Function(String) warn,
   }
 
   var bad = 0;
-  for (final kt in have.where((t) => t.startsWith('Kit')).toList()..sort()) {
+  for (final kt in have.where((t) => t.startsWith('AppBoxKit')).toList()..sort()) {
     final hit = index[kt];
     if (hit == null) continue;
-    // read comment-free source: a locator<> inside a doc comment is not a peer edge
+    // read comment-free source: an appBoxKitLocator<> inside a doc comment is not a peer edge
     final peers = _captures(_stripComments(hit.text),
-            RegExp(r'locator<([A-Z][A-Za-z0-9_]*)>'))
+            RegExp(r'appBoxKitLocator<([A-Z][A-Za-z0-9_]*)>'))
         .toSet()
         .toList()
       ..sort();
     for (final peer in peers) {
       if (have.contains(peer) || peer == kt) continue;
       fail('$kt is registered but its peer $peer is not (S8) — $kt calls '
-          'locator<$peer>(); add LazySingleton(classType: $peer) to @StackedApp '
+          'appBoxKitLocator<$peer>(); add LazySingleton(classType: $peer) to @StackedApp '
           '[${_basename(hit.file)}]');
       bad++;
     }
   }
 
-  // setupKitSnackbars(): the kit registers a SnackbarConfig per KitSnackbarType.
+  // setupAppBoxKitSnackbars(): the kit registers a SnackbarConfig per AppBoxKitSnackbarType.
   // Asserting the CALL, not a main.dart template.
-  if (have.contains('KitNotificationService')) {
+  if (have.contains('AppBoxKitNotificationService')) {
     var called = false;
     for (final x in _findFiles(
         Directory('$app/lib'), (f) => f.path.endsWith('.dart'))) {
-      if (_readOrEmpty(x).contains('setupKitSnackbars')) {
+      if (_readOrEmpty(x).contains('setupAppBoxKitSnackbars')) {
         called = true;
         break;
       }
     }
     if (!called) {
-      fail('KitNotificationService is registered but setupKitSnackbars() is never '
-          'called in lib/ (S8) — the KitSnackbarType SnackbarConfig variants stay '
+      fail('AppBoxKitNotificationService is registered but setupAppBoxKitSnackbars() is never '
+          'called in lib/ (S8) — the AppBoxKitSnackbarType SnackbarConfig variants stay '
           'unregistered, so severity/position render as bare defaults '
           '(showcase_app/lib/ui/snackbars/showcase_snackbar_setup.dart is the reference call site)');
       bad++;
     }
   }
 
-  if (bad == 0) ok('peer services registered for every Kit* service (S8)');
+  if (bad == 0) ok('peer services registered for every AppBoxKit* service (S8)');
 }
 
 // ── S10: overlay ownership by enum reference (port of the embedded Python) ────
@@ -1199,7 +1200,7 @@ String _resolveRootUri(String rootUri, String appDir) {
 }
 
 /// Blank Dart comment CONTENT, preserve newlines and code. S8 is a pure selector
-/// (does this class resolve `locator<X>()`?) so it must read comment-free source — a
+/// (does this class resolve `appBoxKitLocator<X>()`?) so it must read comment-free source — a
 /// kit doc-comment showing example usage must not read as a real peer edge. Port
 /// of the embedded Python strip_comments() (handles strings, //, and nested /* */).
 String _stripComments(String src) {

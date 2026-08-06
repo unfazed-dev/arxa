@@ -311,12 +311,12 @@ String _designSystemDoc(
       '<!-- builder: spacing tokens (no ad-hoc SizedBox gaps) -->\n'
       '\n'
       '## Motion\n'
-      '<!-- builder: KitMotion.* curves/durations -->\n'
+      '<!-- builder: AppBoxKitMotionSpec.* presets/curves/durations -->\n'
       '\n'
       '## Forbidden\n'
-      '- `Icons.*` (use `KitGlyphs.*`)\n'
-      '- ad-hoc `Color(0x…)` (use `KitColors.*`)\n'
-      '- stock `ElevatedButton`/`FilledButton`/`TextButton` CTAs (use `KitNativeButton`)\n';
+      '- `Icons.*` (use `AppBoxKitGlyphs.*`)\n'
+      '- ad-hoc `Color(0x…)` (use `AppBoxKitColors.*`)\n'
+      '- stock `ElevatedButton`/`FilledButton`/`TextButton` CTAs (use `AppBoxKitNativeButton`)\n';
 }
 
 /// Token-exact Palette guidance from structure@2's `theme` block.
@@ -328,7 +328,7 @@ String _designSystemDoc(
 String _paletteSection(Map<String, dynamic>? theme) {
   if (theme == null) {
     return '## Palette\n'
-        '<!-- builder: KitColors.* tokens this surface uses -->\n';
+        '<!-- builder: AppBoxKitColors.* tokens this surface uses -->\n';
   }
   final swatches = (theme['swatches'] as List?) ?? const [];
   final names = swatches
@@ -339,7 +339,7 @@ String _paletteSection(Map<String, dynamic>? theme) {
   final def = theme['default'] as String?;
   final b = StringBuffer('## Palette\n');
   b.write('\n');
-  b.write('The ramp is `KitColors` (light) / `KitDarkColors` (dark). The brand\n'
+  b.write('The ramp is `AppBoxKitColors` (light) / `AppBoxKitDarkColors` (dark). The brand\n'
       'accent is NOT a constant — it is a user setting, so read it through the\n'
       'swatch API and never hard-code one of the hexes below.\n');
   b.write('\n');
@@ -347,15 +347,15 @@ String _paletteSection(Map<String, dynamic>? theme) {
     b.write('- **authored swatches:** ${names.map((n) => '`$n`').join(', ')}\n');
   }
   if (def != null) {
-    b.write('- **default:** `$def` — `kitAccentByName(\'$def\')`, '
-        'or `kitDefaultAccent` for the same value\n');
+    b.write('- **default:** `$def` — `appBoxKitAccentByName(\'$def\')`, '
+        'or `appBoxKitDefaultAccent` for the same value\n');
   }
-  b.write('- **read a swatch:** `kitAccentByName(name)'
+  b.write('- **read a swatch:** `appBoxKitAccentByName(name)'
       '.forBrightness(Theme.of(context).brightness)` — the 5 roles are\n'
       '  `.accent` `.soft` `.surface` `.text` `.muted`\n');
-  b.write('- **theme:** `kitLightTheme(accent: …)` / `kitDarkTheme(accent: …)` —\n'
+  b.write('- **theme:** `appBoxKitLightTheme(accent: …)` / `appBoxKitDarkTheme(accent: …)` —\n'
       '  `accent` is a `Color`, not a swatch: pass a role off the swatch\n'
-      '  (e.g. `kitAccentByName(n).forBrightness(b).accent`)\n');
+      '  (e.g. `appBoxKitAccentByName(n).forBrightness(b).accent`)\n');
   b.write('\n');
   b.write('<!-- builder: which of the 5 roles this surface uses, and where -->\n');
   return b.toString();
@@ -368,7 +368,7 @@ String _paletteSection(Map<String, dynamic>? theme) {
 String _typeSection(Map<String, dynamic>? fonts) {
   if (fonts == null) {
     return '## Type\n'
-        '<!-- builder: KitTypography.* roles -->\n';
+        '<!-- builder: TextTheme roles -->\n';
   }
   final families = (fonts['families'] as List?) ?? const [];
   final ids = families
@@ -379,22 +379,22 @@ String _typeSection(Map<String, dynamic>? fonts) {
   final def = fonts['default'] as String?;
   final b = StringBuffer('## Type\n');
   b.write('\n');
-  b.write('Sizes come from the k-scale (`KitTypography.*` roles) — the font\n'
+  b.write('Sizes come from the ax-scale (the theme\'s `TextTheme` roles) — the font\n'
       'block chooses the FACE only, never the size.\n');
   b.write('\n');
   if (ids.isNotEmpty) {
     b.write('- **declared families:** ${ids.map((i) => '`$i`').join(', ')}\n');
   }
   if (def != null) {
-    b.write('- **default:** `$def` — `kitFontById(\'$def\').cssName`\n');
+    b.write('- **default:** `$def` — `appBoxKitFontById(\'$def\').cssName`\n');
   }
   b.write('- **apply:** pass that css name to '
-      '`kitLightTheme(fontFamily: …)` / `kitDarkTheme(fontFamily: …)`\n');
+      '`appBoxKitLightTheme(fontFamily: …)` / `appBoxKitDarkTheme(fontFamily: …)`\n');
   b.write('- **NOTE:** a family name whose binary is not bundled falls back to\n'
-      '  the platform default SILENTLY — check `kitFontIsBundled` before\n'
-      '  trusting a face, and call `registerKitFontLicenses()` once bundled\n');
+      '  the platform default SILENTLY — check `appBoxKitFontIsBundled` before\n'
+      '  trusting a face, and call `registerAppBoxKitFontLicenses()` once bundled\n');
   b.write('\n');
-  b.write('<!-- builder: KitTypography.* roles this surface uses -->\n');
+  b.write('<!-- builder: TextTheme roles this surface uses -->\n');
   return b.toString();
 }
 
@@ -417,12 +417,12 @@ String _shellDesignSystemDoc(
       '<!-- builder: spacing tokens (no ad-hoc SizedBox gaps) -->\n'
       '\n'
       '## Motion\n'
-      '<!-- builder: KitMotion.* curves/durations -->\n'
+      '<!-- builder: AppBoxKitMotionSpec.* presets/curves/durations -->\n'
       '\n'
       '## Forbidden\n'
-      '- `Icons.*` (use `KitGlyphs.*`)\n'
-      '- ad-hoc `Color(0x…)` (use `KitColors.*`)\n'
-      '- stock CTA buttons (use `KitNativeButton`)\n';
+      '- `Icons.*` (use `AppBoxKitGlyphs.*`)\n'
+      '- ad-hoc `Color(0x…)` (use `AppBoxKitColors.*`)\n'
+      '- stock CTA buttons (use `AppBoxKitNativeButton`)\n';
 }
 
 /// The *_chrome.dart every self-contained shell owns (scaffold gate S6).

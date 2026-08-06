@@ -6,7 +6,7 @@
 // repo-wide R2/R3 checks (stripped names, absolute paths). The two ports
 // cover disjoint rules from the original conventions.sh family.
 //
-// Fatal (fails the gate; populates [KitConventionResult.errors]):
+// Fatal (fails the gate; populates [AppBoxKitConventionResult.errors]):
 //   - barrel lib/<pkg>.dart missing for a library kit (apps exempt)
 //   - publish_to: 'none' missing from a pubspec
 //   - SDK pin differing across kits
@@ -18,10 +18,10 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 
-class KitConventionResult {
+class AppBoxKitConventionResult {
   final List<String> errors;
   final List<String> warnings;
-  const KitConventionResult(this.errors, this.warnings);
+  const AppBoxKitConventionResult(this.errors, this.warnings);
   bool get ok => errors.isEmpty;
 }
 
@@ -30,7 +30,7 @@ const _apps = <String>{'showcase_app'};
 
 // Allowed appbox_kit_* deps per kit directory, encoding the hub-and-spoke
 // topology: core is the hub; data + ui_library may reach core (ui_library also
-// reaches motion, ADR 0011 — KitDrawer's KitMotionScope driver seam);
+// reaches motion, ADR 0011 — AppBoxKitDrawer's AppBoxKitMotionScope driver seam);
 // showcase_app aggregates all. The '*' sentinel means "any kit". A directory
 // absent from this map is standalone — no cross-kit deps at all.
 const _allowedDeps = <String, Set<String>>{
@@ -47,7 +47,7 @@ final _publishNone = RegExp("publish_to:\\s*['\"]none['\"]");
 final _sdkLine = RegExp(r'^\s*sdk:\s*.+$');
 
 /// Checks the structural contract of every kit under [kitRoot].
-KitConventionResult checkKitConventions(String kitRoot) {
+AppBoxKitConventionResult checkAppBoxKitConventions(String kitRoot) {
   final errors = <String>[];
   final warnings = <String>[];
   final sdkPins = <String>{};
@@ -100,7 +100,7 @@ KitConventionResult checkKitConventions(String kitRoot) {
     errors.add('SDK pins differ across kits: ${sdkPins.join(', ')}');
   }
 
-  return KitConventionResult(errors, warnings);
+  return AppBoxKitConventionResult(errors, warnings);
 }
 
 /// Extracts the `sdk:` constraint under `environment:` (mirrors the awk

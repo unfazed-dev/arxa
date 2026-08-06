@@ -346,21 +346,21 @@ const String inkHex = '#141414';
 const double legibleMin = 4.5;
 
 const Map<String, List<String>> iconMap = {
-  'play': ["KitGlyphs.lucide('play')", 'play.fill'],
-  'pause': ["KitGlyphs.lucide('pause')", 'pause.fill'],
-  'reset': ["KitGlyphs.lucide('refresh-cw')", 'arrow.clockwise'],
-  'back': ["KitGlyphs.lucide('chevron-left')", 'chevron.left'],
-  'chevron-left': ["KitGlyphs.lucide('chevron-left')", 'chevron.left'],
-  'chevron-right': ["KitGlyphs.lucide('chevron-right')", 'chevron.right'],
-  'chevron': ["KitGlyphs.lucide('chevron-right')", 'chevron.right'],
-  'edit': ["KitGlyphs.lucide('pencil')", 'pencil'],
-  'check': ["KitGlyphs.lucide('check')", 'checkmark'],
-  'sound': ["KitGlyphs.lucide('volume-2')", 'speaker.wave.2.fill'],
-  'close': ["KitGlyphs.lucide('x')", 'xmark'],
-  'plus': ["KitGlyphs.lucide('plus')", 'plus'],
+  'play': ["AppBoxKitGlyphs.lucide('play')", 'play.fill'],
+  'pause': ["AppBoxKitGlyphs.lucide('pause')", 'pause.fill'],
+  'reset': ["AppBoxKitGlyphs.lucide('refresh-cw')", 'arrow.clockwise'],
+  'back': ["AppBoxKitGlyphs.lucide('chevron-left')", 'chevron.left'],
+  'chevron-left': ["AppBoxKitGlyphs.lucide('chevron-left')", 'chevron.left'],
+  'chevron-right': ["AppBoxKitGlyphs.lucide('chevron-right')", 'chevron.right'],
+  'chevron': ["AppBoxKitGlyphs.lucide('chevron-right')", 'chevron.right'],
+  'edit': ["AppBoxKitGlyphs.lucide('pencil')", 'pencil'],
+  'check': ["AppBoxKitGlyphs.lucide('check')", 'checkmark'],
+  'sound': ["AppBoxKitGlyphs.lucide('volume-2')", 'speaker.wave.2.fill'],
+  'close': ["AppBoxKitGlyphs.lucide('x')", 'xmark'],
+  'plus': ["AppBoxKitGlyphs.lucide('plus')", 'plus'],
 };
 
-const List<String> defaultIcon = ["KitGlyphs.lucide('circle')", 'circle'];
+const List<String> defaultIcon = ["AppBoxKitGlyphs.lucide('circle')", 'circle'];
 
 const List<String> inlineUnderline = ['u', 'a'];
 
@@ -2518,7 +2518,7 @@ class GenerateView {
     }
 
     if (prim == 'IconButton') {
-      return "AdaptiveIconButton(icon: KitGlyphs.lucide('play'), sfSymbol: 'play.fill', "
+      return "AdaptiveIconButton(icon: AppBoxKitGlyphs.lucide('play'), sfSymbol: 'play.fill', "
           'tint: AppTokens.ink, foreground: AppTokens.bone, size: 36, '
           "onPressed: () {}, semanticLabel: 'Start workout')";
     }

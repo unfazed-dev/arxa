@@ -795,7 +795,7 @@ void _runKb(List<String> args) {
       exit(0);
     case 'conventions':
       final kitRoot = rest.isNotEmpty ? rest.first : '$repoRoot/kit';
-      final result = checkKitConventions(kitRoot);
+      final result = checkAppBoxKitConventions(kitRoot);
       for (final e in result.errors) {
         stderr.writeln('FAIL: $e');
       }

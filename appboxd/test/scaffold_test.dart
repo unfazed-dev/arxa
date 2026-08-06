@@ -133,17 +133,17 @@ void main() {
       for (final doc in [surfaceDoc(app), shellDoc(app)]) {
         expect(doc, contains('`cyan`'), reason: 'authored swatch named');
         expect(doc, contains('`amber`'), reason: 'every authored swatch named');
-        expect(doc, contains("kitAccentByName('cyan')"),
+        expect(doc, contains("appBoxKitAccentByName('cyan')"),
             reason: 'default swatch reachable through the real API');
-        expect(doc, contains('kitDefaultAccent'));
+        expect(doc, contains('appBoxKitDefaultAccent'));
         // The placeholder must be GONE — that is the whole point of Inc 6.
         expect(doc,
-            isNot(contains('<!-- builder: KitColors.* tokens this surface uses -->')),
+            isNot(contains('<!-- builder: AppBoxKitColors.* tokens this surface uses -->')),
             reason: 'placeholder replaced by token-exact guidance');
       }
     });
 
-    test('fonts present -> declared families + kitFontById, no placeholder', () {
+    test('fonts present -> declared families + appBoxKitFontById, no placeholder', () {
       final des = plantDesign('${tmp.path}/d', struct: themed());
       final app = '${tmp.path}/app1';
       expect(scaffold(des, app, ['macos'], derivationPath, configPath), 0);
@@ -151,11 +151,11 @@ void main() {
       for (final doc in [surfaceDoc(app), shellDoc(app)]) {
         expect(doc, contains('`lexend`'));
         expect(doc, contains('`space-grotesk`'));
-        expect(doc, contains("kitFontById('lexend').cssName"));
+        expect(doc, contains("appBoxKitFontById('lexend').cssName"));
         // The BARE placeholder must be gone. The populated section keeps its
         // own trailing builder prompt ("...roles this surface uses"), which is
         // a superstring — so assert the exact bare form, not a prefix.
-        expect(doc, isNot(contains('<!-- builder: KitTypography.* roles -->')),
+        expect(doc, isNot(contains('<!-- builder: TextTheme roles -->')),
             reason: 'placeholder replaced by token-exact guidance');
       }
     });
@@ -170,12 +170,12 @@ void main() {
       expect(scaffold(des, app, ['macos'], derivationPath, configPath), 0);
 
       for (final doc in [surfaceDoc(app), shellDoc(app)]) {
-        expect(doc, contains('<!-- builder: KitTypography.* roles -->'),
+        expect(doc, contains('<!-- builder: TextTheme roles -->'),
             reason: 'no fonts block -> placeholder, never invented faces');
-        expect(doc, isNot(contains('kitFontById')),
+        expect(doc, isNot(contains('appBoxKitFontById')),
             reason: 'never names a face the design has not declared');
         // theme is still present, so the Palette half stays token-exact.
-        expect(doc, contains("kitAccentByName('cyan')"));
+        expect(doc, contains("appBoxKitAccentByName('cyan')"));
       }
     });
 
@@ -189,9 +189,9 @@ void main() {
 
       for (final doc in [surfaceDoc(app), shellDoc(app)]) {
         expect(doc,
-            contains('<!-- builder: KitColors.* tokens this surface uses -->'));
-        expect(doc, contains('<!-- builder: KitTypography.* roles -->'));
-        expect(doc, isNot(contains('kitAccentByName')),
+            contains('<!-- builder: AppBoxKitColors.* tokens this surface uses -->'));
+        expect(doc, contains('<!-- builder: TextTheme roles -->'));
+        expect(doc, isNot(contains('appBoxKitAccentByName')),
             reason: 'a structure@1 design invents no tokens');
       }
     });
@@ -285,8 +285,8 @@ void main() {
       expect(File('$sh/design-system.md').existsSync(), isTrue,
           reason: 'shell-level design-system.md emitted');
       final ds = File('$sh/design-system.md').readAsStringSync();
-      expect(ds.contains('## Palette') && ds.contains('KitColors'), isTrue,
-          reason: 'shell design-system.md carries Palette + KitColors (S4)');
+      expect(ds.contains('## Palette') && ds.contains('AppBoxKitColors'), isTrue,
+          reason: 'shell design-system.md carries Palette + AppBoxKitColors (S4)');
       expect(File('$sh/stage_shell_chrome.dart').existsSync(), isTrue,
           reason: 'shell *_chrome.dart emitted (S6)');
     });

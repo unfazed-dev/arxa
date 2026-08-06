@@ -7,7 +7,7 @@
 // handle its failures?* It answers it on every commit, with **no toolchain, no
 // credentials, no device**.
 //
-// The pattern mirrors the deploy kit's `KitProcessRunner` /
+// The pattern mirrors the deploy kit's `AppBoxKitProcessRunner` /
 // `ScriptedProcessRunner`: every external SDK is invoked through a
 // `ProcessRunner`. The real runner shells out; the scripted runner is a fake
 // that **asserts the command shape** and returns canned results. The suite
@@ -44,7 +44,7 @@ import 'dart:io';
 import 'package:appboxd/crypto_aead.dart' as crypto;
 
 // --------------------------------------------------------------------------- //
-// Process runner port (mirrors the deploy kit's KitProcessRunner seam)
+// Process runner port (mirrors the deploy kit's AppBoxKitProcessRunner seam)
 // --------------------------------------------------------------------------- //
 
 /// Result of one SDK/CLI invocation — port of tier1.py's `CompletedProc`.
@@ -303,7 +303,7 @@ const _defaultSeed = <String, _SeededUser>{
 /// is the real kit backend ported from this spec (same seeds, failure
 /// messages, deterministic token minting); its behavior suite is
 /// `kit/auth/test/backends/seed_auth_backend_test.dart`. Deliberate deltas
-/// there: it is async behind the kit's `KitAuthService` interface, tracks a
+/// there: it is async behind the kit's `AppBoxKitAuthService` interface, tracks a
 /// single current user for the auth-state stream (per-uid sessions are still
 /// kept — see its `currentUserFor`), and refuses use after `dispose()`.
 /// Email matching is exact after trim, both here and in the kit.
@@ -429,7 +429,7 @@ class SeedAuthBackend {
 //   - tileUserAgentHeader     <-> flutter_map's UA header the kit tests assert
 
 /// Which map backend a provider wraps — spec copy of kit/maps'
-/// `KitMapProviderKind`.
+/// `AppBoxKitMapProviderKind`.
 enum MapProviderKind { google, apple, openStreetMap, mapbox }
 
 /// Spec copy of kit/maps' `defaultProviderFor`: Apple Maps on iOS
