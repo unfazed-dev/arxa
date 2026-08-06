@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:rxdart/rxdart.dart';
 import 'package:appbox_kit_media/appbox_kit_media.dart' show AppBoxKitPlaybackState;
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
@@ -147,26 +145,22 @@ class ShowcaseNoteEditorViewModel extends AppBoxKitViewModel {
   /// the superseded handles complete with the eventual save's result (the
   /// caller drops them — fire-and-forget by construction). The VM is
   /// per-note, so the entity key is implicit in the owner identity.
+  /// `flushOnDispose` lands the final write: leaving the editor inside the
+  /// debounce window saves immediately instead of dropping the keystrokes.
   late final _autosave = pipeline.pipe<Null, void>(
     'save',
     (_) => _flushSave(),
     debounce: const Duration(milliseconds: 500),
     errorMessage: 'Save failed',
+    flushOnDispose: true,
   );
-
-  /// Tracks a not-yet-written body edit so [dispose] can flush it — the
-  /// pipeline cancels pending debounce timers on dispose, but the user's last
-  /// keystrokes must still land.
-  bool _savePending = false;
 
   void onBodyChanged(String value) {
     _body = value;
-    _savePending = true;
     _autosave.dispatch(null);
   }
 
   Future<void> _flushSave() async {
-    _savePending = false;
     final current = _note;
     if (current == null) return;
     await _notes.saveBody(current, _body);
@@ -221,9 +215,8 @@ class ShowcaseNoteEditorViewModel extends AppBoxKitViewModel {
   void dispose() {
     // Clear any unconsumed intent so it can't leak into the next editor open.
     pendingAction = null;
-    // Flush a pending debounced save before the pipeline's dispose cancels
-    // its timer — the user typed it, the write must land.
-    if (_savePending) unawaited(_flushSave());
+    // A pending debounced save is flushed by the pipe's flushOnDispose in
+    // super.dispose() → disposeAppBoxKitActions.
     super.dispose();
   }
 }
