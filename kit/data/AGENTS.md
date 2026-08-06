@@ -8,41 +8,41 @@ This file owns the data-layer contract.
 
 ## The contract
 
-- **Schema Descriptor is the single source of truth.** One `KitTableSchema`
-  per table (`lib/schema/kit_table_schema.dart`) drives fixture validation,
+- **Schema Descriptor is the single source of truth.** One `AppBoxKitTableSchema`
+  per table (`lib/schema/appbox_kit_table_schema.dart`) drives fixture validation,
   the seed store, and the emitters. Storage mapping lives on the schema,
   **never on the model** — a model is plain Dart plus its Codec
-  (`fromJson`/`toJson`), registered as one `KitEntityRegistration<T>`.
+  (`fromJson`/`toJson`), registered as one `AppBoxKitEntityRegistration<T>`.
 - **Layering:** `View → ViewModel → Facade Service → Repository → Backend`.
-  The `KitDataFacade` subclass is the only layer ViewModels talk to; it
+  The `AppBoxKitDataFacade` subclass is the only layer ViewModels talk to; it
   composes repositories into derived streams and routes writes through
-  `KitAction` via `mutate(...)`. `KitRepository<T>` is the swap seam — one
+  `AppBoxKitAction` via `mutate(...)`. `AppBoxKitRepository<T>` is the swap seam — one
   interface, three implementations (seed / Supabase / Appwrite), no codegen.
-- **`KitQuery` stays deliberately tiny** (`lib/query/kit_query.dart`): eq/gt/lt
+- **`AppBoxKitQuery` stays deliberately tiny** (`lib/query/appbox_kit_query.dart`): eq/gt/lt
   filters + orderBy + limit — every operator satisfiable single-table on all
   three backends. **Joins and aggregates are facade work** (`.map()` over
   streams), never query work. Nested collections live in `jsonb` columns,
   never child tables.
-- **Canonical IDs are deterministic UUIDv5** (`lib/ids/kit_id_service.dart`,
+- **Canonical IDs are deterministic UUIDv5** (`lib/ids/appbox_kit_id_service.dart`,
   ADR-0001): anything not already a UUID becomes
   `uuid.v5(namespace, '<table>:<key>')`, so one fixture yields byte-identical
   PKs on every backend and re-seeding is idempotent. The namespace is
   load-bearing — changing it orphans every stored row.
 - **Fixtures carry Seed Keys** (human-readable, e.g. `p-1`); the
-  `KitIdService` canonicalizes them. The **Seeder**
-  (`lib/seeding/kit_data_seeder.dart`) pushes the same fixtures to the remote
+  `AppBoxKitIdService` canonicalizes them. The **Seeder**
+  (`lib/seeding/appbox_kit_data_seeder.dart`) pushes the same fixtures to the remote
   backend — idempotent upserts in reference order; it refuses the seed
   backend (fixtures load themselves at initialize).
-- **Backend swap is config, not code:** `KitDataConfig.backend`
-  (`lib/config/kit_data_config.dart`) — exactly one of seed / Supabase
-  (default) / Appwrite active per run. The host calls `KitData.initialize`
+- **Backend swap is config, not code:** `AppBoxKitDataConfig.backend`
+  (`lib/config/appbox_kit_data_config.dart`) — exactly one of seed / Supabase
+  (default) / Appwrite active per run. The host calls `AppBoxKitData.initialize`
   once in `main()` after `setupLocator()`; the kit never self-registers.
-- **Seed Profiles are config too:** `KitDataConfig.seedProfile`
-  (`lib/config/kit_seed_profile.dart`) — latency/failure injection applied
-  by every `KitSeedRepository` (`KitSeedProfile.slow` / `.failing`, typed
-  `KitSeedException`; default is a pass-through). The host owns the profile
+- **Seed Profiles are config too:** `AppBoxKitDataConfig.seedProfile`
+  (`lib/config/appbox_kit_seed_profile.dart`) — latency/failure injection applied
+  by every `AppBoxKitSeedRepository` (`AppBoxKitSeedProfile.slow` / `.failing`, typed
+  `AppBoxKitSeedException`; default is a pass-through). The host owns the profile
   names, the fixture selection (`empty` = an empty fixture list), and any
-  persona sign-in after boot; `KitSeedAuthService` bypasses injection (it
+  persona sign-in after boot; `AppBoxKitSeedAuthService` bypasses injection (it
   reads the store directly, never through repositories).
 - **Generated artifacts are never hand-edited.** The emitters
   (`lib/emitters/`) render Supabase migration SQL, Supabase seed SQL, and the
@@ -52,7 +52,7 @@ This file owns the data-layer contract.
 
 ## Gotchas that bite
 
-- Files defining a `KitTableSchema` or `KitEntityRegistration` use **targeted
+- Files defining a `AppBoxKitTableSchema` or `AppBoxKitEntityRegistration` use **targeted
   imports, never the barrel** — the barrel re-exports the Supabase/Appwrite
   adapters, whose FFI deps crash the pure-Dart kernel compile inside
   `dart run` generators.
@@ -65,9 +65,9 @@ This file owns the data-layer contract.
 
 ## Testing
 
-`lib/testing.dart` ships `FakeKitRepository<T>` + `FakeKitDataFacade`;
-`KitMemoryAssetReader` (`lib/assets/kit_asset_reader.dart`) injects fixture
-JSON with no Flutter binding, and `KitData.resetForTesting()` clears the
+`lib/appbox_kit_testing.dart` ships `FakeAppBoxKitRepository<T>` + `FakeAppBoxKitDataFacade`;
+`AppBoxKitMemoryAssetReader` (`lib/assets/appbox_kit_asset_reader.dart`) injects fixture
+JSON with no Flutter binding, and `AppBoxKitData.resetForTesting()` clears the
 composition root between cases. Prefer real components over scripted mocks —
-a real `KitSeedStore` backed by `KitNoPersistence` is the usual substrate;
+a real `AppBoxKitSeedStore` backed by `AppBoxKitNoPersistence` is the usual substrate;
 assert on stream emissions and `tableSnapshot` rows, not mock call-counts.

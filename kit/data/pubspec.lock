@@ -63,6 +63,13 @@ packages:
       relative: true
     source: path
     version: "0.1.0"
+  appbox_kit_ui_library:
+    dependency: "direct main"
+    description:
+      path: "../ui_library"
+      relative: true
+    source: path
+    version: "0.1.0"
   appwrite:
     dependency: "direct main"
     description:
@@ -1153,13 +1160,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.4.0"
-  ui_library:
-    dependency: "direct main"
-    description:
-      path: "../ui_library"
-      relative: true
-    source: path
-    version: "0.1.0"
   universal_io:
     dependency: transitive
     description:

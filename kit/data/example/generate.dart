@@ -15,11 +15,11 @@ library;
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:appbox_kit_data/emitters/kit_appwrite_json_emitter.dart';
-import 'package:appbox_kit_data/emitters/kit_supabase_seed_emitter.dart';
-import 'package:appbox_kit_data/emitters/kit_supabase_sql_emitter.dart';
-import 'package:appbox_kit_data/ids/kit_id_service.dart';
-import 'package:appbox_kit_data/schema/kit_table_schema.dart';
+import 'package:appbox_kit_data/emitters/appbox_kit_appwrite_json_emitter.dart';
+import 'package:appbox_kit_data/emitters/appbox_kit_supabase_seed_emitter.dart';
+import 'package:appbox_kit_data/emitters/appbox_kit_supabase_sql_emitter.dart';
+import 'package:appbox_kit_data/ids/appbox_kit_id_service.dart';
+import 'package:appbox_kit_data/schema/appbox_kit_table_schema.dart';
 
 import 'schema.dart';
 
@@ -30,7 +30,7 @@ Future<void> main() async {
     ..createSync(recursive: true);
 
   final fixturesByTable = <String, List<Map<String, dynamic>>>{};
-  final schemasByTable = <String, KitTableSchema>{};
+  final schemasByTable = <String, AppBoxKitTableSchema>{};
   for (final schema in exampleSchemas) {
     schemasByTable[schema.table] = schema;
     final fixtureFile = File('${seedDir.path}/${schema.table}.json');
@@ -38,14 +38,14 @@ Future<void> main() async {
     fixturesByTable[schema.table] = decoded.cast<Map<String, dynamic>>();
   }
 
-  final migrationSql = KitSupabaseSqlEmitter().emit(exampleSchemas);
+  final migrationSql = AppBoxKitSupabaseSqlEmitter().emit(exampleSchemas);
 
-  final seedSql = KitSupabaseSeedEmitter(idService: KitIdService()).emit(
+  final seedSql = AppBoxKitSupabaseSeedEmitter(idService: AppBoxKitIdService()).emit(
     fixturesByTable: fixturesByTable,
     schemasByTable: schemasByTable,
   );
 
-  final appwriteJson = KitAppwriteJsonEmitter().emit(
+  final appwriteJson = AppBoxKitAppwriteJsonEmitter().emit(
     schemas: exampleSchemas,
     databaseId: 'example_db',
   );
