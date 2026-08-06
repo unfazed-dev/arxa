@@ -5,8 +5,8 @@ import 'dart:typed_data';
 /// Plugin-neutral: `file_selector`'s `XFile` stays behind the seam. Bytes are
 /// read lazily via [readBytes] so a large file is not loaded until needed (and
 /// so the value stays cheap to pass around / fake).
-class KitPickedDocument {
-  const KitPickedDocument({
+class AppBoxKitPickedDocument {
+  const AppBoxKitPickedDocument({
     required this.name,
     required this.readBytes,
     this.path,
@@ -27,5 +27,5 @@ class KitPickedDocument {
 
   @override
   String toString() =>
-      'KitPickedDocument($name, path: $path, mimeType: $mimeType)';
+      'AppBoxKitPickedDocument($name, path: $path, mimeType: $mimeType)';
 }

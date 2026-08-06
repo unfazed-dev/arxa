@@ -29,9 +29,9 @@ API-first document kit — typed ports for document scanning, OCR and PDF (stubb
 
 Exported from `lib/appbox_kit_documents.dart`:
 
-<Table id="documents-api" columns={["Symbol", "Kind", "Defined in"]} rows={[["KitDocumentPickerService", "abstract interface class", "src/kit_document_picker_service.dart"], ["FileSelectorKitDocumentPickerService", "class", "src/kit_document_picker_service.dart"], ["KitScannedPage", "class", "src/kit_document_scan_service.dart"], ["KitScannedDocument", "class", "src/kit_document_scan_service.dart"], ["KitDocumentScanService", "abstract interface class", "src/kit_document_scan_service.dart"], ["UnimplementedKitDocumentScanService", "class", "src/kit_document_scan_service.dart"], ["KitOcrBlock", "class", "src/kit_ocr_service.dart"], ["KitOcrResult", "class", "src/kit_ocr_service.dart"], ["KitOcrService", "abstract interface class", "src/kit_ocr_service.dart"], ["UnimplementedKitOcrService", "class", "src/kit_ocr_service.dart"], ["KitPdfPageImage", "class", "src/kit_pdf_service.dart"], ["KitPdfService", "abstract interface class", "src/kit_pdf_service.dart"], ["UnimplementedKitPdfService", "class", "src/kit_pdf_service.dart"], ["KitPdfViewer", "class", "src/kit_pdf_viewer.dart"], ["KitPickedDocument", "class", "src/kit_picked_document.dart"], ["PdfrxPdfService", "class", "src/pdfrx_pdf_service.dart"]]} />
+<Table id="documents-api" columns={["Symbol", "Kind", "Defined in"]} rows={[["AppBoxKitDocumentPickerService", "abstract interface class", "src/appbox_kit_document_picker_service.dart"], ["FileSelectorAppBoxKitDocumentPickerService", "class", "src/appbox_kit_document_picker_service.dart"], ["AppBoxKitScannedPage", "class", "src/appbox_kit_document_scan_service.dart"], ["AppBoxKitScannedDocument", "class", "src/appbox_kit_document_scan_service.dart"], ["AppBoxKitDocumentScanService", "abstract interface class", "src/appbox_kit_document_scan_service.dart"], ["UnimplementedAppBoxKitDocumentScanService", "class", "src/appbox_kit_document_scan_service.dart"], ["AppBoxKitOcrBlock", "class", "src/appbox_kit_ocr_service.dart"], ["AppBoxKitOcrResult", "class", "src/appbox_kit_ocr_service.dart"], ["AppBoxKitOcrService", "abstract interface class", "src/appbox_kit_ocr_service.dart"], ["UnimplementedAppBoxKitOcrService", "class", "src/appbox_kit_ocr_service.dart"], ["AppBoxKitPdfPageImage", "class", "src/appbox_kit_pdf_service.dart"], ["AppBoxKitPdfService", "abstract interface class", "src/appbox_kit_pdf_service.dart"], ["UnimplementedAppBoxKitPdfService", "class", "src/appbox_kit_pdf_service.dart"], ["AppBoxKitPdfViewer", "class", "src/appbox_kit_pdf_viewer.dart"], ["AppBoxKitPickedDocument", "class", "src/appbox_kit_picked_document.dart"], ["AppBoxKitPdfrxPdfService", "class", "src/appbox_kit_pdfrx_pdf_service.dart"]]} />
 
-Test doubles in `lib/testing.dart`: `FakeKitDocumentPickerService`, `FakeKitDocumentScanService`, `FakeKitOcrService`, `FakeKitPdfService`.
+Test doubles in `lib/appbox_kit_testing.dart`: `FakeAppBoxKitDocumentPickerService`, `FakeAppBoxKitDocumentScanService`, `FakeAppBoxKitOcrService`, `FakeAppBoxKitPdfService`.
 
 Scripts and call-counts — tests never touch platform channels.
 
@@ -43,8 +43,8 @@ Add `appbox_kit_documents` to your `pubspec.yaml` — it transitively pulls only
 ```dart
 import 'package:appbox_kit_documents/appbox_kit_documents.dart';
 
-final picker = FileSelectorKitDocumentPickerService();
-final KitPickedDocument? doc = await picker.pickDocument(extensions: ['pdf']);
+final picker = FileSelectorAppBoxKitDocumentPickerService();
+final AppBoxKitPickedDocument? doc = await picker.pickDocument(extensions: ['pdf']);
 if (doc != null) {
   final Uint8List bytes = await doc.readBytes();
 }
@@ -62,7 +62,7 @@ See `kit_matrix.md` for the full routing + dependency graph.
 
 ### Architecture
 
-The kit is four `abstract interface class` ports — `KitDocumentPickerService`, `KitDocumentScanService`, `KitOcrService`, `KitPdfService` — each with its own concrete adapter behind the seam. Only the picker has a live adapter (`FileSelectorKitDocumentPickerService` over `file_selector`); scan, OCR, and PDF ship `Unimplemented…` classes whose methods throw `UnimplementedError`, holding final signatures stable until the phase-2 native backends. Dependency direction is strictly outward: the package imports only `dart:typed_data` and `file_selector`, and nothing from `appbox_kit*`, `stacked`, or `stacked_services`. The `file_selector` `XFile` never crosses the seam — adapters project it onto plugin-neutral value types (`KitPickedDocument`, `KitScannedPage`, `KitOcrResult`, `KitPdfPageImage`), and bytes are read lazily so large files stay unloaded until used.
+The kit is four `abstract interface class` ports — `AppBoxKitDocumentPickerService`, `AppBoxKitDocumentScanService`, `AppBoxKitOcrService`, `AppBoxKitPdfService` — each with its own concrete adapter behind the seam. Only the picker has a live adapter (`FileSelectorAppBoxKitDocumentPickerService` over `file_selector`); scan, OCR, and PDF ship `Unimplemented…` classes whose methods throw `UnimplementedError`, holding final signatures stable until the phase-2 native backends. Dependency direction is strictly outward: the package imports only `dart:typed_data` and `file_selector`, and nothing from `appbox_kit*`, `stacked`, or `stacked_services`. The `file_selector` `XFile` never crosses the seam — adapters project it onto plugin-neutral value types (`AppBoxKitPickedDocument`, `AppBoxKitScannedPage`, `AppBoxKitOcrResult`, `AppBoxKitPdfPageImage`), and bytes are read lazily so large files stay unloaded until used.
 
 
 ### Gotchas
@@ -79,16 +79,16 @@ Backing package (working path) verified pub.dev 2026-07-14: `file_selector`
 
 ### Testing
 
-`package:appbox_kit_documents/testing.dart` exports fakes for all four ports —
-`FakeKitDocumentPickerService`, `FakeKitDocumentScanService`,
-`FakeKitOcrService`, `FakeKitPdfService`. Each supports a `failWith` error to
+`package:appbox_kit_documents/appbox_kit_testing.dart` exports fakes for all four ports —
+`FakeAppBoxKitDocumentPickerService`, `FakeAppBoxKitDocumentScanService`,
+`FakeAppBoxKitOcrService`, `FakeAppBoxKitPdfService`. Each supports a `failWith` error to
 exercise **failure states**; the picker/scan fakes return `null` to simulate a
 **user cancel**.
 
 
 ### Features
 
-<Checklist id="documents-features" items={[{"id": "documents-feat-0", "label": "`KitDocumentPickerService` \u2014 abstract interface class"}, {"id": "documents-feat-1", "label": "`FileSelectorKitDocumentPickerService` \u2014 class"}, {"id": "documents-feat-2", "label": "`KitScannedPage` \u2014 class"}, {"id": "documents-feat-3", "label": "`KitScannedDocument` \u2014 class"}, {"id": "documents-feat-4", "label": "`KitDocumentScanService` \u2014 abstract interface class"}, {"id": "documents-feat-5", "label": "`UnimplementedKitDocumentScanService` \u2014 class"}, {"id": "documents-feat-6", "label": "`KitOcrBlock` \u2014 class"}, {"id": "documents-feat-7", "label": "`KitOcrResult` \u2014 class"}, {"id": "documents-feat-8", "label": "`KitOcrService` \u2014 abstract interface class"}, {"id": "documents-feat-9", "label": "`UnimplementedKitOcrService` \u2014 class"}, {"id": "documents-feat-10", "label": "`KitPdfPageImage` \u2014 class"}, {"id": "documents-feat-11", "label": "`KitPdfService` \u2014 abstract interface class"}]} />
+<Checklist id="documents-features" items={[{"id": "documents-feat-0", "label": "`AppBoxKitDocumentPickerService` \u2014 abstract interface class"}, {"id": "documents-feat-1", "label": "`FileSelectorAppBoxKitDocumentPickerService` \u2014 class"}, {"id": "documents-feat-2", "label": "`AppBoxKitScannedPage` \u2014 class"}, {"id": "documents-feat-3", "label": "`AppBoxKitScannedDocument` \u2014 class"}, {"id": "documents-feat-4", "label": "`AppBoxKitDocumentScanService` \u2014 abstract interface class"}, {"id": "documents-feat-5", "label": "`UnimplementedAppBoxKitDocumentScanService` \u2014 class"}, {"id": "documents-feat-6", "label": "`AppBoxKitOcrBlock` \u2014 class"}, {"id": "documents-feat-7", "label": "`AppBoxKitOcrResult` \u2014 class"}, {"id": "documents-feat-8", "label": "`AppBoxKitOcrService` \u2014 abstract interface class"}, {"id": "documents-feat-9", "label": "`UnimplementedAppBoxKitOcrService` \u2014 class"}, {"id": "documents-feat-10", "label": "`AppBoxKitPdfPageImage` \u2014 class"}, {"id": "documents-feat-11", "label": "`AppBoxKitPdfService` \u2014 abstract interface class"}]} />
 
 
 ### Decisions / ADRs

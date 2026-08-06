@@ -7,9 +7,9 @@ import 'package:pdfrx/pdfrx.dart';
 /// pdfrx's `PdfViewer` (PDFium: iOS/Android/macOS/Windows/Linux/Web).
 ///
 /// Four source constructors mirror `PdfViewer`'s own. For headless page
-/// rasterization use [PdfrxPdfService] instead.
-class KitPdfViewer extends StatelessWidget {
-  const KitPdfViewer.data(
+/// rasterization use [AppBoxKitPdfrxPdfService] instead.
+class AppBoxKitPdfViewer extends StatelessWidget {
+  const AppBoxKitPdfViewer.data(
     Uint8List bytes, {
     super.key,
     required this.sourceName,
@@ -20,7 +20,7 @@ class KitPdfViewer extends StatelessWidget {
        _filePath = null,
        _uri = null;
 
-  const KitPdfViewer.asset(
+  const AppBoxKitPdfViewer.asset(
     String asset, {
     super.key,
     this.params = const PdfViewerParams(),
@@ -31,7 +31,7 @@ class KitPdfViewer extends StatelessWidget {
        _uri = null,
        sourceName = asset;
 
-  const KitPdfViewer.file(
+  const AppBoxKitPdfViewer.file(
     String path, {
     super.key,
     this.params = const PdfViewerParams(),
@@ -42,7 +42,7 @@ class KitPdfViewer extends StatelessWidget {
        _uri = null,
        sourceName = path;
 
-  const KitPdfViewer.network(
+  const AppBoxKitPdfViewer.network(
     String url, {
     super.key,
     this.params = const PdfViewerParams(),
@@ -59,7 +59,7 @@ class KitPdfViewer extends StatelessWidget {
   final String? _uri;
 
   /// Source ID pdfrx uses to key caches/password prompts. Required only for
-  /// [KitPdfViewer.data] (bytes carry no identity); the path/URL constructors
+  /// [AppBoxKitPdfViewer.data] (bytes carry no identity); the path/URL constructors
   /// default it to the path/URL itself.
   final String sourceName;
 

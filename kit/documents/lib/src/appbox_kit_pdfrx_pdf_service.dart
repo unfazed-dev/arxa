@@ -3,9 +3,9 @@ import 'dart:ui' as ui;
 
 import 'package:pdfrx/pdfrx.dart';
 
-import 'kit_pdf_service.dart';
+import 'appbox_kit_pdf_service.dart';
 
-/// [KitPdfService] backed by `pdfrx` (PDFium).
+/// [AppBoxKitPdfService] backed by `pdfrx` (PDFium).
 ///
 /// Chosen over the native-first PDFKit/`PdfRenderer` plan because PDFium via
 /// pdfrx covers iOS, Android, macOS, Windows, Linux **and web** with one code
@@ -13,7 +13,7 @@ import 'kit_pdf_service.dart';
 ///
 /// [createFromImages] stays unimplemented: pdfrx renders PDFs, it does not
 /// assemble them.
-class PdfrxPdfService implements KitPdfService {
+class AppBoxKitPdfrxPdfService implements AppBoxKitPdfService {
   static bool _initialized = false;
 
   /// Engine APIs used before any pdfrx widget is built require this once.
@@ -35,7 +35,7 @@ class PdfrxPdfService implements KitPdfService {
   }
 
   @override
-  Future<KitPdfPageImage> renderPage(
+  Future<AppBoxKitPdfPageImage> renderPage(
     Uint8List pdfBytes,
     int pageIndex, {
     double scale = 1.0,
@@ -53,7 +53,7 @@ class PdfrxPdfService implements KitPdfService {
       }
       try {
         final png = await _encodePng(image.pixels, image.width, image.height);
-        return KitPdfPageImage(
+        return AppBoxKitPdfPageImage(
           imageBytes: png,
           width: image.width,
           height: image.height,
@@ -100,5 +100,5 @@ class PdfrxPdfService implements KitPdfService {
   // package:pdf (or the native compositor) when a caller needs this.
   @override
   Future<Uint8List> createFromImages(List<Uint8List> pageImages) =>
-      throw UnimplementedError('KitPdfService.createFromImages');
+      throw UnimplementedError('AppBoxKitPdfService.createFromImages');
 }

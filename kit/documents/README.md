@@ -11,25 +11,25 @@ page counting/rendering via `pdfrx`).
 
 ### Working paths
 
-- `KitDocumentPickerService` — `pickDocument({extensions})` /
+- `AppBoxKitDocumentPickerService` — `pickDocument({extensions})` /
   `pickDocuments({extensions})`. Backed by `file_selector`
-  (`FileSelectorKitDocumentPickerService`).
-- `KitPickedDocument` — `name` / `path` / `mimeType` / lazy `readBytes()`.
+  (`FileSelectorAppBoxKitDocumentPickerService`).
+- `AppBoxKitPickedDocument` — `name` / `path` / `mimeType` / lazy `readBytes()`.
   `file_selector`'s `XFile` never crosses the seam.
-- `KitPdfService` — `pageCount` / `renderPage` backed by **`pdfrx`**
-  (`PdfrxPdfService`, PDFium: iOS/Android/macOS/Windows/Linux/Web).
+- `AppBoxKitPdfService` — `pageCount` / `renderPage` backed by **`pdfrx`**
+  (`AppBoxKitPdfrxPdfService`, PDFium: iOS/Android/macOS/Windows/Linux/Web).
   `createFromImages` stays stubbed — pdfrx renders, it does not assemble.
-- `KitPdfViewer` — interactive viewing (scroll/zoom/selection) over pdfrx's
+- `AppBoxKitPdfViewer` — interactive viewing (scroll/zoom/selection) over pdfrx's
   `PdfViewer`; `.data` / `.asset` / `.file` / `.network` constructors.
 
 ### Stub ports (phase 2 — native-first)
 
 Mission name → class:
 
-- `DocumentScanService` → **`KitDocumentScanService`** (`scan({pageLimit})` →
-  `KitScannedDocument`/`KitScannedPage`).
-- `OcrService` → **`KitOcrService`** (`recognizeText(bytes)` → `KitOcrResult`/
-  `KitOcrBlock`).
+- `DocumentScanService` → **`AppBoxKitDocumentScanService`** (`scan({pageLimit})` →
+  `AppBoxKitScannedDocument`/`AppBoxKitScannedPage`).
+- `OcrService` → **`AppBoxKitOcrService`** (`recognizeText(bytes)` → `AppBoxKitOcrResult`/
+  `AppBoxKitOcrBlock`).
 
 Each ships an `Unimplemented…` concrete class whose methods throw
 `UnimplementedError` and carry `// TODO(appbox_kit_documents)` tags naming the
@@ -50,9 +50,9 @@ Backing package (working path) verified pub.dev 2026-07-14: `file_selector`
 
 ## Testing
 
-`package:appbox_kit_documents/testing.dart` exports fakes for all four ports —
-`FakeKitDocumentPickerService`, `FakeKitDocumentScanService`,
-`FakeKitOcrService`, `FakeKitPdfService`. Each supports a `failWith` error to
+`package:appbox_kit_documents/appbox_kit_testing.dart` exports fakes for all four ports —
+`FakeAppBoxKitDocumentPickerService`, `FakeAppBoxKitDocumentScanService`,
+`FakeAppBoxKitOcrService`, `FakeAppBoxKitPdfService`. Each supports a `failWith` error to
 exercise **failure states**; the picker/scan fakes return `null` to simulate a
 **user cancel**.
 

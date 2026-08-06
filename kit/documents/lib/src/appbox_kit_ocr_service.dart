@@ -1,8 +1,8 @@
 import 'dart:typed_data';
 
 /// A recognized block of text with its position on the source image.
-class KitOcrBlock {
-  const KitOcrBlock({
+class AppBoxKitOcrBlock {
+  const AppBoxKitOcrBlock({
     required this.text,
     this.confidence,
   });
@@ -15,8 +15,8 @@ class KitOcrBlock {
 }
 
 /// The result of running OCR over an image.
-class KitOcrResult {
-  const KitOcrResult({
+class AppBoxKitOcrResult {
+  const AppBoxKitOcrResult({
     required this.fullText,
     required this.blocks,
   });
@@ -25,7 +25,7 @@ class KitOcrResult {
   final String fullText;
 
   /// Per-block breakdown.
-  final List<KitOcrBlock> blocks;
+  final List<AppBoxKitOcrBlock> blocks;
 }
 
 /// Port for optical character recognition over an image.
@@ -33,17 +33,17 @@ class KitOcrResult {
 /// STUB (phase 2). Corresponds to the mission's `OcrService`. Native-first
 /// plan: **Vision `VNRecognizeTextRequest` on iOS**, **ML Kit Text Recognition
 /// on Android**.
-abstract interface class KitOcrService {
+abstract interface class AppBoxKitOcrService {
   /// Recognizes text in the encoded image [imageBytes].
-  Future<KitOcrResult> recognizeText(Uint8List imageBytes);
+  Future<AppBoxKitOcrResult> recognizeText(Uint8List imageBytes);
 }
 
-/// Not-yet-implemented [KitOcrService] — throws so callers fail loudly.
-class UnimplementedKitOcrService implements KitOcrService {
-  const UnimplementedKitOcrService();
+/// Not-yet-implemented [AppBoxKitOcrService] — throws so callers fail loudly.
+class UnimplementedAppBoxKitOcrService implements AppBoxKitOcrService {
+  const UnimplementedAppBoxKitOcrService();
 
   // TODO(appbox_kit_documents): implement over Vision (iOS) / ML Kit (Android).
   @override
-  Future<KitOcrResult> recognizeText(Uint8List imageBytes) =>
-      throw UnimplementedError('KitOcrService.recognizeText');
+  Future<AppBoxKitOcrResult> recognizeText(Uint8List imageBytes) =>
+      throw UnimplementedError('AppBoxKitOcrService.recognizeText');
 }
