@@ -32,7 +32,7 @@ class FakeAppBoxKitTransport {
 
 void main() {
   group('AppBoxKitOpenAIChatStream', () {
-    test('request shape: URL, auth header, body', () async {
+    test('kit.genui-bridge.openai-adapter — request shape: URL, auth header, body', () async {
       final transport = FakeAppBoxKitTransport()
         ..responseChunks = const ['data: [DONE]\n\n'];
       final chat = AppBoxKitOpenAIChatStream(
@@ -57,7 +57,7 @@ void main() {
       expect(transport.decodedBody.containsKey('response_format'), isFalse);
     });
 
-    test('maps the schema hint to response_format', () async {
+    test('kit.genui-bridge.openai-adapter — maps the schema hint to response_format', () async {
       final transport = FakeAppBoxKitTransport()
         ..responseChunks = const ['data: [DONE]\n\n'];
       final chat = AppBoxKitOpenAIChatStream(
@@ -90,7 +90,7 @@ void main() {
       });
     });
 
-    test('jsonObjectOnly policy: json_object on the wire, schema in a system '
+    test('kit.genui-bridge.openai-adapter — jsonObjectOnly policy: json_object on the wire, schema in a system '
         'message (the documented Kimi idiom)', () async {
       final transport = FakeAppBoxKitTransport()
         ..responseChunks = const ['data: [DONE]\n\n'];
@@ -120,7 +120,7 @@ void main() {
       });
     });
 
-    test('configurable baseUrl covers Ollama/llama.cpp; auth optional',
+    test('kit.genui-bridge.openai-adapter — configurable baseUrl covers Ollama/llama.cpp; auth optional',
         () async {
       final transport = FakeAppBoxKitTransport()
         ..responseChunks = const ['data: [DONE]\n\n'];
@@ -136,7 +136,7 @@ void main() {
       expect(transport.headers!.containsKey('authorization'), isFalse);
     });
 
-    test('extracts streamed deltas across raw chunk boundaries', () async {
+    test('kit.genui-bridge.openai-adapter — extracts streamed deltas across raw chunk boundaries', () async {
       final transport = FakeAppBoxKitTransport()
         ..responseChunks = const [
           'data: {"choices":[{"delta":{"content":"{\\"version\\":"}}]}',
@@ -154,7 +154,7 @@ void main() {
       expect(text.toString(), '{"version":"v0.9"');
     });
 
-    test('a provider error payload throws AppBoxKitChatStreamException', () async {
+    test('kit.genui-bridge.openai-adapter — a provider error payload throws AppBoxKitChatStreamException', () async {
       final transport = FakeAppBoxKitTransport()
         ..responseChunks = const [
           'data: {"error":{"message":"rate limited","type":"tokens"}}\n\n',
@@ -171,7 +171,7 @@ void main() {
       );
     });
 
-    test('a non-200 transport failure propagates', () async {
+    test('kit.genui-bridge.openai-adapter — a non-200 transport failure propagates', () async {
       final transport = FakeAppBoxKitTransport()
         ..responseError = const AppBoxKitChatStreamException('HTTP 500',
             statusCode: 500, body: 'boom');
@@ -189,7 +189,7 @@ void main() {
   });
 
   group('AppBoxKitAnthropicChatStream', () {
-    test('request shape: URL, headers, system hoisted out of messages',
+    test('kit.genui-bridge.anthropic-adapter — request shape: URL, headers, system hoisted out of messages',
         () async {
       final transport = FakeAppBoxKitTransport()
         ..responseChunks = const [
@@ -221,7 +221,7 @@ void main() {
       ]);
     });
 
-    test('extracts text deltas and ignores pings and other events', () async {
+    test('kit.genui-bridge.anthropic-adapter — extracts text deltas and ignores pings and other events', () async {
       final transport = FakeAppBoxKitTransport()
         ..responseChunks = const [
           'event: message_start\n',
@@ -246,7 +246,7 @@ void main() {
       expect(text.toString(), 'Hello');
     });
 
-    test('a provider error event throws AppBoxKitChatStreamException', () async {
+    test('kit.genui-bridge.anthropic-adapter — a provider error event throws AppBoxKitChatStreamException', () async {
       final transport = FakeAppBoxKitTransport()
         ..responseChunks = const [
           'event: error\n',
@@ -267,7 +267,7 @@ void main() {
   });
 
   group('appBoxKitSplitSseEvents', () {
-    test('joins multi-line data payloads per the SSE spec', () async {
+    test('kit.genui-bridge.sse-transport — joins multi-line data payloads per the SSE spec', () async {
       final events = await appBoxKitSplitSseEvents(
         Stream.fromIterable(const [
           'data: {"a":\ndata: 1}\n\ndata: x\n\n',
@@ -276,7 +276,7 @@ void main() {
       expect(events, ['{"a":\n1}', 'x']);
     });
 
-    test('handles CRLF line endings and an unterminated final event', () async {
+    test('kit.genui-bridge.sse-transport — handles CRLF line endings and an unterminated final event', () async {
       final events = await appBoxKitSplitSseEvents(
         Stream.fromIterable(const ['data: a\r\n\r\ndata: b']),
       ).toList();
@@ -285,7 +285,7 @@ void main() {
   });
 
   group('appBoxKitHttpPostStream', () {
-    test('decodes UTF-8 incrementally across chunk boundaries', () async {
+    test('kit.genui-bridge.sse-transport — decodes UTF-8 incrementally across chunk boundaries', () async {
       // A multi-byte char ('ż' = 0xC5 0xBC) split across two HTTP chunks
       // must not corrupt: guards the utf8.decoder.bind in appbox_kit_sse_transport.dart.
       const payload = 'data: {"choices":[{"delta":{"content":"zażółć"}}]}'

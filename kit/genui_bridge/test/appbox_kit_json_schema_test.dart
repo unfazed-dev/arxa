@@ -5,7 +5,7 @@ void main() {
   const validator = AppBoxKitJsonSchemaValidator();
 
   group('AppBoxKitJsonSchemaValidator (subset)', () {
-    test('valid object passes', () {
+    test('kit.genui-bridge.json-schema — valid object passes', () {
       final errors = validator.validate(
         {'text': 'hi', 'variant': 'h1'},
         {
@@ -23,7 +23,7 @@ void main() {
       expect(errors, isEmpty);
     });
 
-    test('missing required property is reported', () {
+    test('kit.genui-bridge.json-schema — missing required property is reported', () {
       final errors = validator.validate(
         <String, dynamic>{},
         {
@@ -35,7 +35,7 @@ void main() {
       expect(errors.single.message, contains('"text"'));
     });
 
-    test('type mismatch is reported with actual type', () {
+    test('kit.genui-bridge.json-schema — type mismatch is reported with actual type', () {
       final errors = validator.validate(
         {'weight': 'one'},
         {
@@ -49,7 +49,7 @@ void main() {
       expect(errors.single.message, contains('integer'));
     });
 
-    test('integer does not accept doubles, number accepts both', () {
+    test('kit.genui-bridge.json-schema — integer does not accept doubles, number accepts both', () {
       expect(
         validator.validate(1.5, {'type': 'integer'}),
         isNotEmpty,
@@ -58,7 +58,7 @@ void main() {
       expect(validator.validate(1.5, {'type': 'number'}), isEmpty);
     });
 
-    test('enum violation is reported', () {
+    test('kit.genui-bridge.json-schema — enum violation is reported', () {
       final errors = validator.validate(
         'giant',
         {
@@ -69,14 +69,14 @@ void main() {
       expect(errors.single.message, contains('one of'));
     });
 
-    test('const violation is reported', () {
+    test('kit.genui-bridge.json-schema — const violation is reported', () {
       final errors = validator.validate('Row', {
         'const': 'Text',
       });
       expect(errors.single.message, contains('Text'));
     });
 
-    test('additionalProperties: false rejects unknown keys', () {
+    test('kit.genui-bridge.json-schema — additionalProperties: false rejects unknown keys', () {
       final errors = validator.validate(
         {'id': 'a', 'bogus': 1},
         {
@@ -90,7 +90,7 @@ void main() {
       expect(errors.single.message, contains('"bogus"'));
     });
 
-    test('array items and minItems are checked recursively', () {
+    test('kit.genui-bridge.json-schema — array items and minItems are checked recursively', () {
       final errors = validator.validate(
         {
           'children': ['a', 1],
@@ -111,7 +111,7 @@ void main() {
           containsAll([r'$.children', r'$.children[1]']));
     });
 
-    test('multi-type lists accept any listed type', () {
+    test('kit.genui-bridge.json-schema — multi-type lists accept any listed type', () {
       final schema = {
         'type': ['string', 'null'],
       };
@@ -120,7 +120,7 @@ void main() {
       expect(validator.validate(5, schema), isNotEmpty);
     });
 
-    test('unknown keywords are ignored (subset ceiling)', () {
+    test('kit.genui-bridge.json-schema — unknown keywords are ignored (subset ceiling)', () {
       // pattern/format/$ref are out of the supported subset and must pass.
       final errors = validator.validate('not-an-email', {
         'type': 'string',
@@ -131,7 +131,7 @@ void main() {
       expect(errors, isEmpty);
     });
 
-    test('nested object paths compose', () {
+    test('kit.genui-bridge.json-schema — nested object paths compose', () {
       final errors = validator.validate(
         {
           'action': {

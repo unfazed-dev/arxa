@@ -30,7 +30,7 @@ AppBoxKitGenuiBridge bridge(FakeAppBoxKitChatStream chat) =>
 
 void main() {
   group('AppBoxKitGenuiBridge.generate', () {
-    test('happy path: valid output passes in one attempt', () async {
+    test('kit.genui-bridge.bridge — happy path: valid output passes in one attempt', () async {
       final chat = FakeAppBoxKitChatStream()..scriptText('$_create\n$_goodComponents');
       final turn = await bridge(chat).generate([
         const AppBoxKitChatMessage.user('show a greeting'),
@@ -42,7 +42,7 @@ void main() {
       expect(chat.calls, hasLength(1));
     });
 
-    test('toJsonl is the canonical forwardable wire form', () async {
+    test('kit.genui-bridge.bridge — toJsonl is the canonical forwardable wire form', () async {
       final chat = FakeAppBoxKitChatStream()..scriptText('$_create\n$_goodComponents');
       final turn = await bridge(chat).generate(const []);
       expect(
@@ -54,7 +54,7 @@ void main() {
       );
     });
 
-    test('prepends the catalog-bearing system prompt', () async {
+    test('kit.genui-bridge.bridge — prepends the catalog-bearing system prompt', () async {
       final chat = FakeAppBoxKitChatStream()..scriptText(_create);
       await bridge(chat).generate(const [AppBoxKitChatMessage.user('hi')]);
       final first = chat.calls.single.first;
@@ -64,7 +64,7 @@ void main() {
       expect(first.content, contains('v0.9'));
     });
 
-    test('invalid then repaired: re-asks with the validation error', () async {
+    test('kit.genui-bridge.bridge — invalid then repaired: re-asks with the validation error', () async {
       final chat = FakeAppBoxKitChatStream()
         ..scriptText('$_create\n$_badComponents')
         ..scriptText('$_create\n$_goodComponents');
@@ -80,7 +80,7 @@ void main() {
       expect(repair.content, contains('"text"'));
     });
 
-    test('only valid messages ever leave the bridge', () async {
+    test('kit.genui-bridge.bridge — only valid messages ever leave the bridge', () async {
       // Attempt 1 mixes one valid and one invalid message; the whole batch
       // must be discarded, not partially emitted.
       final chat = FakeAppBoxKitChatStream()
@@ -92,7 +92,7 @@ void main() {
       expect(turn.messages.single, isA<AppBoxKitUpdateComponents>());
     });
 
-    test('permanently invalid output throws a typed AppBoxKitGenuiBridgeFailure',
+    test('kit.genui-bridge.bridge — permanently invalid output throws a typed AppBoxKitGenuiBridgeFailure',
         () async {
       final chat = FakeAppBoxKitChatStream()
         ..scriptText(_badComponents)
@@ -111,7 +111,7 @@ void main() {
       expect(chat.calls, hasLength(3)); // 1 + maxRepairs(2)
     });
 
-    test('malformed JSON triggers the repair loop too', () async {
+    test('kit.genui-bridge.bridge — malformed JSON triggers the repair loop too', () async {
       final chat = FakeAppBoxKitChatStream()
         ..scriptText('```json\n{"version":"v0.9", oops\n```')
         ..scriptText(_create);
@@ -120,7 +120,7 @@ void main() {
       expect(chat.lastMessage.content, contains('A2UI validation error'));
     });
 
-    test('a truncated stream is repaired, not silently accepted', () async {
+    test('kit.genui-bridge.bridge — a truncated stream is repaired, not silently accepted', () async {
       final chat = FakeAppBoxKitChatStream()
         ..scriptText('{"version":"v0.9","deleteSur')
         ..scriptText(_create);
@@ -128,7 +128,7 @@ void main() {
       expect(turn.attempts, 2);
     });
 
-    test('output with no A2UI messages is repaired', () async {
+    test('kit.genui-bridge.bridge — output with no A2UI messages is repaired', () async {
       final chat = FakeAppBoxKitChatStream()
         ..scriptText('I cannot render UI, sorry.')
         ..scriptText(_create);
@@ -137,7 +137,7 @@ void main() {
       expect(chat.lastMessage.content, contains('no A2UI messages'));
     });
 
-    test('a hallucinated catalogId is rejected and repaired', () async {
+    test('kit.genui-bridge.bridge — a hallucinated catalogId is rejected and repaired', () async {
       final chat = FakeAppBoxKitChatStream()
         ..scriptText('{"version":"v0.9","createSurface":{"surfaceId":"s1",'
             '"catalogId":"evil.com:other"}}')
@@ -147,7 +147,7 @@ void main() {
       expect(chat.lastMessage.content, contains('catalogId'));
     });
 
-    test('component types outside the catalog are rejected', () async {
+    test('kit.genui-bridge.bridge — component types outside the catalog are rejected', () async {
       final chat = FakeAppBoxKitChatStream()
         ..scriptText('{"version":"v0.9","updateComponents":{"surfaceId":"s1",'
             '"components":[{"id":"root","component":"Chart","data":[]}]}}')
@@ -157,7 +157,7 @@ void main() {
       expect(chat.lastMessage.content, contains('"Chart"'));
     });
 
-    test('an empty catalog disables per-component validation', () async {
+    test('kit.genui-bridge.bridge — an empty catalog disables per-component validation', () async {
       final chat = FakeAppBoxKitChatStream()
         ..scriptText('{"version":"v0.9","createSurface":{"surfaceId":"s1",'
             '"catalogId":"$appBoxKitA2uiBasicCatalogId"}}\n'
@@ -169,7 +169,7 @@ void main() {
       expect(turn.messages, hasLength(2));
     });
 
-    test('prose alongside valid messages passes through as texts', () async {
+    test('kit.genui-bridge.bridge — prose alongside valid messages passes through as texts', () async {
       final chat = FakeAppBoxKitChatStream()..scriptText('Setting that up.\n$_create');
       final turn = await bridge(chat).generate(const []);
       expect(turn.texts.join(), contains('Setting that up.'));

@@ -6,7 +6,7 @@ import 'package:test/test.dart';
 
 void main() {
   group('AppBoxKitA2uiMessage.fromJson', () {
-    test('parses createSurface with all fields', () {
+    test('kit.genui-bridge.a2ui-message — parses createSurface with all fields', () {
       final message = AppBoxKitA2uiMessage.fromJson({
         'version': 'v0.9',
         'createSurface': {
@@ -24,7 +24,7 @@ void main() {
       expect(create.sendDataModel, isTrue);
     });
 
-    test('sendDataModel defaults to false', () {
+    test('kit.genui-bridge.a2ui-message — sendDataModel defaults to false', () {
       final message = AppBoxKitA2uiMessage.fromJson(const {
         'version': 'v0.9',
         'createSurface': {'surfaceId': 's1', 'catalogId': 'c'},
@@ -32,7 +32,7 @@ void main() {
       expect((message as AppBoxKitCreateSurface).sendDataModel, isFalse);
     });
 
-    test('parses updateComponents', () {
+    test('kit.genui-bridge.a2ui-message — parses updateComponents', () {
       final message = AppBoxKitA2uiMessage.fromJson(const {
         'version': 'v0.9',
         'updateComponents': {
@@ -52,7 +52,7 @@ void main() {
       expect(update.components[1]['text'], 'hi');
     });
 
-    test('parses updateDataModel with optional fields omitted', () {
+    test('kit.genui-bridge.a2ui-message — parses updateDataModel with optional fields omitted', () {
       final message = AppBoxKitA2uiMessage.fromJson(const {
         'version': 'v0.9',
         'updateDataModel': {'surfaceId': 's1'},
@@ -62,7 +62,7 @@ void main() {
       expect(update.value, isNull);
     });
 
-    test('parses deleteSurface', () {
+    test('kit.genui-bridge.a2ui-message — parses deleteSurface', () {
       final message = AppBoxKitA2uiMessage.fromJson(const {
         'version': 'v0.9',
         'deleteSurface': {'surfaceId': 's1'},
@@ -71,7 +71,7 @@ void main() {
     });
 
     group('rename-in-flight tolerance (v0.8 aliases)', () {
-      test('accepts surfaceUpdate for updateComponents', () {
+      test('kit.genui-bridge.a2ui-message — accepts surfaceUpdate for updateComponents', () {
         final message = AppBoxKitA2uiMessage.fromJson(const {
           'version': 'v0.9',
           'surfaceUpdate': {
@@ -84,7 +84,7 @@ void main() {
         expect(message, isA<AppBoxKitUpdateComponents>());
       });
 
-      test('accepts dataModelUpdate for updateDataModel', () {
+      test('kit.genui-bridge.a2ui-message — accepts dataModelUpdate for updateDataModel', () {
         final message = AppBoxKitA2uiMessage.fromJson(const {
           'version': 'v0.9',
           'dataModelUpdate': {
@@ -98,7 +98,7 @@ void main() {
         expect(update.value, 'Alice');
       });
 
-      test('writes canonical names after reading an alias', () {
+      test('kit.genui-bridge.a2ui-message — writes canonical names after reading an alias', () {
         final message = AppBoxKitA2uiMessage.fromJson(const {
           'version': 'v0.9',
           'surfaceUpdate': {
@@ -122,20 +122,20 @@ void main() {
         );
       }
 
-      test('missing version', () {
+      test('kit.genui-bridge.a2ui-message — missing version', () {
         expectFormatError(const {
           'deleteSurface': {'surfaceId': 's1'},
         });
       });
 
-      test('wrong version', () {
+      test('kit.genui-bridge.a2ui-message — wrong version', () {
         expectFormatError(const {
           'version': 'v0.8',
           'deleteSurface': {'surfaceId': 's1'},
         });
       });
 
-      test('two verb keys', () {
+      test('kit.genui-bridge.a2ui-message — two verb keys', () {
         expectFormatError(const {
           'version': 'v0.9',
           'createSurface': {'surfaceId': 's1', 'catalogId': 'c'},
@@ -143,7 +143,7 @@ void main() {
         });
       });
 
-      test('canonical verb and its alias both present', () {
+      test('kit.genui-bridge.a2ui-message — canonical verb and its alias both present', () {
         expectFormatError(const {
           'version': 'v0.9',
           'updateComponents': {'surfaceId': 's1', 'components': []},
@@ -151,32 +151,32 @@ void main() {
         });
       });
 
-      test('no verb key', () {
+      test('kit.genui-bridge.a2ui-message — no verb key', () {
         expectFormatError(const {'version': 'v0.9', 'foo': 1});
       });
 
-      test('missing surfaceId', () {
+      test('kit.genui-bridge.a2ui-message — missing surfaceId', () {
         expectFormatError(const {
           'version': 'v0.9',
           'deleteSurface': <String, dynamic>{},
         });
       });
 
-      test('missing catalogId', () {
+      test('kit.genui-bridge.a2ui-message — missing catalogId', () {
         expectFormatError(const {
           'version': 'v0.9',
           'createSurface': {'surfaceId': 's1'},
         });
       });
 
-      test('components not a list', () {
+      test('kit.genui-bridge.a2ui-message — components not a list', () {
         expectFormatError(const {
           'version': 'v0.9',
           'updateComponents': {'surfaceId': 's1', 'components': 'nope'},
         });
       });
 
-      test('component entry not an object', () {
+      test('kit.genui-bridge.a2ui-message — component entry not an object', () {
         expectFormatError(const {
           'version': 'v0.9',
           'updateComponents': {
@@ -223,13 +223,13 @@ void main() {
     ];
 
     for (final envelope in cases) {
-      test('${envelope.keys.last} survives parse → serialize', () {
+      test('kit.genui-bridge.a2ui-message — ${envelope.keys.last} survives parse → serialize', () {
         final message = AppBoxKitA2uiMessage.fromJson(envelope);
         expect(message.toJson(), envelope);
       });
     }
 
-    test('toJsonLine produces the JSONL wire form', () {
+    test('kit.genui-bridge.a2ui-message — toJsonLine produces the JSONL wire form', () {
       const message = AppBoxKitDeleteSurface(surfaceId: 's1');
       expect(
         message.toJsonLine(),
@@ -241,7 +241,7 @@ void main() {
   group('shipped reference schema (assets/a2ui)', () {
     // Anchors the package to the canonical spec artifact — see
     // assets/a2ui/PROVENANCE.md for source URLs and fetch date.
-    test('server_to_client.json is the v0.9 four-verb schema', () {
+    test('kit.genui-bridge.a2ui-message — server_to_client.json is the v0.9 four-verb schema', () {
       final file = File('assets/a2ui/server_to_client.json');
       expect(file.existsSync(), isTrue,
           reason: 'run tests from the package root');
