@@ -36,14 +36,44 @@ abstract class KitDataFacade {
     return subject;
   }
 
-  /// Starts a KitAction chain for a data mutation. Callers keep chaining
-  /// (`.withSuccessSnackbar(...)`, `.withRetry(...)`) and finish with
-  /// `.execute()`.
+  /// Starts a KitAction chain for a data mutation, owned by this facade —
+  /// the registry key is derived (`RuntimeType.op.entity`), never hand-written.
+  ///
+  /// Notification policy as parameters (the common case is a one-liner):
+  /// - [error]: error snackbar message — set it on EVERY mutation (errors
+  ///   always surface).
+  /// - [success]: success snackbar message — only for destructive /
+  ///   confirm-worthy ops.
+  ///
+  /// The builder is still returned, so advanced chains keep chaining
+  /// (`.withRetry(...)`, `.withDebounce(...)`, `.onSuccess(...)`) and finish
+  /// with `.execute()`.
+  ///
+  /// ```dart
+  /// Future<ShowcaseNoteModel> togglePin(ShowcaseNoteModel note) => mutate(
+  ///       operation: () => _repo.upsertNote(note.copyWith(isPinned: !note.isPinned)),
+  ///       op: 'pin',
+  ///       entity: note.id,
+  ///       error: 'Could not update the note',
+  ///     ).execute();
+  /// ```
   KitActionBuilder<T> mutate<T>({
     required FutureOr<T> Function() operation,
-    required String widgetId,
-  }) =>
-      KitAction.run<T>(operation: operation, widgetId: widgetId);
+    String? op,
+    String? entity,
+    String? error,
+    String? success,
+  }) {
+    final label = [if (op != null) op, if (entity != null) entity].join('.');
+    var builder = KitAction.run<T>(
+      operation: operation,
+      owner: this,
+      op: label.isEmpty ? null : label,
+    );
+    if (error != null) builder = builder.withErrorSnackbar(error);
+    if (success != null) builder = builder.withSuccessSnackbar(success);
+    return builder;
+  }
 
   Future<void> dispose() async {
     for (final subject in _subjects$) {
