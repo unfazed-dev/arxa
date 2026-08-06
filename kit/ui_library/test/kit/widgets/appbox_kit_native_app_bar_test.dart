@@ -18,7 +18,7 @@ import 'appbox_kit_native_test_helpers.dart';
 void main() {
   tearDown(AppBoxKitPlatform.reset);
 
-  testWidgets('default ctor Android wantNative → AppBarM3E', (tester) async {
+  testWidgets('kit.ui-library.native-app-bar — default ctor Android wantNative → AppBarM3E', (tester) async {
     AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isAndroid: true);
     await tester.pumpWidget(host(const AppBoxKitNativeAppBar(title: 'Hi')));
 
@@ -29,7 +29,7 @@ void main() {
     );
   });
 
-  testWidgets('default ctor builds clean (Material AppBar fallback)',
+  testWidgets('kit.ui-library.native-app-bar — default ctor builds clean (Material AppBar fallback)',
       (tester) async {
     await tester.pumpWidget(host(const AppBoxKitNativeAppBar(title: 'Hi')));
 
@@ -41,7 +41,7 @@ void main() {
     expect(find.text('Hi'), findsOneWidget);
   });
 
-  testWidgets('.sliver() Android wantNative → SliverAppBarM3E', (tester) async {
+  testWidgets('kit.ui-library.native-app-bar — .sliver() Android wantNative → SliverAppBarM3E', (tester) async {
     AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isAndroid: true);
     await tester.pumpWidget(MaterialApp(
       home: Scaffold(
@@ -62,7 +62,7 @@ void main() {
   });
 
   testWidgets(
-      '.sliver() builds clean on default platform (Material SliverAppBar)',
+      'kit.ui-library.native-app-bar — .sliver() builds clean on default platform (Material SliverAppBar)',
       (tester) async {
     await tester.pumpWidget(MaterialApp(
       home: Scaffold(
@@ -86,7 +86,7 @@ void main() {
   // fixed + sliver kit bars can't drift. This tier is where the guards live
   // (CN/M3E self-inset + space); the default platform lands here.
 
-  testWidgets('Material tier insets trailing actions by 16 (not hugging)',
+  testWidgets('kit.ui-library.native-app-bar — Material tier insets trailing actions by 16 (not hugging)',
       (tester) async {
     const trailing = Key('trailing');
     await tester.pumpWidget(MaterialApp(
@@ -105,7 +105,7 @@ void main() {
             'CN/M3E tiers (parity with AppBoxKitNativeSliverAppBar)');
   });
 
-  testWidgets('Material tier spaces adjacent actions by axGap8', (tester) async {
+  testWidgets('kit.ui-library.native-app-bar — Material tier spaces adjacent actions by axGap8', (tester) async {
     const left = Key('a-left');
     const right = Key('a-right');
     await tester.pumpWidget(MaterialApp(
@@ -127,7 +127,7 @@ void main() {
             'matching the sliver bar + the fixed CN bar');
   });
 
-  testWidgets('Material tier: leading matches trailing (inset, size, center)',
+  testWidgets('kit.ui-library.native-app-bar — Material tier: leading matches trailing (inset, size, center)',
       (tester) async {
     await tester.pumpWidget(MaterialApp(
       home: Scaffold(
@@ -160,7 +160,7 @@ void main() {
   // same bottom slack the Material tier gets from centering in kToolbarHeight.
   // A plain SizedBox stands in for the action — a real AppBoxKitNativeIconButton on
   // iOS builds a native CNButton UiKitView that can't render in a headless test.
-  testWidgets('iOS CN tier reserves a axGap8 bottom gap (buttons not flush)',
+  testWidgets('kit.ui-library.native-app-bar — iOS CN tier reserves a axGap8 bottom gap (buttons not flush)',
       (tester) async {
     AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isIOS: true);
     await tester.pumpWidget(host(const AppBoxKitNativeAppBar(
@@ -202,7 +202,7 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('iOS tier: implied leading is a AppBoxKitNativeIconButton',
+  testWidgets('kit.ui-library.native-app-bar — iOS tier: implied leading is a AppBoxKitNativeIconButton',
       (tester) async {
     AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isIOS: true);
     await withAndroidFallback(() async {
@@ -229,7 +229,7 @@ void main() {
     });
   });
 
-  testWidgets('iOS tier: tapping the implied leading pops the route',
+  testWidgets('kit.ui-library.native-app-bar — iOS tier: tapping the implied leading pops the route',
       (tester) async {
     AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isIOS: true);
     await withAndroidFallback(() async {
@@ -247,7 +247,7 @@ void main() {
     });
   });
 
-  testWidgets('iOS tier: action buttons still render (no regression)',
+  testWidgets('kit.ui-library.native-app-bar — iOS tier: action buttons still render (no regression)',
       (tester) async {
     AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isIOS: true);
     const a = Key('action-a');

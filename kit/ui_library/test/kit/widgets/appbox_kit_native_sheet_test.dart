@@ -21,7 +21,7 @@ void main() {
   tearDown(AppBoxKitPlatform.reset);
 
   testWidgets(
-      'Android routes to showModalBottomSheet (no probe, no glass body)',
+      'kit.ui-library.native-sheet — Android routes to showModalBottomSheet (no probe, no glass body)',
       (tester) async {
     AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isAndroid: true);
     await tester.pumpWidget(_hostWithOpener());
@@ -46,7 +46,7 @@ void main() {
     );
   });
 
-  testWidgets('default tier routes to CNBottomSheet.show (geometry probe)',
+  testWidgets('kit.ui-library.native-sheet — default tier routes to CNBottomSheet.show (geometry probe)',
       (tester) async {
     await withAndroidFallback(() async {
       await tester.pumpWidget(_hostWithOpener());
@@ -67,7 +67,7 @@ void main() {
     });
   });
 
-  testWidgets('default tier wraps content in the glass body with a grabber',
+  testWidgets('kit.ui-library.native-sheet — default tier wraps content in the glass body with a grabber',
       (tester) async {
     await withAndroidFallback(() async {
       await tester.pumpWidget(_hostWithOpener());
@@ -100,7 +100,7 @@ void main() {
     });
   });
 
-  testWidgets('default tier: content tap works and dismiss returns the value',
+  testWidgets('kit.ui-library.native-sheet — default tier: content tap works and dismiss returns the value',
       (tester) async {
     Future<Object?>? sheetFuture;
     await withAndroidFallback(() async {
@@ -127,7 +127,7 @@ void main() {
     });
   });
 
-  testWidgets('default tier: barrier tap dismisses with null', (tester) async {
+  testWidgets('kit.ui-library.native-sheet — default tier: barrier tap dismisses with null', (tester) async {
     Future<Object?>? sheetFuture;
     await withAndroidFallback(() async {
       await tester.pumpWidget(
@@ -149,7 +149,7 @@ void main() {
     });
   });
 
-  testWidgets('default tier: a caller backgroundColor opts out of the glass',
+  testWidgets('kit.ui-library.native-sheet — default tier: a caller backgroundColor opts out of the glass',
       (tester) async {
     await withAndroidFallback(() async {
       await tester.pumpWidget(_hostWithOpener(backgroundColor: Colors.red));

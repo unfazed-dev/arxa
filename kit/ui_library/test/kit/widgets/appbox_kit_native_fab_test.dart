@@ -23,7 +23,7 @@ void main() {
   // Round FAB routes to AppBoxKitFabMorph, NOT FabM3E: since the "consistent morphing"
   // change the round M3E FAB shape-morphs on press, and FabM3E's shape is static,
   // so the kit swaps in AppBoxKitFabMorph. Labeled still uses ExtendedFabM3E (below).
-  testWidgets('Android routes to AppBoxKitFabMorph (round, shape-morphs)',
+  testWidgets('kit.ui-library.native-fab — Android routes to AppBoxKitFabMorph (round, shape-morphs)',
       (tester) async {
     AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isAndroid: true);
     await tester.pumpWidget(host(const AppBoxKitNativeFab(icon: Icons.add)));
@@ -45,7 +45,7 @@ void main() {
     );
   });
 
-  testWidgets('Android routes to ExtendedFabM3E when label is set',
+  testWidgets('kit.ui-library.native-fab — Android routes to ExtendedFabM3E when label is set',
       (tester) async {
     AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isAndroid: true);
     await tester.pumpWidget(
@@ -64,7 +64,7 @@ void main() {
     );
   });
 
-  testWidgets('default platform builds clean (CN glass tier)', (tester) async {
+  testWidgets('kit.ui-library.native-fab — default platform builds clean (CN glass tier)', (tester) async {
     await withAndroidFallback(() async {
       await tester.pumpWidget(host(const AppBoxKitNativeFab(icon: Icons.add)));
 

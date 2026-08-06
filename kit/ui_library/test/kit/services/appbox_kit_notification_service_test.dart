@@ -66,7 +66,7 @@ void main() {
   });
 
   testWidgets(
-      'Android tier → SnackbarService (mapped variant + forwarded duration)',
+      'kit.ui-library.notification-service — Android tier → SnackbarService (mapped variant + forwarded duration)',
       (tester) async {
     final svc = _RecordingSnackbarService();
     appBoxKitLocator.registerSingleton<SnackbarService>(svc);
@@ -91,7 +91,7 @@ void main() {
   });
 
   testWidgets(
-      'iOS/desktop tier, no action → CNToast (SnackbarService NOT invoked)',
+      'kit.ui-library.notification-service — iOS/desktop tier, no action → CNToast (SnackbarService NOT invoked)',
       (tester) async {
     // The macOS test host has Platform.isAndroid == false, so
     // supportsComposeM3E is false and the CNToast tier is taken with no
@@ -119,7 +119,7 @@ void main() {
   });
 
   testWidgets(
-      'iOS/desktop tier: warning + center, no action → CNToast (not snackbar)',
+      'kit.ui-library.notification-service — iOS/desktop tier: warning + center, no action → CNToast (not snackbar)',
       (tester) async {
     // Neither the warning kind nor the center position may promote iOS to the
     // snackbar tier — only actionLabel / Android do. Warning now routes to
@@ -144,7 +144,7 @@ void main() {
     );
   });
 
-  testWidgets('iOS/desktop tier, with actionLabel → SnackbarService fallback',
+  testWidgets('kit.ui-library.notification-service — iOS/desktop tier, with actionLabel → SnackbarService fallback',
       (tester) async {
     final svc = _RecordingSnackbarService();
     appBoxKitLocator.registerSingleton<SnackbarService>(svc);
@@ -171,7 +171,7 @@ void main() {
     expect(svc.lastAction, isNotNull);
   });
 
-  testWidgets('variant override is honored on the snackbar tier',
+  testWidgets('kit.ui-library.notification-service — variant override is honored on the snackbar tier',
       (tester) async {
     final svc = _RecordingSnackbarService();
     appBoxKitLocator.registerSingleton<SnackbarService>(svc);
@@ -192,7 +192,7 @@ void main() {
   });
 
   testWidgets(
-      'Android tier, position center → kit center pill (SnackbarService NOT invoked)',
+      'kit.ui-library.notification-service — Android tier, position center → kit center pill (SnackbarService NOT invoked)',
       (tester) async {
     final svc = _RecordingSnackbarService();
     appBoxKitLocator.registerSingleton<SnackbarService>(svc);
@@ -232,7 +232,7 @@ void main() {
     expect(pill, findsNothing);
   });
 
-  testWidgets('iOS action tier, position center → center pill hosts the action',
+  testWidgets('kit.ui-library.notification-service — iOS action tier, position center → center pill hosts the action',
       (tester) async {
     final svc = _RecordingSnackbarService();
     appBoxKitLocator.registerSingleton<SnackbarService>(svc);
@@ -267,7 +267,7 @@ void main() {
   });
 
   testWidgets(
-      'Android tier, position bottom → SnackbarService (unchanged behavior)',
+      'kit.ui-library.notification-service — Android tier, position bottom → SnackbarService (unchanged behavior)',
       (tester) async {
     final svc = _RecordingSnackbarService();
     appBoxKitLocator.registerSingleton<SnackbarService>(svc);
@@ -289,7 +289,7 @@ void main() {
   });
 
   testWidgets(
-      'iOS/desktop tier: center maps to CNToastPosition.center (paints at screen center)',
+      'kit.ui-library.notification-service — iOS/desktop tier: center maps to CNToastPosition.center (paints at screen center)',
       (tester) async {
     final svc = _RecordingSnackbarService();
     appBoxKitLocator.registerSingleton<SnackbarService>(svc);

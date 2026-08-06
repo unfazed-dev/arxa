@@ -79,7 +79,7 @@ void main() {
           of: find.byKey(gateKey), matching: find.byType(IgnorePointer)))
       .ignoring;
 
-  testWidgets('visible at depth 0: alpha 1, scale 1, pointers live',
+  testWidgets('kit.ui-library.native-chrome-gate — visible at depth 0: alpha 1, scale 1, pointers live',
       (tester) async {
     await tester.pumpWidget(host());
     expect(find.byKey(childKey), findsOneWidget);
@@ -89,7 +89,7 @@ void main() {
   });
 
   testWidgets(
-      'keepAlive hide: dematerializes — fade + slight scale animates out over '
+      'kit.ui-library.native-chrome-gate — keepAlive hide: dematerializes — fade + slight scale animates out over '
       'hideDuration; child stays mounted, footprint intact', (tester) async {
     await tester.pumpWidget(host());
     final shownSize = tester.getSize(find.byKey(gateKey));
@@ -120,7 +120,7 @@ void main() {
   });
 
   testWidgets(
-      'hideDuration: Duration.zero keeps the legacy instant alpha-0 hide '
+      'kit.ui-library.native-chrome-gate — hideDuration: Duration.zero keeps the legacy instant alpha-0 hide '
       '(escape hatch for hosts still presenting a blur overlay)',
       (tester) async {
     await tester.pumpWidget(host(hideDuration: Duration.zero));
@@ -133,7 +133,7 @@ void main() {
   });
 
   testWidgets(
-      'keepAlive restore: fades the SAME live child back in — zero remounts '
+      'kit.ui-library.native-chrome-gate — keepAlive restore: fades the SAME live child back in — zero remounts '
       'across the full cycle (the anti-jank guarantee)', (tester) async {
     await tester.pumpWidget(host());
     CNTabBarRouteObserver.markAnyModalActive();
@@ -154,7 +154,7 @@ void main() {
             'means a new platform view + thread-merge stall (the jank)');
   });
 
-  testWidgets('showDuration: Duration.zero restores at alpha 1 instantly',
+  testWidgets('kit.ui-library.native-chrome-gate — showDuration: Duration.zero restores at alpha 1 instantly',
       (tester) async {
     await tester.pumpWidget(host(showDuration: Duration.zero));
     CNTabBarRouteObserver.markAnyModalActive();
@@ -166,7 +166,7 @@ void main() {
   });
 
   testWidgets(
-      'unmount mode (escape hatch): child destroyed, exact-size placeholder, '
+      'kit.ui-library.native-chrome-gate — unmount mode (escape hatch): child destroyed, exact-size placeholder, '
       'restore remounts + fades', (tester) async {
     await tester.pumpWidget(host(hideMode: AppBoxKitChromeHideMode.unmount));
     final shownSize = tester.getSize(find.byKey(gateKey));
@@ -188,7 +188,7 @@ void main() {
   });
 
   testWidgets(
-      'mount-depth snapshot: a gate mounted INSIDE an open modal does not '
+      'kit.ui-library.native-chrome-gate — mount-depth snapshot: a gate mounted INSIDE an open modal does not '
       'self-destroy, but hides when depth grows past its baseline',
       (tester) async {
     CNTabBarRouteObserver.markAnyModalActive(); // depth 1 BEFORE mount

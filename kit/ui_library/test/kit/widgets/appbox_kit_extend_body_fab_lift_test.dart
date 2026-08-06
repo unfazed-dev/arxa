@@ -7,7 +7,7 @@ void main() {
   // bar height, but FloatingActionButtonLocation lifts FABs by *viewPadding*
   // (raw device inset) — a nested Scaffold's FAB parks behind the bar.
   // AppBoxKitExtendBodyFabLift mirrors padding into viewPadding so the FAB clears it.
-  testWidgets('nested-scaffold FAB floats clear of the extendBody bar',
+  testWidgets('kit.ui-library.extend-body-fab-lift — nested-scaffold FAB floats clear of the extendBody bar',
       (tester) async {
     const screen = Size(400, 800);
     const barHeight = 80.0;

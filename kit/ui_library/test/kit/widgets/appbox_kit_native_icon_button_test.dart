@@ -18,7 +18,7 @@ import 'appbox_kit_native_test_helpers.dart';
 void main() {
   tearDown(AppBoxKitPlatform.reset);
 
-  testWidgets('Android routes to IconButtonM3E', (tester) async {
+  testWidgets('kit.ui-library.native-icon-button — Android routes to IconButtonM3E', (tester) async {
     AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isAndroid: true);
     await tester.pumpWidget(host(const AppBoxKitNativeIconButton(icon: Icons.add)));
 
@@ -29,7 +29,7 @@ void main() {
     );
   });
 
-  testWidgets('default platform builds clean', (tester) async {
+  testWidgets('kit.ui-library.native-icon-button — default platform builds clean', (tester) async {
     await withAndroidFallback(() async {
       await tester.pumpWidget(host(const AppBoxKitNativeIconButton(icon: Icons.add)));
 
@@ -41,7 +41,7 @@ void main() {
     });
   });
 
-  testWidgets('onPressed is wired on the M3E tier', (tester) async {
+  testWidgets('kit.ui-library.native-icon-button — onPressed is wired on the M3E tier', (tester) async {
     AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isAndroid: true);
     var fired = false;
     await tester.pumpWidget(host(AppBoxKitNativeIconButton(

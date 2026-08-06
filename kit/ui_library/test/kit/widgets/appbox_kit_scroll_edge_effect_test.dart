@@ -67,7 +67,7 @@ void main() {
   // Geometry: child top starts at 160 (below the expanded bar). Collapsed
   // pinned extent = kToolbarHeight (56) with zero window padding. Covered
   // fraction = (56 - (160 - pixels)) / 48.
-  testWidgets('child fully clear of the edge builds its bare subtree',
+  testWidgets('kit.ui-library.scroll-edge-effect — child fully clear of the edge builds its bare subtree',
       (tester) async {
     final controller = ScrollController();
     addTearDown(controller.dispose);
@@ -79,7 +79,7 @@ void main() {
   });
 
   testWidgets(
-      'partially covered child blurs and fades progressively '
+      'kit.ui-library.scroll-edge-effect — partially covered child blurs and fades progressively '
       '(automatic resolves to soft)', (tester) async {
     final controller = ScrollController();
     addTearDown(controller.dispose);
@@ -95,7 +95,7 @@ void main() {
     expect(effectDescendant<IgnorePointer>(tester).ignoring, isFalse);
   });
 
-  testWidgets('fully covered child — soft keeps a faint remnant',
+  testWidgets('kit.ui-library.scroll-edge-effect — fully covered child — soft keeps a faint remnant',
       (tester) async {
     final controller = ScrollController();
     addTearDown(controller.dispose);
@@ -115,7 +115,7 @@ void main() {
     expect(find.byKey(markerKey, skipOffstage: false), findsOneWidget);
   });
 
-  testWidgets('hard style fully obscures and ignores pointers', (tester) async {
+  testWidgets('kit.ui-library.scroll-edge-effect — hard style fully obscures and ignores pointers', (tester) async {
     final controller = ScrollController();
     addTearDown(controller.dispose);
     await tester.pumpWidget(harness(
@@ -132,7 +132,7 @@ void main() {
     expect(find.byKey(markerKey, skipOffstage: false), findsOneWidget);
   });
 
-  testWidgets('restores to a bare subtree when scrolled back out',
+  testWidgets('kit.ui-library.scroll-edge-effect — restores to a bare subtree when scrolled back out',
       (tester) async {
     final controller = ScrollController();
     addTearDown(controller.dispose);
@@ -148,7 +148,7 @@ void main() {
     expect(effectDescendantFinder(Opacity), findsNothing);
   });
 
-  testWidgets('bottom edge fades content straddling the trailing fold',
+  testWidgets('kit.ui-library.scroll-edge-effect — bottom edge fades content straddling the trailing fold',
       (tester) async {
     final controller = ScrollController();
     addTearDown(controller.dispose);
@@ -187,7 +187,7 @@ void main() {
     expect(effectDescendantFinder(Opacity), findsNothing);
   });
 
-  testWidgets('.scrollEdgeEffect() extension wraps child in an effect',
+  testWidgets('kit.ui-library.scroll-edge-effect — .scrollEdgeEffect() extension wraps child in an effect',
       (tester) async {
     const childKey = Key('ext-child');
     final wrapped = const SizedBox(key: childKey, height: 40).scrollEdgeEffect(

@@ -24,7 +24,7 @@ void main() {
     AppBoxKitMenuItem(label: 'Delete', sfSymbol: 'trash', isDestructive: true),
   ];
 
-  testWidgets('Android routes to FabMenuM3E', (tester) async {
+  testWidgets('kit.ui-library.native-fab-menu — Android routes to FabMenuM3E', (tester) async {
     AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isAndroid: true);
     await tester.pumpWidget(
       host(const AppBoxKitNativeFabMenu(icon: Icons.add, items: items)),
@@ -37,7 +37,7 @@ void main() {
     );
   });
 
-  testWidgets('default platform builds clean (CN glass tier)', (tester) async {
+  testWidgets('kit.ui-library.native-fab-menu — default platform builds clean (CN glass tier)', (tester) async {
     await withAndroidFallback(() async {
       await tester.pumpWidget(
         host(const AppBoxKitNativeFabMenu(icon: Icons.add, items: items)),
@@ -54,7 +54,7 @@ void main() {
   // M3E spec: the FAB Menu has no scrim (Compose FloatingActionButtonMenu is a
   // plain in-layout composable). The kit must pass overlay:false so fab_m3e's
   // default black α0.25 dimming never renders.
-  testWidgets('M3E tier drops the scrim (overlay:false)', (tester) async {
+  testWidgets('kit.ui-library.native-fab-menu — M3E tier drops the scrim (overlay:false)', (tester) async {
     AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isAndroid: true);
     await tester.pumpWidget(
       host(const AppBoxKitNativeFabMenu(icon: Icons.add, items: items)),
@@ -70,7 +70,7 @@ void main() {
 
   // The signature M3E FAB-Menu morph: the primary FAB glyph flips Add → Close as
   // the menu opens (the FAB is the close affordance, since there is no scrim).
-  testWidgets('primary FAB glyph morphs add → close on open', (tester) async {
+  testWidgets('kit.ui-library.native-fab-menu — primary FAB glyph morphs add → close on open', (tester) async {
     AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isAndroid: true);
     await tester.pumpWidget(
       host(const AppBoxKitNativeFabMenu(icon: Icons.add, items: items)),

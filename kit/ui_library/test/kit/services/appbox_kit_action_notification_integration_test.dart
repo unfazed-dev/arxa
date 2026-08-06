@@ -77,7 +77,7 @@ void main() {
       AppBoxKitActionConfig<String>(operation: () => 'ok', widgetId: widgetId);
 
   testWidgets(
-      'loading notification: AppBoxKitNotificationManager → AppBoxKitNotificationService → SnackbarService',
+      'kit.ui-library.action-notifications — loading notification: AppBoxKitNotificationManager → AppBoxKitNotificationService → SnackbarService',
       (tester) async {
     await tester.pumpWidget(host(const SizedBox.shrink()));
     final config = configWith('kit_action_notif_loading')
@@ -95,7 +95,7 @@ void main() {
   });
 
   testWidgets(
-      'success notification: AppBoxKitNotificationManager → AppBoxKitNotificationService → SnackbarService',
+      'kit.ui-library.action-notifications — success notification: AppBoxKitNotificationManager → AppBoxKitNotificationService → SnackbarService',
       (tester) async {
     await tester.pumpWidget(host(const SizedBox.shrink()));
     final config = configWith('kit_action_notif_success')
@@ -109,7 +109,7 @@ void main() {
   });
 
   testWidgets(
-      'error notification: AppBoxKitNotificationManager → AppBoxKitNotificationService → SnackbarService',
+      'kit.ui-library.action-notifications — error notification: AppBoxKitNotificationManager → AppBoxKitNotificationService → SnackbarService',
       (tester) async {
     await tester.pumpWidget(host(const SizedBox.shrink()));
     final config = configWith('kit_action_notif_error')
@@ -122,7 +122,7 @@ void main() {
     expect(snackbar.lastVariant, AppBoxKitSnackbarType.appBoxKitAutoProcessError);
   });
 
-  testWidgets('host-enum variant override flows through unchanged',
+  testWidgets('kit.ui-library.action-notifications — host-enum variant override flows through unchanged',
       (tester) async {
     // AppBoxKitActionConfig's *SnackbarType is dynamic — a host may pass its own enum
     // variant. The service must forward it verbatim on the snackbar tier

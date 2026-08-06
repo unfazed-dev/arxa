@@ -17,19 +17,19 @@ void main() {
     }
   });
 
-  test('balances depth for a plain future that completes on dismiss',
+  test('kit.ui-library.native-overlay — balances depth for a plain future that completes on dismiss',
       () async {
     expect(depth(), 0);
     await appBoxKitWithNativeChromeHidden(() async {});
     expect(depth(), 0);
   });
 
-  test('balances depth when present() returns null', () async {
+  test('kit.ui-library.native-overlay — balances depth when present() returns null', () async {
     await appBoxKitWithNativeChromeHidden(() => null);
     expect(depth(), 0);
   });
 
-  test('balances depth when present() throws', () async {
+  test('kit.ui-library.native-overlay — balances depth when present() throws', () async {
     await expectLater(
       appBoxKitWithNativeChromeHidden(() => Future.error(StateError('boom'))),
       throwsStateError,
@@ -38,7 +38,7 @@ void main() {
   });
 
   test(
-      'HOLDS the hide while a SnackbarController is live '
+      'kit.ui-library.native-overlay — HOLDS the hide while a SnackbarController is live '
       '(showCustomSnackBar resolves at show time, not dismiss)', () async {
     // Regression for the iOS blur bleed-through: stacked_services'
     // showCustomSnackBar completes one frame after the snackbar APPEARS,

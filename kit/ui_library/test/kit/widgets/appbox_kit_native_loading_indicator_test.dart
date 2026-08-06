@@ -16,7 +16,7 @@ import 'appbox_kit_native_test_helpers.dart';
 void main() {
   tearDown(AppBoxKitPlatform.reset);
 
-  testWidgets('Android routes to LoadingIndicatorM3E', (tester) async {
+  testWidgets('kit.ui-library.native-loading-indicator — Android routes to LoadingIndicatorM3E', (tester) async {
     AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isAndroid: true);
     await tester.pumpWidget(
       host(const AppBoxKitNativeLoadingIndicator(size: 32, color: Colors.blue)),
@@ -30,7 +30,7 @@ void main() {
     );
   });
 
-  testWidgets('default platform builds clean (Material fallback)', (tester) async {
+  testWidgets('kit.ui-library.native-loading-indicator — default platform builds clean (Material fallback)', (tester) async {
     await tester.pumpWidget(
       host(const AppBoxKitNativeLoadingIndicator(size: 24, color: Colors.red)),
     );

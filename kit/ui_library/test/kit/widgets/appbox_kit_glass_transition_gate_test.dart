@@ -16,7 +16,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  test('every native-glass widget transition-gates its platform view', () {
+  test('kit.ui-library.glass-transition-gate — every native-glass widget transition-gates its platform view', () {
     final dir = Directory('lib/widgets');
     expect(dir.existsSync(), isTrue,
         reason: 'run from the ui_library package root');

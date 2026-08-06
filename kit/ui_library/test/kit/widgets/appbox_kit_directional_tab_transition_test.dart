@@ -30,7 +30,7 @@ class _ProbeState extends State<_Probe> {
 void main() {
   setUp(() => _probeInits = 0);
 
-  testWidgets('retains the tabs-stack element across tab switches',
+  testWidgets('kit.ui-library.directional-tab-transition — retains the tabs-stack element across tab switches',
       (tester) async {
     Widget frame(int index) => Directionality(
           textDirection: TextDirection.ltr,

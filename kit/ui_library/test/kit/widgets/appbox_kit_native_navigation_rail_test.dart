@@ -18,7 +18,7 @@ void main() {
     AppBoxKitRailDestination(icon: Icons.search, label: 'Search'),
   ];
 
-  testWidgets('Android wantNative → NavigationRailM3E', (tester) async {
+  testWidgets('kit.ui-library.native-navigation-rail — Android wantNative → NavigationRailM3E', (tester) async {
     AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isAndroid: true);
     await tester.pumpWidget(host(const AppBoxKitNativeNavigationRail(
       selectedIndex: 0,
@@ -33,7 +33,7 @@ void main() {
     );
   });
 
-  testWidgets('iOS extended → wide Cupertino rail with inline labels',
+  testWidgets('kit.ui-library.native-navigation-rail — iOS extended → wide Cupertino rail with inline labels',
       (tester) async {
     AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isIOS: true);
     await tester.pumpWidget(host(const AppBoxKitNativeNavigationRail(
@@ -52,7 +52,7 @@ void main() {
     expect(find.text('Home'), findsWidgets);
   });
 
-  testWidgets('Android rail container is rounded (kit-side corner.large clip)',
+  testWidgets('kit.ui-library.native-navigation-rail — Android rail container is rounded (kit-side corner.large clip)',
       (tester) async {
     AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isAndroid: true);
     await tester.pumpWidget(host(const AppBoxKitNativeNavigationRail(
@@ -69,7 +69,7 @@ void main() {
     );
   });
 
-  testWidgets('iOS built-in menu button toggles collapsed ↔ extended',
+  testWidgets('kit.ui-library.native-navigation-rail — iOS built-in menu button toggles collapsed ↔ extended',
       (tester) async {
     AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isIOS: true);
     await tester.pumpWidget(host(const AppBoxKitNativeNavigationRail(
@@ -105,7 +105,7 @@ void main() {
         reason: 'menu_open button collapses it back');
   });
 
-  testWidgets('iOS collapsed → 84-wide Cupertino rail', (tester) async {
+  testWidgets('kit.ui-library.native-navigation-rail — iOS collapsed → 84-wide Cupertino rail', (tester) async {
     AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isIOS: true);
     await tester.pumpWidget(host(const AppBoxKitNativeNavigationRail(
       selectedIndex: 0,
@@ -116,7 +116,7 @@ void main() {
     expect(tester.getSize(find.byType(AppBoxKitNativeNavigationRail)).width, 84);
   });
 
-  testWidgets('default → Material NavigationRail, builds clean',
+  testWidgets('kit.ui-library.native-navigation-rail — default → Material NavigationRail, builds clean',
       (tester) async {
     await tester.pumpWidget(host(const AppBoxKitNativeNavigationRail(
       selectedIndex: 0,

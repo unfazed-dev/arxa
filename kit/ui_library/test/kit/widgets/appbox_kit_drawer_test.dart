@@ -33,7 +33,7 @@ void main() {
       tester.widget<Drawer>(find.byType(Drawer));
 
   testWidgets(
-      'glassPeek renders the video idiom: frosted skin, ~85% width, '
+      'kit.ui-library.drawer — glassPeek renders the video idiom: frosted skin, ~85% width, '
       'large rounded trailing corner', (tester) async {
     await tester.pumpWidget(host(const AppBoxKitDrawer(child: Text('menu'))));
     await openDrawer(tester);
@@ -61,7 +61,7 @@ void main() {
     );
   });
 
-  testWidgets('glassPeek mirrors the rounded corner for an endDrawer',
+  testWidgets('kit.ui-library.drawer — glassPeek mirrors the rounded corner for an endDrawer',
       (tester) async {
     await tester
         .pumpWidget(host(const AppBoxKitDrawer(child: Text('menu')), end: true));
@@ -77,7 +77,7 @@ void main() {
     );
   });
 
-  testWidgets('plain renders the stock themed Drawer look', (tester) async {
+  testWidgets('kit.ui-library.drawer — plain renders the stock themed Drawer look', (tester) async {
     await tester.pumpWidget(host(const AppBoxKitDrawer(
       variant: AppBoxKitDrawerVariant.plain,
       child: Text('menu'),
@@ -95,7 +95,7 @@ void main() {
         reason: 'the stock M3 drawer width');
   });
 
-  testWidgets('width override wins over the variant default', (tester) async {
+  testWidgets('kit.ui-library.drawer — width override wins over the variant default', (tester) async {
     await tester.pumpWidget(host(const AppBoxKitDrawer(
       width: 400,
       child: Text('menu'),
@@ -106,7 +106,7 @@ void main() {
   });
 
   testWidgets(
-      'works inside a Scaffold: edge swipe opens, drag closes, '
+      'kit.ui-library.drawer — works inside a Scaffold: edge swipe opens, drag closes, '
       'scrim dismisses', (tester) async {
     await tester.pumpWidget(host(const AppBoxKitDrawer(child: Text('menu'))));
     expect(scaffoldKey.currentState!.isDrawerOpen, isFalse);
@@ -130,7 +130,7 @@ void main() {
   });
 
   testWidgets(
-      'motionDriver wraps the content in a AppBoxKitMotionScope driven by '
+      'kit.ui-library.drawer — motionDriver wraps the content in a AppBoxKitMotionScope driven by '
       'the passed driver (the driver path)', (tester) async {
     final driver = AppBoxKitGestureDriver(vsync: tester, initialValue: 0.4);
     addTearDown(driver.dispose);
@@ -159,7 +159,7 @@ void main() {
   });
 
   testWidgets(
-      'the documented menu-row recipe pins mid-flight with '
+      'kit.ui-library.drawer — the documented menu-row recipe pins mid-flight with '
       'gestureAppBoxKitMotionScope', (tester) async {
     await tester.pumpWidget(MaterialApp(
       home: Scaffold(

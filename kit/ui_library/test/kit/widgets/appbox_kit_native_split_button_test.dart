@@ -28,7 +28,7 @@ void main() {
     AppBoxKitMenuItem(label: 'Delete', icon: Icons.delete, isDestructive: true),
   ];
 
-  testWidgets('Android routes to SplitButtonM3E', (tester) async {
+  testWidgets('kit.ui-library.native-split-button — Android routes to SplitButtonM3E', (tester) async {
     AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isAndroid: true);
     await tester.pumpWidget(host(const AppBoxKitNativeSplitButton(
       label: 'Save',
@@ -43,7 +43,7 @@ void main() {
     );
   });
 
-  testWidgets('iOS routes to CNGlassButtonGroup and builds clean',
+  testWidgets('kit.ui-library.native-split-button — iOS routes to CNGlassButtonGroup and builds clean',
       (tester) async {
     AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isIOS: true);
     await withAndroidFallback(() async {
@@ -70,7 +70,7 @@ void main() {
   // Menu parity with the appbar/FAB menu: destructive + Material-icon
   // fallback must survive the AppBoxKitMenuItem → CNButtonDataPopupItem mapping
   // (they used to be dropped on this tier).
-  testWidgets('iOS tier maps destructive + Material fallback icon',
+  testWidgets('kit.ui-library.native-split-button — iOS tier maps destructive + Material fallback icon',
       (tester) async {
     AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isIOS: true);
     await withAndroidFallback(() async {
@@ -99,7 +99,7 @@ void main() {
     });
   });
 
-  testWidgets('default (else) routes to Material PopupMenuButton',
+  testWidgets('kit.ui-library.native-split-button — default (else) routes to Material PopupMenuButton',
       (tester) async {
     await tester.pumpWidget(host(const AppBoxKitNativeSplitButton(
       label: 'Save',

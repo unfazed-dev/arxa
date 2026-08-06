@@ -9,7 +9,7 @@ import 'appbox_kit_native_test_helpers.dart';
 
 void main() {
   testWidgets(
-    'BehaviorSubject seeds the first frame synchronously (no loading flash)',
+    'kit.ui-library.stream-builder — BehaviorSubject seeds the first frame synchronously (no loading flash)',
     (tester) async {
       final subject = BehaviorSubject<int>.seeded(1);
       addTearDown(subject.close);
@@ -34,7 +34,7 @@ void main() {
     },
   );
 
-  testWidgets('plain StreamController shows loading then data',
+  testWidgets('kit.ui-library.stream-builder — plain StreamController shows loading then data',
       (tester) async {
       final controller = StreamController<int>();
       addTearDown(controller.close);
@@ -61,7 +61,7 @@ void main() {
     },
   );
 
-  testWidgets('error path renders errorBuilder', (tester) async {
+  testWidgets('kit.ui-library.stream-builder — error path renders errorBuilder', (tester) async {
     final controller = StreamController<int>();
     addTearDown(controller.close);
 
@@ -85,7 +85,7 @@ void main() {
     );
   });
 
-  testWidgets('nullable stream: emitted null reaches the builder, no spinner',
+  testWidgets('kit.ui-library.stream-builder — nullable stream: emitted null reaches the builder, no spinner',
       (tester) async {
     final subject = BehaviorSubject<String?>.seeded(null);
     addTearDown(subject.close);

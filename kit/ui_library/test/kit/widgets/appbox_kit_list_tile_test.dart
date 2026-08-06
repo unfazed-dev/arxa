@@ -9,7 +9,7 @@ import 'appbox_kit_native_test_helpers.dart';
 /// AppBoxKitListTile tests — the three row idioms (settings / menu / rich), the
 /// trailing-slot precedence, tap handling, and the row-height invariant.
 void main() {
-  testWidgets('menu row: glyph + title render, no trailing chrome',
+  testWidgets('kit.ui-library.list-tile — menu row: glyph + title render, no trailing chrome',
       (tester) async {
     await tester.pumpWidget(host(const AppBoxKitListTile(
       glyph: AppBoxKitGlyphs.settings,
@@ -22,7 +22,7 @@ void main() {
         reason: 'chevron is opt-in (showChevron), never default');
   });
 
-  testWidgets('settings row: trailing value + chevron + tap', (tester) async {
+  testWidgets('kit.ui-library.list-tile — settings row: trailing value + chevron + tap', (tester) async {
     var taps = 0;
     await tester.pumpWidget(host(AppBoxKitListTile(
       glyph: AppBoxKitGlyphs.alerts,
@@ -39,7 +39,7 @@ void main() {
     expect(taps, 1);
   });
 
-  testWidgets('rich row: subtitle + custom trailing replaces value/chevron',
+  testWidgets('kit.ui-library.list-tile — rich row: subtitle + custom trailing replaces value/chevron',
       (tester) async {
     await tester.pumpWidget(host(const AppBoxKitListTile(
       glyph: AppBoxKitGlyphs.sheet,
@@ -58,21 +58,21 @@ void main() {
         reason: 'a custom trailing widget replaces the chevron');
   });
 
-  testWidgets('no glyph → no leading icon slot', (tester) async {
+  testWidgets('kit.ui-library.list-tile — no glyph → no leading icon slot', (tester) async {
     await tester.pumpWidget(host(const AppBoxKitListTile(title: 'Plain')));
 
     expect(find.byType(Icon), findsNothing);
     expect(find.text('Plain'), findsOneWidget);
   });
 
-  testWidgets('row never shrinks below axSize48, even one-line', (tester) async {
+  testWidgets('kit.ui-library.list-tile — row never shrinks below axSize48, even one-line', (tester) async {
     await tester.pumpWidget(host(const AppBoxKitListTile(title: 'Height')));
 
     final size = tester.getSize(find.byType(AppBoxKitListTile));
     expect(size.height, greaterThanOrEqualTo(axSize48));
   });
 
-  testWidgets('null onTap renders the same visuals without crashing',
+  testWidgets('kit.ui-library.list-tile — null onTap renders the same visuals without crashing',
       (tester) async {
     await tester.pumpWidget(host(const AppBoxKitListTile(
       glyph: AppBoxKitGlyphs.info,

@@ -31,7 +31,7 @@ void main() {
   tearDown(() => appBoxKitLocator.reset());
 
   group('re-entry guard', () {
-    test('drops an overlapping call with the same widgetId', () async {
+    test('kit.ui-library.action-guard — drops an overlapping call with the same widgetId', () async {
       final gate = Completer<void>();
       var runs = 0;
 
@@ -60,7 +60,7 @@ void main() {
       expect(runs, 1);
     });
 
-    test('dropped call completes with the fallback when one is set', () async {
+    test('kit.ui-library.action-guard — dropped call completes with the fallback when one is set', () async {
       final gate = Completer<void>();
 
       final first = AppBoxKitAction.run<String>(
@@ -81,7 +81,7 @@ void main() {
       expect(await first, 'first');
     });
 
-    test('sequential runs of the same widgetId both execute', () async {
+    test('kit.ui-library.action-guard — sequential runs of the same widgetId both execute', () async {
       var runs = 0;
       Future<String> once() => AppBoxKitAction.run<String>(
             () async => 'run ${++runs}',
@@ -93,7 +93,7 @@ void main() {
       expect(runs, 2);
     });
 
-    test('withParallelExecution opts out of the guard', () async {
+    test('kit.ui-library.action-guard — withParallelExecution opts out of the guard', () async {
       final gate = Completer<void>();
       var runs = 0;
 
@@ -114,7 +114,7 @@ void main() {
       expect(runs, 2);
     });
 
-    test('different widgetIds run concurrently by default', () async {
+    test('kit.ui-library.action-guard — different widgetIds run concurrently by default', () async {
       final gate = Completer<void>();
       var runs = 0;
 
@@ -137,7 +137,7 @@ void main() {
   });
 
   group('watch (any Stream)', () {
-    test('fires the callback for plain single-subscription streams', () async {
+    test('kit.ui-library.action-guard — fires the callback for plain single-subscription streams', () async {
       final controller = StreamController<int>();
       var fires = 0;
       final seen = <dynamic>[];
@@ -165,7 +165,7 @@ void main() {
       await controller.close();
     });
 
-    test('callback exceptions route to onError, not the zone', () async {
+    test('kit.ui-library.action-guard — callback exceptions route to onError, not the zone', () async {
       final controller = StreamController<int>();
       Object? caught;
 

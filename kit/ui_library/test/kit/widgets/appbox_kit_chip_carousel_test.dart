@@ -22,7 +22,7 @@ void main() {
           ),
       ];
 
-  testWidgets('renders all chips; no fade when everything fits',
+  testWidgets('kit.ui-library.chip-carousel — renders all chips; no fade when everything fits',
       (tester) async {
     await tester.pumpWidget(host(const AppBoxKitChipCarousel(children: [
       AppBoxKitChip(label: 'One'),
@@ -37,7 +37,7 @@ void main() {
         reason: 'edge fades draw only when content overflows');
   });
 
-  testWidgets('overflowing rail fades edges and scrolls to the last chip',
+  testWidgets('kit.ui-library.chip-carousel — overflowing rail fades edges and scrolls to the last chip',
       (tester) async {
     await tester.pumpWidget(host(AppBoxKitChipCarousel(children: boxes(12))));
     await tester.pump(); // post-frame measure + fade setState
@@ -62,7 +62,7 @@ void main() {
     expect(find.byType(ShaderMask), findsOneWidget);
   });
 
-  testWidgets('snap settles on the nearest chip start', (tester) async {
+  testWidgets('kit.ui-library.chip-carousel — snap settles on the nearest chip start', (tester) async {
     await tester.pumpWidget(host(AppBoxKitChipCarousel(
       snap: true,
       spacing: 8,
@@ -83,7 +83,7 @@ void main() {
         reason: 'settle target is the nearest chip start (108dp offset)');
   });
 
-  testWidgets('without snap, a slow drag parks where released', (tester) async {
+  testWidgets('kit.ui-library.chip-carousel — without snap, a slow drag parks where released', (tester) async {
     await tester.pumpWidget(host(AppBoxKitChipCarousel(
       spacing: 8,
       padding: EdgeInsets.zero,
@@ -103,7 +103,7 @@ void main() {
         reason: 'no snap → no corrective spring');
   });
 
-  testWidgets('chips stay tappable through the fade mask', (tester) async {
+  testWidgets('kit.ui-library.chip-carousel — chips stay tappable through the fade mask', (tester) async {
     var taps = 0;
     await tester.pumpWidget(host(AppBoxKitChipCarousel(children: [
       for (var i = 0; i < 12; i++)
@@ -115,7 +115,7 @@ void main() {
     expect(taps, 1);
   });
 
-  testWidgets('rail height is intrinsic — tallest child wins', (tester) async {
+  testWidgets('kit.ui-library.chip-carousel — rail height is intrinsic — tallest child wins', (tester) async {
     await tester.pumpWidget(host(const AppBoxKitChipCarousel(children: [
       AppBoxKitChip(label: 'Small'),
       SizedBox(height: 56, width: 80),

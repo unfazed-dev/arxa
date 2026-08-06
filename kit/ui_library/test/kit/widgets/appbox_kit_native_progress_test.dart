@@ -14,7 +14,7 @@ import 'appbox_kit_native_test_helpers.dart';
 void main() {
   tearDown(AppBoxKitPlatform.reset);
 
-  testWidgets('Android .linear routes to LinearProgressIndicatorM3E',
+  testWidgets('kit.ui-library.native-progress — Android .linear routes to LinearProgressIndicatorM3E',
       (tester) async {
     AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isAndroid: true);
     await tester.pumpWidget(host(AppBoxKitNativeProgress.linear(value: 0.5)));
@@ -26,7 +26,7 @@ void main() {
     );
   });
 
-  testWidgets('Android .circular routes to CircularProgressIndicatorM3E',
+  testWidgets('kit.ui-library.native-progress — Android .circular routes to CircularProgressIndicatorM3E',
       (tester) async {
     AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isAndroid: true);
     await tester.pumpWidget(host(AppBoxKitNativeProgress.circular()));
@@ -40,7 +40,7 @@ void main() {
     );
   });
 
-  testWidgets('default .linear builds clean (Material fallback)', (tester) async {
+  testWidgets('kit.ui-library.native-progress — default .linear builds clean (Material fallback)', (tester) async {
     await tester.pumpWidget(host(AppBoxKitNativeProgress.linear()));
 
     expect(find.byType(LinearProgressIndicatorM3E), findsNothing);
@@ -51,7 +51,7 @@ void main() {
     );
   });
 
-  testWidgets('default .circular builds clean (indeterminate fallback)',
+  testWidgets('kit.ui-library.native-progress — default .circular builds clean (indeterminate fallback)',
       (tester) async {
     await tester.pumpWidget(host(AppBoxKitNativeProgress.circular()));
 

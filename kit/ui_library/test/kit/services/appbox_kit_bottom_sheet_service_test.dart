@@ -21,7 +21,7 @@ void main() {
         home: const Scaffold(body: SizedBox()),
       );
 
-  testWidgets('showCustomSheet renders the registered builder and returns '
+  testWidgets('kit.ui-library.bottom-sheet — showCustomSheet renders the registered builder and returns '
       'the completer response', (tester) async {
     await withAndroidFallback(() async {
       final service = AppBoxKitBottomSheetService()
@@ -58,7 +58,7 @@ void main() {
     });
   });
 
-  testWidgets('Android tier presents via plain showModalBottomSheet',
+  testWidgets('kit.ui-library.bottom-sheet — Android tier presents via plain showModalBottomSheet',
       (tester) async {
     AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isAndroid: true);
     final service = AppBoxKitBottomSheetService()
@@ -75,7 +75,7 @@ void main() {
         reason: 'Android tier uses plain showModalBottomSheet');
   });
 
-  testWidgets('showBottomSheet renders title/description and confirm '
+  testWidgets('kit.ui-library.bottom-sheet — showBottomSheet renders title/description and confirm '
       'completes with confirmed: true', (tester) async {
     await withAndroidFallback(() async {
       final service = AppBoxKitBottomSheetService();

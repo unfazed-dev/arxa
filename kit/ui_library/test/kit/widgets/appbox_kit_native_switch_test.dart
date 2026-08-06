@@ -18,7 +18,7 @@ import 'appbox_kit_native_test_helpers.dart';
 void main() {
   tearDown(AppBoxKitPlatform.reset);
 
-  testWidgets('builds clean', (tester) async {
+  testWidgets('kit.ui-library.native-switch — builds clean', (tester) async {
     await withAndroidFallback(() async {
       await tester.pumpWidget(host(const AppBoxKitNativeSwitch(value: false)));
 
@@ -31,7 +31,7 @@ void main() {
     });
   });
 
-  testWidgets('Android kit gate is a no-op (no M3E branch) and still builds',
+  testWidgets('kit.ui-library.native-switch — Android kit gate is a no-op (no M3E branch) and still builds',
       (tester) async {
     await withAndroidFallback(() async {
       // Switches have no M3E tier; forcing the kit gate to Android must NOT
@@ -47,7 +47,7 @@ void main() {
     });
   });
 
-  testWidgets('onChanged is wired', (tester) async {
+  testWidgets('kit.ui-library.native-switch — onChanged is wired', (tester) async {
     await withAndroidFallback(() async {
       bool? fired;
       await tester.pumpWidget(host(AppBoxKitNativeSwitch(

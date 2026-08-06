@@ -34,7 +34,7 @@ void main() {
         ),
       ));
 
-  testWidgets('Android wantNative routes field + actions to the M3E tier',
+  testWidgets('kit.ui-library.native-input-bar — Android wantNative routes field + actions to the M3E tier',
       (tester) async {
     AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isAndroid: true);
     await pumpBar(
@@ -51,7 +51,7 @@ void main() {
         reason: 'leading + trailing slots render as M3E icon buttons');
   });
 
-  testWidgets('renders field + leading/trailing actions (fallback tiers)',
+  testWidgets('kit.ui-library.native-input-bar — renders field + leading/trailing actions (fallback tiers)',
       (tester) async {
     AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isAndroid: true);
     await pumpBar(
@@ -72,7 +72,7 @@ void main() {
         reason: 'trailing slot renders the mic glyph');
   });
 
-  testWidgets('action tap callbacks fire', (tester) async {
+  testWidgets('kit.ui-library.native-input-bar — action tap callbacks fire', (tester) async {
     AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isAndroid: true);
     var lead = 0, trail = 0;
     await pumpBar(
@@ -95,7 +95,7 @@ void main() {
         reason: 'tapping the trailing action must fire its callback');
   });
 
-  testWidgets('hint text passes through to the field', (tester) async {
+  testWidgets('kit.ui-library.native-input-bar — hint text passes through to the field', (tester) async {
     AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isAndroid: true);
     await pumpBar(tester,
         const AppBoxKitNativeInputBar(hintText: 'Ask anything', wantNative: false));
@@ -104,7 +104,7 @@ void main() {
         reason: 'hintText must reach the field as its hint/placeholder');
   });
 
-  testWidgets('onChanged is wired through the field', (tester) async {
+  testWidgets('kit.ui-library.native-input-bar — onChanged is wired through the field', (tester) async {
     AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isAndroid: true);
     String? fired;
     await pumpBar(tester,
@@ -117,7 +117,7 @@ void main() {
         reason: 'typing in the bar field must fire onChanged');
   });
 
-  testWidgets('keyboard viewInsets lift the bar (keyboard riding)',
+  testWidgets('kit.ui-library.native-input-bar — keyboard viewInsets lift the bar (keyboard riding)',
       (tester) async {
     addTearDown(tester.view.reset);
     AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isAndroid: true);
@@ -139,7 +139,7 @@ void main() {
             'keyboard in a bottomSheet/Stack/bottomNavigationBar slot');
   });
 
-  testWidgets('bottom SafeArea pads for the home indicator', (tester) async {
+  testWidgets('kit.ui-library.native-input-bar — bottom SafeArea pads for the home indicator', (tester) async {
     addTearDown(tester.view.reset);
     AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isAndroid: true);
     const bar = AppBoxKitNativeInputBar(hintText: 'Message', wantNative: false);
@@ -157,7 +157,7 @@ void main() {
             'inset instead of the viewInsets padding');
   });
 
-  testWidgets('actions overriding glyph size trip the one-size assert',
+  testWidgets('kit.ui-library.native-input-bar — actions overriding glyph size trip the one-size assert',
       (tester) async {
     await tester.pumpWidget(host(AppBoxKitNativeInputBar(
       wantNative: false,

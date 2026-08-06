@@ -13,7 +13,7 @@ import 'appbox_kit_native_test_helpers.dart';
 void main() {
   tearDown(AppBoxKitPlatform.reset);
 
-  testWidgets('Android wantNative routes to Material SearchBar', (tester) async {
+  testWidgets('kit.ui-library.native-search-bar — Android wantNative routes to Material SearchBar', (tester) async {
     AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isAndroid: true);
     await tester.pumpWidget(host(const AppBoxKitNativeSearchBar()));
 
@@ -25,7 +25,7 @@ void main() {
     );
   });
 
-  testWidgets('default platform builds clean', (tester) async {
+  testWidgets('kit.ui-library.native-search-bar — default platform builds clean', (tester) async {
     await tester.pumpWidget(host(const AppBoxKitNativeSearchBar(hint: 'Find')));
 
     expect(
@@ -36,7 +36,7 @@ void main() {
     expect(find.text('Find'), findsOneWidget);
   });
 
-  testWidgets('onChanged is wired (text entered via the controller-backed field)',
+  testWidgets('kit.ui-library.native-search-bar — onChanged is wired (text entered via the controller-backed field)',
       (tester) async {
     AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isAndroid: true);
     final controller = TextEditingController();
@@ -62,7 +62,7 @@ void main() {
   // The trailing action is opt-in: with no actionLabel/onAction (the default
   // both existing call sites rely on) the field renders bare — no trailing
   // button of any kind.
-  testWidgets('default (no action) renders no trailing button', (tester) async {
+  testWidgets('kit.ui-library.native-search-bar — default (no action) renders no trailing button', (tester) async {
     AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isAndroid: true);
     await tester.pumpWidget(host(const AppBoxKitNativeSearchBar()));
 
@@ -75,7 +75,7 @@ void main() {
   // button in a Row. Tested on the Material tier (TextButton); the iOS
   // CupertinoButton tier is code-verified only — a native UiKitView can't
   // render in a headless test.
-  testWidgets('actionLabel renders a TextButton that fires onAction',
+  testWidgets('kit.ui-library.native-search-bar — actionLabel renders a TextButton that fires onAction',
       (tester) async {
     AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isAndroid: true);
     var fired = 0;
@@ -96,7 +96,7 @@ void main() {
 
   // Either param null (here actionLabel set, onAction omitted) must NOT render a
   // button — both are required. Guards the half-set footgun.
-  testWidgets('actionLabel without onAction renders no button', (tester) async {
+  testWidgets('kit.ui-library.native-search-bar — actionLabel without onAction renders no button', (tester) async {
     AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isAndroid: true);
     await tester.pumpWidget(
         host(const AppBoxKitNativeSearchBar(actionLabel: 'Cancel')));

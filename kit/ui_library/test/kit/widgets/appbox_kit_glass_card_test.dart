@@ -17,7 +17,7 @@ import 'appbox_kit_native_test_helpers.dart';
 void main() {
   tearDown(AppBoxKitPlatform.reset);
 
-  testWidgets('Android wantNative routes to the frosted tier, not glass',
+  testWidgets('kit.ui-library.glass-card — Android wantNative routes to the frosted tier, not glass',
       (tester) async {
     AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isAndroid: true);
     await tester.pumpWidget(host(const AppBoxKitGlassCard(child: Text('card'))));
@@ -34,7 +34,7 @@ void main() {
     );
   });
 
-  testWidgets('default tier builds clean and renders the child',
+  testWidgets('kit.ui-library.glass-card — default tier builds clean and renders the child',
       (tester) async {
     await withAndroidFallback(() async {
       await tester.pumpWidget(host(const AppBoxKitGlassCard(child: Text('card'))));
@@ -52,7 +52,7 @@ void main() {
     });
   });
 
-  testWidgets('wantNative=false opts out of glass even on iOS 26',
+  testWidgets('kit.ui-library.glass-card — wantNative=false opts out of glass even on iOS 26',
       (tester) async {
     AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(
       isIOS: true,

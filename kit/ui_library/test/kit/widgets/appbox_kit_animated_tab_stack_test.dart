@@ -67,7 +67,7 @@ void main() {
   setUp(_inits.clear);
 
   testWidgets(
-      'lazy kept-alive: unvisited tabs cost nothing, idle frames '
+      'kit.ui-library.animated-tab-stack — lazy kept-alive: unvisited tabs cost nothing, idle frames '
       'render exactly one tab', (tester) async {
     await tester.pumpWidget(_frame(0));
     expect(_onStage('tab0'), findsOneWidget);
@@ -83,7 +83,7 @@ void main() {
   });
 
   testWidgets(
-      'paired transition: the outgoing tab slides out while the '
+      'kit.ui-library.animated-tab-stack — paired transition: the outgoing tab slides out while the '
       'incoming slides in, then leaves the stage', (tester) async {
     await tester.pumpWidget(_frame(0));
     await tester.pumpWidget(_frame(1)); // forward switch starts
@@ -132,7 +132,7 @@ void main() {
         reason: 'reparented through the exit, never re-inflated');
   });
 
-  testWidgets('direction helper: backward switch mirrors both slides',
+  testWidgets('kit.ui-library.animated-tab-stack — direction helper: backward switch mirrors both slides',
       (tester) async {
     await tester.pumpWidget(_frame(0));
     await tester.pumpWidget(_frame(2)); // forward, then let it settle
@@ -147,7 +147,7 @@ void main() {
         reason: 'backward switch: outgoing through the trailing edge');
   });
 
-  testWidgets('no phantom motion before the first switch', (tester) async {
+  testWidgets('kit.ui-library.animated-tab-stack — no phantom motion before the first switch', (tester) async {
     await tester.pumpWidget(_frame(0));
     for (final dx in _slideDxs(tester)) {
       expect(dx, 0.0, reason: 'startup parks the controller at 1.0');
@@ -155,7 +155,7 @@ void main() {
   });
 
   testWidgets(
-      'keyed child keeps state across switches (tap survives the '
+      'kit.ui-library.animated-tab-stack — keyed child keeps state across switches (tap survives the '
       'round trip)', (tester) async {
     await tester.pumpWidget(_frame(0));
     await tester.tap(find.text('tab0:0')); // mutate tab0's State
@@ -176,7 +176,7 @@ void main() {
   });
 
   testWidgets(
-      'router-model shape: regenerated children list and same-index '
+      'kit.ui-library.animated-tab-stack — router-model shape: regenerated children list and same-index '
       'rebuilds stay quiet', (tester) async {
     // StackedTabsRouter.builder regenerates its children on every router
     // build, including builds where the index did NOT change — those must not
@@ -196,7 +196,7 @@ void main() {
   });
 
   testWidgets(
-      'rapid reverse mid-flight reparents both ways without '
+      'kit.ui-library.animated-tab-stack — rapid reverse mid-flight reparents both ways without '
       'duplication or state loss', (tester) async {
     await tester.pumpWidget(_frame(0));
     await tester.pumpWidget(_frame(1)); // forward starts
@@ -217,7 +217,7 @@ void main() {
     expect(_alive('tab1'), findsOneWidget, reason: 'tab1 kept alive');
   });
 
-  testWidgets('tab-list shrink mid-exit cuts the exit short', (tester) async {
+  testWidgets('kit.ui-library.animated-tab-stack — tab-list shrink mid-exit cuts the exit short', (tester) async {
     // Live recomposition (the host's per-Session tab list) can remove the
     // leaving tab while its exit is still running.
     await tester.pumpWidget(_frame(2));
@@ -231,7 +231,7 @@ void main() {
   });
 
   testWidgets(
-      'active tab vanishing with a shrink snaps to the clamped index '
+      'kit.ui-library.animated-tab-stack — active tab vanishing with a shrink snaps to the clamped index '
       '(no out-of-range exit)', (tester) async {
     // The router-clamp path: a grant revoked while SITTING on its tab shrinks
     // the children and moves the index in the same update — there is no
@@ -245,7 +245,7 @@ void main() {
     expect(_inits.where((l) => l == 'tab0'), hasLength(1));
   });
 
-  testWidgets('fade stays off by default (platform-view safety)',
+  testWidgets('kit.ui-library.animated-tab-stack — fade stays off by default (platform-view safety)',
       (tester) async {
     await tester.pumpWidget(_frame(0));
     expect(find.byType(FadeTransition), findsNothing,
@@ -253,7 +253,7 @@ void main() {
             '(flutter#148639/#24164) — fade must be opt-in (check 1c2)');
   });
 
-  testWidgets('fade opt-in cross-fades the pair', (tester) async {
+  testWidgets('kit.ui-library.animated-tab-stack — fade opt-in cross-fades the pair', (tester) async {
     await tester.pumpWidget(_frame(0, fade: true));
     expect(find.byType(FadeTransition), findsNWidgets(2),
         reason: 'incoming fades in, outgoing fades out — wrappers always '

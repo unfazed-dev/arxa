@@ -30,7 +30,7 @@ void main() {
         ],
       );
 
-  testWidgets('renders the header above a glass-card group', (tester) async {
+  testWidgets('kit.ui-library.list-section — renders the header above a glass-card group', (tester) async {
     await tester.pumpWidget(host(section(header: 'Account')));
 
     expect(find.text('Account'), findsOneWidget);
@@ -40,14 +40,14 @@ void main() {
     expect(find.text('Row 2'), findsOneWidget);
   });
 
-  testWidgets('no header when header is null', (tester) async {
+  testWidgets('kit.ui-library.list-section — no header when header is null', (tester) async {
     await tester.pumpWidget(host(section()));
 
     expect(find.text('Account'), findsNothing);
     expect(find.byType(AppBoxKitGlassCard), findsOneWidget);
   });
 
-  testWidgets('draws rows-1 dividers by default, none when disabled',
+  testWidgets('kit.ui-library.list-section — draws rows-1 dividers by default, none when disabled',
       (tester) async {
     await tester.pumpWidget(host(section(rows: 3)));
     expect(find.byType(Divider), findsNWidgets(2),
@@ -61,7 +61,7 @@ void main() {
         reason: 'a single-row section has no divider');
   });
 
-  testWidgets('row taps fire through the section', (tester) async {
+  testWidgets('kit.ui-library.list-section — row taps fire through the section', (tester) async {
     var taps = 0;
     await tester.pumpWidget(host(section(onTap: () => taps++)));
 
