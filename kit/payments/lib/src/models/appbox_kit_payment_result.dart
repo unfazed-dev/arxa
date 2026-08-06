@@ -1,32 +1,32 @@
-import 'kit_payment_method.dart';
+import 'appbox_kit_payment_method.dart';
 
 /// The outcome of a payment request. Sealed with four cases so callers must
 /// handle every branch — the distinctions are load-bearing:
 ///
-/// * [PaymentSuccess] — a token was minted. Nothing is charged yet; hand the
+/// * [AppBoxKitPaymentSuccess] — a token was minted. Nothing is charged yet; hand the
 ///   token to your server / PSP to capture.
-/// * [PaymentCancelled] — the user dismissed the sheet. Not an error; show
+/// * [AppBoxKitPaymentCancelled] — the user dismissed the sheet. Not an error; show
 ///   nothing.
-/// * [PaymentDeclined] — the payment method itself was rejected (expired card,
-///   insufficient funds, risk block). Distinct from [PaymentError] because the
+/// * [AppBoxKitPaymentDeclined] — the payment method itself was rejected (expired card,
+///   insufficient funds, risk block). Distinct from [AppBoxKitPaymentError] because the
 ///   user should retry with a different method, not report a bug. Apple/Google
 ///   Pay rarely surface this client-side (declines usually happen at capture),
 ///   but the pluggable Stripe/PayPal providers and the fake do.
-/// * [PaymentError] — something broke (misconfiguration, network, plugin
+/// * [AppBoxKitPaymentError] — something broke (misconfiguration, network, plugin
 ///   exception). The user cannot fix it by retrying.
-sealed class PaymentResult {
-  const PaymentResult();
+sealed class AppBoxKitPaymentResult {
+  const AppBoxKitPaymentResult();
 }
 
 /// A wallet token was produced. [token] is the raw token payload to forward to
 /// your payment processor (JSON-encoded for Apple/Google Pay). [raw] is the
 /// full plugin result map for providers that need more than the token.
-final class PaymentSuccess extends PaymentResult {
+final class AppBoxKitPaymentSuccess extends AppBoxKitPaymentResult {
   final String token;
-  final KitPaymentMethod method;
+  final AppBoxKitPaymentMethod method;
   final Map<String, dynamic> raw;
 
-  const PaymentSuccess({
+  const AppBoxKitPaymentSuccess({
     required this.token,
     required this.method,
     this.raw = const {},
@@ -34,26 +34,26 @@ final class PaymentSuccess extends PaymentResult {
 }
 
 /// The user dismissed the payment sheet before completing.
-final class PaymentCancelled extends PaymentResult {
-  const PaymentCancelled();
+final class AppBoxKitPaymentCancelled extends AppBoxKitPaymentResult {
+  const AppBoxKitPaymentCancelled();
 }
 
 /// The payment instrument was rejected. [reason] is a provider-supplied,
 /// human-readable string when available.
-final class PaymentDeclined extends PaymentResult {
+final class AppBoxKitPaymentDeclined extends AppBoxKitPaymentResult {
   final String? reason;
 
-  const PaymentDeclined({this.reason});
+  const AppBoxKitPaymentDeclined({this.reason});
 }
 
 /// The request failed for a non-user reason. [cause] retains the underlying
 /// exception so callers can log it without importing any provider SDK.
-final class PaymentError extends PaymentResult {
+final class AppBoxKitPaymentError extends AppBoxKitPaymentResult {
   final String message;
   final Object? cause;
 
-  const PaymentError(this.message, {this.cause});
+  const AppBoxKitPaymentError(this.message, {this.cause});
 
   @override
-  String toString() => 'PaymentError($message)';
+  String toString() => 'AppBoxKitPaymentError($message)';
 }

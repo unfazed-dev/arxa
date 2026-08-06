@@ -1,15 +1,15 @@
 import 'package:flutter_stripe/flutter_stripe.dart';
 
-import '../../models/kit_payment_config.dart';
-import '../../models/kit_payment_item.dart';
-import '../../models/kit_payment_method.dart';
-import '../../models/payment_result.dart';
-import '../kit_payments_provider.dart';
+import '../../models/appbox_kit_payment_config.dart';
+import '../../models/appbox_kit_payment_item.dart';
+import '../../models/appbox_kit_payment_method.dart';
+import '../../models/appbox_kit_payment_result.dart';
+import '../appbox_kit_payments_provider.dart';
 
 /// What the server hands back after creating a PaymentIntent. The secret key
 /// never leaves the server; the app receives only the client secret (plus the
 /// optional customer pairing for saved-card display).
-class StripePaymentIntent {
+class AppBoxKitStripePaymentIntent {
   /// The PaymentIntent client secret (`pi_…_secret_…`).
   final String clientSecret;
 
@@ -20,13 +20,13 @@ class StripePaymentIntent {
   /// is attached.
   final String? customerEphemeralKeySecret;
 
-  const StripePaymentIntent({
+  const AppBoxKitStripePaymentIntent({
     required this.clientSecret,
     this.customerId,
     this.customerEphemeralKeySecret,
   });
 
-  /// The `pi_…` id embedded in [clientSecret] — used as the [PaymentSuccess]
+  /// The `pi_…` id embedded in [clientSecret] — used as the [AppBoxKitPaymentSuccess]
   /// token so the server can reconcile/capture.
   String get id => clientSecret.split('_secret').first;
 }
@@ -34,19 +34,19 @@ class StripePaymentIntent {
 /// Server-side seam for PaymentIntent creation. The actual
 /// `POST /v1/payment_intents` call belongs on your backend (it needs the
 /// secret key); implement this over your API client.
-abstract interface class KitStripeBackend {
+abstract interface class AppBoxKitStripeBackend {
   /// Creates a PaymentIntent for [amountMinor] (smallest currency unit) in
   /// [currency] (ISO 4217 lowercase), optionally bound to [customerId].
-  Future<StripePaymentIntent> createPaymentIntent({
+  Future<AppBoxKitStripePaymentIntent> createPaymentIntent({
     required int amountMinor,
     required String currency,
     String? customerId,
   });
 }
 
-/// Everything [StripeSheetGateway.initSheet] needs, in SDK-free terms so the
+/// Everything [AppBoxKitStripeSheetGateway.initSheet] needs, in SDK-free terms so the
 /// provider and its tests never import `flutter_stripe`.
-class StripeSheetConfig {
+class AppBoxKitStripeSheetConfig {
   final String publishableKey;
   final String? merchantIdentifier;
   final String clientSecret;
@@ -65,7 +65,7 @@ class StripeSheetConfig {
   /// Google Pay test environment flag.
   final bool googlePayTestEnv;
 
-  const StripeSheetConfig({
+  const AppBoxKitStripeSheetConfig({
     required this.publishableKey,
     required this.clientSecret,
     required this.merchantDisplayName,
@@ -80,56 +80,56 @@ class StripeSheetConfig {
   });
 }
 
-/// The user dismissed the PaymentSheet. Maps to [PaymentCancelled].
-class StripeSheetCancelled implements Exception {
-  const StripeSheetCancelled();
+/// The user dismissed the PaymentSheet. Maps to [AppBoxKitPaymentCancelled].
+class AppBoxKitStripeSheetCancelled implements Exception {
+  const AppBoxKitStripeSheetCancelled();
 
   @override
-  String toString() => 'StripeSheetCancelled()';
+  String toString() => 'AppBoxKitStripeSheetCancelled()';
 }
 
 /// The payment instrument was rejected (card declined, risk block). Maps to
-/// [PaymentDeclined]; [reason] is the SDK's localized/decline message.
-class StripeSheetDeclined implements Exception {
+/// [AppBoxKitPaymentDeclined]; [reason] is the SDK's localized/decline message.
+class AppBoxKitStripeSheetDeclined implements Exception {
   final String? reason;
-  const StripeSheetDeclined([this.reason]);
+  const AppBoxKitStripeSheetDeclined([this.reason]);
 
   @override
-  String toString() => 'StripeSheetDeclined($reason)';
+  String toString() => 'AppBoxKitStripeSheetDeclined($reason)';
 }
 
 /// Anything else the SDK threw (misconfiguration, network). Maps to
-/// [PaymentError].
-class StripeSheetError implements Exception {
+/// [AppBoxKitPaymentError].
+class AppBoxKitStripeSheetError implements Exception {
   final String message;
   final Object? cause;
-  const StripeSheetError(this.message, {this.cause});
+  const AppBoxKitStripeSheetError(this.message, {this.cause});
 
   @override
-  String toString() => 'StripeSheetError($message)';
+  String toString() => 'AppBoxKitStripeSheetError($message)';
 }
 
 /// SDK seam over the PaymentSheet. The real implementation is
-/// [FlutterStripeSheetGateway]; tests substitute a mock so no platform
+/// [AppBoxKitFlutterStripeSheetGateway]; tests substitute a mock so no platform
 /// channel is ever touched.
-abstract interface class StripeSheetGateway {
+abstract interface class AppBoxKitStripeSheetGateway {
   /// Applies the publishable key and initialises the sheet.
-  Future<void> initSheet(StripeSheetConfig config);
+  Future<void> initSheet(AppBoxKitStripeSheetConfig config);
 
   /// Presents the sheet; completes only on a confirmed payment, and throws
-  /// [StripeSheetCancelled] / [StripeSheetDeclined] / [StripeSheetError]
+  /// [AppBoxKitStripeSheetCancelled] / [AppBoxKitStripeSheetDeclined] / [AppBoxKitStripeSheetError]
   /// otherwise.
   Future<void> presentSheet();
 }
 
-/// [StripeSheetGateway] over `flutter_stripe`'s PaymentSheet (the supported
+/// [AppBoxKitStripeSheetGateway] over `flutter_stripe`'s PaymentSheet (the supported
 /// surface — CardField/CardForm are sunset). Card entry, Apple Pay, Google
 /// Pay and 3DS all run inside the one sheet.
-class FlutterStripeSheetGateway implements StripeSheetGateway {
-  const FlutterStripeSheetGateway();
+class AppBoxKitFlutterStripeSheetGateway implements AppBoxKitStripeSheetGateway {
+  const AppBoxKitFlutterStripeSheetGateway();
 
   @override
-  Future<void> initSheet(StripeSheetConfig config) async {
+  Future<void> initSheet(AppBoxKitStripeSheetConfig config) async {
     Stripe.publishableKey = config.publishableKey;
     final merchantId = config.merchantIdentifier;
     if (merchantId != null) Stripe.merchantIdentifier = merchantId;
@@ -179,34 +179,34 @@ class FlutterStripeSheetGateway implements StripeSheetGateway {
           error.error.message ??
           error.error.declineCode;
       return switch (code) {
-        FailureCode.Canceled => const StripeSheetCancelled(),
+        FailureCode.Canceled => const AppBoxKitStripeSheetCancelled(),
         // The sheet reports card declines as Failed — distinct from a broken
         // integration, so callers retry with a different payment method.
-        FailureCode.Failed => StripeSheetDeclined(message),
+        FailureCode.Failed => AppBoxKitStripeSheetDeclined(message),
         FailureCode.Timeout ||
         FailureCode.Unknown =>
-          StripeSheetError(message ?? 'Stripe payment failed', cause: error),
+          AppBoxKitStripeSheetError(message ?? 'Stripe payment failed', cause: error),
       };
     }
-    return StripeSheetError(error.toString(), cause: error);
+    return AppBoxKitStripeSheetError(error.toString(), cause: error);
   }
 }
 
 /// Stripe backend over `flutter_stripe`'s PaymentSheet. Fulfils the same
-/// [KitPaymentMethod.applePay] / [KitPaymentMethod.googlePay] slots as the
-/// native provider — register it *after* [PayPaymentsProvider] as a fallback,
+/// [AppBoxKitPaymentMethod.applePay] / [AppBoxKitPaymentMethod.googlePay] slots as the
+/// native provider — register it *after* [AppBoxKitPayPaymentsProvider] as a fallback,
 /// or instead of it when Stripe should front the wallets (its sheet also
 /// takes raw card entry, which the native provider cannot).
 ///
 /// Flow (mirrors the Tier-1 spec in `appboxd/lib/tier1.dart`): init with the
-/// publishable key → create a PaymentIntent via [KitStripeBackend] (secret
+/// publishable key → create a PaymentIntent via [AppBoxKitStripeBackend] (secret
 /// stays server-side) → init + present the sheet.
 ///
 /// Test-mode aware: [googlePayTestEnv] defaults to true when
 /// [publishableKey] starts with `pk_test_`, so Google Pay runs in the test
 /// environment on emulators without extra wiring. Apple Pay works on the iOS
 /// simulator in Stripe test mode with dummy payment data.
-class StripePaymentsProvider implements KitPaymentsProvider {
+class AppBoxKitStripePaymentsProvider implements AppBoxKitPaymentsProvider {
   /// Stripe publishable key (`pk_test_…` / `pk_live_…`). Safe to ship in the
   /// app; the secret key never leaves the server.
   final String publishableKey;
@@ -233,11 +233,11 @@ class StripePaymentsProvider implements KitPaymentsProvider {
 
   /// Server-side PaymentIntent seam. When null the provider cannot pay —
   /// [canPay] reports false.
-  final KitStripeBackend? backend;
+  final AppBoxKitStripeBackend? backend;
 
-  final StripeSheetGateway _gateway;
+  final AppBoxKitStripeSheetGateway _gateway;
 
-  StripePaymentsProvider({
+  AppBoxKitStripePaymentsProvider({
     required this.publishableKey,
     required this.backend,
     this.merchantIdentifier,
@@ -246,42 +246,42 @@ class StripePaymentsProvider implements KitPaymentsProvider {
     this.currencyCode = 'usd',
     bool? googlePayTestEnv,
     this.customerId,
-    StripeSheetGateway? gateway,
+    AppBoxKitStripeSheetGateway? gateway,
   })  : googlePayTestEnv =
             googlePayTestEnv ?? publishableKey.startsWith('pk_test_'),
-        _gateway = gateway ?? const FlutterStripeSheetGateway();
+        _gateway = gateway ?? const AppBoxKitFlutterStripeSheetGateway();
 
   @override
   String get id => 'stripe';
 
   @override
-  Set<KitPaymentMethod> get supportedMethods => {
-        if (merchantIdentifier != null) KitPaymentMethod.applePay,
-        KitPaymentMethod.googlePay,
+  Set<AppBoxKitPaymentMethod> get supportedMethods => {
+        if (merchantIdentifier != null) AppBoxKitPaymentMethod.applePay,
+        AppBoxKitPaymentMethod.googlePay,
       };
 
   @override
-  Future<bool> canPay(KitPaymentMethod method) async =>
+  Future<bool> canPay(AppBoxKitPaymentMethod method) async =>
       backend != null && supportedMethods.contains(method);
 
   @override
-  Future<PaymentResult> requestPayment({
-    required KitPaymentConfig config,
-    required List<KitPaymentItem> items,
+  Future<AppBoxKitPaymentResult> requestPayment({
+    required AppBoxKitPaymentConfig config,
+    required List<AppBoxKitPaymentItem> items,
   }) async {
     final method = config.method;
     if (!supportedMethods.contains(method)) {
-      return PaymentError('StripePaymentsProvider does not support $method');
+      return AppBoxKitPaymentError('AppBoxKitStripePaymentsProvider does not support $method');
     }
     final backend = this.backend;
     if (backend == null) {
-      return const PaymentError(
-          'StripePaymentsProvider has no backend (PaymentIntents are created server-side)');
+      return const AppBoxKitPaymentError(
+          'AppBoxKitStripePaymentsProvider has no backend (PaymentIntents are created server-side)');
     }
     final amountMinor = _totalMinor(items);
     if (amountMinor == null) {
-      return const PaymentError(
-          'StripePaymentsProvider requires final-priced items');
+      return const AppBoxKitPaymentError(
+          'AppBoxKitStripePaymentsProvider requires final-priced items');
     }
     try {
       final intent = await backend.createPaymentIntent(
@@ -290,7 +290,7 @@ class StripePaymentsProvider implements KitPaymentsProvider {
         customerId: customerId,
       );
       await _gateway.initSheet(
-        StripeSheetConfig(
+        AppBoxKitStripeSheetConfig(
           publishableKey: publishableKey,
           merchantIdentifier: merchantIdentifier,
           clientSecret: intent.clientSecret,
@@ -305,20 +305,20 @@ class StripePaymentsProvider implements KitPaymentsProvider {
         ),
       );
       await _gateway.presentSheet();
-      return PaymentSuccess(
+      return AppBoxKitPaymentSuccess(
         token: intent.id,
         method: method,
         raw: {'provider': 'stripe', 'paymentIntentId': intent.id},
       );
-    } on StripeSheetCancelled {
-      return const PaymentCancelled();
-    } on StripeSheetDeclined catch (error) {
-      return PaymentDeclined(reason: error.reason);
-    } on StripeSheetError catch (error) {
-      return PaymentError(error.message, cause: error.cause);
+    } on AppBoxKitStripeSheetCancelled {
+      return const AppBoxKitPaymentCancelled();
+    } on AppBoxKitStripeSheetDeclined catch (error) {
+      return AppBoxKitPaymentDeclined(reason: error.reason);
+    } on AppBoxKitStripeSheetError catch (error) {
+      return AppBoxKitPaymentError(error.message, cause: error.cause);
     } catch (error) {
       // Backend threw (network, 4xx) or an unexpected gateway failure.
-      return PaymentError(error.toString(), cause: error);
+      return AppBoxKitPaymentError(error.toString(), cause: error);
     }
   }
 
@@ -326,10 +326,10 @@ class StripePaymentsProvider implements KitPaymentsProvider {
   /// pending or unparseable — charging a guessed total is worse than failing.
   // kimitail: assumes 2-decimal currencies; JPY/KRW (0-decimal) need a
   // currency→exponent table if ever supported.
-  static int? _totalMinor(List<KitPaymentItem> items) {
+  static int? _totalMinor(List<AppBoxKitPaymentItem> items) {
     var total = 0;
     for (final item in items) {
-      if (item.status != KitPaymentItemStatus.finalPrice) return null;
+      if (item.status != AppBoxKitPaymentItemStatus.finalPrice) return null;
       final amount = double.tryParse(item.amount);
       if (amount == null) return null;
       total += (amount * 100).round();

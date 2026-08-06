@@ -4,7 +4,7 @@ import 'package:pay/pay.dart' as pay;
 /// `pay`'s `PaymentItemStatus` but keeps the port pay-agnostic so the Stripe /
 /// PayPal providers (which never touch the `pay` plugin) can build the same
 /// item list.
-enum KitPaymentItemStatus {
+enum AppBoxKitPaymentItemStatus {
   /// A known, final amount (the common case for the grand total).
   finalPrice,
 
@@ -16,15 +16,15 @@ enum KitPaymentItemStatus {
 /// A single line shown in the Apple Pay / Google Pay sheet. [amount] is a
 /// decimal string in the config's currency (e.g. `'99.99'`) — never an int of
 /// minor units — because that is what both wallets expect.
-class KitPaymentItem {
+class AppBoxKitPaymentItem {
   final String label;
   final String amount;
-  final KitPaymentItemStatus status;
+  final AppBoxKitPaymentItemStatus status;
 
-  const KitPaymentItem({
+  const AppBoxKitPaymentItem({
     required this.label,
     required this.amount,
-    this.status = KitPaymentItemStatus.finalPrice,
+    this.status = AppBoxKitPaymentItemStatus.finalPrice,
   });
 
   /// Maps to the `pay` plugin's item type. Internal to the native provider and
@@ -33,8 +33,8 @@ class KitPaymentItem {
         label: label,
         amount: amount,
         status: switch (status) {
-          KitPaymentItemStatus.finalPrice => pay.PaymentItemStatus.final_price,
-          KitPaymentItemStatus.pending => pay.PaymentItemStatus.pending,
+          AppBoxKitPaymentItemStatus.finalPrice => pay.PaymentItemStatus.final_price,
+          AppBoxKitPaymentItemStatus.pending => pay.PaymentItemStatus.pending,
         },
       );
 }

@@ -4,11 +4,11 @@ import 'package:flutter_stripe/flutter_stripe.dart'
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
-class _MockBackend extends Mock implements KitStripeBackend {}
+class _MockBackend extends Mock implements AppBoxKitStripeBackend {}
 
-class _MockGateway extends Mock implements StripeSheetGateway {}
+class _MockGateway extends Mock implements AppBoxKitStripeSheetGateway {}
 
-const _fallbackConfig = StripeSheetConfig(
+const _fallbackConfig = AppBoxKitStripeSheetConfig(
   publishableKey: 'pk_test_x',
   clientSecret: 'pi_x_secret_y',
   merchantDisplayName: 'x',
@@ -16,25 +16,25 @@ const _fallbackConfig = StripeSheetConfig(
   currencyCode: 'usd',
 );
 
-const _intent = StripePaymentIntent(clientSecret: 'pi_demo_123_secret_abc');
+const _intent = AppBoxKitStripePaymentIntent(clientSecret: 'pi_demo_123_secret_abc');
 
 void main() {
   setUpAll(() => registerFallbackValue(_fallbackConfig));
 
   late _MockBackend backend;
   late _MockGateway gateway;
-  late StripePaymentsProvider provider;
+  late AppBoxKitStripePaymentsProvider provider;
 
   // The provider never parses wallet JSON — the config only picks the method.
-  const config = GooglePayConfig.fromJson('{}');
-  const items = [KitPaymentItem(label: 'Total', amount: '19.99')];
+  const config = AppBoxKitGooglePayConfig.fromJson('{}');
+  const items = [AppBoxKitPaymentItem(label: 'Total', amount: '19.99')];
 
-  StripePaymentsProvider build({
-    KitStripeBackend? backend,
+  AppBoxKitStripePaymentsProvider build({
+    AppBoxKitStripeBackend? backend,
     String publishableKey = 'pk_test_abc',
     String? merchantIdentifier = 'merchant.com.appbox',
   }) =>
-      StripePaymentsProvider(
+      AppBoxKitStripePaymentsProvider(
         publishableKey: publishableKey,
         merchantIdentifier: merchantIdentifier,
         backend: backend,
@@ -57,19 +57,19 @@ void main() {
     provider = build(backend: backend);
   });
 
-  group('StripePaymentsProvider — contract', () {
+  group('AppBoxKitStripePaymentsProvider — contract', () {
     test('id is "stripe"', () {
       expect(provider.id, 'stripe');
     });
 
     test('supports both wallets when a merchant identifier is set', () {
       expect(provider.supportedMethods,
-          {KitPaymentMethod.applePay, KitPaymentMethod.googlePay});
+          {AppBoxKitPaymentMethod.applePay, AppBoxKitPaymentMethod.googlePay});
     });
 
     test('drops Apple Pay without a merchant identifier', () {
       expect(build(backend: backend, merchantIdentifier: null).supportedMethods,
-          {KitPaymentMethod.googlePay});
+          {AppBoxKitPaymentMethod.googlePay});
     });
 
     test('googlePayTestEnv follows the key mode', () {
@@ -79,31 +79,31 @@ void main() {
     });
 
     test('canPay is true for a supported method with a backend', () async {
-      expect(await provider.canPay(KitPaymentMethod.googlePay), isTrue);
-      expect(await provider.canPay(KitPaymentMethod.applePay), isTrue);
+      expect(await provider.canPay(AppBoxKitPaymentMethod.googlePay), isTrue);
+      expect(await provider.canPay(AppBoxKitPaymentMethod.applePay), isTrue);
     });
 
     test('canPay is false without a backend', () async {
-      expect(await build(backend: null).canPay(KitPaymentMethod.googlePay),
+      expect(await build(backend: null).canPay(AppBoxKitPaymentMethod.googlePay),
           isFalse);
     });
 
     test('canPay is false for PayPal', () async {
-      expect(await provider.canPay(KitPaymentMethod.payPal), isFalse);
+      expect(await provider.canPay(AppBoxKitPaymentMethod.payPal), isFalse);
     });
   });
 
-  group('StripePaymentsProvider — PaymentSheet flow', () {
+  group('AppBoxKitStripePaymentsProvider — PaymentSheet flow', () {
     test('success: intent → init → present, token is the pi_ id', () async {
       stubHappyPath();
 
       final result = await provider.requestPayment(
           config: config, items: items);
 
-      expect(result, isA<PaymentSuccess>());
-      final success = result as PaymentSuccess;
+      expect(result, isA<AppBoxKitPaymentSuccess>());
+      final success = result as AppBoxKitPaymentSuccess;
       expect(success.token, 'pi_demo_123');
-      expect(success.method, KitPaymentMethod.googlePay);
+      expect(success.method, AppBoxKitPaymentMethod.googlePay);
       expect(success.raw['paymentIntentId'], 'pi_demo_123');
 
       // Amount is summed to minor units; currency comes from the provider.
@@ -113,7 +113,7 @@ void main() {
       // Sheet got the client secret + wallet toggles for a test key.
       final sheetConfig = verify(() => gateway.initSheet(captureAny()))
           .captured
-          .single as StripeSheetConfig;
+          .single as AppBoxKitStripeSheetConfig;
       expect(sheetConfig.clientSecret, _intent.clientSecret);
       expect(sheetConfig.applePayEnabled, isTrue);
       expect(sheetConfig.googlePayEnabled, isTrue);
@@ -127,7 +127,7 @@ void main() {
             amountMinor: any(named: 'amountMinor'),
             currency: any(named: 'currency'),
             customerId: any(named: 'customerId'),
-          )).thenAnswer((_) async => const StripePaymentIntent(
+          )).thenAnswer((_) async => const AppBoxKitStripePaymentIntent(
             clientSecret: 'pi_c_secret_x',
             customerId: 'cus_1',
             customerEphemeralKeySecret: 'ek_1',
@@ -139,45 +139,45 @@ void main() {
 
       final sheetConfig = verify(() => gateway.initSheet(captureAny()))
           .captured
-          .single as StripeSheetConfig;
+          .single as AppBoxKitStripeSheetConfig;
       expect(sheetConfig.customerId, 'cus_1');
       expect(sheetConfig.customerEphemeralKeySecret, 'ek_1');
     });
 
-    test('user dismissal maps to PaymentCancelled', () async {
+    test('user dismissal maps to AppBoxKitPaymentCancelled', () async {
       stubHappyPath();
       when(() => gateway.presentSheet())
-          .thenThrow(const StripeSheetCancelled());
+          .thenThrow(const AppBoxKitStripeSheetCancelled());
 
       expect(await provider.requestPayment(config: config, items: items),
-          isA<PaymentCancelled>());
+          isA<AppBoxKitPaymentCancelled>());
     });
 
-    test('card decline maps to PaymentDeclined with the SDK reason', () async {
+    test('card decline maps to AppBoxKitPaymentDeclined with the SDK reason', () async {
       stubHappyPath();
       when(() => gateway.presentSheet())
-          .thenThrow(const StripeSheetDeclined('Your card was declined.'));
+          .thenThrow(const AppBoxKitStripeSheetDeclined('Your card was declined.'));
 
       final result =
           await provider.requestPayment(config: config, items: items);
 
-      expect(result, isA<PaymentDeclined>());
-      expect((result as PaymentDeclined).reason, 'Your card was declined.');
+      expect(result, isA<AppBoxKitPaymentDeclined>());
+      expect((result as AppBoxKitPaymentDeclined).reason, 'Your card was declined.');
     });
 
-    test('init failure maps to PaymentError', () async {
+    test('init failure maps to AppBoxKitPaymentError', () async {
       stubHappyPath();
       when(() => gateway.initSheet(any()))
-          .thenThrow(const StripeSheetError('bad client secret'));
+          .thenThrow(const AppBoxKitStripeSheetError('bad client secret'));
 
       final result =
           await provider.requestPayment(config: config, items: items);
 
-      expect(result, isA<PaymentError>());
-      expect((result as PaymentError).message, 'bad client secret');
+      expect(result, isA<AppBoxKitPaymentError>());
+      expect((result as AppBoxKitPaymentError).message, 'bad client secret');
     });
 
-    test('backend failure maps to PaymentError and never shows the sheet',
+    test('backend failure maps to AppBoxKitPaymentError and never shows the sheet',
         () async {
       when(() => backend.createPaymentIntent(
             amountMinor: any(named: 'amountMinor'),
@@ -188,31 +188,31 @@ void main() {
       final result =
           await provider.requestPayment(config: config, items: items);
 
-      expect(result, isA<PaymentError>());
-      expect((result as PaymentError).message, contains('network down'));
+      expect(result, isA<AppBoxKitPaymentError>());
+      expect((result as AppBoxKitPaymentError).message, contains('network down'));
       verifyNever(() => gateway.initSheet(any()));
       verifyNever(() => gateway.presentSheet());
     });
 
-    test('no backend maps to PaymentError', () async {
+    test('no backend maps to AppBoxKitPaymentError', () async {
       final result = await build(backend: null)
           .requestPayment(config: config, items: items);
-      expect(result, isA<PaymentError>());
+      expect(result, isA<AppBoxKitPaymentError>());
     });
 
-    test('a pending item maps to PaymentError and never calls the backend',
+    test('a pending item maps to AppBoxKitPaymentError and never calls the backend',
         () async {
       final result = await provider.requestPayment(
         config: config,
         items: const [
-          KitPaymentItem(
+          AppBoxKitPaymentItem(
               label: 'Shipping',
               amount: '5.00',
-              status: KitPaymentItemStatus.pending),
+              status: AppBoxKitPaymentItemStatus.pending),
         ],
       );
 
-      expect(result, isA<PaymentError>());
+      expect(result, isA<AppBoxKitPaymentError>());
       verifyNever(() => backend.createPaymentIntent(
           amountMinor: any(named: 'amountMinor'),
           currency: any(named: 'currency'),
@@ -221,27 +221,27 @@ void main() {
 
     test('a PayPal config is rejected', () async {
       final result = await provider.requestPayment(
-        config: const PayPalConfig(),
+        config: const AppBoxKitPayPalConfig(),
         items: items,
       );
-      expect(result, isA<PaymentError>());
-      expect((result as PaymentError).message, contains('does not support'));
+      expect(result, isA<AppBoxKitPaymentError>());
+      expect((result as AppBoxKitPaymentError).message, contains('does not support'));
     });
   });
 
-  group('FlutterStripeSheetGateway.mapStripeError', () {
+  group('AppBoxKitFlutterStripeSheetGateway.mapStripeError', () {
     // Pure mapping over flutter_stripe data types — no platform channel.
-    test('Canceled → StripeSheetCancelled', () {
-      final error = FlutterStripeSheetGateway.mapStripeError(
+    test('Canceled → AppBoxKitStripeSheetCancelled', () {
+      final error = AppBoxKitFlutterStripeSheetGateway.mapStripeError(
         const StripeException(
           error: LocalizedErrorMessage(code: FailureCode.Canceled),
         ),
       );
-      expect(error, isA<StripeSheetCancelled>());
+      expect(error, isA<AppBoxKitStripeSheetCancelled>());
     });
 
-    test('Failed → StripeSheetDeclined with the localized reason', () {
-      final error = FlutterStripeSheetGateway.mapStripeError(
+    test('Failed → AppBoxKitStripeSheetDeclined with the localized reason', () {
+      final error = AppBoxKitFlutterStripeSheetGateway.mapStripeError(
         const StripeException(
           error: LocalizedErrorMessage(
             code: FailureCode.Failed,
@@ -249,21 +249,21 @@ void main() {
           ),
         ),
       );
-      expect(error, isA<StripeSheetDeclined>());
-      expect((error as StripeSheetDeclined).reason, 'Your card was declined.');
+      expect(error, isA<AppBoxKitStripeSheetDeclined>());
+      expect((error as AppBoxKitStripeSheetDeclined).reason, 'Your card was declined.');
     });
 
-    test('Timeout → StripeSheetError', () {
-      final error = FlutterStripeSheetGateway.mapStripeError(
+    test('Timeout → AppBoxKitStripeSheetError', () {
+      final error = AppBoxKitFlutterStripeSheetGateway.mapStripeError(
         const StripeException(
           error: LocalizedErrorMessage(code: FailureCode.Timeout),
         ),
       );
-      expect(error, isA<StripeSheetError>());
+      expect(error, isA<AppBoxKitStripeSheetError>());
     });
 
-    test('Unknown → StripeSheetError falling back to the message', () {
-      final error = FlutterStripeSheetGateway.mapStripeError(
+    test('Unknown → AppBoxKitStripeSheetError falling back to the message', () {
+      final error = AppBoxKitFlutterStripeSheetGateway.mapStripeError(
         const StripeException(
           error: LocalizedErrorMessage(
             code: FailureCode.Unknown,
@@ -271,14 +271,14 @@ void main() {
           ),
         ),
       );
-      expect(error, isA<StripeSheetError>());
-      expect((error as StripeSheetError).message, 'something broke');
+      expect(error, isA<AppBoxKitStripeSheetError>());
+      expect((error as AppBoxKitStripeSheetError).message, 'something broke');
     });
 
-    test('non-Stripe exceptions wrap as StripeSheetError', () {
-      final error = FlutterStripeSheetGateway.mapStripeError('boom');
-      expect(error, isA<StripeSheetError>());
-      expect((error as StripeSheetError).cause, 'boom');
+    test('non-Stripe exceptions wrap as AppBoxKitStripeSheetError', () {
+      final error = AppBoxKitFlutterStripeSheetGateway.mapStripeError('boom');
+      expect(error, isA<AppBoxKitStripeSheetError>());
+      expect((error as AppBoxKitStripeSheetError).cause, 'boom');
     });
   });
 }

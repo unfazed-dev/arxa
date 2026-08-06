@@ -22,16 +22,16 @@
 
 ### Overview & role
 
-Native-first payments for appbox_kit apps — Apple Pay + Google Pay via Google's first-party pay plugin, behind a pluggable provider port so Stripe/PayPal backends slot in later. Typed PaymentResult, scriptable fakes.
+Native-first payments for appbox_kit apps — Apple Pay + Google Pay via Google's first-party pay plugin, behind a pluggable provider port so Stripe/PayPal backends slot in later. Typed AppBoxKitPaymentResult, scriptable fakes.
 
 
 ### Public surface
 
 Exported from `lib/appbox_kit_payments.dart`:
 
-<Table id="payments-api" columns={["Symbol", "Kind", "Defined in"]} rows={[["KitPaymentsProvider", "abstract interface class", "src/providers/kit_payments_provider.dart"], ["KitPaymentsProviderRegistry", "class", "src/providers/kit_payments_provider.dart"], ["SeedPaymentProfile", "class", "src/providers/seed/seed_payments_provider.dart"], ["SeedSucceed", "class", "src/providers/seed/seed_payments_provider.dart"], ["SeedDecline", "class", "src/providers/seed/seed_payments_provider.dart"], ["SeedCancel", "class", "src/providers/seed/seed_payments_provider.dart"], ["SeedTimeout", "class", "src/providers/seed/seed_payments_provider.dart"], ["SeedPaymentsProvider", "class", "src/providers/seed/seed_payments_provider.dart"], ["PayPaymentsProvider", "class", "src/providers/native/pay_payments_provider.dart"], ["PayPalPaymentsProvider", "class", "src/providers/paypal/paypal_payments_provider.dart"], ["StripePaymentsProvider", "class", "src/providers/stripe/stripe_payments_provider.dart"], ["KitPaymentConfig", "class", "src/models/kit_payment_config.dart"], ["ApplePayConfig", "class", "src/models/kit_payment_config.dart"], ["GooglePayConfig", "class", "src/models/kit_payment_config.dart"], ["KitPaymentItemStatus", "enum", "src/models/kit_payment_item.dart"], ["KitPaymentItem", "class", "src/models/kit_payment_item.dart"], ["KitPaymentMethod", "enum", "src/models/kit_payment_method.dart"], ["PaymentResult", "class", "src/models/payment_result.dart"], ["PaymentSuccess", "class", "src/models/payment_result.dart"], ["PaymentCancelled", "class", "src/models/payment_result.dart"], ["PaymentDeclined", "class", "src/models/payment_result.dart"], ["PaymentError", "class", "src/models/payment_result.dart"], ["KitPaymentsService", "abstract interface class", "src/service/kit_payments_service.dart"], ["DefaultKitPaymentsService", "class", "src/service/kit_payments_service.dart"], ["KitPayButton", "class", "src/widgets/kit_pay_button.dart"]]} />
+<Table id="payments-api" columns={["Symbol", "Kind", "Defined in"]} rows={[["AppBoxKitPaymentsProvider", "abstract interface class", "src/providers/appbox_kit_payments_provider.dart"], ["AppBoxKitPaymentsProviderRegistry", "class", "src/providers/appbox_kit_payments_provider.dart"], ["AppBoxKitSeedPaymentProfile", "class", "src/providers/seed/appbox_kit_seed_payments_provider.dart"], ["AppBoxKitSeedSucceed", "class", "src/providers/seed/appbox_kit_seed_payments_provider.dart"], ["AppBoxKitSeedDecline", "class", "src/providers/seed/appbox_kit_seed_payments_provider.dart"], ["AppBoxKitSeedCancel", "class", "src/providers/seed/appbox_kit_seed_payments_provider.dart"], ["AppBoxKitSeedTimeout", "class", "src/providers/seed/appbox_kit_seed_payments_provider.dart"], ["AppBoxKitSeedPaymentsProvider", "class", "src/providers/seed/appbox_kit_seed_payments_provider.dart"], ["AppBoxKitPayPaymentsProvider", "class", "src/providers/native/appbox_kit_pay_payments_provider.dart"], ["AppBoxKitPayPalPaymentsProvider", "class", "src/providers/paypal/appbox_kit_paypal_payments_provider.dart"], ["AppBoxKitStripePaymentsProvider", "class", "src/providers/stripe/appbox_kit_stripe_payments_provider.dart"], ["AppBoxKitPaymentConfig", "class", "src/models/appbox_kit_payment_config.dart"], ["AppBoxKitApplePayConfig", "class", "src/models/appbox_kit_payment_config.dart"], ["AppBoxKitGooglePayConfig", "class", "src/models/appbox_kit_payment_config.dart"], ["AppBoxKitPaymentItemStatus", "enum", "src/models/appbox_kit_payment_item.dart"], ["AppBoxKitPaymentItem", "class", "src/models/appbox_kit_payment_item.dart"], ["AppBoxKitPaymentMethod", "enum", "src/models/appbox_kit_payment_method.dart"], ["AppBoxKitPaymentResult", "class", "src/models/appbox_kit_payment_result.dart"], ["AppBoxKitPaymentSuccess", "class", "src/models/appbox_kit_payment_result.dart"], ["AppBoxKitPaymentCancelled", "class", "src/models/appbox_kit_payment_result.dart"], ["AppBoxKitPaymentDeclined", "class", "src/models/appbox_kit_payment_result.dart"], ["AppBoxKitPaymentError", "class", "src/models/appbox_kit_payment_result.dart"], ["AppBoxKitPaymentsService", "abstract interface class", "src/service/appbox_kit_payments_service.dart"], ["DefaultAppBoxKitPaymentsService", "class", "src/service/appbox_kit_payments_service.dart"], ["AppBoxKitPayButton", "class", "src/widgets/kit_pay_button.dart"]]} />
 
-Test doubles in `lib/testing.dart`: `FakeKitPaymentsService`, `FakePaymentsProvider`.
+Test doubles in `lib/appbox_kit_testing.dart`: `FakeAppBoxKitPaymentsService`, `FakeAppBoxKitPaymentsProvider`.
 
 Scripts and call-counts — tests never touch platform channels.
 
@@ -41,21 +41,21 @@ Scripts and call-counts — tests never touch platform channels.
 ```dart
 import 'package:appbox_kit_payments/appbox_kit_payments.dart';
 
-final payments = DefaultKitPaymentsService.native(
-  applePay: const ApplePayConfig.fromAsset('assets/apple_pay_config.json'),
-  googlePay: const GooglePayConfig.fromAsset('assets/google_pay_config.json'),
+final payments = DefaultAppBoxKitPaymentsService.native(
+  applePay: const AppBoxKitApplePayConfig.fromAsset('assets/apple_pay_config.json'),
+  googlePay: const AppBoxKitGooglePayConfig.fromAsset('assets/google_pay_config.json'),
 );
 
-if (await payments.canPay(KitPaymentMethod.applePay)) {
+if (await payments.canPay(AppBoxKitPaymentMethod.applePay)) {
   final result = await payments.requestPayment(
-    config: const ApplePayConfig.fromAsset('assets/apple_pay_config.json'),
-    items: const [KitPaymentItem(label: 'Total', amount: '99.99')],
+    config: const AppBoxKitApplePayConfig.fromAsset('assets/apple_pay_config.json'),
+    items: const [AppBoxKitPaymentItem(label: 'Total', amount: '99.99')],
   );
   switch (result) {
-    case PaymentSuccess(:final token):   // forward token to your server / PSP
-    case PaymentCancelled():             // user dismissed — do nothing
-    case PaymentDeclined(:final reason): // retry with another method
-    case PaymentError(:final message):   // log; not user-fixable
+    case AppBoxKitPaymentSuccess(:final token):   // forward token to your server / PSP
+    case AppBoxKitPaymentCancelled():             // user dismissed — do nothing
+    case AppBoxKitPaymentDeclined(:final reason): // retry with another method
+    case AppBoxKitPaymentError(:final message):   // log; not user-fixable
   }
 }
 ```
@@ -63,10 +63,10 @@ if (await payments.canPay(KitPaymentMethod.applePay)) {
 Or drop in the button directly:
 
 ```dart
-KitPayButton(
-  applePay: const ApplePayConfig.fromAsset('assets/apple_pay_config.json'),
-  googlePay: const GooglePayConfig.fromAsset('assets/google_pay_config.json'),
-  items: const [KitPaymentItem(label: 'Total', amount: '99.99')],
+AppBoxKitPayButton(
+  applePay: const AppBoxKitApplePayConfig.fromAsset('assets/apple_pay_config.json'),
+  googlePay: const AppBoxKitGooglePayConfig.fromAsset('assets/google_pay_config.json'),
+  items: const [AppBoxKitPaymentItem(label: 'Total', amount: '99.99')],
   onResult: (result) { /* same switch as above */ },
 );
 ```
@@ -81,44 +81,44 @@ See `kit_matrix.md` for the full routing + dependency graph.
 
 ### Architecture
 
-Hosts depend only on the `KitPaymentsService` port (`canPay` + `requestPayment`) and the sealed `PaymentResult`; `DefaultKitPaymentsService` routes each call through a `KitPaymentsProviderRegistry` to the first registered `KitPaymentsProvider` whose `supportedMethods` contains the requested wallet. `PayPaymentsProvider` is the sole live adapter, wrapping the `pay` plugin, while `StripePaymentsProvider` and `PayPalPaymentsProvider` ship as same-shaped stubs that throw `UnimplementedError` until their phase arrives. Dependency direction is strictly models/service → providers → `pay`: the service and ViewModels carry no provider SDK, so backends can be swapped without touching call sites. The package is also standalone — it declares no dependency on `appbox_kit`, `stacked`, or `stacked_services`.
+Hosts depend only on the `AppBoxKitPaymentsService` port (`canPay` + `requestPayment`) and the sealed `AppBoxKitPaymentResult`; `DefaultAppBoxKitPaymentsService` routes each call through a `AppBoxKitPaymentsProviderRegistry` to the first registered `AppBoxKitPaymentsProvider` whose `supportedMethods` contains the requested wallet. `AppBoxKitPayPaymentsProvider` is the sole live adapter, wrapping the `pay` plugin, while `AppBoxKitStripePaymentsProvider` and `AppBoxKitPayPalPaymentsProvider` ship as same-shaped stubs that throw `UnimplementedError` until their phase arrives. Dependency direction is strictly models/service → providers → `pay`: the service and ViewModels carry no provider SDK, so backends can be swapped without touching call sites. The package is also standalone — it declares no dependency on `appbox_kit`, `stacked`, or `stacked_services`.
 
 
 ### Gotchas
 
-Native setup is yours to own: Apple Pay requires the Apple Merchant ID entitlement and a matching `merchantIdentifier` in the profile JSON, and Google Pay requires merchant approval in the Google Pay & Wallet Console plus the gateway wiring in the Android manifest — this package ships the flow, not the merchant onboarding. The sample profiles under `example/` (`apple_pay_config.json`, `google_pay_config.json`) must be copied into the host app's own `assets/` and declared in its pubspec; no payment profile is bundled here. Note that Apple/Google Pay do not distinguish a card decline client-side, so a declined instrument surfaces as `PaymentError`, not `PaymentDeclined` — the decline-vs-error split only becomes meaningful once the Stripe/PayPal stubs (currently `UnimplementedError`) are implemented. This package only mints a wallet token; capturing/charging it is your server's job (an explicit non-goal), and it targets Android + iOS only — the `pay` plugin supports no other platform.
+Native setup is yours to own: Apple Pay requires the Apple Merchant ID entitlement and a matching `merchantIdentifier` in the profile JSON, and Google Pay requires merchant approval in the Google Pay & Wallet Console plus the gateway wiring in the Android manifest — this package ships the flow, not the merchant onboarding. The sample profiles under `example/` (`apple_pay_config.json`, `google_pay_config.json`) must be copied into the host app's own `assets/` and declared in its pubspec; no payment profile is bundled here. Note that Apple/Google Pay do not distinguish a card decline client-side, so a declined instrument surfaces as `AppBoxKitPaymentError`, not `AppBoxKitPaymentDeclined` — the decline-vs-error split only becomes meaningful once the Stripe/PayPal stubs (currently `UnimplementedError`) are implemented. This package only mints a wallet token; capturing/charging it is your server's job (an explicit non-goal), and it targets Android + iOS only — the `pay` plugin supports no other platform.
 
 
 ### Testing
 
 ```dart
-import 'package:appbox_kit_payments/testing.dart';
+import 'package:appbox_kit_payments/appbox_kit_testing.dart';
 
-final payments = FakeKitPaymentsService(
-  canPayByMethod: {KitPaymentMethod.applePay: true},
+final payments = FakeAppBoxKitPaymentsService(
+  canPayByMethod: {AppBoxKitPaymentMethod.applePay: true},
   results: [
-    PaymentSuccess(token: 't', method: KitPaymentMethod.applePay),
-    const PaymentCancelled(),
-    const PaymentDeclined(reason: 'insufficient funds'),
-    const PaymentError('network'),
+    AppBoxKitPaymentSuccess(token: 't', method: AppBoxKitPaymentMethod.applePay),
+    const AppBoxKitPaymentCancelled(),
+    const AppBoxKitPaymentDeclined(reason: 'insufficient funds'),
+    const AppBoxKitPaymentError('network'),
   ],
 );
 ```
 
 Named factories cover the common single-outcome cases:
-`FakeKitPaymentsService.alwaysSucceeds()`, `.alwaysCancels()`,
-`.alwaysDeclined()`, `.alwaysErrors()`. `FakePaymentsProvider` exercises the
+`FakeAppBoxKitPaymentsService.alwaysSucceeds()`, `.alwaysCancels()`,
+`.alwaysDeclined()`, `.alwaysErrors()`. `FakeAppBoxKitPaymentsProvider` exercises the
 registry/routing layer directly.
 
 
 ### Features
 
-<Checklist id="payments-features" items={[{"id": "payments-feat-0", "label": "`KitPaymentsProvider` \u2014 abstract interface class"}, {"id": "payments-feat-1", "label": "`KitPaymentsProviderRegistry` \u2014 class"}, {"id": "payments-feat-2", "label": "`SeedPaymentProfile` \u2014 class"}, {"id": "payments-feat-3", "label": "`SeedSucceed` \u2014 class"}, {"id": "payments-feat-4", "label": "`SeedDecline` \u2014 class"}, {"id": "payments-feat-5", "label": "`SeedCancel` \u2014 class"}, {"id": "payments-feat-6", "label": "`SeedTimeout` \u2014 class"}, {"id": "payments-feat-7", "label": "`SeedPaymentsProvider` \u2014 class"}, {"id": "payments-feat-8", "label": "`PayPaymentsProvider` \u2014 class"}, {"id": "payments-feat-9", "label": "`PayPalPaymentsProvider` \u2014 class"}, {"id": "payments-feat-10", "label": "`StripePaymentsProvider` \u2014 class"}, {"id": "payments-feat-11", "label": "`KitPaymentConfig` \u2014 class"}]} />
+<Checklist id="payments-features" items={[{"id": "payments-feat-0", "label": "`AppBoxKitPaymentsProvider` \u2014 abstract interface class"}, {"id": "payments-feat-1", "label": "`AppBoxKitPaymentsProviderRegistry` \u2014 class"}, {"id": "payments-feat-2", "label": "`AppBoxKitSeedPaymentProfile` \u2014 class"}, {"id": "payments-feat-3", "label": "`AppBoxKitSeedSucceed` \u2014 class"}, {"id": "payments-feat-4", "label": "`AppBoxKitSeedDecline` \u2014 class"}, {"id": "payments-feat-5", "label": "`AppBoxKitSeedCancel` \u2014 class"}, {"id": "payments-feat-6", "label": "`AppBoxKitSeedTimeout` \u2014 class"}, {"id": "payments-feat-7", "label": "`AppBoxKitSeedPaymentsProvider` \u2014 class"}, {"id": "payments-feat-8", "label": "`AppBoxKitPayPaymentsProvider` \u2014 class"}, {"id": "payments-feat-9", "label": "`AppBoxKitPayPalPaymentsProvider` \u2014 class"}, {"id": "payments-feat-10", "label": "`AppBoxKitStripePaymentsProvider` \u2014 class"}, {"id": "payments-feat-11", "label": "`AppBoxKitPaymentConfig` \u2014 class"}]} />
 
 
 ### Decisions / ADRs
 
-The package backs itself with Google's first-party `pay` plugin because it wraps PassKit and the Google Pay API directly, driving the wallet the user already trusts without putting a third-party PSP SDK in the hot path. It ships standalone (no dependency on `appbox_kit`, `stacked`, or `stacked_services`) so the payments surface stays usable from non-stacked apps and is not coupled to the framework's release cadence — `pay ^3.3.0` is its only backing dependency. Stripe and PayPal were left as same-shaped stubs behind the `KitPaymentsProvider` port rather than baked in, so a real PSP backend can be added later without changing any call site: native-wallet coverage first, PSP capture deferred to the layer that actually owns it (your server).
+The package backs itself with Google's first-party `pay` plugin because it wraps PassKit and the Google Pay API directly, driving the wallet the user already trusts without putting a third-party PSP SDK in the hot path. It ships standalone (no dependency on `appbox_kit`, `stacked`, or `stacked_services`) so the payments surface stays usable from non-stacked apps and is not coupled to the framework's release cadence — `pay ^3.3.0` is its only backing dependency. Stripe and PayPal were left as same-shaped stubs behind the `AppBoxKitPaymentsProvider` port rather than baked in, so a real PSP backend can be added later without changing any call site: native-wallet coverage first, PSP capture deferred to the layer that actually owns it (your server).
 
 <!-- kb:begin -->
 ### References

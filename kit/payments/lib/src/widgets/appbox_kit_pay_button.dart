@@ -2,34 +2,34 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:pay/pay.dart' as pay;
 
-import '../models/kit_payment_config.dart';
-import '../models/kit_payment_item.dart';
-import '../models/kit_payment_method.dart';
-import '../models/payment_result.dart';
+import '../models/appbox_kit_payment_config.dart';
+import '../models/appbox_kit_payment_item.dart';
+import '../models/appbox_kit_payment_method.dart';
+import '../models/appbox_kit_payment_result.dart';
 
 /// The native wallet button, picked per platform. Renders `pay`'s
 /// `ApplePayButton` on iOS and `GooglePayButton` on Android from whichever
 /// config is supplied, and normalises the plugin's split success/error
-/// callbacks into a single [onResult] taking a typed [PaymentResult].
+/// callbacks into a single [onResult] taking a typed [AppBoxKitPaymentResult].
 ///
 /// Supply the config for each platform you target; the button for the current
 /// platform is shown (an empty box when none is configured for it). For full
 /// control over styling, use `pay`'s buttons directly — they are re-exported
 /// from `package:appbox_kit_payments/appbox_kit_payments.dart`.
-class KitPayButton extends StatelessWidget {
+class AppBoxKitPayButton extends StatelessWidget {
   /// Apple Pay profile — used when running on iOS.
-  final ApplePayConfig? applePay;
+  final AppBoxKitApplePayConfig? applePay;
 
   /// Google Pay profile — used when running on Android.
-  final GooglePayConfig? googlePay;
+  final AppBoxKitGooglePayConfig? googlePay;
 
   /// Line items shown in the sheet.
-  final List<KitPaymentItem> items;
+  final List<AppBoxKitPaymentItem> items;
 
-  /// Called with a [PaymentSuccess] on a minted token, or a [PaymentError] /
-  /// [PaymentCancelled] when the plugin reports a failure. (Apple/Google Pay
-  /// do not distinguish decline client-side; those arrive as [PaymentError].)
-  final ValueChanged<PaymentResult> onResult;
+  /// Called with a [AppBoxKitPaymentSuccess] on a minted token, or a [AppBoxKitPaymentError] /
+  /// [AppBoxKitPaymentCancelled] when the plugin reports a failure. (Apple/Google Pay
+  /// do not distinguish decline client-side; those arrive as [AppBoxKitPaymentError].)
+  final ValueChanged<AppBoxKitPaymentResult> onResult;
 
   /// Widget shown while the button initialises. Defaults to an empty box.
   final Widget? loadingIndicator;
@@ -46,7 +46,7 @@ class KitPayButton extends StatelessWidget {
   /// Outer margin applied to whichever button renders.
   final EdgeInsets margin;
 
-  const KitPayButton({
+  const AppBoxKitPayButton({
     super.key,
     required this.items,
     required this.onResult,
@@ -76,7 +76,7 @@ class KitPayButton extends StatelessWidget {
             type: applePayType,
             margin: margin,
             loadingIndicator: loader,
-            onPaymentResult: _handleSuccess(KitPaymentMethod.applePay),
+            onPaymentResult: _handleSuccess(AppBoxKitPaymentMethod.applePay),
             onError: _handleError,
           ),
         );
@@ -92,7 +92,7 @@ class KitPayButton extends StatelessWidget {
             type: googlePayType,
             margin: margin,
             loadingIndicator: loader,
-            onPaymentResult: _handleSuccess(KitPaymentMethod.googlePay),
+            onPaymentResult: _handleSuccess(AppBoxKitPaymentMethod.googlePay),
             onError: _handleError,
           ),
         );
@@ -108,7 +108,7 @@ class KitPayButton extends StatelessWidget {
   /// Builds the button once its `PaymentConfiguration` is ready — synchronously
   /// for inline JSON, via a [FutureBuilder] for asset-backed configs.
   Widget _resolve(
-    KitPaymentConfig config,
+    AppBoxKitPaymentConfig config,
     Widget loader,
     Widget Function(pay.PaymentConfiguration) builder,
   ) {
@@ -123,9 +123,9 @@ class KitPayButton extends StatelessWidget {
     );
   }
 
-  void Function(Map<String, dynamic>) _handleSuccess(KitPaymentMethod method) =>
+  void Function(Map<String, dynamic>) _handleSuccess(AppBoxKitPaymentMethod method) =>
       (result) => onResult(
-            PaymentSuccess(
+            AppBoxKitPaymentSuccess(
               token: _tokenFrom(result),
               method: method,
               raw: result,
@@ -133,7 +133,7 @@ class KitPayButton extends StatelessWidget {
           );
 
   void _handleError(Object? error) =>
-      onResult(PaymentError(error?.toString() ?? 'Payment failed', cause: error));
+      onResult(AppBoxKitPaymentError(error?.toString() ?? 'Payment failed', cause: error));
 
   static String _tokenFrom(Map<String, dynamic> result) {
     final direct = result['token'];

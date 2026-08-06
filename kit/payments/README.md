@@ -15,22 +15,22 @@ away.
 ## Scope
 
 **In (implemented):**
-- `KitPaymentsService` port — `canPay(method)` + `requestPayment(config, items)`.
-- `PayPaymentsProvider` — the native Apple/Google Pay backend over `pay`.
-- `StripePaymentsProvider` — Stripe PaymentSheet (card entry + Apple Pay /
+- `AppBoxKitPaymentsService` port — `canPay(method)` + `requestPayment(config, items)`.
+- `AppBoxKitPayPaymentsProvider` — the native Apple/Google Pay backend over `pay`.
+- `AppBoxKitStripePaymentsProvider` — Stripe PaymentSheet (card entry + Apple Pay /
   Google Pay + 3DS) over `flutter_stripe`. PaymentIntent creation stays
-  server-side behind the `KitStripeBackend` port; the app sees only the
+  server-side behind the `AppBoxKitStripeBackend` port; the app sees only the
   client secret. `googlePayTestEnv` auto-follows `pk_test_` keys.
-- `PayPalPaymentsProvider` — PayPal Orders v2 web checkout. Order
-  create/capture stay server-side behind the `KitPayPalBackend` port; the
+- `AppBoxKitPayPalPaymentsProvider` — PayPal Orders v2 web checkout. Order
+  create/capture stay server-side behind the `AppBoxKitPayPalBackend` port; the
   buyer approves in an in-app browser via `flutter_web_auth_2`
   (ASWebAuthenticationSession / Chrome Auth Tab) with a deep-link return.
-- Pluggable `KitPaymentsProviderRegistry` so backends are swappable.
-- Typed sealed `PaymentResult`: `PaymentSuccess` · `PaymentCancelled` ·
-  `PaymentDeclined` · `PaymentError`.
-- `KitPayButton` — per-platform wallet button; `pay`'s `ApplePayButton` /
+- Pluggable `AppBoxKitPaymentsProviderRegistry` so backends are swappable.
+- Typed sealed `AppBoxKitPaymentResult`: `AppBoxKitPaymentSuccess` · `AppBoxKitPaymentCancelled` ·
+  `AppBoxKitPaymentDeclined` · `AppBoxKitPaymentError`.
+- `AppBoxKitPayButton` — per-platform wallet button; `pay`'s `ApplePayButton` /
   `GooglePayButton` are re-exported for direct use.
-- Scriptable fakes (`testing.dart`).
+- Scriptable fakes (`appbox_kit_testing.dart`).
 
 **Non-goals:** server-side capture implementation (the kit defines the
 backend ports; your server implements them), storing cards, refunds,
@@ -42,21 +42,21 @@ back the intent/capture id — capturing is your server's job.
 ```dart
 import 'package:appbox_kit_payments/appbox_kit_payments.dart';
 
-final payments = DefaultKitPaymentsService.native(
-  applePay: const ApplePayConfig.fromAsset('assets/apple_pay_config.json'),
-  googlePay: const GooglePayConfig.fromAsset('assets/google_pay_config.json'),
+final payments = DefaultAppBoxKitPaymentsService.native(
+  applePay: const AppBoxKitApplePayConfig.fromAsset('assets/apple_pay_config.json'),
+  googlePay: const AppBoxKitGooglePayConfig.fromAsset('assets/google_pay_config.json'),
 );
 
-if (await payments.canPay(KitPaymentMethod.applePay)) {
+if (await payments.canPay(AppBoxKitPaymentMethod.applePay)) {
   final result = await payments.requestPayment(
-    config: const ApplePayConfig.fromAsset('assets/apple_pay_config.json'),
-    items: const [KitPaymentItem(label: 'Total', amount: '99.99')],
+    config: const AppBoxKitApplePayConfig.fromAsset('assets/apple_pay_config.json'),
+    items: const [AppBoxKitPaymentItem(label: 'Total', amount: '99.99')],
   );
   switch (result) {
-    case PaymentSuccess(:final token):   // forward token to your server / PSP
-    case PaymentCancelled():             // user dismissed — do nothing
-    case PaymentDeclined(:final reason): // retry with another method
-    case PaymentError(:final message):   // log; not user-fixable
+    case AppBoxKitPaymentSuccess(:final token):   // forward token to your server / PSP
+    case AppBoxKitPaymentCancelled():             // user dismissed — do nothing
+    case AppBoxKitPaymentDeclined(:final reason): // retry with another method
+    case AppBoxKitPaymentError(:final message):   // log; not user-fixable
   }
 }
 ```
@@ -65,16 +65,16 @@ Stripe and PayPal plug into the same registry — the secret-bearing calls live
 behind backend ports your server implements:
 
 ```dart
-final payments = DefaultKitPaymentsService(
-  KitPaymentsProviderRegistry([
-    PayPaymentsProvider(applePayConfig: applePay, googlePayConfig: googlePay),
-    StripePaymentsProvider(
+final payments = DefaultAppBoxKitPaymentsService(
+  AppBoxKitPaymentsProviderRegistry([
+    AppBoxKitPayPaymentsProvider(applePayConfig: applePay, googlePayConfig: googlePay),
+    AppBoxKitStripePaymentsProvider(
       publishableKey: 'pk_test_…',            // pk_live_… in production
       merchantIdentifier: 'merchant.com.example.app', // enables Apple Pay
-      backend: MyStripeBackend(),             // implements KitStripeBackend
+      backend: MyStripeBackend(),             // implements AppBoxKitStripeBackend
     ),
-    PayPalPaymentsProvider(
-      backend: MyPayPalBackend(),             // implements KitPayPalBackend
+    AppBoxKitPayPalPaymentsProvider(
+      backend: MyPayPalBackend(),             // implements AppBoxKitPayPalBackend
       callbackUrlScheme: 'com.example.app',   // registered deep-link scheme
     ),
   ]),
@@ -82,24 +82,24 @@ final payments = DefaultKitPaymentsService(
 
 // PayPal routes via its own config (currency is per-order):
 final result = await payments.requestPayment(
-  config: const PayPalConfig(currencyCode: 'EUR'),
-  items: const [KitPaymentItem(label: 'Total', amount: '49.99')],
+  config: const AppBoxKitPayPalConfig(currencyCode: 'EUR'),
+  items: const [AppBoxKitPaymentItem(label: 'Total', amount: '49.99')],
 );
 ```
 
-`KitStripeBackend.createPaymentIntent` wraps your server's PaymentIntent
+`AppBoxKitStripeBackend.createPaymentIntent` wraps your server's PaymentIntent
 endpoint (secret key server-side; returns the client secret).
-`KitPayPalBackend.createOrder` / `.captureOrder` wrap Orders v2
+`AppBoxKitPayPalBackend.createOrder` / `.captureOrder` wrap Orders v2
 create/capture; PayPal must redirect approvals to
 `<callbackUrlScheme>://paypalpay`.
 
 Or drop in the button directly:
 
 ```dart
-KitPayButton(
-  applePay: const ApplePayConfig.fromAsset('assets/apple_pay_config.json'),
-  googlePay: const GooglePayConfig.fromAsset('assets/google_pay_config.json'),
-  items: const [KitPaymentItem(label: 'Total', amount: '99.99')],
+AppBoxKitPayButton(
+  applePay: const AppBoxKitApplePayConfig.fromAsset('assets/apple_pay_config.json'),
+  googlePay: const AppBoxKitGooglePayConfig.fromAsset('assets/google_pay_config.json'),
+  items: const [AppBoxKitPaymentItem(label: 'Total', amount: '99.99')],
   onResult: (result) { /* same switch as above */ },
 );
 ```
@@ -107,8 +107,8 @@ KitPayButton(
 ## Payment profiles
 
 Config follows the `pay` convention: a JSON document per wallet, supplied
-inline (`ApplePayConfig.fromJson`) or from a Flutter asset
-(`ApplePayConfig.fromAsset`). Copy the samples in [`example/`](example/) into
+inline (`AppBoxKitApplePayConfig.fromJson`) or from a Flutter asset
+(`AppBoxKitApplePayConfig.fromAsset`). Copy the samples in [`example/`](example/) into
 your host app's `assets/` and edit the merchant identifiers:
 
 - `example/apple_pay_config.json` — `PKPaymentRequest`-shaped.
@@ -122,22 +122,22 @@ Apple; Business Console + gateway for Google) is per the
 ## Testing
 
 ```dart
-import 'package:appbox_kit_payments/testing.dart';
+import 'package:appbox_kit_payments/appbox_kit_testing.dart';
 
-final payments = FakeKitPaymentsService(
-  canPayByMethod: {KitPaymentMethod.applePay: true},
+final payments = FakeAppBoxKitPaymentsService(
+  canPayByMethod: {AppBoxKitPaymentMethod.applePay: true},
   results: [
-    PaymentSuccess(token: 't', method: KitPaymentMethod.applePay),
-    const PaymentCancelled(),
-    const PaymentDeclined(reason: 'insufficient funds'),
-    const PaymentError('network'),
+    AppBoxKitPaymentSuccess(token: 't', method: AppBoxKitPaymentMethod.applePay),
+    const AppBoxKitPaymentCancelled(),
+    const AppBoxKitPaymentDeclined(reason: 'insufficient funds'),
+    const AppBoxKitPaymentError('network'),
   ],
 );
 ```
 
 Named factories cover the common single-outcome cases:
-`FakeKitPaymentsService.alwaysSucceeds()`, `.alwaysCancels()`,
-`.alwaysDeclined()`, `.alwaysErrors()`. `FakePaymentsProvider` exercises the
+`FakeAppBoxKitPaymentsService.alwaysSucceeds()`, `.alwaysCancels()`,
+`.alwaysDeclined()`, `.alwaysErrors()`. `FakeAppBoxKitPaymentsProvider` exercises the
 registry/routing layer directly.
 
 ## Phase

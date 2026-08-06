@@ -2,11 +2,11 @@ import 'package:appbox_kit_payments/appbox_kit_payments.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
-class _MockBackend extends Mock implements KitPayPalBackend {}
+class _MockBackend extends Mock implements AppBoxKitPayPalBackend {}
 
-class _MockAuthenticator extends Mock implements KitWebAuthenticator {}
+class _MockAuthenticator extends Mock implements AppBoxKitWebAuthenticator {}
 
-final _order = PayPalOrderApproval(
+final _order = AppBoxKitPayPalOrderApproval(
   orderId: '8XS12345AB678901C',
   approvalUrl: _approvalUrl,
 );
@@ -18,10 +18,10 @@ void main() {
 
   late _MockBackend backend;
   late _MockAuthenticator authenticator;
-  late PayPalPaymentsProvider provider;
+  late AppBoxKitPayPalPaymentsProvider provider;
 
-  const config = PayPalConfig(currencyCode: 'EUR');
-  const items = [KitPaymentItem(label: 'Total', amount: '49.99')];
+  const config = AppBoxKitPayPalConfig(currencyCode: 'EUR');
+  const items = [AppBoxKitPaymentItem(label: 'Total', amount: '49.99')];
 
   void stubHappyPath() {
     when(() => backend.createOrder(
@@ -36,37 +36,37 @@ void main() {
         )).thenAnswer(
         (_) async => Uri.parse('appbox.paypal://paypalpay?token=${_order.orderId}'));
     when(() => backend.captureOrder(any())).thenAnswer(
-        (_) async => const PayPalCaptureResult(
+        (_) async => const AppBoxKitPayPalCaptureResult(
             status: 'COMPLETED', captureId: '3CX12345AB678901D'));
   }
 
   setUp(() {
     backend = _MockBackend();
     authenticator = _MockAuthenticator();
-    provider = PayPalPaymentsProvider(
+    provider = AppBoxKitPayPalPaymentsProvider(
       backend: backend,
       callbackUrlScheme: 'appbox.paypal',
       authenticator: authenticator,
     );
   });
 
-  group('PayPalPaymentsProvider — contract', () {
+  group('AppBoxKitPayPalPaymentsProvider — contract', () {
     test('id is "paypal"', () {
       expect(provider.id, 'paypal');
     });
 
     test('supports only PayPal — never the native wallets', () {
-      expect(provider.supportedMethods, {KitPaymentMethod.payPal});
+      expect(provider.supportedMethods, {AppBoxKitPaymentMethod.payPal});
     });
 
     test('canPay is static: true for PayPal, false for the wallets', () async {
-      expect(await provider.canPay(KitPaymentMethod.payPal), isTrue);
-      expect(await provider.canPay(KitPaymentMethod.applePay), isFalse);
-      expect(await provider.canPay(KitPaymentMethod.googlePay), isFalse);
+      expect(await provider.canPay(AppBoxKitPaymentMethod.payPal), isTrue);
+      expect(await provider.canPay(AppBoxKitPaymentMethod.applePay), isFalse);
+      expect(await provider.canPay(AppBoxKitPaymentMethod.googlePay), isFalse);
     });
   });
 
-  group('PayPalPaymentsProvider — Orders v2 flow', () {
+  group('AppBoxKitPayPalPaymentsProvider — Orders v2 flow', () {
     test('success: create → approve → capture, token is the capture id',
         () async {
       stubHappyPath();
@@ -74,10 +74,10 @@ void main() {
       final result =
           await provider.requestPayment(config: config, items: items);
 
-      expect(result, isA<PaymentSuccess>());
-      final success = result as PaymentSuccess;
+      expect(result, isA<AppBoxKitPaymentSuccess>());
+      final success = result as AppBoxKitPaymentSuccess;
       expect(success.token, '3CX12345AB678901D');
-      expect(success.method, KitPaymentMethod.payPal);
+      expect(success.method, AppBoxKitPaymentMethod.payPal);
       expect(success.raw['orderId'], _order.orderId);
 
       // Decimal total + config currency; return URLs derive from the scheme.
@@ -93,20 +93,20 @@ void main() {
       verify(() => backend.captureOrder(_order.orderId)).called(1);
     });
 
-    test('buyer back-out maps to PaymentCancelled and never captures',
+    test('buyer back-out maps to AppBoxKitPaymentCancelled and never captures',
         () async {
       stubHappyPath();
       when(() => authenticator.authenticate(
             url: any(named: 'url'),
             callbackUrlScheme: any(named: 'callbackUrlScheme'),
-          )).thenThrow(const WebAuthCancelled());
+          )).thenThrow(const AppBoxKitWebAuthCancelled());
 
       expect(await provider.requestPayment(config: config, items: items),
-          isA<PaymentCancelled>());
+          isA<AppBoxKitPaymentCancelled>());
       verifyNever(() => backend.captureOrder(any()));
     });
 
-    test('order creation failure maps to PaymentError and never opens the web '
+    test('order creation failure maps to AppBoxKitPaymentError and never opens the web '
         'session', () async {
       when(() => backend.createOrder(
             amount: any(named: 'amount'),
@@ -118,78 +118,78 @@ void main() {
       final result =
           await provider.requestPayment(config: config, items: items);
 
-      expect(result, isA<PaymentError>());
-      expect((result as PaymentError).message, contains('network down'));
+      expect(result, isA<AppBoxKitPaymentError>());
+      expect((result as AppBoxKitPaymentError).message, contains('network down'));
       verifyNever(() => authenticator.authenticate(
           url: any(named: 'url'),
           callbackUrlScheme: any(named: 'callbackUrlScheme')));
     });
 
-    test('declined capture maps to PaymentDeclined with the reason', () async {
+    test('declined capture maps to AppBoxKitPaymentDeclined with the reason', () async {
       stubHappyPath();
       when(() => backend.captureOrder(any())).thenAnswer((_) async =>
-          const PayPalCaptureResult(
+          const AppBoxKitPayPalCaptureResult(
               status: 'DECLINED', declineReason: 'INSTRUMENT_DECLINED'));
 
       final result =
           await provider.requestPayment(config: config, items: items);
 
-      expect(result, isA<PaymentDeclined>());
-      expect((result as PaymentDeclined).reason, 'INSTRUMENT_DECLINED');
+      expect(result, isA<AppBoxKitPaymentDeclined>());
+      expect((result as AppBoxKitPaymentDeclined).reason, 'INSTRUMENT_DECLINED');
     });
 
-    test('an unexpected capture status maps to PaymentError', () async {
+    test('an unexpected capture status maps to AppBoxKitPaymentError', () async {
       stubHappyPath();
       when(() => backend.captureOrder(any()))
-          .thenAnswer((_) async => const PayPalCaptureResult(status: 'VOIDED'));
+          .thenAnswer((_) async => const AppBoxKitPayPalCaptureResult(status: 'VOIDED'));
 
       final result =
           await provider.requestPayment(config: config, items: items);
 
-      expect(result, isA<PaymentError>());
-      expect((result as PaymentError).message, contains('VOIDED'));
+      expect(result, isA<AppBoxKitPaymentError>());
+      expect((result as AppBoxKitPaymentError).message, contains('VOIDED'));
     });
 
     test('a wallet config is rejected', () async {
       final result = await provider.requestPayment(
-        config: const ApplePayConfig.fromJson('{}'),
+        config: const AppBoxKitApplePayConfig.fromJson('{}'),
         items: items,
       );
-      expect(result, isA<PaymentError>());
+      expect(result, isA<AppBoxKitPaymentError>());
       expect(
-          (result as PaymentError).message, contains('requires a PayPalConfig'));
+          (result as AppBoxKitPaymentError).message, contains('requires a AppBoxKitPayPalConfig'));
     });
 
-    test('a pending item maps to PaymentError and never calls the backend',
+    test('a pending item maps to AppBoxKitPaymentError and never calls the backend',
         () async {
       final result = await provider.requestPayment(
         config: config,
         items: const [
-          KitPaymentItem(
+          AppBoxKitPaymentItem(
               label: 'Shipping',
               amount: '5.00',
-              status: KitPaymentItemStatus.pending),
+              status: AppBoxKitPaymentItemStatus.pending),
         ],
       );
 
-      expect(result, isA<PaymentError>());
+      expect(result, isA<AppBoxKitPaymentError>());
       verifyNever(() => backend.createOrder(
           amount: any(named: 'amount'),
           currencyCode: any(named: 'currencyCode')));
     });
   });
 
-  group('PayPalPaymentsProvider — registry integration', () {
-    test('routes through DefaultKitPaymentsService like any provider',
+  group('AppBoxKitPayPalPaymentsProvider — registry integration', () {
+    test('routes through DefaultAppBoxKitPaymentsService like any provider',
         () async {
       stubHappyPath();
-      final service = DefaultKitPaymentsService(
-        KitPaymentsProviderRegistry([provider]),
+      final service = DefaultAppBoxKitPaymentsService(
+        AppBoxKitPaymentsProviderRegistry([provider]),
       );
 
-      expect(await service.canPay(KitPaymentMethod.payPal), isTrue);
+      expect(await service.canPay(AppBoxKitPaymentMethod.payPal), isTrue);
       expect(await service.requestPayment(config: config, items: items),
-          isA<PaymentSuccess>());
+          isA<AppBoxKitPaymentSuccess>());
     });
   });
 }
