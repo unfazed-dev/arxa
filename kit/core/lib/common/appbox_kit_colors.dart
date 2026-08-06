@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:m3e_collection/m3e_collection.dart' show withM3ETheme;
 
-import 'appbox_kit_app_constants.dart' show axRad16;
+import 'appbox_kit_app_constants.dart' show abxRad16;
 
 /// The LIGHT half of the warm-neutral ramp (dark half: [AppBoxKitDarkColors]).
 ///
@@ -309,7 +309,7 @@ ThemeData appBoxKitLightTheme({
       elevation: 0,
       surfaceTintColor: Colors.transparent,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(axRad16),
+        borderRadius: BorderRadius.circular(abxRad16),
         side: const BorderSide(color: AppBoxKitColors.rule),
       ),
     ),
@@ -383,7 +383,7 @@ ThemeData appBoxKitDarkTheme({
       elevation: 0,
       surfaceTintColor: Colors.transparent,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(axRad16),
+        borderRadius: BorderRadius.circular(abxRad16),
         side: const BorderSide(color: AppBoxKitDarkColors.rule),
       ),
     ),
