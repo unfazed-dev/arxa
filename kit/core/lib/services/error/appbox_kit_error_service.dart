@@ -4,7 +4,7 @@ import 'package:rxdart/rxdart.dart';
 import 'package:flutter/foundation.dart';
 
 /// Enum to classify the type of error.
-enum ErrorType {
+enum AppBoxKitErrorType {
   ui,
   network,
   database,
@@ -21,11 +21,11 @@ enum ErrorType {
 }
 
 /// Enum to classify the severity of an error or log.
-enum ErrorSeverity { low, medium, high, critical, info, warning }
+enum AppBoxKitErrorSeverity { low, medium, high, critical, info, warning }
 
 /// ErrorService - A reactive service for error handling and logging
 /// following Stacked architecture patterns.
-class KitErrorService with ListenableServiceMixin {
+class AppBoxKitErrorService with ListenableServiceMixin {
   // Late initialized talker instance
   late Talker _talker;
 
@@ -70,8 +70,8 @@ class KitErrorService with ListenableServiceMixin {
   String _formatMessageWithContext({
     required String originalMessage,
     String? context,
-    ErrorType? type,
-    ErrorSeverity? severity,
+    AppBoxKitErrorType? type,
+    AppBoxKitErrorSeverity? severity,
   }) {
     final parts = <String>[];
     if (severity != null) parts.add('Severity: ${severity.name}');
@@ -90,15 +90,15 @@ class KitErrorService with ListenableServiceMixin {
             (line) =>
                 !line.contains('package:talker_flutter') &&
                 !line.contains('package:flutter/src/widgets') &&
-                !line.contains('KitErrorService._logWithTalker') &&
-                !line.contains('KitErrorService.debug') &&
-                !line.contains('KitErrorService.info') &&
-                !line.contains('KitErrorService.warning') &&
-                !line.contains('KitErrorService.error') &&
-                !line.contains('KitErrorService.critical') &&
-                !line.contains('KitErrorService.verbose') &&
-                !line.contains('KitErrorService.handle') &&
-                !line.contains('KitErrorService.logEvent') &&
+                !line.contains('AppBoxKitErrorService._logWithTalker') &&
+                !line.contains('AppBoxKitErrorService.debug') &&
+                !line.contains('AppBoxKitErrorService.info') &&
+                !line.contains('AppBoxKitErrorService.warning') &&
+                !line.contains('AppBoxKitErrorService.error') &&
+                !line.contains('AppBoxKitErrorService.critical') &&
+                !line.contains('AppBoxKitErrorService.verbose') &&
+                !line.contains('AppBoxKitErrorService.handle') &&
+                !line.contains('AppBoxKitErrorService.logEvent') &&
                 line.contains(':'),
             orElse: () => stackTrace
                 .toString()
@@ -135,8 +135,8 @@ class KitErrorService with ListenableServiceMixin {
       {Object? error,
       StackTrace? stackTrace,
       String? context,
-      ErrorType? type,
-      ErrorSeverity? severity,
+      AppBoxKitErrorType? type,
+      AppBoxKitErrorSeverity? severity,
       String? widgetId}) {
     final st = stackTrace ?? StackTrace.current;
     final (lineNumber, fileName) = _getFileInfo(st);
@@ -161,7 +161,7 @@ class KitErrorService with ListenableServiceMixin {
   }
 
   // Constructor
-  KitErrorService() {
+  AppBoxKitErrorService() {
     listenToReactiveValues([]);
   }
 
@@ -231,8 +231,8 @@ class KitErrorService with ListenableServiceMixin {
       Object? error,
       StackTrace? stackTrace,
       String? context,
-      ErrorType? type,
-      ErrorSeverity? severity}) {
+      AppBoxKitErrorType? type,
+      AppBoxKitErrorSeverity? severity}) {
     // Log the error to talker without recursively calling error()
     _talker.error(
         _formatMessageWithContext(
@@ -319,8 +319,8 @@ class KitErrorService with ListenableServiceMixin {
       {required String message,
       String? widgetId,
       String? context,
-      ErrorType? type = ErrorType.info,
-      ErrorSeverity? severity = ErrorSeverity.info,
+      AppBoxKitErrorType? type = AppBoxKitErrorType.info,
+      AppBoxKitErrorSeverity? severity = AppBoxKitErrorSeverity.info,
       Object? error, // Added optional error
       StackTrace? stackTrace // Added optional stackTrace
       }) {
@@ -342,8 +342,8 @@ class KitErrorService with ListenableServiceMixin {
       {required String message,
       String? widgetId,
       String? context,
-      ErrorType? type = ErrorType.warning,
-      ErrorSeverity? severity = ErrorSeverity.warning,
+      AppBoxKitErrorType? type = AppBoxKitErrorType.warning,
+      AppBoxKitErrorSeverity? severity = AppBoxKitErrorSeverity.warning,
       Object? error, // Added optional error
       StackTrace? stackTrace // Added optional stackTrace
       }) {
@@ -365,8 +365,8 @@ class KitErrorService with ListenableServiceMixin {
       StackTrace? stackTrace,
       String? widgetId,
       String? context,
-      ErrorType? type,
-      ErrorSeverity? severity}) {
+      AppBoxKitErrorType? type,
+      AppBoxKitErrorSeverity? severity}) {
     _logWithTalker(LogLevel.error, message,
         error: error,
         stackTrace: stackTrace,
@@ -403,8 +403,8 @@ class KitErrorService with ListenableServiceMixin {
       String? widgetId,
       int maxEvents = 100,
       String? context,
-      ErrorType? type,
-      ErrorSeverity? severity}) {
+      AppBoxKitErrorType? type,
+      AppBoxKitErrorSeverity? severity}) {
     final timestamp = DateTime.now().toString().split('.').first;
 
     // Capture stack trace to get line number
@@ -493,8 +493,8 @@ class KitErrorService with ListenableServiceMixin {
       StackTrace? stackTrace,
       String? widgetId,
       String? context,
-      ErrorType? type,
-      ErrorSeverity? severity}) {
+      AppBoxKitErrorType? type,
+      AppBoxKitErrorSeverity? severity}) {
     _logWithTalker(LogLevel.critical, message,
         error: error,
         stackTrace: stackTrace,
@@ -531,8 +531,8 @@ class KitErrorService with ListenableServiceMixin {
       String? message,
       String? widgetId,
       String? context,
-      ErrorType? type,
-      ErrorSeverity? severity}) {
+      AppBoxKitErrorType? type,
+      AppBoxKitErrorSeverity? severity}) {
     // Format the message
     final String formattedMessage = _formatMessageWithContext(
         originalMessage: message ?? 'An error occurred',

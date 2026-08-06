@@ -1,37 +1,37 @@
 /// Test doubles for appbox_kit_core.
 ///
-/// Import this from tests to substitute the locator-resolved core services
+/// Import this from tests to substitute the appBoxKitLocator-resolved core services
 /// without touching Talker, SharedPreferences, or SystemChrome:
 ///
 /// ```dart
-/// final errors = FakeKitErrorService();
-/// locator.registerSingleton<KitErrorService>(errors);
-/// locator.registerSingleton<KitThemeService>(FakeKitThemeService());
+/// final errors = FakeAppBoxKitErrorService();
+/// appBoxKitLocator.registerSingleton<AppBoxKitErrorService>(errors);
+/// appBoxKitLocator.registerSingleton<AppBoxKitThemeService>(FakeAppBoxKitThemeService());
 ///
 /// await viewModel.save();
 /// expect(errors.errorCalls, hasLength(1));
 /// expect(errors.lastCall!.message, contains('save failed'));
 /// ```
 ///
-/// Register [FakeKitErrorService] FIRST: [FakeKitThemeService]'s inherited
-/// base resolves `locator<KitErrorService>()` at construction time.
+/// Register [FakeAppBoxKitErrorService] FIRST: [FakeAppBoxKitThemeService]'s inherited
+/// base resolves `appBoxKitLocator<AppBoxKitErrorService>()` at construction time.
 library;
 
 import 'package:flutter/material.dart' show ThemeMode;
 import 'package:rxdart/rxdart.dart';
 import 'package:talker_flutter/talker_flutter.dart' show TalkerData;
 
-import 'extensions/kit_to_title_case_extension.dart';
-import 'services/error/kit_error_service.dart';
-import 'services/theme/kit_theme_service.dart';
+import 'extensions/appbox_kit_to_title_case_extension.dart';
+import 'services/error/appbox_kit_error_service.dart';
+import 'services/theme/appbox_kit_theme_service.dart';
 
-export 'services/error/kit_error_service.dart'
-    show ErrorType, ErrorSeverity, KitErrorService;
-export 'services/theme/kit_theme_service.dart' show KitThemeService;
+export 'services/error/appbox_kit_error_service.dart'
+    show AppBoxKitErrorType, AppBoxKitErrorSeverity, AppBoxKitErrorService;
+export 'services/theme/appbox_kit_theme_service.dart' show AppBoxKitThemeService;
 
-/// One recorded logging call on [FakeKitErrorService].
-class KitErrorRecord {
-  const KitErrorRecord({
+/// One recorded logging call on [FakeAppBoxKitErrorService].
+class AppBoxKitErrorRecord {
+  const AppBoxKitErrorRecord({
     this.message,
     this.error,
     this.stackTrace,
@@ -58,16 +58,16 @@ class KitErrorRecord {
   final String? context;
 
   /// The `type` argument.
-  final ErrorType? type;
+  final AppBoxKitErrorType? type;
 
   /// The `severity` argument.
-  final ErrorSeverity? severity;
+  final AppBoxKitErrorSeverity? severity;
 
   /// The `source` argument (`logEvent` calls only).
   final String? source;
 }
 
-/// A [KitErrorService] that records every logging call and keeps widget error
+/// A [AppBoxKitErrorService] that records every logging call and keeps widget error
 /// / loading / event state in memory. Talker is never initialized and nothing
 /// touches the console or global Flutter error handlers.
 ///
@@ -77,31 +77,31 @@ class KitErrorRecord {
 /// members stay inert: [history] is always empty and `latestError$` /
 /// `allErrors$` / `unreadCount$` keep their seeded values — assert against the
 /// recorded call lists instead.
-class FakeKitErrorService extends KitErrorService {
+class FakeAppBoxKitErrorService extends AppBoxKitErrorService {
   /// Number of times [initialize] was called.
   int initializeCallCount = 0;
 
   /// Every [info] call, in call order.
-  final List<KitErrorRecord> infoCalls = [];
+  final List<AppBoxKitErrorRecord> infoCalls = [];
 
   /// Every [warning] call, in call order.
-  final List<KitErrorRecord> warningCalls = [];
+  final List<AppBoxKitErrorRecord> warningCalls = [];
 
   /// Every [error] call, in call order.
-  final List<KitErrorRecord> errorCalls = [];
+  final List<AppBoxKitErrorRecord> errorCalls = [];
 
   /// Every [critical] call, in call order.
-  final List<KitErrorRecord> criticalCalls = [];
+  final List<AppBoxKitErrorRecord> criticalCalls = [];
 
   /// Every [handle] call, in call order.
-  final List<KitErrorRecord> handleCalls = [];
+  final List<AppBoxKitErrorRecord> handleCalls = [];
 
   /// Every [logEvent] call, in call order.
-  final List<KitErrorRecord> eventCalls = [];
+  final List<AppBoxKitErrorRecord> eventCalls = [];
 
   /// Chronological record across ALL logging methods (shared entries with the
   /// per-method lists above) — backs [lastCall] / [didLog].
-  final List<KitErrorRecord> allCalls = [];
+  final List<AppBoxKitErrorRecord> allCalls = [];
 
   final _widgetErrors$ = BehaviorSubject<Map<String, String>>.seeded({});
   final _loadingWidgets$ = BehaviorSubject<Set<String>>.seeded({});
@@ -121,12 +121,12 @@ class FakeKitErrorService extends KitErrorService {
     required String message,
     String? widgetId,
     String? context,
-    ErrorType? type = ErrorType.info,
-    ErrorSeverity? severity = ErrorSeverity.info,
+    AppBoxKitErrorType? type = AppBoxKitErrorType.info,
+    AppBoxKitErrorSeverity? severity = AppBoxKitErrorSeverity.info,
     Object? error,
     StackTrace? stackTrace,
   }) {
-    infoCalls.add(_tracked(KitErrorRecord(
+    infoCalls.add(_tracked(AppBoxKitErrorRecord(
       message: message,
       error: error,
       stackTrace: stackTrace,
@@ -139,7 +139,7 @@ class FakeKitErrorService extends KitErrorService {
 
   /// Adds [record] to [allCalls] and returns it, so each logging method can
   /// file the same entry in its per-method list.
-  KitErrorRecord _tracked(KitErrorRecord record) {
+  AppBoxKitErrorRecord _tracked(AppBoxKitErrorRecord record) {
     allCalls.add(record);
     return record;
   }
@@ -149,12 +149,12 @@ class FakeKitErrorService extends KitErrorService {
     required String message,
     String? widgetId,
     String? context,
-    ErrorType? type = ErrorType.warning,
-    ErrorSeverity? severity = ErrorSeverity.warning,
+    AppBoxKitErrorType? type = AppBoxKitErrorType.warning,
+    AppBoxKitErrorSeverity? severity = AppBoxKitErrorSeverity.warning,
     Object? error,
     StackTrace? stackTrace,
   }) {
-    warningCalls.add(_tracked(KitErrorRecord(
+    warningCalls.add(_tracked(AppBoxKitErrorRecord(
       message: message,
       error: error,
       stackTrace: stackTrace,
@@ -172,10 +172,10 @@ class FakeKitErrorService extends KitErrorService {
     StackTrace? stackTrace,
     String? widgetId,
     String? context,
-    ErrorType? type,
-    ErrorSeverity? severity,
+    AppBoxKitErrorType? type,
+    AppBoxKitErrorSeverity? severity,
   }) {
-    errorCalls.add(_tracked(KitErrorRecord(
+    errorCalls.add(_tracked(AppBoxKitErrorRecord(
       message: message,
       error: error,
       stackTrace: stackTrace,
@@ -194,10 +194,10 @@ class FakeKitErrorService extends KitErrorService {
     StackTrace? stackTrace,
     String? widgetId,
     String? context,
-    ErrorType? type,
-    ErrorSeverity? severity,
+    AppBoxKitErrorType? type,
+    AppBoxKitErrorSeverity? severity,
   }) {
-    criticalCalls.add(_tracked(KitErrorRecord(
+    criticalCalls.add(_tracked(AppBoxKitErrorRecord(
       message: message,
       error: error,
       stackTrace: stackTrace,
@@ -216,10 +216,10 @@ class FakeKitErrorService extends KitErrorService {
     String? message,
     String? widgetId,
     String? context,
-    ErrorType? type,
-    ErrorSeverity? severity,
+    AppBoxKitErrorType? type,
+    AppBoxKitErrorSeverity? severity,
   }) {
-    handleCalls.add(_tracked(KitErrorRecord(
+    handleCalls.add(_tracked(AppBoxKitErrorRecord(
       message: message,
       error: exception,
       stackTrace: stackTrace,
@@ -240,10 +240,10 @@ class FakeKitErrorService extends KitErrorService {
     String? widgetId,
     int maxEvents = 100,
     String? context,
-    ErrorType? type,
-    ErrorSeverity? severity,
+    AppBoxKitErrorType? type,
+    AppBoxKitErrorSeverity? severity,
   }) {
-    eventCalls.add(_tracked(KitErrorRecord(
+    eventCalls.add(_tracked(AppBoxKitErrorRecord(
       message: message,
       widgetId: widgetId,
       context: context,
@@ -309,8 +309,8 @@ class FakeKitErrorService extends KitErrorService {
     Object? error,
     StackTrace? stackTrace,
     String? context,
-    ErrorType? type,
-    ErrorSeverity? severity,
+    AppBoxKitErrorType? type,
+    AppBoxKitErrorSeverity? severity,
   }) {
     _setWidgetErrorState(widgetId, message, error);
   }
@@ -377,7 +377,7 @@ class FakeKitErrorService extends KitErrorService {
   // ---- query helpers ---------------------------------------------------------
 
   /// The most recently recorded call across all logging methods, or null.
-  KitErrorRecord? get lastCall => allCalls.isEmpty ? null : allCalls.last;
+  AppBoxKitErrorRecord? get lastCall => allCalls.isEmpty ? null : allCalls.last;
 
   /// True if any logging call recorded a message containing [substring].
   bool didLog(String substring) {
@@ -411,27 +411,27 @@ class FakeKitErrorService extends KitErrorService {
   }
 }
 
-/// A [KitThemeService] driven entirely in memory — no SharedPreferences, no
+/// A [AppBoxKitThemeService] driven entirely in memory — no SharedPreferences, no
 /// WidgetsBinding observer, no SystemChrome overlay writes.
 ///
-/// Construction resolves `locator<KitErrorService>()` (an inherited base
-/// field), so register an error service — e.g. [FakeKitErrorService] — first.
+/// Construction resolves `appBoxKitLocator<AppBoxKitErrorService>()` (an inherited base
+/// field), so register an error service — e.g. [FakeAppBoxKitErrorService] — first.
 ///
 /// Like the real service, [setTheme] is a no-op until [initialize] has run;
-/// use [FakeKitThemeService.initialized] to start ready. Assert against
+/// use [FakeAppBoxKitThemeService.initialized] to start ready. Assert against
 /// [themeMode$] / [isInitialized$] and the [setThemeCalls] record.
-class FakeKitThemeService extends KitThemeService {
-  FakeKitThemeService({
+class FakeAppBoxKitThemeService extends AppBoxKitThemeService {
+  FakeAppBoxKitThemeService({
     ThemeMode initialMode = ThemeMode.system,
     bool initialized = false,
   })  : _mode$ = BehaviorSubject<ThemeMode>.seeded(initialMode),
         _initialized$ = BehaviorSubject<bool>.seeded(initialized);
 
   /// Starts initialized (as if [initialize] already ran).
-  factory FakeKitThemeService.initialized({
+  factory FakeAppBoxKitThemeService.initialized({
     ThemeMode initialMode = ThemeMode.system,
   }) =>
-      FakeKitThemeService(initialMode: initialMode, initialized: true);
+      FakeAppBoxKitThemeService(initialMode: initialMode, initialized: true);
 
   final BehaviorSubject<ThemeMode> _mode$;
   final BehaviorSubject<bool> _initialized$;

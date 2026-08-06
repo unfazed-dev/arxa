@@ -6,7 +6,7 @@ import 'package:lucide_flutter/lucide_flutter.dart';
 
 /// Lucide design name (kebab-case, as on lucide.dev) → glyph. 1993 icons,
 /// one const reference per `LucideIcons.<camelName>` entry.
-const kitLucideGlyphMap = <String, IconData>{
+const appBoxKitLucideGlyphMap = <String, IconData>{
   'a-arrow-down': LucideIcons.aArrowDown,
   'a-arrow-up': LucideIcons.aArrowUp,
   'a-large-small': LucideIcons.aLargeSmall,

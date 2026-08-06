@@ -17,14 +17,14 @@ import 'package:flutter/services.dart' show rootBundle;
 /// resolves, role slots and licences. It does NOT bundle font binaries.
 /// The designer side vendors `.woff2` (web); Flutter needs `.ttf`/`.otf`
 /// declared under `flutter: fonts:` in a pubspec. No host bundles them yet, so
-/// [kitFontIsBundled] is false for every face today and [KitFontFamily.cssName]
+/// [appBoxKitFontIsBundled] is false for every face today and [AppBoxKitFontFamily.cssName]
 /// passed to Flutter's `fontFamily:` resolves to nothing — Flutter SILENTLY
 /// falls back to the platform default: no error, just the wrong face.
-/// [kitFontIsBundled] is the honest test, and [registerKitFontLicenses] is what
+/// [appBoxKitFontIsBundled] is the honest test, and [registerAppBoxKitFontLicenses] is what
 /// a host calls once it has bundled them.
 
 /// The role slots declared by fonts.json `roles`.
-enum KitFontRole {
+enum AppBoxKitFontRole {
   /// body copy, controls, everything unmarked
   ui,
 
@@ -37,7 +37,7 @@ enum KitFontRole {
 
 /// One selectable text face.
 @immutable
-class KitFontFamily {
+class AppBoxKitFontFamily {
   /// Stable identifier — matches fonts.json `families[].id` and is the value a
   /// host persists. NOT [label]: a menu label may be renamed freely.
   final String id;
@@ -50,12 +50,12 @@ class KitFontFamily {
   final String cssName;
 
   /// Which slot this face is authored for.
-  final KitFontRole role;
+  final AppBoxKitFontRole role;
 
   /// SPDX licence id, carried so a host can honour attribution.
   final String license;
 
-  const KitFontFamily({
+  const AppBoxKitFontFamily({
     required this.id,
     required this.label,
     required this.cssName,
@@ -65,55 +65,55 @@ class KitFontFamily {
 }
 
 /// Mirrors fonts.json `families`, in the same order.
-const List<KitFontFamily> kitFontOptions = [
-  KitFontFamily(
+const List<AppBoxKitFontFamily> appBoxKitFontOptions = [
+  AppBoxKitFontFamily(
     id: 'lexend',
     label: 'Lexend',
     cssName: 'Lexend',
-    role: KitFontRole.ui,
+    role: AppBoxKitFontRole.ui,
     license: 'OFL-1.1',
   ),
-  KitFontFamily(
+  AppBoxKitFontFamily(
     id: 'grotesk',
     label: 'Space Grotesk',
     cssName: 'Space Grotesk',
-    role: KitFontRole.display,
+    role: AppBoxKitFontRole.display,
     license: 'OFL-1.1',
   ),
-  KitFontFamily(
+  AppBoxKitFontFamily(
     id: 'lora',
     label: 'Lora',
     cssName: 'Lora',
-    role: KitFontRole.ui,
+    role: AppBoxKitFontRole.ui,
     license: 'OFL-1.1',
   ),
-  KitFontFamily(
+  AppBoxKitFontFamily(
     id: 'mono',
     label: 'JetBrains Mono',
     cssName: 'JetBrains Mono',
-    role: KitFontRole.mono,
+    role: AppBoxKitFontRole.mono,
     license: 'OFL-1.1',
   ),
 ];
 
 /// Mirrors fonts.json `default`.
-const String kitDefaultFont = 'lexend';
+const String appBoxKitDefaultFont = 'lexend';
 
-/// The face with [id], or the [kitDefaultFont] one when unknown — a persisted
+/// The face with [id], or the [appBoxKitDefaultFont] one when unknown — a persisted
 /// setting naming a removed face must not crash a host.
-KitFontFamily kitFontById(String id) {
-  for (final f in kitFontOptions) {
+AppBoxKitFontFamily appBoxKitFontById(String id) {
+  for (final f in appBoxKitFontOptions) {
     if (f.id == id) return f;
   }
-  for (final f in kitFontOptions) {
-    if (f.id == kitDefaultFont) return f;
+  for (final f in appBoxKitFontOptions) {
+    if (f.id == appBoxKitDefaultFont) return f;
   }
-  return kitFontOptions.first;
+  return appBoxKitFontOptions.first;
 }
 
 /// The first face declared for [role], or null when none is.
-KitFontFamily? kitFontForRole(KitFontRole role) {
-  for (final f in kitFontOptions) {
+AppBoxKitFontFamily? appBoxKitFontForRole(AppBoxKitFontRole role) {
+  for (final f in appBoxKitFontOptions) {
     if (f.role == role) return f;
   }
   return null;
@@ -124,7 +124,7 @@ KitFontFamily? kitFontForRole(KitFontRole role) {
 /// Flutter gives no way to ask "is this family registered?", so this probes the
 /// asset path the kit expects a host to bundle at. Use it to fail loudly in a
 /// host's own test rather than shipping a silent platform-default fallback.
-Future<bool> kitFontIsBundled(KitFontFamily family) async {
+Future<bool> appBoxKitFontIsBundled(AppBoxKitFontFamily family) async {
   try {
     await rootBundle.load('packages/appbox_kit_core/fonts/${family.id}.ttf');
     return true;
@@ -136,10 +136,10 @@ Future<bool> kitFontIsBundled(KitFontFamily family) async {
 /// Registers the OFL text for every bundled face. Call once at startup, before
 /// `runApp`, in any host that bundles the binaries — OFL-1.1 requires the
 /// licence travel with the font.
-void registerKitFontLicenses() {
+void registerAppBoxKitFontLicenses() {
   LicenseRegistry.addLicense(() async* {
-    for (final f in kitFontOptions) {
-      if (!await kitFontIsBundled(f)) continue;
+    for (final f in appBoxKitFontOptions) {
+      if (!await appBoxKitFontIsBundled(f)) continue;
       final text =
           await rootBundle.loadString('packages/appbox_kit_core/fonts/${f.id}.LICENSE');
       yield LicenseEntryWithLineBreaks(<String>['appbox_kit_core', f.cssName], text);

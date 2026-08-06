@@ -1,6 +1,6 @@
 import 'package:flutter/services.dart';
 
-class KitMobileNumberInputFormatter extends TextInputFormatter {
+class AppBoxKitMobileNumberInputFormatter extends TextInputFormatter {
   @override
   TextEditingValue formatEditUpdate(
       TextEditingValue oldValue, TextEditingValue newValue) {

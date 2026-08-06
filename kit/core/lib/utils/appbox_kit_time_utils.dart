@@ -1,6 +1,6 @@
 /// Utility class providing time-related helper functions.
-class KitTimeUtils {
-  KitTimeUtils._();
+class AppBoxKitTimeUtils {
+  AppBoxKitTimeUtils._();
 
   /// Returns a greeting based on the current time of day.
   ///

@@ -5,7 +5,7 @@ import 'package:flutter/services.dart';
 /// - Removing invalid email characters
 /// - Preventing multiple @ symbols
 /// - Handling common email domain suggestions
-class KitEmailInputFormatter extends TextInputFormatter {
+class AppBoxKitEmailInputFormatter extends TextInputFormatter {
   static const _validEmailChars = r'[a-zA-Z0-9.!#$%&*+/=?^_`{|}~@-]';
   static const _commonDomains = [
     'gmail.com',

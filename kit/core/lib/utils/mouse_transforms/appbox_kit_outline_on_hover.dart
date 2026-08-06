@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 
-class OutlineOnHover extends StatefulWidget {
+class AppBoxKitOutlineOnHover extends StatefulWidget {
   final Widget child;
   final Color hoverOutlineColor;
   final double outlineWidth;
 
-  const OutlineOnHover({
+  const AppBoxKitOutlineOnHover({
     super.key,
     required this.child,
     required this.hoverOutlineColor,
@@ -13,10 +13,10 @@ class OutlineOnHover extends StatefulWidget {
   });
 
   @override
-  State<OutlineOnHover> createState() => _OutlineOnHoverState();
+  State<AppBoxKitOutlineOnHover> createState() => _OutlineOnHoverState();
 }
 
-class _OutlineOnHoverState extends State<OutlineOnHover> {
+class _OutlineOnHoverState extends State<AppBoxKitOutlineOnHover> {
   bool _hovering = false;
 
   @override

@@ -9,12 +9,12 @@ import 'package:flutter/foundation.dart'
 /// [kIsWeb]). Native-chrome widgets (Liquid Glass iOS 26, Compose M3 Android)
 /// route through [supportsNativeChrome] so the choice lives in one testable
 /// place — mirrors the validated starling `supportsNative` gate.
-class KitPlatform {
-  KitPlatform._();
+class AppBoxKitPlatform {
+  AppBoxKitPlatform._();
 
   /// Test override (set in `setUp`, clear with [reset] in `tearDown`) — also
   /// used at runtime to force a tier where no native one exists (e.g. web).
-  static KitPlatformOverride? override;
+  static AppBoxKitPlatformOverride? override;
 
   /// Clear the test override.
   static void reset() => override = null;
@@ -72,10 +72,10 @@ class KitPlatform {
 bool get _hostIsDesktop =>
     Platform.isMacOS || Platform.isWindows || Platform.isLinux;
 
-/// Test override for [KitPlatform]: force identity, iOS major version, and/or
+/// Test override for [AppBoxKitPlatform]: force identity, iOS major version, and/or
 /// the widget-tree [TargetPlatform]. All fields optional.
-class KitPlatformOverride {
-  const KitPlatformOverride({
+class AppBoxKitPlatformOverride {
+  const AppBoxKitPlatformOverride({
     bool? isIOS,
     bool? isAndroid,
     int? iosMajor,
@@ -92,4 +92,4 @@ class KitPlatformOverride {
 }
 
 /// Render tier resolved per native-chrome widget.
-enum KitTier { native, fallback }
+enum AppBoxKitTier { native, fallback }

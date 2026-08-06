@@ -1,5 +1,5 @@
-/// Position of icon relative to label in KitCheckbox and KitRadio widgets
-enum KitIconPosition {
+/// Position of icon relative to label in AppBoxKitCheckbox and AppBoxKitRadio widgets
+enum AppBoxKitIconPosition {
   /// Icon above label (vertical layout)
   top,
 

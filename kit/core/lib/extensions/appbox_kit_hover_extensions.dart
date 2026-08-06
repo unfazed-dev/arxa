@@ -1,13 +1,13 @@
-import '../utils/mouse_transforms/fill_on_hover.dart';
-import '../utils/mouse_transforms/outline_on_hover.dart';
-import '../utils/mouse_transforms/scale_on_hover.dart';
-import '../utils/mouse_transforms/translate_on_hover.dart';
+import '../utils/mouse_transforms/appbox_kit_fill_on_hover.dart';
+import '../utils/mouse_transforms/appbox_kit_outline_on_hover.dart';
+import '../utils/mouse_transforms/appbox_kit_scale_on_hover.dart';
+import '../utils/mouse_transforms/appbox_kit_translate_on_hover.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 /// Extension methods for adding hover effects to widgets
 /// These effects are only applied on desktop platforms and are ignored on mobile
-extension HoverExtensions on Widget {
+extension AppBoxKitHoverExtensions on Widget {
   /// Adds a clickable cursor when hovering over the widget
   ///
   /// Returns a [MouseRegion] wrapped widget on desktop platforms
@@ -25,10 +25,10 @@ extension HoverExtensions on Widget {
   /// - [x]: Horizontal movement in pixels (negative moves left, positive moves right)
   /// - [y]: Vertical movement in pixels (negative moves up, positive moves down)
   ///
-  /// Returns a [TranslateOnHover] wrapped widget on desktop platforms
+  /// Returns a [AppBoxKitTranslateOnHover] wrapped widget on desktop platforms
   /// Returns the original widget unchanged on mobile platforms
   Widget moveOnHover({double? x, double? y}) {
-    return _returnUnalteredOnMobile(TranslateOnHover(
+    return _returnUnalteredOnMobile(AppBoxKitTranslateOnHover(
       x: x,
       y: y,
       child: this,
@@ -40,10 +40,10 @@ extension HoverExtensions on Widget {
   /// Parameters:
   /// - [scale]: Scale factor to apply (1.0 = no change, > 1.0 = grow, < 1.0 = shrink)
   ///
-  /// Returns a [ScaleOnHover] wrapped widget on desktop platforms
+  /// Returns a [AppBoxKitScaleOnHover] wrapped widget on desktop platforms
   /// Returns the original widget unchanged on mobile platforms
   Widget scaleOnHover({double scale = 1.1}) {
-    return _returnUnalteredOnMobile(ScaleOnHover(
+    return _returnUnalteredOnMobile(AppBoxKitScaleOnHover(
       scale: scale,
       child: this,
     ));
@@ -56,14 +56,14 @@ extension HoverExtensions on Widget {
   /// - [opacity]: Opacity of the fill color (0.0 = transparent, 1.0 = solid)
   /// - [disabled]: Whether the hover effect is disabled
   ///
-  /// Returns a [FillOnHover] wrapped widget on desktop platforms
+  /// Returns a [AppBoxKitFillOnHover] wrapped widget on desktop platforms
   /// Returns the original widget unchanged on mobile platforms
   Widget fillOnHover({
     required Color color,
     double opacity = 0.1,
     bool disabled = false,
   }) {
-    return _returnUnalteredOnMobile(FillOnHover(
+    return _returnUnalteredOnMobile(AppBoxKitFillOnHover(
       fillColor: color,
       opacity: opacity,
       borderRadius: BorderRadius.circular(8),
@@ -78,13 +78,13 @@ extension HoverExtensions on Widget {
   /// - [hoverOutlineColor]: Color of the outline
   /// - [outlineWidth]: Width of the outline
   ///
-  /// Returns a [OutlineOnHover] wrapped widget on desktop platforms
+  /// Returns a [AppBoxKitOutlineOnHover] wrapped widget on desktop platforms
   /// Returns the original widget unchanged on mobile platforms
   Widget outlineOnHover({
     required Color hoverOutlineColor,
     double outlineWidth = 2,
   }) {
-    return _returnUnalteredOnMobile(OutlineOnHover(
+    return _returnUnalteredOnMobile(AppBoxKitOutlineOnHover(
       hoverOutlineColor: hoverOutlineColor,
       outlineWidth: outlineWidth,
       child: this,

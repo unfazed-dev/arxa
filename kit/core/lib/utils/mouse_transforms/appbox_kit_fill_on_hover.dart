@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 
-class FillOnHover extends StatefulWidget {
+class AppBoxKitFillOnHover extends StatefulWidget {
   final Widget? child;
   final Color fillColor;
   final double opacity;
   final BorderRadius borderRadius;
   final bool disabled;
 
-  const FillOnHover({
+  const AppBoxKitFillOnHover({
     super.key,
     this.child,
     required this.fillColor,
@@ -17,10 +17,10 @@ class FillOnHover extends StatefulWidget {
   });
 
   @override
-  State<FillOnHover> createState() => _FillOnHoverState();
+  State<AppBoxKitFillOnHover> createState() => _FillOnHoverState();
 }
 
-class _FillOnHoverState extends State<FillOnHover> {
+class _FillOnHoverState extends State<AppBoxKitFillOnHover> {
   bool _hovering = false;
 
   @override

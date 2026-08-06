@@ -1,13 +1,13 @@
 import 'dart:async';
 
-import '../kit_locator.dart';
-import '../services/error/kit_error_service.dart';
+import '../appbox_kit_locator.dart';
+import '../services/error/appbox_kit_error_service.dart';
 import 'package:flutter/material.dart';
 import 'package:stacked/stacked.dart';
 import 'package:rxdart/rxdart.dart';
 
 /// Enum for checkbox position
-enum SelectablePosition {
+enum AppBoxKitSelectablePosition {
   topLeft,
   topCenter,
   topRight,
@@ -17,8 +17,8 @@ enum SelectablePosition {
   bottomRight,
 }
 
-/// Configuration for KitSelectable
-class KitSelectableOptions {
+/// Configuration for AppBoxKitSelectable
+class AppBoxKitSelectableOptions {
   /// Border color when selected
   final Color? borderColor;
 
@@ -29,31 +29,31 @@ class KitSelectableOptions {
   final BorderRadius? borderRadius;
 
   /// Position of the checkbox
-  final SelectablePosition position;
+  final AppBoxKitSelectablePosition position;
 
   /// Callback when selection changes
   final Function(bool)? onSelectionChanged;
 
   /// Constructor with default values
-  const KitSelectableOptions({
+  const AppBoxKitSelectableOptions({
     this.borderColor,
     this.borderWidth = 3.0,
     this.borderRadius,
-    this.position = SelectablePosition.topRight,
+    this.position = AppBoxKitSelectablePosition.topRight,
     this.onSelectionChanged,
   });
 }
 
 /// Service to manage selectable widgets state
-class KitSelectableService with ListenableServiceMixin {
+class AppBoxKitSelectableService with ListenableServiceMixin {
   static const String widgetId = 'kit_selectable_service';
 
-  KitSelectableService() {
+  AppBoxKitSelectableService() {
     // Setup stream listener for reactive updates
     _selectedIDs$.listen((_) => notifyListeners());
   }
 
-  final _errorService = locator<KitErrorService>();
+  final _errorService = appBoxKitLocator<AppBoxKitErrorService>();
 
   // Stream for currently selected widget IDs
   final _selectedIDs$ = BehaviorSubject<Set<String>>.seeded({});
@@ -136,11 +136,11 @@ class KitSelectableService with ListenableServiceMixin {
 }
 
 /// Extension method for making widgets selectable
-extension KitSelectableExtension on Widget {
+extension AppBoxKitSelectableExtension on Widget {
   /// Make this widget selectable with a checkbox
   Widget withSelectable({
     required String id,
-    KitSelectableOptions options = const KitSelectableOptions(),
+    AppBoxKitSelectableOptions options = const AppBoxKitSelectableOptions(),
   }) {
     return _KitSelectableWidget(
       id: id,
@@ -153,11 +153,11 @@ extension KitSelectableExtension on Widget {
 /// ViewModel for the selectable widget that follows Stacked architecture
 class _KitSelectableViewModel extends ReactiveViewModel {
   static const String widgetId = 'kit_selectable_view_model';
-  final _errorService = locator<KitErrorService>();
-  final _selectableService = locator<KitSelectableService>();
+  final _errorService = appBoxKitLocator<AppBoxKitErrorService>();
+  final _selectableService = appBoxKitLocator<AppBoxKitSelectableService>();
 
   late String _id;
-  late KitSelectableOptions _options;
+  late AppBoxKitSelectableOptions _options;
   StreamSubscription<Set<String>>? _selectionSubscription;
 
   // BehaviorSubject for local selection state
@@ -171,7 +171,7 @@ class _KitSelectableViewModel extends ReactiveViewModel {
   @override
   List<ListenableServiceMixin> get listenableServices => [_selectableService];
 
-  void init(String id, KitSelectableOptions options) {
+  void init(String id, AppBoxKitSelectableOptions options) {
     _id = id;
     _options = options;
     _setupStreams();
@@ -270,7 +270,7 @@ class _KitSelectableViewModel extends ReactiveViewModel {
 class _KitSelectableWidget extends StackedView<_KitSelectableViewModel> {
   final Widget child;
   final String id;
-  final KitSelectableOptions options;
+  final AppBoxKitSelectableOptions options;
 
   const _KitSelectableWidget({
     required this.child,
@@ -354,62 +354,62 @@ class _KitSelectableWidget extends StackedView<_KitSelectableViewModel> {
   void onViewModelReady(_KitSelectableViewModel viewModel) =>
       viewModel.init(id, options);
 
-  double? _getLeftPosition(SelectablePosition position) {
+  double? _getLeftPosition(AppBoxKitSelectablePosition position) {
     switch (position) {
-      case SelectablePosition.topLeft:
-      case SelectablePosition.bottomLeft:
+      case AppBoxKitSelectablePosition.topLeft:
+      case AppBoxKitSelectablePosition.bottomLeft:
         return 4;
-      case SelectablePosition.topCenter:
-      case SelectablePosition.center:
-      case SelectablePosition.bottomCenter:
+      case AppBoxKitSelectablePosition.topCenter:
+      case AppBoxKitSelectablePosition.center:
+      case AppBoxKitSelectablePosition.bottomCenter:
         return 0;
-      case SelectablePosition.topRight:
-      case SelectablePosition.bottomRight:
+      case AppBoxKitSelectablePosition.topRight:
+      case AppBoxKitSelectablePosition.bottomRight:
         return null;
     }
   }
 
-  double? _getRightPosition(SelectablePosition position) {
+  double? _getRightPosition(AppBoxKitSelectablePosition position) {
     switch (position) {
-      case SelectablePosition.topRight:
-      case SelectablePosition.bottomRight:
+      case AppBoxKitSelectablePosition.topRight:
+      case AppBoxKitSelectablePosition.bottomRight:
         return 4;
-      case SelectablePosition.topCenter:
-      case SelectablePosition.center:
-      case SelectablePosition.bottomCenter:
+      case AppBoxKitSelectablePosition.topCenter:
+      case AppBoxKitSelectablePosition.center:
+      case AppBoxKitSelectablePosition.bottomCenter:
         return 0;
-      case SelectablePosition.topLeft:
-      case SelectablePosition.bottomLeft:
+      case AppBoxKitSelectablePosition.topLeft:
+      case AppBoxKitSelectablePosition.bottomLeft:
         return null;
     }
   }
 
-  double? _getTopPosition(SelectablePosition position) {
+  double? _getTopPosition(AppBoxKitSelectablePosition position) {
     switch (position) {
-      case SelectablePosition.topLeft:
-      case SelectablePosition.topCenter:
-      case SelectablePosition.topRight:
+      case AppBoxKitSelectablePosition.topLeft:
+      case AppBoxKitSelectablePosition.topCenter:
+      case AppBoxKitSelectablePosition.topRight:
         return 4;
-      case SelectablePosition.center:
+      case AppBoxKitSelectablePosition.center:
         return 0;
-      case SelectablePosition.bottomLeft:
-      case SelectablePosition.bottomCenter:
-      case SelectablePosition.bottomRight:
+      case AppBoxKitSelectablePosition.bottomLeft:
+      case AppBoxKitSelectablePosition.bottomCenter:
+      case AppBoxKitSelectablePosition.bottomRight:
         return null;
     }
   }
 
-  double? _getBottomPosition(SelectablePosition position) {
+  double? _getBottomPosition(AppBoxKitSelectablePosition position) {
     switch (position) {
-      case SelectablePosition.bottomLeft:
-      case SelectablePosition.bottomCenter:
-      case SelectablePosition.bottomRight:
+      case AppBoxKitSelectablePosition.bottomLeft:
+      case AppBoxKitSelectablePosition.bottomCenter:
+      case AppBoxKitSelectablePosition.bottomRight:
         return 4;
-      case SelectablePosition.center:
+      case AppBoxKitSelectablePosition.center:
         return 0;
-      case SelectablePosition.topLeft:
-      case SelectablePosition.topCenter:
-      case SelectablePosition.topRight:
+      case AppBoxKitSelectablePosition.topLeft:
+      case AppBoxKitSelectablePosition.topCenter:
+      case AppBoxKitSelectablePosition.topRight:
         return null;
     }
   }

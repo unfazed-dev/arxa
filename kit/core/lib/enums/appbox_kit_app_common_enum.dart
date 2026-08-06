@@ -1,6 +1,6 @@
-enum KitAppCommonEnumSafeArea { top, bottom, hidden }
+enum AppBoxKitAppCommonEnumSafeArea { top, bottom, hidden }
 
-enum KitAppCommonDuration {
+enum AppBoxKitAppCommonDuration {
   tiny,
   short,
   medium,
@@ -8,26 +8,26 @@ enum KitAppCommonDuration {
   extraLong,
 }
 
-/// Extension on KitAppCommonDuration to provide actual Duration values
-extension KitAppCommonDurationExtension on KitAppCommonDuration {
+/// Extension on AppBoxKitAppCommonDuration to provide actual Duration values
+extension AppBoxKitAppCommonDurationExtension on AppBoxKitAppCommonDuration {
   Duration get duration {
     switch (this) {
-      case KitAppCommonDuration.tiny:
+      case AppBoxKitAppCommonDuration.tiny:
         return const Duration(milliseconds: 100);
-      case KitAppCommonDuration.short:
+      case AppBoxKitAppCommonDuration.short:
         return const Duration(milliseconds: 200);
-      case KitAppCommonDuration.medium:
+      case AppBoxKitAppCommonDuration.medium:
         return const Duration(milliseconds: 350);
-      case KitAppCommonDuration.long:
+      case AppBoxKitAppCommonDuration.long:
         return const Duration(milliseconds: 500);
-      case KitAppCommonDuration.extraLong:
+      case AppBoxKitAppCommonDuration.extraLong:
         return const Duration(milliseconds: 800);
     }
   }
 }
 
 /// Enum for blur effect intensity, matching iOS standards
-enum KitBlurEffect {
+enum AppBoxKitBlurEffect {
   /// Very subtle blur (iOS extraLight equivalent)
   /// Sigma value: 10.0
   extraLight,
@@ -44,18 +44,18 @@ enum KitBlurEffect {
   custom,
 }
 
-/// Extension to get sigma values from KitBlurEffect
-extension KitBlurEffectValues on KitBlurEffect {
+/// Extension to get sigma values from AppBoxKitBlurEffect
+extension AppBoxKitBlurEffectValues on AppBoxKitBlurEffect {
   /// Get the sigma value for the blur effect
   double get sigma {
     switch (this) {
-      case KitBlurEffect.extraLight:
+      case AppBoxKitBlurEffect.extraLight:
         return 10.0;
-      case KitBlurEffect.light:
+      case AppBoxKitBlurEffect.light:
         return 30.0;
-      case KitBlurEffect.regular:
+      case AppBoxKitBlurEffect.regular:
         return 60.0;
-      case KitBlurEffect.custom:
+      case AppBoxKitBlurEffect.custom:
         return 10.0; // Default for custom, should be overridden
     }
   }

@@ -1,4 +1,4 @@
-extension KitStringExtension on String {
+extension AppBoxKitStringExtension on String {
   String toTitleCase() {
     if (isEmpty) return this;
 

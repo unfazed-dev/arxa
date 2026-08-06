@@ -1,5 +1,5 @@
-import '../../kit_locator.dart' show locator;
-import '../error/kit_error_service.dart';
+import '../../appbox_kit_locator.dart' show appBoxKitLocator;
+import '../error/appbox_kit_error_service.dart';
 import 'package:flutter/material.dart' show Brightness, Colors, ThemeMode;
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart'
@@ -7,9 +7,9 @@ import 'package:flutter/widgets.dart'
 import 'package:stacked/stacked.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../extensions/kit_to_title_case_extension.dart';
+import '../../extensions/appbox_kit_to_title_case_extension.dart';
 
-class KitThemeService with ListenableServiceMixin, WidgetsBindingObserver {
+class AppBoxKitThemeService with ListenableServiceMixin, WidgetsBindingObserver {
   static const _widgetId = 'kit_theme_service';
 
   final _themeModeController =
@@ -18,7 +18,7 @@ class KitThemeService with ListenableServiceMixin, WidgetsBindingObserver {
   final _isInitializedController = BehaviorSubject<bool>.seeded(false);
 
   // Service dependencies
-  final _errorService = locator<KitErrorService>();
+  final _errorService = appBoxKitLocator<AppBoxKitErrorService>();
 
   // Expose streams as ValueStreams to ensure latest value is always available
   ValueStream<ThemeMode> get themeMode$ => _themeModeController.stream;
@@ -52,11 +52,11 @@ class KitThemeService with ListenableServiceMixin, WidgetsBindingObserver {
 
   // ponytail: ThemeMode persistence + reactive streams + system UI overlay live
   // here; this service stays free of color values. ThemeData is built from the
-  // kit's generic palette — see kit_colors.dart (kitLightTheme / kitDarkTheme);
+  // kit's generic palette — see appbox_kit_colors.dart (appBoxKitLightTheme / appBoxKitDarkTheme);
   // the host just passes those to MaterialApp.
 
 // Initialize and set theme
-  KitThemeService() {
+  AppBoxKitThemeService() {
     listenToReactiveValues([
       _themeModeController,
       _themeKeyController,

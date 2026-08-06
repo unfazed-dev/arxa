@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 
-class TranslateOnHover extends StatefulWidget {
+class AppBoxKitTranslateOnHover extends StatefulWidget {
   final Widget child;
   final double? x;
   final double? y;
   // You can also pass the translation in here if you want to
-  const TranslateOnHover({
+  const AppBoxKitTranslateOnHover({
     super.key,
     required this.child,
     this.x,
@@ -13,10 +13,10 @@ class TranslateOnHover extends StatefulWidget {
   });
 
   @override
-  State<TranslateOnHover> createState() => _TranslateOnHoverState();
+  State<AppBoxKitTranslateOnHover> createState() => _TranslateOnHoverState();
 }
 
-class _TranslateOnHoverState extends State<TranslateOnHover> {
+class _TranslateOnHoverState extends State<AppBoxKitTranslateOnHover> {
   bool _hovering = false;
 
   @override

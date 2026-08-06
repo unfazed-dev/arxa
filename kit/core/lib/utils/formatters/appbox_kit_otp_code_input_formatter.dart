@@ -1,6 +1,6 @@
 import 'package:flutter/services.dart';
 
-class KitOtpCodeInputFormatter extends TextInputFormatter {
+class AppBoxKitOtpCodeInputFormatter extends TextInputFormatter {
   @override
   TextEditingValue formatEditUpdate(
       TextEditingValue oldValue, TextEditingValue newValue) {

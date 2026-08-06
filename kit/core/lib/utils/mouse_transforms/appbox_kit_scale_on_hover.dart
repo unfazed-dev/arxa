@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 
-class ScaleOnHover extends StatefulWidget {
+class AppBoxKitScaleOnHover extends StatefulWidget {
   final double scale;
   final Widget child;
   // You can also pass the translation in here if you want to
-  const ScaleOnHover({super.key, required this.child, this.scale = 1.1});
+  const AppBoxKitScaleOnHover({super.key, required this.child, this.scale = 1.1});
 
   @override
-  State<ScaleOnHover> createState() => _ScaleOnHoverState();
+  State<AppBoxKitScaleOnHover> createState() => _ScaleOnHoverState();
 }
 
-class _ScaleOnHoverState extends State<ScaleOnHover> {
+class _ScaleOnHoverState extends State<AppBoxKitScaleOnHover> {
   final scaleTransform = Matrix4.diagonal3Values(1.1, 1.1, 1.0);
   final noScaleTransform = Matrix4.diagonal3Values(1.0, 1.0, 1.0);
 
