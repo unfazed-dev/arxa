@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 /// How a consent record came to be.
-enum KitConsentMethod {
+enum AppBoxKitConsentMethod {
   /// The user explicitly accepted (tapped an "I agree" affordance).
   explicitTap,
 
@@ -20,10 +20,10 @@ enum KitConsentMethod {
 /// point in time, optionally by a specific user.
 ///
 /// Records are append-only: a withdrawal is a new record with
-/// [KitConsentMethod.withdrawn], not a deletion.
+/// [AppBoxKitConsentMethod.withdrawn], not a deletion.
 @immutable
-final class KitConsentRecord {
-  const KitConsentRecord({
+final class AppBoxKitConsentRecord {
+  const AppBoxKitConsentRecord({
     required this.documentId,
     required this.documentVersion,
     required this.acceptedAt,
@@ -43,18 +43,18 @@ final class KitConsentRecord {
   /// When the record was captured.
   final DateTime acceptedAt;
 
-  final KitConsentMethod method;
+  final AppBoxKitConsentMethod method;
 
   /// The app version at capture time, supplied by the caller. This package
   /// takes no dependency on `package_info_plus`.
   final String appVersion;
 
   /// Whether this record represents a withdrawal.
-  bool get isWithdrawal => method == KitConsentMethod.withdrawn;
+  bool get isWithdrawal => method == AppBoxKitConsentMethod.withdrawn;
 
   @override
   bool operator ==(Object other) =>
-      other is KitConsentRecord &&
+      other is AppBoxKitConsentRecord &&
       documentId == other.documentId &&
       documentVersion == other.documentVersion &&
       userId == other.userId &&
@@ -68,6 +68,6 @@ final class KitConsentRecord {
 
   @override
   String toString() =>
-      'KitConsentRecord(documentId: $documentId, version: $documentVersion, '
+      'AppBoxKitConsentRecord(documentId: $documentId, version: $documentVersion, '
       'method: $method, userId: $userId, at: $acceptedAt)';
 }

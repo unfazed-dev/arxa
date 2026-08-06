@@ -8,23 +8,23 @@ dependencies** — the Flutter SDK is the only backing package.
 
 ## Scope
 
-- **Documents & versions** — `KitComplianceDocument` (id, `KitComplianceDocumentKind`,
-  opaque `version`, title, sealed `KitComplianceSource` remote/inline body,
+- **Documents & versions** — `AppBoxKitComplianceDocument` (id, `AppBoxKitComplianceDocumentKind`,
+  opaque `version`, title, sealed `AppBoxKitComplianceSource` remote/inline body,
   `effectiveDate`, `requiresExplicitAcceptance`, `locale`) held in a
-  `KitComplianceRegistry` (`register` / `byId` / `currentFor(kind)` /
+  `AppBoxKitComplianceRegistry` (`register` / `byId` / `currentFor(kind)` /
   `currentDocuments` / `all`).
-- **Consent** — `KitConsentRecord` (with `KitConsentMethod`:
+- **Consent** — `AppBoxKitConsentRecord` (with `AppBoxKitConsentMethod`:
   `explicitTap` / `implicitContinue` / `imported` / `withdrawn`) persisted
-  behind the `KitConsentStore` port. `InMemoryKitConsentStore` is the working
-  default. `KitConsentService` derives a typed `KitConsentStatus`
+  behind the `AppBoxKitConsentStore` port. `InMemoryAppBoxKitConsentStore` is the working
+  default. `AppBoxKitConsentService` derives a typed `AppBoxKitConsentStatus`
   (`accepted` / `acceptedOutdatedVersion(acceptedVersion)` / `withdrawn` /
   `neverAccepted` / `notRequired`), exposes `outstandingDocuments()`, and emits
-  `KitConsentStatusChange`es on a broadcast `statusChanges` stream.
-- **Consent gate** — `KitConsentGate.evaluate()` returns a sealed
-  `KitConsentGateResult` (`allowed` / `blocked(outstanding)`), in registry
+  `AppBoxKitConsentStatusChange`es on a broadcast `statusChanges` stream.
+- **Consent gate** — `AppBoxKitConsentGate.evaluate()` returns a sealed
+  `AppBoxKitConsentGateResult` (`allowed` / `blocked(outstanding)`), in registry
   order. Pure logic, no UI.
-- **OSS licenses** — `KitLicensesService` gathers `LicenseRegistry.licenses`
-  into typed `KitLicenseEntry`s (`collect()` / `byPackage()`). Rendering
+- **OSS licenses** — `AppBoxKitLicensesService` gathers `LicenseRegistry.licenses`
+  into typed `AppBoxKitLicenseEntry`s (`collect()` / `byPackage()`). Rendering
   (`showLicensePage` or custom) stays in the app.
 
 ## Semantics
@@ -43,13 +43,13 @@ dependencies** — the Flutter SDK is the only backing package.
 ## Dependency direction
 
 This package intentionally depends on **no other kit** (not `appbox_kit`,
-`stacked`, or `stacked_services`). Persistence is behind the `KitConsentStore`
-port; the app binds `InMemoryKitConsentStore` or its own durable
+`stacked`, or `stacked_services`). Persistence is behind the `AppBoxKitConsentStore`
+port; the app binds `InMemoryAppBoxKitConsentStore` or its own durable
 implementation. Nothing here imports Flutter widgets.
 
 ## Backing packages
 
-- **State / persistence** — Flutter SDK only. `KitConsentStore` is an abstract
+- **State / persistence** — Flutter SDK only. `AppBoxKitConsentStore` is an abstract
   port; the in-memory default keeps an append-only log. Consent value types and
   the license reader use `@immutable` and `LicenseRegistry` from
   `package:flutter/foundation.dart`.
@@ -58,18 +58,18 @@ implementation. Nothing here imports Flutter widgets.
 
 ## Testing
 
-`package:appbox_kit_compliance/testing.dart` re-exports the API and adds
-`FakeKitLicensesService`, a `KitLicensesService` backed by a scripted list of
+`package:appbox_kit_compliance/appbox_kit_testing.dart` re-exports the API and adds
+`FakeAppBoxKitLicensesService`, a `AppBoxKitLicensesService` backed by a scripted list of
 `LicenseEntry`s (build them with `LicenseEntryWithLineBreaks`) so license
 collection can be tested without a Flutter binding. The in-memory consent store
 is used directly in tests.
 
 ## Phase notes
 
-- **v0 (this package)** — standalone, own `KitConsentStore` port, in-memory
+- **v0 (this package)** — standalone, own `AppBoxKitConsentStore` port, in-memory
   default, exact-string versioning.
 - **One document per kind** — `currentDocuments` and the gate collapse to a
-  single current document per `KitComplianceDocumentKind` (latest registered
+  single current document per `AppBoxKitComplianceDocumentKind` (latest registered
   wins). Two documents sharing a kind — most plausibly `custom` — gate as one;
   give each its own kind if both must be presented.
 - **Deferred** — durable store bindings (secure storage / a backend), semver-aware

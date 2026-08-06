@@ -1,128 +1,128 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:appbox_kit_compliance/testing.dart';
+import 'package:appbox_kit_compliance/appbox_kit_testing.dart';
 
-KitComplianceDocument _doc({
+AppBoxKitComplianceDocument _doc({
   String id = 'privacy-policy',
-  KitComplianceDocumentKind kind = KitComplianceDocumentKind.privacyPolicy,
+  AppBoxKitComplianceDocumentKind kind = AppBoxKitComplianceDocumentKind.privacyPolicy,
   String version = '2026-07-01',
   bool requiresExplicitAcceptance = true,
 }) =>
-    KitComplianceDocument(
+    AppBoxKitComplianceDocument(
       id: id,
       kind: kind,
       version: version,
       title: 'Doc $id',
-      source: KitComplianceSource.remote(Uri.parse('https://example.com/$id')),
+      source: AppBoxKitComplianceSource.remote(Uri.parse('https://example.com/$id')),
       effectiveDate: DateTime(2026, 7, 1),
       requiresExplicitAcceptance: requiresExplicitAcceptance,
     );
 
 void main() {
-  group('KitComplianceDocument & source', () {
+  group('AppBoxKitComplianceDocument & source', () {
     test('value equality over all fields', () {
       expect(_doc(), _doc());
       expect(_doc(version: '1.0.0') == _doc(version: '1.0.1'), isFalse);
     });
 
     test('sealed source equality', () {
-      expect(KitComplianceSource.remote(Uri.parse('https://a')),
-          KitComplianceSource.remote(Uri.parse('https://a')));
-      expect(const KitComplianceSource.inline('body'),
-          const KitComplianceSource.inline('body'));
+      expect(AppBoxKitComplianceSource.remote(Uri.parse('https://a')),
+          AppBoxKitComplianceSource.remote(Uri.parse('https://a')));
+      expect(const AppBoxKitComplianceSource.inline('body'),
+          const AppBoxKitComplianceSource.inline('body'));
       expect(
-        KitComplianceSource.remote(Uri.parse('https://a')) ==
-            const KitComplianceSource.inline('body'),
+        AppBoxKitComplianceSource.remote(Uri.parse('https://a')) ==
+            const AppBoxKitComplianceSource.inline('body'),
         isFalse,
       );
     });
   });
 
-  group('KitComplianceRegistry', () {
+  group('AppBoxKitComplianceRegistry', () {
     test('register / byId', () {
-      final registry = KitComplianceRegistry()..register(_doc());
+      final registry = AppBoxKitComplianceRegistry()..register(_doc());
       expect(registry.byId('privacy-policy'), _doc());
       expect(registry.byId('missing'), isNull);
     });
 
     test('currentFor returns the most-recently-registered of a kind', () {
-      final registry = KitComplianceRegistry()
+      final registry = AppBoxKitComplianceRegistry()
         ..register(_doc(id: 'p-v1', version: '1'))
         ..register(_doc(id: 'p-v2', version: '2'));
-      expect(registry.currentFor(KitComplianceDocumentKind.privacyPolicy)?.id,
+      expect(registry.currentFor(AppBoxKitComplianceDocumentKind.privacyPolicy)?.id,
           'p-v2');
-      expect(registry.currentFor(KitComplianceDocumentKind.eula), isNull);
+      expect(registry.currentFor(AppBoxKitComplianceDocumentKind.eula), isNull);
     });
 
     test('all preserves registration order', () {
-      final registry = KitComplianceRegistry()
-        ..register(_doc(id: 'a', kind: KitComplianceDocumentKind.termsOfService))
-        ..register(_doc(id: 'b', kind: KitComplianceDocumentKind.privacyPolicy));
+      final registry = AppBoxKitComplianceRegistry()
+        ..register(_doc(id: 'a', kind: AppBoxKitComplianceDocumentKind.termsOfService))
+        ..register(_doc(id: 'b', kind: AppBoxKitComplianceDocumentKind.privacyPolicy));
       expect(registry.all.map((d) => d.id), ['a', 'b']);
     });
 
     test('re-registering an id replaces in place, keeping position', () {
-      final registry = KitComplianceRegistry()
-        ..register(_doc(id: 'a', kind: KitComplianceDocumentKind.termsOfService))
-        ..register(_doc(id: 'b', kind: KitComplianceDocumentKind.privacyPolicy))
+      final registry = AppBoxKitComplianceRegistry()
+        ..register(_doc(id: 'a', kind: AppBoxKitComplianceDocumentKind.termsOfService))
+        ..register(_doc(id: 'b', kind: AppBoxKitComplianceDocumentKind.privacyPolicy))
         ..register(_doc(
             id: 'a',
-            kind: KitComplianceDocumentKind.termsOfService,
+            kind: AppBoxKitComplianceDocumentKind.termsOfService,
             version: '2'));
       expect(registry.all.map((d) => d.id), ['a', 'b']);
       expect(registry.byId('a')?.version, '2');
     });
 
     test('currentDocuments is one-per-kind in first-seen order', () {
-      final registry = KitComplianceRegistry()
-        ..register(_doc(id: 'tos', kind: KitComplianceDocumentKind.termsOfService))
-        ..register(_doc(id: 'pp1', kind: KitComplianceDocumentKind.privacyPolicy, version: '1'))
-        ..register(_doc(id: 'pp2', kind: KitComplianceDocumentKind.privacyPolicy, version: '2'));
+      final registry = AppBoxKitComplianceRegistry()
+        ..register(_doc(id: 'tos', kind: AppBoxKitComplianceDocumentKind.termsOfService))
+        ..register(_doc(id: 'pp1', kind: AppBoxKitComplianceDocumentKind.privacyPolicy, version: '1'))
+        ..register(_doc(id: 'pp2', kind: AppBoxKitComplianceDocumentKind.privacyPolicy, version: '2'));
       expect(registry.currentDocuments.map((d) => d.id), ['tos', 'pp2']);
     });
 
     test('two documents sharing a kind collapse to the latest (custom case)', () {
-      final registry = KitComplianceRegistry()
-        ..register(_doc(id: 'custom-a', kind: KitComplianceDocumentKind.custom))
-        ..register(_doc(id: 'custom-b', kind: KitComplianceDocumentKind.custom));
+      final registry = AppBoxKitComplianceRegistry()
+        ..register(_doc(id: 'custom-a', kind: AppBoxKitComplianceDocumentKind.custom))
+        ..register(_doc(id: 'custom-b', kind: AppBoxKitComplianceDocumentKind.custom));
       // Both are in `all`, but the gate sees only the latest per kind.
       expect(registry.all, hasLength(2));
       expect(registry.currentDocuments.map((d) => d.id), ['custom-b']);
     });
   });
 
-  group('KitConsentRecord', () {
+  group('AppBoxKitConsentRecord', () {
     test('value equality', () {
       final at = DateTime(2026, 7, 1);
-      final a = KitConsentRecord(
+      final a = AppBoxKitConsentRecord(
           documentId: 'p',
           documentVersion: '1',
           acceptedAt: at,
-          method: KitConsentMethod.explicitTap,
+          method: AppBoxKitConsentMethod.explicitTap,
           appVersion: '1.0.0');
-      final b = KitConsentRecord(
+      final b = AppBoxKitConsentRecord(
           documentId: 'p',
           documentVersion: '1',
           acceptedAt: at,
-          method: KitConsentMethod.explicitTap,
+          method: AppBoxKitConsentMethod.explicitTap,
           appVersion: '1.0.0');
       expect(a, b);
       expect(a.isWithdrawal, isFalse);
     });
   });
 
-  group('InMemoryKitConsentStore', () {
-    late InMemoryKitConsentStore store;
-    setUp(() => store = InMemoryKitConsentStore());
+  group('InMemoryAppBoxKitConsentStore', () {
+    late InMemoryAppBoxKitConsentStore store;
+    setUp(() => store = InMemoryAppBoxKitConsentStore());
 
-    KitConsentRecord rec({
+    AppBoxKitConsentRecord rec({
       String documentId = 'p',
       String version = '1',
       String? userId,
       DateTime? at,
-      KitConsentMethod method = KitConsentMethod.explicitTap,
+      AppBoxKitConsentMethod method = AppBoxKitConsentMethod.explicitTap,
     }) =>
-        KitConsentRecord(
+        AppBoxKitConsentRecord(
           documentId: documentId,
           documentVersion: version,
           userId: userId,
@@ -144,7 +144,7 @@ void main() {
           appVersion: '1.0.0',
           at: DateTime(2026, 7, 2));
       final latest = await store.latestFor('p');
-      expect(latest?.method, KitConsentMethod.withdrawn);
+      expect(latest?.method, AppBoxKitConsentMethod.withdrawn);
       expect(latest?.isWithdrawal, isTrue);
     });
 
@@ -181,15 +181,15 @@ void main() {
     });
   });
 
-  group('KitConsentService.statusFor', () {
-    late KitComplianceRegistry registry;
-    late InMemoryKitConsentStore store;
-    late KitConsentService service;
+  group('AppBoxKitConsentService.statusFor', () {
+    late AppBoxKitComplianceRegistry registry;
+    late InMemoryAppBoxKitConsentStore store;
+    late AppBoxKitConsentService service;
 
     setUp(() {
-      registry = KitComplianceRegistry();
-      store = InMemoryKitConsentStore();
-      service = KitConsentService(store: store, registry: registry);
+      registry = AppBoxKitComplianceRegistry();
+      store = InMemoryAppBoxKitConsentStore();
+      service = AppBoxKitConsentService(store: store, registry: registry);
     });
     tearDown(() => service.dispose());
 
@@ -197,19 +197,19 @@ void main() {
       final doc = _doc(requiresExplicitAcceptance: false);
       // Even with a record present, status is notRequired.
       await service.accept(doc,
-          appVersion: '1.0.0', method: KitConsentMethod.implicitContinue);
-      expect(await service.statusFor(doc), const KitConsentStatus.notRequired());
+          appVersion: '1.0.0', method: AppBoxKitConsentMethod.implicitContinue);
+      expect(await service.statusFor(doc), const AppBoxKitConsentStatus.notRequired());
     });
 
     test('neverAccepted with no record', () async {
       expect(await service.statusFor(_doc()),
-          const KitConsentStatus.neverAccepted());
+          const AppBoxKitConsentStatus.neverAccepted());
     });
 
     test('accepted when the version matches exactly', () async {
       final doc = _doc(version: '1.0.0');
       await service.accept(doc, appVersion: '1.0.0');
-      expect(await service.statusFor(doc), const KitConsentStatus.accepted());
+      expect(await service.statusFor(doc), const AppBoxKitConsentStatus.accepted());
     });
 
     test('acceptedOutdatedVersion on any string mismatch (no semver)',
@@ -217,8 +217,8 @@ void main() {
       await service.accept(_doc(version: '1.0.0'), appVersion: '1.0.0');
       final status = await service.statusFor(_doc(version: '1.0.1'));
       expect(status,
-          const KitConsentStatus.acceptedOutdatedVersion('1.0.0'));
-      expect((status as KitConsentAcceptedOutdatedVersion).acceptedVersion,
+          const AppBoxKitConsentStatus.acceptedOutdatedVersion('1.0.0'));
+      expect((status as AppBoxKitConsentAcceptedOutdatedVersion).acceptedVersion,
           '1.0.0');
     });
 
@@ -226,7 +226,7 @@ void main() {
       final doc = _doc(version: '1.0.0');
       await service.accept(doc, appVersion: '1.0.0', at: DateTime(2026, 7, 1));
       await service.withdraw(doc, appVersion: '1.0.0', at: DateTime(2026, 7, 2));
-      expect(await service.statusFor(doc), const KitConsentStatus.withdrawn());
+      expect(await service.statusFor(doc), const AppBoxKitConsentStatus.withdrawn());
     });
 
     test('latest-wins: accept -> withdraw -> re-accept ends accepted',
@@ -235,16 +235,16 @@ void main() {
       await service.accept(doc, appVersion: '1.0.0', at: DateTime(2026, 7, 1));
       await service.withdraw(doc, appVersion: '1.0.0', at: DateTime(2026, 7, 2));
       await service.accept(doc, appVersion: '1.0.0', at: DateTime(2026, 7, 3));
-      expect(await service.statusFor(doc), const KitConsentStatus.accepted());
+      expect(await service.statusFor(doc), const AppBoxKitConsentStatus.accepted());
     });
 
     test('status is scoped to the service user track', () async {
       final doc = _doc(version: '1.0.0');
-      final anon = KitConsentService(store: store, registry: registry);
-      final u1 = KitConsentService(store: store, registry: registry, userId: 'u1');
+      final anon = AppBoxKitConsentService(store: store, registry: registry);
+      final u1 = AppBoxKitConsentService(store: store, registry: registry, userId: 'u1');
       await u1.accept(doc, appVersion: '1.0.0');
-      expect(await u1.statusFor(doc), const KitConsentStatus.accepted());
-      expect(await anon.statusFor(doc), const KitConsentStatus.neverAccepted());
+      expect(await u1.statusFor(doc), const AppBoxKitConsentStatus.accepted());
+      expect(await anon.statusFor(doc), const AppBoxKitConsentStatus.neverAccepted());
       await anon.dispose();
       await u1.dispose();
     });
@@ -253,15 +253,15 @@ void main() {
   group('outstandingDocuments', () {
     test('lists unsatisfied required docs in registry order, skipping notRequired',
         () async {
-      final registry = KitComplianceRegistry()
-        ..register(_doc(id: 'tos', kind: KitComplianceDocumentKind.termsOfService))
-        ..register(_doc(id: 'pp', kind: KitComplianceDocumentKind.privacyPolicy))
+      final registry = AppBoxKitComplianceRegistry()
+        ..register(_doc(id: 'tos', kind: AppBoxKitComplianceDocumentKind.termsOfService))
+        ..register(_doc(id: 'pp', kind: AppBoxKitComplianceDocumentKind.privacyPolicy))
         ..register(_doc(
             id: 'cookie',
-            kind: KitComplianceDocumentKind.cookiePolicy,
+            kind: AppBoxKitComplianceDocumentKind.cookiePolicy,
             requiresExplicitAcceptance: false));
-      final store = InMemoryKitConsentStore();
-      final service = KitConsentService(store: store, registry: registry);
+      final store = InMemoryAppBoxKitConsentStore();
+      final service = AppBoxKitConsentService(store: store, registry: registry);
       await service.accept(registry.byId('tos')!, appVersion: '1.0.0');
       final outstanding = await service.outstandingDocuments();
       expect(outstanding.map((d) => d.id), ['pp']);
@@ -269,57 +269,57 @@ void main() {
     });
   });
 
-  group('KitConsentService.statusChanges', () {
+  group('AppBoxKitConsentService.statusChanges', () {
     test('accept emits an accepted status change on the broadcast stream',
         () async {
-      final registry = KitComplianceRegistry();
-      final store = InMemoryKitConsentStore();
-      final service = KitConsentService(store: store, registry: registry);
-      final events = <KitConsentStatusChange>[];
+      final registry = AppBoxKitComplianceRegistry();
+      final store = InMemoryAppBoxKitConsentStore();
+      final service = AppBoxKitConsentService(store: store, registry: registry);
+      final events = <AppBoxKitConsentStatusChange>[];
       final sub = service.statusChanges.listen(events.add);
       final doc = _doc(version: '1.0.0');
       await service.accept(doc, appVersion: '1.0.0');
       await Future<void>.delayed(Duration.zero);
       expect(events, hasLength(1));
       expect(events.single.document, doc);
-      expect(events.single.status, const KitConsentStatus.accepted());
+      expect(events.single.status, const AppBoxKitConsentStatus.accepted());
       await sub.cancel();
       await service.dispose();
     });
   });
 
-  group('KitConsentGate', () {
+  group('AppBoxKitConsentGate', () {
     test('blocked lists outstanding docs in registry order', () async {
-      final registry = KitComplianceRegistry()
-        ..register(_doc(id: 'tos', kind: KitComplianceDocumentKind.termsOfService))
-        ..register(_doc(id: 'pp', kind: KitComplianceDocumentKind.privacyPolicy));
+      final registry = AppBoxKitComplianceRegistry()
+        ..register(_doc(id: 'tos', kind: AppBoxKitComplianceDocumentKind.termsOfService))
+        ..register(_doc(id: 'pp', kind: AppBoxKitComplianceDocumentKind.privacyPolicy));
       final service =
-          KitConsentService(store: InMemoryKitConsentStore(), registry: registry);
-      final result = await KitConsentGate(service).evaluate();
+          AppBoxKitConsentService(store: InMemoryAppBoxKitConsentStore(), registry: registry);
+      final result = await AppBoxKitConsentGate(service).evaluate();
       expect(result.canProceed, isFalse);
-      expect(result, isA<KitConsentGateBlocked>());
-      expect((result as KitConsentGateBlocked).outstanding.map((d) => d.id),
+      expect(result, isA<AppBoxKitConsentGateBlocked>());
+      expect((result as AppBoxKitConsentGateBlocked).outstanding.map((d) => d.id),
           ['tos', 'pp']);
       await service.dispose();
     });
 
     test('allowed when nothing is outstanding', () async {
-      final registry = KitComplianceRegistry()
-        ..register(_doc(id: 'pp', kind: KitComplianceDocumentKind.privacyPolicy));
+      final registry = AppBoxKitComplianceRegistry()
+        ..register(_doc(id: 'pp', kind: AppBoxKitComplianceDocumentKind.privacyPolicy));
       final service =
-          KitConsentService(store: InMemoryKitConsentStore(), registry: registry);
+          AppBoxKitConsentService(store: InMemoryAppBoxKitConsentStore(), registry: registry);
       await service.accept(registry.byId('pp')!, appVersion: '1.0.0');
-      final result = await KitConsentGate(service).evaluate();
+      final result = await AppBoxKitConsentGate(service).evaluate();
       expect(result.canProceed, isTrue);
-      expect(result, const KitConsentGateResult.allowed());
+      expect(result, const AppBoxKitConsentGateResult.allowed());
       await service.dispose();
     });
   });
 
-  group('KitLicensesService', () {
+  group('AppBoxKitLicensesService', () {
     test('collect maps packages and paragraph text via the injected source',
         () async {
-      final service = FakeKitLicensesService(const [
+      final service = FakeAppBoxKitLicensesService(const [
         LicenseEntryWithLineBreaks(['my_pkg'], 'MIT license text'),
       ]);
       final entries = await service.collect();
@@ -329,7 +329,7 @@ void main() {
 
     test('byPackage groups an entry under each of its packages, sorted',
         () async {
-      final service = FakeKitLicensesService(const [
+      final service = FakeAppBoxKitLicensesService(const [
         LicenseEntryWithLineBreaks(['zeta', 'alpha'], 'shared license'),
         LicenseEntryWithLineBreaks(['alpha'], 'alpha only'),
       ]);
@@ -339,14 +339,14 @@ void main() {
       expect(grouped['zeta'], hasLength(1));
     });
 
-    test('KitLicenseEntry value equality', () {
+    test('AppBoxKitLicenseEntry value equality', () {
       expect(
-        const KitLicenseEntry(packages: ['a'], paragraphs: ['x']),
-        const KitLicenseEntry(packages: ['a'], paragraphs: ['x']),
+        const AppBoxKitLicenseEntry(packages: ['a'], paragraphs: ['x']),
+        const AppBoxKitLicenseEntry(packages: ['a'], paragraphs: ['x']),
       );
       expect(
-        const KitLicenseEntry(packages: ['a'], paragraphs: ['x']) ==
-            const KitLicenseEntry(packages: ['a'], paragraphs: ['y']),
+        const AppBoxKitLicenseEntry(packages: ['a'], paragraphs: ['x']) ==
+            const AppBoxKitLicenseEntry(packages: ['a'], paragraphs: ['y']),
         isFalse,
       );
     });

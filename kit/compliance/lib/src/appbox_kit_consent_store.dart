@@ -1,14 +1,14 @@
-import 'kit_consent_record.dart';
+import 'appbox_kit_consent_record.dart';
 
-/// Persistence port for [KitConsentRecord]s.
+/// Persistence port for [AppBoxKitConsentRecord]s.
 ///
 /// Anonymous (`userId == null`) and per-user records are **separate tracks**: a
 /// query for one never returns records from the other (`userId` is matched
 /// exactly, not treated as a wildcard). Implementations are append-only logs —
 /// [withdraw] adds a withdrawal record rather than deleting.
-abstract interface class KitConsentStore {
+abstract interface class AppBoxKitConsentStore {
   /// Appends [record] to the log.
-  Future<void> record(KitConsentRecord record);
+  Future<void> record(AppBoxKitConsentRecord record);
 
   /// Appends a withdrawal for [documentId] on the given user track.
   ///
@@ -23,26 +23,26 @@ abstract interface class KitConsentStore {
   });
 
   /// The most recent record for [documentId] on the [userId] track (null =
-  /// anonymous), or null if none. Ties on [KitConsentRecord.acceptedAt] break
+  /// anonymous), or null if none. Ties on [AppBoxKitConsentRecord.acceptedAt] break
   /// by insertion order.
-  Future<KitConsentRecord?> latestFor(String documentId, {String? userId});
+  Future<AppBoxKitConsentRecord?> latestFor(String documentId, {String? userId});
 
   /// Records on the [userId] track (null = anonymous), oldest first, optionally
   /// narrowed to a single [documentId]. The track filter is always applied —
   /// pass the matching [userId] to audit a specific user.
-  Future<List<KitConsentRecord>> history({String? documentId, String? userId});
+  Future<List<AppBoxKitConsentRecord>> history({String? documentId, String? userId});
 }
 
-/// The working default [KitConsentStore] — an in-memory append-only log.
+/// The working default [AppBoxKitConsentStore] — an in-memory append-only log.
 ///
 /// Suitable for tests and for apps that bind their own durable store later; the
 /// full cross-track log is available via [records] for audit/debugging.
-class InMemoryKitConsentStore implements KitConsentStore {
+class InMemoryAppBoxKitConsentStore implements AppBoxKitConsentStore {
   final List<_LoggedRecord> _log = <_LoggedRecord>[];
   int _seq = 0;
 
   @override
-  Future<void> record(KitConsentRecord record) async {
+  Future<void> record(AppBoxKitConsentRecord record) async {
     _log.add(_LoggedRecord(record, _seq++));
   }
 
@@ -55,12 +55,12 @@ class InMemoryKitConsentStore implements KitConsentStore {
     DateTime? at,
   }) async {
     _log.add(_LoggedRecord(
-      KitConsentRecord(
+      AppBoxKitConsentRecord(
         documentId: documentId,
         documentVersion: documentVersion,
         userId: userId,
         acceptedAt: at ?? DateTime.now(),
-        method: KitConsentMethod.withdrawn,
+        method: AppBoxKitConsentMethod.withdrawn,
         appVersion: appVersion,
       ),
       _seq++,
@@ -68,7 +68,7 @@ class InMemoryKitConsentStore implements KitConsentStore {
   }
 
   @override
-  Future<KitConsentRecord?> latestFor(String documentId,
+  Future<AppBoxKitConsentRecord?> latestFor(String documentId,
       {String? userId}) async {
     _LoggedRecord? best;
     for (final entry in _log) {
@@ -81,7 +81,7 @@ class InMemoryKitConsentStore implements KitConsentStore {
   }
 
   @override
-  Future<List<KitConsentRecord>> history(
+  Future<List<AppBoxKitConsentRecord>> history(
       {String? documentId, String? userId}) async {
     final matches = _log.where((entry) {
       final r = entry.record;
@@ -93,13 +93,13 @@ class InMemoryKitConsentStore implements KitConsentStore {
         final byTime = a.record.acceptedAt.compareTo(b.record.acceptedAt);
         return byTime != 0 ? byTime : a.seq.compareTo(b.seq);
       });
-    return List<KitConsentRecord>.unmodifiable(
+    return List<AppBoxKitConsentRecord>.unmodifiable(
         [for (final entry in matches) entry.record]);
   }
 
   /// The full append-ordered log across **all** tracks (audit/debug only).
-  List<KitConsentRecord> get records =>
-      List<KitConsentRecord>.unmodifiable(
+  List<AppBoxKitConsentRecord> get records =>
+      List<AppBoxKitConsentRecord>.unmodifiable(
           [for (final entry in _log) entry.record]);
 
   bool _isAfter(_LoggedRecord a, _LoggedRecord b) {
@@ -111,6 +111,6 @@ class InMemoryKitConsentStore implements KitConsentStore {
 class _LoggedRecord {
   _LoggedRecord(this.record, this.seq);
 
-  final KitConsentRecord record;
+  final AppBoxKitConsentRecord record;
   final int seq;
 }

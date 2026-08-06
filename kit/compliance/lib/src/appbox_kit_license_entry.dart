@@ -3,8 +3,8 @@ import 'package:flutter/foundation.dart';
 /// One collected OSS license: the [packages] it applies to and its [paragraphs]
 /// of text.
 @immutable
-final class KitLicenseEntry {
-  const KitLicenseEntry({required this.packages, required this.paragraphs});
+final class AppBoxKitLicenseEntry {
+  const AppBoxKitLicenseEntry({required this.packages, required this.paragraphs});
 
   /// The packages this license covers (a single license may cover several).
   final List<String> packages;
@@ -14,7 +14,7 @@ final class KitLicenseEntry {
 
   @override
   bool operator ==(Object other) =>
-      other is KitLicenseEntry &&
+      other is AppBoxKitLicenseEntry &&
       listEquals(packages, other.packages) &&
       listEquals(paragraphs, other.paragraphs);
 
@@ -24,5 +24,5 @@ final class KitLicenseEntry {
 
   @override
   String toString() =>
-      'KitLicenseEntry(packages: $packages, ${paragraphs.length} paragraphs)';
+      'AppBoxKitLicenseEntry(packages: $packages, ${paragraphs.length} paragraphs)';
 }
