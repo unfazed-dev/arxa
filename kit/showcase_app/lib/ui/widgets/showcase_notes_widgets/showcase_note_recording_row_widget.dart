@@ -7,9 +7,14 @@ class ShowcaseNoteRecordingRowWidget extends StatelessWidget {
   const ShowcaseNoteRecordingRowWidget({
     super.key,
     required this.viewModel,
+    required this.elapsed,
     required this.formatDuration,
   });
   final ShowcaseNoteEditorViewModel viewModel;
+
+  /// Live elapsed time — arrives as a builder param from the toolbar's
+  /// [KitStreamBuilder] binding, never re-read off the viewmodel here.
+  final Duration elapsed;
 
   /// Duration label formatter — the view owns the formatting helper.
   final String Function(Duration duration) formatDuration;
@@ -17,7 +22,6 @@ class ShowcaseNoteRecordingRowWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final elapsed = viewModel.recordingElapsed ?? Duration.zero;
     return Row(
       children: [
         KitNativeIconButton(

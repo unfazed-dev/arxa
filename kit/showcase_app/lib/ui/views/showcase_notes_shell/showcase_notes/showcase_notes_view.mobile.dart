@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:stacked/stacked.dart';
 import 'package:appbox_kit_motion/appbox_kit_motion.dart';
 import 'package:ui_library/ui_library.dart';
-import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/showcase_note_folder_model.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_auth/showcase_notes_auth_view.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_create_account/showcase_notes_create_account_view.dart';
 import 'package:stacked_services/stacked_services.dart';
@@ -16,108 +15,132 @@ class ShowcaseNotesViewMobile extends ViewModelWidget<ShowcaseNotesViewModel> {
 
   @override
   Widget build(BuildContext context, ShowcaseNotesViewModel viewModel) {
-    final theme = Theme.of(context);
-    final session = viewModel.session;
+    // Streams-only: every live value binds via KitStreamBuilder — session
+    // gates auth-vs-folders, showCreateAccount picks the signed-out panel,
+    // overview/admin drive the list. The viewmodel holds no relay fields.
+    return KitStreamBuilder<KitAuthSession?>(
+      stream: viewModel.session$,
+      builder: (context, session) {
+        // Signed out: the tab root IS the auth surface — no gate card, no
+        // route push. The session stream swaps this for the Folders list in
+        // place. The create-account panel is the same in-place swap, owned by
+        // the VM so the choice survives the transient views rebuilding.
+        if (session == null) {
+          return KitStreamBuilder<bool>(
+            stream: viewModel.showCreateAccount$,
+            builder: (context, showCreateAccount) {
+              if (showCreateAccount) {
+                return Scaffold(
+                  body: ShowcaseNotesCreateAccountView(
+                    onBackToSignIn: viewModel.closeCreateAccount,
+                  ),
+                );
+              }
+              return Scaffold(
+                body: ShowcaseNotesAuthView(
+                  onCreateAccount: viewModel.openCreateAccount,
+                ),
+              );
+            },
+          );
+        }
 
-    // Signed out: the tab root IS the auth surface — no gate card, no route
-    // push. The session stream swaps this for the Folders list in place. The
-    // create-account panel is the same in-place swap, owned by the VM so the
-    // choice survives the transient views rebuilding.
-    if (session == null) {
-      if (viewModel.showCreateAccount) {
         return Scaffold(
-          body: ShowcaseNotesCreateAccountView(
-            onBackToSignIn: viewModel.closeCreateAccount,
+          // THE one app bar — KitNativeAppBar in Scaffold.appBar (never a sliver,
+          // never a stock AppBar) — with the new-folder + overflow actions on it.
+          appBar: KitNativeAppBar(
+            title: 'Folders',
+            actions: [
+              KitNativeIconButton(
+                glyph: KitGlyphs.newFolder,
+                onPressed: () => _showNewFolderDialog(context, viewModel),
+              ),
+              KitNativePopupMenu(
+                glyph: KitGlyphs.more,
+                items: const [
+                  KitMenuItem(
+                    label: 'Sign Out',
+                    glyph: KitGlyphs.signOut,
+                    isDestructive: true,
+                  ),
+                ],
+                onSelect: (_) => viewModel.signOut(),
+              ),
+            ],
+          ),
+          body: SafeArea(
+            // top: false — the fixed app bar owns the status-bar inset.
+            //
+            // bottom: false — the host shell uses extendBody, so the viewport must
+            // extend behind the floating tab bar (content scrolls under the glass
+            // pill). Clearance for the last row is added as a trailing sliver
+            // instead of insetting the whole viewport (which produces a hard cut).
+            top: false,
+            bottom: false,
+            child: KitStreamBuilder<ShowcaseNotesOverview?>(
+              stream: viewModel.overview$,
+              builder: (context, overview) {
+                if (overview == null) {
+                  // Signed in, first overview emission pending.
+                  return const Center(child: KitNativeLoadingIndicator());
+                }
+                return KitStreamBuilder<ShowcaseNotesAdminOverview?>(
+                  stream: viewModel.adminOverview$,
+                  builder: (context, admin) =>
+                      _foldersScrollView(context, viewModel, session, overview, admin),
+                );
+              },
+            ),
           ),
         );
-      }
-      return Scaffold(
-        body: ShowcaseNotesAuthView(
-          onCreateAccount: viewModel.openCreateAccount,
-        ),
-      );
-    }
+      },
+    );
+  }
 
-    final overview = viewModel.overview;
-
-    return Scaffold(
-      // THE one app bar — KitNativeAppBar in Scaffold.appBar (never a sliver,
-      // never a stock AppBar) — with the new-folder + overflow actions on it.
-      appBar: KitNativeAppBar(
-        title: 'Folders',
-        actions: [
-          KitNativeIconButton(
-            glyph: KitGlyphs.newFolder,
-            onPressed: () => _showNewFolderDialog(context, viewModel),
-          ),
-          KitNativePopupMenu(
-            glyph: KitGlyphs.more,
-            items: const [
-              KitMenuItem(
-                label: 'Sign Out',
-                glyph: KitGlyphs.signOut,
-                isDestructive: true,
+  /// The signed-in scroll view: grouped rounded sections mirroring iOS Notes'
+  /// Folders list (All Notes / user folders / Recently Deleted / admin).
+  /// KitMotionScope establishes the choreography boundary — sections
+  /// below register with .wake(order: n) and rise in on the shared
+  /// spec's stagger ramp (spec-owned tokens; no local durations).
+  Widget _foldersScrollView(
+    BuildContext context,
+    ShowcaseNotesViewModel viewModel,
+    KitAuthSession session,
+    ShowcaseNotesOverview overview,
+    ShowcaseNotesAdminOverview? admin,
+  ) {
+    final theme = Theme.of(context);
+    return KitMotionScope(
+      child: CustomScrollView(
+        slivers: [
+          // Account subtitle — a thin sliver at the top of the list.
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: kSize16, vertical: kSize4),
+              child: Text(
+                session.user.displayName ?? session.user.email ?? '',
+                style: theme.textTheme.bodySmall
+                    ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
               ),
-            ],
-            onSelect: (_) => viewModel.signOut(),
+            ),
+          ),
+          ..._foldersSlivers(context, viewModel, overview, admin),
+          // Clearance so the last row can scroll out from under the
+          // floating tab bar (viewport itself extends behind it).
+          SliverToBoxAdapter(
+            child: SizedBox(height: MediaQuery.paddingOf(context).bottom),
           ),
         ],
-      ),
-      body: SafeArea(
-        // top: false — the fixed app bar owns the status-bar inset.
-        //
-        // bottom: false — the host shell uses extendBody, so the viewport must
-        // extend behind the floating tab bar (content scrolls under the glass
-        // pill). Clearance for the last row is added as a trailing sliver
-        // instead of insetting the whole viewport (which produces a hard cut).
-        top: false,
-        bottom: false,
-        // KitMotionScope establishes the choreography boundary — sections
-        // below register with .wake(order: n) and rise in on the shared
-        // spec's stagger ramp (spec-owned tokens; no local durations).
-        child: KitMotionScope(
-          child: CustomScrollView(
-            slivers: [
-              // Account subtitle — a thin sliver at the top of the list.
-              if (overview != null)
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: kSize16, vertical: kSize4),
-                    child: Text(
-                      session.user.displayName ?? session.user.email ?? '',
-                      style: theme.textTheme.bodySmall
-                          ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-                    ),
-                  ),
-                ),
-              if (overview == null)
-                const SliverFillRemaining(
-                  hasScrollBody: false,
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(vertical: kSize32),
-                    child: Center(child: CircularProgressIndicator()),
-                  ),
-                )
-              else
-                ..._foldersSlivers(context, viewModel),
-              // Clearance so the last row can scroll out from under the
-              // floating tab bar (viewport itself extends behind it).
-              SliverToBoxAdapter(
-                child: SizedBox(height: MediaQuery.paddingOf(context).bottom),
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }
 
-  /// Build the three sections (All Notes / user folders / Recently Deleted) as
-  /// slivers that stagger in. Each section is a SliverToBoxAdapter holding a
+  /// Build the sections (All Notes / user folders / Recently Deleted / admin)
+  /// as slivers that stagger in. Each section is a SliverToBoxAdapter holding a
   /// [KitListSection]; the stagger index counts sections, not rows, so the rhythm
-  /// reads as one rise per group. The VM is the single source — overview is
-  /// accessed through it, never re-typed here.
+  /// reads as one rise per group. Data arrives as parameters from the
+  /// [KitStreamBuilder] bindings — never re-read off the viewmodel here.
   ///
   /// The rise-in (`.wake()`) is applied to the [KitListSection] BOX inside the
   /// `SliverToBoxAdapter`, never to the sliver itself — `KitWake` choreographs
@@ -128,10 +151,10 @@ class ShowcaseNotesViewMobile extends ViewModelWidget<ShowcaseNotesViewModel> {
   List<Widget> _foldersSlivers(
     BuildContext context,
     ShowcaseNotesViewModel viewModel,
+    ShowcaseNotesOverview overview,
+    ShowcaseNotesAdminOverview? admin,
   ) {
     final theme = Theme.of(context);
-    final overview = viewModel.overview!;
-    final admin = viewModel.adminOverview;
 
     Widget allNotesSection() => KitListSection(
           margin: EdgeInsets.zero,

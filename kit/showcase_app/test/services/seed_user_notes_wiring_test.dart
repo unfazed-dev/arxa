@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ui_library/ui_library.dart';
+import 'package:ui_library/testing.dart';
 import 'package:appbox_kit_data/appbox_kit_data.dart';
 import 'package:appbox_kit_showcase_app/app/app_data.dart';
 import 'package:appbox_kit_showcase_app/services/showcase_notes_services/facades/showcase_notes_facade_service.dart';
@@ -55,7 +56,9 @@ void main() {
       ..registerLazySingleton(() => DialogService())
       ..registerLazySingleton(() => BottomSheetService())
       ..registerLazySingleton(() => SnackbarService())
-      ..registerLazySingleton(() => KitNotificationService())
+      // Fake: the real service's CNToast path needs a mounted navigator
+      // context, which a data-layer suite doesn't have.
+      ..registerLazySingleton<KitNotificationService>(() => FakeKitNotificationService())
       ..registerLazySingleton<ShowcaseNotesRepositoryService>(() => ShowcaseNotesRepositoryService())
       ..registerLazySingleton<ShowcaseNotesFacadeService>(() => ShowcaseNotesFacadeService());
 

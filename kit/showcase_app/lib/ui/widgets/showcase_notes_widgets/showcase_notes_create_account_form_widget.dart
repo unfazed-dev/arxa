@@ -34,31 +34,46 @@ class ShowcaseNotesCreateAccountFormWidget extends StatelessWidget {
           placeholder: 'Password',
           obscureText: true,
         ),
-        if (vm.errorMessage != null) ShowcaseNotesFormErrorRowWidget(message: vm.errorMessage!),
+        // Streams-only: inline error binds the VM's errorMessage$; busy binds
+        // the sign-up op's KitAction.state$ — no notifyListeners anywhere.
+        KitStreamBuilder<String?>(
+          stream: vm.errorMessage$,
+          builder: (context, errorMessage) => errorMessage == null
+              ? const SizedBox.shrink()
+              : ShowcaseNotesFormErrorRowWidget(message: errorMessage),
+        ),
         verticalSpaceMedium,
-        SizedBox(
-          height: kButtonHeightMedium,
-          child: KitNativeButton(
-            label: 'Create Account',
-            style: KitButtonStyle.prominentGlass,
-            onPressed: vm.isBusy
-                ? null
-                : () => vm.createAccount(vm.email, vm.password),
+        KitStreamBuilder<KitActionState>(
+          stream: vm.signUpState$,
+          builder: (context, state) => Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              SizedBox(
+                height: kButtonHeightMedium,
+                child: KitNativeButton(
+                  label: 'Create Account',
+                  style: KitButtonStyle.prominentGlass,
+                  onPressed: state.busy
+                      ? null
+                      : () => vm.createAccount(vm.email, vm.password),
+                ),
+              ),
+              verticalSpaceSmall,
+              SizedBox(
+                height: kButtonHeightMedium,
+                child: KitNativeButton(
+                  label: 'Back to Sign In',
+                  style: KitButtonStyle.plain,
+                  onPressed: state.busy ? null : onBackToSignIn,
+                ),
+              ),
+              if (state.busy) ...[
+                verticalSpaceSmall,
+                const Center(child: KitNativeLoadingIndicator(size: 20)),
+              ],
+            ],
           ),
         ),
-        verticalSpaceSmall,
-        SizedBox(
-          height: kButtonHeightMedium,
-          child: KitNativeButton(
-            label: 'Back to Sign In',
-            style: KitButtonStyle.plain,
-            onPressed: vm.isBusy ? null : onBackToSignIn,
-          ),
-        ),
-        if (vm.isBusy) ...[
-          verticalSpaceSmall,
-          const Center(child: KitNativeLoadingIndicator(size: 20)),
-        ],
       ],
     );
   }

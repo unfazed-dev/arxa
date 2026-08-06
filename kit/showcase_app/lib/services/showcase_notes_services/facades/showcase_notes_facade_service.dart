@@ -1,6 +1,6 @@
 import 'package:rxdart/rxdart.dart';
 import 'package:appbox_kit_data/appbox_kit_data.dart';
-import 'package:ui_library/ui_library.dart' show locator;
+import 'package:ui_library/ui_library.dart' show KitAction, locator;
 
 import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/showcase_note_model.dart';
 import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/showcase_note_attachment_model.dart';
@@ -191,22 +191,34 @@ class ShowcaseNotesFacadeService extends KitDataFacade {
   ];
 
   // -- Mutations (all through the KitAction chain, over repository writes) ----
+  //
+  // Notification policy (appbox convention): every chain shows an error
+  // snackbar; destructive chains also confirm with a success snackbar.
+  // Ops carry the entity id, so KitAction's re-entry guard only ever
+  // drops a genuine same-op double-fire — never a concurrent op on another
+  // entity. Value-returning chains rethrow after the snackbar (callers await
+  // the value); void chains swallow post-snackbar via withErrorFallback.
 
   Future<ShowcaseNoteModel> createNote(String owner, String folderId) => mutate<ShowcaseNoteModel>(
         operation: () => _repo.upsertNote(_repo.newNote(owner, folderId)),
-        widgetId: 'notes.create',
+        op: 'create',
+        error: 'Could not create note',
       ).execute();
 
   Future<ShowcaseNoteModel> saveBody(ShowcaseNoteModel note, String body) => mutate<ShowcaseNoteModel>(
         operation: () => _repo.upsertNote(
           note.copyWith(body: body, updatedAt: DateTime.now().toUtc()),
         ),
-        widgetId: 'notes.save',
+        op: 'save',
+        entity: note.id,
+        error: 'Could not save note',
       ).execute();
 
   Future<ShowcaseNoteModel> togglePin(ShowcaseNoteModel note) => mutate<ShowcaseNoteModel>(
         operation: () => _repo.upsertNote(note.copyWith(pinned: !note.pinned)),
-        widgetId: 'notes.pin',
+        op: 'pin',
+        entity: note.id,
+        error: 'Could not update note',
       ).execute();
 
   Future<ShowcaseNoteModel> addAttachment(ShowcaseNoteModel note, ShowcaseNoteAttachmentModel attachment) =>
@@ -215,7 +227,9 @@ class ShowcaseNotesFacadeService extends KitDataFacade {
           attachments: [...note.attachments, attachment],
           updatedAt: DateTime.now().toUtc(),
         )),
-        widgetId: 'notes.attach',
+        op: 'attach',
+        entity: note.id,
+        error: 'Could not add attachment',
       ).execute();
 
   Future<ShowcaseNoteModel> removeAttachment(ShowcaseNoteModel note, String attachmentId) => mutate<ShowcaseNoteModel>(
@@ -224,7 +238,9 @@ class ShowcaseNotesFacadeService extends KitDataFacade {
               note.attachments.where((a) => a.id != attachmentId).toList(),
           updatedAt: DateTime.now().toUtc(),
         )),
-        widgetId: 'notes.detach',
+        op: 'detach',
+        entity: note.id,
+        error: 'Could not remove attachment',
       ).execute();
 
   Future<ShowcaseNoteModel> moveToTrash(ShowcaseNoteModel note) => mutate<ShowcaseNoteModel>(
@@ -232,18 +248,26 @@ class ShowcaseNotesFacadeService extends KitDataFacade {
           deletedAt: () => DateTime.now().toUtc(),
           pinned: false,
         )),
-        widgetId: 'notes.trash',
+        op: 'trash',
+        entity: note.id,
+        error: 'Could not move note to Recently Deleted',
+        success: 'Moved to Recently Deleted',
       ).execute();
 
   Future<ShowcaseNoteModel> restore(ShowcaseNoteModel note) => mutate<ShowcaseNoteModel>(
         operation: () => _repo.upsertNote(note.copyWith(deletedAt: () => null)),
-        widgetId: 'notes.restore',
+        op: 'restore',
+        entity: note.id,
+        error: 'Could not restore note',
       ).execute();
 
   Future<void> deletePermanently(ShowcaseNoteModel note) => mutate<void>(
         operation: () => _repo.deleteNote(note.id),
-        widgetId: 'notes.purge',
-      ).execute();
+        op: 'purge',
+        entity: note.id,
+        error: 'Could not delete note',
+        success: 'Note deleted',
+      ).withErrorFallback('Delete failed').execute();
 
   Future<void> emptyTrash(String owner) => mutate<void>(
         operation: () async {
@@ -252,21 +276,26 @@ class ShowcaseNotesFacadeService extends KitDataFacade {
             await _repo.deleteNote(note.id);
           }
         },
-        widgetId: 'notes.emptyTrash',
-      ).withSuccessSnackbar('Recently Deleted emptied').execute();
+        op: 'emptyTrash',
+        error: 'Could not empty Recently Deleted',
+        success: 'Recently Deleted emptied',
+      ).withErrorFallback('Empty trash failed').execute();
 
   Future<ShowcaseNoteFolderModel> createFolder(String owner, String name,
           {required int sortOrder}) =>
       mutate<ShowcaseNoteFolderModel>(
         operation: () =>
             _repo.upsertFolder(_repo.newFolder(owner, name, sortOrder: sortOrder)),
-        widgetId: 'notes.folder.create',
+        op: 'folder.create',
+        error: 'Could not create folder',
       ).execute();
 
   Future<ShowcaseNoteFolderModel> renameFolder(ShowcaseNoteFolderModel folder, String name) =>
       mutate<ShowcaseNoteFolderModel>(
         operation: () => _repo.upsertFolder(folder.copyWith(name: name)),
-        widgetId: 'notes.folder.rename',
+        op: 'folder.rename',
+        entity: folder.id,
+        error: 'Could not rename folder',
       ).execute();
 
   /// iOS behavior: deleting a folder sends its live notes to Recently
@@ -281,10 +310,20 @@ class ShowcaseNotesFacadeService extends KitDataFacade {
           }
           await _repo.deleteFolder(folder.id);
         },
-        widgetId: 'notes.folder.delete',
-      ).execute();
+        op: 'folder.delete',
+        entity: folder.id,
+        error: 'Could not delete folder',
+        success: 'Folder deleted',
+      ).withErrorFallback('Delete folder failed').execute();
 
   // -- Auth ------------------------------------------------------------------
 
-  Future<void> signOut() => auth.signOut();
+  Future<void> signOut() => KitAction.run<void>(
+        operation: () => auth.signOut(),
+        owner: this,
+        op: 'signOut',
+      )
+          .withErrorSnackbar('Could not sign out')
+          .withErrorFallback('Sign-out failed')
+          .execute();
 }

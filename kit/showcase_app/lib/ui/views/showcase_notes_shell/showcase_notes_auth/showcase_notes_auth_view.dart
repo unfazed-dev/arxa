@@ -18,6 +18,12 @@ class ShowcaseNotesAuthView extends StackedView<ShowcaseNotesAuthViewModel> {
   /// signing up inline.
   final VoidCallback? onCreateAccount;
 
+  /// Streams-only house convention: the view never rebuilds off
+  /// `notifyListeners` (the viewmodel never calls it) — every live value is
+  /// bound with [KitStreamBuilder] at the subtree that needs it.
+  @override
+  bool get reactive => false;
+
   @override
   ShowcaseNotesAuthViewModel viewModelBuilder(BuildContext context) =>
       ShowcaseNotesAuthViewModel();

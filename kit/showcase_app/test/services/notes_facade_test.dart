@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ui_library/ui_library.dart';
+import 'package:ui_library/testing.dart';
 import 'package:appbox_kit_data/appbox_kit_data.dart';
 import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/showcase_note_model.dart';
 import 'package:appbox_kit_showcase_app/data/schemas/showcase_notes_schemas/showcase_note_folder_schema.dart';
@@ -40,7 +41,11 @@ void main() {
       ..registerLazySingleton(() => DialogService())
       ..registerLazySingleton(() => BottomSheetService())
       ..registerLazySingleton(() => SnackbarService())
-      ..registerLazySingleton(() => KitNotificationService())
+      // Fake: the real service's CNToast path needs a mounted navigator
+      // context, which a data-layer suite doesn't have. Recording double from
+      // package:ui_library/testing.dart.
+      ..registerLazySingleton<KitNotificationService>(() => FakeKitNotificationService())
+
       // Registered by the @StackedApp locator in the app; this suite stays
       // self-contained (data layer only), so it registers them itself.
       ..registerLazySingleton<ShowcaseNotesRepositoryService>(() => ShowcaseNotesRepositoryService())

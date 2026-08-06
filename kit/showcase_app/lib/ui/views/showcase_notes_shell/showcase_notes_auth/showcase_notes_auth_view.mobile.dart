@@ -64,76 +64,87 @@ class ShowcaseNotesAuthViewMobile
               verticalSpaceLarge,
 
               // (1) Credential block: mode toggle + the form the mode selects.
-              // The form widgets and their reusable field/error pieces come
-              // from the central `showcase_notes_widgets` barrel.
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  KitNativeSegmentedControl(
-                    segments: const ['Password', 'OTP'],
-                    selectedIndex: NotesAuthMode.values.indexOf(viewModel.mode),
-                    onChanged: (i) =>
-                        viewModel.setMode(NotesAuthMode.values[i]),
-                  ),
-                  verticalSpaceMedium,
-                  if (viewModel.mode == NotesAuthMode.password)
-                    ShowcaseNotesPasswordFormWidget(
-                        viewModel: viewModel, onCreateAccount: onCreateAccount)
-                  else
-                    ShowcaseNotesOtpFormWidget(viewModel: viewModel),
-                ],
+              // The mode binds via KitStreamBuilder (streams-only — the VM
+              // never calls notifyListeners). The form widgets and their
+              // reusable field/error pieces come from the central
+              // `showcase_notes_widgets` barrel.
+              KitStreamBuilder<NotesAuthMode>(
+                stream: viewModel.mode$,
+                builder: (context, mode) => Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    KitNativeSegmentedControl(
+                      segments: const ['Password', 'OTP'],
+                      selectedIndex: NotesAuthMode.values.indexOf(mode),
+                      onChanged: (i) =>
+                          viewModel.setMode(NotesAuthMode.values[i]),
+                    ),
+                    verticalSpaceMedium,
+                    if (mode == NotesAuthMode.password)
+                      ShowcaseNotesPasswordFormWidget(
+                          viewModel: viewModel, onCreateAccount: onCreateAccount)
+                    else
+                      ShowcaseNotesOtpFormWidget(viewModel: viewModel),
+                  ],
+                ),
               ).wake(order: 1),
 
               // (2) Alternatives — demoted below an "or" divider. Stacked full
               // width (not a cramped 3-across row) so each provider reads as a
               // peer secondary action, clearly below the prominent primary CTA.
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  verticalSpaceLarge,
-                  Row(
-                    children: [
-                      Expanded(child: Divider(color: theme.dividerColor)),
-                      Padding(
-                        padding:
-                            const EdgeInsets.symmetric(horizontal: kSize12),
-                        child: Text('or',
-                            style: TextStyle(
-                                color: theme.colorScheme.onSurfaceVariant)),
+              // Busy binds via KitStreamBuilder on the VM's busy$ (composed
+              // from the per-op KitAction.state$ streams) — while any auth op
+              // runs, every button disables, same as the old global setBusy.
+              KitStreamBuilder<bool>(
+                stream: viewModel.busy$,
+                builder: (context, busy) => Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    verticalSpaceLarge,
+                    Row(
+                      children: [
+                        Expanded(child: Divider(color: theme.dividerColor)),
+                        Padding(
+                          padding:
+                              const EdgeInsets.symmetric(horizontal: kSize12),
+                          child: Text('or',
+                              style: TextStyle(
+                                  color: theme.colorScheme.onSurfaceVariant)),
+                        ),
+                        Expanded(child: Divider(color: theme.dividerColor)),
+                      ],
+                    ),
+                    verticalSpaceMedium,
+                    SizedBox(
+                      height: kButtonHeightMedium,
+                      child: KitNativeButton(
+                        label: 'Continue with Google',
+                        // glass (default) renders real Liquid Glass on iOS 26 and
+                        // ButtonM3E on Android — the native peer to the primary CTA.
+                        style: KitButtonStyle.glass,
+                        onPressed: busy ? null : viewModel.google,
                       ),
-                      Expanded(child: Divider(color: theme.dividerColor)),
-                    ],
-                  ),
-                  verticalSpaceMedium,
-                  SizedBox(
-                    height: kButtonHeightMedium,
-                    child: KitNativeButton(
-                      label: 'Continue with Google',
-                      // glass (default) renders real Liquid Glass on iOS 26 and
-                      // ButtonM3E on Android — the native peer to the primary CTA.
-                      style: KitButtonStyle.glass,
-                      onPressed: viewModel.isBusy ? null : viewModel.google,
                     ),
-                  ),
-                  verticalSpaceSmall,
-                  SizedBox(
-                    height: kButtonHeightMedium,
-                    child: KitNativeButton(
-                      label: 'Continue with Apple',
-                      style: KitButtonStyle.glass,
-                      onPressed: viewModel.isBusy ? null : viewModel.apple,
+                    verticalSpaceSmall,
+                    SizedBox(
+                      height: kButtonHeightMedium,
+                      child: KitNativeButton(
+                        label: 'Continue with Apple',
+                        style: KitButtonStyle.glass,
+                        onPressed: busy ? null : viewModel.apple,
+                      ),
                     ),
-                  ),
-                  verticalSpaceSmall,
-                  SizedBox(
-                    height: kButtonHeightMedium,
-                    child: KitNativeButton(
-                      label: 'Continue as Guest',
-                      style: KitButtonStyle.glass,
-                      onPressed: viewModel.isBusy ? null : viewModel.anonymous,
+                    verticalSpaceSmall,
+                    SizedBox(
+                      height: kButtonHeightMedium,
+                      child: KitNativeButton(
+                        label: 'Continue as Guest',
+                        style: KitButtonStyle.glass,
+                        onPressed: busy ? null : viewModel.anonymous,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ).wake(order: 2),
 
               // (3) Seed hint — stays in glass at the tail; it's reference copy,

@@ -1,92 +1,112 @@
-import 'dart:async';
-
+import 'package:rxdart/rxdart.dart';
 import 'package:stacked/stacked.dart';
-import 'package:appbox_kit_core/kit_locator.dart';
+import 'package:ui_library/ui_library.dart';
 
 import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/showcase_note_model.dart';
 import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/showcase_note_folder_model.dart';
 import 'package:appbox_kit_showcase_app/services/showcase_notes_services/facades/showcase_notes_facade_service.dart';
 
-/// The notes-list screen viewmodel. [folderKey] is `'all'`, `'trash'`, or a
-/// folder uuid, resolved by the view from the route's `:id` path param.
+// The view knows its viewmodel ONLY — every type a view needs to name (the
+// stream payloads) is re-exported here so view files never import services,
+// repositories, or data/model packages directly.
+export 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/showcase_note_model.dart';
+export 'package:appbox_kit_showcase_app/services/showcase_notes_services/facades/showcase_notes_facade_service.dart'
+    show ShowcaseNoteGroup;
+
+/// The notes-list screen viewmodel — streams-only (house convention): all
+/// state is exposed as streams and the views bind them with [KitStreamBuilder];
+/// `BaseViewModel` is a lifecycle token (creation/disposal via StackedView),
+/// never a rebuild mechanism — `notifyListeners` is not called.
 ///
-/// Owner comes from [ShowcaseNotesFacadeService.currentSession] at construction time — the
-/// Folders screen gates auth, so by the time this viewmodel exists a session
-/// is expected to be live; if not, the streams simply never start and the
-/// view renders nothing (matches the folders screen's gate contract).
+/// [folderKey] is `'all'`, `'trash'`, or a folder uuid, resolved by the view
+/// from the route's `:id` path param.
+///
+/// Data streams are facade pass-throughs composed with rxdart `switchMap`
+/// (session → owner-scoped reads), so the VM holds no relay fields and no
+/// subscription bookkeeping for them — each [KitStreamBuilder] owns its
+/// subscription. While signed out the streams emit empty lists (the Folders
+/// screen gates auth, so by the time this viewmodel exists a session is
+/// expected to be live). The one VM-owned UI state, [query$], is a seeded
+/// [BehaviorSubject].
 class ShowcaseNotesFolderViewModel extends BaseViewModel {
-  ShowcaseNotesFolderViewModel({required this.folderKey}) {
-    final owner = _service.currentSession?.user.id;
-    if (owner == null) return;
-
-    _foldersSub = _service.folders$(owner).listen((folders) {
-      _folders = folders;
-      notifyListeners();
-    });
-
-    _notesSub = (isTrash
-            ? _service.trash$(owner)
-            : _service.notesIn$(owner, folderId: isAll ? null : folderKey))
-        .listen((notes) {
-      _notes = notes;
-      notifyListeners();
-    });
-  }
+  ShowcaseNotesFolderViewModel({required this.folderKey});
 
   final String folderKey;
   final _service = locator<ShowcaseNotesFacadeService>();
 
-  StreamSubscription<List<ShowcaseNoteModel>>? _notesSub;
-  StreamSubscription<List<ShowcaseNoteFolderModel>>? _foldersSub;
-
-  List<ShowcaseNoteModel> _notes = const [];
-  List<ShowcaseNoteFolderModel> _folders = const [];
-
-  String query = '';
-
   bool get isTrash => folderKey == 'trash';
   bool get isAll => folderKey == 'all';
 
-  String get title {
-    if (isTrash) return 'Recently Deleted';
-    if (isAll) return 'All Notes';
-    for (final folder in _folders) {
-      if (folder.id == folderKey) return folder.name;
-    }
-    return 'Notes';
+  /// Owner-scoped folders; empty while signed out.
+  Stream<List<ShowcaseNoteFolderModel>> get folders$ =>
+      _service.session$.switchMap(
+        (s) => s == null
+            ? Stream<List<ShowcaseNoteFolderModel>>.value(const [])
+            : _service.folders$(s.user.id),
+      );
+
+  /// The scope's notes — trash scope, or live notes for the folder ('all' =
+  /// unscoped). Empty while signed out.
+  Stream<List<ShowcaseNoteModel>> get notes$ => _service.session$.switchMap(
+        (s) => s == null
+            ? Stream<List<ShowcaseNoteModel>>.value(const [])
+            : isTrash
+                ? _service.trash$(s.user.id)
+                : _service.notesIn$(s.user.id,
+                    folderId: isAll ? null : folderKey),
+      );
+
+  /// UI-owned search text — seeded so [groups$] has both inputs from the
+  /// first subscription.
+  final BehaviorSubject<String> _query = BehaviorSubject<String>.seeded('');
+  ValueStream<String> get query$ => _query.stream;
+
+  /// App-bar title: static for the 'all'/'trash' scopes; a live folder-name
+  /// lookup otherwise (a rename lands here via [folders$]). Seeded with the
+  /// pre-load fallback so the bar never flashes a loading state.
+  Stream<String> get title$ {
+    if (isTrash) return Stream.value('Recently Deleted');
+    if (isAll) return Stream.value('All Notes');
+    return folders$.map((folders) {
+      for (final folder in folders) {
+        if (folder.id == folderKey) return folder.name;
+      }
+      return 'Notes';
+    }).startWith('Notes');
   }
 
-  /// The first user folder, used as the compose target when creating a note
-  /// from 'all' or 'trash' (there is no natural folder to write into there).
-  ShowcaseNoteFolderModel? get _firstFolder => _folders.isEmpty ? null : _folders.first;
+  /// Search-filtered, sectioned groups. Search filters the already-streamed
+  /// scope — no second stream needed (ShowcaseNotesFacadeService.search$
+  /// exists for facade callers; here the notes are in hand).
+  Stream<List<ShowcaseNoteGroup>> get groups$ => Rx.combineLatest2(
+        notes$,
+        query$,
+        (List<ShowcaseNoteModel> notes, String query) {
+          final needle = query.trim().toLowerCase();
+          final source = needle.isEmpty
+              ? notes
+              : notes
+                  .where((n) => n.body.toLowerCase().contains(needle))
+                  .toList();
+          if (isTrash) {
+            final sorted = [...source]
+              ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+            return sorted.isEmpty
+                ? const <ShowcaseNoteGroup>[]
+                : [ShowcaseNoteGroup('Recently Deleted', sorted)];
+          }
+          return ShowcaseNotesFacadeService.groupNotes(source, DateTime.now());
+        },
+      );
 
-  List<ShowcaseNoteGroup> get groups {
-    // Search filters the already-held scope — no second stream needed
-    // (ShowcaseNotesFacadeService.search$ exists for facade callers; here the notes are
-    // in hand).
-    final needle = query.trim().toLowerCase();
-    final source = needle.isEmpty
-        ? _notes
-        : _notes.where((n) => n.body.toLowerCase().contains(needle)).toList();
-    if (isTrash) {
-      final sorted = [...source]
-        ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
-      return sorted.isEmpty
-          ? const []
-          : [ShowcaseNoteGroup('Recently Deleted', sorted)];
-    }
-    return ShowcaseNotesFacadeService.groupNotes(source, DateTime.now());
-  }
-
-  void setQuery(String value) {
-    query = value;
-    notifyListeners();
-  }
+  void setQuery(String value) => _query.add(value);
 
   Future<void> togglePin(ShowcaseNoteModel note) => _service.togglePin(note);
-  Future<void> moveToTrash(ShowcaseNoteModel note) => _service.moveToTrash(note);
+  Future<void> moveToTrash(ShowcaseNoteModel note) =>
+      _service.moveToTrash(note);
   Future<void> restore(ShowcaseNoteModel note) => _service.restore(note);
-  Future<void> deletePermanently(ShowcaseNoteModel note) => _service.deletePermanently(note);
+  Future<void> deletePermanently(ShowcaseNoteModel note) =>
+      _service.deletePermanently(note);
 
   Future<void> emptyTrash() async {
     final owner = _service.currentSession?.user.id;
@@ -94,11 +114,16 @@ class ShowcaseNotesFolderViewModel extends BaseViewModel {
   }
 
   /// Creates a note and returns its id for the caller to navigate to, or
-  /// `null` if there's no owner / no folder to place it in.
+  /// `null` if there's no owner / no folder to place it in. From 'all' or
+  /// 'trash' the first user folder is the compose target (there is no natural
+  /// folder to write into there).
   Future<String?> compose() async {
     final owner = _service.currentSession?.user.id;
     if (owner == null) return null;
-    final folderId = isAll || isTrash ? _firstFolder?.id : folderKey;
+    final folderId = isAll || isTrash
+        ? await folders$.first
+            .then((folders) => folders.isEmpty ? null : folders.first.id)
+        : folderKey;
     if (folderId == null) return null;
     final note = await _service.createNote(owner, folderId);
     return note.id;
@@ -106,8 +131,7 @@ class ShowcaseNotesFolderViewModel extends BaseViewModel {
 
   @override
   void dispose() {
-    _notesSub?.cancel();
-    _foldersSub?.cancel();
+    _query.close();
     super.dispose();
   }
 }

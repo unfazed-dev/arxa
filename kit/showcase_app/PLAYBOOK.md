@@ -133,7 +133,9 @@ The stacked CLI cannot scaffold a KitDataFacade subclass — hand-author it. -->
 ```bash
 stacked create view notes
 ```
-ViewModel subscribes to the Facade's streams (reactive); no direct Repository access.
+ViewModels expose the Facade's streams as getters (streams-only — see below); no direct Repository access.
+
+**Streams-only convention (hard):** viewmodels `extends KitViewModel` (ui_library), expose all state as `Stream`/`ValueStream` getters (facade pass-throughs, rxdart `switchMap` compositions, seeded `BehaviorSubject`s for UI-owned state) and NEVER call `notifyListeners`. Views add `@override bool get reactive => false;` to the CLI-generated `StackedView` and bind live values with `KitStreamBuilder` at the right subtree. Ops run `KitAction.run(owner: this, op: '<verb>')` — no widgetId strings, no manual `KitAction.dispose` (KitViewModel auto-disposes). A view file imports ONLY its viewmodel (+ kit packages + sibling views/widgets); the viewmodel re-exports every payload type the view names. Reference: `showcase_notes_shell/showcase_notes/`.
 
 ## 7.7 Lay out the shell route tree (IndexedStack tabs)
 
@@ -181,6 +183,8 @@ stacked create widget    note_card      # ui/widgets/common/note_card/ + WidgetM
 # Flags: --no-model (skip Model), -t/--template, -p/--path (widget), --exclude-route
 #        --no-test (skip test file generation)
 ```
+
+**Widget post-scaffold rule (per-shell structure):** the CLI only writes to `ui/widgets/common` with a `WidgetModel` — after `stacked create widget`, RELOCATE the widget into its shell home (`ui/widgets/<shell>_widgets/`), rename the file to `*_widget.dart` with the matching class name, drop the WidgetModel (widgets are dumb — state comes via constructor params or `KitStreamBuilder` bindings on the VM), and export it from the shell widgets barrel. `common/` is only for genuinely cross-shell widgets.
 
 ## 7.11 v2 web (route divergence + chrome fallback) — placeholder
 Web v2 gets its own route tree (different navigation model). Native chrome falls back to Flutter widgets on web; media plugins are web-incompatible and stay ios/android-only. Filled in v2.

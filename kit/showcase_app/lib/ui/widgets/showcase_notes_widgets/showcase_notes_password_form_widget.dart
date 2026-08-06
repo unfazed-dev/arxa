@@ -39,35 +39,50 @@ class ShowcaseNotesPasswordFormWidget extends StatelessWidget {
           placeholder: 'Password',
           obscureText: true,
         ),
-        if (vm.errorMessage != null) ShowcaseNotesFormErrorRowWidget(message: vm.errorMessage!),
+        // Streams-only: inline error and busy bind the VM's streams — nothing
+        // here rebuilds off notifyListeners.
+        KitStreamBuilder<String?>(
+          stream: vm.errorMessage$,
+          builder: (context, errorMessage) => errorMessage == null
+              ? const SizedBox.shrink()
+              : ShowcaseNotesFormErrorRowWidget(message: errorMessage),
+        ),
         verticalSpaceMedium,
-        SizedBox(
-          height: kButtonHeightMedium,
-          child: KitNativeButton(
-            label: 'Sign In',
-            style: KitButtonStyle.prominentGlass,
-            onPressed:
-                vm.isBusy ? null : () => vm.signInEmail(vm.email, vm.password),
+        KitStreamBuilder<bool>(
+          stream: vm.busy$,
+          builder: (context, busy) => Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              SizedBox(
+                height: kButtonHeightMedium,
+                child: KitNativeButton(
+                  label: 'Sign In',
+                  style: KitButtonStyle.prominentGlass,
+                  onPressed:
+                      busy ? null : () => vm.signInEmail(vm.email, vm.password),
+                ),
+              ),
+              verticalSpaceSmall,
+              SizedBox(
+                height: kButtonHeightMedium,
+                child: KitNativeButton(
+                  label: 'Create Account',
+                  style: KitButtonStyle.plain,
+                  // Prefer the owner's panel swap (dedicated create-account view);
+                  // inline fake sign-up remains the fallback for bare embeddings.
+                  onPressed: busy
+                      ? null
+                      : onCreateAccount ??
+                          () => vm.signUpEmail(vm.email, vm.password),
+                ),
+              ),
+              if (busy) ...[
+                verticalSpaceSmall,
+                const Center(child: KitNativeLoadingIndicator(size: 20)),
+              ],
+            ],
           ),
         ),
-        verticalSpaceSmall,
-        SizedBox(
-          height: kButtonHeightMedium,
-          child: KitNativeButton(
-            label: 'Create Account',
-            style: KitButtonStyle.plain,
-            // Prefer the owner's panel swap (dedicated create-account view);
-            // inline fake sign-up remains the fallback for bare embeddings.
-            onPressed: vm.isBusy
-                ? null
-                : onCreateAccount ??
-                    () => vm.signUpEmail(vm.email, vm.password),
-          ),
-        ),
-        if (vm.isBusy) ...[
-          verticalSpaceSmall,
-          const Center(child: KitNativeLoadingIndicator(size: 20)),
-        ],
       ],
     );
   }

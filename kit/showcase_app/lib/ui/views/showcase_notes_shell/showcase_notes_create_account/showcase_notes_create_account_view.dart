@@ -19,6 +19,12 @@ class ShowcaseNotesCreateAccountView
   /// Owner-supplied swap back to the sign-in panel.
   final VoidCallback onBackToSignIn;
 
+  /// Streams-only house convention: the view never rebuilds off
+  /// `notifyListeners` (the viewmodel never calls it) — every live value is
+  /// bound with [KitStreamBuilder] at the subtree that needs it.
+  @override
+  bool get reactive => false;
+
   @override
   ShowcaseNotesCreateAccountViewModel viewModelBuilder(BuildContext context) =>
       ShowcaseNotesCreateAccountViewModel();

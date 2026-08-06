@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:stacked/stacked.dart';
 import 'package:appbox_kit_motion/appbox_kit_motion.dart';
 import 'package:ui_library/ui_library.dart';
-import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/showcase_note_model.dart';
 import 'package:appbox_kit_showcase_app/ui/widgets/common/showcase_tabs_shared/widgets.dart';
 import 'package:appbox_kit_showcase_app/ui/widgets/showcase_notes_widgets/widgets.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_folder/showcase_notes_folder_viewmodel.dart';
@@ -18,7 +17,6 @@ class ShowcaseNotesFolderViewMobile
   @override
   Widget build(BuildContext context, ShowcaseNotesFolderViewModel viewModel) {
     final theme = Theme.of(context);
-    final groups = viewModel.groups;
 
     final actions = [
       if (viewModel.isTrash)
@@ -29,139 +27,149 @@ class ShowcaseNotesFolderViewMobile
         ),
     ];
 
-    return Scaffold(
-      // THE one app bar — KitNativeAppBar in Scaffold.appBar (never a sliver,
-      // never a stock AppBar) — with the explicit back button + (trash-only)
-      // empty-trash action riding on it.
-      appBar: KitNativeAppBar(
-        title: viewModel.title,
-        leading: KitNativeIconButton(
-          glyph: KitGlyphs.back,
-          onPressed: () => context.popRoute(),
+    // Streams-only: title$ feeds the app bar (a rename lands in place),
+    // groups$ feeds the list — the viewmodel holds no relay fields.
+    return KitStreamBuilder<String>(
+      stream: viewModel.title$,
+      builder: (context, title) => Scaffold(
+        // THE one app bar — KitNativeAppBar in Scaffold.appBar (never a sliver,
+        // never a stock AppBar) — with the explicit back button + (trash-only)
+        // empty-trash action riding on it.
+        appBar: KitNativeAppBar(
+          title: title,
+          leading: KitNativeIconButton(
+            glyph: KitGlyphs.back,
+            onPressed: () => context.popRoute(),
+          ),
+          actions: actions,
+          automaticallyImplyLeading: false,
         ),
-        actions: actions,
-        automaticallyImplyLeading: false,
-      ),
-      body: SafeArea(
-        // top: false — the fixed app bar owns the status-bar inset;
-        // bottom: false — host shell uses extendBody, so the list scrolls under
-        // the floating tab bar; clearance lives in the trailing padding.
-        top: false,
-        bottom: false,
-        // KitMotionScope establishes the choreography boundary — group rows
-        // below register with .wake(order: i) and rise in on the shared
-        // spec's stagger ramp (spec-owned tokens; no local durations).
-        child: KitMotionScope(
-          child: CustomScrollView(
-            slivers: [
-              // Pinned search — sticks under the bar while the list scrolls.
-              // Trash view hides it (nothing to search).
-              // .scrollOcclusion() satisfies pipeline check 1i; it is a no-op
-              // for a pinned header (never covered ⇒ alpha stays 1) but keeps
-              // the glass surface safe if this header ever loses `pinned`.
-              if (!viewModel.isTrash)
-                ShowcaseNotesPinnedSearchBarWidget(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: kSize16, vertical: kSize8),
-                    child: KitNativeSearchBar(
-                      hint: 'Search',
-                      onChanged: viewModel.setQuery,
-                    ).scrollOcclusion(),
-                  ),
-                ),
-              if (groups.isEmpty)
-                const SliverFillRemaining(
-                  hasScrollBody: false,
-                  child: Center(
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(vertical: kSize80),
-                      child: Text('No Notes'),
+        body: SafeArea(
+          // top: false — the fixed app bar owns the status-bar inset;
+          // bottom: false — host shell uses extendBody, so the list scrolls under
+          // the floating tab bar; clearance lives in the trailing padding.
+          top: false,
+          bottom: false,
+          child: KitStreamBuilder<List<ShowcaseNoteGroup>>(
+            stream: viewModel.groups$,
+            builder: (context, groups) =>
+                // KitMotionScope establishes the choreography boundary — group
+                // rows below register with .wake(order: i) and rise in on the
+                // shared spec's stagger ramp (spec-owned tokens; no local
+                // durations).
+                KitMotionScope(
+              child: CustomScrollView(
+                slivers: [
+                  // Pinned search — sticks under the bar while the list scrolls.
+                  // Trash view hides it (nothing to search).
+                  // .scrollOcclusion() satisfies pipeline check 1i; it is a no-op
+                  // for a pinned header (never covered ⇒ alpha stays 1) but keeps
+                  // the glass surface safe if this header ever loses `pinned`.
+                  if (!viewModel.isTrash)
+                    ShowcaseNotesPinnedSearchBarWidget(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: kSize16, vertical: kSize8),
+                        child: KitNativeSearchBar(
+                          hint: 'Search',
+                          onChanged: viewModel.setQuery,
+                        ).scrollOcclusion(),
+                      ),
                     ),
-                  ),
-                )
-              else
-                SliverPadding(
-                  padding: EdgeInsets.fromLTRB(kSize16, kSize8, kSize16,
-                      kSize80 + MediaQuery.paddingOf(context).bottom),
-                  sliver: SliverList.builder(
-                    itemCount: groups.length,
-                    itemBuilder: (context, i) {
-                      final group = groups[i];
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: kSize16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            ShowcaseSectionLabelWidget(group.label),
-                            verticalSpaceSmall,
-                            // The kit's grouped-inset section owns the group
-                            // card + hairline dividers (replacing the app's
-                            // hand-rolled NotesSection); margin zero — the
-                            // enclosing SliverPadding already insets 16.
-                            KitListSection(
-                              margin: EdgeInsets.zero,
+                  if (groups.isEmpty)
+                    const SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: Center(
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(vertical: kSize80),
+                          child: Text('No Notes'),
+                        ),
+                      ),
+                    )
+                  else
+                    SliverPadding(
+                      padding: EdgeInsets.fromLTRB(kSize16, kSize8, kSize16,
+                          kSize80 + MediaQuery.paddingOf(context).bottom),
+                      sliver: SliverList.builder(
+                        itemCount: groups.length,
+                        itemBuilder: (context, i) {
+                          final group = groups[i];
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: kSize16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                for (final note in group.notes)
-                                  ShowcaseNotesNoteRowWidget(
-                                    key: ValueKey(note.id),
-                                    note: note,
-                                    viewModel: viewModel,
-                                    onDeletePermanently: () =>
-                                        _confirmDeletePermanently(
-                                            context, viewModel, note),
-                                    formatDate: _relativeDate,
-                                  ),
+                                ShowcaseSectionLabelWidget(group.label),
+                                verticalSpaceSmall,
+                                // The kit's grouped-inset section owns the group
+                                // card + hairline dividers (replacing the app's
+                                // hand-rolled NotesSection); margin zero — the
+                                // enclosing SliverPadding already insets 16.
+                                KitListSection(
+                                  margin: EdgeInsets.zero,
+                                  children: [
+                                    for (final note in group.notes)
+                                      ShowcaseNotesNoteRowWidget(
+                                        key: ValueKey(note.id),
+                                        note: note,
+                                        viewModel: viewModel,
+                                        onDeletePermanently: () =>
+                                            _confirmDeletePermanently(
+                                                context, viewModel, note),
+                                        formatDate: _relativeDate,
+                                      ),
+                                  ],
+                                ),
                               ],
                             ),
-                          ],
-                        ),
-                      )
-                          // iOS 26 scroll edge effects (ADR 0010): the content
-                          // softens where it slides under pinned chrome — the
-                          // pinned search header is detected zero-config via
-                          // getOffsetToReveal; the floating tab bar sits outside
-                          // the scrollable, so it needs an explicit occlusion.
-                          .scrollEdgeEffect()
-                          .scrollEdgeEffect(
-                            edge: KitScrollEdge.bottom,
-                            occlusionPadding: kShowcaseTabBarBlockHeight,
                           )
-                          // Lazy list: rows wake in build (≈viewport) order —
-                          // acceptable here, groups are few and above the fold.
-                          .wake(order: i);
-                    },
-                  ),
-                ),
-            ],
+                              // iOS 26 scroll edge effects (ADR 0010): the content
+                              // softens where it slides under pinned chrome — the
+                              // pinned search header is detected zero-config via
+                              // getOffsetToReveal; the floating tab bar sits outside
+                              // the scrollable, so it needs an explicit occlusion.
+                              .scrollEdgeEffect()
+                              .scrollEdgeEffect(
+                                edge: KitScrollEdge.bottom,
+                                occlusionPadding: kShowcaseTabBarBlockHeight,
+                              )
+                              // Lazy list: rows wake in build (≈viewport) order —
+                              // acceptable here, groups are few and above the fold.
+                              .wake(order: i);
+                        },
+                      ),
+                    ),
+                ],
+              ),
+            ),
           ),
         ),
+        floatingActionButton: viewModel.isTrash
+            ? null
+            : KitNativeFabMenu(
+                glyph: KitGlyphs.add,
+                items: const [
+                  KitMenuItem(label: 'New Note', glyph: KitGlyphs.compose),
+                  KitMenuItem(label: 'New Photo', glyph: KitGlyphs.camera),
+                  KitMenuItem(label: 'New Voice', glyph: KitGlyphs.mic),
+                ],
+                onSelect: (item) async {
+                  // ponytail: a module-level intent slot on the editor viewmodel
+                  // routes New Photo / New Voice to auto-open the camera / mic on
+                  // first load — avoids route query-param plumbing + codegen.
+                  final action = switch (item.label) {
+                    'New Photo' => 'camera',
+                    'New Voice' => 'mic',
+                    _ => null,
+                  };
+                  final id = await viewModel.compose();
+                  if (id == null || !context.mounted) return;
+                  ShowcaseNoteEditorViewModel.pendingAction = action;
+                  // nested push — root stack must not grow
+                  unawaited(context.router.pushNamed('note/$id'));
+                },
+              ),
       ),
-      floatingActionButton: viewModel.isTrash
-          ? null
-          : KitNativeFabMenu(
-              glyph: KitGlyphs.add,
-              items: const [
-                KitMenuItem(label: 'New Note', glyph: KitGlyphs.compose),
-                KitMenuItem(label: 'New Photo', glyph: KitGlyphs.camera),
-                KitMenuItem(label: 'New Voice', glyph: KitGlyphs.mic),
-              ],
-              onSelect: (item) async {
-                // ponytail: a module-level intent slot on the editor viewmodel
-                // routes New Photo / New Voice to auto-open the camera / mic on
-                // first load — avoids route query-param plumbing + codegen.
-                final action = switch (item.label) {
-                  'New Photo' => 'camera',
-                  'New Voice' => 'mic',
-                  _ => null,
-                };
-                final id = await viewModel.compose();
-                if (id == null || !context.mounted) return;
-                ShowcaseNoteEditorViewModel.pendingAction = action;
-                // nested push — root stack must not grow
-                unawaited(context.router.pushNamed('note/$id'));
-              },
-            ),
     );
   }
 }

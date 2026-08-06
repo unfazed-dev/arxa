@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:stacked/stacked.dart';
 import 'package:ui_library/ui_library.dart';
-import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/showcase_note_attachment_model.dart';
 import 'package:stacked_services/stacked_services.dart';
 import 'package:appbox_kit_showcase_app/app/app.dialogs.dart';
 import 'package:appbox_kit_showcase_app/ui/widgets/showcase_notes_widgets/widgets.dart';
@@ -32,14 +31,31 @@ class ShowcaseNoteEditorViewMobile
 
   @override
   Widget build(BuildContext context, ShowcaseNoteEditorViewModel viewModel) {
-    final note = viewModel.note;
     final theme = Theme.of(context);
-    return Scaffold(
-      appBar: KitNativeAppBar(
-        leading: KitNativeIconButton(
-          glyph: KitGlyphs.back,
-          onPressed: () => context.popRoute(),
-        ),
+
+    // One scaffold shell shared by the loading state and the loaded note, so
+    // the back button never drops out while note$'s first event is pending.
+    Scaffold shell({String? title, List<Widget>? actions, required Widget body}) =>
+        Scaffold(
+          appBar: KitNativeAppBar(
+            leading: KitNativeIconButton(
+              glyph: KitGlyphs.back,
+              onPressed: () => context.popRoute(),
+            ),
+            title: title,
+            actions: actions,
+            automaticallyImplyLeading: false,
+          ),
+          body: SafeArea(child: body),
+        );
+
+    // Streams-only: note$ feeds the app bar (edited label, pin/delete) and the
+    // body swap. Media chrome binds its own streams inside the widgets.
+    return KitStreamBuilder<ShowcaseNoteModel?>(
+      stream: viewModel.note$,
+      loadingBuilder: (context) =>
+          shell(body: const Center(child: KitNativeLoadingIndicator())),
+      builder: (context, note) => shell(
         title: note == null ? null : _editedLabel(context, note.updatedAt),
         actions: note == null
             ? null
@@ -58,10 +74,7 @@ class ShowcaseNoteEditorViewMobile
                   },
                 ),
               ],
-        automaticallyImplyLeading: false,
-      ),
-      body: SafeArea(
-        child: Column(
+        body: Column(
           children: [
             Expanded(
               child: note == null

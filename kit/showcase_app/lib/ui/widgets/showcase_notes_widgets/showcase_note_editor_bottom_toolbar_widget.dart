@@ -28,42 +28,52 @@ class ShowcaseNoteEditorBottomToolbarWidget extends StatelessWidget {
           child: Padding(
             padding: const EdgeInsets.symmetric(
                 horizontal: kSize16, vertical: kSize8),
-            child: viewModel.isRecording
-                ? ShowcaseNoteRecordingRowWidget(
-                    viewModel: viewModel, formatDuration: formatDuration)
-                : Row(
-                    children: [
-                      if (viewModel.isCameraAvailable) ...[
+            // Streams-only: recordingElapsed$ (a seeded BehaviorSubject on the
+            // media adapter, passed through the VM) swaps the action row for
+            // the recording row and feeds the live elapsed pill.
+            child: KitStreamBuilder<Duration?>(
+              stream: viewModel.recordingElapsed$,
+              builder: (context, elapsed) => elapsed != null
+                  ? ShowcaseNoteRecordingRowWidget(
+                      viewModel: viewModel,
+                      elapsed: elapsed,
+                      formatDuration: formatDuration,
+                    )
+                  : Row(
+                      children: [
+                        if (viewModel.isCameraAvailable) ...[
+                          KitNativeIconButton(
+                            glyph: KitGlyphs.camera,
+                            onPressed: () =>
+                                viewModel.addPhoto(fromCamera: true),
+                          ),
+                          horizontalSpaceSmall,
+                        ],
                         KitNativeIconButton(
-                          glyph: KitGlyphs.camera,
-                          onPressed: () => viewModel.addPhoto(fromCamera: true),
+                          glyph: KitGlyphs.photo,
+                          onPressed: () => viewModel.addPhoto(fromCamera: false),
                         ),
-                        horizontalSpaceSmall,
+                        const Spacer(),
+                        KitNativeIconButton(
+                          glyph: KitGlyphs.mic,
+                          onPressed: () async {
+                            final started = await viewModel.startRecording();
+                            if (!started && context.mounted) {
+                              locator<KitNotificationService>().show(
+                                'Microphone permission needed',
+                                kind: KitNotificationKind.warning,
+                                context: context,
+                              );
+                            }
+                          },
+                        ),
                       ],
-                      KitNativeIconButton(
-                        glyph: KitGlyphs.photo,
-                        onPressed: () => viewModel.addPhoto(fromCamera: false),
-                      ),
-                      const Spacer(),
-                      KitNativeIconButton(
-                        glyph: KitGlyphs.mic,
-                        onPressed: () async {
-                          final started = await viewModel.startRecording();
-                          if (!started && context.mounted) {
-                            locator<KitNotificationService>().show(
-                              'Microphone permission needed',
-                              kind: KitNotificationKind.warning,
-                              context: context,
-                            );
-                          }
-                        },
-                      ),
-                    ],
-                  )
-                    // The toolbar settles in after the surface mounts — one
-                    // rise, not a stagger (the editor is a destination, not
-                    // a list).
-                    .wake(order: 0),
+                    )
+                      // The toolbar settles in after the surface mounts — one
+                      // rise, not a stagger (the editor is a destination, not
+                      // a list).
+                      .wake(order: 0),
+            ),
           ),
         ),
       );

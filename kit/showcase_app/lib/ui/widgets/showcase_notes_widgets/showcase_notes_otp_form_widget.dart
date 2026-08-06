@@ -15,43 +15,62 @@ class ShowcaseNotesOtpFormWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final vm = viewModel;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        // Standalone capsules (see ShowcaseNotesPasswordFormWidget) — no grouped section chrome.
-        ShowcaseNotesAuthTextFieldWidget(
-          onChanged: (v) => vm.email = v,
-          enabled: !vm.otpRequested,
-          placeholder: 'Email',
-          keyboardType: TextInputType.emailAddress,
-        ),
-        if (vm.otpRequested) ...[
-          verticalSpaceSmall,
+    // Streams-only: the OTP step (email locked / code field / Verify vs Send
+    // Code), the inline error, and busy each bind a VM stream — nothing here
+    // rebuilds off notifyListeners.
+    return KitStreamBuilder<bool>(
+      stream: vm.otpRequested$,
+      builder: (context, otpRequested) => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Standalone capsules (see ShowcaseNotesPasswordFormWidget) — no grouped section chrome.
           ShowcaseNotesAuthTextFieldWidget(
-            onChanged: (v) => vm.code = v,
-            placeholder: '000000',
-            keyboardType: TextInputType.number,
+            onChanged: (v) => vm.email = v,
+            enabled: !otpRequested,
+            placeholder: 'Email',
+            keyboardType: TextInputType.emailAddress,
+          ),
+          if (otpRequested) ...[
+            verticalSpaceSmall,
+            ShowcaseNotesAuthTextFieldWidget(
+              onChanged: (v) => vm.code = v,
+              placeholder: '000000',
+              keyboardType: TextInputType.number,
+            ),
+          ],
+          KitStreamBuilder<String?>(
+            stream: vm.errorMessage$,
+            builder: (context, errorMessage) => errorMessage == null
+                ? const SizedBox.shrink()
+                : ShowcaseNotesFormErrorRowWidget(message: errorMessage),
+          ),
+          verticalSpaceMedium,
+          KitStreamBuilder<bool>(
+            stream: vm.busy$,
+            builder: (context, busy) => Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                SizedBox(
+                  height: kButtonHeightMedium,
+                  child: KitNativeButton(
+                    label: otpRequested ? 'Verify' : 'Send Code',
+                    style: KitButtonStyle.prominentGlass,
+                    onPressed: busy
+                        ? null
+                        : () => otpRequested
+                            ? vm.confirmOtp(vm.email, vm.code)
+                            : vm.requestOtp(vm.email),
+                  ),
+                ),
+                if (busy) ...[
+                  verticalSpaceSmall,
+                  const Center(child: KitNativeLoadingIndicator(size: 20)),
+                ],
+              ],
+            ),
           ),
         ],
-        if (vm.errorMessage != null) ShowcaseNotesFormErrorRowWidget(message: vm.errorMessage!),
-        verticalSpaceMedium,
-        SizedBox(
-          height: kButtonHeightMedium,
-          child: KitNativeButton(
-            label: vm.otpRequested ? 'Verify' : 'Send Code',
-            style: KitButtonStyle.prominentGlass,
-            onPressed: vm.isBusy
-                ? null
-                : () => vm.otpRequested
-                    ? vm.confirmOtp(vm.email, vm.code)
-                    : vm.requestOtp(vm.email),
-          ),
-        ),
-        if (vm.isBusy) ...[
-          verticalSpaceSmall,
-          const Center(child: KitNativeLoadingIndicator(size: 20)),
-        ],
-      ],
+      ),
     );
   }
 }

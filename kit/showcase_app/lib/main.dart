@@ -4,6 +4,8 @@ import 'package:appbox_kit_motion/appbox_kit_motion.dart';
 import 'package:ui_library/ui_library.dart'
     show
         CNTransitionObserver,
+        KitAction,
+        KitErrorService,
         KitThemeService,
         kitDarkTheme,
         kitLightTheme;
@@ -18,11 +20,18 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   setPathUrlStrategy();
   await setupLocator(stackedRouter: kitPlatformRouter);
+  // KitAction's error/notification managers log through KitErrorService —
+  // initialize it first or the first handled error dies on the late Talker.
+  await locator<KitErrorService>().initialize();
   // App boot (appbox_kit_data seed backend + fake auth) happens in
   // ShowcaseStartupViewModel.runStartupLogic() — the canonical Stacked startup flow.
   // Restore the persisted ThemeMode (defaults to `system`) and sync the status
   // bar before the first frame. KitThemeService owns ThemeMode + system UI.
-  await locator<KitThemeService>().initialize();
+  // Through KitAction so a restore failure logs instead of killing main().
+  await KitAction.run<void>(
+    operation: () => locator<KitThemeService>().initialize(),
+    widgetId: 'main.themeInit',
+  ).withErrorFallback('Theme restore failed').execute();
   setupShowcaseSnackbars();
   setupDialogUi();
   setupBottomSheetUi();

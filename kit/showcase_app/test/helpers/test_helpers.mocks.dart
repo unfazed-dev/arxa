@@ -14,10 +14,10 @@ import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/showca
     as _i5;
 import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/showcase_note_model.dart'
     as _i4;
-import 'package:appbox_kit_showcase_app/services/showcase_notes_services/facades/showcase_notes_facade_service.dart'
-    as _i16;
 import 'package:appbox_kit_showcase_app/services/showcase_notes_services/adapters/showcase_notes_media_adapter_service.dart'
     as _i19;
+import 'package:appbox_kit_showcase_app/services/showcase_notes_services/facades/showcase_notes_facade_service.dart'
+    as _i16;
 import 'package:flutter/material.dart' as _i10;
 import 'package:mockito/mockito.dart' as _i1;
 import 'package:mockito/src/dummies.dart' as _i18;
@@ -1188,7 +1188,10 @@ class MockShowcaseNotesFacadeService extends _i1.Mock
   @override
   _i6.KitActionBuilder<T> mutate<T>({
     required _i9.FutureOr<T> Function()? operation,
-    required String? widgetId,
+    String? op,
+    String? entity,
+    String? error,
+    String? success,
   }) =>
       (super.noSuchMethod(
         Invocation.method(
@@ -1196,7 +1199,10 @@ class MockShowcaseNotesFacadeService extends _i1.Mock
           [],
           {
             #operation: operation,
-            #widgetId: widgetId,
+            #op: op,
+            #entity: entity,
+            #error: error,
+            #success: success,
           },
         ),
         returnValue: _FakeKitActionBuilder_7<T>(
@@ -1206,7 +1212,10 @@ class MockShowcaseNotesFacadeService extends _i1.Mock
             [],
             {
               #operation: operation,
-              #widgetId: widgetId,
+              #op: op,
+              #entity: entity,
+              #error: error,
+              #success: success,
             },
           ),
         ),
@@ -1217,7 +1226,10 @@ class MockShowcaseNotesFacadeService extends _i1.Mock
             [],
             {
               #operation: operation,
-              #widgetId: widgetId,
+              #op: op,
+              #entity: entity,
+              #error: error,
+              #success: success,
             },
           ),
         ),

@@ -22,8 +22,8 @@ import 'package:ui_library/services/navigation/kit_navigation_controller_service
 import 'package:ui_library/services/notifications/kit_notification_service.dart';
 import 'package:ui_library/services/sheet/kit_bottom_sheet_service.dart';
 
-import '../services/showcase_notes_services/facades/showcase_notes_facade_service.dart';
 import '../services/showcase_notes_services/adapters/showcase_notes_media_adapter_service.dart';
+import '../services/showcase_notes_services/facades/showcase_notes_facade_service.dart';
 import '../services/showcase_notes_services/repositories/showcase_notes_repository_service.dart';
 import 'app.router.dart';
 
