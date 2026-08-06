@@ -1,5 +1,5 @@
-name: ui_library
-description: Stacked kit UI tier — Kit* adaptive port widgets, UI-coupled services (navigation/sheet/notifications), overlay + component plumbing. Re-exports appbox_kit_core so consumers import one package.
+name: appbox_kit_ui_library
+description: Stacked kit UI tier — AppBoxKit* adaptive port widgets, UI-coupled services (navigation/sheet/notifications), overlay + component plumbing. Re-exports appbox_kit_core so consumers import one package.
 version: 0.1.0
 publish_to: 'none'
 
@@ -18,7 +18,7 @@ dependencies:
   flutter_animate: ^4.5.2
   shared_preferences: ^2.5.5
   # Viewer chrome: markdown rendering (with syntax-highlighted code blocks)
-  # and SVG images. `markdown` is pinned because KitMarkdown's code builder
+  # and SVG images. `markdown` is pinned because AppBoxKitMarkdown's code builder
   # implements MarkdownElementBuilder against its Element type.
   # Latest verified on pub.dev 2026-07-30: flutter_markdown_plus 1.0.12,
   # flutter_highlighting 0.9.0+11.8.0, flutter_svg 2.3.0, markdown 7.3.1.

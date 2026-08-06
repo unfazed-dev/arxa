@@ -5,11 +5,11 @@ out of `core` in the 2026-07 refactor. A standalone kit.
 
 ## Reactive views
 
-- `KitStreamBuilder<T>` — thin `StreamBuilder` wrapper that auto-seeds from a
+- `AppBoxKitStreamBuilder<T>` — thin `StreamBuilder` wrapper that auto-seeds from a
   rxdart `ValueStream.valueOrNull` (no loading flash on `BehaviorSubject`-
   backed kit-data streams) and shares a default loading/error UI.
 
-View bodies render kit-data / async streams via `KitStreamBuilder`, never raw
+View bodies render kit-data / async streams via `AppBoxKitStreamBuilder`, never raw
 `StreamBuilder` (enforced by review_checklist check 1k + scaffold_gate check
 5). Use stacked's stock `StreamViewModel<T>` when the viewmodel itself reacts
 to / transforms a single dominant stream; `MultipleStreamViewModel` is banned

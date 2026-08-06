@@ -1,0 +1,163 @@
+import 'package:appbox_kit_core/appbox_kit_locator.dart';
+import 'package:appbox_kit_core/services/error/appbox_kit_error_service.dart';
+import '../appbox_kit_action_config.dart';
+import 'package:talker_flutter/talker_flutter.dart';
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// AppBoxKitAction v2.0 - AppBoxKitLoadingManager
+// ═══════════════════════════════════════════════════════════════════════════════
+//
+// 📖 Technical Specification: docs/kit_action_technical_specification.md
+//    - Section 4.2: Component Responsibilities - AppBoxKitLoadingManager (lines 323-327)
+//    - Section 5.2: Loading State Management (lines 669-698)
+//
+// Manages loading states with setBusy/setBusyForObject callbacks.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/// Manages loading state for operations
+/// Handles setBusy and setBusyForObject callbacks with error logging
+/// Includes state tracking and disposal error handling for navigation flows
+class AppBoxKitLoadingManager<T> {
+  final AppBoxKitActionConfig<T> config;
+  static final _errorService = appBoxKitLocator<AppBoxKitErrorService>();
+  static final _talker = appBoxKitLocator<Talker>();
+
+  /// Tracks whether loading has been cleared to prevent redundant calls
+  bool _hasCleared = false;
+
+  AppBoxKitLoadingManager(this.config);
+
+  /// Start loading state
+  /// Sets loading state to true using the configured callback
+  /// Resets the _hasCleared flag for new operation
+  void start() {
+    // Reset cleared flag for new operation
+    _hasCleared = false;
+
+    if (config.debugMode) {
+      _talker.debug(
+          '[AppBoxKitAction] 🔄 AppBoxKitLoadingManager: Starting loading for ${config.widgetId}');
+    }
+
+    try {
+      if (config.busyObject != null &&
+          config.setBusyForObjectCallback != null) {
+        if (config.debugMode) {
+          _talker.debug(
+              '[AppBoxKitAction] 📦 Setting busy for object: ${config.busyObject} (${config.widgetId})');
+        }
+        config.setBusyForObjectCallback!(config.busyObject!, true);
+      } else if (config.setBusyCallback != null) {
+        if (config.debugMode) {
+          _talker.debug(
+              '[AppBoxKitAction] 🔄 Setting global busy state (${config.widgetId})');
+        }
+        config.setBusyCallback!(true);
+      }
+
+      // Call granular UI state callback if provided
+      if (config.onLoadingStateCallback != null) {
+        if (config.debugMode) {
+          _talker.debug(
+              '[AppBoxKitAction] 📢 Calling onLoadingState callback (${config.widgetId})');
+        }
+        config.onLoadingStateCallback!(true, config.loadingSnackbarMessage);
+      }
+    } catch (e, s) {
+      if (config.debugMode) {
+        _talker.error(
+            '[AppBoxKitAction] ⚠️ AppBoxKitLoadingManager error in start() (${config.widgetId})',
+            e,
+            s);
+      }
+      _errorService.warning(
+        error: e,
+        stackTrace: s,
+        message: 'Failed to set loading state to true',
+        widgetId: config.widgetId,
+      );
+    }
+  }
+
+  /// Stop loading state
+  /// Sets loading state to false using the configured callback
+  /// Includes defense-in-depth:
+  /// - Skips redundant calls if already cleared
+  /// - Catches view disposal errors for navigation flows
+  /// - Marks as cleared to prevent double setBusy(false)
+  void stop() {
+    // Skip if already cleared (efficiency layer)
+    if (_hasCleared) {
+      if (config.debugMode) {
+        _talker.debug(
+            '[AppBoxKitAction] ⏭️ AppBoxKitLoadingManager: Already cleared for ${config.widgetId}, skipping');
+      }
+      return;
+    }
+
+    if (config.debugMode) {
+      _talker.debug(
+          '[AppBoxKitAction] ✅ AppBoxKitLoadingManager: Stopping loading for ${config.widgetId}');
+    }
+
+    try {
+      if (config.busyObject != null &&
+          config.setBusyForObjectCallback != null) {
+        if (config.debugMode) {
+          _talker.debug(
+              '[AppBoxKitAction] 📦 Clearing busy for object: ${config.busyObject} (${config.widgetId})');
+        }
+        config.setBusyForObjectCallback!(config.busyObject!, false);
+      } else if (config.setBusyCallback != null) {
+        if (config.debugMode) {
+          _talker.debug(
+              '[AppBoxKitAction] ✅ Clearing global busy state (${config.widgetId})');
+        }
+        config.setBusyCallback!(false);
+      }
+
+      // Call granular UI state callback if provided
+      if (config.onLoadingStateCallback != null) {
+        if (config.debugMode) {
+          _talker.debug(
+              '[AppBoxKitAction] 📢 Calling onLoadingState callback with false (${config.widgetId})');
+        }
+        config.onLoadingStateCallback!(false, null);
+      }
+
+      // Mark as cleared after successful clear
+      _hasCleared = true;
+    } catch (e, s) {
+      // Check if this is a view disposal error (reactive layer)
+      final errorString = e.toString();
+      final isDisposalError = errorString.contains('disposed') ||
+          errorString
+              .contains('A ChangeNotifier was used after being disposed') ||
+          errorString.contains('Null check operator used on a null value');
+
+      if (isDisposalError) {
+        // View disposed - this is expected for navigation flows
+        if (config.debugMode) {
+          _talker.debug(
+              '[AppBoxKitAction] 🔄 AppBoxKitLoadingManager: View disposed for ${config.widgetId}, skipping cleanup');
+        }
+        // Still mark as cleared to prevent retries
+        _hasCleared = true;
+      } else {
+        // Unexpected error - log it
+        if (config.debugMode) {
+          _talker.error(
+              '[AppBoxKitAction] ⚠️ AppBoxKitLoadingManager error in stop() (${config.widgetId})',
+              e,
+              s);
+        }
+        _errorService.warning(
+          error: e,
+          stackTrace: s,
+          message: 'Failed to set loading state to false',
+          widgetId: config.widgetId,
+        );
+      }
+    }
+  }
+}
