@@ -456,7 +456,7 @@ class _SplitButtonM3EState<T> extends State<SplitButtonM3E<T>> {
 
     // Place the menu just below the trailing segment with a small vertical gap,
     // keeping horizontal alignment anchored to the trailing edge. 8px (was 4)
-    // matches KitNativePopupMenu's gap so both dropdowns sit the same distance
+    // matches AppBoxKitNativePopupMenu's gap so both dropdowns sit the same distance
     // below their trigger — a 4px gap read as "touching" the chevron.
     const double _kMenuVerticalOffset = 8.0;
     // showMenu's own screen-fit inset (Flutter's private _kMenuScreenPadding).

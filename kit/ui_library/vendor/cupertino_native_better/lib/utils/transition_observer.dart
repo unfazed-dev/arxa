@@ -45,7 +45,7 @@ class CNTransitionObserver extends NavigatorObserver {
   /// route slide — the native `beginTransition`/`endTransition` flag only
   /// drives the on-view glass-effect tint, and a hybrid-composition platform
   /// view can't be tinted out of a leak: it must leave the frame's layer tree
-  /// (see `KitNativeChromeGate`). Includes the interactive back-swipe, held
+  /// (see `AppBoxKitNativeChromeGate`). Includes the interactive back-swipe, held
   /// open by the `didStartUserGesture`/`didStopUserGesture` hooks below —
   /// `didPop` alone fires only at gesture COMMIT, leaving the drag unguarded.
   static final ValueNotifier<int> _activeTransitions = ValueNotifier<int>(0);
@@ -102,7 +102,7 @@ class CNTransitionObserver extends NavigatorObserver {
     // (Liquid Glass tint); on Android/macOS the method channel has no handler
     // and the call throws MissingPluginException into the zone error handler.
     // Guard so the noise stops at the source. The Dart-side
-    // [_activeTransitions] signal still drives KitNativeChromeGate everywhere.
+    // [_activeTransitions] signal still drives AppBoxKitNativeChromeGate everywhere.
     if (_transitionCount == 1 && (!kIsWeb && Platform.isIOS)) {
       CupertinoNativePlatform.instance.beginTransition();
     }

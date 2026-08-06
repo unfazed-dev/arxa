@@ -12,7 +12,7 @@ import '../utils/modal_hide_mixin.dart';
 /// Backed by `UITextField` via SwiftUI hosted in a `UiKitView` (iOS 26+ renders
 /// `.glassEffect(.regular, in: .capsule)`; below iOS 26 a `Color(.systemGray6)`
 /// capsule). On macOS it hosts the same SwiftUI field via `AppKitView`. This is
-/// the primitive [KitNativeTextField] wraps on its Liquid Glass tier.
+/// the primitive [AppBoxKitNativeTextField] wraps on its Liquid Glass tier.
 ///
 /// **Two-way controller** (the gap [CNSearchBar] leaves open): pass a
 /// [TextEditingController] and it stays in sync both ways — programmatic
