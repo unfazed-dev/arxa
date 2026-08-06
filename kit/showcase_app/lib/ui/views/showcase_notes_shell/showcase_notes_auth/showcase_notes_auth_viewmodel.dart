@@ -92,7 +92,8 @@ class ShowcaseNotesAuthViewModel extends AppBoxKitViewModel {
           _errorMessage.add(error is AppBoxKitAuthException
               ? error.message
               : 'Something went wrong. Try again.');
-        });
+        })
+        .execute();
   }
 
   Future<void> signInEmail(String email, String password) => _guard(

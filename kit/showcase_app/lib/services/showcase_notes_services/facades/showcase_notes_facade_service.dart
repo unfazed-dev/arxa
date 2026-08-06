@@ -286,7 +286,7 @@ class ShowcaseNotesFacadeService extends AppBoxKitDataFacade {
         entity: note.id,
         error: 'Could not delete note',
         success: 'Note deleted',
-      ).completeOnError('Delete failed');
+      ).completeOnError('Delete failed').execute();
 
   Future<void> emptyTrash(String owner) => mutate<void>(
         () async {
@@ -298,7 +298,7 @@ class ShowcaseNotesFacadeService extends AppBoxKitDataFacade {
         name: 'emptyTrash',
         error: 'Could not empty Recently Deleted',
         success: 'Recently Deleted emptied',
-      ).completeOnError('Empty trash failed');
+      ).completeOnError('Empty trash failed').execute();
 
   Future<ShowcaseNoteFolderModel> createFolder(String owner, String name,
           {required int sortOrder}) =>
@@ -333,11 +333,11 @@ class ShowcaseNotesFacadeService extends AppBoxKitDataFacade {
         entity: folder.id,
         error: 'Could not delete folder',
         success: 'Folder deleted',
-      ).completeOnError('Delete folder failed');
+      ).completeOnError('Delete folder failed').execute();
 
   // -- Auth ------------------------------------------------------------------
 
   Future<void> signOut() => action<void>('signOut', () => auth.signOut())
       .withErrorSnackbar('Could not sign out')
-      .completeOnError('Sign-out failed');
+      .completeOnError('Sign-out failed').execute();
 }

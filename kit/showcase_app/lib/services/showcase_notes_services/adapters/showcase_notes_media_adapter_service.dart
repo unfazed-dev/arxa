@@ -141,7 +141,7 @@ class ShowcaseNotesMediaAdapterService with AppBoxKitActionOwner {
         },
       )
           .withErrorSnackbar('Could not add photo')
-          .completeOnError('Photo capture failed', withValue: null);
+          .completeOnError('Photo capture failed', withValue: null).execute();
 
   // -- Voice memos -------------------------------------------------------------
 
@@ -162,7 +162,7 @@ class ShowcaseNotesMediaAdapterService with AppBoxKitActionOwner {
         },
       )
           .withErrorSnackbar('Could not start recording')
-          .completeOnError('Recording start failed', withValue: false);
+          .completeOnError('Recording start failed', withValue: false).execute();
 
   Future<ShowcaseNoteAttachmentModel?> stopRecording() =>
       action<ShowcaseNoteAttachmentModel?>(
@@ -180,14 +180,14 @@ class ShowcaseNotesMediaAdapterService with AppBoxKitActionOwner {
         },
       )
           .withErrorSnackbar('Could not save voice memo')
-          .completeOnError('Recording stop failed', withValue: null);
+          .completeOnError('Recording stop failed', withValue: null).execute();
 
   Future<void> cancelRecording() => action<void>(
         'cancelRecording',
         () => _recorder.cancel(),
       )
           .withErrorSnackbar('Could not cancel recording')
-          .completeOnError('Recording cancel failed');
+          .completeOnError('Recording cancel failed').execute();
 
   // -- Playback ----------------------------------------------------------------
 
@@ -208,7 +208,7 @@ class ShowcaseNotesMediaAdapterService with AppBoxKitActionOwner {
         },
       )
           .withErrorSnackbar('Could not play voice memo')
-          .completeOnError('Playback failed');
+          .completeOnError('Playback failed').execute();
 
   Future<void> stopPlayback() async {
     await _player.stop();
@@ -226,7 +226,7 @@ class ShowcaseNotesMediaAdapterService with AppBoxKitActionOwner {
         },
       )
           .withErrorSnackbar('Could not delete attachment')
-          .completeOnError('Attachment cleanup failed');
+          .completeOnError('Attachment cleanup failed').execute();
 
   Future<void> dispose() async {
     disposeAppBoxKitActions();

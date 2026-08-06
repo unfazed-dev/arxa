@@ -52,7 +52,8 @@ class ShowcaseNotesCreateAccountViewModel extends AppBoxKitViewModel {
           _errorMessage.add(error is AppBoxKitAuthException
               ? error.message
               : 'Something went wrong. Try again.');
-        });
+        })
+        .execute();
   }
 
   @override

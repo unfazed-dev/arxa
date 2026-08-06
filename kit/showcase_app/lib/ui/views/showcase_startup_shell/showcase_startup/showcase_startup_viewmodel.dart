@@ -21,5 +21,6 @@ class ShowcaseStartupViewModel extends AppBoxKitViewModel {
         },
       )
           .withErrorSnackbar('Startup failed — please restart the app')
-          .completeOnError('Startup failed');
+          .completeOnError('Startup failed')
+          .execute();
 }
