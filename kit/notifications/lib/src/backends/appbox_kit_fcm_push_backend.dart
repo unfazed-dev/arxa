@@ -1,5 +1,5 @@
-import '../kit_notifications_service.dart';
-import '../kit_notifications_types.dart';
+import '../appbox_kit_notifications_service.dart';
+import '../appbox_kit_notifications_types.dart';
 
 /// STUB — Firebase Cloud Messaging (FCM/APNs) push backend.
 ///
@@ -10,43 +10,43 @@ import '../kit_notifications_types.dart';
 ///   - tokenStream        -> onTokenRefresh (seed with getToken())
 ///   - currentToken       -> getToken()  (APNs: getAPNSToken() first on iOS)
 ///   - foregroundMessages -> FirebaseMessaging.onMessage
-///   - showLocalNotification -> delegate to LocalKitNotificationsService (FCM
+///   - showLocalNotification -> delegate to LocalAppBoxKitNotificationsService (FCM
 ///                              does not render foreground alerts itself)
 ///   - setBadgeCount      -> deliver via the APNs `badge` field server-side
 ///
 /// This stub intentionally does NOT import `firebase_messaging`, so the package
 /// pulls no Firebase dependency until a host opts in and wires this backend.
-class FcmPushBackend implements KitNotificationsService {
-  FcmPushBackend();
+class AppBoxKitFcmPushBackend implements AppBoxKitNotificationsService {
+  AppBoxKitFcmPushBackend();
 
   Never _stub(String member) =>
-      throw UnimplementedError('FcmPushBackend.$member is a stub');
+      throw UnimplementedError('AppBoxKitFcmPushBackend.$member is a stub');
 
   @override
   Future<void> initialize() async => _stub('initialize');
 
   @override
-  Future<KitNotificationPermissionResult> requestPermission([
-    KitNotificationPermissionRequest request =
-        const KitNotificationPermissionRequest(),
+  Future<AppBoxKitNotificationPermissionResult> requestPermission([
+    AppBoxKitNotificationPermissionRequest request =
+        const AppBoxKitNotificationPermissionRequest(),
   ]) async =>
       _stub('requestPermission');
 
   @override
-  Future<KitNotificationPermissionResult> permissionStatus() async =>
+  Future<AppBoxKitNotificationPermissionResult> permissionStatus() async =>
       _stub('permissionStatus');
 
   @override
-  Stream<KitPushToken> get tokenStream => _stub('tokenStream');
+  Stream<AppBoxKitPushToken> get tokenStream => _stub('tokenStream');
 
   @override
-  Future<KitPushToken?> currentToken() async => _stub('currentToken');
+  Future<AppBoxKitPushToken?> currentToken() async => _stub('currentToken');
 
   @override
-  Stream<KitRemoteMessage> get foregroundMessages => _stub('foregroundMessages');
+  Stream<AppBoxKitRemoteMessage> get foregroundMessages => _stub('foregroundMessages');
 
   @override
-  Future<void> showLocalNotification(KitLocalNotification notification) async =>
+  Future<void> showLocalNotification(AppBoxKitLocalNotification notification) async =>
       _stub('showLocalNotification');
 
   @override

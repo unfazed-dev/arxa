@@ -2,10 +2,10 @@ import 'package:flutter/foundation.dart'
     show TargetPlatform, defaultTargetPlatform, kIsWeb;
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
-import '../kit_notifications_service.dart';
-import '../kit_notifications_types.dart';
+import '../appbox_kit_notifications_service.dart';
+import '../appbox_kit_notifications_types.dart';
 
-/// The working default [KitNotificationsService]: local notifications,
+/// The working default [AppBoxKitNotificationsService]: local notifications,
 /// permission prompting, and per-notification badge via
 /// flutter_local_notifications (native-first — UNUserNotificationCenter on
 /// iOS/macOS, NotificationManager on Android).
@@ -13,8 +13,8 @@ import '../kit_notifications_types.dart';
 /// This is NOT a push provider. [tokenStream] and [foregroundMessages] emit
 /// nothing; attach the FCM/APNs push backend for those seams. [setBadgeCount]
 /// is likewise unsupported standalone (see the method doc).
-class LocalKitNotificationsService implements KitNotificationsService {
-  LocalKitNotificationsService({
+class LocalAppBoxKitNotificationsService implements AppBoxKitNotificationsService {
+  LocalAppBoxKitNotificationsService({
     FlutterLocalNotificationsPlugin? plugin,
     this.androidDefaultIcon = '@mipmap/ic_launcher',
     this.defaultChannelId = 'default',
@@ -27,7 +27,7 @@ class LocalKitNotificationsService implements KitNotificationsService {
   /// Android small-icon resource used at initialize time.
   final String androidDefaultIcon;
 
-  /// Android channel applied when a [KitLocalNotification] omits its own.
+  /// Android channel applied when a [AppBoxKitLocalNotification] omits its own.
   final String defaultChannelId;
   final String defaultChannelName;
 
@@ -61,13 +61,13 @@ class LocalKitNotificationsService implements KitNotificationsService {
   }
 
   @override
-  Future<KitNotificationPermissionResult> requestPermission([
-    KitNotificationPermissionRequest request =
-        const KitNotificationPermissionRequest(),
+  Future<AppBoxKitNotificationPermissionResult> requestPermission([
+    AppBoxKitNotificationPermissionRequest request =
+        const AppBoxKitNotificationPermissionRequest(),
   ]) async {
     if (kIsWeb) {
-      return const KitNotificationPermissionResult(
-          KitNotificationAuthorization.notDetermined);
+      return const AppBoxKitNotificationPermissionResult(
+          AppBoxKitNotificationAuthorization.notDetermined);
     }
     bool? granted;
     switch (defaultTargetPlatform) {
@@ -99,34 +99,34 @@ class LocalKitNotificationsService implements KitNotificationsService {
       case TargetPlatform.windows:
         granted = null;
     }
-    return KitNotificationPermissionResult(switch (granted) {
-      true => KitNotificationAuthorization.authorized,
-      false => KitNotificationAuthorization.denied,
-      null => KitNotificationAuthorization.notDetermined,
+    return AppBoxKitNotificationPermissionResult(switch (granted) {
+      true => AppBoxKitNotificationAuthorization.authorized,
+      false => AppBoxKitNotificationAuthorization.denied,
+      null => AppBoxKitNotificationAuthorization.notDetermined,
     });
   }
 
   @override
-  Future<KitNotificationPermissionResult> permissionStatus() async {
+  Future<AppBoxKitNotificationPermissionResult> permissionStatus() async {
     // flutter_local_notifications 21 has no cross-platform status query that
     // avoids prompting; report notDetermined. A push backend (FCM) or a
     // permission_handler-backed service can override with a real status.
-    return const KitNotificationPermissionResult(
-        KitNotificationAuthorization.notDetermined);
+    return const AppBoxKitNotificationPermissionResult(
+        AppBoxKitNotificationAuthorization.notDetermined);
   }
 
   // Local notifications are not a push provider — no tokens, no remote messages.
   @override
-  Stream<KitPushToken> get tokenStream => const Stream.empty();
+  Stream<AppBoxKitPushToken> get tokenStream => const Stream.empty();
 
   @override
-  Future<KitPushToken?> currentToken() async => null;
+  Future<AppBoxKitPushToken?> currentToken() async => null;
 
   @override
-  Stream<KitRemoteMessage> get foregroundMessages => const Stream.empty();
+  Stream<AppBoxKitRemoteMessage> get foregroundMessages => const Stream.empty();
 
   @override
-  Future<void> showLocalNotification(KitLocalNotification notification) async {
+  Future<void> showLocalNotification(AppBoxKitLocalNotification notification) async {
     await initialize();
     final darwin = DarwinNotificationDetails(badgeNumber: notification.badgeCount);
     final details = NotificationDetails(
@@ -159,10 +159,10 @@ class LocalKitNotificationsService implements KitNotificationsService {
     // no standalone app-icon badge setter in v21, and Android badges are
     // launcher-specific. A standalone count is a push-payload / dedicated-badge-
     // plugin concern owned by the FCM/APNs backend. Set
-    // KitLocalNotification.badgeCount on a shown notification instead.
+    // AppBoxKitLocalNotification.badgeCount on a shown notification instead.
     throw UnsupportedError(
-      'LocalKitNotificationsService: standalone setBadgeCount is not supported '
-      'by flutter_local_notifications. Set KitLocalNotification.badgeCount on a '
+      'LocalAppBoxKitNotificationsService: standalone setBadgeCount is not supported '
+      'by flutter_local_notifications. Set AppBoxKitLocalNotification.badgeCount on a '
       'shown notification, or attach the FCM/APNs push backend.',
     );
   }

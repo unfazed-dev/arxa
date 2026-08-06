@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart' show immutable;
 
 /// OS-level authorization state for device notifications. Union of the iOS
 /// `UNAuthorizationStatus` and Android's runtime-permission model.
-enum KitNotificationAuthorization {
+enum AppBoxKitNotificationAuthorization {
   /// Never asked (iOS `notDetermined`; Android before the first request).
   notDetermined,
 
@@ -20,24 +20,24 @@ enum KitNotificationAuthorization {
 /// Result of a permission query/request. [isGranted] treats provisional as
 /// granted since messages still deliver.
 @immutable
-class KitNotificationPermissionResult {
-  const KitNotificationPermissionResult(this.status);
+class AppBoxKitNotificationPermissionResult {
+  const AppBoxKitNotificationPermissionResult(this.status);
 
-  final KitNotificationAuthorization status;
+  final AppBoxKitNotificationAuthorization status;
 
   bool get isGranted =>
-      status == KitNotificationAuthorization.authorized ||
-      status == KitNotificationAuthorization.provisional;
+      status == AppBoxKitNotificationAuthorization.authorized ||
+      status == AppBoxKitNotificationAuthorization.provisional;
 
   @override
-  String toString() => 'KitNotificationPermissionResult($status)';
+  String toString() => 'AppBoxKitNotificationPermissionResult($status)';
 }
 
 /// Which capabilities to request when prompting. Honored on iOS/macOS (Darwin);
 /// Android's single runtime permission ignores the individual flags.
 @immutable
-class KitNotificationPermissionRequest {
-  const KitNotificationPermissionRequest({
+class AppBoxKitNotificationPermissionRequest {
+  const AppBoxKitNotificationPermissionRequest({
     this.alert = true,
     this.badge = true,
     this.sound = true,
@@ -48,31 +48,31 @@ class KitNotificationPermissionRequest {
   final bool sound;
 }
 
-/// The push provider that issued a [KitPushToken].
-enum KitPushProvider { apns, fcm, unknown }
+/// The push provider that issued a [AppBoxKitPushToken].
+enum AppBoxKitPushProvider { apns, fcm, unknown }
 
 /// A push registration token (APNs device token or FCM token).
 @immutable
-class KitPushToken {
-  const KitPushToken({
+class AppBoxKitPushToken {
+  const AppBoxKitPushToken({
     required this.value,
     required this.issuedAt,
-    this.provider = KitPushProvider.unknown,
+    this.provider = AppBoxKitPushProvider.unknown,
   });
 
   final String value;
-  final KitPushProvider provider;
+  final AppBoxKitPushProvider provider;
   final DateTime issuedAt;
 
   @override
-  String toString() => 'KitPushToken(${provider.name}, '
+  String toString() => 'AppBoxKitPushToken(${provider.name}, '
       '${value.length > 12 ? '${value.substring(0, 12)}…' : value})';
 }
 
 /// A remote message delivered while the app is in the foreground.
 @immutable
-class KitRemoteMessage {
-  const KitRemoteMessage({
+class AppBoxKitRemoteMessage {
+  const AppBoxKitRemoteMessage({
     required this.receivedAt,
     this.messageId,
     this.title,
@@ -89,13 +89,13 @@ class KitRemoteMessage {
   final DateTime receivedAt;
 
   @override
-  String toString() => 'KitRemoteMessage($messageId, $title)';
+  String toString() => 'AppBoxKitRemoteMessage($messageId, $title)';
 }
 
 /// A local notification to display now.
 @immutable
-class KitLocalNotification {
-  const KitLocalNotification({
+class AppBoxKitLocalNotification {
+  const AppBoxKitLocalNotification({
     required this.id,
     this.title,
     this.body,
@@ -123,10 +123,10 @@ class KitLocalNotification {
 }
 
 /// An outbound one-to-one message (SMS, email) the app sends — distinct from
-/// inbound device push. Consumed by [KitOutboundMessageSink] implementations.
+/// inbound device push. Consumed by [AppBoxKitOutboundMessageSink] implementations.
 @immutable
-class KitOutboundMessage {
-  const KitOutboundMessage({
+class AppBoxKitOutboundMessage {
+  const AppBoxKitOutboundMessage({
     required this.to,
     required this.body,
     this.subject,
@@ -144,5 +144,5 @@ class KitOutboundMessage {
   final Map<String, String> metadata;
 
   @override
-  String toString() => 'KitOutboundMessage(to: $to)';
+  String toString() => 'AppBoxKitOutboundMessage(to: $to)';
 }
