@@ -3,7 +3,7 @@ import 'package:appbox_kit_auth/appbox_kit_auth.dart';
 
 void main() {
   group('AppBoxKitSeedAuthBackend (tier1 spec port)', () {
-    test('seeds the deterministic showcase accounts', () {
+    test('kit.auth.seed-backend — seeds the deterministic showcase accounts', () {
       final backend = AppBoxKitSeedAuthBackend();
       final users = backend.seedUsers();
       expect(users['seed_alice']?['email'], 'alice@showcase.app');
@@ -12,7 +12,7 @@ void main() {
       expect(users['seed_alice']!.containsKey('password'), isFalse);
     });
 
-    test('valid sign-in succeeds with user id + fresh token', () async {
+    test('kit.auth.seed-backend — valid sign-in succeeds with user id + fresh token', () async {
       final backend = AppBoxKitSeedAuthBackend();
       final res = await backend.signIn(const AppBoxKitEmailPasswordCredentials(
         email: 'alice@showcase.app',
@@ -27,7 +27,7 @@ void main() {
       expect(backend.currentUserFor('seed_alice')?.email, 'alice@showcase.app');
     });
 
-    test('wrong password → invalidCredentials', () async {
+    test('kit.auth.seed-backend — wrong password → invalidCredentials', () async {
       final backend = AppBoxKitSeedAuthBackend();
       final res = await backend.signIn(const AppBoxKitEmailPasswordCredentials(
         email: 'alice@showcase.app',
@@ -38,7 +38,7 @@ void main() {
       expect(res.message, 'wrong password');
     });
 
-    test('unknown user → userNotFound', () async {
+    test('kit.auth.seed-backend — unknown user → userNotFound', () async {
       final backend = AppBoxKitSeedAuthBackend();
       final res = await backend.signIn(const AppBoxKitEmailPasswordCredentials(
         email: 'nobody@showcase.app',
@@ -49,7 +49,7 @@ void main() {
       expect(res.message, 'unknown user');
     });
 
-    test('signOut clears the session and emits null', () async {
+    test('kit.auth.seed-backend — signOut clears the session and emits null', () async {
       final backend = AppBoxKitSeedAuthBackend();
       await backend.signIn(const AppBoxKitEmailPasswordCredentials(
         email: 'alice@showcase.app',
@@ -66,7 +66,7 @@ void main() {
       await sub.cancel();
     });
 
-    test('signUp creates a new user + session; duplicate is rejected; '
+    test('kit.auth.seed-backend — signUp creates a new user + session; duplicate is rejected; '
         'the new user can sign in independently', () async {
       final backend = AppBoxKitSeedAuthBackend();
       final res = await backend.signUp(const AppBoxKitEmailPasswordCredentials(
@@ -97,7 +97,7 @@ void main() {
       expect(signIn, isA<AppBoxKitAuthSuccess>());
     });
 
-    test('token refresh rotates: old token dies, bogus token fails', () async {
+    test('kit.auth.seed-backend — token refresh rotates: old token dies, bogus token fails', () async {
       final backend = AppBoxKitSeedAuthBackend();
       final auth = await backend.signIn(const AppBoxKitEmailPasswordCredentials(
         email: 'bob@showcase.app',
@@ -119,7 +119,7 @@ void main() {
       expect((bogus as AppBoxKitAuthFailure).reason, AppBoxKitAuthFailureReason.tokenExpired);
     });
 
-    test('tokens mint monotonically (tok_1, tok_2, …)', () async {
+    test('kit.auth.seed-backend — tokens mint monotonically (tok_1, tok_2, …)', () async {
       final backend = AppBoxKitSeedAuthBackend();
       final a = await backend.signIn(const AppBoxKitEmailPasswordCredentials(
         email: 'alice@showcase.app',
@@ -133,7 +133,7 @@ void main() {
       expect(b.session.accessToken, 'tok_2');
     });
 
-    test('sign-up uids mint monotonically (user_1, user_2, …)', () async {
+    test('kit.auth.seed-backend — sign-up uids mint monotonically (user_1, user_2, …)', () async {
       final backend = AppBoxKitSeedAuthBackend();
       final a = await backend.signUp(const AppBoxKitEmailPasswordCredentials(
         email: 'a@showcase.app',
@@ -147,7 +147,7 @@ void main() {
       expect(b.user.id, 'user_2');
     });
 
-    test('Apple/Google sign-in resolve deterministic demo identities', () async {
+    test('kit.auth.seed-backend — Apple/Google sign-in resolve deterministic demo identities', () async {
       final backend = AppBoxKitSeedAuthBackend();
       final apple = await backend.signInWithApple();
       expect(apple, isA<AppBoxKitAuthSuccess>());
@@ -166,7 +166,7 @@ void main() {
       expect(again.user.id, 'apple_demo_user');
     });
 
-    test('authStateChanges replays current user then live changes', () async {
+    test('kit.auth.seed-backend — authStateChanges replays current user then live changes', () async {
       final backend = AppBoxKitSeedAuthBackend();
       final emitted = <AppBoxKitAuthUser?>[];
       final sub = backend.authStateChanges.listen(emitted.add);
@@ -184,7 +184,7 @@ void main() {
       await sub.cancel();
     });
 
-    test('use after dispose throws StateError', () async {
+    test('kit.auth.seed-backend — use after dispose throws StateError', () async {
       final backend = AppBoxKitSeedAuthBackend();
       await backend.dispose();
       expect(

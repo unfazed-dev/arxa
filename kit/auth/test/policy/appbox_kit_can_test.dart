@@ -17,7 +17,7 @@ Widget _host(Widget child) =>
     MaterialApp(home: Scaffold(body: child));
 
 void main() {
-  testWidgets('renders child when allowed', (t) async {
+  testWidgets('kit.auth.access-widget — renders child when allowed', (t) async {
     await t.pumpWidget(_host(
       AppBoxKitCan(
         action: 'product.update',
@@ -29,7 +29,7 @@ void main() {
     expect(find.text('EDIT'), findsOneWidget);
   });
 
-  testWidgets('renders nothing (shrink) when denied — C14', (t) async {
+  testWidgets('kit.auth.access-widget — renders nothing (shrink) when denied — C14', (t) async {
     await t.pumpWidget(_host(
       AppBoxKitCan(
         action: 'product.update',
@@ -41,7 +41,7 @@ void main() {
     expect(find.text('EDIT'), findsNothing);
   });
 
-  testWidgets('renders nothing when signed out', (t) async {
+  testWidgets('kit.auth.access-widget — renders nothing when signed out', (t) async {
     await t.pumpWidget(_host(
       AppBoxKitCan(
         action: 'product.update',
@@ -53,7 +53,7 @@ void main() {
     expect(find.text('EDIT'), findsNothing);
   });
 
-  testWidgets('renders fallback when provided and denied', (t) async {
+  testWidgets('kit.auth.access-widget — renders fallback when provided and denied', (t) async {
     await t.pumpWidget(_host(
       AppBoxKitCan(
         action: 'product.update',

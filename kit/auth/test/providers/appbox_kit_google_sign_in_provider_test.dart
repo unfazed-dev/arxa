@@ -41,11 +41,11 @@ void main() {
       );
 
   group('AppBoxKitGoogleSignInProvider', () {
-    test('id is google', () {
+    test('kit.auth.oauth-google — id is google', () {
       expect(AppBoxKitGoogleSignInProvider().id, 'google');
     });
 
-    test('success: initialize → probe → authenticate, session mapped',
+    test('kit.auth.oauth-google — success: initialize → probe → authenticate, session mapped',
         () async {
       when(() => platform.authenticate(any()))
           .thenAnswer((_) async => results(photoUrl: 'https://x/p.png'));
@@ -73,7 +73,7 @@ void main() {
       verify(() => platform.supportsAuthenticate()).called(1);
     });
 
-    test('cancellation → AppBoxKitAuthFailure(cancelled), not an exception', () async {
+    test('kit.auth.oauth-google — cancellation → AppBoxKitAuthFailure(cancelled), not an exception', () async {
       when(() => platform.authenticate(any())).thenThrow(
         const GoogleSignInException(
           code: GoogleSignInExceptionCode.canceled,
@@ -88,7 +88,7 @@ void main() {
       expect(res.message, 'user backed out');
     });
 
-    test('clientConfigurationError → operationNotAllowed', () async {
+    test('kit.auth.oauth-google — clientConfigurationError → operationNotAllowed', () async {
       when(() => platform.authenticate(any())).thenThrow(
         const GoogleSignInException(
           code: GoogleSignInExceptionCode.clientConfigurationError,
@@ -103,7 +103,7 @@ void main() {
           AppBoxKitAuthFailureReason.operationNotAllowed);
     });
 
-    test('other error codes → unknown, cause retained', () async {
+    test('kit.auth.oauth-google — other error codes → unknown, cause retained', () async {
       const error = GoogleSignInException(
         code: GoogleSignInExceptionCode.interrupted,
         description: 'network hiccup',
@@ -117,7 +117,7 @@ void main() {
       expect(identical(res.cause, error), isTrue);
     });
 
-    test('platform without authenticate support → operationNotAllowed, '
+    test('kit.auth.oauth-google — platform without authenticate support → operationNotAllowed, '
         'authenticate never called', () async {
       when(() => platform.supportsAuthenticate()).thenReturn(false);
 
@@ -129,7 +129,7 @@ void main() {
       verifyNever(() => platform.authenticate(any()));
     });
 
-    test('scopeHint is forwarded to authenticate', () async {
+    test('kit.auth.oauth-google — scopeHint is forwarded to authenticate', () async {
       when(() => platform.authenticate(any()))
           .thenAnswer((_) async => results());
 

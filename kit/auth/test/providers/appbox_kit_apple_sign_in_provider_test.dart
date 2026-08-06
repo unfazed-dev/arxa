@@ -42,12 +42,12 @@ AppBoxKitAppleSignInProvider _provider({
 
 void main() {
   group('AppBoxKitAppleSignInProvider', () {
-    test('id is apple', () {
+    test('kit.auth.oauth-apple — id is apple', () {
       expect(_provider(onFetch: (_, __) => throw UnimplementedError()).id,
           'apple');
     });
 
-    test('first authorization: maps email, name, tokens, and nonce hash',
+    test('kit.auth.oauth-apple — first authorization: maps email, name, tokens, and nonce hash',
         () async {
       List<AppleIDAuthorizationScopes>? seenScopes;
       String? seenNonce;
@@ -78,7 +78,7 @@ void main() {
       expect(seenScopes, contains(AppleIDAuthorizationScopes.fullName));
     });
 
-    test('repeat authorization: null email/name is normal, id stays stable',
+    test('kit.auth.oauth-apple — repeat authorization: null email/name is normal, id stays stable',
         () async {
       final provider = _provider(
         onFetch: (_, __) async => _credential(), // no email/name
@@ -93,7 +93,7 @@ void main() {
       expect(user.displayName, isNull);
     });
 
-    test('cancellation → AppBoxKitAuthFailure(cancelled), not an exception', () async {
+    test('kit.auth.oauth-apple — cancellation → AppBoxKitAuthFailure(cancelled), not an exception', () async {
       final provider = _provider(
         onFetch: (_, __) => throw const SignInWithAppleAuthorizationException(
           code: AuthorizationErrorCode.canceled,
@@ -107,7 +107,7 @@ void main() {
       expect((res as AppBoxKitAuthFailure).reason, AppBoxKitAuthFailureReason.cancelled);
     });
 
-    test('capability probe failure → operationNotAllowed', () async {
+    test('kit.auth.oauth-apple — capability probe failure → operationNotAllowed', () async {
       var fetchCalled = false;
       final provider = _provider(
         available: false,
@@ -125,7 +125,7 @@ void main() {
       expect(fetchCalled, isFalse); // never reaches the platform flow
     });
 
-    test('not-supported exception → operationNotAllowed', () async {
+    test('kit.auth.oauth-apple — not-supported exception → operationNotAllowed', () async {
       final provider = _provider(
         onFetch: (_, __) =>
             throw const SignInWithAppleNotSupportedException(
@@ -140,7 +140,7 @@ void main() {
           AppBoxKitAuthFailureReason.operationNotAllowed);
     });
 
-    test('other authorization error → unknown, cause retained', () async {
+    test('kit.auth.oauth-apple — other authorization error → unknown, cause retained', () async {
       const error = SignInWithAppleAuthorizationException(
         code: AuthorizationErrorCode.failed,
         message: 'something failed',
