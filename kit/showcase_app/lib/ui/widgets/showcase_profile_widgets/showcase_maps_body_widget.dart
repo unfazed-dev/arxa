@@ -25,7 +25,7 @@ class ShowcaseMapsBodyWidget extends StatelessWidget {
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.all(axSize16),
+            padding: const EdgeInsets.all(abxSize16),
             child: Text(
               'Backend: ${viewModel.backendLabel}'
               '${viewModel.mapboxAvailable ? '' : ' — pass --dart-define=MAPBOX_PUBLIC_TOKEN=pk.... to run the same AppBoxKitMapView on Mapbox tiles.'}',

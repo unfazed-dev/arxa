@@ -19,12 +19,12 @@ class ShowcaseNotesFormErrorRowWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.only(top: axSize12),
+      padding: const EdgeInsets.only(top: abxSize12),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(AppBoxKitGlyphs.error.icon,
-              size: axSize18, color: theme.colorScheme.error),
+              size: abxSize18, color: theme.colorScheme.error),
           appBoxKitHorizontalSpaceSmall,
           Expanded(
             child: Text(

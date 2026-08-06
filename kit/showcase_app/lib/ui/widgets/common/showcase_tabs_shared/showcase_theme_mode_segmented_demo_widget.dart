@@ -32,10 +32,10 @@ class ShowcaseThemeModeSegmentedDemoWidget extends StatelessWidget {
             appBoxKitVerticalSpaceXSmall,
             Container(
               padding: const EdgeInsets.symmetric(
-                  horizontal: axSize16, vertical: axSize10),
+                  horizontal: abxSize16, vertical: abxSize10),
               decoration: BoxDecoration(
                 color: scheme.primaryContainer,
-                borderRadius: BorderRadius.circular(axRad10),
+                borderRadius: BorderRadius.circular(abxRad10),
               ),
               child: Text(
                 'theme: ${mode.name}',

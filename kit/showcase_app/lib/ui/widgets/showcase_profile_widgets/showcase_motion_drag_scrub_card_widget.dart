@@ -36,7 +36,7 @@ class _ShowcaseMotionDragScrubCardState
         // Same Expanded-inside-wake rule as ShowcaseMotionManualReplayCardWidget.
         child: AppBoxKitGlassCard(
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: axSize16),
+            padding: const EdgeInsets.symmetric(vertical: abxSize16),
             child: Center(
               child: Text(
                 label,
@@ -63,7 +63,7 @@ class _ShowcaseMotionDragScrubCardState
               _driver.settle(velocity: (details.primaryVelocity ?? 0) / extent),
           child: AppBoxKitGlassCard(
             child: Padding(
-              padding: const EdgeInsets.all(axSize16),
+              padding: const EdgeInsets.all(abxSize16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -106,9 +106,9 @@ class _ShowcaseMotionDragScrubCardState
                     child: Row(
                       children: <Widget>[
                         _chip(context, 'One', 0),
-                        appBoxKitHorizontalSpace(axSize16 / 2),
+                        appBoxKitHorizontalSpace(abxSize16 / 2),
                         _chip(context, 'Two', 1),
-                        appBoxKitHorizontalSpace(axSize16 / 2),
+                        appBoxKitHorizontalSpace(abxSize16 / 2),
                         _chip(context, 'Three', 2),
                       ],
                     ),

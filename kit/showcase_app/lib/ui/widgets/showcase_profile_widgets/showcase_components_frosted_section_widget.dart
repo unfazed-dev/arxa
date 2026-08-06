@@ -8,7 +8,7 @@ class ShowcaseComponentsFrostedSectionWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const AppBoxKitFrostedSurface(
-      padding: EdgeInsets.all(axSize16),
+      padding: EdgeInsets.all(abxSize16),
       child: Text(
         'An explicit AppBoxKitFrostedSurface — the ADR 0010 content-layer '
         'glass tier (Flutter-drawn frost: BackdropFilter + tint + rim '

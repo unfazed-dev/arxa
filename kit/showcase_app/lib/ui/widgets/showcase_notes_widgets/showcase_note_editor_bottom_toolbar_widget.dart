@@ -27,7 +27,7 @@ class ShowcaseNoteEditorBottomToolbarWidget extends StatelessWidget {
         child: AppBoxKitMotionScope(
           child: Padding(
             padding: const EdgeInsets.symmetric(
-                horizontal: axSize16, vertical: axSize8),
+                horizontal: abxSize16, vertical: abxSize8),
             // Streams-only: recordingElapsed$ (a seeded BehaviorSubject on the
             // media adapter, passed through the VM) swaps the action row for
             // the recording row and feeds the live elapsed pill.

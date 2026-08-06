@@ -36,7 +36,7 @@ class ShowcaseNotesFolderRowWidget extends StatelessWidget {
       background: Container(
         color: theme.colorScheme.error,
         alignment: Alignment.centerRight,
-        padding: const EdgeInsets.symmetric(horizontal: axSize20),
+        padding: const EdgeInsets.symmetric(horizontal: abxSize20),
         child: Icon(AppBoxKitGlyphs.delete.icon, color: theme.colorScheme.onError),
       ),
       confirmDismiss: (_) async {

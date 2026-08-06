@@ -51,7 +51,7 @@ class ShowcaseNotesOtpFormWidget extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 SizedBox(
-                  height: axButtonHeightMedium,
+                  height: abxButtonHeightMedium,
                   child: AppBoxKitNativeButton(
                     label: otpRequested ? 'Verify' : 'Send Code',
                     style: AppBoxKitButtonStyle.prominentGlass,

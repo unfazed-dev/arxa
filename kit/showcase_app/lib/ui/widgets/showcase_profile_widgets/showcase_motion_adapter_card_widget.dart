@@ -14,7 +14,7 @@ class ShowcaseMotionAdapterCardWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return AppBoxKitGlassCard(
       child: Padding(
-        padding: const EdgeInsets.all(axSize16),
+        padding: const EdgeInsets.all(abxSize16),
         child: Text(
           'This card animates through a plain flutter_animate '
           'chain, but its timeline comes from the scope via '

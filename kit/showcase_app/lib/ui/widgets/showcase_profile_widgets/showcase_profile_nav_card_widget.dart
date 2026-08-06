@@ -26,7 +26,7 @@ class ShowcaseProfileNavCardWidget extends StatelessWidget {
           ShowcaseSectionLabelWidget(title),
           appBoxKitVerticalSpaceSmall,
           SizedBox(
-            height: axButtonHeightMedium,
+            height: abxButtonHeightMedium,
             child: AppBoxKitNativeButton(
               label: buttonLabel,
               onPressed: () => context.router.pushNamed(routeName),

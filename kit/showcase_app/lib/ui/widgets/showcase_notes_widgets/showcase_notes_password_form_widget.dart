@@ -54,7 +54,7 @@ class ShowcaseNotesPasswordFormWidget extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               SizedBox(
-                height: axButtonHeightMedium,
+                height: abxButtonHeightMedium,
                 child: AppBoxKitNativeButton(
                   label: 'Sign In',
                   style: AppBoxKitButtonStyle.prominentGlass,
@@ -64,7 +64,7 @@ class ShowcaseNotesPasswordFormWidget extends StatelessWidget {
               ),
               appBoxKitVerticalSpaceSmall,
               SizedBox(
-                height: axButtonHeightMedium,
+                height: abxButtonHeightMedium,
                 child: AppBoxKitNativeButton(
                   label: 'Create Account',
                   style: AppBoxKitButtonStyle.plain,

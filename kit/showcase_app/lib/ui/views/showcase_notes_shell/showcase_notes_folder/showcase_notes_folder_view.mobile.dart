@@ -69,7 +69,7 @@ class ShowcaseNotesFolderViewMobile
                     ShowcaseNotesPinnedSearchBarWidget(
                       child: Padding(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: axSize16, vertical: axSize8),
+                            horizontal: abxSize16, vertical: abxSize8),
                         child: AppBoxKitNativeSearchBar(
                           hint: 'Search',
                           onChanged: viewModel.setQuery,
@@ -81,21 +81,21 @@ class ShowcaseNotesFolderViewMobile
                       hasScrollBody: false,
                       child: Center(
                         child: Padding(
-                          padding: EdgeInsets.symmetric(vertical: axSize80),
+                          padding: EdgeInsets.symmetric(vertical: abxSize80),
                           child: Text('No Notes'),
                         ),
                       ),
                     )
                   else
                     SliverPadding(
-                      padding: EdgeInsets.fromLTRB(axSize16, axSize8, axSize16,
-                          axSize80 + MediaQuery.paddingOf(context).bottom),
+                      padding: EdgeInsets.fromLTRB(abxSize16, abxSize8, abxSize16,
+                          abxSize80 + MediaQuery.paddingOf(context).bottom),
                       sliver: SliverList.builder(
                         itemCount: groups.length,
                         itemBuilder: (context, i) {
                           final group = groups[i];
                           return Padding(
-                            padding: const EdgeInsets.only(bottom: axSize16),
+                            padding: const EdgeInsets.only(bottom: abxSize16),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [

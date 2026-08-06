@@ -10,7 +10,7 @@ class ShowcaseComponentsInsetWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.symmetric(horizontal: axSize16),
+        padding: const EdgeInsets.symmetric(horizontal: abxSize16),
         child: child,
       );
 }

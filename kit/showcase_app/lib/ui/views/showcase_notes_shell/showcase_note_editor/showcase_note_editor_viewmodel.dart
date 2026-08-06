@@ -33,16 +33,16 @@ typedef NotePlaybackProgress = ({Duration position, Duration? duration});
 ///
 /// [note$] is a facade pass-through; the media state streams are
 /// pass-throughs of [ShowcaseNotesMediaAdapterService]'s seeded
-/// [BehaviorSubject]s. The one [AppBoxKitAction.watch] left runs VM-internal side
+/// [BehaviorSubject]s. The one [AppBoxKitAction.listen] left runs VM-internal side
 /// effects only (the one-shot body seed and the pending New Photo/New Voice
-/// intent) — it feeds no view data. Autosave debounce is the bus's
-/// per-dispatcher `debounce`, not a hand-rolled Timer.
+/// intent) — it feeds no view data. Autosave debounce is the hub's
+/// per-command `debounce`, not a hand-rolled Timer.
 class ShowcaseNoteEditorViewModel extends AppBoxKitViewModel {
   ShowcaseNoteEditorViewModel({required this.noteId}) {
-    watch(
+    listen(
       'note.sideEffects',
-      streams: [_notes.note$(noteId)],
-      callback: (note) => _onNoteSideEffects(note as ShowcaseNoteModel?),
+      to: [_notes.note$(noteId)],
+      onData: (note) => _onNoteSideEffects(note as ShowcaseNoteModel?),
     );
   }
 
@@ -101,7 +101,7 @@ class ShowcaseNoteEditorViewModel extends AppBoxKitViewModel {
   bool _textInitialized = false;
 
   /// Command-side cache of the latest note$ event (togglePin/delete/attachment
-  /// writes need it synchronously). Fed by the side-effect watch — the view
+  /// writes need it synchronously). Fed by the side-effect listen — the view
   /// never reads it; it binds [note$].
   ShowcaseNoteModel? _note;
 
@@ -141,13 +141,13 @@ class ShowcaseNoteEditorViewModel extends AppBoxKitViewModel {
   Future<String> resolvePath(ShowcaseNoteAttachmentModel attachment) =>
       _media.resolvePath(attachment);
 
-  /// Debounced autosave dispatcher: rapid keystrokes supersede the pending save and
+  /// Debounced autosave command: rapid keystrokes supersede the pending save and
   /// the superseded handles complete with the eventual save's result (the
   /// caller drops them — fire-and-forget by construction). The VM is
   /// per-note, so the entity key is implicit in the owner identity.
   /// `flushOnDispose` lands the final write: leaving the editor inside the
   /// debounce window saves immediately instead of dropping the keystrokes.
-  late final _autosave = bus.define<Null, void>(
+  late final _autosave = abxActionHub.on<Null, void>(
     'save',
     (_) => _flushSave(),
     debounce: const Duration(milliseconds: 500),
@@ -157,7 +157,7 @@ class ShowcaseNoteEditorViewModel extends AppBoxKitViewModel {
 
   void onBodyChanged(String value) {
     _body = value;
-    _autosave.dispatch(null);
+    _autosave.send(null);
   }
 
   Future<void> _flushSave() async {
@@ -215,7 +215,7 @@ class ShowcaseNoteEditorViewModel extends AppBoxKitViewModel {
   void dispose() {
     // Clear any unconsumed intent so it can't leak into the next editor open.
     pendingAction = null;
-    // A pending debounced save is flushed by the dispatcher's flushOnDispose in
+    // A pending debounced save is flushed by the command's flushOnDispose in
     // super.dispose() → disposeAppBoxKitActions.
     super.dispose();
   }

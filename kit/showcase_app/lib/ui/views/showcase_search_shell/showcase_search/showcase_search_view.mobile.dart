@@ -12,7 +12,7 @@ class ShowcaseSearchViewMobile
   Widget build(BuildContext context, ShowcaseSearchViewModel viewModel) {
     return ListView(
       padding:
-          const EdgeInsets.symmetric(horizontal: axSize16, vertical: axSize16),
+          const EdgeInsets.symmetric(horizontal: abxSize16, vertical: abxSize16),
       children: [
         // No controller: the bar manages its own field, and the submit value
         // arrives via onSubmitted — the VM holds no TextEditingController

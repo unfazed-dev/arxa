@@ -49,7 +49,7 @@ class ShowcaseNoteAudioRowWidget extends StatelessWidget {
           onLongPress: () => onRemoveAttachment(attachment),
           child: AppBoxKitGlassCard(
             padding: const EdgeInsets.symmetric(
-                horizontal: axSize12, vertical: axSize8),
+                horizontal: abxSize12, vertical: abxSize8),
             child: Row(
               children: [
                 AppBoxKitNativeIconButton(

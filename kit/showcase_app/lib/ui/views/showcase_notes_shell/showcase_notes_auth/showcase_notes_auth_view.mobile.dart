@@ -35,10 +35,10 @@ class ShowcaseNotesAuthViewMobile
       child: AppBoxKitMotionScope(
         child: SingleChildScrollView(
           padding: EdgeInsets.fromLTRB(
-              axSize24,
-              axSize24,
-              axSize24,
-              axSize24 +
+              abxSize24,
+              abxSize24,
+              abxSize24,
+              abxSize24 +
                   MediaQuery.paddingOf(context).bottom +
                   kShowcaseTabBarBlockHeight),
           child: Column(
@@ -51,7 +51,7 @@ class ShowcaseNotesAuthViewMobile
               Column(
                 children: [
                   Icon(AppBoxKitGlyphs.notes.icon,
-                      size: axSize60, color: theme.colorScheme.primary),
+                      size: abxSize60, color: theme.colorScheme.primary),
                   appBoxKitVerticalSpaceSmall,
                   Text(
                     'Kit Notes',
@@ -106,7 +106,7 @@ class ShowcaseNotesAuthViewMobile
                         Expanded(child: Divider(color: theme.dividerColor)),
                         Padding(
                           padding:
-                              const EdgeInsets.symmetric(horizontal: axSize12),
+                              const EdgeInsets.symmetric(horizontal: abxSize12),
                           child: Text('or',
                               style: TextStyle(
                                   color: theme.colorScheme.onSurfaceVariant)),
@@ -116,7 +116,7 @@ class ShowcaseNotesAuthViewMobile
                     ),
                     appBoxKitVerticalSpaceMedium,
                     SizedBox(
-                      height: axButtonHeightMedium,
+                      height: abxButtonHeightMedium,
                       child: AppBoxKitNativeButton(
                         label: 'Continue with Google',
                         // glass (default) renders real Liquid Glass on iOS 26 and
@@ -127,7 +127,7 @@ class ShowcaseNotesAuthViewMobile
                     ),
                     appBoxKitVerticalSpaceSmall,
                     SizedBox(
-                      height: axButtonHeightMedium,
+                      height: abxButtonHeightMedium,
                       child: AppBoxKitNativeButton(
                         label: 'Continue with Apple',
                         style: AppBoxKitButtonStyle.glass,
@@ -136,7 +136,7 @@ class ShowcaseNotesAuthViewMobile
                     ),
                     appBoxKitVerticalSpaceSmall,
                     SizedBox(
-                      height: axButtonHeightMedium,
+                      height: abxButtonHeightMedium,
                       child: AppBoxKitNativeButton(
                         label: 'Continue as Guest',
                         style: AppBoxKitButtonStyle.glass,
@@ -155,7 +155,7 @@ class ShowcaseNotesAuthViewMobile
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Icon(AppBoxKitGlyphs.info.icon,
-                        size: axSize18,
+                        size: abxSize18,
                         color: theme.colorScheme.onSurfaceVariant),
                     appBoxKitHorizontalSpaceSmall,
                     Expanded(

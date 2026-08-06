@@ -67,7 +67,7 @@ class _ShowcaseNoteEditorBodyState extends State<ShowcaseNoteEditorBodyWidget> {
         .toList();
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(axSize16),
+      padding: const EdgeInsets.all(abxSize16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

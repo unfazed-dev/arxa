@@ -206,7 +206,8 @@ class ShowcaseNotesFacadeService extends AppBoxKitDataFacade {
       );
 
   Future<ShowcaseNoteModel> saveBody(ShowcaseNoteModel note, String body) => mutate<ShowcaseNoteModel>(
-        () => _repo.upsertNote(
+        () => _repo.patchNote(
+          note,
           note.copyWith(body: body, updatedAt: DateTime.now().toUtc()),
         ),
         name: 'save',
@@ -215,7 +216,7 @@ class ShowcaseNotesFacadeService extends AppBoxKitDataFacade {
       );
 
   Future<ShowcaseNoteModel> togglePin(ShowcaseNoteModel note) => mutate<ShowcaseNoteModel>(
-        () => _repo.upsertNote(note.copyWith(pinned: !note.pinned)),
+        () => _repo.patchNote(note, note.copyWith(pinned: !note.pinned)),
         name: 'pin',
         entity: note.id,
         error: 'Could not update note',
@@ -223,31 +224,40 @@ class ShowcaseNotesFacadeService extends AppBoxKitDataFacade {
 
   Future<ShowcaseNoteModel> addAttachment(ShowcaseNoteModel note, ShowcaseNoteAttachmentModel attachment) =>
       mutate<ShowcaseNoteModel>(
-        () => _repo.upsertNote(note.copyWith(
-          attachments: [...note.attachments, attachment],
-          updatedAt: DateTime.now().toUtc(),
-        )),
+        () => _repo.patchNote(
+          note,
+          note.copyWith(
+            attachments: [...note.attachments, attachment],
+            updatedAt: DateTime.now().toUtc(),
+          ),
+        ),
         name: 'attach',
         entity: note.id,
         error: 'Could not add attachment',
       );
 
   Future<ShowcaseNoteModel> removeAttachment(ShowcaseNoteModel note, String attachmentId) => mutate<ShowcaseNoteModel>(
-        () => _repo.upsertNote(note.copyWith(
-          attachments:
-              note.attachments.where((attachment) => attachment.id != attachmentId).toList(),
-          updatedAt: DateTime.now().toUtc(),
-        )),
+        () => _repo.patchNote(
+          note,
+          note.copyWith(
+            attachments:
+                note.attachments.where((attachment) => attachment.id != attachmentId).toList(),
+            updatedAt: DateTime.now().toUtc(),
+          ),
+        ),
         name: 'detach',
         entity: note.id,
         error: 'Could not remove attachment',
       );
 
   Future<ShowcaseNoteModel> moveToTrash(ShowcaseNoteModel note) => mutate<ShowcaseNoteModel>(
-        () => _repo.upsertNote(note.copyWith(
-          deletedAt: () => DateTime.now().toUtc(),
-          pinned: false,
-        )),
+        () => _repo.patchNote(
+          note,
+          note.copyWith(
+            deletedAt: () => DateTime.now().toUtc(),
+            pinned: false,
+          ),
+        ),
         name: 'trash',
         entity: note.id,
         error: 'Could not move note to Recently Deleted',
@@ -255,7 +265,7 @@ class ShowcaseNotesFacadeService extends AppBoxKitDataFacade {
       );
 
   Future<ShowcaseNoteModel> restore(ShowcaseNoteModel note) => mutate<ShowcaseNoteModel>(
-        () => _repo.upsertNote(note.copyWith(deletedAt: () => null)),
+        () => _repo.patchNote(note, note.copyWith(deletedAt: () => null)),
         name: 'restore',
         entity: note.id,
         error: 'Could not restore note',
@@ -273,7 +283,7 @@ class ShowcaseNotesFacadeService extends AppBoxKitDataFacade {
       return Future.value(note);
     }
     return mutate<ShowcaseNoteModel>(
-      () => _repo.upsertNote(note.copyWith(folderId: folderId)),
+      () => _repo.patchNote(note, note.copyWith(folderId: folderId)),
       name: 'move',
       entity: note.id,
       error: 'Could not move note',
@@ -313,7 +323,7 @@ class ShowcaseNotesFacadeService extends AppBoxKitDataFacade {
 
   Future<ShowcaseNoteFolderModel> renameFolder(ShowcaseNoteFolderModel folder, String name) =>
       mutate<ShowcaseNoteFolderModel>(
-        () => _repo.upsertFolder(folder.copyWith(name: name)),
+        () => _repo.patchFolder(folder, folder.copyWith(name: name)),
         name: 'folder.rename',
         entity: folder.id,
         error: 'Could not rename folder',
@@ -326,8 +336,8 @@ class ShowcaseNotesFacadeService extends AppBoxKitDataFacade {
           final notes = await _repo.notesInFolder(folder.id);
           final now = DateTime.now().toUtc();
           for (final note in notes.where((note) => !note.isDeleted)) {
-            await _repo
-                .upsertNote(note.copyWith(deletedAt: () => now, pinned: false));
+            await _repo.patchNote(
+                note, note.copyWith(deletedAt: () => now, pinned: false));
           }
           await _repo.deleteFolder(folder.id);
         },
@@ -340,7 +350,7 @@ class ShowcaseNotesFacadeService extends AppBoxKitDataFacade {
 
   // -- Auth ------------------------------------------------------------------
 
-  Future<void> signOut() => bus.run<void>(
+  Future<void> signOut() => abxActionHub.send<void>(
         'signOut',
         () => auth.signOut(),
         errorNotification: 'Could not sign out',

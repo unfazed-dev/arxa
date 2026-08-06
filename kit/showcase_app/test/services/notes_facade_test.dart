@@ -258,4 +258,46 @@ void main() {
     expect(overview.folders.map((f) => f.name), ['Notes']);
     expect(overview.trashCount, 0);
   });
+
+  test(
+      'notes.trash-and-restore.trash-a-note — a trash write preserves a concurrent body edit on the same note',
+      () async {
+    final idService = appBoxKitLocator<AppBoxKitIdService>();
+    final kitRepo = appBoxKitLocator<AppBoxKitRepository<ShowcaseNoteModel>>();
+    final folderId = idService.canonicalId(kShowcaseNoteFoldersTable, 'folder-notes');
+    final note = await notes.createNote(evanId, folderId);
+
+    // A second surface edits the body after the editor read `note`.
+    await kitRepo.upsert(
+        note.copyWith(body: 'concurrent edit', updatedAt: DateTime.now().toUtc()));
+
+    final trashed = await notes.moveToTrash(note);
+
+    expect(trashed.isDeleted, isTrue);
+    expect(trashed.body, 'concurrent edit',
+        reason: 'trash writes only deleted_at/pinned — never clobbers another edit');
+
+    // Leave the store as found for order-independence.
+    await notes.deletePermanently(trashed);
+  });
+
+  test(
+      'notes.pin-notes.pin-a-note-to-the-top-of-the-inbox — a pin write preserves a concurrent body edit on the same note',
+      () async {
+    final idService = appBoxKitLocator<AppBoxKitIdService>();
+    final kitRepo = appBoxKitLocator<AppBoxKitRepository<ShowcaseNoteModel>>();
+    final folderId = idService.canonicalId(kShowcaseNoteFoldersTable, 'folder-notes');
+    final note = await notes.createNote(evanId, folderId);
+
+    await kitRepo.upsert(
+        note.copyWith(body: 'concurrent edit', updatedAt: DateTime.now().toUtc()));
+
+    final pinned = await notes.togglePin(note);
+
+    expect(pinned.pinned, isTrue);
+    expect(pinned.body, 'concurrent edit');
+
+    // Leave the store as found for order-independence.
+    await notes.deletePermanently(pinned);
+  });
 }

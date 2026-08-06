@@ -59,7 +59,7 @@ class ShowcaseNotesAuthViewModel extends AppBoxKitViewModel {
 
   /// Inline form error (seeded null = none). [AppBoxKitAuthException] shows its
   /// message, anything unexpected gets the generic one — set from the
-  /// bus's onError tap, never a snackbar.
+  /// hub's onError tap, never a snackbar.
   final BehaviorSubject<String?> _errorMessage =
       BehaviorSubject<String?>.seeded(null);
   ValueStream<String?> get errorMessage$ => _errorMessage.stream;
@@ -81,70 +81,70 @@ class ShowcaseNotesAuthViewModel extends AppBoxKitViewModel {
     _errorMessage.add(null);
   }
 
-  /// Every auth op is a hot-dispatch dispatcher on the AppBoxKitActionOwner
-  /// bus: per-op busy state via the same actionState$ machinery (bound
+  /// Every auth op is a hot-send command on the AppBoxKitActionOwner
+  /// hub: per-op busy state via the same actionState$ machinery (bound
   /// via [busy$]), re-entry guard (a double-tap's handle observes the
   /// in-flight run instead of re-running), errors surfaced inline as
-  /// [errorMessage$]. The methods below return the dispatch's observation
+  /// [errorMessage$]. The methods below return the send's observation
   /// handle — the op is already running when they return, so the views'
   /// fire-and-forget callbacks can never drop it.
   @override
-  AppBoxKitActionBus createBus() => AppBoxKitActionBus(
+  AppBoxKitActionHub createHub() => AppBoxKitActionHub(
         owner: this,
         errorMessage: 'Authentication failed',
-        onDispatch: () => _errorMessage.add(null),
+        onSend: () => _errorMessage.add(null),
         onError: (error) => _errorMessage.add(error is AppBoxKitAuthException
             ? error.message
             : 'Something went wrong. Try again.'),
       );
 
-  late final _signIn = bus.define<(String, String), void>('signIn',
+  late final _signIn = abxActionHub.on<(String, String), void>('signIn',
       (p) => auth.signInWithEmailPassword(email: p.$1, password: p.$2));
 
-  late final _signUp = bus.define<(String, String), void>('signUp',
+  late final _signUp = abxActionHub.on<(String, String), void>('signUp',
       (p) => auth.signUpWithEmailPassword(email: p.$1, password: p.$2));
 
   late final _requestOtp =
-      bus.define<String, void>('requestOtp', (email) async {
+      abxActionHub.on<String, void>('requestOtp', (email) async {
     await auth.requestOtp(email: email);
     _otpRequested.add(true);
   });
 
-  late final _confirmOtp = bus.define<(String, String), void>(
+  late final _confirmOtp = abxActionHub.on<(String, String), void>(
       'confirmOtp', (p) => auth.confirmOtp(email: p.$1, code: p.$2));
 
   late final _google =
-      bus.define<Null, void>('google', (_) => auth.signInWithGoogle());
+      abxActionHub.on<Null, void>('google', (_) => auth.signInWithGoogle());
 
   late final _apple =
-      bus.define<Null, void>('apple', (_) => auth.signInWithApple());
+      abxActionHub.on<Null, void>('apple', (_) => auth.signInWithApple());
 
   late final _anonymous =
-      bus.define<Null, void>('anonymous', (_) => auth.signInAnonymously());
+      abxActionHub.on<Null, void>('anonymous', (_) => auth.signInAnonymously());
 
   Future<void> signInEmail(String email, String password) =>
-      _signIn.dispatch((email, password));
+      _signIn.send((email, password));
 
   Future<void> signUpEmail(String email, String password) =>
-      _signUp.dispatch((email, password));
+      _signUp.send((email, password));
 
-  Future<void> requestOtp(String email) => _requestOtp.dispatch(email);
+  Future<void> requestOtp(String email) => _requestOtp.send(email);
 
   Future<void> confirmOtp(String email, String code) =>
-      _confirmOtp.dispatch((email, code));
+      _confirmOtp.send((email, code));
 
-  Future<void> google() => _google.dispatch(null);
+  Future<void> google() => _google.send(null);
 
-  Future<void> apple() => _apple.dispatch(null);
+  Future<void> apple() => _apple.send(null);
 
-  Future<void> anonymous() => _anonymous.dispatch(null);
+  Future<void> anonymous() => _anonymous.send(null);
 
   @override
   void dispose() {
     _mode.close();
     _otpRequested.close();
     _errorMessage.close();
-    // The bus dies in super.dispose() → disposeAppBoxKitActions.
+    // The hub dies in super.dispose() → disposeAppBoxKitActions.
     super.dispose();
   }
 }

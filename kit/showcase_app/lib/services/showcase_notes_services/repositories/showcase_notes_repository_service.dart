@@ -79,4 +79,13 @@ class ShowcaseNotesRepositoryService {
   Future<void> deleteNote(String id) => _notes.delete(id);
   Future<ShowcaseNoteFolderModel> upsertFolder(ShowcaseNoteFolderModel folder) => _folders.upsert(folder);
   Future<void> deleteFolder(String id) => _folders.delete(id);
+
+  /// Narrow writes for existing rows: only the columns that differ between
+  /// [original] and [patched] hit storage, so concurrent edits to other
+  /// columns (another surface, another device) survive. Default for every
+  /// mutation of an existing row; `upsert` is for creates.
+  Future<ShowcaseNoteModel> patchNote(ShowcaseNoteModel original, ShowcaseNoteModel patched) =>
+      _notes.patch(original, patched);
+  Future<ShowcaseNoteFolderModel> patchFolder(ShowcaseNoteFolderModel original, ShowcaseNoteFolderModel patched) =>
+      _folders.patch(original, patched);
 }

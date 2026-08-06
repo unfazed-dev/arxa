@@ -10,7 +10,7 @@ class ShowcaseGlassCtaButtonWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: axButtonHeightMedium,
+      height: abxButtonHeightMedium,
       child: AppBoxKitNativeButton(
         label: 'Glass CTA',
         glyph: AppBoxKitGlyphs.star,

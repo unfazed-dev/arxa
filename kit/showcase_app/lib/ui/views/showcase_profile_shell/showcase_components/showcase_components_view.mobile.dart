@@ -39,7 +39,7 @@ class ShowcaseComponentsViewMobile
       bottomSheet: const ShowcaseComponentsInputBarWidget(),
       body: ListView(
         // Bottom clearance for the docked input bar + the floating tab bar.
-        padding: const EdgeInsets.fromLTRB(0, axSize16, 0, 160),
+        padding: const EdgeInsets.fromLTRB(0, abxSize16, 0, 160),
         children: const [
           ShowcaseComponentsInsetWidget(
               child: ShowcaseSectionLabelWidget('Frosted surface')),

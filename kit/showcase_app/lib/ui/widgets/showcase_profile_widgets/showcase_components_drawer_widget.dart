@@ -15,7 +15,7 @@ class ShowcaseComponentsDrawerWidget extends StatelessWidget {
       builder: (drawerContext) => AppBoxKitDrawer(
         child: SafeArea(
           child: ListView(
-            padding: const EdgeInsets.symmetric(vertical: axSize16),
+            padding: const EdgeInsets.symmetric(vertical: abxSize16),
             children: [
               const AppBoxKitListTile(
                 glyph: AppBoxKitGlyphs.person,

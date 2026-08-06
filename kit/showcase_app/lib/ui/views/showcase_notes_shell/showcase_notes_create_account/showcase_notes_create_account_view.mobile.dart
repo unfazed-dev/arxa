@@ -26,8 +26,8 @@ class ShowcaseNotesCreateAccountViewMobile
       // the floating tab bar; clearance folded into the scroll padding.
       bottom: false,
       child: SingleChildScrollView(
-        padding: EdgeInsets.fromLTRB(axSize24, axSize24, axSize24,
-            axSize24 + MediaQuery.paddingOf(context).bottom),
+        padding: EdgeInsets.fromLTRB(abxSize24, abxSize24, abxSize24,
+            abxSize24 + MediaQuery.paddingOf(context).bottom),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -35,7 +35,7 @@ class ShowcaseNotesCreateAccountViewMobile
             Column(
               children: [
                 Icon(AppBoxKitGlyphs.notes.icon,
-                    size: axSize60, color: theme.colorScheme.primary),
+                    size: abxSize60, color: theme.colorScheme.primary),
                 appBoxKitVerticalSpaceSmall,
                 Text(
                   'Create your account',

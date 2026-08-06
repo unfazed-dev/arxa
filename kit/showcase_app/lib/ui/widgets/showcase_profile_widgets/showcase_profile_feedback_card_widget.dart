@@ -17,7 +17,7 @@ class ShowcaseProfileFeedbackCardWidget extends StatelessWidget {
           const ShowcaseSectionLabelWidget('Toast & sheet'),
           appBoxKitVerticalSpaceSmall,
           SizedBox(
-            height: axButtonHeightMedium,
+            height: abxButtonHeightMedium,
             child: AppBoxKitNativeButton(
               label: 'Show toast',
               glyph: AppBoxKitGlyphs.alertsBadge,
@@ -29,7 +29,7 @@ class ShowcaseProfileFeedbackCardWidget extends StatelessWidget {
           ),
           appBoxKitVerticalSpaceSmall,
           SizedBox(
-            height: axButtonHeightMedium,
+            height: abxButtonHeightMedium,
             child: AppBoxKitNativeButton(
               label: 'Show sheet',
               glyph: AppBoxKitGlyphs.sheet,

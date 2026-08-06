@@ -9,7 +9,7 @@ class ShowcaseMotionHeaderCardWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return AppBoxKitGlassCard(
       child: Padding(
-        padding: const EdgeInsets.all(axSize16),
+        padding: const EdgeInsets.all(abxSize16),
         child: Text(
           'This screen woke under the route\'s own animation — no '
           'controller in the view. Pop with the edge-swipe and watch '

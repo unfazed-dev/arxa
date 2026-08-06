@@ -45,7 +45,7 @@ class ShowcaseNotePhotoStripWidget extends StatelessWidget {
                   onTap: () => _openViewer(context, file),
                   onLongPress: () => onRemoveAttachment(attachment),
                   child: ClipRRect(
-                    borderRadius: BorderRadius.circular(axRad12),
+                    borderRadius: BorderRadius.circular(abxRad12),
                     child: Image.file(
                       file,
                       width: 84,
@@ -73,8 +73,8 @@ class ShowcaseNotePhotoStripWidget extends StatelessWidget {
                 child: InteractiveViewer(child: Image.file(file)),
               ),
               Positioned(
-                top: axSize8,
-                right: axSize8,
+                top: abxSize8,
+                right: abxSize8,
                 child: AppBoxKitNativeIconButton(
                   glyph: AppBoxKitGlyphs.close,
                   color: kcWhite,

@@ -12,13 +12,13 @@ class ShowcaseHomeViewMobile extends ViewModelWidget<ShowcaseHomeViewModel> {
   Widget build(BuildContext context, ShowcaseHomeViewModel viewModel) {
     return ListView(
       padding:
-          const EdgeInsets.symmetric(horizontal: axSize16, vertical: axSize16),
+          const EdgeInsets.symmetric(horizontal: abxSize16, vertical: abxSize16),
       children: [
         const Center(
           child: Text(
             'Kit Showcase',
             style:
-                TextStyle(fontSize: axFontXXXLarge, fontWeight: FontWeight.w900),
+                TextStyle(fontSize: abxFontXXXLarge, fontWeight: FontWeight.w900),
           ),
         ),
         appBoxKitVerticalSpaceMedium,

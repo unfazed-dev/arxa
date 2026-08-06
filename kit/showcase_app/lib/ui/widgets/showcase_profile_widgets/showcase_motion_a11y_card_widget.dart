@@ -10,7 +10,7 @@ class ShowcaseMotionA11yCardWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return AppBoxKitGlassCard(
       child: Padding(
-        padding: const EdgeInsets.all(axSize16),
+        padding: const EdgeInsets.all(abxSize16),
         child: Text(
           'With OS reduce-motion on (or the switch above off), every '
           'scope renders its children settled — no code changes in '

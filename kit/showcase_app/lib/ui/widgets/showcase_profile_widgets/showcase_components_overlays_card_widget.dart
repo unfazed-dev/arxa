@@ -24,7 +24,7 @@ class ShowcaseComponentsOverlaysCardWidget extends StatelessWidget {
           const ShowcaseSectionLabelWidget('Overlays'),
           appBoxKitVerticalSpaceSmall,
           SizedBox(
-            height: axButtonHeightMedium,
+            height: abxButtonHeightMedium,
             child: AppBoxKitNativeButton(
               label: 'Show dialog',
               glyph: AppBoxKitGlyphs.info,
@@ -59,7 +59,7 @@ class ShowcaseComponentsOverlaysCardWidget extends StatelessWidget {
           ),
           appBoxKitVerticalSpaceSmall,
           SizedBox(
-            height: axButtonHeightMedium,
+            height: abxButtonHeightMedium,
             child: AppBoxKitNativeButton(
               label: 'Show frosted sheet',
               glyph: AppBoxKitGlyphs.sheet,
@@ -90,7 +90,7 @@ class ShowcaseComponentsOverlaysCardWidget extends StatelessWidget {
           ),
           appBoxKitVerticalSpaceSmall,
           SizedBox(
-            height: axButtonHeightMedium,
+            height: abxButtonHeightMedium,
             child: AppBoxKitNativeButton(
               label: 'Show center toast',
               glyph: AppBoxKitGlyphs.alertsBadge,
@@ -103,7 +103,7 @@ class ShowcaseComponentsOverlaysCardWidget extends StatelessWidget {
           ),
           appBoxKitVerticalSpaceSmall,
           SizedBox(
-            height: axButtonHeightMedium,
+            height: abxButtonHeightMedium,
             // Builder: openDrawer needs a context UNDER this Scaffold.
             child: Builder(
               builder: (scaffoldContext) => AppBoxKitNativeButton(

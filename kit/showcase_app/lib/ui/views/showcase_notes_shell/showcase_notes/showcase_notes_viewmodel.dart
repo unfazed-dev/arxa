@@ -22,7 +22,7 @@ export 'package:appbox_kit_showcase_app/services/showcase_notes_services/facades
 /// (session → owner-scoped reads), so the VM holds no relay fields and no
 /// subscription bookkeeping for them — each [AppBoxKitStreamBuilder] owns its
 /// subscription. The one VM-owned UI state, [showCreateAccount$], is a
-/// seeded [BehaviorSubject]; the only [AppBoxKitAction.watch] left is the
+/// seeded [BehaviorSubject]; the only [AppBoxKitAction.listen] left is the
 /// VM-internal side effect that resets it when a session appears.
 class ShowcaseNotesViewModel extends AppBoxKitViewModel {
   final _service = appBoxKitLocator<ShowcaseNotesFacadeService>();
@@ -60,12 +60,12 @@ class ShowcaseNotesViewModel extends AppBoxKitViewModel {
 
   ShowcaseNotesViewModel() {
     // VM-internal side effect (no view data): reset the panel choice when a
-    // session appears. One watch, one dispose — the data streams above need
+    // session appears. One listen, one dispose — the data streams above need
     // no subscription management here.
-    watch(
+    listen(
       'session.resetPanel',
-      streams: [_service.session$],
-      callback: (session) {
+      to: [_service.session$],
+      onData: (session) {
         if (session != null) _showCreateAccount.add(false);
       },
     );

@@ -17,10 +17,10 @@ class ShowcaseProfileViewMobile
       // under it (extendBody) and previously the button laid out
       // unreachable beneath the bar.
       padding: EdgeInsets.fromLTRB(
-          axSize16,
-          axSize16,
-          axSize16,
-          axSize16 +
+          abxSize16,
+          abxSize16,
+          abxSize16,
+          abxSize16 +
               MediaQuery.paddingOf(context).bottom +
               kShowcaseTabBarBlockHeight),
       children: [

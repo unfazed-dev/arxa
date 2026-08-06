@@ -33,10 +33,10 @@ class ShowcaseNoteRecordingRowWidget extends StatelessWidget {
         Expanded(
           child: Container(
             padding: const EdgeInsets.symmetric(
-                horizontal: axSize12, vertical: axSize8),
+                horizontal: abxSize12, vertical: abxSize8),
             decoration: BoxDecoration(
               color: theme.colorScheme.error.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(axRad20),
+              borderRadius: BorderRadius.circular(abxRad20),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,

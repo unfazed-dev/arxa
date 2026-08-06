@@ -39,7 +39,7 @@ class ShowcaseMotionViewMobile
         // wake; iOS swipe-back scrubs the set-down interactively.
         spec: viewModel.spec,
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(axSize16, axSize16, axSize16, 120),
+          padding: const EdgeInsets.fromLTRB(abxSize16, abxSize16, abxSize16, 120),
           children: <Widget>[
             const ShowcaseMotionHeaderCardWidget(),
             appBoxKitVerticalSpaceMedium,

@@ -36,7 +36,7 @@ class ShowcaseNotesNoteRowWidget extends StatelessWidget {
       background: Container(
         color: isTrash ? theme.colorScheme.tertiary : theme.colorScheme.primary,
         alignment: Alignment.centerLeft,
-        padding: const EdgeInsets.symmetric(horizontal: axSize20),
+        padding: const EdgeInsets.symmetric(horizontal: abxSize20),
         child: Icon(
           isTrash
               ? AppBoxKitGlyphs.restore.icon
@@ -49,7 +49,7 @@ class ShowcaseNotesNoteRowWidget extends StatelessWidget {
       secondaryBackground: Container(
         color: theme.colorScheme.error,
         alignment: Alignment.centerRight,
-        padding: const EdgeInsets.symmetric(horizontal: axSize20),
+        padding: const EdgeInsets.symmetric(horizontal: abxSize20),
         child: Icon(AppBoxKitGlyphs.delete.icon, color: theme.colorScheme.onError),
       ),
       confirmDismiss: (direction) async {
@@ -72,7 +72,7 @@ class ShowcaseNotesNoteRowWidget extends StatelessWidget {
         onTap: () => context.router.pushNamed('note/${note.id}'),
         child: Padding(
           padding: const EdgeInsets.symmetric(
-              horizontal: axSize16, vertical: axSize12),
+              horizontal: abxSize16, vertical: abxSize12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -90,7 +90,7 @@ class ShowcaseNotesNoteRowWidget extends StatelessWidget {
                   if (note.pinned) ...[
                     appBoxKitHorizontalSpaceTiny,
                     Icon(AppBoxKitGlyphs.pin.icon,
-                        size: axSize14, color: theme.colorScheme.primary),
+                        size: abxSize14, color: theme.colorScheme.primary),
                   ],
                 ],
               ),

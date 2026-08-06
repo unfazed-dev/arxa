@@ -35,7 +35,7 @@ class _ShowcaseMotionManualReplayCardState
         // assertion on route push).
         child: AppBoxKitGlassCard(
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: axSize16),
+            padding: const EdgeInsets.symmetric(vertical: abxSize16),
             child: Center(
               child: Text(
                 label,
@@ -57,9 +57,9 @@ class _ShowcaseMotionManualReplayCardState
           Row(
             children: <Widget>[
               _chip(context, 'One', 0),
-              appBoxKitHorizontalSpace(axSize16 / 2),
+              appBoxKitHorizontalSpace(abxSize16 / 2),
               _chip(context, 'Two', 1),
-              appBoxKitHorizontalSpace(axSize16 / 2),
+              appBoxKitHorizontalSpace(abxSize16 / 2),
               _chip(context, 'Three', 2),
             ],
           ),
@@ -71,7 +71,7 @@ class _ShowcaseMotionManualReplayCardState
                 label: 'Set down',
                 onPressed: () => _controller.reverse(),
               ),
-              appBoxKitHorizontalSpace(axSize16 / 2),
+              appBoxKitHorizontalSpace(abxSize16 / 2),
               AppBoxKitNativeButton(
                 label: 'Replay',
                 onPressed: () => _controller.forward(from: 0),
