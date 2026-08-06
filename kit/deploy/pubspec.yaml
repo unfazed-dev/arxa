@@ -11,8 +11,8 @@ environment:
 # NATIVE-FIRST / STANDALONE: pure Dart dev tooling. No dependency on
 # flutter, stacked, stacked_services, or appbox_kit core. External CLIs
 # (fastlane, shorebird, wrangler, flutter) are invoked through the
-# KitProcessRunner port, so every command shape is unit-testable via
-# ScriptedProcessRunner without touching a real toolchain.
+# AppBoxKitProcessRunner port, so every command shape is unit-testable via
+# ScriptedAppBoxKitProcessRunner without touching a real toolchain.
 dependencies: {}
 
 dev_dependencies:

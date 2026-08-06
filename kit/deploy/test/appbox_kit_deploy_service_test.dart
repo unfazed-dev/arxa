@@ -1,20 +1,20 @@
 import 'package:appbox_kit_deploy/appbox_kit_deploy.dart';
-import 'package:appbox_kit_deploy/testing.dart';
+import 'package:appbox_kit_deploy/appbox_kit_testing.dart';
 import 'package:test/test.dart';
 
 void main() {
-  const config = KitDeployConfig(projectName: 'showcase');
+  const config = AppBoxKitDeployConfig(projectName: 'showcase');
 
-  KitDeployService buildService(ScriptedProcessRunner runner) =>
-      KitDeployService(targets: [
-        FastlaneTarget(runner, platform: 'android'),
-        ShorebirdTarget(runner, mode: ShorebirdMode.release),
-        CloudflarePagesTarget(runner),
-        VercelTarget(runner),
+  AppBoxKitDeployService buildService(ScriptedAppBoxKitProcessRunner runner) =>
+      AppBoxKitDeployService(targets: [
+        AppBoxKitFastlaneTarget(runner, platform: 'android'),
+        AppBoxKitShorebirdTarget(runner, mode: AppBoxKitShorebirdMode.release),
+        AppBoxKitCloudflarePagesTarget(runner),
+        AppBoxKitVercelTarget(runner),
       ]);
 
   test('targetNames exposes registration order', () {
-    final service = buildService(ScriptedProcessRunner());
+    final service = buildService(ScriptedAppBoxKitProcessRunner());
     expect(service.targetNames, [
       'fastlane-android',
       'shorebird-release',
@@ -24,7 +24,7 @@ void main() {
   });
 
   test('deployTo routes by name', () async {
-    final runner = ScriptedProcessRunner();
+    final runner = ScriptedAppBoxKitProcessRunner();
     final result =
         await buildService(runner).deployTo('cloudflare-pages', config);
 
@@ -33,7 +33,7 @@ void main() {
   });
 
   test('deployTo with unknown name throws with known targets listed', () {
-    final service = buildService(ScriptedProcessRunner());
+    final service = buildService(ScriptedAppBoxKitProcessRunner());
     expect(
       () => service.deployTo('heroku', config),
       throwsA(
@@ -48,7 +48,7 @@ void main() {
 
   test('doctor aggregates every target', () async {
     final report =
-        await buildService(ScriptedProcessRunner()).doctor(config);
+        await buildService(ScriptedAppBoxKitProcessRunner()).doctor(config);
 
     expect(report.keys, containsAll([
       'fastlane-android',
@@ -63,8 +63,8 @@ void main() {
     );
   });
 
-  test('KitDeployConfig.dartDefineArgs preserves insertion order', () {
-    const config = KitDeployConfig(
+  test('AppBoxKitDeployConfig.dartDefineArgs preserves insertion order', () {
+    const config = AppBoxKitDeployConfig(
       projectName: 'x',
       dartDefines: {'A': '1', 'B': '2'},
     );

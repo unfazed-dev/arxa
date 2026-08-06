@@ -1,25 +1,25 @@
-import '../kit_deploy_target.dart';
-import '../models/kit_deploy_config.dart';
-import '../models/kit_deploy_result.dart';
-import '../process/kit_process_runner.dart';
+import '../appbox_kit_deploy_target.dart';
+import '../models/appbox_kit_deploy_config.dart';
+import '../models/appbox_kit_deploy_result.dart';
+import '../process/appbox_kit_process_runner.dart';
 
 /// Wired Cloudflare Workers backend: `wrangler deploy` from the working
 /// directory's own `wrangler.toml`. Unlike Pages there is no flutter build
-/// step — a Worker ships its own source, so [KitDeployConfig.workingDirectory]
+/// step — a Worker ships its own source, so [AppBoxKitDeployConfig.workingDirectory]
 /// is required (that is where wrangler.toml lives).
 ///
 /// Auth comes from CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID in
-/// [KitDeployConfig.environment] (or ambient `wrangler login` state).
-class CloudflareWorkersTarget implements KitDeployTarget {
-  const CloudflareWorkersTarget(this._runner);
+/// [AppBoxKitDeployConfig.environment] (or ambient `wrangler login` state).
+class AppBoxKitCloudflareWorkersTarget implements AppBoxKitDeployTarget {
+  const AppBoxKitCloudflareWorkersTarget(this._runner);
 
-  final KitProcessRunner _runner;
+  final AppBoxKitProcessRunner _runner;
 
   @override
   String get name => 'cloudflare-workers';
 
   @override
-  Future<List<KitDoctorCheck>> doctor(KitDeployConfig config) async {
+  Future<List<AppBoxKitDoctorCheck>> doctor(AppBoxKitDeployConfig config) async {
     final wrangler = await _runner.run(
       'wrangler',
       const ['--version'],
@@ -28,21 +28,21 @@ class CloudflareWorkersTarget implements KitDeployTarget {
     final hasToken = config.environment.containsKey('CLOUDFLARE_API_TOKEN');
     final hasAccount = config.environment.containsKey('CLOUDFLARE_ACCOUNT_ID');
     return [
-      KitDoctorCheck(
+      AppBoxKitDoctorCheck(
         name: 'wrangler CLI',
         ok: wrangler.ok,
         detail: wrangler.ok
             ? wrangler.stdout.trim()
             : 'wrangler not found on PATH (npm i -g wrangler)',
       ),
-      KitDoctorCheck(
+      AppBoxKitDoctorCheck(
         name: 'CLOUDFLARE_API_TOKEN',
         ok: hasToken,
         detail: hasToken
             ? 'provided via config.environment'
             : 'not set — relying on ambient `wrangler login` credentials',
       ),
-      KitDoctorCheck(
+      AppBoxKitDoctorCheck(
         name: 'CLOUDFLARE_ACCOUNT_ID',
         ok: hasAccount,
         detail: hasAccount
@@ -53,10 +53,10 @@ class CloudflareWorkersTarget implements KitDeployTarget {
   }
 
   @override
-  Future<KitDeployResult> deploy(KitDeployConfig config) async {
+  Future<AppBoxKitDeployResult> deploy(AppBoxKitDeployConfig config) async {
     final workingDirectory = config.workingDirectory;
     if (workingDirectory == null) {
-      return KitDeployResult(
+      return AppBoxKitDeployResult(
         target: name,
         ok: false,
         commandsRun: [],
@@ -72,7 +72,7 @@ class CloudflareWorkersTarget implements KitDeployTarget {
       workingDirectory: workingDirectory,
       environment: config.environment.isEmpty ? null : config.environment,
     );
-    return KitDeployResult(
+    return AppBoxKitDeployResult(
       target: name,
       ok: deploy.ok,
       commandsRun: ['wrangler ${deployArgs.join(' ')}'],

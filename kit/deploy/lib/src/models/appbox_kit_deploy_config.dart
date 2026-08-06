@@ -1,6 +1,6 @@
-/// Everything a [KitDeployTarget] needs to run one deployment.
-class KitDeployConfig {
-  const KitDeployConfig({
+/// Everything a [AppBoxKitDeployTarget] needs to run one deployment.
+class AppBoxKitDeployConfig {
+  const AppBoxKitDeployConfig({
     required this.projectName,
     this.workingDirectory,
     this.releaseVersion,

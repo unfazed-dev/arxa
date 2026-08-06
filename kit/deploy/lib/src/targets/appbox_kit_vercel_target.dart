@@ -1,21 +1,21 @@
-import '../kit_deploy_target.dart';
-import '../models/kit_deploy_config.dart';
-import '../models/kit_deploy_result.dart';
-import '../process/kit_process_runner.dart';
+import '../appbox_kit_deploy_target.dart';
+import '../models/appbox_kit_deploy_config.dart';
+import '../models/appbox_kit_deploy_result.dart';
+import '../process/appbox_kit_process_runner.dart';
 
 /// Wired Vercel backend for static Flutter web builds:
 ///
 /// 1. `flutter build web --release [--dart-define=...]`
 /// 2. `vercel deploy build/web --prod --yes`
 ///
-/// Auth comes from VERCEL_TOKEN in [KitDeployConfig.environment]. Vercel CLI
+/// Auth comes from VERCEL_TOKEN in [AppBoxKitDeployConfig.environment]. Vercel CLI
 /// v55+ tightened non-interactive project linking — pin a CLI major version
 /// (and set VERCEL_ORG_ID / VERCEL_PROJECT_ID to link non-interactively);
 /// [doctor] surfaces the installed version so drift is visible.
-class VercelTarget implements KitDeployTarget {
-  const VercelTarget(this._runner);
+class AppBoxKitVercelTarget implements AppBoxKitDeployTarget {
+  const AppBoxKitVercelTarget(this._runner);
 
-  final KitProcessRunner _runner;
+  final AppBoxKitProcessRunner _runner;
 
   static const String _outputDirectory = 'build/web';
 
@@ -23,7 +23,7 @@ class VercelTarget implements KitDeployTarget {
   String get name => 'vercel';
 
   @override
-  Future<List<KitDoctorCheck>> doctor(KitDeployConfig config) async {
+  Future<List<AppBoxKitDoctorCheck>> doctor(AppBoxKitDeployConfig config) async {
     final vercel = await _runner.run(
       'vercel',
       const ['--version'],
@@ -31,14 +31,14 @@ class VercelTarget implements KitDeployTarget {
     );
     final hasToken = config.environment.containsKey('VERCEL_TOKEN');
     return [
-      KitDoctorCheck(
+      AppBoxKitDoctorCheck(
         name: 'vercel CLI',
         ok: vercel.ok,
         detail: vercel.ok
             ? vercel.stdout.trim()
             : 'vercel not found on PATH (npm i -g vercel — pin a major)',
       ),
-      KitDoctorCheck(
+      AppBoxKitDoctorCheck(
         name: 'VERCEL_TOKEN',
         ok: hasToken,
         detail: hasToken
@@ -49,7 +49,7 @@ class VercelTarget implements KitDeployTarget {
   }
 
   @override
-  Future<KitDeployResult> deploy(KitDeployConfig config) async {
+  Future<AppBoxKitDeployResult> deploy(AppBoxKitDeployConfig config) async {
     final commands = <String>[];
 
     final buildArgs = ['build', 'web', '--release', ...config.dartDefineArgs];
@@ -60,7 +60,7 @@ class VercelTarget implements KitDeployTarget {
       workingDirectory: config.workingDirectory,
     );
     if (!build.ok) {
-      return KitDeployResult(
+      return AppBoxKitDeployResult(
         target: name,
         ok: false,
         commandsRun: commands,
@@ -77,7 +77,7 @@ class VercelTarget implements KitDeployTarget {
       workingDirectory: config.workingDirectory,
       environment: config.environment.isEmpty ? null : config.environment,
     );
-    return KitDeployResult(
+    return AppBoxKitDeployResult(
       target: name,
       ok: deploy.ok,
       commandsRun: commands,

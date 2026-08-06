@@ -1,8 +1,8 @@
 import 'dart:io';
 
 /// Result of one external command, owned by appbox_kit_deploy.
-class KitProcessResult {
-  const KitProcessResult({
+class AppBoxKitProcessResult {
+  const AppBoxKitProcessResult({
     required this.exitCode,
     this.stdout = '',
     this.stderr = '',
@@ -15,15 +15,15 @@ class KitProcessResult {
   bool get ok => exitCode == 0;
 
   @override
-  String toString() => 'KitProcessResult(exitCode: $exitCode)';
+  String toString() => 'AppBoxKitProcessResult(exitCode: $exitCode)';
 }
 
 /// Port for running external CLIs (flutter, fastlane, shorebird, wrangler).
 ///
 /// Targets depend on this interface only, so command shapes are asserted in
-/// tests with ScriptedProcessRunner and no real toolchain.
-abstract interface class KitProcessRunner {
-  Future<KitProcessResult> run(
+/// tests with ScriptedAppBoxKitProcessRunner and no real toolchain.
+abstract interface class AppBoxKitProcessRunner {
+  Future<AppBoxKitProcessResult> run(
     String executable,
     List<String> arguments, {
     String? workingDirectory,
@@ -32,11 +32,11 @@ abstract interface class KitProcessRunner {
 }
 
 /// Real runner backed by dart:io [Process.run].
-class IoProcessRunner implements KitProcessRunner {
-  const IoProcessRunner();
+class AppBoxKitIoProcessRunner implements AppBoxKitProcessRunner {
+  const AppBoxKitIoProcessRunner();
 
   @override
-  Future<KitProcessResult> run(
+  Future<AppBoxKitProcessResult> run(
     String executable,
     List<String> arguments, {
     String? workingDirectory,
@@ -50,13 +50,13 @@ class IoProcessRunner implements KitProcessRunner {
         environment: environment,
         runInShell: true,
       );
-      return KitProcessResult(
+      return AppBoxKitProcessResult(
         exitCode: result.exitCode,
         stdout: '${result.stdout}',
         stderr: '${result.stderr}',
       );
     } on ProcessException catch (e) {
-      return KitProcessResult(exitCode: 127, stderr: e.message);
+      return AppBoxKitProcessResult(exitCode: 127, stderr: e.message);
     }
   }
 }

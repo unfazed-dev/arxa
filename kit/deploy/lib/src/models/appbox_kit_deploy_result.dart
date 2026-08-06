@@ -1,6 +1,6 @@
 /// One environment/tooling precondition checked by a target's doctor().
-class KitDoctorCheck {
-  const KitDoctorCheck({
+class AppBoxKitDoctorCheck {
+  const AppBoxKitDoctorCheck({
     required this.name,
     required this.ok,
     this.detail = '',
@@ -15,9 +15,9 @@ class KitDoctorCheck {
       '${detail.isEmpty ? '' : ' — $detail'}';
 }
 
-/// Outcome of one [KitDeployTarget.deploy] run.
-class KitDeployResult {
-  const KitDeployResult({
+/// Outcome of one [AppBoxKitDeployTarget.deploy] run.
+class AppBoxKitDeployResult {
+  const AppBoxKitDeployResult({
     required this.target,
     required this.ok,
     this.commandsRun = const <String>[],
@@ -36,6 +36,6 @@ class KitDeployResult {
   final String? failureReason;
 
   @override
-  String toString() => 'KitDeployResult($target: ${ok ? 'ok' : 'FAILED'}'
+  String toString() => 'AppBoxKitDeployResult($target: ${ok ? 'ok' : 'FAILED'}'
       '${failureReason == null ? '' : ' — $failureReason'})';
 }

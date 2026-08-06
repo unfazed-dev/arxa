@@ -1,18 +1,18 @@
-import '../kit_deploy_target.dart';
-import '../models/kit_deploy_config.dart';
-import '../models/kit_deploy_result.dart';
-import '../process/kit_process_runner.dart';
+import '../appbox_kit_deploy_target.dart';
+import '../models/appbox_kit_deploy_config.dart';
+import '../models/appbox_kit_deploy_result.dart';
+import '../process/appbox_kit_process_runner.dart';
 
 /// Wired fastlane backend: `bundle exec fastlane <platform> <lane>`.
-class FastlaneTarget implements KitDeployTarget {
-  const FastlaneTarget(
+class AppBoxKitFastlaneTarget implements AppBoxKitDeployTarget {
+  const AppBoxKitFastlaneTarget(
     this._runner, {
     required this.platform,
     this.lane = 'release',
   }) : assert(platform == 'android' || platform == 'ios',
             'platform must be android or ios');
 
-  final KitProcessRunner _runner;
+  final AppBoxKitProcessRunner _runner;
 
   /// `android` or `ios` — the fastlane platform namespace.
   final String platform;
@@ -24,14 +24,14 @@ class FastlaneTarget implements KitDeployTarget {
   String get name => 'fastlane-$platform';
 
   @override
-  Future<List<KitDoctorCheck>> doctor(KitDeployConfig config) async {
+  Future<List<AppBoxKitDoctorCheck>> doctor(AppBoxKitDeployConfig config) async {
     final version = await _runner.run(
       'fastlane',
       const ['--version'],
       workingDirectory: config.workingDirectory,
     );
     return [
-      KitDoctorCheck(
+      AppBoxKitDoctorCheck(
         name: 'fastlane CLI',
         ok: version.ok,
         detail: version.ok
@@ -42,7 +42,7 @@ class FastlaneTarget implements KitDeployTarget {
   }
 
   @override
-  Future<KitDeployResult> deploy(KitDeployConfig config) async {
+  Future<AppBoxKitDeployResult> deploy(AppBoxKitDeployConfig config) async {
     final args = ['exec', 'fastlane', platform, lane];
     final result = await _runner.run(
       'bundle',
@@ -51,7 +51,7 @@ class FastlaneTarget implements KitDeployTarget {
       environment: config.environment.isEmpty ? null : config.environment,
     );
     final command = 'bundle ${args.join(' ')}';
-    return KitDeployResult(
+    return AppBoxKitDeployResult(
       target: name,
       ok: result.ok,
       commandsRun: [command],

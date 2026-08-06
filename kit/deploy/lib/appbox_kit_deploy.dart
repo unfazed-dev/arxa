@@ -3,13 +3,13 @@
 /// Standalone pure Dart: no flutter/stacked/appbox_kit dependency.
 library;
 
-export 'src/kit_deploy_service.dart';
-export 'src/kit_deploy_target.dart';
-export 'src/models/kit_deploy_config.dart';
-export 'src/models/kit_deploy_result.dart';
-export 'src/process/kit_process_runner.dart';
-export 'src/targets/cloudflare_pages_target.dart';
-export 'src/targets/cloudflare_workers_target.dart';
-export 'src/targets/fastlane_target.dart';
-export 'src/targets/shorebird_target.dart';
-export 'src/targets/vercel_target.dart';
+export 'src/appbox_kit_deploy_service.dart';
+export 'src/appbox_kit_deploy_target.dart';
+export 'src/models/appbox_kit_deploy_config.dart';
+export 'src/models/appbox_kit_deploy_result.dart';
+export 'src/process/appbox_kit_process_runner.dart';
+export 'src/targets/appbox_kit_cloudflare_pages_target.dart';
+export 'src/targets/appbox_kit_cloudflare_workers_target.dart';
+export 'src/targets/appbox_kit_fastlane_target.dart';
+export 'src/targets/appbox_kit_shorebird_target.dart';
+export 'src/targets/appbox_kit_vercel_target.dart';

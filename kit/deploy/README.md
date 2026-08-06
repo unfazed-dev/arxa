@@ -1,8 +1,8 @@
 # appbox_kit_deploy
 
 Deploy port for appbox_kit apps. External CLIs run through a
-`KitProcessRunner` port, so every command shape is unit-tested with
-`ScriptedProcessRunner` — no toolchain needed in CI.
+`AppBoxKitProcessRunner` port, so every command shape is unit-tested with
+`ScriptedAppBoxKitProcessRunner` — no toolchain needed in CI.
 
 Pure Dart and standalone: no flutter, stacked, or appbox_kit dependency.
 
@@ -17,7 +17,7 @@ Pure Dart and standalone: no flutter, stacked, or appbox_kit dependency.
 | `cloudflare-workers` | `wrangler deploy` (from the working directory's `wrangler.toml`) | **Wired** |
 | `vercel` | `flutter build web --release` → `vercel deploy build/web --prod --yes` | **Wired** |
 
-`vercel` reads `VERCEL_TOKEN` from `KitDeployConfig.environment`. Vercel CLI
+`vercel` reads `VERCEL_TOKEN` from `AppBoxKitDeployConfig.environment`. Vercel CLI
 v55+ tightened non-interactive project linking — pin a CLI major version
 (`doctor` reports `vercel --version`) and set `VERCEL_ORG_ID` /
 `VERCEL_PROJECT_ID` to link non-interactively.
@@ -32,13 +32,13 @@ null.
 ```dart
 import 'package:appbox_kit_deploy/appbox_kit_deploy.dart';
 
-const runner = IoProcessRunner();
-final service = KitDeployService(targets: [
-  const ShorebirdTarget(runner, mode: ShorebirdMode.release),
-  const CloudflarePagesTarget(runner),
+const runner = AppBoxKitIoProcessRunner();
+final service = AppBoxKitDeployService(targets: [
+  const AppBoxKitShorebirdTarget(runner, mode: AppBoxKitShorebirdMode.release),
+  const AppBoxKitCloudflarePagesTarget(runner),
 ]);
 
-final config = KitDeployConfig(
+final config = AppBoxKitDeployConfig(
   projectName: 'showcase',
   flutterVersion: '3.24.0',
   dartDefines: {'ENV': 'prod'},
@@ -55,16 +55,16 @@ CLI: `dart run appbox_kit_deploy doctor` /
 ## Testing
 
 ```dart
-import 'package:appbox_kit_deploy/testing.dart';
+import 'package:appbox_kit_deploy/appbox_kit_testing.dart';
 
-final runner = ScriptedProcessRunner(script: {
-  'flutter build web': KitProcessResult(exitCode: 1, stderr: 'boom'),
+final runner = ScriptedAppBoxKitProcessRunner(script: {
+  'flutter build web': AppBoxKitProcessResult(exitCode: 1, stderr: 'boom'),
 });
 // runner.commandsRun / workingDirectories / environments record each call.
 ```
 
 Targets never throw on tool failure — they return
-`KitDeployResult(ok: false, failureReason: ...)`.
+`AppBoxKitDeployResult(ok: false, failureReason: ...)`.
 
 ## Live smoke
 

@@ -1,9 +1,9 @@
 import 'package:appbox_kit_deploy/appbox_kit_deploy.dart';
-import 'package:appbox_kit_deploy/testing.dart';
+import 'package:appbox_kit_deploy/appbox_kit_testing.dart';
 import 'package:test/test.dart';
 
 void main() {
-  const config = KitDeployConfig(
+  const config = AppBoxKitDeployConfig(
     projectName: 'showcase',
     workingDirectory: '/app',
     releaseVersion: '1.2.0+45',
@@ -12,10 +12,10 @@ void main() {
     environment: {'CLOUDFLARE_API_TOKEN': 'cf-token'},
   );
 
-  group('FastlaneTarget', () {
+  group('AppBoxKitFastlaneTarget', () {
     test('deploy runs bundle exec fastlane <platform> <lane>', () async {
-      final runner = ScriptedProcessRunner();
-      final target = FastlaneTarget(runner, platform: 'ios', lane: 'beta');
+      final runner = ScriptedAppBoxKitProcessRunner();
+      final target = AppBoxKitFastlaneTarget(runner, platform: 'ios', lane: 'beta');
 
       final result = await target.deploy(config);
 
@@ -26,11 +26,11 @@ void main() {
     });
 
     test('failure surfaces exit code and stderr', () async {
-      final runner = ScriptedProcessRunner(script: {
+      final runner = ScriptedAppBoxKitProcessRunner(script: {
         'bundle exec fastlane android release':
-            const KitProcessResult(exitCode: 2, stderr: 'lane failed'),
+            const AppBoxKitProcessResult(exitCode: 2, stderr: 'lane failed'),
       });
-      final target = FastlaneTarget(runner, platform: 'android');
+      final target = AppBoxKitFastlaneTarget(runner, platform: 'android');
 
       final result = await target.deploy(config);
 
@@ -40,20 +40,20 @@ void main() {
     });
 
     test('doctor checks fastlane --version', () async {
-      final runner = ScriptedProcessRunner();
+      final runner = ScriptedAppBoxKitProcessRunner();
       final checks =
-          await FastlaneTarget(runner, platform: 'android').doctor(config);
+          await AppBoxKitFastlaneTarget(runner, platform: 'android').doctor(config);
 
       expect(runner.commandsRun, ['fastlane --version']);
       expect(checks.single.ok, isTrue);
     });
   });
 
-  group('ShorebirdTarget', () {
+  group('AppBoxKitShorebirdTarget', () {
     test('release shape includes --flutter-version and dart-defines',
         () async {
-      final runner = ScriptedProcessRunner();
-      final target = ShorebirdTarget(runner, mode: ShorebirdMode.release);
+      final runner = ScriptedAppBoxKitProcessRunner();
+      final target = AppBoxKitShorebirdTarget(runner, mode: AppBoxKitShorebirdMode.release);
 
       final result = await target.deploy(config);
 
@@ -65,10 +65,10 @@ void main() {
     });
 
     test('patch shape includes --release-version', () async {
-      final runner = ScriptedProcessRunner();
-      final target = ShorebirdTarget(
+      final runner = ScriptedAppBoxKitProcessRunner();
+      final target = AppBoxKitShorebirdTarget(
         runner,
-        mode: ShorebirdMode.patch,
+        mode: AppBoxKitShorebirdMode.patch,
         platform: 'ios',
       );
 
@@ -82,13 +82,13 @@ void main() {
     });
 
     test('doctor runs shorebird doctor', () async {
-      final runner = ScriptedProcessRunner(script: {
+      final runner = ScriptedAppBoxKitProcessRunner(script: {
         'shorebird doctor':
-            const KitProcessResult(exitCode: 1, stderr: 'not logged in'),
+            const AppBoxKitProcessResult(exitCode: 1, stderr: 'not logged in'),
       });
-      final checks = await ShorebirdTarget(
+      final checks = await AppBoxKitShorebirdTarget(
         runner,
-        mode: ShorebirdMode.release,
+        mode: AppBoxKitShorebirdMode.release,
       ).doctor(config);
 
       expect(checks.single.ok, isFalse);
@@ -96,10 +96,10 @@ void main() {
     });
   });
 
-  group('CloudflarePagesTarget', () {
+  group('AppBoxKitCloudflarePagesTarget', () {
     test('deploy builds web then wrangler pages deploy', () async {
-      final runner = ScriptedProcessRunner();
-      final target = CloudflarePagesTarget(runner);
+      final runner = ScriptedAppBoxKitProcessRunner();
+      final target = AppBoxKitCloudflarePagesTarget(runner);
 
       final result = await target.deploy(config);
 
@@ -115,11 +115,11 @@ void main() {
     });
 
     test('stops after failed flutter build', () async {
-      final runner = ScriptedProcessRunner(script: {
+      final runner = ScriptedAppBoxKitProcessRunner(script: {
         'flutter build web':
-            const KitProcessResult(exitCode: 1, stderr: 'compile error'),
+            const AppBoxKitProcessResult(exitCode: 1, stderr: 'compile error'),
       });
-      final result = await CloudflarePagesTarget(runner).deploy(config);
+      final result = await AppBoxKitCloudflarePagesTarget(runner).deploy(config);
 
       expect(result.ok, isFalse);
       expect(result.commandsRun, hasLength(1));
@@ -132,16 +132,16 @@ void main() {
     });
 
     test('doctor reports wrangler + token presence', () async {
-      final runner = ScriptedProcessRunner();
-      final checks = await CloudflarePagesTarget(runner).doctor(config);
+      final runner = ScriptedAppBoxKitProcessRunner();
+      final checks = await AppBoxKitCloudflarePagesTarget(runner).doctor(config);
 
       expect(checks, hasLength(2));
       expect(checks.every((c) => c.ok), isTrue);
     });
   });
 
-  group('VercelTarget', () {
-    const vercelConfig = KitDeployConfig(
+  group('AppBoxKitVercelTarget', () {
+    const vercelConfig = AppBoxKitDeployConfig(
       projectName: 'showcase',
       workingDirectory: '/app',
       dartDefines: {'ENV': 'prod'},
@@ -149,8 +149,8 @@ void main() {
     );
 
     test('deploy builds web then vercel deploy --prod --yes', () async {
-      final runner = ScriptedProcessRunner();
-      final target = VercelTarget(runner);
+      final runner = ScriptedAppBoxKitProcessRunner();
+      final target = AppBoxKitVercelTarget(runner);
 
       final result = await target.deploy(vercelConfig);
 
@@ -167,11 +167,11 @@ void main() {
     });
 
     test('stops after failed flutter build', () async {
-      final runner = ScriptedProcessRunner(script: {
+      final runner = ScriptedAppBoxKitProcessRunner(script: {
         'flutter build web':
-            const KitProcessResult(exitCode: 1, stderr: 'compile error'),
+            const AppBoxKitProcessResult(exitCode: 1, stderr: 'compile error'),
       });
-      final result = await VercelTarget(runner).deploy(vercelConfig);
+      final result = await AppBoxKitVercelTarget(runner).deploy(vercelConfig);
 
       expect(result.ok, isFalse);
       expect(result.commandsRun, hasLength(1));
@@ -184,8 +184,8 @@ void main() {
     });
 
     test('doctor reports vercel CLI + token presence', () async {
-      final runner = ScriptedProcessRunner();
-      final checks = await VercelTarget(runner).doctor(vercelConfig);
+      final runner = ScriptedAppBoxKitProcessRunner();
+      final checks = await AppBoxKitVercelTarget(runner).doctor(vercelConfig);
 
       expect(runner.commandsRun, ['vercel --version']);
       expect(checks, hasLength(2));
@@ -193,8 +193,8 @@ void main() {
     });
 
     test('doctor flags a missing VERCEL_TOKEN', () async {
-      final runner = ScriptedProcessRunner();
-      final checks = await VercelTarget(runner).doctor(config);
+      final runner = ScriptedAppBoxKitProcessRunner();
+      final checks = await AppBoxKitVercelTarget(runner).doctor(config);
 
       expect(checks[0].ok, isTrue);
       expect(checks[1].ok, isFalse);
@@ -202,8 +202,8 @@ void main() {
     });
   });
 
-  group('CloudflareWorkersTarget', () {
-    const workersConfig = KitDeployConfig(
+  group('AppBoxKitCloudflareWorkersTarget', () {
+    const workersConfig = AppBoxKitDeployConfig(
       projectName: 'showcase',
       workingDirectory: '/worker',
       environment: {
@@ -213,8 +213,8 @@ void main() {
     );
 
     test('deploy runs wrangler deploy in the working directory', () async {
-      final runner = ScriptedProcessRunner();
-      final target = CloudflareWorkersTarget(runner);
+      final runner = ScriptedAppBoxKitProcessRunner();
+      final target = AppBoxKitCloudflareWorkersTarget(runner);
 
       final result = await target.deploy(workersConfig);
 
@@ -233,10 +233,10 @@ void main() {
 
     test('fails without a workingDirectory (no wrangler.toml to read)',
         () async {
-      final runner = ScriptedProcessRunner();
-      const noDir = KitDeployConfig(projectName: 'showcase');
+      final runner = ScriptedAppBoxKitProcessRunner();
+      const noDir = AppBoxKitDeployConfig(projectName: 'showcase');
 
-      final result = await CloudflareWorkersTarget(runner).deploy(noDir);
+      final result = await AppBoxKitCloudflareWorkersTarget(runner).deploy(noDir);
 
       expect(result.ok, isFalse);
       expect(result.failureReason, contains('workingDirectory'));
@@ -244,11 +244,11 @@ void main() {
     });
 
     test('deploy failure surfaces exit code and stderr', () async {
-      final runner = ScriptedProcessRunner(script: {
+      final runner = ScriptedAppBoxKitProcessRunner(script: {
         'wrangler deploy':
-            const KitProcessResult(exitCode: 1, stderr: 'missing wrangler.toml'),
+            const AppBoxKitProcessResult(exitCode: 1, stderr: 'missing wrangler.toml'),
       });
-      final result = await CloudflareWorkersTarget(runner).deploy(workersConfig);
+      final result = await AppBoxKitCloudflareWorkersTarget(runner).deploy(workersConfig);
 
       expect(result.ok, isFalse);
       expect(result.failureReason, contains('exited 1'));
@@ -256,8 +256,8 @@ void main() {
     });
 
     test('doctor reports wrangler + token + account id presence', () async {
-      final runner = ScriptedProcessRunner();
-      final checks = await CloudflareWorkersTarget(runner).doctor(workersConfig);
+      final runner = ScriptedAppBoxKitProcessRunner();
+      final checks = await AppBoxKitCloudflareWorkersTarget(runner).doctor(workersConfig);
 
       expect(runner.commandsRun, ['wrangler --version']);
       expect(checks, hasLength(3));
@@ -265,8 +265,8 @@ void main() {
     });
 
     test('doctor flags a missing CLOUDFLARE_ACCOUNT_ID', () async {
-      final runner = ScriptedProcessRunner();
-      final checks = await CloudflareWorkersTarget(runner).doctor(config);
+      final runner = ScriptedAppBoxKitProcessRunner();
+      final checks = await AppBoxKitCloudflareWorkersTarget(runner).doctor(config);
 
       expect(checks[2].ok, isFalse);
       expect(checks[2].name, 'CLOUDFLARE_ACCOUNT_ID');

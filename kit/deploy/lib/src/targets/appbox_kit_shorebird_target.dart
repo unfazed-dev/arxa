@@ -1,24 +1,24 @@
-import '../kit_deploy_target.dart';
-import '../models/kit_deploy_config.dart';
-import '../models/kit_deploy_result.dart';
-import '../process/kit_process_runner.dart';
+import '../appbox_kit_deploy_target.dart';
+import '../models/appbox_kit_deploy_config.dart';
+import '../models/appbox_kit_deploy_result.dart';
+import '../process/appbox_kit_process_runner.dart';
 
-/// What a [ShorebirdTarget] does when deployed.
-enum ShorebirdMode { release, patch }
+/// What a [AppBoxKitShorebirdTarget] does when deployed.
+enum AppBoxKitShorebirdMode { release, patch }
 
 /// Wired shorebird backend for over-the-air code push.
 ///
 /// - release: `shorebird release <platform> [--flutter-version=X] [--dart-define=...]`
 /// - patch:   `shorebird patch <platform> [--release-version=Y]`
-class ShorebirdTarget implements KitDeployTarget {
-  const ShorebirdTarget(
+class AppBoxKitShorebirdTarget implements AppBoxKitDeployTarget {
+  const AppBoxKitShorebirdTarget(
     this._runner, {
     required this.mode,
     this.platform = 'android',
   });
 
-  final KitProcessRunner _runner;
-  final ShorebirdMode mode;
+  final AppBoxKitProcessRunner _runner;
+  final AppBoxKitShorebirdMode mode;
 
   /// `android` or `ios`.
   final String platform;
@@ -27,14 +27,14 @@ class ShorebirdTarget implements KitDeployTarget {
   String get name => 'shorebird-${mode.name}';
 
   @override
-  Future<List<KitDoctorCheck>> doctor(KitDeployConfig config) async {
+  Future<List<AppBoxKitDoctorCheck>> doctor(AppBoxKitDeployConfig config) async {
     final result = await _runner.run(
       'shorebird',
       const ['doctor'],
       workingDirectory: config.workingDirectory,
     );
     return [
-      KitDoctorCheck(
+      AppBoxKitDoctorCheck(
         name: 'shorebird doctor',
         ok: result.ok,
         detail: result.ok
@@ -47,16 +47,16 @@ class ShorebirdTarget implements KitDeployTarget {
   }
 
   @override
-  Future<KitDeployResult> deploy(KitDeployConfig config) async {
+  Future<AppBoxKitDeployResult> deploy(AppBoxKitDeployConfig config) async {
     final args = switch (mode) {
-      ShorebirdMode.release => [
+      AppBoxKitShorebirdMode.release => [
           'release',
           platform,
           if (config.flutterVersion != null)
             '--flutter-version=${config.flutterVersion}',
           ...config.dartDefineArgs,
         ],
-      ShorebirdMode.patch => [
+      AppBoxKitShorebirdMode.patch => [
           'patch',
           platform,
           if (config.releaseVersion != null)
@@ -70,7 +70,7 @@ class ShorebirdTarget implements KitDeployTarget {
       workingDirectory: config.workingDirectory,
       environment: config.environment.isEmpty ? null : config.environment,
     );
-    return KitDeployResult(
+    return AppBoxKitDeployResult(
       target: name,
       ok: result.ok,
       commandsRun: ['shorebird ${args.join(' ')}'],

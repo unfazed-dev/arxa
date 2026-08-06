@@ -31,11 +31,11 @@ void main() {
     final token = env['VERCEL_TOKEN'];
 
     test('doctor all-ok, then preview deploy of a static fixture', () async {
-      const runner = IoProcessRunner();
+      const runner = AppBoxKitIoProcessRunner();
       final site = fixtureDir('appbox_smoke_vercel', {
         'index.html': '<!doctype html><title>appbox smoke</title>ok',
       });
-      final config = KitDeployConfig(
+      final config = AppBoxKitDeployConfig(
         projectName: 'appbox-smoke-$stamp',
         workingDirectory: site.path,
         environment: {
@@ -47,8 +47,8 @@ void main() {
         },
       );
 
-      final checks = await const VercelTarget(runner).doctor(config);
-      expect(checks, everyElement(predicate<KitDoctorCheck>((c) => c.ok)),
+      final checks = await const AppBoxKitVercelTarget(runner).doctor(config);
+      expect(checks, everyElement(predicate<AppBoxKitDoctorCheck>((c) => c.ok)),
           reason: checks.map((c) => '${c.name}: ${c.detail}').join('\n'));
 
       // The target's deploy() runs `flutter build web` first — the smoke
@@ -70,11 +70,11 @@ void main() {
     final account = env['CLOUDFLARE_ACCOUNT_ID'];
 
     test('doctor all-ok, then preview deploy of a static fixture', () async {
-      const runner = IoProcessRunner();
+      const runner = AppBoxKitIoProcessRunner();
       final site = fixtureDir('appbox_smoke_pages', {
         'index.html': '<!doctype html><title>appbox smoke</title>ok',
       });
-      final config = KitDeployConfig(
+      final config = AppBoxKitDeployConfig(
         projectName: 'appbox-smoke-$stamp',
         workingDirectory: site.path,
         environment: {
@@ -83,8 +83,8 @@ void main() {
         },
       );
 
-      final checks = await const CloudflarePagesTarget(runner).doctor(config);
-      expect(checks, everyElement(predicate<KitDoctorCheck>((c) => c.ok)),
+      final checks = await const AppBoxKitCloudflarePagesTarget(runner).doctor(config);
+      expect(checks, everyElement(predicate<AppBoxKitDoctorCheck>((c) => c.ok)),
           reason: checks.map((c) => '${c.name}: ${c.detail}').join('\n'));
 
       // Same honest shape as vercel: skip the flutter build step, drive the
@@ -115,7 +115,7 @@ void main() {
     final account = env['CLOUDFLARE_ACCOUNT_ID'];
 
     test('doctor all-ok, then wrangler deploy of a minimal worker', () async {
-      const runner = IoProcessRunner();
+      const runner = AppBoxKitIoProcessRunner();
       // Workers ship their own source — no flutter build step, so this smoke
       // can exercise the target's deploy() end to end. Unrouted worker =
       // non-prod until a route is bound.
@@ -126,7 +126,7 @@ void main() {
             'main = "index.js"\n'
             'compatibility_date = "2025-01-01"\n',
       });
-      final config = KitDeployConfig(
+      final config = AppBoxKitDeployConfig(
         projectName: 'appbox-smoke-$stamp',
         workingDirectory: worker.path,
         environment: {
@@ -135,11 +135,11 @@ void main() {
         },
       );
 
-      final checks = await const CloudflareWorkersTarget(runner).doctor(config);
-      expect(checks, everyElement(predicate<KitDoctorCheck>((c) => c.ok)),
+      final checks = await const AppBoxKitCloudflareWorkersTarget(runner).doctor(config);
+      expect(checks, everyElement(predicate<AppBoxKitDoctorCheck>((c) => c.ok)),
           reason: checks.map((c) => '${c.name}: ${c.detail}').join('\n'));
 
-      final result = await const CloudflareWorkersTarget(runner).deploy(config);
+      final result = await const AppBoxKitCloudflareWorkersTarget(runner).deploy(config);
       expect(result.ok, isTrue, reason: result.failureReason ?? '');
     },
         skip: (token == null || account == null)

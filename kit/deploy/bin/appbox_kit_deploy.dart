@@ -19,18 +19,18 @@ Future<void> main(List<String> args) async {
         .substring(prefix.length);
   }
 
-  const runner = IoProcessRunner();
-  final service = KitDeployService(targets: [
-    const FastlaneTarget(runner, platform: 'android'),
-    const FastlaneTarget(runner, platform: 'ios'),
-    const ShorebirdTarget(runner, mode: ShorebirdMode.release),
-    const ShorebirdTarget(runner, mode: ShorebirdMode.patch),
-    const CloudflarePagesTarget(runner),
-    const CloudflareWorkersTarget(runner),
-    const VercelTarget(runner),
+  const runner = AppBoxKitIoProcessRunner();
+  final service = AppBoxKitDeployService(targets: [
+    const AppBoxKitFastlaneTarget(runner, platform: 'android'),
+    const AppBoxKitFastlaneTarget(runner, platform: 'ios'),
+    const AppBoxKitShorebirdTarget(runner, mode: AppBoxKitShorebirdMode.release),
+    const AppBoxKitShorebirdTarget(runner, mode: AppBoxKitShorebirdMode.patch),
+    const AppBoxKitCloudflarePagesTarget(runner),
+    const AppBoxKitCloudflareWorkersTarget(runner),
+    const AppBoxKitVercelTarget(runner),
   ]);
 
-  final config = KitDeployConfig(
+  final config = AppBoxKitDeployConfig(
     projectName: option('project-name', 'app'),
     workingDirectory: Directory.current.path,
     releaseVersion: args.any((a) => a.startsWith('--release-version='))

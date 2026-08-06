@@ -1,19 +1,19 @@
-import '../kit_deploy_target.dart';
-import '../models/kit_deploy_config.dart';
-import '../models/kit_deploy_result.dart';
-import '../process/kit_process_runner.dart';
+import '../appbox_kit_deploy_target.dart';
+import '../models/appbox_kit_deploy_config.dart';
+import '../models/appbox_kit_deploy_result.dart';
+import '../process/appbox_kit_process_runner.dart';
 
 /// Wired Cloudflare Pages backend for static Flutter web builds:
 ///
 /// 1. `flutter build web --release [--dart-define=...]`
 /// 2. `wrangler pages deploy build/web --project-name=<projectName>`
 ///
-/// Auth comes from CLOUDFLARE_API_TOKEN in [KitDeployConfig.environment]
+/// Auth comes from CLOUDFLARE_API_TOKEN in [AppBoxKitDeployConfig.environment]
 /// (or ambient `wrangler login` state).
-class CloudflarePagesTarget implements KitDeployTarget {
-  const CloudflarePagesTarget(this._runner);
+class AppBoxKitCloudflarePagesTarget implements AppBoxKitDeployTarget {
+  const AppBoxKitCloudflarePagesTarget(this._runner);
 
-  final KitProcessRunner _runner;
+  final AppBoxKitProcessRunner _runner;
 
   static const String _outputDirectory = 'build/web';
 
@@ -21,7 +21,7 @@ class CloudflarePagesTarget implements KitDeployTarget {
   String get name => 'cloudflare-pages';
 
   @override
-  Future<List<KitDoctorCheck>> doctor(KitDeployConfig config) async {
+  Future<List<AppBoxKitDoctorCheck>> doctor(AppBoxKitDeployConfig config) async {
     final wrangler = await _runner.run(
       'wrangler',
       const ['--version'],
@@ -29,14 +29,14 @@ class CloudflarePagesTarget implements KitDeployTarget {
     );
     final hasToken = config.environment.containsKey('CLOUDFLARE_API_TOKEN');
     return [
-      KitDoctorCheck(
+      AppBoxKitDoctorCheck(
         name: 'wrangler CLI',
         ok: wrangler.ok,
         detail: wrangler.ok
             ? wrangler.stdout.trim()
             : 'wrangler not found on PATH (npm i -g wrangler)',
       ),
-      KitDoctorCheck(
+      AppBoxKitDoctorCheck(
         name: 'CLOUDFLARE_API_TOKEN',
         ok: hasToken,
         detail: hasToken
@@ -47,7 +47,7 @@ class CloudflarePagesTarget implements KitDeployTarget {
   }
 
   @override
-  Future<KitDeployResult> deploy(KitDeployConfig config) async {
+  Future<AppBoxKitDeployResult> deploy(AppBoxKitDeployConfig config) async {
     final commands = <String>[];
 
     final buildArgs = ['build', 'web', '--release', ...config.dartDefineArgs];
@@ -58,7 +58,7 @@ class CloudflarePagesTarget implements KitDeployTarget {
       workingDirectory: config.workingDirectory,
     );
     if (!build.ok) {
-      return KitDeployResult(
+      return AppBoxKitDeployResult(
         target: name,
         ok: false,
         commandsRun: commands,
@@ -80,7 +80,7 @@ class CloudflarePagesTarget implements KitDeployTarget {
       workingDirectory: config.workingDirectory,
       environment: config.environment.isEmpty ? null : config.environment,
     );
-    return KitDeployResult(
+    return AppBoxKitDeployResult(
       target: name,
       ok: deploy.ok,
       commandsRun: commands,
