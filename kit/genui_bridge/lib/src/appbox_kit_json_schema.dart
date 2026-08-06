@@ -1,10 +1,10 @@
 /// A JSON Schema as plain decoded JSON. Catalog dataSchemas are runtime
 /// inputs (supplied by the app/daemon), never compiled into this package.
-typedef JsonSchema = Map<String, Object?>;
+typedef AppBoxKitJsonSchema = Map<String, Object?>;
 
-/// One schema violation found by [JsonSchemaValidator].
-class SchemaError {
-  const SchemaError(this.path, this.message);
+/// One schema violation found by [AppBoxKitJsonSchemaValidator].
+class AppBoxKitSchemaError {
+  const AppBoxKitSchemaError(this.path, this.message);
 
   /// JSON-path-ish location of the offending value, e.g. `$.components[2].text`.
   final String path;
@@ -16,7 +16,7 @@ class SchemaError {
   String toString() => '$path: $message';
 }
 
-/// Validates decoded JSON values against caller-supplied [JsonSchema]s.
+/// Validates decoded JSON values against caller-supplied [AppBoxKitJsonSchema]s.
 ///
 /// kimitail: validates only the subset a component catalog actually needs —
 /// `type` (incl. `"integer"` and multi-type lists), `properties`, `required`,
@@ -26,33 +26,33 @@ class SchemaError {
 /// callers must flatten refs and unions before handing schemas over.
 /// Upgrade path: depend on a real json_schema package the day a catalog
 /// needs union types or remote refs.
-class JsonSchemaValidator {
-  const JsonSchemaValidator();
+class AppBoxKitJsonSchemaValidator {
+  const AppBoxKitJsonSchemaValidator();
 
   /// Returns every violation of [value] against [schema]; empty means valid.
-  List<SchemaError> validate(Object? value, JsonSchema schema,
+  List<AppBoxKitSchemaError> validate(Object? value, AppBoxKitJsonSchema schema,
           [String path = r'$']) =>
       _validate(value, schema, path);
 
-  List<SchemaError> _validate(Object? value, JsonSchema schema, String path) {
-    final errors = <SchemaError>[];
+  List<AppBoxKitSchemaError> _validate(Object? value, AppBoxKitJsonSchema schema, String path) {
+    final errors = <AppBoxKitSchemaError>[];
 
     final const_ = schema['const'];
     if (schema.containsKey('const') && value != const_) {
-      errors.add(SchemaError(path, 'must be $const_'));
+      errors.add(AppBoxKitSchemaError(path, 'must be $const_'));
       return errors; // A failed const makes deeper checks noise.
     }
 
     final enum_ = schema['enum'];
     if (enum_ is List && !enum_.any((e) => _deepEquals(e, value))) {
-      errors.add(SchemaError(path, 'must be one of $enum_'));
+      errors.add(AppBoxKitSchemaError(path, 'must be one of $enum_'));
       return errors;
     }
 
     final type = schema['type'];
     if (type != null && !_matchesType(value, type)) {
       errors.add(
-          SchemaError(path, 'must be of type $type, got ${_typeName(value)}'));
+          AppBoxKitSchemaError(path, 'must be of type $type, got ${_typeName(value)}'));
       return errors; // Type mismatch makes property/item checks noise.
     }
 
@@ -61,23 +61,23 @@ class JsonSchemaValidator {
       if (required is List) {
         for (final key in required) {
           if (!value.containsKey(key)) {
-            errors.add(SchemaError(path, 'missing required property "$key"'));
+            errors.add(AppBoxKitSchemaError(path, 'missing required property "$key"'));
           }
         }
       }
       final properties = schema['properties'];
       if (properties is Map<String, dynamic>) {
         for (final entry in properties.entries) {
-          if (value.containsKey(entry.key) && entry.value is JsonSchema) {
+          if (value.containsKey(entry.key) && entry.value is AppBoxKitJsonSchema) {
             errors.addAll(_validate(value[entry.key],
-                entry.value! as JsonSchema, '$path.${entry.key}'));
+                entry.value! as AppBoxKitJsonSchema, '$path.${entry.key}'));
           }
         }
       }
       if (schema['additionalProperties'] == false && properties is Map) {
         for (final key in value.keys) {
           if (!properties.containsKey(key)) {
-            errors.add(SchemaError(path, 'unexpected property "$key"'));
+            errors.add(AppBoxKitSchemaError(path, 'unexpected property "$key"'));
           }
         }
       }
@@ -86,11 +86,11 @@ class JsonSchemaValidator {
     if (value is List) {
       final minItems = schema['minItems'];
       if (minItems is int && value.length < minItems) {
-        errors.add(SchemaError(
+        errors.add(AppBoxKitSchemaError(
             path, 'must have at least $minItems item(s), got ${value.length}'));
       }
       final items = schema['items'];
-      if (items is JsonSchema) {
+      if (items is AppBoxKitJsonSchema) {
         for (var i = 0; i < value.length; i++) {
           errors.addAll(_validate(value[i], items, '$path[$i]'));
         }
@@ -101,18 +101,18 @@ class JsonSchemaValidator {
       final minLength = schema['minLength'];
       if (minLength is int && value.length < minLength) {
         errors
-            .add(SchemaError(path, 'must be at least $minLength character(s)'));
+            .add(AppBoxKitSchemaError(path, 'must be at least $minLength character(s)'));
       }
     }
 
     if (value is num) {
       final minimum = schema['minimum'];
       if (minimum is num && value < minimum) {
-        errors.add(SchemaError(path, 'must be >= $minimum'));
+        errors.add(AppBoxKitSchemaError(path, 'must be >= $minimum'));
       }
       final maximum = schema['maximum'];
       if (maximum is num && value > maximum) {
-        errors.add(SchemaError(path, 'must be <= $maximum'));
+        errors.add(AppBoxKitSchemaError(path, 'must be <= $maximum'));
       }
     }
 

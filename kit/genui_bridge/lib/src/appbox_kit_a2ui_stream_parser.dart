@@ -1,26 +1,26 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'a2ui_message.dart';
+import 'appbox_kit_a2ui_message.dart';
 
-/// One event from an [A2uiStreamParser]: a parsed message, a chunk of prose,
+/// One event from an [AppBoxKitA2uiStreamParser]: a parsed message, a chunk of prose,
 /// or a malformed attempted message.
-sealed class A2uiStreamEvent {
-  const A2uiStreamEvent();
+sealed class AppBoxKitA2uiStreamEvent {
+  const AppBoxKitA2uiStreamEvent();
 }
 
-/// A complete, structurally valid [A2uiMessage] parsed from the stream.
-final class A2uiMessageEvent extends A2uiStreamEvent {
-  const A2uiMessageEvent(this.message);
+/// A complete, structurally valid [AppBoxKitA2uiMessage] parsed from the stream.
+final class AppBoxKitA2uiMessageEvent extends AppBoxKitA2uiStreamEvent {
+  const AppBoxKitA2uiMessageEvent(this.message);
 
   /// The parsed message (already structurally valid; catalog validation is
   /// the bridge's job, not the parser's).
-  final A2uiMessage message;
+  final AppBoxKitA2uiMessage message;
 }
 
 /// Non-message text the model emitted alongside (or instead of) A2UI.
-final class A2uiTextEvent extends A2uiStreamEvent {
-  const A2uiTextEvent(this.text);
+final class AppBoxKitA2uiTextEvent extends AppBoxKitA2uiStreamEvent {
+  const AppBoxKitA2uiTextEvent(this.text);
 
   /// The prose chunk, with `<a2ui_message>` protocol tags stripped.
   final String text;
@@ -30,10 +30,10 @@ final class A2uiTextEvent extends A2uiStreamEvent {
 ///
 /// Emitted (never thrown) so a consumer can feed [raw] + [error] into a
 /// repair loop without try/catch plumbing around the stream.
-final class A2uiErrorEvent extends A2uiStreamEvent {
-  const A2uiErrorEvent(this.error, this.raw);
+final class AppBoxKitA2uiErrorEvent extends AppBoxKitA2uiStreamEvent {
+  const AppBoxKitA2uiErrorEvent(this.error, this.raw);
 
-  /// What went wrong (typically an [A2uiFormatException] or
+  /// What went wrong (typically an [AppBoxKitA2uiFormatException] or
   /// [FormatException] from `jsonDecode`).
   final Object error;
 
@@ -41,7 +41,7 @@ final class A2uiErrorEvent extends A2uiStreamEvent {
   final String raw;
 }
 
-/// Incrementally parses a stream of LLM text chunks into [A2uiStreamEvent]s.
+/// Incrementally parses a stream of LLM text chunks into [AppBoxKitA2uiStreamEvent]s.
 ///
 /// Mirrors the extraction semantics of genui's `A2uiParserTransformer`
 /// (https://github.com/flutter/genui/blob/main/packages/genui/lib/src/transport/a2ui_parser_transformer.dart):
@@ -50,25 +50,25 @@ final class A2uiErrorEvent extends A2uiStreamEvent {
 /// - otherwise a balanced `{...}` object is matched (string- and
 ///   escape-aware), so messages split across any chunk boundary assemble;
 /// - whitespace between two messages (the JSONL separator) is dropped;
-/// - anything else is prose and surfaces as [A2uiTextEvent].
+/// - anything else is prose and surfaces as [AppBoxKitA2uiTextEvent].
 ///
 /// Deliberate divergences, because this parser feeds a repair loop rather
 /// than a renderer (genui falls back to plain text in both cases):
 ///
-/// - a fenced JSON block that fails `jsonDecode` is an [A2uiErrorEvent];
-/// - a trailing partial `{...` when the input closes is an [A2uiErrorEvent]
+/// - a fenced JSON block that fails `jsonDecode` is an [AppBoxKitA2uiErrorEvent];
+/// - a trailing partial `{...` when the input closes is an [AppBoxKitA2uiErrorEvent]
 ///   (truncated message) instead of text.
-class A2uiStreamParser extends StreamTransformerBase<String, A2uiStreamEvent> {
-  const A2uiStreamParser();
+class AppBoxKitA2uiStreamParser extends StreamTransformerBase<String, AppBoxKitA2uiStreamEvent> {
+  const AppBoxKitA2uiStreamParser();
 
   @override
-  Stream<A2uiStreamEvent> bind(Stream<String> stream) =>
+  Stream<AppBoxKitA2uiStreamEvent> bind(Stream<String> stream) =>
       _A2uiParserStream(stream).stream;
 }
 
 class _A2uiParserStream {
   _A2uiParserStream(Stream<String> input) {
-    _controller = StreamController<A2uiStreamEvent>(
+    _controller = StreamController<AppBoxKitA2uiStreamEvent>(
       onListen: () {
         _subscription = input.listen(
           _onData,
@@ -83,14 +83,14 @@ class _A2uiParserStream {
     );
   }
 
-  late final StreamController<A2uiStreamEvent> _controller;
+  late final StreamController<AppBoxKitA2uiStreamEvent> _controller;
   StreamSubscription<String>? _subscription;
   String _buffer = '';
 
   /// Whitespace right after a message is a JSONL separator, not prose.
   bool _wasLastEventA2ui = false;
 
-  Stream<A2uiStreamEvent> get stream => _controller.stream;
+  Stream<AppBoxKitA2uiStreamEvent> get stream => _controller.stream;
 
   void _onData(String chunk) {
     _buffer += chunk;
@@ -107,7 +107,7 @@ class _A2uiParserStream {
     }
     if (rest.contains('{')) {
       // Stream ended mid-message: truncated A2UI, repairable.
-      _controller.add(A2uiErrorEvent(
+      _controller.add(AppBoxKitA2uiErrorEvent(
         const FormatException('stream ended with an incomplete JSON message'),
         rest,
       ));
@@ -182,7 +182,7 @@ class _A2uiParserStream {
     _wasLastEventA2ui = false;
     final clean =
         text.replaceAll('<a2ui_message>', '').replaceAll('</a2ui_message>', '');
-    if (clean.isNotEmpty) _controller.add(A2uiTextEvent(clean));
+    if (clean.isNotEmpty) _controller.add(AppBoxKitA2uiTextEvent(clean));
   }
 
   void _emitPayload(String content) {
@@ -192,7 +192,7 @@ class _A2uiParserStream {
     } on FormatException catch (e) {
       // Fenced-but-invalid JSON, or a balanced-but-invalid object: an
       // attempted A2UI message either way — surface for repair.
-      _controller.add(A2uiErrorEvent(e, content));
+      _controller.add(AppBoxKitA2uiErrorEvent(e, content));
       _wasLastEventA2ui = false;
       return;
     }
@@ -221,14 +221,14 @@ class _A2uiParserStream {
 
   void _emitOne(Map<String, dynamic> json, String raw) {
     try {
-      _controller.add(A2uiMessageEvent(A2uiMessage.fromJson(json)));
+      _controller.add(AppBoxKitA2uiMessageEvent(AppBoxKitA2uiMessage.fromJson(json)));
       _wasLastEventA2ui = true;
-    } on A2uiFormatException catch (e) {
+    } on AppBoxKitA2uiFormatException catch (e) {
       if (json.keys.any(_a2uiMessageKeys.contains)) {
-        _controller.add(A2uiErrorEvent(e, raw));
+        _controller.add(AppBoxKitA2uiErrorEvent(e, raw));
       } else {
         // Some other JSON object the model happened to emit; not A2UI.
-        _controller.add(A2uiTextEvent(jsonEncode(json)));
+        _controller.add(AppBoxKitA2uiTextEvent(jsonEncode(json)));
       }
       _wasLastEventA2ui = false;
     }
@@ -280,6 +280,6 @@ class _Match {
   final int end;
 
   /// The payload text to decode (fence contents, or the balanced object);
-  /// also what an [A2uiErrorEvent] reports as its raw payload.
+  /// also what an [AppBoxKitA2uiErrorEvent] reports as its raw payload.
   final String content;
 }

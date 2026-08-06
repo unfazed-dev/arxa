@@ -1,19 +1,19 @@
 import 'dart:convert';
 
-import 'a2ui_message.dart';
-import 'a2ui_stream_parser.dart';
-import 'chat_stream.dart';
-import 'json_schema.dart';
+import 'appbox_kit_a2ui_message.dart';
+import 'appbox_kit_a2ui_stream_parser.dart';
+import 'appbox_kit_chat_stream.dart';
+import 'appbox_kit_json_schema.dart';
 
 /// The catalogId of the A2UI v0.9 basic catalog (the one genui ships as
 /// `BasicCatalogItems`). Used as the prompt default; an opaque agreed string,
 /// never fetched.
-const String a2uiBasicCatalogId =
+const String appBoxKitA2uiBasicCatalogId =
     'https://a2ui.org/specification/v0_9/catalogs/basic/catalog.json';
 
-/// The validated result of one [GenuiBridge.generate] turn.
-class A2uiTurn {
-  const A2uiTurn({
+/// The validated result of one [AppBoxKitGenuiBridge.generate] turn.
+class AppBoxKitA2uiTurn {
+  const AppBoxKitA2uiTurn({
     required this.messages,
     required this.texts,
     required this.attempts,
@@ -22,7 +22,7 @@ class A2uiTurn {
   /// The validated A2UI messages, in stream order. Only valid messages ever
   /// appear here — a turn whose messages fail validation is retried, never
   /// partially emitted.
-  final List<A2uiMessage> messages;
+  final List<AppBoxKitA2uiMessage> messages;
 
   /// Non-message prose the model emitted alongside the messages.
   final List<String> texts;
@@ -36,8 +36,8 @@ class A2uiTurn {
 }
 
 /// Raised when a turn is still invalid after all repair attempts.
-class GenuiBridgeFailure implements Exception {
-  const GenuiBridgeFailure({
+class AppBoxKitGenuiBridgeFailure implements Exception {
+  const AppBoxKitGenuiBridgeFailure({
     required this.attempts,
     required this.errors,
     required this.lastRawOutput,
@@ -53,42 +53,42 @@ class GenuiBridgeFailure implements Exception {
   final String lastRawOutput;
 
   @override
-  String toString() => 'GenuiBridgeFailure: still invalid after $attempts '
+  String toString() => 'AppBoxKitGenuiBridgeFailure: still invalid after $attempts '
       'attempt(s):\n${errors.join('\n')}';
 }
 
-/// The reliability core: drives a [ChatStream], parses its output into A2UI
+/// The reliability core: drives a [AppBoxKitChatStream], parses its output into A2UI
 /// messages, validates them against the catalog, and re-asks with the
 /// validation error appended when output is invalid — at most [maxRepairs]
 /// times. Only valid messages ever leave the bridge.
 ///
 /// Reliability does not depend on any provider's structured-output mode; the
 /// contract is prompt → streamed parse → validate → bounded repair.
-class GenuiBridge {
+class AppBoxKitGenuiBridge {
   /// [catalog] maps component type names (`Text`, `Card`, …) to their JSON
   /// schemas (runtime inputs — flatten any `$ref`s first; see
-  /// [JsonSchemaValidator] for the supported subset). An empty catalog
+  /// [AppBoxKitJsonSchemaValidator] for the supported subset). An empty catalog
   /// disables per-component validation. [systemPrompt] overrides the prompt
   /// built from the catalog when you need full control.
-  GenuiBridge({
-    required ChatStream chat,
-    Map<String, JsonSchema> catalog = const {},
-    this.catalogId = a2uiBasicCatalogId,
+  AppBoxKitGenuiBridge({
+    required AppBoxKitChatStream chat,
+    Map<String, AppBoxKitJsonSchema> catalog = const {},
+    this.catalogId = appBoxKitA2uiBasicCatalogId,
     this.maxRepairs = 2,
     String? systemPrompt,
-    JsonSchemaValidator validator = const JsonSchemaValidator(),
+    AppBoxKitJsonSchemaValidator validator = const AppBoxKitJsonSchemaValidator(),
   })  : _chat = chat,
         _catalog = catalog,
         _validator = validator,
         systemPrompt = systemPrompt ??
-            buildA2uiSystemPrompt(catalogId: catalogId, catalog: catalog);
+            appBoxKitBuildA2uiSystemPrompt(catalogId: catalogId, catalog: catalog);
 
-  final ChatStream _chat;
-  final Map<String, JsonSchema> _catalog;
-  final JsonSchemaValidator _validator;
+  final AppBoxKitChatStream _chat;
+  final Map<String, AppBoxKitJsonSchema> _catalog;
+  final AppBoxKitJsonSchemaValidator _validator;
 
   /// The catalogId the prompt instructs the model to use, and the one
-  /// [CreateSurface] messages are checked against.
+  /// [AppBoxKitCreateSurface] messages are checked against.
   final String catalogId;
 
   /// Maximum number of re-asks after an invalid attempt. Total provider
@@ -100,34 +100,34 @@ class GenuiBridge {
 
   /// Runs one turn: [messages] are the conversation so far (user/assistant
   /// turns; the bridge prepends its own system prompt). Returns the validated
-  /// turn, or throws [GenuiBridgeFailure] after 1 + [maxRepairs] attempts.
-  Future<A2uiTurn> generate(List<ChatMessage> messages) async {
-    final attemptMessages = <ChatMessage>[
-      ChatMessage.system(systemPrompt),
+  /// turn, or throws [AppBoxKitGenuiBridgeFailure] after 1 + [maxRepairs] attempts.
+  Future<AppBoxKitA2uiTurn> generate(List<AppBoxKitChatMessage> messages) async {
+    final attemptMessages = <AppBoxKitChatMessage>[
+      AppBoxKitChatMessage.system(systemPrompt),
       ...messages,
     ];
     final errors = <String>[];
     var rawOutput = '';
 
     for (var attempt = 1; attempt <= maxRepairs + 1; attempt++) {
-      final events = await const A2uiStreamParser()
+      final events = await const AppBoxKitA2uiStreamParser()
           .bind(_chat.complete(attemptMessages))
           .toList();
 
-      final messagesOut = <A2uiMessage>[];
+      final messagesOut = <AppBoxKitA2uiMessage>[];
       final texts = <String>[];
       final attemptErrors = <String>[];
       final raw = StringBuffer();
 
       for (final event in events) {
         switch (event) {
-          case A2uiMessageEvent(:final message):
+          case AppBoxKitA2uiMessageEvent(:final message):
             messagesOut.add(message);
             raw.writeln(message.toJsonLine());
-          case A2uiTextEvent(:final text):
+          case AppBoxKitA2uiTextEvent(:final text):
             texts.add(text);
             raw.write(text);
-          case A2uiErrorEvent(:final error, :final raw):
+          case AppBoxKitA2uiErrorEvent(:final error, :final raw):
             attemptErrors.add('$error (payload: ${_snippet(raw)})');
         }
       }
@@ -139,7 +139,7 @@ class GenuiBridge {
       }
 
       if (attemptErrors.isEmpty) {
-        return A2uiTurn(
+        return AppBoxKitA2uiTurn(
           messages: messagesOut,
           texts: texts,
           attempts: attempt,
@@ -152,12 +152,12 @@ class GenuiBridge {
         // "prompt-first" design intends. The failed output is included so
         // the model can correct rather than regenerate blind.
         attemptMessages
-          ..add(ChatMessage.assistant(rawOutput))
-          ..add(ChatMessage.user(_repairInstruction(attemptErrors)));
+          ..add(AppBoxKitChatMessage.assistant(rawOutput))
+          ..add(AppBoxKitChatMessage.user(_repairInstruction(attemptErrors)));
       }
     }
 
-    throw GenuiBridgeFailure(
+    throw AppBoxKitGenuiBridgeFailure(
       attempts: maxRepairs + 1,
       errors: errors,
       lastRawOutput: rawOutput,
@@ -166,16 +166,16 @@ class GenuiBridge {
 
   /// Validates parsed messages against the catalog: component shape, known
   /// component types, per-component schemas, and the createSurface catalogId.
-  List<String> _validateCatalog(List<A2uiMessage> messages) {
+  List<String> _validateCatalog(List<AppBoxKitA2uiMessage> messages) {
     final errors = <String>[];
     for (final message in messages) {
       switch (message) {
-        case CreateSurface(:final catalogId):
+        case AppBoxKitCreateSurface(:final catalogId):
           if (catalogId != this.catalogId) {
             errors.add('createSurface: catalogId must be "${this.catalogId}"'
                 ' (got "$catalogId")');
           }
-        case UpdateComponents(:final components):
+        case AppBoxKitUpdateComponents(:final components):
           final seenIds = <String>{};
           for (final component in components) {
             final id = component['id'];
@@ -202,7 +202,7 @@ class GenuiBridge {
               errors.add('component "$id" ($type): $e');
             }
           }
-        case UpdateDataModel() || DeleteSurface():
+        case AppBoxKitUpdateDataModel() || AppBoxKitDeleteSurface():
           break; // Envelope checks in fromJson suffice.
       }
     }
@@ -213,7 +213,7 @@ class GenuiBridge {
       'A2UI validation error:\n'
       '${attemptErrors.map((e) => '- $e').join('\n')}\n'
       'Re-emit the COMPLETE set of A2UI messages with every error corrected. '
-      'Output only JSONL: one {"version":"$a2uiVersion",...} object per line, '
+      'Output only JSONL: one {"version":"$appBoxKitA2uiVersion",...} object per line, '
       'no markdown, no commentary.';
 
   static String _snippet(String raw) {
@@ -225,9 +225,9 @@ class GenuiBridge {
 /// Builds the system prompt that instructs a model to speak A2UI v0.9 JSONL
 /// against [catalog]. This — not any provider's structured-output mode — is
 /// the first leg of the bridge's reliability story.
-String buildA2uiSystemPrompt({
-  String catalogId = a2uiBasicCatalogId,
-  Map<String, JsonSchema> catalog = const {},
+String appBoxKitBuildA2uiSystemPrompt({
+  String catalogId = appBoxKitA2uiBasicCatalogId,
+  Map<String, AppBoxKitJsonSchema> catalog = const {},
 }) {
   final catalogSection = catalog.isEmpty
       ? 'Use only components from the A2UI v0.9 basic catalog '
@@ -242,7 +242,7 @@ You generate user interfaces for an A2UI v0.9 client. Respond with A2UI
 messages ONLY: one complete JSON object per line (JSONL). No markdown fences,
 no commentary, no surrounding prose.
 
-Every message is an envelope {"version":"$a2uiVersion","<verb>":{...}} with
+Every message is an envelope {"version":"$appBoxKitA2uiVersion","<verb>":{...}} with
 EXACTLY ONE verb key:
 
 - createSurface {surfaceId, catalogId, theme?, sendDataModel?} — must be the

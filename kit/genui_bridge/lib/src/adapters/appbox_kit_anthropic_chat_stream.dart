@@ -1,10 +1,10 @@
 import 'dart:convert';
 
-import '../chat_stream.dart';
-import '../json_schema.dart';
-import '../sse_transport.dart';
+import '../appbox_kit_chat_stream.dart';
+import '../appbox_kit_json_schema.dart';
+import '../appbox_kit_sse_transport.dart';
 
-/// [ChatStream] over the Anthropic messages API.
+/// [AppBoxKitChatStream] over the Anthropic messages API.
 ///
 /// Wire shape (verified against https://docs.anthropic.com/en/api/messages-streaming,
 /// 2026-07-28): `POST {baseUrl}/v1/messages` with
@@ -13,19 +13,19 @@ import '../sse_transport.dart';
 /// `message_start → content_block_* → message_delta → message_stop`; text
 /// arrives in `content_block_delta` events as
 /// `{"delta": {"type": "text_delta", "text": "..."}}`.
-class AnthropicChatStream implements ChatStream {
+class AppBoxKitAnthropicChatStream implements AppBoxKitChatStream {
   /// Auth is injected per request via the `x-api-key` header; nothing is
   /// persisted by this package.
-  AnthropicChatStream({
+  AppBoxKitAnthropicChatStream({
     required this.model,
     required this.apiKey,
     Uri? baseUrl,
-    SseTransport? transport,
+    AppBoxKitSseTransport? transport,
     this.maxTokens = 8192,
     this.anthropicVersion = '2023-06-01',
     this.extraHeaders = const {},
   })  : baseUrl = baseUrl ?? _defaultBaseUrl,
-        _transport = transport ?? httpPostStream;
+        _transport = transport ?? appBoxKitHttpPostStream;
 
   static final _defaultBaseUrl = Uri.parse('https://api.anthropic.com');
 
@@ -47,16 +47,16 @@ class AnthropicChatStream implements ChatStream {
   /// Extra headers merged into every request (after auth, so they win).
   final Map<String, String> extraHeaders;
 
-  final SseTransport _transport;
+  final AppBoxKitSseTransport _transport;
 
   @override
-  Stream<String> complete(List<ChatMessage> messages,
-      {JsonSchema? schema}) async* {
+  Stream<String> complete(List<AppBoxKitChatMessage> messages,
+      {AppBoxKitJsonSchema? schema}) async* {
     // Anthropic takes the system prompt as a top-level parameter, not a
     // message; system turns are concatenated in order.
     final system = [
       for (final m in messages)
-        if (m.role == ChatRole.system) m.content,
+        if (m.role == AppBoxKitChatRole.system) m.content,
     ].join('\n\n');
     final body = <String, Object?>{
       'model': model,
@@ -65,7 +65,7 @@ class AnthropicChatStream implements ChatStream {
       if (system.isNotEmpty) 'system': system,
       'messages': [
         for (final m in messages)
-          if (m.role != ChatRole.system)
+          if (m.role != AppBoxKitChatRole.system)
             {'role': m.role.name, 'content': m.content},
       ],
     };
@@ -81,7 +81,7 @@ class AnthropicChatStream implements ChatStream {
     final uri = _resolve(baseUrl, '/v1/messages');
 
     await for (final payload
-        in splitSseEvents(_transport(uri, headers, body))) {
+        in appBoxKitSplitSseEvents(_transport(uri, headers, body))) {
       final Object? decoded;
       try {
         decoded = jsonDecode(payload);
@@ -100,7 +100,7 @@ class AnthropicChatStream implements ChatStream {
           }
         case 'error':
           final error = decoded['error'];
-          throw ChatStreamException(
+          throw AppBoxKitChatStreamException(
             'provider error: '
             '${error is Map<String, dynamic> ? error['message'] : payload}',
             body: payload,

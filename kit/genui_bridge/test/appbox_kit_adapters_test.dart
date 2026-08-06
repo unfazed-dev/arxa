@@ -1,11 +1,11 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:genui_bridge/genui_bridge.dart';
+import 'package:appbox_kit_genui_bridge/appbox_kit_genui_bridge.dart';
 import 'package:test/test.dart';
 
 /// Records the request and replays a scripted raw response — no network.
-class FakeTransport {
+class FakeAppBoxKitTransport {
   Uri? uri;
   Map<String, String>? headers;
   Map<String, Object?>? body;
@@ -31,18 +31,18 @@ class FakeTransport {
 }
 
 void main() {
-  group('OpenAIChatStream', () {
+  group('AppBoxKitOpenAIChatStream', () {
     test('request shape: URL, auth header, body', () async {
-      final transport = FakeTransport()
+      final transport = FakeAppBoxKitTransport()
         ..responseChunks = const ['data: [DONE]\n\n'];
-      final chat = OpenAIChatStream(
+      final chat = AppBoxKitOpenAIChatStream(
         model: 'gpt-4o-mini',
         apiKey: 'sk-test',
         transport: transport.call,
       );
       await chat.complete(const [
-        ChatMessage.system('be brief'),
-        ChatMessage.user('hi'),
+        AppBoxKitChatMessage.system('be brief'),
+        AppBoxKitChatMessage.user('hi'),
       ]).drain();
 
       expect(transport.uri.toString(),
@@ -58,15 +58,15 @@ void main() {
     });
 
     test('maps the schema hint to response_format', () async {
-      final transport = FakeTransport()
+      final transport = FakeAppBoxKitTransport()
         ..responseChunks = const ['data: [DONE]\n\n'];
-      final chat = OpenAIChatStream(
+      final chat = AppBoxKitOpenAIChatStream(
         model: 'gpt-4o-mini',
         apiKey: 'k',
         transport: transport.call,
       );
       await chat.complete(
-        const [ChatMessage.user('hi')],
+        const [AppBoxKitChatMessage.user('hi')],
         schema: const {
           'type': 'object',
           'properties': {
@@ -92,14 +92,14 @@ void main() {
 
     test('jsonObjectOnly policy: json_object on the wire, schema in a system '
         'message (the documented Kimi idiom)', () async {
-      final transport = FakeTransport()
+      final transport = FakeAppBoxKitTransport()
         ..responseChunks = const ['data: [DONE]\n\n'];
-      final chat = OpenAIChatStream(
+      final chat = AppBoxKitOpenAIChatStream(
         model: 'kimi-k2',
         apiKey: 'k',
         baseUrl: Uri.parse('https://api.moonshot.ai'),
         transport: transport.call,
-        paramPolicy: OpenAIParamPolicy.jsonObjectOnly,
+        paramPolicy: AppBoxKitOpenAIParamPolicy.jsonObjectOnly,
       );
       const schema = {
         'type': 'object',
@@ -107,7 +107,7 @@ void main() {
           'version': {'const': 'v0.9'}
         },
       };
-      await chat.complete(const [ChatMessage.user('hi')],
+      await chat.complete(const [AppBoxKitChatMessage.user('hi')],
           schema: schema).drain();
 
       expect(transport.decodedBody['response_format'],
@@ -122,14 +122,14 @@ void main() {
 
     test('configurable baseUrl covers Ollama/llama.cpp; auth optional',
         () async {
-      final transport = FakeTransport()
+      final transport = FakeAppBoxKitTransport()
         ..responseChunks = const ['data: [DONE]\n\n'];
-      final chat = OpenAIChatStream(
+      final chat = AppBoxKitOpenAIChatStream(
         model: 'qwen3:8b',
         baseUrl: Uri.parse('http://localhost:11434'),
         transport: transport.call,
       );
-      await chat.complete(const [ChatMessage.user('hi')]).drain();
+      await chat.complete(const [AppBoxKitChatMessage.user('hi')]).drain();
 
       expect(transport.uri.toString(),
           'http://localhost:11434/v1/chat/completions');
@@ -137,74 +137,74 @@ void main() {
     });
 
     test('extracts streamed deltas across raw chunk boundaries', () async {
-      final transport = FakeTransport()
+      final transport = FakeAppBoxKitTransport()
         ..responseChunks = const [
           'data: {"choices":[{"delta":{"content":"{\\"version\\":"}}]}',
           '\n\ndata: {"choices":[{"delta":{"content":"\\"v0.9\\""}}]}\n\nda',
           'ta: {"choices":[{"delta":{}}]}\n\ndata: [DONE]\n\n',
         ];
-      final chat = OpenAIChatStream(
+      final chat = AppBoxKitOpenAIChatStream(
         model: 'm',
         apiKey: 'k',
         transport: transport.call,
       );
       final text = await chat
-          .complete(const [ChatMessage.user('hi')]).fold<StringBuffer>(
+          .complete(const [AppBoxKitChatMessage.user('hi')]).fold<StringBuffer>(
               StringBuffer(), (b, s) => b..write(s));
       expect(text.toString(), '{"version":"v0.9"');
     });
 
-    test('a provider error payload throws ChatStreamException', () async {
-      final transport = FakeTransport()
+    test('a provider error payload throws AppBoxKitChatStreamException', () async {
+      final transport = FakeAppBoxKitTransport()
         ..responseChunks = const [
           'data: {"error":{"message":"rate limited","type":"tokens"}}\n\n',
         ];
-      final chat = OpenAIChatStream(
+      final chat = AppBoxKitOpenAIChatStream(
         model: 'm',
         apiKey: 'k',
         transport: transport.call,
       );
       await expectLater(
-        chat.complete(const [ChatMessage.user('hi')]).drain(),
-        throwsA(isA<ChatStreamException>()
+        chat.complete(const [AppBoxKitChatMessage.user('hi')]).drain(),
+        throwsA(isA<AppBoxKitChatStreamException>()
             .having((e) => e.message, 'message', contains('rate limited'))),
       );
     });
 
     test('a non-200 transport failure propagates', () async {
-      final transport = FakeTransport()
-        ..responseError = const ChatStreamException('HTTP 500',
+      final transport = FakeAppBoxKitTransport()
+        ..responseError = const AppBoxKitChatStreamException('HTTP 500',
             statusCode: 500, body: 'boom');
-      final chat = OpenAIChatStream(
+      final chat = AppBoxKitOpenAIChatStream(
         model: 'm',
         apiKey: 'k',
         transport: transport.call,
       );
       await expectLater(
-        chat.complete(const [ChatMessage.user('hi')]).drain(),
-        throwsA(isA<ChatStreamException>()
+        chat.complete(const [AppBoxKitChatMessage.user('hi')]).drain(),
+        throwsA(isA<AppBoxKitChatStreamException>()
             .having((e) => e.statusCode, 'statusCode', 500)),
       );
     });
   });
 
-  group('AnthropicChatStream', () {
+  group('AppBoxKitAnthropicChatStream', () {
     test('request shape: URL, headers, system hoisted out of messages',
         () async {
-      final transport = FakeTransport()
+      final transport = FakeAppBoxKitTransport()
         ..responseChunks = const [
           'event: message_stop\ndata: {"type":"message_stop"}\n\n',
         ];
-      final chat = AnthropicChatStream(
+      final chat = AppBoxKitAnthropicChatStream(
         model: 'claude-sonnet-4-5',
         apiKey: 'sk-ant',
         transport: transport.call,
       );
       await chat.complete(const [
-        ChatMessage.system('be brief'),
-        ChatMessage.user('hi'),
-        ChatMessage.assistant('hello'),
-        ChatMessage.user('again'),
+        AppBoxKitChatMessage.system('be brief'),
+        AppBoxKitChatMessage.user('hi'),
+        AppBoxKitChatMessage.assistant('hello'),
+        AppBoxKitChatMessage.user('again'),
       ]).drain();
 
       expect(transport.uri.toString(), 'https://api.anthropic.com/v1/messages');
@@ -222,7 +222,7 @@ void main() {
     });
 
     test('extracts text deltas and ignores pings and other events', () async {
-      final transport = FakeTransport()
+      final transport = FakeAppBoxKitTransport()
         ..responseChunks = const [
           'event: message_start\n',
           'data: {"type":"message_start","message":{"content":[]}}\n\n',
@@ -235,40 +235,40 @@ void main() {
               '"delta":{"type":"text_delta","text":"lo"}}\n\n',
           'event: message_stop\ndata: {"type":"message_stop"}\n\n',
         ];
-      final chat = AnthropicChatStream(
+      final chat = AppBoxKitAnthropicChatStream(
         model: 'm',
         apiKey: 'k',
         transport: transport.call,
       );
       final text = await chat
-          .complete(const [ChatMessage.user('hi')]).fold<StringBuffer>(
+          .complete(const [AppBoxKitChatMessage.user('hi')]).fold<StringBuffer>(
               StringBuffer(), (b, s) => b..write(s));
       expect(text.toString(), 'Hello');
     });
 
-    test('a provider error event throws ChatStreamException', () async {
-      final transport = FakeTransport()
+    test('a provider error event throws AppBoxKitChatStreamException', () async {
+      final transport = FakeAppBoxKitTransport()
         ..responseChunks = const [
           'event: error\n',
           'data: {"type":"error","error":{"type":"overloaded_error",'
               '"message":"Overloaded"}}\n\n',
         ];
-      final chat = AnthropicChatStream(
+      final chat = AppBoxKitAnthropicChatStream(
         model: 'm',
         apiKey: 'k',
         transport: transport.call,
       );
       await expectLater(
-        chat.complete(const [ChatMessage.user('hi')]).drain(),
-        throwsA(isA<ChatStreamException>()
+        chat.complete(const [AppBoxKitChatMessage.user('hi')]).drain(),
+        throwsA(isA<AppBoxKitChatStreamException>()
             .having((e) => e.message, 'message', contains('Overloaded'))),
       );
     });
   });
 
-  group('splitSseEvents', () {
+  group('appBoxKitSplitSseEvents', () {
     test('joins multi-line data payloads per the SSE spec', () async {
-      final events = await splitSseEvents(
+      final events = await appBoxKitSplitSseEvents(
         Stream.fromIterable(const [
           'data: {"a":\ndata: 1}\n\ndata: x\n\n',
         ]),
@@ -277,17 +277,17 @@ void main() {
     });
 
     test('handles CRLF line endings and an unterminated final event', () async {
-      final events = await splitSseEvents(
+      final events = await appBoxKitSplitSseEvents(
         Stream.fromIterable(const ['data: a\r\n\r\ndata: b']),
       ).toList();
       expect(events, ['a', 'b']);
     });
   });
 
-  group('httpPostStream', () {
+  group('appBoxKitHttpPostStream', () {
     test('decodes UTF-8 incrementally across chunk boundaries', () async {
       // A multi-byte char ('ż' = 0xC5 0xBC) split across two HTTP chunks
-      // must not corrupt: guards the utf8.decoder.bind in sse_transport.dart.
+      // must not corrupt: guards the utf8.decoder.bind in appbox_kit_sse_transport.dart.
       const payload = 'data: {"choices":[{"delta":{"content":"zażółć"}}]}'
           '\n\ndata: [DONE]\n\n';
       final bytes = utf8.encode(payload);
@@ -303,12 +303,12 @@ void main() {
         await request.response.close();
       });
 
-      final chat = OpenAIChatStream(
+      final chat = AppBoxKitOpenAIChatStream(
         model: 'm',
         baseUrl: Uri.parse('http://127.0.0.1:${server.port}'),
       );
       final text = await chat
-          .complete(const [ChatMessage.user('hi')]).fold<StringBuffer>(
+          .complete(const [AppBoxKitChatMessage.user('hi')]).fold<StringBuffer>(
               StringBuffer(), (b, s) => b..write(s));
       expect(text.toString(), 'zażółć');
     });

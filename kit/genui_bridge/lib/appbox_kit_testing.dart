@@ -1,11 +1,11 @@
-/// Test doubles for genui_bridge.
+/// Test doubles for appbox_kit_genui_bridge.
 ///
-/// Import in tests: `import 'package:genui_bridge/testing.dart';`
+/// Import in tests: `import 'package:appbox_kit_genui_bridge/appbox_kit_testing.dart';`
 library;
 
-import 'genui_bridge.dart';
+import 'appbox_kit_genui_bridge.dart';
 
-/// A [ChatStream] whose responses are fully scripted, with every call
+/// A [AppBoxKitChatStream] whose responses are fully scripted, with every call
 /// recorded for assertion.
 ///
 /// Each scripted entry is consumed by one [complete] call, in order:
@@ -16,15 +16,15 @@ import 'genui_bridge.dart';
 ///
 /// A call with no scripted entry left throws [StateError] — an unscripted
 /// call is a test bug.
-class FakeChatStream implements ChatStream {
+class FakeAppBoxKitChatStream implements AppBoxKitChatStream {
   final List<_Scripted> _script = [];
 
   /// Every `messages` list received, in call order (including the system
   /// prompt a bridge prepended).
-  final List<List<ChatMessage>> calls = [];
+  final List<List<AppBoxKitChatMessage>> calls = [];
 
   /// Every `schema` argument received, in call order.
-  final List<JsonSchema?> schemas = [];
+  final List<AppBoxKitJsonSchema?> schemas = [];
 
   /// Scripts a single-chunk response.
   void scriptText(String text) => _script.add(_Scripted.chunks([text]));
@@ -38,14 +38,14 @@ class FakeChatStream implements ChatStream {
 
   /// The last message of the most recent call — where a bridge appends its
   /// repair instruction.
-  ChatMessage get lastMessage => calls.last.last;
+  AppBoxKitChatMessage get lastMessage => calls.last.last;
 
   @override
-  Stream<String> complete(List<ChatMessage> messages, {JsonSchema? schema}) {
+  Stream<String> complete(List<AppBoxKitChatMessage> messages, {AppBoxKitJsonSchema? schema}) {
     calls.add(List.unmodifiable(messages));
     schemas.add(schema);
     if (_script.isEmpty) {
-      throw StateError('FakeChatStream: unscripted call #${calls.length}');
+      throw StateError('FakeAppBoxKitChatStream: unscripted call #${calls.length}');
     }
     final next = _script.removeAt(0);
     return switch (next) {

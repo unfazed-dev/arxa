@@ -1,13 +1,13 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:genui_bridge/genui_bridge.dart';
+import 'package:appbox_kit_genui_bridge/appbox_kit_genui_bridge.dart';
 import 'package:test/test.dart';
 
 void main() {
-  group('A2uiMessage.fromJson', () {
+  group('AppBoxKitA2uiMessage.fromJson', () {
     test('parses createSurface with all fields', () {
-      final message = A2uiMessage.fromJson({
+      final message = AppBoxKitA2uiMessage.fromJson({
         'version': 'v0.9',
         'createSurface': {
           'surfaceId': 's1',
@@ -16,8 +16,8 @@ void main() {
           'sendDataModel': true,
         },
       });
-      expect(message, isA<CreateSurface>());
-      final create = message as CreateSurface;
+      expect(message, isA<AppBoxKitCreateSurface>());
+      final create = message as AppBoxKitCreateSurface;
       expect(create.surfaceId, 's1');
       expect(create.catalogId, 'example.com:catalog');
       expect(create.theme, {'primaryColor': '#00BFFF'});
@@ -25,15 +25,15 @@ void main() {
     });
 
     test('sendDataModel defaults to false', () {
-      final message = A2uiMessage.fromJson(const {
+      final message = AppBoxKitA2uiMessage.fromJson(const {
         'version': 'v0.9',
         'createSurface': {'surfaceId': 's1', 'catalogId': 'c'},
       });
-      expect((message as CreateSurface).sendDataModel, isFalse);
+      expect((message as AppBoxKitCreateSurface).sendDataModel, isFalse);
     });
 
     test('parses updateComponents', () {
-      final message = A2uiMessage.fromJson(const {
+      final message = AppBoxKitA2uiMessage.fromJson(const {
         'version': 'v0.9',
         'updateComponents': {
           'surfaceId': 's1',
@@ -47,32 +47,32 @@ void main() {
           ],
         },
       });
-      final update = message as UpdateComponents;
+      final update = message as AppBoxKitUpdateComponents;
       expect(update.components, hasLength(2));
       expect(update.components[1]['text'], 'hi');
     });
 
     test('parses updateDataModel with optional fields omitted', () {
-      final message = A2uiMessage.fromJson(const {
+      final message = AppBoxKitA2uiMessage.fromJson(const {
         'version': 'v0.9',
         'updateDataModel': {'surfaceId': 's1'},
       });
-      final update = message as UpdateDataModel;
+      final update = message as AppBoxKitUpdateDataModel;
       expect(update.path, isNull);
       expect(update.value, isNull);
     });
 
     test('parses deleteSurface', () {
-      final message = A2uiMessage.fromJson(const {
+      final message = AppBoxKitA2uiMessage.fromJson(const {
         'version': 'v0.9',
         'deleteSurface': {'surfaceId': 's1'},
       });
-      expect((message as DeleteSurface).surfaceId, 's1');
+      expect((message as AppBoxKitDeleteSurface).surfaceId, 's1');
     });
 
     group('rename-in-flight tolerance (v0.8 aliases)', () {
       test('accepts surfaceUpdate for updateComponents', () {
-        final message = A2uiMessage.fromJson(const {
+        final message = AppBoxKitA2uiMessage.fromJson(const {
           'version': 'v0.9',
           'surfaceUpdate': {
             'surfaceId': 's1',
@@ -81,11 +81,11 @@ void main() {
             ],
           },
         });
-        expect(message, isA<UpdateComponents>());
+        expect(message, isA<AppBoxKitUpdateComponents>());
       });
 
       test('accepts dataModelUpdate for updateDataModel', () {
-        final message = A2uiMessage.fromJson(const {
+        final message = AppBoxKitA2uiMessage.fromJson(const {
           'version': 'v0.9',
           'dataModelUpdate': {
             'surfaceId': 's1',
@@ -93,13 +93,13 @@ void main() {
             'value': 'Alice',
           },
         });
-        final update = message as UpdateDataModel;
+        final update = message as AppBoxKitUpdateDataModel;
         expect(update.path, '/user');
         expect(update.value, 'Alice');
       });
 
       test('writes canonical names after reading an alias', () {
-        final message = A2uiMessage.fromJson(const {
+        final message = AppBoxKitA2uiMessage.fromJson(const {
           'version': 'v0.9',
           'surfaceUpdate': {
             'surfaceId': 's1',
@@ -117,8 +117,8 @@ void main() {
     group('rejections (repairable format errors)', () {
       void expectFormatError(Map<String, dynamic> json) {
         expect(
-          () => A2uiMessage.fromJson(json),
-          throwsA(isA<A2uiFormatException>()),
+          () => AppBoxKitA2uiMessage.fromJson(json),
+          throwsA(isA<AppBoxKitA2uiFormatException>()),
         );
       }
 
@@ -224,13 +224,13 @@ void main() {
 
     for (final envelope in cases) {
       test('${envelope.keys.last} survives parse → serialize', () {
-        final message = A2uiMessage.fromJson(envelope);
+        final message = AppBoxKitA2uiMessage.fromJson(envelope);
         expect(message.toJson(), envelope);
       });
     }
 
     test('toJsonLine produces the JSONL wire form', () {
-      const message = DeleteSurface(surfaceId: 's1');
+      const message = AppBoxKitDeleteSurface(surfaceId: 's1');
       expect(
         message.toJsonLine(),
         '{"version":"v0.9","deleteSurface":{"surfaceId":"s1"}}',

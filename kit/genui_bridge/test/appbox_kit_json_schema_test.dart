@@ -1,10 +1,10 @@
-import 'package:genui_bridge/genui_bridge.dart';
+import 'package:appbox_kit_genui_bridge/appbox_kit_genui_bridge.dart';
 import 'package:test/test.dart';
 
 void main() {
-  const validator = JsonSchemaValidator();
+  const validator = AppBoxKitJsonSchemaValidator();
 
-  group('JsonSchemaValidator (subset)', () {
+  group('AppBoxKitJsonSchemaValidator (subset)', () {
     test('valid object passes', () {
       final errors = validator.validate(
         {'text': 'hi', 'variant': 'h1'},

@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'chat_stream.dart';
+import 'appbox_kit_chat_stream.dart';
 
 /// The HTTP seam every streaming adapter talks through.
 ///
@@ -10,17 +10,17 @@ import 'chat_stream.dart';
 /// body as UTF-8 text chunks. Adapters own SSE framing and payload extraction
 /// on top of this; tests inject a fake to assert the request shape and script
 /// the response — no network, no mocking of `dart:io` types.
-typedef SseTransport = Stream<String> Function(
+typedef AppBoxKitSseTransport = Stream<String> Function(
   Uri uri,
   Map<String, String> headers,
   Map<String, Object?> body,
 );
 
-/// Default [SseTransport]: `dart:io` [HttpClient], nothing else.
+/// Default [AppBoxKitSseTransport]: `dart:io` [HttpClient], nothing else.
 ///
-/// Throws [ChatStreamException] on non-200 responses (with the body captured
+/// Throws [AppBoxKitChatStreamException] on non-200 responses (with the body captured
 /// for diagnostics). The client is closed when the response stream ends.
-Stream<String> httpPostStream(
+Stream<String> appBoxKitHttpPostStream(
   Uri uri,
   Map<String, String> headers,
   Map<String, Object?> body,
@@ -34,7 +34,7 @@ Stream<String> httpPostStream(
     final response = await request.close();
     if (response.statusCode != HttpStatus.ok) {
       final errorBody = await utf8.decoder.bind(response).join();
-      throw ChatStreamException(
+      throw AppBoxKitChatStreamException(
         'HTTP ${response.statusCode} from $uri',
         statusCode: response.statusCode,
         body: errorBody,
@@ -51,7 +51,7 @@ Stream<String> httpPostStream(
 /// Yields one string per complete SSE event: its `data:` lines joined with
 /// `\n` per the SSE spec. `event:`/comment lines are dropped — both supported
 /// providers embed the event type inside the JSON payload itself.
-Stream<String> splitSseEvents(Stream<String> chunks) {
+Stream<String> appBoxKitSplitSseEvents(Stream<String> chunks) {
   return Stream<String>.eventTransformed(chunks, (sink) => _SseEventSink(sink));
 }
 

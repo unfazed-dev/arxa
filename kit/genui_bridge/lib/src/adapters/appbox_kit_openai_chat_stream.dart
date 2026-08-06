@@ -1,12 +1,12 @@
 import 'dart:convert';
 
-import '../chat_stream.dart';
-import '../json_schema.dart';
-import '../sse_transport.dart';
+import '../appbox_kit_chat_stream.dart';
+import '../appbox_kit_json_schema.dart';
+import '../appbox_kit_sse_transport.dart';
 
-/// Per-provider wire policy for [OpenAIChatStream]: which `response_format`
+/// Per-provider wire policy for [AppBoxKitOpenAIChatStream]: which `response_format`
 /// a schema hint maps to.
-enum OpenAIParamPolicy {
+enum AppBoxKitOpenAIParamPolicy {
   /// OpenAI and the local servers: `{"type": "json_schema", "json_schema": …}`.
   fullJsonSchema,
 
@@ -16,7 +16,7 @@ enum OpenAIParamPolicy {
   jsonObjectOnly,
 }
 
-/// [ChatStream] over the OpenAI chat-completions API — also covers Ollama,
+/// [AppBoxKitChatStream] over the OpenAI chat-completions API — also covers Ollama,
 /// llama.cpp, vLLM and any other OpenAI-compatible server via [baseUrl].
 ///
 /// Wire shape (verified against https://platform.openai.com/docs/api-reference/chat/create,
@@ -24,26 +24,26 @@ enum OpenAIParamPolicy {
 /// `{model, messages, stream: true}`; the SSE stream emits
 /// `data: {"choices":[{"delta":{"content":"..."}}]}` chunks and terminates
 /// with `data: [DONE]`.
-class OpenAIChatStream implements ChatStream {
+class AppBoxKitOpenAIChatStream implements AppBoxKitChatStream {
   /// [apiKey] may be null for local servers that ignore auth; [baseUrl]
   /// defaults to OpenAI — point it at `http://localhost:11434` for Ollama or
   /// `http://localhost:8080` for llama.cpp. Auth is injected per request;
   /// nothing is persisted by this package.
   ///
-  /// [paramPolicy] selects how a [ChatStream.complete] schema hint is sent:
+  /// [paramPolicy] selects how a [AppBoxKitChatStream.complete] schema hint is sent:
   /// the default works for OpenAI and the local servers; use
-  /// [OpenAIParamPolicy.jsonObjectOnly] for providers like Kimi
+  /// [AppBoxKitOpenAIParamPolicy.jsonObjectOnly] for providers like Kimi
   /// (api.moonshot.ai) that reject `json_schema` and document
   /// `{"type": "json_object"}` plus the schema in a system message instead.
-  OpenAIChatStream({
+  AppBoxKitOpenAIChatStream({
     required this.model,
     this.apiKey,
     Uri? baseUrl,
-    SseTransport? transport,
+    AppBoxKitSseTransport? transport,
     this.extraHeaders = const {},
-    this.paramPolicy = OpenAIParamPolicy.fullJsonSchema,
+    this.paramPolicy = AppBoxKitOpenAIParamPolicy.fullJsonSchema,
   })  : baseUrl = baseUrl ?? _defaultBaseUrl,
-        _transport = transport ?? httpPostStream;
+        _transport = transport ?? appBoxKitHttpPostStream;
 
   static final _defaultBaseUrl = Uri.parse('https://api.openai.com');
 
@@ -60,15 +60,15 @@ class OpenAIChatStream implements ChatStream {
   final Map<String, String> extraHeaders;
 
   /// How a schema hint is put on the wire; see the constructor docs.
-  final OpenAIParamPolicy paramPolicy;
+  final AppBoxKitOpenAIParamPolicy paramPolicy;
 
-  final SseTransport _transport;
+  final AppBoxKitSseTransport _transport;
 
   @override
-  Stream<String> complete(List<ChatMessage> messages,
-      {JsonSchema? schema}) async* {
+  Stream<String> complete(List<AppBoxKitChatMessage> messages,
+      {AppBoxKitJsonSchema? schema}) async* {
     final schemaInPrompt =
-        schema != null && paramPolicy == OpenAIParamPolicy.jsonObjectOnly;
+        schema != null && paramPolicy == AppBoxKitOpenAIParamPolicy.jsonObjectOnly;
     final body = <String, Object?>{
       'model': model,
       'stream': true,
@@ -89,11 +89,11 @@ class OpenAIChatStream implements ChatStream {
       // regardless, so providers that ignore or reject this are fine.
       if (schema != null)
         'response_format': switch (paramPolicy) {
-          OpenAIParamPolicy.fullJsonSchema => {
+          AppBoxKitOpenAIParamPolicy.fullJsonSchema => {
               'type': 'json_schema',
               'json_schema': {'name': 'a2ui_message', 'schema': schema},
             },
-          OpenAIParamPolicy.jsonObjectOnly => {'type': 'json_object'},
+          AppBoxKitOpenAIParamPolicy.jsonObjectOnly => {'type': 'json_object'},
         },
     };
     final headers = <String, String>{
@@ -103,7 +103,7 @@ class OpenAIChatStream implements ChatStream {
     final uri = _resolve(baseUrl, '/v1/chat/completions');
 
     await for (final payload
-        in splitSseEvents(_transport(uri, headers, body))) {
+        in appBoxKitSplitSseEvents(_transport(uri, headers, body))) {
       if (payload == '[DONE]') return;
       final Object? decoded;
       try {
@@ -114,7 +114,7 @@ class OpenAIChatStream implements ChatStream {
       if (decoded is! Map<String, dynamic>) continue;
       final error = decoded['error'];
       if (error is Map<String, dynamic>) {
-        throw ChatStreamException(
+        throw AppBoxKitChatStreamException(
           'provider error: ${error['message'] ?? payload}',
           body: payload,
         );
