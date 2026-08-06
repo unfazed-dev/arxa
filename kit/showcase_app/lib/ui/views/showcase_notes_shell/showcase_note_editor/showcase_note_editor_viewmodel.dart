@@ -39,10 +39,10 @@ typedef NotePlaybackProgress = ({Duration position, Duration? duration});
 /// `withDebounce`, not a hand-rolled Timer.
 class ShowcaseNoteEditorViewModel extends KitViewModel {
   ShowcaseNoteEditorViewModel({required this.noteId}) {
-    KitAction.watch(
-      owner: this,
+    watch(
+      'note.sideEffects',
       streams: [_notes.note$(noteId)],
-      callback: (n) => _onNoteSideEffects(n as ShowcaseNoteModel?),
+      callback: (note) => _onNoteSideEffects(note as ShowcaseNoteModel?),
     );
   }
 
@@ -75,7 +75,7 @@ class ShowcaseNoteEditorViewModel extends KitViewModel {
   Stream<bool> isAttachmentPlaying$(String attachmentId) => Rx.combineLatest2(
         playingAttachmentId$,
         playerState$,
-        (String? id, PlaybackState s) => id == attachmentId && s.playing,
+        (String? id, PlaybackState state) => id == attachmentId && state.playing,
       );
 
   /// Combined position + track length for the audio scrubber. Both back onto
@@ -85,7 +85,8 @@ class ShowcaseNoteEditorViewModel extends KitViewModel {
   Stream<NotePlaybackProgress> get playbackProgress$ => Rx.combineLatest2(
         _media.position$,
         _media.duration$,
-        (Duration p, Duration? d) => (position: p, duration: d),
+        (Duration position, Duration? duration) =>
+            (position: position, duration: duration),
       );
 
   /// The note body. Seeded once from the first note$ emit; subsequent emits
@@ -128,11 +129,11 @@ class ShowcaseNoteEditorViewModel extends KitViewModel {
   Future<void> _maybeRunPendingAction() async {
     if (_pendingHandled || _note == null || pendingAction == null) return;
     _pendingHandled = true;
-    final action = pendingAction;
+    final pending = pendingAction;
     pendingAction = null;
-    if (action == 'camera' && isCameraAvailable) {
+    if (pending == 'camera' && isCameraAvailable) {
       await addPhoto(fromCamera: true);
-    } else if (action == 'mic') {
+    } else if (pending == 'mic') {
       await startRecording();
     }
   }
@@ -145,13 +146,9 @@ class ShowcaseNoteEditorViewModel extends KitViewModel {
     // Debounced autosave through KitAction: rapid keystrokes supersede the
     // pending save, and superseded calls complete silently via the fallback
     // (a real write failure is snackbar'd by the facade's own chain).
-    KitAction.run<void>(
-      operation: _flushSave,
-      owner: this,
-      op: 'save.$noteId',
-    )
+    action<void>('save.$noteId', _flushSave)
         .withDebounce(const Duration(milliseconds: 500))
-        .withErrorFallback('Save failed')
+        .completeOnError('Save failed')
         .execute();
   }
 

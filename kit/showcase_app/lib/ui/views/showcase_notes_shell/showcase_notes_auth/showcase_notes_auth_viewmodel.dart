@@ -44,7 +44,7 @@ class ShowcaseNotesAuthViewModel extends KitViewModel {
   /// Busy while ANY auth op is in flight. Seeded (no loading flash on first
   /// bind); one lazy composition per VM.
   late final ValueStream<bool> busy$ = Rx.combineLatest(
-    [for (final op in _ops) actionState$(op).map((s) => s.busy)],
+    [for (final op in _ops) actionState$(op).map((state) => state.busy)],
     (flags) => flags.any((busy) => busy),
   ).shareValueSeeded(false);
 
@@ -59,7 +59,7 @@ class ShowcaseNotesAuthViewModel extends KitViewModel {
 
   /// Inline form error (seeded null = none). [KitAuthException] shows its
   /// message, anything unexpected gets the generic one — set from the
-  /// KitAction chain's onError, never a snackbar.
+  /// KitAction chain's handleError, never a snackbar.
   final BehaviorSubject<String?> _errorMessage =
       BehaviorSubject<String?>.seeded(null);
   ValueStream<String?> get errorMessage$ => _errorMessage.stream;
@@ -84,42 +84,42 @@ class ShowcaseNotesAuthViewModel extends KitViewModel {
   /// Every auth call runs through KitAction: per-op busy state (bound via
   /// [busy$]), re-entry guard (double-tap dropped silently via the fallback),
   /// and errors surfaced inline as [errorMessage$].
-  Future<void> _guard(Future<void> Function() action, String op) {
+  Future<void> _guard(String name, Future<void> Function() operation) {
     _errorMessage.add(null);
-    return KitAction.run<void>(operation: action, owner: this, op: op)
-        .withErrorFallback('Authentication failed')
-        .onError((e, _) {
-          _errorMessage.add(
-              e is KitAuthException ? e.message : 'Something went wrong. Try again.');
-        })
-        .execute();
+    return action<void>(name, operation)
+        .completeOnError('Authentication failed')
+        .handleError((error) {
+          _errorMessage.add(error is KitAuthException
+              ? error.message
+              : 'Something went wrong. Try again.');
+        });
   }
 
   Future<void> signInEmail(String email, String password) => _guard(
-      () => auth.signInWithEmailPassword(email: email, password: password),
-      'signIn');
+      'signIn',
+      () => auth.signInWithEmailPassword(email: email, password: password));
 
   Future<void> signUpEmail(String email, String password) => _guard(
-      () => auth.signUpWithEmailPassword(email: email, password: password),
-      'signUp');
+      'signUp',
+      () => auth.signUpWithEmailPassword(email: email, password: password));
 
-  Future<void> requestOtp(String email) => _guard(() async {
+  Future<void> requestOtp(String email) => _guard('requestOtp', () async {
         await auth.requestOtp(email: email);
         _otpRequested.add(true);
-      }, 'requestOtp');
+      });
 
   Future<void> confirmOtp(String email, String code) =>
-      _guard(() => auth.confirmOtp(email: email, code: code),
-          'confirmOtp');
+      _guard('confirmOtp',
+          () => auth.confirmOtp(email: email, code: code));
 
   Future<void> google() =>
-      _guard(() => auth.signInWithGoogle(), 'google');
+      _guard('google', () => auth.signInWithGoogle());
 
   Future<void> apple() =>
-      _guard(() => auth.signInWithApple(), 'apple');
+      _guard('apple', () => auth.signInWithApple());
 
   Future<void> anonymous() =>
-      _guard(() => auth.signInAnonymously(), 'anonymous');
+      _guard('anonymous', () => auth.signInAnonymously());
 
   @override
   void dispose() {

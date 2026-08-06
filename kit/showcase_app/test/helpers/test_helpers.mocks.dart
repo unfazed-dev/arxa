@@ -29,7 +29,7 @@ import 'package:stacked_services/src/dialog/dialog_service.dart' as _i14;
 import 'package:stacked_services/src/models/overlay_request.dart' as _i15;
 import 'package:stacked_services/src/models/overlay_response.dart' as _i12;
 import 'package:stacked_services/src/navigation/router_service.dart' as _i8;
-import 'package:ui_library/utils/kit_action/kit_action_builder.dart' as _i6;
+import 'package:ui_library/ui_library.dart' as _i6;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values
@@ -133,9 +133,20 @@ class _FakeKitActionBuilder_7<T1> extends _i1.SmartFake
         );
 }
 
-class _FakeBehaviorSubject_8<T> extends _i1.SmartFake
+class _FakeValueStream_8<T> extends _i1.SmartFake
+    implements _i7.ValueStream<T> {
+  _FakeValueStream_8(
+    Object parent,
+    Invocation parentInvocation,
+  ) : super(
+          parent,
+          parentInvocation,
+        );
+}
+
+class _FakeBehaviorSubject_9<T> extends _i1.SmartFake
     implements _i7.BehaviorSubject<T> {
-  _FakeBehaviorSubject_8(
+  _FakeBehaviorSubject_9(
     Object parent,
     Invocation parentInvocation,
   ) : super(
@@ -1186,9 +1197,9 @@ class MockShowcaseNotesFacadeService extends _i1.Mock
       ) as S);
 
   @override
-  _i6.KitActionBuilder<T> mutate<T>({
-    required _i9.FutureOr<T> Function()? operation,
-    String? op,
+  _i6.KitActionBuilder<T> mutate<T>(
+    _i9.FutureOr<T> Function()? operation, {
+    String? name,
     String? entity,
     String? error,
     String? success,
@@ -1196,10 +1207,9 @@ class MockShowcaseNotesFacadeService extends _i1.Mock
       (super.noSuchMethod(
         Invocation.method(
           #mutate,
-          [],
+          [operation],
           {
-            #operation: operation,
-            #op: op,
+            #name: name,
             #entity: entity,
             #error: error,
             #success: success,
@@ -1209,10 +1219,9 @@ class MockShowcaseNotesFacadeService extends _i1.Mock
           this,
           Invocation.method(
             #mutate,
-            [],
+            [operation],
             {
-              #operation: operation,
-              #op: op,
+              #name: name,
               #entity: entity,
               #error: error,
               #success: success,
@@ -1223,10 +1232,9 @@ class MockShowcaseNotesFacadeService extends _i1.Mock
           this,
           Invocation.method(
             #mutate,
-            [],
+            [operation],
             {
-              #operation: operation,
-              #op: op,
+              #name: name,
               #entity: entity,
               #error: error,
               #success: success,
@@ -1244,6 +1252,95 @@ class MockShowcaseNotesFacadeService extends _i1.Mock
         returnValue: _i9.Future<void>.value(),
         returnValueForMissingStub: _i9.Future<void>.value(),
       ) as _i9.Future<void>);
+
+  @override
+  _i6.KitActionBuilder<T> action<T>(
+    String? name,
+    _i9.FutureOr<T> Function()? operation,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #action,
+          [
+            name,
+            operation,
+          ],
+        ),
+        returnValue: _FakeKitActionBuilder_7<T>(
+          this,
+          Invocation.method(
+            #action,
+            [
+              name,
+              operation,
+            ],
+          ),
+        ),
+        returnValueForMissingStub: _FakeKitActionBuilder_7<T>(
+          this,
+          Invocation.method(
+            #action,
+            [
+              name,
+              operation,
+            ],
+          ),
+        ),
+      ) as _i6.KitActionBuilder<T>);
+
+  @override
+  void watch(
+    String? name, {
+    required List<_i9.Stream<dynamic>>? streams,
+    required void Function(dynamic)? callback,
+    String? errorMessage,
+    void Function(Object)? onError,
+  }) =>
+      super.noSuchMethod(
+        Invocation.method(
+          #watch,
+          [name],
+          {
+            #streams: streams,
+            #callback: callback,
+            #errorMessage: errorMessage,
+            #onError: onError,
+          },
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
+  _i7.ValueStream<_i6.KitActionState> actionState$(String? name) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #actionState$,
+          [name],
+        ),
+        returnValue: _FakeValueStream_8<_i6.KitActionState>(
+          this,
+          Invocation.method(
+            #actionState$,
+            [name],
+          ),
+        ),
+        returnValueForMissingStub: _FakeValueStream_8<_i6.KitActionState>(
+          this,
+          Invocation.method(
+            #actionState$,
+            [name],
+          ),
+        ),
+      ) as _i7.ValueStream<_i6.KitActionState>);
+
+  @override
+  void disposeKitActions() => super.noSuchMethod(
+        Invocation.method(
+          #disposeKitActions,
+          [],
+        ),
+        returnValueForMissingStub: null,
+      );
 }
 
 /// A class which mocks [ShowcaseNotesMediaAdapterService].
@@ -1254,11 +1351,11 @@ class MockShowcaseNotesMediaAdapterService extends _i1.Mock
   @override
   _i7.BehaviorSubject<Duration?> get recording$ => (super.noSuchMethod(
         Invocation.getter(#recording$),
-        returnValue: _FakeBehaviorSubject_8<Duration?>(
+        returnValue: _FakeBehaviorSubject_9<Duration?>(
           this,
           Invocation.getter(#recording$),
         ),
-        returnValueForMissingStub: _FakeBehaviorSubject_8<Duration?>(
+        returnValueForMissingStub: _FakeBehaviorSubject_9<Duration?>(
           this,
           Invocation.getter(#recording$),
         ),
@@ -1267,11 +1364,11 @@ class MockShowcaseNotesMediaAdapterService extends _i1.Mock
   @override
   _i7.BehaviorSubject<String?> get playingAttachmentId$ => (super.noSuchMethod(
         Invocation.getter(#playingAttachmentId$),
-        returnValue: _FakeBehaviorSubject_8<String?>(
+        returnValue: _FakeBehaviorSubject_9<String?>(
           this,
           Invocation.getter(#playingAttachmentId$),
         ),
-        returnValueForMissingStub: _FakeBehaviorSubject_8<String?>(
+        returnValueForMissingStub: _FakeBehaviorSubject_9<String?>(
           this,
           Invocation.getter(#playingAttachmentId$),
         ),
@@ -1418,4 +1515,93 @@ class MockShowcaseNotesMediaAdapterService extends _i1.Mock
         returnValue: _i9.Future<void>.value(),
         returnValueForMissingStub: _i9.Future<void>.value(),
       ) as _i9.Future<void>);
+
+  @override
+  _i6.KitActionBuilder<T> action<T>(
+    String? name,
+    _i9.FutureOr<T> Function()? operation,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #action,
+          [
+            name,
+            operation,
+          ],
+        ),
+        returnValue: _FakeKitActionBuilder_7<T>(
+          this,
+          Invocation.method(
+            #action,
+            [
+              name,
+              operation,
+            ],
+          ),
+        ),
+        returnValueForMissingStub: _FakeKitActionBuilder_7<T>(
+          this,
+          Invocation.method(
+            #action,
+            [
+              name,
+              operation,
+            ],
+          ),
+        ),
+      ) as _i6.KitActionBuilder<T>);
+
+  @override
+  void watch(
+    String? name, {
+    required List<_i9.Stream<dynamic>>? streams,
+    required void Function(dynamic)? callback,
+    String? errorMessage,
+    void Function(Object)? onError,
+  }) =>
+      super.noSuchMethod(
+        Invocation.method(
+          #watch,
+          [name],
+          {
+            #streams: streams,
+            #callback: callback,
+            #errorMessage: errorMessage,
+            #onError: onError,
+          },
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
+  _i7.ValueStream<_i6.KitActionState> actionState$(String? name) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #actionState$,
+          [name],
+        ),
+        returnValue: _FakeValueStream_8<_i6.KitActionState>(
+          this,
+          Invocation.method(
+            #actionState$,
+            [name],
+          ),
+        ),
+        returnValueForMissingStub: _FakeValueStream_8<_i6.KitActionState>(
+          this,
+          Invocation.method(
+            #actionState$,
+            [name],
+          ),
+        ),
+      ) as _i7.ValueStream<_i6.KitActionState>);
+
+  @override
+  void disposeKitActions() => super.noSuchMethod(
+        Invocation.method(
+          #disposeKitActions,
+          [],
+        ),
+        returnValueForMissingStub: null,
+      );
 }

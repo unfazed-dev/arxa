@@ -1,6 +1,6 @@
 import 'package:rxdart/rxdart.dart';
 import 'package:appbox_kit_data/appbox_kit_data.dart';
-import 'package:ui_library/ui_library.dart' show KitAction, locator;
+import 'package:ui_library/ui_library.dart' show locator;
 
 import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/showcase_note_model.dart';
 import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/showcase_note_attachment_model.dart';
@@ -103,7 +103,7 @@ class ShowcaseNotesFacadeService extends KitDataFacade {
         _repo.allNotes(),
         (List<ShowcaseNoteFolderModel> folders, List<ShowcaseNoteModel> notes) {
           final counts = <String, int>{};
-          for (final note in notes.where((n) => !n.isDeleted)) {
+          for (final note in notes.where((note) => !note.isDeleted)) {
             counts[note.folderId] = (counts[note.folderId] ?? 0) + 1;
           }
           return ShowcaseNotesAdminOverview(folders: folders, liveCountByFolder: counts);
@@ -113,12 +113,12 @@ class ShowcaseNotesFacadeService extends KitDataFacade {
   /// Live notes, optionally scoped to a folder (null = All Notes).
   Stream<List<ShowcaseNoteModel>> notesIn$(String owner, {String? folderId}) =>
       _allNotes$(owner).map((notes) => notes
-          .where((n) =>
-              !n.isDeleted && (folderId == null || n.folderId == folderId))
+          .where((note) =>
+              !note.isDeleted && (folderId == null || note.folderId == folderId))
           .toList());
 
   Stream<List<ShowcaseNoteModel>> trash$(String owner) => _allNotes$(owner)
-      .map((notes) => notes.where((n) => n.isDeleted).toList());
+      .map((notes) => notes.where((note) => note.isDeleted).toList());
 
   Stream<ShowcaseNoteModel?> note$(String id) => _repo.watchNote(id);
 
@@ -128,15 +128,15 @@ class ShowcaseNotesFacadeService extends KitDataFacade {
     final needle = query.trim().toLowerCase();
     return notesIn$(owner).map((notes) => needle.isEmpty
         ? notes
-        : notes.where((n) => n.body.toLowerCase().contains(needle)).toList());
+        : notes.where((note) => note.body.toLowerCase().contains(needle)).toList());
   }
 
   /// iOS Notes sectioning: Pinned first, then Today / Yesterday / Previous 7
   /// Days / Previous 30 Days / month names (current year) / year buckets.
   /// Pure and static so tests can pin `now`.
   static List<ShowcaseNoteGroup> groupNotes(List<ShowcaseNoteModel> notes, DateTime now) {
-    final pinned = notes.where((n) => n.pinned).toList();
-    final rest = notes.where((n) => !n.pinned).toList();
+    final pinned = notes.where((note) => note.pinned).toList();
+    final rest = notes.where((note) => !note.pinned).toList();
 
     final today = DateTime(now.year, now.month, now.day);
     final buckets = <String, List<ShowcaseNoteModel>>{};
@@ -197,133 +197,128 @@ class ShowcaseNotesFacadeService extends KitDataFacade {
   // Ops carry the entity id, so KitAction's re-entry guard only ever
   // drops a genuine same-op double-fire — never a concurrent op on another
   // entity. Value-returning chains rethrow after the snackbar (callers await
-  // the value); void chains swallow post-snackbar via withErrorFallback.
+  // the value); void chains swallow post-snackbar via completeOnError.
 
   Future<ShowcaseNoteModel> createNote(String owner, String folderId) => mutate<ShowcaseNoteModel>(
-        operation: () => _repo.upsertNote(_repo.newNote(owner, folderId)),
-        op: 'create',
+        () => _repo.upsertNote(_repo.newNote(owner, folderId)),
+        name: 'create',
         error: 'Could not create note',
-      ).execute();
+      );
 
   Future<ShowcaseNoteModel> saveBody(ShowcaseNoteModel note, String body) => mutate<ShowcaseNoteModel>(
-        operation: () => _repo.upsertNote(
+        () => _repo.upsertNote(
           note.copyWith(body: body, updatedAt: DateTime.now().toUtc()),
         ),
-        op: 'save',
+        name: 'save',
         entity: note.id,
         error: 'Could not save note',
-      ).execute();
+      );
 
   Future<ShowcaseNoteModel> togglePin(ShowcaseNoteModel note) => mutate<ShowcaseNoteModel>(
-        operation: () => _repo.upsertNote(note.copyWith(pinned: !note.pinned)),
-        op: 'pin',
+        () => _repo.upsertNote(note.copyWith(pinned: !note.pinned)),
+        name: 'pin',
         entity: note.id,
         error: 'Could not update note',
-      ).execute();
+      );
 
   Future<ShowcaseNoteModel> addAttachment(ShowcaseNoteModel note, ShowcaseNoteAttachmentModel attachment) =>
       mutate<ShowcaseNoteModel>(
-        operation: () => _repo.upsertNote(note.copyWith(
+        () => _repo.upsertNote(note.copyWith(
           attachments: [...note.attachments, attachment],
           updatedAt: DateTime.now().toUtc(),
         )),
-        op: 'attach',
+        name: 'attach',
         entity: note.id,
         error: 'Could not add attachment',
-      ).execute();
+      );
 
   Future<ShowcaseNoteModel> removeAttachment(ShowcaseNoteModel note, String attachmentId) => mutate<ShowcaseNoteModel>(
-        operation: () => _repo.upsertNote(note.copyWith(
+        () => _repo.upsertNote(note.copyWith(
           attachments:
-              note.attachments.where((a) => a.id != attachmentId).toList(),
+              note.attachments.where((attachment) => attachment.id != attachmentId).toList(),
           updatedAt: DateTime.now().toUtc(),
         )),
-        op: 'detach',
+        name: 'detach',
         entity: note.id,
         error: 'Could not remove attachment',
-      ).execute();
+      );
 
   Future<ShowcaseNoteModel> moveToTrash(ShowcaseNoteModel note) => mutate<ShowcaseNoteModel>(
-        operation: () => _repo.upsertNote(note.copyWith(
+        () => _repo.upsertNote(note.copyWith(
           deletedAt: () => DateTime.now().toUtc(),
           pinned: false,
         )),
-        op: 'trash',
+        name: 'trash',
         entity: note.id,
         error: 'Could not move note to Recently Deleted',
         success: 'Moved to Recently Deleted',
-      ).execute();
+      );
 
   Future<ShowcaseNoteModel> restore(ShowcaseNoteModel note) => mutate<ShowcaseNoteModel>(
-        operation: () => _repo.upsertNote(note.copyWith(deletedAt: () => null)),
-        op: 'restore',
+        () => _repo.upsertNote(note.copyWith(deletedAt: () => null)),
+        name: 'restore',
         entity: note.id,
         error: 'Could not restore note',
-      ).execute();
+      );
 
   Future<void> deletePermanently(ShowcaseNoteModel note) => mutate<void>(
-        operation: () => _repo.deleteNote(note.id),
-        op: 'purge',
+        () => _repo.deleteNote(note.id),
+        name: 'purge',
         entity: note.id,
         error: 'Could not delete note',
         success: 'Note deleted',
-      ).withErrorFallback('Delete failed').execute();
+      ).completeOnError('Delete failed');
 
   Future<void> emptyTrash(String owner) => mutate<void>(
-        operation: () async {
+        () async {
           final all = await _repo.notesOf(owner);
-          for (final note in all.where((n) => n.isDeleted)) {
+          for (final note in all.where((note) => note.isDeleted)) {
             await _repo.deleteNote(note.id);
           }
         },
-        op: 'emptyTrash',
+        name: 'emptyTrash',
         error: 'Could not empty Recently Deleted',
         success: 'Recently Deleted emptied',
-      ).withErrorFallback('Empty trash failed').execute();
+      ).completeOnError('Empty trash failed');
 
   Future<ShowcaseNoteFolderModel> createFolder(String owner, String name,
           {required int sortOrder}) =>
       mutate<ShowcaseNoteFolderModel>(
-        operation: () =>
+        () =>
             _repo.upsertFolder(_repo.newFolder(owner, name, sortOrder: sortOrder)),
-        op: 'folder.create',
+        name: 'folder.create',
         error: 'Could not create folder',
-      ).execute();
+      );
 
   Future<ShowcaseNoteFolderModel> renameFolder(ShowcaseNoteFolderModel folder, String name) =>
       mutate<ShowcaseNoteFolderModel>(
-        operation: () => _repo.upsertFolder(folder.copyWith(name: name)),
-        op: 'folder.rename',
+        () => _repo.upsertFolder(folder.copyWith(name: name)),
+        name: 'folder.rename',
         entity: folder.id,
         error: 'Could not rename folder',
-      ).execute();
+      );
 
   /// iOS behavior: deleting a folder sends its live notes to Recently
   /// Deleted, then removes the folder row.
   Future<void> deleteFolder(ShowcaseNoteFolderModel folder) => mutate<void>(
-        operation: () async {
+        () async {
           final notes = await _repo.notesInFolder(folder.id);
           final now = DateTime.now().toUtc();
-          for (final note in notes.where((n) => !n.isDeleted)) {
+          for (final note in notes.where((note) => !note.isDeleted)) {
             await _repo
                 .upsertNote(note.copyWith(deletedAt: () => now, pinned: false));
           }
           await _repo.deleteFolder(folder.id);
         },
-        op: 'folder.delete',
+        name: 'folder.delete',
         entity: folder.id,
         error: 'Could not delete folder',
         success: 'Folder deleted',
-      ).withErrorFallback('Delete folder failed').execute();
+      ).completeOnError('Delete folder failed');
 
   // -- Auth ------------------------------------------------------------------
 
-  Future<void> signOut() => KitAction.run<void>(
-        operation: () => auth.signOut(),
-        owner: this,
-        op: 'signOut',
-      )
-          .withErrorSnackbar('Could not sign out')
-          .withErrorFallback('Sign-out failed')
-          .execute();
+  Future<void> signOut() => action<void>('signOut', () => auth.signOut())
+      .withErrorSnackbar('Could not sign out')
+      .completeOnError('Sign-out failed');
 }

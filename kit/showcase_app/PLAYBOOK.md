@@ -135,7 +135,7 @@ stacked create view notes
 ```
 ViewModels expose the Facade's streams as getters (streams-only — see below); no direct Repository access.
 
-**Streams-only convention (hard):** viewmodels `extends KitViewModel` (ui_library), expose all state as `Stream`/`ValueStream` getters (facade pass-throughs, rxdart `switchMap` compositions, seeded `BehaviorSubject`s for UI-owned state) and NEVER call `notifyListeners`. Views add `@override bool get reactive => false;` to the CLI-generated `StackedView` and bind live values with `KitStreamBuilder` at the right subtree. Ops run `KitAction.run(owner: this, op: '<verb>')` — no widgetId strings, no manual `KitAction.dispose` (KitViewModel auto-disposes). A view file imports ONLY its viewmodel (+ kit packages + sibling views/widgets); the viewmodel re-exports every payload type the view names. Reference: `showcase_notes_shell/showcase_notes/`.
+**Streams-only convention (hard):** viewmodels `extends KitViewModel` (ui_library), expose all state as `Stream`/`ValueStream` getters (facade pass-throughs, rxdart `switchMap` compositions, seeded `BehaviorSubject`s for UI-owned state) and NEVER call `notifyListeners`. Views add `@override bool get reactive => false;` to the CLI-generated `StackedView` and bind live values with `KitStreamBuilder` at the right subtree. Ops run `action('<verb>', () => ...)` (the `KitActionOwner` helper on `KitViewModel`) — no widgetId strings, no manual `KitAction.dispose` (KitViewModel auto-disposes via `disposeKitActions`). A view file imports ONLY its viewmodel (+ kit packages + sibling views/widgets); the viewmodel re-exports every payload type the view names. Reference: `showcase_notes_shell/showcase_notes/`.
 
 ## 7.7 Lay out the shell route tree (IndexedStack tabs)
 

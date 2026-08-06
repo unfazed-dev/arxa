@@ -92,7 +92,7 @@ Reference template + full step-by-step: `showcase_app` and
 
 | Layer | Entry point | Notes |
 |---|---|---|
-| Operations | `KitAction.run<T>(operation:, owner:, op:)` → `utils/kit_action/kit_action.dart` | Fluent builder; owner-identity keys + auto-dispose via `KitViewModel`/`disposeOwner`; terminals `execute()` / `asStream()` / `asCancellable()` |
+| Operations | `action(name, () => ...)` helper from the `KitActionOwner` mixin (`KitViewModel`, `KitDataFacade`) → `utils/kit_action/kit_action.dart` | Awaitable fluent builder (await = execute; `.execute()` only for fire-and-forget); owner-identity keys + auto-dispose; `.toStream()` / `.toCancellable()` single-call terminals |
 | Notifications | `KitNotificationService.show(msg, {kind, position, actionLabel, …})` → `services/notifications/kit_notification_service.dart`; `KitNotificationKind`/`KitToastPosition`; snackbar vocab `KitSnackbarType.kitAutoProcess{Info,Success,Error,Warning}` → `kit_snackbar_type.dart`; `setupKitSnackbars()` → `kit_snackbar_setup.dart` | One entry point picks the native surface per platform (see **Transient feedback**); host registers the service + calls `setupKitSnackbars()` |
 | Services | `services/{error,haptics,theme,navigation,notifications}/` + `KitOverlayService`/`KitSelectableService` (defined in their extensions) | Resolved via `locator` |
 | Theme | `KitColors` / `KitDarkColors` + `kitLightTheme()` / `kitDarkTheme()` → `common/kit_colors.dart`; `KitThemeService` owns `ThemeMode` + status bar | Generic default; host passes builders to `MaterialApp` |
@@ -196,12 +196,12 @@ class ShopFacade extends KitDataFacade {
 
   Future<void> save(Product product) async {
     await mutate<Product>(
-      operation: () => _products.upsert(product),
-      op: 'save',
+      () => _products.upsert(product),
+      name: 'save',
       entity: product.id,
       error: 'Could not save',
       success: 'Saved',
-    ).execute();
+    );
   }
 }
 ```
@@ -391,15 +391,14 @@ The kit is decoupled by design — the host wires three things, **none of them i
 ## Patterns
 
 ```dart
-// ViewModel operation: owner-owned, busy state binds as a stream
-final user = await KitAction.run<User>(
-  operation: () => userService.fetch(id),
-  owner: this,               // the viewmodel — auto-disposed by KitViewModel
-  op: 'fetch',
+// ViewModel operation: owner-owned (KitViewModel mixes in KitActionOwner),
+// busy state binds as a stream; awaiting the chain executes it
+final user = await action<User>(
+  'fetch',
+  () => userService.fetch(id),
 )
-    .withErrorFallback('Failed to load user', fallback: User.empty())
-    .withSnackbars(success: 'User loaded', error: 'Load failed')
-    .execute();
+    .completeOnError('Failed to load user', withValue: User.empty())
+    .withSnackbars(success: 'User loaded', error: 'Load failed');
 
 // Views bind op state as a stream — no setBusy plumbing:
 // KitStreamBuilder(stream: viewModel.actionState$('fetch'), builder: ...)

@@ -33,7 +33,7 @@ class ShowcaseNotesCreateAccountViewModel extends KitViewModel {
 
   /// Inline form error (seeded null = none). [KitAuthException] shows its
   /// message, anything unexpected gets the generic one — set from the
-  /// KitAction chain's onError, never a snackbar.
+  /// KitAction chain's handleError, never a snackbar.
   final BehaviorSubject<String?> _errorMessage =
       BehaviorSubject<String?>.seeded(null);
   ValueStream<String?> get errorMessage$ => _errorMessage.stream;
@@ -43,18 +43,16 @@ class ShowcaseNotesCreateAccountViewModel extends KitViewModel {
   /// [errorMessage$].
   Future<void> createAccount(String email, String password) {
     _errorMessage.add(null);
-    return KitAction.run<void>(
-      operation: () =>
-          auth.signUpWithEmailPassword(email: email, password: password),
-      owner: this,
-      op: 'signUp',
+    return action<void>(
+      'signUp',
+      () => auth.signUpWithEmailPassword(email: email, password: password),
     )
-        .withErrorFallback('Sign-up failed')
-        .onError((e, _) {
-          _errorMessage.add(
-              e is KitAuthException ? e.message : 'Something went wrong. Try again.');
-        })
-        .execute();
+        .completeOnError('Sign-up failed')
+        .handleError((error) {
+          _errorMessage.add(error is KitAuthException
+              ? error.message
+              : 'Something went wrong. Try again.');
+        });
   }
 
   @override

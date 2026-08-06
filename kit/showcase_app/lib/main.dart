@@ -29,9 +29,9 @@ Future<void> main() async {
   // bar before the first frame. KitThemeService owns ThemeMode + system UI.
   // Through KitAction so a restore failure logs instead of killing main().
   await KitAction.run<void>(
-    operation: () => locator<KitThemeService>().initialize(),
+    () => locator<KitThemeService>().initialize(),
     widgetId: 'main.themeInit',
-  ).withErrorFallback('Theme restore failed').execute();
+  ).completeOnError('Theme restore failed');
   setupShowcaseSnackbars();
   setupDialogUi();
   setupBottomSheetUi();

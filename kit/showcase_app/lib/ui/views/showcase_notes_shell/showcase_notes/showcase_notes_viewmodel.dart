@@ -32,9 +32,9 @@ class ShowcaseNotesViewModel extends KitViewModel {
 
   /// Owner-scoped folder overview; null while signed out.
   Stream<ShowcaseNotesOverview?> get overview$ => _service.session$.switchMap(
-        (s) => s == null
+        (session) => session == null
             ? Stream<ShowcaseNotesOverview?>.value(null)
-            : _service.overview$(s.user.id),
+            : _service.overview$(session.user.id),
       );
 
   /// Cross-owner folders + counts; emits non-null only while an admin session
@@ -45,7 +45,7 @@ class ShowcaseNotesViewModel extends KitViewModel {
   /// authorization server-side, never via client-side gating like this.
   Stream<ShowcaseNotesAdminOverview?> get adminOverview$ =>
       _service.session$.switchMap(
-        (s) => ShowcaseNotesFacadeService.isAdminSession(s)
+        (session) => ShowcaseNotesFacadeService.isAdminSession(session)
             ? _service.adminOverview$()
             : Stream<ShowcaseNotesAdminOverview?>.value(null),
       );
@@ -62,11 +62,11 @@ class ShowcaseNotesViewModel extends KitViewModel {
     // VM-internal side effect (no view data): reset the panel choice when a
     // session appears. One watch, one dispose — the data streams above need
     // no subscription management here.
-    KitAction.watch(
-      owner: this,
+    watch(
+      'session.resetPanel',
       streams: [_service.session$],
-      callback: (s) {
-        if (s != null) _showCreateAccount.add(false);
+      callback: (session) {
+        if (session != null) _showCreateAccount.add(false);
       },
     );
   }
@@ -82,7 +82,7 @@ class ShowcaseNotesViewModel extends KitViewModel {
     final sortOrder = await _service
         .overview$(owner)
         .first
-        .then((o) => o.folders.length);
+        .then((overview) => overview.folders.length);
     await _service.createFolder(owner, trimmed, sortOrder: sortOrder);
   }
 
