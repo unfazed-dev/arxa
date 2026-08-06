@@ -13,7 +13,7 @@ void main() {
   });
 
   group('override resolution', () {
-    test('persisted override wins over the system locale', () async {
+    test('kit.i18n.locale-resolution — persisted override wins over the system locale', () async {
       final store = FakeAppBoxKitLocaleStore()..queueReads(['pl']);
       final i18n = AppBoxKitI18n(store: store, systemLocale: const Locale('en'));
 
@@ -25,7 +25,7 @@ void main() {
       expect(store.readCalls, 1);
     });
 
-    test('clearing the override falls back to the system locale', () async {
+    test('kit.i18n.locale-resolution — clearing the override falls back to the system locale', () async {
       final store = FakeAppBoxKitLocaleStore()..queueReads(['pl']);
       final i18n = AppBoxKitI18n(store: store, systemLocale: const Locale('en'));
 
@@ -37,7 +37,7 @@ void main() {
       expect(store.clearCalls, 1);
     });
 
-    test('no override and no system locale falls back to en', () async {
+    test('kit.i18n.locale-resolution — no override and no system locale falls back to en', () async {
       final store = FakeAppBoxKitLocaleStore(); // empty queue → read() returns null
       final i18n = AppBoxKitI18n(store: store);
 
@@ -50,11 +50,11 @@ void main() {
   });
 
   group('AppBoxKitLanguage', () {
-    test('supported ships en and pl', () {
+    test('kit.i18n.language — supported ships en and pl', () {
       expect(AppBoxKitLanguage.supported.map((l) => l.tag), ['en', 'pl']);
     });
 
-    test('byTag falls back to the base subtag (pl-PL → pl)', () {
+    test('kit.i18n.language — byTag falls back to the base subtag (pl-PL → pl)', () {
       final lang = AppBoxKitLanguage.byTag('pl-PL');
       expect(lang, isNotNull);
       expect(lang!.tag, 'pl');
@@ -62,7 +62,7 @@ void main() {
       expect(lang.nameNative, 'polski');
     });
 
-    test('equality is by tag', () {
+    test('kit.i18n.language — equality is by tag', () {
       expect(
         const AppBoxKitLanguage(tag: 'pl', nameEn: 'Polish', nameNative: 'polski'),
         const AppBoxKitLanguage(tag: 'pl', nameEn: 'Polski', nameNative: 'polski'),
@@ -74,14 +74,14 @@ void main() {
     final store = FakeAppBoxKitLocaleStore();
     final i18n = AppBoxKitI18n(store: store);
 
-    test('case-SENSITIVE: {COUNT} vs {count} fails', () {
+    test('kit.i18n.placeholders — case-SENSITIVE: {COUNT} vs {count} fails', () {
       expect(
         i18n.placeholderParity('You have {COUNT} items', 'Masz {count} rzeczy'),
         isFalse,
       );
     });
 
-    test('same tokens reordered passes', () {
+    test('kit.i18n.placeholders — same tokens reordered passes', () {
       expect(
         i18n.placeholderParity(
           '{name}, you have {count} messages',
@@ -91,7 +91,7 @@ void main() {
       );
     });
 
-    test('missing token fails', () {
+    test('kit.i18n.placeholders — missing token fails', () {
       expect(
         i18n.placeholderParity('Hello {name}, {count} left', 'Hello {name}'),
         isFalse,
@@ -100,7 +100,7 @@ void main() {
   });
 
   group('llmLocaleDirective', () {
-    test('contains language names and literal placeholder tokens', () {
+    test('kit.i18n.llm-directive — contains language names and literal placeholder tokens', () {
       final store = FakeAppBoxKitLocaleStore();
       final i18n = AppBoxKitI18n(store: store, systemLocale: const Locale('pl'));
 
@@ -111,7 +111,7 @@ void main() {
       expect(directive, contains('Do not translate these terms: (none).'));
     });
 
-    test('doNotTranslate terms are interpolated', () {
+    test('kit.i18n.llm-directive — doNotTranslate terms are interpolated', () {
       final store = FakeAppBoxKitLocaleStore();
       final i18n = AppBoxKitI18n(store: store)..doNotTranslate = ['Acme', 'ProPlan'];
 
@@ -123,7 +123,7 @@ void main() {
   });
 
   group('setLocale', () {
-    test('notifies listeners and persists the override', () async {
+    test('kit.i18n.set-locale — notifies listeners and persists the override', () async {
       final store = FakeAppBoxKitLocaleStore();
       final i18n = AppBoxKitI18n(store: store, systemLocale: const Locale('en'));
       var notified = 0;
@@ -140,7 +140,7 @@ void main() {
   });
 
   group('formatting', () {
-    test('date and number follow the effective locale', () {
+    test('kit.i18n.formatting — date and number follow the effective locale', () {
       final store = FakeAppBoxKitLocaleStore();
       final pl = AppBoxKitI18n(store: store, systemLocale: const Locale('pl'));
       final en = AppBoxKitI18n(store: store, systemLocale: const Locale('en'));
