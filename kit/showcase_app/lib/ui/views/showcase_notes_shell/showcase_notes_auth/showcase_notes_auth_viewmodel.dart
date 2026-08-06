@@ -59,7 +59,7 @@ class ShowcaseNotesAuthViewModel extends AppBoxKitViewModel {
 
   /// Inline form error (seeded null = none). [AppBoxKitAuthException] shows its
   /// message, anything unexpected gets the generic one — set from the
-  /// AppBoxKitAction chain's handleError, never a snackbar.
+  /// pipeline's onError tap, never a snackbar.
   final BehaviorSubject<String?> _errorMessage =
       BehaviorSubject<String?>.seeded(null);
   ValueStream<String?> get errorMessage$ => _errorMessage.stream;
@@ -81,52 +81,70 @@ class ShowcaseNotesAuthViewModel extends AppBoxKitViewModel {
     _errorMessage.add(null);
   }
 
-  /// Every auth call runs through AppBoxKitAction: per-op busy state (bound via
-  /// [busy$]), re-entry guard (double-tap dropped silently via the fallback),
-  /// and errors surfaced inline as [errorMessage$].
-  Future<void> _guard(String name, Future<void> Function() operation) {
-    _errorMessage.add(null);
-    return action<void>(name, operation)
-        .completeOnError('Authentication failed')
-        .handleError((error) {
-          _errorMessage.add(error is AppBoxKitAuthException
-              ? error.message
-              : 'Something went wrong. Try again.');
-        })
-        .execute();
-  }
+  /// Every auth op is a hot-dispatch pipe on the AppBoxKitActionOwner
+  /// pipeline: per-op busy state via the same actionState$ machinery (bound
+  /// via [busy$]), re-entry guard (a double-tap's handle observes the
+  /// in-flight run instead of re-running), errors surfaced inline as
+  /// [errorMessage$]. The methods below return the dispatch's observation
+  /// handle — the op is already running when they return, so the views'
+  /// fire-and-forget callbacks can never drop it.
+  @override
+  AppBoxKitActionPipeline createPipeline() => AppBoxKitActionPipeline(
+        owner: this,
+        errorMessage: 'Authentication failed',
+        onDispatch: () => _errorMessage.add(null),
+        onError: (error) => _errorMessage.add(error is AppBoxKitAuthException
+            ? error.message
+            : 'Something went wrong. Try again.'),
+      );
 
-  Future<void> signInEmail(String email, String password) => _guard(
-      'signIn',
-      () => auth.signInWithEmailPassword(email: email, password: password));
+  late final _signIn = pipeline.pipe<(String, String), void>('signIn',
+      (p) => auth.signInWithEmailPassword(email: p.$1, password: p.$2));
 
-  Future<void> signUpEmail(String email, String password) => _guard(
-      'signUp',
-      () => auth.signUpWithEmailPassword(email: email, password: password));
+  late final _signUp = pipeline.pipe<(String, String), void>('signUp',
+      (p) => auth.signUpWithEmailPassword(email: p.$1, password: p.$2));
 
-  Future<void> requestOtp(String email) => _guard('requestOtp', () async {
-        await auth.requestOtp(email: email);
-        _otpRequested.add(true);
-      });
+  late final _requestOtp =
+      pipeline.pipe<String, void>('requestOtp', (email) async {
+    await auth.requestOtp(email: email);
+    _otpRequested.add(true);
+  });
+
+  late final _confirmOtp = pipeline.pipe<(String, String), void>(
+      'confirmOtp', (p) => auth.confirmOtp(email: p.$1, code: p.$2));
+
+  late final _google =
+      pipeline.pipe<Null, void>('google', (_) => auth.signInWithGoogle());
+
+  late final _apple =
+      pipeline.pipe<Null, void>('apple', (_) => auth.signInWithApple());
+
+  late final _anonymous =
+      pipeline.pipe<Null, void>('anonymous', (_) => auth.signInAnonymously());
+
+  Future<void> signInEmail(String email, String password) =>
+      _signIn.dispatch((email, password));
+
+  Future<void> signUpEmail(String email, String password) =>
+      _signUp.dispatch((email, password));
+
+  Future<void> requestOtp(String email) => _requestOtp.dispatch(email);
 
   Future<void> confirmOtp(String email, String code) =>
-      _guard('confirmOtp',
-          () => auth.confirmOtp(email: email, code: code));
+      _confirmOtp.dispatch((email, code));
 
-  Future<void> google() =>
-      _guard('google', () => auth.signInWithGoogle());
+  Future<void> google() => _google.dispatch(null);
 
-  Future<void> apple() =>
-      _guard('apple', () => auth.signInWithApple());
+  Future<void> apple() => _apple.dispatch(null);
 
-  Future<void> anonymous() =>
-      _guard('anonymous', () => auth.signInAnonymously());
+  Future<void> anonymous() => _anonymous.dispatch(null);
 
   @override
   void dispose() {
     _mode.close();
     _otpRequested.close();
     _errorMessage.close();
+    // The pipeline dies in super.dispose() → disposeAppBoxKitActions.
     super.dispose();
   }
 }

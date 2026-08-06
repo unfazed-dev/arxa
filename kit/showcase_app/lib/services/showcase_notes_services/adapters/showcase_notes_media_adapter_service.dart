@@ -25,13 +25,13 @@ import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/showca
 /// One recorder and one player for the whole app: iOS Notes plays a single
 /// memo at a time, and starting a recording stops playback.
 ///
-/// Every hardware/IO operation runs through a AppBoxKitAction chain: a plugin or
-/// file-system failure surfaces as an error snackbar and collapses to the
-/// method's existing null/false contract (fallback) instead of escaping
-/// uncaught. Expected non-error outcomes (permission denial, user cancel)
-/// stay plain returns — no snackbar. [resolvePath] stays raw: it is a pure
-/// path derivation on the per-attachment render path, where a snackbar per
-/// failed row would storm.
+/// Every hardware/IO operation dispatches on the owner's AppBoxKitAction
+/// pipeline (one-shot `run`s): a plugin or file-system failure surfaces as an
+/// error snackbar and collapses to the method's existing null/false contract
+/// (fallback) instead of escaping uncaught. Expected non-error outcomes
+/// (permission denial, user cancel) stay plain returns — no snackbar.
+/// [resolvePath] stays raw: it is a pure path derivation on the
+/// per-attachment render path, where a snackbar per failed row would storm.
 class ShowcaseNotesMediaAdapterService with AppBoxKitActionOwner {
   /// Ports default to their real plugin-backed implementations; inject fakes
   /// (from `package:appbox_kit_media/appbox_kit_testing.dart`) in tests.
@@ -107,7 +107,7 @@ class ShowcaseNotesMediaAdapterService with AppBoxKitActionOwner {
   /// collapses to null too, via the AppBoxKitAction fallback, after an error
   /// snackbar.
   Future<ShowcaseNoteAttachmentModel?> pickPhoto({required bool fromCamera}) =>
-      action<ShowcaseNoteAttachmentModel?>(
+      pipeline.run<ShowcaseNoteAttachmentModel?>(
         'pickPhoto',
         () async {
           // Degrade to the library on simulators rather than crash — mirrors how
@@ -139,16 +139,17 @@ class ShowcaseNotesMediaAdapterService with AppBoxKitActionOwner {
             createdAt: DateTime.now().toUtc(),
           );
         },
-      )
-          .withErrorSnackbar('Could not add photo')
-          .completeOnError('Photo capture failed', withValue: null).execute();
+        errorNotification: 'Could not add photo',
+        errorMessage: 'Photo capture failed',
+        withValue: null,
+      );
 
   // -- Voice memos -------------------------------------------------------------
 
   /// False on permission denial (the view surfaces that — not an error, no
   /// snackbar); a recorder/plugin throw also collapses to false, after an
   /// error snackbar.
-  Future<bool> startRecording() => action<bool>(
+  Future<bool> startRecording() => pipeline.run<bool>(
         'startRecording',
         () async {
           if (!await _recorder.hasPermission()) return false;
@@ -160,12 +161,13 @@ class ShowcaseNotesMediaAdapterService with AppBoxKitActionOwner {
           await _recorder.start(path: '${dir.path}/${_uuid.v4()}.m4a');
           return true;
         },
-      )
-          .withErrorSnackbar('Could not start recording')
-          .completeOnError('Recording start failed', withValue: false).execute();
+        errorNotification: 'Could not start recording',
+        errorMessage: 'Recording start failed',
+        withValue: false,
+      );
 
   Future<ShowcaseNoteAttachmentModel?> stopRecording() =>
-      action<ShowcaseNoteAttachmentModel?>(
+      pipeline.run<ShowcaseNoteAttachmentModel?>(
         'stopRecording',
         () async {
           final result = await _recorder.stop();
@@ -178,23 +180,24 @@ class ShowcaseNotesMediaAdapterService with AppBoxKitActionOwner {
             createdAt: DateTime.now().toUtc(),
           );
         },
-      )
-          .withErrorSnackbar('Could not save voice memo')
-          .completeOnError('Recording stop failed', withValue: null).execute();
+        errorNotification: 'Could not save voice memo',
+        errorMessage: 'Recording stop failed',
+        withValue: null,
+      );
 
-  Future<void> cancelRecording() => action<void>(
+  Future<void> cancelRecording() => pipeline.run<void>(
         'cancelRecording',
         () => _recorder.cancel(),
-      )
-          .withErrorSnackbar('Could not cancel recording')
-          .completeOnError('Recording cancel failed').execute();
+        errorNotification: 'Could not cancel recording',
+        errorMessage: 'Recording cancel failed',
+      );
 
   // -- Playback ----------------------------------------------------------------
 
   /// Play [attachment] from the start, or toggle pause/resume when it is the
   /// one already loaded.
   Future<void> togglePlayback(ShowcaseNoteAttachmentModel attachment) =>
-      action<void>(
+      pipeline.run<void>(
         'playback.${attachment.id}',
         () async {
           if (playingAttachmentId$.value == attachment.id) {
@@ -206,9 +209,9 @@ class ShowcaseNotesMediaAdapterService with AppBoxKitActionOwner {
           playingAttachmentId$.add(attachment.id);
           await _player.play();
         },
-      )
-          .withErrorSnackbar('Could not play voice memo')
-          .completeOnError('Playback failed').execute();
+        errorNotification: 'Could not play voice memo',
+        errorMessage: 'Playback failed',
+      );
 
   Future<void> stopPlayback() async {
     await _player.stop();
@@ -217,16 +220,16 @@ class ShowcaseNotesMediaAdapterService with AppBoxKitActionOwner {
 
   /// Best-effort binary cleanup when an attachment is removed from a note.
   Future<void> deleteFile(ShowcaseNoteAttachmentModel attachment) =>
-      action<void>(
+      pipeline.run<void>(
         'deleteFile.${attachment.id}',
         () async {
           if (playingAttachmentId$.value == attachment.id) await stopPlayback();
           final file = File(await resolvePath(attachment));
           if (await file.exists()) await file.delete();
         },
-      )
-          .withErrorSnackbar('Could not delete attachment')
-          .completeOnError('Attachment cleanup failed').execute();
+        errorNotification: 'Could not delete attachment',
+        errorMessage: 'Attachment cleanup failed',
+      );
 
   Future<void> dispose() async {
     disposeAppBoxKitActions();

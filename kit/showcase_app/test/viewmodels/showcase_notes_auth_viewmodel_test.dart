@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:appbox_kit_data/appbox_kit_data.dart';
@@ -63,6 +65,8 @@ void main() {
       );
       // when
       vm.setMode(NotesAuthMode.otp);
+      // The dispatch handle observes the already-running op — awaiting it
+      // waits for the request (and its otpRequested flip) to complete.
       await vm.requestOtp('evan@seed.local');
       vm.setMode(NotesAuthMode.password);
       // then
@@ -127,6 +131,30 @@ void main() {
       await vm.signInEmail('evan@seed.local', 'x');
       // then
       await expectation.timeout(const Duration(milliseconds: 500));
+    });
+
+    test(
+        'auth-and-accounts.sign-in.sign-in-with-email-and-otp — a double-tap during an in-flight sign-in runs the op once (re-entry guard)',
+        () async {
+      // given — sign-in held open until the completer fires
+      final vm = createViewModel();
+      final gate = Completer<AppBoxKitAuthSession>();
+      addTearDown(() {
+        if (!gate.isCompleted) gate.complete(_session);
+      });
+      when(() => auth.signInWithEmailPassword(
+            email: any(named: 'email'),
+            password: any(named: 'password'),
+          )).thenAnswer((_) => gate.future);
+      // when — both handles observe the one in-flight run
+      final first = vm.signInEmail('evan@seed.local', 'x');
+      final second = vm.signInEmail('evan@seed.local', 'x');
+      gate.complete(_session);
+      await first;
+      await second; // completes with the in-flight run's result, never a guard error
+      // then — the second tap did not re-run the op
+      verify(() => auth.signInWithEmailPassword(
+          email: any(named: 'email'), password: any(named: 'password'))).called(1);
     });
 
     test(
