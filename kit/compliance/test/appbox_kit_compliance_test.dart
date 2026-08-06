@@ -20,12 +20,12 @@ AppBoxKitComplianceDocument _doc({
 
 void main() {
   group('AppBoxKitComplianceDocument & source', () {
-    test('value equality over all fields', () {
+    test('kit.compliance.documents — value equality over all fields', () {
       expect(_doc(), _doc());
       expect(_doc(version: '1.0.0') == _doc(version: '1.0.1'), isFalse);
     });
 
-    test('sealed source equality', () {
+    test('kit.compliance.documents — sealed source variants compare by value', () {
       expect(AppBoxKitComplianceSource.remote(Uri.parse('https://a')),
           AppBoxKitComplianceSource.remote(Uri.parse('https://a')));
       expect(const AppBoxKitComplianceSource.inline('body'),
@@ -39,13 +39,13 @@ void main() {
   });
 
   group('AppBoxKitComplianceRegistry', () {
-    test('register / byId', () {
+    test('kit.compliance.registry — a registered document resolves by id', () {
       final registry = AppBoxKitComplianceRegistry()..register(_doc());
       expect(registry.byId('privacy-policy'), _doc());
       expect(registry.byId('missing'), isNull);
     });
 
-    test('currentFor returns the most-recently-registered of a kind', () {
+    test('kit.compliance.registry — currentFor returns the most-recently-registered of a kind', () {
       final registry = AppBoxKitComplianceRegistry()
         ..register(_doc(id: 'p-v1', version: '1'))
         ..register(_doc(id: 'p-v2', version: '2'));
@@ -54,14 +54,14 @@ void main() {
       expect(registry.currentFor(AppBoxKitComplianceDocumentKind.eula), isNull);
     });
 
-    test('all preserves registration order', () {
+    test('kit.compliance.registry — all preserves registration order', () {
       final registry = AppBoxKitComplianceRegistry()
         ..register(_doc(id: 'a', kind: AppBoxKitComplianceDocumentKind.termsOfService))
         ..register(_doc(id: 'b', kind: AppBoxKitComplianceDocumentKind.privacyPolicy));
       expect(registry.all.map((d) => d.id), ['a', 'b']);
     });
 
-    test('re-registering an id replaces in place, keeping position', () {
+    test('kit.compliance.registry — re-registering an id replaces in place, keeping position', () {
       final registry = AppBoxKitComplianceRegistry()
         ..register(_doc(id: 'a', kind: AppBoxKitComplianceDocumentKind.termsOfService))
         ..register(_doc(id: 'b', kind: AppBoxKitComplianceDocumentKind.privacyPolicy))
@@ -73,7 +73,7 @@ void main() {
       expect(registry.byId('a')?.version, '2');
     });
 
-    test('currentDocuments is one-per-kind in first-seen order', () {
+    test('kit.compliance.registry — currentDocuments is one-per-kind in first-seen order', () {
       final registry = AppBoxKitComplianceRegistry()
         ..register(_doc(id: 'tos', kind: AppBoxKitComplianceDocumentKind.termsOfService))
         ..register(_doc(id: 'pp1', kind: AppBoxKitComplianceDocumentKind.privacyPolicy, version: '1'))
@@ -81,7 +81,7 @@ void main() {
       expect(registry.currentDocuments.map((d) => d.id), ['tos', 'pp2']);
     });
 
-    test('two documents sharing a kind collapse to the latest (custom case)', () {
+    test('kit.compliance.registry — two documents sharing a kind collapse to the latest (custom case)', () {
       final registry = AppBoxKitComplianceRegistry()
         ..register(_doc(id: 'custom-a', kind: AppBoxKitComplianceDocumentKind.custom))
         ..register(_doc(id: 'custom-b', kind: AppBoxKitComplianceDocumentKind.custom));
@@ -92,7 +92,7 @@ void main() {
   });
 
   group('AppBoxKitConsentRecord', () {
-    test('value equality', () {
+    test('kit.compliance.consent-record — value equality', () {
       final at = DateTime(2026, 7, 1);
       final a = AppBoxKitConsentRecord(
           documentId: 'p',
@@ -131,12 +131,12 @@ void main() {
           appVersion: '1.0.0',
         );
 
-    test('record then latestFor returns it', () async {
+    test('kit.compliance.consent-store — record then latestFor returns it', () async {
       await store.record(rec());
       expect((await store.latestFor('p'))?.documentVersion, '1');
     });
 
-    test('withdraw appends a withdrawal that latestFor surfaces', () async {
+    test('kit.compliance.consent-store — withdraw appends a withdrawal that latestFor surfaces', () async {
       await store.record(rec());
       await store.withdraw(
           documentId: 'p',
@@ -148,7 +148,7 @@ void main() {
       expect(latest?.isWithdrawal, isTrue);
     });
 
-    test('anonymous and per-user tracks are separate (both directions)',
+    test('kit.compliance.consent-store — anonymous and per-user tracks are separate (both directions)',
         () async {
       await store.record(rec(userId: 'u1'));
       // Anonymous query must not see u1's record.
@@ -160,7 +160,7 @@ void main() {
       expect((await store.latestFor('p'))?.userId, isNull);
     });
 
-    test('history filters by track and document, oldest first', () async {
+    test('kit.compliance.consent-store — history filters by track and document, oldest first', () async {
       await store.record(rec(at: DateTime(2026, 7, 1)));
       await store.record(rec(documentId: 'q', at: DateTime(2026, 7, 2)));
       await store.record(rec(userId: 'u1', at: DateTime(2026, 7, 3)));
@@ -172,7 +172,7 @@ void main() {
       expect(u1, hasLength(1));
     });
 
-    test('latest-wins tie-breaks equal timestamps by insertion order',
+    test('kit.compliance.consent-store — latest-wins tie-breaks equal timestamps by insertion order',
         () async {
       final at = DateTime(2026, 7, 1);
       await store.record(rec(version: 'first', at: at));
@@ -193,7 +193,7 @@ void main() {
     });
     tearDown(() => service.dispose());
 
-    test('notRequired when the document does not require acceptance', () async {
+    test('kit.compliance.consent-status — notRequired when the document does not require acceptance', () async {
       final doc = _doc(requiresExplicitAcceptance: false);
       // Even with a record present, status is notRequired.
       await service.accept(doc,
@@ -201,18 +201,18 @@ void main() {
       expect(await service.statusFor(doc), const AppBoxKitConsentStatus.notRequired());
     });
 
-    test('neverAccepted with no record', () async {
+    test('kit.compliance.consent-status — neverAccepted with no record', () async {
       expect(await service.statusFor(_doc()),
           const AppBoxKitConsentStatus.neverAccepted());
     });
 
-    test('accepted when the version matches exactly', () async {
+    test('kit.compliance.consent-status — accepted when the version matches exactly', () async {
       final doc = _doc(version: '1.0.0');
       await service.accept(doc, appVersion: '1.0.0');
       expect(await service.statusFor(doc), const AppBoxKitConsentStatus.accepted());
     });
 
-    test('acceptedOutdatedVersion on any string mismatch (no semver)',
+    test('kit.compliance.consent-status — acceptedOutdatedVersion on any string mismatch (no semver)',
         () async {
       await service.accept(_doc(version: '1.0.0'), appVersion: '1.0.0');
       final status = await service.statusFor(_doc(version: '1.0.1'));
@@ -222,14 +222,14 @@ void main() {
           '1.0.0');
     });
 
-    test('withdrawn when the latest action is a withdrawal', () async {
+    test('kit.compliance.consent-status — withdrawn when the latest action is a withdrawal', () async {
       final doc = _doc(version: '1.0.0');
       await service.accept(doc, appVersion: '1.0.0', at: DateTime(2026, 7, 1));
       await service.withdraw(doc, appVersion: '1.0.0', at: DateTime(2026, 7, 2));
       expect(await service.statusFor(doc), const AppBoxKitConsentStatus.withdrawn());
     });
 
-    test('latest-wins: accept -> withdraw -> re-accept ends accepted',
+    test('kit.compliance.consent-status — latest-wins: accept -> withdraw -> re-accept ends accepted',
         () async {
       final doc = _doc(version: '1.0.0');
       await service.accept(doc, appVersion: '1.0.0', at: DateTime(2026, 7, 1));
@@ -238,7 +238,7 @@ void main() {
       expect(await service.statusFor(doc), const AppBoxKitConsentStatus.accepted());
     });
 
-    test('status is scoped to the service user track', () async {
+    test('kit.compliance.consent-status — status is scoped to the service user track', () async {
       final doc = _doc(version: '1.0.0');
       final anon = AppBoxKitConsentService(store: store, registry: registry);
       final u1 = AppBoxKitConsentService(store: store, registry: registry, userId: 'u1');
@@ -251,7 +251,7 @@ void main() {
   });
 
   group('outstandingDocuments', () {
-    test('lists unsatisfied required docs in registry order, skipping notRequired',
+    test('kit.compliance.outstanding — lists unsatisfied required docs in registry order, skipping notRequired',
         () async {
       final registry = AppBoxKitComplianceRegistry()
         ..register(_doc(id: 'tos', kind: AppBoxKitComplianceDocumentKind.termsOfService))
@@ -270,7 +270,7 @@ void main() {
   });
 
   group('AppBoxKitConsentService.statusChanges', () {
-    test('accept emits an accepted status change on the broadcast stream',
+    test('kit.compliance.status-changes — accept emits an accepted status change on the broadcast stream',
         () async {
       final registry = AppBoxKitComplianceRegistry();
       final store = InMemoryAppBoxKitConsentStore();
@@ -289,7 +289,7 @@ void main() {
   });
 
   group('AppBoxKitConsentGate', () {
-    test('blocked lists outstanding docs in registry order', () async {
+    test('kit.compliance.gate — blocked lists outstanding docs in registry order', () async {
       final registry = AppBoxKitComplianceRegistry()
         ..register(_doc(id: 'tos', kind: AppBoxKitComplianceDocumentKind.termsOfService))
         ..register(_doc(id: 'pp', kind: AppBoxKitComplianceDocumentKind.privacyPolicy));
@@ -303,7 +303,7 @@ void main() {
       await service.dispose();
     });
 
-    test('allowed when nothing is outstanding', () async {
+    test('kit.compliance.gate — allowed when nothing is outstanding', () async {
       final registry = AppBoxKitComplianceRegistry()
         ..register(_doc(id: 'pp', kind: AppBoxKitComplianceDocumentKind.privacyPolicy));
       final service =
@@ -317,7 +317,7 @@ void main() {
   });
 
   group('AppBoxKitLicensesService', () {
-    test('collect maps packages and paragraph text via the injected source',
+    test('kit.compliance.licenses — collect maps packages and paragraph text via the injected source',
         () async {
       final service = FakeAppBoxKitLicensesService(const [
         LicenseEntryWithLineBreaks(['my_pkg'], 'MIT license text'),
@@ -327,7 +327,7 @@ void main() {
       expect(entries.single.paragraphs.join(' '), contains('MIT'));
     });
 
-    test('byPackage groups an entry under each of its packages, sorted',
+    test('kit.compliance.licenses — byPackage groups an entry under each of its packages, sorted',
         () async {
       final service = FakeAppBoxKitLicensesService(const [
         LicenseEntryWithLineBreaks(['zeta', 'alpha'], 'shared license'),
@@ -339,7 +339,7 @@ void main() {
       expect(grouped['zeta'], hasLength(1));
     });
 
-    test('AppBoxKitLicenseEntry value equality', () {
+    test('kit.compliance.licenses — AppBoxKitLicenseEntry value equality', () {
       expect(
         const AppBoxKitLicenseEntry(packages: ['a'], paragraphs: ['x']),
         const AppBoxKitLicenseEntry(packages: ['a'], paragraphs: ['x']),
