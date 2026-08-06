@@ -15,7 +15,7 @@
 
 ### Overview & role
 
-The architecture contract is statically enforced by `arch_guard` — do not re-assert "ViewModel extends BaseViewModel" or "Supabase in infrastructure" in tests. This role writes FEATURE tests: the behavior, not the contract.
+The architecture contract is statically enforced by `arch_guard` — do not re-assert "ViewModel extends BaseViewModel" or "Supabase in infrastructure" in tests. This role writes FEATURE tests: the behavior, not the contract. **Behavior-TDD is the mandated posture** — the canon is `skills/appbox-tester/behavior-tdd-rules.md`, enforced by `appbox gate tests` (T1/T2/T3).
 
 ### Inputs
 
@@ -32,7 +32,7 @@ A passing suite (unit → widget → smoke → visual → E2E) plus the freeze i
 
 ### Rules
 
-Tests are extension points (the pipeline emits once; the operator owns them). Mock the Port, never the adapter directly — keeps tests infrastructure-free. Freeze the suite for reproducibility. Unit tests mock `WorkoutRepository` (the Port), never the concrete repo.
+Tests are extension points (the pipeline emits once; the operator owns them). Mock the Port, never the adapter directly — keeps tests infrastructure-free. Freeze the suite for reproducibility. Unit tests mock `WorkoutRepository` (the Port), never the concrete repo. Test names are `<story-id> — <behavior sentence>` (story-ID verbatim from `map.json`; kits cite `kit.<package>.<capability>`); no mechanical tests (getter/verify-only/stub round-trips/empty stubs) — the gate fails them.
 
 <!-- kb:begin -->
 ### References

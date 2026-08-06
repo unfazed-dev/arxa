@@ -3,16 +3,23 @@ name: appbox-tester
 description: Use when writing/running tests for a appbox-built target — mocktail the repository Ports for unit/TDD, appbox lens (appboxd/lib/lens.dart, the probe-runner port) for visual + smoke, Patrol for native E2E. Trigger on "test the app", "write tests", "TDD", "visual test", "smoke test", "E2E".
 ---
 
-# tester — TDD (Ports mocked), visual, smoke, E2E
+# tester — behavior-TDD (Ports mocked), visual, smoke, E2E
 
 ## Core principle
+**Behavior-TDD is the mandated posture.** The canon is
+[behavior-tdd-rules.md](behavior-tdd-rules.md) — test anatomy, streams rules,
+banned anti-patterns, mocking/static-state discipline, story-ID traceability.
+`appbox gate tests` enforces it (T1 traceability, T2 anti-patterns, T3 green).
 The architecture contract is statically enforced by `arch_guard` (ADR-0003) — do
 NOT re-assert "ViewModel extends BaseViewModel" or "Supabase in infrastructure"
 in tests. This role writes FEATURE tests: the behavior, not the contract.
 
-## TDD loop (red-green-refactor)
-1. **Red** — write the test first against a repository Port (interface in
-   `domain/`), mocking it with **mocktail** (no codegen). It fails (no impl yet).
+## TDD loop (red-first, mandated for new code)
+1. **Red** — write the test first, named `<story-id> — <behavior sentence>`
+   (story-ID verbatim from `map.json`; kits cite `kit.<package>.<capability>`),
+   against a repository Port (interface in `domain/`), mocking it with
+   **mocktail** (no codegen) — or a kit fake from `appbox_kit_testing.dart`
+   when one exists. It fails (no impl yet).
 2. **Green** — builder emits the minimum code to pass (Ports locator-injected;
    Supabase adapter behind the Port).
 3. **Refactor** — keep tests green; `arch_guard` stays PASS.
@@ -45,6 +52,8 @@ expect(await viewModel.load(), [sample]);
 - Tests are **extension points** (factory emits once; operator owns). The
   contract is `arch_guard`'s job — don't duplicate it.
 - Mock the **Port**, never Supabase — keeps tests infrastructure-free (ADR-0003).
+- No mechanical tests (getter/verify-only/stub round-trips/empty stubs) —
+  `appbox gate tests` T1/T2 fails them; the canon lists every ban.
 - Freeze the suite into `.blueprint/<source>/test/` → replayable (reproducibility).
 
 ## Output
