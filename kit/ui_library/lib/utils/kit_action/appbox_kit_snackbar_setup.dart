@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:stacked_services/stacked_services.dart';
 
 import 'package:appbox_kit_core/common/appbox_kit_app_constants.dart'
-    show axPad8, axPad12, axPad16, axPad80, axRad8;
+    show abxPad8, abxPad12, abxPad16, abxPad80, abxRad8;
 import 'package:appbox_kit_core/common/appbox_kit_colors.dart';
 import 'package:appbox_kit_core/appbox_kit_locator.dart' show appBoxKitLocator;
 import 'appbox_kit_snackbar_type.dart';
@@ -25,9 +25,9 @@ void setupAppBoxKitSnackbars() {
 
   const duration = Duration(seconds: 5);
   const animationDuration = Duration(milliseconds: 300);
-  const margin = EdgeInsets.symmetric(horizontal: axPad12, vertical: axPad80);
-  const padding = EdgeInsets.symmetric(horizontal: axPad8, vertical: axPad16);
-  const borderRadius = axRad8;
+  const margin = EdgeInsets.symmetric(horizontal: abxPad12, vertical: abxPad80);
+  const padding = EdgeInsets.symmetric(horizontal: abxPad8, vertical: abxPad16);
+  const borderRadius = abxRad8;
   const position = SnackPosition.BOTTOM;
   // ADR 0010 amendment: the scrim is a REAL blur (sigma 20 ≈ Apple's regular
   // material, the AppBoxKitFrostedSurface default) + a plain-dim color fill. GetX

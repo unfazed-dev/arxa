@@ -82,7 +82,7 @@ class AppBoxKitNativeSearchBar extends StatelessWidget {
     // (notes folder, search showcase) rely on.
     if (actionLabel == null || onAction == null) return field;
     return Row(
-      spacing: axGap8,
+      spacing: abxGap8,
       children: [
         Expanded(child: field),
         _TrailingAction(

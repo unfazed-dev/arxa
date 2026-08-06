@@ -28,17 +28,17 @@ class AppBoxKitChipCarousel extends StatefulWidget {
   const AppBoxKitChipCarousel({
     super.key,
     required this.children,
-    this.spacing = axPad8,
-    this.padding = const EdgeInsets.symmetric(horizontal: axPad16),
+    this.spacing = abxPad8,
+    this.padding = const EdgeInsets.symmetric(horizontal: abxPad16),
     this.snap = false,
-    this.fadeExtent = axSize24,
+    this.fadeExtent = abxSize24,
   });
 
   /// The chips. Wrapped internally for width measurement — keys on the
   /// children themselves are not preserved.
   final List<Widget> children;
 
-  /// Gap between chips. Defaults to [axPad8].
+  /// Gap between chips. Defaults to [abxPad8].
   final double spacing;
 
   /// Content inset inside the scroll view (scrolls with the chips), so the

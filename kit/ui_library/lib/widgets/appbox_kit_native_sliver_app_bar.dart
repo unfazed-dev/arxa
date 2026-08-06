@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:m3e_collection/m3e_collection.dart' show SliverAppBarM3E;
-import 'package:appbox_kit_core/common/appbox_kit_app_constants.dart' show axGap8;
+import 'package:appbox_kit_core/common/appbox_kit_app_constants.dart' show abxGap8;
 import 'package:appbox_kit_core/platform/appbox_kit_platform.dart';
 
 import 'appbox_kit_native_icon_button.dart';
@@ -175,15 +175,15 @@ class AppBoxKitNativeSliverAppBar extends StatelessWidget {
       // default in any appbar. (The M3E + CN tiers already self-inset.)
       actionsPadding: const EdgeInsets.only(right: 16),
       // ...and a bare SliverAppBar packs adjacent actions flush together, while
-      // the fixed CN bar spaces its trailing Row by axGap8. Wrap the actions in
+      // the fixed CN bar spaces its trailing Row by abxGap8. Wrap the actions in
       // the same Row so two bar buttons sit the same distance apart in either
-      // appbar — shared axGap8 (not a literal) so the two bars can't drift.
+      // appbar — shared abxGap8 (not a literal) so the two bars can't drift.
       actions: actions == null
           ? null
           : [
               Row(
                 mainAxisSize: MainAxisSize.min,
-                spacing: axGap8,
+                spacing: abxGap8,
                 children: actions!,
               ),
             ],

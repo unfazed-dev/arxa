@@ -102,10 +102,10 @@ class AppBoxKitNativeInputBar extends StatelessWidget {
     );
     final scheme = Theme.of(context).colorScheme;
     final bar = Padding(
-      padding: const EdgeInsets.symmetric(horizontal: axPad12, vertical: axPad8),
+      padding: const EdgeInsets.symmetric(horizontal: abxPad12, vertical: abxPad8),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
-        spacing: axGap8,
+        spacing: abxGap8,
         children: [
           ...leading,
           Expanded(
@@ -121,7 +121,7 @@ class AppBoxKitNativeInputBar extends StatelessWidget {
               // Material-fallback capsule: the CN/M3E tiers own their pill
               // shape and ignore both params (see class docs § Pill shape).
               fillColor: scheme.surfaceContainerHigh,
-              borderRadius: axRad28,
+              borderRadius: abxRad28,
             ),
           ),
           ...trailing,

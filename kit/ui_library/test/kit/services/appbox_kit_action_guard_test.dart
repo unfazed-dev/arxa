@@ -15,8 +15,8 @@ import 'package:appbox_kit_ui_library/utils/kit_action/appbox_kit_action_types.d
 /// 1. Re-entry guard (default on): a second execute() while the same
 ///    widgetId is in flight is dropped — fallback when set, else
 ///    AppBoxKitGuardedException. `.withParallelExecution()` opts out.
-/// 2. `AppBoxKitAction.watch` accepts any `Stream` (not only BehaviorSubjects) so
-///    callers compose with rxdart (switchMap etc.) and watch one stream.
+/// 2. `AppBoxKitAction.listen` accepts any `Stream` (not only BehaviorSubjects) so
+///    callers compose with rxdart (switchMap etc.) and listen one stream.
 void main() {
   setUp(() {
     appBoxKitLocator
@@ -136,16 +136,16 @@ void main() {
     });
   });
 
-  group('watch (any Stream)', () {
+  group('listen (any Stream)', () {
     test('kit.ui-library.action-guard — fires the callback for plain single-subscription streams', () async {
       final controller = StreamController<int>();
       var fires = 0;
       final seen = <dynamic>[];
 
-      AppBoxKitAction.watch(
-        widgetId: 'watch.plain',
-        streams: [controller.stream],
-        callback: (value) {
+      AppBoxKitAction.listen(
+        widgetId: 'listen.plain',
+        to: [controller.stream],
+        onData: (value) {
           fires++;
           seen.add(value);
         },
@@ -157,7 +157,7 @@ void main() {
       expect(fires, 2);
       expect(seen, [1, 2], reason: 'the callback receives the emitted value');
 
-      AppBoxKitAction.dispose(widgetId: 'watch.plain');
+      AppBoxKitAction.dispose(widgetId: 'listen.plain');
       controller.add(3);
       await pumpEventQueue();
       expect(fires, 2, reason: 'dispose cancels the subscription');
@@ -169,10 +169,10 @@ void main() {
       final controller = StreamController<int>();
       Object? caught;
 
-      AppBoxKitAction.watch(
-        widgetId: 'watch.error',
-        streams: [controller.stream],
-        callback: (_) => throw Exception('boom'),
+      AppBoxKitAction.listen(
+        widgetId: 'listen.error',
+        to: [controller.stream],
+        onData: (_) => throw Exception('boom'),
         onError: (error) => caught = error,
       );
 
@@ -180,7 +180,7 @@ void main() {
       await pumpEventQueue();
       expect(caught?.toString(), contains('boom'));
 
-      AppBoxKitAction.dispose(widgetId: 'watch.error');
+      AppBoxKitAction.dispose(widgetId: 'listen.error');
       await controller.close();
     });
   });

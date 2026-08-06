@@ -105,7 +105,7 @@ void main() {
             'CN/M3E tiers (parity with AppBoxKitNativeSliverAppBar)');
   });
 
-  testWidgets('kit.ui-library.native-app-bar — Material tier spaces adjacent actions by axGap8', (tester) async {
+  testWidgets('kit.ui-library.native-app-bar — Material tier spaces adjacent actions by abxGap8', (tester) async {
     const left = Key('a-left');
     const right = Key('a-right');
     await tester.pumpWidget(MaterialApp(
@@ -122,8 +122,8 @@ void main() {
 
     final l = tester.getRect(find.byKey(left));
     final r = tester.getRect(find.byKey(right));
-    expect(r.left - l.right, moreOrLessEquals(8, epsilon: 0.5), // axGap8
-        reason: 'kit app bar must gap adjacent actions by axGap8 (Row spacing), '
+    expect(r.left - l.right, moreOrLessEquals(8, epsilon: 0.5), // abxGap8
+        reason: 'kit app bar must gap adjacent actions by abxGap8 (Row spacing), '
             'matching the sliver bar + the fixed CN bar');
   });
 
@@ -156,11 +156,11 @@ void main() {
   // ── iOS CN tier: bottom breathing room ────────────────────────────────────
   // CupertinoNavigationBar's persistent height is a fixed 44 (== the kit icon
   // button's 44pt tap target), so a bar button sits flush on the content seam.
-  // The CN tier reserves a keyed axGap8 gap below the bar so its buttons get the
+  // The CN tier reserves a keyed abxGap8 gap below the bar so its buttons get the
   // same bottom slack the Material tier gets from centering in kToolbarHeight.
   // A plain SizedBox stands in for the action — a real AppBoxKitNativeIconButton on
   // iOS builds a native CNButton UiKitView that can't render in a headless test.
-  testWidgets('kit.ui-library.native-app-bar — iOS CN tier reserves a axGap8 bottom gap (buttons not flush)',
+  testWidgets('kit.ui-library.native-app-bar — iOS CN tier reserves a abxGap8 bottom gap (buttons not flush)',
       (tester) async {
     AppBoxKitPlatform.override = const AppBoxKitPlatformOverride(isIOS: true);
     await tester.pumpWidget(host(const AppBoxKitNativeAppBar(
@@ -175,7 +175,7 @@ void main() {
         reason: 'CN tier must reserve a bottom gap so its 44pt buttons are not '
             'flush on the content seam (parity with the Material tier slack)');
     expect(tester.getSize(gap).height, moreOrLessEquals(8, epsilon: 0.5),
-        reason: 'bottom gap == axGap8');
+        reason: 'bottom gap == abxGap8');
   });
 
   // ── iOS CN tier: implied leading parity ───────────────────────────────────

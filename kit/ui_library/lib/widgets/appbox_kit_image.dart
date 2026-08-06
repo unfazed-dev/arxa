@@ -19,7 +19,7 @@ import 'package:appbox_kit_core/common/appbox_kit_glyphs.dart';
 ///   `errorBuilder` keeps the placeholder glyph on screen instead of the
 ///   framework's red error box, so an unknown asset path degrades gracefully
 ///   instead of crashing a screen.
-/// - **Radius** — [ClipRRect] clips the image to [radius] (default [axRad16]),
+/// - **Radius** — [ClipRRect] clips the image to [radius] (default [abxRad16]),
 ///   so rounded product imagery is one parameter, not a wrapping widget.
 ///
 /// The kit ships no bundled image assets, so the happy-path decode is
@@ -59,7 +59,7 @@ class AppBoxKitImage extends StatelessWidget {
   /// product photo fills its rounded frame without distortion.
   final BoxFit fit;
 
-  /// Corner radius. Defaults to [axRad16].
+  /// Corner radius. Defaults to [abxRad16].
   final double? radius;
 
   /// Glyph drawn over the fill color before the first frame decodes and on
@@ -75,7 +75,7 @@ class AppBoxKitImage extends StatelessWidget {
     final glyph = placeholder ?? AppBoxKitGlyphs.photo;
     final w = size ?? width;
     final h = size ?? height;
-    final r = radius ?? axRad16;
+    final r = radius ?? abxRad16;
 
     Widget fallback() => Container(
           width: w,

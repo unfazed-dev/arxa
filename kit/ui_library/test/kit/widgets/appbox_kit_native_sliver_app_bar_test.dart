@@ -103,10 +103,10 @@ void main() {
   });
 
   // Inter-action spacing: the fixed AppBoxKitNativeAppBar (CupertinoNavigationBar)
-  // gaps its trailing actions by axGap8; the kit sliver bar must match so two
+  // gaps its trailing actions by abxGap8; the kit sliver bar must match so two
   // bar buttons sit the same distance apart in either appbar. Keyed plain boxes
   // (no internal chrome) so the measured gap IS the explicit spacing.
-  testWidgets('kit.ui-library.native-sliver-app-bar — Material tier spaces adjacent actions by axGap8', (tester) async {
+  testWidgets('kit.ui-library.native-sliver-app-bar — Material tier spaces adjacent actions by abxGap8', (tester) async {
     const a = Key('action-a');
     const b = Key('action-b');
     await tester.pumpWidget(
@@ -132,10 +132,10 @@ void main() {
     final right = tester.getRect(find.byKey(b));
     expect(
       right.left - left.right,
-      moreOrLessEquals(8, epsilon: 0.5), // axGap8 — matches the CN bar
+      moreOrLessEquals(8, epsilon: 0.5), // abxGap8 — matches the CN bar
 
-      reason: 'kit sliver bar must gap adjacent actions by axGap8 to match the '
-          'fixed CN bar (Row spacing: axGap8)',
+      reason: 'kit sliver bar must gap adjacent actions by abxGap8 to match the '
+          'fixed CN bar (Row spacing: abxGap8)',
     );
   });
 

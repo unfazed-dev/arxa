@@ -102,10 +102,10 @@ void main() {
       addTearDown(subject.close);
       var calls = 0;
 
-      vm.watch(
+      vm.listen(
         'listener',
-        streams: [subject.stream],
-        callback: (_) => calls++,
+        to: [subject.stream],
+        onData: (_) => calls++,
       );
       subject.add(1);
       await Future<void>.delayed(Duration.zero);

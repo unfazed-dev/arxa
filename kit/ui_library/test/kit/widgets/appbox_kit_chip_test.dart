@@ -51,12 +51,12 @@ void main() {
         reason: 'the tint comes from the kit theme, not a hardcoded color');
   });
 
-  testWidgets('kit.ui-library.chip — never shrinks below axSize36', (tester) async {
+  testWidgets('kit.ui-library.chip — never shrinks below abxSize36', (tester) async {
     await tester.pumpWidget(host(const AppBoxKitChip(label: 'Height')));
 
     expect(
       tester.getSize(find.byType(AppBoxKitChip)).height,
-      greaterThanOrEqualTo(axSize36),
+      greaterThanOrEqualTo(abxSize36),
     );
   });
 }

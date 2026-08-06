@@ -14,7 +14,7 @@ import 'appbox_kit_action_owner.dart';
 /// What this base adds over `BaseViewModel` (via [AppBoxKitActionOwner]):
 /// - **`action(name, operation)`:** runs ops with `owner: this` implied —
 ///   `await action('save', () => _repo.put(note))`, no widgetId strings.
-/// - **`watch(name, streams:, callback:)`:** owner-scoped stream watchers.
+/// - **`listen(name, to:, onData:)`:** owner-scoped stream listeners.
 /// - **[actionState$]:** the busy/error stream for one of this VM's ops,
 ///   addressed by the same `name` the `action` chain used — views bind
 ///   `AppBoxKitStreamBuilder(stream: viewModel.actionState$('save'), …)`.

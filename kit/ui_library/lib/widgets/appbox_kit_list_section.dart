@@ -25,7 +25,7 @@ class AppBoxKitListSection extends StatelessWidget {
     required this.children,
     this.header,
     this.showDividers = true,
-    this.margin = const EdgeInsets.symmetric(horizontal: axPad16),
+    this.margin = const EdgeInsets.symmetric(horizontal: abxPad16),
     this.borderRadius,
   });
 
@@ -60,7 +60,7 @@ class AppBoxKitListSection extends StatelessWidget {
       for (var i = 0; i < children.length; i++) ...[
         children[i],
         if (showDividers && i < children.length - 1)
-          const Divider(height: 1, indent: axPad16),
+          const Divider(height: 1, indent: abxPad16),
       ],
     ];
 
@@ -71,9 +71,9 @@ class AppBoxKitListSection extends StatelessWidget {
         if (header != null)
           Padding(
             padding: EdgeInsets.only(
-              left: axPad16 + margin.horizontal / 2,
-              right: axPad16 + margin.horizontal / 2,
-              bottom: axPad8,
+              left: abxPad16 + margin.horizontal / 2,
+              right: abxPad16 + margin.horizontal / 2,
+              bottom: abxPad8,
             ),
             child: Text(
               header!,

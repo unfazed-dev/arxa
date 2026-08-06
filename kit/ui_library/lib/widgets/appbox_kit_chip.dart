@@ -10,9 +10,9 @@ import 'package:appbox_kit_core/common/appbox_kit_glyphs.dart';
 /// `core/NATIVE_COMPONENTS.md` ("Content widgets").
 ///
 /// The chip is a stadium (fully rounded) [Material] tinted
-/// `surfaceContainerHigh` with a minimum height of [axSize36]; the label uses
+/// `surfaceContainerHigh` with a minimum height of [abxSize36]; the label uses
 /// the theme's `labelLarge` and the optional leading [glyph] draws at
-/// [axSize18] in `onSurfaceVariant`. A `null` [onTap] renders the same
+/// [abxSize18] in `onSurfaceVariant`. A `null` [onTap] renders the same
 /// visuals without the ink response (a decorative tag).
 ///
 /// Rows of these scroll inside a `AppBoxKitChipCarousel`; a chip is also fine
@@ -47,11 +47,11 @@ class AppBoxKitChip extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         child: ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: axSize36),
+          constraints: const BoxConstraints(minHeight: abxSize36),
           child: Padding(
             padding: const EdgeInsets.symmetric(
-              horizontal: axPad12,
-              vertical: axPad6,
+              horizontal: abxPad12,
+              vertical: abxPad6,
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -60,10 +60,10 @@ class AppBoxKitChip extends StatelessWidget {
                 if (glyph != null) ...[
                   Icon(
                     glyph!.icon,
-                    size: axSize18,
+                    size: abxSize18,
                     color: scheme.onSurfaceVariant,
                   ),
-                  const SizedBox(width: axGap6),
+                  const SizedBox(width: abxGap6),
                 ],
                 Text(label, style: textTheme.labelLarge),
               ],

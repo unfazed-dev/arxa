@@ -11,59 +11,59 @@ import 'appbox_kit_notification_type.dart';
 import 'managers/appbox_kit_action_state_manager.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// AppBoxKitActionBus — hot-Subject dispatch, the app-level KitAction API.
+// AppBoxKitActionHub — hot-Subject send, the app-level KitAction API.
 // ═══════════════════════════════════════════════════════════════════════════════
 //
-// Dispatchers replace per-call builder chains in app code (viewmodels, facades):
-// VM methods become sync-shaped dispatchers whose work ALWAYS runs — the lazy
+// Commands replace per-call builder chains in app code (viewmodels, facades):
+// VM methods become sync-shaped commands whose work ALWAYS runs — the lazy
 // builder's "dropped chain never runs" footgun is structurally impossible.
 //
 // Observation-handle contract (async_redux dispatch/dispatchAndWait model):
-// - `dispatch(payload)` executes the op HOT and returns `Future<R>` — a handle
+// - `send(payload)` executes the op HOT and returns `Future<R>` — a handle
 //   OBSERVING the already-running op. Awaiting it is optional; dropping it is
 //   harmless (its errors are pre-observed, never unhandled).
-// - Re-entry guard: a dispatch while the same op key is in flight does NOT
+// - Re-entry guard: a send while the same op key is in flight does NOT
 //   re-run the op; its handle completes with the IN-FLIGHT run's result
-//   (success or routed error), never with a guard error. Opt out per dispatcher
-//   with `parallelExecution: true` (flatMap — every dispatch runs).
-// - Debounce: superseded dispatches' handles complete with the eventual run's
+//   (success or routed error), never with a guard error. Opt out per command
+//   with `parallelExecution: true` (flatMap — every send runs).
+// - Debounce: superseded sends' handles complete with the eventual run's
 //   result — debounce drops events, never callers.
 // - Throttle: leading edge, window anchored at the last run's START (builder
 //   parity); throttled-away handles complete with the in-flight run's result,
 //   else the previous run's.
-// - `flushOnDispose`: a pending debounced dispatch runs immediately on
+// - `flushOnDispose`: a pending debounced send runs immediately on
 //   dispose (attaching to an in-flight run per guard semantics) instead of
 //   being dropped — autosave-style "the last write must land".
 // - Cancellation is cooperative-only: Dart futures cannot be aborted. A
-//   disposed bus stops accepting dispatches and tears down subjects, but
+//   disposed hub stops accepting sends and tears down subjects, but
 //   an in-flight op runs to completion. Need real mid-flight cancel? That is
-//   the builder's `toCancellable` (low-level API), not dispatchers.
+//   the builder's `toCancellable` (low-level API), not commands.
 //
-// Subject discipline: PublishSubject for the per-dispatcher command channel,
+// Subject discipline: PublishSubject for the per-command channel,
 // BehaviorSubject (via AppBoxKitActionStateManager) for busy/error state.
 // ═══════════════════════════════════════════════════════════════════════════════
 
-/// Retry policy for a dispatcher — parity with the builder's `withRetry`.
+/// Retry policy for a command — parity with the builder's `withRetry`.
 ///
 /// The operation re-runs until it succeeds or [maxAttempts] total attempts
 /// failed, waiting [delay] between attempts; [shouldRetry] (when set) vetoes
-/// a retry. The last failure routes into the dispatcher's normal error path.
+/// a retry. The last failure routes into the command's normal error path.
 typedef AppBoxKitRetryPolicy = ({
   int maxAttempts,
   Duration? delay,
   bool Function(Exception error)? shouldRetry,
 });
 
-/// One named op on an [AppBoxKitActionBus]: a hot [PublishSubject]
+/// One named op on an [AppBoxKitActionHub]: a hot [PublishSubject]
 /// command channel whose single subscription owns execution, busy state, and
 /// error routing for the owner's lifetime.
-class AppBoxKitActionDispatcher<P, R> {
+class AppBoxKitActionCommand<P, R> {
   final String name;
-  final AppBoxKitActionBus _bus;
-  final _AppBoxKitDispatcherConfig _config;
-  // sync: dispatch delivers the command to the subscription IN the dispatch
+  final AppBoxKitActionHub _hub;
+  final _AppBoxKitCommandConfig _config;
+  // sync: send delivers the command to the subscription IN the send
   // call, so the run starts (and lands in the guard's in-flight registry)
-  // synchronously — a same-frame double dispatch always sees the in-flight
+  // synchronously — a same-frame double send always sees the in-flight
   // run, no matter how fast the op completes. With async delivery a fast op
   // could finish before the second command was even processed, and the guard
   // would miss the classic double-tap.
@@ -72,28 +72,28 @@ class AppBoxKitActionDispatcher<P, R> {
   late final StreamSubscription<void> _subscription;
   bool _closed = false;
 
-  AppBoxKitActionDispatcher._(this._bus, this.name, this._config) {
-    // The single subscription owns execution for the dispatcher's lifetime — made
+  AppBoxKitActionCommand._(this._hub, this.name, this._config) {
+    // The single subscription owns execution for the command's lifetime — made
     // here, once, at registration (a late-final field would never initialize:
     // nothing reads it until close()).
     _subscription = _commands.stream.listen(_onCommand);
   }
 
-  /// Dispatch the op HOT with [payload] and return an observation handle for
+  /// Send the op HOT with [payload] and return an observation handle for
   /// the run's result. See the file header for the full handle contract —
-  /// awaiting is optional, dropping is harmless, guarded/debounced dispatches
+  /// awaiting is optional, dropping is harmless, guarded/debounced sends
   /// share the run they resolve to.
-  Future<R> dispatch(P payload) {
+  Future<R> send(P payload) {
     final completer = Completer<R>();
     // Pre-observe the handle: a dropped handle must never surface an
     // unhandled async error; an awaited one still delivers result/error.
     completer.future.ignore();
-    if (_closed || _bus._disposed) {
+    if (_closed || _hub._disposed) {
       completer.completeError(StateError(
-          'AppBoxKitActionDispatcher "$name" is disposed — dispatch dropped'));
+          'AppBoxKitActionCommand "$name" is disposed — send dropped'));
       return completer.future;
     }
-    _config.onDispatch?.call();
+    _config.onSend?.call();
     _commands.add(_AppBoxKitCommand<P>(payload, completer));
     return completer.future;
   }
@@ -104,48 +104,48 @@ class AppBoxKitActionDispatcher<P, R> {
       AppBoxKitActionStateManager.state$(_config.key);
 
   void _onCommand(_AppBoxKitCommand<P> command) =>
-      _bus._accept(_config, command.payload, command.completer);
+      _hub._accept(_config, command.payload, command.completer);
 
   /// Cancel the subscription first, then close the subject (research-backed
   /// ordering: a closed subject with a live subscription can still be
   /// delivered events; a cancelled subscription cannot). A pending debounced
-  /// dispatch flushes first when the dispatcher opted into `flushOnDispose`.
+  /// send flushes first when the command opted into `flushOnDispose`.
   Future<void> close() async {
     if (_closed) return;
     _closed = true;
-    _bus._flushForDispatcher(_config);
+    _hub._flushForDispatcher(_config);
     await _subscription.cancel();
     await _commands.close();
   }
 }
 
-/// Hot-dispatch bus for an owner's ops — the app-level KitAction API.
+/// Hot-send hub for an owner's ops — the app-level KitAction API.
 ///
 /// ```dart
 /// class NotesViewModel extends AppBoxKitViewModel {
-///   late final _save = bus.define<Note, void>(
+///   late final _save = abxActionHub.on<Note, void>(
 ///     'save',
 ///     (note) => _repo.put(note),
 ///     errorMessage: 'Could not save',       // swallow + fallback identity
 ///     errorNotification: 'Could not save',  // error snackbar
 ///   );
 ///
-///   Future<void> save(Note note) => _save.dispatch(note);
+///   Future<void> save(Note note) => _save.send(note);
 /// }
 /// ```
 ///
-/// Created lazily by `AppBoxKitActionOwner.bus` and disposed by
+/// Created lazily by `AppBoxKitActionOwner.hub` and disposed by
 /// `disposeAppBoxKitActions` — no manual wiring in owners.
-class AppBoxKitActionBus {
+class AppBoxKitActionHub {
   final Object _owner;
   final void Function()? _onDispatch;
   final String? _errorMessage;
   final void Function(Object error)? _onError;
 
-  final List<AppBoxKitActionDispatcher<dynamic, dynamic>> _dispatchers = [];
+  final List<AppBoxKitActionCommand<dynamic, dynamic>> _dispatchers = [];
 
-  /// Guard state, keyed by the derived op key and shared by every dispatcher of
-  /// this owner (including one-shot [run]s) — parity with the executor's
+  /// Guard state, keyed by the derived op key and shared by every command of
+  /// this owner (including one-shot [send]s) — parity with the executor's
   /// static `_inFlight` set keyed by widgetId.
   final Map<String, Future<dynamic>> _inFlight = {};
 
@@ -161,25 +161,25 @@ class AppBoxKitActionBus {
 
   bool _disposed = false;
 
-  AppBoxKitActionBus({
+  AppBoxKitActionHub({
     required Object owner,
 
-    /// Runs synchronously on every dispatch of every dispatcher (e.g. clearing an
-    /// inline error before the retry). Dispatchers override with their own.
-    void Function()? onDispatch,
+    /// Runs synchronously on every send of every command (e.g. clearing an
+    /// inline error before the retry). Commands override with their own.
+    void Function()? onSend,
 
     /// Default error identity (log, state$ stream, fallback marker) — the
-    /// builder's `completeOnError(message)`. Dispatchers override with their own.
+    /// builder's `completeOnError(message)`. Commands override with their own.
     String? errorMessage,
 
-    /// Default error tap — the builder's `handleError`. Dispatchers override.
+    /// Default error tap — the builder's `handleError`. Commands override.
     void Function(Object error)? onError,
   })  : _owner = owner,
-        _onDispatch = onDispatch,
+        _onDispatch = onSend,
         _errorMessage = errorMessage,
         _onError = onError;
 
-  /// Register a named op and return its dispatcher. The command-channel
+  /// Register a named op and return its command. The command-channel
   /// subscription is made ONCE here; execution, busy state, and error routing
   /// live on it.
   ///
@@ -198,22 +198,22 @@ class AppBoxKitActionBus {
   ///   never fail the run.
   /// - [debounce]: delay execution until no new dispatches for this long;
   ///   superseded handles complete with the eventual run's result.
-  /// - [throttle]: leading edge — the first dispatch runs, later dispatches
+  /// - [throttle]: leading edge — the first send runs, later dispatches
   ///   inside the window (anchored at the last run's START, builder parity)
   ///   don't; their handles complete with the in-flight/previous run's
   ///   result. When both are set, debounce wins (builder precedence).
   /// - [parallelExecution]: opt OUT of the re-entry guard (the builder's
-  ///   `withParallelExecution`) — every dispatch runs concurrently and each
+  ///   `withParallelExecution`) — every send runs concurrently and each
   ///   handle gets its own run's result.
-  /// - [flushOnDispose]: a pending debounced dispatch executes immediately
-  ///   when the bus/dispatcher disposes (attaching to an in-flight run per
+  /// - [flushOnDispose]: a pending debounced send executes immediately
+  ///   when the hub/command disposes (attaching to an in-flight run per
   ///   guard semantics) instead of being dropped; `dispose()` awaits it.
   /// - [retry]: re-run policy, parity with the builder's `withRetry`.
   /// - [timeout]: per-attempt timeout, parity with the builder's `withTimeout`
   ///   (a timeout raises [TimeoutException] into the error path).
   /// - [loadingNotification]: shown at run start (the builder's
   ///   `withLoadingSnackbar`); error/success fire at their transitions.
-  AppBoxKitActionDispatcher<P, R> define<P, R>(
+  AppBoxKitActionCommand<P, R> on<P, R>(
     String name,
     FutureOr<R> Function(P payload) operation, {
     String? errorMessage,
@@ -229,7 +229,7 @@ class AppBoxKitActionBus {
         AppBoxKitNotificationType.snackbar,
     void Function(Object error)? onError,
     FutureOr<void> Function(R result)? onSuccess,
-    void Function()? onDispatch,
+    void Function()? onSend,
     Duration? debounce,
     Duration? throttle,
     bool parallelExecution = false,
@@ -237,7 +237,7 @@ class AppBoxKitActionBus {
     AppBoxKitRetryPolicy? retry,
     Duration? timeout,
   }) {
-    final dispatcher = AppBoxKitActionDispatcher<P, R>._(
+    final command = AppBoxKitActionCommand<P, R>._(
       this,
       name,
       // Function-typed config is wrapped into its dynamic erasure HERE, at
@@ -246,7 +246,7 @@ class AppBoxKitActionBus {
       // field type would throw on the implicit downcast. Value types flow
       // through as dynamic and land on the reified Completer<R>, whose
       // complete() performs the checked cast.
-      _AppBoxKitDispatcherConfig(
+      _AppBoxKitCommandConfig(
         key: AppBoxKitAction.deriveKey(_owner, name),
         operation: (payload) => operation(payload as P),
         errorMessage: errorMessage ?? _errorMessage,
@@ -261,7 +261,7 @@ class AppBoxKitActionBus {
         onSuccess: onSuccess == null
             ? null
             : (result) => onSuccess(result as R),
-        onDispatch: onDispatch ?? _onDispatch,
+        onSend: onSend ?? _onDispatch,
         debounce: debounce,
         throttle: throttle,
         parallelExecution: parallelExecution,
@@ -270,15 +270,15 @@ class AppBoxKitActionBus {
         timeout: timeout,
       ),
     );
-    _dispatchers.add(dispatcher);
-    return dispatcher;
+    _dispatchers.add(command);
+    return command;
   }
 
-  /// One-shot dispatch without a long-lived dispatcher — for facade-style
+  /// One-shot send without a long-lived command — for facade-style
   /// `mutate(name: 'pin', entity: id)` calls whose config varies per call.
-  /// The ephemeral dispatcher's channel closes when the run settles; the guard,
+  /// The ephemeral command's channel closes when the run settles; the guard,
   /// debounce, busy state, and error routing are identical to [define].
-  Future<R> run<R>(
+  Future<R> send<R>(
     String name,
     FutureOr<R> Function() operation, {
     String? errorMessage,
@@ -294,14 +294,14 @@ class AppBoxKitActionBus {
         AppBoxKitNotificationType.snackbar,
     void Function(Object error)? onError,
     FutureOr<void> Function(R result)? onSuccess,
-    void Function()? onDispatch,
+    void Function()? onSend,
     Duration? debounce,
     Duration? throttle,
     bool parallelExecution = false,
     AppBoxKitRetryPolicy? retry,
     Duration? timeout,
   }) {
-    final dispatcher = this.define<Null, R>(
+    final command = this.on<Null, R>(
       name,
       (_) => operation(),
       errorMessage: errorMessage,
@@ -314,21 +314,21 @@ class AppBoxKitActionBus {
       loadingNotificationType: loadingNotificationType,
       onError: onError,
       onSuccess: onSuccess,
-      onDispatch: onDispatch,
+      onSend: onSend,
       debounce: debounce,
       throttle: throttle,
       parallelExecution: parallelExecution,
       retry: retry,
       timeout: timeout,
     );
-    final handle = dispatcher.dispatch(null);
-    handle.whenComplete(() => _closeDispatcher(dispatcher)).ignore();
+    final handle = command.send(null);
+    handle.whenComplete(() => _closeDispatcher(command)).ignore();
     return handle;
   }
 
-  // ── Dispatch machinery (all dynamic internally; types live on the dispatcher) ──
+  // ── Dispatch machinery (all dynamic internally; types live on the command) ──
 
-  void _accept(_AppBoxKitDispatcherConfig config, Object? payload,
+  void _accept(_AppBoxKitCommandConfig config, Object? payload,
       Completer<dynamic> completer) {
     if (config.debounce != null) {
       return _acceptDebounced(config, payload, completer);
@@ -347,7 +347,7 @@ class AppBoxKitActionBus {
     if (!config.parallelExecution) {
       final inFlight = _inFlight[config.key];
       if (inFlight != null) {
-        // Guarded dispatch: never re-runs, never errors — the handle observes
+        // Guarded send: never re-runs, never errors — the handle observes
         // the in-flight run's result.
         return _attach(completer, inFlight);
       }
@@ -355,7 +355,7 @@ class AppBoxKitActionBus {
     _start(config, payload, [completer]);
   }
 
-  void _acceptDebounced(_AppBoxKitDispatcherConfig config, Object? payload,
+  void _acceptDebounced(_AppBoxKitCommandConfig config, Object? payload,
       Completer<dynamic> completer) {
     final slot =
         _debounceSlots.putIfAbsent(config.key, () => _AppBoxKitDebounceSlot());
@@ -377,7 +377,7 @@ class AppBoxKitActionBus {
     });
   }
 
-  Future<dynamic> _start(_AppBoxKitDispatcherConfig config, Object? payload,
+  Future<dynamic> _start(_AppBoxKitCommandConfig config, Object? payload,
       List<Completer<dynamic>> observers) {
     if (config.throttle != null) {
       _throttleWindowStart[config.key] = DateTime.now();
@@ -386,7 +386,7 @@ class AppBoxKitActionBus {
     run.ignore();
     _lastRun[config.key] = run;
     if (!config.parallelExecution) {
-      // Parallel dispatchers (the builder's withParallelExecution) never enter the
+      // Parallel commands (the builder's withParallelExecution) never enter the
       // guard registry — matching the builder, whose parallel chains skip
       // the static _inFlight set, so guarded ops on the same key don't see
       // them either.
@@ -416,7 +416,7 @@ class AppBoxKitActionBus {
   /// markDone. Built on rxdart operators: the attempt factory re-runs the
   /// operation per (re)subscription, `Stream.timeout` applies per attempt,
   /// `Rx.retryWhen` re-subscribes with backoff.
-  Future<dynamic> _run(_AppBoxKitDispatcherConfig config, Object? payload) async {
+  Future<dynamic> _run(_AppBoxKitCommandConfig config, Object? payload) async {
     AppBoxKitActionStateManager.markBusy(config.key);
     if (config.loadingNotification != null) {
       _showNotification(
@@ -495,7 +495,7 @@ class AppBoxKitActionBus {
   /// tap the custom handler, record the message on state$, optional error
   /// notification; then fallback (errorMessage set) or rethrow.
   Future<dynamic> _handleError(
-      _AppBoxKitDispatcherConfig config, Object error, StackTrace stackTrace) async {
+      _AppBoxKitCommandConfig config, Object error, StackTrace stackTrace) async {
     final errorService = appBoxKitLocator<AppBoxKitErrorService>();
     errorService.handle(
       exception: error,
@@ -582,15 +582,15 @@ class AppBoxKitActionBus {
     }
   }
 
-  void _closeDispatcher(AppBoxKitActionDispatcher<dynamic, dynamic> dispatcher) {
-    _dispatchers.remove(dispatcher);
-    dispatcher.close();
+  void _closeDispatcher(AppBoxKitActionCommand<dynamic, dynamic> command) {
+    _dispatchers.remove(command);
+    command.close();
   }
 
-  /// Flush one pending debounce slot: execute the dispatch NOW. Guard
+  /// Flush one pending debounce slot: execute the send NOW. Guard
   /// semantics apply — when an op is in flight on the key, the flush attaches
   /// to that run (the pending payload is dropped, exactly like a debounced
-  /// dispatch landing while in flight).
+  /// send landing while in flight).
   Future<dynamic> _flushSlot(String key, _AppBoxKitDebounceSlot slot) {
     slot.timer?.cancel();
     final observers = List<Completer<dynamic>>.of(slot.observers);
@@ -605,9 +605,9 @@ class AppBoxKitActionBus {
     return _start(slot.config!, slot.payload, observers);
   }
 
-  /// Dispatcher-level dispose hook: a closing dispatcher flushes its own pending
+  /// Command-level dispose hook: a closing command flushes its own pending
   /// debounce slot when it opted into `flushOnDispose`.
-  void _flushForDispatcher(_AppBoxKitDispatcherConfig config) {
+  void _flushForDispatcher(_AppBoxKitCommandConfig config) {
     final slot = _debounceSlots[config.key];
     if (slot != null &&
         identical(slot.config, config) &&
@@ -618,7 +618,7 @@ class AppBoxKitActionBus {
     }
   }
 
-  /// Cancel every dispatcher's subscription, close its subject, settle pending
+  /// Cancel every command's subscription, close its subject, settle pending
   /// debounce slots — `flushOnDispose` slots EXECUTE immediately (awaited
   /// before dispose returns), the rest complete with a disposed error (safe
   /// to drop, informative to await) — and release state$ subjects. In-flight
@@ -636,15 +636,15 @@ class AppBoxKitActionBus {
         for (final observer in slot.observers) {
           if (!observer.isCompleted) {
             observer.completeError(
-                StateError('AppBoxKitActionBus disposed before the run'));
+                StateError('AppBoxKitActionHub disposed before the run'));
           }
         }
       }
     }
     _debounceSlots.clear();
-    for (final dispatcher in List.of(_dispatchers)) {
-      dispatcher.close();
-      AppBoxKitActionStateManager.disposeWidget(dispatcher._config.key);
+    for (final command in List.of(_dispatchers)) {
+      command.close();
+      AppBoxKitActionStateManager.disposeWidget(command._config.key);
     }
     _dispatchers.clear();
     if (flushes.isNotEmpty) await Future.wait(flushes);
@@ -659,7 +659,7 @@ class _AppBoxKitCommand<P> {
   _AppBoxKitCommand(this.payload, this.completer);
 }
 
-class _AppBoxKitDispatcherConfig {
+class _AppBoxKitCommandConfig {
   final String key;
   final FutureOr<dynamic> Function(Object? payload) operation;
   final String? errorMessage;
@@ -672,7 +672,7 @@ class _AppBoxKitDispatcherConfig {
   final AppBoxKitNotificationType loadingNotificationType;
   final void Function(Object error)? onError;
   final FutureOr<void> Function(dynamic result)? onSuccess;
-  final void Function()? onDispatch;
+  final void Function()? onSend;
   final Duration? debounce;
   final Duration? throttle;
   final bool parallelExecution;
@@ -680,7 +680,7 @@ class _AppBoxKitDispatcherConfig {
   final AppBoxKitRetryPolicy? retry;
   final Duration? timeout;
 
-  _AppBoxKitDispatcherConfig({
+  _AppBoxKitCommandConfig({
     required this.key,
     required this.operation,
     this.errorMessage,
@@ -693,7 +693,7 @@ class _AppBoxKitDispatcherConfig {
     this.loadingNotificationType = AppBoxKitNotificationType.snackbar,
     this.onError,
     this.onSuccess,
-    this.onDispatch,
+    this.onSend,
     this.debounce,
     this.throttle,
     this.parallelExecution = false,
@@ -706,6 +706,6 @@ class _AppBoxKitDispatcherConfig {
 class _AppBoxKitDebounceSlot {
   Timer? timer;
   Object? payload;
-  _AppBoxKitDispatcherConfig? config;
+  _AppBoxKitCommandConfig? config;
   final List<Completer<dynamic>> observers = [];
 }

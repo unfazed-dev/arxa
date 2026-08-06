@@ -113,14 +113,14 @@ class _KitOverlayViewModel extends ReactiveViewModel {
     _setupStreams();
 
     // Set up automatic UI updates based on subject changes
-    AppBoxKitAction.watch(
+    AppBoxKitAction.listen(
       widgetId: widgetId,
-      streams: [
+      to: [
         _isOpen$,
         _animatingOut$,
         _visibleInWidget$,
       ],
-      callback: (_) => rebuildUi(),
+      onData: (_) => rebuildUi(),
       errorMessage: 'Error in overlay subject listener',
     );
   }
@@ -416,7 +416,7 @@ class _KitOverlayWidget extends StackedView<_KitOverlayViewModel> {
     switch (position) {
       case AppBoxKitOverlayControlPosition.topLeft:
       case AppBoxKitOverlayControlPosition.bottomLeft:
-        return axPad12;
+        return abxPad12;
       case AppBoxKitOverlayControlPosition.topCenter:
       case AppBoxKitOverlayControlPosition.center:
       case AppBoxKitOverlayControlPosition.bottomCenter:
@@ -431,7 +431,7 @@ class _KitOverlayWidget extends StackedView<_KitOverlayViewModel> {
     switch (position) {
       case AppBoxKitOverlayControlPosition.topRight:
       case AppBoxKitOverlayControlPosition.bottomRight:
-        return axPad12;
+        return abxPad12;
       case AppBoxKitOverlayControlPosition.topCenter:
       case AppBoxKitOverlayControlPosition.center:
       case AppBoxKitOverlayControlPosition.bottomCenter:
@@ -447,7 +447,7 @@ class _KitOverlayWidget extends StackedView<_KitOverlayViewModel> {
       case AppBoxKitOverlayControlPosition.topLeft:
       case AppBoxKitOverlayControlPosition.topCenter:
       case AppBoxKitOverlayControlPosition.topRight:
-        return axPad12;
+        return abxPad12;
       case AppBoxKitOverlayControlPosition.center:
         return 0;
       case AppBoxKitOverlayControlPosition.bottomLeft:
@@ -462,7 +462,7 @@ class _KitOverlayWidget extends StackedView<_KitOverlayViewModel> {
       case AppBoxKitOverlayControlPosition.bottomLeft:
       case AppBoxKitOverlayControlPosition.bottomCenter:
       case AppBoxKitOverlayControlPosition.bottomRight:
-        return axPad12;
+        return abxPad12;
       case AppBoxKitOverlayControlPosition.center:
         return 0;
       case AppBoxKitOverlayControlPosition.topLeft:

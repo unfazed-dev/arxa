@@ -103,7 +103,7 @@ widgetId strings or `owner: this` at call sites**.
   success:)` — `error:` on EVERY mutation (errors always surface),
   `success:` only for destructive / confirm-worthy ops, `fallback:` to
   swallow with an error identity (completeOnError parity). It dispatches on
-  the facade's action bus and returns a hot observation handle
+  the facade's action hub and returns a hot observation handle
   (`Future<T>`) — already running, awaiting optional.
 - **Busy/error state is a stream:** inside a viewmodel use the
   `actionState$('<name>')` helper; views bind it with `AppBoxKitStreamBuilder`.

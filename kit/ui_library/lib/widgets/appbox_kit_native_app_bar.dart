@@ -137,7 +137,7 @@ class AppBoxKitNativeAppBar extends StatelessWidget implements PreferredSizeWidg
       // centering the 44 button in kToolbarHeight (56), leaving slack. The CN
       // bar can't be grown (no height param) and its own `padding` shrinks +
       // clips the toolbar, so reserve the slack BELOW the bar (a surface-colored
-      // gap of axGap8) so the buttons get the same bottom
+      // gap of abxGap8) so the buttons get the same bottom
       // breathing room as the Material tier. Guarded by kit_native_app_bar_test
       // + review_checklist 1v.
       return Column(
@@ -167,7 +167,7 @@ class AppBoxKitNativeAppBar extends StatelessWidget implements PreferredSizeWidg
                 ? null
                 : Row(
                     mainAxisSize: MainAxisSize.min,
-                    spacing: axGap8,
+                    spacing: abxGap8,
                     children: actions!),
             leading: effectiveLeading,
             automaticallyImplyLeading: automaticallyImplyLeading,
@@ -176,7 +176,7 @@ class AppBoxKitNativeAppBar extends StatelessWidget implements PreferredSizeWidg
             color: scheme.surface,
             child: const SizedBox(
               key: Key('appBoxKitNativeAppBarBottomGap'),
-              height: axGap8,
+              height: abxGap8,
             ),
           ),
         ],
@@ -186,9 +186,9 @@ class AppBoxKitNativeAppBar extends StatelessWidget implements PreferredSizeWidg
     // above) nor Android (→ AppBarM3E) — but a bare Material AppBar hugs its
     // trailing actions to the edge, packs adjacent actions flush, and left-aligns
     // + full-height-stretches its leading, so this tier drifts from the CN/M3E
-    // tiers (which self-inset 16 + space by axGap8). Mirror AppBoxKitNativeSliverAppBar's
+    // tiers (which self-inset 16 + space by abxGap8). Mirror AppBoxKitNativeSliverAppBar's
     // Material-tier guards so every appbar tier lands its bar buttons at the same
-    // inset (16), gap (axGap8), and size — the two bars are kept in lockstep
+    // inset (16), gap (abxGap8), and size — the two bars are kept in lockstep
     // (kit_native_sliver_app_bar_test + kit_native_app_bar_test assert both).
     // Same implied-leading parity as the CN tier: the stock BackButton drifts
     // from the AppBoxKitNativeIconButton trailing actions, so the kit implies its own.
@@ -206,7 +206,7 @@ class AppBoxKitNativeAppBar extends StatelessWidget implements PreferredSizeWidg
           : [
               Row(
                 mainAxisSize: MainAxisSize.min,
-                spacing: axGap8,
+                spacing: abxGap8,
                 children: actions!,
               ),
             ],

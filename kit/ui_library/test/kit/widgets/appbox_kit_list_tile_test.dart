@@ -65,11 +65,11 @@ void main() {
     expect(find.text('Plain'), findsOneWidget);
   });
 
-  testWidgets('kit.ui-library.list-tile — row never shrinks below axSize48, even one-line', (tester) async {
+  testWidgets('kit.ui-library.list-tile — row never shrinks below abxSize48, even one-line', (tester) async {
     await tester.pumpWidget(host(const AppBoxKitListTile(title: 'Height')));
 
     final size = tester.getSize(find.byType(AppBoxKitListTile));
-    expect(size.height, greaterThanOrEqualTo(axSize48));
+    expect(size.height, greaterThanOrEqualTo(abxSize48));
   });
 
   testWidgets('kit.ui-library.list-tile — null onTap renders the same visuals without crashing',

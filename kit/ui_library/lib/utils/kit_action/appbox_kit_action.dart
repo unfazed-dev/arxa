@@ -24,9 +24,9 @@ export 'appbox_kit_action_builder.dart' show AppBoxKitActionBuilder;
 /// Main entry point for AppBoxKitAction - a fluent API for executing operations
 ///
 /// **Low-level API.** App code (viewmodels, facades) should prefer
-/// [AppBoxKitActionBus] dispatchers via `AppBoxKitActionOwner.bus` — hot
-/// dispatch with observation handles. This builder remains for the advanced
-/// forms dispatchers don't cover: `toStream`, `toCancellable`, per-call
+/// [AppBoxKitActionHub] commands via `AppBoxKitActionOwner.hub` — hot
+/// send with observation handles. This builder remains for the advanced
+/// forms commands don't cover: `toStream`, `toCancellable`, per-call
 /// throttle/debounce timers, and parallel execution.
 ///
 /// AppBoxKitAction provides automatic error handling, loading state management,
@@ -98,11 +98,11 @@ class AppBoxKitAction {
   /// `RuntimeType#identityHash.name` (`ShowcaseNotesViewModel#4123.save`). The
   /// identity hash discriminates two live instances of the same class (the
   /// note editor pushed twice), so their ops never share a re-entry guard or
-  /// state subject; `run`/`watch`/`state$` all derive from the same owner
+  /// state subject; `run`/`listen`/`state$` all derive from the same owner
   /// object, so the pair always resolves to the same key. The string is a
   /// diagnostic label and registry key, never hand-written at call sites.
   ///
-  /// Public so [AppBoxKitActionBus] derives byte-identical keys — dispatcher
+  /// Public so [AppBoxKitActionHub] derives byte-identical keys — command
   /// and builder ops with the same owner+name share one state subject.
   static String deriveKey(Object owner, String? name) {
     final base = '${owner.runtimeType}#${identityHashCode(owner)}';
@@ -165,62 +165,62 @@ class AppBoxKitAction {
     );
   }
 
-  /// Watch streams with automatic subscription management
+  /// Listen to streams with automatic subscription management
   ///
   /// Sets up reactive listeners that trigger [callback] when any stream emits.
   /// Accepts any [Stream] — BehaviorSubjects, single-subscription streams, or
   /// composed pipelines. For dependent re-subscription (e.g. re-watching user
   /// data when the session changes), compose with rxdart first
-  /// (`session$.switchMap((s) => ...)`) and watch the single resulting stream
+  /// (`session$.switchMap((s) => ...)`) and listen the single resulting stream
   /// instead of nesting listeners.
   ///
   /// The [callback] receives the emitted value; use `(_) => ...` when the
   /// value isn't needed (a bare `rebuildUi` tear-off does not type-check).
   ///
   /// **Parameters:**
-  /// - [owner]: Object whose lifecycle owns this watcher (viewmodel/service)
-  /// - [name]: Short watcher label — combined into the derived key
-  /// - [widgetId]: Explicit key (ownerless watchers only)
-  /// - [streams]: Streams to watch (any mix of types)
+  /// - [owner]: Object whose lifecycle owns this listener (viewmodel/service)
+  /// - [name]: Short listener label — combined into the derived key
+  /// - [widgetId]: Explicit key (ownerless listeners only)
+  /// - [streams]: Streams to listen (any mix of types)
   /// - [callback]: Callback executed with the emitted value when any stream emits
   /// - [errorMessage]: Optional error message for logging
   /// - [onError]: Optional error handler (receives the error object)
   ///
   /// **Example:**
   /// ```dart
-  /// AppBoxKitAction.watch(
+  /// AppBoxKitAction.listen(
   ///   owner: this,
   ///   name: 'profile',
-  ///   streams: [userSubject$, settingsSubject$],
-  ///   callback: (_) => rebuildUi(),
-  ///   errorMessage: 'Failed to watch user changes',
+  ///   to: [userSubject$, settingsSubject$],
+  ///   onData: (_) => rebuildUi(),
+  ///   errorMessage: 'Failed to listen user changes',
   /// );
   /// ```
   ///
   /// **Important:** Owners registered in get_it must call [disposeOwner] from
   /// their own dispose; `AppBoxKitViewModel.dispose` already does.
-  static void watch({
+  static void listen({
     Object? owner,
     String? name,
     String? widgetId,
-    required List<Stream<dynamic>> streams,
-    required void Function(dynamic value) callback,
+    required List<Stream<dynamic>> to,
+    required void Function(dynamic value) onData,
     String? errorMessage,
     void Function(Object error)? onError,
   }) {
     assert(
       owner != null || widgetId != null,
-      'AppBoxKitAction.watch needs an owner (+name) or an explicit widgetId',
+      'AppBoxKitAction.listen needs an owner (+name) or an explicit widgetId',
     );
     final key = owner != null ? _track(owner, name) : widgetId!;
     final errorService = appBoxKitLocator<AppBoxKitErrorService>();
 
-    // Subscribe to all streams and call callback on emissions
-    for (final stream in streams) {
+    // Subscribe to all streams and call onData on emissions
+    for (final stream in to) {
       final subscription = stream.listen(
         (value) {
           try {
-            callback(value);
+            onData(value);
           } catch (error, stackTrace) {
             if (onError != null) {
               onError(error);
@@ -228,7 +228,7 @@ class AppBoxKitAction {
               errorService.handle(
                 exception: error,
                 stackTrace: stackTrace,
-                message: errorMessage ?? 'Error in stream watcher callback',
+                message: errorMessage ?? 'Error in stream listener onData',
                 widgetId: widgetId,
               );
             }

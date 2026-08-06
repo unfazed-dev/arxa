@@ -23,7 +23,7 @@ import 'package:appbox_kit_core/common/appbox_kit_glyphs.dart';
 /// The tile is transparent and full-bleed: place it inside a
 /// [AppBoxKitGlassCard]-backed `AppBoxKitListSection` (which owns the group container,
 /// header, and dividers) or inside any card surface directly. The row keeps a
-/// minimum height of [axSize48] and paints its own ink through a transparent
+/// minimum height of [abxSize48] and paints its own ink through a transparent
 /// [Material], so it works over glass tiers that provide no [Material]
 /// ancestor. A `null` [onTap] renders the same visuals without the ink
 /// response (a label row).
@@ -43,7 +43,7 @@ class AppBoxKitListTile extends StatelessWidget {
   final String title;
 
   /// Leading glyph (paired Material icon + SF Symbol; see [AppBoxKitGlyphs]).
-  /// Drawn at [axSize20] in `onSurfaceVariant`. `null` = no leading slot.
+  /// Drawn at [abxSize20] in `onSurfaceVariant`. `null` = no leading slot.
   final AppBoxKitGlyph? glyph;
 
   /// Secondary line under [title], in the subdued body style. `null` = a
@@ -72,17 +72,17 @@ class AppBoxKitListTile extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
 
     final row = ConstrainedBox(
-      constraints: const BoxConstraints(minHeight: axSize48),
+      constraints: const BoxConstraints(minHeight: abxSize48),
       child: Padding(
         padding: const EdgeInsets.symmetric(
-          horizontal: axPad16,
-          vertical: axPad12,
+          horizontal: abxPad16,
+          vertical: abxPad12,
         ),
         child: Row(
           children: [
             if (glyph != null) ...[
-              Icon(glyph!.icon, size: axSize20, color: scheme.onSurfaceVariant),
-              const SizedBox(width: axGap12),
+              Icon(glyph!.icon, size: abxSize20, color: scheme.onSurfaceVariant),
+              const SizedBox(width: abxGap12),
             ],
             Expanded(
               child: Column(
@@ -111,7 +111,7 @@ class AppBoxKitListTile extends StatelessWidget {
               if (showChevron)
                 Icon(
                   AppBoxKitGlyphs.chevronRight.icon,
-                  size: axSize18,
+                  size: abxSize18,
                   color: scheme.onSurfaceVariant,
                 ),
             ],
