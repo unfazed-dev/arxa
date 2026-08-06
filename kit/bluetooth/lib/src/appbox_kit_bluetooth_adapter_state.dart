@@ -3,7 +3,7 @@
 /// Mirrors `flutter_blue_plus`'s `BluetoothAdapterState` so consumers can
 /// switch on adapter state without importing the plugin. The production
 /// binding maps every plugin variant onto exactly one value here.
-enum KitBluetoothAdapterState {
+enum AppBoxKitBluetoothAdapterState {
   /// State not yet known (before the first OS event).
   unknown,
 
@@ -27,5 +27,5 @@ enum KitBluetoothAdapterState {
   turningOff;
 
   /// True when scanning/connecting is possible right now.
-  bool get isOn => this == KitBluetoothAdapterState.poweredOn;
+  bool get isOn => this == AppBoxKitBluetoothAdapterState.poweredOn;
 }

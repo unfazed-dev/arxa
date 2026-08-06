@@ -2,37 +2,37 @@ import 'package:app_settings/app_settings.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart' as fbp;
 
-import 'kit_bluetooth_adapter_state.dart';
-import 'kit_bluetooth_capabilities.dart';
-import 'kit_bluetooth_service.dart';
+import 'appbox_kit_bluetooth_adapter_state.dart';
+import 'appbox_kit_bluetooth_capabilities.dart';
+import 'appbox_kit_bluetooth_service.dart';
 
-/// Production [KitBluetoothService] backed by `flutter_blue_plus`.
+/// Production [AppBoxKitBluetoothService] backed by `flutter_blue_plus`.
 ///
 /// Native-first: `flutter_blue_plus` wraps CoreBluetooth (iOS) and
 /// `android.bluetooth` (Android) directly. This adapter only re-projects its
-/// adapter-state stream onto [KitBluetoothAdapterState] and gates
+/// adapter-state stream onto [AppBoxKitBluetoothAdapterState] and gates
 /// [requestEnable] on platform capability.
-class FlutterBluePlusKitBluetoothService implements KitBluetoothService {
-  FlutterBluePlusKitBluetoothService();
+class AppBoxKitFlutterBluePlusBluetoothService implements AppBoxKitBluetoothService {
+  AppBoxKitFlutterBluePlusBluetoothService();
 
   @override
-  KitBluetoothCapabilities get capabilities =>
+  AppBoxKitBluetoothCapabilities get capabilities =>
       defaultTargetPlatform == TargetPlatform.android
-          ? KitBluetoothCapabilities.androidDialog
-          : KitBluetoothCapabilities.escortOnly;
+          ? AppBoxKitBluetoothCapabilities.androidDialog
+          : AppBoxKitBluetoothCapabilities.escortOnly;
 
   @override
-  Stream<KitBluetoothAdapterState> get adapterState =>
+  Stream<AppBoxKitBluetoothAdapterState> get adapterState =>
       fbp.FlutterBluePlus.adapterState.map(_map);
 
   @override
-  Future<KitBluetoothAdapterState> currentAdapterState() async =>
+  Future<AppBoxKitBluetoothAdapterState> currentAdapterState() async =>
       _map(fbp.FlutterBluePlus.adapterStateNow);
 
   @override
   Future<void> requestEnable() async {
     if (!capabilities.canControlAdapter) {
-      throw KitBluetoothUnsupportedError(
+      throw AppBoxKitBluetoothUnsupportedError(
         'Enabling Bluetooth programmatically is not supported on this '
         'platform; call openSettings() to escort the user instead.',
       );
@@ -47,22 +47,22 @@ class FlutterBluePlusKitBluetoothService implements KitBluetoothService {
     return true;
   }
 
-  KitBluetoothAdapterState _map(fbp.BluetoothAdapterState state) {
+  AppBoxKitBluetoothAdapterState _map(fbp.BluetoothAdapterState state) {
     switch (state) {
       case fbp.BluetoothAdapterState.unknown:
-        return KitBluetoothAdapterState.unknown;
+        return AppBoxKitBluetoothAdapterState.unknown;
       case fbp.BluetoothAdapterState.unavailable:
-        return KitBluetoothAdapterState.unavailable;
+        return AppBoxKitBluetoothAdapterState.unavailable;
       case fbp.BluetoothAdapterState.unauthorized:
-        return KitBluetoothAdapterState.unauthorized;
+        return AppBoxKitBluetoothAdapterState.unauthorized;
       case fbp.BluetoothAdapterState.turningOn:
-        return KitBluetoothAdapterState.turningOn;
+        return AppBoxKitBluetoothAdapterState.turningOn;
       case fbp.BluetoothAdapterState.on:
-        return KitBluetoothAdapterState.poweredOn;
+        return AppBoxKitBluetoothAdapterState.poweredOn;
       case fbp.BluetoothAdapterState.turningOff:
-        return KitBluetoothAdapterState.turningOff;
+        return AppBoxKitBluetoothAdapterState.turningOff;
       case fbp.BluetoothAdapterState.off:
-        return KitBluetoothAdapterState.poweredOff;
+        return AppBoxKitBluetoothAdapterState.poweredOff;
     }
   }
 }

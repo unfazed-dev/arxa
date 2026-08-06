@@ -1,7 +1,7 @@
 # appbox_kit_bluetooth
 
 Plugin-neutral **port** over `flutter_blue_plus`. The app depends on
-`KitBluetoothService` and Kit-prefixed value types; no `flutter_blue_plus`
+`AppBoxKitBluetoothService` and Kit-prefixed value types; no `flutter_blue_plus`
 types leak across the seam.
 
 Phase: **1 — adapter observation + capability gate + escort implemented**;
@@ -11,30 +11,30 @@ scanning and GATT are full stub ports (final signatures, `UnimplementedError`).
 
 ### Implemented (priority)
 
-- `KitBluetoothAdapterState` — `unknown` / `unavailable` / `unauthorized` /
+- `AppBoxKitBluetoothAdapterState` — `unknown` / `unavailable` / `unauthorized` /
   `poweredOff` / `turningOn` / `poweredOn` / `turningOff`. The production
   binding maps **every** `flutter_blue_plus` `BluetoothAdapterState` variant
   onto exactly one of these.
-- `KitBluetoothCapabilities` — `canControlAdapter`: `true` on Android
+- `AppBoxKitBluetoothCapabilities` — `canControlAdapter`: `true` on Android
   (system enable dialog), `false` on iOS (escort). Lets demo UIs label a
   control **direct** vs **escorted**.
-- `KitBluetoothService` — the port:
+- `AppBoxKitBluetoothService` — the port:
   - `adapterState` — **live OS stream** (the implemented priority).
   - `currentAdapterState()`.
   - `requestEnable()` — Android system dialog; throws
-    `KitBluetoothUnsupportedError` on iOS.
+    `AppBoxKitBluetoothUnsupportedError` on iOS.
   - `openSettings()` — Bluetooth settings deep-link (escort).
-- `FlutterBluePlusKitBluetoothService` — production binding.
+- `AppBoxKitFlutterBluePlusBluetoothService` — production binding.
 
 ### Stubs (phase 2)
 
-- `KitBluetoothScanner` — `scanResults` / `isScanning` / `startScan` /
-  `stopScan`. `UnimplementedKitBluetoothScanner` throws.
-- `KitBluetoothGattClient` — `connect` / `disconnect` / `discoverServices` /
+- `AppBoxKitBluetoothScanner` — `scanResults` / `isScanning` / `startScan` /
+  `stopScan`. `UnimplementedAppBoxKitBluetoothScanner` throws.
+- `AppBoxKitBluetoothGattClient` — `connect` / `disconnect` / `discoverServices` /
   `read` / `write` / `setNotify` / `connectionState`.
-  `UnimplementedKitBluetoothGattClient` throws.
-- Value types: `KitBluetoothDevice`, `KitBluetoothScanResult`,
-  `KitGattService`, `KitGattCharacteristic`, `KitBluetoothConnectionState`.
+  `UnimplementedAppBoxKitBluetoothGattClient` throws.
+- Value types: `AppBoxKitBluetoothDevice`, `AppBoxKitBluetoothScanResult`,
+  `AppBoxKitGattService`, `AppBoxKitGattCharacteristic`, `AppBoxKitBluetoothConnectionState`.
 
 ## Backing packages (verified pub.dev 2026-07-14)
 
@@ -43,7 +43,7 @@ scanning and GATT are full stub ports (final signatures, `UnimplementedError`).
 
 ## Testing
 
-`package:appbox_kit_bluetooth/testing.dart` exports `FakeKitBluetoothService`:
+`package:appbox_kit_bluetooth/appbox_kit_testing.dart` exports `FakeAppBoxKitBluetoothService`:
 drive the adapter stream with `emit`, choose the capability set, and assert the
 escort via `openSettingsCallCount` / `requestEnableCallCount`. On the
 `escortOnly` capability set `requestEnable` throws so the escort branch is

@@ -6,8 +6,8 @@
 /// `FlutterBluePlus.turnOn`), so `canControlAdapter` is `true` there. iOS has
 /// no such API — the only affordance is deep-linking into Settings, so
 /// `canControlAdapter` is `false` and the UI must escort.
-class KitBluetoothCapabilities {
-  const KitBluetoothCapabilities({
+class AppBoxKitBluetoothCapabilities {
+  const AppBoxKitBluetoothCapabilities({
     required this.canControlAdapter,
   });
 
@@ -16,8 +16,8 @@ class KitBluetoothCapabilities {
   final bool canControlAdapter;
 
   /// Android: the adapter can be enabled via a system dialog.
-  static const androidDialog = KitBluetoothCapabilities(canControlAdapter: true);
+  static const androidDialog = AppBoxKitBluetoothCapabilities(canControlAdapter: true);
 
   /// iOS / other: observe + escort only.
-  static const escortOnly = KitBluetoothCapabilities(canControlAdapter: false);
+  static const escortOnly = AppBoxKitBluetoothCapabilities(canControlAdapter: false);
 }

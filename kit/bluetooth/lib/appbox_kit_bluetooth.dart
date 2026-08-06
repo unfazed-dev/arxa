@@ -9,12 +9,12 @@
 /// `stacked_services`) — pure port over a native plugin.
 library;
 
-export 'src/kit_bluetooth_adapter_state.dart';
-export 'src/kit_bluetooth_capabilities.dart';
-export 'src/kit_bluetooth_service.dart';
-export 'src/flutter_blue_plus_kit_bluetooth_service.dart';
+export 'src/appbox_kit_bluetooth_adapter_state.dart';
+export 'src/appbox_kit_bluetooth_capabilities.dart';
+export 'src/appbox_kit_bluetooth_service.dart';
+export 'src/appbox_kit_flutter_blue_plus_bluetooth_service.dart';
 
 // Stub ports (phase 2)
-export 'src/kit_bluetooth_device.dart';
-export 'src/kit_bluetooth_scanner.dart';
-export 'src/kit_bluetooth_gatt.dart';
+export 'src/appbox_kit_bluetooth_device.dart';
+export 'src/appbox_kit_bluetooth_scanner.dart';
+export 'src/appbox_kit_bluetooth_gatt.dart';

@@ -2,8 +2,8 @@
 ///
 /// Value object shared by the scanner and GATT ports. Plugin-neutral: no
 /// `flutter_blue_plus` types leak through.
-class KitBluetoothDevice {
-  const KitBluetoothDevice({
+class AppBoxKitBluetoothDevice {
+  const AppBoxKitBluetoothDevice({
     required this.id,
     this.name,
   });
@@ -16,31 +16,31 @@ class KitBluetoothDevice {
 
   @override
   bool operator ==(Object other) =>
-      other is KitBluetoothDevice && other.id == id;
+      other is AppBoxKitBluetoothDevice && other.id == id;
 
   @override
   int get hashCode => id.hashCode;
 
   @override
-  String toString() => 'KitBluetoothDevice($id, name: $name)';
+  String toString() => 'AppBoxKitBluetoothDevice($id, name: $name)';
 }
 
 /// One advertisement observed during a scan.
-class KitBluetoothScanResult {
-  const KitBluetoothScanResult({
+class AppBoxKitBluetoothScanResult {
+  const AppBoxKitBluetoothScanResult({
     required this.device,
     required this.rssi,
   });
 
   /// The advertising peripheral.
-  final KitBluetoothDevice device;
+  final AppBoxKitBluetoothDevice device;
 
   /// Received signal strength in dBm (negative; closer to 0 is stronger).
   final int rssi;
 }
 
 /// The connection state of a GATT client.
-enum KitBluetoothConnectionState {
+enum AppBoxKitBluetoothConnectionState {
   disconnected,
   connecting,
   connected,
@@ -48,8 +48,8 @@ enum KitBluetoothConnectionState {
 }
 
 /// A discovered GATT service on a connected peripheral.
-class KitGattService {
-  const KitGattService({
+class AppBoxKitGattService {
+  const AppBoxKitGattService({
     required this.uuid,
     required this.characteristics,
   });
@@ -58,12 +58,12 @@ class KitGattService {
   final String uuid;
 
   /// Characteristics exposed by this service.
-  final List<KitGattCharacteristic> characteristics;
+  final List<AppBoxKitGattCharacteristic> characteristics;
 }
 
 /// A discovered GATT characteristic.
-class KitGattCharacteristic {
-  const KitGattCharacteristic({
+class AppBoxKitGattCharacteristic {
+  const AppBoxKitGattCharacteristic({
     required this.serviceUuid,
     required this.uuid,
   });
