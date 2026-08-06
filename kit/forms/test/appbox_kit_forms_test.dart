@@ -14,28 +14,28 @@ class _BridgeViewModel extends FormViewModel with AppBoxKitFormViewModelMixin {
 
 void main() {
   group('AppBoxKitValidators', () {
-    test('required fails empty, passes non-empty', () {
+    test('kit.forms.validators — required fails empty, passes non-empty', () {
       final validator = AppBoxKitValidators.required();
       expect(validator('')?.code, AppBoxKitValidationCode.required);
       expect(validator('  ')?.code, AppBoxKitValidationCode.required);
       expect(validator('x'), isNull);
     });
 
-    test('email passes empty, fails malformed, passes valid', () {
+    test('kit.forms.validators — email passes empty, fails malformed, passes valid', () {
       final validator = AppBoxKitValidators.email();
       expect(validator(''), isNull);
       expect(validator('nope')?.code, AppBoxKitValidationCode.email);
       expect(validator('a@b.co'), isNull);
     });
 
-    test('minLength interpolates the bound into the message', () {
+    test('kit.forms.validators — minLength interpolates the bound into the message', () {
       final error = AppBoxKitValidators.minLength(8)('abc');
       expect(error?.code, AppBoxKitValidationCode.minLength);
       expect(error?.message, contains('8'));
       expect(error?.params['min'], 8);
     });
 
-    test('compose short-circuits to the first failure', () {
+    test('kit.forms.validators — compose short-circuits to the first failure', () {
       final validator = AppBoxKitValidators.compose([
         AppBoxKitValidators.required(),
         AppBoxKitValidators.minLength(3),
@@ -45,13 +45,13 @@ void main() {
       expect(validator('abc'), isNull);
     });
 
-    test('toStacked surfaces the message string for the form generator', () {
+    test('kit.forms.validators — toStacked surfaces the message string for the form generator', () {
       final validator = AppBoxKitValidators.required(message: 'Required!').toStacked();
       expect(validator(''), 'Required!');
       expect(validator('x'), isNull);
     });
 
-    test('match compares against a lazily-read other value', () {
+    test('kit.forms.validators — match compares against a lazily-read other value', () {
       var password = 'secret';
       final validator = AppBoxKitValidators.match(() => password);
       expect(validator('secret'), isNull);
@@ -61,7 +61,7 @@ void main() {
   });
 
   group('AppBoxKitFieldController', () {
-    test('sync validation moves between valid and invalid', () async {
+    test('kit.forms.fields — sync validation moves between valid and invalid', () async {
       final field = AppBoxKitFieldController<String>(
         name: 'email',
         validators: [AppBoxKitValidators.required(), AppBoxKitValidators.email()],
@@ -79,7 +79,7 @@ void main() {
       expect(field.error, isNull);
     });
 
-    test('async validation transitions through validating', () async {
+    test('kit.forms.fields — async validation transitions through validating', () async {
       final fake = AppBoxKitFakeAsyncValidator<String>();
       final field = AppBoxKitFieldController<String>(
         name: 'username',
@@ -96,7 +96,7 @@ void main() {
       expect(field.error?.code, 'taken');
     });
 
-    test('scripted validator returns queued outcomes then default', () {
+    test('kit.forms.fields — scripted validator returns queued outcomes then default', () {
       final scripted = AppBoxKitScriptedValidator<String>(
         outcomes: const [AppBoxKitFieldError(code: 'a', message: 'a'), null],
       );
@@ -110,7 +110,7 @@ void main() {
       expect(scripted.callCount, 2);
     });
 
-    test('reset restores the initial value and pristine status', () async {
+    test('kit.forms.fields — reset restores the initial value and pristine status', () async {
       final field = AppBoxKitFieldController<String>(
         name: 'f',
         initialValue: 'seed',
@@ -126,7 +126,7 @@ void main() {
   });
 
   group('AppBoxKitFormController', () {
-    test('canSubmit gates on every field being valid', () async {
+    test('kit.forms.form — canSubmit gates on every field being valid', () async {
       final email = AppBoxKitFieldController<String>(
         name: 'email',
         validators: [AppBoxKitValidators.required(), AppBoxKitValidators.email()],
@@ -147,7 +147,7 @@ void main() {
       form.dispose();
     });
 
-    test('submit returns null and does not run action when invalid', () async {
+    test('kit.forms.form — submit returns null and does not run action when invalid', () async {
       final email = AppBoxKitFieldController<String>(
         name: 'email',
         validators: [AppBoxKitValidators.required()],
@@ -166,7 +166,7 @@ void main() {
   });
 
   group('AppBoxKitFormViewModelMixin', () {
-    test('syncAppBoxKitForm pushes values and errors into FormStateHelper', () async {
+    test('kit.forms.stacked-bridge — syncAppBoxKitForm pushes values and errors into FormStateHelper', () async {
       final email = AppBoxKitFieldController<String>(
         name: 'email',
         validators: [AppBoxKitValidators.required()],
@@ -191,7 +191,7 @@ void main() {
   });
 
   group('AppBoxKitMultiStepFormController (stub)', () {
-    test('advances only when the current step can submit', () async {
+    test('kit.forms.multistep — advances only when the current step can submit', () async {
       final field = AppBoxKitFieldController<String>(
         name: 'name',
         validators: [AppBoxKitValidators.required()],
