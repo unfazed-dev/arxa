@@ -10,7 +10,7 @@ environment:
 # stacked_services. The Talker instance is INJECTED (apps already register it
 # as a lazy singleton) — this package never constructs one.
 #
-# Submission sinks are a port: the default LocalFileSubmissionSink writes to the
+# Submission sinks are a port: the default AppBoxKitLocalFileSubmissionSink writes to the
 # app-documents dir (path_provider, native). The email + github-issue sinks are
 # file stubs (no smtp / http client wired) that name their intent in a TODO.
 dependencies:

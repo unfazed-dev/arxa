@@ -1,5 +1,5 @@
-import '../kit_support_types.dart';
-import 'kit_submission_sink.dart';
+import '../appbox_kit_support_types.dart';
+import 'appbox_kit_submission_sink.dart';
 
 /// STUB — email submission sink.
 ///
@@ -9,13 +9,13 @@ import 'kit_submission_sink.dart';
 ///     and include `diagnostics.talkerLog` as a text part.
 ///   - `flutter_email_sender: ^7.x` to open the native compose sheet with the
 ///     screenshot attached (user-sent — a different UX contract).
-/// Map FeedbackSubmission.text -> body, .screenshot -> attachment,
+/// Map AppBoxKitFeedbackSubmission.text -> body, .screenshot -> attachment,
 /// .diagnostics?.talkerLog -> attached log, [recipient] -> To.
 ///
 /// This stub imports no mail client, so no SMTP/HTTP dependency is pulled until
 /// a host opts in.
-class EmailSubmissionSink implements KitSubmissionSink {
-  EmailSubmissionSink({this.id = 'email', this.recipient});
+class AppBoxKitEmailSubmissionSink implements AppBoxKitSubmissionSink {
+  AppBoxKitEmailSubmissionSink({this.id = 'email', this.recipient});
 
   @override
   final String id;
@@ -24,6 +24,6 @@ class EmailSubmissionSink implements KitSubmissionSink {
   final String? recipient;
 
   @override
-  Future<SubmissionResult> submit(FeedbackSubmission submission) async =>
-      throw UnimplementedError('EmailSubmissionSink.submit is a stub');
+  Future<AppBoxKitSubmissionResult> submit(AppBoxKitFeedbackSubmission submission) async =>
+      throw UnimplementedError('AppBoxKitEmailSubmissionSink.submit is a stub');
 }

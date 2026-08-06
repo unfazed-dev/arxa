@@ -29,9 +29,9 @@ In-app support port for appbox_kit apps — screenshot+annotation feedback flow 
 
 Exported from `lib/appbox_kit_support.dart`:
 
-<Table id="support-api" columns={["Symbol", "Kind", "Defined in"]} rows={[["KitSupportContextBuilder", "typedef", "src/kit_support_service.dart"], ["KitSupportService", "class", "src/kit_support_service.dart"], ["DiagnosticsBundle", "class", "src/kit_support_types.dart"], ["FeedbackSubmission", "class", "src/kit_support_types.dart"], ["SubmissionResult", "class", "src/kit_support_types.dart"], ["EmailSubmissionSink", "class", "src/sinks/email_submission_sink.dart"], ["GithubIssueSink", "class", "src/sinks/github_issue_sink.dart"], ["KitSubmissionSink", "abstract class", "src/sinks/kit_submission_sink.dart"], ["CallbackSubmissionSink", "class", "src/sinks/kit_submission_sink.dart"], ["LocalFileSubmissionSink", "class", "src/sinks/kit_submission_sink.dart"]]} />
+<Table id="support-api" columns={["Symbol", "Kind", "Defined in"]} rows={[["AppBoxKitSupportContextBuilder", "typedef", "src/appbox_kit_support_service.dart"], ["AppBoxKitSupportService", "class", "src/appbox_kit_support_service.dart"], ["AppBoxKitDiagnosticsBundle", "class", "src/appbox_kit_support_types.dart"], ["AppBoxKitFeedbackSubmission", "class", "src/appbox_kit_support_types.dart"], ["AppBoxKitSubmissionResult", "class", "src/appbox_kit_support_types.dart"], ["AppBoxKitEmailSubmissionSink", "class", "src/sinks/appbox_kit_email_submission_sink.dart"], ["AppBoxKitGithubIssueSink", "class", "src/sinks/appbox_kit_github_issue_sink.dart"], ["AppBoxKitSubmissionSink", "abstract class", "src/sinks/appbox_kit_submission_sink.dart"], ["AppBoxKitCallbackSubmissionSink", "class", "src/sinks/appbox_kit_submission_sink.dart"], ["AppBoxKitLocalFileSubmissionSink", "class", "src/sinks/appbox_kit_submission_sink.dart"]]} />
 
-Test doubles in `lib/testing.dart`: `RecordingSubmissionSink`.
+Test doubles in `lib/appbox_kit_testing.dart`: `RecordingAppBoxKitSubmissionSink`.
 
 Scripts and call-counts — tests never touch platform channels.
 
@@ -42,8 +42,8 @@ Scripts and call-counts — tests never touch platform channels.
   package) — `startFeedbackFlow` requires that ancestor.
 - `feedback`'s screenshots need Flutter's **CanvasKit renderer** on web, and
   platform views (maps, webviews) render blank in the screenshot.
-- `LocalFileSubmissionSink` uses `dart:io`; on web, inject a
-  `CallbackSubmissionSink` instead.
+- `AppBoxKitLocalFileSubmissionSink` uses `dart:io`; on web, inject a
+  `AppBoxKitCallbackSubmissionSink` instead.
 
 
 ### Integration map
@@ -55,30 +55,30 @@ See `kit_matrix.md` for the full routing + dependency graph.
 
 ### Architecture
 
-`KitSupportService` is the single entry point and depends only on two things it is handed: the app's already-registered `Talker` instance (injected, never constructed here) and a `KitSubmissionSink`. `KitSubmissionSink` is the port — an abstract `submit(FeedbackSubmission)` — that the concrete adapters (`LocalFileSubmissionSink`, `CallbackSubmissionSink`, plus the `EmailSubmissionSink` / `GithubIssueSink` stubs) implement, so the service is transport-agnostic. Dependency direction runs one way: service → port → the immutable types in `kit_support_types.dart` (`DiagnosticsBundle`, `FeedbackSubmission`, `SubmissionResult`), and the sinks depend on those same types rather than back on the service. No edge points at `appbox_kit` core, `stacked`, or `stacked_services`.
+`AppBoxKitSupportService` is the single entry point and depends only on two things it is handed: the app's already-registered `Talker` instance (injected, never constructed here) and a `AppBoxKitSubmissionSink`. `AppBoxKitSubmissionSink` is the port — an abstract `submit(AppBoxKitFeedbackSubmission)` — that the concrete adapters (`AppBoxKitLocalFileSubmissionSink`, `AppBoxKitCallbackSubmissionSink`, plus the `AppBoxKitEmailSubmissionSink` / `AppBoxKitGithubIssueSink` stubs) implement, so the service is transport-agnostic. Dependency direction runs one way: service → port → the immutable types in `appbox_kit_support_types.dart` (`AppBoxKitDiagnosticsBundle`, `AppBoxKitFeedbackSubmission`, `AppBoxKitSubmissionResult`), and the sinks depend on those same types rather than back on the service. No edge points at `appbox_kit` core, `stacked`, or `stacked_services`.
 
 
 ### Gotchas
 
-`startFeedbackFlow` resolves `BetterFeedback.of(context)`, so the host MUST wrap the app root in `feedback`'s `BetterFeedback` widget or it throws. `feedback`'s screenshots require Flutter's CanvasKit renderer on web, and platform views (maps, webviews) render blank in the captured PNG. `LocalFileSubmissionSink` uses `dart:io`, so on web inject a `CallbackSubmissionSink` instead; the `EmailSubmissionSink` and `GithubIssueSink` are deliberate stubs that throw `UnimplementedError` — wire a real transport before relying on them. Because the `Talker` is injected, passing a fresh/empty instance ships a diagnostics bundle with no history — hand the service the same singleton the app logs to.
+`startFeedbackFlow` resolves `BetterFeedback.of(context)`, so the host MUST wrap the app root in `feedback`'s `BetterFeedback` widget or it throws. `feedback`'s screenshots require Flutter's CanvasKit renderer on web, and platform views (maps, webviews) render blank in the captured PNG. `AppBoxKitLocalFileSubmissionSink` uses `dart:io`, so on web inject a `AppBoxKitCallbackSubmissionSink` instead; the `AppBoxKitEmailSubmissionSink` and `AppBoxKitGithubIssueSink` are deliberate stubs that throw `UnimplementedError` — wire a real transport before relying on them. Because the `Talker` is injected, passing a fresh/empty instance ships a diagnostics bundle with no history — hand the service the same singleton the app logs to.
 
 
 ### Testing
 
-`import 'package:appbox_kit_support/testing.dart';` for
-`RecordingSubmissionSink` (records `submissions`, scriptable `result`),
-`fakeFeedbackSubmission(...)`, and `cannedDiagnosticsBundle(...)` — assert the
+`import 'package:appbox_kit_support/appbox_kit_testing.dart';` for
+`RecordingAppBoxKitSubmissionSink` (records `submissions`, scriptable `result`),
+`appBoxKitFakeFeedbackSubmission(...)`, and `appBoxKitCannedDiagnosticsBundle(...)` — assert the
 diagnostics/submit path without a widget tree or a real Talker.
 
 
 ### Features
 
-<Checklist id="support-features" items={[{"id": "support-feat-0", "label": "`KitSupportContextBuilder` \u2014 typedef"}, {"id": "support-feat-1", "label": "`KitSupportService` \u2014 class"}, {"id": "support-feat-2", "label": "`DiagnosticsBundle` \u2014 class"}, {"id": "support-feat-3", "label": "`FeedbackSubmission` \u2014 class"}, {"id": "support-feat-4", "label": "`SubmissionResult` \u2014 class"}, {"id": "support-feat-5", "label": "`EmailSubmissionSink` \u2014 class"}, {"id": "support-feat-6", "label": "`GithubIssueSink` \u2014 class"}, {"id": "support-feat-7", "label": "`KitSubmissionSink` \u2014 abstract class"}, {"id": "support-feat-8", "label": "`CallbackSubmissionSink` \u2014 class"}, {"id": "support-feat-9", "label": "`LocalFileSubmissionSink` \u2014 class"}]} />
+<Checklist id="support-features" items={[{"id": "support-feat-0", "label": "`AppBoxKitSupportContextBuilder` \u2014 typedef"}, {"id": "support-feat-1", "label": "`AppBoxKitSupportService` \u2014 class"}, {"id": "support-feat-2", "label": "`AppBoxKitDiagnosticsBundle` \u2014 class"}, {"id": "support-feat-3", "label": "`AppBoxKitFeedbackSubmission` \u2014 class"}, {"id": "support-feat-4", "label": "`AppBoxKitSubmissionResult` \u2014 class"}, {"id": "support-feat-5", "label": "`AppBoxKitEmailSubmissionSink` \u2014 class"}, {"id": "support-feat-6", "label": "`AppBoxKitGithubIssueSink` \u2014 class"}, {"id": "support-feat-7", "label": "`AppBoxKitSubmissionSink` \u2014 abstract class"}, {"id": "support-feat-8", "label": "`AppBoxKitCallbackSubmissionSink` \u2014 class"}, {"id": "support-feat-9", "label": "`AppBoxKitLocalFileSubmissionSink` \u2014 class"}]} />
 
 
 ### Decisions / ADRs
 
-The package backs onto `feedback` for the screenshot+annotation flow (its overlay and editor are mature and self-contained) and onto `talker_flutter` for diagnostics precisely because appbox_kit apps already register a `Talker` as a lazy singleton — reusing that instance avoids a competing logger and ships the same log history the app has been writing. It is intentionally standalone (no `appbox_kit` core, `stacked`, or `stacked_services` edge) so a host can adopt in-app support without pulling the rest of the kit, and it is not a crash reporter — Crashlytics/Sentry stay a separate concern. The default sink is `LocalFileSubmissionSink` (app-documents files) because it carries no transport dependency; the email and github-issue sinks ship as stubs so the package never pulls an SMTP/HTTP client until a host explicitly opts in. The `KitSubmissionSink` port exists so a host can swap in Supabase, an existing HTTP client, or a web-friendly callback without forking the service.
+The package backs onto `feedback` for the screenshot+annotation flow (its overlay and editor are mature and self-contained) and onto `talker_flutter` for diagnostics precisely because appbox_kit apps already register a `Talker` as a lazy singleton — reusing that instance avoids a competing logger and ships the same log history the app has been writing. It is intentionally standalone (no `appbox_kit` core, `stacked`, or `stacked_services` edge) so a host can adopt in-app support without pulling the rest of the kit, and it is not a crash reporter — Crashlytics/Sentry stay a separate concern. The default sink is `AppBoxKitLocalFileSubmissionSink` (app-documents files) because it carries no transport dependency; the email and github-issue sinks ship as stubs so the package never pulls an SMTP/HTTP client until a host explicitly opts in. The `AppBoxKitSubmissionSink` port exists so a host can swap in Supabase, an existing HTTP client, or a web-friendly callback without forking the service.
 
 <!-- kb:begin -->
 ### References

@@ -5,8 +5,8 @@ import 'package:flutter/foundation.dart' show immutable;
 /// Diagnostics captured alongside a feedback submission — primarily an export
 /// of the app's Talker log history.
 @immutable
-class DiagnosticsBundle {
-  const DiagnosticsBundle({
+class AppBoxKitDiagnosticsBundle {
+  const AppBoxKitDiagnosticsBundle({
     required this.talkerLog,
     required this.capturedAt,
     this.entryCount = 0,
@@ -25,14 +25,14 @@ class DiagnosticsBundle {
   final DateTime capturedAt;
 
   @override
-  String toString() => 'DiagnosticsBundle($entryCount entries)';
+  String toString() => 'AppBoxKitDiagnosticsBundle($entryCount entries)';
 }
 
 /// A completed feedback submission: the user's annotated screenshot + text,
 /// optional diagnostics, and host context.
 @immutable
-class FeedbackSubmission {
-  const FeedbackSubmission({
+class AppBoxKitFeedbackSubmission {
+  const AppBoxKitFeedbackSubmission({
     required this.text,
     required this.screenshot,
     required this.submittedAt,
@@ -49,14 +49,14 @@ class FeedbackSubmission {
   /// Host-supplied context merged with the feedback package's `extra`.
   final Map<String, dynamic> extra;
 
-  /// Attached diagnostics, if [KitSupportService] bundled them.
-  final DiagnosticsBundle? diagnostics;
+  /// Attached diagnostics, if [AppBoxKitSupportService] bundled them.
+  final AppBoxKitDiagnosticsBundle? diagnostics;
 
   final DateTime submittedAt;
 
   /// Copy with [diagnostics] attached.
-  FeedbackSubmission withDiagnostics(DiagnosticsBundle bundle) =>
-      FeedbackSubmission(
+  AppBoxKitFeedbackSubmission withDiagnostics(AppBoxKitDiagnosticsBundle bundle) =>
+      AppBoxKitFeedbackSubmission(
         text: text,
         screenshot: screenshot,
         submittedAt: submittedAt,
@@ -66,18 +66,18 @@ class FeedbackSubmission {
 
   @override
   String toString() =>
-      'FeedbackSubmission(${text.length} chars, ${screenshot.length} bytes'
+      'AppBoxKitFeedbackSubmission(${text.length} chars, ${screenshot.length} bytes'
       '${diagnostics == null ? '' : ', +diagnostics'})';
 }
 
-/// Outcome of routing a [FeedbackSubmission] to a sink.
+/// Outcome of routing a [AppBoxKitFeedbackSubmission] to a sink.
 @immutable
-class SubmissionResult {
-  const SubmissionResult.success({this.reference, this.location})
+class AppBoxKitSubmissionResult {
+  const AppBoxKitSubmissionResult.success({this.reference, this.location})
       : ok = true,
         error = null;
 
-  const SubmissionResult.failure(this.error)
+  const AppBoxKitSubmissionResult.failure(this.error)
       : ok = false,
         reference = null,
         location = null;
@@ -95,5 +95,5 @@ class SubmissionResult {
 
   @override
   String toString() =>
-      ok ? 'SubmissionResult.success($location)' : 'SubmissionResult.failure($error)';
+      ok ? 'AppBoxKitSubmissionResult.success($location)' : 'AppBoxKitSubmissionResult.failure($error)';
 }
