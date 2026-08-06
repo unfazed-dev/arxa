@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:appbox_kit_motion/appbox_kit_motion.dart';
-import 'package:appbox_kit_motion/testing.dart';
+import 'package:appbox_kit_motion/appbox_kit_testing.dart';
 
 Widget _host({
   required Animation<double> driver,
   required Widget child,
-  KitMotionSpec? spec,
+  AppBoxKitMotionSpec? spec,
   bool disableAnimations = false,
 }) {
   return MaterialApp(
@@ -15,7 +15,7 @@ Widget _host({
       builder: (context) => MediaQuery(
         data: MediaQuery.of(context)
             .copyWith(disableAnimations: disableAnimations),
-        child: KitMotionScope(driver: driver, spec: spec, child: child),
+        child: AppBoxKitMotionScope(driver: driver, spec: spec, child: child),
       ),
     ),
   );
@@ -42,14 +42,14 @@ void main() {
 
   tearDown(() => driver.dispose());
 
-  group('KitWake stagger', () {
+  group('AppBoxKitWake stagger', () {
     testWidgets('later orders wake later on the timeline', (tester) async {
       driver.value = 0.12;
       await tester.pumpWidget(_host(
         driver: driver,
         child: const Column(children: [
-          KitWake(order: 0, child: SizedBox(key: Key('a'), height: 10)),
-          KitWake(order: 5, child: SizedBox(key: Key('b'), height: 10)),
+          AppBoxKitWake(order: 0, child: SizedBox(key: Key('a'), height: 10)),
+          AppBoxKitWake(order: 5, child: SizedBox(key: Key('b'), height: 10)),
         ]),
       ));
       final early = _opacityOf(tester, const Key('a'));
@@ -63,8 +63,8 @@ void main() {
       driver.value = 1.0;
       await tester.pumpWidget(_host(
         driver: driver,
-        spec: const KitMotionSpec(scale: 0.9),
-        child: const KitWake(
+        spec: const AppBoxKitMotionSpec(scale: 0.9),
+        child: const AppBoxKitWake(
             order: 3, child: SizedBox(key: Key('a'), height: 10)),
       ));
       expect(_opacityOf(tester, const Key('a')), 1.0);
@@ -86,7 +86,7 @@ void main() {
       driver.value = 1.0;
       await tester.pumpWidget(_host(
         driver: driver,
-        child: const KitWake(
+        child: const AppBoxKitWake(
             order: 2, child: SizedBox(key: Key('a'), height: 10)),
       ));
       expect(_opacityOf(tester, const Key('a')), 1.0);
@@ -107,8 +107,8 @@ void main() {
       await tester.pumpWidget(_host(
         driver: driver,
         child: const Column(children: [
-          KitWake(child: SizedBox(key: Key('first'), height: 10)),
-          KitWake(child: SizedBox(key: Key('second'), height: 10)),
+          AppBoxKitWake(child: SizedBox(key: Key('first'), height: 10)),
+          AppBoxKitWake(child: SizedBox(key: Key('second'), height: 10)),
         ]),
       ));
       final first = _opacityOf(tester, const Key('first'));
@@ -120,7 +120,7 @@ void main() {
       driver.value = 0.55;
       await tester.pumpWidget(_host(
         driver: driver,
-        child: const KitWake(
+        child: const AppBoxKitWake(
             order: 99, child: SizedBox(key: Key('a'), height: 10)),
       ));
       // 99 * 0.06 would start at 5.94 (never); clamp to 0.5 keeps it alive.
@@ -134,12 +134,12 @@ void main() {
       await tester.pumpWidget(_host(
         driver: driver,
         disableAnimations: true,
-        child: const KitWake(
+        child: const AppBoxKitWake(
             order: 0, child: SizedBox(key: Key('a'), height: 10)),
       ));
       expect(
         find.descendant(
-            of: find.byType(KitWake),
+            of: find.byType(AppBoxKitWake),
             matching: find.byType(FadeTransition)),
         findsNothing,
       );
@@ -151,13 +151,13 @@ void main() {
       driver.value = 0.0;
       await tester.pumpWidget(_host(
         driver: driver,
-        spec: const KitMotionSpec(enabled: false),
-        child: const KitWake(
+        spec: const AppBoxKitMotionSpec(enabled: false),
+        child: const AppBoxKitWake(
             order: 0, child: SizedBox(key: Key('a'), height: 10)),
       ));
       expect(
         find.descendant(
-            of: find.byType(KitWake),
+            of: find.byType(AppBoxKitWake),
             matching: find.byType(FadeTransition)),
         findsNothing,
       );
@@ -165,7 +165,7 @@ void main() {
 
     testWidgets('no scope above renders children untouched', (tester) async {
       await tester.pumpWidget(const MaterialApp(
-        home: KitWake(order: 0, child: SizedBox(key: Key('a'), height: 10)),
+        home: AppBoxKitWake(order: 0, child: SizedBox(key: Key('a'), height: 10)),
       ));
       // MaterialApp's route animation is not consulted without a scope.
       expect(find.byKey(const Key('a')), findsOneWidget);
@@ -173,13 +173,13 @@ void main() {
   });
 
   group('extensions', () {
-    testWidgets('.wake() wraps in KitWake', (tester) async {
+    testWidgets('.wake() wraps in AppBoxKitWake', (tester) async {
       driver.value = 1.0;
       await tester.pumpWidget(_host(
         driver: driver,
         child: const SizedBox(key: Key('a'), height: 10).wake(order: 1),
       ));
-      expect(find.byType(KitWake), findsOneWidget);
+      expect(find.byType(AppBoxKitWake), findsOneWidget);
       expect(_opacityOf(tester, const Key('a')), 1.0);
     });
 
@@ -197,7 +197,7 @@ void main() {
         ),
       ));
       final wakes =
-          tester.widgetList<KitWake>(find.byType(KitWake)).toList();
+          tester.widgetList<AppBoxKitWake>(find.byType(AppBoxKitWake)).toList();
       expect(wakes.map((w) => w.order), [0, 1, 2]);
       expect(
         _opacityOf(tester, const Key('w0')),
@@ -206,7 +206,7 @@ void main() {
     });
   });
 
-  group('KitMotionAdapter', () {
+  group('AppBoxKitMotionAdapter', () {
     testWidgets('drives flutter_animate effects from the scope driver',
         (tester) async {
       driver.value = 0.0;
@@ -214,7 +214,7 @@ void main() {
         driver: driver,
         child: Builder(builder: (context) {
           return const SizedBox(key: Key('a'), height: 10)
-              .animate(adapter: KitMotionAdapter.of(context, order: 0))
+              .animate(adapter: AppBoxKitMotionAdapter.of(context, order: 0))
               .fadeIn();
         }),
       ));
@@ -235,7 +235,7 @@ void main() {
       await tester.pumpWidget(MaterialApp(
         home: Builder(builder: (context) {
           return const SizedBox(key: Key('a'), height: 10)
-              .animate(adapter: KitMotionAdapter.of(context))
+              .animate(adapter: AppBoxKitMotionAdapter.of(context))
               .fadeIn();
         }),
       ));
@@ -245,19 +245,19 @@ void main() {
   });
 
   group('testing helpers', () {
-    testWidgets('staticKitMotionScope pins the timeline', (tester) async {
+    testWidgets('staticAppBoxKitMotionScope pins the timeline', (tester) async {
       await tester.pumpWidget(MaterialApp(
-        home: staticKitMotionScope(
+        home: staticAppBoxKitMotionScope(
           t: 0.0,
-          child: const KitWake(
+          child: const AppBoxKitWake(
               order: 0, child: SizedBox(key: Key('a'), height: 10)),
         ),
       ));
       expect(_opacityOf(tester, const Key('a')), 0.0);
 
       await tester.pumpWidget(MaterialApp(
-        home: staticKitMotionScope(
-          child: const KitWake(
+        home: staticAppBoxKitMotionScope(
+          child: const AppBoxKitWake(
               order: 0, child: SizedBox(key: Key('b'), height: 10)),
         ),
       ));
@@ -265,23 +265,23 @@ void main() {
     });
   });
 
-  group('KitMotionSpec', () {
+  group('AppBoxKitMotionSpec', () {
     test('startFor staggers and clamps', () {
-      const spec = KitMotionSpec();
+      const spec = AppBoxKitMotionSpec();
       expect(spec.startFor(0), 0.0);
       expect(spec.startFor(2), closeTo(0.12, 1e-9));
       expect(spec.startFor(99), 0.5);
     });
 
     test('lerp interpolates continuous channels', () {
-      final mid = const KitMotionSpec()
-          .lerp(const KitMotionSpec(offset: Offset(0, 0.16)), 0.5);
+      final mid = const AppBoxKitMotionSpec()
+          .lerp(const AppBoxKitMotionSpec(offset: Offset(0, 0.16)), 0.5);
       expect(mid.offset.dy, closeTo(0.12, 1e-9));
     });
 
     test('theme extension resolution falls back to standard', () {
       expect(
-        ThemeData().extension<KitMotionSpec>(),
+        ThemeData().extension<AppBoxKitMotionSpec>(),
         isNull,
       );
     });

@@ -1,16 +1,16 @@
 import 'package:flutter/physics.dart';
 
 /// Spring presets for gesture-settle motion — the drawer/sheet-style
-/// "release and it lands" feel. Mirrors the [KitMotionSpec] preset
+/// "release and it lands" feel. Mirrors the [AppBoxKitMotionSpec] preset
 /// vocabulary (`standard` / `subtle` / `energetic`): static const fields on
-/// a non-instantiable holder, consumed by `KitGestureDriver.settleSpring`.
+/// a non-instantiable holder, consumed by `AppBoxKitGestureDriver.settleSpring`.
 ///
 /// All presets are raw [SpringDescription]s — const-constructible, unlike
 /// `SpringDescription.withDampingRatio` (which computes with `sqrt`). The
 /// damping ratio ζ each encodes is noted in its doc comment.
-abstract final class KitSprings {
+abstract final class AppBoxKitSprings {
   /// Default drawer settle — critically damped (ζ = 1.0), lands in ~0.3 s
-  /// with no overshoot. The `KitGestureDriver` default.
+  /// with no overshoot. The `AppBoxKitGestureDriver` default.
   static const SpringDescription snappy =
       SpringDescription(mass: 1, stiffness: 256, damping: 32);
 

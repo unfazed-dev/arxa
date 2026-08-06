@@ -8,7 +8,7 @@ import 'package:flutter/material.dart';
 ///
 /// ```dart
 /// MaterialApp(
-///   theme: ThemeData(extensions: const [KitMotionSpec.subtle]),
+///   theme: ThemeData(extensions: const [AppBoxKitMotionSpec.subtle]),
 /// )
 /// ```
 ///
@@ -16,8 +16,8 @@ import 'package:flutter/material.dart';
 /// (usually the route transition), never absolute durations — the kit never
 /// extends a route's transition; it choreographs within it.
 @immutable
-class KitMotionSpec extends ThemeExtension<KitMotionSpec> {
-  const KitMotionSpec({
+class AppBoxKitMotionSpec extends ThemeExtension<AppBoxKitMotionSpec> {
+  const AppBoxKitMotionSpec({
     this.enabled = true,
     this.staggerFraction = 0.06,
     this.maxStartFraction = 0.5,
@@ -32,7 +32,7 @@ class KitMotionSpec extends ThemeExtension<KitMotionSpec> {
             'a non-empty slice of the driver timeline'),
         assert(scale > 0 && scale <= 1, 'scale must be in (0, 1]');
 
-  /// Master switch. When `false`, [KitWake] renders its child untouched.
+  /// Master switch. When `false`, [AppBoxKitWake] renders its child untouched.
   final bool enabled;
 
   /// How far into the driver timeline each successive stagger slot starts
@@ -58,24 +58,24 @@ class KitMotionSpec extends ThemeExtension<KitMotionSpec> {
   final double scale;
 
   /// Default look: 8%-height rise + fade, ease-out-cubic.
-  static const KitMotionSpec standard = KitMotionSpec();
+  static const AppBoxKitMotionSpec standard = AppBoxKitMotionSpec();
 
   /// Quieter variant for dense/utility surfaces.
-  static const KitMotionSpec subtle = KitMotionSpec(
+  static const AppBoxKitMotionSpec subtle = AppBoxKitMotionSpec(
     staggerFraction: 0.04,
     offset: Offset(0, 0.04),
   );
 
   /// Showier variant for marketing/hero surfaces.
-  static const KitMotionSpec energetic = KitMotionSpec(
+  static const AppBoxKitMotionSpec energetic = AppBoxKitMotionSpec(
     staggerFraction: 0.09,
     offset: Offset(0, 0.12),
     scale: 0.96,
   );
 
   /// The active spec: nearest theme extension, else [standard].
-  static KitMotionSpec of(BuildContext context) =>
-      Theme.of(context).extension<KitMotionSpec>() ?? standard;
+  static AppBoxKitMotionSpec of(BuildContext context) =>
+      Theme.of(context).extension<AppBoxKitMotionSpec>() ?? standard;
 
   /// Normalized timeline position at which stagger slot [order] begins.
   double startFor(int order) =>
@@ -86,7 +86,7 @@ class KitMotionSpec extends ThemeExtension<KitMotionSpec> {
       Interval(startFor(order), 1.0, curve: curve);
 
   @override
-  KitMotionSpec copyWith({
+  AppBoxKitMotionSpec copyWith({
     bool? enabled,
     double? staggerFraction,
     double? maxStartFraction,
@@ -95,7 +95,7 @@ class KitMotionSpec extends ThemeExtension<KitMotionSpec> {
     bool? fade,
     double? scale,
   }) {
-    return KitMotionSpec(
+    return AppBoxKitMotionSpec(
       enabled: enabled ?? this.enabled,
       staggerFraction: staggerFraction ?? this.staggerFraction,
       maxStartFraction: maxStartFraction ?? this.maxStartFraction,
@@ -107,9 +107,9 @@ class KitMotionSpec extends ThemeExtension<KitMotionSpec> {
   }
 
   @override
-  KitMotionSpec lerp(ThemeExtension<KitMotionSpec>? other, double t) {
-    if (other is! KitMotionSpec) return this;
-    return KitMotionSpec(
+  AppBoxKitMotionSpec lerp(ThemeExtension<AppBoxKitMotionSpec>? other, double t) {
+    if (other is! AppBoxKitMotionSpec) return this;
+    return AppBoxKitMotionSpec(
       enabled: t < 0.5 ? enabled : other.enabled,
       staggerFraction:
           lerpDouble(staggerFraction, other.staggerFraction, t)!,
@@ -125,7 +125,7 @@ class KitMotionSpec extends ThemeExtension<KitMotionSpec> {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is KitMotionSpec &&
+      other is AppBoxKitMotionSpec &&
           other.enabled == enabled &&
           other.staggerFraction == staggerFraction &&
           other.maxStartFraction == maxStartFraction &&

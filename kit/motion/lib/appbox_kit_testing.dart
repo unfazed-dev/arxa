@@ -9,39 +9,39 @@ import 'appbox_kit_motion.dart';
 
 /// A driver frozen at the settled end of the timeline — children render in
 /// their final (fully woken) state. Ideal default for goldens.
-const Animation<double> kitMotionSettled = AlwaysStoppedAnimation<double>(1.0);
+const Animation<double> appBoxKitMotionSettled = AlwaysStoppedAnimation<double>(1.0);
 
 /// A driver frozen at the start of the timeline — children render fully
 /// set down (invisible when the spec fades).
-const Animation<double> kitMotionDormant = AlwaysStoppedAnimation<double>(0.0);
+const Animation<double> appBoxKitMotionDormant = AlwaysStoppedAnimation<double>(0.0);
 
-/// Wraps [child] in a [KitMotionScope] frozen at timeline position [t]
+/// Wraps [child] in a [AppBoxKitMotionScope] frozen at timeline position [t]
 /// (0 = dormant, 1 = settled).
-Widget staticKitMotionScope({
+Widget staticAppBoxKitMotionScope({
   required Widget child,
   double t = 1.0,
-  KitMotionSpec? spec,
+  AppBoxKitMotionSpec? spec,
 }) {
-  return KitMotionScope(
+  return AppBoxKitMotionScope(
     driver: AlwaysStoppedAnimation<double>(t),
     spec: spec,
     child: child,
   );
 }
 
-/// Pins *gesture-driven* choreography: wraps [child] in a [KitMotionScope]
-/// driven by a real [KitGestureDriver] parked at timeline position [t] with
+/// Pins *gesture-driven* choreography: wraps [child] in a [AppBoxKitMotionScope]
+/// driven by a real [AppBoxKitGestureDriver] parked at timeline position [t] with
 /// no settle in flight — deterministic, golden-safe, and exercising the same
 /// driver type the gesture path uses in production.
 ///
 /// For behavioral tests that scrub/settle, construct the driver directly —
 /// `WidgetTester` is a `TickerProvider`:
-/// `KitGestureDriver(vsync: tester, initialValue: 0.4)`.
-Widget gestureKitMotionScope({
+/// `AppBoxKitGestureDriver(vsync: tester, initialValue: 0.4)`.
+Widget gestureAppBoxKitMotionScope({
   required Widget child,
   double t = 0.0,
-  KitMotionSpec? spec,
-  SpringDescription settleSpring = KitSprings.snappy,
+  AppBoxKitMotionSpec? spec,
+  SpringDescription settleSpring = AppBoxKitSprings.snappy,
 }) {
   return _GestureKitMotionScope(
     t: t,
@@ -60,7 +60,7 @@ class _GestureKitMotionScope extends StatefulWidget {
   });
 
   final double t;
-  final KitMotionSpec? spec;
+  final AppBoxKitMotionSpec? spec;
   final SpringDescription settleSpring;
   final Widget child;
 
@@ -70,12 +70,12 @@ class _GestureKitMotionScope extends StatefulWidget {
 
 class _GestureKitMotionScopeState extends State<_GestureKitMotionScope>
     with TickerProviderStateMixin {
-  late KitGestureDriver _driver;
+  late AppBoxKitGestureDriver _driver;
 
   @override
   void initState() {
     super.initState();
-    _driver = KitGestureDriver(
+    _driver = AppBoxKitGestureDriver(
       vsync: this,
       initialValue: widget.t,
       settleSpring: widget.settleSpring,
@@ -88,7 +88,7 @@ class _GestureKitMotionScopeState extends State<_GestureKitMotionScope>
     if (oldWidget.t != widget.t ||
         oldWidget.settleSpring != widget.settleSpring) {
       _driver.dispose();
-      _driver = KitGestureDriver(
+      _driver = AppBoxKitGestureDriver(
         vsync: this,
         initialValue: widget.t,
         settleSpring: widget.settleSpring,
@@ -104,7 +104,7 @@ class _GestureKitMotionScopeState extends State<_GestureKitMotionScope>
 
   @override
   Widget build(BuildContext context) {
-    return KitMotionScope(
+    return AppBoxKitMotionScope(
       driver: _driver,
       spec: widget.spec,
       child: widget.child,

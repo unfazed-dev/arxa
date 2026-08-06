@@ -1,16 +1,16 @@
 import 'package:flutter/animation.dart';
 import 'package:flutter/physics.dart';
 
-import 'kit_springs.dart';
+import 'appbox_kit_springs.dart';
 
-/// A gesture-driven 0→1 driver for `KitMotionScope`: drag input scrubs the
+/// A gesture-driven 0→1 driver for `AppBoxKitMotionScope`: drag input scrubs the
 /// timeline, release settles it to an end state with a spring. It IS the
 /// `Animation<double>` the scope's explicit-driver contract consumes —
 /// hand it straight over:
 ///
 /// ```dart
-/// final driver = KitGestureDriver(vsync: this);
-/// KitMotionScope(driver: driver, child: drawerBody);
+/// final driver = AppBoxKitGestureDriver(vsync: this);
+/// AppBoxKitMotionScope(driver: driver, child: drawerBody);
 /// ```
 ///
 /// Drawer recipe (the primary consumer): a horizontal drag across `extent`
@@ -25,16 +25,16 @@ import 'kit_springs.dart';
 ///
 /// Progress-domain only (no pixels, no gesture arena) — callers map their
 /// own drag geometry, so end drawers just negate the deltas.
-class KitGestureDriver extends AnimationController {
-  KitGestureDriver({
+class AppBoxKitGestureDriver extends AnimationController {
+  AppBoxKitGestureDriver({
     required super.vsync,
     double initialValue = 0.0,
-    this.settleSpring = KitSprings.snappy,
+    this.settleSpring = AppBoxKitSprings.snappy,
     this.completionThreshold = 0.5,
     super.debugLabel,
   }) : super(value: initialValue);
 
-  /// The spring [settle] lands with; presets live in [KitSprings]. Mutable
+  /// The spring [settle] lands with; presets live in [AppBoxKitSprings]. Mutable
   /// so a surface can re-tune without rebuilding the scope.
   SpringDescription settleSpring;
 

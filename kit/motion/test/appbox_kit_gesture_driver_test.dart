@@ -3,7 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:appbox_kit_motion/appbox_kit_motion.dart';
-import 'package:appbox_kit_motion/testing.dart';
+import 'package:appbox_kit_motion/appbox_kit_testing.dart';
 
 double _opacityOf(WidgetTester tester, Key key) {
   final fade = tester.widget<FadeTransition>(
@@ -15,15 +15,15 @@ double _opacityOf(WidgetTester tester, Key key) {
 }
 
 void main() {
-  group('KitGestureDriver scrub', () {
+  group('AppBoxKitGestureDriver scrub', () {
     testWidgets('horizontal drag maps to 0→1 progress, wake tracks it',
         (tester) async {
-      final driver = KitGestureDriver(vsync: tester);
+      final driver = AppBoxKitGestureDriver(vsync: tester);
       addTearDown(driver.dispose);
       var recordedDelta = 0.0;
 
       await tester.pumpWidget(MaterialApp(
-        home: KitMotionScope(
+        home: AppBoxKitMotionScope(
           driver: driver,
           child: Center(
             child: GestureDetector(
@@ -37,7 +37,7 @@ void main() {
                 height: 300,
                 color: Colors.blue,
                 child: const Center(
-                  child: KitWake(
+                  child: AppBoxKitWake(
                     order: 0,
                     child: SizedBox(key: Key('w'), height: 10),
                   ),
@@ -69,7 +69,7 @@ void main() {
     });
 
     test('scrubTo clamps both ends', () {
-      final driver = KitGestureDriver(vsync: const TestVSync());
+      final driver = AppBoxKitGestureDriver(vsync: const TestVSync());
       addTearDown(driver.dispose);
       driver.scrubTo(1.4);
       expect(driver.value, 1.0);
@@ -80,22 +80,22 @@ void main() {
     });
   });
 
-  group('KitGestureDriver settle', () {
-    Future<KitGestureDriver> pumpDriver(
+  group('AppBoxKitGestureDriver settle', () {
+    Future<AppBoxKitGestureDriver> pumpDriver(
       WidgetTester tester, {
       double initialValue = 0.0,
       SpringDescription? settleSpring,
       double? completionThreshold,
     }) async {
-      final driver = KitGestureDriver(
+      final driver = AppBoxKitGestureDriver(
         vsync: tester,
         initialValue: initialValue,
-        settleSpring: settleSpring ?? KitSprings.snappy,
+        settleSpring: settleSpring ?? AppBoxKitSprings.snappy,
         completionThreshold: completionThreshold ?? 0.5,
       );
       addTearDown(driver.dispose);
       await tester.pumpWidget(MaterialApp(
-        home: KitMotionScope(driver: driver, child: const SizedBox()),
+        home: AppBoxKitMotionScope(driver: driver, child: const SizedBox()),
       ));
       return driver;
     }
@@ -183,49 +183,49 @@ void main() {
     });
   });
 
-  group('KitSprings presets', () {
+  group('AppBoxKitSprings presets', () {
     double zeta(SpringDescription s) =>
         s.damping / (2 * math.sqrt(s.mass * s.stiffness));
 
     test('snappy and gentle are critically damped, bouncy underdamped', () {
-      expect(zeta(KitSprings.snappy), closeTo(1.0, 1e-9));
-      expect(zeta(KitSprings.gentle), closeTo(1.0, 1e-9));
-      expect(zeta(KitSprings.bouncy), inInclusiveRange(0.5, 0.99));
+      expect(zeta(AppBoxKitSprings.snappy), closeTo(1.0, 1e-9));
+      expect(zeta(AppBoxKitSprings.gentle), closeTo(1.0, 1e-9));
+      expect(zeta(AppBoxKitSprings.bouncy), inInclusiveRange(0.5, 0.99));
     });
 
     test('gentle settles softer than snappy (lower stiffness)', () {
       expect(
-          KitSprings.gentle.stiffness, lessThan(KitSprings.snappy.stiffness));
+          AppBoxKitSprings.gentle.stiffness, lessThan(AppBoxKitSprings.snappy.stiffness));
     });
 
-    test('KitGestureDriver defaults to KitSprings.snappy', () {
-      final driver = KitGestureDriver(vsync: const TestVSync());
+    test('AppBoxKitGestureDriver defaults to AppBoxKitSprings.snappy', () {
+      final driver = AppBoxKitGestureDriver(vsync: const TestVSync());
       addTearDown(driver.dispose);
-      expect(driver.settleSpring, KitSprings.snappy);
+      expect(driver.settleSpring, AppBoxKitSprings.snappy);
     });
 
     test('spec presets resolve alongside the spring vocabulary', () {
-      expect(KitMotionSpec.standard.staggerFraction, 0.06);
-      expect(KitMotionSpec.subtle.staggerFraction, 0.04);
-      expect(KitMotionSpec.energetic.scale, 0.96);
+      expect(AppBoxKitMotionSpec.standard.staggerFraction, 0.06);
+      expect(AppBoxKitMotionSpec.subtle.staggerFraction, 0.04);
+      expect(AppBoxKitMotionSpec.energetic.scale, 0.96);
     });
   });
 
-  group('gestureKitMotionScope (testing helper)', () {
+  group('gestureAppBoxKitMotionScope (testing helper)', () {
     testWidgets('pins gesture-driven choreography at t', (tester) async {
       await tester.pumpWidget(MaterialApp(
-        home: gestureKitMotionScope(
+        home: gestureAppBoxKitMotionScope(
           t: 0.0,
-          child: const KitWake(
+          child: const AppBoxKitWake(
               order: 0, child: SizedBox(key: Key('g'), height: 10)),
         ),
       ));
       expect(_opacityOf(tester, const Key('g')), 0.0);
 
       await tester.pumpWidget(MaterialApp(
-        home: gestureKitMotionScope(
+        home: gestureAppBoxKitMotionScope(
           t: 1.0,
-          child: const KitWake(
+          child: const AppBoxKitWake(
               order: 0, child: SizedBox(key: Key('g'), height: 10)),
         ),
       ));
@@ -235,13 +235,13 @@ void main() {
     testWidgets('no settle in flight — value stays parked across pumps',
         (tester) async {
       await tester.pumpWidget(MaterialApp(
-        home: gestureKitMotionScope(
+        home: gestureAppBoxKitMotionScope(
           t: 0.5,
           child: const SizedBox(key: Key('g'), height: 10),
         ),
       ));
       final scope =
-          tester.state<KitMotionScopeState>(find.byType(KitMotionScope));
+          tester.state<AppBoxKitMotionScopeState>(find.byType(AppBoxKitMotionScope));
       expect(scope.driver.value, 0.5);
       await tester.pump(const Duration(seconds: 1));
       expect(scope.driver.value, 0.5);

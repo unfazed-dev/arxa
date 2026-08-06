@@ -4,7 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:appbox_kit_motion/appbox_kit_motion.dart';
 
 /// Regression test (exit-animation gap, 2026-07-21): a route-driven
-/// KitMotionScope must scrub KitWake children back down while its route pops.
+/// AppBoxKitMotionScope must scrub AppBoxKitWake children back down while its route pops.
 /// If opacity stays pinned at 1 during the pop, the set-down is broken.
 void main() {
   for (final kind in [_RouteKind.material, _RouteKind.cupertino]) {
@@ -33,7 +33,7 @@ void main() {
 
       double wakeOpacity() => tester
           .widget<FadeTransition>(find.descendant(
-              of: find.byType(KitWake), matching: find.byType(FadeTransition)))
+              of: find.byType(AppBoxKitWake), matching: find.byType(FadeTransition)))
           .opacity
           .value;
       expect(wakeOpacity(), 1.0, reason: 'settled after push');
@@ -63,7 +63,7 @@ class _WakePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: KitMotionScope(
+      body: AppBoxKitMotionScope(
         child: const SizedBox(width: 10, height: 10).wake(order: 0),
       ),
     );
