@@ -74,7 +74,7 @@ entry points: intake (optional), design (declarations), scaffold (final pick).
     classifier verdict as Patch/Release.
 
 13. **Deploy engine: unify — kit runtime + appboxd governance.** kit/deploy's
-    KitDeployTarget port + target classes become THE runtime; appboxd's
+    AppBoxKitDeployTarget port + target classes become THE runtime; appboxd's
     approval token + append-only ledger + licence gate wrap it as
     orchestration; both rewired to read config/credentials.catalog.json
     (kit/deploy module, 10 keys); gate_deploy asserts against the ledger;

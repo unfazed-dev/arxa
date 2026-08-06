@@ -7,9 +7,9 @@ gate in the product.
 
 ## Source — the work is done
 
-`stacked_kit/deploy` is **pure Dart and standalone** (*"no flutter, stacked, or
+`kit/deploy` is **pure Dart and standalone** (*"no flutter, stacked, or
 stacked_kit dependency"*), registry `phase: stable`, with a
-`bin/stacked_kit_deploy.dart` entry point and a `doctor(config)` preflight.
+`bin/appbox_kit_deploy.dart` entry point and a `doctor(config)` preflight.
 
 | target | status |
 |---|---|
@@ -19,7 +19,7 @@ stacked_kit dependency"*), registry `phase: stable`, with a
 | `vercel` | **stub — throws `UnimplementedError`** |
 
 **Why this is the right integration:** external CLIs run through a
-`KitProcessRunner` port, so a scripted runner asserts **every command shape with
+`AppBoxKitProcessRunner` port, so a scripted runner asserts **every command shape with
 no toolchain in CI**. A deploy stage normally cannot be self-tested — no
 credentials, no signing identity, no shorebird install. This one can.
 

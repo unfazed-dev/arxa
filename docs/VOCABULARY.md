@@ -506,13 +506,13 @@ _Layer_: Kit
 The icon set — the only icons appbox ships, written as a name, never drawn
 by hand.
 The icon vocabulary: `icon('name')` inlines a vendored Lucide glyph at design
-time; `KitGlyphs.lucide('name')` resolves the same name in Flutter.
+time; `AppBoxKitGlyphs.lucide('name')` resolves the same name in Flutter.
 _Avoid_: emoji, custom icons, icon font, sprite
 _Layer_: Kit
 
-**KitGlyphs**:
+**AppBoxKitGlyphs**:
 How Flutter code asks for an icon by name.
-The kit's glyph accessor; `KitGlyphs.lucide('name')` is the Flutter-side
+The kit's glyph accessor; `AppBoxKitGlyphs.lucide('name')` is the Flutter-side
 spelling of the design-time `icon('name')`.
 _Avoid_: IconData (bare), icon lookup
 _Layer_: Kit

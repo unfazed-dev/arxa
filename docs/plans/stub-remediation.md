@@ -25,8 +25,8 @@ her — which is her stated abandon condition.
 
 ### Tier 1 — port + scripted fake (no toolchain, runs in CI)
 
-The kit already proves this pattern works: `stacked_kit_deploy` runs every
-external CLI through `KitProcessRunner`, so `ScriptedProcessRunner` asserts
+The kit already proves this pattern works: `appbox_kit_deploy` runs every
+external CLI through `AppBoxKitProcessRunner`, so `ScriptedProcessRunner` asserts
 command shape **with no fastlane, no shorebird, no credentials**.
 
 Apply the same port to payments and auth. Tier 1 answers *"do we call the SDK
@@ -95,9 +95,9 @@ attached.**
   its header + SeedAuthBackend doc comment now name the pairing; drift
   reconciled (email matching after trim on both sides). kit/auth 48/48.
 - **Seq 3 done (spec-reconciled).** kit/payments is real: Stripe via
-  flutter_stripe 13.1.0 PaymentSheet behind `KitStripeBackend`; PayPal via
+  flutter_stripe 13.1.0 PaymentSheet behind `AppBoxKitStripeBackend`; PayPal via
   Orders v2 create → approve (flutter_web_auth_2 redirect) → capture behind
-  `KitPayPalBackend`; `KitPaymentMethod.payPal` added. tier1's PayPal comment
+  `AppBoxKitPayPalBackend`; `AppBoxKitPaymentMethod.payPal` added. tier1's PayPal comment
   now maps its scripted `tokens request` step to the real approve+capture
   half. kit/auth Apple (sign_in_with_apple 8.1.0) + Google (google_sign_in
   7.2.0) providers real. kit/payments 45/45, kit/auth 48/48.

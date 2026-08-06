@@ -295,7 +295,7 @@ Each step ends with something runnable, and none is blocked on the desktop app.
    **(b) form-factor dispatch** — `ScreenTypeLayout` occurs 0 times in 22,738
    lines; the five-file surface set does not exist in its model.
    **(c) kit vocabulary** — it emits `Icons.*` and raw `SizedBox`/`EdgeInsets`;
-   the kit demands `KitGlyphs.*` and the spacing helpers.
+   the kit demands `AppBoxKitGlyphs.*` and the spacing helpers.
    Gate: one surface regenerates byte-identically twice, passes all 73 checks, and
    `gen_freshness` catches a hand-edit to the base.
 6. **Harness adapters** — `harness` | `api` | `none`. Gate: the same design
@@ -720,7 +720,7 @@ thing this architecture cannot afford.
 
 ### `appbox-deployer` — integrate, the work is already done
 
-`stacked_kit_deploy` is **pure Dart and standalone** (*"no flutter, stacked, or
+`appbox_kit_deploy` is **pure Dart and standalone** (*"no flutter, stacked, or
 stacked_kit dependency"*), registry `phase: stable`, `topology: standalone`:
 
 | target | status |
@@ -731,9 +731,9 @@ stacked_kit dependency"*), registry `phase: stable`, `topology: standalone`:
 | `vercel` | **wired** (real target since 2026-08-01, `261b2ad`; opt-in live smoke tests `93cf1ef` — was a stub throwing `UnimplementedError` when this table was written) |
 | `cloudflare-workers` | **wired** (added 2026-08-01, `261b2ad`) |
 
-It already has `bin/stacked_kit_deploy.dart` and a `doctor(config)` preflight.
+It already has `bin/appbox_kit_deploy.dart` and a `doctor(config)` preflight.
 
-**The property that makes it the right integration** is the `KitProcessRunner`
+**The property that makes it the right integration** is the `AppBoxKitProcessRunner`
 port: external CLIs are invoked through it, so `ScriptedProcessRunner` asserts
 every command shape **with no toolchain in CI**. A deploy stage normally cannot
 be self-tested — no credentials, no signing identity, no shorebird install.
@@ -871,7 +871,7 @@ Every decision above is settled. Sequencing for the agents:
 | 5 | **Vendor kit tooling at a pinned SHA** + freshness check (§17) | appbox cannot ship against a private repo |
 | 6 | **Dogfood: prototype appbox's own macOS app** from `design-brief.md` | `--targets macos` → one viewport, the cleanest first exercise |
 | 7 | **Desktop app**: chat (MCP, stdio + HTTP), credentials (OS vault), the three gates | the product |
-| 8 | **`appbox-deployer`** over `stacked_kit_deploy` | wired already; gate 3 |
+| 8 | **`appbox-deployer`** over `appbox_kit_deploy` | wired already; gate 3 |
 | 9 | **Companion app** — QR pairing, prototype WebView, state-bearing FAB (§15) | after the desktop exists to control |
 | 10 | **Payments** — implement Stripe in the kit, or route licensing outside it | blocked; product work, not pipeline work |
 

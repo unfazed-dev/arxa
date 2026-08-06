@@ -49,7 +49,7 @@ pocket for future app-side native cores, not tooling.
    happens, it takes `stacked_kit` / `flutter-crew` at their then-current
    HEAD — which already includes post-vendoring work like the 2026-07-30
    viewer-chrome deps (video_player, pdfrx, markdown/highlight/svg) and
-   KitGlyphs.lucide. `tools/vendor/` snapshots serve only as golden-test
+   AppBoxKitGlyphs.lucide. `tools/vendor/` snapshots serve only as golden-test
    baselines; re-sync (check_freshness / re-vendor) before porting any piece
    so the Dart port targets the latest behavior, and capture baselines from
    that same version.
