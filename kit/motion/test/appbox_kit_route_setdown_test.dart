@@ -8,7 +8,7 @@ import 'package:appbox_kit_motion/appbox_kit_motion.dart';
 /// If opacity stays pinned at 1 during the pop, the set-down is broken.
 void main() {
   for (final kind in [_RouteKind.material, _RouteKind.cupertino]) {
-    testWidgets('route pop scrubs the wake back down (${kind.name})',
+    testWidgets('kit.motion.route-setdown — route pop scrubs the wake back down (${kind.name})',
         (tester) async {
       final navKey = GlobalKey<NavigatorState>();
       await tester.pumpWidget(MaterialApp(

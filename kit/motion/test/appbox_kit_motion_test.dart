@@ -43,7 +43,7 @@ void main() {
   tearDown(() => driver.dispose());
 
   group('AppBoxKitWake stagger', () {
-    testWidgets('later orders wake later on the timeline', (tester) async {
+    testWidgets('kit.motion.wake — later orders wake later on the timeline', (tester) async {
       driver.value = 0.12;
       await tester.pumpWidget(_host(
         driver: driver,
@@ -59,7 +59,7 @@ void main() {
       expect(early, greaterThan(late_));
     });
 
-    testWidgets('settles to identity at driver == 1', (tester) async {
+    testWidgets('kit.motion.wake — settles to identity at driver == 1', (tester) async {
       driver.value = 1.0;
       await tester.pumpWidget(_host(
         driver: driver,
@@ -82,7 +82,7 @@ void main() {
       expect(scale.scale.value, 1.0);
     });
 
-    testWidgets('set-down scrubs in reverse with the driver', (tester) async {
+    testWidgets('kit.motion.wake — set-down scrubs in reverse with the driver', (tester) async {
       driver.value = 1.0;
       await tester.pumpWidget(_host(
         driver: driver,
@@ -101,7 +101,7 @@ void main() {
       expect(_opacityOf(tester, const Key('a')), 0.0);
     });
 
-    testWidgets('auto-claims sequential orders in build order',
+    testWidgets('kit.motion.wake — auto-claims sequential orders in build order',
         (tester) async {
       driver.value = 0.1;
       await tester.pumpWidget(_host(
@@ -116,7 +116,7 @@ void main() {
       expect(first, greaterThan(second)); // slot 0 leads slot 1
     });
 
-    testWidgets('maxStartFraction budgets late orders', (tester) async {
+    testWidgets('kit.motion.wake — maxStartFraction budgets late orders', (tester) async {
       driver.value = 0.55;
       await tester.pumpWidget(_host(
         driver: driver,
@@ -129,7 +129,7 @@ void main() {
   });
 
   group('safe degrades', () {
-    testWidgets('reduce-motion renders children untouched', (tester) async {
+    testWidgets('kit.motion.wake — reduce-motion renders children untouched', (tester) async {
       driver.value = 0.0;
       await tester.pumpWidget(_host(
         driver: driver,
@@ -146,7 +146,7 @@ void main() {
       expect(find.byKey(const Key('a')), findsOneWidget);
     });
 
-    testWidgets('spec.enabled == false renders children untouched',
+    testWidgets('kit.motion.wake — spec.enabled == false renders children untouched',
         (tester) async {
       driver.value = 0.0;
       await tester.pumpWidget(_host(
@@ -163,7 +163,7 @@ void main() {
       );
     });
 
-    testWidgets('no scope above renders children untouched', (tester) async {
+    testWidgets('kit.motion.wake — no scope above renders children untouched', (tester) async {
       await tester.pumpWidget(const MaterialApp(
         home: AppBoxKitWake(order: 0, child: SizedBox(key: Key('a'), height: 10)),
       ));
@@ -173,7 +173,7 @@ void main() {
   });
 
   group('extensions', () {
-    testWidgets('.wake() wraps in AppBoxKitWake', (tester) async {
+    testWidgets('kit.motion.wake — .wake() wraps in AppBoxKitWake', (tester) async {
       driver.value = 1.0;
       await tester.pumpWidget(_host(
         driver: driver,
@@ -183,7 +183,7 @@ void main() {
       expect(_opacityOf(tester, const Key('a')), 1.0);
     });
 
-    testWidgets('.wakeAll() assigns sequential explicit orders',
+    testWidgets('kit.motion.wake — .wakeAll() assigns sequential explicit orders',
         (tester) async {
       driver.value = 0.1;
       await tester.pumpWidget(_host(
@@ -207,7 +207,7 @@ void main() {
   });
 
   group('AppBoxKitMotionAdapter', () {
-    testWidgets('drives flutter_animate effects from the scope driver',
+    testWidgets('kit.motion.wake — drives flutter_animate effects from the scope driver',
         (tester) async {
       driver.value = 0.0;
       await tester.pumpWidget(_host(
@@ -231,7 +231,7 @@ void main() {
       expect(_opacityOf(tester, const Key('a')), 0.0);
     });
 
-    testWidgets('degrades to settled without a scope', (tester) async {
+    testWidgets('kit.motion.wake — degrades to settled without a scope', (tester) async {
       await tester.pumpWidget(MaterialApp(
         home: Builder(builder: (context) {
           return const SizedBox(key: Key('a'), height: 10)
@@ -245,7 +245,7 @@ void main() {
   });
 
   group('testing helpers', () {
-    testWidgets('staticAppBoxKitMotionScope pins the timeline', (tester) async {
+    testWidgets('kit.motion.wake — staticAppBoxKitMotionScope pins the timeline', (tester) async {
       await tester.pumpWidget(MaterialApp(
         home: staticAppBoxKitMotionScope(
           t: 0.0,
@@ -266,20 +266,20 @@ void main() {
   });
 
   group('AppBoxKitMotionSpec', () {
-    test('startFor staggers and clamps', () {
+    test('kit.motion.wake — startFor staggers and clamps', () {
       const spec = AppBoxKitMotionSpec();
       expect(spec.startFor(0), 0.0);
       expect(spec.startFor(2), closeTo(0.12, 1e-9));
       expect(spec.startFor(99), 0.5);
     });
 
-    test('lerp interpolates continuous channels', () {
+    test('kit.motion.wake — lerp interpolates continuous channels', () {
       final mid = const AppBoxKitMotionSpec()
           .lerp(const AppBoxKitMotionSpec(offset: Offset(0, 0.16)), 0.5);
       expect(mid.offset.dy, closeTo(0.12, 1e-9));
     });
 
-    test('theme extension resolution falls back to standard', () {
+    test('kit.motion.wake — theme extension resolution falls back to standard', () {
       expect(
         ThemeData().extension<AppBoxKitMotionSpec>(),
         isNull,

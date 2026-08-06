@@ -16,7 +16,7 @@ double _opacityOf(WidgetTester tester, Key key) {
 
 void main() {
   group('AppBoxKitGestureDriver scrub', () {
-    testWidgets('horizontal drag maps to 0→1 progress, wake tracks it',
+    testWidgets('kit.motion.gesture-driver — horizontal drag maps to 0→1 progress, wake tracks it',
         (tester) async {
       final driver = AppBoxKitGestureDriver(vsync: tester);
       addTearDown(driver.dispose);
@@ -68,7 +68,7 @@ void main() {
       expect(_opacityOf(tester, const Key('w')), 0.0);
     });
 
-    test('scrubTo clamps both ends', () {
+    test('kit.motion.gesture-driver — scrubTo clamps both ends', () {
       final driver = AppBoxKitGestureDriver(vsync: const TestVSync());
       addTearDown(driver.dispose);
       driver.scrubTo(1.4);
@@ -100,7 +100,7 @@ void main() {
       return driver;
     }
 
-    testWidgets('fling velocity sign picks the end state', (tester) async {
+    testWidgets('kit.motion.gesture-driver — fling velocity sign picks the end state', (tester) async {
       final driver = await pumpDriver(tester, initialValue: 0.2);
 
       driver.settle(velocity: 4.0); // flung toward open despite low position
@@ -114,7 +114,7 @@ void main() {
       expect(driver.value, closeTo(0.0, 0.005));
     });
 
-    testWidgets('near-stationary release falls back to completionThreshold',
+    testWidgets('kit.motion.gesture-driver — near-stationary release falls back to completionThreshold',
         (tester) async {
       final driver = await pumpDriver(tester, initialValue: 0.7);
 
@@ -128,7 +128,7 @@ void main() {
       expect(driver.value, closeTo(0.0, 0.005)); // below halfway → closed
     });
 
-    testWidgets('custom completionThreshold re-tunes the fallback',
+    testWidgets('kit.motion.gesture-driver — custom completionThreshold re-tunes the fallback',
         (tester) async {
       final driver = await pumpDriver(
         tester,
@@ -140,7 +140,7 @@ void main() {
       expect(driver.value, closeTo(0.0, 0.005)); // 0.7 < 0.8 → closed
     });
 
-    testWidgets('explicit `to` overrides velocity and threshold',
+    testWidgets('kit.motion.gesture-driver — explicit `to` overrides velocity and threshold',
         (tester) async {
       final driver = await pumpDriver(tester, initialValue: 0.9);
       driver.settle(to: 0.0, velocity: 5.0);
@@ -148,7 +148,7 @@ void main() {
       expect(driver.value, closeTo(0.0, 0.005));
     });
 
-    testWidgets('settle carries release velocity into the spring',
+    testWidgets('kit.motion.gesture-driver — settle carries release velocity into the spring',
         (tester) async {
       final driver = await pumpDriver(tester, initialValue: 0.5);
       driver.settle(to: 1.0, velocity: 20.0);
@@ -169,7 +169,7 @@ void main() {
       await tester.pumpAndSettle();
     });
 
-    testWidgets('scrub cancels an in-flight settle (re-grab mid-flight)',
+    testWidgets('kit.motion.gesture-driver — scrub cancels an in-flight settle (re-grab mid-flight)',
         (tester) async {
       final driver = await pumpDriver(tester, initialValue: 0.5);
       driver.settle(to: 1.0);
@@ -187,24 +187,24 @@ void main() {
     double zeta(SpringDescription s) =>
         s.damping / (2 * math.sqrt(s.mass * s.stiffness));
 
-    test('snappy and gentle are critically damped, bouncy underdamped', () {
+    test('kit.motion.gesture-driver — snappy and gentle are critically damped, bouncy underdamped', () {
       expect(zeta(AppBoxKitSprings.snappy), closeTo(1.0, 1e-9));
       expect(zeta(AppBoxKitSprings.gentle), closeTo(1.0, 1e-9));
       expect(zeta(AppBoxKitSprings.bouncy), inInclusiveRange(0.5, 0.99));
     });
 
-    test('gentle settles softer than snappy (lower stiffness)', () {
+    test('kit.motion.gesture-driver — gentle settles softer than snappy (lower stiffness)', () {
       expect(
           AppBoxKitSprings.gentle.stiffness, lessThan(AppBoxKitSprings.snappy.stiffness));
     });
 
-    test('AppBoxKitGestureDriver defaults to AppBoxKitSprings.snappy', () {
+    test('kit.motion.gesture-driver — AppBoxKitGestureDriver defaults to AppBoxKitSprings.snappy', () {
       final driver = AppBoxKitGestureDriver(vsync: const TestVSync());
       addTearDown(driver.dispose);
       expect(driver.settleSpring, AppBoxKitSprings.snappy);
     });
 
-    test('spec presets resolve alongside the spring vocabulary', () {
+    test('kit.motion.gesture-driver — spec presets resolve alongside the spring vocabulary', () {
       expect(AppBoxKitMotionSpec.standard.staggerFraction, 0.06);
       expect(AppBoxKitMotionSpec.subtle.staggerFraction, 0.04);
       expect(AppBoxKitMotionSpec.energetic.scale, 0.96);
@@ -212,7 +212,7 @@ void main() {
   });
 
   group('gestureAppBoxKitMotionScope (testing helper)', () {
-    testWidgets('pins gesture-driven choreography at t', (tester) async {
+    testWidgets('kit.motion.gesture-driver — pins gesture-driven choreography at t', (tester) async {
       await tester.pumpWidget(MaterialApp(
         home: gestureAppBoxKitMotionScope(
           t: 0.0,
@@ -232,7 +232,7 @@ void main() {
       expect(_opacityOf(tester, const Key('g')), 1.0);
     });
 
-    testWidgets('no settle in flight — value stays parked across pumps',
+    testWidgets('kit.motion.gesture-driver — no settle in flight — value stays parked across pumps',
         (tester) async {
       await tester.pumpWidget(MaterialApp(
         home: gestureAppBoxKitMotionScope(
