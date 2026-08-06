@@ -1,12 +1,12 @@
 import 'package:rxdart/rxdart.dart';
 
 /// Observable per-widgetId state of a [KitAction] operation — the stream form
-/// of what `withLoading(setBusy)` / `onError` deliver as callbacks, so views
-/// bind `KitStreamBuilder(stream: KitAction.state$('op.id'), …)` instead of
-/// plumbing busy flags through the viewmodel.
+/// of what `withLoading(setBusy)` / `handleError` deliver as callbacks, so
+/// views bind `KitStreamBuilder(stream: vm.actionState$('save'), …)` instead
+/// of plumbing busy flags through the viewmodel.
 ///
 /// [errorMessage] holds the last failure's message (the configured
-/// `withErrorFallback` message, else the exception's `toString()`); it is
+/// `completeOnError` message, else the exception's `toString()`); it is
 /// cleared when the next run of the same widgetId starts, not on success —
 /// an error stays visible until the user retries.
 class KitActionState {

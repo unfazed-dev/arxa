@@ -28,17 +28,17 @@ class KitActionConfig<T> {
 
   // ===== Error Handling =====
 
-  /// Error message to display/log
+  /// Error message to display/log — set by `completeOnError`
   String? errorMessage;
 
-  /// Fallback value to return on error
+  /// Fallback value to return on error — set by `completeOnError(withValue:)`
   T? fallbackValue;
 
-  /// Whether a fallback value is available
+  /// Whether the operation completes with [fallbackValue] instead of throwing
   bool hasFallback = false;
 
-  /// Custom error handler callback
-  void Function(Exception exception, StackTrace stackTrace)? onErrorCallback;
+  /// Side-effect tap executed on error — set by `handleError`
+  void Function(Object error)? handleErrorCallback;
 
   // ===== Success Handling =====
 

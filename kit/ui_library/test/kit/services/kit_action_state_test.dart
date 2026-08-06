@@ -42,7 +42,7 @@ void main() {
       final sub = KitAction.state$(widgetId: 'state.success').listen(states.add);
 
       final future = KitAction.run<String>(
-        operation: () async {
+        () async {
           await gate.future;
           return 'ok';
         },
@@ -69,9 +69,9 @@ void main() {
       final state = KitAction.state$(widgetId: 'state.error');
       await expectLater(
         KitAction.run<String>(
-          operation: () async => throw Exception('boom'),
+          () async => throw Exception('boom'),
           widgetId: 'state.error',
-        ).withErrorFallback('Could not save', fallback: '').execute(),
+        ).completeOnError('Could not save', withValue: '').execute(),
         completion(''),
       );
 
@@ -81,7 +81,7 @@ void main() {
 
       // Next run starts: stale error clears, busy set.
       final rerun = KitAction.run<String>(
-        operation: () async => 'fixed',
+        () async => 'fixed',
         widgetId: 'state.error',
       ).execute();
       final running = KitAction.state$(widgetId: 'state.error').value;
@@ -97,7 +97,7 @@ void main() {
       final state = KitAction.state$(widgetId: 'state.raw');
       await expectLater(
         KitAction.run<String>(
-          operation: () async => throw Exception('raw failure'),
+          () async => throw Exception('raw failure'),
           widgetId: 'state.raw',
         ).execute(),
         throwsException,

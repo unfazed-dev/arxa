@@ -36,7 +36,7 @@ void main() {
       var runs = 0;
 
       final first = KitAction.run<String>(
-        operation: () async {
+        () async {
           runs++;
           await gate.future;
           return 'first';
@@ -46,7 +46,7 @@ void main() {
 
       await expectLater(
         KitAction.run<String>(
-          operation: () async {
+          () async {
             runs++;
             return 'second';
           },
@@ -64,7 +64,7 @@ void main() {
       final gate = Completer<void>();
 
       final first = KitAction.run<String>(
-        operation: () async {
+        () async {
           await gate.future;
           return 'first';
         },
@@ -72,9 +72,9 @@ void main() {
       ).execute();
 
       final second = await KitAction.run<String>(
-        operation: () async => 'second',
+        () async => 'second',
         widgetId: 'guard.fallback',
-      ).withErrorFallback('failed', fallback: 'fallback').execute();
+      ).completeOnError('failed', withValue: 'fallback').execute();
 
       expect(second, 'fallback');
       gate.complete();
@@ -84,7 +84,7 @@ void main() {
     test('sequential runs of the same widgetId both execute', () async {
       var runs = 0;
       Future<String> once() => KitAction.run<String>(
-            operation: () async => 'run ${++runs}',
+            () async => 'run ${++runs}',
             widgetId: 'guard.sequential',
           ).execute();
 
@@ -98,7 +98,7 @@ void main() {
       var runs = 0;
 
       Future<String> call() => KitAction.run<String>(
-            operation: () async {
+            () async {
               runs++;
               await gate.future;
               return 'ok';
@@ -119,7 +119,7 @@ void main() {
       var runs = 0;
 
       Future<String> call(String id) => KitAction.run<String>(
-            operation: () async {
+            () async {
               runs++;
               await gate.future;
               return id;
@@ -167,13 +167,13 @@ void main() {
 
     test('callback exceptions route to onError, not the zone', () async {
       final controller = StreamController<int>();
-      Exception? caught;
+      Object? caught;
 
       KitAction.watch(
         widgetId: 'watch.error',
         streams: [controller.stream],
         callback: (_) => throw Exception('boom'),
-        onError: (e, s) => caught = e,
+        onError: (error) => caught = error,
       );
 
       controller.add(1);

@@ -74,6 +74,7 @@ export 'package:cupertino_native_better/cupertino_native.dart'
 
 // --- KitAction (fluent operation API + snackbar vocabulary) ---
 export 'utils/kit_action/kit_action.dart';
+export 'utils/kit_action_owner.dart';
 export 'utils/kit_view_model.dart';
 export 'utils/kit_action/kit_snackbar_type.dart';
 export 'utils/kit_action/kit_snackbar_setup.dart';

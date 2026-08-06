@@ -63,42 +63,58 @@ lockstep — plus the widget, the `lib/ui_library.dart` barrel export, and a
 
 ## KitAction — the operation convention (opinionated)
 
-Every async operation in a kit app runs through `KitAction.run<T>(operation:,
-owner: this, op: '<verb>')` — no hand-rolled `setBusy`/try-catch guards in
-viewmodels, no bare `Timer` debounces, no hand-managed `StreamSubscription`s
-where `watch` fits, and **no hand-written widgetId strings**.
+Every async operation in a kit app runs through the `action(name, operation)`
+helper (from `KitViewModel` / the `KitActionOwner` mixin) — no hand-rolled
+`setBusy`/try-catch guards in viewmodels, no bare `Timer` debounces, no
+hand-managed `StreamSubscription`s where `watch` fits, and **no hand-written
+widgetId strings or `owner: this` at call sites**.
 
-- **Ownership:** ops take `owner:` (the viewmodel/facade/service object) + a
-  short `op:` label (`'save'`; entity ops append the id: `op: 'pin',
-  entity: note.id` on facades, `op: 'save.$noteId'` elsewhere). The registry
-  key derives as `RuntimeType#identityHash.op` — the identity hash keeps two
-  live instances of the same VM class (a view pushed twice) from sharing a
-  guard. The bare `widgetId:` form is for ownerless boot ops (`main()`) only.
+- **Ownership:** the `KitActionOwner` mixin (on `KitViewModel`, `KitDataFacade`,
+  and adapters/services via `with KitActionOwner`) passes `owner: this` for
+  you. Ops take a short name label (`'save'`; entity ops append the id:
+  `mutate(..., name: 'pin', entity: note.id)` on facades,
+  `action('save.$noteId', ...)` elsewhere). The registry key derives as
+  `RuntimeType#identityHash.name` — the identity hash keeps two live instances
+  of the same VM class (a view pushed twice) from sharing a guard. The static
+  `KitAction.run(() => ..., widgetId: ...)` form is for ownerless boot ops
+  (`main()`) only.
+- **Awaitable builder:** `KitActionBuilder` implements `Future` — awaiting
+  the chain executes it, so app code has **no `.execute()` terminal**:
+  `await action('signIn', () => _auth.signIn(...)).completeOnError('...')`.
+  `.execute()` remains for fire-and-forget handles inside non-async methods.
+  The reactive/cancellable forms are single-call terminals: `.toStream()` /
+  `.toCancellable()`.
+- **Error API — two jobs, two names:** `.completeOnError('msg', withValue: v)`
+  decides the OUTCOME (completes with the fallback instead of throwing; `msg`
+  feeds the log/snackbar/state stream). `.handleError((error) => ...)` is a
+  side-effect tap (single param; the stack trace is already logged by the
+  error service).
 - **Auto-dispose:** viewmodels extend `KitViewModel` (not `BaseViewModel`
-  directly) — its `dispose()` calls `KitAction.disposeOwner(this)`, killing
-  every subscription and state subject the VM's ops created. Services with
-  their own `dispose()` (adapters) call `KitAction.disposeOwner(this)` there.
+  directly) — its `dispose()` calls `disposeKitActions()`, killing every
+  subscription and state subject the VM's ops created. Services with their
+  own `dispose()` (adapters, facades) call `disposeKitActions()` there
+  (`KitDataFacade.dispose` already does).
 - **Re-entry guard is default-on** per op key (the Flutter Command /
-  command_it rule): an overlapping `execute()` on the same key is dropped —
-  silently when the chain has `withErrorFallback`, else it throws
+  command_it rule): an overlapping execution on the same key is dropped —
+  silently when the chain has `completeOnError`, else it throws
   `GuardedException`. Opt out per chain with `.withParallelExecution()`.
 - **Facade mutations go through `KitDataFacade.mutate`** with the
-  notification policy as params: `mutate(operation:, op:, entity:, error:,
+  notification policy as params: `mutate(() => ..., name:, entity:, error:,
   success:)` — `error:` on EVERY mutation (errors always surface),
   `success:` only for destructive / confirm-worthy ops. The builder is
   returned, so advanced chains keep chaining (`.withRetry`, `.withDebounce`,
-  `.onSuccess`, `.withErrorFallback`).
-- **Busy/error state is a stream:** `KitAction.state$(owner:, op:)` — inside
-  a viewmodel use the `actionState$('<op>')` helper; views bind it with
-  `KitStreamBuilder`. `.withLoading(setBusy)` remains for stacked-busy
-  consumers but new code binds the stream.
+  `.onSuccess`, `.completeOnError`).
+- **Busy/error state is a stream:** inside a viewmodel use the
+  `actionState$('<name>')` helper; views bind it with `KitStreamBuilder`.
+  `.withLoading(setBusy)` remains for stacked-busy consumers but new code
+  binds the stream.
 - **Debounce:** `.withDebounce(...)` — always pair it with
-  `withErrorFallback`, or each superseded call completes with an error.
-- **Streams:** `KitAction.watch(owner: this, streams:, callback:)` is for
-  VM-internal side effects (navigation triggers, resetting UI-state subjects)
-  — never to feed view data (views bind streams directly). Dependent
-  re-subscription (session → data) composes with rxdart `switchMap` into ONE
-  stream first — never nest listeners.
+  `completeOnError`, or each superseded call completes with an error.
+- **Streams:** `watch(name, streams:, callback:)` is for VM-internal side
+  effects (navigation triggers, resetting UI-state subjects) — never to feed
+  view data (views bind streams directly). Dependent re-subscription
+  (session → data) composes with rxdart `switchMap` into ONE stream first —
+  never nest listeners.
 - **Boot order:** `locator<KitErrorService>().initialize()` must run before
   any KitAction error path can fire (its Talker is late-initialized) — see
   the showcase app's `main.dart`.

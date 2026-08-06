@@ -19,8 +19,19 @@ import 'executors/kit_action_executor.dart';
 
 /// Fluent builder for configuring and executing operations
 /// Provides a chainable API for adding features like loading, error handling, snackbars, etc.
-class KitActionBuilder<T> {
+///
+/// The builder IS a [Future]: awaiting it runs the operation — there is no
+/// terminal `.execute()` in app code. The execution is memoized, so multiple
+/// `await`s/`then`s on the same builder share one run (the re-entry guard
+/// stays happy). `execute()` remains for fire-and-forget assignment
+/// (`final future = action(...).execute();`); `toStream()`/`toCancellable()`
+/// are the single-call terminals for the reactive/cancellable forms.
+class KitActionBuilder<T> implements Future<T> {
   final KitActionConfig<T> _config;
+
+  /// Memoized execution future backing the [Future] interface — awaiting the
+  /// builder twice must not run the operation twice.
+  Future<T>? _awaited;
 
   /// Internal constructor - use KitAction.run() as the entry point
   /// @nodoc
@@ -33,6 +44,33 @@ class KitActionBuilder<T> {
         );
 
   // ═════════════════════════════════════════════════════════════════════════
+  // Future<T> — awaiting the builder executes the operation
+  // ═════════════════════════════════════════════════════════════════════════
+
+  Future<T> _asFuture() => _awaited ??= execute();
+
+  @override
+  Future<R> then<R>(FutureOr<R> Function(T value) onValue,
+          {Function? onError}) =>
+      _asFuture().then(onValue, onError: onError);
+
+  @override
+  Future<T> catchError(Function onError,
+          {bool Function(Object error)? test}) =>
+      _asFuture().catchError(onError, test: test);
+
+  @override
+  Future<T> whenComplete(FutureOr<void> Function() action) =>
+      _asFuture().whenComplete(action);
+
+  @override
+  Future<T> timeout(Duration timeLimit, {FutureOr<T> Function()? onTimeout}) =>
+      _asFuture().timeout(timeLimit, onTimeout: onTimeout);
+
+  @override
+  Stream<T> asStream() => _asFuture().asStream();
+
+  // ═════════════════════════════════════════════════════════════════════════
   // Loading State Management
   // 📖 Spec: Section 5.2 (lines 669-698)
   // ═════════════════════════════════════════════════════════════════════════
@@ -41,9 +79,8 @@ class KitActionBuilder<T> {
   ///
   /// Example:
   /// ```dart
-  /// KitAction.run<String>(...)
-  ///   .withLoading(setBusy)
-  ///   .execute();
+  /// await KitAction.run<String>(...)
+  ///   .withLoading(setBusy);
   /// ```
   KitActionBuilder<T> withLoading(void Function(bool isBusy) setBusy) {
     _config.setBusyCallback = setBusy;
@@ -54,9 +91,8 @@ class KitActionBuilder<T> {
   ///
   /// Example:
   /// ```dart
-  /// KitAction.run<String>(...)
-  ///   .withLoadingFor(myObject, setBusyForObject)
-  ///   .execute();
+  /// await KitAction.run<String>(...)
+  ///   .withLoadingFor(myObject, setBusyForObject);
   /// ```
   KitActionBuilder<T> withLoadingFor(
     Object busyObject,
@@ -73,19 +109,19 @@ class KitActionBuilder<T> {
   ///
   /// Example:
   /// ```dart
-  /// KitAction.run<void>(
-  ///   operation: () async {
+  /// await KitAction.run<void>(
+  ///   () async {
   ///     await _profileService.updateRole(role);
   ///   },
-  ///   widgetId: 'role_selection',
+  ///   owner: this,
+  ///   name: 'updateRole',
   /// )
   ///   .withLoading(setBusy)
   ///   .withClearLoadingBeforeSuccess()
   ///   .onSuccess((_) {
   ///     // Navigation happens here - view will dispose
   ///     _routerService.replaceWith(OnboardingViewRoute());
-  ///   })
-  ///   .execute();
+  ///   });
   /// ```
   KitActionBuilder<T> withClearLoadingBeforeSuccess() {
     _config.clearLoadingBeforeSuccess = true;
@@ -95,38 +131,51 @@ class KitActionBuilder<T> {
   // ═════════════════════════════════════════════════════════════════════════
   // Error Handling
   // 📖 Spec: Section 5.2 (lines 701-744)
+  //
+  // The two error APIs have distinct jobs:
+  // - [completeOnError] decides the OUTCOME: the operation completes with the
+  //   fallback value instead of throwing, and `message` becomes the error
+  //   identity (log, error snackbar, state$ stream).
+  // - [handleError] is a side-effect tap: run this when the operation fails.
+  //   It changes nothing about the outcome.
   // ═════════════════════════════════════════════════════════════════════════
 
-  /// Set error message and optional fallback value
+  /// Complete with a fallback on error instead of throwing
+  ///
+  /// Sets the error [message] (used by the error service log, the error
+  /// snackbar, and the `state$` stream's errorMessage) and marks the
+  /// operation as recovering: `await` completes with [withValue] (or `null`
+  /// for `void`) instead of rethrowing.
   ///
   /// Example:
   /// ```dart
-  /// KitAction.run<String>(...)
-  ///   .withErrorFallback('Failed to load user', fallback: User.empty())
-  ///   .execute();
+  /// await KitAction.run<String>(...)
+  ///   .completeOnError('Failed to load user', withValue: 'anonymous');
   /// ```
-  KitActionBuilder<T> withErrorFallback(
+  KitActionBuilder<T> completeOnError(
     String message, {
-    T? fallback,
+    T? withValue,
   }) {
     _config.errorMessage = message;
-    _config.fallbackValue = fallback;
+    _config.fallbackValue = withValue;
     _config.hasFallback = true;
     return this;
   }
 
-  /// Set custom error handler callback
+  /// Side-effect tap executed when the operation fails
+  ///
+  /// Receives the thrown error (any [Object], not only [Exception]); the full
+  /// stack trace is already logged by the error service before this runs.
+  /// Changes nothing about the outcome — pair with [completeOnError] to also
+  /// swallow the throw.
   ///
   /// Example:
   /// ```dart
-  /// KitAction.run<String>(...)
-  ///   .onError((e, s) => print('Error: $e'))
-  ///   .execute();
+  /// await KitAction.run<String>(...)
+  ///   .handleError((error) => _errorMessage.add('$error'));
   /// ```
-  KitActionBuilder<T> onError(
-    void Function(Exception exception, StackTrace stackTrace) handler,
-  ) {
-    _config.onErrorCallback = handler;
+  KitActionBuilder<T> handleError(void Function(Object error) handler) {
+    _config.handleErrorCallback = handler;
     return this;
   }
 
@@ -139,9 +188,8 @@ class KitActionBuilder<T> {
   ///
   /// Example:
   /// ```dart
-  /// KitAction.run<String>(...)
-  ///   .withLoadingSnackbar('Loading user...', title: 'Please wait')
-  ///   .execute();
+  /// await KitAction.run<String>(...)
+  ///   .withLoadingSnackbar('Loading user...', title: 'Please wait');
   /// ```
   KitActionBuilder<T> withLoadingSnackbar(
     String message, {
@@ -160,9 +208,8 @@ class KitActionBuilder<T> {
   ///
   /// Example:
   /// ```dart
-  /// KitAction.run<String>(...)
-  ///   .withSuccessSnackbar('User loaded!', title: 'Success')
-  ///   .execute();
+  /// await KitAction.run<String>(...)
+  ///   .withSuccessSnackbar('User loaded!', title: 'Success');
   /// ```
   KitActionBuilder<T> withSuccessSnackbar(
     String message, {
@@ -181,9 +228,8 @@ class KitActionBuilder<T> {
   ///
   /// Example:
   /// ```dart
-  /// KitAction.run<String>(...)
-  ///   .withErrorSnackbar('Failed to load user', title: 'Error')
-  ///   .execute();
+  /// await KitAction.run<String>(...)
+  ///   .withErrorSnackbar('Failed to load user', title: 'Error');
   /// ```
   KitActionBuilder<T> withErrorSnackbar(
     String message, {
@@ -202,13 +248,12 @@ class KitActionBuilder<T> {
   ///
   /// Example:
   /// ```dart
-  /// KitAction.run<String>(...)
+  /// await KitAction.run<String>(...)
   ///   .withSnackbars(
   ///     loading: 'Loading...',
   ///     success: 'Success!',
   ///     error: 'Error!',
-  ///   )
-  ///   .execute();
+  ///   );
   /// ```
   KitActionBuilder<T> withSnackbars({
     String? loading,
@@ -254,14 +299,13 @@ class KitActionBuilder<T> {
   ///
   /// Example - Use dialogs for all notifications:
   /// ```dart
-  /// KitAction.run<String>(...)
+  /// await KitAction.run<String>(...)
   ///   .withNotificationType(NotificationType.dialog)
   ///   .withSnackbars(
   ///     loading: 'Saving...',
   ///     success: 'Saved!',
   ///     error: 'Failed to save',
-  ///   )
-  ///   .execute();
+  ///   );
   /// ```
   KitActionBuilder<T> withNotificationType(NotificationType type) {
     _config.loadingNotificationType = type;
@@ -274,7 +318,7 @@ class KitActionBuilder<T> {
   ///
   /// Example - Different types for different states:
   /// ```dart
-  /// KitAction.run<String>(...)
+  /// await KitAction.run<String>(...)
   ///   .withNotificationTypes(
   ///     loading: NotificationType.none,
   ///     success: NotificationType.snackbar,
@@ -283,8 +327,7 @@ class KitActionBuilder<T> {
   ///   .withSnackbars(
   ///     success: 'Operation successful!',
   ///     error: 'An error occurred',
-  ///   )
-  ///   .execute();
+  ///   );
   /// ```
   KitActionBuilder<T> withNotificationTypes({
     NotificationType? loading,
@@ -307,14 +350,13 @@ class KitActionBuilder<T> {
   ///
   /// Example:
   /// ```dart
-  /// KitAction.run<String>(...)
+  /// await KitAction.run<String>(...)
   ///   .withDialogs()
   ///   .withSnackbars(
   ///     loading: 'Processing...',
   ///     success: 'Done!',
   ///     error: 'Failed',
-  ///   )
-  ///   .execute();
+  ///   );
   /// ```
   KitActionBuilder<T> withDialogs() {
     return withNotificationType(NotificationType.dialog);
@@ -324,14 +366,13 @@ class KitActionBuilder<T> {
   ///
   /// Example:
   /// ```dart
-  /// KitAction.run<String>(...)
+  /// await KitAction.run<String>(...)
   ///   .withBottomSheets()
   ///   .withSnackbars(
   ///     loading: 'Processing...',
   ///     success: 'Done!',
   ///     error: 'Failed',
-  ///   )
-  ///   .execute();
+  ///   );
   /// ```
   KitActionBuilder<T> withBottomSheets() {
     return withNotificationType(NotificationType.bottomSheet);
@@ -347,16 +388,14 @@ class KitActionBuilder<T> {
   ///
   /// Example:
   /// ```dart
-  /// KitAction.run<User>(...)
-  ///   .onSuccess((user) => print('Loaded: ${user.name}'))
-  ///   .execute();
+  /// await KitAction.run<User>(...)
+  ///   .onSuccess((user) => print('Loaded: ${user.name}'));
   ///
   /// // Async example (navigation)
-  /// KitAction.run<void>(...)
+  /// await KitAction.run<void>(...)
   ///   .onSuccess((_) async {
   ///     await _routerService.replaceWith(HomeRoute());
-  ///   })
-  ///   .execute();
+  ///   });
   /// ```
   KitActionBuilder<T> onSuccess(FutureOr<void> Function(T result) callback) {
     _config.onSuccessCallback = callback;
@@ -368,9 +407,8 @@ class KitActionBuilder<T> {
   ///
   /// Example:
   /// ```dart
-  /// KitAction.run<String>(...)
-  ///   .onComplete(() => print('Operation complete'))
-  ///   .execute();
+  /// await KitAction.run<String>(...)
+  ///   .onComplete(() => print('Operation complete'));
   /// ```
   KitActionBuilder<T> onComplete(FutureOr<void> Function() callback) {
     _config.onCompleteCallback = callback;
@@ -387,14 +425,13 @@ class KitActionBuilder<T> {
   ///
   /// Example - Update card loading state:
   /// ```dart
-  /// KitAction.run<User>(...)
+  /// await KitAction.run<User>(...)
   ///   .onLoadingState((isLoading, message) {
   ///     setState(() {
   ///       _cardLoading = isLoading;
   ///       _cardMessage = message ?? '';
   ///     });
-  ///   })
-  ///   .execute();
+  ///   });
   /// ```
   KitActionBuilder<T> onLoadingState(
     void Function(bool isLoading, String? message) callback,
@@ -408,14 +445,13 @@ class KitActionBuilder<T> {
   ///
   /// Example - Update success text in card:
   /// ```dart
-  /// KitAction.run<User>(...)
+  /// await KitAction.run<User>(...)
   ///   .onSuccessState((message) {
   ///     setState(() {
   ///       _cardSuccessMessage = message;
   ///       _showSuccessIcon = true;
   ///     });
-  ///   })
-  ///   .execute();
+  ///   });
   /// ```
   KitActionBuilder<T> onSuccessState(
     void Function(String? message) callback,
@@ -429,14 +465,13 @@ class KitActionBuilder<T> {
   ///
   /// Example - Update text input validation:
   /// ```dart
-  /// KitAction.run<User>(...)
+  /// await KitAction.run<User>(...)
   ///   .onErrorState((message) {
   ///     setState(() {
   ///       _inputError = message;
   ///       _inputValid = false;
   ///     });
-  ///   })
-  ///   .execute();
+  ///   });
   /// ```
   KitActionBuilder<T> onErrorState(
     void Function(String? message) callback,
@@ -449,13 +484,12 @@ class KitActionBuilder<T> {
   ///
   /// Example - Update card with all states:
   /// ```dart
-  /// KitAction.run<User>(...)
+  /// await KitAction.run<User>(...)
   ///   .withUIStateCallbacks(
-  ///     onLoading: (isLoading, msg) => setState(() => _loading = isLoading),
-  ///     onSuccess: (msg) => setState(() => _successText = msg),
-  ///     onError: (msg) => setState(() => _errorText = msg),
-  ///   )
-  ///   .execute();
+  ///     onLoading: (isLoading, message) => setState(() => _loading = isLoading),
+  ///     onSuccess: (message) => setState(() => _successText = message),
+  ///     onError: (message) => setState(() => _errorText = message),
+  ///   );
   /// ```
   KitActionBuilder<T> withUIStateCallbacks({
     void Function(bool isLoading, String? message)? onLoading,
@@ -483,13 +517,12 @@ class KitActionBuilder<T> {
   ///
   /// Example:
   /// ```dart
-  /// KitAction.run<String>(...)
+  /// await KitAction.run<String>(...)
   ///   .withRetry(
   ///     maxAttempts: 3,
   ///     delay: Duration(seconds: 1),
-  ///     retryIf: (e) => e.toString().contains('network'),
-  ///   )
-  ///   .execute();
+  ///     retryIf: (error) => error.toString().contains('network'),
+  ///   );
   /// ```
   KitActionBuilder<T> withRetry({
     int maxAttempts = 3,
@@ -511,12 +544,11 @@ class KitActionBuilder<T> {
   ///
   /// Example:
   /// ```dart
-  /// KitAction.run<void>(...)
+  /// await KitAction.run<void>(...)
   ///   .withProgress((progress) {
   ///     _progress = progress;
   ///     rebuildUi();
-  ///   })
-  ///   .execute();
+  ///   });
   /// ```
   KitActionBuilder<T> withProgress(void Function(double progress) onProgress) {
     _config.onProgressCallback = onProgress;
@@ -528,18 +560,22 @@ class KitActionBuilder<T> {
   // 📖 Spec: Section 5.2 (lines 1095-1136)
   // ═════════════════════════════════════════════════════════════════════════
 
-  /// Configure operation to return a BehaviorSubject stream
+  /// Execute the operation and return its result as a BehaviorSubject
+  ///
+  /// Single-call terminal — replaces the old `.asStream().executeAsStream()`
+  /// pair. The subject closes itself with [withAutoCleanup] or dies with the
+  /// owner's disposal.
   ///
   /// Example:
   /// ```dart
   /// final stream = KitAction.run<User>(...)
-  ///   .asStream(initialValue: User.empty())
-  ///   .executeAsStream();
+  ///   .toStream(initialValue: User.empty());
   /// ```
-  KitActionBuilder<T> asStream({T? initialValue}) {
+  BehaviorSubject<T> toStream({T? initialValue}) {
     _config.isStream = true;
     _config.streamInitialValue = initialValue;
-    return this;
+    final executor = KitActionExecutor<T>(_config);
+    return executor.executeAsStream();
   }
 
   /// Set up auto-cleanup trigger for streams
@@ -547,9 +583,8 @@ class KitActionBuilder<T> {
   /// Example:
   /// ```dart
   /// final stream = KitAction.run<User>(...)
-  ///   .asStream()
   ///   .withAutoCleanup(disposeStream$)
-  ///   .executeAsStream();
+  ///   .toStream();
   /// ```
   KitActionBuilder<T> withAutoCleanup(Stream<void> trigger) {
     _config.autoCleanupTrigger = trigger;
@@ -561,20 +596,23 @@ class KitActionBuilder<T> {
   // 📖 Spec: Section 5.2 (lines 1141-1159)
   // ═════════════════════════════════════════════════════════════════════════
 
-  /// Configure operation as cancellable
+  /// Execute the operation as a cancellable operation
+  ///
+  /// Single-call terminal — replaces the old
+  /// `.asCancellable().executeAsCancellable()` pair.
   ///
   /// Example:
   /// ```dart
   /// final cancellable = KitAction.run<String>(...)
-  ///   .asCancellable()
-  ///   .executeAsCancellable();
+  ///   .toCancellable();
   ///
   /// // Later...
   /// cancellable.cancel();
   /// ```
-  KitActionBuilder<T> asCancellable() {
+  KitActionCancellable<T> toCancellable() {
     _config.isCancellable = true;
-    return this;
+    final executor = KitActionExecutor<T>(_config);
+    return executor.executeAsCancellable();
   }
 
   // ═════════════════════════════════════════════════════════════════════════
@@ -586,9 +624,8 @@ class KitActionBuilder<T> {
   ///
   /// Example:
   /// ```dart
-  /// KitAction.run<String>(...)
-  ///   .withTimeout(Duration(seconds: 30))
-  ///   .execute();
+  /// await KitAction.run<String>(...)
+  ///   .withTimeout(Duration(seconds: 30));
   /// ```
   KitActionBuilder<T> withTimeout(Duration timeout) {
     _config.timeout = timeout;
@@ -601,18 +638,17 @@ class KitActionBuilder<T> {
 
   /// Allow parallel executions of the same widgetId
   ///
-  /// By default KitAction prevents parallel runs: a second execute() while
+  /// By default KitAction prevents parallel runs: a second execution while
   /// the same widgetId is still in flight is dropped — it completes with the
-  /// fallback when [withErrorFallback] was set, otherwise it throws a
+  /// fallback when [completeOnError] was set, otherwise it throws a
   /// [GuardedException]. This is the double-tap protection the Flutter
   /// Command pattern and command_it build in. Call this to opt out for
   /// operations that are legitimately concurrent under one widgetId.
   ///
   /// Example:
   /// ```dart
-  /// KitAction.run<String>(...)
-  ///   .withParallelExecution()
-  ///   .execute();
+  /// await KitAction.run<String>(...)
+  ///   .withParallelExecution();
   /// ```
   KitActionBuilder<T> withParallelExecution() {
     _config.allowParallelExecution = true;
@@ -628,9 +664,8 @@ class KitActionBuilder<T> {
   ///
   /// Example:
   /// ```dart
-  /// KitAction.run<List<String>>(...)
-  ///   .withDebounce(Duration(milliseconds: 500))
-  ///   .execute();
+  /// await KitAction.run<List<String>>(...)
+  ///   .withDebounce(Duration(milliseconds: 500));
   /// ```
   KitActionBuilder<T> withDebounce(Duration duration) {
     _config.debounceDuration = duration;
@@ -641,9 +676,8 @@ class KitActionBuilder<T> {
   ///
   /// Example:
   /// ```dart
-  /// KitAction.run<void>(...)
-  ///   .withThrottle(Duration(milliseconds: 1000))
-  ///   .execute();
+  /// await KitAction.run<void>(...)
+  ///   .withThrottle(Duration(milliseconds: 1000));
   /// ```
   KitActionBuilder<T> withThrottle(Duration duration) {
     _config.throttleDuration = duration;
@@ -674,8 +708,7 @@ class KitActionBuilder<T> {
   /// await KitAction.run<String>(...)
   ///   .withDebugMode()
   ///   .withRetry(maxAttempts: 3)
-  ///   .withSnackbars(success: 'Done!')
-  ///   .execute();
+  ///   .withSnackbars(success: 'Done!');
   /// ```
   KitActionBuilder<T> withDebugMode() {
     _config.debugMode = true;
@@ -689,6 +722,9 @@ class KitActionBuilder<T> {
 
   /// Execute the operation and return a Future
   ///
+  /// Escape hatch for fire-and-forget assignment — in app code prefer
+  /// `await`ing the builder directly (it implements [Future]).
+  ///
   /// Example:
   /// ```dart
   /// final result = await KitAction.run<String>(...)
@@ -698,45 +734,5 @@ class KitActionBuilder<T> {
   Future<T> execute() {
     final executor = KitActionExecutor<T>(_config);
     return executor.execute();
-  }
-
-  /// Execute the operation and return a BehaviorSubject stream
-  /// Must call `.asStream()` first or this will throw a StateError
-  ///
-  /// Example:
-  /// ```dart
-  /// final stream = KitAction.run<User>(...)
-  ///   .asStream(initialValue: User.empty())
-  ///   .executeAsStream();
-  /// ```
-  BehaviorSubject<T> executeAsStream() {
-    if (!_config.isStream) {
-      throw StateError(
-        'Cannot execute as stream. Call .asStream() first.',
-      );
-    }
-    final executor = KitActionExecutor<T>(_config);
-    return executor.executeAsStream();
-  }
-
-  /// Execute the operation as a cancellable operation
-  /// Must call `.asCancellable()` first or this will throw a StateError
-  ///
-  /// Example:
-  /// ```dart
-  /// final cancellable = KitAction.run<String>(...)
-  ///   .asCancellable()
-  ///   .executeAsCancellable();
-  ///
-  /// cancellable.cancel();
-  /// ```
-  KitActionCancellable<T> executeAsCancellable() {
-    if (!_config.isCancellable) {
-      throw StateError(
-        'Cannot execute as cancellable. Call .asCancellable() first.',
-      );
-    }
-    final executor = KitActionExecutor<T>(_config);
-    return executor.executeAsCancellable();
   }
 }

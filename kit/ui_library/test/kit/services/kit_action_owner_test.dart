@@ -8,12 +8,11 @@ import 'package:talker_flutter/talker_flutter.dart';
 import 'package:appbox_kit_core/kit_locator.dart';
 import 'package:appbox_kit_core/services/error/kit_error_service.dart';
 import 'package:ui_library/services/notifications/kit_notification_service.dart';
-import 'package:ui_library/utils/kit_action/kit_action.dart';
 import 'package:ui_library/utils/kit_view_model.dart';
 
 /// Tests for owner-identity KitAction: derived keys (no hand-written
-/// widgetIds), parallel ops across owners, and auto-dispose via
-/// `KitViewModel.dispose` → `KitAction.disposeOwner`.
+/// widgetIds), parallel ops across owners, the awaitable builder, and
+/// auto-dispose via `KitViewModel.dispose` → `KitAction.disposeOwner`.
 class _FakeVm extends KitViewModel {}
 
 void main() {
@@ -31,21 +30,18 @@ void main() {
   tearDown(() => locator.reset());
 
   group('owner-identity keys', () {
-    test('run(owner:, op:) state is observable via state\$ of the same pair',
+    test('action(name, operation) state is observable via actionState\$',
         () async {
       final vm = _FakeVm();
       final gate = Completer<void>();
       // Bind first, like a view does — subjects are created on read.
       final state = vm.actionState$('save');
 
-      final future = KitAction.run<String>(
-        operation: () async {
-          await gate.future;
-          return 'done';
-        },
-        owner: vm,
-        op: 'save',
-      ).execute();
+      // Fire-and-forget handle (the builder itself is lazy until awaited).
+      final future = vm.action<String>('save', () async {
+        await gate.future;
+        return 'done';
+      }).execute();
 
       expect(state.value.busy, isTrue);
       gate.complete();
@@ -55,23 +51,37 @@ void main() {
       vm.dispose();
     });
 
-    test('same op label on two owners runs in parallel (independent keys)',
+    test('awaiting the same builder twice runs the operation once', () async {
+      final vm = _FakeVm();
+      var runs = 0;
+
+      final future = vm.action<String>('save', () async {
+        runs++;
+        return 'x';
+      });
+
+      expect(await future, 'x');
+      expect(await future, 'x');
+      expect(runs, 1);
+
+      vm.dispose();
+    });
+
+    test('same name on two owners runs in parallel (independent keys)',
         () async {
       final vmA = _FakeVm();
       final vmB = _FakeVm();
       final gate = Completer<void>();
       var runs = 0;
 
-      Future<String> op() async {
+      Future<String> operation() async {
         runs++;
         await gate.future;
         return 'x';
       }
 
-      final a = KitAction.run<String>(operation: op, owner: vmA, op: 'save')
-          .execute();
-      final b = KitAction.run<String>(operation: op, owner: vmB, op: 'save')
-          .execute();
+      final a = vmA.action<String>('save', operation).execute();
+      final b = vmB.action<String>('save', operation).execute();
 
       // Neither was dropped by the re-entry guard — keys differ per owner.
       gate.complete();
@@ -92,8 +102,8 @@ void main() {
       addTearDown(subject.close);
       var calls = 0;
 
-      KitAction.watch(
-        owner: vm,
+      vm.watch(
+        'listener',
         streams: [subject.stream],
         callback: (_) => calls++,
       );
@@ -115,14 +125,10 @@ void main() {
       expect(vm.actionState$('save').value.busy, isFalse);
 
       final gate = Completer<void>();
-      final future = KitAction.run<String>(
-        operation: () async {
-          await gate.future;
-          return 'x';
-        },
-        owner: vm,
-        op: 'save',
-      ).execute();
+      final future = vm.action<String>('save', () async {
+        await gate.future;
+        return 'x';
+      }).execute();
       expect(vm.actionState$('save').value.busy, isTrue);
 
       gate.complete();
@@ -130,7 +136,7 @@ void main() {
       vm.dispose();
 
       // Post-dispose lookup is a fresh idle subject — the old one is closed.
-      expect(KitAction.state$(owner: vm, op: 'save').value.busy, isFalse);
+      expect(vm.actionState$('save').value.busy, isFalse);
     });
   });
 }

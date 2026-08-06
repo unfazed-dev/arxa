@@ -385,7 +385,7 @@ class AsyncExecutor<T> {
     KitActionStateManager.markError(
       config.widgetId,
       // The user-facing message, however it was configured: explicit
-      // withErrorFallback message, else the error snackbar's, else the raw
+      // completeOnError message, else the error snackbar's, else the raw
       // exception.
       config.errorMessage ?? config.errorSnackbarMessage ?? error.toString(),
     );

@@ -32,9 +32,9 @@ class ThrottledException implements Exception {
 
 /// Exception thrown when an overlapping call is dropped by the re-entry guard
 ///
-/// KitAction guards every `execute()` against parallel runs of the same
+/// KitAction guards every execution against parallel runs of the same
 /// widgetId (the Flutter Command / command_it convention). The dropped call
-/// completes with the fallback when one was set via `withErrorFallback`,
+/// completes with the fallback when one was set via `completeOnError`,
 /// otherwise it throws this exception. Opt out per chain with
 /// `KitActionBuilder.withParallelExecution()`.
 class GuardedException implements Exception {

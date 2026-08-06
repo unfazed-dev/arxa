@@ -36,29 +36,29 @@ class KitOverlayService with ListenableServiceMixin {
 
   void openOverlay(String id) {
     KitAction.run<void>(
-      operation: () {
+      () {
         final currentOverlays = Set<String>.from(_openOverlays$.value);
         currentOverlays.add(id);
         _openOverlays$.add(currentOverlays);
       },
       widgetId: widgetId,
-    ).withErrorFallback('Failed to open overlay').execute();
+    ).completeOnError('Failed to open overlay').execute();
   }
 
   void closeOverlay(String id) {
     KitAction.run<void>(
-      operation: () {
+      () {
         final currentOverlays = Set<String>.from(_openOverlays$.value);
         currentOverlays.remove(id);
         _openOverlays$.add(currentOverlays);
       },
       widgetId: widgetId,
-    ).withErrorFallback('Failed to close overlay').execute();
+    ).completeOnError('Failed to close overlay').execute();
   }
 
   void toggleOverlay(String id) {
     KitAction.run<void>(
-      operation: () {
+      () {
         final currentOverlays = Set<String>.from(_openOverlays$.value);
         if (currentOverlays.contains(id)) {
           currentOverlays.remove(id);
@@ -68,7 +68,7 @@ class KitOverlayService with ListenableServiceMixin {
         _openOverlays$.add(currentOverlays);
       },
       widgetId: widgetId,
-    ).withErrorFallback('Failed to toggle overlay').execute();
+    ).completeOnError('Failed to toggle overlay').execute();
   }
 
   bool isOverlayOpen(String id) {
@@ -127,7 +127,7 @@ class _KitOverlayViewModel extends ReactiveViewModel {
 
   void _setupStreams() {
     KitAction.run<void>(
-      operation: () {
+      () {
         final isServiceOpen = _overlayService.isOverlayOpen(_id);
         _isOpen$.add(isServiceOpen);
         _animatingOut$.add(false);
@@ -168,12 +168,12 @@ class _KitOverlayViewModel extends ReactiveViewModel {
         ));
       },
       widgetId: widgetId,
-    ).withErrorFallback('Failed to set up overlay streams').execute();
+    ).completeOnError('Failed to set up overlay streams').execute();
   }
 
   void _handleExitAnimation() {
     KitAction.run<bool>(
-      operation: () {
+      () {
         _animatingOut$.add(true);
         _isOpen$.add(false);
         _visibleInWidget$.add(true);
@@ -205,29 +205,29 @@ class _KitOverlayViewModel extends ReactiveViewModel {
       },
       widgetId: widgetId,
     )
-        .withErrorFallback('Failed to handle exit animation', fallback: false)
+        .completeOnError('Failed to handle exit animation', withValue: false)
         .execute();
   }
 
   void toggleOverlay() {
     KitAction.run<void>(
-      operation: () => _overlayService.toggleOverlay(_id),
+      () => _overlayService.toggleOverlay(_id),
       widgetId: widgetId,
-    ).withErrorFallback('Failed to toggle overlay in ViewModel').execute();
+    ).completeOnError('Failed to toggle overlay in ViewModel').execute();
   }
 
   void openOverlay() {
     KitAction.run<void>(
-      operation: () => _overlayService.openOverlay(_id),
+      () => _overlayService.openOverlay(_id),
       widgetId: widgetId,
-    ).withErrorFallback('Failed to open overlay in ViewModel').execute();
+    ).completeOnError('Failed to open overlay in ViewModel').execute();
   }
 
   void closeOverlay() {
     KitAction.run<void>(
-      operation: () => _overlayService.closeOverlay(_id),
+      () => _overlayService.closeOverlay(_id),
       widgetId: widgetId,
-    ).withErrorFallback('Failed to close overlay in ViewModel').execute();
+    ).completeOnError('Failed to close overlay in ViewModel').execute();
   }
 
   @override

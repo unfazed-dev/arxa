@@ -46,12 +46,10 @@ class ErrorManager<T> {
       widgetId: config.widgetId,
     );
 
-    // 2. Call custom error handler if provided
-    if (config.onErrorCallback != null) {
+    // 2. Call the side-effect error tap if provided
+    if (config.handleErrorCallback != null) {
       try {
-        final exception =
-            error is Exception ? error : Exception(error.toString());
-        config.onErrorCallback!(exception, stackTrace);
+        config.handleErrorCallback!(error);
       } catch (handlerError, handlerStackTrace) {
         _errorService.warning(
           error: handlerError,

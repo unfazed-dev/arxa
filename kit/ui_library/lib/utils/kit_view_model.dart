@@ -1,7 +1,6 @@
-import 'package:rxdart/rxdart.dart' show ValueStream;
 import 'package:stacked/stacked.dart';
 
-import 'kit_action/kit_action.dart';
+import 'kit_action_owner.dart';
 
 /// Base viewmodel for kit apps — the streams-only convention's lifecycle
 /// half.
@@ -12,23 +11,19 @@ import 'kit_action/kit_action.dart';
 /// rxdart compositions, seeded `BehaviorSubject`s for UI-owned state) and
 /// bound in the view with `KitStreamBuilder`.
 ///
-/// What this base adds over `BaseViewModel`:
-/// - **Auto-dispose:** [dispose] routes through `KitAction.disposeOwner(this)`,
-///   so every `KitAction.run/watch(owner: this, …)` resource — subscriptions,
-///   state subjects — dies with the viewmodel. No hand-written widgetIds, no
-///   manual `KitAction.dispose`.
+/// What this base adds over `BaseViewModel` (via [KitActionOwner]):
+/// - **`action(name, operation)`:** runs ops with `owner: this` implied —
+///   `await action('save', () => _repo.put(note))`, no widgetId strings.
+/// - **`watch(name, streams:, callback:)`:** owner-scoped stream watchers.
 /// - **[actionState$]:** the busy/error stream for one of this VM's ops,
-///   addressed by the same `op` label the `run` chain used — views bind
+///   addressed by the same `name` the `action` chain used — views bind
 ///   `KitStreamBuilder(stream: viewModel.actionState$('save'), …)`.
-abstract class KitViewModel extends BaseViewModel {
-  /// Live busy/error state of the op this viewmodel runs as
-  /// `KitAction.run(owner: this, op: op, …)`.
-  ValueStream<KitActionState> actionState$(String op) =>
-      KitAction.state$(owner: this, op: op);
-
+/// - **Auto-dispose:** [dispose] routes through [disposeKitActions], so every
+///   resource the VM's ops created dies with it.
+abstract class KitViewModel extends BaseViewModel with KitActionOwner {
   @override
   void dispose() {
-    KitAction.disposeOwner(this);
+    disposeKitActions();
     super.dispose();
   }
 }
