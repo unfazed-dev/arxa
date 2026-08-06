@@ -74,6 +74,7 @@ export 'package:cupertino_native_better/cupertino_native.dart'
 
 // --- AppBoxKitAction (fluent operation API + snackbar vocabulary) ---
 export 'utils/kit_action/appbox_kit_action.dart';
+export 'utils/kit_action/appbox_kit_action_pipeline.dart'; // SPIKE — @experimental
 export 'utils/appbox_kit_action_owner.dart';
 export 'utils/appbox_kit_view_model.dart';
 export 'utils/kit_action/appbox_kit_snackbar_type.dart';

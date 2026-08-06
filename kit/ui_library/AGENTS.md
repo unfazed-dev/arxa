@@ -101,9 +101,10 @@ widgetId strings or `owner: this` at call sites**.
 - **Facade mutations go through `AppBoxKitDataFacade.mutate`** with the
   notification policy as params: `mutate(() => ..., name:, entity:, error:,
   success:)` — `error:` on EVERY mutation (errors always surface),
-  `success:` only for destructive / confirm-worthy ops. The builder is
-  returned, so advanced chains keep chaining (`.withRetry`, `.withDebounce`,
-  `.onSuccess`, `.completeOnError`).
+  `success:` only for destructive / confirm-worthy ops, `fallback:` to
+  swallow with an error identity (completeOnError parity). It dispatches on
+  the facade's action pipeline and returns a hot observation handle
+  (`Future<T>`) — already running, awaiting optional.
 - **Busy/error state is a stream:** inside a viewmodel use the
   `actionState$('<name>')` helper; views bind it with `AppBoxKitStreamBuilder`.
   `.withLoading(setBusy)` remains for stacked-busy consumers but new code

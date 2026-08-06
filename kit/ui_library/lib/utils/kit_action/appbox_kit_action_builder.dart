@@ -20,6 +20,13 @@ import 'executors/appbox_kit_action_executor.dart';
 /// Fluent builder for configuring and executing operations
 /// Provides a chainable API for adding features like loading, error handling, snackbars, etc.
 ///
+/// **Low-level API — prefer pipes in app code.** This builder is LAZY: the
+/// operation only runs when the builder is awaited or `.execute()` is called,
+/// so a dropped chain silently never runs. `AppBoxKitActionOwner.pipeline`
+/// (see `AppBoxKitActionPipeline`) is the app-level API: dispatch is hot and
+/// returns an observation handle. The builder remains for `toStream` /
+/// `toCancellable` and other advanced per-call forms.
+///
 /// The builder IS a [Future]: awaiting it runs the operation — there is no
 /// terminal `.execute()` in app code. The execution is memoized, so multiple
 /// `await`s/`then`s on the same builder share one run (the re-entry guard

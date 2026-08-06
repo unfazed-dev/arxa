@@ -23,6 +23,12 @@ export 'appbox_kit_action_builder.dart' show AppBoxKitActionBuilder;
 
 /// Main entry point for AppBoxKitAction - a fluent API for executing operations
 ///
+/// **Low-level API.** App code (viewmodels, facades) should prefer
+/// [AppBoxKitActionPipeline] pipes via `AppBoxKitActionOwner.pipeline` — hot
+/// dispatch with observation handles. This builder remains for the advanced
+/// forms pipes don't cover: `toStream`, `toCancellable`, per-call
+/// throttle/debounce timers, and parallel execution.
+///
 /// AppBoxKitAction provides automatic error handling, loading state management,
 /// user notifications, and reactive stream support with a clean, chainable API.
 /// The builder runs when awaited — no terminal `.execute()` needed in app code.
@@ -95,13 +101,16 @@ class AppBoxKitAction {
   /// state subject; `run`/`watch`/`state$` all derive from the same owner
   /// object, so the pair always resolves to the same key. The string is a
   /// diagnostic label and registry key, never hand-written at call sites.
-  static String _deriveKey(Object owner, String? name) {
+  ///
+  /// Public so [AppBoxKitActionPipeline] derives byte-identical keys — pipe
+  /// and builder ops with the same owner+name share one state subject.
+  static String deriveKey(Object owner, String? name) {
     final base = '${owner.runtimeType}#${identityHashCode(owner)}';
     return name == null ? base : '$base.$name';
   }
 
   static String _track(Object owner, String? name) {
-    final key = _deriveKey(owner, name);
+    final key = deriveKey(owner, name);
     final keys = _ownerKeys[owner] ??= [];
     if (!keys.contains(key)) keys.add(key);
     return key;
@@ -261,7 +270,7 @@ class AppBoxKitAction {
       'AppBoxKitAction.state\$ needs an owner (+name) or an explicit widgetId',
     );
     return AppBoxKitActionStateManager.state$(
-      owner != null ? _deriveKey(owner, name) : widgetId!,
+      owner != null ? deriveKey(owner, name) : widgetId!,
     );
   }
 
