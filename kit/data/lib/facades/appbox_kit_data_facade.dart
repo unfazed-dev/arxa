@@ -15,10 +15,10 @@ import '../repositories/appbox_kit_repository.dart';
 /// Aggregations belong here, never in repositories (swap rule 2).
 ///
 /// Mutations go through [mutate], which dispatches on the facade's
-/// `AppBoxKitActionBus` so data writes inherit the kit's
-/// busy/error/snackbar automation (hot dispatch — the returned future is an
+/// `AppBoxKitActionHub` so data writes inherit the kit's
+/// busy/error/snackbar automation (hot send — the returned future is an
 /// observation handle). As a [AppBoxKitActionOwner] the facade can also run
-/// ad-hoc ops via `bus.define(name, …)` and everything it created dies
+/// ad-hoc ops via `abxActionHub.on(name, …)` and everything it created dies
 /// with [dispose].
 abstract class AppBoxKitDataFacade with AppBoxKitActionOwner {
   final List<Subject<dynamic>> _subjects$ = [];
@@ -38,7 +38,7 @@ abstract class AppBoxKitDataFacade with AppBoxKitActionOwner {
     return subject;
   }
 
-  /// Runs a data mutation on the facade's bus, owned by this facade —
+  /// Runs a data mutation on the facade's hub, owned by this facade —
   /// the registry key is derived (`RuntimeType.name.entity`), never
   /// hand-written.
   ///
@@ -52,14 +52,16 @@ abstract class AppBoxKitDataFacade with AppBoxKitActionOwner {
   ///   becomes the error identity (log, state$ stream).
   ///
   /// The returned future is an observation handle: the mutation is ALREADY
-  /// RUNNING when `mutate` returns (hot dispatch), so awaiting it is optional
+  /// RUNNING when `mutate` returns (hot send), so awaiting it is optional
   /// and dropping it is harmless. Awaiting delivers the stored value on
   /// success and — unless [fallback] was set — rethrows on failure (errors
   /// surface via the snackbar AND the handle).
   ///
   /// ```dart
   /// Future<ShowcaseNoteModel> togglePin(ShowcaseNoteModel note) => mutate(
-  ///       () => _repo.upsertNote(note.copyWith(isPinned: !note.isPinned)),
+  ///       // patch, not upsert: only `pinned` is written — a concurrent
+  ///       // edit to any other column survives (see AppBoxKitRepository.patch).
+  ///       () => _repo.patchNote(note, note.copyWith(isPinned: !note.isPinned)),
   ///       name: 'pin',
   ///       entity: note.id,
   ///       error: 'Could not update the note',
@@ -75,7 +77,7 @@ abstract class AppBoxKitDataFacade with AppBoxKitActionOwner {
   }) {
     final label =
         [if (name != null) name, if (entity != null) entity].join('.');
-    return bus.run<T>(
+    return abxActionHub.send<T>(
       label.isEmpty ? 'mutate' : label,
       operation,
       errorMessage: fallback,
@@ -88,7 +90,7 @@ abstract class AppBoxKitDataFacade with AppBoxKitActionOwner {
     disposeAppBoxKitActions();
     for (final subject in _subjects$) {
       // Fire-and-forget: awaiting close() deadlocks a testWidgets FakeAsync
-      // zone (rxdart's close waits for in-flight dispatch that never drains
+      // zone (rxdart's close waits for in-flight send that never drains
       // under the fake clock). The subject is closed regardless.
       // ignore: unawaited_futures
       subject.close();

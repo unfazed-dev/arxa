@@ -73,6 +73,30 @@ class AppBoxKitIdService {
     return out;
   }
 
+  /// Canonicalizes a partial wire-shape patch: every reference column
+  /// present (against the referenced table's namespace-key). Null values
+  /// pass through — a null patch value clears the column. The id column
+  /// must NOT appear: a patch can never re-address a row.
+  Map<String, dynamic> canonicalizePatch(
+    AppBoxKitTableSchema schema,
+    Map<String, dynamic> patch,
+  ) {
+    if (patch.containsKey(schema.idColumn.name)) {
+      throw ArgumentError(
+        'patch for "${schema.table}" must not contain '
+        '"${schema.idColumn.name}" — a patch cannot re-address a row',
+      );
+    }
+    final out = Map<String, dynamic>.from(patch);
+    for (final ref in schema.referenceColumns) {
+      final value = out[ref.name];
+      if (value != null) {
+        out[ref.name] = canonicalId(ref.references!, value);
+      }
+    }
+    return out;
+  }
+
   /// Canonicalizes `eq` filter values that target the id column or a
   /// reference column, so callers can query by seed key ("cat-1") or UUID
   /// interchangeably on every backend. Other filters pass through — gt/lt on

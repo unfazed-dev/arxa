@@ -16,9 +16,13 @@ This file owns the data-layer contract.
 - **Layering:** `View → ViewModel → Facade Service → Repository → Backend`.
   The `AppBoxKitDataFacade` subclass is the only layer ViewModels talk to; it
   composes repositories into derived streams and routes writes through the
-  KitAction bus via `mutate(...)` (hot dispatch — the returned future is
+  KitAction hub via `mutate(...)` (hot send — the returned future is
   an observation handle). `AppBoxKitRepository<T>` is the swap seam — one
   interface, three implementations (seed / Supabase / Appwrite), no codegen.
+  Writes: `upsert` for creates, **`patch(original, patched)` for every
+  mutation of an existing row** — only the columns that differ (codec
+  wire-shape diff) hit storage, so a concurrent edit to another column is
+  never clobbered by a full-row write.
 - **`AppBoxKitQuery` stays deliberately tiny** (`lib/query/appbox_kit_query.dart`): eq/gt/lt
   filters + orderBy + limit — every operator satisfiable single-table on all
   three backends. **Joins and aggregates are facade work** (`.map()` over

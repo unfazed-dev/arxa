@@ -129,6 +129,25 @@ class AppBoxKitSupabaseRepository<T> implements AppBoxKitRepository<T> {
   }
 
   @override
+  Future<T> patch(T original, T patched) async {
+    final originalJson = _registration.toJson(original);
+    final canonical = _idService.canonicalId(
+        _table, originalJson[_registration.schema.idColumn.name]!);
+    final diff = appBoxKitJsonPatch(originalJson, _registration.toJson(patched));
+    if (diff.isEmpty) return patched;
+    // Column-level UPDATE … WHERE id = canonical — the whole point of patch:
+    // columns outside the diff are never named, so a concurrent writer's
+    // values survive regardless of what `original` saw.
+    final result = await _client
+        .from(_table)
+        .update(_idService.canonicalizePatch(_registration.schema, diff))
+        .eq('id', canonical)
+        .select()
+        .single();
+    return _registration.fromJson(result);
+  }
+
+  @override
   Future<void> delete(String id) async {
     final canonical = _idService.canonicalId(_table, id);
     await _client.from(_table).delete().eq('id', canonical);

@@ -187,4 +187,87 @@ void main() {
 
     expect(results.map((w) => w.name), ['Gamma', 'Alpha', 'Beta']);
   });
+
+  group('patch', () {
+    test('kit.data.seed-repos — patch writes only the differing columns, leaving a concurrent edit to another column intact', () async {
+      final repo = makeRepo();
+      const original = _Widget(id: 'w-1', name: 'Alpha', qty: 1);
+      await repo.upsert(original);
+
+      // Another surface edits `name` after `original` was read.
+      await repo.upsert(const _Widget(id: 'w-1', name: 'Alpha edited', qty: 1));
+
+      final patched =
+          await repo.patch(original, const _Widget(id: 'w-1', name: 'Alpha', qty: 5));
+
+      expect(patched.qty, 5);
+      expect(patched.name, 'Alpha edited',
+          reason: 'the concurrent edit to a column the patch did not touch survives');
+    });
+
+    test('kit.data.seed-repos — patch clearing a nullable column stores the null', () async {
+      final repo = makeRepo();
+      const original = _Widget(id: 'w-1', name: 'Alpha', categoryId: 'cat-1', qty: 3);
+      await repo.upsert(original);
+
+      final patched =
+          await repo.patch(original, const _Widget(id: 'w-1', name: 'Alpha', qty: 3));
+
+      expect(patched.categoryId, isNull);
+      expect((await repo.getById('w-1'))!.categoryId, isNull);
+    });
+
+    test('kit.data.seed-repos — patch canonicalizes a reference column inside the diff', () async {
+      final repo = makeRepo();
+      const original = _Widget(id: 'w-1', name: 'Alpha');
+      await repo.upsert(original);
+
+      await repo.patch(original, const _Widget(id: 'w-1', name: 'Alpha', categoryId: 'cat-2'));
+
+      final stored = await repo.getById('w-1');
+      expect(stored!.categoryId, idService.canonicalId('categories', 'cat-2'));
+    });
+
+    test('kit.data.seed-repos — patch on a missing row throws instead of creating it', () async {
+      final repo = makeRepo();
+
+      expect(
+        () => repo.patch(
+          const _Widget(id: 'ghost', name: 'A'),
+          const _Widget(id: 'ghost', name: 'B'),
+        ),
+        throwsStateError,
+      );
+    });
+
+    test('kit.data.seed-repos — patch with no differing columns writes nothing', () async {
+      final repo = makeRepo();
+      const original = _Widget(id: 'w-1', name: 'Alpha', qty: 1);
+      await repo.upsert(original);
+
+      var emissions = 0;
+      final sub = repo.watchById('w-1').listen((_) => emissions++);
+      await Future<void>.delayed(Duration.zero); // flush the seeded replay
+
+      final result = await repo.patch(original, original);
+      await Future<void>.delayed(Duration.zero);
+      await sub.cancel();
+
+      expect(result.qty, 1);
+      expect(emissions, 1, reason: 'no store write, no watcher re-emit');
+    });
+
+    test('kit.data.seed-repos — patch rejects a diff that would re-address the row', () async {
+      final repo = makeRepo();
+      await repo.upsert(const _Widget(id: 'w-1', name: 'Alpha'));
+
+      expect(
+        () => repo.patch(
+          const _Widget(id: 'w-1', name: 'Alpha'),
+          const _Widget(id: 'w-2', name: 'Alpha'),
+        ),
+        throwsArgumentError,
+      );
+    });
+  });
 }

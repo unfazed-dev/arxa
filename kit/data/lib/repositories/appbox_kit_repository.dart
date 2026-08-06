@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import '../query/appbox_kit_query.dart';
 
 /// The typed, single-table gateway to the active backend — the swap seam.
@@ -27,5 +29,32 @@ abstract interface class AppBoxKitRepository<T> {
 
   Future<List<T>> upsertMany(List<T> entities);
 
+  /// Partial update: writes ONLY the columns that differ between [original]
+  /// and [patched] (compared as wire-shape JSON — see [appBoxKitJsonPatch]),
+  /// leaving every other stored column untouched, so two surfaces patching
+  /// different columns of the same row never clobber each other. The row
+  /// must exist — backends throw their natural not-found error. A no-op
+  /// diff writes nothing and returns [patched]. Returns the entity as
+  /// stored after the patch.
+  Future<T> patch(T original, T patched);
+
   Future<void> delete(String id);
+}
+
+/// The wire-shape diff behind every [AppBoxKitRepository.patch]: the entries
+/// of [patched] whose JSON encoding differs from [original]'s. Values are
+/// codec output, so `jsonEncode` equality is exact — including nested
+/// list/map columns and explicit nulls (a cleared column diffs, an unchanged
+/// null does not).
+Map<String, dynamic> appBoxKitJsonPatch(
+  Map<String, dynamic> original,
+  Map<String, dynamic> patched,
+) {
+  final diff = <String, dynamic>{};
+  for (final entry in patched.entries) {
+    if (jsonEncode(original[entry.key]) != jsonEncode(entry.value)) {
+      diff[entry.key] = entry.value;
+    }
+  }
+  return diff;
 }

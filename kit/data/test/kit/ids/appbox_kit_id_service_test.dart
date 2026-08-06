@@ -168,4 +168,31 @@ void main() {
       expect(identical(out, query), isTrue);
     });
   });
+
+  group('canonicalizePatch', () {
+    test('kit.data.id-service — reference values canonicalize, scalars and nulls pass through', () {
+      final service = AppBoxKitIdService();
+
+      final out = service.canonicalizePatch(products, {
+        'category': 'cat-1',
+        'name': 'Widget',
+        'price': null,
+      });
+
+      expect(out['category'], service.canonicalId('categories', 'cat-1'));
+      expect(out['name'], 'Widget');
+      expect(out.containsKey('price'), isTrue,
+          reason: 'a null patch value clears the column, it is not dropped');
+      expect(out['price'], isNull);
+    });
+
+    test('kit.data.id-service — a patch containing the id column throws', () {
+      final service = AppBoxKitIdService();
+
+      expect(
+        () => service.canonicalizePatch(products, {'id': 'p-1', 'name': 'Widget'}),
+        throwsArgumentError,
+      );
+    });
+  });
 }

@@ -78,6 +78,26 @@ class AppBoxKitSeedRepository<T> implements AppBoxKitRepository<T> {
   }
 
   @override
+  Future<T> patch(T original, T patched) async {
+    await profile.gate();
+    final originalJson = registration.toJson(original);
+    final canonical = idService.canonicalId(
+        _table, originalJson[registration.schema.idColumn.name]!);
+    final diff = appBoxKitJsonPatch(originalJson, registration.toJson(patched));
+    if (diff.isEmpty) return patched;
+    final row = store.tableSnapshot(_table)[canonical];
+    if (row == null) {
+      throw StateError('patch: no "$_table" row "$canonical"');
+    }
+    final merged = <String, dynamic>{
+      ...row,
+      ...idService.canonicalizePatch(registration.schema, diff),
+    };
+    await store.upsertRow(_table, merged);
+    return registration.fromJson(merged);
+  }
+
+  @override
   Future<void> delete(String id) async {
     await profile.gate();
     final canonical = idService.canonicalId(_table, id);

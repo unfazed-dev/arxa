@@ -39,7 +39,7 @@ export 'schema/appbox_kit_table_schema.dart';
 ///
 /// Rows live as canonicalized JSON (the same wire shape the seed backend
 /// stores) keyed by canonical id, behind a seeded [BehaviorSubject], so
-/// `watch*` emits the current result set immediately and again on every
+/// `listen*` emits the current result set immediately and again on every
 /// write. ID canonicalization and [AppBoxKitQuery] evaluation (`eq` / `gt` / `lt` /
 /// `orderBy` with nulls-last / `limit`) mirror `AppBoxKitSeedRepository` — if the
 /// seed engine's semantics change, change this fake too.
@@ -83,6 +83,9 @@ class FakeAppBoxKitRepository<T> implements AppBoxKitRepository<T> {
   /// in call order. [upsertMany] records one entry per entity.
   final List<T> upsertedEntities = [];
 
+  /// Every entity returned by [patch], in call order.
+  final List<T> patchedEntities = [];
+
   /// Number of [upsertMany] calls.
   int upsertManyCallCount = 0;
 
@@ -96,6 +99,9 @@ class FakeAppBoxKitRepository<T> implements AppBoxKitRepository<T> {
 
   /// When non-null, [upsert] / [upsertMany] throw this instead of writing.
   Object? upsertError;
+
+  /// When non-null, [patch] throws this instead of writing.
+  Object? patchError;
 
   /// When non-null, [delete] throws this instead of removing the row.
   Object? deleteError;
@@ -164,6 +170,29 @@ class FakeAppBoxKitRepository<T> implements AppBoxKitRepository<T> {
   }
 
   @override
+  Future<T> patch(T original, T patched) async {
+    _throwIf(patchError);
+    final originalJson = registration.toJson(original);
+    final canonical = idService.canonicalId(_table, originalJson[_idColumn]!);
+    final diff = appBoxKitJsonPatch(originalJson, registration.toJson(patched));
+    if (diff.isEmpty) return patched;
+    final row = _rows$.value[canonical];
+    if (row == null) {
+      throw StateError('patch: no "$_table" row "$canonical"');
+    }
+    final merged = <String, dynamic>{
+      ...row,
+      ...idService.canonicalizePatch(registration.schema, diff),
+    };
+    final next = Map<String, Map<String, dynamic>>.from(_rows$.value);
+    next[canonical] = merged;
+    _rows$.add(next);
+    final stored = registration.fromJson(merged);
+    patchedEntities.add(stored);
+    return stored;
+  }
+
+  @override
   Future<void> delete(String id) async {
     deletedIds.add(id);
     _throwIf(deleteError);
@@ -206,10 +235,12 @@ class FakeAppBoxKitRepository<T> implements AppBoxKitRepository<T> {
     watchByIdCalls.clear();
     watchAllCalls.clear();
     upsertedEntities.clear();
+    patchedEntities.clear();
     upsertManyCallCount = 0;
     deletedIds.clear();
     readError = null;
     upsertError = null;
+    patchError = null;
     deleteError = null;
   }
 
@@ -291,7 +322,7 @@ class FakeAppBoxKitRepository<T> implements AppBoxKitRepository<T> {
 ///
 /// `repository<T>()` / `auth` resolve through the appBoxKitLocator exactly as in a
 /// real facade subclass — register [FakeAppBoxKitRepository] instances for the
-/// entities under test. `mutate` still returns the real bus observation
+/// entities under test. `mutate` still returns the real hub observation
 /// handle (so the mutation executes against kit fakes); it just records each
 /// call's label and value type first.
 class FakeAppBoxKitDataFacade extends AppBoxKitDataFacade {

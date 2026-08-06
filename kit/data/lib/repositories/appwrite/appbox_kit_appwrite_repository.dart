@@ -197,6 +197,24 @@ class AppBoxKitAppwriteRepository<T> implements AppBoxKitRepository<T> {
   }
 
   @override
+  Future<T> patch(T original, T patched) async {
+    final originalJson = _registration.toJson(original);
+    final canonical = _idService.canonicalId(
+        _tableId, originalJson[_registration.schema.idColumn.name]!);
+    final diff = appBoxKitJsonPatch(originalJson, _registration.toJson(patched));
+    if (diff.isEmpty) return patched;
+    // updateRow is attribute-level: only the diffed columns are written;
+    // `_toWireData` applies the same jsonb string encoding as upsert.
+    final result = await _tablesDB.updateRow(
+      databaseId: _databaseId,
+      tableId: _tableId,
+      rowId: canonical,
+      data: _toWireData(_idService.canonicalizePatch(_registration.schema, diff)),
+    );
+    return _registration.fromJson(_fromWire(result));
+  }
+
+  @override
   Future<void> delete(String id) async {
     final canonical = _idService.canonicalId(_tableId, id);
     try {

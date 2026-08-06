@@ -178,4 +178,31 @@ void main() {
     await expectation;
     expect(repo.currentRows, isEmpty);
   });
+
+  test('kit.data.fake-repository — patch merges only the differing columns and records the stored entity', () async {
+    final repo = makeRepo(seed: [const _Widget(id: 'w-1', name: 'Alpha', qty: 1)]);
+    const original = _Widget(id: 'w-1', name: 'Alpha', qty: 1);
+
+    final patched =
+        await repo.patch(original, const _Widget(id: 'w-1', name: 'Alpha', qty: 9));
+
+    expect(patched.qty, 9);
+    expect(patched.name, 'Alpha');
+    expect(repo.patchedEntities.single.qty, 9);
+  });
+
+  test('kit.data.fake-repository — patchError scripts a patch failure', () async {
+    final repo = makeRepo(seed: [const _Widget(id: 'w-1', name: 'Alpha')]);
+    final boom = StateError('boom');
+
+    repo.patchError = boom;
+
+    expect(
+      () => repo.patch(
+        const _Widget(id: 'w-1', name: 'Alpha'),
+        const _Widget(id: 'w-1', name: 'Beta'),
+      ),
+      throwsA(boom),
+    );
+  });
 }
