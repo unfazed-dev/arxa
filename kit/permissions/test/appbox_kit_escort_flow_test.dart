@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:appbox_kit_permissions/appbox_kit_testing.dart';
 
 void main() {
-  test('permanentlyDenied triggers the settings escort', () async {
+  test('kit.permissions.escort — permanentlyDenied triggers the settings escort', () async {
     final perms = FakeAppBoxKitPermissionsService();
     perms.script(AppBoxKitPermission.camera, [AppBoxKitPermissionStatus.permanentlyDenied]);
 
@@ -17,7 +17,7 @@ void main() {
     expect(perms.openAppSettingsCallCount, 1);
   });
 
-  test('a permanently-denied permission never re-prompts', () async {
+  test('kit.permissions.escort — a permanently-denied permission never re-prompts', () async {
     final perms = FakeAppBoxKitPermissionsService(
       initial: {AppBoxKitPermission.location: AppBoxKitPermissionStatus.permanentlyDenied},
     );
