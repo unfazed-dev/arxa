@@ -6,19 +6,19 @@ void main() {
   const melbourne = AppBoxKitLatLng(-37.8136, 144.9631);
 
   group('AppBoxKitLatLng', () {
-    test('value equality', () {
+    test('kit.maps.models — value equality', () {
       expect(sydney, const AppBoxKitLatLng(-33.8688, 151.2093));
       expect(sydney, isNot(melbourne));
       expect(sydney.hashCode, const AppBoxKitLatLng(-33.8688, 151.2093).hashCode);
     });
 
-    test('toString is readable', () {
+    test('kit.maps.models — toString is readable', () {
       expect(sydney.toString(), 'AppBoxKitLatLng(-33.8688, 151.2093)');
     });
   });
 
   group('AppBoxKitLatLngBounds', () {
-    test('value equality', () {
+    test('kit.maps.models — value equality', () {
       const bounds =
           AppBoxKitLatLngBounds(southwest: melbourne, northeast: sydney);
       expect(
@@ -33,7 +33,7 @@ void main() {
   });
 
   group('AppBoxKitCameraPosition', () {
-    test('defaults and equality', () {
+    test('kit.maps.models — defaults and equality', () {
       const camera = AppBoxKitCameraPosition(target: sydney);
       expect(camera.zoom, 14);
       expect(camera.bearing, 0);
@@ -41,7 +41,7 @@ void main() {
       expect(camera, const AppBoxKitCameraPosition(target: sydney));
     });
 
-    test('copyWith replaces only requested fields', () {
+    test('kit.maps.models — copyWith replaces only requested fields', () {
       const camera = AppBoxKitCameraPosition(target: sydney, zoom: 10);
       final moved = camera.copyWith(target: melbourne, tilt: 30);
       expect(moved.target, melbourne);
@@ -52,7 +52,7 @@ void main() {
   });
 
   group('AppBoxKitMapMarker', () {
-    test('identity is id + position + info window', () {
+    test('kit.maps.models — identity is id + position + info window', () {
       const a = AppBoxKitMapMarker(id: 'office', position: sydney, title: 'HQ');
       const b = AppBoxKitMapMarker(id: 'office', position: sydney, title: 'HQ');
       expect(a, b);
@@ -61,7 +61,7 @@ void main() {
   });
 
   group('AppBoxKitMapConfig', () {
-    test('defaults', () {
+    test('kit.maps.models — defaults', () {
       const config =
           AppBoxKitMapConfig(initialCameraPosition: AppBoxKitCameraPosition(target: sydney));
       expect(config.markers, isEmpty);
@@ -71,7 +71,7 @@ void main() {
       expect(config.compassEnabled, isTrue);
     });
 
-    test('copyWith swaps markers without touching camera', () {
+    test('kit.maps.models — copyWith swaps markers without touching camera', () {
       const config =
           AppBoxKitMapConfig(initialCameraPosition: AppBoxKitCameraPosition(target: sydney));
       final updated = config.copyWith(

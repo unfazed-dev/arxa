@@ -7,7 +7,7 @@ void main() {
   const camera = AppBoxKitCameraPosition(target: AppBoxKitLatLng(40.7128, -74.006));
   const config = AppBoxKitMapConfig(initialCameraPosition: camera);
 
-  testWidgets('AppBoxKitMapView builds through the injected provider',
+  testWidgets('kit.maps.map-view — AppBoxKitMapView builds through the injected provider',
       (tester) async {
     final fake = FakeAppBoxKitMapProvider();
 
@@ -23,7 +23,7 @@ void main() {
     expect(find.byType(SizedBox), findsOneWidget);
   });
 
-  testWidgets('onMapCreated receives a controller that records camera calls',
+  testWidgets('kit.maps.map-view — onMapCreated receives a controller that records camera calls',
       (tester) async {
     final fake = FakeAppBoxKitMapProvider();
     AppBoxKitMapController? controller;
@@ -49,7 +49,7 @@ void main() {
     expect(fake.controller.animatedCameras, [camera]);
   });
 
-  testWidgets('rebuilding with new markers hands the provider the new set',
+  testWidgets('kit.maps.map-view — rebuilding with new markers hands the provider the new set',
       (tester) async {
     final fake = FakeAppBoxKitMapProvider();
     const marker = AppBoxKitMapMarker(id: 'pin', position: AppBoxKitLatLng(3, 4));

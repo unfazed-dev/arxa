@@ -38,7 +38,7 @@ Widget _host(Widget map) => MaterialApp(home: Scaffold(body: map));
 
 void main() {
   group('AppBoxKitOpenStreetMapProvider', () {
-    testWidgets('builds a flutter_map with OSM tiles, UA, attribution, '
+    testWidgets('kit.maps.tiled-providers — builds a flutter_map with OSM tiles, UA, attribution, '
         'and the config camera/markers', (tester) async {
       final provider = AppBoxKitOpenStreetMapProvider(
         userAgentPackageName: 'com.example.test',
@@ -77,7 +77,7 @@ void main() {
   });
 
   group('AppBoxKitMapboxProvider', () {
-    testWidgets('builds Mapbox 512px raster tiles with the public token in '
+    testWidgets('kit.maps.tiled-providers — builds Mapbox 512px raster tiles with the public token in '
         'the URL template', (tester) async {
       final provider = AppBoxKitMapboxProvider(
         accessToken: 'pk.test-token',
@@ -102,7 +102,7 @@ void main() {
       expect(find.byType(SimpleAttributionWidget), findsOneWidget);
     });
 
-    testWidgets('mapType selects the Mapbox style', (tester) async {
+    testWidgets('kit.maps.tiled-providers — mapType selects the Mapbox style', (tester) async {
       final provider = AppBoxKitMapboxProvider(
         accessToken: 'pk.test-token',
         userAgentPackageName: 'com.example.test',
@@ -126,7 +126,7 @@ void main() {
   });
 
   group('AppBoxKitTiledMapView controller', () {
-    testWidgets('onMapCreated delivers a controller that moves the camera',
+    testWidgets('kit.maps.tiled-providers — onMapCreated delivers a controller that moves the camera',
         (tester) async {
       final provider = AppBoxKitOpenStreetMapProvider(
         userAgentPackageName: 'com.example.test',
