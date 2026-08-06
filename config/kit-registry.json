@@ -10,8 +10,8 @@
         "design tokens",
         "locator",
         "input formatters",
-        "KitGlyphs",
-        "KitPlatform"
+        "AppBoxKitGlyphs",
+        "AppBoxKitPlatform"
       ],
       "backing": "stacked, stacked_services, stacked_shared",
       "topology": "core",
@@ -22,10 +22,10 @@
     },
     {
       "dir": "ui_library",
-      "package": "ui_library",
+      "package": "appbox_kit_ui_library",
       "capabilities": [
         "Kit* adaptive port widgets",
-        "KitNative* widgets",
+        "AppBoxKitNative* widgets",
         "UI-coupled services (navigation / sheet / notifications toast)"
       ],
       "backing": "core + vendored cupertino_native/m3e forks",
@@ -35,49 +35,49 @@
       "hasSkill": false,
       "provides": {
         "widgets": [
-          "KitAnimatedTabStack",
-          "KitBottomNavScaffold",
-          "KitChip",
-          "KitChipCarousel",
-          "KitDirectionalTabTransition",
-          "KitDrawer",
-          "KitExtendBodyFabLift",
-          "KitFabMorph",
-          "KitFrostedSurface",
-          "KitGlassCard",
-          "KitImage",
-          "KitLazyIndexedStack",
-          "KitListSection",
-          "KitListTile",
-          "KitNativeAppBar",
-          "KitNativeButton",
-          "KitNativeChromeGate",
-          "KitNativeFab",
-          "KitNativeFabMenu",
-          "KitNativeIconButton",
-          "KitNativeInputBar",
-          "KitNativeLoadingIndicator",
-          "KitNativeNavigationRail",
-          "KitNativePopupMenu",
-          "KitNativeProgress",
-          "KitNativeRangeSlider",
-          "KitNativeSearchBar",
-          "KitNativeSegmentedControl",
-          "KitNativeSlider",
-          "KitNativeSliverAppBar",
-          "KitNativeSplitButton",
-          "KitNativeSwitch",
-          "KitNativeTabBar",
-          "KitNativeTextField",
-          "KitNativeToolbar",
-          "KitScrollEdgeEffect",
-          "KitScrollOcclusionGate",
-          "KitStreamBuilder",
-          "KitTabSwitchTransition"
+          "AppBoxKitAnimatedTabStack",
+          "AppBoxKitBottomNavScaffold",
+          "AppBoxKitChip",
+          "AppBoxKitChipCarousel",
+          "AppBoxKitDirectionalTabTransition",
+          "AppBoxKitDrawer",
+          "AppBoxKitExtendBodyFabLift",
+          "AppBoxKitFabMorph",
+          "AppBoxKitFrostedSurface",
+          "AppBoxKitGlassCard",
+          "AppBoxKitImage",
+          "AppBoxKitLazyIndexedStack",
+          "AppBoxKitListSection",
+          "AppBoxKitListTile",
+          "AppBoxKitNativeAppBar",
+          "AppBoxKitNativeButton",
+          "AppBoxKitNativeChromeGate",
+          "AppBoxKitNativeFab",
+          "AppBoxKitNativeFabMenu",
+          "AppBoxKitNativeIconButton",
+          "AppBoxKitNativeInputBar",
+          "AppBoxKitNativeLoadingIndicator",
+          "AppBoxKitNativeNavigationRail",
+          "AppBoxKitNativePopupMenu",
+          "AppBoxKitNativeProgress",
+          "AppBoxKitNativeRangeSlider",
+          "AppBoxKitNativeSearchBar",
+          "AppBoxKitNativeSegmentedControl",
+          "AppBoxKitNativeSlider",
+          "AppBoxKitNativeSliverAppBar",
+          "AppBoxKitNativeSplitButton",
+          "AppBoxKitNativeSwitch",
+          "AppBoxKitNativeTabBar",
+          "AppBoxKitNativeTextField",
+          "AppBoxKitNativeToolbar",
+          "AppBoxKitScrollEdgeEffect",
+          "AppBoxKitScrollOcclusionGate",
+          "AppBoxKitStreamBuilder",
+          "AppBoxKitTabSwitchTransition"
         ],
         "services": [
           {
-            "name": "KitNotificationService",
+            "name": "AppBoxKitNotificationService",
             "methods": [
               "show"
             ]
@@ -133,7 +133,7 @@
       "hasSkill": false,
       "provides": {
         "widgets": [
-          "KitCan"
+          "AppBoxKitCan"
         ]
       },
       "providers": [
@@ -160,7 +160,7 @@
       "capabilities": [
         "form field state",
         "sync/async validation",
-        "KitFieldController",
+        "AppBoxKitFieldController",
         "error messages"
       ],
       "backing": "stacked (ChangeNotifier; no rxdart)",
@@ -257,19 +257,19 @@
       "hasSkill": false,
       "provides": {
         "widgets": [
-          "KitPayButton"
+          "AppBoxKitPayButton"
         ]
       },
       "providers": [
         {
           "name": "Stripe",
           "verification": "port-tested",
-          "notes": "implemented 2026-08-01 — kit/payments Stripe provider runs flutter_stripe 13.1.0 PaymentSheet behind the KitStripeBackend port; unit tests green at the mocked backend boundary. device-verified needs a physical device with test keys (plan seq 4) — tier stays port-tested."
+          "notes": "implemented 2026-08-01 — kit/payments Stripe provider runs flutter_stripe 13.1.0 PaymentSheet behind the AppBoxKitStripeBackend port; unit tests green at the mocked backend boundary. device-verified needs a physical device with test keys (plan seq 4) — tier stays port-tested."
         },
         {
           "name": "PayPal",
           "verification": "port-tested",
-          "notes": "implemented 2026-08-01 — kit/payments PayPal provider runs Orders v2 create -> approve (flutter_web_auth_2 redirect) -> capture behind the KitPayPalBackend port; unit tests green at the mocked backend boundary. Sandbox smoke with real keys not yet run — tier stays port-tested."
+          "notes": "implemented 2026-08-01 — kit/payments PayPal provider runs Orders v2 create -> approve (flutter_web_auth_2 redirect) -> capture behind the AppBoxKitPayPalBackend port; unit tests green at the mocked backend boundary. Sandbox smoke with real keys not yet run — tier stays port-tested."
         },
         {
           "name": "Apple Pay",
@@ -283,7 +283,7 @@
       "package": "appbox_kit_maps",
       "capabilities": [
         "native maps",
-        "KitMapView"
+        "AppBoxKitMapView"
       ],
       "backing": "google/apple maps; OSM/Mapbox on flutter_map",
       "topology": "standalone",
@@ -292,7 +292,7 @@
       "hasSkill": false,
       "provides": {
         "widgets": [
-          "KitMapView"
+          "AppBoxKitMapView"
         ]
       },
       "providers": [
@@ -435,7 +435,7 @@
     },
     {
       "dir": "branding",
-      "package": "branding",
+      "package": "appbox_kit_branding",
       "capabilities": [
         "app icons",
         "native/in-Flutter splash",
@@ -456,7 +456,7 @@
         "entrance/exit choreography",
         "gesture drivers",
         "motion scopes",
-        "KitWake"
+        "AppBoxKitWake"
       ],
       "backing": "pure Dart",
       "topology": "standalone",
@@ -471,8 +471,8 @@
           "standard"
         ],
         "widgets": [
-          "KitMotionScope",
-          "KitWake"
+          "AppBoxKitMotionScope",
+          "AppBoxKitWake"
         ]
       }
     },
