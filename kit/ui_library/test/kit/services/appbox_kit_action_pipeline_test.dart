@@ -459,5 +459,178 @@ void main() {
       expect(finished, isTrue,
           reason: 'Dart futures cannot be aborted — dispose never kills a run');
     });
+
+    test('flushOnDispose executes a pending debounced dispatch immediately', () async {
+      final p = pipeline();
+      final seen = <String>[];
+      final pipe = p.pipe<String, String>(
+        'op',
+        (payload) async {
+          seen.add(payload);
+          return 'saved:$payload';
+        },
+        debounce: const Duration(seconds: 5),
+        flushOnDispose: true,
+      );
+      final handle = pipe.dispatch('final draft');
+
+      await p.dispose(); // awaits the flush
+
+      expect(seen, ['final draft'],
+          reason: 'dispose flushes instead of dropping the pending save');
+      expect(await handle, 'saved:final draft');
+    });
+
+    test('flushOnDispose attaches to an in-flight run (guard semantics)', () async {
+      final p = pipeline();
+      final gate = Completer<String>();
+      final debouncedRuns = <String>[];
+      final pipe = p.pipe<String, String>(
+        'op',
+        (payload) async {
+          debouncedRuns.add(payload);
+          return 'debounced:$payload';
+        },
+        debounce: const Duration(seconds: 5),
+        flushOnDispose: true,
+      );
+      // A non-debounced run on the same key is in flight when dispose hits.
+      final inFlight = p.run<String>('op', () => gate.future);
+      final pending = pipe.dispatch('dropped payload');
+
+      final disposeDone = p.dispose();
+      gate.complete('in-flight result');
+      await disposeDone;
+
+      expect(await pending, 'in-flight result',
+          reason: 'the flush queues per guard semantics, it never re-runs');
+      expect(await inFlight, 'in-flight result');
+      expect(debouncedRuns, isEmpty);
+    });
+  });
+
+  group('kit.ui-library.action-pipeline — throttle and parallel execution', () {
+    test('throttle is leading-edge: dispatches inside the window share the run', () async {
+      final p = pipeline();
+      var runs = 0;
+      final pipe = p.pipe<String, String>(
+        'op',
+        (payload) async {
+          runs++;
+          return 'ran:$payload';
+        },
+        throttle: const Duration(milliseconds: 150),
+      );
+
+      final first = pipe.dispatch('one');
+      final second = pipe.dispatch('two'); // inside the window
+      expect(await first, 'ran:one');
+      expect(await second, 'ran:one',
+          reason: 'throttled-away handle observes the previous run');
+      expect(runs, 1);
+
+      // After the window the next dispatch runs again.
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+      expect(await pipe.dispatch('three'), 'ran:three');
+      expect(runs, 2);
+      p.dispose();
+    });
+
+    test('throttle window anchors at the run start (builder parity)', () async {
+      final p = pipeline();
+      final gate = Completer<String>();
+      var runs = 0;
+      final pipe = p.pipe<Null, String>(
+        'op',
+        (_) async {
+          runs++;
+          return gate.future;
+        },
+        throttle: const Duration(seconds: 30),
+      );
+
+      final first = pipe.dispatch(null);
+      final second = pipe.dispatch(null); // in flight, inside the window
+      gate.complete('shared');
+      expect(await first, 'shared');
+      expect(await second, 'shared',
+          reason: 'a throttled dispatch attaches to the in-flight run');
+      expect(runs, 1);
+      p.dispose();
+    });
+
+    test('parallelExecution opts out of the guard — every dispatch runs', () async {
+      final p = pipeline();
+      final gate = Completer<void>();
+      var runs = 0;
+      final pipe = p.pipe<String, String>(
+        'op',
+        (payload) async {
+          runs++;
+          await gate.future;
+          return 'own:$payload';
+        },
+        parallelExecution: true,
+      );
+
+      final first = pipe.dispatch('a');
+      final second = pipe.dispatch('b');
+      await pumpEventQueue();
+      expect(runs, 2, reason: 'flatMap — no in-flight sharing');
+      gate.complete();
+      expect(await first, 'own:a');
+      expect(await second, 'own:b',
+          reason: 'each handle gets its own run’s result');
+      p.dispose();
+    });
+  });
+
+  group('kit.ui-library.action-pipeline — success and loading taps', () {
+    test('onSuccess runs after the op and before the handle completes', () async {
+      final p = pipeline();
+      final order = <String>[];
+      final pipe = p.pipe<Null, String>(
+        'op',
+        (_) async => 'result',
+        onSuccess: (result) => order.add('tap:$result'),
+      );
+
+      final handle = pipe.dispatch(null).then((result) {
+        order.add('handle:$result');
+        return result;
+      });
+
+      expect(await handle, 'result');
+      expect(order, ['tap:result', 'handle:result']);
+      p.dispose();
+    });
+
+    test('an onSuccess tap error logs a warning and never fails the run', () async {
+      final p = pipeline();
+      final pipe = p.pipe<Null, String>(
+        'op',
+        (_) async => 'result',
+        onSuccess: (_) => throw Exception('tap exploded'),
+      );
+      expect(await pipe.dispatch(null), 'result');
+      p.dispose();
+    });
+
+    test('loading notification fires at run start', () async {
+      final p = pipeline();
+      final gate = Completer<String>();
+      final pipe = p.pipe<Null, String>(
+        'op',
+        (_) => gate.future,
+        loadingNotification: 'Working…',
+      );
+      pipe.dispatch(null);
+      expect(notifications.calls.single.message, 'Working…');
+      expect(notifications.calls.single.kind, AppBoxKitNotificationKind.info,
+          reason: 'shown while the op is still in flight');
+      gate.complete('done');
+      await pumpEventQueue();
+      p.dispose();
+    });
   });
 }

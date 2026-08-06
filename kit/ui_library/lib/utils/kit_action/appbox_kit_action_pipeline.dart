@@ -24,9 +24,16 @@ import 'managers/appbox_kit_action_state_manager.dart';
 //   harmless (its errors are pre-observed, never unhandled).
 // - Re-entry guard: a dispatch while the same op key is in flight does NOT
 //   re-run the op; its handle completes with the IN-FLIGHT run's result
-//   (success or routed error), never with a guard error.
+//   (success or routed error), never with a guard error. Opt out per pipe
+//   with `parallelExecution: true` (flatMap — every dispatch runs).
 // - Debounce: superseded dispatches' handles complete with the eventual run's
 //   result — debounce drops events, never callers.
+// - Throttle: leading edge, window anchored at the last run's START (builder
+//   parity); throttled-away handles complete with the in-flight run's result,
+//   else the previous run's.
+// - `flushOnDispose`: a pending debounced dispatch runs immediately on
+//   dispose (attaching to an in-flight run per guard semantics) instead of
+//   being dropped — autosave-style "the last write must land".
 // - Cancellation is cooperative-only: Dart futures cannot be aborted. A
 //   disposed pipeline stops accepting dispatches and tears down subjects, but
 //   an in-flight op runs to completion. Need real mid-flight cancel? That is
@@ -53,7 +60,7 @@ typedef AppBoxKitRetryPolicy = ({
 class AppBoxKitActionPipe<P, R> {
   final String name;
   final AppBoxKitActionPipeline _pipeline;
-  final _AppBoxKitPipeConfig<P, R> _config;
+  final _AppBoxKitPipeConfig _config;
   // sync: dispatch delivers the command to the subscription IN the dispatch
   // call, so the run starts (and lands in the guard's in-flight registry)
   // synchronously — a same-frame double dispatch always sees the in-flight
@@ -101,10 +108,12 @@ class AppBoxKitActionPipe<P, R> {
 
   /// Cancel the subscription first, then close the subject (research-backed
   /// ordering: a closed subject with a live subscription can still be
-  /// delivered events; a cancelled subscription cannot).
+  /// delivered events; a cancelled subscription cannot). A pending debounced
+  /// dispatch flushes first when the pipe opted into `flushOnDispose`.
   Future<void> close() async {
     if (_closed) return;
     _closed = true;
+    _pipeline._flushForPipe(_config);
     await _subscription.cancel();
     await _commands.close();
   }
@@ -142,6 +151,14 @@ class AppBoxKitActionPipeline {
 
   final Map<String, _AppBoxKitDebounceSlot> _debounceSlots = {};
 
+  /// Throttle state: last run START per key (builder parity — the window
+  /// anchors at execution start, leading edge).
+  final Map<String, DateTime> _throttleWindowStart = {};
+
+  /// Last started run per key (in-flight or settled) — throttled-away
+  /// handles observe it when nothing is in flight.
+  final Map<String, Future<dynamic>> _lastRun = {};
+
   bool _disposed = false;
 
   AppBoxKitActionPipeline({
@@ -175,11 +192,27 @@ class AppBoxKitActionPipeline {
   ///   manager — snackbar (default), dialog, or bottomSheet via
   ///   [errorNotificationType] / [successNotificationType].
   /// - [onError]: side-effect tap with the thrown error (handleError).
+  /// - [onSuccess]: side-effect tap with the result — awaited AFTER the op
+  ///   succeeds and BEFORE the success notification and handle completion
+  ///   (the builder's `onSuccess` ordering); tap errors log a warning, they
+  ///   never fail the run.
   /// - [debounce]: delay execution until no new dispatches for this long;
   ///   superseded handles complete with the eventual run's result.
+  /// - [throttle]: leading edge — the first dispatch runs, later dispatches
+  ///   inside the window (anchored at the last run's START, builder parity)
+  ///   don't; their handles complete with the in-flight/previous run's
+  ///   result. When both are set, debounce wins (builder precedence).
+  /// - [parallelExecution]: opt OUT of the re-entry guard (the builder's
+  ///   `withParallelExecution`) — every dispatch runs concurrently and each
+  ///   handle gets its own run's result.
+  /// - [flushOnDispose]: a pending debounced dispatch executes immediately
+  ///   when the pipeline/pipe disposes (attaching to an in-flight run per
+  ///   guard semantics) instead of being dropped; `dispose()` awaits it.
   /// - [retry]: re-run policy, parity with the builder's `withRetry`.
   /// - [timeout]: per-attempt timeout, parity with the builder's `withTimeout`
   ///   (a timeout raises [TimeoutException] into the error path).
+  /// - [loadingNotification]: shown at run start (the builder's
+  ///   `withLoadingSnackbar`); error/success fire at their transitions.
   AppBoxKitActionPipe<P, R> pipe<P, R>(
     String name,
     FutureOr<R> Function(P payload) operation, {
@@ -191,27 +224,48 @@ class AppBoxKitActionPipeline {
     String? successNotification,
     AppBoxKitNotificationType successNotificationType =
         AppBoxKitNotificationType.snackbar,
+    String? loadingNotification,
+    AppBoxKitNotificationType loadingNotificationType =
+        AppBoxKitNotificationType.snackbar,
     void Function(Object error)? onError,
+    FutureOr<void> Function(R result)? onSuccess,
     void Function()? onDispatch,
     Duration? debounce,
+    Duration? throttle,
+    bool parallelExecution = false,
+    bool flushOnDispose = false,
     AppBoxKitRetryPolicy? retry,
     Duration? timeout,
   }) {
     final pipe = AppBoxKitActionPipe<P, R>._(
       this,
       name,
-      _AppBoxKitPipeConfig<P, R>(
+      // Function-typed config is wrapped into its dynamic erasure HERE, at
+      // creation: internally everything is dynamic, and a reified
+      // `(String) → Future<String>` read through a `(dynamic) → dynamic`
+      // field type would throw on the implicit downcast. Value types flow
+      // through as dynamic and land on the reified Completer<R>, whose
+      // complete() performs the checked cast.
+      _AppBoxKitPipeConfig(
         key: AppBoxKitAction.deriveKey(_owner, name),
-        operation: operation,
+        operation: (payload) => operation(payload as P),
         errorMessage: errorMessage ?? _errorMessage,
         withValue: withValue,
         errorNotification: errorNotification,
         errorNotificationType: errorNotificationType,
         successNotification: successNotification,
         successNotificationType: successNotificationType,
+        loadingNotification: loadingNotification,
+        loadingNotificationType: loadingNotificationType,
         onError: onError ?? _onError,
+        onSuccess: onSuccess == null
+            ? null
+            : (result) => onSuccess(result as R),
         onDispatch: onDispatch ?? _onDispatch,
         debounce: debounce,
+        throttle: throttle,
+        parallelExecution: parallelExecution,
+        flushOnDispose: flushOnDispose,
         retry: retry,
         timeout: timeout,
       ),
@@ -235,9 +289,15 @@ class AppBoxKitActionPipeline {
     String? successNotification,
     AppBoxKitNotificationType successNotificationType =
         AppBoxKitNotificationType.snackbar,
+    String? loadingNotification,
+    AppBoxKitNotificationType loadingNotificationType =
+        AppBoxKitNotificationType.snackbar,
     void Function(Object error)? onError,
+    FutureOr<void> Function(R result)? onSuccess,
     void Function()? onDispatch,
     Duration? debounce,
+    Duration? throttle,
+    bool parallelExecution = false,
     AppBoxKitRetryPolicy? retry,
     Duration? timeout,
   }) {
@@ -250,9 +310,14 @@ class AppBoxKitActionPipeline {
       errorNotificationType: errorNotificationType,
       successNotification: successNotification,
       successNotificationType: successNotificationType,
+      loadingNotification: loadingNotification,
+      loadingNotificationType: loadingNotificationType,
       onError: onError,
+      onSuccess: onSuccess,
       onDispatch: onDispatch,
       debounce: debounce,
+      throttle: throttle,
+      parallelExecution: parallelExecution,
       retry: retry,
       timeout: timeout,
     );
@@ -263,27 +328,41 @@ class AppBoxKitActionPipeline {
 
   // ── Dispatch machinery (all dynamic internally; types live on the pipe) ──
 
-  void _accept<P, R>(_AppBoxKitPipeConfig<P, R> config, P payload,
-      Completer<R> completer) {
+  void _accept(_AppBoxKitPipeConfig config, Object? payload,
+      Completer<dynamic> completer) {
     if (config.debounce != null) {
       return _acceptDebounced(config, payload, completer);
     }
-    final inFlight = _inFlight[config.key];
-    if (inFlight != null) {
-      // Guarded dispatch: never re-runs, never errors — the handle observes
-      // the in-flight run's result.
-      return _attach(completer, inFlight);
+    final throttle = config.throttle;
+    if (throttle != null) {
+      final windowStart = _throttleWindowStart[config.key];
+      if (windowStart != null &&
+          DateTime.now().difference(windowStart) < throttle) {
+        // Throttled away (leading edge): the handle observes the in-flight
+        // run, else the previous run — never an error, never a new run.
+        final previous = _inFlight[config.key] ?? _lastRun[config.key];
+        if (previous != null) return _attach(completer, previous);
+      }
+    }
+    if (!config.parallelExecution) {
+      final inFlight = _inFlight[config.key];
+      if (inFlight != null) {
+        // Guarded dispatch: never re-runs, never errors — the handle observes
+        // the in-flight run's result.
+        return _attach(completer, inFlight);
+      }
     }
     _start(config, payload, [completer]);
   }
 
-  void _acceptDebounced<P, R>(_AppBoxKitPipeConfig<P, R> config, P payload,
-      Completer<R> completer) {
+  void _acceptDebounced(_AppBoxKitPipeConfig config, Object? payload,
+      Completer<dynamic> completer) {
     final slot =
         _debounceSlots.putIfAbsent(config.key, () => _AppBoxKitDebounceSlot());
     slot.timer?.cancel();
     slot.observers.add(completer);
     slot.payload = payload;
+    slot.config = config;
     slot.timer = Timer(config.debounce!, () {
       _debounceSlots.remove(config.key);
       final observers = List<Completer<dynamic>>.of(slot.observers);
@@ -298,17 +377,30 @@ class AppBoxKitActionPipeline {
     });
   }
 
-  void _start<P, R>(_AppBoxKitPipeConfig<P, R> config, Object? payload,
+  Future<dynamic> _start(_AppBoxKitPipeConfig config, Object? payload,
       List<Completer<dynamic>> observers) {
-    final Future<dynamic> run = _run(config, payload as P);
+    if (config.throttle != null) {
+      _throttleWindowStart[config.key] = DateTime.now();
+    }
+    final Future<dynamic> run = _run(config, payload);
     run.ignore();
-    _inFlight[config.key] = run;
+    _lastRun[config.key] = run;
+    if (!config.parallelExecution) {
+      // Parallel pipes (the builder's withParallelExecution) never enter the
+      // guard registry — matching the builder, whose parallel chains skip
+      // the static _inFlight set, so guarded ops on the same key don't see
+      // them either.
+      _inFlight[config.key] = run;
+      run.whenComplete(() {
+        if (identical(_inFlight[config.key], run)) {
+          _inFlight.remove(config.key);
+        }
+      }).ignore();
+    }
     for (final observer in observers) {
       _attach(observer, run);
     }
-    run.whenComplete(() {
-      if (identical(_inFlight[config.key], run)) _inFlight.remove(config.key);
-    }).ignore();
+    return run;
   }
 
   void _attach(Completer<dynamic> completer, Future<dynamic> run) {
@@ -319,17 +411,26 @@ class AppBoxKitActionPipeline {
     });
   }
 
-  /// Executor-parity run: markBusy → op (with retry/timeout) → success
-  /// notification | error routing → markDone. Built on rxdart operators:
-  /// the attempt factory re-runs the operation per (re)subscription,
-  /// `Stream.timeout` applies per attempt, `Rx.retryWhen` re-subscribes
-  /// with backoff.
-  Future<R> _run<P, R>(_AppBoxKitPipeConfig<P, R> config, P payload) async {
+  /// Executor-parity run: markBusy + loading notification → op (with
+  /// retry/timeout) → onSuccess tap + success notification | error routing →
+  /// markDone. Built on rxdart operators: the attempt factory re-runs the
+  /// operation per (re)subscription, `Stream.timeout` applies per attempt,
+  /// `Rx.retryWhen` re-subscribes with backoff.
+  Future<dynamic> _run(_AppBoxKitPipeConfig config, Object? payload) async {
     AppBoxKitActionStateManager.markBusy(config.key);
+    if (config.loadingNotification != null) {
+      _showNotification(
+        config.key,
+        message: config.loadingNotification!,
+        type: config.loadingNotificationType,
+        kind: AppBoxKitNotificationKind.info,
+        title: 'Loading',
+      );
+    }
     var failures = 0;
-    Stream<R> attempt() {
-      Stream<R> stream =
-          Stream<R>.fromFuture(Future<R>.sync(() => config.operation(payload)));
+    Stream<dynamic> attempt() {
+      Stream<dynamic> stream = Stream<dynamic>.fromFuture(
+          Future<dynamic>.sync(() => config.operation(payload)));
       if (config.timeout != null) {
         stream = stream.timeout(config.timeout!);
       }
@@ -338,7 +439,7 @@ class AppBoxKitActionPipeline {
 
     final retry = config.retry;
     final stream = retry != null && retry.maxAttempts > 1
-        ? Rx.retryWhen<R>(attempt, (error, stackTrace) {
+        ? Rx.retryWhen<dynamic>(attempt, (error, stackTrace) {
             failures++;
             if (failures >= retry.maxAttempts) {
               return Stream<void>.error(error, stackTrace);
@@ -357,6 +458,22 @@ class AppBoxKitActionPipeline {
         : attempt();
     try {
       final result = await stream.first;
+      // Builder ordering: the onSuccess tap is awaited first, then the
+      // success notification, then the handle completes. Tap errors log a
+      // warning and never fail the run (AppBoxKitSuccessManager parity).
+      final onSuccess = config.onSuccess;
+      if (onSuccess != null) {
+        try {
+          await onSuccess(result);
+        } catch (e, s) {
+          appBoxKitLocator<AppBoxKitErrorService>().warning(
+            error: e,
+            stackTrace: s,
+            message: 'Error in onSuccess callback',
+            widgetId: config.key,
+          );
+        }
+      }
       if (config.successNotification != null) {
         _showNotification(
           config.key,
@@ -377,8 +494,8 @@ class AppBoxKitActionPipeline {
   /// AppBoxKitErrorManager + notification parity: log via the error service,
   /// tap the custom handler, record the message on state$, optional error
   /// notification; then fallback (errorMessage set) or rethrow.
-  Future<R> _handleError<P, R>(_AppBoxKitPipeConfig<P, R> config, Object error,
-      StackTrace stackTrace) async {
+  Future<dynamic> _handleError(
+      _AppBoxKitPipeConfig config, Object error, StackTrace stackTrace) async {
     final errorService = appBoxKitLocator<AppBoxKitErrorService>();
     errorService.handle(
       exception: error,
@@ -417,10 +534,11 @@ class AppBoxKitActionPipeline {
     }
 
     if (config.errorMessage != null) {
-      // completeOnError parity: swallow, complete with the fallback.
-      return config.withValue as R;
+      // completeOnError parity: swallow, complete with the fallback (the
+      // checked cast to R happens at the reified Completer, not here).
+      return config.withValue;
     }
-    return Future<R>.error(error, stackTrace);
+    return Future<dynamic>.error(error, stackTrace);
   }
 
   /// All three notification kinds, same services as the builder's
@@ -469,19 +587,57 @@ class AppBoxKitActionPipeline {
     pipe.close();
   }
 
-  /// Cancel every pipe's subscription, close its subject, cancel pending
-  /// debounce timers (their handles complete with a disposed error — safe to
-  /// drop, informative to await), and release state$ subjects. In-flight ops
-  /// run to completion (cooperative-only — see the file header).
-  void dispose() {
+  /// Flush one pending debounce slot: execute the dispatch NOW. Guard
+  /// semantics apply — when an op is in flight on the key, the flush attaches
+  /// to that run (the pending payload is dropped, exactly like a debounced
+  /// dispatch landing while in flight).
+  Future<dynamic> _flushSlot(String key, _AppBoxKitDebounceSlot slot) {
+    slot.timer?.cancel();
+    final observers = List<Completer<dynamic>>.of(slot.observers);
+    slot.observers.clear();
+    final inFlight = _inFlight[key];
+    if (inFlight != null) {
+      for (final observer in observers) {
+        _attach(observer, inFlight);
+      }
+      return inFlight;
+    }
+    return _start(slot.config!, slot.payload, observers);
+  }
+
+  /// Pipe-level dispose hook: a closing pipe flushes its own pending
+  /// debounce slot when it opted into `flushOnDispose`.
+  void _flushForPipe(_AppBoxKitPipeConfig config) {
+    final slot = _debounceSlots[config.key];
+    if (slot != null &&
+        identical(slot.config, config) &&
+        config.flushOnDispose &&
+        slot.observers.isNotEmpty) {
+      _debounceSlots.remove(config.key);
+      _flushSlot(config.key, slot);
+    }
+  }
+
+  /// Cancel every pipe's subscription, close its subject, settle pending
+  /// debounce slots — `flushOnDispose` slots EXECUTE immediately (awaited
+  /// before dispose returns), the rest complete with a disposed error (safe
+  /// to drop, informative to await) — and release state$ subjects. In-flight
+  /// ops run to completion (cooperative-only — see the file header).
+  Future<void> dispose() async {
     if (_disposed) return;
     _disposed = true;
-    for (final slot in _debounceSlots.values) {
-      slot.timer?.cancel();
-      for (final observer in slot.observers) {
-        if (!observer.isCompleted) {
-          observer.completeError(
-              StateError('AppBoxKitActionPipeline disposed before the run'));
+    final flushes = <Future<dynamic>>[];
+    for (final entry in _debounceSlots.entries) {
+      final slot = entry.value;
+      if (slot.config?.flushOnDispose == true && slot.observers.isNotEmpty) {
+        flushes.add(_flushSlot(entry.key, slot));
+      } else {
+        slot.timer?.cancel();
+        for (final observer in slot.observers) {
+          if (!observer.isCompleted) {
+            observer.completeError(
+                StateError('AppBoxKitActionPipeline disposed before the run'));
+          }
         }
       }
     }
@@ -491,6 +647,7 @@ class AppBoxKitActionPipeline {
       AppBoxKitActionStateManager.disposeWidget(pipe._config.key);
     }
     _pipes.clear();
+    if (flushes.isNotEmpty) await Future.wait(flushes);
   }
 }
 
@@ -502,18 +659,24 @@ class _AppBoxKitCommand<P> {
   _AppBoxKitCommand(this.payload, this.completer);
 }
 
-class _AppBoxKitPipeConfig<P, R> {
+class _AppBoxKitPipeConfig {
   final String key;
-  final FutureOr<R> Function(P payload) operation;
+  final FutureOr<dynamic> Function(Object? payload) operation;
   final String? errorMessage;
-  final R? withValue;
+  final dynamic withValue;
   final String? errorNotification;
   final AppBoxKitNotificationType errorNotificationType;
   final String? successNotification;
   final AppBoxKitNotificationType successNotificationType;
+  final String? loadingNotification;
+  final AppBoxKitNotificationType loadingNotificationType;
   final void Function(Object error)? onError;
+  final FutureOr<void> Function(dynamic result)? onSuccess;
   final void Function()? onDispatch;
   final Duration? debounce;
+  final Duration? throttle;
+  final bool parallelExecution;
+  final bool flushOnDispose;
   final AppBoxKitRetryPolicy? retry;
   final Duration? timeout;
 
@@ -526,9 +689,15 @@ class _AppBoxKitPipeConfig<P, R> {
     this.errorNotificationType = AppBoxKitNotificationType.snackbar,
     this.successNotification,
     this.successNotificationType = AppBoxKitNotificationType.snackbar,
+    this.loadingNotification,
+    this.loadingNotificationType = AppBoxKitNotificationType.snackbar,
     this.onError,
+    this.onSuccess,
     this.onDispatch,
     this.debounce,
+    this.throttle,
+    this.parallelExecution = false,
+    this.flushOnDispose = false,
     this.retry,
     this.timeout,
   });
@@ -537,5 +706,6 @@ class _AppBoxKitPipeConfig<P, R> {
 class _AppBoxKitDebounceSlot {
   Timer? timer;
   Object? payload;
+  _AppBoxKitPipeConfig? config;
   final List<Completer<dynamic>> observers = [];
 }
