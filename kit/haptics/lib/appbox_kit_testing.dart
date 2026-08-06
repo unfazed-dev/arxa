@@ -1,17 +1,17 @@
 /// Test doubles for appbox_kit_haptics.
 ///
 /// ```dart
-/// import 'package:appbox_kit_haptics/testing.dart';
+/// import 'package:appbox_kit_haptics/appbox_kit_testing.dart';
 /// ```
 library;
 
 import 'package:haptic_feedback/haptic_feedback.dart';
 
-import 'src/kit_haptic_service.dart';
+import 'src/appbox_kit_haptic_service.dart';
 
-/// A scriptable, platform-free stand-in for [KitHapticService].
+/// A scriptable, platform-free stand-in for [AppBoxKitHapticService].
 ///
-/// Substitute it in the locator (`registerSingleton<KitHapticService>(...)`)
+/// Substitute it in the locator (`registerSingleton<AppBoxKitHapticService>(...)`)
 /// so widgets and view models resolve it exactly as they would the real
 /// service — no method channels are touched.
 ///
@@ -31,8 +31,8 @@ import 'src/kit_haptic_service.dart';
 /// The inherited reactive streams (`canVibrate$`, `isHapticEnable$`, …) are
 /// not driven by this fake; assert against the getters and recorded
 /// invocations instead.
-class FakeKitHapticService extends KitHapticService {
-  FakeKitHapticService({
+class FakeAppBoxKitHapticService extends AppBoxKitHapticService {
+  FakeAppBoxKitHapticService({
     bool canVibrate = true,
     bool hapticEnabled = true,
     bool initialized = true,
@@ -41,7 +41,7 @@ class FakeKitHapticService extends KitHapticService {
   })  : _canVibrate = canVibrate,
         _hapticEnabled = hapticEnabled,
         _initialized = initialized,
-        triggerError = triggerError ?? Exception('FakeKitHapticService failure');
+        triggerError = triggerError ?? Exception('FakeAppBoxKitHapticService failure');
 
   bool _canVibrate;
   bool _hapticEnabled;

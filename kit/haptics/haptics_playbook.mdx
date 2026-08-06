@@ -6,7 +6,7 @@
 `appbox_kit_haptics` v**0.1.0** · `publish_to: 'none'` · status: **active**
 
 
-**Role (one line):** Device haptic feedback for Stacked apps — a reactive KitHapticService (RxDart streams, persisted enable state, device-capability checking) over the haptic_feedback package, plus a withHapticFeedback() widget extension.
+**Role (one line):** Device haptic feedback for Stacked apps — a reactive AppBoxKitHapticService (RxDart streams, persisted enable state, device-capability checking) over the haptic_feedback package, plus a withHapticFeedback() widget extension.
 
 
 **Scope of this document:** lets a human OR an LLM use, wire, and extend `appbox_kit_haptics` **without reading its source**. The public surface below was extracted from the barrel; README content is folded into the narrative sections.
@@ -22,16 +22,16 @@
 
 ### Overview & role
 
-Device haptic feedback for Stacked apps — a reactive KitHapticService (RxDart streams, persisted enable state, device-capability checking) over the haptic_feedback package, plus a withHapticFeedback() widget extension. Standalone capability kit; no dependency on appbox_kit core.
+Device haptic feedback for Stacked apps — a reactive AppBoxKitHapticService (RxDart streams, persisted enable state, device-capability checking) over the haptic_feedback package, plus a withHapticFeedback() widget extension. Standalone capability kit; no dependency on appbox_kit core.
 
 
 ### Public surface
 
 Exported from `lib/appbox_kit_haptics.dart`:
 
-<Table id="haptics-api" columns={["Symbol", "Kind", "Defined in"]} rows={[["KitHapticService", "class", "src/kit_haptic_service.dart"]]} />
+<Table id="haptics-api" columns={["Symbol", "Kind", "Defined in"]} rows={[["AppBoxKitHapticService", "class", "src/appbox_kit_haptic_service.dart"]]} />
 
-Test doubles in `lib/testing.dart`: `FakeKitHapticService`.
+Test doubles in `lib/appbox_kit_testing.dart`: `FakeAppBoxKitHapticService`.
 
 Scripts and call-counts — tests never touch platform channels.
 
@@ -42,10 +42,10 @@ Scripts and call-counts — tests never touch platform channels.
 import 'package:appbox_kit_haptics/appbox_kit_haptics.dart';
 
 // 1. Register in your app (Stacked @StackedApp dependencies or setupLocator):
-//    LazySingleton(classType: KitHapticService)
+//    LazySingleton(classType: AppBoxKitHapticService)
 
 // 2. Drive it from a view model:
-final haptics = locator<KitHapticService>();
+final haptics = appBoxKitLocator<AppBoxKitHapticService>();
 await haptics.initialize();          // reads canVibrate + persisted enable state
 await haptics.triggerSuccessHaptic();
 
@@ -69,16 +69,16 @@ reverse: `appbox_kit` core (or any app) may take a path dependency on this kit.
 
 ### Gotchas
 
-No platform-specific permissions or manifest keys are documented at the kit level — device vibration capability is inherited from the underlying `haptic_feedback` package. The service gates every trigger on `canVibrate` plus the `SharedPreferences`-persisted enable flag, so unsupported devices silently no-op rather than throwing. Maintenance risk is concentrated in three backing packages (`haptic_feedback`, `rxdart`, `shared_preferences`) which must stay version-aligned with `stacked`/`stacked_shared`. Because the extension resolves the service through the shared `StackedLocator.instance`, `KitHapticService` must be registered before any `.withHapticFeedback()` call or the gesture will fail to find a service.
+No platform-specific permissions or manifest keys are documented at the kit level — device vibration capability is inherited from the underlying `haptic_feedback` package. The service gates every trigger on `canVibrate` plus the `SharedPreferences`-persisted enable flag, so unsupported devices silently no-op rather than throwing. Maintenance risk is concentrated in three backing packages (`haptic_feedback`, `rxdart`, `shared_preferences`) which must stay version-aligned with `stacked`/`stacked_shared`. Because the extension resolves the service through the shared `StackedLocator.instance`, `AppBoxKitHapticService` must be registered before any `.withHapticFeedback()` call or the gesture will fail to find a service.
 
 
 ### Testing
 
 ```dart
-import 'package:appbox_kit_haptics/testing.dart';
+import 'package:appbox_kit_haptics/appbox_kit_testing.dart';
 
-final fake = FakeKitHapticService(canVibrate: false); // unsupported device
-locator.registerSingleton<KitHapticService>(fake);
+final fake = FakeAppBoxKitHapticService(canVibrate: false); // unsupported device
+locator.registerSingleton<AppBoxKitHapticService>(fake);
 // ... exercise UI ...
 expect(fake.triggeredHaptics, isEmpty); // no-op on unsupported device
 ```
@@ -86,7 +86,7 @@ expect(fake.triggeredHaptics, isEmpty); // no-op on unsupported device
 
 ### Features
 
-<Checklist id="haptics-features" items={[{"id": "haptics-feat-0", "label": "`KitHapticService` \u2014 class"}]} />
+<Checklist id="haptics-features" items={[{"id": "haptics-feat-0", "label": "`AppBoxKitHapticService` \u2014 class"}]} />
 
 
 ### Decisions / ADRs

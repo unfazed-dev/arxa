@@ -14,11 +14,11 @@
 /// Usage:
 /// ```dart
 /// // 1. Register in your app's setup:
-/// setupLocator((l) => l.registerLazySingleton(() => HapticService()));
+/// setupLocator((l) => l.registerLazySingleton(() => AppBoxKitHapticService()));
 ///
 /// // 2. Use in your ViewModel:
 /// class FeedbackViewModel extends ReactiveViewModel {
-///   final _hapticService = locator<HapticService>();
+///   final _hapticService = appBoxKitLocator<AppBoxKitHapticService>();
 ///
 ///   @override
 ///   List<ReactiveServiceMixin> get reactiveServices => [_hapticService];
@@ -53,7 +53,7 @@ import 'package:stacked/stacked.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:flutter/foundation.dart';
 
-class KitHapticService with ListenableServiceMixin {
+class AppBoxKitHapticService with ListenableServiceMixin {
   // BehaviorSubjects for reactive state management
   final _hapticEnableSubject = BehaviorSubject<bool>.seeded(false);
   final _canVibrateSubject = BehaviorSubject<bool>.seeded(false);
@@ -96,7 +96,7 @@ class KitHapticService with ListenableServiceMixin {
       _isInitializedSubject.add(true);
     } catch (e) {
       if (kDebugMode && !e.toString().contains('FAILED')) {
-        debugPrint('Failed to initialize HapticService: $e');
+        debugPrint('Failed to initialize AppBoxKitHapticService: $e');
       }
       _isInitializedSubject.add(false);
       _canVibrateSubject.add(false);
@@ -107,7 +107,7 @@ class KitHapticService with ListenableServiceMixin {
   Future<void> setHapticEnabled(bool enabled) async {
     if (!_isInitializedValue) {
       if (kDebugMode) {
-        debugPrint('HapticService not initialized');
+        debugPrint('AppBoxKitHapticService not initialized');
       }
       return;
     }
@@ -136,7 +136,7 @@ class KitHapticService with ListenableServiceMixin {
   Future<void> triggerHaptic(HapticsType type) async {
     if (!_isInitializedValue) {
       if (kDebugMode) {
-        debugPrint('HapticService not initialized');
+        debugPrint('AppBoxKitHapticService not initialized');
       }
       return;
     }

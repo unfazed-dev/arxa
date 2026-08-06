@@ -1,5 +1,5 @@
 name: appbox_kit_haptics
-description: Device haptic feedback for Stacked apps — a reactive KitHapticService (RxDart streams, persisted enable state, device-capability checking) over the haptic_feedback package, plus a withHapticFeedback() widget extension. Standalone capability kit; no dependency on appbox_kit core.
+description: Device haptic feedback for Stacked apps — a reactive AppBoxKitHapticService (RxDart streams, persisted enable state, device-capability checking) over the haptic_feedback package, plus a withHapticFeedback() widget extension. Standalone capability kit; no dependency on appbox_kit core.
 version: 0.1.0
 publish_to: 'none'
 
@@ -11,10 +11,10 @@ dependencies:
     sdk: flutter
   # Core device-haptics engine (iOS Core Haptics + emulated Android patterns).
   haptic_feedback: ^0.6.4+3
-  # KitHapticService mixes in ListenableServiceMixin (defined in `stacked`).
+  # AppBoxKitHapticService mixes in ListenableServiceMixin (defined in `stacked`).
   stacked: ^3.5.0
   # StackedLocator.instance — the shared singleton the extension resolves
-  # KitHapticService through (mirrors appbox_kit core's kit_locator).
+  # AppBoxKitHapticService through (mirrors appbox_kit core's appbox_kit_locator).
   stacked_shared: ^1.4.2
   # Reactive state streams for enable / capability / last-event.
   rxdart: ^0.28.0

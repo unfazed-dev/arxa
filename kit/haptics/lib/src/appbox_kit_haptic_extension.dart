@@ -1,5 +1,5 @@
-import 'kit_haptic_locator.dart';
-import 'kit_haptic_service.dart';
+import 'appbox_kit_haptic_locator.dart';
+import 'appbox_kit_haptic_service.dart';
 import 'package:flutter/widgets.dart';
 import 'package:haptic_feedback/haptic_feedback.dart';
 
@@ -26,7 +26,7 @@ class _HapticGestureDetector extends StatelessWidget {
 
   Future<void> _handleTap() async {
     try {
-      await locator<KitHapticService>().triggerHaptic(type);
+      await appBoxKitLocator<AppBoxKitHapticService>().triggerHaptic(type);
     } catch (e) {
       // Ignore haptic errors to ensure onTap is still called
     }
@@ -35,7 +35,7 @@ class _HapticGestureDetector extends StatelessWidget {
 }
 
 /// Extension methods for adding haptic feedback to any widget
-extension KitHapticExtension on Widget {
+extension AppBoxKitHapticExtension on Widget {
   /// Wraps the widget with haptic feedback of the specified type
   Widget withHapticFeedback({
     HapticsType type = HapticsType.light,

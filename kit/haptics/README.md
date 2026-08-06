@@ -5,12 +5,12 @@ core — a standalone capability kit with **no dependency on appbox_kit**.
 
 ## Scope
 
-- Reactive `KitHapticService` wrapping the [`haptic_feedback`](https://pub.dev/packages/haptic_feedback)
+- Reactive `AppBoxKitHapticService` wrapping the [`haptic_feedback`](https://pub.dev/packages/haptic_feedback)
   package: RxDart state streams, `SharedPreferences`-persisted enable flag, and
   device-capability (`canVibrate`) checking.
-- `KitHapticExtension` — one-liner widget wrapping:
+- `AppBoxKitHapticExtension` — one-liner widget wrapping:
   `myWidget.withHapticFeedback()`, `.withSuccessHaptic()`, `.withSelectionHaptic()`, etc.
-- `FakeKitHapticService` (in `package:appbox_kit_haptics/testing.dart`) for tests:
+- `FakeAppBoxKitHapticService` (in `package:appbox_kit_haptics/appbox_kit_testing.dart`) for tests:
   records invocations, and simulates unsupported-device and platform-failure states.
 
 ## Non-goals
@@ -27,10 +27,10 @@ core — a standalone capability kit with **no dependency on appbox_kit**.
 import 'package:appbox_kit_haptics/appbox_kit_haptics.dart';
 
 // 1. Register in your app (Stacked @StackedApp dependencies or setupLocator):
-//    LazySingleton(classType: KitHapticService)
+//    LazySingleton(classType: AppBoxKitHapticService)
 
 // 2. Drive it from a view model:
-final haptics = locator<KitHapticService>();
+final haptics = appBoxKitLocator<AppBoxKitHapticService>();
 await haptics.initialize();          // reads canVibrate + persisted enable state
 await haptics.triggerSuccessHaptic();
 
@@ -41,10 +41,10 @@ MyButton().withSelectionHaptic(onTap: _onTap);
 ## Testing
 
 ```dart
-import 'package:appbox_kit_haptics/testing.dart';
+import 'package:appbox_kit_haptics/appbox_kit_testing.dart';
 
-final fake = FakeKitHapticService(canVibrate: false); // unsupported device
-locator.registerSingleton<KitHapticService>(fake);
+final fake = FakeAppBoxKitHapticService(canVibrate: false); // unsupported device
+locator.registerSingleton<AppBoxKitHapticService>(fake);
 // ... exercise UI ...
 expect(fake.triggeredHaptics, isEmpty); // no-op on unsupported device
 ```
