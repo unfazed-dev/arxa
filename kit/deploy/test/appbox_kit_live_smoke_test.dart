@@ -30,7 +30,7 @@ void main() {
   group('vercel (live)', () {
     final token = env['VERCEL_TOKEN'];
 
-    test('doctor all-ok, then preview deploy of a static fixture', () async {
+    test('kit.deploy.live-smoke — doctor all-ok, then preview deploy of a static fixture', () async {
       const runner = AppBoxKitIoProcessRunner();
       final site = fixtureDir('appbox_smoke_vercel', {
         'index.html': '<!doctype html><title>appbox smoke</title>ok',
@@ -69,7 +69,7 @@ void main() {
     final token = env['CLOUDFLARE_API_TOKEN'];
     final account = env['CLOUDFLARE_ACCOUNT_ID'];
 
-    test('doctor all-ok, then preview deploy of a static fixture', () async {
+    test('kit.deploy.live-smoke — doctor all-ok, then preview deploy of a static fixture', () async {
       const runner = AppBoxKitIoProcessRunner();
       final site = fixtureDir('appbox_smoke_pages', {
         'index.html': '<!doctype html><title>appbox smoke</title>ok',
@@ -114,7 +114,7 @@ void main() {
     final token = env['CLOUDFLARE_API_TOKEN'];
     final account = env['CLOUDFLARE_ACCOUNT_ID'];
 
-    test('doctor all-ok, then wrangler deploy of a minimal worker', () async {
+    test('kit.deploy.live-smoke — doctor all-ok, then wrangler deploy of a minimal worker', () async {
       const runner = AppBoxKitIoProcessRunner();
       // Workers ship their own source — no flutter build step, so this smoke
       // can exercise the target's deploy() end to end. Unrouted worker =

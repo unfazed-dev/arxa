@@ -13,7 +13,7 @@ void main() {
         AppBoxKitVercelTarget(runner),
       ]);
 
-  test('targetNames exposes registration order', () {
+  test('kit.deploy.service — targetNames exposes registration order', () {
     final service = buildService(ScriptedAppBoxKitProcessRunner());
     expect(service.targetNames, [
       'fastlane-android',
@@ -23,7 +23,7 @@ void main() {
     ]);
   });
 
-  test('deployTo routes by name', () async {
+  test('kit.deploy.service — deployTo routes by name', () async {
     final runner = ScriptedAppBoxKitProcessRunner();
     final result =
         await buildService(runner).deployTo('cloudflare-pages', config);
@@ -32,7 +32,7 @@ void main() {
     expect(runner.commandsRun.first, startsWith('flutter build web'));
   });
 
-  test('deployTo with unknown name throws with known targets listed', () {
+  test('kit.deploy.service — deployTo with unknown name throws with known targets listed', () {
     final service = buildService(ScriptedAppBoxKitProcessRunner());
     expect(
       () => service.deployTo('heroku', config),
@@ -46,7 +46,7 @@ void main() {
     );
   });
 
-  test('doctor aggregates every target', () async {
+  test('kit.deploy.service — doctor aggregates every target', () async {
     final report =
         await buildService(ScriptedAppBoxKitProcessRunner()).doctor(config);
 
@@ -63,7 +63,7 @@ void main() {
     );
   });
 
-  test('AppBoxKitDeployConfig.dartDefineArgs preserves insertion order', () {
+  test('kit.deploy.service — AppBoxKitDeployConfig.dartDefineArgs preserves insertion order', () {
     const config = AppBoxKitDeployConfig(
       projectName: 'x',
       dartDefines: {'A': '1', 'B': '2'},

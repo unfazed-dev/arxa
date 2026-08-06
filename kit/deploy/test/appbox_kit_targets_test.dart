@@ -13,7 +13,7 @@ void main() {
   );
 
   group('AppBoxKitFastlaneTarget', () {
-    test('deploy runs bundle exec fastlane <platform> <lane>', () async {
+    test('kit.deploy.targets — deploy runs bundle exec fastlane <platform> <lane>', () async {
       final runner = ScriptedAppBoxKitProcessRunner();
       final target = AppBoxKitFastlaneTarget(runner, platform: 'ios', lane: 'beta');
 
@@ -25,7 +25,7 @@ void main() {
       expect(runner.workingDirectories.single, '/app');
     });
 
-    test('failure surfaces exit code and stderr', () async {
+    test('kit.deploy.targets — failure surfaces exit code and stderr', () async {
       final runner = ScriptedAppBoxKitProcessRunner(script: {
         'bundle exec fastlane android release':
             const AppBoxKitProcessResult(exitCode: 2, stderr: 'lane failed'),
@@ -39,7 +39,7 @@ void main() {
       expect(result.failureReason, contains('lane failed'));
     });
 
-    test('doctor checks fastlane --version', () async {
+    test('kit.deploy.targets — doctor checks fastlane --version', () async {
       final runner = ScriptedAppBoxKitProcessRunner();
       final checks =
           await AppBoxKitFastlaneTarget(runner, platform: 'android').doctor(config);
@@ -50,7 +50,7 @@ void main() {
   });
 
   group('AppBoxKitShorebirdTarget', () {
-    test('release shape includes --flutter-version and dart-defines',
+    test('kit.deploy.targets — release shape includes --flutter-version and dart-defines',
         () async {
       final runner = ScriptedAppBoxKitProcessRunner();
       final target = AppBoxKitShorebirdTarget(runner, mode: AppBoxKitShorebirdMode.release);
@@ -64,7 +64,7 @@ void main() {
       ]);
     });
 
-    test('patch shape includes --release-version', () async {
+    test('kit.deploy.targets — patch shape includes --release-version', () async {
       final runner = ScriptedAppBoxKitProcessRunner();
       final target = AppBoxKitShorebirdTarget(
         runner,
@@ -81,7 +81,7 @@ void main() {
       ]);
     });
 
-    test('doctor runs shorebird doctor', () async {
+    test('kit.deploy.targets — doctor runs shorebird doctor', () async {
       final runner = ScriptedAppBoxKitProcessRunner(script: {
         'shorebird doctor':
             const AppBoxKitProcessResult(exitCode: 1, stderr: 'not logged in'),
@@ -97,7 +97,7 @@ void main() {
   });
 
   group('AppBoxKitCloudflarePagesTarget', () {
-    test('deploy builds web then wrangler pages deploy', () async {
+    test('kit.deploy.targets — deploy builds web then wrangler pages deploy', () async {
       final runner = ScriptedAppBoxKitProcessRunner();
       final target = AppBoxKitCloudflarePagesTarget(runner);
 
@@ -114,7 +114,7 @@ void main() {
       );
     });
 
-    test('stops after failed flutter build', () async {
+    test('kit.deploy.targets — stops after failed flutter build', () async {
       final runner = ScriptedAppBoxKitProcessRunner(script: {
         'flutter build web':
             const AppBoxKitProcessResult(exitCode: 1, stderr: 'compile error'),
@@ -131,7 +131,7 @@ void main() {
       );
     });
 
-    test('doctor reports wrangler + token presence', () async {
+    test('kit.deploy.targets — doctor reports wrangler + token presence', () async {
       final runner = ScriptedAppBoxKitProcessRunner();
       final checks = await AppBoxKitCloudflarePagesTarget(runner).doctor(config);
 
@@ -148,7 +148,7 @@ void main() {
       environment: {'VERCEL_TOKEN': 'vercel-token'},
     );
 
-    test('deploy builds web then vercel deploy --prod --yes', () async {
+    test('kit.deploy.targets — deploy builds web then vercel deploy --prod --yes', () async {
       final runner = ScriptedAppBoxKitProcessRunner();
       final target = AppBoxKitVercelTarget(runner);
 
@@ -166,7 +166,7 @@ void main() {
       );
     });
 
-    test('stops after failed flutter build', () async {
+    test('kit.deploy.targets — stops after failed flutter build', () async {
       final runner = ScriptedAppBoxKitProcessRunner(script: {
         'flutter build web':
             const AppBoxKitProcessResult(exitCode: 1, stderr: 'compile error'),
@@ -183,7 +183,7 @@ void main() {
       );
     });
 
-    test('doctor reports vercel CLI + token presence', () async {
+    test('kit.deploy.targets — doctor reports vercel CLI + token presence', () async {
       final runner = ScriptedAppBoxKitProcessRunner();
       final checks = await AppBoxKitVercelTarget(runner).doctor(vercelConfig);
 
@@ -192,7 +192,7 @@ void main() {
       expect(checks.every((c) => c.ok), isTrue);
     });
 
-    test('doctor flags a missing VERCEL_TOKEN', () async {
+    test('kit.deploy.targets — doctor flags a missing VERCEL_TOKEN', () async {
       final runner = ScriptedAppBoxKitProcessRunner();
       final checks = await AppBoxKitVercelTarget(runner).doctor(config);
 
@@ -212,7 +212,7 @@ void main() {
       },
     );
 
-    test('deploy runs wrangler deploy in the working directory', () async {
+    test('kit.deploy.targets — deploy runs wrangler deploy in the working directory', () async {
       final runner = ScriptedAppBoxKitProcessRunner();
       final target = AppBoxKitCloudflareWorkersTarget(runner);
 
@@ -231,7 +231,7 @@ void main() {
       );
     });
 
-    test('fails without a workingDirectory (no wrangler.toml to read)',
+    test('kit.deploy.targets — fails without a workingDirectory (no wrangler.toml to read)',
         () async {
       final runner = ScriptedAppBoxKitProcessRunner();
       const noDir = AppBoxKitDeployConfig(projectName: 'showcase');
@@ -243,7 +243,7 @@ void main() {
       expect(runner.commandsRun, isEmpty);
     });
 
-    test('deploy failure surfaces exit code and stderr', () async {
+    test('kit.deploy.targets — deploy failure surfaces exit code and stderr', () async {
       final runner = ScriptedAppBoxKitProcessRunner(script: {
         'wrangler deploy':
             const AppBoxKitProcessResult(exitCode: 1, stderr: 'missing wrangler.toml'),
@@ -255,7 +255,7 @@ void main() {
       expect(result.failureReason, contains('missing wrangler.toml'));
     });
 
-    test('doctor reports wrangler + token + account id presence', () async {
+    test('kit.deploy.targets — doctor reports wrangler + token + account id presence', () async {
       final runner = ScriptedAppBoxKitProcessRunner();
       final checks = await AppBoxKitCloudflareWorkersTarget(runner).doctor(workersConfig);
 
@@ -264,7 +264,7 @@ void main() {
       expect(checks.every((c) => c.ok), isTrue);
     });
 
-    test('doctor flags a missing CLOUDFLARE_ACCOUNT_ID', () async {
+    test('kit.deploy.targets — doctor flags a missing CLOUDFLARE_ACCOUNT_ID', () async {
       final runner = ScriptedAppBoxKitProcessRunner();
       final checks = await AppBoxKitCloudflareWorkersTarget(runner).doctor(config);
 
