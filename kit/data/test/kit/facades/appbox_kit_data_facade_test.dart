@@ -9,8 +9,9 @@ import 'package:appbox_kit_data/appbox_kit_testing.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_testing.dart';
 
 /// `AppBoxKitDataFacade.mutate` policy params: the key is derived
-/// (owner + name.entity), and error/success messages become snackbar config
-/// on the returned builder — the common mutation is a one-liner.
+/// (owner + name.entity), and error/success messages become notification
+/// config on the pipeline run — the common mutation is a one-liner. The
+/// returned future is an observation handle: the mutation is already running.
 void main() {
   setUp(() async {
     appBoxKitLocator
@@ -26,7 +27,7 @@ void main() {
   test('kit.data.facades — mutate records name/entity and executes the operation', () async {
     final facade = FakeAppBoxKitDataFacade();
 
-    // Awaiting the builder executes it (no .execute() terminal).
+    // The handle is already running — awaiting it just observes the result.
     final result = await facade.mutate<String>(
       () async => 'stored',
       name: 'pin',
@@ -55,8 +56,11 @@ void main() {
       name: 'pin',
       entity: 'note-1',
       error: 'nope',
-    ).execute();
+    );
 
+    // Hot dispatch: the run starts on the pipe's subscription, a microtask
+    // after the call — pump before observing busy.
+    await pumpEventQueue();
     expect(state.value.busy, isTrue);
     gate.complete();
     await future;
@@ -67,14 +71,14 @@ void main() {
     final facade = FakeAppBoxKitDataFacade();
     final state = facade.actionState$('wipe');
 
-    // No fallback: the error rethrows after the snackbar — and the state
-    // stream carries the snackbar's message.
+    // No fallback: the error rethrows through the handle after the snackbar —
+    // and the state stream carries the snackbar's message.
     await expectLater(
       facade.mutate<void>(
         () async => throw Exception('db gone'),
         name: 'wipe',
         error: 'Could not delete',
-      ).execute(),
+      ),
       throwsException,
     );
 

@@ -20,7 +20,6 @@ library;
 import 'dart:async';
 
 import 'package:rxdart/rxdart.dart';
-import 'package:appbox_kit_ui_library/utils/kit_action/appbox_kit_action_builder.dart';
 
 import 'facades/appbox_kit_data_facade.dart';
 import 'ids/appbox_kit_id_service.dart';
@@ -292,11 +291,11 @@ class FakeAppBoxKitRepository<T> implements AppBoxKitRepository<T> {
 ///
 /// `repository<T>()` / `auth` resolve through the appBoxKitLocator exactly as in a
 /// real facade subclass — register [FakeAppBoxKitRepository] instances for the
-/// entities under test. `mutate` still returns the real [AppBoxKitActionBuilder]
-/// (so the chain can be executed against kit fakes); it just records each
-/// chain's label and value type first.
+/// entities under test. `mutate` still returns the real pipeline observation
+/// handle (so the mutation executes against kit fakes); it just records each
+/// call's label and value type first.
 class FakeAppBoxKitDataFacade extends AppBoxKitDataFacade {
-  /// Every [mutate] chain started, in call order (`label` is `name.entity` —
+  /// Every [mutate] call started, in call order (`label` is `name.entity` —
   /// either part may be null).
   final List<({String? name, String? entity, String type})> mutateCalls = [];
 
@@ -304,12 +303,13 @@ class FakeAppBoxKitDataFacade extends AppBoxKitDataFacade {
   int disposeCallCount = 0;
 
   @override
-  AppBoxKitActionBuilder<T> mutate<T>(
+  Future<T> mutate<T>(
     FutureOr<T> Function() operation, {
     String? name,
     String? entity,
     String? error,
     String? success,
+    String? fallback,
   }) {
     mutateCalls.add((name: name, entity: entity, type: T.toString()));
     return super.mutate<T>(
@@ -318,6 +318,7 @@ class FakeAppBoxKitDataFacade extends AppBoxKitDataFacade {
       entity: entity,
       error: error,
       success: success,
+      fallback: fallback,
     );
   }
 

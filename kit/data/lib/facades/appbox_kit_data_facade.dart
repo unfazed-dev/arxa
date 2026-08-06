@@ -14,10 +14,12 @@ import '../repositories/appbox_kit_repository.dart';
 /// subjects registered through [registerSubject] so [dispose] closes them.
 /// Aggregations belong here, never in repositories (swap rule 2).
 ///
-/// Mutations go through [mutate], which routes into `AppBoxKitAction` so data
-/// writes inherit the kit's loading/error/snackbar/retry automation. As a
-/// [AppBoxKitActionOwner] the facade can also run ad-hoc ops via `action(name, …)`
-/// and everything it creates dies with [dispose].
+/// Mutations go through [mutate], which dispatches on the facade's
+/// `AppBoxKitActionPipeline` so data writes inherit the kit's
+/// busy/error/snackbar automation (hot dispatch — the returned future is an
+/// observation handle). As a [AppBoxKitActionOwner] the facade can also run
+/// ad-hoc ops via `pipeline.pipe(name, …)` and everything it created dies
+/// with [dispose].
 abstract class AppBoxKitDataFacade with AppBoxKitActionOwner {
   final List<Subject<dynamic>> _subjects$ = [];
 
@@ -36,7 +38,7 @@ abstract class AppBoxKitDataFacade with AppBoxKitActionOwner {
     return subject;
   }
 
-  /// Starts a AppBoxKitAction chain for a data mutation, owned by this facade —
+  /// Runs a data mutation on the facade's pipeline, owned by this facade —
   /// the registry key is derived (`RuntimeType.name.entity`), never
   /// hand-written.
   ///
@@ -45,10 +47,15 @@ abstract class AppBoxKitDataFacade with AppBoxKitActionOwner {
   ///   always surface).
   /// - [success]: success snackbar message — only for destructive /
   ///   confirm-worthy ops.
+  /// - [fallback]: completeOnError parity — when set, failures are swallowed:
+  ///   the handle completes with `null` instead of rethrowing and [fallback]
+  ///   becomes the error identity (log, state$ stream).
   ///
-  /// The builder is still returned, so advanced chains keep chaining
-  /// (`.withRetry(...)`, `.withDebounce(...)`, `.onSuccess(...)`) and run when
-  /// awaited.
+  /// The returned future is an observation handle: the mutation is ALREADY
+  /// RUNNING when `mutate` returns (hot dispatch), so awaiting it is optional
+  /// and dropping it is harmless. Awaiting delivers the stored value on
+  /// success and — unless [fallback] was set — rethrows on failure (errors
+  /// surface via the snackbar AND the handle).
   ///
   /// ```dart
   /// Future<ShowcaseNoteModel> togglePin(ShowcaseNoteModel note) => mutate(
@@ -58,23 +65,23 @@ abstract class AppBoxKitDataFacade with AppBoxKitActionOwner {
   ///       error: 'Could not update the note',
   ///     );
   /// ```
-  AppBoxKitActionBuilder<T> mutate<T>(
+  Future<T> mutate<T>(
     FutureOr<T> Function() operation, {
     String? name,
     String? entity,
     String? error,
     String? success,
+    String? fallback,
   }) {
     final label =
         [if (name != null) name, if (entity != null) entity].join('.');
-    var builder = AppBoxKitAction.run<T>(
+    return pipeline.run<T>(
+      label.isEmpty ? 'mutate' : label,
       operation,
-      owner: this,
-      name: label.isEmpty ? null : label,
+      errorMessage: fallback,
+      errorNotification: error,
+      successNotification: success,
     );
-    if (error != null) builder = builder.withErrorSnackbar(error);
-    if (success != null) builder = builder.withSuccessSnackbar(success);
-    return builder;
   }
 
   Future<void> dispose() async {

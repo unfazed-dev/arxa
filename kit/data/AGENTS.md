@@ -15,8 +15,9 @@ This file owns the data-layer contract.
   (`fromJson`/`toJson`), registered as one `AppBoxKitEntityRegistration<T>`.
 - **Layering:** `View → ViewModel → Facade Service → Repository → Backend`.
   The `AppBoxKitDataFacade` subclass is the only layer ViewModels talk to; it
-  composes repositories into derived streams and routes writes through
-  `AppBoxKitAction` via `mutate(...)`. `AppBoxKitRepository<T>` is the swap seam — one
+  composes repositories into derived streams and routes writes through the
+  KitAction pipeline via `mutate(...)` (hot dispatch — the returned future is
+  an observation handle). `AppBoxKitRepository<T>` is the swap seam — one
   interface, three implementations (seed / Supabase / Appwrite), no codegen.
 - **`AppBoxKitQuery` stays deliberately tiny** (`lib/query/appbox_kit_query.dart`): eq/gt/lt
   filters + orderBy + limit — every operator satisfiable single-table on all
