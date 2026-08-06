@@ -43,6 +43,7 @@ import 'package:appboxd/gate_memory.dart';
 import 'package:appboxd/gate_native_deps.dart';
 import 'package:appboxd/gate_scaffold.dart';
 import 'package:appboxd/gate_structure.dart';
+import 'package:appboxd/gate_tests.dart';
 import 'package:appboxd/gate_runner.dart';
 import 'package:appboxd/gates.dart';
 import 'package:appboxd/lens_cli.dart';
@@ -129,7 +130,7 @@ Usage: appbox <command> [options]
 
 Commands:
   gate <name>    Run a gate by name (arch, gen-freshness, trace, intake, freeze,
-                 structure, scaffold, coverage, memory, advertise, review,
+                 structure, scaffold, coverage, tests, memory, advertise, review,
                  native_deps, lens, deploy, tier1, capability, api-map)
                  tier1 accepts --promote: on a green run, write the evidence
                  ledger + port-tested tiers (the only path that sets a tier)
@@ -163,7 +164,7 @@ Options:
   --port <n>     Port for serve (default 8787)
   --sarif <path> Write SARIF output to <path>
   --project <n>  Gate a project's own shell (~/.appbox/projects/<n>) instead of
-                 the studio — intake gate only
+                 the studio — intake + tests gates only
 ''');
 }
 
@@ -172,7 +173,7 @@ Options:
 Future<void> _runGate(List<String> args) async {
   if (args.isEmpty) {
     stderr.writeln('appbox gate: missing gate name');
-    stderr.writeln('  gates: arch gen-freshness trace intake freeze structure scaffold coverage memory advertise review native_deps lens deploy tier1');
+    stderr.writeln('  gates: arch gen-freshness trace intake freeze structure scaffold coverage tests memory advertise review native_deps lens deploy tier1');
     exit(2);
   }
 
@@ -327,11 +328,12 @@ Future<void> _runAllGates(List<String> args) async {
 
 Future<GateResult> _dispatchGate(String name, GateContext ctx,
     {String? project}) async {
-  // Only intake reads a project shell so far — refuse rather than accept the
-  // flag and quietly gate the studio instead of the project asked for.
-  if (project != null && name != 'intake') {
+  // Only intake and tests read a project shell so far — refuse rather than
+  // accept the flag and quietly gate the studio instead of the project asked
+  // for.
+  if (project != null && name != 'intake' && name != 'tests') {
     return GateResult.env('gate "$name" does not support --project '
-        '(intake only)');
+        '(intake + tests only)');
   }
   switch (name) {
     case 'memory':
@@ -352,6 +354,8 @@ Future<GateResult> _dispatchGate(String name, GateContext ctx,
       return coverageGate(ctx);
     case 'scaffold':
       return scaffoldGate(ctx);
+    case 'tests':
+      return testsGate(ctx, project: project);
     case 'freeze':
       return freezeGate(ctx);
     case 'review':

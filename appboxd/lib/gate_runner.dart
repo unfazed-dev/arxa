@@ -17,6 +17,7 @@ import 'package:appboxd/gate_memory.dart';
 import 'package:appboxd/gate_native_deps.dart';
 import 'package:appboxd/gate_scaffold.dart';
 import 'package:appboxd/gate_structure.dart';
+import 'package:appboxd/gate_tests.dart';
 import 'package:appboxd/gates.dart';
 import 'package:appboxd/memory.dart';
 import 'package:path/path.dart' as p;
@@ -28,6 +29,7 @@ const gateOrder = [
   'structure',
   'scaffold',
   'coverage',
+  'tests',
   'memory',
   'advertise',
   'review',
@@ -154,6 +156,8 @@ Future<GateResult?> _tryDartGate(String name, GateContext ctx) async {
       return coverageGate(ctx);
     case 'scaffold':
       return scaffoldGate(ctx);
+    case 'tests':
+      return testsGate(ctx, project: ctx.project);
     case 'freeze':
       return freezeGate(ctx);
     default:

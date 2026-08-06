@@ -19,6 +19,12 @@
 //   builder implements, marked as a stub. It does not compile Dart; it produces
 //   the file set + the .shell-structure.json manifest the coverage gate reads.
 //
+//   It also emits the RED-FIRST test seeds (behavior-TDD canon, enforced by
+//   `appbox gate tests`): per surface, test/viewmodels/<dir>_viewmodel_test.dart
+//   with one SKIPPED test per story the story map attaches to that surface —
+//   T1-passing (test( present), T2-passing (story id cited verbatim), T3-green
+//   (skipped) until the builder implements the behavior and removes the skip.
+//
 //   Directory naming is a scaffolder DECISION, recorded in the manifest (the
 //   coverage gate refuses to guess it). The decision here: dir = <shell>_<short>
 //   from the registry id — the stable key §18 says must never be reused — which is
@@ -44,6 +50,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'mem_b.dart';
+import 'story_map.dart';
 
 /// The gen-l10n config is a FIXED contract — gates assert it verbatim, so it is
 /// a constant, never templated. (synthetic-package deliberately absent: the SDK
@@ -281,6 +288,116 @@ String _stubViewmodel(Map<String, dynamic> screen) {
       '  /// Wrap the real load in setBusy/setError so the branches light up.\n'
       '  Future<void> refresh() async {}\n'
       '}\n';
+}
+
+// ------------------------------------------------ red-first test seeds
+
+/// The behavior-TDD seed for `<comp>ViewModel` (canon: skills/appbox-tester/
+/// behavior-tdd-rules.md), one SKIPPED test per story the story map attaches
+/// to this surface. The stub VM has no behavior yet, so a "real" test is
+/// impossible — the skip is the honest red-first state: it satisfies gate T1's
+/// test( presence, cites the story id verbatim for T2, and cannot fail T3.
+/// The builder implements the VM, writes the given/when/then body, and removes
+/// the skip.
+///
+/// [stories] is null when no story map was found (or it did not parse) — the
+/// seed then carries a single placeholder skipped test citing no id (still
+/// T1-passing) with a run-intake-first comment. Empty means the map exists but
+/// no stories roll up to this surface.
+String _stubViewmodelTest(
+    Map<String, dynamic> screen, List<Map<String, dynamic>>? stories) {
+  final comp = screen['comp'] as String;
+  final surface = screen['surface'] as String;
+  final b = StringBuffer()
+    ..write('// appbox-scaffolder: red-first behavior-test seed. Canon:\n')
+    ..write('// skills/appbox-tester/behavior-tdd-rules.md — each skipped test cites its\n')
+    ..write('// story id verbatim (gate T2) and stays green (T3) until the builder\n')
+    ..write('// implements the behavior and removes the skip.\n')
+    ..write('//   surface:       $surface\n')
+    ..write('//   comp:          ${comp}ViewModel\n')
+    ..write("import 'package:flutter_test/flutter_test.dart';\n")
+    ..write('\n')
+    ..write('void main() {\n')
+    ..write("  group('${comp}ViewModel', () {\n")
+    ..write('    setUp(() {\n')
+    ..write('      // builder: register kit fakes / port mocks here once the VM wires services.\n')
+    ..write('    });\n')
+    ..write('\n')
+    ..write('    tearDown(() {\n')
+    ..write('      // builder: reset locator/static state here if the VM touches it.\n')
+    ..write('    });\n');
+  if (stories == null || stories.isEmpty) {
+    b.write('\n');
+    if (stories == null) {
+      b.write('    // No story map found (intake/map.json, docs/design/story-map.json) —\n');
+      b.write('    // run `appbox intake` first, then re-scaffold to seed one test per story.\n');
+    } else {
+      b.write('    // The story map attaches no stories to this surface yet — extend\n');
+      b.write('    // the map (appbox intake), then re-scaffold.\n');
+    }
+    b.write("    test('placeholder — seed me from the story map', () async {\n");
+    b.write('      // red-first: implement with ${comp}ViewModel, then remove the skip.\n');
+    b.write("    }, skip: 'red-first seed — implement with ${comp}ViewModel');\n");
+  } else {
+    for (final s in stories) {
+      final id = s['id'] as String;
+      final name = _sentenceCase((s['name'] as String?) ?? id);
+      b.write('\n');
+      b.write("    test('${_dartSingleQuoted('$id — $name')}', () async {\n");
+      b.write('      // red-first: implement with ${comp}ViewModel, then remove the skip.\n');
+      b.write("    }, skip: 'red-first seed — implement with ${comp}ViewModel');\n");
+    }
+  }
+  b.write('  });\n');
+  b.write('}\n');
+  return b.toString();
+}
+
+/// "create folder" -> "Create folder": first letter up, the rest untouched —
+/// never lowercases an intentional capital ("Use OAuth2" stays "Use OAuth2").
+String _sentenceCase(String s) =>
+    s.isEmpty ? s : '${s[0].toUpperCase()}${s.substring(1)}';
+
+/// Escape [s] for a single-quoted Dart string literal.
+String _dartSingleQuoted(String s) => s
+    .replaceAll(r'\', r'\\')
+    .replaceAll("'", r"\'")
+    .replaceAll(r'$', r'\$')
+    .replaceAll('\n', r'\n');
+
+/// Story-map discovery for the test seeds — the same lookup the tests gate
+/// enforces (gate_tests T2): `<app>/intake/map.json`, then
+/// `<app>/docs/design/story-map.json`. Returns surface-id -> stories (surfaces
+/// derive from features exactly as story_map.dart's deriveSurfaces rolls them
+/// up, so the ids match the structure.json screen ids), or null when no map
+/// exists / the map does not parse — never a scaffold failure.
+Map<String, List<Map<String, dynamic>>>? _storiesBySurface(String appRoot) {
+  String? mapPath;
+  for (final candidate in [
+    '$appRoot/intake/map.json',
+    '$appRoot/docs/design/story-map.json',
+  ]) {
+    if (File(candidate).existsSync()) {
+      mapPath = candidate;
+      break;
+    }
+  }
+  if (mapPath == null) return null;
+  try {
+    final data = jsonDecode(File(mapPath).readAsStringSync());
+    if (data is! Map<String, dynamic>) return null;
+    return {
+      for (final s in deriveSurfaces(data).surfaces)
+        s.id: [
+          for (final st in s.stories)
+            if (st['id'] is String) st,
+        ],
+    };
+  } catch (_) {
+    stderr.writeln('scaffold: WARN story map $mapPath does not parse — '
+        'emitting placeholder test seeds (run intake first)');
+    return null;
+  }
 }
 
 /// The design-system.md every surface dir must carry (the review gate's
@@ -774,6 +891,11 @@ int scaffold(
   final themeBlock = loaded.data!['theme'] as Map<String, dynamic>?;
   final fontsBlock = loaded.data!['fonts'] as Map<String, dynamic>?;
 
+  // Red-first behavior-test seeds (behavior-TDD canon): one per surface, from
+  // the same story map the tests gate reads. Null = no map -> placeholders.
+  final storiesBySurface = _storiesBySurface(appRoot);
+  final testDir = '$appRoot/test/viewmodels';
+
   var written = 0;
   for (final s in frozen) {
     final d = surfaceDir(s);
@@ -785,6 +907,12 @@ int scaffold(
     }
     File('$base/${d}_viewmodel.dart').writeAsStringSync(_stubViewmodel(s));
     File('$base/design-system.md').writeAsStringSync(_designSystemDoc(s, factors, theme: themeBlock, fonts: fontsBlock));
+    Directory(testDir).createSync(recursive: true);
+    File('$testDir/${d}_viewmodel_test.dart').writeAsStringSync(_stubViewmodelTest(
+        s,
+        storiesBySurface == null
+            ? null
+            : storiesBySurface[s['id']] ?? const []));
     written++;
   }
 
@@ -832,6 +960,8 @@ int scaffold(
   final sortedShells = shells.toList()..sort();
   print('scaffold: $written surface(s) x $per file(s) = ${written * per} files');
   print('  targets [${targets.join(',')}] -> form factors [$fl]');
+  print('  red-first test seeds: $written file(s) -> test/viewmodels/ '
+      '(${storiesBySurface == null ? 'no story map — placeholders' : 'seeded from the story map'})');
   print('  shells: ${sortedShells.join(', ')}');
   if (l10n != null) {
     print('  l10n: ${l10n.length} catalog(s) -> lib/l10n/ + l10n.yaml '

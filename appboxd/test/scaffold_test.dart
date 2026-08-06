@@ -8,6 +8,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:appboxd/gate_scaffold.dart';
+import 'package:appboxd/gate_tests.dart';
 import 'package:appboxd/gates.dart';
 import 'package:appboxd/scaffold.dart';
 import 'package:test/test.dart';
@@ -95,6 +96,64 @@ void main() {
 
   Map<String, dynamic> clone(Map<String, dynamic> s) =>
       jsonDecode(jsonEncode(s)) as Map<String, dynamic>;
+
+  /// The emitStoryMap shape (intake/map.json): feature ids pin the surface ids
+  /// of baseStruct (projects.home, settings.kits); stage.shell has no feature.
+  Map<String, dynamic> fixtureMap() => {
+        'releases': <dynamic>[],
+        'counts': <String, dynamic>{},
+        'statuses': <String, dynamic>{},
+        'epics': [
+          {
+            'id': 'projects',
+            'name': 'Projects',
+            'features': [
+              {
+                'id': 'projects.home',
+                'name': 'Home',
+                'stories': [
+                  {
+                    'id': 'projects.home.create-project',
+                    'name': 'create project',
+                    'priority': 'must',
+                    'release': null,
+                  },
+                  {
+                    'id': 'projects.home.archive-project',
+                    'name': 'Archive project',
+                    'priority': 'should',
+                    'release': null,
+                  },
+                ],
+              },
+            ],
+          },
+          {
+            'id': 'settings',
+            'name': 'Settings',
+            'features': [
+              {
+                'id': 'settings.kits',
+                'name': 'Kits',
+                'stories': [
+                  {
+                    'id': 'settings.kits.toggle-kit',
+                    'name': 'Toggle kit',
+                    'priority': 'must',
+                    'release': null,
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      };
+
+  void plantMap(String app, [String rel = 'intake/map.json']) {
+    final f = File('$app/$rel');
+    f.parent.createSync(recursive: true);
+    f.writeAsStringSync(jsonEncode(fixtureMap()));
+  }
 
   group('design-system.md: token-exact emission from structure@2', () {
     // A theme block shaped like the authored designs/*/structure.json.
@@ -710,6 +769,89 @@ void main() {
           File('$app/lib/ui/views/.shell-structure.json').readAsStringSync())
           as Map<String, dynamic>;
       expect((mf['kits'] as Map)['resolved'], resolved);
+    });
+  });
+
+  group('red-first test seeds (behavior-TDD canon)', () {
+    test('fixture map.json -> one skipped test per story, ids verbatim, canon shape',
+        () {
+      final des = plantDesign('${tmp.path}/d');
+      final app = '${tmp.path}/app1';
+      plantMap(app);
+      expect(scaffold(des, app, ['macos'], derivationPath, configPath), 0);
+
+      final f = File('$app/test/viewmodels/projects_home_viewmodel_test.dart');
+      expect(f.existsSync(), isTrue, reason: 'test seed emitted per surface');
+      final t = f.readAsStringSync();
+      expect(t, contains("import 'package:flutter_test/flutter_test.dart';"));
+      expect(t, contains("group('ProjectsHomeViewModel', () {"));
+      expect(t, contains('setUp(() {'));
+      expect(t, contains('tearDown(() {'));
+      expect(
+          t,
+          contains(
+              "test('projects.home.create-project — Create project', () async {\n"
+              '      // red-first: implement with ProjectsHomeViewModel, then remove the skip.\n'
+              "    }, skip: 'red-first seed — implement with ProjectsHomeViewModel');"),
+          reason: 'canon shape: verbatim id, sentence-cased name, red-first skip');
+      expect(t, contains('projects.home.archive-project — Archive project'));
+      expect('test('.allMatches(t).length, 2,
+          reason: 'one test per story of the feature, no more');
+
+      final kits = File('$app/test/viewmodels/settings_kits_viewmodel_test.dart')
+          .readAsStringSync();
+      expect(kits, contains('settings.kits.toggle-kit — Toggle kit'));
+
+      // A surface no feature maps to still gets a T1-passing placeholder.
+      final shell = File('$app/test/viewmodels/stage_shell_viewmodel_test.dart')
+          .readAsStringSync();
+      expect(shell, contains("test('placeholder — seed me from the story map'"));
+      expect(shell, contains('no stories'));
+    });
+
+    test('no story map -> single placeholder skipped test, run-intake comment', () {
+      final des = plantDesign('${tmp.path}/d');
+      final app = '${tmp.path}/app2';
+      expect(scaffold(des, app, ['macos'], derivationPath, configPath), 0);
+      final t = File('$app/test/viewmodels/projects_home_viewmodel_test.dart')
+          .readAsStringSync();
+      expect(t, contains('run `appbox intake` first'));
+      expect(t, contains("test('placeholder — seed me from the story map', () async {"));
+      expect('test('.allMatches(t).length, 1, reason: 'placeholder only (T1 green)');
+      expect(t, isNot(contains('projects.home.create-project')));
+    });
+
+    test('docs/design/story-map.json is the fallback discovery', () {
+      final des = plantDesign('${tmp.path}/d');
+      final app = '${tmp.path}/app3';
+      plantMap(app, 'docs/design/story-map.json');
+      expect(scaffold(des, app, ['macos'], derivationPath, configPath), 0);
+      final t = File('$app/test/viewmodels/projects_home_viewmodel_test.dart')
+          .readAsStringSync();
+      expect(t, contains('projects.home.create-project — Create project'));
+    });
+
+    test('an unparseable map falls back to placeholders, never fails scaffold', () {
+      final des = plantDesign('${tmp.path}/d');
+      final app = '${tmp.path}/app4';
+      Directory('$app/intake').createSync(recursive: true);
+      File('$app/intake/map.json').writeAsStringSync('{not json');
+      expect(scaffold(des, app, ['macos'], derivationPath, configPath), 0);
+      final t = File('$app/test/viewmodels/projects_home_viewmodel_test.dart')
+          .readAsStringSync();
+      expect(t, contains("test('placeholder — seed me from the story map'"));
+    });
+
+    test('a freshly scaffolded app with a map passes the tests gate (T1+T2)', () {
+      final des = plantDesign('${tmp.path}/d');
+      final app = '${tmp.path}/app5';
+      plantMap(app);
+      expect(scaffold(des, app, ['macos'], derivationPath, configPath), 0);
+      File('$app/pubspec.yaml').writeAsStringSync('name: demo\n');
+      // check:true keeps T3 hermetic (no `dart test` subprocess); T1+T2 are the
+      // rules the seeds exist to satisfy.
+      final r = testsGate(GateContext(repoRoot: app, appRoot: app, check: true));
+      expect(r.passed, isTrue, reason: r.details.join('\n'));
     });
   });
 

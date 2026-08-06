@@ -19,8 +19,9 @@ gates/<name>/
 
 ## The gates
 
-The gates are Dart. Ten live in `appboxd/lib/gate_*.dart` (intake, freeze,
-structure, scaffold, coverage, memory, advertise, native_deps, lens, deploy),
+The gates are Dart. Eleven live in `appboxd/lib/gate_*.dart` (intake, freeze,
+structure, scaffold, coverage, memory, advertise, native_deps, lens, deploy,
+tests),
 orchestrated by `appboxd/lib/gate_runner.dart`; the review gate is
 `gates/review/review.dart`, dispatched the same way. Run them from `appboxd/`:
 
