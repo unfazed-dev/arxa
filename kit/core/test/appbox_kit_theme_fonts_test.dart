@@ -14,40 +14,40 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('font catalogue', () {
-    test('declares the approved faces, in order, with their css names', () {
+    test('kit.core.fonts — declares the approved faces, in order, with their css names', () {
       expect(appBoxKitFontOptions.map((f) => f.id).toList(),
           ['lexend', 'grotesk', 'lora', 'mono']);
       expect(appBoxKitFontOptions.map((f) => f.cssName).toList(),
           ['Lexend', 'Space Grotesk', 'Lora', 'JetBrains Mono']);
     });
 
-    test('every face carries an OFL licence id', () {
+    test('kit.core.fonts — every face carries an OFL licence id', () {
       for (final f in appBoxKitFontOptions) {
         expect(f.license, 'OFL-1.1', reason: '${f.id} must ship its licence');
       }
     });
 
-    test('the default names a face that exists', () {
+    test('kit.core.fonts — the default names a face that exists', () {
       expect(appBoxKitDefaultFont, 'lexend');
       expect(appBoxKitFontOptions.any((f) => f.id == appBoxKitDefaultFont), isTrue);
     });
 
-    test('appBoxKitFontById resolves a known id', () {
+    test('kit.core.fonts — appBoxKitFontById resolves a known id', () {
       expect(appBoxKitFontById('mono').cssName, 'JetBrains Mono');
     });
 
-    test('appBoxKitFontById falls back rather than crashing on a removed face', () {
+    test('kit.core.fonts — appBoxKitFontById falls back rather than crashing on a removed face', () {
       // A host may have persisted an id that later left the catalogue.
       expect(appBoxKitFontById('no-such-face').id, appBoxKitDefaultFont);
     });
 
-    test('appBoxKitFontForRole picks the first face declared for the slot', () {
+    test('kit.core.fonts — appBoxKitFontForRole picks the first face declared for the slot', () {
       expect(appBoxKitFontForRole(AppBoxKitFontRole.ui)!.id, 'lexend');
       expect(appBoxKitFontForRole(AppBoxKitFontRole.display)!.id, 'grotesk');
       expect(appBoxKitFontForRole(AppBoxKitFontRole.mono)!.id, 'mono');
     });
 
-    test('no face is bundled yet — the catalogue is inert until a host '
+    test('kit.core.fonts — no face is bundled yet — the catalogue is inert until a host '
         'declares the binaries in its pubspec', () async {
       // This is the honest state, not an aspiration: nothing under
       // packages/appbox_kit_core/fonts/ exists. When a host bundles the ttfs
@@ -59,7 +59,7 @@ void main() {
   });
 
   group('theme family param', () {
-    test('fontFamily applies across the whole ramp, light and dark', () {
+    test('kit.core.theme — fontFamily applies across the whole ramp, light and dark', () {
       final light = appBoxKitLightTheme(fontFamily: 'Lexend');
       expect(light.textTheme.bodyMedium!.fontFamily, 'Lexend');
       expect(light.textTheme.displayLarge!.fontFamily, 'Lexend');
@@ -70,7 +70,7 @@ void main() {
       expect(dark.primaryTextTheme.bodyMedium!.fontFamily, 'Lexend');
     });
 
-    test('omitting it leaves the platform default untouched', () {
+    test('kit.core.theme — omitting it leaves the platform default untouched', () {
       // Not `isNull` — Flutter's base theme names a platform face (Roboto on
       // the test host). The contract is that the kit does not impose one.
       expect(appBoxKitLightTheme().textTheme.bodyMedium!.fontFamily,
@@ -79,29 +79,29 @@ void main() {
           ThemeData.dark().textTheme.bodyMedium!.fontFamily);
     });
 
-    test('brightness is still correct with a family applied', () {
+    test('kit.core.theme — brightness is still correct with a family applied', () {
       expect(appBoxKitLightTheme(fontFamily: 'Lora').brightness, Brightness.light);
       expect(appBoxKitDarkTheme(fontFamily: 'Lora').brightness, Brightness.dark);
     });
   });
 
   group('accent swatches (the designer five)', () {
-    test('five swatches in the authored order', () {
+    test('kit.core.accents — five swatches in the authored order', () {
       expect(appBoxKitAccentOptions.map((s) => s.name).toList(),
           ['cyan', 'violet', 'blue', 'ember', 'moss']);
     });
 
-    test('the default names a swatch that exists', () {
+    test('kit.core.accents — the default names a swatch that exists', () {
       expect(appBoxKitDefaultAccent, 'cyan');
       expect(appBoxKitAccentOptions.any((s) => s.name == appBoxKitDefaultAccent), isTrue);
     });
 
-    test('appBoxKitAccentByName falls back rather than crashing', () {
+    test('kit.core.accents — appBoxKitAccentByName falls back rather than crashing', () {
       expect(appBoxKitAccentByName('violet').name, 'violet');
       expect(appBoxKitAccentByName('removed-swatch').name, appBoxKitDefaultAccent);
     });
 
-    test('forBrightness is the only correct read and differs per mode', () {
+    test('kit.core.accents — forBrightness is the only correct read and differs per mode', () {
       for (final s in appBoxKitAccentOptions) {
         final light = s.forBrightness(Brightness.light);
         final dark = s.forBrightness(Brightness.dark);
@@ -114,7 +114,7 @@ void main() {
       }
     });
 
-    test('all five roles resolve to opaque-enough, distinct values', () {
+    test('kit.core.accents — all five roles resolve to opaque-enough, distinct values', () {
       for (final s in appBoxKitAccentOptions) {
         for (final r in [s.light, s.dark]) {
           expect(r.surface, isNot(r.accent), reason: s.name);
