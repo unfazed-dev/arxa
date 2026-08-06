@@ -23,8 +23,6 @@ void main() {
 
   // registerServices()'s bottom-sheet stub matches on custom types;
   // PageRouteInfo needs a fallback for any()/captureAny() on replaceWith.
-  registerFallbackValue(const Color(0x00000000));
-  registerFallbackValue(Duration.zero);
   registerFallbackValue(ShowcaseApplicationShellViewRoute());
 
   group('ShowcaseStartupViewModel Tests -', () {

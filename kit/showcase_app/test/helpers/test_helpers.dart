@@ -1,3 +1,5 @@
+import 'dart:ui' show Color;
+
 import 'package:mocktail/mocktail.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:talker_flutter/talker_flutter.dart';
@@ -24,6 +26,10 @@ class MockShowcaseNotesMediaAdapterService extends Mock
     implements ShowcaseNotesMediaAdapterService {}
 
 void registerServices() {
+  // Fallbacks for the `any(named:)` matchers in the bottom-sheet stub below —
+  // registered once here so consuming files don't repeat them per file.
+  registerFallbackValue(const Color(0x00000000));
+  registerFallbackValue(Duration.zero);
   getAndRegisterRouterService();
   getAndRegisterBottomSheetService();
   getAndRegisterDialogService();

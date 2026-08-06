@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mocktail/mocktail.dart';
 import 'package:appbox_kit_media/appbox_kit_media.dart';
 import 'package:appbox_kit_media/appbox_kit_testing.dart';
 import 'package:appbox_kit_showcase_app/app/app.locator.dart';
@@ -11,14 +10,9 @@ import 'package:appbox_kit_showcase_app/services/showcase_notes_services/adapter
 
 import '../helpers/test_helpers.dart';
 
-class _FakeColor extends Fake implements Color {}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-
-  // The harness's bottom-sheet stub matches on `barrierColor` (Color) —
-  // mocktail needs a fallback registered before registerServices() runs.
-  setUpAll(() => registerFallbackValue(_FakeColor()));
 
   const pathProviderChannel = MethodChannel('plugins.flutter.io/path_provider');
 

@@ -201,6 +201,49 @@ void main() {
   });
 
   test(
+      'notes.folders.move-a-note-into-a-folder — moving a note changes which folder stream it appears in',
+      () async {
+    final source = await notes.createFolder(evanId, 'Move source', sortOrder: 100);
+    final target = await notes.createFolder(evanId, 'Move target', sortOrder: 101);
+    final note = await notes.createNote(evanId, source.id);
+
+    Future<List<String>> idsIn(String folderId) async =>
+        (await notes.notesIn$(evanId, folderId: folderId).first)
+            .map((n) => n.id)
+            .toList();
+
+    expect(await idsIn(source.id), contains(note.id));
+    expect(await idsIn(target.id), isNot(contains(note.id)));
+
+    final moved = await notes.moveNoteToFolder(note, target.id);
+    expect(moved.folderId, target.id);
+    expect(await idsIn(source.id), isNot(contains(note.id)));
+    expect(await idsIn(target.id), contains(note.id));
+
+    // Guards — identical() proves the no-op returned the input without a
+    // repository write.
+    expect(identical(await notes.moveNoteToFolder(moved, target.id), moved), isTrue,
+        reason: 'same-folder move is a no-op');
+
+    await notes.auth.signOut();
+    addTearDown(() => notes.auth
+        .signInWithEmailPassword(email: 'evan@seed.local', password: 'x'));
+    expect(identical(await notes.moveNoteToFolder(moved, source.id), moved), isTrue,
+        reason: 'signed-out move is a no-op');
+    await notes.auth
+        .signInWithEmailPassword(email: 'evan@seed.local', password: 'x');
+
+    final trashed = await notes.moveToTrash(moved);
+    expect((await notes.moveNoteToFolder(trashed, source.id)).folderId, target.id,
+        reason: 'trashed notes stay put — restore returns to the folder');
+
+    // Leave the store as found for order-independence.
+    await notes.deletePermanently(trashed);
+    await notes.deleteFolder(source);
+    await notes.deleteFolder(target);
+  });
+
+  test(
       'auth-and-accounts.sign-in.sign-in-with-email-and-otp — per-owner isolation: the guest sees only guest notes',
       () async {
     final guest = await notes.auth

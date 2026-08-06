@@ -1,5 +1,3 @@
-import 'dart:ui' show Color;
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:rxdart/rxdart.dart';
@@ -49,8 +47,6 @@ ShowcaseNoteModel _note(
 
 void main() {
   // registerServices()'s bottom-sheet stub matches on custom types.
-  registerFallbackValue(const Color(0x00000000));
-  registerFallbackValue(Duration.zero);
   // mocktail any() on model-typed port parameters.
   registerFallbackValue(_note('fallback', ''));
 
@@ -321,13 +317,11 @@ void main() {
     });
 
     test(
-        'notes.folders.move-a-note-into-a-folder — compose() from All Notes files the new note in the first user folder',
+        'notes.note-crud.create-a-note — compose() from All Notes files the new note in the first user folder',
         () async {
-      // given — map.json's "move a note into a folder" has no dedicated
-      // mutation in the codebase (no reassign-folder op exists on the facade);
-      // folder placement happens at compose time, pinned here. From 'all' /
-      // 'trash' there is no natural folder, so the first user folder is the
-      // compose target.
+      // given — from 'all' / 'trash' there is no natural folder, so the
+      // first user folder is the compose target. (Folder placement of an
+      // existing note is the moveNoteToFolder op, cited on its own tests.)
       stubSignedIn();
       when(() => facade.currentSession).thenReturn(_evan);
       when(() => facade.folders$('user-1')).thenAnswer(
@@ -347,6 +341,24 @@ void main() {
       // then
       expect(id, 'note-new');
       verify(() => facade.createNote('user-1', 'folder-notes')).called(1);
+    });
+
+    test(
+        'notes.folders.move-a-note-into-a-folder — moveNoteToFolder delegates to the facade',
+        () async {
+      // given
+      final note = _note('n1', 'Q2 retro');
+      when(() => facade.moveNoteToFolder(any(), any()))
+          .thenAnswer((_) async => note.copyWith(folderId: 'folder-personal'));
+      final vm = ShowcaseNotesFolderViewModel(folderKey: 'folder-work');
+      addTearDown(vm.dispose);
+
+      // when
+      await vm.moveNoteToFolder(note, 'folder-personal');
+
+      // then — trust boundary; the facade owns the move semantics (guards,
+      // stream placement — covered in notes_facade_test).
+      verify(() => facade.moveNoteToFolder(note, 'folder-personal')).called(1);
     });
 
     test('compose() returns null while signed out', () async {

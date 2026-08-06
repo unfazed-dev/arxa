@@ -1,6 +1,4 @@
 import 'dart:async';
-import 'dart:ui' show Color;
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:rxdart/rxdart.dart';
@@ -17,7 +15,6 @@ class _FakeAttachment extends Fake implements ShowcaseNoteAttachmentModel {}
 
 // The harness's bottom-sheet stub matches on `barrierColor` (Color) — mocktail
 // needs a fallback registered before registerServices() runs.
-class _FakeColor extends Fake implements Color {}
 
 void main() {
   ShowcaseNoteModel note({
@@ -55,7 +52,6 @@ void main() {
     setUpAll(() {
       registerFallbackValue(_FakeNote());
       registerFallbackValue(_FakeAttachment());
-      registerFallbackValue(_FakeColor());
     });
 
     setUp(() {
@@ -141,7 +137,7 @@ void main() {
     });
 
     test(
-        'notes.note-crud.delete-a-note-forever — deleting the open note drops it from the editor stream',
+        'notes.trash-and-restore.trash-a-note — deleting the open note drops it from the editor stream',
         () async {
       // given
       final loaded = note();

@@ -261,6 +261,25 @@ class ShowcaseNotesFacadeService extends AppBoxKitDataFacade {
         error: 'Could not restore note',
       );
 
+  /// Refiles a live note into another folder. No-ops (returning the note
+  /// untouched, no repository write) while signed out, when the note is
+  /// already in [folderId], and for trashed notes — trash/restore never
+  /// touch folderId (restore returns a note to the folder it was trashed
+  /// from), so folder moves stay a live-notes affair. Like trash/restore,
+  /// a move does not bump updatedAt: iOS does not re-date a note on refile.
+  /// Not destructive, so error snackbar only (see the policy note above).
+  Future<ShowcaseNoteModel> moveNoteToFolder(ShowcaseNoteModel note, String folderId) {
+    if (currentSession == null || note.folderId == folderId || note.isDeleted) {
+      return Future.value(note);
+    }
+    return mutate<ShowcaseNoteModel>(
+      () => _repo.upsertNote(note.copyWith(folderId: folderId)),
+      name: 'move',
+      entity: note.id,
+      error: 'Could not move note',
+    );
+  }
+
   Future<void> deletePermanently(ShowcaseNoteModel note) => mutate<void>(
         () => _repo.deleteNote(note.id),
         name: 'purge',

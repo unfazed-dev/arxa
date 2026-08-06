@@ -1,5 +1,3 @@
-import 'dart:ui' show Color;
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:appbox_kit_data/appbox_kit_data.dart';
@@ -17,8 +15,6 @@ const _session = AppBoxKitAuthSession(user: AppBoxKitAuthUser(id: 'user-1'));
 
 void main() {
   // registerServices()'s bottom-sheet stub matches on custom types.
-  registerFallbackValue(const Color(0x00000000));
-  registerFallbackValue(Duration.zero);
 
   group('ShowcaseNotesCreateAccountViewModel Tests -', () {
     late MockShowcaseNotesFacadeService facade;

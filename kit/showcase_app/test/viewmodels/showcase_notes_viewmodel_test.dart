@@ -1,5 +1,3 @@
-import 'dart:ui' show Color;
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:rxdart/rxdart.dart';
@@ -30,8 +28,6 @@ ShowcaseNoteFolderModel _folder(String id, String name, int sortOrder) =>
 
 void main() {
   // registerServices()'s bottom-sheet stub matches on custom types.
-  registerFallbackValue(const Color(0x00000000));
-  registerFallbackValue(Duration.zero);
   // mocktail any() on model-typed port parameters.
   registerFallbackValue(_folder('fallback', 'Fallback', 0));
 

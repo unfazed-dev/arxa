@@ -104,6 +104,8 @@ class ShowcaseNotesFolderViewModel extends BaseViewModel {
   Future<void> togglePin(ShowcaseNoteModel note) => _service.togglePin(note);
   Future<void> moveToTrash(ShowcaseNoteModel note) =>
       _service.moveToTrash(note);
+  Future<void> moveNoteToFolder(ShowcaseNoteModel note, String folderId) =>
+      _service.moveNoteToFolder(note, folderId);
   Future<void> restore(ShowcaseNoteModel note) => _service.restore(note);
   Future<void> deletePermanently(ShowcaseNoteModel note) =>
       _service.deletePermanently(note);
