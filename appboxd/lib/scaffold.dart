@@ -496,7 +496,7 @@ String _typeSection(Map<String, dynamic>? fonts) {
   final def = fonts['default'] as String?;
   final b = StringBuffer('## Type\n');
   b.write('\n');
-  b.write('Sizes come from the ax-scale (the theme\'s `TextTheme` roles) — the font\n'
+  b.write('Sizes come from the abx-scale (the theme\'s `TextTheme` roles) — the font\n'
       'block chooses the FACE only, never the size.\n');
   b.write('\n');
   if (ids.isNotEmpty) {
