@@ -3,7 +3,7 @@
 /// Persists a form's in-progress values so a user can leave and resume. The
 /// port is defined now so hosts can code against the seam; concrete storage
 /// (secure prefs / file) lands in a later phase.
-abstract interface class KitFormDraftStore {
+abstract interface class AppBoxKitFormDraftStore {
   /// Persists [values] under [formId].
   Future<void> save(String formId, Map<String, dynamic> values);
 
@@ -14,11 +14,11 @@ abstract interface class KitFormDraftStore {
   Future<void> clear(String formId);
 }
 
-/// STUB placeholder: an in-memory [KitFormDraftStore] (lost on restart).
+/// STUB placeholder: an in-memory [AppBoxKitFormDraftStore] (lost on restart).
 ///
 /// Useful for tests and wiring the seam; swap for durable storage in the draft
 /// phase.
-class KitInMemoryDraftStore implements KitFormDraftStore {
+class AppBoxKitInMemoryDraftStore implements AppBoxKitFormDraftStore {
   final Map<String, Map<String, dynamic>> _drafts = {};
 
   @override

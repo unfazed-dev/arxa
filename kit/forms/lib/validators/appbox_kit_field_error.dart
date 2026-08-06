@@ -3,12 +3,12 @@ import 'package:flutter/foundation.dart';
 /// A validation error for a single field.
 ///
 /// [code] is the stable, i18n-friendly key — the *primary* identifier hosts
-/// localize against (see `KitValidationCode`). [message] is a resolved/English
+/// localize against (see `AppBoxKitValidationCode`). [message] is a resolved/English
 /// fallback; [params] carries interpolation values for the localized template
 /// (e.g. `{'min': 8}`).
 @immutable
-class KitFieldError {
-  const KitFieldError({
+class AppBoxKitFieldError {
+  const AppBoxKitFieldError({
     required this.code,
     required this.message,
     this.params = const {},
@@ -25,7 +25,7 @@ class KitFieldError {
 
   @override
   bool operator ==(Object other) =>
-      other is KitFieldError &&
+      other is AppBoxKitFieldError &&
       code == other.code &&
       message == other.message &&
       mapEquals(params, other.params);
@@ -36,5 +36,5 @@ class KitFieldError {
   int get hashCode => Object.hash(code, message);
 
   @override
-  String toString() => 'KitFieldError($code: $message)';
+  String toString() => 'AppBoxKitFieldError($code: $message)';
 }

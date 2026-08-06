@@ -2,22 +2,22 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
-import '../validators/kit_field_error.dart';
-import '../validators/kit_validator.dart';
-import 'kit_field_status.dart';
+import '../validators/appbox_kit_field_error.dart';
+import '../validators/appbox_kit_validator.dart';
+import 'appbox_kit_field_status.dart';
 
 /// Holds the value, validation status, and error for a single form field.
 ///
-/// Runs synchronous [KitValidator]s first (short-circuit); only when those pass
-/// does it run any [KitAsyncValidator]s. Exposes state as a [ChangeNotifier] so
-/// Flutter views and `KitFormController` can react. Concurrent [validate] calls
+/// Runs synchronous [AppBoxKitValidator]s first (short-circuit); only when those pass
+/// does it run any [AppBoxKitAsyncValidator]s. Exposes state as a [ChangeNotifier] so
+/// Flutter views and `AppBoxKitFormController` can react. Concurrent [validate] calls
 /// are epoch-guarded, so a stale async result never overwrites a newer one.
-class KitFieldController<T> extends ChangeNotifier {
-  KitFieldController({
+class AppBoxKitFieldController<T> extends ChangeNotifier {
+  AppBoxKitFieldController({
     required this.name,
     T? initialValue,
-    List<KitValidator<T>> validators = const [],
-    List<KitAsyncValidator<T>> asyncValidators = const [],
+    List<AppBoxKitValidator<T>> validators = const [],
+    List<AppBoxKitAsyncValidator<T>> asyncValidators = const [],
   })  : _value = initialValue,
         _initialValue = initialValue,
         _validators = validators,
@@ -26,31 +26,31 @@ class KitFieldController<T> extends ChangeNotifier {
   /// Stable field key (matches Stacked's `ValueKey` when bridging).
   final String name;
 
-  final List<KitValidator<T>> _validators;
-  final List<KitAsyncValidator<T>> _asyncValidators;
+  final List<AppBoxKitValidator<T>> _validators;
+  final List<AppBoxKitAsyncValidator<T>> _asyncValidators;
   final T? _initialValue;
 
   T? _value;
-  KitFieldStatus _status = KitFieldStatus.pristine;
-  KitFieldError? _error;
+  AppBoxKitFieldStatus _status = AppBoxKitFieldStatus.pristine;
+  AppBoxKitFieldError? _error;
   int _validationEpoch = 0;
 
   T? get value => _value;
-  KitFieldStatus get status => _status;
-  KitFieldError? get error => _error;
+  AppBoxKitFieldStatus get status => _status;
+  AppBoxKitFieldError? get error => _error;
 
-  bool get isValid => _status == KitFieldStatus.valid;
-  bool get isInvalid => _status == KitFieldStatus.invalid;
-  bool get isValidating => _status == KitFieldStatus.validating;
-  bool get isPristine => _status == KitFieldStatus.pristine;
-  bool get isDirty => _status != KitFieldStatus.pristine;
+  bool get isValid => _status == AppBoxKitFieldStatus.valid;
+  bool get isInvalid => _status == AppBoxKitFieldStatus.invalid;
+  bool get isValidating => _status == AppBoxKitFieldStatus.validating;
+  bool get isPristine => _status == AppBoxKitFieldStatus.pristine;
+  bool get isDirty => _status != AppBoxKitFieldStatus.pristine;
   bool get hasAsyncValidators => _asyncValidators.isNotEmpty;
 
   /// Sets the value, marks the field dirty, and validates (fire-and-forget).
   set value(T? next) {
     if (_value == next) return;
     _value = next;
-    _status = KitFieldStatus.dirty;
+    _status = AppBoxKitFieldStatus.dirty;
     _error = null;
     notifyListeners();
     // Intentionally not awaited: the setter drives reactive validation and
@@ -61,7 +61,7 @@ class KitFieldController<T> extends ChangeNotifier {
   /// Sets the value and marks the field dirty *without* triggering validation.
   void setValueSilently(T? next) {
     _value = next;
-    _status = KitFieldStatus.dirty;
+    _status = AppBoxKitFieldStatus.dirty;
     notifyListeners();
   }
 
@@ -83,7 +83,7 @@ class KitFieldController<T> extends ChangeNotifier {
       return true;
     }
 
-    _status = KitFieldStatus.validating;
+    _status = AppBoxKitFieldStatus.validating;
     _error = null;
     notifyListeners();
 
@@ -101,13 +101,13 @@ class KitFieldController<T> extends ChangeNotifier {
   }
 
   void _setValid() {
-    _status = KitFieldStatus.valid;
+    _status = AppBoxKitFieldStatus.valid;
     _error = null;
     notifyListeners();
   }
 
-  void _setInvalid(KitFieldError error) {
-    _status = KitFieldStatus.invalid;
+  void _setInvalid(AppBoxKitFieldError error) {
+    _status = AppBoxKitFieldStatus.invalid;
     _error = error;
     notifyListeners();
   }
@@ -116,7 +116,7 @@ class KitFieldController<T> extends ChangeNotifier {
   /// async validation.
   void reset() {
     _value = _initialValue;
-    _status = KitFieldStatus.pristine;
+    _status = AppBoxKitFieldStatus.pristine;
     _error = null;
     _validationEpoch++;
     notifyListeners();

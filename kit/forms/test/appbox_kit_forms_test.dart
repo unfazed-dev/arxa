@@ -1,106 +1,106 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:stacked/stacked.dart';
 import 'package:appbox_kit_forms/appbox_kit_forms.dart';
-import 'package:appbox_kit_forms/testing.dart';
+import 'package:appbox_kit_forms/appbox_kit_testing.dart';
 
-/// Minimal concrete subclass proving [KitFormViewModelMixin] composes onto a
+/// Minimal concrete subclass proving [AppBoxKitFormViewModelMixin] composes onto a
 /// real [FormViewModel] and drives Stacked's [FormStateHelper] maps.
-class _BridgeViewModel extends FormViewModel with KitFormViewModelMixin {
-  _BridgeViewModel(this.kitForm);
+class _BridgeViewModel extends FormViewModel with AppBoxKitFormViewModelMixin {
+  _BridgeViewModel(this.appBoxKitForm);
 
   @override
-  final KitFormController kitForm;
+  final AppBoxKitFormController appBoxKitForm;
 }
 
 void main() {
-  group('KitValidators', () {
+  group('AppBoxKitValidators', () {
     test('required fails empty, passes non-empty', () {
-      final validator = KitValidators.required();
-      expect(validator('')?.code, KitValidationCode.required);
-      expect(validator('  ')?.code, KitValidationCode.required);
+      final validator = AppBoxKitValidators.required();
+      expect(validator('')?.code, AppBoxKitValidationCode.required);
+      expect(validator('  ')?.code, AppBoxKitValidationCode.required);
       expect(validator('x'), isNull);
     });
 
     test('email passes empty, fails malformed, passes valid', () {
-      final validator = KitValidators.email();
+      final validator = AppBoxKitValidators.email();
       expect(validator(''), isNull);
-      expect(validator('nope')?.code, KitValidationCode.email);
+      expect(validator('nope')?.code, AppBoxKitValidationCode.email);
       expect(validator('a@b.co'), isNull);
     });
 
     test('minLength interpolates the bound into the message', () {
-      final error = KitValidators.minLength(8)('abc');
-      expect(error?.code, KitValidationCode.minLength);
+      final error = AppBoxKitValidators.minLength(8)('abc');
+      expect(error?.code, AppBoxKitValidationCode.minLength);
       expect(error?.message, contains('8'));
       expect(error?.params['min'], 8);
     });
 
     test('compose short-circuits to the first failure', () {
-      final validator = KitValidators.compose([
-        KitValidators.required(),
-        KitValidators.minLength(3),
+      final validator = AppBoxKitValidators.compose([
+        AppBoxKitValidators.required(),
+        AppBoxKitValidators.minLength(3),
       ]);
-      expect(validator('')?.code, KitValidationCode.required);
-      expect(validator('ab')?.code, KitValidationCode.minLength);
+      expect(validator('')?.code, AppBoxKitValidationCode.required);
+      expect(validator('ab')?.code, AppBoxKitValidationCode.minLength);
       expect(validator('abc'), isNull);
     });
 
     test('toStacked surfaces the message string for the form generator', () {
-      final validator = KitValidators.required(message: 'Required!').toStacked();
+      final validator = AppBoxKitValidators.required(message: 'Required!').toStacked();
       expect(validator(''), 'Required!');
       expect(validator('x'), isNull);
     });
 
     test('match compares against a lazily-read other value', () {
       var password = 'secret';
-      final validator = KitValidators.match(() => password);
+      final validator = AppBoxKitValidators.match(() => password);
       expect(validator('secret'), isNull);
       password = 'changed';
-      expect(validator('secret')?.code, KitValidationCode.match);
+      expect(validator('secret')?.code, AppBoxKitValidationCode.match);
     });
   });
 
-  group('KitFieldController', () {
+  group('AppBoxKitFieldController', () {
     test('sync validation moves between valid and invalid', () async {
-      final field = KitFieldController<String>(
+      final field = AppBoxKitFieldController<String>(
         name: 'email',
-        validators: [KitValidators.required(), KitValidators.email()],
+        validators: [AppBoxKitValidators.required(), AppBoxKitValidators.email()],
       );
-      expect(field.status, KitFieldStatus.pristine);
+      expect(field.status, AppBoxKitFieldStatus.pristine);
 
       field.value = '';
       await field.validate();
-      expect(field.status, KitFieldStatus.invalid);
-      expect(field.error?.code, KitValidationCode.required);
+      expect(field.status, AppBoxKitFieldStatus.invalid);
+      expect(field.error?.code, AppBoxKitValidationCode.required);
 
       field.value = 'a@b.co';
       await field.validate();
-      expect(field.status, KitFieldStatus.valid);
+      expect(field.status, AppBoxKitFieldStatus.valid);
       expect(field.error, isNull);
     });
 
     test('async validation transitions through validating', () async {
-      final fake = KitFakeAsyncValidator<String>();
-      final field = KitFieldController<String>(
+      final fake = AppBoxKitFakeAsyncValidator<String>();
+      final field = AppBoxKitFieldController<String>(
         name: 'username',
         asyncValidators: [fake.validator],
       );
 
       final future = field.validate();
-      expect(field.status, KitFieldStatus.validating);
+      expect(field.status, AppBoxKitFieldStatus.validating);
       expect(fake.isPending, isTrue);
 
-      fake.resolveInvalid(const KitFieldError(code: 'taken', message: 'Taken'));
+      fake.resolveInvalid(const AppBoxKitFieldError(code: 'taken', message: 'Taken'));
       expect(await future, isFalse);
-      expect(field.status, KitFieldStatus.invalid);
+      expect(field.status, AppBoxKitFieldStatus.invalid);
       expect(field.error?.code, 'taken');
     });
 
     test('scripted validator returns queued outcomes then default', () {
-      final scripted = KitScriptedValidator<String>(
-        outcomes: const [KitFieldError(code: 'a', message: 'a'), null],
+      final scripted = AppBoxKitScriptedValidator<String>(
+        outcomes: const [AppBoxKitFieldError(code: 'a', message: 'a'), null],
       );
-      final field = KitFieldController<String>(
+      final field = AppBoxKitFieldController<String>(
         name: 'f',
         validators: [scripted.validator],
       );
@@ -111,35 +111,35 @@ void main() {
     });
 
     test('reset restores the initial value and pristine status', () async {
-      final field = KitFieldController<String>(
+      final field = AppBoxKitFieldController<String>(
         name: 'f',
         initialValue: 'seed',
-        validators: [KitValidators.required()],
+        validators: [AppBoxKitValidators.required()],
       );
       field.value = '';
       await field.validate();
-      expect(field.status, KitFieldStatus.invalid);
+      expect(field.status, AppBoxKitFieldStatus.invalid);
       field.reset();
       expect(field.value, 'seed');
-      expect(field.status, KitFieldStatus.pristine);
+      expect(field.status, AppBoxKitFieldStatus.pristine);
     });
   });
 
-  group('KitFormController', () {
+  group('AppBoxKitFormController', () {
     test('canSubmit gates on every field being valid', () async {
-      final email = KitFieldController<String>(
+      final email = AppBoxKitFieldController<String>(
         name: 'email',
-        validators: [KitValidators.required(), KitValidators.email()],
+        validators: [AppBoxKitValidators.required(), AppBoxKitValidators.email()],
       );
-      final form = KitFormController([email]);
+      final form = AppBoxKitFormController([email]);
 
       expect(form.canSubmit, isFalse);
-      expect(form.status, KitFormStatus.pristine);
+      expect(form.status, AppBoxKitFormStatus.pristine);
 
       email.value = 'a@b.co';
       final valid = await form.validate();
       expect(valid, isTrue);
-      expect(form.status, KitFormStatus.valid);
+      expect(form.status, AppBoxKitFormStatus.valid);
       expect(form.canSubmit, isTrue);
 
       final result = await form.submit((values) async => values['email']);
@@ -148,11 +148,11 @@ void main() {
     });
 
     test('submit returns null and does not run action when invalid', () async {
-      final email = KitFieldController<String>(
+      final email = AppBoxKitFieldController<String>(
         name: 'email',
-        validators: [KitValidators.required()],
+        validators: [AppBoxKitValidators.required()],
       );
-      final form = KitFormController([email]);
+      final form = AppBoxKitFormController([email]);
       var ran = false;
       final result = await form.submit((values) async {
         ran = true;
@@ -160,29 +160,29 @@ void main() {
       });
       expect(result, isNull);
       expect(ran, isFalse);
-      expect(form.status, KitFormStatus.invalid);
+      expect(form.status, AppBoxKitFormStatus.invalid);
       form.dispose();
     });
   });
 
-  group('KitFormViewModelMixin', () {
-    test('syncKitForm pushes values and errors into FormStateHelper', () async {
-      final email = KitFieldController<String>(
+  group('AppBoxKitFormViewModelMixin', () {
+    test('syncAppBoxKitForm pushes values and errors into FormStateHelper', () async {
+      final email = AppBoxKitFieldController<String>(
         name: 'email',
-        validators: [KitValidators.required()],
+        validators: [AppBoxKitValidators.required()],
       );
-      final vm = _BridgeViewModel(KitFormController([email]));
+      final vm = _BridgeViewModel(AppBoxKitFormController([email]));
 
       email.value = '';
       await email.validate();
-      vm.syncKitForm();
+      vm.syncAppBoxKitForm();
 
       expect(vm.formValueMap['email'], '');
       expect(vm.fieldsValidationMessages['email'], isNotNull);
 
       email.value = 'a@b.co';
       await email.validate();
-      vm.syncKitForm();
+      vm.syncAppBoxKitForm();
 
       expect(vm.formValueMap['email'], 'a@b.co');
       // setValidationMessages strips null entries, so a valid field clears.
@@ -190,17 +190,17 @@ void main() {
     });
   });
 
-  group('KitMultiStepFormController (stub)', () {
+  group('AppBoxKitMultiStepFormController (stub)', () {
     test('advances only when the current step can submit', () async {
-      final field = KitFieldController<String>(
+      final field = AppBoxKitFieldController<String>(
         name: 'name',
-        validators: [KitValidators.required()],
+        validators: [AppBoxKitValidators.required()],
       );
-      final step1 = KitFormController([field]);
-      final step2 = KitFormController([
-        KitFieldController<String>(name: 'extra'),
+      final step1 = AppBoxKitFormController([field]);
+      final step2 = AppBoxKitFormController([
+        AppBoxKitFieldController<String>(name: 'extra'),
       ]);
-      final flow = KitMultiStepFormController([step1, step2]);
+      final flow = AppBoxKitMultiStepFormController([step1, step2]);
 
       expect(flow.next(), isFalse); // step1 not valid yet
       field.value = 'Ada';

@@ -1,25 +1,25 @@
 import 'package:flutter/foundation.dart';
 
-import '../forms/kit_form_controller.dart';
+import '../forms/appbox_kit_form_controller.dart';
 
 /// STUB (scheduled: multi-step form flow phase).
 ///
-/// Sequences several [KitFormController]s into a wizard with per-step submit
+/// Sequences several [AppBoxKitFormController]s into a wizard with per-step submit
 /// gating. This minimal controller covers linear next/previous navigation; the
 /// richer semantics (branching, progress, back-stack, per-step drafts) land in
 /// a later phase.
-class KitMultiStepFormController extends ChangeNotifier {
-  KitMultiStepFormController(this.steps)
+class AppBoxKitMultiStepFormController extends ChangeNotifier {
+  AppBoxKitMultiStepFormController(this.steps)
       : assert(steps.isNotEmpty, 'A multi-step form needs at least one step');
 
-  final List<KitFormController> steps;
+  final List<AppBoxKitFormController> steps;
   int _index = 0;
 
   /// The current step index.
   int get index => _index;
 
   /// The form controller for the current step.
-  KitFormController get current => steps[_index];
+  AppBoxKitFormController get current => steps[_index];
 
   bool get isFirst => _index == 0;
   bool get isLast => _index == steps.length - 1;

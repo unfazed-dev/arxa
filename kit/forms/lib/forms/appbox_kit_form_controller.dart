@@ -1,38 +1,38 @@
 import 'package:flutter/foundation.dart';
 
-import '../fields/kit_field_controller.dart';
-import '../fields/kit_field_status.dart';
-import '../validators/kit_field_error.dart';
-import 'kit_form_status.dart';
+import '../fields/appbox_kit_field_controller.dart';
+import '../fields/appbox_kit_field_status.dart';
+import '../validators/appbox_kit_field_error.dart';
+import 'appbox_kit_form_status.dart';
 
-/// Aggregates [KitFieldController]s into a single form: derived status, submit
+/// Aggregates [AppBoxKitFieldController]s into a single form: derived status, submit
 /// gating, and a [submit] helper.
 ///
 /// Listens to every field and re-notifies, so a view bound to the form rebuilds
 /// when any field changes. By default the form *owns* its fields and disposes
 /// them in [dispose]; pass `ownsFields: false` when the fields outlive the form.
-class KitFormController extends ChangeNotifier {
-  KitFormController(List<KitFieldController> fields, {this.ownsFields = true})
+class AppBoxKitFormController extends ChangeNotifier {
+  AppBoxKitFormController(List<AppBoxKitFieldController> fields, {this.ownsFields = true})
       : _fields = {for (final field in fields) field.name: field} {
     for (final field in _fields.values) {
       field.addListener(_onFieldChanged);
     }
   }
 
-  final Map<String, KitFieldController> _fields;
+  final Map<String, AppBoxKitFieldController> _fields;
 
   /// Whether [dispose] also disposes the underlying fields.
   final bool ownsFields;
 
   bool _submitting = false;
 
-  Iterable<KitFieldController> get fields => _fields.values;
+  Iterable<AppBoxKitFieldController> get fields => _fields.values;
 
   /// Looks up a field by [name]. Throws [ArgumentError] when absent.
-  KitFieldController<T> field<T>(String name) {
+  AppBoxKitFieldController<T> field<T>(String name) {
     final field = _fields[name];
     if (field == null) throw ArgumentError('No field named "$name"');
-    return field as KitFieldController<T>;
+    return field as AppBoxKitFieldController<T>;
   }
 
   bool get isSubmitting => _submitting;
@@ -42,31 +42,31 @@ class KitFormController extends ChangeNotifier {
       {for (final entry in _fields.entries) entry.key: entry.value.value};
 
   /// Current field errors keyed by name (only invalid fields appear).
-  Map<String, KitFieldError> get errors => {
+  Map<String, AppBoxKitFieldError> get errors => {
         for (final entry in _fields.entries)
           if (entry.value.error != null) entry.key: entry.value.error!,
       };
 
   /// Aggregate status derived from the fields.
-  KitFormStatus get status {
+  AppBoxKitFormStatus get status {
     final statuses = _fields.values.map((f) => f.status);
-    if (statuses.contains(KitFieldStatus.validating)) {
-      return KitFormStatus.validating;
+    if (statuses.contains(AppBoxKitFieldStatus.validating)) {
+      return AppBoxKitFormStatus.validating;
     }
-    if (statuses.contains(KitFieldStatus.invalid)) {
-      return KitFormStatus.invalid;
+    if (statuses.contains(AppBoxKitFieldStatus.invalid)) {
+      return AppBoxKitFormStatus.invalid;
     }
-    if (statuses.every((s) => s == KitFieldStatus.valid)) {
-      return KitFormStatus.valid;
+    if (statuses.every((s) => s == AppBoxKitFieldStatus.valid)) {
+      return AppBoxKitFormStatus.valid;
     }
-    return KitFormStatus.pristine;
+    return AppBoxKitFormStatus.pristine;
   }
 
   /// True when the form may be submitted: every field valid, none in flight,
   /// and not already submitting.
   bool get canSubmit =>
       !_submitting &&
-      _fields.values.every((f) => f.status == KitFieldStatus.valid);
+      _fields.values.every((f) => f.status == AppBoxKitFieldStatus.valid);
 
   /// Validates every field (sync + async). Returns true when all pass.
   Future<bool> validate() async {
