@@ -3,19 +3,19 @@ import 'package:appbox_studio/l10n/app_localizations.dart';
 import 'package:appbox_studio/ui/views/startup/startup_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:appbox_kit_i18n/testing.dart';
+import 'package:appbox_kit_i18n/appbox_kit_testing.dart';
 
 import 'helpers/test_helpers.dart';
 
 /// Pumps StartupView with the real localization delegates and asserts the
-/// visible string follows KitI18n live: English first, Polish after
+/// visible string follows AppBoxKitI18n live: English first, Polish after
 /// setLocale('pl') + pump.
 void main() {
   setUp(() => registerServices());
   tearDown(() => locator.reset());
 
   testWidgets('StartupView switches loading text en → pl live', (tester) async {
-    final i18n = KitI18n(store: FakeKitLocaleStore());
+    final i18n = AppBoxKitI18n(store: FakeAppBoxKitLocaleStore());
     await i18n.load();
 
     await tester.pumpWidget(

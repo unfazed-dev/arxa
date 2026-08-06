@@ -137,23 +137,23 @@ class _CompanionHomeViewState extends State<CompanionHomeView> {
 }
 
 /// Compact language switch: System (clears the persisted override) or one of
-/// the kit's supported languages (persists an override via [KitI18n]).
+/// the kit's supported languages (persists an override via [AppBoxKitI18n]).
 class _LanguageMenu extends StatelessWidget {
   const _LanguageMenu();
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final kitI18n = locator<KitI18n>();
+    final appBoxKitI18n = locator<AppBoxKitI18n>();
     return PopupMenuButton<String>(
       icon: const Icon(Icons.language),
       tooltip: l10n.languageLabel,
       onSelected: (tag) => tag == 'system'
-          ? kitI18n.clearOverride()
-          : kitI18n.setLocale(tag),
+          ? appBoxKitI18n.clearOverride()
+          : appBoxKitI18n.setLocale(tag),
       itemBuilder: (context) => [
         PopupMenuItem(value: 'system', child: Text(l10n.languageSystem)),
-        for (final lang in KitLanguage.supported)
+        for (final lang in AppBoxKitLanguage.supported)
           PopupMenuItem(value: lang.tag, child: Text(lang.nameNative)),
       ],
     );

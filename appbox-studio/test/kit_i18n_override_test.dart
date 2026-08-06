@@ -1,13 +1,13 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:appbox_kit_i18n/testing.dart';
+import 'package:appbox_kit_i18n/appbox_kit_testing.dart';
 
 /// Locale override resolution: persisted override → system locale → English.
 void main() {
-  group('KitI18n override resolution -', () {
+  group('AppBoxKitI18n override resolution -', () {
     test('persisted pl override resolves to pl', () async {
-      final store = FakeKitLocaleStore()..queueReads(['pl']);
-      final i18n = KitI18n(store: store);
+      final store = FakeAppBoxKitLocaleStore()..queueReads(['pl']);
+      final i18n = AppBoxKitI18n(store: store);
 
       await i18n.load();
 
@@ -18,8 +18,8 @@ void main() {
 
     test('setLocale persists and notifies; clearOverride drops the override',
         () async {
-      final store = FakeKitLocaleStore()..queueReads(['pl']);
-      final i18n = KitI18n(store: store);
+      final store = FakeAppBoxKitLocaleStore()..queueReads(['pl']);
+      final i18n = AppBoxKitI18n(store: store);
       await i18n.load();
 
       await i18n.setLocale('en');
@@ -34,8 +34,8 @@ void main() {
 
     test('clearOverride falls back to the system locale when present',
         () async {
-      final store = FakeKitLocaleStore()..queueReads(['en']);
-      final i18n = KitI18n(store: store, systemLocale: const Locale('pl'));
+      final store = FakeAppBoxKitLocaleStore()..queueReads(['en']);
+      final i18n = AppBoxKitI18n(store: store, systemLocale: const Locale('pl'));
       await i18n.load();
       expect(i18n.bcp47, 'en');
 
@@ -45,7 +45,7 @@ void main() {
     });
 
     test('no override and no system locale falls back to English', () async {
-      final i18n = KitI18n(store: FakeKitLocaleStore());
+      final i18n = AppBoxKitI18n(store: FakeAppBoxKitLocaleStore());
       await i18n.load();
       expect(i18n.bcp47, 'en');
     });

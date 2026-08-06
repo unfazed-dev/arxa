@@ -14,12 +14,12 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   setPathUrlStrategy();
   await setupLocator(stackedRouter: stackedRouter);
-  // KitI18n needs async creation (shared_preferences store + persisted
+  // AppBoxKitI18n needs async creation (shared_preferences store + persisted
   // override load), which the generated lazy singletons can't express — so
   // it's created and registered here, before runApp.
-  final kitI18n = KitI18n(store: await SharedPreferencesKitLocaleStore.create());
-  await kitI18n.load();
-  locator.registerSingleton<KitI18n>(kitI18n);
+  final appBoxKitI18n = AppBoxKitI18n(store: await SharedPreferencesAppBoxKitLocaleStore.create());
+  await appBoxKitI18n.load();
+  locator.registerSingleton<AppBoxKitI18n>(appBoxKitI18n);
   locator.registerSingleton<L10nService>(L10nService());
   setupDialogUi();
   setupBottomSheetUi();
@@ -31,12 +31,12 @@ class MainApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final kitI18n = locator<KitI18n>();
+    final appBoxKitI18n = locator<AppBoxKitI18n>();
     return ResponsiveApp(
       builder: (_) => ListenableBuilder(
-        listenable: kitI18n,
+        listenable: appBoxKitI18n,
         builder: (context, _) => MaterialApp.router(
-          locale: kitI18n.locale,
+          locale: appBoxKitI18n.locale,
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           routerDelegate: stackedRouter.delegate(),
