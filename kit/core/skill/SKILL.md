@@ -92,7 +92,7 @@ Reference template + full step-by-step: `showcase_app` and
 
 | Layer | Entry point | Notes |
 |---|---|---|
-| Operations | `KitAction.run<T>(operation:, widgetId:)` → `utils/kit_action/kit_action.dart` | Fluent builder; terminals `execute()` / `asStream()` / `asCancellable()` |
+| Operations | `KitAction.run<T>(operation:, owner:, op:)` → `utils/kit_action/kit_action.dart` | Fluent builder; owner-identity keys + auto-dispose via `KitViewModel`/`disposeOwner`; terminals `execute()` / `asStream()` / `asCancellable()` |
 | Notifications | `KitNotificationService.show(msg, {kind, position, actionLabel, …})` → `services/notifications/kit_notification_service.dart`; `KitNotificationKind`/`KitToastPosition`; snackbar vocab `KitSnackbarType.kitAutoProcess{Info,Success,Error,Warning}` → `kit_snackbar_type.dart`; `setupKitSnackbars()` → `kit_snackbar_setup.dart` | One entry point picks the native surface per platform (see **Transient feedback**); host registers the service + calls `setupKitSnackbars()` |
 | Services | `services/{error,haptics,theme,navigation,notifications}/` + `KitOverlayService`/`KitSelectableService` (defined in their extensions) | Resolved via `locator` |
 | Theme | `KitColors` / `KitDarkColors` + `kitLightTheme()` / `kitDarkTheme()` → `common/kit_colors.dart`; `KitThemeService` owns `ThemeMode` + status bar | Generic default; host passes builders to `MaterialApp` |
@@ -144,7 +144,7 @@ import 'package:appbox_kit_data/appbox_kit_data.dart';
 | Registration | `KitEntityRegistration<T>({required schema, required fromJson, required toJson})` → `models/kit_entity_registration.dart` | The Codec: binds `T` to its `KitTableSchema`. One per entity, passed to `KitData.initialize` |
 | Schema | `KitTableSchema({required table, required columns})` + `KitColumn(name, type, {nullable, references})` → `schema/kit_table_schema.dart`; `KitColumnType {id, text, integer, real, boolean, timestamptz, jsonb, reference}` | The Schema Descriptor — single source of truth for fixture validation, the seed store, and the emitters |
 | IDs | `KitIdService({String? namespace})` → `ids/kit_id_service.dart` — `canonicalId(table, key)`, `canonicalizeRow(schema, row)`, `canonicalizeQuery(schema, query)`, `isUuid(value)` | ADR-0001: deterministic UUID v5 of `'<table>:<key>'`; registered as a locator singleton by `KitData.initialize` |
-| Facade | `KitDataFacade` → `facades/kit_data_facade.dart` — `repository<T>()`, `registerSubject(subject)`, `mutate<T>({required operation, required widgetId})`, `dispose()` | The only layer ViewModels see; subjects registered via `registerSubject` get closed by `dispose()` |
+| Facade | `KitDataFacade` → `facades/kit_data_facade.dart` — `repository<T>()`, `registerSubject(subject)`, `mutate<T>({required operation, op, entity, error, success})`, `dispose()` | The only layer ViewModels see; subjects registered via `registerSubject` get closed by `dispose()` |
 | Seeder | `KitDataSeeder({KitIdService? idService, KitSchemaRegistry? registry}).push({required List<String> fixtureAssets, AssetBundle? bundle})` → `seeding/kit_data_seeder.dart` | Idempotent upsert of Fixtures into the active **remote** Backend; throws if `KitData.config.backend == KitDataBackend.seed` (the seed Backend loads Fixtures itself at `initialize`) |
 | Emitters | `KitSupabaseSqlEmitter().emit(schemas)`, `KitSupabaseSeedEmitter(idService:).emit(fixturesByTable:, schemasByTable:)`, `KitAppwriteJsonEmitter().emit(schemas:, databaseId:)` → `emitters/` | Pure Dart — safe inside a `dart run` script. Schema Descriptors are the only input; never hand-edit the generated SQL/JSON |
 | Auth | `KitAuthService` → `auth/kit_auth_service.dart` — `session$`, `currentSession`, `signUpWithEmailPassword({email, password})`, `signInWithEmailPassword({email, password})`, `requestOtp({email, phone})`, `confirmOtp({email, phone, code})`, `signInWithGoogle()`, `signInWithApple()`, `signInAnonymously()`, `signOut()`, `dispose()` | The identity seam, sibling to `KitRepository<T>` — NOT a repository. Three impls — `KitSeedAuthService`, `KitSupabaseAuthService`, `KitAppwriteAuthService` — selected by the same `KitDataConfig.backend`; see **Auth seam** below |
@@ -197,8 +197,11 @@ class ShopFacade extends KitDataFacade {
   Future<void> save(Product product) async {
     await mutate<Product>(
       operation: () => _products.upsert(product),
-      widgetId: 'product-save',
-    ).withSuccessSnackbar('Saved').execute();
+      op: 'save',
+      entity: product.id,
+      error: 'Could not save',
+      success: 'Saved',
+    ).execute();
   }
 }
 ```
@@ -388,16 +391,29 @@ The kit is decoupled by design — the host wires three things, **none of them i
 ## Patterns
 
 ```dart
-// ViewModel operation: loading state + error fallback + success/error snackbars
+// ViewModel operation: owner-owned, busy state binds as a stream
 final user = await KitAction.run<User>(
   operation: () => userService.fetch(id),
-  widgetId: 'profile_view',
+  owner: this,               // the viewmodel — auto-disposed by KitViewModel
+  op: 'fetch',
 )
-    .withLoading((busy) => setBusy(busy))
     .withErrorFallback('Failed to load user', fallback: User.empty())
     .withSnackbars(success: 'User loaded', error: 'Load failed')
     .execute();
+
+// Views bind op state as a stream — no setBusy plumbing:
+// KitStreamBuilder(stream: viewModel.actionState$('fetch'), builder: ...)
 ```
+
+**Streams-only views (hard convention):** viewmodels `extends KitViewModel`,
+expose all state as `Stream`/`ValueStream` getters, and never call
+`notifyListeners`; views set `@override bool get reactive => false;` on the
+`StackedView` and bind live values with `KitStreamBuilder`. A view file
+imports ONLY its viewmodel (+ kit packages + sibling views/widgets) — the
+viewmodel re-exports every payload type the view names. After
+`stacked create widget`, relocate the widget into its shell's
+`ui/widgets/<shell>_widgets/` folder, rename to `*_widget.dart` (class name
+matches), drop the WidgetModel, and export from the shell barrel.
 
 - Log an error: `locator<KitErrorService>().error(error: e, stackTrace: s, message: 'fetch failed', widgetId: 'profile_view');` (also `info`/`warning`/`critical`/`handle`/`logEvent`; per-widget `setWidgetError`/`setWidgetLoading`).
 - Theme: `KitThemeService` persists/reacts to `ThemeMode` (seeded `system`) and syncs the status bar to the resolved brightness. `ThemeData` comes from the kit's `kitLightTheme()` / `kitDarkTheme()` — pass them to `MaterialApp` and bind `themeMode` to `themeMode$`. `await locator<KitThemeService>().initialize()` in `main()` restores the persisted mode before first frame.
