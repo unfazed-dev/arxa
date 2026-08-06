@@ -37,7 +37,7 @@ expect(await viewModel.load(), [sample]);
 ## i18n (when the target carries `l10n/`)
 - Probes run **per locale**: en + pl, plus `qps-ploc` (pseudolocale) for layout
   stress — long-accented pseudo-copy is the cheapest truncation/overflow finder.
-- Smoke pattern: switch the locale (KitI18n override), assert the key strings
+- Smoke pattern: switch the locale (AppBoxKitI18n override), assert the key strings
   re-render in the new locale.
 - Goldens: at least one reference surface per locale.
 

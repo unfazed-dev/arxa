@@ -31,7 +31,7 @@
    In-flight state is `pending` motion: htmx toggles .htmx-request on the
    submit button; add an indicator child (recipe: loading/pending).
    Styles: assets/css/widgets.css (block: .field).
-   Flutter: KitNativeTextField + KitFieldController (forms kit).
+   Flutter: AppBoxKitNativeTextField + AppBoxKitFieldController (forms kit).
    ============================================================================ #}
 <div id="field-{{ field.name }}" class="field{% if field.error %} field--invalid{% endif %}">
   <label class="field__label" for="field-input-{{ field.name }}">{{ field.label }}</label>

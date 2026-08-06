@@ -163,7 +163,7 @@
   }
 }
 
-/* ── nav rail (_nav-rail.html) · Flutter: KitNativeNavigationRail ───────── */
+/* ── nav rail (_nav-rail.html) · Flutter: AppBoxKitNativeNavigationRail ───────── */
 .nav-rail {
   --nr-bg: color-mix(in srgb, CanvasText 5%, Canvas);
   --nr-dim: color-mix(in srgb, CanvasText 55%, Canvas);
@@ -244,7 +244,7 @@
 .nav-rail--drawer .nav-rail__label { display: inline; }
 .nav-rail--drawer .nav-rail__link { justify-content: flex-start; }
 
-/* ── tabbar (_tabbar.html) · Flutter: KitBottomNavScaffold ─────────────── */
+/* ── tabbar (_tabbar.html) · Flutter: AppBoxKitBottomNavScaffold ─────────────── */
 .tabbar {
   --bn-bg: color-mix(in srgb, CanvasText 4%, Canvas);
   --bn-dim: color-mix(in srgb, CanvasText 55%, Canvas);
@@ -278,7 +278,7 @@
   .tabbar__link { transition: color var(--motion-fast) var(--motion-ease); }
 }
 
-/* ── tabs (_tabs.html) · Flutter: KitAnimatedTabStack ───────────────────── */
+/* ── tabs (_tabs.html) · Flutter: AppBoxKitAnimatedTabStack ───────────────────── */
 .tabs {
   --tabs-sep: color-mix(in srgb, CanvasText 14%, transparent);
   --tabs-dim: color-mix(in srgb, CanvasText 60%, Canvas);
@@ -316,7 +316,7 @@
   .tabs__tab { transition: color var(--motion-fast) var(--motion-ease); }
 }
 
-/* ── app bar (_appbar.html) · Flutter: KitNativeAppBar / KitNativeToolbar ─ */
+/* ── app bar (_appbar.html) · Flutter: AppBoxKitNativeAppBar / AppBoxKitNativeToolbar ─ */
 .appbar {
   --ab-bg: color-mix(in srgb, CanvasText 3%, Canvas);
   display: flex;
@@ -378,7 +378,7 @@
 }
 .appbar__menu-link:hover { background: color-mix(in srgb, currentColor 8%, transparent); }
 
-/* ── list rows & sections (_list-row.html) · Flutter: KitListTile/Section ─ */
+/* ── list rows & sections (_list-row.html) · Flutter: AppBoxKitListTile/Section ─ */
 .list-section { margin-bottom: 24px; font-family: var(--c-font); }
 .list-section__header {
   margin: 0;
@@ -444,7 +444,7 @@ a.list-row:hover { background: color-mix(in srgb, currentColor 6%, transparent);
 .list-row__detail { font-size: 14px; color: var(--row-dim); }
 .list-row__chevron { color: color-mix(in srgb, CanvasText 30%, Canvas); }
 
-/* ── card (_card.html) · Flutter: KitGlassCard / KitFrostedSurface ──────── */
+/* ── card (_card.html) · Flutter: AppBoxKitGlassCard / AppBoxKitFrostedSurface ──────── */
 .card {
   --card-bg: color-mix(in srgb, CanvasText 4%, Canvas);
   --card-dim: color-mix(in srgb, CanvasText 60%, Canvas);
@@ -476,7 +476,7 @@ a.list-row:hover { background: color-mix(in srgb, currentColor 6%, transparent);
   .card-grid { grid-template-columns: repeat(3, 1fr); }
 }
 
-/* ── form field (_form-field.html) · Flutter: KitNativeTextField ────────── */
+/* ── form field (_form-field.html) · Flutter: AppBoxKitNativeTextField ────────── */
 .field {
   --field-border: color-mix(in srgb, CanvasText 25%, transparent);
   --field-error: #dc2626;
@@ -693,7 +693,7 @@ a.list-row:hover { background: color-mix(in srgb, currentColor 6%, transparent);
   .modal[open] .modal-card { animation: c-dialog-in var(--motion-med) var(--motion-ease); }
 }
 
-/* ── toast (_toast.html) · Flutter: KitNotificationService.show ─────────── */
+/* ── toast (_toast.html) · Flutter: AppBoxKitNotificationService.show ─────────── */
 /* Motion (enter/exit/linger) lives in motion.css §5 — this is the look.
    The #toasts host belongs in base.html; add these rules with it. */
 #toasts {
@@ -865,7 +865,7 @@ a.list-row:hover { background: color-mix(in srgb, currentColor 6%, transparent);
   .panel-activity { display: none; }
 }
 
-/* ── chip (_chip.html) · Flutter: KitChip / KitFilterChip ───────────────── */
+/* ── chip (_chip.html) · Flutter: AppBoxKitChip / AppBoxKitFilterChip ───────────────── */
 .chip-row { display: flex; flex-wrap: wrap; gap: 6px; }
 .chip {
   --chip-fg: var(--accent, #4f46e5);

@@ -24,19 +24,19 @@ has none to tier — it is a plain module, not a provider seam.
 
 | dir | package | capabilities | providers (tier) |
 |---|---|---|---|
-| `core` | `appbox_kit_core` | MVVM plumbing; error/theme services; design tokens; locator; input formatters; KitGlyphs; KitPlatform | — |
-| `ui_library` | `ui_library` | Kit* adaptive port widgets; KitNative* widgets; UI-coupled services (navigation / sheet / notifications toast) | — |
+| `core` | `appbox_kit_core` | MVVM plumbing; error/theme services; design tokens; locator; input formatters; AppBoxKitGlyphs; AppBoxKitPlatform | — |
+| `ui_library` | `appbox_kit_ui_library` | AppBoxKit* adaptive port widgets; AppBoxKitNative* widgets; UI-coupled services (navigation / sheet / notifications toast) | — |
 | `state` | `appbox_kit_state` | async state vocabulary (idle/loading/error); retry policy; persistence | — |
 | `data` | `appbox_kit_data` | repositories; schema descriptors; seed/Supabase/Appwrite backends; canonical IDs; codecs; seeder | — |
 | `auth` | `appbox_kit_auth` | email/OAuth auth seam; typed AuthResult; session stream | SeedAuthBackend: port-tested; Apple SignIn: port-tested; Google SignIn: port-tested |
-| `forms` | `appbox_kit_forms` | form field state; sync/async validation; KitFieldController; error messages | — |
+| `forms` | `appbox_kit_forms` | form field state; sync/async validation; AppBoxKitFieldController; error messages | — |
 | `permissions` | `appbox_kit_permissions` | OS permissions (camera/location/...); typed permission + status | — |
 | `media` | `appbox_kit_media` | camera/photos; audio record; audio+video playback | — |
 | `documents` | `appbox_kit_documents` | doc pick; scan (stub); OCR (stub); PDF | — |
 | `notifications` | `appbox_kit_notifications` | device push/local notifications; tokens; badge | — |
 | `analytics` | `appbox_kit_analytics` | analytics event fan-out | — |
 | `payments` | `appbox_kit_payments` | Apple Pay; Google Pay | Stripe: port-tested; PayPal: port-tested; Apple Pay: stub |
-| `maps` | `appbox_kit_maps` | native maps; KitMapView | OpenStreetMap: port-tested; Mapbox: port-tested |
+| `maps` | `appbox_kit_maps` | native maps; AppBoxKitMapView | OpenStreetMap: port-tested; Mapbox: port-tested |
 | `deploy` | `appbox_kit_deploy` | release automation (fastlane/shorebird/CF Pages+Workers/Vercel) | Vercel: port-tested; Cloudflare Pages: port-tested; Cloudflare Workers: port-tested; fastlane: port-tested; Shorebird: port-tested |
 | `haptics` | `appbox_kit_haptics` | haptic feedback | — |
 | `bluetooth` | `appbox_kit_bluetooth` | bluetooth adapter state; BLE scan/GATT (stub) | — |
@@ -44,8 +44,8 @@ has none to tier — it is a plain module, not a provider seam.
 | `support` | `appbox_kit_support` | in-app support; feedback + Talker export; submission sinks | — |
 | `security` | `appbox_kit_security` | biometrics; secure storage; crypto; app-lock; device integrity (stub) | — |
 | `compliance` | `appbox_kit_compliance` | ToS/privacy/EULA; consent gates; OSS licenses | — |
-| `branding` | `branding` | app icons; native/in-Flutter splash; brand colors (codegen); BrandSplash | — |
-| `motion` | `appbox_kit_motion` | entrance/exit choreography; gesture drivers; motion scopes; KitWake | — |
+| `branding` | `appbox_kit_branding` | app icons; native/in-Flutter splash; brand colors (codegen); BrandSplash | — |
+| `motion` | `appbox_kit_motion` | entrance/exit choreography; gesture drivers; motion scopes; AppBoxKitWake | — |
 | `i18n` | `appbox_kit_i18n` | i18n | — |
 | `showcase_app` | `appbox_kit_showcase_app` | integration surface / reference app (proves every kit) | — |
 

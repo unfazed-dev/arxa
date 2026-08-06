@@ -92,7 +92,7 @@ medium/expanded keep the end-aligned row.
 
 **Motion:** `pending` on submit; `swap` when a target re-renders.
 
-**Flutter:** KitNativeButton, KitNativeSplitButton; KitNativeIconButton for icon-only.
+**Flutter:** AppBoxKitNativeButton, AppBoxKitNativeSplitButton; AppBoxKitNativeIconButton for icon-only.
 
 **Navigational variant — CTA link** (partial `_cta-link.html`, context:
 `cta = { href, label, icon?, external?, hx? }`). When the action is *go
@@ -102,7 +102,7 @@ a trailing affordance glyph (`icon` defaults to `chevron-right`,
 `arrow-up-right` when `external`, `false` for a bare text link). Fragment
 navigation passes `hx: { get?, target, swap?, pushUrl? }` (`get` defaults to
 `href`, `swap` to `outerHTML`). Motion: `traverse`, or `swap` under `hx`.
-Flutter: KitListTile trailing chevron / KitNativeButton(link).
+Flutter: AppBoxKitListTile trailing chevron / AppBoxKitNativeButton(link).
 
 ## 2. Icon
 
@@ -136,7 +136,7 @@ scale icons between rungs — composition changes, not glyph size.
 
 **Motion:** none of its own; `pending` spinners add `.indicator-spin` (recipe 17).
 
-**Flutter:** KitGlyphs (core kit).
+**Flutter:** AppBoxKitGlyphs (core kit).
 
 ## 3. Nav rail (the railbar's container)
 
@@ -171,7 +171,7 @@ popover, zero JS).
 
 **Motion:** `traverse` (boosted navigation crossfade).
 
-**Flutter:** KitNativeNavigationRail; KitDrawer for the compact drawer form.
+**Flutter:** AppBoxKitNativeNavigationRail; AppBoxKitDrawer for the compact drawer form.
 
 ## 4. Tabs
 
@@ -202,8 +202,8 @@ the app bar instead of under it — wider gutters only, same partial.
 
 **Motion:** `swap` on the panel.
 
-**Flutter:** KitAnimatedTabStack (+ KitDirectionalTabTransition,
-KitNativeTabBar for the bar alone).
+**Flutter:** AppBoxKitAnimatedTabStack (+ AppBoxKitDirectionalTabTransition,
+AppBoxKitNativeTabBar for the bar alone).
 
 ## 5. Tabbar
 
@@ -229,7 +229,7 @@ auth gate with no nav), say so explicitly in its notes.
 
 **Motion:** `traverse`.
 
-**Flutter:** KitBottomNavScaffold.
+**Flutter:** AppBoxKitBottomNavScaffold.
 
 ## 6. App bar / toolbar
 
@@ -257,8 +257,8 @@ pane in master–detail.
 
 **Motion:** `disclose` on the dropdown; `traverse` on actions.
 
-**Flutter:** KitNativeAppBar; KitNativeSliverAppBar (collapsing),
-KitNativeToolbar (desktop).
+**Flutter:** AppBoxKitNativeAppBar; AppBoxKitNativeSliverAppBar (collapsing),
+AppBoxKitNativeToolbar (desktop).
 
 ## 7. List rows & sections
 
@@ -295,7 +295,7 @@ column).
 
 **Motion:** `swap` on row OOB; `traverse` on row links.
 
-**Flutter:** KitListTile (row), KitListSection (grouped card + header).
+**Flutter:** AppBoxKitListTile (row), AppBoxKitListSection (grouped card + header).
 
 ## 8. Card
 
@@ -325,7 +325,7 @@ medium — the grid caps it.
 
 **Motion:** `spotlight` (opt-in via `vt`); `traverse` on its links.
 
-**Flutter:** KitGlassCard / KitFrostedSurface.
+**Flutter:** AppBoxKitGlassCard / AppBoxKitFrostedSurface.
 
 ## 9. Chip
 
@@ -369,7 +369,7 @@ wraps (`flex-wrap`) on expanded.
 
 **Motion:** `traverse` / `swap` depending on nav vs in-place.
 
-**Flutter:** KitChip; KitChipCarousel for the scrolling row.
+**Flutter:** AppBoxKitChip; AppBoxKitChipCarousel for the scrolling row.
 
 ## 10. Form fields (+ the 422 validation flow)
 
@@ -403,7 +403,7 @@ the same meta). Success paths: `h.location()` to navigate, or `hx-swap="none"`
 
 **Motion:** `pending` on submit; `swap` on the re-rendered form.
 
-**Flutter:** KitNativeTextField + KitFieldController (forms kit).
+**Flutter:** AppBoxKitNativeTextField + AppBoxKitFieldController (forms kit).
 
 ## 11. Search / filter input
 
@@ -446,7 +446,7 @@ detail pane beside `#results` — the input does not widen past the list pane.
 
 **Motion:** `pending` while querying; `swap` on results.
 
-**Flutter:** KitNativeSearchBar.
+**Flutter:** AppBoxKitNativeSearchBar.
 
 ## 12. Dialog / popover
 
@@ -497,7 +497,7 @@ notes if the product expects it.
 
 **Motion:** `reveal`.
 
-**Flutter:** ui_library sheet/dialog services; KitNativePopupMenu for menus.
+**Flutter:** ui_library sheet/dialog services; AppBoxKitNativePopupMenu for menus.
 
 ## 13. Bottom sheet
 
@@ -553,7 +553,7 @@ time the server re-renders `#toasts` — only the server removes.
 
 **Motion:** `notify`.
 
-**Flutter:** KitNotificationService.show.
+**Flutter:** AppBoxKitNotificationService.show.
 
 ## 15. Table / data density
 
@@ -603,7 +603,7 @@ the surface swaps to recipe 7 rows — decide per surface, never squeeze.
 
 **Motion:** `traverse` on sort; `swap` if the table is a fragment target.
 
-**Flutter:** none — compose KitListTile at compact density, or custom.
+**Flutter:** none — compose AppBoxKitListTile at compact density, or custom.
 
 ## 16. Empty state
 
@@ -634,7 +634,7 @@ notes so the scaffolder knows it was decided, not forgotten.
 
 **Motion:** rides the `swap` of whatever fragment contains it.
 
-**Flutter:** none — compose icon + copy + KitNativeButton.
+**Flutter:** none — compose icon + copy + AppBoxKitNativeButton.
 
 ## 17. Loading: skeleton + pending indicator
 
@@ -676,8 +676,8 @@ heights, grid columns) — a phone-shaped skeleton on expanded is a tell.
 
 **Motion:** `pending`.
 
-**Flutter:** KitNativeLoadingIndicator, KitNativeProgress;
-KitLazyIndexedStack for the deferred-pane case.
+**Flutter:** AppBoxKitNativeLoadingIndicator, AppBoxKitNativeProgress;
+AppBoxKitLazyIndexedStack for the deferred-pane case.
 
 ## 18. Pagination / load-more
 
@@ -731,7 +731,7 @@ up; never infinite-scroll — no JS.
 
 **Motion:** `swap` on appended rows; `pending` on the button.
 
-**Flutter:** KitLazyIndexedStack.
+**Flutter:** AppBoxKitLazyIndexedStack.
 
 ## 19. Multi-view panel (the stateful widget)
 
@@ -873,23 +873,23 @@ Stack + Positioned for the escape hatch.
 
 | Recipe | Drop-in partial | Flutter primitive (kit registry) |
 |---|---|---|
-| Buttons & action rows | `_cta-link.html` (navigational variant) | KitNativeButton, KitNativeIconButton, KitNativeSplitButton |
-| Icon | — (runtime global) | KitGlyphs (core) |
-| Nav rail (railbar) | `_nav-rail.html` | KitNativeNavigationRail; KitDrawer (drawer form) |
-| Tabs | `_tabs.html` | KitAnimatedTabStack, KitDirectionalTabTransition, KitNativeTabBar |
-| Tabbar | `_tabbar.html` | KitBottomNavScaffold |
-| App bar / toolbar | `_appbar.html` | KitNativeAppBar, KitNativeSliverAppBar, KitNativeToolbar |
-| List rows & sections | `_list-row.html` | KitListTile, KitListSection |
-| Card | `_card.html` | KitGlassCard, KitFrostedSurface |
-| Chip | — (macro) | KitChip, KitChipCarousel |
-| Form fields + 422 | `_form-field.html` | KitNativeTextField + KitFieldController (forms kit) |
-| Search / filter | — (macro) | KitNativeSearchBar |
-| Dialog / popover | `_dialog.html` (server-driven), `_modal.html` (declarative) | ui_library sheet/dialog services; KitNativePopupMenu |
+| Buttons & action rows | `_cta-link.html` (navigational variant) | AppBoxKitNativeButton, AppBoxKitNativeIconButton, AppBoxKitNativeSplitButton |
+| Icon | — (runtime global) | AppBoxKitGlyphs (core) |
+| Nav rail (railbar) | `_nav-rail.html` | AppBoxKitNativeNavigationRail; AppBoxKitDrawer (drawer form) |
+| Tabs | `_tabs.html` | AppBoxKitAnimatedTabStack, AppBoxKitDirectionalTabTransition, AppBoxKitNativeTabBar |
+| Tabbar | `_tabbar.html` | AppBoxKitBottomNavScaffold |
+| App bar / toolbar | `_appbar.html` | AppBoxKitNativeAppBar, AppBoxKitNativeSliverAppBar, AppBoxKitNativeToolbar |
+| List rows & sections | `_list-row.html` | AppBoxKitListTile, AppBoxKitListSection |
+| Card | `_card.html` | AppBoxKitGlassCard, AppBoxKitFrostedSurface |
+| Chip | — (macro) | AppBoxKitChip, AppBoxKitChipCarousel |
+| Form fields + 422 | `_form-field.html` | AppBoxKitNativeTextField + AppBoxKitFieldController (forms kit) |
+| Search / filter | — (macro) | AppBoxKitNativeSearchBar |
+| Dialog / popover | `_dialog.html` (server-driven), `_modal.html` (declarative) | ui_library sheet/dialog services; AppBoxKitNativePopupMenu |
 | Bottom sheet | `_bottom-sheet.html` | ui_library sheet service |
-| Toast | `_toast.html` | KitNotificationService.show |
-| Table / data density | — (macro) | none — compose KitListTile / custom |
-| Empty state | `_empty-state.html` | none — compose icon + copy + KitNativeButton |
-| Loading / skeleton | — (motion.css) | KitNativeLoadingIndicator, KitNativeProgress, KitLazyIndexedStack |
-| Pagination / load-more | — (macros) | KitLazyIndexedStack |
+| Toast | `_toast.html` | AppBoxKitNotificationService.show |
+| Table / data density | — (macro) | none — compose AppBoxKitListTile / custom |
+| Empty state | `_empty-state.html` | none — compose icon + copy + AppBoxKitNativeButton |
+| Loading / skeleton | — (motion.css) | AppBoxKitNativeLoadingIndicator, AppBoxKitNativeProgress, AppBoxKitLazyIndexedStack |
+| Pagination / load-more | — (macros) | AppBoxKitLazyIndexedStack |
 | Multi-view panel | `_panel-views.html` | per-shell panel controller (view/size/filter) + adaptive panel — compose |
 | Auto Layout | — (attribute layer in widgets.css) | Row/Column + Expanded (fill) / SizedBox (fixed); Stack + Positioned (ignore) |

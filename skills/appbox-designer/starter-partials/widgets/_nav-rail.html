@@ -38,7 +38,7 @@
        {% macro nav_rail(c) %}{% set nav = c.nav %}{% include "ui/common/widgets/_nav-rail.html" %}{% endmacro %}
 
    Styles: assets/css/widgets.css (block: .nav-rail).
-   Flutter: KitNativeNavigationRail (medium+), KitDrawer (compact drawer).
+   Flutter: AppBoxKitNativeNavigationRail (medium+), AppBoxKitDrawer (compact drawer).
    ============================================================================ #}
 {% if nav %}
 <nav id="{% if nav.drawer %}nav-drawer{% else %}nav-rail{% endif %}" class="nav-rail{% if nav.drawer %} nav-rail--drawer{% endif %}" aria-label="Primary">

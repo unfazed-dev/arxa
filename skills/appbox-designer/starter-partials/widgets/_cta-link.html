@@ -21,7 +21,7 @@
        {% include "ui/common/widgets/_cta-link.html" %}
 
    Styles: assets/css/widgets.css (block: .cta-link).
-   Flutter: KitListTile trailing chevron / KitNativeButton(link).
+   Flutter: AppBoxKitListTile trailing chevron / AppBoxKitNativeButton(link).
    ============================================================================ #}
 <a class="cta-link" href="{{ cta.href }}"
    {%- if cta.hx %} hx-get="{{ cta.hx.get or cta.href }}" hx-target="{{ cta.hx.target }}" hx-swap="{{ cta.hx.swap or "outerHTML" }}" hx-push-url="{{ "true" if cta.hx.pushUrl else "false" }}"{% endif %}

@@ -26,7 +26,7 @@
    leaves the DOM the next time the server re-renders #toasts — CSS hides,
    only the server removes.
    Styles: assets/css/widgets.css (block: .toast, plus the #toasts host).
-   Flutter: KitNotificationService.show.
+   Flutter: AppBoxKitNotificationService.show.
    ============================================================================ #}
 {% set kind = toast.kind or "info" %}
 {% set kind_icons = { info: "info", success: "check-circle-2", error: "circle-alert" } %}
