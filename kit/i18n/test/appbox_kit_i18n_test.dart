@@ -2,7 +2,7 @@ import 'dart:ui';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
-import 'package:appbox_kit_i18n/testing.dart';
+import 'package:appbox_kit_i18n/appbox_kit_testing.dart';
 
 void main() {
   // In an app the flutter_localizations delegates load intl's date symbols;
@@ -14,20 +14,20 @@ void main() {
 
   group('override resolution', () {
     test('persisted override wins over the system locale', () async {
-      final store = FakeKitLocaleStore()..queueReads(['pl']);
-      final i18n = KitI18n(store: store, systemLocale: const Locale('en'));
+      final store = FakeAppBoxKitLocaleStore()..queueReads(['pl']);
+      final i18n = AppBoxKitI18n(store: store, systemLocale: const Locale('en'));
 
       await i18n.load();
 
       expect(i18n.bcp47, 'pl');
       expect(i18n.locale, const Locale('pl'));
-      expect(i18n.language, KitLanguage.byTag('pl'));
+      expect(i18n.language, AppBoxKitLanguage.byTag('pl'));
       expect(store.readCalls, 1);
     });
 
     test('clearing the override falls back to the system locale', () async {
-      final store = FakeKitLocaleStore()..queueReads(['pl']);
-      final i18n = KitI18n(store: store, systemLocale: const Locale('en'));
+      final store = FakeAppBoxKitLocaleStore()..queueReads(['pl']);
+      final i18n = AppBoxKitI18n(store: store, systemLocale: const Locale('en'));
 
       await i18n.load();
       await i18n.clearOverride();
@@ -38,24 +38,24 @@ void main() {
     });
 
     test('no override and no system locale falls back to en', () async {
-      final store = FakeKitLocaleStore(); // empty queue → read() returns null
-      final i18n = KitI18n(store: store);
+      final store = FakeAppBoxKitLocaleStore(); // empty queue → read() returns null
+      final i18n = AppBoxKitI18n(store: store);
 
       await i18n.load();
 
       expect(i18n.bcp47, 'en');
       expect(i18n.locale, const Locale('en'));
-      expect(i18n.language, KitLanguage.fallback);
+      expect(i18n.language, AppBoxKitLanguage.fallback);
     });
   });
 
-  group('KitLanguage', () {
+  group('AppBoxKitLanguage', () {
     test('supported ships en and pl', () {
-      expect(KitLanguage.supported.map((l) => l.tag), ['en', 'pl']);
+      expect(AppBoxKitLanguage.supported.map((l) => l.tag), ['en', 'pl']);
     });
 
     test('byTag falls back to the base subtag (pl-PL → pl)', () {
-      final lang = KitLanguage.byTag('pl-PL');
+      final lang = AppBoxKitLanguage.byTag('pl-PL');
       expect(lang, isNotNull);
       expect(lang!.tag, 'pl');
       expect(lang.nameEn, 'Polish');
@@ -64,15 +64,15 @@ void main() {
 
     test('equality is by tag', () {
       expect(
-        const KitLanguage(tag: 'pl', nameEn: 'Polish', nameNative: 'polski'),
-        const KitLanguage(tag: 'pl', nameEn: 'Polski', nameNative: 'polski'),
+        const AppBoxKitLanguage(tag: 'pl', nameEn: 'Polish', nameNative: 'polski'),
+        const AppBoxKitLanguage(tag: 'pl', nameEn: 'Polski', nameNative: 'polski'),
       );
     });
   });
 
   group('placeholderParity', () {
-    final store = FakeKitLocaleStore();
-    final i18n = KitI18n(store: store);
+    final store = FakeAppBoxKitLocaleStore();
+    final i18n = AppBoxKitI18n(store: store);
 
     test('case-SENSITIVE: {COUNT} vs {count} fails', () {
       expect(
@@ -101,8 +101,8 @@ void main() {
 
   group('llmLocaleDirective', () {
     test('contains language names and literal placeholder tokens', () {
-      final store = FakeKitLocaleStore();
-      final i18n = KitI18n(store: store, systemLocale: const Locale('pl'));
+      final store = FakeAppBoxKitLocaleStore();
+      final i18n = AppBoxKitI18n(store: store, systemLocale: const Locale('pl'));
 
       final directive = i18n.llmLocaleDirective();
 
@@ -112,8 +112,8 @@ void main() {
     });
 
     test('doNotTranslate terms are interpolated', () {
-      final store = FakeKitLocaleStore();
-      final i18n = KitI18n(store: store)..doNotTranslate = ['Acme', 'ProPlan'];
+      final store = FakeAppBoxKitLocaleStore();
+      final i18n = AppBoxKitI18n(store: store)..doNotTranslate = ['Acme', 'ProPlan'];
 
       expect(
         i18n.llmLocaleDirective(),
@@ -124,8 +124,8 @@ void main() {
 
   group('setLocale', () {
     test('notifies listeners and persists the override', () async {
-      final store = FakeKitLocaleStore();
-      final i18n = KitI18n(store: store, systemLocale: const Locale('en'));
+      final store = FakeAppBoxKitLocaleStore();
+      final i18n = AppBoxKitI18n(store: store, systemLocale: const Locale('en'));
       var notified = 0;
       i18n.addListener(() => notified++);
 
@@ -141,9 +141,9 @@ void main() {
 
   group('formatting', () {
     test('date and number follow the effective locale', () {
-      final store = FakeKitLocaleStore();
-      final pl = KitI18n(store: store, systemLocale: const Locale('pl'));
-      final en = KitI18n(store: store, systemLocale: const Locale('en'));
+      final store = FakeAppBoxKitLocaleStore();
+      final pl = AppBoxKitI18n(store: store, systemLocale: const Locale('pl'));
+      final en = AppBoxKitI18n(store: store, systemLocale: const Locale('en'));
 
       expect(en.formatDate(DateTime(2026, 7, 30)), 'Jul 30, 2026');
       expect(pl.formatDate(DateTime(2026, 7, 30)), contains('2026'));

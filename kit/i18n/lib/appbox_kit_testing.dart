@@ -4,24 +4,24 @@
 /// store traffic:
 ///
 /// ```dart
-/// final store = FakeKitLocaleStore();
+/// final store = FakeAppBoxKitLocaleStore();
 /// store.queueReads(['pl']);
-/// final i18n = KitI18n(store: store);
+/// final i18n = AppBoxKitI18n(store: store);
 /// await i18n.load();
 /// expect(i18n.bcp47, 'pl');
 /// expect(store.readCalls, 1);
 /// ```
 library;
 
-import 'src/kit_locale_store.dart';
+import 'src/appbox_kit_locale_store.dart';
 
-export 'src/kit_i18n.dart';
-export 'src/kit_language.dart';
-export 'src/kit_locale_store.dart';
+export 'src/appbox_kit_i18n.dart';
+export 'src/appbox_kit_language.dart';
+export 'src/appbox_kit_locale_store.dart';
 
-/// In-memory [KitLocaleStore] with a script queue for [read] results plus
+/// In-memory [AppBoxKitLocaleStore] with a script queue for [read] results plus
 /// call counts, so tests never touch platform channels.
-class FakeKitLocaleStore implements KitLocaleStore {
+class FakeAppBoxKitLocaleStore implements AppBoxKitLocaleStore {
   final List<String?> _readQueue = [];
 
   /// Number of times [read] was invoked.

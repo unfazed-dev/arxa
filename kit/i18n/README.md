@@ -23,13 +23,13 @@ Register in the locator at startup and wire `MaterialApp`:
 
 ```dart
 // main.dart — create once, load the persisted override before runApp.
-final store = await SharedPreferencesKitLocaleStore.create();
-final i18n = KitI18n(
+final store = await SharedPreferencesAppBoxKitLocaleStore.create();
+final i18n = AppBoxKitI18n(
   store: store,
   systemLocale: WidgetsBinding.instance.platformDispatcher.locale,
 );
 await i18n.load();
-locator.registerSingleton<KitI18n>(i18n);
+locator.registerSingleton<AppBoxKitI18n>(i18n);
 
 // MaterialApp — listen so the app rebuilds live on setLocale().
 MaterialApp(
@@ -75,15 +75,15 @@ final systemPrompt = '${i18n.llmLocaleDirective()}\n\n$restOfPrompt';
 
 ## Scope
 
-- `KitLanguage` — value type: BCP-47 `tag`, `nameEn`, `nameNative`;
-  `KitLanguage.supported` ships `en` + `pl`; `byTag` falls back to the base
+- `AppBoxKitLanguage` — value type: BCP-47 `tag`, `nameEn`, `nameNative`;
+  `AppBoxKitLanguage.supported` ships `en` + `pl`; `byTag` falls back to the base
   subtag (`'pl-PL'` → `'pl'`).
-- `KitLocaleStore` — persistence port (`read`/`write`/`clear`);
-  `SharedPreferencesKitLocaleStore` is the shipped default.
-- `KitI18n` — resolution (override → system → `en`), live switching via
+- `AppBoxKitLocaleStore` — persistence port (`read`/`write`/`clear`);
+  `SharedPreferencesAppBoxKitLocaleStore` is the shipped default.
+- `AppBoxKitI18n` — resolution (override → system → `en`), live switching via
   `ChangeNotifier`, intl formatting, `placeholderParity`,
   `llmLocaleDirective`.
-- `appbox_kit_i18n/testing.dart` — `FakeKitLocaleStore` with a script queue
+- `appbox_kit_i18n/appbox_kit_testing.dart` — `FakeAppBoxKitLocaleStore` with a script queue
   and call counts; tests never touch platform channels.
 
 ## Gotchas
@@ -96,7 +96,7 @@ final systemPrompt = '${i18n.llmLocaleDirective()}\n\n$restOfPrompt';
 - **Translation strings live in the app.** The kit has no ARB/codegen; it
   expects the app's gen-l10n delegates to sit next to the
   `flutter_localizations` delegates.
-- **`SharedPreferencesKitLocaleStore.create()` is async** — create it once
+- **`SharedPreferencesAppBoxKitLocaleStore.create()` is async** — create it once
   before `runApp`, not per viewmodel.
 - **The LLM directive is a prompt block, not a translator** — it steers the
   model to answer in `languageNameEn`/`languageNameNative`, preserve

@@ -2,20 +2,20 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:intl/intl.dart';
 
-import 'kit_language.dart';
-import 'kit_locale_store.dart';
+import 'appbox_kit_language.dart';
+import 'appbox_kit_locale_store.dart';
 
 /// Locale resolution, live switching, and locale-aware formatting.
 ///
 /// Resolution order: persisted override → [systemLocale] → English.
 /// Extends [ChangeNotifier] so a `MaterialApp` listening to it rebuilds live
 /// when [setLocale] / [clearOverride] run.
-class KitI18n extends ChangeNotifier {
-  KitI18n({required KitLocaleStore store, Locale? systemLocale})
+class AppBoxKitI18n extends ChangeNotifier {
+  AppBoxKitI18n({required AppBoxKitLocaleStore store, Locale? systemLocale})
     : _store = store,
       _systemLocale = systemLocale;
 
-  final KitLocaleStore _store;
+  final AppBoxKitLocaleStore _store;
   final Locale? _systemLocale;
 
   String? _override;
@@ -30,7 +30,7 @@ class KitI18n extends ChangeNotifier {
 
   /// The effective locale tag: override → system → `'en'`.
   String get bcp47 =>
-      _override ?? _systemLocale?.toLanguageTag() ?? KitLanguage.fallback.tag;
+      _override ?? _systemLocale?.toLanguageTag() ?? AppBoxKitLanguage.fallback.tag;
 
   /// The effective locale.
   Locale get locale {
@@ -43,8 +43,8 @@ class KitI18n extends ChangeNotifier {
 
   /// The effective language, with base-tag fallback (`'pl-PL'` → `'pl'`),
   /// defaulting to English for unsupported tags.
-  KitLanguage get language =>
-      KitLanguage.byTag(bcp47) ?? KitLanguage.fallback;
+  AppBoxKitLanguage get language =>
+      AppBoxKitLanguage.byTag(bcp47) ?? AppBoxKitLanguage.fallback;
 
   /// English name of the effective language, e.g. `'Polish'`.
   String get languageNameEn => language.nameEn;
