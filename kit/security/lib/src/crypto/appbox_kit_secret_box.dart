@@ -1,17 +1,17 @@
 import 'package:flutter/foundation.dart';
 
-import 'kit_crypto_failure.dart';
+import 'appbox_kit_crypto_failure.dart';
 
 /// The plugin-neutral output of an AES-GCM encryption: a [nonce], the
 /// [cipherText], and the authentication [mac].
 ///
 /// All three parts are required to decrypt. [concatenated] packs them into a
 /// single `nonce || cipherText || mac` buffer convenient for storage;
-/// [KitSecretBox.fromConcatenated] reverses it.
+/// [AppBoxKitSecretBox.fromConcatenated] reverses it.
 @immutable
-class KitSecretBox {
+class AppBoxKitSecretBox {
   /// Builds a box from its three parts (each defensively copied).
-  KitSecretBox({
+  AppBoxKitSecretBox({
     required List<int> nonce,
     required List<int> cipherText,
     required List<int> mac,
@@ -23,22 +23,22 @@ class KitSecretBox {
   /// box, given the fixed [nonceLength] and [macLength] used to build it
   /// (AES-GCM defaults: 12-byte nonce, 16-byte tag).
   ///
-  /// Throws [KitCryptoFailure] with [KitCryptoFailureReason.malformed] when the
+  /// Throws [AppBoxKitCryptoFailure] with [AppBoxKitCryptoFailureReason.malformed] when the
   /// buffer is too short to hold both.
-  factory KitSecretBox.fromConcatenated(
+  factory AppBoxKitSecretBox.fromConcatenated(
     List<int> bytes, {
     int nonceLength = 12,
     int macLength = 16,
   }) {
     if (bytes.length < nonceLength + macLength) {
-      throw KitCryptoFailure(
-        KitCryptoFailureReason.malformed,
+      throw AppBoxKitCryptoFailure(
+        AppBoxKitCryptoFailureReason.malformed,
         message: 'Concatenated box is ${bytes.length} bytes; needs at least '
             '${nonceLength + macLength}.',
       );
     }
     final cipherEnd = bytes.length - macLength;
-    return KitSecretBox(
+    return AppBoxKitSecretBox(
       nonce: bytes.sublist(0, nonceLength),
       cipherText: bytes.sublist(nonceLength, cipherEnd),
       mac: bytes.sublist(cipherEnd),
@@ -61,7 +61,7 @@ class KitSecretBox {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is KitSecretBox &&
+      other is AppBoxKitSecretBox &&
           runtimeType == other.runtimeType &&
           listEquals(nonce, other.nonce) &&
           listEquals(cipherText, other.cipherText) &&
@@ -76,6 +76,6 @@ class KitSecretBox {
 
   @override
   String toString() =>
-      'KitSecretBox(nonce: ${nonce.length}B, cipherText: ${cipherText.length}B, '
+      'AppBoxKitSecretBox(nonce: ${nonce.length}B, cipherText: ${cipherText.length}B, '
       'mac: ${mac.length}B)';
 }

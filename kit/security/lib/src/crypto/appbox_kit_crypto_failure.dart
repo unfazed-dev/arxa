@@ -1,5 +1,5 @@
-/// Why a [KitCryptoService] decrypt / parse operation failed.
-enum KitCryptoFailureReason {
+/// Why a [AppBoxKitCryptoService] decrypt / parse operation failed.
+enum AppBoxKitCryptoFailureReason {
   /// The ciphertext failed authentication (wrong key, or tampered data). This
   /// is the security-critical case: the plaintext must not be trusted.
   authentication,
@@ -12,16 +12,16 @@ enum KitCryptoFailureReason {
   unknown,
 }
 
-/// A typed failure raised by [KitCryptoService] decrypt / parse operations.
+/// A typed failure raised by [AppBoxKitCryptoService] decrypt / parse operations.
 ///
 /// Thrown (never returned) so a successful decrypt can hand back plaintext
 /// directly. Callers catch this to distinguish a tampered/[authentication]
 /// failure from a merely [malformed] input.
-class KitCryptoFailure implements Exception {
-  const KitCryptoFailure(this.reason, {this.message, this.cause});
+class AppBoxKitCryptoFailure implements Exception {
+  const AppBoxKitCryptoFailure(this.reason, {this.message, this.cause});
 
   /// The typed reason.
-  final KitCryptoFailureReason reason;
+  final AppBoxKitCryptoFailureReason reason;
 
   /// A human-readable description, if any.
   final String? message;
@@ -31,5 +31,5 @@ class KitCryptoFailure implements Exception {
 
   @override
   String toString() =>
-      'KitCryptoFailure(${reason.name}${message == null ? '' : ': $message'})';
+      'AppBoxKitCryptoFailure(${reason.name}${message == null ? '' : ': $message'})';
 }

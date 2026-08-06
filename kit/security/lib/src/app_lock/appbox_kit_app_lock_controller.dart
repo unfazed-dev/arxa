@@ -1,54 +1,54 @@
 import 'dart:async';
 
-import '../biometric/kit_biometric_result.dart';
-import '../biometric/kit_biometric_service.dart';
-import 'kit_app_lock_config.dart';
-import 'kit_app_lock_outcome.dart';
-import 'kit_app_lock_state.dart';
-import 'kit_pin_verifier.dart';
+import '../biometric/appbox_kit_biometric_result.dart';
+import '../biometric/appbox_kit_biometric_service.dart';
+import 'appbox_kit_app_lock_config.dart';
+import 'appbox_kit_app_lock_outcome.dart';
+import 'appbox_kit_app_lock_state.dart';
+import 'appbox_kit_pin_verifier.dart';
 
-/// A pure-Dart app-lock state machine over [KitAppLockState].
+/// A pure-Dart app-lock state machine over [AppBoxKitAppLockState].
 ///
-/// Holds the current state plus a broadcast stream (the [KitStateNotifier] feel
+/// Holds the current state plus a broadcast stream (the [AppBoxKitStateNotifier] feel
 /// from `appbox_kit_state`, without depending on it). Composes a
-/// [KitBiometricService] and a [KitPinVerifier]:
+/// [AppBoxKitBiometricService] and a [AppBoxKitPinVerifier]:
 ///
 /// - `maxAttempts` biometric failures (or a platform permanent lockout) lock
 ///   out the biometric path — [unlockWithBiometrics] then returns
-///   [KitAppLockDenied] with [KitAppLockDenialReason.biometricLockedOut] and the
+///   [AppBoxKitAppLockDenied] with [AppBoxKitAppLockDenialReason.biometricLockedOut] and the
 ///   UI must fall back to the PIN.
 /// - `maxAttempts` PIN failures start a `cooldown` window during which
-///   [unlockWithPin] is refused with [KitAppLockDenialReason.inCooldown].
+///   [unlockWithPin] is refused with [AppBoxKitAppLockDenialReason.inCooldown].
 /// - Any successful unlock resets every counter and clears both lockouts.
 ///
 /// Lifecycle is pushed in by the host (this class has no Flutter dependency):
 /// call [didEnterBackground] / [didEnterForeground] from a
 /// `WidgetsBindingObserver`. Re-lock triggers when the backgrounded duration
-/// reaches [KitAppLockConfig.lockOnBackgroundAfter]. The clock is injectable for
+/// reaches [AppBoxKitAppLockConfig.lockOnBackgroundAfter]. The clock is injectable for
 /// deterministic tests.
-class KitAppLockController {
-  KitAppLockController({
-    required KitBiometricService biometrics,
-    required KitPinVerifier pinVerifier,
-    this.config = const KitAppLockConfig(),
-    KitAppLockState initialState = KitAppLockState.locked,
+class AppBoxKitAppLockController {
+  AppBoxKitAppLockController({
+    required AppBoxKitBiometricService biometrics,
+    required AppBoxKitPinVerifier pinVerifier,
+    this.config = const AppBoxKitAppLockConfig(),
+    AppBoxKitAppLockState initialState = AppBoxKitAppLockState.locked,
     DateTime Function()? clock,
   })  : _biometrics = biometrics,
         _pinVerifier = pinVerifier,
         _state = initialState,
         _now = clock ?? DateTime.now;
 
-  final KitBiometricService _biometrics;
-  final KitPinVerifier _pinVerifier;
+  final AppBoxKitBiometricService _biometrics;
+  final AppBoxKitPinVerifier _pinVerifier;
 
   /// The tuning applied to this controller.
-  final KitAppLockConfig config;
+  final AppBoxKitAppLockConfig config;
 
   final DateTime Function() _now;
-  final StreamController<KitAppLockState> _controller =
-      StreamController<KitAppLockState>.broadcast();
+  final StreamController<AppBoxKitAppLockState> _controller =
+      StreamController<AppBoxKitAppLockState>.broadcast();
 
-  KitAppLockState _state;
+  AppBoxKitAppLockState _state;
   int _biometricAttempts = 0;
   int _pinAttempts = 0;
   bool _biometricLockedOut = false;
@@ -57,14 +57,14 @@ class KitAppLockController {
   bool _disposed = false;
 
   /// The current lock state.
-  KitAppLockState get state => _state;
+  AppBoxKitAppLockState get state => _state;
 
   /// Broadcast stream of state changes. Does not replay the current value; read
   /// [state] for that.
-  Stream<KitAppLockState> get stateChanges => _controller.stream;
+  Stream<AppBoxKitAppLockState> get stateChanges => _controller.stream;
 
-  /// True whenever the app is not [KitAppLockState.unlocked].
-  bool get isLocked => _state != KitAppLockState.unlocked;
+  /// True whenever the app is not [AppBoxKitAppLockState.unlocked].
+  bool get isLocked => _state != AppBoxKitAppLockState.unlocked;
 
   /// Consecutive biometric failures since the last success.
   int get biometricAttempts => _biometricAttempts;
@@ -92,44 +92,44 @@ class KitAppLockController {
   /// Seals the app. Attempt counters and any active lockout/cooldown persist.
   void lock() {
     _requireNotDisposed();
-    _setState(KitAppLockState.locked);
+    _setState(AppBoxKitAppLockState.locked);
   }
 
   /// Attempts to unlock with biometrics.
   ///
-  /// No-ops to [KitAppLockUnlocked] when already unlocked; [KitAppLockDenied]
+  /// No-ops to [AppBoxKitAppLockUnlocked] when already unlocked; [AppBoxKitAppLockDenied]
   /// when an unlock is in flight or the biometric path is locked out; otherwise
-  /// prompts and returns [KitAppLockUnlocked] / [KitAppLockFailed].
-  Future<KitAppLockOutcome> unlockWithBiometrics({String? reason}) async {
+  /// prompts and returns [AppBoxKitAppLockUnlocked] / [AppBoxKitAppLockFailed].
+  Future<AppBoxKitAppLockOutcome> unlockWithBiometrics({String? reason}) async {
     _requireNotDisposed();
-    if (_state == KitAppLockState.unlocked) return const KitAppLockUnlocked();
-    if (_state == KitAppLockState.unlocking) {
-      return const KitAppLockDenied(KitAppLockDenialReason.busy);
+    if (_state == AppBoxKitAppLockState.unlocked) return const AppBoxKitAppLockUnlocked();
+    if (_state == AppBoxKitAppLockState.unlocking) {
+      return const AppBoxKitAppLockDenied(AppBoxKitAppLockDenialReason.busy);
     }
     if (_biometricLockedOut) {
-      return const KitAppLockDenied(KitAppLockDenialReason.biometricLockedOut);
+      return const AppBoxKitAppLockDenied(AppBoxKitAppLockDenialReason.biometricLockedOut);
     }
 
-    _setState(KitAppLockState.unlocking);
+    _setState(AppBoxKitAppLockState.unlocking);
     final result =
         await _biometrics.authenticate(reason: reason ?? config.unlockReason);
     if (_disposed) {
-      return const KitAppLockDenied(KitAppLockDenialReason.busy);
+      return const AppBoxKitAppLockDenied(AppBoxKitAppLockDenialReason.busy);
     }
 
     switch (result) {
-      case KitBiometricSuccess():
+      case AppBoxKitBiometricSuccess():
         _resetOnSuccess();
-        return const KitAppLockUnlocked();
-      case KitBiometricFailure(:final reason):
+        return const AppBoxKitAppLockUnlocked();
+      case AppBoxKitBiometricFailure(:final reason):
         _biometricAttempts++;
         if (_biometricAttempts >= config.maxAttempts ||
-            reason == KitBiometricFailureReason.permanentlyLockedOut) {
+            reason == AppBoxKitBiometricFailureReason.permanentlyLockedOut) {
           _biometricLockedOut = true;
         }
-        _setState(KitAppLockState.locked);
-        return KitAppLockFailed(
-          method: KitAppLockMethod.biometric,
+        _setState(AppBoxKitAppLockState.locked);
+        return AppBoxKitAppLockFailed(
+          method: AppBoxKitAppLockMethod.biometric,
           biometricReason: reason,
           lockedOut: _biometricLockedOut,
         );
@@ -138,29 +138,29 @@ class KitAppLockController {
 
   /// Attempts to unlock with [pin].
   ///
-  /// No-ops to [KitAppLockUnlocked] when already unlocked; [KitAppLockDenied]
+  /// No-ops to [AppBoxKitAppLockUnlocked] when already unlocked; [AppBoxKitAppLockDenied]
   /// when an unlock is in flight or a cooldown is active; otherwise verifies and
-  /// returns [KitAppLockUnlocked] / [KitAppLockFailed]. The failure that reaches
-  /// [KitAppLockConfig.maxAttempts] starts the cooldown and resets the PIN
+  /// returns [AppBoxKitAppLockUnlocked] / [AppBoxKitAppLockFailed]. The failure that reaches
+  /// [AppBoxKitAppLockConfig.maxAttempts] starts the cooldown and resets the PIN
   /// counter, so a fresh set of attempts is available once it elapses.
-  Future<KitAppLockOutcome> unlockWithPin(String pin) async {
+  Future<AppBoxKitAppLockOutcome> unlockWithPin(String pin) async {
     _requireNotDisposed();
-    if (_state == KitAppLockState.unlocked) return const KitAppLockUnlocked();
-    if (_state == KitAppLockState.unlocking) {
-      return const KitAppLockDenied(KitAppLockDenialReason.busy);
+    if (_state == AppBoxKitAppLockState.unlocked) return const AppBoxKitAppLockUnlocked();
+    if (_state == AppBoxKitAppLockState.unlocking) {
+      return const AppBoxKitAppLockDenied(AppBoxKitAppLockDenialReason.busy);
     }
     if (isInCooldown) {
-      return const KitAppLockDenied(KitAppLockDenialReason.inCooldown);
+      return const AppBoxKitAppLockDenied(AppBoxKitAppLockDenialReason.inCooldown);
     }
 
-    _setState(KitAppLockState.unlocking);
+    _setState(AppBoxKitAppLockState.unlocking);
     final ok = await _pinVerifier.verifyPin(pin);
     if (_disposed) {
-      return const KitAppLockDenied(KitAppLockDenialReason.busy);
+      return const AppBoxKitAppLockDenied(AppBoxKitAppLockDenialReason.busy);
     }
     if (ok) {
       _resetOnSuccess();
-      return const KitAppLockUnlocked();
+      return const AppBoxKitAppLockUnlocked();
     }
 
     _pinAttempts++;
@@ -170,9 +170,9 @@ class KitAppLockController {
       _pinAttempts = 0;
       cooldownStarted = true;
     }
-    _setState(KitAppLockState.locked);
-    return KitAppLockFailed(
-      method: KitAppLockMethod.pin,
+    _setState(AppBoxKitAppLockState.locked);
+    return AppBoxKitAppLockFailed(
+      method: AppBoxKitAppLockMethod.pin,
       cooldownStarted: cooldownStarted,
     );
   }
@@ -180,20 +180,20 @@ class KitAppLockController {
   /// Records the moment the app was backgrounded (only while unlocked).
   void didEnterBackground() {
     _requireNotDisposed();
-    if (_state == KitAppLockState.unlocked) {
+    if (_state == AppBoxKitAppLockState.unlocked) {
       _backgroundedAt = _now();
     }
   }
 
   /// Re-locks if the app stayed backgrounded for at least
-  /// [KitAppLockConfig.lockOnBackgroundAfter].
+  /// [AppBoxKitAppLockConfig.lockOnBackgroundAfter].
   void didEnterForeground() {
     _requireNotDisposed();
     final backgroundedAt = _backgroundedAt;
     _backgroundedAt = null;
-    if (backgroundedAt == null || _state != KitAppLockState.unlocked) return;
+    if (backgroundedAt == null || _state != AppBoxKitAppLockState.unlocked) return;
     if (_now().difference(backgroundedAt) >= config.lockOnBackgroundAfter) {
-      _setState(KitAppLockState.locked);
+      _setState(AppBoxKitAppLockState.locked);
     }
   }
 
@@ -203,10 +203,10 @@ class KitAppLockController {
     _biometricLockedOut = false;
     _cooldownUntil = null;
     _backgroundedAt = null;
-    _setState(KitAppLockState.unlocked);
+    _setState(AppBoxKitAppLockState.unlocked);
   }
 
-  void _setState(KitAppLockState next) {
+  void _setState(AppBoxKitAppLockState next) {
     if (next == _state) return;
     _state = next;
     _controller.add(next);
@@ -214,7 +214,7 @@ class KitAppLockController {
 
   void _requireNotDisposed() {
     if (_disposed) {
-      throw StateError('Operation called on a disposed KitAppLockController');
+      throw StateError('Operation called on a disposed AppBoxKitAppLockController');
     }
   }
 

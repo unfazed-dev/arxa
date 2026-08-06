@@ -4,15 +4,15 @@
 /// OS, keychain, or a real crypto backend:
 ///
 /// ```dart
-/// final biometrics = FakeKitBiometricService()
-///   ..script([const KitBiometricFailure(KitBiometricFailureReason.cancelled)]);
-/// final pin = FakeKitPinVerifier(pin: '1234');
-/// final lock = KitAppLockController(biometrics: biometrics, pinVerifier: pin);
+/// final biometrics = FakeAppBoxKitBiometricService()
+///   ..script([const AppBoxKitBiometricFailure(AppBoxKitBiometricFailureReason.cancelled)]);
+/// final pin = FakeAppBoxKitPinVerifier(pin: '1234');
+/// final lock = AppBoxKitAppLockController(biometrics: biometrics, pinVerifier: pin);
 ///
 /// await lock.unlockWithBiometrics();      // fails → back to locked
 /// final outcome = await lock.unlockWithPin('1234');
-/// expect(outcome, isA<KitAppLockUnlocked>());
-/// expect(lock.state, KitAppLockState.unlocked);
+/// expect(outcome, isA<AppBoxKitAppLockUnlocked>());
+/// expect(lock.state, AppBoxKitAppLockState.unlocked);
 /// await lock.dispose();
 /// ```
 library;
@@ -21,50 +21,50 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
-import 'src/biometric/kit_biometric_availability.dart';
-import 'src/biometric/kit_biometric_result.dart';
-import 'src/biometric/kit_biometric_service.dart';
-import 'src/biometric/kit_biometric_type.dart';
-import 'src/crypto/kit_crypto_failure.dart';
-import 'src/crypto/kit_crypto_key.dart';
-import 'src/crypto/kit_crypto_service.dart';
-import 'src/crypto/kit_secret_box.dart';
-import 'src/integrity/kit_device_integrity_service.dart';
-import 'src/integrity/kit_integrity_report.dart';
-import 'src/storage/kit_secure_storage_service.dart';
-import 'src/app_lock/kit_pin_verifier.dart';
+import 'src/biometric/appbox_kit_biometric_availability.dart';
+import 'src/biometric/appbox_kit_biometric_result.dart';
+import 'src/biometric/appbox_kit_biometric_service.dart';
+import 'src/biometric/appbox_kit_biometric_type.dart';
+import 'src/crypto/appbox_kit_crypto_failure.dart';
+import 'src/crypto/appbox_kit_crypto_key.dart';
+import 'src/crypto/appbox_kit_crypto_service.dart';
+import 'src/crypto/appbox_kit_secret_box.dart';
+import 'src/integrity/appbox_kit_device_integrity_service.dart';
+import 'src/integrity/appbox_kit_integrity_report.dart';
+import 'src/storage/appbox_kit_secure_storage_service.dart';
+import 'src/app_lock/appbox_kit_pin_verifier.dart';
 
-export 'src/biometric/kit_biometric_availability.dart';
-export 'src/biometric/kit_biometric_result.dart';
-export 'src/biometric/kit_biometric_service.dart';
-export 'src/biometric/kit_biometric_type.dart';
-export 'src/crypto/kit_crypto_failure.dart';
-export 'src/crypto/kit_crypto_key.dart';
-export 'src/crypto/kit_crypto_service.dart';
-export 'src/crypto/kit_secret_box.dart';
-export 'src/integrity/kit_device_integrity_service.dart';
-export 'src/integrity/kit_integrity_report.dart';
-export 'src/integrity/kit_tri_state.dart';
-export 'src/storage/kit_secure_storage_service.dart';
-export 'src/app_lock/kit_pin_verifier.dart';
+export 'src/biometric/appbox_kit_biometric_availability.dart';
+export 'src/biometric/appbox_kit_biometric_result.dart';
+export 'src/biometric/appbox_kit_biometric_service.dart';
+export 'src/biometric/appbox_kit_biometric_type.dart';
+export 'src/crypto/appbox_kit_crypto_failure.dart';
+export 'src/crypto/appbox_kit_crypto_key.dart';
+export 'src/crypto/appbox_kit_crypto_service.dart';
+export 'src/crypto/appbox_kit_secret_box.dart';
+export 'src/integrity/appbox_kit_device_integrity_service.dart';
+export 'src/integrity/appbox_kit_integrity_report.dart';
+export 'src/integrity/appbox_kit_tri_state.dart';
+export 'src/storage/appbox_kit_secure_storage_service.dart';
+export 'src/app_lock/appbox_kit_pin_verifier.dart';
 
-/// A [KitBiometricService] whose availability and per-call results are scripted.
+/// A [AppBoxKitBiometricService] whose availability and per-call results are scripted.
 ///
-/// [authenticate] pops the next scripted [KitBiometricResult] (queued via
+/// [authenticate] pops the next scripted [AppBoxKitBiometricResult] (queued via
 /// [script]); when the queue is empty it returns [defaultResult]. Call
 /// [pauseAuthentication] to hold the next authenticate mid-flight (to exercise
 /// the "unlock while unlocking" path).
-class FakeKitBiometricService implements KitBiometricService {
-  FakeKitBiometricService({
-    KitBiometricAvailability availability = const KitBiometricAvailability
-        .available(<KitBiometricType>{KitBiometricType.fingerprint}),
-    KitBiometricResult defaultResult = const KitBiometricSuccess(),
+class FakeAppBoxKitBiometricService implements AppBoxKitBiometricService {
+  FakeAppBoxKitBiometricService({
+    AppBoxKitBiometricAvailability availability = const AppBoxKitBiometricAvailability
+        .available(<AppBoxKitBiometricType>{AppBoxKitBiometricType.fingerprint}),
+    AppBoxKitBiometricResult defaultResult = const AppBoxKitBiometricSuccess(),
   })  : _availability = availability,
         _defaultResult = defaultResult;
 
-  KitBiometricAvailability _availability;
-  KitBiometricResult _defaultResult;
-  final List<KitBiometricResult> _results = <KitBiometricResult>[];
+  AppBoxKitBiometricAvailability _availability;
+  AppBoxKitBiometricResult _defaultResult;
+  final List<AppBoxKitBiometricResult> _results = <AppBoxKitBiometricResult>[];
   Completer<void>? _pause;
 
   /// Number of [availability] calls.
@@ -77,28 +77,28 @@ class FakeKitBiometricService implements KitBiometricService {
   String? lastReason;
 
   /// Sets what [availability] returns.
-  void setAvailability(KitBiometricAvailability availability) =>
+  void setAvailability(AppBoxKitBiometricAvailability availability) =>
       _availability = availability;
 
   /// Queues [results] to be returned by successive [authenticate] calls.
-  void script(List<KitBiometricResult> results) => _results
+  void script(List<AppBoxKitBiometricResult> results) => _results
     ..clear()
     ..addAll(results);
 
   /// Sets the result used once the scripted queue is exhausted.
-  void setDefaultResult(KitBiometricResult result) => _defaultResult = result;
+  void setDefaultResult(AppBoxKitBiometricResult result) => _defaultResult = result;
 
   /// Holds the next [authenticate] until the returned completer is completed.
   Completer<void> pauseAuthentication() => _pause = Completer<void>();
 
   @override
-  Future<KitBiometricAvailability> availability() async {
+  Future<AppBoxKitBiometricAvailability> availability() async {
     availabilityCallCount++;
     return _availability;
   }
 
   @override
-  Future<KitBiometricResult> authenticate({required String reason}) async {
+  Future<AppBoxKitBiometricResult> authenticate({required String reason}) async {
     authenticateCallCount++;
     lastReason = reason;
     final pause = _pause;
@@ -109,8 +109,8 @@ class FakeKitBiometricService implements KitBiometricService {
   }
 }
 
-/// An in-memory [KitSecureStorageService] with per-operation call counts.
-class FakeKitSecureStorageService implements KitSecureStorageService {
+/// An in-memory [AppBoxKitSecureStorageService] with per-operation call counts.
+class FakeAppBoxKitSecureStorageService implements AppBoxKitSecureStorageService {
   final Map<String, String> _data = <String, String>{};
 
   /// Call counts for each operation.
@@ -154,15 +154,15 @@ class FakeKitSecureStorageService implements KitSecureStorageService {
   }
 }
 
-/// A deterministic, reversible [KitCryptoService] for tests — **not** real
+/// A deterministic, reversible [AppBoxKitCryptoService] for tests — **not** real
 /// cryptography.
 ///
 /// "Encryption" XORs the plaintext with a key-derived keystream and stores a
 /// deterministic tag; [decryptBytes] recomputes the tag and throws
-/// [KitCryptoFailure] with [KitCryptoFailureReason.authentication] on mismatch
+/// [AppBoxKitCryptoFailure] with [AppBoxKitCryptoFailureReason.authentication] on mismatch
 /// (wrong key) — so wrong-key and tamper paths behave like the real backend.
 /// Set [failNextDecrypt] to force the next decrypt to fail.
-class FakeKitCryptoService implements KitCryptoService {
+class FakeAppBoxKitCryptoService implements AppBoxKitCryptoService {
   int _counter = 0;
 
   /// Call counts.
@@ -174,15 +174,15 @@ class FakeKitCryptoService implements KitCryptoService {
   bool failNextDecrypt = false;
 
   @override
-  Future<KitCryptoKey> generateKey() async => KitCryptoKey(_freshBytes(32));
+  Future<AppBoxKitCryptoKey> generateKey() async => AppBoxKitCryptoKey(_freshBytes(32));
 
   @override
   List<int> generateNonce() => _freshBytes(12);
 
   @override
-  Future<KitSecretBox> encryptBytes(
+  Future<AppBoxKitSecretBox> encryptBytes(
     List<int> data, {
-    required KitCryptoKey key,
+    required AppBoxKitCryptoKey key,
     List<int>? nonce,
   }) async {
     encryptCallCount++;
@@ -191,7 +191,7 @@ class FakeKitCryptoService implements KitCryptoService {
     for (var i = 0; i < data.length; i++) {
       cipher[i] = data[i] ^ stream[i];
     }
-    return KitSecretBox(
+    return AppBoxKitSecretBox(
       nonce: nonce ?? generateNonce(),
       cipherText: cipher,
       mac: _tag(key.bytes, data),
@@ -200,14 +200,14 @@ class FakeKitCryptoService implements KitCryptoService {
 
   @override
   Future<Uint8List> decryptBytes(
-    KitSecretBox box, {
-    required KitCryptoKey key,
+    AppBoxKitSecretBox box, {
+    required AppBoxKitCryptoKey key,
   }) async {
     decryptCallCount++;
     if (failNextDecrypt) {
       failNextDecrypt = false;
-      throw const KitCryptoFailure(
-        KitCryptoFailureReason.authentication,
+      throw const AppBoxKitCryptoFailure(
+        AppBoxKitCryptoFailureReason.authentication,
         message: 'Fake: forced decrypt failure.',
       );
     }
@@ -217,8 +217,8 @@ class FakeKitCryptoService implements KitCryptoService {
       plain[i] = box.cipherText[i] ^ stream[i];
     }
     if (!_bytesEqual(_tag(key.bytes, plain), box.mac)) {
-      throw const KitCryptoFailure(
-        KitCryptoFailureReason.authentication,
+      throw const AppBoxKitCryptoFailure(
+        AppBoxKitCryptoFailureReason.authentication,
         message: 'Fake: tag mismatch (wrong key or tampered).',
       );
     }
@@ -226,17 +226,17 @@ class FakeKitCryptoService implements KitCryptoService {
   }
 
   @override
-  Future<KitSecretBox> encryptString(
+  Future<AppBoxKitSecretBox> encryptString(
     String data, {
-    required KitCryptoKey key,
+    required AppBoxKitCryptoKey key,
     List<int>? nonce,
   }) =>
       encryptBytes(utf8.encode(data), key: key, nonce: nonce);
 
   @override
   Future<String> decryptString(
-    KitSecretBox box, {
-    required KitCryptoKey key,
+    AppBoxKitSecretBox box, {
+    required AppBoxKitCryptoKey key,
   }) async =>
       utf8.decode(await decryptBytes(box, key: key));
 
@@ -246,7 +246,7 @@ class FakeKitCryptoService implements KitCryptoService {
   @override
   Future<Uint8List> hmacSha256(
     List<int> data, {
-    required KitCryptoKey key,
+    required AppBoxKitCryptoKey key,
   }) async =>
       _digest(key.bytes, data);
 
@@ -299,10 +299,10 @@ class FakeKitCryptoService implements KitCryptoService {
   }
 }
 
-/// A [KitPinVerifier] holding a plaintext PIN in memory, with optional scripted
+/// A [AppBoxKitPinVerifier] holding a plaintext PIN in memory, with optional scripted
 /// [verifyPin] results and call counts.
-class FakeKitPinVerifier implements KitPinVerifier {
-  FakeKitPinVerifier({String? pin}) : _pin = pin;
+class FakeAppBoxKitPinVerifier implements AppBoxKitPinVerifier {
+  FakeAppBoxKitPinVerifier({String? pin}) : _pin = pin;
 
   String? _pin;
   final List<bool> _scripted = <bool>[];
@@ -349,21 +349,21 @@ class FakeKitPinVerifier implements KitPinVerifier {
   }
 }
 
-/// A [KitDeviceIntegrityService] that returns a scripted [KitIntegrityReport]
+/// A [AppBoxKitDeviceIntegrityService] that returns a scripted [AppBoxKitIntegrityReport]
 /// (or throws a scripted error).
-class FakeKitDeviceIntegrityService implements KitDeviceIntegrityService {
-  FakeKitDeviceIntegrityService({
-    KitIntegrityReport report = KitIntegrityReport.unknown,
+class FakeAppBoxKitDeviceIntegrityService implements AppBoxKitDeviceIntegrityService {
+  FakeAppBoxKitDeviceIntegrityService({
+    AppBoxKitIntegrityReport report = AppBoxKitIntegrityReport.unknown,
   }) : _report = report;
 
-  KitIntegrityReport _report;
+  AppBoxKitIntegrityReport _report;
   Object? _error;
 
   /// Number of [check] calls.
   int checkCallCount = 0;
 
   /// Sets the report [check] returns (and clears any scripted error).
-  void setReport(KitIntegrityReport report) {
+  void setReport(AppBoxKitIntegrityReport report) {
     _report = report;
     _error = null;
   }
@@ -372,7 +372,7 @@ class FakeKitDeviceIntegrityService implements KitDeviceIntegrityService {
   void setError(Object error) => _error = error;
 
   @override
-  Future<KitIntegrityReport> check() async {
+  Future<AppBoxKitIntegrityReport> check() async {
     checkCallCount++;
     final error = _error;
     if (error != null) throw error;

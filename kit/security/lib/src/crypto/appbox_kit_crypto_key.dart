@@ -4,12 +4,12 @@ import 'package:flutter/foundation.dart';
 /// `SecretKey` leaks through the port).
 ///
 /// Wraps raw key bytes. For AES-GCM-256 the expected length is 32 bytes; obtain
-/// one from [KitCryptoService.generateKey] or reconstruct from stored bytes via
+/// one from [AppBoxKitCryptoService.generateKey] or reconstruct from stored bytes via
 /// the constructor.
 @immutable
-class KitCryptoKey {
+class AppBoxKitCryptoKey {
   /// Wraps [bytes] (defensively copied) as a key.
-  KitCryptoKey(List<int> bytes) : bytes = Uint8List.fromList(bytes);
+  AppBoxKitCryptoKey(List<int> bytes) : bytes = Uint8List.fromList(bytes);
 
   /// The raw key material.
   final Uint8List bytes;
@@ -20,7 +20,7 @@ class KitCryptoKey {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is KitCryptoKey &&
+      other is AppBoxKitCryptoKey &&
           runtimeType == other.runtimeType &&
           listEquals(bytes, other.bytes);
 
@@ -28,5 +28,5 @@ class KitCryptoKey {
   int get hashCode => Object.hashAll(bytes);
 
   @override
-  String toString() => 'KitCryptoKey(${bytes.length} bytes)';
+  String toString() => 'AppBoxKitCryptoKey(${bytes.length} bytes)';
 }

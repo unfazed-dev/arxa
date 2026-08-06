@@ -3,7 +3,7 @@
 ///
 /// [unknown] is a first-class value, not a default to be ignored: a signal the
 /// current platform cannot measure must not be reported as a safe [no].
-enum KitTriState {
+enum AppBoxKitTriState {
   /// The condition holds (e.g. the device *is* rooted).
   yes,
 

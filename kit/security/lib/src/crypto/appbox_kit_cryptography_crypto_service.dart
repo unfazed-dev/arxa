@@ -3,38 +3,38 @@ import 'dart:typed_data';
 
 import 'package:cryptography/cryptography.dart';
 
-import 'kit_crypto_failure.dart';
-import 'kit_crypto_key.dart';
-import 'kit_crypto_service.dart';
-import 'kit_secret_box.dart';
+import 'appbox_kit_crypto_failure.dart';
+import 'appbox_kit_crypto_key.dart';
+import 'appbox_kit_crypto_service.dart';
+import 'appbox_kit_secret_box.dart';
 
-/// Default pure-Dart [KitCryptoService] over the `cryptography` package.
+/// Default pure-Dart [AppBoxKitCryptoService] over the `cryptography` package.
 ///
 /// AES-GCM-256 with a 12-byte nonce and 16-byte tag; SHA-256 and HMAC-SHA256
 /// for hashing. In `flutter test` (no plugin registered) `cryptography` uses
 /// its `DartCryptography` fallback, so this backend is fully exercisable off
 /// device. The `cryptography` types (`SecretKey`, `SecretBox`, `Mac`) never
 /// escape this file — the port speaks bytes and neutral value types.
-class CryptographyKitCryptoService implements KitCryptoService {
-  CryptographyKitCryptoService();
+class CryptographyAppBoxKitCryptoService implements AppBoxKitCryptoService {
+  CryptographyAppBoxKitCryptoService();
 
   final AesGcm _aesGcm = AesGcm.with256bits();
   final Sha256 _sha256 = Sha256();
   final Hmac _hmacSha256 = Hmac.sha256();
 
   @override
-  Future<KitCryptoKey> generateKey() async {
+  Future<AppBoxKitCryptoKey> generateKey() async {
     final secretKey = await _aesGcm.newSecretKey();
-    return KitCryptoKey(await secretKey.extractBytes());
+    return AppBoxKitCryptoKey(await secretKey.extractBytes());
   }
 
   @override
   List<int> generateNonce() => _aesGcm.newNonce();
 
   @override
-  Future<KitSecretBox> encryptBytes(
+  Future<AppBoxKitSecretBox> encryptBytes(
     List<int> data, {
-    required KitCryptoKey key,
+    required AppBoxKitCryptoKey key,
     List<int>? nonce,
   }) async {
     final box = await _aesGcm.encrypt(
@@ -42,7 +42,7 @@ class CryptographyKitCryptoService implements KitCryptoService {
       secretKey: SecretKey(key.bytes),
       nonce: nonce ?? _aesGcm.newNonce(),
     );
-    return KitSecretBox(
+    return AppBoxKitSecretBox(
       nonce: box.nonce,
       cipherText: box.cipherText,
       mac: box.mac.bytes,
@@ -51,8 +51,8 @@ class CryptographyKitCryptoService implements KitCryptoService {
 
   @override
   Future<Uint8List> decryptBytes(
-    KitSecretBox box, {
-    required KitCryptoKey key,
+    AppBoxKitSecretBox box, {
+    required AppBoxKitCryptoKey key,
   }) async {
     try {
       final clear = await _aesGcm.decrypt(
@@ -61,15 +61,15 @@ class CryptographyKitCryptoService implements KitCryptoService {
       );
       return Uint8List.fromList(clear);
     } on SecretBoxAuthenticationError catch (e) {
-      throw KitCryptoFailure(
-        KitCryptoFailureReason.authentication,
+      throw AppBoxKitCryptoFailure(
+        AppBoxKitCryptoFailureReason.authentication,
         message: 'Ciphertext failed authentication (wrong key or tampered).',
         cause: e,
       );
     } on ArgumentError catch (e) {
       // e.g. a key or nonce of the wrong length.
-      throw KitCryptoFailure(
-        KitCryptoFailureReason.malformed,
+      throw AppBoxKitCryptoFailure(
+        AppBoxKitCryptoFailureReason.malformed,
         message: e.message?.toString(),
         cause: e,
       );
@@ -77,24 +77,24 @@ class CryptographyKitCryptoService implements KitCryptoService {
   }
 
   @override
-  Future<KitSecretBox> encryptString(
+  Future<AppBoxKitSecretBox> encryptString(
     String data, {
-    required KitCryptoKey key,
+    required AppBoxKitCryptoKey key,
     List<int>? nonce,
   }) =>
       encryptBytes(utf8.encode(data), key: key, nonce: nonce);
 
   @override
   Future<String> decryptString(
-    KitSecretBox box, {
-    required KitCryptoKey key,
+    AppBoxKitSecretBox box, {
+    required AppBoxKitCryptoKey key,
   }) async {
     final clear = await decryptBytes(box, key: key);
     try {
       return utf8.decode(clear);
     } on FormatException catch (e) {
-      throw KitCryptoFailure(
-        KitCryptoFailureReason.malformed,
+      throw AppBoxKitCryptoFailure(
+        AppBoxKitCryptoFailureReason.malformed,
         message: 'Decrypted bytes are not valid UTF-8.',
         cause: e,
       );
@@ -110,7 +110,7 @@ class CryptographyKitCryptoService implements KitCryptoService {
   @override
   Future<Uint8List> hmacSha256(
     List<int> data, {
-    required KitCryptoKey key,
+    required AppBoxKitCryptoKey key,
   }) async {
     final mac = await _hmacSha256.calculateMac(
       data,

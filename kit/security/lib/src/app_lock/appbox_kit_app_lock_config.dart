@@ -1,9 +1,9 @@
 import 'package:flutter/foundation.dart';
 
-/// Tuning for [KitAppLockController].
+/// Tuning for [AppBoxKitAppLockController].
 @immutable
-class KitAppLockConfig {
-  const KitAppLockConfig({
+class AppBoxKitAppLockConfig {
+  const AppBoxKitAppLockConfig({
     this.lockOnBackgroundAfter = const Duration(seconds: 30),
     this.maxAttempts = 3,
     this.cooldown = const Duration(seconds: 30),
@@ -26,13 +26,13 @@ class KitAppLockConfig {
   /// Default localized reason shown in the biometric prompt.
   final String unlockReason;
 
-  KitAppLockConfig copyWith({
+  AppBoxKitAppLockConfig copyWith({
     Duration? lockOnBackgroundAfter,
     int? maxAttempts,
     Duration? cooldown,
     String? unlockReason,
   }) =>
-      KitAppLockConfig(
+      AppBoxKitAppLockConfig(
         lockOnBackgroundAfter:
             lockOnBackgroundAfter ?? this.lockOnBackgroundAfter,
         maxAttempts: maxAttempts ?? this.maxAttempts,
@@ -43,7 +43,7 @@ class KitAppLockConfig {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is KitAppLockConfig &&
+      other is AppBoxKitAppLockConfig &&
           runtimeType == other.runtimeType &&
           lockOnBackgroundAfter == other.lockOnBackgroundAfter &&
           maxAttempts == other.maxAttempts &&
@@ -56,6 +56,6 @@ class KitAppLockConfig {
 
   @override
   String toString() =>
-      'KitAppLockConfig(lockOnBackgroundAfter: $lockOnBackgroundAfter, '
+      'AppBoxKitAppLockConfig(lockOnBackgroundAfter: $lockOnBackgroundAfter, '
       'maxAttempts: $maxAttempts, cooldown: $cooldown)';
 }

@@ -11,14 +11,14 @@ dependencies:
     sdk: flutter
   # Native-first biometric auth: wraps LocalAuthentication (iOS) /
   # BiometricPrompt (Android). Its exceptions/error codes are mapped to the
-  # typed KitBiometricFailureReason so the plugin never leaks past the port.
+  # typed AppBoxKitBiometricFailureReason so the plugin never leaks past the port.
   # Latest verified on pub.dev 2026-07-14: 3.0.2 (publisher flutter.dev).
   local_auth: ^3.0.2
-  # Encrypted key-value storage backing KitSecureStorageService (iOS Keychain /
+  # Encrypted key-value storage backing AppBoxKitSecureStorageService (iOS Keychain /
   # Android EncryptedSharedPreferences+Keystore). Latest verified on pub.dev
   # 2026-07-14: 10.3.1.
   flutter_secure_storage: ^10.3.1
-  # Pure-Dart AES-GCM / SHA-256 / HMAC backend for KitCryptoService (uses the
+  # Pure-Dart AES-GCM / SHA-256 / HMAC backend for AppBoxKitCryptoService (uses the
   # package's DartCryptography fallback in tests — no platform channels).
   # Latest verified on pub.dev 2026-07-14: 2.9.0.
   cryptography: ^2.9.0

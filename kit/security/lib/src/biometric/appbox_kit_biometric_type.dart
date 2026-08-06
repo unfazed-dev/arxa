@@ -2,9 +2,9 @@
 ///
 /// Deliberately platform-neutral. `local_auth` also reports coarse `strong` /
 /// `weak` Android classifications; those carry no specific modality and are
-/// dropped from this set (see `LocalAuthKitBiometricService`) — the availability
+/// dropped from this set (see `LocalAuthAppBoxKitBiometricService`) — the availability
 /// *status* still reflects that biometrics are usable.
-enum KitBiometricType {
+enum AppBoxKitBiometricType {
   /// Face recognition (Face ID / Android face unlock).
   face,
 

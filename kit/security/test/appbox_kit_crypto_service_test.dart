@@ -2,17 +2,17 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:appbox_kit_security/appbox_kit_security.dart';
 
-/// Exercises the *real* [CryptographyKitCryptoService]. The `cryptography`
+/// Exercises the *real* [CryptographyAppBoxKitCryptoService]. The `cryptography`
 /// package falls back to its pure-Dart implementation under `flutter test`
 /// (no platform channel), so these are genuine AES-GCM-256 / SHA-256 / HMAC
 /// round-trips — not fake arithmetic.
 void main() {
   const plainText = 'appbox_kit_security round-trip ✅';
-  late KitCryptoService crypto;
-  late KitCryptoKey key;
+  late AppBoxKitCryptoService crypto;
+  late AppBoxKitCryptoKey key;
 
   setUp(() async {
-    crypto = CryptographyKitCryptoService();
+    crypto = CryptographyAppBoxKitCryptoService();
     key = await crypto.generateKey();
   });
 
@@ -53,14 +53,14 @@ void main() {
       final box = await crypto.encryptString(plainText, key: key);
       final tampered = List<int>.from(box.cipherText);
       tampered[0] ^= 0x01;
-      final bad = KitSecretBox(
+      final bad = AppBoxKitSecretBox(
         nonce: box.nonce,
         cipherText: tampered,
         mac: box.mac,
       );
       await expectLater(
         crypto.decryptBytes(bad, key: key),
-        throwsA(isA<KitCryptoFailure>()),
+        throwsA(isA<AppBoxKitCryptoFailure>()),
       );
     });
 
@@ -68,7 +68,7 @@ void main() {
       final box = await crypto.encryptString(plainText, key: key);
       final tampered = List<int>.from(box.mac);
       tampered[0] ^= 0x01;
-      final bad = KitSecretBox(
+      final bad = AppBoxKitSecretBox(
         nonce: box.nonce,
         cipherText: box.cipherText,
         mac: tampered,
@@ -76,10 +76,10 @@ void main() {
       await expectLater(
         crypto.decryptBytes(bad, key: key),
         throwsA(
-          isA<KitCryptoFailure>().having(
+          isA<AppBoxKitCryptoFailure>().having(
             (f) => f.reason,
             'reason',
-            KitCryptoFailureReason.authentication,
+            AppBoxKitCryptoFailureReason.authentication,
           ),
         ),
       );
@@ -91,10 +91,10 @@ void main() {
       await expectLater(
         crypto.decryptBytes(box, key: other),
         throwsA(
-          isA<KitCryptoFailure>().having(
+          isA<AppBoxKitCryptoFailure>().having(
             (f) => f.reason,
             'reason',
-            KitCryptoFailureReason.authentication,
+            AppBoxKitCryptoFailureReason.authentication,
           ),
         ),
       );
@@ -104,19 +104,19 @@ void main() {
   group('concatenated box', () {
     test('round-trips through nonce || cipherText || mac', () async {
       final box = await crypto.encryptString(plainText, key: key);
-      final rejoined = KitSecretBox.fromConcatenated(box.concatenated);
+      final rejoined = AppBoxKitSecretBox.fromConcatenated(box.concatenated);
       expect(rejoined, box);
       expect(await crypto.decryptString(rejoined, key: key), plainText);
     });
 
     test('rejects a too-short buffer as malformed', () async {
       await expectLater(
-        () => KitSecretBox.fromConcatenated(<int>[0, 1, 2]),
+        () => AppBoxKitSecretBox.fromConcatenated(<int>[0, 1, 2]),
         throwsA(
-          isA<KitCryptoFailure>().having(
+          isA<AppBoxKitCryptoFailure>().having(
             (f) => f.reason,
             'reason',
-            KitCryptoFailureReason.malformed,
+            AppBoxKitCryptoFailureReason.malformed,
           ),
         ),
       );

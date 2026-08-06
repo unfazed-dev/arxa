@@ -1,19 +1,19 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:appbox_kit_security/appbox_kit_security.dart';
-import 'package:appbox_kit_security/testing.dart';
+import 'package:appbox_kit_security/appbox_kit_testing.dart';
 
-/// [SecureStoragePinVerifier] over the real [CryptographyKitCryptoService] +
-/// [FakeKitSecureStorageService]. Verifies the documented contract: plaintext
+/// [SecureStoragePinVerifier] over the real [CryptographyAppBoxKitCryptoService] +
+/// [FakeAppBoxKitSecureStorageService]. Verifies the documented contract: plaintext
 /// never persisted, per-PIN random salt, correct/wrong-PIN discrimination.
 void main() {
-  late FakeKitSecureStorageService storage;
+  late FakeAppBoxKitSecureStorageService storage;
   late SecureStoragePinVerifier verifier;
 
   setUp(() {
-    storage = FakeKitSecureStorageService();
+    storage = FakeAppBoxKitSecureStorageService();
     verifier = SecureStoragePinVerifier(
       storage: storage,
-      crypto: CryptographyKitCryptoService(),
+      crypto: CryptographyAppBoxKitCryptoService(),
     );
   });
 

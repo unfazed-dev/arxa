@@ -1,15 +1,15 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
-import 'kit_secure_storage_service.dart';
+import 'appbox_kit_secure_storage_service.dart';
 
-/// Production [KitSecureStorageService] backed by `flutter_secure_storage`.
+/// Production [AppBoxKitSecureStorageService] backed by `flutter_secure_storage`.
 ///
 /// A thin adapter over the plugin's Keychain / Keystore-backed store. It holds
 /// no state; the plugin's options types stay behind the seam (pass a
 /// pre-configured [FlutterSecureStorage] to the constructor to customise them).
-class FlutterSecureStorageKitSecureStorageService
-    implements KitSecureStorageService {
-  const FlutterSecureStorageKitSecureStorageService({
+class FlutterSecureStorageAppBoxKitSecureStorageService
+    implements AppBoxKitSecureStorageService {
+  const FlutterSecureStorageAppBoxKitSecureStorageService({
     FlutterSecureStorage storage = const FlutterSecureStorage(),
   }) : _storage = storage;
 

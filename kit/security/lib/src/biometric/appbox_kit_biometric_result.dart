@@ -1,9 +1,9 @@
 /// Why a biometric authentication attempt did not succeed.
 ///
 /// A lossy-but-actionable projection of the platform failure codes onto the
-/// branches a UI reacts to. See `LocalAuthKitBiometricService.mapExceptionCode`
+/// branches a UI reacts to. See `LocalAuthAppBoxKitBiometricService.mapExceptionCode`
 /// for the exact mapping from `local_auth`'s `LocalAuthExceptionCode`.
-enum KitBiometricFailureReason {
+enum AppBoxKitBiometricFailureReason {
   /// The user (or a system event, e.g. backgrounding) dismissed the prompt, or
   /// chose a fallback authentication method instead of biometrics.
   cancelled,
@@ -25,42 +25,42 @@ enum KitBiometricFailureReason {
   error,
 }
 
-/// The typed outcome of [KitBiometricService.authenticate].
-sealed class KitBiometricResult {
-  const KitBiometricResult();
+/// The typed outcome of [AppBoxKitBiometricService.authenticate].
+sealed class AppBoxKitBiometricResult {
+  const AppBoxKitBiometricResult();
 
-  /// True for [KitBiometricSuccess].
-  bool get isSuccess => this is KitBiometricSuccess;
+  /// True for [AppBoxKitBiometricSuccess].
+  bool get isSuccess => this is AppBoxKitBiometricSuccess;
 }
 
 /// The user authenticated successfully.
-final class KitBiometricSuccess extends KitBiometricResult {
-  const KitBiometricSuccess();
+final class AppBoxKitBiometricSuccess extends AppBoxKitBiometricResult {
+  const AppBoxKitBiometricSuccess();
 
   @override
-  bool operator ==(Object other) => other is KitBiometricSuccess;
+  bool operator ==(Object other) => other is AppBoxKitBiometricSuccess;
 
   @override
-  int get hashCode => (KitBiometricSuccess).hashCode;
+  int get hashCode => (AppBoxKitBiometricSuccess).hashCode;
 
   @override
-  String toString() => 'KitBiometricSuccess()';
+  String toString() => 'AppBoxKitBiometricSuccess()';
 }
 
 /// Authentication did not succeed; [reason] says why.
-final class KitBiometricFailure extends KitBiometricResult {
-  const KitBiometricFailure(this.reason);
+final class AppBoxKitBiometricFailure extends AppBoxKitBiometricResult {
+  const AppBoxKitBiometricFailure(this.reason);
 
   /// The typed reason for the failure.
-  final KitBiometricFailureReason reason;
+  final AppBoxKitBiometricFailureReason reason;
 
   @override
   bool operator ==(Object other) =>
-      other is KitBiometricFailure && reason == other.reason;
+      other is AppBoxKitBiometricFailure && reason == other.reason;
 
   @override
   int get hashCode => Object.hash(runtimeType, reason);
 
   @override
-  String toString() => 'KitBiometricFailure(${reason.name})';
+  String toString() => 'AppBoxKitBiometricFailure(${reason.name})';
 }

@@ -9,38 +9,38 @@ value types and results — the backing plugins never leak past the boundary.
 - **Version:** 0.1.0 · `publish_to: 'none'` · Dart `>=3.0.3 <4.0.0`
 - **Depends on:** no other kit (not `appbox_kit`, `stacked`, or
   `stacked_services`). The app wires the ports; scriptable fakes live in
-  `package:appbox_kit_security/testing.dart`.
+  `package:appbox_kit_security/appbox_kit_testing.dart`.
 
 ## Scope
 
-- **Biometrics** — `KitBiometricService`: `availability()` (unsupported /
+- **Biometrics** — `AppBoxKitBiometricService`: `availability()` (unsupported /
   notEnrolled / available + the enrolled modalities) and `authenticate()` →
-  typed `KitBiometricResult` (`KitBiometricSuccess` /
-  `KitBiometricFailure` with a reason enum: cancelled, lockedOut,
+  typed `AppBoxKitBiometricResult` (`AppBoxKitBiometricSuccess` /
+  `AppBoxKitBiometricFailure` with a reason enum: cancelled, lockedOut,
   permanentlyLockedOut, notEnrolled, unavailable, error). Production binding
-  `LocalAuthKitBiometricService` maps `local_auth`'s `BiometricType` and
+  `LocalAuthAppBoxKitBiometricService` maps `local_auth`'s `BiometricType` and
   `LocalAuthExceptionCode` onto the kit's typed values.
-- **Secure storage** — `KitSecureStorageService` (read / write / delete /
+- **Secure storage** — `AppBoxKitSecureStorageService` (read / write / delete /
   containsKey / deleteAll, String-keyed) backed by `flutter_secure_storage`
   (iOS Keychain / Android EncryptedSharedPreferences + Keystore).
-- **Crypto** — `KitCryptoService`: AES-GCM-256 encrypt/decrypt, SHA-256, and
-  HMAC-SHA256. `decryptBytes` throws a typed `KitCryptoFailure` whose
+- **Crypto** — `AppBoxKitCryptoService`: AES-GCM-256 encrypt/decrypt, SHA-256, and
+  HMAC-SHA256. `decryptBytes` throws a typed `AppBoxKitCryptoFailure` whose
   `authentication` reason is the security-critical tamper / wrong-key signal
   — the plaintext is never handed back on a failed tag. Default pure-Dart
-  backend `CryptographyKitCryptoService` over the `cryptography` package; its
+  backend `CryptographyAppBoxKitCryptoService` over the `cryptography` package; its
   `cryptography` types (`SecretKey`, `SecretBox`, `Mac`) stay behind the seam.
-- **App-lock** — the pure-Dart `KitAppLockController` state machine
-  (unlocked / locked / unlocking) composing a `KitBiometricService` and a
-  `KitPinVerifier`. `maxAttempts` biometric failures (or a platform permanent
+- **App-lock** — the pure-Dart `AppBoxKitAppLockController` state machine
+  (unlocked / locked / unlocking) composing a `AppBoxKitBiometricService` and a
+  `AppBoxKitPinVerifier`. `maxAttempts` biometric failures (or a platform permanent
   lockout) lock out the biometric path and force PIN fallback; `maxAttempts`
   PIN failures start a cooldown window; any success resets every counter.
   Lifecycle is pushed in by the host (`didEnterBackground` /
   `didEnterForeground`); the clock is injectable. `SecureStoragePinVerifier`
   (salted HMAC, constant-time compare) ships as the portable PIN backend.
-- **Device integrity** — `KitDeviceIntegrityService` → `KitIntegrityReport`
+- **Device integrity** — `AppBoxKitDeviceIntegrityService` → `AppBoxKitIntegrityReport`
   (jailbroken/rooted, developerMode, emulator, debuggable, each a
-  first-class `KitTriState` so a partial platform never reports a false
-  "no"). Ships **only** the `UnimplementedKitDeviceIntegrityService` stub;
+  first-class `AppBoxKitTriState` so a partial platform never reports a false
+  "no"). Ships **only** the `UnimplementedAppBoxKitDeviceIntegrityService` stub;
   the scriptable fake drives UIs and tests.
 
 ## Security notes (read before relying on this kit)
@@ -54,11 +54,11 @@ value types and results — the backing plugins never leak past the boundary.
   brute-force-resistant: an attacker who exfiltrates the secure-storage
   contents can grind a short numeric PIN offline. This is the documented
   portable default, acceptable when the app enforces attempt limits — which
-  `KitAppLockController` does (biometric lockout + PIN cooldown). For a
+  `AppBoxKitAppLockController` does (biometric lockout + PIN cooldown). For a
   high-value lock, back the PIN with a rate-limited secure element
   (StrongBox / Secure Enclave) or a slow KDF (Argon2/ PBKDF2) by supplying
-  your own `KitPinVerifier`.
-- **Biometric-only.** `LocalAuthKitBiometricService` passes `biometricOnly:
+  your own `AppBoxKitPinVerifier`.
+- **Biometric-only.** `LocalAuthAppBoxKitBiometricService` passes `biometricOnly:
   true`; the device passcode fallback is the app-lock's job, not the
   biometric seam's.
 - **Device integrity is phase 2.** No production binding ships; the stub
@@ -72,11 +72,11 @@ binds the ports in its locator:
 
 ```dart
 // app bootstrap — choose the production bindings you need
-locator.registerSingleton<KitBiometricService>(LocalAuthKitBiometricService());
-locator.registerSingleton<KitSecureStorageService>(
-  FlutterSecureStorageKitSecureStorageService(),
+locator.registerSingleton<AppBoxKitBiometricService>(LocalAuthAppBoxKitBiometricService());
+locator.registerSingleton<AppBoxKitSecureStorageService>(
+  FlutterSecureStorageAppBoxKitSecureStorageService(),
 );
-locator.registerSingleton<KitCryptoService>(CryptographyKitCryptoService());
+locator.registerSingleton<AppBoxKitCryptoService>(CryptographyAppBoxKitCryptoService());
 ```
 
 ## Backing packages (verified pub.dev 2026-07-14)
@@ -91,5 +91,5 @@ locator.registerSingleton<KitCryptoService>(CryptographyKitCryptoService());
 
 - **Implemented now:** biometrics, secure storage, crypto, app-lock.
 - **Stubbed (native-first, later phase):** device integrity
-  (`UnimplementedKitDeviceIntegrityService` throws; wire
-  `FakeKitDeviceIntegrityService` for UIs/tests).
+  (`UnimplementedAppBoxKitDeviceIntegrityService` throws; wire
+  `FakeAppBoxKitDeviceIntegrityService` for UIs/tests).

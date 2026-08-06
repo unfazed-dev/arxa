@@ -1,12 +1,12 @@
 import 'dart:convert';
 
-import '../crypto/kit_crypto_key.dart';
-import '../crypto/kit_crypto_service.dart';
-import '../storage/kit_secure_storage_service.dart';
-import 'kit_pin_verifier.dart';
+import '../crypto/appbox_kit_crypto_key.dart';
+import '../crypto/appbox_kit_crypto_service.dart';
+import '../storage/appbox_kit_secure_storage_service.dart';
+import 'appbox_kit_pin_verifier.dart';
 
-/// A [KitPinVerifier] that stores a per-PIN-salted HMAC of the PIN in
-/// [KitSecureStorageService], hashing via [KitCryptoService].
+/// A [AppBoxKitPinVerifier] that stores a per-PIN-salted HMAC of the PIN in
+/// [AppBoxKitSecureStorageService], hashing via [AppBoxKitCryptoService].
 ///
 /// The plaintext PIN is never persisted: [setPin] draws a random salt, computes
 /// `HMAC-SHA256(pin, key: salt)`, and stores the salt and digest (base64).
@@ -17,18 +17,18 @@ import 'kit_pin_verifier.dart';
 /// numeric PIN offline. For high-value locks, back the PIN with a rate-limited
 /// secure element (StrongBox / Secure Enclave) or a slow KDF; this verifier is
 /// the portable default.
-class SecureStoragePinVerifier implements KitPinVerifier {
+class SecureStoragePinVerifier implements AppBoxKitPinVerifier {
   SecureStoragePinVerifier({
-    required KitSecureStorageService storage,
-    required KitCryptoService crypto,
+    required AppBoxKitSecureStorageService storage,
+    required AppBoxKitCryptoService crypto,
     String keyPrefix = 'appbox_kit_security.app_lock',
   })  : _storage = storage,
         _crypto = crypto,
         _saltKey = '$keyPrefix.pin_salt',
         _digestKey = '$keyPrefix.pin_digest';
 
-  final KitSecureStorageService _storage;
-  final KitCryptoService _crypto;
+  final AppBoxKitSecureStorageService _storage;
+  final AppBoxKitCryptoService _crypto;
   final String _saltKey;
   final String _digestKey;
 
@@ -40,7 +40,7 @@ class SecureStoragePinVerifier implements KitPinVerifier {
     final salt = _crypto.generateNonce();
     final digest = await _crypto.hmacSha256(
       utf8.encode(pin),
-      key: KitCryptoKey(salt),
+      key: AppBoxKitCryptoKey(salt),
     );
     await _storage.write(_saltKey, base64Encode(salt));
     await _storage.write(_digestKey, base64Encode(digest));
@@ -55,7 +55,7 @@ class SecureStoragePinVerifier implements KitPinVerifier {
     final expected = base64Decode(digestB64);
     final actual = await _crypto.hmacSha256(
       utf8.encode(pin),
-      key: KitCryptoKey(base64Decode(saltB64)),
+      key: AppBoxKitCryptoKey(base64Decode(saltB64)),
     );
     return _constantTimeEquals(actual, expected);
   }

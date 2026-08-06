@@ -1,11 +1,11 @@
-/// Abstract PIN store the app supplies to [KitAppLockController].
+/// Abstract PIN store the app supplies to [AppBoxKitAppLockController].
 ///
 /// The kit ships `SecureStoragePinVerifier` (a salted-HMAC verifier over
-/// [KitSecureStorageService] + [KitCryptoService]); apps with a different PIN
+/// [AppBoxKitSecureStorageService] + [AppBoxKitCryptoService]); apps with a different PIN
 /// backend (a server check, an existing keychain layout) implement this
 /// directly. [verifyPin] is a predicate — a match/no-match query — not an
 /// operation outcome, so it returns a bool by design.
-abstract interface class KitPinVerifier {
+abstract interface class AppBoxKitPinVerifier {
   /// Whether a PIN has been set.
   Future<bool> hasPin();
 
