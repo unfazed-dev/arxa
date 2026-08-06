@@ -61,6 +61,70 @@ One row in `../core/NATIVE_COMPONENTS.md` **and** one ban row in
 lockstep — plus the widget, the `lib/ui_library.dart` barrel export, and a
 `COMPONENTS.md` row.
 
+## KitAction — the operation convention (opinionated)
+
+Every async operation in a kit app runs through `KitAction.run<T>(operation:,
+owner: this, op: '<verb>')` — no hand-rolled `setBusy`/try-catch guards in
+viewmodels, no bare `Timer` debounces, no hand-managed `StreamSubscription`s
+where `watch` fits, and **no hand-written widgetId strings**.
+
+- **Ownership:** ops take `owner:` (the viewmodel/facade/service object) + a
+  short `op:` label (`'save'`; entity ops append the id: `op: 'pin',
+  entity: note.id` on facades, `op: 'save.$noteId'` elsewhere). The registry
+  key derives as `RuntimeType#identityHash.op` — the identity hash keeps two
+  live instances of the same VM class (a view pushed twice) from sharing a
+  guard. The bare `widgetId:` form is for ownerless boot ops (`main()`) only.
+- **Auto-dispose:** viewmodels extend `KitViewModel` (not `BaseViewModel`
+  directly) — its `dispose()` calls `KitAction.disposeOwner(this)`, killing
+  every subscription and state subject the VM's ops created. Services with
+  their own `dispose()` (adapters) call `KitAction.disposeOwner(this)` there.
+- **Re-entry guard is default-on** per op key (the Flutter Command /
+  command_it rule): an overlapping `execute()` on the same key is dropped —
+  silently when the chain has `withErrorFallback`, else it throws
+  `GuardedException`. Opt out per chain with `.withParallelExecution()`.
+- **Facade mutations go through `KitDataFacade.mutate`** with the
+  notification policy as params: `mutate(operation:, op:, entity:, error:,
+  success:)` — `error:` on EVERY mutation (errors always surface),
+  `success:` only for destructive / confirm-worthy ops. The builder is
+  returned, so advanced chains keep chaining (`.withRetry`, `.withDebounce`,
+  `.onSuccess`, `.withErrorFallback`).
+- **Busy/error state is a stream:** `KitAction.state$(owner:, op:)` — inside
+  a viewmodel use the `actionState$('<op>')` helper; views bind it with
+  `KitStreamBuilder`. `.withLoading(setBusy)` remains for stacked-busy
+  consumers but new code binds the stream.
+- **Debounce:** `.withDebounce(...)` — always pair it with
+  `withErrorFallback`, or each superseded call completes with an error.
+- **Streams:** `KitAction.watch(owner: this, streams:, callback:)` is for
+  VM-internal side effects (navigation triggers, resetting UI-state subjects)
+  — never to feed view data (views bind streams directly). Dependent
+  re-subscription (session → data) composes with rxdart `switchMap` into ONE
+  stream first — never nest listeners.
+- **Boot order:** `locator<KitErrorService>().initialize()` must run before
+  any KitAction error path can fire (its Talker is late-initialized) — see
+  the showcase app's `main.dart`.
+- **Tests:** register `FakeKitNotificationService` **as** `KitNotificationService`
+  (`registerLazySingleton<KitNotificationService>(...)` — getIt keys on the
+  explicit type) and never the real one; the real service's CNToast path needs
+  a mounted navigator context.
+
+## Streams-only views (opinionated)
+
+Views/viewmodels are built with **streams only** (operator override
+excepted): viewmodels expose `Stream`/`ValueStream` getters — facade
+pass-throughs, rxdart compositions, seeded `BehaviorSubject`s for UI-owned
+state — and never call `notifyListeners`. Views keep `StackedView<VM>` with
+`@override bool get reactive => false;` and bind every live value with
+`KitStreamBuilder<T>` at the subtree that needs it. `KitStreamBuilder` seeds
+from `ValueStream.hasValue` (no loading flash, even for seeded-null) and
+treats emitted null as data once the stream is active. Stacked's
+`StreamViewModel`/`ReactiveViewModel` are NOT the convention (they rebuild
+the whole tree via `notifyListeners` internally); `MultipleStreamViewModel`
+stays banned (stringly-keyed). **MVVM boundary:** a view file imports only
+its viewmodel (plus kit packages and sibling view/widget files) — the
+viewmodel re-exports every payload type the view must name.
+
+The showcase app (`../showcase_app`) is the reference implementation.
+
 ## Testing
 
 `lib/testing.dart` ships scriptable fakes — `FakeKitNotificationService`,

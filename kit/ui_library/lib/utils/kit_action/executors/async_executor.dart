@@ -6,6 +6,7 @@ import '../managers/loading_manager.dart';
 import '../managers/error_manager.dart';
 import '../managers/success_manager.dart';
 import '../managers/notification_manager.dart';
+import '../managers/action_state_manager.dart';
 import 'package:talker_flutter/talker_flutter.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -36,6 +37,9 @@ class AsyncExecutor<T> {
 
   /// Static map to track last throttle execution time by widgetId
   static final Map<String, DateTime> _throttleLastExecution = {};
+
+  /// Static set of widgetIds currently executing (re-entry guard)
+  static final Set<String> _inFlight = {};
 
   AsyncExecutor({
     required this.config,
@@ -92,6 +96,24 @@ class AsyncExecutor<T> {
   /// Execute the operation without debounce/throttle
   Future<T> _executeNormal() async {
     final stopwatch = config.debugMode ? (Stopwatch()..start()) : null;
+
+    // Re-entry guard (default): drop overlapping executions of the same
+    // widgetId. Thrown here, before the try, so a dropped call never routes
+    // into the error/notification path — a double-tap is not an error.
+    final guarded = !config.allowParallelExecution;
+    if (guarded) {
+      if (_inFlight.contains(config.widgetId)) {
+        if (config.debugMode) {
+          _talker.warning(
+              '[KitAction] 🛡️ Re-entry dropped for ${config.widgetId}');
+        }
+        if (config.hasFallback) return config.fallbackValue as T;
+        throw GuardedException(
+          'KitAction "${config.widgetId}" is already running — overlapping call dropped',
+        );
+      }
+      _inFlight.add(config.widgetId);
+    }
 
     try {
       // 1. Set loading state
@@ -175,6 +197,7 @@ class AsyncExecutor<T> {
       }
       return _handleError(e, s);
     } finally {
+      if (guarded) _inFlight.remove(config.widgetId);
       // 8. Always reset loading state (LoadingManager handles redundant calls)
       if (config.debugMode) {
         _talker.debug(
@@ -339,12 +362,14 @@ class AsyncExecutor<T> {
 
   /// Start loading state
   void _startLoading() {
+    KitActionStateManager.markBusy(config.widgetId);
     loadingManager.start();
     notificationManager.showLoadingSnackbar();
   }
 
   /// Stop loading state
   void _stopLoading() {
+    KitActionStateManager.markDone(config.widgetId);
     loadingManager.stop();
   }
 
@@ -357,6 +382,13 @@ class AsyncExecutor<T> {
   /// Handle operation error
   Future<T> _handleError(dynamic error, StackTrace stackTrace) async {
     final fallback = errorManager.handleError(error, stackTrace);
+    KitActionStateManager.markError(
+      config.widgetId,
+      // The user-facing message, however it was configured: explicit
+      // withErrorFallback message, else the error snackbar's, else the raw
+      // exception.
+      config.errorMessage ?? config.errorSnackbarMessage ?? error.toString(),
+    );
     notificationManager.showErrorSnackbar();
 
     if (config.hasFallback) {

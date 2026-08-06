@@ -84,4 +84,31 @@ void main() {
       reason: 'Stream errors should route through errorBuilder.',
     );
   });
+
+  testWidgets('nullable stream: emitted null reaches the builder, no spinner',
+      (tester) async {
+    final subject = BehaviorSubject<String?>.seeded(null);
+    addTearDown(subject.close);
+
+    await tester.pumpWidget(
+      host(
+        KitStreamBuilder<String?>(
+          stream: subject,
+          builder: (context, data) => Text('data: ${data ?? "null"}'),
+        ),
+      ),
+    );
+
+    expect(
+      find.text('data: null'),
+      findsOneWidget,
+      reason:
+          'Role-gated streams emit null on purpose — null is a value, not a '
+          'loading state.',
+    );
+
+    subject.add('admin');
+    await tester.pump();
+    expect(find.text('data: admin'), findsOneWidget);
+  });
 }

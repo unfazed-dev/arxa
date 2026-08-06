@@ -30,6 +30,22 @@ class ThrottledException implements Exception {
   String toString() => 'ThrottledException: $message';
 }
 
+/// Exception thrown when an overlapping call is dropped by the re-entry guard
+///
+/// KitAction guards every `execute()` against parallel runs of the same
+/// widgetId (the Flutter Command / command_it convention). The dropped call
+/// completes with the fallback when one was set via `withErrorFallback`,
+/// otherwise it throws this exception. Opt out per chain with
+/// `KitActionBuilder.withParallelExecution()`.
+class GuardedException implements Exception {
+  final String message;
+
+  GuardedException([this.message = 'Operation is already running']);
+
+  @override
+  String toString() => 'GuardedException: $message';
+}
+
 /// Internal token used to track and cancel operations
 class CancelToken {
   bool _cancelled = false;

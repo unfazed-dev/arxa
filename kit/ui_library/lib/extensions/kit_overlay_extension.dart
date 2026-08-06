@@ -115,12 +115,12 @@ class _KitOverlayViewModel extends ReactiveViewModel {
     // Set up automatic UI updates based on subject changes
     KitAction.watch(
       widgetId: widgetId,
-      subjects: [
+      streams: [
         _isOpen$,
         _animatingOut$,
         _visibleInWidget$,
       ],
-      callback: rebuildUi,
+      callback: (_) => rebuildUi(),
       errorMessage: 'Error in overlay subject listener',
     );
   }

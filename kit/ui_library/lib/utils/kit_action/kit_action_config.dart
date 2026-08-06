@@ -149,6 +149,15 @@ class KitActionConfig<T> {
   /// Timeout duration for the operation
   Duration? timeout;
 
+  // ===== Re-entry Guard =====
+
+  /// Whether parallel executions of the same widgetId are allowed.
+  /// Defaults to false: an execute() while the same widgetId is still in
+  /// flight is dropped — completes with [fallbackValue] when set, otherwise
+  /// throws GuardedException. Debounced chains are exempt by nature (a newer
+  /// call cancels the pending one before either runs).
+  bool allowParallelExecution = false;
+
   // ===== Debounce & Throttle =====
 
   /// Debounce duration (delay execution until no new calls)

@@ -596,6 +596,30 @@ class KitActionBuilder<T> {
   }
 
   // ═════════════════════════════════════════════════════════════════════════
+  // Re-entry Guard (default on — Flutter Command / command_it convention)
+  // ═════════════════════════════════════════════════════════════════════════
+
+  /// Allow parallel executions of the same widgetId
+  ///
+  /// By default KitAction prevents parallel runs: a second execute() while
+  /// the same widgetId is still in flight is dropped — it completes with the
+  /// fallback when [withErrorFallback] was set, otherwise it throws a
+  /// [GuardedException]. This is the double-tap protection the Flutter
+  /// Command pattern and command_it build in. Call this to opt out for
+  /// operations that are legitimately concurrent under one widgetId.
+  ///
+  /// Example:
+  /// ```dart
+  /// KitAction.run<String>(...)
+  ///   .withParallelExecution()
+  ///   .execute();
+  /// ```
+  KitActionBuilder<T> withParallelExecution() {
+    _config.allowParallelExecution = true;
+    return this;
+  }
+
+  // ═════════════════════════════════════════════════════════════════════════
   // Debounce & Throttle
   // 📖 Spec: Section 5.2 (lines 1181-1209)
   // ═════════════════════════════════════════════════════════════════════════
