@@ -33,7 +33,7 @@ void main() {
   });
 
   group('happy path', () {
-    test('a biometric success unlocks and resets counters', () async {
+    test('kit.security.app-lock — a biometric success unlocks and resets counters', () async {
       final bio = FakeAppBoxKitBiometricService(); // default: success
       final lock = _build(
         biometrics: bio,
@@ -48,7 +48,7 @@ void main() {
       expect(lock.biometricAttempts, 0);
     });
 
-    test('a PIN success unlocks', () async {
+    test('kit.security.app-lock — a PIN success unlocks', () async {
       final lock = _build(
         biometrics: FakeAppBoxKitBiometricService(),
         pin: FakeAppBoxKitPinVerifier(pin: '1234'),
@@ -59,7 +59,7 @@ void main() {
       expect(lock.state, AppBoxKitAppLockState.unlocked);
     });
 
-    test('calling unlock while already unlocked is a no-op success', () async {
+    test('kit.security.app-lock — calling unlock while already unlocked is a no-op success', () async {
       final lock = _build(
         biometrics: FakeAppBoxKitBiometricService(),
         pin: FakeAppBoxKitPinVerifier(pin: '1234'),
@@ -72,7 +72,7 @@ void main() {
   });
 
   group('biometric lockout → PIN fallback', () {
-    test('maxAttempts biometric failures lock out the biometric path', () async {
+    test('kit.security.app-lock — maxAttempts biometric failures lock out the biometric path', () async {
       final bio = FakeAppBoxKitBiometricService(
         defaultResult:
             const AppBoxKitBiometricFailure(AppBoxKitBiometricFailureReason.lockedOut),
@@ -102,7 +102,7 @@ void main() {
           AppBoxKitAppLockDenialReason.biometricLockedOut);
     });
 
-    test('a permanent platform lockout trips the lockout on the first failure',
+    test('kit.security.app-lock — a permanent platform lockout trips the lockout on the first failure',
         () async {
       final bio = FakeAppBoxKitBiometricService()
         ..script(const [
@@ -118,7 +118,7 @@ void main() {
       expect(lock.biometricLockedOut, isTrue);
     });
 
-    test('the PIN still unlocks after the biometric path is locked out',
+    test('kit.security.app-lock — the PIN still unlocks after the biometric path is locked out',
         () async {
       final bio = FakeAppBoxKitBiometricService(
         defaultResult:
@@ -143,7 +143,7 @@ void main() {
   });
 
   group('PIN cooldown', () {
-    test('maxAttempts PIN failures start the cooldown', () async {
+    test('kit.security.app-lock — maxAttempts PIN failures start the cooldown', () async {
       final lock = _build(
         biometrics: FakeAppBoxKitBiometricService(),
         pin: FakeAppBoxKitPinVerifier(pin: '1234'),
@@ -161,7 +161,7 @@ void main() {
       expect(lock.isInCooldown, isTrue);
     });
 
-    test('PIN entry is refused while in cooldown, then works once it elapses',
+    test('kit.security.app-lock — PIN entry is refused while in cooldown, then works once it elapses',
         () async {
       final lock = _build(
         biometrics: FakeAppBoxKitBiometricService(),
@@ -188,7 +188,7 @@ void main() {
   });
 
   group('concurrency guard', () {
-    test('a second unlock while one is in flight is denied as busy', () async {
+    test('kit.security.app-lock — a second unlock while one is in flight is denied as busy', () async {
       final bio = FakeAppBoxKitBiometricService()
         ..script(const [
           AppBoxKitBiometricFailure(AppBoxKitBiometricFailureReason.cancelled),
@@ -214,7 +214,7 @@ void main() {
   });
 
   group('background / foreground re-lock', () {
-    test('re-locks after the backgrounded duration crosses the threshold',
+    test('kit.security.app-lock — re-locks after the backgrounded duration crosses the threshold',
         () async {
       final lock = _build(
         biometrics: FakeAppBoxKitBiometricService(),
@@ -231,7 +231,7 @@ void main() {
       expect(lock.state, AppBoxKitAppLockState.locked);
     });
 
-    test('does not re-lock when the backgrounded duration is under threshold',
+    test('kit.security.app-lock — does not re-lock when the backgrounded duration is under threshold',
         () async {
       final lock = _build(
         biometrics: FakeAppBoxKitBiometricService(),
@@ -248,7 +248,7 @@ void main() {
       expect(lock.state, AppBoxKitAppLockState.unlocked);
     });
 
-    test('lock() seals the app on demand', () {
+    test('kit.security.app-lock — lock() seals the app on demand', () {
       final lock = _build(
         biometrics: FakeAppBoxKitBiometricService(),
         pin: FakeAppBoxKitPinVerifier(pin: '1234'),

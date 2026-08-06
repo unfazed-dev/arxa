@@ -17,14 +17,14 @@ void main() {
     );
   });
 
-  test('a PIN can be set and only the matching PIN verifies', () async {
+  test('kit.security.pin-verifier — a PIN can be set and only the matching PIN verifies', () async {
     await verifier.setPin('1234');
     expect(await verifier.hasPin(), isTrue);
     expect(await verifier.verifyPin('1234'), isTrue);
     expect(await verifier.verifyPin('0000'), isFalse);
   });
 
-  test('re-setting the same PIN draws a fresh salt', () async {
+  test('kit.security.pin-verifier — re-setting the same PIN draws a fresh salt', () async {
     await verifier.setPin('1234');
     final firstSnapshot = Map<String, String>.from(storage.snapshot);
 
@@ -37,7 +37,7 @@ void main() {
     expect(await verifier.verifyPin('1234'), isTrue);
   });
 
-  test('the plaintext PIN is never stored verbatim', () async {
+  test('kit.security.pin-verifier — the plaintext PIN is never stored verbatim', () async {
     await verifier.setPin('secret-pin');
     for (final value in storage.snapshot.values) {
       expect(value.contains('secret-pin'), isFalse,
@@ -45,7 +45,7 @@ void main() {
     }
   });
 
-  test('clearPin removes the stored PIN', () async {
+  test('kit.security.pin-verifier — clearPin removes the stored PIN', () async {
     await verifier.setPin('1234');
     await verifier.clearPin();
     expect(await verifier.hasPin(), isFalse);
