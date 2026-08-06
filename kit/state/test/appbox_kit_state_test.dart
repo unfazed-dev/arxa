@@ -4,7 +4,7 @@ import 'package:test/test.dart';
 
 void main() {
   group('AppBoxKitState equality', () {
-    test('same case and payload are equal', () {
+    test('kit.state.equality — same case and payload are equal', () {
       expect(const AppBoxKitSuccess<int>(5), const AppBoxKitSuccess<int>(5));
       expect(const AppBoxKitLoading<int>(0.5), const AppBoxKitLoading<int>(0.5));
       expect(const AppBoxKitIdle<int>(), const AppBoxKitIdle<int>());
@@ -14,14 +14,14 @@ void main() {
       );
     });
 
-    test('different payloads are not equal', () {
+    test('kit.state.equality — different payloads are not equal', () {
       expect(const AppBoxKitSuccess<int>(5) == const AppBoxKitSuccess<int>(6), isFalse);
       expect(const AppBoxKitLoading<int>(0.1) == const AppBoxKitLoading<int>(0.2), isFalse);
     });
   });
 
   group('combinators', () {
-    test('when folds the matching case', () {
+    test('kit.state.combinators — when folds the matching case', () {
       const AppBoxKitState<int> state = AppBoxKitSuccess(7);
       final label = state.when(
         idle: () => 'idle',
@@ -33,7 +33,7 @@ void main() {
       expect(label, 'success:7');
     });
 
-    test('dataOrNull / failureOrNull', () {
+    test('kit.state.combinators — dataOrNull / failureOrNull expose the payload of the matching case', () {
       expect(const AppBoxKitSuccess<int>(3).dataOrNull, 3);
       expect(const AppBoxKitIdle<int>().dataOrNull, isNull);
       expect(
@@ -44,21 +44,21 @@ void main() {
   });
 
   group('transition guard', () {
-    test('legal transition passes (idle -> loading)', () {
+    test('kit.state.transitions — legal transition passes (idle -> loading)', () {
       final notifier = AppBoxKitStateNotifier<int>();
       notifier.emit(const AppBoxKitLoading<int>());
       expect(notifier.state, const AppBoxKitLoading<int>());
       notifier.dispose();
     });
 
-    test('legal transition passes (success -> loading)', () {
+    test('kit.state.transitions — legal transition passes (success -> loading)', () {
       final notifier = AppBoxKitStateNotifier<int>(initial: const AppBoxKitSuccess(1));
       notifier.emit(const AppBoxKitLoading<int>());
       expect(notifier.state, const AppBoxKitLoading<int>());
       notifier.dispose();
     });
 
-    test('illegal transition trips an assertion in debug (idle -> success)', () {
+    test('kit.state.transitions — illegal transition trips an assertion in debug (idle -> success)', () {
       final notifier = AppBoxKitStateNotifier<int>();
       expect(
         () => notifier.emit(const AppBoxKitSuccess<int>(1)),
@@ -67,7 +67,7 @@ void main() {
       notifier.dispose();
     });
 
-    test('scripted notifier bypasses the guard', () {
+    test('kit.state.transitions — scripted notifier bypasses the guard', () {
       final notifier = AppBoxKitScriptedStateNotifier<int>();
       notifier.scriptAll(const [
         AppBoxKitSuccess<int>(1),
@@ -82,7 +82,7 @@ void main() {
   });
 
   group('track', () {
-    test('drives loading -> success and returns the value', () async {
+    test('kit.state.track — drives loading -> success and returns the value', () async {
       final notifier = AppBoxKitStateNotifier<int>();
       final value = await notifier.track(Future.value(42));
       expect(value, 42);
@@ -90,7 +90,7 @@ void main() {
       notifier.dispose();
     });
 
-    test('drives loading -> error on throw', () async {
+    test('kit.state.track — drives loading -> error on throw', () async {
       final notifier = AppBoxKitStateNotifier<int>();
       final value = await notifier.track(Future<int>.error(Exception('boom')));
       expect(value, isNull);
@@ -100,7 +100,7 @@ void main() {
   });
 
   group('AppBoxKitStateRecorder', () {
-    test('captures the emitted sequence with value equality', () async {
+    test('kit.state.recorder — captures the emitted sequence with value equality', () async {
       final notifier = AppBoxKitStateNotifier<int>();
       final recorder = AppBoxKitStateRecorder<int>(notifier);
       notifier.emit(const AppBoxKitLoading<int>());
@@ -117,7 +117,7 @@ void main() {
   });
 
   group('AppBoxKitRetryPolicy', () {
-    test('delay curve grows by backoff and caps at maxDelay', () {
+    test('kit.state.retry — delay curve grows by backoff and caps at maxDelay', () {
       const policy = AppBoxKitRetryPolicy(
         initialDelay: Duration(milliseconds: 100),
         backoffFactor: 2,
