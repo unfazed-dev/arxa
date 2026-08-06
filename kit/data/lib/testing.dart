@@ -296,25 +296,25 @@ class FakeKitRepository<T> implements KitRepository<T> {
 /// (so the chain can be executed against kit fakes); it just records each
 /// chain's label and value type first.
 class FakeKitDataFacade extends KitDataFacade {
-  /// Every [mutate] chain started, in call order (`label` is `op.entity` —
+  /// Every [mutate] chain started, in call order (`label` is `name.entity` —
   /// either part may be null).
-  final List<({String? op, String? entity, String type})> mutateCalls = [];
+  final List<({String? name, String? entity, String type})> mutateCalls = [];
 
   /// Number of times [dispose] ran.
   int disposeCallCount = 0;
 
   @override
-  KitActionBuilder<T> mutate<T>({
-    required FutureOr<T> Function() operation,
-    String? op,
+  KitActionBuilder<T> mutate<T>(
+    FutureOr<T> Function() operation, {
+    String? name,
     String? entity,
     String? error,
     String? success,
   }) {
-    mutateCalls.add((op: op, entity: entity, type: T.toString()));
+    mutateCalls.add((name: name, entity: entity, type: T.toString()));
     return super.mutate<T>(
-      operation: operation,
-      op: op,
+      operation,
+      name: name,
       entity: entity,
       error: error,
       success: success,

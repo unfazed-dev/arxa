@@ -174,10 +174,10 @@ class ProfileFacade extends KitDataFacade {
   Stream<KitAuthSession?> get session$ => auth.session$;
 
   Future<void> signIn(String email, String password) => mutate<KitAuthSession>(
-        operation: () =>
-            auth.signInWithEmailPassword(email: email, password: password),
-        widgetId: 'sign-in',
-      ).execute();
+        () => auth.signInWithEmailPassword(email: email, password: password),
+        name: 'signIn',
+        error: 'Sign-in failed',
+      );
 }
 
 final authService = locator<KitAuthService>();
