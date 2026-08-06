@@ -1,12 +1,12 @@
 import 'package:flutter/foundation.dart';
 
-import 'kit_lat_lng.dart';
+import 'appbox_kit_lat_lng.dart';
 
 /// A map pin, owned by appbox_kit_maps and translated to each provider's
 /// native marker/annotation type internally.
 @immutable
-class KitMapMarker {
-  const KitMapMarker({
+class AppBoxKitMapMarker {
+  const AppBoxKitMapMarker({
     required this.id,
     required this.position,
     this.title,
@@ -17,7 +17,7 @@ class KitMapMarker {
   /// Stable identifier — used as the native MarkerId / AnnotationId.
   final String id;
 
-  final KitLatLng position;
+  final AppBoxKitLatLng position;
 
   /// Info-window title shown when the marker is selected.
   final String? title;
@@ -29,7 +29,7 @@ class KitMapMarker {
 
   @override
   bool operator ==(Object other) =>
-      other is KitMapMarker &&
+      other is AppBoxKitMapMarker &&
       other.id == id &&
       other.position == position &&
       other.title == title &&
@@ -39,5 +39,5 @@ class KitMapMarker {
   int get hashCode => Object.hash(id, position, title, snippet);
 
   @override
-  String toString() => 'KitMapMarker($id @ $position)';
+  String toString() => 'AppBoxKitMapMarker($id @ $position)';
 }

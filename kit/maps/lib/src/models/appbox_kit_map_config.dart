@@ -1,48 +1,48 @@
 import 'package:flutter/foundation.dart';
 
-import 'kit_lat_lng.dart';
-import 'kit_map_marker.dart';
+import 'appbox_kit_lat_lng.dart';
+import 'appbox_kit_map_marker.dart';
 
 /// Base map style. Providers map this to their nearest native equivalent
 /// (Apple Maps has no terrain style — it falls back to standard).
-enum KitMapType { normal, satellite, hybrid, terrain }
+enum AppBoxKitMapType { normal, satellite, hybrid, terrain }
 
-/// Declarative configuration for a [KitMapView].
+/// Declarative configuration for a [AppBoxKitMapView].
 ///
 /// Markers are config-driven: change the set and rebuild the widget. Camera
-/// moves after creation go through [KitMapController].
+/// moves after creation go through [AppBoxKitMapController].
 @immutable
-class KitMapConfig {
-  const KitMapConfig({
+class AppBoxKitMapConfig {
+  const AppBoxKitMapConfig({
     required this.initialCameraPosition,
-    this.markers = const <KitMapMarker>{},
-    this.mapType = KitMapType.normal,
+    this.markers = const <AppBoxKitMapMarker>{},
+    this.mapType = AppBoxKitMapType.normal,
     this.myLocationEnabled = false,
     this.zoomControlsEnabled = true,
     this.compassEnabled = true,
     this.onTap,
   });
 
-  final KitCameraPosition initialCameraPosition;
-  final Set<KitMapMarker> markers;
-  final KitMapType mapType;
+  final AppBoxKitCameraPosition initialCameraPosition;
+  final Set<AppBoxKitMapMarker> markers;
+  final AppBoxKitMapType mapType;
   final bool myLocationEnabled;
   final bool zoomControlsEnabled;
   final bool compassEnabled;
 
   /// Called with the tapped coordinate when the user taps bare map.
-  final ValueChanged<KitLatLng>? onTap;
+  final ValueChanged<AppBoxKitLatLng>? onTap;
 
-  KitMapConfig copyWith({
-    KitCameraPosition? initialCameraPosition,
-    Set<KitMapMarker>? markers,
-    KitMapType? mapType,
+  AppBoxKitMapConfig copyWith({
+    AppBoxKitCameraPosition? initialCameraPosition,
+    Set<AppBoxKitMapMarker>? markers,
+    AppBoxKitMapType? mapType,
     bool? myLocationEnabled,
     bool? zoomControlsEnabled,
     bool? compassEnabled,
-    ValueChanged<KitLatLng>? onTap,
+    ValueChanged<AppBoxKitLatLng>? onTap,
   }) =>
-      KitMapConfig(
+      AppBoxKitMapConfig(
         initialCameraPosition:
             initialCameraPosition ?? this.initialCameraPosition,
         markers: markers ?? this.markers,

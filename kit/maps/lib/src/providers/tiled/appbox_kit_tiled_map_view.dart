@@ -2,23 +2,23 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 
-import '../../kit_map_provider.dart';
-import '../../models/kit_lat_lng.dart';
-import '../../models/kit_map_config.dart';
-import '../../models/kit_map_marker.dart';
+import '../../appbox_kit_map_provider.dart';
+import '../../models/appbox_kit_lat_lng.dart';
+import '../../models/appbox_kit_map_config.dart';
+import '../../models/appbox_kit_map_marker.dart';
 
 /// Shared flutter_map builder behind the tile-based providers
-/// ([OpenStreetMapProvider], [MapboxProvider]). Both are pure-Dart
+/// ([AppBoxKitOpenStreetMapProvider], [AppBoxKitMapboxProvider]). Both are pure-Dart
 /// flutter_map backends — no native SDK — that differ only in tile URL,
 /// tile geometry (256px vs Mapbox's 512px retina tiles), and attribution.
 ///
-/// KitMapConfig fields with no flutter_map equivalent are intentionally not
+/// AppBoxKitMapConfig fields with no flutter_map equivalent are intentionally not
 /// honored here: `myLocationEnabled` (needs a location plugin),
 /// `zoomControlsEnabled` / `compassEnabled` (flutter_map renders neither
-/// chrome), and `KitCameraPosition.tilt` (2D tile renderer). `mapType` is
+/// chrome), and `AppBoxKitCameraPosition.tilt` (2D tile renderer). `mapType` is
 /// resolved by each provider into a tile style.
-class TiledMapView extends StatefulWidget {
-  const TiledMapView({
+class AppBoxKitTiledMapView extends StatefulWidget {
+  const AppBoxKitTiledMapView({
     super.key,
     required this.config,
     required this.urlTemplate,
@@ -30,7 +30,7 @@ class TiledMapView extends StatefulWidget {
     this.onMapCreated,
   });
 
-  final KitMapConfig config;
+  final AppBoxKitMapConfig config;
 
   /// Tile URL template, e.g. `https://tile.openstreetmap.org/{z}/{x}/{y}.png`.
   final String urlTemplate;
@@ -52,13 +52,13 @@ class TiledMapView extends StatefulWidget {
   /// (built-in tile caching since 8.2, per the OSM usage policy).
   final TileProvider? tileProvider;
 
-  final KitMapCreatedCallback? onMapCreated;
+  final AppBoxKitMapCreatedCallback? onMapCreated;
 
   @override
-  State<TiledMapView> createState() => _TiledMapViewState();
+  State<AppBoxKitTiledMapView> createState() => _TiledMapViewState();
 }
 
-class _TiledMapViewState extends State<TiledMapView> {
+class _TiledMapViewState extends State<AppBoxKitTiledMapView> {
   final MapController _mapController = MapController();
 
   @override
@@ -81,7 +81,7 @@ class _TiledMapViewState extends State<TiledMapView> {
         onTap: config.onTap == null
             ? null
             : (_, latLng) =>
-                config.onTap!(KitLatLng(latLng.latitude, latLng.longitude)),
+                config.onTap!(AppBoxKitLatLng(latLng.latitude, latLng.longitude)),
         onMapReady: () => widget.onMapCreated
             ?.call(_TiledKitMapController(_mapController)),
       ),
@@ -99,7 +99,7 @@ class _TiledMapViewState extends State<TiledMapView> {
     );
   }
 
-  static Marker _toMarker(KitMapMarker marker) {
+  static Marker _toMarker(AppBoxKitMapMarker marker) {
     final tooltip =
         [marker.title, marker.snippet].whereType<String>().join('\n');
     return Marker(
@@ -118,13 +118,13 @@ class _TiledMapViewState extends State<TiledMapView> {
   }
 }
 
-class _TiledKitMapController implements KitMapController {
+class _TiledKitMapController implements AppBoxKitMapController {
   _TiledKitMapController(this._inner);
 
   final MapController _inner;
 
   @override
-  Future<void> moveCamera(KitCameraPosition position) async {
+  Future<void> moveCamera(AppBoxKitCameraPosition position) async {
     _inner.moveAndRotate(
       LatLng(position.target.latitude, position.target.longitude),
       position.zoom,
@@ -135,6 +135,6 @@ class _TiledKitMapController implements KitMapController {
   // kimitail: flutter_map core has no animated camera API — jumps instead.
   // Add flutter_map_animations if smooth flight ever matters.
   @override
-  Future<void> animateCamera(KitCameraPosition position) =>
+  Future<void> animateCamera(AppBoxKitCameraPosition position) =>
       moveCamera(position);
 }

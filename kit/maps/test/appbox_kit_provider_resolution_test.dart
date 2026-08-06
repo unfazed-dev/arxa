@@ -3,36 +3,36 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:appbox_kit_maps/appbox_kit_maps.dart';
 
 void main() {
-  group('defaultProviderFor', () {
+  group('appBoxKitDefaultProviderFor', () {
     test('iOS resolves to Apple Maps', () {
-      final provider = defaultProviderFor(TargetPlatform.iOS);
-      expect(provider, isA<AppleMapsProvider>());
-      expect(provider.kind, KitMapProviderKind.apple);
+      final provider = appBoxKitDefaultProviderFor(TargetPlatform.iOS);
+      expect(provider, isA<AppBoxKitAppleMapsProvider>());
+      expect(provider.kind, AppBoxKitMapProviderKind.apple);
     });
 
     test('every non-iOS platform resolves to Google Maps', () {
       for (final platform in TargetPlatform.values
           .where((p) => p != TargetPlatform.iOS)) {
-        final provider = defaultProviderFor(platform);
-        expect(provider, isA<GoogleMapsProvider>(), reason: '$platform');
-        expect(provider.kind, KitMapProviderKind.google);
+        final provider = appBoxKitDefaultProviderFor(platform);
+        expect(provider, isA<AppBoxKitGoogleMapsProvider>(), reason: '$platform');
+        expect(provider.kind, AppBoxKitMapProviderKind.google);
       }
     });
   });
 
   group('tile providers', () {
-    test('OpenStreetMapProvider reports its kind', () {
+    test('AppBoxKitOpenStreetMapProvider reports its kind', () {
       final provider =
-          OpenStreetMapProvider(userAgentPackageName: 'com.example.test');
-      expect(provider.kind, KitMapProviderKind.openStreetMap);
+          AppBoxKitOpenStreetMapProvider(userAgentPackageName: 'com.example.test');
+      expect(provider.kind, AppBoxKitMapProviderKind.openStreetMap);
     });
 
-    test('MapboxProvider reports its kind', () {
-      final provider = MapboxProvider(
+    test('AppBoxKitMapboxProvider reports its kind', () {
+      final provider = AppBoxKitMapboxProvider(
         accessToken: 'pk.test',
         userAgentPackageName: 'com.example.test',
       );
-      expect(provider.kind, KitMapProviderKind.mapbox);
+      expect(provider.kind, AppBoxKitMapProviderKind.mapbox);
     });
   });
 }

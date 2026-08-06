@@ -5,10 +5,10 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:appbox_kit_maps/appbox_kit_maps.dart';
-import 'package:appbox_kit_maps/src/providers/tiled/tiled_map_view.dart';
+import 'package:appbox_kit_maps/src/providers/tiled/appbox_kit_tiled_map_view.dart';
 
 /// Serves an in-memory 1x1 transparent PNG for every tile — no HTTP.
-class FakeTileProvider extends TileProvider {
+class FakeAppBoxKitTileProvider extends TileProvider {
   @override
   ImageProvider getImage(TileCoordinates coordinates, TileLayer options) =>
       MemoryImage(_transparentPng);
@@ -23,26 +23,26 @@ class FakeTileProvider extends TileProvider {
   ]);
 }
 
-final _config = KitMapConfig(
-  initialCameraPosition: KitCameraPosition(
-    target: KitLatLng(51.5074, -0.1278),
+final _config = AppBoxKitMapConfig(
+  initialCameraPosition: AppBoxKitCameraPosition(
+    target: AppBoxKitLatLng(51.5074, -0.1278),
     zoom: 12,
   ),
   markers: {
-    KitMapMarker(id: 'london', position: KitLatLng(51.5074, -0.1278)),
-    KitMapMarker(id: 'greenwich', position: KitLatLng(51.4769, -0.0005)),
+    AppBoxKitMapMarker(id: 'london', position: AppBoxKitLatLng(51.5074, -0.1278)),
+    AppBoxKitMapMarker(id: 'greenwich', position: AppBoxKitLatLng(51.4769, -0.0005)),
   },
 );
 
 Widget _host(Widget map) => MaterialApp(home: Scaffold(body: map));
 
 void main() {
-  group('OpenStreetMapProvider', () {
+  group('AppBoxKitOpenStreetMapProvider', () {
     testWidgets('builds a flutter_map with OSM tiles, UA, attribution, '
         'and the config camera/markers', (tester) async {
-      final provider = OpenStreetMapProvider(
+      final provider = AppBoxKitOpenStreetMapProvider(
         userAgentPackageName: 'com.example.test',
-        tileProvider: FakeTileProvider(),
+        tileProvider: FakeAppBoxKitTileProvider(),
       );
 
       await tester.pumpWidget(_host(provider.buildMap(config: _config)));
@@ -58,7 +58,7 @@ void main() {
         'flutter_map (com.example.test)',
       );
       expect(tileLayer.tileDimension, 256);
-      expect(tileProviderUsed(tester), isA<FakeTileProvider>());
+      expect(appBoxKitTileProviderUsed(tester), isA<FakeAppBoxKitTileProvider>());
 
       expect(find.byType(SimpleAttributionWidget), findsOneWidget);
 
@@ -76,13 +76,13 @@ void main() {
     });
   });
 
-  group('MapboxProvider', () {
+  group('AppBoxKitMapboxProvider', () {
     testWidgets('builds Mapbox 512px raster tiles with the public token in '
         'the URL template', (tester) async {
-      final provider = MapboxProvider(
+      final provider = AppBoxKitMapboxProvider(
         accessToken: 'pk.test-token',
         userAgentPackageName: 'com.example.test',
-        tileProvider: FakeTileProvider(),
+        tileProvider: FakeAppBoxKitTileProvider(),
       );
 
       await tester.pumpWidget(_host(provider.buildMap(config: _config)));
@@ -103,36 +103,36 @@ void main() {
     });
 
     testWidgets('mapType selects the Mapbox style', (tester) async {
-      final provider = MapboxProvider(
+      final provider = AppBoxKitMapboxProvider(
         accessToken: 'pk.test-token',
         userAgentPackageName: 'com.example.test',
-        tileProvider: FakeTileProvider(),
+        tileProvider: FakeAppBoxKitTileProvider(),
       );
 
-      String templateFor(KitMapType type) {
+      String templateFor(AppBoxKitMapType type) {
         final map =
             provider.buildMap(config: _config.copyWith(mapType: type));
-        return (map as TiledMapView).urlTemplate;
+        return (map as AppBoxKitTiledMapView).urlTemplate;
       }
 
-      expect(templateFor(KitMapType.normal), contains('streets-v12'));
-      expect(templateFor(KitMapType.satellite), contains('satellite-v9'));
+      expect(templateFor(AppBoxKitMapType.normal), contains('streets-v12'));
+      expect(templateFor(AppBoxKitMapType.satellite), contains('satellite-v9'));
       expect(
-        templateFor(KitMapType.hybrid),
+        templateFor(AppBoxKitMapType.hybrid),
         contains('satellite-streets-v12'),
       );
-      expect(templateFor(KitMapType.terrain), contains('outdoors-v12'));
+      expect(templateFor(AppBoxKitMapType.terrain), contains('outdoors-v12'));
     });
   });
 
-  group('TiledMapView controller', () {
+  group('AppBoxKitTiledMapView controller', () {
     testWidgets('onMapCreated delivers a controller that moves the camera',
         (tester) async {
-      final provider = OpenStreetMapProvider(
+      final provider = AppBoxKitOpenStreetMapProvider(
         userAgentPackageName: 'com.example.test',
-        tileProvider: FakeTileProvider(),
+        tileProvider: FakeAppBoxKitTileProvider(),
       );
-      KitMapController? controller;
+      AppBoxKitMapController? controller;
 
       await tester.pumpWidget(_host(provider.buildMap(
         config: _config,
@@ -143,7 +143,7 @@ void main() {
       expect(controller, isNotNull);
 
       await controller!.moveCamera(
-        const KitCameraPosition(target: KitLatLng(48.8566, 2.3522), zoom: 9),
+        const AppBoxKitCameraPosition(target: AppBoxKitLatLng(48.8566, 2.3522), zoom: 9),
       );
       await tester.pump();
 
@@ -155,5 +155,5 @@ void main() {
   });
 }
 
-TileProvider tileProviderUsed(WidgetTester tester) =>
+TileProvider appBoxKitTileProviderUsed(WidgetTester tester) =>
     tester.widget<TileLayer>(find.byType(TileLayer)).tileProvider;

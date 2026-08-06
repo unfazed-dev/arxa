@@ -1,9 +1,9 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_map/flutter_map.dart';
 
-import '../../kit_map_provider.dart';
-import '../../models/kit_map_config.dart';
-import '../tiled/tiled_map_view.dart';
+import '../../appbox_kit_map_provider.dart';
+import '../../models/appbox_kit_map_config.dart';
+import '../tiled/appbox_kit_tiled_map_view.dart';
 
 /// Real, wired OpenStreetMap backend (flutter_map, pure Dart — no native
 /// SDK, no API key, fully simulator/emulator/web-testable).
@@ -14,10 +14,10 @@ import '../tiled/tiled_map_view.dart';
 /// `com.example.myapp`), and an attribution overlay is always rendered.
 /// Tile caching is handled by flutter_map itself (built-in since 8.2).
 ///
-/// `KitMapConfig.mapType` is ignored: the standard OSM tile server only
+/// `AppBoxKitMapConfig.mapType` is ignored: the standard OSM tile server only
 /// ships the default street style.
-class OpenStreetMapProvider implements KitMapProvider {
-  OpenStreetMapProvider({
+class AppBoxKitOpenStreetMapProvider implements AppBoxKitMapProvider {
+  AppBoxKitOpenStreetMapProvider({
     required this.userAgentPackageName,
     this.tileProvider,
   });
@@ -26,18 +26,18 @@ class OpenStreetMapProvider implements KitMapProvider {
   final String userAgentPackageName;
 
   /// Injectable for widget tests so no HTTP happens; see
-  /// [TiledMapView.tileProvider].
+  /// [AppBoxKitTiledMapView.tileProvider].
   final TileProvider? tileProvider;
 
   @override
-  KitMapProviderKind get kind => KitMapProviderKind.openStreetMap;
+  AppBoxKitMapProviderKind get kind => AppBoxKitMapProviderKind.openStreetMap;
 
   @override
   Widget buildMap({
-    required KitMapConfig config,
-    KitMapCreatedCallback? onMapCreated,
+    required AppBoxKitMapConfig config,
+    AppBoxKitMapCreatedCallback? onMapCreated,
   }) {
-    return TiledMapView(
+    return AppBoxKitTiledMapView(
       config: config,
       urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
       userAgentPackageName: userAgentPackageName,

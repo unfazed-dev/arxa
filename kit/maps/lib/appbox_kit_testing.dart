@@ -1,45 +1,45 @@
-/// Test doubles for appbox_kit_maps — import 'package:appbox_kit_maps/testing.dart'.
+/// Test doubles for appbox_kit_maps — import 'package:appbox_kit_maps/appbox_kit_testing.dart'.
 library;
 
 import 'package:flutter/widgets.dart';
 
-import 'src/kit_map_provider.dart';
-import 'src/models/kit_lat_lng.dart';
-import 'src/models/kit_map_config.dart';
+import 'src/appbox_kit_map_provider.dart';
+import 'src/models/appbox_kit_lat_lng.dart';
+import 'src/models/appbox_kit_map_config.dart';
 
 /// Records every camera call so tests can assert on map interaction without
 /// any platform channel.
-class RecordingMapController implements KitMapController {
-  final List<KitCameraPosition> movedCameras = <KitCameraPosition>[];
-  final List<KitCameraPosition> animatedCameras = <KitCameraPosition>[];
+class RecordingAppBoxKitMapController implements AppBoxKitMapController {
+  final List<AppBoxKitCameraPosition> movedCameras = <AppBoxKitCameraPosition>[];
+  final List<AppBoxKitCameraPosition> animatedCameras = <AppBoxKitCameraPosition>[];
 
   @override
-  Future<void> moveCamera(KitCameraPosition position) async {
+  Future<void> moveCamera(AppBoxKitCameraPosition position) async {
     movedCameras.add(position);
   }
 
   @override
-  Future<void> animateCamera(KitCameraPosition position) async {
+  Future<void> animateCamera(AppBoxKitCameraPosition position) async {
     animatedCameras.add(position);
   }
 }
 
-/// In-memory [KitMapProvider] that renders a plain [SizedBox], captures the
-/// configs it was asked to build, and hands a [RecordingMapController] to
+/// In-memory [AppBoxKitMapProvider] that renders a plain [SizedBox], captures the
+/// configs it was asked to build, and hands a [RecordingAppBoxKitMapController] to
 /// `onMapCreated` synchronously.
-class FakeMapProvider implements KitMapProvider {
-  FakeMapProvider({this.kind = KitMapProviderKind.google});
+class FakeAppBoxKitMapProvider implements AppBoxKitMapProvider {
+  FakeAppBoxKitMapProvider({this.kind = AppBoxKitMapProviderKind.google});
 
   @override
-  final KitMapProviderKind kind;
+  final AppBoxKitMapProviderKind kind;
 
-  final List<KitMapConfig> builtConfigs = <KitMapConfig>[];
-  final RecordingMapController controller = RecordingMapController();
+  final List<AppBoxKitMapConfig> builtConfigs = <AppBoxKitMapConfig>[];
+  final RecordingAppBoxKitMapController controller = RecordingAppBoxKitMapController();
 
   @override
   Widget buildMap({
-    required KitMapConfig config,
-    KitMapCreatedCallback? onMapCreated,
+    required AppBoxKitMapConfig config,
+    AppBoxKitMapCreatedCallback? onMapCreated,
   }) {
     builtConfigs.add(config);
     onMapCreated?.call(controller);

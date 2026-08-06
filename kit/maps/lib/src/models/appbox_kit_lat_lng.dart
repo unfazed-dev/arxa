@@ -3,15 +3,15 @@ import 'package:flutter/foundation.dart';
 /// A geographic coordinate, owned by appbox_kit_maps so app code never
 /// imports a map SDK's LatLng type directly.
 @immutable
-class KitLatLng {
-  const KitLatLng(this.latitude, this.longitude);
+class AppBoxKitLatLng {
+  const AppBoxKitLatLng(this.latitude, this.longitude);
 
   final double latitude;
   final double longitude;
 
   @override
   bool operator ==(Object other) =>
-      other is KitLatLng &&
+      other is AppBoxKitLatLng &&
       other.latitude == latitude &&
       other.longitude == longitude;
 
@@ -19,20 +19,20 @@ class KitLatLng {
   int get hashCode => Object.hash(latitude, longitude);
 
   @override
-  String toString() => 'KitLatLng($latitude, $longitude)';
+  String toString() => 'AppBoxKitLatLng($latitude, $longitude)';
 }
 
 /// A rectangular region described by its south-west and north-east corners.
 @immutable
-class KitLatLngBounds {
-  const KitLatLngBounds({required this.southwest, required this.northeast});
+class AppBoxKitLatLngBounds {
+  const AppBoxKitLatLngBounds({required this.southwest, required this.northeast});
 
-  final KitLatLng southwest;
-  final KitLatLng northeast;
+  final AppBoxKitLatLng southwest;
+  final AppBoxKitLatLng northeast;
 
   @override
   bool operator ==(Object other) =>
-      other is KitLatLngBounds &&
+      other is AppBoxKitLatLngBounds &&
       other.southwest == southwest &&
       other.northeast == northeast;
 
@@ -40,31 +40,31 @@ class KitLatLngBounds {
   int get hashCode => Object.hash(southwest, northeast);
 
   @override
-  String toString() => 'KitLatLngBounds($southwest, $northeast)';
+  String toString() => 'AppBoxKitLatLngBounds($southwest, $northeast)';
 }
 
 /// A camera position: where the map is looking and how.
 @immutable
-class KitCameraPosition {
-  const KitCameraPosition({
+class AppBoxKitCameraPosition {
+  const AppBoxKitCameraPosition({
     required this.target,
     this.zoom = 14,
     this.bearing = 0,
     this.tilt = 0,
   });
 
-  final KitLatLng target;
+  final AppBoxKitLatLng target;
   final double zoom;
   final double bearing;
   final double tilt;
 
-  KitCameraPosition copyWith({
-    KitLatLng? target,
+  AppBoxKitCameraPosition copyWith({
+    AppBoxKitLatLng? target,
     double? zoom,
     double? bearing,
     double? tilt,
   }) =>
-      KitCameraPosition(
+      AppBoxKitCameraPosition(
         target: target ?? this.target,
         zoom: zoom ?? this.zoom,
         bearing: bearing ?? this.bearing,
@@ -73,7 +73,7 @@ class KitCameraPosition {
 
   @override
   bool operator ==(Object other) =>
-      other is KitCameraPosition &&
+      other is AppBoxKitCameraPosition &&
       other.target == target &&
       other.zoom == zoom &&
       other.bearing == bearing &&
@@ -84,6 +84,6 @@ class KitCameraPosition {
 
   @override
   String toString() =>
-      'KitCameraPosition(target: $target, zoom: $zoom, bearing: $bearing, '
+      'AppBoxKitCameraPosition(target: $target, zoom: $zoom, bearing: $bearing, '
       'tilt: $tilt)';
 }

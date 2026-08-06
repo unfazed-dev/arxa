@@ -1,20 +1,20 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:appbox_kit_maps/appbox_kit_maps.dart';
-import 'package:appbox_kit_maps/testing.dart';
+import 'package:appbox_kit_maps/appbox_kit_testing.dart';
 
 void main() {
-  const camera = KitCameraPosition(target: KitLatLng(40.7128, -74.006));
-  const config = KitMapConfig(initialCameraPosition: camera);
+  const camera = AppBoxKitCameraPosition(target: AppBoxKitLatLng(40.7128, -74.006));
+  const config = AppBoxKitMapConfig(initialCameraPosition: camera);
 
-  testWidgets('KitMapView builds through the injected provider',
+  testWidgets('AppBoxKitMapView builds through the injected provider',
       (tester) async {
-    final fake = FakeMapProvider();
+    final fake = FakeAppBoxKitMapProvider();
 
     await tester.pumpWidget(
       Directionality(
         textDirection: TextDirection.ltr,
-        child: KitMapView(config: config, provider: fake),
+        child: AppBoxKitMapView(config: config, provider: fake),
       ),
     );
 
@@ -25,13 +25,13 @@ void main() {
 
   testWidgets('onMapCreated receives a controller that records camera calls',
       (tester) async {
-    final fake = FakeMapProvider();
-    KitMapController? controller;
+    final fake = FakeAppBoxKitMapProvider();
+    AppBoxKitMapController? controller;
 
     await tester.pumpWidget(
       Directionality(
         textDirection: TextDirection.ltr,
-        child: KitMapView(
+        child: AppBoxKitMapView(
           config: config,
           provider: fake,
           onMapCreated: (c) => controller = c,
@@ -41,7 +41,7 @@ void main() {
 
     expect(controller, isNotNull);
 
-    const moved = KitCameraPosition(target: KitLatLng(1, 2), zoom: 5);
+    const moved = AppBoxKitCameraPosition(target: AppBoxKitLatLng(1, 2), zoom: 5);
     await controller!.moveCamera(moved);
     await controller!.animateCamera(camera);
 
@@ -51,12 +51,12 @@ void main() {
 
   testWidgets('rebuilding with new markers hands the provider the new set',
       (tester) async {
-    final fake = FakeMapProvider();
-    const marker = KitMapMarker(id: 'pin', position: KitLatLng(3, 4));
+    final fake = FakeAppBoxKitMapProvider();
+    const marker = AppBoxKitMapMarker(id: 'pin', position: AppBoxKitLatLng(3, 4));
 
-    Widget build(KitMapConfig c) => Directionality(
+    Widget build(AppBoxKitMapConfig c) => Directionality(
           textDirection: TextDirection.ltr,
-          child: KitMapView(config: c, provider: fake),
+          child: AppBoxKitMapView(config: c, provider: fake),
         );
 
     await tester.pumpWidget(build(config));

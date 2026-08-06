@@ -1,51 +1,51 @@
 import 'package:flutter/widgets.dart';
 
-import 'models/kit_lat_lng.dart';
-import 'models/kit_map_config.dart';
-import 'providers/apple/apple_maps_provider.dart';
-import 'providers/google/google_maps_provider.dart';
+import 'models/appbox_kit_lat_lng.dart';
+import 'models/appbox_kit_map_config.dart';
+import 'providers/apple/appbox_kit_apple_maps_provider.dart';
+import 'providers/google/appbox_kit_google_maps_provider.dart';
 
 /// Which native map backend a provider wraps.
-enum KitMapProviderKind { google, apple, openStreetMap, mapbox }
+enum AppBoxKitMapProviderKind { google, apple, openStreetMap, mapbox }
 
 /// Post-creation camera handle for a live map, owned by appbox_kit_maps.
 ///
 /// Markers are intentionally NOT controlled here — they are declarative via
-/// [KitMapConfig.markers]; rebuild the [KitMapView] with a new set instead.
-abstract interface class KitMapController {
+/// [AppBoxKitMapConfig.markers]; rebuild the [AppBoxKitMapView] with a new set instead.
+abstract interface class AppBoxKitMapController {
   /// Jump the camera immediately.
-  Future<void> moveCamera(KitCameraPosition position);
+  Future<void> moveCamera(AppBoxKitCameraPosition position);
 
   /// Animate the camera.
-  Future<void> animateCamera(KitCameraPosition position);
+  Future<void> animateCamera(AppBoxKitCameraPosition position);
 }
 
 /// Signature invoked once the native map is ready.
-typedef KitMapCreatedCallback = void Function(KitMapController controller);
+typedef AppBoxKitMapCreatedCallback = void Function(AppBoxKitMapController controller);
 
 /// Port every map backend implements. App code depends on this interface
-/// (usually indirectly through [KitMapView]) — never on a map SDK.
-abstract interface class KitMapProvider {
-  KitMapProviderKind get kind;
+/// (usually indirectly through [AppBoxKitMapView]) — never on a map SDK.
+abstract interface class AppBoxKitMapProvider {
+  AppBoxKitMapProviderKind get kind;
 
   /// Builds the platform map widget for [config].
   Widget buildMap({
-    required KitMapConfig config,
-    KitMapCreatedCallback? onMapCreated,
+    required AppBoxKitMapConfig config,
+    AppBoxKitMapCreatedCallback? onMapCreated,
   });
 }
 
 /// Default provider resolution: Apple Maps on iOS (first-party SDK, no API
 /// key), Google Maps everywhere else (Android, web, desktop embeddings).
-KitMapProvider defaultProviderFor(TargetPlatform platform) {
+AppBoxKitMapProvider appBoxKitDefaultProviderFor(TargetPlatform platform) {
   switch (platform) {
     case TargetPlatform.iOS:
-      return AppleMapsProvider();
+      return AppBoxKitAppleMapsProvider();
     case TargetPlatform.android:
     case TargetPlatform.fuchsia:
     case TargetPlatform.linux:
     case TargetPlatform.macOS:
     case TargetPlatform.windows:
-      return GoogleMapsProvider();
+      return AppBoxKitGoogleMapsProvider();
   }
 }
