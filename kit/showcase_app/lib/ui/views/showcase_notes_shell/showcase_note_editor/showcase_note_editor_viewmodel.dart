@@ -35,8 +35,8 @@ typedef NotePlaybackProgress = ({Duration position, Duration? duration});
 /// pass-throughs of [ShowcaseNotesMediaAdapterService]'s seeded
 /// [BehaviorSubject]s. The one [AppBoxKitAction.watch] left runs VM-internal side
 /// effects only (the one-shot body seed and the pending New Photo/New Voice
-/// intent) — it feeds no view data. Autosave debounce is the pipeline's
-/// per-pipe `debounce`, not a hand-rolled Timer.
+/// intent) — it feeds no view data. Autosave debounce is the bus's
+/// per-dispatcher `debounce`, not a hand-rolled Timer.
 class ShowcaseNoteEditorViewModel extends AppBoxKitViewModel {
   ShowcaseNoteEditorViewModel({required this.noteId}) {
     watch(
@@ -141,13 +141,13 @@ class ShowcaseNoteEditorViewModel extends AppBoxKitViewModel {
   Future<String> resolvePath(ShowcaseNoteAttachmentModel attachment) =>
       _media.resolvePath(attachment);
 
-  /// Debounced autosave pipe: rapid keystrokes supersede the pending save and
+  /// Debounced autosave dispatcher: rapid keystrokes supersede the pending save and
   /// the superseded handles complete with the eventual save's result (the
   /// caller drops them — fire-and-forget by construction). The VM is
   /// per-note, so the entity key is implicit in the owner identity.
   /// `flushOnDispose` lands the final write: leaving the editor inside the
   /// debounce window saves immediately instead of dropping the keystrokes.
-  late final _autosave = pipeline.pipe<Null, void>(
+  late final _autosave = bus.define<Null, void>(
     'save',
     (_) => _flushSave(),
     debounce: const Duration(milliseconds: 500),
@@ -215,7 +215,7 @@ class ShowcaseNoteEditorViewModel extends AppBoxKitViewModel {
   void dispose() {
     // Clear any unconsumed intent so it can't leak into the next editor open.
     pendingAction = null;
-    // A pending debounced save is flushed by the pipe's flushOnDispose in
+    // A pending debounced save is flushed by the dispatcher's flushOnDispose in
     // super.dispose() → disposeAppBoxKitActions.
     super.dispose();
   }

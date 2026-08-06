@@ -340,7 +340,7 @@ class ShowcaseNotesFacadeService extends AppBoxKitDataFacade {
 
   // -- Auth ------------------------------------------------------------------
 
-  Future<void> signOut() => pipeline.run<void>(
+  Future<void> signOut() => bus.run<void>(
         'signOut',
         () => auth.signOut(),
         errorNotification: 'Could not sign out',

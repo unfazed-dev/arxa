@@ -33,15 +33,15 @@ class ShowcaseNotesCreateAccountViewModel extends AppBoxKitViewModel {
 
   /// Inline form error (seeded null = none). [AppBoxKitAuthException] shows its
   /// message, anything unexpected gets the generic one — set from the
-  /// pipe's onError tap, never a snackbar.
+  /// dispatcher's onError tap, never a snackbar.
   final BehaviorSubject<String?> _errorMessage =
       BehaviorSubject<String?>.seeded(null);
   ValueStream<String?> get errorMessage$ => _errorMessage.stream;
 
-  /// Same hot-dispatch pipe as the auth viewmodel: per-op busy state (bound
+  /// Same hot-dispatch dispatcher as the auth viewmodel: per-op busy state (bound
   /// via [signUpState$]), re-entry guard (a double-tap's handle observes the
   /// in-flight run), [AppBoxKitAuthException] surfaced inline as [errorMessage$].
-  late final _signUp = pipeline.pipe<(String, String), void>(
+  late final _signUp = bus.define<(String, String), void>(
     'signUp',
     (p) => auth.signUpWithEmailPassword(email: p.$1, password: p.$2),
     errorMessage: 'Sign-up failed',

@@ -26,7 +26,7 @@ import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/showca
 /// memo at a time, and starting a recording stops playback.
 ///
 /// Every hardware/IO operation dispatches on the owner's AppBoxKitAction
-/// pipeline (one-shot `run`s): a plugin or file-system failure surfaces as an
+/// bus (one-shot `run`s): a plugin or file-system failure surfaces as an
 /// error snackbar and collapses to the method's existing null/false contract
 /// (fallback) instead of escaping uncaught. Expected non-error outcomes
 /// (permission denial, user cancel) stay plain returns — no snackbar.
@@ -44,7 +44,7 @@ class ShowcaseNotesMediaAdapterService with AppBoxKitActionOwner {
         _player = player ?? AppBoxKitJustAudioPlayerService() {
     // Mirror the kit ports' streams onto app-owned BehaviorSubjects, subscribed
     // here at construction so late-binding viewmodels still get the last value.
-    // One watch per stream (each pipes to a different subject) — all
+    // One watch per stream (each dispatchers to a different subject) — all
     // owner-keyed, so [dispose]'s disposeAppBoxKitActions() cancels them.
     watch('bridge.elapsed', streams: [_recorder.elapsed$], callback: (value) => recording$.add(value as Duration?));
     watch('bridge.position', streams: [_player.position$], callback: (value) => _position.add(value as Duration));
@@ -107,7 +107,7 @@ class ShowcaseNotesMediaAdapterService with AppBoxKitActionOwner {
   /// collapses to null too, via the AppBoxKitAction fallback, after an error
   /// snackbar.
   Future<ShowcaseNoteAttachmentModel?> pickPhoto({required bool fromCamera}) =>
-      pipeline.run<ShowcaseNoteAttachmentModel?>(
+      bus.run<ShowcaseNoteAttachmentModel?>(
         'pickPhoto',
         () async {
           // Degrade to the library on simulators rather than crash — mirrors how
@@ -149,7 +149,7 @@ class ShowcaseNotesMediaAdapterService with AppBoxKitActionOwner {
   /// False on permission denial (the view surfaces that — not an error, no
   /// snackbar); a recorder/plugin throw also collapses to false, after an
   /// error snackbar.
-  Future<bool> startRecording() => pipeline.run<bool>(
+  Future<bool> startRecording() => bus.run<bool>(
         'startRecording',
         () async {
           if (!await _recorder.hasPermission()) return false;
@@ -167,7 +167,7 @@ class ShowcaseNotesMediaAdapterService with AppBoxKitActionOwner {
       );
 
   Future<ShowcaseNoteAttachmentModel?> stopRecording() =>
-      pipeline.run<ShowcaseNoteAttachmentModel?>(
+      bus.run<ShowcaseNoteAttachmentModel?>(
         'stopRecording',
         () async {
           final result = await _recorder.stop();
@@ -185,7 +185,7 @@ class ShowcaseNotesMediaAdapterService with AppBoxKitActionOwner {
         withValue: null,
       );
 
-  Future<void> cancelRecording() => pipeline.run<void>(
+  Future<void> cancelRecording() => bus.run<void>(
         'cancelRecording',
         () => _recorder.cancel(),
         errorNotification: 'Could not cancel recording',
@@ -197,7 +197,7 @@ class ShowcaseNotesMediaAdapterService with AppBoxKitActionOwner {
   /// Play [attachment] from the start, or toggle pause/resume when it is the
   /// one already loaded.
   Future<void> togglePlayback(ShowcaseNoteAttachmentModel attachment) =>
-      pipeline.run<void>(
+      bus.run<void>(
         'playback.${attachment.id}',
         () async {
           if (playingAttachmentId$.value == attachment.id) {
@@ -220,7 +220,7 @@ class ShowcaseNotesMediaAdapterService with AppBoxKitActionOwner {
 
   /// Best-effort binary cleanup when an attachment is removed from a note.
   Future<void> deleteFile(ShowcaseNoteAttachmentModel attachment) =>
-      pipeline.run<void>(
+      bus.run<void>(
         'deleteFile.${attachment.id}',
         () async {
           if (playingAttachmentId$.value == attachment.id) await stopPlayback();
