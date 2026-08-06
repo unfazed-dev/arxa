@@ -1,20 +1,20 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:appbox_kit_media/appbox_kit_media.dart';
-import 'package:appbox_kit_media/testing.dart';
+import 'package:appbox_kit_media/appbox_kit_testing.dart';
 import 'package:video_player/video_player.dart';
 
 void main() {
-  group('PluginVideoPlayerService.toState', () {
+  group('AppBoxKitPluginVideoPlayerService.toState', () {
     test('uninitialized maps to loading, not playing', () {
-      final state = PluginVideoPlayerService.toState(
+      final state = AppBoxKitPluginVideoPlayerService.toState(
         const VideoPlayerValue.uninitialized(),
       );
-      expect(state.processing, MediaProcessingState.loading);
+      expect(state.processing, AppBoxKitMediaProcessingState.loading);
       expect(state.playing, isFalse);
     });
 
     test('buffering wins over ready once initialized', () {
-      final state = PluginVideoPlayerService.toState(
+      final state = AppBoxKitPluginVideoPlayerService.toState(
         const VideoPlayerValue(
           duration: Duration(seconds: 10),
           isInitialized: true,
@@ -22,12 +22,12 @@ void main() {
           isBuffering: true,
         ),
       );
-      expect(state.processing, MediaProcessingState.buffering);
+      expect(state.processing, AppBoxKitMediaProcessingState.buffering);
       expect(state.playing, isTrue);
     });
 
     test('initialized mid-play maps to ready', () {
-      final state = PluginVideoPlayerService.toState(
+      final state = AppBoxKitPluginVideoPlayerService.toState(
         const VideoPlayerValue(
           duration: Duration(seconds: 10),
           position: Duration(seconds: 3),
@@ -35,38 +35,38 @@ void main() {
           isPlaying: true,
         ),
       );
-      expect(state.processing, MediaProcessingState.ready);
+      expect(state.processing, AppBoxKitMediaProcessingState.ready);
       expect(state.playing, isTrue);
     });
 
     test('paused at the end maps to completed', () {
-      final state = PluginVideoPlayerService.toState(
+      final state = AppBoxKitPluginVideoPlayerService.toState(
         const VideoPlayerValue(
           duration: Duration(seconds: 10),
           position: Duration(seconds: 10),
           isInitialized: true,
         ),
       );
-      expect(state.processing, MediaProcessingState.completed);
+      expect(state.processing, AppBoxKitMediaProcessingState.completed);
       expect(state.isCompleted, isTrue);
     });
 
     test('plugin isCompleted flag alone maps to completed', () {
-      final state = PluginVideoPlayerService.toState(
+      final state = AppBoxKitPluginVideoPlayerService.toState(
         const VideoPlayerValue(
           duration: Duration(seconds: 10),
           isInitialized: true,
           isCompleted: true,
         ),
       );
-      expect(state.processing, MediaProcessingState.completed);
+      expect(state.processing, AppBoxKitMediaProcessingState.completed);
     });
   });
 
-  group('FakeVideoPlayerService', () {
+  group('FakeAppBoxKitVideoPlayerService', () {
     test('records loads and drives play/pause state', () async {
-      final fake = FakeVideoPlayerService();
-      final states = <PlaybackState>[];
+      final fake = FakeAppBoxKitVideoPlayerService();
+      final states = <AppBoxKitPlaybackState>[];
       final sub = fake.state$.listen(states.add);
 
       await fake.load('a.mp4');
@@ -81,7 +81,7 @@ void main() {
     });
 
     test('stop rewinds position to zero', () async {
-      final fake = FakeVideoPlayerService();
+      final fake = FakeAppBoxKitVideoPlayerService();
       final positions = <Duration>[];
       final sub = fake.position$.listen(positions.add);
 
@@ -94,8 +94,8 @@ void main() {
     });
   });
 
-  test('StubVideoPlayerService fails loudly', () {
-    final stub = StubVideoPlayerService();
+  test('AppBoxKitStubVideoPlayerService fails loudly', () {
+    final stub = AppBoxKitStubVideoPlayerService();
     expect(() => stub.position$, throwsUnimplementedError);
     expect(() => stub.videoView(), throwsUnimplementedError);
     expect(() => stub.play(), throwsUnimplementedError);

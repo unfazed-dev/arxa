@@ -29,9 +29,9 @@
 
 Exported from `lib/appbox_kit_media.dart`:
 
-<Table id="media-api" columns={["Symbol", "Kind", "Defined in"]} rows={[["CapturedMedia", "abstract class", "src/capture/media_capture_result.dart"], ["XFileCapturedMedia", "class", "src/capture/media_capture_result.dart"], ["MediaCaptureResult", "class", "src/capture/media_capture_result.dart"], ["MediaCaptured", "class", "src/capture/media_capture_result.dart"], ["MediaCaptureCancelled", "class", "src/capture/media_capture_result.dart"], ["MediaCapturePermissionDenied", "class", "src/capture/media_capture_result.dart"], ["MediaCaptureUnavailable", "class", "src/capture/media_capture_result.dart"], ["MediaCaptureFailed", "class", "src/capture/media_capture_result.dart"], ["MediaCaptureService", "abstract class", "src/capture/media_capture_service.dart"], ["ImagePickerMediaCaptureService", "class", "src/capture/media_capture_service.dart"], ["MediaSource", "enum", "src/capture/media_source.dart"], ["VideoPlayerService", "abstract class", "src/video/video_player_service.dart"], ["PluginVideoPlayerService", "class", "src/video/video_player_service.dart"], ["AudioPlayerService", "abstract class", "src/audio/audio_player_service.dart"], ["JustAudioPlayerService", "class", "src/audio/audio_player_service.dart"], ["AudioRecorderService", "abstract class", "src/audio/audio_recorder_service.dart"], ["RecordAudioRecorderService", "class", "src/audio/audio_recorder_service.dart"], ["MediaProcessingState", "enum", "src/audio/playback_state.dart"], ["PlaybackState", "class", "src/audio/playback_state.dart"], ["MediaEditingService", "abstract class", "src/editing/media_editing_service.dart"]]} />
+<Table id="media-api" columns={["Symbol", "Kind", "Defined in"]} rows={[["AppBoxKitCapturedMedia", "abstract class", "src/capture/appbox_kit_media_capture_result.dart"], ["AppBoxKitXFileCapturedMedia", "class", "src/capture/appbox_kit_media_capture_result.dart"], ["AppBoxKitMediaCaptureResult", "class", "src/capture/appbox_kit_media_capture_result.dart"], ["AppBoxKitMediaCaptured", "class", "src/capture/appbox_kit_media_capture_result.dart"], ["AppBoxKitMediaCaptureCancelled", "class", "src/capture/appbox_kit_media_capture_result.dart"], ["AppBoxKitMediaCapturePermissionDenied", "class", "src/capture/appbox_kit_media_capture_result.dart"], ["AppBoxKitMediaCaptureUnavailable", "class", "src/capture/appbox_kit_media_capture_result.dart"], ["AppBoxKitMediaCaptureFailed", "class", "src/capture/appbox_kit_media_capture_result.dart"], ["AppBoxKitMediaCaptureService", "abstract class", "src/capture/appbox_kit_media_capture_service.dart"], ["AppBoxKitImagePickerMediaCaptureService", "class", "src/capture/appbox_kit_media_capture_service.dart"], ["AppBoxKitMediaSource", "enum", "src/capture/appbox_kit_media_source.dart"], ["AppBoxKitVideoPlayerService", "abstract class", "src/video/appbox_kit_video_player_service.dart"], ["AppBoxKitPluginVideoPlayerService", "class", "src/video/appbox_kit_video_player_service.dart"], ["AppBoxKitAudioPlayerService", "abstract class", "src/audio/appbox_kit_audio_player_service.dart"], ["AppBoxKitJustAudioPlayerService", "class", "src/audio/appbox_kit_audio_player_service.dart"], ["AppBoxKitAudioRecorderService", "abstract class", "src/audio/appbox_kit_audio_recorder_service.dart"], ["AppBoxKitRecordAudioRecorderService", "class", "src/audio/appbox_kit_audio_recorder_service.dart"], ["AppBoxKitMediaProcessingState", "enum", "src/audio/appbox_kit_playback_state.dart"], ["AppBoxKitPlaybackState", "class", "src/audio/appbox_kit_playback_state.dart"], ["AppBoxKitMediaEditingService", "abstract class", "src/editing/appbox_kit_media_editing_service.dart"]]} />
 
-Test doubles in `lib/testing.dart`: `FakeCapturedMedia`, `FakeMediaCaptureService`, `FakeAudioRecorderService`, `FakeAudioPlayerService`, `FakeVideoPlayerService`, `StubVideoPlayerService`, `RecordingResult`, `StubMediaEditingService`.
+Test doubles in `lib/appbox_kit_testing.dart`: `FakeAppBoxKitCapturedMedia`, `FakeAppBoxKitMediaCaptureService`, `FakeAppBoxKitAudioRecorderService`, `FakeAppBoxKitAudioPlayerService`, `FakeAppBoxKitVideoPlayerService`, `AppBoxKitStubVideoPlayerService`, `AppBoxKitRecordingResult`, `AppBoxKitStubMediaEditingService`.
 
 Scripts and call-counts — tests never touch platform channels.
 
@@ -41,16 +41,16 @@ Scripts and call-counts — tests never touch platform channels.
 ```dart
 import 'package:appbox_kit_media/appbox_kit_media.dart';
 
-final capture = ImagePickerMediaCaptureService();
-final result = await capture.capturePhoto(source: MediaSource.camera);
+final capture = AppBoxKitImagePickerMediaCaptureService();
+final result = await capture.capturePhoto(source: AppBoxKitMediaSource.camera);
 switch (result) {
-  case MediaCaptured(:final media):
+  case AppBoxKitMediaCaptured(:final media):
     await media.saveTo('/somewhere/photo.jpg');
-  case MediaCapturePermissionDenied():
+  case AppBoxKitMediaCapturePermissionDenied():
     // surface a "grant camera access" hint
-  case MediaCaptureCancelled():
-  case MediaCaptureUnavailable():
-  case MediaCaptureFailed():
+  case AppBoxKitMediaCaptureCancelled():
+  case AppBoxKitMediaCaptureUnavailable():
+  case AppBoxKitMediaCaptureFailed():
 }
 ```
 
@@ -68,13 +68,13 @@ See `kit_matrix.md` for the full routing + dependency graph.
   is pure ports + backing plugins; apps depend on it, never the reverse.
 - **No plugin type crosses a port.** `image_picker`'s `ImageSource`/`XFile`,
   `just_audio`'s `PlayerState`, and `record`'s `RecordConfig` stay inside the
-  implementations. Callers see kit-owned `MediaSource`, `CapturedMedia`,
-  `PlaybackState`.
+  implementations. Callers see kit-owned `AppBoxKitMediaSource`, `AppBoxKitCapturedMedia`,
+  `AppBoxKitPlaybackState`.
 - **Permission denial is a value, not an exception.** `capturePhoto` returns a
-  sealed `MediaCaptureResult` (`MediaCaptured` / `MediaCaptureCancelled` /
-  `MediaCapturePermissionDenied` / `MediaCaptureUnavailable` /
-  `MediaCaptureFailed`) so callers `switch` exhaustively.
-- **Capability flags:** `MediaCaptureService.hasCamera` (false on the iOS
+  sealed `AppBoxKitMediaCaptureResult` (`AppBoxKitMediaCaptured` / `AppBoxKitMediaCaptureCancelled` /
+  `AppBoxKitMediaCapturePermissionDenied` / `AppBoxKitMediaCaptureUnavailable` /
+  `AppBoxKitMediaCaptureFailed`) so callers `switch` exhaustively.
+- **Capability flags:** `AppBoxKitMediaCaptureService.hasCamera` (false on the iOS
   Simulator) lets UIs hide capture affordances that would fail.
 - **The recorder owns its clock:** `elapsed$` emits `Duration.zero` on start,
   ticks while recording, and emits `null` when idle — bind directly instead of
@@ -92,21 +92,21 @@ package.
 
 ### Testing
 
-`package:appbox_kit_media/testing.dart` ships scriptable fakes —
-`FakeMediaCaptureService`, `FakeAudioRecorderService`, `FakeAudioPlayerService`
-(and `FakeCapturedMedia`) — with canned files, scripted denial/failure, and
+`package:appbox_kit_media/appbox_kit_testing.dart` ships scriptable fakes —
+`FakeAppBoxKitMediaCaptureService`, `FakeAppBoxKitAudioRecorderService`, `FakeAppBoxKitAudioPlayerService`
+(and `FakeAppBoxKitCapturedMedia`) — with canned files, scripted denial/failure, and
 stream-driving helpers (`driveElapsed`, `drivePosition`, `driveState`, …). No
 plugins or MethodChannels required.
 
 
 ### Features
 
-<Checklist id="media-features" items={[{"id": "media-feat-0", "label": "`CapturedMedia` \u2014 abstract class"}, {"id": "media-feat-1", "label": "`XFileCapturedMedia` \u2014 class"}, {"id": "media-feat-2", "label": "`MediaCaptureResult` \u2014 class"}, {"id": "media-feat-3", "label": "`MediaCaptured` \u2014 class"}, {"id": "media-feat-4", "label": "`MediaCaptureCancelled` \u2014 class"}, {"id": "media-feat-5", "label": "`MediaCapturePermissionDenied` \u2014 class"}, {"id": "media-feat-6", "label": "`MediaCaptureUnavailable` \u2014 class"}, {"id": "media-feat-7", "label": "`MediaCaptureFailed` \u2014 class"}, {"id": "media-feat-8", "label": "`MediaCaptureService` \u2014 abstract class"}, {"id": "media-feat-9", "label": "`ImagePickerMediaCaptureService` \u2014 class"}, {"id": "media-feat-10", "label": "`MediaSource` \u2014 enum"}, {"id": "media-feat-11", "label": "`VideoPlayerService` \u2014 abstract class"}]} />
+<Checklist id="media-features" items={[{"id": "media-feat-0", "label": "`AppBoxKitCapturedMedia` \u2014 abstract class"}, {"id": "media-feat-1", "label": "`AppBoxKitXFileCapturedMedia` \u2014 class"}, {"id": "media-feat-2", "label": "`AppBoxKitMediaCaptureResult` \u2014 class"}, {"id": "media-feat-3", "label": "`AppBoxKitMediaCaptured` \u2014 class"}, {"id": "media-feat-4", "label": "`AppBoxKitMediaCaptureCancelled` \u2014 class"}, {"id": "media-feat-5", "label": "`AppBoxKitMediaCapturePermissionDenied` \u2014 class"}, {"id": "media-feat-6", "label": "`AppBoxKitMediaCaptureUnavailable` \u2014 class"}, {"id": "media-feat-7", "label": "`AppBoxKitMediaCaptureFailed` \u2014 class"}, {"id": "media-feat-8", "label": "`AppBoxKitMediaCaptureService` \u2014 abstract class"}, {"id": "media-feat-9", "label": "`AppBoxKitImagePickerMediaCaptureService` \u2014 class"}, {"id": "media-feat-10", "label": "`AppBoxKitMediaSource` \u2014 enum"}, {"id": "media-feat-11", "label": "`AppBoxKitVideoPlayerService` \u2014 abstract class"}]} />
 
 
 ### Decisions / ADRs
 
-This kit is pure ports plus backing plugins: it declares no dependency on `stacked`, `stacked_services`, or any other `appbox_kit` package, so apps depend on it but never the reverse. Capture, recording, and playback layer onto mature, narrowly-scoped plugins (`image_picker`, `record`, `just_audio`) so the kit owns no codec or platform glue of its own and plugin types never cross a port. Music and video playback are deliberately absorbed here rather than split into separate `appbox_kit_music` / `appbox_kit_video` kits, keeping the media surface in one package and leaving `VideoPlayerService` and `MediaEditingService` as phase-2A stubs to fill in against the existing seams.
+This kit is pure ports plus backing plugins: it declares no dependency on `stacked`, `stacked_services`, or any other `appbox_kit` package, so apps depend on it but never the reverse. Capture, recording, and playback layer onto mature, narrowly-scoped plugins (`image_picker`, `record`, `just_audio`) so the kit owns no codec or platform glue of its own and plugin types never cross a port. Music and video playback are deliberately absorbed here rather than split into separate `appbox_kit_music` / `appbox_kit_video` kits, keeping the media surface in one package and leaving `AppBoxKitVideoPlayerService` and `AppBoxKitMediaEditingService` as phase-2A stubs to fill in against the existing seams.
 
 <!-- kb:begin -->
 ### References

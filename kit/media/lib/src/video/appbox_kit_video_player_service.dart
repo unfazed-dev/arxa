@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:flutter/widgets.dart';
 import 'package:video_player/video_player.dart';
 
-import '../audio/playback_state.dart';
+import '../audio/appbox_kit_playback_state.dart';
 
 /// Single-source video playback.
 ///
@@ -13,8 +13,8 @@ import '../audio/playback_state.dart';
 /// scrubbers and play/pause chrome, and render via [videoView].
 ///
 /// Backed by `video_player` (AVPlayer / ExoPlayer); the kit-owned
-/// [PlaybackState] keeps the plugin's value types out of callers.
-abstract class VideoPlayerService {
+/// [AppBoxKitPlaybackState] keeps the plugin's value types out of callers.
+abstract class AppBoxKitVideoPlayerService {
   /// Current playback position.
   Stream<Duration> get position$;
 
@@ -22,7 +22,7 @@ abstract class VideoPlayerService {
   Stream<Duration?> get duration$;
 
   /// Player lifecycle + playing flag.
-  Stream<PlaybackState> get state$;
+  Stream<AppBoxKitPlaybackState> get state$;
 
   /// Aspect ratio (width / height) of the loaded video; `null` until known.
   double? get aspectRatio;
@@ -50,19 +50,19 @@ abstract class VideoPlayerService {
   Future<void> dispose();
 }
 
-/// [VideoPlayerService] backed by the native `video_player` plugin.
+/// [AppBoxKitVideoPlayerService] backed by the native `video_player` plugin.
 ///
 /// `video_player` exposes a `ValueNotifier` controller rather than streams,
 /// so each [load] bridges controller notifications onto broadcast streams.
-class PluginVideoPlayerService implements VideoPlayerService {
+class AppBoxKitPluginVideoPlayerService implements AppBoxKitVideoPlayerService {
   VideoPlayerController? _controller;
 
   final StreamController<Duration> _position =
       StreamController<Duration>.broadcast();
   final StreamController<Duration?> _duration =
       StreamController<Duration?>.broadcast();
-  final StreamController<PlaybackState> _state =
-      StreamController<PlaybackState>.broadcast();
+  final StreamController<AppBoxKitPlaybackState> _state =
+      StreamController<AppBoxKitPlaybackState>.broadcast();
 
   void _forward() {
     final value = _controller?.value;
@@ -72,30 +72,30 @@ class PluginVideoPlayerService implements VideoPlayerService {
     _state.add(toState(value));
   }
 
-  /// Maps the plugin's value snapshot onto the kit-owned [PlaybackState].
+  /// Maps the plugin's value snapshot onto the kit-owned [AppBoxKitPlaybackState].
   @visibleForTesting
-  static PlaybackState toState(VideoPlayerValue value) {
+  static AppBoxKitPlaybackState toState(VideoPlayerValue value) {
     if (!value.isInitialized) {
-      return const PlaybackState(
+      return const AppBoxKitPlaybackState(
         playing: false,
-        processing: MediaProcessingState.loading,
+        processing: AppBoxKitMediaProcessingState.loading,
       );
     }
     if (value.isBuffering) {
-      return PlaybackState(
+      return AppBoxKitPlaybackState(
         playing: value.isPlaying,
-        processing: MediaProcessingState.buffering,
+        processing: AppBoxKitMediaProcessingState.buffering,
       );
     }
     final completed = value.isCompleted ||
         (value.duration > Duration.zero &&
             !value.isPlaying &&
             value.position >= value.duration);
-    return PlaybackState(
+    return AppBoxKitPlaybackState(
       playing: value.isPlaying,
       processing: completed
-          ? MediaProcessingState.completed
-          : MediaProcessingState.ready,
+          ? AppBoxKitMediaProcessingState.completed
+          : AppBoxKitMediaProcessingState.ready,
     );
   }
 
@@ -106,7 +106,7 @@ class PluginVideoPlayerService implements VideoPlayerService {
   Stream<Duration?> get duration$ => _duration.stream;
 
   @override
-  Stream<PlaybackState> get state$ => _state.stream;
+  Stream<AppBoxKitPlaybackState> get state$ => _state.stream;
 
   @override
   double? get aspectRatio {
@@ -176,12 +176,12 @@ class PluginVideoPlayerService implements VideoPlayerService {
   }
 }
 
-/// Placeholder [VideoPlayerService]. Every member throws — kept for callers
+/// Placeholder [AppBoxKitVideoPlayerService]. Every member throws — kept for callers
 /// that want video to fail loudly rather than silently no-op.
-class StubVideoPlayerService implements VideoPlayerService {
+class AppBoxKitStubVideoPlayerService implements AppBoxKitVideoPlayerService {
   static const _todo =
-      'appbox_kit_media: StubVideoPlayerService throws by design — '
-      'use PluginVideoPlayerService for real playback.';
+      'appbox_kit_media: AppBoxKitStubVideoPlayerService throws by design — '
+      'use AppBoxKitPluginVideoPlayerService for real playback.';
 
   @override
   Stream<Duration> get position$ => throw UnimplementedError(_todo);
@@ -190,7 +190,7 @@ class StubVideoPlayerService implements VideoPlayerService {
   Stream<Duration?> get duration$ => throw UnimplementedError(_todo);
 
   @override
-  Stream<PlaybackState> get state$ => throw UnimplementedError(_todo);
+  Stream<AppBoxKitPlaybackState> get state$ => throw UnimplementedError(_todo);
 
   @override
   double? get aspectRatio => throw UnimplementedError(_todo);

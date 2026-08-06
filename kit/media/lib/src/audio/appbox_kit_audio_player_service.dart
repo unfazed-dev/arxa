@@ -2,14 +2,14 @@ import 'dart:async';
 
 import 'package:just_audio/just_audio.dart';
 
-import 'playback_state.dart';
+import 'appbox_kit_playback_state.dart';
 
 /// Single-track audio playback with position/duration/state streams.
 ///
 /// One instance plays one source at a time; loading a new file replaces the
 /// current one. Callers bind to [position$]/[duration$]/[state$] for scrubbers
 /// and play/pause chrome.
-abstract class AudioPlayerService {
+abstract class AppBoxKitAudioPlayerService {
   /// Current playback position, updated as playback advances.
   Stream<Duration> get position$;
 
@@ -17,7 +17,7 @@ abstract class AudioPlayerService {
   Stream<Duration?> get duration$;
 
   /// Player lifecycle + playing flag.
-  Stream<PlaybackState> get state$;
+  Stream<AppBoxKitPlaybackState> get state$;
 
   /// Synchronous read of whether audio is currently playing.
   bool get isPlaying;
@@ -41,9 +41,9 @@ abstract class AudioPlayerService {
   Future<void> dispose();
 }
 
-/// [AudioPlayerService] backed by the native `just_audio` plugin.
-class JustAudioPlayerService implements AudioPlayerService {
-  JustAudioPlayerService([AudioPlayer? player])
+/// [AppBoxKitAudioPlayerService] backed by the native `just_audio` plugin.
+class AppBoxKitJustAudioPlayerService implements AppBoxKitAudioPlayerService {
+  AppBoxKitJustAudioPlayerService([AudioPlayer? player])
       : _player = player ?? AudioPlayer();
 
   final AudioPlayer _player;
@@ -55,7 +55,7 @@ class JustAudioPlayerService implements AudioPlayerService {
   Stream<Duration?> get duration$ => _player.durationStream;
 
   @override
-  Stream<PlaybackState> get state$ => _player.playerStateStream.map(_toState);
+  Stream<AppBoxKitPlaybackState> get state$ => _player.playerStateStream.map(_toState);
 
   @override
   bool get isPlaying => _player.playing;
@@ -85,14 +85,14 @@ class JustAudioPlayerService implements AudioPlayerService {
   @override
   Future<void> dispose() => _player.dispose();
 
-  static PlaybackState _toState(PlayerState s) => PlaybackState(
+  static AppBoxKitPlaybackState _toState(PlayerState s) => AppBoxKitPlaybackState(
         playing: s.playing,
         processing: switch (s.processingState) {
-          ProcessingState.idle => MediaProcessingState.idle,
-          ProcessingState.loading => MediaProcessingState.loading,
-          ProcessingState.buffering => MediaProcessingState.buffering,
-          ProcessingState.ready => MediaProcessingState.ready,
-          ProcessingState.completed => MediaProcessingState.completed,
+          ProcessingState.idle => AppBoxKitMediaProcessingState.idle,
+          ProcessingState.loading => AppBoxKitMediaProcessingState.loading,
+          ProcessingState.buffering => AppBoxKitMediaProcessingState.buffering,
+          ProcessingState.ready => AppBoxKitMediaProcessingState.ready,
+          ProcessingState.completed => AppBoxKitMediaProcessingState.completed,
         },
       );
 }

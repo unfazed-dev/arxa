@@ -4,39 +4,39 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/services.dart' show PlatformException;
 import 'package:image_picker/image_picker.dart';
 
-import 'media_capture_result.dart';
-import 'media_source.dart';
+import 'appbox_kit_media_capture_result.dart';
+import 'appbox_kit_media_source.dart';
 
 /// Photo capture from the camera or the photo library.
 ///
 /// Permission denial and missing hardware come back as
-/// [MediaCaptureResult] variants, never as thrown exceptions — see
+/// [AppBoxKitMediaCaptureResult] variants, never as thrown exceptions — see
 /// [capturePhoto].
-abstract class MediaCaptureService {
+abstract class AppBoxKitMediaCaptureService {
   /// Whether the device has usable camera hardware. Callers use this to hide
   /// "Take Photo" affordances where capture would be impossible.
   bool get hasCamera;
 
   /// Capture a photo from [source]. Returns:
-  /// * [MediaCaptured] with the temp file on success,
-  /// * [MediaCaptureCancelled] if the user backed out,
-  /// * [MediaCapturePermissionDenied] if the OS denied access,
-  /// * [MediaCaptureUnavailable] if [source] is camera but none exists,
-  /// * [MediaCaptureFailed] for any other plugin/platform error.
+  /// * [AppBoxKitMediaCaptured] with the temp file on success,
+  /// * [AppBoxKitMediaCaptureCancelled] if the user backed out,
+  /// * [AppBoxKitMediaCapturePermissionDenied] if the OS denied access,
+  /// * [AppBoxKitMediaCaptureUnavailable] if [source] is camera but none exists,
+  /// * [AppBoxKitMediaCaptureFailed] for any other plugin/platform error.
   ///
   /// [maxWidth]/[maxHeight]/[imageQuality] bound the output like the underlying
   /// plugin (quality is 0–100; null leaves the original).
-  Future<MediaCaptureResult> capturePhoto({
-    required MediaSource source,
+  Future<AppBoxKitMediaCaptureResult> capturePhoto({
+    required AppBoxKitMediaSource source,
     double? maxWidth,
     double? maxHeight,
     int? imageQuality,
   });
 }
 
-/// [MediaCaptureService] backed by the native `image_picker` plugin.
-class ImagePickerMediaCaptureService implements MediaCaptureService {
-  ImagePickerMediaCaptureService([ImagePicker? picker])
+/// [AppBoxKitMediaCaptureService] backed by the native `image_picker` plugin.
+class AppBoxKitImagePickerMediaCaptureService implements AppBoxKitMediaCaptureService {
+  AppBoxKitImagePickerMediaCaptureService([ImagePicker? picker])
       : _picker = picker ?? ImagePicker();
 
   final ImagePicker _picker;
@@ -53,35 +53,35 @@ class ImagePickerMediaCaptureService implements MediaCaptureService {
   }
 
   @override
-  Future<MediaCaptureResult> capturePhoto({
-    required MediaSource source,
+  Future<AppBoxKitMediaCaptureResult> capturePhoto({
+    required AppBoxKitMediaSource source,
     double? maxWidth,
     double? maxHeight,
     int? imageQuality,
   }) async {
-    if (source == MediaSource.camera && !hasCamera) {
-      return const MediaCaptureUnavailable('no camera on this device');
+    if (source == AppBoxKitMediaSource.camera && !hasCamera) {
+      return const AppBoxKitMediaCaptureUnavailable('no camera on this device');
     }
     try {
       final shot = await _picker.pickImage(
-        source: source == MediaSource.camera
+        source: source == AppBoxKitMediaSource.camera
             ? ImageSource.camera
             : ImageSource.gallery,
         maxWidth: maxWidth,
         maxHeight: maxHeight,
         imageQuality: imageQuality,
       );
-      if (shot == null) return const MediaCaptureCancelled();
-      return MediaCaptured(XFileCapturedMedia(shot));
+      if (shot == null) return const AppBoxKitMediaCaptureCancelled();
+      return AppBoxKitMediaCaptured(AppBoxKitXFileCapturedMedia(shot));
     } on PlatformException catch (e) {
       // image_picker raises `camera_access_denied` / `photo_access_denied`
       // (and similar) when the OS permission prompt is refused.
       if (e.code.contains('denied')) {
-        return MediaCapturePermissionDenied(e.message);
+        return AppBoxKitMediaCapturePermissionDenied(e.message);
       }
-      return MediaCaptureFailed(e);
+      return AppBoxKitMediaCaptureFailed(e);
     } catch (e, st) {
-      return MediaCaptureFailed(e, st);
+      return AppBoxKitMediaCaptureFailed(e, st);
     }
   }
 }

@@ -4,8 +4,8 @@ import 'package:path_provider/path_provider.dart';
 import 'package:record/record.dart';
 
 /// A completed recording: the file [path] and its measured [duration].
-class RecordingResult {
-  const RecordingResult({required this.path, required this.duration});
+class AppBoxKitRecordingResult {
+  const AppBoxKitRecordingResult({required this.path, required this.duration});
 
   final String path;
   final Duration duration;
@@ -17,7 +17,7 @@ class RecordingResult {
 /// The service owns the elapsed clock — [elapsed$] emits `Duration.zero` on
 /// [start], ticks while recording, and emits `null` when idle — so UIs can bind
 /// to it directly instead of running their own timer.
-abstract class AudioRecorderService {
+abstract class AppBoxKitAudioRecorderService {
   /// Elapsed recording time; `null` when not recording.
   Stream<Duration?> get elapsed$;
 
@@ -42,7 +42,7 @@ abstract class AudioRecorderService {
 
   /// Stop and finalize. Returns the recording, or `null` if nothing was
   /// captured.
-  Future<RecordingResult?> stop();
+  Future<AppBoxKitRecordingResult?> stop();
 
   /// Abort and delete the in-progress file.
   Future<void> cancel();
@@ -51,9 +51,9 @@ abstract class AudioRecorderService {
   Future<void> dispose();
 }
 
-/// [AudioRecorderService] backed by the native `record` plugin.
-class RecordAudioRecorderService implements AudioRecorderService {
-  RecordAudioRecorderService([AudioRecorder? recorder])
+/// [AppBoxKitAudioRecorderService] backed by the native `record` plugin.
+class AppBoxKitRecordAudioRecorderService implements AppBoxKitAudioRecorderService {
+  AppBoxKitRecordAudioRecorderService([AudioRecorder? recorder])
       : _recorder = recorder ?? AudioRecorder();
 
   final AudioRecorder _recorder;
@@ -101,11 +101,11 @@ class RecordAudioRecorderService implements AudioRecorderService {
   }
 
   @override
-  Future<RecordingResult?> stop() async {
+  Future<AppBoxKitRecordingResult?> stop() async {
     final path = await _recorder.stop();
     final elapsed = _stopClock();
     if (path == null) return null;
-    return RecordingResult(path: path, duration: elapsed);
+    return AppBoxKitRecordingResult(path: path, duration: elapsed);
   }
 
   @override

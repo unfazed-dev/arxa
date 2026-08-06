@@ -2,12 +2,12 @@
 /// OS, no MethodChannels. Drive streams and script outcomes from tests.
 ///
 /// ```dart
-/// final capture = FakeMediaCaptureService(hasCamera: false);
-/// capture.scriptedResult = const MediaCapturePermissionDenied();
+/// final capture = FakeAppBoxKitMediaCaptureService(hasCamera: false);
+/// capture.scriptedResult = const AppBoxKitMediaCapturePermissionDenied();
 ///
-/// final rec = FakeAudioRecorderService()..permission = false;
+/// final rec = FakeAppBoxKitAudioRecorderService()..permission = false;
 ///
-/// final player = FakeAudioPlayerService();
+/// final player = FakeAppBoxKitAudioPlayerService();
 /// player.drivePosition(const Duration(seconds: 3));
 /// ```
 library;
@@ -20,10 +20,10 @@ import 'package:flutter/widgets.dart';
 
 import 'appbox_kit_media.dart';
 
-/// In-memory [CapturedMedia]. [saveTo] writes [bytes] to disk so a caller that
+/// In-memory [AppBoxKitCapturedMedia]. [saveTo] writes [bytes] to disk so a caller that
 /// moves the capture produces a real file the test can assert on.
-class FakeCapturedMedia implements CapturedMedia {
-  FakeCapturedMedia(this.path, {this.name = 'fake.jpg', Uint8List? bytes})
+class FakeAppBoxKitCapturedMedia implements AppBoxKitCapturedMedia {
+  FakeAppBoxKitCapturedMedia(this.path, {this.name = 'fake.jpg', Uint8List? bytes})
       : _bytes = bytes ?? Uint8List(0);
 
   @override
@@ -47,24 +47,24 @@ class FakeCapturedMedia implements CapturedMedia {
   Future<Uint8List> readAsBytes() async => _bytes;
 }
 
-/// Scriptable [MediaCaptureService]. Set [scriptedResult] to force any outcome;
+/// Scriptable [AppBoxKitMediaCaptureService]. Set [scriptedResult] to force any outcome;
 /// otherwise a camera-on-no-camera returns unavailable and everything else
-/// returns a [FakeCapturedMedia].
-class FakeMediaCaptureService implements MediaCaptureService {
-  FakeMediaCaptureService({this.hasCamera = true, this.scriptedResult});
+/// returns a [FakeAppBoxKitCapturedMedia].
+class FakeAppBoxKitMediaCaptureService implements AppBoxKitMediaCaptureService {
+  FakeAppBoxKitMediaCaptureService({this.hasCamera = true, this.scriptedResult});
 
   @override
   bool hasCamera;
 
   /// When non-null, [capturePhoto] returns this verbatim.
-  MediaCaptureResult? scriptedResult;
+  AppBoxKitMediaCaptureResult? scriptedResult;
 
   /// Sources passed to [capturePhoto], in call order.
-  final List<MediaSource> requestedSources = [];
+  final List<AppBoxKitMediaSource> requestedSources = [];
 
   @override
-  Future<MediaCaptureResult> capturePhoto({
-    required MediaSource source,
+  Future<AppBoxKitMediaCaptureResult> capturePhoto({
+    required AppBoxKitMediaSource source,
     double? maxWidth,
     double? maxHeight,
     int? imageQuality,
@@ -72,25 +72,25 @@ class FakeMediaCaptureService implements MediaCaptureService {
     requestedSources.add(source);
     final scripted = scriptedResult;
     if (scripted != null) return scripted;
-    if (source == MediaSource.camera && !hasCamera) {
-      return const MediaCaptureUnavailable('fake: no camera');
+    if (source == AppBoxKitMediaSource.camera && !hasCamera) {
+      return const AppBoxKitMediaCaptureUnavailable('fake: no camera');
     }
-    return MediaCaptured(FakeCapturedMedia('/fake/photo.jpg'));
+    return AppBoxKitMediaCaptured(FakeAppBoxKitCapturedMedia('/fake/photo.jpg'));
   }
 }
 
-/// Scriptable [AudioRecorderService]. Drive [elapsed$]/[amplitude$] with
+/// Scriptable [AppBoxKitAudioRecorderService]. Drive [elapsed$]/[amplitude$] with
 /// [driveElapsed]/[driveAmplitude]; script [hasPermission] via [permission] and
 /// the [stop] return via [scriptedStopResult].
-class FakeAudioRecorderService implements AudioRecorderService {
-  FakeAudioRecorderService({this.permission = true, this.scriptedStopResult});
+class FakeAppBoxKitAudioRecorderService implements AppBoxKitAudioRecorderService {
+  FakeAppBoxKitAudioRecorderService({this.permission = true, this.scriptedStopResult});
 
   /// Value returned by [hasPermission].
   bool permission;
 
   /// When non-null, [stop] returns this; otherwise it returns the last started
   /// path (or a default) with the current [elapsed].
-  RecordingResult? scriptedStopResult;
+  AppBoxKitRecordingResult? scriptedStopResult;
 
   final StreamController<Duration?> _elapsed =
       StreamController<Duration?>.broadcast();
@@ -127,14 +127,14 @@ class FakeAudioRecorderService implements AudioRecorderService {
   }
 
   @override
-  Future<RecordingResult?> stop() async {
+  Future<AppBoxKitRecordingResult?> stop() async {
     _recording = false;
     _elapsed.add(null);
     if (scriptedStopResult != null) return scriptedStopResult;
     final path = startedPaths.isNotEmpty && startedPaths.last != null
         ? startedPaths.last!
         : '/fake/rec.m4a';
-    return RecordingResult(path: path, duration: _elapsed$value);
+    return AppBoxKitRecordingResult(path: path, duration: _elapsed$value);
   }
 
   @override
@@ -159,16 +159,16 @@ class FakeAudioRecorderService implements AudioRecorderService {
   }
 }
 
-/// Scriptable [AudioPlayerService]. Drive [position$]/[duration$]/[state$] with
+/// Scriptable [AppBoxKitAudioPlayerService]. Drive [position$]/[duration$]/[state$] with
 /// [drivePosition]/[driveDuration]/[driveState]; [play]/[pause]/[stop] flip
-/// [isPlaying] and emit a ready [PlaybackState].
-class FakeAudioPlayerService implements AudioPlayerService {
+/// [isPlaying] and emit a ready [AppBoxKitPlaybackState].
+class FakeAppBoxKitAudioPlayerService implements AppBoxKitAudioPlayerService {
   final StreamController<Duration> _position =
       StreamController<Duration>.broadcast();
   final StreamController<Duration?> _duration =
       StreamController<Duration?>.broadcast();
-  final StreamController<PlaybackState> _state =
-      StreamController<PlaybackState>.broadcast();
+  final StreamController<AppBoxKitPlaybackState> _state =
+      StreamController<AppBoxKitPlaybackState>.broadcast();
 
   bool _playing = false;
 
@@ -182,7 +182,7 @@ class FakeAudioPlayerService implements AudioPlayerService {
   Stream<Duration?> get duration$ => _duration.stream;
 
   @override
-  Stream<PlaybackState> get state$ => _state.stream;
+  Stream<AppBoxKitPlaybackState> get state$ => _state.stream;
 
   @override
   bool get isPlaying => _playing;
@@ -219,13 +219,13 @@ class FakeAudioPlayerService implements AudioPlayerService {
   /// Emit a duration update.
   void driveDuration(Duration? value) => _duration.add(value);
 
-  /// Emit an explicit [PlaybackState] (e.g. a completed state).
-  void driveState(PlaybackState value) => _state.add(value);
+  /// Emit an explicit [AppBoxKitPlaybackState] (e.g. a completed state).
+  void driveState(AppBoxKitPlaybackState value) => _state.add(value);
 
   void _emitState() => _state.add(
-        PlaybackState(
+        AppBoxKitPlaybackState(
           playing: _playing,
-          processing: MediaProcessingState.ready,
+          processing: AppBoxKitMediaProcessingState.ready,
         ),
       );
 
@@ -237,15 +237,15 @@ class FakeAudioPlayerService implements AudioPlayerService {
   }
 }
 
-/// In-memory [VideoPlayerService] — scriptable streams, recorded [load]s, no
+/// In-memory [AppBoxKitVideoPlayerService] — scriptable streams, recorded [load]s, no
 /// render surface ([videoView] is an empty box).
-class FakeVideoPlayerService implements VideoPlayerService {
+class FakeAppBoxKitVideoPlayerService implements AppBoxKitVideoPlayerService {
   final StreamController<Duration> _position =
       StreamController<Duration>.broadcast();
   final StreamController<Duration?> _duration =
       StreamController<Duration?>.broadcast();
-  final StreamController<PlaybackState> _state =
-      StreamController<PlaybackState>.broadcast();
+  final StreamController<AppBoxKitPlaybackState> _state =
+      StreamController<AppBoxKitPlaybackState>.broadcast();
 
   bool _playing = false;
 
@@ -262,7 +262,7 @@ class FakeVideoPlayerService implements VideoPlayerService {
   Stream<Duration?> get duration$ => _duration.stream;
 
   @override
-  Stream<PlaybackState> get state$ => _state.stream;
+  Stream<AppBoxKitPlaybackState> get state$ => _state.stream;
 
   @override
   double? get aspectRatio => scriptedAspectRatio;
@@ -303,13 +303,13 @@ class FakeVideoPlayerService implements VideoPlayerService {
   /// Emit a duration update.
   void driveDuration(Duration? value) => _duration.add(value);
 
-  /// Emit an explicit [PlaybackState] (e.g. a completed state).
-  void driveState(PlaybackState value) => _state.add(value);
+  /// Emit an explicit [AppBoxKitPlaybackState] (e.g. a completed state).
+  void driveState(AppBoxKitPlaybackState value) => _state.add(value);
 
   void _emitState() => _state.add(
-        PlaybackState(
+        AppBoxKitPlaybackState(
           playing: _playing,
-          processing: MediaProcessingState.ready,
+          processing: AppBoxKitMediaProcessingState.ready,
         ),
       );
 

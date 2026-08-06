@@ -1,6 +1,6 @@
 /// Coarse player lifecycle, kit-owned so callers never import a plugin's own
 /// state enum. Maps 1:1 onto `just_audio`'s `ProcessingState`.
-enum MediaProcessingState {
+enum AppBoxKitMediaProcessingState {
   /// No source loaded.
   idle,
 
@@ -19,24 +19,24 @@ enum MediaProcessingState {
 
 /// A snapshot of a player's state: whether it is [playing] and where it is in
 /// its [processing] lifecycle. Kit-owned to keep `just_audio` out of callers.
-class PlaybackState {
-  const PlaybackState({required this.playing, required this.processing});
+class AppBoxKitPlaybackState {
+  const AppBoxKitPlaybackState({required this.playing, required this.processing});
 
   /// A convenient idle default (nothing loaded, not playing).
-  static const idle = PlaybackState(
+  static const idle = AppBoxKitPlaybackState(
     playing: false,
-    processing: MediaProcessingState.idle,
+    processing: AppBoxKitMediaProcessingState.idle,
   );
 
   final bool playing;
-  final MediaProcessingState processing;
+  final AppBoxKitMediaProcessingState processing;
 
   /// True once playback has run to the end of the source.
-  bool get isCompleted => processing == MediaProcessingState.completed;
+  bool get isCompleted => processing == AppBoxKitMediaProcessingState.completed;
 
   @override
   bool operator ==(Object other) =>
-      other is PlaybackState &&
+      other is AppBoxKitPlaybackState &&
       other.playing == playing &&
       other.processing == processing;
 
@@ -45,5 +45,5 @@ class PlaybackState {
 
   @override
   String toString() =>
-      'PlaybackState(playing: $playing, processing: $processing)';
+      'AppBoxKitPlaybackState(playing: $playing, processing: $processing)';
 }

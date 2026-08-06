@@ -3,7 +3,7 @@
 /// STUB: no backing implementation yet. Signatures use only kit-owned types
 /// (file paths + [Duration]) so a future ffmpeg/native-backed implementation
 /// slots in without changing callers. Every member throws [UnimplementedError].
-abstract class MediaEditingService {
+abstract class AppBoxKitMediaEditingService {
   /// Transcode [inputPath] into a new container/codec at [outputPath],
   /// returning the output path.
   Future<String> transcode({
@@ -29,13 +29,13 @@ abstract class MediaEditingService {
   });
 }
 
-/// Placeholder [MediaEditingService]. Every member throws until the phase-2A
+/// Placeholder [AppBoxKitMediaEditingService]. Every member throws until the phase-2A
 /// editing/transcode seam is wired.
-class StubMediaEditingService implements MediaEditingService {
+class AppBoxKitStubMediaEditingService implements AppBoxKitMediaEditingService {
   // TODO(appbox_kit_media): implement editing/transcode (ffmpeg_kit_flutter or
   // native AVFoundation / MediaCodec). Phase 2A.
   static const _todo =
-      'appbox_kit_media: MediaEditingService is a phase-2A stub — '
+      'appbox_kit_media: AppBoxKitMediaEditingService is a phase-2A stub — '
       'no transcode backend is wired yet.';
 
   @override
