@@ -85,7 +85,9 @@ void main() {
     }
   });
 
-  test('email/password seed users see their fixture notes', () async {
+  test(
+      'auth-and-accounts.sign-in.sign-in-with-email-and-otp — email/password seed users see their fixture notes',
+      () async {
     const emailUsers = {
       'user-1': 'evan@seed.local',
       'user-2': 'guest@seed.local',
@@ -104,7 +106,9 @@ void main() {
     }
   });
 
-  test('Google provider sign-in resolves to user-google seed data', () async {
+  test(
+      'auth-and-accounts.sign-in.sign-in-with-google — Google provider sign-in resolves to user-google seed data',
+      () async {
     final session = await notes.auth.signInWithGoogle();
     final overview = await overviewFor(session);
     expect(overview.allCount, expectedLive['user-google'],
@@ -112,7 +116,9 @@ void main() {
             'google-user@seed.local (session.user.id=${session.user.id})');
   });
 
-  test('Apple provider sign-in resolves to user-apple seed data', () async {
+  test(
+      'auth-and-accounts.sign-in.sign-in-with-apple — Apple provider sign-in resolves to user-apple seed data',
+      () async {
     final session = await notes.auth.signInWithApple();
     final overview = await overviewFor(session);
     expect(overview.allCount, expectedLive['user-apple'],
@@ -120,7 +126,8 @@ void main() {
             'apple-user@seed.local (session.user.id=${session.user.id})');
   });
 
-  test('anonymous sign-in intentionally starts empty (0 notes is correct)',
+  test(
+      'auth-and-accounts.sign-in.continue-anonymously — anonymous sign-in intentionally starts empty (0 notes is correct)',
       () async {
     final session = await notes.auth.signInAnonymously();
     final overview = await overviewFor(session);
@@ -128,7 +135,9 @@ void main() {
         reason: 'anon users own no seed rows by design');
   });
 
-  test('folder counts sum to allCount for every seeded user', () async {
+  test(
+      'notes.folders.browse-the-notes-in-a-folder — folder counts sum to allCount for every seeded user',
+      () async {
     const emails = [
       'evan@seed.local',
       'guest@seed.local',

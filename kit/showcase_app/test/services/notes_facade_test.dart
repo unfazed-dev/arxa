@@ -71,19 +71,24 @@ void main() {
     await appBoxKitLocator.reset();
   });
 
-  test('fake sign-in resolves the fixture user and its canonical id', () {
+  test(
+      'auth-and-accounts.sign-in.sign-in-with-email-and-otp — fake sign-in resolves the fixture user and its canonical id',
+      () {
     final idService = appBoxKitLocator<AppBoxKitIdService>();
     expect(evanId, idService.canonicalId(kAppBoxKitAuthUsersTable, 'user-1'));
   });
 
-  test('notesIn\$ emits only the owner\'s live notes', () async {
+  test(
+      'notes.folders.browse-the-notes-in-a-folder — notesIn\$ emits only the owner\'s live notes',
+      () async {
     final live = await notes.notesIn$(evanId).first;
     expect(live, hasLength(7)); // 8 evan fixtures minus the deleted draft
     expect(live.any((n) => n.title == 'Old draft'), isFalse);
     expect(live.any((n) => n.title == 'Guest note'), isFalse);
   });
 
-  test('overview\$ derives folder counts, all count, and trash count',
+  test(
+      'notes.folders.browse-the-notes-in-a-folder — overview\$ derives folder counts, all count, and trash count',
       () async {
     final overview = await notes.overview$(evanId).first;
     expect(overview.folders.map((f) => f.name), ['Notes', 'Work', 'Personal']);
@@ -97,17 +102,22 @@ void main() {
     expect(overview.liveCountByFolder[fid('folder-notes')], 1);
   });
 
-  test('trash\$ holds the seeded deleted draft', () async {
+  test('notes.trash-and-restore.trash-a-note — trash\$ holds the seeded deleted draft',
+      () async {
     final trash = await notes.trash$(evanId).first;
     expect(trash.map((n) => n.title), ['Old draft']);
   });
 
-  test('search\$ filters bodies case-insensitively', () async {
+  test(
+      'search-and-attachments.search.search-notes-by-text — search\$ filters bodies case-insensitively',
+      () async {
     final hits = await notes.search$(evanId, 'ESPRESSO').first;
     expect(hits.map((n) => n.title), ['Groceries']);
   });
 
-  test('groupNotes buckets by iOS Notes sections, pinned first', () {
+  test(
+      'notes.pin-notes.pin-a-note-to-the-top-of-the-inbox — groupNotes buckets by iOS Notes sections, pinned first',
+      () {
     final now = DateTime(2026, 7, 12, 12);
     ShowcaseNoteModel note(String id, DateTime updatedAt, {bool pinned = false}) => ShowcaseNoteModel(
           id: id,
@@ -141,7 +151,8 @@ void main() {
     expect(groups.first.notes.single.id, 'pinned-old');
   });
 
-  test('mutation round-trip: create → save → pin → trash → restore → purge',
+  test(
+      'notes.note-crud.create-a-note — mutation round-trip: create → save (notes.note-crud.edit-a-note) → pin (notes.pin-notes.pin-a-note-to-the-top-of-the-inbox) → trash (notes.trash-and-restore.trash-a-note) → restore (notes.trash-and-restore.restore-a-trashed-note) → purge (notes.note-crud.delete-a-note-forever)',
       () async {
     final idService = appBoxKitLocator<AppBoxKitIdService>();
     final folderId = idService.canonicalId(kShowcaseNoteFoldersTable, 'folder-notes');
@@ -171,7 +182,9 @@ void main() {
     expect(live.map((n) => n.id), isNot(contains(created.id)));
   });
 
-  test('deleteFolder sends its live notes to Recently Deleted', () async {
+  test(
+      'notes.trash-and-restore.trash-a-note — deleteFolder sends its live notes to Recently Deleted',
+      () async {
     final folder = await notes.createFolder(evanId, 'Doomed', sortOrder: 99);
     final doomed = await notes.createNote(evanId, folder.id);
 
@@ -187,7 +200,9 @@ void main() {
     await notes.deletePermanently(row);
   });
 
-  test('per-owner isolation: the guest sees only guest notes', () async {
+  test(
+      'auth-and-accounts.sign-in.sign-in-with-email-and-otp — per-owner isolation: the guest sees only guest notes',
+      () async {
     final guest = await notes.auth
         .signInWithEmailPassword(email: 'guest@seed.local', password: 'x');
     addTearDown(() => notes.auth

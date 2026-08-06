@@ -65,7 +65,9 @@ void main() {
     }
   }
 
-  test('overview follows the session through the switchMap cascade', () async {
+  test(
+      'notes.folders.browse-the-notes-in-a-folder — overview follows the session through the switchMap cascade',
+      () async {
     await notes.auth
         .signInWithEmailPassword(email: 'evan@seed.local', password: 'x');
 

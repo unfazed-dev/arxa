@@ -116,11 +116,14 @@ dependency_overrides:
   package_info_plus: ^10.0.0
 
 dev_dependencies:
+  # Retained for stacked_generator (app.locator/router regeneration); mockito
+  # codegen is gone — tests use mocktail + kit fakes (behavior-TDD canon).
   build_runner: ^2.15.0
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
-  mockito: ^5.7.0
+  # Matches kit/auth (repo mocking convention).
+  mocktail: ^1.0.4
   stacked_generator: ^2.0.4
 flutter:
   # Standalone app: bundles the MaterialIcons font (appbox_kit + the M3E
