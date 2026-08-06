@@ -5,7 +5,7 @@ import 'package:video_player/video_player.dart';
 
 void main() {
   group('AppBoxKitPluginVideoPlayerService.toState', () {
-    test('uninitialized maps to loading, not playing', () {
+    test('kit.media.video-player — uninitialized maps to loading, not playing', () {
       final state = AppBoxKitPluginVideoPlayerService.toState(
         const VideoPlayerValue.uninitialized(),
       );
@@ -13,7 +13,7 @@ void main() {
       expect(state.playing, isFalse);
     });
 
-    test('buffering wins over ready once initialized', () {
+    test('kit.media.video-player — buffering wins over ready once initialized', () {
       final state = AppBoxKitPluginVideoPlayerService.toState(
         const VideoPlayerValue(
           duration: Duration(seconds: 10),
@@ -26,7 +26,7 @@ void main() {
       expect(state.playing, isTrue);
     });
 
-    test('initialized mid-play maps to ready', () {
+    test('kit.media.video-player — initialized mid-play maps to ready', () {
       final state = AppBoxKitPluginVideoPlayerService.toState(
         const VideoPlayerValue(
           duration: Duration(seconds: 10),
@@ -39,7 +39,7 @@ void main() {
       expect(state.playing, isTrue);
     });
 
-    test('paused at the end maps to completed', () {
+    test('kit.media.video-player — paused at the end maps to completed', () {
       final state = AppBoxKitPluginVideoPlayerService.toState(
         const VideoPlayerValue(
           duration: Duration(seconds: 10),
@@ -51,7 +51,7 @@ void main() {
       expect(state.isCompleted, isTrue);
     });
 
-    test('plugin isCompleted flag alone maps to completed', () {
+    test('kit.media.video-player — plugin isCompleted flag alone maps to completed', () {
       final state = AppBoxKitPluginVideoPlayerService.toState(
         const VideoPlayerValue(
           duration: Duration(seconds: 10),
@@ -64,7 +64,7 @@ void main() {
   });
 
   group('FakeAppBoxKitVideoPlayerService', () {
-    test('records loads and drives play/pause state', () async {
+    test('kit.media.video-player — records loads and drives play/pause state', () async {
       final fake = FakeAppBoxKitVideoPlayerService();
       final states = <AppBoxKitPlaybackState>[];
       final sub = fake.state$.listen(states.add);
@@ -80,7 +80,7 @@ void main() {
       await fake.dispose();
     });
 
-    test('stop rewinds position to zero', () async {
+    test('kit.media.video-player — stop rewinds position to zero', () async {
       final fake = FakeAppBoxKitVideoPlayerService();
       final positions = <Duration>[];
       final sub = fake.position$.listen(positions.add);
@@ -94,7 +94,7 @@ void main() {
     });
   });
 
-  test('AppBoxKitStubVideoPlayerService fails loudly', () {
+  test('kit.media.video-player — AppBoxKitStubVideoPlayerService fails loudly', () {
     final stub = AppBoxKitStubVideoPlayerService();
     expect(() => stub.position$, throwsUnimplementedError);
     expect(() => stub.videoView(), throwsUnimplementedError);
