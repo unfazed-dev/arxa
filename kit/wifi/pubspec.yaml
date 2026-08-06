@@ -9,7 +9,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  # Live OS connectivity stream backing the priority Stream<KitWifiState>
+  # Live OS connectivity stream backing the priority Stream<AppBoxKitWifiState>
   # (wraps Android ConnectivityManager / iOS NWPathMonitor). network_info_plus
   # has no stream, so connectivity_plus is the source of the "real OS stream".
   # Latest verified on pub.dev 2026-07-14: 7.2.0.

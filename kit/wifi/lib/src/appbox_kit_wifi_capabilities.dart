@@ -5,8 +5,8 @@
 /// join a network; the only honest affordance is to deep-link the user into
 /// the system Settings screen. These flags let the UI render the right control
 /// (a switch vs a "Open Settings" button) without hard-coding platform checks.
-class KitWifiCapabilities {
-  const KitWifiCapabilities({
+class AppBoxKitWifiCapabilities {
+  const AppBoxKitWifiCapabilities({
     required this.canControlAdapter,
     required this.canJoinNetwork,
     required this.canReadNetworkInfo,
@@ -25,7 +25,7 @@ class KitWifiCapabilities {
 
   /// The realistic capability set for iOS / modern Android: observe and
   /// escort only.
-  static const escortOnly = KitWifiCapabilities(
+  static const escortOnly = AppBoxKitWifiCapabilities(
     canControlAdapter: false,
     canJoinNetwork: false,
     canReadNetworkInfo: true,

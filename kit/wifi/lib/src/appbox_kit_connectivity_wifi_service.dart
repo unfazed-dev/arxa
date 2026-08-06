@@ -2,12 +2,12 @@ import 'package:app_settings/app_settings.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:network_info_plus/network_info_plus.dart';
 
-import 'kit_wifi_capabilities.dart';
-import 'kit_wifi_network.dart';
-import 'kit_wifi_service.dart';
-import 'kit_wifi_state.dart';
+import 'appbox_kit_wifi_capabilities.dart';
+import 'appbox_kit_wifi_network.dart';
+import 'appbox_kit_wifi_service.dart';
+import 'appbox_kit_wifi_state.dart';
 
-/// Production [KitWifiService].
+/// Production [AppBoxKitWifiService].
 ///
 /// The implemented priority is **adapter-state observation + escort**:
 /// - [stateChanges] / [currentState] come from the live `connectivity_plus`
@@ -16,9 +16,9 @@ import 'kit_wifi_state.dart';
 /// - [openSettings] deep-links to Wi-Fi settings via `app_settings`.
 ///
 /// Adapter control ([requestEnable]) is unsupported on the platforms this kit
-/// targets and throws [KitWifiUnsupportedError] — the UI escorts instead.
-class ConnectivityKitWifiService implements KitWifiService {
-  ConnectivityKitWifiService({
+/// targets and throws [AppBoxKitWifiUnsupportedError] — the UI escorts instead.
+class ConnectivityAppBoxKitWifiService implements AppBoxKitWifiService {
+  ConnectivityAppBoxKitWifiService({
     Connectivity? connectivity,
     NetworkInfo? networkInfo,
   })  : _connectivity = connectivity ?? Connectivity(),
@@ -28,30 +28,30 @@ class ConnectivityKitWifiService implements KitWifiService {
   final NetworkInfo _networkInfo;
 
   @override
-  KitWifiCapabilities get capabilities => KitWifiCapabilities.escortOnly;
+  AppBoxKitWifiCapabilities get capabilities => AppBoxKitWifiCapabilities.escortOnly;
 
   @override
-  Stream<KitWifiState> get stateChanges =>
+  Stream<AppBoxKitWifiState> get stateChanges =>
       _connectivity.onConnectivityChanged.map(_toState);
 
   @override
-  Future<KitWifiState> currentState() async {
+  Future<AppBoxKitWifiState> currentState() async {
     return _toState(await _connectivity.checkConnectivity());
   }
 
   @override
-  Future<KitWifiNetwork?> currentNetwork() async {
+  Future<AppBoxKitWifiNetwork?> currentNetwork() async {
     final ssid = await _networkInfo.getWifiName();
     final bssid = await _networkInfo.getWifiBSSID();
     final ip = await _networkInfo.getWifiIP();
     if (ssid == null && bssid == null && ip == null) return null;
-    return KitWifiNetwork(ssid: ssid, bssid: bssid, ipAddress: ip);
+    return AppBoxKitWifiNetwork(ssid: ssid, bssid: bssid, ipAddress: ip);
   }
 
   @override
   Future<void> requestEnable() async {
     // No cross-platform OS API enables the Wi-Fi radio on iOS or Android 10+.
-    throw KitWifiUnsupportedError(
+    throw AppBoxKitWifiUnsupportedError(
       'Enabling Wi-Fi programmatically is not supported on this platform; '
       'call openSettings() to escort the user instead.',
     );
@@ -63,10 +63,10 @@ class ConnectivityKitWifiService implements KitWifiService {
     return true;
   }
 
-  KitWifiState _toState(List<ConnectivityResult> results) {
+  AppBoxKitWifiState _toState(List<ConnectivityResult> results) {
     if (results.contains(ConnectivityResult.wifi)) {
-      return KitWifiState.connected;
+      return AppBoxKitWifiState.connected;
     }
-    return KitWifiState.disconnected;
+    return AppBoxKitWifiState.disconnected;
   }
 }

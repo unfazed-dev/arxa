@@ -1,4 +1,4 @@
-/// The observable Wi-Fi state exposed by `KitWifiService.stateChanges`.
+/// The observable Wi-Fi state exposed by `AppBoxKitWifiService.stateChanges`.
 ///
 /// IMPORTANT — this reflects **connectivity/reachability, not radio power.**
 /// Mobile OSes do not expose the Wi-Fi adapter's on/off state to apps, so this
@@ -6,7 +6,7 @@
 /// (via the OS connectivity stream), which it can observe. A [connected]
 /// state implies the adapter is enabled; [disconnected] does **not** prove the
 /// adapter is off — it may be on but not associated with a network.
-enum KitWifiState {
+enum AppBoxKitWifiState {
   /// The device has an active Wi-Fi connection.
   connected,
 

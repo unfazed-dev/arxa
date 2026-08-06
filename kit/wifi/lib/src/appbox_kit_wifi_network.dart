@@ -2,11 +2,11 @@
 ///
 /// Every field is nullable: modern iOS and Android gate SSID/BSSID reads
 /// behind location permission (and, on iOS, entitlements), so a `null` [ssid]
-/// on a [KitWifiState.connected] device usually means "permission not
+/// on a [AppBoxKitWifiState.connected] device usually means "permission not
 /// granted", not "no network". Consumers should treat the whole object as a
 /// hint, never as authoritative connection state.
-class KitWifiNetwork {
-  const KitWifiNetwork({
+class AppBoxKitWifiNetwork {
+  const AppBoxKitWifiNetwork({
     this.ssid,
     this.bssid,
     this.ipAddress,
@@ -24,5 +24,5 @@ class KitWifiNetwork {
 
   @override
   String toString() =>
-      'KitWifiNetwork(ssid: $ssid, bssid: $bssid, ipAddress: $ipAddress)';
+      'AppBoxKitWifiNetwork(ssid: $ssid, bssid: $bssid, ipAddress: $ipAddress)';
 }

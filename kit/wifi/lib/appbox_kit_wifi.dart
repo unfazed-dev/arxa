@@ -9,8 +9,8 @@
 /// `stacked_services`) — pure port over native plugins.
 library;
 
-export 'src/kit_wifi_capabilities.dart';
-export 'src/kit_wifi_network.dart';
-export 'src/kit_wifi_service.dart';
-export 'src/kit_wifi_state.dart';
-export 'src/connectivity_kit_wifi_service.dart';
+export 'src/appbox_kit_wifi_capabilities.dart';
+export 'src/appbox_kit_wifi_network.dart';
+export 'src/appbox_kit_wifi_service.dart';
+export 'src/appbox_kit_wifi_state.dart';
+export 'src/appbox_kit_connectivity_wifi_service.dart';
