@@ -291,7 +291,7 @@ class FakeAppBoxKitRepository<T> implements AppBoxKitRepository<T> {
 ///
 /// `repository<T>()` / `auth` resolve through the appBoxKitLocator exactly as in a
 /// real facade subclass — register [FakeAppBoxKitRepository] instances for the
-/// entities under test. `mutate` still returns the real pipeline observation
+/// entities under test. `mutate` still returns the real bus observation
 /// handle (so the mutation executes against kit fakes); it just records each
 /// call's label and value type first.
 class FakeAppBoxKitDataFacade extends AppBoxKitDataFacade {

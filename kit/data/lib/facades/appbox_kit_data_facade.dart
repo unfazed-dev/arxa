@@ -15,10 +15,10 @@ import '../repositories/appbox_kit_repository.dart';
 /// Aggregations belong here, never in repositories (swap rule 2).
 ///
 /// Mutations go through [mutate], which dispatches on the facade's
-/// `AppBoxKitActionPipeline` so data writes inherit the kit's
+/// `AppBoxKitActionBus` so data writes inherit the kit's
 /// busy/error/snackbar automation (hot dispatch — the returned future is an
 /// observation handle). As a [AppBoxKitActionOwner] the facade can also run
-/// ad-hoc ops via `pipeline.pipe(name, …)` and everything it created dies
+/// ad-hoc ops via `bus.define(name, …)` and everything it created dies
 /// with [dispose].
 abstract class AppBoxKitDataFacade with AppBoxKitActionOwner {
   final List<Subject<dynamic>> _subjects$ = [];
@@ -38,7 +38,7 @@ abstract class AppBoxKitDataFacade with AppBoxKitActionOwner {
     return subject;
   }
 
-  /// Runs a data mutation on the facade's pipeline, owned by this facade —
+  /// Runs a data mutation on the facade's bus, owned by this facade —
   /// the registry key is derived (`RuntimeType.name.entity`), never
   /// hand-written.
   ///
@@ -75,7 +75,7 @@ abstract class AppBoxKitDataFacade with AppBoxKitActionOwner {
   }) {
     final label =
         [if (name != null) name, if (entity != null) entity].join('.');
-    return pipeline.run<T>(
+    return bus.run<T>(
       label.isEmpty ? 'mutate' : label,
       operation,
       errorMessage: fallback,

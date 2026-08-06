@@ -10,7 +10,7 @@ import 'package:appbox_kit_ui_library/appbox_kit_testing.dart';
 
 /// `AppBoxKitDataFacade.mutate` policy params: the key is derived
 /// (owner + name.entity), and error/success messages become notification
-/// config on the pipeline run — the common mutation is a one-liner. The
+/// config on the bus run — the common mutation is a one-liner. The
 /// returned future is an observation handle: the mutation is already running.
 void main() {
   setUp(() async {
@@ -58,7 +58,7 @@ void main() {
       error: 'nope',
     );
 
-    // Hot dispatch: the run starts on the pipe's subscription, a microtask
+    // Hot dispatch: the run starts on the dispatcher's subscription, a microtask
     // after the call — pump before observing busy.
     await pumpEventQueue();
     expect(state.value.busy, isTrue);
