@@ -3,11 +3,11 @@ import 'package:flutter/foundation.dart' show immutable;
 /// A discrete analytics event: a [name] plus optional structured [params].
 ///
 /// The service normalizes every `logEvent` call into one of these before
-/// fanning it out, so each [KitAnalyticsBackend] receives a single stable shape
+/// fanning it out, so each [AppBoxKitAnalyticsBackend] receives a single stable shape
 /// regardless of the call site.
 @immutable
-class KitAnalyticsEvent {
-  const KitAnalyticsEvent({
+class AppBoxKitAnalyticsEvent {
+  const AppBoxKitAnalyticsEvent({
     required this.name,
     required this.timestamp,
     this.params = const <String, Object?>{},
@@ -27,13 +27,13 @@ class KitAnalyticsEvent {
   final DateTime timestamp;
 
   @override
-  String toString() => 'KitAnalyticsEvent($name, $params)';
+  String toString() => 'AppBoxKitAnalyticsEvent($name, $params)';
 }
 
 /// A screen/route view. Mirrors the `screen_view` convention most vendors use.
 @immutable
-class KitScreenView {
-  const KitScreenView({
+class AppBoxKitScreenView {
+  const AppBoxKitScreenView({
     required this.screenName,
     required this.timestamp,
     this.screenClass,
@@ -44,26 +44,26 @@ class KitScreenView {
   final DateTime timestamp;
 
   @override
-  String toString() => 'KitScreenView('
+  String toString() => 'AppBoxKitScreenView('
       '$screenName${screenClass == null ? '' : ', $screenClass'})';
 }
 
 /// A named user property (dimension). A null [value] clears the property.
 @immutable
-class KitUserProperty {
-  const KitUserProperty(this.name, this.value);
+class AppBoxKitUserProperty {
+  const AppBoxKitUserProperty(this.name, this.value);
 
   final String name;
   final String? value;
 
   @override
-  String toString() => 'KitUserProperty($name = $value)';
+  String toString() => 'AppBoxKitUserProperty($name = $value)';
 }
 
 /// A timing/duration measurement, e.g. time-to-interactive.
 @immutable
-class KitAnalyticsTiming {
-  const KitAnalyticsTiming({
+class AppBoxKitAnalyticsTiming {
+  const AppBoxKitAnalyticsTiming({
     required this.name,
     required this.duration,
     required this.timestamp,
@@ -77,5 +77,5 @@ class KitAnalyticsTiming {
 
   @override
   String toString() =>
-      'KitAnalyticsTiming($name, ${duration.inMilliseconds}ms)';
+      'AppBoxKitAnalyticsTiming($name, ${duration.inMilliseconds}ms)';
 }

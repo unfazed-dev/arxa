@@ -2,8 +2,8 @@ import 'dart:developer' as developer;
 
 import 'package:flutter/foundation.dart' show kReleaseMode;
 
-import '../kit_analytics_backend.dart';
-import '../kit_analytics_event.dart';
+import '../appbox_kit_analytics_backend.dart';
+import '../appbox_kit_analytics_event.dart';
 
 /// The working default backend: emits every analytics call to the console with
 /// zero external dependencies. Wire this in development to see exactly what the
@@ -13,8 +13,8 @@ import '../kit_analytics_event.dart';
 /// groups in DevTools' logging view and prints to the run console). Suppressed
 /// in release by default ([enableInRelease] = false) so it never ships noise to
 /// production logs.
-class DebugConsoleAnalyticsBackend implements KitAnalyticsBackend {
-  DebugConsoleAnalyticsBackend({
+class AppBoxKitDebugConsoleAnalyticsBackend implements AppBoxKitAnalyticsBackend {
+  AppBoxKitDebugConsoleAnalyticsBackend({
     this.id = 'debug-console',
     this.logName = 'analytics',
     this.enableInRelease = false,
@@ -32,23 +32,23 @@ class DebugConsoleAnalyticsBackend implements KitAnalyticsBackend {
   bool get _enabled => enableInRelease || !kReleaseMode;
 
   @override
-  Future<void> logEvent(KitAnalyticsEvent event) async {
+  Future<void> logEvent(AppBoxKitAnalyticsEvent event) async {
     _emit('event  ${event.name}${_fmtParams(event.params)}');
   }
 
   @override
-  Future<void> setUserProperty(KitUserProperty property) async {
+  Future<void> setUserProperty(AppBoxKitUserProperty property) async {
     _emit('user   ${property.name} = ${property.value ?? '<cleared>'}');
   }
 
   @override
-  Future<void> screenView(KitScreenView view) async {
+  Future<void> screenView(AppBoxKitScreenView view) async {
     final cls = view.screenClass == null ? '' : ' (${view.screenClass})';
     _emit('screen ${view.screenName}$cls');
   }
 
   @override
-  Future<void> timing(KitAnalyticsTiming timing) async {
+  Future<void> timing(AppBoxKitAnalyticsTiming timing) async {
     _emit('timing ${timing.name} = ${timing.duration.inMilliseconds}ms'
         '${_fmtParams(timing.params)}');
   }

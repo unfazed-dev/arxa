@@ -1,5 +1,5 @@
-import '../kit_analytics_backend.dart';
-import '../kit_analytics_event.dart';
+import '../appbox_kit_analytics_backend.dart';
+import '../appbox_kit_analytics_event.dart';
 
 /// STUB — Google Analytics for Firebase backend.
 ///
@@ -14,30 +14,30 @@ import '../kit_analytics_event.dart';
 ///
 /// This stub intentionally does NOT import `firebase_analytics`, so the package
 /// pulls no Firebase dependency until a host opts in and wires this backend.
-class FirebaseAnalyticsBackend implements KitAnalyticsBackend {
-  FirebaseAnalyticsBackend({this.id = 'firebase'});
+class AppBoxKitFirebaseAnalyticsBackend implements AppBoxKitAnalyticsBackend {
+  AppBoxKitFirebaseAnalyticsBackend({this.id = 'firebase'});
 
   @override
   final String id;
 
   @override
-  Future<void> logEvent(KitAnalyticsEvent event) async =>
-      throw UnimplementedError('FirebaseAnalyticsBackend.logEvent is a stub');
+  Future<void> logEvent(AppBoxKitAnalyticsEvent event) async =>
+      throw UnimplementedError('AppBoxKitFirebaseAnalyticsBackend.logEvent is a stub');
 
   @override
-  Future<void> setUserProperty(KitUserProperty property) async =>
+  Future<void> setUserProperty(AppBoxKitUserProperty property) async =>
       throw UnimplementedError(
-          'FirebaseAnalyticsBackend.setUserProperty is a stub');
+          'AppBoxKitFirebaseAnalyticsBackend.setUserProperty is a stub');
 
   @override
-  Future<void> screenView(KitScreenView view) async =>
-      throw UnimplementedError('FirebaseAnalyticsBackend.screenView is a stub');
+  Future<void> screenView(AppBoxKitScreenView view) async =>
+      throw UnimplementedError('AppBoxKitFirebaseAnalyticsBackend.screenView is a stub');
 
   @override
-  Future<void> timing(KitAnalyticsTiming timing) async =>
-      throw UnimplementedError('FirebaseAnalyticsBackend.timing is a stub');
+  Future<void> timing(AppBoxKitAnalyticsTiming timing) async =>
+      throw UnimplementedError('AppBoxKitFirebaseAnalyticsBackend.timing is a stub');
 
   @override
   Future<void> flush() async =>
-      throw UnimplementedError('FirebaseAnalyticsBackend.flush is a stub');
+      throw UnimplementedError('AppBoxKitFirebaseAnalyticsBackend.flush is a stub');
 }

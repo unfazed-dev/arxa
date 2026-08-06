@@ -1,20 +1,20 @@
 import 'package:flutter/foundation.dart' show debugPrint;
 
-import 'kit_analytics_backend.dart';
-import 'kit_analytics_event.dart';
+import 'appbox_kit_analytics_backend.dart';
+import 'appbox_kit_analytics_event.dart';
 
 /// Called when a registered backend throws while handling a call. [id] is the
-/// offending [KitAnalyticsBackend.id]. Return normally to swallow; the service
+/// offending [AppBoxKitAnalyticsBackend.id]. Return normally to swallow; the service
 /// never rethrows a backend error.
-typedef KitAnalyticsErrorHandler = void Function(
+typedef AppBoxKitAnalyticsErrorHandler = void Function(
   String id,
   Object error,
   StackTrace stackTrace,
 );
 
 /// The kit's analytics entry point: a thin, backend-agnostic port that
-/// normalizes each call into a value object ([KitAnalyticsEvent] and friends)
-/// and fans it out to every registered [KitAnalyticsBackend].
+/// normalizes each call into a value object ([AppBoxKitAnalyticsEvent] and friends)
+/// and fans it out to every registered [AppBoxKitAnalyticsBackend].
 ///
 /// This is deliberately NOT a Stacked service and has no dependency on the kit
 /// core — construct it directly and register it however your app wires
@@ -24,10 +24,10 @@ typedef KitAnalyticsErrorHandler = void Function(
 /// settled. A backend that throws is isolated — its error is routed to
 /// [onError] (default: [debugPrint]) and the other backends still receive the
 /// call.
-class KitAnalyticsService {
-  KitAnalyticsService({
-    Iterable<KitAnalyticsBackend> backends = const [],
-    KitAnalyticsErrorHandler? onError,
+class AppBoxKitAnalyticsService {
+  AppBoxKitAnalyticsService({
+    Iterable<AppBoxKitAnalyticsBackend> backends = const [],
+    AppBoxKitAnalyticsErrorHandler? onError,
     DateTime Function()? clock,
   })  : _onError = onError ?? _defaultOnError,
         _clock = clock ?? DateTime.now {
@@ -36,16 +36,16 @@ class KitAnalyticsService {
     }
   }
 
-  final KitAnalyticsErrorHandler _onError;
+  final AppBoxKitAnalyticsErrorHandler _onError;
   final DateTime Function() _clock;
-  final Map<String, KitAnalyticsBackend> _backends = {};
+  final Map<String, AppBoxKitAnalyticsBackend> _backends = {};
 
   /// Currently registered backends, in registration order.
-  Iterable<KitAnalyticsBackend> get backends => _backends.values;
+  Iterable<AppBoxKitAnalyticsBackend> get backends => _backends.values;
 
   /// Register [backend]. Replaces any existing backend with the same
-  /// [KitAnalyticsBackend.id] (last registration wins).
-  void registerBackend(KitAnalyticsBackend backend) {
+  /// [AppBoxKitAnalyticsBackend.id] (last registration wins).
+  void registerBackend(AppBoxKitAnalyticsBackend backend) {
     _backends[backend.id] = backend;
   }
 
@@ -57,7 +57,7 @@ class KitAnalyticsService {
 
   /// Record a discrete event named [name] with optional [params].
   Future<void> logEvent(String name, {Map<String, Object?>? params}) {
-    final event = KitAnalyticsEvent(
+    final event = AppBoxKitAnalyticsEvent(
       name: name,
       params: params ?? const {},
       timestamp: _clock(),
@@ -67,13 +67,13 @@ class KitAnalyticsService {
 
   /// Set (or clear, when [value] is null) the user property [name].
   Future<void> setUserProperty(String name, String? value) {
-    final property = KitUserProperty(name, value);
+    final property = AppBoxKitUserProperty(name, value);
     return _fanOut((b) => b.setUserProperty(property));
   }
 
   /// Record a screen/route view.
   Future<void> screenView(String screenName, {String? screenClass}) {
-    final view = KitScreenView(
+    final view = AppBoxKitScreenView(
       screenName: screenName,
       screenClass: screenClass,
       timestamp: _clock(),
@@ -87,7 +87,7 @@ class KitAnalyticsService {
     Duration duration, {
     Map<String, Object?>? params,
   }) {
-    final measurement = KitAnalyticsTiming(
+    final measurement = AppBoxKitAnalyticsTiming(
       name: name,
       duration: duration,
       params: params ?? const {},
@@ -99,7 +99,7 @@ class KitAnalyticsService {
   /// Flush buffered events across all backends.
   Future<void> flush() => _fanOut((b) => b.flush());
 
-  Future<void> _fanOut(Future<void> Function(KitAnalyticsBackend) call) async {
+  Future<void> _fanOut(Future<void> Function(AppBoxKitAnalyticsBackend) call) async {
     if (_backends.isEmpty) return;
     await Future.wait(_backends.values.map((backend) async {
       try {
@@ -111,6 +111,6 @@ class KitAnalyticsService {
   }
 
   static void _defaultOnError(String id, Object error, StackTrace st) {
-    debugPrint('KitAnalyticsService: backend "$id" threw: $error');
+    debugPrint('AppBoxKitAnalyticsService: backend "$id" threw: $error');
   }
 }

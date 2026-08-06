@@ -1,5 +1,5 @@
 name: appbox_kit_analytics
-description: Analytics port for appbox_kit apps — a backend-agnostic KitAnalyticsService that fans a single event stream out to any number of registered backends, with a zero-dependency DebugConsoleAnalyticsBackend shipped as the working default.
+description: Analytics port for appbox_kit apps — a backend-agnostic AppBoxKitAnalyticsService that fans a single event stream out to any number of registered backends, with a zero-dependency AppBoxKitDebugConsoleAnalyticsBackend shipped as the working default.
 version: 0.1.0
 publish_to: 'none'
 
