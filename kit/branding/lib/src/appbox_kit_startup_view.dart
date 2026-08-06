@@ -12,7 +12,7 @@ import 'package:flutter/material.dart';
 /// [duration] MUST match the host view-model's splash floor so the bar reaches
 /// 100% as the brand moment ends. Mirrors the reference app's splash layout
 /// (logo center, bottom progress) adapted to the host theme.
-class BrandSplash extends StatelessWidget {
+class AppBoxKitBrandSplash extends StatelessWidget {
   /// Canonical brand-logo edge in dp (in-Flutter). SSOT for the logo size across
   /// the pipeline: the host binds its logo `Image.asset` width/height to this,
   /// and `tools/generate_branding.sh` rasterizes the native-splash PNG at 4× this
@@ -23,7 +23,7 @@ class BrandSplash extends StatelessWidget {
   /// (`splash_logo_android12.png`) to hit the same on-screen size as iOS.
   static const double logoSize = 80;
 
-  const BrandSplash({
+  const AppBoxKitBrandSplash({
     super.key,
     required this.duration,
     required this.brand,

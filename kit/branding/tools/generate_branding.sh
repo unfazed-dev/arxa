@@ -56,8 +56,8 @@ cp "$TPL/splash.yaml.tmpl" "$HOST/flutter_native_splash.yaml"
 # renders `image:` at its source pixel dimensions (no upscale), so a full-res 1024px
 # launcher icon would show enormous on the pre-Flutter OS splash. The reference
 # app uses the same
-# 4× convention (logoSize 80 -> 320px). Keep LOGO_SIZE in sync with BrandSplash.logoSize
-# (branding/lib/src/startup_view.dart) + branding_gate.sh.
+# 4× convention (logoSize 80 -> 320px). Keep LOGO_SIZE in sync with AppBoxKitBrandSplash.logoSize
+# (branding/lib/src/appbox_kit_startup_view.dart) + branding_gate.sh.
 LOGO_SIZE=80
 SPLASH_PX=$((LOGO_SIZE * 4))   # 320
 SPLASH_PNG="$HOST/assets/icons/splash_logo.png"

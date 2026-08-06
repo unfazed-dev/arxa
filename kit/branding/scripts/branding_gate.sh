@@ -45,12 +45,12 @@ ACCENT_RGB="${ACCENT_ARGB:2:6}"   # strip 2-char alpha -> RR GG BB (matches gene
 grep -qE 'color_dark:' "$NS" \
   || fail "$NS missing color_dark — native splash won't follow the system theme (regenerate via generate_branding.sh)"
 grep -qE "^[[:space:]]*color:[[:space:]]*\"#$ACCENT_RGB\"" "$NS" \
-  && fail "$NS color is the brand accent (#$ACCENT_RGB) — must be the app surface (KitColors.surface), not accent"
+  && fail "$NS color is the brand accent (#$ACCENT_RGB) — must be the app surface (AppBoxKitColors.surface), not accent"
 
 # 6. Native-splash logo PNG must exist and be sized at 4× logoSize (320px) — NOT
 #    the full-res 1024px launcher icon (renders enormous on the OS splash, which
 #    cannot read Flutter dp). Keep SPLASH_PX in sync with generate_branding.sh +
-#    BrandSplash.logoSize (branding/lib/src/startup_view.dart).
+#    AppBoxKitBrandSplash.logoSize (branding/lib/src/appbox_kit_startup_view.dart).
 LOGO_SIZE=80
 SPLASH_PX=$((LOGO_SIZE * 4))   # 320
 SPLASH_PNG="assets/icons/splash_logo.png"
