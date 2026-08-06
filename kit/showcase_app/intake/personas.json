@@ -1,0 +1,40 @@
+[
+  {
+    "name": "Kit evaluator",
+    "role": "engineer assessing the appbox kit for a client project",
+    "goals": [
+      "see real product behavior built from kit parts",
+      "judge every shell family in one running target"
+    ],
+    "frustrations": [
+      "showcases that are static mockups with dead buttons"
+    ],
+    "contexts": [
+      "desktop demo",
+      "on-device walkthrough"
+    ],
+    "proficiency": "expert",
+    "provenance": "founder",
+    "id": "persona-kit-evaluator",
+    "accessibility": null
+  },
+  {
+    "name": "Notes user",
+    "role": "everyday note taker inside the demo product",
+    "goals": [
+      "capture thoughts and media quickly",
+      "find notes again via folders and search"
+    ],
+    "frustrations": [
+      "losing a note by accident",
+      "sign-in friction before first use"
+    ],
+    "contexts": [
+      "phone on the go"
+    ],
+    "proficiency": "novice",
+    "provenance": "founder",
+    "id": "persona-notes-user",
+    "accessibility": null
+  }
+]

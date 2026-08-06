@@ -1,0 +1,592 @@
+{
+  "product": {
+    "value": "showcase_app — the appbox kit showcase: a real notes product (auth, notes CRUD, folders, search, media attachments) plus shell demos for every kit surface family",
+    "provenance": "founder"
+  },
+  "audience": {
+    "value": "When I evaluate the appbox kit, I want a working notes app and live shell demos in one target, so I can judge the kit on real product behavior rather than static mockups",
+    "provenance": "founder"
+  },
+  "appMustDo": {
+    "value": [
+      "sign in and create an account via email OTP, Google, Apple, or anonymously",
+      "create, edit, pin, trash and restore notes",
+      "organize notes into folders",
+      "search notes by text",
+      "attach photos and audio recordings to notes",
+      "demonstrate the startup, unknown-route, home, application and profile shells"
+    ],
+    "provenance": "founder"
+  },
+  "existingSystems": {
+    "value": "kit auth ports (email OTP, Google, Apple, anonymous); kit media ports for photo and audio capture",
+    "provenance": "founder"
+  },
+  "targets": {
+    "value": [
+      "ios",
+      "android",
+      "macos"
+    ],
+    "provenance": "founder"
+  },
+  "locales": {
+    "value": [
+      "en"
+    ],
+    "provenance": "founder"
+  },
+  "brand": {
+    "value": "appbox kit showcase; neutral demo branding that defers to the kit theme",
+    "provenance": "founder"
+  },
+  "direction": {
+    "value": {
+      "adjectives": [
+        "honest",
+        "working",
+        "adaptive"
+      ],
+      "avoids": [
+        "lorem ipsum",
+        "dead buttons",
+        "mock data presented as real"
+      ]
+    },
+    "provenance": "founder"
+  },
+  "contentAnchors": {
+    "value": [
+      "Inbox — 3 pinned notes, 12 total",
+      "Folder: Ideas — 5 notes",
+      "Note with photo attachment and 0:42 audio memo",
+      "Trash — 2 notes, restore or delete forever"
+    ],
+    "provenance": "founder"
+  },
+  "constraints": {
+    "value": [
+      "the notes slice is a real product — no stubbed behavior",
+      "everything is built from kit primitives and ports, no bespoke native code"
+    ],
+    "provenance": "founder"
+  },
+  "outOfScope": {
+    "value": [
+      "note sharing and collaboration",
+      "rich-text editing",
+      "sync across devices"
+    ],
+    "provenance": "founder"
+  },
+  "surfaces": [
+    {
+      "id": "showcase.startup",
+      "label": "Startup",
+      "shell": "showcase",
+      "states": ["loading", "error"],
+      "provenance": "founder"
+    },
+    {
+      "id": "showcase.unknown",
+      "label": "Unknown route",
+      "shell": "showcase",
+      "provenance": "founder"
+    },
+    {
+      "id": "showcase.notesauth",
+      "label": "Notes sign-in",
+      "shell": "showcase",
+      "provenance": "founder"
+    },
+    {
+      "id": "showcase.createaccount",
+      "label": "Create account",
+      "shell": "showcase",
+      "provenance": "founder"
+    },
+    {
+      "id": "showcase.notes",
+      "label": "Notes inbox",
+      "shell": "showcase",
+      "states": ["loading", "empty", "error"],
+      "requiresAuth": true,
+      "provenance": "founder"
+    },
+    {
+      "id": "showcase.noteeditor",
+      "label": "Note editor",
+      "shell": "showcase",
+      "requiresAuth": true,
+      "provenance": "founder"
+    },
+    {
+      "id": "showcase.notesfolder",
+      "label": "Folder",
+      "shell": "showcase",
+      "states": ["empty"],
+      "requiresAuth": true,
+      "provenance": "founder"
+    },
+    {
+      "id": "showcase.search",
+      "label": "Search",
+      "shell": "showcase",
+      "states": ["empty"],
+      "provenance": "founder"
+    },
+    {
+      "id": "showcase.home",
+      "label": "Home shell",
+      "shell": "showcase",
+      "provenance": "founder"
+    },
+    {
+      "id": "showcase.application",
+      "label": "Application shell",
+      "shell": "showcase",
+      "provenance": "founder"
+    },
+    {
+      "id": "showcase.profile",
+      "label": "Profile",
+      "shell": "showcase",
+      "provenance": "founder"
+    },
+    {
+      "id": "showcase.maps",
+      "label": "Maps demo",
+      "shell": "showcase",
+      "provenance": "founder"
+    },
+    {
+      "id": "showcase.motion",
+      "label": "Motion demo",
+      "shell": "showcase",
+      "provenance": "founder"
+    },
+    {
+      "id": "showcase.components",
+      "label": "Components gallery",
+      "shell": "showcase",
+      "provenance": "founder"
+    }
+  ],
+  "flows": [
+    {
+      "id": "flow-onboarding",
+      "name": "Onboarding",
+      "provenance": "founder",
+      "edges": [
+        {
+          "from": "showcase.startup",
+          "to": "showcase.notesauth",
+          "trigger": "App launch, kit ready",
+          "action": "replace"
+        },
+        {
+          "from": "showcase.notesauth",
+          "to": "showcase.notes",
+          "trigger": "Signed in (OTP, Google, Apple or anonymous)",
+          "action": "replace",
+          "feedback": { "kind": "success", "text": "Signed in" }
+        }
+      ]
+    },
+    {
+      "id": "flow-create-account",
+      "name": "Create account",
+      "provenance": "founder",
+      "edges": [
+        {
+          "from": "showcase.notesauth",
+          "to": "showcase.createaccount",
+          "trigger": "Create account",
+          "action": "push",
+          "element": "button:Create account"
+        },
+        {
+          "from": "showcase.createaccount",
+          "to": "showcase.notes",
+          "trigger": "OTP verified, account created",
+          "action": "replace",
+          "feedback": { "kind": "success", "text": "Account created" }
+        }
+      ]
+    },
+    {
+      "id": "flow-note-editing",
+      "name": "Note editing",
+      "provenance": "founder",
+      "edges": [
+        {
+          "from": "showcase.notes",
+          "to": "showcase.noteeditor",
+          "trigger": "Tap a note or compose",
+          "action": "push"
+        },
+        {
+          "from": "showcase.noteeditor",
+          "to": "showcase.notes",
+          "trigger": "Save and close",
+          "action": "back",
+          "feedback": { "kind": "success", "text": "Note saved" }
+        }
+      ]
+    },
+    {
+      "id": "flow-folders",
+      "name": "Folders",
+      "provenance": "founder",
+      "edges": [
+        {
+          "from": "showcase.notes",
+          "to": "showcase.notesfolder",
+          "trigger": "Tap a folder",
+          "action": "push"
+        },
+        {
+          "from": "showcase.notesfolder",
+          "to": "showcase.noteeditor",
+          "trigger": "Tap a note in the folder",
+          "action": "push"
+        }
+      ]
+    },
+    {
+      "id": "flow-search",
+      "name": "Search",
+      "provenance": "founder",
+      "edges": [
+        {
+          "from": "showcase.notes",
+          "to": "showcase.search",
+          "trigger": "Tap search",
+          "action": "push",
+          "element": "button:Search"
+        },
+        {
+          "from": "showcase.search",
+          "to": "showcase.noteeditor",
+          "trigger": "Tap a result",
+          "action": "push"
+        }
+      ]
+    }
+  ],
+  "personas": [
+    {
+      "name": "Kit evaluator",
+      "role": "engineer assessing the appbox kit for a client project",
+      "goals": [
+        "see real product behavior built from kit parts",
+        "judge every shell family in one running target"
+      ],
+      "frustrations": [
+        "showcases that are static mockups with dead buttons"
+      ],
+      "contexts": [
+        "desktop demo",
+        "on-device walkthrough"
+      ],
+      "proficiency": "expert",
+      "provenance": "founder"
+    },
+    {
+      "name": "Notes user",
+      "role": "everyday note taker inside the demo product",
+      "goals": [
+        "capture thoughts and media quickly",
+        "find notes again via folders and search"
+      ],
+      "frustrations": [
+        "losing a note by accident",
+        "sign-in friction before first use"
+      ],
+      "contexts": [
+        "phone on the go"
+      ],
+      "proficiency": "novice",
+      "provenance": "founder"
+    }
+  ],
+  "map": {
+    "releases": [
+      {
+        "name": "MVP",
+        "description": "The working notes product: auth, notes CRUD, pin, trash, folders",
+        "provenance": "founder"
+      },
+      {
+        "name": "Next",
+        "description": "Findability and capture: search, photo and audio attachments",
+        "provenance": "founder"
+      },
+      {
+        "name": "Later",
+        "description": "Shell and gallery demos around the product",
+        "provenance": "founder"
+      }
+    ],
+    "epics": [
+      {
+        "name": "Auth and accounts",
+        "provenance": "founder",
+        "features": [
+          {
+            "name": "Sign in",
+            "stories": [
+              {
+                "name": "Sign in with email and OTP",
+                "priority": "must",
+                "release": "MVP",
+                "provenance": "founder"
+              },
+              {
+                "name": "Sign in with Google",
+                "priority": "must",
+                "release": "MVP",
+                "provenance": "founder"
+              },
+              {
+                "name": "Sign in with Apple",
+                "priority": "must",
+                "release": "MVP",
+                "provenance": "founder"
+              },
+              {
+                "name": "Continue anonymously",
+                "priority": "must",
+                "release": "MVP",
+                "provenance": "founder"
+              }
+            ]
+          },
+          {
+            "name": "Create account",
+            "stories": [
+              {
+                "name": "Create account with email and OTP",
+                "priority": "must",
+                "release": "MVP",
+                "provenance": "founder"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Notes",
+        "provenance": "founder",
+        "features": [
+          {
+            "name": "Note CRUD",
+            "stories": [
+              {
+                "name": "Create a note",
+                "priority": "must",
+                "release": "MVP",
+                "provenance": "founder"
+              },
+              {
+                "name": "Edit a note",
+                "priority": "must",
+                "release": "MVP",
+                "provenance": "founder"
+              },
+              {
+                "name": "Delete a note forever",
+                "priority": "must",
+                "release": "MVP",
+                "provenance": "founder"
+              }
+            ]
+          },
+          {
+            "name": "Pin notes",
+            "stories": [
+              {
+                "name": "Pin a note to the top of the inbox",
+                "priority": "must",
+                "release": "MVP",
+                "provenance": "founder"
+              },
+              {
+                "name": "Unpin a pinned note",
+                "priority": "must",
+                "release": "MVP",
+                "provenance": "founder"
+              }
+            ]
+          },
+          {
+            "name": "Trash and restore",
+            "stories": [
+              {
+                "name": "Trash a note",
+                "priority": "must",
+                "release": "MVP",
+                "provenance": "founder"
+              },
+              {
+                "name": "Restore a trashed note",
+                "priority": "must",
+                "release": "MVP",
+                "provenance": "founder"
+              }
+            ]
+          },
+          {
+            "name": "Folders",
+            "stories": [
+              {
+                "name": "Create a folder",
+                "priority": "must",
+                "release": "MVP",
+                "provenance": "founder"
+              },
+              {
+                "name": "Move a note into a folder",
+                "priority": "must",
+                "release": "MVP",
+                "provenance": "founder"
+              },
+              {
+                "name": "Browse the notes in a folder",
+                "priority": "must",
+                "release": "MVP",
+                "provenance": "founder"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Search and attachments",
+        "provenance": "founder",
+        "features": [
+          {
+            "name": "Search",
+            "stories": [
+              {
+                "name": "Search notes by text",
+                "priority": "should",
+                "release": "Next",
+                "provenance": "founder"
+              },
+              {
+                "name": "Open a note from a search result",
+                "priority": "should",
+                "release": "Next",
+                "provenance": "founder"
+              }
+            ]
+          },
+          {
+            "name": "Media attachments",
+            "stories": [
+              {
+                "name": "Attach a photo to a note",
+                "priority": "should",
+                "release": "Next",
+                "provenance": "founder"
+              },
+              {
+                "name": "Attach an audio recording to a note",
+                "priority": "should",
+                "release": "Next",
+                "provenance": "founder"
+              },
+              {
+                "name": "Play back an audio attachment",
+                "priority": "should",
+                "release": "Next",
+                "provenance": "founder"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Shell demos",
+        "provenance": "founder",
+        "features": [
+          {
+            "name": "Startup and unknown shells",
+            "stories": [
+              {
+                "name": "Boot through the startup shell",
+                "priority": "could",
+                "release": "Later",
+                "provenance": "founder"
+              },
+              {
+                "name": "Land on the unknown shell for a bad route",
+                "priority": "could",
+                "release": "Later",
+                "provenance": "founder"
+              }
+            ]
+          },
+          {
+            "name": "Home and application shells",
+            "stories": [
+              {
+                "name": "Browse the home shell",
+                "priority": "could",
+                "release": "Later",
+                "provenance": "founder"
+              },
+              {
+                "name": "Browse the application shell",
+                "priority": "could",
+                "release": "Later",
+                "provenance": "founder"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Profile and gallery demos",
+        "provenance": "founder",
+        "features": [
+          {
+            "name": "Profile",
+            "stories": [
+              {
+                "name": "View the profile surface",
+                "priority": "could",
+                "release": "Later",
+                "provenance": "founder"
+              }
+            ]
+          },
+          {
+            "name": "Gallery",
+            "stories": [
+              {
+                "name": "Browse the components gallery",
+                "priority": "could",
+                "release": "Later",
+                "provenance": "founder"
+              },
+              {
+                "name": "View the maps demo",
+                "priority": "could",
+                "release": "Later",
+                "provenance": "founder"
+              },
+              {
+                "name": "View the motion demo",
+                "priority": "could",
+                "release": "Later",
+                "provenance": "founder"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

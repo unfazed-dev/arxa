@@ -1,0 +1,116 @@
+[
+  {
+    "id": "flow-onboarding",
+    "name": "Onboarding",
+    "provenance": "founder",
+    "edges": [
+      {
+        "from": "showcase.startup",
+        "to": "showcase.notesauth",
+        "trigger": "App launch, kit ready",
+        "action": "replace"
+      },
+      {
+        "from": "showcase.notesauth",
+        "to": "showcase.notes",
+        "trigger": "Signed in (OTP, Google, Apple or anonymous)",
+        "action": "replace",
+        "feedback": {
+          "kind": "success",
+          "text": "Signed in"
+        }
+      }
+    ]
+  },
+  {
+    "id": "flow-create-account",
+    "name": "Create account",
+    "provenance": "founder",
+    "edges": [
+      {
+        "from": "showcase.notesauth",
+        "to": "showcase.createaccount",
+        "trigger": "Create account",
+        "action": "push",
+        "element": "button:Create account",
+        "feedback": {
+          "kind": "success",
+          "text": "Create account",
+          "inferred": true
+        }
+      },
+      {
+        "from": "showcase.createaccount",
+        "to": "showcase.notes",
+        "trigger": "OTP verified, account created",
+        "action": "replace",
+        "feedback": {
+          "kind": "success",
+          "text": "Account created"
+        }
+      }
+    ]
+  },
+  {
+    "id": "flow-note-editing",
+    "name": "Note editing",
+    "provenance": "founder",
+    "edges": [
+      {
+        "from": "showcase.notes",
+        "to": "showcase.noteeditor",
+        "trigger": "Tap a note or compose",
+        "action": "push"
+      },
+      {
+        "from": "showcase.noteeditor",
+        "to": "showcase.notes",
+        "trigger": "Save and close",
+        "action": "back",
+        "feedback": {
+          "kind": "success",
+          "text": "Note saved"
+        }
+      }
+    ]
+  },
+  {
+    "id": "flow-folders",
+    "name": "Folders",
+    "provenance": "founder",
+    "edges": [
+      {
+        "from": "showcase.notes",
+        "to": "showcase.notesfolder",
+        "trigger": "Tap a folder",
+        "action": "push"
+      },
+      {
+        "from": "showcase.notesfolder",
+        "to": "showcase.noteeditor",
+        "trigger": "Tap a note in the folder",
+        "action": "push"
+      }
+    ]
+  },
+  {
+    "id": "flow-search",
+    "name": "Search",
+    "provenance": "founder",
+    "edges": [
+      {
+        "from": "showcase.notes",
+        "to": "showcase.search",
+        "trigger": "Tap search",
+        "action": "push",
+        "element": "button:Search"
+      },
+      {
+        "from": "showcase.search",
+        "to": "showcase.noteeditor",
+        "trigger": "Tap a result",
+        "action": "push"
+      }
+    ]
+  }
+]

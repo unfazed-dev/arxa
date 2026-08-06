@@ -1,0 +1,149 @@
+[
+  {
+    "id": "showcase.startup",
+    "label": "Startup",
+    "shell": "showcase",
+    "comp": "ShowcaseStartup",
+    "route": "/startup",
+    "surface": null,
+    "states": [
+      "loading",
+      "error"
+    ],
+    "statesProvenance": "founder"
+  },
+  {
+    "id": "showcase.unknown",
+    "label": "Unknown route",
+    "shell": "showcase",
+    "comp": "ShowcaseUnknown",
+    "route": "/unknown",
+    "surface": null
+  },
+  {
+    "id": "showcase.notesauth",
+    "label": "Notes sign-in",
+    "shell": "showcase",
+    "comp": "ShowcaseNotesauth",
+    "route": "/notesauth",
+    "surface": null
+  },
+  {
+    "id": "showcase.createaccount",
+    "label": "Create account",
+    "shell": "showcase",
+    "comp": "ShowcaseCreateaccount",
+    "route": "/createaccount",
+    "surface": null
+  },
+  {
+    "id": "showcase.notes",
+    "label": "Notes inbox",
+    "shell": "showcase",
+    "comp": "ShowcaseNotes",
+    "route": "/notes",
+    "surface": null,
+    "states": [
+      "loading",
+      "empty",
+      "error"
+    ],
+    "statesProvenance": "founder",
+    "requiresAuth": true
+  },
+  {
+    "id": "showcase.noteeditor",
+    "label": "Note editor",
+    "shell": "showcase",
+    "comp": "ShowcaseNoteeditor",
+    "route": "/noteeditor",
+    "surface": null,
+    "states": [
+      "error"
+    ],
+    "statesProvenance": "inferred",
+    "requiresAuth": true
+  },
+  {
+    "id": "showcase.notesfolder",
+    "label": "Folder",
+    "shell": "showcase",
+    "comp": "ShowcaseNotesfolder",
+    "route": "/notesfolder",
+    "surface": null,
+    "states": [
+      "empty"
+    ],
+    "statesProvenance": "founder",
+    "requiresAuth": true
+  },
+  {
+    "id": "showcase.search",
+    "label": "Search",
+    "shell": "showcase",
+    "comp": "ShowcaseSearch",
+    "route": "/search",
+    "surface": null,
+    "states": [
+      "empty"
+    ],
+    "statesProvenance": "founder"
+  },
+  {
+    "id": "showcase.home",
+    "label": "Home shell",
+    "shell": "showcase",
+    "comp": "ShowcaseHome",
+    "route": "/home",
+    "surface": null,
+    "states": [
+      "loading",
+      "empty"
+    ],
+    "statesProvenance": "inferred"
+  },
+  {
+    "id": "showcase.application",
+    "label": "Application shell",
+    "shell": "showcase",
+    "comp": "ShowcaseApplication",
+    "route": "/application",
+    "surface": null
+  },
+  {
+    "id": "showcase.profile",
+    "label": "Profile",
+    "shell": "showcase",
+    "comp": "ShowcaseProfile",
+    "route": "/profile",
+    "surface": null,
+    "states": [
+      "error"
+    ],
+    "statesProvenance": "inferred"
+  },
+  {
+    "id": "showcase.maps",
+    "label": "Maps demo",
+    "shell": "showcase",
+    "comp": "ShowcaseMaps",
+    "route": "/maps",
+    "surface": null
+  },
+  {
+    "id": "showcase.motion",
+    "label": "Motion demo",
+    "shell": "showcase",
+    "comp": "ShowcaseMotion",
+    "route": "/motion",
+    "surface": null
+  },
+  {
+    "id": "showcase.components",
+    "label": "Components gallery",
+    "shell": "showcase",
+    "comp": "ShowcaseComponents",
+    "route": "/components",
+    "surface": null
+  }
+]
