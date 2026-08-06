@@ -42,7 +42,7 @@ void main() {
       AppBoxKitFixtureLoader(
           idService: idService, assetReader: AppBoxKitMemoryAssetReader(assets));
 
-  test('relations survive: product reference equals category canonical id', () async {
+  test('kit.data.fixture-loader — relations survive: product reference equals category canonical id', () async {
     final assets = {
       'assets/seed/categories.json': jsonEncode([
         {'id': 'cat-1', 'name': 'Widgets'},
@@ -64,7 +64,7 @@ void main() {
     expect(productRow['category'], categoryCanonicalId);
   });
 
-  test('unknown table (no registered schema) throws', () async {
+  test('kit.data.fixture-loader — unknown table (no registered schema) throws', () async {
     final assets = {
       'assets/seed/widgets.json': jsonEncode([
         {'id': 'w-1'},
@@ -80,7 +80,7 @@ void main() {
     );
   });
 
-  test('row missing id throws', () async {
+  test('kit.data.fixture-loader — row missing id throws', () async {
     final assets = {
       'assets/seed/categories.json': jsonEncode([
         {'name': 'no id here'},
@@ -96,7 +96,7 @@ void main() {
     );
   });
 
-  test('unknown column name throws', () async {
+  test('kit.data.fixture-loader — unknown column name throws', () async {
     final assets = {
       'assets/seed/categories.json': jsonEncode([
         {'id': 'cat-1', 'name': 'Widgets', 'typo_column': 'oops'},
@@ -112,7 +112,7 @@ void main() {
     );
   });
 
-  test('duplicate canonical id (two rows, same seed key) throws', () async {
+  test('kit.data.fixture-loader — duplicate canonical id (two rows, same seed key) throws', () async {
     final assets = {
       'assets/seed/categories.json': jsonEncode([
         {'id': 'cat-1', 'name': 'Widgets'},

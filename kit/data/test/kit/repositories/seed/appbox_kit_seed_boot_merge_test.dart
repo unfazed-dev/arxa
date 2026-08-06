@@ -137,8 +137,8 @@ void main() {
 
   group('seed boot with snapshot persistence', () {
     test(
-        'first boot (no snapshot) → fixtures reach the repository read path',
-        () async {
+        'kit.data.seed-repos — first boot (no snapshot) → fixtures reach the '
+        'repository read path', () async {
       final store = boot(fixtureAssets: fixturesJson);
       final repo = AppBoxKitSeedRepository<Map<String, dynamic>>(
         store: await store,
@@ -157,9 +157,10 @@ void main() {
     });
 
     test(
-        'REGRESSION: partial snapshot (only kit_auth_users persisted) must not '
-        'shadow fixture tables on the next boot — the showcase app rendered '
-        'empty notes because of this', () async {
+        'kit.data.seed-repos — REGRESSION: partial snapshot (only '
+        'kit_auth_users persisted) must not shadow fixture tables on the '
+        'next boot — the showcase app rendered empty notes because of this',
+        () async {
       // Boot 1: nothing persisted yet → fixtures load. Simulate the auth
       // service's write-through of only the reserved users table (the real
       // AppBoxKitSeedAuthService.initialize upserts each fake user, which
@@ -214,8 +215,8 @@ void main() {
     });
 
     test(
-        'a deliberately-empty persisted table shadows its fixtures (user '
-        'deletes survive reboot)', () async {
+        'kit.data.seed-repos — a deliberately-empty persisted table shadows '
+        'its fixtures (user deletes survive reboot)', () async {
       // Boot 1: fixtures load (notes table populated).
       await boot(fixtureAssets: fixturesJson);
       // Simulate "user deleted every note then rebooted" by persisting an
@@ -240,10 +241,10 @@ void main() {
     });
 
     test(
-        'REGRESSION: shipped fixture update re-seeds an already-snapshotted '
-        'install — new seed rows appear, user-created rows survive (the '
-        'showcase app kept serving first-generation demo data forever)',
-        () async {
+        'kit.data.seed-repos — REGRESSION: shipped fixture update re-seeds '
+        'an already-snapshotted install — new seed rows appear, user-created '
+        'rows survive (the showcase app kept serving first-generation demo '
+        'data forever)', () async {
       // Boot 1: first fixture generation loads and is snapshotted (the store
       // write-throughs the notes table when the user writes to it).
       final store1 = await boot(fixtureAssets: fixturesJson);

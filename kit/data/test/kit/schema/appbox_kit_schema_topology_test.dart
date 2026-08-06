@@ -17,7 +17,7 @@ import 'package:appbox_kit_data/schema/appbox_kit_table_schema.dart';
 ///   shared topology helper should behave the same way rather than treating
 ///   a table's reference to itself as a cycle.
 void main() {
-  test('referenced-before-referrer ordering across a 3-table chain', () {
+  test('kit.data.schema-topology — referenced-before-referrer ordering across a 3-table chain', () {
     final grandparent = AppBoxKitTableSchema(
       table: 'grandparent',
       columns: const [AppBoxKitColumn.id()],
@@ -46,8 +46,9 @@ void main() {
   });
 
   test(
-      'reference target absent from the input imposes no ordering '
-      '(forward-declared FK, assumed to exist on the backend)', () {
+      'kit.data.schema-topology — reference target absent from the input '
+      'imposes no ordering (forward-declared FK, assumed to exist on the '
+      'backend)', () {
     final orphan = AppBoxKitTableSchema(
       table: 'orphan',
       columns: const [
@@ -60,7 +61,7 @@ void main() {
     expect(ordered.map((s) => s.table), ['orphan']);
   });
 
-  test('2-table cycle throws ArgumentError naming the cycle', () {
+  test('kit.data.schema-topology — 2-table cycle throws ArgumentError naming the cycle', () {
     final a = AppBoxKitTableSchema(
       table: 'a',
       columns: const [
@@ -88,7 +89,7 @@ void main() {
     );
   });
 
-  test('self-reference does not throw', () {
+  test('kit.data.schema-topology — self-reference does not throw', () {
     final tree = AppBoxKitTableSchema(
       table: 'tree_nodes',
       columns: const [

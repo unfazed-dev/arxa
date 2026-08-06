@@ -57,7 +57,7 @@ void main() {
         seed: seed,
       );
 
-  test('getById resolves by seed key and by the canonical uuid', () async {
+  test('kit.data.fake-repository — getById resolves by seed key and by the canonical uuid', () async {
     final repo = makeRepo(seed: [const _Widget(id: 'w-1', name: 'Alpha')]);
 
     final canonical = idService.canonicalId('widgets', 'w-1');
@@ -71,7 +71,7 @@ void main() {
     expect(repo.getByIdCalls, ['w-1', canonical]);
   });
 
-  test('upsert returns the stored entity with canonical ids and records it',
+  test('kit.data.fake-repository — upsert returns the stored entity with canonical ids and records it',
       () async {
     final repo = makeRepo();
 
@@ -85,7 +85,7 @@ void main() {
     expect(repo.length, 1);
   });
 
-  test('AppBoxKitQuery evaluation: eq, gt, lt, orderBy, limit', () async {
+  test('kit.data.fake-repository — AppBoxKitQuery evaluation: eq, gt, lt, orderBy, limit', () async {
     final repo = makeRepo(seed: [
       const _Widget(id: 'w-1', name: 'Alpha', categoryId: 'cat-1', qty: 5),
       const _Widget(id: 'w-2', name: 'Beta', categoryId: 'cat-1', qty: 1),
@@ -120,7 +120,7 @@ void main() {
     expect(repo.getAllCalls, hasLength(5));
   });
 
-  test('watchAll emits the current set, then again after upsert and delete',
+  test('kit.data.fake-repository — watchAll emits the current set, then again after upsert and delete',
       () async {
     final repo = makeRepo(seed: [const _Widget(id: 'w-1', name: 'Alpha')]);
 
@@ -141,7 +141,7 @@ void main() {
     expect(repo.deletedIds, ['w-1']);
   });
 
-  test('scripted errors throw from the matching operations', () async {
+  test('kit.data.fake-repository — scripted errors throw from the matching operations', () async {
     final repo = makeRepo(seed: [const _Widget(id: 'w-1', name: 'Alpha')]);
     final boom = StateError('boom');
 
@@ -163,7 +163,7 @@ void main() {
     expect(repo.getByIdCalls, ['w-1']); // record restarted after reset
   });
 
-  test('clear() empties the table and notifies watchers', () async {
+  test('kit.data.fake-repository — clear() empties the table and notifies watchers', () async {
     final repo = makeRepo(seed: [const _Widget(id: 'w-1', name: 'Alpha')]);
 
     final expectation = expectLater(

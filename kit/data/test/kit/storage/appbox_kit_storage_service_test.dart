@@ -12,7 +12,7 @@ import 'package:appbox_kit_data/storage/seed/appbox_kit_seed_storage_service.dar
 void main() {
   final service = AppBoxKitSeedStorageService();
 
-  test('upload returns a ref with the given bucket and path', () async {
+  test('kit.data.storage — upload returns a ref with the given bucket and path', () async {
     final ref = await service.upload(
       bucket: 'avatars',
       path: 'usr/1.png',
@@ -25,7 +25,7 @@ void main() {
     expect(ref.id, ref.path); // seed: id == path
   });
 
-  test('upload delivers a terminal 1.0 progress event', () async {
+  test('kit.data.storage — upload delivers a terminal 1.0 progress event', () async {
     final progresses = <double>[];
     await service.upload(
       bucket: 'avatars',
@@ -40,7 +40,7 @@ void main() {
     expect(progresses.first, 0.0);
   });
 
-  test('getUrl returns a non-empty URL-ish string after upload', () async {
+  test('kit.data.storage — getUrl returns a non-empty URL-ish string after upload', () async {
     final ref = await service.upload(
       bucket: 'avatars',
       path: 'usr/3.png',
@@ -54,7 +54,7 @@ void main() {
     expect(url, startsWith('data:image/png;base64,'));
   });
 
-  test('delete removes the object (getUrl then throws on seed)', () async {
+  test('kit.data.storage — delete removes the object (getUrl then throws on seed)', () async {
     final ref = await service.upload(
       bucket: 'avatars',
       path: 'usr/4.png',
@@ -70,7 +70,7 @@ void main() {
     );
   });
 
-  test('upload overwrites a prior object at the same bucket/path', () async {
+  test('kit.data.storage — upload overwrites a prior object at the same bucket/path', () async {
     final ref = await service.upload(
       bucket: 'avatars',
       path: 'usr/5.png',
@@ -90,7 +90,7 @@ void main() {
     expect(url, isNot(contains(base64Encode([1]))));
   });
 
-  test('AppBoxKitStorageObjectRef id defaults to path and equals by value', () {
+  test('kit.data.storage — AppBoxKitStorageObjectRef id defaults to path and equals by value', () {
     final a = const AppBoxKitStorageObjectRef(bucket: 'b', path: 'p');
     final b = const AppBoxKitStorageObjectRef(bucket: 'b', path: 'p');
     final explicit = const AppBoxKitStorageObjectRef(bucket: 'b', path: 'p', id: 'x');

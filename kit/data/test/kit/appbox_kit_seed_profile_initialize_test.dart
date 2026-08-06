@@ -28,7 +28,7 @@ final _registration = AppBoxKitEntityRegistration<_TestEntity>(
 );
 
 void main() {
-  test('initialize wires config.seedProfile into the registered repository',
+  test('kit.data.initialize — initialize wires config.seedProfile into the registered repository',
       () async {
     await AppBoxKitData.initialize(
       config: const AppBoxKitDataConfig(

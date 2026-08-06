@@ -31,7 +31,7 @@ void main() {
         client = sb.Supabase.instance.client;
       });
 
-      test('upload → getUrl → delete round trip', () async {
+      test('kit.data.storage — upload → getUrl → delete round trip', () async {
         final service = AppBoxKitSupabaseStorageService(client: client);
         final id = const Uuid().v4();
         final path = 'contract/$id.txt';
@@ -57,7 +57,7 @@ void main() {
         await expectLater(service.delete(ref), completes);
       });
 
-      test('upload delivers a terminal 1.0 progress event', () async {
+      test('kit.data.storage — upload delivers a terminal 1.0 progress event', () async {
         final service = AppBoxKitSupabaseStorageService(client: client);
         final id = const Uuid().v4();
         final seen = <double>[];

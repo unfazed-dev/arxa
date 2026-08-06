@@ -51,8 +51,8 @@ void main() {
 
   group('initialize()', () {
     test(
-        'seeds fixture users; signing in by email resolves to the canonical seed-key id',
-        () async {
+        'kit.data.seed-auth — seeds fixture users; signing in by email '
+        'resolves to the canonical seed-key id', () async {
       final assets = {
         'assets/seed/kit_auth_users.json': jsonEncode([
           {'id': 'user-1', 'email': 'Alice@Example.com'},
@@ -73,14 +73,14 @@ void main() {
       expect(session.user.id, expectedId);
     });
 
-    test('no-ops when fakeUsersAsset is null', () async {
+    test('kit.data.seed-auth — no-ops when fakeUsersAsset is null', () async {
       final service = makeService();
       await service.initialize();
       expect(service.currentSession, isNull);
     });
   });
 
-  test('session\$ emits null on listen, then session after sign-in, then null after signOut',
+  test('kit.data.seed-auth — session\$ emits null on listen, then session after sign-in, then null after signOut',
       () async {
     final service = makeService();
 
@@ -103,7 +103,7 @@ void main() {
   });
 
   group('signInWithEmailPassword', () {
-    test('auto-creates unknown identities', () async {
+    test('kit.data.seed-auth — auto-creates unknown identities', () async {
       final service = makeService();
 
       final session = await service.signInWithEmailPassword(
@@ -115,7 +115,7 @@ void main() {
       expect(session.user.id, isNotEmpty);
     });
 
-    test('same email twice yields the same user id', () async {
+    test('kit.data.seed-auth — same email twice yields the same user id', () async {
       final service = makeService();
 
       final first = await service.signInWithEmailPassword(
@@ -132,7 +132,7 @@ void main() {
   });
 
   group('OTP', () {
-    test('requestOtp throws when given both email and phone', () async {
+    test('kit.data.seed-auth — requestOtp throws when given both email and phone', () async {
       final service = makeService();
       await expectLater(
         service.requestOtp(email: 'a@example.com', phone: '+15551234567'),
@@ -140,7 +140,7 @@ void main() {
       );
     });
 
-    test('requestOtp throws when given neither email nor phone', () async {
+    test('kit.data.seed-auth — requestOtp throws when given neither email nor phone', () async {
       final service = makeService();
       await expectLater(
         service.requestOtp(),
@@ -148,7 +148,7 @@ void main() {
       );
     });
 
-    test('requestOtp(email) then confirmOtp(email, anyCode) yields a session for that email',
+    test('kit.data.seed-auth — requestOtp(email) then confirmOtp(email, anyCode) yields a session for that email',
         () async {
       final service = makeService();
 
@@ -163,7 +163,7 @@ void main() {
   });
 
   group('Google / Apple', () {
-    test('signInWithGoogle grants an instant session with a deterministic id',
+    test('kit.data.seed-auth — signInWithGoogle grants an instant session with a deterministic id',
         () async {
       final service = makeService();
 
@@ -175,7 +175,7 @@ void main() {
       expect(second.user.id, first.user.id);
     });
 
-    test('signInWithApple grants an instant session with a deterministic id',
+    test('kit.data.seed-auth — signInWithApple grants an instant session with a deterministic id',
         () async {
       final service = makeService();
 
@@ -187,7 +187,7 @@ void main() {
       expect(second.user.id, first.user.id);
     });
 
-    test('Google and Apple resolve to distinct ids', () async {
+    test('kit.data.seed-auth — Google and Apple resolve to distinct ids', () async {
       final service = makeService();
 
       final google = await service.signInWithGoogle();
@@ -197,7 +197,7 @@ void main() {
     });
   });
 
-  test('signInAnonymously marks isAnonymous true; two calls yield different ids',
+  test('kit.data.seed-auth — signInAnonymously marks isAnonymous true; two calls yield different ids',
       () async {
     final service = makeService();
 
@@ -209,7 +209,7 @@ void main() {
     expect(second.user.id, isNot(first.user.id));
   });
 
-  test('users survive in the store after sign-in', () async {
+  test('kit.data.seed-auth — users survive in the store after sign-in', () async {
     final store = makeStore();
     final service = makeService(store: store);
 

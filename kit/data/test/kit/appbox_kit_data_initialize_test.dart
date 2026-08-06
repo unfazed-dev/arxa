@@ -48,7 +48,7 @@ void main() {
     appBoxKitLocator.reset();
   });
 
-  test('seed backend: appBoxKitLocator resolves AppBoxKitRepository<T> and watchAll emits fixture rows',
+  test('kit.data.initialize — seed backend: appBoxKitLocator resolves AppBoxKitRepository<T> and watchAll emits fixture rows',
       () async {
     final assetReader = AppBoxKitMemoryAssetReader({
       'assets/seed/test_entities.json': jsonEncode([

@@ -29,7 +29,7 @@ void main() {
         storage = aw.Storage(client);
       });
 
-      test('upload → getUrl → delete round trip', () async {
+      test('kit.data.storage — upload → getUrl → delete round trip', () async {
         final service =
             AppBoxKitAppwriteStorageService(storage: storage, client: client);
         final path = 'contract/${const Uuid().v4()}.txt';
@@ -55,7 +55,7 @@ void main() {
         await expectLater(service.delete(ref), completes);
       });
 
-      test('upload streams real progress toward 1.0', () async {
+      test('kit.data.storage — upload streams real progress toward 1.0', () async {
         final service =
             AppBoxKitAppwriteStorageService(storage: storage, client: client);
         final path = 'progress/${const Uuid().v4()}.bin';

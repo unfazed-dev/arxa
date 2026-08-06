@@ -33,7 +33,7 @@ void main() {
   });
 
   group('AppBoxKitSeedStorageService (in-memory)', () {
-    test('progress callback receives 0.0 then 1.0 in order', () async {
+    test('kit.data.storage — progress callback receives 0.0 then 1.0 in order', () async {
       final service = AppBoxKitSeedStorageService();
       final seen = <double>[];
 
@@ -49,7 +49,7 @@ void main() {
       expect(seen.last, 1.0);
     });
 
-    test('getUrl encodes the uploaded MIME into the data URL', () async {
+    test('kit.data.storage — getUrl encodes the uploaded MIME into the data URL', () async {
       final service = AppBoxKitSeedStorageService();
       final ref = await service.upload(
         bucket: 'avatars',
@@ -61,7 +61,7 @@ void main() {
       expect(await service.getUrl(ref), startsWith('data:image/jpeg;base64,'));
     });
 
-    test('getUrl on a missing object throws StateError naming the path',
+    test('kit.data.storage — getUrl on a missing object throws StateError naming the path',
         () async {
       final service = AppBoxKitSeedStorageService();
 
@@ -79,7 +79,7 @@ void main() {
   });
 
   group('AppBoxKitSnapshotStoragePersistence', () {
-    test('persist then load round-trips the same bytes', () async {
+    test('kit.data.storage — persist then load round-trips the same bytes', () async {
       final p = AppBoxKitSnapshotStoragePersistence(overrideDirectory: tempDir);
       final bytes = Uint8List.fromList(List.generate(256, (i) => i % 256));
 
@@ -88,12 +88,12 @@ void main() {
       expect(await p.load('avatars', 'usr/1.png'), bytes);
     });
 
-    test('load returns null for a key that was never written', () async {
+    test('kit.data.storage — load returns null for a key that was never written', () async {
       final p = AppBoxKitSnapshotStoragePersistence(overrideDirectory: tempDir);
       expect(await p.load('avatars', 'nope.png'), isNull);
     });
 
-    test('remove drops the blob', () async {
+    test('kit.data.storage — remove drops the blob', () async {
       final p = AppBoxKitSnapshotStoragePersistence(overrideDirectory: tempDir);
       await p.persist('avatars', 'usr/2.png', Uint8List.fromList([1]));
 
@@ -102,7 +102,7 @@ void main() {
       expect(await p.load('avatars', 'usr/2.png'), isNull);
     });
 
-    test('reset removes the storage root', () async {
+    test('kit.data.storage — reset removes the storage root', () async {
       final p = AppBoxKitSnapshotStoragePersistence(overrideDirectory: tempDir);
       await p.persist('avatars', 'usr/3.png', Uint8List.fromList([1]));
       final root = Directory('${tempDir.path}/appbox_kit_data/storage');
@@ -115,7 +115,7 @@ void main() {
   });
 
   group('write-through across instances', () {
-    test('a second service reads bytes persisted by the first', () async {
+    test('kit.data.storage — a second service reads bytes persisted by the first', () async {
       final persistence =
           AppBoxKitSnapshotStoragePersistence(overrideDirectory: tempDir);
       final a = AppBoxKitSeedStorageService(persistence: persistence);

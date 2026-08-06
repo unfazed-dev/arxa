@@ -23,7 +23,7 @@ void main() {
 
   tearDown(() => appBoxKitLocator.reset());
 
-  test('mutate records name/entity and executes the operation', () async {
+  test('kit.data.facades — mutate records name/entity and executes the operation', () async {
     final facade = FakeAppBoxKitDataFacade();
 
     // Awaiting the builder executes it (no .execute() terminal).
@@ -40,7 +40,7 @@ void main() {
     expect(facade.mutateCalls.single.entity, 'note-1');
   });
 
-  test('derived key is owner + name.entity — state binds while in flight',
+  test('kit.data.facades — derived key is owner + name.entity — state binds while in flight',
       () async {
     final facade = FakeAppBoxKitDataFacade();
     final gate = Completer<void>();
@@ -63,7 +63,7 @@ void main() {
     expect(state.value.busy, isFalse);
   });
 
-  test('error param surfaces as the recorded errorMessage', () async {
+  test('kit.data.facades — error param surfaces as the recorded errorMessage', () async {
     final facade = FakeAppBoxKitDataFacade();
     final state = facade.actionState$('wipe');
 

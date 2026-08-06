@@ -35,13 +35,13 @@ void main() {
   );
 
   group('canonicalId', () {
-    test('same (table, key) yields identical UUID across instances', () {
+    test('kit.data.id-service — same (table, key) yields identical UUID across instances', () {
       final a = AppBoxKitIdService();
       final b = AppBoxKitIdService();
       expect(a.canonicalId('products', 'p-1'), b.canonicalId('products', 'p-1'));
     });
 
-    test('different table, same key yields different UUID', () {
+    test('kit.data.id-service — different table, same key yields different UUID', () {
       final service = AppBoxKitIdService();
       expect(
         service.canonicalId('products', 'x-1'),
@@ -49,13 +49,13 @@ void main() {
       );
     });
 
-    test('valid-UUID key passes through lowercased', () {
+    test('kit.data.id-service — valid-UUID key passes through lowercased', () {
       final service = AppBoxKitIdService();
       const upper = 'A1B2C3D4-E5F6-4711-8899-AABBCCDDEEFF';
       expect(service.canonicalId('products', upper), upper.toLowerCase());
     });
 
-    test('empty key throws ArgumentError', () {
+    test('kit.data.id-service — empty key throws ArgumentError', () {
       final service = AppBoxKitIdService();
       expect(
         () => service.canonicalId('products', ''),
@@ -63,7 +63,7 @@ void main() {
       );
     });
 
-    test('invalid namespace throws in the constructor', () {
+    test('kit.data.id-service — invalid namespace throws in the constructor', () {
       expect(
         () => AppBoxKitIdService(namespace: 'not-a-uuid'),
         throwsArgumentError,
@@ -72,7 +72,7 @@ void main() {
   });
 
   group('canonicalizeRow', () {
-    test('canonicalizes id and reference columns; leaves the rest alone', () {
+    test('kit.data.id-service — canonicalizes id and reference columns; leaves the rest alone', () {
       final service = AppBoxKitIdService();
       final row = <String, dynamic>{
         'id': 'p-1',
@@ -89,7 +89,7 @@ void main() {
       expect(out['price'], 9.99);
     });
 
-    test('leaves a null reference column untouched', () {
+    test('kit.data.id-service — leaves a null reference column untouched', () {
       final service = AppBoxKitIdService();
       final row = <String, dynamic>{
         'id': 'p-2',
@@ -103,7 +103,7 @@ void main() {
       expect(out['category'], isNull);
     });
 
-    test('row missing id throws', () {
+    test('kit.data.id-service — row missing id throws', () {
       final service = AppBoxKitIdService();
       final row = <String, dynamic>{'name': 'no id'};
 
@@ -115,7 +115,7 @@ void main() {
   });
 
   group('canonicalizeQuery', () {
-    test('eq on the id column is canonicalized against the schema\'s own table', () {
+    test('kit.data.id-service — eq on the id column is canonicalized against the schema\'s own table', () {
       final service = AppBoxKitIdService();
       final query = const AppBoxKitQuery(filters: [AppBoxKitFilter.eq('id', 'p-1')]);
 
@@ -124,7 +124,7 @@ void main() {
       expect(out.filters.single.value, service.canonicalId('products', 'p-1'));
     });
 
-    test('eq on a reference column is canonicalized against the REFERENCED table', () {
+    test('kit.data.id-service — eq on a reference column is canonicalized against the REFERENCED table', () {
       final service = AppBoxKitIdService();
       final query = const AppBoxKitQuery(filters: [AppBoxKitFilter.eq('category', 'cat-1')]);
 
@@ -138,7 +138,7 @@ void main() {
       );
     });
 
-    test('gt/lt filters pass through untouched', () {
+    test('kit.data.id-service — gt/lt filters pass through untouched', () {
       final service = AppBoxKitIdService();
       final query = const AppBoxKitQuery(
         filters: [AppBoxKitFilter.gt('price', 5), AppBoxKitFilter.lt('price', 100)],
@@ -150,7 +150,7 @@ void main() {
       expect(out.filters[1].value, 100);
     });
 
-    test('eq on a non-id, non-reference column passes through untouched', () {
+    test('kit.data.id-service — eq on a non-id, non-reference column passes through untouched', () {
       final service = AppBoxKitIdService();
       final query = const AppBoxKitQuery(filters: [AppBoxKitFilter.eq('name', 'Widget')]);
 
@@ -159,7 +159,7 @@ void main() {
       expect(out.filters.single.value, 'Widget');
     });
 
-    test('empty-filter query is returned as the same instance', () {
+    test('kit.data.id-service — empty-filter query is returned as the same instance', () {
       final service = AppBoxKitIdService();
       const query = AppBoxKitQuery(orderBy: 'name');
 

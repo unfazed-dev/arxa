@@ -75,7 +75,7 @@ void main() {
         idService: idService,
       );
 
-  test('getById resolves by seed key and by the canonical uuid', () async {
+  test('kit.data.seed-repos — getById resolves by seed key and by the canonical uuid', () async {
     final repo = makeRepo();
     await repo.upsert(const _Widget(id: 'w-1', name: 'Alpha'));
 
@@ -89,7 +89,7 @@ void main() {
     expect(byUuid!.id, canonical);
   });
 
-  test('watchAll emits current list on listen, then again after upsert and delete',
+  test('kit.data.seed-repos — watchAll emits current list on listen, then again after upsert and delete',
       () async {
     final repo = makeRepo();
 
@@ -117,7 +117,7 @@ void main() {
       ]);
     });
 
-    test('eq filters to the matching row', () async {
+    test('kit.data.seed-repos — eq filters to the matching row', () async {
       final results = await repo.getAll(
         const AppBoxKitQuery(filters: [AppBoxKitFilter.eq('name', 'Beta')]),
       );
@@ -125,40 +125,40 @@ void main() {
       expect(results.single.name, 'Beta');
     });
 
-    test('gt filters to rows strictly greater', () async {
+    test('kit.data.seed-repos — gt filters to rows strictly greater', () async {
       final results = await repo.getAll(
         const AppBoxKitQuery(filters: [AppBoxKitFilter.gt('qty', 10)]),
       );
       expect(results.map((w) => w.name), ['Delta']);
     });
 
-    test('lt filters to rows strictly less', () async {
+    test('kit.data.seed-repos — lt filters to rows strictly less', () async {
       final results = await repo.getAll(
         const AppBoxKitQuery(filters: [AppBoxKitFilter.lt('qty', 10)]),
       );
       expect(results.map((w) => w.name), ['Beta']);
     });
 
-    test('orderBy ascending sorts nulls last', () async {
+    test('kit.data.seed-repos — orderBy ascending sorts nulls last', () async {
       final results = await repo.getAll(const AppBoxKitQuery(orderBy: 'qty'));
       expect(results.map((w) => w.name), ['Beta', 'Alpha', 'Delta', 'Gamma']);
     });
 
-    test('orderBy descending still sorts nulls last', () async {
+    test('kit.data.seed-repos — orderBy descending still sorts nulls last', () async {
       final results = await repo.getAll(
         const AppBoxKitQuery(orderBy: 'qty', descending: true),
       );
       expect(results.map((w) => w.name), ['Delta', 'Alpha', 'Beta', 'Gamma']);
     });
 
-    test('limit caps the result count after ordering', () async {
+    test('kit.data.seed-repos — limit caps the result count after ordering', () async {
       final results = await repo.getAll(
         const AppBoxKitQuery(orderBy: 'qty', limit: 2),
       );
       expect(results.map((w) => w.name), ['Beta', 'Alpha']);
     });
 
-    test('eq filter on a reference column matches via a seed key', () async {
+    test('kit.data.seed-repos — eq filter on a reference column matches via a seed key', () async {
       final results = await repo.getAll(
         const AppBoxKitQuery(filters: [AppBoxKitFilter.eq('category', 'cat-1')]),
       );
@@ -166,7 +166,7 @@ void main() {
     });
   });
 
-  test('delete by seed key removes the row', () async {
+  test('kit.data.seed-repos — delete by seed key removes the row', () async {
     final repo = makeRepo();
     await repo.upsert(const _Widget(id: 'w-1', name: 'Alpha'));
 
@@ -176,7 +176,7 @@ void main() {
     expect(await repo.getAll(), isEmpty);
   });
 
-  test('upsertMany returns entities in the same order they were given', () async {
+  test('kit.data.seed-repos — upsertMany returns entities in the same order they were given', () async {
     final repo = makeRepo();
 
     final results = await repo.upsertMany(const [

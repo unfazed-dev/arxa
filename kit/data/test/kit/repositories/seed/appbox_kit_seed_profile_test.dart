@@ -64,7 +64,7 @@ void main() {
     );
   }
 
-  test('default profile is a pass-through', () async {
+  test('kit.data.seed-repos — default profile is a pass-through', () async {
     const profile = AppBoxKitSeedProfile();
     final source = Stream<int>.value(1);
     expect(identical(profile.apply(source), source), isTrue,
@@ -79,7 +79,7 @@ void main() {
   group('failing profile', () {
     const failure = AppBoxKitSeedException('injected backend failure');
 
-    test('every one-shot operation throws the typed AppBoxKitSeedException', () {
+    test('kit.data.seed-repos — every one-shot operation throws the typed AppBoxKitSeedException', () {
       final repos = makeRepo(const AppBoxKitSeedProfile.failing(failure));
 
       expect(repos.repo.getAll(), throwsA(isA<AppBoxKitSeedException>()));
@@ -91,7 +91,7 @@ void main() {
       expect(repos.repo.delete('w-1'), throwsA(isA<AppBoxKitSeedException>()));
     });
 
-    test('watch emissions become stream errors', () async {
+    test('kit.data.seed-repos — watch emissions become stream errors', () async {
       final repos = makeRepo(const AppBoxKitSeedProfile.failing(failure));
       await repos.seeder.upsert(const _Widget(id: 'w-1', name: 'Alpha'));
 
@@ -121,7 +121,7 @@ void main() {
   group('slow profile', () {
     const latency = Duration(seconds: 2);
 
-    test('one-shot operations resolve only after the latency', () {
+    test('kit.data.seed-repos — one-shot operations resolve only after the latency', () {
       fakeAsync((async) {
         final repos = makeRepo(const AppBoxKitSeedProfile.slow(latency));
 
@@ -144,7 +144,7 @@ void main() {
       });
     });
 
-    test('watch emits nothing before the latency, then the rows', () {
+    test('kit.data.seed-repos — watch emits nothing before the latency, then the rows', () {
       fakeAsync((async) {
         final repos = makeRepo(const AppBoxKitSeedProfile.slow(latency));
         // Seed through the pass-through writer so setup isn't itself gated.

@@ -44,7 +44,7 @@ void main() {
   );
 
   group('AppBoxKitSupabaseSqlEmitter', () {
-    test('referenced table precedes referrer; reference/not-null/jsonb render correctly', () {
+    test('kit.data.emitters — referenced table precedes referrer; reference/not-null/jsonb render correctly', () {
       final sql = AppBoxKitSupabaseSqlEmitter().emit([products, categories]);
 
       final categoriesIndex = sql.indexOf('create table if not exists "categories"');
@@ -69,7 +69,7 @@ void main() {
     final idService = AppBoxKitIdService();
     final emitter = AppBoxKitSupabaseSeedEmitter(idService: idService);
 
-    test('single quote doubled, jsonb cast, absent nullable -> NULL, upsert clause, canonical ids', () {
+    test('kit.data.emitters — single quote doubled, jsonb cast, absent nullable -> NULL, upsert clause, canonical ids', () {
       final sql = emitter.emit(
         fixturesByTable: {
           'categories': [
@@ -104,7 +104,7 @@ void main() {
   });
 
   group('AppBoxKitAppwriteJsonEmitter', () {
-    test('parses via jsonDecode with tables/columns shaped as expected', () {
+    test('kit.data.emitters — parses via jsonDecode with tables/columns shaped as expected', () {
       final json = AppBoxKitAppwriteJsonEmitter().emit(
         schemas: [categories, products],
         databaseId: 'db-1',

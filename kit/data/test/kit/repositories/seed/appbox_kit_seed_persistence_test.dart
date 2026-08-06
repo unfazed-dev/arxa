@@ -27,7 +27,7 @@ void main() {
   });
 
   group('AppBoxKitSnapshotPersistence', () {
-    test('persistTable then load roundtrips the same nested map', () async {
+    test('kit.data.seed-repos — persistTable then load roundtrips the same nested map', () async {
       final persistence = AppBoxKitSnapshotPersistence(overrideDirectory: tempDir);
       final rows = {
         'row-1': {'id': 'row-1', 'name': 'Alpha'},
@@ -41,13 +41,13 @@ void main() {
       expect(loaded!['widgets'], rows);
     });
 
-    test('load with no directory yet returns null', () async {
+    test('kit.data.seed-repos — load with no directory yet returns null', () async {
       final persistence = AppBoxKitSnapshotPersistence(overrideDirectory: tempDir);
 
       expect(await persistence.load(), isNull);
     });
 
-    test('corrupt JSON file throws FormatException naming the file path', () async {
+    test('kit.data.seed-repos — corrupt JSON file throws FormatException naming the file path', () async {
       final persistence = AppBoxKitSnapshotPersistence(overrideDirectory: tempDir);
       final seedDir = Directory('${tempDir.path}/appbox_kit_data/seed')
         ..createSync(recursive: true);
@@ -66,7 +66,7 @@ void main() {
       );
     });
 
-    test('reset removes the directory', () async {
+    test('kit.data.seed-repos — reset removes the directory', () async {
       final persistence = AppBoxKitSnapshotPersistence(overrideDirectory: tempDir);
       await persistence.persistTable('widgets', {
         'row-1': {'id': 'row-1'},
@@ -81,19 +81,19 @@ void main() {
   });
 
   group('AppBoxKitNoPersistence', () {
-    test('load always returns null', () async {
+    test('kit.data.seed-repos — load always returns null', () async {
       final persistence = AppBoxKitNoPersistence();
       expect(await persistence.load(), isNull);
     });
   });
 
   group('fixture fingerprints sidecar', () {
-    test('loadFixtureFingerprints returns null before any persist', () async {
+    test('kit.data.seed-repos — loadFixtureFingerprints returns null before any persist', () async {
       final persistence = AppBoxKitSnapshotPersistence(overrideDirectory: tempDir);
       expect(await persistence.loadFixtureFingerprints(), isNull);
     });
 
-    test('persist then load roundtrips, and the sidecar is not a table', () async {
+    test('kit.data.seed-repos — persist then load roundtrips, and the sidecar is not a table', () async {
       final persistence = AppBoxKitSnapshotPersistence(overrideDirectory: tempDir);
 
       await persistence.persistFixtureFingerprints({'notes': 'abcd1234'});
@@ -104,7 +104,7 @@ void main() {
       expect(await persistence.load(), isNull);
     });
 
-    test('corrupt sidecar degrades to null (re-seed) instead of throwing', () async {
+    test('kit.data.seed-repos — corrupt sidecar degrades to null (re-seed) instead of throwing', () async {
       final persistence = AppBoxKitSnapshotPersistence(overrideDirectory: tempDir);
       Directory('${tempDir.path}/appbox_kit_data/seed').createSync(recursive: true);
       File('${tempDir.path}/appbox_kit_data/seed/.fixture_fingerprints.json')
@@ -115,7 +115,7 @@ void main() {
   });
 
   group('appBoxKitFixtureFingerprint', () {
-    test('is stable across map key ordering', () {
+    test('kit.data.seed-repos — is stable across map key ordering', () {
       final a = {
         'n-1': {'id': 'n-1', 'body': 'seeded note'},
       };
@@ -125,7 +125,7 @@ void main() {
       expect(appBoxKitFixtureFingerprint(a), appBoxKitFixtureFingerprint(b));
     });
 
-    test('changes when any row content changes', () {
+    test('kit.data.seed-repos — changes when any row content changes', () {
       final a = {
         'n-1': {'id': 'n-1', 'body': 'seeded note'},
       };
@@ -150,7 +150,7 @@ void main() {
     ) =>
         {for (final e in tables.entries) e.key: appBoxKitFixtureFingerprint(e.value)};
 
-    test('no snapshot (first boot) → fixtures verbatim, nothing re-seeded', () {
+    test('kit.data.seed-repos — no snapshot (first boot) → fixtures verbatim, nothing re-seeded', () {
       final resolution = appBoxKitResolveBootTables(fixtures: fixtures, snapshot: null);
 
       expect(resolution.tables, fixtures);
@@ -159,9 +159,9 @@ void main() {
     });
 
     test(
-        'rule 1: partial snapshot must not shadow never-persisted fixture '
-        'tables (regression: fake-auth boot persists only kit_auth_users, '
-        'second boot then showed empty notes)', () async {
+        'kit.data.seed-repos — rule 1: partial snapshot must not shadow '
+        'never-persisted fixture tables (regression: fake-auth boot persists '
+        'only kit_auth_users, second boot then showed empty notes)', () async {
       final persistence = AppBoxKitSnapshotPersistence(overrideDirectory: tempDir);
 
       // Boot 1: nothing persisted → fixtures. Fake-auth initialize then
@@ -183,8 +183,8 @@ void main() {
     });
 
     test(
-        'rule 2: matching fingerprint → snapshot verbatim '
-        '(user edits and deletions survive reboot)', () {
+        'kit.data.seed-repos — rule 2: matching fingerprint → snapshot '
+        'verbatim (user edits and deletions survive reboot)', () {
       final resolution = appBoxKitResolveBootTables(
         fixtures: fixtures,
         snapshot: {'notes': {}}, // user deleted the seeded note
@@ -197,9 +197,9 @@ void main() {
     });
 
     test(
-        'rule 3: changed fixtures re-seed a stale snapshot, preserving '
-        'user-created rows (regression: updated seed data never reached '
-        'devices that already persisted a snapshot)', () {
+        'kit.data.seed-repos — rule 3: changed fixtures re-seed a stale '
+        'snapshot, preserving user-created rows (regression: updated seed '
+        'data never reached devices that already persisted a snapshot)', () {
       final snapshot = {
         'notes': {
           'n-1': {'id': 'n-1', 'body': 'OLD seeded generation'},
@@ -226,8 +226,8 @@ void main() {
     });
 
     test(
-        'rule 3: snapshot that predates fingerprinting (no sidecar) '
-        're-seeds fixture rows', () {
+        'kit.data.seed-repos — rule 3: snapshot that predates fingerprinting '
+        '(no sidecar) re-seeds fixture rows', () {
       final resolution = appBoxKitResolveBootTables(
         fixtures: fixtures,
         snapshot: {
