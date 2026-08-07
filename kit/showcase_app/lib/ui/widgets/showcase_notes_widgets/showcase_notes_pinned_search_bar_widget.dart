@@ -1,3 +1,22 @@
+/// A widget is a reusable UI piece composed by views. It receives data via
+/// constructor params or [AppBoxKitStreamBuilder] bindings and renders its
+/// slice of the surface — it holds no business logic and never decides when
+/// an action runs.
+///
+/// This is the user interface for a pinned search-bar sliver that sticks under
+/// the app bar while the list scrolls beneath it.
+///
+/// Requirements:
+/// 1. [Pinned header]
+/// Wraps a child in a SliverPersistentHeader that pins to the top of the scroll.
+///
+/// Relationships:
+///
+/// Standalone — no viewmodel binding.
+///
+/// History: git log --follow -- kit/showcase_app/lib/ui/widgets/showcase_notes_widgets/showcase_notes_pinned_search_bar_widget.dart
+library;
+
 import 'package:flutter/material.dart';
 
 /// Pinned search-bar sliver: sticks [child] under the app bar while the list

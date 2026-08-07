@@ -1,3 +1,36 @@
+/// A widget is a reusable UI piece composed by views. It receives data via
+/// constructor params or [AppBoxKitStreamBuilder] bindings and renders its
+/// slice of the surface — it holds no business logic and never decides when
+/// an action runs.
+///
+/// This is the user interface for one audio attachment row — play/pause, live
+/// progress bar, and duration label.
+///
+/// Requirements:
+/// 1. [Play/pause] — play-back-an-audio-attachment
+/// The play/pause button toggles playback; the progress bar shows live position.
+/// 2. [Remove attachment] — attach-a-photo-to-a-note
+/// Long-press confirms removal of the audio attachment.
+///
+/// Relationships:
+///
+///   ┌──────────────────────────────┐
+///   │    note audio row widget     │
+///   └──────────────────────────────┘
+///   ACT ▼                    ▲ STRM
+///   [1-2]                    [1-2]
+///   ┌──────────────────────────────┐
+///   │    note editor viewmodel     │
+///   └──────────────────────────────┘
+///      ════════ abxAction ════════
+///
+///  streams (STRM)              actions (ACT)
+///    1. isAttachmentPlaying$      1. togglePlayback
+///    2. playbackProgress$         2. confirmRemoveAttachment
+///
+/// History: git log --follow -- kit/showcase_app/lib/ui/widgets/showcase_notes_widgets/showcase_note_audio_row_widget.dart
+library;
+
 import 'package:flutter/material.dart';
 import 'package:appbox_kit_media/appbox_kit_media.dart'
     show AppBoxKitPlaybackProgress;

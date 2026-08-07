@@ -1,18 +1,45 @@
+/// A model is a pure data class representing a domain entity — fields and
+/// serialization only, no behavior, no Flutter, no services.
+///
+/// This is the data shape for a note — its text, when it was created and edited,
+/// whether it's pinned or soft-deleted, and its attachments. iOS-style: there is
+/// no separate title column — the title and snippet derive from the body's first
+/// lines, and `deleted_at` implements Recently Deleted (soft delete, restorable)
+/// without a second table.
+///
+/// History: git log --follow -- kit/showcase_app/lib/data/models/showcase_notes_models/showcase_note_model.dart
+library;
+
 import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/showcase_note_attachment_model.dart';
 import 'package:appbox_kit_showcase_app/enums/showcase_notes_enums/enums.dart';
 
-/// A note. iOS-style: no separate title column — [title] and [snippet] derive
-/// from [body]'s first lines; `deleted_at` implements Recently Deleted
-/// (soft delete, restorable) without a second table.
 class ShowcaseNoteModel {
+  /// The note's unique id.
   final String id;
+
+  /// The folder this note lives in.
   final String folderId;
+
+  /// The user who owns this note.
   final String owner;
+
+  /// The note's full text; the list title and snippet derive from its first lines.
   final String body;
+
+  /// Whether the note is pinned to the top of the inbox.
   final bool pinned;
+
+  /// Photos and voice recordings attached to the note.
   final List<ShowcaseNoteAttachmentModel> attachments;
+
+  /// When the note was soft-deleted; null means it's live (Recently Deleted is
+  /// this set, not a separate table).
   final DateTime? deletedAt;
+
+  /// When the note was first created.
   final DateTime createdAt;
+
+  /// When the note was last edited.
   final DateTime updatedAt;
 
   const ShowcaseNoteModel({

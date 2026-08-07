@@ -1,3 +1,40 @@
+/// A widget is a reusable UI piece composed by views. It receives data via
+/// constructor params or [AppBoxKitStreamBuilder] bindings and renders its
+/// slice of the surface — it holds no business logic and never decides when
+/// an action runs.
+///
+/// This is the user interface for the note editor's scrollable body — the text
+/// field, photo strip, and audio rows. It owns a TextEditingController for the
+/// borderless multiline document (seeded once from the VM, then one-way out via
+/// onChanged for autosave).
+///
+/// Requirements:
+/// 1. [Text editing] — edit-a-note
+/// The multiline text field seeds once from the VM and calls onBodyChanged on
+/// every keystroke.
+/// 2. [Photo display] — attach-a-photo-to-a-note
+/// The photo strip shows attached photos at the top of the body.
+/// 3. [Audio display] — play-back-an-audio-attachment
+/// Each audio attachment renders as a row with play/pause and live progress.
+///
+/// Relationships:
+///
+///   ┌──────────────────────────────┐
+///   │   note editor body widget    │
+///   └──────────────────────────────┘
+///   ACT ▼
+///   [1]
+///   ┌──────────────────────────────┐
+///   │    note editor viewmodel     │
+///   └──────────────────────────────┘
+///      ════════ abxAction ════════
+///
+///  actions (ACT)
+///    1. onBodyChanged
+///
+/// History: git log --follow -- kit/showcase_app/lib/ui/widgets/showcase_notes_widgets/showcase_note_editor_body_widget.dart
+library;
+
 import 'package:flutter/material.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/models.dart';

@@ -1,3 +1,22 @@
+/// A widget is a reusable piece of a view — a card, control, or section that
+/// composes the kit's primitives and turns the user's taps into callbacks or
+/// imperative kit calls. A widget holds no business logic; the view that
+/// places it owns the data.
+///
+/// This is the user interface for the flutter_animate adapter demo — a card
+/// whose plain animate chain takes its timeline from the enclosing motion
+/// scope via AppBoxKitMotionAdapter.
+///
+/// Requirements:
+/// 1. [flutter_animate adapter] — view-the-motion-demo
+/// A plain animate chain driven by the enclosing scope's timeline.
+///
+/// Relationships: a self-contained presentational widget — no viewmodel
+/// binding; reads the scope from its own context.
+///
+/// History: git log --follow -- kit/showcase_app/lib/ui/widgets/showcase_profile_widgets/showcase_motion_adapter_card_widget.dart
+library;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:appbox_kit_motion/appbox_kit_motion.dart';

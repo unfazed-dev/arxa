@@ -1,3 +1,16 @@
+/// A widget is a reusable piece of a view — it composes the kit's primitives
+/// and holds no business logic; the view that places it owns the data.
+///
+/// This is the user interface for a search options section. It shows "Open
+/// now" and "Outdoor seating" switches bound to the search viewmodel.
+///
+/// Requirements:
+/// 1. [Option switches]
+/// Open-now and outdoor-seating toggles bound to the search viewmodel.
+///
+/// History: git log --follow -- kit/showcase_app/lib/ui/widgets/showcase_search_widgets/showcase_search_options_section_widget.dart
+library;
+
 import 'package:flutter/material.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_search_shell/showcase_search/showcase_search_viewmodel.dart';

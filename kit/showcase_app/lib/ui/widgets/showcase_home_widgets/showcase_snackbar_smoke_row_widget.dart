@@ -1,3 +1,18 @@
+/// A widget is a reusable piece of a view — it composes the kit's primitives
+/// and holds no business logic; the view that places it owns the data.
+///
+/// This is the user interface for a snackbar smoke-test. It lays out two rows
+/// of icon buttons that fire the kit's notification surface across every kind
+/// (info, success, error, warning) and every stacked-snackbar tier (titled,
+/// action, bottom).
+///
+/// Requirements:
+/// 1. [Notification smoke test]
+/// Fires every notification kind and snackbar tier via AppBoxKitNotificationService.
+///
+/// History: git log --follow -- kit/showcase_app/lib/ui/widgets/showcase_home_widgets/showcase_snackbar_smoke_row_widget.dart
+library;
+
 import 'package:flutter/material.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 

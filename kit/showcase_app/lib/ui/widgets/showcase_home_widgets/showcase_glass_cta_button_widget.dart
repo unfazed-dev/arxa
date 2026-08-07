@@ -1,3 +1,17 @@
+/// A widget is a reusable piece of a view — it composes the kit's primitives
+/// and holds no business logic; the view that places it owns the data.
+///
+/// This is the user interface for a glass CTA button demo. It shows a
+/// native button at the kit's standard height with a star glyph that fires a
+/// toast notification on tap.
+///
+/// Requirements:
+/// 1. [Glass CTA demo]
+/// A native button with a glyph that shows a toast on tap.
+///
+/// History: git log --follow -- kit/showcase_app/lib/ui/widgets/showcase_home_widgets/showcase_glass_cta_button_widget.dart
+library;
+
 import 'package:flutter/material.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 

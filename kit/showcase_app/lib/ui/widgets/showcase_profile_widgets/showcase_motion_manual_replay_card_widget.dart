@@ -1,3 +1,21 @@
+/// A widget is a reusable piece of a view — a card, control, or section that
+/// composes the kit's primitives and turns the user's taps into callbacks or
+/// imperative kit calls. A widget holds no business logic; the view that
+/// places it owns the data.
+///
+/// This is the user interface for the manual-replay demo — a nested motion
+/// scope with its own controller driver, replayable on demand.
+///
+/// Requirements:
+/// 1. [Manual replay] — view-the-motion-demo
+/// A nested scope replays wake/set-down on demand via set-down and replay buttons.
+///
+/// Relationships: a self-contained presentational widget — no viewmodel
+/// binding; the spec is passed in, the controller is local.
+///
+/// History: git log --follow -- kit/showcase_app/lib/ui/widgets/showcase_profile_widgets/showcase_motion_manual_replay_card_widget.dart
+library;
+
 import 'package:flutter/material.dart';
 import 'package:appbox_kit_motion/appbox_kit_motion.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';

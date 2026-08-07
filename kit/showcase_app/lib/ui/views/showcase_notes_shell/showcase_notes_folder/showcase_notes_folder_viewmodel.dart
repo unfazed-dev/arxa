@@ -1,29 +1,79 @@
+/// The notes-list screen's viewmodel. The view calls actions in and reads
+/// streams out: when the user does something, the matching action does the
+/// work; when something changes, the new value flows down the stream and the
+/// view redraws just the part listening to it. The viewmodel never touches the
+/// view — swap the UI for any other and this file stays unchanged.
+///
+/// This is the business logic for the screen that lists notes. Depending on the
+/// scope it shows all notes, the notes in one folder, or the notes in Recently
+/// Deleted. A note can be created, pinned or unpinned, trashed, restored, or
+/// deleted forever; when viewing a folder a note can be moved into another
+/// folder. The list can be searched, and Recently Deleted can be emptied in one
+/// step.
+///
+/// Requirements:
+/// 1. [Browse notes] — browse-the-notes-in-a-folder
+/// The notes in the current scope stream as sectioned groups.
+/// 2. [Create a note] — create-a-note
+/// A new note is created in the current folder and its id returned for navigation.
+/// 3. [Pinning] — pin-a-note-to-the-top-of-the-inbox / unpin-a-pinned-note
+/// A note can be pinned or unpinned.
+/// 4. [Trash a note] — trash-a-note
+/// A note moves to Recently Deleted.
+/// 5. [Restore a note] — restore-a-trashed-note
+/// A trashed note moves back.
+/// 6. [Delete permanently] — delete-a-note-forever
+/// A note is deleted forever, one at a time or by emptying trash — both behind a confirm gate.
+/// 7. [Move to folder] — move-a-note-into-a-folder
+/// A note moves into a folder.
+///
+/// Relationships:
+///
+///      ┌─────────────────────────┐
+///      │    notes folder view    │
+///      └─────────────────────────┘
+///      ACT ▼               ▲ STRM
+///      [1-10]              [1-5]
+///   ┌───────────────────────────────┐
+///   │    notes folder viewmodel     │
+///   └───────────────────────────────┘
+///            ACT ▼    ▲ STRM
+///            [1-7]    [1-3]
+///            ┌──────────────┐
+///            │ notes facade │
+///            └──────────────┘
+///      ════════ abxAction ════════
+///
+///  streams (STRM)          actions (ACT)            commands (CMD)
+///    1. folders$            1. setQuery              1. _confirmEmptyTrash
+///    2. notes$              2. togglePin             2. _confirmDeletePermanently
+///    3. query$              3. moveToTrash
+///    4. title$              4. moveNoteToFolder
+///    5. groups$             5. restore
+///                          6. deletePermanently
+///                          7. emptyTrash
+///                          8. confirmEmptyTrash
+///                          9. confirmDeletePermanently
+///                         10. compose
+///
+/// History: git log --follow -- kit/showcase_app/lib/ui/views/showcase_notes_shell/showcase_notes_folder/showcase_notes_folder_viewmodel.dart
+library;
+
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 
 import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/models.dart';
 import 'package:appbox_kit_showcase_app/enums/showcase_notes_enums/enums.dart';
 import 'package:appbox_kit_showcase_app/services/showcase_notes_services/facades/showcase_notes_facade_service.dart';
 
-/// The notes-list screen viewmodel — streams-only (house convention): all
-/// state is exposed as streams and the views bind them with [AppBoxKitStreamBuilder];
-/// `BaseViewModel` is a lifecycle token (creation/disposal via StackedView),
-/// never a rebuild mechanism — `notifyListeners` is not called.
-///
-/// [folderKey] is `'all'`, `'trash'`, or a folder uuid, resolved by the view
-/// from the route's `:id` path param.
-///
-/// Data streams are facade pass-throughs composed with rxdart `switchMap`
-/// (session → owner-scoped reads), so the VM holds no relay fields and no
-/// subscription bookkeeping for them — each [AppBoxKitStreamBuilder] owns its
-/// subscription. While signed out the streams emit empty lists (the Folders
-/// screen gates auth, so by the time this viewmodel exists a session is
-/// expected to be live). The one VM-owned UI state, [query$], is a seeded
-/// [BehaviorSubject].
 class ShowcaseNotesFolderViewModel extends AppBoxKitViewModel {
+  // ── Setup ──────────────────────────────────────────────────────────────────
+
   ShowcaseNotesFolderViewModel({required this.folderKey});
 
   final String folderKey;
   final _service = appBoxKitLocator<ShowcaseNotesFacadeService>();
+
+  // ── Initial state ─────────────────────────────────────────────────────────
 
   /// The route's `:id` param, parsed once — the scope checks and the folder
   /// listing query switch on this, never on the raw string.
@@ -32,7 +82,9 @@ class ShowcaseNotesFolderViewModel extends AppBoxKitViewModel {
   bool get isTrash => scope is ShowcaseFolderScopeTrash;
   bool get isAll => scope is ShowcaseFolderScopeAll;
 
-  /// Owner-scoped folders; empty while signed out.
+  // ── Streams ─────────────────────────────────────────────────────────
+
+  /// [1. Browse notes] Owner-scoped folders; empty while signed out.
   Stream<List<ShowcaseNoteFolderModel>> get folders$ =>
       _service.session$.switchMap(
         (s) => s == null
@@ -40,8 +92,8 @@ class ShowcaseNotesFolderViewModel extends AppBoxKitViewModel {
             : _service.folders$(s.user.id),
       );
 
-  /// The scope's notes — trash scope, or live notes for the folder ('all' =
-  /// unscoped). Empty while signed out.
+  /// [1. Browse notes] The scope's notes — trash scope, or live notes for the
+  /// folder ('all' = unscoped). Empty while signed out.
   Stream<List<ShowcaseNoteModel>> get notes$ => _service.session$.switchMap(
         (s) => s == null
             ? Stream<List<ShowcaseNoteModel>>.value(const [])
@@ -58,9 +110,9 @@ class ShowcaseNotesFolderViewModel extends AppBoxKitViewModel {
   final BehaviorSubject<String> _query = BehaviorSubject<String>.seeded('');
   ValueStream<String> get query$ => _query.stream;
 
-  /// App-bar title: static for the 'all'/'trash' scopes; a live folder-name
-  /// lookup otherwise (a rename lands here via [folders$]). Seeded with the
-  /// pre-load fallback so the bar never flashes a loading state.
+  /// [1. Browse notes] App-bar title: static for the 'all'/'trash' scopes; a
+  /// live folder-name lookup otherwise (a rename lands here via [folders$]).
+  /// Seeded with the pre-load fallback so the bar never flashes a loading state.
   Stream<String> get title$ {
     if (isTrash) return Stream.value('Recently Deleted');
     if (isAll) return Stream.value('All Notes');
@@ -72,9 +124,10 @@ class ShowcaseNotesFolderViewModel extends AppBoxKitViewModel {
     }).startWith('Notes');
   }
 
-  /// Search-filtered, sectioned groups. Search filters the already-streamed
-  /// scope — no second stream needed (ShowcaseNotesFacadeService.search$
-  /// exists for facade callers; here the notes are in hand).
+  /// [1. Browse notes] Search-filtered, sectioned groups. Search filters the
+  /// already-streamed scope — no second stream needed
+  /// (ShowcaseNotesFacadeService.search$ exists for facade callers; here the
+  /// notes are in hand).
   Stream<List<ShowcaseNoteGroup>> get groups$ => Rx.combineLatest2(
         notes$,
         query$,
@@ -96,26 +149,11 @@ class ShowcaseNotesFolderViewModel extends AppBoxKitViewModel {
         },
       );
 
-  void setQuery(String value) => _query.add(value);
-
-  Future<void> togglePin(ShowcaseNoteModel note) => _service.togglePin(note);
-  Future<void> moveToTrash(ShowcaseNoteModel note) =>
-      _service.moveToTrash(note);
-  Future<void> moveNoteToFolder(ShowcaseNoteModel note, String folderId) =>
-      _service.moveNoteToFolder(note, folderId);
-  Future<void> restore(ShowcaseNoteModel note) => _service.restore(note);
-  Future<void> deletePermanently(ShowcaseNoteModel note) =>
-      _service.deletePermanently(note);
-
-  Future<void> emptyTrash() async {
-    final owner = _service.currentSession?.user.id;
-    if (owner != null) await _service.emptyTrash(owner);
-  }
-
   // ── Commands ─────────────────────────────────────────
   // Commands decide when — and whether — Actions run.
 
-  /// Asks first (the hub's confirm gate); on confirm Recently Deleted is purged.
+  /// [6. Delete permanently] Asks first (the hub's confirm gate); on confirm
+  /// Recently Deleted is purged.
   late final _confirmEmptyTrash = abxActionHub.on<Null, void>(
     ShowcaseNotesFolderOp.emptyTrash.name,
     (_) => emptyTrash(),
@@ -125,9 +163,8 @@ class ShowcaseNotesFolderViewModel extends AppBoxKitViewModel {
     confirmDestructive: true,
   );
 
-  Future<void> confirmEmptyTrash() => _confirmEmptyTrash.send(null);
-
-  /// Asks first (the hub's confirm gate); on confirm the note is permanently deleted.
+  /// [6. Delete permanently] Asks first (the hub's confirm gate); on confirm
+  /// the note is permanently deleted.
   late final _confirmDeletePermanently = abxActionHub.on<ShowcaseNoteModel, void>(
     ShowcaseNotesFolderOp.deletePermanently.name,
     (note) => deletePermanently(note),
@@ -137,13 +174,48 @@ class ShowcaseNotesFolderViewModel extends AppBoxKitViewModel {
     confirmDestructive: true,
   );
 
+  // ── Actions ──────────────────────────────────────────
+
+  /// [1. Browse notes] Updates the search query.
+  void setQuery(String value) => _query.add(value);
+
+  /// [3. Pinning] Pins or unpins the note.
+  Future<void> togglePin(ShowcaseNoteModel note) => _service.togglePin(note);
+
+  /// [4. Trash a note] Sends the note to Recently Deleted.
+  Future<void> moveToTrash(ShowcaseNoteModel note) =>
+      _service.moveToTrash(note);
+
+  /// [7. Move to folder] Moves the note into a folder.
+  Future<void> moveNoteToFolder(ShowcaseNoteModel note, String folderId) =>
+      _service.moveNoteToFolder(note, folderId);
+
+  /// [5. Restore a note] Restores a trashed note.
+  Future<void> restore(ShowcaseNoteModel note) => _service.restore(note);
+
+  /// [6. Delete permanently] Deletes the note forever (no confirm gate — the
+  /// caller decides; [confirmDeletePermanently] adds one).
+  Future<void> deletePermanently(ShowcaseNoteModel note) =>
+      _service.deletePermanently(note);
+
+  /// [6. Delete permanently] Empties Recently Deleted (no confirm gate — the
+  /// caller decides; [confirmEmptyTrash] adds one).
+  Future<void> emptyTrash() async {
+    final owner = _service.currentSession?.user.id;
+    if (owner != null) await _service.emptyTrash(owner);
+  }
+
+  /// [6. Delete permanently] Confirm gate for emptying trash.
+  Future<void> confirmEmptyTrash() => _confirmEmptyTrash.send(null);
+
+  /// [6. Delete permanently] Confirm gate for deleting a single note forever.
   Future<void> confirmDeletePermanently(ShowcaseNoteModel note) =>
       _confirmDeletePermanently.send(note);
 
-  /// Creates a note and returns its id for the caller to navigate to, or
-  /// `null` if there's no owner / no folder to place it in. From 'all' or
-  /// 'trash' the first user folder is the compose target (there is no natural
-  /// folder to write into there).
+  /// [2. Create a note] Creates a note and returns its id for the caller to
+  /// navigate to, or `null` if there's no owner / no folder to place it in.
+  /// From 'all' or 'trash' the first user folder is the compose target (there
+  /// is no natural folder to write into there).
   Future<String?> compose() async {
     final owner = _service.currentSession?.user.id;
     if (owner == null) return null;
@@ -156,6 +228,8 @@ class ShowcaseNotesFolderViewModel extends AppBoxKitViewModel {
     final note = await _service.createNote(owner, folderId);
     return note.id;
   }
+
+  // ── Cleanup ────────────────────────────────────────────────────────────────
 
   @override
   void dispose() {

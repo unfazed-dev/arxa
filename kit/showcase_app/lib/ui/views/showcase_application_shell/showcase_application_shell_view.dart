@@ -1,3 +1,29 @@
+/// The application shell's view (route `/showcase`). A view is actions in,
+/// streams out: the user taps and the viewmodel acts; a value changes and the
+/// view redraws the part listening to it.
+///
+/// This is the user interface for the showcase's tabbed root shell. It mounts
+/// four tab shells — home, search, profile, notes — as a stacked tabs router,
+/// each kept alive across switches. The shell owns only the body outlet and the
+/// bottom tab bar; every tab owns its own chrome.
+///
+/// Requirements:
+/// 1. [Tab host] — shell-demos.home-and-application-shells.browse-the-application-shell
+/// The shell mounts the four tab shells through a stacked tabs router.
+///
+/// Relationships:
+///
+///          ┌────────────────────────┐
+///          │ application shell view │
+///          └────────────────────────┘
+///       ┌─────────────────────────────┐
+///       │ application shell viewmodel │
+///       └─────────────────────────────┘
+///         ════════ abxAction ════════
+///
+/// History: git log --follow -- kit/showcase_app/lib/ui/views/showcase_application_shell/showcase_application_shell_view.dart
+library;
+
 import 'package:flutter/material.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';

@@ -1,3 +1,25 @@
+/// A widget is a reusable UI building block: props in via the constructor,
+/// widgets out via `build`. It never owns business logic.
+///
+/// This is the user interface for the chrome every widget-gallery tab shares —
+/// the 'Kit Showcase' app bar (search shortcut + overflow menu) and the compose
+/// floating-action-button menu. Each gallery shell wraps its nested router in
+/// this widget so the tab is a self-contained chrome Scaffold.
+///
+/// Requirements:
+/// 1. [Gallery chrome] — profile-and-gallery-demos.gallery.browse-the-components-gallery
+/// The shared app bar and compose button every gallery tab uses.
+///
+/// Relationships:
+///
+///       ┌──────────────────────────┐
+///       │  gallery chrome widget   │
+///       └──────────────────────────┘
+///        ════════ abxAction ════════
+///
+/// History: git log --follow -- kit/showcase_app/lib/ui/widgets/common/showcase_gallery_chrome/showcase_gallery_chrome_widget.dart
+library;
+
 import 'package:flutter/foundation.dart' show defaultTargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';

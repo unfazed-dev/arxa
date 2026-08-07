@@ -37,6 +37,32 @@ Per frozen surface (those with `surface` non-null in `structure.json`), under `<
 
 Form factors follow targets — never emit an empty `.mobile`/`.tablet` to satisfy a count; that is the stale-green pattern §16 exists to kill (the self-test guards it). Never hardcode widths or factors — they come from the derivation table + config (P06/R3); adding a target is a data edit, not a code change here. Never read targets from ambient state — pass `--targets` explicitly. Never edit scaffolded Dart directly — edit the authored layer, re-freeze, re-scaffold, or the drift check dies. Treat stub bodies as unfinished — the builder replaces them. Keep `appbox emit scaffold --self-test` (and `appboxd/test/scaffold_test.dart`) green when you change the engine; it is the proof the guardrail holds (negatively: missing structure.json, surface with no viewmodel, wrong file count, unknown target, dir collision; positively: macos→desktop only with no empty factors).
 
+### Emitted file structure (semantic frontmatter)
+
+Every scaffolded file starts with `library;` and a placeholder `///` doc comment that the builder fills in. The stub is a skeleton; the builder replaces the placeholder with the full five-part spine (layer intro → role paragraph → requirements → relationships → history) per `BUILDER_playbook.mdx → File structure`.
+
+**Per-kind stub headers (what the scaffold emits):**
+
+- **ViewModel:** `/// <Layer intro: actions in, streams out, never touches the view>` + `library;` + imports + `class … extends AppBoxKitViewModel { // ── Setup ── }`
+- **View:** `/// <Layer intro: composes primitives, binds VM streams>` + `library;` + imports + class
+- **Widget:** same pattern as view.
+- **Service (facade/adapter/repository):** `/// <Role opener: front door / bridge to device / store>` + `library;` + imports + class.
+- **Model:** `/// <Role paragraph>` + `library;` (light variant — no diagram).
+
+**Body section markers (locked order per kind):**
+
+| Kind | Separators |
+|---|---|
+| viewmodel | `// ── Setup ──` / Initial state / Streams / Commands / Actions / Side effects / Cleanup |
+| facade | `// ── Setup ──` / Initial state / Streams / Writes / Reads / Cleanup |
+| adapter | `// ── Setup ──` / Initial state / Streams / Actions / Cleanup |
+| repository | `// ── Setup ──` / Reads / Writes / Cleanup |
+| views/widgets | no invented sections — natural build order |
+
+The scaffold emits only the `// ── Setup ──` marker in the stub; the builder adds the rest as it fills the body. Empty sections are omitted — a VM with no hub commands has no Commands section.
+
+See `skills/appbox-builder/BUILDER_playbook.mdx → File structure (semantic frontmatter)` for the full grammar, and `kit/showcase_app/.../showcase_note_editor_viewmodel.dart` for the reference implementation.
+
 <!-- kb:begin -->
 ### References
 <!-- kb:end -->

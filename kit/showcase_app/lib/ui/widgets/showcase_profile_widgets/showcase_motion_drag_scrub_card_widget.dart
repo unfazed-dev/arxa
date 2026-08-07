@@ -1,3 +1,22 @@
+/// A widget is a reusable piece of a view — a card, control, or section that
+/// composes the kit's primitives and turns the user's taps into callbacks or
+/// imperative kit calls. A widget holds no business logic; the view that
+/// places it owns the data.
+///
+/// This is the user interface for the gesture-driver demo — a card whose
+/// horizontal drag scrubs a motion scope's 0→1 timeline and settles with a
+/// spring on release.
+///
+/// Requirements:
+/// 1. [Gesture driver] — view-the-motion-demo
+/// A horizontal drag scrubs the scope's timeline; release settles with a spring.
+///
+/// Relationships: a self-contained presentational widget — no viewmodel
+/// binding; the spec is passed in, the gesture driver is local.
+///
+/// History: git log --follow -- kit/showcase_app/lib/ui/widgets/showcase_profile_widgets/showcase_motion_drag_scrub_card_widget.dart
+library;
+
 import 'package:flutter/material.dart';
 import 'package:appbox_kit_motion/appbox_kit_motion.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';

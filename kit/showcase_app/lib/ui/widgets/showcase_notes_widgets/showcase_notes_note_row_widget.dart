@@ -1,3 +1,43 @@
+/// A widget is a reusable UI piece composed by views. It receives data via
+/// constructor params or [AppBoxKitStreamBuilder] bindings and renders its
+/// slice of the surface — it holds no business logic and never decides when
+/// an action runs.
+///
+/// This is the user interface for one note row in the notes list — swipe actions
+/// differ by scope (trash vs. live), tap always opens the editor.
+///
+/// Requirements:
+/// 1. [Pin] — pin-a-note-to-the-top-of-the-inbox
+/// Swipe right-to-left on a live note toggles its pin.
+/// 2. [Unpin] — unpin-a-pinned-note
+/// Swipe right-to-left on a pinned note unpins it.
+/// 3. [Trash] — trash-a-note
+/// Swipe left-to-right on a live note moves it to Recently Deleted.
+/// 4. [Restore] — restore-a-trashed-note
+/// In trash scope, swipe left-to-right restores the note.
+/// 5. [Delete permanently] — delete-a-note-forever
+/// In trash scope, swipe left-to-right permanently deletes the note.
+///
+/// Relationships:
+///
+///   ┌──────────────────────────────┐
+///   │    notes note row widget     │
+///   └──────────────────────────────┘
+///   ACT ▼
+///   [1-3]
+///   ┌──────────────────────────────┐
+///   │    notes folder viewmodel    │
+///   └──────────────────────────────┘
+///      ════════ abxAction ════════
+///
+///  actions (ACT)
+///    1. togglePin
+///    2. moveToTrash
+///    3. restore
+///
+/// History: git log --follow -- kit/showcase_app/lib/ui/widgets/showcase_notes_widgets/showcase_notes_note_row_widget.dart
+library;
+
 import 'package:flutter/material.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/models.dart';

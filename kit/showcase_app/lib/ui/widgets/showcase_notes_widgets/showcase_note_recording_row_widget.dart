@@ -1,3 +1,35 @@
+/// A widget is a reusable UI piece composed by views. It receives data via
+/// constructor params or [AppBoxKitStreamBuilder] bindings and renders its
+/// slice of the surface — it holds no business logic and never decides when
+/// an action runs.
+///
+/// This is the user interface for the in-progress voice-recording row — cancel,
+/// elapsed pill, and stop.
+///
+/// Requirements:
+/// 1. [Recording controls] — attach-an-audio-recording-to-a-note
+/// The cancel button discards the in-progress recording; the stop button stops
+/// and attaches it.
+///
+/// Relationships:
+///
+///   ┌──────────────────────────────┐
+///   │  note recording row widget   │
+///   └──────────────────────────────┘
+///   ACT ▼
+///   [1-2]
+///   ┌──────────────────────────────┐
+///   │    note editor viewmodel     │
+///   └──────────────────────────────┘
+///      ════════ abxAction ════════
+///
+///  actions (ACT)
+///    1. cancelRecording
+///    2. stopRecording
+///
+/// History: git log --follow -- kit/showcase_app/lib/ui/widgets/showcase_notes_widgets/showcase_note_recording_row_widget.dart
+library;
+
 import 'package:flutter/material.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 import 'package:appbox_kit_showcase_app/ui/common/ui_helpers.dart';

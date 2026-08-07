@@ -1,22 +1,85 @@
+/// The folders-screen viewmodel. The view calls actions in and reads streams
+/// out: when the user does something, the matching action does the work; when
+/// something changes, the new value flows down the stream and the view redraws
+/// just the part listening to it. The viewmodel never touches the view — swap
+/// the UI for any other and this file stays unchanged.
+///
+/// This is the business logic for the screen that lists folders. A signed-in
+/// user sees their folders with note counts, creates or renames a folder from a
+/// prompt, and deletes one after confirming (its notes move to Recently
+/// Deleted). While signed out the screen shows the sign-in or create-account
+/// panel; signing in from either swaps back to the folders list.
+///
+/// Requirements:
+/// 1. [Create a folder] — create-a-folder
+/// A folder is created with a prompted name.
+///
+/// Relationships:
+///
+///      ┌─────────────────────────┐
+///      │   notes folders view    │
+///      └─────────────────────────┘
+///      ACT ▼               ▲ STRM
+///      [1-9]               [1-4]
+///   ┌───────────────────────────────┐
+///   │        notes viewmodel        │
+///   └───────────────────────────────┘
+///            ACT ▼    ▲ STRM
+///            [1-4]    [1-3]
+///            ┌──────────────┐
+///            │ notes facade │
+///            └──────────────┘
+///      ════════ abxAction ════════
+///
+///  streams (STRM)            actions (ACT)
+///    1. session$              1. openCreateAccount
+///    2. overview$             2. closeCreateAccount
+///    3. adminOverview$        3. createFolder
+///    4. showCreateAccount$    4. createFolderWithPrompt
+///                            5. renameFolderWithPrompt
+///                            6. confirmDeleteFolder
+///                            7. renameFolder
+///                            8. deleteFolder
+///                            9. signOut
+///
+/// History: git log --follow -- kit/showcase_app/lib/ui/views/showcase_notes_shell/showcase_notes/showcase_notes_viewmodel.dart
+library;
+
 import 'package:appbox_kit_data/appbox_kit_data.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 
 import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/models.dart';
 import 'package:appbox_kit_showcase_app/services/showcase_notes_services/facades/showcase_notes_facade_service.dart';
 
-/// The "Folders" screen viewmodel — streams-only (house convention): all
-/// state is exposed as streams and the views bind them with [AppBoxKitStreamBuilder];
-/// `BaseViewModel` is a lifecycle token (creation/disposal via StackedView),
-/// never a rebuild mechanism — `notifyListeners` is not called.
-///
-/// Data streams are facade pass-throughs composed with rxdart `switchMap`
-/// (session → owner-scoped reads), so the VM holds no relay fields and no
-/// subscription bookkeeping for them — each [AppBoxKitStreamBuilder] owns its
-/// subscription. The one VM-owned UI state, [showCreateAccount$], is a
-/// seeded [BehaviorSubject]; the only [AppBoxKitAction.listen] left is the
-/// VM-internal side effect that resets it when a session appears.
 class ShowcaseNotesViewModel extends AppBoxKitViewModel {
+  // ── Setup ──────────────────────────────────────────────────────────────────
+
   final _service = appBoxKitLocator<ShowcaseNotesFacadeService>();
+
+  ShowcaseNotesViewModel() {
+    // VM-internal side effect (no view data): reset the panel choice when a
+    // session appears. One listen, one dispose — the data streams above need
+    // no subscription management here.
+    listen(
+      'session.resetPanel',
+      to: [_service.session$],
+      onData: (session) {
+        if (session != null) _showCreateAccount.add(false);
+      },
+    );
+  }
+
+  // ── Initial state ─────────────────────────────────────────────────────────
+
+  /// When signed out, the Notes tab shows the create-account panel instead of
+  /// the sign-in panel. Owner-held here (not in the transient views) and reset
+  /// whenever a session appears, so signing in — from either panel — always
+  /// swaps back cleanly.
+  final BehaviorSubject<bool> _showCreateAccount =
+      BehaviorSubject<bool>.seeded(false);
+  ValueStream<bool> get showCreateAccount$ => _showCreateAccount.stream;
+
+  // ── Streams ─────────────────────────────────────────────────────────
 
   /// Null while signed out — the views swap to the auth surface on null.
   Stream<AppBoxKitAuthSession?> get session$ => _service.session$;
@@ -41,31 +104,16 @@ class ShowcaseNotesViewModel extends AppBoxKitViewModel {
             : Stream<ShowcaseNotesAdminOverview?>.value(null),
       );
 
-  /// When signed out, the Notes tab shows the create-account panel instead of
-  /// the sign-in panel. Owner-held here (not in the transient views) and reset
-  /// whenever a session appears, so signing in — from either panel — always
-  /// swaps back cleanly.
-  final BehaviorSubject<bool> _showCreateAccount =
-      BehaviorSubject<bool>.seeded(false);
-  ValueStream<bool> get showCreateAccount$ => _showCreateAccount.stream;
+  // ── Actions ──────────────────────────────────────────
 
-  ShowcaseNotesViewModel() {
-    // VM-internal side effect (no view data): reset the panel choice when a
-    // session appears. One listen, one dispose — the data streams above need
-    // no subscription management here.
-    listen(
-      'session.resetPanel',
-      to: [_service.session$],
-      onData: (session) {
-        if (session != null) _showCreateAccount.add(false);
-      },
-    );
-  }
-
+  /// Swaps the signed-out panel to create-account.
   void openCreateAccount() => _showCreateAccount.add(true);
 
+  /// Swaps the signed-out panel back to sign-in.
   void closeCreateAccount() => _showCreateAccount.add(false);
 
+  /// [1. Create a folder] Creates a folder with the given name at the end of
+  /// the current overview's sort order.
   Future<void> createFolder(String name) async {
     final owner = _service.currentSession?.user.id;
     final trimmed = name.trim();
@@ -77,8 +125,8 @@ class ShowcaseNotesViewModel extends AppBoxKitViewModel {
     await _service.createFolder(owner, trimmed, sortOrder: sortOrder);
   }
 
-  /// Prompts for a folder name, then creates it (G8: the VM owns the dialog).
-  /// A cancelled/empty prompt is a no-op.
+  /// [1. Create a folder] Prompts for a folder name, then creates it (G8: the
+  /// VM owns the dialog). A cancelled/empty prompt is a no-op.
   Future<void> createFolderWithPrompt() async {
     final name = await appBoxKitLocator<AppBoxKitNotificationService>()
         .prompt(title: 'New Folder', placeholder: 'Name');
@@ -117,6 +165,8 @@ class ShowcaseNotesViewModel extends AppBoxKitViewModel {
       _service.deleteFolder(folder);
 
   Future<void> signOut() => _service.signOut();
+
+  // ── Cleanup ────────────────────────────────────────────────────────────────
 
   @override
   void dispose() {

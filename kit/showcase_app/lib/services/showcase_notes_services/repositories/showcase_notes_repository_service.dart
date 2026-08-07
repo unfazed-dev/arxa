@@ -1,3 +1,60 @@
+/// The notes repository — the app-level persistence seam over the kit's
+/// generic `AppBoxKitRepository<T>`. It owns query construction
+/// (AppBoxKitQuery — filters, ordering, direction) and id minting, and
+/// exposes raw single-table writes. It never aggregates or derives: counts,
+/// sectioning, and cross-table composition are facade work. Watch streams
+/// pass through from the kit; the facade wraps every call.
+///
+/// This is the store for the notes product. It saves notes and folders to the
+/// database, reads them back with the right filters and sort order, and hands
+/// out fresh ids when something new is created.
+///
+/// Requirements:
+/// 1. [Read notes and folders] — notes.folders.browse-the-notes-in-a-folder
+/// The owner's notes and folders are read back from the database.
+/// 2. [Create a note] — notes.note-crud.create-a-note
+/// A new note is constructed with a fresh id and written to storage.
+/// 3. [Delete a note] — notes.note-crud.delete-a-note-forever
+/// A note is removed from storage by id.
+/// 4. [Create a folder] — notes.folders.create-a-folder
+/// A new folder is constructed with a fresh id and written to storage.
+/// 5. [Move a note into a folder] — notes.folders.move-a-note-into-a-folder
+/// A note's folder assignment is changed through a narrow patch write.
+/// 6. [Query construction]
+/// Filters, ordering, and direction are assembled into AppBoxKitQuery objects.
+/// 7. [Id minting]
+/// New notes and folders get a UUID v4 id before they reach the kit.
+/// 8. [Patch writes]
+/// Only the columns that differ between original and patched hit storage.
+///
+/// Relationships:
+///
+///         ┌──────────────┐
+///         │ notes facade │
+///         └──────────────┘
+///         ACT ▼    ▲ STRM
+///         [1-10]   [1-5]
+///      ┌────────────────────┐
+///      │  notes repository  │
+///      └────────────────────┘
+///      ACT ▼          ▲ STRM
+///      [1-6]          [1-2]
+///    ┌────────────────────────┐
+///    │ AppBoxKitRepository<T> │
+///    └────────────────────────┘
+///    ════════ abxAction ════════
+///
+///  streams (STRM)            actions (ACT)
+///    1. foldersOf              1. watchAll
+///    2. allNotesOf             2. watchById
+///    3. allFolders             3. getAll
+///    4. allNotes               4. upsert
+///    5. watchNote              5. delete
+///                              6. patch
+///
+/// History: git log --follow -- kit/showcase_app/lib/services/showcase_notes_services/repositories/showcase_notes_repository_service.dart
+library;
+
 import 'package:appbox_kit_data/appbox_kit_data.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart' show appBoxKitLocator;
 import 'package:uuid/uuid.dart';
@@ -5,53 +62,52 @@ import 'package:uuid/uuid.dart';
 import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/showcase_note_model.dart';
 import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/showcase_note_folder_model.dart';
 
-/// Notes-domain gateway over the kit's `AppBoxKitRepository<ShowcaseNoteModel>` / `<ShowcaseNoteFolderModel>`
-/// (registered by `AppBoxKitData.initialize`). This is the app-level repository seam:
-/// it owns query construction and id minting, and exposes raw single-table
-/// writes. It never aggregates or derives — counts, sectioning and cross-table
-/// composition are facade work (swap rule 2). See ADR / DESIGN-ARCHITECTURE:
-/// query work lives in the repository, aggregation in the facade.
 class ShowcaseNotesRepositoryService {
+  // ── Setup ──────────────────────────────────────────────────────────────────
+
   static const _uuid = Uuid();
 
   AppBoxKitRepository<ShowcaseNoteModel> get _notes => appBoxKitLocator<AppBoxKitRepository<ShowcaseNoteModel>>();
   AppBoxKitRepository<ShowcaseNoteFolderModel> get _folders => appBoxKitLocator<AppBoxKitRepository<ShowcaseNoteFolderModel>>();
 
-  // -- Reads (own the AppBoxKitQuery) ----------------------------------------------
+  // ── Reads ──────────────────────────────────────────────────────────────────
 
-  /// The owner's folders, in display order.
+  /// [1. Read notes and folders] The owner's folders, in display order.
   Stream<List<ShowcaseNoteFolderModel>> foldersOf(String owner) => _folders.watchAll(AppBoxKitQuery(
         filters: [AppBoxKitFilter.eq('owner', owner)],
         orderBy: 'sort_order',
       ));
 
-  /// Every note the owner has, live and deleted, newest-edited first — the
-  /// single upstream the facade's derived streams map over.
+  /// [1. Read notes and folders] Every note the owner has, live and deleted,
+  /// newest-edited first — the single upstream the facade's derived streams map
+  /// over.
   Stream<List<ShowcaseNoteModel>> allNotesOf(String owner) => _notes.watchAll(AppBoxKitQuery(
         filters: [AppBoxKitFilter.eq('owner', owner)],
         orderBy: 'updated_at',
         descending: true,
       ));
 
-  /// Every owner's folders (admin visibility — deliberately unfiltered).
+  /// [1. Read notes and folders] Every owner's folders (admin visibility — deliberately unfiltered).
   Stream<List<ShowcaseNoteFolderModel>> allFolders() =>
       _folders.watchAll(const AppBoxKitQuery(orderBy: 'created_at'));
 
-  /// Every owner's notes (admin visibility — deliberately unfiltered).
+  /// [1. Read notes and folders] Every owner's notes (admin visibility — deliberately unfiltered).
   Stream<List<ShowcaseNoteModel>> allNotes() => _notes.watchAll(const AppBoxKitQuery());
 
+  /// [1. Read notes and folders] Live watch on a single note by id.
   Stream<ShowcaseNoteModel?> watchNote(String id) => _notes.watchById(id);
 
-  /// One-shot fetch of the owner's notes (for multi-step mutations).
+  /// [1. Read notes and folders] One-shot fetch of the owner's notes (for multi-step mutations).
   Future<List<ShowcaseNoteModel>> notesOf(String owner) =>
       _notes.getAll(AppBoxKitQuery(filters: [AppBoxKitFilter.eq('owner', owner)]));
 
-  /// One-shot fetch of a folder's notes (for cascade delete).
+  /// [1. Read notes and folders] One-shot fetch of a folder's notes (for cascade delete).
   Future<List<ShowcaseNoteModel>> notesInFolder(String folderId) =>
       _notes.getAll(AppBoxKitQuery(filters: [AppBoxKitFilter.eq('folder_id', folderId)]));
 
-  // -- Id minting ------------------------------------------------------------
+  // ── Writes ─────────────────────────────────────────────────────────────────
 
+  /// [2. Create a note][7. Id minting] Mints a fresh id and constructs the note row.
   ShowcaseNoteModel newNote(String owner, String folderId) {
     final now = DateTime.now().toUtc();
     return ShowcaseNoteModel(
@@ -64,6 +120,7 @@ class ShowcaseNotesRepositoryService {
     );
   }
 
+  /// [4. Create a folder][7. Id minting] Mints a fresh id and constructs the folder row.
   ShowcaseNoteFolderModel newFolder(String owner, String name, {required int sortOrder}) =>
       ShowcaseNoteFolderModel(
         id: _uuid.v4(),
@@ -73,19 +130,27 @@ class ShowcaseNotesRepositoryService {
         createdAt: DateTime.now().toUtc(),
       );
 
-  // -- Writes (raw single-table ops; the facade wraps these in `mutate`) -----
-
+  /// [2. Create a note] Writes the note (create or replace).
   Future<ShowcaseNoteModel> upsertNote(ShowcaseNoteModel note) => _notes.upsert(note);
+
+  /// [3. Delete a note] Removes the note by id.
   Future<void> deleteNote(String id) => _notes.delete(id);
+
+  /// [4. Create a folder] Writes the folder (create or replace).
   Future<ShowcaseNoteFolderModel> upsertFolder(ShowcaseNoteFolderModel folder) => _folders.upsert(folder);
+
+  /// Removes the folder by id (cascade is facade work).
   Future<void> deleteFolder(String id) => _folders.delete(id);
 
-  /// Narrow writes for existing rows: only the columns that differ between
-  /// [original] and [patched] hit storage, so concurrent edits to other
-  /// columns (another surface, another device) survive. Default for every
-  /// mutation of an existing row; `upsert` is for creates.
+  /// [5. Move a note into a folder][8. Patch writes] Narrow writes for existing
+  /// rows: only the columns that differ between [original] and [patched] hit
+  /// storage, so concurrent edits to other columns (another surface, another
+  /// device) survive. Default for every mutation of an existing row; `upsert`
+  /// is for creates.
   Future<ShowcaseNoteModel> patchNote(ShowcaseNoteModel original, ShowcaseNoteModel patched) =>
       _notes.patch(original, patched);
+
+  /// [8. Patch writes] Narrow column update for an existing folder.
   Future<ShowcaseNoteFolderModel> patchFolder(ShowcaseNoteFolderModel original, ShowcaseNoteFolderModel patched) =>
       _folders.patch(original, patched);
 }

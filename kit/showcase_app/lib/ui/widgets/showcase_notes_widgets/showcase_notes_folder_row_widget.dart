@@ -1,3 +1,33 @@
+/// A widget is a reusable UI piece composed by views. It receives data via
+/// constructor params or [AppBoxKitStreamBuilder] bindings and renders its
+/// slice of the surface — it holds no business logic and never decides when
+/// an action runs.
+///
+/// This is the user interface for one folder row in the Folders list —
+/// swipe-to-delete (confirmed), long-press-to-rename, tap to open.
+///
+/// Requirements:
+/// 1. [Open folder] — browse-the-notes-in-a-folder
+/// Tapping the row navigates into the folder's notes list.
+///
+/// Relationships:
+///
+///   ┌──────────────────────────────┐
+///   │   notes folder row widget    │
+///   └──────────────────────────────┘
+///   ACT ▼
+///   [1]
+///   ┌──────────────────────────────┐
+///   │       notes viewmodel        │
+///   └──────────────────────────────┘
+///      ════════ abxAction ════════
+///
+///  actions (ACT)
+///    1. confirmDeleteFolder
+///
+/// History: git log --follow -- kit/showcase_app/lib/ui/widgets/showcase_notes_widgets/showcase_notes_folder_row_widget.dart
+library;
+
 import 'package:flutter/material.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/models.dart';

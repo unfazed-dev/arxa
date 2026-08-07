@@ -249,3 +249,35 @@ The rules this layer exists to make mechanical (canon:
 
 Arch_guard's G12 flags any enum/sealed declaration outside
 `lib/enums/**`; stringly-literal misuse stays a review rule.
+
+---
+
+## 7.14 File structure (semantic frontmatter)
+
+Every covered file (`*_view.dart`, `*_viewmodel.dart`, facade/adapter/repository
+services, `*_widget.dart`) carries a semantic library doc comment above
+`library;` — the five-part spine: layer intro → plain paragraph (fixed role name
+per kind) → numbered requirements (`N. [Name] — story-id`, story-id only when a
+real story covers it) → ASCII relationships diagram + column inventory → history
+line. Then `library;`, imports, and the class. Inline comments cite frontmatter
+requirements: `/// [N. Requirement name] sentence.`
+
+**Body sections (locked order, `// ── Name ──` separators):**
+
+| Kind | Order |
+|---|---|
+| viewmodel | Setup / Initial state / Streams / Commands / Actions / Side effects / Cleanup |
+| facade | Setup / Initial state / Streams / Writes / Reads / Cleanup |
+| adapter | Setup / Initial state / Streams / Actions / Cleanup |
+| repository | Setup / Reads / Writes / Cleanup |
+| views/widgets | natural build order (no invented sections) |
+
+Empty sections are omitted; models get the light variant (role paragraph +
+field-purpose comments, no diagram); enums and tests are exempt.
+
+**Reference implementation:**
+`showcase_notes_shell/showcase_note_editor/showcase_note_editor_viewmodel.dart`
+(the pilot VM).
+
+**Full grammar:** `skills/appbox-builder/BUILDER_playbook.mdx` → File structure
+(semantic frontmatter).

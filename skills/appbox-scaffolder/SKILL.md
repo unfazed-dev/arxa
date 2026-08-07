@@ -77,6 +77,8 @@ concern), or anything that is design. Every emitted file is a **minimal valid
 Dart skeleton** carrying the class name the builder implements, marked as a
 stub. The builder (plan 08) fills the bodies.
 
+- **File structure (canon: `BUILDER_playbook.mdx` → File structure):** every emitted file (view, viewmodel, facade, adapter, repository, widget) carries the semantic library doc comment above `library;` — layer intro → role paragraph → requirements → relationships diagram → history — with locked body sections per kind. Models get the light variant. The scaffolded stubs must include the `library;` directive and a placeholder frontmatter the builder fills in.
+
 ## Route table contract
 
 Besides the file tree, the scaffolder compiles **ONE go_router-shaped route

@@ -1,3 +1,47 @@
+/// A view renders the screen: it reads state from the viewmodel and redraws
+/// when that state changes, and it turns the user's taps and gestures into
+/// actions on the viewmodel. The view holds no business logic — swap the
+/// viewmodel for another and this file stays unchanged.
+///
+/// This is the user interface for the components gallery — one pushed surface
+/// proving each wave-1/2 kit capability: the frosted surface, chip carousel,
+/// grouped list, glassPeek drawer, native dialog and frosted sheet, the docked
+/// input bar, and the center toast. The tablet and desktop variants reuse the
+/// mobile surface (the demos are form-factor-independent). The viewmodel is an
+/// empty placeholder — every demo is an imperative kit call, no state held.
+///
+/// Requirements:
+/// 1. [Frosted surface] — browse-the-components-gallery
+/// An explicit frosted glass panel (the content-layer tier).
+/// 2. [Chip carousel] — browse-the-components-gallery
+/// A snapping capability rail of chips.
+/// 3. [Grouped list] — browse-the-components-gallery
+/// A settings-style grouped list of tiles.
+/// 4. [Drawer] — browse-the-components-gallery
+/// A glassPeek drawer with menu rows.
+/// 5. [Dialog and sheet] — browse-the-components-gallery
+/// Native dialog and frosted sheet overlays, pushed on the root navigator.
+/// 6. [Input bar] — browse-the-components-gallery
+/// A docked input bar that rides the keyboard.
+/// 7. [Center toast] — browse-the-components-gallery
+/// A center-positioned toast through the notification service.
+///
+/// Relationships:
+///
+///      ┌─────────────────┐
+///      │ components view │
+///      └─────────────────┘
+///   ┌──────────────────────┐
+///   │ components viewmodel │
+///   └──────────────────────┘
+///  ════════ abxAction ════════
+///
+///   No streams or actions — the viewmodel is an empty placeholder; every
+///   demo is an imperative kit call.
+///
+/// History: git log --follow -- kit/showcase_app/lib/ui/views/showcase_profile_shell/showcase_components/showcase_components_view.dart
+library;
+
 import 'package:flutter/material.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';

@@ -1,3 +1,36 @@
+/// A widget is a reusable UI piece composed by views. It receives data via
+/// constructor params or [AppBoxKitStreamBuilder] bindings and renders its
+/// slice of the surface — it holds no business logic and never decides when
+/// an action runs.
+///
+/// This is the user interface for the OTP-mode credential form in the sign-in
+/// panel — email, code field (after request), verify/send-code button.
+///
+/// Requirements:
+/// 1. [OTP sign-in] — sign-in-with-email-and-otp
+/// The form binds the OTP-requested stream, calls request-OTP, then shows the
+/// code field and calls confirm-OTP.
+///
+/// Relationships:
+///
+///   ┌──────────────────────────────┐
+///   │    notes otp form widget     │
+///   └──────────────────────────────┘
+///   ACT ▼                    ▲ STRM
+///   [1-2]                    [1-3]
+///   ┌──────────────────────────────┐
+///   │        auth viewmodel        │
+///   └──────────────────────────────┘
+///      ════════ abxAction ════════
+///
+///  streams (STRM)              actions (ACT)
+///    1. otpRequested$            1. requestOtp
+///    2. errorMessage$            2. confirmOtp
+///    3. busy$
+///
+/// History: git log --follow -- kit/showcase_app/lib/ui/widgets/showcase_notes_widgets/showcase_notes_otp_form_widget.dart
+library;
+
 import 'package:flutter/material.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 

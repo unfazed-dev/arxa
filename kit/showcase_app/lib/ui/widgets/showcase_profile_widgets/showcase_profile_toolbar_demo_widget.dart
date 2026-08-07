@@ -1,3 +1,21 @@
+/// A widget is a reusable piece of a view — a card, control, or section that
+/// composes the kit's primitives and turns the user's taps into callbacks or
+/// imperative kit calls. A widget holds no business logic; the view that
+/// places it owns the data.
+///
+/// This is the user interface for the toolbar demo — a native toolbar whose
+/// share, edit, and delete actions toast through the notification service.
+///
+/// Requirements:
+/// 1. [Toolbar] — view-the-profile-surface
+/// A native toolbar with share, edit, and delete actions.
+///
+/// Relationships: a self-contained presentational widget — no viewmodel
+/// binding; each action toasts through the located notification service.
+///
+/// History: git log --follow -- kit/showcase_app/lib/ui/widgets/showcase_profile_widgets/showcase_profile_toolbar_demo_widget.dart
+library;
+
 import 'package:flutter/material.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 

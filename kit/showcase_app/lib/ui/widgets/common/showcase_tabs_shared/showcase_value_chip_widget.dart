@@ -1,3 +1,23 @@
+/// A widget is a reusable UI building block: props in via the constructor,
+/// widgets out via `build`. It never owns business logic.
+///
+/// This is the user interface for a small live-value pill shown beside a slider
+/// label — tabular figures keep the digits from jittering while dragging.
+///
+/// Requirements:
+/// 1. [Value chip] — profile-and-gallery-demos.gallery.browse-the-components-gallery
+/// Shows the current value beside a slider so it stays visible while dragging.
+///
+/// Relationships:
+///
+///       ┌───────────────────┐
+///       │ value chip widget │
+///       └───────────────────┘
+///    ════════ abxAction ════════
+///
+/// History: git log --follow -- kit/showcase_app/lib/ui/widgets/common/showcase_tabs_shared/showcase_value_chip_widget.dart
+library;
+
 import 'package:flutter/material.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 

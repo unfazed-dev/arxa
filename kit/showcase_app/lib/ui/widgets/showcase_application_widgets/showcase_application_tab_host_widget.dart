@@ -1,3 +1,24 @@
+/// A widget is a reusable UI building block: props in via the constructor,
+/// widgets out via `build`. It never owns business logic.
+///
+/// This is the user interface for the application shell's tab host — a stacked
+/// tabs router that mounts the four tab shells (home, search, profile, notes)
+/// with a floating bottom tab bar and an animated tab stack.
+///
+/// Requirements:
+/// 1. [Tab host] — shell-demos.home-and-application-shells.browse-the-application-shell
+/// Mounts the four tab shells with a floating tab bar.
+///
+/// Relationships:
+///
+///       ┌─────────────────────────────┐
+///       │ application tab host widget │
+///       └─────────────────────────────┘
+///         ════════ abxAction ════════
+///
+/// History: git log --follow -- kit/showcase_app/lib/ui/widgets/showcase_application_widgets/showcase_application_tab_host_widget.dart
+library;
+
 import 'package:flutter/material.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 

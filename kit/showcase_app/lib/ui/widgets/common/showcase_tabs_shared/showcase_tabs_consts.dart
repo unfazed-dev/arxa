@@ -1,3 +1,8 @@
+/// Shared showcase-tab constants.
+///
+/// History: git log --follow -- kit/showcase_app/lib/ui/widgets/common/showcase_tabs_shared/showcase_tabs_consts.dart
+library;
+
 /// Height the floating [AppBoxKitNativeTabBar] occupies above the system safe area
 /// (M3E "small" bar = 64dp; the iOS Liquid Glass pill measures ~61pt plus its
 /// float margin). The host shell's `extendBody` lets tab content slide under

@@ -1,3 +1,26 @@
+/// A widget is a reusable piece of a view — a card, control, or section that
+/// composes the kit's primitives and turns the user's taps into callbacks or
+/// imperative kit calls. A widget holds no business logic; the view that
+/// places it owns the data.
+///
+/// This is the user interface for the overlays demo — a card whose buttons
+/// show a native dialog, a frosted sheet, a center toast, and open the host
+/// scaffold's drawer.
+///
+/// Requirements:
+/// 1. [Dialog and sheet] — browse-the-components-gallery
+/// Native dialog and frosted sheet overlays, pushed on the root navigator.
+/// 2. [Center toast] — browse-the-components-gallery
+/// A center-positioned toast through the notification service.
+/// 3. [Drawer trigger] — browse-the-components-gallery
+/// A button opens the host scaffold's drawer.
+///
+/// Relationships: a self-contained presentational widget — no viewmodel
+/// binding; the overlays are imperative kit calls on the root navigator.
+///
+/// History: git log --follow -- kit/showcase_app/lib/ui/widgets/showcase_profile_widgets/showcase_components_overlays_card_widget.dart
+library;
+
 import 'package:flutter/material.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 import 'package:appbox_kit_showcase_app/enums/showcase_profile_enums/enums.dart';

@@ -1,3 +1,17 @@
+/// A widget is a reusable piece of a view — it composes the kit's primitives
+/// and holds no business logic; the view that places it owns the data.
+///
+/// This is the user interface for a hover-scale effect. It enlarges a child
+/// when the mouse enters and returns it when the mouse leaves, animated with
+/// an ease-out curve.
+///
+/// Requirements:
+/// 1. [Hover scale]
+/// Scales the child on mouse hover and animates the transition.
+///
+/// History: git log --follow -- kit/showcase_app/lib/ui/widgets/mouse_transforms/scale_on_hover_widget.dart
+library;
+
 import 'package:flutter/material.dart';
 
 class ScaleOnHoverWidget extends StatefulWidget {

@@ -1,3 +1,16 @@
+/// A widget is a reusable piece of a view — it composes the kit's primitives
+/// and holds no business logic; the view that places it owns the data.
+///
+/// This is the user interface for a hover-translate effect. It shifts a child
+/// by x/y offsets when the mouse enters and back when the mouse leaves.
+///
+/// Requirements:
+/// 1. [Hover translate]
+/// Translates the child on mouse hover and animates the transition.
+///
+/// History: git log --follow -- kit/showcase_app/lib/ui/widgets/mouse_transforms/translate_on_hover_widget.dart
+library;
+
 import 'package:flutter/material.dart';
 
 class TranslateOnHoverWidget extends StatefulWidget {

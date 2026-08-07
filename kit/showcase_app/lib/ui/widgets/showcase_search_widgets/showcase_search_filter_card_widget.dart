@@ -1,3 +1,17 @@
+/// A widget is a reusable piece of a view — it composes the kit's primitives
+/// and holds no business logic; the view that places it owns the data.
+///
+/// This is the user interface for a search filter card. It binds radius and
+/// price-range sliders to the search viewmodel, letting the user narrow the
+/// results.
+///
+/// Requirements:
+/// 1. [Filter controls]
+/// Radius slider and price-range slider bound to the search viewmodel.
+///
+/// History: git log --follow -- kit/showcase_app/lib/ui/widgets/showcase_search_widgets/showcase_search_filter_card_widget.dart
+library;
+
 import 'package:flutter/material.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_search_shell/showcase_search/showcase_search_viewmodel.dart';

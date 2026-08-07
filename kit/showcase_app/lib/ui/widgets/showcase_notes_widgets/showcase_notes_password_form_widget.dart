@@ -1,3 +1,37 @@
+/// A widget is a reusable UI piece composed by views. It receives data via
+/// constructor params or [AppBoxKitStreamBuilder] bindings and renders its
+/// slice of the surface — it holds no business logic and never decides when
+/// an action runs.
+///
+/// This is the user interface for the password-mode credential form in the
+/// sign-in panel — email, password, sign-in button, create-account button.
+///
+/// Requirements:
+/// 1. [Password sign-in] — sign-in-with-email-and-otp
+/// The form binds the error and busy streams and calls the sign-in action.
+/// 2. [Inline sign-up] — create-account-with-email-and-otp
+/// The "Create Account" button calls the sign-up action as a fallback when no
+/// owner swap is provided.
+///
+/// Relationships:
+///
+///   ┌──────────────────────────────┐
+///   │  notes password form widget  │
+///   └──────────────────────────────┘
+///   ACT ▼                    ▲ STRM
+///   [1-2]                    [1-2]
+///   ┌──────────────────────────────┐
+///   │        auth viewmodel        │
+///   └──────────────────────────────┘
+///      ════════ abxAction ════════
+///
+///  streams (STRM)              actions (ACT)
+///    1. errorMessage$            1. signInEmail
+///    2. busy$                    2. signUpEmail
+///
+/// History: git log --follow -- kit/showcase_app/lib/ui/widgets/showcase_notes_widgets/showcase_notes_password_form_widget.dart
+library;
+
 import 'package:flutter/material.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 

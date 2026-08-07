@@ -94,6 +94,53 @@ Every `enum` and every sealed discriminator type lives under `lib/enums/`, organ
 - **Sealed for mixed domains.** A domain of sentinels plus an open id set (folder scope `'all' | 'trash' | <uuid>`) is a sealed type with a `parse` at the route boundary and exhaustive switches — an enum cannot honestly hold an open set.
 - **Purity.** Views, widgets, viewmodels, and services may all import enums barrels (pure types); the view↔viewmodel purity rule is unaffected — a view imports the enums barrel directly (G11: viewmodels never re-export).
 
+### File structure (semantic frontmatter)
+
+Every covered file carries a **semantic library doc comment** (`///`) above `library;` — a five-part spine that makes the file's role, requirements, and relationships machine-readable — followed by a locked body section order. The pilot VM (`kit/showcase_app/.../showcase_note_editor_viewmodel.dart`) is the living reference implementation.
+
+**The spine (every covered file, in order):**
+
+1. **Layer intro** — one sentence framing what this *kind* of file is in flow vocabulary (viewmodel: actions in, streams out, never touches the view; per-layer variants use the same data-flow framing).
+2. **Plain paragraph** — opens with a fixed role name, then what the file does for a human:
+   - view → `This is the user interface for …`
+   - viewmodel → `This is the business logic for …`
+   - facade → `This is the front door for …`
+   - adapter → `This is the bridge to the device for …`
+   - repository → `This is the store for …`
+3. **Requirements** — numbered list, one per line: `N. [Name] — story-id(s)`, then one plain sentence on the next line. `[Name]` brackets are mandatory; multiple stories separated by ` / `. The story-id tail appears ONLY when a real story in `map.json` covers it — never invent citations (startup/infra files list requirements story-free).
+4. **Relationships** — an ASCII diagram per the fixed grammar below, then the column inventory.
+5. **History** — `History: git log --follow -- <repo-relative path>`.
+
+Then `library;`, then imports, then the class.
+
+**Body sections (locked order per kind, `// ── Name ──` separators):**
+
+| Kind | Order |
+|---|---|
+| viewmodel | Setup / Initial state / Streams / Commands / Actions / Side effects / Cleanup |
+| facade | Setup / Initial state / Streams / Writes / Reads / Cleanup |
+| adapter | Setup / Initial state / Streams / Actions / Cleanup |
+| repository | Setup / Reads / Writes / Cleanup |
+| views/widgets | same spine frontmatter; body follows the file's natural build order (no invented sections) |
+
+The viewmodel Commands section carries the sentence `// Commands decide when — and whether — Actions run.` Empty sections are omitted — a VM with no hub commands has no Commands section; the sentence appears only where the section exists.
+
+**Diagram grammar (fixed — review-enforced):**
+
+- Boxes `┌──┐ │ │ └──┘`, label centered with one-space padding; the file's own box is centered, every tier above/below center-aligns to it.
+- Arrows between tiers: `ACT ▼` (actions down) / `▲ STRM` (streams up), tips touching box edges, each with a connecting line.
+- Numbered ranges `[1-N]` sit centered under their **labels** (not boxes).
+- Last diagram line: `════════ abxAction ════════` rail, bare, no caption.
+- Below the diagram, the column inventory: `streams (STRM)` / `actions (ACT)` / `commands (CMD)` — numbered items, one kind per column, aligned; numbers match the diagram ranges.
+
+**Coverage:**
+
+- **Full spine** — views, viewmodels, facades, adapters, repositories, widgets.
+- **Light variant** (role paragraph + field-purpose comments, no diagram) — models.
+- **Exempt** — enum files (one-line doc), tests (story-ids live in test names per behavior-TDD canon).
+
+**Inline comments:** `/// [N. Requirement name] One short sentence.` citing the frontmatter requirement; the code carries the rest. Comments support the code, never restate it. See `kit/showcase_app/lib/ui/views/showcase_notes_shell/showcase_note_editor/showcase_note_editor_viewmodel.dart` for the reference implementation.
+
 ### Kit wiring
 
 When a stub header declares `//   kits (builder wires): <names>`, wire each named kit's **real providers** via locator injection, per the kit's playbook (`kit/<name>/<name>_playbook.mdx`) and the providers + verification tiers in `config/kit-registry.json`. Never offer a `stub`-tier provider to users — that tier means unproven, and the advertise gate fails a shipped surface presenting one (dev fallback + flag only). Required credentials come from `config/credentials.catalog.json` (match `module: kit/<name>`), read from the environment / credential store at runtime, never hardcoded; name missing keys in the handoff notes.

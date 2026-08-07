@@ -1,3 +1,36 @@
+/// A widget is a reusable UI piece composed by views. It receives data via
+/// constructor params or [AppBoxKitStreamBuilder] bindings and renders its
+/// slice of the surface — it holds no business logic and never decides when
+/// an action runs.
+///
+/// This is the user interface for the horizontal photo-attachment strip — tap
+/// opens a fullscreen viewer, long-press removes.
+///
+/// Requirements:
+/// 1. [Photo display] — attach-a-photo-to-a-note
+/// Attached photos render as a horizontal strip of thumbnails.
+/// 2. [Remove photo] — attach-a-photo-to-a-note
+/// Long-press confirms removal of a photo attachment.
+///
+/// Relationships:
+///
+///   ┌──────────────────────────────┐
+///   │   note photo strip widget    │
+///   └──────────────────────────────┘
+///   ACT ▼
+///   [1-2]
+///   ┌──────────────────────────────┐
+///   │    note editor viewmodel     │
+///   └──────────────────────────────┘
+///      ════════ abxAction ════════
+///
+///  actions (ACT)
+///    1. resolvePath
+///    2. confirmRemoveAttachment
+///
+/// History: git log --follow -- kit/showcase_app/lib/ui/widgets/showcase_notes_widgets/showcase_note_photo_strip_widget.dart
+library;
+
 import 'dart:io';
 
 import 'package:flutter/material.dart';

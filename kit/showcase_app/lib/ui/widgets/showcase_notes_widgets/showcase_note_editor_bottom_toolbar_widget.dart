@@ -1,3 +1,40 @@
+/// A widget is a reusable UI piece composed by views. It receives data via
+/// constructor params or [AppBoxKitStreamBuilder] bindings and renders its
+/// slice of the surface — it holds no business logic and never decides when
+/// an action runs.
+///
+/// This is the user interface for the editor's bottom toolbar — camera, photo,
+/// and mic actions, swapped for the recording row while voice capture is in
+/// progress.
+///
+/// Requirements:
+/// 1. [Attach photo] — attach-a-photo-to-a-note
+/// The camera and photo buttons add a photo to the note.
+/// 2. [Record voice] — attach-an-audio-recording-to-a-note
+/// The mic button starts recording; the recording row's stop button stops and
+/// attaches; cancel discards.
+///
+/// Relationships:
+///
+///   ┌──────────────────────────────────┐
+///   │note editor bottom toolbar widget │
+///   └──────────────────────────────────┘
+///   ACT ▼                        ▲ STRM
+///   [1-4]
+///   ┌──────────────────────────────────┐
+///   │      note editor viewmodel       │
+///   └──────────────────────────────────┘
+///        ════════ abxAction ════════
+///
+///  streams (STRM)              actions (ACT)
+///    1. recordingElapsed$        1. addPhoto
+///                                2. startRecording
+///                                3. stopRecording
+///                                4. cancelRecording
+///
+/// History: git log --follow -- kit/showcase_app/lib/ui/widgets/showcase_notes_widgets/showcase_note_editor_bottom_toolbar_widget.dart
+library;
+
 import 'package:flutter/material.dart';
 import 'package:appbox_kit_motion/appbox_kit_motion.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';

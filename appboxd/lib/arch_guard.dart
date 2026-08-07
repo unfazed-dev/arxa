@@ -43,6 +43,15 @@
 //       a top-level `enum` or `sealed class`/`sealed mixin` anywhere else is a
 //       violation. Generated files (app.router.dart, *.g.dart, *.gr.dart,
 //       *.gen.dart, *.freezed.dart) are exempt — their types aren't authored.
+//   G13 semantic frontmatter: covered files (views, viewmodels, facades,
+//       adapters, repositories, widgets, models) carry a `library;` directive
+//       preceded by a `///` doc comment with the fixed spine — a role paragraph
+//       (`This is the … for`), numbered requirements (`N. [Name]` — full spine
+//       only, not models), and `History: git log`. Mechanical checks: structural
+//       presence, spine ordering (role → requirements → relationships → history),
+//       and body-section separators in the locked order per file kind. Diagram
+//       geometry and requirement quality stay review rules. Barrel files,
+//       lib/enums/, lib/app/, and generated files are exempt.
 
 import 'dart:io';
 
@@ -109,6 +118,103 @@ bool _isGeneratedFile(String rel) {
       base.endsWith('.gr.dart') ||
       base.endsWith('.gen.dart') ||
       base.endsWith('.freezed.dart');
+}
+
+// G13: the bare `library;` directive (own line, multiline-anchored).
+final _libraryRe = RegExp(r'^library;', multiLine: true);
+
+// G13: role-paragraph opener — fixed per file kind.
+final _g13RoleRe = RegExp(
+    r'This is the (user interface|business logic|front door|bridge to the device|store|data shape) for');
+
+// G13: numbered-requirement line (`N. [Name]`).
+final _g13RequirementsRe = RegExp(r'\d+\.\s+\[.*?\]');
+
+// G13: history footer.
+final _g13HistoryRe = RegExp(r'History:\s+git log');
+
+/// G13: locked body-section order per file kind. Views and widgets follow the
+/// file's natural build order — no locked sections.
+const _g13LockedSections = <String, List<String>>{
+  'viewmodel': [
+    'Setup',
+    'Initial state',
+    'Streams',
+    'Commands',
+    'Actions',
+    'Side effects',
+    'Cleanup',
+  ],
+  'facade': ['Setup', 'Initial state', 'Streams', 'Writes', 'Reads', 'Cleanup'],
+  'adapter': ['Setup', 'Initial state', 'Streams', 'Actions', 'Cleanup'],
+  'repository': ['Setup', 'Reads', 'Writes', 'Cleanup'],
+};
+
+/// G13: section separator marker — `// ── Name ──…` (─ is U+2500, not ASCII `-`).
+final _g13SectionSepRe = RegExp(r'// ──\s*(\w[\w ]*?)\s*──');
+
+/// G13: classify a covered file by its frontmatter kind, or null if not
+/// covered. Full-spine kinds (view, viewmodel, facade, adapter, repository,
+/// widget) need the complete spine; models need the light variant only.
+String? _g13CoveredKind(String rel) {
+  if (rel.endsWith('_viewmodel.dart')) return 'viewmodel';
+  if (_viewFileRe.hasMatch(rel)) return 'view';
+  if (rel.endsWith('_facade_service.dart')) return 'facade';
+  if (rel.endsWith('_adapter_service.dart')) return 'adapter';
+  if (rel.endsWith('_repository_service.dart')) return 'repository';
+  if (rel.endsWith('_widget.dart')) return 'widget';
+  if (rel.endsWith('_model.dart')) return 'model';
+  return null;
+}
+
+/// G13: barrel files (export-only, no declarations) are exempt.
+bool _isBarrelFile(String src) {
+  if (!_exportRe.hasMatch(src)) return false;
+  return !RegExp(r'\b(class|enum|mixin|void|Future)\b').hasMatch(src);
+}
+
+/// G13: extract the contiguous `///` block immediately preceding [pos] in
+/// [src], or null if there isn't one. Skips trailing blank lines so the
+/// comment can sit a line or two above `library;`.
+List<String>? _docCommentBefore(String src, int pos) {
+  final lines = src.substring(0, pos).split('\n');
+  var i = lines.length - 1;
+  while (i >= 0 && lines[i].trim().isEmpty) {
+    i--;
+  }
+  final doc = <String>[];
+  while (i >= 0 && lines[i].trimLeft().startsWith('///')) {
+    doc.insert(0, lines[i]);
+    i--;
+  }
+  return doc.isEmpty ? null : doc;
+}
+
+/// G13: extract diagram tier centers from the doc comment. Returns one center
+/// per tier (lines containing ┌), or null when there are fewer than 2 tiers
+/// (single-box diagrams have nothing to align). For multi-box tiers the
+/// center is the midpoint of the leftmost ┌ and rightmost ┐.
+List<double>? _g13DiagramCenters(List<String> doc) {
+  final centers = <double>[];
+  for (final raw in doc) {
+    if (!raw.contains('┌')) continue;
+    final content = raw.startsWith('/// ')
+        ? raw.substring(4)
+        : raw.startsWith('///')
+            ? raw.substring(3)
+            : raw;
+    final padded = content.padRight(200);
+    final lefts = <int>[];
+    final rights = <int>[];
+    for (int c = 0; c < padded.length; c++) {
+      if (padded[c] == '┌') lefts.add(c);
+      if (padded[c] == '┐') rights.add(c);
+    }
+    if (lefts.isNotEmpty && rights.isNotEmpty) {
+      centers.add((lefts.first + rights.last) / 2);
+    }
+  }
+  return centers.length >= 2 ? centers : null;
 }
 
 /// G9: classify a lib-relative path or import path into its service tier.
@@ -401,6 +507,106 @@ ArchGuardResult archGuard(String targetDir) {
       for (final m in _sealedRe.allMatches(src)) {
         violations.add(ArchGuardFinding('G12', rel,
             'sealed type ${m.group(1)} declared outside lib/enums/ — enums and sealed discriminator types live in lib/enums/<shell>_enums/'));
+      }
+    }
+
+    // ── G13 semantic frontmatter ──────────────────────────────────────────
+    final kind = _g13CoveredKind(relPosix);
+    if (kind != null &&
+        !relPosix.startsWith('enums/') &&
+        !relPosix.startsWith('app/') &&
+        !_isGeneratedFile(relPosix) &&
+        !_isBarrelFile(src)) {
+      final libMatch = _libraryRe.firstMatch(src);
+      if (libMatch == null) {
+        violations.add(ArchGuardFinding(
+            'G13', rel, 'covered $kind file missing `library;` directive'));
+      } else {
+        final doc = _docCommentBefore(src, libMatch.start);
+        if (doc == null || doc.length < 3) {
+          violations.add(ArchGuardFinding('G13', rel,
+              'covered $kind file missing doc comment (≥3 `///` lines) above `library;`'));
+        } else {
+          final docText = doc.join('\n');
+          if (!_g13RoleRe.hasMatch(docText)) {
+            violations.add(ArchGuardFinding('G13', rel,
+                'doc comment missing role paragraph (`This is the … for`)'));
+          }
+          if (kind != 'model') {
+            if (!_g13RequirementsRe.hasMatch(docText)) {
+              violations.add(ArchGuardFinding('G13', rel,
+                  'doc comment missing numbered requirements (`N. [Name]`)'));
+            }
+            if (!_g13HistoryRe.hasMatch(docText)) {
+              violations.add(ArchGuardFinding(
+                  'G13', rel, 'doc comment missing `History: git log …`'));
+            }
+            // G13: diagram tier center-alignment (mechanical check — ±1 of
+            // the middle-tier anchor).
+            final centers = _g13DiagramCenters(doc);
+            if (centers != null) {
+              final anchorCenter = centers[centers.length ~/ 2];
+              for (int ti = 0; ti < centers.length; ti++) {
+                if ((centers[ti] - anchorCenter).abs() > 1.0) {
+                  violations.add(ArchGuardFinding('G13', rel,
+                      'diagram tier centers not aligned (tier $ti center=${centers[ti]}, anchor center=$anchorCenter)'));
+                  break;
+                }
+              }
+            }
+
+            // G13: spine parts in order (role → requirements → relationships
+            // → history). Only when all four markers are present — missing
+            // markers are already reported by the presence checks above.
+            final roleM = _g13RoleRe.firstMatch(docText);
+            final reqM = _g13RequirementsRe.firstMatch(docText);
+            final histM = _g13HistoryRe.firstMatch(docText);
+            int? relPos;
+            for (final marker in ['┌', 'Relationships:']) {
+              final p = docText.indexOf(marker);
+              if (p >= 0 && (relPos == null || p < relPos)) relPos = p;
+            }
+            if (roleM != null &&
+                reqM != null &&
+                histM != null &&
+                relPos != null) {
+              if (!(roleM.start < reqM.start &&
+                  reqM.start < relPos &&
+                  relPos < histM.start)) {
+                violations.add(ArchGuardFinding('G13', rel,
+                    'spine parts out of order (expected: role → requirements → relationships → history)'));
+              }
+            }
+          }
+        }
+      }
+
+      // G13: body-section separators in the locked order for the file kind.
+      // Operates on the code body (src), not the doc comment. Views and widgets
+      // have no locked sections — natural build order.
+      final locked = _g13LockedSections[kind];
+      if (locked != null) {
+        final found = _g13SectionSepRe
+            .allMatches(src)
+            .map((m) => m.group(1)!.trim())
+            .toList();
+        String? prevName;
+        var prevLockedIdx = -1;
+        for (final name in found) {
+          final pos = locked.indexOf(name);
+          if (pos < 0) {
+            warnings.add(ArchGuardFinding('G13', rel,
+                "unknown section separator '$name' — not in the locked order for $kind"));
+            continue;
+          }
+          if (pos < prevLockedIdx) {
+            violations.add(ArchGuardFinding('G13', rel,
+                "section separator '$prevName' appears before '$name' — locked order is ${locked.join(' → ')}"));
+            break;
+          }
+          prevLockedIdx = pos;
+          prevName = name;
+        }
       }
     }
   }

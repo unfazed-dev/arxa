@@ -1,3 +1,17 @@
+/// A widget is a reusable piece of a view — it composes the kit's primitives
+/// and holds no business logic; the view that places it owns the data.
+///
+/// This is the user interface for a progress-and-loading demo card. It shows
+/// a determinate linear bar, an indeterminate circular spinner, and the kit's
+/// loading indicator side by side inside a glass card.
+///
+/// Requirements:
+/// 1. [Progress demo]
+/// Displays linear, circular, and indicator loading states.
+///
+/// History: git log --follow -- kit/showcase_app/lib/ui/widgets/showcase_home_widgets/showcase_progress_loading_card_widget.dart
+library;
+
 import 'package:flutter/material.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 import 'package:appbox_kit_showcase_app/ui/widgets/common/showcase_tabs_shared/widgets.dart';

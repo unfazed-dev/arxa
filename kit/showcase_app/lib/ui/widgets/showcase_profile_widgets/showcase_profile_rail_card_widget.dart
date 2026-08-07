@@ -1,3 +1,37 @@
+/// A widget is a reusable piece of a view — a card, control, or section that
+/// composes the kit's primitives and turns the user's taps into callbacks or
+/// imperative kit calls. A widget holds no business logic; the view that
+/// places it owns the data.
+///
+/// This is the user interface for the navigation-rail demo — a native
+/// navigation rail bound to the viewmodel's selected index, beside the
+/// selected destination's label.
+///
+/// Requirements:
+/// 1. [Navigation rail] — view-the-profile-surface
+/// A native navigation rail bound to the viewmodel's rail index.
+/// 2. [Selected label] — view-the-profile-surface
+/// The selected destination's label is shown beside the rail.
+///
+/// Relationships:
+///
+///     ┌──────────────────────────┐
+///     │ profile rail card widget │
+///     └──────────────────────────┘
+///        ACT ▼         ▲ STRM
+///        [1-2]
+///        ┌───────────────────┐
+///        │ profile viewmodel │
+///        └───────────────────┘
+///     ════════ abxAction ════════
+///
+///   streams (STRM)            actions (ACT)
+///     1. railIndex              1. setRailIndex
+///     2. rail
+///
+/// History: git log --follow -- kit/showcase_app/lib/ui/widgets/showcase_profile_widgets/showcase_profile_rail_card_widget.dart
+library;
+
 import 'package:flutter/material.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 import 'package:appbox_kit_showcase_app/enums/showcase_profile_enums/enums.dart';

@@ -1,3 +1,28 @@
+/// A view composes adaptive primitives from the kit's native family and binds
+/// the viewmodel's streams with [AppBoxKitStreamBuilder], calling the viewmodel's
+/// actions on user input. It never contains business logic — every decision
+/// lives in the viewmodel, and only the subtree bound to a changed stream
+/// redraws.
+///
+/// This is the user interface for the notes shell — a nested router host that
+/// mounts the Folders, folder-detail, and editor screens under the Notes tab.
+/// The shell viewmodel is empty (a lifecycle token); all routing is declarative.
+///
+/// Requirements:
+/// 1. [Nested routing]
+/// The mobile variant hosts a NestedRouter; tablet and desktop are placeholder
+/// surfaces.
+///
+/// Relationships:
+///
+///   ┌──────────────────────────────┐
+///   │       notes shell view       │
+///   └──────────────────────────────┘
+///      ════════ abxAction ════════
+///
+/// History: git log --follow -- kit/showcase_app/lib/ui/views/showcase_notes_shell/showcase_notes_shell_view.dart
+library;
+
 import 'package:flutter/material.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';

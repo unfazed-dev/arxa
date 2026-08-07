@@ -447,14 +447,387 @@ void main() {
     });
   });
 
+  group('G13 semantic frontmatter', () {
+    test('covered viewmodel without library; is a violation', () {
+      _file(tmp, 'lib/ui/test_viewmodel.dart',
+          "import 'package:stacked/stacked.dart';\n"
+          'class TestViewModel extends BaseViewModel {}\n');
+      final r = archGuard(tmp.path);
+      expect(
+          r.violations.any(
+              (v) => v.rule == 'G13' && v.msg.contains('library;')),
+          isTrue);
+    });
+
+    test('covered viewmodel with library; but no doc comment is a violation',
+        () {
+      _file(tmp, 'lib/ui/test_viewmodel.dart',
+          'library;\n'
+          "import 'package:stacked/stacked.dart';\n"
+          'class TestViewModel extends BaseViewModel {}\n');
+      final r = archGuard(tmp.path);
+      expect(
+          r.violations.any(
+              (v) => v.rule == 'G13' && v.msg.contains('doc comment')),
+          isTrue);
+    });
+
+    test('covered viewmodel with doc comment but no role paragraph is a violation',
+        () {
+      _file(tmp, 'lib/ui/test_viewmodel.dart',
+          '/// The test viewmodel.\n'
+          '/// It does things.\n'
+          '/// More detail here.\n'
+          '///\n'
+          '/// Requirements:\n'
+          '/// 1. [Load] — story-1\n'
+          '/// Loads the thing.\n'
+          '///\n'
+          '/// History: git log --follow -- x\n'
+          'library;\n'
+          "import 'package:stacked/stacked.dart';\n"
+          'class TestViewModel extends BaseViewModel {}\n');
+      final r = archGuard(tmp.path);
+      expect(
+          r.violations.any(
+              (v) => v.rule == 'G13' && v.msg.contains('role paragraph')),
+          isTrue);
+    });
+
+    test('covered viewmodel with doc comment but no requirements is a violation',
+        () {
+      _file(tmp, 'lib/ui/test_viewmodel.dart',
+          '/// The test viewmodel.\n'
+          '/// It does things.\n'
+          '///\n'
+          '/// This is the business logic for testing. It manages state.\n'
+          '///\n'
+          '/// History: git log --follow -- x\n'
+          'library;\n'
+          "import 'package:stacked/stacked.dart';\n"
+          'class TestViewModel extends BaseViewModel {}\n');
+      final r = archGuard(tmp.path);
+      expect(
+          r.violations.any(
+              (v) => v.rule == 'G13' && v.msg.contains('requirements')),
+          isTrue);
+    });
+
+    test('covered viewmodel with doc comment but no History is a violation', () {
+      _file(tmp, 'lib/ui/test_viewmodel.dart',
+          '/// The test viewmodel.\n'
+          '/// It does things.\n'
+          '///\n'
+          '/// This is the business logic for testing. It manages state.\n'
+          '///\n'
+          '/// Requirements:\n'
+          '/// 1. [Load] — story-1\n'
+          '/// Loads the thing.\n'
+          'library;\n'
+          "import 'package:stacked/stacked.dart';\n"
+          'class TestViewModel extends BaseViewModel {}\n');
+      final r = archGuard(tmp.path);
+      expect(
+          r.violations
+              .any((v) => v.rule == 'G13' && v.msg.contains('History')),
+          isTrue);
+    });
+
+    test('fully conformant viewmodel passes', () {
+      _file(tmp, 'lib/ui/test_viewmodel.dart',
+          '/// The test viewmodel. Actions in, streams out.\n'
+          '///\n'
+          '/// This is the business logic for testing. It manages the state\n'
+          '/// and exposes actions the view calls on user input.\n'
+          '///\n'
+          '/// Requirements:\n'
+          '/// 1. [Load] — story-1\n'
+          '/// The thing is loaded on init.\n'
+          '///\n'
+          '/// History: git log --follow -- lib/ui/test_viewmodel.dart\n'
+          'library;\n'
+          "import 'package:stacked/stacked.dart';\n"
+          'class TestViewModel extends BaseViewModel {}\n');
+      final r = archGuard(tmp.path);
+      expect(r.violations.where((v) => v.rule == 'G13'), isEmpty);
+    });
+
+    test('model (light variant) passes with role paragraph + library;', () {
+      _file(tmp, 'lib/data/models/thing_model.dart',
+          '/// A model is a pure data class — fields and serialization only.\n'
+          '/// No behavior, no Flutter, no services.\n'
+          '///\n'
+          '/// This is the data shape for a thing — its id and name.\n'
+          'library;\n'
+          'class ThingModel {\n'
+          '  final String id;\n'
+          '  ThingModel({required this.id});\n'
+          '}\n');
+      final r = archGuard(tmp.path);
+      expect(r.violations.where((v) => v.rule == 'G13'), isEmpty);
+    });
+
+    test('barrel file (export-only) is exempt', () {
+      _file(tmp, 'lib/ui/widgets/widgets.dart',
+          "export 'package:x/a_widget.dart';\n"
+          "export 'package:x/b_widget.dart';\n");
+      final r = archGuard(tmp.path);
+      expect(r.violations.where((v) => v.rule == 'G13'), isEmpty);
+    });
+
+    test('enum file is exempt', () {
+      _file(tmp, 'lib/enums/shell_enums/thing_enum.dart',
+          'enum ThingEnum { a, b }\n');
+      final r = archGuard(tmp.path);
+      expect(r.violations.where((v) => v.rule == 'G13'), isEmpty);
+    });
+
+    test('generated file is exempt', () {
+      _file(tmp, 'lib/app/app.router.dart',
+          'class Router {}\n');
+      final r = archGuard(tmp.path);
+      expect(r.violations.where((v) => v.rule == 'G13'), isEmpty);
+    });
+
+    test('file under lib/app/ is exempt', () {
+      _file(tmp, 'lib/app/locator_viewmodel.dart',
+          "import 'package:stacked/stacked.dart';\n"
+          'class LocatorViewModel extends BaseViewModel {}\n');
+      final r = archGuard(tmp.path);
+      expect(r.violations.where((v) => v.rule == 'G13'), isEmpty);
+    });
+
+    test('widget file conforms with full frontmatter', () {
+      _file(tmp, 'lib/ui/widgets/thing_widget.dart',
+          '/// A widget is a reusable piece of a view — a card or section that\n'
+          '/// composes primitives and turns taps into callbacks.\n'
+          '///\n'
+          '/// This is the user interface for a thing card. It shows the thing\n'
+          '/// and calls back on tap.\n'
+          '///\n'
+          '/// Requirements:\n'
+          '/// 1. [Display] — story-1\n'
+          '/// The thing is rendered in a card.\n'
+          '///\n'
+          '/// History: git log --follow -- lib/ui/widgets/thing_widget.dart\n'
+          'library;\n'
+          "import 'package:flutter/material.dart';\n"
+          'class ThingWidget extends StatelessWidget {\n'
+          '  const ThingWidget({super.key});\n'
+          '  @override\n'
+          '  Widget build(BuildContext context) => const SizedBox();\n'
+          '}\n');
+      final r = archGuard(tmp.path);
+      expect(r.violations.where((v) => v.rule == 'G13'), isEmpty);
+    });
+
+    test('diagram with misaligned tier centers is a violation', () {
+      _file(tmp, 'lib/ui/test_viewmodel.dart',
+          '/// The test viewmodel. Actions in, streams out.\n'
+          '///\n'
+          '/// This is the business logic for testing. It manages state.\n'
+          '///\n'
+          '/// Requirements:\n'
+          '/// 1. [Load] — story-1\n'
+          '/// The thing is loaded on init.\n'
+          '///\n'
+          '/// Relationships:\n'
+          '///\n'
+          '///      ┌──────────────────┐\n'
+          '///      │ note editor view │\n'
+          '///      └──────────────────┘\n'
+          '///                            ┌─────────────────────────┐\n'
+          '///                            │  note editor viewmodel  │\n'
+          '///                            └─────────────────────────┘\n'
+          '///                            ════════ abxAction ════════\n'
+          '///\n'
+          '/// History: git log --follow -- lib/ui/test_viewmodel.dart\n'
+          'library;\n'
+          "import 'package:stacked/stacked.dart';\n"
+          'class TestViewModel extends BaseViewModel {}\n');
+      final r = archGuard(tmp.path);
+      expect(
+          r.violations.any((v) =>
+              v.rule == 'G13' && v.msg.contains('diagram tier centers')),
+          isTrue);
+    });
+
+    test('diagram with aligned tier centers passes', () {
+      _file(tmp, 'lib/ui/test_viewmodel.dart',
+          '/// The test viewmodel. Actions in, streams out.\n'
+          '///\n'
+          '/// This is the business logic for testing. It manages state.\n'
+          '///\n'
+          '/// Requirements:\n'
+          '/// 1. [Load] — story-1\n'
+          '/// The thing is loaded on init.\n'
+          '///\n'
+          '/// Relationships:\n'
+          '///\n'
+          '///      ┌──────────────────┐\n'
+          '///      │ note editor view │\n'
+          '///      └──────────────────┘\n'
+          '///   ┌─────────────────────────┐\n'
+          '///   │  note editor viewmodel  │\n'
+          '///   └─────────────────────────┘\n'
+          '///   ════════ abxAction ════════\n'
+          '///\n'
+          '/// History: git log --follow -- lib/ui/test_viewmodel.dart\n'
+          'library;\n'
+          "import 'package:stacked/stacked.dart';\n"
+          'class TestViewModel extends BaseViewModel {}\n');
+      final r = archGuard(tmp.path);
+      expect(r.violations.where((v) => v.rule == 'G13'), isEmpty);
+    });
+
+    test('spine parts out of order is a violation (History before Requirements)', () {
+      _file(tmp, 'lib/ui/test_viewmodel.dart',
+          '/// The test viewmodel. Actions in, streams out.\n'
+          '///\n'
+          '/// This is the business logic for testing. It manages state.\n'
+          '///\n'
+          '/// History: git log --follow -- lib/ui/test_viewmodel.dart\n'
+          '///\n'
+          '/// Requirements:\n'
+          '/// 1. [Load] — story-1\n'
+          '/// The thing is loaded on init.\n'
+          '///\n'
+          '/// Relationships:\n'
+          '///\n'
+          '///   ┌───────┐\n'
+          '///   │ view  │\n'
+          '///   └───────┘\n'
+          'library;\n'
+          "import 'package:stacked/stacked.dart';\n"
+          'class TestViewModel extends BaseViewModel {}\n');
+      final r = archGuard(tmp.path);
+      expect(
+          r.violations.any((v) =>
+              v.rule == 'G13' && v.msg.contains('spine parts out of order')),
+          isTrue);
+    });
+
+    test('spine parts in order passes', () {
+      _file(tmp, 'lib/ui/test_viewmodel.dart',
+          '/// The test viewmodel. Actions in, streams out.\n'
+          '///\n'
+          '/// This is the business logic for testing. It manages state.\n'
+          '///\n'
+          '/// Requirements:\n'
+          '/// 1. [Load] — story-1\n'
+          '/// The thing is loaded on init.\n'
+          '///\n'
+          '/// Relationships:\n'
+          '///\n'
+          '///   ┌───────┐\n'
+          '///   │ view  │\n'
+          '///   └───────┘\n'
+          '///\n'
+          '/// History: git log --follow -- lib/ui/test_viewmodel.dart\n'
+          'library;\n'
+          "import 'package:stacked/stacked.dart';\n"
+          'class TestViewModel extends BaseViewModel {}\n');
+      final r = archGuard(tmp.path);
+      expect(r.violations.where((v) => v.rule == 'G13'), isEmpty);
+    });
+
+    test('section separators out of order is a violation', () {
+      _file(tmp, 'lib/ui/test_viewmodel.dart',
+          '/// The test viewmodel. Actions in, streams out.\n'
+          '///\n'
+          '/// This is the business logic for testing. It manages state.\n'
+          '///\n'
+          '/// Requirements:\n'
+          '/// 1. [Load] — story-1\n'
+          '/// The thing is loaded on init.\n'
+          '///\n'
+          '/// History: git log --follow -- lib/ui/test_viewmodel.dart\n'
+          'library;\n'
+          "import 'package:stacked/stacked.dart';\n"
+          'class TestViewModel extends BaseViewModel {\n'
+          '  // ── Setup ──────────────────────────────────────────────────────────────\n'
+          '  // ── Actions ──────────────────────────────────────────────────────────────\n'
+          '  // ── Streams ────────────────────────────────────────────────────────────────\n'
+          '}\n');
+      final r = archGuard(tmp.path);
+      expect(
+          r.violations.any((v) =>
+              v.rule == 'G13' &&
+              v.msg.contains(
+                  "section separator 'Actions' appears before 'Streams'")),
+          isTrue);
+    });
+
+    test('section separators in locked order passes', () {
+      _file(tmp, 'lib/ui/test_viewmodel.dart',
+          '/// The test viewmodel. Actions in, streams out.\n'
+          '///\n'
+          '/// This is the business logic for testing. It manages state.\n'
+          '///\n'
+          '/// Requirements:\n'
+          '/// 1. [Load] — story-1\n'
+          '/// The thing is loaded on init.\n'
+          '///\n'
+          '/// History: git log --follow -- lib/ui/test_viewmodel.dart\n'
+          'library;\n'
+          "import 'package:stacked/stacked.dart';\n"
+          'class TestViewModel extends BaseViewModel {\n'
+          '  // ── Setup ──────────────────────────────────────────────────────────────\n'
+          '  // ── Streams ────────────────────────────────────────────────────────────────\n'
+          '  // ── Actions ────────────────────────────────────────────────────────────────\n'
+          '  // ── Cleanup ────────────────────────────────────────────────────────────────\n'
+          '}\n');
+      final r = archGuard(tmp.path);
+      expect(
+          r.violations.where(
+              (v) => v.rule == 'G13' && v.msg.contains('section separator')),
+          isEmpty);
+    });
+
+    test('section separators not checked for views', () {
+      _file(tmp, 'lib/ui/test_view.dart',
+          '/// A view composes primitives and binds the viewmodel streams.\n'
+          '///\n'
+          '/// This is the user interface for testing. It renders things.\n'
+          '///\n'
+          '/// Requirements:\n'
+          '/// 1. [Display] — story-1\n'
+          '/// The thing is shown.\n'
+          '///\n'
+          '/// History: git log --follow -- lib/ui/test_view.dart\n'
+          'library;\n'
+          "import 'package:flutter/material.dart';\n"
+          'class TestView extends StatelessWidget {\n'
+          '  const TestView({super.key});\n'
+          '  // ── Banana ──\n'
+          '  // ── Apple ──\n'
+          '  @override\n'
+          '  Widget build(BuildContext context) => const SizedBox();\n'
+          '}\n');
+      final r = archGuard(tmp.path);
+      expect(
+          r.violations.where(
+              (v) => v.rule == 'G13' && v.msg.contains('section separator')),
+          isEmpty);
+    });
+  });
+
   test('violations are sorted by (rule, file)', () {
     _file(tmp, 'lib/ui/zeta_viewmodel.dart', 'class Zeta extends Other {}\n');
     _file(tmp, 'lib/domain/alpha.dart',
         "import 'package:flutter/material.dart';\nclass Alpha {}\n");
     final r = archGuard(tmp.path);
-    final keys = r.violations.map((v) => '${v.rule}|${v.file}').toList();
-    final sorted = [...keys]..sort();
-    expect(keys, equals(sorted));
+    // Sort with the same comparator the guard uses (rule first, then file),
+    // not a bare string sort — 'G13' < 'G1' by raw string but 'G1' < 'G13'
+    // by rule-only comparison, and the guard sorts by rule.
+    final sorted = [...r.violations]..sort((a, b) {
+      final byRule = a.rule.compareTo(b.rule);
+      return byRule != 0 ? byRule : a.file.compareTo(b.file);
+    });
+    expect(
+      r.violations.map((v) => '${v.rule}|${v.file}').toList(),
+      equals(sorted.map((v) => '${v.rule}|${v.file}').toList()),
+    );
   });
 }
 
@@ -472,16 +845,42 @@ void _buildCleanTarget(Directory tmp) {
   // domain Port
   _file(tmp, 'lib/domain/ports/thing_repository.dart',
       'abstract class ThingRepository {}\n');
-  // application viewmodel — extends a Stacked busy-capable base
+  // application viewmodel — extends a Stacked busy-capable base, G13 frontmatter
   _file(tmp, 'lib/application/thing_viewmodel.dart',
+      '/// The thing viewmodel. Actions in, streams out — never touches the\n'
+      '/// view. Swap the UI for any other and this file stays unchanged.\n'
+      '///\n'
+      '/// This is the business logic for managing a thing. It loads the thing\n'
+      '/// on init and exposes actions the view calls on user input.\n'
+      '///\n'
+      '/// Requirements:\n'
+      '/// 1. [Load] — story-1\n'
+      '/// The thing is loaded on init.\n'
+      '///\n'
+      '/// History: git log --follow -- lib/application/thing_viewmodel.dart\n'
+      'library;\n'
+      '\n'
       "import 'package:stacked/stacked.dart';\n"
       'class ThingViewModel extends BaseViewModel {}\n');
   // infrastructure repo — implements the domain Port
   _file(tmp, 'lib/infrastructure/thing_repository.dart',
       "import '../domain/ports/thing_repository.dart';\n"
       'class ThingRepo implements ThingRepository {}\n');
-  // presentation view — Flutter UI lives here
+  // presentation view — Flutter UI lives here, G13 frontmatter
   _file(tmp, 'lib/presentation/thing_view.dart',
+      '/// A view composes primitives and binds the viewmodel streams. It never\n'
+      '/// contains business logic — every decision lives in the viewmodel.\n'
+      '///\n'
+      '/// This is the user interface for viewing a thing. It renders the thing\n'
+      '/// and forwards user taps to the viewmodel actions.\n'
+      '///\n'
+      '/// Requirements:\n'
+      '/// 1. [Display] — story-1\n'
+      '/// The thing is shown on screen.\n'
+      '///\n'
+      '/// History: git log --follow -- lib/presentation/thing_view.dart\n'
+      'library;\n'
+      '\n'
       "import 'package:flutter/material.dart';\n"
       "import '../application/thing_viewmodel.dart';\n"
       'class ThingView extends StatelessWidget {\n'

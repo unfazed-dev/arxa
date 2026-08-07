@@ -1,3 +1,25 @@
+/// The unknown leaf's form-factor variant. A view is actions in, streams out.
+///
+/// This is the user interface for the dead-end screen a bad route lands on —
+/// the variant renders the static unknown body widget.
+///
+/// Requirements:
+/// 1. [Dead-end body] — shell-demos.startup-and-unknown-shells.land-on-the-unknown-shell-for-a-bad-route
+/// The variant renders the unknown body.
+///
+/// Relationships:
+///
+///         ┌──────────────────────┐
+///         │ unknown leaf variant │
+///         └──────────────────────┘
+///       ┌─────────────────────────┐
+///       │ unknown leaf viewmodel  │
+///       └─────────────────────────┘
+///       ════════ abxAction ════════
+///
+/// History: git log --follow -- kit/showcase_app/lib/ui/views/showcase_unknown_shell/showcase_unknown/showcase_unknown_view.desktop.dart
+library;
+
 import 'package:flutter/material.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 

@@ -1,3 +1,23 @@
+/// A widget is a reusable UI piece composed by views. It receives data via
+/// constructor params or [AppBoxKitStreamBuilder] bindings and renders its
+/// slice of the surface — it holds no business logic and never decides when
+/// an action runs.
+///
+/// This is the user interface for a shared credential text field — a thin
+/// pass-through to [AppBoxKitNativeTextField]. Value-based (onChanged), never
+/// controller-based: credential capture is never-prefill.
+///
+/// Requirements:
+/// 1. [Credential field]
+/// Renders a native text field for email/password/code entry.
+///
+/// Relationships:
+///
+/// Standalone — no viewmodel binding.
+///
+/// History: git log --follow -- kit/showcase_app/lib/ui/widgets/showcase_notes_widgets/showcase_notes_auth_text_field_widget.dart
+library;
+
 import 'package:flutter/material.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 

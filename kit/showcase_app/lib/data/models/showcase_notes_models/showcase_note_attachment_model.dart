@@ -1,18 +1,24 @@
-/// One media attachment on a [ShowcaseNoteModel], stored inside the note row's
-/// `attachments` jsonb column (swap rule 2: nested collections are jsonb,
-/// never child tables).
+/// A model is a pure data class representing a domain entity — fields and
+/// serialization only, no behavior, no Flutter, no services.
 ///
-/// Binaries themselves live in the app-documents directory —
-/// `ShowcaseNotesMediaAdapterService` owns the files; rows carry only [fileName] (relative,
-/// because the iOS app container path changes across reinstalls) plus
-/// metadata. Rows therefore sync to any backend while files stay local — the
-/// documented ceiling until a storage seam exists.
+/// This is the data shape for one media attachment on a note — a photo or voice
+/// recording's file name and metadata, stored inside the note row's `attachments`
+/// jsonb column (nested collections are jsonb, never child tables). The binary
+/// file itself lives in the app-documents directory, where the media adapter owns
+/// it; the row carries only a relative file name (the iOS app container path
+/// changes across reinstalls) plus metadata, so rows sync to any backend while
+/// files stay local — the documented ceiling until a storage seam exists.
+///
+/// History: git log --follow -- kit/showcase_app/lib/data/models/showcase_notes_models/showcase_note_attachment_model.dart
 library;
 
 import 'package:appbox_kit_showcase_app/enums/showcase_notes_enums/enums.dart';
 
 class ShowcaseNoteAttachmentModel {
+  /// The attachment's unique id.
   final String id;
+
+  /// Whether this is a photo or an audio recording.
   final ShowcaseNoteAttachmentKind kind;
 
   /// File name relative to the showcase attachments directory.
@@ -20,6 +26,8 @@ class ShowcaseNoteAttachmentModel {
 
   /// Recording length; null for photos.
   final int? durationMs;
+
+  /// When the attachment was added to the note.
   final DateTime createdAt;
 
   const ShowcaseNoteAttachmentModel({
