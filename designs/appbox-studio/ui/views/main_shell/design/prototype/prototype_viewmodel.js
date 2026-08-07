@@ -108,10 +108,14 @@ export const inspector = (c, h) =>
 export const inspectorSelect = async (c, h) => {
   const d = h.session(c).data;
   const form = await h.form(c);
+  // Crumb clicks arrive as query params on the hx-post URL; island hovers
+  // arrive as a form body. Prefer the body, fall back to query so both paths
+  // resolve through the same facade call.
+  const f = (k) => form[k] ?? c.req.query(k);
   const next = facade.selectElement(d, {
-    screen: form.screen, name: form.name, kind: form.kind,
-    role: form.role, style: form.style, motion: form.motion, fn: form.fn,
-    lock: form.lock,
+    screen: f('screen'), name: f('name'), kind: f('kind'),
+    role: f('role'), style: f('style'), motion: f('motion'), fn: f('fn'),
+    lock: f('lock'), inferred: f('inferred'), chain: f('chain'),
   }, h.prefs(c), h.t(c), h.locale(c));
   if (next.activityView !== 'inspector') return h.noContent(c);
   return h.render(c, `${VIEW}#inspectorPane`, next);

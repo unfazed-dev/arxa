@@ -393,6 +393,8 @@
   "inspector.lockedTitle": "[!! Hëłð hëřë — hövëřïñg åñöţhëř ëłëmëñţ wïłł ñöţ řëpłåçë ïţ ~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
   "inspector.unlock": "[!! Řëłëåšë ~̷~~̷~ !!]",
   "inspector.inferred": "[!! ïñfëřřëð ~̷~~̷~ !!]",
+  "inspector.inferredTitle": "[!! Ëłëmëñţ häð ñö ðåţå-ëł — ïðëñţïţÿ ïñfëřřëð fřöm ţåg öř ţëxţ ~̷~~̷~~̷~~̷~~̷~~̷~~̷~ !!]",
+  "inspector.chainAria": "[!! Ëłëmëñţ ßřëåðçřümb ~̷~~̷~~̷~ !!]",
   "inspector.role": "[!! řöłë ~̷~~̷~ !!]",
   "inspector.style": "[!! šţÿłë ~̷~~̷~ !!]",
   "inspector.motion": "[!! möţïöñ ~̷~~̷~ !!]",

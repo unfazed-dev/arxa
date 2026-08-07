@@ -392,6 +392,8 @@
   "inspector.lockedTitle": "Zatrzymany tutaj — najechanie na inny element go nie zastąpi",
   "inspector.unlock": "Zwolnij",
   "inspector.inferred": "wywnioskowane",
+  "inspector.inferredTitle": "Element nie miał data-el — tożsamość wnioskowana z tagu lub tekstu",
+  "inspector.chainAria": "Ścieżka elementu",
   "inspector.role": "rola",
   "inspector.style": "styl",
   "inspector.motion": "ruch",

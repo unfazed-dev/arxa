@@ -393,6 +393,8 @@
   "inspector.lockedTitle": "Held here — hovering another element will not replace it",
   "inspector.unlock": "Release",
   "inspector.inferred": "inferred",
+  "inspector.inferredTitle": "Element had no data-el — identity inferred from tag or text",
+  "inspector.chainAria": "Element breadcrumb",
   "inspector.role": "role",
   "inspector.style": "style",
   "inspector.motion": "motion",

@@ -12,7 +12,7 @@
 // Macro library file — imported directly by the design activity view.
 import { Fragment } from 'hono/jsx';
 import Icon from '../../../../runtime/icon.tsx';
-import { TypeBadge, StatusPill } from '../../../common/widgets/primitives.tsx';
+import { TypeBadge, StatusPill, inspectAttrs } from '../../../common/widgets/primitives.tsx';
 
 type TFn = (key: string, vars?: Record<string, unknown>) => unknown;
 
@@ -20,6 +20,11 @@ type TFn = (key: string, vars?: Record<string, unknown>) => unknown;
 interface InferredField {
   value?: string;
   inferred?: boolean;
+}
+interface InspectorCrumb {
+  el: string;
+  inferred?: boolean;
+  selectHref?: string | null;
 }
 interface InspectorElement {
   kind?: string;
@@ -29,6 +34,8 @@ interface InspectorElement {
   pinned?: boolean;
   pinHref?: string;
   unpinHref?: string;
+  inferred?: boolean;
+  chain?: InspectorCrumb[];
   role?: InferredField;
   style?: string;
   motion?: string;
@@ -111,6 +118,11 @@ export function ElementCard({ el, locked, unlockHref, t }: ElementCardProps) {
     <div class={`msg msg-agent${locked ? ` is-active msg-ctx ctx-${el.tone}` : ''}`}>
       <header class="msg-meta">
         {el.kind && <TypeBadge type={el.kind} />}
+        {el.inferred && (
+          <span class="chip thread-badge" {...inspectAttrs('inspector:inferred', { role: 'status' })} title={t('inspector.inferredTitle') as string}>
+            {t('inspector.inferred') as string}
+          </span>
+        )}
         {locked && (
           <span class="chip thread-badge" title={t('inspector.lockedTitle') as string}>
             <Icon name="lock" size={12} /> {t('inspector.locked') as string}
@@ -118,6 +130,31 @@ export function ElementCard({ el, locked, unlockHref, t }: ElementCardProps) {
         )}
       </header>
       <span class="msg-text"><code>{el.name}</code></span>
+      {/* Ancestor breadcrumb — outermost › … › current. Each ancestor is a
+          button that POSTs back to /design/inspector/select (selectHref) to
+          lock that element; the last entry is the current element (no link). */}
+      {Array.isArray(el.chain) && el.chain.length > 1 && (
+        <nav class="insp-crumbs" aria-label={t('inspector.chainAria') as string} {...inspectAttrs('inspector:crumbs', { role: 'navigation' })}>
+          {el.chain.map((c, i) => (
+            <Fragment key={i}>
+              {i > 0 && <span class="insp-crumb-sep" {...inspectAttrs('inspector:crumb-sep', { role: 'separator' })} aria-hidden="true">›</span>}
+              {c.selectHref ? (
+                <button
+                  class={`insp-crumb${c.inferred ? ' is-inferred' : ''}`}
+                  {...inspectAttrs('inspector:crumb', { role: 'link' })}
+                  type="button"
+                  hx-post={c.selectHref}
+                  hx-target="#av-list"
+                  hx-swap="outerHTML"
+                  hx-push-url="false"
+                >{c.el}</button>
+              ) : (
+                <span class={`insp-crumb is-current${c.inferred ? ' is-inferred' : ''}`} {...inspectAttrs('inspector:crumb-current', { role: 'text' })}>{c.el}</span>
+              )}
+            </Fragment>
+          ))}
+        </nav>
+      )}
       {el.screenId && <span class="msg-detail muted">{el.screenId}</span>}
       <MetaRow label={t('inspector.role') as string} value={el.role?.value} mark={el.role?.inferred} t={t} />
       <MetaRow label={t('inspector.style') as string} value={el.style} mark={false} t={t} />

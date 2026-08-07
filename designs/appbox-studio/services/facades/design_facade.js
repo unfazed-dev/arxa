@@ -804,11 +804,34 @@ const elementCard = (d, p, L) => {
   // is computed here: the island posts the attribute or nothing, and never
   // claims a provenance it cannot know.
   const roleValue = p.role || String(p.name ?? '').split(':')[0] || '';
+  // The ancestor chain (outermost→innermost) the island walked to reach this
+  // element. Each crumb except the last gets a selectHref that POSTs back to
+  // /design/inspector/select — clicking an ancestor selects+locks it. The
+  // href is built here because the facade owns all hrefs (see header comment).
+  const rawChain = Array.isArray(p.chain) ? p.chain : [];
+  const lastIdx = rawChain.length - 1;
+  const chain = rawChain.map((c, i) => {
+    const crumb = { el: c?.el ?? '', inferred: !!c?.inferred, selectHref: null };
+    if (i === lastIdx) return crumb;
+    const qs = new URLSearchParams();
+    if (crumb.el) qs.set('name', crumb.el);
+    if (c?.role) qs.set('role', c.role);
+    if (p.screen) qs.set('screen', p.screen);
+    if (crumb.inferred) qs.set('inferred', '1');
+    qs.set('lock', '1');
+    crumb.selectHref = `/design/inspector/select?${qs.toString()}`;
+    return crumb;
+  });
   return {
     name: p.name,
     kind: p.kind ?? '',
     screenId: p.screen,
     tone: toneFor(p.screen, L),
+    // True when the island had no data-el to read — identity was inferred from
+    // tag/text, not declared. A card-level marker distinct from per-field
+    // inference (role.inferred etc.).
+    inferred: !!p.inferred,
+    chain,
     role: { value: roleValue, inferred: !p.role && !!roleValue },
     style: p.style || null,
     motion: p.motion || null,
@@ -907,6 +930,11 @@ export const selectElement = (sessionData, payload = {}, prefs = {}, t = (k) => 
   // is a deliberate pick; an element merely brushed past while it is held must
   // not displace it — and must not become what unlock falls back to either.
   if (d.inspectorLock && payload.lock !== '1') return stageContext(sessionData, {}, prefs, t, locale);
+  // chain is a JSON string from the island (a trust boundary) — guard the
+  // parse so a malformed body can never crash the selection path.
+  let chain = [];
+  try { chain = JSON.parse(payload.chain || '[]'); } catch (_) { chain = []; }
+  if (!Array.isArray(chain)) chain = [];
   const p = {
     screen: payload.screen ?? '',
     name: payload.name ?? '',
@@ -915,6 +943,8 @@ export const selectElement = (sessionData, payload = {}, prefs = {}, t = (k) => 
     style: payload.style ?? '',
     motion: payload.motion ?? '',
     fn: payload.fn ?? '',
+    inferred: payload.inferred === '1',
+    chain,
   };
   if (payload.lock === '1') d.inspectorLock = p; else d.inspectorHover = p;
   // Remembered so the screen card still has a subject once the pointer leaves
