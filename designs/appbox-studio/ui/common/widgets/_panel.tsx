@@ -27,6 +27,7 @@
 
 import { raw } from 'hono/utils/html';
 import type { Child } from 'hono/jsx';
+import { inspectAttrs } from './primitives.tsx';
 
 type TFn = (key: string, vars?: Record<string, unknown>) => unknown;
 
@@ -133,6 +134,7 @@ export function Panel(props: PanelProps) {
       class={panelClass}
       id={pid}
       style={styleParts.join('') || undefined}
+      {...inspectAttrs(`panel:${props.role}`, { role: 'panel' })}
       {...((props.attrs ?? {}) as any)}
     >
       {props.resize && <Resize pid={pid} cfg={props.resize} t={props.t!} />}

@@ -4,6 +4,8 @@
 // every value shown and every write lives server-side. Edits hit the widget's
 // SOURCE element, so `appliesTo` names every screen the change reaches.
 // Macro library file — imported directly by view components.
+import { inspectAttrs } from '../../../../common/widgets/primitives.tsx';
+
 type TFn = (key: string, vars?: Record<string, unknown>) => unknown;
 
 interface Step {
@@ -41,7 +43,7 @@ export function Pane(props: PaneProps) {
   const resizeY = props.resizeY ?? [];
 
   return (
-    <div class="dv-wedit-card">
+    <div class="dv-wedit-card" {...inspectAttrs('widget-editor', { role: 'panel' })}>
       <div class="dv-wedit-head">
         <b>{props.sel.name || props.sel.kind}</b>
         <code class="dv-wedit-file">{props.file}</code>

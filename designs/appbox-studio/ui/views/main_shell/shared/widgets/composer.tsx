@@ -6,6 +6,7 @@
 // upward. Macro library file — imported directly by view components.
 import { Fragment } from 'hono/jsx';
 import Icon from '../../../../../runtime/icon.tsx';
+import { inspectAttrs } from '../../../../common/widgets/primitives.tsx';
 
 type TFn = (key: string, vars?: Record<string, unknown>) => unknown;
 
@@ -113,6 +114,7 @@ export function Field(props: ComposerProps) {
       hx-post={props.composerAction}
       hx-target={tgt}
       hx-swap="outerMorph"
+      {...inspectAttrs('composer', { role: 'input' })}
     >
       {(hasBody || hasChips) && (
         <Fragment>

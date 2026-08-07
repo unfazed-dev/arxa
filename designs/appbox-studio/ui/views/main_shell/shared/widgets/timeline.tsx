@@ -3,6 +3,7 @@
 // oob=false → items only (footer panel supplied the <ol>); oob=true → whole body element via BodyOob.
 import { Fragment } from 'hono/jsx';
 import { BodyOob } from '../../../../common/widgets/_panel.tsx';
+import { inspectAttrs } from '../../../../common/widgets/primitives.tsx';
 
 type TFn = (key: string, vars?: Record<string, unknown>) => unknown;
 
@@ -86,7 +87,7 @@ export function Timeline({ timeline, oob, label, base, t }: TimelineProps) {
         tag="ol"
         cls="timeline"
         id="timeline"
-        attrs={`aria-label="${label ?? ''}"`}
+        attrs={{ ...inspectAttrs('timeline', { role: 'list' }), 'aria-label': label ?? '' }}
       >
         <Items timeline={timeline} base={base} t={t} />
       </BodyOob>

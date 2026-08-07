@@ -51,7 +51,7 @@ import Icon from '../../../../../runtime/icon.tsx';
 import { Panel } from '../../../../common/widgets/_panel.tsx';
 import { Pane } from './widget_editor.tsx';
 import { MiniPanel } from './mini_panel.tsx';
-import { StatusPill } from '../../../../common/widgets/primitives.tsx';
+import { StatusPill, inspectAttrs } from '../../../../common/widgets/primitives.tsx';
 import { Field } from './composer.tsx';
 
 type TFn = (key: string, vars?: Record<string, unknown>) => unknown;
@@ -195,7 +195,7 @@ export function DeviceChrome({ src, vp, title }: DeviceChromeProps) {
   const style = `width: ${w}px; height: ${h}px`;
   if (vp === 'mobile') {
     return (
-      <div class="device device-ios" style={style}>
+      <div class="device device-ios" style={style} {...inspectAttrs('viewer:device', { role: 'group' })}>
         <span class="device-island" aria-hidden="true"></span>
         <iframe class="dv-frame" id="dvf-proto" src={src} title={title}></iframe>
         <span class="device-home" aria-hidden="true"></span>
@@ -204,13 +204,13 @@ export function DeviceChrome({ src, vp, title }: DeviceChromeProps) {
   }
   if (vp === 'tablet') {
     return (
-      <div class="device device-tablet" style={style}>
+      <div class="device device-tablet" style={style} {...inspectAttrs('viewer:device', { role: 'group' })}>
         <iframe class="dv-frame" id="dvf-proto" src={src} title={title}></iframe>
       </div>
     );
   }
   return (
-    <div class="device device-win" style={style}>
+    <div class="device device-win" style={style} {...inspectAttrs('viewer:device', { role: 'group' })}>
       <span class="device-titlebar" aria-hidden="true"><i></i><i></i><i></i></span>
       <iframe class="dv-frame" id="dvf-proto" src={src} title={title}></iframe>
     </div>
@@ -267,7 +267,7 @@ interface TileToolsProps {
 export function TileTools({ v, s, row, first, last, t }: TileToolsProps) {
   const dr = v.drawers?.[s.id] ?? null;
   return (
-    <span class="dv-tile-tools">
+    <span class="dv-tile-tools" {...inspectAttrs('viewer:tile-tools', { role: 'toolbar' })}>
       {/* Reveal-drawer trigger. A real <button aria-expanded>, not a chip <a>:
           it toggles the card's back panel, it does not navigate. State is
           session-scoped server state, so the swap is the whole viewer — morph
@@ -448,7 +448,7 @@ export function Tile({ v, s, row, first, last, t }: TileProps) {
   if (s.live && s.walkQs) src += s.walkQs;
 
   return (
-    <div class={cls} id={`dvt-${scope}--${s.id}`} data-id={s.id} style={`width: ${s.tile.width}px`}>
+    <div class={cls} id={`dvt-${scope}--${s.id}`} data-id={s.id} style={`width: ${s.tile.width}px`} {...inspectAttrs('viewer:tile', { role: 'card' })}>
       <header class="dv-tile-chrome">
         {!v.static && <TileTools v={v} s={s} row={row} first={first} last={last} t={t} />}
         <span class="dv-tile-label"><strong>{s.label ?? s.id}</strong> <code>{s.id}</code></span>
@@ -515,7 +515,7 @@ interface ToolsPaneProps {
 export function ToolsPane({ s, dr, t }: ToolsPaneProps) {
   const tl = dr.tools!;
   return (
-    <div class="dv-tools">
+    <div class="dv-tools" {...inspectAttrs('viewer:tools', { role: 'panel' })}>
       <nav class="dv-tools-strip" aria-label={t('viewer.tools.strip') as string}>
         <span class="dv-tools-crumb">
           {s.id}
@@ -614,7 +614,7 @@ interface LogicPaneProps {
 export function LogicPane({ s, dr, t }: LogicPaneProps) {
   const lg = dr.logic!;
   return (
-    <div class="dv-logic">
+    <div class="dv-logic" {...inspectAttrs('viewer:logic', { role: 'panel' })}>
       <section class="dv-logic-screen">
         <h4 class="dv-tools-h">{t('viewer.logic.screen') as string}</h4>
         <dl class="dv-logic-facts">
@@ -736,6 +736,7 @@ export function RevealDrawer({ v, s, t }: RevealDrawerProps) {
       class="dv-drawer"
       id={`dv-drawer-${dr.slug}`}
       data-drawer-for={s.id}
+      {...inspectAttrs('viewer:drawer', { role: 'panel' })}
       tabindex={-1}
       role="region"
       aria-label={t('viewer.drawer.title', { id: s.id }) as string}
@@ -949,6 +950,7 @@ export function DesignViewer({ v, chrome, t }: DesignViewerProps) {
       role="main"
       id="design-viewer"
       class={`panel-viewer dv-bg-${v.bg ?? 'canvas'}`}
+      attrs={inspectAttrs('viewer', { role: 'panel' })}
       top={chrome ? <Topbar v={v} chrome={chrome} t={t} /> : null}
       topClass="dv-topbar"
       bodyClass={proto ? 'dv-proto' : 'dv-flow-canvas'}

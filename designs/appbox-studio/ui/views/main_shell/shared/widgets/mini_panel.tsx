@@ -1,6 +1,7 @@
 // mini_panel.tsx — the mini panel: bottom-docked controller bar (replaces mini_panel.html).
 // Mode toggle, viewer fullscreen, canvas undo/redo + device rung icons.
 import Icon from '../../../../../runtime/icon.tsx';
+import { inspectAttrs } from '../../../../common/widgets/primitives.tsx';
 
 type TFn = (key: string, vars?: Record<string, unknown>) => unknown;
 
@@ -35,7 +36,7 @@ interface ControllerPanelProps {
 }
 export function ControllerPanel({ controller: c, t }: ControllerPanelProps) {
   return (
-    <div class="mini-panel-body" id="mini-panel-controller">
+    <div class="mini-panel-body" id="mini-panel-controller" {...inspectAttrs('mini-panel:controller', { role: 'toolbar' })}>
       <span class="mini-panel-group" role="group" aria-label={t('miniPanel.modeGroup') as string}>
         {c.modes.map((m) => (
           <a
@@ -99,7 +100,7 @@ interface MiniPanelProps {
 export function MiniPanel({ v, t }: MiniPanelProps) {
   const pnl = (v?.miniPanel ?? {}) as MiniPanelData;
   return (
-    <nav class="mini-panel" aria-label={t('miniPanel.aria') as string}>
+    <nav class="mini-panel" aria-label={t('miniPanel.aria') as string} {...inspectAttrs('mini-panel', { role: 'toolbar' })}>
       <div class="mini-panel-bar">
         <ControllerPanel controller={pnl.controller} t={t} />
         <span class="mini-panel-bar-right">

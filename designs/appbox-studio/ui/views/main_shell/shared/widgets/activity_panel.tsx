@@ -5,6 +5,7 @@
 import type { Child } from 'hono/jsx';
 import Icon from '../../../../../runtime/icon.tsx';
 import { Open as PanelOpen, Top as PanelTop, Bottom as PanelBottom } from '../../../../common/widgets/_panel.tsx';
+import { inspectAttrs } from '../../../../common/widgets/primitives.tsx';
 
 type TFn = (key: string, vars?: Record<string, unknown>) => unknown;
 
@@ -31,7 +32,7 @@ interface LabelProps {
   spec: ActivitySpec;
 }
 export function Label({ spec }: LabelProps) {
-  return <strong class="panel-label">{spec.label}</strong>;
+  return <strong class="panel-label" {...inspectAttrs('panel:activity:label', { role: 'label' })}>{spec.label}</strong>;
 }
 
 // Views — the views carousel: one icon per registered view.
@@ -41,7 +42,7 @@ interface ViewsProps {
 }
 export function Views({ spec, t }: ViewsProps) {
   return (
-    <nav class="panel-views" aria-label={t('panel.activity.views') as string}>
+    <nav class="panel-views" aria-label={t('panel.activity.views') as string} {...inspectAttrs('panel:activity:views', { role: 'nav' })}>
       {spec.views.map((v) => (
         <a
           key={v.id}

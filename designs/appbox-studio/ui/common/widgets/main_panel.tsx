@@ -4,6 +4,7 @@
 import { raw } from 'hono/utils/html';
 import type { Child } from 'hono/jsx';
 import Icon from '../../../runtime/icon.tsx';
+import { inspectAttrs } from './primitives.tsx';
 
 type TFn = (key: string, vars?: Record<string, unknown>) => unknown;
 
@@ -32,7 +33,7 @@ interface MainPanelOpenProps {
   children?: Child;
 }
 export function Open(props: MainPanelOpenProps) {
-  return <div class="panel-main" id={props.id ?? 'panel-main'}>{props.children}</div>;
+  return <div class="panel-main" id={props.id ?? 'panel-main'} {...inspectAttrs('panel:main', { role: 'panel' })}>{props.children}</div>;
 }
 
 // panelBar — the per-shell segmented switcher that picks the single visible
@@ -56,7 +57,7 @@ interface PanelBarProps {
 export function PanelBar(props: PanelBarProps) {
   const { panel, t } = props;
   return (
-    <nav class="panel-bar" aria-label={t('panelBar.aria') as string}>
+    <nav class="panel-bar" aria-label={t('panelBar.aria') as string} {...inspectAttrs('panel-bar', { role: 'toolbar' })}>
       {PANEL_BAR_ITEMS.map(p => (
         <a
           key={p.id}
@@ -78,7 +79,7 @@ interface EmptyProps {
 }
 export function Empty(props: EmptyProps) {
   return (
-    <section class="mp-content mp-empty" id="mp-content">
+    <section class="mp-content mp-empty" id="mp-content" {...inspectAttrs('panel:main:empty', { role: 'panel' })}>
       <p class="muted">{props.t('mainPanel.empty') as string}</p>
     </section>
   );
@@ -140,7 +141,7 @@ interface ViewProps {
 export function View(props: ViewProps) {
   const { f, t } = props;
   return (
-    <section class="mp-content mp-file" id="mp-content" aria-live="polite">
+    <section class="mp-content mp-file" id="mp-content" aria-live="polite" {...inspectAttrs('file-view', { role: 'panel' })}>
       <header class="mp-file-head">
         <code class="mp-file-path">{f.path}</code>
         <span class="chip chip--muted">{t(`mainPanel.mode.${f.modeName}`) as string}</span>
