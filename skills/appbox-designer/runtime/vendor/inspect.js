@@ -152,6 +152,10 @@
     name.style.cssText = 'font-weight:600;' + (info.inferred ? ' opacity:.6;' : '');
     name.textContent = info.name;
     labelEl.appendChild(name);
+    const sub = document.createElement('div');
+    sub.style.cssText = 'font-size:10px;opacity:.85;';
+    sub.textContent = info.role + (info.inferred ? ' · inferred' : '');
+    labelEl.appendChild(sub);
   };
 
   // What the pane renders. Identified elements (data-el) send their authored
