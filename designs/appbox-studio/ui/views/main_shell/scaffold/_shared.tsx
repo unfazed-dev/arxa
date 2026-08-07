@@ -5,6 +5,7 @@
 // widget homes through the same open/close pair from _panel.tsx.
 import { Fragment, type Child } from 'hono/jsx';
 import Icon from '../../../../runtime/icon.tsx';
+import { inspectAttrs, Label, Txt } from '../../../common/widgets/primitives.tsx';
 import { Open as ActivityOpen } from '../shared/widgets/activity_panel.tsx';
 import { Open as ComposerOpen } from '../shared/widgets/composer_panel.tsx';
 import { Field } from '../shared/widgets/composer.tsx';
@@ -20,19 +21,19 @@ interface ThreadProps {
 }
 export function Thread({ c }: ThreadProps) {
   return (
-    <div class="chat-thread" aria-live="polite">
+    <div class="chat-thread" aria-live="polite" {...inspectAttrs('scaffold:thread', { role: 'group' })}>
       {(c.thread ?? []).map((m: Ctx, i: number) => {
         if (m.kind === 'event') {
-          return <p key={i} class="bt-event">{m.text}</p>;
+          return <Txt key={i} name="scaffold:thread:event" class="bt-event">{m.text}</Txt>;
         }
         if (m.from === 'user') {
-          return <p key={i} class="bt-msg bt-user">{m.text}</p>;
+          return <Txt key={i} name="scaffold:thread:user" class="bt-msg bt-user">{m.text}</Txt>;
         }
         return (
-          <p key={i} class="bt-msg bt-agent">
+          <Txt key={i} name="scaffold:thread:agent" class="bt-msg bt-agent">
             {m.text}
-            {m.link && <Fragment>{' '}<a class="bt-link" href={m.link.href}>{m.link.label}</a></Fragment>}
-          </p>
+            {m.link && <Fragment>{' '}<a class="bt-link" href={m.link.href} {...inspectAttrs('scaffold:thread:link', { role: 'action' })}>{m.link.label}</a></Fragment>}
+          </Txt>
         );
       })}
     </div>
@@ -62,11 +63,11 @@ interface ActivityBodyProps {
 }
 export function ActivityBody({ c }: ActivityBodyProps) {
   return (
-    <ul class="panel-activity-body" id="panel-activity-body">
+    <ul class="panel-activity-body" id="panel-activity-body" {...inspectAttrs('scaffold:activity:list', { role: 'list' })}>
       {(c.activity?.items ?? []).map((it: Ctx, i: number) => (
         <li key={i} class={`act-row${it.active ? ' is-active' : ''}`}>
-          <span class="act-label">{it.label}</span>
-          {it.meta && <span class="act-meta">{it.meta}</span>}
+          <Label name="scaffold:activity:label" class="act-label">{it.label}</Label>
+          {it.meta && <Label name="scaffold:activity:meta" class="act-meta">{it.meta}</Label>}
         </li>
       ))}
     </ul>
@@ -126,13 +127,13 @@ export function AccountChip({ c, t }: AccountChipProps) {
   const ent = c.entitlement ?? {};
   const entState = !ent.signedIn ? 'signedOut' : ent.entitled ? 'entitled' : 'free';
   return (
-    <span class="shell-account" data-entitlement={entState}>
+    <span class="shell-account" data-entitlement={entState} {...inspectAttrs('scaffold:account', { role: 'group' })}>
       {!ent.signedIn ? (
-        <a class="chip chip--muted shell-account-chip" href="/auth">
+        <a class="chip chip--muted shell-account-chip" href="/auth" {...inspectAttrs('scaffold:account:signin', { role: 'action' })}>
           <Icon name="log-in" size={13} /> {t('scaffold.chrome.signIn') as string}
         </a>
       ) : !ent.entitled ? (
-        <a class="chip chip--accent shell-account-chip" href={ent.accountHref}>
+        <a class="chip chip--accent shell-account-chip" href={ent.accountHref} {...inspectAttrs('scaffold:account:upgrade', { role: 'action' })}>
           <Icon name="sparkles" size={13} /> {t('scaffold.chrome.upgrade') as string}
         </a>
       ) : (
@@ -140,6 +141,7 @@ export function AccountChip({ c, t }: AccountChipProps) {
           class="chip chip--accent shell-account-chip"
           href={ent.accountHref}
           title={t('scaffold.chrome.accountTitle') as string}
+          {...inspectAttrs('scaffold:account:plan', { role: 'action' })}
         >
           <Icon name="badge-check" size={13} /> {t(`plans.plan.${ent.plan}.name`) as string}
         </a>

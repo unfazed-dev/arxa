@@ -5,6 +5,7 @@
 import type { FC } from 'hono/jsx';
 import Base from '../../../common/base.tsx';
 import Icon from '../../../../runtime/icon.tsx';
+import { inspectAttrs, Label } from '../../../common/widgets/primitives.tsx';
 
 type TFn = (key: string, vars?: Record<string, unknown>) => unknown;
 
@@ -27,15 +28,16 @@ const StartupView: FC<StartupViewProps> = ({
   <Base title={t('startup.pageTitle') as string} locale={locale}>
     <meta http-equiv="refresh" content={`3;url=${advanceHref}`} />
     <main class="splash">
-      <span class="splash-brand">appbox studio</span>
-      <ol class="startup-steps">
+      <Label name="app-startup:brand" class="splash-brand">appbox studio</Label>
+      <ol class="startup-steps" {...inspectAttrs('app-startup:steps', { role: 'group' })}>
         {steps.map((step, i) => (
           <li
             key={i}
             class={`startup-step${i < doneThrough ? ' is-done' : ''}${i === doneThrough ? ' is-current' : ''}`}
+            {...inspectAttrs('app-startup:step', { role: 'list row' })}
           >
             {i < doneThrough ? <Icon name="check" size={14} /> : <span class="startup-dot"></span>}
-            <span>{step}</span>
+            <Label name={`app-startup:step-${i}`}>{step}</Label>
           </li>
         ))}
       </ol>

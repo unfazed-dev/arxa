@@ -4,6 +4,7 @@
 import type { FC } from 'hono/jsx';
 import Base from '../../../common/base.tsx';
 import Icon from '../../../../runtime/icon.tsx';
+import { inspectAttrs, Label, Heading, Txt } from '../../../common/widgets/primitives.tsx';
 
 type TFn = (key: string, vars?: Record<string, unknown>) => unknown;
 
@@ -32,15 +33,15 @@ const AuthView: FC<AuthViewProps> = ({ t, locale, auth = {}, account = {} }) => 
   <Base title={t('auth.pageTitle') as string} locale={locale}>
     <main class="centered-state">
       <section class="auth-card" aria-labelledby="auth-h" data-lens={auth.mode}>
-        <span class="auth-brand">appbox studio</span>
-        <h1 class="display" id="auth-h">{auth.headline}</h1>
-        <p class="muted">{auth.lede}</p>
+        <Label name="app-auth:brand" class="auth-brand">appbox studio</Label>
+        <Heading name="app-auth:heading" level={1} class="display" id="auth-h">{auth.headline}</Heading>
+        <Txt name="app-auth:lede" class="muted">{auth.lede}</Txt>
         {auth.note && (
-          <p class="muted auth-note"><Icon name="info" size={14} /> {auth.note}</p>
+          <p class="muted auth-note" {...inspectAttrs('app-auth:note', { role: 'text' })}><Icon name="info" size={14} /> {auth.note}</p>
         )}
 
         <form class="auth-form" method="post" action="/auth/signin">
-          <label class="auth-label" for="auth-email">{t('auth.email') as string}</label>
+          <label class="auth-label" for="auth-email" {...inspectAttrs('app-auth:email-label', { role: 'label' })}>{t('auth.email') as string}</label>
           <input
             id="auth-email"
             type="email"
@@ -48,17 +49,18 @@ const AuthView: FC<AuthViewProps> = ({ t, locale, auth = {}, account = {} }) => 
             placeholder={account.email}
             autocomplete="email"
             autofocus={true}
+            {...inspectAttrs('app-auth:email-input', { role: 'input' })}
           />
-          <button type="submit">
+          <button type="submit" {...inspectAttrs('app-auth:submit', { role: 'action' })}>
             {auth.mode === 'signup' ? t('auth.createAccount') as string : t('auth.continue') as string}
           </button>
         </form>
 
-        <p class="auth-or"><span>{t('auth.or') as string}</span></p>
+        <p class="auth-or"><span {...inspectAttrs('app-auth:or', { role: 'text' })}>{t('auth.or') as string}</span></p>
 
         {(auth.providers ?? []).map((p) => (
           <form key={p.id} method="post" action="/auth/signin">
-            <button type="submit" class="ghost auth-provider" name="provider" value={p.id}>{p.label}</button>
+            <button type="submit" class="ghost auth-provider" name="provider" value={p.id} {...inspectAttrs('app-auth:provider', { role: 'action' })}>{p.label}</button>
           </form>
         ))}
       </section>

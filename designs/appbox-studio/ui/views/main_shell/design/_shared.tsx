@@ -6,7 +6,7 @@
 // and revert all re-render the one container the chat and the artifact share.
 import { Fragment, type Child } from 'hono/jsx';
 import Icon from '../../../../runtime/icon.tsx';
-import { TypeBadge, StatusPill } from '../../../common/widgets/primitives.tsx';
+import { TypeBadge, StatusPill, inspectAttrs, Label, Heading, Txt } from '../../../common/widgets/primitives.tsx';
 import { FactsBar } from '../../../common/facts_bar.tsx';
 import { Open as ActivityOpen, Top as ActivityTop, Bottom as ActivityBottom } from '../shared/widgets/activity_panel.tsx';
 import { Open as ComposerOpen } from '../shared/widgets/composer_panel.tsx';
@@ -27,18 +27,18 @@ export function CheckpointCard({ e, t }: CheckpointCardProps) {
   return (
     <div class={`checkpoint${e.reverted ? ' is-reverted' : ''}`}>
       <header class="cp-head">
-        <span class="fact-label">{t('checkpoint.label', { id: e.id, screen: e.screen }) as string}</span>
-        <span class="muted">{e.summary}</span>
-        <span class="msg-time">{e.at}</span>
+        <Label name="design-checkpoint:label" class="fact-label">{t('checkpoint.label', { id: e.id, screen: e.screen }) as string}</Label>
+        <Label name="design-checkpoint:summary" class="muted">{e.summary}</Label>
+        <Label name="design-checkpoint:time" class="msg-time">{e.at}</Label>
       </header>
       {e.before && (
         <div class="cp-diff">
-          <span class="fact"><span class="fact-label">{t('checkpoint.before') as string}</span>{e.before}</span>
-          <span class="fact"><span class="fact-label">{t('checkpoint.after') as string}</span>{e.after}</span>
+          <span class="fact" {...inspectAttrs('design-checkpoint:before', { role: 'group' })}><Label name="design-checkpoint:before-label" class="fact-label">{t('checkpoint.before') as string}</Label>{e.before}</span>
+          <span class="fact" {...inspectAttrs('design-checkpoint:after', { role: 'group' })}><Label name="design-checkpoint:after-label" class="fact-label">{t('checkpoint.after') as string}</Label>{e.after}</span>
         </div>
       )}
       {e.reverted ? (
-        <span class="bt-action-done" title={t('checkpoint.revertedTitle') as string}>
+        <span class="bt-action-done" {...inspectAttrs('design-checkpoint:reverted', { role: 'status' })} title={t('checkpoint.revertedTitle') as string}>
           {t('checkpoint.reverted') as string} <Icon name="check" size={14} />
         </span>
       ) : (
@@ -50,7 +50,7 @@ export function CheckpointCard({ e, t }: CheckpointCardProps) {
           hx-target="#panels"
           hx-swap="outerMorph"
         >
-          <button type="submit" class="ghost">
+          <button type="submit" class="ghost" {...inspectAttrs('design-checkpoint:revert', { role: 'action' })}>
             <Icon name="undo-2" size={14} /> {t('checkpoint.revert', { id: e.id }) as string}
           </button>
         </form>
@@ -66,20 +66,20 @@ interface ThreadProps {
 }
 export function Thread({ c, t }: ThreadProps) {
   return (
-    <div class="chat-thread" aria-live="polite">
+    <div class="chat-thread" aria-live="polite" {...inspectAttrs('design-thread:log', { role: 'group' })}>
       {(c.thread ?? []).map((m: Ctx, i: number) => {
         if (m.kind === 'event') {
-          return <p key={i} class="bt-event">{m.text}</p>;
+          return <Txt key={i} name="design-thread:event" class="bt-event">{m.text}</Txt>;
         }
         if (m.from === 'user') {
-          return <p key={i} class="bt-msg bt-user">{m.text}</p>;
+          return <Txt key={i} name="design-thread:user-msg" class="bt-msg bt-user">{m.text}</Txt>;
         }
         return (
           <Fragment key={String(i)}>
-            <p class="bt-msg bt-agent">
+            <Txt name="design-thread:agent-msg" class="bt-msg bt-agent">
               {m.text}
-              {m.link && <Fragment>{' '}<a class="bt-link" href={m.link.href}>{m.link.label}</a></Fragment>}
-            </p>
+              {m.link && <Fragment>{' '}<a class="bt-link" href={m.link.href} {...inspectAttrs('design-thread:link', { role: 'action' })}>{m.link.label}</a></Fragment>}
+            </Txt>
             {(m.cps ?? []).map((e: Ctx, j: number) => (
               <CheckpointCard key={j} e={e} t={t} />
             ))}
@@ -178,14 +178,14 @@ export function ScreenCard({ s, t }: ScreenCardProps) {
       <header class="msg-meta">
         <TypeBadge type="screen" label={s.epic} />
         {s.card?.threadCount ? (
-          <span class="chip thread-badge" title={t('design.checkpointsTitle', { count: s.card.threadCount }) as string}>
+          <span class="chip thread-badge" {...inspectAttrs('design-screen:thread-count', { role: 'status' })} title={t('design.checkpointsTitle', { count: s.card.threadCount }) as string}>
             <Icon name="history" size={12} /> {s.card.threadCount}
           </span>
         ) : null}
         <StatusPill state={s.card?.state} t={t} />
       </header>
-      <span class="msg-text">{s.summary}</span>
-      <span class="msg-detail">{s.card?.detail}</span>
+      <Label name="design-screen:summary" class="msg-text">{s.summary}</Label>
+      <Label name="design-screen:detail" class="msg-detail">{s.card?.detail}</Label>
       <footer class="msg-foot">
         <span class="msg-cta">
           <a
@@ -195,13 +195,14 @@ export function ScreenCard({ s, t }: ScreenCardProps) {
             hx-target="#panels"
             hx-swap="outerMorph"
             hx-push-url="false"
+            {...inspectAttrs('design-screen:pin-toggle', { role: 'action' })}
           >
             {s.inContext
               ? <Fragment>{t('design.inContext') as string} <Icon name="check" size={14} /></Fragment>
               : <Fragment>{t('design.pinToContext') as string} <Icon name="pin" size={14} /></Fragment>}
           </a>
         </span>
-        <span class="msg-time">{s.label}</span>
+        <Label name="design-screen:label" class="msg-time">{s.label}</Label>
       </footer>
     </div>
   );
@@ -215,10 +216,10 @@ interface ScreenListProps {
 }
 export function ScreenList({ c, oob = false, t }: ScreenListProps) {
   return (
-    <div class="av-list" id="av-list" hx-swap-oob={oob ? 'outerHTML' : undefined}>
+    <div class="av-list" id="av-list" hx-swap-oob={oob ? 'outerHTML' : undefined} {...inspectAttrs('design-screen:list', { role: 'group' })}>
       {c.screens?.length
         ? c.screens.map((s: Ctx, i: number) => <ScreenCard key={s.id ?? i} s={s} t={t} />)
-        : <p class="muted">{t('design.noScreens') as string}</p>}
+        : <Txt name="design-screen:empty" class="muted">{t('design.noScreens') as string}</Txt>}
     </div>
   );
 }
@@ -232,12 +233,12 @@ interface ActivityBodyProps {
 export function ActivityBody({ c, t }: ActivityBodyProps) {
   if (c.activityView === 'artifacts') {
     return (
-      <div class="av-list" id="av-list">
+      <div class="av-list" id="av-list" {...inspectAttrs('design-artifact:list', { role: 'group' })}>
         {(c.artifacts ?? []).map((a: Ctx, i: number) => (
-          <a key={i} class="msg msg-agent av-row" href={a.href}>
+          <a key={i} class="msg msg-agent av-row" href={a.href} {...inspectAttrs('design-artifact:row', { role: 'action' })}>
             <header class="msg-meta"><TypeBadge type={a.kind} /></header>
-            <span class="msg-text">{a.label}</span>
-            <span class="msg-detail">{a.detail}</span>
+            <Label name="design-artifact:label" class="msg-text">{a.label}</Label>
+            <Label name="design-artifact:detail" class="msg-detail">{a.detail}</Label>
           </a>
         ))}
       </div>
@@ -245,7 +246,7 @@ export function ActivityBody({ c, t }: ActivityBodyProps) {
   }
   if (c.activityView === 'files') {
     return (
-      <div class="av-list" id="av-list">
+      <div class="av-list" id="av-list" {...inspectAttrs('design-file:list', { role: 'group' })}>
         {(c.files ?? []).map((f: Ctx, i: number) =>
           f.mode ? (
             <a
@@ -256,14 +257,15 @@ export function ActivityBody({ c, t }: ActivityBodyProps) {
               hx-target="#panel-main"
               hx-swap="innerHTML"
               hx-push-url={f.href}
+              {...inspectAttrs('design-file:row', { role: 'action' })}
             >
-              <span class="msg-text"><code>{f.path}</code></span>
-              <span class="msg-detail">{f.detail}</span>
+              <span class="msg-text" {...inspectAttrs('design-file:path', { role: 'text' })}><code {...inspectAttrs('design-file:path-val', { role: 'text' })}>{f.path}</code></span>
+              <Label name="design-file:detail" class="msg-detail">{f.detail}</Label>
             </a>
           ) : (
-            <div key={i} class="msg msg-agent av-row">
-              <span class="msg-text"><code>{f.path}</code></span>
-              <span class="msg-detail">{f.detail}</span>
+            <div key={i} class="msg msg-agent av-row" {...inspectAttrs('design-file:row', { role: 'group' })}>
+              <span class="msg-text" {...inspectAttrs('design-file:path', { role: 'text' })}><code {...inspectAttrs('design-file:path-val', { role: 'text' })}>{f.path}</code></span>
+              <Label name="design-file:detail" class="msg-detail">{f.detail}</Label>
             </div>
           ),
         )}

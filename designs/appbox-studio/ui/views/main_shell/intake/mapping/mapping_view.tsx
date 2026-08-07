@@ -7,6 +7,7 @@ import MainShellView from '../../main_shell_view.tsx';
 import * as SH from '../_shared.tsx';
 import type { Ctx } from '../_shared.tsx';
 import Icon from '../../../../../runtime/icon.tsx';
+import { inspectAttrs, Label, Heading, Txt } from '../../../../common/widgets/primitives.tsx';
 
 type TFn = (key: string, vars?: Record<string, unknown>) => unknown;
 
@@ -39,17 +40,18 @@ function StatusDot({ s, t }: { s: Story; t: TFn }) {
 function StoryCard({ c, s, t }: { c: Ctx; s: Story; t: TFn }) {
   return (
     <a class={`story-card${s.priority ? ` pri-${s.priority}` : ''}`} href={`${c.base}/artifact/story/${s.id}`}
-       hx-get={`${c.base}/artifact/story/${s.id}`} hx-target="#panels" hx-swap="outerMorph" hx-push-url="false">
+       hx-get={`${c.base}/artifact/story/${s.id}`} hx-target="#panels" hx-swap="outerMorph" hx-push-url="false"
+       {...inspectAttrs('intake-mapping:story-card', { role: 'action', fn: 'navigate' })}>
       <StatusDot s={s} t={t} />
-      <span class="story-text">{s.name}</span>
-      {s.priority && <span class={`chip pri-chip pri-${s.priority}`}>{t(`pri.name.${s.priority}`) as string}</span>}
+      <Label name="intake-mapping:story-name" class="story-text">{s.name}</Label>
+      {s.priority && <Label name="intake-mapping:story-priority" class={`chip pri-chip pri-${s.priority}`}>{t(`pri.name.${s.priority}`) as string}</Label>}
     </a>
   );
 }
 
 function RollupChip({ r, t }: { r: Rollup; t: TFn }) {
   return (
-    <span class="chip chip--muted">
+    <span class="chip chip--muted" {...inspectAttrs('intake-mapping:rollup', { role: 'label' })}>
       {t('map.rollupDone', { done: r.done, total: r.total }) as string}
       {r.active ? ` · ${t('map.rollupActive', { count: r.active }) as string}` : ''}
       {r.blocked ? ` · ${t('map.rollupBlocked', { count: r.blocked }) as string}` : ''}
@@ -61,9 +63,9 @@ function RollupChip({ r, t }: { r: Rollup; t: TFn }) {
 // re-approval badge when answers moved after approval.
 function ApprovalBadge({ c, t }: { c: Ctx; t: TFn }) {
   const approval = (c.approval as Approval) ?? {};
-  if (approval.stale) return <span class="rv-badge rv-warn">{t('map.staleBadge', { version: approval.currentVersion }) as string}</span>;
-  if (approval.approved) return <span class="rv-badge rv-ok">{t('map.approvedBadge', { version: approval.approvedVersion }) as string}</span>;
-  return <span class="rv-badge">{t('map.notApprovedBadge') as string}</span>;
+  if (approval.stale) return <Label name="intake-mapping:stale-badge" class="rv-badge rv-warn">{t('map.staleBadge', { version: approval.currentVersion }) as string}</Label>;
+  if (approval.approved) return <Label name="intake-mapping:approved-badge" class="rv-badge rv-ok">{t('map.approvedBadge', { version: approval.approvedVersion }) as string}</Label>;
+  return <Label name="intake-mapping:not-approved-badge" class="rv-badge">{t('map.notApprovedBadge') as string}</Label>;
 }
 
 // The live map: release swimlanes, epics as horizontally scrolling columns,
@@ -73,16 +75,16 @@ function MapCanvas({ c, a, t }: { c: Ctx; a: MapArtifact; t: TFn }) {
   return (
     <article class="artifact map-artifact">
       <header class="artifact-head">
-        <span class="eyebrow">{t('map.eyebrow') as string}</span>
+        <Label name="intake-mapping:eyebrow" class="eyebrow">{t('map.eyebrow') as string}</Label>
         <ApprovalBadge c={c} t={t} />
-        <span class="chip chip--muted">{t('map.storiesCount', { count: counts.stories }) as string} · {t('map.epicsCount', { count: counts.epics }) as string} · {t('map.featuresCount', { count: counts.features }) as string}</span>
+        <span class="chip chip--muted" {...inspectAttrs('intake-mapping:counts', { role: 'label' })}>{t('map.storiesCount', { count: counts.stories }) as string} · {t('map.epicsCount', { count: counts.epics }) as string} · {t('map.featuresCount', { count: counts.features }) as string}</span>
       </header>
-      <h2 class="display">{a.headline}</h2>
-      <p class="artifact-lede">{a.lede}</p>
+      <Heading name="intake-mapping:headline" level={2} class="display">{a.headline}</Heading>
+      <Txt name="intake-mapping:lede" class="artifact-lede">{a.lede}</Txt>
       <p class="map-legend">
-        <span class="chip pri-chip pri-must">{t('pri.must', { count: counts.must }) as string}</span>
-        <span class="chip pri-chip pri-should">{t('pri.should', { count: counts.should }) as string}</span>
-        <span class="chip pri-chip pri-could">{t('pri.could', { count: counts.could }) as string}</span>
+        <Label name="intake-mapping:pri-must" class="chip pri-chip pri-must">{t('pri.must', { count: counts.must }) as string}</Label>
+        <Label name="intake-mapping:pri-should" class="chip pri-chip pri-should">{t('pri.should', { count: counts.should }) as string}</Label>
+        <Label name="intake-mapping:pri-could" class="chip pri-chip pri-could">{t('pri.could', { count: counts.could }) as string}</Label>
         <span class="map-legend-dots">
           <span class="status-dot st-done"></span> {t('status.name.done') as string}
           <span class="status-dot st-in-progress"></span> {t('status.name.in-progress') as string}
@@ -93,18 +95,18 @@ function MapCanvas({ c, a, t }: { c: Ctx; a: MapArtifact; t: TFn }) {
       {(a.lanes ?? []).map((lane, i) => (
         <section class="swimlane" key={i}>
           <header class="swimlane-head">
-            <h3 class="swimlane-title">{lane.release?.name}</h3>
+            <Heading name="intake-mapping:swimlane-title" level={3} class="swimlane-title">{lane.release?.name}</Heading>
             {lane.release?.rollup && <RollupChip r={lane.release.rollup} t={t} />}
-            <span class="swimlane-desc muted">{lane.release?.description}</span>
+            <Label name="intake-mapping:swimlane-desc" class="swimlane-desc muted">{lane.release?.description}</Label>
           </header>
-          <div class="map-grid">
+          <div class="map-grid" {...inspectAttrs('intake-mapping:map-grid', { role: 'group' })}>
             {(lane.epics ?? []).map((epic, j) => (
               <div class="map-epic" key={j}>
-                <h4 class="map-epic-name">{epic.name}</h4>
+                <h4 class="map-epic-name" {...inspectAttrs('intake-mapping:epic-name', { role: 'heading' })}>{epic.name}</h4>
                 {epic.rollup && <RollupChip r={epic.rollup} t={t} />}
                 {(epic.features ?? []).map((f, k) => (
                   <div class="map-feature" key={k}>
-                    <span class="map-feature-name">{f.name}</span>
+                    <Label name="intake-mapping:feature-name" class="map-feature-name">{f.name}</Label>
                     {(f.stories ?? []).map((s, l) => <StoryCard key={l} c={c} s={s} t={t} />)}
                   </div>
                 ))}
@@ -122,23 +124,23 @@ function StoryCanvas({ c, a, t }: { c: Ctx; a: StoryArtifact; t: TFn }) {
   const s = a.story ?? {};
   return (
     <article class="artifact story-artifact">
-      <header class="artifact-head">
-        {a.epic && <span class="eyebrow">{t('story.eyebrow', { epic: a.epic, feature: a.feature }) as string}</span>}
-        <span class="story-status"><StatusDot s={s} t={t} /> {t(`status.name.${s.status}`) as string}</span>
-        {s.priority && <span class={`chip pri-chip pri-${s.priority}`}>{t(`pri.name.${s.priority}`) as string}</span>}
+      <header class="artifact-head" {...inspectAttrs('intake-mapping:story-head', { role: 'group' })}>
+        {a.epic && <Label name="intake-mapping:story-eyebrow" class="eyebrow">{t('story.eyebrow', { epic: a.epic, feature: a.feature }) as string}</Label>}
+        <span class="story-status" {...inspectAttrs('intake-mapping:story-status', { role: 'label' })}><StatusDot s={s} t={t} /> {t(`status.name.${s.status}`) as string}</span>
+        {s.priority && <Label name="intake-mapping:story-priority" class={`chip pri-chip pri-${s.priority}`}>{t(`pri.name.${s.priority}`) as string}</Label>}
       </header>
-      <h2 class="display">{s.name}</h2>
-      {s.release && <p class="artifact-lede"><span class="chip chip--muted">{s.release}</span></p>}
+      <Heading name="intake-mapping:story-title" level={2} class="display">{s.name}</Heading>
+      {s.release && <p class="artifact-lede"><Label name="intake-mapping:story-release" class="chip chip--muted">{s.release}</Label></p>}
       {s.surfaces && s.surfaces.length > 0 && (
         <Fragment>
-          <p class="fact-label">{t('storyTrace') as string}</p>
-          <ul class="trace-list">
-            {s.surfaces.map((sid, i) => <li key={i}><code class="surface-id">{sid}</code></li>)}
+          <Txt name="intake-mapping:trace-label" class="fact-label">{t('storyTrace') as string}</Txt>
+          <ul class="trace-list" {...inspectAttrs('intake-mapping:trace-list', { role: 'list' })}>
+            {s.surfaces.map((sid, i) => <li key={i}><code class="surface-id" {...inspectAttrs('intake-mapping:surface-id', { role: 'text' })}>{sid}</code></li>)}
           </ul>
         </Fragment>
       )}
       <p class="artifact-foot">
-        <a href={`${c.base}/artifact/map/full`} hx-get={`${c.base}/artifact/map/full`} hx-target="#panels" hx-swap="outerMorph" hx-push-url="false"><Icon name="chevron-left" size={14} /> {t('map.back') as string}</a>
+        <a href={`${c.base}/artifact/map/full`} hx-get={`${c.base}/artifact/map/full`} hx-target="#panels" hx-swap="outerMorph" hx-push-url="false" {...inspectAttrs('intake-mapping:back', { role: 'action', fn: 'navigate' })}><Icon name="chevron-left" size={14} /> {t('map.back') as string}</a>
       </p>
     </article>
   );

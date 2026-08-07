@@ -7,6 +7,7 @@ import MainShellView from '../../main_shell_view.tsx';
 import * as SH from '../_shared.tsx';
 import type { Ctx, Step } from '../_shared.tsx';
 import Icon from '../../../../../runtime/icon.tsx';
+import { inspectAttrs, Label, Heading, Txt } from '../../../../common/widgets/primitives.tsx';
 
 type TFn = (key: string, vars?: Record<string, unknown>) => unknown;
 
@@ -31,8 +32,8 @@ function PersonaList({ iconName, label, entries, t }: { iconName: string; label:
   return (
     <section class="persona-list">
       <h3 class="fact-label"><Icon name={iconName} size={14} /> {label}</h3>
-      <ul class="trace-list">
-        {entries.map((e, i) => <li key={i}>{e}</li>)}
+      <ul class="trace-list" {...inspectAttrs('intake-personas:trace-list', { role: 'list' })}>
+        {entries.map((e, i) => <li key={i} {...inspectAttrs('intake-personas:trace-entry', { role: 'list row' })}>{e}</li>)}
       </ul>
     </section>
   );
@@ -45,11 +46,11 @@ function PersonaCard({ c, item, t }: { c: Ctx; item: PersonaItem; t: TFn }) {
     <article class={`artifact persona-card is-${item.state}`}>
       <header class="artifact-head">
         <SH.ProvChip p={item.provenance} t={t} />
-        <span class="chip chip--muted"><Icon name="user" size={14} /> {t('intake.personas.proficiency') as string}: {t(`intake.personas.prof.${item.proficiency}`) as string}</span>
-        {item.edited && <span class="chip chip--muted">{t('intake.item.edited') as string}</span>}
+        <span class="chip chip--muted" {...inspectAttrs('intake-personas:proficiency', { role: 'label' })}><Icon name="user" size={14} /> {t('intake.personas.proficiency') as string}: {t(`intake.personas.prof.${item.proficiency}`) as string}</span>
+        {item.edited && <span class="chip chip--muted" {...inspectAttrs('intake-personas:card-edited', { role: 'label' })}>{t('intake.item.edited') as string}</span>}
       </header>
-      <h2 class="display">{item.name}</h2>
-      <p class="artifact-lede">{item.role}</p>
+      <Heading name="intake-personas:name" level={2} class="display">{item.name}</Heading>
+      <Txt name="intake-personas:role" class="artifact-lede">{item.role}</Txt>
       {item.accessibility && (
         <p class="persona-a11y"><span class="fact-label"><Icon name="accessibility" size={14} /> {t('intake.personas.accessibility') as string}</span> {item.accessibility}</p>
       )}
@@ -65,18 +66,18 @@ function PersonaCard({ c, item, t }: { c: Ctx; item: PersonaItem; t: TFn }) {
 function CorrectionForm({ c, item, t }: { c: Ctx; item: PersonaItem; t: TFn }) {
   return (
     <form class="persona-form" method="post" action={`${c.base}/save`} hx-post={`${c.base}/save`} hx-target="#panels" hx-swap="outerMorph">
-      <input type="hidden" name="item" value={item.id} />
-      <label class="fact-label" for="pf-name">{t('intake.form.name') as string}</label>
-      <input type="text" id="pf-name" name="name" value={item.name} />
-      <label class="fact-label" for="pf-role">{t('intake.form.role') as string}</label>
-      <input type="text" id="pf-role" name="role" value={item.role} />
-      <label class="fact-label" for="pf-goals">{t('intake.form.goals') as string}</label>
-      <textarea id="pf-goals" name="goals" rows={item.goals?.length || 2}>{(item.goals ?? []).join('\n')}</textarea>
-      <label class="fact-label" for="pf-frustrations">{t('intake.form.frustrations') as string}</label>
-      <textarea id="pf-frustrations" name="frustrations" rows={item.frustrations?.length || 2}>{(item.frustrations ?? []).join('\n')}</textarea>
-      <label class="fact-label" for="pf-contexts">{t('intake.form.contexts') as string}</label>
-      <textarea id="pf-contexts" name="contexts" rows={item.contexts?.length || 2}>{(item.contexts ?? []).join('\n')}</textarea>
-      <button type="submit" class="cta-main">{t('intake.form.save') as string} <Icon name="check" size={14} /></button>
+      <input type="hidden" name="item" value={item.id} {...inspectAttrs('intake-personas:item-id', { role: 'input' })} />
+      <label class="fact-label" for="pf-name" {...inspectAttrs('intake-personas:field-name-label', { role: 'label' })}>{t('intake.form.name') as string}</label>
+      <input type="text" id="pf-name" name="name" value={item.name} {...inspectAttrs('intake-personas:field-name', { role: 'input' })} />
+      <label class="fact-label" for="pf-role" {...inspectAttrs('intake-personas:field-role-label', { role: 'label' })}>{t('intake.form.role') as string}</label>
+      <input type="text" id="pf-role" name="role" value={item.role} {...inspectAttrs('intake-personas:field-role', { role: 'input' })} />
+      <label class="fact-label" for="pf-goals" {...inspectAttrs('intake-personas:field-goals-label', { role: 'label' })}>{t('intake.form.goals') as string}</label>
+      <textarea id="pf-goals" name="goals" rows={item.goals?.length || 2} {...inspectAttrs('intake-personas:field-goals', { role: 'input' })}>{(item.goals ?? []).join('\n')}</textarea>
+      <label class="fact-label" for="pf-frustrations" {...inspectAttrs('intake-personas:field-frustrations-label', { role: 'label' })}>{t('intake.form.frustrations') as string}</label>
+      <textarea id="pf-frustrations" name="frustrations" rows={item.frustrations?.length || 2} {...inspectAttrs('intake-personas:field-frustrations', { role: 'input' })}>{(item.frustrations ?? []).join('\n')}</textarea>
+      <label class="fact-label" for="pf-contexts" {...inspectAttrs('intake-personas:field-contexts-label', { role: 'label' })}>{t('intake.form.contexts') as string}</label>
+      <textarea id="pf-contexts" name="contexts" rows={item.contexts?.length || 2} {...inspectAttrs('intake-personas:field-contexts', { role: 'input' })}>{(item.contexts ?? []).join('\n')}</textarea>
+      <button type="submit" class="cta-main" {...inspectAttrs('intake-personas:save', { role: 'action', fn: 'submit' })}>{t('intake.form.save') as string} <Icon name="check" size={14} /></button>
     </form>
   );
 }
@@ -86,15 +87,15 @@ function PersonasSummary({ c, t }: { c: Ctx; t: TFn }) {
   const step = (c.step as Step) ?? {};
   return (
     <div class="step-summary">
-      <h2 class="display">{t('intake.step.allConfirmed', { total: step.total }) as string}</h2>
+      <Heading name="intake-personas:summary-title" level={2} class="display">{t('intake.step.allConfirmed', { total: step.total }) as string}</Heading>
       {(step.items ?? []).map((item, i) => {
         const persona = item as unknown as PersonaItem;
         return (
           <div key={i} class={`q-card is-${persona.state}`}>
-            <p class="q-text">{persona.name} <span class="muted">— {persona.role}</span> {persona.edited && <span class="chip chip--muted">{t('intake.item.edited') as string}</span>}</p>
+            <p class="q-text" {...inspectAttrs('intake-personas:summary-card-text', { role: 'text' })}>{persona.name} <Label name="intake-personas:summary-card-role" class="muted">— {persona.role}</Label> {persona.edited && <span class="chip chip--muted" {...inspectAttrs('intake-personas:summary-card-edited', { role: 'label' })}>{t('intake.item.edited') as string}</span>}</p>
             <p class="q-answer">
               <SH.ProvChip p={persona.provenance} t={t} />
-              <span class="chip chip--muted"><Icon name="target" size={14} /> {(persona.goals ?? []).length} {t('intake.personas.goals') as string}</span>
+              <span class="chip chip--muted" {...inspectAttrs('intake-personas:summary-card-goals', { role: 'label' })}><Icon name="target" size={14} /> {(persona.goals ?? []).length} {t('intake.personas.goals') as string}</span>
             </p>
             <SH.ItemActions c={c} item={item} t={t} />
           </div>

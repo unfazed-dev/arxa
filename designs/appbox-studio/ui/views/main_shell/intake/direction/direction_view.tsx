@@ -7,15 +7,16 @@ import Icon from '../../../../../runtime/icon.tsx';
 import MainShellView from '../../main_shell_view.tsx';
 import * as SH from '../_shared.tsx';
 import type { Ctx, StepItem } from '../_shared.tsx';
+import { inspectAttrs, Label } from '../../../../common/widgets/primitives.tsx';
 
 type TFn = (key: string, vars?: Record<string, unknown>) => unknown;
 
 // Prefill values as chips, each with its provenance; avoids carry the ban mark.
 function ValueChips({ item, t }: { item: StepItem; t: TFn }) {
   return (
-    <span class="value-chips">
+    <span class="value-chips" {...inspectAttrs('intake-direction:value-chips', { role: 'group' })}>
       {(item.values ?? []).map((v, i) => (
-        <span key={i} class={`chip value-chip${item.id === 'avoids' ? ' avoid-chip' : ''}`}>
+        <span key={i} class={`chip value-chip${item.id === 'avoids' ? ' avoid-chip' : ''}`} {...inspectAttrs('intake-direction:value-chip', { role: 'label' })}>
           {item.id === 'avoids' ? <Fragment><Icon name="ban" size={12} /> </Fragment> : null}
           {v.value} <SH.ProvChip p={v.provenance} t={t} />
         </span>
@@ -27,12 +28,12 @@ function ValueChips({ item, t }: { item: StepItem; t: TFn }) {
 // The references group: one row per moodboard pull.
 function ReferenceRows({ item, t }: { item: StepItem; t: TFn }) {
   return (
-    <div class="ref-list">
+    <div class="ref-list" {...inspectAttrs('intake-direction:ref-list', { role: 'group' })}>
       {(item.values ?? []).map((v, i) => (
         <div key={i} class="ref-row">
-          <span class="chip chip--muted">{v.board}</span>
-          <span class="ref-note">{v.note}</span>
-          <a class="ref-link" href="/intake/moodboard">
+          <Label name="intake-direction:ref-board" class="chip chip--muted">{v.board}</Label>
+          <Label name="intake-direction:ref-note" class="ref-note">{v.note}</Label>
+          <a class="ref-link" href="/intake/moodboard" {...inspectAttrs('intake-direction:ref-link', { role: 'action', fn: 'navigate' })}>
             <Icon name="image" size={14} /> {t('intake.direction.fromBoard', { board: v.board }) as string}
           </a>
         </div>
@@ -46,10 +47,10 @@ function ValuesForm({ c, item, t }: { c: Ctx; item: StepItem; t: TFn }) {
   return (
     <form class="values-form" method="post" action={`${c.base}/save`}
           hx-post={`${c.base}/save`} hx-target="#panels" hx-swap="outerMorph">
-      <input type="hidden" name="item" value={item.id} />
-      <label class="fact-label" for={`values-${item.id}`}>{t('intake.form.values') as string}</label>
-      <textarea id={`values-${item.id}`} name="values" rows={6}>{(item.values ?? []).map((v) => v.value ?? '').join('\n')}</textarea>
-      <button type="submit" class="cta-main">{t('intake.form.save') as string} <Icon name="check" size={14} /></button>
+      <input type="hidden" name="item" value={item.id} {...inspectAttrs('intake-direction:form-item', { role: 'input' })} />
+      <label class="fact-label" for={`values-${item.id}`} {...inspectAttrs('intake-direction:values-label', { role: 'label' })}>{t('intake.form.values') as string}</label>
+      <textarea id={`values-${item.id}`} name="values" rows={6} {...inspectAttrs('intake-direction:values-input', { role: 'input' })}>{(item.values ?? []).map((v) => v.value ?? '').join('\n')}</textarea>
+      <button type="submit" class="cta-main" {...inspectAttrs('intake-direction:save', { role: 'action', fn: 'submit' })}>{t('intake.form.save') as string} <Icon name="check" size={14} /></button>
     </form>
   );
 }
@@ -75,9 +76,9 @@ function StepSummary({ c, t }: { c: Ctx; t: TFn }) {
       <h2 class="display"><Icon name="compass" size={20} /> {t('intake.step.allConfirmed', { total: step?.total }) as string}</h2>
       {(step?.items ?? []).map((item) => (
         <div key={item.id} class={`q-card is-${item.state ?? ''}`}>
-          <p class="q-text">{t(`intake.direction.group.${item.id}`) as string} {item.edited ? <span class="chip chip--muted">{t('intake.item.edited') as string}</span> : null}</p>
+          <p class="q-text" {...inspectAttrs('intake-direction:summary-text', { role: 'text' })}>{t(`intake.direction.group.${item.id}`) as string} {item.edited ? <Label name="intake-direction:edited-mark" class="chip chip--muted">{t('intake.item.edited') as string}</Label> : null}</p>
           {item.id === 'references' ? (
-            <span class="value-chips">{(item.values ?? []).map((v, i) => <span key={i} class="chip chip--muted">{v.board}</span>)}</span>
+            <span class="value-chips" {...inspectAttrs('intake-direction:summary-chips', { role: 'group' })}>{(item.values ?? []).map((v, i) => <Label name="intake-direction:summary-board" class="chip chip--muted" key={i}>{v.board}</Label>)}</span>
           ) : (
             <ValueChips item={item} t={t} />
           )}

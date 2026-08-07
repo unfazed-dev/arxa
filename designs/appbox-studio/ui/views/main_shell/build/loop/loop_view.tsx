@@ -9,7 +9,7 @@
 import { Fragment, type FC } from 'hono/jsx';
 import Icon from '../../../../../runtime/icon.tsx';
 import MainShellView from '../../main_shell_view.tsx';
-import { StatusPill, TypeBadge, CtaLink } from '../../../../common/widgets/primitives.tsx';
+import { StatusPill, TypeBadge, CtaLink, inspectAttrs, Label, Heading, Txt } from '../../../../common/widgets/primitives.tsx';
 import { PanelBar, Empty, View as MainView, Open as MainPanelOpen } from '../../../../common/widgets/main_panel.tsx';
 import { Open as ComposerPanelOpen } from '../../shared/widgets/composer_panel.tsx';
 import { Open as ActivityPanelOpen, Top as ActivityTop, Bottom as ActivityBottom } from '../../shared/widgets/activity_panel.tsx';
@@ -179,7 +179,7 @@ export function MsgCard({ m, t }: MsgCardProps) {
   if (m.from === 'user') {
     return (
       <div class="msg msg-user">
-        <span class="msg-text">{m.text}</span>
+        <Label name="loop:msg-text" class="msg-text">{m.text}</Label>
       </div>
     );
   }
@@ -190,15 +190,15 @@ export function MsgCard({ m, t }: MsgCardProps) {
         <TypeBadge type={m.card!.type} label={m.card!.label} />
         {m.card!.state && <StatusPill state={m.card!.state} size="sm" t={t} />}
       </header>
-      <span class="msg-text">{m.text}</span>
-      {m.card!.detail && <span class="msg-detail">{m.card!.detail}</span>}
+      <Label name="loop:msg-text" class="msg-text">{m.text}</Label>
+      {m.card!.detail && <Label name="loop:msg-detail" class="msg-detail">{m.card!.detail}</Label>}
       {m.card!.type === 'gate' && m.card!.state === 'pending' && (
         <span class="gate-quick">
           <form method="post" action="/build/gates/decide"
                 hx-post="/build/gates/decide" hx-target="#panels" hx-swap="outerMorph">
-            <input type="hidden" name="gate" value={m.card!.gateId} />
-            <button type="submit" name="decision" value="approved" class="btn-approve">{t('action.approve') as string}</button>
-            <button type="submit" name="decision" value="rejected" class="btn-reject ghost">{t('action.reject') as string}</button>
+            <input type="hidden" name="gate" value={m.card!.gateId} {...inspectAttrs('loop:gate-id', { role: 'input' })} />
+            <button type="submit" name="decision" value="approved" class="btn-approve" {...inspectAttrs('loop:approve', { role: 'action' })}>{t('action.approve') as string}</button>
+            <button type="submit" name="decision" value="rejected" class="btn-reject ghost" {...inspectAttrs('loop:reject', { role: 'action' })}>{t('action.reject') as string}</button>
           </form>
           <CtaLink href={`/build/chips/pin?ref=gate/${m.card!.gateId}`} label={t('build.rejectWithNote') as string}
               glyph="undo-2" variant="ghost" size={13}
@@ -206,9 +206,9 @@ export function MsgCard({ m, t }: MsgCardProps) {
               hx={{ target: '#panels' }} />
         </span>
       )}
-      <footer class="msg-foot">
+      <footer class="msg-foot" {...inspectAttrs('loop:msg-foot', { role: 'group' })}>
         {m.artifact && (
-          <span class="msg-cta">
+          <span class="msg-cta" {...inspectAttrs('loop:msg-cta', { role: 'group' })}>
             {m.active ? (
               <CtaLink href={`/build/artifact/${m.artifact}`} label={t('build.onCanvas') as string}
                   glyph="circle-dot" variant="main" size={12} hx={{ target: '#panels' }} />
@@ -218,7 +218,7 @@ export function MsgCard({ m, t }: MsgCardProps) {
             )}
           </span>
         )}
-        <span class="msg-time">{m.at}</span>
+        <Label name="loop:msg-time" class="msg-time">{m.at}</Label>
       </footer>
     </div>
   );
@@ -226,7 +226,7 @@ export function MsgCard({ m, t }: MsgCardProps) {
 
 export function ChatThread(props: LoopProps) {
   return (
-    <div class="av-list chat-thread" id="chat-thread">
+    <div class="av-list chat-thread" id="chat-thread" {...inspectAttrs('loop:chat-thread', { role: 'group' })}>
       {[...(props.messages ?? [])].reverse().map((m, i) => (
         <MsgCard key={i} m={m} t={props.t} />
       ))}
@@ -294,52 +294,56 @@ export function RunView(props: LoopProps) {
   return (
     <div class="av-view run-view">
       <header class="av-view-head">
-        <span class="eyebrow">{t('build.runEyebrow', { number: run.number, brief: run.brief }) as string}</span>
-        <strong class="facts-state">{run.stateLabel}</strong>
+        <Label name="loop:run-eyebrow" class="eyebrow">{t('build.runEyebrow', { number: run.number, brief: run.brief }) as string}</Label>
+        <strong class="facts-state" {...inspectAttrs('loop:run-state', { role: 'text' })}>{run.stateLabel}</strong>
         <span class="facts-list">
-          <span>{t('build.started') as string} {run.started}</span>
-          <span>{t('build.elapsedFact') as string} {run.elapsed}</span>
-          <span>{t('facts.stopOnRed') as string} {run.policy.stopOnRed ? (t('build.on') as string) : (t('build.off') as string)}</span>
-          <span>{t('facts.esc') as string} {run.policy.escLimit}</span>
+          <Label name="loop:fact-started">{t('build.started') as string} {run.started}</Label>
+          <Label name="loop:fact-elapsed">{t('build.elapsedFact') as string} {run.elapsed}</Label>
+          <Label name="loop:fact-stop-on-red">{t('facts.stopOnRed') as string} {run.policy.stopOnRed ? (t('build.on') as string) : (t('build.off') as string)}</Label>
+          <Label name="loop:fact-esc">{t('facts.esc') as string} {run.policy.escLimit}</Label>
         </span>
       </header>
       <form class="run-controls" method="post" action="/build/run/control"
-            hx-post="/build/run/control" hx-target="#panel-activity-body" hx-swap="innerHTML">
+            hx-post="/build/run/control" hx-target="#panel-activity-body" hx-swap="innerHTML"
+            {...inspectAttrs('loop:run-controls', { role: 'group' })}>
         {run.pausedByYou ? (
-          <button type="submit" name="action" value="resume" class="btn-approve"><Icon name="play" size={14} /> {t('build.resumeRun') as string}</button>
+          <button type="submit" name="action" value="resume" class="btn-approve" {...inspectAttrs('loop:resume-run', { role: 'action' })}><Icon name="play" size={14} /> {t('build.resumeRun') as string}</button>
         ) : (
-          <button type="submit" name="action" value="pause" class="ghost"><Icon name="pause" size={14} /> {t('build.pauseRun') as string}</button>
+          <button type="submit" name="action" value="pause" class="ghost" {...inspectAttrs('loop:pause-run', { role: 'action' })}><Icon name="pause" size={14} /> {t('build.pauseRun') as string}</button>
         )}
       </form>
-      <ol class="run-stages">
+      <ol class="run-stages" {...inspectAttrs('loop:stages', { role: 'list' })}>
         {(props.stages ?? []).map((s, i) => (
           <li class="run-stage" key={i}>
             <span class="run-stage-main">
-              <span class="run-stage-label">{s.n}. {s.label}</span>
+              <Label name="loop:stage-label" class="run-stage-label">{s.n}. {s.label}</Label>
               <StatusPill state={s.state} t={t} />
             </span>
             {['active', 'queued', 'held'].includes(s.state) && (
-              <span class="run-stage-acts">
+              <span class="run-stage-acts" {...inspectAttrs('loop:stage-acts', { role: 'group' })}>
                 {s.state === 'held' ? (
                   <form method="post" action={`/build/stages/${s.id}/control`}
                         hx-post={`/build/stages/${s.id}/control`} hx-target="#panels" hx-swap="outerMorph">
                     <button type="submit" name="action" value="resume" class="ico-btn"
                       title={t('build.resumeStage', { label: s.label }) as string}
-                      aria-label={t('build.resumeStage', { label: s.label }) as string}><Icon name="play" size={14} /></button>
+                      aria-label={t('build.resumeStage', { label: s.label }) as string}
+                      {...inspectAttrs('loop:stage-resume', { role: 'action' })}><Icon name="play" size={14} /></button>
                   </form>
                 ) : (
                   <form method="post" action={`/build/stages/${s.id}/control`}
                         hx-post={`/build/stages/${s.id}/control`} hx-target="#panels" hx-swap="outerMorph">
                     <button type="submit" name="action" value="pause" class="ico-btn"
                       title={t('build.pauseStage', { label: s.label }) as string}
-                      aria-label={t('build.pauseStage', { label: s.label }) as string}><Icon name="pause" size={14} /></button>
+                      aria-label={t('build.pauseStage', { label: s.label }) as string}
+                      {...inspectAttrs('loop:stage-pause', { role: 'action' })}><Icon name="pause" size={14} /></button>
                   </form>
                 )}
                 <form method="post" action={`/build/stages/${s.id}/control`}
                       hx-post={`/build/stages/${s.id}/control`} hx-target="#panels" hx-swap="outerMorph">
                   <button type="submit" name="action" value="cancel" class="ico-btn"
                     title={t('build.cancelStage', { label: s.label }) as string}
-                    aria-label={t('build.cancelStage', { label: s.label }) as string}><Icon name="x" size={14} /></button>
+                    aria-label={t('build.cancelStage', { label: s.label }) as string}
+                    {...inspectAttrs('loop:stage-cancel', { role: 'action' })}><Icon name="x" size={14} /></button>
                 </form>
               </span>
             )}
@@ -362,13 +366,14 @@ export function ThreadView(props: LoopProps) {
   ];
   return (
     <div class="av-view thread-view">
-      <p class="av-view-note muted">{t('build.filterNote') as string}</p>
-      <nav class="thread-filter" aria-label={t('build.filterAria') as string}>
+      <Txt name="loop:filter-note" class="av-view-note muted">{t('build.filterNote') as string}</Txt>
+      <nav class="thread-filter" aria-label={t('build.filterAria') as string} {...inspectAttrs('loop:filter-nav', { role: 'group' })}>
         {filters.map(o => (
           <a key={o.id}
              class={`filter-item${props.filter === o.id ? ' is-active' : ''}`}
              href={`/build/panel?type=${o.id}`}
-             hx-get={`/build/panel?type=${o.id}`} hx-target="#panel-activity-body" hx-swap="innerHTML" hx-push-url="false">{o.label}</a>
+             hx-get={`/build/panel?type=${o.id}`} hx-target="#panel-activity-body" hx-swap="innerHTML" hx-push-url="false"
+             {...inspectAttrs('loop:filter-link', { role: 'action' })}>{o.label}</a>
         ))}
       </nav>
     </div>
@@ -379,14 +384,15 @@ export function ArtifactsView(props: LoopProps) {
   const { t } = props;
   return (
     <div class="av-view artifacts-view">
-      <ul class="artifact-index">
+      <ul class="artifact-index" {...inspectAttrs('loop:artifact-list', { role: 'list' })}>
         {(props.artifacts ?? []).map((a, i) => (
           <li key={i}>
             <a class={`artifact-index-link${props.activeArtifact === a.ref ? ' is-active' : ''}`}
                href={`/build/artifact/${a.ref}`}
-               hx-get={`/build/artifact/${a.ref}`} hx-target="#panels" hx-swap="outerMorph" hx-push-url="false">
+               hx-get={`/build/artifact/${a.ref}`} hx-target="#panels" hx-swap="outerMorph" hx-push-url="false"
+               {...inspectAttrs('loop:artifact-link', { role: 'action' })}>
               <TypeBadge type={a.kind} />
-              <span class="artifact-index-label">{a.label}</span>
+              <Label name="loop:artifact-label" class="artifact-index-label">{a.label}</Label>
               {a.state && <StatusPill state={a.state} t={t} />}
             </a>
           </li>
@@ -399,12 +405,12 @@ export function ArtifactsView(props: LoopProps) {
 export function CommitsView(props: LoopProps) {
   return (
     <div class="av-view commits-view">
-      <p class="av-view-note muted">{props.t('build.commitsNote') as string}</p>
-      <ol class="commit-list">
+      <Txt name="loop:commits-note" class="av-view-note muted">{props.t('build.commitsNote') as string}</Txt>
+      <ol class="commit-list" {...inspectAttrs('loop:commit-list', { role: 'list' })}>
         {[...(props.commits ?? [])].reverse().map((commit, i) => (
           <li class="commit" key={i}>
-            <span class="commit-head"><code class="commit-hash">{commit.hash}</code><span class="msg-time">{commit.at}</span></span>
-            <span class="commit-msg">{commit.message}</span>
+            <span class="commit-head"><code class="commit-hash" {...inspectAttrs('loop:commit-hash', { role: 'text' })}>{commit.hash}</code><Label name="loop:commit-time" class="msg-time">{commit.at}</Label></span>
+            <Label name="loop:commit-msg" class="commit-msg">{commit.message}</Label>
           </li>
         ))}
       </ol>
@@ -416,21 +422,22 @@ export function FilesView(props: LoopProps) {
   const { t } = props;
   return (
     <div class="av-view files-view">
-      <p class="av-view-note muted">{t('build.filesNote') as string}</p>
-      <ul class="file-list">
+      <Txt name="loop:files-note" class="av-view-note muted">{t('build.filesNote') as string}</Txt>
+      <ul class="file-list" {...inspectAttrs('loop:file-list', { role: 'list' })}>
         {(props.files ?? []).map((f, i) => (
-          <li class="file-row" key={i}>
+          <li class="file-row" key={i} {...inspectAttrs('loop:file-row', { role: 'list row' })}>
             {f.mode ? (
               <a class={`file-link${props.fileView && props.fileView.path === f.path ? ' is-active' : ''}`}
                  href={f.href}
-                 hx-get={f.get} hx-target="#panel-main" hx-swap="innerHTML" hx-push-url={f.href}>
-                <code class="file-path">{f.path}</code>
-                <span class={`chip chip--muted file-status-${f.status}`}>{t(`build.fileStatus.${f.status}`) as string}</span>
+                 hx-get={f.get} hx-target="#panel-main" hx-swap="innerHTML" hx-push-url={f.href}
+                 {...inspectAttrs('loop:file-link', { role: 'action' })}>
+                <code class="file-path" {...inspectAttrs('loop:file-path', { role: 'text' })}>{f.path}</code>
+                <span class={`chip chip--muted file-status-${f.status}`} {...inspectAttrs('loop:file-status', { role: 'label' })}>{t(`build.fileStatus.${f.status}`) as string}</span>
               </a>
             ) : (
               <Fragment>
-                <code class="file-path">{f.path}</code>
-                <span class={`chip chip--muted file-status-${f.status}`}>{t(`build.fileStatus.${f.status}`) as string}</span>
+                <code class="file-path" {...inspectAttrs('loop:file-path', { role: 'text' })}>{f.path}</code>
+                <span class={`chip chip--muted file-status-${f.status}`} {...inspectAttrs('loop:file-status', { role: 'label' })}>{t(`build.fileStatus.${f.status}`) as string}</span>
               </Fragment>
             )}
           </li>
@@ -521,39 +528,39 @@ export function GateCanvas(props: { gate: GateItem; t: TFn; [key: string]: unkno
   return (
     <article class={`artifact gate-artifact gate-${gate.state}`}>
       <header class="artifact-head">
-        <span class="eyebrow">{t('build.humanGate') as string}</span>
+        <Label name="loop:gate-eyebrow" class="eyebrow">{t('build.humanGate') as string}</Label>
         <StatusPill state={gate.state} t={t} />
       </header>
-      <h2 class="display">{gate.label}</h2>
-      <p class="artifact-lede">{gate.context}</p>
+      <Heading name="loop:gate-title" level={2} class="display">{gate.label}</Heading>
+      <Txt name="loop:gate-context" class="artifact-lede">{gate.context}</Txt>
 
       {gate.state === 'pending' ? (
         <Fragment>
           <div class="gate-actions" id="gate-actions">
             <form class="gate-buttons" method="post" action="/build/gates/decide"
                   hx-post="/build/gates/decide" hx-target="#panels" hx-swap="outerMorph">
-              <input type="hidden" name="gate" value={gate.id} />
-              <button type="submit" name="decision" value="approved" class="btn-approve">{t('action.approve') as string}</button>
-              <button type="submit" name="decision" value="rejected" class="btn-reject ghost">{t('action.reject') as string}</button>
-              <span class="htmx-indicator muted">{t('build.minting') as string}</span>
+              <input type="hidden" name="gate" value={gate.id} {...inspectAttrs('loop:gate-id', { role: 'input' })} />
+              <button type="submit" name="decision" value="approved" class="btn-approve" {...inspectAttrs('loop:approve', { role: 'action' })}>{t('action.approve') as string}</button>
+              <button type="submit" name="decision" value="rejected" class="btn-reject ghost" {...inspectAttrs('loop:reject', { role: 'action' })}>{t('action.reject') as string}</button>
+              <span class="htmx-indicator muted" {...inspectAttrs('loop:minting', { role: 'text' })}>{t('build.minting') as string}</span>
             </form>
             <CtaLink href={`/build/chips/pin?ref=gate/${gate.id}`} label={t('build.rejectWithNoteLong') as string}
                 glyph="undo-2" variant="ghost" hx={{ target: '#panels' }} />
           </div>
-          <p class="artifact-foot muted">{t('gateFoot') as string}</p>
+          <Txt name="loop:gate-foot" class="artifact-foot muted">{t('gateFoot') as string}</Txt>
         </Fragment>
       ) : gate.provenance ? (
         <Fragment>
           <dl class="provenance">
-            <div><dt>{t('prov.decidedBy') as string}</dt><dd>{gate.provenance.by} · {gate.provenance.shell}</dd></div>
-            <div><dt>{t('prov.device') as string}</dt><dd>{gate.provenance.device}</dd></div>
-            <div><dt>{t('prov.confirm') as string}</dt><dd>{gate.provenance.method} · {gate.provenance.at}</dd></div>
-            <div><dt>{t('prov.hash') as string}</dt><dd><code>{gate.provenance.hash}</code></dd></div>
+            <div><dt {...inspectAttrs('loop:prov-label', { role: 'label' })}>{t('prov.decidedBy') as string}</dt><dd {...inspectAttrs('loop:prov-value', { role: 'text' })}>{gate.provenance.by} · {gate.provenance.shell}</dd></div>
+            <div><dt {...inspectAttrs('loop:prov-label', { role: 'label' })}>{t('prov.device') as string}</dt><dd {...inspectAttrs('loop:prov-value', { role: 'text' })}>{gate.provenance.device}</dd></div>
+            <div><dt {...inspectAttrs('loop:prov-label', { role: 'label' })}>{t('prov.confirm') as string}</dt><dd {...inspectAttrs('loop:prov-value', { role: 'text' })}>{gate.provenance.method} · {gate.provenance.at}</dd></div>
+            <div><dt {...inspectAttrs('loop:prov-label', { role: 'label' })}>{t('prov.hash') as string}</dt><dd><code {...inspectAttrs('loop:prov-hash', { role: 'text' })}>{gate.provenance.hash}</code></dd></div>
           </dl>
-          {gate.note && <p class="gate-note">{t('build.yourNote') as string} {gate.note}</p>}
+          {gate.note && <Txt name="loop:gate-note" class="gate-note">{t('build.yourNote') as string} {gate.note}</Txt>}
         </Fragment>
       ) : (
-        <p class="artifact-foot muted">{t('build.gateNotReachable') as string}</p>
+        <Txt name="loop:gate-unreachable" class="artifact-foot muted">{t('build.gateNotReachable') as string}</Txt>
       )}
     </article>
   );
@@ -564,20 +571,20 @@ export function StageCanvas(props: { s: StageItem; total: number; run?: RunState
   return (
     <article class={`artifact stage-artifact stage-state-${s.state}`}>
       <header class="artifact-head">
-        <span class="eyebrow">{t('build.stageEyebrow', { n: s.n, total }) as string}</span>
+        <Label name="loop:stage-eyebrow" class="eyebrow">{t('build.stageEyebrow', { n: s.n, total }) as string}</Label>
         <StatusPill state={s.state} t={t} />
       </header>
-      <h2 class="display">{s.label}</h2>
-      <p class="big-metric">{s.duration}<span class="big-metric-label">{t('build.onTheLine') as string}</span></p>
-      <p class="artifact-lede">{s.summary}</p>
-      <p class="artifact-detail muted">{s.detail}</p>
+      <Heading name="loop:stage-title" level={2} class="display">{s.label}</Heading>
+      <Txt name="loop:stage-metric" class="big-metric">{s.duration}<Label name="loop:stage-metric-label" class="big-metric-label">{t('build.onTheLine') as string}</Label></Txt>
+      <Txt name="loop:stage-lede" class="artifact-lede">{s.summary}</Txt>
+      <Txt name="loop:stage-detail" class="artifact-detail muted">{s.detail}</Txt>
       {s.attempts && (
-        <ol class="attempts">
+        <ol class="attempts" {...inspectAttrs('loop:attempts', { role: 'list' })}>
           {s.attempts.map((a, i) => (
             <li class={`attempt attempt-${a.state}`} key={i}>
-              <span class="attempt-n">{t('build.attemptOf', { n: a.n, total: props.run?.policy.escLimit }) as string}</span>
+              <Label name="loop:attempt-n" class="attempt-n">{t('build.attemptOf', { n: a.n, total: props.run?.policy.escLimit }) as string}</Label>
               <StatusPill state={a.state} t={t} />
-              <span class="muted">{a.note}</span>
+              <Label name="loop:attempt-note" class="muted">{a.note}</Label>
             </li>
           ))}
         </ol>
@@ -596,29 +603,29 @@ export function FindingsCanvas(props: { a: { list?: FindingItem[]; [key: string]
   return (
     <article class="artifact findings-artifact">
       <header class="artifact-head">
-        <span class="eyebrow">{t('build.findingsEyebrow', { gate: a.gate }) as string}</span>
-        <span class="chip chip--muted">{t('build.findingsChip', { count: a.list?.length ?? 0 }) as string}</span>
+        <Label name="loop:findings-eyebrow" class="eyebrow">{t('build.findingsEyebrow', { gate: a.gate }) as string}</Label>
+        <span class="chip chip--muted" {...inspectAttrs('loop:findings-chip', { role: 'label' })}>{t('build.findingsChip', { count: a.list?.length ?? 0 }) as string}</span>
       </header>
-      <h2 class="display">{t('findingsHeadline') as string}</h2>
-      <p class="artifact-lede">{t('findingsLede') as string}</p>
-      <div class="finding-list">
+      <Heading name="loop:findings-title" level={2} class="display">{t('findingsHeadline') as string}</Heading>
+      <Txt name="loop:findings-lede" class="artifact-lede">{t('findingsLede') as string}</Txt>
+      <div class="finding-list" {...inspectAttrs('loop:finding-list', { role: 'group' })}>
         {(a.list ?? []).map((f, i) => (
           <article class={`finding finding-${f.severity}`} key={i}>
             <header class="finding-head">
-              <span class={`sev sev-${f.severity}`}>{t(`finding.severity.${f.severity}`) as string}</span>
-              <code class="finding-loc">{f.file}:{f.line}</code>
-              <span class="finding-check muted">{f.check}</span>
+              <span class={`sev sev-${f.severity}`} {...inspectAttrs('loop:finding-severity', { role: 'label' })}>{t(`finding.severity.${f.severity}`) as string}</span>
+              <code class="finding-loc" {...inspectAttrs('loop:finding-loc', { role: 'text' })}>{f.file}:{f.line}</code>
+              <Label name="loop:finding-check" class="finding-check muted">{f.check}</Label>
             </header>
             <dl class="finding-body">
-              <div><dt>{t('finding.expected') as string}</dt><dd>{f.expected}</dd></div>
-              <div><dt>{t('finding.actual') as string}</dt><dd>{f.actual}</dd></div>
+              <div><dt {...inspectAttrs('loop:finding-expected-label', { role: 'label' })}>{t('finding.expected') as string}</dt><dd {...inspectAttrs('loop:finding-expected-value', { role: 'text' })}>{f.expected}</dd></div>
+              <div><dt {...inspectAttrs('loop:finding-actual-label', { role: 'label' })}>{t('finding.actual') as string}</dt><dd {...inspectAttrs('loop:finding-actual-value', { role: 'text' })}>{f.actual}</dd></div>
             </dl>
-            <p class="reproduce"><span class="fact-label">{t('finding.reproduce') as string}</span><code>{f.reproduce}</code></p>
+            <p class="reproduce"><Label name="loop:finding-reproduce-label" class="fact-label">{t('finding.reproduce') as string}</Label><code {...inspectAttrs('loop:finding-reproduce-cmd', { role: 'text' })}>{f.reproduce}</code></p>
             <footer class="finding-foot">
-              <span class="chip chip--muted">{f.state}</span>
-              <span class="muted">{t('finding.fingerprint') as string} <code>{f.fingerprint}</code></span>
+              <span class="chip chip--muted" {...inspectAttrs('loop:finding-state', { role: 'label' })}>{f.state}</span>
+              <span class="muted" {...inspectAttrs('loop:finding-fingerprint', { role: 'text' })}>{t('finding.fingerprint') as string} <code {...inspectAttrs('loop:finding-fingerprint-hash', { role: 'text' })}>{f.fingerprint}</code></span>
             </footer>
-            <p class="finding-note muted">{f.note}</p>
+            <Txt name="loop:finding-note" class="finding-note muted">{f.note}</Txt>
           </article>
         ))}
       </div>
@@ -631,16 +638,16 @@ export function ChartCanvas(props: { chart: ChartData; run?: RunState; t: TFn; [
   return (
     <article class="artifact chart-artifact">
       <header class="artifact-head">
-        <span class="eyebrow">{t('build.chartEyebrow', { number: props.run?.number }) as string}</span>
+        <Label name="loop:chart-eyebrow" class="eyebrow">{t('build.chartEyebrow', { number: props.run?.number }) as string}</Label>
       </header>
-      <h2 class="display">{t('build.chartHeadline') as string}</h2>
-      <p class="artifact-lede">{t('build.chartLede', { duration: chart.maxDuration.duration, elapsed: props.run?.elapsed }) as string}</p>
-      <div class="bars" role="img" aria-label={t('build.chartAria', { duration: chart.maxDuration.duration }) as string}>
+      <Heading name="loop:chart-title" level={2} class="display">{t('build.chartHeadline') as string}</Heading>
+      <Txt name="loop:chart-lede" class="artifact-lede">{t('build.chartLede', { duration: chart.maxDuration.duration, elapsed: props.run?.elapsed }) as string}</Txt>
+      <div class="bars" role="img" aria-label={t('build.chartAria', { duration: chart.maxDuration.duration }) as string} {...inspectAttrs('loop:chart-bars', { role: 'group' })}>
         {chart.bars.map((b, i) => (
           <div class="bar-row" key={i}>
-            <span class="bar-label">{b.label}</span>
+            <Label name="loop:bar-label" class="bar-label">{b.label}</Label>
             <span class="bar-track"><span class={`bar bar-${b.state}`} style={`--pct: ${b.pct}`} /></span>
-            <span class="bar-value">{b.duration}</span>
+            <Label name="loop:bar-value" class="bar-value">{b.duration}</Label>
           </div>
         ))}
       </div>
@@ -654,16 +661,16 @@ export function LogCanvas(props: { messages: LogLine[]; run?: RunState; t: TFn; 
   return (
     <article class="artifact log-artifact">
       <header class="artifact-head">
-        <span class="eyebrow">{t('logEyebrow') as string} · {t('build.runShort', { number: props.run?.number }) as string}</span>
-        <span class="chip chip--muted">{t('build.elapsedChip', { elapsed: props.run?.elapsed }) as string}</span>
+        <Label name="loop:log-eyebrow" class="eyebrow">{t('logEyebrow') as string} · {t('build.runShort', { number: props.run?.number }) as string}</Label>
+        <span class="chip chip--muted" {...inspectAttrs('loop:log-chip', { role: 'label' })}>{t('build.elapsedChip', { elapsed: props.run?.elapsed }) as string}</span>
       </header>
-      <h2 class="display">{t('build.logHeadline') as string}</h2>
-      <div class="log-lines">
+      <Heading name="loop:log-title" level={2} class="display">{t('build.logHeadline') as string}</Heading>
+      <div class="log-lines" {...inspectAttrs('loop:log-lines', { role: 'group' })}>
         {messages.map((m, i) => (
           <p class={`log-line log-${m.from}${m.tone ? ` log-tone-${m.tone}` : ''}`} key={i}>
-            <span class="log-time">{m.at}</span>
-            <span class="log-who">{m.from === 'user' ? (t('log.you') as string) : (t('log.agent') as string)}</span>
-            <span class="log-text">{m.text}</span>
+            <Label name="loop:log-time" class="log-time">{m.at}</Label>
+            <Label name="loop:log-who" class="log-who">{m.from === 'user' ? (t('log.you') as string) : (t('log.agent') as string)}</Label>
+            <Label name="loop:log-text" class="log-text">{m.text}</Label>
           </p>
         ))}
       </div>
@@ -680,10 +687,10 @@ export function EvidenceCanvas(props: { evidence?: unknown; viewer?: unknown; t:
   return (
     <article class="artifact evidence-artifact">
       <header class="artifact-head">
-        <span class="eyebrow">{t('evidenceEyebrow') as string}</span>
+        <Label name="loop:evidence-eyebrow" class="eyebrow">{t('evidenceEyebrow') as string}</Label>
       </header>
-      <h2 class="display">{t('evidenceHeadline') as string}</h2>
-      <p class="artifact-lede">{t('evidenceLede') as string}</p>
+      <Heading name="loop:evidence-title" level={2} class="display">{t('evidenceHeadline') as string}</Heading>
+      <Txt name="loop:evidence-lede" class="artifact-lede">{t('evidenceLede') as string}</Txt>
       {props.viewer && <DesignViewer v={props.viewer as any} t={t} />}
     </article>
   );
@@ -722,7 +729,7 @@ export function DecisionSwap(props: LoopProps) {
     <Fragment>
       <Panels {...props} />
       <Timeline {...props} oob={true} />
-      <div hx-swap-oob="beforeend:#toasts"><div class="toast" id="toast-decision">{props.run?.stateLabel}</div></div>
+      <div hx-swap-oob="beforeend:#toasts"><div class="toast" id="toast-decision" {...inspectAttrs('loop:toast-decision', { role: 'text' })}>{props.run?.stateLabel}</div></div>
     </Fragment>
   );
 }
@@ -758,7 +765,7 @@ export function RunSwap(props: LoopProps) {
     <Fragment>
       <ActivityTarget {...props} />
       <Panels {...props} oob={true} />
-      <div hx-swap-oob="beforeend:#toasts"><div class="toast" id="toast-run">{props.run?.stateLabel}</div></div>
+      <div hx-swap-oob="beforeend:#toasts"><div class="toast" id="toast-run" {...inspectAttrs('loop:toast-run', { role: 'text' })}>{props.run?.stateLabel}</div></div>
     </Fragment>
   );
 }
@@ -772,8 +779,8 @@ export function NoEvidence(_props: LoopProps) {
     <div class="panels" id="panels" data-panel="main">
       <div class="panel-main" id="panel-main">
         <section class="mp-content mp-empty" id="mp-content">
-          <p>No build evidence yet — run a build to populate this surface.</p>
-          <p class="muted">Stages, human gates, findings and screen evidence appear here once a run has written them.</p>
+          <Txt name="loop:no-evidence">No build evidence yet — run a build to populate this surface.</Txt>
+          <Txt name="loop:no-evidence-hint" class="muted">Stages, human gates, findings and screen evidence appear here once a run has written them.</Txt>
         </section>
       </div>
     </div>

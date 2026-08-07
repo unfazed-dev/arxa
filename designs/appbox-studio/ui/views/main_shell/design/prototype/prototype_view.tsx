@@ -19,6 +19,7 @@ import { Pane as WidgetEditorPane } from '../../shared/widgets/widget_editor.tsx
 import { Pane as InspectorPaneComp } from '../inspector_pane.tsx';
 import { Top as ActivityTop, Bottom as ActivityBottom } from '../../shared/widgets/activity_panel.tsx';
 import { Timeline as TimelineEl } from '../../shared/widgets/timeline.tsx';
+import { inspectAttrs } from '../../../../common/widgets/primitives.tsx';
 
 type TFn = (key: string, vars?: Record<string, unknown>) => unknown;
 
@@ -57,7 +58,7 @@ function StageViewer({ c, t }: { c: PrototypeViewProps; t: TFn }) {
 function CanvasBoard({ c, t }: { c: PrototypeViewProps; t: TFn }) {
   return (
     <section class="mp-content" id="mp-content" aria-live="polite">
-      <article class="artifact screen-artifact evidence-artifact">
+      <article class="artifact screen-artifact evidence-artifact" {...inspectAttrs('design-prototype:artboard', { role: 'group' })}>
         {StageViewer({ c, t })}
       </article>
     </section>

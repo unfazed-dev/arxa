@@ -4,6 +4,7 @@
 // flows_viewmodel.js.
 import { Fragment, type FC } from 'hono/jsx';
 import Icon from '../../../../../runtime/icon.tsx';
+import { inspectAttrs, Label, Heading, Txt } from '../../../../common/widgets/primitives.tsx';
 import MainShellView from '../../main_shell_view.tsx';
 import * as SH from '../_shared.tsx';
 import type { Ctx, StepItem, FlowEdge } from '../_shared.tsx';
@@ -13,21 +14,21 @@ type TFn = (key: string, vars?: Record<string, unknown>) => unknown;
 // The edge chain: a vertical path of node pairs.
 function EdgeChain({ item }: { item: StepItem }) {
   return (
-    <ol class="edge-chain">
+    <ol class="edge-chain" {...inspectAttrs('intake-flows:edge-chain', { role: 'list' })}>
       {(item.edges ?? []).map((e: FlowEdge, i) => (
         <li key={i} class="edge">
-          <span class="edge-node">
-            <span class="edge-label">{e.fromLabel}</span>
-            <code class="edge-id">{e.from}</code>
+          <span class="edge-node" {...inspectAttrs('intake-flows:edge-node', { role: 'label' })}>
+            <Label name="intake-flows:edge-from-label" class="edge-label">{e.fromLabel}</Label>
+            <code class="edge-id" {...inspectAttrs('intake-flows:edge-from-id', { role: 'text' })}>{e.from}</code>
           </span>
-          <span class="edge-link">
+          <span class="edge-link" {...inspectAttrs('intake-flows:edge-link', { role: 'label' })}>
             <Icon name="move-right" size={16} />
-            <span class="edge-trigger">{e.trigger}</span>
-            {e.label ? <span class="chip chip--muted">{e.label}</span> : null}
+            <Label name="intake-flows:edge-trigger" class="edge-trigger">{e.trigger}</Label>
+            {e.label ? <Label name="intake-flows:edge-chip" class="chip chip--muted">{e.label}</Label> : null}
           </span>
-          <span class="edge-node">
-            <span class="edge-label">{e.toLabel}</span>
-            <code class="edge-id">{e.to}</code>
+          <span class="edge-node" {...inspectAttrs('intake-flows:edge-node', { role: 'label' })}>
+            <Label name="intake-flows:edge-to-label" class="edge-label">{e.toLabel}</Label>
+            <code class="edge-id" {...inspectAttrs('intake-flows:edge-to-id', { role: 'text' })}>{e.to}</code>
           </span>
         </li>
       ))}
@@ -39,20 +40,20 @@ function EdgeChain({ item }: { item: StepItem }) {
 function FlowCard({ c, item, t }: { c: Ctx; item: StepItem; t: TFn }) {
   return (
     <article class={`artifact flow-artifact is-${item.state ?? ''}`}>
-      <header class="artifact-head">
-        {item.personaName ? <span class="chip chip--muted"><Icon name="user" size={14} /> {t('intake.flows.personaLabel', { name: item.personaName }) as string}</span> : null}
+      <header class="artifact-head" {...inspectAttrs('intake-flows:artifact-head', { role: 'group' })}>
+        {item.personaName ? <span class="chip chip--muted" {...inspectAttrs('intake-flows:persona-label', { role: 'label' })}><Icon name="user" size={14} /> {t('intake.flows.personaLabel', { name: item.personaName }) as string}</span> : null}
         <SH.ProvChip p={item.provenance} t={t} />
-        <span class="chip chip--muted"><Icon name="waypoints" size={14} /> {t('intake.flows.edgeCount', { count: item.edges?.length ?? 0 }) as string}</span>
+        <span class="chip chip--muted" {...inspectAttrs('intake-flows:edge-count', { role: 'label' })}><Icon name="waypoints" size={14} /> {t('intake.flows.edgeCount', { count: item.edges?.length ?? 0 }) as string}</span>
       </header>
-      <h2 class="display">{item.name}</h2>
+      <Heading name="intake-flows:flow-name" level={2} class="display">{item.name}</Heading>
       <EdgeChain item={item} />
       {item.state === 'editing' ? (
         <form class="q-form" method="post" action={`${c.base}/save`}
               hx-post={`${c.base}/save`} hx-target="#panels" hx-swap="outerMorph">
-          <input type="hidden" name="item" value={item.id} />
-          <label class="fact-label" for={`flow-name-${item.id}`}>{t('intake.form.name') as string}</label>
-          <input type="text" id={`flow-name-${item.id}`} name="name" value={item.name} />
-          <button type="submit" class="cta-main">{t('intake.form.save') as string} <Icon name="check" size={14} /></button>
+          <input type="hidden" name="item" value={item.id} {...inspectAttrs('intake-flows:flow-id', { role: 'input' })} />
+          <label class="fact-label" for={`flow-name-${item.id}`} {...inspectAttrs('intake-flows:flow-name-label', { role: 'label' })}>{t('intake.form.name') as string}</label>
+          <input type="text" id={`flow-name-${item.id}`} name="name" value={item.name} {...inspectAttrs('intake-flows:flow-name-input', { role: 'input' })} />
+          <button type="submit" class="cta-main" {...inspectAttrs('intake-flows:save', { role: 'action', fn: 'submit' })}>{t('intake.form.save') as string} <Icon name="check" size={14} /></button>
         </form>
       ) : null}
       <SH.ItemActions c={c} item={item} t={t} />
@@ -64,11 +65,11 @@ function FlowCard({ c, item, t }: { c: Ctx; item: StepItem; t: TFn }) {
 function FlowRow({ c, item, t }: { c: Ctx; item: StepItem; t: TFn }) {
   return (
     <div class={`q-card is-${item.state ?? ''}`}>
-      <p class="q-text">{item.name}</p>
-      <span class="rv-badges">
-        {item.personaName ? <span class="chip chip--muted"><Icon name="user" size={14} /> {t('intake.flows.personaLabel', { name: item.personaName }) as string}</span> : null}
-        <span class="chip chip--muted">{t('intake.flows.edgeCount', { count: item.edges?.length ?? 0 }) as string}</span>
-        {item.edited ? <span class="chip chip--muted">{t('intake.item.edited') as string}</span> : null}
+      <Txt name="intake-flows:row-name" class="q-text">{item.name}</Txt>
+      <span class="rv-badges" {...inspectAttrs('intake-flows:row-badges', { role: 'label' })}>
+        {item.personaName ? <span class="chip chip--muted" {...inspectAttrs('intake-flows:persona-label', { role: 'label' })}><Icon name="user" size={14} /> {t('intake.flows.personaLabel', { name: item.personaName }) as string}</span> : null}
+        <Label name="intake-flows:edge-count" class="chip chip--muted">{t('intake.flows.edgeCount', { count: item.edges?.length ?? 0 }) as string}</Label>
+        {item.edited ? <Label name="intake-flows:edited" class="chip chip--muted">{t('intake.item.edited') as string}</Label> : null}
       </span>
       <SH.ItemActions c={c} item={item} t={t} />
     </div>
@@ -81,7 +82,7 @@ function FlowsStage({ c, t }: { c: Ctx; t: TFn }) {
     <SH.StepStage c={c} t={t}>
       {step?.complete ? (
         <div class="step-summary">
-          <h2 class="display">{t('intake.step.allConfirmed', { total: step.total }) as string}</h2>
+          <Heading name="intake-flows:all-confirmed" level={2} class="display">{t('intake.step.allConfirmed', { total: step.total }) as string}</Heading>
           {(step.items ?? []).map((item) => <FlowRow key={item.id} c={c} item={item} t={t} />)}
         </div>
       ) : (

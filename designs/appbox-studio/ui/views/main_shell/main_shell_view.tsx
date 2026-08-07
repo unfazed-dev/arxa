@@ -5,6 +5,7 @@
 // does not mount does not exist in it — no empty box, no reserved height.
 import type { FC, Child } from 'hono/jsx';
 import Base from '../../common/base.tsx';
+import { inspectAttrs } from '../../common/widgets/primitives.tsx';
 import { HeaderBody, OffCanvas } from '../../common/widgets/chrome.tsx';
 import HeaderPanel from '../../common/widgets/header_panel.tsx';
 import FooterPanel from './shared/widgets/footer_panel.tsx';
@@ -56,7 +57,7 @@ const MainShellView: FC<MainShellViewProps> = ({
       {headerExtra}
     </HeaderPanel>
     <OffCanvas t={t} activeShell={activeShell} prefs={prefs} project={project} />
-    <main class={`shell-main${mainClass ? ` ${mainClass}` : ''}`}>
+    <main class={`shell-main${mainClass ? ` ${mainClass}` : ''}`} {...inspectAttrs('main-shell:main', { role: 'group' })}>
       {surface}
     </main>
     <FooterPanel bodyTag="ol" bodyClass="timeline" bodyId="timeline">

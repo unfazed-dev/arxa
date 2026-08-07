@@ -12,6 +12,7 @@ import {
   type PrototypeViewProps,
 } from '../prototype/prototype_view.tsx';
 import { Timeline as TimelineEl } from '../../shared/widgets/timeline.tsx';
+import { inspectAttrs } from '../../../../common/widgets/primitives.tsx';
 
 type ChatViewProps = PrototypeViewProps;
 
@@ -29,7 +30,7 @@ export function RevertSwap(c: ChatViewProps) {
     <Fragment>
       {ProtoPanelsSwap(c)}
       <div hx-swap-oob="beforeend:#toasts">
-        <div class="toast" id="toast-revert">{c.t('design.revertToast') as string}</div>
+        <div class="toast" id="toast-revert" {...inspectAttrs('design-chat:toast', { role: 'text' })}>{c.t('design.revertToast') as string}</div>
       </div>
     </Fragment>
   );

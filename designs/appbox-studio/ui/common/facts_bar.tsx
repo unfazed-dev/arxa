@@ -8,6 +8,7 @@
 //   <FactsBar oob={oob} spec={spec} />
 import type { Child } from 'hono/jsx';
 import Icon from '../../runtime/icon.tsx';
+import { inspectAttrs } from './widgets/primitives.tsx';
 
 interface FilterOption {
   id: string;
@@ -54,21 +55,21 @@ export function FactsBar(props: FactsBarProps) {
   const filter = spec.filter;
   return (
     <header class="facts-bar" id="facts-bar" hx-swap-oob={oob ? 'outerHTML' : undefined}>
-      <span class="facts-bar-main">
-        <span class="eyebrow">{spec.eyebrow}</span>
-        <strong class="facts-state">{spec.state}</strong>
-        <span class="facts-list">
-          {spec.facts?.map((f, i) => <span key={i}>{f}</span>)}
+      <span class="facts-bar-main" {...inspectAttrs('facts-bar:main', { role: 'group' })}>
+        <span class="eyebrow" {...inspectAttrs('facts-bar:eyebrow', { role: 'text' })}>{spec.eyebrow}</span>
+        <strong class="facts-state" {...inspectAttrs('facts-bar:state', { role: 'text' })}>{spec.state}</strong>
+        <span class="facts-list" {...inspectAttrs('facts-bar:facts-list', { role: 'group' })}>
+          {spec.facts?.map((f, i) => <span key={i} {...inspectAttrs('facts-bar:fact', { role: 'text' })}>{f}</span>)}
         </span>
       </span>
-      <span class="facts-acts">
+      <span class="facts-acts" {...inspectAttrs('facts-bar:actions', { role: 'group' })}>
         {filter && (
           <details class="facts-filter">
-            <summary aria-label={filter.summaryAria} title={filter.summaryTitle}>
+            <summary aria-label={filter.summaryAria} title={filter.summaryTitle} {...inspectAttrs('facts-bar:filter-summary', { role: 'label' })}>
               {filter.summary}
               <Icon name="chevron-down" size={14} cls="caret" />
             </summary>
-            <span class="filter-menu">
+            <span class="filter-menu" {...inspectAttrs('facts-bar:filter-menu', { role: 'group' })}>
               {filter.options.map((o) => {
                 const oid = typeof o === 'string' ? o : o.id;
                 const label = typeof o === 'string' ? oid : (o.label ?? oid);
@@ -81,6 +82,7 @@ export function FactsBar(props: FactsBarProps) {
                     hx-target={filter.target}
                     hx-swap={filter.swap}
                     hx-push-url="false"
+                    {...inspectAttrs('facts-bar:filter-option', { role: 'action' })}
                   >
                     {label}
                   </a>
@@ -104,6 +106,7 @@ export function FactsBar(props: FactsBarProps) {
               class="ico-btn"
               title={spec.control.title}
               aria-label={spec.control.title}
+              {...inspectAttrs('facts-bar:control', { role: 'action' })}
             >
               <Icon name={spec.control.icon} size={16} />
             </button>

@@ -9,6 +9,7 @@
 
 import { Fragment, type FC, type Child } from 'hono/jsx';
 import { raw } from 'hono/utils/html';
+import { inspectAttrs, Label, Heading, Txt } from '../../../../common/widgets/primitives.tsx';
 
 type TFn = (key: string, vars?: Record<string, unknown>) => unknown;
 
@@ -45,7 +46,7 @@ const ScreenStubView: FC<ScreenStubViewProps> = (props) => {
         <head>
           <meta charset="utf-8" />
           <meta name="viewport" content="width=device-width, initial-scale=1" />
-          <title>{props.surface} · {props.vp}</title>
+          <title {...inspectAttrs('screen-stub:title', { role: 'text' })}>{props.surface} · {props.vp}</title>
           <link rel="stylesheet" href="/assets/css/fonts.css" />
           <link rel="stylesheet" href="/assets/css/app.css" />
           <link rel="stylesheet" href="/assets/css/theme.css" />
@@ -76,29 +77,29 @@ const ScreenStubView: FC<ScreenStubViewProps> = (props) => {
           {...(!props.still ? { 'hx-boost': 'true', 'hx-sync': 'this:replace' } : {})}
         >
           <div id="app" data-theme={props.theme} data-accent={props.accent} data-font={props.font}>
-            <div class="stub-screen" style={props.embed ? undefined : `max-width: ${props.width}px`}>
+            <div class="stub-screen" style={props.embed ? undefined : `max-width: ${props.width}px`} {...inspectAttrs('screen-stub:screen', { role: 'group' })}>
               {!props.embed && (
                 <header class="stub-nav" data-el="nav-bar" data-inspect-role="nav" data-inspect-style="app bar · brand + links" data-inspect-motion="none" data-inspect-fn="Top-level navigation and brand for the screen">
                   {props.partial ? (
-                    <span class="stub-brand">{props.t('app.brand') as string}</span>
+                    <Label name="screen-stub:brand" class="stub-brand">{props.t('app.brand') as string}</Label>
                   ) : (
-                    <span class="stub-brand">appbox</span>
+                    <Label name="screen-stub:brand" class="stub-brand">appbox</Label>
                   )}
-                  {!props.partial && <span class="stub-nav-links">{props.t(`stub.kind.${props.kind}`) as string}</span>}
+                  {!props.partial && <Label name="screen-stub:nav-links" class="stub-nav-links">{props.t(`stub.kind.${props.kind}`) as string}</Label>}
                 </header>
               )}
 
               {props.partial ? props.partial : (
                 <Fragment>
                   <section class="stub-hero" data-el="hero" data-inspect-role="hero" data-inspect-style="display headline + note" data-inspect-motion="reveal" data-inspect-fn="Names the screen being previewed">
-                    <h1>{props.t(`stub.kind.${props.kind}`) as string}</h1>
-                    <p>{props.t('stub.previewNote') as string}</p>
+                    <Heading name="screen-stub:hero-title" level={1}>{props.t(`stub.kind.${props.kind}`) as string}</Heading>
+                    <Txt name="screen-stub:preview-note">{props.t('stub.previewNote') as string}</Txt>
                   </section>
-                  <section class="stub-rows">
+                  <section class="stub-rows" {...inspectAttrs('screen-stub:rows', { role: 'group' })}>
                     {[1, 2, 3].map(i => (
                       <div class="stub-row" data-el={`list-item:Block ${i}`} data-inspect-role="list row" data-inspect-style="row · thumb + label" data-inspect-motion="none" data-inspect-fn="Content placeholder row" key={i}>
                         <span class="stub-thumb sm"></span>
-                        <span class="stub-row-name">{props.t('stub.block', { kind: props.kind, i }) as string}</span>
+                        <Label name="screen-stub:row-name" class="stub-row-name">{props.t('stub.block', { kind: props.kind, i }) as string}</Label>
                       </div>
                     ))}
                   </section>
@@ -106,7 +107,7 @@ const ScreenStubView: FC<ScreenStubViewProps> = (props) => {
               )}
 
               {!props.embed && (
-                <span class="stub-tag">{props.t('stub.tag', { surface: props.surface, vp: props.vp }) as string}</span>
+                <Label name="screen-stub:tag" class="stub-tag">{props.t('stub.tag', { surface: props.surface, vp: props.vp }) as string}</Label>
               )}
             </div>
           </div>

@@ -4,6 +4,7 @@
 // prefs and keys, so a footer here would narrate a pipeline that is not running.
 import type { FC, Child } from 'hono/jsx';
 import Base from '../../common/base.tsx';
+import { inspectAttrs } from '../../common/widgets/primitives.tsx';
 import { HeaderBody, OffCanvas } from '../../common/widgets/chrome.tsx';
 import HeaderPanel from '../../common/widgets/header_panel.tsx';
 import MainPanel from '../../common/widgets/main_panel.tsx';
@@ -51,7 +52,7 @@ const WorkspaceShellView: FC<WorkspaceShellViewProps> = ({
     <OffCanvas t={t} activeShell={activeShell} prefs={prefs} project={project} />
     <main class="shell-main shell-main-col">
       <MainPanel>
-        <section class="mp-content">{surface}</section>
+        <section class="mp-content" {...inspectAttrs('workspace-shell:content', { role: 'group' })}>{surface}</section>
       </MainPanel>
     </main>
   </Base>

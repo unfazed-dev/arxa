@@ -10,6 +10,7 @@
 // Reads `locales` and `locale` from the context bag (merged into every render
 // by the runtime), so no viewmodel wiring is needed.
 import type { FC } from 'hono/jsx';
+import { inspectAttrs } from './widgets/primitives.tsx';
 
 type TFn = (key: string, vars?: Record<string, unknown>) => unknown;
 
@@ -22,12 +23,13 @@ interface LangSwitcherProps {
 const LangSwitcher: FC<LangSwitcherProps> = ({ locales, locale, t }) => {
   if (!locales || locales.length <= 1) return null;
   return (
-    <nav class="lang-switcher" aria-label={t('lang.label') as string}>
+    <nav class="lang-switcher" aria-label={t('lang.label') as string} {...inspectAttrs('lang-switcher:nav', { role: 'nav' })}>
       {locales.map((l) => (
         <a
           class="lang-switcher__link"
           href={`/prefs/lang?lang=${l}`}
           aria-current={l === locale ? 'true' : undefined}
+          {...inspectAttrs('lang-switcher:locale', { role: 'action' })}
         >
           {t(`lang.name.${l}`) as string}
         </a>

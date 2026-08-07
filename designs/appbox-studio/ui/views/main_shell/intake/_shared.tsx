@@ -15,6 +15,7 @@
 //   Built with appbox (free tier) — https://appbox.dev
 import { Fragment, type Child } from 'hono/jsx';
 import Icon from '../../../../runtime/icon.tsx';
+import { inspectAttrs, Label, Heading, Txt } from '../../../common/widgets/primitives.tsx';
 import {
   PanelBar,
   Open as MainPanelOpen,
@@ -115,20 +116,20 @@ export function MissingArtifact({ c, a }: { c: Ctx; a: MissingArtifactA }) {
   return (
     <article class={`artifact missing-artifact is-${a.tone ?? ''}`} aria-live="polite">
       <header class="artifact-head">
-        <span class="eyebrow">{c.eyebrow}</span>
-        <span class={`rv-badge${a.tone === 'error' ? ' rv-warn' : ''}`}>{a.badge}</span>
+        <Label name="intake-shared:eyebrow" class="eyebrow">{c.eyebrow}</Label>
+        <Label name="intake-shared:badge" class={`rv-badge${a.tone === 'error' ? ' rv-warn' : ''}`}>{a.badge}</Label>
       </header>
-      <h2 class="display">{a.headline}</h2>
-      <p class="artifact-lede">{a.lede}</p>
+      <Heading name="intake-shared:headline" level={2} class="display">{a.headline}</Heading>
+      <Txt name="intake-shared:lede" class="artifact-lede">{a.lede}</Txt>
       {a.steps && a.steps.length > 0 ? (
         <Fragment>
-          <p class="fact-label">{a.howLabel}</p>
-          <ol class="missing-steps">
-            {a.steps.map((s, i) => <li key={i}>{s}</li>)}
+          <Txt name="intake-shared:how-label" class="fact-label">{a.howLabel}</Txt>
+          <ol class="missing-steps" {...inspectAttrs('intake-shared:missing-steps', { role: 'list' })}>
+            {a.steps.map((s, i) => <li key={i} {...inspectAttrs('intake-shared:missing-step', { role: 'list row' })}>{s}</li>)}
           </ol>
         </Fragment>
       ) : null}
-      {a.file ? <p class="artifact-detail muted"><code>{a.file}</code></p> : null}
+      {a.file ? <p class="artifact-detail muted"><code {...inspectAttrs('intake-shared:file-path', { role: 'text' })}>{a.file}</code></p> : null}
     </article>
   );
 }
@@ -138,56 +139,61 @@ export function QCard({ c, q, t }: { c: Ctx; q: Question; t: TFn }) {
   const base = c.base;
   return (
     <div class={`q-card is-${q.state ?? ''}`}>
-      <p class="q-text">{q.text}</p>
+      <Txt name="intake-shared:q-text" class="q-text">{q.text}</Txt>
       {(q.state === 'current' || q.state === 'editing') ? (
         <Fragment>
           <form class="q-form" method="post" action={`${base}/answer`}
                 hx-post={`${base}/answer`} hx-target="#panels" hx-swap="outerMorph">
-            <input type="hidden" name="q" value={q.id} />
+            <input type="hidden" name="q" value={q.id} {...inspectAttrs('intake-shared:q-id', { role: 'input' })} />
             <input type="text" name="text" value={q.answer ?? ''}
                    placeholder={t('intake.answerPlaceholder') as string}
-                   aria-label={t('intake.answerAria', { question: q.text }) as string} />
-            <button type="submit" class="composer-send" aria-label={t('intake.sendAnswer') as string}>
+                   aria-label={t('intake.answerAria', { question: q.text }) as string}
+                   {...inspectAttrs('intake-shared:q-answer-input', { role: 'input' })} />
+            <button type="submit" class="composer-send" aria-label={t('intake.sendAnswer') as string}
+                    {...inspectAttrs('intake-shared:q-send', { role: 'action', fn: 'submit' })}>
               <Icon name="arrow-up" size={18} />
             </button>
           </form>
           {q.suggestions && q.suggestions.length > 0 ? (
-            <span class="q-sugs">
+            <span class="q-sugs" {...inspectAttrs('intake-shared:q-suggestions', { role: 'group' })}>
               {q.suggestions.map((s, i) => (
                 <form key={i} method="post" action={`${base}/answer`}
                       hx-post={`${base}/answer`} hx-target="#panels" hx-swap="outerMorph">
-                  <input type="hidden" name="q" value={q.id} />
-                  <button type="submit" name="text" value={s}>{s}</button>
+                  <input type="hidden" name="q" value={q.id} {...inspectAttrs('intake-shared:q-sug-id', { role: 'input' })} />
+                  <button type="submit" name="text" value={s} {...inspectAttrs('intake-shared:q-suggestion', { role: 'action', fn: 'submit' })}>{s}</button>
                 </form>
               ))}
             </span>
           ) : null}
           <form class="q-skip" method="post" action={`${base}/skip`}
                 hx-post={`${base}/skip`} hx-target="#panels" hx-swap="outerMorph">
-            <input type="hidden" name="q" value={q.id} />
-            <button type="submit" aria-label={t('intake.skipAria') as string}>
+            <input type="hidden" name="q" value={q.id} {...inspectAttrs('intake-shared:q-skip-id', { role: 'input' })} />
+            <button type="submit" aria-label={t('intake.skipAria') as string}
+                    {...inspectAttrs('intake-shared:q-skip', { role: 'action', fn: 'skip' })}>
               {t('intake.skip') as string} <Icon name="chevron-right" size={14} />
             </button>
           </form>
         </Fragment>
       ) : q.state === 'answered' ? (
         <Fragment>
-          <p class="q-answer">{q.answer}</p>
+          <Txt name="intake-shared:q-answer" class="q-answer">{q.answer}</Txt>
           <a class="q-edit" href={`${base}/edit?q=${q.id}`}
-             hx-get={`${base}/edit?q=${q.id}`} hx-target="#panels" hx-swap="outerMorph" hx-push-url="false">
+             hx-get={`${base}/edit?q=${q.id}`} hx-target="#panels" hx-swap="outerMorph" hx-push-url="false"
+             {...inspectAttrs('intake-shared:q-edit', { role: 'action', fn: 'edit' })}>
             {t('intake.edit') as string}
           </a>
         </Fragment>
       ) : q.state === 'skipped' ? (
         <Fragment>
-          <p class="q-answer muted">{t('intake.skipped') as string}</p>
+          <Txt name="intake-shared:q-skipped" class="q-answer muted">{t('intake.skipped') as string}</Txt>
           <a class="q-edit" href={`${base}/edit?q=${q.id}`}
-             hx-get={`${base}/edit?q=${q.id}`} hx-target="#panels" hx-swap="outerMorph" hx-push-url="false">
+             hx-get={`${base}/edit?q=${q.id}`} hx-target="#panels" hx-swap="outerMorph" hx-push-url="false"
+             {...inspectAttrs('intake-shared:q-answer-anyway', { role: 'action', fn: 'edit' })}>
             {t('intake.answerAnyway') as string}
           </a>
         </Fragment>
       ) : (
-        <p class="q-answer muted">{t('intake.upNext') as string}</p>
+        <Txt name="intake-shared:q-up-next" class="q-answer muted">{t('intake.upNext') as string}</Txt>
       )}
     </div>
   );
@@ -196,7 +202,7 @@ export function QCard({ c, q, t }: { c: Ctx; q: Question; t: TFn }) {
 // Provenance chip: where a prefill came from (client / founder / inferred).
 export function ProvChip({ p, t }: { p?: string; t: TFn }) {
   if (!p) return null;
-  return <span class={`chip prov-chip prov-${p}`}>{t(`intake.prov.${p}`) as string}</span>;
+  return <Label name={`intake-shared:prov-${p}`} class={`chip prov-chip prov-${p}`}>{t(`intake.prov.${p}`) as string}</Label>;
 }
 
 // The current item's action bar: confirm the prefill as-is, or skip.
@@ -204,14 +210,14 @@ export function ItemActions({ c, item, t }: { c: Ctx; item: StepItem; t: TFn }) 
   const base = c.base;
   if (item.state === 'current' || item.state === 'editing') {
     return (
-      <span class="item-actions">
+      <span class="item-actions" {...inspectAttrs('intake-shared:item-actions', { role: 'group' })}>
         <form method="post" action={`${base}/confirm`} hx-post={`${base}/confirm`} hx-target="#panels" hx-swap="outerMorph">
-          <input type="hidden" name="item" value={item.id} />
-          <button type="submit" class="cta-main">{t('intake.item.confirm') as string} <Icon name="check" size={14} /></button>
+          <input type="hidden" name="item" value={item.id} {...inspectAttrs('intake-shared:item-confirm-id', { role: 'input' })} />
+          <button type="submit" class="cta-main" {...inspectAttrs('intake-shared:item-confirm', { role: 'action', fn: 'confirm' })}>{t('intake.item.confirm') as string} <Icon name="check" size={14} /></button>
         </form>
         <form method="post" action={`${base}/skip`} hx-post={`${base}/skip`} hx-target="#panels" hx-swap="outerMorph">
-          <input type="hidden" name="item" value={item.id} />
-          <button type="submit" class="cta-ghost">{t('intake.skip') as string} <Icon name="chevron-right" size={14} /></button>
+          <input type="hidden" name="item" value={item.id} {...inspectAttrs('intake-shared:item-skip-id', { role: 'input' })} />
+          <button type="submit" class="cta-ghost" {...inspectAttrs('intake-shared:item-skip', { role: 'action', fn: 'skip' })}>{t('intake.skip') as string} <Icon name="chevron-right" size={14} /></button>
         </form>
       </span>
     );
@@ -219,7 +225,8 @@ export function ItemActions({ c, item, t }: { c: Ctx; item: StepItem; t: TFn }) 
   if (item.state === 'confirmed') {
     return (
       <a class="q-edit" href={`${base}/edit?item=${item.id}`}
-         hx-get={`${base}/edit?item=${item.id}`} hx-target="#panels" hx-swap="outerMorph" hx-push-url="false">
+         hx-get={`${base}/edit?item=${item.id}`} hx-target="#panels" hx-swap="outerMorph" hx-push-url="false"
+         {...inspectAttrs('intake-shared:item-edit', { role: 'action', fn: 'edit' })}>
         {t('intake.edit') as string}
       </a>
     );
@@ -227,7 +234,8 @@ export function ItemActions({ c, item, t }: { c: Ctx; item: StepItem; t: TFn }) 
   if (item.state === 'skipped') {
     return (
       <a class="q-edit" href={`${base}/edit?item=${item.id}`}
-         hx-get={`${base}/edit?item=${item.id}`} hx-target="#panels" hx-swap="outerMorph" hx-push-url="false">
+         hx-get={`${base}/edit?item=${item.id}`} hx-target="#panels" hx-swap="outerMorph" hx-push-url="false"
+         {...inspectAttrs('intake-shared:item-review', { role: 'action', fn: 'edit' })}>
         {t('intake.item.reviewAnyway') as string}
       </a>
     );
@@ -240,17 +248,18 @@ export function ItemStrip({ c, step, t }: { c: Ctx; step?: Step; t: TFn }) {
   const base = c.base;
   const items = step?.items ?? [];
   return (
-    <nav class="item-strip" aria-label={t('intake.step.stripAria') as string}>
+    <nav class="item-strip" aria-label={t('intake.step.stripAria') as string} {...inspectAttrs('intake-shared:item-strip', { role: 'group' })}>
       {items.map((item) => {
         const title = item.name ?? item.label ?? item.id;
         if (item.state === 'confirmed' || item.state === 'skipped') {
           return (
             <a key={item.id} class={`strip-dot is-${item.state}`} href={`${base}/edit?item=${item.id}`}
                hx-get={`${base}/edit?item=${item.id}`} hx-target="#panels" hx-swap="outerMorph" hx-push-url="false"
-               title={title} aria-label={title} />
+               title={title} aria-label={title}
+               {...inspectAttrs('intake-shared:strip-dot', { role: 'action', fn: 'edit' })} />
           );
         }
-        return <span key={item.id} class={`strip-dot is-${item.state ?? ''}`} title={title} />;
+        return <span key={item.id} class={`strip-dot is-${item.state ?? ''}`} title={title} {...inspectAttrs('intake-shared:strip-dot-static', { role: 'label' })} />;
       })}
     </nav>
   );
@@ -260,14 +269,14 @@ export function ItemStrip({ c, step, t }: { c: Ctx; step?: Step; t: TFn }) {
 export function StepFoot({ c, step, t }: { c: Ctx; step?: Step; t: TFn }) {
   const base = c.base;
   return (
-    <div class="step-foot">
+    <div class="step-foot" {...inspectAttrs('intake-shared:step-foot', { role: 'group' })}>
       {step?.complete ? (
         step.nextHref ? (
-          <a class="cta-main" href={step.nextHref}>{t(step.nextLabel as string) as string} <Icon name="chevron-right" size={14} /></a>
+          <a class="cta-main" href={step.nextHref} {...inspectAttrs('intake-shared:step-next', { role: 'action', fn: 'navigate' })}>{t(step.nextLabel as string) as string} <Icon name="chevron-right" size={14} /></a>
         ) : null
       ) : (
         <form method="post" action={`${base}/accept-all`} hx-post={`${base}/accept-all`} hx-target="#panels" hx-swap="outerMorph">
-          <button type="submit" class="cta-ghost">{t('intake.item.acceptAll') as string}</button>
+          <button type="submit" class="cta-ghost" {...inspectAttrs('intake-shared:step-accept-all', { role: 'action', fn: 'submit' })}>{t('intake.item.acceptAll') as string}</button>
         </form>
       )}
     </div>
@@ -281,9 +290,9 @@ export function StepStage({ c, t, children }: { c: Ctx; t: TFn; children?: Child
   return (
     <section class="mp-content step-stage" id="mp-content" aria-live="polite">
       <header class="step-head">
-        <span class="eyebrow">{c.eyebrow}</span>
-        <span class="chip chip--muted">{t('intake.step.progress', { done: step?.done, total: step?.total }) as string}</span>
-        {step?.mode ? <span class="chip chip--muted">{t(`intake.bank.${step.mode}`) as string}</span> : null}
+        <Label name="intake-shared:step-eyebrow" class="eyebrow">{c.eyebrow}</Label>
+        <Label name="intake-shared:step-progress" class="chip chip--muted">{t('intake.step.progress', { done: step?.done, total: step?.total }) as string}</Label>
+        {step?.mode ? <Label name={`intake-shared:step-mode-${step.mode}`} class="chip chip--muted">{t(`intake.bank.${step.mode}`) as string}</Label> : null}
       </header>
       {children}
       <ItemStrip c={c} step={step} t={t} />
@@ -297,18 +306,19 @@ export function QStrip({ c, car, t }: { c: Ctx; car: Carousel; t: TFn }) {
   const base = c.base;
   const qs = car.questions ?? [];
   return (
-    <nav class="item-strip" aria-label={t('intake.questionsAria', { bank: car.bankLabel }) as string}>
+    <nav class="item-strip" aria-label={t('intake.questionsAria', { bank: car.bankLabel }) as string} {...inspectAttrs('intake-shared:q-strip', { role: 'group' })}>
       {qs.map((q) => {
         if (q.state === 'answered' || q.state === 'skipped') {
           const dot = q.state === 'answered' ? 'confirmed' : 'skipped';
           return (
             <a key={q.id} class={`strip-dot is-${dot}`} href={`${base}/edit?q=${q.id}`}
                hx-get={`${base}/edit?q=${q.id}`} hx-target="#panels" hx-swap="outerMorph" hx-push-url="false"
-               title={q.text} aria-label={q.text} />
+               title={q.text} aria-label={q.text}
+               {...inspectAttrs('intake-shared:q-strip-dot', { role: 'action', fn: 'edit' })} />
           );
         }
         const dot = q.state === 'current' ? 'current' : 'upcoming';
-        return <span key={q.id} class={`strip-dot is-${dot}`} title={q.text} />;
+        return <span key={q.id} class={`strip-dot is-${dot}`} title={q.text} {...inspectAttrs('intake-shared:q-strip-dot-static', { role: 'label' })} />;
       })}
     </nav>
   );
@@ -317,29 +327,30 @@ export function QStrip({ c, car, t }: { c: Ctx; car: Carousel; t: TFn }) {
 export function ChatMsg({ c, m, t }: { c: Ctx; m: ChatMsg; t: TFn }) {
   const base = c.base;
   if (m.from === 'user') {
-    return <div class="msg msg-user"><span class="msg-text">{m.text}</span></div>;
+    return <div class="msg msg-user" {...inspectAttrs('intake-shared:msg-user', { role: 'group' })}><Label name="intake-shared:msg-user-text" class="msg-text">{m.text}</Label></div>;
   }
   return (
-    <div class="msg msg-agent">
-      <span class="msg-text">{m.text}</span>
+    <div class="msg msg-agent" {...inspectAttrs('intake-shared:msg-agent', { role: 'group' })}>
+      <Label name="intake-shared:msg-agent-text" class="msg-text">{m.text}</Label>
       {m.quickReplies && m.quickReplies.length > 0 ? (
-        <span class="q-replies">
+        <span class="q-replies" {...inspectAttrs('intake-shared:q-replies', { role: 'group' })}>
           {m.quickReplies.map((r, i) => (
             <form key={i} method="post" action={r.action} hx-post={r.action} hx-target="#panels" hx-swap="outerMorph">
-              <button type="submit" class="chip chip--accent qr-chip" name={r.name} value={r.value}>{r.label}</button>
+              <button type="submit" class="chip chip--accent qr-chip" name={r.name} value={r.value} {...inspectAttrs('intake-shared:qr-chip', { role: 'action', fn: 'submit' })}>{r.label}</button>
             </form>
           ))}
         </span>
       ) : null}
       {m.artifactRef || m.nextHref ? (
-        <span class="msg-cta">
+        <span class="msg-cta" {...inspectAttrs('intake-shared:msg-cta', { role: 'group' })}>
           {m.artifactRef ? (
             <a class="cta-main" href={`${base}/artifact/${m.artifactRef}`}
-               hx-get={`${base}/artifact/${m.artifactRef}`} hx-target="#panels" hx-swap="outerMorph" hx-push-url="false">
+               hx-get={`${base}/artifact/${m.artifactRef}`} hx-target="#panels" hx-swap="outerMorph" hx-push-url="false"
+               {...inspectAttrs('intake-shared:msg-artifact', { role: 'action', fn: 'navigate' })}>
               {m.artifactLabel} <Icon name="chevron-right" size={14} />
             </a>
           ) : null}
-          {m.nextHref ? <a class="cta-ghost" href={m.nextHref}>{m.nextLabel} <Icon name="chevron-right" size={14} /></a> : null}
+          {m.nextHref ? <a class="cta-ghost" href={m.nextHref} {...inspectAttrs('intake-shared:msg-next', { role: 'action', fn: 'navigate' })}>{m.nextLabel} <Icon name="chevron-right" size={14} /></a> : null}
         </span>
       ) : null}
     </div>
@@ -349,7 +360,7 @@ export function ChatMsg({ c, m, t }: { c: Ctx; m: ChatMsg; t: TFn }) {
 function ChatThread({ c, t }: { c: Ctx; t: TFn }) {
   const msgs = c.chat ?? [];
   return (
-    <div class="chat-thread" aria-live="polite">
+    <div class="chat-thread" aria-live="polite" {...inspectAttrs('intake-shared:chat-thread', { role: 'group' })}>
       {msgs.map((m, i) => <ChatMsg key={i} c={c} m={m} t={t} />)}
     </div>
   );
@@ -371,7 +382,7 @@ function ComposerPanel({ c, t }: { c: Ctx; t: TFn }) {
 // same DOM order as every other shell, so tab + screen-reader order match.
 export function Panels({ c, t, children }: { c: Ctx; t: TFn; children?: Child }) {
   return (
-    <div class="panels" id="panels" data-panel={c.panel}>
+    <div class="panels" id="panels" data-panel={c.panel} {...inspectAttrs('intake-shared:panels', { role: 'group' })}>
       <PanelBar panel={c.panel} t={t} />
       <ComposerPanel c={c} t={t} />
       <MainPanelOpen>{children}</MainPanelOpen>
@@ -388,15 +399,16 @@ function ActivityBody({ c }: { c: Ctx }) {
   if (c.activityView === 'artifacts') {
     const arts = body?.artifacts ?? [];
     return (
-      <div class="rv-list">
+      <div class="rv-list" {...inspectAttrs('intake-shared:artifact-list', { role: 'group' })}>
         {arts.map((a) => (
           <a key={a.ref} class="rv-card" href={`${base}/artifact/${a.ref}`}
-             hx-get={`${base}/artifact/${a.ref}`} hx-target="#panels" hx-swap="outerMorph" hx-push-url="false">
-            <span class="rv-title">{a.title}</span>
-            <span class="rv-detail muted">{a.detail}</span>
+             hx-get={`${base}/artifact/${a.ref}`} hx-target="#panels" hx-swap="outerMorph" hx-push-url="false"
+             {...inspectAttrs('intake-shared:artifact-card', { role: 'action', fn: 'navigate' })}>
+            <Label name="intake-shared:artifact-title" class="rv-title">{a.title}</Label>
+            <Label name="intake-shared:artifact-detail" class="rv-detail muted">{a.detail}</Label>
             {a.badges && a.badges.length > 0 ? (
-              <span class="rv-badges">
-                {a.badges.map((b, i) => <span key={i} class={`rv-badge rv-${b.tone}`}>{b.label}</span>)}
+              <span class="rv-badges" {...inspectAttrs('intake-shared:artifact-badges', { role: 'group' })}>
+                {a.badges.map((b, i) => <Label key={i} name="intake-shared:artifact-badge" class={`rv-badge rv-${b.tone}`}>{b.label}</Label>)}
               </span>
             ) : null}
           </a>
@@ -407,17 +419,18 @@ function ActivityBody({ c }: { c: Ctx }) {
   if (c.activityView === 'files') {
     const files = body?.files ?? [];
     return (
-      <ul class="rv-files">
+      <ul class="rv-files" {...inspectAttrs('intake-shared:file-list', { role: 'list' })}>
         {files.map((f, i) => (
-          <li key={i}>
+          <li key={i} {...inspectAttrs('intake-shared:file-row', { role: 'list row' })}>
             {f.mode ? (
               <a class={`rv-file${fileView && fileView.path === f.path ? ' is-active' : ''}`} href={f.href}
-                 hx-get={f.get} hx-target="#panel-main" hx-swap="innerHTML" hx-push-url={f.href}>
-                <code class="rv-path">{f.path}</code><span class={`file-badge fb-${f.badge}`}>{f.badge}</span>
+                 hx-get={f.get} hx-target="#panel-main" hx-swap="innerHTML" hx-push-url={f.href}
+                 {...inspectAttrs('intake-shared:file-link', { role: 'action', fn: 'navigate' })}>
+                <code class="rv-path" {...inspectAttrs('intake-shared:file-path', { role: 'text' })}>{f.path}</code><Label name="intake-shared:file-badge" class={`file-badge fb-${f.badge}`}>{f.badge}</Label>
               </a>
             ) : (
               <Fragment>
-                <code class="rv-path">{f.path}</code><span class={`file-badge fb-${f.badge}`}>{f.badge}</span>
+                <code class="rv-path" {...inspectAttrs('intake-shared:file-path', { role: 'text' })}>{f.path}</code><Label name="intake-shared:file-badge" class={`file-badge fb-${f.badge}`}>{f.badge}</Label>
               </Fragment>
             )}
           </li>
@@ -427,18 +440,19 @@ function ActivityBody({ c }: { c: Ctx }) {
   }
   const thread = [...(body?.thread ?? [])].reverse();
   return (
-    <div class="rv-list">
+    <div class="rv-list" {...inspectAttrs('intake-shared:thread-list', { role: 'group' })}>
       {thread.map((m, i) => (
-        <div key={i} class="rv-card is-static">
-          <span class="msg-text">{m.text}</span>
-          <span class="rv-foot">
+        <div key={i} class="rv-card is-static" {...inspectAttrs('intake-shared:thread-card', { role: 'group' })}>
+          <Label name="intake-shared:thread-text" class="msg-text">{m.text}</Label>
+          <span class="rv-foot" {...inspectAttrs('intake-shared:thread-foot', { role: 'group' })}>
             {m.artifact ? (
               <a class="cta-ghost" href={`${base}/artifact/${m.artifact}`}
-                 hx-get={`${base}/artifact/${m.artifact}`} hx-target="#panels" hx-swap="outerMorph" hx-push-url="false">
+                 hx-get={`${base}/artifact/${m.artifact}`} hx-target="#panels" hx-swap="outerMorph" hx-push-url="false"
+                 {...inspectAttrs('intake-shared:thread-artifact', { role: 'action', fn: 'navigate' })}>
                 {m.artifactLabel} <Icon name="chevron-right" size={14} />
               </a>
             ) : null}
-            <span class="msg-time">{m.at}</span>
+            <Label name="intake-shared:thread-time" class="msg-time">{m.at}</Label>
           </span>
         </div>
       ))}

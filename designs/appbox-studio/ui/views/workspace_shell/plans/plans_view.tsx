@@ -5,7 +5,7 @@
 import type { FC } from 'hono/jsx';
 import { Fragment } from 'hono/jsx';
 import WorkspaceShellView from '../workspace_shell_view.tsx';
-import { CtaLink } from '../../../common/widgets/primitives.tsx';
+import { CtaLink, inspectAttrs, Label, Heading, Txt } from '../../../common/widgets/primitives.tsx';
 import Icon from '../../../../runtime/icon.tsx';
 
 type TFn = (key: string, vars?: Record<string, unknown>) => unknown;
@@ -105,39 +105,39 @@ const PlansView: FC<PlansViewProps> = (props) => {
 
   const surface = (
     <Fragment>
-      <span class="eyebrow">{t('plans.eyebrow') as string}</span>
-      <h1 class="display">{t('plans.title') as string}</h1>
-      <p class="muted">{t('plans.lede') as string}</p>
+      <Label name="workspace-plans:eyebrow" class="eyebrow">{t('plans.eyebrow') as string}</Label>
+      <Heading name="workspace-plans:title" level={1} class="display">{t('plans.title') as string}</Heading>
+      <Txt name="workspace-plans:lede" class="muted">{t('plans.lede') as string}</Txt>
 
       {signedOut ? (
         <aside class="plans-notice" data-lens="signedOut">
           <h4 class="fact-label">
             <Icon name="lock" size={14} /> {t('plans.signedOut.title') as string}
           </h4>
-          <p>{t('plans.signedOut.body') as string}</p>
+          <Txt name="workspace-plans:signed-out-body">{t('plans.signedOut.body') as string}</Txt>
           <CtaLink href={signInHref} label={t('plans.signedOut.cta') as string} glyph="chevron-right" variant="main" />
         </aside>
       ) : null}
 
       <section class="settings-section">
-        <h2>{t('plans.plansH') as string}</h2>
-        <div class="plan-grid">
+        <Heading name="workspace-plans:plans-h" level={2}>{t('plans.plansH') as string}</Heading>
+        <div class="plan-grid" {...inspectAttrs('workspace-plans:grid', { role: 'group' })}>
           {plans.map((p) => (
             <article class={`plan-card${p.current ? ' is-current' : ''}`} key={p.name}>
               <header class="plan-head">
-                <h3 class="plan-name">{p.name}</h3>
+                <Heading name="workspace-plans:plan-name" level={3} class="plan-name">{p.name}</Heading>
                 {p.current ? (
                   <span class="chip chip--accent">
                     <Icon name="badge-check" size={13} /> {t('plans.current') as string}
                   </span>
                 ) : null}
               </header>
-              <p class="plan-price">{p.priceLabel}</p>
-              <p class="muted">{p.blurb}</p>
+              <Txt name="workspace-plans:plan-price" class="plan-price">{p.priceLabel}</Txt>
+              <Txt name="workspace-plans:plan-blurb" class="muted">{p.blurb}</Txt>
               <p class="plan-seats">
                 <Icon name="laptop" size={13} /> {p.seatsLabel}
               </p>
-              <ul class="plan-features">
+              <ul class="plan-features" {...inspectAttrs('workspace-plans:features', { role: 'group' })}>
                 {p.features.map((f, i) => (
                   <li key={i}>
                     <Icon name="check" size={13} /> {f}
@@ -145,7 +145,7 @@ const PlansView: FC<PlansViewProps> = (props) => {
                 ))}
               </ul>
               {p.upgradeable ? (
-                <a class="cta-main plan-upgrade" href="#plans-checkout">{t('plans.upgrade', { plan: p.name }) as string}</a>
+                <a class="cta-main plan-upgrade" href="#plans-checkout" {...inspectAttrs('workspace-plans:upgrade', { role: 'action' })}>{t('plans.upgrade', { plan: p.name }) as string}</a>
               ) : null}
             </article>
           ))}
@@ -154,7 +154,7 @@ const PlansView: FC<PlansViewProps> = (props) => {
 
       {entitled ? (
         <section class="settings-section">
-          <h2>{t('plans.accountH') as string}</h2>
+          <Heading name="workspace-plans:account-h" level={2}>{t('plans.accountH') as string}</Heading>
           <div class="plan-account">
             <p>
               <span class="chip chip--accent">
@@ -165,7 +165,7 @@ const PlansView: FC<PlansViewProps> = (props) => {
               </span>
             </p>
             <form method="post" action="/workspace/plans/signout">
-              <button type="submit" class="ghost">
+              <button type="submit" class="ghost" {...inspectAttrs('workspace-plans:sign-out', { role: 'action' })}>
                 <Icon name="log-out" size={14} /> {t('plans.signOut') as string}
               </button>
             </form>
@@ -175,13 +175,13 @@ const PlansView: FC<PlansViewProps> = (props) => {
 
       {checkout ? (
         <section class="settings-section" id="plans-checkout">
-          <h2>{t('plans.checkoutH') as string}</h2>
-          <p class="settings-note">{t('plans.checkout.seeded') as string}</p>
+          <Heading name="workspace-plans:checkout-h" level={2}>{t('plans.checkoutH') as string}</Heading>
+          <Txt name="workspace-plans:checkout-seeded" class="settings-note">{t('plans.checkout.seeded') as string}</Txt>
           <p class="checkout-summary">
             <Icon name="credit-card" size={14} /> {t('plans.checkout.summary', { amount: checkout.amountLabel }) as string}
           </p>
 
-          <div class="checkout-outcomes" role="group" aria-label={t('plans.checkout.outcomesAria') as string}>
+          <div class="checkout-outcomes" role="group" aria-label={t('plans.checkout.outcomesAria') as string} {...inspectAttrs('workspace-plans:outcomes', { role: 'group' })}>
             {checkout.outcomes.map((o) => (
               <form method="post" action="/workspace/plans/checkout/attempt" key={o.id}>
                 <button
@@ -189,6 +189,7 @@ const PlansView: FC<PlansViewProps> = (props) => {
                   name="outcome"
                   value={o.id}
                   class={`chip${o.active ? ' chip--accent' : ' chip--muted'}`}
+                  {...inspectAttrs('workspace-plans:outcome', { role: 'action' })}
                   title={o.profile ? `${o.profile} -> ${o.result}` : o.result}
                 >
                   {o.label}
@@ -202,22 +203,22 @@ const PlansView: FC<PlansViewProps> = (props) => {
               <h4 class="fact-label">
                 <Icon name={outcomeIcon} size={14} /> {active.title}
               </h4>
-              <p class="checkout-kit">
+              <Txt name="workspace-plans:checkout-kit" class="checkout-kit">
                 {active.profile ? (
                   <Fragment>
                     {active.profile} <Icon name="arrow-right" size={12} />{' '}
                   </Fragment>
                 ) : null}
                 {active.result}
-              </p>
-              <p>{active.body}</p>
+              </Txt>
+              <Txt name="workspace-plans:checkout-body">{active.body}</Txt>
               {active.id === 'succeed' ? (
                 <form method="post" action="/workspace/plans/checkout/apply">
-                  <button type="submit" class="cta-main">{active.applyLabel}</button>
+                  <button type="submit" class="cta-main" {...inspectAttrs('workspace-plans:apply', { role: 'action' })}>{active.applyLabel}</button>
                 </form>
               ) : active.id === 'decline' || active.id === 'timeout' ? (
                 <form method="post" action="/workspace/plans/checkout/attempt">
-                  <button type="submit" name="outcome" value="succeed" class="cta-main">
+                  <button type="submit" name="outcome" value="succeed" class="cta-main" {...inspectAttrs('workspace-plans:retry', { role: 'action' })}>
                     <Icon name="refresh-cw" size={14} /> {active.retryLabel}
                   </button>
                 </form>

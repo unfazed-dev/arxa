@@ -12,7 +12,7 @@
 // Macro library file — imported directly by the design activity view.
 import { Fragment } from 'hono/jsx';
 import Icon from '../../../../runtime/icon.tsx';
-import { TypeBadge, StatusPill, inspectAttrs } from '../../../common/widgets/primitives.tsx';
+import { TypeBadge, StatusPill, inspectAttrs, Label, Txt } from '../../../common/widgets/primitives.tsx';
 
 type TFn = (key: string, vars?: Record<string, unknown>) => unknown;
 
@@ -99,9 +99,9 @@ interface MetaRowProps {
 export function MetaRow({ label, value, mark, t }: MetaRowProps) {
   if (!value) return null;
   return (
-    <span class="msg-detail">
-      <b>{label}</b> {value}
-      {mark && <em class="chip thread-badge"> {t('inspector.inferred') as string}</em>}
+    <span class="msg-detail" {...inspectAttrs('inspector:meta-row', { role: 'group' })}>
+      <b {...inspectAttrs('inspector:meta-label', { role: 'label' })}>{label}</b> {value}
+      {mark && <em class="chip thread-badge" {...inspectAttrs('inspector:inferred-badge', { role: 'status' })}> {t('inspector.inferred') as string}</em>}
     </span>
   );
 }
@@ -116,7 +116,7 @@ interface ElementCardProps {
 export function ElementCard({ el, locked, unlockHref, t }: ElementCardProps) {
   return (
     <div class={`msg msg-agent${locked ? ` is-active msg-ctx ctx-${el.tone}` : ''}`}>
-      <header class="msg-meta">
+      <header class="msg-meta" {...inspectAttrs('inspector:card-head', { role: 'group' })}>
         {el.kind && <TypeBadge type={el.kind} />}
         {el.inferred && (
           <span class="chip thread-badge" {...inspectAttrs('inspector:inferred', { role: 'status' })} title={t('inspector.inferredTitle') as string}>
@@ -124,12 +124,12 @@ export function ElementCard({ el, locked, unlockHref, t }: ElementCardProps) {
           </span>
         )}
         {locked && (
-          <span class="chip thread-badge" title={t('inspector.lockedTitle') as string}>
+          <span class="chip thread-badge" {...inspectAttrs('inspector:locked', { role: 'status' })} title={t('inspector.lockedTitle') as string}>
             <Icon name="lock" size={12} /> {t('inspector.locked') as string}
           </span>
         )}
       </header>
-      <span class="msg-text"><code>{el.name}</code></span>
+      <span class="msg-text" {...inspectAttrs('inspector:el-name-text', { role: 'text' })}><code {...inspectAttrs('inspector:el-name', { role: 'text' })}>{el.name}</code></span>
       {/* Ancestor breadcrumb — outermost › … › current. Each ancestor is a
           button that POSTs back to /design/inspector/select (selectHref) to
           lock that element; the last entry is the current element (no link). */}
@@ -155,13 +155,13 @@ export function ElementCard({ el, locked, unlockHref, t }: ElementCardProps) {
           ))}
         </nav>
       )}
-      {el.screenId && <span class="msg-detail muted">{el.screenId}</span>}
+      {el.screenId && <Label name="inspector:screen-id" class="msg-detail muted">{el.screenId}</Label>}
       <MetaRow label={t('inspector.role') as string} value={el.role?.value} mark={el.role?.inferred} t={t} />
       <MetaRow label={t('inspector.style') as string} value={el.style} mark={false} t={t} />
       <MetaRow label={t('inspector.motion') as string} value={el.motion} mark={false} t={t} />
       <MetaRow label={t('inspector.fn') as string} value={el.fn?.value} mark={el.fn?.inferred} t={t} />
       <footer class="msg-foot">
-        <span class="msg-cta">
+        <span class="msg-cta" {...inspectAttrs('inspector:card-cta', { role: 'group' })}>
           {/* Pin is an explicit control, not a side effect of clicking — a form,
               because the endpoint reads name/kind off the body. */}
           {el.pinned && el.unpinHref ? (
@@ -172,15 +172,16 @@ export function ElementCard({ el, locked, unlockHref, t }: ElementCardProps) {
               hx-target="#panels"
               hx-swap="outerMorph"
               hx-push-url="false"
+              {...inspectAttrs('inspector:unpin', { role: 'action' })}
             >
               {t('design.inContext') as string} <Icon name="check" size={14} />
             </a>
           ) : el.pinHref ? (
             <form hx-post={el.pinHref} hx-target="#panels" hx-swap="outerMorph" hx-push-url="false">
-              <input type="hidden" name="screen" value={el.screenId} />
-              <input type="hidden" name="name" value={el.name} />
-              <input type="hidden" name="kind" value={el.kind} />
-              <button class="cta-main" type="submit">{t('design.pinToContext') as string} <Icon name="pin" size={14} /></button>
+              <input type="hidden" name="screen" value={el.screenId} {...inspectAttrs('inspector:field-screen', { role: 'input' })} />
+              <input type="hidden" name="name" value={el.name} {...inspectAttrs('inspector:field-name', { role: 'input' })} />
+              <input type="hidden" name="kind" value={el.kind} {...inspectAttrs('inspector:field-kind', { role: 'input' })} />
+              <button class="cta-main" type="submit" {...inspectAttrs('inspector:pin', { role: 'action' })}>{t('design.pinToContext') as string} <Icon name="pin" size={14} /></button>
             </form>
           ) : null}
           {locked && unlockHref && (
@@ -191,6 +192,7 @@ export function ElementCard({ el, locked, unlockHref, t }: ElementCardProps) {
               hx-target="#panel-activity-body"
               hx-swap="innerHTML"
               hx-push-url="false"
+              {...inspectAttrs('inspector:unlock', { role: 'action' })}
             >
               {t('inspector.unlock') as string} <Icon name="lock-open" size={14} />
             </button>
@@ -214,67 +216,68 @@ export function ScreenCard({ sc, t }: ScreenCardProps) {
         <TypeBadge type="screen" label={sc.epic} />
         {sc.state && <StatusPill state={sc.state} size="sm" t={t} />}
       </header>
-      <span class="msg-text"><code>{sc.id}</code></span>
+      <span class="msg-text" {...inspectAttrs('inspector:sc-id-text', { role: 'text' })}><code {...inspectAttrs('inspector:sc-id', { role: 'text' })}>{sc.id}</code></span>
 
-      <span class="msg-detail"><b>{t('inspector.states') as string}</b></span>
-      <span class="msg-meta">
+      <span class="msg-detail" {...inspectAttrs('inspector:states-label', { role: 'group' })}><b {...inspectAttrs('inspector:states-text', { role: 'label' })}>{t('inspector.states') as string}</b></span>
+      <span class="msg-meta" {...inspectAttrs('inspector:states-badges', { role: 'group' })}>
         {sc.states && sc.states.length > 0 ? (
           sc.states.map((st, i) => (
             <span
               key={i}
               class="chip thread-badge"
+              {...inspectAttrs('inspector:state-badge', { role: 'label' })}
               title={t(`inspector.source.${st.source ?? 'declared'}`) as string}
             >
               {st.name}{st.source === 'derived' ? ` · ${t('inspector.derived') as string}` : ''}
             </span>
           ))
         ) : (
-          <span class="msg-detail muted">{t('inspector.noStates') as string}</span>
+          <Label name="inspector:no-states" class="msg-detail muted">{t('inspector.noStates') as string}</Label>
         )}
       </span>
 
       {/* States the kit implies but the screen never declares — only when there is one. */}
       {sc.missingStates && sc.missingStates.length > 0 && (
         <Fragment>
-          <span class="msg-detail"><b>{t('inspector.missingStates') as string}</b></span>
+          <span class="msg-detail" {...inspectAttrs('inspector:missing-label', { role: 'group' })}><b {...inspectAttrs('inspector:missing-states-text', { role: 'label' })}>{t('inspector.missingStates') as string}</b></span>
           {sc.missingStates.map((ms, i) => (
-            <span key={i} class="msg-detail">{ms.name}{ms.why ? ` — ${ms.why}` : ''}</span>
+            <Label key={i} name="inspector:missing-state" class="msg-detail">{ms.name}{ms.why ? ` — ${ms.why}` : ''}</Label>
           ))}
         </Fragment>
       )}
 
-      <span class="msg-detail"><b>{t('inspector.kits') as string}</b></span>
-      <span class="msg-meta">
+      <span class="msg-detail" {...inspectAttrs('inspector:kits-label', { role: 'group' })}><b {...inspectAttrs('inspector:kits-text', { role: 'label' })}>{t('inspector.kits') as string}</b></span>
+      <span class="msg-meta" {...inspectAttrs('inspector:kits-badges', { role: 'group' })}>
         {sc.kits && sc.kits.length > 0 ? (
-          sc.kits.map((k, i) => <span key={i} class="chip thread-badge">{k.label ?? k.id}</span>)
+          sc.kits.map((k, i) => <Label key={i} name="inspector:kit-badge" class="chip thread-badge">{k.label ?? k.id}</Label>)
         ) : (
-          <span class="msg-detail muted">{t('inspector.noKits') as string}</span>
+          <Label name="inspector:no-kits" class="msg-detail muted">{t('inspector.noKits') as string}</Label>
         )}
       </span>
 
-      <span class="msg-detail"><b>{t('inspector.edges') as string}</b></span>
+      <span class="msg-detail" {...inspectAttrs('inspector:edges-label', { role: 'group' })}><b {...inspectAttrs('inspector:edges-text', { role: 'label' })}>{t('inspector.edges') as string}</b></span>
       {sc.edges && sc.edges.length > 0 ? (
         sc.edges.map((e, i) => (
-          <span key={i} class="msg-detail">
-            {e.flowLabel ?? e.flow} · {e.trigger} <Icon name="arrow-right" size={12} /> <code>{e.to}</code>
-            {e.element ? <span class="muted"> ({e.element})</span> : null}
+          <span key={i} class="msg-detail" {...inspectAttrs('inspector:edge', { role: 'group' })}>
+            {e.flowLabel ?? e.flow} · {e.trigger} <Icon name="arrow-right" size={12} /> <code {...inspectAttrs('inspector:edge-to', { role: 'text' })}>{e.to}</code>
+            {e.element ? <Label name="inspector:edge-element" class="muted"> ({e.element})</Label> : null}
           </span>
         ))
       ) : (
-        <span class="msg-detail muted">{t('inspector.noEdges') as string}</span>
+        <Label name="inspector:no-edges" class="msg-detail muted">{t('inspector.noEdges') as string}</Label>
       )}
 
       {sc.annotations && (
         <Fragment>
           <footer class="msg-foot">
-            <span class="msg-detail">
+            <Label name="inspector:coverage" class="msg-detail">
               {t('inspector.coverage', { covered: sc.annotations.covered, total: sc.annotations.total, pct: sc.annotations.pct }) as string}
-            </span>
+            </Label>
           </footer>
           {sc.annotations.missing && sc.annotations.missing.length > 0 && (
             <Fragment>
-              <span class="msg-detail"><b>{t('inspector.uncovered') as string}</b></span>
-              {sc.annotations.missing.map((m, i) => <span key={i} class="msg-detail"><code>{m}</code></span>)}
+              <span class="msg-detail" {...inspectAttrs('inspector:uncovered-label', { role: 'group' })}><b {...inspectAttrs('inspector:uncovered-text', { role: 'label' })}>{t('inspector.uncovered') as string}</b></span>
+              {sc.annotations.missing.map((m, i) => <span key={i} class="msg-detail" {...inspectAttrs('inspector:missing-annotation', { role: 'group' })}><code {...inspectAttrs('inspector:missing-code', { role: 'text' })}>{m}</code></span>)}
             </Fragment>
           )}
         </Fragment>
@@ -293,13 +296,13 @@ interface PaneProps {
 export function Pane({ c, t }: PaneProps) {
   const ins = c.inspector;
   return (
-    <div class="av-list" id="av-list">
+    <div class="av-list" id="av-list" {...inspectAttrs('inspector:list', { role: 'group' })}>
       {ins && ins.mode === 'element' && ins.element ? (
         <ElementCard el={ins.element} locked={ins.locked} unlockHref={ins.unlockHref} t={t} />
       ) : ins && ins.mode === 'screen' && ins.screen ? (
         <ScreenCard sc={ins.screen} t={t} />
       ) : (
-        <p class="muted">{(ins?.hint) || (t('inspector.empty') as string)}</p>
+        <Txt name="inspector:empty" class="muted">{(ins?.hint) || (t('inspector.empty') as string)}</Txt>
       )}
     </div>
   );
