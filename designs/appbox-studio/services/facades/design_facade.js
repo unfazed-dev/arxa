@@ -554,7 +554,7 @@ function viewerFor(d, L, t) {
               // Extra stub query for the walked tile: the island inside the
               // iframe needs the PARENT url to advance to, plus what to match
               // a click against. Built here because encodeURIComponent in a
-              // nunjucks expression is where this would quietly break.
+              // template expression is where this would quietly break.
               // `advance` is a plain viewer GET, so the island can hand it
               // straight to the parent's htmx — no new endpoint to keep in
               // sync with the viewer's param list.

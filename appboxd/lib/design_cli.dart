@@ -96,7 +96,7 @@ Future<int> designMain(List<String> args) async {
     case 'serve':
       return designServe(rest);
     case 'eject':
-      return _emit(designEject(rest));
+      return _emit(await designEject(rest));
     case 'ds-check':
       return _emit(designDsCheck(rest));
     case 'record-asset':

@@ -1,0 +1,125 @@
+// screen_stub_view.tsx — Stand-in render of a client design screen (replaces
+// screen_stub_view.html). Served as the iframe document on the evidence canvas.
+// In the shipped app this src is the designer artifact the daemon serves; here
+// it is an honest labelled stub.
+//
+// appbox:provenance
+//   generator: app-box  licence: free  project: 662368770980
+//   Built with app-box (free tier) — https://appbox.dev
+
+import { Fragment, type FC, type Child } from 'hono/jsx';
+import { raw } from 'hono/utils/html';
+
+type TFn = (key: string, vars?: Record<string, unknown>) => unknown;
+
+interface ScreenStubViewProps {
+  t: TFn;
+  locale?: string;
+  surface?: string;
+  vp?: string;
+  // The dynamic {% include partial %} becomes a pre-rendered Child prop: the
+  // server resolves the project screen partial and passes the rendered content.
+  partial?: Child;
+  still?: boolean;
+  embed?: boolean;
+  inspect?: boolean;
+  theme?: string;
+  accent?: string;
+  font?: string;
+  width?: number;
+  kind?: string;
+  themeOverride?: string;
+  walk?: boolean;
+  [key: string]: unknown;
+}
+
+const ScreenStubView: FC<ScreenStubViewProps> = (props) => {
+  // kimitail: pqs is computed but not rendered — carried so boosted navigation
+  // inside the iframe preserves vp/embed/still/inspect/theme on every hop.
+  const pqs = `?vp=${props.vp}${props.embed ? '&embed=1' : ''}${props.still ? '&still=1' : ''}${props.inspect ? '&inspect=1' : ''}${props.themeOverride ? `&theme=${props.themeOverride}` : ''}`;
+
+  return (
+    <Fragment>
+      {raw('<!doctype html>')}
+      <html lang={props.locale}>
+        <head>
+          <meta charset="utf-8" />
+          <meta name="viewport" content="width=device-width, initial-scale=1" />
+          <title>{props.surface} · {props.vp}</title>
+          <link rel="stylesheet" href="/assets/css/fonts.css" />
+          <link rel="stylesheet" href="/assets/css/app.css" />
+          <link rel="stylesheet" href="/assets/css/theme.css" />
+          {props.partial && (
+            <Fragment>
+              <link rel="stylesheet" href="/assets/css/appshell.css" />
+              <link rel="stylesheet" href="/assets/css/media.css" />
+            </Fragment>
+          )}
+          {/* Boosted MPA (ADR-0003) for frames the user can click (live tile,
+              proto lens). `still` frames are canvas tiles: interactive in place
+              but navigation inert via canvas.js, so they stay script-free.
+              globalViewTransitions animates the body swap with zero JS;
+              allowEval and allowScriptTags stay false (ADR-0002 no-custom-JS). */}
+          {!props.still && (
+            <Fragment>
+              <meta name="htmx-config" content='{"allowEval":false,"allowScriptTags":false,"globalViewTransitions":true}' />
+              <script src="/assets/vendor/htmx.min.js" integrity="sha384-H5SrcfygHmAuTDZphMHqBJLc3FhssKjG7w/CeCpFReSfwBWDTKpkzPP8c+cLsK+V" crossorigin="anonymous" />
+            </Fragment>
+          )}
+        </head>
+        {/* inspect MUST be a real conditional attribute, not an interpolated
+            string — auto-escaping would break dataset.inspectArmed matching. */}
+        <body
+          class={`stub-body${props.embed ? ' stub-embed' : ''}`}
+          data-surface={props.surface}
+          {...(props.inspect ? { 'data-inspect-armed': 'true' } : {})}
+          {...(!props.still ? { 'hx-boost': 'true', 'hx-sync': 'this:replace' } : {})}
+        >
+          <div id="app" data-theme={props.theme} data-accent={props.accent} data-font={props.font}>
+            <div class="stub-screen" style={props.embed ? undefined : `max-width: ${props.width}px`}>
+              {!props.embed && (
+                <header class="stub-nav" data-el="nav-bar" data-inspect-role="nav" data-inspect-style="app bar · brand + links" data-inspect-motion="none" data-inspect-fn="Top-level navigation and brand for the screen">
+                  {props.partial ? (
+                    <span class="stub-brand">{props.t('app.brand') as string}</span>
+                  ) : (
+                    <span class="stub-brand">appbox</span>
+                  )}
+                  {!props.partial && <span class="stub-nav-links">{props.t(`stub.kind.${props.kind}`) as string}</span>}
+                </header>
+              )}
+
+              {props.partial ? props.partial : (
+                <Fragment>
+                  <section class="stub-hero" data-el="hero" data-inspect-role="hero" data-inspect-style="display headline + note" data-inspect-motion="reveal" data-inspect-fn="Names the screen being previewed">
+                    <h1>{props.t(`stub.kind.${props.kind}`) as string}</h1>
+                    <p>{props.t('stub.previewNote') as string}</p>
+                  </section>
+                  <section class="stub-rows">
+                    {[1, 2, 3].map(i => (
+                      <div class="stub-row" data-el={`list-item:Block ${i}`} data-inspect-role="list row" data-inspect-style="row · thumb + label" data-inspect-motion="none" data-inspect-fn="Content placeholder row" key={i}>
+                        <span class="stub-thumb sm"></span>
+                        <span class="stub-row-name">{props.t('stub.block', { kind: props.kind, i }) as string}</span>
+                      </div>
+                    ))}
+                  </section>
+                </Fragment>
+              )}
+
+              {!props.embed && (
+                <span class="stub-tag">{props.t('stub.tag', { surface: props.surface, vp: props.vp }) as string}</span>
+              )}
+            </div>
+          </div>
+          {props.inspect && <script src="/assets/vendor/inspect.js" />}
+          {/* The flow-walk island, loaded ONLY on the current step of a walked
+              flow row. The tap fires a flow edge in here, but the row that moves
+              lives in the parent — a boundary markup cannot cross, so this is a
+              named island (ADR-0002 amendment 2026-08-02). */}
+          {props.walk && <script src="/assets/vendor/flowwalk.js" />}
+        </body>
+      </html>
+    </Fragment>
+  );
+};
+
+export default ScreenStubView;

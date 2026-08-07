@@ -1,0 +1,799 @@
+// loop_view.tsx — Build loop surface (replaces loop_view.html).
+//
+// The run thread IS the chat: stage / evidence / chart / gate cards stream
+// into the composer panel — centered when nothing is open, docked right when
+// an artifact is in the main panel. Gate decisions are chat acts.
+// Extends main_shell_view; all 33 macros are exported functions (registry
+// auto-lowercases the names).
+
+import { Fragment, type FC } from 'hono/jsx';
+import Icon from '../../../../../runtime/icon.tsx';
+import MainShellView from '../../main_shell_view.tsx';
+import { StatusPill, TypeBadge, CtaLink } from '../../../../common/widgets/primitives.tsx';
+import { PanelBar, Empty, View as MainView, Open as MainPanelOpen } from '../../../../common/widgets/main_panel.tsx';
+import { Open as ComposerPanelOpen } from '../../shared/widgets/composer_panel.tsx';
+import { Open as ActivityPanelOpen, Top as ActivityTop, Bottom as ActivityBottom } from '../../shared/widgets/activity_panel.tsx';
+import { Field } from '../../shared/widgets/composer.tsx';
+import { DesignViewer } from '../../shared/widgets/design_viewer.tsx';
+import { Timeline as RenderTimeline } from '../../shared/widgets/timeline.tsx';
+
+type TFn = (key: string, vars?: Record<string, unknown>) => unknown;
+
+// ---- context types ----------------------------------------------------------
+
+interface RunState {
+  number: string | number;
+  brief: string;
+  stateLabel: string;
+  started: string;
+  elapsed: string;
+  policy: { stopOnRed: boolean; escLimit: number | string };
+  pausedByYou?: boolean;
+}
+
+interface Message {
+  from: string;
+  text: string;
+  active?: boolean;
+  tone?: string;
+  at: string;
+  card?: { type: string; label?: string; state?: string; detail?: string; gateId?: string };
+  artifact?: string;
+}
+
+interface StageItem {
+  n: number;
+  id: string;
+  label: string;
+  state: string;
+  duration?: string;
+  summary?: string;
+  detail?: string;
+  attempts?: { n: number; state: string; note?: string }[];
+}
+
+interface GateItem {
+  id: string;
+  state: string;
+  label: string;
+  context: string;
+  provenance?: { by?: string; shell?: string; device?: string; method?: string; at?: string; hash?: string };
+  note?: string;
+}
+
+interface FindingItem {
+  severity: string;
+  file: string;
+  line: number;
+  check: string;
+  expected: string;
+  actual: string;
+  reproduce: string;
+  state: string;
+  fingerprint: string;
+  note: string;
+}
+
+interface ChartData {
+  maxDuration: { duration: string };
+  bars: { label: string; state: string; pct: string | number; duration: string }[];
+}
+
+interface LogLine {
+  from: string;
+  tone?: string;
+  at: string;
+  text: string;
+}
+
+interface ActivityViewDef {
+  id: string;
+  icon: string;
+  label: string;
+  href: string;
+  active?: boolean;
+}
+
+interface ArtifactIdx {
+  ref: string;
+  kind: string;
+  label: string;
+  state?: string;
+}
+
+interface CommitItem {
+  hash: string;
+  at: string;
+  message: string;
+}
+
+interface FileRowItem {
+  path: string;
+  mode?: boolean;
+  href?: string;
+  get?: string;
+  status: string;
+}
+
+interface TimelineDataObj {
+  items: { kind: string; state: string; label: string; ref: string; href?: string }[];
+  currentId: string;
+}
+
+interface Prefs {
+  accent?: string;
+  theme?: string;
+  [key: string]: unknown;
+}
+
+// The build loop render context. Every exported macro receives this as props.
+interface LoopProps {
+  t: TFn;
+  panel?: string;
+  messages?: Message[];
+  chips?: { id: string; label: string; tone?: string; removeHref?: string }[];
+  run?: RunState;
+  fileView?: { path?: string; mode?: string; modeName?: string; lang?: string; body?: string; html?: string; src?: string; backHref?: string };
+  artifact?: {
+    kind: string;
+    gate?: GateItem;
+    stage?: StageItem;
+    stageCount?: number;
+    list?: FindingItem[];
+    gateName?: string;
+    chart?: ChartData;
+    messages?: LogLine[];
+    evidence?: unknown;
+  };
+  activityView?: string;
+  activityViews?: ActivityViewDef[];
+  panelSize?: string;
+  panelSizeHref?: string;
+  stages?: StageItem[];
+  filter?: string;
+  artifacts?: ArtifactIdx[];
+  activeArtifact?: string;
+  commits?: CommitItem[];
+  files?: FileRowItem[];
+  viewer?: Record<string, unknown>;
+  opFired?: boolean;
+  noEvidence?: boolean;
+  timeline?: TimelineDataObj;
+  locale?: string;
+  prefs?: Prefs;
+  activeShell?: string;
+  composerAction?: string;
+  placeholder?: string;
+  [key: string]: unknown;
+}
+
+// ===== the chat: thread cards + composer ====================================
+
+// One thread card. Pending gates get inline quick-replies; every artifact
+// card keeps the "view in the main panel" CTA that docks the chat.
+interface MsgCardProps {
+  m: Message;
+  t: TFn;
+}
+export function MsgCard({ m, t }: MsgCardProps) {
+  if (m.from === 'user') {
+    return (
+      <div class="msg msg-user">
+        <span class="msg-text">{m.text}</span>
+      </div>
+    );
+  }
+  const cls = `msg msg-agent${m.active ? ' is-active' : ''}${m.tone ? ` msg-tone-${m.tone}` : ''}`;
+  return (
+    <div class={cls}>
+      <header class="msg-meta">
+        <TypeBadge type={m.card!.type} label={m.card!.label} />
+        {m.card!.state && <StatusPill state={m.card!.state} size="sm" t={t} />}
+      </header>
+      <span class="msg-text">{m.text}</span>
+      {m.card!.detail && <span class="msg-detail">{m.card!.detail}</span>}
+      {m.card!.type === 'gate' && m.card!.state === 'pending' && (
+        <span class="gate-quick">
+          <form method="post" action="/build/gates/decide"
+                hx-post="/build/gates/decide" hx-target="#panels" hx-swap="morph:outerHTML">
+            <input type="hidden" name="gate" value={m.card!.gateId} />
+            <button type="submit" name="decision" value="approved" class="btn-approve">{t('action.approve') as string}</button>
+            <button type="submit" name="decision" value="rejected" class="btn-reject ghost">{t('action.reject') as string}</button>
+          </form>
+          <CtaLink href={`/build/chips/pin?ref=gate/${m.card!.gateId}`} label={t('build.rejectWithNote') as string}
+              glyph="undo-2" variant="ghost" size={13}
+              title={t('build.rejectWithNoteTitle') as string}
+              hx={{ target: '#panels' }} />
+        </span>
+      )}
+      <footer class="msg-foot">
+        {m.artifact && (
+          <span class="msg-cta">
+            {m.active ? (
+              <CtaLink href={`/build/artifact/${m.artifact}`} label={t('build.onCanvas') as string}
+                  glyph="circle-dot" variant="main" size={12} hx={{ target: '#panels' }} />
+            ) : (
+              <CtaLink href={`/build/artifact/${m.artifact}`} label={t('build.viewOnCanvas') as string}
+                  variant="main" size={13} hx={{ target: '#panels' }} />
+            )}
+          </span>
+        )}
+        <span class="msg-time">{m.at}</span>
+      </footer>
+    </div>
+  );
+}
+
+export function ChatThread(props: LoopProps) {
+  return (
+    <div class="av-list chat-thread" id="chat-thread">
+      {[...(props.messages ?? [])].reverse().map((m, i) => (
+        <MsgCard key={i} m={m} t={props.t} />
+      ))}
+    </div>
+  );
+}
+
+// The single input path — the shared composer card. With a gate chip pinned,
+// this is the note input.
+export function ComposerPanel(props: LoopProps) {
+  const spec = {
+    eyebrow: props.t('build.runEyebrow', { number: props.run?.number, brief: props.run?.brief }) as string,
+    chips: props.chips,
+  };
+  return (
+    <ComposerPanelOpen spec={spec} t={props.t}>
+      <ChatThread {...props} />
+      {/* Field reads composerAction, placeholder, modelMenu, etc. from the render context. */}
+      <Field {...(props as any)} />
+    </ComposerPanelOpen>
+  );
+}
+
+// ===== the main panel content ===============================================
+
+// The main panel's content: the open file, else the open artifact, else empty.
+export function MainContent(props: LoopProps) {
+  const { t } = props;
+  if (props.fileView) {
+    return <MainView f={props.fileView} t={t} />;
+  }
+  if (props.artifact) {
+    return (
+      <section class="mp-content" id="mp-content" aria-live="polite">
+        <CanvasArtifact {...props} />
+      </section>
+    );
+  }
+  return <Empty t={t} />;
+}
+
+// The three content panels, one swap unit. Composer LEFT, activity RIGHT.
+interface PanelsProps extends LoopProps {
+  oob?: boolean;
+}
+export function Panels(props: PanelsProps) {
+  const { t } = props;
+  return (
+    <div class="panels" id="panels" data-panel={props.panel} {...(props.oob ? { 'hx-swap-oob': 'outerHTML' } : {})}>
+      <PanelBar panel={props.panel} t={t} />
+      <ComposerPanel {...props} />
+      <MainPanelOpen>
+        <MainContent {...props} />
+      </MainPanelOpen>
+      <ActivityPanel {...props} />
+    </div>
+  );
+}
+
+// ===== the activity panel ===================================================
+
+export function RunView(props: LoopProps) {
+  const { t } = props;
+  const run = props.run!;
+  return (
+    <div class="av-view run-view">
+      <header class="av-view-head">
+        <span class="eyebrow">{t('build.runEyebrow', { number: run.number, brief: run.brief }) as string}</span>
+        <strong class="facts-state">{run.stateLabel}</strong>
+        <span class="facts-list">
+          <span>{t('build.started') as string} {run.started}</span>
+          <span>{t('build.elapsedFact') as string} {run.elapsed}</span>
+          <span>{t('facts.stopOnRed') as string} {run.policy.stopOnRed ? (t('build.on') as string) : (t('build.off') as string)}</span>
+          <span>{t('facts.esc') as string} {run.policy.escLimit}</span>
+        </span>
+      </header>
+      <form class="run-controls" method="post" action="/build/run/control"
+            hx-post="/build/run/control" hx-target="#panel-activity-body" hx-swap="innerHTML">
+        {run.pausedByYou ? (
+          <button type="submit" name="action" value="resume" class="btn-approve"><Icon name="play" size={14} /> {t('build.resumeRun') as string}</button>
+        ) : (
+          <button type="submit" name="action" value="pause" class="ghost"><Icon name="pause" size={14} /> {t('build.pauseRun') as string}</button>
+        )}
+      </form>
+      <ol class="run-stages">
+        {(props.stages ?? []).map((s, i) => (
+          <li class="run-stage" key={i}>
+            <span class="run-stage-main">
+              <span class="run-stage-label">{s.n}. {s.label}</span>
+              <StatusPill state={s.state} t={t} />
+            </span>
+            {['active', 'queued', 'held'].includes(s.state) && (
+              <span class="run-stage-acts">
+                {s.state === 'held' ? (
+                  <form method="post" action={`/build/stages/${s.id}/control`}
+                        hx-post={`/build/stages/${s.id}/control`} hx-target="#panels" hx-swap="morph:outerHTML">
+                    <button type="submit" name="action" value="resume" class="ico-btn"
+                      title={t('build.resumeStage', { label: s.label }) as string}
+                      aria-label={t('build.resumeStage', { label: s.label }) as string}><Icon name="play" size={14} /></button>
+                  </form>
+                ) : (
+                  <form method="post" action={`/build/stages/${s.id}/control`}
+                        hx-post={`/build/stages/${s.id}/control`} hx-target="#panels" hx-swap="morph:outerHTML">
+                    <button type="submit" name="action" value="pause" class="ico-btn"
+                      title={t('build.pauseStage', { label: s.label }) as string}
+                      aria-label={t('build.pauseStage', { label: s.label }) as string}><Icon name="pause" size={14} /></button>
+                  </form>
+                )}
+                <form method="post" action={`/build/stages/${s.id}/control`}
+                      hx-post={`/build/stages/${s.id}/control`} hx-target="#panels" hx-swap="morph:outerHTML">
+                  <button type="submit" name="action" value="cancel" class="ico-btn"
+                    title={t('build.cancelStage', { label: s.label }) as string}
+                    aria-label={t('build.cancelStage', { label: s.label }) as string}><Icon name="x" size={14} /></button>
+                </form>
+              </span>
+            )}
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
+}
+
+export function ThreadView(props: LoopProps) {
+  const { t } = props;
+  const filters = [
+    { id: 'all', label: t('build.filter.all') as string },
+    { id: 'stage', label: t('build.filter.stage') as string },
+    { id: 'gate', label: t('build.filter.gate') as string },
+    { id: 'findings', label: t('build.filter.findings') as string },
+    { id: 'evidence', label: t('build.filter.evidence') as string },
+    { id: 'note', label: t('build.filter.note') as string },
+  ];
+  return (
+    <div class="av-view thread-view">
+      <p class="av-view-note muted">{t('build.filterNote') as string}</p>
+      <nav class="thread-filter" aria-label={t('build.filterAria') as string}>
+        {filters.map(o => (
+          <a key={o.id}
+             class={`filter-item${props.filter === o.id ? ' is-active' : ''}`}
+             href={`/build/panel?type=${o.id}`}
+             hx-get={`/build/panel?type=${o.id}`} hx-target="#panel-activity-body" hx-swap="innerHTML" hx-push-url="false">{o.label}</a>
+        ))}
+      </nav>
+    </div>
+  );
+}
+
+export function ArtifactsView(props: LoopProps) {
+  const { t } = props;
+  return (
+    <div class="av-view artifacts-view">
+      <ul class="artifact-index">
+        {(props.artifacts ?? []).map((a, i) => (
+          <li key={i}>
+            <a class={`artifact-index-link${props.activeArtifact === a.ref ? ' is-active' : ''}`}
+               href={`/build/artifact/${a.ref}`}
+               hx-get={`/build/artifact/${a.ref}`} hx-target="#panels" hx-swap="morph:outerHTML" hx-push-url="false">
+              <TypeBadge type={a.kind} />
+              <span class="artifact-index-label">{a.label}</span>
+              {a.state && <StatusPill state={a.state} t={t} />}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+export function CommitsView(props: LoopProps) {
+  return (
+    <div class="av-view commits-view">
+      <p class="av-view-note muted">{props.t('build.commitsNote') as string}</p>
+      <ol class="commit-list">
+        {[...(props.commits ?? [])].reverse().map((commit, i) => (
+          <li class="commit" key={i}>
+            <span class="commit-head"><code class="commit-hash">{commit.hash}</code><span class="msg-time">{commit.at}</span></span>
+            <span class="commit-msg">{commit.message}</span>
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
+}
+
+export function FilesView(props: LoopProps) {
+  const { t } = props;
+  return (
+    <div class="av-view files-view">
+      <p class="av-view-note muted">{t('build.filesNote') as string}</p>
+      <ul class="file-list">
+        {(props.files ?? []).map((f, i) => (
+          <li class="file-row" key={i}>
+            {f.mode ? (
+              <a class={`file-link${props.fileView && props.fileView.path === f.path ? ' is-active' : ''}`}
+                 href={f.href}
+                 hx-get={f.get} hx-target="#panel-main" hx-swap="innerHTML" hx-push-url={f.href}>
+                <code class="file-path">{f.path}</code>
+                <span class={`chip chip--muted file-status-${f.status}`}>{t(`build.fileStatus.${f.status}`) as string}</span>
+              </a>
+            ) : (
+              <Fragment>
+                <code class="file-path">{f.path}</code>
+                <span class={`chip chip--muted file-status-${f.status}`}>{t(`build.fileStatus.${f.status}`) as string}</span>
+              </Fragment>
+            )}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+export function ActivityBody(props: LoopProps) {
+  switch (props.activityView) {
+    case 'thread': return <ThreadView {...props} />;
+    case 'artifacts': return <ArtifactsView {...props} />;
+    case 'commits': return <CommitsView {...props} />;
+    case 'files': return <FilesView {...props} />;
+    default: return <RunView {...props} />;
+  }
+}
+
+// Head label + active carousel icon — refreshed out-of-band on every
+// panel-affecting act; the <aside> itself is never replaced.
+export function ActivityChrome(props: LoopProps) {
+  const spec = {
+    label: props.t(`activityView.${props.activityView}`) as string,
+    views: props.activityViews ?? [],
+    size: props.panelSize as any,
+    sizeHref: props.panelSizeHref,
+  };
+  return (
+    <Fragment>
+      <ActivityTop spec={spec} oob={true} />
+      <ActivityBottom spec={spec} oob={true} t={props.t} />
+    </Fragment>
+  );
+}
+
+// Targeted response for acts inside the panel: new body + head + bar OOB.
+export function ActivityTarget(props: LoopProps) {
+  return (
+    <Fragment>
+      <ActivityBody {...props} />
+      <ActivityChrome {...props} />
+    </Fragment>
+  );
+}
+
+export function ActivityPanel(props: LoopProps) {
+  const spec = {
+    label: props.t(`activityView.${props.activityView}`) as string,
+    views: props.activityViews ?? [],
+    size: props.panelSize as any,
+    sizeHref: props.panelSizeHref,
+  };
+  return (
+    <ActivityPanelOpen spec={spec} t={props.t}>
+      <ActivityBody {...props} />
+    </ActivityPanelOpen>
+  );
+}
+
+// The width grip's response: the whole activity panel re-rendered at its
+// new persisted size.
+export function ActivityFrameSwap(props: LoopProps) {
+  return <ActivityPanel {...props} />;
+}
+
+// ===== the shell timeline ===================================================
+
+// Footer-panel resident, read-only.
+interface TimelineProps extends LoopProps {
+  oob?: boolean;
+}
+export function Timeline(props: TimelineProps) {
+  return (
+    <RenderTimeline
+      timeline={props.timeline}
+      oob={props.oob}
+      label={props.t('build.timelineLabel') as string}
+      t={props.t}
+    />
+  );
+}
+
+// ===== Canvas artifacts: one thing at a time, large =========================
+
+export function GateCanvas(props: { gate: GateItem; t: TFn; [key: string]: unknown }) {
+  const { gate, t } = props;
+  return (
+    <article class={`artifact gate-artifact gate-${gate.state}`}>
+      <header class="artifact-head">
+        <span class="eyebrow">{t('build.humanGate') as string}</span>
+        <StatusPill state={gate.state} t={t} />
+      </header>
+      <h2 class="display">{gate.label}</h2>
+      <p class="artifact-lede">{gate.context}</p>
+
+      {gate.state === 'pending' ? (
+        <Fragment>
+          <div class="gate-actions" id="gate-actions">
+            <form class="gate-buttons" method="post" action="/build/gates/decide"
+                  hx-post="/build/gates/decide" hx-target="#panels" hx-swap="morph:outerHTML">
+              <input type="hidden" name="gate" value={gate.id} />
+              <button type="submit" name="decision" value="approved" class="btn-approve">{t('action.approve') as string}</button>
+              <button type="submit" name="decision" value="rejected" class="btn-reject ghost">{t('action.reject') as string}</button>
+              <span class="htmx-indicator muted">{t('build.minting') as string}</span>
+            </form>
+            <CtaLink href={`/build/chips/pin?ref=gate/${gate.id}`} label={t('build.rejectWithNoteLong') as string}
+                glyph="undo-2" variant="ghost" hx={{ target: '#panels' }} />
+          </div>
+          <p class="artifact-foot muted">{t('gateFoot') as string}</p>
+        </Fragment>
+      ) : gate.provenance ? (
+        <Fragment>
+          <dl class="provenance">
+            <div><dt>{t('prov.decidedBy') as string}</dt><dd>{gate.provenance.by} · {gate.provenance.shell}</dd></div>
+            <div><dt>{t('prov.device') as string}</dt><dd>{gate.provenance.device}</dd></div>
+            <div><dt>{t('prov.confirm') as string}</dt><dd>{gate.provenance.method} · {gate.provenance.at}</dd></div>
+            <div><dt>{t('prov.hash') as string}</dt><dd><code>{gate.provenance.hash}</code></dd></div>
+          </dl>
+          {gate.note && <p class="gate-note">{t('build.yourNote') as string} {gate.note}</p>}
+        </Fragment>
+      ) : (
+        <p class="artifact-foot muted">{t('build.gateNotReachable') as string}</p>
+      )}
+    </article>
+  );
+}
+
+export function StageCanvas(props: { s: StageItem; total: number; run?: RunState; t: TFn; [key: string]: unknown }) {
+  const { s, total, t } = props;
+  return (
+    <article class={`artifact stage-artifact stage-state-${s.state}`}>
+      <header class="artifact-head">
+        <span class="eyebrow">{t('build.stageEyebrow', { n: s.n, total }) as string}</span>
+        <StatusPill state={s.state} t={t} />
+      </header>
+      <h2 class="display">{s.label}</h2>
+      <p class="big-metric">{s.duration}<span class="big-metric-label">{t('build.onTheLine') as string}</span></p>
+      <p class="artifact-lede">{s.summary}</p>
+      <p class="artifact-detail muted">{s.detail}</p>
+      {s.attempts && (
+        <ol class="attempts">
+          {s.attempts.map((a, i) => (
+            <li class={`attempt attempt-${a.state}`} key={i}>
+              <span class="attempt-n">{t('build.attemptOf', { n: a.n, total: props.run?.policy.escLimit }) as string}</span>
+              <StatusPill state={a.state} t={t} />
+              <span class="muted">{a.note}</span>
+            </li>
+          ))}
+        </ol>
+      )}
+      {s.state === 'recovered' && (
+        <p class="artifact-foot">
+          <CtaLink href="/build/artifact/findings/coverage" label={t('build.seeFindings') as string} hx={{ target: '#panels' }} />
+        </p>
+      )}
+    </article>
+  );
+}
+
+export function FindingsCanvas(props: { a: { list?: FindingItem[]; [key: string]: unknown }; t: TFn; [key: string]: unknown }) {
+  const { a, t } = props;
+  return (
+    <article class="artifact findings-artifact">
+      <header class="artifact-head">
+        <span class="eyebrow">{t('build.findingsEyebrow', { gate: a.gate }) as string}</span>
+        <span class="chip chip--muted">{t('build.findingsChip', { count: a.list?.length ?? 0 }) as string}</span>
+      </header>
+      <h2 class="display">{t('findingsHeadline') as string}</h2>
+      <p class="artifact-lede">{t('findingsLede') as string}</p>
+      <div class="finding-list">
+        {(a.list ?? []).map((f, i) => (
+          <article class={`finding finding-${f.severity}`} key={i}>
+            <header class="finding-head">
+              <span class={`sev sev-${f.severity}`}>{t(`finding.severity.${f.severity}`) as string}</span>
+              <code class="finding-loc">{f.file}:{f.line}</code>
+              <span class="finding-check muted">{f.check}</span>
+            </header>
+            <dl class="finding-body">
+              <div><dt>{t('finding.expected') as string}</dt><dd>{f.expected}</dd></div>
+              <div><dt>{t('finding.actual') as string}</dt><dd>{f.actual}</dd></div>
+            </dl>
+            <p class="reproduce"><span class="fact-label">{t('finding.reproduce') as string}</span><code>{f.reproduce}</code></p>
+            <footer class="finding-foot">
+              <span class="chip chip--muted">{f.state}</span>
+              <span class="muted">{t('finding.fingerprint') as string} <code>{f.fingerprint}</code></span>
+            </footer>
+            <p class="finding-note muted">{f.note}</p>
+          </article>
+        ))}
+      </div>
+    </article>
+  );
+}
+
+export function ChartCanvas(props: { chart: ChartData; run?: RunState; t: TFn; [key: string]: unknown }) {
+  const { chart, t } = props;
+  return (
+    <article class="artifact chart-artifact">
+      <header class="artifact-head">
+        <span class="eyebrow">{t('build.chartEyebrow', { number: props.run?.number }) as string}</span>
+      </header>
+      <h2 class="display">{t('build.chartHeadline') as string}</h2>
+      <p class="artifact-lede">{t('build.chartLede', { duration: chart.maxDuration.duration, elapsed: props.run?.elapsed }) as string}</p>
+      <div class="bars" role="img" aria-label={t('build.chartAria', { duration: chart.maxDuration.duration }) as string}>
+        {chart.bars.map((b, i) => (
+          <div class="bar-row" key={i}>
+            <span class="bar-label">{b.label}</span>
+            <span class="bar-track"><span class={`bar bar-${b.state}`} style={`--pct: ${b.pct}`} /></span>
+            <span class="bar-value">{b.duration}</span>
+          </div>
+        ))}
+      </div>
+      <p class="chart-note muted"><span class="legend-swatch"></span>{t('chartNote') as string}</p>
+    </article>
+  );
+}
+
+export function LogCanvas(props: { messages: LogLine[]; run?: RunState; t: TFn; [key: string]: unknown }) {
+  const { messages, t } = props;
+  return (
+    <article class="artifact log-artifact">
+      <header class="artifact-head">
+        <span class="eyebrow">{t('logEyebrow') as string} · {t('build.runShort', { number: props.run?.number }) as string}</span>
+        <span class="chip chip--muted">{t('build.elapsedChip', { elapsed: props.run?.elapsed }) as string}</span>
+      </header>
+      <h2 class="display">{t('build.logHeadline') as string}</h2>
+      <div class="log-lines">
+        {messages.map((m, i) => (
+          <p class={`log-line log-${m.from}${m.tone ? ` log-tone-${m.tone}` : ''}`} key={i}>
+            <span class="log-time">{m.at}</span>
+            <span class="log-who">{m.from === 'user' ? (t('log.you') as string) : (t('log.agent') as string)}</span>
+            <span class="log-text">{m.text}</span>
+          </p>
+        ))}
+      </div>
+    </article>
+  );
+}
+
+export function ViewerSwap(props: LoopProps) {
+  return <DesignViewer v={props.viewer as any} t={props.t} />;
+}
+
+export function EvidenceCanvas(props: { evidence?: unknown; viewer?: unknown; t: TFn; [key: string]: unknown }) {
+  const { t } = props;
+  return (
+    <article class="artifact evidence-artifact">
+      <header class="artifact-head">
+        <span class="eyebrow">{t('evidenceEyebrow') as string}</span>
+      </header>
+      <h2 class="display">{t('evidenceHeadline') as string}</h2>
+      <p class="artifact-lede">{t('evidenceLede') as string}</p>
+      {props.viewer && <DesignViewer v={props.viewer as any} t={t} />}
+    </article>
+  );
+}
+
+export function CanvasArtifact(props: LoopProps) {
+  const a = props.artifact!;
+  switch (a.kind) {
+    case 'gate': return <GateCanvas {...props} gate={a.gate!} />;
+    case 'stage': return <StageCanvas {...props} s={a.stage!} total={a.stageCount!} />;
+    case 'findings': return <FindingsCanvas {...props} a={a} />;
+    case 'chart': return <ChartCanvas {...props} chart={a.chart!} />;
+    case 'log': return <LogCanvas {...props} messages={a.messages!} />;
+    case 'evidence': return <EvidenceCanvas {...props} evidence={a.evidence} />;
+    default: return null;
+  }
+}
+
+// ===== Fragment responses ===================================================
+
+export function PanelsSwap(props: LoopProps) {
+  return <Panels {...props} />;
+}
+
+export function MessageSwap(props: LoopProps) {
+  return (
+    <Fragment>
+      <Panels {...props} />
+      {props.opFired && <Timeline {...props} oob={true} />}
+    </Fragment>
+  );
+}
+
+export function DecisionSwap(props: LoopProps) {
+  return (
+    <Fragment>
+      <Panels {...props} />
+      <Timeline {...props} oob={true} />
+      <div hx-swap-oob="beforeend:#toasts"><div class="toast" id="toast-decision">{props.run?.stateLabel}</div></div>
+    </Fragment>
+  );
+}
+
+export function ControlSwap(props: LoopProps) {
+  return (
+    <Fragment>
+      <Panels {...props} />
+      <Timeline {...props} oob={true} />
+    </Fragment>
+  );
+}
+
+export function FilterSwap(props: LoopProps) {
+  return (
+    <Fragment>
+      <ActivityTarget {...props} />
+      <Panels {...props} oob={true} />
+    </Fragment>
+  );
+}
+
+export function ActivityViewSwap(props: LoopProps) {
+  return <ActivityTarget {...props} />;
+}
+
+export function FileSwap(props: LoopProps) {
+  return <MainContent {...props} />;
+}
+
+export function RunSwap(props: LoopProps) {
+  return (
+    <Fragment>
+      <ActivityTarget {...props} />
+      <Panels {...props} oob={true} />
+      <div hx-swap-oob="beforeend:#toasts"><div class="toast" id="toast-run">{props.run?.stateLabel}</div></div>
+    </Fragment>
+  );
+}
+
+// ===== No build evidence yet ================================================
+// Nothing in appboxd writes build evidence, so this is what EVERY project
+// shows today. Literal copy — l10n is outside this change's scope.
+
+export function NoEvidence(_props: LoopProps) {
+  return (
+    <div class="panels" id="panels" data-panel="main">
+      <div class="panel-main" id="panel-main">
+        <section class="mp-content mp-empty" id="mp-content">
+          <p>No build evidence yet — run a build to populate this surface.</p>
+          <p class="muted">Stages, human gates, findings and screen evidence appear here once a run has written them.</p>
+        </section>
+      </div>
+    </div>
+  );
+}
+
+// ===== Page (default export) ================================================
+
+const LoopView: FC<LoopProps> = (props) => (
+  <MainShellView
+    t={props.t}
+    title={props.t('build.pageTitle') as string}
+    locale={props.locale}
+    activeShell={props.activeShell ?? 'build'}
+    prefs={props.prefs}
+    project={props.project as { name?: string; savedLabel?: string }}
+    mainClass="shell-main-loop"
+    surface={props.noEvidence ? <NoEvidence {...props} /> : <Panels {...props} />}
+    footer={!props.noEvidence ? <Timeline {...props} oob={false} /> : null}
+  />
+);
+
+export default LoopView;

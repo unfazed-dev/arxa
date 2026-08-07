@@ -8,21 +8,7 @@ boundary; `/assets/vendor/*` still serves from the runtime vendor dir.
 - `worker_page.html` — the page the worker tab loads; carries the import map
   that remaps `node:fs` → `fs_shim.js` (the only Node builtin the artifact
   module graph uses; backed by a Dart-prefetched fixture map).
-- `worker_shim.js` — the Hono-equivalent shim. Ports lib/helpers.mjs +
-  lib/templates.mjs + lib/l10n.mjs + lib/state.mjs + lib/timers.mjs into the
-  worker so viewmodels (authored against Hono's `c`) cannot tell the
-  difference. Exposes `__boot` / `__routes` / `__dispatch`.
+- `worker_shim.js` — the Hono-equivalent shim. Uses the TSX render bundle
+  (esbuild-compiled from `.tsx` view files) to serve artifacts. Exposes
+  `__boot` / `__routes` / `__dispatch`.
 - `fs_shim.js` — the `node:fs` shim (sync readFileSync from globalThis.__fixtures).
-- `nunjucks.min.js` — the Nunjucks **full** browser build (slim cannot compile
-  templates at runtime; the design server renders from source, so the compiler
-  is required).
-
-  - source: https://unpkg.com/nunjucks@3.2.4/browser/nunjucks.min.js
-  - version: 3.2.4
-  - license: BSD-2-Clause (https://github.com/mozilla/nunjucks/blob/master/LICENSE)
-  - size: 90596 bytes
-  - SRI (sha384): ZNWDztJihcuTdvvOj/69bJWcalk3vWhHhurVe78xxAbMM8A8rmHY5+eTDWIjWC7Q
-
-  Re-verify:
-    curl -sfL -o nunjucks.min.js https://unpkg.com/nunjucks@3.2.4/browser/nunjucks.min.js
-    openssl dgst -sha384 -binary nunjucks.min.js | openssl base64 -A

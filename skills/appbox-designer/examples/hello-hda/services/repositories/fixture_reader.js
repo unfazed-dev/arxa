@@ -4,6 +4,10 @@ import { readFileSync } from 'node:fs';
 
 const cache = new Map();
 
+/**
+ * @param {string} relFromThisFile
+ * @returns {unknown}
+ */
 export function readFixture(relFromThisFile) {
   if (!cache.has(relFromThisFile)) {
     cache.set(relFromThisFile, JSON.parse(readFileSync(new URL(relFromThisFile, import.meta.url), 'utf8')));

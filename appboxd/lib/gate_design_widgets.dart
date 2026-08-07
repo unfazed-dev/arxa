@@ -70,11 +70,13 @@ const panelStructuralClasses = <String>[
 /// a tree that has one, correctly placed. The rule is "the skeleton lives in the
 /// base", not "the base lives at this path".
 const panelBaseName = '_panel.html';
+const panelBaseNameTsx = '_panel.tsx';
 
-/// Every legal widget home holding a `_panel.html`.
+/// Every legal widget home holding a `_panel.html` or `_panel.tsx`.
 List<String> panelBaseWidgets(String artifactDir) => _htmlFiles(artifactDir)
     .where((rel) =>
-        p.basename(rel) == panelBaseName &&
+        (p.basename(rel) == panelBaseName ||
+            p.basename(rel) == panelBaseNameTsx) &&
         isWidget(rel) &&
         widgetHomeOf(rel) != null)
     .toList();
@@ -119,30 +121,48 @@ List<TemplateRef> parseTemplateRefs(String src) {
   return out;
 }
 
-/// Artifact-root-relative POSIX paths of every `.html` file under [artifactDir].
+/// Artifact-root-relative POSIX paths of every `.html` or `.tsx` template file
+/// under [artifactDir].
 List<String> _htmlFiles(String artifactDir) {
   final dir = Directory(artifactDir);
   if (!dir.existsSync()) return const [];
   final out = <String>[];
   for (final e in dir.listSync(recursive: true)) {
-    if (e is! File || !e.path.endsWith('.html')) continue;
+    if (e is! File) continue;
+    if (!e.path.endsWith('.html') && !e.path.endsWith('.tsx')) continue;
     out.add(p.split(p.relative(e.path, from: artifactDir)).join('/'));
   }
   out.sort();
   return out;
 }
 
-/// includee → the files that reference it, for every `.html` in the tree.
+/// includee → the files that reference it, for every template in the tree.
 ///
 /// Keys and values are artifact-root-relative POSIX paths. Self-references are
 /// dropped (a macro file importing itself is not a consumer of itself).
+/// Handles both legacy `{% include %}` refs and TSX `import` statements.
 Map<String, Set<String>> buildIncludeGraph(String artifactDir) {
   final graph = <String, Set<String>>{};
   for (final rel in _htmlFiles(artifactDir)) {
     final src = stripComments(File(p.join(artifactDir, rel)).readAsStringSync());
+    // Legacy: {% include "path" %} / {% import "path" %}
     for (final ref in parseTemplateRefs(src)) {
       if (ref.path == rel) continue;
       (graph[ref.path] ??= <String>{}).add(rel);
+    }
+    // TSX: import X from 'relative/path.tsx'
+    if (rel.endsWith('.tsx')) {
+      final importRe = RegExp(r'''import\s+(?:\{[^}]*\}\s+from\s+|[\w]+\s+from\s+)?['"]([^'"]+)['"]''');
+      final importerDir = p.dirname(rel);
+      for (final m in importRe.allMatches(src)) {
+        final importPath = m.group(1)!;
+        // Only resolve relative imports (skip bare specifiers like 'hono/jsx')
+        if (!importPath.startsWith('.')) continue;
+        // Resolve relative to the importing file, normalize to artifact-root-relative
+        final resolved = p.normalize(p.join(importerDir, importPath)).replaceAll('\\', '/');
+        if (resolved == rel) continue;
+        (graph[resolved] ??= <String>{}).add(rel);
+      }
     }
   }
   return graph;
@@ -449,7 +469,7 @@ bool _underHostedGroup(String rel, Set<String> surfaceDirs) {
 /// Macro names that OPEN a panel, and the names that CLOSE it.
 ///
 /// The panel base is a balanced pair rather than a `{% call %}` wrapper because
-/// nunjucks binds `caller()` to the NEAREST enclosing `{% call %}`: a base that
+/// the template engine binds `caller()` to the NEAREST enclosing `{% call %}`: a base that
 /// wrapped `{{ caller() }}` could not be invoked from inside a role that is
 /// itself called, which is how every panel is written. So the base cannot be
 /// one entry point, and W4 counts mounts by entry point instead of by use.

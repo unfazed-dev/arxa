@@ -908,28 +908,31 @@ export default [
       p.absolute('../skills/appbox-designer/examples/hello-hda');
 
   group('design eject', () {
-    test('missing args → usage, exit 2', () {
-      expect(designEject([]).exitCode, 2);
-      expect(designEject(['only-one']).exitCode, 2);
-      expect(designEject([]).stderrLines.first, contains('usage'));
+    test('missing args → usage, exit 2', () async {
+      expect((await designEject([])).exitCode, 2);
+      expect((await designEject(['only-one'])).exitCode, 2);
+      expect((await designEject([])).stderrLines.first, contains('usage'));
     });
 
-    test('ejects hello-hda: copied artifact + narrowed vendor + README', () {
+    test('ejects hello-hda: copied artifact + narrowed vendor + README', () async {
       final out = _tmpDir();
       addTearDown(() => out.deleteSync(recursive: true));
-      final r = designEject([ejectFixture, out.path]);
+      final r = await designEject([ejectFixture, out.path]);
       expect(r.exitCode, 0, reason: r.stderrLines.join('\n'));
 
       // 1. the artifact itself is copied (routes + a nested view).
       expect(File(p.join(out.path, 'app.routes.js')).existsSync(), isTrue);
       expect(
           File(p.join(out.path, 'ui', 'views', 'main_shell', 'home',
-                  'home_view.html'))
+                  'home_view.tsx'))
               .existsSync(),
           isTrue);
 
-      // 2. narrowed vendor: hello-hda loads exactly htmx + preload + head-support.
-      //    mustache.min.js is vendored but NOT referenced → must be absent.
+      // 2. narrowed vendor: hello-hda loads htmx 4 only (head-support and
+      //    preload are htmx-2 extensions removed in the v4 migration — htmx 4
+      //    handles titles natively). mustache.min.js is vendored but NOT
+      //    referenced → must be absent. alien-signals.min.js is force-included
+      //    because hello-hda's home view declares a toggle island (Phase 3).
       final vendor = Directory(p.join(out.path, 'runtime', 'vendor'));
       expect(vendor.existsSync(), isTrue);
       final jsFiles = vendor
@@ -938,27 +941,41 @@ export default [
           .map((f) => p.basename(f.path))
           .where((n) => n.endsWith('.js'))
           .toSet();
-      expect(jsFiles, {'htmx.min.js', 'preload.min.js', 'head-support.js'});
+      expect(jsFiles, {'htmx4.min.js', 'alien-signals.min.js'});
       expect(
           File(p.join(vendor.path, 'mustache.min.js')).existsSync(), isFalse);
 
-      // narrowed manifest: only the 3 referenced rows.
+      // narrowed manifest: htmx4 + alien-signals (island force-include).
       final manifest = jsonDecode(
           File(p.join(vendor.path, 'manifest.json')).readAsStringSync()) as List;
       final files = manifest.map((e) => (e as Map)['file']).toSet();
-      expect(files, {'htmx.min.js', 'preload.min.js', 'head-support.js'});
+      expect(files, {'htmx4.min.js', 'alien-signals.min.js'});
 
-      // 3. README carries the serve invocation line; no node/npm anywhere.
+      // 3. README carries the target-aware quick start (Phase 1 eject).
       final readme = File(p.join(out.path, 'README.md')).readAsStringSync();
-      expect(readme, contains('appbox design serve . --no-watch'));
-      expect(readme.toLowerCase(), isNot(contains('npm')));
-      expect(readme.toLowerCase(), isNot(contains('node ')));
+      expect(readme.toLowerCase(), contains('npm install'));
 
-      // stdout next: line points at the serve command.
-      expect(r.stdoutLines.last, contains('appbox design serve'));
+      // 4. Phase 3 islands machinery: islands.js + island-kit.js copied to
+      //    assets/, toggle island bundled by esbuild, manifest injected.
+      expect(File(p.join(out.path, 'assets', 'islands.js')).existsSync(), isTrue);
+      expect(File(p.join(out.path, 'assets', 'island-kit.js')).existsSync(), isTrue);
+      final chunk = File(p.join(out.path, 'assets', 'islands', 'toggle.js'));
+      expect(chunk.existsSync(), isTrue, reason: 'esbuild should bundle toggle island');
+      expect(chunk.readAsStringSync(), contains('export'));
+
+      final baseTsx =
+          File(p.join(out.path, 'ui', 'common', 'base.tsx')).readAsStringSync();
+      expect(baseTsx, contains('id="island-manifest"'));
+      expect(baseTsx, contains('/assets/islands.js'));
+
+      // stdout mentions islands.
+      expect(r.stdoutLines.any((l) => l.contains('islands:')), isTrue);
+
+      // stdout next: line points at npm start.
+      expect(r.stdoutLines.last, contains('npm start'));
     });
 
-    test('referencing a non-vendored lib → exit 1', () {
+    test('referencing a non-vendored lib → exit 1', () async {
       final d = _tmpDir();
       _write(d, 'app.routes.js', "export default [['GET','/']];\n");
       _write(d, 'index.html',
@@ -969,7 +986,7 @@ export default [
         d.deleteSync(recursive: true);
         out.deleteSync(recursive: true);
       });
-      final r = designEject([d.path, out.path]);
+      final r = await designEject([d.path, out.path]);
       expect(r.exitCode, 1);
       expect(r.stderrLines.first, contains('not vendored'));
       expect(r.stderrLines.first, contains('totally-fake.js'));
@@ -981,7 +998,7 @@ export default [
           reason: 'no vendor copied when the guard fires');
     });
 
-    test('no htmx referenced → exit 1 (htmx-required hard fail)', () {
+    test('no htmx referenced → exit 1 (htmx-required hard fail)', () async {
       final d = _tmpDir();
       _write(d, 'app.routes.js', "export default [['GET','/']];\n");
       _write(d, 'index.html',
@@ -991,13 +1008,13 @@ export default [
         d.deleteSync(recursive: true);
         out.deleteSync(recursive: true);
       });
-      final r = designEject([d.path, out.path]);
+      final r = await designEject([d.path, out.path]);
       expect(r.exitCode, 1);
       expect(r.stderrLines.first, contains('htmx.min.js'));
       expect(r.stderrLines.first, contains('refusing to eject'));
     });
 
-    test('map-island artifact ejects the leaflet subdir incl. images/', () {
+    test('map-island artifact ejects the leaflet subdir incl. images/', () async {
       final d = _tmpDir();
       _write(d, 'app.routes.js', "export default [['GET','/']];\n");
       _write(d, 'index.html',
@@ -1009,7 +1026,7 @@ export default [
         d.deleteSync(recursive: true);
         out.deleteSync(recursive: true);
       });
-      final r = designEject([d.path, out.path]);
+      final r = await designEject([d.path, out.path]);
       expect(r.exitCode, 0, reason: r.stderrLines.join('\n'));
 
       // The whole leaflet/ subdir ships: leaflet.css references its marker
@@ -1036,7 +1053,7 @@ export default [
     test('serve smoke: ejected copy serves / and htmx (in-process)', () async {
       final out = _tmpDir();
       addTearDown(() => out.deleteSync(recursive: true));
-      designEject([ejectFixture, out.path]);
+      await designEject([ejectFixture, out.path]);
 
       final srv = await DesignServer.start(
         artifactDir: out.path,
@@ -1049,7 +1066,7 @@ export default [
         expect(home.status, 200);
         expect(home.body.toLowerCase(), contains('<html'));
 
-        final htmx = await _ejectGet('${srv.url}assets/vendor/htmx.min.js');
+        final htmx = await _ejectGet('${srv.url}assets/vendor/htmx4.min.js');
         expect(htmx.status, 200);
         expect(htmx.body, contains('htmx'));
       } finally {

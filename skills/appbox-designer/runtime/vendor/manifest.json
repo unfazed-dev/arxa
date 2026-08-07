@@ -100,5 +100,23 @@
     "package": "idiomorph",
     "version": "0.7.4",
     "integrity": "sha384-SsScJKzATF/w6suEEdLbgYGsYFLzeKfOA6PY+/C5ZPxOSuA+ARquqtz/BZz9JWU8"
+  },
+  {
+    "file": "htmx4.min.js",
+    "package": "htmx.org",
+    "version": "4.0.0-beta6",
+    "integrity": "sha384-6lyVbhrs13b9z7mLOpt/N6R76rtkEBWgCjAXRs/DSWyi2AMnQSs10ijWk+PI8n7W"
+  },
+  {
+    "file": "hx-sse.min.js",
+    "package": "htmx.org",
+    "version": "4.0.0-beta6",
+    "integrity": "sha384-k3FOGGeM049iTmLw/5TvDh5u+ku311l7JTDjUXhWgD01QiEzDc9Z82c7aNW+R3wK"
+  },
+  {
+    "file": "alien-signals.min.js",
+    "package": "alien-signals",
+    "version": "3.2.1",
+    "integrity": "sha384-JEXjCHkGjEBJBD27oeiXrrFMeKb53WEpVqm7qQ2qz8CXrmtvoYHM1bSyArrNlwcT"
   }
 ]

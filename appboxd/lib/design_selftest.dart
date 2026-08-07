@@ -162,7 +162,7 @@ List<String> _legacyFlatWidgets(String art) =>
       ..sort());
 
 List<File> _htmlFiles(String dir) => _walkFiles(Directory(dir))
-    .where((f) => f.path.endsWith('.html'))
+    .where((f) => f.path.endsWith('.html') || f.path.endsWith('.tsx'))
     .toList()
       ..sort((a, b) => a.path.compareTo(b.path));
 
@@ -584,9 +584,13 @@ List<_Check> _buildChecks({required bool skipRender}) {
       }
       if (bad.isNotEmpty) return CheckOutcome.fail(bad.join(' '));
       final hasIcon = _walkFiles(Directory(p.join(art, 'ui')))
-          .where((f) => f.path.endsWith('.html'))
-          .any((f) => f.readAsStringSync().contains("icon('"));
-      if (!hasIcon) return const CheckOutcome.fail("no icon(' usage found in ui/");
+          .where((f) => f.path.endsWith('.html') || f.path.endsWith('.tsx'))
+          .any((f) {
+        final src = f.readAsStringSync();
+        // Legacy: {{ icon('name') }} in .html. TSX: <Icon name="..." /> component.
+        return src.contains("icon('") || src.contains('<Icon');
+      });
+      if (!hasIcon) return const CheckOutcome.fail("no icon(' or <Icon> usage found in ui/");
       return const CheckOutcome.ok();
     }),
 

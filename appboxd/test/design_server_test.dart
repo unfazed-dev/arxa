@@ -323,14 +323,14 @@ void main() {
       final r = await _get(srv!.url);
       expect(r.status, 200);
       expect(r.body, contains('hello-hda'),
-          reason: 'templates + l10n survived the coalesced reload');
+          reason: 'TSX bundle + l10n survived the coalesced reload');
     });
 
     test('5: record URL answers 200 + renders <html>', () async {
       final r = await _get(srv!.url);
       expect(r.status, 200);
       expect(r.body.toLowerCase(), contains('<html'));
-      // l10n + Nunjucks rendered: the title carries the en catalog text.
+      // l10n + TSX rendered: the title carries the en catalog text.
       expect(r.body, contains('hello-hda'));
     });
 
@@ -409,16 +409,16 @@ void main() {
 
     test('12: hot reload picks up an edit (same port)', () async {
       final view = File(p.join(
-          tempDir, 'ui', 'views', 'main_shell', 'home', 'home_view.html'));
+          tempDir, 'ui', 'views', 'main_shell', 'home', 'home_view.tsx'));
       final original = view.readAsStringSync();
-      // Edit a literal that actually lives in the template (not l10n text).
+      // Edit a literal that actually lives in the view (not l10n text).
       const marker = 'data-reload-marker="1"';
       try {
         view.writeAsStringSync(
             original.replaceFirst('class="muted"', 'class="muted" $marker'));
         expect(original, isNot(contains(marker)),
             reason: 'fixture must not already carry the marker');
-        await srv!.reload(); // re-import cache-busted + refresh prefetch
+        await srv!.reload(); // re-bundle TSX + re-inject
         final r = await _get(srv!.url);
         expect(r.status, 200);
         expect(r.body, contains(marker));
