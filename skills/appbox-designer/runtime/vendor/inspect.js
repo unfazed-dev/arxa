@@ -149,11 +149,11 @@
     const info = synthesize(el);
     labelEl.replaceChildren();
     const name = document.createElement('div');
-    name.style.cssText = 'font-weight:600;' + (info.inferred ? ' opacity:.6;' : '');
+    name.style.cssText = 'font-weight:600;color:#fff;' + (info.inferred ? ' opacity:.7;' : '');
     name.textContent = info.name;
     labelEl.appendChild(name);
     const sub = document.createElement('div');
-    sub.style.cssText = 'font-size:10px;opacity:.85;';
+    sub.style.cssText = 'font-size:10px;color:#7f849c;';
     sub.textContent = info.role + (info.inferred ? ' · inferred' : '');
     labelEl.appendChild(sub);
   };
@@ -215,9 +215,11 @@
       `box-shadow:inset 0 0 0 2px ${a};background:${a}1a;border-radius:4px;`;
     labelEl.style.cssText =
       'display:block;position:fixed;pointer-events:none;z-index:99999;' +
-      `left:${r.left}px;top:${Math.max(0, r.top - 24)}px;` +
-      `background:${a};color:#fff;font-size:11px;line-height:18px;` +
-      'padding:2px 8px;border-radius:4px 4px 4px 0;white-space:nowrap;';
+      `left:${r.left}px;top:${Math.max(0, r.top - 28)}px;` +
+      'background:#1e1e2e;color:#cdd6f4;font-size:11px;line-height:1.4;' +
+      'padding:4px 10px;border-radius:6px;white-space:nowrap;' +
+      'box-shadow:0 2px 8px rgba(0,0,0,0.25);' +
+      `border-left:3px solid ${a};`;
     fillReadout(el);
     // multi-line readouts grow downward from the element's top edge
     labelEl.style.top = Math.max(0, r.top - labelEl.offsetHeight - 6) + 'px';
