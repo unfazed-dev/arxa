@@ -96,7 +96,7 @@ chains (≤1 outgoing edge per screen per flow); a screen may belong to several
 flows. Intake derives drafts (`provenance: inferred`) when answers carry
 none; confirming flips provenance. Edges travel through the data spine (seed
 → fixture → repository → facade) like any other content and render by a
-server template macro or named island — never bespoke per-flow markup, never
+server component or named island — never bespoke per-flow markup, never
 a separate file format. Flow-level metadata (`id`, `name`, `persona`,
 `provenance`) is allowed; the edge endpoints are always registry ids. The
 freeze threads the array into `structure.json` as an optional top-level
@@ -105,7 +105,7 @@ artifacts.
 
 ### `?embed=1` bare render mode
 
-The stub screen renderer (`screen_stub_view.html`) supports `?embed=1`: a
+The stub screen renderer (`screen_stub_view.tsx`) supports `?embed=1`: a
 chromeless render (no nav, no tag, no max-width) for viewer tiles. The
 inspect island is conditionally included when `inspect=1` is also present;
 `still=1` freezes the tile (no auto-advance), and `live=1` renders the same
@@ -127,7 +127,7 @@ element-level revert), independent of both stacks.
 
 ```
 ui/views/<shell>/<short>/
-├── <short>_view.html        the template
+├── <short>_view.tsx         the view component (default export + Named Fragment exports)
 └── <short>_viewmodel.js     co-located; the only place logic lives
 ```
 
@@ -136,10 +136,11 @@ A shell with many surfaces may add one subgrouping level —
 subgroup is the shell's own organization, not a second registry concept.
 
 Shell-level surfaces sit one level up:
-`ui/views/<shell>/<shell>_view.html` + `<shell>_viewmodel.js`.
+`ui/views/<shell>/<shell>_view.tsx` + `<shell>_viewmodel.js`.
 
 Widgets place at the narrowest scope that covers all their consumers; the
-include graph is the only authority, checked in both directions:
+include graph (imports + fragment refs — `buildIncludeGraph`) is the only
+authority, checked in both directions:
 
 | scope | design medium |
 |---|---|

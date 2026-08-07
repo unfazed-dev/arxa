@@ -1,6 +1,6 @@
 ---
 name: "use-design-system"
-description: "Consume an existing design system from a regular design project — discover available systems, import a compiled copy into _ds/<slug>/, wire its CSS into the artifact, recreate its components as Nunjucks partials, and record the binding in _d_meta.json."
+description: "Consume an existing design system from a regular design project — discover available systems, import a compiled copy into _ds/<slug>/, wire its CSS into the artifact, recreate its components as TSX components, and record the binding in _d_meta.json."
 ---
 # Using a design system in a project
 
@@ -8,7 +8,7 @@ Use this guide when you're building a **regular design project** (a mockup, prot
 
 The mechanism mirrors the authoring pipeline: instead of scattering copied assets, you sync a **self-contained, version-pinned copy** of each design system into `<project>/_ds/<slug>/` with a script, wire its CSS into your artifact, and record the binding in `<project>/_d_meta.json`. Re-running the script later is how you pull updates.
 
-**HDA caveat.** In this skill every deliverable is a server-rendered hypermedia artifact under the zero-custom-JS contract (ADR-0002): the design system's React `_ds_bundle.js` **never loads** in an artifact. What you consume is the system's **CSS closure** (tokens, base styles, fonts) plus its **specification** (the `_ds_prompt.md`, per-component `*.prompt.md` excerpts, and component source in the DS tree) — components are recreated as Nunjucks partials. Everything else in this flow (discovery, import, binding, `_d_meta.json`) is unchanged.
+**HDA caveat.** In this skill every deliverable is a server-rendered hypermedia artifact under the zero-custom-JS contract (ADR-0002): the design system's React `_ds_bundle.js` **never loads** in an artifact. What you consume is the system's **CSS closure** (tokens, base styles, fonts) plus its **specification** (the `_ds_prompt.md`, per-component `*.prompt.md` excerpts, and component source in the DS tree) — components are recreated as TSX (hono/jsx) components. Everything else in this flow (discovery, import, binding, `_d_meta.json`) is unchanged.
 
 ## How projects and design systems are distinguished on disk
 
@@ -64,7 +64,7 @@ It writes **only** `_ds/<slug>/` and `_d_meta.json` — never the DS source, and
 
 ### 4. Wire it into your artifact
 
-**The CSS closure is how a design system reaches an artifact** — the `_ds_bundle.js` `<script>` is banned by the zero-custom-JS contract and its React components never load (the Runtime serves the consumed copy at `/_ds/`). Wire the stylesheets the import printed into `ui/common/base.html`, grouped per system in closure order, the **primary** system's group **last** so its tokens win on collision:
+**The CSS closure is how a design system reaches an artifact** — the `_ds_bundle.js` `<script>` is banned by the zero-custom-JS contract and its React components never load (the Runtime serves the consumed copy at `/_ds/`). Wire the stylesheets the import printed into `ui/common/base.tsx`, grouped per system in closure order, the **primary** system's group **last** so its tokens win on collision:
 
 ```html
 <!-- each system's stylesheets as a group, in the closure order the import printed -->
@@ -81,7 +81,7 @@ Ignore the `<script>` wiring lines the import prints — they describe the React
 Importing and wiring a system is **not** the same as *following* it. Before you design, **load the bound system's prompt** and treat it as the visual contract — for **each** system you imported:
 
 - **Read `_ds/<slug>/_ds_prompt.md`** — the self-contained per-load prompt the importer generates: it states the binding + scope, reproduces the full guide inline, carries per-component usage excerpts from each component's `*.prompt.md` (those files aren't copied into `_ds/`), and lists the exact `var(--*)` token allowlist. This is the one file to load every time you design. (`_ds/<slug>/README.md` and `_ds/<slug>/SKILL.md` are the deeper source refs if you need them; the import script prints a reminder.)
-- **Recreate components as Nunjucks partials.** For each component you actually use, read its `*.prompt.md` excerpt and its source in the DS tree, then build the equivalent macro/partial under the artifact's `ui/widgets/` (`_<name>.html`) from the system's tokens and classes. This is recreation *from the system's own spec* — the bundle path being absent, the partial IS the component in an artifact. Keep partials dumb (context in, markup out); behavior is htmx attributes per `runtime/README.md`.
+- **Recreate components as TSX components.** For each component you actually use, read its `*.prompt.md` excerpt and its source in the DS tree, then build the equivalent component under the artifact's widget tree (`_<name>.tsx` at its placement-law tier) from the system's tokens and classes. This is recreation *from the system's own spec* — the bundle path being absent, the component IS the component in an artifact. Keep components dumb (props in, markup out); behavior is htmx attributes per `runtime/README.md`.
 - **It is binding.** Every visual must follow it — don't invent colors, type, spacing, or components that aren't grounded in the system. Build only from its tokens — use `var(--*)` names from the allowlist in `_ds_prompt.md`, and never guess a name (an unresolved `var()` silently falls back to the browser default). With several systems, the **primary** owns the overall visual language; pull only specific components from the others.
 - **Scope — visual style only.** The design system is a *visual style reference*, nothing more. Its guide may describe example products, brands, or people that are unrelated to the user and to what they asked for. Never treat anything in the design system as a fact about the user, their work, or the topic of the conversation.
 - **Mine it for what you need.** Copy out the fonts and colors you use; for prototypes and designs, recreate any relevant components as partials. If the system ships mocks of existing products and you're asked to design something similar, **fork those mocks** as your surface templates' starting point — it beats designing from scratch. The runtime copy under `_ds/<slug>/` holds the CSS; the system's **source** (its `sourcePath` in `_d_meta.json`, e.g. `designs/<ds>/ui_kits/`, `preview/`, component files) is where the mocks, specimens, and component source live — read and fork from there.
@@ -90,8 +90,8 @@ Importing and wiring a system is **not** the same as *following* it. Before you 
 
 If the user chose a starting point, seed it from the DS copy (the script doesn't do this — you do, after import):
 
-- **Screen** — recreate `<dsDir>/<startingPoint.path>` as an artifact surface: copy the file into the artifact for reference, then express its markup as `<surface>_view.html` (JSX → Nunjucks template) under `ui/views/<shell>_shell/<surface>/`, relying on the `base.html` `/_ds/<slug>/` CSS wiring from step 4.
-- **Component** — don't copy a file; build it as a `ui/widgets/_<name>.html` partial from the source at `<dsDir>/<startingPoint.path>` (read it for reference), per step 5.
+- **Screen** — recreate `<dsDir>/<startingPoint.path>` as an artifact surface: copy the file into the artifact for reference, then express its markup as `<surface>_view.tsx` (JSX → hono/jsx TSX) under `ui/views/<shell>_shell/<surface>/`, relying on the `base.tsx` `/_ds/<slug>/` CSS wiring from step 4.
+- **Component** — don't copy a file; build it as a `_<name>.tsx` component (placement-law tier) from the source at `<dsDir>/<startingPoint.path>` (read it for reference), per step 5.
 
 Record the choice in the `startingPoint` field of `_d_meta.json` (with `dsSlug` so it's clear which system it came from).
 
@@ -174,14 +174,14 @@ A path removes that one version (scoped to `--name` if also given); `--name` alo
 
 When you open or continue an **existing** project (the folder already exists), don't assume a clean slate — **read `<projectDir>/_d_meta.json` first** to recover its design-system binding:
 
-- **`designSystems` is non-empty** → the project is bound. For **each** entry, **load its prompt and follow it as binding** (step 5 above — read `_ds/<slug>/_ds_prompt.md`) *before* you design, honoring `primaryDesignSystem` for token precedence. Then confirm the wiring is intact (each system's stylesheet `<link>`s present in `ui/common/base.html` in closure order, primary group last); re-import (below) only if a `_ds/<slug>/` copy is missing or stale. Don't re-ask which system to use — it's already chosen.
+- **`designSystems` is non-empty** → the project is bound. For **each** entry, **load its prompt and follow it as binding** (step 5 above — read `_ds/<slug>/_ds_prompt.md`) *before* you design, honoring `primaryDesignSystem` for token precedence. Then confirm the wiring is intact (each system's stylesheet `<link>`s present in `ui/common/base.tsx` in closure order, primary group last); re-import (below) only if a `_ds/<slug>/` copy is missing or stale. Don't re-ask which system to use — it's already chosen.
 - **`designSystems` is `[]`, or there is no `_d_meta.json`** → no system is bound; design normally. If the work would benefit from one, offer to add one (discovery in step 1).
 
 To then change what's bound, read `_d_meta.json` for the current systems and:
 
 - **Refresh a system** — re-run the import script for that `<dsDir>`. It overwrites `_ds/<slug>/` in place and updates only that entry in `designSystems[]` (idempotent: no duplicates, other entries and `createdAt`/`title`/`prompt` untouched).
 - **Add a system** — run the script for the new `<dsDir>`; it appends to `designSystems[]`. Add `--primary` if it should become primary.
-- **Remove a system** — delete its `_ds/<slug>/` folder, its entry in `designSystems[]`, and its `<link>` lines in `base.html`. If it was primary, repoint `primaryDesignSystem` to a remaining slug (or `null`).
+- **Remove a system** — delete its `_ds/<slug>/` folder, its entry in `designSystems[]`, and its `<link>` lines in `base.tsx`. If it was primary, repoint `primaryDesignSystem` to a remaining slug (or `null`).
 - **Change primary** — re-run the script for the target with `--primary` (or edit `primaryDesignSystem`), and move that system's `<link>` to load last.
 
 ## Multiple design systems

@@ -48,11 +48,15 @@ class LintFinding {
   String toString() => '$file: $message';
 }
 
-/// Strip `<!-- -->` and `{# #}` comments before scanning (the commented-js
-/// inverse case: commented code is not a violation). Ported from lint.mjs.
+/// Strip comments before scanning (commented code is not a violation).
+/// Handles HTML (`<!-- -->`) and TSX/JS (`/* */` blocks — which also covers
+/// the JSX `{/* … */}` form — plus `//` line comments). Line-comment
+/// stripping is anchored to line-start to avoid matching `//` inside strings
+/// (URLs, attribute values).
 String stripComments(String html) => html
     .replaceAll(RegExp(r'<!--[\s\S]*?-->'), '')
-    .replaceAll(RegExp(r'\{#[\s\S]*?#\}'), '');
+    .replaceAll(RegExp(r'/\*[\s\S]*?\*/'), '')
+    .replaceAll(RegExp(r'^\s*//.*$', multiLine: true), '');
 
 /// The four ADR-0002 rules, ported rule-for-rule from lint.mjs. Negative
 /// lookaheads kept identical to the source regex (double-quote-specific vendor
@@ -136,13 +140,15 @@ final _inferredFnRe = RegExp(
     """\\b$_inspectFnProvenance\\s*=\\s*["']inferred["']""",
     caseSensitive: false);
 
-/// D10 — a declared state is a `{% if state == '<name>' %}` branch in the SAME
-/// surface file. `?state=loading` swaps regions in place: separate variant
-/// files duplicate every annotation with no sync mechanism, and a viewer-side
-/// overlay has none at all. The registry declares, the surface must branch —
-/// and a branch nobody declared is that drift read the other way.
+/// D10 — a declared state is a JSX conditional on the `state` prop in the
+/// SAME surface file: `{state === 'loading' && (…)}` or the ternary
+/// `{state === 'empty' ? (…) : (…)}`. `?state=loading` swaps regions in
+/// place: separate variant files duplicate every annotation with no sync
+/// mechanism, and a viewer-side overlay has none at all. The registry
+/// declares, the surface must branch — and a branch nobody declared is that
+/// drift read the other way.
 final _stateBranchRe = RegExp(
-    r"""\{%-?\s*if\s+state\s*==\s*["']([a-z]+)["']""",
+    r"""\bstate\s*={2,3}\s*["']([a-z]+)["']""",
     caseSensitive: false);
 
 /// D13 — retry is an affordance, not a fourth state. An `error`/`empty` region
@@ -199,7 +205,7 @@ List<String> inspectFindings(String src,
     for (final s in declaredStates) {
       if (!branched.contains(s)) {
         out.add("registry declares state '$s' but the surface has no "
-            "{% if state == '$s' %} branch");
+            "`state === '$s'` branch");
       }
     }
     for (final s in branched) {
@@ -255,8 +261,8 @@ List<String> _retryFindings(String src) {
 /// renders. The join is filename → the registry id ending `.<short>`: registry
 /// `surface` is null until the designer fills it, so the name is the only link
 /// that exists at lint time. Returns null — D10 off — for a partial
-/// (`_name.html`), when no registry is reachable, or when no entry matches, so
-/// a bare directory of loose HTML stays lintable.
+/// (`_name.tsx`), when no registry is reachable, or when no entry matches, so
+/// a bare directory of loose templates stays lintable.
 List<String>? _declaredStates(String htmlPath, Map<String, List<dynamic>?> cache) {
   final short = p.basenameWithoutExtension(htmlPath);
   if (short.startsWith('_')) return null;
@@ -299,16 +305,16 @@ List<File> _walk(Directory d) => d
     .whereType<File>()
     .toList();
 
-/// Scan every `.html` under [artifactDir] for the four rules. Returns findings
-/// in walk order, rule order within each file (mirrors lint.mjs). [coverageB]
-/// drops D7's bar from C to B; [notes] collects the advisory D9 channel, which
-/// never affects the exit code.
+/// Scan every `.html`/`.tsx` template under [artifactDir] for the four rules.
+/// Returns findings in walk order, rule order within each file (mirrors
+/// lint.mjs). [coverageB] drops D7's bar from C to B; [notes] collects the
+/// advisory D9 channel, which never affects the exit code.
 List<LintFinding> lintArtifact(String artifactDir,
     {bool coverageB = false, List<LintFinding>? notes}) {
   final findings = <LintFinding>[];
   final registries = <String, List<dynamic>?>{};
   for (final f in _walk(Directory(artifactDir))) {
-    if (!f.path.endsWith('.html')) continue;
+    if (!f.path.endsWith('.html') && !f.path.endsWith('.tsx')) continue;
     final src = stripComments(f.readAsStringSync());
     for (final (re, msg) in _lintRules) {
       if (re.hasMatch(src)) {
@@ -477,7 +483,7 @@ List<String> checkWiringArtifact(String artifactDir, String property) {
   String rel(String f) => p.relative(f, from: dir);
   final files = _walk(Directory(dir));
   final markup = files
-      .where((f) => f.path.endsWith('.html'))
+      .where((f) => f.path.endsWith('.html') || f.path.endsWith('.tsx'))
       .map((f) => (f, stripComments(f.readAsStringSync())))
       .toList();
   // app.routes.js spreads the per-shell routes.<shell>.js tables — parse
@@ -517,9 +523,18 @@ List<String> checkWiringArtifact(String artifactDir, String property) {
       for (final f in files.where((f) => f.path.endsWith('_viewmodel.js'))) {
         final src = f.readAsStringSync();
         final named = RegExp(r"""const VIEW\s*=\s*['"]([^'"]+)['"]""").firstMatch(src);
+        // View refs use .html paths for registry parity; the actual file may
+        // be .tsx (post-migration). Try the literal path first, then .tsx.
+        String resolveView(String ref) {
+          final literal = p.join(dir, ref);
+          if (File(literal).existsSync()) return literal;
+          final tsx = literal.replaceAll(RegExp(r'\.html$'), '.tsx');
+          if (File(tsx).existsSync()) return tsx;
+          return literal; // let the existsSync check below report it
+        }
         final view = named != null
-            ? p.join(dir, named.group(1)!)
-            : f.path.replaceAll(RegExp(r'_viewmodel\.js$'), '_view.html');
+            ? resolveView(named.group(1)!)
+            : resolveView(f.path.replaceAll(RegExp(r'_viewmodel\.js$'), '_view.html'));
         // Fragment refs are view refs: `${VIEW}#macro` or 'path.html#macro'.
         // Data strings like '#21BFE9' (hex colors) are not renders.
         final wantedRe =
@@ -535,8 +550,15 @@ List<String> checkWiringArtifact(String artifactDir, String property) {
         }
         final tpl = File(view).readAsStringSync();
         for (final n in wanted) {
-          if (!RegExp('\\{%-?\\s*macro\\s+${RegExp.escape(n)}\\s*\\(').hasMatch(tpl)) {
-            problems.add('${rel(f.path)}: renders "#$n", but ${rel(view)} defines no such macro');
+          // TSX: export function Name / export const Name (PascalCase).
+          // Viewmodels reference fragments by lowercase name (#tick → Tick).
+          // Legacy: {% macro name %}
+          final isTsx = view.endsWith('.tsx');
+          final found = isTsx
+              ? RegExp('export\\s+(?:default\\s+)?(?:function|const)\\s+${RegExp.escape(n[0].toUpperCase() + n.substring(1))}\\b').hasMatch(tpl)
+              : RegExp('\\{%-?\\s*macro\\s+${RegExp.escape(n)}\\s*\\(').hasMatch(tpl);
+          if (!found) {
+            problems.add('${rel(f.path)}: renders "#$n", but ${rel(view)} defines no such ${isTsx ? 'component' : 'macro'}');
           }
         }
       }
@@ -809,14 +831,32 @@ const _htmxPin = '2.0.10';
 const _htmxIntegrity =
     'sha384-H5SrcfygHmAuTDZphMHqBJLc3FhssKjG7w/CeCpFReSfwBWDTKpkzPP8c+cLsK+V';
 
+/// htmx 4 — morph is core (no idiomorph-ext); SSE is the bundled `hx-sse`
+/// extension. Shipped as a separate vendor file (`htmx4.min.js`) so htmx 2
+/// artifacts keep loading `htmx.min.js` unchanged. Pinned ≥ #3606 (morph swaps
+/// not initializing new elements — closed 2026-01-20; fixed in beta6,
+/// released 2026-07-23).
+const _htmx4Pin = '4.0.0-beta6';
+const _htmx4Integrity =
+    'sha384-6lyVbhrs13b9z7mLOpt/N6R76rtkEBWgCjAXRs/DSWyi2AMnQSs10ijWk+PI8n7W';
+
+/// alien-signals — the signals runtime for island-kit.js (Phase 3c). Its
+/// algorithm is ported into Vue core 3.6; effectScope gives one stopScope()
+/// per island. The npm package ships multi-file ESM, so vendor-fetch bundles
+/// it with esbuild. 1.9 kB gzip.
+const _alienSignalsPin = '3.2.1';
+const _alienSignalsIntegrity =
+    'sha384-JEXjCHkGjEBJBD27oeiXrrFMeKb53WEpVqm7qQ2qz8CXrmtvoYHM1bSyArrNlwcT';
+
 class _Pkg {
   final String pkg;
   final String? version;
   final List<String> candidates;
   final String out;
   final bool expect; // htmx: SRI must match the recorded pin
+  final String? expectPin; // override the function-level pin (multi-version)
   const _Pkg(this.pkg, this.candidates, this.out,
-      {this.version, this.expect = false});
+      {this.version, this.expect = false, this.expectPin});
 }
 
 /// Lucide is pinned like htmx/leaflet: @latest drift would silently rewrite
@@ -866,6 +906,16 @@ const _packages = [
   // build (morphing core + the htmx extension registration) — one script tag.
   _Pkg('idiomorph', ['dist/idiomorph-ext.min.js'], 'idiomorph-ext.min.js',
       version: '0.7.4'),
+  // htmx 4 — morph is core; SSE ships as the bundled `hx-sse` extension.
+  // Separate output name so htmx 2 artifacts keep loading `htmx.min.js`.
+  _Pkg('htmx.org', ['dist/htmx.min.js'], 'htmx4.min.js',
+      version: _htmx4Pin, expect: true, expectPin: _htmx4Integrity),
+  _Pkg('htmx.org', ['dist/ext/hx-sse.min.js', 'dist/ext/hx-sse.js'],
+      'hx-sse.min.js', version: _htmx4Pin),
+  // alien-signals: the signals runtime for island-kit.js (Phase 3c). The npm
+  // package ships multi-file ESM (index.mjs imports system.mjs), so vendor-fetch
+  // bundles it with esbuild into a single self-contained ESM file (~1.9 kB gzip).
+  _Pkg('alien-signals', [], 'alien-signals.min.js', version: _alienSignalsPin),
 ];
 
 /// Compute the SRI hash of [buf] via `openssl dgst -sha384 -binary`. macOS
@@ -986,6 +1036,50 @@ Future<CmdResult> vendorFetch(String vendorDir,
       }
       continue;
     }
+    // alien-signals: multi-file ESM (index.mjs imports system.mjs). Download
+    // both, bundle with esbuild into a single self-contained ESM file. The npm
+    // package has no dist/ — only esm/ and cjs/.
+    if (pkg.pkg == 'alien-signals') {
+      try {
+        final v = pkg.version!;
+        final tmpDir = Directory.systemTemp.createTempSync('alien-signals');
+        try {
+          for (final part in ['index.mjs', 'system.mjs']) {
+            final buf = await _httpGet('$cdn/alien-signals@$v/esm/$part');
+            if (buf == null) throw Exception('esm/$part unreachable');
+            File(p.join(tmpDir.path, part)).writeAsBytesSync(buf);
+          }
+          final outFile = File(p.join(vendorDir, pkg.out));
+          outFile.parent.createSync(recursive: true);
+          final result = await Process.run('npx', [
+            'esbuild',
+            p.join(tmpDir.path, 'index.mjs'),
+            '--bundle',
+            '--format=esm',
+            '--minify',
+            '--outfile=${outFile.path}',
+          ]);
+          if (result.exitCode != 0) {
+            throw Exception('esbuild failed: ${result.stderr}');
+          }
+          final buf = outFile.readAsBytesSync();
+          final integrity = await sri(buf);
+          if (integrity != _alienSignalsIntegrity) {
+            throw Exception(
+                'integrity mismatch! got $integrity, expected $_alienSignalsIntegrity');
+          }
+          manifest.add(manifestEntry(
+              file: pkg.out, pkg: pkg.pkg, version: v, integrity: integrity));
+          out.add('✓ ${pkg.out} ← alien-signals@$v (${buf.length} bytes, esbuild bundled)');
+        } finally {
+          tmpDir.deleteSync(recursive: true);
+        }
+      } catch (e) {
+        err.add('✗ alien-signals: $e');
+        return CmdResult(1, stdoutLines: out, stderrLines: err);
+      }
+      continue;
+    }
     try {
       final v = pkg.version ?? await _latestVersion(npm, pkg.pkg);
       List<int>? buf;
@@ -997,8 +1091,9 @@ Future<CmdResult> vendorFetch(String vendorDir,
         throw Exception('no candidate file found: ${pkg.candidates.join(", ")}');
       }
       final integrity = await sri(buf);
-      if (pkg.expect && integrity != expectPin) {
-        throw Exception('integrity mismatch! got $integrity, expected $expectPin');
+      final expected = pkg.expectPin ?? expectPin;
+      if (pkg.expect && integrity != expected) {
+        throw Exception('integrity mismatch! got $integrity, expected $expected');
       }
       final outFile = File(p.join(vendorDir, pkg.out));
       outFile.parent.createSync(recursive: true); // leaflet/* lives in a subdir
@@ -1202,18 +1297,65 @@ void _copyTree(String src, String dst) {
   }
 }
 
+/// Copy all *.js, *.d.ts, and *.tsx files from [srcDir] to [dstDir], preserving
+/// relative paths. TSX is included so render.tsx and icon.tsx ship in the eject.
+void _copyJsTree(Directory srcDir, String dstDir) {
+  if (!srcDir.existsSync()) return;
+  for (final f in _walk(srcDir)) {
+    if (!f.path.endsWith('.js') && !f.path.endsWith('.d.ts') && !f.path.endsWith('.tsx')) continue;
+    final rel = p.relative(f.path, from: srcDir.path);
+    final target = File(p.join(dstDir, rel))..parent.createSync(recursive: true);
+    f.copySync(target.path);
+  }
+}
+
+/// esbuild invocation for the eject path: prefer the skill's lockfile-pinned
+/// binary (skills/appbox-designer/runtime devDependency), fall back to npx
+/// with an exact pinned version — never a floating `npx esbuild`.
+(String, List<String>) _esbuildCmd(String repo) {
+  final local = p.join(repo, 'skills', 'appbox-designer', 'runtime',
+      'node_modules', '.bin', 'esbuild');
+  if (File(local).existsSync()) return (local, const []);
+  return ('npx', const ['--yes', 'esbuild@0.25.12']);
+}
+
 /// `appbox design eject <artifact-dir> <out-dir>` — exit 2 usage / 1 vendor
 /// or htmx-required fail / 0 ejected. Ported from eject.mjs; the .mjs's
 /// node-runtime + package.json + smoke.test.mjs are replaced by a README.
-CmdResult designEject(List<String> args) {
-  if (args.length < 2) {
+Future<CmdResult> designEject(List<String> args) async {
+  // Parse --target=node|cloudflare|vercel (default node) and --kits=dir,dir.
+  String? target;
+  final kits = <String>[];
+  final positional = <String>[];
+  void addKits(String v) =>
+      kits.addAll(v.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty));
+  for (var i = 0; i < args.length; i++) {
+    if (args[i] == '--target' && i + 1 < args.length) {
+      target = args[++i];
+    } else if (args[i].startsWith('--target=')) {
+      target = args[i].substring(9);
+    } else if (args[i] == '--kits' && i + 1 < args.length) {
+      addKits(args[++i]);
+    } else if (args[i].startsWith('--kits=')) {
+      addKits(args[i].substring(7));
+    } else {
+      positional.add(args[i]);
+    }
+  }
+  if (positional.length < 2) {
     return CmdResult(2,
         stderrLines: const [
-          'usage: appbox design eject <artifact-dir> <out-dir>'
+          'usage: appbox design eject <artifact-dir> <out-dir> '
+              '[--target=node|cloudflare|vercel] [--kits=a,b]'
         ]);
   }
-  final artifact = p.absolute(args[0]);
-  final out = p.absolute(args[1]);
+  target ??= 'node';
+  if (!const ['node', 'cloudflare', 'vercel'].contains(target)) {
+    return CmdResult(2,
+        stderrLines: ['unknown target: $target (use node, cloudflare, or vercel)']);
+  }
+  final artifact = p.absolute(positional[0]);
+  final out = p.absolute(positional[1]);
   final repo = _findRepoRoot() ?? Directory.current.path;
   final vendorDir =
       p.join(repo, 'skills', 'appbox-designer', 'runtime', 'vendor');
@@ -1229,17 +1371,24 @@ CmdResult designEject(List<String> args) {
   // 1. The artifact itself.
   _copyTree(artifact, out);
 
-  // 2. Vendored libraries — only the ones this artifact's HTML loads.
-  //    vendor/ is the ALLOWLIST: the menu of libs an artifact may enable, not
-  //    the set any given one uses. Copying it wholesale ships mustache.min.js
-  //    etc. into every app. The delivered copy carries what the markup asks for.
+  // 1-phase scan: detect [hx-island] usage + wanted vendor refs in one walk.
+  final islandRe = RegExp(r'hx-island="([^"]+)"');
+  final islandNames = <String>{};
   final wanted = <String>{};
   for (final f in _walk(Directory(artifact))) {
-    if (!f.path.endsWith('.html')) continue;
-    for (final m in _vendorRefRe.allMatches(f.readAsStringSync())) {
+    if (!f.path.endsWith('.html') && !f.path.endsWith('.tsx')) continue;
+    final html = f.readAsStringSync();
+    for (final m in islandRe.allMatches(html)) {
+      islandNames.add(m.group(1)!);
+    }
+    for (final m in _vendorRefRe.allMatches(html)) {
       wanted.add(m.group(1)!);
     }
   }
+  final hasIslands = islandNames.isNotEmpty;
+  // alien-signals is imported by island-kit.js (not referenced in HTML), so the
+  // narrowing scan misses it. Force-include when islands are present.
+  if (hasIslands) wanted.add('alien-signals.min.js');
 
   // Both guards fail the eject rather than shipping: an empty vendor/ would
   // turn this trim into an outage, and the symptom — every interaction inert,
@@ -1258,11 +1407,23 @@ CmdResult designEject(List<String> args) {
       'markup loads libraries that are not vendored: ${missing.join(', ')}',
     ]);
   }
-  if (!wanted.contains('htmx.min.js')) {
+  // Accept either htmx 2 (htmx.min.js) or htmx 4 (htmx4.min.js).
+  if (!wanted.any((f) => f == 'htmx.min.js' || f == 'htmx4.min.js')) {
     return CmdResult(1,
         stderrLines: const [
-          'no artifact HTML loads /assets/vendor/htmx.min.js — refusing to eject',
+          'no artifact HTML loads htmx (htmx.min.js for 2.x or '
+          'htmx4.min.js for 4.x) — refusing to eject',
         ]);
+  }
+
+  // Warn (not fail) when the artifact loads htmx 2: production eject expects
+  // htmx 4 (morph is core, SSE ships as the bundled hx-sse extension).
+  final warnings = <String>[];
+  if (wanted.contains('htmx.min.js') && !wanted.contains('htmx4.min.js')) {
+    warnings.add(
+        '⚠ artifact loads htmx 2.x (htmx.min.js) — production eject expects '
+        'htmx 4 (htmx4.min.js). Morphing is core in v4; SSE is the bundled '
+        'hx-sse extension.');
   }
 
   final outVendor =
@@ -1281,6 +1442,33 @@ CmdResult designEject(List<String> args) {
           p.join(outVendor.path, f.substring(0, slash)));
     }
   }
+  // Non-node targets serve static files from a platform static root
+  // (Cloudflare's [assets] binding directory, Vercel's public/) — serveStatic
+  // is node-only, so mirror the narrowed vendor set where /assets/vendor/*
+  // actually resolves. Lucide/manifest stay out: icons are server-side
+  // (preload on Workers, fs elsewhere).
+  if (target != 'node') {
+    final assetsVendor = p.join(out, 'assets', 'vendor');
+    final mirrored = <String>{};
+    for (final f in wanted) {
+      final slash = f.indexOf('/');
+      if (slash < 0) {
+        final dest = File(p.join(assetsVendor, f))
+          ..parent.createSync(recursive: true);
+        File(p.join(vendorDir, f)).copySync(dest.path);
+      } else if (mirrored.add(f.substring(0, slash))) {
+        _copyTree(p.join(vendorDir, f.substring(0, slash)),
+            p.join(assetsVendor, f.substring(0, slash)));
+      }
+    }
+  }
+  // Lucide icons are used server-side by the icon() template function — never
+  // referenced in HTML, so the narrowing scan misses them. Always include them.
+  final lucideSrc = Directory(p.join(vendorDir, 'lucide'));
+  if (lucideSrc.existsSync()) {
+    _copyTree(lucideSrc.path, p.join(outVendor.path, 'lucide'));
+  }
+
   // Provenance travels with the copy: the same rows, narrowed to what shipped.
   final manifest =
       jsonDecode(File(p.join(vendorDir, 'manifest.json')).readAsStringSync())
@@ -1292,39 +1480,901 @@ CmdResult designEject(List<String> args) {
   File(p.join(outVendor.path, 'manifest.json')).writeAsStringSync(
       '${const JsonEncoder.withIndent('  ').convert(narrowed)}\n');
 
-  // 3. README — replaces eject.mjs's package.json + node-runtime. The ejected
-  //    artifact runs on the same Dart design server (no node anywhere).
-  File(p.join(out, 'README.md')).writeAsStringSync(_ejectReadme(name));
+  // 3. JS runtime scaffold (eject web productionization — Phase 1).
+  //    The runtime modules + entry points ship as templates under the skill's
+  //    runtime/eject/. Eject copies them and generates the target-specific
+  //    config. The artifact contract is untouched — all machinery lives here.
+  final ejectSrc = p.join(repo, 'skills', 'appbox-designer', 'runtime', 'eject');
 
-  return CmdResult(0, stdoutLines: [
-    'ejected $artifact → $out',
-    'next: cd $out && appbox design serve . --no-watch',
+  // 3a. Runtime modules (shared across targets).
+  _copyJsTree(Directory(p.join(ejectSrc, 'runtime')), p.join(out, 'runtime'));
+
+  // 3a-bis. Islands machinery (Phase 3 — eject-only).
+  //   Client-side loader (islands.js) + binding layer (island-kit.js) go to
+  //   out/assets/. Each referenced island is bundled by esbuild into
+  //   out/assets/islands/<name>.js with sha384 SRI. The manifest + module
+  //   script are injected into the ejected base.html so the browser loads
+  //   zero island JS until a condition fires.
+  if (hasIslands) {
+    final islandsSrc = Directory(p.join(ejectSrc, 'assets'));
+    if (islandsSrc.existsSync()) {
+      _copyJsTree(islandsSrc, p.join(out, 'assets'));
+    }
+
+    // Bundle each island with esbuild → out/assets/islands/<name>.js (ESM).
+    final esbuild = _esbuildCmd(repo);
+    final islandManifest = <String, Map<String, String>>{};
+    final islandsOut =
+        Directory(p.join(out, 'assets', 'islands'))..createSync(recursive: true);
+    for (final islandName in islandNames) {
+      final src = p.join(vendorDir, '${islandName}_island.js');
+      if (!File(src).existsSync()) continue; // developer-added island (no vendor source)
+      final chunk = p.join(islandsOut.path, '$islandName.js');
+      final result = await Process.run(
+          esbuild.$1, [...esbuild.$2, src, '--bundle', '--format=esm', '--minify', '--outfile=$chunk']);
+      if (result.exitCode != 0) {
+        return CmdResult(1, stderrLines: [
+          'esbuild failed for island "$islandName": ${result.stderr}',
+        ]);
+      }
+      islandManifest[islandName] = {
+        'src': '/assets/islands/$islandName.js',
+        'integrity': await sri(File(chunk).readAsBytesSync()),
+      };
+    }
+
+    // Inject island manifest + module script into the ejected base.tsx.
+    // esbuild bundles base.tsx (via the view → shell → base import chain) after
+    // this step, so the injection lands in the final render.js.
+    if (islandManifest.isNotEmpty) {
+      // Fail loudly: a missing anchor would silently ship inert islands (the
+      // failure mode this stack is worst at surfacing).
+      final baseTsx = File(p.join(out, 'ui', 'common', 'base.tsx'));
+      if (!baseTsx.existsSync()) {
+        return CmdResult(1, stderrLines: const [
+          'islands referenced but ui/common/base.tsx is missing — nowhere to '
+              'inject the island manifest',
+        ]);
+      }
+      final src = baseTsx.readAsStringSync();
+      if (!src.contains('<div id="toasts"')) {
+        return CmdResult(1, stderrLines: const [
+          'island-manifest injection anchor <div id="toasts" not found in '
+              'ui/common/base.tsx — add it to the shell or drop the islands',
+        ]);
+      }
+      final manifestJson =
+          const JsonEncoder.withIndent('  ').convert(islandManifest);
+      final scriptContent = '<script type="application/json" id="island-manifest">'
+          '$manifestJson</script>\n'
+          '<script type="module" src="/assets/islands.js"></script>\n';
+      final injection = '{raw(`$scriptContent`)}\n        ';
+      baseTsx.writeAsStringSync(
+          src.replaceFirst('<div id="toasts"', '$injection<div id="toasts"'));
+    }
+  }
+
+  // 3b. Entry point + config per target.
+  final isWorkers = target == 'cloudflare';
+  final isVercel = target == 'vercel';
+  final entrySrc = isWorkers
+      ? p.join(ejectSrc, 'worker.js')
+      : p.join(ejectSrc, isVercel ? 'vercel.js' : 'server.js');
+  if (File(entrySrc).existsSync()) {
+    File(p.join(out, isWorkers ? 'worker.js' : 'server.js'))
+        .writeAsStringSync(File(entrySrc).readAsStringSync());
+  }
+
+  // 3c. package.json — target-specific deps.
+  File(p.join(out, 'package.json'))
+      .writeAsStringSync(_ejectPackageJson(name, target));
+
+  // 3d. Target config.
+  if (isWorkers) {
+    File(p.join(out, 'wrangler.toml'))
+        .writeAsStringSync(_ejectWrangler(name));
+    // Workers have no fs — bundle templates/l10n/fixtures/icons into preload.js
+    // and emit a target-specific fixture_reader.js.
+    File(p.join(out, 'runtime', 'preload.js'))
+        .writeAsStringSync(_generatePreload(artifact, vendorDir));
+    final cfReader = p.join(out, 'services', 'repositories', 'fixture_reader.js');
+    if (File(cfReader).existsSync()) {
+      File(cfReader).writeAsStringSync(_cfFixtureReader);
+    }
+  } else {
+    // Node/Vercel stub so icon.tsx's './preload.js' import resolves at bundle
+    // and typecheck time; the cloudflare target writes the real bundle above.
+    File(p.join(out, 'runtime', 'preload.js')).writeAsStringSync(_preloadStub);
+  }
+  if (isVercel) {
+    // Vercel's zero-config Hono preset: server.js's default export becomes the
+    // Function (no vercel.json needed) and static files serve from public/
+    // only — relocate the asset tree (incl. the mirrored vendor set).
+    final assets = Directory(p.join(out, 'assets'));
+    if (assets.existsSync()) {
+      Directory(p.join(out, 'public')).createSync();
+      assets.renameSync(p.join(out, 'public', 'assets'));
+    }
+  }
+
+  // 3e. Route manifest codegen + tsconfig (Phase 4: typing — the moat).
+  _generateRouteManifest(artifact, out);
+  final tsconfigSrc = p.join(ejectSrc, 'tsconfig.json');
+  if (File(tsconfigSrc).existsSync()) {
+    File(p.join(out, 'tsconfig.json')).writeAsStringSync(File(tsconfigSrc).readAsStringSync());
+  }
+
+  // 3e-bis. TSX render module — generate render.tsx from the artifact's .tsx
+  // view inventory, then bundle to render.js via esbuild. The source render.tsx
+  // (copied by _copyJsTree) is overwritten with the generated version.
+  // helpers.js imports ./render.js at runtime; TypeScript resolves ./render.js
+  // → ./render.tsx for typecheck via moduleResolution: "bundler".
+  final generatedRender = generateRenderTsx(artifact);
+  File(p.join(out, 'runtime', 'render.tsx')).writeAsStringSync(generatedRender);
+
+  // Dead legacy template modules — nothing imports them in the TSX tree.
+  for (final dead in ['templates.js', 'nunjucks.d.ts']) {
+    final deadFile = File(p.join(out, 'runtime', dead));
+    if (deadFile.existsSync()) deadFile.deleteSync();
+  }
+
+  // Bundle render.tsx → render.js (Node can't import .tsx directly). hono and
+  // node:* stay external — they resolve from node_modules / Node built-ins.
+  final renderJsPath = p.join(out, 'runtime', 'render.js');
+  final esbuild = _esbuildCmd(repo);
+  final esbuildResult = await Process.run(esbuild.$1, [
+    ...esbuild.$2,
+    p.join(out, 'runtime', 'render.tsx'),
+    '--bundle', '--format=esm',
+    '--outfile=$renderJsPath',
+    '--external:hono', '--external:hono/*', '--external:node:*',
+    // Keep preload.js out of the Workers render bundle — worker.js imports it
+    // directly; inlining would ship the icon/fixture blob twice. (Node/Vercel
+    // bundle the tiny stub, so no external needed there.)
+    if (isWorkers) '--external:./preload.js',
   ]);
+  if (esbuildResult.exitCode != 0) {
+    return CmdResult(1, stderrLines: [
+      'esbuild failed to bundle render.tsx:',
+      esbuildResult.stderr.toString(),
+    ]);
+  }
+
+  // 3f. Kit facades + .env.example (Phase 5: kits for web).
+  final kitDeps = _emitKitsAndEnv(out, repo, target, kits);
+  if (kitDeps.isNotEmpty) {
+    // Merge kit npm deps into the generated package.json.
+    final pkgPath = File(p.join(out, 'package.json'));
+    final pkg = jsonDecode(pkgPath.readAsStringSync()) as Map<String, dynamic>;
+    (pkg['dependencies'] as Map<String, dynamic>).addAll(kitDeps);
+    pkgPath.writeAsStringSync('${const JsonEncoder.withIndent('  ').convert(pkg)}\n');
+  }
+
+  // 4. README — target-aware productionization guide.
+  File(p.join(out, 'README.md')).writeAsStringSync(_ejectReadmeV2(name, target));
+
+  return CmdResult(0,
+      stdoutLines: [
+        'ejected $artifact → $out (target: $target)',
+        if (hasIslands) ...[
+          'islands: ${islandNames.join(', ')} → bundled to assets/islands/ (lazy-loaded)',
+        ],
+        if (isWorkers) ...[
+          'next: cd $out && npm install && npx wrangler dev',
+        ] else ...[
+          'next: cd $out && npm install && npm start',
+        ],
+      ],
+      stderrLines: warnings);
 }
 
-/// Ejected-artifact README. Mirrors eject.mjs's README shape (name, what it
-/// is, how to run, layout) but Dart-flavoured — no npm, no node runtime.
-String _ejectReadme(String name) => '''# $name
+/// Ejected-artifact package.json — target-specific deps.
+String _ejectPackageJson(String name, String target) {
+  final deps = <String, String>{
+    'hono': '^4.12.31',
+    'zod': '^3.24.0',
+  };
+  final devDeps = <String, String>{
+    'typescript': '^5.7.0',
+    '@types/node': '^22.0.0',
+  };
+  String startScript;
+  switch (target) {
+    case 'cloudflare':
+      devDeps['wrangler'] = '^4.0.0'; // deploy tool, not a runtime dep
+      startScript = 'wrangler dev';
+      break;
+    case 'vercel':
+      devDeps['vercel'] = '^41.0.0'; // deploy tool, not a runtime dep
+      startScript = 'vercel dev';
+      break;
+    default:
+      deps['@hono/node-server'] = '^2.0.11';
+      startScript = 'node server.js';
+  }
+  final pkg = {
+    'name': name,
+    'version': '1.0.0',
+    'private': true,
+    'type': 'module',
+    'scripts': {
+      'start': startScript,
+      // tsconfig already sets noEmit — the flag would just restate it.
+      'typecheck': 'tsc -p .',
+    },
+    'dependencies': deps,
+    'devDependencies': devDeps,
+  };
+  return '${const JsonEncoder.withIndent('  ').convert(pkg)}\n';
+}
+
+/// wrangler.toml for the Cloudflare Workers target.
+String _ejectWrangler(String name) => '''name = "$name"
+compatibility_date = "2026-08-06"
+# nodejs_compat: the runtime modules import node builtins statically
+# (node:url/node:path in router.js + icon.tsx, node:fs in l10n.js,
+# node:async_hooks in timers.js). Without the flag workerd fails at module
+# load ("No such module node:url") before any request runs. The imports
+# resolve but fs is never CALLED on Workers — templates/l10n/icons/fixtures
+# come from runtime/preload.js instead.
+compatibility_flags = ["nodejs_compat"]
+main = "worker.js"
+
+[assets]
+directory = "./assets"
+binding = "ASSETS"
+
+# Env vars: add secrets/vars from credentials.catalog.json (Phase 5 kits).
+# [vars]
+# STRIPE_PUBLISHABLE_KEY = "set me"
+# Run `wrangler secret put STRIPE_SECRET_KEY` for server secrets.
+''';
+
+/// Node/Vercel stub for runtime/preload.js — the cloudflare target writes the
+/// real bundle (l10n catalogs, fixtures, Lucide icons). The stub keeps
+/// icon.tsx's `./preload.js` import resolvable at esbuild-bundle and
+/// `tsc --checkJs` time; `preload = null` means "use the filesystem".
+const _preloadStub = '''
+// preload.js — node/vercel stub. The cloudflare target replaces this file at
+// eject time with the real bundle (arb catalogs, fixtures, Lucide icons).
+/** @type {{ arb?: Record<string, unknown>, fixtures?: Record<string, unknown>, iconSvg?: Record<string, string> } | null} */
+export const preload = null;
+''';
+
+/// Cloudflare Workers fixture_reader.js — reads from preload (no node:fs).
+const _cfFixtureReader = r"""
+// Cloudflare Workers fixture reader — reads from runtime/preload.js (no node:fs).
+// Replaces the node version (which uses readFileSync) at eject time for the
+// cloudflare target. Same export: readFixture(relFromThisFile) → parsed JSON.
+import { preload } from '../../runtime/preload.js';
+
+const cache = new Map();
+
+/** @param {string} relFromThisFile @returns {unknown} */
+export function readFixture(relFromThisFile) {
+  if (cache.has(relFromThisFile)) return cache.get(relFromThisFile);
+  const key = relFromThisFile.replace(/^(\.\.\/)+/, '');
+  const data = /** @type {Record<string, unknown>} */ (preload.fixtures)[key];
+  if (!data) throw new Error('fixture not bundled: ' + relFromThisFile);
+  cache.set(relFromThisFile, data);
+  return data;
+}
+""";
+
+/// Generates runtime/preload.js for the cloudflare target — bundles ARB
+/// catalogs, fixture JSON, and Lucide icons into a single ESM module so the
+/// Worker has no filesystem dependency. (TSX templates are compiled into
+/// render.js by esbuild — no template source bundling needed.)
+String _generatePreload(String artifactDir, String vendorDir) {
+  final arb = <String, dynamic>{};
+  final fixtures = <String, dynamic>{};
+  final iconSvg = <String, String>{};
+
+  final l10nDir = Directory(p.join(artifactDir, 'l10n'));
+  if (l10nDir.existsSync()) {
+    for (final f in l10nDir.listSync().whereType<File>()) {
+      final m = RegExp(r'^app_(.+)\.arb$').firstMatch(p.basename(f.path));
+      if (m == null) continue;
+      final src = f.readAsStringSync().split('\n').where((l) => !l.trimLeft().startsWith('//')).join('\n');
+      final entries = jsonDecode(src) as Map<String, dynamic>;
+      arb[m.group(1)!] = Map.fromEntries(entries.entries.where((e) => !e.key.startsWith('@')));
+    }
+  }
+
+  final modelsDir = Directory(p.join(artifactDir, 'models'));
+  if (modelsDir.existsSync()) {
+    for (final f in _walk(modelsDir)) {
+      if (!f.path.endsWith('.json')) continue;
+      final rel = p.relative(f.path, from: artifactDir).replaceAll('\\', '/');
+      fixtures[rel] = jsonDecode(f.readAsStringSync());
+    }
+  }
+
+  final iconsDir = Directory(p.join(vendorDir, 'lucide', 'icons'));
+  if (iconsDir.existsSync()) {
+    for (final f in iconsDir.listSync().whereType<File>()) {
+      if (!f.path.endsWith('.svg')) continue;
+      iconSvg[p.basenameWithoutExtension(f.path)] = f.readAsStringSync();
+    }
+  }
+
+  final preload = {
+    'arb': arb,
+    'fixtures': fixtures,
+    'iconSvg': iconSvg,
+  };
+  return 'export const preload = ${const JsonEncoder().convert(preload)};\n';
+}
+
+/// Generates runtime/render.tsx from the artifact's .tsx view inventory.
+/// Scans for *_view.tsx files, finds default + named exports, builds a static
+/// registry mapping .html view paths → TSX components.
+String generateRenderTsx(String artifactDir, {String? projectDir}) {
+  final views = <TsxView>[];
+
+  // Scan artifact for *_view.tsx files (studio views).
+  for (final f in _walk(Directory(artifactDir))) {
+    if (!f.path.endsWith('_view.tsx')) continue;
+    final rel = p.relative(f.path, from: artifactDir).replaceAll('\\', '/');
+    final htmlKey = rel.replaceAll('.tsx', '.html');
+    final src = f.readAsStringSync();
+
+    // Default export: `export default Foo` or `export default const Foo`
+    final defaultRe = RegExp(r'export\s+default\s+(?:const\s+)?(\w+)');
+    final defaultName = defaultRe.firstMatch(src)?.group(1);
+
+    // Named exports (fragments): `export function Foo` or `export const Foo`
+    final fragRe = RegExp(r'export\s+(?:const|function)\s+([A-Z]\w+)');
+    final fragments = <String>[];
+    for (final m in fragRe.allMatches(src)) {
+      final name = m.group(1)!;
+      if (name != defaultName) fragments.add(name);
+    }
+
+    views.add(TsxView(htmlKey, rel, defaultName, fragments));
+  }
+
+  // Scan project surfaces for *.tsx partials (e.g. portalo home, product, etc.).
+  // Registered as ui/project/<name>.html to match build_facade.js's partial key.
+  if (projectDir != null) {
+    final surfacesDir = Directory(p.join(projectDir, 'design', 'surfaces'));
+    if (surfacesDir.existsSync()) {
+      for (final f in _walk(surfacesDir)) {
+        if (!f.path.endsWith('.tsx')) continue;
+        final name = p.basenameWithoutExtension(f.path);
+        final htmlKey = 'ui/project/$name.html';
+        final rel = 'ui/project/$name.tsx'; // matches the copy path in _buildRenderBundle
+        final src = f.readAsStringSync();
+
+        final fragRe = RegExp(r'export\s+(?:const|function)\s+([A-Z]\w+)');
+        final fragments = <String>[];
+        for (final m in fragRe.allMatches(src)) {
+          fragments.add(m.group(1)!);
+        }
+        // Project partials use named exports only (no default export).
+        // All exports go into fragments; the registry treats the first as
+        // the default component (see registry generation below).
+        views.add(TsxView(htmlKey, rel, null, fragments));
+      }
+    }
+  }
+
+  final buf = StringBuffer()
+    ..writeln("// render.tsx — auto-generated at eject time from the artifact's")
+    ..writeln("// .tsx view inventory. DO NOT EDIT — re-run eject to regenerate.")
+    ..writeln("import type { FC } from 'hono/jsx';");
+
+  for (final v in views) {
+    final prefix = viewAliasPrefix(v.relPath);
+    if (v.defaultName != null && v.fragments.isEmpty) {
+      buf.writeln("import ${v.defaultName} from '../${v.relPath}';");
+    } else if (v.defaultName != null) {
+      final aliased = v.fragments.map((f) => '$f as $prefix$f').join(', ');
+      buf.writeln("import ${v.defaultName}, { $aliased } from '../${v.relPath}';");
+    } else if (v.fragments.isNotEmpty) {
+      final aliased = v.fragments.map((f) => '$f as $prefix$f').join(', ');
+      buf.writeln("import { $aliased } from '../${v.relPath}';");
+    }
+  }
+
+  buf
+    ..writeln()
+    ..writeln('type ComponentMap = { default: FC<Record<string, unknown>>; [fragment: string]: FC<Record<string, unknown>> };')
+    ..writeln()
+    ..writeln('const registry: Record<string, ComponentMap> = {');
+
+  for (final v in views) {
+    final prefix = viewAliasPrefix(v.relPath);
+    buf.write("  '${v.htmlKey}': {");
+    if (v.defaultName != null) {
+      buf.write(' default: ${v.defaultName} as unknown as FC<Record<string, unknown>>,');
+    } else if (v.fragments.isNotEmpty) {
+      // Project partials: no default export — first named export acts as default.
+      buf.write(' default: $prefix${v.fragments.first} as unknown as FC<Record<string, unknown>>,');
+    }
+    for (final frag in v.fragments) {
+      final key = frag[0].toLowerCase() + frag.substring(1);
+      buf.write(' $key: $prefix$frag as unknown as FC<Record<string, unknown>>,');
+    }
+    buf.writeln(' },');
+  }
+
+  buf
+    ..writeln('};')
+    ..writeln()
+    ..writeln(r'''export function render(viewRef: string, ctx: Record<string, unknown>) {
+  const hash = viewRef.indexOf('#');
+  const file = hash === -1 ? viewRef : viewRef.slice(0, hash);
+  const macro = hash === -1 ? undefined : viewRef.slice(hash + 1);
+
+  const entry = registry[file];
+  if (!entry) throw new Error('Unknown view: ' + file);
+  const component = macro ? entry[macro] : entry.default;
+  if (!component) throw new Error('Unknown fragment: ' + macro);
+  return component(ctx);
+}''');
+
+  return buf.toString();
+}
+
+class TsxView {
+  final String htmlKey;
+  final String relPath;
+  final String? defaultName;
+  final List<String> fragments;
+  TsxView(this.htmlKey, this.relPath, this.defaultName, this.fragments);
+}
+
+/// Derives a unique PascalCase prefix from a view file path for import aliasing.
+/// `ui/views/.../brief/brief_view.tsx` → `BriefView`
+String viewAliasPrefix(String relPath) {
+  final base = p.basenameWithoutExtension(relPath);
+  return base.split('_').map((s) => s.isEmpty ? '' : s[0].toUpperCase() + s.substring(1)).join('');
+}
+
+/// Route-manifest codegen (Phase 4 — the moat). Parses app.routes.js's route
+/// table (a static array — parse, don't eval) and emits runtime/routes.js +
+/// runtime/routes.d.ts: typed helpers so viewmodels write
+/// `routes.timer.tick()` instead of string literals. Renaming a route in
+/// app.routes.js breaks typecheck (the falsifiability test).
+void _generateRouteManifest(String artifactDir, String out) {
+  final routesFile = File(p.join(artifactDir, 'app.routes.js'));
+  if (!routesFile.existsSync()) return;
+  // Strip comments before matching so a route-shaped line inside a comment
+  // (e.g. a commented-out route kept for reference) can't emit a false route.
+  // kimitail: naive strip — a `//` or `/*` inside a string literal would
+  // truncate it; route tables don't carry such strings (paths start with '/').
+  final src = routesFile
+      .readAsStringSync()
+      .replaceAll(RegExp(r'/\*[\s\S]*?\*/'), '')
+      .replaceAll(RegExp(r'//[^\n]*'), '');
+
+  // Extract [METHOD, PATH] pairs from the route table — regex, not eval.
+  final routeRe = RegExp(r"""['"]([A-Z]+)['"]\s*,\s*['"]([^'"]+)['"]""");
+  final paths = <String>{};
+  for (final m in routeRe.allMatches(src)) {
+    paths.add(m.group(2)!);
+  }
+  final sorted = paths.toList()..sort();
+  if (sorted.isEmpty) return;
+
+  // Build a nested tree from path segments.
+  final root = <String, dynamic>{};
+  for (final path in sorted) {
+    final segs = path.split('/').where((s) => s.isNotEmpty).toList();
+    if (segs.isEmpty) {
+      root['index'] = path;
+      continue;
+    }
+    var node = root;
+    for (var i = 0; i < segs.length; i++) {
+      final seg = segs[i];
+      final isLast = i == segs.length - 1;
+      final key = seg.startsWith(':') ? seg.substring(1) : seg;
+      if (isLast) {
+        node[key] = path;
+      } else {
+        // A shorter route (/timer) may have set this as a String leaf —
+        // promote it to a namespace with an 'index' entry.
+        if (node[key] is String) {
+          node[key] = <String, dynamic>{'index': node[key]};
+        }
+        node[key] ??= <String, dynamic>{};
+        node = node[key] as Map<String, dynamic>;
+      }
+    }
+  }
+
+  // Object keys must be valid JS identifiers — quote anything else (e.g.
+  // hyphenated path segments: /order-items → "order-items": …). Applies to
+  // both the .js and the .d.ts output, leaves and namespaces alike.
+  String jsKey(String key) =>
+      RegExp(r'^[A-Za-z_$][A-Za-z0-9_$]*$').hasMatch(key) ? key : '"$key"';
+
+  // Shared tree walker — leaf callback formats the terminal line; closeSep
+  // distinguishes `,` (JS) from `;` (.d.ts).
+  String emitNode(Map<String, dynamic> node, String indent, String closeSep,
+      String Function(String key, String pathStr, List<String> params, String indent) leaf) {
+    final buf = StringBuffer();
+    for (final e in node.entries) {
+      if (e.value is String) {
+        final pathStr = e.value as String;
+        final params = RegExp(r':(\w+)').allMatches(pathStr).map((m) => m.group(1)!).toList();
+        buf.writeln(leaf(e.key, pathStr, params, indent));
+      } else {
+        buf.writeln('$indent${jsKey(e.key)}: {');
+        buf.write(emitNode(e.value as Map<String, dynamic>, '$indent  ', closeSep, leaf));
+        buf.writeln('$indent}$closeSep');
+      }
+    }
+    return buf.toString();
+  }
+
+  String jsLeaf(String key, String pathStr, List<String> params, String indent) {
+    if (params.isEmpty) return '$indent${jsKey(key)}: () => "$pathStr",';
+    final args = params.join(', ');
+    final tmpl = pathStr.replaceAllMapped(RegExp(r':(\w+)'), (m) => '\${${m.group(1)}}');
+    return '$indent${jsKey(key)}: ($args) => `$tmpl`,';
+  }
+
+  String tsLeaf(String key, String pathStr, List<String> params, String indent) {
+    if (params.isEmpty) return '$indent${jsKey(key)}: () => "$pathStr";';
+    final typed = params.map((p) => '$p: string').join(', ');
+    return '$indent${jsKey(key)}: ($typed) => string;';
+  }
+
+  final runtimeDir = Directory(p.join(out, 'runtime'))..createSync(recursive: true);
+  File(p.join(runtimeDir.path, 'routes.js')).writeAsStringSync(
+    '// Auto-generated route manifest — do not edit.\n'
+    '// Regenerate via `appbox design eject`.\n\n'
+    'export const routes = {\n${emitNode(root, '  ', ',', jsLeaf)}};\n',
+  );
+  File(p.join(runtimeDir.path, 'routes.d.ts')).writeAsStringSync(
+    '// Auto-generated route types — do not edit.\n\n'
+    'export declare const routes: {\n${emitNode(root, '  ', ';', tsLeaf)}};\n',
+  );
+}
+
+/// Emits kit facades + .env.example for declared kits (Phase 5). Returns the
+/// npm deps to merge into package.json. Reads kit-registry.json + credentials
+/// catalog to wire env vars and copy the right facades.
+Map<String, String> _emitKitsAndEnv(String out, String repo, String target, List<String> kits) {
+  final kitDeps = <String, String>{};
+  if (kits.isEmpty && target != 'cloudflare' && target != 'vercel') return kitDeps;
+
+  // Read config files.
+  final kitRegPath = p.join(repo, 'config', 'kit-registry.json');
+  final credPath = p.join(repo, 'config', 'credentials.catalog.json');
+  if (!File(kitRegPath).existsSync() || !File(credPath).existsSync()) return kitDeps;
+
+  final kitReg = jsonDecode(File(kitRegPath).readAsStringSync()) as Map<String, dynamic>;
+  final credCatalog = jsonDecode(File(credPath).readAsStringSync()) as Map<String, dynamic>;
+
+  // Build credential lookup: key → entry.
+  final creds = <String, Map<String, dynamic>>{};
+  for (final c in (credCatalog['credentials'] as List).whereType<Map>()) {
+    final entry = Map<String, dynamic>.from(c);
+    if (entry['key'] != null) creds[entry['key'] as String] = entry;
+  }
+
+  final envLines = <String>[];
+  final publishableKeys = <String>[];
+  final kitFacadesDir = p.join(repo, 'skills', 'appbox-designer', 'runtime', 'kit-facades');
+
+  // Process each declared kit.
+  for (final kitDir in kits) {
+    Map<String, dynamic>? web;
+    for (final k in (kitReg['kits'] as List).whereType<Map>()) {
+      if (k['dir'] == kitDir && k['web'] != null) {
+        web = Map<String, dynamic>.from(k['web'] as Map);
+        break;
+      }
+    }
+    if (web == null) continue;
+
+    // Copy facade into ejected tree.
+    final facade = web['facade'] as String;
+    final src = File(p.join(kitFacadesDir, facade));
+    if (src.existsSync()) {
+      final destDir = Directory(p.join(out, 'services', 'facades'))..createSync(recursive: true);
+      File(p.join(destDir.path, facade)).writeAsStringSync(src.readAsStringSync());
+    }
+
+    // Parse npm spec: "package@^version" → {package: ^version}.
+    final npm = web['npm'] as String;
+    final at = npm.lastIndexOf('@');
+    if (at > 0) kitDeps[npm.substring(0, at)] = npm.substring(at + 1);
+
+    // Collect env vars from the kit's envFrom list.
+    for (final key in (web['envFrom'] as List).whereType<String>()) {
+      final cred = creds[key];
+      if (cred == null) continue;
+      final kind = cred['kind'] ?? 'secret';
+      final url = cred['url'] ?? '';
+      envLines.add('# $key ($kind)${url.isNotEmpty ? ' — $url' : ''}');
+      envLines.add('$key=${kind == 'publishable' ? 'set-me' : ''}');
+      envLines.add('');
+      if (kind == 'publishable' && !publishableKeys.contains(key)) {
+        publishableKeys.add(key);
+      }
+    }
+  }
+
+  // Publishable (client-safe) keys also land in a generated config module —
+  // .env.example documents them, but a viewmodel needs them as VALUES to hand
+  // to a template (e.g. a map token rendered into an island's state). Secrets
+  // never appear here. The caller passes env explicitly (process.env on node,
+  // ctx.env on Workers) so the module stays runtime-agnostic.
+  if (publishableKeys.isNotEmpty) {
+    final entries = publishableKeys
+        .map((k) => '  $k: env.$k ?? \'\',')
+        .join('\n');
+    File(p.join(out, 'runtime', 'client_config.js')).writeAsStringSync(
+      '// Auto-generated client config — publishable (browser-safe) values only.\n'
+      '// Regenerate via `appbox design eject`. Secrets never appear here.\n'
+      '\n'
+      '/**\n'
+      ' * @param {Record<string, string | undefined>} env - process.env on node, ctx.env on Workers\n'
+      ' * @returns {Record<string, string>} publishable config, safe to render into a page\n'
+      ' */\n'
+      'export const clientConfig = (env) => ({\n$entries\n});\n',
+    );
+  }
+
+  // Deploy credentials for the target.
+  final deployKeys = target == 'cloudflare'
+      ? ['CLOUDFLARE_API_TOKEN', 'CLOUDFLARE_ACCOUNT_ID']
+      : target == 'vercel'
+          ? ['VERCEL_TOKEN', 'VERCEL_ORG_ID', 'VERCEL_PROJECT_ID']
+          : <String>[];
+  for (final key in deployKeys) {
+    if (envLines.any((l) => l.startsWith('$key='))) continue;
+    final cred = creds[key];
+    if (cred == null) continue;
+    envLines.add('# $key (secret) — ${cred['url'] ?? ''}');
+    envLines.add('$key=');
+    envLines.add('');
+  }
+
+  if (envLines.isNotEmpty) {
+    File(p.join(out, '.env.example')).writeAsStringSync(
+      '# Environment variables for the ejected app.\n'
+      '# Copy to .env and fill in. Secrets: never commit .env.\n\n'
+      '${envLines.join('\n')}\n',
+    );
+  }
+
+  return kitDeps;
+}
+
+/// Ejected-artifact README — target-aware productionization guide.
+String _ejectReadmeV2(String name, String target) {
+  final isWorkers = target == 'cloudflare';
+  final isVercel = target == 'vercel';
+  final runCmd = isWorkers ? 'npx wrangler dev' : 'npm start';
+  final deployCmd = isWorkers
+      ? 'npx wrangler deploy'
+      : isVercel
+          ? 'npx vercel deploy'
+          : 'deploy server.js to any Node host';
+  return '''# $name
 
 Ejected from a appbox-designer artifact — a self-contained server-rendered
-htmx app (zero custom client-side JavaScript). It runs on the appbox design
-server, the same Dart server that serves designs in-tree; there is no node
-runtime anywhere in the ejected app.
+htmx app (zero custom client-side JavaScript). It runs on a real Hono runtime
+on $target.
+
+**One-way eject:** this tree is yours. appbox will never re-import it. Edit
+freely — routes, templates, services, the runtime modules.
+
+## Quick start
 
 ```sh
-appbox design serve . --no-watch   # http://localhost:4319 (PORT env to change)
-appbox design lint .               # zero-custom-client-JS contract
+npm install
+$runCmd          # http://localhost:${isWorkers ? '8787' : isVercel ? '3000' : '4399'}
+npm run typecheck # tsc --checkJs (Phase 4)
 ```
 
-## Layout
+## Deploy
 
-- `app.routes.js` — the URL inventory: [method, path, ViewModel handler]
+```sh
+$deployCmd
+```
+
+## Realtime (SSE)
+
+The runtime ships an SSE bus (`runtime/realtime.js`), attached at
+`GET /__events?channel=<name>`. Connect from markup with the bundled hx-sse
+extension; publish from any viewmodel via `h.sse`:
+
+```html
+<div hx-ext="sse" hx-sse:connect="/__events?channel=orders">
+  <div id="orders">1 open</div>
+</div>
+```
+
+```js
+// in a viewmodel — unnamed messages swap into the connecting element's
+// hx-target/hx-swap (morph composes), so every client patches #orders:
+h.sse.publishPatch('orders', '<div id="orders">2 open</div>');
+// or dispatch a named DOM event instead of a swap:
+h.sse.publishEvent('orders', 'order-accepted', '<li>#1042</li>');
+```
+
+Every event carries an `id:` and a short replay buffer, so reconnects (hx-sse
+resends `Last-Event-ID` automatically) pick up where they left off. The bus is
+in-memory: single-process only — see the Workers note below for the scale seam.
+
+$_readmeFormsSection${isWorkers ? '''
+## Cloudflare Workers notes
+
+- Static assets (`/assets/*`, including the narrowed `/assets/vendor/*` set)
+  are served from the `[assets]` binding directory (`./assets`); `worker.js`
+  strips the `/assets` prefix and delegates to `env.ASSETS`. Update
+  `wrangler.toml [assets]` if you add directories.
+- Templates, l10n catalogs, and fixtures are pre-bundled into
+  `runtime/preload.js` (Workers have no filesystem). Re-run eject to refresh it
+  after artifact changes, or edit it directly.
+- The SSE bus (`runtime/realtime.js`) is in-memory — events published on one
+  isolate never reach clients on another. For multi-instance realtime, use a
+  Durable-Object-per-channel adapter (documented in realtime.js).
+''' : ''}${isVercel ? '''
+## Vercel notes
+
+- Entry shape follows Vercel's zero-config Hono convention: `server.js`
+  exports the app as its default export, which becomes the Function (Fluid
+  compute). There is no listening server and no vercel.json — rewrites/routes
+  are unnecessary.
+- Static files serve from `public/` only; the eject relocated `assets/` there
+  (`serveStatic` is ignored by the platform).
+- Files read from disk at runtime (l10n catalogs, fixture JSON, Lucide SVGs)
+  rely on Vercel's file tracing. If a deploy 500s on a missing file, add a
+  `functions` config with `includeFiles` for the directory to vercel.json.
+''' : ''}## Layout
+
+- `app.routes.js` — the URL inventory: `[method, path, handler][]` + `shellRoots`
 - `ui/views/<shell>_shell/<surface>/` — view template + co-located ViewModel
 - `services/repositories|facades/` — data access; **swap fixture Repositories
   for a real DB here** — ViewModels depend only on Facades, so nothing else
   changes
-- `runtime/vendor/` — the narrowed set of vendored client libraries this
-  artifact's HTML loads (htmx is required; the rest are opt-in)
+- `runtime/` — the Hono runtime: `router.js` (app factory), `helpers.js` (the
+  `h` object), `render.js` (compiled TSX renderer), `l10n.js`, `state.js`, `timers.js`,
+  `realtime.js` (SSE bus), `vendor/` (narrowed client libraries)
+- `runtime/routes.js` + `routes.d.ts` — the generated typed route manifest:
+  viewmodels take URLs from `routes.*` helpers, so renaming a route in
+  `app.routes.js` breaks `npm run typecheck` instead of 404ing at runtime
+- `${isWorkers ? 'worker.js' : 'server.js'}` — the $target entry point
+
+## Productionize
+
+1. **Config** — move env-sensitive values to env vars (`PORT` is supported).
+2. **Data layer** — swap fixture Repositories for real ones behind Facade
+   contracts. ViewModels touch only Facades → no template/route changes.
+3. **Session store** — in-memory store is single-process; multi-instance needs
+   a shared store (KV/Redis) behind `sessionOf/prefsOf/setPrefs`. The
+   `kdh_sid` cookie is an opaque random-UUID bearer token (documented in
+   `state.js`) — equivalent to a signed cookie because it carries no payload.
+4. **Tests** — `appbox lens check http://localhost:${isWorkers ? '8787' : isVercel ? '3000' : '4399'}/`
+   for visual + smoke; add `npm test` with your framework of choice.
+5. **Security** — keep the zero-custom-JS contract; add standard headers.
+''';
+}
+
+/// Forms section of the ejected README (M8) — a raw string so the TSX/JS
+/// example needs no Dart escaping. Interpolated into [_ejectReadmeV2].
+const _readmeFormsSection = r'''
+## Forms (422 validation)
+
+POST form actions validate with zod (`runtime/forms.js`); a failed parse
+answers **422 with the form partial re-rendered** — errors and prior values
+intact. htmx 4 ignores non-2xx responses by default, but the base layout
+carries `hx-status:422="{}"` on `<body>`, which lets a 422 swap like any
+other response (the v4-native mechanism — no extensions, no custom JS).
+`autofocus` on the first invalid field makes htmx focus it after the swap
+(v4 focuses the first `[autofocus]` in swapped content natively).
+
+Field-error convention: `aria-invalid="true"` on the invalid input, an error
+element right next to it (`field__error` / `field-error-<name>`), wired with
+`aria-describedby` — the same shape as the artifact's FormField widget.
+
+A contact form, end to end:
+
+```tsx
+// ui/views/main_shell/contact/contact_view.tsx — page + ContactForm fragment.
+import type { FC } from 'hono/jsx';
+
+interface ContactProps {
+  action: string; // hx-post target — the viewmodel passes a routes.* helper
+  errors?: Record<string, string>;
+  values?: Record<string, string>;
+}
+
+export const ContactForm: FC<ContactProps> = ({ action, errors = {}, values = {} }) => {
+  const firstError = Object.keys(errors)[0];
+  const field = (name: string, label: string, type = 'text') => (
+    <div class={errors[name] ? 'field field--invalid' : 'field'}>
+      <label class="field__label" for={name}>{label}</label>
+      <input
+        class="field__input"
+        id={name}
+        name={name}
+        type={type}
+        value={values[name] ?? ''}
+        aria-invalid={errors[name] ? 'true' : undefined}
+        aria-describedby={errors[name] ? 'field-error-' + name : undefined}
+        autofocus={name === firstError ? true : undefined}
+      />
+      {errors[name] && (
+        <p class="field__error" id={'field-error-' + name}>{errors[name]}</p>
+      )}
+    </div>
+  );
+  return (
+    <form hx-post={action} hx-swap="outerHTML">
+      {field('name', 'Name')}
+      {field('email', 'Email', 'email')}
+      <button class="btn" type="submit">Send</button>
+    </form>
+  );
+};
+
+const ContactPage: FC<ContactProps> = (props) => (
+  <main>
+    <h1>Contact</h1>
+    <ContactForm {...props} />
+  </main>
+);
+
+export default ContactPage;
+```
+
+```js
+// ui/views/main_shell/contact/contact_viewmodel.js
+import { z } from 'zod';
+import { parseForm } from '../../../../runtime/forms.js';
+import { routes } from '../../../../runtime/routes.js';
+
+const schema = z.object({
+  name: z.string().min(1, 'Name is required'),
+  email: z.string().email('A valid email is required'),
+});
+
+/** @param {import('hono').Context} c @param {import('../../../../runtime/types').Helpers} h */
+export const page = (c, h) =>
+  h.render(c, 'ui/views/main_shell/contact/contact_view.html', {
+    action: routes.contact(),
+  });
+
+/** @param {import('hono').Context} c @param {import('../../../../runtime/types').Helpers} h */
+export const submit = async (c, h) => {
+  const result = await parseForm(c, schema);
+  if (!result.ok) {
+    // 422 + the form fragment: htmx swaps it in place of the <form>
+    // (default target), errors and typed values preserved, no full reload.
+    return h.render(c, 'ui/views/main_shell/contact/contact_view.html#contactForm', {
+      action: routes.contact(),
+      errors: result.errors,
+      values: result.values,
+    }, 422);
+  }
+  return h.refresh(c);
+};
+```
+
+```js
+// app.routes.js
+import * as contact from './ui/views/main_shell/contact/contact_viewmodel.js';
+export default [
+  // ...
+  ['GET', '/contact', contact.page],
+  ['POST', '/contact', contact.submit],
+];
+```
+
+Invalid submit → 422 → the form swaps in place with errors + values and
+focus on the first invalid field; no full reload. URLs come from the
+generated route manifest (`runtime/routes.js`), so renaming `/contact` in
+`app.routes.js` fails `npm run typecheck` instead of 404ing at runtime.
+
 ''';
 
 // ══ design-system intake (Task 22.1) ═════════════════════════════════════

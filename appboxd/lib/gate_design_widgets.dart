@@ -7,19 +7,20 @@
 ///
 ///   W1  placement — a widget lives at the narrowest scope covering all its
 ///       consumers, enforced in BOTH directions (too broad and too narrow).
-///   W2  dead widgets — zero includers is a deletion, not a widget.
+///   W2  dead widgets — zero importers is a deletion, not a widget.
 ///   W3  panels are instantiated, never re-implemented — the `.panel-*`
-///       structural skeleton appears in markup only inside `_panel.html`.
-///   W4  shell composition — `<shell>_view.html` mounts role panels from
-///       {header, main, activity, composer, footer}, each at most once.
+///       structural skeleton appears in markup only inside `_panel.tsx`.
+///   W4  shell composition — `<shell>_view.tsx` mounts role panels from
+///       {header, main, activity, composer, footer} by rendering the panel's
+///       imported `Open` component, each at most once.
 ///   W5  chip singularity — pill radius (999px/9999px) only in the widgets CSS.
 ///   W6  state namespacing — a shell's viewmodels write session keys under
 ///       `<shell>.` or `app.` only.
 ///
-/// The include/import graph is the only authority for W1/W2. No such parser
-/// existed in appboxd before this file — the pre-existing "orphan sweeps"
-/// (emit_htmx, emit_structure, gate_intake) are surface- and viewmodel-scoped
-/// and never look at Jinja includes — so [buildIncludeGraph] is new machinery.
+/// The import graph is the only authority for W1/W2. No such parser existed in
+/// appboxd before this file — the pre-existing "orphan sweeps" (emit_htmx,
+/// emit_structure, gate_intake) are surface- and viewmodel-scoped and never
+/// look at template imports — so [buildIncludeGraph] is new machinery.
 library;
 
 import 'dart:io';
@@ -31,7 +32,7 @@ import 'design_tools.dart' show LintFinding, stripComments;
 // ══ vocabulary ══════════════════════════════════════════════════════════
 
 /// The five panel roles. A shell mounts each at most once (W4); a widget named
-/// `<role>_panel.html` is that role's instantiation.
+/// `<role>_panel.tsx` is that role's instantiation.
 const panelRoles = <String>['header', 'main', 'activity', 'composer', 'footer'];
 
 /// The `.panel-*` structural skeleton — the classes that BUILD a panel: the
@@ -61,18 +62,18 @@ const panelStructuralClasses = <String>[
 ];
 
 /// The base widget that owns the panel skeleton, identified by NAME rather than
-/// by a fixed path: `_panel.html` in any legal widget home.
+/// by a fixed path: `_panel.tsx` in any legal widget home.
 ///
-/// A fixed `ui/common/widgets/_panel.html` would put W3 in direct conflict with
+/// A fixed `ui/common/widgets/_panel.tsx` would put W3 in direct conflict with
 /// W1. W1 judges placement by real consumers, so a base whose only consumers are
 /// one shell's role panels belongs in that shell's `shared/widgets/` — and a W3
 /// that only ever looked in `ui/common/widgets/` would then report "no base" for
 /// a tree that has one, correctly placed. The rule is "the skeleton lives in the
 /// base", not "the base lives at this path".
-const panelBaseName = '_panel.html';
+const panelBaseName = '_panel.tsx';
 
-/// Every legal widget home holding a `_panel.html`.
-List<String> panelBaseWidgets(String artifactDir) => _htmlFiles(artifactDir)
+/// Every legal widget home holding a `_panel.tsx`.
+List<String> panelBaseWidgets(String artifactDir) => _templateFiles(artifactDir)
     .where((rel) =>
         p.basename(rel) == panelBaseName &&
         isWidget(rel) &&
@@ -83,66 +84,75 @@ List<String> panelBaseWidgets(String artifactDir) => _htmlFiles(artifactDir)
 /// consolidated here; no per-widget CSS files.
 const widgetsCssPath = 'assets/css/widgets.css';
 
-// ══ the include graph ═══════════════════════════════════════════════════
+// ══ the import graph ════════════════════════════════════════════════════
 
-/// A parsed template reference: `{% include %}`, `{% import %}`,
-/// `{% from … import … %}`, `{% extends %}`.
-///
-/// Paths in this dialect are ARTIFACT-ROOT-RELATIVE (`ui/common/mini_panel.html`),
-/// never relative to the referring file — matching how the design server resolves
-/// them. `alias` is the `as X` binding when present, which W4 needs to count
-/// macro calls.
-class TemplateRef {
-  final String path;
-  final String? alias;
-  const TemplateRef(this.path, this.alias);
-}
+/// A TSX import statement. `clause` is the binding list (`X`, `{ A, B as C }`,
+/// `X, { A }`, `* as X`) — absent for a side-effect import (`import './x.css'`).
+/// An optional `type` qualifier is allowed (`import type { FC } from …`).
+final _importRe = RegExp(
+    r'''import\s+(?:type\s+)?(?:(?<clause>[\w$]+|\{[^}]*\}|[\w$]+\s*,\s*\{[^}]*\}|\*\s+as\s+[\w$]+)\s+from\s+)?['"](?<path>[^'"]+)['"]''');
 
-final _refRe = RegExp(
-  r'''\{%-?\s*(?:from\s+(?<from>"[^"]*"|'[^']*')\s+import\b[^%]*|(?<kind>include|import|extends)\s+(?<path>"[^"]*"|'[^']*')(?:\s+as\s+(?<alias>[A-Za-z_][A-Za-z_0-9]*))?[^%]*)%\}''',
-);
-
-String _unquote(String s) => s.substring(1, s.length - 1);
-
-/// Every template reference in [src], comments already stripped by the caller.
-///
-/// A malformed or dynamic directive (the bare `{% include %}` that exists in the
-/// studio today, or `{% include some_var %}`) simply does not match and is
-/// skipped — a lint must not crash on the tree it is auditing.
-List<TemplateRef> parseTemplateRefs(String src) {
-  final out = <TemplateRef>[];
-  for (final m in _refRe.allMatches(src)) {
-    final raw = m.namedGroup('from') ?? m.namedGroup('path');
-    if (raw == null) continue;
-    out.add(TemplateRef(_unquote(raw), m.namedGroup('alias')));
+/// The bindings an import [clause] creates, as (imported, local) name pairs —
+/// `Open as MainOpen` is `(imported: 'Open', local: 'MainOpen')`. The default
+/// import reads as `(imported: 'default', …)`: its source name is unknowable
+/// from the import alone, and every role panel re-exports its `Open` frame as
+/// default, so W4 treats a default binding as a mount binding.
+List<({String imported, String local})> _importBindings(String? clause) {
+  if (clause == null) return const [];
+  final out = <({String imported, String local})>[];
+  if (!clause.startsWith('{') && !clause.startsWith('*')) {
+    out.add((
+      imported: 'default',
+      local: RegExp(r'[\w$]+').firstMatch(clause)![0]!,
+    ));
+  }
+  final named = RegExp(r'\{([^}]*)\}').firstMatch(clause);
+  if (named != null) {
+    for (final part in named.group(1)!.split(',')) {
+      final bits = part.trim().split(RegExp(r'\s+as\s+'));
+      final imported = bits.first.trim();
+      if (imported.isEmpty) continue;
+      out.add((imported: imported, local: bits.last.trim()));
+    }
   }
   return out;
 }
 
-/// Artifact-root-relative POSIX paths of every `.html` file under [artifactDir].
-List<String> _htmlFiles(String artifactDir) {
+/// Artifact-root-relative POSIX paths of every `.tsx` template under
+/// [artifactDir].
+List<String> _templateFiles(String artifactDir) {
   final dir = Directory(artifactDir);
   if (!dir.existsSync()) return const [];
   final out = <String>[];
   for (final e in dir.listSync(recursive: true)) {
-    if (e is! File || !e.path.endsWith('.html')) continue;
+    if (e is! File) continue;
+    if (!e.path.endsWith('.tsx')) continue;
     out.add(p.split(p.relative(e.path, from: artifactDir)).join('/'));
   }
   out.sort();
   return out;
 }
 
-/// includee → the files that reference it, for every `.html` in the tree.
+/// importee → the files that import it, for every template in the tree.
 ///
 /// Keys and values are artifact-root-relative POSIX paths. Self-references are
-/// dropped (a macro file importing itself is not a consumer of itself).
+/// dropped (a file importing itself is not a consumer of itself). Only RELATIVE
+/// imports resolve into the tree — bare specifiers ('hono/jsx') are packages,
+/// not files.
 Map<String, Set<String>> buildIncludeGraph(String artifactDir) {
   final graph = <String, Set<String>>{};
-  for (final rel in _htmlFiles(artifactDir)) {
+  for (final rel in _templateFiles(artifactDir)) {
     final src = stripComments(File(p.join(artifactDir, rel)).readAsStringSync());
-    for (final ref in parseTemplateRefs(src)) {
-      if (ref.path == rel) continue;
-      (graph[ref.path] ??= <String>{}).add(rel);
+    final importerDir = p.dirname(rel);
+    for (final m in _importRe.allMatches(src)) {
+      final importPath = m.namedGroup('path')!;
+      if (!importPath.startsWith('.')) continue;
+      // Resolve relative to the importing file, normalize to
+      // artifact-root-relative.
+      final resolved =
+          p.normalize(p.join(importerDir, importPath)).replaceAll('\\', '/');
+      if (resolved == rel) continue;
+      (graph[resolved] ??= <String>{}).add(rel);
     }
   }
   return graph;
@@ -150,7 +160,7 @@ Map<String, Set<String>> buildIncludeGraph(String artifactDir) {
 
 // ══ scopes ══════════════════════════════════════════════════════════════
 
-/// A widget file: any `.html` under a directory literally named `widgets`.
+/// A widget file: any `.tsx` under a directory literally named `widgets`.
 bool isWidget(String rel) => rel.split('/').contains('widgets');
 
 /// The retired flat tier — `ui/widgets/`, `ui/dialogs/`, `ui/bottomsheets/` at
@@ -184,7 +194,7 @@ enum WidgetHome { common, shell, surface }
 /// the bare `ui/views/<shell>/widgets/`, and the retired flat `ui/widgets/`.
 ///
 /// A surface home must live under `ui/views/`. Returning one for any unmatched
-/// directory is what used to map the flat `ui/widgets/x.html` onto a surface
+/// directory is what used to map the flat `ui/widgets/x.tsx` onto a surface
 /// home keyed `ui`, so a legacy tree drew "every consumer is confined to
 /// ui/views/main_shell — move to …" (a scope complaint about a file whose real
 /// problem is that it sits in a retired tier) instead of being told to migrate.
@@ -222,28 +232,28 @@ String _dirOf(String rel) {
 
 // ══ W1 · W2 — placement and dead widgets ════════════════════════════════
 
-/// W1 + W2 over the include graph.
+/// W1 + W2 over the import graph.
 ///
-/// ponytail: consumer scope is read from DIRECT includers, not the transitive
+/// ponytail: consumer scope is read from DIRECT importers, not the transitive
 /// closure. A misplaced widget therefore drags its children's required scope
 /// with it (a common widget consumed only by main_shell makes everything it
-/// includes look common too). That resolves by fixpoint — fix the parent, rerun,
+/// imports look common too). That resolves by fixpoint — fix the parent, rerun,
 /// the children settle — and it keeps each message pointing at one file the
 /// reader can actually move. A transitive closure would name the same violation
 /// from every leaf that reaches it.
 List<LintFinding> _placementFindings(
     String artifactDir, Map<String, Set<String>> graph) {
   final findings = <LintFinding>[];
-  final all = _htmlFiles(artifactDir);
+  final all = _templateFiles(artifactDir);
   final surfaceDirs = _surfaceDirs(all);
   for (final rel in all) {
     if (!isWidget(rel) && !isRetiredFlatWidget(rel)) continue;
     final consumers = graph[rel] ?? const <String>{};
 
-    // ── W2: a widget nobody includes is a deletion, not a widget.
+    // ── W2: a widget nobody imports is a deletion, not a widget.
     if (consumers.isEmpty) {
       findings.add(LintFinding(rel,
-          'W2: widget has zero includers (dead) — delete it, or include it '
+          'W2: widget has zero importers (dead) — delete it, or import it '
           'from the surface that needs it'));
       continue;
     }
@@ -275,7 +285,7 @@ List<LintFinding> _placementFindings(
     //
     // Each consumer contributes the directory its OWN scope covers, which is not
     // always the directory it sits in: a consumer that is itself a widget covers
-    // its home's scope. A shell-scoped widget included only by another
+    // its home's scope. A shell-scoped widget imported only by another
     // shell-scoped widget in the same folder is correctly placed — reading the
     // literal parent directory instead would demand it move into a `widgets/`
     // inside `widgets/`.
@@ -342,18 +352,18 @@ String _commonAncestor(Iterable<String> dirs) {
   return (home: WidgetHome.common, key: '');
 }
 
-/// Surfaces, identified structurally: a directory holding a `*_view.html`.
+/// Surfaces, identified structurally: a directory holding a `*_view.tsx`.
 ///
 /// This is what separates a surface from a section. `ui/views/main_shell/intake/`
-/// holds `_shared.html` and `routes.intake.js` but no `*_view.html`; each of its
+/// holds `_shared.tsx` and `routes.intake.js` but no `*_view.tsx`; each of its
 /// children (`brief/`, `flows/`, …) holds one. A shell's own
-/// `<shell>_view.html` makes the shell root look like a surface, so it is
+/// `<shell>_view.tsx` makes the shell root look like a surface, so it is
 /// excluded — the shell root is the shell home, never a surface.
-Set<String> _surfaceDirs(List<String> htmlFiles) {
+Set<String> _surfaceDirs(List<String> templateFiles) {
   final out = <String>{};
-  for (final rel in htmlFiles) {
+  for (final rel in templateFiles) {
     final name = p.basename(rel);
-    if (!name.endsWith('_view.html')) continue;
+    if (!name.endsWith('_view.tsx')) continue;
     if (isWidget(rel)) continue;
     final dir = _dirOf(rel);
     final shell = shellOf(rel);
@@ -372,7 +382,7 @@ String _destination(({WidgetHome home, String key}) required, String name) =>
 
 String _why(({WidgetHome home, String key}) required, Set<String> scopeDirs) {
   // Name the consumers, capped — a placement failure is fixed by looking at who
-  // includes the widget, so the message should save the reader that grep.
+  // imports the widget, so the message should save the reader that grep.
   final dirs = scopeDirs.map((d) => d.isEmpty ? 'ui/common' : d).toList()..sort();
   final shown =
       dirs.length <= 3 ? dirs.join(', ') : '${dirs.take(3).join(', ')}, +${dirs.length - 3} more';
@@ -388,7 +398,10 @@ String _why(({WidgetHome home, String key}) required, Set<String> scopeDirs) {
 
 // ══ W3 — the panel skeleton lives in one file ═══════════════════════════
 
-final _classAttrRe = RegExp(r'''class\s*=\s*(?:"([^"]*)"|'([^']*)')''');
+/// hono/jsx keeps the HTML attribute name: `class="…"` / `class='…'`, or a
+/// computed class string as a backtick template (`class={`…`}`).
+final _classAttrRe =
+    RegExp(r'''class\s*=\s*(?:"([^"]*)"|'([^']*)'|\{`([^`]*)`\})''');
 
 List<LintFinding> _panelReimplementationFindings(
     String artifactDir, List<LintFinding>? notes) {
@@ -398,7 +411,7 @@ List<LintFinding> _panelReimplementationFindings(
     // put the skeleton, so flagging every use would be noise. Skipped, not passed.
     //
     // The note is worth printing only for a tree that HAS a UI (a design artifact
-    // mid-migration). A fixture of two loose .html files is not mid-migration —
+    // mid-migration). A fixture of two loose .tsx files is not mid-migration —
     // the rule simply does not address it, and a note there is noise in the
     // channel the ADR-0002 lint uses for its own advisories.
     if (Directory(p.join(artifactDir, 'ui')).existsSync()) {
@@ -410,12 +423,12 @@ List<LintFinding> _panelReimplementationFindings(
   }
   final findings = <LintFinding>[];
   final structural = panelStructuralClasses.toSet();
-  for (final rel in _htmlFiles(artifactDir)) {
+  for (final rel in _templateFiles(artifactDir)) {
     if (bases.contains(rel)) continue;
     final src = stripComments(File(p.join(artifactDir, rel)).readAsStringSync());
     final hits = <String>{};
     for (final m in _classAttrRe.allMatches(src)) {
-      final value = m.group(1) ?? m.group(2) ?? '';
+      final value = m.group(1) ?? m.group(2) ?? m.group(3) ?? '';
       for (final cls in value.split(RegExp(r'\s+'))) {
         if (structural.contains(cls)) hits.add(cls);
       }
@@ -446,127 +459,92 @@ bool _underHostedGroup(String rel, Set<String> surfaceDirs) {
   return !surfaceDirs.contains('ui/views/${segs[2]}/${segs[3]}');
 }
 
-/// Macro names that OPEN a panel, and the names that CLOSE it.
+// The nunjucks gate carried an open/close BALANCE rule here (a `{% macro %}`
+// pair can go unbalanced). JSX components are balanced by construction — the
+// TSX compiler owns that check now, so there is nothing to count.
+
+/// Role panels a shell view mounts, counted by JSX use of the panel's `Open`
+/// component.
 ///
-/// The panel base is a balanced pair rather than a `{% call %}` wrapper because
-/// nunjucks binds `caller()` to the NEAREST enclosing `{% call %}`: a base that
-/// wrapped `{{ caller() }}` could not be invoked from inside a role that is
-/// itself called, which is how every panel is written. So the base cannot be
-/// one entry point, and W4 counts mounts by entry point instead of by use.
-const _mountOpenMacros = <String>['open', 'mount'];
-const _mountCloseMacros = <String>['close', 'end'];
-
-/// Section and out-of-band macros. Calling one is explicitly NOT a mount: a
-/// surface that re-feeds a panel's top and bottom from a fragment route is
-/// refreshing sections of a panel someone else mounted. Without this the
-/// "uncounted mount" note fires on every oob refresh site and cries wolf.
-const _sectionMacros = <String>[
-  'top',
-  'bottom',
-  'sideStart',
-  'sideEnd',
-  'body',
-  'bodyEnd',
-  'topOob',
-  'bottomOob',
-  'sideEndOob',
-  'bodyOob',
-];
-
-/// Occurrences of `alias.<name>(` for any [names], on a word boundary.
-int _aliasCalls(String src, String alias, List<String> names) {
-  var n = 0;
-  final a = RegExp.escape(alias);
-  for (final name in names) {
-    n += RegExp('(?<![A-Za-z_0-9])$a\\s*\\.\\s*${RegExp.escape(name)}\\s*\\(')
-        .allMatches(src)
-        .length;
-  }
-  return n;
-}
-
-/// An alias bound to the panel base or to a role panel widget.
-bool _isPanelRef(TemplateRef ref) =>
-    p.basename(ref.path) == panelBaseName ||
-    p.basename(ref.path).endsWith('_panel.html');
-
-/// W4 balance: an opened panel must be closed in the same template.
+/// The mount convention, read off the studio tree: a role panel
+/// `<role>_panel.tsx` exports `Open` — the frame — plus section/body helpers
+/// (`Top`, `Bottom`, `PanelBar`, `Empty`, `View`, …) for OOB refreshes, and
+/// re-exports `Open` as default. So a shell MOUNTS a role by rendering the
+/// imported `Open` binding (`import { Open as MainOpen } …` → `<MainOpen>…`)
+/// or the default import (`import HeaderPanel from '…/header_panel.tsx'` →
+/// `<HeaderPanel>…`). Using a helper export is composing INSIDE a panel
+/// someone else mounted, never a mount: counting every imported identifier
+/// would read `design/_shared.tsx` — four names imported from main_panel.tsx,
+/// one of them the frame — as a triple mount, the macro-library false
+/// positive the nunjucks gate carried a whole apparatus to avoid.
 ///
-/// The one safety the open/close pair loses against `{% call %}…{% endcall %}`
-/// is that the pair can go unbalanced — `{% call %}` cannot. An imbalance emits
-/// broken nesting that no other rule sees, so it is caught here, statically,
-/// rather than left to a DOM assertion after render.
-///
-/// Swept over EVERY template, not just shell views: the base is opened wherever
-/// a panel is composed, and a role widget that opens without closing is exactly
-/// as broken as a shell that does.
-List<LintFinding> _panelBalanceFindings(String artifactDir) {
-  final findings = <LintFinding>[];
-  for (final rel in _htmlFiles(artifactDir)) {
-    final src = stripComments(File(p.join(artifactDir, rel)).readAsStringSync());
-    for (final ref in parseTemplateRefs(src)) {
-      final alias = ref.alias;
-      if (alias == null || !_isPanelRef(ref)) continue;
-      final opens = _aliasCalls(src, alias, _mountOpenMacros);
-      final closes = _aliasCalls(src, alias, _mountCloseMacros);
-      if (opens == closes) continue;
-      findings.add(LintFinding(rel,
-          'W4: `$alias` (${ref.path}) opens $opens time(s) but closes $closes — '
-          'every `$alias.open(…)` needs a matching `$alias.close(…)` in the same '
-          'template, or the panel emits unbalanced markup'));
-    }
-  }
-  return findings;
-}
-
-/// Role panels a shell view mounts, counted by macro-call site.
-///
-/// ponytail: a mount inside `{% if %}`/`{% else %}` branches counts once per
-/// branch, so a shell that renders the same role two ways reads as a duplicate.
-/// Counting distinct branches would need a template parser, not a regex; the
-/// D4 rule ("declares which role panels it mounts") reads the declaration as
-/// unconditional, so branch-aware counting would be measuring the wrong thing.
+/// ponytail: counting is regex-deep (`<Ident` open tags), like every other
+/// rule in this file; a mount inside a conditional branch counts once per
+/// branch, so a shell that renders the same role two ways reads as a
+/// duplicate. Branch-aware counting would need an AST, and the D4 rule
+/// ("declares which role panels it mounts") reads the declaration as
+/// unconditional anyway.
 List<LintFinding> _shellCompositionFindings(
     String artifactDir, List<LintFinding>? notes) {
   final findings = <LintFinding>[];
   final roles = panelRoles.toSet();
-  final all = _htmlFiles(artifactDir);
+  final all = _templateFiles(artifactDir);
   // Same honesty as W3: with no role-panel widgets there is nothing to compose,
   // so a silent pass would read as "composition checked" when it was not.
   final hasRolePanels = all.any((rel) =>
       isWidget(rel) &&
-      roles.any((r) => p.basename(rel) == '${r}_panel.html'));
+      roles.any((r) => p.basename(rel) == '${r}_panel.tsx'));
   if (!hasRolePanels) {
     if (Directory(p.join(artifactDir, 'ui', 'views')).existsSync()) {
       notes?.add(LintFinding('ui/views',
-          'W4 skipped: no role-panel widgets (<role>_panel.html under a '
+          'W4 skipped: no role-panel widgets (<role>_panel.tsx under a '
           '`widgets/` dir) — nothing to compose yet'));
     }
     return const [];
   }
   final surfaceDirs = _surfaceDirs(all);
-  final unmeasured = <String>[];
   for (final rel in all) {
     final name = p.basename(rel);
     final shell = shellOf(rel);
-    final isShellView = shell != null && name == '${shell}_view.html';
+    final isShellView = shell != null && name == '${shell}_view.tsx';
 
     final src = stripComments(File(p.join(artifactDir, rel)).readAsStringSync());
-    final refs = parseTemplateRefs(src);
-    final mountsPanels = refs.any((r) =>
-        isWidget(r.path) && p.basename(r.path).endsWith('_panel.html'));
+    final importerDir = p.dirname(rel);
+    // This file's panel imports. `role` is null for a `*_panel.tsx` widget
+    // whose name is not one of the five roles.
+    final panelImports =
+        <({String? role, String refName, List<String> mountIdents})>[];
+    for (final m in _importRe.allMatches(src)) {
+      final importPath = m.namedGroup('path')!;
+      if (!importPath.startsWith('.')) continue;
+      final resolved =
+          p.normalize(p.join(importerDir, importPath)).replaceAll('\\', '/');
+      final refName = p.basename(resolved);
+      if (!refName.endsWith('_panel.tsx') || !isWidget(resolved)) continue;
+      final role = refName.substring(0, refName.length - '_panel.tsx'.length);
+      final mountIdents = [
+        for (final b in _importBindings(m.namedGroup('clause')))
+          if (b.imported == 'default' || b.imported == 'Open') b.local,
+      ];
+      panelImports.add((
+        role: roles.contains(role) ? role : null,
+        refName: refName,
+        mountIdents: mountIdents,
+      ));
+    }
 
-    // A top-level shell declares its panel set in `<shell>_view.html`; a HOSTED
-    // shell declares its own in whatever template composes it. Both are shell
+    // A top-level shell declares its panel set in `<shell>_view.tsx`; a HOSTED
+    // shell declares its own in whatever view composes it. Both are shell
     // views in the sense that matters, so both are checked.
     //
     // Detection is structural, not by filename: build's composition lives in a
-    // surface view (`build/loop/loop_view.html`), so a `_shared.html` naming
+    // surface view (`build/loop/loop_view.tsx`), so a `_shared.tsx` naming
     // rule would miss it. The scope is bounded to hosted-shell GROUP dirs so a
     // content widget that happens to compose a non-role panel — design_viewer
     // mounting mini_panel from `shared/widgets/` — is not read as a shell
     // declaring its panel set.
-    if (!isShellView && !(mountsPanels && _underHostedGroup(rel, surfaceDirs))) {
+    if (!isShellView &&
+        !(panelImports.isNotEmpty && _underHostedGroup(rel, surfaceDirs))) {
       continue;
     }
 
@@ -574,47 +552,23 @@ List<LintFinding> _shellCompositionFindings(
     // activity panel once are two shells with one activity panel, not a double
     // mount. Alternative layouts of one hosted shell are the same story.
     final mounts = <String, int>{};
-    for (final ref in refs) {
-      final refName = p.basename(ref.path);
-      if (!refName.endsWith('_panel.html')) continue;
-      if (!isWidget(ref.path)) continue;
-      final role = refName.substring(0, refName.length - '_panel.html'.length);
-      if (!roles.contains(role)) {
+    for (final imp in panelImports) {
+      final role = imp.role;
+      if (role == null) {
         findings.add(LintFinding(rel,
-            'W4: mounts `$refName`, which is not one of the five panel roles '
-            '(${panelRoles.join(', ')}) — rename it to a role or stop mounting '
-            'it from the shell view'));
+            'W4: mounts `${imp.refName}`, which is not one of the five panel '
+            'roles (${panelRoles.join(', ')}) — rename it to a role or stop '
+            'mounting it from the shell view'));
         continue;
       }
-      // A bare include mounts once. An `import … as X` mounts once per ENTRY
-      // POINT — `X.open(` / `X.mount(` — not once per alias use, because the
-      // panel base is a balanced pair: one mounted panel is `X.open(…)` plus
-      // `X.close(…)`, and counting every alias use would read that correct
-      // markup as a double mount. Roles that expose a single all-in-one macro
-      // have no entry point to find, so those fall back to alias uses.
-      if (ref.alias == null) {
-        mounts[role] = (mounts[role] ?? 0) + 1;
-        continue;
+      // A mount is a JSX use of the panel's frame: the default import, or a
+      // binding of the `Open` export. An unused mount binding is a dead
+      // import, not a mount; helper bindings (Top/Bottom/PanelBar/…) are
+      // never mounts.
+      for (final ident in imp.mountIdents) {
+        mounts[role] = (mounts[role] ?? 0) +
+            RegExp('<$ident(?=[\\s>/])').allMatches(src).length;
       }
-      // ENTRY POINTS ONLY. A role file is a macro LIBRARY, not a single macro:
-      // the studio's main_panel.html exports empty / panelBar / view /
-      // renderCode / renderDoc / …, and a composition file legitimately calls
-      // three of them. Counting every `mp.` use counted render helpers as
-      // mounts and reported a shell mounting ONE main panel as mounting three.
-      final count = _aliasCalls(
-          src, ref.alias!, [..._mountOpenMacros, '${role}_panel', role]);
-      if (count == 0) {
-        // Only a SECTION refresh? Then this file is not mounting the panel at
-        // all — it is re-feeding sections of one another file mounted — and
-        // there is nothing uncounted to report.
-        if (_aliasCalls(src, ref.alias!, _sectionMacros) > 0) continue;
-        // The file composes this panel through some other macro, so W4 cannot
-        // tell which call is the mount. Reported, never guessed — a guess here
-        // is what produced the false positive above.
-        unmeasured.add('$name → ${p.basename(ref.path)} via `${ref.alias}`');
-        continue;
-      }
-      mounts[role] = (mounts[role] ?? 0) + count;
     }
     for (final role in panelRoles) {
       final n = mounts[role] ?? 0;
@@ -624,12 +578,6 @@ List<LintFinding> _shellCompositionFindings(
             'most once; keep one mount and move the variation inside the panel'));
       }
     }
-  }
-  if (unmeasured.isNotEmpty) {
-    notes?.add(LintFinding('ui/views',
-        'W4 partial: ${unmeasured.length} panel mount(s) not counted — no '
-        '`open(`/`mount(` or role-named macro at the call site, so which macro '
-        'is the mount is unknowable: ${unmeasured.join('; ')}'));
   }
   return findings;
 }
@@ -697,11 +645,11 @@ List<LintFinding> _pillRadiusFindings(String artifactDir) {
       }
       continue;
     }
-    if (!rel.endsWith('.html')) continue;
+    if (!rel.endsWith('.tsx')) continue;
     final src = stripComments(e.readAsStringSync());
-    for (final m in RegExp(r'''style\s*=\s*(?:"([^"]*)"|'([^']*)')''')
+    for (final m in RegExp(r'''style\s*=\s*(?:"([^"]*)"|'([^']*)'|\{`([^`]*)`\})''')
         .allMatches(src)) {
-      final value = m.group(1) ?? m.group(2) ?? '';
+      final value = m.group(1) ?? m.group(2) ?? m.group(3) ?? '';
       if (_pillRadiusRe.hasMatch(value)) {
         findings.add(LintFinding(rel,
             'W5: pill radius (999px/9999px) in an inline `style=` — use the '
@@ -783,7 +731,7 @@ List<LintFinding> _stateNamespaceFindings(
   final findings = <LintFinding>[];
   final dir = Directory(artifactDir);
   if (!dir.existsSync()) return findings;
-  final surfaceDirs = _surfaceDirs(_htmlFiles(artifactDir));
+  final surfaceDirs = _surfaceDirs(_templateFiles(artifactDir));
   var scanned = 0;
   for (final e in dir.listSync(recursive: true)) {
     if (e is! File) continue;
@@ -840,7 +788,6 @@ List<LintFinding> gateDesignWidgets(String artifactDir,
     ..._placementFindings(artifactDir, graph),
     ..._panelReimplementationFindings(artifactDir, notes),
     ..._shellCompositionFindings(artifactDir, notes),
-    ..._panelBalanceFindings(artifactDir),
     ..._pillRadiusFindings(artifactDir),
     ..._stateNamespaceFindings(artifactDir, notes),
   ];

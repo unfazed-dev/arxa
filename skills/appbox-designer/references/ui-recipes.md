@@ -1,12 +1,14 @@
 # UI recipes — the widget catalog
 
 The app-UI patterns a Surface is allowed to be composed from. Each recipe is
-copy-adapt ready: the macro takes the context bag `c`, the CSS is flex/grid
-with `gap` (never inline-flow spacing), tokens are CSS custom properties,
-naming is BEM-ish (`.block__el--mod`, matching `frames.css`).
+copy-adapt ready: the component takes its props (the server passes the ctx
+bag — `{ prefs, locale, locales, t }` merged in — as the single props
+object; `t` is a prop, used as `{t('home.title') as string}`), the CSS is
+flex/grid with `gap` (never inline-flow spacing), tokens are CSS custom
+properties, naming is BEM-ish (`.block__el--mod`, matching `frames.css`).
 
 **How to use this catalog — widgets-first.** Before composing any surface,
-inventory the design's repeated patterns and define them as macros/partials in
+inventory the design's repeated patterns and define them as components in
 `ui/common/` + `ui/widgets/` (dialogs/bottomsheets under their own folders) —
 start by copying the drop-ins from [`starter-partials/widgets/`](../starter-partials/widgets/)
 and adapt. *Then* compose surfaces, only from that library. A pattern used on
@@ -21,20 +23,30 @@ is the most expensive drift this medium allows.
   recipe names which of the seven it rides; all timing comes from the
   `--motion-*` tokens in `starter-partials/motion.css`, and everything is
   gated inside `@media (prefers-reduced-motion: no-preference)`.
-- **Icons** come from the runtime Nunjucks global: `{{ icon('arrow-left') }}`
-  or `{{ icon('x', {size: 20, cls: 'foo', label: 'Close'}) }}` — Lucide
-  kebab-case names, `currentColor`, decorative (`aria-hidden`) by default,
-  `label` opts into a meaningful accessible icon. Never emoji, never
-  hand-drawn SVG glyphs.
+- **Icons** come from the runtime `Icon` component: import it relative from
+  the file to the artifact root (`import Icon from '../../../runtime/icon.tsx'`
+  — the server bundles a browser-compatible `icon.tsx` there), then
+  `<Icon name="arrow-left" />` or `<Icon name="x" size={20} cls="foo"
+  label="Close" />` — Lucide kebab-case names, `currentColor`, decorative
+  (`aria-hidden`) by default, `label` opts into a meaningful accessible
+  icon. Never emoji, never hand-drawn SVG glyphs.
 - **Ladder** branches live in CSS on the window-size-class boundaries
   (`min-width: 600px` / `840px`); never hardcode the freeze widths 390/744/1280
   anywhere — those are for shooting (see `references/viewport-ladder.md`).
-- **Partials** referenced below (`_name.html`) live in
+- **Partials** referenced below (`_name.tsx`) live in
   `starter-partials/widgets/`; copy them to the placement-law tier their
   consumers require (`references/app-architecture.md`) and
   `assets/css/widgets.css` into your artifact. Shared cross-surface
-  fragments are pulled with `{% include %}`; a surface re-renders one
-  independently by wrapping the include in a Named Fragment macro.
+  fragments are component imports (relative paths, **including the `.tsx`
+  extension**); a surface re-renders one independently as a Named Fragment —
+  a named PascalCase export of the `*_view.tsx` file, rendered by the
+  viewmodel as `'ui/.../x_view.html#fragmentName'` (the `.html` viewRef is
+  kept for registry parity; `#fragmentName` maps to the named export
+  `FragmentName`). hono/jsx escapes everything by default — trusted HTML
+  goes through `raw(...)` from 'hono/utils/html' (never `raw()` user data),
+  and control flow is plain JS: ternaries, `{cond && (...)}` (never guard on
+  a bare number — `{count && ...}` renders a literal `0`), and
+  `{xs.map((x) => (...))}` with `key` on dynamic lists.
 
 ---
 
@@ -43,19 +55,32 @@ is the most expensive drift this medium allows.
 **Use:** any committed action — submits, mutations, primary/secondary pairs.
 Actions in a row, never floating solo in text.
 
-**Macro:**
+**Component:**
 
-```html
-{% macro action_row(c) %}
-<div class="action-row{% if c.stack %} action-row--stack{% endif %}">
-  {% for a in c.actions %}
-  <button class="btn{% if a.kind %} btn--{{ a.kind }}{% endif %}" type="button"
-          hx-post="{{ a.url }}"{% if a.target %} hx-target="{{ a.target }}"{% endif %}
-          {% if not a.target %} hx-swap="none transition:false"{% endif %}>{{ a.label }}</button>
-  {% endfor %}
-</div>
-{% endmacro %}
+```tsx
+import type { FC } from 'hono/jsx';
+
+interface Action {
+  url: string;
+  label: string;
+  kind?: string;
+  target?: string;
+}
+
+export const ActionRow: FC<{ actions: Action[]; stack?: boolean }> = ({ actions, stack }) => (
+  <div class={`action-row${stack ? ' action-row--stack' : ''}`}>
+    {actions.map((a) => (
+      <button key={a.url} class={`btn${a.kind ? ` btn--${a.kind}` : ''}`} type="button"
+              hx-post={a.url} hx-target={a.target}
+              hx-swap={a.target ? undefined : 'none transition:false'}>{a.label}</button>
+    ))}
+  </div>
+);
 ```
+
+(hono/jsx drops an attribute whose value is `undefined` — conditional
+attributes like `hx-target` and the `hx-swap` fallback above need no extra
+branching.)
 
 **CSS:**
 
@@ -75,7 +100,7 @@ mutations (pair with a toast, recipe 14); `hx-target` + Named Fragment when the
 mutation re-renders a region. In-flight state is free: htmx toggles
 `.htmx-request` on the button.
 
-> `transition:false` is not optional boilerplate. `globalViewTransitions:true`
+> `transition:false` is not optional boilerplate. `transitions:true`
 > wraps every swap in a view transition, and `hx-swap="none"` alone does not
 > suppress it — the transition rides the swap cycle, not the swap style. A
 > fire-and-forget POST without it cross-fades the whole page, which reads as
@@ -94,11 +119,11 @@ medium/expanded keep the end-aligned row.
 
 **Flutter:** AppBoxKitNativeButton, AppBoxKitNativeSplitButton; AppBoxKitNativeIconButton for icon-only.
 
-**Navigational variant — CTA link** (partial `_cta-link.html`, context:
-`cta = { href, label, icon?, external?, hx? }`). When the action is *go
-somewhere* rather than *do something* — card footers, "view on canvas",
-artifact cross-links — use the cta-link instead of a ghost button: label with
-a trailing affordance glyph (`icon` defaults to `chevron-right`,
+**Navigational variant — CTA link** (partial `_cta-link.tsx` exporting
+`CtaLink`, props: `cta = { href, label, icon?, external?, hx? }`). When the
+action is *go somewhere* rather than *do something* — card footers, "view on
+canvas", artifact cross-links — use the cta-link instead of a ghost button:
+label with a trailing affordance glyph (`icon` defaults to `chevron-right`,
 `arrow-up-right` when `external`, `false` for a bare text link). Fragment
 navigation passes `hx: { get?, target, swap?, pushUrl? }` (`get` defaults to
 `href`, `swap` to `outerHTML`). Motion: `traverse`, or `swap` under `hx`.
@@ -106,16 +131,19 @@ Flutter: AppBoxKitListTile trailing chevron / AppBoxKitNativeButton(link).
 
 ## 2. Icon
 
-**Use:** every glyph in the artifact. The runtime global renders vendored
+**Use:** every glyph in the artifact. The runtime component renders vendored
 Lucide SVGs server-side — decorative by default, meaningful with `label`.
 
-**Macro:** none — call the global. Wrap in `.icon-btn` when the icon IS the button:
+**Component:** none — import `Icon` from `runtime/icon.tsx` (relative from the
+file to the artifact root). Wrap in `.icon-btn` when the icon IS the button:
 
-```html
+```tsx
+import Icon from '../../../runtime/icon.tsx';
+
 <a class="icon-btn" href="/settings" aria-label="Settings">
-  {{ icon('settings', {size: 20}) }}
+  <Icon name="settings" size={20} />
 </a>
-{{ icon('lock', {size: 16, label: 'Private'}) }}  {# meaningful: role="img" + <title> #}
+<Icon name="lock" size={16} label="Private" />  {/* meaningful: role="img" + <title> */}
 ```
 
 **CSS:**
@@ -144,18 +172,21 @@ scale icons between rungs — composition changes, not glyph size.
 railbar in app chrome. Compact's primary nav is the tabbar (recipe 5); the
 nav-rail's overflow destinations ride the compact drawer.
 
-**Macro:** partial — `_nav-rail.html` (context: `nav = { brand?, drawer?,
-items: [{ id, label, icon, href, current? }] }`). Include in the shell; wrap
-for fragment re-render:
+**Component:** partial — `_nav-rail.tsx` exporting `NavRail` (props:
+`nav = { brand?, drawer?, items: [{ id, label, icon, href, current? }] }`).
+Render it in the shell; expose it as a Named Fragment for fragment re-render:
 
-```html
-{% macro nav_rail(c) %}{% set nav = c.nav %}{% include "ui/common/widgets/_nav-rail.html" %}{% endmacro %}
+```tsx
+import { NavRail } from '../../common/widgets/_nav-rail.tsx';
+
+export const NavRailFragment: FC<{ nav: NavData }> = ({ nav }) => <NavRail nav={nav} />;
 ```
 
-(The `{% set %}` shadows the context key from the bag: a fragment render
-`{% import %}`s the view file, and imported macros see only their arguments
-+ globals — not the render context. Includes under a `{% extends %}` page
-see the full context either way.)
+(A fragment render — the viewmodel rendering `'.../x_view.html#navRailFragment'` —
+calls the named export with exactly the props the endpoint passes. Nothing
+leaks in from a render context beyond the server's merged
+`{ prefs, locale, locales, t }`, so whatever a fragment needs, the endpoint
+puts in the props.)
 
 **CSS:** `.nav-rail` in widgets.css — `display: none` on compact; floating
 icon-only nav-rail (76px, sticky) at ≥600; icon+label (224px) at ≥840.
@@ -165,7 +196,7 @@ Active item: `.is-active` + `aria-current="page"`.
 route; boosted swaps carry the state automatically.
 
 **Ladder:** hidden → icon-only → icon+label. The compact drawer is the same
-partial with `nav.drawer: true`, included inside `<div id="nav-drawer"
+partial rendered with `nav.drawer: true`, mounted inside `<div id="nav-drawer"
 popover>` and opened by the header panel's `popovertarget` button (native
 popover, zero JS).
 
@@ -178,21 +209,26 @@ popover, zero JS).
 **Use:** switching between peer views INSIDE one surface (nested-shell
 archetype) — not primary navigation. 2–5 tabs.
 
-**Macro:** partial — `_tabs.html` (context: `tabs = { endpoint, oob?, items:
-[{ id, label, current? }] }`), plus the surface's panel fragment:
+**Component:** partial — `_tabs.tsx` exporting `Tabs` (props: `tabs = {
+endpoint, oob?, items: [{ id, label, current? }] }`), plus the surface's
+panel fragment:
 
-```html
-{% macro tab_panel(c) %}
-{% set tabs = c.tabs %}{% include "ui/common/widgets/_tabs.html" %}
-<div id="tab-panel" class="tabs__panel">{{ c.panel.body }}</div>
-{% endmacro %}
+```tsx
+import { Tabs } from '../../common/widgets/_tabs.tsx';
+
+export const TabPanel: FC<{ tabs: TabsData; panel: { body: string } }> = ({ tabs, panel }) => (
+  <Fragment>
+    <Tabs tabs={tabs} />
+    <div id="tab-panel" class="tabs__panel">{panel.body}</div>
+  </Fragment>
+);
 ```
 
 **CSS:** `.tabs` in widgets.css — flex row, `overflow-x: auto`, active tab
 underlined via `.is-active::after`.
 
 **htmx:** each tab: `hx-get="<endpoint>?tab=<id>" hx-target="#tab-panel"
-hx-swap="outerHTML"`. The fragment endpoint renders `tab_panel(c)` with
+hx-swap="outerHTML"`. The fragment endpoint renders `TabPanel` with
 `tabs.oob: true` — the bar re-renders out-of-band (`hx-swap-oob="outerHTML"`
 on `#tabs`) so the active marker moves with the panel. The full-page route
 reads `?tab=` for deep links.
@@ -210,13 +246,15 @@ AppBoxKitNativeTabBar for the bar alone).
 **Use:** THE primary nav on compact (tab-shell default chrome). 3–5 top-level
 destinations only.
 
-**Macro:** partial — `_tabbar.html`, reading the SAME `nav` context key
-as `_nav-rail.html` (one viewmodel source feeds both; the tabbar is the
-nav-rail's compact form). Include as the last element of the shell's
-scrolling column — it is sticky-bottom.
+**Component:** partial — `_tabbar.tsx` exporting `TabBar`, reading the SAME
+`nav` prop shape as `_nav-rail.tsx` (one viewmodel source feeds both; the
+tabbar is the nav-rail's compact form). Render as the last element of the
+shell's scrolling column — it is sticky-bottom.
 
-```html
-{% macro tabbar(c) %}{% set nav = c.nav %}{% include "ui/common/widgets/_tabbar.html" %}{% endmacro %}
+```tsx
+import { TabBar } from '../../common/widgets/_tabbar.tsx';
+
+export const TabBarFragment: FC<{ nav: NavData }> = ({ nav }) => <TabBar nav={nav} />;
 ```
 
 **CSS:** `.tabbar` in widgets.css — flex row, icon over label,
@@ -237,13 +275,15 @@ auth gate with no nav), say so explicitly in its notes.
 actions. The ladder's shipped default: compact/medium show title + drawer
 action + dropdown menu; expanded shows the full action row.
 
-**Macro:** partial — `_appbar.html` (context: `bar = { title, back?, drawer?,
-actions: [{ icon, label, href }] }`). Actions render twice from the one list:
-inline row (≥840) and inside a native `<details>` dropdown (<840) — the
-zero-JS responsive menu; CSS shows exactly one.
+**Component:** partial — `_appbar.tsx` exporting `AppBar` (props: `bar = {
+title, back?, drawer?, actions: [{ icon, label, href }] }`). Actions render
+twice from the one list: inline row (≥840) and inside a native `<details>`
+dropdown (<840) — the zero-JS responsive menu; CSS shows exactly one.
 
-```html
-{% macro appbar(c) %}{% set bar = c.bar %}{% include "ui/common/widgets/_appbar.html" %}{% endmacro %}
+```tsx
+import { AppBar } from '../../common/widgets/_appbar.tsx';
+
+export const AppBarFragment: FC<{ bar: BarData }> = ({ bar }) => <AppBar bar={bar} />;
 ```
 
 **CSS:** `.appbar` in widgets.css — sticky top, flex row with gap, title
@@ -265,19 +305,21 @@ AppBoxKitNativeToolbar (desktop).
 **Use:** the inset-grouped-list archetype — settings, collections, any
 homogeneous record list. Sections group rows under headers.
 
-**Macro:** partial `_list-row.html` (context: `row = { id, title, subtitle?,
-detail?, icon?, href?, chevron?, oob? }`), composed by a section macro in the
-surface:
+**Component:** partial `_list-row.tsx` exporting `ListRow` (props: `row = {
+id, title, subtitle?, detail?, icon?, href?, chevron?, oob? }`), composed by
+a section component in the surface:
 
-```html
-{% macro list_section(c) %}
-<section class="list-section">
-  <h2 class="list-section__header">{{ c.section.title }}</h2>
-  <div class="list-section__card">
-    {% for row in c.section.rows %}{% include "ui/common/widgets/_list-row.html" %}{% endfor %}
-  </div>
-</section>
-{% endmacro %}
+```tsx
+import { ListRow } from '../../common/widgets/_list-row.tsx';
+
+export const ListSection: FC<{ section: { title: string; rows: RowData[] } }> = ({ section }) => (
+  <section class="list-section">
+    <h2 class="list-section__header">{section.title}</h2>
+    <div class="list-section__card">
+      {section.rows.map((row) => <ListRow key={row.id} row={row} />)}
+    </div>
+  </section>
+);
 ```
 
 **CSS:** `.list-section` / `.list-row` in widgets.css — rounded section
@@ -285,8 +327,8 @@ card, 1px separators between rows, leading icon tile, trailing
 detail/chevron; whole-row `<a>` when `href` is set.
 
 **htmx:** row navigation is boosted links. Single-row updates: the mutation
-endpoint responds `hx-swap="none"` and renders the include with `row.oob:
-true` — the row root (`id="row-{{ row.id }}"`) carries
+endpoint responds `hx-swap="none"` and renders the partial with `row.oob:
+true` — the row root (`id={`row-${row.id}`}`) carries
 `hx-swap-oob="outerHTML"` and htmx swaps it over the stale row in place.
 
 **Ladder:** compact full-width grouped rows; medium wider inset; expanded the
@@ -302,12 +344,14 @@ column).
 **Use:** a self-contained content unit — media, title, summary, actions —
 repeated in a grid (dashboard-stack archetype) or stacked singly.
 
-**Macro:** partial `_card.html` (context: `card = { id, media?, title,
-subtitle?, body?, actions?, vt? }`):
+**Component:** partial `_card.tsx` exporting `Card` (props: `card = { id,
+media?, title, subtitle?, body?, actions?, vt? }`):
 
-```html
+```tsx
+import { Card } from '../../common/widgets/_card.tsx';
+
 <div class="card-grid">
-  {% for card in cards %}{% include "ui/common/widgets/_card.html" %}{% endfor %}
+  {cards.map((card) => <Card key={card.id} card={card} />)}
 </div>
 ```
 
@@ -316,7 +360,7 @@ ring, actions pinned to the bottom; `.card-grid` is the ladder: 1 column → 2
 (≥600) → 3 (≥840).
 
 **htmx:** cards are usually static; make one a target by its stable root id
-(`card-{{ card.id }}`) for OOB refreshes, exactly like recipe 7's row. Set
+(`card-${card.id}`) for OOB refreshes, exactly like recipe 7's row. Set
 `card.vt: true` for a shared-element morph into the detail surface — the
 partial derives a per-record `view-transition-name` (motion.css §2).
 
@@ -332,20 +376,29 @@ medium — the grid caps it.
 **Use:** compact filters, tags, single-select facets. Filter chips navigate;
 they never mutate directly.
 
-**Macro:**
+**Component:**
 
-```html
-{% macro chip_row(c) %}
-<div class="chip-row">
-  {% for chip in c.chips %}
-  <a class="chip{% if chip.current %} is-active{% endif %}" href="{{ c.chip_url }}{{ chip.id }}"
-     {% if chip.current %}aria-current="true"{% endif %}>
-    {% if chip.icon %}{{ icon(chip.icon, {size: 14}) }}{% endif %}
-    <span>{{ chip.label }}</span>
-  </a>
-  {% endfor %}
-</div>
-{% endmacro %}
+```tsx
+import Icon from '../../../runtime/icon.tsx';
+
+interface Chip {
+  id: string;
+  label: string;
+  icon?: string;
+  current?: boolean;
+}
+
+export const ChipRow: FC<{ chips: Chip[]; chipUrl: string }> = ({ chips, chipUrl }) => (
+  <div class="chip-row">
+    {chips.map((chip) => (
+      <a key={chip.id} class={`chip${chip.current ? ' is-active' : ''}`} href={`${chipUrl}${chip.id}`}
+         aria-current={chip.current ? 'true' : undefined}>
+        {chip.icon && <Icon name={chip.icon} size={14} />}
+        <span>{chip.label}</span>
+      </a>
+    ))}
+  </div>
+);
 ```
 
 **CSS:**
@@ -377,27 +430,31 @@ wraps (`flex-wrap`) on expanded.
 compact, centered fixed-width column on expanded — never fields stretched to
 1280px.
 
-**Macro:** partial `_form-field.html` (context: `field = { name, label,
-type?, value?, placeholder?, autocomplete?, required?, hint?, error? }`):
+**Component:** partial `_form-field.tsx` exporting `FormField` (props:
+`field = { name, label, type?, value?, placeholder?, autocomplete?,
+required?, hint?, error? }`):
 
-```html
-{% macro profile_form(c) %}
-<form id="profile-form" hx-post="/profile" hx-swap="outerHTML">
-  {% for field in c.fields %}{% include "ui/common/widgets/_form-field.html" %}{% endfor %}
-  <div class="action-row"><button class="btn" type="submit">Save</button></div>
-</form>
-{% endmacro %}
+```tsx
+import { FormField } from '../../common/widgets/_form-field.tsx';
+
+export const ProfileForm: FC<{ fields: FieldData[] }> = ({ fields }) => (
+  <form id="profile-form" hx-post="/profile" hx-swap="outerHTML" {...{ 'hx-status:422': '{}' }}>
+    {fields.map((field) => <FormField key={field.name} field={field} />)}
+    <div class="action-row"><button class="btn" type="submit">Save</button></div>
+  </form>
+);
 ```
 
 **CSS:** `.field` in widgets.css — label/input/hint column with gap;
 `.field--invalid` paints the error state; focus ring via `:focus` outline.
 
 **htmx:** the POST handler validates server-side; on failure it re-renders
-`profile_form(c)` with values + per-field `error` at **status 422** — the
-base.html meta config (`"code":"422","swap":true"`) swaps it like a normal
-response. Native `required` etc. run first (`reportValidityOfForms: true` in
-the same meta). Success paths: `h.location()` to navigate, or `hx-swap="none"`
-+ toast (recipe 14).
+`ProfileForm` with values + per-field `error` at **status 422** — the
+base.tsx htmx config (`"noSwap":[204,304,"4xx","5xx"]`) would black a 4xx
+out, so the form opts back in with the `hx-status:422` spread attribute
+(empty merge = swap like a normal response). Native `required` etc. run
+first — htmx 4 validates forms with `reportValidity()` natively. Success
+paths: `h.location()` to navigate, or `hx-swap="none"` + toast (recipe 14).
 
 **Ladder:** form column `max-width` capped (≈480px) from medium up.
 
@@ -410,18 +467,24 @@ the same meta). Success paths: `h.location()` to navigate, or `hx-swap="none"`
 **Use:** the pinned-search-list archetype — query-as-you-type over a list
 fragment.
 
-**Macro:**
+**Component:**
 
-```html
-{% macro search_bar(c) %}
-<div class="search-bar">
-  {{ icon('search', {size: 18, cls: 'search-bar__icon'}) }}
-  <input class="search-bar__input" type="search" name="q" value="{{ c.q }}"
-         placeholder="{{ c.placeholder or 'Search' }}" aria-label="Search"
-         hx-get="{{ c.endpoint }}" hx-trigger="input changed delay:300ms, search"
-         hx-target="#results" hx-swap="innerHTML" />
-</div>
-{% endmacro %}
+```tsx
+import Icon from '../../../runtime/icon.tsx';
+
+export const SearchBar: FC<{ q?: string; placeholder?: string; endpoint: string }> = ({
+  q,
+  placeholder,
+  endpoint,
+}) => (
+  <div class="search-bar">
+    <Icon name="search" size={18} cls="search-bar__icon" />
+    <input class="search-bar__input" type="search" name="q" value={q ?? ''}
+           placeholder={placeholder ?? 'Search'} aria-label="Search"
+           hx-get={endpoint} hx-trigger="input changed delay:300ms, search"
+           hx-target="#results" hx-swap="innerHTML" />
+  </div>
+);
 ```
 
 **CSS:**
@@ -453,11 +516,11 @@ detail pane beside `#results` — the input does not widen past the list pane.
 **Use:** confirms, short forms, focused decisions. Three mechanisms, all zero
 JS — pick by whether the content needs the server at all.
 
-**Macro:** partial `_dialog.html` for server-driven dialogs (context:
-`dialog = { title, body, scrim?, dismiss?, actions? }`). The shell owns an
-empty host:
+**Component:** partial `_dialog.tsx` exporting `Dialog` for server-driven
+dialogs (props: `dialog = { title, body, scrim?, dismiss?, actions? }`). The
+shell owns an empty host:
 
-```html
+```tsx
 <button class="btn" hx-get="/confirm-delete" hx-target="#dialog-host" hx-swap="innerHTML">
   Delete
 </button>
@@ -466,20 +529,23 @@ empty host:
 
 For stateless popovers/menus use the native form — no endpoint at all:
 
-```html
+```tsx
 <button class="icon-btn" popovertarget="sort-pop" aria-label="Sort">
-  {{ icon('arrow-up-down', {size: 20}) }}
+  <Icon name="arrow-up-down" size={20} />
 </button>
 <div id="sort-pop" popover class="popover">… boosted sort links …</div>
 ```
 
 For static confirms/info overlays whose content the page already owns — no
-endpoint, no host, not even a request — use the declarative `_modal.html`
-(context: `modal = { trigger, body, label?, cardClass?, closeLabel? }`): a
-pure `<details>` toggle; the open summary stretches into the scrim (click
-outside closes) and the card floats above it. `body` is trusted HTML composed
-in the surface (`{% set %}` capture), rendered `|safe`. Esc does not close
-(no JS) — note it in the surface's design notes if the product expects it.
+endpoint, no host, not even a request — use the declarative `_modal.tsx`
+exporting `Modal` (props: `modal = { trigger, label?, cardClass?,
+closeLabel? }`, body passed as `children`): a pure `<details>` toggle; the
+open summary stretches into the scrim (click outside closes) and the card
+floats above it. The body is JSX composed in the surface and passed as
+`children` (type `Child` from 'hono/jsx') — a trusted HTML string goes
+through `raw(...)` from 'hono/utils/html', never `raw()` on user data. Esc
+does not close (no JS) — note it in the surface's design notes if the
+product expects it.
 
 **CSS:** `.dialog` in widgets.css — fixed, centered, radius + shadow;
 `.overlay-scrim` dims. `.modal` is the declarative variant: `<details>` root,
@@ -504,9 +570,9 @@ notes if the product expects it.
 **Use:** action sheets and contextual pickers on touch rungs — the mobile
 form of recipe 12's overlay.
 
-**Macro:** partial `_bottom-sheet.html` (context: `sheet = { title?, items:
-[{ icon?, label, href, danger? }], dismiss? }`), swapped into
-`<div id="sheet-host">` like the dialog.
+**Component:** partial `_bottom-sheet.tsx` exporting `BottomSheet` (props:
+`sheet = { title?, items: [{ icon?, label, href, danger? }], dismiss? }`),
+swapped into `<div id="sheet-host">` like the dialog.
 
 **CSS:** `.sheet` in widgets.css — fixed bottom, top radius, grab handle,
 safe-area padding. From 600px up the SAME markup presents as a centered
@@ -527,16 +593,26 @@ markup path, CSS branches.
 **Use:** transient confirmation of a mutation — saved, deleted, sent. Never
 for errors that need action (use a dialog) or state that must persist.
 
-**Macro:** partial `_toast.html` (context: `toast = { text, kind?, icon?,
-linger? }`). The host is one line in base.html: `<div id="toasts">`. The
-mutation endpoint renders ONLY the toast:
+**Component:** partial `_toast.tsx` exporting `Toast` (props: `toast = {
+text, kind?, icon?, linger? }`). The host is one line in base.tsx:
+`<div id="toasts"></div>`. The mutation endpoint renders ONLY the toast —
+as a **Named Fragment of the current view**, never the widget file directly
+(the render registry maps `*_view.tsx` exports only, so a bare widget path
+is not a renderable viewRef):
 
 ```js
 export const del = (c, h) => {
   facade.delete(c.req.param('id'));
-  return h.render(c, 'ui/common/widgets/_toast.html',
+  return h.render(c, `${VIEW}#toastSwap`,
     { toast: { text: 'Item deleted', kind: 'success', linger: true } });
 };
+```
+
+```tsx
+// in <surface>_view.tsx — the fragment composes the shared component:
+export function ToastSwap({ toast }) {
+  return <Toast toast={toast} />; // Toast's root carries hx-swap-oob
+}
 ```
 
 **CSS:** `.toast` + `#toasts` in widgets.css — pill, fixed bottom-center
@@ -560,25 +636,36 @@ time the server re-renders `#toasts` — only the server removes.
 **Use:** genuinely tabular data on expanded rungs — admin, reporting. If the
 "table" is really a list, use recipe 7.
 
-**Macro:**
+**Component:**
 
-```html
-{% macro data_table(c) %}
-<div class="table-scroll">
-  <table class="data-table data-table--{{ c.density or 'comfortable' }}">
-    <thead>
-      <tr>{% for col in c.columns %}
-        <th><a href="?sort={{ col.id }}">{{ col.label }}</a></th>
-      {% endfor %}</tr>
-    </thead>
-    <tbody>
-      {% for r in c.rows %}<tr>
-        {% for col in c.columns %}<td>{{ r[col.id] }}</td>{% endfor %}
-      </tr>{% endfor %}
-    </tbody>
-  </table>
-</div>
-{% endmacro %}
+```tsx
+interface Column {
+  id: string;
+  label: string;
+}
+
+export const DataTable: FC<{
+  columns: Column[];
+  rows: Record<string, unknown>[];
+  density?: string;
+}> = ({ columns, rows, density }) => (
+  <div class="table-scroll">
+    <table class={`data-table data-table--${density ?? 'comfortable'}`}>
+      <thead>
+        <tr>{columns.map((col) => (
+          <th key={col.id}><a href={`?sort=${col.id}`}>{col.label}</a></th>
+        ))}</tr>
+      </thead>
+      <tbody>
+        {rows.map((r, i) => (
+          <tr key={i}>
+            {columns.map((col) => <td key={col.id}>{r[col.id] as string}</td>)}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+);
 ```
 
 **CSS:**
@@ -596,7 +683,7 @@ time the server re-renders `#toasts` — only the server removes.
 **htmx:** sort headers are boosted `?sort=` links (server re-renders the
 table). Density is a pref: POST to `/prefs/density` → `h.setPrefs` →
 `h.refresh` (state playbook), and the viewmodel passes `prefs.density` as
-`c.density`.
+the `density` prop.
 
 **Ladder:** compact wraps the table in `.table-scroll` (horizontal scroll) or
 the surface swaps to recipe 7 rows — decide per surface, never squeeze.
@@ -610,17 +697,19 @@ the surface swaps to recipe 7 rows — decide per surface, never squeeze.
 **Use:** a list/search with zero results, a cleared inbox, an unstarted
 feature. Always pair the copy with the action that fills it.
 
-**Macro:** partial `_empty-state.html` (context: `empty = { icon?, title,
-body?, action? }`). The view branches server-side:
+**Component:** partial `_empty-state.tsx` exporting `EmptyState` (props:
+`empty = { icon?, title, body?, action? }`). The view branches server-side:
 
-```html
-{% if rows | length %}… list …{% else %}
-{% include "ui/common/widgets/_empty-state.html" %}
-{% endif %}
+```tsx
+import { EmptyState } from '../../common/widgets/_empty-state.tsx';
+
+{rows.length > 0 ? <>… list …</> : <EmptyState empty={empty} />}
 ```
 
-(Empty arrays are truthy in Nunjucks — always test `| length`, never the
-bare array.)
+(Arrays are always truthy in JS too — test `.length`, never the bare array.
+And never write `{rows.length && ...}` to guard a block: JSX renders a
+falsy number literally, so an empty list would paint a stray `0` — guard
+with `rows.length > 0 && ...` or a ternary.)
 
 **CSS:** `.empty-state` in widgets.css — centered column with gap, width
 capped at 360px (centered-state archetype).
@@ -641,24 +730,24 @@ notes so the scaffolder knows it was decided, not forgotten.
 **Use:** first-paint loads (skeleton) and in-flight requests (pending
 indicator). Two different states — never a spinner where a skeleton belongs.
 
-**Macro:** skeleton as the INITIAL content of a lazy fragment; htmx replaces
-it on load:
+**Component:** skeleton as the INITIAL content of a lazy fragment; htmx
+replaces it on load:
 
-```html
-{% macro list_skeleton(c) %}
-<div id="list-body" hx-get="{{ c.endpoint }}" hx-trigger="load" hx-swap="outerHTML">
-  {% for i in range(0, c.rows or 4) %}
-  <div class="skeleton" style="height: 52px; border-radius: 10px;"></div>
-  {% endfor %}
-</div>
-{% endmacro %}
+```tsx
+export const ListSkeleton: FC<{ endpoint: string; rows?: number }> = ({ endpoint, rows = 4 }) => (
+  <div id="list-body" hx-get={endpoint} hx-trigger="load" hx-swap="outerHTML">
+    {Array.from({ length: rows }, (_, i) => (
+      <div key={i} class="skeleton" style="height: 52px; border-radius: 10px;"></div>
+    ))}
+  </div>
+);
 ```
 
 Pending on a trigger — the indicator is a child, shown only in flight:
 
-```html
+```tsx
 <button class="btn" hx-post="/save" hx-swap="none transition:false">
-  {{ icon('loader-circle', {size: 16, cls: 'htmx-indicator indicator-spin'}) }}
+  <Icon name="loader-circle" size={16} cls="htmx-indicator indicator-spin" />
   <span>Save</span>
 </button>
 ```
@@ -684,32 +773,38 @@ AppBoxKitLazyIndexedStack for the deferred-pane case.
 **Use:** long lists. Numbered pager when position matters (admin tables);
 load-more when flow matters (feeds).
 
-**Macro:**
+**Component:**
 
-```html
-{% macro pager(c) %}
-<nav class="pager" aria-label="Pagination">
-  {% if c.page > 1 %}
-  <a class="btn btn--ghost" href="?page={{ c.page - 1 }}">
-    {{ icon('chevron-left', {size: 16}) }}<span>Prev</span></a>
-  {% endif %}
-  <span class="pager__status">Page {{ c.page }} of {{ c.pages }}</span>
-  {% if c.page < c.pages %}
-  <a class="btn btn--ghost" href="?page={{ c.page + 1 }}">
-    <span>Next</span>{{ icon('chevron-right', {size: 16}) }}</a>
-  {% endif %}
-</nav>
-{% endmacro %}
+```tsx
+import Icon from '../../../runtime/icon.tsx';
 
-{% macro items_tail(c) %}
-<div id="items-tail" class="load-more"{% if c.oob %} hx-swap-oob="outerHTML"{% endif %}>
-  {% if c.next_page %}
-  <button class="btn btn--ghost" type="button"
-          hx-get="{{ c.endpoint }}?page={{ c.next_page }}"
-          hx-target="#items" hx-swap="beforeend">Load more</button>
-  {% endif %}
-</div>
-{% endmacro %}
+export const Pager: FC<{ page: number; pages: number }> = ({ page, pages }) => (
+  <nav class="pager" aria-label="Pagination">
+    {page > 1 && (
+      <a class="btn btn--ghost" href={`?page=${page - 1}`}>
+        <Icon name="chevron-left" size={16} /><span>Prev</span></a>
+    )}
+    <span class="pager__status">Page {page} of {pages}</span>
+    {page < pages && (
+      <a class="btn btn--ghost" href={`?page=${page + 1}`}>
+        <span>Next</span><Icon name="chevron-right" size={16} /></a>
+    )}
+  </nav>
+);
+
+export const ItemsTail: FC<{ oob?: boolean; nextPage?: number; endpoint: string }> = ({
+  oob,
+  nextPage,
+  endpoint,
+}) => (
+  <div id="items-tail" class="load-more" hx-swap-oob={oob ? 'outerHTML' : undefined}>
+    {nextPage !== undefined && (
+      <button class="btn btn--ghost" type="button"
+              hx-get={`${endpoint}?page=${nextPage}`}
+              hx-target="#items" hx-swap="beforeend">Load more</button>
+    )}
+  </div>
+);
 ```
 
 **CSS:**
@@ -723,7 +818,7 @@ load-more when flow matters (feeds).
 **htmx:** the pager is plain boosted links (full page re-render per page —
 right for tables). Load-more: the button appends the next page's rows to
 `#items` (`hx-swap="beforeend"`); the endpoint's response is the rows PLUS
-`items_tail(c)` rendered with `oob: true` + the next page number (or no
+`ItemsTail` rendered with `oob: true` + the next page number (or no
 button when exhausted) — the OOB swap replaces the control that triggered it.
 
 **Ladder:** load-more on compact (scroll flow); pager acceptable from medium
@@ -745,22 +840,24 @@ This is the reference implementation of the Widget-state contract
 server session state, namespaced per shell, rendered back as classes — and
 the panel's parts refresh out-of-band so nothing ever shows a stale copy.
 
-**Macro:** partial — `_panel-views.html`. `frame(spec)` wraps a caller
-body; part macros `head` / `body` / `bar` carry their own ids
-(`#panel-activity-top|-body|-bottom`) and an `oob` flag — the macro hardcodes
-the activity ids rather than templating a retired `side` param (canon:
-`designs/appbox-studio/ui/common/_integration_panels.md`):
+**Component:** partial — `_panel-views.tsx`. `Frame` wraps the caller's
+`children`; part components `Head` / `Body` / `Bar` carry their own ids
+(`#panel-activity-top|-body|-bottom`) and an `oob` flag — the component
+hardcodes the activity ids rather than templating a retired `side` param
+(canon: `designs/appbox-studio/ui/common/_integration_panels.md`):
 
-```html
-{% call pv.frame({ label: c.activityLabel, views: c.activityViews,
-                   size: c.panelSize, sizeHref: c.panelSizeHref }) %}
+```tsx
+import { Frame } from '../../common/widgets/_panel-views.tsx';
+
+<Frame label={c.activityLabel} views={c.activityViews}
+       size={c.panelSize} sizeHref={c.panelSizeHref}>
   …markup for the active view…
-{% endcall %}
+</Frame>
 ```
 
-`spec.views`: `[{ id, icon, label, href, active }]` — one carousel button per
-registered view, `href` targets `#panel-activity-body`. `spec.size` is `'s'|'m'|
-'l'`; `spec.sizeHref` marks the panel resizable — the top section renders a drag
+`views`: `[{ id, icon, label, href, active }]` — one carousel button per
+registered view, `href` targets `#panel-activity-body`. `size` is `'s'|'m'|
+'l'`; `sizeHref` marks the panel resizable — the top section renders a drag
 handle (`.panel-resize`) that the vendored drag.js island wires to POST
 the px width (`…/panel/size/activity`). Requires l10n keys
 `panel.activity.views`, `panel.resize` (only with `sizeHref`).
@@ -784,7 +881,7 @@ re-render.
   at all.
 - **stage acts** — anything that changes the panel's data (pins, approvals,
   decisions) re-feeds body + head + bar OOB in the same response.
-- **page render** — emits `frame` only; OOB parts are response-only markup.
+- **page render** — emits `Frame` only; OOB parts are response-only markup.
 
 **CSS:** `.panel .panel-activity` + `.panel-size-s|m|l` width classes (`transition:
 width` on `--panel-w`); `.panel-views-icon.is-active` takes the accent ring. Below the
@@ -811,11 +908,11 @@ the attributes deliberately don't cover (colors, radius, min/max constraints).
 
 Canonical button — hugs both axes, icon + label with a gap:
 
-```html
+```tsx
 <button class="btn" data-layout data-gap="8" data-align-y="center"
         data-resize-x="hug" data-resize-y="hug" type="button"
-        hx-post="{{ a.url }}">
-  {{ icon('check', {size: 16}) }}<span>{{ a.label }}</span>
+        hx-post={a.url}>
+  <Icon name="check" size={16} /><span>{a.label}</span>
 </button>
 ```
 
@@ -823,31 +920,31 @@ Card in a list — the list flows vertically, each card fills the row and
 flows its own content; the header row uses `data-gap="auto"` to push the
 badge to the far end:
 
-```html
+```tsx
 <ul class="card-list" data-layout data-flow="v" data-gap="8">
-  {% for card in c.cards %}
-  <li class="card" data-layout data-flow="v" data-gap="12" data-pad="16"
-      data-resize-x="fill">
-    <div data-layout data-gap="auto" data-align-y="center">
-      <h3 class="card__title" data-resize-x="hug">{{ card.title }}</h3>
-      <span class="card__badge" data-resize-x="fixed">{{ card.badge }}</span>
-    </div>
-    <p class="card__body">{{ card.body }}</p>
-    <div data-layout data-gap="8" data-align-x="end">
-      <button class="btn btn--ghost" type="button">Dismiss</button>
-      <button class="btn" type="button">Open</button>
-    </div>
-  </li>
-  {% endfor %}
+  {c.cards.map((card) => (
+    <li key={card.id} class="card" data-layout data-flow="v" data-gap="12" data-pad="16"
+        data-resize-x="fill">
+      <div data-layout data-gap="auto" data-align-y="center">
+        <h3 class="card__title" data-resize-x="hug">{card.title}</h3>
+        <span class="card__badge" data-resize-x="fixed">{card.badge}</span>
+      </div>
+      <p class="card__body">{card.body}</p>
+      <div data-layout data-gap="8" data-align-x="end">
+        <button class="btn btn--ghost" type="button">Dismiss</button>
+        <button class="btn" type="button">Open</button>
+      </div>
+    </li>
+  ))}
 </ul>
 ```
 
 Escape hatch — one child out of the flow (an overlapping badge on the card
 corner); the `[data-layout]` parent is already `position: relative`:
 
-```html
+```tsx
 <span class="card__pin" data-layout-ignore style="top: 8px; right: 8px;">
-  {{ icon('pin', {size: 14}) }}
+  <Icon name="pin" size={14} />
 </span>
 ```
 
@@ -873,23 +970,23 @@ Stack + Positioned for the escape hatch.
 
 | Recipe | Drop-in partial | Flutter primitive (kit registry) |
 |---|---|---|
-| Buttons & action rows | `_cta-link.html` (navigational variant) | AppBoxKitNativeButton, AppBoxKitNativeIconButton, AppBoxKitNativeSplitButton |
-| Icon | — (runtime global) | AppBoxKitGlyphs (core) |
-| Nav rail (railbar) | `_nav-rail.html` | AppBoxKitNativeNavigationRail; AppBoxKitDrawer (drawer form) |
-| Tabs | `_tabs.html` | AppBoxKitAnimatedTabStack, AppBoxKitDirectionalTabTransition, AppBoxKitNativeTabBar |
-| Tabbar | `_tabbar.html` | AppBoxKitBottomNavScaffold |
-| App bar / toolbar | `_appbar.html` | AppBoxKitNativeAppBar, AppBoxKitNativeSliverAppBar, AppBoxKitNativeToolbar |
-| List rows & sections | `_list-row.html` | AppBoxKitListTile, AppBoxKitListSection |
-| Card | `_card.html` | AppBoxKitGlassCard, AppBoxKitFrostedSurface |
-| Chip | — (macro) | AppBoxKitChip, AppBoxKitChipCarousel |
-| Form fields + 422 | `_form-field.html` | AppBoxKitNativeTextField + AppBoxKitFieldController (forms kit) |
-| Search / filter | — (macro) | AppBoxKitNativeSearchBar |
-| Dialog / popover | `_dialog.html` (server-driven), `_modal.html` (declarative) | ui_library sheet/dialog services; AppBoxKitNativePopupMenu |
-| Bottom sheet | `_bottom-sheet.html` | ui_library sheet service |
-| Toast | `_toast.html` | AppBoxKitNotificationService.show |
-| Table / data density | — (macro) | none — compose AppBoxKitListTile / custom |
-| Empty state | `_empty-state.html` | none — compose icon + copy + AppBoxKitNativeButton |
+| Buttons & action rows | `_cta-link.tsx` (navigational variant) | AppBoxKitNativeButton, AppBoxKitNativeIconButton, AppBoxKitNativeSplitButton |
+| Icon | — (`runtime/icon.tsx` component) | AppBoxKitGlyphs (core) |
+| Nav rail (railbar) | `_nav-rail.tsx` | AppBoxKitNativeNavigationRail; AppBoxKitDrawer (drawer form) |
+| Tabs | `_tabs.tsx` | AppBoxKitAnimatedTabStack, AppBoxKitDirectionalTabTransition, AppBoxKitNativeTabBar |
+| Tabbar | `_tabbar.tsx` | AppBoxKitBottomNavScaffold |
+| App bar / toolbar | `_appbar.tsx` | AppBoxKitNativeAppBar, AppBoxKitNativeSliverAppBar, AppBoxKitNativeToolbar |
+| List rows & sections | `_list-row.tsx` | AppBoxKitListTile, AppBoxKitListSection |
+| Card | `_card.tsx` | AppBoxKitGlassCard, AppBoxKitFrostedSurface |
+| Chip | — (component) | AppBoxKitChip, AppBoxKitChipCarousel |
+| Form fields + 422 | `_form-field.tsx` | AppBoxKitNativeTextField + AppBoxKitFieldController (forms kit) |
+| Search / filter | — (component) | AppBoxKitNativeSearchBar |
+| Dialog / popover | `_dialog.tsx` (server-driven), `_modal.tsx` (declarative) | ui_library sheet/dialog services; AppBoxKitNativePopupMenu |
+| Bottom sheet | `_bottom-sheet.tsx` | ui_library sheet service |
+| Toast | `_toast.tsx` | AppBoxKitNotificationService.show |
+| Table / data density | — (component) | none — compose AppBoxKitListTile / custom |
+| Empty state | `_empty-state.tsx` | none — compose icon + copy + AppBoxKitNativeButton |
 | Loading / skeleton | — (motion.css) | AppBoxKitNativeLoadingIndicator, AppBoxKitNativeProgress, AppBoxKitLazyIndexedStack |
-| Pagination / load-more | — (macros) | AppBoxKitLazyIndexedStack |
-| Multi-view panel | `_panel-views.html` | per-shell panel controller (view/size/filter) + adaptive panel — compose |
+| Pagination / load-more | — (components) | AppBoxKitLazyIndexedStack |
+| Multi-view panel | `_panel-views.tsx` | per-shell panel controller (view/size/filter) + adaptive panel — compose |
 | Auto Layout | — (attribute layer in widgets.css) | Row/Column + Expanded (fill) / SizedBox (fixed); Stack + Positioned (ignore) |

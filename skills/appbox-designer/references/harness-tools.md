@@ -130,7 +130,7 @@ For "show me 3 directions" exploration: dispatch one subagent per direction in a
 **single message** so they run in parallel. Each gets the same spec and design
 context, works independently, and must not see the others' output — that is what
 keeps the directions divergent. Present the results side-by-side;
-`starter-partials/artboards.html` artboards in one document beat N loose files.
+`starter-partials/artboards.tsx` artboards in one document beat N loose files.
 
 ## Ejecting an artifact
 

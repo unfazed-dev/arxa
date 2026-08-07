@@ -1,0 +1,66 @@
+import { createTemplates } from './templates.mjs';
+import { sessionOf, prefsOf, setPrefs } from './state.mjs';
+import { localeOf } from './l10n.mjs';
+import { timers } from './timers.mjs';
+
+// The `h` object every viewmodel handler receives: `handler(c, h) => Response`.
+export function createHelpers(artifactDir, l10n) {
+  const templates = createTemplates(artifactDir, l10n);
+
+  return {
+    // Renders a page or a `#fragment`; merges cookie prefs and the request
+    // locale into the context. Templates see the context bag as top-level keys
+    // AND as `c` (for macro calls).
+    render(c, viewRef, ctx = {}, status = 200) {
+      const bag = { prefs: prefsOf(c), locale: localeOf(c), locales: l10n?.locales ?? [], ...ctx };
+      bag.c = bag;
+      c.status(status);
+      return c.html(templates.render(viewRef, bag));
+    },
+
+    form(c) {
+      return c.req.parseBody();
+    },
+
+    session: sessionOf,
+    prefs: prefsOf,
+
+    // Request locale (resolved by the router middleware) and a translator
+    // bound to it — viewmodels use h.t(c) for strings the context carries
+    // (nav labels, facade-level text); templates use the `t` global directly.
+    locale: localeOf,
+    t(c) {
+      return l10n ? l10n.createT({ locale: localeOf(c), level: prefsOf(c).jargon }) : (s) => s;
+    },
+
+    setPrefs(c, patch) {
+      setPrefs(c, { ...prefsOf(c), ...patch });
+    },
+
+    timers,
+
+    noContent(c) {
+      c.status(204);
+      return c.body(null);
+    },
+
+    // Cancels an `every Ns` / load-delay poll from the server side.
+    stopPolling(c) {
+      c.status(286);
+      return c.body(null);
+    },
+
+    // Full reload — the theme-change escape hatch (body attrs don't swap under boost).
+    refresh(c) {
+      c.header('HX-Refresh', 'true');
+      return c.body(null);
+    },
+
+    // Client-side navigation without a full reload (use instead of 3xx —
+    // redirects swallow HX-* response headers).
+    location(c, url) {
+      c.header('HX-Location', url);
+      return c.body(null);
+    },
+  };
+}

@@ -26,11 +26,11 @@ export default [
   // set, and `?kit=` is only consulted when it is absent (fresh session
   // `?kit=auth` and `?kit=payments` render differently; with pendingRemove
   // set both render the pending kit). The two agree in every real flow.
-  // posted-by: picker_view.html forms; targets #picker-grid (outerHTML),
-  // except removeConfirm which targets #panels (morph:outerHTML).
-  ['POST', '/scaffold/add', picker.add],
-  ['POST', '/scaffold/remove', picker.remove],
-  ['POST', '/scaffold/remove/confirm', picker.removeConfirm],
+  // posted-by: picker_view.tsx forms; targets #picker-grid (outerHTML),
+  // except removeConfirm which targets #panels (outerMorph).
+  ['POST', '/scaffold/add', picker.add], // posted-by: picker_view.tsx `${c.base}/add` form (hx-post)
+  ['POST', '/scaffold/remove', picker.remove], // posted-by: picker_view.tsx `${c.base}/remove` form (hx-post)
+  ['POST', '/scaffold/remove/confirm', picker.removeConfirm], // posted-by: picker_view.tsx cf.confirmHref form (hx-post)
   // Composer post target. Was declared, unrouted, live 404 — see
   // docs/plans/composer-action-integrity.md.
   ['POST', '/scaffold/messages', picker.sendMessage], // posted-by: c.composerAction (scaffold_facade)

@@ -4,11 +4,12 @@
 // per-locale fixture.
 import * as greetings from '../repositories/greeting_repository.js';
 
+/** @param {string} [locale] */
 export const homeContext = (locale = 'en') => {
   const all = greetings.all(locale);
   return {
     // rows: greetings projected onto the shared list-row widget's shape
-    rows: all.map((g) => ({ id: g.id, title: g.text, icon: 'message-circle' })),
+    rows: all.map((/** @type {{ id: string, text: string }} */ g) => ({ id: g.id, title: g.text, icon: 'message-circle' })),
     count: all.length,
   };
 };

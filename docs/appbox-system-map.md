@@ -141,7 +141,7 @@ flowchart TD
 `appbox design serve <dir|name>` (`lib/design_cli.dart` →
 `lib/design_server.dart`) runs the artifact's ES-module JS in a headless-Chrome
 tab over CDP (`design_server/worker.dart`). Dart owns HTTP/sessions/timers; the
-worker tab owns viewmodel dispatch + Nunjucks render. `_scanArtifact` prefetches
+worker tab owns viewmodel dispatch + TSX render. `_scanArtifact` prefetches
 everything into sync in-memory maps; two file watchers hot-reload the worker.
 
 ```mermaid

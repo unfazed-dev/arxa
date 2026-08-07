@@ -20,7 +20,7 @@ Every piece of state an Artifact renders travels through five stages, in order:
 2. **Fixture generation** — a small script turns seed into the on-disk shape a Model actually consumes. This repo has no generator today; new Artifacts add one under `models/<domain>_model/generate.mjs` (or equivalent) rather than hand-editing generated files.
 3. **Model** — `models/<domain>_model/` holds the generated fixture plus the shape/schema comment describing it. Nothing under `models/` is hand-edited; it is always regenerated from seed.
 4. **Services** — `services/repositories/*_repository.mjs` read Models and expose them as plain data. `services/facades/*_facade.mjs` compose one or more repositories into the shape a ViewModel actually wants.
-5. **ViewModel → View** — a `*_viewmodel.js` calls facades only (never repositories directly), builds render context, and hands it to its co-located `*_view.html` (Nunjucks) for a full page or Named Fragment render.
+5. **ViewModel → View** — a `*_viewmodel.js` calls facades only (never repositories directly), builds render context, and hands it to its co-located `*_view.tsx` (hono/jsx) for a full page or Named Fragment render.
 
 Each stage only talks to its immediate neighbor. A View never reaches past its ViewModel; a ViewModel never reaches past a Facade.
 
@@ -74,7 +74,7 @@ The design server **live-reads** the current project as an overlay on its own ar
 
 | project file | overlaid as |
 |---|---|
-| `design/surfaces/**.html` | templates `ui/project/<sub>` — screen partials keyed by kind; absent kind → the stub's generic fallback |
+| `design/surfaces/**.tsx` | bundled into the render registry as `ui/project/<kind>.html` — screen components keyed by kind; absent kind → the stub's generic fallback. Raw source is also exposed read-only at `/project-src/` (the widget manager's edit window) |
 | `**.json` (anywhere) | fixtures served at `/project/<rel>`, read via `readProjectFixture(rel)` |
 | `design/l10n/app_*.arb` | merged **over** the artifact's arb catalogs — the project can restyle copy |
 
@@ -84,7 +84,7 @@ Writes travel one confined channel: `POST /__project_write` (JS side: `writeProj
 
 One Artifact, three lenses. `structure.json` is the single screen registry; the design surface exposes three switchable views over it — **views** (the inventory: one row per screen in registry order — the screen card, with a reveal-drawer tucked behind it carrying Composer / Tools / Logic tabs), **flows** (the journeys: one row per flow, tiles in edge-chain order, with hand-off chips at the row end), and **proto** (the wired app: a device-chrome live preview navigating each entry's `route`). Three lenses over one registry — never three separate artifacts, and never a flows document that can drift from the screens it names.
 
-**The views lens is the inventory (amended 2026-08-05 — the components container it used to pair each screen with is removed).** Each row is the screen card alone; per-widget detail lives in the card's reveal-drawer instead of a second column. The drawer's Tools tab edits the selected widget (provenance-routed writes), the Logic tab renders the deterministic wiring graph — both over the shared `data-el` selection (see `docs/plans/screen-reveal-drawer-composer-tools-logic.md`, D2/D5/D6). Why the old column could not simply be server-rendered stays true and is why the drawer derives its inventory from `widget_repository` over the static `data-el` kind prefix: `data-el` values are templated (`data-el="card:{{ t('portalo.cat.' ~ pair[0]) }}"` inside a `{% for %}`, tab bars arriving via `{% include %}`), so the authored source carries one unresolved string where the screen shows four resolved names.
+**The views lens is the inventory (amended 2026-08-05 — the components container it used to pair each screen with is removed).** Each row is the screen card alone; per-widget detail lives in the card's reveal-drawer instead of a second column. The drawer's Tools tab edits the selected widget (provenance-routed writes), the Logic tab renders the deterministic wiring graph — both over the shared `data-el` selection (see `docs/plans/screen-reveal-drawer-composer-tools-logic.md`, D2/D5/D6). Why the old column could not simply be server-rendered stays true and is why the drawer derives its inventory from `widget_repository` over the static `data-el` kind prefix: `data-el` values are computed (`data-el={`card:${t('portalo.cat.' + pair[0])}`}` inside a `.map()`, tab bars arriving via `import`), so the authored source carries one unresolved expression where the screen shows four resolved names.
 
 **The viewer's two optional sections.** The viewer renders three stacked sections inside `.design-viewer`: a top section (what this canvas is, run state, shell-scoped actions), the canvas as the body, and a bottom section hosting the mini panel — docked, not floating. `.design-viewer` is itself one panel (the card); the top/bottom bars are its sections, not panels of their own — see `designs/appbox-studio/ui/common/_integration_panels.md`. All three are *inside* the fullscreen target, because `canvas.js` fullscreens `.design-viewer` and anything outside it vanishes on fullscreen, including the exit button. The top and bottom sections are passed as an optional second macro argument rather than added to the viewer contract, so build evidence — which renders the same widget with `static: true` — omits them structurally instead of relying on a `static` guard on every control.
 
@@ -97,7 +97,7 @@ One Artifact, three lenses. `structure.json` is the single screen registry; the 
   ] }
 ```
 
-The edge contract is `from` / `to` / `trigger` / `action`, plus optional `element`. `from`/`to` are not negotiable: registry ids, and an edge naming an id the registry does not declare is a bug the same mechanical style of check as the surface join catches. `trigger` names what the user does ON the from screen to advance — it travels with the screen on reorder. `element` is optional and names the thing a user touches to take the edge, joining to a `data-el` value on the surface (`"button:Continue"`); it is what the flow-walk island matches on, and its absence degrades that to a fuzzy match against `trigger` rather than breaking anything. It rides with `trigger` through reorder and stitch for the same reason `trigger` does. `action` is a typed navigation op: `push` (default) | `replace` | `back` | `modal` | `system`. A `system` edge (auth-success, deep-link) is not user navigation — it becomes a **route guard** downstream. Flow-level metadata (`id`, `name`, `persona`, `provenance`) is allowed. Flows travel the data spine like any other content — seed → fixture → repository → facade — and render through a server template macro or named island. Never bespoke per-flow markup, never a separate file format: the flows lens is a projection of the registry plus the edges.
+The edge contract is `from` / `to` / `trigger` / `action`, plus optional `element`. `from`/`to` are not negotiable: registry ids, and an edge naming an id the registry does not declare is a bug the same mechanical style of check as the surface join catches. `trigger` names what the user does ON the from screen to advance — it travels with the screen on reorder. `element` is optional and names the thing a user touches to take the edge, joining to a `data-el` value on the surface (`"button:Continue"`); it is what the flow-walk island matches on, and its absence degrades that to a fuzzy match against `trigger` rather than breaking anything. It rides with `trigger` through reorder and stitch for the same reason `trigger` does. `action` is a typed navigation op: `push` (default) | `replace` | `back` | `modal` | `system`. A `system` edge (auth-success, deep-link) is not user navigation — it becomes a **route guard** downstream. Flow-level metadata (`id`, `name`, `persona`, `provenance`) is allowed. Flows travel the data spine like any other content — seed → fixture → repository → facade — and render through a server component or named island. Never bespoke per-flow markup, never a separate file format: the flows lens is a projection of the registry plus the edges.
 
 **Flows are linear chains.** Each screen has at most one outgoing edge per flow — no branches, no loops (a screen needing two successors is two flows, or a `system` edge). Chain order is derived by walking the edges from the head — the edge whose `from` has no incoming edge. A screen may belong to several flows at once (multi-flow membership); it renders once per flow row, and row order in the flows lens is the flow order in `flows.json`.
 
@@ -109,11 +109,11 @@ The edge contract is `from` / `to` / `trigger` / `action`, plus optional `elemen
 
 The freeze carries flows into `structure.json` as an optional top-level `flows` array — same v2 edge shape, keyed by registry screen ids. Absent means the Artifact has no flows lens, which is valid for small artifacts; present means every `from`/`to` resolves to a registry entry.
 
-**The viewer renders the triad.** The design canvas (`ui/common/design_viewer.html`) switches lenses by the `mode` viewer param — `views` (default) | `flows` | `proto`:
+**The viewer renders the triad.** The design canvas (`ui/views/main_shell/shared/widgets/design_viewer.tsx`) switches lenses by the `mode` viewer param — `views` (default) | `flows` | `proto`:
 
 - **views** — the flat registry grid: wrapping rows, registry order, no containers or connector lines.
 - **flows** — one dashed rounded row per flow, rows stacked in a column: flow label chip top-left, tiles in chain order, and pure-CSS connectors BETWEEN consecutive tiles carrying the edge's `trigger` label (line + arrowhead, zero JS measurement, deterministic re-render on reorder).
-- **proto** — one screen live at a real rung size inside device chrome. The tab bar and flow-advance chrome render FROM the project's registry (`tab` flags, registry order) and flows (the screen's next edge) — template macros over the same data, never bespoke per screen.
+- **proto** — one screen live at a real rung size inside device chrome. The tab bar and flow-advance chrome render FROM the project's registry (`tab` flags, registry order) and flows (the screen's next edge) — view components over the same data, never bespoke per screen.
 
 All three device rungs (390/744/1280) are reachable from the mini bar in every lens.
 
@@ -124,7 +124,7 @@ Per-tile chrome is a **hover toolbar** (CSS `:hover`/`:focus-within`, zero JS), 
 - **flows** — flow mode (walk the row), advance-one-step, move (←→ nudge, plus axis-locked row drag), remove-from-flow.
 - **proto** — nothing. Proto has no tiles at all: it is one device-chrome stage whose controls live in the mini panel and the composer filmstrip. Per-lens hover means **two** toolbars, not three.
 
-Viewer-state keys arming per-tile behavior: `inspect=<id>` arms the inspect island in that tile's iframe; `flow=<flowId>` + `step=<screenId>` arm the **flow walk** on one row, with `live=<id>` marking the stepped tile interactive (`still=1` dropped). `live` is clamped to the flows lens in the facade, not merely hidden in the template — a stale `live` carried into views used to paint an interactive tile with no reachable close control. One walked row and one live tile at a time by construction, since each is a single key. All viewer state keys are authoritative: every control href echoes the whole state, defaults elided, so an absent key means "back to default".
+Viewer-state keys arming per-tile behavior: `inspect=<id>` arms the inspect island in that tile's iframe; `flow=<flowId>` + `step=<screenId>` arm the **flow walk** on one row, with `live=<id>` marking the stepped tile interactive (`still=1` dropped). `live` is clamped to the flows lens in the facade, not merely hidden in the view — a stale `live` carried into views used to paint an interactive tile with no reachable close control. One walked row and one live tile at a time by construction, since each is a single key. All viewer state keys are authoritative: every control href echoes the whole state, defaults elided, so an absent key means "back to default".
 
 **Walking a flow (amended 2026-08-02 — this lens used to be specified as non-navigable).** The flows lens was previously a strictly static projection, with navigability living only in proto. It is now walkable: arm a row, and tapping the element an edge names advances the row's ACTIVE tile to that edge's destination. The tile keeps showing the screen it is labelled with — only the row moves — so a row never shows the same screen twice. Two mechanisms, in order:
 
@@ -137,7 +137,7 @@ The `element` field is optional on a v2 edge and exists because `trigger` is pro
 
 **Handoff.** `appbox-scaffolder` consumes the frozen `structure.json`'s registry screens (with `shellRoots`, `kits`, `deps`) and emits the per-surface Flutter file sets plus the `.shell-structure.json` manifest. From the same authored layer it compiles **one go_router-shaped route table** — no separate nav graph: registry `route` values become paths, flow edges become typed navigation ops (`push|replace|back|modal`), guards come from `requiresAuth` entries plus `system` edges, and the tab shell from `tab` flags (tab order = registry order). One registry, three lenses, one route table — the pipeline reads all of it from the same authored layer.
 
-Reference implementation: `designs/appbox-studio` — the current project's flows live-read from `~/.appbox/projects/<name>/intake/flows.json` (`services/repositories/project_repository.js`), rendered by the design viewer (`ui/common/design_viewer.html` + `viewerFor` in `services/facades/design_facade.js`): the views lens as registry-order screen cards with tucked reveal-drawers, the flows lens as dashed rows with trigger-labelled connectors and row-end hand-off chips, proto as the device-chrome preview.
+Reference implementation: `designs/appbox-studio` — the current project's flows live-read from `~/.appbox/projects/<name>/intake/flows.json` (`services/repositories/project_repository.js`), rendered by the design viewer (`ui/views/main_shell/shared/widgets/design_viewer.tsx` + `viewerFor` in `services/facades/design_facade.js`): the views lens as registry-order screen cards with tucked reveal-drawers, the flows lens as dashed rows with trigger-labelled connectors and row-end hand-off chips, proto as the device-chrome preview.
 
 ## Services split
 
@@ -149,22 +149,22 @@ ViewModels import facades. They do not import repositories. If a ViewModel needs
 
 ## Viewmodels
 
-A ViewModel is its own artifact, not a section of a View. `*_viewmodel.js` co-located with `*_view.html` exports:
+A ViewModel is its own artifact, not a section of a View. `*_viewmodel.js` co-located with `*_view.tsx` exports:
 
 - context builders — pure functions producing the object a full-page or fragment render needs.
 - handlers — `(c, h)` functions bound to routes, calling facades and using the `h.*` response helpers (`h.form`, `h.refresh`, `h.noContent`, OOB helpers) to decide full-page vs. Named-Fragment vs. no-content response, keyed off `HX-Request`.
 
-A ViewModel never renders a template string itself and never touches a repository — both are boundary violations.
+A ViewModel never renders markup itself and never touches a repository — both are boundary violations.
 
 ## Shared widgets (views)
 
-Widgets come first. Before any surface is composed, the design's repeated patterns are inventoried and authored as parameterized macros — the artifact's widget library — and surfaces are then composed only from that library. Start from the catalog in `references/ui-recipes.md` (drop-in partials: `starter-partials/widgets/`): each recipe is a macro + its CSS + its htmx wiring, viewport-ladder aware. A pattern the catalog doesn't cover is authored new, once, in the same shape. The rule holds after the first pass too: a UI pattern that appears on two surfaces is extracted, never copied. The moment a second surface needs a rail, a card, a timeline bar, a shell nav, a composer, a viewer — it moves to a shared partial under `ui/common/` as a parameterized macro, and both surfaces call it. Three near-identical implementations of the same widget is the most expensive drift this medium allows: each copy silently diverges (the rail that pauses differently, the scrollbar that tints differently) and the scaffold downstream inherits the divergence.
+Widgets come first. Before any surface is composed, the design's repeated patterns are inventoried and authored as parameterized components — the artifact's widget library — and surfaces are then composed only from that library. Start from the catalog in `references/ui-recipes.md` (drop-in components: `starter-partials/widgets/`): each recipe is a component + its CSS + its htmx wiring, viewport-ladder aware. A pattern the catalog doesn't cover is authored new, once, in the same shape. The rule holds after the first pass too: a UI pattern that appears on two surfaces is extracted, never copied. The moment a second surface needs a rail, a card, a timeline bar, a shell nav, a composer, a viewer — it moves to a shared component under `ui/common/`, and both surfaces import it. Three near-identical implementations of the same widget is the most expensive drift this medium allows: each copy silently diverges (the rail that pauses differently, the scrollbar that tints differently) and the scaffold downstream inherits the divergence.
 
-- `ui/common/` owns cross-surface macros: shell chrome (nav, timeline), the rail (top bar, card shell, composer), the design viewer, primitives. `ui/widgets|dialogs|bottomsheets/` owns the `_name.html` include partials (see the runtime contract).
+- `ui/common/` owns cross-surface components: shell chrome (nav, timeline), the rail (top bar, card shell, composer), the design viewer, primitives. `ui/widgets|dialogs|bottomsheets/` owns the `_name.tsx` shared components (see the runtime contract).
 - Per-surface views keep only what is genuinely theirs: the card's domain content, the canvas artifact's body.
-- Parameters travel through the macro's context (e.g. a `base` path prefix); session state stays namespaced per shell in the facade.
+- Parameters travel through the component's props (e.g. a `base` path prefix); session state stays namespaced per shell in the facade.
 - The same rule applies to CSS: shared widget styles live in the artifact's main stylesheet, not duplicated across per-surface CSS files. Scrollbars always blend (transparent track, theme-ink thumb) — see the starter's `app.css`.
-- Icons are vocabulary, not pixels: `{{ icon('name') }}` inlines a vendored Lucide glyph server-side (see the runtime contract) — emoji or hand-drawn stand-ins are never shipped as icons.
+- Icons are vocabulary, not pixels: `<Icon name="name" />` inlines a vendored Lucide glyph server-side (see the runtime contract) — emoji or hand-drawn stand-ins are never shipped as icons.
 
 ## Auto Layout
 
@@ -200,7 +200,7 @@ Auto Layout is the medium's default layout discipline for widget-library widgets
 
 `data-gap="auto"` *is* the main-axis alignment — never combine it with `data-align-x`.
 
-**Default scope — ON vs OFF.** Auto Layout is **default-ON** for every widget-library widget: buttons, cards, inputs, list rows, navs, modals, forms, toolbars. A macro authored without `data-layout` on its container is a bug in the widget-library pass. It is **default-OFF** at the screen/artboard level and wherever layout is art direction rather than relationship:
+**Default scope — ON vs OFF.** Auto Layout is **default-ON** for every widget-library widget: buttons, cards, inputs, list rows, navs, modals, forms, toolbars. A widget component authored without `data-layout` on its container is a bug in the widget-library pass. It is **default-OFF** at the screen/artboard level and wherever layout is art direction rather than relationship:
 
 - top-level surfaces and artboards — they compose the Layout Template's named containers via `grid-template-areas`, not flow;
 - scroll-clipped containers (the clip is the point, not the flow);
@@ -231,13 +231,13 @@ Rules:
 - The set is **mandatory on interactive or content-bearing elements** (anything with `data-el`). `data-inspect-motion` may be `none`; the other three never omit.
 - Motion names are **closed** — inventing an eighth name is the same offence as inventing an eighth Motion Vocabulary entry.
 - Keep the text reader-level plain: these strings surface to the user in the inspect readout and to the LLM as element context; write them like the brief, not like CSS.
-- Reference implementation: the appbox design shell's own stub screens (`screen_stub_view.html`) carry the full set.
+- Reference implementation: the appbox design shell's own stub screens (`screen_stub_view.tsx`) carry the full set.
 
 ### Coverage bar: policy C, with a toggle to B (D7)
 
 The coverage check that gates a surface (`design_tools.dart:107`) currently
 requires only "at least one annotated element" — a smoke test, not a
-coverage bar: `home.html` passes it with 1 of ~11 interactive elements
+coverage bar: `home.tsx` passes it with 1 of ~11 interactive elements
 annotated. Two real policies replace it:
 
 - **C — full coverage (default).** Every element that renders a leaf text
@@ -310,7 +310,7 @@ A **fatal** error — one the user cannot recover from without leaving the flow 
 
 Every state a surface's registry entry declares or derives (D12) MUST render. Portalo declares 12 state variants across its 10 screens and renders none of them today — that gap is the generator's to close, not the author's, once D10 lands.
 
-Mechanism: a query param on the **same surface file** — `product.html?state=loading` swaps the affected region(s) via server-side conditional branches the designer emits alongside the surface, never a second file. (`product.loading.html` duplicates every `data-el` annotation the surface carries — under mandatory generation (D8) that duplication compounds on every edit, and a base edit silently skips the variant.) Transport is the existing tile channel — the same query string the viewer already threads through (`…?vp={vp}&embed=1&still=1&inspect=1`), one more param.
+Mechanism: a query param on the **same surface file** — `product.tsx?state=loading` swaps the affected region(s) via server-side conditional branches the designer emits alongside the surface, never a second file. (`product.loading.tsx` duplicates every `data-el` annotation the surface carries — under mandatory generation (D8) that duplication compounds on every edit, and a base edit silently skips the variant.) Transport is the existing tile channel — the same query string the viewer already threads through (`…?vp={vp}&embed=1&still=1&inspect=1`), one more param.
 
 Three artefacts make the rule structural, not a habit:
 
@@ -378,7 +378,7 @@ Actors:
 Two real gaps this consolidation found. One is closed, one is open — checked against the live repo, not the plan doc that first found them:
 
 1. **Kind drift — open.** `feedbackKinds = ['success', 'error', 'info']` (intake) vs. blueprint's boolean `isError` (`:593-599`, `:2400`) — the design layer permits `info` that the Flutter layer cannot render today. `_kFeedbackError = Color(0xFFE53935)` (`:2392`) is a literal because no semantic danger token is compiled; a typed-severity taxonomy needs that token.
-2. **The studio's HTML+JS half failing silently — closed.** `designs/appbox-studio/ui/common/base.html:10`'s htmx-config now retargets `404`/`5..` into the always-rendered `#toasts` tray (`swapOverride: innerHTML`, one at a time); `422` still swaps in place so form validation renders where the form is. (This was an open gap when D19 was first written; it is fixed in the current tree.)
+2. **The studio's HTML+JS half failing silently — closed.** `designs/appbox-studio/ui/common/base.tsx`'s per-status rules (`hx-status:<pattern>` on `<body>`) retarget `404`/`5xx` into the always-rendered `#toasts` tray (`swap: innerHTML`); `422` still swaps in place so form validation renders where the form is, and the remaining `4xx` swap nothing. (This was an open gap when D19 was first written; it is fixed in the current tree.)
 
 ## Motion vocabulary
 

@@ -31,7 +31,7 @@
    path is a transparent drag-shield in a held pan mode. Wheel-zoom DOES work
    over the devices: same-origin iframe documents get their own ctrl+wheel
    listener that forwards into the stage's zoom. Zoom state SURVIVES htmx
-   swaps of the viewer: stashed on htmx:beforeSwap, re-applied on afterSwap
+   swaps of the viewer: stashed on htmx:before:swap, re-applied on after:swap
    (the control toggles re-render #design-viewer; without the stash every
    toggle snapped back to 1×). */
 (() => {
@@ -176,8 +176,8 @@
   // it to the incoming zoom child after (flow .dv-zoom or proto .device —
   // same zoomChild helper). A 1× stash is dropped so dblclick-reset sticks.
   let stashedZoom = null;
-  document.addEventListener('htmx:beforeSwap', (e) => {
-    const target = e.detail.target;
+  document.addEventListener('htmx:before:swap', (e) => {
+    const target = e.detail.ctx?.target;
     if (target?.id !== 'design-viewer') return;
     const stage = target.querySelector(SEL);
     const t = stage && zoomChild(stage);
@@ -185,9 +185,9 @@
       ? { z: stage._z, transformOrigin: t.style.transformOrigin }
       : null;
   });
-  document.addEventListener('htmx:afterSwap', (e) => {
-    if (!stashedZoom || e.detail.target?.id !== 'design-viewer') return;
-    // detail.target is the DETACHED pre-swap node on an outerHTML swap —
+  document.addEventListener('htmx:after:swap', (e) => {
+    if (!stashedZoom || e.detail.ctx?.target?.id !== 'design-viewer') return;
+    // detail.ctx.target is the DETACHED pre-swap node on an outerHTML swap —
     // re-resolve the live viewer by id.
     const stage = document.getElementById('design-viewer')?.querySelector(SEL);
     const t = stage && zoomChild(stage);
@@ -273,7 +273,7 @@
           // morph (not outerHTML) is what keeps the tiles from reloading.
           htmx.ajax('POST', '/design/widget/select', {
             target: '#design-viewer',
-            swap: 'morph:outerHTML',
+            swap: 'outerMorph',
             values: {
               screen: sid,
               kind: ci < 0 ? raw : raw.slice(0, ci),

@@ -39,8 +39,10 @@ export const locales = () =>
 // is: these are our own linted templates, and a `>` never appears bare.
 const innerRange = (src, tag, openEnd) => {
   // One left-to-right pass from the open tag's end, depth-counting same-name
-  // opens against closes. Self-closing `<tag/>` does not open a level.
-  const scan = new RegExp(`<${tag}(?:"[^"]*"|'[^']*'|[^>"'])*>|</${tag}\\s*>`, 'g');
+  // opens against closes. Self-closing `<tag/>` does not open a level. The
+  // brace alternative keeps the scan sound on TSX sources, where a `>` can
+  // hide inside an attribute's {…} expression (an arrow function's =>).
+  const scan = new RegExp(`<${tag}(?:"[^"]*"|'[^']*'|\\{(?:[^{}]|\\{[^{}]*\\})*\\}|[^>"'])*>|</${tag}\\s*>`, 'g');
   scan.lastIndex = openEnd;
   let depth = 0;
   for (let m; (m = scan.exec(src)); ) {
@@ -53,18 +55,20 @@ const innerRange = (src, tag, openEnd) => {
 };
 
 // ------------------------------------------------------------- classifier
-// Three provenance classes, in the order the editor must try them.
-const ARB_RE = /^\s*{{\s*t\(\s*['"]([^'"]+)['"]\s*\)\s*}}\s*$/;
-const BIND_RE = /^\s*{{\s*([A-Za-z_$][\w$]*(?:\.[\w$]+)*)\s*}}\s*$/;
+// Three provenance classes, in the order the editor must try them. Copy comes
+// in two surface dialects: legacy nunjucks ({{ t('k') }}, {{ x.y }}) and TSX
+// ({t('k') as string}, {x.y}) — the regexes read both.
+const ARB_RE = /^\s*\{\{?\s*t\(\s*['"]([^'"]+)['"][^)]*\)\s*(?:as\s+[A-Za-z]+)?\s*\}\}?\s*$/;
+const BIND_RE = /^\s*\{\{?\s*([A-Za-z_$][\w$]*(?:\.[\w$]+)*)\s*\}?\}?\s*$/;
 
 // A t() call anywhere in the element, not only as the whole of it.
-const T_CALL_RE = /{{[^}]*?\bt\(\s*['"]([^'"]+)['"]\s*\)/g;
+const T_CALL_RE = /\bt\(\s*['"]([^'"]+)['"]/g;
 
 export const classify = (text) => {
   const arb = text.match(ARB_RE);
   if (arb) return { source: 'arb', key: arb[1] };
 
-  // Most real widgets are an icon plus a label — `{{ icon('user') }} {{ t('k') }}`.
+  // Most real widgets are an icon plus a label — `<Icon name="user" /> {t('k')}`.
   // Treating those as unroutable would refuse two thirds of portalo's widgets
   // while the copy sits in plain sight. If EXACTLY ONE t() key appears, that
   // key is unambiguously the element's copy and the ARB write is exact; the
@@ -76,7 +80,7 @@ export const classify = (text) => {
 
   const bind = text.match(BIND_RE);
   // A binding is NOT assumed to be seed-backed: portalo's surfaces bind loop
-  // variables ({{ next.to }}, {{ tab.id }}), never a seed path, so the seed
+  // variables ({next.to}, {tab.id}), never a seed path, so the seed
   // key cannot be recovered from the template. Resolving it needs the VALUE
   // the viewmodel passed, which the source window does not carry — so this
   // class is reported, not written, and the editor sends the user to the seed.

@@ -3,6 +3,7 @@ export const surfaceId = 'main.home';
 import { homeContext } from '../../../../services/facades/greeting_facade.js';
 import { chrome } from '../main_shell_viewmodel.js';
 
+/** @param {import('hono').Context} c @param {import('../../../../runtime/types').Helpers} h */
 export const page = (c, h) => {
   const ctx = homeContext(h.locale(c));
   // ?n= overrides the count for the itemCount plural demo (one/few/many).

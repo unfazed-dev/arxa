@@ -131,7 +131,10 @@ class _Mutation {
   final bool wantOk;
   final void Function(String art, String skill) apply;
   const _Mutation(this.name, this.label, this.wantOk, this.apply);
-  bool get targetsSkill => name.startsWith('ladder-') || name == 'upstream-leak';
+  bool get targetsSkill =>
+      name.startsWith('ladder-') ||
+      name == 'upstream-leak' ||
+      name == 'kit-catalog-row';
 }
 
 // ══ helpers ═════════════════════════════════════════════════════════════
@@ -162,7 +165,7 @@ List<String> _legacyFlatWidgets(String art) =>
       ..sort());
 
 List<File> _htmlFiles(String dir) => _walkFiles(Directory(dir))
-    .where((f) => f.path.endsWith('.html'))
+    .where((f) => f.path.endsWith('.html') || f.path.endsWith('.tsx'))
     .toList()
       ..sort((a, b) => a.path.compareTo(b.path));
 
@@ -552,20 +555,12 @@ List<_Check> _buildChecks({required bool skipRender}) {
             '`design lint` W1 names the three-tier destination for each');
       }
 
-      // No widgets anywhere: the artifact must at least carry a shared macro
-      // library under ui/common (the pre-widget generation's shape).
-      final commonDir = Directory(p.join(art, 'ui', 'common'));
-      final found = commonDir.existsSync() &&
-          _walkFiles(commonDir)
-              .where((f) => f.path.endsWith('.html'))
-              .any((f) => RegExp(r'\{%\s*macro').hasMatch(f.readAsStringSync()));
-      if (!found) {
-        return const CheckOutcome.fail(
-            'no widgets in the three-tier homes (ui/common/widgets/, '
-            'ui/views/<shell>/shared/widgets/, <surface>/widgets/) and no macro '
-            'in ui/common');
-      }
-      return const CheckOutcome.ok();
+      // No widgets anywhere: fail. The pre-migration escape hatch (a shared
+      // nunjucks macro library under ui/common) died with nunjucks — every
+      // supported artifact composes at least one widget.
+      return const CheckOutcome.fail(
+          'no widgets in the three-tier homes (ui/common/widgets/, '
+          'ui/views/<shell>/shared/widgets/, <surface>/widgets/)');
     }),
 
     _Check(_lIcons, _Section.structure, (art, skill, src) async {
@@ -584,9 +579,13 @@ List<_Check> _buildChecks({required bool skipRender}) {
       }
       if (bad.isNotEmpty) return CheckOutcome.fail(bad.join(' '));
       final hasIcon = _walkFiles(Directory(p.join(art, 'ui')))
-          .where((f) => f.path.endsWith('.html'))
-          .any((f) => f.readAsStringSync().contains("icon('"));
-      if (!hasIcon) return const CheckOutcome.fail("no icon(' usage found in ui/");
+          .where((f) => f.path.endsWith('.html') || f.path.endsWith('.tsx'))
+          .any((f) {
+        final src = f.readAsStringSync();
+        // Legacy: {{ icon('name') }} in .html. TSX: <Icon name="..." /> component.
+        return src.contains("icon('") || src.contains('<Icon');
+      });
+      if (!hasIcon) return const CheckOutcome.fail("no icon(' or <Icon> usage found in ui/");
       return const CheckOutcome.ok();
     }),
 
@@ -726,6 +725,7 @@ final List<_Mutation> _mutations = [
   _Mutation('client-js', _lLint, false, _mutateClientJs),
   // The inverse row: a commented ban is NOT a violation — the lint must still pass.
   _Mutation('commented-js', _lLint, true, _mutateCommentedJs),
+  _Mutation('kit-catalog-row', _lKitCatalogMirror, false, _mutateKitCatalogRow),
   _Mutation('broken-route', _lRender, false, _mutateBrokenRoute),
 ];
 
@@ -848,8 +848,8 @@ void _mutateFullReload(String art, String skill) {
 }
 
 void _mutateFragmentTypo(String art, String skill) {
-  // Rename a macro a viewmodel actually renders as a fragment — renaming an
-  // unreferenced macro (shared partials) would prove nothing.
+  // Rename a fragment a viewmodel actually renders — renaming an
+  // unreferenced fragment (shared partials) would prove nothing.
   for (final vm in _viewModels(art)) {
     final src = vm.readAsStringSync();
     final frag = RegExp(r'\$\{VIEW\}#(\w+)').firstMatch(src);
@@ -857,15 +857,46 @@ void _mutateFragmentTypo(String art, String skill) {
     final named =
         RegExp(r"""const VIEW\s*=\s*['"]([^'"]+)['"]""").firstMatch(src);
     if (named == null) continue;
-    final view = File(p.join(art, named.group(1)!));
+    // View refs keep .html paths for registry parity; post-migration the
+    // actual file is .tsx (same resolution as the 'fragments' wiring check).
+    var view = File(p.join(art, named.group(1)!));
+    if (!view.existsSync()) {
+      final tsx = File(view.path.replaceAll(RegExp(r'\.html$'), '.tsx'));
+      if (tsx.existsSync()) view = tsx;
+    }
     if (!view.existsSync()) continue;
     final tpl = view.readAsStringSync();
+    if (view.path.endsWith('.tsx')) {
+      // TSX: the fragment is an exported component, PascalCase of the ref
+      // (#tick → Tick) — mirror the check's lookup.
+      final n = frag.group(1)!;
+      final comp = n[0].toUpperCase() + n.substring(1);
+      final re = RegExp(r'(export\s+(?:default\s+)?(?:function|const)\s+)' +
+          RegExp.escape(comp) +
+          r'\b');
+      if (!re.hasMatch(tpl)) continue;
+      view.writeAsStringSync(tpl.replaceFirst(re, '\${1}${comp}zz'));
+      return;
+    }
     final re = RegExp(r'(\{%\s*macro\s+)' + RegExp.escape(frag.group(1)!) + r'\b');
     if (!re.hasMatch(tpl)) continue;
     view.writeAsStringSync(
         tpl.replaceFirst(re, '\${1}${frag.group(1)}zz'));
     return;
   }
+}
+
+void _mutateKitCatalogRow(String art, String skill) {
+  // Drop one kit's table row from the mirror doc — prose mentions stay, so
+  // only a row-scoped check can see it (the check's own header comment).
+  final f = File(p.join(skill, 'references', 'kit-catalog.md'));
+  if (!f.existsSync()) return;
+  final lines = f.readAsLinesSync();
+  final idx = lines.indexWhere(
+      (l) => l.trimLeft().startsWith('|') && l.contains('`'));
+  if (idx < 0) return;
+  lines.removeAt(idx);
+  f.writeAsStringSync('${lines.join('\n')}\n');
 }
 
 void _mutateOrphanPost(String art, String skill) {
@@ -913,25 +944,15 @@ void _mutateWidgetPartials(String art, String skill) {
   //
   // FILES, not directories: deleting `ui/common/` would take `base.html` with
   // it and redden neighbouring checks, which masks whether THIS check flipped.
-  var removed = 0;
   for (final f in _htmlFiles(art)) {
     final rel = _relOf(art, f);
     if (_isThreeTierWidget(rel) || isRetiredFlatWidget(rel)) {
       f.deleteSync();
-      removed++;
     }
   }
-  // An artifact with no widget layer at all falls through to the ui/common
-  // macro-library branch; strip its macros so the mutation still lands.
-  if (removed > 0) return;
-  final common = Directory(p.join(art, 'ui', 'common'));
-  if (!common.existsSync()) return;
-  for (final f in _walkFiles(common).where((f) => f.path.endsWith('.html'))) {
-    final src = f.readAsStringSync();
-    if (RegExp(r'\{%\s*macro').hasMatch(src)) {
-      f.writeAsStringSync(src.replaceAll(RegExp(r'\{%\s*macro'), '{# macro'));
-    }
-  }
+  // An artifact with no widget layer at all fails the check outright (the
+  // nunjucks macro-library escape hatch is gone), so the file deletions above
+  // are the whole mutation.
 }
 
 void _mutateUntrackedFile(String art, String skill) {
@@ -949,7 +970,7 @@ void _mutateCommentedJs(String art, String skill) {
   final files = _htmlFiles(art);
   if (files.isEmpty) return;
   final f = files.first;
-  f.writeAsStringSync("${f.readAsStringSync()}\n{# hx-on:click is banned here — ADR-0002 #}\n");
+  f.writeAsStringSync("${f.readAsStringSync()}\n{/* hx-on:click is banned here — ADR-0002 */}\n");
 }
 
 void _mutateBrokenRoute(String art, String skill) {

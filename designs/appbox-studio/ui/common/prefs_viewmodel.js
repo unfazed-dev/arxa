@@ -24,7 +24,7 @@ export const setFont = async (c, h) => {
   const form = await h.form(c);
   const font = String(form.font || '');
   if (fontIds().includes(font)) h.setPrefs(c, { font });
-  // refresh-exempt for the same reason as accent: the family is switched by
+  // refresh-exempt: for the same reason as accent: the family is switched by
   // data-font on #app (base.html), which is outside every swap unit — and the
   // four --font-* variables it re-keys are inherited by the whole document,
   // so a partial swap would leave un-swapped regions on the old family.

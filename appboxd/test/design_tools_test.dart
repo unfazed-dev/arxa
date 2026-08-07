@@ -116,7 +116,7 @@ void main() {
 
     test('comments are stripped — commented ban is not a violation', () {
       final d = _tmpDir();
-      _write(d, 'c.html', '{# hx-on:click explains the ban #}'
+      _write(d, 'c.tsx', '{/* hx-on:click explains the ban */}'
           '<!-- <script src=/x.js></script> -->');
       addTearDown(() => d.deleteSync(recursive: true));
       final r = designLint([d.path]);
@@ -213,27 +213,40 @@ void main() {
         {'id': 'portalo.home', 'states': ['loading', 'empty']},
         {'id': 'portalo.cart', 'states': ['loading']},
       ]));
-      _write(d, 'design/surfaces/home.html',
-          "{% if state == 'loading' %}<p>…</p>{% endif %}");
-      _write(d, 'design/surfaces/cart.html',
-          "{% if state == 'loading' %}<p>…</p>{% endif %}"
-          "{% if state == 'error' %}<p>oops</p>{% endif %}");
+      _write(d, 'design/surfaces/home.tsx',
+          "{state === 'loading' && (<p>…</p>)}");
+      _write(d, 'design/surfaces/cart.tsx',
+          "{state === 'loading' && (<p>…</p>)}"
+          "{state === 'error' && (<p>oops</p>)}");
 
       final r = designLint([d.path]);
       expect(r.exitCode, 1);
       expect(r.stderrLines.skip(1), containsAll([
         endsWith("registry declares state 'empty' but the surface has no "
-            "{% if state == 'empty' %} branch"),
+            "`state === 'empty'` branch"),
         endsWith("surface branches on state 'error' that the registry does "
             'not declare'),
       ]));
     });
 
+    test('D10 — a ternary branch satisfies the declared state', () {
+      final d = _tmpDir();
+      addTearDown(() => d.deleteSync(recursive: true));
+      _write(d, 'intake/registry.json', jsonEncode([
+        {'id': 'portalo.home', 'states': ['empty']},
+      ]));
+      _write(d, 'design/surfaces/home.tsx',
+          "{state === 'empty' ? (<p>nothing yet</p>) : (<ul>…</ul>)}");
+
+      final r = designLint([d.path]);
+      expect(r.exitCode, 0, reason: r.stderrLines.join('\n'));
+    });
+
     test('D10 — no registry reachable leaves the rule off', () {
       final d = _tmpDir();
       addTearDown(() => d.deleteSync(recursive: true));
-      _write(d, 'surfaces/loose.html',
-          "{% if state == 'error' %}<p>oops</p>{% endif %}");
+      _write(d, 'surfaces/loose.tsx',
+          "{state === 'error' && (<p>oops</p>)}");
       expect(designLint([d.path]).exitCode, 0);
     });
 
@@ -908,28 +921,31 @@ export default [
       p.absolute('../skills/appbox-designer/examples/hello-hda');
 
   group('design eject', () {
-    test('missing args → usage, exit 2', () {
-      expect(designEject([]).exitCode, 2);
-      expect(designEject(['only-one']).exitCode, 2);
-      expect(designEject([]).stderrLines.first, contains('usage'));
+    test('missing args → usage, exit 2', () async {
+      expect((await designEject([])).exitCode, 2);
+      expect((await designEject(['only-one'])).exitCode, 2);
+      expect((await designEject([])).stderrLines.first, contains('usage'));
     });
 
-    test('ejects hello-hda: copied artifact + narrowed vendor + README', () {
+    test('ejects hello-hda: copied artifact + narrowed vendor + README', () async {
       final out = _tmpDir();
       addTearDown(() => out.deleteSync(recursive: true));
-      final r = designEject([ejectFixture, out.path]);
+      final r = await designEject([ejectFixture, out.path]);
       expect(r.exitCode, 0, reason: r.stderrLines.join('\n'));
 
       // 1. the artifact itself is copied (routes + a nested view).
       expect(File(p.join(out.path, 'app.routes.js')).existsSync(), isTrue);
       expect(
           File(p.join(out.path, 'ui', 'views', 'main_shell', 'home',
-                  'home_view.html'))
+                  'home_view.tsx'))
               .existsSync(),
           isTrue);
 
-      // 2. narrowed vendor: hello-hda loads exactly htmx + preload + head-support.
-      //    mustache.min.js is vendored but NOT referenced → must be absent.
+      // 2. narrowed vendor: hello-hda loads htmx 4 only (head-support and
+      //    preload are htmx-2 extensions removed in the v4 migration — htmx 4
+      //    handles titles natively). mustache.min.js is vendored but NOT
+      //    referenced → must be absent. alien-signals.min.js is force-included
+      //    because hello-hda's home view declares a toggle island (Phase 3).
       final vendor = Directory(p.join(out.path, 'runtime', 'vendor'));
       expect(vendor.existsSync(), isTrue);
       final jsFiles = vendor
@@ -938,27 +954,41 @@ export default [
           .map((f) => p.basename(f.path))
           .where((n) => n.endsWith('.js'))
           .toSet();
-      expect(jsFiles, {'htmx.min.js', 'preload.min.js', 'head-support.js'});
+      expect(jsFiles, {'htmx4.min.js', 'alien-signals.min.js'});
       expect(
           File(p.join(vendor.path, 'mustache.min.js')).existsSync(), isFalse);
 
-      // narrowed manifest: only the 3 referenced rows.
+      // narrowed manifest: htmx4 + alien-signals (island force-include).
       final manifest = jsonDecode(
           File(p.join(vendor.path, 'manifest.json')).readAsStringSync()) as List;
       final files = manifest.map((e) => (e as Map)['file']).toSet();
-      expect(files, {'htmx.min.js', 'preload.min.js', 'head-support.js'});
+      expect(files, {'htmx4.min.js', 'alien-signals.min.js'});
 
-      // 3. README carries the serve invocation line; no node/npm anywhere.
+      // 3. README carries the target-aware quick start (Phase 1 eject).
       final readme = File(p.join(out.path, 'README.md')).readAsStringSync();
-      expect(readme, contains('appbox design serve . --no-watch'));
-      expect(readme.toLowerCase(), isNot(contains('npm')));
-      expect(readme.toLowerCase(), isNot(contains('node ')));
+      expect(readme.toLowerCase(), contains('npm install'));
 
-      // stdout next: line points at the serve command.
-      expect(r.stdoutLines.last, contains('appbox design serve'));
+      // 4. Phase 3 islands machinery: islands.js + island-kit.js copied to
+      //    assets/, toggle island bundled by esbuild, manifest injected.
+      expect(File(p.join(out.path, 'assets', 'islands.js')).existsSync(), isTrue);
+      expect(File(p.join(out.path, 'assets', 'island-kit.js')).existsSync(), isTrue);
+      final chunk = File(p.join(out.path, 'assets', 'islands', 'toggle.js'));
+      expect(chunk.existsSync(), isTrue, reason: 'esbuild should bundle toggle island');
+      expect(chunk.readAsStringSync(), contains('export'));
+
+      final baseTsx =
+          File(p.join(out.path, 'ui', 'common', 'base.tsx')).readAsStringSync();
+      expect(baseTsx, contains('id="island-manifest"'));
+      expect(baseTsx, contains('/assets/islands.js'));
+
+      // stdout mentions islands.
+      expect(r.stdoutLines.any((l) => l.contains('islands:')), isTrue);
+
+      // stdout next: line points at npm start.
+      expect(r.stdoutLines.last, contains('npm start'));
     });
 
-    test('referencing a non-vendored lib → exit 1', () {
+    test('referencing a non-vendored lib → exit 1', () async {
       final d = _tmpDir();
       _write(d, 'app.routes.js', "export default [['GET','/']];\n");
       _write(d, 'index.html',
@@ -969,7 +999,7 @@ export default [
         d.deleteSync(recursive: true);
         out.deleteSync(recursive: true);
       });
-      final r = designEject([d.path, out.path]);
+      final r = await designEject([d.path, out.path]);
       expect(r.exitCode, 1);
       expect(r.stderrLines.first, contains('not vendored'));
       expect(r.stderrLines.first, contains('totally-fake.js'));
@@ -981,7 +1011,7 @@ export default [
           reason: 'no vendor copied when the guard fires');
     });
 
-    test('no htmx referenced → exit 1 (htmx-required hard fail)', () {
+    test('no htmx referenced → exit 1 (htmx-required hard fail)', () async {
       final d = _tmpDir();
       _write(d, 'app.routes.js', "export default [['GET','/']];\n");
       _write(d, 'index.html',
@@ -991,13 +1021,13 @@ export default [
         d.deleteSync(recursive: true);
         out.deleteSync(recursive: true);
       });
-      final r = designEject([d.path, out.path]);
+      final r = await designEject([d.path, out.path]);
       expect(r.exitCode, 1);
       expect(r.stderrLines.first, contains('htmx.min.js'));
       expect(r.stderrLines.first, contains('refusing to eject'));
     });
 
-    test('map-island artifact ejects the leaflet subdir incl. images/', () {
+    test('map-island artifact ejects the leaflet subdir incl. images/', () async {
       final d = _tmpDir();
       _write(d, 'app.routes.js', "export default [['GET','/']];\n");
       _write(d, 'index.html',
@@ -1009,7 +1039,7 @@ export default [
         d.deleteSync(recursive: true);
         out.deleteSync(recursive: true);
       });
-      final r = designEject([d.path, out.path]);
+      final r = await designEject([d.path, out.path]);
       expect(r.exitCode, 0, reason: r.stderrLines.join('\n'));
 
       // The whole leaflet/ subdir ships: leaflet.css references its marker
@@ -1031,12 +1061,94 @@ export default [
       expect(files, containsAll(['leaflet/leaflet.js', 'leaflet/leaflet.css']));
     });
 
-    // The plan-20.5 serve smoke: the ejected copy renders + serves htmx on
-    // the Dart design server, booted in-process.
-    test('serve smoke: ejected copy serves / and htmx (in-process)', () async {
+    test('node eject: port 4399 default, preload stub, README realtime', () async {
       final out = _tmpDir();
       addTearDown(() => out.deleteSync(recursive: true));
-      designEject([ejectFixture, out.path]);
+      final r = await designEject([ejectFixture, out.path]);
+      expect(r.exitCode, 0, reason: r.stderrLines.join('\n'));
+
+      // 4319 is the Dart design server's port — the ejected default is 4399.
+      final server = File(p.join(out.path, 'server.js')).readAsStringSync();
+      expect(server, contains('process.env.PORT ?? 4399'));
+
+      // The stub keeps icon.tsx's './preload.js' import resolvable at
+      // esbuild-bundle and tsc time; `null` means "use the filesystem".
+      expect(
+          File(p.join(out.path, 'runtime', 'preload.js')).readAsStringSync(),
+          contains('preload = null'));
+
+      final readme = File(p.join(out.path, 'README.md')).readAsStringSync();
+      expect(readme, contains('## Realtime (SSE)'));
+      expect(readme, contains('h.sse.publishPatch'));
+    });
+
+    test('cloudflare eject: vendor mirrored into the [assets] tree', () async {
+      final out = _tmpDir();
+      addTearDown(() => out.deleteSync(recursive: true));
+      final r = await designEject([ejectFixture, out.path, '--target=cloudflare']);
+      expect(r.exitCode, 0, reason: r.stderrLines.join('\n'));
+
+      // /assets/vendor/htmx4.min.js must resolve via the [assets] binding.
+      expect(
+          File(p.join(out.path, 'assets', 'vendor', 'htmx4.min.js'))
+              .existsSync(),
+          isTrue);
+      // lucide stays server-side only (Workers icons come from preload).
+      expect(
+          Directory(p.join(out.path, 'assets', 'vendor', 'lucide')).existsSync(),
+          isFalse);
+
+      // Real preload bundle (not the node stub) + wrangler is a dev tool.
+      expect(
+          File(p.join(out.path, 'runtime', 'preload.js')).readAsStringSync(),
+          contains('"iconSvg"'));
+      final pkg = jsonDecode(
+          File(p.join(out.path, 'package.json')).readAsStringSync()) as Map;
+      expect((pkg['devDependencies'] as Map).containsKey('wrangler'), isTrue);
+      expect((pkg['dependencies'] as Map).containsKey('wrangler'), isFalse);
+    });
+
+    test('vercel eject: fetch-handler entry + public/ static root', () async {
+      final out = _tmpDir();
+      addTearDown(() => out.deleteSync(recursive: true));
+      final r = await designEject([ejectFixture, out.path, '--target=vercel']);
+      expect(r.exitCode, 0, reason: r.stderrLines.join('\n'));
+
+      // Zero-config Hono preset: default export becomes the Function — no
+      // listening server, no legacy builds/routes vercel.json.
+      final server = File(p.join(out.path, 'server.js')).readAsStringSync();
+      expect(server, contains('export default app'));
+      expect(server, isNot(contains('serve(')));
+      expect(File(p.join(out.path, 'vercel.json')).existsSync(), isFalse);
+      // Static files serve from public/ only — assets (incl. vendor) move.
+      expect(
+          File(p.join(out.path, 'public', 'assets', 'vendor', 'htmx4.min.js'))
+              .existsSync(),
+          isTrue);
+      expect(Directory(p.join(out.path, 'assets')).existsSync(), isFalse);
+    });
+
+    test('islands without a base.tsx anchor fail loudly', () async {
+      final d = _tmpDir();
+      _write(d, 'app.routes.js', "export default [['GET','/']];\n");
+      _write(d, 'index.html',
+          '<script src="/assets/vendor/htmx4.min.js"></script>'
+          '<div hx-island="toggle"></div>');
+      final out = _tmpDir();
+      addTearDown(() {
+        d.deleteSync(recursive: true);
+        out.deleteSync(recursive: true);
+      });
+      final r = await designEject([d.path, out.path]);
+      expect(r.exitCode, 1);
+      expect(r.stderrLines.first, contains('island manifest'));
+    });
+
+    // The plan-20.5 serve smoke: the ejected copy renders + serves htmx on
+    // the Dart design server, booted in-process.
+    test('serve smoke: ejected copy serves / and htmx (in-process)', () async {      final out = _tmpDir();
+      addTearDown(() => out.deleteSync(recursive: true));
+      await designEject([ejectFixture, out.path]);
 
       final srv = await DesignServer.start(
         artifactDir: out.path,
@@ -1049,12 +1161,110 @@ export default [
         expect(home.status, 200);
         expect(home.body.toLowerCase(), contains('<html'));
 
-        final htmx = await _ejectGet('${srv.url}assets/vendor/htmx.min.js');
+        final htmx = await _ejectGet('${srv.url}assets/vendor/htmx4.min.js');
         expect(htmx.status, 200);
         expect(htmx.body, contains('htmx'));
       } finally {
         await srv.stop();
       }
+    });
+  });
+
+  // ── eject: R4/M6/M7/minors (2026-08-07 fix wave) ──────────────────────
+  group('design eject — typing moat + kit facades', () {
+    test('route manifest: hyphenated paths emit quoted keys, comments emit no false routes', () async {
+      final d = _tmpDir();
+      _write(d, 'app.routes.js', '''
+export default [
+  ['GET', '/', h.page],
+  ['GET', '/order-items', h.list],
+  // ['GET', '/ghost', h.ghost] — kept for reference; must NOT emit a route
+  /* ['GET', '/ghost2', h.ghost2] */
+];
+''');
+      _write(d, 'index.html',
+          '<script src="/assets/vendor/htmx4.min.js"></script>');
+      final out = _tmpDir();
+      addTearDown(() {
+        d.deleteSync(recursive: true);
+        out.deleteSync(recursive: true);
+      });
+      final r = await designEject([d.path, out.path]);
+      expect(r.exitCode, 0, reason: r.stderrLines.join('\n'));
+
+      final routesJs =
+          File(p.join(out.path, 'runtime', 'routes.js')).readAsStringSync();
+      // A hyphenated segment is not a valid bare JS identifier — the key must
+      // be quoted, or the emitted module is a syntax error.
+      expect(routesJs, contains('"order-items": () => "/order-items"'));
+      // Commented-out routes are comments, not routes.
+      expect(routesJs, isNot(contains('ghost')));
+      final routesDts =
+          File(p.join(out.path, 'runtime', 'routes.d.ts')).readAsStringSync();
+      expect(routesDts, contains('"order-items": () => "/order-items";'));
+      expect(routesDts, isNot(contains('ghost')));
+    });
+
+    test('checkJs is on and the typecheck script drops the redundant --noEmit', () async {
+      final out = _tmpDir();
+      addTearDown(() => out.deleteSync(recursive: true));
+      final r = await designEject([ejectFixture, out.path]);
+      expect(r.exitCode, 0, reason: r.stderrLines.join('\n'));
+
+      // R4: the moat is live — the whole ejected tree is typechecked.
+      final tsconfig = jsonDecode(
+          File(p.join(out.path, 'tsconfig.json')).readAsStringSync()) as Map;
+      expect((tsconfig['compilerOptions'] as Map)['checkJs'], isTrue);
+
+      // tsconfig sets noEmit; restating it in the script was redundant.
+      final pkg = jsonDecode(
+          File(p.join(out.path, 'package.json')).readAsStringSync()) as Map;
+      expect((pkg['scripts'] as Map)['typecheck'], 'tsc -p .');
+    });
+
+    test('kit facades take env explicitly; publishable keys emit client config', () async {
+      final out = _tmpDir();
+      addTearDown(() => out.deleteSync(recursive: true));
+      final r = await designEject(
+          [ejectFixture, out.path, '--kits=maps,payments,data']);
+      expect(r.exitCode, 0, reason: r.stderrLines.join('\n'));
+
+      // M6: no module-scope process.env reads — facades take env as an
+      // argument and fail at boot with a named error (Workers have no
+      // process.env). Doc comments may NAME it; reads (`process.env.X`) may
+      // not appear.
+      for (final f in ['stripe.js', 'supabase.js', 'maps.js']) {
+        final src = File(p.join(out.path, 'services', 'facades', f))
+            .readAsStringSync();
+        expect(src, isNot(contains('process.env.')),
+            reason: '$f must not read process.env');
+      }
+      final stripe = File(p.join(out.path, 'services', 'facades', 'stripe.js'))
+          .readAsStringSync();
+      expect(stripe, contains('export function createStripe(env)'));
+      // M7: the realtime bridges are code, not comments.
+      expect(stripe, contains('constructEventAsync'));
+      expect(stripe, contains('waitUntil'));
+      final supabase =
+          File(p.join(out.path, 'services', 'facades', 'supabase.js'))
+              .readAsStringSync();
+      expect(supabase, contains('handleDatabaseWebhook'));
+      expect(supabase, contains('x-webhook-secret'));
+
+      // Publishable → client config; secrets never land there.
+      final clientConfig =
+          File(p.join(out.path, 'runtime', 'client_config.js'))
+              .readAsStringSync();
+      expect(clientConfig, contains('MAPBOX_PUBLIC_TOKEN'));
+      expect(clientConfig, contains('STRIPE_PUBLISHABLE_KEY'));
+      expect(clientConfig, isNot(contains('STRIPE_SECRET_KEY')));
+      expect(clientConfig, isNot(contains('SUPABASE_SERVICE_ROLE_KEY')));
+
+      // The new webhook secrets are documented in .env.example.
+      final envExample =
+          File(p.join(out.path, '.env.example')).readAsStringSync();
+      expect(envExample, contains('STRIPE_WEBHOOK_SECRET'));
+      expect(envExample, contains('SUPABASE_WEBHOOK_SECRET'));
     });
   });
 }

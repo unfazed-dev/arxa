@@ -207,9 +207,12 @@ export const edgesFrom = (screenId) => {
   return out;
 };
 
-// Does the project ship a bespoke partial for this screen kind?
-// (ui/project/<kind>.html in the overlay's template map — the worker injects
-// it as globalThis.__templates; absent → the stub's generic fallback renders.)
+// Does the project ship a bespoke surface for this screen kind?
+// The worker registers every design/surfaces/<kind>.tsx (the rendered source;
+// .html is the pre-TSX fallback) in globalThis.__templates under the render
+// registry's viewRef — ui/project/<kind>.html (generateRenderTsx). The map is
+// presence-only; rendering runs from the esbuild bundle. Absent → the stub's
+// generic fallback renders.
 export const hasPartial = (kind) =>
   typeof globalThis.__templates?.[`ui/project/${kind}.html`] === 'string';
 

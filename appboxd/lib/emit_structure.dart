@@ -567,11 +567,12 @@ Map<String, dynamic>? loadFonts(String designRoot) {
   return {'default': def, 'families': out};
 }
 
-// Every open tag carrying data-el, in source order. Nunjucks-templated HTML is
-// not strictly parseable as HTML, but an OPEN TAG is: attributes may hold
-// {{ }} but never a bare `>`. Ported from widget_repository.js `elsIn` — the
-// two MUST agree on identity or a designer edit and a pipeline read would name
-// different elements.
+// Every open tag carrying data-el, in source order. Templated markup ({{ }}
+// in legacy .html, JSX expressions in .tsx) is not strictly parseable as
+// HTML, but an OPEN TAG is: attributes may hold template braces, never a bare
+// `>`. Ported from widget_repository.js `elsIn` — the two MUST agree on
+// identity or a designer edit and a pipeline read would name different
+// elements.
 final _tagRe = RegExp(r'<([a-zA-Z][\w-]*)((?:"[^"]*"|' "'[^']*'" r'|[^>"' "'" r'])*)>');
 final _elRe = RegExp('data-el="([^":]+)(:|")');
 

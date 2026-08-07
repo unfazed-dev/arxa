@@ -98,7 +98,6 @@ Licences below were **read from each installed package's `package.json`** on
 |---|---|---|
 | `hono` | 4.12.31 | MIT |
 | `@hono/node-server` | 2.0.11 | MIT |
-| `nunjucks` | 3.2.4 | BSD-2-Clause |
 | `playwright` (dev only) | 1.61.1 | Apache-2.0 |
 
 ---

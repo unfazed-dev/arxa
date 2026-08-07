@@ -78,7 +78,7 @@
       // <body> aborts in-flight XHRs when a newer request supersedes them,
       // and htmx rejects the promise with undefined. Not an error.
       htmx.ajax('POST', base + '?ids=' + encodeURIComponent(ids.join(',')), {
-        target: '#panels', swap: 'morph:outerHTML',
+        target: '#panels', swap: 'outerMorph',
       }).catch((e) => { if (e !== undefined) console.error('appbox island htmx.ajax:', e); });
     });
     el.appendChild(btn);
@@ -165,7 +165,7 @@
       if (index === current) return;
       htmx.ajax('POST', `/design/flows/${encodeURIComponent(flow)}/move/${encodeURIComponent(id)}`, {
         values: { index: String(index) },
-        target: '#panels', swap: 'morph:outerHTML',
+        target: '#panels', swap: 'outerMorph',
       }).catch((e) => { if (e !== undefined) console.error('appbox island htmx.ajax:', e); }); // superseded-request abort; see bulk-pin note
     }, { once: true });
   };
@@ -491,7 +491,7 @@
     if (!location.pathname.startsWith('/design')) return; // undo stacks are design-shell state
     e.preventDefault();
     htmx.ajax('POST', `/design/${e.shiftKey ? 'redo' : 'undo'}/${pointerStack}`,
-      { target: '#panels', swap: 'morph:outerHTML' })
+      { target: '#panels', swap: 'outerMorph' })
       .catch((e) => { if (e !== undefined) console.error('appbox island htmx.ajax:', e); }); // superseded-request abort; see bulk-pin note
   });
 })();

@@ -116,7 +116,12 @@
       "phase": "stable",
       "playbook": "data/data_playbook.mdx",
       "hasSkill": false,
-      "provides": {}
+      "provides": {},
+      "web": {
+        "npm": "@supabase/supabase-js@^2",
+        "facade": "supabase.js",
+        "envFrom": ["SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY", "SUPABASE_WEBHOOK_SECRET"]
+      }
     },
     {
       "dir": "auth",
@@ -260,6 +265,11 @@
           "AppBoxKitPayButton"
         ]
       },
+      "web": {
+        "npm": "stripe@^17",
+        "facade": "stripe.js",
+        "envFrom": ["STRIPE_SECRET_KEY", "STRIPE_PUBLISHABLE_KEY", "STRIPE_WEBHOOK_SECRET"]
+      },
       "providers": [
         {
           "name": "Stripe",
@@ -294,6 +304,11 @@
         "widgets": [
           "AppBoxKitMapView"
         ]
+      },
+      "web": {
+        "npm": "mapbox-gl@^3",
+        "facade": "maps.js",
+        "envFrom": ["MAPBOX_PUBLIC_TOKEN"]
       },
       "providers": [
         {

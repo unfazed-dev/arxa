@@ -4,9 +4,12 @@
 // never 500s the page.
 import { readFixture } from './fixture_reader.js';
 
+/** @param {string} locale */
 const data = (locale) =>
-  readFixture(`../../models/greeting_model/greeting_fixtures.${locale}.json`);
+  /** @type {{ greetings: Array<{ id: string, text: string }> }} */
+  (readFixture(`../../models/greeting_model/greeting_fixtures.${locale}.json`));
 
+/** @param {string} [locale] */
 export const all = (locale = 'en') => {
   try {
     return data(locale).greetings;
@@ -14,4 +17,5 @@ export const all = (locale = 'en') => {
     return data('en').greetings;
   }
 };
-export const byId = (id, locale = 'en') => all(locale).find((g) => g.id === id);
+/** @param {string} id @param {string} [locale] */
+export const byId = (id, locale = 'en') => all(locale).find((/** @type {{ id: string, text: string }} */ g) => g.id === id);

@@ -24,7 +24,7 @@
 //   appbox design vendor-fetch [--vendor <dir>]
 //   appbox design doctor
 //   appbox design serve <dir|name> [--port N] [--host H] [--json] [--no-watch]
-//   appbox design eject <artifact-dir> <out-dir>
+//   appbox design eject <artifact-dir> <out-dir> [--target=node|cloudflare|vercel] [--kits=a,b]
 //   appbox design ds-check <projectDir> [--verbose]
 //   appbox design record-asset <projectDir> <htmlPath> [flags]
 //   appbox design record-asset <projectDir> --remove [<htmlPath>] [flags]
@@ -51,9 +51,10 @@ Subcommands:
   pseudolocalize <artifact-dir>      Generate the qps-ploc pseudo-locale
   vendor-fetch [--vendor <dir>]      Fetch + SRI-pin the vendored client libs
   doctor                             Preflight the Dart toolchain the gates use
-  eject <artifact-dir> <out-dir>     Eject a self-contained server-rendered copy
-                                     (narrowed vendor + README; runs on the Dart
-                                     server, no node)
+  eject <artifact-dir> <out-dir>     Eject a self-contained Hono app (JS runtime
+       [--target=node|cloudflare|vercel]   scaffold + narrowed vendor + README).
+       [--kits=a,b]                   node boots locally (default port 4399);
+                                     cloudflare/vercel emit deployable trees.
   selftest [<artifact-dir>] [--negative]
                                      Structural-contract selftest + falsifiability
   ds-check <projectDir> [--verbose]  Read-only design-system structural check
@@ -96,7 +97,7 @@ Future<int> designMain(List<String> args) async {
     case 'serve':
       return designServe(rest);
     case 'eject':
-      return _emit(designEject(rest));
+      return _emit(await designEject(rest));
     case 'ds-check':
       return _emit(designDsCheck(rest));
     case 'record-asset':
@@ -130,7 +131,7 @@ int _emit(CmdResult r) {
 Future<int> _selfTest() async {
   try {
     // 1. comment stripping — a documented ban is not itself a violation.
-    if (stripComments('{# hx-on:click #}<script src=/x.js></script>')
+    if (stripComments('{/* hx-on:click */}<script src=/x.js></script>')
         .contains('hx-on')) {
       throw 'comment not stripped';
     }

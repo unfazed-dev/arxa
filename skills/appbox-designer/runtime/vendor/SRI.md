@@ -19,6 +19,9 @@
 | leaflet/leaflet.js | leaflet | 1.9.4 | `sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH` |
 | leaflet/leaflet.css | leaflet | 1.9.4 | `sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H` |
 | idiomorph-ext.min.js | idiomorph | 0.7.4 | `sha384-SsScJKzATF/w6suEEdLbgYGsYFLzeKfOA6PY+/C5ZPxOSuA+ARquqtz/BZz9JWU8` |
+| htmx4.min.js | htmx.org | 4.0.0-beta6 | `sha384-6lyVbhrs13b9z7mLOpt/N6R76rtkEBWgCjAXRs/DSWyi2AMnQSs10ijWk+PI8n7W` |
+| hx-sse.min.js | htmx.org | 4.0.0-beta6 | `sha384-k3FOGGeM049iTmLw/5TvDh5u+ku311l7JTDjUXhWgD01QiEzDc9Z82c7aNW+R3wK` |
+| alien-signals.min.js | alien-signals | 3.2.1 | `sha384-JEXjCHkGjEBJBD27oeiXrrFMeKb53WEpVqm7qQ2qz8CXrmtvoYHM1bSyArrNlwcT` |
 
 `leaflet/images/*.png` (marker + layers control sprites, referenced by
 `leaflet.css` relative to itself) ride along unpinned — like the lucide SVGs

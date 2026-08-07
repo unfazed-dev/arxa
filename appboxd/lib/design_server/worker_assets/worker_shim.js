@@ -1,22 +1,31 @@
 // worker_shim.js — the Hono-equivalent shim. Ports lib/helpers.mjs +
-// lib/templates.mjs + lib/l10n.mjs + lib/state.mjs + lib/timers.mjs semantics
-// into the browser worker tab. Viewmodels call handler(c, h) and cannot tell
-// the difference from Hono.
+// lib/l10n.mjs + lib/state.mjs + lib/timers.mjs semantics into the browser
+// worker tab. Viewmodels call handler(c, h) and cannot tell the difference
+// from Hono.
 //
 // Dart pre-populates (before __boot):
-//   globalThis.__templates  {path: src}   every .html under the artifact
+//   globalThis.__renderBundleUrl  blob:      esbuild-bundled TSX render module
+//   globalThis.__templates  {viewRef: src}   project-surface presence map (worker.dart)
 //   globalThis.__fixtures   {absUrl: txt} every models/**/*.json (fs_shim keys)
 //   globalThis.__arb        {locale: {key: val}}  l10n/*.arb parsed
 //   globalThis.__icons      {name: rawSvg}        lucide icons referenced
-/* global nunjucks */
 (function () {
   'use strict';
-  let env = null;
+  let renderModule = null; // { render(viewRef, ctx) } — set by __boot
   let routesTable = [];
 
   // ── l10n (port of lib/l10n.mjs) ───────────────────────────────────────
   const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
     .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+  // hono/jsx raw(): marks a string as pre-escaped so JSX rendering does not
+  // double-escape it. The t() function pre-escapes via interpolate(), so its
+  // return values must carry isEscaped = true.
+  function raw(s) {
+    const r = new String(s);
+    r.isEscaped = true;
+    return r;
+  }
 
   function parsePlural(str) {
     const head = String(str).match(/^\{\s*(\w+)\s*,\s*plural\s*,\s*/);
@@ -64,53 +73,19 @@
         : level === 'technical' ? [key + 'Technical', key] : [key];
       for (const k of variants) {
         const hit = translate(cat, locale, k, vars) || translate(en, 'en', k, vars);
-        if (hit !== undefined) return new nunjucks.runtime.SafeString(hit);
+        if (hit !== undefined) return raw(hit);
       }
-      return new nunjucks.runtime.SafeString(key);
+      return raw(key);
     };
   }
   const locales = Object.keys(globalThis.__arb || {}).sort((a, b) =>
     (a === 'en' ? -1 : b === 'en' ? 1 : a.localeCompare(b)));
 
-  // ── templates (port of lib/templates.mjs) ─────────────────────────────
-  // Loader reads from Dart-prefetched globalThis.__templates — synchronous,
-  // deterministic, no async fetch on the render path.
-  const prefetchedLoader = {
-    async: false,
-    getSource(name) {
-      const src = globalThis.__templates[name];
-      if (src === undefined) throw new Error('no template prefetched: ' + name);
-      return { src: src, path: name, noCache: true };
-    },
-  };
-
-  const NAME_RE = /^[a-z0-9-]+$/;
-  function icon(name, opts) {
-    opts = opts || {};
-    const size = opts.size != null ? opts.size : 24;
-    const placeholder = '<svg width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"' + (opts.cls ? ' class="' + esc(opts.cls) + '"' : '') + '><rect x="3" y="3" width="18" height="18" rx="3" stroke-dasharray="4 3"/></svg>';
-    if (typeof name !== 'string' || !NAME_RE.test(name)) return new nunjucks.runtime.SafeString(placeholder);
-    const raw = (globalThis.__icons || {})[name];
-    if (!raw) return new nunjucks.runtime.SafeString(placeholder);
-    const openTag = (raw.match(/<svg[^>]*>/) || [''])[0];
-    let open = openTag.replace(/\s+class="[^"]*"/, '').replace(/\s+width="[^"]*"/, '').replace(/\s+height="[^"]*"/, '');
-    if (opts.strokeWidth != null) open = open.replace(/stroke-width="[^"]*"/, 'stroke-width="' + Number(opts.strokeWidth) + '"');
-    open = open.replace(/<svg/, '<svg width="' + size + '" height="' + size + '"' +
-      (opts.cls ? ' class="' + esc(opts.cls) + '"' : '') +
-      (opts.label ? ' role="img" aria-label="' + esc(opts.label) + '"' : ' aria-hidden="true" focusable="false"'));
-    const head = raw.slice(0, raw.indexOf(openTag));
-    let out = head + open + raw.slice(raw.indexOf(openTag) + openTag.length);
-    if (opts.label) out = out.replace(/(<svg[^>]*>)/, '$1<title>' + esc(opts.label) + '</title>');
-    return new nunjucks.runtime.SafeString(out);
-  }
-
+  // ── TSX rendering ─────────────────────────────────────────────────────
+  // The bundled render module exports render(viewRef, ctx) which returns a
+  // hono/jsx JSXNode. String() converts it to an HTML string.
   function templatesRender(viewRef, ctx) {
-    env.addGlobal('t', createT(ctx.locale, ctx.prefs && ctx.prefs.jargon));
-    const hash = viewRef.indexOf('#');
-    if (hash === -1) return env.render(viewRef, ctx);
-    const file = viewRef.slice(0, hash);
-    const macro = viewRef.slice(hash + 1);
-    return env.renderString('{% import "' + file + '" as f %}{{ f.' + macro + '(c) }}', ctx);
+    return String(renderModule.render(viewRef, ctx));
   }
 
   // ── timers (port of lib/timers.mjs) — seeded from Dart state ──────────
@@ -195,7 +170,23 @@
       render(c, viewRef, ctx, st) {
         ctx = ctx || {};
         const prefs = c._cookies.kdh_prefs ? safeJson(c._cookies.kdh_prefs) : {};
-        const bag = Object.assign({ prefs, locale: c.get('locale') || 'en', locales }, ctx);
+        const t = createT(c.get('locale') || 'en', prefs.jargon);
+        // If ctx.partial is a string file path (e.g. 'ui/project/home.html'),
+        // pre-render it through the TSX render module so the component receives
+        // ready-made content instead of a raw path string. This replaces the
+        // old nunjucks {% include partial %} dynamic-include pattern.
+        if (typeof ctx.partial === 'string' && ctx.partial) {
+          const partialCtx = Object.assign({ prefs, locale: c.get('locale') || 'en', locales, t }, ctx);
+          partialCtx.c = partialCtx;
+          try {
+            const rendered = String(renderModule.render(ctx.partial, partialCtx));
+            ctx.partial = raw(rendered);
+          } catch (e) {
+            // Partial not in registry or render error — leave as-is (falls back
+            // to the generic placeholder in screen_stub_view.tsx).
+          }
+        }
+        const bag = Object.assign({ prefs, locale: c.get('locale') || 'en', locales, t }, ctx);
         bag.c = bag;
         if (st != null) c.status(st);
         return c.html(templatesRender(viewRef, bag));
@@ -220,9 +211,8 @@
 
   // ── public worker API ─────────────────────────────────────────────────
   globalThis.__boot = async function (artifactBase) {
-    env = new nunjucks.Environment(prefetchedLoader, { autoescape: true, throwOnUndefined: false });
-    env.addGlobal('icon', icon);
-    env.addGlobal('t', createT('en'));
+    // Import the TSX render module from the blob URL Dart injected.
+    renderModule = await import(globalThis.__renderBundleUrl);
     const mod = await import(/* @vite-ignore */ artifactBase + '/app.routes.js');
     routesTable = mod.default;
     return true;
