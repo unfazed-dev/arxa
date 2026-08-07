@@ -214,7 +214,7 @@ function Blocked({ c, t }: { c: RunViewProps; t: TFn }) {
 function MainContent({ c, t }: { c: RunViewProps; t: TFn }) {
   return (
     <section class="mp-content" id="mp-content" aria-live="polite">
-      <div class="run-body">
+      <div class="run-body" {...inspectAttrs('scaffold.run:body', { role: 'group' })}>
         <Banner c={c} t={t} />
         {c.isBlocked ? (
           <Blocked c={c} t={t} />

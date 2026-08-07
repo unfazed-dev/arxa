@@ -31,7 +31,7 @@ function PersonaList({ iconName, label, entries, t }: { iconName: string; label:
   if (!entries || entries.length === 0) return null;
   return (
     <section class="persona-list">
-      <h3 class="fact-label"><Icon name={iconName} size={14} /> {label}</h3>
+      <h3 class="fact-label" {...inspectAttrs('intake-personas:list-label', { role: 'heading' })}><Icon name={iconName} size={14} /> {label}</h3>
       <ul class="trace-list" {...inspectAttrs('intake-personas:trace-list', { role: 'list' })}>
         {entries.map((e, i) => <li key={i} {...inspectAttrs('intake-personas:trace-entry', { role: 'list row' })}>{e}</li>)}
       </ul>
@@ -52,7 +52,7 @@ function PersonaCard({ c, item, t }: { c: Ctx; item: PersonaItem; t: TFn }) {
       <Heading name="intake-personas:name" level={2} class="display">{item.name}</Heading>
       <Txt name="intake-personas:role" class="artifact-lede">{item.role}</Txt>
       {item.accessibility && (
-        <p class="persona-a11y"><span class="fact-label"><Icon name="accessibility" size={14} /> {t('intake.personas.accessibility') as string}</span> {item.accessibility}</p>
+        <p class="persona-a11y"><span class="fact-label" {...inspectAttrs('intake-personas:a11y-label', { role: 'label' })}><Icon name="accessibility" size={14} /> {t('intake.personas.accessibility') as string}</span> {item.accessibility}</p>
       )}
       <PersonaList iconName="target" label={t('intake.personas.goals') as string} entries={item.goals} t={t} />
       <PersonaList iconName="circle-alert" label={t('intake.personas.frustrations') as string} entries={item.frustrations} t={t} />

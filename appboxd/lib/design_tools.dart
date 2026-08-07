@@ -111,7 +111,7 @@ final _interactiveRe = RegExp(
     r"""|\brole\s*=\s*["'](?:button|link|tab|switch)["']"""
     r"""|\btabindex\s*=\s*["']\d"""
     r"""|\bhx-(?:get|post|put|patch|delete|trigger|target|swap|confirm)\b""",
-    caseSensitive: false, dotAll: true);
+    caseSensitive: true, dotAll: true);
 
 /// Rule B — the `coverageB` target: the element KINDS a reviewer expects to be
 /// inspectable. It is a strict SUBSET of C, deliberately: a lower bar that
@@ -124,7 +124,7 @@ final _interactiveRe = RegExp(
 final _interactiveBRe = RegExp(
     r"""^<(?:a\s[^>]*\bhref|button|summary|input|select|textarea)\b"""
     r"""|\brole\s*=\s*["'](?:button|link)["']""",
-    caseSensitive: false, dotAll: true);
+    caseSensitive: true, dotAll: true);
 
 /// D9 — a DERIVED `data-inspect-fn`. `fn` is prose ("Opens the category
 /// listing"); `role`, `style` and `data-el` are mechanical. A generated `fn` is

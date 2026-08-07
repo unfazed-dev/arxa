@@ -833,12 +833,25 @@ List<LintFinding> _anonymousElementFindings(String artifactDir) {
       final interactive = _interactiveTags.contains(tag);
       var textBearing = false;
       if (!selfClosing) {
-        // Non-whitespace between '>' and the next '<' = literal text or a JSX
-        // expression ({t('key')}) producing user-visible text.
+        // Direct text before the first child element.
         final nextLt = src.indexOf('<', m.end);
         final textBetween =
             src.substring(m.end, nextLt < 0 ? src.length : nextLt);
         textBearing = textBetween.trim().isNotEmpty;
+        // Blind spot: <tag><Icon/> text</tag> — the first child is self-closing
+        // and text follows it. Only checks the first child to avoid false
+        // positives from deeply nested self-closing descendants.
+        if (!textBearing && nextLt >= m.end && nextLt < src.length) {
+          final childEnd = src.indexOf('>', nextLt);
+          if (childEnd >= 0 &&
+              src.substring(nextLt, childEnd + 1).endsWith('/>')) {
+            final afterSc = childEnd + 1;
+            final nextLtSc = src.indexOf('<', afterSc);
+            final textSc = src.substring(
+                afterSc, nextLtSc < 0 ? src.length : nextLtSc);
+            textBearing = textSc.trim().isNotEmpty;
+          }
+        }
       }
       if (!interactive && !textBearing) continue;
 

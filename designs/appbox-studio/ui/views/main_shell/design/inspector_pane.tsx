@@ -212,7 +212,7 @@ interface ScreenCardProps {
 export function ScreenCard({ sc, t }: ScreenCardProps) {
   return (
     <div class="msg msg-agent">
-      <header class="msg-meta">
+      <header class="msg-meta" {...inspectAttrs('inspector:sc-meta', { role: 'nav' })}>
         <TypeBadge type="screen" label={sc.epic} />
         {sc.state && <StatusPill state={sc.state} size="sm" t={t} />}
       </header>

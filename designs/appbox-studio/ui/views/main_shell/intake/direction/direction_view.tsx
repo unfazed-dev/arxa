@@ -60,7 +60,7 @@ function GroupCard({ c, item, t }: { c: Ctx; item: StepItem; t: TFn }) {
   const icon = item.id === 'adjectives' ? 'sparkles' : item.id === 'avoids' ? 'ban' : 'image';
   return (
     <div class={`q-card group-card is-${item.state ?? ''}`}>
-      <h2 class="display"><Icon name={icon} size={20} /> {t(`intake.direction.group.${item.id}`) as string}</h2>
+      <h2 class="display" {...inspectAttrs('intake-direction:group-title', { role: 'heading' })}><Icon name={icon} size={20} /> {t(`intake.direction.group.${item.id}`) as string}</h2>
       {item.id === 'references' ? <ReferenceRows item={item} t={t} /> : <ValueChips item={item} t={t} />}
       {item.state === 'editing' && item.id !== 'references' ? <ValuesForm c={c} item={item} t={t} /> : null}
       <SH.ItemActions c={c} item={item} t={t} />
@@ -73,7 +73,7 @@ function StepSummary({ c, t }: { c: Ctx; t: TFn }) {
   const step = c.step;
   return (
     <div class="step-summary">
-      <h2 class="display"><Icon name="compass" size={20} /> {t('intake.step.allConfirmed', { total: step?.total }) as string}</h2>
+      <h2 class="display" {...inspectAttrs('intake-direction:summary-title', { role: 'heading' })}><Icon name="compass" size={20} /> {t('intake.step.allConfirmed', { total: step?.total }) as string}</h2>
       {(step?.items ?? []).map((item) => (
         <div key={item.id} class={`q-card is-${item.state ?? ''}`}>
           <p class="q-text" {...inspectAttrs('intake-direction:summary-text', { role: 'text' })}>{t(`intake.direction.group.${item.id}`) as string} {item.edited ? <Label name="intake-direction:edited-mark" class="chip chip--muted">{t('intake.item.edited') as string}</Label> : null}</p>

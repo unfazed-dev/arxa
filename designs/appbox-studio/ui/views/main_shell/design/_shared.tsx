@@ -175,7 +175,7 @@ interface ScreenCardProps {
 export function ScreenCard({ s, t }: ScreenCardProps) {
   return (
     <div class={`msg msg-agent${s.inContext ? ` is-active msg-ctx ctx-${s.tone}` : ''}`}>
-      <header class="msg-meta">
+      <header class="msg-meta" {...inspectAttrs('design-screen:meta', { role: 'nav' })}>
         <TypeBadge type="screen" label={s.epic} />
         {s.card?.threadCount ? (
           <span class="chip thread-badge" {...inspectAttrs('design-screen:thread-count', { role: 'status' })} title={t('design.checkpointsTitle', { count: s.card.threadCount }) as string}>

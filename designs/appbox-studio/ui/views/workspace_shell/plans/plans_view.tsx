@@ -111,7 +111,7 @@ const PlansView: FC<PlansViewProps> = (props) => {
 
       {signedOut ? (
         <aside class="plans-notice" data-lens="signedOut">
-          <h4 class="fact-label">
+          <h4 class="fact-label" {...inspectAttrs('workspace-plans:signed-out-title', { role: 'heading' })}>
             <Icon name="lock" size={14} /> {t('plans.signedOut.title') as string}
           </h4>
           <Txt name="workspace-plans:signed-out-body">{t('plans.signedOut.body') as string}</Txt>
@@ -127,19 +127,19 @@ const PlansView: FC<PlansViewProps> = (props) => {
               <header class="plan-head">
                 <Heading name="workspace-plans:plan-name" level={3} class="plan-name">{p.name}</Heading>
                 {p.current ? (
-                  <span class="chip chip--accent">
+                  <span class="chip chip--accent" {...inspectAttrs('workspace-plans:current-chip', { role: 'label' })}>
                     <Icon name="badge-check" size={13} /> {t('plans.current') as string}
                   </span>
                 ) : null}
               </header>
               <Txt name="workspace-plans:plan-price" class="plan-price">{p.priceLabel}</Txt>
               <Txt name="workspace-plans:plan-blurb" class="muted">{p.blurb}</Txt>
-              <p class="plan-seats">
+              <p class="plan-seats" {...inspectAttrs('workspace-plans:plan-seats', { role: 'text' })}>
                 <Icon name="laptop" size={13} /> {p.seatsLabel}
               </p>
               <ul class="plan-features" {...inspectAttrs('workspace-plans:features', { role: 'group' })}>
                 {p.features.map((f, i) => (
-                  <li key={i}>
+                  <li key={i} {...inspectAttrs('workspace-plans:feature', { role: 'list row' })}>
                     <Icon name="check" size={13} /> {f}
                   </li>
                 ))}
@@ -157,10 +157,10 @@ const PlansView: FC<PlansViewProps> = (props) => {
           <Heading name="workspace-plans:account-h" level={2}>{t('plans.accountH') as string}</Heading>
           <div class="plan-account">
             <p>
-              <span class="chip chip--accent">
+              <span class="chip chip--accent" {...inspectAttrs('workspace-plans:plan-name-chip', { role: 'label' })}>
                 <Icon name="badge-check" size={13} /> {t(`plans.plan.${currentPlan}.name`) as string}
               </span>
-              <span class="chip chip--muted">
+              <span class="chip chip--muted" {...inspectAttrs('workspace-plans:seats-chip', { role: 'label' })}>
                 <Icon name="laptop" size={13} /> {t('plans.seats.used', { used: machineSeats?.used, total: machineSeats?.total }) as string}
               </span>
             </p>
@@ -177,7 +177,7 @@ const PlansView: FC<PlansViewProps> = (props) => {
         <section class="settings-section" id="plans-checkout">
           <Heading name="workspace-plans:checkout-h" level={2}>{t('plans.checkoutH') as string}</Heading>
           <Txt name="workspace-plans:checkout-seeded" class="settings-note">{t('plans.checkout.seeded') as string}</Txt>
-          <p class="checkout-summary">
+          <p class="checkout-summary" {...inspectAttrs('workspace-plans:checkout-summary', { role: 'text' })}>
             <Icon name="credit-card" size={14} /> {t('plans.checkout.summary', { amount: checkout.amountLabel }) as string}
           </p>
 
@@ -200,7 +200,7 @@ const PlansView: FC<PlansViewProps> = (props) => {
 
           {active ? (
             <aside class={`plans-notice checkout-result checkout-result--${active.id}`} role="status">
-              <h4 class="fact-label">
+              <h4 class="fact-label" {...inspectAttrs('workspace-plans:checkout-result-title', { role: 'heading' })}>
                 <Icon name={outcomeIcon} size={14} /> {active.title}
               </h4>
               <Txt name="workspace-plans:checkout-kit" class="checkout-kit">
