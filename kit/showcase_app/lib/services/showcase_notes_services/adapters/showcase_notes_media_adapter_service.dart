@@ -2,9 +2,9 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:path_provider/path_provider.dart';
-import 'package:rxdart/rxdart.dart';
 import 'package:appbox_kit_media/appbox_kit_media.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart' show AppBoxKitActionOwner;
+import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart'
+    show AppBoxKitActionOwner, BehaviorSubject, Rx;
 import 'package:uuid/uuid.dart';
 
 import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/showcase_note_attachment_model.dart';
@@ -78,6 +78,23 @@ class ShowcaseNotesMediaAdapterService with AppBoxKitActionOwner {
   Stream<Duration> get position$ => _position.stream;
   Stream<Duration?> get duration$ => _duration.stream;
   Stream<AppBoxKitPlaybackState> get playerState$ => _playerState.stream;
+
+  /// Whether [attachmentId] is the one loaded and playing right now — derived
+  /// from the adapter's own player state, so any surface can ask.
+  Stream<bool> isAttachmentPlaying$(String attachmentId) => Rx.combineLatest2(
+        playingAttachmentId$,
+        playerState$,
+        (String? id, AppBoxKitPlaybackState state) =>
+            id == attachmentId && state.playing,
+      );
+
+  /// Live position paired with the track length, for a scrubber.
+  Stream<AppBoxKitPlaybackProgress> get playbackProgress$ => Rx.combineLatest2(
+        position$,
+        duration$,
+        (Duration position, Duration? duration) =>
+            (position: position, duration: duration),
+      );
 
   /// The iOS Simulator has no camera hardware, and capture throws when asked
   /// for the camera there. The kit's [AppBoxKitMediaCaptureService.hasCamera] detects

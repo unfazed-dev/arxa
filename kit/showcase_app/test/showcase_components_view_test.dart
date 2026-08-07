@@ -10,7 +10,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_profile_shell/showcase_components/showcase_components_view.dart';
-import 'package:stacked_services/stacked_services.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 
 import 'helpers.dart';

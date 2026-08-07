@@ -17,6 +17,10 @@ enum AppBoxKitMediaProcessingState {
   completed,
 }
 
+/// Position and length of the current track — the scrubber pair. Kit-owned:
+/// every player surface derives this the same way.
+typedef AppBoxKitPlaybackProgress = ({Duration position, Duration? duration});
+
 /// A snapshot of a player's state: whether it is [playing] and where it is in
 /// its [processing] lifecycle. Kit-owned to keep `just_audio` out of callers.
 class AppBoxKitPlaybackState {

@@ -3,7 +3,6 @@ import 'package:appbox_kit_core/services/error/appbox_kit_error_service.dart';
 import '../../../services/notifications/appbox_kit_notification_service.dart';
 import '../appbox_kit_action_config.dart';
 import '../appbox_kit_notification_type.dart';
-import 'package:stacked_services/stacked_services.dart';
 import 'package:talker_flutter/talker_flutter.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -22,8 +21,6 @@ import 'package:talker_flutter/talker_flutter.dart';
 class AppBoxKitNotificationManager<T> {
   final AppBoxKitActionConfig<T> config;
   static final _errorService = appBoxKitLocator<AppBoxKitErrorService>();
-  static final _dialogService = appBoxKitLocator<DialogService>();
-  static final _bottomSheetService = appBoxKitLocator<BottomSheetService>();
   static final _talker = appBoxKitLocator<Talker>();
 
   AppBoxKitNotificationManager(this.config);
@@ -52,17 +49,17 @@ class AppBoxKitNotificationManager<T> {
           break;
 
         case AppBoxKitNotificationType.dialog:
-          _dialogService.showDialog(
+          appBoxKitLocator<AppBoxKitNotificationService>().alert(
             title: config.loadingSnackbarTitle ?? 'Loading',
-            description: config.loadingSnackbarMessage!,
+            message: config.loadingSnackbarMessage!,
             barrierDismissible: false,
           );
           break;
 
         case AppBoxKitNotificationType.bottomSheet:
-          _bottomSheetService.showBottomSheet(
+          appBoxKitLocator<AppBoxKitNotificationService>().notice(
             title: config.loadingSnackbarTitle ?? 'Loading',
-            description: config.loadingSnackbarMessage!,
+            message: config.loadingSnackbarMessage!,
           );
           break;
 
@@ -104,17 +101,16 @@ class AppBoxKitNotificationManager<T> {
           break;
 
         case AppBoxKitNotificationType.dialog:
-          _dialogService.showDialog(
+          appBoxKitLocator<AppBoxKitNotificationService>().alert(
             title: config.successSnackbarTitle ?? 'Success',
-            description: config.successSnackbarMessage!,
-            buttonTitle: 'OK',
+            message: config.successSnackbarMessage!,
           );
           break;
 
         case AppBoxKitNotificationType.bottomSheet:
-          _bottomSheetService.showBottomSheet(
+          appBoxKitLocator<AppBoxKitNotificationService>().notice(
             title: config.successSnackbarTitle ?? 'Success',
-            description: config.successSnackbarMessage!,
+            message: config.successSnackbarMessage!,
           );
           break;
 
@@ -156,17 +152,16 @@ class AppBoxKitNotificationManager<T> {
           break;
 
         case AppBoxKitNotificationType.dialog:
-          _dialogService.showDialog(
+          appBoxKitLocator<AppBoxKitNotificationService>().alert(
             title: config.errorSnackbarTitle ?? 'Error',
-            description: config.errorSnackbarMessage!,
-            buttonTitle: 'OK',
+            message: config.errorSnackbarMessage!,
           );
           break;
 
         case AppBoxKitNotificationType.bottomSheet:
-          _bottomSheetService.showBottomSheet(
+          appBoxKitLocator<AppBoxKitNotificationService>().notice(
             title: config.errorSnackbarTitle ?? 'Error',
-            description: config.errorSnackbarMessage!,
+            message: config.errorSnackbarMessage!,
           );
           break;
 

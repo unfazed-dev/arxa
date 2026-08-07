@@ -12,7 +12,6 @@ import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 import 'package:appbox_kit_data/appbox_kit_data.dart';
 import 'package:appbox_kit_showcase_app/app/app_data.dart';
 import 'package:appbox_kit_showcase_app/services/showcase_notes_services/facades/showcase_notes_facade_service.dart';
-import 'package:stacked_services/stacked_services.dart';
 
 /// Package-asset keys map straight onto this package's source tree.
 class DiskAssetReader implements AppBoxKitAssetReader {
@@ -26,9 +25,12 @@ class DiskAssetReader implements AppBoxKitAssetReader {
 }
 
 /// Registers the app's real services for widget tests — the generated
-/// `setupLocator()` (from `@StackedApp` dependencies), same wiring as `main()`.
-Future<void> registerKitTestServices() =>
-    setupLocator(stackedRouter: stackedRouter);
+/// `setupLocator()` (from `@StackedApp` dependencies) plus the kit's UI
+/// services, same wiring as `main()`.
+Future<void> registerKitTestServices() async {
+  await setupLocator(stackedRouter: stackedRouter);
+  setupAppBoxKitUiServices();
+}
 
 /// Boots appbox_kit_data off the bundled fixtures (seed backend, fake auth).
 Future<void> initShowcase({bool signedIn = false}) async {

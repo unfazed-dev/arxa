@@ -1,16 +1,40 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_testing.dart';
 import 'package:appbox_kit_data/appbox_kit_data.dart';
 import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/showcase_note_model.dart';
+import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/showcase_note_attachment_model.dart';
 import 'package:appbox_kit_showcase_app/data/schemas/showcase_notes_schemas/showcase_note_folder_schema.dart';
 import 'package:appbox_kit_showcase_app/services/showcase_notes_services/facades/showcase_notes_facade_service.dart';
+import 'package:appbox_kit_showcase_app/services/showcase_notes_services/adapters/showcase_notes_media_adapter_service.dart';
 import 'package:appbox_kit_showcase_app/services/showcase_notes_services/repositories/showcase_notes_repository_service.dart';
 import 'package:appbox_kit_showcase_app/app/app_data.dart';
-import 'package:stacked_services/stacked_services.dart';
-import 'package:talker_flutter/talker_flutter.dart';
+
+class _MockMediaAdapter extends Mock
+    implements ShowcaseNotesMediaAdapterService {}
+
+ShowcaseNoteAttachmentModel _attachment(String id) =>
+    ShowcaseNoteAttachmentModel(
+      id: id,
+      kind: ShowcaseNoteAttachmentKind.photo,
+      fileName: '$id.jpg',
+      createdAt: DateTime.utc(2026, 1, 1),
+    );
+
+/// Registers a fresh recording mock of the media adapter for one test (the
+/// suite otherwise never resolves it — only attachment/purge paths do).
+_MockMediaAdapter _registerMediaMock() {
+  final media = _MockMediaAdapter();
+  when(() => media.deleteFile(any())).thenAnswer((_) async {});
+  appBoxKitLocator
+      .registerSingleton<ShowcaseNotesMediaAdapterService>(media);
+  addTearDown(() =>
+      appBoxKitLocator.unregister<ShowcaseNotesMediaAdapterService>());
+  return media;
+}
 
 /// Smoke tests for the Notes data slice over the REAL shipped fixtures —
 /// the same JSON the app seeds from, loaded off disk. One initialize for the
@@ -34,13 +58,12 @@ void main() {
   late String evanId;
 
   setUpAll(() async {
-    // AppBoxKitAction managers resolve these lazily on first execute().
+    registerFallbackValue(_attachment('fallback'));
+    // AppBoxKitAction managers resolve these lazily on first execute() — the
+    // kit's own setup registers Talker + the stacked UI service bases.
+    setupAppBoxKitUiServices();
     appBoxKitLocator
-      ..registerLazySingleton(() => Talker())
       ..registerLazySingleton(() => AppBoxKitErrorService())
-      ..registerLazySingleton(() => DialogService())
-      ..registerLazySingleton(() => BottomSheetService())
-      ..registerLazySingleton(() => SnackbarService())
       // Fake: the real service's CNToast path needs a mounted navigator
       // context, which a data-layer suite doesn't have. Recording double from
       // package:appbox_kit_ui_library/appbox_kit_testing.dart.
@@ -299,5 +322,120 @@ void main() {
 
     // Leave the store as found for order-independence.
     await notes.deletePermanently(pinned);
+  });
+
+  test(
+      'search-and-attachments.media-attachments.attach-a-photo-to-a-note — removeAttachment unlinks the row first, then deletes the file',
+      () async {
+    // given — a note carrying one photo, and a media mock that inspects the
+    // store at the moment its delete runs
+    final media = _registerMediaMock();
+    final idService = appBoxKitLocator<AppBoxKitIdService>();
+    final folderId = idService.canonicalId(kShowcaseNoteFoldersTable, 'folder-notes');
+    final created = await notes.createNote(evanId, folderId);
+    final withPhoto = await notes.addAttachment(created, _attachment('p1'));
+    when(() => media.deleteFile(any())).thenAnswer((_) async {
+      final current = await notes.note$(withPhoto.id).first;
+      expect(current!.attachments, isEmpty,
+          reason: 'the reference is gone before the file delete runs');
+    });
+
+    // when
+    final updated = await notes.removeAttachment(withPhoto, withPhoto.attachments.single);
+
+    // then
+    expect(updated.attachments, isEmpty);
+    verify(() => media.deleteFile(any())).called(1);
+
+    // Leave the store as found.
+    await notes.deletePermanently(updated);
+  });
+
+  test(
+      'notes.note-crud.delete-a-note-forever — purging a note deletes its attachment files',
+      () async {
+    // given
+    final media = _registerMediaMock();
+    final idService = appBoxKitLocator<AppBoxKitIdService>();
+    final folderId = idService.canonicalId(kShowcaseNoteFoldersTable, 'folder-notes');
+    final created = await notes.createNote(evanId, folderId);
+    final withMedia = await notes.addAttachment(created, _attachment('p1'));
+
+    // when
+    await notes.deletePermanently(withMedia);
+
+    // then — the row is gone AND its binary cleanup ran (no orphans)
+    final live = await notes.notesIn$(evanId).first;
+    expect(live.map((n) => n.id), isNot(contains(created.id)));
+    verify(() => media.deleteFile(any())).called(1);
+  });
+
+  test(
+      'notes.trash-and-restore.trash-a-note — emptying the trash deletes every trashed note\'s files',
+      () async {
+    // given — a trashed note carrying a photo
+    final media = _registerMediaMock();
+    final idService = appBoxKitLocator<AppBoxKitIdService>();
+    final folderId = idService.canonicalId(kShowcaseNoteFoldersTable, 'folder-notes');
+    final created = await notes.createNote(evanId, folderId);
+    final withPhoto = await notes.addAttachment(created, _attachment('p1'));
+    await notes.moveToTrash(withPhoto);
+
+    // when
+    await notes.emptyTrash(evanId);
+
+    // then
+    expect(await notes.trash$(evanId).first, isEmpty);
+    verify(() => media.deleteFile(any())).called(1);
+    // NB: this empties the seeded 'Old draft' too — it relies on declaration
+    // order (the trash$ seed test runs earlier in this file).
+  });
+
+  test(
+      'search-and-attachments.media-attachments.attach-a-photo-to-a-note — a cancelled picker leaves the note untouched (no write, no attach)',
+      () async {
+    // given — the user backs out of the picker
+    final media = _registerMediaMock();
+    when(() => media.pickPhoto(fromCamera: any(named: 'fromCamera')))
+        .thenAnswer((_) async => null);
+    final idService = appBoxKitLocator<AppBoxKitIdService>();
+    final folderId = idService.canonicalId(kShowcaseNoteFoldersTable, 'folder-notes');
+    final created = await notes.createNote(evanId, folderId);
+
+    // when
+    final result = await notes.addPhoto(created, fromCamera: false);
+
+    // then — identical() proves no repository write happened
+    expect(identical(result, created), isTrue);
+
+    await notes.deletePermanently(created);
+  });
+
+  test(
+      'search-and-attachments.media-attachments.attach-an-audio-recording-to-a-note — a stopped recording lands on the note through the facade',
+      () async {
+    // given
+    final media = _registerMediaMock();
+    final memo = ShowcaseNoteAttachmentModel(
+      id: 'v1',
+      kind: ShowcaseNoteAttachmentKind.audio,
+      fileName: 'v1.m4a',
+      durationMs: 7000,
+      createdAt: DateTime.utc(2026, 1, 1),
+    );
+    when(() => media.stopRecording()).thenAnswer((_) async => memo);
+    final idService = appBoxKitLocator<AppBoxKitIdService>();
+    final folderId = idService.canonicalId(kShowcaseNoteFoldersTable, 'folder-notes');
+    final created = await notes.createNote(evanId, folderId);
+
+    // when
+    final updated = await notes.addVoiceNote(created);
+
+    // then
+    expect(updated.attachments.single.id, 'v1');
+    expect(updated.attachments.single.kind, ShowcaseNoteAttachmentKind.audio);
+    expect(updated.attachments.single.durationMs, 7000);
+
+    await notes.deletePermanently(updated);
   });
 }

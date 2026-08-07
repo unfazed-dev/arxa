@@ -1,4 +1,4 @@
-import 'package:stacked/stacked.dart';
+import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 
 /// Search-filter state for the demo surface. Logic-only: holds primitives only
 /// (no Flutter value types) so the viewmodel stays free of `package:flutter/*`

@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:appbox_kit_media/appbox_kit_media.dart'
+    show AppBoxKitPlaybackProgress;
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
+import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/models.dart';
+import 'package:appbox_kit_showcase_app/ui/common/ui_helpers.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_note_editor/showcase_note_editor_viewmodel.dart';
 
 /// One audio attachment row: play/pause, live progress bar, duration label.
@@ -8,18 +12,9 @@ class ShowcaseNoteAudioRowWidget extends StatelessWidget {
     super.key,
     required this.viewModel,
     required this.attachment,
-    required this.onRemoveAttachment,
-    required this.formatDuration,
   });
   final ShowcaseNoteEditorViewModel viewModel;
   final ShowcaseNoteAttachmentModel attachment;
-
-  /// Long-press handler — the view owns the remove-confirmation dialog
-  /// plumbing.
-  final Future<void> Function(ShowcaseNoteAttachmentModel attachment) onRemoveAttachment;
-
-  /// Duration label formatter — the view owns the formatting helper.
-  final String Function(Duration duration) formatDuration;
 
   static Widget _progressBar(Duration progress, Duration? progressTotal) {
     if (progressTotal == null || progressTotal.inMilliseconds == 0) {
@@ -46,7 +41,7 @@ class ShowcaseNoteAudioRowWidget extends StatelessWidget {
       initialData: false,
       builder: (context, playing) {
         return GestureDetector(
-          onLongPress: () => onRemoveAttachment(attachment),
+          onLongPress: () => viewModel.confirmRemoveAttachment(attachment),
           child: AppBoxKitGlassCard(
             padding: const EdgeInsets.symmetric(
                 horizontal: abxSize12, vertical: abxSize8),
@@ -63,7 +58,7 @@ class ShowcaseNoteAudioRowWidget extends StatelessWidget {
                 Expanded(
                   child: !playing
                       ? _progressBar(Duration.zero, total)
-                      : AppBoxKitStreamBuilder<NotePlaybackProgress>(
+                      : AppBoxKitStreamBuilder<AppBoxKitPlaybackProgress>(
                           stream: viewModel.playbackProgress$,
                           initialData: const (
                             position: Duration.zero,
@@ -74,7 +69,7 @@ class ShowcaseNoteAudioRowWidget extends StatelessWidget {
                         ),
                 ),
                 appBoxKitHorizontalSpaceSmall,
-                Text(total == null ? '--:--' : formatDuration(total)),
+                Text(total == null ? '--:--' : showcaseFormatDuration(total)),
               ],
             ),
           ),

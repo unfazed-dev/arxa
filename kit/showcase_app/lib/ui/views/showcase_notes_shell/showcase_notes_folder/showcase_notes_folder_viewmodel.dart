@@ -1,17 +1,7 @@
-import 'package:rxdart/rxdart.dart';
-import 'package:stacked/stacked.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 
-import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/showcase_note_model.dart';
-import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/showcase_note_folder_model.dart';
+import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/models.dart';
 import 'package:appbox_kit_showcase_app/services/showcase_notes_services/facades/showcase_notes_facade_service.dart';
-
-// The view knows its viewmodel ONLY — every type a view needs to name (the
-// stream payloads) is re-exported here so view files never import services,
-// repositories, or data/model packages directly.
-export 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/showcase_note_model.dart';
-export 'package:appbox_kit_showcase_app/services/showcase_notes_services/facades/showcase_notes_facade_service.dart'
-    show ShowcaseNoteGroup;
 
 /// The notes-list screen viewmodel — streams-only (house convention): all
 /// state is exposed as streams and the views bind them with [AppBoxKitStreamBuilder];
@@ -28,7 +18,7 @@ export 'package:appbox_kit_showcase_app/services/showcase_notes_services/facades
 /// screen gates auth, so by the time this viewmodel exists a session is
 /// expected to be live). The one VM-owned UI state, [query$], is a seeded
 /// [BehaviorSubject].
-class ShowcaseNotesFolderViewModel extends BaseViewModel {
+class ShowcaseNotesFolderViewModel extends AppBoxKitViewModel {
   ShowcaseNotesFolderViewModel({required this.folderKey});
 
   final String folderKey;
@@ -114,6 +104,34 @@ class ShowcaseNotesFolderViewModel extends BaseViewModel {
     final owner = _service.currentSession?.user.id;
     if (owner != null) await _service.emptyTrash(owner);
   }
+
+  // ── Commands ─────────────────────────────────────────
+  // Commands decide when — and whether — Actions run.
+
+  /// Asks first (the hub's confirm gate); on confirm Recently Deleted is purged.
+  late final _confirmEmptyTrash = abxActionHub.on<Null, void>(
+    'emptyTrash',
+    (_) => emptyTrash(),
+    confirmTitle: 'Empty Recently Deleted',
+    confirmMessage: 'Notes will be permanently deleted. This cannot be undone.',
+    confirmActionLabel: 'Delete All',
+    confirmDestructive: true,
+  );
+
+  Future<void> confirmEmptyTrash() => _confirmEmptyTrash.send(null);
+
+  /// Asks first (the hub's confirm gate); on confirm the note is permanently deleted.
+  late final _confirmDeletePermanently = abxActionHub.on<ShowcaseNoteModel, void>(
+    'deletePermanently',
+    (note) => deletePermanently(note),
+    confirmTitle: 'Delete Note',
+    confirmMessage: 'This note will be permanently deleted.',
+    confirmActionLabel: 'Delete',
+    confirmDestructive: true,
+  );
+
+  Future<void> confirmDeletePermanently(ShowcaseNoteModel note) =>
+      _confirmDeletePermanently.send(note);
 
   /// Creates a note and returns its id for the caller to navigate to, or
   /// `null` if there's no owner / no folder to place it in. From 'all' or

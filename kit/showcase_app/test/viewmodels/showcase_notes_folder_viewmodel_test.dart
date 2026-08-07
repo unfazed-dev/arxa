@@ -1,11 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:rxdart/rxdart.dart';
 import 'package:appbox_kit_data/appbox_kit_data.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart'
-    show AppBoxKitErrorService;
+    show AppBoxKitErrorService, AppBoxKitNotificationService, BehaviorSubject;
+import 'package:appbox_kit_ui_library/appbox_kit_testing.dart';
 import 'package:appbox_kit_showcase_app/app/app.locator.dart';
-import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/showcase_note_folder_model.dart';
+import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/models.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_folder/showcase_notes_folder_viewmodel.dart';
 
 import '../helpers/test_helpers.dart';
@@ -46,7 +46,6 @@ ShowcaseNoteModel _note(
     );
 
 void main() {
-  // registerServices()'s bottom-sheet stub matches on custom types.
   // mocktail any() on model-typed port parameters.
   registerFallbackValue(_note('fallback', ''));
 
@@ -268,7 +267,35 @@ void main() {
       // when
       await vm.deletePermanently(doomed);
 
-      // then — the confirmation dialog lives in the view; the VM delegates.
+      // then — the confirmation lives in confirmDeletePermanently; the VM
+      // delegates.
+      verify(() => facade.deletePermanently(doomed)).called(1);
+    });
+
+    test(
+        'notes.note-crud.delete-a-note-forever — confirmDeletePermanently deletes only when the user confirms',
+        () async {
+      // given
+      final doomed = _note('n1', 'Old draft', deleted: true);
+      when(() => facade.deletePermanently(any())).thenAnswer((_) async {});
+      // The kit notification fake (registered by
+      // registerAppBoxKitActionServices) scripts the confirm.
+      final notifications = locator<AppBoxKitNotificationService>()
+          as FakeAppBoxKitNotificationService;
+      final vm = ShowcaseNotesFolderViewModel(folderKey: 'trash');
+      addTearDown(vm.dispose);
+
+      // when — the user cancels (default confirmResult is false)
+      await vm.confirmDeletePermanently(doomed);
+
+      // then — the facade never hears about it
+      verifyNever(() => facade.deletePermanently(any()));
+
+      // when — the user confirms
+      notifications.confirmResult = true;
+      await vm.confirmDeletePermanently(doomed);
+
+      // then
       verify(() => facade.deletePermanently(doomed)).called(1);
     });
 
@@ -296,6 +323,29 @@ void main() {
 
       // then — no owner, no purge.
       verifyNever(() => facade.emptyTrash(any()));
+    });
+
+    test('confirmEmptyTrash purges only when the user confirms', () async {
+      // given
+      when(() => facade.currentSession).thenReturn(_evan);
+      when(() => facade.emptyTrash(any())).thenAnswer((_) async {});
+      final notifications = locator<AppBoxKitNotificationService>()
+          as FakeAppBoxKitNotificationService;
+      final vm = ShowcaseNotesFolderViewModel(folderKey: 'trash');
+      addTearDown(vm.dispose);
+
+      // when — the user cancels (default confirmResult is false)
+      await vm.confirmEmptyTrash();
+
+      // then — no purge
+      verifyNever(() => facade.emptyTrash(any()));
+
+      // when — the user confirms
+      notifications.confirmResult = true;
+      await vm.confirmEmptyTrash();
+
+      // then
+      verify(() => facade.emptyTrash('user-1')).called(1);
     });
 
     test(

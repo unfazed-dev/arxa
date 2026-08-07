@@ -1,23 +1,13 @@
-import 'dart:ui' show Color;
-
 import 'package:mocktail/mocktail.dart';
-import 'package:rxdart/rxdart.dart';
-import 'package:talker_flutter/talker_flutter.dart';
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart'
-    show AppBoxKitErrorService, AppBoxKitNotificationService;
+import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_testing.dart';
 import 'package:appbox_kit_showcase_app/app/app.locator.dart';
-import 'package:stacked_services/stacked_services.dart';
 import 'package:appbox_kit_showcase_app/services/showcase_notes_services/facades/showcase_notes_facade_service.dart';
 import 'package:appbox_kit_showcase_app/services/showcase_notes_services/adapters/showcase_notes_media_adapter_service.dart';
 // @stacked-import
 
 /// mocktail mocks — no codegen (behavior-TDD canon: mocktail only).
 class MockRouterService extends Mock implements RouterService {}
-
-class MockBottomSheetService extends Mock implements BottomSheetService {}
-
-class MockDialogService extends Mock implements DialogService {}
 
 class MockShowcaseNotesFacadeService extends Mock
     implements ShowcaseNotesFacadeService {}
@@ -26,26 +16,24 @@ class MockShowcaseNotesMediaAdapterService extends Mock
     implements ShowcaseNotesMediaAdapterService {}
 
 void registerServices() {
-  // Fallbacks for the `any(named:)` matchers in the bottom-sheet stub below —
-  // registered once here so consuming files don't repeat them per file.
-  registerFallbackValue(const Color(0x00000000));
-  registerFallbackValue(Duration.zero);
   getAndRegisterRouterService();
-  getAndRegisterBottomSheetService();
-  getAndRegisterDialogService();
   getAndRegisterShowcaseNotesFacadeService();
   getAndRegisterShowcaseNotesMediaAdapterService();
 // @stacked-mock-register
 }
 
 /// Registers the services an `AppBoxKitAction` chain lazily resolves from the
-/// locator — real [Talker], real [AppBoxKitErrorService], and the kit's
-/// scriptable [FakeAppBoxKitNotificationService] — so viewmodel tests can
-/// execute REAL action chains (error snackbars land on the fake, where the
-/// test can assert them) instead of mocking the chain away.
+/// locator — the kit's UI services (Talker backs AppBoxKitErrorService
+/// logging), the real [AppBoxKitErrorService], and the kit's scriptable
+/// [FakeAppBoxKitNotificationService] — so viewmodel tests can execute REAL
+/// action chains (error snackbars land on the fake, where the test can assert
+/// them) instead of mocking the chain away. Confirm/prompt paths set
+/// `confirmResult`/`promptResult` on the fake.
 void registerAppBoxKitActionServices() {
-  _removeRegistrationIfExists<Talker>();
-  locator.registerLazySingleton<Talker>(() => Talker());
+  // Talker isn't re-exported by the kit barrel; the kit's own setup
+  // registers it (plus the stacked Dialog/Snackbar/BottomSheet bases —
+  // SnackbarService doubles as the idempotency check).
+  if (!locator.isRegistered<SnackbarService>()) setupAppBoxKitUiServices();
   _removeRegistrationIfExists<AppBoxKitErrorService>();
   locator.registerLazySingleton<AppBoxKitErrorService>(
       () => AppBoxKitErrorService());
@@ -70,55 +58,6 @@ MockRouterService getAndRegisterRouterService() {
   _removeRegistrationIfExists<RouterService>();
   final service = MockRouterService();
   locator.registerSingleton<RouterService>(service);
-  return service;
-}
-
-MockBottomSheetService getAndRegisterBottomSheetService<T>({
-  SheetResponse<T>? showCustomSheetResponse,
-}) {
-  _removeRegistrationIfExists<BottomSheetService>();
-  final service = MockBottomSheetService();
-
-  when(
-    () => service.showCustomSheet<T, T>(
-      enableDrag: any(named: 'enableDrag'),
-      enterBottomSheetDuration: any(named: 'enterBottomSheetDuration'),
-      exitBottomSheetDuration: any(named: 'exitBottomSheetDuration'),
-      ignoreSafeArea: any(named: 'ignoreSafeArea'),
-      isScrollControlled: any(named: 'isScrollControlled'),
-      barrierDismissible: any(named: 'barrierDismissible'),
-      additionalButtonTitle: any(named: 'additionalButtonTitle'),
-      variant: any(named: 'variant'),
-      title: any(named: 'title'),
-      hasImage: any(named: 'hasImage'),
-      imageUrl: any(named: 'imageUrl'),
-      showIconInMainButton: any(named: 'showIconInMainButton'),
-      mainButtonTitle: any(named: 'mainButtonTitle'),
-      showIconInSecondaryButton: any(named: 'showIconInSecondaryButton'),
-      secondaryButtonTitle: any(named: 'secondaryButtonTitle'),
-      showIconInAdditionalButton: any(named: 'showIconInAdditionalButton'),
-      takesInput: any(named: 'takesInput'),
-      barrierColor: any(named: 'barrierColor'),
-      barrierLabel: any(named: 'barrierLabel'),
-      // Kept so calls still passing the legacy param match the stub; drop
-      // when stacked_services removes it.
-      // ignore: deprecated_member_use
-      customData: any(named: 'customData'),
-      data: any(named: 'data'),
-      description: any(named: 'description'),
-    ),
-  ).thenAnswer(
-    (_) => Future.value(showCustomSheetResponse ?? SheetResponse<T>()),
-  );
-
-  locator.registerSingleton<BottomSheetService>(service);
-  return service;
-}
-
-MockDialogService getAndRegisterDialogService() {
-  _removeRegistrationIfExists<DialogService>();
-  final service = MockDialogService();
-  locator.registerSingleton<DialogService>(service);
   return service;
 }
 

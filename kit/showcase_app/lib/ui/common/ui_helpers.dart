@@ -88,3 +88,12 @@ double getResponsiveFontSize(
 
   return responsiveSize;
 }
+
+/// A duration as `mm:ss` — the shared formatter for the notes audio rows
+/// (recording timer, attachment length). Lives here, not on a viewmodel:
+/// pure presentation formatting with no view-session state.
+String showcaseFormatDuration(Duration duration) {
+  final minutes = duration.inMinutes.remainder(60).toString().padLeft(2, '0');
+  final seconds = duration.inSeconds.remainder(60).toString().padLeft(2, '0');
+  return '$minutes:$seconds';
+}

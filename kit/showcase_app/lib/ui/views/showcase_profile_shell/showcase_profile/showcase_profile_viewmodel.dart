@@ -1,4 +1,4 @@
-import 'package:stacked/stacked.dart';
+import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 
 class ShowcaseProfileViewModel extends BaseViewModel {
   static const railLabels = ['Account', 'Privacy', 'Alerts'];

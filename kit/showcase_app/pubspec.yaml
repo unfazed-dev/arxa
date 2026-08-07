@@ -9,8 +9,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  stacked: ^3.5.0
-  stacked_services: ^1.6.0
+  # stacked / stacked_services / rxdart / talker_flutter come via the kit
+  # barrel (appbox_kit_ui_library re-exports them) — never declared here.
   # The kit under test — path deps to the sibling packages.
   appbox_kit_core:
     path: ../core
@@ -21,11 +21,6 @@ dependencies:
   # Device haptics — extracted from appbox_kit core (phase 2B).
   appbox_kit_haptics:
     path: ../haptics
-  # M3E text field (focus shape-morph) — the Material-tier auth field
-  # (Apple/desktop keep KitNativeTextField's native CNTextField capsule).
-  text_field_m3e:
-    path: ../ui_library/packages/text_field_m3e
-  rxdart: ^0.28.0
   uuid: ^4.5.3
   # Web / responsive-stub structure (from `stacked create --template=web`).
   url_strategy: ^0.3.0
@@ -79,9 +74,6 @@ dependencies:
     path: ../wifi
   # Attachment binaries live in the app documents dir (rows carry paths).
   path_provider: ^2.1.5
-  # app.dart registers Talker as a lazy singleton (KitAction/KitErrorService
-  # resolve it from the locator).
-  talker_flutter: ^5.1.17
 
 # Mirrors the root pubspec.yaml dependency_overrides (paths rebased ../).
 # Pub overrides do NOT propagate to a standalone package, so without these the

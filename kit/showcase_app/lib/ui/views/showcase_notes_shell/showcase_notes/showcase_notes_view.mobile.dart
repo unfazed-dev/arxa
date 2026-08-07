@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:stacked/stacked.dart';
+import 'package:appbox_kit_data/appbox_kit_data.dart' show AppBoxKitAuthSession;
 import 'package:appbox_kit_motion/appbox_kit_motion.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
+import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/models.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_auth/showcase_notes_auth_view.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_create_account/showcase_notes_create_account_view.dart';
-import 'package:stacked_services/stacked_services.dart';
-import 'package:appbox_kit_showcase_app/app/app.dialogs.dart';
 import 'package:appbox_kit_showcase_app/ui/widgets/common/showcase_tabs_shared/widgets.dart';
 import 'package:appbox_kit_showcase_app/ui/widgets/showcase_notes_widgets/widgets.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes/showcase_notes_viewmodel.dart';
@@ -53,7 +52,7 @@ class ShowcaseNotesViewMobile extends ViewModelWidget<ShowcaseNotesViewModel> {
             actions: [
               AppBoxKitNativeIconButton(
                 glyph: AppBoxKitGlyphs.newFolder,
-                onPressed: () => _showNewFolderDialog(context, viewModel),
+                onPressed: viewModel.createFolderWithPrompt,
               ),
               AppBoxKitNativePopupMenu(
                 glyph: AppBoxKitGlyphs.more,
@@ -176,7 +175,7 @@ class ShowcaseNotesViewMobile extends ViewModelWidget<ShowcaseNotesViewModel> {
                 folder: folder,
                 count: overview.liveCountByFolder[folder.id] ?? 0,
                 viewModel: viewModel,
-                onRename: () => _showRenameDialog(context, viewModel, folder),
+                onRename: () => viewModel.renameFolderWithPrompt(folder),
               ),
           ],
         );
@@ -276,26 +275,3 @@ class ShowcaseNotesViewMobile extends ViewModelWidget<ShowcaseNotesViewModel> {
   }
 }
 
-Future<void> _showNewFolderDialog(
-    BuildContext context, ShowcaseNotesViewModel viewModel) async {
-  final res = await appBoxKitLocator<DialogService>().showCustomDialog(
-    variant: DialogType.showcaseTextInput,
-    title: 'New Folder',
-    data: (initial: null, hint: 'Name'),
-  );
-  if (res?.confirmed == true) {
-    await viewModel.createFolder(res!.data as String);
-  }
-}
-
-Future<void> _showRenameDialog(BuildContext context,
-    ShowcaseNotesViewModel viewModel, ShowcaseNoteFolderModel folder) async {
-  final res = await appBoxKitLocator<DialogService>().showCustomDialog(
-    variant: DialogType.showcaseTextInput,
-    title: 'Rename Folder',
-    data: (initial: folder.name, hint: null),
-  );
-  if (res?.confirmed == true) {
-    await viewModel.renameFolder(folder, res!.data as String);
-  }
-}

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:stacked/stacked.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
+import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/models.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_folder/showcase_notes_folder_viewmodel.dart';
 
 /// One note row: swipe actions differ by scope (trash vs. live folder), tap

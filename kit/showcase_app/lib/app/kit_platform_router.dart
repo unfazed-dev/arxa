@@ -1,5 +1,5 @@
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart' show AppBoxKitPlatformPagesMixin;
-import 'package:stacked_services/stacked_services.dart' show StackedService;
+import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart'
+    show AppBoxKitPlatformPagesMixin, StackedService;
 
 import 'package:appbox_kit_showcase_app/app/app.router.dart' show StackedRouterWeb;
 

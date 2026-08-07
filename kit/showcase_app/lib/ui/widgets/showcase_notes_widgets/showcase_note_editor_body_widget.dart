@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
+import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/models.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_note_editor/showcase_note_editor_viewmodel.dart';
 import 'package:appbox_kit_showcase_app/ui/widgets/showcase_notes_widgets/widgets.dart';
 
@@ -18,18 +19,9 @@ class ShowcaseNoteEditorBodyWidget extends StatefulWidget {
     super.key,
     required this.viewModel,
     required this.note,
-    required this.onRemoveAttachment,
-    required this.formatDuration,
   });
   final ShowcaseNoteEditorViewModel viewModel;
   final ShowcaseNoteModel note;
-
-  /// Long-press handler for an attachment — the view owns the
-  /// remove-confirmation dialog plumbing.
-  final Future<void> Function(ShowcaseNoteAttachmentModel attachment) onRemoveAttachment;
-
-  /// Duration label formatter — the view owns the formatting helper.
-  final String Function(Duration duration) formatDuration;
 
   @override
   State<ShowcaseNoteEditorBodyWidget> createState() => _ShowcaseNoteEditorBodyState();
@@ -75,7 +67,6 @@ class _ShowcaseNoteEditorBodyState extends State<ShowcaseNoteEditorBodyWidget> {
             ShowcaseNotePhotoStripWidget(
               viewModel: widget.viewModel,
               photos: photos,
-              onRemoveAttachment: widget.onRemoveAttachment,
             ),
             appBoxKitVerticalSpaceSmall,
           ],
@@ -83,8 +74,6 @@ class _ShowcaseNoteEditorBodyState extends State<ShowcaseNoteEditorBodyWidget> {
             ShowcaseNoteAudioRowWidget(
               viewModel: widget.viewModel,
               attachment: a,
-              onRemoveAttachment: widget.onRemoveAttachment,
-              formatDuration: widget.formatDuration,
             ),
             appBoxKitVerticalSpaceSmall,
           ],

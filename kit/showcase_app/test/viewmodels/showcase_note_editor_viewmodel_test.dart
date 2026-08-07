@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:rxdart/rxdart.dart';
 import 'package:appbox_kit_media/appbox_kit_media.dart'
-    show AppBoxKitMediaProcessingState, AppBoxKitPlaybackState;
+    show AppBoxKitPlaybackProgress;
+import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
+import 'package:appbox_kit_ui_library/appbox_kit_testing.dart';
 import 'package:appbox_kit_showcase_app/app/app.locator.dart';
+import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/models.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_note_editor/showcase_note_editor_viewmodel.dart';
 
 import '../helpers/test_helpers.dart';
@@ -12,9 +14,6 @@ import '../helpers/test_helpers.dart';
 class _FakeNote extends Fake implements ShowcaseNoteModel {}
 
 class _FakeAttachment extends Fake implements ShowcaseNoteAttachmentModel {}
-
-// The harness's bottom-sheet stub matches on `barrierColor` (Color) — mocktail
-// needs a fallback registered before registerServices() runs.
 
 void main() {
   ShowcaseNoteModel note({
@@ -47,7 +46,6 @@ void main() {
 
   group('ShowcaseNoteEditorViewModel Tests -', () {
     late MockShowcaseNotesFacadeService notes;
-    late MockShowcaseNotesMediaAdapterService media;
 
     setUpAll(() {
       registerFallbackValue(_FakeNote());
@@ -60,22 +58,21 @@ void main() {
       // The mocks register under their real service types; re-running the
       // factories captures typed handles (each re-registers a fresh mock).
       notes = getAndRegisterShowcaseNotesFacadeService();
-      media = getAndRegisterShowcaseNotesMediaAdapterService();
-      ShowcaseNoteEditorViewModel.pendingAction = null;
     });
 
     tearDown(() {
-      ShowcaseNoteEditorViewModel.pendingAction = null;
       locator.reset();
     });
 
     /// Stubs `notes.note$` with [subject] (seed it before constructing the VM)
     /// and returns the VM with its side-effect watch flushed.
     Future<ShowcaseNoteEditorViewModel> openEditor(
-      BehaviorSubject<ShowcaseNoteModel?> subject,
-    ) async {
+      BehaviorSubject<ShowcaseNoteModel?> subject, {
+      String? quickAction,
+    }) async {
       when(() => notes.note$('n1')).thenAnswer((_) => subject.stream);
-      final vm = ShowcaseNoteEditorViewModel(noteId: 'n1');
+      final vm =
+          ShowcaseNoteEditorViewModel(noteId: 'n1', quickAction: quickAction);
       addTearDown(vm.dispose);
       await pumpEventQueue(); // deliver the seeded note to the watch callback
       return vm;
@@ -161,12 +158,11 @@ void main() {
     test(
         'search-and-attachments.media-attachments.attach-a-photo-to-a-note — a picked photo lands on the note as a photo attachment',
         () async {
-      // given
+      // given — the facade owns pick→attach; the mock replays its outcome
       final photo = attachment(id: 'p1');
       final subject = seededSubject<ShowcaseNoteModel?>(note());
-      when(() => media.pickPhoto(fromCamera: any(named: 'fromCamera')))
-          .thenAnswer((_) async => photo);
-      when(() => notes.addAttachment(any(), any())).thenAnswer((_) async {
+      when(() => notes.addPhoto(any(), fromCamera: any(named: 'fromCamera')))
+          .thenAnswer((_) async {
         final withPhoto = note(attachments: [photo]);
         subject.add(withPhoto);
         return withPhoto;
@@ -190,17 +186,15 @@ void main() {
     });
 
     test(
-        'search-and-attachments.media-attachments.attach-a-photo-to-a-note — the pending camera intent auto-captures once on first load and consumes the slot',
+        'search-and-attachments.media-attachments.attach-a-photo-to-a-note — the route\'s camera quick action auto-captures once on first load and never re-runs',
         () async {
-      // given — the Folders FAB queued "New Photo" before navigating here
-      ShowcaseNoteEditorViewModel.pendingAction = 'camera';
+      // given — the route carried `?quickAction=camera` (Folders "New Photo")
       final photo = attachment(id: 'p1');
       final subject = seededSubject<ShowcaseNoteModel?>(note());
-      when(() => media.isCameraAvailable).thenReturn(true);
-      when(() => media.pickPhoto(fromCamera: any(named: 'fromCamera')))
-          .thenAnswer((_) async => photo);
+      when(() => notes.isCameraAvailable).thenReturn(true);
       final added = <ShowcaseNoteModel>[];
-      when(() => notes.addAttachment(any(), any())).thenAnswer((invocation) async {
+      when(() => notes.addPhoto(any(), fromCamera: any(named: 'fromCamera')))
+          .thenAnswer((invocation) async {
         added.add(invocation.positionalArguments[0] as ShowcaseNoteModel);
         final withPhoto = note(attachments: [photo]);
         subject.add(withPhoto);
@@ -212,11 +206,10 @@ void main() {
       );
 
       // when — the editor opens (the intent fires off the first note\$ emit)
-      await openEditor(subject);
+      await openEditor(subject, quickAction: 'camera');
 
-      // then — the photo attached, and the slot was consumed
+      // then — the photo attached exactly once
       await captured.timeout(const Duration(milliseconds: 500));
-      expect(ShowcaseNoteEditorViewModel.pendingAction, isNull);
 
       // and — a later note\$ emit does not re-run the intent
       subject.add(note(attachments: [photo]));
@@ -229,7 +222,7 @@ void main() {
         () async {
       // given
       final subject = seededSubject<ShowcaseNoteModel?>(note());
-      when(() => media.startRecording()).thenAnswer((_) async => false);
+      when(() => notes.startRecording()).thenAnswer((_) async => false);
       final vm = await openEditor(subject);
 
       // when / then — the view shows the denial; nothing else happens
@@ -246,8 +239,7 @@ void main() {
         durationMs: 7000,
       );
       final subject = seededSubject<ShowcaseNoteModel?>(note());
-      when(() => media.stopRecording()).thenAnswer((_) async => memo);
-      when(() => notes.addAttachment(any(), any())).thenAnswer((_) async {
+      when(() => notes.addVoiceNote(any())).thenAnswer((_) async {
         final withMemo = note(attachments: [memo]);
         subject.add(withMemo);
         return withMemo;
@@ -272,52 +264,74 @@ void main() {
     });
 
     test(
-        'search-and-attachments.media-attachments.play-back-an-audio-attachment — isAttachmentPlaying\$ turns true only for the loaded, playing attachment',
+        'search-and-attachments.media-attachments.play-back-an-audio-attachment — isAttachmentPlaying\$ forwards the facade\'s per-attachment playing stream',
         () async {
       // given
       final memo = attachment(id: 'v1', kind: ShowcaseNoteAttachmentKind.audio);
-      final playingId = seededSubject<String?>(null);
-      final state = seededSubject<AppBoxKitPlaybackState>(AppBoxKitPlaybackState.idle);
-      when(() => media.playingAttachmentId$).thenAnswer((_) => playingId);
-      when(() => media.playerState$).thenAnswer((_) => state);
-      when(() => media.togglePlayback(any())).thenAnswer((_) async {
-        state.add(const AppBoxKitPlaybackState(
-          playing: true,
-          processing: AppBoxKitMediaProcessingState.ready,
-        ));
-        playingId.add('v1');
+      final playing = seededSubject<bool>(false);
+      when(() => notes.isAttachmentPlaying$('v1'))
+          .thenAnswer((_) => playing.stream);
+      when(() => notes.togglePlayback(any())).thenAnswer((_) async {
+        playing.add(true);
       });
-      final subject = seededSubject<ShowcaseNoteModel?>(note(attachments: [memo]));
+      final subject =
+          seededSubject<ShowcaseNoteModel?>(note(attachments: [memo]));
       final vm = await openEditor(subject);
-      // Full sequence including the seed: idle (nothing loaded), still false
-      // once playing but not yet loaded, true only when BOTH hold.
-      final playing = expectLater(
+      final sequence = expectLater(
         vm.isAttachmentPlaying$('v1'),
-        emitsInOrder([isFalse, isFalse, isTrue]),
+        emitsInOrder([isFalse, isTrue]),
       );
 
       // when
       await vm.togglePlayback(memo);
 
       // then
-      await playing.timeout(const Duration(milliseconds: 500));
+      await sequence.timeout(const Duration(milliseconds: 500));
     });
 
     test(
-        'search-and-attachments.media-attachments.play-back-an-audio-attachment — playbackProgress\$ pairs the live position with the track length',
+        'search-and-attachments.media-attachments.attach-a-photo-to-a-note — removing an attachment asks first: only a confirmed dialog calls the facade',
         () async {
       // given
-      final position = seededSubject<Duration>(Duration.zero);
-      final duration = seededSubject<Duration?>(null);
-      when(() => media.position$).thenAnswer((_) => position);
-      when(() => media.duration$).thenAnswer((_) => duration);
+      final photo = attachment(id: 'p1');
+      final subject =
+          seededSubject<ShowcaseNoteModel?>(note(attachments: [photo]));
+      // The kit notification fake (registered by registerAppBoxKitActionServices)
+      // scripts the confirm: cancel first, accept second.
+      final notifications = locator<AppBoxKitNotificationService>()
+          as FakeAppBoxKitNotificationService;
+      when(() => notes.removeAttachment(any(), any()))
+          .thenAnswer((_) async => note());
+      final vm = await openEditor(subject);
+
+      // when — the user cancels the confirmation
+      await vm.confirmRemoveAttachment(photo);
+
+      // then — the facade never hears about it
+      verifyNever(() => notes.removeAttachment(any(), any()));
+
+      // when — the user confirms
+      notifications.confirmResult = true;
+      await vm.confirmRemoveAttachment(photo);
+
+      // then — one facade call carrying the note and the attachment (the
+      // facade owns the unlink-then-delete-file ordering; tested there)
+      verify(() => notes.removeAttachment(any(), photo)).called(1);
+    });
+
+    test(
+        'search-and-attachments.media-attachments.play-back-an-audio-attachment — playbackProgress\$ forwards the facade\'s position/length pairing',
+        () async {
+      // given
+      final progress = seededSubject<AppBoxKitPlaybackProgress>(
+          (position: Duration.zero, duration: null));
+      when(() => notes.playbackProgress$).thenAnswer((_) => progress.stream);
       final subject = seededSubject<ShowcaseNoteModel?>(note());
       final vm = await openEditor(subject);
-      final progress = expectLater(
+      final sequence = expectLater(
         vm.playbackProgress$,
         emitsInOrder([
           equals((position: Duration.zero, duration: null)),
-          equals((position: const Duration(seconds: 3), duration: null)),
           equals((
             position: const Duration(seconds: 3),
             duration: const Duration(seconds: 10),
@@ -325,12 +339,14 @@ void main() {
         ]),
       );
 
-      // when — the player reports a position tick, then the track length
-      position.add(const Duration(seconds: 3));
-      duration.add(const Duration(seconds: 10));
+      // when — the player reports a tick with the track length known
+      progress.add((
+        position: const Duration(seconds: 3),
+        duration: const Duration(seconds: 10),
+      ));
 
       // then
-      await progress.timeout(const Duration(milliseconds: 500));
+      await sequence.timeout(const Duration(milliseconds: 500));
     });
   });
 }

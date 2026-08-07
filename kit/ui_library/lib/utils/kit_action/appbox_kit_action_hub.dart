@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:appbox_kit_core/appbox_kit_locator.dart';
 import 'package:appbox_kit_core/services/error/appbox_kit_error_service.dart';
 import 'package:rxdart/rxdart.dart';
-import 'package:stacked_services/stacked_services.dart';
 
 import '../../../services/notifications/appbox_kit_notification_service.dart';
 import 'appbox_kit_action.dart';
@@ -213,6 +212,14 @@ class AppBoxKitActionHub {
   ///   (a timeout raises [TimeoutException] into the error path).
   /// - [loadingNotification]: shown at run start (the builder's
   ///   `withLoadingSnackbar`); error/success fire at their transitions.
+  /// - [confirmTitle] (+ [confirmMessage] / [confirmActionLabel] /
+  ///   [confirmDestructive]): confirmation gate — the run first awaits
+  ///   `AppBoxKitNotificationService.confirm`; a decline never executes the op
+  ///   (no busy state, no notifications) and the handle completes with
+  ///   [withValue] (`null` for void/nullable `R`).
+  ///   kimitail: static strings only — a payload-derived message (e.g.
+  ///   interpolating the entity name) stays a hand-written VM confirm until
+  ///   a second case justifies a function-valued variant.
   AppBoxKitActionCommand<P, R> on<P, R>(
     String name,
     FutureOr<R> Function(P payload) operation, {
@@ -236,6 +243,10 @@ class AppBoxKitActionHub {
     bool flushOnDispose = false,
     AppBoxKitRetryPolicy? retry,
     Duration? timeout,
+    String? confirmTitle,
+    String? confirmMessage,
+    String confirmActionLabel = 'OK',
+    bool confirmDestructive = false,
   }) {
     final command = AppBoxKitActionCommand<P, R>._(
       this,
@@ -268,6 +279,10 @@ class AppBoxKitActionHub {
         flushOnDispose: flushOnDispose,
         retry: retry,
         timeout: timeout,
+        confirmTitle: confirmTitle,
+        confirmMessage: confirmMessage,
+        confirmActionLabel: confirmActionLabel,
+        confirmDestructive: confirmDestructive,
       ),
     );
     _dispatchers.add(command);
@@ -417,6 +432,18 @@ class AppBoxKitActionHub {
   /// operation per (re)subscription, `Stream.timeout` applies per attempt,
   /// `Rx.retryWhen` re-subscribes with backoff.
   Future<dynamic> _run(_AppBoxKitCommandConfig config, Object? payload) async {
+    // Confirmation gate FIRST: a decline never reaches markBusy, so state$
+    // never flickers and no notification fires for an op that never ran.
+    if (config.confirmTitle != null) {
+      final confirmed =
+          await appBoxKitLocator<AppBoxKitNotificationService>().confirm(
+        title: config.confirmTitle!,
+        message: config.confirmMessage,
+        actionLabel: config.confirmActionLabel,
+        destructive: config.confirmDestructive,
+      );
+      if (!confirmed) return config.withValue;
+    }
     AppBoxKitActionStateManager.markBusy(config.key);
     if (config.loadingNotification != null) {
       _showNotification(
@@ -559,15 +586,14 @@ class AppBoxKitActionHub {
             duration: const Duration(seconds: 3),
           );
         case AppBoxKitNotificationType.dialog:
-          appBoxKitLocator<DialogService>().showDialog(
+          appBoxKitLocator<AppBoxKitNotificationService>().alert(
             title: title,
-            description: message,
-            buttonTitle: 'OK',
+            message: message,
           );
         case AppBoxKitNotificationType.bottomSheet:
-          appBoxKitLocator<BottomSheetService>().showBottomSheet(
+          appBoxKitLocator<AppBoxKitNotificationService>().notice(
             title: title,
-            description: message,
+            message: message,
           );
         case AppBoxKitNotificationType.none:
           break;
@@ -679,6 +705,10 @@ class _AppBoxKitCommandConfig {
   final bool flushOnDispose;
   final AppBoxKitRetryPolicy? retry;
   final Duration? timeout;
+  final String? confirmTitle;
+  final String? confirmMessage;
+  final String confirmActionLabel;
+  final bool confirmDestructive;
 
   _AppBoxKitCommandConfig({
     required this.key,
@@ -700,6 +730,10 @@ class _AppBoxKitCommandConfig {
     this.flushOnDispose = false,
     this.retry,
     this.timeout,
+    this.confirmTitle,
+    this.confirmMessage,
+    this.confirmActionLabel = 'OK',
+    this.confirmDestructive = false,
   });
 }
 

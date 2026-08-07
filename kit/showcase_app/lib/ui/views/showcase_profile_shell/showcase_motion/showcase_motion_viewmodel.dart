@@ -1,4 +1,4 @@
-import 'package:stacked/stacked.dart';
+import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 import 'package:appbox_kit_motion/appbox_kit_motion.dart';
 
 class ShowcaseMotionViewModel extends BaseViewModel {

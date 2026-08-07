@@ -227,5 +227,51 @@ void main() {
       expect(player.isPlaying, isFalse);
       expect(file.existsSync(), isFalse);
     });
+
+    test(
+        'search-and-attachments.media-attachments.play-back-an-audio-attachment — isAttachmentPlaying\$ is true only for the loaded, playing attachment',
+        () async {
+      // given
+      final states = <bool>[];
+      final sub = adapter.isAttachmentPlaying$('v1').listen(states.add);
+      addTearDown(sub.cancel);
+      await pumpEventQueue(); // seed: idle, nothing loaded
+
+      // when — playing with nothing loaded, then loaded AND playing
+      player.driveState(const AppBoxKitPlaybackState(
+        playing: true,
+        processing: AppBoxKitMediaProcessingState.ready,
+      ));
+      adapter.playingAttachmentId$.add('v1');
+      await pumpEventQueue();
+
+      // then — true only when both hold
+      expect(states, [false, false, true]);
+    });
+
+    test(
+        'search-and-attachments.media-attachments.play-back-an-audio-attachment — playbackProgress\$ pairs the live position with the track length',
+        () async {
+      // given
+      final progress = <AppBoxKitPlaybackProgress>[];
+      final sub = adapter.playbackProgress$.listen(progress.add);
+      addTearDown(sub.cancel);
+      await pumpEventQueue(); // seed: zero position, unknown length
+
+      // when — the player reports a position tick, then the track length
+      player.drivePosition(const Duration(seconds: 3));
+      player.driveDuration(const Duration(seconds: 10));
+      await pumpEventQueue();
+
+      // then
+      expect(progress, [
+        (position: Duration.zero, duration: null),
+        (position: const Duration(seconds: 3), duration: null),
+        (
+          position: const Duration(seconds: 3),
+          duration: const Duration(seconds: 10),
+        ),
+      ]);
+    });
   });
 }

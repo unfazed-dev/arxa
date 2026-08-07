@@ -13,6 +13,11 @@ import 'package:appbox_kit_ui_library/utils/kit_action/appbox_kit_snackbar_type.
 import '../../utils/appbox_kit_native_overlay.dart' show appBoxKitWithNativeChromeHidden;
 import 'package:appbox_kit_core/platform/appbox_kit_platform.dart' show AppBoxKitPlatform;
 
+import '../../widgets/appbox_kit_native_dialog.dart';
+import '../../widgets/appbox_kit_native_sheet.dart'
+    show appBoxKitShowNativeSheet;
+import 'appbox_kit_ask_surfaces.dart';
+
 /// Severity for [AppBoxKitNotificationService.show]. Drives the M3E-tier snackbar
 /// variant (Android / iOS action fallback) and the CNToast style preset (the
 /// iOS default tier).
@@ -109,6 +114,124 @@ class AppBoxKitNotificationService {
   /// The currently-shown center pill, so a new one replaces it (GetX-style
   /// replace semantics) instead of stacking two capsules at screen center.
   OverlayEntry? _activeCenterPill;
+
+  /// Tells the user something in a modal dialog — kit-rendered
+  /// ([appBoxKitShowNativeDialog]) with a single action, so apps never
+  /// register a stacked alert variant. Fire-and-forget. This is also the
+  /// surface AppBoxKitAction's `dialog` notification type routes through.
+  /// Pre-boot no-ops.
+  Future<void> alert({
+    required String title,
+    String? message,
+    String actionLabel = 'OK',
+    bool barrierDismissible = true,
+    BuildContext? context,
+  }) async {
+    final ctx = _overlayContext(context, 'alert dropped: "$title"');
+    if (ctx == null) return;
+    await appBoxKitShowNativeDialog<void>(
+      context: ctx,
+      title: title,
+      message: message,
+      barrierDismissible: barrierDismissible,
+      actions: [
+        AppBoxKitNativeDialogAction(
+          label: actionLabel,
+          role: AppBoxKitDialogActionRole.primary,
+        ),
+      ],
+    );
+  }
+
+  /// Asks the user to confirm — kit-rendered native dialog
+  /// ([appBoxKitShowNativeDialog]), so apps never register a stacked confirm
+  /// variant. Resolves `true` only when the action button is tapped;
+  /// cancel / barrier-dismiss / pre-boot resolve `false`.
+  Future<bool> confirm({
+    required String title,
+    String? message,
+    String actionLabel = 'OK',
+    String cancelLabel = 'Cancel',
+    bool destructive = false,
+    BuildContext? context,
+  }) async {
+    final ctx = _overlayContext(context, 'confirm dropped: "$title"');
+    if (ctx == null) return false;
+    final result = await appBoxKitShowNativeDialog<bool>(
+      context: ctx,
+      title: title,
+      message: message,
+      actions: [
+        AppBoxKitNativeDialogAction(label: cancelLabel, value: false),
+        AppBoxKitNativeDialogAction(
+          label: actionLabel,
+          value: true,
+          role: destructive
+              ? AppBoxKitDialogActionRole.destructive
+              : AppBoxKitDialogActionRole.primary,
+        ),
+      ],
+    );
+    return result ?? false;
+  }
+
+  /// Asks the user for a short text entry — kit-rendered [AppBoxKitPromptDialog]
+  /// (frosted panel + CupertinoTextField on iOS, M3 AlertDialog elsewhere), so
+  /// apps never register a stacked text-input variant. Resolves the trimmed
+  /// entry, or null on cancel / barrier-dismiss / empty entry / pre-boot.
+  Future<String?> prompt({
+    required String title,
+    String? message,
+    String? placeholder,
+    String? initialValue,
+    String actionLabel = 'Save',
+    String cancelLabel = 'Cancel',
+    BuildContext? context,
+  }) {
+    final ctx = _overlayContext(context, 'prompt dropped: "$title"');
+    if (ctx == null) return Future.value();
+    return showDialog<String>(
+      context: ctx,
+      builder: (_) => AppBoxKitPromptDialog(
+        title: title,
+        message: message,
+        placeholder: placeholder,
+        initialValue: initialValue,
+        actionLabel: actionLabel,
+        cancelLabel: cancelLabel,
+      ),
+    );
+  }
+
+  /// Tells the user something in a modal sheet — kit-rendered
+  /// [AppBoxKitNoticeSheetBody] presented through [appBoxKitShowNativeSheet]
+  /// (CNBottomSheet glass on iOS, M3 modal sheet on Android), so apps never
+  /// register a stacked notice-sheet variant. Fire-and-forget: dismissible by
+  /// drag/barrier. Pre-boot no-ops.
+  Future<void> notice({
+    required String title,
+    required String message,
+    BuildContext? context,
+  }) async {
+    final ctx = _overlayContext(context, 'notice dropped: "$title"');
+    if (ctx == null) return;
+    await appBoxKitShowNativeSheet<void>(
+      context: ctx,
+      builder: (_) => AppBoxKitNoticeSheetBody(title: title, message: message),
+    );
+  }
+
+  /// Context for the dialog/sheet tiers: the caller's when mounted, else the
+  /// app's navigator-key context (context-less callers). Null pre-boot — the
+  /// caller no-ops with a debugPrint instead of throwing, mirroring `_cnToast`.
+  BuildContext? _overlayContext(BuildContext? context, String dropMessage) {
+    if (context != null && context.mounted) return context;
+    final fallback = StackedService.navigatorKey?.currentContext;
+    if (fallback != null && fallback.mounted) return fallback;
+    debugPrint('AppBoxKitNotificationService: no BuildContext for dialog/sheet '
+        'tier; $dropMessage');
+    return null;
+  }
 
   /// Snackbar-tier center path: a kit-owned floating pill at screen center.
   /// SnackPosition (stacked_services/GetX) has no center value, so the kit

@@ -1,6 +1,5 @@
 import 'package:flutter/foundation.dart' show defaultTargetPlatform;
 import 'package:flutter/material.dart';
-import 'package:stacked/stacked.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 
 /// The chrome every widget-gallery tab shares: the 'Kit Showcase' app bar

@@ -1,5 +1,5 @@
 import 'package:appbox_kit_maps/appbox_kit_maps.dart';
-import 'package:stacked/stacked.dart';
+import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 
 /// Maps showcase — appbox_kit_maps through the plugin-neutral AppBoxKitMapView.
 ///

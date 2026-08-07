@@ -360,7 +360,12 @@ with no external usage still exists.
 ### `services/notifications/appbox_kit_notification_service.dart`
 
 - **`AppBoxKitNotificationService`** — platform-routed transient feedback (CNToast
-  on iOS, SnackbarService on Android/with action).
+  on iOS, SnackbarService on Android/with action) plus the kit-rendered
+  ask-surfaces: `confirm` → bool, `prompt` → String?, `alert`, `notice`
+  (modal sheet). The one door for all transient UI — apps never call stacked's
+  DialogService/BottomSheetService nor register generic dialog/sheet variants;
+  AppBoxKitAction's dialog/bottomSheet notification types route through
+  `alert`/`notice`.
   - p2 lib/ · app: `lib/app/app.dart:96` (registration)
   - p2 test/: `test/kit/services/appbox_kit_notification_toast_sequencing_test.dart:39-40`
   - showcase lib/: `app/app.dart:82`;
@@ -399,6 +404,15 @@ with no external usage still exists.
     `onboarding_flow_test.dart:77`, `shared_chrome_avatar_test.dart:77`,
     `account_guard_redirect_test.dart:66`)
   - showcase lib/: `app/appbox_kit_platform_router.dart:1,11`
+
+### `services/appbox_kit_ui_services_setup.dart`
+
+- **`setupAppBoxKitUiServices()`** — registers the stacked UI services every kit
+  app needs (DialogService / SnackbarService / BottomSheetService-as-
+  AppBoxKitBottomSheetService / Talker) so app code never imports
+  `stacked_services`/`talker_flutter` for registrations. Call from `main()`
+  after `setupLocator()`.
+  - showcase lib/: `main.dart`; test/: `helpers.dart`, `helpers/test_helpers.dart`
 
 ### `services/sheet/appbox_kit_bottom_sheet_service.dart`
 

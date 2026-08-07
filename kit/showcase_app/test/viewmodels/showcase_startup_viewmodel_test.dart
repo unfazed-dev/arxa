@@ -5,12 +5,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:appbox_kit_data/appbox_kit_data.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart'
-    show AppBoxKitErrorService, AppBoxKitNotificationService;
+    show AppBoxKitErrorService, AppBoxKitNotificationService, RouterService;
 import 'package:appbox_kit_ui_library/appbox_kit_testing.dart';
 import 'package:appbox_kit_showcase_app/app/app.locator.dart';
 import 'package:appbox_kit_showcase_app/app/app.router.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_startup_shell/showcase_startup/showcase_startup_viewmodel.dart';
-import 'package:stacked_services/stacked_services.dart';
 
 import '../helpers/test_helpers.dart';
 
@@ -21,7 +20,6 @@ void main() {
 
   const pathProviderChannel = MethodChannel('plugins.flutter.io/path_provider');
 
-  // registerServices()'s bottom-sheet stub matches on custom types;
   // PageRouteInfo needs a fallback for any()/captureAny() on replaceWith.
   registerFallbackValue(ShowcaseApplicationShellViewRoute());
 

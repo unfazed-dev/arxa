@@ -5,11 +5,10 @@ import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_testing.dart';
 import 'package:appbox_kit_data/appbox_kit_data.dart';
 import 'package:appbox_kit_showcase_app/app/app_data.dart';
+import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/models.dart';
 import 'package:appbox_kit_showcase_app/services/showcase_notes_services/facades/showcase_notes_facade_service.dart';
 import 'package:appbox_kit_showcase_app/services/showcase_notes_services/repositories/showcase_notes_repository_service.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes/showcase_notes_viewmodel.dart';
-import 'package:stacked_services/stacked_services.dart';
-import 'package:talker_flutter/talker_flutter.dart';
 
 /// The notes-shell cascade: session → overview/admin streams, composed with
 /// rxdart switchMap and bound via AppBoxKitStreamBuilder in the views. This is the
@@ -30,12 +29,12 @@ void main() {
   late ShowcaseNotesFacadeService notes;
 
   setUpAll(() async {
+    // Kit UI services (Talker / Dialog / Snackbar / BottomSheet) — the kit's
+    // own setup; AppBoxKitAction managers resolve these lazily on first
+    // execute().
+    setupAppBoxKitUiServices();
     appBoxKitLocator
-      ..registerLazySingleton(() => Talker())
       ..registerLazySingleton(() => AppBoxKitErrorService())
-      ..registerLazySingleton(() => DialogService())
-      ..registerLazySingleton(() => BottomSheetService())
-      ..registerLazySingleton(() => SnackbarService())
       ..registerLazySingleton<AppBoxKitNotificationService>(
           () => FakeAppBoxKitNotificationService())
       ..registerLazySingleton<ShowcaseNotesRepositoryService>(

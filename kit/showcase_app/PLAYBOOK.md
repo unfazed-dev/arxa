@@ -176,9 +176,15 @@ stacked generate
 One tab per package surface; future packages append identically.
 
 ## 7.10 Sheets, dialogs, widgets
+
+Generic transient UI needs NO scaffolded files — call the kit verbs on
+`AppBoxKitNotificationService` (via `appBoxKitLocator`) from the viewmodel:
+`confirm(title, actionLabel:, destructive:)` → bool, `prompt(title, placeholder:, initialValue:)` → String?,
+`alert(title, message:)`, `notice(title, message:)` (modal sheet), `show(message, kind:)` (toast/snackbar).
+`stacked create dialog/bottom_sheet` is only for genuinely custom branded
+surfaces — never for confirm/text-input/notice, which the kit renders natively.
+
 ```bash
-stacked create bottom_sheet notice      # ui/bottom_sheets/ + registers BottomSheetService
-stacked create dialog    error          # ui/dialogs/      + registers DialogService
 stacked create widget    note_card      # ui/widgets/common/note_card/ + WidgetModel
 # Flags: --no-model (skip Model), -t/--template, -p/--path (widget), --exclude-route
 #        --no-test (skip test file generation)

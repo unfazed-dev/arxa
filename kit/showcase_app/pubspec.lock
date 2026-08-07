@@ -1965,7 +1965,7 @@ packages:
     source: hosted
     version: "3.1.2"
   rxdart:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: rxdart
       sha256: "5c3004a4a8dbb94bd4bf5412a4def4acdaa12e12f269737a5751369e12d1a962"
@@ -2145,7 +2145,7 @@ packages:
     source: hosted
     version: "1.12.1"
   stacked:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: stacked
       sha256: "5f4a6ba6cfa43c5854690de0f946eef1694250cf46ecf7859519d90bf764b1e4"
@@ -2161,7 +2161,7 @@ packages:
     source: hosted
     version: "2.0.4"
   stacked_services:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: stacked_services
       sha256: a70c5c86f89a9258139ff174bf045a527099ea8552f8497ebb0b755469841bb4
@@ -2265,7 +2265,7 @@ packages:
     source: hosted
     version: "5.1.17"
   talker_flutter:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: talker_flutter
       sha256: "7e4b5fb520b4dadfc8db97e73a2a76ea5d6eda471a51489f3c0bd58b96a1ed43"
@@ -2297,7 +2297,7 @@ packages:
     source: hosted
     version: "0.7.11"
   text_field_m3e:
-    dependency: "direct main"
+    dependency: transitive
     description:
       path: "../ui_library/packages/text_field_m3e"
       relative: true

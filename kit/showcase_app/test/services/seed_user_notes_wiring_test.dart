@@ -6,10 +6,9 @@ import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_testing.dart';
 import 'package:appbox_kit_data/appbox_kit_data.dart';
 import 'package:appbox_kit_showcase_app/app/app_data.dart';
+import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/models.dart';
 import 'package:appbox_kit_showcase_app/services/showcase_notes_services/facades/showcase_notes_facade_service.dart';
 import 'package:appbox_kit_showcase_app/services/showcase_notes_services/repositories/showcase_notes_repository_service.dart';
-import 'package:stacked_services/stacked_services.dart';
-import 'package:talker_flutter/talker_flutter.dart';
 
 /// End-to-end wiring check: every seed user, signed in through the REAL auth
 /// entry points (email/password, Google, Apple), must see exactly the notes
@@ -50,12 +49,10 @@ void main() {
       }
     }
 
+    // The kit's own setup registers Talker + the stacked UI service bases.
+    setupAppBoxKitUiServices();
     appBoxKitLocator
-      ..registerLazySingleton(() => Talker())
       ..registerLazySingleton(() => AppBoxKitErrorService())
-      ..registerLazySingleton(() => DialogService())
-      ..registerLazySingleton(() => BottomSheetService())
-      ..registerLazySingleton(() => SnackbarService())
       // Fake: the real service's CNToast path needs a mounted navigator
       // context, which a data-layer suite doesn't have.
       ..registerLazySingleton<AppBoxKitNotificationService>(() => FakeAppBoxKitNotificationService())

@@ -111,6 +111,13 @@ void main() {
       final r = archGuard(tmp.path);
       expect(r.violations.where((v) => v.rule == 'G2'), isEmpty);
     });
+
+    test('viewmodel extending the kit base (AppBoxKitViewModel) is accepted', () {
+      _file(tmp, 'lib/ui/kit_viewmodel.dart',
+          'class KitViewModel extends AppBoxKitViewModel {}\n');
+      final r = archGuard(tmp.path);
+      expect(r.violations.where((v) => v.rule == 'G2'), isEmpty);
+    });
   });
 
   group('G3 async-without-busy', () {
@@ -166,6 +173,226 @@ void main() {
           'class SupaRepo implements ThingRepository {}\n');
       final r = archGuard(tmp.path);
       expect(r.violations.where((v) => v.rule == 'G5'), isEmpty);
+    });
+  });
+
+  group('G6 one viewmodel per view', () {
+    test('view importing a foreign viewmodel is a violation', () {
+      _file(tmp, 'lib/ui/editor_view.dart',
+          "import '../folder/folder_viewmodel.dart';\nclass EditorView {}\n");
+      final r = archGuard(tmp.path);
+      expect(r.passed, isFalse);
+      expect(
+          r.violations.any((v) => v.rule == 'G6' && v.msg.contains('foreign')),
+          isTrue);
+    });
+
+    test('form-factor view importing a foreign viewmodel is a violation', () {
+      _file(tmp, 'lib/ui/editor_view.mobile.dart',
+          "import 'package:x/folder/folder_viewmodel.dart';\nclass EditorView {}\n");
+      final r = archGuard(tmp.path);
+      expect(r.violations.any((v) => v.rule == 'G6'), isTrue);
+    });
+
+    test('view importing its own viewmodel (same basename) is accepted', () {
+      _file(tmp, 'lib/ui/editor_view.mobile.dart',
+          "import 'package:x/editor/editor_viewmodel.dart';\nclass EditorView {}\n");
+      final r = archGuard(tmp.path);
+      expect(r.violations.where((v) => v.rule == 'G6'), isEmpty);
+    });
+
+    test('widgets are free to import any viewmodel (typed ViewModelWidget)', () {
+      _file(tmp, 'lib/ui/widgets/editor_body_widget.dart',
+          "import 'package:x/editor/editor_viewmodel.dart';\nclass Body {}\n");
+      final r = archGuard(tmp.path);
+      expect(r.violations.where((v) => v.rule == 'G6'), isEmpty);
+    });
+  });
+
+  group('G7 no mutable statics on viewmodels', () {
+    test('a mutable static field on a viewmodel is a violation', () {
+      _file(tmp, 'lib/ui/bad_viewmodel.dart',
+          "import 'package:stacked/stacked.dart';\n"
+          'class BadViewModel extends BaseViewModel {\n'
+          '  static String? pendingAction;\n'
+          '}\n');
+      final r = archGuard(tmp.path);
+      expect(r.passed, isFalse);
+      expect(
+          r.violations.any((v) => v.rule == 'G7' && v.msg.contains('static')),
+          isTrue);
+    });
+
+    test('static const/final fields and static members are accepted', () {
+      _file(tmp, 'lib/ui/good_viewmodel.dart',
+          "import 'package:stacked/stacked.dart';\n"
+          'class GoodViewModel extends BaseViewModel {\n'
+          "  static const int limit = 10;\n"
+          "  static final stamp = DateTime(2026);\n"
+          '  static int get count => 1;\n'
+          '  static void reset() {}\n'
+          '}\n');
+      final r = archGuard(tmp.path);
+      expect(r.violations.where((v) => v.rule == 'G7'), isEmpty);
+    });
+  });
+
+  group('G8 dialogs from UI', () {
+    test('a view calling DialogService via the locator is a violation', () {
+      _file(tmp, 'lib/ui/editor_view.dart',
+          "import 'package:stacked_services/stacked_services.dart';\n"
+          'class EditorView {\n'
+          '  void go() => appBoxKitLocator<DialogService>().showCustomDialog();\n'
+          '}\n');
+      final r = archGuard(tmp.path);
+      expect(r.violations.any((v) => v.rule == 'G8'), isTrue);
+      expect(r.passed, isFalse);
+    });
+
+    test('a viewmodel calling DialogService does not warn', () {
+      _file(tmp, 'lib/ui/editor_viewmodel.dart',
+          "import 'package:stacked/stacked.dart';\n"
+          "import 'package:stacked_services/stacked_services.dart';\n"
+          'class EditorViewModel extends BaseViewModel {\n'
+          '  void go() => appBoxKitLocator<DialogService>().showCustomDialog();\n'
+          '}\n');
+      final r = archGuard(tmp.path);
+      expect(r.warnings.where((w) => w.rule == 'G8'), isEmpty);
+    });
+  });
+
+  group('G9 service-layer direction', () {
+    test('viewmodel importing a repository is a violation', () {
+      _file(tmp, 'lib/ui/bad_viewmodel.dart',
+          "import 'package:stacked/stacked.dart';\n"
+          "import 'package:x/services/items/repositories/items_repository_service.dart';\n"
+          'class BadViewModel extends BaseViewModel {}\n');
+      final r = archGuard(tmp.path);
+      expect(r.passed, isFalse);
+      expect(
+          r.violations.any(
+              (v) => v.rule == 'G9' && v.msg.contains('repository')),
+          isTrue);
+    });
+
+    test('viewmodel importing a view is a violation', () {
+      _file(tmp, 'lib/ui/bad_viewmodel.dart',
+          "import 'package:stacked/stacked.dart';\n"
+          "import 'package:x/ui/views/home/home_view.dart';\n"
+          'class BadViewModel extends BaseViewModel {}\n');
+      final r = archGuard(tmp.path);
+      expect(r.violations.any((v) => v.rule == 'G9'), isTrue);
+    });
+
+    test('facade importing a viewmodel is a violation', () {
+      _file(tmp, 'lib/services/items/facades/items_facade_service.dart',
+          "import 'package:x/ui/views/home/home_viewmodel.dart';\n"
+          'class ItemsFacade {}\n');
+      final r = archGuard(tmp.path);
+      expect(r.violations.any((v) => v.rule == 'G9'), isTrue);
+    });
+
+    test('adapter importing a facade is a violation', () {
+      _file(tmp, 'lib/services/items/adapters/items_media_adapter_service.dart',
+          "import 'package:x/services/items/facades/items_facade_service.dart';\n"
+          'class ItemsAdapter {}\n');
+      final r = archGuard(tmp.path);
+      expect(r.violations.any((v) => v.rule == 'G9'), isTrue);
+    });
+
+    test('repository importing an adapter is a violation', () {
+      _file(tmp,
+          'lib/services/items/repositories/items_repository_service.dart',
+          "import 'package:x/services/items/adapters/items_media_adapter_service.dart';\n"
+          'class ItemsRepo {}\n');
+      final r = archGuard(tmp.path);
+      expect(r.violations.any((v) => v.rule == 'G9'), isTrue);
+    });
+
+    test('view importing a facade is a violation', () {
+      _file(tmp, 'lib/ui/views/home/home_view.dart',
+          "import 'package:x/services/items/facades/items_facade_service.dart';\n"
+          'class HomeView {}\n');
+      final r = archGuard(tmp.path);
+      expect(r.violations.any((v) => v.rule == 'G9'), isTrue);
+    });
+
+    test('facade importing repository + adapter is the sanctioned direction', () {
+      _file(tmp, 'lib/services/items/facades/items_facade_service.dart',
+          "import 'package:x/services/items/repositories/items_repository_service.dart';\n"
+          "import 'package:x/services/items/adapters/items_media_adapter_service.dart';\n"
+          'class ItemsFacade {}\n');
+      final r = archGuard(tmp.path);
+      expect(r.violations.where((v) => v.rule == 'G9'), isEmpty);
+    });
+
+    test('viewmodel importing an adapter is a violation', () {
+      _file(tmp, 'lib/ui/bad_viewmodel.dart',
+          "import 'package:stacked/stacked.dart';\n"
+          "import 'package:x/services/items/adapters/items_media_adapter_service.dart';\n"
+          'class BadViewModel extends BaseViewModel {}\n');
+      final r = archGuard(tmp.path);
+      expect(r.passed, isFalse);
+      expect(
+          r.violations.any((v) => v.rule == 'G9' && v.msg.contains('adapter')),
+          isTrue);
+    });
+
+    test('viewmodel importing a facade is the sanctioned direction', () {
+      _file(tmp, 'lib/ui/views/home/home_viewmodel.dart',
+          "import 'package:stacked/stacked.dart';\n"
+          "import 'package:x/services/items/facades/items_facade_service.dart';\n"
+          'class HomeViewModel extends BaseViewModel {}\n');
+      final r = archGuard(tmp.path);
+      expect(r.violations.where((v) => v.rule == 'G9'), isEmpty);
+    });
+  });
+
+  group('G10 no duplicate URIs', () {
+    test('the same URI imported twice is a violation', () {
+      _file(tmp, 'lib/ui/dup.dart',
+          "import 'package:flutter/material.dart';\n"
+          "import 'package:flutter/material.dart' show Colors;\n"
+          'class Dup {}\n');
+      final r = archGuard(tmp.path);
+      expect(r.passed, isFalse);
+      expect(
+          r.violations.any(
+              (v) => v.rule == 'G10' && v.msg.contains('import')),
+          isTrue);
+    });
+
+    test('the same URI exported twice is a violation', () {
+      _file(tmp, 'lib/ui/dup.dart',
+          "export 'package:x/a.dart';\n"
+          "export 'package:x/a.dart' show A;\n");
+      final r = archGuard(tmp.path);
+      expect(r.violations.any((v) => v.rule == 'G10' && v.msg.contains('export')),
+          isTrue);
+    });
+
+    test('import + export of the same URI is not a duplicate (barrel files)', () {
+      _file(tmp, 'lib/data/models/models.dart',
+          "export 'package:x/a.dart';\n"
+          "export 'package:x/b.dart';\n");
+      final r = archGuard(tmp.path);
+      expect(r.violations.where((v) => v.rule == 'G10'), isEmpty);
+    });
+  });
+
+  group('G11 viewmodels never re-export', () {
+    test('an export directive in a viewmodel is a violation', () {
+      _file(tmp, 'lib/ui/reshare_viewmodel.dart',
+          "import 'package:stacked/stacked.dart';\n"
+          "import 'package:x/models.dart';\n"
+          "export 'package:x/models.dart';\n"
+          'class ReShareViewModel extends BaseViewModel {}\n');
+      final r = archGuard(tmp.path);
+      expect(r.passed, isFalse);
+      expect(
+          r.violations.any(
+              (v) => v.rule == 'G11' && v.msg.contains('re-export')),
+          isTrue);
     });
   });
 

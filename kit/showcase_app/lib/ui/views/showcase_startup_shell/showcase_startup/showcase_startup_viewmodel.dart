@@ -1,8 +1,8 @@
-import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart' show AppBoxKitViewModel;
+import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart'
+    show AppBoxKitViewModel, RouterService;
 import 'package:appbox_kit_showcase_app/app/app.locator.dart';
 import 'package:appbox_kit_showcase_app/app/app.router.dart';
 import 'package:appbox_kit_showcase_app/app/app_data.dart';
-import 'package:stacked_services/stacked_services.dart';
 
 class ShowcaseStartupViewModel extends AppBoxKitViewModel {
   final _routerService = locator<RouterService>();

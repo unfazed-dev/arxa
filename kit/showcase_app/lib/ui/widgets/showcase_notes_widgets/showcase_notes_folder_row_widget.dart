@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:stacked/stacked.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
-import 'package:stacked_services/stacked_services.dart';
-import 'package:appbox_kit_showcase_app/app/app.dialogs.dart';
+import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/models.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes/showcase_notes_viewmodel.dart';
 import 'package:appbox_kit_showcase_app/ui/widgets/showcase_notes_widgets/widgets.dart';
 
@@ -23,8 +21,8 @@ class ShowcaseNotesFolderRowWidget extends StatelessWidget {
   final int count;
   final ShowcaseNotesViewModel viewModel;
 
-  /// Long-press handler — the view owns the rename dialog plumbing
-  /// (DialogType.showcaseTextInput + `renameFolder`).
+  /// Long-press handler — the view wires this to the viewmodel's
+  /// `renameFolderWithPrompt` (G8: the VM owns the dialog).
   final VoidCallback onRename;
 
   @override
@@ -40,16 +38,7 @@ class ShowcaseNotesFolderRowWidget extends StatelessWidget {
         child: Icon(AppBoxKitGlyphs.delete.icon, color: theme.colorScheme.onError),
       ),
       confirmDismiss: (_) async {
-        final res = await appBoxKitLocator<DialogService>().showCustomDialog(
-          variant: DialogType.showcaseConfirm,
-          title: 'Delete Folder',
-          description:
-              'Notes in "${folder.name}" will move to Recently Deleted.',
-          data: (actionLabel: 'Delete', destructive: true),
-        );
-        if (res?.confirmed == true) {
-          await viewModel.deleteFolder(folder);
-        }
+        await viewModel.confirmDeleteFolder(folder);
         return false;
       },
       child: GestureDetector(

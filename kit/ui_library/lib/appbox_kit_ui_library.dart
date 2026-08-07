@@ -10,6 +10,23 @@ library;
 // Core non-UI surface — re-exported for one-import consumers.
 export 'package:appbox_kit_core/appbox_kit_core.dart';
 
+// The appbox-mandated MVVM framework — re-exported so apps never declare
+// stacked/rxdart in their own pubspec (the kit pins the versions once).
+export 'package:stacked/stacked.dart';
+export 'package:stacked/stacked_annotations.dart';
+export 'package:rxdart/rxdart.dart'
+    show BehaviorSubject, ValueStream, Rx, SwitchMapExtension,
+        StartWithExtension, ConnectableStreamExtensions;
+
+// The stacked_services types an app legitimately touches: registrations and
+// its own snackbar palette config. Dialogs/sheets/toasts themselves go
+// through AppBoxKitNotificationService's verbs — apps never call the stacked
+// dialog/sheet services directly.
+export 'package:stacked_services/stacked_services.dart'
+    show RouterService, SnackbarService, SnackbarConfig, SnackPosition,
+        StackedService;
+
+export 'services/appbox_kit_ui_services_setup.dart';
 export 'widgets/appbox_kit_lazy_indexed_stack.dart';
 export 'widgets/appbox_kit_directional_tab_transition.dart';
 export 'widgets/appbox_kit_tab_switch_transition.dart';

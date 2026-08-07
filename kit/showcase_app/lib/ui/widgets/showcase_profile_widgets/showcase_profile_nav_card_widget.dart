@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:stacked/stacked.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 import 'package:appbox_kit_showcase_app/ui/widgets/common/showcase_tabs_shared/widgets.dart';
 

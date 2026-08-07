@@ -10,12 +10,8 @@ class ShowcaseNoteEditorBottomToolbarWidget extends StatelessWidget {
   const ShowcaseNoteEditorBottomToolbarWidget({
     super.key,
     required this.viewModel,
-    required this.formatDuration,
   });
   final ShowcaseNoteEditorViewModel viewModel;
-
-  /// Duration label formatter — the view owns the formatting helper.
-  final String Function(Duration duration) formatDuration;
 
   @override
   Widget build(BuildContext context) => SafeArea(
@@ -37,7 +33,6 @@ class ShowcaseNoteEditorBottomToolbarWidget extends StatelessWidget {
                   ? ShowcaseNoteRecordingRowWidget(
                       viewModel: viewModel,
                       elapsed: elapsed,
-                      formatDuration: formatDuration,
                     )
                   : Row(
                       children: [

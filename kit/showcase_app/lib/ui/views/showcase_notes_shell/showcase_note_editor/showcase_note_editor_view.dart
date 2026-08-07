@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:responsive_builder/responsive_builder.dart';
-import 'package:stacked/stacked.dart';
+import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 
 import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_note_editor/showcase_note_editor_view.desktop.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_note_editor/showcase_note_editor_view.tablet.dart';
@@ -33,5 +33,7 @@ class ShowcaseNoteEditorView extends StackedView<ShowcaseNoteEditorViewModel> {
   @override
   ShowcaseNoteEditorViewModel viewModelBuilder(BuildContext context) =>
       ShowcaseNoteEditorViewModel(
-          noteId: context.routeData.pathParams.getString('id'));
+        noteId: context.routeData.pathParams.getString('id'),
+        quickAction: context.routeData.queryParams.optString('quickAction'),
+      );
 }

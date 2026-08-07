@@ -8,9 +8,8 @@ import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart'
         AppBoxKitErrorService,
         AppBoxKitThemeService,
         appBoxKitDarkTheme,
-        appBoxKitLightTheme;
-import 'package:appbox_kit_showcase_app/app/app.bottomsheets.dart';
-import 'package:appbox_kit_showcase_app/app/app.dialogs.dart';
+        appBoxKitLightTheme,
+        setupAppBoxKitUiServices;
 import 'package:appbox_kit_showcase_app/app/app.locator.dart';
 import 'package:appbox_kit_showcase_app/app/kit_platform_router.dart';
 import 'package:appbox_kit_showcase_app/ui/snackbars/snackbars.dart';
@@ -20,6 +19,8 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   setPathUrlStrategy();
   await setupLocator(stackedRouter: kitPlatformRouter);
+  // Kit-owned stacked UI services (Dialog/Snackbar/BottomSheet/Talker).
+  setupAppBoxKitUiServices();
   // AppBoxKitAction's error/notification managers log through AppBoxKitErrorService —
   // initialize it first or the first handled error dies on the late Talker.
   await locator<AppBoxKitErrorService>().initialize();
@@ -33,8 +34,6 @@ Future<void> main() async {
     widgetId: 'main.themeInit',
   ).completeOnError('Theme restore failed');
   setupShowcaseSnackbars();
-  setupDialogUi();
-  setupBottomSheetUi();
   runApp(const ShowcaseApp());
 }
 

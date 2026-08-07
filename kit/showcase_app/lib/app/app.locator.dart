@@ -14,13 +14,8 @@ import 'package:appbox_kit_haptics/src/appbox_kit_haptic_service.dart';
 import 'package:appbox_kit_ui_library/extensions/appbox_kit_overlay_extension.dart';
 import 'package:appbox_kit_ui_library/services/navigation/appbox_kit_navigation_controller_service.dart';
 import 'package:appbox_kit_ui_library/services/notifications/appbox_kit_notification_service.dart';
-import 'package:appbox_kit_ui_library/services/sheet/appbox_kit_bottom_sheet_service.dart';
-import 'package:stacked_services/src/bottom_sheet/bottom_sheet_service.dart';
-import 'package:stacked_services/src/dialog/dialog_service.dart';
 import 'package:stacked_services/src/navigation/router_service.dart';
-import 'package:stacked_services/src/snackbar/snackbar_service.dart';
 import 'package:stacked_shared/stacked_shared.dart';
-import 'package:talker/src/talker.dart';
 
 import '../services/showcase_notes_services/adapters/showcase_notes_media_adapter_service.dart';
 import '../services/showcase_notes_services/facades/showcase_notes_facade_service.dart';
@@ -38,12 +33,7 @@ Future<void> setupLocator(
       environment: environment, environmentFilter: environmentFilter);
 
 // Register dependencies
-  locator.registerLazySingleton<BottomSheetService>(
-      () => AppBoxKitBottomSheetService());
-  locator.registerLazySingleton(() => DialogService());
   locator.registerLazySingleton(() => RouterService());
-  locator.registerLazySingleton(() => SnackbarService());
-  locator.registerLazySingleton(() => Talker());
   locator.registerLazySingleton(() => AppBoxKitErrorService());
   locator.registerLazySingleton(() => AppBoxKitNotificationService());
   locator.registerLazySingleton(() => AppBoxKitHapticService());

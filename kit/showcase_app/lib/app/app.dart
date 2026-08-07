@@ -1,7 +1,3 @@
-import 'package:appbox_kit_showcase_app/ui/bottom_sheets/showcase_notice_sheet/showcase_notice_sheet.dart';
-import 'package:appbox_kit_showcase_app/ui/dialogs/showcase_info_alert_dialog/showcase_info_alert_dialog.dart';
-import 'package:appbox_kit_showcase_app/ui/dialogs/showcase_confirm_dialog/showcase_confirm_dialog.dart';
-import 'package:appbox_kit_showcase_app/ui/dialogs/showcase_text_input_dialog/showcase_text_input_dialog.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_unknown_shell/showcase_unknown_shell_view.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_unknown_shell/showcase_unknown/showcase_unknown_view.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_startup_shell/showcase_startup_shell_view.dart';
@@ -20,9 +16,6 @@ import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_n
 import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes/showcase_notes_view.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_folder/showcase_notes_folder_view.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_note_editor/showcase_note_editor_view.dart';
-import 'package:stacked/stacked_annotations.dart';
-import 'package:stacked_services/stacked_services.dart';
-import 'package:talker_flutter/talker_flutter.dart';
 import 'package:appbox_kit_haptics/appbox_kit_haptics.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 import 'package:appbox_kit_showcase_app/services/showcase_notes_services/repositories/showcase_notes_repository_service.dart';
@@ -85,16 +78,11 @@ import 'package:appbox_kit_showcase_app/services/showcase_notes_services/adapter
     RedirectRoute(path: '*', redirectTo: '/404'),
   ],
   dependencies: [
-    // AppBoxKitBottomSheetService presents stacked sheets through appBoxKitShowNativeSheet
-    // (CNBottomSheet on iOS, M3 modal sheet on Android) — registered as the
-    // base type so every BottomSheetService call site stays untouched.
-    LazySingleton(classType: AppBoxKitBottomSheetService, asType: BottomSheetService),
-    LazySingleton(classType: DialogService),
+    // DialogService / SnackbarService / BottomSheetService / Talker are
+    // registered by setupAppBoxKitUiServices() (called from main) — kit-owned.
     LazySingleton(classType: RouterService),
-    LazySingleton(classType: SnackbarService),
 
     // Kit services — registration lives in the app, decoupled from the kit.
-    LazySingleton(classType: Talker),
     LazySingleton(classType: AppBoxKitErrorService),
     LazySingleton(classType: AppBoxKitNotificationService),
     LazySingleton(classType: AppBoxKitHapticService),
@@ -109,16 +97,6 @@ import 'package:appbox_kit_showcase_app/services/showcase_notes_services/adapter
     LazySingleton(classType: ShowcaseNotesFacadeService),
     LazySingleton(classType: ShowcaseNotesMediaAdapterService),
 // @stacked-service
-  ],
-  bottomsheets: [
-    StackedBottomsheet(classType: ShowcaseNoticeSheet),
-    // @stacked-bottom-sheet
-  ],
-  dialogs: [
-    StackedDialog(classType: ShowcaseInfoAlertDialog),
-    StackedDialog(classType: ShowcaseConfirmDialog),
-    StackedDialog(classType: ShowcaseTextInputDialog),
-    // @stacked-dialog
   ],
 )
 class App {}

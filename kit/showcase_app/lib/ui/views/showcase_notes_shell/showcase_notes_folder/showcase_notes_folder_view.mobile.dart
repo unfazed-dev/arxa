@@ -1,14 +1,11 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:stacked/stacked.dart';
 import 'package:appbox_kit_motion/appbox_kit_motion.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 import 'package:appbox_kit_showcase_app/ui/widgets/common/showcase_tabs_shared/widgets.dart';
 import 'package:appbox_kit_showcase_app/ui/widgets/showcase_notes_widgets/widgets.dart';
+import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/models.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_folder/showcase_notes_folder_viewmodel.dart';
-import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_note_editor/showcase_note_editor_viewmodel.dart';
-import 'package:stacked_services/stacked_services.dart';
-import 'package:appbox_kit_showcase_app/app/app.dialogs.dart';
 
 class ShowcaseNotesFolderViewMobile
     extends ViewModelWidget<ShowcaseNotesFolderViewModel> {
@@ -23,7 +20,7 @@ class ShowcaseNotesFolderViewMobile
         AppBoxKitNativeIconButton(
           glyph: AppBoxKitGlyphs.delete,
           color: theme.colorScheme.error,
-          onPressed: () => _confirmEmptyTrash(context, viewModel),
+          onPressed: viewModel.confirmEmptyTrash,
         ),
     ];
 
@@ -113,9 +110,8 @@ class ShowcaseNotesFolderViewMobile
                                         key: ValueKey(note.id),
                                         note: note,
                                         viewModel: viewModel,
-                                        onDeletePermanently: () =>
-                                            _confirmDeletePermanently(
-                                                context, viewModel, note),
+                                        onDeletePermanently: () => viewModel
+                                            .confirmDeletePermanently(note),
                                         formatDate: _relativeDate,
                                       ),
                                   ],
@@ -154,9 +150,6 @@ class ShowcaseNotesFolderViewMobile
                   AppBoxKitMenuItem(label: 'New Voice', glyph: AppBoxKitGlyphs.mic),
                 ],
                 onSelect: (item) async {
-                  // ponytail: a module-level intent slot on the editor viewmodel
-                  // routes New Photo / New Voice to auto-open the camera / mic on
-                  // first load — avoids route query-param plumbing + codegen.
                   final action = switch (item.label) {
                     'New Photo' => 'camera',
                     'New Voice' => 'mic',
@@ -164,39 +157,14 @@ class ShowcaseNotesFolderViewMobile
                   };
                   final id = await viewModel.compose();
                   if (id == null || !context.mounted) return;
-                  ShowcaseNoteEditorViewModel.pendingAction = action;
                   // nested push — root stack must not grow
-                  unawaited(context.router.pushNamed('note/$id'));
+                  unawaited(context.router.pushNamed(action == null
+                      ? 'note/$id'
+                      : 'note/$id?quickAction=$action'));
                 },
               ),
       ),
     );
-  }
-}
-
-Future<void> _confirmEmptyTrash(
-    BuildContext context, ShowcaseNotesFolderViewModel viewModel) async {
-  final res = await appBoxKitLocator<DialogService>().showCustomDialog(
-    variant: DialogType.showcaseConfirm,
-    title: 'Empty Recently Deleted',
-    description: 'Notes will be permanently deleted. This cannot be undone.',
-    data: (actionLabel: 'Delete All', destructive: true),
-  );
-  if (res?.confirmed == true) {
-    await viewModel.emptyTrash();
-  }
-}
-
-Future<void> _confirmDeletePermanently(BuildContext context,
-    ShowcaseNotesFolderViewModel viewModel, ShowcaseNoteModel note) async {
-  final res = await appBoxKitLocator<DialogService>().showCustomDialog(
-    variant: DialogType.showcaseConfirm,
-    title: 'Delete Note',
-    description: 'This note will be permanently deleted.',
-    data: (actionLabel: 'Delete', destructive: true),
-  );
-  if (res?.confirmed == true) {
-    await viewModel.deletePermanently(note);
   }
 }
 

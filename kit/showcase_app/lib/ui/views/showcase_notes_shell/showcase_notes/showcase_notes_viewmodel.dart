@@ -1,17 +1,8 @@
-import 'package:rxdart/rxdart.dart';
 import 'package:appbox_kit_data/appbox_kit_data.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 
-import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/showcase_note_folder_model.dart';
+import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/models.dart';
 import 'package:appbox_kit_showcase_app/services/showcase_notes_services/facades/showcase_notes_facade_service.dart';
-
-// The view knows its viewmodel ONLY — every type a view needs to name (the
-// stream payloads) is re-exported here so view files never import services,
-// repositories, or data/model packages directly.
-export 'package:appbox_kit_data/appbox_kit_data.dart' show AppBoxKitAuthSession;
-export 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/showcase_note_folder_model.dart';
-export 'package:appbox_kit_showcase_app/services/showcase_notes_services/facades/showcase_notes_facade_service.dart'
-    show ShowcaseNotesAdminOverview, ShowcaseNotesOverview;
 
 /// The "Folders" screen viewmodel — streams-only (house convention): all
 /// state is exposed as streams and the views bind them with [AppBoxKitStreamBuilder];
@@ -84,6 +75,36 @@ class ShowcaseNotesViewModel extends AppBoxKitViewModel {
         .first
         .then((overview) => overview.folders.length);
     await _service.createFolder(owner, trimmed, sortOrder: sortOrder);
+  }
+
+  /// Prompts for a folder name, then creates it (G8: the VM owns the dialog).
+  /// A cancelled/empty prompt is a no-op.
+  Future<void> createFolderWithPrompt() async {
+    final name = await appBoxKitLocator<AppBoxKitNotificationService>()
+        .prompt(title: 'New Folder', placeholder: 'Name');
+    if (name != null) await createFolder(name);
+  }
+
+  /// Prompts for a new name (pre-filled with the current one), then renames.
+  Future<void> renameFolderWithPrompt(ShowcaseNoteFolderModel folder) async {
+    final name = await appBoxKitLocator<AppBoxKitNotificationService>()
+        .prompt(title: 'Rename Folder', initialValue: folder.name);
+    if (name != null) await renameFolder(folder, name);
+  }
+
+  /// Asks first — hand-written because the message interpolates the folder
+  /// name (the hub's confirm gate takes static strings; see `hub.on`).
+  /// On confirm the folder is deleted (its live notes move to Recently
+  /// Deleted — the facade owns that semantic).
+  Future<void> confirmDeleteFolder(ShowcaseNoteFolderModel folder) async {
+    final confirmed = await appBoxKitLocator<AppBoxKitNotificationService>()
+        .confirm(
+      title: 'Delete Folder',
+      message: 'Notes in "${folder.name}" will move to Recently Deleted.',
+      actionLabel: 'Delete',
+      destructive: true,
+    );
+    if (confirmed) await deleteFolder(folder);
   }
 
   Future<void> renameFolder(ShowcaseNoteFolderModel folder, String name) async {

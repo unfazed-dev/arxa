@@ -1,8 +1,6 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:stacked_services/stacked_services.dart';
 import 'package:talker_flutter/talker_flutter.dart';
 
 import 'package:appbox_kit_core/appbox_kit_locator.dart';
@@ -21,65 +19,15 @@ import 'package:appbox_kit_ui_library/utils/kit_action/appbox_kit_action_hub.dar
 /// - Guarded dispatches (same key in flight) complete with the in-flight
 ///   run's result, never an error.
 /// - Debounce-superseded dispatches complete with the eventual run's result.
-class _RecordingDialogService extends DialogService {
-  final List<({String? title, String? description})> calls = [];
-
-  @override
-  Future<DialogResponse?> showDialog({
-    String? title,
-    String? description,
-    String? cancelTitle,
-    Color? cancelTitleColor,
-    String buttonTitle = 'Ok',
-    Color? buttonTitleColor,
-    bool barrierDismissible = false,
-    RouteSettings? routeSettings,
-    GlobalKey<NavigatorState>? navigatorKey,
-    DialogPlatform? dialogPlatform,
-  }) {
-    calls.add((title: title, description: description));
-    return Future.value();
-  }
-}
-
-class _RecordingBottomSheetService extends BottomSheetService {
-  final List<({String title, String? description})> calls = [];
-
-  @override
-  Future<SheetResponse?> showBottomSheet({
-    required String title,
-    String? description,
-    String confirmButtonTitle = 'Ok',
-    String? cancelButtonTitle,
-    bool enableDrag = true,
-    bool barrierDismissible = true,
-    bool isScrollControlled = false,
-    Duration? exitBottomSheetDuration,
-    Duration? enterBottomSheetDuration,
-    bool? ignoreSafeArea,
-    bool useRootNavigator = false,
-    double elevation = 1,
-  }) {
-    calls.add((title: title, description: description));
-    return Future.value();
-  }
-}
-
 void main() {
   late FakeAppBoxKitNotificationService notifications;
-  late _RecordingDialogService dialogs;
-  late _RecordingBottomSheetService bottomSheets;
 
   setUp(() async {
     notifications = FakeAppBoxKitNotificationService();
-    dialogs = _RecordingDialogService();
-    bottomSheets = _RecordingBottomSheetService();
     appBoxKitLocator
       ..registerLazySingleton(() => Talker())
       ..registerLazySingleton(() => AppBoxKitErrorService())
-      ..registerSingleton<AppBoxKitNotificationService>(notifications)
-      ..registerSingleton<DialogService>(dialogs)
-      ..registerSingleton<BottomSheetService>(bottomSheets);
+      ..registerSingleton<AppBoxKitNotificationService>(notifications);
     await appBoxKitLocator<AppBoxKitErrorService>().initialize();
   });
 
@@ -331,6 +279,30 @@ void main() {
       p.dispose();
     });
 
+    test('confirm gate: a decline never runs the op, an accept runs it once', () async {
+      final p = hub();
+      var ran = 0;
+      final command = p.on<Null, void>(
+        'guarded',
+        (_) async => ran++,
+        confirmTitle: 'Delete?',
+        confirmActionLabel: 'Delete',
+        confirmDestructive: true,
+      );
+
+      // declined (the fake's confirmResult defaults to false) — the op never
+      // runs and the handle still completes.
+      await command.send(null);
+      expect(ran, 0);
+      expect(notifications.confirmCalls.single.title, 'Delete?');
+
+      // accepted.
+      notifications.confirmResult = true;
+      await command.send(null);
+      expect(ran, 1);
+      p.dispose();
+    });
+
     test('error notification routes to dialog and bottomSheet kinds', () async {
       final p = hub();
       final dialogPipe = p.on<Null, void>(
@@ -351,10 +323,13 @@ void main() {
       await dialogPipe.send(null);
       await sheetPipe.send(null);
 
-      expect(dialogs.calls.single.title, 'Error');
-      expect(dialogs.calls.single.description, 'Dialog says no');
-      expect(bottomSheets.calls.single.title, 'Error');
-      expect(bottomSheets.calls.single.description, 'Sheet says no');
+      // Both kinds route through AppBoxKitNotificationService's kit-rendered
+      // ask-surfaces (alert / notice) — never stacked's DialogService /
+      // BottomSheetService directly.
+      expect(notifications.alertCalls.single.title, 'Error');
+      expect(notifications.alertCalls.single.message, 'Dialog says no');
+      expect(notifications.noticeCalls.single.title, 'Error');
+      expect(notifications.noticeCalls.single.message, 'Sheet says no');
       expect(notifications.calls, isEmpty);
       p.dispose();
     });

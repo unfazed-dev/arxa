@@ -75,6 +75,25 @@ class FakeAppBoxKitNotificationService extends AppBoxKitNotificationService {
   /// Every [show] call, in call order.
   final List<AppBoxKitNotificationRecord> calls = [];
 
+  /// Every [alert] call, as `(title, message)` records, in call order.
+  final List<({String title, String? message})> alertCalls = [];
+
+  /// Every [notice] call, as `(title, message)` records, in call order.
+  final List<({String title, String message})> noticeCalls = [];
+
+  /// Every [confirm] call, as `(title, message)` records, in call order.
+  final List<({String title, String? message})> confirmCalls = [];
+
+  /// Every [prompt] call, as `(title, message)` records, in call order.
+  final List<({String title, String? message})> promptCalls = [];
+
+  /// What [confirm] resolves. Tests exercising a VM's confirm path set this —
+  /// the real service would need a widget tree.
+  bool confirmResult = false;
+
+  /// What [prompt] resolves. See [confirmResult].
+  String? promptResult;
+
   /// When non-null, [show] throws this instead of recording.
   Object? showError;
 
@@ -102,6 +121,55 @@ class FakeAppBoxKitNotificationService extends AppBoxKitNotificationService {
       position: position,
     ));
     return Future.value();
+  }
+
+  @override
+  Future<void> alert({
+    required String title,
+    String? message,
+    String actionLabel = 'OK',
+    bool barrierDismissible = true,
+    BuildContext? context,
+  }) {
+    alertCalls.add((title: title, message: message));
+    return Future.value();
+  }
+
+  @override
+  Future<void> notice({
+    required String title,
+    required String message,
+    BuildContext? context,
+  }) {
+    noticeCalls.add((title: title, message: message));
+    return Future.value();
+  }
+
+  @override
+  Future<bool> confirm({
+    required String title,
+    String? message,
+    String actionLabel = 'OK',
+    String cancelLabel = 'Cancel',
+    bool destructive = false,
+    BuildContext? context,
+  }) {
+    confirmCalls.add((title: title, message: message));
+    return Future.value(confirmResult);
+  }
+
+  @override
+  Future<String?> prompt({
+    required String title,
+    String? message,
+    String? placeholder,
+    String? initialValue,
+    String actionLabel = 'Save',
+    String cancelLabel = 'Cancel',
+    BuildContext? context,
+  }) {
+    promptCalls.add((title: title, message: message));
+    return Future.value(promptResult);
   }
 
   // ---- query helpers ---------------------------------------------------------

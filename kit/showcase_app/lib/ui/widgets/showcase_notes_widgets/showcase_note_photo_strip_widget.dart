@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
+import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/models.dart';
 import 'package:appbox_kit_showcase_app/ui/common/app_colors.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_note_editor/showcase_note_editor_viewmodel.dart';
 
@@ -12,14 +13,9 @@ class ShowcaseNotePhotoStripWidget extends StatelessWidget {
     super.key,
     required this.viewModel,
     required this.photos,
-    required this.onRemoveAttachment,
   });
   final ShowcaseNoteEditorViewModel viewModel;
   final List<ShowcaseNoteAttachmentModel> photos;
-
-  /// Long-press handler — the view owns the remove-confirmation dialog
-  /// plumbing.
-  final Future<void> Function(ShowcaseNoteAttachmentModel attachment) onRemoveAttachment;
 
   @override
   Widget build(BuildContext context) => SizedBox(
@@ -43,7 +39,8 @@ class ShowcaseNotePhotoStripWidget extends StatelessWidget {
                 final file = File(snap.data!);
                 return GestureDetector(
                   onTap: () => _openViewer(context, file),
-                  onLongPress: () => onRemoveAttachment(attachment),
+                  onLongPress: () =>
+                      viewModel.confirmRemoveAttachment(attachment),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(abxRad12),
                     child: Image.file(
