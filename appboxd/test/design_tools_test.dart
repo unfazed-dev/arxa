@@ -214,10 +214,10 @@ void main() {
         {'id': 'portalo.cart', 'states': ['loading']},
       ]));
       _write(d, 'design/surfaces/home.tsx',
-          "{state === 'loading' && (<p>…</p>)}");
+          "{state === 'loading' && (<p {...inspectAttrs('loading', {role: 'text'})}>…</p>)}");
       _write(d, 'design/surfaces/cart.tsx',
-          "{state === 'loading' && (<p>…</p>)}"
-          "{state === 'error' && (<p>oops</p>)}");
+          "{state === 'loading' && (<p {...inspectAttrs('loading', {role: 'text'})}>…</p>)}"
+          "{state === 'error' && (<p {...inspectAttrs('error', {role: 'text'})}>oops</p>)}");
 
       final r = designLint([d.path]);
       expect(r.exitCode, 1);
@@ -236,7 +236,7 @@ void main() {
         {'id': 'portalo.home', 'states': ['empty']},
       ]));
       _write(d, 'design/surfaces/home.tsx',
-          "{state === 'empty' ? (<p>nothing yet</p>) : (<ul>…</ul>)}");
+          "{state === 'empty' ? (<p {...inspectAttrs('empty-msg', {role: 'text'})}>nothing yet</p>) : (<ul {...inspectAttrs('list', {role: 'list'})}>…</ul>)}");
 
       final r = designLint([d.path]);
       expect(r.exitCode, 0, reason: r.stderrLines.join('\n'));
@@ -246,7 +246,7 @@ void main() {
       final d = _tmpDir();
       addTearDown(() => d.deleteSync(recursive: true));
       _write(d, 'surfaces/loose.tsx',
-          "{state === 'error' && (<p>oops</p>)}");
+          "{state === 'error' && (<p {...inspectAttrs('error-msg', {role: 'text'})}>oops</p>)}");
       expect(designLint([d.path]).exitCode, 0);
     });
 

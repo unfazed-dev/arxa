@@ -1,7 +1,7 @@
 /// The W-gate: the widget placement law and the panel contract, enforced
 /// against ANY design artifact tree (nothing here is studio-specific).
 ///
-/// Six hard-fail rules, per docs/plans/widget-panel-vocabulary-reconciliation.md
+/// Seven hard-fail rules, per docs/plans/widget-panel-vocabulary-reconciliation.md
 /// D5. Every failure message begins with its rule id and names the concrete fix,
 /// because the reader of a gate failure is someone who has to move a file:
 ///
@@ -16,6 +16,11 @@
 ///   W5  chip singularity — pill radius (999px/9999px) only in the widgets CSS.
 ///   W6  state namespacing — a shell's viewmodels write session keys under
 ///       `<shell>.` or `app.` only.
+///   W7  widget identity — in surface/view templates (outside widget-library
+///       dirs), a rendered HTML element that bears literal text or is
+///       interactive (button|a|input|select|textarea) must carry widget
+///       identity: a `data-el` attribute, an `inspectAttrs(...)` spread, or
+///       be a Capitalized library-widget invocation.
 ///
 /// The import graph is the only authority for W1/W2. No such parser existed in
 /// appboxd before this file — the pre-existing "orphan sweeps" (emit_htmx,
@@ -769,9 +774,90 @@ List<LintFinding> _stateNamespaceFindings(
   return findings;
 }
 
+// ══ W7 — anonymous text/interactive elements in surface templates ══════
+
+/// Interactive HTML elements that always require widget identity, even with no
+/// text content: a bare `<button />` or `<a />` is an interaction the widget
+/// library must own.
+const _interactiveTags = <String>{'button', 'a', 'input', 'select', 'textarea'};
+
+/// Known HTML element names. Restricting the scan to these eliminates false
+/// positives from TypeScript generics (`Record<string, …>`, `Array<T>`) that
+/// happen to look like `<lowercase>` after comment stripping.
+const _htmlElements = <String>{
+  'a', 'abbr', 'address', 'area', 'article', 'aside', 'audio', 'b', 'base',
+  'bdi', 'bdo', 'blockquote', 'br', 'button', 'canvas', 'caption', 'cite',
+  'code', 'col', 'colgroup', 'data', 'datalist', 'dd', 'del', 'details', 'dfn',
+  'dialog', 'div', 'dl', 'dt', 'em', 'embed', 'fieldset', 'figcaption',
+  'figure', 'footer', 'form', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'head',
+  'header', 'hgroup', 'hr', 'html', 'i', 'iframe', 'img', 'input', 'ins',
+  'kbd', 'label', 'legend', 'li', 'link', 'main', 'map', 'mark', 'menu',
+  'meta', 'meter', 'nav', 'noscript', 'object', 'ol', 'optgroup', 'option',
+  'output', 'p', 'param', 'picture', 'pre', 'progress', 'q', 'rp', 'rt',
+  'ruby', 's', 'samp', 'script', 'section', 'select', 'slot', 'small',
+  'source', 'span', 'strong', 'style', 'sub', 'summary', 'sup', 'table',
+  'tbody', 'td', 'template', 'textarea', 'tfoot', 'th', 'thead', 'time',
+  'title', 'tr', 'track', 'u', 'ul', 'var', 'video', 'wbr',
+};
+
+// kimitail: line-regex scan like the sibling rules, not a JSX parser — upgrade
+// only if false positives appear in practice. The _htmlElements allowlist is
+// the one upgrade applied: TS generics (Record<string, …>) produce <lowercase>
+// matches that a bare regex cannot distinguish from HTML tags.
+final _openingTagRe = RegExp(r'<([a-z][\w-]*)([^>]*?)(/?)>');
+
+/// W7: in surface/view templates (NOT in widget-library dirs), a rendered HTML
+/// element that bears literal text or is interactive must carry widget identity
+/// — a `data-el` attribute, an `inspectAttrs(...)` spread, or be a library-widget
+/// invocation. Capitalized tags (`<Label>`, `<Heading>`) are component
+/// invocations, not raw HTML, so they are exempt by construction (the regex only
+/// matches lowercase-opening tags).
+///
+/// The failure output doubles as the migration worklist: each finding names the
+/// file, line, and tag that needs wrapping.
+List<LintFinding> _anonymousElementFindings(String artifactDir) {
+  final findings = <LintFinding>[];
+  for (final rel in _templateFiles(artifactDir)) {
+    // Widget-library dirs DEFINE the widgets — raw HTML with text is legal there.
+    if (isWidget(rel)) continue;
+    final src = stripComments(File(p.join(artifactDir, rel)).readAsStringSync());
+    for (final m in _openingTagRe.allMatches(src)) {
+      final tag = m.group(1)!;
+      if (!_htmlElements.contains(tag)) continue; // TS generic, not HTML
+      final attrs = m.group(2)!;
+      final selfClosing = m.group(3) == '/';
+      final hasIdentity =
+          attrs.contains('data-el') || attrs.contains('inspectAttrs');
+      if (hasIdentity) continue;
+
+      final interactive = _interactiveTags.contains(tag);
+      var textBearing = false;
+      if (!selfClosing) {
+        // Non-whitespace between '>' and the next '<' = literal text or a JSX
+        // expression ({t('key')}) producing user-visible text.
+        final nextLt = src.indexOf('<', m.end);
+        final textBetween =
+            src.substring(m.end, nextLt < 0 ? src.length : nextLt);
+        textBearing = textBetween.trim().isNotEmpty;
+      }
+      if (!interactive && !textBearing) continue;
+
+      final line = _lineNumberAt(src, m.start);
+      final what = interactive
+          ? (textBearing ? 'text and interaction' : 'interaction')
+          : 'literal text';
+      findings.add(LintFinding(rel,
+          'W7: <$tag> bearing $what at line $line — wrap this <$tag> in a '
+          'library widget (Label/Heading/Txt/…) or spread inspectAttrs(...), '
+          'or add a `data-el` attribute'));
+    }
+  }
+  return findings;
+}
+
 // ══ entry point ═════════════════════════════════════════════════════════
 
-/// Run W1–W6 over the design artifact at [artifactDir].
+/// Run W1–W7 over the design artifact at [artifactDir].
 ///
 /// Returns the hard-fail findings in rule order. [notes] collects the advisory
 /// skipped-with-note channel (a rule that cannot apply to this tree yet), which
@@ -790,5 +876,6 @@ List<LintFinding> gateDesignWidgets(String artifactDir,
     ..._shellCompositionFindings(artifactDir, notes),
     ..._pillRadiusFindings(artifactDir),
     ..._stateNamespaceFindings(artifactDir, notes),
+    ..._anonymousElementFindings(artifactDir),
   ];
 }

@@ -1,8 +1,8 @@
-/// Mutation tests for the W-gate (W1–W6).
+/// Mutation tests for the W-gate (W1–W7).
 ///
-/// The shape is one clean synthetic artifact tree that passes all six rules,
+/// The shape is one clean synthetic artifact tree that passes all seven rules,
 /// then per-rule mutations of that same tree. Each mutation asserts BOTH
-/// directions: the mutated rule fires, and the other five stay silent. A rule
+/// directions: the mutated rule fires, and the other six stay silent. A rule
 /// that can only be shown to fire, never to be the *only* thing firing, is not
 /// proven non-vacuous — that is the whole point of the exercise.
 library;
@@ -141,7 +141,7 @@ export const page = (c, h) => {
 /// `*_view.tsx`, so it is a surface — never a hosted-shell namespace.
 const _workspaceShell = <String, String>{
   'ui/views/workspace_shell/settings/settings_view.tsx':
-      'export default function SettingsView() { return <main>settings</main>; }\n',
+      'export default function SettingsView() { return <main></main>; }\n',
 };
 
 /// Materialize [files] (plus [mutations], which overwrite or add) under a fresh
@@ -184,7 +184,7 @@ void main() {
   }
 
   group('clean tree', () {
-    test('passes all six rules', () {
+    test('passes all seven rules', () {
       final notes = <LintFinding>[];
       final findings = gateDesignWidgets(_tree(tmp, const {}), notes: notes);
       expect(findings, isEmpty, reason: findings.join('\n'));
@@ -205,7 +205,7 @@ void main() {
       // the law demands the surface home, not merely the shell home.
       expectsOnly('W1', {
         'ui/views/app_shell/auth/auth_view.tsx':
-            'export default function AuthView() { return <main>no chip</main>; }\n',
+            'export default function AuthView() { return <main></main>; }\n',
       },
           messageContains:
               'ui/views/main_shell/intake/brief/widgets/chip.tsx');
@@ -215,7 +215,7 @@ void main() {
         () {
       expectsOnly('W1', {
         'ui/views/app_shell/auth/auth_view.tsx':
-            'export default function AuthView() { return <main>no chip</main>; }\n',
+            'export default function AuthView() { return <main></main>; }\n',
         'ui/views/main_shell/design/chat/chat_view.tsx': '''
 import Toolbar from '../../shared/widgets/toolbar.tsx';
 import { Chip } from '../../../../common/widgets/chip.tsx';
@@ -232,7 +232,7 @@ export default function ChatView() {
       // chat_view stops using the toolbar → one consumer directory left.
       expectsOnly('W1', {
         'ui/views/main_shell/design/chat/chat_view.tsx':
-            'export default function ChatView() { return <main>bare</main>; }\n',
+            'export default function ChatView() { return <main></main>; }\n',
       }, messageContains: 'ui/views/main_shell/intake/brief/widgets/toolbar.tsx');
     });
 
@@ -278,7 +278,7 @@ export default function Toolbar() {
       // `intake/widgets/` is not a place the scaffolder would emit.
       final findings = gateDesignWidgets(_tree(tmp, {
         'ui/views/main_shell/design/chat/chat_view.tsx':
-            'export default function ChatView() { return <main>bare</main>; }\n',
+            'export default function ChatView() { return <main></main>; }\n',
         'ui/views/main_shell/intake/direction/direction_view.tsx': '''
 import Toolbar from '../../shared/widgets/toolbar.tsx';
 export default function DirectionView() {
@@ -358,9 +358,9 @@ export default function AppShellView() {
       // enforced only where it happens to be spelled `widgets`.
       final findings = gateDesignWidgets(_tree(tmp, {
         'ui/dialogs/_confirm.tsx':
-            'export default function Confirm() { return <dialog>confirm</dialog>; }\n',
+            'export default function Confirm() { return <dialog></dialog>; }\n',
         'ui/bottomsheets/_share.tsx':
-            'export default function Share() { return <div>share</div>; }\n',
+            'export default function Share() { return <div></div>; }\n',
         'ui/views/main_shell/intake/brief/brief_view.tsx': '''
 import Toolbar from '../../shared/widgets/toolbar.tsx';
 import { Chip } from '../../../../common/widgets/chip.tsx';
@@ -535,8 +535,8 @@ export default function MainShellView() {
   return (
     <main>
       <HeaderPanel />
-      <MainOpen><p>one</p></MainOpen>
-      <MainOpen><p>two</p></MainOpen>
+      <MainOpen></MainOpen>
+      <MainOpen></MainOpen>
     </main>
   );
 }
@@ -888,6 +888,102 @@ export const page = (c, h) => {
 ''',
       }));
       expect(findings, isEmpty, reason: findings.join('\n'));
+    });
+  });
+
+  group('W7 anonymous text/interactive elements', () {
+    test('a bare <span> with literal text in a surface view fails', () {
+      expectsOnly('W7', {
+        'ui/views/main_shell/intake/brief/brief_view.tsx': '''
+import Toolbar from '../../shared/widgets/toolbar.tsx';
+import { Chip } from '../../../../common/widgets/chip.tsx';
+import Row from './widgets/row.tsx';
+export default function BriefView() {
+  return <main><Toolbar /><Chip text="a" /><Row /><span>Raw text</span></main>;
+}
+''',
+      }, messageContains: 'wrap this <span>');
+    });
+
+    test('an interactive <button> without identity fails even with no text', () {
+      expectsOnly('W7', {
+        'ui/views/main_shell/intake/brief/brief_view.tsx': '''
+import Toolbar from '../../shared/widgets/toolbar.tsx';
+import { Chip } from '../../../../common/widgets/chip.tsx';
+import Row from './widgets/row.tsx';
+export default function BriefView() {
+  return <main><Toolbar /><Chip text="a" /><Row /><button /></main>;
+}
+''',
+      }, messageContains: 'wrap this <button>');
+    });
+
+    test('a library widget invocation (Capitalized tag) bearing text passes', () {
+      final findings = gateDesignWidgets(_tree(tmp, {
+        'ui/views/main_shell/intake/brief/brief_view.tsx': '''
+import Toolbar from '../../shared/widgets/toolbar.tsx';
+import { Chip } from '../../../../common/widgets/chip.tsx';
+import Row from './widgets/row.tsx';
+export default function BriefView() {
+  return <main><Toolbar /><Chip text="a" /><Row /><Label>Raw text</Label></main>;
+}
+''',
+      }));
+      expect(findings, isEmpty, reason: findings.join('\n'));
+    });
+
+    test('a bare tag with data-el passes', () {
+      final findings = gateDesignWidgets(_tree(tmp, {
+        'ui/views/main_shell/intake/brief/brief_view.tsx': '''
+import Toolbar from '../../shared/widgets/toolbar.tsx';
+import { Chip } from '../../../../common/widgets/chip.tsx';
+import Row from './widgets/row.tsx';
+export default function BriefView() {
+  return <main><Toolbar /><Chip text="a" /><Row /><span data-el="label">text</span></main>;
+}
+''',
+      }));
+      expect(findings, isEmpty, reason: findings.join('\n'));
+    });
+
+    test('a bare tag with inspectAttrs spread passes', () {
+      final findings = gateDesignWidgets(_tree(tmp, {
+        'ui/views/main_shell/intake/brief/brief_view.tsx': '''
+import Toolbar from '../../shared/widgets/toolbar.tsx';
+import { Chip } from '../../../../common/widgets/chip.tsx';
+import Row from './widgets/row.tsx';
+export default function BriefView() {
+  return <main><Toolbar /><Chip text="a" /><Row /><span {...inspectAttrs('label', { role: 'label' })}>text</span></main>;
+}
+''',
+      }));
+      expect(findings, isEmpty, reason: findings.join('\n'));
+    });
+
+    test('widget-library dirs are exempt — raw text in a widget file is legal', () {
+      // The same <span>Raw text</span> that fails in a surface view is legal
+      // inside a widget-library dir: that is where the widgets are DEFINED.
+      final findings = gateDesignWidgets(_tree(tmp, {
+        'ui/views/main_shell/intake/brief/widgets/raw_label.tsx':
+            'export default function RawLabel() { return <span>Raw text</span>; }\n',
+        'ui/views/main_shell/intake/brief/brief_view.tsx': '''
+import Toolbar from '../../shared/widgets/toolbar.tsx';
+import { Chip } from '../../../../common/widgets/chip.tsx';
+import Row from './widgets/row.tsx';
+import RawLabel from './widgets/raw_label.tsx';
+export default function BriefView() {
+  return <main><Toolbar /><Chip text="a" /><Row /><RawLabel /></main>;
+}
+''',
+      }));
+      expect(_rules(findings), isNot(contains('W7')));
+    });
+
+    test('a bare <main> with only component children passes (no literal text)', () {
+      // <main> itself is a lowercase HTML element, but it has no literal text
+      // and is not interactive — so W7 does not fire.
+      final findings = gateDesignWidgets(_tree(tmp, const {}));
+      expect(_rules(findings), isNot(contains('W7')));
     });
   });
 
