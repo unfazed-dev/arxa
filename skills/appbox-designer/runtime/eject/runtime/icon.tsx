@@ -21,10 +21,15 @@ interface IconProps {
 }
 
 // Vendored Lucide icons — resolved relative to this module. In the ejected tree
-// that is runtime/vendor/lucide/icons. On Workers, icons come from preload.iconSvg.
+// that is runtime/vendor/lucide/icons. On Workers there is no fs: the cloudflare
+// eject bundles icons into preload.js (node/vercel emit a stub, preload = null).
 const iconsDir = path.join(path.dirname(fileURLToPath(import.meta.url)), 'vendor', 'lucide', 'icons');
 const NAME_RE = /^[a-z0-9-]+$/;
 const cache = new Map<string, string | null>();
+
+// @ts-ignore — runtime/preload.js is generated at eject time
+const { preload } = await import('./preload.js');
+const preloadIcons: Record<string, string> | null = preload?.iconSvg ?? null;
 
 const esc = (s: string) =>
   String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -37,10 +42,14 @@ function placeholder(size: number, cls?: string): string {
 function loadIcon(name: string): string | null {
   let raw_ = cache.get(name);
   if (raw_ !== undefined) return raw_;
-  try {
-    raw_ = readFileSync(path.join(iconsDir, name + '.svg'), 'utf8');
-  } catch {
-    raw_ = null;
+  if (preloadIcons) {
+    raw_ = preloadIcons[name] ?? null;
+  } else {
+    try {
+      raw_ = readFileSync(path.join(iconsDir, name + '.svg'), 'utf8');
+    } catch {
+      raw_ = null;
+    }
   }
   if (raw_ === null) console.warn(`[icon] unknown icon '${name}'`);
   cache.set(name, raw_);

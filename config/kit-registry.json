@@ -120,7 +120,7 @@
       "web": {
         "npm": "@supabase/supabase-js@^2",
         "facade": "supabase.js",
-        "envFrom": ["SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY"]
+        "envFrom": ["SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY", "SUPABASE_WEBHOOK_SECRET"]
       }
     },
     {
@@ -268,7 +268,7 @@
       "web": {
         "npm": "stripe@^17",
         "facade": "stripe.js",
-        "envFrom": ["STRIPE_SECRET_KEY", "STRIPE_PUBLISHABLE_KEY"]
+        "envFrom": ["STRIPE_SECRET_KEY", "STRIPE_PUBLISHABLE_KEY", "STRIPE_WEBHOOK_SECRET"]
       },
       "providers": [
         {

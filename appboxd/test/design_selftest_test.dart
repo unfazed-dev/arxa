@@ -239,6 +239,7 @@ void main() {
         'untracked-file',
         'client-js',
         'commented-js',
+        'kit-catalog-row',
       ];
       final tmp = await Directory.systemTemp.createTemp('selftest-neg-repo-');
       // The artifact must be a SUBDIR of the git repo (not the repo root): the

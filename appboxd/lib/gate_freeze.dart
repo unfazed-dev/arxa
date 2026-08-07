@@ -279,7 +279,7 @@ bool _checkShape(
     if (views.isNotEmpty) {
       ok('shape: ${views.length} view template(s) under $designRel/ui/views/');
     } else {
-      fail('shape: no view templates — $designRel/ui/views/**/*_view.html missing');
+      fail('shape: no view templates — $designRel/ui/views/**/*_view.{html,tsx} missing');
     }
   } else {
     for (final f in [
@@ -1109,7 +1109,8 @@ List<File> _viewTemplates(String designRoot) {
     for (final e in dir.listSync()..sort((a, b) => a.path.compareTo(b.path))) {
       if (e is Directory) {
         walk(e);
-      } else if (e is File && e.path.endsWith('_view.html')) {
+      } else if (e is File &&
+          (e.path.endsWith('_view.html') || e.path.endsWith('_view.tsx'))) {
         out.add(e);
       }
     }

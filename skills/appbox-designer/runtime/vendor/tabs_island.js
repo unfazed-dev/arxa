@@ -16,15 +16,15 @@ export default function tabs(el, { state, signal, effect }) {
 
   effect(() => {
     tabBtns.forEach((btn) => {
-      const on = btn.dataset.tab === active.value;
+      const on = btn.dataset.tab === active();
       btn.setAttribute('aria-selected', String(on));
       btn.classList.toggle('active', on);
     });
-    panels.forEach((p) => { p.hidden = p.dataset.panel !== active.value; });
+    panels.forEach((p) => { p.hidden = p.dataset.panel !== active(); });
   });
 
   tabBtns.forEach((btn) =>
-    btn.addEventListener('click', () => { active.value = btn.dataset.tab; }),
+    btn.addEventListener('click', () => { active(btn.dataset.tab); }),
   );
   return { active };
 }

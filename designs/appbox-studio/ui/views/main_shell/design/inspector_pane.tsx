@@ -133,13 +133,13 @@ export function ElementCard({ el, locked, unlockHref, t }: ElementCardProps) {
               href={el.unpinHref}
               hx-get={el.unpinHref}
               hx-target="#panels"
-              hx-swap="morph:outerHTML"
+              hx-swap="outerMorph"
               hx-push-url="false"
             >
               {t('design.inContext') as string} <Icon name="check" size={14} />
             </a>
           ) : el.pinHref ? (
-            <form hx-post={el.pinHref} hx-target="#panels" hx-swap="morph:outerHTML" hx-push-url="false">
+            <form hx-post={el.pinHref} hx-target="#panels" hx-swap="outerMorph" hx-push-url="false">
               <input type="hidden" name="screen" value={el.screenId} />
               <input type="hidden" name="name" value={el.name} />
               <input type="hidden" name="kind" value={el.kind} />

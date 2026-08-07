@@ -278,7 +278,7 @@ export function TileTools({ v, s, row, first, last, t }: TileToolsProps) {
           type="button"
           hx-get={dr.toggleHref}
           hx-target="#design-viewer"
-          hx-swap="morph:outerHTML"
+          hx-swap="outerMorph"
           aria-expanded={dr.open ? 'true' : 'false'}
           aria-controls={`dv-drawer-${dr.slug}`}
           aria-label={
@@ -297,7 +297,7 @@ export function TileTools({ v, s, row, first, last, t }: TileToolsProps) {
           href={`${v.contextBase}${s.id}?state=toggle`}
           hx-get={`${v.contextBase}${s.id}?state=toggle`}
           hx-target="#panels"
-          hx-swap="morph:outerHTML"
+          hx-swap="outerMorph"
           aria-label={
             s.inContext
               ? t('viewer.removeCtxAria', { id: s.id }) as string
@@ -317,7 +317,7 @@ export function TileTools({ v, s, row, first, last, t }: TileToolsProps) {
         href={s.inspectHref}
         hx-get={s.inspectHref}
         hx-target="#design-viewer"
-        hx-swap="morph:outerHTML"
+        hx-swap="outerMorph"
         aria-label={t('viewer.inspectAria', { id: s.id }) as string}
         title={t('viewer.inspect', { id: s.id }) as string}
       >
@@ -330,7 +330,7 @@ export function TileTools({ v, s, row, first, last, t }: TileToolsProps) {
             href={s.liveHref}
             hx-get={s.liveHref}
             hx-target="#design-viewer"
-            hx-swap="morph:outerHTML"
+            hx-swap="outerMorph"
             aria-label={t('viewer.flowModeAria', { id: s.id }) as string}
             title={t('viewer.flowMode', { id: s.id }) as string}
           >
@@ -343,7 +343,7 @@ export function TileTools({ v, s, row, first, last, t }: TileToolsProps) {
             hx-post={`/design/flows/${row.id}/move/${s.id}`}
             hx-vals={'{"dir": -1}'}
             hx-target="#panels"
-            hx-swap="morph:outerHTML"
+            hx-swap="outerMorph"
             aria-label={t('viewer.moveEarlier', { id: s.id }) as string}
             title={t('viewer.moveEarlier', { id: s.id }) as string}
           >
@@ -356,7 +356,7 @@ export function TileTools({ v, s, row, first, last, t }: TileToolsProps) {
             hx-post={`/design/flows/${row.id}/move/${s.id}`}
             hx-vals={'{"dir": 1}'}
             hx-target="#panels"
-            hx-swap="morph:outerHTML"
+            hx-swap="outerMorph"
             aria-label={t('viewer.moveLater', { id: s.id }) as string}
             title={t('viewer.moveLater', { id: s.id }) as string}
           >
@@ -372,7 +372,7 @@ export function TileTools({ v, s, row, first, last, t }: TileToolsProps) {
             aria-disabled={s.canRemove === false ? 'true' : 'false'}
             hx-post={`/design/flows/${row.id}/remove/${s.id}`}
             hx-target="#panels"
-            hx-swap="morph:outerHTML"
+            hx-swap="outerMorph"
             aria-label={t('viewer.removeFromFlowAria', { id: s.id }) as string}
             title={t('viewer.removeFromFlow') as string}
           >
@@ -394,7 +394,7 @@ export function TileTools({ v, s, row, first, last, t }: TileToolsProps) {
                 key={f.id}
                 hx-post={`/design/flows/${f.id}/add/${s.id}`}
                 hx-target="#panels"
-                hx-swap="morph:outerHTML"
+                hx-swap="outerMorph"
               >
                 <button class="dv-menu-item" type="submit">{f.name}</button>
               </form>
@@ -465,7 +465,7 @@ export function Tile({ v, s, row, first, last, t }: TileProps) {
                 href={s.advanceHref}
                 hx-get={s.advanceHref}
                 hx-target="#design-viewer"
-                hx-swap="morph:outerHTML"
+                hx-swap="outerMorph"
                 aria-label={t('viewer.flowAdvanceAria', { trigger: s.conn ?? s.edge?.to }) as string}
                 title={t('viewer.flowAdvance', { trigger: s.conn ?? s.edge?.to }) as string}
               >
@@ -477,7 +477,7 @@ export function Tile({ v, s, row, first, last, t }: TileProps) {
               href={s.liveCloseHref}
               hx-get={s.liveCloseHref}
               hx-target="#design-viewer"
-              hx-swap="morph:outerHTML"
+              hx-swap="outerMorph"
               aria-label={t('viewer.flowModeCloseAria') as string}
               title={t('viewer.flowModeClose') as string}
             >
@@ -534,7 +534,7 @@ export function ToolsPane({ s, dr, t }: ToolsPaneProps) {
             hx-post={tl.selectHref}
             hx-vals={`{"screen": "${s.id}", "kind": "${w.kind}", "name": "", "index": "${w.index}"}`}
             hx-target="#design-viewer"
-            hx-swap="morph:outerHTML"
+            hx-swap="outerMorph"
             hx-push-url="false"
           >
             {w.kind}{w.index ? ` #${w.index + 1}` : ''}
@@ -568,7 +568,7 @@ export function ToolsPane({ s, dr, t }: ToolsPaneProps) {
                   class="dv-tools-copy-form"
                   hx-post={tl.copy.textHref}
                   hx-target={`#dv-drawer-${dr.slug}`}
-                  hx-swap="morph:outerHTML"
+                  hx-swap="outerMorph"
                   hx-push-url="false"
                 >
                   <input type="hidden" name="drawer" value={s.id} />
@@ -648,7 +648,7 @@ export function LogicPane({ s, dr, t }: LogicPaneProps) {
         </p>
         {lg.screen.edges.map((e, i) => (
           <p class="dv-logic-edge" key={i}>
-            <code class="dv-logic-tech">{s.id} → {e.action ?? 'push'} {e.to} · {e.flow}</code>
+            <code class="dv-logic-tech">{s.id} <Icon name="arrow-right" size={12} /> {e.action ?? 'push'} {e.to} · {e.flow}</code>
             <span class="dv-logic-plain">
               {t('viewer.logic.edgePlain', { trigger: e.trigger ?? '—', to: e.toLabel, flow: e.flowName }) as string}
             </span>
@@ -682,7 +682,7 @@ export function LogicPane({ s, dr, t }: LogicPaneProps) {
               {w.wiring === 'edge' ? (
                 <p class="dv-logic-edge">
                   <code class="dv-logic-tech">
-                    {w.el} → {w.edge!.action ?? 'push'} {w.edge!.to} · {w.edge!.flow}
+                    {w.el} <Icon name="arrow-right" size={12} /> {w.edge!.action ?? 'push'} {w.edge!.to} · {w.edge!.flow}
                   </code>
                   <span class="dv-logic-plain">
                     {t('viewer.logic.edgePlain', {
@@ -753,7 +753,7 @@ export function RevealDrawer({ v, s, t }: RevealDrawerProps) {
             aria-controls={`dv-drawer-panel--${dr.slug}`}
             hx-get={tab.href}
             hx-target="#design-viewer"
-            hx-swap="morph:outerHTML"
+            hx-swap="outerMorph"
             hx-push-url="false"
           >
             {t(`viewer.drawer.tab.${tab.key}`) as string}
@@ -810,7 +810,7 @@ export function Topbar({ v, chrome, t }: TopbarProps) {
                   class={`chip dv-chip dv-arm-chip${v.weditArmed ? ' on' : ''}`}
                   hx-post={v.weditArmHref}
                   hx-target="#design-viewer"
-                  hx-swap="morph:outerHTML"
+                  hx-swap="outerMorph"
                   aria-pressed={v.weditArmed ? 'true' : 'false'}
                   title={t('viewer.wedit.armHint') as string}
                 >
@@ -828,7 +828,7 @@ export function Topbar({ v, chrome, t }: TopbarProps) {
                 href={th.href}
                 hx-get={th.href}
                 hx-target="#design-viewer"
-                hx-swap="morph:outerHTML"
+                hx-swap="outerMorph"
               >
                 {t(`viewer.theme.${th.key}`) as string}
               </a>
@@ -843,7 +843,7 @@ export function Topbar({ v, chrome, t }: TopbarProps) {
                 href={b.href}
                 hx-get={b.href}
                 hx-target="#design-viewer"
-                hx-swap="morph:outerHTML"
+                hx-swap="outerMorph"
                 aria-label={t(`miniPanel.bg.${b.value}`) as string}
                 title={t(`miniPanel.bg.${b.value}`) as string}
               ></a>
@@ -914,7 +914,7 @@ export function FsClose({ t }: FsCloseProps) {
 // The viewer: CONTENT of the main panel, not a panel. The card is a _panel
 // instantiation in the main role; this component passes section params and
 // streams the canvas between open/close. `id="design-viewer"` stays on the
-// CARD, deliberately — nine controls swap it with morph:outerHTML and every
+// CARD, deliberately — nine controls swap it with outerMorph and every
 // one expects the topbar and botbar to be re-rendered with the body.
 //
 // bodyAttrs carries the edit-arming state. Arming rides the canvas body, not
@@ -999,7 +999,7 @@ export function DesignViewer({ v, chrome, t }: DesignViewerProps) {
                           href={h.href}
                           hx-get={h.href}
                           hx-target="#design-viewer"
-                          hx-swap="morph:outerHTML"
+                          hx-swap="outerMorph"
                           aria-label={t('viewer.handoffAria', { flow: h.flowName, id: h.to }) as string}
                           title={t('viewer.handoff', { flow: h.flowName, id: h.to }) as string}
                         >

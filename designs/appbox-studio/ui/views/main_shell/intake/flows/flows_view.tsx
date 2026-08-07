@@ -48,7 +48,7 @@ function FlowCard({ c, item, t }: { c: Ctx; item: StepItem; t: TFn }) {
       <EdgeChain item={item} />
       {item.state === 'editing' ? (
         <form class="q-form" method="post" action={`${c.base}/save`}
-              hx-post={`${c.base}/save`} hx-target="#panels" hx-swap="morph:outerHTML">
+              hx-post={`${c.base}/save`} hx-target="#panels" hx-swap="outerMorph">
           <input type="hidden" name="item" value={item.id} />
           <label class="fact-label" for={`flow-name-${item.id}`}>{t('intake.form.name') as string}</label>
           <input type="text" id={`flow-name-${item.id}`} name="name" value={item.name} />

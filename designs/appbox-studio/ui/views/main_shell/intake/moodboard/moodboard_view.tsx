@@ -59,7 +59,7 @@ function GalleryCanvas({ c, a, t }: { c: Ctx; a: GalleryArtifact; t: TFn }) {
           <div class="shot-grid">
             {(b.references ?? []).map((r, j) => (
               <a key={j} class="shot-card" href={`${c.base}/artifact/shot/${r.shot?.id}`}
-                 hx-get={`${c.base}/artifact/shot/${r.shot?.id}`} hx-target="#panels" hx-swap="morph:outerHTML" hx-push-url="false">
+                 hx-get={`${c.base}/artifact/shot/${r.shot?.id}`} hx-target="#panels" hx-swap="outerMorph" hx-push-url="false">
                 <img src={r.shot?.src} alt={`${r.name} — ${r.shot?.caption}`} loading="lazy" />
                 <span class="shot-meta">
                   <strong>{r.name}</strong>
@@ -93,7 +93,7 @@ function ShotCanvas({ c, a, t }: { c: Ctx; a: ShotArtifact; t: TFn }) {
       <p class="fact-label">{t('shotWhy') as string}</p>
       <p class="artifact-detail">{reference.why}</p>
       <p class="artifact-foot">
-        <a href={`${c.base}/artifact/${a.backRef}`} hx-get={`${c.base}/artifact/${a.backRef}`} hx-target="#panels" hx-swap="morph:outerHTML" hx-push-url="false"><Icon name="chevron-left" size={14} /> {t('mood.back') as string}</a>
+        <a href={`${c.base}/artifact/${a.backRef}`} hx-get={`${c.base}/artifact/${a.backRef}`} hx-target="#panels" hx-swap="outerMorph" hx-push-url="false"><Icon name="chevron-left" size={14} /> {t('mood.back') as string}</a>
       </p>
     </article>
   );

@@ -58,12 +58,12 @@ const ScreenStubView: FC<ScreenStubViewProps> = (props) => {
           {/* Boosted MPA (ADR-0003) for frames the user can click (live tile,
               proto lens). `still` frames are canvas tiles: interactive in place
               but navigation inert via canvas.js, so they stay script-free.
-              globalViewTransitions animates the body swap with zero JS;
-              allowEval and allowScriptTags stay false (ADR-0002 no-custom-JS). */}
+              htmx 4 `transitions` animates the body swap with zero JS and no
+              hx-on is used (ADR-0002 no-custom-JS — v4 has no allowEval). */}
           {!props.still && (
             <Fragment>
-              <meta name="htmx-config" content='{"allowEval":false,"allowScriptTags":false,"globalViewTransitions":true}' />
-              <script src="/assets/vendor/htmx.min.js" integrity="sha384-H5SrcfygHmAuTDZphMHqBJLc3FhssKjG7w/CeCpFReSfwBWDTKpkzPP8c+cLsK+V" crossorigin="anonymous" />
+              <meta name="htmx-config" content='{"transitions":true}' />
+              <script src="/assets/vendor/htmx4.min.js" integrity="sha384-6lyVbhrs13b9z7mLOpt/N6R76rtkEBWgCjAXRs/DSWyi2AMnQSs10ijWk+PI8n7W" crossorigin="anonymous" />
             </Fragment>
           )}
         </head>

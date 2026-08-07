@@ -93,5 +93,5 @@
       }
     });
   document.addEventListener('DOMContentLoaded', arm);
-  document.body.addEventListener('htmx:load', arm);
+  document.body.addEventListener('htmx:after:process', arm);
 })();

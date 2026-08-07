@@ -23,13 +23,13 @@ Build a fully interactive prototype as a **server-first hypermedia app**: every 
 1. Inventory the screens and their URLs (the route table *is* the app map).
 2. Copy `examples/hello-hda/` → your artifact dir; rename shell/surfaces.
 3. Models + fixtures first (`models/`, `services/repositories|facades/`) — the data the screens bind to.
-4. Shell (chrome + nav) in `ui/views/<shell>_shell/`, then one Surface at a time: `<surface>_view.html` (page + Named Fragment macros) + `<surface>_viewmodel.js` (context builders + handlers).
+4. Shell (chrome + nav) in `ui/views/<shell>_shell/`, then one Surface at a time: `<surface>_view.tsx` (default-export page + Named Fragment exports) + `<surface>_viewmodel.js` (context builders + handlers).
 5. Serve, then verify per surface: `appbox design lint`, `appbox lens check`, playwright screenshot + `ReadMediaFile`.
 
 ## The playbook (copy these patterns)
 
 - **Navigation** — plain `<a href>`; `<body hx-boost>` upgrades it. Every pushed URL must render a full page (deep links, back button, cache-miss restore). Long nav lists get `preload` for snap.
-- **Partial update** — `hx-get="/x" hx-target="#y" hx-swap="outerHTML"` where `/x` returns a Named Fragment (`view.html#macro`) for `HX-Request` calls. Server branches full-page vs fragment in the ViewModel.
+- **Partial update** — `hx-get="/x" hx-target="#y" hx-swap="outerHTML"` where `/x` returns a Named Fragment (`view.html#fragment` → the view file's `Fragment` export) for `HX-Request` calls. Server branches full-page vs fragment in the ViewModel.
 - **Forms** — real `<form>` + HTML5 validation (`reportValidityOfForms` is on). Valid POST → 200 with the next-state fragment (no PRG needed). Invalid → **422 + re-rendered form** (the meta config swaps 422s). Mutations that change nothing visible → `h.noContent(c)` (204).
 - **Tabs / filters** — URL-as-state: GET form or links with `?tab=…`, server renders the active state, `hx-push-url="true"` so it deep-links.
 - **Sheets / dialogs** — deep-linkable flows get **real routes** (a sheet is a page styled as an overlay; back button closes it). Transient confirmations: a fragment swapped into a persistent `#modal` container in the shell. Trivial popovers: the Popover API (`<button popovertarget>`), and the Invoker Commands API (`commandfor`/`command="show-modal"`) for modal dialogs — both zero-JS.
@@ -37,7 +37,7 @@ Build a fully interactive prototype as a **server-first hypermedia app**: every 
 - **Theme / accent / role** — POST to a prefs endpoint → `h.setPrefs(c, …)` → `h.refresh(c)` (full reload; body/html attributes don't update under boosted swaps). Render CSS vars on an in-body wrapper (`#app`).
 - **Timers / countdowns** — server holds the deadline; the view polls: `hx-get="/timer/tick" hx-trigger="load delay:1s" hx-swap="outerHTML"`, each tick renders `timers.remaining(id)`, and the fragment drops its trigger (or the handler answers `h.stopPolling(c)`, 286) at zero. Never decrement client-side.
 - **Preserve Islands** — a playing media element that must survive navigation: `<div id="player" hx-preserve>` with the same id on every page. Never answer a request touching it with `hx-swap="none"`.
-- **Race safety** — `<body hx-sync="this:replace">` (already in `base.html`); buttons that mutate get `hx-disabled-elt="this"`.
+- **Race safety** — `<body hx-sync="this:replace">` (already in `base.tsx`); buttons that mutate get `hx-disabled-elt="this"`.
 
 ## Motion (CSS only)
 

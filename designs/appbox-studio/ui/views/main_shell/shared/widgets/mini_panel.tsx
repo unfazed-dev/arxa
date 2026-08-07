@@ -44,7 +44,7 @@ export function ControllerPanel({ controller: c, t }: ControllerPanelProps) {
             href={m.href}
             hx-get={m.href}
             hx-target="#design-viewer"
-            hx-swap="morph:outerHTML"
+            hx-swap="outerMorph"
           >
             {t(`viewer.modeLabel.${m.key}`) as string}
           </a>
@@ -61,7 +61,7 @@ export function ControllerPanel({ controller: c, t }: ControllerPanelProps) {
             class="ico-btn undo-btn"
             hx-post={c.undo.href}
             hx-target="#panels"
-            hx-swap="morph:outerHTML"
+            hx-swap="outerMorph"
             title={t('miniPanel.undo') as string}
           >
             <Icon name="undo-2" size={16} />
@@ -76,7 +76,7 @@ export function ControllerPanel({ controller: c, t }: ControllerPanelProps) {
             class="ico-btn redo-btn"
             hx-post={c.redo.href}
             hx-target="#panels"
-            hx-swap="morph:outerHTML"
+            hx-swap="outerMorph"
             title={t('miniPanel.redo') as string}
           >
             <Icon name="redo-2" size={16} />
@@ -112,7 +112,7 @@ export function MiniPanel({ v, t }: MiniPanelProps) {
                   href={d.href}
                   hx-get={d.href}
                   hx-target="#design-viewer"
-                  hx-swap="morph:outerHTML"
+                  hx-swap="outerMorph"
                   aria-label={t(`viewer.vp.${d.key}`) as string}
                   title={t(`viewer.vp.${d.key}`) as string}
                 >

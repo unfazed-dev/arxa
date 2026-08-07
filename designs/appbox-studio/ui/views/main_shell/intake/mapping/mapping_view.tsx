@@ -39,7 +39,7 @@ function StatusDot({ s, t }: { s: Story; t: TFn }) {
 function StoryCard({ c, s, t }: { c: Ctx; s: Story; t: TFn }) {
   return (
     <a class={`story-card${s.priority ? ` pri-${s.priority}` : ''}`} href={`${c.base}/artifact/story/${s.id}`}
-       hx-get={`${c.base}/artifact/story/${s.id}`} hx-target="#panels" hx-swap="morph:outerHTML" hx-push-url="false">
+       hx-get={`${c.base}/artifact/story/${s.id}`} hx-target="#panels" hx-swap="outerMorph" hx-push-url="false">
       <StatusDot s={s} t={t} />
       <span class="story-text">{s.name}</span>
       {s.priority && <span class={`chip pri-chip pri-${s.priority}`}>{t(`pri.name.${s.priority}`) as string}</span>}
@@ -138,7 +138,7 @@ function StoryCanvas({ c, a, t }: { c: Ctx; a: StoryArtifact; t: TFn }) {
         </Fragment>
       )}
       <p class="artifact-foot">
-        <a href={`${c.base}/artifact/map/full`} hx-get={`${c.base}/artifact/map/full`} hx-target="#panels" hx-swap="morph:outerHTML" hx-push-url="false"><Icon name="chevron-left" size={14} /> {t('map.back') as string}</a>
+        <a href={`${c.base}/artifact/map/full`} hx-get={`${c.base}/artifact/map/full`} hx-target="#panels" hx-swap="outerMorph" hx-push-url="false"><Icon name="chevron-left" size={14} /> {t('map.back') as string}</a>
       </p>
     </article>
   );

@@ -15,10 +15,10 @@ export default function toggle(el, { state, signal, effect }) {
   const panel = el.querySelector('[data-island-panel]');
   if (btn && panel) {
     effect(() => {
-      panel.hidden = !open.value;
-      btn.setAttribute('aria-expanded', String(open.value));
+      panel.hidden = !open();
+      btn.setAttribute('aria-expanded', String(open()));
     });
-    btn.addEventListener('click', () => { open.value = !open.value; });
+    btn.addEventListener('click', () => { open(!open()); });
   }
   return { open };
 }

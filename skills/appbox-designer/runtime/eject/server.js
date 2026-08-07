@@ -1,6 +1,6 @@
 // server.js — node entry point for the ejected appbox-designer artifact.
 //
-//   npm start           # → http://0.0.0.0:4319 (PORT/HOST env to change)
+//   npm start           # → http://0.0.0.0:4399 (PORT/HOST env to change)
 //   npm run typecheck   # tsc --checkJs (Phase 4)
 //
 // One-way eject: this tree is yours. appbox will never re-import it.
@@ -9,7 +9,7 @@ import { serveStatic } from '@hono/node-server/serve-static';
 import { createArtifactApp } from './runtime/router.js';
 
 const artifactDir = process.cwd();
-const port = Number(process.env.PORT ?? 4319);
+const port = Number(process.env.PORT ?? 4399);
 const hostname = process.env.HOST || '0.0.0.0';
 
 const app = await createArtifactApp(artifactDir, {

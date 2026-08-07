@@ -1,7 +1,7 @@
 // The appbox design server (ports skills/appbox-designer/runtime/serve.mjs +
 // lib/*.mjs). Dart owns the process contract — target resolution, ports,
 // supervisor/hot-reload, pidfile registry, session/pref/timer state, exit
-// codes 64/66/69/70/77. Artifact JS (app.routes.js viewmodels, Nunjucks views)
+// codes 64/66/69/70/77. Artifact JS (app.routes.js viewmodels, TSX views)
 // executes in a headless-Chrome worker over CDP (see worker.dart): the designs
 // stay ES modules, the toolchain stays Dart.
 //
@@ -83,8 +83,8 @@ String _esc(String s) => s
     .replaceAll('>', '&gt;')
     .replaceAll('"', '&quot;');
 
-/// The htmx fragment. htmx retargets it into `#toasts` with swapOverride
-/// innerHTML (base.html) — so it lands in the always-rendered tray without
+/// The htmx fragment. htmx retargets it into `#toasts` (the hx-status 404/5xx
+/// rules in base.tsx) — so it lands in the always-rendered tray without
 /// touching whatever panel the request came from, and only one shows at a
 /// time. The checkbox is the dismiss control: pure CSS, no client JS.
 String _errorToast(String message, String dismiss) =>
@@ -303,6 +303,12 @@ class DesignServer {
     String? projectDir,
     Duration reloadGrace = _kReloadGrace,
   }) async {
+    // Absolutize up front: artifact files are served and re-scanned (worker
+    // boot, watcher reload) against the process cwd at USE time, so a relative
+    // dir silently breaks the worker's app.routes.js fetch the moment the
+    // caller's cwd is not the long-lived server's. Resolve it once, here,
+    // while the caller's cwd is still the right base.
+    artifactDir = p.normalize(p.absolute(artifactDir));
     final srv = DesignServer._()
       ..artifactDir = artifactDir
       ..projectRoot = projectDir
@@ -526,27 +532,32 @@ class DesignServer {
   /// absent or a catalog is unreadable, so the worst case is exactly the
   /// pre-l10n behaviour rather than a raw key on screen.
   ///
-  /// htmx is configured (ui/common/base.html) to retarget 404/5xx into the
-  /// always-rendered `#toasts` tray; the blanket `[45]..` rule stays
-  /// swap:false, so an error can never overwrite a good panel. A full-page
-  /// request gets a real page instead of a bare string.
+  /// htmx is configured (ui/common/base.tsx) to retarget 404/5xx into the
+  /// always-rendered `#toasts` tray; the blanket 4xx rule is swap:none, so an
+  /// error can never overwrite a good panel. A full-page request gets a real
+  /// page instead of a bare string.
   ///
   /// `Vary: Accept-Language` joins `Vary: HX-Request` now that the body depends
   /// on the negotiated locale — without it a cache would serve one visitor's
   /// language to the next.
+  ///
+  /// [detail] appends a raw diagnosis (e.g. the esbuild stderr for a broken
+  /// TSX bundle) — developer-facing, never localized, escaped like the message.
   Future<void> _writeError(
     HttpRequest req,
     int status,
     String key,
     String fallbackEn, {
     Map<String, String> vars = const {},
+    String? detail,
   }) async {
     final headers = _headerMap(req);
     final prefs = _parsePrefs(_parseCookies(headers)['kdh_prefs']);
     final locale = _resolveLocale(
         locales, req.uri.queryParameters, prefs, headers['accept-language']);
     final cat = _errorCatalog;
-    final message = cat.t(locale, key, fallbackEn, vars);
+    var message = cat.t(locale, key, fallbackEn, vars);
+    if (detail != null) message = '$message — $detail';
 
     req.response.statusCode = status;
     req.response.headers.contentType =
@@ -652,6 +663,17 @@ class DesignServer {
       }
     }
 
+    // A TSX syntax error breaks the render bundle, not the studio: every
+    // route answers with the esbuild diagnosis on the 5xx surface (toast for
+    // htmx, page otherwise) until a save rebuilds clean — the nunjucks era
+    // surfaced template errors per-route; stderr alone is invisible (M9).
+    final bundleError = _worker.bundleError;
+    if (bundleError != null) {
+      await _writeError(req, 500, 'errorSurface.serverError', _msgServerError,
+          detail: bundleError);
+      return;
+    }
+
     final resp = await _withSessionLock(sid, () async {
       final sessionData = Map<String, dynamic>.from(_sessions[sid] ?? {});
       final state = <String, dynamic>{
@@ -687,7 +709,22 @@ class DesignServer {
     if ((resp.headers['content-type'] ?? '').contains('text/html')) {
       req.response.headers.add('Vary', 'Accept-Language');
     }
-    if (resp.body != null) req.response.add(utf8.encode(resp.body!));
+    var respBody = resp.body;
+    // Design-time eager islands (M10): every full HTML page gets the eager
+    // loader — hx-island-when conditions are ignored, islands init on boot —
+    // so a lens check sees the real island, not the inert pre-condition
+    // markup. Full documents only: a fragment carries no shell, and the
+    // loader's MutationObserver arms islands swapped in later. The ejected
+    // app never passes through here; its lazy loader is untouched.
+    if (respBody != null &&
+        (resp.headers['content-type'] ?? '').contains('text/html') &&
+        respBody.contains('</body>')) {
+      respBody = respBody.replaceFirst(
+          '</body>',
+          '<script type="module" src="/__worker_assets/islands_eager.js">'
+          '</script></body>');
+    }
+    if (respBody != null) req.response.add(utf8.encode(respBody));
     await req.response.close();
   }
 
@@ -867,6 +904,9 @@ class DesignServer {
 
   /// Test-only; see [JsWorker.reloadRunsForTest].
   int get workerReloadRunsForTest => _worker.reloadRunsForTest;
+
+  /// Test-only; see [JsWorker.bundleError].
+  String? get workerBundleErrorForTest => _worker.bundleError;
 
   /// Kill the worker's browser, the state task #64 recovers from.
   /// Test-only; see [JsWorker.killChromeForTest].

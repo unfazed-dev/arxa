@@ -221,7 +221,7 @@ function RemoveConfirm({ c, t }: { c: PickerViewProps; t: TFn }) {
             </p>
           )}
           <div class="confirm-actions">
-            <form method="post" action={cf.confirmHref} hx-post={cf.confirmHref} hx-target="#panels" hx-swap="morph:outerHTML">
+            <form method="post" action={cf.confirmHref} hx-post={cf.confirmHref} hx-target="#panels" hx-swap="outerMorph">
               <button type="submit" class="cta-ghost is-destructive">{t('scaffold.picker.confirm.yes') as string}</button>
             </form>
             <form method="post" action={cf.cancelHref} hx-post={cf.cancelHref} hx-target="#picker-grid" hx-swap="outerHTML">

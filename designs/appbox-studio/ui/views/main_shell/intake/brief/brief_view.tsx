@@ -125,7 +125,7 @@ function SurfacesCanvas({ c, a, t }: { c: Ctx; a: Artifact; t: TFn }) {
       <Inventory surfaces={a.surfaces ?? []} t={t} />
       <p class="artifact-foot">
         <a href={`${c.base}/artifact/doc/full`}
-           hx-get={`${c.base}/artifact/doc/full`} hx-target="#panels" hx-swap="morph:outerHTML" hx-push-url="false">
+           hx-get={`${c.base}/artifact/doc/full`} hx-target="#panels" hx-swap="outerMorph" hx-push-url="false">
           <Icon name="chevron-left" size={14} /> {t('brief.back') as string}
         </a>
       </p>

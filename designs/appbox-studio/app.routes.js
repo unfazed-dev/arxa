@@ -38,7 +38,7 @@ export default [
   ['GET', '/build/file', buildLoop.file],
   ['GET', '/build/artifact/evidence/surfaces/viewer', buildLoop.evidenceViewer],
   ['GET', '/build/screens/:surface', buildLoop.screenStub],
-  ['POST', '/build/stages/:id/control', buildLoop.stageControl],
+  ['POST', '/build/stages/:id/control', buildLoop.stageControl], // posted-by: loop_view.tsx stage control forms (hx-post)
   ['POST', '/build/messages', buildLoop.sendMessage], // posted-by: c.composerAction (build_facade)
   ['POST', '/build/gates/decide', buildLoop.decide],
   ['GET', '/build/model/:id', buildLoop.model],

@@ -25,30 +25,46 @@ export const surfaceFiles = () =>
 export const readSource = (rel) =>
   existsSync(srcUrl(rel)) ? readFileSync(srcUrl(rel), 'utf8') : null;
 
-// portalo.home -> design/surfaces/home.html (the live-read layout contract)
-export const screenFile = (screenId) =>
-  `design/surfaces/${String(screenId).split('.').pop()}.html`;
+// portalo.home -> design/surfaces/home.tsx (the live-read layout contract).
+// .tsx is what the renderer renders; .html is the pre-TSX fallback for
+// projects whose surfaces were never migrated.
+export const screenFile = (screenId) => {
+  const base = `design/surfaces/${String(screenId).split('.').pop()}`;
+  return surfaceFiles().includes(`${base}.tsx`) ? `${base}.tsx` : `${base}.html`;
+};
 
+// Cross-file composition, per surface format: legacy .html surfaces pull
+// partials in with nunjucks includes; .tsx surfaces import them.
 const INCLUDE_RE = /{%\s*include\s+"ui\/project\/([^"]+)"\s*%}/g;
+const IMPORT_RE = /from\s+['"]\.\/([^'"]+)\.tsx['"]/g;
 export const includesOf = (rel) => {
   const src = readSource(rel);
   if (!src) return [];
+  if (rel.endsWith('.tsx'))
+    return [...src.matchAll(IMPORT_RE)].map((m) => `design/surfaces/${m[1]}.tsx`);
   return [...src.matchAll(INCLUDE_RE)].map((m) => `design/surfaces/${m[1]}`);
 };
 
-// Every open tag carrying data-el, in source order. Nunjucks-templated HTML is
-// not strictly parseable as HTML, but an OPEN TAG is: attributes may contain
-// {{ }} but never a bare `>` (the templates are ours and linted).
-const TAG_RE = /<([a-zA-Z][\w-]*)((?:"[^"]*"|'[^']*'|[^>"'])*)>/g;
+// Every open tag carrying data-el, in source order. TSX is not parseable as
+// HTML, but an OPEN TAG is: attribute values are quoted strings or {…}
+// expression groups, and a bare `>` can only hide inside braces (an arrow
+// function's =>), so the brace alternative keeps the scan sound. Braces nest
+// at most one level in these sources (an options/object literal).
+const TAG_RE = /<([a-zA-Z][\w-]*)((?:"[^"]*"|'[^']*'|\{(?:[^{}]|\{[^{}]*\})*\}|[^>"'])*)>/g;
+// data-el comes three ways: "static" (both formats), {`card:${…}`} and
+// {'static'} (TSX). The captured value keeps its unresolved expression —
+// identity is (file, kind, occurrence), never the rendered string.
+const EL_RE = /data-el=(?:"([^"]*)"|\{`([^`]*)`\}|\{\s*'([^']*)'\s*\})/;
 const elsIn = (src) => {
   const out = [];
   for (const m of src.matchAll(TAG_RE)) {
     const attrs = m[2];
-    const el = attrs.match(/data-el="([^"]*)"/);
+    const el = attrs.match(EL_RE);
+    const elVal = el ? (el[1] ?? el[2] ?? el[3]) : null;
     // `el` keeps the FULL data-el value (the Logic tab joins it against the
     // flows' authored `element`); `kind` stays the static prefix the widget
     // manager's identity rule has always used.
-    if (el && el[1]) out.push({ tag: m[1], attrs, el: el[1], kind: el[1].split(':')[0], start: m.index, end: m.index + m[0].length });
+    if (elVal) out.push({ tag: m[1], attrs, el: elVal, kind: elVal.split(':')[0], start: m.index, end: m.index + m[0].length });
   }
   return out;
 };
@@ -147,7 +163,10 @@ export const setWidgetAttr = async (screenId, kind, index, attr, value) => {
   const hits = elsIn(src).filter((e) => e.kind === kind);
   const e = hits[index];
   let open = src.slice(e.start, e.end);
-  const re = new RegExp(`\\s*${attr}(?:="[^"]*")?(?=[\\s>/])`);
+  // Values may be quoted ("…") or braced TSX expressions ({…}); replacing
+  // always writes the quoted form, which is valid TSX for the string-valued
+  // layout attributes this editor touches.
+  const re = new RegExp(`\\s*${attr}(?:="[^"]*"|=\\{(?:[^{}]|\\{[^{}]*\\})*\\})?(?=[\\s>/])`);
   if (re.test(open)) open = open.replace(re, value === '' ? '' : ` ${attr}="${value}"`);
   else if (value !== '') open = open.replace(/(\s*\/?>)$/, ` ${attr}="${value}"$1`);
   const next = src.slice(0, e.start) + open + src.slice(e.end);

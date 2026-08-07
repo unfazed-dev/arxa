@@ -42,8 +42,8 @@ export default [
   ['GET', '/intake/panel/size/:panel/:size', interview.panelSize],
   ['POST', '/intake/messages', interview.sendMessage], // posted-by: c.composerAction (intake_facade)
   ['POST', '/intake/depth', interview.depth], // posted-by: r.action quick-replies (intake_facade)
-  ['POST', '/intake/answer', interview.answer],
-  ['POST', '/intake/skip', interview.skip],
+  ['POST', '/intake/answer', interview.answer], // posted-by: intake/_shared.tsx `${base}/answer` forms (hx-post)
+  ['POST', '/intake/skip', interview.skip], // posted-by: intake/_shared.tsx `${base}/skip` forms (hx-post)
   ['GET', '/intake/edit', interview.edit],
 
   // intake.personas / intake.surfaces / intake.flows / intake.direction

@@ -19,6 +19,7 @@ import { pathToFileURL } from 'node:url';
 import path from 'node:path';
 import { sessionMiddleware } from './state.js';
 import { createHelpers } from './helpers.js';
+import { attachSse } from './realtime.js';
 import { createL10n, resolveLocale } from './l10n.js';
 import { runForSession } from './timers.js';
 
@@ -61,6 +62,9 @@ export async function createArtifactApp(artifactDir, { staticSetup = null, prelo
   // Target-specific static serving (vendor + assets). null on Workers where
   // the [assets] binding handles it before the Worker runs.
   if (staticSetup) staticSetup(app);
+
+  // SSE bus: GET /__events?channel=<name> (replay buffer + Last-Event-ID).
+  attachSse(app);
 
   const routes = preloadedRoutes
     ?? (await import(/** @type {string} */ (pathToFileURL(path.join(artifactDir, 'app.routes.js')).href))).default;

@@ -10,6 +10,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:appboxd/design_server.dart';
+import 'package:appboxd/design_server/worker.dart' show bundleBuildCount;
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
@@ -243,6 +244,31 @@ void main() {
           artifactDir: '/x',
           port: 5000);
       expect(lines.join('\n'), isNot(contains('bound to every interface')));
+    });
+  });
+
+  // ── P3b regression: a RELATIVE artifactDir must boot the same as an
+  // absolute one. The worker fetches app.routes.js from the server origin and
+  // the server resolves artifact files against the process cwd at REQUEST
+  // time — a relative dir only works while that cwd never moves. start()
+  // absolutizes the dir before the worker boots.
+  group('relative artifactDir', () {
+    test('boot + app.routes.js + a route all answer with a relative path',
+        () async {
+      final rel = p.relative(_fixture);
+      expect(p.isRelative(rel), isTrue, reason: 'the test needs a relative form');
+      final s =
+          await DesignServer.start(artifactDir: rel, port: 0, noWatch: true);
+      try {
+        expect(s.artifactDir, p.normalize(_fixture));
+        final routes = await _get('${s.url}app.routes.js');
+        expect(routes.status, 200);
+        final home = await _get(s.url);
+        expect(home.status, 200);
+        expect(home.body, contains('hello-hda'));
+      } finally {
+        await s.stop();
+      }
     });
   });
 
@@ -640,6 +666,93 @@ void main() {
         await s.stop();
         await tmp2.delete(recursive: true);
       }
+    });
+  });
+
+  // ── M9: a broken TSX bundle surfaces on every route, not just stderr ────
+  group('tsx bundle error surface', () {
+    late Directory tmp;
+    late DesignServer srv;
+
+    setUpAll(() async {
+      tmp = await Directory.systemTemp.createTemp('design-tsxerr-');
+      await _copyDir(_fixture, tmp.path);
+      // Break one view: esbuild cannot bundle the render module.
+      final view = File(p.join(
+          tmp.path, 'ui', 'views', 'main_shell', 'timer', 'timer_view.tsx'));
+      await view.writeAsString(
+          '${await view.readAsString()}\nexport const Broken = () => (<div>{oops</div>);\n');
+      // Boot must SURVIVE a broken bundle — the error rides the 5xx surface.
+      srv = await DesignServer.start(
+          artifactDir: tmp.path, port: 0, noWatch: true);
+    });
+    tearDownAll(() async {
+      await srv.stop();
+      await tmp.delete(recursive: true);
+    });
+
+    test('every route answers 500 with the esbuild diagnosis', () async {
+      final r = await _get(srv.url);
+      expect(r.status, 500);
+      expect(r.body, contains('esbuild failed to bundle render.tsx'));
+    });
+
+    test('an htmx request gets the toast fragment with the diagnosis', () async {
+      final r = await _get(srv.url, headers: {'HX-Request': 'true'});
+      expect(r.status, 500);
+      expect(r.body, contains('toast-error'));
+      expect(r.body, contains('esbuild failed to bundle render.tsx'));
+    });
+
+    test('a clean rebuild clears the error and routes serve again', () async {
+      final view = File(p.join(
+          tmp.path, 'ui', 'views', 'main_shell', 'timer', 'timer_view.tsx'));
+      final src = await view.readAsString();
+      await view.writeAsString(src.split('\nexport const Broken').first);
+      await srv.reload();
+      final r = await _get(srv.url);
+      expect(r.status, 200);
+      expect(r.body, contains('hello-hda'));
+    });
+  });
+
+  // ── the render bundle cache: esbuild reruns only when the .tsx tree moves ─
+  group('render bundle cache', () {
+    late Directory tmp;
+    late DesignServer srv;
+
+    setUpAll(() async {
+      tmp = await Directory.systemTemp.createTemp('design-bundles-');
+      await _copyDir(_fixture, tmp.path);
+      srv = await DesignServer.start(
+          artifactDir: tmp.path, port: 0, noWatch: true);
+    });
+    tearDownAll(() async {
+      await srv.stop();
+      await tmp.delete(recursive: true);
+    });
+
+    test('a fixture-only reload reuses the bundle; a tsx edit rebuilds',
+        () async {
+      final afterBoot = bundleBuildCount;
+      // JSON fixture edit: the bundle does not depend on it.
+      final fixture = File(p.join(tmp.path, 'models', 'greeting_model',
+          'greeting_fixtures.json'));
+      await fixture.writeAsString('${await fixture.readAsString()}\n');
+      await srv.reload();
+      expect(bundleBuildCount, afterBoot,
+          reason: 'a fixture-only edit must not rebundle');
+
+      // A .tsx edit changes the render bundle's inputs.
+      final view = File(p.join(tmp.path, 'ui', 'views', 'main_shell', 'timer',
+          'timer_view.tsx'));
+      await view.writeAsString('${await view.readAsString()}\n// touched\n');
+      await srv.reload();
+      expect(bundleBuildCount, afterBoot + 1,
+          reason: 'a tsx edit must rebundle');
+
+      final r = await _get(srv.url);
+      expect(r.status, 200);
     });
   });
 

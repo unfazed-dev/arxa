@@ -131,7 +131,10 @@ class _Mutation {
   final bool wantOk;
   final void Function(String art, String skill) apply;
   const _Mutation(this.name, this.label, this.wantOk, this.apply);
-  bool get targetsSkill => name.startsWith('ladder-') || name == 'upstream-leak';
+  bool get targetsSkill =>
+      name.startsWith('ladder-') ||
+      name == 'upstream-leak' ||
+      name == 'kit-catalog-row';
 }
 
 // ══ helpers ═════════════════════════════════════════════════════════════
@@ -730,6 +733,7 @@ final List<_Mutation> _mutations = [
   _Mutation('client-js', _lLint, false, _mutateClientJs),
   // The inverse row: a commented ban is NOT a violation — the lint must still pass.
   _Mutation('commented-js', _lLint, true, _mutateCommentedJs),
+  _Mutation('kit-catalog-row', _lKitCatalogMirror, false, _mutateKitCatalogRow),
   _Mutation('broken-route', _lRender, false, _mutateBrokenRoute),
 ];
 
@@ -852,8 +856,8 @@ void _mutateFullReload(String art, String skill) {
 }
 
 void _mutateFragmentTypo(String art, String skill) {
-  // Rename a macro a viewmodel actually renders as a fragment — renaming an
-  // unreferenced macro (shared partials) would prove nothing.
+  // Rename a fragment a viewmodel actually renders — renaming an
+  // unreferenced fragment (shared partials) would prove nothing.
   for (final vm in _viewModels(art)) {
     final src = vm.readAsStringSync();
     final frag = RegExp(r'\$\{VIEW\}#(\w+)').firstMatch(src);
@@ -861,15 +865,46 @@ void _mutateFragmentTypo(String art, String skill) {
     final named =
         RegExp(r"""const VIEW\s*=\s*['"]([^'"]+)['"]""").firstMatch(src);
     if (named == null) continue;
-    final view = File(p.join(art, named.group(1)!));
+    // View refs keep .html paths for registry parity; post-migration the
+    // actual file is .tsx (same resolution as the 'fragments' wiring check).
+    var view = File(p.join(art, named.group(1)!));
+    if (!view.existsSync()) {
+      final tsx = File(view.path.replaceAll(RegExp(r'\.html$'), '.tsx'));
+      if (tsx.existsSync()) view = tsx;
+    }
     if (!view.existsSync()) continue;
     final tpl = view.readAsStringSync();
+    if (view.path.endsWith('.tsx')) {
+      // TSX: the fragment is an exported component, PascalCase of the ref
+      // (#tick → Tick) — mirror the check's lookup.
+      final n = frag.group(1)!;
+      final comp = n[0].toUpperCase() + n.substring(1);
+      final re = RegExp(r'(export\s+(?:default\s+)?(?:function|const)\s+)' +
+          RegExp.escape(comp) +
+          r'\b');
+      if (!re.hasMatch(tpl)) continue;
+      view.writeAsStringSync(tpl.replaceFirst(re, '\${1}${comp}zz'));
+      return;
+    }
     final re = RegExp(r'(\{%\s*macro\s+)' + RegExp.escape(frag.group(1)!) + r'\b');
     if (!re.hasMatch(tpl)) continue;
     view.writeAsStringSync(
         tpl.replaceFirst(re, '\${1}${frag.group(1)}zz'));
     return;
   }
+}
+
+void _mutateKitCatalogRow(String art, String skill) {
+  // Drop one kit's table row from the mirror doc — prose mentions stay, so
+  // only a row-scoped check can see it (the check's own header comment).
+  final f = File(p.join(skill, 'references', 'kit-catalog.md'));
+  if (!f.existsSync()) return;
+  final lines = f.readAsLinesSync();
+  final idx = lines.indexWhere(
+      (l) => l.trimLeft().startsWith('|') && l.contains('`'));
+  if (idx < 0) return;
+  lines.removeAt(idx);
+  f.writeAsStringSync('${lines.join('\n')}\n');
 }
 
 void _mutateOrphanPost(String art, String skill) {

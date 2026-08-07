@@ -88,12 +88,12 @@ export function attachSse(app) {
         if (conns) conns.delete(myController);
       },
     });
-    // Hono/Workers ReadableStream response.
+    // Hono/Workers ReadableStream response. (No `connection` header — illegal
+    // on HTTP/2 and Workers; the ping interval keeps idle connections alive.)
     return new Response(stream, {
       headers: {
         'content-type': 'text/event-stream',
         'cache-control': 'no-cache',
-        connection: 'keep-alive',
       },
     });
   });
@@ -106,7 +106,9 @@ const liveConnections = new Map();
 function formatSse(entry) {
   let out = `id: ${entry.id}\n`;
   if (entry.event) out += `event: ${entry.event}\n`;
-  out += `data: ${entry.data}\n\n`;
+  // SSE spec: multi-line payloads need one `data:` line per line, or lines
+  // after the first are parsed as bogus field names and silently dropped.
+  out += entry.data.split('\n').map((l) => `data: ${l}`).join('\n') + '\n\n';
   return out;
 }
 

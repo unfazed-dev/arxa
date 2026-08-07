@@ -11,22 +11,22 @@
 // Tracks each [data-field] in a signal, derives a summary, and exposes a
 // clear() method. Demonstrates the signal → derived → DOM binding pattern.
 
-export default function formState(el, { state, signal, effect }) {
+export default function formState(el, { state, signal, computed, effect }) {
   const fields = {};
   for (const input of el.querySelectorAll('[data-field]')) {
     const key = input.dataset.field;
     fields[key] = signal(state?.[key] ?? input.value ?? '');
-    input.addEventListener('input', () => { fields[key].value = input.value; });
+    input.addEventListener('input', () => { fields[key](input.value); });
     // Keep the input in sync if the signal changes programmatically (e.g. clear).
-    effect(() => { if (input.value !== fields[key].value) input.value = fields[key].value; });
+    effect(() => { if (input.value !== fields[key]()) input.value = fields[key](); });
   }
   const summary = computed(() => {
-    const total = Object.values(fields).reduce((n, s) => n + String(s.value).length, 0);
+    const total = Object.values(fields).reduce((n, s) => n + String(s()).length, 0);
     return `${total} character${total === 1 ? '' : 's'}`;
   });
   return {
     ...fields,
     summary,
-    clear: () => { Object.values(fields).forEach((s) => { s.value = ''; }); },
+    clear: () => { Object.values(fields).forEach((s) => { s(''); }); },
   };
 }

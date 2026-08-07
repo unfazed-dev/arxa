@@ -44,7 +44,7 @@ export function HeadContent({ spec, t }: HeadContentProps) {
                   href={chip.removeHref}
                   hx-get={chip.removeHref}
                   hx-target="#panels"
-                  hx-swap="morph:outerHTML"
+                  hx-swap="outerMorph"
                   hx-push-url="false"
                   aria-label={t('chat.removeChip', { label: chip.label }) as string}
                 >

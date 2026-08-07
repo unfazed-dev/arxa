@@ -5,14 +5,32 @@
 import { raw } from 'hono/utils/html';
 import { Fragment, type FC, type Child } from 'hono/jsx';
 
-// htmx responseHandling (first match wins): 404 and 5xx retarget into #toasts
-// instead of clobbering the panel that made the request — the server sends a
-// toast fragment, the good panel stays. The blanket [45].. rule is swap:false
-// for every other error. Config is the only declarative channel here: with
-// allowEval:false the hx-on escape hatch is dead (ADR-0002, no client JS).
-// 422 still swaps in place so form validation renders where the form is.
-const HTMX_CONFIG =
-  '{"allowEval":false,"allowScriptTags":false,"globalViewTransitions":true,"historyRestoreAsHxRequest":false,"responseHandling":[{"code":"204","swap":false},{"code":"[23]..","swap":true},{"code":"422","swap":true},{"code":"404","swap":true,"error":true,"target":"#toasts","swapOverride":"innerHTML"},{"code":"5..","swap":true,"error":true,"target":"#toasts","swapOverride":"innerHTML"},{"code":"[45]..","swap":false,"error":true},{"code":"...","swap":true}]}';
+// htmx 4 config. v2's responseHandling has no meta-config equivalent in v4 —
+// the per-status rules live on <body> as hx-status:<pattern> attributes (see
+// below). `transitions` is the renamed globalViewTransitions. v4 turns OFF
+// v2's attribute inheritance by default; without implicitInheritance the
+// body's hx-boost/hx-sync/hx-status would apply to nothing inside it.
+// allowEval and historyRestoreAsHxRequest are gone entirely: v4 evaluates
+// hx-on/hx-confirm expressions through htmx.initSecurity() Function
+// constructors (the only switch, and it is custom JS — banned here by
+// ADR-0002); this artifact never uses hx-on, so the eval path stays dead by
+// convention instead.
+const HTMX_CONFIG = '{"transitions":true,"implicitInheritance":true}';
+
+// The v2 responseHandling rules, restated for htmx 4: hx-status:<pattern> on
+// <body> (inherited by every request source). Patterns try exact → "40x" →
+// "4xx", first hit wins. 404 and 5xx retarget into #toasts instead of
+// clobbering the panel that made the request — the server sends a toast
+// fragment, the good panel stays. 422 escapes the 4xx blackout (empty merge)
+// so form validation renders where the form is. 204/304 stay no-swap via the
+// default noSwap config. Colon attributes are not valid JSX names, so the
+// spread form it is.
+const HTMX_RESPONSE_RULES = {
+  'hx-status:404': '{"target":"#toasts","swap":"innerHTML"}',
+  'hx-status:5xx': '{"target":"#toasts","swap":"innerHTML"}',
+  'hx-status:4xx': '{"swap":"none"}',
+  'hx-status:422': '{}',
+};
 
 interface BaseProps {
   title?: string;
@@ -42,30 +60,17 @@ const Base: FC<BaseProps> = ({
         <meta name="htmx-config" content={HTMX_CONFIG} />
         <title>{title}</title>
         <script
-          src="/assets/vendor/htmx.min.js"
-          integrity="sha384-H5SrcfygHmAuTDZphMHqBJLc3FhssKjG7w/CeCpFReSfwBWDTKpkzPP8c+cLsK+V"
+          src="/assets/vendor/htmx4.min.js"
+          integrity="sha384-6lyVbhrs13b9z7mLOpt/N6R76rtkEBWgCjAXRs/DSWyi2AMnQSs10ijWk+PI8n7W"
           crossorigin="anonymous"
         ></script>
-        <script
-          src="/assets/vendor/preload.min.js"
-          integrity="sha384-PRIcY6hH1Y5784C76/Y8SqLyTanY9rnI3B8F3+hKZFNED55hsEqMJyqWhp95lgfk"
-          crossorigin="anonymous"
-        ></script>
-        <script
-          src="/assets/vendor/head-support.js"
-          integrity="sha384-cvMqHzjCJsOHgGuyB3sWXaUSv/Krm0BdzjuI1rtkjCbL1l1oHJx+cHyVRJhyuEz0"
-          crossorigin="anonymous"
-        ></script>
-        {/* idiomorph: the `morph` swap style. Loads AFTER htmx — it registers
-            as an extension. Morphing exists for one reason: viewer screen
-            iframes live INSIDE swap targets, and a replace-style swap destroys
-            them, so every interaction would re-fetch all frames and discard
-            whatever the user had navigated to inside a live tile. */}
-        <script
-          src="/assets/vendor/idiomorph-ext.min.js"
-          integrity="sha384-SsScJKzATF/w6suEEdLbgYGsYFLzeKfOA6PY+/C5ZPxOSuA+ARquqtz/BZz9JWU8"
-          crossorigin="anonymous"
-        ></script>
+        {/* htmx 4: morph is a core swap style (outerMorph), not an extension.
+            Morphing exists for one reason: viewer screen iframes live INSIDE
+            swap targets, and a replace-style swap destroys them, so every
+            interaction would re-fetch all frames and discard whatever the
+            user had navigated to inside a live tile. The v2 preload/head-
+            support extensions are gone — hx-ext does not exist in v4, the
+            studio never used hx-preload, and v4 core lifts <title> itself. */}
         <script src="/assets/vendor/canvas.js" defer></script>
         <script src="/assets/vendor/drag.js" defer></script>
         <script src="/assets/vendor/reveal.js" defer></script>
@@ -85,7 +90,7 @@ const Base: FC<BaseProps> = ({
         <link rel="stylesheet" href="/assets/css/error_surface.css" />
         {headExtra}
       </head>
-      <body hx-boost="true" hx-sync="this:replace" hx-ext="head-support,preload,morph">
+      <body hx-boost="true" hx-sync="this:replace" {...HTMX_RESPONSE_RULES}>
         <div id="app" data-theme={theme} data-accent={accent} data-font={font}>
           {children}
         </div>

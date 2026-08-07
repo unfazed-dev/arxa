@@ -114,13 +114,13 @@ designs may still carry a `serve.mjs` shim at the artifact root: it is dead
 
 **9. Build widgets-first, then serve and verify.** Before composing any
 surface, author the artifact's widget library: inventory the design's
-repeated patterns and define them as macros/partials at the tier their
+repeated patterns and define them as components at the tier their
 consumers require (`ui/common/widgets/` cross-shell, `ui/views/<shell>/shared/widgets/`
 intra-shell, `<surface>/widgets/` per-surface — see `references/app-architecture.md`),
 starting from [`references/ui-recipes.md`](references/ui-recipes.md)
-and the drop-in partials in `starter-partials/widgets/` — surfaces compose
+and the drop-in components in `starter-partials/widgets/` — surfaces compose
 only from that library. **Auto Layout is default-ON for every widget in
-the library** (DESIGN-ARCHITECTURE, "Auto Layout"): each macro's container
+the library** (DESIGN-ARCHITECTURE, "Auto Layout"): each component's container
 carries the `data-layout` attribute set and its children size with
 `data-resize-x` / `data-resize-y`. To turn it off per frame, omit
 `data-layout` (art-directed frames); to exempt a single child, give it
@@ -146,7 +146,7 @@ appbox desktop app serves prototypes without Node.
 ## Deliberately absent capabilities
 
 These are JS-bound by nature — do not recreate them:
-- **design-canvas pan/zoom** → use `starter-partials/artboards.html` (static
+- **design-canvas pan/zoom** → use `starter-partials/artboards.tsx` (static
   side-by-side comparison page)
 - **animation timeline engine**, **animated video**, **video export** → use
   scroll-driven CSS motion studies (`starter-partials/motion.css`)
@@ -162,8 +162,8 @@ applications.
   contract; `references/ui-recipes.md` is the widget catalog; `CONTEXT.md`
   is the vocabulary; `docs/adr/` holds the runtime decisions.
 - **i18n**: when an artifact is localized, every chrome/surface string lives in
-  `l10n/app_<locale>.arb` and renders via the `t` global — never hardcode copy
-  in templates. Jargon variants are key suffixes (`keyPlain`/`keyTechnical`).
+  `l10n/app_<locale>.arb` and renders via the `t` prop — never hardcode copy
+  in views. Jargon variants are key suffixes (`keyPlain`/`keyTechnical`).
   Localized content is per-locale seeds (`<name>_seed.<locale>.json` is the
   SSOT) generating `<name>_fixtures.<locale>.json`. `appbox design pseudolocalize`
   derives the `qps-ploc` pseudo-locale from English — run it to catch

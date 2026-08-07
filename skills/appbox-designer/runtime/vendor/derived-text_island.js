@@ -18,10 +18,10 @@ export default function derivedText(el, { state, signal, computed, effect }) {
   const last = signal(state?.last ?? '');
 
   for (const input of el.querySelectorAll('[data-source="first"]'))
-    input.addEventListener('input', () => { first.value = input.value; });
+    input.addEventListener('input', () => { first(input.value); });
   for (const input of el.querySelectorAll('[data-source="last"]'))
-    input.addEventListener('input', () => { last.value = input.value; });
+    input.addEventListener('input', () => { last(input.value); });
 
-  const greeting = computed(() => `Hello, ${first.value} ${last.value}!`);
+  const greeting = computed(() => `Hello, ${first()} ${last()}!`);
   return { greeting };
 }

@@ -5,7 +5,7 @@
 //
 // Dart pre-populates (before __boot):
 //   globalThis.__renderBundleUrl  blob:      esbuild-bundled TSX render module
-//   globalThis.__templates  {path: src}      .html partials (project surfaces)
+//   globalThis.__templates  {viewRef: src}   project-surface presence map (worker.dart)
 //   globalThis.__fixtures   {absUrl: txt} every models/**/*.json (fs_shim keys)
 //   globalThis.__arb        {locale: {key: val}}  l10n/*.arb parsed
 //   globalThis.__icons      {name: rawSvg}        lucide icons referenced

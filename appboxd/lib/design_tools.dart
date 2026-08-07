@@ -1308,6 +1308,16 @@ void _copyJsTree(Directory srcDir, String dstDir) {
   }
 }
 
+/// esbuild invocation for the eject path: prefer the skill's lockfile-pinned
+/// binary (skills/appbox-designer/runtime devDependency), fall back to npx
+/// with an exact pinned version — never a floating `npx esbuild`.
+(String, List<String>) _esbuildCmd(String repo) {
+  final local = p.join(repo, 'skills', 'appbox-designer', 'runtime',
+      'node_modules', '.bin', 'esbuild');
+  if (File(local).existsSync()) return (local, const []);
+  return ('npx', const ['--yes', 'esbuild@0.25.12']);
+}
+
 /// `appbox design eject <artifact-dir> <out-dir>` — exit 2 usage / 1 vendor
 /// or htmx-required fail / 0 ejected. Ported from eject.mjs; the .mjs's
 /// node-runtime + package.json + smoke.test.mjs are replaced by a README.
@@ -1334,7 +1344,8 @@ Future<CmdResult> designEject(List<String> args) async {
   if (positional.length < 2) {
     return CmdResult(2,
         stderrLines: const [
-          'usage: appbox design eject <artifact-dir> <out-dir> [--target=node|cloudflare|vercel]'
+          'usage: appbox design eject <artifact-dir> <out-dir> '
+              '[--target=node|cloudflare|vercel] [--kits=a,b]'
         ]);
   }
   target ??= 'node';
@@ -1430,6 +1441,26 @@ Future<CmdResult> designEject(List<String> args) async {
           p.join(outVendor.path, f.substring(0, slash)));
     }
   }
+  // Non-node targets serve static files from a platform static root
+  // (Cloudflare's [assets] binding directory, Vercel's public/) — serveStatic
+  // is node-only, so mirror the narrowed vendor set where /assets/vendor/*
+  // actually resolves. Lucide/manifest stay out: icons are server-side
+  // (preload on Workers, fs elsewhere).
+  if (target != 'node') {
+    final assetsVendor = p.join(out, 'assets', 'vendor');
+    final mirrored = <String>{};
+    for (final f in wanted) {
+      final slash = f.indexOf('/');
+      if (slash < 0) {
+        final dest = File(p.join(assetsVendor, f))
+          ..parent.createSync(recursive: true);
+        File(p.join(vendorDir, f)).copySync(dest.path);
+      } else if (mirrored.add(f.substring(0, slash))) {
+        _copyTree(p.join(vendorDir, f.substring(0, slash)),
+            p.join(assetsVendor, f.substring(0, slash)));
+      }
+    }
+  }
   // Lucide icons are used server-side by the icon() template function — never
   // referenced in HTML, so the narrowing scan misses them. Always include them.
   final lucideSrc = Directory(p.join(vendorDir, 'lucide'));
@@ -1470,6 +1501,7 @@ Future<CmdResult> designEject(List<String> args) async {
     }
 
     // Bundle each island with esbuild → out/assets/islands/<name>.js (ESM).
+    final esbuild = _esbuildCmd(repo);
     final islandManifest = <String, Map<String, String>>{};
     final islandsOut =
         Directory(p.join(out, 'assets', 'islands'))..createSync(recursive: true);
@@ -1478,7 +1510,7 @@ Future<CmdResult> designEject(List<String> args) async {
       if (!File(src).existsSync()) continue; // developer-added island (no vendor source)
       final chunk = p.join(islandsOut.path, '$islandName.js');
       final result = await Process.run(
-          'npx', ['esbuild', src, '--bundle', '--format=esm', '--minify', '--outfile=$chunk']);
+          esbuild.$1, [...esbuild.$2, src, '--bundle', '--format=esm', '--minify', '--outfile=$chunk']);
       if (result.exitCode != 0) {
         return CmdResult(1, stderrLines: [
           'esbuild failed for island "$islandName": ${result.stderr}',
@@ -1493,15 +1525,29 @@ Future<CmdResult> designEject(List<String> args) async {
     // Inject island manifest + module script into the ejected base.tsx.
     // esbuild bundles base.tsx (via the view → shell → base import chain) after
     // this step, so the injection lands in the final render.js.
-    final baseTsx = File(p.join(out, 'ui', 'common', 'base.tsx'));
-    if (baseTsx.existsSync() && islandManifest.isNotEmpty) {
+    if (islandManifest.isNotEmpty) {
+      // Fail loudly: a missing anchor would silently ship inert islands (the
+      // failure mode this stack is worst at surfacing).
+      final baseTsx = File(p.join(out, 'ui', 'common', 'base.tsx'));
+      if (!baseTsx.existsSync()) {
+        return CmdResult(1, stderrLines: const [
+          'islands referenced but ui/common/base.tsx is missing — nowhere to '
+              'inject the island manifest',
+        ]);
+      }
+      final src = baseTsx.readAsStringSync();
+      if (!src.contains('<div id="toasts"')) {
+        return CmdResult(1, stderrLines: const [
+          'island-manifest injection anchor <div id="toasts" not found in '
+              'ui/common/base.tsx — add it to the shell or drop the islands',
+        ]);
+      }
       final manifestJson =
           const JsonEncoder.withIndent('  ').convert(islandManifest);
       final scriptContent = '<script type="application/json" id="island-manifest">'
           '$manifestJson</script>\n'
           '<script type="module" src="/assets/islands.js"></script>\n';
       final injection = '{raw(`${scriptContent}`)}\n        ';
-      final src = baseTsx.readAsStringSync();
       baseTsx.writeAsStringSync(
           src.replaceFirst('<div id="toasts"', '$injection<div id="toasts"'));
     }
@@ -1509,9 +1555,10 @@ Future<CmdResult> designEject(List<String> args) async {
 
   // 3b. Entry point + config per target.
   final isWorkers = target == 'cloudflare';
+  final isVercel = target == 'vercel';
   final entrySrc = isWorkers
       ? p.join(ejectSrc, 'worker.js')
-      : p.join(ejectSrc, 'server.js');
+      : p.join(ejectSrc, isVercel ? 'vercel.js' : 'server.js');
   if (File(entrySrc).existsSync()) {
     File(p.join(out, isWorkers ? 'worker.js' : 'server.js'))
         .writeAsStringSync(File(entrySrc).readAsStringSync());
@@ -1533,8 +1580,20 @@ Future<CmdResult> designEject(List<String> args) async {
     if (File(cfReader).existsSync()) {
       File(cfReader).writeAsStringSync(_cfFixtureReader);
     }
-  } else if (target == 'vercel') {
-    File(p.join(out, 'vercel.json')).writeAsStringSync(_ejectVercelJson());
+  } else {
+    // Node/Vercel stub so icon.tsx's './preload.js' import resolves at bundle
+    // and typecheck time; the cloudflare target writes the real bundle above.
+    File(p.join(out, 'runtime', 'preload.js')).writeAsStringSync(_preloadStub);
+  }
+  if (isVercel) {
+    // Vercel's zero-config Hono preset: server.js's default export becomes the
+    // Function (no vercel.json needed) and static files serve from public/
+    // only — relocate the asset tree (incl. the mirrored vendor set).
+    final assets = Directory(p.join(out, 'assets'));
+    if (assets.existsSync()) {
+      Directory(p.join(out, 'public')).createSync();
+      assets.renameSync(p.join(out, 'public', 'assets'));
+    }
   }
 
   // 3e. Route manifest codegen + tsconfig (Phase 4: typing — the moat).
@@ -1561,11 +1620,17 @@ Future<CmdResult> designEject(List<String> args) async {
   // Bundle render.tsx → render.js (Node can't import .tsx directly). hono and
   // node:* stay external — they resolve from node_modules / Node built-ins.
   final renderJsPath = p.join(out, 'runtime', 'render.js');
-  final esbuildResult = await Process.run('npx', [
-    'esbuild', p.join(out, 'runtime', 'render.tsx'),
+  final esbuild = _esbuildCmd(repo);
+  final esbuildResult = await Process.run(esbuild.$1, [
+    ...esbuild.$2,
+    p.join(out, 'runtime', 'render.tsx'),
     '--bundle', '--format=esm',
     '--outfile=$renderJsPath',
     '--external:hono', '--external:hono/*', '--external:node:*',
+    // Keep preload.js out of the Workers render bundle — worker.js imports it
+    // directly; inlining would ship the icon/fixture blob twice. (Node/Vercel
+    // bundle the tiny stub, so no external needed there.)
+    if (isWorkers) '--external:./preload.js',
   ]);
   if (esbuildResult.exitCode != 0) {
     return CmdResult(1, stderrLines: [
@@ -1615,13 +1680,12 @@ String _ejectPackageJson(String name, String target) {
   String startScript;
   switch (target) {
     case 'cloudflare':
-      deps['wrangler'] = '^4.0.0';
+      devDeps['wrangler'] = '^4.0.0'; // deploy tool, not a runtime dep
       startScript = 'wrangler dev';
       break;
     case 'vercel':
-      deps['@hono/node-server'] = '^2.0.11';
-      devDeps['vercel'] = '^41.0.0';
-      startScript = 'node server.js';
+      devDeps['vercel'] = '^41.0.0'; // deploy tool, not a runtime dep
+      startScript = 'vercel dev';
       break;
     default:
       deps['@hono/node-server'] = '^2.0.11';
@@ -1634,7 +1698,8 @@ String _ejectPackageJson(String name, String target) {
     'type': 'module',
     'scripts': {
       'start': startScript,
-      'typecheck': 'tsc -p . --noEmit',
+      // tsconfig already sets noEmit — the flag would just restate it.
+      'typecheck': 'tsc -p .',
     },
     'dependencies': deps,
     'devDependencies': devDeps,
@@ -1657,14 +1722,15 @@ binding = "ASSETS"
 # Run `wrangler secret put STRIPE_SECRET_KEY` for server secrets.
 ''';
 
-/// vercel.json for the Vercel target.
-String _ejectVercelJson() => r'''{
-  "version": 2,
-  "builds": [{ "src": "server.js", "use": "@vercel/node" }],
-  "routes": [
-    { "src": "/assets/(.*)", "dest": "/assets/$1" }
-  ]
-}
+/// Node/Vercel stub for runtime/preload.js — the cloudflare target writes the
+/// real bundle (l10n catalogs, fixtures, Lucide icons). The stub keeps
+/// icon.tsx's `./preload.js` import resolvable at esbuild-bundle and
+/// `tsc --checkJs` time; `preload = null` means "use the filesystem".
+const _preloadStub = '''
+// preload.js — node/vercel stub. The cloudflare target replaces this file at
+// eject time with the real bundle (arb catalogs, fixtures, Lucide icons).
+/** @type {{ arb?: Record<string, unknown>, fixtures?: Record<string, unknown>, iconSvg?: Record<string, string> } | null} */
+export const preload = null;
 ''';
 
 /// Cloudflare Workers fixture_reader.js — reads from preload (no node:fs).
@@ -1866,7 +1932,14 @@ String viewAliasPrefix(String relPath) {
 void _generateRouteManifest(String artifactDir, String out) {
   final routesFile = File(p.join(artifactDir, 'app.routes.js'));
   if (!routesFile.existsSync()) return;
-  final src = routesFile.readAsStringSync();
+  // Strip comments before matching so a route-shaped line inside a comment
+  // (e.g. a commented-out route kept for reference) can't emit a false route.
+  // kimitail: naive strip — a `//` or `/*` inside a string literal would
+  // truncate it; route tables don't carry such strings (paths start with '/').
+  final src = routesFile
+      .readAsStringSync()
+      .replaceAll(RegExp(r'/\*[\s\S]*?\*/'), '')
+      .replaceAll(RegExp(r'//[^\n]*'), '');
 
   // Extract [METHOD, PATH] pairs from the route table — regex, not eval.
   final routeRe = RegExp(r"""['"]([A-Z]+)['"]\s*,\s*['"]([^'"]+)['"]""");
@@ -1904,6 +1977,12 @@ void _generateRouteManifest(String artifactDir, String out) {
     }
   }
 
+  // Object keys must be valid JS identifiers — quote anything else (e.g.
+  // hyphenated path segments: /order-items → "order-items": …). Applies to
+  // both the .js and the .d.ts output, leaves and namespaces alike.
+  String jsKey(String key) =>
+      RegExp(r'^[A-Za-z_$][A-Za-z0-9_$]*$').hasMatch(key) ? key : '"$key"';
+
   // Shared tree walker — leaf callback formats the terminal line; closeSep
   // distinguishes `,` (JS) from `;` (.d.ts).
   String emitNode(Map<String, dynamic> node, String indent, String closeSep,
@@ -1915,7 +1994,7 @@ void _generateRouteManifest(String artifactDir, String out) {
         final params = RegExp(r':(\w+)').allMatches(pathStr).map((m) => m.group(1)!).toList();
         buf.writeln(leaf(e.key, pathStr, params, indent));
       } else {
-        buf.writeln('$indent${e.key}: {');
+        buf.writeln('$indent${jsKey(e.key)}: {');
         buf.write(emitNode(e.value as Map<String, dynamic>, '$indent  ', closeSep, leaf));
         buf.writeln('$indent}$closeSep');
       }
@@ -1924,16 +2003,16 @@ void _generateRouteManifest(String artifactDir, String out) {
   }
 
   String jsLeaf(String key, String pathStr, List<String> params, String indent) {
-    if (params.isEmpty) return '$indent$key: () => "$pathStr",';
+    if (params.isEmpty) return '$indent${jsKey(key)}: () => "$pathStr",';
     final args = params.join(', ');
     final tmpl = pathStr.replaceAllMapped(RegExp(r':(\w+)'), (m) => '\${${m.group(1)}}');
-    return '$indent$key: ($args) => `$tmpl`,';
+    return '$indent${jsKey(key)}: ($args) => `$tmpl`,';
   }
 
   String tsLeaf(String key, String pathStr, List<String> params, String indent) {
-    if (params.isEmpty) return '$indent$key: () => "$pathStr";';
+    if (params.isEmpty) return '$indent${jsKey(key)}: () => "$pathStr";';
     final typed = params.map((p) => '$p: string').join(', ');
-    return '$indent$key: ($typed) => string;';
+    return '$indent${jsKey(key)}: ($typed) => string;';
   }
 
   final runtimeDir = Directory(p.join(out, 'runtime'))..createSync(recursive: true);
@@ -1971,6 +2050,7 @@ Map<String, String> _emitKitsAndEnv(String out, String repo, String target, List
   }
 
   final envLines = <String>[];
+  final publishableKeys = <String>[];
   final kitFacadesDir = p.join(repo, 'skills', 'appbox-designer', 'runtime', 'kit-facades');
 
   // Process each declared kit.
@@ -2006,7 +2086,31 @@ Map<String, String> _emitKitsAndEnv(String out, String repo, String target, List
       envLines.add('# $key ($kind)${url.isNotEmpty ? ' — $url' : ''}');
       envLines.add('$key=${kind == 'publishable' ? 'set-me' : ''}');
       envLines.add('');
+      if (kind == 'publishable' && !publishableKeys.contains(key)) {
+        publishableKeys.add(key);
+      }
     }
+  }
+
+  // Publishable (client-safe) keys also land in a generated config module —
+  // .env.example documents them, but a viewmodel needs them as VALUES to hand
+  // to a template (e.g. a map token rendered into an island's state). Secrets
+  // never appear here. The caller passes env explicitly (process.env on node,
+  // ctx.env on Workers) so the module stays runtime-agnostic.
+  if (publishableKeys.isNotEmpty) {
+    final entries = publishableKeys
+        .map((k) => '  $k: env.$k ?? \'\',')
+        .join('\n');
+    File(p.join(out, 'runtime', 'client_config.js')).writeAsStringSync(
+      '// Auto-generated client config — publishable (browser-safe) values only.\n'
+      '// Regenerate via `appbox design eject`. Secrets never appear here.\n'
+      '\n'
+      '/**\n'
+      ' * @param {Record<string, string | undefined>} env - process.env on node, ctx.env on Workers\n'
+      ' * @returns {Record<string, string>} publishable config, safe to render into a page\n'
+      ' */\n'
+      'export const clientConfig = (env) => ({\n$entries\n});\n',
+    );
   }
 
   // Deploy credentials for the target.
@@ -2058,7 +2162,7 @@ freely — routes, templates, services, the runtime modules.
 
 ```sh
 npm install
-$runCmd          # http://localhost:${isWorkers ? '8787' : '4319'}
+$runCmd          # http://localhost:${isWorkers ? '8787' : isVercel ? '3000' : '4399'}
 npm run typecheck # tsc --checkJs (Phase 4)
 ```
 
@@ -2068,16 +2172,54 @@ npm run typecheck # tsc --checkJs (Phase 4)
 $deployCmd
 ```
 
-${isWorkers ? '''## Cloudflare Workers notes
+## Realtime (SSE)
 
-- Static assets (`/assets/*`) are served by the `[assets]` binding — they never
-  enter the Worker. Update `wrangler.toml [assets]` if you add directories.
+The runtime ships an SSE bus (`runtime/realtime.js`), attached at
+`GET /__events?channel=<name>`. Connect from markup with the bundled hx-sse
+extension; publish from any viewmodel via `h.sse`:
+
+```html
+<div hx-ext="sse" hx-sse:connect="/__events?channel=orders">
+  <div id="orders">1 open</div>
+</div>
+```
+
+```js
+// in a viewmodel — unnamed messages swap into the connecting element's
+// hx-target/hx-swap (morph composes), so every client patches #orders:
+h.sse.publishPatch('orders', '<div id="orders">2 open</div>');
+// or dispatch a named DOM event instead of a swap:
+h.sse.publishEvent('orders', 'order-accepted', '<li>#1042</li>');
+```
+
+Every event carries an `id:` and a short replay buffer, so reconnects (hx-sse
+resends `Last-Event-ID` automatically) pick up where they left off. The bus is
+in-memory: single-process only — see the Workers note below for the scale seam.
+
+$_readmeFormsSection${isWorkers ? '''
+## Cloudflare Workers notes
+
+- Static assets (`/assets/*`, including the narrowed `/assets/vendor/*` set)
+  are served by the `[assets]` binding — they never enter the Worker. Update
+  `wrangler.toml [assets]` if you add directories.
 - Templates, l10n catalogs, and fixtures are pre-bundled into
   `runtime/preload.js` (Workers have no filesystem). Re-run eject to refresh it
   after artifact changes, or edit it directly.
 - The SSE bus (`runtime/realtime.js`) is in-memory — events published on one
   isolate never reach clients on another. For multi-instance realtime, use a
   Durable-Object-per-channel adapter (documented in realtime.js).
+''' : ''}${isVercel ? '''
+## Vercel notes
+
+- Entry shape follows Vercel's zero-config Hono convention: `server.js`
+  exports the app as its default export, which becomes the Function (Fluid
+  compute). There is no listening server and no vercel.json — rewrites/routes
+  are unnecessary.
+- Static files serve from `public/` only; the eject relocated `assets/` there
+  (`serveStatic` is ignored by the platform).
+- Files read from disk at runtime (l10n catalogs, fixture JSON, Lucide SVGs)
+  rely on Vercel's file tracing. If a deploy 500s on a missing file, add a
+  `functions` config with `includeFiles` for the directory to vercel.json.
 ''' : ''}## Layout
 
 - `app.routes.js` — the URL inventory: `[method, path, handler][]` + `shellRoots`
@@ -2088,6 +2230,9 @@ ${isWorkers ? '''## Cloudflare Workers notes
 - `runtime/` — the Hono runtime: `router.js` (app factory), `helpers.js` (the
   `h` object), `render.js` (compiled TSX renderer), `l10n.js`, `state.js`, `timers.js`,
   `realtime.js` (SSE bus), `vendor/` (narrowed client libraries)
+- `runtime/routes.js` + `routes.d.ts` — the generated typed route manifest:
+  viewmodels take URLs from `routes.*` helpers, so renaming a route in
+  `app.routes.js` breaks `npm run typecheck` instead of 404ing at runtime
 - `${isWorkers ? 'worker.js' : 'server.js'}` — the $target entry point
 
 ## Productionize
@@ -2096,12 +2241,132 @@ ${isWorkers ? '''## Cloudflare Workers notes
 2. **Data layer** — swap fixture Repositories for real ones behind Facade
    contracts. ViewModels touch only Facades → no template/route changes.
 3. **Session store** — in-memory store is single-process; multi-instance needs
-   a shared store (KV/Redis) behind `sessionOf/prefsOf/setPrefs`.
-4. **Tests** — `appbox lens check http://localhost:${isWorkers ? '8787' : '4319'}/`
+   a shared store (KV/Redis) behind `sessionOf/prefsOf/setPrefs`. The
+   `kdh_sid` cookie is an opaque random-UUID bearer token (documented in
+   `state.js`) — equivalent to a signed cookie because it carries no payload.
+4. **Tests** — `appbox lens check http://localhost:${isWorkers ? '8787' : isVercel ? '3000' : '4399'}/`
    for visual + smoke; add `npm test` with your framework of choice.
 5. **Security** — keep the zero-custom-JS contract; add standard headers.
 ''';
 }
+
+/// Forms section of the ejected README (M8) — a raw string so the TSX/JS
+/// example needs no Dart escaping. Interpolated into [_ejectReadmeV2].
+const _readmeFormsSection = r'''
+## Forms (422 validation)
+
+POST form actions validate with zod (`runtime/forms.js`); a failed parse
+answers **422 with the form partial re-rendered** — errors and prior values
+intact. htmx 4 ignores non-2xx responses by default, but the base layout
+carries `hx-status:422="{}"` on `<body>`, which lets a 422 swap like any
+other response (the v4-native mechanism — no extensions, no custom JS).
+`autofocus` on the first invalid field makes htmx focus it after the swap
+(v4 focuses the first `[autofocus]` in swapped content natively).
+
+Field-error convention: `aria-invalid="true"` on the invalid input, an error
+element right next to it (`field__error` / `field-error-<name>`), wired with
+`aria-describedby` — the same shape as the artifact's FormField widget.
+
+A contact form, end to end:
+
+```tsx
+// ui/views/main_shell/contact/contact_view.tsx — page + ContactForm fragment.
+import type { FC } from 'hono/jsx';
+
+interface ContactProps {
+  action: string; // hx-post target — the viewmodel passes a routes.* helper
+  errors?: Record<string, string>;
+  values?: Record<string, string>;
+}
+
+export const ContactForm: FC<ContactProps> = ({ action, errors = {}, values = {} }) => {
+  const firstError = Object.keys(errors)[0];
+  const field = (name: string, label: string, type = 'text') => (
+    <div class={errors[name] ? 'field field--invalid' : 'field'}>
+      <label class="field__label" for={name}>{label}</label>
+      <input
+        class="field__input"
+        id={name}
+        name={name}
+        type={type}
+        value={values[name] ?? ''}
+        aria-invalid={errors[name] ? 'true' : undefined}
+        aria-describedby={errors[name] ? 'field-error-' + name : undefined}
+        autofocus={name === firstError ? true : undefined}
+      />
+      {errors[name] && (
+        <p class="field__error" id={'field-error-' + name}>{errors[name]}</p>
+      )}
+    </div>
+  );
+  return (
+    <form hx-post={action} hx-swap="outerHTML">
+      {field('name', 'Name')}
+      {field('email', 'Email', 'email')}
+      <button class="btn" type="submit">Send</button>
+    </form>
+  );
+};
+
+const ContactPage: FC<ContactProps> = (props) => (
+  <main>
+    <h1>Contact</h1>
+    <ContactForm {...props} />
+  </main>
+);
+
+export default ContactPage;
+```
+
+```js
+// ui/views/main_shell/contact/contact_viewmodel.js
+import { z } from 'zod';
+import { parseForm } from '../../../../runtime/forms.js';
+import { routes } from '../../../../runtime/routes.js';
+
+const schema = z.object({
+  name: z.string().min(1, 'Name is required'),
+  email: z.string().email('A valid email is required'),
+});
+
+/** @param {import('hono').Context} c @param {import('../../../../runtime/types').Helpers} h */
+export const page = (c, h) =>
+  h.render(c, 'ui/views/main_shell/contact/contact_view.html', {
+    action: routes.contact(),
+  });
+
+/** @param {import('hono').Context} c @param {import('../../../../runtime/types').Helpers} h */
+export const submit = async (c, h) => {
+  const result = await parseForm(c, schema);
+  if (!result.ok) {
+    // 422 + the form fragment: htmx swaps it in place of the <form>
+    // (default target), errors and typed values preserved, no full reload.
+    return h.render(c, 'ui/views/main_shell/contact/contact_view.html#contactForm', {
+      action: routes.contact(),
+      errors: result.errors,
+      values: result.values,
+    }, 422);
+  }
+  return h.refresh(c);
+};
+```
+
+```js
+// app.routes.js
+import * as contact from './ui/views/main_shell/contact/contact_viewmodel.js';
+export default [
+  // ...
+  ['GET', '/contact', contact.page],
+  ['POST', '/contact', contact.submit],
+];
+```
+
+Invalid submit → 422 → the form swaps in place with errors + values and
+focus on the first invalid field; no full reload. URLs come from the
+generated route manifest (`runtime/routes.js`), so renaming `/contact` in
+`app.routes.js` fails `npm run typecheck` instead of 404ing at runtime.
+
+''';
 
 // ══ design-system intake (Task 22.1) ═════════════════════════════════════
 // Ported from skills/appbox-designer/agents/{check-design-system,record-asset,

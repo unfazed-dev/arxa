@@ -64,7 +64,7 @@ function PersonaCard({ c, item, t }: { c: Ctx; item: PersonaItem; t: TFn }) {
 // confirms the item with the corrected fields.
 function CorrectionForm({ c, item, t }: { c: Ctx; item: PersonaItem; t: TFn }) {
   return (
-    <form class="persona-form" method="post" action={`${c.base}/save`} hx-post={`${c.base}/save`} hx-target="#panels" hx-swap="morph:outerHTML">
+    <form class="persona-form" method="post" action={`${c.base}/save`} hx-post={`${c.base}/save`} hx-target="#panels" hx-swap="outerMorph">
       <input type="hidden" name="item" value={item.id} />
       <label class="fact-label" for="pf-name">{t('intake.form.name') as string}</label>
       <input type="text" id="pf-name" name="name" value={item.name} />

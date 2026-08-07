@@ -1,7 +1,9 @@
 // @ts-check
 import { getCookie, setCookie } from 'hono/cookie';
-import { randomUUID } from 'node:crypto';
 
+// The session id is an opaque bearer key (128-bit random; all data lives
+// server-side) — there is no payload to tamper with, so a signed cookie adds
+// nothing here. Switch to hono's signed cookies if the cookie ever encodes data.
 // tradeoff: single-process in-memory session store — right for a one-user
 // prototype server; the productionize docs name this as a swap point.
 const sessions = new Map();
@@ -13,9 +15,11 @@ const sessions = new Map();
 export async function sessionMiddleware(c, next) {
   let sid = getCookie(c)['kdh_sid'];
   if (!sid || !sessions.has(sid)) {
-    sid = randomUUID();
+    sid = crypto.randomUUID();
     sessions.set(sid, {});
-    setCookie(c, 'kdh_sid', sid, { path: '/', httpOnly: true, sameSite: 'Lax' });
+    // secure everywhere except localhost (global crypto works on Node ≥19 + Workers).
+    const secure = !['localhost', '127.0.0.1', '[::1]'].includes(new URL(c.req.url).hostname);
+    setCookie(c, 'kdh_sid', sid, { path: '/', httpOnly: true, sameSite: 'Lax', secure });
   }
   c.set('kdh_session', { id: sid, data: sessions.get(sid) });
   await next();

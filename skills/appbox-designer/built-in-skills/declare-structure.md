@@ -95,7 +95,7 @@ renders them (e.g. the studio design's
 Every `from`/`to` must be a registry id — declare the endpoints in the
 registry first, then the edge. A `system` edge is not user navigation: it
 becomes a route guard in the compiled route table. The flows view renders
-these edges with a server template macro (resolving ids to labels via the
+these edges with a server component (resolving ids to labels via the
 facade); never author per-flow markup. Absent = no flows lens, which is
 valid for small artifacts.
 The freeze threads the array into `structure.json` keyed by the same ids.

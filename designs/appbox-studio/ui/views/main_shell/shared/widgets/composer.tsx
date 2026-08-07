@@ -112,7 +112,7 @@ export function Field(props: ComposerProps) {
       action={props.composerAction}
       hx-post={props.composerAction}
       hx-target={tgt}
-      hx-swap="morph:outerHTML"
+      hx-swap="outerMorph"
     >
       {(hasBody || hasChips) && (
         <Fragment>
@@ -126,7 +126,7 @@ export function Field(props: ComposerProps) {
                 hx-get={props.tray?.toggleHref}
                 hx-trigger="change"
                 hx-target={tgt}
-                hx-swap="morph:outerHTML"
+                hx-swap="outerMorph"
                 hx-push-url="false"
                 aria-label={collapseLabel}
               />
@@ -154,7 +154,7 @@ export function Field(props: ComposerProps) {
                     href={s.removeHref}
                     hx-get={s.removeHref}
                     hx-target={tgt}
-                    hx-swap="morph:outerHTML"
+                    hx-swap="outerMorph"
                     hx-push-url="false"
                     aria-label={t('chat.removeChip', { label: s.label }) as string}
                   >
@@ -176,7 +176,7 @@ export function Field(props: ComposerProps) {
                         href={s.protoHref || s.contextHref}
                         hx-get={s.protoHref || s.contextHref}
                         hx-target={s.protoHref ? '#design-viewer' : tgt}
-                        hx-swap="morph:outerHTML"
+                        hx-swap="outerMorph"
                         hx-push-url="false"
                         title={s.label || s.id}
                         key={s.id}
@@ -202,7 +202,7 @@ export function Field(props: ComposerProps) {
                             href={el.removeHref}
                             hx-get={el.removeHref}
                             hx-target={tgt}
-                            hx-swap="morph:outerHTML"
+                            hx-swap="outerMorph"
                             hx-push-url="false"
                             aria-label={t('chat.removeChip', { label: el.name }) as string}
                           >
@@ -255,7 +255,7 @@ export function Field(props: ComposerProps) {
             disabled={!canUndo || undefined}
             hx-post={canUndo ? props.undoHref || '/design/undo/chat' : undefined}
             hx-target={canUndo ? tgt : undefined}
-            hx-swap={canUndo ? 'morph:outerHTML' : undefined}
+            hx-swap={canUndo ? 'outerMorph' : undefined}
             title={t('miniPanel.undo') as string}
           >
             <Icon name="undo-2" size={16} />
@@ -266,7 +266,7 @@ export function Field(props: ComposerProps) {
             disabled={!canRedo || undefined}
             hx-post={canRedo ? props.redoHref || '/design/redo/chat' : undefined}
             hx-target={canRedo ? tgt : undefined}
-            hx-swap={canRedo ? 'morph:outerHTML' : undefined}
+            hx-swap={canRedo ? 'outerMorph' : undefined}
             title={t('miniPanel.redo') as string}
           >
             <Icon name="redo-2" size={16} />
@@ -287,7 +287,7 @@ export function Field(props: ComposerProps) {
                   href={o.href}
                   hx-get={o.href}
                   hx-target={tgt}
-                  hx-swap="morph:outerHTML"
+                  hx-swap="outerMorph"
                   hx-push-url="false"
                   key={o.href}
                 >

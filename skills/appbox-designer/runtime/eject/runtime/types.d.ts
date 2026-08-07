@@ -32,8 +32,9 @@ export interface Timers {
   stop(id: string): void;
 }
 
-export interface Templates {
-  render(viewRef: string, ctx: Record<string, unknown>): string;
+export interface Sse {
+  publishPatch(channel: string, html: string): void;
+  publishEvent(channel: string, eventName: string, html?: string): void;
 }
 
 export interface Helpers {
@@ -45,6 +46,7 @@ export interface Helpers {
   t(c: Context): (key: string, vars?: Record<string, unknown>) => string;
   setPrefs(c: Context, patch: Partial<Prefs>): void;
   timers: Timers;
+  sse: Sse;
   noContent(c: Context): Response;
   stopPolling(c: Context): Response;
   refresh(c: Context): Response;

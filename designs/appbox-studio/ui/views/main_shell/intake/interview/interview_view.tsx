@@ -17,7 +17,7 @@ function ModeCards({ c, t }: { c: Ctx; t: TFn }) {
   return (
     <div class="mode-cards">
       {DEPTHS.map((d) => (
-        <form key={d} method="post" action={`${c.base}/depth`} hx-post={`${c.base}/depth`} hx-target="#panels" hx-swap="morph:outerHTML">
+        <form key={d} method="post" action={`${c.base}/depth`} hx-post={`${c.base}/depth`} hx-target="#panels" hx-swap="outerMorph">
           <button type="submit" class="mode-card" name="depth" value={d}>
             <span class="mode-name">{t(`intake.bank.${d}`) as string}</span>
             <span class="mode-desc muted">{t(`intake.mode.desc.${d}`) as string}</span>
@@ -41,13 +41,13 @@ function AnswersSummary({ c, car, t }: { c: Ctx; car: Carousel; t: TFn }) {
             <Fragment>
               <p class="q-answer">{q.answer}</p>
               <a class="q-edit" href={`${c.base}/edit?q=${q.id}`}
-                 hx-get={`${c.base}/edit?q=${q.id}`} hx-target="#panels" hx-swap="morph:outerHTML" hx-push-url="false">{t('intake.edit') as string}</a>
+                 hx-get={`${c.base}/edit?q=${q.id}`} hx-target="#panels" hx-swap="outerMorph" hx-push-url="false">{t('intake.edit') as string}</a>
             </Fragment>
           ) : q.state === 'skipped' ? (
             <Fragment>
               <p class="q-answer muted">{t('intake.skipped') as string}</p>
               <a class="q-edit" href={`${c.base}/edit?q=${q.id}`}
-                 hx-get={`${c.base}/edit?q=${q.id}`} hx-target="#panels" hx-swap="morph:outerHTML" hx-push-url="false">{t('intake.answerAnyway') as string}</a>
+                 hx-get={`${c.base}/edit?q=${q.id}`} hx-target="#panels" hx-swap="outerMorph" hx-push-url="false">{t('intake.answerAnyway') as string}</a>
             </Fragment>
           ) : null}
         </div>

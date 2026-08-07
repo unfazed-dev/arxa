@@ -14,7 +14,7 @@ export default function counter(el, { state, signal, effect }) {
   // from the returned API — the effect runs once writing the server value.
   return {
     count,
-    inc: () => { count.value++; },
-    dec: () => { count.value--; },
+    inc: () => { count(count() + 1); },
+    dec: () => { count(count() - 1); },
   };
 }

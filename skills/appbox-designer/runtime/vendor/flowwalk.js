@@ -84,10 +84,10 @@
     // #panels out of it; this URL is the viewer route, which already returns
     // just the viewer fragment — asking for a DESCENDANT with that id finds
     // nothing and swaps nothing. Same shape as the tile toolbar's own links:
-    // hx-target="#design-viewer" hx-swap="morph:outerHTML", no select.
+    // hx-target="#design-viewer" hx-swap="outerMorph", no select.
     p.htmx.ajax('GET', advance, {
       target: '#design-viewer',
-      swap: 'morph:outerHTML',
+      swap: 'outerMorph',
       // hx-sync="this:replace" on <body> aborts superseded XHRs; htmx rejects
       // the promise with undefined on abort. Real failures still log.
     }).catch((e) => { if (e !== undefined) console.error('appbox island htmx.ajax:', e); });

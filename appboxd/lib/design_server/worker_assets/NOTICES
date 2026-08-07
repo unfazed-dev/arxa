@@ -12,3 +12,7 @@ boundary; `/assets/vendor/*` still serves from the runtime vendor dir.
   (esbuild-compiled from `.tsx` view files) to serve artifacts. Exposes
   `__boot` / `__routes` / `__dispatch`.
 - `fs_shim.js` — the `node:fs` shim (sync readFileSync from globalThis.__fixtures).
+- `islands_eager.js` — the design-time eager island loader. The one asset here
+  NOT for the worker tab: the design server injects it into every full HTML
+  page it serves (M10), initializing every `[hx-island]` on boot from the
+  vendored sources; the ejected app's lazy loader is untouched.

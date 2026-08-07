@@ -4,6 +4,7 @@ import { raw } from 'hono/utils/html';
 import { sessionOf, prefsOf, setPrefs } from './state.js';
 import { localeOf } from './l10n.js';
 import { timers } from './timers.js';
+import { publishPatch, publishEvent } from './realtime.js';
 
 // The `h` object every viewmodel handler receives: `handler(c, h) => Response`.
 /**
@@ -29,6 +30,18 @@ export function createHelpers(artifactDir, l10n) {
         : (/** @type {string} */ s) => s;
       const t = (/** @type {string} */ key, /** @type {Record<string, unknown> | undefined} */ vars) =>
         raw(String(tFn(key, vars)));
+      // If ctx.partial is a string viewRef (e.g. 'ui/project/home.html'),
+      // pre-render it through the TSX registry so the component receives
+      // ready-made content instead of a raw path string — replaces the nunjucks
+      // dynamic-include pattern (parity with the design-time shim).
+      if (typeof ctx.partial === 'string' && ctx.partial) {
+        const partialBag = { prefs: prefsOf(c), locale: localeOf(c), locales: l10n?.locales ?? [], t, ...ctx };
+        // @ts-ignore — circular self-reference (viewmodels expect props.c)
+        partialBag.c = partialBag;
+        try {
+          ctx = { ...ctx, partial: raw(String(renderTsx(ctx.partial, partialBag))) };
+        } catch { /* not in registry or render error — generic placeholder fallback */ }
+      }
       const bag = { prefs: prefsOf(c), locale: localeOf(c), locales: l10n?.locales ?? [], t, ...ctx };
       // @ts-ignore — circular self-reference (kept for parity; macro-free in TSX)
       bag.c = bag;
@@ -71,6 +84,9 @@ export function createHelpers(artifactDir, l10n) {
     },
 
     timers,
+
+    // Server-push: publish onto the SSE bus (GET /__events?channel=<name>).
+    sse: { publishPatch, publishEvent },
 
     /** @param {import('./types').Context} c */
     noContent(c) {

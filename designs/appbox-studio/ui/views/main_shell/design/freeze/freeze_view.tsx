@@ -51,7 +51,7 @@ function ApprovalCard({ c, t }: { c: FreezeViewProps; t: TFn }) {
       <p class="artifact-lede">{c.approval?.lede}</p>
       <p class="approval-note">{c.approval?.note}</p>
       {!c.approval?.approved ? (
-        <form method="post" action="/design/freeze/messages" hx-post="/design/freeze/messages" hx-target="#panels" hx-swap="morph:outerHTML">
+        <form method="post" action="/design/freeze/messages" hx-post="/design/freeze/messages" hx-target="#panels" hx-swap="outerMorph">
           <button type="submit" name="preset" value="approve" class="cta-main">{t('freeze.approveCta') as string}</button>
         </form>
       ) : (

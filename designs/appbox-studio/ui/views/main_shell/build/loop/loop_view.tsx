@@ -195,7 +195,7 @@ export function MsgCard({ m, t }: MsgCardProps) {
       {m.card!.type === 'gate' && m.card!.state === 'pending' && (
         <span class="gate-quick">
           <form method="post" action="/build/gates/decide"
-                hx-post="/build/gates/decide" hx-target="#panels" hx-swap="morph:outerHTML">
+                hx-post="/build/gates/decide" hx-target="#panels" hx-swap="outerMorph">
             <input type="hidden" name="gate" value={m.card!.gateId} />
             <button type="submit" name="decision" value="approved" class="btn-approve">{t('action.approve') as string}</button>
             <button type="submit" name="decision" value="rejected" class="btn-reject ghost">{t('action.reject') as string}</button>
@@ -322,21 +322,21 @@ export function RunView(props: LoopProps) {
               <span class="run-stage-acts">
                 {s.state === 'held' ? (
                   <form method="post" action={`/build/stages/${s.id}/control`}
-                        hx-post={`/build/stages/${s.id}/control`} hx-target="#panels" hx-swap="morph:outerHTML">
+                        hx-post={`/build/stages/${s.id}/control`} hx-target="#panels" hx-swap="outerMorph">
                     <button type="submit" name="action" value="resume" class="ico-btn"
                       title={t('build.resumeStage', { label: s.label }) as string}
                       aria-label={t('build.resumeStage', { label: s.label }) as string}><Icon name="play" size={14} /></button>
                   </form>
                 ) : (
                   <form method="post" action={`/build/stages/${s.id}/control`}
-                        hx-post={`/build/stages/${s.id}/control`} hx-target="#panels" hx-swap="morph:outerHTML">
+                        hx-post={`/build/stages/${s.id}/control`} hx-target="#panels" hx-swap="outerMorph">
                     <button type="submit" name="action" value="pause" class="ico-btn"
                       title={t('build.pauseStage', { label: s.label }) as string}
                       aria-label={t('build.pauseStage', { label: s.label }) as string}><Icon name="pause" size={14} /></button>
                   </form>
                 )}
                 <form method="post" action={`/build/stages/${s.id}/control`}
-                      hx-post={`/build/stages/${s.id}/control`} hx-target="#panels" hx-swap="morph:outerHTML">
+                      hx-post={`/build/stages/${s.id}/control`} hx-target="#panels" hx-swap="outerMorph">
                   <button type="submit" name="action" value="cancel" class="ico-btn"
                     title={t('build.cancelStage', { label: s.label }) as string}
                     aria-label={t('build.cancelStage', { label: s.label }) as string}><Icon name="x" size={14} /></button>
@@ -384,7 +384,7 @@ export function ArtifactsView(props: LoopProps) {
           <li key={i}>
             <a class={`artifact-index-link${props.activeArtifact === a.ref ? ' is-active' : ''}`}
                href={`/build/artifact/${a.ref}`}
-               hx-get={`/build/artifact/${a.ref}`} hx-target="#panels" hx-swap="morph:outerHTML" hx-push-url="false">
+               hx-get={`/build/artifact/${a.ref}`} hx-target="#panels" hx-swap="outerMorph" hx-push-url="false">
               <TypeBadge type={a.kind} />
               <span class="artifact-index-label">{a.label}</span>
               {a.state && <StatusPill state={a.state} t={t} />}
@@ -531,7 +531,7 @@ export function GateCanvas(props: { gate: GateItem; t: TFn; [key: string]: unkno
         <Fragment>
           <div class="gate-actions" id="gate-actions">
             <form class="gate-buttons" method="post" action="/build/gates/decide"
-                  hx-post="/build/gates/decide" hx-target="#panels" hx-swap="morph:outerHTML">
+                  hx-post="/build/gates/decide" hx-target="#panels" hx-swap="outerMorph">
               <input type="hidden" name="gate" value={gate.id} />
               <button type="submit" name="decision" value="approved" class="btn-approve">{t('action.approve') as string}</button>
               <button type="submit" name="decision" value="rejected" class="btn-reject ghost">{t('action.reject') as string}</button>

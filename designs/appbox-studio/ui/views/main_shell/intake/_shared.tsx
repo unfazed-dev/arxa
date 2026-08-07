@@ -142,7 +142,7 @@ export function QCard({ c, q, t }: { c: Ctx; q: Question; t: TFn }) {
       {(q.state === 'current' || q.state === 'editing') ? (
         <Fragment>
           <form class="q-form" method="post" action={`${base}/answer`}
-                hx-post={`${base}/answer`} hx-target="#panels" hx-swap="morph:outerHTML">
+                hx-post={`${base}/answer`} hx-target="#panels" hx-swap="outerMorph">
             <input type="hidden" name="q" value={q.id} />
             <input type="text" name="text" value={q.answer ?? ''}
                    placeholder={t('intake.answerPlaceholder') as string}
@@ -155,7 +155,7 @@ export function QCard({ c, q, t }: { c: Ctx; q: Question; t: TFn }) {
             <span class="q-sugs">
               {q.suggestions.map((s, i) => (
                 <form key={i} method="post" action={`${base}/answer`}
-                      hx-post={`${base}/answer`} hx-target="#panels" hx-swap="morph:outerHTML">
+                      hx-post={`${base}/answer`} hx-target="#panels" hx-swap="outerMorph">
                   <input type="hidden" name="q" value={q.id} />
                   <button type="submit" name="text" value={s}>{s}</button>
                 </form>
@@ -163,7 +163,7 @@ export function QCard({ c, q, t }: { c: Ctx; q: Question; t: TFn }) {
             </span>
           ) : null}
           <form class="q-skip" method="post" action={`${base}/skip`}
-                hx-post={`${base}/skip`} hx-target="#panels" hx-swap="morph:outerHTML">
+                hx-post={`${base}/skip`} hx-target="#panels" hx-swap="outerMorph">
             <input type="hidden" name="q" value={q.id} />
             <button type="submit" aria-label={t('intake.skipAria') as string}>
               {t('intake.skip') as string} <Icon name="chevron-right" size={14} />
@@ -174,7 +174,7 @@ export function QCard({ c, q, t }: { c: Ctx; q: Question; t: TFn }) {
         <Fragment>
           <p class="q-answer">{q.answer}</p>
           <a class="q-edit" href={`${base}/edit?q=${q.id}`}
-             hx-get={`${base}/edit?q=${q.id}`} hx-target="#panels" hx-swap="morph:outerHTML" hx-push-url="false">
+             hx-get={`${base}/edit?q=${q.id}`} hx-target="#panels" hx-swap="outerMorph" hx-push-url="false">
             {t('intake.edit') as string}
           </a>
         </Fragment>
@@ -182,7 +182,7 @@ export function QCard({ c, q, t }: { c: Ctx; q: Question; t: TFn }) {
         <Fragment>
           <p class="q-answer muted">{t('intake.skipped') as string}</p>
           <a class="q-edit" href={`${base}/edit?q=${q.id}`}
-             hx-get={`${base}/edit?q=${q.id}`} hx-target="#panels" hx-swap="morph:outerHTML" hx-push-url="false">
+             hx-get={`${base}/edit?q=${q.id}`} hx-target="#panels" hx-swap="outerMorph" hx-push-url="false">
             {t('intake.answerAnyway') as string}
           </a>
         </Fragment>
@@ -205,11 +205,11 @@ export function ItemActions({ c, item, t }: { c: Ctx; item: StepItem; t: TFn }) 
   if (item.state === 'current' || item.state === 'editing') {
     return (
       <span class="item-actions">
-        <form method="post" action={`${base}/confirm`} hx-post={`${base}/confirm`} hx-target="#panels" hx-swap="morph:outerHTML">
+        <form method="post" action={`${base}/confirm`} hx-post={`${base}/confirm`} hx-target="#panels" hx-swap="outerMorph">
           <input type="hidden" name="item" value={item.id} />
           <button type="submit" class="cta-main">{t('intake.item.confirm') as string} <Icon name="check" size={14} /></button>
         </form>
-        <form method="post" action={`${base}/skip`} hx-post={`${base}/skip`} hx-target="#panels" hx-swap="morph:outerHTML">
+        <form method="post" action={`${base}/skip`} hx-post={`${base}/skip`} hx-target="#panels" hx-swap="outerMorph">
           <input type="hidden" name="item" value={item.id} />
           <button type="submit" class="cta-ghost">{t('intake.skip') as string} <Icon name="chevron-right" size={14} /></button>
         </form>
@@ -219,7 +219,7 @@ export function ItemActions({ c, item, t }: { c: Ctx; item: StepItem; t: TFn }) 
   if (item.state === 'confirmed') {
     return (
       <a class="q-edit" href={`${base}/edit?item=${item.id}`}
-         hx-get={`${base}/edit?item=${item.id}`} hx-target="#panels" hx-swap="morph:outerHTML" hx-push-url="false">
+         hx-get={`${base}/edit?item=${item.id}`} hx-target="#panels" hx-swap="outerMorph" hx-push-url="false">
         {t('intake.edit') as string}
       </a>
     );
@@ -227,7 +227,7 @@ export function ItemActions({ c, item, t }: { c: Ctx; item: StepItem; t: TFn }) 
   if (item.state === 'skipped') {
     return (
       <a class="q-edit" href={`${base}/edit?item=${item.id}`}
-         hx-get={`${base}/edit?item=${item.id}`} hx-target="#panels" hx-swap="morph:outerHTML" hx-push-url="false">
+         hx-get={`${base}/edit?item=${item.id}`} hx-target="#panels" hx-swap="outerMorph" hx-push-url="false">
         {t('intake.item.reviewAnyway') as string}
       </a>
     );
@@ -246,7 +246,7 @@ export function ItemStrip({ c, step, t }: { c: Ctx; step?: Step; t: TFn }) {
         if (item.state === 'confirmed' || item.state === 'skipped') {
           return (
             <a key={item.id} class={`strip-dot is-${item.state}`} href={`${base}/edit?item=${item.id}`}
-               hx-get={`${base}/edit?item=${item.id}`} hx-target="#panels" hx-swap="morph:outerHTML" hx-push-url="false"
+               hx-get={`${base}/edit?item=${item.id}`} hx-target="#panels" hx-swap="outerMorph" hx-push-url="false"
                title={title} aria-label={title} />
           );
         }
@@ -266,7 +266,7 @@ export function StepFoot({ c, step, t }: { c: Ctx; step?: Step; t: TFn }) {
           <a class="cta-main" href={step.nextHref}>{t(step.nextLabel as string) as string} <Icon name="chevron-right" size={14} /></a>
         ) : null
       ) : (
-        <form method="post" action={`${base}/accept-all`} hx-post={`${base}/accept-all`} hx-target="#panels" hx-swap="morph:outerHTML">
+        <form method="post" action={`${base}/accept-all`} hx-post={`${base}/accept-all`} hx-target="#panels" hx-swap="outerMorph">
           <button type="submit" class="cta-ghost">{t('intake.item.acceptAll') as string}</button>
         </form>
       )}
@@ -303,7 +303,7 @@ export function QStrip({ c, car, t }: { c: Ctx; car: Carousel; t: TFn }) {
           const dot = q.state === 'answered' ? 'confirmed' : 'skipped';
           return (
             <a key={q.id} class={`strip-dot is-${dot}`} href={`${base}/edit?q=${q.id}`}
-               hx-get={`${base}/edit?q=${q.id}`} hx-target="#panels" hx-swap="morph:outerHTML" hx-push-url="false"
+               hx-get={`${base}/edit?q=${q.id}`} hx-target="#panels" hx-swap="outerMorph" hx-push-url="false"
                title={q.text} aria-label={q.text} />
           );
         }
@@ -325,7 +325,7 @@ export function ChatMsg({ c, m, t }: { c: Ctx; m: ChatMsg; t: TFn }) {
       {m.quickReplies && m.quickReplies.length > 0 ? (
         <span class="q-replies">
           {m.quickReplies.map((r, i) => (
-            <form key={i} method="post" action={r.action} hx-post={r.action} hx-target="#panels" hx-swap="morph:outerHTML">
+            <form key={i} method="post" action={r.action} hx-post={r.action} hx-target="#panels" hx-swap="outerMorph">
               <button type="submit" class="chip chip--accent qr-chip" name={r.name} value={r.value}>{r.label}</button>
             </form>
           ))}
@@ -335,7 +335,7 @@ export function ChatMsg({ c, m, t }: { c: Ctx; m: ChatMsg; t: TFn }) {
         <span class="msg-cta">
           {m.artifactRef ? (
             <a class="cta-main" href={`${base}/artifact/${m.artifactRef}`}
-               hx-get={`${base}/artifact/${m.artifactRef}`} hx-target="#panels" hx-swap="morph:outerHTML" hx-push-url="false">
+               hx-get={`${base}/artifact/${m.artifactRef}`} hx-target="#panels" hx-swap="outerMorph" hx-push-url="false">
               {m.artifactLabel} <Icon name="chevron-right" size={14} />
             </a>
           ) : null}
@@ -391,7 +391,7 @@ function ActivityBody({ c }: { c: Ctx }) {
       <div class="rv-list">
         {arts.map((a) => (
           <a key={a.ref} class="rv-card" href={`${base}/artifact/${a.ref}`}
-             hx-get={`${base}/artifact/${a.ref}`} hx-target="#panels" hx-swap="morph:outerHTML" hx-push-url="false">
+             hx-get={`${base}/artifact/${a.ref}`} hx-target="#panels" hx-swap="outerMorph" hx-push-url="false">
             <span class="rv-title">{a.title}</span>
             <span class="rv-detail muted">{a.detail}</span>
             {a.badges && a.badges.length > 0 ? (
@@ -434,7 +434,7 @@ function ActivityBody({ c }: { c: Ctx }) {
           <span class="rv-foot">
             {m.artifact ? (
               <a class="cta-ghost" href={`${base}/artifact/${m.artifact}`}
-                 hx-get={`${base}/artifact/${m.artifact}`} hx-target="#panels" hx-swap="morph:outerHTML" hx-push-url="false">
+                 hx-get={`${base}/artifact/${m.artifact}`} hx-target="#panels" hx-swap="outerMorph" hx-push-url="false">
                 {m.artifactLabel} <Icon name="chevron-right" size={14} />
               </a>
             ) : null}

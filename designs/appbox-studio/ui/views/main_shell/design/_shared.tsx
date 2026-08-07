@@ -48,7 +48,7 @@ export function CheckpointCard({ e, t }: CheckpointCardProps) {
           action={`/design/chat/screen/${e.screen}/revert/${e.id}`}
           hx-post={`/design/chat/screen/${e.screen}/revert/${e.id}`}
           hx-target="#panels"
-          hx-swap="morph:outerHTML"
+          hx-swap="outerMorph"
         >
           <button type="submit" class="ghost">
             <Icon name="undo-2" size={14} /> {t('checkpoint.revert', { id: e.id }) as string}
@@ -177,11 +177,11 @@ export function ScreenCard({ s, t }: ScreenCardProps) {
     <div class={`msg msg-agent${s.inContext ? ` is-active msg-ctx ctx-${s.tone}` : ''}`}>
       <header class="msg-meta">
         <TypeBadge type="screen" label={s.epic} />
-        {s.card?.threadCount && (
+        {s.card?.threadCount ? (
           <span class="chip thread-badge" title={t('design.checkpointsTitle', { count: s.card.threadCount }) as string}>
             <Icon name="history" size={12} /> {s.card.threadCount}
           </span>
-        )}
+        ) : null}
         <StatusPill state={s.card?.state} t={t} />
       </header>
       <span class="msg-text">{s.summary}</span>
@@ -193,7 +193,7 @@ export function ScreenCard({ s, t }: ScreenCardProps) {
             href={`/design/chat/context/${s.id}?state=toggle`}
             hx-get={`/design/chat/context/${s.id}?state=toggle`}
             hx-target="#panels"
-            hx-swap="morph:outerHTML"
+            hx-swap="outerMorph"
             hx-push-url="false"
           >
             {s.inContext

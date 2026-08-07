@@ -24,7 +24,7 @@
 * { scrollbar-width: thin; scrollbar-color: color-mix(in oklab, var(--tx, currentColor) 22%, transparent) transparent; }
 ::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: color-mix(in oklab, var(--tx, currentColor) 22%, transparent); border-radius: 999px; }
+::-webkit-scrollbar-thumb { background: color-mix(in oklab, var(--tx, currentColor) 22%, transparent); border-radius: 999px; } /* w5:not-a-chip — scrollbar chrome, not a chip */
 body { margin: 0; font-family: var(--c-font); }
 #app { min-height: 100dvh; display: flex; flex-direction: column; }
 h1 { font-size: 1.8rem; margin: 0 0 .5rem; }
@@ -39,7 +39,7 @@ form { display: flex; gap: .5rem; align-items: end; margin: 1rem 0; }
 /* ── widget library ──────────────────────────────────────────────────────
    The blocks below are this artifact's copies from
    starter-partials/widgets/widgets.css — one per adopted partial in
-   this artifact's widget tree (ui/views/main_shell/shared/widgets/, ui/views/main_shell/home/widgets/). The contract: shared widget styles live in the
+   this artifact's widget tree (ui/views/main_shell/shared/widgets/). The contract: shared widget styles live in the
    main stylesheet, never duplicated across per-surface CSS. Colors/geometry
    are custom properties scoped per block; widgets read var(--accent) off
    the #app wrapper like everything else. Ladder branches live on the
@@ -191,7 +191,7 @@ form { display: flex; gap: .5rem; align-items: end; margin: 1rem 0; }
   .bottom-nav__link { transition: color var(--motion-fast) var(--motion-ease); }
 }
 
-/* ── list rows & sections (ui/views/main_shell/home/widgets/_list-row.html) ────────── */
+/* ── list rows & sections (ui/views/main_shell/shared/widgets/_list-row.html) ──────── */
 .list-section { margin-bottom: 24px; font-family: var(--c-font); }
 .list-section__header {
   margin: 0;
@@ -257,7 +257,7 @@ a.list-row:hover { background: color-mix(in srgb, currentColor 6%, transparent);
 .list-row__detail { font-size: 14px; color: var(--row-dim); }
 .list-row__chevron { color: color-mix(in srgb, CanvasText 30%, Canvas); }
 
-/* ── form field (ui/views/main_shell/home/widgets/_form-field.html) ────────────────── */
+/* ── form field (ui/views/main_shell/shared/widgets/_form-field.html) ──────────────── */
 .field {
   --field-border: color-mix(in srgb, CanvasText 25%, transparent);
   --field-error: #dc2626;

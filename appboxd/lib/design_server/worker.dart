@@ -15,8 +15,10 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:appboxd/cdp.dart';
+import 'package:appboxd/crypto_aead.dart' as crypto;
 import 'package:appboxd/design_server/l10n.dart' show parseArb;
 import 'package:appboxd/design_tools.dart' show generateRenderTsx;
 import 'package:path/path.dart' as p;
@@ -129,7 +131,7 @@ class WorkerResponse {
 /// artifact dir; refreshed on hot reload. Sync lookups only on the render path.
 class _Prefetch {
   final String renderBundle; // esbuild-bundled TSX render module (ESM JS)
-  final Map<String, String> templates; // .html partials (nunjucks, project surfaces)
+  final Map<String, String> templates; // project-surface presence map, keyed by registry viewRef (ui/project/<name>.html)
   final Map<String, String> fixtures; // keyed by absolute served URL
   final Map<String, Map<String, dynamic>> arb;
   final Map<String, String> icons;
@@ -151,14 +153,16 @@ Future<_Prefetch> _scanArtifact(String artifactDir, String origin,
       p.relative(f, from: artifactDir).split(p.separator).join('/');
 
   void iconScan(String src) {
-    // Nunjucks-era pattern: icon('foo') / icon: 'foo'
+    // Facade/viewmodel data pattern: icon('foo') / icon: 'foo' — a viewmodel
+    // names the icon a view will render.
     for (final m
         in RegExp(r"""icon['"]?\s*[:\(]\s*['"]([a-z0-9-]+)['"]""").allMatches(src)) {
       iconNames.add(m.group(1)!);
     }
-    // TSX-era pattern: <Icon name="foo" />
+    // TSX pattern: <Icon name="foo" /> only — a bare name= match sweeps in
+    // form fields and every other named attribute.
     for (final m
-        in RegExp(r'''name=["']([a-z0-9-]+)["']''').allMatches(src)) {
+        in RegExp(r'''<Icon(?:\s[^>]*?)?name=["']([a-z0-9-]+)["']''').allMatches(src)) {
       iconNames.add(m.group(1)!);
     }
   }
@@ -204,9 +208,17 @@ Future<_Prefetch> _scanArtifact(String artifactDir, String origin,
       if (rel.endsWith('.html') || rel.endsWith('.js') || rel.endsWith('.tsx')) {
         iconScan(f.readAsStringSync());
       }
-      if (rel.startsWith('design/surfaces/') && rel.endsWith('.html')) {
+      if (rel.startsWith('design/surfaces/') &&
+          (rel.endsWith('.html') || rel.endsWith('.tsx'))) {
         final src = f.readAsStringSync();
-        templates['ui/project/${rel.substring('design/surfaces/'.length)}'] = src;
+        // Presence key follows the render registry's viewRef convention
+        // (generateRenderTsx): a surface renders as 'ui/project/<name>.html'
+        // no matter which extension the source carries — .tsx is the
+        // rendered source post-migration, .html the pre-TSX fallback. The
+        // templates map is presence-only now (nothing renders from it);
+        // hasPartial in project_repository.js keys off this name.
+        templates[
+            'ui/project/${p.basenameWithoutExtension(rel)}.html'] = src;
         // Raw SOURCE text too, for the widget manager: services scan the
         // authored surface partials (data-el containers, layout attrs) via
         // fs_shim, which can only see prefetched keys. /project-src/ is that
@@ -289,6 +301,24 @@ String? _findNodeModulesDir([String? from]) {
   return null;
 }
 
+/// esbuild could not bundle the render module — almost always a TSX syntax
+/// error in the artifact. Distinct from a missing toolchain (node_modules
+/// absent still fails the boot): a bundle error must not kill the server, it
+/// surfaces on every route instead (M9 — see [JsWorker.bundleError]).
+class RenderBundleException implements Exception {
+  final String message;
+  RenderBundleException(this.message);
+  @override
+  String toString() => message;
+}
+
+/// Stand-in render module injected when the real bundle fails to build, so
+/// the worker still boots (the route table loads, the server stays up) and
+/// [JsWorker.bundleError] can be surfaced per-route. render() is never
+/// reached: the server short-circuits every dispatch while the error stands.
+const _kBrokenRenderBundle =
+    'export function render(){ throw new Error("render bundle unavailable — see bundleError"); }\n';
+
 /// Browser-compatible icon.tsx — reads Lucide SVGs from `globalThis.__icons`
 /// (populated by the Dart prefetch) instead of `node:fs`. Same SVG modification
 /// logic as the ejected icon.tsx (stroke-width, aria attrs, class, size).
@@ -358,12 +388,59 @@ export default Icon;
 /// esbuild resolves `hono/jsx` / `hono/utils/html` from the symlinked
 /// node_modules. All source files are COPIED (not symlinked) so esbuild's
 /// upward node_modules walk from each file lands in tempDir/node_modules.
+///
+/// The bundle depends ONLY on the .tsx tree (sources + the generated
+/// registry), so it is cached on a content hash: a hot reload that touched
+/// just JSON/ARB/fixtures reuses the bundle and skips the esbuild round-trip.
+/// kimitail: single-slot cache — reloads are sequential, one slot covers the
+/// edit/save cycle; a Map would only accumulate dead bundles.
+String? _bundleCacheKey;
+String? _bundleCacheValue;
+
+/// esbuild runs across the process. The bundle-cache contract is a count,
+/// same reasoning as [JsWorker.reloadRunsForTest]: a fixture-only reload must
+/// not bump this, a .tsx edit must. Test-only.
+int bundleBuildCount = 0;
+
 Future<String> _buildRenderBundle(
     String artifactDir, String? nodeModulesDir, {String? projectDir}) async {
   if (nodeModulesDir == null || !Directory(nodeModulesDir).existsSync()) {
     throw StateError(
         'node_modules not found (needed to bundle TSX). Expected at '
         'skills/appbox-designer/runtime/node_modules. Run `npm install` there.');
+  }
+
+  // Collect the .tsx inputs once — they are both the cache key and what the
+  // build copies. Key = sha256 over sorted rel paths + contents + the
+  // generated render.tsx (which the inventory alone determines).
+  final inputs = <String, String>{};
+  for (final f in _walk(Directory(artifactDir))) {
+    if (!f.path.endsWith('.tsx')) continue;
+    inputs[p.relative(f.path, from: artifactDir)] = f.readAsStringSync();
+  }
+  // Project surface .tsx partials join the bundle under ui/project/.
+  if (projectDir != null) {
+    final surfacesDir = Directory(p.join(projectDir, 'design', 'surfaces'));
+    if (surfacesDir.existsSync()) {
+      for (final f in _walk(surfacesDir)) {
+        if (!f.path.endsWith('.tsx')) continue;
+        inputs[p.join('ui', 'project', p.basename(f.path))] =
+            f.readAsStringSync();
+      }
+    }
+  }
+  final renderTsx = generateRenderTsx(artifactDir, projectDir: projectDir);
+  final keyBytes = <int>[];
+  for (final rel in inputs.keys.toList()..sort()) {
+    keyBytes.addAll(utf8.encode(rel));
+    keyBytes.addAll(utf8.encode(inputs[rel]!));
+  }
+  keyBytes.addAll(utf8.encode(renderTsx));
+  final key = crypto.sha256(Uint8List.fromList(keyBytes))
+      .map((b) => b.toRadixString(16).padLeft(2, '0'))
+      .join();
+  if (key == _bundleCacheKey && _bundleCacheValue != null) {
+    return _bundleCacheValue!;
   }
 
   final buildDir =
@@ -373,30 +450,13 @@ Future<String> _buildRenderBundle(
     await Link(p.join(buildDir.path, 'node_modules'))
         .create(nodeModulesDir);
 
-    // Copy all .tsx files from the artifact (views, shared components, etc.).
-    // esbuild resolves relative imports from the file's real path, so symlinked
-    // files would walk up to the artifact dir (which has no node_modules).
-    for (final f in _walk(Directory(artifactDir))) {
-      if (!f.path.endsWith('.tsx')) continue;
-      final rel = p.relative(f.path, from: artifactDir);
+    // Copy the .tsx files in. esbuild resolves relative imports from the
+    // file's real path, so symlinked files would walk up to the artifact dir
+    // (which has no node_modules).
+    for (final rel in inputs.keys) {
       final dest = File(p.join(buildDir.path, rel));
       await dest.parent.create(recursive: true);
-      await dest.writeAsString(f.readAsStringSync());
-    }
-
-    // Copy project surface .tsx partials into ui/project/ so esbuild can
-    // resolve them as part of the render bundle.
-    if (projectDir != null) {
-      final surfacesDir = Directory(p.join(projectDir, 'design', 'surfaces'));
-      if (surfacesDir.existsSync()) {
-        for (final f in _walk(surfacesDir)) {
-          if (!f.path.endsWith('.tsx')) continue;
-          final name = p.basename(f.path);
-          final dest = File(p.join(buildDir.path, 'ui', 'project', name));
-          await dest.parent.create(recursive: true);
-          await dest.writeAsString(f.readAsStringSync());
-        }
-      }
+      await dest.writeAsString(inputs[rel]!);
     }
 
     // Create runtime/ with generated render.tsx + browser-compatible icon.tsx.
@@ -404,16 +464,17 @@ Future<String> _buildRenderBundle(
     // versions (e.g. an ejected copy has a node-dependent icon.tsx).
     final runtimeDir = Directory(p.join(buildDir.path, 'runtime'))
       ..createSync(recursive: true);
-    File(p.join(runtimeDir.path, 'render.tsx'))
-        .writeAsStringSync(generateRenderTsx(artifactDir, projectDir: projectDir));
+    File(p.join(runtimeDir.path, 'render.tsx')).writeAsStringSync(renderTsx);
     File(p.join(runtimeDir.path, 'icon.tsx'))
         .writeAsStringSync(_browserIconTsx);
 
-    // Bundle render.tsx → render_bundle.js (self-contained ESM).
+    // Bundle render.tsx → render_bundle.js (self-contained ESM). The skill's
+    // own pinned esbuild binary, not an npx lookup.
     final entryPath = p.join(runtimeDir.path, 'render.tsx');
     final outPath = p.join(buildDir.path, 'render_bundle.js');
-    final result = await Process.run('npx', [
-      'esbuild',
+    bundleBuildCount++;
+    final result =
+        await Process.run(p.join(nodeModulesDir, '.bin', 'esbuild'), [
       entryPath,
       '--bundle',
       '--format=esm',
@@ -427,11 +488,14 @@ Future<String> _buildRenderBundle(
       '--external:node:url',
     ]);
     if (result.exitCode != 0) {
-      throw StateError(
+      throw RenderBundleException(
           'esbuild failed to bundle render.tsx:\n${result.stderr}');
     }
 
-    return File(outPath).readAsStringSync();
+    final bundle = File(outPath).readAsStringSync();
+    _bundleCacheKey = key;
+    _bundleCacheValue = bundle;
+    return bundle;
   } finally {
     try {
       await buildDir.delete(recursive: true);
@@ -505,8 +569,7 @@ class JsWorker {
       final w = JsWorker._(tab, workerPageUrl, origin, artifactDir, iconsDir,
           nmDir, projectDir, launchAttempts, chromePath, profilePrefix)
         .._chrome = handle;
-      await w._inject(await _scanArtifact(
-          artifactDir, origin, iconsDir, nmDir, projectDir: projectDir));
+      await w._inject(await w._scan());
       final ok = await tab.evaluateFunction(
           '(b) => globalThis.__boot(b).then(() => true).catch(e => "FAIL:"+(e&&e.message||e))',
           origin);
@@ -533,6 +596,31 @@ class JsWorker {
     await _tab.evaluate('globalThis.__fixtures=${jsonEncode(pf.fixtures)};');
     await _tab.evaluate('globalThis.__arb=${jsonEncode(pf.arb)};');
     await _tab.evaluate('globalThis.__icons=${jsonEncode(pf.icons)};');
+  }
+
+  /// The esbuild diagnosis from the last failed render-bundle build, null
+  /// when the bundle is healthy. The design server surfaces this on every
+  /// route (500 + toast) while it stands — a TSX syntax error must reach the
+  /// designer's browser, not just the serve log (M9; the nunjucks era
+  /// surfaced template errors per-route).
+  String? bundleError;
+
+  /// [_scanArtifact] plus the bundle-error contract: a TSX/esbuild failure is
+  /// recorded in [bundleError] and swapped for a stub bundle so the worker
+  /// still boots and the server can answer with the diagnosis; a clean build
+  /// clears it. Anything else (toolchain, IO) still throws.
+  Future<_Prefetch> _scan() async {
+    try {
+      final pf = await _scanArtifact(_artifactDir, _origin, _iconsDir,
+          _nodeModulesDir, projectDir: _projectDir);
+      bundleError = null;
+      return pf;
+    } on RenderBundleException catch (e) {
+      bundleError = e.message;
+      return _Prefetch(_kBrokenRenderBundle, const <String, String>{},
+          const <String, String>{}, const <String, Map<String, dynamic>>{},
+          const <String, String>{});
+    }
   }
 
   /// The Chrome process pid (the "worker" pid — distinct from the Dart pid).
@@ -782,8 +870,7 @@ class JsWorker {
 
   Future<void> _navigateInjectBoot() async {
     await _tab.navigateAndSettle(_workerPageUrl, settleMs: 600);
-    await _inject(await _scanArtifact(_artifactDir, _origin, _iconsDir,
-        _nodeModulesDir, projectDir: _projectDir));
+    await _inject(await _scan());
     final ok = await _tab.evaluateFunction(
         '(b) => globalThis.__boot(b).then(()=>true).catch(e=>"FAIL:"+(e&&e.message||e))',
         _origin);

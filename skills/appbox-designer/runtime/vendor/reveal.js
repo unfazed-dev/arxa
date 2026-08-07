@@ -17,7 +17,7 @@
  * WIRING. The trigger is `.dv-drawer-toggle` with aria-expanded and
  * aria-controls pointing at the drawer aside (tabindex="-1", focusable as a
  * region target). A trigger click arms an intent (opening/closing + which
- * drawer); htmx:afterSettle consumes it and moves focus. ESC anywhere inside
+ * drawer); htmx:after:settle consumes it and moves focus. ESC anywhere inside
  * an open `.dv-reveal` clicks that drawer's trigger.
  */
 (() => {
@@ -46,7 +46,7 @@
     if (btn) { e.stopPropagation(); btn.click(); }
   });
 
-  document.addEventListener('htmx:afterSettle', () => {
+  document.addEventListener('htmx:after:settle', () => {
     if (!pending) return;
     const p = pending;
     pending = null;
