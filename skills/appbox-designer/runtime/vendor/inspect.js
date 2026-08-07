@@ -52,6 +52,62 @@
     return v || ACCENT_FALLBACK;
   };
 
+  // heuristic: tag-map, extend the map before reaching for anything smarter
+  const ROLE_BY_TAG = { H1:'heading',H2:'heading',H3:'heading',H4:'heading',H5:'heading',H6:'heading',
+    P:'text',SPAN:'text',LABEL:'label',BUTTON:'action',A:'action',IMG:'image',SVG:'image',
+    UL:'list',OL:'list',LI:'list row',NAV:'nav',HEADER:'nav',FOOTER:'group',SECTION:'group',
+    INPUT:'input',SELECT:'input',TEXTAREA:'input' };
+
+  const SKIP_TAGS = new Set(['SCRIPT','STYLE','BODY','HTML']);
+
+  // Infer identity for elements that may lack data-el. Identified elements keep
+  // their data-el name; unannotated ones get a tag-heuristic role + a snippet of
+  // text content, tagged "inferred" so the pane and overlay can dim them.
+  const synthesize = (el) => ({
+    name: el.dataset.el || (el.textContent || '').trim().slice(0, 24) || el.tagName.toLowerCase(),
+    role: el.dataset.inspectRole || ROLE_BY_TAG[el.tagName] || 'group',
+    inferred: el.dataset.el ? '' : '1',
+  });
+
+  // Resolve the innermost inspectable element from a pointer event target.
+  // Walks up from the raw target, skipping overlay nodes, script/style/body/html.
+  const inspectTarget = (raw) => {
+    let el = raw;
+    while (el && el !== document.body) {
+      if (SKIP_TAGS.has(el.tagName)) { el = el.parentElement; continue; }
+      if (el.className && typeof el.className === 'string' && el.className.startsWith('inspect-')) {
+        el = el.parentElement; continue;
+      }
+      return el; // first non-skipped element is the innermost
+    }
+    return null;
+  };
+
+  // Build the ancestor chain outermost→innermost for the breadcrumb.
+  // Keep every element with data-el, plus the immediate parent if it lacks
+  // data-el. The hovered element is always included.
+  const buildChain = (el) => {
+    const chain = [];
+    let cur = el;
+    let grabbedNonDataEl = false;
+    // Walk from el upward; collect into chain, then reverse at the end
+    while (cur && cur !== document.body) {
+      if (SKIP_TAGS.has(cur.tagName)) break;
+      if (cur.className && typeof cur.className === 'string' && cur.className.startsWith('inspect-')) {
+        cur = cur.parentElement; continue;
+      }
+      const hasDataEl = !!cur.dataset.el;
+      if (hasDataEl || !grabbedNonDataEl) {
+        const info = synthesize(cur);
+        chain.push({ el: info.name, role: info.role, inferred: info.inferred || undefined });
+        if (!hasDataEl) grabbedNonDataEl = true;
+      }
+      cur = cur.parentElement;
+    }
+    chain.reverse(); // outermost→innermost
+    return chain;
+  };
+
   let outlineEl = null;
   let labelEl = null;
   let lastHovered = null;
@@ -86,28 +142,37 @@
 
   // The badge: the element's name, nothing else. The role/style/motion/fn
   // rows moved to the inspector pane, where there is room for them and for
-  // the server-side joins that give them meaning.
+  // the server-side joins that give them meaning. Inferred elements (no
+  // data-el) render at reduced opacity so the composer can tell at a glance
+  // which names are authored vs guessed.
   const fillReadout = (el) => {
+    const info = synthesize(el);
     labelEl.replaceChildren();
     const name = document.createElement('div');
-    name.style.cssText = 'font-weight:600;';
-    name.textContent = el.dataset.el;
+    name.style.cssText = 'font-weight:600;' + (info.inferred ? ' opacity:.6;' : '');
+    name.textContent = info.name;
     labelEl.appendChild(name);
   };
 
-  // What the pane renders. Only what the element actually declares is sent —
-  // the SERVER owns the inferred/authored distinction, so a value this island
-  // guessed would be indistinguishable from an authored one.
+  // What the pane renders. Identified elements (data-el) send their authored
+  // name; unannotated elements send an inferred name + role so the pane can
+  // still show a breadcrumb. The SERVER owns the final authored/inferred
+  // distinction in its joins — the inferred flag here is the client's best
+  // guess, consistent with what the overlay badge dims.
   const measure = (el, lock) => {
+    const info = synthesize(el);
     const v = {
       screen: document.body.dataset.surface || '',
-      name: el.dataset.el,
+      name: info.name,
       kind: el.tagName.toLowerCase(),
     };
     if (el.dataset.inspectRole) v.role = el.dataset.inspectRole;
+    else if (info.role && info.inferred) v.role = info.role; // inferred role
     if (el.dataset.inspectStyle) v.style = el.dataset.inspectStyle;
     if (el.dataset.inspectMotion) v.motion = el.dataset.inspectMotion;
     if (el.dataset.inspectFn) v.fn = el.dataset.inspectFn;
+    if (info.inferred) v.inferred = '1';
+    v.chain = JSON.stringify(buildChain(el));
     if (lock) v.lock = '1';
     return v;
   };
@@ -154,10 +219,12 @@
     labelEl.style.top = Math.max(0, r.top - labelEl.offsetHeight - 6) + 'px';
   };
 
-  // hover tracking — only acts while armed
+  // hover tracking — only acts while armed. Resolves the innermost element
+  // (not just [data-el]) so unannotated elements are still inspectable; their
+  // identity is inferred by synthesize().
   document.addEventListener('pointermove', (e) => {
     if (!armed()) { clearHover(); return; }
-    const el = e.target.closest('[data-el]');
+    const el = inspectTarget(e.target);
     if (el !== lastHovered) {
       lastHovered = el;
       // One request per element CHANGE, not per pointer move — the identity
@@ -174,7 +241,7 @@
   // which is what lets it survive the htmx morphs that rebuild the panel.
   document.addEventListener('click', (e) => {
     if (!armed()) return;
-    const el = e.target.closest('[data-el]');
+    const el = inspectTarget(e.target);
     if (!el) return;
     e.preventDefault();
     e.stopPropagation();
