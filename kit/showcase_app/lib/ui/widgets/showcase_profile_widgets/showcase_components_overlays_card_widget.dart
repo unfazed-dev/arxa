@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
+import 'package:appbox_kit_showcase_app/enums/showcase_profile_enums/enums.dart';
 import 'package:appbox_kit_showcase_app/ui/widgets/common/showcase_tabs_shared/widgets.dart';
 
 /// Overlays card: native dialog, frosted sheet, center toast, and a button
@@ -28,30 +29,30 @@ class ShowcaseComponentsOverlaysCardWidget extends StatelessWidget {
               label: 'Show dialog',
               glyph: AppBoxKitGlyphs.info,
               onPressed: () async {
-                final result = await appBoxKitShowNativeDialog<String>(
+                final result = await appBoxKitShowNativeDialog<ShowcaseDialogResult>(
                   context: _modalContext(context),
                   title: 'Delete note?',
                   message: 'This cannot be undone.',
                   actions: [
-                    const AppBoxKitNativeDialogAction<String>(
+                    const AppBoxKitNativeDialogAction<ShowcaseDialogResult>(
                       label: 'Keep note',
                       role: AppBoxKitDialogActionRole.primary,
-                      value: 'kept',
+                      value: ShowcaseDialogResult.kept,
                     ),
-                    const AppBoxKitNativeDialogAction<String>(
+                    const AppBoxKitNativeDialogAction<ShowcaseDialogResult>(
                       label: 'Cancel',
-                      value: 'cancelled',
+                      value: ShowcaseDialogResult.cancelled,
                     ),
-                    const AppBoxKitNativeDialogAction<String>(
+                    const AppBoxKitNativeDialogAction<ShowcaseDialogResult>(
                       label: 'Delete',
                       glyph: AppBoxKitGlyphs.delete,
                       role: AppBoxKitDialogActionRole.destructive,
-                      value: 'deleted',
+                      value: ShowcaseDialogResult.deleted,
                     ),
                   ],
                 );
                 if (result != null && context.mounted) {
-                  _toast(context, 'Dialog: $result');
+                  _toast(context, 'Dialog: ${result.name}');
                 }
               },
             ),

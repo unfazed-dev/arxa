@@ -4,6 +4,7 @@ import 'package:appbox_kit_showcase_app/ui/widgets/common/showcase_tabs_shared/w
 import 'package:appbox_kit_showcase_app/ui/widgets/showcase_notes_widgets/widgets.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 
+import 'package:appbox_kit_showcase_app/enums/showcase_notes_enums/enums.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_auth/showcase_notes_auth_viewmodel.dart';
 
 class ShowcaseNotesAuthViewMobile
@@ -67,19 +68,21 @@ class ShowcaseNotesAuthViewMobile
               // never calls notifyListeners). The form widgets and their
               // reusable field/error pieces come from the central
               // `showcase_notes_widgets` barrel.
-              AppBoxKitStreamBuilder<NotesAuthMode>(
+              AppBoxKitStreamBuilder<ShowcaseNotesAuthMode>(
                 stream: viewModel.mode$,
                 builder: (context, mode) => Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     AppBoxKitNativeSegmentedControl(
-                      segments: const ['Password', 'OTP'],
-                      selectedIndex: NotesAuthMode.values.indexOf(mode),
+                      segments: [
+                        for (final m in ShowcaseNotesAuthMode.values) m.label
+                      ],
+                      selectedIndex: mode.index,
                       onChanged: (i) =>
-                          viewModel.setMode(NotesAuthMode.values[i]),
+                          viewModel.setMode(ShowcaseNotesAuthMode.values[i]),
                     ),
                     appBoxKitVerticalSpaceMedium,
-                    if (mode == NotesAuthMode.password)
+                    if (mode == ShowcaseNotesAuthMode.password)
                       ShowcaseNotesPasswordFormWidget(
                           viewModel: viewModel, onCreateAccount: onCreateAccount)
                     else

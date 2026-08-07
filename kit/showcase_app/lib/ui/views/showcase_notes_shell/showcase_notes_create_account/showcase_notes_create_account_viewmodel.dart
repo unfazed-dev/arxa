@@ -1,6 +1,7 @@
 import 'package:appbox_kit_data/appbox_kit_data.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 
+import 'package:appbox_kit_showcase_app/enums/showcase_notes_enums/enums.dart';
 import 'package:appbox_kit_showcase_app/services/showcase_notes_services/facades/showcase_notes_facade_service.dart';
 
 /// Create-account panel for the seed-backend smoke surface — streams-only
@@ -21,7 +22,7 @@ class ShowcaseNotesCreateAccountViewModel extends AppBoxKitViewModel {
   /// Live busy/error state of the sign-up op — the stream form of the old
   /// `.withLoading(setBusy)`: the form binds it to disable buttons and show
   /// the inline spinner while sign-up runs.
-  ValueStream<AppBoxKitActionState> get signUpState$ => actionState$('signUp');
+  ValueStream<AppBoxKitActionState> get signUpState$ => actionState$(ShowcaseNotesAuthOp.signUp.name);
 
   // Never-prefill credential capture: plain string fields written one-way from
   // the view's onChanged, read at submit. No TextEditingController in the
@@ -41,7 +42,7 @@ class ShowcaseNotesCreateAccountViewModel extends AppBoxKitViewModel {
   /// via [signUpState$]), re-entry guard (a double-tap's handle observes the
   /// in-flight run), [AppBoxKitAuthException] surfaced inline as [errorMessage$].
   late final _signUp = abxActionHub.on<(String, String), void>(
-    'signUp',
+    ShowcaseNotesAuthOp.signUp.name,
     (p) => auth.signUpWithEmailPassword(email: p.$1, password: p.$2),
     errorMessage: 'Sign-up failed',
     onSend: () => _errorMessage.add(null),

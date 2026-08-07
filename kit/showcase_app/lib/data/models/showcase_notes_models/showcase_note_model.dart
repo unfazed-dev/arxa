@@ -1,4 +1,5 @@
 import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/showcase_note_attachment_model.dart';
+import 'package:appbox_kit_showcase_app/enums/showcase_notes_enums/enums.dart';
 
 /// A note. iOS-style: no separate title column — [title] and [snippet] derive
 /// from [body]'s first lines; `deleted_at` implements Recently Deleted

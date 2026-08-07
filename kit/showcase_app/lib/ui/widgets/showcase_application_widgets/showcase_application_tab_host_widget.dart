@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 
+import 'package:appbox_kit_showcase_app/enums/showcase_application_enums/enums.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_application_shell/showcase_application_shell_view.dart';
 
 class ShowcaseApplicationTabHostWidget extends StatelessWidget {
@@ -37,11 +38,17 @@ class ShowcaseApplicationTabHostWidget extends StatelessWidget {
             ),
           ),
           bottomNavigationBar: AppBoxKitNativeTabBar(
-            tabs: const [
-              AppBoxKitTab(glyph: AppBoxKitGlyphs.home, label: 'Home'),
-              AppBoxKitTab(glyph: AppBoxKitGlyphs.search, label: 'Search'),
-              AppBoxKitTab(glyph: AppBoxKitGlyphs.profile, label: 'Profile'),
-              AppBoxKitTab(glyph: AppBoxKitGlyphs.notes, label: 'Notes'),
+            tabs: [
+              for (final tab in ShowcaseTab.values)
+                AppBoxKitTab(
+                  glyph: switch (tab) {
+                    ShowcaseTab.home => AppBoxKitGlyphs.home,
+                    ShowcaseTab.search => AppBoxKitGlyphs.search,
+                    ShowcaseTab.profile => AppBoxKitGlyphs.profile,
+                    ShowcaseTab.notes => AppBoxKitGlyphs.notes,
+                  },
+                  label: tab.label,
+                ),
             ],
             currentIndex: tabsRouter.activeIndex,
             onTap: tabsRouter.setActiveIndex,

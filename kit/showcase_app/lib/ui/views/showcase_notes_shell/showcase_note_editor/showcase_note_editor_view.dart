@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 
+import 'package:appbox_kit_showcase_app/enums/showcase_notes_enums/enums.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_note_editor/showcase_note_editor_view.desktop.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_note_editor/showcase_note_editor_view.tablet.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_note_editor/showcase_note_editor_view.mobile.dart';
@@ -34,6 +35,7 @@ class ShowcaseNoteEditorView extends StackedView<ShowcaseNoteEditorViewModel> {
   ShowcaseNoteEditorViewModel viewModelBuilder(BuildContext context) =>
       ShowcaseNoteEditorViewModel(
         noteId: context.routeData.pathParams.getString('id'),
-        quickAction: context.routeData.queryParams.optString('quickAction'),
+        quickAction: ShowcaseQuickAction.fromRoute(
+            context.routeData.queryParams.optString('quickAction')),
       );
 }

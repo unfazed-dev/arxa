@@ -39,6 +39,10 @@
 //   G11 viewmodels never re-export: no `export` directives in a
 //       `*_viewmodel.dart`. Views/widgets import model barrels and kit types
 //       directly — types are vocabulary; only behavior flows through the VM.
+//   G12 enums and sealed discriminator types live in lib/enums/<shell>_enums/ —
+//       a top-level `enum` or `sealed class`/`sealed mixin` anywhere else is a
+//       violation. Generated files (app.router.dart, *.g.dart, *.gr.dart,
+//       *.gen.dart, *.freezed.dart) are exempt — their types aren't authored.
 
 import 'dart:io';
 
@@ -89,6 +93,23 @@ final _viewFileRe = RegExp(r'_view(\.(mobile|tablet|desktop|web))?\.dart$');
 // G8: locator-resolved dialog/bottom-sheet services (`locator` or
 // `appBoxKitLocator`).
 final _uiSheetServiceRe = RegExp(r'[Ll]ocator<(Dialog|BottomSheet)Service>\(\)');
+
+// G12: top-level declarations only — `^` anchored (enums and sealed types
+// can't be nested in Dart, so an anchored match is a declaration site).
+final _enumRe = RegExp(r'^enum\s+(\w+)', multiLine: true);
+final _sealedRe =
+    RegExp(r'^(?:abstract\s+)?sealed\s+(?:class|mixin)\s+(\w+)', multiLine: true);
+
+/// G12: generated files declare their own types (stacked router, build_runner
+/// output) — never authored, so exempt from placement conventions.
+bool _isGeneratedFile(String rel) {
+  final base = p.basename(rel);
+  return base == 'app.router.dart' ||
+      base.endsWith('.g.dart') ||
+      base.endsWith('.gr.dart') ||
+      base.endsWith('.gen.dart') ||
+      base.endsWith('.freezed.dart');
+}
 
 /// G9: classify a lib-relative path or import path into its service tier.
 String? _serviceTier(String path) {
@@ -367,6 +388,19 @@ ArchGuardResult archGuard(String targetDir) {
           violations.add(ArchGuardFinding(
               'G10', rel, 'duplicate $kind of $uri — one directive per URI'));
         }
+      }
+    }
+
+    // ── G12 enums/sealed types live in lib/enums/ ────────────────────────
+    final relPosix = rel.replaceAll('\\', '/');
+    if (!relPosix.startsWith('enums/') && !_isGeneratedFile(relPosix)) {
+      for (final m in _enumRe.allMatches(src)) {
+        violations.add(ArchGuardFinding('G12', rel,
+            'enum ${m.group(1)} declared outside lib/enums/ — enums and sealed discriminator types live in lib/enums/<shell>_enums/'));
+      }
+      for (final m in _sealedRe.allMatches(src)) {
+        violations.add(ArchGuardFinding('G12', rel,
+            'sealed type ${m.group(1)} declared outside lib/enums/ — enums and sealed discriminator types live in lib/enums/<shell>_enums/'));
       }
     }
   }

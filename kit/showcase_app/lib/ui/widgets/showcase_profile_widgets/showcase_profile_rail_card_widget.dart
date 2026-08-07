@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
+import 'package:appbox_kit_showcase_app/enums/showcase_profile_enums/enums.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_profile_shell/showcase_profile/showcase_profile_viewmodel.dart';
 import 'package:appbox_kit_showcase_app/ui/widgets/common/showcase_tabs_shared/widgets.dart';
 
@@ -31,19 +32,23 @@ class ShowcaseProfileRailCardWidget extends StatelessWidget {
                 AppBoxKitNativeNavigationRail(
                   selectedIndex: viewModel.railIndex,
                   onDestinationSelected: viewModel.setRailIndex,
-                  destinations: const [
-                    AppBoxKitRailDestination(
-                        glyph: AppBoxKitGlyphs.person, label: 'Account'),
-                    AppBoxKitRailDestination(glyph: AppBoxKitGlyphs.lock, label: 'Privacy'),
-                    AppBoxKitRailDestination(
-                        glyph: AppBoxKitGlyphs.alerts, label: 'Alerts'),
+                  destinations: [
+                    for (final rail in ShowcaseProfileRail.values)
+                      AppBoxKitRailDestination(
+                        glyph: switch (rail) {
+                          ShowcaseProfileRail.account => AppBoxKitGlyphs.person,
+                          ShowcaseProfileRail.privacy => AppBoxKitGlyphs.lock,
+                          ShowcaseProfileRail.alerts => AppBoxKitGlyphs.alerts,
+                        },
+                        label: rail.label,
+                      ),
                   ],
                 ),
                 const VerticalDivider(),
                 Expanded(
                   child: Center(
                     child: Text(
-                        'Selected: ${ShowcaseProfileViewModel.railLabels[viewModel.railIndex]}',
+                        'Selected: ${viewModel.rail.label}',
                         style: const TextStyle(fontWeight: FontWeight.w600)),
                   ),
                 ),

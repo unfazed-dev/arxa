@@ -6,6 +6,7 @@ import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart'
 import 'package:appbox_kit_ui_library/appbox_kit_testing.dart';
 import 'package:appbox_kit_showcase_app/app/app.locator.dart';
 import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/models.dart';
+import 'package:appbox_kit_showcase_app/enums/showcase_notes_enums/enums.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_folder/showcase_notes_folder_viewmodel.dart';
 
 import '../helpers/test_helpers.dart';
@@ -123,6 +124,30 @@ void main() {
       addTearDown(trash.dispose);
       await expectLater(trash.title$, emitsInOrder(['Recently Deleted']))
           .timeout(const Duration(milliseconds: 500));
+    });
+
+    test(
+        'notes.folders.browse-the-notes-in-a-folder — the viewmodel parses '
+        'folderKey into the sealed scope once', () {
+      // given / when / then — sentinels map to their scope types (driving
+      // isAll/isTrash), anything else is a folder scope.
+      final all = ShowcaseNotesFolderViewModel(folderKey: 'all');
+      addTearDown(all.dispose);
+      expect(all.scope, isA<ShowcaseFolderScopeAll>());
+      expect(all.isAll, isTrue);
+      expect(all.isTrash, isFalse);
+
+      final trash = ShowcaseNotesFolderViewModel(folderKey: 'trash');
+      addTearDown(trash.dispose);
+      expect(trash.scope, isA<ShowcaseFolderScopeTrash>());
+      expect(trash.isTrash, isTrue);
+      expect(trash.isAll, isFalse);
+
+      final folder = ShowcaseNotesFolderViewModel(folderKey: 'folder-work');
+      addTearDown(folder.dispose);
+      expect(folder.scope, isA<ShowcaseFolderScopeFolder>());
+      expect(folder.isAll, isFalse);
+      expect(folder.isTrash, isFalse);
     });
 
     test(

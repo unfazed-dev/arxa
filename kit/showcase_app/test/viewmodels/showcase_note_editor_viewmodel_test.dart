@@ -7,6 +7,7 @@ import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_testing.dart';
 import 'package:appbox_kit_showcase_app/app/app.locator.dart';
 import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/models.dart';
+import 'package:appbox_kit_showcase_app/enums/showcase_notes_enums/enums.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_note_editor/showcase_note_editor_viewmodel.dart';
 
 import '../helpers/test_helpers.dart';
@@ -68,7 +69,7 @@ void main() {
     /// and returns the VM with its side-effect watch flushed.
     Future<ShowcaseNoteEditorViewModel> openEditor(
       BehaviorSubject<ShowcaseNoteModel?> subject, {
-      String? quickAction,
+      ShowcaseQuickAction? quickAction,
     }) async {
       when(() => notes.note$('n1')).thenAnswer((_) => subject.stream);
       final vm =
@@ -206,7 +207,7 @@ void main() {
       );
 
       // when — the editor opens (the intent fires off the first note\$ emit)
-      await openEditor(subject, quickAction: 'camera');
+      await openEditor(subject, quickAction: ShowcaseQuickAction.camera);
 
       // then — the photo attached exactly once
       await captured.timeout(const Duration(milliseconds: 500));

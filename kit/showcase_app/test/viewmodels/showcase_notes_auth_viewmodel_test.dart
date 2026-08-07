@@ -6,6 +6,7 @@ import 'package:appbox_kit_data/appbox_kit_data.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart'
     show AppBoxKitErrorService;
 import 'package:appbox_kit_showcase_app/app/app.locator.dart';
+import 'package:appbox_kit_showcase_app/enums/showcase_notes_enums/enums.dart';
 import 'package:appbox_kit_showcase_app/services/showcase_notes_services/facades/showcase_notes_facade_service.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_auth/showcase_notes_auth_viewmodel.dart';
 
@@ -52,9 +53,9 @@ void main() {
       final modes = expectLater(
         vm.mode$,
         emitsInOrder([
-          NotesAuthMode.password,
-          NotesAuthMode.otp,
-          NotesAuthMode.password,
+          ShowcaseNotesAuthMode.password,
+          ShowcaseNotesAuthMode.otp,
+          ShowcaseNotesAuthMode.password,
         ]),
       );
       // Seed, the reset setMode re-adds (BehaviorSubject re-emits equal
@@ -64,11 +65,11 @@ void main() {
         emitsInOrder([isFalse, isFalse, isTrue, isFalse]),
       );
       // when
-      vm.setMode(NotesAuthMode.otp);
+      vm.setMode(ShowcaseNotesAuthMode.otp);
       // The dispatch handle observes the already-running op — awaiting it
       // waits for the request (and its otpRequested flip) to complete.
       await vm.requestOtp('evan@seed.local');
-      vm.setMode(NotesAuthMode.password);
+      vm.setMode(ShowcaseNotesAuthMode.password);
       // then
       await modes.timeout(const Duration(milliseconds: 500));
       await otpSteps.timeout(const Duration(milliseconds: 500));

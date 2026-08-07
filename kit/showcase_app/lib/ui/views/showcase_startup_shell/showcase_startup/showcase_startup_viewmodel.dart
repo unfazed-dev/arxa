@@ -3,6 +3,7 @@ import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart'
 import 'package:appbox_kit_showcase_app/app/app.locator.dart';
 import 'package:appbox_kit_showcase_app/app/app.router.dart';
 import 'package:appbox_kit_showcase_app/app/app_data.dart';
+import 'package:appbox_kit_showcase_app/enums/showcase_startup_enums/enums.dart';
 
 class ShowcaseStartupViewModel extends AppBoxKitViewModel {
   final _routerService = locator<RouterService>();
@@ -15,7 +16,7 @@ class ShowcaseStartupViewModel extends AppBoxKitViewModel {
   // fixture, backend init) surfaces as a snackbar on the startup view instead
   // of stranding the app on a spinner with an unhandled async error.
   Future runStartupLogic() => abxActionHub.send<void>(
-        'boot',
+        ShowcaseStartupOp.boot.name,
         () async {
           await AppData.initialize();
           await _routerService.replaceWith(ShowcaseApplicationShellViewRoute());

@@ -2,6 +2,8 @@ import 'package:flutter/foundation.dart' show defaultTargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 
+import 'package:appbox_kit_showcase_app/enums/showcase_application_enums/enums.dart';
+
 /// The chrome every widget-gallery tab shares: the 'Kit Showcase' app bar
 /// (search shortcut + overflow menu) and the compose [AppBoxKitNativeFabMenu],
 /// built from the reusable [AppBoxKitNativeAppBar] (a `PreferredSizeWidget`, so it
@@ -25,7 +27,7 @@ class ShowcaseGalleryChromeWidget extends StatelessWidget {
         actions: [
           AppBoxKitNativeIconButton(
             glyph: AppBoxKitGlyphs.search,
-            onPressed: () => tabsRouter.setActiveIndex(1),
+            onPressed: () => tabsRouter.setActiveIndex(ShowcaseTab.search.index),
           ),
           AppBoxKitNativePopupMenu(
             glyph: AppBoxKitGlyphs.more,

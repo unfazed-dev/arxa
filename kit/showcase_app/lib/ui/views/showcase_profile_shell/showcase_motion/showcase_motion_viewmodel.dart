@@ -1,14 +1,9 @@
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 import 'package:appbox_kit_motion/appbox_kit_motion.dart';
 
-class ShowcaseMotionViewModel extends BaseViewModel {
-  static const presetLabels = ['Standard', 'Subtle', 'Energetic'];
-  static const _presets = [
-    AppBoxKitMotionSpec.standard,
-    AppBoxKitMotionSpec.subtle,
-    AppBoxKitMotionSpec.energetic,
-  ];
+import 'package:appbox_kit_showcase_app/enums/showcase_profile_enums/enums.dart';
 
+class ShowcaseMotionViewModel extends BaseViewModel {
   int _presetIndex = 0;
   int get presetIndex => _presetIndex;
   void setPreset(int index) {
@@ -25,5 +20,6 @@ class ShowcaseMotionViewModel extends BaseViewModel {
 
   /// The active spec: selected preset + master switch. Feeds every
   /// [AppBoxKitMotionScope] on the demo surface.
-  AppBoxKitMotionSpec get spec => _presets[_presetIndex].copyWith(enabled: _enabled);
+  AppBoxKitMotionSpec get spec =>
+      ShowcaseMotionPreset.values[_presetIndex].spec.copyWith(enabled: _enabled);
 }

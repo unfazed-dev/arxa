@@ -5,6 +5,13 @@
 /// viewmodel never touches the view — swap the UI for any other and this file
 /// stays unchanged.
 ///
+/// This is the business logic for the screen where a note is written. It holds the text while
+/// the user types and saves it on its own after a short pause — and right
+/// away when the screen closes. The note can be pinned or moved to Recently
+/// Deleted, photos and voice recordings can be added or removed, and audio
+/// plays back with live progress. Opened from the camera or microphone
+/// button, it starts that as soon as the note loads.
+///
 /// Requirements:
 /// 1. [Text ownership] — edit-a-note
 /// The viewmodel keeps the note's text as plain text.
@@ -72,6 +79,7 @@ import 'package:appbox_kit_media/appbox_kit_media.dart'
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 
 import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/models.dart';
+import 'package:appbox_kit_showcase_app/enums/showcase_notes_enums/enums.dart';
 import 'package:appbox_kit_showcase_app/services/showcase_notes_services/facades/showcase_notes_facade_service.dart';
 
 class ShowcaseNoteEditorViewModel extends AppBoxKitViewModel {
@@ -82,12 +90,12 @@ class ShowcaseNoteEditorViewModel extends AppBoxKitViewModel {
     // the null filter IS "once the note has loaded", no bool flags.
     final note$ = _notes.note$(noteId).shareValue();
     listen(
-      'note.track',
+      ShowcaseNoteEditorOp.noteTrack.name,
       to: [note$],
       onData: (note) => _note = note as ShowcaseNoteModel?,
     );
     listen(
-      'note.firstLoad',
+      ShowcaseNoteEditorOp.noteFirstLoad.name,
       to: [note$.where((note) => note != null).take(1)],
       onData: (note) => _onFirstLoad(note as ShowcaseNoteModel),
     );
@@ -108,8 +116,9 @@ class ShowcaseNoteEditorViewModel extends AppBoxKitViewModel {
   /// The latest note, kept on hand so the actions below never wait for it.
   ShowcaseNoteModel? _note;
 
-  /// [12. Quick action] A one-time request carried by the route: `'camera'` or `'mic'`.
-  final String? quickAction;
+  /// [12. Quick action] A one-time request carried by the route (parsed from
+  /// `?quickAction=` by the view).
+  final ShowcaseQuickAction? quickAction;
 
   /// [7. Attaching photos] False on the iOS Simulator, so the camera button hides.
   bool get isCameraAvailable => _notes.isCameraAvailable;
@@ -142,7 +151,7 @@ class ShowcaseNoteEditorViewModel extends AppBoxKitViewModel {
   /// [3. Autosave][4. Final save] Saves after a short pause in typing, and right
   /// away when the editor closes.
   late final _autosave = abxActionHub.on<Null, void>(
-    'save',
+    ShowcaseNoteEditorOp.save.name,
     (_) => _flushSave(),
     debounce: const Duration(milliseconds: 500),
     errorMessage: 'Save failed',
@@ -160,7 +169,7 @@ class ShowcaseNoteEditorViewModel extends AppBoxKitViewModel {
   /// the attachment leaves the note and its file is deleted — one facade call.
   late final _removeAttachment =
       abxActionHub.on<ShowcaseNoteAttachmentModel, void>(
-    'removeAttachment',
+    ShowcaseNoteEditorOp.removeAttachment.name,
     (attachment) async {
       final current = _note;
       if (current == null) return;
@@ -246,10 +255,12 @@ class ShowcaseNoteEditorViewModel extends AppBoxKitViewModel {
   void _onFirstLoad(ShowcaseNoteModel note) {
     _body = note.body;
     switch (quickAction) {
-      case 'camera' when isCameraAvailable:
+      case ShowcaseQuickAction.camera when isCameraAvailable:
         addPhoto(fromCamera: true);
-      case 'mic':
+      case ShowcaseQuickAction.mic:
         startRecording();
+      // Camera requested on a device without one (simulator), or no action.
+      case ShowcaseQuickAction.camera || null:
     }
   }
 

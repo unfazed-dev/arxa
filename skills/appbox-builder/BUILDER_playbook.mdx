@@ -9,7 +9,7 @@
 
 ## Table of contents
 
-0. Header & TOC · 1. Overview & role · 2. Inputs · 3. Procedure · 4. Outputs · 5. Rules · 6. View/ViewModel boundaries · 7. Kit wiring · 8. References
+0. Header & TOC · 1. Overview & role · 2. Inputs · 3. Procedure · 4. Outputs · 5. Rules · 6. View/ViewModel boundaries · 7. Enums layer · 8. Kit wiring · 9. References
 
 </Callout>
 
@@ -75,6 +75,24 @@ A viewmodel orchestrating two services looks harmless with one caller — the da
 **Notifications, dialogs, sheets — one door: `AppBoxKitNotificationService`.** All transient UI goes through its verbs, never through stacked's services directly: `show(...)` (toast/snackbar, platform-routed), `confirm(...)` → `bool`, `prompt(...)` → `String?`, `alert(...)`, `notice(title, message)` (modal sheet). Apps do not register stacked `DialogType`/`BottomSheetType` variants for the generic cases — the kit renders them natively. Registrations live in the kit too: `main()` calls `setupAppBoxKitUiServices()` (DialogService / SnackbarService / BottomSheetService-as-AppBoxKitBottomSheetService / Talker) after `setupLocator()`. App pubspecs never declare `stacked`, `stacked_services`, `rxdart`, or `talker_flutter` — the `appbox_kit_ui_library` barrel re-exports stacked (+ annotations), rxdart's `BehaviorSubject`/`ValueStream`/`Rx`/`SwitchMapExtension`, and the stacked_services config types (`RouterService`, `SnackbarService`, `SnackbarConfig`, `SnackPosition`, `StackedService`).
 
 **Imports and barrels.** One directive per URI — a repeated URI within a file's imports (or within its exports) is a G10 violation. A viewmodel **never re-exports** (G11): no `export` directives in a `*_viewmodel.dart`. Views and widgets import model barrels (`models.dart`) and kit types directly — types are vocabulary, not behavior; only *behavior* flows exclusively through the viewmodel. Prefer the folder barrel over several imports from the same directory.
+
+### Enums layer
+
+Every `enum` and every sealed discriminator type lives under `lib/enums/`, organized per shell: `lib/enums/<shell>_enums/` with a shell barrel `enums.dart`; the root barrel `lib/enums/enums.dart` exports ONLY the shell barrels. Files are `<app>_<subject>_enum.dart` (plain name for sealed types, e.g. `showcase_folder_scope.dart`); classes carry the app prefix (`Showcase…` in the showcase app). Arch_guard's G12 flags any enum/sealed declaration outside `lib/enums/**` — stringly-literal misuse is not mechanically decidable, so it stays a playbook rule: **if a value picks behavior, it is an enum, never a raw string/int.** That covers route-param actions, tab identity, rail/segment selections, dialog results, and motion presets.
+
+- **Enhanced vs simple.** When a value carries presentation or wire data, the enum carries it as fields so parallel arrays and label→value maps die:
+  ```dart
+  enum ShowcaseQuickAction {
+    record('Record new memo'),
+    photo('Attach a photo');
+    const ShowcaseQuickAction(this.label);
+    final String label;
+  }
+  ```
+  An enum with nothing to carry stays plain.
+- **Op enums.** abxAction op names are per-owner op-verb enums (`ShowcaseNotesFacadeOp`, `ShowcaseNotesMediaOp`); `.name` is the hub/mutate wire key — camelCase, so a dotted key like `'folder.create'` becomes `folderCreate`. Entity-keyed ops interpolate the verb: `'${ShowcaseNotesMediaOp.playback.name}.$id'`. Facade op enums carry their mutate copy as fields (`error`, nullable `success`) copied from the call sites; ops without user-facing copy stay simple.
+- **Sealed for mixed domains.** A domain of sentinels plus an open id set (folder scope `'all' | 'trash' | <uuid>`) is a sealed type with a `parse` at the route boundary and exhaustive switches — an enum cannot honestly hold an open set.
+- **Purity.** Views, widgets, viewmodels, and services may all import enums barrels (pure types); the view↔viewmodel purity rule is unaffected — a view imports the enums barrel directly (G11: viewmodels never re-export).
 
 ### Kit wiring
 

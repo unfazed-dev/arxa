@@ -3,6 +3,7 @@ import 'package:appbox_kit_data/appbox_kit_data.dart' show AppBoxKitAuthSession;
 import 'package:appbox_kit_motion/appbox_kit_motion.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/models.dart';
+import 'package:appbox_kit_showcase_app/enums/showcase_notes_enums/enums.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_auth/showcase_notes_auth_view.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_create_account/showcase_notes_create_account_view.dart';
 import 'package:appbox_kit_showcase_app/ui/widgets/common/showcase_tabs_shared/widgets.dart';
@@ -162,7 +163,8 @@ class ShowcaseNotesViewMobile extends ViewModelWidget<ShowcaseNotesViewModel> {
               glyph: AppBoxKitGlyphs.notes,
               label: 'All Notes',
               trailingCount: overview.allCount,
-              onTap: () => context.router.pushNamed('folder/all'),
+              onTap: () => context.router
+                  .pushNamed('folder/${const ShowcaseFolderScopeAll().key}'),
             ),
           ],
         );
@@ -187,7 +189,8 @@ class ShowcaseNotesViewMobile extends ViewModelWidget<ShowcaseNotesViewModel> {
               glyph: AppBoxKitGlyphs.delete,
               label: 'Recently Deleted',
               trailingCount: overview.trashCount,
-              onTap: () => context.router.pushNamed('folder/trash'),
+              onTap: () => context.router
+                  .pushNamed('folder/${const ShowcaseFolderScopeTrash().key}'),
             ),
           ],
         );

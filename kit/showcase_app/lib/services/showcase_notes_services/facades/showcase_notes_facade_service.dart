@@ -5,6 +5,7 @@ import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart'
     show appBoxKitLocator, Rx, ValueStream;
 
 import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/models.dart';
+import 'package:appbox_kit_showcase_app/enums/showcase_notes_enums/enums.dart';
 import 'package:appbox_kit_showcase_app/services/showcase_notes_services/repositories/showcase_notes_repository_service.dart';
 import 'package:appbox_kit_showcase_app/services/showcase_notes_services/adapters/showcase_notes_media_adapter_service.dart';
 
@@ -192,31 +193,41 @@ class ShowcaseNotesFacadeService extends AppBoxKitDataFacade {
   // entity. Value-returning chains rethrow after the snackbar (callers await
   // the value); void chains swallow post-snackbar via completeOnError.
 
-  Future<ShowcaseNoteModel> createNote(String owner, String folderId) => mutate<ShowcaseNoteModel>(
-        () => _repo.upsertNote(_repo.newNote(owner, folderId)),
-        name: 'create',
-        error: 'Could not create note',
+  /// Every mutation's hub key + snackbar copy lives on [ShowcaseNotesFacadeOp];
+  /// this just forwards the op's fields into [mutate].
+  Future<T> _mutateOp<T>(Future<T> Function() operation, ShowcaseNotesFacadeOp op,
+          {String? entity, String? fallback}) =>
+      mutate<T>(
+        operation,
+        name: op.name,
+        entity: entity,
+        error: op.error,
+        success: op.success,
+        fallback: fallback,
       );
 
-  Future<ShowcaseNoteModel> saveBody(ShowcaseNoteModel note, String body) => mutate<ShowcaseNoteModel>(
+  Future<ShowcaseNoteModel> createNote(String owner, String folderId) => _mutateOp<ShowcaseNoteModel>(
+        () => _repo.upsertNote(_repo.newNote(owner, folderId)),
+        ShowcaseNotesFacadeOp.create,
+      );
+
+  Future<ShowcaseNoteModel> saveBody(ShowcaseNoteModel note, String body) => _mutateOp<ShowcaseNoteModel>(
         () => _repo.patchNote(
           note,
           note.copyWith(body: body, updatedAt: DateTime.now().toUtc()),
         ),
-        name: 'save',
+        ShowcaseNotesFacadeOp.save,
         entity: note.id,
-        error: 'Could not save note',
       );
 
-  Future<ShowcaseNoteModel> togglePin(ShowcaseNoteModel note) => mutate<ShowcaseNoteModel>(
+  Future<ShowcaseNoteModel> togglePin(ShowcaseNoteModel note) => _mutateOp<ShowcaseNoteModel>(
         () => _repo.patchNote(note, note.copyWith(pinned: !note.pinned)),
-        name: 'pin',
+        ShowcaseNotesFacadeOp.pin,
         entity: note.id,
-        error: 'Could not update note',
       );
 
   Future<ShowcaseNoteModel> addAttachment(ShowcaseNoteModel note, ShowcaseNoteAttachmentModel attachment) =>
-      mutate<ShowcaseNoteModel>(
+      _mutateOp<ShowcaseNoteModel>(
         () => _repo.patchNote(
           note,
           note.copyWith(
@@ -224,9 +235,8 @@ class ShowcaseNotesFacadeService extends AppBoxKitDataFacade {
             updatedAt: DateTime.now().toUtc(),
           ),
         ),
-        name: 'attach',
+        ShowcaseNotesFacadeOp.attach,
         entity: note.id,
-        error: 'Could not add attachment',
       );
 
   /// Picks (or captures) a photo and attaches it — one transaction, so no
@@ -251,7 +261,7 @@ class ShowcaseNotesFacadeService extends AppBoxKitDataFacade {
   /// file is deleted — a crash mid-way leaves an orphan file on disk, never a
   /// dangling reference on the note.
   Future<ShowcaseNoteModel> removeAttachment(ShowcaseNoteModel note, ShowcaseNoteAttachmentModel attachment) async {
-    final updated = await mutate<ShowcaseNoteModel>(
+    final updated = await _mutateOp<ShowcaseNoteModel>(
       () => _repo.patchNote(
         note,
         note.copyWith(
@@ -260,15 +270,14 @@ class ShowcaseNotesFacadeService extends AppBoxKitDataFacade {
           updatedAt: DateTime.now().toUtc(),
         ),
       ),
-      name: 'detach',
+      ShowcaseNotesFacadeOp.detach,
       entity: note.id,
-      error: 'Could not remove attachment',
     );
     await _media.deleteFile(attachment);
     return updated;
   }
 
-  Future<ShowcaseNoteModel> moveToTrash(ShowcaseNoteModel note) => mutate<ShowcaseNoteModel>(
+  Future<ShowcaseNoteModel> moveToTrash(ShowcaseNoteModel note) => _mutateOp<ShowcaseNoteModel>(
         () => _repo.patchNote(
           note,
           note.copyWith(
@@ -276,17 +285,14 @@ class ShowcaseNotesFacadeService extends AppBoxKitDataFacade {
             pinned: false,
           ),
         ),
-        name: 'trash',
+        ShowcaseNotesFacadeOp.trash,
         entity: note.id,
-        error: 'Could not move note to Recently Deleted',
-        success: 'Moved to Recently Deleted',
       );
 
-  Future<ShowcaseNoteModel> restore(ShowcaseNoteModel note) => mutate<ShowcaseNoteModel>(
+  Future<ShowcaseNoteModel> restore(ShowcaseNoteModel note) => _mutateOp<ShowcaseNoteModel>(
         () => _repo.patchNote(note, note.copyWith(deletedAt: () => null)),
-        name: 'restore',
+        ShowcaseNotesFacadeOp.restore,
         entity: note.id,
-        error: 'Could not restore note',
       );
 
   /// Refiles a live note into another folder. No-ops (returning the note
@@ -300,32 +306,29 @@ class ShowcaseNotesFacadeService extends AppBoxKitDataFacade {
     if (currentSession == null || note.folderId == folderId || note.isDeleted) {
       return Future.value(note);
     }
-    return mutate<ShowcaseNoteModel>(
+    return _mutateOp<ShowcaseNoteModel>(
       () => _repo.patchNote(note, note.copyWith(folderId: folderId)),
-      name: 'move',
+      ShowcaseNotesFacadeOp.move,
       entity: note.id,
-      error: 'Could not move note',
     );
   }
 
   /// Purges a note: the row goes first, then its attachment files — a crash
   /// mid-way leaves orphan files (sweep-able), never a note with dangling
   /// references. Trashing keeps files; only purge paths delete them.
-  Future<void> deletePermanently(ShowcaseNoteModel note) => mutate<void>(
+  Future<void> deletePermanently(ShowcaseNoteModel note) => _mutateOp<void>(
         () async {
           await _repo.deleteNote(note.id);
           for (final attachment in note.attachments) {
             await _media.deleteFile(attachment);
           }
         },
-        name: 'purge',
+        ShowcaseNotesFacadeOp.purge,
         entity: note.id,
-        error: 'Could not delete note',
-        success: 'Note deleted',
         fallback: 'Delete failed',
       );
 
-  Future<void> emptyTrash(String owner) => mutate<void>(
+  Future<void> emptyTrash(String owner) => _mutateOp<void>(
         () async {
           final all = await _repo.notesOf(owner);
           final trashed = all.where((note) => note.isDeleted).toList();
@@ -338,32 +341,28 @@ class ShowcaseNotesFacadeService extends AppBoxKitDataFacade {
             }
           }
         },
-        name: 'emptyTrash',
-        error: 'Could not empty Recently Deleted',
-        success: 'Recently Deleted emptied',
+        ShowcaseNotesFacadeOp.emptyTrash,
         fallback: 'Empty trash failed',
       );
 
   Future<ShowcaseNoteFolderModel> createFolder(String owner, String name,
           {required int sortOrder}) =>
-      mutate<ShowcaseNoteFolderModel>(
+      _mutateOp<ShowcaseNoteFolderModel>(
         () =>
             _repo.upsertFolder(_repo.newFolder(owner, name, sortOrder: sortOrder)),
-        name: 'folder.create',
-        error: 'Could not create folder',
+        ShowcaseNotesFacadeOp.folderCreate,
       );
 
   Future<ShowcaseNoteFolderModel> renameFolder(ShowcaseNoteFolderModel folder, String name) =>
-      mutate<ShowcaseNoteFolderModel>(
+      _mutateOp<ShowcaseNoteFolderModel>(
         () => _repo.patchFolder(folder, folder.copyWith(name: name)),
-        name: 'folder.rename',
+        ShowcaseNotesFacadeOp.folderRename,
         entity: folder.id,
-        error: 'Could not rename folder',
       );
 
   /// iOS behavior: deleting a folder sends its live notes to Recently
   /// Deleted, then removes the folder row.
-  Future<void> deleteFolder(ShowcaseNoteFolderModel folder) => mutate<void>(
+  Future<void> deleteFolder(ShowcaseNoteFolderModel folder) => _mutateOp<void>(
         () async {
           final notes = await _repo.notesInFolder(folder.id);
           final now = DateTime.now().toUtc();
@@ -373,19 +372,17 @@ class ShowcaseNotesFacadeService extends AppBoxKitDataFacade {
           }
           await _repo.deleteFolder(folder.id);
         },
-        name: 'folder.delete',
+        ShowcaseNotesFacadeOp.folderDelete,
         entity: folder.id,
-        error: 'Could not delete folder',
-        success: 'Folder deleted',
         fallback: 'Delete folder failed',
       );
 
   // -- Auth ------------------------------------------------------------------
 
   Future<void> signOut() => abxActionHub.send<void>(
-        'signOut',
+        ShowcaseNotesFacadeOp.signOut.name,
         () => auth.signOut(),
-        errorNotification: 'Could not sign out',
+        errorNotification: ShowcaseNotesFacadeOp.signOut.error,
         errorMessage: 'Sign-out failed',
       );
 }

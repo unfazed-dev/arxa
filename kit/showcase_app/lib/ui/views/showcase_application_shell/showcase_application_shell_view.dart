@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 
+import 'package:appbox_kit_showcase_app/enums/showcase_application_enums/enums.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_application_shell/showcase_application_shell_view.desktop.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_application_shell/showcase_application_shell_view.tablet.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_application_shell/showcase_application_shell_view.mobile.dart';
@@ -35,13 +36,14 @@ import 'package:appbox_kit_showcase_app/ui/views/showcase_application_shell/show
 class ShowcaseApplicationShellView extends StackedView<ShowcaseApplicationShellViewModel> {
   const ShowcaseApplicationShellView({super.key});
 
-  /// One entry per tab, in tab order. Names/paths must match the shell's
-  /// children in `app.dart` — the single contract between shell and routes.
-  static const tabs = [
-    PageRouteInfo('ShowcaseHomeShellView', path: 'home'),
-    PageRouteInfo('ShowcaseSearchShellView', path: 'search'),
-    PageRouteInfo('ShowcaseProfileShellView', path: 'profile'),
-    PageRouteInfo('ShowcaseNotesShellView', path: 'notes'),
+  /// One entry per tab, in [ShowcaseTab] order. Names/paths must match the
+  /// shell's children in `app.dart` — the single contract between shell and
+  /// routes. (`final`, not `const`: enum field reads aren't const.)
+  static final tabs = [
+    PageRouteInfo('ShowcaseHomeShellView', path: ShowcaseTab.home.path),
+    PageRouteInfo('ShowcaseSearchShellView', path: ShowcaseTab.search.path),
+    PageRouteInfo('ShowcaseProfileShellView', path: ShowcaseTab.profile.path),
+    PageRouteInfo('ShowcaseNotesShellView', path: ShowcaseTab.notes.path),
   ];
 
   @override

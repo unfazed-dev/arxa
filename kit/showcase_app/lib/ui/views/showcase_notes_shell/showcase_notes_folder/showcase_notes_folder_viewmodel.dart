@@ -1,6 +1,7 @@
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 
 import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/models.dart';
+import 'package:appbox_kit_showcase_app/enums/showcase_notes_enums/enums.dart';
 import 'package:appbox_kit_showcase_app/services/showcase_notes_services/facades/showcase_notes_facade_service.dart';
 
 /// The notes-list screen viewmodel — streams-only (house convention): all
@@ -24,8 +25,12 @@ class ShowcaseNotesFolderViewModel extends AppBoxKitViewModel {
   final String folderKey;
   final _service = appBoxKitLocator<ShowcaseNotesFacadeService>();
 
-  bool get isTrash => folderKey == 'trash';
-  bool get isAll => folderKey == 'all';
+  /// The route's `:id` param, parsed once — the scope checks and the folder
+  /// listing query switch on this, never on the raw string.
+  late final ShowcaseFolderScope scope = ShowcaseFolderScope.parse(folderKey);
+
+  bool get isTrash => scope is ShowcaseFolderScopeTrash;
+  bool get isAll => scope is ShowcaseFolderScopeAll;
 
   /// Owner-scoped folders; empty while signed out.
   Stream<List<ShowcaseNoteFolderModel>> get folders$ =>
@@ -40,10 +45,12 @@ class ShowcaseNotesFolderViewModel extends AppBoxKitViewModel {
   Stream<List<ShowcaseNoteModel>> get notes$ => _service.session$.switchMap(
         (s) => s == null
             ? Stream<List<ShowcaseNoteModel>>.value(const [])
-            : isTrash
-                ? _service.trash$(s.user.id)
-                : _service.notesIn$(s.user.id,
-                    folderId: isAll ? null : folderKey),
+            : switch (scope) {
+                ShowcaseFolderScopeTrash() => _service.trash$(s.user.id),
+                ShowcaseFolderScopeAll() => _service.notesIn$(s.user.id),
+                ShowcaseFolderScopeFolder(:final folderId) =>
+                  _service.notesIn$(s.user.id, folderId: folderId),
+              },
       );
 
   /// UI-owned search text — seeded so [groups$] has both inputs from the
@@ -110,7 +117,7 @@ class ShowcaseNotesFolderViewModel extends AppBoxKitViewModel {
 
   /// Asks first (the hub's confirm gate); on confirm Recently Deleted is purged.
   late final _confirmEmptyTrash = abxActionHub.on<Null, void>(
-    'emptyTrash',
+    ShowcaseNotesFolderOp.emptyTrash.name,
     (_) => emptyTrash(),
     confirmTitle: 'Empty Recently Deleted',
     confirmMessage: 'Notes will be permanently deleted. This cannot be undone.',
@@ -122,7 +129,7 @@ class ShowcaseNotesFolderViewModel extends AppBoxKitViewModel {
 
   /// Asks first (the hub's confirm gate); on confirm the note is permanently deleted.
   late final _confirmDeletePermanently = abxActionHub.on<ShowcaseNoteModel, void>(
-    'deletePermanently',
+    ShowcaseNotesFolderOp.deletePermanently.name,
     (note) => deletePermanently(note),
     confirmTitle: 'Delete Note',
     confirmMessage: 'This note will be permanently deleted.',
@@ -140,10 +147,11 @@ class ShowcaseNotesFolderViewModel extends AppBoxKitViewModel {
   Future<String?> compose() async {
     final owner = _service.currentSession?.user.id;
     if (owner == null) return null;
-    final folderId = isAll || isTrash
-        ? await folders$.first
-            .then((folders) => folders.isEmpty ? null : folders.first.id)
-        : folderKey;
+    final folderId = switch (scope) {
+      ShowcaseFolderScopeFolder(:final folderId) => folderId,
+      _ => await folders$.first
+          .then((folders) => folders.isEmpty ? null : folders.first.id),
+    };
     if (folderId == null) return null;
     final note = await _service.createNote(owner, folderId);
     return note.id;

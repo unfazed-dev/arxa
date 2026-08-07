@@ -8,6 +8,7 @@ import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart'
 import 'package:uuid/uuid.dart';
 
 import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/showcase_note_attachment_model.dart';
+import 'package:appbox_kit_showcase_app/enums/showcase_notes_enums/enums.dart';
 
 /// Owns attachment binaries and the recording/playback hardware for Notes.
 ///
@@ -125,7 +126,7 @@ class ShowcaseNotesMediaAdapterService with AppBoxKitActionOwner {
   /// snackbar.
   Future<ShowcaseNoteAttachmentModel?> pickPhoto({required bool fromCamera}) =>
       abxActionHub.send<ShowcaseNoteAttachmentModel?>(
-        'pickPhoto',
+        ShowcaseNotesMediaOp.pickPhoto.name,
         () async {
           // Degrade to the library on simulators rather than crash — mirrors how
           // the UI hides the camera action via [isCameraAvailable].
@@ -156,7 +157,7 @@ class ShowcaseNotesMediaAdapterService with AppBoxKitActionOwner {
             createdAt: DateTime.now().toUtc(),
           );
         },
-        errorNotification: 'Could not add photo',
+        errorNotification: ShowcaseNotesMediaOp.pickPhoto.error,
         errorMessage: 'Photo capture failed',
         withValue: null,
       );
@@ -167,7 +168,7 @@ class ShowcaseNotesMediaAdapterService with AppBoxKitActionOwner {
   /// snackbar); a recorder/plugin throw also collapses to false, after an
   /// error snackbar.
   Future<bool> startRecording() => abxActionHub.send<bool>(
-        'startRecording',
+        ShowcaseNotesMediaOp.startRecording.name,
         () async {
           if (!await _recorder.hasPermission()) return false;
           await _player.stop();
@@ -178,14 +179,14 @@ class ShowcaseNotesMediaAdapterService with AppBoxKitActionOwner {
           await _recorder.start(path: '${dir.path}/${_uuid.v4()}.m4a');
           return true;
         },
-        errorNotification: 'Could not start recording',
+        errorNotification: ShowcaseNotesMediaOp.startRecording.error,
         errorMessage: 'Recording start failed',
         withValue: false,
       );
 
   Future<ShowcaseNoteAttachmentModel?> stopRecording() =>
       abxActionHub.send<ShowcaseNoteAttachmentModel?>(
-        'stopRecording',
+        ShowcaseNotesMediaOp.stopRecording.name,
         () async {
           final result = await _recorder.stop();
           if (result == null) return null;
@@ -197,15 +198,15 @@ class ShowcaseNotesMediaAdapterService with AppBoxKitActionOwner {
             createdAt: DateTime.now().toUtc(),
           );
         },
-        errorNotification: 'Could not save voice memo',
+        errorNotification: ShowcaseNotesMediaOp.stopRecording.error,
         errorMessage: 'Recording stop failed',
         withValue: null,
       );
 
   Future<void> cancelRecording() => abxActionHub.send<void>(
-        'cancelRecording',
+        ShowcaseNotesMediaOp.cancelRecording.name,
         () => _recorder.cancel(),
-        errorNotification: 'Could not cancel recording',
+        errorNotification: ShowcaseNotesMediaOp.cancelRecording.error,
         errorMessage: 'Recording cancel failed',
       );
 
@@ -215,7 +216,7 @@ class ShowcaseNotesMediaAdapterService with AppBoxKitActionOwner {
   /// one already loaded.
   Future<void> togglePlayback(ShowcaseNoteAttachmentModel attachment) =>
       abxActionHub.send<void>(
-        'playback.${attachment.id}',
+        '${ShowcaseNotesMediaOp.playback.name}.${attachment.id}',
         () async {
           if (playingAttachmentId$.value == attachment.id) {
             _player.isPlaying ? await _player.pause() : await _player.play();
@@ -226,7 +227,7 @@ class ShowcaseNotesMediaAdapterService with AppBoxKitActionOwner {
           playingAttachmentId$.add(attachment.id);
           await _player.play();
         },
-        errorNotification: 'Could not play voice memo',
+        errorNotification: ShowcaseNotesMediaOp.playback.error,
         errorMessage: 'Playback failed',
       );
 
@@ -238,13 +239,13 @@ class ShowcaseNotesMediaAdapterService with AppBoxKitActionOwner {
   /// Best-effort binary cleanup when an attachment is removed from a note.
   Future<void> deleteFile(ShowcaseNoteAttachmentModel attachment) =>
       abxActionHub.send<void>(
-        'deleteFile.${attachment.id}',
+        '${ShowcaseNotesMediaOp.deleteFile.name}.${attachment.id}',
         () async {
           if (playingAttachmentId$.value == attachment.id) await stopPlayback();
           final file = File(await resolvePath(attachment));
           if (await file.exists()) await file.delete();
         },
-        errorNotification: 'Could not delete attachment',
+        errorNotification: ShowcaseNotesMediaOp.deleteFile.error,
         errorMessage: 'Attachment cleanup failed',
       );
 

@@ -206,3 +206,46 @@ into a host router shell, wire it in `main.dart` (+ `RootBackButtonDispatcher`),
 and add `enableOnBackInvokedCallback` to the Android manifest. Full how-to +
 why-a-kit-helper-is-required (stacked 3.5.0 `AdaptivePage` is material on all
 non-web platforms; the iOS gesture is route-mixin-only): **SKILL.md → "Per-platform route transitions"** and `docs/plans/kit-platform-route-transitions.md`. Showcase reference impl: `appbox_kit/showcase_app/lib/app/kit_platform_router.dart`.
+
+---
+
+## 7.13 The enums layer (reference implementation)
+
+Every `enum` and sealed discriminator type in the app lives under
+`lib/enums/`, one folder per shell with a shell barrel, and a root barrel that
+exports only the shell barrels:
+
+```
+lib/enums/
+├── enums.dart                        # root barrel — exports ONLY the shell barrels
+├── showcase_application_enums/       # app-wide (tab identity, motion presets, …)
+│   └── enums.dart                    # shell barrel
+├── showcase_notes_enums/             # notes shell (ops, quick actions, folder scope, …)
+│   └── enums.dart
+├── showcase_profile_enums/
+│   └── enums.dart
+└── showcase_startup_enums/
+    └── enums.dart
+```
+
+The rules this layer exists to make mechanical (canon:
+`skills/appbox-builder/BUILDER_playbook.mdx` → Enums layer):
+
+- **Behavior discriminators are enums, never raw strings/ints** — route-param
+  actions, tab identity, rail/segment selections, dialog results, motion
+  presets. Enhanced enums carry their label/route/preset fields so parallel
+  arrays and label→value maps die.
+- **abxAction op names are per-owner op-verb enums** (`ShowcaseNotesFacadeOp`,
+  `ShowcaseNotesMediaOp`); `.name` is the hub/mutate wire key (camelCase —
+  `'folder.create'` → `folderCreate`), entity-keyed ops interpolate the verb
+  (`'${ShowcaseNotesMediaOp.playback.name}.$id'`), and facade op enums carry
+  their mutate copy (`error`, nullable `success`) as fields.
+- **Mixed domains are sealed types** — folder scope `'all' | 'trash' | <uuid>`
+  is `ShowcaseFolderScope` with a `parse` at the route boundary and exhaustive
+  switches; an enum cannot honestly hold an open set.
+- Views, widgets, viewmodels, and services all import the enums barrels (pure
+  types); the view↔viewmodel purity rule is unaffected — a view imports the
+  barrel directly (G11: viewmodels never re-export).
+
+Arch_guard's G12 flags any enum/sealed declaration outside
+`lib/enums/**`; stringly-literal misuse stays a review rule.

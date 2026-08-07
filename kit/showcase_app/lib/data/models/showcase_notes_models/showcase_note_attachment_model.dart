@@ -9,7 +9,7 @@
 /// documented ceiling until a storage seam exists.
 library;
 
-enum ShowcaseNoteAttachmentKind { photo, audio }
+import 'package:appbox_kit_showcase_app/enums/showcase_notes_enums/enums.dart';
 
 class ShowcaseNoteAttachmentModel {
   final String id;

@@ -5,6 +5,7 @@ import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 import 'package:appbox_kit_showcase_app/ui/widgets/common/showcase_tabs_shared/widgets.dart';
 import 'package:appbox_kit_showcase_app/ui/widgets/showcase_notes_widgets/widgets.dart';
 import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/models.dart';
+import 'package:appbox_kit_showcase_app/enums/showcase_notes_enums/enums.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_folder/showcase_notes_folder_viewmodel.dart';
 
 class ShowcaseNotesFolderViewMobile
@@ -144,23 +145,29 @@ class ShowcaseNotesFolderViewMobile
             ? null
             : AppBoxKitNativeFabMenu(
                 glyph: AppBoxKitGlyphs.add,
-                items: const [
-                  AppBoxKitMenuItem(label: 'New Note', glyph: AppBoxKitGlyphs.compose),
-                  AppBoxKitMenuItem(label: 'New Photo', glyph: AppBoxKitGlyphs.camera),
-                  AppBoxKitMenuItem(label: 'New Voice', glyph: AppBoxKitGlyphs.mic),
+                items: [
+                  const AppBoxKitMenuItem(
+                      label: 'New Note', glyph: AppBoxKitGlyphs.compose),
+                  for (final action in ShowcaseQuickAction.values)
+                    AppBoxKitMenuItem(
+                      label: action.label,
+                      glyph: switch (action) {
+                        ShowcaseQuickAction.camera => AppBoxKitGlyphs.camera,
+                        ShowcaseQuickAction.mic => AppBoxKitGlyphs.mic,
+                      },
+                    ),
                 ],
                 onSelect: (item) async {
-                  final action = switch (item.label) {
-                    'New Photo' => 'camera',
-                    'New Voice' => 'mic',
-                    _ => null,
-                  };
+                  ShowcaseQuickAction? action;
+                  for (final a in ShowcaseQuickAction.values) {
+                    if (a.label == item.label) action = a;
+                  }
                   final id = await viewModel.compose();
                   if (id == null || !context.mounted) return;
                   // nested push — root stack must not grow
                   unawaited(context.router.pushNamed(action == null
                       ? 'note/$id'
-                      : 'note/$id?quickAction=$action'));
+                      : 'note/$id?quickAction=${action.name}'));
                 },
               ),
       ),

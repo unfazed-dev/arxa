@@ -1,11 +1,8 @@
 import 'package:appbox_kit_data/appbox_kit_data.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 
+import 'package:appbox_kit_showcase_app/enums/showcase_notes_enums/enums.dart';
 import 'package:appbox_kit_showcase_app/services/showcase_notes_services/facades/showcase_notes_facade_service.dart';
-
-/// Which credential flow the auth screen shows. Owner-held, mirrors
-/// [AppBoxKitNativeSegmentedControl]'s index convention (see the view).
-enum NotesAuthMode { password, otp }
 
 /// Sign-in screen for the seed-backend smoke surface — streams-only (house
 /// convention): `BaseViewModel` is a lifecycle token (creation/disposal via
@@ -28,17 +25,9 @@ class ShowcaseNotesAuthViewModel extends AppBoxKitViewModel {
 
   AppBoxKitAuthService get auth => _notes.auth;
 
-  /// Op labels of the auth ops — [busy$] composes their
-  /// [AppBoxKitAction.state$] streams; AppBoxKitViewModel.dispose releases them.
-  static const _ops = [
-    'signIn',
-    'signUp',
-    'requestOtp',
-    'confirmOtp',
-    'google',
-    'apple',
-    'anonymous',
-  ];
+  /// The auth ops — [busy$] composes their [AppBoxKitAction.state$] streams;
+  /// AppBoxKitViewModel.dispose releases them.
+  static final _ops = [for (final op in ShowcaseNotesAuthOp.values) op.name];
 
   /// Busy while ANY auth op is in flight. Seeded (no loading flash on first
   /// bind); one lazy composition per VM.
@@ -48,9 +37,9 @@ class ShowcaseNotesAuthViewModel extends AppBoxKitViewModel {
   ).shareValueSeeded(false);
 
   /// The credential flow the segmented control selected.
-  final BehaviorSubject<NotesAuthMode> _mode =
-      BehaviorSubject<NotesAuthMode>.seeded(NotesAuthMode.password);
-  ValueStream<NotesAuthMode> get mode$ => _mode.stream;
+  final BehaviorSubject<ShowcaseNotesAuthMode> _mode =
+      BehaviorSubject<ShowcaseNotesAuthMode>.seeded(ShowcaseNotesAuthMode.password);
+  ValueStream<ShowcaseNotesAuthMode> get mode$ => _mode.stream;
 
   /// Flips once [requestOtp] succeeds — the view then shows the code field.
   final BehaviorSubject<bool> _otpRequested = BehaviorSubject<bool>.seeded(false);
@@ -73,7 +62,7 @@ class ShowcaseNotesAuthViewModel extends AppBoxKitViewModel {
   String password = '';
   String code = '';
 
-  void setMode(NotesAuthMode value) {
+  void setMode(ShowcaseNotesAuthMode value) {
     _mode.add(value);
     _otpRequested.add(false);
     code = '';
@@ -97,29 +86,29 @@ class ShowcaseNotesAuthViewModel extends AppBoxKitViewModel {
             : 'Something went wrong. Try again.'),
       );
 
-  late final _signIn = abxActionHub.on<(String, String), void>('signIn',
+  late final _signIn = abxActionHub.on<(String, String), void>(ShowcaseNotesAuthOp.signIn.name,
       (p) => auth.signInWithEmailPassword(email: p.$1, password: p.$2));
 
-  late final _signUp = abxActionHub.on<(String, String), void>('signUp',
+  late final _signUp = abxActionHub.on<(String, String), void>(ShowcaseNotesAuthOp.signUp.name,
       (p) => auth.signUpWithEmailPassword(email: p.$1, password: p.$2));
 
   late final _requestOtp =
-      abxActionHub.on<String, void>('requestOtp', (email) async {
+      abxActionHub.on<String, void>(ShowcaseNotesAuthOp.requestOtp.name, (email) async {
     await auth.requestOtp(email: email);
     _otpRequested.add(true);
   });
 
   late final _confirmOtp = abxActionHub.on<(String, String), void>(
-      'confirmOtp', (p) => auth.confirmOtp(email: p.$1, code: p.$2));
+      ShowcaseNotesAuthOp.confirmOtp.name, (p) => auth.confirmOtp(email: p.$1, code: p.$2));
 
   late final _google =
-      abxActionHub.on<Null, void>('google', (_) => auth.signInWithGoogle());
+      abxActionHub.on<Null, void>(ShowcaseNotesAuthOp.google.name, (_) => auth.signInWithGoogle());
 
   late final _apple =
-      abxActionHub.on<Null, void>('apple', (_) => auth.signInWithApple());
+      abxActionHub.on<Null, void>(ShowcaseNotesAuthOp.apple.name, (_) => auth.signInWithApple());
 
   late final _anonymous =
-      abxActionHub.on<Null, void>('anonymous', (_) => auth.signInAnonymously());
+      abxActionHub.on<Null, void>(ShowcaseNotesAuthOp.anonymous.name, (_) => auth.signInAnonymously());
 
   Future<void> signInEmail(String email, String password) =>
       _signIn.send((email, password));

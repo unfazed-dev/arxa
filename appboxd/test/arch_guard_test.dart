@@ -1,5 +1,5 @@
 // arch_guard test — verifies the Dart port matches arch_guard.py's behavior.
-// One positive (clean target passes) plus one negative per rule (G0–G5).
+// One positive (clean target passes) plus one negative per rule (G0–G12).
 
 import 'dart:io';
 
@@ -393,6 +393,57 @@ void main() {
           r.violations.any(
               (v) => v.rule == 'G11' && v.msg.contains('re-export')),
           isTrue);
+    });
+  });
+
+  group('G12 enums/sealed types live in lib/enums', () {
+    test('an enum declared in a viewmodel file is a violation', () {
+      _file(tmp, 'lib/ui/editor_viewmodel.dart',
+          "import 'package:stacked/stacked.dart';\n"
+          'enum EditorMode { draft, live }\n'
+          'class EditorViewModel extends BaseViewModel {}\n');
+      final r = archGuard(tmp.path);
+      expect(r.passed, isFalse);
+      expect(
+          r.violations.any((v) =>
+              v.rule == 'G12' &&
+              v.file == 'ui/editor_viewmodel.dart' &&
+              v.msg.contains('EditorMode')),
+          isTrue);
+    });
+
+    test('a sealed class outside lib/enums is a violation', () {
+      _file(tmp, 'lib/data/models/note_state.dart', 'sealed class NoteState {}\n');
+      final r = archGuard(tmp.path);
+      expect(r.passed, isFalse);
+      expect(
+          r.violations.any(
+              (v) => v.rule == 'G12' && v.msg.contains('NoteState')),
+          isTrue);
+    });
+
+    test('an enum under lib/enums/<shell>_enums is accepted', () {
+      _file(tmp, 'lib/enums/showcase_notes_enums/note_status.dart',
+          'enum NoteStatus { draft, live }\n');
+      final r = archGuard(tmp.path);
+      expect(r.violations.where((v) => v.rule == 'G12'), isEmpty);
+    });
+
+    test('a sealed class under lib/enums is accepted', () {
+      _file(tmp, 'lib/enums/showcase_notes_enums/note_state.dart',
+          'sealed class NoteState {}\n');
+      final r = archGuard(tmp.path);
+      expect(r.violations.where((v) => v.rule == 'G12'), isEmpty);
+    });
+
+    test('enums and sealed types in generated files are exempt', () {
+      _file(tmp, 'lib/app/app.router.dart',
+          'enum RouteTab { home, settings }\n'
+          'sealed class RouterState {}\n');
+      _file(tmp, 'lib/data/models/note.freezed.dart',
+          'sealed class Note {}\n');
+      final r = archGuard(tmp.path);
+      expect(r.violations.where((v) => v.rule == 'G12'), isEmpty);
     });
   });
 
