@@ -160,3 +160,47 @@ provenance HTML comment lost in TSX output; stale comments
 3. Both artifacts move to htmx 4 (studio migrates off 2.0.10; restore
    hello-hda's dropped config intent — `allowEval:false` equivalent,
    extensions — under htmx 4 semantics).
+
+## Gap closure (2026-08-07)
+
+The leftovers the first fix pass could not verify, now closed:
+
+- **M1/M2 residual — workerd verified for real.** `wrangler dev` (wrangler
+  4.119.0, workerd 1.20260801.1) booted the cloudflare eject and failed twice:
+  `node:url` unresolvable without `compatibility_flags = ["nodejs_compat"]`
+  (added to `_ejectWrangler`), then workerd's undefined `import.meta.url`
+  killed icon.tsx's top-level `fileURLToPath` (iconsDir is now lazy, computed
+  only on the node fs path). Also fixed a latent 404: `[assets]` maps URLs
+  onto the directory verbatim, so `worker.js` now strips the `/assets` prefix
+  and delegates to `env.ASSETS`. Post-fix under workerd: `/` 200, vendor
+  assets 200, 8 real Lucide `<path>` icons (preload path), SSE endpoint live.
+  Node-target eject re-verified unchanged. M4: vercel.js already exports a
+  fetch handler (zero-config Hono convention) — no deferral needed; a real
+  `vercel deploy` remains unrun.
+- **M12 — benchmark doc publishable.** SPA baseline is now measured, not
+  assumed: React 19.2.8 (no official minified browser build exists —
+  documented; esm.sh ESM measured as proxy: 64,290 B gz runtime total) and
+  Preact 10.29.8 (4,855 B gz), each with exact URL/version/date and local
+  `gzip -9` methodology. App-bundle/CSS/API rows stay explicitly labeled
+  assumptions.
+- **422 browser-verified.** `hx-status:422` confirmed present in vendored
+  htmx 4.0.0-beta6 (minified source + live Chrome): the smoke test now drives
+  a real form POST → 422 → swap (11 checks total). One mechanism correction:
+  the escape hatch needs BOTH the base layout's `noSwap` 4xx blacklist AND
+  `"implicitInheritance":true` in the meta htmx-config, and the form wants
+  `hx-swap="outerHTML"` — forms.js's header now says so.
+- **Nunjucks deleted from the tooling** (user decision: one-way migration,
+  no dual maintenance). D10 matches `state === 'x'` TSX branches; W-gate is
+  TSX-only (include graph, `_templateFiles`, `_panel.tsx`); W4 balance rule
+  deleted (JSX is balanced by construction) and mount counting ported to JSX
+  usage of the default/`Open` export of `<role>_panel.tsx`; the selftest's
+  macro-library fallback and its mutation arm deleted with it. hello-hda's
+  `form_field.tsx`/`list_row.tsx` moved to `home/widgets/` — the rewritten
+  W1 correctly measured their only consumer as `home` (the earlier "lint
+  clean on both artifacts" claim did not survive the W-gate rewrite; caught
+  on re-run).
+
+Gates after closure: `dart test` 1298/1298, `dart analyze` clean, both
+artifact lints clean, selftest 24/25 — the one FAIL is the git-tracking
+check flagging this changeset's own uncommitted widget moves, green on
+commit — islands smoke 11/11 in headless Chrome.

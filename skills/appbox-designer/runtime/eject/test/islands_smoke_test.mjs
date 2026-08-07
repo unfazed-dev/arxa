@@ -3,7 +3,8 @@
 // machinery (assets/islands.js + assets/island-kit.js + a vendored
 // micro-island). Would have caught review R1 (islands dead on arrival:
 // bare effectScope() call, undefined `fn`) — Dart tests never execute the
-// shipped JS.
+// shipped JS. Also covers the forms.js 422 convention (hx-status:422 swap)
+// at browser level — see the forms.js header comment.
 //
 // Zero dependencies: a node:http static server + headless Chrome driven over
 // raw CDP (Node ≥22 built-in WebSocket). Chrome path via $CHROME_PATH or the
@@ -44,8 +45,10 @@ async function buildFixture() {
     'form-state': { src: '/assets/islands/form-state.js', integrity: sri(formStateSrc) },
   };
   const page = `<!doctype html>
-<html><head><meta charset="utf-8"><title>islands smoke</title></head>
-<body>
+<html><head><meta charset="utf-8"><title>islands smoke</title>
+<meta name="htmx-config" content='{"transitions":true,"implicitInheritance":true,"noSwap":[204,304,"4xx","5xx"]}' />
+</head>
+<body hx-status:422="{}">
   <div hx-island="counter" hx-island-when="load" id="c1">
     <button data-on:click="dec">−</button>
     <span data-text="count">0</span>
@@ -66,6 +69,11 @@ async function buildFixture() {
 
   <div id="swap-host"></div>
 
+  <form hx-post="/submit" hx-swap="outerHTML" id="vf">
+    <input name="email" type="text" value="">
+    <button id="send" type="submit">Send</button>
+  </form>
+
   <script type="application/json" id="island-manifest">${JSON.stringify(manifest)}</script>
   <script src="/assets/vendor/htmx4.min.js"></script>
   <script type="module" src="/assets/islands.js"></script>
@@ -85,10 +93,12 @@ function serve(routes) {
   const server = http.createServer((req, res) => {
     const route = routes[req.url || ''];
     if (!route) { res.writeHead(404); res.end('nope'); return; }
-    Promise.resolve(route()).then(({ body, type }) => {
-      res.writeHead(200, { 'content-type': type });
+    let reqBody = '';
+    req.on('data', (c) => { reqBody += c; });
+    req.on('end', () => Promise.resolve(route(reqBody)).then(({ body, type, status = 200 }) => {
+      res.writeHead(status, { 'content-type': type });
       res.end(body);
-    });
+    }));
   });
   return new Promise((resolve) => server.listen(0, '127.0.0.1', () => resolve(server)));
 }
@@ -205,6 +215,20 @@ async function main() {
     '/assets/islands/form-state.js': async () => ({ body: formStateSrc, type: MIME['.js'] }),
     '/assets/vendor/alien-signals.min.js': async () => ({ body: await readFile(path.join(vendorDir, 'alien-signals.min.js')), type: MIME['.js'] }),
     '/assets/vendor/htmx4.min.js': async () => ({ body: await readFile(path.join(vendorDir, 'htmx4.min.js')), type: MIME['.js'] }),
+    // forms.js convention: failed zod validation → 422 + re-rendered form
+    // partial (error marker + prior value preserved).
+    '/submit': async (reqBody) => {
+      const email = new URLSearchParams(reqBody).get('email') || '';
+      return {
+        status: 422,
+        type: MIME['.html'],
+        body: `<form hx-post="/submit" hx-swap="outerHTML" id="vf">
+  <input name="email" type="text" value="${email}" aria-invalid="true">
+  <p class="field-error">email is required</p>
+  <button id="send" type="submit">Send</button>
+</form>`,
+      };
+    },
   };
   const server = await serve(routes);
   const port = /** @type {any} */ (server.address()).port;
@@ -270,6 +294,24 @@ async function main() {
     check('htmx 4 htmx_after_process hook discovers swapped island',
       await waitFor(cdp, sessionId,
         `document.querySelector('#c2 [data-text="count"]')?.textContent === '7'`));
+
+    // 4b. forms.js 422 convention: hx-status:422="{}" on <body> must make
+    //     htmx 4 swap the re-rendered form partial despite the noSwap 4xx
+    //     blackout — the first browser-level verification of that claim.
+    //     (Requires the base layout's implicitInheritance:true meta config —
+    //     without it v4 does NOT inherit attributes from ancestors.)
+    await cdp.eval(`window.__sentinel = 42`, sessionId);
+    await cdp.eval(`(() => {
+      document.querySelector('#vf [name="email"]').value = 'a@b.co';
+      document.getElementById('send').click();
+    })()`, sessionId);
+    check('422 form partial swaps in (hx-status:422 honored)',
+      await waitFor(cdp, sessionId,
+        `document.querySelector('#vf .field-error')?.textContent === 'email is required'`));
+    check('submitted value preserved in re-rendered form',
+      await cdp.eval(`document.querySelector('#vf [name="email"]')?.value`, sessionId) === 'a@b.co');
+    check('no full-page navigation on 422 (window sentinel survives)',
+      await cdp.eval(`window.__sentinel`, sessionId) === 42);
 
     // 5. Teardown: removing an island dispatches island:dispose without error.
     await cdp.eval(`document.getElementById('c2').remove()`, sessionId);

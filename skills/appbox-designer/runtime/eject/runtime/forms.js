@@ -7,13 +7,19 @@
 // the Carson-endorsed reference — the client swaps the form in-place, errors
 // and values preserved, no full reload.
 //
-// Client story (htmx 4): htmx ignores non-2xx responses by default, and this
-// stack's base layout additionally blacklists 4xx via `noSwap`. The escape
-// hatch is v4-native: an `hx-status:422` attribute on any ancestor of the
-// form (the artifact's base layout puts `hx-status:422="{}"` on <body>)
+// Client story (htmx 4): the stack's base layout blacklists 4xx/5xx via its
+// meta htmx-config `noSwap` (v4's default noSwap is only [204,304]). The
+// escape hatch is v4-native: an `hx-status:422` attribute on any ancestor of
+// the form (the artifact's base layout puts `hx-status:422="{}"` on <body>)
 // merges that JSON config into the swap for 422 responses, so the re-rendered
-// form partial swaps in place of the submitting form (default target) —
-// no extensions, no custom JS.
+// form partial swaps in place of the submitting form — no extensions, no
+// custom JS. Two hard dependencies, both in the base layout's meta config:
+// the `noSwap:["4xx",…]` blacklist (without it every 4xx swaps anyway and the
+// escape is moot) and `"implicitInheritance":true` (without it the body-level
+// attribute is invisible to the lookup — verified against 4.0.0-beta6 in
+// test/islands_smoke_test.mjs). The form also wants `hx-swap="outerHTML"`:
+// the default innerHTML swap would nest the re-rendered <form> inside the
+// submitting one.
 //
 // Field-error convention in the re-rendered partial (the artifact's
 // FormField widget implements it — mirror it in hand-rolled forms):

@@ -131,7 +131,7 @@ int _emit(CmdResult r) {
 Future<int> _selfTest() async {
   try {
     // 1. comment stripping — a documented ban is not itself a violation.
-    if (stripComments('{# hx-on:click #}<script src=/x.js></script>')
+    if (stripComments('{/* hx-on:click */}<script src=/x.js></script>')
         .contains('hx-on')) {
       throw 'comment not stripped';
     }

@@ -2,8 +2,8 @@
 // Default export HomePage: wraps MainShell → Base.
 import type { FC } from 'hono/jsx';
 import MainShell from '../main_shell_view.tsx';
-import ListRow from '../shared/widgets/list_row.tsx';
-import FormField from '../shared/widgets/form_field.tsx';
+import ListRow from './widgets/list_row.tsx';
+import FormField from './widgets/form_field.tsx';
 import Icon from '../../../../runtime/icon.tsx';
 
 type TFn = (key: string, vars?: Record<string, unknown>) => unknown;

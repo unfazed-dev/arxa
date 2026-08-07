@@ -665,8 +665,8 @@ class DesignServer {
 
     // A TSX syntax error breaks the render bundle, not the studio: every
     // route answers with the esbuild diagnosis on the 5xx surface (toast for
-    // htmx, page otherwise) until a save rebuilds clean — the nunjucks era
-    // surfaced template errors per-route; stderr alone is invisible (M9).
+    // htmx, page otherwise) until a save rebuilds clean — stderr alone is
+    // invisible (M9).
     final bundleError = _worker.bundleError;
     if (bundleError != null) {
       await _writeError(req, 500, 'errorSurface.serverError', _msgServerError,

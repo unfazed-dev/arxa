@@ -555,20 +555,12 @@ List<_Check> _buildChecks({required bool skipRender}) {
             '`design lint` W1 names the three-tier destination for each');
       }
 
-      // No widgets anywhere: the artifact must at least carry a shared macro
-      // library under ui/common (the pre-widget generation's shape).
-      final commonDir = Directory(p.join(art, 'ui', 'common'));
-      final found = commonDir.existsSync() &&
-          _walkFiles(commonDir)
-              .where((f) => f.path.endsWith('.html'))
-              .any((f) => RegExp(r'\{%\s*macro').hasMatch(f.readAsStringSync()));
-      if (!found) {
-        return const CheckOutcome.fail(
-            'no widgets in the three-tier homes (ui/common/widgets/, '
-            'ui/views/<shell>/shared/widgets/, <surface>/widgets/) and no macro '
-            'in ui/common');
-      }
-      return const CheckOutcome.ok();
+      // No widgets anywhere: fail. The pre-migration escape hatch (a shared
+      // nunjucks macro library under ui/common) died with nunjucks — every
+      // supported artifact composes at least one widget.
+      return const CheckOutcome.fail(
+          'no widgets in the three-tier homes (ui/common/widgets/, '
+          'ui/views/<shell>/shared/widgets/, <surface>/widgets/)');
     }),
 
     _Check(_lIcons, _Section.structure, (art, skill, src) async {
@@ -952,25 +944,15 @@ void _mutateWidgetPartials(String art, String skill) {
   //
   // FILES, not directories: deleting `ui/common/` would take `base.html` with
   // it and redden neighbouring checks, which masks whether THIS check flipped.
-  var removed = 0;
   for (final f in _htmlFiles(art)) {
     final rel = _relOf(art, f);
     if (_isThreeTierWidget(rel) || isRetiredFlatWidget(rel)) {
       f.deleteSync();
-      removed++;
     }
   }
-  // An artifact with no widget layer at all falls through to the ui/common
-  // macro-library branch; strip its macros so the mutation still lands.
-  if (removed > 0) return;
-  final common = Directory(p.join(art, 'ui', 'common'));
-  if (!common.existsSync()) return;
-  for (final f in _walkFiles(common).where((f) => f.path.endsWith('.html'))) {
-    final src = f.readAsStringSync();
-    if (RegExp(r'\{%\s*macro').hasMatch(src)) {
-      f.writeAsStringSync(src.replaceAll(RegExp(r'\{%\s*macro'), '{# macro'));
-    }
-  }
+  // An artifact with no widget layer at all fails the check outright (the
+  // nunjucks macro-library escape hatch is gone), so the file deletions above
+  // are the whole mutation.
 }
 
 void _mutateUntrackedFile(String art, String skill) {
@@ -988,7 +970,7 @@ void _mutateCommentedJs(String art, String skill) {
   final files = _htmlFiles(art);
   if (files.isEmpty) return;
   final f = files.first;
-  f.writeAsStringSync("${f.readAsStringSync()}\n{# hx-on:click is banned here — ADR-0002 #}\n");
+  f.writeAsStringSync("${f.readAsStringSync()}\n{/* hx-on:click is banned here — ADR-0002 */}\n");
 }
 
 void _mutateBrokenRoute(String art, String skill) {

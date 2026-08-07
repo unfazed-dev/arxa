@@ -116,7 +116,7 @@ void main() {
 
     test('comments are stripped — commented ban is not a violation', () {
       final d = _tmpDir();
-      _write(d, 'c.html', '{# hx-on:click explains the ban #}'
+      _write(d, 'c.tsx', '{/* hx-on:click explains the ban */}'
           '<!-- <script src=/x.js></script> -->');
       addTearDown(() => d.deleteSync(recursive: true));
       final r = designLint([d.path]);
@@ -213,27 +213,40 @@ void main() {
         {'id': 'portalo.home', 'states': ['loading', 'empty']},
         {'id': 'portalo.cart', 'states': ['loading']},
       ]));
-      _write(d, 'design/surfaces/home.html',
-          "{% if state == 'loading' %}<p>…</p>{% endif %}");
-      _write(d, 'design/surfaces/cart.html',
-          "{% if state == 'loading' %}<p>…</p>{% endif %}"
-          "{% if state == 'error' %}<p>oops</p>{% endif %}");
+      _write(d, 'design/surfaces/home.tsx',
+          "{state === 'loading' && (<p>…</p>)}");
+      _write(d, 'design/surfaces/cart.tsx',
+          "{state === 'loading' && (<p>…</p>)}"
+          "{state === 'error' && (<p>oops</p>)}");
 
       final r = designLint([d.path]);
       expect(r.exitCode, 1);
       expect(r.stderrLines.skip(1), containsAll([
         endsWith("registry declares state 'empty' but the surface has no "
-            "{% if state == 'empty' %} branch"),
+            "`state === 'empty'` branch"),
         endsWith("surface branches on state 'error' that the registry does "
             'not declare'),
       ]));
     });
 
+    test('D10 — a ternary branch satisfies the declared state', () {
+      final d = _tmpDir();
+      addTearDown(() => d.deleteSync(recursive: true));
+      _write(d, 'intake/registry.json', jsonEncode([
+        {'id': 'portalo.home', 'states': ['empty']},
+      ]));
+      _write(d, 'design/surfaces/home.tsx',
+          "{state === 'empty' ? (<p>nothing yet</p>) : (<ul>…</ul>)}");
+
+      final r = designLint([d.path]);
+      expect(r.exitCode, 0, reason: r.stderrLines.join('\n'));
+    });
+
     test('D10 — no registry reachable leaves the rule off', () {
       final d = _tmpDir();
       addTearDown(() => d.deleteSync(recursive: true));
-      _write(d, 'surfaces/loose.html',
-          "{% if state == 'error' %}<p>oops</p>{% endif %}");
+      _write(d, 'surfaces/loose.tsx',
+          "{state === 'error' && (<p>oops</p>)}");
       expect(designLint([d.path]).exitCode, 0);
     });
 

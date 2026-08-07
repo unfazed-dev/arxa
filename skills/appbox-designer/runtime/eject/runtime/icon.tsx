@@ -23,7 +23,12 @@ interface IconProps {
 // Vendored Lucide icons — resolved relative to this module. In the ejected tree
 // that is runtime/vendor/lucide/icons. On Workers there is no fs: the cloudflare
 // eject bundles icons into preload.js (node/vercel emit a stub, preload = null).
-const iconsDir = path.join(path.dirname(fileURLToPath(import.meta.url)), 'vendor', 'lucide', 'icons');
+// Lazy: workerd leaves import.meta.url undefined, so computing this at module
+// load would kill the Worker even though the fs path is never used there.
+let iconsDir: string | null = null;
+function iconsDirPath(): string {
+  return (iconsDir ??= path.join(path.dirname(fileURLToPath(import.meta.url)), 'vendor', 'lucide', 'icons'));
+}
 const NAME_RE = /^[a-z0-9-]+$/;
 const cache = new Map<string, string | null>();
 
@@ -46,7 +51,7 @@ function loadIcon(name: string): string | null {
     raw_ = preloadIcons[name] ?? null;
   } else {
     try {
-      raw_ = readFileSync(path.join(iconsDir, name + '.svg'), 'utf8');
+      raw_ = readFileSync(path.join(iconsDirPath(), name + '.svg'), 'utf8');
     } catch {
       raw_ = null;
     }

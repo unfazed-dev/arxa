@@ -601,8 +601,7 @@ class JsWorker {
   /// The esbuild diagnosis from the last failed render-bundle build, null
   /// when the bundle is healthy. The design server surfaces this on every
   /// route (500 + toast) while it stands — a TSX syntax error must reach the
-  /// designer's browser, not just the serve log (M9; the nunjucks era
-  /// surfaced template errors per-route).
+  /// designer's browser, not just the serve log (M9).
   String? bundleError;
 
   /// [_scanArtifact] plus the bundle-error contract: a TSX/esbuild failure is

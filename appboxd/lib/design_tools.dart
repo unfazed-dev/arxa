@@ -49,13 +49,12 @@ class LintFinding {
 }
 
 /// Strip comments before scanning (commented code is not a violation).
-/// Handles HTML (`<!-- -->`), nunjucks (`{# #}`), and TSX/JS (`/* */` blocks,
-/// `//` line comments) — the last two added when templates moved from .html
-/// to .tsx. Line-comment stripping is anchored to line-start to avoid
-/// matching `//` inside strings (URLs, attribute values).
+/// Handles HTML (`<!-- -->`) and TSX/JS (`/* */` blocks — which also covers
+/// the JSX `{/* … */}` form — plus `//` line comments). Line-comment
+/// stripping is anchored to line-start to avoid matching `//` inside strings
+/// (URLs, attribute values).
 String stripComments(String html) => html
     .replaceAll(RegExp(r'<!--[\s\S]*?-->'), '')
-    .replaceAll(RegExp(r'\{#[\s\S]*?#\}'), '')
     .replaceAll(RegExp(r'/\*[\s\S]*?\*/'), '')
     .replaceAll(RegExp(r'^\s*//.*$', multiLine: true), '');
 
@@ -141,13 +140,15 @@ final _inferredFnRe = RegExp(
     """\\b$_inspectFnProvenance\\s*=\\s*["']inferred["']""",
     caseSensitive: false);
 
-/// D10 — a declared state is a `{% if state == '<name>' %}` branch in the SAME
-/// surface file. `?state=loading` swaps regions in place: separate variant
-/// files duplicate every annotation with no sync mechanism, and a viewer-side
-/// overlay has none at all. The registry declares, the surface must branch —
-/// and a branch nobody declared is that drift read the other way.
+/// D10 — a declared state is a JSX conditional on the `state` prop in the
+/// SAME surface file: `{state === 'loading' && (…)}` or the ternary
+/// `{state === 'empty' ? (…) : (…)}`. `?state=loading` swaps regions in
+/// place: separate variant files duplicate every annotation with no sync
+/// mechanism, and a viewer-side overlay has none at all. The registry
+/// declares, the surface must branch — and a branch nobody declared is that
+/// drift read the other way.
 final _stateBranchRe = RegExp(
-    r"""\{%-?\s*if\s+state\s*==\s*["']([a-z]+)["']""",
+    r"""\bstate\s*={2,3}\s*["']([a-z]+)["']""",
     caseSensitive: false);
 
 /// D13 — retry is an affordance, not a fourth state. An `error`/`empty` region
@@ -204,7 +205,7 @@ List<String> inspectFindings(String src,
     for (final s in declaredStates) {
       if (!branched.contains(s)) {
         out.add("registry declares state '$s' but the surface has no "
-            "{% if state == '$s' %} branch");
+            "`state === '$s'` branch");
       }
     }
     for (final s in branched) {
@@ -260,8 +261,8 @@ List<String> _retryFindings(String src) {
 /// renders. The join is filename → the registry id ending `.<short>`: registry
 /// `surface` is null until the designer fills it, so the name is the only link
 /// that exists at lint time. Returns null — D10 off — for a partial
-/// (`_name.html`), when no registry is reachable, or when no entry matches, so
-/// a bare directory of loose HTML stays lintable.
+/// (`_name.tsx`), when no registry is reachable, or when no entry matches, so
+/// a bare directory of loose templates stays lintable.
 List<String>? _declaredStates(String htmlPath, Map<String, List<dynamic>?> cache) {
   final short = p.basenameWithoutExtension(htmlPath);
   if (short.startsWith('_')) return null;
@@ -304,10 +305,10 @@ List<File> _walk(Directory d) => d
     .whereType<File>()
     .toList();
 
-/// Scan every `.html` under [artifactDir] for the four rules. Returns findings
-/// in walk order, rule order within each file (mirrors lint.mjs). [coverageB]
-/// drops D7's bar from C to B; [notes] collects the advisory D9 channel, which
-/// never affects the exit code.
+/// Scan every `.html`/`.tsx` template under [artifactDir] for the four rules.
+/// Returns findings in walk order, rule order within each file (mirrors
+/// lint.mjs). [coverageB] drops D7's bar from C to B; [notes] collects the
+/// advisory D9 channel, which never affects the exit code.
 List<LintFinding> lintArtifact(String artifactDir,
     {bool coverageB = false, List<LintFinding>? notes}) {
   final findings = <LintFinding>[];
@@ -1547,7 +1548,7 @@ Future<CmdResult> designEject(List<String> args) async {
       final scriptContent = '<script type="application/json" id="island-manifest">'
           '$manifestJson</script>\n'
           '<script type="module" src="/assets/islands.js"></script>\n';
-      final injection = '{raw(`${scriptContent}`)}\n        ';
+      final injection = '{raw(`$scriptContent`)}\n        ';
       baseTsx.writeAsStringSync(
           src.replaceFirst('<div id="toasts"', '$injection<div id="toasts"'));
     }
@@ -1710,6 +1711,13 @@ String _ejectPackageJson(String name, String target) {
 /// wrangler.toml for the Cloudflare Workers target.
 String _ejectWrangler(String name) => '''name = "$name"
 compatibility_date = "2026-08-06"
+# nodejs_compat: the runtime modules import node builtins statically
+# (node:url/node:path in router.js + icon.tsx, node:fs in l10n.js,
+# node:async_hooks in timers.js). Without the flag workerd fails at module
+# load ("No such module node:url") before any request runs. The imports
+# resolve but fs is never CALLED on Workers — templates/l10n/icons/fixtures
+# come from runtime/preload.js instead.
+compatibility_flags = ["nodejs_compat"]
 main = "worker.js"
 
 [assets]
@@ -2200,7 +2208,8 @@ $_readmeFormsSection${isWorkers ? '''
 ## Cloudflare Workers notes
 
 - Static assets (`/assets/*`, including the narrowed `/assets/vendor/*` set)
-  are served by the `[assets]` binding — they never enter the Worker. Update
+  are served from the `[assets]` binding directory (`./assets`); `worker.js`
+  strips the `/assets` prefix and delegates to `env.ASSETS`. Update
   `wrangler.toml [assets]` if you add directories.
 - Templates, l10n catalogs, and fixtures are pre-bundled into
   `runtime/preload.js` (Workers have no filesystem). Re-run eject to refresh it
