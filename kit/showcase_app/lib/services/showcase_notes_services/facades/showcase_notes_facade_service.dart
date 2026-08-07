@@ -155,11 +155,8 @@ class ShowcaseNotesFacadeService extends AppBoxKitDataFacade {
         },
       );
 
-  /// [15. Admin overview] Every owner's folders with live note counts —
-  /// deliberately **no owner filter**. Admin visibility on a fake backend is
-  /// a client-side showcase of role metadata; there is no security boundary
-  /// to enforce, and the doc on [ShowcaseNotesAdminOverview] says so. Callers
-  /// gate on [isAdmin] / [isAdminSession].
+  /// [15. Admin overview] Every owner's folders with live note counts — no
+  /// owner filter; for admin views only, callers gate on [isAdmin].
   Stream<ShowcaseNotesAdminOverview> adminOverview$() => Rx.combineLatest2(
         _repo.allFolders(),
         _repo.allNotes(),
@@ -288,10 +285,8 @@ class ShowcaseNotesFacadeService extends AppBoxKitDataFacade {
         entity: note.id,
       );
 
-  /// [9. Attach photo] Picks (or captures) a photo and attaches it — one
-  /// transaction, so no caller can pick without attaching or attach without
-  /// the file move. Returns the updated note; the unchanged note when the
-  /// picker is cancelled.
+  /// [9. Attach photo] Picks or captures a photo and attaches it in one step.
+  /// Returns the updated note, or the unchanged note when the picker is cancelled.
   Future<ShowcaseNoteModel> addPhoto(ShowcaseNoteModel note, {required bool fromCamera}) async {
     final attachment = await _media.pickPhoto(fromCamera: fromCamera);
     if (attachment == null) return note;
@@ -307,9 +302,7 @@ class ShowcaseNotesFacadeService extends AppBoxKitDataFacade {
     return addAttachment(note, attachment);
   }
 
-  /// Removes an attachment: the note row loses the reference FIRST, then the
-  /// file is deleted — a crash mid-way leaves an orphan file on disk, never a
-  /// dangling reference on the note.
+  /// Removes an attachment from the note, then deletes its file.
   Future<ShowcaseNoteModel> removeAttachment(ShowcaseNoteModel note, ShowcaseNoteAttachmentModel attachment) async {
     final updated = await _mutateOp<ShowcaseNoteModel>(
       () => _repo.patchNote(
@@ -347,14 +340,8 @@ class ShowcaseNotesFacadeService extends AppBoxKitDataFacade {
         entity: note.id,
       );
 
-  /// [7. Move note to folder] Refiles a live note into another folder.
-  /// No-ops (returning the note untouched, no repository write) while signed
-  /// out, when the note is already in [folderId], and for trashed notes —
-  /// trash/restore never touch folderId (restore returns a note to the folder
-  /// it was trashed from), so folder moves stay a live-notes affair. Like
-  /// trash/restore, a move does not bump updatedAt: iOS does not re-date a
-  /// note on refile. Not destructive, so error snackbar only (see the policy
-  /// note above).
+  /// [7. Move note to folder] Refiles a live note into another folder. No-ops
+  /// when signed out, already there, or trashed; does not change updatedAt.
   Future<ShowcaseNoteModel> moveNoteToFolder(ShowcaseNoteModel note, String folderId) {
     if (currentSession == null || note.folderId == folderId || note.isDeleted) {
       return Future.value(note);
@@ -366,10 +353,8 @@ class ShowcaseNotesFacadeService extends AppBoxKitDataFacade {
     );
   }
 
-  /// [3. Delete permanently] Purges a note: the row goes first, then its
-  /// attachment files — a crash mid-way leaves orphan files (sweep-able),
-  /// never a note with dangling references. Trashing keeps files; only purge
-  /// paths delete them.
+  /// [3. Delete permanently] Purges a note for good: the row goes first,
+  /// then its attachment files.
   Future<void> deletePermanently(ShowcaseNoteModel note) => _mutateOp<void>(
         () async {
           await _repo.deleteNote(note.id);
@@ -444,9 +429,8 @@ class ShowcaseNotesFacadeService extends AppBoxKitDataFacade {
 
   // ── Reads ───────────────────────────────────────────────────────────────────
 
-  /// iOS Notes sectioning: Pinned first, then Today / Yesterday / Previous 7
-  /// Days / Previous 30 Days / month names (current year) / year buckets.
-  /// Pure and static so tests can pin `now`.
+  /// Groups notes the way iOS Notes does: Pinned first, then Today / Yesterday
+  /// / Previous 7 Days / Previous 30 Days / months / years.
   static List<ShowcaseNoteGroup> groupNotes(List<ShowcaseNoteModel> notes, DateTime now) {
     final pinned = notes.where((note) => note.pinned).toList();
     final rest = notes.where((note) => !note.pinned).toList();

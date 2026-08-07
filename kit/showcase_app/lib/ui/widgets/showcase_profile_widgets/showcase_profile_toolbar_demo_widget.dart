@@ -19,8 +19,6 @@ library;
 import 'package:flutter/material.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 
-/// [AppBoxKitNativeToolbar] demo — every action toasts through the located
-/// [AppBoxKitNotificationService] (the delete action uses the error kind).
 class ShowcaseProfileToolbarDemoWidget extends StatelessWidget {
   const ShowcaseProfileToolbarDemoWidget({super.key});
 

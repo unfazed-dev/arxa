@@ -21,8 +21,6 @@ import 'package:flutter/material.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 import 'package:appbox_kit_showcase_app/ui/widgets/common/showcase_tabs_shared/widgets.dart';
 
-/// Toast & notice card: [AppBoxKitNotificationService] toast plus the kit
-/// notice surface.
 class ShowcaseProfileFeedbackCardWidget extends StatelessWidget {
   const ShowcaseProfileFeedbackCardWidget({super.key});
 

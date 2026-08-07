@@ -38,8 +38,6 @@ import 'package:appbox_kit_showcase_app/enums/showcase_profile_enums/enums.dart'
 import 'package:appbox_kit_showcase_app/ui/views/showcase_profile_shell/showcase_profile/showcase_profile_viewmodel.dart';
 import 'package:appbox_kit_showcase_app/ui/widgets/common/showcase_tabs_shared/widgets.dart';
 
-/// Navigation-rail card: a [AppBoxKitNativeNavigationRail] bound to the
-/// viewmodel's rail index, beside the selected destination's label.
 class ShowcaseProfileRailCardWidget extends StatelessWidget {
   const ShowcaseProfileRailCardWidget({required this.viewModel, super.key});
 

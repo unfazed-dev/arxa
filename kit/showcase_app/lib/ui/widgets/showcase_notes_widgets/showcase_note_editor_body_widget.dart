@@ -42,16 +42,6 @@ import 'package:appbox_kit_showcase_app/enums/showcase_notes_enums/enums.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_note_editor/showcase_note_editor_viewmodel.dart';
 import 'package:appbox_kit_showcase_app/ui/widgets/showcase_notes_widgets/widgets.dart';
 
-/// Owns the body field's [TextEditingController] — the editor is a *document*
-/// (borderless multiline), not a capsule form field, so the kit's
-/// [AppBoxKitFieldTextField] bridge (which wraps [AppBoxKitNativeTextField]) is the wrong
-/// widget here. This leaf applies the bridge's *rationale* instead: the view
-/// owns the controller's lifecycle (create/seed/dispose for IME + cursor),
-/// the value mirror stays in the viewmodel (`ShowcaseNoteEditorViewModel.body`)
-/// and drives autosave. Not a "StatefulWidget form host" anti-pattern — there
-/// is no form/field state split from the VM; the controller is view plumbing
-/// for a document editor, the same way stacked's generated `$View` form mixin
-/// is stateful purely for controller disposal.
 class ShowcaseNoteEditorBodyWidget extends StatefulWidget {
   const ShowcaseNoteEditorBodyWidget({
     super.key,

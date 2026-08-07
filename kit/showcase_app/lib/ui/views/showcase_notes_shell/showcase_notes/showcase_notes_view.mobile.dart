@@ -139,11 +139,8 @@ class ShowcaseNotesViewMobile extends ViewModelWidget<ShowcaseNotesViewModel> {
     );
   }
 
-  /// The signed-in scroll view: grouped rounded sections mirroring iOS Notes'
-  /// Folders list (All Notes / user folders / Recently Deleted / admin).
-  /// AppBoxKitMotionScope establishes the choreography boundary — sections
-  /// below register with .wake(order: n) and rise in on the shared
-  /// spec's stagger ramp (spec-owned tokens; no local durations).
+  /// The signed-in scroll view: grouped sections that rise in on the shared
+  /// stagger ramp (spec-owned timing; no local durations).
   Widget _foldersScrollView(
     BuildContext context,
     ShowcaseNotesViewModel viewModel,
@@ -178,18 +175,8 @@ class ShowcaseNotesViewMobile extends ViewModelWidget<ShowcaseNotesViewModel> {
     );
   }
 
-  /// Build the sections (All Notes / user folders / Recently Deleted / admin)
-  /// as slivers that stagger in. Each section is a SliverToBoxAdapter holding a
-  /// [AppBoxKitListSection]; the stagger index counts sections, not rows, so the rhythm
-  /// reads as one rise per group. Data arrives as parameters from the
-  /// [AppBoxKitStreamBuilder] bindings — never re-read off the viewmodel here.
-  ///
-  /// The rise-in (`.wake()`) is applied to the [AppBoxKitListSection] BOX inside the
-  /// `SliverToBoxAdapter`, never to the sliver itself — `AppBoxKitWake` choreographs
-  /// box children only (it inserts box render-objects), so waking a
-  /// `SliverPadding` would hand the Viewport a non-sliver child and trip
-  /// "RenderViewport expected a RenderSliver". Waking the inner box preserves
-  /// the staggered rise-in while keeping the sliver protocol intact.
+  /// Builds the sections (All Notes / folders / Recently Deleted / admin) as
+  /// slivers that stagger in, one rise per group; data comes in as parameters.
   List<Widget> _foldersSlivers(
     BuildContext context,
     ShowcaseNotesViewModel viewModel,
@@ -237,14 +224,8 @@ class ShowcaseNotesViewMobile extends ViewModelWidget<ShowcaseNotesViewModel> {
           ],
         );
 
-    /// Wraps a [AppBoxKitListSection] box in the bottom scroll edge effect (ADR
-    /// 0010: content softens where it slides under the floating tab bar —
-    /// external to the scrollable, so the occlusion is explicit; no top edge,
-    /// the fixed app bar never underlaps this scrollable), then in a
-    /// staggered rise-in (`.wake`), then in the sliver padding that positions
-    /// it. Waking the box (not the sliver) is what keeps the viewport happy —
-    /// see the method doc. Timing/stagger come from the enclosing
-    /// [AppBoxKitMotionScope]'s spec, not local tokens.
+    /// Wraps a section box in the bottom scroll edge effect, a staggered
+    /// rise-in, and the sliver padding that positions it.
     SliverPadding staggeredSliver({
       required EdgeInsetsGeometry padding,
       required Widget section,

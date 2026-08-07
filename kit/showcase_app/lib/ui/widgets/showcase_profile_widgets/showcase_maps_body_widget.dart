@@ -40,9 +40,6 @@ import 'package:appbox_kit_maps/appbox_kit_maps.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_profile_shell/showcase_maps/showcase_maps_viewmodel.dart';
 
-/// Maps showcase body — the app bar, the backend label, and the
-/// [AppBoxKitMapView] backed by the viewmodel's provider (OpenStreetMap by
-/// default, Mapbox raster tiles when a public token is dart-defined).
 class ShowcaseMapsBodyWidget extends StatelessWidget {
   const ShowcaseMapsBodyWidget({required this.viewModel, super.key});
 

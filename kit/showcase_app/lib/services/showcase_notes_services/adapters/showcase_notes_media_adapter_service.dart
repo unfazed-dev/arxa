@@ -1,12 +1,9 @@
-/// The notes media adapter (app-layer). A thin bridge over the kit's
-/// framework-free media ports — the facade calls actions in and reads streams
-/// out, same as every app layer, but this one owns the device/hardware surface:
-/// camera, recorder, player, plus the app-specific derivations the kit
-/// deliberately stays out of (attachments directory, model mapping, "which memo
-/// is playing" tracking, "starting a recording stops playback" orchestration).
-/// Every hardware/IO op dispatches on the owner's AppBoxKitAction hub: a plugin
-/// or file-system failure surfaces as an error snackbar and collapses to the
-/// method's existing null/false contract instead of escaping uncaught.
+/// The notes media adapter (app-layer). The facade calls actions in and reads
+/// streams out, same as every app layer, but this one owns the device surface:
+/// camera, recorder, player, plus the app-side details the kit stays out of
+/// (attachments directory, "which memo is playing" tracking, and stopping
+/// playback when a recording starts). Every device op runs on the owner's
+/// action hub: a failure shows an error snackbar and falls back to null/false.
 ///
 /// This is the bridge to the device for note attachments. It takes photos with
 /// the camera or picks them from the gallery, records voice memos, plays them
@@ -111,12 +108,8 @@ class ShowcaseNotesMediaAdapterService with AppBoxKitActionOwner {
   final BehaviorSubject<AppBoxKitPlaybackState> _playerState =
       BehaviorSubject<AppBoxKitPlaybackState>.seeded(AppBoxKitPlaybackState.idle);
 
-  /// [5. Camera detection] The iOS Simulator has no camera hardware, and
-  /// capture throws when asked for the camera there. The kit's
-  /// [AppBoxKitMediaCaptureService.hasCamera] detects this (via the injected
-  /// `SIMULATOR_*` env vars) without a MethodChannel. ViewModels use this to
-  /// hide the "Take Photo" action so the demo stays testable end-to-end on
-  /// simulators.
+  /// [5. Camera detection] Whether the camera exists — false on the simulator,
+  /// where the UI hides the "Take Photo" action.
   bool get isCameraAvailable => _capture.hasCamera;
 
   // ── Streams ───────────────────────────────────────────────────────────
@@ -155,21 +148,15 @@ class ShowcaseNotesMediaAdapterService with AppBoxKitActionOwner {
     return dir;
   }
 
-  /// [4. Attachment files] Re-derives the absolute path from the stored file
-  /// name — the iOS app container path changes across reinstalls, so only the
-  /// name is persisted. Stays raw (no hub dispatch): it sits on the
-  /// per-attachment render path, where a snackbar per failed row would storm.
+  /// [4. Attachment files] Rebuilds the absolute path from the stored file name
+  /// — the app container path changes across reinstalls, so only the name is kept.
   Future<String> resolvePath(ShowcaseNoteAttachmentModel attachment) async {
     final dir = await _attachmentsDir();
     return '${dir.path}/${attachment.fileName}';
   }
 
-  /// [1. Pick or capture photo] Camera capture or library pick. The kit
-  /// returns a TEMP file — it is moved into the attachments dir or it would
-  /// vanish with the cache. Permission denial, cancellation and missing
-  /// hardware all collapse to null here (the UI already gates the camera via
-  /// [isCameraAvailable]); a plugin/IO throw collapses to null too, via the
-  /// AppBoxKitAction fallback, after an error snackbar.
+  /// [1. Pick or capture photo] Takes a photo or picks one from the gallery;
+  /// the file moves into the attachments dir. Returns null on cancel or failure.
   Future<ShowcaseNoteAttachmentModel?> pickPhoto({required bool fromCamera}) =>
       abxActionHub.send<ShowcaseNoteAttachmentModel?>(
         ShowcaseNotesMediaOp.pickPhoto.name,

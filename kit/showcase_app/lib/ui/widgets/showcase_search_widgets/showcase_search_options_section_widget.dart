@@ -16,8 +16,6 @@ import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_search_shell/showcase_search/showcase_search_viewmodel.dart';
 import 'package:appbox_kit_showcase_app/ui/widgets/common/showcase_tabs_shared/widgets.dart';
 
-/// "Open now" / "Outdoor seating" switch section for the search leaf.
-/// View-specific composite (wires [ShowcaseSearchViewModel]).
 class ShowcaseSearchOptionsSectionWidget extends StatelessWidget {
   const ShowcaseSearchOptionsSectionWidget({super.key, required this.viewModel});
 

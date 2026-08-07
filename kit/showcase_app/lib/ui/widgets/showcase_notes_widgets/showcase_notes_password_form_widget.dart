@@ -38,10 +38,6 @@ import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_auth/showcase_notes_auth_viewmodel.dart';
 import 'package:appbox_kit_showcase_app/ui/widgets/showcase_notes_widgets/widgets.dart';
 
-/// Password-mode credential form for the sign-in panel. View-specific composite
-/// (wires [ShowcaseNotesAuthViewModel]) — lives in the central
-/// `showcase_notes_widgets` home. The reusable pieces ([ShowcaseNotesAuthTextFieldWidget],
-/// [ShowcaseNotesFormErrorRowWidget]) come from the same barrel.
 class ShowcaseNotesPasswordFormWidget extends StatelessWidget {
   const ShowcaseNotesPasswordFormWidget({
     super.key,

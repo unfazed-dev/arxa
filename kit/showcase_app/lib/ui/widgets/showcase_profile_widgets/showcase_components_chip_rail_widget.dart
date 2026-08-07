@@ -19,8 +19,6 @@ library;
 import 'package:flutter/material.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 
-/// Snapping capability rail — [AppBoxKitChipCarousel] of [AppBoxKitChip]s, each
-/// toasting its label.
 class ShowcaseComponentsChipRailWidget extends StatelessWidget {
   const ShowcaseComponentsChipRailWidget({super.key});
 

@@ -39,8 +39,6 @@ import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/models
 import 'package:appbox_kit_showcase_app/ui/common/app_colors.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_note_editor/showcase_note_editor_viewmodel.dart';
 
-/// Horizontal strip of photo attachments; tap opens a fullscreen viewer,
-/// long-press removes.
 class ShowcaseNotePhotoStripWidget extends StatelessWidget {
   const ShowcaseNotePhotoStripWidget({
     super.key,

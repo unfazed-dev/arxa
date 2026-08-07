@@ -43,10 +43,6 @@ import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_n
 import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_create_account/showcase_notes_create_account_view.mobile.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_create_account/showcase_notes_create_account_viewmodel.dart';
 
-/// Create-account panel for the Notes seed backend. Not routed: the
-/// signed-out [ShowcaseNotesView] embeds it when `showCreateAccount` is set,
-/// and [onBackToSignIn] flips back to the sign-in panel — the transient view
-/// holds no navigation state (callback props only).
 class ShowcaseNotesCreateAccountView
     extends StackedView<ShowcaseNotesCreateAccountViewModel> {
   const ShowcaseNotesCreateAccountView(
@@ -55,9 +51,7 @@ class ShowcaseNotesCreateAccountView
   /// Owner-supplied swap back to the sign-in panel.
   final VoidCallback onBackToSignIn;
 
-  /// Streams-only house convention: the view never rebuilds off
-  /// `notifyListeners` (the viewmodel never calls it) — every live value is
-  /// bound with [AppBoxKitStreamBuilder] at the subtree that needs it.
+  /// Never rebuilds off `notifyListeners`; every live value binds a stream.
   @override
   bool get reactive => false;
 

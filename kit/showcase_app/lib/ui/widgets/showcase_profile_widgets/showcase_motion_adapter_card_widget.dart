@@ -22,10 +22,6 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:appbox_kit_motion/appbox_kit_motion.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 
-/// flutter_animate adapter demo: a plain `.animate()` chain whose timeline
-/// comes from the enclosing [AppBoxKitMotionScope] via [AppBoxKitMotionAdapter]. Must be
-/// placed under a scope — its own context is passed to
-/// `AppBoxKitMotionAdapter.of`.
 class ShowcaseMotionAdapterCardWidget extends StatelessWidget {
   const ShowcaseMotionAdapterCardWidget({super.key});
 

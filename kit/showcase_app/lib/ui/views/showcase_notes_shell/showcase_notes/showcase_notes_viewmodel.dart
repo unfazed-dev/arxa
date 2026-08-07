@@ -71,10 +71,8 @@ class ShowcaseNotesViewModel extends AppBoxKitViewModel {
 
   // ── Initial state ─────────────────────────────────────────────────────────
 
-  /// When signed out, the Notes tab shows the create-account panel instead of
-  /// the sign-in panel. Owner-held here (not in the transient views) and reset
-  /// whenever a session appears, so signing in — from either panel — always
-  /// swaps back cleanly.
+  /// When signed out, whether the panel shows create-account instead of
+  /// sign-in; reset whenever a session appears.
   final BehaviorSubject<bool> _showCreateAccount =
       BehaviorSubject<bool>.seeded(false);
   ValueStream<bool> get showCreateAccount$ => _showCreateAccount.stream;
@@ -91,12 +89,8 @@ class ShowcaseNotesViewModel extends AppBoxKitViewModel {
             : _service.overview$(session.user.id),
       );
 
-  /// Cross-owner folders + counts; emits non-null only while an admin session
-  /// is live, so the views gate the "All users (admin)" section on presence.
-  ///
-  /// DEMO ONLY — not a security boundary. The admin role comes from seeded
-  /// identity metadata on a fake local backend; real apps must enforce
-  /// authorization server-side, never via client-side gating like this.
+  /// Cross-owner folders and counts; non-null only during an admin session
+  /// (demo gating, not a security boundary — real apps enforce server-side).
   Stream<ShowcaseNotesAdminOverview?> get adminOverview$ =>
       _service.session$.switchMap(
         (session) => ShowcaseNotesFacadeService.isAdminSession(session)
@@ -140,10 +134,8 @@ class ShowcaseNotesViewModel extends AppBoxKitViewModel {
     if (name != null) await renameFolder(folder, name);
   }
 
-  /// Asks first — hand-written because the message interpolates the folder
-  /// name (the hub's confirm gate takes static strings; see `hub.on`).
-  /// On confirm the folder is deleted (its live notes move to Recently
-  /// Deleted — the facade owns that semantic).
+  /// Asks first (hand-written — the message interpolates the folder name);
+  /// on confirm the folder is deleted and its notes move to Recently Deleted.
   Future<void> confirmDeleteFolder(ShowcaseNoteFolderModel folder) async {
     final confirmed = await appBoxKitLocator<AppBoxKitNotificationService>()
         .confirm(

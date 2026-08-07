@@ -33,9 +33,6 @@ import 'package:appbox_kit_showcase_app/ui/views/showcase_search_shell/showcase_
 import 'package:appbox_kit_showcase_app/ui/views/showcase_search_shell/showcase_search/showcase_search_view.mobile.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_search_shell/showcase_search/showcase_search_viewmodel.dart';
 
-/// Search-tab showcase: [AppBoxKitNativeSearchBar], [AppBoxKitNativeSlider],
-/// [AppBoxKitNativeRangeSlider], [AppBoxKitNativeSwitch] — all state-driven so the native
-/// controls actually respond.
 class ShowcaseSearchView extends StackedView<ShowcaseSearchViewModel> {
   const ShowcaseSearchView({super.key});
 

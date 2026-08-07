@@ -37,9 +37,6 @@ import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_create_account/showcase_notes_create_account_viewmodel.dart';
 import 'package:appbox_kit_showcase_app/ui/widgets/showcase_notes_widgets/widgets.dart';
 
-/// Create-account form for the dedicated sign-up panel. View-specific composite
-/// (wires [ShowcaseNotesCreateAccountViewModel]); reusable [ShowcaseNotesAuthTextFieldWidget] +
-/// [ShowcaseNotesFormErrorRowWidget] come from the central `showcase_notes_widgets` barrel.
 class ShowcaseNotesCreateAccountFormWidget extends StatelessWidget {
   const ShowcaseNotesCreateAccountFormWidget({
     super.key,

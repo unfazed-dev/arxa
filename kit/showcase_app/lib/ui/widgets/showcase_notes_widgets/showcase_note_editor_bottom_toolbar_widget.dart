@@ -41,8 +41,6 @@ import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_note_editor/showcase_note_editor_viewmodel.dart';
 import 'package:appbox_kit_showcase_app/ui/widgets/showcase_notes_widgets/widgets.dart';
 
-/// The editor's bottom toolbar: camera/photo/mic actions, swapped for the
-/// recording row while a voice note is capturing.
 class ShowcaseNoteEditorBottomToolbarWidget extends StatelessWidget {
   const ShowcaseNoteEditorBottomToolbarWidget({
     super.key,

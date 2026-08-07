@@ -61,16 +61,11 @@ import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_n
 import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_folder/showcase_notes_folder_view.mobile.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_folder/showcase_notes_folder_viewmodel.dart';
 
-/// The notes-list screen for one scope — 'all', 'trash', or a folder id (see
-/// [ShowcaseNotesFolderViewModel.folderKey]). iOS Notes look: back + large title,
-/// search (hidden in trash), grouped sections with swipe actions, compose FAB.
 class ShowcaseNotesFolderView
     extends StackedView<ShowcaseNotesFolderViewModel> {
   const ShowcaseNotesFolderView({super.key});
 
-  /// Streams-only house convention: the view never rebuilds off
-  /// `notifyListeners` (the viewmodel never calls it) — every live value is
-  /// bound with [AppBoxKitStreamBuilder] at the subtree that needs it.
+  /// Never rebuilds off `notifyListeners`; every live value binds a stream.
   @override
   bool get reactive => false;
 

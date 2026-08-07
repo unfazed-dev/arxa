@@ -141,6 +141,19 @@ The viewmodel Commands section carries the sentence `// Commands decide when —
 
 **Inline comments:** `/// [N. Requirement name] One short sentence.` citing the frontmatter requirement; the code carries the rest. Comments support the code, never restate it. See `kit/showcase_app/lib/ui/views/showcase_notes_shell/showcase_note_editor/showcase_note_editor_viewmodel.dart` for the reference implementation.
 
+### Prose comment canon
+
+Every prose `///` block follows the language canon. Style exemplar: `kit/showcase_app/lib/ui/views/showcase_notes_shell/showcase_note_editor/showcase_note_editor_viewmodel.dart`.
+
+- **Plain language.** User-visible behavior, present tense, plain verbs: "Pins or unpins the note." / "Where an attachment's file lives." — never "Leverages the facade abstraction to facilitate mutations."
+- **Frontmatter paragraphs** (above `library;`): max 6 lines each.
+- **Class docs.** NONE for the primary class — the frontmatter speaks for it. A secondary class may carry one plain sentence.
+- **Member docs.** `/// [N. Requirement name] One plain sentence.` — max 2 lines, requirement citation first (citing the frontmatter requirement list).
+- **No API type names, framework talk, or jargon in prose.** Banned (gate-enforced): paradigm, leverage, utilize, facilitate, abstraction, boilerplate, wrapper, self-contained, PreferredSizeWidget, NestedRouter, IndexedStack, StatelessWidget, StatefulWidget, BuildContext, Scaffold.
+- **Technical refs** only in backticks and only when load-bearing: route paths (`/showcase/notes/note/:id`), flag/operator names (`take(1)`, `flushOnDispose`).
+- **Exempt:** requirement list lines, the relationships diagram, the inventory columns, the History line, and `//` code comments.
+- **Enforcement:** G13-language in arch_guard checks this mechanically; violations fail `appbox gate arch`.
+
 ### Kit wiring
 
 When a stub header declares `//   kits (builder wires): <names>`, wire each named kit's **real providers** via locator injection, per the kit's playbook (`kit/<name>/<name>_playbook.mdx`) and the providers + verification tiers in `config/kit-registry.json`. Never offer a `stub`-tier provider to users — that tier means unproven, and the advertise gate fails a shipped surface presenting one (dev fallback + flag only). Required credentials come from `config/credentials.catalog.json` (match `module: kit/<name>`), read from the environment / credential store at runtime, never hardcoded; name missing keys in the handoff notes.

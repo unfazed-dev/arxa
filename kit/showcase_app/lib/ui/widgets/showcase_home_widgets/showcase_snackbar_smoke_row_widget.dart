@@ -16,22 +16,6 @@ library;
 import 'package:flutter/material.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 
-/// Smoke-test rows for the kit's transient-feedback surface, routed through
-/// AppBoxKitNotificationService so Android renders the M3E snackbar (variant
-/// derived from kind, configs from setupAppBoxKitSnackbars) and iOS renders CNToast
-/// — no Material snackbar leaks on iOS.
-///
-/// Row 1: one notification per [AppBoxKitNotificationKind] (warning rides
-/// `position: center` to demo the kit-owned center pill overlay).
-///
-/// Row 2: the stacked-SnackbarService tiers. `actionLabel` is the ONLY thing
-/// that promotes iOS from CNToast to the stacked snackbar (CNToast is
-/// fire-and-forget and cannot host an action), so the Undo button shows the
-/// real `showCustomSnackBar` path on both platforms; Titled adds `title:`;
-/// Bottom pins to `AppBoxKitToastPosition.bottom`.
-/// AppBoxKitNativeIconButton so each button shape-morphs on press (Android M3E)
-/// and renders liquid glass on iOS 26 — matching every other kit icon
-/// button. The semantic tint (muted/good/danger/warn) flows through `color`.
 class ShowcaseSnackbarSmokeRowWidget extends StatelessWidget {
   const ShowcaseSnackbarSmokeRowWidget({super.key});
 

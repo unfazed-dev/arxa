@@ -17,8 +17,6 @@ import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_search_shell/showcase_search/showcase_search_viewmodel.dart';
 import 'package:appbox_kit_showcase_app/ui/widgets/common/showcase_tabs_shared/widgets.dart';
 
-/// Radius / price-range filter card for the search leaf. View-specific
-/// composite (wires [ShowcaseSearchViewModel]).
 class ShowcaseSearchFilterCardWidget extends StatelessWidget {
   const ShowcaseSearchFilterCardWidget({super.key, required this.viewModel});
 

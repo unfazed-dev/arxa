@@ -52,6 +52,13 @@
 //       and body-section separators in the locked order per file kind. Diagram
 //       geometry and requirement quality stay review rules. Barrel files,
 //       lib/enums/, lib/app/, and generated files are exempt.
+//   G13-language plain-language canon on prose doc comments in covered files:
+//       frontmatter paragraphs (the `///` block above `library;`) are capped at
+//       6 lines, member docs at 2 lines, a frontmatter file's class declarations
+//       carry no multi-line doc (the frontmatter IS the class doc), and banned
+//       jargon tokens are rejected case-insensitively outside backticked spans.
+//       Requirement lines (`N. [Name]`), the Relationships diagram, the
+//       inventory columns, and the History line are exempt zones.
 
 import 'dart:io';
 
@@ -153,6 +160,40 @@ const _g13LockedSections = <String, List<String>>{
 /// G13: section separator marker — `// ── Name ──…` (─ is U+2500, not ASCII `-`).
 final _g13SectionSepRe = RegExp(r'// ──\s*(\w[\w ]*?)\s*──');
 
+// G13-language: banned jargon tokens (checked lowercase, word-bounded).
+const _g13LangBanned = <String>[
+  'paradigm',
+  'leverage',
+  'utilize',
+  'facilitates',
+  'facilitate',
+  'abstraction',
+  'boilerplate',
+  'wrapper',
+  'self-contained',
+  'preferredsizewidget',
+  'nestedrouter',
+  'indexedstack',
+  'statelesswidget',
+  'statefulwidget',
+  'buildcontext',
+  'scaffold',
+];
+final _g13LangBannedRe = RegExp(
+    '\\b(${_g13LangBanned.map(RegExp.escape).join('|')})\\b',
+    caseSensitive: false);
+
+// G13-language: backticked spans hold code, not prose — stripped before the
+// token check.
+final _g13LangBacktickRe = RegExp(r'`[^`]*`');
+
+// G13-language: a requirement line (`N. [Name]`) — an exempt zone.
+final _g13LangReqLineRe = RegExp(r'^\s*///\s*\d+\.\s*\[');
+
+// G13-language: a member-doc requirement reference (`[N. Name] …`) — the tag
+// line carries the trace link, not prose; it doesn't count against the cap.
+final _g13LangReqRefRe = RegExp(r'^\s*///\s*\[\d+\.');
+
 /// G13: classify a covered file by its frontmatter kind, or null if not
 /// covered. Full-spine kinds (view, viewmodel, facade, adapter, repository,
 /// widget) need the complete spine; models need the light variant only.
@@ -215,6 +256,129 @@ List<double>? _g13DiagramCenters(List<String> doc) {
     }
   }
   return centers.length >= 2 ? centers : null;
+}
+
+/// G13-language: per-line exempt-zone flags for one `///` block. Exempt:
+/// requirement lines, the diagram (from `Relationships:` or a ```text fence
+/// to the closing fence), the inventory columns (same zone), and the History
+/// line itself. Zone state carries across lines but resets per block.
+List<bool> _g13LangExemptLines(List<String> block) {
+  final flags = <bool>[];
+  var zone = false;
+  for (final line in block) {
+    if (_g13LangReqLineRe.hasMatch(line) || _g13LangReqRefRe.hasMatch(line)) {
+      flags.add(true);
+    } else if (line.contains('Relationships:') || line.contains('```text')) {
+      zone = true;
+      flags.add(true);
+    } else if (line.contains('```')) {
+      zone = false;
+      flags.add(true);
+    } else if (line.contains('History:')) {
+      zone = false;
+      flags.add(true);
+    } else {
+      flags.add(zone);
+    }
+  }
+  return flags;
+}
+
+/// G13-language: run the plain-language canon over every `///` block in
+/// [src]. The block above `library;` (when present) is the frontmatter —
+/// paragraphs capped at 6 lines, no multi-line class docs below it; every
+/// other block is a member doc capped at 2 lines. Banned tokens are checked
+/// outside backticked spans and outside the exempt zones.
+void _g13LanguageCheck(
+    String src, String rel, List<ArchGuardFinding> violations) {
+  final lines = src.split('\n');
+
+  // Locate the frontmatter block (the contiguous `///` run above `library;`).
+  int? fmStart;
+  final libMatch = _libraryRe.firstMatch(src);
+  if (libMatch != null) {
+    final libLine = '\n'.allMatches(src.substring(0, libMatch.start)).length;
+    var i = libLine - 1;
+    while (i >= 0 && lines[i].trim().isEmpty) {
+      i--;
+    }
+    if (i >= 0 && lines[i].trimLeft().startsWith('///')) {
+      var s = i;
+      while (s > 0 && lines[s - 1].trimLeft().startsWith('///')) {
+        s--;
+      }
+      fmStart = s;
+    }
+  }
+
+  var i = 0;
+  while (i < lines.length) {
+    if (!lines[i].trimLeft().startsWith('///')) {
+      i++;
+      continue;
+    }
+    final start = i;
+    while (i < lines.length && lines[i].trimLeft().startsWith('///')) {
+      i++;
+    }
+    final block = lines.sublist(start, i);
+    final exempt = _g13LangExemptLines(block);
+    final isFrontmatter = fmStart != null && start == fmStart;
+
+    // Banned tokens (exempt zones and backticked spans skipped).
+    for (var j = 0; j < block.length; j++) {
+      if (exempt[j]) continue;
+      final prose = block[j].replaceAll(_g13LangBacktickRe, '');
+      final m = _g13LangBannedRe.firstMatch(prose);
+      if (m != null) {
+        violations.add(ArchGuardFinding('G13-language', '$rel:${start + j + 1}',
+            "banned token '${m.group(1)}' — doc comments use plain language; code/type names go in backticks"));
+      }
+    }
+
+    if (isFrontmatter) {
+      // Paragraph cap: runs of consecutive non-empty, non-exempt lines.
+      var run = 0;
+      var runStart = start;
+      for (var j = 0; j <= block.length; j++) {
+        final content = j < block.length
+            ? block[j].trimLeft().replaceFirst(RegExp(r'^///\s?'), '').trim()
+            : '';
+        if (j < block.length && content.isNotEmpty && !exempt[j]) {
+          if (run == 0) runStart = start + j;
+          run++;
+        } else {
+          if (run > 6) {
+            violations.add(ArchGuardFinding('G13-language', '$rel:${runStart + 1}',
+                'frontmatter paragraph capped at 6 lines (found $run) — plain language says it shorter'));
+          }
+          run = 0;
+        }
+      }
+    } else {
+      // Member doc cap: exempt lines (requirement references, zones) don't
+      // count — the cap is on prose lines.
+      final counted =
+          [for (var j = 0; j < block.length; j++) if (!exempt[j]) j].length;
+      if (counted > 2) {
+        violations.add(ArchGuardFinding('G13-language', '$rel:${start + 1}',
+            'member doc comment capped at 2 lines (found $counted) — plain language says it shorter'));
+      }
+      // In a frontmatter file the `///` block above `library;` IS the class
+      // doc — a multi-line doc above a class duplicates it (one line passes).
+      if (fmStart != null && block.length >= 2) {
+        var k = i;
+        while (k < lines.length && lines[k].trim().isEmpty) {
+          k++;
+        }
+        if (k < lines.length &&
+            RegExp(r'^\s*(?:abstract\s+)?class\s').hasMatch(lines[k])) {
+          violations.add(ArchGuardFinding('G13-language', '$rel:${start + 1}',
+              'class doc comment duplicating the frontmatter — the `///` block above `library;` is the class doc (a single sentence passes)'));
+        }
+      }
+    }
+  }
 }
 
 /// G9: classify a lib-relative path or import path into its service tier.
@@ -608,6 +772,9 @@ ArchGuardResult archGuard(String targetDir) {
           prevName = name;
         }
       }
+
+      // ── G13-language plain-language canon on doc comments ─────────────
+      _g13LanguageCheck(src, rel, violations);
     }
   }
 

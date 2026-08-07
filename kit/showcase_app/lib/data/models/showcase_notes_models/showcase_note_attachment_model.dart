@@ -1,13 +1,12 @@
 /// A model is a pure data class representing a domain entity — fields and
 /// serialization only, no behavior, no Flutter, no services.
 ///
-/// This is the data shape for one media attachment on a note — a photo or voice
-/// recording's file name and metadata, stored inside the note row's `attachments`
-/// jsonb column (nested collections are jsonb, never child tables). The binary
-/// file itself lives in the app-documents directory, where the media adapter owns
-/// it; the row carries only a relative file name (the iOS app container path
-/// changes across reinstalls) plus metadata, so rows sync to any backend while
-/// files stay local — the documented ceiling until a storage seam exists.
+/// This is the data shape for one media attachment on a note — a photo or
+/// voice recording's file name and metadata, stored inside the note row's
+/// `attachments` jsonb column. The binary file lives in the app-documents
+/// directory, owned by the media adapter; the row carries only a relative
+/// file name (the app container path changes across reinstalls), so rows
+/// sync to any backend while files stay local.
 ///
 /// History: git log --follow -- kit/showcase_app/lib/data/models/showcase_notes_models/showcase_note_attachment_model.dart
 library;

@@ -47,14 +47,9 @@ class ShowcaseStartupViewModel extends AppBoxKitViewModel {
 
   // ── Actions ──────────────────────────────────────────────────
 
-  /// [1. Boot][2. Boot failure] Everything that must happen before the app is
-  /// usable: boots appbox_kit_data (seed backend + snapshot persistence + fake
-  /// auth), then replaces to the tab shell — the canonical Stacked startup
-  /// flow. A hot one-shot on the VM's hub: the view calls this fire-and-forget
-  /// from a post-frame callback (safe by construction), and a boot failure
-  /// (bad seed fixture, backend init) surfaces as a snackbar on the startup
-  /// view instead of stranding the app on a spinner with an unhandled async
-  /// error.
+  /// [1. Boot][2. Boot failure]
+  /// Boots the kit's data (seed backend, persistence, fake auth), then swaps
+  /// to the tab shell; a boot failure shows a snackbar, not a stuck spinner.
   Future runStartupLogic() => abxActionHub.send<void>(
         ShowcaseStartupOp.boot.name,
         () async {

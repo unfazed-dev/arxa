@@ -21,10 +21,6 @@ import 'package:flutter/material.dart';
 import 'package:appbox_kit_motion/appbox_kit_motion.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 
-/// Drag-scrubbed choreography: a [AppBoxKitGestureDriver] maps the horizontal drag
-/// to the scope's 0→1 timeline (wake-choreographed chips + a scrubbing
-/// handle), and release settles with a [AppBoxKitSprings] preset — the same driver
-/// `AppBoxKitDrawer` consumes for custom open/close choreography.
 class ShowcaseMotionDragScrubCardWidget extends StatefulWidget {
   const ShowcaseMotionDragScrubCardWidget({required this.spec, super.key});
 

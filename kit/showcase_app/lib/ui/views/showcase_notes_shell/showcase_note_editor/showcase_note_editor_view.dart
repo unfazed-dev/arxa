@@ -72,9 +72,8 @@ import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_n
 class ShowcaseNoteEditorView extends StackedView<ShowcaseNoteEditorViewModel> {
   const ShowcaseNoteEditorView({super.key});
 
-  /// Streams-only house convention: the view never rebuilds off
-  /// `notifyListeners` (the viewmodel never calls it) — every live value is
-  /// bound with [AppBoxKitStreamBuilder] at the subtree that needs it.
+  /// Streams-only: the viewmodel never calls `notifyListeners` — live values
+  /// bind with [AppBoxKitStreamBuilder] at the subtree that needs it.
   @override
   bool get reactive => false;
 

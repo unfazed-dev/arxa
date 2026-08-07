@@ -19,9 +19,6 @@ library;
 
 import 'package:flutter/material.dart';
 
-/// Pinned search-bar sliver: sticks [child] under the app bar while the list
-/// scrolls beneath it. Min height keeps the bar tappable when collapsed; max
-/// height gives it breathing room at the top of the scroll.
 class ShowcaseNotesPinnedSearchBarWidget extends StatelessWidget {
   const ShowcaseNotesPinnedSearchBarWidget({required this.child, super.key});
 

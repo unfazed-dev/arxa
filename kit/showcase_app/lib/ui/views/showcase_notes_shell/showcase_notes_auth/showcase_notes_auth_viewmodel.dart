@@ -67,13 +67,8 @@ class ShowcaseNotesAuthViewModel extends AppBoxKitViewModel {
   /// AppBoxKitViewModel.dispose releases them.
   static final _ops = [for (final op in ShowcaseNotesAuthOp.values) op.name];
 
-  /// Every auth op is a hot-send command on the AppBoxKitActionOwner
-  /// hub: per-op busy state via the same actionState$ machinery (bound
-  /// via [busy$]), re-entry guard (a double-tap's handle observes the
-  /// in-flight run instead of re-running), errors surfaced inline as
-  /// [errorMessage$]. The methods below return the send's observation
-  /// handle — the op is already running when they return, so the views'
-  /// fire-and-forget callbacks can never drop it.
+  /// Sends every auth op through the shared hub — busy state, double-tap
+  /// guard, and inline errors come with it; the send returns after the op starts.
   @override
   AppBoxKitActionHub createHub() => AppBoxKitActionHub(
         owner: this,
@@ -115,9 +110,8 @@ class ShowcaseNotesAuthViewModel extends AppBoxKitViewModel {
   final BehaviorSubject<bool> _otpRequested = BehaviorSubject<bool>.seeded(false);
   ValueStream<bool> get otpRequested$ => _otpRequested.stream;
 
-  /// Inline form error (seeded null = none). [AppBoxKitAuthException] shows its
-  /// message, anything unexpected gets the generic one — set from the
-  /// hub's onError tap, never a snackbar.
+  /// Inline form error (seeded null = none): auth errors show their message,
+  /// anything else gets the generic one.
   final BehaviorSubject<String?> _errorMessage =
       BehaviorSubject<String?>.seeded(null);
   ValueStream<String?> get errorMessage$ => _errorMessage.stream;

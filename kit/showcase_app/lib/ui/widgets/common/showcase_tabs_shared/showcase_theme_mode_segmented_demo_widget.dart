@@ -22,12 +22,6 @@ library;
 import 'package:flutter/material.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 
-/// Drives [AppBoxKitThemeService]'s theme mode via a native segmented control and
-/// proves the kit theme is live: the swatch reads the *active*
-/// `Theme.of(context).colorScheme` (not static `AppBoxKitColors`), so it repaints the
-/// instant a segment is tapped — `main.dart` rebuilds `MaterialApp` on
-/// `themeMode$`. `ThemeMode.values` is `[system, light, dark]`, so the segment
-/// index maps 1:1 to the mode.
 class ShowcaseThemeModeSegmentedDemoWidget extends StatelessWidget {
   const ShowcaseThemeModeSegmentedDemoWidget({super.key});
 

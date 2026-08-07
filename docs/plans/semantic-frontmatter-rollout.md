@@ -60,6 +60,29 @@ support the code, never restate it.
   / `commands (CMD)` — numbered items, one kind per column, aligned; numbers
   match the diagram ranges.
 
+## Plain-language canon (every prose `///` block, measured from the pilot)
+
+The pilot VM is the measuring stick; these numbers are taken from it.
+
+- **Frontmatter paragraphs** (intro, plain paragraph): ≤ 6 comment lines each.
+- **Class doc comments: none.** The frontmatter speaks for the class — a
+  class-level `///` block repeating it is a violation. (One plain sentence
+  allowed for a secondary class in the same file.)
+- **Member docs**: `/// [N. Requirement name] One plain sentence.` — ≤ 2
+  lines, the citation first.
+- **Vocabulary**: user-visible behavior in plain present-tense verbs ("Pins
+  or unpins the note", "Where an attachment's file lives"). No API type
+  names, no framework talk, no jargon in prose. Technical refs only in
+  backticks and only when load-bearing (route paths, flag/operator names
+  like `take(1)`).
+- **Banned-token seed list** (gate-enforced, extend as found): paradigm,
+  leverage, utilize, facilitate(s), abstraction, boilerplate, wrapper,
+  self-contained — plus Flutter/stacked API symbols named in prose:
+  PreferredSizeWidget, NestedRouter, IndexedStack, StatelessWidget,
+  StatefulWidget, BuildContext, Scaffold, PreferredSizeWidget.
+- **Exempt zones**: requirement lines, the ```text diagram, the inventory
+  columns, the History line, `//` code comments, and backticked spans.
+
 ## Coverage (blast radius)
 
 - **Full spine**: views, viewmodels, facades, adapters, repositories, widgets.
@@ -78,12 +101,19 @@ support the code, never restate it.
    one bullet in `skills/appbox-builder/SKILL.md`; reference section in
    `kit/showcase_app/PLAYBOOK.md`.
 4. **Showcase sweep** — all remaining views/VMs/services/widgets in
-   `kit/showcase_app/lib`, fanned out to subagents per shell.
+   `kit/showcase_app/lib`, fanned out to subagents per shell. The prose sweep
+   (G13-language violations) rides along in the same pass — one sweep, not
+   two.
 5. **G13 light gate** — `appboxd/lib/arch_guard.dart` + tests. Mechanical
    checks ONLY: frontmatter block + `library;` present; the five spine parts
    in order; requirement lines match `N. [Name]( — story-ids)?`; section
    separators present in the locked order for the file kind. Diagram geometry
    stays a review rule. Land after the sweep so the gate is born green.
+   **G13-language (lands first, drives the prose sweep):** the plain-language
+   canon above, checked mechanically — paragraph/member-doc line caps,
+   no class doc above a frontmatter-covered class, banned tokens outside
+   backticks and exempt zones. Run against covered dirs to LIST violations;
+   the sweep fixes what it reports.
 6. **Scaffolder** — `skills/appbox-scaffolder` templates emit the structure
    for new apps.
 

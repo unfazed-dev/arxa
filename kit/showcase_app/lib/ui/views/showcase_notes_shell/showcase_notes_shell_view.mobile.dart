@@ -10,8 +10,8 @@
 ///
 /// Requirements:
 /// 1. [Nested routing]
-/// The mobile variant hosts a NestedRouter; tablet and desktop are placeholder
-/// surfaces.
+/// The mobile variant keeps its own navigation stack; tablet and desktop are
+/// placeholder surfaces.
 ///
 /// Relationships:
 ///

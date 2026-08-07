@@ -3,8 +3,8 @@
 ///
 /// This is the user interface for the chrome every widget-gallery tab shares —
 /// the 'Kit Showcase' app bar (search shortcut + overflow menu) and the compose
-/// floating-action-button menu. Each gallery shell wraps its nested router in
-/// this widget so the tab is a self-contained chrome Scaffold.
+/// floating-action-button menu. Each gallery shell puts its nested router
+/// inside this widget so the tab owns its own chrome.
 ///
 /// Requirements:
 /// 1. [Gallery chrome] — profile-and-gallery-demos.gallery.browse-the-components-gallery
@@ -26,16 +26,6 @@ import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 
 import 'package:appbox_kit_showcase_app/enums/showcase_application_enums/enums.dart';
 
-/// The chrome every widget-gallery tab shares: the 'Kit Showcase' app bar
-/// (search shortcut + overflow menu) and the compose [AppBoxKitNativeFabMenu],
-/// built from the reusable [AppBoxKitNativeAppBar] (a `PreferredSizeWidget`, so it
-/// slots straight into `Scaffold.appBar` with no wrapper). Notes renders its
-/// own per-view `AppBoxKitNativeAppBar`s in that same slot (compact nav bar, leading
-/// back via `AppBoxKitGlyphs.back`, compose [AppBoxKitNativeFabMenu]) instead of this chrome.
-///
-/// Each gallery shell wraps its `NestedRouter` in this so the tab is a
-/// self-contained chrome Scaffold, created once on first visit and kept
-/// mounted by the IndexedStack — the paradigm the host shells follow.
 class ShowcaseGalleryChromeWidget extends StatelessWidget {
   const ShowcaseGalleryChromeWidget({required this.child, super.key});
   final Widget child;

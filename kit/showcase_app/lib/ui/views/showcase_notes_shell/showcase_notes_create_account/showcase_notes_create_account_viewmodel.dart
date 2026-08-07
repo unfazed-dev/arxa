@@ -66,9 +66,8 @@ class ShowcaseNotesCreateAccountViewModel extends AppBoxKitViewModel {
   /// buttons and show the inline spinner while sign-up runs.
   ValueStream<AppBoxKitActionState> get signUpState$ => actionState$(ShowcaseNotesAuthOp.signUp.name);
 
-  /// Inline form error (seeded null = none). [AppBoxKitAuthException] shows its
-  /// message, anything unexpected gets the generic one — set from the
-  /// command's onError tap, never a snackbar.
+  /// Inline form error (seeded null = none): auth errors show their message,
+  /// anything else gets the generic one.
   final BehaviorSubject<String?> _errorMessage =
       BehaviorSubject<String?>.seeded(null);
   ValueStream<String?> get errorMessage$ => _errorMessage.stream;
@@ -76,10 +75,8 @@ class ShowcaseNotesCreateAccountViewModel extends AppBoxKitViewModel {
   // ── Commands ─────────────────────────────────────────
   // Commands decide when — and whether — Actions run.
 
-  /// [1. Create account] Same hot-send command as the auth viewmodel: per-op
-  /// busy state (bound via [signUpState$]), re-entry guard (a double-tap's
-  /// handle observes the in-flight run), [AppBoxKitAuthException] surfaced
-  /// inline as [errorMessage$].
+  /// [1. Create account] Hot-send sign-up: per-op busy state, double-tap
+  /// guard, and inline errors via [errorMessage$].
   late final _signUp = abxActionHub.on<(String, String), void>(
     ShowcaseNotesAuthOp.signUp.name,
     (p) => auth.signUpWithEmailPassword(email: p.$1, password: p.$2),

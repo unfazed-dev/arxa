@@ -34,10 +34,6 @@ import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/models
 import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes/showcase_notes_viewmodel.dart';
 import 'package:appbox_kit_showcase_app/ui/widgets/showcase_notes_widgets/widgets.dart';
 
-/// A folder row: swipe-to-delete (confirmed), long-press-to-rename, tap to
-/// open. `confirmDismiss` always returns false — the section rebuilds off
-/// [ShowcaseNotesViewModel.overview$] once the mutation lands, so the
-/// Dismissible never needs to remove the row itself.
 class ShowcaseNotesFolderRowWidget extends StatelessWidget {
   const ShowcaseNotesFolderRowWidget({
     super.key,

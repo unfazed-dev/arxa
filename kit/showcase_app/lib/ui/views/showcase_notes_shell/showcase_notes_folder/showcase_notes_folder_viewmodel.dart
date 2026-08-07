@@ -124,10 +124,8 @@ class ShowcaseNotesFolderViewModel extends AppBoxKitViewModel {
     }).startWith('Notes');
   }
 
-  /// [1. Browse notes] Search-filtered, sectioned groups. Search filters the
-  /// already-streamed scope — no second stream needed
-  /// (ShowcaseNotesFacadeService.search$ exists for facade callers; here the
-  /// notes are in hand).
+  /// [1. Browse notes] Search-filtered, sectioned groups — the search runs on
+  /// the already-streamed notes, no second fetch.
   Stream<List<ShowcaseNoteGroup>> get groups$ => Rx.combineLatest2(
         notes$,
         query$,
@@ -212,10 +210,8 @@ class ShowcaseNotesFolderViewModel extends AppBoxKitViewModel {
   Future<void> confirmDeletePermanently(ShowcaseNoteModel note) =>
       _confirmDeletePermanently.send(note);
 
-  /// [2. Create a note] Creates a note and returns its id for the caller to
-  /// navigate to, or `null` if there's no owner / no folder to place it in.
-  /// From 'all' or 'trash' the first user folder is the compose target (there
-  /// is no natural folder to write into there).
+  /// [2. Create a note] Creates a note and returns its id for navigation
+  /// (null without an owner); outside a folder the first user folder receives it.
   Future<String?> compose() async {
     final owner = _service.currentSession?.user.id;
     if (owner == null) return null;

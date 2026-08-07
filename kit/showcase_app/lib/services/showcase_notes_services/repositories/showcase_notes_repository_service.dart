@@ -142,11 +142,8 @@ class ShowcaseNotesRepositoryService {
   /// Removes the folder by id (cascade is facade work).
   Future<void> deleteFolder(String id) => _folders.delete(id);
 
-  /// [5. Move a note into a folder][8. Patch writes] Narrow writes for existing
-  /// rows: only the columns that differ between [original] and [patched] hit
-  /// storage, so concurrent edits to other columns (another surface, another
-  /// device) survive. Default for every mutation of an existing row; `upsert`
-  /// is for creates.
+  /// [5. Move a note into a folder][8. Patch writes] Writes only the columns
+  /// that changed, so concurrent edits to other columns survive.
   Future<ShowcaseNoteModel> patchNote(ShowcaseNoteModel original, ShowcaseNoteModel patched) =>
       _notes.patch(original, patched);
 

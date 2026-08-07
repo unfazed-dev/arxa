@@ -54,19 +54,6 @@ import 'package:appbox_kit_showcase_app/ui/widgets/showcase_profile_widgets/widg
 
 import 'package:appbox_kit_showcase_app/ui/views/showcase_profile_shell/showcase_motion/showcase_motion_viewmodel.dart';
 
-/// Motion showcase — every appbox_kit_motion feature on one pushed surface:
-///
-/// * **Route-driven wake**: the whole screen sits under a [AppBoxKitMotionScope]
-///   with no explicit driver, so the route's push animation *is* the
-///   timeline — content wakes as the page arrives, and the iOS swipe-back
-///   gesture scrubs the set-down in reverse.
-/// * **Spec presets + master switch**: the segmented control swaps
-///   [AppBoxKitMotionSpec] presets; the switch flips `enabled` (everything renders
-///   settled when off — same behavior reduce-motion triggers automatically).
-/// * **Manual replay**: a nested scope with its own controller driver,
-///   replayable on demand.
-/// * **flutter_animate adapter**: [AppBoxKitMotionAdapter] hands the scope's
-///   timeline to a plain `.animate()` chain.
 class ShowcaseMotionViewMobile
     extends ViewModelWidget<ShowcaseMotionViewModel> {
   const ShowcaseMotionViewMobile({super.key});

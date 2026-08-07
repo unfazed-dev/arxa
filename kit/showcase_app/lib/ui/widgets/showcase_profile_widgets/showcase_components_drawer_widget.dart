@@ -19,8 +19,6 @@ library;
 import 'package:flutter/material.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 
-/// glassPeek drawer — stock Drawer machinery (edge-swipe, drag-close,
-/// scrim) with the frosted peek skin; menu rows are AppBoxKitListTiles.
 class ShowcaseComponentsDrawerWidget extends StatelessWidget {
   const ShowcaseComponentsDrawerWidget({super.key});
 

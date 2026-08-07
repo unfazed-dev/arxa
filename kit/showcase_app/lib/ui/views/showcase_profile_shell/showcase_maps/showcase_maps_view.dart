@@ -46,9 +46,6 @@ import 'package:appbox_kit_showcase_app/ui/views/showcase_profile_shell/showcase
 import 'package:appbox_kit_showcase_app/ui/views/showcase_profile_shell/showcase_maps/showcase_maps_view.mobile.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_profile_shell/showcase_maps/showcase_maps_viewmodel.dart';
 
-/// appbox_kit_maps showcase — the plugin-neutral AppBoxKitMapView on
-/// OpenStreetMap (no key), flipping to Mapbox raster tiles when
-/// `--dart-define=MAPBOX_PUBLIC_TOKEN` is provided.
 class ShowcaseMapsView extends StackedView<ShowcaseMapsViewModel> {
   const ShowcaseMapsView({super.key});
 

@@ -5,7 +5,7 @@
 ///
 /// This is the user interface for the overlays demo — a card whose buttons
 /// show a native dialog, a frosted sheet, a center toast, and open the host
-/// scaffold's drawer.
+/// shell's drawer.
 ///
 /// Requirements:
 /// 1. [Dialog and sheet] — browse-the-components-gallery
@@ -13,7 +13,7 @@
 /// 2. [Center toast] — browse-the-components-gallery
 /// A center-positioned toast through the notification service.
 /// 3. [Drawer trigger] — browse-the-components-gallery
-/// A button opens the host scaffold's drawer.
+/// A button opens the host shell's drawer.
 ///
 /// Relationships: a self-contained presentational widget — no viewmodel
 /// binding; the overlays are imperative kit calls on the root navigator.
@@ -26,8 +26,6 @@ import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 import 'package:appbox_kit_showcase_app/enums/showcase_profile_enums/enums.dart';
 import 'package:appbox_kit_showcase_app/ui/widgets/common/showcase_tabs_shared/widgets.dart';
 
-/// Overlays card: native dialog, frosted sheet, center toast, and a button
-/// that opens the host Scaffold's drawer.
 class ShowcaseComponentsOverlaysCardWidget extends StatelessWidget {
   const ShowcaseComponentsOverlaysCardWidget({super.key});
 

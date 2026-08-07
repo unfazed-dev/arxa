@@ -20,8 +20,6 @@ import 'package:flutter/material.dart';
 import 'package:appbox_kit_motion/appbox_kit_motion.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 
-/// Nested scope with an explicit controller driver — wake/set-down replayed
-/// on demand, independent of the route animation above it.
 class ShowcaseMotionManualReplayCardWidget extends StatefulWidget {
   const ShowcaseMotionManualReplayCardWidget({required this.spec, super.key});
 

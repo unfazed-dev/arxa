@@ -36,8 +36,6 @@ import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 import 'package:appbox_kit_showcase_app/enums/showcase_profile_enums/enums.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_profile_shell/showcase_motion/showcase_motion_viewmodel.dart';
 
-/// Spec presets segmented control plus the motion master switch, bound to
-/// the viewmodel's preset/enabled state.
 class ShowcaseMotionSpecControlsWidget extends StatelessWidget {
   const ShowcaseMotionSpecControlsWidget({required this.viewModel, super.key});
 

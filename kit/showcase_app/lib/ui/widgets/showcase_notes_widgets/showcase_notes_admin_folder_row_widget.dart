@@ -22,10 +22,6 @@ import 'package:flutter/material.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/showcase_note_folder_model.dart';
 
-/// Admin-section row: folder name + owner id subtitle + live count. Read-only
-/// by design — folder detail streams are owner-scoped, so navigating into
-/// another user's folder would show an empty list and read as a bug. The
-/// section demonstrates role-gated *visibility*, nothing more.
 class ShowcaseNotesAdminFolderRowWidget extends StatelessWidget {
   const ShowcaseNotesAdminFolderRowWidget({
     super.key,

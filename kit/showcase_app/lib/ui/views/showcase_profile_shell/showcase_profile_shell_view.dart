@@ -5,10 +5,10 @@
 ///
 /// This is the user interface for the profile tab's shell — the container
 /// that hosts the profile tab's nested router inside the gallery chrome and
-/// routes it to the right form-factor variant. The mobile variant wraps a
-/// NestedRouter in the gallery chrome; the tablet and desktop variants are
-/// stubs. The viewmodel is an empty placeholder (the shell only routes),
-/// kept to satisfy the showcase's five-file surface pattern.
+/// routes it to the right form-factor variant. The mobile variant wraps the
+/// tab's own navigation stack in the gallery chrome; the tablet and desktop
+/// variants are stubs. The viewmodel is an empty placeholder (the shell only
+/// routes), kept to satisfy the showcase's five-file surface pattern.
 ///
 /// Requirements:
 /// 1. [Profile tab host] — view-the-profile-surface

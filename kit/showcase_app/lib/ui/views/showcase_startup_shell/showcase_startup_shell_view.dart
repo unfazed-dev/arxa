@@ -35,9 +35,6 @@ import 'package:appbox_kit_showcase_app/ui/views/showcase_startup_shell/showcase
 import 'package:appbox_kit_showcase_app/ui/views/showcase_startup_shell/showcase_startup_shell_view.mobile.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_startup_shell/showcase_startup_shell_viewmodel.dart';
 
-/// Startup shell — router-outlet host for the `showcase_startup` leaf, same
-/// shell+leaf pattern as `showcase_home_shell`. No chrome of its own: the
-/// leaf (boot logic + loading UI) renders through the [NestedRouter].
 class ShowcaseStartupShellView extends StackedView<ShowcaseStartupShellViewModel> {
   const ShowcaseStartupShellView({super.key});
 

@@ -1,5 +1,5 @@
 // arch_guard test — verifies the Dart port matches arch_guard.py's behavior.
-// One positive (clean target passes) plus one negative per rule (G0–G12).
+// One positive (clean target passes) plus one negative per rule (G0–G13).
 
 import 'dart:io';
 
@@ -809,6 +809,164 @@ void main() {
           r.violations.where(
               (v) => v.rule == 'G13' && v.msg.contains('section separator')),
           isEmpty);
+    });
+  });
+
+  group('G13-language plain-language canon', () {
+    // Conformant frontmatter shared by the fixtures below.
+    const fm = '/// The test viewmodel. Actions in, streams out.\n'
+        '///\n'
+        '/// This is the business logic for testing. It manages state.\n'
+        '///\n'
+        '/// Requirements:\n'
+        '/// 1. [Load] — story-1\n'
+        '/// The thing is loaded on init.\n'
+        '///\n'
+        '/// History: git log --follow -- lib/ui/test_viewmodel.dart\n'
+        'library;\n'
+        "import 'package:stacked/stacked.dart';\n";
+
+    test('the canonical pilot viewmodel passes clean', () {
+      final pilot = File(
+          '../kit/showcase_app/lib/ui/views/showcase_notes_shell/showcase_note_editor/showcase_note_editor_viewmodel.dart');
+      _file(tmp, 'lib/ui/showcase_note_editor_viewmodel.dart',
+          pilot.readAsStringSync());
+      final r = archGuard(tmp.path);
+      expect(r.violations.where((v) => v.rule == 'G13-language'), isEmpty,
+          reason: r.violations
+              .map((v) => '${v.rule} ${v.file}: ${v.msg}')
+              .join('\n'));
+    });
+
+    test('a 10-line jargon class doc is a violation', () {
+      _file(tmp, 'lib/ui/test_viewmodel.dart',
+          '$fm' '/// This viewmodel leverages a self-contained paradigm where the\n'
+          '/// PreferredSizeWidget and NestedRouter facilitate a wrapper\n'
+          '/// abstraction over the IndexedStack. The boilerplate utilizes\n'
+          '/// a StatelessWidget and StatefulWidget with BuildContext to\n'
+          '/// render the Scaffold. This abstraction facilitates composition\n'
+          '/// across the shell. The wrapper leverages the paradigm to\n'
+          '/// reduce boilerplate further. The IndexedStack maintains state\n'
+          '/// across tabs without rebuilding. The NestedRouter handles\n'
+          '/// deep links. It is fully self-contained and easy to reason\n'
+          '/// about.\n'
+          'class TestViewModel extends BaseViewModel {}\n');
+      final r = archGuard(tmp.path);
+      final lang = r.violations.where((v) => v.rule == 'G13-language').toList();
+      expect(lang, isNotEmpty);
+      expect(lang.any((v) => v.msg.contains('capped at 2 lines')), isTrue);
+      expect(lang.any((v) => v.msg.contains('class doc comment')), isTrue);
+      expect(lang.any((v) => v.msg.contains('banned token')), isTrue);
+    });
+
+    test('a 3-line member doc is a violation', () {
+      _file(tmp, 'lib/ui/test_viewmodel.dart',
+          '$fm' 'class TestViewModel extends BaseViewModel {\n'
+          '  /// The name, filled in once on load.\n'
+          '  /// Empty while loading. Reset when\n'
+          '  /// the thing changes.\n'
+          '  String name = \'\';\n'
+          '}\n');
+      final r = archGuard(tmp.path);
+      expect(
+          r.violations.any((v) =>
+              v.rule == 'G13-language' && v.msg.contains('capped at 2 lines')),
+          isTrue);
+    });
+
+    test('a 2-line member doc passes', () {
+      _file(tmp, 'lib/ui/test_viewmodel.dart',
+          '$fm' 'class TestViewModel extends BaseViewModel {\n'
+          '  /// The name, filled in once on load.\n'
+          '  /// Empty while loading.\n'
+          '  String name = \'\';\n'
+          '}\n');
+      final r = archGuard(tmp.path);
+      expect(r.violations.where((v) => v.rule == 'G13-language'), isEmpty);
+    });
+
+    test('a banned token inside backticks passes; outside backticks fails', () {
+      _file(tmp, 'lib/ui/backtick_viewmodel.dart',
+          '$fm' 'class BacktickViewModel extends BaseViewModel {\n'
+          '  /// Rendered inside an `IndexedStack`.\n'
+          '  int tab = 0;\n'
+          '}\n');
+      _file(tmp, 'lib/ui/plain_viewmodel.dart',
+          '$fm' 'class PlainViewModel extends BaseViewModel {\n'
+          '  /// Rendered inside an IndexedStack.\n'
+          '  int tab = 0;\n'
+          '}\n');
+      final r = archGuard(tmp.path);
+      expect(
+          r.violations.any((v) =>
+              v.rule == 'G13-language' &&
+              v.file.startsWith('ui/backtick_viewmodel.dart')),
+          isFalse);
+      expect(
+          r.violations.any((v) =>
+              v.rule == 'G13-language' &&
+              v.file.startsWith('ui/plain_viewmodel.dart') &&
+              v.msg.contains('IndexedStack')),
+          isTrue);
+    });
+
+    test('requirement lines, diagram, inventory, and History are exempt', () {
+      _file(tmp, 'lib/ui/test_viewmodel.dart',
+          '/// The test viewmodel. Actions in, streams out.\n'
+          '///\n'
+          '/// This is the business logic for testing. It manages state.\n'
+          '///\n'
+          '/// Requirements:\n'
+          '/// 1. [Load] — leverage the paradigm\n'
+          '/// The thing is loaded on init.\n'
+          '///\n'
+          '/// Relationships:\n'
+          '///\n'
+          '///   ┌───────────────────┐\n'
+          '///   │ view — wrapper    │\n'
+          '///   └───────────────────┘\n'
+          '///   paradigm leverage utilize\n'
+          '///\n'
+          '///  streams (STRM)   actions (ACT)\n'
+          '///    1. note\$         1. wrapper\n'
+          '///\n'
+          '/// History: git log --follow -- utilize facilitate boilerplate\n'
+          'library;\n'
+          "import 'package:stacked/stacked.dart';\n"
+          'class TestViewModel extends BaseViewModel {}\n');
+      final r = archGuard(tmp.path);
+      expect(r.violations.where((v) => v.rule == 'G13-language'), isEmpty,
+          reason: r.violations
+              .map((v) => '${v.rule} ${v.file}: ${v.msg}')
+              .join('\n'));
+    });
+
+    test('a frontmatter paragraph over 6 lines is a violation', () {
+      _file(tmp, 'lib/ui/test_viewmodel.dart',
+          '/// The test viewmodel. Actions in, streams out — one.\n'
+          '/// two.\n'
+          '/// three.\n'
+          '/// four.\n'
+          '/// five.\n'
+          '/// six.\n'
+          '/// seven.\n'
+          '///\n'
+          '/// This is the business logic for testing. It manages state.\n'
+          '///\n'
+          '/// Requirements:\n'
+          '/// 1. [Load] — story-1\n'
+          '/// The thing is loaded on init.\n'
+          '///\n'
+          '/// History: git log --follow -- lib/ui/test_viewmodel.dart\n'
+          'library;\n'
+          "import 'package:stacked/stacked.dart';\n"
+          'class TestViewModel extends BaseViewModel {}\n');
+      final r = archGuard(tmp.path);
+      expect(
+          r.violations.any((v) =>
+              v.rule == 'G13-language' &&
+              v.msg.contains('frontmatter paragraph capped at 6 lines')),
+          isTrue);
     });
   });
 

@@ -3,12 +3,12 @@
 /// imperative kit calls. A widget holds no business logic; the view that
 /// places it owns the data.
 ///
-/// This is the user interface for a horizontal inset — a thin padding wrapper
-/// that gives full-bleed ListView children their 16dp side margins.
+/// This is the user interface for a horizontal inset — thin padding that
+/// gives full-bleed ListView children their 16dp side margins.
 ///
 /// Requirements:
 /// 1. [Side inset]
-/// A horizontal padding wrapper for full-bleed list children.
+/// Horizontal padding for full-bleed list children.
 ///
 /// Relationships: a self-contained presentational widget — no viewmodel
 /// binding; a pure padding wrapper.
@@ -19,8 +19,6 @@ library;
 import 'package:flutter/material.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 
-/// Horizontal inset for full-bleed ListView children (the carousel and the
-/// list section carry their own 16dp margins).
 class ShowcaseComponentsInsetWidget extends StatelessWidget {
   const ShowcaseComponentsInsetWidget({required this.child, super.key});
 

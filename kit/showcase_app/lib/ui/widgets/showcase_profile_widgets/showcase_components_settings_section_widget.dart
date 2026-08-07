@@ -19,8 +19,6 @@ library;
 import 'package:flutter/material.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 
-/// Settings-style grouped list — [AppBoxKitListSection] of [AppBoxKitListTile]s, each
-/// toasting its title.
 class ShowcaseComponentsSettingsSectionWidget extends StatelessWidget {
   const ShowcaseComponentsSettingsSectionWidget({super.key});
 

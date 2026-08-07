@@ -49,16 +49,11 @@ import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_n
 import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes/showcase_notes_view.mobile.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes/showcase_notes_viewmodel.dart';
 
-/// The "Folders" screen — Notes tab root. Signed-out state embeds
-/// [NotesAuthPanel] directly (seamless, no navigation); signed-in state is
-/// grouped rounded sections mirroring iOS Notes' Folders list
-/// (All Notes / user folders / Recently Deleted).
 class ShowcaseNotesView extends StackedView<ShowcaseNotesViewModel> {
   const ShowcaseNotesView({super.key});
 
-  /// Streams-only house convention: the view never rebuilds off
-  /// `notifyListeners` (the viewmodel never calls it) — every live value is
-  /// bound with [AppBoxKitStreamBuilder] at the subtree that needs it.
+  /// Streams-only: the viewmodel never calls `notifyListeners` — live values
+  /// bind with [AppBoxKitStreamBuilder] at the subtree that needs it.
   @override
   bool get reactive => false;
 
