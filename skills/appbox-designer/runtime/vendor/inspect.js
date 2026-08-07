@@ -61,10 +61,10 @@
   const SKIP_TAGS = new Set(['SCRIPT','STYLE','BODY','HTML']);
 
   // Infer identity for elements that may lack data-el. Identified elements keep
-  // their data-el name; unannotated ones get a tag-heuristic role + a snippet of
-  // text content, tagged "inferred" so the pane and overlay can dim them.
+  // their data-el name; unannotated ones get the tag name as a structural label,
+  // tagged "inferred" so the pane and overlay can dim them.
   const synthesize = (el) => ({
-    name: el.dataset.el || (el.textContent || '').trim().slice(0, 24) || el.tagName.toLowerCase(),
+    name: el.dataset.el || el.tagName.toLowerCase(),
     role: el.dataset.inspectRole || ROLE_BY_TAG[el.tagName] || 'group',
     inferred: el.dataset.el ? '' : '1',
   });
