@@ -10,6 +10,20 @@
 /// 1. [Shell entry]
 /// Provides a viewmodel for the notes shell route.
 ///
+/// Relationships:
+///
+///   ┌──────────────────────────┐
+///   │     notes shell view     │
+///   └──────────────────────────┘
+///   ┌──────────────────────────┐
+///   │  notes shell viewmodel   │
+///   └──────────────────────────┘
+///    ════════ abxAction ════════
+///
+/// No streams, actions, or commands yet — passive router-outlet host. Each
+/// child surface (notes, folder, editor, auth, create-account) carries its own
+/// viewmodel; none of them route through this one.
+///
 /// History: git log --follow -- kit/showcase_app/lib/ui/views/showcase_notes_shell/showcase_notes_shell_viewmodel.dart
 library;
 
