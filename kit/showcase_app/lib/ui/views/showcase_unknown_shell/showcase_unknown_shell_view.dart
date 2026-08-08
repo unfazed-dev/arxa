@@ -40,7 +40,7 @@ class ShowcaseUnknownShellView extends StackedView<ShowcaseUnknownShellViewModel
   static const AppBoxKitInspectAttrs inspectAttrs = AppBoxKitInspectAttrs(
     screenId: 'showcase.unknown',
     surfaceId: 'surface.unknown.shell',
-    anatomyNodeId: 'anatomy:view.body',
+    anatomyNodeId: 'anatomy:shell.surface',
   );
 
   @override

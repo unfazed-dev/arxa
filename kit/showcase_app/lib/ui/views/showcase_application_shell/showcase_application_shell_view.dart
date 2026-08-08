@@ -41,7 +41,7 @@ class ShowcaseApplicationShellView extends StackedView<ShowcaseApplicationShellV
   static const AppBoxKitInspectAttrs inspectAttrs = AppBoxKitInspectAttrs(
     screenId: 'showcase.application',
     surfaceId: 'surface.application.shell',
-    anatomyNodeId: 'anatomy:view.body',
+    anatomyNodeId: 'anatomy:shell.surface',
   );
 
   /// One entry per tab, in [ShowcaseTab] order; names/paths must match the

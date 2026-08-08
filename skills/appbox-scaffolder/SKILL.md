@@ -273,7 +273,7 @@ belongs to `showcase.createaccount`; convention-matching loses it. That miss is 
 reason the triple is stamped rather than inferred. `surfaceId` is the surface's own
 tree-derived id (`surface.<feature>.<surface>`, or `surface.<feature>.shell` for a shell
 view); `anatomyNodeId` is drawn from the CLOSED set at
-`kind-resolution.registry.json#/anatomyNodes` (registry v1.2.0).
+`kind-resolution.registry.json#/anatomyNodes` (registry v1.3.0).
 
 Note: `kit/showcase_app` was back-stamped at the Q11/Q12 ratification — all 20 view files
 carry the triple. Showcase is therefore normative for identity, the golden probe's

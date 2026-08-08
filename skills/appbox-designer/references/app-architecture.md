@@ -183,9 +183,12 @@ The anatomy-node vocabulary is CLOSED, not open: the valid ids are exactly
 those in `skills/appbox-scaffolder/kind-resolution.registry.json#/anatomyNodes/vocabulary`
 (ratified at registry v1.2.0; Dart spells this slot `anatomyNodeId`, JS spells
 it `nodeId` — one slot, two spellings). `anatomy:view.body` above is not an
-illustrative sample of an open namespace; the registry currently lists it as
-the vocabulary's only member — the registry, not this sentence, is the
-authority on that count.
+illustrative sample of an open namespace; the vocabulary is closed, and as of
+registry v1.3.0 it holds two members — `anatomy:view.body` (a view's own body
+subtree) and `anatomy:shell.surface` (the shell-level surface a shell
+contributes one level up, ratified to distinguish a shell's frame from the
+leaf sharing its screenId). The registry, not this sentence, is the authority
+on the member list.
 New node ids are added there deliberately, with a version bump, exactly like
 widget kinds — never invented at design time.
 

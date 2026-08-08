@@ -40,7 +40,7 @@ class ShowcaseSearchShellView
   static const AppBoxKitInspectAttrs inspectAttrs = AppBoxKitInspectAttrs(
     screenId: 'showcase.search',
     surfaceId: 'surface.search.shell',
-    anatomyNodeId: 'anatomy:view.body',
+    anatomyNodeId: 'anatomy:shell.surface',
   );
 
   @override

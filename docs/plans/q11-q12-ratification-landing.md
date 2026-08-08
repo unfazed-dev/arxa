@@ -133,3 +133,12 @@ answer, not an agent's to infer:
 Whether that slot should ever distinguish frame from body is a call for
 whoever authors `showcase-anatomy.md`. Until they author such an id, there is
 nothing to ratify and nothing to stamp. Recorded, not resolved.
+
+## Ratification: anatomy:shell.surface (registry v1.3.0)
+
+User ratified option A (2026-08-08). Second member `anatomy:shell.surface` added to the
+closed vocabulary; spelling drawn from authored prose ("Shell-level surfaces sit one
+level up"), not the spike's retracted "frame" coinage. The seven `*_shell_view.dart`
+frame views re-stamped; the six frame/leaf screenId collisions are now distinguished by
+anatomyNodeId within each screenId. Verified: validate-registry.py OK (2 members closed,
+unviolated), probe q11-shells ALL PASSED (V1–V5 green against the 2-member set).

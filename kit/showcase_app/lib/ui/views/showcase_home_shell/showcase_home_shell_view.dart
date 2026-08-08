@@ -41,7 +41,7 @@ class ShowcaseHomeShellView extends StackedView<ShowcaseHomeShellViewModel> {
   static const AppBoxKitInspectAttrs inspectAttrs = AppBoxKitInspectAttrs(
     screenId: 'showcase.home',
     surfaceId: 'surface.home.shell',
-    anatomyNodeId: 'anatomy:view.body',
+    anatomyNodeId: 'anatomy:shell.surface',
   );
 
   @override

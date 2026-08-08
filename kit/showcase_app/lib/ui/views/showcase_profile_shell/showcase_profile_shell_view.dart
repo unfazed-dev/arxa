@@ -46,7 +46,7 @@ class ShowcaseProfileShellView
   static const AppBoxKitInspectAttrs inspectAttrs = AppBoxKitInspectAttrs(
     screenId: 'showcase.profile',
     surfaceId: 'surface.profile.shell',
-    anatomyNodeId: 'anatomy:view.body',
+    anatomyNodeId: 'anatomy:shell.surface',
   );
 
   @override

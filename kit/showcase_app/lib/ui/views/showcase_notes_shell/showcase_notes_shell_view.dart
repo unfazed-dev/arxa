@@ -39,7 +39,7 @@ class ShowcaseNotesShellView extends StackedView<ShowcaseNotesShellViewModel> {
   static const AppBoxKitInspectAttrs inspectAttrs = AppBoxKitInspectAttrs(
     screenId: 'showcase.notes',
     surfaceId: 'surface.notes.shell',
-    anatomyNodeId: 'anatomy:view.body',
+    anatomyNodeId: 'anatomy:shell.surface',
   );
 
   @override
