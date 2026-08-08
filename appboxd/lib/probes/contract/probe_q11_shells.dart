@@ -119,6 +119,7 @@ void _verdictGoldenExpansion(
     strayTitle: '1.',
     subject: 'showcase',
     lib: showcaseLib,
+    types: types,
   );
 
   // The spike's own golden tree, through the SAME function. A second
@@ -140,6 +141,7 @@ void _verdictGoldenExpansion(
     strayTitle: '1b.',
     subject: 'spike',
     lib: Directory('${golden.path}/lib'),
+    types: types,
   );
 }
 
@@ -154,7 +156,23 @@ void _expansionLine(
   required String strayTitle,
   required String subject,
   required Directory lib,
+  required List<Map<String, dynamic>> types,
 }) {
+  // Non-Dart artifacts the manifest types by literal filename (no `<slot>` to
+  // substitute), keyed by the directory level their pathTemplate names. A file
+  // matching one here is explained by the manifest, not a stray.
+  Set<String> literalsAt(String pathTemplate) => types
+      .where((t) =>
+          t['pathTemplate'] == pathTemplate &&
+          t['nameTemplate'] is String &&
+          (t['nameTemplate'] as String).isNotEmpty &&
+          !(t['nameTemplate'] as String).contains('<') &&
+          !(t['nameTemplate'] as String).endsWith('.dart'))
+      .map((t) => t['nameTemplate'] as String)
+      .toSet();
+  final shellLevel = literalsAt('lib/ui/views/<app>_<feature>_shell/');
+  final surfaceLevel =
+      literalsAt('lib/ui/views/<app>_<feature>_shell/<app>_<surface>/');
   if (!lib.existsSync()) {
     report.check(title, false, '$subject lib missing at ${lib.path}');
     return;
@@ -198,7 +216,10 @@ void _expansionLine(
         // forward: every file in a surface dir matches a surface template.
         for (final sf in entity.listSync().whereType<File>()) {
           final n = sf.path.split('/').last;
-          if (!n.endsWith('.dart')) { strays.add('$shellName/$surfaceName/$n'); continue; }
+          if (!n.endsWith('.dart')) {
+            if (!surfaceLevel.contains(n)) strays.add('$shellName/$surfaceName/$n');
+            continue;
+          }
           if (!_matchesViewTemplates(n, surfaceName)) {
             unexplained.add('$shellName/$surfaceName/$n');
           }
@@ -206,7 +227,10 @@ void _expansionLine(
       } else if (entity is File) {
         // forward: every file in a shell dir matches a shell template.
         final n = entity.path.split('/').last;
-        if (!n.endsWith('.dart')) { strays.add('$shellName/$n'); continue; }
+        if (!n.endsWith('.dart')) {
+          if (!shellLevel.contains(n)) strays.add('$shellName/$n');
+          continue;
+        }
         if (!_matchesViewTemplates(n, shellName)) {
           unexplained.add('$shellName/$n');
         }
@@ -229,16 +253,14 @@ void _expansionLine(
   }
   report.check(title, ok, detail.toString());
   if (strays.isNotEmpty) {
-    // Not a failure: the manifest's artifact types describe .dart artifacts. But a
-    // non-Dart file living inside a shell directory cannot be produced by any Q8
-    // expansion, so the manifest cannot round-trip the showcase tree it was derived
-    // from. Whether such files get an artifact type was a decision, not a probe
-    // call — ratified since as (c): they get a TYPED artifact entry. Provisional
-    // here because the manifest edit lands after this spike reports.
-    report.warn('$strayTitle non-Dart files inside shell dirs, unexpressible in the Q8 '
-        'manifest (${strays.length}): ${strays.take(4).join(", ")} '
-        '— PROVISIONAL: ratified decision (c) gives these a typed artifact entry; '
-        'this warn should disappear once that manifest edit lands.');
+    // Non-Dart files inside a shell dir are no longer categorically unexpressible:
+    // ratification (c) gives them typed manifest entries keyed by literal filename
+    // (today only `design-system.md`; `.shell-structure.json` is typed one level
+    // up at `lib/ui/views/` and never reaches this walk). What remains here is the
+    // genuinely untyped residue — a file the manifest still cannot round-trip.
+    report.warn('$strayTitle non-Dart files inside shell dirs with no matching typed '
+        'manifest entry (${strays.length}): ${strays.take(4).join(", ")} '
+        '— each needs a typed artifact entry or deletion.');
   }
 }
 

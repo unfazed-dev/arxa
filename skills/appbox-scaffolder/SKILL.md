@@ -267,9 +267,18 @@ Studio's inspect mode reads the triple and nothing else: zero DOM heuristics, no
 structural guessing. Inspect therefore survives regeneration by construction rather
 than by luck.
 
-Note: `kit/showcase_app` carries no `inspectAttrs` today. This is a **new** obligation
-on emitted output — the golden probe's showcase corroboration must exempt showcase or
-showcase must be back-stamped.
+`screenId` is a verbatim `intake/registry.json` entry id — never a value derived from
+a class or file name. `ShowcaseNotesCreateAccountView` carries its shell as a prefix and
+belongs to `showcase.createaccount`; convention-matching loses it. That miss is the whole
+reason the triple is stamped rather than inferred. `surfaceId` is the surface's own
+tree-derived id (`surface.<feature>.<surface>`, or `surface.<feature>.shell` for a shell
+view); `anatomyNodeId` is drawn from the CLOSED set at
+`kind-resolution.registry.json#/anatomyNodes` (registry v1.2.0).
+
+Note: `kit/showcase_app` was back-stamped at the Q11/Q12 ratification — all 20 view files
+carry the triple. Showcase is therefore normative for identity, the golden probe's
+showcase corroboration exempts nothing, and a new emit that omits the triple fails
+verdict 4 against a showcase that satisfies it.
 
 ## Verdicts (Q11)
 
