@@ -72,18 +72,22 @@ Verified mechanics (stacked_cli 1.15.5, 2026-07-12):
   startup view (boot logic in `runStartupLogic()` → `replaceWith(...)`), a
   thin `main()`, and `app.dart` at `lib/app/app.dart`.
 - **Showcase naming convention**: every showcase-app view (startup and unknown
-  included), the `lib/ui/common` shared helpers, and the root widget in
-  `main.dart` are `showcase_`-prefixed (`showcase_startup` /
+  included), the shared widgets in `lib/ui/widgets/common/`, and the root
+  widget in `main.dart` are `showcase_`-prefixed (`showcase_startup` /
   `ShowcaseStartupView`, `showcase_notes_shell`, `ShowcaseApp`) so showcase
   artifacts are always distinguishable from any other app's. Pass the prefixed
   name to `stacked create view`. CLI-template boilerplate keeps its canonical
-  names (notice sheet, info_alert dialog, `app_colors`/`ui_helpers`;
-  `main.dart` filename is fixed by Flutter).
+  names (notice sheet, info_alert dialog; `main.dart` filename is fixed by
+  Flutter). There is **no local `lib/ui/common/`**: delete the CLI-template
+  `app_colors`/`app_strings`/`app_constants`/`ui_helpers` files and import
+  colors, spacing helpers, constants, glyphs, and fonts from
+  `package:appbox_kit_core/common/…` instead.
 - **Documented exceptions** (the CLI has no verb for these — hand-author):
   a `KitDataFacade` subclass body (create the service via
   `stacked create service`, then make it `extends KitDataFacade`), entity
-  models + `KitTableSchema`/`KitEntityRegistration`, and plain shared-helper
-  files (put those in `lib/ui/common/`).
+  models + `KitTableSchema`/`KitEntityRegistration`, and plain shared widget
+  files (put those in `lib/ui/widgets/common/`; never recreate
+  `lib/ui/common/` — kit-core `common/` owns colors/helpers/constants).
 
 Reference template + full step-by-step: `showcase_app` and
 `docs/plans/appbox-kit-showcase-app-port.md` §7.

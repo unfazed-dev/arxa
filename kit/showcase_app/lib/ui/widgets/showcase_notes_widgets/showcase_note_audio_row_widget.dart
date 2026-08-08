@@ -36,7 +36,6 @@ import 'package:appbox_kit_media/appbox_kit_media.dart'
     show AppBoxKitPlaybackProgress;
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/models.dart';
-import 'package:appbox_kit_showcase_app/ui/common/ui_helpers.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_note_editor/showcase_note_editor_viewmodel.dart';
 
 /// One audio attachment row: play/pause, live progress bar, duration label.
@@ -102,7 +101,7 @@ class ShowcaseNoteAudioRowWidget extends StatelessWidget {
                         ),
                 ),
                 appBoxKitHorizontalSpaceSmall,
-                Text(total == null ? '--:--' : showcaseFormatDuration(total)),
+                Text(total == null ? '--:--' : appBoxKitFormatDuration(total)),
               ],
             ),
           ),

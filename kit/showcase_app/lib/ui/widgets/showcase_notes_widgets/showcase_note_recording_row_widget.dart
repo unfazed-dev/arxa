@@ -32,7 +32,6 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
-import 'package:appbox_kit_showcase_app/ui/common/ui_helpers.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_note_editor/showcase_note_editor_viewmodel.dart';
 
 /// The in-progress voice-recording row: cancel, elapsed pill, stop.
@@ -74,7 +73,7 @@ class ShowcaseNoteRecordingRowWidget extends StatelessWidget {
                     color: theme.colorScheme.error, size: 12),
                 appBoxKitHorizontalSpaceXSmall,
                 Text(
-                  showcaseFormatDuration(elapsed),
+                  appBoxKitFormatDuration(elapsed),
                   style: TextStyle(
                     color: theme.colorScheme.error,
                     fontFeatures: const [FontFeature.tabularFigures()],

@@ -11,8 +11,7 @@
 /// History: git log --follow -- kit/showcase_app/lib/ui/widgets/showcase_unknown_widgets/showcase_unknown_body_widget.dart
 library;
 
-import 'package:appbox_kit_showcase_app/ui/common/app_colors.dart';
-import 'package:appbox_kit_showcase_app/ui/common/ui_helpers.dart';
+import 'package:appbox_kit_core/common/appbox_kit_ui_helpers.dart';
 import 'package:flutter/material.dart';
 
 class ShowcaseUnknownBodyWidget extends StatelessWidget {
@@ -21,7 +20,6 @@ class ShowcaseUnknownBodyWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const Scaffold(
-      backgroundColor: kcBackgroundColor,
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -29,18 +27,16 @@ class ShowcaseUnknownBodyWidget extends StatelessWidget {
             Text(
               '404',
               style: TextStyle(
-                color: kcWhite,
                 fontSize: 80,
                 fontWeight: FontWeight.w800,
                 height: 0.95,
                 letterSpacing: 20.0,
               ),
             ),
-            verticalSpaceSmall,
+            appBoxKitVerticalSpaceSmall,
             Text(
               'PAGE NOT FOUND',
               style: TextStyle(
-                color: kcWhite,
                 fontSize: 20,
                 letterSpacing: 20.0,
                 wordSpacing: 10.0,

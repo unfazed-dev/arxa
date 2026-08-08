@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 
-import 'package:appbox_kit_showcase_app/ui/common/app_colors.dart';
-
 /// The app's snackbar seat. The kit supplies the severity VARIANTS
 /// (`setupAppBoxKitSnackbars` — one SnackbarConfig per AppBoxKitSnackbarType); what the
 /// APP owns lives here: the default SnackbarConfig in the app's own palette,
@@ -19,18 +17,12 @@ void setupShowcaseSnackbars() {
   appBoxKitLocator<SnackbarService>().registerSnackbarConfig(
     SnackbarConfig(
       snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: kcDarkGreyColor,
-      // Real blur + plain dim (see setupAppBoxKitSnackbars: blur 20 ≈ Apple's
-      // regular material; chrome dematerializes via withNativeChromeHidden
-      // at the AppBoxKitNotificationService seat).
+
       overlayBlur: 20,
       overlayColor: Colors.black54,
-      messageColor: kcWhite,
       messageTextAlign: TextAlign.center,
-      titleColor: kcWhite,
       // stacked's _getMainButtonWidget falls back to white when null — keep
       // the accent visible on the dark default bg.
-      mainButtonTextColor: kcSoftYellow,
       borderRadius: 10,
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 80),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),

@@ -35,24 +35,24 @@ Widget appBoxKitVerticalSpace(double height) => SizedBox(height: height);
 
 Widget appBoxKitHorizontalSpace(double width) => SizedBox(width: width);
 
-double appBoxKitScreenWidth(BuildContext context) => MediaQuery.of(context).size.width;
-double appBoxKitScreenHeight(BuildContext context) => MediaQuery.of(context).size.height;
+double appBoxKitScreenWidth(BuildContext context) =>
+    MediaQuery.of(context).size.width;
+double appBoxKitScreenHeight(BuildContext context) =>
+    MediaQuery.of(context).size.height;
 
 double appBoxKitScreenHeightFraction(
   BuildContext context, {
   int dividedBy = 1,
   double offsetBy = 0,
   double max = 3000,
-}) =>
-    min((appBoxKitScreenHeight(context) - offsetBy) / dividedBy, max);
+}) => min((appBoxKitScreenHeight(context) - offsetBy) / dividedBy, max);
 
 double appBoxKitScreenWidthFraction(
   BuildContext context, {
   int dividedBy = 1,
   double offsetBy = 0,
   double max = 3000,
-}) =>
-    min((appBoxKitScreenWidth(context) - offsetBy) / dividedBy, max);
+}) => min((appBoxKitScreenWidth(context) - offsetBy) / dividedBy, max);
 
 double appBoxKitHalfScreenWidth(BuildContext context) =>
     appBoxKitScreenWidthFraction(context, dividedBy: 2);
@@ -88,9 +88,16 @@ double appBoxKitGetResponsiveFontSize(
   max ??= 100;
 
   var responsiveSize = min(
-    appBoxKitScreenWidthFraction(context, dividedBy: 10) * ((fontSize ?? 100) / 100),
+    appBoxKitScreenWidthFraction(context, dividedBy: 10) *
+        ((fontSize ?? 100) / 100),
     max,
   );
 
   return responsiveSize;
+}
+
+String appBoxKitFormatDuration(Duration duration) {
+  final minutes = duration.inMinutes.remainder(60).toString().padLeft(2, '0');
+  final seconds = duration.inSeconds.remainder(60).toString().padLeft(2, '0');
+  return '$minutes:$seconds';
 }

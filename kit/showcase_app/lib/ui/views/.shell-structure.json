@@ -1,4 +1,0 @@
-{
-  "selfContained": [],
-  "notes": "Shells that have opted into the self-contained pattern. The list is empty because the pattern was retired on 2026-08-05: showcase_notes_shell — the one shell that had qualified, with in-shell widget homes (shared/widgets/ for cross-surface components, <surface>/widgets/ for surface-local ones, each with a widgets.dart barrel) — moved all of its widgets to the central home at lib/ui/widgets/showcase_notes_widgets/ (single widgets.dart barrel; views import the barrel, never individual files). In-shell widget homes fragmented reuse across shells and duplicated what lib/ui/widgets/ already provides for every other shell, so the notes shell now follows the same central-widgets convention and no shell is self-contained."
-}

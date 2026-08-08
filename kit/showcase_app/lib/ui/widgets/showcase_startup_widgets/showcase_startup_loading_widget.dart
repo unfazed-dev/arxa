@@ -11,8 +11,9 @@
 /// History: git log --follow -- kit/showcase_app/lib/ui/widgets/showcase_startup_widgets/showcase_startup_loading_widget.dart
 library;
 
+import 'package:appbox_kit_core/common/appbox_kit_ui_helpers.dart'
+    show appBoxKitHorizontalSpaceSmall;
 import 'package:flutter/material.dart';
-import 'package:appbox_kit_showcase_app/ui/common/ui_helpers.dart';
 
 class ShowcaseStartupLoadingWidget extends StatelessWidget {
   const ShowcaseStartupLoadingWidget({super.key});
@@ -32,7 +33,7 @@ class ShowcaseStartupLoadingWidget extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text('Loading ...', style: TextStyle(fontSize: 16)),
-                horizontalSpaceSmall,
+                appBoxKitHorizontalSpaceSmall,
                 SizedBox(
                   width: 16,
                   height: 16,

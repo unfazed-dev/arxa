@@ -36,7 +36,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 import 'package:appbox_kit_showcase_app/data/models/showcase_notes_models/models.dart';
-import 'package:appbox_kit_showcase_app/ui/common/app_colors.dart';
 import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_note_editor/showcase_note_editor_viewmodel.dart';
 
 class ShowcaseNotePhotoStripWidget extends StatelessWidget {
@@ -64,7 +63,8 @@ class ShowcaseNotePhotoStripWidget extends StatelessWidget {
                   return const SizedBox(
                     width: 84,
                     height: 84,
-                    child: Center(child: AppBoxKitNativeLoadingIndicator(size: 20)),
+                    child: Center(
+                        child: AppBoxKitNativeLoadingIndicator(size: 20)),
                   );
                 }
                 final file = File(snap.data!);
@@ -93,7 +93,6 @@ class ShowcaseNotePhotoStripWidget extends StatelessWidget {
         builder: (context) => Dialog(
           // ponytail: media lightboxes are always black regardless of theme —
           // a deliberate platform constant, not a theme leak.
-          backgroundColor: kcBlack,
           insetPadding: EdgeInsets.zero,
           child: Stack(
             children: [
@@ -105,7 +104,6 @@ class ShowcaseNotePhotoStripWidget extends StatelessWidget {
                 right: abxSize8,
                 child: AppBoxKitNativeIconButton(
                   glyph: AppBoxKitGlyphs.close,
-                  color: kcWhite,
                   onPressed: () => Navigator.of(context).pop(),
                 ),
               ),
