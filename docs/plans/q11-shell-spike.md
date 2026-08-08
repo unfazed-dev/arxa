@@ -107,9 +107,11 @@ still offline and browserless. **Zero skips, zero BLOCKED.** 6 PASS, 1 FAIL.
 - **V1 PASS** (showcase, unchanged) + **V1b PASS** — spike tree, 5 shells / 8 surfaces,
   `unexplained=0 missing=0`. Both lines run the *same* `_expansionLine()` function; a fork here
   would have made the spike's green prove nothing about the showcase bar.
-- **V2 PASS** — `dart analyze` on the emitted tree, exit 0, with the mirrored
-  `analysis_options.yaml`. `--no-fatal-warnings` was **removed**: the ruling was the showcase's
-  bar, not a weaker default, so warnings are fatal here.
+- **V2 PASS** — `dart analyze` on the emitted tree, exit 0. `--no-fatal-warnings` was **removed**:
+  the ruling was the showcase's bar, not a weaker default, so warnings are fatal here.
+  The two `analysis_options.yaml` files are **not** byte-identical and shouldn't be — showcase
+  excludes its `stacked_generator` router, which the spike doesn't emit. The probe compares the
+  `include:` line, which is what pins the lint set, and the verdict text now says only that.
 - **V3 PASS** — emitted twice from the frozen `input/design.json` into throwaway temp dirs,
   68 files per run, compared byte-for-byte (base64 of contents, not a digest) against the
   committed tree; `pubspec.lock` + `.dart_tool/` excluded as pub artifacts. The probe never
@@ -122,6 +124,29 @@ still offline and browserless. **Zero skips, zero BLOCKED.** 6 PASS, 1 FAIL.
   0 non-conforming. The showcase red stays red: forcing it green would delete the finding.
 
 The one remaining FAIL is the pre-existing showcase defect from run 1, not spike output.
+It is **committed as red**: verdict 5, `kit/showcase_app/lib/ui/views/showcase_notes_shell/
+showcase_notes_shell_viewmodel.dart`, expected a `Relationships:` section in the `full`
+frontmatter, actual — absent. Nothing is left uncommitted.
+
+Two constraints worth stating rather than leaving to arithmetic:
+
+- **The splash is a surface, not a shell.** The 5 shells are startup, unknown, auth, application,
+  ceremony. The splash is one of the 8 emitted surfaces, mobile-only, brand logo, never modelled
+  as a shell — exactly as the brief requires. V4 covers it like any other surface.
+- **F1 is visible in the output.** The three-override block (`win32 ^6.0.1`, `device_info_plus
+  ^13.0.0`, `package_info_plus ^10.0.0`) is present in the emitted `pubspec.yaml`, while the rule
+  that demands it still lives only in `kit/data` prose — absent from manifest, playbook and skills.
+  The spike emits a correct file for a reason a reader of the contract cannot find.
+
+### A second false green, caught by review
+
+V2 passed on this machine and would have **failed on a fresh clone**. `dart analyze` needs a
+resolved `.dart_tool/package_config.json`; that directory is gitignored, so a clean `git status`
+is not a resolved tree. My "clean tree re-run" silently reused resolution left over from building
+the emitter. Moving `.dart_tool` aside flipped V2 to FAIL. V2 now runs `dart pub get` itself when
+resolution is missing and reports a pub failure *as the verdict* rather than analyzing nothing and
+exiting 0. Verified by re-running with `.dart_tool` absent. Same class as the empty-dir bug below,
+found the same way: ask what the green would say if the thing under test were missing entirely.
 
 ### A false green, caught and fixed
 

@@ -266,11 +266,43 @@ void _verdictAnalyze(ProbeReport report, Directory root) {
     );
     return;
   }
-  if (!File('${golden.path}/analysis_options.yaml').existsSync()) {
+  final opts = File('${golden.path}/analysis_options.yaml');
+  if (!opts.existsSync()) {
     report.check('2. dart analyze clean', false,
         'no analysis_options.yaml in the emitted tree — flutter_lints as a dev '
         'dependency alone runs no lints, so a green here would test less than it appears to');
     return;
+  }
+  // The two files are NOT byte-identical and should not be: showcase excludes
+  // its stacked_generator router, which the spike does not emit. The `include:`
+  // line is what pins the lint set, so that is what gets compared.
+  String includeLine(File f) => f
+      .readAsLinesSync()
+      .firstWhere((l) => l.trim().startsWith('include:'), orElse: () => '');
+  final wantInclude =
+      includeLine(File('${root.path}/kit/showcase_app/analysis_options.yaml'));
+  final gotInclude = includeLine(opts);
+  if (wantInclude.isEmpty || gotInclude != wantInclude) {
+    report.check('2. dart analyze clean', false,
+        'analysis_options.yaml does not pin the showcase lint set — '
+        'expected `$wantInclude`, got `$gotInclude`');
+    return;
+  }
+
+  // Resolution is machine-local and gitignored: a clean `git status` is not a
+  // resolved package_config.json. Without this, a fresh clone analyzed nothing
+  // and still exited 0 — the same false-green class as the empty-dir bug below.
+  var resolution = 'pre-resolved';
+  if (!File('${golden.path}/.dart_tool/package_config.json').existsSync()) {
+    final pub = Process.runSync('dart', <String>['pub', 'get'],
+        workingDirectory: golden.path);
+    if (pub.exitCode != 0) {
+      report.check('2. dart analyze clean', false,
+          'dart pub get failed in the emitted tree (analyze cannot be trusted '
+          'without resolution): ${(pub.stderr as String).trim().split('\n').take(3).join(' / ')}');
+      return;
+    }
+    resolution = 'resolved by probe (dart pub get)';
   }
   // No --no-fatal-warnings: the ruling was "the showcase's bar, not a weaker
   // default". Warnings fail here exactly as they would in showcase.
@@ -280,7 +312,7 @@ void _verdictAnalyze(ProbeReport report, Directory root) {
       '2. dart analyze clean (warnings fatal — showcase bar)',
       res.exitCode == 0,
       res.exitCode == 0
-          ? 'exit 0, analysis_options.yaml mirrors showcase'
+          ? 'exit 0; lint set pinned by the same `$wantInclude` as showcase; $resolution'
           : (res.stdout as String).split('\n').take(6).join('\n      '));
 }
 
