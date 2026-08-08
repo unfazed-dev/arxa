@@ -7,12 +7,10 @@
     "PROVENANCE: derived by abstraction from kit/showcase_app/lib (207 .dart files), which",
     "Q1 locks as the structure contract, not an example. Showcase itself MUST pass the",
     "golden-expansion probe against this manifest (Q8 gate).",
-    "FINAL DESTINATION: kit/showcase_app/feature-recipe.manifest.json — this file and its",
-    "sibling feature-recipe.schema.json are STAGED in skills/appbox-scaffolder/ only because",
-    "both refactor agents are read-only on kit/. The orchestrator git mv's the pair at commit",
-    "time; every path reference in both skills already points at the final location, and the",
-    "$schema pointer above is relative, so the move needs no follow-up text edits.",
-    "NOT moving: kind-resolution.registry.json (Q7) stays in skills/appbox-scaffolder/."
+    "PLACEMENT: showcase-adjacent by Q8, so both skills read one copy. The sibling",
+    "feature-recipe.schema.json must stay in this directory — the $schema pointer above is",
+    "relative. Move the pair together or not at all.",
+    "NOT here: kind-resolution.registry.json (Q7) lives in skills/appbox-scaffolder/."
   ],
   "structureContract": {
     "root": "kit/showcase_app/lib",
