@@ -45,6 +45,8 @@ statements in that document:
   three variants `.desktop` / `.mobile` / `.tablet`.
 
 Cross-product: `{shell.frame, view.body} × {∅, .desktop, .mobile, .tablet}` = 8.
+**RETRACTED — see §Correction below. The breakpoint axis is not authored;
+the derivation yields 2, not 8, and this line was my own reasoning, not a source.**
 Nothing beyond what the showcase's own structure needs. The registry is the
 home because the doc holds no literals to extend.
 
@@ -71,3 +73,34 @@ the scaffolder.
 - The team-lead's acceptance message verified HEAD `01bb5a7`; the spike's final
   HEAD was `409c44c`. Possible stale-commit verification, surfaced for
   confirmation.
+
+## Correction (post-ratification audit)
+
+Three claims above and in `app-architecture.md` were mine, not sources, and two
+were wrong. Recorded here because both were later cited back to me as evidence.
+
+1. **The `= 8` cross-product is retracted.** Pre-session authorship
+   (`54c5c5f`, `06f1f68` — both ancestors of the first spike commit `c4b4531`)
+   stamps `nodeId: 'anatomy:view.body'` with **no** breakpoint suffix, and
+   `inspectAttrs` has exactly three slots with no breakpoint member. The
+   authoring encodes a **base id with no breakpoint axis**, so breakpoint
+   variants are not vocabulary members. Derivation yields **2**, not 8.
+
+2. **"`anatomy:view.body` … is currently the entire set" (`6a2cf68`) is my own
+   sentence**, written this session. It is not independent authority and must
+   not be cited as ratification of a 1-member set.
+
+3. **The 1-member set has a concrete defect.** Six `screenId`s are each carried
+   by two view files — the shell frame and its leaf:
+   `showcase.home`, `.notes`, `.profile`, `.search`, `.startup`, `.unknown`.
+   Pre-session text requires the triple on every emitted surface, *"shells
+   included"*. With a constant `anatomyNodeId`, the slot whose job is to say
+   which tree position renders carries zero information and cannot distinguish
+   a frame from the body inside it. That is a real cost, independent of any
+   document I wrote.
+
+**Open, not decided here:** the *name* of the second member. `shell.frame`
+appears in **no** pre-session commit — I coined it. Adding it is a vocabulary
+addition, and the standing rule is that these are ratified deliberately with a
+version bump, never invented mid-task. The need for a second member is derived;
+the spelling is not, and is referred up rather than stamped.
