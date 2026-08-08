@@ -13,6 +13,7 @@
 
 import 'package:appboxd/probes/contract/probe_contract_chips.dart';
 import 'package:appboxd/probes/contract/probe_contract_panels.dart';
+import 'package:appboxd/probes/contract/probe_q11_shells.dart';
 import 'package:appboxd/probes/probe_base.dart';
 import 'package:appboxd/probes/studio/probe_boost.dart';
 import 'package:appboxd/probes/studio/probe_composer_draft.dart';
@@ -33,6 +34,10 @@ const List<Probe> kProbes = <Probe>[
   // Contract suite first: these assert the appbox opinion against ANY served
   // design, so a design that violates it fails here rather than deep inside a
   // studio-specific interaction. Same doctrine as kSuiteOrder.
+  // Cheapest of all and first by that rule: offline and browserless, it reads the
+  // Q8 manifest and the tree. No server, no Chrome — a structure break fails the
+  // suite before anything is launched.
+  probeQ11Shells,
   contractPanelsProbe,
   contractChipsProbe,
   // First studio probe: a read-mostly walk like the contract pair above it, so
