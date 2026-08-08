@@ -32,6 +32,9 @@ export 'common/appbox_kit_colors.dart';
 export 'common/appbox_kit_fonts.dart';
 export 'common/appbox_kit_ui_helpers.dart';
 
+// --- Inspect identity (Q12): the emit-time (screenId, surfaceId, anatomyNodeId) triple ---
+export 'common/appbox_kit_inspect_attrs.dart';
+
 // --- Enums ---
 export 'enums/appbox_kit_app_common_enum.dart';
 export 'enums/appbox_kit_icon_position.dart';
