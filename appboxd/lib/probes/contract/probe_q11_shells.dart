@@ -434,68 +434,150 @@ Map<String, String> _hashTree(Directory dir) {
 
 // =============================================================== verdict 4 ===
 void _verdictInspectAttrs(ProbeReport report, Directory root, Directory showcaseLib) {
-  // Showcase is EXEMPT and that exemption is not the probe's invention:
-  // skills/appbox-scaffolder/SKILL.md:270 states showcase carries no inspectAttrs
-  // today and that the corroboration must either exempt showcase or back-stamp it.
-  report.warn(
-    '4. inspectAttrs — showcase exempt by skills/appbox-scaffolder/SKILL.md:270 '
-    '("kit/showcase_app carries no inspectAttrs today"). Exempt-vs-back-stamp is an '
-    'open decision for team-lead, not a probe choice.',
+  // Both open decisions that made this verdict circular are now CLOSED, so the
+  // probe verifies against ratified sources instead of asserting a shape of its
+  // own invention:
+  //   (a) the Dart shape is `AppBoxKitInspectAttrs` in kit core;
+  //   (b) the anatomy-node vocabulary is a CLOSED set at
+  //       skills/appbox-scaffolder/kind-resolution.registry.json (v1.2.0).
+  // Showcase was back-stamped at the same ratification, so it is NORMATIVE here
+  // and no longer exempt — the corroboration is now a real gate on both trees.
+  final vocab = _anatomyVocabulary(root);
+  if (vocab.isEmpty) {
+    report.check(
+      '4. inspectAttrs (vocabulary)',
+      false,
+      'BLOCKED: no closed anatomy-node vocabulary at '
+      'skills/appbox-scaffolder/kind-resolution.registry.json#/anatomyNodes/vocabulary. '
+      'Without the ratified set there is nothing to check membership against.',
+    );
+    return;
+  }
+
+  // Showcase screenIds must be verbatim intake/registry.json entry ids. This is
+  // the join that class-name convention cannot reproduce (app-architecture.md:169).
+  _inspectAttrsLine(
+    report,
+    title: '4. inspectAttrs triple on every showcase surface (normative, back-stamped)',
+    subject: 'showcase',
+    lib: showcaseLib,
+    vocab: vocab,
+    allowedScreenIds: _showcaseRegistryIds(root),
+    screenIdSource: 'kit/showcase_app/intake/registry.json entry ids',
   );
 
   final golden = _goldenTree(root);
   if (golden == null) {
     report.check(
-      '4. inspectAttrs coverage (UNRATIFIED — see detail)',
+      '4b. inspectAttrs triple on every emitted surface',
       false,
-      'BLOCKED, and blocked on more than the emitter. This verdict is currently '
-      'CIRCULAR: (a) no Dart shape for inspectAttrs exists anywhere in kit/ — '
-      'app-architecture.md:169 defines only the JS form; (b) the anatomy-node-id '
-      'vocabulary does not exist — the repo contains exactly one illustrative value, '
-      "'anatomy:view.body' at app-architecture.md:172, with no closed set and no home. "
-      'Emitting a shape and a vocabulary of my own invention and then checking output '
-      'against that invention would make a green here meaningless. Both need a '
-      'ratified decision and a home (showcase-anatomy.md §3 or the registry) before '
-      'this verdict can mean "Q12 satisfied".',
+      'BLOCKED: no emitted tree at tool/spike-q11-shells/golden — the emitter did '
+      'not run, so there is nothing to gate.',
     );
     return;
   }
-  // Golden tree present: the triple is mechanically checkable even though its
-  // vocabulary is unratified. Team-lead ruled this PASS (unratified vocabulary),
-  // NOT "Q12 satisfied" — the two open decisions stay recorded, above and below.
-  final viewsDir = Directory('${golden.path}/lib/ui/views');
+  // The emitted tree is held to the same ratified sources. Its screenIds must be
+  // values carried by the FROZEN design input, not strings the emitter invented.
+  _inspectAttrsLine(
+    report,
+    title: '4b. inspectAttrs triple on every emitted surface (same ratified gate)',
+    subject: 'spike',
+    lib: Directory('${golden.path}/lib/ui/views'),
+    vocab: vocab,
+    allowedScreenIds: _designStringValues(root),
+    screenIdSource: 'tool/spike-q11-shells/input/design.json string values',
+  );
+}
+
+/// The ratified closed anatomy-node vocabulary. Empty set = not ratified.
+Set<String> _anatomyVocabulary(Directory root) {
+  final f = File('${root.path}/skills/appbox-scaffolder/kind-resolution.registry.json');
+  if (!f.existsSync()) return <String>{};
+  final nodes = (jsonDecode(f.readAsStringSync()) as Map)['anatomyNodes'];
+  if (nodes is! Map) return <String>{};
+  final vocab = nodes['vocabulary'];
+  if (vocab is Map) return vocab.keys.cast<String>().toSet();
+  if (vocab is List) return vocab.cast<String>().toSet();
+  return <String>{};
+}
+
+/// Verbatim entry ids from the showcase intake registry.
+Set<String> _showcaseRegistryIds(Directory root) {
+  final f = File('${root.path}/kit/showcase_app/intake/registry.json');
+  if (!f.existsSync()) return <String>{};
+  final decoded = jsonDecode(f.readAsStringSync());
+  final entries = decoded is List ? decoded : (decoded as Map)['entries'] as List;
+  return entries.map((e) => (e as Map)['id'] as String).toSet();
+}
+
+/// Every string value anywhere in the frozen spike design input.
+Set<String> _designStringValues(Directory root) {
+  final f = File('${root.path}/tool/spike-q11-shells/input/design.json');
+  if (!f.existsSync()) return <String>{};
+  final out = <String>{};
+  void walk(dynamic n) {
+    if (n is String) out.add(n);
+    if (n is List) n.forEach(walk);
+    if (n is Map) n.values.forEach(walk);
+  }
+  walk(jsonDecode(f.readAsStringSync()));
+  return out;
+}
+
+/// One inspectAttrs gate over a `lib/ui/views` tree: the triple is present on
+/// every view, its anatomyNodeId is inside the closed vocabulary, and its
+/// screenId comes from the declared source rather than from a name convention.
+void _inspectAttrsLine(
+  ProbeReport report, {
+  required String title,
+  required String subject,
+  required Directory lib,
+  required Set<String> vocab,
+  required Set<String> allowedScreenIds,
+  required String screenIdSource,
+}) {
+  String? cap(String src, String key) =>
+      RegExp("$key:\\s*'([^']+)'").firstMatch(src)?.group(1);
+
   final surfaces = <String>[];
-  final missing = <String>[];
-  for (final f in viewsDir.listSync(recursive: true).whereType<File>()) {
-    final n = f.path.split('/').last;
-    if (!n.endsWith('_view.dart')) continue;
-    final rel = f.path.substring(golden.path.length + 1);
+  final failures = <String>[];
+  for (final f in lib.listSync(recursive: true).whereType<File>()) {
+    if (!f.path.endsWith('_view.dart')) continue;
+    final rel = f.path.substring(lib.path.length + 1);
     surfaces.add(rel);
     final src = f.readAsStringSync();
+    final screenId = cap(src, 'screenId');
+    final surfaceId = cap(src, 'surfaceId');
+    final anatomyNodeId = cap(src, 'anatomyNodeId');
     final absent = <String>[
-      if (!src.contains('screenId:')) 'screenId',
-      if (!src.contains('surfaceId:')) 'surfaceId',
-      if (!src.contains('anatomyNodeId:')) 'anatomyNodeId',
+      if (screenId == null) 'screenId',
+      if (surfaceId == null) 'surfaceId',
+      if (anatomyNodeId == null) 'anatomyNodeId',
     ];
-    if (absent.isNotEmpty) missing.add('$rel — missing ${absent.join(", ")}');
+    if (absent.isNotEmpty) {
+      failures.add('$rel — missing ${absent.join(", ")}');
+      continue;
+    }
+    if (!vocab.contains(anatomyNodeId)) {
+      failures.add("$rel — anatomyNodeId '$anatomyNodeId' outside the closed vocabulary");
+    }
+    if (allowedScreenIds.isNotEmpty && !allowedScreenIds.contains(screenId)) {
+      failures.add("$rel — screenId '$screenId' is not in $screenIdSource");
+    }
   }
 
-  final ok = surfaces.isNotEmpty && missing.isEmpty;
+  final ok = surfaces.isNotEmpty && failures.isEmpty;
   final detail = StringBuffer(
-    'spike tree: ${surfaces.length} emitted view files, each carrying the '
-    'inspectAttrs triple (screenId, surfaceId, anatomyNodeId). UNRATIFIED: this '
-    'is a PASS against a shape and vocabulary the spike invented, not evidence '
-    'that Q12 is satisfied — (a) no Dart inspectAttrs shape exists in kit/ '
-    '(app-architecture.md:169 defines only the JS form), (b) the anatomy-node-id '
-    'vocabulary has no closed set and no home. Both need ratifying before this '
-    'line means anything beyond internal consistency.',
+    '$subject: ${surfaces.length} view files, each carrying the inspectAttrs triple; '
+    'every anatomyNodeId inside the closed vocabulary (${vocab.length} member'
+    '${vocab.length == 1 ? '' : 's'}, kind-resolution.registry.json); every screenId '
+    'drawn from $screenIdSource.',
   );
-  for (final m in missing.take(8)) {
+  for (final m in failures.take(8)) {
     detail.write('\n      $m');
   }
-  if (surfaces.isEmpty) detail.write('\n      no _view.dart files found under ${viewsDir.path}');
-  report.check('4. inspectAttrs triple on every emitted surface (UNRATIFIED vocabulary)',
-      ok, detail.toString());
+  if (surfaces.isEmpty) detail.write('\n      no _view.dart files found under ${lib.path}');
+  report.check(title, ok, detail.toString());
 }
 
 // =============================================================== verdict 5 ===
