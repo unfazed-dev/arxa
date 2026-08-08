@@ -207,7 +207,7 @@
             // to the generic placeholder in screen_stub_view.tsx).
           }
         }
-        const bag = Object.assign({ prefs, locale: c.get('locale') || 'en', locales, t }, ctx);
+        const bag = Object.assign({ prefs, locale: c.get('locale') || 'en', locales, t, vendorRev: globalThis.__vendorRev || {} }, ctx);
         bag.c = bag;
         if (st != null) c.status(st);
         return c.html(templatesRender(viewRef, bag));
@@ -236,6 +236,21 @@
     renderModule = await import(globalThis.__renderBundleUrl);
     const mod = await import(/* @vite-ignore */ artifactBase + '/app.routes.js');
     routesTable = mod.default;
+    // Compute vendor content-hash rev map (first 12 hex of sha256) so templates
+    // can emit ?v= cache-busters. Same-origin fetch — the worker tab and the
+    // Dart server share one origin.
+    globalThis.__vendorRev = {};
+    for (const name of ['inspect.js','canvas.js','drag.js','reveal.js','flowwalk.js']) {
+      try {
+        // cache:'no-store' is load-bearing: the default cache mode can hash a
+        // STALE cached copy of the bare URL, yielding the old rev — which then
+        // re-serves the old cached ?v= URL and the buster pins you to stale.
+        const buf = await (await fetch('/assets/vendor/' + name, { cache: 'no-store' })).arrayBuffer();
+        const h = await crypto.subtle.digest('SHA-256', buf);
+        globalThis.__vendorRev[name] = Array.from(new Uint8Array(h)).slice(0,6)
+          .map(function(b){return b.toString(16).padStart(2,'0');}).join('');
+      } catch (_) { /* vendor file not present — template falls back to bare src */ }
+    }
     return true;
   };
   globalThis.__routes = function () {

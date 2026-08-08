@@ -13,6 +13,12 @@ import { inspectAttrs, Label, Heading, Txt } from '../../../../common/widgets/pr
 
 type TFn = (key: string, vars?: Record<string, unknown>) => unknown;
 
+// Cache-busted vendor script URL (content hash from worker_shim boot).
+const vendorSrc = (name: string) => {
+  const rev = (globalThis as any).__vendorRev?.[name];
+  return `/assets/vendor/${name}${rev ? `?v=${rev}` : ''}`;
+};
+
 interface ScreenStubViewProps {
   t: TFn;
   locale?: string;
@@ -116,12 +122,12 @@ const ScreenStubView: FC<ScreenStubViewProps> = (props) => {
               )}
             </div>
           </div>
-          {props.inspect && <script src="/assets/vendor/inspect.js" />}
+          {props.inspect && <script src={vendorSrc('inspect.js')} />}
           {/* The flow-walk island, loaded ONLY on the current step of a walked
               flow row. The tap fires a flow edge in here, but the row that moves
               lives in the parent — a boundary markup cannot cross, so this is a
               named island (ADR-0002 amendment 2026-08-02). */}
-          {props.walk && <script src="/assets/vendor/flowwalk.js" />}
+          {props.walk && <script src={vendorSrc('flowwalk.js')} />}
         </body>
       </html>
     </Fragment>

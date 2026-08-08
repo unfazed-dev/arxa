@@ -18,6 +18,12 @@ import { inspectAttrs } from './widgets/primitives.tsx';
 // convention instead.
 const HTMX_CONFIG = '{"transitions":true,"implicitInheritance":true}';
 
+// Cache-busted vendor script URL (content hash from worker_shim boot).
+const vendorSrc = (name: string) => {
+  const rev = (globalThis as any).__vendorRev?.[name];
+  return `/assets/vendor/${name}${rev ? `?v=${rev}` : ''}`;
+};
+
 // The v2 responseHandling rules, restated for htmx 4: hx-status:<pattern> on
 // <body> (inherited by every request source). Patterns try exact → "40x" →
 // "4xx", first hit wins. 404 and 5xx retarget into #toasts instead of
@@ -72,9 +78,9 @@ const Base: FC<BaseProps> = ({
             user had navigated to inside a live tile. The v2 preload/head-
             support extensions are gone — hx-ext does not exist in v4, the
             studio never used hx-preload, and v4 core lifts <title> itself. */}
-        <script src="/assets/vendor/canvas.js" defer></script>
-        <script src="/assets/vendor/drag.js" defer></script>
-        <script src="/assets/vendor/reveal.js" defer></script>
+        <script src={vendorSrc('canvas.js')} defer></script>
+        <script src={vendorSrc('drag.js')} defer></script>
+        <script src={vendorSrc('reveal.js')} defer></script>
         <link rel="stylesheet" href="/assets/css/fonts.css" />
         <link rel="stylesheet" href="/assets/css/app.css" />
         <link rel="stylesheet" href="/assets/css/theme.css" />
