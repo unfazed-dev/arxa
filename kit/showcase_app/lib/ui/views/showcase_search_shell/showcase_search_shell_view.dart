@@ -36,6 +36,13 @@ class ShowcaseSearchShellView
     extends StackedView<ShowcaseSearchShellViewModel> {
   const ShowcaseSearchShellView({super.key});
 
+  /// Identity stamped at emit time (Q12 triple).
+  static const AppBoxKitInspectAttrs inspectAttrs = AppBoxKitInspectAttrs(
+    screenId: 'showcase.search',
+    surfaceId: 'surface.search.shell',
+    anatomyNodeId: 'anatomy:view.body',
+  );
+
   @override
   Widget builder(
     BuildContext context,

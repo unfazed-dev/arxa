@@ -37,6 +37,13 @@ import 'package:appbox_kit_showcase_app/ui/views/showcase_home_shell/showcase_ho
 class ShowcaseHomeShellView extends StackedView<ShowcaseHomeShellViewModel> {
   const ShowcaseHomeShellView({super.key});
 
+  /// Identity stamped at emit time (Q12 triple).
+  static const AppBoxKitInspectAttrs inspectAttrs = AppBoxKitInspectAttrs(
+    screenId: 'showcase.home',
+    surfaceId: 'surface.home.shell',
+    anatomyNodeId: 'anatomy:view.body',
+  );
+
   @override
   Widget builder(
     BuildContext context,

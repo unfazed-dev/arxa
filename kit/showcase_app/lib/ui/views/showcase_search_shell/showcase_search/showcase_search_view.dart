@@ -36,6 +36,13 @@ import 'package:appbox_kit_showcase_app/ui/views/showcase_search_shell/showcase_
 class ShowcaseSearchView extends StackedView<ShowcaseSearchViewModel> {
   const ShowcaseSearchView({super.key});
 
+  /// Identity stamped at emit time (Q12 triple).
+  static const AppBoxKitInspectAttrs inspectAttrs = AppBoxKitInspectAttrs(
+    screenId: 'showcase.search',
+    surfaceId: 'surface.search.search',
+    anatomyNodeId: 'anatomy:view.body',
+  );
+
   @override
   ShowcaseSearchViewModel viewModelBuilder(BuildContext context) =>
       ShowcaseSearchViewModel();

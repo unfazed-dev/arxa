@@ -48,6 +48,13 @@ class ShowcaseNotesCreateAccountView
   const ShowcaseNotesCreateAccountView(
       {required this.onBackToSignIn, super.key});
 
+  /// Identity stamped at emit time (Q12 triple).
+  static const AppBoxKitInspectAttrs inspectAttrs = AppBoxKitInspectAttrs(
+    screenId: 'showcase.createaccount',
+    surfaceId: 'surface.notes.notes_create_account',
+    anatomyNodeId: 'anatomy:view.body',
+  );
+
   /// Owner-supplied swap back to the sign-in panel.
   final VoidCallback onBackToSignIn;
 

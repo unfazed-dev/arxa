@@ -55,6 +55,13 @@ import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_n
 import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_notes_auth/showcase_notes_auth_viewmodel.dart';
 
 class ShowcaseNotesAuthView extends StackedView<ShowcaseNotesAuthViewModel> {
+  /// Identity stamped at emit time (Q12 triple).
+  static const AppBoxKitInspectAttrs inspectAttrs = AppBoxKitInspectAttrs(
+    screenId: 'showcase.notesauth',
+    surfaceId: 'surface.notes.notes_auth',
+    anatomyNodeId: 'anatomy:view.body',
+  );
+
   const ShowcaseNotesAuthView({this.onCreateAccount, super.key});
 
   /// When set, the "Create Account" button hands off to the owner instead of signing up inline.

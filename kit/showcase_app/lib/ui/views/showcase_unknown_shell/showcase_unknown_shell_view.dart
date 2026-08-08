@@ -36,6 +36,13 @@ import 'package:appbox_kit_showcase_app/ui/views/showcase_unknown_shell/showcase
 class ShowcaseUnknownShellView extends StackedView<ShowcaseUnknownShellViewModel> {
   const ShowcaseUnknownShellView({super.key});
 
+  /// Identity stamped at emit time (Q12 triple).
+  static const AppBoxKitInspectAttrs inspectAttrs = AppBoxKitInspectAttrs(
+    screenId: 'showcase.unknown',
+    surfaceId: 'surface.unknown.shell',
+    anatomyNodeId: 'anatomy:view.body',
+  );
+
   @override
   Widget builder(
     BuildContext context,

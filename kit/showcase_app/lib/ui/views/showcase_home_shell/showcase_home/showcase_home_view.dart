@@ -39,6 +39,13 @@ import 'package:appbox_kit_showcase_app/ui/views/showcase_home_shell/showcase_ho
 class ShowcaseHomeView extends StackedView<ShowcaseHomeViewModel> {
   const ShowcaseHomeView({super.key});
 
+  /// Identity stamped at emit time (Q12 triple).
+  static const AppBoxKitInspectAttrs inspectAttrs = AppBoxKitInspectAttrs(
+    screenId: 'showcase.home',
+    surfaceId: 'surface.home.home',
+    anatomyNodeId: 'anatomy:view.body',
+  );
+
   @override
   ShowcaseHomeViewModel viewModelBuilder(BuildContext context) =>
       ShowcaseHomeViewModel();

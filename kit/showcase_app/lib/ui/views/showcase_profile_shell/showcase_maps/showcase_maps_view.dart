@@ -49,6 +49,13 @@ import 'package:appbox_kit_showcase_app/ui/views/showcase_profile_shell/showcase
 class ShowcaseMapsView extends StackedView<ShowcaseMapsViewModel> {
   const ShowcaseMapsView({super.key});
 
+  /// Identity stamped at emit time (Q12 triple).
+  static const AppBoxKitInspectAttrs inspectAttrs = AppBoxKitInspectAttrs(
+    screenId: 'showcase.maps',
+    surfaceId: 'surface.profile.maps',
+    anatomyNodeId: 'anatomy:view.body',
+  );
+
   @override
   Widget builder(
     BuildContext context,

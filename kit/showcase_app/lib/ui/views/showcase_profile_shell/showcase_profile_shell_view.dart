@@ -42,6 +42,13 @@ class ShowcaseProfileShellView
     extends StackedView<ShowcaseProfileShellViewModel> {
   const ShowcaseProfileShellView({super.key});
 
+  /// Identity stamped at emit time (Q12 triple).
+  static const AppBoxKitInspectAttrs inspectAttrs = AppBoxKitInspectAttrs(
+    screenId: 'showcase.profile',
+    surfaceId: 'surface.profile.shell',
+    anatomyNodeId: 'anatomy:view.body',
+  );
+
   @override
   Widget builder(
     BuildContext context,

@@ -50,6 +50,13 @@ import 'package:appbox_kit_showcase_app/ui/views/showcase_profile_shell/showcase
 class ShowcaseProfileView extends StackedView<ShowcaseProfileViewModel> {
   const ShowcaseProfileView({super.key});
 
+  /// Identity stamped at emit time (Q12 triple).
+  static const AppBoxKitInspectAttrs inspectAttrs = AppBoxKitInspectAttrs(
+    screenId: 'showcase.profile',
+    surfaceId: 'surface.profile.profile',
+    anatomyNodeId: 'anatomy:view.body',
+  );
+
   @override
   ShowcaseProfileViewModel viewModelBuilder(BuildContext context) =>
       ShowcaseProfileViewModel();

@@ -37,6 +37,13 @@ import 'package:appbox_kit_showcase_app/ui/views/showcase_application_shell/show
 class ShowcaseApplicationShellView extends StackedView<ShowcaseApplicationShellViewModel> {
   const ShowcaseApplicationShellView({super.key});
 
+  /// Identity stamped at emit time (Q12 triple).
+  static const AppBoxKitInspectAttrs inspectAttrs = AppBoxKitInspectAttrs(
+    screenId: 'showcase.application',
+    surfaceId: 'surface.application.shell',
+    anatomyNodeId: 'anatomy:view.body',
+  );
+
   /// One entry per tab, in [ShowcaseTab] order; names/paths must match the
   /// shell's children in `app.dart`. (`final`: enum field reads aren't const.)
   static final tabs = [

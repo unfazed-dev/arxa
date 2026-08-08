@@ -43,6 +43,13 @@ import 'package:appbox_kit_showcase_app/ui/views/showcase_startup_shell/showcase
 class ShowcaseStartupView extends StackedView<ShowcaseStartupViewModel> {
   const ShowcaseStartupView({super.key});
 
+  /// Identity stamped at emit time (Q12 triple).
+  static const AppBoxKitInspectAttrs inspectAttrs = AppBoxKitInspectAttrs(
+    screenId: 'showcase.startup',
+    surfaceId: 'surface.startup.startup',
+    anatomyNodeId: 'anatomy:view.body',
+  );
+
   @override
   Widget builder(
     BuildContext context,

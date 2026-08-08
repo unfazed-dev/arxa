@@ -72,6 +72,13 @@ import 'package:appbox_kit_showcase_app/ui/views/showcase_notes_shell/showcase_n
 class ShowcaseNoteEditorView extends StackedView<ShowcaseNoteEditorViewModel> {
   const ShowcaseNoteEditorView({super.key});
 
+  /// Identity stamped at emit time (Q12 triple).
+  static const AppBoxKitInspectAttrs inspectAttrs = AppBoxKitInspectAttrs(
+    screenId: 'showcase.noteeditor',
+    surfaceId: 'surface.notes.note_editor',
+    anatomyNodeId: 'anatomy:view.body',
+  );
+
   /// Streams-only: the viewmodel never calls `notifyListeners` — live values
   /// bind with [AppBoxKitStreamBuilder] at the subtree that needs it.
   @override

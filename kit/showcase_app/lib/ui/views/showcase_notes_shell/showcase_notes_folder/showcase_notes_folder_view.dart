@@ -65,6 +65,13 @@ class ShowcaseNotesFolderView
     extends StackedView<ShowcaseNotesFolderViewModel> {
   const ShowcaseNotesFolderView({super.key});
 
+  /// Identity stamped at emit time (Q12 triple).
+  static const AppBoxKitInspectAttrs inspectAttrs = AppBoxKitInspectAttrs(
+    screenId: 'showcase.notesfolder',
+    surfaceId: 'surface.notes.notes_folder',
+    anatomyNodeId: 'anatomy:view.body',
+  );
+
   /// Never rebuilds off `notifyListeners`; every live value binds a stream.
   @override
   bool get reactive => false;
