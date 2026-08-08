@@ -781,6 +781,47 @@ List<LintFinding> _stateNamespaceFindings(
 /// library must own.
 const _interactiveTags = <String>{'button', 'a', 'input', 'select', 'textarea'};
 
+/// Roles that may bear direct text content. Text inside any other role (or with
+/// no `data-el` carrier at all) must flow through a Label/Heading/Txt widget so
+/// every visible string resolves to its own identity on inspect.
+const _textBearingRoles = <String>{
+  'label', 'heading', 'text', 'button', 'link', 'chip', 'badge',
+  'input', 'option',
+};
+
+/// The first direct text snippet after the opening tag at [tagEnd] in [src],
+/// or null when the tag has only element children / whitespace. Handles the
+/// `<tag><Icon/> text</tag>` blind spot (self-closing child then text).
+///
+/// JSX expressions (`{expr}`) are NOT literal text: a snippet that starts with
+/// `{` is a JSX child expression (e.g. `{cond ? (<A/> : <B/)}), and the next
+/// `<` it finds belongs to a component inside that expression, not a sibling
+/// element. Without this guard, every conditional-child wrapper in the studio
+/// would be a false positive.
+String? _directTextSnippet(String src, int tagEnd) {
+  final nextLt = src.indexOf('<', tagEnd);
+  final between = src.substring(tagEnd, nextLt < 0 ? src.length : nextLt);
+  final trimmed = between.trim();
+  if (trimmed.isNotEmpty && !trimmed.startsWith('{')) return trimmed;
+  if (nextLt >= tagEnd && nextLt < src.length) {
+    final childEnd = src.indexOf('>', nextLt);
+    if (childEnd >= 0 && src.substring(nextLt, childEnd + 1).endsWith('/>')) {
+      final afterSc = childEnd + 1;
+      final nextLtSc = src.indexOf('<', afterSc);
+      final textSc = src.substring(afterSc, nextLtSc < 0 ? src.length : nextLtSc);
+      final trimmedSc = textSc.trim();
+      if (trimmedSc.isNotEmpty && !trimmedSc.startsWith('{')) return trimmedSc;
+    }
+  }
+  return null;
+}
+
+/// Truncates [text] for inclusion in a failure message.
+String _snippet(String? text) {
+  if (text == null) return '';
+  return text.length <= 40 ? text : '${text.substring(0, 37)}…';
+}
+
 /// Known HTML element names. Restricting the scan to these eliminates false
 /// positives from TypeScript generics (`Record<string, …>`, `Array<T>`) that
 /// happen to look like `<lowercase>` after comment stripping.
@@ -813,6 +854,11 @@ final _openingTagRe = RegExp(r'<([a-z][\w-]*)([^>]*?)(/?)>');
 /// invocations, not raw HTML, so they are exempt by construction (the regex only
 /// matches lowercase-opening tags).
 ///
+/// Additionally, an element that DOES carry identity but whose `data-inspect-role`
+/// is not a text-bearing role (card/panel/nav/section…) must not bear direct
+/// text content either — that text must flow through a Label/Heading/Txt widget
+/// so it resolves to its own `data-el` on inspect.
+///
 /// The failure output doubles as the migration worklist: each finding names the
 /// file, line, and tag that needs wrapping.
 List<LintFinding> _anonymousElementFindings(String artifactDir) {
@@ -828,41 +874,42 @@ List<LintFinding> _anonymousElementFindings(String artifactDir) {
       final selfClosing = m.group(3) == '/';
       final hasIdentity =
           attrs.contains('data-el') || attrs.contains('inspectAttrs');
-      if (hasIdentity) continue;
+      final snippet = selfClosing ? null : _directTextSnippet(src, m.end);
+      final line = _lineNumberAt(src, m.start);
 
-      final interactive = _interactiveTags.contains(tag);
-      var textBearing = false;
-      if (!selfClosing) {
-        // Direct text before the first child element.
-        final nextLt = src.indexOf('<', m.end);
-        final textBetween =
-            src.substring(m.end, nextLt < 0 ? src.length : nextLt);
-        textBearing = textBetween.trim().isNotEmpty;
-        // Blind spot: <tag><Icon/> text</tag> — the first child is self-closing
-        // and text follows it. Only checks the first child to avoid false
-        // positives from deeply nested self-closing descendants.
-        if (!textBearing && nextLt >= m.end && nextLt < src.length) {
-          final childEnd = src.indexOf('>', nextLt);
-          if (childEnd >= 0 &&
-              src.substring(nextLt, childEnd + 1).endsWith('/>')) {
-            final afterSc = childEnd + 1;
-            final nextLtSc = src.indexOf('<', afterSc);
-            final textSc = src.substring(
-                afterSc, nextLtSc < 0 ? src.length : nextLtSc);
-            textBearing = textSc.trim().isNotEmpty;
+      if (hasIdentity) {
+        // Identity-carrying element with direct text in a non-text-bearing
+        // role: the text is unreachable on inspect (resolves to the container,
+        // never its own widget).
+        if (snippet != null) {
+          final roleMatch = RegExp(r'data-inspect-role\s*=\s*"([^"]*)"')
+              .firstMatch(attrs);
+          final role = roleMatch?.group(1);
+          if (role != null && !_textBearingRoles.contains(role)) {
+            findings.add(LintFinding(rel,
+                'W7: raw text "${_snippet(snippet)}" in <$tag> at line $line — '
+                'author via Label/Heading/Txt (or a text-bearing widget)'));
           }
         }
+        continue;
       }
-      if (!interactive && !textBearing) continue;
 
-      final line = _lineNumberAt(src, m.start);
-      final what = interactive
-          ? (textBearing ? 'text and interaction' : 'interaction')
-          : 'literal text';
-      findings.add(LintFinding(rel,
-          'W7: <$tag> bearing $what at line $line — wrap this <$tag> in a '
-          'library widget (Label/Heading/Txt/…) or spread inspectAttrs(...), '
-          'or add a `data-el` attribute'));
+      // No identity at all.
+      final interactive = _interactiveTags.contains(tag);
+      if (!interactive && snippet == null) continue;
+
+      if (interactive && snippet == null) {
+        // Bare interactive element with no text.
+        findings.add(LintFinding(rel,
+            'W7: <$tag> bearing interaction at line $line — wrap this <$tag> in '
+            'a library widget (Label/Heading/Txt/…) or spread inspectAttrs(...), '
+            'or add a `data-el` attribute'));
+      } else {
+        // Text (with or without interaction) outside any text-bearing widget.
+        findings.add(LintFinding(rel,
+            'W7: raw text "${_snippet(snippet)}" in <$tag> at line $line — '
+            'author via Label/Heading/Txt (or a text-bearing widget)'));
+      }
     }
   }
   return findings;

@@ -22,7 +22,7 @@ export const context = (c, h) =>
 // screen chips, and the canvas keeps rendering uninterrupted.
 export const elementContext = async (c, h) => {
   const form = await h.form(c);
-  return h.render(c, `${VIEW}#panelsSwap`, facade.pinElement(h.session(c).data, form.screen, form.name, form.kind, h.prefs(c), h.t(c), h.locale(c)));
+  return h.render(c, `${VIEW}#panelsSwap`, facade.pinElement(h.session(c).data, form.screen, form.name, form.kind, h.prefs(c), h.t(c), h.locale(c), form.instance));
 };
 
 // Element context chip remove (GET — the composer chip's hx-get). Reads query

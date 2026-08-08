@@ -825,6 +825,8 @@ const elementCard = (d, p, L) => {
   return {
     name: p.name,
     kind: p.kind ?? '',
+    instance: p.instance ?? '',
+    instanceCount: p.instanceCount ?? '',
     screenId: p.screen,
     tone: toneFor(p.screen, L),
     // True when the island had no data-el to read — identity was inferred from
@@ -945,6 +947,8 @@ export const selectElement = (sessionData, payload = {}, prefs = {}, t = (k) => 
     fn: payload.fn ?? '',
     inferred: payload.inferred === '1',
     chain,
+    instance: payload.instance ?? '',
+    instanceCount: payload.instanceCount ?? '',
   };
   if (payload.lock === '1') d.inspectorLock = p; else d.inspectorHover = p;
   // Remembered so the screen card still has a subject once the pointer leaves
@@ -1474,11 +1478,11 @@ export const removeFromFlow = async (sessionData, flowId, screenId, prefs = {}, 
 // pin dedupes on (screenId, name) and auto-opens the tray. These do NOT touch
 // the canvas undo stack — element-scoped checkpoints (contract §6) are a
 // separate slice; this just maintains the tray membership.
-export const pinElement = (sessionData, screenId, name, kind, prefs, t, locale) => {
+export const pinElement = (sessionData, screenId, name, kind, prefs, t, locale, instance) => {
   const d = design(sessionData);
   const el = (d.elementContext ??= []);
   if (!el.some((e) => e.screenId === screenId && e.name === name)) {
-    el.push({ screenId, name, kind, tone: toneFor(screenId, locale) });
+    el.push({ screenId, name, kind, instance: instance || '', tone: toneFor(screenId, locale) });
     d.trayOpen = true;
   }
   return stageContext(sessionData, {}, prefs, t, locale);

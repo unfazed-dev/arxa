@@ -322,6 +322,10 @@ const _kBrokenRenderBundle =
 /// Browser-compatible icon.tsx — reads Lucide SVGs from `globalThis.__icons`
 /// (populated by the Dart prefetch) instead of `node:fs`. Same SVG modification
 /// logic as the ejected icon.tsx (stroke-width, aria attrs, class, size).
+///
+/// Every icon carries `data-el="icon:<glyph>"` on its `<svg>` root so it is a
+/// first-class inspectable widget — hovering a path/group collapses to the svg
+/// (via ownerSVGElement), never to the parent container.
 const _browserIconTsx = r"""
 import { raw } from 'hono/utils/html';
 import type { FC } from 'hono/jsx';
@@ -332,22 +336,24 @@ interface IconProps {
   cls?: string;
   label?: string;
   strokeWidth?: number;
+  fn?: string;
 }
 
 const NAME_RE = /^[a-z0-9-]+$/;
 const esc = (s: string) =>
   String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
-function placeholder(size: number, cls?: string): string {
-  return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"${cls ? ` class="${esc(cls)}"` : ''}><rect x="3" y="3" width="18" height="18" rx="3" stroke-dasharray="4 3"/></svg>`;
+function placeholder(size: number, cls: string | undefined, elName: string): string {
+  return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false" data-el="${esc(elName)}" data-inspect-role="icon" data-inspect-style="icon"${cls ? ` class="${esc(cls)}"` : ''}><rect x="3" y="3" width="18" height="18" rx="3" stroke-dasharray="4 3"/></svg>`;
 }
 
-const Icon: FC<IconProps> = ({ name, size = 24, cls, label, strokeWidth }) => {
+const Icon: FC<IconProps> = ({ name, size = 24, cls, label, strokeWidth, fn }) => {
+  const elName = `icon:${name}`;
   if (typeof name !== 'string' || !NAME_RE.test(name)) {
-    return raw(placeholder(size, cls));
+    return raw(placeholder(size, cls, 'icon:unknown'));
   }
   const rawSvg = ((globalThis as any).__icons || {})[name];
-  if (!rawSvg) return raw(placeholder(size, cls));
+  if (!rawSvg) return raw(placeholder(size, cls, elName));
 
   const openTag = rawSvg.match(/<svg[^>]*>/)![0];
   let open = openTag
@@ -360,6 +366,8 @@ const Icon: FC<IconProps> = ({ name, size = 24, cls, label, strokeWidth }) => {
   open = open.replace(
     /<svg/,
     `<svg width="${size}" height="${size}"` +
+      ` data-el="${esc(elName)}" data-inspect-role="icon" data-inspect-style="icon"` +
+      (fn ? ` data-inspect-fn="${esc(fn)}"` : '') +
       (cls ? ` class="${esc(cls)}"` : '') +
       (label ? ` role="img" aria-label="${esc(label)}"` : ' aria-hidden="true" focusable="false"'),
   );

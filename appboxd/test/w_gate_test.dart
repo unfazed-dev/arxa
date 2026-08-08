@@ -902,7 +902,7 @@ export default function BriefView() {
   return <main><Toolbar /><Chip text="a" /><Row /><span>Raw text</span></main>;
 }
 ''',
-      }, messageContains: 'wrap this <span>');
+      }, messageContains: 'author via Label/Heading/Txt');
     });
 
     test('an interactive <button> without identity fails even with no text', () {
@@ -984,6 +984,64 @@ export default function BriefView() {
       // and is not interactive — so W7 does not fire.
       final findings = gateDesignWidgets(_tree(tmp, const {}));
       expect(_rules(findings), isNot(contains('W7')));
+    });
+
+    test('direct text in a non-text-bearing role (card) fails', () {
+      // A card has identity (data-el) and role "card", which is not a
+      // text-bearing role. Text directly inside it is unreachable on inspect.
+      expectsOnly('W7', {
+        'ui/views/main_shell/intake/brief/brief_view.tsx': '''
+import Toolbar from '../../shared/widgets/toolbar.tsx';
+import { Chip } from '../../../../common/widgets/chip.tsx';
+import Row from './widgets/row.tsx';
+export default function BriefView() {
+  return <main><Toolbar /><Chip text="a" /><Row /><div data-el="card:X" data-inspect-role="card">hello</div></main>;
+}
+''',
+      }, messageContains: 'author via Label/Heading/Txt');
+    });
+
+    test('text in a container-role card via child span fails (span has no identity)', () {
+      expectsOnly('W7', {
+        'ui/views/main_shell/intake/brief/brief_view.tsx': '''
+import Toolbar from '../../shared/widgets/toolbar.tsx';
+import { Chip } from '../../../../common/widgets/chip.tsx';
+import Row from './widgets/row.tsx';
+export default function BriefView() {
+  return <main><Toolbar /><Chip text="a" /><Row /><div data-el="card:X" data-inspect-role="card"><span>hello</span></div></main>;
+}
+''',
+      }, messageContains: 'author via Label/Heading/Txt');
+    });
+
+    test('data-el with no data-inspect-role and direct text passes (role unknown)', () {
+      // A bare data-el with no role metadata: the gate cannot determine the
+      // role, so it is lenient — the author put identity on it.
+      final findings = gateDesignWidgets(_tree(tmp, {
+        'ui/views/main_shell/intake/brief/brief_view.tsx': '''
+import Toolbar from '../../shared/widgets/toolbar.tsx';
+import { Chip } from '../../../../common/widgets/chip.tsx';
+import Row from './widgets/row.tsx';
+export default function BriefView() {
+  return <main><Toolbar /><Chip text="a" /><Row /><div data-el="label:X">text</div></main>;
+}
+''',
+      }));
+      expect(findings, isEmpty, reason: findings.join('\n'));
+    });
+
+    test('text in a text-bearing role (button with data-el) passes', () {
+      final findings = gateDesignWidgets(_tree(tmp, {
+        'ui/views/main_shell/intake/brief/brief_view.tsx': '''
+import Toolbar from '../../shared/widgets/toolbar.tsx';
+import { Chip } from '../../../../common/widgets/chip.tsx';
+import Row from './widgets/row.tsx';
+export default function BriefView() {
+  return <main><Toolbar /><Chip text="a" /><Row /><button data-el="btn:go" data-inspect-role="button">Go</button></main>;
+}
+''',
+      }));
+      expect(findings, isEmpty, reason: findings.join('\n'));
     });
   });
 

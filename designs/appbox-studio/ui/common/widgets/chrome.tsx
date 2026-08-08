@@ -3,6 +3,7 @@
 // Rung visibility is pure CSS; every open/close is <details> — zero client JS.
 import { Fragment } from 'hono/jsx';
 import Icon from '../../../runtime/icon.tsx';
+import { inspectAttrs } from './primitives.tsx';
 
 type TFn = (key: string, vars?: Record<string, unknown>) => unknown;
 
@@ -52,7 +53,7 @@ export function HeaderBody(props: HeaderBodyProps) {
 
   return (
     <Fragment>
-      <details class="shell-drawer shell-chrome-touch">
+      <details class="shell-drawer shell-chrome-touch" {...inspectAttrs('chrome:drawer', { role: 'nav' })}>
         <summary class="ico-btn" aria-label={t('nav.open') as string}>
           <Icon name="menu" size={20} />
         </summary>
@@ -84,17 +85,17 @@ export function HeaderBody(props: HeaderBodyProps) {
         </div>
       </details>
 
-      <a class="shell-brand" href="/">appbox studio</a>
+      <a class="shell-brand" href="/" {...inspectAttrs('chrome:brand', { role: 'link' })}>appbox studio</a>
 
       {project && (
-        <a class="shell-project" href="/" title={t('chrome.projectBack') as string}>
+        <a class="shell-project" href="/" title={t('chrome.projectBack') as string} {...inspectAttrs('chrome:project', { role: 'link' })}>
           <span class="shell-project-name">{project.name}</span>
           <span class="shell-project-shell">{activeLabel}</span>
           {project.savedLabel && <span class="shell-project-saved">{project.savedLabel}</span>}
         </a>
       )}
 
-      <span class="shell-links">
+      <span class="shell-links" {...inspectAttrs('chrome:links', { role: 'nav' })}>
         {dests.map((d) => (
           <a
             key={d.id}
@@ -109,7 +110,7 @@ export function HeaderBody(props: HeaderBodyProps) {
 
       <span class="panel-header-spacer"></span>
 
-      <span class="channel" title={t('chrome.daemonChannel') as string}>
+      <span class="channel" title={t('chrome.daemonChannel') as string} {...inspectAttrs('chrome:channel', { role: 'status' })}>
         <span class="channel-dot"></span>
         <span class="channel-label">{t('chrome.daemonLive') as string}</span>
       </span>
@@ -120,7 +121,7 @@ export function HeaderBody(props: HeaderBodyProps) {
         </button>
       </form>
 
-      <details class="shell-overflow shell-chrome-touch">
+      <details class="shell-overflow shell-chrome-touch" {...inspectAttrs('chrome:overflow', { role: 'nav' })}>
         <summary class="ico-btn" aria-label={t('nav.more') as string}>
           <Icon name="ellipsis-vertical" size={20} />
         </summary>
@@ -150,7 +151,7 @@ export function OffCanvas(props: OffCanvasProps) {
   return (
     <Fragment>
       {/* compact: primary nav leaves the header panel and becomes the tabbar */}
-      <nav class="tabbar" aria-label={t('nav.primary') as string}>
+      <nav class="tabbar" aria-label={t('nav.primary') as string} {...inspectAttrs('chrome:tabbar', { role: 'nav' })}>
         {dests.map((d) => (
           <a
             key={d.id}
@@ -165,7 +166,7 @@ export function OffCanvas(props: OffCanvasProps) {
       </nav>
 
       {/* compact + medium: staggered-action FAB, pure <details> */}
-      <details class="fab-menu">
+      <details class="fab-menu" {...inspectAttrs('chrome:fab', { role: 'nav' })}>
         <summary class="fab" aria-label={t('nav.quickActions') as string}>
           <Icon name="plus" size={24} />
         </summary>
@@ -177,7 +178,7 @@ export function OffCanvas(props: OffCanvasProps) {
       </details>
 
       {/* medium: the railbar — the drawer's docked form: slim icon strip */}
-      <details class="railbar">
+      <details class="railbar" {...inspectAttrs('chrome:railbar', { role: 'nav' })}>
         <summary class="railbar-strip" aria-label={t('nav.openRailbar') as string}>
           {dests.map((d) => (
             <span key={d.id} class={`railbar-ico${activeShell === d.id ? ' is-active' : ''}`}>

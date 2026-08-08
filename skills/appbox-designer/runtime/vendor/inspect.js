@@ -28,12 +28,14 @@
    context chip renders (composer.html, .cs-el-name) — what you see on the
    screen is what gets pinned.
 
-   Hover targets ONLY authored widgets ([data-el]). SVG internals collapse to
-   their owning <svg> before resolution, so hovering a <path> inside an icon
-   badges the widget that owns the icon, never the path. Unannotated regions
-   fall through to a screen-level sentinel (document.body) that outlines the
-   full surface and badges it with the body's data-surface name — the single
-   surviving inferred case.
+   Hover targets ONLY authored widgets ([data-el]). Resolution uses
+   elementsFromPoint to walk the full paint-order stack, so even a widget
+   occluded by a transparent overlapping sibling is reachable. SVG internals
+   collapse to their owning <svg> before resolution, so hovering a <path>
+   inside an icon badges the widget that owns the icon, never the path.
+   Unannotated regions fall through to a screen-level sentinel (document.body)
+   that outlines the full surface and badges it with the body's data-surface
+   name — the single surviving inferred case.
 
    The badge follows the studio accent: reads --accent and --on-accent off the
    parent document's #app element (same-origin), falling back to the local
@@ -95,14 +97,64 @@
     };
   };
 
-  // Resolve the innermost inspectable target from a pointer event target.
-  // SVG internals collapse to the owning <svg>, then the nearest [data-el]
-  // ancestor is the widget. No widget → document.body sentinel (screen
-  // fallback). Overlay nodes (inspect-*) carry no data-el and are never the
-  // pointer target anyway (pointer-events:none).
-  const inspectTarget = (raw) => {
-    const el = raw.ownerSVGElement ? raw.ownerSVGElement : raw;
-    return el.closest('[data-el]') || document.body;
+  // Resolve the innermost inspectable widget at viewport coordinates (x, y)
+  // via an elementsFromPoint stack-walk. Each hit in the stack collapses SVG
+  // internals to the owning <svg>, then finds the nearest [data-el]. Overlay
+  // nodes (tagged data-inspect-overlay) are skipped. When the stack is empty
+  // or has no widget (every element is unannotated), falls back to the event
+  // target's own closest [data-el], then to the document.body sentinel.
+  //
+  // Replaces the old inspectTarget(e.target): that only read the topmost
+  // element, so a widget occluded by an overlapping sibling was unreachable.
+  // elementsFromPoint returns the full paint-order stack, so the walker finds
+  // the widget even when something transparent sits on top of it.
+  const resolveAt = (x, y, fallbackTarget) => {
+    const stack = document.elementsFromPoint(x, y);
+    for (const raw of stack) {
+      if (raw.closest('[data-inspect-overlay]')) continue;
+      const el = raw.ownerSVGElement ? raw.ownerSVGElement : raw;
+      const hit = el.closest('[data-el]');
+      if (hit) return hit;
+    }
+    const el = fallbackTarget && (fallbackTarget.ownerSVGElement || fallbackTarget);
+    return (el && el.closest('[data-el]')) || document.body;
+  };
+
+  // Compute the instance path of [el] among same-name siblings in its widget
+  // tree. For each level in the ancestor chain (outermost→innermost):
+  //   scope = nearest [data-el] ancestor (or document for top-level)
+  //   siblings = same-name [data-el] elements whose nearest widget ancestor IS scope
+  //   k = 0-based index of this element among those siblings
+  // Returns { instance: "0/1/2", instanceCount: n } where n is the leaf's sibling count.
+  const instanceOf = (el) => {
+    if (!el.dataset || !el.dataset.el) return { instance: '', instanceCount: 1 };
+    const chain = [];
+    let cur = el;
+    while (cur && cur !== document.body && cur.parentElement) {
+      if (cur.dataset && cur.dataset.el) chain.unshift(cur);
+      cur = cur.parentElement;
+    }
+    if (chain.length === 0) return { instance: '', instanceCount: 1 };
+    const parts = [];
+    var leafCount = 1;
+    for (const node of chain) {
+      const name = node.dataset.el;
+      let scope = node.parentElement;
+      while (scope && scope !== document.body && !(scope.dataset && scope.dataset.el)) {
+        scope = scope.parentElement;
+      }
+      const scopeEl = scope || document;
+      const all = scopeEl.querySelectorAll('[data-el="' + name + '"]');
+      const siblings = [];
+      for (const c of all) {
+        var a = c.parentElement;
+        while (a && !(a.dataset && a.dataset.el)) a = a.parentElement;
+        if (a === scope) siblings.push(c);
+      }
+      parts.push(String(siblings.indexOf(node)));
+      if (node === el) leafCount = siblings.length;
+    }
+    return { instance: parts.join('/'), instanceCount: leafCount };
   };
 
   // Build the ancestor chain outermost→innermost, [data-el] widgets only.
@@ -120,28 +172,33 @@
     return chain;
   };
 
-  let outlineEl = null;
+  let overlayContainer = null; // position:fixed at viewport 0,0 — holds rect divs
   let labelEl = null;
+  let rectPool = [];           // reusable highlight rect divs (one per line fragment)
   let lastHovered = null;
   let momentary = false; // true only while Alt is the thing that armed us
 
   const ensureOverlay = () => {
     // isConnected, not a plain truthiness check: under boosted navigation htmx
     // replaces the body's children, which detaches these nodes while our
-    // references stay live. A `if (outlineEl) return;` would then keep handing
-    // back an orphan that renders nowhere, and inspect would silently stop
-    // drawing after the first in-frame navigation.
-    if (outlineEl && outlineEl.isConnected && labelEl && labelEl.isConnected) return;
-    outlineEl = document.createElement('div');
-    outlineEl.className = 'inspect-outline';
+    // references stay live. A `if (overlayContainer) return;` would then keep
+    // handing back an orphan that renders nowhere, and inspect would silently
+    // stop drawing after the first in-frame navigation.
+    if (overlayContainer && overlayContainer.isConnected && labelEl && labelEl.isConnected) return;
+    overlayContainer = document.createElement('div');
+    overlayContainer.setAttribute('data-inspect-overlay', '');
+    overlayContainer.style.cssText =
+      'position:fixed;left:0;top:0;pointer-events:none;z-index:99998;';
     labelEl = document.createElement('div');
     labelEl.className = 'inspect-label';
-    document.body.appendChild(outlineEl);
+    labelEl.setAttribute('data-inspect-overlay', '');
+    document.body.appendChild(overlayContainer);
     document.body.appendChild(labelEl);
+    rectPool = [];
   };
 
   const hideOverlay = () => {
-    if (outlineEl) outlineEl.style.display = 'none';
+    if (overlayContainer) overlayContainer.style.display = 'none';
     if (labelEl) labelEl.style.display = 'none';
   };
 
@@ -152,15 +209,20 @@
     lastHovered = null;
   };
 
-  // The badge: the widget's name (or surface name for the screen fallback).
+  // The badge: the widget's name (or surface name for the screen fallback),
+  // with a · k/n suffix when multiple same-name instances exist.
   // Inferred (screen fallback) dims the name line; the role travels in the
   // POST and is rendered by the server in the pane.
   const fillReadout = (el) => {
     const info = synthesize(el);
+    const inst = instanceOf(el);
     labelEl.replaceChildren();
     const name = document.createElement('div');
     name.style.cssText = 'font-weight:600;color:inherit;' + (info.inferred ? ' opacity:.7;' : '');
-    name.textContent = info.name;
+    const leafK = inst.instance ? Number(inst.instance.split('/').pop()) : 0;
+    name.textContent = inst.instanceCount > 1
+      ? info.name + ' · ' + (leafK + 1) + '/' + inst.instanceCount
+      : info.name;
     labelEl.appendChild(name);
     const sub = document.createElement('div');
     sub.style.cssText = 'font-size:10px;opacity:.75;color:inherit;';
@@ -173,6 +235,7 @@
   // SERVER owns the final authored/inferred distinction in its joins.
   const measure = (el, lock) => {
     const info = synthesize(el);
+    const inst = instanceOf(el);
     const v = {
       screen: document.body.dataset.surface || '',
       name: info.name,
@@ -183,6 +246,8 @@
     if (el.dataset.inspectMotion) v.motion = el.dataset.inspectMotion;
     if (el.dataset.inspectFn) v.fn = el.dataset.inspectFn;
     if (info.inferred) v.inferred = '1';
+    if (inst.instance) v.instance = inst.instance;
+    if (inst.instanceCount > 1) v.instanceCount = String(inst.instanceCount);
     v.chain = JSON.stringify(buildChain(el));
     if (lock) v.lock = '1';
     return v;
@@ -213,39 +278,79 @@
 
   const showOverlay = (el) => {
     ensureOverlay();
-    const r = el.getBoundingClientRect();
     const a = accents();
-    outlineEl.style.cssText =
-      'display:block;position:fixed;' +
-      `left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px;` +
-      'pointer-events:none;z-index:99998;' +
-      `box-shadow:inset 0 0 0 2px ${a.accent};background:${a.accent}1a;border-radius:4px;`;
+
+    // Batch-read all rects before writing anything (avoids layout thrashing).
+    // getClientRects returns one rect per line fragment for wrapped inline
+    // content; block elements yield exactly one rect — visual parity with the
+    // old single-rect overlay.
+    var rects = Array.from(el.getClientRects());
+    // Empty inline / display:contents → fall back to the nearest block
+    // container's rect, but keep the leaf's name/identity in the badge and POST.
+    if (rects.length === 0) {
+      var block = el.parentElement;
+      while (block && getComputedStyle(block).display === 'inline') block = block.parentElement;
+      if (block) rects = Array.from(block.getClientRects());
+      if (rects.length === 0) rects = [el.getBoundingClientRect()];
+    }
+
+    // Grow the reusable pool as needed (pool survives htmx morphs via the
+    // isConnected guard in ensureOverlay).
+    while (rectPool.length < rects.length) {
+      var d = document.createElement('div');
+      overlayContainer.appendChild(d);
+      rectPool.push(d);
+    }
+
+    // Position each rect in a single write pass.
+    overlayContainer.style.display = 'block';
+    var rectCss = 'display:block;position:absolute;' +
+      'pointer-events:none;' +
+      'box-shadow:inset 0 0 0 2px ' + a.accent + ';' +
+      'background:' + a.accent + '1a;border-radius:4px;';
+    for (var i = 0; i < rects.length; i++) {
+      var r = rects[i];
+      rectPool[i].style.cssText = rectCss +
+        'left:' + r.left + 'px;top:' + r.top + 'px;' +
+        'width:' + r.width + 'px;height:' + r.height + 'px;';
+    }
+    // Hide surplus pool divs from a previous hover.
+    for (var j = rects.length; j < rectPool.length; j++) {
+      rectPool[j].style.display = 'none';
+    }
+
+    // Badge follows the first (topmost) rect.
+    var firstRect = rects[0];
     labelEl.style.cssText =
       'display:block;position:fixed;pointer-events:none;z-index:99999;' +
-      `left:${r.left}px;top:${Math.max(0, r.top - 28)}px;` +
-      `background:${a.accent};color:${a.onAccent};` +
+      'left:' + firstRect.left + 'px;top:' + Math.max(0, firstRect.top - 28) + 'px;' +
+      'background:' + a.accent + ';color:' + a.onAccent + ';' +
       'font-size:11px;line-height:1.4;padding:4px 10px;' +
       'border-radius:6px 6px 6px 0;white-space:nowrap;' +
       'box-shadow:0 2px 8px rgba(0,0,0,.25);' +
       "font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;";
     fillReadout(el);
     // multi-line readouts grow downward from the element's top edge
-    labelEl.style.top = Math.max(0, r.top - labelEl.offsetHeight - 6) + 'px';
+    labelEl.style.top = Math.max(0, firstRect.top - labelEl.offsetHeight - 6) + 'px';
   };
 
   // hover tracking — only acts while armed. Resolves to the nearest [data-el]
-  // widget (or screen fallback). One request per element CHANGE, not per
-  // pointer move — the identity check is the whole throttle. Hovering while
-  // the pane is locked is a no-op server-side, so it costs a request and
-  // swaps nothing.
+  // widget (or screen fallback) via elementsFromPoint stack-walk. One request
+  // per element CHANGE, not per pointer move — the identity check is the whole
+  // throttle. Hovering while the pane is locked is a no-op server-side, so it
+  // costs a request and swaps nothing.
+  //
+  // Capture phase so we run before any boosted-navigation handler on the
+  // element — without it, a link's click suppresses our pointermove before we
+  // read the target.
   document.addEventListener('pointermove', (e) => {
     if (!armed()) { clearHover(); return; }
-    const el = inspectTarget(e.target);
+    const el = resolveAt(e.clientX, e.clientY, e.target);
     if (el !== lastHovered) {
       lastHovered = el;
       if (el) { showOverlay(el); feedPane(el, false); } else hideOverlay();
     }
-  });
+  }, true);
 
   // click to LOCK — capture phase so we run before any navigation handler.
   // Clicking used to pin to chat context; pinning is now an explicit button on
@@ -254,7 +359,7 @@
   // which is what lets it survive the htmx morphs that rebuild the panel.
   document.addEventListener('click', (e) => {
     if (!armed()) return;
-    const el = inspectTarget(e.target);
+    const el = resolveAt(e.clientX, e.clientY, e.target);
     if (!el) return;
     e.preventDefault();
     e.stopPropagation();

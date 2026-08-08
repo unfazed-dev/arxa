@@ -29,6 +29,8 @@ interface InspectorCrumb {
 interface InspectorElement {
   kind?: string;
   name?: string;
+  instance?: string;
+  instanceCount?: string;
   screenId?: string;
   tone?: string;
   pinned?: boolean;
@@ -106,6 +108,19 @@ export function MetaRow({ label, value, mark, t }: MetaRowProps) {
   );
 }
 
+// kindToBadge — maps the element's HTML tag kind to a styled badge type+label,
+// so text leaves and icons get a meaningful badge instead of a bare .tb-span.
+function kindToBadge(kind?: string): { type: string; label?: string } | null {
+  if (!kind) return null;
+  switch (kind) {
+    case 'span': return { type: 'text', label: 'text · label' };
+    case 'p': return { type: 'text', label: 'text · body' };
+    case 'h1': case 'h2': case 'h3': return { type: 'text', label: 'text · heading' };
+    case 'svg': return { type: 'icon', label: 'icon' };
+    default: return { type: kind };
+  }
+}
+
 // elementCard — the element's own story + pin/lock controls.
 interface ElementCardProps {
   el: InspectorElement;
@@ -117,7 +132,7 @@ export function ElementCard({ el, locked, unlockHref, t }: ElementCardProps) {
   return (
     <div class={`msg msg-agent${locked ? ` is-active msg-ctx ctx-${el.tone}` : ''}`}>
       <header class="msg-meta" {...inspectAttrs('inspector:card-head', { role: 'group' })}>
-        {el.kind && <TypeBadge type={el.kind} />}
+        {(() => { const b = kindToBadge(el.kind); return b && <TypeBadge type={b.type} label={b.label} />; })()}
         {el.inferred && (
           <span class="chip thread-badge" {...inspectAttrs('inspector:inferred', { role: 'status' })} title={t('inspector.inferredTitle') as string}>
             {t('inspector.inferred') as string}
@@ -129,7 +144,7 @@ export function ElementCard({ el, locked, unlockHref, t }: ElementCardProps) {
           </span>
         )}
       </header>
-      <span class="msg-text" {...inspectAttrs('inspector:el-name-text', { role: 'text' })}><code {...inspectAttrs('inspector:el-name', { role: 'text' })}>{el.name}</code></span>
+      <span class="msg-text" {...inspectAttrs('inspector:el-name-text', { role: 'text' })}><code {...inspectAttrs('inspector:el-name', { role: 'text' })}>{el.name}{el.instanceCount && Number(el.instanceCount) > 1 && (() => { const k = Number((el.instance ?? '0').split('/').pop()); return ` · ${k + 1}/${el.instanceCount}`; })()}</code></span>
       {/* Ancestor breadcrumb — outermost › … › current. Each ancestor is a
           button that POSTs back to /design/inspector/select (selectHref) to
           lock that element; the last entry is the current element (no link). */}
@@ -181,6 +196,7 @@ export function ElementCard({ el, locked, unlockHref, t }: ElementCardProps) {
               <input type="hidden" name="screen" value={el.screenId} {...inspectAttrs('inspector:field-screen', { role: 'input' })} />
               <input type="hidden" name="name" value={el.name} {...inspectAttrs('inspector:field-name', { role: 'input' })} />
               <input type="hidden" name="kind" value={el.kind} {...inspectAttrs('inspector:field-kind', { role: 'input' })} />
+              <input type="hidden" name="instance" value={el.instance} {...inspectAttrs('inspector:field-instance', { role: 'input' })} />
               <button class="cta-main" type="submit" {...inspectAttrs('inspector:pin', { role: 'action' })}>{t('design.pinToContext') as string} <Icon name="pin" size={14} /></button>
             </form>
           ) : null}

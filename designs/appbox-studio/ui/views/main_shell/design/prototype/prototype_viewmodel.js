@@ -116,6 +116,7 @@ export const inspectorSelect = async (c, h) => {
     screen: f('screen'), name: f('name'), kind: f('kind'),
     role: f('role'), style: f('style'), motion: f('motion'), fn: f('fn'),
     lock: f('lock'), inferred: f('inferred'), chain: f('chain'),
+    instance: f('instance'), instanceCount: f('instanceCount'),
   }, h.prefs(c), h.t(c), h.locale(c));
   if (next.activityView !== 'inspector') return h.noContent(c);
   return h.render(c, `${VIEW}#inspectorPane`, next);
