@@ -1,0 +1,639 @@
+{
+  "$schema": "./feature-recipe.schema.json",
+  "manifestVersion": "1.0.0",
+  "_comment": [
+    "Q8 SSOT. Feature-recipe path/naming manifest. Loaded by BOTH appbox-designer and",
+    "appbox-scaffolder so their outputs converge on the same tree.",
+    "PROVENANCE: derived by abstraction from kit/showcase_app/lib (207 .dart files), which",
+    "Q1 locks as the structure contract, not an example. Showcase itself MUST pass the",
+    "golden-expansion probe against this manifest (Q8 gate).",
+    "FINAL DESTINATION: kit/showcase_app/feature-recipe.manifest.json — this file and its",
+    "sibling feature-recipe.schema.json are STAGED in skills/appbox-scaffolder/ only because",
+    "both refactor agents are read-only on kit/. The orchestrator git mv's the pair at commit",
+    "time; every path reference in both skills already points at the final location, and the",
+    "$schema pointer above is relative, so the move needs no follow-up text edits.",
+    "NOT moving: kind-resolution.registry.json (Q7) stays in skills/appbox-scaffolder/."
+  ],
+  "structureContract": {
+    "root": "kit/showcase_app/lib",
+    "packageTemplate": "appbox_kit_<app>_app",
+    "importTemplate": "package:appbox_kit_<app>_app/<path>"
+  },
+  "tokens": {
+    "app": {
+      "description": "App slug. Prefixes nearly every app-owned file and directory (Q1 <app>_<feature>_ naming).",
+      "source": "intake/registry.json#/app/slug",
+      "pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*$",
+      "showcaseValue": "showcase"
+    },
+    "feature": {
+      "description": "Feature slug. One feature owns one shell plus its widget/service/model/schema/enum buckets.",
+      "source": "intake/registry.json#/features/*/slug",
+      "pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*$",
+      "showcaseValues": [
+        "notes",
+        "profile",
+        "home",
+        "search",
+        "startup",
+        "unknown",
+        "application"
+      ],
+      "syntheticProbeValue": "payments"
+    },
+    "surface": {
+      "description": "One screen inside a shell. Registry id is the stable key (§18).",
+      "source": "intake/registry.json#/surfaces/*/id",
+      "pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*$",
+      "note": "A surface slug is NOT required to equal its feature slug: showcase_notes_shell contains surfaces notes, note_editor, notes_folder, notes_auth, notes_create_account."
+    },
+    "factor": {
+      "description": "Form factor. DERIVED from --targets via pipeline/state/targets.derivation.json + config viewports (P06). Never a per-surface literal, never read from ambient pipeline state.",
+      "enum": [
+        "desktop",
+        "mobile",
+        "tablet"
+      ],
+      "derivation": {
+        "macos": [
+          "desktop"
+        ],
+        "ios,android": [
+          "mobile",
+          "tablet"
+        ],
+        "web": [
+          "mobile",
+          "tablet",
+          "desktop"
+        ]
+      },
+      "rule": "A factor absent from the derived set produces NO file. Emitting an empty .mobile/.tablet to satisfy a counter is the stale-green defect §16 exists to kill."
+    },
+    "widgetGroup": {
+      "description": "Sub-bucket under ui/widgets/common/ for cross-feature shared widgets.",
+      "pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*$",
+      "showcaseValues": [
+        "showcase_tabs_shared",
+        "showcase_gallery_chrome",
+        "mouse_transforms"
+      ]
+    }
+  },
+  "ownership": {
+    "_comment": "Q9 generation-gap boundary, declared up front. scaffolder = deterministically regenerated, byte-identical on unchanged inputs, hand edits are drift (--check fails). user = written once as a stub then owned by the builder/human; regeneration NEVER clobbers, divergence gate only verifies against the last-generated baseline.",
+    "values": {
+      "scaffolder": "Scaffolder-owned. Regenerated every run. Additive-only diff. Idempotence asserted by the golden probe.",
+      "user": "User-owned after first emit. Scaffolder writes the stub once; subsequent runs leave it untouched.",
+      "shared-join-point": "Scaffolder-owned aggregation point (barrels, router, locator, manifest). Deterministically regenerated; unchanged inputs => byte-identical entries."
+    }
+  },
+  "frontmatterKinds": {
+    "_comment": "Q5: the semantic library doc comment in showcase files is NORMATIVE. Canon: skills/appbox-builder/BUILDER_playbook.mdx -> File structure. Every emitted file carries the doc comment ABOVE a bare `library;` directive. Order is locked. The scaffolder emits the layer-intro + role + History lines verbatim-derived and leaves the requirements/relationships bodies as a marked placeholder the builder fills.",
+    "full": {
+      "sections": [
+        {
+          "id": "layer-intro",
+          "required": true,
+          "owner": "scaffolder",
+          "note": "Fixed prose per artifact kind. Identical across every file of that kind."
+        },
+        {
+          "id": "role",
+          "required": true,
+          "owner": "scaffolder",
+          "note": "One paragraph: what THIS file is, derived from the registry surface/widget label."
+        },
+        {
+          "id": "requirements",
+          "required": true,
+          "owner": "user",
+          "note": "Numbered `/// N. [Label] — requirement-slug` pairs from the registry; body line per item written by the builder."
+        },
+        {
+          "id": "relationships",
+          "required": true,
+          "owner": "user",
+          "note": "ASCII box diagram + streams (STRM) / actions (ACT) legend, joined by the `abxAction` rail."
+        },
+        {
+          "id": "history",
+          "required": true,
+          "owner": "scaffolder",
+          "note": "`/// History: git log --follow -- <repo-relative path>` — mechanically derivable, so mechanically gated."
+        }
+      ],
+      "terminator": "library;"
+    },
+    "light": {
+      "sections": [
+        {
+          "id": "layer-intro",
+          "required": true,
+          "owner": "scaffolder"
+        },
+        {
+          "id": "role",
+          "required": true,
+          "owner": "scaffolder"
+        },
+        {
+          "id": "history",
+          "required": true,
+          "owner": "scaffolder"
+        }
+      ],
+      "terminator": "library;",
+      "appliesTo": [
+        "model",
+        "schema",
+        "enum",
+        "consts",
+        "barrel"
+      ]
+    }
+  },
+  "inspectAttrs": {
+    "_comment": "Q12: identity is STAMPED AT EMIT TIME, never inferred at runtime (Flutter --track-widget-creation pattern). Presence is enforced by Q11 verdict 4. NOTE: kit/showcase_app carries NO inspectAttrs today (verified: zero matches) — this is a NEW obligation on emitted output, and the showcase corroboration in the golden probe must exempt it or showcase must be back-stamped by the orchestrator.",
+    "triple": [
+      "screenId",
+      "surfaceId",
+      "anatomyNodeId"
+    ],
+    "source": "intake/registry.json ids, carried through the frozen run artifact",
+    "requiredOn": [
+      "view",
+      "view-factor",
+      "widget",
+      "shared-widget"
+    ],
+    "rule": "Studio inspect mode reads the triple ONLY. Zero DOM heuristics; inspect mode survives regeneration by construction."
+  },
+  "artifactTypes": [
+    {
+      "id": "shell-view",
+      "layer": "ui/views",
+      "ownership": "user",
+      "pathTemplate": "lib/ui/views/<app>_<feature>_shell/",
+      "nameTemplate": "<app>_<feature>_shell_view.dart",
+      "cardinality": "one per feature",
+      "frontmatter": "full",
+      "inspectAttrs": true,
+      "showcaseExample": "lib/ui/views/showcase_notes_shell/showcase_notes_shell_view.dart"
+    },
+    {
+      "id": "shell-view-factor",
+      "layer": "ui/views",
+      "ownership": "user",
+      "pathTemplate": "lib/ui/views/<app>_<feature>_shell/",
+      "nameTemplate": "<app>_<feature>_shell_view.<factor>.dart",
+      "cardinality": "one per feature per DERIVED factor",
+      "frontmatter": "full",
+      "inspectAttrs": true,
+      "showcaseExample": "lib/ui/views/showcase_notes_shell/showcase_notes_shell_view.desktop.dart"
+    },
+    {
+      "id": "shell-viewmodel",
+      "layer": "ui/views",
+      "ownership": "user",
+      "pathTemplate": "lib/ui/views/<app>_<feature>_shell/",
+      "nameTemplate": "<app>_<feature>_shell_viewmodel.dart",
+      "cardinality": "one per feature",
+      "frontmatter": "full",
+      "inspectAttrs": false,
+      "showcaseExample": "lib/ui/views/showcase_notes_shell/showcase_notes_shell_viewmodel.dart"
+    },
+    {
+      "id": "surface-view",
+      "layer": "ui/views",
+      "ownership": "user",
+      "pathTemplate": "lib/ui/views/<app>_<feature>_shell/<app>_<surface>/",
+      "nameTemplate": "<app>_<surface>_view.dart",
+      "cardinality": "one per surface",
+      "frontmatter": "full",
+      "inspectAttrs": true,
+      "showcaseExample": "lib/ui/views/showcase_notes_shell/showcase_note_editor/showcase_note_editor_view.dart"
+    },
+    {
+      "id": "surface-view-factor",
+      "layer": "ui/views",
+      "ownership": "user",
+      "pathTemplate": "lib/ui/views/<app>_<feature>_shell/<app>_<surface>/",
+      "nameTemplate": "<app>_<surface>_view.<factor>.dart",
+      "cardinality": "one per surface per DERIVED factor",
+      "frontmatter": "full",
+      "inspectAttrs": true,
+      "showcaseExample": "lib/ui/views/showcase_notes_shell/showcase_note_editor/showcase_note_editor_view.tablet.dart"
+    },
+    {
+      "id": "surface-viewmodel",
+      "layer": "ui/views",
+      "ownership": "user",
+      "pathTemplate": "lib/ui/views/<app>_<feature>_shell/<app>_<surface>/",
+      "nameTemplate": "<app>_<surface>_viewmodel.dart",
+      "cardinality": "one per surface",
+      "frontmatter": "full",
+      "inspectAttrs": false,
+      "showcaseExample": "lib/ui/views/showcase_notes_shell/showcase_note_editor/showcase_note_editor_viewmodel.dart"
+    },
+    {
+      "id": "widget",
+      "layer": "ui/widgets",
+      "ownership": "user",
+      "pathTemplate": "lib/ui/widgets/<app>_<feature>_widgets/",
+      "nameTemplate": "<app>_<name>_widget.dart",
+      "cardinality": "one per designed widget node resolved through kind-resolution.registry.json",
+      "frontmatter": "full",
+      "inspectAttrs": true,
+      "showcaseExample": "lib/ui/widgets/showcase_notes_widgets/showcase_note_audio_row_widget.dart"
+    },
+    {
+      "id": "shared-widget",
+      "layer": "ui/widgets",
+      "ownership": "user",
+      "pathTemplate": "lib/ui/widgets/common/<widgetGroup>/",
+      "nameTemplate": "<app>_<name>_widget.dart",
+      "cardinality": "one per cross-feature widget; group declared in the registry, never inferred",
+      "frontmatter": "full",
+      "inspectAttrs": true,
+      "showcaseExample": "lib/ui/widgets/common/showcase_tabs_shared/showcase_value_chip_widget.dart",
+      "note": "mouse_transforms/ is the documented un-prefixed exception (scale_on_hover_widget.dart, translate_on_hover_widget.dart): generic interaction primitives, not app-branded. Expansion allows an un-prefixed name ONLY when the registry marks the group `appNeutral: true`."
+    },
+    {
+      "id": "shared-consts",
+      "layer": "ui/widgets",
+      "ownership": "user",
+      "pathTemplate": "lib/ui/widgets/common/<widgetGroup>/",
+      "nameTemplate": "<app>_<name>_consts.dart",
+      "cardinality": "optional, at most one per shared widget group",
+      "frontmatter": "light",
+      "inspectAttrs": false,
+      "showcaseExample": "lib/ui/widgets/common/showcase_tabs_shared/showcase_tabs_consts.dart",
+      "note": "Layout constants LOCAL to one widget group. Design vocabulary (colors, spacing, glyphs, fonts) must NOT live here — Q6 Tier 1 requires importing kit-core common instead. See kitCommonImports below."
+    },
+    {
+      "id": "facade-service",
+      "layer": "services",
+      "ownership": "user",
+      "pathTemplate": "lib/services/<app>_<feature>_services/facades/",
+      "nameTemplate": "<app>_<feature>_facade_service.dart",
+      "cardinality": "one per feature that declares services",
+      "frontmatter": "full",
+      "inspectAttrs": false,
+      "showcaseExample": "lib/services/showcase_notes_services/facades/showcase_notes_facade_service.dart"
+    },
+    {
+      "id": "adapter-service",
+      "layer": "services",
+      "ownership": "user",
+      "pathTemplate": "lib/services/<app>_<feature>_services/adapters/",
+      "nameTemplate": "<app>_<feature>_<name>_adapter_service.dart",
+      "cardinality": "zero or more per feature",
+      "frontmatter": "full",
+      "inspectAttrs": false,
+      "showcaseExample": "lib/services/showcase_notes_services/adapters/showcase_notes_media_adapter_service.dart"
+    },
+    {
+      "id": "repository-service",
+      "layer": "services",
+      "ownership": "user",
+      "pathTemplate": "lib/services/<app>_<feature>_services/repositories/",
+      "nameTemplate": "<app>_<feature>_repository_service.dart",
+      "cardinality": "zero or more per feature",
+      "frontmatter": "full",
+      "inspectAttrs": false,
+      "showcaseExample": "lib/services/showcase_notes_services/repositories/showcase_notes_repository_service.dart"
+    },
+    {
+      "id": "model",
+      "layer": "data",
+      "ownership": "user",
+      "pathTemplate": "lib/data/models/<app>_<feature>_models/",
+      "nameTemplate": "<app>_<name>_model.dart",
+      "cardinality": "zero or more per feature",
+      "frontmatter": "light",
+      "inspectAttrs": false,
+      "showcaseExample": "lib/data/models/showcase_notes_models/showcase_note_folder_model.dart"
+    },
+    {
+      "id": "schema",
+      "layer": "data",
+      "ownership": "user",
+      "pathTemplate": "lib/data/schemas/<app>_<feature>_schemas/",
+      "nameTemplate": "<app>_<name>_schema.dart",
+      "cardinality": "zero or more per feature",
+      "frontmatter": "light",
+      "inspectAttrs": false,
+      "showcaseExample": "lib/data/schemas/showcase_notes_schemas/showcase_note_schema.dart"
+    },
+    {
+      "id": "enum",
+      "layer": "enums",
+      "ownership": "user",
+      "pathTemplate": "lib/enums/<app>_<feature>_enums/",
+      "nameTemplate": "<app>_<name>_enum.dart",
+      "cardinality": "zero or more per feature",
+      "frontmatter": "light",
+      "inspectAttrs": false,
+      "showcaseExample": "lib/enums/showcase_notes_enums/showcase_note_attachment_kind_enum.dart",
+      "note": "showcase_folder_scope.dart sits in this bucket without the _enum suffix. Expansion treats a missing _enum suffix as FAIL; that file is recorded in exemptions[] so showcase still passes, and new emits always carry the suffix."
+    },
+    {
+      "id": "bucket-barrel",
+      "layer": "*",
+      "ownership": "shared-join-point",
+      "pathTemplate": "lib/<bucketDir>/",
+      "nameTemplate": "<bucketKind>.dart",
+      "cardinality": "exactly one per non-empty bucket directory",
+      "frontmatter": "light",
+      "inspectAttrs": false,
+      "rule": "The barrel is named after the BUCKET KIND, never after its directory. showcase_notes_widgets/ -> widgets.dart (NOT showcase_notes_widgets.dart).",
+      "bucketKinds": {
+        "ui/widgets/**": "widgets.dart",
+        "enums/**": "enums.dart",
+        "data/models/**": "models.dart",
+        "data/schemas/**": "schemas.dart",
+        "services/*/facades": "facades.dart",
+        "services/*/adapters": "adapters.dart",
+        "services/*/repositories": "repositories.dart",
+        "ui/snackbars": "snackbars.dart"
+      },
+      "showcaseExample": "lib/ui/widgets/showcase_notes_widgets/widgets.dart"
+    },
+    {
+      "id": "root-barrel",
+      "layer": "*",
+      "ownership": "shared-join-point",
+      "pathTemplate": "lib/<rootDir>/",
+      "nameTemplate": "<rootDir>.dart",
+      "cardinality": "one per root layer that has one",
+      "frontmatter": "light",
+      "inspectAttrs": false,
+      "instances": [
+        "lib/data/data.dart",
+        "lib/enums/enums.dart",
+        "lib/services/services.dart",
+        "lib/data/models/models.dart",
+        "lib/data/schemas/schemas.dart",
+        "lib/ui/widgets/common/widgets.dart"
+      ],
+      "showcaseExample": "lib/data/data.dart",
+      "instancesVerified": "All six instances confirmed present in kit/showcase_app (2026-08-08). Bucket barrels confirmed at 27 total sites; the bucket-kind naming rule holds at every one.",
+      "rule": "lib/ui/views has NO barrel — views are imported by full path (verified against showcase). Do not emit one.",
+      "negativeAssertion": "lib/ui/views/views.dart MUST NOT exist"
+    },
+    {
+      "id": "seed-data",
+      "layer": "data",
+      "ownership": "user",
+      "pathTemplate": "data/seed/",
+      "nameTemplate": "<feature>.json | <feature>_<entity>.json",
+      "cardinality": "zero or more per feature that declares seed data",
+      "frontmatter": "none",
+      "inspectAttrs": false,
+      "showcaseExample": "data/seed/notes.json",
+      "note": "Q4. NOTE THE LOCATION: app-root data/seed/, NOT lib/. Files are FEATURE-named and are NOT <app>_ prefixed (verified: notes.json, notes_folders.json, kit_auth_users.json) — the one bucket where the <app>_ rule does not apply. The designer's seed mirror must be byte-comparable with these, which is only possible if both sides use the same un-prefixed feature naming.",
+      "gating": "Design-time overlay ONLY. Seeds are gated: they load in design/dev boot and must never reach a shipped build. The gate is the point of Q4 — un-gated seed data shipping as real user content is the failure being prevented."
+    },
+    {
+      "id": "seed-generated",
+      "layer": "data",
+      "ownership": "scaffolder",
+      "pathTemplate": "data/generated/",
+      "nameTemplate": [
+        "supabase_seed.sql",
+        "supabase_migration.sql",
+        "appwrite.tables.json"
+      ],
+      "cardinality": "one set per backend the registry declares",
+      "frontmatter": "none",
+      "inspectAttrs": false,
+      "showcaseExample": "data/generated/supabase_seed.sql",
+      "note": "Q4. Derived FROM data/seed/ + the schemas, never hand-edited. Emitted by the backend emitter rather than the scaffolder proper; recorded here so the manifest expansion accounts for the files and --check does not flag them as unknown."
+    },
+    {
+      "id": "data-boot",
+      "layer": "app",
+      "ownership": "shared-join-point",
+      "pathTemplate": "lib/app/",
+      "nameTemplate": "app_data.dart",
+      "cardinality": "exactly one",
+      "frontmatter": "light",
+      "inspectAttrs": false,
+      "showcaseExample": "lib/app/app_data.dart",
+      "note": "Q4. The data-layer boot: registers entities + fixtures with appbox_kit_data, called once from main() after setupLocator(). Regenerated additively as features declare entities. Service registration does NOT live here — it lives in the @StackedApp dependencies in lib/app/app.dart."
+    },
+    {
+      "id": "app-entrypoint",
+      "layer": "app",
+      "ownership": "scaffolder",
+      "pathTemplate": "lib/",
+      "nameTemplate": "main.dart",
+      "cardinality": "exactly one",
+      "frontmatter": "light",
+      "inspectAttrs": false,
+      "showcaseExample": "lib/main.dart",
+      "verificationNote": "Verified present in kit/showcase_app."
+    },
+    {
+      "id": "app-join-points",
+      "layer": "app",
+      "ownership": "shared-join-point",
+      "pathTemplate": "lib/app/",
+      "nameTemplate": [
+        "app.dart",
+        "app.router.dart",
+        "app.locator.dart",
+        "app_data.dart",
+        "kit_platform_router.dart"
+      ],
+      "cardinality": "exactly one set",
+      "frontmatter": "light",
+      "inspectAttrs": false,
+      "rule": "Q9: regenerated deterministically every run; unchanged feature set => byte-identical entries; additive-only diff. app.router.dart is the compiled route table (see routeTable below).",
+      "showcaseExample": "lib/app/app.dart",
+      "verificationNote": "Verified present in kit/showcase_app (app.dart, app_data.dart confirmed on disk)."
+    },
+    {
+      "id": "shell-structure-manifest",
+      "layer": "app",
+      "ownership": "scaffolder",
+      "pathTemplate": "lib/ui/views/",
+      "nameTemplate": ".shell-structure.json",
+      "cardinality": "exactly one",
+      "frontmatter": "none",
+      "inspectAttrs": false,
+      "rule": "The manifest gates/coverage reads: selfContained shells + the {shell: {surfaceId: dir}} map + per-surface `kits`. Directory name is a scaffolder DECISION (coverage refuses to guess it), recorded so the gate can check it.",
+      "noShowcaseExample": true,
+      "verificationNote": "NO showcase instance by design: this is a NEW scaffolder-emitted artifact, not a showcase convention. Golden-probe corroboration against showcase must exempt it (same exemption class as inspectAttrs)."
+    },
+    {
+      "id": "generated-baseline",
+      "layer": "app",
+      "ownership": "scaffolder",
+      "pathTemplate": "pipeline/state/",
+      "nameTemplate": "scaffold-baseline.json",
+      "cardinality": "exactly one",
+      "frontmatter": "none",
+      "inspectAttrs": false,
+      "rule": "Q9 obligation: the `.copier-answers` analog. Persisted from the FIRST scaffold. Records the registry version id, the run artifact id, the target set, and a content hash per emitted file. The divergence gate verifies user-owned files against this baseline instead of clobbering them; the 3-way merge uses it as the common ancestor.",
+      "noShowcaseExample": true,
+      "verificationNote": "NO showcase instance by design: pipeline-state file living outside the app tree (pipeline/state/), not part of the emitted app. Excluded from golden-tree comparison."
+    }
+  ],
+  "exemptions": [
+    {
+      "path": "lib/enums/showcase_notes_enums/showcase_folder_scope.dart",
+      "artifactType": "enum",
+      "reason": "Pre-manifest file missing the _enum suffix. Grandfathered so showcase passes golden expansion; new emits must carry the suffix."
+    },
+    {
+      "path": "lib/extensions/hover_extensions.dart",
+      "artifactType": null,
+      "reason": "Hand-written un-prefixed extension with no artifact type. Out of scaffolder scope — the manifest neither emits nor asserts lib/extensions/."
+    },
+    {
+      "path": "lib/ui/snackbars/showcase_snackbar_setup.dart",
+      "artifactType": null,
+      "reason": "Registration glue, not a recipe artifact. Emitted only when the registry declares snackbars; no path template until that intake shape is locked."
+    }
+  ],
+  "kitCommonImports": {
+    "_comment": "Q6 Tier 1. Scaffolded output IMPORTS the kit design vocabulary; it never generates local duplicates. showcase's lib/ui/common was deleted for exactly this reason. Emitting a local colors/spacing/glyphs/fonts file is a FAIL, not a style preference.",
+    "source": "kit/core/lib/common/",
+    "symbols": [
+      "appbox_kit_colors.dart",
+      "appbox_kit_ui_helpers.dart",
+      "appbox_kit_app_constants.dart",
+      "appbox_kit_fonts.dart",
+      "appbox_kit_glyphs.dart",
+      "appbox_kit_glyphs_lucide.dart",
+      "appbox_kit_glyphs_lucide_map.g.dart"
+    ],
+    "widgetLibrary": "package:appbox_kit_ui_library/appbox_kit_ui_library.dart",
+    "widgetLibraryNote": "The kit-native widget library — 149 imports across showcase, the single most imported package. Every widget the kind-resolution registry resolves to comes from here.",
+    "forbiddenLocalDuplicates": [
+      "lib/ui/common/**",
+      "lib/**/*_colors.dart",
+      "lib/**/*_spacing.dart",
+      "lib/**/*_ui_helpers.dart"
+    ]
+  },
+  "routeTable": {
+    "_comment": "Unchanged by the grill and still binding. ONE go_router-shaped table compiled from intake/registry.json + intake/flows.json (exact shapes per appboxd/lib/intake.dart), emitted as lib/app/app.router.dart.",
+    "registryEntry": [
+      "id",
+      "label",
+      "shell",
+      "comp",
+      "route",
+      "surface",
+      "states?",
+      "requiresAuth?",
+      "tab?"
+    ],
+    "flowEdge": [
+      "from",
+      "to",
+      "trigger",
+      "action"
+    ],
+    "actions": [
+      "push",
+      "replace",
+      "back",
+      "modal",
+      "system"
+    ],
+    "rules": [
+      "Typed nav ops only — push, replace, back. `modal` is a presentation flag on the destination, never a fourth verb.",
+      "`system` edges are non-gesture (auth-success, deep-link): they compile to route guards, never to buttons.",
+      "Guards are named predicates — requiresAuth:true entries plus system edges compile to ONE redirect, not per-route copies.",
+      "Tabs are data — tab:true entries form the bottom-tab shell, in registry order.",
+      "Flow row order is edge-chain order — the table adds no reordering.",
+      "A flow needing something the registry does not declare is a DESIGN DEFECT, not a scaffolder branch."
+    ]
+  },
+  "l10n": {
+    "_comment": "Unchanged by the grill. Backward-compatible: a design with no l10n/ dir gets NO l10n artifacts.",
+    "copyVerbatim": "design l10n/app_<locale>.arb -> lib/l10n/",
+    "rootFile": "l10n.yaml",
+    "rootFileContract": "gen-l10n; template-arb-file: app_en.arb; no synthetic package",
+    "manifestKey": {
+      "l10n": [
+        "arbDir",
+        "locales"
+      ]
+    },
+    "checkedBy": "--check asserts the catalog file set + l10n.yaml",
+    "pubspecNote": "flutter_localizations, intl and flutter.generate:true are emitted unconditionally by appboxd/lib/blueprint.dart — NOT by the scaffolder."
+  },
+  "goldenExpansionProbe": {
+    "_comment": "Q8 gate + Q11 verdict 1. The full locked verdict list lives in verdicts[] below so the probe reads it from the SSOT rather than from prose.",
+    "syntheticFeature": "payments",
+    "rule": "Expand this manifest for the synthetic feature, diff the produced tree against the expansion. Extra file or missing file = FAIL.",
+    "showcaseCorroboration": "Showcase itself MUST pass expansion (modulo exemptions[]). If it does not, the manifest is wrong — not the showcase.",
+    "q11Surfaces": {
+      "fromShowcase": [
+        "application",
+        "startup",
+        "unknown"
+      ],
+      "fromManifestOnly": [
+        "auth",
+        "design",
+        "splashscreen"
+      ],
+      "note": "auth/design/splashscreen are absent from showcase and expand from the manifest exactly like `payments`. splashscreen is NOT a shell — it is the mobile-device splash surface, brand logo only."
+    },
+    "verdicts": [
+      {
+        "n": 1,
+        "id": "golden-expansion",
+        "rule": "Emitted tree matches this manifest's expansion exactly. Extra or missing file = fail."
+      },
+      {
+        "n": 2,
+        "id": "analyze-clean",
+        "rule": "`dart analyze` reports no issues."
+      },
+      {
+        "n": 3,
+        "id": "byte-identical-second-run",
+        "rule": "A second run on unchanged inputs is byte-identical.",
+        "scope": "TRANSLITERATION OUTPUT ONLY",
+        "caveat": "Per the Q2<->Q11 audit resolution: transformation output is LLM-touched and is pinned by its frozen run artifact (Q10) plus the non-clobber rule, NOT by byte-identity. Asserting byte-identity over transformation output is a misreading of this verdict and has been made once already."
+      },
+      {
+        "n": 4,
+        "id": "identity-coverage",
+        "rule": "Every emitted surface carries inspectAttrs (see inspectAttrs.requiredOn)."
+      },
+      {
+        "n": 5,
+        "id": "frontmatter-conventions",
+        "rule": "Q5 frontmatter/comment conventions present, mechanically enforced (see frontmatterKinds)."
+      }
+    ],
+    "harness": "One probe, five verdicts, reusing existing ProbeReport / ProbeTarget plumbing. No new harness.",
+    "shells": [
+      "application",
+      "home",
+      "notes",
+      "profile",
+      "search",
+      "startup",
+      "unknown"
+    ],
+    "_expansionNote": "Showcase instances corroborate the seven real shells only; absentSurfaceExamples are manifest-derived.",
+    "nonVerdictInvariant": "Kit-only vocabulary (no local design-vocabulary duplicates; every widget resolves via kind-resolution.registry.json) is an always-on emit-time invariant, deliberately NOT one of the five verdicts.",
+    "_shellsNote": "Verified against kit/showcase_app/lib/ui/views/ — dir name is showcase_<shell>_shell. This is the corroboration set: real dirs the probe can diff against.",
+    "absentSurfaceExamples": [
+      "auth",
+      "design",
+      "payments",
+      "splashscreen"
+    ],
+    "_absentNote": "NOT shells and NOT in showcase. They expand from this manifest alone, exactly like the synthetic `payments` feature — the manifest is the authority where showcase offers no instance. `splashscreen` additionally is not a shell at all (mobile-device splash surface, brand logo only)."
+  }
+}

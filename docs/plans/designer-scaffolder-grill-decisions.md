@@ -127,3 +127,13 @@ intake → prototype → design → scaffold → review → build → deploy, pe
      (consistent with Q13 parallel-run verdict philosophy).
   - `genui`/A2UI remains a candidate only for *generated apps themselves* wanting runtime GenUI —
     a separate concern from the studio viewer.
+
+## Q7 vocabulary closure — reconciliation ruling (user-confirmed)
+
+Registry mapped 12/15 derived kinds; three resolved as follows, restoring closure (15/15, asserted mechanically against `starter-partials/widgets/_*.tsx`):
+
+- **tabs** → `AppBoxKitAnimatedTabStack` (promoted from `tabbar.companions`; `tabbar` = in-surface strip, `tabs` = animated content stack).
+- **modal** → kept as a distinct kind (vocabulary is mechanically derived; deleting it would mean deleting the partial). Resolves to a **presentation mode**, not a widget subtree: route-flag + `AppBoxKitOverlayService`/`AppBoxKitFrostedSurface`. `dialog` remains separate.
+- **panel-activity** → COMPOSITION (`AppBoxKitGlassCard` + `AppBoxKitListSection` + `AppBoxKitNotificationRecord`), recorded debt pending a first-class kit activity widget.
+
+**Composition rule (user directive):** every composition is a designer RECIPE — the designer always composes (panels included) for any design; the scaffolder emits compositions explicitly and never resolves them to one class. Recipe knowledge lives with the designer; the registry records the resolved target set.

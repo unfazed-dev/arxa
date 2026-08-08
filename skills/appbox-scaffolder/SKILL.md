@@ -79,6 +79,240 @@ stub. The builder (plan 08) fills the bodies.
 
 - **File structure (canon: `BUILDER_playbook.mdx` → File structure):** every emitted file (view, viewmodel, facade, adapter, repository, widget) carries the semantic library doc comment above `library;` — layer intro → role paragraph → requirements → relationships diagram → history — with locked body sections per kind. Models get the light variant. The scaffolded stubs must include the `library;` directive and a placeholder frontmatter the builder fills in.
 
+## Mode: transliteration by default (Q2)
+
+Two modes, and the default is the conservative one.
+
+**Transliteration (default).** The designer's materialized anatomy is already the
+app's shape. You carry it across into the showcase structure with kit widgets —
+same nodes, same nesting, same order. You are a translator, not an author. If a
+node exists in the anatomy, a widget exists in the output; if it doesn't, nothing
+appears. This is the mode that makes the output auditable: a reviewer can diff the
+anatomy against the tree and see a one-to-one map.
+
+**Transformation (opt-in).** Restructuring — collapsing nodes, hoisting shared
+widgets, splitting a surface — happens **only** when explicitly requested, and each
+transformation is recorded in the run artifact with the rule that fired. An
+unrecorded transformation is indistinguishable from a bug.
+
+Defaulting to transformation would be the seductive mistake: the output would look
+more "designed" and would silently stop corresponding to anything the designer
+approved. Transliteration keeps the correspondence checkable.
+
+## The structure contract (Q1)
+
+`kit/showcase_app/lib` is **the contract, not an example.** Its folder layout,
+naming, barrels, comment conventions and frontmatter are what you emit — for every
+app, not just showcase-shaped ones. 207 `.dart` files across
+`app/ ui/views/ ui/widgets/ services/ data/models/ data/schemas/ enums/`.
+
+Naming is `<app>_<feature>_` almost everywhere. The two structural rules people get
+wrong:
+
+- **A barrel is named after its bucket kind, never its directory.**
+  `ui/widgets/showcase_notes_widgets/` contains `widgets.dart` — *not*
+  `showcase_notes_widgets.dart`.
+- **`lib/ui/views` has no barrel.** Views are imported by full path. Do not emit
+  `views.dart`; the manifest carries that as a negative assertion so a later run
+  can't "helpfully" add one.
+
+Deliberate absences are part of the contract. `payments` is absent from showcase,
+which is exactly why it is the synthetic feature the golden probe expands.
+
+## Per-surface split (Q3)
+
+A surface is not one file. Per showcase convention every surface splits into a view
+plus its **desktop / mobile / tablet** variants, with the base view acting as the
+responsive factor. The manifest's `surface-view` and `surface-view-factor` types carry
+this; emit all variants a surface declares, never a single collapsed file.
+
+## Seeds and fixtures (Q4)
+
+Seed data lives at **app-root `data/seed/`, not under `lib/`** — and it is the one
+bucket where the `<app>_` prefix rule does **not** apply: files are feature-named
+(`notes.json`, `notes_folders.json`, `kit_auth_users.json`). The designer's seed mirror
+must be *mirror-exact* with these, which is only achievable if both sides use the same
+un-prefixed feature naming.
+
+Seeds are a **gated design-time overlay.** They load in design/dev boot and must never
+reach a shipped build — un-gated seed data shipping as real user content is precisely
+the failure Q4 exists to prevent. `data/generated/` (`supabase_seed.sql`,
+`supabase_migration.sql`, `appwrite.tables.json`) is derived from `data/seed/` plus the
+schemas and is never hand-edited. `lib/app/app_data.dart` is the data-layer boot that
+registers entities + fixtures with `appbox_kit_data`; note that service registration
+does *not* live there — it lives in the `@StackedApp` dependencies in `lib/app/app.dart`.
+
+## Inputs: frozen run artifacts (Q10)
+
+Everything derives from versioned `intake/registry.json` through an **immutable run
+artifact**. You consume the designer's materialized anatomy plus the registry
+version; you never invent scope, and you never re-read live intake mid-run.
+
+The reason is concurrency, not purity: designer and scaffolder run against the same
+intake, and a registry that changes underneath a half-finished scaffold produces a
+tree that matches no version of anything. The frozen artifact makes a run
+reproducible — same artifact id, same bytes out.
+
+If a flow needs something the registry does not declare, that is a **design defect**
+to report, not a branch for you to invent.
+
+## The feature recipe (Q8)
+
+`kit/showcase_app/feature-recipe.manifest.json` (schema alongside it) is the SSOT for
+paths and names — showcase-adjacent, so both skills read it from one place. It is
+**machine-readable on purpose**: the golden-expansion probe
+diffs a produced tree against an expansion of the manifest, so agreement is checked
+mechanically rather than by prose reading.
+
+The designer loads the same file. That is the whole point — a single manifest is why
+the designer's output and your output land on the same tree instead of two plausible
+trees that have to be reconciled by hand.
+
+A new feature expands deterministically: shell view (+ derived factor variants),
+viewmodel, per-surface views/viewmodels, widget bucket, service facade/adapters/
+repositories, models, schemas, enums, and every bucket barrel.
+
+**Form factor is derived, never literal.** `--targets` → `pipeline/state/targets.derivation.json`
+→ factors. A factor outside the derived set produces **no file**. Emitting an empty
+`.mobile`/`.tablet` to satisfy a counter is the stale-green defect: a file that
+exists, passes the count, and renders nothing.
+
+**Gate:** showcase itself must pass expansion (modulo the recorded `exemptions[]`).
+If it doesn't, the manifest is wrong — not the showcase.
+
+## Kind resolution (Q7)
+
+`kind-resolution.registry.json` maps the designer's closed kind vocabulary to real
+kit-native widgets (`AppBoxKitNativeAppBar`, `AppBoxKitGlassCard`, `AppBoxKitListTile`,
+…). Resolve through that table and nowhere else.
+
+**An unresolvable kind is a FAIL that names the kind and the design node.** There is
+no silent `Container()` fallback. A silent fallback yields a scaffold that compiles,
+looks plausible, and is wrong — precisely the failure the gate stack exists to catch.
+When the kit genuinely lacks a widget, use the registry's escape hatch: it emits, but
+it warns with a reason, an owner and an expiry, and an expired escape fails the build.
+
+## Design vocabulary: import, don't generate (Q6)
+
+Tier 1 — colors, spacing, glyphs, fonts, app constants — **imports** from
+`kit/core/lib/common/`. Scaffolded output never generates local duplicates.
+Showcase's `lib/ui/common` was deleted for exactly this reason, and
+`kit/core/lib/utils/formatters/` is kit-owned for the same one.
+
+Emitting `lib/ui/common/**`, `*_colors.dart`, `*_spacing.dart` or `*_ui_helpers.dart`
+is a **FAIL**, not a style preference — duplicated vocabulary is how a design system
+silently forks.
+
+## Frontmatter is normative (Q5)
+
+The semantic library doc comment in showcase files is a contract, not decoration.
+Canon: `skills/appbox-builder/BUILDER_playbook.mdx` → *File structure*. Order is
+locked, and every file terminates the block with a bare `library;`.
+
+Full kind: layer-intro → role → requirements → relationships → History.
+Light kind (models, schemas, enums, consts, barrels): layer-intro → role → History.
+
+You own layer-intro, role and the `History:` line. You leave requirements and
+relationships as marked placeholders — those are the builder's. The `History` line is
+mechanically derivable (`git log --follow -- <path>`), which is why it is mechanically
+gated.
+
+## The generation gap (Q9)
+
+Two ownership classes, and the boundary is declared in the manifest per artifact type:
+
+- **scaffolder-owned** — regenerated every run, byte-identical on unchanged inputs.
+  A hand edit here is drift and `--check` fails it.
+- **user-owned** — stubbed once, then owned by the builder. Regeneration **never**
+  clobbers it.
+
+This needs a persisted baseline, so the first scaffold writes
+`pipeline/state/scaffold-baseline.json` (the `.copier-answers` analog): registry
+version, run artifact id, target set, and a content hash per emitted file. The
+divergence gate checks user-owned files against that baseline, and a 3-way merge uses
+it as the common ancestor. Without it, "don't clobber" degrades into "never update",
+and the scaffold rots.
+
+Shared join points — barrels, `app.router.dart`, `app.locator.dart`, the shell
+structure manifest — are regenerated deterministically with additive-only diffs.
+
+## Inspect identity is stamped, not inferred (Q12)
+
+Every emitted view and widget carries the triple `screenId` / `surfaceId` /
+`anatomyNodeId`, stamped **at emit time** from the frozen artifact — the same trick
+as Flutter's `--track-widget-creation`.
+
+Studio's inspect mode reads the triple and nothing else: zero DOM heuristics, no
+structural guessing. Inspect therefore survives regeneration by construction rather
+than by luck.
+
+Note: `kit/showcase_app` carries no `inspectAttrs` today. This is a **new** obligation
+on emitted output — the golden probe's showcase corroboration must exempt showcase or
+showcase must be back-stamped.
+
+## Verdicts (Q11)
+
+**Five** verdicts decide whether a run is good — one probe, five verdicts, reusing the
+existing `ProbeReport` / `ProbeTarget` plumbing (no new harness). The list is locked;
+do not add to it or reorder it:
+
+1. **Golden expansion** — the tree matches the Q8 manifest expansion exactly. Extra or
+   missing file = fail.
+2. **`dart analyze` clean.**
+3. **Second run byte-identical** — **transliteration output ONLY.** Transformation
+   output is LLM-touched and is pinned by its frozen run artifact (Q10) and re-verified
+   by the non-clobber rule, *not* by byte-identity. Asserting byte-identity on
+   transformation output is a misreading of this verdict (Q2↔Q11 audit resolution).
+4. **Identity coverage** — every emitted surface carries `inspectAttrs`.
+5. **Frontmatter/comment conventions present** — Q5's normative rules, mechanically
+   enforced rather than reviewed by eye.
+
+Kit-only vocabulary (no local duplicates; every widget resolves through the kind
+registry) is an always-on invariant enforced at emit time by the closed vocabulary —
+it is deliberately *not* one of the five verdicts.
+
+The spike runs after **both** skills are refactored, and produces five shells —
+`startup`, `unknown`, `auth`, `application` (ceremony shells) + `design` — **plus the
+splashscreen**. Surfaces absent from showcase (`auth`, `design`, `splashscreen`) expand
+from the manifest exactly like the synthetic `payments` feature; showcase instances
+corroborate `application` / `startup` / `unknown`. `splashscreen` is **not a shell**: it
+is the mobile-device splash surface, brand logo only. After the spike passes, the rest
+of the appbox studio design refactor proceeds (Q13).
+
+## What reaches you from composers (Q14) and what you report (Q15)
+
+Three composers exist upstream — intake interview, design-update, and the feature-add
+entry point in studio UI. **None of them ever writes a file, a delta, or a line of your
+output.** They emit **registry patches**, validated strictly against the registry schema
+(retry on validation failure); deterministic code applies valid patches. What reaches
+you is therefore always the same thing: a new registry version and its frozen run
+artifact. There is no separate sync path and none is needed — a design-composer creating
+a screen emits an intake-level registry patch, and the derived pipeline (diff → run
+artifact → designer → your delta run) flows from there.
+
+Consequences for you:
+
+- **Never accept LLM-authored files.** If something proposes emitted content directly,
+  that is a bug upstream, not an input.
+- For cross-boundary changes the LLM may *propose* a 3-way merge, but a deterministic
+  validator applies it (Q9↔Q14). Unvalidated LLM output is never applied.
+- The approval gate is not yours to fire and fires **only** when a derived diff touches
+  a locked decision. Routine additive changes are gated by probes alone — do not invent
+  extra confirmation steps; approval fatigue is the failure being avoided.
+
+Report progress as **structured run events** the studio renders itself (Q15). The studio
+viewer draws pipeline progress natively; `genui` / A2UI is explicitly out of scope, since
+runtime LLM-composed UI is what Q10/Q14 forbid.
+
+## Studio cutover is parallel-run (Q13)
+
+When the new showcase-anatomy design shell arrives it is generated **alongside** the
+current studio design shell behind a flag — never as a replacement. Probes render the
+same screens through both and diff. Views flip **one at a time**, each only when its
+probe is green; flipping back is a toggle, not a revert. The old shell is deleted only
+once every view is flipped and green. Do not emit anything that assumes the old shell is
+already gone.
+
 ## Route table contract
 
 Besides the file tree, the scaffolder compiles **ONE go_router-shaped route

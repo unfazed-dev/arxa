@@ -22,6 +22,20 @@ The scaffolder PRODUCES the tree the gates ASSERT (architecture §16). The struc
 - A **frozen** `structure.json` at `<design-dir>/structure.json` (produced by `tools/emit_structure`; the scaffold reads it as frozen input and never re-derives structure).
 - A **target set** (`--targets macos`, or `ios,android`, or `web`, …) — explicit, never ambient. Every target must have an entry in `pipeline/state/targets.derivation.json`.
 - The derivation table (`pipeline/state/targets.derivation.json`) and config viewports (`config/appbox.config.json`) — the source of factor names and ordering (P06/R3). The scaffold reads these; it does not hardcode them.
+- The designer's **materialized anatomy** plus the **registry version**, carried in an immutable run artifact (Q10). `structure.json` is that frozen artifact's structural face; the versioned source of truth upstream is `intake/registry.json`. The scaffolder never re-reads live intake mid-run and never invents scope — a flow needing something the registry does not declare is a design defect to report, not a branch to invent.
+- `kit/showcase_app/feature-recipe.manifest.json` (Q8, schema alongside it) and `skills/appbox-scaffolder/kind-resolution.registry.json` (Q7) — different homes, both **shared verbatim with `appbox-designer`** so the two skills' outputs converge on one tree. The manifest sits showcase-adjacent because it is derived from that tree; the kind registry is scaffolder-owned vocabulary and stays in the skill.
+
+### Contracts this playbook defers to
+
+| Concern | SSOT | Rule in one line |
+|---|---|---|
+| Paths & names | `kit/showcase_app/feature-recipe.manifest.json` | `kit/showcase_app/lib` is the contract, not an example. |
+| Kind → widget | `skills/appbox-scaffolder/kind-resolution.registry.json` | Unresolvable kind FAILS loudly; no silent `Container()`. |
+| Design vocabulary | `kit/core/lib/common/` | Import it; generating a local `*_colors.dart` is a FAIL. |
+| Frontmatter | `skills/appbox-builder/BUILDER_playbook.mdx` → *File structure* | Locked section order, bare `library;` terminator. |
+| Decisions | `docs/plans/designer-scaffolder-grill-decisions.md` | Q1–Q15, locked; wins over every summary. |
+
+Mode is **transliteration by default** (Q2): carry the anatomy across one-to-one. Transformation is opt-in and each applied rule is recorded in the run artifact — an unrecorded transformation is indistinguishable from a bug.
 
 ### Procedure
 
@@ -64,5 +78,51 @@ The scaffold emits only the `// ── Setup ──` marker in the stub; the bui
 See `skills/appbox-builder/BUILDER_playbook.mdx → File structure (semantic frontmatter)` for the full grammar, and `kit/showcase_app/.../showcase_note_editor_viewmodel.dart` for the reference implementation.
 
 <!-- kb:begin -->
+### Ownership & regeneration (Q9)
+
+Manifest-declared per artifact type. **Scaffolder-owned** files are regenerated every
+run, byte-identical on unchanged inputs — a hand edit is drift and `--check` fails it.
+**User-owned** files (views, viewmodels, widgets, services) are stubbed once and then
+belong to the builder; regeneration never clobbers them.
+
+That requires a persisted baseline: the first scaffold writes
+`pipeline/state/scaffold-baseline.json` recording the registry version, the run
+artifact id, the target set, and a content hash per emitted file. The divergence gate
+checks user-owned files against it, and a 3-way merge uses it as the common ancestor.
+Without a baseline, "don't clobber" degrades into "never update" and the scaffold rots.
+
+Shared join points — bucket barrels, `app/app.router.dart`, `app/app.locator.dart`,
+`lib/ui/views/.shell-structure.json` — regenerate deterministically, additive-only.
+
+### Identity stamping (Q12)
+
+Every emitted view and widget carries `screenId` / `surfaceId` / `anatomyNodeId`,
+stamped at emit time from the frozen artifact (the `--track-widget-creation` trick).
+Studio inspect reads the triple and nothing else — no DOM heuristics — so inspect mode
+survives regeneration by construction. Showcase carries none today; this is a new
+obligation on emitted output.
+
+### Verdicts (Q11)
+
+**Five** locked verdicts, one probe, existing `ProbeReport`/`ProbeTarget` plumbing:
+
+1. Golden expansion — the tree matches the Q8 manifest expansion exactly.
+2. `dart analyze` clean.
+3. Second run byte-identical — **transliteration output only** (Q2↔Q11). Transformation
+   output is pinned by its frozen run artifact and the non-clobber rule instead.
+4. Identity coverage — every emitted surface carries `inspectAttrs`.
+5. Frontmatter/comment conventions present (Q5, mechanically enforced).
+
+Kit-only vocabulary is an always-on emit-time invariant, not a verdict.
+
+The spike runs after both skills are refactored and produces five shells — startup,
+unknown, auth, application + design — plus the splashscreen (not a shell: mobile splash
+surface, brand logo only). `auth`, `design`, `splashscreen` are absent from showcase and
+expand from the manifest exactly like synthetic `payments`; showcase corroborates
+application/startup/unknown.
+
+Showcase itself must pass expansion (modulo recorded `exemptions[]`). If it doesn't,
+the manifest is wrong — not the showcase.
+
 ### References
 <!-- kb:end -->

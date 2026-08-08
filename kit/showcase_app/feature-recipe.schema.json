@@ -1,0 +1,168 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://appbox.dev/schemas/feature-recipe.schema.json",
+  "title": "AppBox feature-recipe path/naming manifest",
+  "description": "Q8 SSOT schema. Validates feature-recipe.manifest.json — the shared path/naming contract loaded by appbox-designer and appbox-scaffolder. Machine-readable so the golden-expansion probe can diff a produced tree against an expansion instead of a prose reading.",
+  "type": "object",
+  "required": ["manifestVersion", "structureContract", "tokens", "ownership", "frontmatterKinds", "artifactTypes", "kitCommonImports", "goldenExpansionProbe"],
+  "additionalProperties": true,
+
+  "definitions": {
+    "slugPattern": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9]*(_[a-z0-9]+)*$"
+    },
+    "frontmatterKind": {
+      "type": "object",
+      "required": ["sections", "terminator"],
+      "properties": {
+        "sections": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["id", "required", "owner"],
+            "properties": {
+              "id": { "enum": ["layer-intro", "role", "requirements", "relationships", "history"] },
+              "required": { "type": "boolean" },
+              "owner": { "enum": ["scaffolder", "user"] },
+              "note": { "type": "string" }
+            }
+          }
+        },
+        "terminator": { "const": "library;" },
+        "appliesTo": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "artifactType": {
+      "type": "object",
+      "required": ["id", "layer", "ownership", "pathTemplate", "nameTemplate", "cardinality", "frontmatter", "inspectAttrs"],
+      "additionalProperties": true,
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+        "layer": { "type": "string" },
+        "ownership": { "enum": ["scaffolder", "user", "shared-join-point"] },
+        "pathTemplate": {
+          "type": "string",
+          "description": "Path with <token> placeholders. Every token used MUST be declared in tokens{} or be a documented local (bucketDir, rootDir, bucketKind). Roots: lib/ (the app tree), data/ (Q4 seed + generated data, app-root and deliberately NOT under lib/), pipeline/ (pipeline state, outside the emitted app).",
+          "pattern": "^(lib|data|pipeline)/"
+        },
+        "nameTemplate": {
+          "oneOf": [
+            { "type": "string" },
+            { "type": "array", "items": { "type": "string" }, "minItems": 1 }
+          ]
+        },
+        "cardinality": { "type": "string" },
+        "frontmatter": { "enum": ["full", "light", "none"] },
+        "inspectAttrs": {
+          "type": "boolean",
+          "description": "Q12: true means the emitted file must carry the stamped screenId/surfaceId/anatomyNodeId triple. Enforced by Q11 verdict 4."
+        },
+        "showcaseExample": {
+          "type": "string",
+          "description": "A real path under kit/showcase_app that this template expands to. Presence is what keeps the manifest honest: if the example does not exist, the template is wrong."
+        },
+        "negativeAssertion": {
+          "type": "string",
+          "description": "A path that MUST NOT be emitted. Encodes deliberate absences (e.g. lib/ui/views has no barrel) so a future run cannot 'helpfully' add one."
+        },
+        "note": { "type": "string" },
+        "rule": { "type": "string" }
+      }
+    }
+  },
+
+  "properties": {
+    "manifestVersion": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+    "structureContract": {
+      "type": "object",
+      "required": ["root", "packageTemplate", "importTemplate"],
+      "properties": {
+        "root": { "const": "kit/showcase_app/lib" },
+        "packageTemplate": { "type": "string" },
+        "importTemplate": { "type": "string" }
+      }
+    },
+    "tokens": {
+      "type": "object",
+      "required": ["app", "feature", "surface", "factor"],
+      "properties": {
+        "factor": {
+          "type": "object",
+          "required": ["enum", "derivation", "rule"],
+          "properties": {
+            "enum": { "type": "array", "items": { "enum": ["desktop", "mobile", "tablet"] } },
+            "derivation": {
+              "type": "object",
+              "description": "targets -> factors. The ONLY legal source of factor. Reading a factor from ambient pipeline state or a per-surface literal is the stale-green defect."
+            }
+          }
+        }
+      }
+    },
+    "ownership": {
+      "type": "object",
+      "required": ["values"],
+      "description": "Q9 generation-gap boundary. Must enumerate exactly the three ownership values artifactTypes may use."
+    },
+    "frontmatterKinds": {
+      "type": "object",
+      "required": ["full", "light"],
+      "description": "Q5. Section order within each kind is significant and must be preserved on emit.",
+      "properties": {
+        "full": { "$ref": "#/definitions/frontmatterKind" },
+        "light": { "$ref": "#/definitions/frontmatterKind" }
+      }
+    },
+    "inspectAttrs": {
+      "type": "object",
+      "required": ["triple", "requiredOn", "rule"],
+      "properties": {
+        "triple": {
+          "type": "array",
+          "items": { "enum": ["screenId", "surfaceId", "anatomyNodeId"] },
+          "minItems": 3,
+          "maxItems": 3
+        }
+      }
+    },
+    "artifactTypes": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/definitions/artifactType" }
+    },
+    "exemptions": {
+      "type": "array",
+      "description": "Grandfathered showcase paths that do not expand from any template. Every entry needs a reason. An empty list is the goal state; a growing list is manifest drift.",
+      "items": {
+        "type": "object",
+        "required": ["path", "reason"],
+        "properties": {
+          "path": { "type": "string" },
+          "artifactType": { "type": ["string", "null"] },
+          "reason": { "type": "string", "minLength": 20 }
+        }
+      }
+    },
+    "kitCommonImports": {
+      "type": "object",
+      "required": ["source", "symbols", "forbiddenLocalDuplicates"],
+      "description": "Q6 Tier 1. forbiddenLocalDuplicates are glob patterns that must match ZERO emitted files.",
+      "properties": {
+        "source": { "const": "kit/core/lib/common/" },
+        "forbiddenLocalDuplicates": { "type": "array", "items": { "type": "string" }, "minItems": 1 }
+      }
+    },
+    "goldenExpansionProbe": {
+      "type": "object",
+      "required": ["syntheticFeature", "rule", "showcaseCorroboration"],
+      "properties": {
+        "syntheticFeature": {
+          "$ref": "#/definitions/slugPattern",
+          "description": "A feature deliberately ABSENT from showcase, so passing cannot be memorisation."
+        }
+      }
+    }
+  }
+}

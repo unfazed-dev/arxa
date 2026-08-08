@@ -1,0 +1,219 @@
+{
+  "registryVersion": "1.0.0",
+  "_comment": [
+    "Q7 SSOT. Closed-vocabulary map from a DESIGNED kind (the designer's starter-partial",
+    "vocabulary) to the kit-native widget that realises it.",
+    "Widget names below were enumerated from kit/ui_library/lib — they are real classes, not",
+    "invented placeholders. The scaffolder resolves through this table and NOWHERE else.",
+    "CORE RULE (Q7): an unresolvable kind is a FAIL that names the kind and the design node.",
+    "There is no silent Container fallback. A silent fallback produces a scaffold that compiles,",
+    "looks plausible and is wrong — the exact failure the whole gate stack exists to prevent."
+  ],
+  "resolution": {
+    "order": [
+      "kinds[kind].widget",
+      "kinds[kind].variants[variantKey]",
+      "FAIL"
+    ],
+    "failureContract": {
+      "exitNonZero": true,
+      "messageTemplate": "unresolvable kind '<kind>' at design node <anatomyNodeId> (surface <surfaceId>): not in kind-resolution.registry.json v<registryVersion>",
+      "forbidden": [
+        "Container()",
+        "SizedBox.shrink()",
+        "Placeholder()",
+        "any silent substitution"
+      ]
+    },
+    "escapeHatch": {
+      "mechanism": "registry entry with \"escape\": { \"reason\": \"...\", \"owner\": \"...\", \"expires\": \"<iso-date>\" }",
+      "rule": "Trail-leaving, never silent. An escape entry emits the widget AND a build-time warning naming the reason and owner. An expired escape is a FAIL.",
+      "rationale": "Escapes are how a real design ships before the kit catches up; making them loud and dated stops them becoming permanent."
+    }
+  },
+  "kinds": {
+    "appbar": {
+      "widget": "AppBoxKitNativeAppBar",
+      "variants": {
+        "sliver": "AppBoxKitNativeSliverAppBar",
+        "toolbar": "AppBoxKitNativeToolbar"
+      },
+      "companions": [
+        "AppBoxKitToolbarAction",
+        "AppBoxKitNativeIconButton"
+      ]
+    },
+    "bottom-sheet": {
+      "widget": "AppBoxKitBottomSheetService",
+      "companions": [
+        "AppBoxKitBottomSheetCall",
+        "AppBoxKitCustomSheetCall",
+        "AppBoxKitNoticeSheetBody"
+      ],
+      "note": "Service-invoked, not a tree widget. `modal` presentation flag on a route resolves here."
+    },
+    "card": {
+      "widget": "AppBoxKitGlassCard",
+      "variants": {
+        "frosted": "AppBoxKitFrostedSurface"
+      }
+    },
+    "chip": {
+      "widget": "AppBoxKitChip",
+      "variants": {
+        "carousel": "AppBoxKitChipCarousel"
+      }
+    },
+    "cta-link": {
+      "widget": "AppBoxKitNativeButton",
+      "variants": {
+        "icon": "AppBoxKitNativeIconButton",
+        "fab": "AppBoxKitNativeFab",
+        "fab-menu": "AppBoxKitNativeFabMenu",
+        "split": "AppBoxKitNativeSplitButton",
+        "menu": "AppBoxKitNativePopupMenu"
+      }
+    },
+    "dialog": {
+      "widget": "AppBoxKitFrostedAlertDialog",
+      "variants": {
+        "prompt": "AppBoxKitPromptDialog"
+      },
+      "companions": [
+        "AppBoxKitNativeDialogAction"
+      ]
+    },
+    "empty-state": {
+      "widget": null,
+      "composedFrom": [
+        "AppBoxKitGlassCard",
+        "AppBoxKitSvg",
+        "AppBoxKitNativeButton"
+      ],
+      "note": "NO single kit widget realises this kind. It is a COMPOSITION, and the scaffolder emits the composition explicitly rather than resolving to one class. Recorded here so `empty-state` is inside the closed vocabulary and never trips the unresolvable-kind FAIL."
+    },
+    "form-field": {
+      "widget": "AppBoxKitNativeTextField",
+      "variants": {
+        "search": "AppBoxKitNativeSearchBar",
+        "switch": "AppBoxKitNativeSwitch",
+        "slider": "AppBoxKitNativeSlider",
+        "range-slider": "AppBoxKitNativeRangeSlider",
+        "segmented": "AppBoxKitNativeSegmentedControl",
+        "input-bar": "AppBoxKitNativeInputBar"
+      }
+    },
+    "list-row": {
+      "widget": "AppBoxKitListTile",
+      "variants": {
+        "section": "AppBoxKitListSection"
+      }
+    },
+    "modal": {
+      "widget": null,
+      "presentation": {
+        "mode": "route-flag",
+        "service": "AppBoxKitOverlayService",
+        "surface": "AppBoxKitFrostedSurface"
+      },
+      "note": "Q7 reconciliation: `modal` is a distinct DESIGNED kind (authored partial), NOT a dialog variant and NOT a vocabulary deletion. It resolves to a PRESENTATION MODE, not a widget subtree: the scaffolder sets the route presentation flag and hosts the surface via the overlay service. `dialog` remains a separate kind."
+    },
+    "nav-rail": {
+      "widget": "AppBoxKitNativeNavigationRail",
+      "companions": [
+        "AppBoxKitRailDestination",
+        "AppBoxKitDrawer"
+      ]
+    },
+    "panel-activity": {
+      "widget": null,
+      "composedFrom": [
+        "AppBoxKitGlassCard",
+        "AppBoxKitListSection",
+        "AppBoxKitNotificationRecord"
+      ],
+      "note": "Q7 reconciliation: COMPOSITION — no first-class kit activity widget exists yet; this entry is a recorded debt pending one. Compositions are designer RECIPES: the designer always composes panels for any design; the scaffolder emits the composition explicitly, never resolves to one class.",
+      "debt": "Replace with first-class kit activity widget when available."
+    },
+    "tabbar": {
+      "widget": "AppBoxKitNativeTabBar",
+      "companions": [
+        "AppBoxKitTab",
+        "AppBoxKitAnimatedTabStack",
+        "AppBoxKitTabSwitchTransition",
+        "AppBoxKitDirectionalTabTransition"
+      ],
+      "note": "tab:true registry entries compile to AppBoxKitBottomNavScaffold at the shell level; this kind is the in-surface tab strip."
+    },
+    "tabs": {
+      "widget": "AppBoxKitAnimatedTabStack",
+      "companions": [
+        "AppBoxKitNativeTabBar",
+        "AppBoxKitTabSwitchTransition",
+        "AppBoxKitDirectionalTabTransition"
+      ],
+      "note": "Q7 reconciliation: promoted from tabbar.companions to primary target. `tabbar` is the in-surface tab strip; `tabs` is the animated tabbed content stack."
+    },
+    "toast": {
+      "widget": "AppBoxKitNotificationService",
+      "companions": [
+        "AppBoxKitNotificationRecord",
+        "AppBoxKitOverlayService",
+        "AppBoxKitOverlayOptions"
+      ]
+    }
+  },
+  "supportKinds": {
+    "_comment": "Non-visual kit primitives the scaffolder wires structurally. Not part of the designed kind vocabulary; listed so emitted scaffolds reference real classes.",
+    "viewmodel-base": "AppBoxKitViewModel",
+    "stream-binding": [
+      "AppBoxKitStreamBuilder",
+      "AppBoxKitStreamManager"
+    ],
+    "action-rail": [
+      "AppBoxKitAction",
+      "AppBoxKitActionHub",
+      "AppBoxKitActionCommand",
+      "AppBoxKitActionConfig",
+      "AppBoxKitActionExecutor",
+      "AppBoxKitActionState"
+    ],
+    "state-managers": [
+      "AppBoxKitLoadingManager",
+      "AppBoxKitErrorManager",
+      "AppBoxKitSuccessManager"
+    ],
+    "loading": [
+      "AppBoxKitNativeLoadingIndicator",
+      "AppBoxKitNativeProgress"
+    ],
+    "media": [
+      "AppBoxKitImage",
+      "AppBoxKitSvg",
+      "AppBoxKitMarkdown",
+      "AppBoxKitCodeBlock"
+    ],
+    "navigation": [
+      "AppBoxKitNavigationControllerService",
+      "AppBoxKitNavigationRecord",
+      "AppBoxKitPlatformPages",
+      "AppBoxKitBottomNavScaffold"
+    ]
+  },
+  "designVocabulary": {
+    "_comment": "Q6 Tier 1. Colors, spacing, glyphs and fonts resolve to kit-core common — NEVER to a generated local file. Enforced by feature-recipe.manifest.json#/kitCommonImports/forbiddenLocalDuplicates.",
+    "colors": "package:appbox_kit_core/common/appbox_kit_colors.dart",
+    "spacing": "package:appbox_kit_core/common/appbox_kit_ui_helpers.dart",
+    "constants": "package:appbox_kit_core/common/appbox_kit_app_constants.dart",
+    "fonts": "package:appbox_kit_core/common/appbox_kit_fonts.dart",
+    "glyphs": "package:appbox_kit_core/common/appbox_kit_glyphs.dart",
+    "glyphsLucide": "package:appbox_kit_core/common/appbox_kit_glyphs_lucide.dart"
+  },
+  "sharedWith": {
+    "appbox-designer": "The designer resolves the SAME table when choosing starter partials, so a designed kind and a scaffolded widget cannot disagree. Divergence between the two skills' copies is a defect; there is exactly one file.",
+    "consumedBy": [
+      "skills/appbox-scaffolder",
+      "skills/appbox-designer"
+    ]
+  }
+}
