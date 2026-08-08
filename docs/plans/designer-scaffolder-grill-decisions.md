@@ -137,3 +137,16 @@ Registry mapped 12/15 derived kinds; three resolved as follows, restoring closur
 - **panel-activity** → COMPOSITION (`AppBoxKitGlassCard` + `AppBoxKitListSection` + `AppBoxKitNotificationRecord`), recorded debt pending a first-class kit activity widget.
 
 **Composition rule (user directive):** every composition is a designer RECIPE — the designer always composes (panels included) for any design; the scaffolder emits compositions explicitly and never resolves them to one class. Recipe knowledge lives with the designer; the registry records the resolved target set.
+
+## Q11/Q12 spike ratifications (user-confirmed)
+
+Four decisions surfaced by the Q11 shell spike (`docs/plans/q11-shell-spike.md`, probe at `tool/spike-q11-shells/`), all confirmed as recommended:
+
+- **(a) inspectAttrs Dart shape + anatomy-node-id vocabulary.** The Dart triple (`screenId`, `surfaceId`, anatomy node id) is ratified into kit core; the anatomy-node-id vocabulary is CLOSED in the kind-resolution registry (versioned, machine-read by both skills — same authority pattern as kinds). `app-architecture.md:169`'s JS form and the Dart shape must stay 1:1.
+- **(b) Showcase is BACK-STAMPED with `inspectAttrs`** — not exempted. Showcase is normative; every emitted surface carries the triple, so the exemplar carries it too. Resolves the collision flagged at scaffolder SKILL.md:270.
+- **(c) `showcase_notes_shell/design-system.md` gets a TYPED artifact entry** in the Q8 feature-recipe manifest (not an exclusion), so the manifest fully round-trips showcase (closes the Verdict-1 warn).
+- **(d) `showcase_notes_shell_viewmodel.dart` is FIXED** — add the missing `Relationships:` frontmatter (19/20 viewmodels already comply). The manifest stays strict; no relaxation for trivial viewmodels.
+
+**Also ratified from spike F1:** emitted pubspecs MUST carry kit/data's three dependency_overrides (`win32 ^6.0.1`, `device_info_plus ^13.0.0`, `package_info_plus ^10.0.0`) — the obligation moves from kit/data prose into the manifest/scaffolder rules (without it every scaffolded app fails version solving).
+
+**Sequencing:** contract edits (registry vocabulary, kit core shape, showcase back-stamp, manifest artifact type + override rule, viewmodel fix) land only AFTER the shell-spike agent's completion report — not while its transliterator is reading the exemplar. Then the Q11 probe re-runs for five ratified verdicts (V4 no longer provisional).
