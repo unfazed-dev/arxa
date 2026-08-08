@@ -179,6 +179,14 @@ principle as Flutter's `--track-widget-creation`. The triple
 mandatory on **every** emitted surface, shells included; its presence is
 mechanically enforced by the probe.
 
+The anatomy-node vocabulary is CLOSED, not open: the valid ids are exactly
+those in `skills/appbox-scaffolder/kind-resolution.registry.json#/anatomyNodes/vocabulary`
+(ratified at registry v1.2.0; Dart spells this slot `anatomyNodeId`, JS spells
+it `nodeId` — one slot, two spellings). `anatomy:view.body` above is not an
+illustrative sample of an open namespace; it is currently the entire set.
+New node ids are added there deliberately, with a version bump, exactly like
+widget kinds — never invented at design time.
+
 It is the join between the registry and the tree. Without it the pipeline
 matches surfaces to registry entries by *filename convention*, which held for
 21 of 37 surfaces in the reference project and silently lost the rest.
