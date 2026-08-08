@@ -179,7 +179,28 @@
           const partialCtx = Object.assign({ prefs, locale: c.get('locale') || 'en', locales, t }, ctx);
           partialCtx.c = partialCtx;
           try {
-            const rendered = String(renderModule.render(ctx.partial, partialCtx));
+            let rendered = String(renderModule.render(ctx.partial, partialCtx));
+            // Boosted MPA (ADR-0003): every in-app link inside the project
+            // partial re-propagates the stub's own params (vp/embed/still/
+            // inspect/theme) so a boosted hop keeps its viewport and inspect
+            // mode. This is the render-side half of the `pqs` comment in
+            // screen_stub_view.tsx — authored partials carry plain hrefs and
+            // cannot know the serving stub's params. Assets and absolute
+            // URLs are left alone.
+            const pqsParts = [];
+            if (ctx.vp != null) pqsParts.push(`vp=${ctx.vp}`);
+            if (ctx.embed) pqsParts.push('embed=1');
+            if (ctx.still) pqsParts.push('still=1');
+            if (ctx.inspect) pqsParts.push('inspect=1');
+            if (ctx.themeOverride) pqsParts.push(`theme=${ctx.themeOverride}`);
+            const pqs = pqsParts.join('&');
+            if (pqs) {
+              rendered = rendered.replace(/href="(\/(?!\/)[^"]*)"/g, (m, url) => {
+                if (url.startsWith('/assets/')) return m;
+                const [path, q] = url.split('?');
+                return `href="${path}?${q ? `${q}&` : ''}${pqs}"`;
+              });
+            }
             ctx.partial = raw(rendered);
           } catch (e) {
             // Partial not in registry or render error — leave as-is (falls back

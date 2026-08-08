@@ -44,15 +44,19 @@ Future<void> _run(ProbeContext ctx) async {
   await waitQuiet(page, report: ctx.report);
 
   ctx.report.section('C. capability');
+  // htmx4 ships morph in core (config.morphSkip/morphScanLimit, swap token
+  // `outerMorph`) — there is no idiomorph extension and no `hx-ext` wiring
+  // anymore. The old assertion encoded the v2 stack; asserting it against
+  // htmx4 fails on every correctly-served page.
   final morphReady = await page.evaluate(
-      "!!(window.htmx && htmx.config && document.querySelector('[hx-ext*=\"morph\"]')) && typeof Idiomorph !== 'undefined'");
+      "!!(window.htmx && htmx.config && 'morphSkip' in htmx.config && 'morphScanLimit' in htmx.config)");
   final htmxVersion = await page.evaluate('window.htmx && htmx.version');
   ctx.report.out.writeln('  htmx            : ${htmxVersion ?? 'undefined'}');
   final idiomorphType = await page.evaluate('typeof Idiomorph');
-  ctx.report.out.writeln('  Idiomorph loaded: $idiomorphType');
+  ctx.report.out.writeln('  Idiomorph loaded: $idiomorphType (htmx4 core morph needs none)');
   final moveBefore = await page.evaluate("'moveBefore' in Element.prototype");
   ctx.report.out.writeln('  Element.moveBefore: $moveBefore');
-  ctx.report.check('morph extension wired', morphReady == true);
+  ctx.report.check('htmx4 core morph available', morphReady == true);
 
   ctx.report.section('D1. duplicate ids (morph correctness precondition)');
   final dups =

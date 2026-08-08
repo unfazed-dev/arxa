@@ -221,8 +221,16 @@ export function Field(props: ComposerProps) {
         </Fragment>
       )}
 
+      {/* draftSent must break the MORPH identity, not just drop hx-preserve:
+          outerMorph matches this node by id and morphs attributes only — a
+          textarea's typed text lives in the live `.value` property, which a
+          morph never touches, so the sent message would survive the swap.
+          Suffixing the id on the one render that follows a send makes the
+          morph treat it as a new node: fresh element, empty value. The next
+          normal render restores the canonical id (and hx-preserve), replacing
+          the already-empty temp node. Nothing else keys on this id. */}
       <textarea
-        id={`composer-text${sfx}`}
+        id={`composer-text${sfx}${props.draftSent ? '--sent' : ''}`}
         hx-preserve={!props.draftSent ? 'true' : undefined}
         name="text"
         rows={1}

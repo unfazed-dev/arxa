@@ -63,7 +63,12 @@ const ScreenStubView: FC<ScreenStubViewProps> = (props) => {
               hx-on is used (ADR-0002 no-custom-JS — v4 has no allowEval). */}
           {!props.still && (
             <Fragment>
-              <meta name="htmx-config" content='{"transitions":true}' />
+              {/* implicitInheritance: htmx4 stops inheriting attributes by
+                  default — without it the body's hx-boost/hx-sync never reach
+                  the partial's links and every click is a full document load,
+                  which is exactly the reload this boosted stub exists to
+                  avoid. */}
+              <meta name="htmx-config" content='{"transitions":true,"implicitInheritance":true}' />
               <script src="/assets/vendor/htmx4.min.js" integrity="sha384-6lyVbhrs13b9z7mLOpt/N6R76rtkEBWgCjAXRs/DSWyi2AMnQSs10ijWk+PI8n7W" crossorigin="anonymous" />
             </Fragment>
           )}

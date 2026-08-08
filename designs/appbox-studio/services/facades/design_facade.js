@@ -1174,7 +1174,12 @@ const logicContext = (d, s, t, L = 'en') => {
       edges: edges.filter((e) => !e.element).map((e) => ({ ...e, toLabel: labelOf(e.to) })),
     },
     widgets: widgets.widgetsOn(s.id).map((w) => {
-      const templated = !w.el || w.el.includes('{{');
+      // Templated means static analysis cannot resolve the name: `{{ }}`
+      // (mustache-style seeds) OR `${ }` (TSX template-literal data-el, the
+      // form the scaffolder emits for localized labels). Missing either
+      // marker classified interpolated buttons 'unwired' — a fabricated
+      // certainty; 'unknown' is the honest state.
+      const templated = !w.el || w.el.includes('{{') || w.el.includes('${');
       const edge = templated ? null : edges.find((e) => e.element === w.el) ?? null;
       return {
         kind: w.kind, index: w.index, el: w.el ?? null,

@@ -193,32 +193,40 @@ export function Panel(props: PanelProps) {
 // section markup, which is precisely what this file exists to prevent.
 // =============================================================================
 
+// A JSX runtime hands sections an empty children array even when the caller
+// wrote a self-closing tag — [] is truthy, so a bare truthiness check would
+// render empty sections on every panel. Recurse: real content only.
+const hasChild = (k: unknown): boolean =>
+  Array.isArray(k) ? k.some(hasChild) : k != null && k !== false && k !== '';
+
 export function Top(props: SectionProps) {
   const { pid, content, o } = props;
-  if (!content) return null;
+  const body = content ? raw(String(content)) : hasChild(props.children) ? props.children : null;
+  if (body == null) return null;
   return (
     <header
       class={`panel-top${o?.cls ? ` ${o.cls}` : ''}`}
       id={o?.id ?? `${pid}-top`}
-      hx-swap-oob={o?.oob ? 'outerHTML' : undefined}
+      hx-swap-oob={props.oob || o?.oob ? 'outerHTML' : undefined}
       {...(o?.attrs ?? {})}
     >
-      {raw(String(content))}
+      {body}
     </header>
   );
 }
 
 export function Bottom(props: SectionProps) {
   const { pid, content, o } = props;
-  if (!content) return null;
+  const body = content ? raw(String(content)) : hasChild(props.children) ? props.children : null;
+  if (body == null) return null;
   return (
     <footer
       class={`panel-bottom${o?.cls ? ` ${o.cls}` : ''}`}
       id={o?.id ?? `${pid}-bottom`}
-      hx-swap-oob={o?.oob ? 'outerHTML' : undefined}
+      hx-swap-oob={props.oob || o?.oob ? 'outerHTML' : undefined}
       {...(o?.attrs ?? {})}
     >
-      {raw(String(content))}
+      {body}
     </footer>
   );
 }
@@ -227,30 +235,32 @@ export function Bottom(props: SectionProps) {
 // `start`/`end` rather than `left`/`right` so the names survive an RTL locale.
 export function SideStart(props: SectionProps) {
   const { pid, content, o } = props;
-  if (!content) return null;
+  const body = content ? raw(String(content)) : hasChild(props.children) ? props.children : null;
+  if (body == null) return null;
   return (
     <aside
       class={`panel-side-start${o?.cls ? ` ${o.cls}` : ''}`}
       id={o?.id ?? `${pid}-side-start`}
-      hx-swap-oob={o?.oob ? 'outerHTML' : undefined}
+      hx-swap-oob={props.oob || o?.oob ? 'outerHTML' : undefined}
       {...(o?.attrs ?? {})}
     >
-      {raw(String(content))}
+      {body}
     </aside>
   );
 }
 
 export function SideEnd(props: SectionProps) {
   const { pid, content, o } = props;
-  if (!content) return null;
+  const body = content ? raw(String(content)) : hasChild(props.children) ? props.children : null;
+  if (body == null) return null;
   return (
     <aside
       class={`panel-side-end${o?.cls ? ` ${o.cls}` : ''}`}
       id={o?.id ?? `${pid}-side-end`}
-      hx-swap-oob={o?.oob ? 'outerHTML' : undefined}
+      hx-swap-oob={props.oob || o?.oob ? 'outerHTML' : undefined}
       {...(o?.attrs ?? {})}
     >
-      {raw(String(content))}
+      {body}
     </aside>
   );
 }
