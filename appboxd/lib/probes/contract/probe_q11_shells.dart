@@ -232,9 +232,13 @@ void _expansionLine(
     // Not a failure: the manifest's artifact types describe .dart artifacts. But a
     // non-Dart file living inside a shell directory cannot be produced by any Q8
     // expansion, so the manifest cannot round-trip the showcase tree it was derived
-    // from. Whether such files get an artifact type is a decision, not a probe call.
+    // from. Whether such files get an artifact type was a decision, not a probe
+    // call — ratified since as (c): they get a TYPED artifact entry. Provisional
+    // here because the manifest edit lands after this spike reports.
     report.warn('$strayTitle non-Dart files inside shell dirs, unexpressible in the Q8 '
-        'manifest (${strays.length}): ${strays.take(4).join(", ")}');
+        'manifest (${strays.length}): ${strays.take(4).join(", ")} '
+        '— PROVISIONAL: ratified decision (c) gives these a typed artifact entry; '
+        'this warn should disappear once that manifest edit lands.');
   }
 }
 

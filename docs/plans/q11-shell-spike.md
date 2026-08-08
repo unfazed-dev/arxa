@@ -177,6 +177,26 @@ vocabulary exists · F4 showcase exempt-vs-back-stamp is an open decision (scaff
 F2+F3 are why V4 is reported as **UNRATIFIED** rather than green: inventing both the shape and the
 vocabulary and then checking my own output against them would make a pass meaningless.
 
+## Ratified after the spike ran — what each verdict becomes
+
+The user ratified all four open decisions plus F1, recorded in
+`docs/plans/designer-scaffolder-grill-decisions.md` at `c4b4531`. **None of it changed this run**:
+the contract edits land only after this report, so the transliterator kept reading the exemplar
+as-is and every verdict below is reported against the *pre-ratification* contract. What changes
+next, and what the verdict means afterwards:
+
+| Decision | Effect on this spike's verdicts |
+|---|---|
+| (a) `inspectAttrs` Dart triple → kit core; `anatomy-node-id` vocabulary CLOSED in the kind-resolution registry | **V4 stops being unratified.** F2/F3 both close: the shape gets a real home in kit/ and the vocabulary gets a closed set. V4's PASS then means what it says. Until the edit lands it is still internal consistency only. |
+| (b) showcase gets BACK-STAMPED with `inspectAttrs` (not exempted) | The V4 showcase warn disappears — the exempt-vs-back-stamp question (F4) is answered as back-stamp. The spike's emitted triple stops being a divergence from the exemplar and becomes the exemplar's own rule. |
+| (c) `design-system.md` gets a TYPED artifact entry in the Q8 manifest | The V1 warn disappears. The manifest will then genuinely round-trip the showcase tree, which today it does not. Probe warn now says so, marked PROVISIONAL. |
+| (d) notes viewmodel's `Relationships:` frontmatter fixed; manifest stays strict | **V5 goes green by fixing the defect, not by weakening the rule** — the outcome I'd have argued for. The red below stays red as found; it is the evidence that prompted the fix. |
+| F1: three-override block becomes a manifest/scaffolder rule | The rule stops living only in `kit/data` prose. The emitted pubspec was already correct; after this, a reader of the contract can find out *why*. |
+
+Deliberately **not** done here, per team-lead: no edit to
+`showcase_notes_shell_viewmodel.dart`, the Q8 manifest, `showcase-anatomy.md`, or either skill.
+Verified mechanically — the spike commits touch none of those paths.
+
 ## A retracted blocker — recorded because the error is instructive
 
 I first reported placement/commit policy as **blocked on team-lead**, because the brief's HARD
