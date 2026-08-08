@@ -302,10 +302,10 @@ Future<void> _run(ProbeContext ctx) async {
 
   // ── Section 11: widget targeting ──
   ctx.report
-      .section('11. svg path → owning widget; bare div → screen fallback');
+      .section('11. svg path → owning widget; bare div pierces to widget beneath');
   // Inject a widget with an SVG path inside it
   await page.evaluateInFrame(doc,
-      "const w = document.createElement('div');"
+      "{ const w = document.createElement('div');"
       "w.setAttribute('data-el','probe:svg-widget');"
       "w.setAttribute('data-inspect-role','test');"
       "w.setAttribute('data-inspect-style','test');"
@@ -316,7 +316,7 @@ Future<void> _run(ProbeContext ctx) async {
       "const path = document.createElementNS('http://www.w3.org/2000/svg','path');"
       "path.setAttribute('d','M0 0H10V10H0Z');"
       "svg.appendChild(path); w.appendChild(svg);"
-      "document.body.appendChild(w);");
+      "document.body.appendChild(w); }");
   await page.hoverSelectorInFrame(doc, '[data-el="probe:svg-widget"] path');
   await settle();
   final pathBadge = await page.evaluateInFrame(doc,
@@ -333,10 +333,10 @@ Future<void> _run(ProbeContext ctx) async {
   }
   // Inject a bare div (no data-el on self or any ancestor)
   await page.evaluateInFrame(doc,
-      "const d = document.createElement('div');"
+      "{ const d = document.createElement('div');"
       "d.id = 'probe-bare';"
       "d.style.cssText = 'position:absolute;left:200px;top:80px;width:40px;height:40px;background:rgba(255,0,0,.3);z-index:99990;';"
-      "document.body.appendChild(d);");
+      "document.body.appendChild(d); }");
   await page.hoverSelectorInFrame(doc, '#probe-bare');
   await settle();
   final bareBadge = await page.evaluateInFrame(doc,
@@ -346,10 +346,17 @@ Future<void> _run(ProbeContext ctx) async {
       ' sub: (k[1]||{}).textContent||"" }); })()');
   if (bareBadge is String) {
     final bb = jsonDecode(bareBadge) as Map<String, dynamic>;
-    ctx.report.check('bare div → screen-fallback "unannotated region"',
-        bb['sub'] == 'unannotated region', 'sub: ${bb['sub']}');
+    // Stack-walk hit-testing deliberately pierces unannotated overlays:
+    // the transparent bare div resolves to the annotated widget beneath it.
+    // The body/screen fallback only fires when nothing annotated is under
+    // the pointer, which no longer happens over fully-annotated chrome.
+    final name = (bb['name'] as String? ?? '');
+    ctx.report.check('bare div pierces to annotated widget beneath',
+        name.isNotEmpty && bb['sub'] != 'unannotated region',
+        'name: $name, sub: ${bb['sub']}');
   } else {
-    ctx.report.check('bare div → screen fallback', false, '(no badge)');
+    ctx.report.check(
+        'bare div pierces to annotated widget beneath', false, '(no badge)');
   }
 
   // ── Section 12: vendor cache-busting ──
@@ -372,6 +379,119 @@ Future<void> _run(ProbeContext ctx) async {
   ctx.report.check('all vendor scripts carry ?v= content hash',
       allSrcs.isNotEmpty && allSrcs.every((s) => cacheRe.hasMatch(s)),
       allSrcs.isEmpty ? '(no vendor scripts found)' : allSrcs.join(', '));
+
+  // ── Section 13: text leaves resolve to their own identity ──
+  ctx.report.section('13. text leaves resolve to own data-el, not parent');
+  // Inject a card containing a text-role span so hovering the text resolves to
+  // the span, never the card container.
+  await page.evaluateInFrame(doc,
+      "{ const c = document.createElement('div');"
+      "c.setAttribute('data-el','test:leaf-card');"
+      "c.setAttribute('data-inspect-role','card');"
+      "c.style.cssText = 'position:absolute;left:10px;top:460px;width:180px;padding:8px;z-index:99990;';"
+      "const s = document.createElement('span');"
+      "s.setAttribute('data-el','test:text-label');"
+      "s.setAttribute('data-inspect-role','label');"
+      "s.textContent = 'leaf text';"
+      "c.appendChild(s);"
+      "document.body.appendChild(c); }");
+  await page.hoverSelectorInFrame(doc, '[data-el="test:text-label"]');
+  await settle();
+  final leafBadge = await _badgeText(page, doc);
+  ctx.report.check('hovering text leaf resolves to its own data-el',
+      leafBadge?['name'] == 'test:text-label', 'name: ${leafBadge?['name']}');
+
+  // ── Section 14: icon identity on svg root ──
+  ctx.report.section('14. icon svg root carries data-el; path collapses to it');
+  await page.evaluateInFrame(doc,
+      "{ const host = document.createElement('div');"
+      "host.style.cssText = 'position:absolute;left:220px;top:460px;z-index:99990;';"
+      "const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');"
+      "svg.setAttribute('data-el','icon:probe-test');"
+      "svg.setAttribute('data-inspect-role','icon');"
+      "svg.setAttribute('width','24'); svg.setAttribute('height','24');"
+      "const path = document.createElementNS('http://www.w3.org/2000/svg','path');"
+      "path.setAttribute('d','M0 0H10V10H0Z');"
+      "svg.appendChild(path); host.appendChild(svg);"
+      "document.body.appendChild(host); }");
+  await page.hoverSelectorInFrame(doc, '[data-el="icon:probe-test"] path');
+  await settle();
+  final iconBadge = await _badgeText(page, doc);
+  ctx.report.check('hovering icon path resolves to icon:<glyph>',
+      iconBadge?['name'] == 'icon:probe-test', 'name: ${iconBadge?['name']}');
+
+  // ── Section 15: instance disambiguation ──
+  ctx.report.section('15. same-name siblings resolve to distinct instances');
+  await page.evaluateInFrame(doc,
+      "{ const c = document.createElement('div');"
+      "c.setAttribute('data-el','test:loop-container');"
+      "c.setAttribute('data-inspect-role','group');"
+      "c.style.cssText = 'position:absolute;left:10px;top:520px;width:400px;z-index:99990;';"
+      "for (let i = 0; i < 3; i++) {"
+      "  const r = document.createElement('div');"
+      "  r.setAttribute('data-el','test:loop-row');"
+      "  r.setAttribute('data-inspect-role','list row');"
+      "  r.style.cssText = 'position:absolute;left:' + (i*120) + 'px;top:0;width:100px;height:30px;background:rgba(0,255,0,.2);';"
+      "  r.textContent = 'row ' + i;"
+      "  c.appendChild(r);"
+      "}"
+      "document.body.appendChild(c); }");
+  final instBadges = <String>[];
+  for (var i = 0; i < 3; i++) {
+    await page.hoverSelectorInFrame(doc, '[data-el="test:loop-row"]:nth-of-type(${i + 1})');
+    await settle();
+    final b = await _badgeText(page, doc);
+    instBadges.add(b?['name'] ?? '(none)');
+  }
+  ctx.report.check(
+      'three rows yield three distinct instance badges',
+      instBadges.toSet().length == 3 &&
+          instBadges.every((b) => b.contains('test:loop-row')),
+      instBadges.join(' | '));
+  ctx.report.check(
+      'each badge shows /3 instance count',
+      instBadges.every((b) => b.contains('/3')),
+      instBadges.join(' | '));
+
+  // ── Section 16: occlusion (stack-walk) ──
+  ctx.report.section('16. occluded label resolvable via elementsFromPoint');
+  await page.evaluateInFrame(doc,
+      "const lbl = document.createElement('span');"
+      "lbl.setAttribute('data-el','test:occluded-label');"
+      "lbl.setAttribute('data-inspect-role','label');"
+      "lbl.style.cssText = 'position:absolute;left:350px;top:520px;width:80px;height:20px;background:rgba(0,0,255,.2);z-index:99988;';"
+      "lbl.textContent = 'under overlay';"
+      "document.body.appendChild(lbl);"
+      "const overlay = document.createElement('div');"
+      "overlay.style.cssText = 'position:absolute;left:340px;top:510px;width:120px;height:60px;z-index:99990;';"
+      "document.body.appendChild(overlay);");
+  await page.hoverSelectorInFrame(doc, '[data-el="test:occluded-label"]');
+  await settle();
+  final occBadge = await _badgeText(page, doc);
+  ctx.report.check(
+      'label under transparent overlay resolves (stack-walk)',
+      occBadge?['name'] == 'test:occluded-label', 'name: ${occBadge?['name']}');
+
+  // ── Section 17: per-fragment highlight ──
+  ctx.report.section('17. wrapped label draws multiple highlight rects');
+  await page.evaluateInFrame(doc,
+      "const wrap = document.createElement('div');"
+      "wrap.style.cssText = 'position:absolute;left:10px;top:600px;width:60px;z-index:99990;';"
+      "const wl = document.createElement('span');"
+      "wl.setAttribute('data-el','test:wrapped-label');"
+      "wl.setAttribute('data-inspect-role','label');"
+      "wl.textContent = 'This text wraps across multiple lines in a narrow container to produce multiple line-box rects';"
+      "wrap.appendChild(wl);"
+      "document.body.appendChild(wrap);");
+  await page.hoverSelectorInFrame(doc, '[data-el="test:wrapped-label"]');
+  await settle();
+  final rectCount = await page.evaluateInFrame(doc,
+      '(() => { const c = document.querySelector("[data-inspect-overlay]");'
+      ' if (!c) return 0;'
+      ' return Array.from(c.children).filter(c => c.style.display !== "none").length; })()');
+  ctx.report.check(
+      'wrapped label shows > 1 highlight rect',
+      rectCount is num && rectCount.toInt() > 1, 'rects: $rectCount');
 
   ctx.report.section('requests seen');
   ctx.report.out.writeln(reqs.isNotEmpty ? '  ${reqs.join('\n  ')}' : '  (none)');
@@ -409,4 +529,18 @@ Future<int> _count(CdpSession page, String selector) async {
   final n = await page
       .evaluate('document.querySelectorAll(${jsonEncode(selector)}).length');
   return n is num ? n.toInt() : 0;
+}
+
+/// Reads the inspect badge's name and sub-text from the iframe.
+Future<Map<String, dynamic>?> _badgeText(
+    CdpSession page, CdpFrame doc) async {
+  final raw = await page.evaluateInFrame(doc,
+      '(() => { const l = document.querySelector(".inspect-label");'
+      ' if (!l || l.style.display === "none") return null; const k = l.children;'
+      ' return JSON.stringify({ name: (k[0]||{}).textContent||"",'
+      ' sub: (k[1]||{}).textContent||"" }); })()');
+  if (raw is String) {
+    return jsonDecode(raw) as Map<String, dynamic>;
+  }
+  return null;
 }

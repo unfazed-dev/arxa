@@ -428,14 +428,14 @@ CmdResult designLint(List<String> args) {
       lines.addAll(findings.map((f) => f.toString()));
     }
     if (widgetFindings.isNotEmpty) {
-      lines.add('widget/panel gate failed (W1–W6):');
+      lines.add('widget/panel gate failed (W1–W7):');
       lines.addAll(widgetFindings.map((f) => f.toString()));
     }
     return CmdResult(1, stdoutLines: noteLines, stderrLines: lines);
   }
   return CmdResult(0, stdoutLines: [
     'lint clean: no custom client-side JS in $dir',
-    'widget/panel gate clean: W1–W6 in $dir',
+    'widget/panel gate clean: W1–W7 in $dir',
     ...noteLines,
   ]);
 }
