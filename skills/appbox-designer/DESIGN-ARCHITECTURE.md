@@ -161,6 +161,17 @@ A ViewModel never renders markup itself and never touches a repository — both 
 Widgets come first. Before any surface is composed, the design's repeated patterns are inventoried and authored as parameterized components — the artifact's widget library — and surfaces are then composed only from that library. Start from the catalog in `references/ui-recipes.md` (drop-in components: `starter-partials/widgets/`): each recipe is a component + its CSS + its htmx wiring, viewport-ladder aware. A pattern the catalog doesn't cover is authored new, once, in the same shape. The rule holds after the first pass too: a UI pattern that appears on two surfaces is extracted, never copied. The moment a second surface needs a rail, a card, a timeline bar, a shell nav, a composer, a viewer — it moves to a shared component under `ui/common/`, and both surfaces import it. Three near-identical implementations of the same widget is the most expensive drift this medium allows: each copy silently diverges (the rail that pauses differently, the scrollbar that tints differently) and the scaffold downstream inherits the divergence.
 
 - `ui/common/` owns cross-surface components: shell chrome (nav, timeline), the rail (top bar, card shell, composer), the design viewer, primitives. `ui/widgets|dialogs|bottomsheets/` owns the `_name.tsx` shared components (see the runtime contract).
+
+  > **Name collision — read once, then never confuse them.** This `ui/common/`
+  > is the **design artifact's** tree (`.tsx`, htmx, served by the studio) and
+  > it is correct here. The **Flutter app** tree in
+  > `references/showcase-anatomy.md` has no `lib/ui/common/` — that folder was
+  > deleted from showcase so colors and helpers resolve to kit-common instead
+  > of a local duplicate. Flutter's only `common` is
+  > `lib/ui/widgets/common/<group>/`, the promoted-widget tier. When a rule
+  > mentions `ui/common/`, check which tree it is talking about: `.tsx` ⇒
+  > design artifact, `.dart` ⇒ Flutter, and in Flutter it is always
+  > `widgets/common/`.
 - Per-surface views keep only what is genuinely theirs: the card's domain content, the canvas artifact's body.
 - Parameters travel through the component's props (e.g. a `base` path prefix); session state stays namespaced per shell in the facade.
 - The same rule applies to CSS: shared widget styles live in the artifact's main stylesheet, not duplicated across per-surface CSS files. Scrollbars always blend (transparent track, theme-ink thumb) — see the starter's `app.css`.

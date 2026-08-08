@@ -4,6 +4,31 @@ Load this when the brief mentions maps, payments, auth, deploy, or any other
 kit capability. It is the designer-side mirror of the kit: what exists, how a
 design declares usage, and where the credentials come from.
 
+## Two mirror tiers — and what is deliberately not mirrored
+
+The designer designs **against the kit as always-available** and never invents a
+local duplicate of what the kit provides.
+
+**Tier 1 — design vocabulary.** A *generated*, parity-gated JS mirror of
+`kit/core/lib/common/`: colors (`appbox_kit_colors.dart`), spacing/ui helpers
+(`appbox_kit_ui_helpers.dart`), app constants, glyphs (incl. lucide) and fonts —
+same symbol names on both sides. **Never hand-author these.** They are generated
+from the Dart and gated by `kitCatalogMirrorCheck`; a hand-written copy is the
+exact drift that got `lib/ui/common` deleted from showcase. Missing symbol ⇒
+extend the generator, never define the value locally.
+
+**Tier 2 — service kits.** Everything catalogued below (auth, payments, maps,
+deploy, i18n, …), reaching the design medium through this catalog plus
+`runtime/kit-facades/*.js`, declared with the `kits` field on the surface that
+needs it.
+
+**Not mirrored, by decision:** `AppBoxKitNative*` and `appbox_kit_ui_library`
+widgets. The designer designs web (baoyu design core; ejects production web);
+natives are the scaffolder's transliteration targets. Do not reach for a native
+primitive while designing, and do not pre-empt which native a widget `kind`
+resolves to — that boundary is what keeps eject-to-web and emit-to-native both
+honest. See `references/showcase-anatomy.md` §4.
+
 ## What the kit is
 
 The kit is a set of Flutter packages under `kit/` (`auth`, `payments`, `maps`,

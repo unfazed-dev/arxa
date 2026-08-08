@@ -54,7 +54,7 @@ _Avoid_: partial (that word means the shared kind)
 A shared `_name.tsx` component file living at its placement-law tier (`references/app-architecture.md`), imported and used across Surfaces.
 
 **Widget Library**:
-The artifact's own set of parameterized components, placed per the three-tier placement law (`references/app-architecture.md`: `ui/common/widgets/` cross-shell, `ui/views/<shell>/shared/widgets/` intra-shell, `<surface>/widgets/` per-surface), authored in the widget-library pass BEFORE any Surface is composed; Surfaces compose only from it. Seeded from `references/ui-recipes.md` (the Recipe catalog) and `starter-partials/widgets/`.
+The artifact's own set of parameterized widgets, placed per the two-tier placement law (`references/showcase-anatomy.md` §2: `ui/widgets/common/<group>/` cross-shell, `ui/widgets/<app>_<feature>_widgets/` for everything else), authored in the widget-library pass BEFORE any Surface is composed; Surfaces compose only from it. Every widget declares a `kind` from the closed 15-kind vocabulary (`starter-partials/widgets/`); an unlisted kind is a gate failure on both sides, never an improvised mapping. Seeded from `references/ui-recipes.md` (the Recipe catalog) and `starter-partials/widgets/`.
 _Avoid_: widget set, UI kit (that word means a design system)
 
 **Boosted MPA**:

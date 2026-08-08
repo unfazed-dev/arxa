@@ -142,30 +142,56 @@ Widgets place at the narrowest scope that covers all their consumers; the
 include graph (imports + fragment refs — `buildIncludeGraph`) is the only
 authority, checked in both directions:
 
-| scope | design medium |
-|---|---|
-| cross-shell (2+ shells) | `ui/common/widgets/` |
-| intra-shell (2+ surfaces) | `ui/views/<shell>/shared/widgets/` |
-| per-surface (1 surface) | `<surface>/widgets/` |
+| scope | design medium | build medium |
+|---|---|---|
+| cross-shell (2+ shells) | `ui/widgets/common/<group>/` | `lib/ui/widgets/common/<group>/` |
+| everything else (one feature) | `ui/widgets/<app>_<feature>_widgets/` | `lib/ui/widgets/<app>_<feature>_widgets/` |
+
+**Two tiers, not three.** This law is read off the exemplar
+(`kit/showcase_app/lib/ui/widgets/`), which is the structure contract, not an
+example. `ui/common/widgets/`, `ui/views/<shell>/shared/widgets/` and
+`<surface>/widgets/` are **illegal** — they do not exist in the exemplar. A
+widget with a single surface consumer stays in its feature's widgets folder;
+there is no per-surface tier to demote it to. Promotion to `common/<group>/` is
+earned by a second *shell* consumer, proven by the include graph in both
+directions.
 
 Bare `<shell>/widgets/` is illegal. Empty tiers are never created
-speculatively — a widget with one consumer lives with that consumer until a
-second consumer justifies promoting it.
+speculatively.
 
-### Every viewmodel declares its surface
+Every widgets folder carries a `widgets.dart` barrel exporting by full package
+URI. Full anatomy: [`showcase-anatomy.md`](showcase-anatomy.md).
+
+### Every surface stamps its inspect identity
 
 ```js
 export const surfaceId = 'train.library';
+export const inspectAttrs = {
+  screenId: 'train.library',        // registry screen id
+  surfaceId: 'train.library',       // this surface
+  nodeId: 'anatomy:view.body',      // anatomy-node id
+};
 ```
 
-**This line is mandatory in every viewmodel and is not optional for shells.**
+**Identity is stamped at emit time, never inferred at runtime** — the same
+principle as Flutter's `--track-widget-creation`. The triple
+**(screenId, surfaceId, anatomy-node id)** is derived from registry ids and is
+mandatory on **every** emitted surface, shells included; its presence is
+mechanically enforced by the probe.
+
 It is the join between the registry and the tree. Without it the pipeline
 matches surfaces to registry entries by *filename convention*, which held for
 21 of 37 surfaces in the reference project and silently lost the rest.
 
-Declare it while designing. Back-filling `surfaceId` after the fact means
-guessing which entry a file was meant to be — that is the same inference the
-export exists to replace.
+Studio inspect mode reads the triple **only** — hover tint, tags, and both icon
+buttons key off it, with zero DOM heuristics. That is what lets inspect mode
+survive regeneration by construction, so never emit a surface without the
+triple "just for now", and never let a class name or DOM position stand in
+for it.
+
+Stamp it while designing. Back-filling it after the fact means guessing which
+entry a file was meant to be — that is the same inference the export exists to
+replace. Details: [`delta-runs.md`](delta-runs.md) §4.
 
 ### The app-shell roster is law
 

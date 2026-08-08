@@ -10,13 +10,33 @@ studio shells, not a cosmetic mismatch. A widget lives at the narrowest scope
 that covers all its consumers; the include/import graph is the only
 authority, checked in both directions — this generalizes gate S10's
 sole-consumer overlay rule from the scaffolder to the whole pipeline, design
-side included. Three tiers, identical shape on both mediums:
+side included. Originally three tiers, identical shape on both mediums:
 
 | scope | design medium | build medium |
 |---|---|---|
 | cross-shell (2+ shells) | `ui/common/widgets/` | `lib/ui/widgets/` |
 | intra-shell (2+ surfaces) | `ui/views/<shell>/shared/widgets/` | `<shell>/shared/widgets/` |
 | per-surface (1 surface) | `<surface>/widgets/` | `<view>/widgets/` |
+
+> **AMENDED — the table above is superseded; do not follow it.**
+>
+> The three-tier law was written before `kit/showcase_app/lib` was adopted as
+> the structure contract (grill decision Q1). The exemplar has **no**
+> `ui/common/widgets/`, **no** `<shell>/shared/widgets/` and **no**
+> `<view>/widgets/`; those paths are now illegal on both mediums. The law is
+> **two tiers**:
+>
+> | scope | design + build medium |
+> |---|---|
+> | cross-shell (2+ shells) | `ui/widgets/common/<group>/` |
+> | everything else (one feature) | `ui/widgets/<app>_<feature>_widgets/` |
+>
+> A single-consumer widget stays in its feature's widgets folder — there is no
+> per-surface tier to demote it to, so the scaffold-side demotion check
+> described below narrows to a promotion check only. Everything else in this
+> ADR — one vocabulary, include-graph-as-sole-authority, bidirectional
+> checking, no speculative empty tiers — stands unchanged.
+> Current law: [`references/showcase-anatomy.md`](../../references/showcase-anatomy.md) §2.
 
 Bare `<shell>/widgets/` is illegal on both sides — it names no graph
 authority a widget could be checked against. Empty tiers are never created

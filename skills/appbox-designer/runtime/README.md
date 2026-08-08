@@ -154,9 +154,9 @@ There is no template language: composition is component imports and
   values — the nunjucks autoescape equivalent). Trusted HTML opts out with
   `raw(...)` from `hono/utils/html`; element content can use
   `dangerouslySetInnerHTML={{ __html }}`. Never `raw()` user data.
-- Shared cross-surface fragments are `_name.tsx` components placed per the
-  three-tier placement law (`references/app-architecture.md`), pulled in with
-  a plain `import { Card } from '../../common/widgets/_card.tsx'` (the `.tsx`
+- Shared cross-surface fragments are `_name.tsx` widgets placed per the
+  two-tier placement law (`references/showcase-anatomy.md` §2), pulled in with
+  a plain `import { Card } from '../../widgets/common/base/_card.tsx'` (the `.tsx`
   extension is included) and rendered as `<Card card={card} />`. Parameters
   are explicit typed props — nothing reads a magic context bag. The drop-in
   starter library lives in `starter-partials/widgets/`.

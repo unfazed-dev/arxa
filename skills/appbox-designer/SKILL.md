@@ -9,10 +9,14 @@ description: >-
   dashboards, interactive prototypes and wireframes, authored at every
   viewport in the active ladder. Use when the user asks to design, mock up,
   prototype, wireframe or visualize an application, product screen or user
-  flow that will be scaffolded into a real app. Produces an authored
-  `registry.json`, a `surfaceId` in every viewmodel and a route table the
-  freeze step can read — one screen registry viewed through three lenses
-  (views / flows / proto), flows authored as data edges over it. Not for slide decks or printable documents.
+  flow that will be scaffolded into a real app. Consumes the versioned
+  `intake/registry.json` as its single authoring surface (all design
+  instructions including seed data) and materializes a *derived*
+  `registry.json`, an `inspectAttrs` triple on every surface and a route table
+  the freeze step can read — one screen registry viewed through three lenses
+  (views / flows / proto), flows authored as data edges over it. Output is
+  structurally isomorphic to `kit/showcase_app/lib`, so the scaffolder can
+  transliterate rather than interpret. Not for slide decks or printable documents.
 ---
 
 # appbox-designer
@@ -45,6 +49,41 @@ navigation from the edges. Binding contract:
 [`DESIGN-ARCHITECTURE.md`](DESIGN-ARCHITECTURE.md) "The output triad".
 
 ## How to use this skill
+
+**0. Load the structure contract and identify your input. Do this first.**
+Two files govern everything below and win over any prose elsewhere in this
+skill:
+
+- [`references/showcase-anatomy.md`](references/showcase-anatomy.md) —
+  `kit/showcase_app/lib` is **the structure contract, not an example**. Folder
+  layout, the `<app>_<feature>_` naming law, the five-file per-surface split,
+  barrels, the two-tier widget placement law, the closed 15-kind widget
+  vocabulary, the mandatory `///` frontmatter and comment conventions, and the
+  deterministic expansion recipe for a feature showcase doesn't have.
+- [`references/delta-runs.md`](references/delta-runs.md) — where your input
+  comes from and what you may touch.
+
+Then establish **which kind of run this is**, because it changes what you are
+allowed to write:
+
+| input | run | you materialize |
+|---|---|---|
+| a pinned `intake/registry.json` version, no prior scaffold | full run | every feature |
+| a frozen run artifact for a diff between registry versions | **feature-scoped delta run** | **only** the new/changed feature |
+
+In a delta run, **already-designed features are never regenerated.** Leave
+their files untouched; the divergence gate verifies them, it does not rewrite
+them. Shared join points (registry, routes, root barrels, locator) are
+scaffolder-owned, regenerated deterministically, additive-only — never
+hand-edit one. Any cross-feature touch must be declared in the delta scope and
+carries 3-way merge plus human approval; an undeclared one is a gate failure.
+
+You **never author a second source of truth.** `intake/registry.json` is the
+only authoring surface; composers write it, you consume it. The artifact's
+`models/screens_model/registry.json` is *derived* from the run artifact — a
+projection, regenerated, never edited to disagree with its source. If you find
+yourself wanting to write design instructions somewhere other than a registry
+patch, stop: that is the failure this rule exists to prevent.
 
 **1. Load the methodology.** Read [`system-prompt.md`](system-prompt.md) — the
 core design process and craft standards. Follow it for the whole job.
@@ -114,12 +153,32 @@ designs may still carry a `serve.mjs` shim at the artifact root: it is dead
 
 **9. Build widgets-first, then serve and verify.** Before composing any
 surface, author the artifact's widget library: inventory the design's
-repeated patterns and define them as components at the tier their
-consumers require (`ui/common/widgets/` cross-shell, `ui/views/<shell>/shared/widgets/`
-intra-shell, `<surface>/widgets/` per-surface — see `references/app-architecture.md`),
-starting from [`references/ui-recipes.md`](references/ui-recipes.md)
-and the drop-in components in `starter-partials/widgets/` — surfaces compose
-only from that library. **Auto Layout is default-ON for every widget in
+repeated patterns and define them as widgets at the tier their consumers
+require — **two tiers only**: `ui/widgets/common/<group>/` cross-shell,
+`ui/widgets/<app>_<feature>_widgets/` for everything else (see
+[`references/showcase-anatomy.md`](references/showcase-anatomy.md) §2; the old
+three-tier `shared/widgets/` + `<surface>/widgets/` law is superseded and those
+paths are illegal). Each widget declares a `kind` from the **closed** 15-kind
+vocabulary — the file list of `starter-partials/widgets/`; a kind outside it is
+a gate failure on both sides, **never improvise a mapping**. Start from
+[`references/ui-recipes.md`](references/ui-recipes.md)
+and the drop-in widgets in `starter-partials/widgets/` — surfaces compose
+only from that library.
+
+Design **against the kit as always-available**: colors, spacing, glyphs, fonts
+and constants come from the generated kit mirror, never from a local duplicate
+(`lib/ui/common` was deleted from showcase for exactly that drift). If the
+mirror lacks a symbol, extend the generator — do not define the value locally.
+`AppBoxKitNative*` and `appbox_kit_ui_library` are **not** mirrored: you design
+web, and which native a `kind` resolves to is the scaffolder's call, not yours
+to pre-empt. See `references/showcase-anatomy.md` §4.
+
+Every emitted surface carries the `inspectAttrs` triple
+`(screenId, surfaceId, anatomy-node id)` derived from registry ids — stamped at
+emit time, mechanically enforced, never inferred at runtime. Every emitted view
+and viewmodel carries the `///` frontmatter block (role sentence, Requirements
+with registry ids, Relationships diagram, `History:` line) per
+`references/showcase-anatomy.md` §3. **Auto Layout is default-ON for every widget in
 the library** (DESIGN-ARCHITECTURE, "Auto Layout"): each component's container
 carries the `data-layout` attribute set and its children size with
 `data-resize-x` / `data-resize-y`. To turn it off per frame, omit
