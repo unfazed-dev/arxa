@@ -1,0 +1,8 @@
+include: package:flutter_lints/flutter.yaml
+
+# Mirrors kit/showcase_app/analysis_options.yaml. The showcase excludes
+# lib/app/app.router.dart (stacked_generator output). The spike emits no
+# generated router yet, so the exclude list is present but empty — the
+# INCLUDE line is the part the exemplar contract actually pins.
+analyzer:
+  exclude:

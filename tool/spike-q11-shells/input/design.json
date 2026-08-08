@@ -1,0 +1,128 @@
+{
+  "_comment": "FROZEN designer output for the Q11 spike. The creative (designer) stage is exempt from verdict 3 per the Q2<->Q11 audit resolution, so this file is committed and the transliterator reads ONLY this. Regenerating it is a designer act, not a transliteration act. NOTE: anatomyNodeId values are PROVISIONAL — the vocabulary has no closed set and no ratified home (see docs/plans/q11-shell-spike.md, F3).",
+  "designVersion": "1.0.0",
+  "app": "spike",
+  "manifestVersion": "1.0.0",
+  "registryVersion": "1.1.0",
+  "factors": ["desktop", "mobile", "tablet"],
+  "shells": [
+    {
+      "feature": "startup",
+      "screenId": "screen.startup",
+      "label": "startup",
+      "role": "boot sequencing and first-paint handoff",
+      "intro": "The startup shell's outer frame. It holds a nested-router outlet that the startup leaf (boot logic + loading UI) renders through.",
+      "surfaces": [
+        {
+          "surface": "splashscreen",
+          "screenId": "screen.startup",
+          "surfaceId": "surface.startup.splashscreen",
+          "anatomyNodeId": "anatomy:view.body",
+          "label": "splashscreen",
+          "role": "the mobile-device splash surface — brand logo only",
+          "intro": "The splash surface. Brand logo only: no navigation, no copy, no controls. It is a surface, never a shell.",
+          "isSplash": true
+        }
+      ]
+    },
+    {
+      "feature": "unknown",
+      "screenId": "screen.unknown",
+      "label": "unknown",
+      "role": "terminal route fallback",
+      "intro": "The unknown shell's outer frame. It is the terminal fallback the router resolves when no other route matches.",
+      "surfaces": [
+        {
+          "surface": "notfound",
+          "screenId": "screen.unknown",
+          "surfaceId": "surface.unknown.notfound",
+          "anatomyNodeId": "anatomy:view.body",
+          "label": "not found",
+          "role": "the unmatched-route explanation surface",
+          "intro": "The not-found surface. It explains that the requested route does not resolve and offers the way back."
+        }
+      ]
+    },
+    {
+      "feature": "auth",
+      "screenId": "screen.auth",
+      "label": "auth",
+      "role": "credential capture and session establishment",
+      "intro": "The auth shell's outer frame. It holds a nested-router outlet that each credential surface renders through.",
+      "surfaces": [
+        {
+          "surface": "signin",
+          "screenId": "screen.auth",
+          "surfaceId": "surface.auth.signin",
+          "anatomyNodeId": "anatomy:view.body",
+          "label": "sign in",
+          "role": "the returning-user credential surface",
+          "intro": "The sign-in surface. It captures an existing credential and forwards it to the session facade."
+        },
+        {
+          "surface": "signup",
+          "screenId": "screen.auth",
+          "surfaceId": "surface.auth.signup",
+          "anatomyNodeId": "anatomy:view.body",
+          "label": "sign up",
+          "role": "the new-account surface",
+          "intro": "The sign-up surface. It captures the fields a new account requires and forwards them to the session facade."
+        }
+      ]
+    },
+    {
+      "feature": "application",
+      "screenId": "screen.application",
+      "label": "application",
+      "role": "the authenticated application frame",
+      "intro": "The application shell's outer frame. It holds the persistent chrome and a nested-router outlet each authenticated surface renders through.",
+      "surfaces": [
+        {
+          "surface": "home",
+          "screenId": "screen.application",
+          "surfaceId": "surface.application.home",
+          "anatomyNodeId": "anatomy:view.body",
+          "label": "home",
+          "role": "the authenticated landing surface",
+          "intro": "The home surface. It is the first authenticated surface a signed-in user lands on."
+        },
+        {
+          "surface": "settings",
+          "screenId": "screen.application",
+          "surfaceId": "surface.application.settings",
+          "anatomyNodeId": "anatomy:view.body",
+          "label": "settings",
+          "role": "the account and preference surface",
+          "intro": "The settings surface. It presents account and preference controls for the signed-in user."
+        }
+      ]
+    },
+    {
+      "feature": "design",
+      "screenId": "screen.design",
+      "label": "design",
+      "role": "the design-system inspection frame",
+      "intro": "The design shell's outer frame. It holds a nested-router outlet each design-system surface renders through.",
+      "surfaces": [
+        {
+          "surface": "tokens",
+          "screenId": "screen.design",
+          "surfaceId": "surface.design.tokens",
+          "anatomyNodeId": "anatomy:view.body",
+          "label": "tokens",
+          "role": "the design-token inspection surface",
+          "intro": "The tokens surface. It renders the active token set so the values can be inspected against the design."
+        },
+        {
+          "surface": "components",
+          "screenId": "screen.design",
+          "surfaceId": "surface.design.components",
+          "anatomyNodeId": "anatomy:view.body",
+          "label": "components",
+          "role": "the kit-component inspection surface",
+          "intro": "The components surface. It renders kit components in their default states for visual inspection."
+        }
+      ]
+    }
+  ]
+}

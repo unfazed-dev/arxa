@@ -17,6 +17,11 @@ dependencies:
     path: ../../../kit/ui_library
   appbox_kit_data:
     path: ../../../kit/data
+  # SPIKE FINDING: the shell-view / surface-view artifact types are defined by
+  # an exemplar that calls ScreenTypeLayout, but responsive_builder is declared
+  # in NO manifest, playbook or skill — it is recoverable only by reading
+  # kit/showcase_app/pubspec.yaml. Every view-factor emission needs it.
+  responsive_builder: ^0.7.1
 
 # appbox_kit_data's own dependency_overrides do NOT propagate to host apps
 # (pub only honours the root package's overrides), so every scaffolded app must
