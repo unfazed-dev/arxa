@@ -113,14 +113,56 @@ void _verdictGoldenExpansion(
   Directory showcaseLib,
   List<Map<String, dynamic>> types,
 ) {
-  if (!showcaseLib.existsSync()) {
-    report.check('1. golden expansion', false, 'showcase lib missing at ${showcaseLib.path}');
+  _expansionLine(
+    report,
+    title: '1. golden expansion (showcase = Q8 gate, bidirectional)',
+    strayTitle: '1.',
+    subject: 'showcase',
+    lib: showcaseLib,
+  );
+
+  // The spike's own golden tree, through the SAME function. A second
+  // implementation here would make a green spike line prove nothing about the
+  // showcase bar, so there isn't one.
+  final golden = _goldenTree(root);
+  if (golden == null) {
+    report.check(
+      '1b. golden expansion (spike tree)',
+      false,
+      'BLOCKED: no emitted tree at tool/spike-q11-shells/golden — the emitter '
+      'did not run, so there is nothing to gate.',
+    );
+    return;
+  }
+  _expansionLine(
+    report,
+    title: '1b. golden expansion (spike tree = same Q8 gate, bidirectional)',
+    strayTitle: '1b.',
+    subject: 'spike',
+    lib: Directory('${golden.path}/lib'),
+  );
+}
+
+/// The Q8 bidirectional expansion rule applied to one `lib/` directory.
+///
+/// Forward: every file on disk is explained by a template expansion.
+/// Backward: every declared shell/surface directory carries its cardinality-one
+/// view + viewmodel. Shared by showcase (the gate) and the spike (the candidate).
+void _expansionLine(
+  ProbeReport report, {
+  required String title,
+  required String strayTitle,
+  required String subject,
+  required Directory lib,
+}) {
+  if (!lib.existsSync()) {
+    report.check(title, false, '$subject lib missing at ${lib.path}');
     return;
   }
 
-  final viewsDir = Directory('${showcaseLib.path}/ui/views');
+  final viewsDir = Directory('${lib.path}/ui/views');
   if (!viewsDir.existsSync()) {
-    report.check('1. golden expansion', false, 'no lib/ui/views in showcase');
+    report.check(title, false, 'no lib/ui/views in $subject');
     return;
   }
 
@@ -174,7 +216,7 @@ void _verdictGoldenExpansion(
 
   final ok = unexplained.isEmpty && missing.isEmpty;
   final detail = StringBuffer(
-    'showcase: $shells shells, $surfaces surfaces; '
+    '$subject: $shells shells, $surfaces surfaces; '
     'unexplained=${unexplained.length} missing=${missing.length}',
   );
   if (!ok) {
@@ -185,22 +227,14 @@ void _verdictGoldenExpansion(
       detail.write('\n      missing: $m');
     }
   }
-  report.check('1. golden expansion (showcase = Q8 gate, bidirectional)', ok, detail.toString());
+  report.check(title, ok, detail.toString());
   if (strays.isNotEmpty) {
     // Not a failure: the manifest's artifact types describe .dart artifacts. But a
     // non-Dart file living inside a shell directory cannot be produced by any Q8
     // expansion, so the manifest cannot round-trip the showcase tree it was derived
     // from. Whether such files get an artifact type is a decision, not a probe call.
-    report.warn('1. non-Dart files inside shell dirs, unexpressible in the Q8 '
+    report.warn('$strayTitle non-Dart files inside shell dirs, unexpressible in the Q8 '
         'manifest (${strays.length}): ${strays.take(4).join(", ")}');
-  }
-
-  // The spike's own golden tree, when it exists.
-  final golden = _goldenTree(root);
-  if (golden == null) {
-    report.skip('1b. golden expansion (spike tree) — no emitted tree yet; emitter not '
-        'built. Output location is settled: tool/spike-q11-shells/ (alongside probe '
-        'tooling, repo-tracked, not tmp/), per the spike brief.');
   }
 }
 
@@ -238,10 +272,16 @@ void _verdictAnalyze(ProbeReport report, Directory root) {
         'dependency alone runs no lints, so a green here would test less than it appears to');
     return;
   }
-  final res = Process.runSync('dart', <String>['analyze', '--no-fatal-warnings'],
+  // No --no-fatal-warnings: the ruling was "the showcase's bar, not a weaker
+  // default". Warnings fail here exactly as they would in showcase.
+  final res = Process.runSync('dart', <String>['analyze'],
       workingDirectory: golden.path);
-  report.check('2. dart analyze clean', res.exitCode == 0,
-      res.exitCode == 0 ? 'exit 0' : (res.stdout as String).split('\n').take(6).join('\n      '));
+  report.check(
+      '2. dart analyze clean (warnings fatal — showcase bar)',
+      res.exitCode == 0,
+      res.exitCode == 0
+          ? 'exit 0, analysis_options.yaml mirrors showcase'
+          : (res.stdout as String).split('\n').take(6).join('\n      '));
 }
 
 // =============================================================== verdict 3 ===
@@ -260,7 +300,78 @@ void _verdictByteIdentity(ProbeReport report, Directory root) {
     );
     return;
   }
-  report.skip('3. second run byte-identical — emitter present but not yet wired here');
+  final golden = _goldenTree(root);
+  if (golden == null) {
+    report.check('3. second run byte-identical', false,
+        'BLOCKED: emitter exists but no committed golden tree to compare against.');
+    return;
+  }
+
+  // Emit twice into throwaway dirs from the FROZEN input/design.json. The
+  // designer (creative) stage is exempt per the Q2<->Q11 audit resolution, so
+  // what is under test is the transliterator alone. Excluded from the compare:
+  // pubspec.lock and .dart_tool (pub artifacts, not emitter output).
+  final tmp = Directory.systemTemp.createTempSync('q11-byte-identity-');
+  try {
+    final runs = <String, Map<String, String>>{};
+    for (final n in <String>['a', 'b']) {
+      final out = Directory('${tmp.path}/$n');
+      final res = Process.runSync(
+        'dart',
+        <String>['run', '${root.path}/tool/spike-q11-shells/bin/emit_spike_app.dart', out.path],
+        workingDirectory: root.path,
+      );
+      if (res.exitCode != 0) {
+        report.check('3. second run byte-identical', false,
+            'emitter run "$n" failed (exit ${res.exitCode}): '
+            '${(res.stderr as String).split('\n').take(4).join(' / ')}');
+        return;
+      }
+      runs[n] = _hashTree(out);
+    }
+    final committed = _hashTree(golden);
+
+    final diffs = <String>[];
+    void compare(String label, Map<String, String> lhs, Map<String, String> rhs) {
+      final keys = <String>{...lhs.keys, ...rhs.keys}.toList()..sort();
+      for (final k in keys) {
+        if (lhs[k] != rhs[k]) {
+          diffs.add('$label: $k (${lhs[k] == null ? "absent" : rhs[k] == null ? "extra" : "differs"})');
+        }
+      }
+    }
+
+    compare('run-a vs run-b', runs['a']!, runs['b']!);
+    compare('run-a vs committed', runs['a']!, committed);
+
+    final ok = diffs.isEmpty;
+    final detail = StringBuffer(
+      'emitted twice from frozen input/design.json; '
+      '${runs['a']!.length} files per run, byte-compared against the committed '
+      'tree (pubspec.lock + .dart_tool excluded)',
+    );
+    if (!ok) {
+      for (final d in diffs.take(8)) {
+        detail.write('\n      $d');
+      }
+    }
+    report.check('3. second run byte-identical', ok, detail.toString());
+  } finally {
+    tmp.deleteSync(recursive: true);
+  }
+}
+
+/// Repo-relative path -> exact bytes (base64) for every file under [dir] except
+/// pub artifacts, which are not emitter output. Byte-exact by construction —
+/// no digest, so "identical" here means identical, not merely non-colliding.
+Map<String, String> _hashTree(Directory dir) {
+  final out = <String, String>{};
+  for (final f in dir.listSync(recursive: true).whereType<File>()) {
+    final rel = f.path.substring(dir.path.length).replaceAll(RegExp(r'^/'), '');
+    if (rel == 'pubspec.lock' || rel.startsWith('.dart_tool/')) continue;
+    out[rel] = base64Encode(f.readAsBytesSync());
+  }
+  return out;
 }
 
 // =============================================================== verdict 4 ===
@@ -291,7 +402,42 @@ void _verdictInspectAttrs(ProbeReport report, Directory root, Directory showcase
     );
     return;
   }
-  report.skip('4. inspectAttrs — golden tree present; vocabulary still unratified');
+  // Golden tree present: the triple is mechanically checkable even though its
+  // vocabulary is unratified. Team-lead ruled this PASS (unratified vocabulary),
+  // NOT "Q12 satisfied" — the two open decisions stay recorded, above and below.
+  final viewsDir = Directory('${golden.path}/lib/ui/views');
+  final surfaces = <String>[];
+  final missing = <String>[];
+  for (final f in viewsDir.listSync(recursive: true).whereType<File>()) {
+    final n = f.path.split('/').last;
+    if (!n.endsWith('_view.dart')) continue;
+    final rel = f.path.substring(golden.path.length + 1);
+    surfaces.add(rel);
+    final src = f.readAsStringSync();
+    final absent = <String>[
+      if (!src.contains('screenId:')) 'screenId',
+      if (!src.contains('surfaceId:')) 'surfaceId',
+      if (!src.contains('anatomyNodeId:')) 'anatomyNodeId',
+    ];
+    if (absent.isNotEmpty) missing.add('$rel — missing ${absent.join(", ")}');
+  }
+
+  final ok = surfaces.isNotEmpty && missing.isEmpty;
+  final detail = StringBuffer(
+    'spike tree: ${surfaces.length} emitted view files, each carrying the '
+    'inspectAttrs triple (screenId, surfaceId, anatomyNodeId). UNRATIFIED: this '
+    'is a PASS against a shape and vocabulary the spike invented, not evidence '
+    'that Q12 is satisfied — (a) no Dart inspectAttrs shape exists in kit/ '
+    '(app-architecture.md:169 defines only the JS form), (b) the anatomy-node-id '
+    'vocabulary has no closed set and no home. Both need ratifying before this '
+    'line means anything beyond internal consistency.',
+  );
+  for (final m in missing.take(8)) {
+    detail.write('\n      $m');
+  }
+  if (surfaces.isEmpty) detail.write('\n      no _view.dart files found under ${viewsDir.path}');
+  report.check('4. inspectAttrs triple on every emitted surface (UNRATIFIED vocabulary)',
+      ok, detail.toString());
 }
 
 // =============================================================== verdict 5 ===
@@ -304,9 +450,41 @@ void _verdictFrontmatter(
   Directory showcaseLib,
   List<Map<String, dynamic>> types,
 ) {
-  final viewsDir = Directory('${showcaseLib.path}/ui/views');
+  _frontmatterLine(
+    report,
+    root: root,
+    lib: showcaseLib,
+    subject: 'showcase',
+    title: '5. frontmatter conventions (Q5, enforced against showcase)',
+  );
+
+  // Same rule, same function, applied to the spike's emitted tree.
+  final golden = _goldenTree(root);
+  if (golden == null) {
+    report.check('5b. frontmatter conventions (spike tree)', false,
+        'BLOCKED: no emitted tree at tool/spike-q11-shells/golden.');
+    return;
+  }
+  _frontmatterLine(
+    report,
+    root: root,
+    lib: Directory('${golden.path}/lib'),
+    subject: 'spike',
+    title: '5b. frontmatter conventions (Q5, enforced against the emitted tree)',
+  );
+}
+
+/// Q5 frontmatter, applied to one `lib/` directory.
+void _frontmatterLine(
+  ProbeReport report, {
+  required Directory root,
+  required Directory lib,
+  required String subject,
+  required String title,
+}) {
+  final viewsDir = Directory('${lib.path}/ui/views');
   if (!viewsDir.existsSync()) {
-    report.check('5. frontmatter conventions', false, 'no showcase views');
+    report.check(title, false, 'no $subject views at ${viewsDir.path}');
     return;
   }
 
@@ -343,7 +521,7 @@ void _verdictFrontmatter(
   }
 
   final ok = failures.isEmpty;
-  final detail = StringBuffer('showcase: $checked view/viewmodel files checked, '
+  final detail = StringBuffer('$subject: $checked view/viewmodel files checked, '
       '${failures.length} non-conforming');
   if (!ok) {
     for (final x in failures.take(10)) {
@@ -351,5 +529,5 @@ void _verdictFrontmatter(
     }
     if (failures.length > 10) detail.write('\n      … ${failures.length - 10} more');
   }
-  report.check('5. frontmatter conventions (Q5, enforced against showcase)', ok, detail.toString());
+  report.check(title, ok, detail.toString());
 }

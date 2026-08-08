@@ -19,7 +19,12 @@ void main(List<String> args) {
     Platform.script.resolve('..').toFilePath(),
   );
   final File input = File('${spikeRoot.path}input/design.json');
-  final Directory golden = Directory('${spikeRoot.path}golden');
+  // Optional out-dir. Verdict 3 emits into two throwaway directories and diffs
+  // them against the committed tree; a probe must never re-emit over the tree
+  // it is about to gate.
+  final Directory golden = Directory(
+    args.isNotEmpty ? args.first : '${spikeRoot.path}golden',
+  );
 
   final Map<String, dynamic> design =
       json.decode(input.readAsStringSync()) as Map<String, dynamic>;

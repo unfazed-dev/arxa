@@ -99,6 +99,30 @@ That ratio is the honest state, not a shortfall to be tuned away.
   marks `relationships` required for `full` frontmatter — so the structure contract violates
   itself in one file. Fix the file, or the manifest must say trivial viewmodels may omit it.
 
+## Run 2 — the spike tree exists; all five verdicts report
+
+Emitter + transliterator built, golden tree committed. `appbox design probe q11-shells`,
+still offline and browserless. **Zero skips, zero BLOCKED.** 6 PASS, 1 FAIL.
+
+- **V1 PASS** (showcase, unchanged) + **V1b PASS** — spike tree, 5 shells / 8 surfaces,
+  `unexplained=0 missing=0`. Both lines run the *same* `_expansionLine()` function; a fork here
+  would have made the spike's green prove nothing about the showcase bar.
+- **V2 PASS** — `dart analyze` on the emitted tree, exit 0, with the mirrored
+  `analysis_options.yaml`. `--no-fatal-warnings` was **removed**: the ruling was the showcase's
+  bar, not a weaker default, so warnings are fatal here.
+- **V3 PASS** — emitted twice from the frozen `input/design.json` into throwaway temp dirs,
+  68 files per run, compared byte-for-byte (base64 of contents, not a digest) against the
+  committed tree; `pubspec.lock` + `.dart_tool/` excluded as pub artifacts. The probe never
+  re-emits over the tree it is gating. Determinism holds, and the no-timestamps rule in Q5
+  frontmatter is what makes it holdable.
+- **V4 PASS (UNRATIFIED)** — 13 emitted view files, every one carrying the
+  `screenId` / `surfaceId` / `anatomyNodeId` triple. This is internal consistency against a shape
+  and a vocabulary **the spike invented**. It is not "Q12 satisfied". See F2/F3 — both still open.
+- **V5 FAIL (showcase, unchanged true positive)** + **V5b PASS** — spike tree, 65 files,
+  0 non-conforming. The showcase red stays red: forcing it green would delete the finding.
+
+The one remaining FAIL is the pre-existing showcase defect from run 1, not spike output.
+
 ### A false green, caught and fixed
 
 The first run reported **V2 PASS**. It was an artifact: `tool/spike-q11-shells/golden/` existed but
