@@ -84,7 +84,8 @@ were wrong. Recorded here because both were later cited back to me as evidence.
    stamps `nodeId: 'anatomy:view.body'` with **no** breakpoint suffix, and
    `inspectAttrs` has exactly three slots with no breakpoint member. The
    authoring encodes a **base id with no breakpoint axis**, so breakpoint
-   variants are not vocabulary members. Derivation yields **2**, not 8.
+   variants are not vocabulary members. Derivation yields **1**, not 8 —
+   see the second correction below; my own "yields 2" was also overstated.
 
 2. **"`anatomy:view.body` … is currently the entire set" (`6a2cf68`) is my own
    sentence**, written this session. It is not independent authority and must
@@ -104,3 +105,31 @@ appears in **no** pre-session commit — I coined it. Adding it is a vocabulary
 addition, and the standing rule is that these are ratified deliberately with a
 version bump, never invented mid-task. The need for a second member is derived;
 the spelling is not, and is referred up rather than stamped.
+
+## Correction to the correction (team-lead provenance, accepted)
+
+I wrote above that the derivation "yields 2". That overstates it, and the
+error is the same species as the one I flagged. Team-lead traced provenance
+independently: `anatomy:shell.frame` and every breakpoint variant exist **only**
+under `tool/spike-q11-shells/` — my emitter and its golden output. Confirmed:
+`git grep -c 'shell.frame' c4b4531` finds nothing pre-spike.
+
+So the pre-session corpus authorizes exactly **one** id, `anatomy:view.body`.
+Deriving a second member from a name my own emitter emitted would have had the
+probe verify its own output — the tautology this registry exists to prevent,
+arrived at by a subtler route than the grep did.
+
+**The closed set stays at 1 member. Registry v1.2.0 stands.**
+
+What survives is a *design question*, not a derivation, and it is the user's to
+answer, not an agent's to infer:
+
+> Six `screenId`s are each carried by two files — a shell frame and its leaf
+> (`showcase.home`, `.notes`, `.profile`, `.search`, `.startup`, `.unknown`).
+> The triple stays unique because `surfaceId` differs, so nothing is broken.
+> But `anatomyNodeId` is constant across all 20 surfaces, so the slot whose
+> job is to say which tree position renders currently distinguishes nothing.
+
+Whether that slot should ever distinguish frame from body is a call for
+whoever authors `showcase-anatomy.md`. Until they author such an id, there is
+nothing to ratify and nothing to stamp. Recorded, not resolved.
