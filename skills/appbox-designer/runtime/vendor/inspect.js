@@ -5,15 +5,16 @@
    same-origin iframe document — the stub is same-origin, so it may read the
    DOM and reach window.parent.
 
-   While armed (data-inspect-armed on <body>): hover outlines any [data-el]
-   element with an accent-tinted overlay carrying the element's NAME, and
-   POSTs what it measured to the parent's inspector endpoint so the inspector
-   pane (activity panel, 4th view) shows the element's full story. Click LOCKS
-   the pane to that element (navigation suppressed) so it survives further
-   hovers. Stays armed for multi-pick until disarmed.
+   While armed (data-inspect-armed on <body>): hover outlines the nearest
+   authored widget ([data-el]) with an accent-tinted overlay carrying the
+   widget's NAME, and POSTs what it measured to the parent's inspector
+   endpoint so the inspector pane (activity panel, 4th view) shows the
+   widget's full story. Click LOCKS the pane to that widget (navigation
+   suppressed) so it survives further hovers. Stays armed for multi-pick
+   until disarmed.
 
    The overlay badge is the name and nothing else. The metadata this island
-   reads off the element's data-attributes (data-inspect-role / -style /
+   reads off the widget's data-attributes (data-inspect-role / -style /
    -motion / -fn — see DESIGN-ARCHITECTURE.md "Inspect metadata") is no longer
    drawn on the screen: it travels in the POST and is RENDERED BY THE SERVER
    in the pane, joined there with registry states, kits and flow edges the
@@ -27,13 +28,18 @@
    context chip renders (composer.html, .cs-el-name) — what you see on the
    screen is what gets pinned.
 
-   Clicking no longer pins: pin is an explicit button on the pane. Multi-pick
-   is unchanged — lock one, pin it, lock the next, pin it.
+   Hover targets ONLY authored widgets ([data-el]). SVG internals collapse to
+   their owning <svg> before resolution, so hovering a <path> inside an icon
+   badges the widget that owns the icon, never the path. Unannotated regions
+   fall through to a screen-level sentinel (document.body) that outlines the
+   full surface and badges it with the body's data-surface name — the single
+   surviving inferred case.
 
-   The overlay tint follows the document's data-accent: app.css maps
-   [data-accent] on #app to the --accent custom property, so the island reads
-   the computed value off that host element (documentElement carries no
-   --accent — reading it there would silently fall back).
+   The badge follows the studio accent: reads --accent and --on-accent off the
+   parent document's #app element (same-origin), falling back to the local
+   [data-accent] host, then to literals. Text uses --on-accent so it stays
+   legible on any swatch; the font is pinned so it never inherits the designed
+   app's typeface.
 
    Arming: the parent page sets document.body.dataset.inspectArmed = 'true'
    (or removes it). Momentary: hold Alt to temporarily arm, release to disarm.
@@ -45,62 +51,68 @@
   document._inspect = 1;
 
   const ACCENT_FALLBACK = '#0891b2'; // cyan-600 — the design shell accent
+  const ON_ACCENT_FALLBACK = '#FFFCF0';
   const armed = () => document.body.dataset.inspectArmed === 'true';
-  const accent = () => {
-    const host = document.querySelector('[data-accent]');
-    const v = host && getComputedStyle(host).getPropertyValue('--accent').trim();
-    return v || ACCENT_FALLBACK;
-  };
 
-  // heuristic: tag-map, extend the map before reaching for anything smarter
-  const ROLE_BY_TAG = { H1:'heading',H2:'heading',H3:'heading',H4:'heading',H5:'heading',H6:'heading',
-    P:'text',SPAN:'text',LABEL:'label',BUTTON:'action',A:'action',IMG:'image',SVG:'image',
-    UL:'list',OL:'list',LI:'list row',NAV:'nav',HEADER:'nav',FOOTER:'group',SECTION:'group',
-    INPUT:'input',SELECT:'input',TEXTAREA:'input' };
-
-  const SKIP_TAGS = new Set(['SCRIPT','STYLE','BODY','HTML']);
-
-  // Infer identity for elements that may lack data-el. Identified elements keep
-  // their data-el name; unannotated ones get the tag name as a structural label,
-  // tagged "inferred" so the pane and overlay can dim them.
-  const synthesize = (el) => ({
-    name: el.dataset.el || el.tagName.toLowerCase(),
-    role: el.dataset.inspectRole || ROLE_BY_TAG[el.tagName] || 'group',
-    inferred: el.dataset.el ? '' : '1',
-  });
-
-  // Resolve the innermost inspectable element from a pointer event target.
-  // Walks up from the raw target, skipping overlay nodes, script/style/body/html.
-  const inspectTarget = (raw) => {
-    let el = raw;
-    while (el && el !== document.body) {
-      if (SKIP_TAGS.has(el.tagName)) { el = el.parentElement; continue; }
-      if (el.className && typeof el.className === 'string' && el.className.startsWith('inspect-')) {
-        el = el.parentElement; continue;
+  // Resolve accent + onAccent from the studio chrome. Order: (1) parent
+  // document's #app computed --accent/--on-accent (same-origin; the island
+  // already reaches window.parent.htmx — try/catch for detached frames),
+  // (2) local [data-accent] host, (3) literals.
+  const accents = () => {
+    try {
+      const pApp = window.parent.document.querySelector('#app');
+      if (pApp) {
+        const cs = getComputedStyle(pApp);
+        const a = cs.getPropertyValue('--accent').trim();
+        const oa = cs.getPropertyValue('--on-accent').trim();
+        if (a) return { accent: a, onAccent: oa || ON_ACCENT_FALLBACK };
       }
-      return el; // first non-skipped element is the innermost
+    } catch (_) { /* cross-origin or detached frame */ }
+    const host = document.querySelector('[data-accent]');
+    if (host) {
+      const cs = getComputedStyle(host);
+      const a = cs.getPropertyValue('--accent').trim();
+      const oa = cs.getPropertyValue('--on-accent').trim();
+      if (a) return { accent: a, onAccent: oa || ON_ACCENT_FALLBACK };
     }
-    return null;
+    return { accent: ACCENT_FALLBACK, onAccent: ON_ACCENT_FALLBACK };
   };
 
-  // Build the ancestor chain outermost→innermost for the breadcrumb.
-  // Keep every element with data-el, plus the immediate parent if it lacks
-  // data-el. The hovered element is always included.
+  // Infer identity for an inspect target. Authored widgets carry data-el;
+  // the body sentinel (screen fallback) is the single inferred case.
+  const synthesize = (el) => {
+    if (el === document.body) {
+      return {
+        name: document.body.dataset.surface || 'screen',
+        role: 'unannotated region',
+        inferred: '1',
+      };
+    }
+    return {
+      name: el.dataset.el || el.tagName.toLowerCase(),
+      role: el.dataset.inspectRole || 'group',
+      inferred: el.dataset.el ? '' : '1',
+    };
+  };
+
+  // Resolve the innermost inspectable target from a pointer event target.
+  // SVG internals collapse to the owning <svg>, then the nearest [data-el]
+  // ancestor is the widget. No widget → document.body sentinel (screen
+  // fallback). Overlay nodes (inspect-*) carry no data-el and are never the
+  // pointer target anyway (pointer-events:none).
+  const inspectTarget = (raw) => {
+    const el = raw.ownerSVGElement ? raw.ownerSVGElement : raw;
+    return el.closest('[data-el]') || document.body;
+  };
+
+  // Build the ancestor chain outermost→innermost, [data-el] widgets only.
   const buildChain = (el) => {
     const chain = [];
     let cur = el;
-    let grabbedNonDataEl = false;
-    // Walk from el upward; collect into chain, then reverse at the end
     while (cur && cur !== document.body) {
-      if (SKIP_TAGS.has(cur.tagName)) break;
-      if (cur.className && typeof cur.className === 'string' && cur.className.startsWith('inspect-')) {
-        cur = cur.parentElement; continue;
-      }
-      const hasDataEl = !!cur.dataset.el;
-      if (hasDataEl || !grabbedNonDataEl) {
+      if (cur.dataset && cur.dataset.el) {
         const info = synthesize(cur);
-        chain.push({ el: info.name, role: info.role, inferred: info.inferred || undefined });
-        if (!hasDataEl) grabbedNonDataEl = true;
+        chain.push({ el: info.name, role: info.role });
       }
       cur = cur.parentElement;
     }
@@ -140,29 +152,25 @@
     lastHovered = null;
   };
 
-  // The badge: the element's name, nothing else. The role/style/motion/fn
-  // rows moved to the inspector pane, where there is room for them and for
-  // the server-side joins that give them meaning. Inferred elements (no
-  // data-el) render at reduced opacity so the composer can tell at a glance
-  // which names are authored vs guessed.
+  // The badge: the widget's name (or surface name for the screen fallback).
+  // Inferred (screen fallback) dims the name line; the role travels in the
+  // POST and is rendered by the server in the pane.
   const fillReadout = (el) => {
     const info = synthesize(el);
     labelEl.replaceChildren();
     const name = document.createElement('div');
-    name.style.cssText = 'font-weight:600;color:#fff;' + (info.inferred ? ' opacity:.7;' : '');
+    name.style.cssText = 'font-weight:600;color:inherit;' + (info.inferred ? ' opacity:.7;' : '');
     name.textContent = info.name;
     labelEl.appendChild(name);
     const sub = document.createElement('div');
-    sub.style.cssText = 'font-size:10px;color:#7f849c;';
-    sub.textContent = info.role + (info.inferred ? ' · inferred' : '');
+    sub.style.cssText = 'font-size:10px;opacity:.75;color:inherit;';
+    sub.textContent = info.role;
     labelEl.appendChild(sub);
   };
 
-  // What the pane renders. Identified elements (data-el) send their authored
-  // name; unannotated elements send an inferred name + role so the pane can
-  // still show a breadcrumb. The SERVER owns the final authored/inferred
-  // distinction in its joins — the inferred flag here is the client's best
-  // guess, consistent with what the overlay badge dims.
+  // What the pane renders. Identified widgets send their authored name; the
+  // screen-fallback sentinel sends the surface name + inferred flag. The
+  // SERVER owns the final authored/inferred distinction in its joins.
   const measure = (el, lock) => {
     const info = synthesize(el);
     const v = {
@@ -170,8 +178,7 @@
       name: info.name,
       kind: el.tagName.toLowerCase(),
     };
-    if (el.dataset.inspectRole) v.role = el.dataset.inspectRole;
-    else if (info.role && info.inferred) v.role = info.role; // inferred role
+    if (info.role) v.role = info.role;
     if (el.dataset.inspectStyle) v.style = el.dataset.inspectStyle;
     if (el.dataset.inspectMotion) v.motion = el.dataset.inspectMotion;
     if (el.dataset.inspectFn) v.fn = el.dataset.inspectFn;
@@ -207,35 +214,35 @@
   const showOverlay = (el) => {
     ensureOverlay();
     const r = el.getBoundingClientRect();
-    const a = accent();
+    const a = accents();
     outlineEl.style.cssText =
       'display:block;position:fixed;' +
       `left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px;` +
       'pointer-events:none;z-index:99998;' +
-      `box-shadow:inset 0 0 0 2px ${a};background:${a}1a;border-radius:4px;`;
+      `box-shadow:inset 0 0 0 2px ${a.accent};background:${a.accent}1a;border-radius:4px;`;
     labelEl.style.cssText =
       'display:block;position:fixed;pointer-events:none;z-index:99999;' +
       `left:${r.left}px;top:${Math.max(0, r.top - 28)}px;` +
-      'background:#1e1e2e;color:#cdd6f4;font-size:11px;line-height:1.4;' +
-      'padding:4px 10px;border-radius:6px;white-space:nowrap;' +
-      'box-shadow:0 2px 8px rgba(0,0,0,0.25);' +
-      `border-left:3px solid ${a};`;
+      `background:${a.accent};color:${a.onAccent};` +
+      'font-size:11px;line-height:1.4;padding:4px 10px;' +
+      'border-radius:6px 6px 6px 0;white-space:nowrap;' +
+      'box-shadow:0 2px 8px rgba(0,0,0,.25);' +
+      "font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;";
     fillReadout(el);
     // multi-line readouts grow downward from the element's top edge
     labelEl.style.top = Math.max(0, r.top - labelEl.offsetHeight - 6) + 'px';
   };
 
-  // hover tracking — only acts while armed. Resolves the innermost element
-  // (not just [data-el]) so unannotated elements are still inspectable; their
-  // identity is inferred by synthesize().
+  // hover tracking — only acts while armed. Resolves to the nearest [data-el]
+  // widget (or screen fallback). One request per element CHANGE, not per
+  // pointer move — the identity check is the whole throttle. Hovering while
+  // the pane is locked is a no-op server-side, so it costs a request and
+  // swaps nothing.
   document.addEventListener('pointermove', (e) => {
     if (!armed()) { clearHover(); return; }
     const el = inspectTarget(e.target);
     if (el !== lastHovered) {
       lastHovered = el;
-      // One request per element CHANGE, not per pointer move — the identity
-      // check above is the whole throttle. Hovering while the pane is locked
-      // is a no-op server-side, so it costs a request and swaps nothing.
       if (el) { showOverlay(el); feedPane(el, false); } else hideOverlay();
     }
   });
