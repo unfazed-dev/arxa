@@ -90,8 +90,8 @@ That ratio is the honest state, not a shortfall to be tuned away.
   Warn: `showcase_notes_shell/design-system.md` — a non-Dart file inside a shell dir that **no**
   Q8 expansion can produce. Not failed (artifact types describe `.dart`), but the manifest cannot
   fully round-trip the showcase tree. Needs an artifact type or an explicit exclusion.
-- **V2 BLOCKED** — no emitted tree (emitter gated on HARD CONSTRAINTS).
-- **V3 BLOCKED** — no transliterator.
+- **V2 BLOCKED** — no emitted tree; emitter not built (my work, not a team-lead gate).
+- **V3 BLOCKED** — no transliterator; same.
 - **V4 BLOCKED + circular** — see F2/F3 below.
 - **V5 FAIL, true positive** — 100 view/viewmodel files checked, 1 non-conforming:
   `showcase_notes_shell_viewmodel.dart` has no `Relationships:` section. Verified by hand and by
@@ -108,6 +108,17 @@ was empty, and `dart analyze` in an empty directory exits 0 — green having com
 failure mode is general: every verdict that shells out to a tool needs a non-emptiness guard, or
 absence reads as success.
 
+### Exactly what V1 and V5 cover (so neither is over-read)
+
+- **V1 scope: `.dart` files only.** The PASS means every `.dart` file under a shell dir is explained
+  by a manifest template and every template expansion exists on disk. It does **not** mean the
+  manifest round-trips the tree — `design-system.md` is proof it doesn't, hence the warn.
+- **V5 scope: one rule of Q5, not Q5.** The checker enforces the presence of the `Relationships:`
+  section on view/viewmodel files. It does **not** yet check `Requirements:`, `History:`,
+  numbered-requirement form, or comment conventions. So "1 of 100 non-conforming" is *one rule's*
+  conformance, not Q5 coverage. The single failure it found is real; the 99 passes are weaker
+  evidence than the count suggests.
+
 ## Findings for team-lead (F1–F5)
 
 F1 pubspec overrides (above) · F2 no Dart `inspectAttrs` shape exists · F3 no anatomy-node-id
@@ -117,9 +128,33 @@ vocabulary exists · F4 showcase exempt-vs-back-stamp is an open decision (scaff
 F2+F3 are why V4 is reported as **UNRATIFIED** rather than green: inventing both the shape and the
 vocabulary and then checking my own output against them would make a pass meaningless.
 
-## Open — blocking, asked of team-lead
+## A retracted blocker — recorded because the error is instructive
 
-The brief's HARD CONSTRAINTS block truncated in the executor's context at
-`"- Do NOT add the spike outpu[t]…"`. Placement/commit policy for the generated tree is therefore
-unconfirmed. Current working location is `tool/spike-q11-shells/` (outside `kit/` and `skills/`);
-nothing staged or committed pending the answer.
+I first reported placement/commit policy as **blocked on team-lead**, because the brief's HARD
+CONSTRAINTS block appeared truncated at `"- Do NOT add the spike outpu[t]…"`. That was wrong.
+The truncation was a *context-rendering* artifact, not a gap in the message. The verbatim brief is
+on disk in the session log and recovers cleanly. Its actual text:
+
+> Emit the spike's generated app tree into an isolated, durable, repo-tracked spike location
+> (e.g. a dedicated spike output dir alongside the probe tooling) … tmp/ is wiped between
+> sessions — do not put durable evidence there.
+
+`tool/spike-q11-shells/` satisfies this exactly: alongside the probe tooling, repo-tracked, outside
+`kit/` and `skills/`, not `tmp/`. **Placement is settled and the tree is committed.**
+
+Generalisable lesson: when input looks elided, check the durable source before declaring a
+dependency on a human. A false "blocked on you" is more costly than the work it avoids — it parks
+the task and misattributes the cause.
+
+## Genuinely open — needs team-lead ratification (V4 only)
+
+V4 cannot be made meaningful by more work on my side: `inspectAttrs` has **no Dart shape** anywhere
+in `kit/` (app-architecture.md:169 defines only the JS form) and the anatomy-node-id vocabulary has
+exactly one illustrative value (`anatomy:view.body`, app-architecture.md:172) with no closed set and
+no home. Both need ratification + a home (showcase-anatomy.md §3, or the registry). Also open:
+whether showcase is exempt from `inspectAttrs` or gets back-stamped (scaffolder SKILL.md:270).
+
+## Remaining spike work — mine, not blocked
+
+V2 and V3 are unfinished, not gated: the emitter and transliterator are not built. V1 and V5 already
+run against showcase and produce real signal.

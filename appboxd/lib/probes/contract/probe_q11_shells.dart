@@ -198,8 +198,9 @@ void _verdictGoldenExpansion(
   // The spike's own golden tree, when it exists.
   final golden = _goldenTree(root);
   if (golden == null) {
-    report.skip('1b. golden expansion (spike tree) — no emitted tree yet; emitter pending '
-        'HARD CONSTRAINTS from team-lead');
+    report.skip('1b. golden expansion (spike tree) — no emitted tree yet; emitter not '
+        'built. Output location is settled: tool/spike-q11-shells/ (alongside probe '
+        'tooling, repo-tracked, not tmp/), per the spike brief.');
   }
 }
 
@@ -222,8 +223,9 @@ void _verdictAnalyze(ProbeReport report, Directory root) {
     report.check(
       '2. dart analyze clean',
       false,
-      'BLOCKED: no emitted tree. Emitter is gated on the HARD CONSTRAINTS section '
-      'that was elided from the spike brief (placement/commit policy for emitted output). '
+      'BLOCKED: no emitted tree — the emitter is not built. This is unfinished spike '
+      'work, NOT a decision owed by team-lead: output location is settled at '
+      'tool/spike-q11-shells/ per the brief. '
       'Note also that the emitted tree MUST carry an analysis_options.yaml mirroring '
       'showcase — flutter_lints as a dev dependency alone runs no lints, so a green '
       'here without it would test less than it appears to.',
