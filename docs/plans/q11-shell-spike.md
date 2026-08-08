@@ -215,13 +215,33 @@ Generalisable lesson: when input looks elided, check the durable source before d
 dependency on a human. A false "blocked on you" is more costly than the work it avoids — it parks
 the task and misattributes the cause.
 
-## Genuinely open — needs team-lead ratification (V4 only)
+## Was open, now RATIFIED and landed (Task #11)
 
-V4 cannot be made meaningful by more work on my side: `inspectAttrs` has **no Dart shape** anywhere
-in `kit/` (app-architecture.md:169 defines only the JS form) and the anatomy-node-id vocabulary has
-exactly one illustrative value (`anatomy:view.body`, app-architecture.md:172) with no closed set and
-no home. Both need ratification + a home (showcase-anatomy.md §3, or the registry). Also open:
-whether showcase is exempt from `inspectAttrs` or gets back-stamped (scaffolder SKILL.md:270).
+Everything below was the spike's one genuinely open question. All of it has landed; V4 is no longer
+unratified and V5 is green by fix, not by weakening.
+
+- **(a) shape + vocabulary.** `AppBoxKitInspectAttrs` is the Dart triple in kit core; the
+  anatomy-node vocabulary is a **CLOSED** set at
+  `skills/appbox-scaffolder/kind-resolution.registry.json#/anatomyNodes` (registry **v1.2.0**),
+  currently one member, `anatomy:view.body`, with a stated failure contract.
+- **(b) showcase BACK-STAMPED, not exempted.** All **20** showcase view files carry the triple.
+  Showcase is normative for identity like everything else; SKILL.md:270's exemption note is gone and
+  the probe's showcase warn with it.
+- **(c) design notes TYPED** into the manifest; the probe's stray-narrowing rides on that entry.
+- **(d) notes viewmodel `Relationships:` fixed**; manifest stayed strict.
+- **(F1) dependency override obligation recorded** in the manifest contract — pub honours
+  `dependency_overrides` from the root package only, so `win32 ^6.0.1` / `device_info_plus ^13.0.0` /
+  `package_info_plus ^10.0.0` must be emitted verbatim into every scaffolded app. Previously this
+  rule lived only in `kit/data` prose, which the scaffolder cannot check itself against.
+
+**V4 is now a verification, not an assertion.** It reads the ratified sources and gates both trees:
+the triple is present, every `anatomyNodeId` is inside the closed vocabulary, and every `screenId` is
+a verbatim `intake/registry.json` id (spike side: a string carried by the frozen `design.json`).
+Mutation-tested in three directions — dropping the triple, substituting a plausible
+convention-derived id (`showcase.homeshell`), and using an out-of-vocabulary node — each turns V4
+**red**. That middle case is the point: `ShowcaseNotesCreateAccountView` belongs to
+`showcase.createaccount`, so name-convention inference loses the join, which is exactly why identity
+is stamped at emit time rather than inferred at runtime.
 
 ## Remaining spike work — mine, not blocked
 
