@@ -60,9 +60,12 @@ String stripComments(String html) => html
 
 /// The four ADR-0002 rules, ported rule-for-rule from lint.mjs. Negative
 /// lookaheads kept identical to the source regex (double-quote-specific vendor
-/// allowlisting — matching the original's byte-for-byte semantics).
+/// allowlisting — matching the original's byte-for-byte semantics). The
+/// `vendorSrc(` lookahead was added when script tags moved from literal
+/// `src="/assets/vendor/…"` to the vendorSrc() helper for cache-busting.
 final _lintRules = <(RegExp, String)>[
-  (RegExp(r'<script(?![^>]*src="/assets/vendor/)(?![^>]*type="application/json")[^>]*>',
+  (RegExp(r'<script(?![^>]*src="/assets/vendor/)(?![^>]*vendorSrc\()'
+      r'(?![^>]*type="application/json")[^>]*>',
       caseSensitive: false),
    'non-vendor <script> tag'),
   (RegExp(r'\bhx-on[:\s=]', caseSensitive: false), 'hx-on handler'),
@@ -163,6 +166,25 @@ const _scrollMarker = 'data-scroll';
 const _pullMarker = 'data-refresh';
 const _retryMarker = 'data-retry';
 
+/// D18 — widget-coverage: every visible interactive or text leaf must sit
+/// inside a [data-el] widget boundary (or carry one itself), so inspect hover
+/// always resolves to an authored widget — never the screen fallback. Checks
+/// ancestry via a lightweight nesting walk over the token stream.
+final _coverageLeafTags = {
+  'button', 'a', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p',
+  'input', 'select', 'textarea', 'label', 'svg',
+};
+/// Matches both literal `data-el=` and `inspectAttrs(` spread (the ONE source
+/// of widget identity in the studio — see primitives.tsx).
+final _hasElOrAttrsRe = RegExp(r'\bdata-el\s*=|inspectAttrs\(');
+/// HTML void elements that don't push to the nesting stack.
+const _coverageVoidTags = {
+  'br', 'img', 'input', 'meta', 'link', 'hr', 'area', 'base',
+  'col', 'embed', 'source', 'track', 'wbr',
+};
+final _tagTokenRe = RegExp(
+    r'(</?)([a-zA-Z][a-zA-Z0-9]*)([^>]*?)(/?)>', dotAll: true);
+
 /// Findings for [src]. [declaredStates] turns D10 on (null = no registry
 /// reachable, rule off); [notes] collects the advisory, non-failing D9 channel.
 List<String> inspectFindings(String src,
@@ -216,6 +238,7 @@ List<String> inspectFindings(String src,
     }
   }
   if (isSurface) out.addAll(_retryFindings(src));
+  if (isSurface) out.addAll(_widgetCoverageFindings(src));
   return out;
 }
 
@@ -257,7 +280,44 @@ List<String> _retryFindings(String src) {
   return out;
 }
 
-/// The states `intake/registry.json` declares for the screen [htmlPath]
+/// D18 — widget-coverage nesting walk. Returns a finding for every target leaf
+/// (button, a, h1–h6, p, input, select, textarea, label, svg) that has no
+/// `data-el` on self and no `data-el`/`inspectAttrs(` on any open ancestor.
+/// Not a full HTML parser — sufficient for well-formed TSX, same scope as the
+/// other regex rules in this file.
+List<String> _widgetCoverageFindings(String src) {
+  final out = <String>[];
+  // Stack of (tagName, hasDataEl) for currently-open elements.
+  final stack = <(String, bool)>[];
+  for (final m in _tagTokenRe.allMatches(src)) {
+    final isClose = m[1] == '</';
+    final tag = m[2]!.toLowerCase();
+    final attrs = m[3]!;
+    final selfClose = m[4] == '/';
+    if (isClose) {
+      // Pop to the matching tag (tolerates minor malformed nesting).
+      for (var i = stack.length - 1; i >= 0; i--) {
+        if (stack[i].$1 == tag) {
+          stack.removeRange(i, stack.length);
+          break;
+        }
+      }
+      continue;
+    }
+    final hasEl = _hasElOrAttrsRe.hasMatch(attrs);
+    if (!hasEl && _coverageLeafTags.contains(tag)) {
+      final inWidget = stack.any((s) => s.$2);
+      if (!inWidget) {
+        out.add('<$tag> has no data-el on self or any ancestor — '
+            'inspect hover falls through to screen fallback');
+      }
+    }
+    if (!selfClose && !_coverageVoidTags.contains(tag)) {
+      stack.add((tag, hasEl));
+    }
+  }
+  return out;
+}
 /// renders. The join is filename → the registry id ending `.<short>`: registry
 /// `surface` is null until the designer fills it, so the name is the only link
 /// that exists at lint time. Returns null — D10 off — for a partial

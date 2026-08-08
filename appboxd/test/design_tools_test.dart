@@ -146,7 +146,10 @@ void main() {
       // `<a href>|<button>` regex and to bar B, so this single fixture proves
       // the widened detector and the C→B toggle at once.
       _write(d, 'surfaces/home.html', '$annotatedButton'
+          '<div data-el="form-section" data-inspect-role="group" '
+          'data-inspect-style="form" data-inspect-fn="Form section">'
           '<label>Name</label><label>Email</label>'
+          '</div>'
           '<div role="tab">One</div><div role="tab">Two</div>'
           '<div role="switch">Dark</div>'
           '<div tabindex="0">Focusable</div><div tabindex="2">Also</div>'
@@ -158,7 +161,7 @@ void main() {
 
       final c = designLint([d.path]);
       expect(c.exitCode, 1, reason: c.stdoutLines.join('\n'));
-      expect(c.stderrLines.skip(1).single,
+      expect(c.stderrLines.skip(1).first,
           endsWith('10 interactive element(s) carry no data-el — inspect has '
               'nothing to bind to (coverage bar C)'));
 
@@ -170,15 +173,44 @@ void main() {
       final d = _tmpDir();
       addTearDown(() => d.deleteSync(recursive: true));
       _write(d, 'surfaces/form.html',
+          '<div data-el="form-field" data-inspect-role="input" '
+          'data-inspect-style="field" data-inspect-fn="Email input">'
           '<input type="email" placeholder="you@example.com">'
+          '</div>'
           '<div hx-post="/subscribe">Subscribe</div>'
           '<div role="button">Dismiss</div>');
 
       final r = designLint([d.path]);
       expect(r.exitCode, 1, reason: 'the old regex saw none of these');
-      expect(r.stderrLines.skip(1).single,
+      expect(r.stderrLines.skip(1).first,
           endsWith('3 interactive element(s) carry no data-el — inspect has '
               'nothing to bind to (coverage bar C)'));
+    });
+
+    test('D18 — widget-coverage: uncovered leaves flagged, covered ones not', () {
+      final d = _tmpDir();
+      addTearDown(() => d.deleteSync(recursive: true));
+      // <p> is a widget-coverage target but NOT interactive (D7 misses it).
+      // The <button> is covered by its data-el ancestor; the <p> is not.
+      _write(d, 'surfaces/blog.html',
+          '<div data-el="post" data-inspect-role="group" '
+          'data-inspect-style="post" data-inspect-fn="Blog post">'
+          '<button>Read</button>'
+          '</div>'
+          '<p>Standalone paragraph with no widget ancestor</p>');
+
+      final r = designLint([d.path]);
+      expect(r.exitCode, 1, reason: r.stderrLines.join('\n'));
+      // D18 flags the <p>; the <button> inside [data-el] is covered.
+      expect(
+          r.stderrLines.where((l) => l.contains('widget-coverage') ||
+              l.contains('no data-el on self or any ancestor')),
+          isNotEmpty);
+      expect(r.stderrLines.any((l) => l.contains('<p>')),
+          true);
+      // The covered <button> is NOT flagged by D18.
+      expect(r.stderrLines.any((l) => l.contains('<button>')),
+          false);
     });
 
     test('D9 — an inferred fn passes, and is reported apart from an authored '
