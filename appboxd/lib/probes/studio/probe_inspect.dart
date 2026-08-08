@@ -248,6 +248,131 @@ Future<void> _run(ProbeContext ctx) async {
   ctx.report
       .check('screens list untouched by the hover (204 no-op)', before == after);
 
+  // ── Section 10: badge uniformity ──
+  ctx.report.section('10. badge follows studio accent + pinned font');
+  await page.clickSelector(_inspectorIcon);
+  await settle();
+  await page.hoverSelectorInFrame(doc, '[data-el="card:Ceramics"]');
+  await settle();
+  final b1raw = await page.evaluateInFrame(doc,
+      '(() => { const l = document.querySelector(".inspect-label");'
+      ' if (!l || l.style.display === "none") return null;'
+      ' const cs = getComputedStyle(l);'
+      ' const pCs = getComputedStyle(window.parent.document.querySelector("#app"));'
+      ' const accent = pCs.getPropertyValue("--accent").trim();'
+      ' const onAccent = pCs.getPropertyValue("--on-accent").trim();'
+      ' const probe = document.createElement("div");'
+      ' probe.style.cssText = "position:absolute;visibility:hidden;";'
+      ' document.body.appendChild(probe);'
+      ' probe.style.background = accent;'
+      ' const accentRgb = getComputedStyle(probe).backgroundColor;'
+      ' probe.style.background = "";'
+      ' probe.style.color = onAccent;'
+      ' const onAccentRgb = getComputedStyle(probe).color;'
+      ' probe.remove();'
+      ' return JSON.stringify({ bg: cs.backgroundColor, color: cs.color, ff: cs.fontFamily,'
+      ' accentRgb, onAccentRgb,'
+      ' bgMatch: cs.backgroundColor === accentRgb, colorMatch: cs.color === onAccentRgb,'
+      ' ffMatch: cs.fontFamily.startsWith("-apple-system") }); })()');
+  await page.hoverSelectorInFrame(doc, '[data-el="card:Furniture"]');
+  await settle();
+  final b2raw = await page.evaluateInFrame(doc,
+      '(() => { const l = document.querySelector(".inspect-label");'
+      ' if (!l || l.style.display === "none") return null;'
+      ' const cs = getComputedStyle(l);'
+      ' return JSON.stringify({ bg: cs.backgroundColor, color: cs.color, ff: cs.fontFamily }); })()');
+  if (b1raw is String) {
+    final b1 = jsonDecode(b1raw) as Map<String, dynamic>;
+    ctx.report.check('badge background = studio --accent', b1['bgMatch'] == true,
+        '${b1['bg']} vs ${b1['accentRgb']}');
+    ctx.report.check('badge color = studio --on-accent',
+        b1['colorMatch'] == true, '${b1['color']} vs ${b1['onAccentRgb']}');
+    ctx.report.check('badge font-family starts with -apple-system',
+        b1['ffMatch'] == true, '${b1['ff']}');
+    if (b2raw is String) {
+      final b2 = jsonDecode(b2raw) as Map<String, dynamic>;
+      ctx.report.check(
+          'badge identical across widgets',
+          b1['bg'] == b2['bg'] && b1['color'] == b2['color'] && b1['ff'] == b2['ff'],
+          'bg:${b1['bg']}==${b2['bg']}');
+    }
+  } else {
+    ctx.report.check('badge visible for uniformity check', false, '(no badge)');
+  }
+
+  // ── Section 11: widget targeting ──
+  ctx.report
+      .section('11. svg path → owning widget; bare div → screen fallback');
+  // Inject a widget with an SVG path inside it
+  await page.evaluateInFrame(doc,
+      "const w = document.createElement('div');"
+      "w.setAttribute('data-el','probe:svg-widget');"
+      "w.setAttribute('data-inspect-role','test');"
+      "w.setAttribute('data-inspect-style','test');"
+      "w.setAttribute('data-inspect-fn','test');"
+      "w.style.cssText = 'position:absolute;left:200px;top:5px;width:60px;height:60px;z-index:99990;';"
+      "const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');"
+      "svg.setAttribute('width','24'); svg.setAttribute('height','24');"
+      "const path = document.createElementNS('http://www.w3.org/2000/svg','path');"
+      "path.setAttribute('d','M0 0H10V10H0Z');"
+      "svg.appendChild(path); w.appendChild(svg);"
+      "document.body.appendChild(w);");
+  await page.hoverSelectorInFrame(doc, '[data-el="probe:svg-widget"] path');
+  await settle();
+  final pathBadge = await page.evaluateInFrame(doc,
+      '(() => { const l = document.querySelector(".inspect-label");'
+      ' if (!l) return null; const k = l.children;'
+      ' return JSON.stringify({ name: (k[0]||{}).textContent||"",'
+      ' sub: (k[1]||{}).textContent||"" }); })()');
+  if (pathBadge is String) {
+    final pb = jsonDecode(pathBadge) as Map<String, dynamic>;
+    ctx.report.check('svg path collapses to owning widget',
+        pb['name'] == 'probe:svg-widget', 'name: ${pb['name']}');
+  } else {
+    ctx.report.check('svg path collapses to owning widget', false, '(no badge)');
+  }
+  // Inject a bare div (no data-el on self or any ancestor)
+  await page.evaluateInFrame(doc,
+      "const d = document.createElement('div');"
+      "d.id = 'probe-bare';"
+      "d.style.cssText = 'position:absolute;left:200px;top:80px;width:40px;height:40px;background:rgba(255,0,0,.3);z-index:99990;';"
+      "document.body.appendChild(d);");
+  await page.hoverSelectorInFrame(doc, '#probe-bare');
+  await settle();
+  final bareBadge = await page.evaluateInFrame(doc,
+      '(() => { const l = document.querySelector(".inspect-label");'
+      ' if (!l) return null; const k = l.children;'
+      ' return JSON.stringify({ name: (k[0]||{}).textContent||"",'
+      ' sub: (k[1]||{}).textContent||"" }); })()');
+  if (bareBadge is String) {
+    final bb = jsonDecode(bareBadge) as Map<String, dynamic>;
+    ctx.report.check('bare div → screen-fallback "unannotated region"',
+        bb['sub'] == 'unannotated region', 'sub: ${bb['sub']}');
+  } else {
+    ctx.report.check('bare div → screen fallback', false, '(no badge)');
+  }
+
+  // ── Section 12: vendor cache-busting ──
+  ctx.report.section('12. vendor script tags carry ?v= content hash');
+  final parentSrcsRaw = await page.evaluate(
+      'JSON.stringify(Array.from(document.querySelectorAll("script"))'
+      '.map(s=>s.getAttribute("src")||"")'
+      '.filter(s=>s.includes("/assets/vendor/")&&!s.includes("htmx4")))');
+  final iframeSrcsRaw = await page.evaluateInFrame(doc,
+      'JSON.stringify(Array.from(document.querySelectorAll("script"))'
+      '.map(s=>s.getAttribute("src")||"")'
+      '.filter(s=>s.includes("/assets/vendor/")&&!s.includes("htmx4")))');
+  final cacheRe = RegExp(r'\?v=[0-9a-f]{12}$');
+  final allSrcs = <String>[
+    if (parentSrcsRaw is String)
+      for (final s in jsonDecode(parentSrcsRaw) as List) s.toString(),
+    if (iframeSrcsRaw is String)
+      for (final s in jsonDecode(iframeSrcsRaw) as List) s.toString(),
+  ];
+  ctx.report.check('all vendor scripts carry ?v= content hash',
+      allSrcs.isNotEmpty && allSrcs.every((s) => cacheRe.hasMatch(s)),
+      allSrcs.isEmpty ? '(no vendor scripts found)' : allSrcs.join(', '));
+
   ctx.report.section('requests seen');
   ctx.report.out.writeln(reqs.isNotEmpty ? '  ${reqs.join('\n  ')}' : '  (none)');
   ctx.report.section('errors');
