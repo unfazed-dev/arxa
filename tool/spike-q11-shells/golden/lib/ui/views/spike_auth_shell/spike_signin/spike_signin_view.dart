@@ -22,7 +22,6 @@ import 'package:flutter/material.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 
-import 'package:appbox_kit_spike_app/app/inspect_attrs.dart';
 import 'package:appbox_kit_spike_app/ui/views/spike_auth_shell/spike_signin/spike_signin_view.desktop.dart';
 import 'package:appbox_kit_spike_app/ui/views/spike_auth_shell/spike_signin/spike_signin_view.mobile.dart';
 import 'package:appbox_kit_spike_app/ui/views/spike_auth_shell/spike_signin/spike_signin_view.tablet.dart';
@@ -32,7 +31,7 @@ class SpikeSigninView extends StackedView<SpikeSigninViewModel> {
   const SpikeSigninView({super.key});
 
   /// Identity stamped at emit time (Q12 triple).
-  static const InspectAttrs inspectAttrs = InspectAttrs(
+  static const AppBoxKitInspectAttrs inspectAttrs = AppBoxKitInspectAttrs(
     screenId: 'screen.auth',
     surfaceId: 'surface.auth.signin',
     anatomyNodeId: 'anatomy:view.body',

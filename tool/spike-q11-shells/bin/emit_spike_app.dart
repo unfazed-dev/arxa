@@ -45,7 +45,6 @@ void main(List<String> args) {
 
   e.write('pubspec.yaml', _pubspec(pkg));
   e.write('analysis_options.yaml', _analysisOptions());
-  e.emitInspectAttrs();
 
   for (final Map<String, dynamic> shell in shells) {
     e.emitShell(shell);
@@ -117,48 +116,10 @@ class _Emitter {
     count++;
   }
 
-  /// The provisional identity carrier. Emitted INTO the generated tree, never
-  /// into kit/ — the vocabulary is unratified (Q11 finding F3) and must not be
-  /// planted in the exemplar until it has a ratified home.
-  void emitInspectAttrs() {
-    final String path = 'lib/app/inspect_attrs.dart';
-    final StringBuffer b = StringBuffer();
-    b.write(_frontmatterLight(
-      intro: 'The app layer holds the wiring every feature depends on and no '
-          'feature owns: routing, locator registration and the identity '
-          'carriers the tooling reads.',
-      role: 'This file declares the inspect-attribute triple that every emitted '
-          'view and view-factor stamps at emit time. Studio inspect mode reads '
-          'the triple only; nothing is inferred at runtime.',
-      path: path,
-    ));
-    b.writeln();
-    b.writeln("import 'package:flutter/foundation.dart';");
-    b.writeln();
-    b.writeln('/// Identity stamped at emit time, never inferred at runtime.');
-    b.writeln('///');
-    b.writeln('/// PROVISIONAL VOCABULARY: the anatomy-node namespace has no');
-    b.writeln('/// ratified closed set yet. Presence is contractual; the value');
-    b.writeln('/// space is not. See docs/plans/q11-shell-spike.md (F3).');
-    b.writeln('@immutable');
-    b.writeln('class InspectAttrs {');
-    b.writeln('${_kIndent}const InspectAttrs({');
-    b.writeln('$_kIndent${_kIndent}required this.screenId,');
-    b.writeln('$_kIndent${_kIndent}required this.surfaceId,');
-    b.writeln('$_kIndent${_kIndent}required this.anatomyNodeId,');
-    b.writeln('$_kIndent});');
-    b.writeln();
-    b.writeln('$_kIndent/// The screen this element belongs to.');
-    b.writeln('${_kIndent}final String screenId;');
-    b.writeln();
-    b.writeln('$_kIndent/// The surface this element belongs to.');
-    b.writeln('${_kIndent}final String surfaceId;');
-    b.writeln();
-    b.writeln('$_kIndent/// The anatomy node this element realises.');
-    b.writeln('${_kIndent}final String anatomyNodeId;');
-    b.writeln('}');
-    write(path, b.toString());
-  }
+  // The identity carrier is NOT emitted. It is AppBoxKitInspectAttrs, imported
+  // from kit core (registry v1.2.0, designVocabulary.inspectAttrs). Q11 emitted
+  // its own copy because the shape had no ratified home; it has one now, and a
+  // shape re-emitted per app is a shape that drifts per app.
 
   // -- shells ---------------------------------------------------------------
 
@@ -169,7 +130,12 @@ class _Emitter {
     final String cls = _pascal(stem);
     final String screenId = shell['screenId'] as String;
     final String surfaceId = 'surface.$feature.shell';
-    final String anatomy = 'anatomy:shell.frame';
+    // Shells are not surfaces in the design record, so there is no id to
+    // copy. They stamp the view body every view stamps; surfaceId
+    // ('surface.<feature>.shell') is what tells a shell from a leaf. Inventing
+    // an 'anatomy:shell.frame' here would be vocabulary the registry never
+    // ratified — registry v1.2.0 closes the set.
+    const String anatomy = 'anatomy:view.body';
 
     // shell-view
     final String viewPath = '$dir/${stem}_view.dart';
@@ -187,7 +153,6 @@ class _Emitter {
     b.writeln(
         "import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';");
     b.writeln();
-    b.writeln("import 'package:$pkg/app/inspect_attrs.dart';");
     for (final String f in factors) {
       b.writeln("import 'package:$pkg/ui/views/$stem/${stem}_view.$f.dart';");
     }
@@ -232,7 +197,7 @@ class _Emitter {
           factor: f,
           screenId: screenId,
           surfaceId: surfaceId,
-          anatomy: '$anatomy.$f',
+          anatomy: anatomy,
           role: 'The $f rendering of ${shell['label']}. It hosts the '
               'nested-router outlet the leaf renders through.',
           body: 'const NestedRouter()',
@@ -283,7 +248,6 @@ class _Emitter {
     b.writeln(
         "import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';");
     b.writeln();
-    b.writeln("import 'package:$pkg/app/inspect_attrs.dart';");
     for (final String f in factors) {
       b.writeln(
           "import 'package:$pkg/ui/views/${app}_${feature}_shell/$stem/${stem}_view.$f.dart';");
@@ -329,7 +293,7 @@ class _Emitter {
           factor: f,
           screenId: screenId,
           surfaceId: surfaceId,
-          anatomy: '$anatomy.$f',
+          anatomy: anatomy,
           role: isSplash
               ? 'The $f rendering of the splash surface. Brand mark only: no '
                   'navigation, no copy, no controls.'
@@ -383,7 +347,6 @@ class _Emitter {
     b.writeln(
         "import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';");
     b.writeln();
-    b.writeln("import 'package:$pkg/app/inspect_attrs.dart';");
     b.writeln(
         "import 'package:$pkg/${vmImport.substring('lib/'.length)}/${stem}_viewmodel.dart';");
     b.writeln();
@@ -431,8 +394,8 @@ class _Emitter {
   ) {
     final StringBuffer b = StringBuffer();
     b.writeln('$_kIndent/// Identity stamped at emit time (Q12 triple).');
-    b.writeln('${_kIndent}static const InspectAttrs inspectAttrs = '
-        'InspectAttrs(');
+    b.writeln('${_kIndent}static const AppBoxKitInspectAttrs inspectAttrs = '
+        'AppBoxKitInspectAttrs(');
     b.writeln("$_kIndent${_kIndent}screenId: '$screenId',");
     b.writeln("$_kIndent${_kIndent}surfaceId: '$surfaceId',");
     b.writeln("$_kIndent${_kIndent}anatomyNodeId: '$anatomy',");
@@ -464,22 +427,6 @@ String _frontmatterFull({
   b.writeln('///');
   b.writeln('/// PLACEHOLDER(builder): the relationships diagram is user-owned.');
   b.writeln('/// The scaffolder emits the section and this marker only.');
-  b.writeln('///');
-  b.writeln(
-      '/// History: git log --follow -- tool/spike-q11-shells/golden/$path');
-  b.writeln('library;');
-  return b.toString();
-}
-
-String _frontmatterLight({
-  required String intro,
-  required String role,
-  required String path,
-}) {
-  final StringBuffer b = StringBuffer();
-  b.write(_wrap(intro));
-  b.writeln('///');
-  b.write(_wrap(role));
   b.writeln('///');
   b.writeln(
       '/// History: git log --follow -- tool/spike-q11-shells/golden/$path');

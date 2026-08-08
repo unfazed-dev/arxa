@@ -20,7 +20,6 @@ library;
 import 'package:flutter/material.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 
-import 'package:appbox_kit_spike_app/app/inspect_attrs.dart';
 import 'package:appbox_kit_spike_app/ui/views/spike_design_shell/spike_tokens/spike_tokens_viewmodel.dart';
 
 class SpikeTokensViewDesktop
@@ -28,10 +27,10 @@ class SpikeTokensViewDesktop
   const SpikeTokensViewDesktop({super.key});
 
   /// Identity stamped at emit time (Q12 triple).
-  static const InspectAttrs inspectAttrs = InspectAttrs(
+  static const AppBoxKitInspectAttrs inspectAttrs = AppBoxKitInspectAttrs(
     screenId: 'screen.design',
     surfaceId: 'surface.design.tokens',
-    anatomyNodeId: 'anatomy:view.body.desktop',
+    anatomyNodeId: 'anatomy:view.body',
   );
 
   @override

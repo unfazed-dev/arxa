@@ -21,7 +21,6 @@ library;
 import 'package:flutter/material.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 
-import 'package:appbox_kit_spike_app/app/inspect_attrs.dart';
 import 'package:appbox_kit_spike_app/ui/views/spike_auth_shell/spike_auth_shell_viewmodel.dart';
 
 class SpikeAuthShellViewTablet
@@ -29,10 +28,10 @@ class SpikeAuthShellViewTablet
   const SpikeAuthShellViewTablet({super.key});
 
   /// Identity stamped at emit time (Q12 triple).
-  static const InspectAttrs inspectAttrs = InspectAttrs(
+  static const AppBoxKitInspectAttrs inspectAttrs = AppBoxKitInspectAttrs(
     screenId: 'screen.auth',
     surfaceId: 'surface.auth.shell',
-    anatomyNodeId: 'anatomy:shell.frame.tablet',
+    anatomyNodeId: 'anatomy:view.body',
   );
 
   @override

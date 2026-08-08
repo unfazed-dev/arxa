@@ -21,7 +21,6 @@ library;
 import 'package:flutter/material.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 
-import 'package:appbox_kit_spike_app/app/inspect_attrs.dart';
 import 'package:appbox_kit_spike_app/ui/views/spike_application_shell/spike_application_shell_viewmodel.dart';
 
 class SpikeApplicationShellViewMobile
@@ -29,10 +28,10 @@ class SpikeApplicationShellViewMobile
   const SpikeApplicationShellViewMobile({super.key});
 
   /// Identity stamped at emit time (Q12 triple).
-  static const InspectAttrs inspectAttrs = InspectAttrs(
+  static const AppBoxKitInspectAttrs inspectAttrs = AppBoxKitInspectAttrs(
     screenId: 'screen.application',
     surfaceId: 'surface.application.shell',
-    anatomyNodeId: 'anatomy:shell.frame.mobile',
+    anatomyNodeId: 'anatomy:view.body',
   );
 
   @override

@@ -22,7 +22,6 @@ import 'package:flutter/material.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 
-import 'package:appbox_kit_spike_app/app/inspect_attrs.dart';
 import 'package:appbox_kit_spike_app/ui/views/spike_design_shell/spike_design_shell_view.desktop.dart';
 import 'package:appbox_kit_spike_app/ui/views/spike_design_shell/spike_design_shell_view.mobile.dart';
 import 'package:appbox_kit_spike_app/ui/views/spike_design_shell/spike_design_shell_view.tablet.dart';
@@ -32,10 +31,10 @@ class SpikeDesignShellView extends StackedView<SpikeDesignShellViewModel> {
   const SpikeDesignShellView({super.key});
 
   /// Identity stamped at emit time (Q12 triple).
-  static const InspectAttrs inspectAttrs = InspectAttrs(
+  static const AppBoxKitInspectAttrs inspectAttrs = AppBoxKitInspectAttrs(
     screenId: 'screen.design',
     surfaceId: 'surface.design.shell',
-    anatomyNodeId: 'anatomy:shell.frame',
+    anatomyNodeId: 'anatomy:view.body',
   );
 
   @override

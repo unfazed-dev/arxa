@@ -22,7 +22,6 @@ import 'package:flutter/material.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart';
 
-import 'package:appbox_kit_spike_app/app/inspect_attrs.dart';
 import 'package:appbox_kit_spike_app/ui/views/spike_design_shell/spike_tokens/spike_tokens_view.desktop.dart';
 import 'package:appbox_kit_spike_app/ui/views/spike_design_shell/spike_tokens/spike_tokens_view.mobile.dart';
 import 'package:appbox_kit_spike_app/ui/views/spike_design_shell/spike_tokens/spike_tokens_view.tablet.dart';
@@ -32,7 +31,7 @@ class SpikeTokensView extends StackedView<SpikeTokensViewModel> {
   const SpikeTokensView({super.key});
 
   /// Identity stamped at emit time (Q12 triple).
-  static const InspectAttrs inspectAttrs = InspectAttrs(
+  static const AppBoxKitInspectAttrs inspectAttrs = AppBoxKitInspectAttrs(
     screenId: 'screen.design',
     surfaceId: 'surface.design.tokens',
     anatomyNodeId: 'anatomy:view.body',
