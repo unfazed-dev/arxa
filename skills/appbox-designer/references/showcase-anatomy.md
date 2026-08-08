@@ -137,12 +137,27 @@ name `AppBoxKit*` widgets. An unmapped kind exits non-zero via that file's
 `resolution.failureContract` — `Container()`, `SizedBox.shrink()`,
 `Placeholder()` and any silent substitution are forbidden fallbacks.
 
-> **Closed, as of registry v1.1.0 (Q7).** All 15 kinds resolve: 12 land 1:1 on
+> **Closed at registry v1.0.0 (Q7); resolver-reachable at v1.1.0.** All 15 kinds
+> resolve: 12 land 1:1 on
 > a kit widget, 2 are compositions (`empty-state`, `panel-activity`) and 1 is a
-> presentation mode (`modal`). Zero unresolved. The earlier gap in `modal`,
-> `tabs` and `panel-activity` was closed by adding registry entries, not by
-> narrowing this vocabulary — all three are real authored partials and all
-> three stayed.
+> presentation mode (`modal`). Zero unresolved, and no kind was ever dropped to
+> get there.
+>
+> Do not repeat the mistake this note used to make. `modal` and `panel-activity`
+> were correctly authored from the registry's first commit; reading their
+> `widget: null` as "unmapped" was a *misreading of the encoding*, not a real
+> gap. One defect was real — `tabs`' class sat in `tabbar.companions` — and
+> v1.1.0's substantive fix was reachability, not coverage: `composedFrom` and
+> `presentation` were missing from `resolution.order`, so entries that were
+> correct on the page would still have hit `FAIL` in the resolver.
+>
+> **Never settle a coverage question in prose — this note was wrong twice.**
+> Run `python3 skills/appbox-scaffolder/scripts/validate-registry.py`. It derives
+> the vocabulary from the partials directory (the SSOT), checks every target
+> against real class names under `kit/ui_library/lib`, verifies every
+> `widget: null` shape is reachable from `resolution.order`, and catches
+> duplicate kind keys — which `json.load()` silently swallows, and which review
+> by reading has already missed twice.
 >
 > **A kind resolving to more than one widget is normal, not a gap.** Do not
 > read `widget: null` as unbuildable. It means the kind is composed or

@@ -234,7 +234,9 @@ against it. Registry v1.1.0 holds three worked examples:
   not reaching for a widget.
 
 That `empty-state` was already composed before Q7 is the point: Q7 didn't
-invent this rule, it generalised one the registry was already following.
+invent this rule, it generalised one the registry was already following. Nor did
+Q7 rescue `modal` and `panel-activity` from being unmapped — no registry state
+ever lacked them, and the "gap" was someone reading `widget: null` as absence. That misreading is exactly what this section exists to prevent.
 
 The boundary in `references/showcase-anatomy.md` still holds underneath all of
 this: recipes are authored in **design** terms — parts, slots, arrangement. A
