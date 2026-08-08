@@ -484,8 +484,8 @@ void _verdictInspectAttrs(ProbeReport report, Directory root, Directory showcase
     subject: 'spike',
     lib: Directory('${golden.path}/lib/ui/views'),
     vocab: vocab,
-    allowedScreenIds: _designStringValues(root),
-    screenIdSource: 'tool/spike-q11-shells/input/design.json string values',
+    allowedScreenIds: _designScreenIds(root),
+    screenIdSource: 'screenId values declared in tool/spike-q11-shells/input/design.json',
   );
 }
 
@@ -510,15 +510,20 @@ Set<String> _showcaseRegistryIds(Directory root) {
   return entries.map((e) => (e as Map)['id'] as String).toSet();
 }
 
-/// Every string value anywhere in the frozen spike design input.
-Set<String> _designStringValues(Directory root) {
+/// The `screenId` values DECLARED by the frozen spike design input — not any
+/// string that happens to appear in it. "Any string" would let the app name or a
+/// label satisfy the join, which is not a join at all.
+Set<String> _designScreenIds(Directory root) {
   final f = File('${root.path}/tool/spike-q11-shells/input/design.json');
   if (!f.existsSync()) return <String>{};
   final out = <String>{};
   void walk(dynamic n) {
-    if (n is String) out.add(n);
     if (n is List) n.forEach(walk);
-    if (n is Map) n.values.forEach(walk);
+    if (n is Map) {
+      final v = n['screenId'];
+      if (v is String) out.add(v);
+      n.values.forEach(walk);
+    }
   }
   walk(jsonDecode(f.readAsStringSync()));
   return out;
@@ -538,6 +543,16 @@ void _inspectAttrsLine(
 }) {
   String? cap(String src, String key) =>
       RegExp("$key:\\s*'([^']+)'").firstMatch(src)?.group(1);
+
+  if (allowedScreenIds.isEmpty) {
+    report.check(
+      title,
+      false,
+      'BLOCKED: $screenIdSource yielded no ids, so the screenId join cannot be '
+      'checked. Reporting red rather than degrading to a presence-only pass.',
+    );
+    return;
+  }
 
   final surfaces = <String>[];
   final failures = <String>[];
@@ -561,7 +576,7 @@ void _inspectAttrsLine(
     if (!vocab.contains(anatomyNodeId)) {
       failures.add("$rel — anatomyNodeId '$anatomyNodeId' outside the closed vocabulary");
     }
-    if (allowedScreenIds.isNotEmpty && !allowedScreenIds.contains(screenId)) {
+    if (!allowedScreenIds.contains(screenId)) {
       failures.add("$rel — screenId '$screenId' is not in $screenIdSource");
     }
   }
