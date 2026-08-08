@@ -192,6 +192,27 @@ looks plausible, and is wrong — precisely the failure the gate stack exists to
 When the kit genuinely lacks a widget, use the registry's escape hatch: it emits, but
 it warns with a reason, an owner and an expiry, and an expired escape fails the build.
 
+Not every kind resolves to a single class. Three shapes resolve with `widget: null` —
+`composedFrom` (a composition the scaffolder emits explicitly, never collapsing it to
+one class), `presentation` (a route/overlay mode, not a subtree — this is what `modal`
+is), and `variants`. **Every such shape must be named in `resolution.order`**; a shape
+that is not listed falls through to FAIL and turns a correctly-authored kind into a
+build break.
+
+**Validate after any registry edit:**
+
+```
+python3 skills/appbox-scaffolder/scripts/validate-registry.py
+```
+
+It checks the registry against its two ground truths — the partials directory
+(`appbox-designer/starter-partials/widgets/_<kind>.tsx` *is* the vocabulary; never
+hand-maintain a second copy of that list) and the real class names under
+`kit/ui_library/lib` — and it rejects duplicate kind keys. That last check is not
+theoretical: two entries were authored twice, and because `json.load()` silently keeps
+the last duplicate, the careful entry vanished with no error and no merge conflict.
+Prose review missed it both times.
+
 ## Design vocabulary: import, don't generate (Q6)
 
 Tier 1 — colors, spacing, glyphs, fonts, app constants — **imports** from

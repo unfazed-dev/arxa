@@ -183,7 +183,12 @@ the library** (DESIGN-ARCHITECTURE, "Auto Layout"): each component's container
 carries the `data-layout` attribute set and its children size with
 `data-resize-x` / `data-resize-y`. To turn it off per frame, omit
 `data-layout` (art-directed frames); to exempt a single child, give it
-`data-layout-ignore`. Then build the artifact per the contract, serve it with
+`data-layout-ignore`. **You compose; you never resolve** (DESIGN-ARCHITECTURE,
+"Compositions are recipes"): a `kind` may land on one kit widget, on a variant
+you must name, on several widgets, or on a presentation mode — so name the
+variant and author the recipe (parts, slots, arrangement) in design terms.
+`widget: null` in the resolution registry means *composed*, never *unbuildable*.
+Then build the artifact per the contract, serve it with
 `appbox design serve <artifact-dir> --port 4319` (background), then
 verify: `appbox design lint <artifact-dir>` (no-ad-hoc-JS / named-islands),
 `appbox lens check http://localhost:4319/…` (console

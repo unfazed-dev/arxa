@@ -1,8 +1,16 @@
 {
-  "registryVersion": "1.0.0",
+  "registryVersion": "1.1.0",
   "_comment": [
     "Q7 SSOT. Closed-vocabulary map from a DESIGNED kind (the designer's starter-partial",
     "vocabulary) to the kit-native widget that realises it.",
+    "VOCABULARY SOURCE: skills/appbox-designer/starter-partials/widgets/_<kind>.tsx — the file",
+    "list IS the vocabulary. Derive it (strip leading _ and .tsx); never hand-maintain a copy.",
+    "Every kind in that directory must appear in `kinds` — as a `widget`, or as a `composedFrom`",
+    "recipe or `presentation` mode when no single kit class realises it. Coverage: 15/15.",
+    "v1.1.0 did NOT add missing kinds — v1.0.0 already covered all 15. It fixed a real defect:",
+    "`composedFrom` and `presentation` were absent from `resolution.order`, so the two kinds",
+    "using them (panel-activity, modal) would have fallen through to FAIL despite being",
+    "correctly authored. A reachability bug, not a coverage bug. See scripts/validate-registry.py.",
     "Widget names below were enumerated from kit/ui_library/lib — they are real classes, not",
     "invented placeholders. The scaffolder resolves through this table and NOWHERE else.",
     "CORE RULE (Q7): an unresolvable kind is a FAIL that names the kind and the design node.",
@@ -13,8 +21,11 @@
     "order": [
       "kinds[kind].widget",
       "kinds[kind].variants[variantKey]",
+      "kinds[kind].composedFrom",
+      "kinds[kind].presentation",
       "FAIL"
     ],
+    "nullWidgetRule": "Three entry shapes resolve with widget:null, and ALL THREE must be named in `order` — a shape that is not listed falls through to FAIL, silently turning a designed kind into a build break. (1) `composedFrom`: no single kit class realises the kind; the scaffolder emits the listed classes explicitly as a composition and NEVER collapses them to one class. (2) `presentation`: the kind is a route/overlay presentation mode, not a subtree; the scaffolder sets the flag and hosts via the named service. (3) `variants`: the widget depends on a variant key. Adding a fourth shape means adding a line to `order` in the same edit.",
     "failureContract": {
       "exitNonZero": true,
       "messageTemplate": "unresolvable kind '<kind>' at design node <anatomyNodeId> (surface <surfaceId>): not in kind-resolution.registry.json v<registryVersion>",
@@ -50,7 +61,7 @@
         "AppBoxKitCustomSheetCall",
         "AppBoxKitNoticeSheetBody"
       ],
-      "note": "Service-invoked, not a tree widget. `modal` presentation flag on a route resolves here."
+      "note": "Service-invoked, not a tree widget."
     },
     "card": {
       "widget": "AppBoxKitGlassCard",
@@ -116,7 +127,22 @@
         "service": "AppBoxKitOverlayService",
         "surface": "AppBoxKitFrostedSurface"
       },
-      "note": "Q7 reconciliation: `modal` is a distinct DESIGNED kind (authored partial), NOT a dialog variant and NOT a vocabulary deletion. It resolves to a PRESENTATION MODE, not a widget subtree: the scaffolder sets the route presentation flag and hosts the surface via the overlay service. `dialog` remains a separate kind."
+      "note": [
+        "Q7 reconciliation: `modal` is a distinct DESIGNED kind (authored partial), NOT a dialog",
+        "variant and NOT a vocabulary deletion. It resolves to a PRESENTATION MODE, not a widget",
+        "subtree: the scaffolder sets the route presentation flag and hosts the surface via the",
+        "overlay service. `dialog` remains a separate kind.",
+        "What separates them in the design is DATA FRESHNESS, not form: _modal.tsx is a",
+        "zero-request <details> toggle over content the page already holds; _dialog.tsx is a",
+        "server-swapped <dialog> for content fetched fresh. That axis is a web-transport concern",
+        "with no widget analogue, so it does not survive transliteration at the widget layer —",
+        "it re-appears one layer up, in the viewmodel binding (modal binds a value the surface",
+        "already has; dialog binds an async source).",
+        "Why NOT AppBoxKitFrostedAlertDialog: its constructor REQUIRES title, message and a",
+        "List<AppBoxKitNativeDialogAction>. _modal has no action contract — only a close X and a",
+        "caller-supplied body. Resolving there would invent buttons the design never authored,",
+        "which is exactly the plausible-but-wrong scaffold this registry exists to prevent."
+      ]
     },
     "nav-rail": {
       "widget": "AppBoxKitNativeNavigationRail",
@@ -139,11 +165,10 @@
       "widget": "AppBoxKitNativeTabBar",
       "companions": [
         "AppBoxKitTab",
-        "AppBoxKitAnimatedTabStack",
         "AppBoxKitTabSwitchTransition",
         "AppBoxKitDirectionalTabTransition"
       ],
-      "note": "tab:true registry entries compile to AppBoxKitBottomNavScaffold at the shell level; this kind is the in-surface tab strip."
+      "note": "tab:true registry entries compile to AppBoxKitBottomNavScaffold at the shell level; this kind is the in-surface tab strip. The BAR only — the panel/stack it drives is the sibling kind `tabs`, which owns AppBoxKitAnimatedTabStack outright. Do not re-add that class as a companion here; it was deliberately promoted out."
     },
     "tabs": {
       "widget": "AppBoxKitAnimatedTabStack",
@@ -152,7 +177,7 @@
         "AppBoxKitTabSwitchTransition",
         "AppBoxKitDirectionalTabTransition"
       ],
-      "note": "Q7 reconciliation: promoted from tabbar.companions to primary target. `tabbar` is the in-surface tab strip; `tabs` is the animated tabbed content stack."
+      "note": "Q7 reconciliation: promoted from tabbar.companions to primary target. `tabbar` is the in-surface tab strip; `tabs` is the animated tabbed content stack. Two authored partials (_tabs.tsx, _tabbar.tsx), two kinds, two widgets — a design may use either alone, so neither may be folded into the other."
     },
     "toast": {
       "widget": "AppBoxKitNotificationService",

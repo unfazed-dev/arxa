@@ -137,12 +137,19 @@ name `AppBoxKit*` widgets. An unmapped kind exits non-zero via that file's
 `resolution.failureContract` — `Container()`, `SizedBox.shrink()`,
 `Placeholder()` and any silent substitution are forbidden fallbacks.
 
-> **Open reconciliation (blocking, as of registry v1).** That registry maps 12
-> of these 15 kinds. `modal`, `tabs` and `panel-activity` have no entry, so any
-> design using them fails the contract above today. All three are real authored
-> partials, so the fix is registry entries — **not** quietly narrowing this
-> vocabulary. Until they land, treat those three as unbuildable and say so in
-> the design rather than substituting a mapped neighbour.
+> **Closed, as of registry v1.1.0 (Q7).** All 15 kinds resolve: 12 land 1:1 on
+> a kit widget, 2 are compositions (`empty-state`, `panel-activity`) and 1 is a
+> presentation mode (`modal`). Zero unresolved. The earlier gap in `modal`,
+> `tabs` and `panel-activity` was closed by adding registry entries, not by
+> narrowing this vocabulary — all three are real authored partials and all
+> three stayed.
+>
+> **A kind resolving to more than one widget is normal, not a gap.** Do not
+> read `widget: null` as unbuildable. It means the kind is composed or
+> presented, and the design carries the recipe — see "Compositions are recipes"
+> in `DESIGN-ARCHITECTURE.md`. Designers still never name `AppBoxKit*` widgets;
+> a recipe is authored in design terms (parts, slots, arrangement), and the
+> registry does the resolving.
 
 ---
 

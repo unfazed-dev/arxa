@@ -177,6 +177,70 @@ Widgets come first. Before any surface is composed, the design's repeated patter
 - The same rule applies to CSS: shared widget styles live in the artifact's main stylesheet, not duplicated across per-surface CSS files. Scrollbars always blend (transparent track, theme-ink thumb) — see the starter's `app.css`.
 - Icons are vocabulary, not pixels: `<Icon name="name" />` inlines a vendored Lucide glyph server-side (see the runtime contract) — emoji or hand-drawn stand-ins are never shipped as icons.
 
+### Compositions are recipes, and recipes are the designer's (Q7)
+
+**The designer always composes.** Not every `kind` in the closed vocabulary
+lands on a single kit widget, and the ones that don't are *not* a defect to be
+routed around — they are the normal case. Panels included: a `panel-activity`
+is composed, never wished into one class.
+
+The division of labour is fixed:
+
+- **The designer authors the recipe.** Structure, slots, ordering, which parts
+  are conditional, what each part is *for*. The recipe is design knowledge and
+  it lives in these docs and in the design itself — it is the reason the
+  composition is the shape it is.
+- **The registry records only the resolved target set** — which kit widgets a
+  kind lands on, nothing about how they fit together. A registry entry is an
+  answer, not a recipe. Do not read arrangement out of it, and do not push
+  arrangement into it.
+- **The scaffolder emits the composition explicitly** — the parts, assembled as
+  the recipe says. It never resolves a composed kind down to one class, and it
+  never invents an arrangement the design didn't specify.
+
+Three shapes exist in the registry, and the design must know which it is
+holding, because they emit differently:
+
+| Registry shape | Meaning | The design must carry |
+|---|---|---|
+| `widget: "AppBoxKit…"` | 1:1 — one kind, one class | the kind |
+| `widget: …` + `variants: {…}` | one kind, several forms | the kind **and which variant** |
+| `widget: null` + `composedFrom: […]` | composition | the full recipe: parts, arrangement, conditionals |
+| `widget: null` + `presentation: {…}` | a presentation *mode*, not a subtree | how the surface is presented, not what widget it "is" |
+
+**Variants are a design decision, not a scaffolder inference.** Seven kinds
+carry them, and some carry many: a `cta-link` is a plain link, an `icon`, a
+`fab`, a `fab-menu`, a `split` or a `menu` — six different things a user sees
+and touches. Nothing downstream can recover that intent from the kind alone, so
+a design that says only "cta-link" has under-specified itself. Name the variant
+in the design's own terms; the registry turns that name into a class. This is
+the same boundary as everywhere else — you choose the *form*, not the class.
+
+Not every composition is a debt, and the difference changes how you design
+against it. Registry v1.1.0 holds three worked examples:
+
+- `empty-state` (`AppBoxKitGlassCard` + `AppBoxKitSvg` +
+  `AppBoxKitNativeButton`) is an **inherent** composition and predates Q7 — no
+  single kit widget will ever realise it, because an empty state *is* an
+  arrangement (art, message, action). Nothing is pending. Design it as parts.
+- `panel-activity` (`AppBoxKitGlassCard` + `AppBoxKitListSection` +
+  `AppBoxKitNotificationRecord`) is a **debt** composition: no first-class kit
+  activity widget exists yet. When one lands the recipe collapses to 1:1 and
+  this doc is what has to change — so keep the recipe legible rather than
+  clever.
+- `modal` is neither: a presentation **mode** (route-flag +
+  `AppBoxKitOverlayService` / `AppBoxKitFrostedSurface`), still a distinct kind
+  from `dialog`. Designing a modal means declaring how a surface is presented,
+  not reaching for a widget.
+
+That `empty-state` was already composed before Q7 is the point: Q7 didn't
+invent this rule, it generalised one the registry was already following.
+
+The boundary in `references/showcase-anatomy.md` still holds underneath all of
+this: recipes are authored in **design** terms — parts, slots, arrangement. A
+recipe does not pre-empt which native class a part resolves to. Composing is
+the designer's job; resolving stays the registry's.
+
 ## Auto Layout
 
 Auto Layout is the medium's default layout discipline for widget-library widgets — the Figma-equivalent property set, emitted as pure static CSS keyed on data-attributes. It needs no client JavaScript and gets none: the whole layer is attribute selectors in `starter-partials/widgets/widgets.css`, so the Client-JS-Free rule is untouched. The same holds for the named media islands (ADR-0002's 2026-07-31 amendment): 3D, animation and game runtimes are vendored web components or data-attribute islands — a surface uses them by writing markup, never script.
