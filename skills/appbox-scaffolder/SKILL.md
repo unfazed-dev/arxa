@@ -242,7 +242,10 @@ copy-paste** of that folder into the scaffolded app, then wiring driven ONLY
 by `assets.manifest.json`:
 
 - **Fonts:** Google Fonts by name — emit the `google_fonts` package and call
-  families from the manifest's font roles (`primary`, `monospace`, …). No
+  families from the manifest's font roles (`primary`, `monospace`, …); the
+  roles name families from the design's `[data-font]` menu, so the app
+  requests exactly what the design's css2 link showed (designer law:
+  DESIGN-ARCHITECTURE.md "Fonts (Google Fonts by name)"). No
   font binaries, no pubspec `fonts:` block — UNLESS the manifest declares
   `"source": "file"` (user uploaded a custom brand font at intake), in which
   case emit a real `fonts:` block for `assets/fonts/` instead.

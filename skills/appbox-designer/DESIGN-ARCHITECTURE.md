@@ -224,6 +224,23 @@ deleted, not parked: a selector with no consumer in `ui/` is a defect. The
 scaffolder maps `ui/styles/<owner>/` to the app's `lib/ui/styles/<owner>/` with
 the same folder-per-owner and barrel discipline.
 
+## Fonts (Google Fonts by name)
+
+Type families arrive from the Google Fonts CDN — a design vendors **no font
+binaries**. No `.woff2`/`.ttf`/`.otf` and no font license files anywhere in a
+design; `assets/fonts/` exists only when intake uploaded a custom brand font
+(the manifest's `"source": "file"` case), the sole binary exception on either
+side of the pipeline. `base.tsx` emits two preconnects
+(`fonts.googleapis.com`, and `fonts.gstatic.com` with crossorigin) and exactly
+ONE `css2` stylesheet link, placed before the styles barrels, naming every
+family the `[data-font]` menu can select, with explicit weight ranges and
+`display=swap`. `ui/styles/common/fonts.css` declares no `@font-face`; it owns
+only the `--font-*` role variables and the `#app[data-font=...]` entries,
+which are the design's family SSOT — the css2 link and that menu must stay
+1:1. The manifest's font roles name families from the same set, so the
+scaffolder's `google_fonts` emission (its skill already mandates it) requests
+exactly the families the design showed.
+
 ## One application hub
 
 Every designed app has two-plus shells and **exactly one** application hub —

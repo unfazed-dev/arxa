@@ -170,7 +170,9 @@ constants and strings come from the generated kit mirror, never from a local
 duplicate. (In the Flutter tree, each app's `lib/ui/common/` is a verbatim
 scaffold-time copy of kit common plus the app's `appbox_kit_app_strings.dart` —
 refreshed from kit, never hand-edited.) If the mirror lacks a symbol, extend
-the generator — do not define the value locally.
+the generator — do not define the value locally. Fonts specifically are never
+vendored: families come from the Google Fonts CDN by name — see
+DESIGN-ARCHITECTURE.md "Fonts (Google Fonts by name)".
 `AppBoxKitNative*` and `appbox_kit_ui_library` are **not** mirrored: you design
 web, and which native a `kind` resolves to is the scaffolder's call, not yours
 to pre-empt. See `references/showcase-anatomy.md` §4.

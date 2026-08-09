@@ -81,6 +81,17 @@ const Base: FC<BaseProps> = ({
         <script src={vendorSrc('canvas.js')} defer></script>
         <script src={vendorSrc('drag.js')} defer></script>
         <script src={vendorSrc('reveal.js')} defer></script>
+        {/* Fonts law (DESIGN-ARCHITECTURE.md "Fonts (Google Fonts by name)"):
+            families arrive from the Google Fonts CDN — the design vendors no
+            font binaries. ONE css2 request names every family the [data-font]
+            menu can select, with explicit weight ranges; fonts.css maps them
+            to the --font-* role variables and never declares @font-face. */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Lexend:wght@300..700&family=Lexend+Giga:wght@300..400&family=Lexend+Deca:wght@500&family=Space+Grotesk:wght@300..700&family=Lora:wght@400..700&family=JetBrains+Mono:wght@300..700&display=swap"
+        />
         <link rel="stylesheet" href="/ui/styles/common/styles.css" />
         <link rel="stylesheet" href="/ui/styles/studio_application_hub/styles.css" />
         <link rel="stylesheet" href="/ui/styles/studio_dashboard_shell/styles.css" />
