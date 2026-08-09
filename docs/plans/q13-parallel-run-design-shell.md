@@ -152,12 +152,40 @@ render both shells, which is what the diff needs.
 - Registry: `skills/appbox-scaffolder/kind-resolution.registry.json` v1.2.0.
 - Do not delete the old shell.
 
-## Open question for team-lead (non-blocking)
+## Finding 3 — `nodeId` vs `anatomyNodeId` is not a conflict
 
-Only one remains: the third key is **`nodeId`** in the ratified JS form but
-`anatomyNodeId` in the task brief. This plan follows the JS form, since
-decisions L145 requires the JS and Dart shapes stay 1:1. Confirm.
+`app-architecture.md:184` settles it outright: "Dart spells this slot
+`anatomyNodeId`, JS spells it `nodeId` — **one slot, two spellings**." Both are
+ratified. The Q11 spike golden confirms the Dart side
+(`AppBoxKitInspectAttrs(screenId:, surfaceId:, anatomyNodeId:)`). TSX therefore
+uses `nodeId`; nothing to arbitrate.
 
-("Stamped at emit time" is no longer open — `app-architecture.md` answers it
-directly: identity is a module-level const on each surface, "never inferred at
-runtime". No route-level prop threading, no TSX-rewriting build step.)
+## Finding 4 — the DOM spelling of the triple does not exist yet (BLOCKING step 5)
+
+`app-architecture.md:180` says the triple's presence "is mechanically enforced
+by the probe". It currently is not, and cannot be:
+
+- `probe_inspect.dart` (`appboxd/lib/probes/studio/`) parses only `data-el`,
+  `data-inspect-role|style|fn`, `data-inspect-armed`, `data-id`. It never reads
+  screen/surface/node identity.
+- No `data-screen-id` / `data-surface-id` / `data-node-id` exists anywhere in
+  `skills/`. The only neighbours are `data-surface` (`runtime/vendor/inspect.js`),
+  `data-screen` (`runtime/vendor/drag.js`), `data-screen-label`.
+
+So `inspectAttrs` is a JS object that no serializer spreads into markup. A
+surface-level const that never reaches the DOM makes the step-5 diff compare
+nothing — the same late-failure class as the env-var flag (finding 2).
+
+**This must be settled before step 3**, because the shell's emit path is what
+writes the attributes. Proposed minimal spelling, consistent with the existing
+`data-inspect-*` prefix and avoiding the `data-surface` / `data-screen`
+collisions already taken by the vendor runtime:
+
+    data-inspect-screen   data-inspect-surface   data-inspect-node
+
+with `probe_inspect.dart` extended to read those three and assert the closed
+vocabulary for the node slot. Awaiting team-lead confirmation on the spelling.
+
+("Stamped at emit time" is no longer open — identity is a module-level const on
+each surface, "never inferred at runtime". No route-level prop threading, no
+TSX-rewriting build step.)
