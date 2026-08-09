@@ -537,8 +537,75 @@ bought."* Confirmed — the step paid for itself by killing a false premise.
 Everything is unblocked. Not started — deliberately left for a fresh context
 budget rather than half-emitted:
 
-1. `design/anatomy_flag.ts` — `abxResolveShellView(c, viewName, VIEW, VIEW_ANATOMY)`, one module (R-d).
+1. `design/anatomy_flag.js` — `abxResolveShellView(c, viewName, VIEW, VIEW_ANATOMY)`, one module (R-d). **Extension corrected — see finding 7.**
 2. New shell `design/anatomy/{chat,freeze,prototype}/*_view.tsx` + `_shared_anatomy.tsx`, emitting the R-e triple, `activeShell` hard-frozen at `'design'` (R-a).
 3. Add `VIEW_ANATOMY` const + helper call to the three `page` handlers (R-b, R-c).
 4. Extend `probe_inspect.dart` to read the three attributes and assert the node slot against the closed registry vocabulary; unstamped surfaces → N/A, not PASS (R-f, R-g).
 5. Amend `app-architecture.md:180` **in the same commit as 4** (R-h).
+
+---
+
+## Finding 7 — the helper must be `.js`, not `.ts`
+
+R-d specifies `design/anatomy_flag.ts`. That file would not load. Two
+independent confirmations:
+
+- Viewmodels are **native ESM with explicit extensions**:
+  `import * as facade from '../../../../../services/facades/design_facade.js';`
+  A runtime resolving that literally cannot import a `.ts` sibling.
+- The eject copier takes **only three extensions**:
+
+      // design_tools.dart:1360
+      /// Copy all *.js, *.d.ts, and *.tsx files from [srcDir] to [dstDir] ...
+
+  Plain `.ts` is not copied. The helper would vanish from the eject even if it
+  loaded in dev.
+
+**Use `anatomy_flag.js`.** (`.d.ts` alongside is permitted by the copier if
+typing is wanted.) This is a mechanical correction to R-d, not a reopening of
+it — placement, signature, and single-module constraint all stand.
+
+---
+
+## Finding 8 — the cutover unit is the viewmodel MODULE, not the `page` handler
+
+R-b/R-c set the cutover unit at each view's `page` handler. But `page` is not
+the only handler that renders `VIEW`. From `chat_viewmodel.js`:
+
+    export const page = (c, h) =>
+      h.render(c, VIEW, { activeShell: 'design', ... });
+
+    export const context = (c, h) =>
+      h.render(c, `${VIEW}#panelsSwap`, facade.toggleContext(...));
+
+Sibling handlers render **fragments of the same template** (`${VIEW}#fragment`)
+to service htmx partial swaps. If only `page` consults the flag, then on a
+new-shell page every subsequent htmx swap re-renders **old-shell fragment markup
+into the new-shell DOM**. The page would silently degrade into a hybrid after
+the first interaction — and the probe, if it captures markup on first paint,
+would not see it.
+
+This is the same failure class as findings 5–7: a mechanism assumed to have one
+call site that actually has several.
+
+**Required refinement:** resolution must be per-*request* and shared by every
+handler in the module, not per-handler:
+
+    // anatomy_flag.js
+    export const abxResolveShellView = (c, viewName, base, anatomy) => ...;
+
+    // chat_viewmodel.js
+    const shellView = (c) => abxResolveShellView(c, 'chat', VIEW, VIEW_ANATOMY);
+
+    export const page    = (c, h) => h.render(c, shellView(c), { activeShell: 'design', ... });
+    export const context = (c, h) => h.render(c, `${shellView(c)}#panelsSwap`, ...);
+
+Cutover granularity is **unchanged** — still one view at a time, still
+toggle-not-revert. What changes is that flipping a view means flipping *all*
+handlers in that viewmodel together, because they render one template. The
+per-view cutover table stays exactly as ruled; "cutover unit = `page` handler"
+should read "= viewmodel module".
+
+**Every handler in the module must be enumerated when a view is flipped.** A
+missed sibling is a silent hybrid, not a visible break — the most expensive
+kind of miss for a parallel run whose entire value is diff fidelity.
