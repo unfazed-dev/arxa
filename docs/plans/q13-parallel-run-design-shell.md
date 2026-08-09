@@ -642,3 +642,50 @@ fragments into a new-shell DOM.
 fragment exports and 22 handlers make it the highest-risk view, and its
 `inspectorPane`/`widgetEditor` fragments are precisely where `data-inspect-*`
 stamping and the inspector probe interact.
+
+## Finding 9 — a "surface" is an inner host element, NOT a fragment root (BLOCKING the emit shape)
+
+Verified in source, not assumed. Three facts collide with the naive reading of
+scope item 4 ("every emitted surface carries the triple"):
+
+1. **Fragment roots are frequently not host elements.** `chat/chat_view.tsx:28`
+   `RevertSwap` returns `<Fragment>{ProtoPanelsSwap(c)}<div hx-swap-oob=...>…</Fragment>`
+   — a multi-root htmx OOB swap. `prototype_view.tsx` `DrawerSwap` returns
+   `<Fragment>{…RevealDrawer…}</Fragment>`; `FilterSwap` returns
+   `<Fragment><ScreenList/><RunBar/></Fragment>`. A Fragment has no host root,
+   so **attrs cannot be attached to a fragment response at all.**
+2. **Delegating to legacy compositions cannot stamp either.**
+   `RenderPanels` returns `<Panels c t>{…}</Panels>` — a *component* element.
+   `cloneElement` (which hono/jsx does export) would attach props that
+   `Panels({c,t,children})` silently drops. `Panels` lives in legacy
+   `_shared.tsx:130` and is untouchable under scope item 5.
+3. **The old shell already shows the intended carrier granularity.**
+   `chat_view.tsx:33` stamps `inspectAttrs('design-chat:toast', {role:'text'})`
+   on an *inner* `<div class="toast">`, not on the fragment root.
+
+**Ruling consequence:** the triple is carried by the same inner host elements
+that legacy already stamps via `inspectAttrs` — `data-inspect-screen` and
+`-surface` are what `inspectAttrs` already emits; the anatomy shell adds
+`data-inspect-node`. The anatomy shell therefore re-authors those elements
+(via `_shared_anatomy.tsx`) rather than delegating to legacy compositions.
+**Do not** add a wrapper `<span>`/`<div>` purely to carry attributes — that
+breaks R6 diff normalization (R6 strips *attributes*, not elements, so an
+added element is a real structural diff and a genuine regression signal).
+
+**Zero-delta stamp recipe (verified for `PanelsSwap`):** mirror
+`_shared.tsx:130` `Panels` exactly —
+`<div class="panels" id="panels" data-panel={c.panel} {...triple}>` with
+children `PanelBar` / `ComposerPanel` / `<MainOpen>{…}</MainOpen>` /
+`ActivityPanel`. `ComposerPanel` (`_shared.tsx:98`) and `ActivityPanel`
+(`_shared.tsx:291`) are exported; `MainContent` (`prototype_view.tsx:69`) is
+**not**, but `FileSwap` (`prototype_view.tsx:132`) is exactly
+`MainContent({c, t: c.t})` and is the legal accessor.
+*Coupling note:* relying on `FileSwap` as the `MainContent` accessor is only
+defensible because the old shell dies at cutover; annotate it inline.
+
+**Open (next agent must decide before emitting):** for Fragment-rooted
+fragments (`DrawerSwap`, `RevertSwap`, `FilterSwap`) the triple can only land
+on their inner host elements. Confirm against the fragment-surface table
+whether each such fragment owns one node or several, then emit per inner
+element. Verify zero delta by **running** the dual-render diff against the
+live design server — not by reasoning about DOM equality.
