@@ -96,14 +96,14 @@ interface MetaRowProps {
   label: string;
   value?: string;
   mark?: boolean;
-  t: TFn;
+  translate: TFn;
 }
-export function MetaRow({ label, value, mark, t }: MetaRowProps) {
+export function MetaRow({ label, value, mark, translate }: MetaRowProps) {
   if (!value) return null;
   return (
     <span class="msg-detail" {...inspectAttrs('inspector:meta-row', { role: 'group' })}>
       <b {...inspectAttrs('inspector:meta-label', { role: 'label' })}>{label}</b> {value}
-      {mark && <em class="chip thread-badge" {...inspectAttrs('inspector:inferred-badge', { role: 'status' })}> {t('inspector.inferred') as string}</em>}
+      {mark && <em class="chip thread-badge" {...inspectAttrs('inspector:inferred-badge', { role: 'status' })}> {translate('inspector.inferred') as string}</em>}
     </span>
   );
 }
@@ -126,21 +126,21 @@ interface ElementCardProps {
   el: InspectorElement;
   locked?: boolean;
   unlockHref?: string;
-  t: TFn;
+  translate: TFn;
 }
-export function ElementCard({ el, locked, unlockHref, t }: ElementCardProps) {
+export function ElementCard({ el, locked, unlockHref, translate }: ElementCardProps) {
   return (
     <div class={`msg msg-agent${locked ? ` is-active msg-ctx ctx-${el.tone}` : ''}`}>
       <header class="msg-meta" {...inspectAttrs('inspector:card-head', { role: 'group' })}>
         {(() => { const b = kindToBadge(el.kind); return b && <TypeBadge type={b.type} label={b.label} />; })()}
         {el.inferred && (
-          <span class="chip thread-badge" {...inspectAttrs('inspector:inferred', { role: 'status' })} title={t('inspector.inferredTitle') as string}>
-            {t('inspector.inferred') as string}
+          <span class="chip thread-badge" {...inspectAttrs('inspector:inferred', { role: 'status' })} title={translate('inspector.inferredTitle') as string}>
+            {translate('inspector.inferred') as string}
           </span>
         )}
         {locked && (
-          <span class="chip thread-badge" {...inspectAttrs('inspector:locked', { role: 'status' })} title={t('inspector.lockedTitle') as string}>
-            <Icon name="lock" size={12} /> {t('inspector.locked') as string}
+          <span class="chip thread-badge" {...inspectAttrs('inspector:locked', { role: 'status' })} title={translate('inspector.lockedTitle') as string}>
+            <Icon name="lock" size={12} /> {translate('inspector.locked') as string}
           </span>
         )}
       </header>
@@ -149,7 +149,7 @@ export function ElementCard({ el, locked, unlockHref, t }: ElementCardProps) {
           button that POSTs back to /design/inspector/select (selectHref) to
           lock that element; the last entry is the current element (no link). */}
       {Array.isArray(el.chain) && el.chain.length > 1 && (
-        <nav class="insp-crumbs" aria-label={t('inspector.chainAria') as string} {...inspectAttrs('inspector:crumbs', { role: 'navigation' })}>
+        <nav class="insp-crumbs" aria-label={translate('inspector.chainAria') as string} {...inspectAttrs('inspector:crumbs', { role: 'navigation' })}>
           {el.chain.map((c, i) => (
             <Fragment key={i}>
               {i > 0 && <span class="insp-crumb-sep" {...inspectAttrs('inspector:crumb-sep', { role: 'separator' })} aria-hidden="true">›</span>}
@@ -171,10 +171,10 @@ export function ElementCard({ el, locked, unlockHref, t }: ElementCardProps) {
         </nav>
       )}
       {el.screenId && <Label name="inspector:screen-id" class="msg-detail muted">{el.screenId}</Label>}
-      <MetaRow label={t('inspector.role') as string} value={el.role?.value} mark={el.role?.inferred} t={t} />
-      <MetaRow label={t('inspector.style') as string} value={el.style} mark={false} t={t} />
-      <MetaRow label={t('inspector.motion') as string} value={el.motion} mark={false} t={t} />
-      <MetaRow label={t('inspector.fn') as string} value={el.fn?.value} mark={el.fn?.inferred} t={t} />
+      <MetaRow label={translate('inspector.role') as string} value={el.role?.value} mark={el.role?.inferred} translate={translate} />
+      <MetaRow label={translate('inspector.style') as string} value={el.style} mark={false} translate={translate} />
+      <MetaRow label={translate('inspector.motion') as string} value={el.motion} mark={false} translate={translate} />
+      <MetaRow label={translate('inspector.fn') as string} value={el.fn?.value} mark={el.fn?.inferred} translate={translate} />
       <footer class="msg-foot">
         <span class="msg-cta" {...inspectAttrs('inspector:card-cta', { role: 'group' })}>
           {/* Pin is an explicit control, not a side effect of clicking — a form,
@@ -189,7 +189,7 @@ export function ElementCard({ el, locked, unlockHref, t }: ElementCardProps) {
               hx-push-url="false"
               {...inspectAttrs('inspector:unpin', { role: 'action' })}
             >
-              {t('design.inContext') as string} <Icon name="check" size={14} />
+              {translate('design.inContext') as string} <Icon name="check" size={14} />
             </a>
           ) : el.pinHref ? (
             <form hx-post={el.pinHref} hx-target="#panels" hx-swap="outerMorph" hx-push-url="false">
@@ -197,7 +197,7 @@ export function ElementCard({ el, locked, unlockHref, t }: ElementCardProps) {
               <input type="hidden" name="name" value={el.name} {...inspectAttrs('inspector:field-name', { role: 'input' })} />
               <input type="hidden" name="kind" value={el.kind} {...inspectAttrs('inspector:field-kind', { role: 'input' })} />
               <input type="hidden" name="instance" value={el.instance} {...inspectAttrs('inspector:field-instance', { role: 'input' })} />
-              <button class="cta-main" type="submit" {...inspectAttrs('inspector:pin', { role: 'action' })}>{t('design.pinToContext') as string} <Icon name="pin" size={14} /></button>
+              <button class="cta-main" type="submit" {...inspectAttrs('inspector:pin', { role: 'action' })}>{translate('design.pinToContext') as string} <Icon name="pin" size={14} /></button>
             </form>
           ) : null}
           {locked && unlockHref && (
@@ -210,7 +210,7 @@ export function ElementCard({ el, locked, unlockHref, t }: ElementCardProps) {
               hx-push-url="false"
               {...inspectAttrs('inspector:unlock', { role: 'action' })}
             >
-              {t('inspector.unlock') as string} <Icon name="lock-open" size={14} />
+              {translate('inspector.unlock') as string} <Icon name="lock-open" size={14} />
             </button>
           )}
         </span>
@@ -223,18 +223,18 @@ export function ElementCard({ el, locked, unlockHref, t }: ElementCardProps) {
 // annotation coverage. Every list has an honest empty.
 interface ScreenCardProps {
   sc: InspectorScreen;
-  t: TFn;
+  translate: TFn;
 }
-export function ScreenCard({ sc, t }: ScreenCardProps) {
+export function ScreenCard({ sc, translate }: ScreenCardProps) {
   return (
     <div class="msg msg-agent">
       <header class="msg-meta" {...inspectAttrs('inspector:sc-meta', { role: 'nav' })}>
         <TypeBadge type="screen" label={sc.epic} />
-        {sc.state && <StatusPill state={sc.state} size="sm" t={t} />}
+        {sc.state && <StatusPill state={sc.state} size="sm" translate={translate} />}
       </header>
       <span class="msg-text" {...inspectAttrs('inspector:sc-id-text', { role: 'text' })}><code {...inspectAttrs('inspector:sc-id', { role: 'text' })}>{sc.id}</code></span>
 
-      <span class="msg-detail" {...inspectAttrs('inspector:states-label', { role: 'group' })}><b {...inspectAttrs('inspector:states-text', { role: 'label' })}>{t('inspector.states') as string}</b></span>
+      <span class="msg-detail" {...inspectAttrs('inspector:states-label', { role: 'group' })}><b {...inspectAttrs('inspector:states-text', { role: 'label' })}>{translate('inspector.states') as string}</b></span>
       <span class="msg-meta" {...inspectAttrs('inspector:states-badges', { role: 'group' })}>
         {sc.states && sc.states.length > 0 ? (
           sc.states.map((st, i) => (
@@ -242,36 +242,36 @@ export function ScreenCard({ sc, t }: ScreenCardProps) {
               key={i}
               class="chip thread-badge"
               {...inspectAttrs('inspector:state-badge', { role: 'label' })}
-              title={t(`inspector.source.${st.source ?? 'declared'}`) as string}
+              title={translate(`inspector.source.${st.source ?? 'declared'}`) as string}
             >
-              {st.name}{st.source === 'derived' ? ` · ${t('inspector.derived') as string}` : ''}
+              {st.name}{st.source === 'derived' ? ` · ${translate('inspector.derived') as string}` : ''}
             </span>
           ))
         ) : (
-          <Label name="inspector:no-states" class="msg-detail muted">{t('inspector.noStates') as string}</Label>
+          <Label name="inspector:no-states" class="msg-detail muted">{translate('inspector.noStates') as string}</Label>
         )}
       </span>
 
       {/* States the kit implies but the screen never declares — only when there is one. */}
       {sc.missingStates && sc.missingStates.length > 0 && (
         <Fragment>
-          <span class="msg-detail" {...inspectAttrs('inspector:missing-label', { role: 'group' })}><b {...inspectAttrs('inspector:missing-states-text', { role: 'label' })}>{t('inspector.missingStates') as string}</b></span>
+          <span class="msg-detail" {...inspectAttrs('inspector:missing-label', { role: 'group' })}><b {...inspectAttrs('inspector:missing-states-text', { role: 'label' })}>{translate('inspector.missingStates') as string}</b></span>
           {sc.missingStates.map((ms, i) => (
             <Label key={i} name="inspector:missing-state" class="msg-detail">{ms.name}{ms.why ? ` — ${ms.why}` : ''}</Label>
           ))}
         </Fragment>
       )}
 
-      <span class="msg-detail" {...inspectAttrs('inspector:kits-label', { role: 'group' })}><b {...inspectAttrs('inspector:kits-text', { role: 'label' })}>{t('inspector.kits') as string}</b></span>
+      <span class="msg-detail" {...inspectAttrs('inspector:kits-label', { role: 'group' })}><b {...inspectAttrs('inspector:kits-text', { role: 'label' })}>{translate('inspector.kits') as string}</b></span>
       <span class="msg-meta" {...inspectAttrs('inspector:kits-badges', { role: 'group' })}>
         {sc.kits && sc.kits.length > 0 ? (
           sc.kits.map((k, i) => <Label key={i} name="inspector:kit-badge" class="chip thread-badge">{k.label ?? k.id}</Label>)
         ) : (
-          <Label name="inspector:no-kits" class="msg-detail muted">{t('inspector.noKits') as string}</Label>
+          <Label name="inspector:no-kits" class="msg-detail muted">{translate('inspector.noKits') as string}</Label>
         )}
       </span>
 
-      <span class="msg-detail" {...inspectAttrs('inspector:edges-label', { role: 'group' })}><b {...inspectAttrs('inspector:edges-text', { role: 'label' })}>{t('inspector.edges') as string}</b></span>
+      <span class="msg-detail" {...inspectAttrs('inspector:edges-label', { role: 'group' })}><b {...inspectAttrs('inspector:edges-text', { role: 'label' })}>{translate('inspector.edges') as string}</b></span>
       {sc.edges && sc.edges.length > 0 ? (
         sc.edges.map((e, i) => (
           <span key={i} class="msg-detail" {...inspectAttrs('inspector:edge', { role: 'group' })}>
@@ -280,19 +280,19 @@ export function ScreenCard({ sc, t }: ScreenCardProps) {
           </span>
         ))
       ) : (
-        <Label name="inspector:no-edges" class="msg-detail muted">{t('inspector.noEdges') as string}</Label>
+        <Label name="inspector:no-edges" class="msg-detail muted">{translate('inspector.noEdges') as string}</Label>
       )}
 
       {sc.annotations && (
         <Fragment>
           <footer class="msg-foot">
             <Label name="inspector:coverage" class="msg-detail">
-              {t('inspector.coverage', { covered: sc.annotations.covered, total: sc.annotations.total, pct: sc.annotations.pct }) as string}
+              {translate('inspector.coverage', { covered: sc.annotations.covered, total: sc.annotations.total, pct: sc.annotations.pct }) as string}
             </Label>
           </footer>
           {sc.annotations.missing && sc.annotations.missing.length > 0 && (
             <Fragment>
-              <span class="msg-detail" {...inspectAttrs('inspector:uncovered-label', { role: 'group' })}><b {...inspectAttrs('inspector:uncovered-text', { role: 'label' })}>{t('inspector.uncovered') as string}</b></span>
+              <span class="msg-detail" {...inspectAttrs('inspector:uncovered-label', { role: 'group' })}><b {...inspectAttrs('inspector:uncovered-text', { role: 'label' })}>{translate('inspector.uncovered') as string}</b></span>
               {sc.annotations.missing.map((m, i) => <span key={i} class="msg-detail" {...inspectAttrs('inspector:missing-annotation', { role: 'group' })}><code {...inspectAttrs('inspector:missing-code', { role: 'text' })}>{m}</code></span>)}
             </Fragment>
           )}
@@ -307,18 +307,18 @@ export function ScreenCard({ sc, t }: ScreenCardProps) {
 // hover can never overwrite the screens list.
 interface PaneProps {
   c: PaneCtx;
-  t: TFn;
+  translate: TFn;
 }
-export function Pane({ c, t }: PaneProps) {
+export function Pane({ c, translate }: PaneProps) {
   const ins = c.inspector;
   return (
     <div class="av-list" id="av-list" {...inspectAttrs('inspector:list', { role: 'group' })}>
       {ins && ins.mode === 'element' && ins.element ? (
-        <ElementCard el={ins.element} locked={ins.locked} unlockHref={ins.unlockHref} t={t} />
+        <ElementCard el={ins.element} locked={ins.locked} unlockHref={ins.unlockHref} translate={translate} />
       ) : ins && ins.mode === 'screen' && ins.screen ? (
-        <ScreenCard sc={ins.screen} t={t} />
+        <ScreenCard sc={ins.screen} translate={translate} />
       ) : (
-        <Txt name="inspector:empty" class="muted">{(ins?.hint) || (t('inspector.empty') as string)}</Txt>
+        <Txt name="inspector:empty" class="muted">{(ins?.hint) || (translate('inspector.empty') as string)}</Txt>
       )}
     </div>
   );

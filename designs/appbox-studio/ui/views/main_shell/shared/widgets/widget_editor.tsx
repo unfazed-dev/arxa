@@ -21,7 +21,7 @@ interface Sel {
 }
 
 interface PaneProps {
-  t: TFn;
+  translate: TFn;
   sel?: Sel | null;
   file?: string;
   screens?: string[];
@@ -33,7 +33,7 @@ interface PaneProps {
 }
 
 export function Pane(props: PaneProps) {
-  const { t } = props;
+  const { translate } = props;
   if (!props.sel) return null;
   const screens = props.screens ?? [];
   const attrHref = props.attrHref ?? '';
@@ -49,10 +49,10 @@ export function Pane(props: PaneProps) {
         <code class="dv-wedit-file">{props.file}</code>
       </div>
       <p class="dv-wedit-prov">
-        {t('viewer.wedit.appliesTo', { n: screens.length }) as string} · {screens.join(' · ')}
+        {translate('viewer.wedit.appliesTo', { n: screens.length }) as string} · {screens.join(' · ')}
       </p>
       <div class="dv-wedit-row">
-        <span class="dv-wedit-label">{t('viewer.wedit.pad') as string}</span>
+        <span class="dv-wedit-label">{translate('viewer.wedit.pad') as string}</span>
         <span class="dv-wedit-steps">
           {pads.map((s) => (
             <button
@@ -70,7 +70,7 @@ export function Pane(props: PaneProps) {
         </span>
       </div>
       <div class="dv-wedit-row">
-        <span class="dv-wedit-label">{t('viewer.wedit.gap') as string}</span>
+        <span class="dv-wedit-label">{translate('viewer.wedit.gap') as string}</span>
         <span class="dv-wedit-steps">
           {gaps.map((s) => (
             <button
@@ -91,7 +91,7 @@ export function Pane(props: PaneProps) {
           steps above. The canvas handles hug/fill by gesture; fixed is only
           here, because no drag direction honestly means "keep your size". */}
       <div class="dv-wedit-row">
-        <span class="dv-wedit-label">{t('viewer.wedit.resizeX') as string}</span>
+        <span class="dv-wedit-label">{translate('viewer.wedit.resizeX') as string}</span>
         <span class="dv-wedit-steps">
           {resizeX.map((s) => (
             <button
@@ -103,13 +103,13 @@ export function Pane(props: PaneProps) {
               hx-swap="innerHTML"
               key={s.val}
             >
-              {t(`viewer.wedit.mode.${s.m}`) as string}
+              {translate(`viewer.wedit.mode.${s.m}`) as string}
             </button>
           ))}
         </span>
       </div>
       <div class="dv-wedit-row">
-        <span class="dv-wedit-label">{t('viewer.wedit.resizeY') as string}</span>
+        <span class="dv-wedit-label">{translate('viewer.wedit.resizeY') as string}</span>
         <span class="dv-wedit-steps">
           {resizeY.map((s) => (
             <button
@@ -121,7 +121,7 @@ export function Pane(props: PaneProps) {
               hx-swap="innerHTML"
               key={s.val}
             >
-              {t(`viewer.wedit.mode.${s.m}`) as string}
+              {translate(`viewer.wedit.mode.${s.m}`) as string}
             </button>
           ))}
         </span>

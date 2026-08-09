@@ -32,12 +32,12 @@ interface MiniPanelData {
 // ControllerPanel — mode chips, fullscreen, undo/redo (the bar's left cluster).
 interface ControllerPanelProps {
   controller: MiniController;
-  t: TFn;
+  translate: TFn;
 }
-export function ControllerPanel({ controller: c, t }: ControllerPanelProps) {
+export function ControllerPanel({ controller: c, translate }: ControllerPanelProps) {
   return (
     <div class="mini-panel-body" id="mini-panel-controller" {...inspectAttrs('mini-panel:controller', { role: 'toolbar' })}>
-      <span class="mini-panel-group" role="group" aria-label={t('miniPanel.modeGroup') as string}>
+      <span class="mini-panel-group" role="group" aria-label={translate('miniPanel.modeGroup') as string}>
         {c.modes.map((m) => (
           <a
             key={m.key}
@@ -47,28 +47,28 @@ export function ControllerPanel({ controller: c, t }: ControllerPanelProps) {
             hx-target="#design-viewer"
             hx-swap="outerMorph"
           >
-            {t(`viewer.modeLabel.${m.key}`) as string}
+            {translate(`viewer.modeLabel.${m.key}`) as string}
           </a>
         ))}
       </span>
       <span class="mini-panel-group">
-        <button class="ico-btn" data-action="viewer-fullscreen" title={t('miniPanel.fullscreen') as string}>
+        <button class="ico-btn" data-action="viewer-fullscreen" title={translate('miniPanel.fullscreen') as string}>
           <Icon name="maximize" size={16} />
         </button>
       </span>
-      <span class="mini-panel-group" role="group" aria-label={t('miniPanel.historyGroup') as string}>
+      <span class="mini-panel-group" role="group" aria-label={translate('miniPanel.historyGroup') as string}>
         {c.undo.can ? (
           <button
             class="ico-btn undo-btn"
             hx-post={c.undo.href}
             hx-target="#panels"
             hx-swap="outerMorph"
-            title={t('miniPanel.undo') as string}
+            title={translate('miniPanel.undo') as string}
           >
             <Icon name="undo-2" size={16} />
           </button>
         ) : (
-          <button class="ico-btn undo-btn" disabled={true} title={t('miniPanel.undo') as string}>
+          <button class="ico-btn undo-btn" disabled={true} title={translate('miniPanel.undo') as string}>
             <Icon name="undo-2" size={16} />
           </button>
         )}
@@ -78,12 +78,12 @@ export function ControllerPanel({ controller: c, t }: ControllerPanelProps) {
             hx-post={c.redo.href}
             hx-target="#panels"
             hx-swap="outerMorph"
-            title={t('miniPanel.redo') as string}
+            title={translate('miniPanel.redo') as string}
           >
             <Icon name="redo-2" size={16} />
           </button>
         ) : (
-          <button class="ico-btn redo-btn" disabled={true} title={t('miniPanel.redo') as string}>
+          <button class="ico-btn redo-btn" disabled={true} title={translate('miniPanel.redo') as string}>
             <Icon name="redo-2" size={16} />
           </button>
         )}
@@ -95,17 +95,17 @@ export function ControllerPanel({ controller: c, t }: ControllerPanelProps) {
 // MiniPanel — the bar: controller + device rungs pushed right.
 interface MiniPanelProps {
   v?: { miniPanel?: MiniPanelData | Record<string, unknown>; [key: string]: unknown };
-  t: TFn;
+  translate: TFn;
 }
-export function MiniPanel({ v, t }: MiniPanelProps) {
+export function MiniPanel({ v, translate }: MiniPanelProps) {
   const pnl = (v?.miniPanel ?? {}) as MiniPanelData;
   return (
-    <nav class="mini-panel" aria-label={t('miniPanel.aria') as string} {...inspectAttrs('mini-panel', { role: 'toolbar' })}>
+    <nav class="mini-panel" aria-label={translate('miniPanel.aria') as string} {...inspectAttrs('mini-panel', { role: 'toolbar' })}>
       <div class="mini-panel-bar">
-        <ControllerPanel controller={pnl.controller} t={t} />
+        <ControllerPanel controller={pnl.controller} translate={translate} />
         <span class="mini-panel-bar-right">
           {pnl.bar.devices && (
-            <span class="mini-panel-group" role="group" aria-label={t('viewer.viewportGroup') as string}>
+            <span class="mini-panel-group" role="group" aria-label={translate('viewer.viewportGroup') as string}>
               {pnl.bar.devices.map((d) => (
                 <a
                   key={d.key}
@@ -114,8 +114,8 @@ export function MiniPanel({ v, t }: MiniPanelProps) {
                   hx-get={d.href}
                   hx-target="#design-viewer"
                   hx-swap="outerMorph"
-                  aria-label={t(`viewer.vp.${d.key}`) as string}
-                  title={t(`viewer.vp.${d.key}`) as string}
+                  aria-label={translate(`viewer.vp.${d.key}`) as string}
+                  title={translate(`viewer.vp.${d.key}`) as string}
                 >
                   <Icon name={d.icon} size={16} />
                 </a>

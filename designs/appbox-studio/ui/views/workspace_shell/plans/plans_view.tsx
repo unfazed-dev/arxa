@@ -61,7 +61,7 @@ interface Project {
 }
 
 interface PlansViewProps {
-  t: TFn;
+  translate: TFn;
   locale?: string;
   activeShell: string;
   prefs?: Prefs;
@@ -78,7 +78,7 @@ interface PlansViewProps {
 
 const PlansView: FC<PlansViewProps> = (props) => {
   const {
-    t,
+    translate,
     locale,
     activeShell,
     prefs,
@@ -105,22 +105,22 @@ const PlansView: FC<PlansViewProps> = (props) => {
 
   const surface = (
     <Fragment>
-      <Label name="workspace-plans:eyebrow" class="eyebrow">{t('plans.eyebrow') as string}</Label>
-      <Heading name="workspace-plans:title" level={1} class="display">{t('plans.title') as string}</Heading>
-      <Txt name="workspace-plans:lede" class="muted">{t('plans.lede') as string}</Txt>
+      <Label name="workspace-plans:eyebrow" class="eyebrow">{translate('plans.eyebrow') as string}</Label>
+      <Heading name="workspace-plans:title" level={1} class="display">{translate('plans.title') as string}</Heading>
+      <Txt name="workspace-plans:lede" class="muted">{translate('plans.lede') as string}</Txt>
 
       {signedOut ? (
         <aside class="plans-notice" data-lens="signedOut">
           <h4 class="fact-label" {...inspectAttrs('workspace-plans:signed-out-title', { role: 'heading' })}>
-            <Icon name="lock" size={14} /> {t('plans.signedOut.title') as string}
+            <Icon name="lock" size={14} /> {translate('plans.signedOut.title') as string}
           </h4>
-          <Txt name="workspace-plans:signed-out-body">{t('plans.signedOut.body') as string}</Txt>
-          <CtaLink href={signInHref} label={t('plans.signedOut.cta') as string} glyph="chevron-right" variant="main" />
+          <Txt name="workspace-plans:signed-out-body">{translate('plans.signedOut.body') as string}</Txt>
+          <CtaLink href={signInHref} label={translate('plans.signedOut.cta') as string} glyph="chevron-right" variant="main" />
         </aside>
       ) : null}
 
       <section class="settings-section">
-        <Heading name="workspace-plans:plans-h" level={2}>{t('plans.plansH') as string}</Heading>
+        <Heading name="workspace-plans:plans-h" level={2}>{translate('plans.plansH') as string}</Heading>
         <div class="plan-grid" {...inspectAttrs('workspace-plans:grid', { role: 'group' })}>
           {plans.map((p) => (
             <article class={`plan-card${p.current ? ' is-current' : ''}`} key={p.name}>
@@ -128,7 +128,7 @@ const PlansView: FC<PlansViewProps> = (props) => {
                 <Heading name="workspace-plans:plan-name" level={3} class="plan-name">{p.name}</Heading>
                 {p.current ? (
                   <span class="chip chip--accent" {...inspectAttrs('workspace-plans:current-chip', { role: 'label' })}>
-                    <Icon name="badge-check" size={13} /> {t('plans.current') as string}
+                    <Icon name="badge-check" size={13} /> {translate('plans.current') as string}
                   </span>
                 ) : null}
               </header>
@@ -145,7 +145,7 @@ const PlansView: FC<PlansViewProps> = (props) => {
                 ))}
               </ul>
               {p.upgradeable ? (
-                <a class="cta-main plan-upgrade" href="#plans-checkout" {...inspectAttrs('workspace-plans:upgrade', { role: 'action' })}>{t('plans.upgrade', { plan: p.name }) as string}</a>
+                <a class="cta-main plan-upgrade" href="#plans-checkout" {...inspectAttrs('workspace-plans:upgrade', { role: 'action' })}>{translate('plans.upgrade', { plan: p.name }) as string}</a>
               ) : null}
             </article>
           ))}
@@ -154,19 +154,19 @@ const PlansView: FC<PlansViewProps> = (props) => {
 
       {entitled ? (
         <section class="settings-section">
-          <Heading name="workspace-plans:account-h" level={2}>{t('plans.accountH') as string}</Heading>
+          <Heading name="workspace-plans:account-h" level={2}>{translate('plans.accountH') as string}</Heading>
           <div class="plan-account">
             <p>
               <span class="chip chip--accent" {...inspectAttrs('workspace-plans:plan-name-chip', { role: 'label' })}>
-                <Icon name="badge-check" size={13} /> {t(`plans.plan.${currentPlan}.name`) as string}
+                <Icon name="badge-check" size={13} /> {translate(`plans.plan.${currentPlan}.name`) as string}
               </span>
               <span class="chip chip--muted" {...inspectAttrs('workspace-plans:seats-chip', { role: 'label' })}>
-                <Icon name="laptop" size={13} /> {t('plans.seats.used', { used: machineSeats?.used, total: machineSeats?.total }) as string}
+                <Icon name="laptop" size={13} /> {translate('plans.seats.used', { used: machineSeats?.used, total: machineSeats?.total }) as string}
               </span>
             </p>
             <form method="post" action="/workspace/plans/signout">
               <button type="submit" class="ghost" {...inspectAttrs('workspace-plans:sign-out', { role: 'action' })}>
-                <Icon name="log-out" size={14} /> {t('plans.signOut') as string}
+                <Icon name="log-out" size={14} /> {translate('plans.signOut') as string}
               </button>
             </form>
           </div>
@@ -175,13 +175,13 @@ const PlansView: FC<PlansViewProps> = (props) => {
 
       {checkout ? (
         <section class="settings-section" id="plans-checkout">
-          <Heading name="workspace-plans:checkout-h" level={2}>{t('plans.checkoutH') as string}</Heading>
-          <Txt name="workspace-plans:checkout-seeded" class="settings-note">{t('plans.checkout.seeded') as string}</Txt>
+          <Heading name="workspace-plans:checkout-h" level={2}>{translate('plans.checkoutH') as string}</Heading>
+          <Txt name="workspace-plans:checkout-seeded" class="settings-note">{translate('plans.checkout.seeded') as string}</Txt>
           <p class="checkout-summary" {...inspectAttrs('workspace-plans:checkout-summary', { role: 'text' })}>
-            <Icon name="credit-card" size={14} /> {t('plans.checkout.summary', { amount: checkout.amountLabel }) as string}
+            <Icon name="credit-card" size={14} /> {translate('plans.checkout.summary', { amount: checkout.amountLabel }) as string}
           </p>
 
-          <div class="checkout-outcomes" role="group" aria-label={t('plans.checkout.outcomesAria') as string} {...inspectAttrs('workspace-plans:outcomes', { role: 'group' })}>
+          <div class="checkout-outcomes" role="group" aria-label={translate('plans.checkout.outcomesAria') as string} {...inspectAttrs('workspace-plans:outcomes', { role: 'group' })}>
             {checkout.outcomes.map((o) => (
               <form method="post" action="/workspace/plans/checkout/attempt" key={o.id}>
                 <button
@@ -232,8 +232,8 @@ const PlansView: FC<PlansViewProps> = (props) => {
 
   return (
     <WorkspaceShellView
-      t={t}
-      title={t('plans.pageTitle') as string}
+      translate={translate}
+      title={translate('plans.pageTitle') as string}
       locale={locale}
       activeShell={activeShell}
       prefs={prefs}

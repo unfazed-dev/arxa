@@ -24,7 +24,7 @@ import { inspectAttrs } from '../../../../common/widgets/primitives.tsx';
 type TFn = (key: string, vars?: Record<string, unknown>) => unknown;
 
 export interface PrototypeViewProps extends DesignCtx {
-  t: TFn;
+  translate: TFn;
   locale?: string;
   locales?: string[];
   prefs?: { accent?: string; [key: string]: unknown };
@@ -37,43 +37,43 @@ export interface PrototypeViewProps extends DesignCtx {
 }
 
 // ---- timeline ----
-function renderTimeline(c: PrototypeViewProps, oob: boolean, t: TFn) {
-  return <TimelineEl timeline={c.timeline as any} oob={oob} label={t('design.timelineLabel') as string} t={t} />;
+function renderTimeline(c: PrototypeViewProps, oob: boolean, translate: TFn) {
+  return <TimelineEl timeline={c.timeline as any} oob={oob} label={translate('design.timelineLabel') as string} translate={translate} />;
 }
 
 // ---- the viewer (chrome defined HERE — title + run state only) ----
-function StageViewer({ c, t }: { c: PrototypeViewProps; t: TFn }) {
+function StageViewer({ c, translate }: { c: PrototypeViewProps; translate: TFn }) {
   return (
     <DesignViewer
       v={c.viewer as any}
       chrome={{
-        title: t('design.artboardsEyebrow', { count: c.counts?.screens }) as string,
+        title: translate('design.artboardsEyebrow', { count: c.counts?.screens }) as string,
         state: c.run?.state,
       }}
-      t={t}
+      translate={translate}
     />
   );
 }
 
-function CanvasBoard({ c, t }: { c: PrototypeViewProps; t: TFn }) {
+function CanvasBoard({ c, translate }: { c: PrototypeViewProps; translate: TFn }) {
   return (
     <section class="mp-content" id="mp-content" aria-live="polite">
       <article class="artifact screen-artifact evidence-artifact" {...inspectAttrs('design-prototype:artboard', { role: 'group' })}>
-        {StageViewer({ c, t })}
+        {StageViewer({ c, translate })}
       </article>
     </section>
   );
 }
 
 // ---- main content: open file, else the artboards ----
-function MainContent({ c, t }: { c: PrototypeViewProps; t: TFn }) {
-  if (c.fileView) return <FileView c={c} t={t} />;
-  return CanvasBoard({ c, t });
+function MainContent({ c, translate }: { c: PrototypeViewProps; translate: TFn }) {
+  if (c.fileView) return <FileView c={c} translate={translate} />;
+  return CanvasBoard({ c, translate });
 }
 
 // ---- panels (the whole panels block, one swap unit) ----
 export function RenderPanels(c: PrototypeViewProps) {
-  return <Panels c={c} t={c.t}>{MainContent({ c, t: c.t })}</Panels>;
+  return <Panels c={c} translate={c.translate}>{MainContent({ c, translate: c.translate })}</Panels>;
 }
 
 // ---- Fragment responses ----
@@ -82,15 +82,15 @@ export function PanelsSwap(c: PrototypeViewProps) {
 }
 
 export function ActivitySwap(c: PrototypeViewProps) {
-  return <SharedActivitySwap c={c} t={c.t} />;
+  return <SharedActivitySwap c={c} translate={c.translate} />;
 }
 
 export function InspectorPane(c: PrototypeViewProps) {
-  return <InspectorPaneComp c={c as any} t={c.t} />;
+  return <InspectorPaneComp c={c as any} translate={c.translate} />;
 }
 
 export function WidgetEditor(c: PrototypeViewProps) {
-  return <WidgetEditorPane {...(c as any)} t={c.t} />;
+  return <WidgetEditorPane {...(c as any)} translate={c.translate} />;
 }
 
 export function InspectorSwap(c: PrototypeViewProps) {
@@ -102,19 +102,19 @@ export function InspectorSwap(c: PrototypeViewProps) {
   };
   return (
     <Fragment>
-      <InspectorPaneComp c={c as any} t={c.t} />
+      <InspectorPaneComp c={c as any} translate={c.translate} />
       <ActivityTop spec={spec} oob={true} />
-      <ActivityBottom spec={spec} oob={true} t={c.t} />
+      <ActivityBottom spec={spec} oob={true} translate={c.translate} />
     </Fragment>
   );
 }
 
 export function ActivityFrameSwap(c: PrototypeViewProps) {
-  return <ActivityPanel c={c} t={c.t} />;
+  return <ActivityPanel c={c} translate={c.translate} />;
 }
 
 export function ViewerSwap(c: PrototypeViewProps) {
-  return StageViewer({ c, t: c.t });
+  return StageViewer({ c, translate: c.translate });
 }
 
 export function DrawerSwap(c: PrototypeViewProps) {
@@ -123,21 +123,21 @@ export function DrawerSwap(c: PrototypeViewProps) {
   return (
     <Fragment>
       {(v.screens ?? []).filter((s: any) => s.id === c.drawerScreen).map((s: any) => (
-        <RevealDrawer key={s.id} v={v} s={s} t={c.t} />
+        <RevealDrawer key={s.id} v={v} s={s} translate={c.translate} />
       ))}
     </Fragment>
   );
 }
 
 export function FileSwap(c: PrototypeViewProps) {
-  return MainContent({ c, t: c.t });
+  return MainContent({ c, translate: c.translate });
 }
 
 export function FilterSwap(c: PrototypeViewProps) {
   return (
     <Fragment>
-      <ScreenList c={c} t={c.t} />
-      <RunBar c={c} oob={true} t={c.t} />
+      <ScreenList c={c} translate={c.translate} />
+      <RunBar c={c} oob={true} translate={c.translate} />
     </Fragment>
   );
 }
@@ -145,15 +145,15 @@ export function FilterSwap(c: PrototypeViewProps) {
 // ---- Page ----
 const PrototypeView: FC<PrototypeViewProps> = (props) => (
   <MainShellView
-    title={props.t('design.pageTitle') as string}
+    title={props.translate('design.pageTitle') as string}
     locale={props.locale}
     activeShell={props.activeShell ?? 'design'}
     prefs={props.prefs as { accent?: string; [key: string]: unknown }}
     project={props.project as { name?: string; savedLabel?: string }}
     mainClass="shell-main-loop"
-    footer={renderTimeline(props, false, props.t)}
+    footer={renderTimeline(props, false, props.translate)}
     surface={RenderPanels(props)}
-    t={props.t}
+    translate={props.translate}
   />
 );
 

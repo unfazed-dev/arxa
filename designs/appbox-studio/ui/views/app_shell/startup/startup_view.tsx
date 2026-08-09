@@ -10,7 +10,7 @@ import { inspectAttrs, Label } from '../../../common/widgets/primitives.tsx';
 type TFn = (key: string, vars?: Record<string, unknown>) => unknown;
 
 interface StartupViewProps {
-  t: TFn;
+  translate: TFn;
   locale?: string;
   steps?: string[];
   doneThrough?: number;
@@ -19,13 +19,13 @@ interface StartupViewProps {
 }
 
 const StartupView: FC<StartupViewProps> = ({
-  t,
+  translate,
   locale,
   steps = [],
   doneThrough = 0,
   advanceHref = '/auth',
 }) => (
-  <Base title={t('startup.pageTitle') as string} locale={locale}>
+  <Base title={translate('startup.pageTitle') as string} locale={locale}>
     <meta http-equiv="refresh" content={`3;url=${advanceHref}`} />
     <main class="splash">
       <Label name="app-startup:brand" class="splash-brand">appbox studio</Label>
@@ -41,7 +41,7 @@ const StartupView: FC<StartupViewProps> = ({
           </li>
         ))}
       </ol>
-      <span class="startup-bar" role="progressbar" aria-label={t('startup.loading') as string}></span>
+      <span class="startup-bar" role="progressbar" aria-label={translate('startup.loading') as string}></span>
     </main>
   </Base>
 );

@@ -38,11 +38,11 @@ export function Label({ spec }: LabelProps) {
 // Views — the views carousel: one icon per registered view.
 interface ViewsProps {
   spec: ActivitySpec;
-  t: TFn;
+  translate: TFn;
 }
-export function Views({ spec, t }: ViewsProps) {
+export function Views({ spec, translate }: ViewsProps) {
   return (
-    <nav class="panel-views" aria-label={t('panel.activity.views') as string} {...inspectAttrs('panel:activity:views', { role: 'nav' })}>
+    <nav class="panel-views" aria-label={translate('panel.activity.views') as string} {...inspectAttrs('panel:activity:views', { role: 'nav' })}>
       {spec.views.map((v) => (
         <a
           key={v.id}
@@ -79,12 +79,12 @@ export function Top({ spec, oob }: TopProps) {
 interface BottomProps {
   spec: ActivitySpec;
   oob?: boolean;
-  t: TFn;
+  translate: TFn;
 }
-export function Bottom({ spec, oob, t }: BottomProps) {
+export function Bottom({ spec, oob, translate }: BottomProps) {
   return (
     <PanelBottom pid={PID} oob={oob}>
-      <Views spec={spec} t={t} />
+      <Views spec={spec} translate={translate} />
     </PanelBottom>
   );
 }
@@ -93,10 +93,10 @@ export function Bottom({ spec, oob, t }: BottomProps) {
 // Callers: <Open spec={spec} t={t}>…active view content…</Open>
 interface OpenProps {
   spec: ActivitySpec;
-  t: TFn;
+  translate: TFn;
   children?: Child;
 }
-export function Open({ spec, t, children }: OpenProps) {
+export function Open({ spec, translate, children }: OpenProps) {
   return (
     <PanelOpen
       role="activity"
@@ -104,9 +104,9 @@ export function Open({ spec, t, children }: OpenProps) {
       size={spec.panelSizePx ? undefined : spec.size ?? 's'}
       width={spec.panelSizePx}
       top={<Label spec={spec} />}
-      bottom={<Views spec={spec} t={t} />}
+      bottom={<Views spec={spec} translate={translate} />}
       resize={spec.sizeHref ? { edge: 'start', persist: 'activity' } : undefined}
-      t={t}
+      translate={translate}
     >
       {children}
     </PanelOpen>

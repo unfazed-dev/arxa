@@ -222,9 +222,9 @@ export function DeviceChrome({ src, vp, title }: DeviceChromeProps) {
 // panel); the bar here just names the screen.
 interface ProtoStageProps {
   v: ViewerState;
-  t: TFn;
+  translate: TFn;
 }
-export function ProtoStage({ v, t }: ProtoStageProps) {
+export function ProtoStage({ v, translate }: ProtoStageProps) {
   const p = v.proto!;
   return (
     <Fragment>
@@ -235,7 +235,7 @@ export function ProtoStage({ v, t }: ProtoStageProps) {
         <DeviceChrome
           src={p.src}
           vp={p.vp}
-          title={t('viewer.frameTitle', { id: p.active, size: p.vp }) as string}
+          title={translate('viewer.frameTitle', { id: p.active, size: p.vp }) as string}
         />
       </div>
     </Fragment>
@@ -262,9 +262,9 @@ interface TileToolsProps {
   row?: FlowRow | null;
   first?: boolean;
   last?: boolean;
-  t: TFn;
+  translate: TFn;
 }
-export function TileTools({ v, s, row, first, last, t }: TileToolsProps) {
+export function TileTools({ v, s, row, first, last, translate }: TileToolsProps) {
   const dr = v.drawers?.[s.id] ?? null;
   return (
     <span class="dv-tile-tools" {...inspectAttrs('viewer:tile-tools', { role: 'toolbar' })}>
@@ -283,10 +283,10 @@ export function TileTools({ v, s, row, first, last, t }: TileToolsProps) {
           aria-controls={`dv-drawer-${dr.slug}`}
           aria-label={
             dr.open
-              ? t('viewer.drawer.closeAria', { id: s.id }) as string
-              : t('viewer.drawer.openAria', { id: s.id }) as string
+              ? translate('viewer.drawer.closeAria', { id: s.id }) as string
+              : translate('viewer.drawer.openAria', { id: s.id }) as string
           }
-          title={dr.open ? t('viewer.drawer.close') as string : t('viewer.drawer.open') as string}
+          title={dr.open ? translate('viewer.drawer.close') as string : translate('viewer.drawer.open') as string}
         >
           <Icon name="panel-right" size={14} />
         </button>
@@ -300,13 +300,13 @@ export function TileTools({ v, s, row, first, last, t }: TileToolsProps) {
           hx-swap="outerMorph"
           aria-label={
             s.inContext
-              ? t('viewer.removeCtxAria', { id: s.id }) as string
-              : t('viewer.pinCtxAria', { id: s.id }) as string
+              ? translate('viewer.removeCtxAria', { id: s.id }) as string
+              : translate('viewer.pinCtxAria', { id: s.id }) as string
           }
           title={
             s.inContext
-              ? t('viewer.removeCtx', { id: s.id }) as string
-              : t('viewer.pinCtx', { id: s.id }) as string
+              ? translate('viewer.removeCtx', { id: s.id }) as string
+              : translate('viewer.pinCtx', { id: s.id }) as string
           }
         >
           <Icon name="pin" size={14} />
@@ -318,8 +318,8 @@ export function TileTools({ v, s, row, first, last, t }: TileToolsProps) {
         hx-get={s.inspectHref}
         hx-target="#design-viewer"
         hx-swap="outerMorph"
-        aria-label={t('viewer.inspectAria', { id: s.id }) as string}
-        title={t('viewer.inspect', { id: s.id }) as string}
+        aria-label={translate('viewer.inspectAria', { id: s.id }) as string}
+        title={translate('viewer.inspect', { id: s.id }) as string}
       >
         <Icon name="mouse-pointer-click" size={14} />
       </a>
@@ -331,8 +331,8 @@ export function TileTools({ v, s, row, first, last, t }: TileToolsProps) {
             hx-get={s.liveHref}
             hx-target="#design-viewer"
             hx-swap="outerMorph"
-            aria-label={t('viewer.flowModeAria', { id: s.id }) as string}
-            title={t('viewer.flowMode', { id: s.id }) as string}
+            aria-label={translate('viewer.flowModeAria', { id: s.id }) as string}
+            title={translate('viewer.flowMode', { id: s.id }) as string}
           >
             <Icon name="route" size={14} />
           </a>
@@ -344,8 +344,8 @@ export function TileTools({ v, s, row, first, last, t }: TileToolsProps) {
             hx-vals={'{"dir": -1}'}
             hx-target="#panels"
             hx-swap="outerMorph"
-            aria-label={t('viewer.moveEarlier', { id: s.id }) as string}
-            title={t('viewer.moveEarlier', { id: s.id }) as string}
+            aria-label={translate('viewer.moveEarlier', { id: s.id }) as string}
+            title={translate('viewer.moveEarlier', { id: s.id }) as string}
           >
             <Icon name="arrow-left" size={14} />
           </button>
@@ -357,8 +357,8 @@ export function TileTools({ v, s, row, first, last, t }: TileToolsProps) {
             hx-vals={'{"dir": 1}'}
             hx-target="#panels"
             hx-swap="outerMorph"
-            aria-label={t('viewer.moveLater', { id: s.id }) as string}
-            title={t('viewer.moveLater', { id: s.id }) as string}
+            aria-label={translate('viewer.moveLater', { id: s.id }) as string}
+            title={translate('viewer.moveLater', { id: s.id }) as string}
           >
             <Icon name="arrow-right" size={14} />
           </button>
@@ -373,8 +373,8 @@ export function TileTools({ v, s, row, first, last, t }: TileToolsProps) {
             hx-post={`/design/flows/${row.id}/remove/${s.id}`}
             hx-target="#panels"
             hx-swap="outerMorph"
-            aria-label={t('viewer.removeFromFlowAria', { id: s.id }) as string}
-            title={t('viewer.removeFromFlow') as string}
+            aria-label={translate('viewer.removeFromFlowAria', { id: s.id }) as string}
+            title={translate('viewer.removeFromFlow') as string}
           >
             <Icon name="list-x" size={14} />
           </button>
@@ -383,8 +383,8 @@ export function TileTools({ v, s, row, first, last, t }: TileToolsProps) {
         <details class="dv-tool-menu">
           <summary
             class="ico-btn dv-tool"
-            title={t('viewer.addToFlow') as string}
-            aria-label={t('viewer.addToFlow') as string}
+            title={translate('viewer.addToFlow') as string}
+            aria-label={translate('viewer.addToFlow') as string}
           >
             <Icon name="list-plus" size={14} />
           </summary>
@@ -424,9 +424,9 @@ interface TileProps {
   row?: FlowRow | null;
   first?: boolean;
   last?: boolean;
-  t: TFn;
+  translate: TFn;
 }
-export function Tile({ v, s, row, first, last, t }: TileProps) {
+export function Tile({ v, s, row, first, last, translate }: TileProps) {
   const scope = row?.id ?? 'views';
   const className = [
     'dv-tile',
@@ -450,7 +450,7 @@ export function Tile({ v, s, row, first, last, t }: TileProps) {
   return (
     <div class={className} id={`dvt-${scope}--${s.id}`} data-id={s.id} style={`width: ${s.tile.width}px`} {...inspectAttrs('viewer:tile', { role: 'card' })}>
       <header class="dv-tile-chrome">
-        {!v.static && <TileTools v={v} s={s} row={row} first={first} last={last} t={t} />}
+        {!v.static && <TileTools v={v} s={s} row={row} first={first} last={last} translate={translate} />}
         <span class="dv-tile-label"><strong>{s.label ?? s.id}</strong> <code>{s.id}</code></span>
         {s.live && (
           <Fragment>
@@ -466,8 +466,8 @@ export function Tile({ v, s, row, first, last, t }: TileProps) {
                 hx-get={s.advanceHref}
                 hx-target="#design-viewer"
                 hx-swap="outerMorph"
-                aria-label={t('viewer.flowAdvanceAria', { trigger: s.conn ?? s.edge?.to }) as string}
-                title={t('viewer.flowAdvance', { trigger: s.conn ?? s.edge?.to }) as string}
+                aria-label={translate('viewer.flowAdvanceAria', { trigger: s.conn ?? s.edge?.to }) as string}
+                title={translate('viewer.flowAdvance', { trigger: s.conn ?? s.edge?.to }) as string}
               >
                 <Icon name="arrow-right" size={14} />
               </a>
@@ -478,8 +478,8 @@ export function Tile({ v, s, row, first, last, t }: TileProps) {
               hx-get={s.liveCloseHref}
               hx-target="#design-viewer"
               hx-swap="outerMorph"
-              aria-label={t('viewer.flowModeCloseAria') as string}
-              title={t('viewer.flowModeClose') as string}
+              aria-label={translate('viewer.flowModeCloseAria') as string}
+              title={translate('viewer.flowModeClose') as string}
             >
               <Icon name="x" size={14} />
             </a>
@@ -510,13 +510,13 @@ export function Tile({ v, s, row, first, last, t }: TileProps) {
 interface ToolsPaneProps {
   s: ScreenTile;
   dr: Drawer;
-  t: TFn;
+  translate: TFn;
 }
-export function ToolsPane({ s, dr, t }: ToolsPaneProps) {
+export function ToolsPane({ s, dr, translate }: ToolsPaneProps) {
   const tl = dr.tools!;
   return (
     <div class="dv-tools" {...inspectAttrs('viewer:tools', { role: 'panel' })}>
-      <nav class="dv-tools-strip" aria-label={t('viewer.tools.strip') as string}>
+      <nav class="dv-tools-strip" aria-label={translate('viewer.tools.strip') as string}>
         <span class="dv-tools-crumb">
           {s.id}
           {tl.sel && (
@@ -547,21 +547,21 @@ export function ToolsPane({ s, dr, t }: ToolsPaneProps) {
               `closest .dv-wedit` and the #widgetEditor response swaps its
               innerHTML. */}
           <div class="dv-wedit dv-tools-wedit">
-            <Pane {...tl.wedit} t={t} />
+            <Pane {...tl.wedit} translate={translate} />
           </div>
           {tl.roAttrs && tl.roAttrs.length > 0 && (
             <section class="dv-tools-ro-attrs">
-              <h4 class="dv-tools-h">{t('viewer.tools.roAttrs') as string}</h4>
+              <h4 class="dv-tools-h">{translate('viewer.tools.roAttrs') as string}</h4>
               {tl.roAttrs.map((a) => (
                 <p class="dv-tools-ro-row" key={a.attr}>
                   <code>{a.attr}</code><span>{a.value ?? '—'}</span>
                 </p>
               ))}
-              <p class="dv-tools-ro">{t('viewer.tools.roContract') as string}</p>
+              <p class="dv-tools-ro">{translate('viewer.tools.roContract') as string}</p>
             </section>
           )}
           <section class="dv-tools-copy">
-            <h4 class="dv-tools-h">{t('viewer.tools.copy') as string}</h4>
+            <h4 class="dv-tools-h">{translate('viewer.tools.copy') as string}</h4>
             {tl.copy.editable ? (
               <Fragment>
                 <form
@@ -576,9 +576,9 @@ export function ToolsPane({ s, dr, t }: ToolsPaneProps) {
                     class="dv-tools-copy-input"
                     name="value"
                     value={tl.copy.text ?? ''}
-                    aria-label={t('viewer.tools.copyAria') as string}
+                    aria-label={translate('viewer.tools.copyAria') as string}
                   />
-                  <button type="submit" class="chip dv-chip">{t('viewer.tools.copySave') as string}</button>
+                  <button type="submit" class="chip dv-chip">{translate('viewer.tools.copySave') as string}</button>
                 </form>
                 <p class="dv-tools-prov">{tl.copy.note}</p>
               </Fragment>
@@ -591,9 +591,9 @@ export function ToolsPane({ s, dr, t }: ToolsPaneProps) {
           </section>
         </Fragment>
       ) : tl.elsewhere ? (
-        <p class="dv-drawer-stub">{t('viewer.tools.elsewhere', { id: tl.elsewhere }) as string}</p>
+        <p class="dv-drawer-stub">{translate('viewer.tools.elsewhere', { id: tl.elsewhere }) as string}</p>
       ) : (
-        <p class="dv-drawer-stub">{t('viewer.tools.empty') as string}</p>
+        <p class="dv-drawer-stub">{translate('viewer.tools.empty') as string}</p>
       )}
     </div>
   );
@@ -609,54 +609,54 @@ export function ToolsPane({ s, dr, t }: ToolsPaneProps) {
 interface LogicPaneProps {
   s: ScreenTile;
   dr: Drawer;
-  t: TFn;
+  translate: TFn;
 }
-export function LogicPane({ s, dr, t }: LogicPaneProps) {
+export function LogicPane({ s, dr, translate }: LogicPaneProps) {
   const lg = dr.logic!;
   return (
     <div class="dv-logic" {...inspectAttrs('viewer:logic', { role: 'panel' })}>
       <section class="dv-logic-screen">
-        <h4 class="dv-tools-h">{t('viewer.logic.screen') as string}</h4>
+        <h4 class="dv-tools-h">{translate('viewer.logic.screen') as string}</h4>
         <dl class="dv-logic-facts">
           <div class="dv-logic-fact">
-            <dt>{t('viewer.logic.route') as string}</dt>
+            <dt>{translate('viewer.logic.route') as string}</dt>
             <dd><code>{lg.screen.route ?? '—'}</code></dd>
           </div>
           <div class="dv-logic-fact">
-            <dt>{t('viewer.logic.comp') as string}</dt>
+            <dt>{translate('viewer.logic.comp') as string}</dt>
             <dd><code>{lg.screen.comp ?? '—'}</code></dd>
           </div>
           <div class="dv-logic-fact">
-            <dt>{t('viewer.logic.kits') as string}</dt>
+            <dt>{translate('viewer.logic.kits') as string}</dt>
             <dd>
               {lg.screen.kits?.length
                 ? lg.screen.kits.map((k) => <code key={k}>kit/{k}</code>)
-                : <span class="dv-logic-none">{t('viewer.logic.noneDeclared') as string}</span>}
+                : <span class="dv-logic-none">{translate('viewer.logic.noneDeclared') as string}</span>}
             </dd>
           </div>
           <div class="dv-logic-fact">
-            <dt>{t('viewer.logic.states') as string}</dt>
+            <dt>{translate('viewer.logic.states') as string}</dt>
             <dd>
               {lg.screen.states?.length
                 ? lg.screen.states.map((st) => <code key={st}>{st}</code>)
-                : <span class="dv-logic-none">{t('viewer.logic.noneDeclared') as string}</span>}
+                : <span class="dv-logic-none">{translate('viewer.logic.noneDeclared') as string}</span>}
             </dd>
           </div>
         </dl>
         <p class="dv-logic-plain">
-          {t('viewer.logic.screenPlain', { label: s.label ?? s.id, route: lg.screen.route ?? '—' }) as string}
+          {translate('viewer.logic.screenPlain', { label: s.label ?? s.id, route: lg.screen.route ?? '—' }) as string}
         </p>
         {lg.screen.edges.map((e, i) => (
           <p class="dv-logic-edge" key={i}>
             <code class="dv-logic-tech">{s.id} <Icon name="arrow-right" size={12} /> {e.action ?? 'push'} {e.to} · {e.flow}</code>
             <span class="dv-logic-plain">
-              {t('viewer.logic.edgePlain', { trigger: e.trigger ?? '—', to: e.toLabel, flow: e.flowName }) as string}
+              {translate('viewer.logic.edgePlain', { trigger: e.trigger ?? '—', to: e.toLabel, flow: e.flowName }) as string}
             </span>
           </p>
         ))}
       </section>
       <section class="dv-logic-widgets">
-        <h4 class="dv-tools-h">{t('viewer.logic.widgets') as string}</h4>
+        <h4 class="dv-tools-h">{translate('viewer.logic.widgets') as string}</h4>
         {lg.widgets.length ? (
           lg.widgets.map((w, i) => (
             <div
@@ -676,7 +676,7 @@ export function LogicPane({ s, dr, t }: LogicPaneProps) {
                 </p>
               ) : (
                 <p class="dv-logic-fn is-honest">
-                  <span class="dv-logic-plain">{t('viewer.logic.fnUnknown') as string}</span>
+                  <span class="dv-logic-plain">{translate('viewer.logic.fnUnknown') as string}</span>
                 </p>
               )}
               {w.wiring === 'edge' ? (
@@ -685,7 +685,7 @@ export function LogicPane({ s, dr, t }: LogicPaneProps) {
                     {w.el} <Icon name="arrow-right" size={12} /> {w.edge!.action ?? 'push'} {w.edge!.to} · {w.edge!.flow}
                   </code>
                   <span class="dv-logic-plain">
-                    {t('viewer.logic.edgePlain', {
+                    {translate('viewer.logic.edgePlain', {
                       trigger: w.edge!.trigger ?? w.el,
                       to: w.edge!.toLabel,
                       flow: w.edge!.flowName,
@@ -694,19 +694,19 @@ export function LogicPane({ s, dr, t }: LogicPaneProps) {
                 </p>
               ) : w.wiring === 'unknown' ? (
                 <p class="dv-logic-edge is-honest">
-                  <code class="dv-logic-tech">{t('viewer.logic.unknownTech') as string}</code>
-                  <span class="dv-logic-plain">{t('viewer.logic.unknown') as string}</span>
+                  <code class="dv-logic-tech">{translate('viewer.logic.unknownTech') as string}</code>
+                  <span class="dv-logic-plain">{translate('viewer.logic.unknown') as string}</span>
                 </p>
               ) : (
                 <p class="dv-logic-edge is-honest">
-                  <code class="dv-logic-tech">{t('viewer.logic.unwiredTech') as string}</code>
-                  <span class="dv-logic-plain">{t('viewer.logic.unwired') as string}</span>
+                  <code class="dv-logic-tech">{translate('viewer.logic.unwiredTech') as string}</code>
+                  <span class="dv-logic-plain">{translate('viewer.logic.unwired') as string}</span>
                 </p>
               )}
             </div>
           ))
         ) : (
-          <p class="dv-drawer-stub">{t('viewer.logic.noWidgets') as string}</p>
+          <p class="dv-drawer-stub">{translate('viewer.logic.noWidgets') as string}</p>
         )}
       </section>
     </div>
@@ -727,9 +727,9 @@ export function LogicPane({ s, dr, t }: LogicPaneProps) {
 interface RevealDrawerProps {
   v: ViewerState;
   s: ScreenTile;
-  t: TFn;
+  translate: TFn;
 }
-export function RevealDrawer({ v, s, t }: RevealDrawerProps) {
+export function RevealDrawer({ v, s, translate }: RevealDrawerProps) {
   const dr = v.drawers![s.id];
   return (
     <aside
@@ -739,10 +739,10 @@ export function RevealDrawer({ v, s, t }: RevealDrawerProps) {
       {...inspectAttrs('viewer:drawer', { role: 'panel' })}
       tabindex={-1}
       role="region"
-      aria-label={t('viewer.drawer.title', { id: s.id }) as string}
+      aria-label={translate('viewer.drawer.title', { id: s.id }) as string}
       style={`height: ${s.tile.height}px`}
     >
-      <header class="dv-drawer-tabs" role="tablist" aria-label={t('viewer.drawer.tabs') as string}>
+      <header class="dv-drawer-tabs" role="tablist" aria-label={translate('viewer.drawer.tabs') as string}>
         {dr.tabs.map((tab) => (
           <button
             key={tab.key}
@@ -757,7 +757,7 @@ export function RevealDrawer({ v, s, t }: RevealDrawerProps) {
             hx-swap="outerMorph"
             hx-push-url="false"
           >
-            {t(`viewer.drawer.tab.${tab.key}`) as string}
+            {translate(`viewer.drawer.tab.${tab.key}`) as string}
           </button>
         ))}
       </header>
@@ -768,11 +768,11 @@ export function RevealDrawer({ v, s, t }: RevealDrawerProps) {
         aria-labelledby={`dv-drawer-tab-${dr.tab}--${dr.slug}`}
       >
         {dr.tab === 'tools' ? (
-          <ToolsPane s={s} dr={dr} t={t} />
+          <ToolsPane s={s} dr={dr} translate={translate} />
         ) : dr.tab === 'logic' ? (
-          <LogicPane s={s} dr={dr} t={t} />
+          <LogicPane s={s} dr={dr} translate={translate} />
         ) : (
-          <Field {...(dr.composer ?? {})} scope={`drawer-${dr.slug}`} t={t} />
+          <Field {...(dr.composer ?? {})} scope={`drawer-${dr.slug}`} translate={translate} />
         )}
       </div>
     </aside>
@@ -790,13 +790,13 @@ export function RevealDrawer({ v, s, t }: RevealDrawerProps) {
 interface TopbarProps {
   v: ViewerState;
   chrome: Chrome;
-  t: TFn;
+  translate: TFn;
 }
-export function Topbar({ v, chrome, t }: TopbarProps) {
+export function Topbar({ v, chrome, translate }: TopbarProps) {
   return (
     <Fragment>
       <span class="dv-topbar-title">{chrome.title}</span>
-      {chrome.state && <StatusPill state={chrome.state} t={t} />}
+      {chrome.state && <StatusPill state={chrome.state} translate={translate} />}
       {!v.static && (
         <span class="dv-topbar-actions">
           {/* Edit arming — VIEWS LENS ONLY. The widget editor mounts in the
@@ -805,7 +805,7 @@ export function Topbar({ v, chrome, t }: TopbarProps) {
               this toggles a MODE, it does not navigate. */}
           {v.mode === 'views' && (
             <Fragment>
-              <span class="mini-panel-group" role="group" aria-label={t('viewer.weditGroup') as string}>
+              <span class="mini-panel-group" role="group" aria-label={translate('viewer.weditGroup') as string}>
                 <button
                   type="button"
                   class={`chip dv-chip dv-arm-chip${v.weditArmed ? ' on' : ''}`}
@@ -813,15 +813,15 @@ export function Topbar({ v, chrome, t }: TopbarProps) {
                   hx-target="#design-viewer"
                   hx-swap="outerMorph"
                   aria-pressed={v.weditArmed ? 'true' : 'false'}
-                  title={t('viewer.wedit.armHint') as string}
+                  title={translate('viewer.wedit.armHint') as string}
                 >
-                  {t('viewer.wedit.arm') as string}
+                  {translate('viewer.wedit.arm') as string}
                 </button>
               </span>
               <span class="mini-panel-divider" aria-hidden="true"></span>
             </Fragment>
           )}
-          <span class="mini-panel-group" role="group" aria-label={t('viewer.themeGroup') as string}>
+          <span class="mini-panel-group" role="group" aria-label={translate('viewer.themeGroup') as string}>
             {v.themes?.map((th) => (
               <a
                 key={th.key}
@@ -831,12 +831,12 @@ export function Topbar({ v, chrome, t }: TopbarProps) {
                 hx-target="#design-viewer"
                 hx-swap="outerMorph"
               >
-                {t(`viewer.theme.${th.key}`) as string}
+                {translate(`viewer.theme.${th.key}`) as string}
               </a>
             ))}
           </span>
           <span class="mini-panel-divider" aria-hidden="true"></span>
-          <span class="mini-panel-group" role="group" aria-label={t('miniPanel.bgGroup') as string}>
+          <span class="mini-panel-group" role="group" aria-label={translate('miniPanel.bgGroup') as string}>
             {v.bgs?.map((b) => (
               <a
                 key={b.value}
@@ -845,8 +845,8 @@ export function Topbar({ v, chrome, t }: TopbarProps) {
                 hx-get={b.href}
                 hx-target="#design-viewer"
                 hx-swap="outerMorph"
-                aria-label={t(`miniPanel.bg.${b.value}`) as string}
-                title={t(`miniPanel.bg.${b.value}`) as string}
+                aria-label={translate(`miniPanel.bg.${b.value}`) as string}
+                title={translate(`miniPanel.bg.${b.value}`) as string}
               ></a>
             ))}
           </span>
@@ -898,14 +898,14 @@ export function Filmstrip({ v }: FilmstripProps) {
 // goes in the base's `overlay` slot (taken out of flow). canvas.js toggles via
 // data-action; Esc drops :fullscreen for free.
 interface FsCloseProps {
-  t: TFn;
+  translate: TFn;
 }
-export function FsClose({ t }: FsCloseProps) {
+export function FsClose({ translate }: FsCloseProps) {
   return (
     <button
       class="ico-btn dv-fs-close"
       data-action="viewer-fullscreen-exit"
-      title={t('miniPanel.fullscreenExit') as string}
+      title={translate('miniPanel.fullscreenExit') as string}
     >
       <Icon name="x" size={16} />
     </button>
@@ -927,9 +927,9 @@ export function FsClose({ t }: FsCloseProps) {
 interface DesignViewerProps {
   v: ViewerState;
   chrome?: Chrome | null;
-  t: TFn;
+  translate: TFn;
 }
-export function DesignViewer({ v, chrome, t }: DesignViewerProps) {
+export function DesignViewer({ v, chrome, translate }: DesignViewerProps) {
   const proto = v.mode === 'proto';
 
   const bodyAttrs: Record<string, string> = {};
@@ -951,32 +951,32 @@ export function DesignViewer({ v, chrome, t }: DesignViewerProps) {
       id="design-viewer"
       class={`panel-viewer dv-bg-${v.bg ?? 'canvas'}`}
       attrs={inspectAttrs('viewer', { role: 'panel' })}
-      top={chrome ? <Topbar v={v} chrome={chrome} t={t} /> : null}
+      top={chrome ? <Topbar v={v} chrome={chrome} translate={translate} /> : null}
       topClass="dv-topbar"
       bodyClass={proto ? 'dv-proto' : 'dv-flow-canvas'}
       bodyAttrs={bodyAttrs}
       sideEnd={showFilmstrip ? <Filmstrip v={v} /> : null}
       sideEndClass="dv-vstrip cs-strip"
       sideEndId="dv-vstrip"
-      sideEndAttrs={{ 'aria-label': t('composer.screensInContext') as string }}
-      bottom={<MiniPanel v={v} t={t} />}
+      sideEndAttrs={{ 'aria-label': translate('composer.screensInContext') as string }}
+      bottom={<MiniPanel v={v} translate={translate} />}
       bottomClass="dv-botbar"
-      overlay={<FsClose t={t} />}
+      overlay={<FsClose translate={translate} />}
     >
       {proto ? (
-        <ProtoStage v={v} t={t} />
+        <ProtoStage v={v} translate={translate} />
       ) : v.mode === 'flows' ? (
         // FLOWS — one dashed .dv-flow-row per project flow, column-stacked
         // with a clear gap, the flow label chip at the top-left,
         // .dv-connector between consecutive tiles. v.static (build evidence):
         // data-static disarms drag.js on this canvas.
-        <div class="dv-zoom dv-zoom-flows">
+        (<div class="dv-zoom dv-zoom-flows">
           {(v.flows ?? []).map((row) => (
             <div class="dv-flow-row" data-flow={row.id} key={row.id}>
               <span class="dv-flow-label">{row.name}</span>
               {row.tiles.map((s, i) => (
                 <Fragment key={`dvt-${row.id}--${s.id}`}>
-                  <Tile v={v} s={s} row={row} first={i === 0} last={i === row.tiles.length - 1} t={t} />
+                  <Tile v={v} s={s} row={row} first={i === 0} last={i === row.tiles.length - 1} translate={translate} />
                   {s.conn && (
                     <span class="dv-connector" aria-hidden="true">
                       <span class="dv-connector-label">{s.conn}</span>
@@ -993,7 +993,7 @@ export function DesignViewer({ v, chrome, t }: DesignViewerProps) {
                       screen can head more than one flow. */}
                   {s.handoffs && s.handoffs.length > 0 && (
                     <span class="dv-handoffs">
-                      <span class="dv-handoff-cap">{t('viewer.continuesIn') as string}</span>
+                      <span class="dv-handoff-cap">{translate('viewer.continuesIn') as string}</span>
                       {s.handoffs.map((h) => (
                         <a
                           key={`${h.flowName}-${h.to}`}
@@ -1002,8 +1002,8 @@ export function DesignViewer({ v, chrome, t }: DesignViewerProps) {
                           hx-get={h.href}
                           hx-target="#design-viewer"
                           hx-swap="outerMorph"
-                          aria-label={t('viewer.handoffAria', { flow: h.flowName, id: h.to }) as string}
-                          title={t('viewer.handoff', { flow: h.flowName, id: h.to }) as string}
+                          aria-label={translate('viewer.handoffAria', { flow: h.flowName, id: h.to }) as string}
+                          title={translate('viewer.handoff', { flow: h.flowName, id: h.to }) as string}
                         >
                           {h.flowName} <Icon name="arrow-right" size={12} />
                         </a>
@@ -1014,13 +1014,13 @@ export function DesignViewer({ v, chrome, t }: DesignViewerProps) {
               ))}
             </div>
           ))}
-        </div>
+        </div>)
       ) : (
         // VIEWS — one row per screen: the screen card (tile + its tucked
         // reveal-drawer). The components container that used to sit in a
         // second column was removed: the drawer's Tools and Logic tabs carry
         // selection, editing and wiring now.
-        <div class="dv-zoom dv-zoom-views">
+        (<div class="dv-zoom dv-zoom-views">
           {(v.screens ?? []).map((s) => {
             const dr = v.drawers?.[s.id] ?? null;
             return (
@@ -1029,21 +1029,21 @@ export function DesignViewer({ v, chrome, t }: DesignViewerProps) {
                   // The serve-time wrapper: screen card + its back drawer
                   // share one positioning context, so the drawer's translateX
                   // is measured against the card it hides behind.
-                  <div
+                  (<div
                     class={`dv-reveal${dr.open ? ' is-open' : ''}`}
                     id={`dv-reveal--${s.id}`}
                     data-reveal-for={s.id}
                   >
-                    <Tile v={v} s={s} t={t} />
-                    <RevealDrawer v={v} s={s} t={t} />
-                  </div>
+                    <Tile v={v} s={s} translate={translate} />
+                    <RevealDrawer v={v} s={s} translate={translate} />
+                  </div>)
                 ) : (
-                  <Tile v={v} s={s} t={t} />
+                  <Tile v={v} s={s} translate={translate} />
                 )}
               </div>
             );
           })}
-        </div>
+        </div>)
       )}
     </Panel>
   );

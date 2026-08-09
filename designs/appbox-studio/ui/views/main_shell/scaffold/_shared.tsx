@@ -45,14 +45,14 @@ export function Thread({ c }: ThreadProps) {
 // no field rather than a field wired to an empty action.
 interface ComposerPanelProps {
   c: Ctx;
-  t: TFn;
+  translate: TFn;
 }
-export function ComposerPanel({ c, t }: ComposerPanelProps) {
+export function ComposerPanel({ c, translate }: ComposerPanelProps) {
   const spec = { eyebrow: c.stageEyebrow ?? '', chips: c.chips };
   return (
-    <ComposerOpen spec={spec} t={t}>
+    <ComposerOpen spec={spec} translate={translate}>
       <Thread c={c} />
-      {c.composerAction && <Field {...c} t={t} />}
+      {c.composerAction && <Field {...c} translate={translate} />}
     </ComposerOpen>
   );
 }
@@ -77,9 +77,9 @@ export function ActivityBody({ c }: ActivityBodyProps) {
 // activityPanel — the multi-view activity frame wrapping the body.
 interface ActivityPanelProps {
   c: Ctx;
-  t: TFn;
+  translate: TFn;
 }
-export function ActivityPanel({ c, t }: ActivityPanelProps) {
+export function ActivityPanel({ c, translate }: ActivityPanelProps) {
   const spec = {
     label: c.activity?.label ?? '',
     views: c.activity?.views ?? [],
@@ -87,7 +87,7 @@ export function ActivityPanel({ c, t }: ActivityPanelProps) {
     sizeHref: c.panelSizeHref,
   };
   return (
-    <ActivityOpen spec={spec} t={t}>
+    <ActivityOpen spec={spec} translate={translate}>
       <ActivityBody c={c} />
     </ActivityOpen>
   );
@@ -98,52 +98,52 @@ export function ActivityPanel({ c, t }: ActivityPanelProps) {
 // an out-of-band re-feed. The caller fills the main panel.
 interface PanelsProps {
   c: Ctx;
-  t: TFn;
+  translate: TFn;
   children?: Child;
 }
-export function Panels({ c, t, children }: PanelsProps) {
+export function Panels({ c, translate, children }: PanelsProps) {
   return (
     <div class="panels panels-scaffold" id="panels" data-panel={c.panel}>
-      <PanelBar panel={c.panel} t={t} />
-      <ComposerPanel c={c} t={t} />
+      <PanelBar panel={c.panel} translate={translate} />
+      <ComposerPanel c={c} translate={translate} />
       <MainOpen>{children}</MainOpen>
-      <ActivityPanel c={c} t={t} />
+      <ActivityPanel c={c} translate={translate} />
     </div>
   );
 }
 
 // mainEmpty — the main panel's empty read state (nothing selected yet).
-export function MainEmpty({ t }: { t: TFn }) {
-  return <Empty t={t} />;
+export function MainEmpty({ translate }: { translate: TFn }) {
+  return <Empty translate={translate} />;
 }
 
 // accountChip — the header's entitlement/account element.
 // Three states: signed-out → Sign in; free → Upgrade; entitled → plan badge.
 interface AccountChipProps {
   c: Ctx;
-  t: TFn;
+  translate: TFn;
 }
-export function AccountChip({ c, t }: AccountChipProps) {
+export function AccountChip({ c, translate }: AccountChipProps) {
   const ent = c.entitlement ?? {};
   const entState = !ent.signedIn ? 'signedOut' : ent.entitled ? 'entitled' : 'free';
   return (
     <span class="shell-account" data-entitlement={entState} {...inspectAttrs('scaffold:account', { role: 'group' })}>
       {!ent.signedIn ? (
         <a class="chip chip--muted shell-account-chip" href="/auth" {...inspectAttrs('scaffold:account:signin', { role: 'action' })}>
-          <Icon name="log-in" size={13} /> {t('scaffold.chrome.signIn') as string}
+          <Icon name="log-in" size={13} /> {translate('scaffold.chrome.signIn') as string}
         </a>
       ) : !ent.entitled ? (
         <a class="chip chip--accent shell-account-chip" href={ent.accountHref} {...inspectAttrs('scaffold:account:upgrade', { role: 'action' })}>
-          <Icon name="sparkles" size={13} /> {t('scaffold.chrome.upgrade') as string}
+          <Icon name="sparkles" size={13} /> {translate('scaffold.chrome.upgrade') as string}
         </a>
       ) : (
         <a
           class="chip chip--accent shell-account-chip"
           href={ent.accountHref}
-          title={t('scaffold.chrome.accountTitle') as string}
+          title={translate('scaffold.chrome.accountTitle') as string}
           {...inspectAttrs('scaffold:account:plan', { role: 'action' })}
         >
-          <Icon name="badge-check" size={13} /> {t(`plans.plan.${ent.plan}.name`) as string}
+          <Icon name="badge-check" size={13} /> {translate(`plans.plan.${ent.plan}.name`) as string}
         </a>
       )}
     </span>

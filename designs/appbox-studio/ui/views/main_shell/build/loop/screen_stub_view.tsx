@@ -20,7 +20,7 @@ const vendorSrc = (name: string) => {
 };
 
 interface ScreenStubViewProps {
-  t: TFn;
+  translate: TFn;
   locale?: string;
   surface?: string;
   vp?: string;
@@ -92,25 +92,25 @@ const ScreenStubView: FC<ScreenStubViewProps> = (props) => {
               {!props.embed && (
                 <header class="stub-nav" data-el="nav-bar" data-inspect-role="nav" data-inspect-style="app bar · brand + links" data-inspect-motion="none" data-inspect-fn="Top-level navigation and brand for the screen">
                   {props.partial ? (
-                    <Label name="screen-stub:brand" class="stub-brand">{props.t('app.brand') as string}</Label>
+                    <Label name="screen-stub:brand" class="stub-brand">{props.translate('app.brand') as string}</Label>
                   ) : (
                     <Label name="screen-stub:brand" class="stub-brand">appbox</Label>
                   )}
-                  {!props.partial && <Label name="screen-stub:nav-links" class="stub-nav-links">{props.t(`stub.kind.${props.kind}`) as string}</Label>}
+                  {!props.partial && <Label name="screen-stub:nav-links" class="stub-nav-links">{props.translate(`stub.kind.${props.kind}`) as string}</Label>}
                 </header>
               )}
 
               {props.partial ? props.partial : (
                 <Fragment>
                   <section class="stub-hero" data-el="hero" data-inspect-role="hero" data-inspect-style="display headline + note" data-inspect-motion="reveal" data-inspect-fn="Names the screen being previewed">
-                    <Heading name="screen-stub:hero-title" level={1}>{props.t(`stub.kind.${props.kind}`) as string}</Heading>
-                    <Txt name="screen-stub:preview-note">{props.t('stub.previewNote') as string}</Txt>
+                    <Heading name="screen-stub:hero-title" level={1}>{props.translate(`stub.kind.${props.kind}`) as string}</Heading>
+                    <Txt name="screen-stub:preview-note">{props.translate('stub.previewNote') as string}</Txt>
                   </section>
                   <section class="stub-rows" {...inspectAttrs('screen-stub:rows', { role: 'group' })}>
                     {[1, 2, 3].map(i => (
                       <div class="stub-row" data-el={`list-item:Block ${i}`} data-inspect-role="list row" data-inspect-style="row · thumb + label" data-inspect-motion="none" data-inspect-fn="Content placeholder row" key={i}>
                         <span class="stub-thumb sm"></span>
-                        <Label name="screen-stub:row-name" class="stub-row-name">{props.t('stub.block', { kind: props.kind, i }) as string}</Label>
+                        <Label name="screen-stub:row-name" class="stub-row-name">{props.translate('stub.block', { kind: props.kind, i }) as string}</Label>
                       </div>
                     ))}
                   </section>
@@ -118,7 +118,7 @@ const ScreenStubView: FC<ScreenStubViewProps> = (props) => {
               )}
 
               {!props.embed && (
-                <Label name="screen-stub:tag" class="stub-tag">{props.t('stub.tag', { surface: props.surface, vp: props.vp }) as string}</Label>
+                <Label name="screen-stub:tag" class="stub-tag">{props.translate('stub.tag', { surface: props.surface, vp: props.vp }) as string}</Label>
               )}
             </div>
           </div>

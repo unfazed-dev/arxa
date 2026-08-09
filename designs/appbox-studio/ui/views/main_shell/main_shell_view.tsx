@@ -25,7 +25,7 @@ interface Prefs {
 }
 
 interface MainShellViewProps {
-  t: TFn;
+  translate: TFn;
   title?: string;
   locale?: string;
   activeShell: string;
@@ -40,7 +40,7 @@ interface MainShellViewProps {
 }
 
 const MainShellView: FC<MainShellViewProps> = ({
-  t,
+  translate,
   title,
   locale,
   activeShell,
@@ -51,12 +51,12 @@ const MainShellView: FC<MainShellViewProps> = ({
   headerExtra,
   footer,
 }) => (
-  <Base title={title ?? (t('index.pageTitle') as string)} locale={locale} accent={prefs?.accent} theme={prefs?.theme} font={prefs?.font}>
+  <Base title={title ?? (translate('index.pageTitle') as string)} locale={locale} accent={prefs?.accent} theme={prefs?.theme} font={prefs?.font}>
     <HeaderPanel>
-      <HeaderBody t={t} activeShell={activeShell} prefs={prefs} project={project} />
+      <HeaderBody translate={translate} activeShell={activeShell} prefs={prefs} project={project} />
       {headerExtra}
     </HeaderPanel>
-    <OffCanvas t={t} activeShell={activeShell} prefs={prefs} project={project} />
+    <OffCanvas translate={translate} activeShell={activeShell} prefs={prefs} project={project} />
     <main class={`shell-main${mainClass ? ` ${mainClass}` : ''}`} {...inspectAttrs('main-shell:main', { role: 'group' })}>
       {surface}
     </main>

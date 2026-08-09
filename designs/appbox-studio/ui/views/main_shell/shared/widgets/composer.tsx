@@ -60,7 +60,7 @@ interface ContextChip {
 }
 
 interface ComposerProps {
-  t: TFn;
+  translate: TFn;
   composerAction?: string;
   placeholder?: string;
   suggestions?: (Suggestion | string)[];
@@ -79,7 +79,7 @@ interface ComposerProps {
 }
 
 export function Field(props: ComposerProps) {
-  const { t } = props;
+  const { translate } = props;
   const scope = props.scope ?? '';
   const sfx = scope ? `--${scope}` : '';
   const tgt = props.swapTarget || '#panels';
@@ -93,8 +93,8 @@ export function Field(props: ComposerProps) {
   const canRedo = !!(props.undoRedo && props.undoRedo.chat.canRedo);
 
   const collapseLabel = props.tray?.open
-    ? (t('composer.collapseTray') as string)
-    : (t('composer.showTray') as string);
+    ? (translate('composer.collapseTray') as string)
+    : (translate('composer.showTray') as string);
 
   // Tray title's pinned-context suffix: trayContext ("first +N") when the
   // thumbs live in the viewer, else the first pinned element's name + count.
@@ -134,7 +134,7 @@ export function Field(props: ComposerProps) {
               />
               <label class="cm-tray-head" for={`cm-tray-cb${sfx}`} title={collapseLabel}>
                 <span class="cm-tray-title">
-                  {t('composer.context') as string}
+                  {translate('composer.context') as string}
                   {ctxSuffix}
                 </span>
                 <Icon name="chevron-down" size={14} className="composer-chev" />
@@ -142,12 +142,12 @@ export function Field(props: ComposerProps) {
             </Fragment>
           ) : (
             <p class="cm-tray-head is-static">
-              <span class="cm-tray-title">{t('composer.context') as string}</span>
+              <span class="cm-tray-title">{translate('composer.context') as string}</span>
             </p>
           )}
 
           {hasChips && (
-            <div class="cs-ctx-strip" role="group" aria-label={t('composer.screensInContext') as string}>
+            <div class="cs-ctx-strip" role="group" aria-label={translate('composer.screensInContext') as string}>
               {props.contextChips!.map((s) => (
                 <span class={`cs-ctx-chip ctx-${s.tone}`} title={s.id} key={s.id}>
                   <span class="cs-ctx-name">{s.label}</span>
@@ -158,7 +158,7 @@ export function Field(props: ComposerProps) {
                     hx-target={tgt}
                     hx-swap="outerMorph"
                     hx-push-url="false"
-                    aria-label={t('chat.removeChip', { label: s.label }) as string}
+                    aria-label={translate('chat.removeChip', { label: s.label }) as string}
                   >
                     <Icon name="x" size={12} />
                   </a>
@@ -171,7 +171,7 @@ export function Field(props: ComposerProps) {
             <div class="cm-tray">
               <div class="cm-tray-clip">
                 {hasStrip && (
-                  <div class="cs-strip" aria-label={t('composer.screensInContext') as string}>
+                  <div class="cs-strip" aria-label={translate('composer.screensInContext') as string}>
                     {props.filmstrip!.map((s) => (
                       <a
                         class={`dv-thumb cs-thumb${s.inContext ? ` in-ctx ctx-${s.tone}` : ''}${s.dim ? ' is-dim' : ''}${s.active ? ' on' : ''}`}
@@ -192,7 +192,7 @@ export function Field(props: ComposerProps) {
                   </div>
                 )}
                 {hasEls && (
-                  <div class="cs-el-strip" aria-label={t('composer.elsInContext') as string}>
+                  <div class="cs-el-strip" aria-label={translate('composer.elsInContext') as string}>
                     {props.elements!.map((el) => (
                       <span class={`chip cs-el-chip ctx-${el.tone}`} key={`${el.screenId}:${el.name}`}>
                         <code class="cs-el-name">{el.name}</code>
@@ -206,7 +206,7 @@ export function Field(props: ComposerProps) {
                             hx-target={tgt}
                             hx-swap="outerMorph"
                             hx-push-url="false"
-                            aria-label={t('chat.removeChip', { label: el.name }) as string}
+                            aria-label={translate('chat.removeChip', { label: el.name }) as string}
                           >
                             <Icon name="x" size={12} />
                           </a>
@@ -241,7 +241,7 @@ export function Field(props: ComposerProps) {
       <div class="composer-bar">
         {props.suggestions && props.suggestions.length > 0 && (
           <details class="composer-plus">
-            <summary aria-label={t('composer.tools') as string}>
+            <summary aria-label={translate('composer.tools') as string}>
               <Icon name="plus" size={18} />
             </summary>
             <span class="composer-sugs">
@@ -258,7 +258,7 @@ export function Field(props: ComposerProps) {
           </details>
         )}
 
-        <span class="composer-undo-redo" role="group" aria-label={t('miniPanel.historyGroup') as string}>
+        <span class="composer-undo-redo" role="group" aria-label={translate('miniPanel.historyGroup') as string}>
           <button
             type="button"
             class="ico-btn undo-btn"
@@ -266,7 +266,7 @@ export function Field(props: ComposerProps) {
             hx-post={canUndo ? props.undoHref || '/design/undo/chat' : undefined}
             hx-target={canUndo ? tgt : undefined}
             hx-swap={canUndo ? 'outerMorph' : undefined}
-            title={t('miniPanel.undo') as string}
+            title={translate('miniPanel.undo') as string}
           >
             <Icon name="undo-2" size={16} />
           </button>
@@ -277,7 +277,7 @@ export function Field(props: ComposerProps) {
             hx-post={canRedo ? props.redoHref || '/design/redo/chat' : undefined}
             hx-target={canRedo ? tgt : undefined}
             hx-swap={canRedo ? 'outerMorph' : undefined}
-            title={t('miniPanel.redo') as string}
+            title={translate('miniPanel.redo') as string}
           >
             <Icon name="redo-2" size={16} />
           </button>
@@ -287,7 +287,7 @@ export function Field(props: ComposerProps) {
 
         {props.modelMenu && (
           <details class="composer-model">
-            <summary aria-label={t('composer.agentModel') as string} title={t('composer.agentModel') as string}>
+            <summary aria-label={translate('composer.agentModel') as string} title={translate('composer.agentModel') as string}>
               {props.modelMenu.label} <Icon name="chevron-down" size={14} className="composer-chev" />
             </summary>
             <span class="composer-menu composer-menu-right">
@@ -310,7 +310,7 @@ export function Field(props: ComposerProps) {
           </details>
         )}
 
-        <button type="submit" class="composer-send" aria-label={t('composer.send') as string}>
+        <button type="submit" class="composer-send" aria-label={translate('composer.send') as string}>
           <Icon name="arrow-up" size={18} />
         </button>
       </div>

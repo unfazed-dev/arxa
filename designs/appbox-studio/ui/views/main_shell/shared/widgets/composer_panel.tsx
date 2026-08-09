@@ -25,9 +25,9 @@ interface ComposerSpec {
 // HeadContent — the top section's content: eyebrow + pinned context chips.
 interface HeadContentProps {
   spec: ComposerSpec;
-  t: TFn;
+  translate: TFn;
 }
-export function HeadContent({ spec, t }: HeadContentProps) {
+export function HeadContent({ spec, translate }: HeadContentProps) {
   const tones = ['cyan', 'olive', 'amber', 'violet'];
   return (
     <Fragment>
@@ -46,7 +46,7 @@ export function HeadContent({ spec, t }: HeadContentProps) {
                   hx-target="#panels"
                   hx-swap="outerMorph"
                   hx-push-url="false"
-                  aria-label={t('chat.removeChip', { label: chip.label }) as string}
+                  aria-label={translate('chat.removeChip', { label: chip.label }) as string}
                 >
                   <Icon name="x" size={12} />
                 </a>
@@ -63,12 +63,12 @@ export function HeadContent({ spec, t }: HeadContentProps) {
 interface TopProps {
   spec: ComposerSpec;
   oob?: boolean;
-  t: TFn;
+  translate: TFn;
 }
-export function Top({ spec, oob, t }: TopProps) {
+export function Top({ spec, oob, translate }: TopProps) {
   return (
     <PanelTop pid={PID} oob={oob}>
-      <HeadContent spec={spec} t={t} />
+      <HeadContent spec={spec} translate={translate} />
     </PanelTop>
   );
 }
@@ -77,18 +77,18 @@ export function Top({ spec, oob, t }: TopProps) {
 // Callers: <Open spec={spec} t={t}>thread + composer card</Open>
 interface OpenProps {
   spec: ComposerSpec;
-  t: TFn;
+  translate: TFn;
   children?: Child;
 }
-export function Open({ spec, t, children }: OpenProps) {
+export function Open({ spec, translate, children }: OpenProps) {
   return (
     <PanelOpen
       role="composer"
       id={PID}
-      top={<HeadContent spec={spec} t={t} />}
+      top={<HeadContent spec={spec} translate={translate} />}
       bottom={false}
       resize={{ edge: 'end' }}
-      t={t}
+      translate={translate}
     >
       {children}
     </PanelOpen>

@@ -135,7 +135,7 @@ export function MissingArtifact({ c, a }: { c: Ctx; a: MissingArtifactA }) {
 }
 
 // --- one question card (the horizontal carousel) ---
-export function QCard({ c, q, t }: { c: Ctx; q: Question; t: TFn }) {
+export function QCard({ c, q, translate }: { c: Ctx; q: Question; translate: TFn }) {
   const base = c.base;
   return (
     <div class={`q-card is-${q.state ?? ''}`}>
@@ -146,10 +146,10 @@ export function QCard({ c, q, t }: { c: Ctx; q: Question; t: TFn }) {
                 hx-post={`${base}/answer`} hx-target="#panels" hx-swap="outerMorph">
             <input type="hidden" name="q" value={q.id} {...inspectAttrs('intake-shared:q-id', { role: 'input' })} />
             <input type="text" name="text" value={q.answer ?? ''}
-                   placeholder={t('intake.answerPlaceholder') as string}
-                   aria-label={t('intake.answerAria', { question: q.text }) as string}
+                   placeholder={translate('intake.answerPlaceholder') as string}
+                   aria-label={translate('intake.answerAria', { question: q.text }) as string}
                    {...inspectAttrs('intake-shared:q-answer-input', { role: 'input' })} />
-            <button type="submit" class="composer-send" aria-label={t('intake.sendAnswer') as string}
+            <button type="submit" class="composer-send" aria-label={translate('intake.sendAnswer') as string}
                     {...inspectAttrs('intake-shared:q-send', { role: 'action', fn: 'submit' })}>
               <Icon name="arrow-up" size={18} />
             </button>
@@ -168,9 +168,9 @@ export function QCard({ c, q, t }: { c: Ctx; q: Question; t: TFn }) {
           <form class="q-skip" method="post" action={`${base}/skip`}
                 hx-post={`${base}/skip`} hx-target="#panels" hx-swap="outerMorph">
             <input type="hidden" name="q" value={q.id} {...inspectAttrs('intake-shared:q-skip-id', { role: 'input' })} />
-            <button type="submit" aria-label={t('intake.skipAria') as string}
+            <button type="submit" aria-label={translate('intake.skipAria') as string}
                     {...inspectAttrs('intake-shared:q-skip', { role: 'action', fn: 'skip' })}>
-              {t('intake.skip') as string} <Icon name="chevron-right" size={14} />
+              {translate('intake.skip') as string} <Icon name="chevron-right" size={14} />
             </button>
           </form>
         </Fragment>
@@ -180,44 +180,44 @@ export function QCard({ c, q, t }: { c: Ctx; q: Question; t: TFn }) {
           <a class="q-edit" href={`${base}/edit?q=${q.id}`}
              hx-get={`${base}/edit?q=${q.id}`} hx-target="#panels" hx-swap="outerMorph" hx-push-url="false"
              {...inspectAttrs('intake-shared:q-edit', { role: 'action', fn: 'edit' })}>
-            {t('intake.edit') as string}
+            {translate('intake.edit') as string}
           </a>
         </Fragment>
       ) : q.state === 'skipped' ? (
         <Fragment>
-          <Txt name="intake-shared:q-skipped" class="q-answer muted">{t('intake.skipped') as string}</Txt>
+          <Txt name="intake-shared:q-skipped" class="q-answer muted">{translate('intake.skipped') as string}</Txt>
           <a class="q-edit" href={`${base}/edit?q=${q.id}`}
              hx-get={`${base}/edit?q=${q.id}`} hx-target="#panels" hx-swap="outerMorph" hx-push-url="false"
              {...inspectAttrs('intake-shared:q-answer-anyway', { role: 'action', fn: 'edit' })}>
-            {t('intake.answerAnyway') as string}
+            {translate('intake.answerAnyway') as string}
           </a>
         </Fragment>
       ) : (
-        <Txt name="intake-shared:q-up-next" class="q-answer muted">{t('intake.upNext') as string}</Txt>
+        <Txt name="intake-shared:q-up-next" class="q-answer muted">{translate('intake.upNext') as string}</Txt>
       )}
     </div>
   );
 }
 
 // Provenance chip: where a prefill came from (client / founder / inferred).
-export function ProvChip({ p, t }: { p?: string; t: TFn }) {
+export function ProvChip({ p, translate }: { p?: string; translate: TFn }) {
   if (!p) return null;
-  return <Label name={`intake-shared:prov-${p}`} class={`chip prov-chip prov-${p}`}>{t(`intake.prov.${p}`) as string}</Label>;
+  return <Label name={`intake-shared:prov-${p}`} class={`chip prov-chip prov-${p}`}>{translate(`intake.prov.${p}`) as string}</Label>;
 }
 
 // The current item's action bar: confirm the prefill as-is, or skip.
-export function ItemActions({ c, item, t }: { c: Ctx; item: StepItem; t: TFn }) {
+export function ItemActions({ c, item, translate }: { c: Ctx; item: StepItem; translate: TFn }) {
   const base = c.base;
   if (item.state === 'current' || item.state === 'editing') {
     return (
       <span class="item-actions" {...inspectAttrs('intake-shared:item-actions', { role: 'group' })}>
         <form method="post" action={`${base}/confirm`} hx-post={`${base}/confirm`} hx-target="#panels" hx-swap="outerMorph">
           <input type="hidden" name="item" value={item.id} {...inspectAttrs('intake-shared:item-confirm-id', { role: 'input' })} />
-          <button type="submit" class="cta-main" {...inspectAttrs('intake-shared:item-confirm', { role: 'action', fn: 'confirm' })}>{t('intake.item.confirm') as string} <Icon name="check" size={14} /></button>
+          <button type="submit" class="cta-main" {...inspectAttrs('intake-shared:item-confirm', { role: 'action', fn: 'confirm' })}>{translate('intake.item.confirm') as string} <Icon name="check" size={14} /></button>
         </form>
         <form method="post" action={`${base}/skip`} hx-post={`${base}/skip`} hx-target="#panels" hx-swap="outerMorph">
           <input type="hidden" name="item" value={item.id} {...inspectAttrs('intake-shared:item-skip-id', { role: 'input' })} />
-          <button type="submit" class="cta-ghost" {...inspectAttrs('intake-shared:item-skip', { role: 'action', fn: 'skip' })}>{t('intake.skip') as string} <Icon name="chevron-right" size={14} /></button>
+          <button type="submit" class="cta-ghost" {...inspectAttrs('intake-shared:item-skip', { role: 'action', fn: 'skip' })}>{translate('intake.skip') as string} <Icon name="chevron-right" size={14} /></button>
         </form>
       </span>
     );
@@ -227,7 +227,7 @@ export function ItemActions({ c, item, t }: { c: Ctx; item: StepItem; t: TFn }) 
       <a class="q-edit" href={`${base}/edit?item=${item.id}`}
          hx-get={`${base}/edit?item=${item.id}`} hx-target="#panels" hx-swap="outerMorph" hx-push-url="false"
          {...inspectAttrs('intake-shared:item-edit', { role: 'action', fn: 'edit' })}>
-        {t('intake.edit') as string}
+        {translate('intake.edit') as string}
       </a>
     );
   }
@@ -236,7 +236,7 @@ export function ItemActions({ c, item, t }: { c: Ctx; item: StepItem; t: TFn }) 
       <a class="q-edit" href={`${base}/edit?item=${item.id}`}
          hx-get={`${base}/edit?item=${item.id}`} hx-target="#panels" hx-swap="outerMorph" hx-push-url="false"
          {...inspectAttrs('intake-shared:item-review', { role: 'action', fn: 'edit' })}>
-        {t('intake.item.reviewAnyway') as string}
+        {translate('intake.item.reviewAnyway') as string}
       </a>
     );
   }
@@ -244,11 +244,11 @@ export function ItemActions({ c, item, t }: { c: Ctx; item: StepItem; t: TFn }) 
 }
 
 // The item strip: one dot per item, state-coloured; done items re-open.
-export function ItemStrip({ c, step, t }: { c: Ctx; step?: Step; t: TFn }) {
+export function ItemStrip({ c, step, translate }: { c: Ctx; step?: Step; translate: TFn }) {
   const base = c.base;
   const items = step?.items ?? [];
   return (
-    <nav class="item-strip" aria-label={t('intake.step.stripAria') as string} {...inspectAttrs('intake-shared:item-strip', { role: 'group' })}>
+    <nav class="item-strip" aria-label={translate('intake.step.stripAria') as string} {...inspectAttrs('intake-shared:item-strip', { role: 'group' })}>
       {items.map((item) => {
         const title = item.name ?? item.label ?? item.id;
         if (item.state === 'confirmed' || item.state === 'skipped') {
@@ -266,17 +266,17 @@ export function ItemStrip({ c, step, t }: { c: Ctx; step?: Step; t: TFn }) {
 }
 
 // The step footer: accept-all while open, the next-step CTA when complete.
-export function StepFoot({ c, step, t }: { c: Ctx; step?: Step; t: TFn }) {
+export function StepFoot({ c, step, translate }: { c: Ctx; step?: Step; translate: TFn }) {
   const base = c.base;
   return (
     <div class="step-foot" {...inspectAttrs('intake-shared:step-foot', { role: 'group' })}>
       {step?.complete ? (
         step.nextHref ? (
-          <a class="cta-main" href={step.nextHref} {...inspectAttrs('intake-shared:step-next', { role: 'action', fn: 'navigate' })}>{t(step.nextLabel as string) as string} <Icon name="chevron-right" size={14} /></a>
+          <a class="cta-main" href={step.nextHref} {...inspectAttrs('intake-shared:step-next', { role: 'action', fn: 'navigate' })}>{translate(step.nextLabel as string) as string} <Icon name="chevron-right" size={14} /></a>
         ) : null
       ) : (
         <form method="post" action={`${base}/accept-all`} hx-post={`${base}/accept-all`} hx-target="#panels" hx-swap="outerMorph">
-          <button type="submit" class="cta-ghost" {...inspectAttrs('intake-shared:step-accept-all', { role: 'action', fn: 'submit' })}>{t('intake.item.acceptAll') as string}</button>
+          <button type="submit" class="cta-ghost" {...inspectAttrs('intake-shared:step-accept-all', { role: 'action', fn: 'submit' })}>{translate('intake.item.acceptAll') as string}</button>
         </form>
       )}
     </div>
@@ -285,28 +285,28 @@ export function StepFoot({ c, step, t }: { c: Ctx; step?: Step; t: TFn }) {
 
 // The step stage: header (eyebrow + progress + mode), the caller's item
 // card(s) [children], the strip, the footer. One thing per main panel.
-export function StepStage({ c, t, children }: { c: Ctx; t: TFn; children?: Child }) {
+export function StepStage({ c, translate, children }: { c: Ctx; translate: TFn; children?: Child }) {
   const step = c.step;
   return (
     <section class="mp-content step-stage" id="mp-content" aria-live="polite">
       <header class="step-head">
         <Label name="intake-shared:step-eyebrow" class="eyebrow">{c.eyebrow}</Label>
-        <Label name="intake-shared:step-progress" class="chip chip--muted">{t('intake.step.progress', { done: step?.done, total: step?.total }) as string}</Label>
-        {step?.mode ? <Label name={`intake-shared:step-mode-${step.mode}`} class="chip chip--muted">{t(`intake.bank.${step.mode}`) as string}</Label> : null}
+        <Label name="intake-shared:step-progress" class="chip chip--muted">{translate('intake.step.progress', { done: step?.done, total: step?.total }) as string}</Label>
+        {step?.mode ? <Label name={`intake-shared:step-mode-${step.mode}`} class="chip chip--muted">{translate(`intake.bank.${step.mode}`) as string}</Label> : null}
       </header>
       {children}
-      <ItemStrip c={c} step={step} t={t} />
-      <StepFoot c={c} step={step} t={t} />
+      <ItemStrip c={c} step={step} translate={translate} />
+      <StepFoot c={c} step={step} translate={translate} />
     </section>
   );
 }
 
 // A question strip for the interview stage (questions re-open with ?q=).
-export function QStrip({ c, car, t }: { c: Ctx; car: Carousel; t: TFn }) {
+export function QStrip({ c, car, translate }: { c: Ctx; car: Carousel; translate: TFn }) {
   const base = c.base;
   const qs = car.questions ?? [];
   return (
-    <nav class="item-strip" aria-label={t('intake.questionsAria', { bank: car.bankLabel }) as string} {...inspectAttrs('intake-shared:q-strip', { role: 'group' })}>
+    <nav class="item-strip" aria-label={translate('intake.questionsAria', { bank: car.bankLabel }) as string} {...inspectAttrs('intake-shared:q-strip', { role: 'group' })}>
       {qs.map((q) => {
         if (q.state === 'answered' || q.state === 'skipped') {
           const dot = q.state === 'answered' ? 'confirmed' : 'skipped';
@@ -324,7 +324,7 @@ export function QStrip({ c, car, t }: { c: Ctx; car: Carousel; t: TFn }) {
   );
 }
 
-export function ChatMsg({ c, m, t }: { c: Ctx; m: ChatMsg; t: TFn }) {
+export function ChatMsg({ c, m, translate }: { c: Ctx; m: ChatMsg; translate: TFn }) {
   const base = c.base;
   if (m.from === 'user') {
     return <div class="msg msg-user" {...inspectAttrs('intake-shared:msg-user', { role: 'group' })}><Label name="intake-shared:msg-user-text" class="msg-text">{m.text}</Label></div>;
@@ -357,36 +357,36 @@ export function ChatMsg({ c, m, t }: { c: Ctx; m: ChatMsg; t: TFn }) {
   );
 }
 
-function ChatThread({ c, t }: { c: Ctx; t: TFn }) {
+function ChatThread({ c, translate }: { c: Ctx; translate: TFn }) {
   const msgs = c.chat ?? [];
   return (
     <div class="chat-thread" aria-live="polite" {...inspectAttrs('intake-shared:chat-thread', { role: 'group' })}>
-      {msgs.map((m, i) => <ChatMsg key={i} c={c} m={m} t={t} />)}
+      {msgs.map((m, i) => <ChatMsg key={i} c={c} m={m} translate={translate} />)}
     </div>
   );
 }
 
 // The composer panel proper — permanent, right, single-state.
-function ComposerPanel({ c, t }: { c: Ctx; t: TFn }) {
+function ComposerPanel({ c, translate }: { c: Ctx; translate: TFn }) {
   return (
-    <ComposerPanelOpen spec={{ eyebrow: c.eyebrow, chips: c.chips } as any} t={t}>
-      <ChatThread c={c} t={t} />
+    <ComposerPanelOpen spec={{ eyebrow: c.eyebrow, chips: c.chips } as any} translate={translate}>
+      <ChatThread c={c} translate={translate} />
       {/* Field reads its many props (composerAction, placeholder, modelMenu, …)
           straight off the context bag; spreading forwards them all. */}
-      <Field t={t} {...(c as any)} />
+      <Field translate={translate} {...(c as any)} />
     </ComposerPanelOpen>
   );
 }
 
 // The three content panels, one swap unit. Composer LEFT, activity RIGHT —
 // same DOM order as every other shell, so tab + screen-reader order match.
-export function Panels({ c, t, children }: { c: Ctx; t: TFn; children?: Child }) {
+export function Panels({ c, translate, children }: { c: Ctx; translate: TFn; children?: Child }) {
   return (
     <div class="panels" id="panels" data-panel={c.panel} {...inspectAttrs('intake-shared:panels', { role: 'group' })}>
-      <PanelBar panel={c.panel} t={t} />
-      <ComposerPanel c={c} t={t} />
+      <PanelBar panel={c.panel} translate={translate} />
+      <ComposerPanel c={c} translate={translate} />
       <MainPanelOpen>{children}</MainPanelOpen>
-      <ActivityPanel c={c} t={t} />
+      <ActivityPanel c={c} translate={translate} />
     </div>
   );
 }
@@ -460,7 +460,7 @@ function ActivityBody({ c }: { c: Ctx }) {
   );
 }
 
-export function ActivityPanel({ c, t }: { c: Ctx; t: TFn }) {
+export function ActivityPanel({ c, translate }: { c: Ctx; translate: TFn }) {
   const spec = {
     label: c.activityLabel,
     views: c.activityViews,
@@ -468,7 +468,7 @@ export function ActivityPanel({ c, t }: { c: Ctx; t: TFn }) {
     sizeHref: c.panelSizeHref,
   } as any;
   return (
-    <ActivityPanelOpen spec={spec} t={t}>
+    <ActivityPanelOpen spec={spec} translate={translate}>
       <ActivityBody c={c} />
     </ActivityPanelOpen>
   );
@@ -476,7 +476,7 @@ export function ActivityPanel({ c, t }: { c: Ctx; t: TFn }) {
 
 // Targeted view-switch response (<base>/panel?view= → #panel-activity-body):
 // the new body plus head + bar out-of-band.
-export function ActivitySwap({ c, t }: { c: Ctx; t: TFn }) {
+export function ActivitySwap({ c, translate }: { c: Ctx; translate: TFn }) {
   const spec = {
     label: c.activityLabel,
     views: c.activityViews,
@@ -487,7 +487,7 @@ export function ActivitySwap({ c, t }: { c: Ctx; t: TFn }) {
     <Fragment>
       <ActivityBody c={c} />
       <ActivityPanelTop spec={spec} oob />
-      <ActivityPanelBottom spec={spec} oob t={t} />
+      <ActivityPanelBottom spec={spec} oob translate={translate} />
     </Fragment>
   );
 }
@@ -495,24 +495,24 @@ export function ActivitySwap({ c, t }: { c: Ctx; t: TFn }) {
 // --- thin forwards to the shared widgets ---
 
 // The footer-panel timeline: read-only stage line, intake item current.
-export function Timeline({ c, t, oob = false }: { c: Ctx; t: TFn; oob?: boolean }) {
+export function Timeline({ c, translate, oob = false }: { c: Ctx; translate: TFn; oob?: boolean }) {
   return (
     <TimelineTl
       timeline={c.timeline as TimelineData}
       oob={oob}
-      label={t('intake.timelineLabel') as string}
+      label={translate('intake.timelineLabel') as string}
       base={c.base}
-      t={t}
+      translate={translate}
     />
   );
 }
 
 // The main panel's empty read state (nothing open yet).
-export function MainEmpty({ t }: { t: TFn }) {
-  return <MainPanelEmpty t={t} />;
+export function MainEmpty({ translate }: { translate: TFn }) {
+  return <MainPanelEmpty translate={translate} />;
 }
 
 // The open file, rendered by the main panel's automatic mode.
-export function FileView({ c, t }: { c: Ctx; t: TFn }) {
-  return <MainPanelView f={c.fileView as any} t={t} />;
+export function FileView({ c, translate }: { c: Ctx; translate: TFn }) {
+  return <MainPanelView f={c.fileView as any} translate={translate} />;
 }

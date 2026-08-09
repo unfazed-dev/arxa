@@ -24,18 +24,18 @@ interface WrapProps {
   cardClass?: string;
   /** Close button aria-label; defaults to t('modal.close'). */
   closeLabel?: string;
-  t: TFn;
+  translate: TFn;
   children?: Child;
 }
 
 export function Wrap(props: WrapProps) {
-  const { trigger, label, cardClass, closeLabel, t } = props;
+  const { trigger, label, cardClass, closeLabel, translate } = props;
   return (
     <details class="modal">
       <summary class="modal-trigger" {...inspectAttrs('modal:trigger', { role: 'label' })}>
         <span class="modal-open-label" {...inspectAttrs('modal:open-label', { role: 'text' })}>{trigger}</span>
         <span class="modal-close-label">
-          <Icon name="x" size={18} label={closeLabel ?? (t('modal.close') as string)} />
+          <Icon name="x" size={18} label={closeLabel ?? (translate('modal.close') as string)} />
         </span>
       </summary>
       <div

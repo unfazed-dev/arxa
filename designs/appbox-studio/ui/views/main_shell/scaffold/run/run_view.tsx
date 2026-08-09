@@ -15,7 +15,7 @@ interface RunWrite { kind?: string; path?: string; ready?: boolean; }
 interface RunWarning { code?: string; kitId?: string; href?: string; }
 
 interface RunViewProps extends ScaffoldCtx {
-  t: TFn;
+  translate: TFn;
   locale?: string;
   locales?: string[];
   prefs?: { accent?: string; [key: string]: unknown };
@@ -43,7 +43,7 @@ interface RunViewProps extends ScaffoldCtx {
 }
 
 // ---- the state banner ----
-function Banner({ c, t }: { c: RunViewProps; t: TFn }) {
+function Banner({ c, translate }: { c: RunViewProps; translate: TFn }) {
   const icon = c.isDone && !c.hasWarnings ? 'file-check'
     : c.hasWarnings ? 'alert-triangle'
     : c.isFailed ? 'x-octagon'
@@ -53,43 +53,43 @@ function Banner({ c, t }: { c: RunViewProps; t: TFn }) {
     <div class={`run-banner run-banner--${c.state}`} role="status">
       <span class="run-banner-icon"><Icon name={icon} size={18} /></span>
       <div class="run-banner-text">
-        <Txt name="scaffold.run:banner-title" class="run-banner-title">{t(`scaffold.run.state.${c.state}.title`) as string}</Txt>
-        <Txt name="scaffold.run:banner-note" class="run-banner-note">{t(`scaffold.run.state.${c.state}.note`) as string}</Txt>
+        <Txt name="scaffold.run:banner-title" class="run-banner-title">{translate(`scaffold.run.state.${c.state}.title`) as string}</Txt>
+        <Txt name="scaffold.run:banner-note" class="run-banner-note">{translate(`scaffold.run.state.${c.state}.note`) as string}</Txt>
       </div>
     </div>
   );
 }
 
 // ---- the input summary ----
-function InputSummary({ c, t }: { c: RunViewProps; t: TFn }) {
+function InputSummary({ c, translate }: { c: RunViewProps; translate: TFn }) {
   return (
     <section class="run-card run-input" aria-labelledby="run-input-h">
-      <h3 class="run-card-h" id="run-input-h" {...inspectAttrs('scaffold.run:input-heading', { role: 'heading' })}>{t('scaffold.run.input.heading') as string}</h3>
+      <h3 class="run-card-h" id="run-input-h" {...inspectAttrs('scaffold.run:input-heading', { role: 'heading' })}>{translate('scaffold.run.input.heading') as string}</h3>
       <dl class="run-facts">
         <div class="run-fact">
-          <dt {...inspectAttrs('scaffold.run:fact-structure', { role: 'label' })}>{t('scaffold.run.input.structure') as string}</dt>
+          <dt {...inspectAttrs('scaffold.run:fact-structure', { role: 'label' })}>{translate('scaffold.run.input.structure') as string}</dt>
           <dd>
             <code class="run-path" {...inspectAttrs('scaffold.run:structure-path', { role: 'text' })}>{c.structure?.path}</code>
             <span class="chip chip--sm run-frozen" {...inspectAttrs('scaffold.run:structure-frozen', { role: 'label' })}>
-              <Icon name="lock" size={12} /> {t('scaffold.run.input.frozen', { revision: c.structure?.revision }) as string}
+              <Icon name="lock" size={12} /> {translate('scaffold.run.input.frozen', { revision: c.structure?.revision }) as string}
             </span>
           </dd>
         </div>
         <div class="run-fact">
-          <dt {...inspectAttrs('scaffold.run:fact-scope', { role: 'label' })}>{t('scaffold.run.input.scope') as string}</dt>
-          <dd {...inspectAttrs('scaffold.run:fact-scope-value', { role: 'text' })}>{t('scaffold.run.input.scopeValue', { screens: c.structure?.screens, shells: c.structure?.shells }) as string}</dd>
+          <dt {...inspectAttrs('scaffold.run:fact-scope', { role: 'label' })}>{translate('scaffold.run.input.scope') as string}</dt>
+          <dd {...inspectAttrs('scaffold.run:fact-scope-value', { role: 'text' })}>{translate('scaffold.run.input.scopeValue', { screens: c.structure?.screens, shells: c.structure?.shells }) as string}</dd>
         </div>
         <div class="run-fact">
-          <dt {...inspectAttrs('scaffold.run:fact-kits', { role: 'label' })}>{t('scaffold.run.input.kits') as string}</dt>
-          <dd {...inspectAttrs('scaffold.run:fact-kits-value', { role: 'text' })}>{t('scaffold.run.input.kitsValue', { count: c.counts?.kits }) as string}</dd>
+          <dt {...inspectAttrs('scaffold.run:fact-kits', { role: 'label' })}>{translate('scaffold.run.input.kits') as string}</dt>
+          <dd {...inspectAttrs('scaffold.run:fact-kits-value', { role: 'text' })}>{translate('scaffold.run.input.kitsValue', { count: c.counts?.kits }) as string}</dd>
         </div>
       </dl>
       <ul class="run-kitset" {...inspectAttrs('scaffold.run:kitset', { role: 'list' })}>
         {(c.kits ?? []).map((k) => (
           <li key={k.id} class={`chip run-kit${!k.ready ? ' run-kit--unready' : ''}`}>
-            <Label name="scaffold.run:kit-name" class="run-kit-name">{t(`scaffold.kit.${k.id}`) as string}</Label>
-            {k.auto && <Label name="scaffold.run:kit-auto" class="chip chip--sm run-kit-auto">{t('scaffold.run.kit.auto') as string}</Label>}
-            {!k.ready && <Label name="scaffold.run:kit-keys" class="chip chip--sm run-kit-keys">{t('scaffold.run.kit.needsKeys') as string}</Label>}
+            <Label name="scaffold.run:kit-name" class="run-kit-name">{translate(`scaffold.kit.${k.id}`) as string}</Label>
+            {k.auto && <Label name="scaffold.run:kit-auto" class="chip chip--sm run-kit-auto">{translate('scaffold.run.kit.auto') as string}</Label>}
+            {!k.ready && <Label name="scaffold.run:kit-keys" class="chip chip--sm run-kit-keys">{translate('scaffold.run.kit.needsKeys') as string}</Label>}
           </li>
         ))}
       </ul>
@@ -98,34 +98,34 @@ function InputSummary({ c, t }: { c: RunViewProps; t: TFn }) {
 }
 
 // ---- the gate (pre) ----
-function Gate({ c, t }: { c: RunViewProps; t: TFn }) {
+function Gate({ c, translate }: { c: RunViewProps; translate: TFn }) {
   return (
     <section class="run-card run-gate">
-      <Txt name="scaffold.run:gate-note" class="run-gate-note">{t('scaffold.run.gate.note') as string}</Txt>
+      <Txt name="scaffold.run:gate-note" class="run-gate-note">{translate('scaffold.run.gate.note') as string}</Txt>
       <div class="run-actions">
         <a class="cta-link cta-link--main" href={c.runHref} {...inspectAttrs('scaffold.run:gate-run', { role: 'action' })}>
-          <Icon name="play" size={14} /> {t('scaffold.run.gate.action') as string}
+          <Icon name="play" size={14} /> {translate('scaffold.run.gate.action') as string}
         </a>
-        <a class="cta-link cta-link--ghost" href={c.backHref} {...inspectAttrs('scaffold.run:gate-back', { role: 'action' })}>{t('scaffold.run.gate.back') as string}</a>
+        <a class="cta-link cta-link--ghost" href={c.backHref} {...inspectAttrs('scaffold.run:gate-back', { role: 'action' })}>{translate('scaffold.run.gate.back') as string}</a>
       </div>
     </section>
   );
 }
 
 // ---- what landed ----
-function Writes({ c, t }: { c: RunViewProps; t: TFn }) {
+function Writes({ c, translate }: { c: RunViewProps; translate: TFn }) {
   return (
     <section class="run-card run-writes" aria-labelledby="run-writes-h">
-      <h3 class="run-card-h" id="run-writes-h" {...inspectAttrs('scaffold.run:writes-heading', { role: 'heading' })}>{t('scaffold.run.writes.heading') as string}</h3>
+      <h3 class="run-card-h" id="run-writes-h" {...inspectAttrs('scaffold.run:writes-heading', { role: 'heading' })}>{translate('scaffold.run.writes.heading') as string}</h3>
       <Txt name="scaffold.run:writes-counts" class="run-counts">
-        {t('scaffold.run.writes.counts', { created: c.counts?.created, updated: c.counts?.updated, skipped: c.counts?.skipped }) as string}
+        {translate('scaffold.run.writes.counts', { created: c.counts?.created, updated: c.counts?.updated, skipped: c.counts?.skipped }) as string}
       </Txt>
       <ul class="run-filelist" {...inspectAttrs('scaffold.run:filelist', { role: 'list' })}>
         {(c.writes ?? []).map((w, i) => (
           <li key={i} class={`run-file run-file--${w.kind}`}>
-            <Label name="scaffold.run:file-kind" class="run-file-kind">{t(`scaffold.run.writes.kind.${w.kind}`) as string}</Label>
+            <Label name="scaffold.run:file-kind" class="run-file-kind">{translate(`scaffold.run.writes.kind.${w.kind}`) as string}</Label>
             <code class="run-path" {...inspectAttrs('scaffold.run:file-path', { role: 'text' })}>{w.path}</code>
-            {!w.ready && <Label name="scaffold.run:file-keys" class="chip chip--sm run-kit-keys">{t('scaffold.run.kit.needsKeys') as string}</Label>}
+            {!w.ready && <Label name="scaffold.run:file-keys" class="chip chip--sm run-kit-keys">{translate('scaffold.run.kit.needsKeys') as string}</Label>}
           </li>
         ))}
       </ul>
@@ -134,27 +134,27 @@ function Writes({ c, t }: { c: RunViewProps; t: TFn }) {
 }
 
 // ---- the manifest sidecar (D8) ----
-function Sidecar({ c, t }: { c: RunViewProps; t: TFn }) {
+function Sidecar({ c, translate }: { c: RunViewProps; translate: TFn }) {
   return (
     <section class="run-card run-sidecar" aria-labelledby="run-sidecar-h">
-      <h3 class="run-card-h" id="run-sidecar-h" {...inspectAttrs('scaffold.run:sidecar-heading', { role: 'heading' })}>{t('scaffold.run.manifest.heading') as string}</h3>
+      <h3 class="run-card-h" id="run-sidecar-h" {...inspectAttrs('scaffold.run:sidecar-heading', { role: 'heading' })}>{translate('scaffold.run.manifest.heading') as string}</h3>
       <p class="run-sidecar-line">
         <code class="run-path" {...inspectAttrs('scaffold.run:manifest-path', { role: 'text' })}>{c.manifest?.path}</code>
-        <Label name="scaffold.run:manifest-beside" class="run-beside">{t('scaffold.run.manifest.beside', { path: c.manifest?.beside }) as string}</Label>
+        <Label name="scaffold.run:manifest-beside" class="run-beside">{translate('scaffold.run.manifest.beside', { path: c.manifest?.beside }) as string}</Label>
       </p>
       <ul class="run-sections" {...inspectAttrs('scaffold.run:sections', { role: 'list' })}>
         {(c.manifest?.sections ?? []).map((s) => (
-          <li key={s} {...inspectAttrs('scaffold.run:section', { role: 'list row' })}>{t(`scaffold.run.manifest.section.${s}`) as string}</li>
+          <li key={s} {...inspectAttrs('scaffold.run:section', { role: 'list row' })}>{translate(`scaffold.run.manifest.section.${s}`) as string}</li>
         ))}
       </ul>
       <dl class="run-facts run-deltas">
         <div class="run-fact">
           <dt><code class="run-path" {...inspectAttrs('scaffold.run:delta-structure-path', { role: 'text' })}>{c.deltas?.structure?.path}</code></dt>
-          <dd {...inspectAttrs('scaffold.run:delta-untouched', { role: 'text' })}>{t('scaffold.run.delta.untouched') as string}</dd>
+          <dd {...inspectAttrs('scaffold.run:delta-untouched', { role: 'text' })}>{translate('scaffold.run.delta.untouched') as string}</dd>
         </div>
         <div class="run-fact">
           <dt><code class="run-path" {...inspectAttrs('scaffold.run:delta-registry-path', { role: 'text' })}>{c.deltas?.registry?.path}</code></dt>
-          <dd {...inspectAttrs('scaffold.run:delta-counts', { role: 'text' })}>{t('scaffold.run.delta.counts', { added: c.deltas?.registry?.added, changed: c.deltas?.registry?.changed }) as string}</dd>
+          <dd {...inspectAttrs('scaffold.run:delta-counts', { role: 'text' })}>{translate('scaffold.run.delta.counts', { added: c.deltas?.registry?.added, changed: c.deltas?.registry?.changed }) as string}</dd>
         </div>
       </dl>
     </section>
@@ -162,17 +162,17 @@ function Sidecar({ c, t }: { c: RunViewProps; t: TFn }) {
 }
 
 // ---- readiness warnings (D6 — inform only) ----
-function Warnings({ c, t }: { c: RunViewProps; t: TFn }) {
+function Warnings({ c, translate }: { c: RunViewProps; translate: TFn }) {
   return (
     <section class="run-card run-warnings" aria-labelledby="run-warn-h">
-      <h3 class="run-card-h" id="run-warn-h" {...inspectAttrs('scaffold.run:warn-heading', { role: 'heading' })}>{t('scaffold.run.warn.heading') as string}</h3>
-      <Txt name="scaffold.run:warn-note" class="run-warn-note">{t('scaffold.run.warn.note') as string}</Txt>
+      <h3 class="run-card-h" id="run-warn-h" {...inspectAttrs('scaffold.run:warn-heading', { role: 'heading' })}>{translate('scaffold.run.warn.heading') as string}</h3>
+      <Txt name="scaffold.run:warn-note" class="run-warn-note">{translate('scaffold.run.warn.note') as string}</Txt>
       <ul class="run-warnlist" {...inspectAttrs('scaffold.run:warnlist', { role: 'list' })}>
         {(c.warnings ?? []).map((w, i) => (
           <li key={i} class="run-warn">
             <Icon name="alert-triangle" size={13} />
-            <Label name="scaffold.run:warn-text">{t(`scaffold.run.warn.${w.code}`, { kit: t(`scaffold.kit.${w.kitId}`) }) as string}</Label>
-            <a class="bt-link" href={w.href} {...inspectAttrs('scaffold.run:warn-fix', { role: 'action' })}>{t('scaffold.run.warn.fix') as string}</a>
+            <Label name="scaffold.run:warn-text">{translate(`scaffold.run.warn.${w.code}`, { kit: translate(`scaffold.kit.${w.kitId}`) }) as string}</Label>
+            <a class="bt-link" href={w.href} {...inspectAttrs('scaffold.run:warn-fix', { role: 'action' })}>{translate('scaffold.run.warn.fix') as string}</a>
           </li>
         ))}
       </ul>
@@ -181,60 +181,60 @@ function Warnings({ c, t }: { c: RunViewProps; t: TFn }) {
 }
 
 // ---- failure ----
-function Failure({ c, t }: { c: RunViewProps; t: TFn }) {
+function Failure({ c, translate }: { c: RunViewProps; translate: TFn }) {
   return (
     <section class="run-card run-failure" aria-labelledby="run-fail-h">
-      <h3 class="run-card-h" id="run-fail-h" {...inspectAttrs('scaffold.run:fail-heading', { role: 'heading' })}>{t('scaffold.run.fail.heading') as string}</h3>
-      <Txt name="scaffold.run:fail-reason" class="run-fail-reason">{t(`scaffold.run.fail.${c.failure?.code}`) as string}</Txt>
+      <h3 class="run-card-h" id="run-fail-h" {...inspectAttrs('scaffold.run:fail-heading', { role: 'heading' })}>{translate('scaffold.run.fail.heading') as string}</h3>
+      <Txt name="scaffold.run:fail-reason" class="run-fail-reason">{translate(`scaffold.run.fail.${c.failure?.code}`) as string}</Txt>
       <p class="run-fail-path"><code class="run-path" {...inspectAttrs('scaffold.run:fail-path', { role: 'text' })}>{c.failure?.path}</code></p>
       {c.failure?.rolledBack && (
-        <Txt name="scaffold.run:fail-rollback" class="run-fail-rollback">{t('scaffold.run.fail.rolledBack', { count: c.failure.wrote }) as string}</Txt>
+        <Txt name="scaffold.run:fail-rollback" class="run-fail-rollback">{translate('scaffold.run.fail.rolledBack', { count: c.failure.wrote }) as string}</Txt>
       )}
       <div class="run-actions">
-        <a class="cta-link cta-link--main" href={c.failure?.retryHref} {...inspectAttrs('scaffold.run:fail-retry', { role: 'action' })}>{t('scaffold.run.fail.retry') as string}</a>
-        <a class="cta-link cta-link--ghost" href={c.backHref} {...inspectAttrs('scaffold.run:fail-back', { role: 'action' })}>{t('scaffold.run.gate.back') as string}</a>
+        <a class="cta-link cta-link--main" href={c.failure?.retryHref} {...inspectAttrs('scaffold.run:fail-retry', { role: 'action' })}>{translate('scaffold.run.fail.retry') as string}</a>
+        <a class="cta-link cta-link--ghost" href={c.backHref} {...inspectAttrs('scaffold.run:fail-back', { role: 'action' })}>{translate('scaffold.run.gate.back') as string}</a>
       </div>
     </section>
   );
 }
 
 // ---- blocked ----
-function Blocked({ c, t }: { c: RunViewProps; t: TFn }) {
+function Blocked({ c, translate }: { c: RunViewProps; translate: TFn }) {
   return (
     <section class="run-card run-blocked">
-      <Txt name="scaffold.run:blocked-note" class="run-blocked-note">{t(`scaffold.run.blocked.${c.blocked?.code}`) as string}</Txt>
+      <Txt name="scaffold.run:blocked-note" class="run-blocked-note">{translate(`scaffold.run.blocked.${c.blocked?.code}`) as string}</Txt>
       <div class="run-actions">
-        <a class="cta-link cta-link--main" href={c.blocked?.href} {...inspectAttrs('scaffold.run:blocked-action', { role: 'action' })}>{t('scaffold.run.blocked.action') as string}</a>
+        <a class="cta-link cta-link--main" href={c.blocked?.href} {...inspectAttrs('scaffold.run:blocked-action', { role: 'action' })}>{translate('scaffold.run.blocked.action') as string}</a>
       </div>
     </section>
   );
 }
 
 // ---- main content ----
-function MainContent({ c, t }: { c: RunViewProps; t: TFn }) {
+function MainContent({ c, translate }: { c: RunViewProps; translate: TFn }) {
   return (
     <section class="mp-content" id="mp-content" aria-live="polite">
       <div class="run-body" {...inspectAttrs('scaffold.run:body', { role: 'group' })}>
-        <Banner c={c} t={t} />
+        <Banner c={c} translate={translate} />
         {c.isBlocked ? (
-          <Blocked c={c} t={t} />
+          <Blocked c={c} translate={translate} />
         ) : (
           <Fragment>
-            <InputSummary c={c} t={t} />
+            <InputSummary c={c} translate={translate} />
             {c.isPre ? (
-              <Gate c={c} t={t} />
+              <Gate c={c} translate={translate} />
             ) : c.isFailed ? (
               <Fragment>
-                <Failure c={c} t={t} />
-                <Writes c={c} t={t} />
+                <Failure c={c} translate={translate} />
+                <Writes c={c} translate={translate} />
               </Fragment>
             ) : (
               <Fragment>
-                <Writes c={c} t={t} />
-                <Sidecar c={c} t={t} />
-                {c.hasWarnings && <Warnings c={c} t={t} />}
+                <Writes c={c} translate={translate} />
+                <Sidecar c={c} translate={translate} />
+                {c.hasWarnings && <Warnings c={c} translate={translate} />}
                 <div class="run-actions run-next">
-                  <a class="cta-link cta-link--main" href="/build" {...inspectAttrs('scaffold.run:next-build', { role: 'action' })}>{t('scaffold.run.next.build') as string}</a>
+                  <a class="cta-link cta-link--main" href="/build" {...inspectAttrs('scaffold.run:next-build', { role: 'action' })}>{translate('scaffold.run.next.build') as string}</a>
                 </div>
               </Fragment>
             )}
@@ -247,7 +247,7 @@ function MainContent({ c, t }: { c: RunViewProps; t: TFn }) {
 
 // ---- panels ----
 function renderPanels(c: RunViewProps) {
-  return <Panels c={c} t={c.t}>{MainContent({ c, t: c.t })}</Panels>;
+  return <Panels c={c} translate={c.translate}>{MainContent({ c, translate: c.translate })}</Panels>;
 }
 
 // ---- Fragment response ----
@@ -258,20 +258,20 @@ export function PanelsSwap(c: RunViewProps) {
 // ---- Page ----
 const RunView: FC<RunViewProps> = (props) => (
   <MainShellView
-    title={props.t('scaffold.run.pageTitle') as string}
+    title={props.translate('scaffold.run.pageTitle') as string}
     locale={props.locale}
     activeShell={props.activeShell ?? 'scaffold'}
     prefs={props.prefs as { accent?: string; [key: string]: unknown }}
     project={props.project as { name?: string; savedLabel?: string }}
     mainClass="shell-main-loop shell-main-scaffold-run"
-    headerExtra={<AccountChip c={props} t={props.t} />}
+    headerExtra={<AccountChip c={props} translate={props.translate} />}
     surface={
       <Fragment>
         <link rel="stylesheet" href="/assets/css/scaffold-run.css" />
         {renderPanels(props)}
       </Fragment>
     }
-    t={props.t}
+    translate={props.translate}
   />
 );
 

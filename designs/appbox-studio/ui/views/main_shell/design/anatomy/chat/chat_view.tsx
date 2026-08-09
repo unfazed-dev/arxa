@@ -44,7 +44,7 @@ const ChatView: FC<ChatViewProps> = (props) => (
   <AnatomyShellView
     screenId={SCREEN_ID}
     surfaceId={SURFACE_ID}
-    title={props.t('design.chat.pageTitle') as string}
+    title={props.translate('design.chat.pageTitle') as string}
     locale={props.locale}
     activeShell={props.activeShell ?? 'design'}
     prefs={props.prefs as { accent?: string; [key: string]: unknown }}
@@ -53,12 +53,12 @@ const ChatView: FC<ChatViewProps> = (props) => (
     footer={
       <TimelineEl
         timeline={props.timeline as any}
-        label={props.t('design.timelineLabel') as string}
-        t={props.t}
+        label={props.translate('design.timelineLabel') as string}
+        translate={props.translate}
       />
     }
     surface={RenderPanels(props)}
-    t={props.t}
+    translate={props.translate}
   />
 );
 

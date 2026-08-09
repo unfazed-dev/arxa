@@ -128,7 +128,7 @@ interface Prefs {
 
 // The build loop render context. Every exported macro receives this as props.
 interface LoopProps {
-  t: TFn;
+  translate: TFn;
   panel?: string;
   messages?: Message[];
   chips?: { id: string; label: string; tone?: string; removeHref?: string }[];
@@ -173,9 +173,9 @@ interface LoopProps {
 // card keeps the "view in the main panel" CTA that docks the chat.
 interface MsgCardProps {
   m: Message;
-  t: TFn;
+  translate: TFn;
 }
-export function MsgCard({ m, t }: MsgCardProps) {
+export function MsgCard({ m, translate }: MsgCardProps) {
   if (m.from === 'user') {
     return (
       <div class="msg msg-user">
@@ -188,7 +188,7 @@ export function MsgCard({ m, t }: MsgCardProps) {
     <div class={className}>
       <header class="msg-meta" {...inspectAttrs('loop:msg-meta', { role: 'nav' })}>
         <TypeBadge type={m.card!.type} label={m.card!.label} />
-        {m.card!.state && <StatusPill state={m.card!.state} size="sm" t={t} />}
+        {m.card!.state && <StatusPill state={m.card!.state} size="sm" translate={translate} />}
       </header>
       <Label name="loop:msg-text" class="msg-text">{m.text}</Label>
       {m.card!.detail && <Label name="loop:msg-detail" class="msg-detail">{m.card!.detail}</Label>}
@@ -197,12 +197,12 @@ export function MsgCard({ m, t }: MsgCardProps) {
           <form method="post" action="/build/gates/decide"
                 hx-post="/build/gates/decide" hx-target="#panels" hx-swap="outerMorph">
             <input type="hidden" name="gate" value={m.card!.gateId} {...inspectAttrs('loop:gate-id', { role: 'input' })} />
-            <button type="submit" name="decision" value="approved" class="btn-approve" {...inspectAttrs('loop:approve', { role: 'action' })}>{t('action.approve') as string}</button>
-            <button type="submit" name="decision" value="rejected" class="btn-reject ghost" {...inspectAttrs('loop:reject', { role: 'action' })}>{t('action.reject') as string}</button>
+            <button type="submit" name="decision" value="approved" class="btn-approve" {...inspectAttrs('loop:approve', { role: 'action' })}>{translate('action.approve') as string}</button>
+            <button type="submit" name="decision" value="rejected" class="btn-reject ghost" {...inspectAttrs('loop:reject', { role: 'action' })}>{translate('action.reject') as string}</button>
           </form>
-          <CtaLink href={`/build/chips/pin?ref=gate/${m.card!.gateId}`} label={t('build.rejectWithNote') as string}
+          <CtaLink href={`/build/chips/pin?ref=gate/${m.card!.gateId}`} label={translate('build.rejectWithNote') as string}
               glyph="undo-2" variant="ghost" size={13}
-              title={t('build.rejectWithNoteTitle') as string}
+              title={translate('build.rejectWithNoteTitle') as string}
               hx={{ target: '#panels' }} />
         </span>
       )}
@@ -210,10 +210,10 @@ export function MsgCard({ m, t }: MsgCardProps) {
         {m.artifact && (
           <span class="msg-cta" {...inspectAttrs('loop:msg-cta', { role: 'group' })}>
             {m.active ? (
-              <CtaLink href={`/build/artifact/${m.artifact}`} label={t('build.onCanvas') as string}
+              <CtaLink href={`/build/artifact/${m.artifact}`} label={translate('build.onCanvas') as string}
                   glyph="circle-dot" variant="main" size={12} hx={{ target: '#panels' }} />
             ) : (
-              <CtaLink href={`/build/artifact/${m.artifact}`} label={t('build.viewOnCanvas') as string}
+              <CtaLink href={`/build/artifact/${m.artifact}`} label={translate('build.viewOnCanvas') as string}
                   variant="main" size={13} hx={{ target: '#panels' }} />
             )}
           </span>
@@ -228,7 +228,7 @@ export function ChatThread(props: LoopProps) {
   return (
     <div class="av-list chat-thread" id="chat-thread" {...inspectAttrs('loop:chat-thread', { role: 'group' })}>
       {[...(props.messages ?? [])].reverse().map((m, i) => (
-        <MsgCard key={i} m={m} t={props.t} />
+        <MsgCard key={i} m={m} translate={props.translate} />
       ))}
     </div>
   );
@@ -238,11 +238,11 @@ export function ChatThread(props: LoopProps) {
 // this is the note input.
 export function ComposerPanel(props: LoopProps) {
   const spec = {
-    eyebrow: props.t('build.runEyebrow', { number: props.run?.number, brief: props.run?.brief }) as string,
+    eyebrow: props.translate('build.runEyebrow', { number: props.run?.number, brief: props.run?.brief }) as string,
     chips: props.chips,
   };
   return (
-    <ComposerPanelOpen spec={spec} t={props.t}>
+    <ComposerPanelOpen spec={spec} translate={props.translate}>
       <ChatThread {...props} />
       {/* Field reads composerAction, placeholder, modelMenu, etc. from the render context. */}
       <Field {...(props as any)} />
@@ -254,9 +254,9 @@ export function ComposerPanel(props: LoopProps) {
 
 // The main panel's content: the open file, else the open artifact, else empty.
 export function MainContent(props: LoopProps) {
-  const { t } = props;
+  const { translate } = props;
   if (props.fileView) {
-    return <MainView f={props.fileView} t={t} />;
+    return <MainView f={props.fileView} translate={translate} />;
   }
   if (props.artifact) {
     return (
@@ -265,7 +265,7 @@ export function MainContent(props: LoopProps) {
       </section>
     );
   }
-  return <Empty t={t} />;
+  return <Empty translate={translate} />;
 }
 
 // The three content panels, one swap unit. Composer LEFT, activity RIGHT.
@@ -273,10 +273,10 @@ interface PanelsProps extends LoopProps {
   oob?: boolean;
 }
 export function Panels(props: PanelsProps) {
-  const { t } = props;
+  const { translate } = props;
   return (
     <div class="panels" id="panels" data-panel={props.panel} {...(props.oob ? { 'hx-swap-oob': 'outerHTML' } : {})}>
-      <PanelBar panel={props.panel} t={t} />
+      <PanelBar panel={props.panel} translate={translate} />
       <ComposerPanel {...props} />
       <MainPanelOpen>
         <MainContent {...props} />
@@ -289,27 +289,27 @@ export function Panels(props: PanelsProps) {
 // ===== the activity panel ===================================================
 
 export function RunView(props: LoopProps) {
-  const { t } = props;
+  const { translate } = props;
   const run = props.run!;
   return (
     <div class="av-view run-view">
       <header class="av-view-head">
-        <Label name="loop:run-eyebrow" class="eyebrow">{t('build.runEyebrow', { number: run.number, brief: run.brief }) as string}</Label>
+        <Label name="loop:run-eyebrow" class="eyebrow">{translate('build.runEyebrow', { number: run.number, brief: run.brief }) as string}</Label>
         <strong class="facts-state" {...inspectAttrs('loop:run-state', { role: 'text' })}>{run.stateLabel}</strong>
         <span class="facts-list">
-          <Label name="loop:fact-started">{t('build.started') as string} {run.started}</Label>
-          <Label name="loop:fact-elapsed">{t('build.elapsedFact') as string} {run.elapsed}</Label>
-          <Label name="loop:fact-stop-on-red">{t('facts.stopOnRed') as string} {run.policy.stopOnRed ? (t('build.on') as string) : (t('build.off') as string)}</Label>
-          <Label name="loop:fact-esc">{t('facts.esc') as string} {run.policy.escLimit}</Label>
+          <Label name="loop:fact-started">{translate('build.started') as string} {run.started}</Label>
+          <Label name="loop:fact-elapsed">{translate('build.elapsedFact') as string} {run.elapsed}</Label>
+          <Label name="loop:fact-stop-on-red">{translate('facts.stopOnRed') as string} {run.policy.stopOnRed ? (translate('build.on') as string) : (translate('build.off') as string)}</Label>
+          <Label name="loop:fact-esc">{translate('facts.esc') as string} {run.policy.escLimit}</Label>
         </span>
       </header>
       <form class="run-controls" method="post" action="/build/run/control"
             hx-post="/build/run/control" hx-target="#panel-activity-body" hx-swap="innerHTML"
             {...inspectAttrs('loop:run-controls', { role: 'group' })}>
         {run.pausedByYou ? (
-          <button type="submit" name="action" value="resume" class="btn-approve" {...inspectAttrs('loop:resume-run', { role: 'action' })}><Icon name="play" size={14} /> {t('build.resumeRun') as string}</button>
+          <button type="submit" name="action" value="resume" class="btn-approve" {...inspectAttrs('loop:resume-run', { role: 'action' })}><Icon name="play" size={14} /> {translate('build.resumeRun') as string}</button>
         ) : (
-          <button type="submit" name="action" value="pause" class="ghost" {...inspectAttrs('loop:pause-run', { role: 'action' })}><Icon name="pause" size={14} /> {t('build.pauseRun') as string}</button>
+          <button type="submit" name="action" value="pause" class="ghost" {...inspectAttrs('loop:pause-run', { role: 'action' })}><Icon name="pause" size={14} /> {translate('build.pauseRun') as string}</button>
         )}
       </form>
       <ol class="run-stages" {...inspectAttrs('loop:stages', { role: 'list' })}>
@@ -317,7 +317,7 @@ export function RunView(props: LoopProps) {
           <li class="run-stage" key={i}>
             <span class="run-stage-main">
               <Label name="loop:stage-label" class="run-stage-label">{s.n}. {s.label}</Label>
-              <StatusPill state={s.state} t={t} />
+              <StatusPill state={s.state} translate={translate} />
             </span>
             {['active', 'queued', 'held'].includes(s.state) && (
               <span class="run-stage-acts" {...inspectAttrs('loop:stage-acts', { role: 'group' })}>
@@ -325,24 +325,24 @@ export function RunView(props: LoopProps) {
                   <form method="post" action={`/build/stages/${s.id}/control`}
                         hx-post={`/build/stages/${s.id}/control`} hx-target="#panels" hx-swap="outerMorph">
                     <button type="submit" name="action" value="resume" class="ico-btn"
-                      title={t('build.resumeStage', { label: s.label }) as string}
-                      aria-label={t('build.resumeStage', { label: s.label }) as string}
+                      title={translate('build.resumeStage', { label: s.label }) as string}
+                      aria-label={translate('build.resumeStage', { label: s.label }) as string}
                       {...inspectAttrs('loop:stage-resume', { role: 'action' })}><Icon name="play" size={14} /></button>
                   </form>
                 ) : (
                   <form method="post" action={`/build/stages/${s.id}/control`}
                         hx-post={`/build/stages/${s.id}/control`} hx-target="#panels" hx-swap="outerMorph">
                     <button type="submit" name="action" value="pause" class="ico-btn"
-                      title={t('build.pauseStage', { label: s.label }) as string}
-                      aria-label={t('build.pauseStage', { label: s.label }) as string}
+                      title={translate('build.pauseStage', { label: s.label }) as string}
+                      aria-label={translate('build.pauseStage', { label: s.label }) as string}
                       {...inspectAttrs('loop:stage-pause', { role: 'action' })}><Icon name="pause" size={14} /></button>
                   </form>
                 )}
                 <form method="post" action={`/build/stages/${s.id}/control`}
                       hx-post={`/build/stages/${s.id}/control`} hx-target="#panels" hx-swap="outerMorph">
                   <button type="submit" name="action" value="cancel" class="ico-btn"
-                    title={t('build.cancelStage', { label: s.label }) as string}
-                    aria-label={t('build.cancelStage', { label: s.label }) as string}
+                    title={translate('build.cancelStage', { label: s.label }) as string}
+                    aria-label={translate('build.cancelStage', { label: s.label }) as string}
                     {...inspectAttrs('loop:stage-cancel', { role: 'action' })}><Icon name="x" size={14} /></button>
                 </form>
               </span>
@@ -355,19 +355,19 @@ export function RunView(props: LoopProps) {
 }
 
 export function ThreadView(props: LoopProps) {
-  const { t } = props;
+  const { translate } = props;
   const filters = [
-    { id: 'all', label: t('build.filter.all') as string },
-    { id: 'stage', label: t('build.filter.stage') as string },
-    { id: 'gate', label: t('build.filter.gate') as string },
-    { id: 'findings', label: t('build.filter.findings') as string },
-    { id: 'evidence', label: t('build.filter.evidence') as string },
-    { id: 'note', label: t('build.filter.note') as string },
+    { id: 'all', label: translate('build.filter.all') as string },
+    { id: 'stage', label: translate('build.filter.stage') as string },
+    { id: 'gate', label: translate('build.filter.gate') as string },
+    { id: 'findings', label: translate('build.filter.findings') as string },
+    { id: 'evidence', label: translate('build.filter.evidence') as string },
+    { id: 'note', label: translate('build.filter.note') as string },
   ];
   return (
     <div class="av-view thread-view">
-      <Txt name="loop:filter-note" class="av-view-note muted">{t('build.filterNote') as string}</Txt>
-      <nav class="thread-filter" aria-label={t('build.filterAria') as string} {...inspectAttrs('loop:filter-nav', { role: 'group' })}>
+      <Txt name="loop:filter-note" class="av-view-note muted">{translate('build.filterNote') as string}</Txt>
+      <nav class="thread-filter" aria-label={translate('build.filterAria') as string} {...inspectAttrs('loop:filter-nav', { role: 'group' })}>
         {filters.map(o => (
           <a key={o.id}
              class={`filter-item${props.filter === o.id ? ' is-active' : ''}`}
@@ -381,7 +381,7 @@ export function ThreadView(props: LoopProps) {
 }
 
 export function ArtifactsView(props: LoopProps) {
-  const { t } = props;
+  const { translate } = props;
   return (
     <div class="av-view artifacts-view">
       <ul class="artifact-index" {...inspectAttrs('loop:artifact-list', { role: 'list' })}>
@@ -393,7 +393,7 @@ export function ArtifactsView(props: LoopProps) {
                {...inspectAttrs('loop:artifact-link', { role: 'action' })}>
               <TypeBadge type={a.kind} />
               <Label name="loop:artifact-label" class="artifact-index-label">{a.label}</Label>
-              {a.state && <StatusPill state={a.state} t={t} />}
+              {a.state && <StatusPill state={a.state} translate={translate} />}
             </a>
           </li>
         ))}
@@ -405,7 +405,7 @@ export function ArtifactsView(props: LoopProps) {
 export function CommitsView(props: LoopProps) {
   return (
     <div class="av-view commits-view">
-      <Txt name="loop:commits-note" class="av-view-note muted">{props.t('build.commitsNote') as string}</Txt>
+      <Txt name="loop:commits-note" class="av-view-note muted">{props.translate('build.commitsNote') as string}</Txt>
       <ol class="commit-list" {...inspectAttrs('loop:commit-list', { role: 'list' })}>
         {[...(props.commits ?? [])].reverse().map((commit, i) => (
           <li class="commit" key={i}>
@@ -419,10 +419,10 @@ export function CommitsView(props: LoopProps) {
 }
 
 export function FilesView(props: LoopProps) {
-  const { t } = props;
+  const { translate } = props;
   return (
     <div class="av-view files-view">
-      <Txt name="loop:files-note" class="av-view-note muted">{t('build.filesNote') as string}</Txt>
+      <Txt name="loop:files-note" class="av-view-note muted">{translate('build.filesNote') as string}</Txt>
       <ul class="file-list" {...inspectAttrs('loop:file-list', { role: 'list' })}>
         {(props.files ?? []).map((f, i) => (
           <li class="file-row" key={i} {...inspectAttrs('loop:file-row', { role: 'list row' })}>
@@ -432,12 +432,12 @@ export function FilesView(props: LoopProps) {
                  hx-get={f.get} hx-target="#panel-main" hx-swap="innerHTML" hx-push-url={f.href}
                  {...inspectAttrs('loop:file-link', { role: 'action' })}>
                 <code class="file-path" {...inspectAttrs('loop:file-path', { role: 'text' })}>{f.path}</code>
-                <span class={`chip chip--muted file-status-${f.status}`} {...inspectAttrs('loop:file-status', { role: 'label' })}>{t(`build.fileStatus.${f.status}`) as string}</span>
+                <span class={`chip chip--muted file-status-${f.status}`} {...inspectAttrs('loop:file-status', { role: 'label' })}>{translate(`build.fileStatus.${f.status}`) as string}</span>
               </a>
             ) : (
               <Fragment>
                 <code class="file-path" {...inspectAttrs('loop:file-path', { role: 'text' })}>{f.path}</code>
-                <span class={`chip chip--muted file-status-${f.status}`} {...inspectAttrs('loop:file-status', { role: 'label' })}>{t(`build.fileStatus.${f.status}`) as string}</span>
+                <span class={`chip chip--muted file-status-${f.status}`} {...inspectAttrs('loop:file-status', { role: 'label' })}>{translate(`build.fileStatus.${f.status}`) as string}</span>
               </Fragment>
             )}
           </li>
@@ -461,7 +461,7 @@ export function ActivityBody(props: LoopProps) {
 // panel-affecting act; the <aside> itself is never replaced.
 export function ActivityChrome(props: LoopProps) {
   const spec = {
-    label: props.t(`activityView.${props.activityView}`) as string,
+    label: props.translate(`activityView.${props.activityView}`) as string,
     views: props.activityViews ?? [],
     size: props.panelSize as any,
     sizeHref: props.panelSizeHref,
@@ -469,7 +469,7 @@ export function ActivityChrome(props: LoopProps) {
   return (
     <Fragment>
       <ActivityTop spec={spec} oob={true} />
-      <ActivityBottom spec={spec} oob={true} t={props.t} />
+      <ActivityBottom spec={spec} oob={true} translate={props.translate} />
     </Fragment>
   );
 }
@@ -486,13 +486,13 @@ export function ActivityTarget(props: LoopProps) {
 
 export function ActivityPanel(props: LoopProps) {
   const spec = {
-    label: props.t(`activityView.${props.activityView}`) as string,
+    label: props.translate(`activityView.${props.activityView}`) as string,
     views: props.activityViews ?? [],
     size: props.panelSize as any,
     sizeHref: props.panelSizeHref,
   };
   return (
-    <ActivityPanelOpen spec={spec} t={props.t}>
+    <ActivityPanelOpen spec={spec} translate={props.translate}>
       <ActivityBody {...props} />
     </ActivityPanelOpen>
   );
@@ -515,21 +515,21 @@ export function Timeline(props: TimelineProps) {
     <RenderTimeline
       timeline={props.timeline}
       oob={props.oob}
-      label={props.t('build.timelineLabel') as string}
-      t={props.t}
+      label={props.translate('build.timelineLabel') as string}
+      translate={props.translate}
     />
   );
 }
 
 // ===== Canvas artifacts: one thing at a time, large =========================
 
-export function GateCanvas(props: { gate: GateItem; t: TFn; [key: string]: unknown }) {
-  const { gate, t } = props;
+export function GateCanvas(props: { gate: GateItem; translate: TFn; [key: string]: unknown }) {
+  const { gate, translate } = props;
   return (
     <article class={`artifact gate-artifact gate-${gate.state}`}>
       <header class="artifact-head">
-        <Label name="loop:gate-eyebrow" class="eyebrow">{t('build.humanGate') as string}</Label>
-        <StatusPill state={gate.state} t={t} />
+        <Label name="loop:gate-eyebrow" class="eyebrow">{translate('build.humanGate') as string}</Label>
+        <StatusPill state={gate.state} translate={translate} />
       </header>
       <Heading name="loop:gate-title" level={2} class="display">{gate.label}</Heading>
       <Txt name="loop:gate-context" class="artifact-lede">{gate.context}</Txt>
@@ -540,50 +540,50 @@ export function GateCanvas(props: { gate: GateItem; t: TFn; [key: string]: unkno
             <form class="gate-buttons" method="post" action="/build/gates/decide"
                   hx-post="/build/gates/decide" hx-target="#panels" hx-swap="outerMorph">
               <input type="hidden" name="gate" value={gate.id} {...inspectAttrs('loop:gate-id', { role: 'input' })} />
-              <button type="submit" name="decision" value="approved" class="btn-approve" {...inspectAttrs('loop:approve', { role: 'action' })}>{t('action.approve') as string}</button>
-              <button type="submit" name="decision" value="rejected" class="btn-reject ghost" {...inspectAttrs('loop:reject', { role: 'action' })}>{t('action.reject') as string}</button>
-              <span class="htmx-indicator muted" {...inspectAttrs('loop:minting', { role: 'text' })}>{t('build.minting') as string}</span>
+              <button type="submit" name="decision" value="approved" class="btn-approve" {...inspectAttrs('loop:approve', { role: 'action' })}>{translate('action.approve') as string}</button>
+              <button type="submit" name="decision" value="rejected" class="btn-reject ghost" {...inspectAttrs('loop:reject', { role: 'action' })}>{translate('action.reject') as string}</button>
+              <span class="htmx-indicator muted" {...inspectAttrs('loop:minting', { role: 'text' })}>{translate('build.minting') as string}</span>
             </form>
-            <CtaLink href={`/build/chips/pin?ref=gate/${gate.id}`} label={t('build.rejectWithNoteLong') as string}
+            <CtaLink href={`/build/chips/pin?ref=gate/${gate.id}`} label={translate('build.rejectWithNoteLong') as string}
                 glyph="undo-2" variant="ghost" hx={{ target: '#panels' }} />
           </div>
-          <Txt name="loop:gate-foot" class="artifact-foot muted">{t('gateFoot') as string}</Txt>
+          <Txt name="loop:gate-foot" class="artifact-foot muted">{translate('gateFoot') as string}</Txt>
         </Fragment>
       ) : gate.provenance ? (
         <Fragment>
           <dl class="provenance">
-            <div><dt {...inspectAttrs('loop:prov-label', { role: 'label' })}>{t('prov.decidedBy') as string}</dt><dd {...inspectAttrs('loop:prov-value', { role: 'text' })}>{gate.provenance.by} · {gate.provenance.shell}</dd></div>
-            <div><dt {...inspectAttrs('loop:prov-label', { role: 'label' })}>{t('prov.device') as string}</dt><dd {...inspectAttrs('loop:prov-value', { role: 'text' })}>{gate.provenance.device}</dd></div>
-            <div><dt {...inspectAttrs('loop:prov-label', { role: 'label' })}>{t('prov.confirm') as string}</dt><dd {...inspectAttrs('loop:prov-value', { role: 'text' })}>{gate.provenance.method} · {gate.provenance.at}</dd></div>
-            <div><dt {...inspectAttrs('loop:prov-label', { role: 'label' })}>{t('prov.hash') as string}</dt><dd><code {...inspectAttrs('loop:prov-hash', { role: 'text' })}>{gate.provenance.hash}</code></dd></div>
+            <div><dt {...inspectAttrs('loop:prov-label', { role: 'label' })}>{translate('prov.decidedBy') as string}</dt><dd {...inspectAttrs('loop:prov-value', { role: 'text' })}>{gate.provenance.by} · {gate.provenance.shell}</dd></div>
+            <div><dt {...inspectAttrs('loop:prov-label', { role: 'label' })}>{translate('prov.device') as string}</dt><dd {...inspectAttrs('loop:prov-value', { role: 'text' })}>{gate.provenance.device}</dd></div>
+            <div><dt {...inspectAttrs('loop:prov-label', { role: 'label' })}>{translate('prov.confirm') as string}</dt><dd {...inspectAttrs('loop:prov-value', { role: 'text' })}>{gate.provenance.method} · {gate.provenance.at}</dd></div>
+            <div><dt {...inspectAttrs('loop:prov-label', { role: 'label' })}>{translate('prov.hash') as string}</dt><dd><code {...inspectAttrs('loop:prov-hash', { role: 'text' })}>{gate.provenance.hash}</code></dd></div>
           </dl>
-          {gate.note && <Txt name="loop:gate-note" class="gate-note">{t('build.yourNote') as string} {gate.note}</Txt>}
+          {gate.note && <Txt name="loop:gate-note" class="gate-note">{translate('build.yourNote') as string} {gate.note}</Txt>}
         </Fragment>
       ) : (
-        <Txt name="loop:gate-unreachable" class="artifact-foot muted">{t('build.gateNotReachable') as string}</Txt>
+        <Txt name="loop:gate-unreachable" class="artifact-foot muted">{translate('build.gateNotReachable') as string}</Txt>
       )}
     </article>
   );
 }
 
-export function StageCanvas(props: { s: StageItem; total: number; run?: RunState; t: TFn; [key: string]: unknown }) {
-  const { s, total, t } = props;
+export function StageCanvas(props: { s: StageItem; total: number; run?: RunState; translate: TFn; [key: string]: unknown }) {
+  const { s, total, translate } = props;
   return (
     <article class={`artifact stage-artifact stage-state-${s.state}`}>
       <header class="artifact-head">
-        <Label name="loop:stage-eyebrow" class="eyebrow">{t('build.stageEyebrow', { n: s.n, total }) as string}</Label>
-        <StatusPill state={s.state} t={t} />
+        <Label name="loop:stage-eyebrow" class="eyebrow">{translate('build.stageEyebrow', { n: s.n, total }) as string}</Label>
+        <StatusPill state={s.state} translate={translate} />
       </header>
       <Heading name="loop:stage-title" level={2} class="display">{s.label}</Heading>
-      <Txt name="loop:stage-metric" class="big-metric">{s.duration}<Label name="loop:stage-metric-label" class="big-metric-label">{t('build.onTheLine') as string}</Label></Txt>
+      <Txt name="loop:stage-metric" class="big-metric">{s.duration}<Label name="loop:stage-metric-label" class="big-metric-label">{translate('build.onTheLine') as string}</Label></Txt>
       <Txt name="loop:stage-lede" class="artifact-lede">{s.summary}</Txt>
       <Txt name="loop:stage-detail" class="artifact-detail muted">{s.detail}</Txt>
       {s.attempts && (
         <ol class="attempts" {...inspectAttrs('loop:attempts', { role: 'list' })}>
           {s.attempts.map((a, i) => (
             <li class={`attempt attempt-${a.state}`} key={i}>
-              <Label name="loop:attempt-n" class="attempt-n">{t('build.attemptOf', { n: a.n, total: props.run?.policy.escLimit }) as string}</Label>
-              <StatusPill state={a.state} t={t} />
+              <Label name="loop:attempt-n" class="attempt-n">{translate('build.attemptOf', { n: a.n, total: props.run?.policy.escLimit }) as string}</Label>
+              <StatusPill state={a.state} translate={translate} />
               <Label name="loop:attempt-note" class="muted">{a.note}</Label>
             </li>
           ))}
@@ -591,39 +591,39 @@ export function StageCanvas(props: { s: StageItem; total: number; run?: RunState
       )}
       {s.state === 'recovered' && (
         <p class="artifact-foot">
-          <CtaLink href="/build/artifact/findings/coverage" label={t('build.seeFindings') as string} hx={{ target: '#panels' }} />
+          <CtaLink href="/build/artifact/findings/coverage" label={translate('build.seeFindings') as string} hx={{ target: '#panels' }} />
         </p>
       )}
     </article>
   );
 }
 
-export function FindingsCanvas(props: { a: { list?: FindingItem[]; [key: string]: unknown }; t: TFn; [key: string]: unknown }) {
-  const { a, t } = props;
+export function FindingsCanvas(props: { a: { list?: FindingItem[]; [key: string]: unknown }; translate: TFn; [key: string]: unknown }) {
+  const { a, translate } = props;
   return (
     <article class="artifact findings-artifact">
       <header class="artifact-head">
-        <Label name="loop:findings-eyebrow" class="eyebrow">{t('build.findingsEyebrow', { gate: a.gate }) as string}</Label>
-        <span class="chip chip--muted" {...inspectAttrs('loop:findings-chip', { role: 'label' })}>{t('build.findingsChip', { count: a.list?.length ?? 0 }) as string}</span>
+        <Label name="loop:findings-eyebrow" class="eyebrow">{translate('build.findingsEyebrow', { gate: a.gate }) as string}</Label>
+        <span class="chip chip--muted" {...inspectAttrs('loop:findings-chip', { role: 'label' })}>{translate('build.findingsChip', { count: a.list?.length ?? 0 }) as string}</span>
       </header>
-      <Heading name="loop:findings-title" level={2} class="display">{t('findingsHeadline') as string}</Heading>
-      <Txt name="loop:findings-lede" class="artifact-lede">{t('findingsLede') as string}</Txt>
+      <Heading name="loop:findings-title" level={2} class="display">{translate('findingsHeadline') as string}</Heading>
+      <Txt name="loop:findings-lede" class="artifact-lede">{translate('findingsLede') as string}</Txt>
       <div class="finding-list" {...inspectAttrs('loop:finding-list', { role: 'group' })}>
         {(a.list ?? []).map((f, i) => (
           <article class={`finding finding-${f.severity}`} key={i}>
             <header class="finding-head">
-              <span class={`sev sev-${f.severity}`} {...inspectAttrs('loop:finding-severity', { role: 'label' })}>{t(`finding.severity.${f.severity}`) as string}</span>
+              <span class={`sev sev-${f.severity}`} {...inspectAttrs('loop:finding-severity', { role: 'label' })}>{translate(`finding.severity.${f.severity}`) as string}</span>
               <code class="finding-loc" {...inspectAttrs('loop:finding-loc', { role: 'text' })}>{f.file}:{f.line}</code>
               <Label name="loop:finding-check" class="finding-check muted">{f.check}</Label>
             </header>
             <dl class="finding-body">
-              <div><dt {...inspectAttrs('loop:finding-expected-label', { role: 'label' })}>{t('finding.expected') as string}</dt><dd {...inspectAttrs('loop:finding-expected-value', { role: 'text' })}>{f.expected}</dd></div>
-              <div><dt {...inspectAttrs('loop:finding-actual-label', { role: 'label' })}>{t('finding.actual') as string}</dt><dd {...inspectAttrs('loop:finding-actual-value', { role: 'text' })}>{f.actual}</dd></div>
+              <div><dt {...inspectAttrs('loop:finding-expected-label', { role: 'label' })}>{translate('finding.expected') as string}</dt><dd {...inspectAttrs('loop:finding-expected-value', { role: 'text' })}>{f.expected}</dd></div>
+              <div><dt {...inspectAttrs('loop:finding-actual-label', { role: 'label' })}>{translate('finding.actual') as string}</dt><dd {...inspectAttrs('loop:finding-actual-value', { role: 'text' })}>{f.actual}</dd></div>
             </dl>
-            <p class="reproduce"><Label name="loop:finding-reproduce-label" class="fact-label">{t('finding.reproduce') as string}</Label><code {...inspectAttrs('loop:finding-reproduce-cmd', { role: 'text' })}>{f.reproduce}</code></p>
+            <p class="reproduce"><Label name="loop:finding-reproduce-label" class="fact-label">{translate('finding.reproduce') as string}</Label><code {...inspectAttrs('loop:finding-reproduce-cmd', { role: 'text' })}>{f.reproduce}</code></p>
             <footer class="finding-foot">
               <span class="chip chip--muted" {...inspectAttrs('loop:finding-state', { role: 'label' })}>{f.state}</span>
-              <span class="muted" {...inspectAttrs('loop:finding-fingerprint', { role: 'text' })}>{t('finding.fingerprint') as string} <code {...inspectAttrs('loop:finding-fingerprint-hash', { role: 'text' })}>{f.fingerprint}</code></span>
+              <span class="muted" {...inspectAttrs('loop:finding-fingerprint', { role: 'text' })}>{translate('finding.fingerprint') as string} <code {...inspectAttrs('loop:finding-fingerprint-hash', { role: 'text' })}>{f.fingerprint}</code></span>
             </footer>
             <Txt name="loop:finding-note" class="finding-note muted">{f.note}</Txt>
           </article>
@@ -633,16 +633,16 @@ export function FindingsCanvas(props: { a: { list?: FindingItem[]; [key: string]
   );
 }
 
-export function ChartCanvas(props: { chart: ChartData; run?: RunState; t: TFn; [key: string]: unknown }) {
-  const { chart, t } = props;
+export function ChartCanvas(props: { chart: ChartData; run?: RunState; translate: TFn; [key: string]: unknown }) {
+  const { chart, translate } = props;
   return (
     <article class="artifact chart-artifact">
       <header class="artifact-head">
-        <Label name="loop:chart-eyebrow" class="eyebrow">{t('build.chartEyebrow', { number: props.run?.number }) as string}</Label>
+        <Label name="loop:chart-eyebrow" class="eyebrow">{translate('build.chartEyebrow', { number: props.run?.number }) as string}</Label>
       </header>
-      <Heading name="loop:chart-title" level={2} class="display">{t('build.chartHeadline') as string}</Heading>
-      <Txt name="loop:chart-lede" class="artifact-lede">{t('build.chartLede', { duration: chart.maxDuration.duration, elapsed: props.run?.elapsed }) as string}</Txt>
-      <div class="bars" role="img" aria-label={t('build.chartAria', { duration: chart.maxDuration.duration }) as string} {...inspectAttrs('loop:chart-bars', { role: 'group' })}>
+      <Heading name="loop:chart-title" level={2} class="display">{translate('build.chartHeadline') as string}</Heading>
+      <Txt name="loop:chart-lede" class="artifact-lede">{translate('build.chartLede', { duration: chart.maxDuration.duration, elapsed: props.run?.elapsed }) as string}</Txt>
+      <div class="bars" role="img" aria-label={translate('build.chartAria', { duration: chart.maxDuration.duration }) as string} {...inspectAttrs('loop:chart-bars', { role: 'group' })}>
         {chart.bars.map((b, i) => (
           <div class="bar-row" key={i}>
             <Label name="loop:bar-label" class="bar-label">{b.label}</Label>
@@ -651,25 +651,25 @@ export function ChartCanvas(props: { chart: ChartData; run?: RunState; t: TFn; [
           </div>
         ))}
       </div>
-      <p class="chart-note muted"><span class="legend-swatch"></span>{t('chartNote') as string}</p>
+      <p class="chart-note muted"><span class="legend-swatch"></span>{translate('chartNote') as string}</p>
     </article>
   );
 }
 
-export function LogCanvas(props: { messages: LogLine[]; run?: RunState; t: TFn; [key: string]: unknown }) {
-  const { messages, t } = props;
+export function LogCanvas(props: { messages: LogLine[]; run?: RunState; translate: TFn; [key: string]: unknown }) {
+  const { messages, translate } = props;
   return (
     <article class="artifact log-artifact">
       <header class="artifact-head">
-        <Label name="loop:log-eyebrow" class="eyebrow">{t('logEyebrow') as string} · {t('build.runShort', { number: props.run?.number }) as string}</Label>
-        <span class="chip chip--muted" {...inspectAttrs('loop:log-chip', { role: 'label' })}>{t('build.elapsedChip', { elapsed: props.run?.elapsed }) as string}</span>
+        <Label name="loop:log-eyebrow" class="eyebrow">{translate('logEyebrow') as string} · {translate('build.runShort', { number: props.run?.number }) as string}</Label>
+        <span class="chip chip--muted" {...inspectAttrs('loop:log-chip', { role: 'label' })}>{translate('build.elapsedChip', { elapsed: props.run?.elapsed }) as string}</span>
       </header>
-      <Heading name="loop:log-title" level={2} class="display">{t('build.logHeadline') as string}</Heading>
+      <Heading name="loop:log-title" level={2} class="display">{translate('build.logHeadline') as string}</Heading>
       <div class="log-lines" {...inspectAttrs('loop:log-lines', { role: 'group' })}>
         {messages.map((m, i) => (
           <p class={`log-line log-${m.from}${m.tone ? ` log-tone-${m.tone}` : ''}`} key={i}>
             <Label name="loop:log-time" class="log-time">{m.at}</Label>
-            <Label name="loop:log-who" class="log-who">{m.from === 'user' ? (t('log.you') as string) : (t('log.agent') as string)}</Label>
+            <Label name="loop:log-who" class="log-who">{m.from === 'user' ? (translate('log.you') as string) : (translate('log.agent') as string)}</Label>
             <Label name="loop:log-text" class="log-text">{m.text}</Label>
           </p>
         ))}
@@ -679,19 +679,19 @@ export function LogCanvas(props: { messages: LogLine[]; run?: RunState; t: TFn; 
 }
 
 export function ViewerSwap(props: LoopProps) {
-  return <DesignViewer v={props.viewer as any} t={props.t} />;
+  return <DesignViewer v={props.viewer as any} translate={props.translate} />;
 }
 
-export function EvidenceCanvas(props: { evidence?: unknown; viewer?: unknown; t: TFn; [key: string]: unknown }) {
-  const { t } = props;
+export function EvidenceCanvas(props: { evidence?: unknown; viewer?: unknown; translate: TFn; [key: string]: unknown }) {
+  const { translate } = props;
   return (
     <article class="artifact evidence-artifact">
       <header class="artifact-head">
-        <Label name="loop:evidence-eyebrow" class="eyebrow">{t('evidenceEyebrow') as string}</Label>
+        <Label name="loop:evidence-eyebrow" class="eyebrow">{translate('evidenceEyebrow') as string}</Label>
       </header>
-      <Heading name="loop:evidence-title" level={2} class="display">{t('evidenceHeadline') as string}</Heading>
-      <Txt name="loop:evidence-lede" class="artifact-lede">{t('evidenceLede') as string}</Txt>
-      {props.viewer && <DesignViewer v={props.viewer as any} t={t} />}
+      <Heading name="loop:evidence-title" level={2} class="display">{translate('evidenceHeadline') as string}</Heading>
+      <Txt name="loop:evidence-lede" class="artifact-lede">{translate('evidenceLede') as string}</Txt>
+      {props.viewer && <DesignViewer v={props.viewer as any} translate={translate} />}
     </article>
   );
 }
@@ -791,8 +791,8 @@ export function NoEvidence(_props: LoopProps) {
 
 const LoopView: FC<LoopProps> = (props) => (
   <MainShellView
-    t={props.t}
-    title={props.t('build.pageTitle') as string}
+    translate={props.translate}
+    title={props.translate('build.pageTitle') as string}
     locale={props.locale}
     activeShell={props.activeShell ?? 'build'}
     prefs={props.prefs}

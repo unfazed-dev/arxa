@@ -24,15 +24,15 @@ export interface TimelineData {
 interface ItemsProps {
   timeline: TimelineData;
   base?: string;
-  t: TFn;
+  translate: TFn;
 }
-export function Items({ timeline, base, t }: ItemsProps) {
+export function Items({ timeline, base, translate }: ItemsProps) {
   return (
     <Fragment>
       {timeline.items.map((i) => {
         const isCurrent = timeline.currentId === i.ref;
         const title = i.state
-          ? `${i.label} · ${t(`status.name.${i.state}`) as string}`
+          ? `${i.label} · ${translate(`status.name.${i.state}`) as string}`
           : i.label;
         return (
           <li
@@ -76,9 +76,9 @@ interface TimelineProps {
   oob?: boolean;
   label?: string;
   base?: string;
-  t: TFn;
+  translate: TFn;
 }
-export function Timeline({ timeline, oob, label, base, t }: TimelineProps) {
+export function Timeline({ timeline, oob, label, base, translate }: TimelineProps) {
   if (!timeline) return null;
   if (oob) {
     return (
@@ -89,9 +89,9 @@ export function Timeline({ timeline, oob, label, base, t }: TimelineProps) {
         id="timeline"
         attrs={{ ...inspectAttrs('timeline', { role: 'list' }), 'aria-label': label ?? '' }}
       >
-        <Items timeline={timeline} base={base} t={t} />
+        <Items timeline={timeline} base={base} translate={translate} />
       </BodyOob>
     );
   }
-  return <Items timeline={timeline} base={base} t={t} />;
+  return <Items timeline={timeline} base={base} translate={translate} />;
 }

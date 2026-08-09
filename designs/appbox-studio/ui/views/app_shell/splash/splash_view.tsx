@@ -7,14 +7,14 @@ import { inspectAttrs, Label, Txt } from '../../../common/widgets/primitives.tsx
 type TFn = (key: string, vars?: Record<string, unknown>) => unknown;
 
 interface SplashViewProps {
-  t: TFn;
+  translate: TFn;
   locale?: string;
   tagline?: string;
   [key: string]: unknown;
 }
 
-const SplashView: FC<SplashViewProps> = ({ t, locale, tagline }) => (
-  <Base title={t('splash.pageTitle') as string} locale={locale}>
+const SplashView: FC<SplashViewProps> = ({ translate, locale, tagline }) => (
+  <Base title={translate('splash.pageTitle') as string} locale={locale}>
     <meta http-equiv="refresh" content="2;url=/startup" />
     <main class="splash">
       <Label name="app-splash:brand" class="splash-brand">appbox studio</Label>

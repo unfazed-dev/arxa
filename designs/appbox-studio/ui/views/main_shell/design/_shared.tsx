@@ -21,25 +21,25 @@ export type DesignCtx = Ctx;
 // ---- checkpointCard — a checkpoint in the design thread with diff + revert ----
 interface CheckpointCardProps {
   e: Ctx;
-  t: TFn;
+  translate: TFn;
 }
-export function CheckpointCard({ e, t }: CheckpointCardProps) {
+export function CheckpointCard({ e, translate }: CheckpointCardProps) {
   return (
     <div class={`checkpoint${e.reverted ? ' is-reverted' : ''}`}>
       <header class="cp-head">
-        <Label name="design-checkpoint:label" class="fact-label">{t('checkpoint.label', { id: e.id, screen: e.screen }) as string}</Label>
+        <Label name="design-checkpoint:label" class="fact-label">{translate('checkpoint.label', { id: e.id, screen: e.screen }) as string}</Label>
         <Label name="design-checkpoint:summary" class="muted">{e.summary}</Label>
         <Label name="design-checkpoint:time" class="msg-time">{e.at}</Label>
       </header>
       {e.before && (
         <div class="cp-diff">
-          <span class="fact" {...inspectAttrs('design-checkpoint:before', { role: 'group' })}><Label name="design-checkpoint:before-label" class="fact-label">{t('checkpoint.before') as string}</Label>{e.before}</span>
-          <span class="fact" {...inspectAttrs('design-checkpoint:after', { role: 'group' })}><Label name="design-checkpoint:after-label" class="fact-label">{t('checkpoint.after') as string}</Label>{e.after}</span>
+          <span class="fact" {...inspectAttrs('design-checkpoint:before', { role: 'group' })}><Label name="design-checkpoint:before-label" class="fact-label">{translate('checkpoint.before') as string}</Label>{e.before}</span>
+          <span class="fact" {...inspectAttrs('design-checkpoint:after', { role: 'group' })}><Label name="design-checkpoint:after-label" class="fact-label">{translate('checkpoint.after') as string}</Label>{e.after}</span>
         </div>
       )}
       {e.reverted ? (
-        <span class="bt-action-done" {...inspectAttrs('design-checkpoint:reverted', { role: 'status' })} title={t('checkpoint.revertedTitle') as string}>
-          {t('checkpoint.reverted') as string} <Icon name="check" size={14} />
+        <span class="bt-action-done" {...inspectAttrs('design-checkpoint:reverted', { role: 'status' })} title={translate('checkpoint.revertedTitle') as string}>
+          {translate('checkpoint.reverted') as string} <Icon name="check" size={14} />
         </span>
       ) : (
         <form
@@ -51,7 +51,7 @@ export function CheckpointCard({ e, t }: CheckpointCardProps) {
           hx-swap="outerMorph"
         >
           <button type="submit" class="ghost" {...inspectAttrs('design-checkpoint:revert', { role: 'action' })}>
-            <Icon name="undo-2" size={14} /> {t('checkpoint.revert', { id: e.id }) as string}
+            <Icon name="undo-2" size={14} /> {translate('checkpoint.revert', { id: e.id }) as string}
           </button>
         </form>
       )}
@@ -62,9 +62,9 @@ export function CheckpointCard({ e, t }: CheckpointCardProps) {
 // ---- thread — the design chat thread (events + user/agent messages + checkpoints) ----
 interface ThreadProps {
   c: Ctx;
-  t: TFn;
+  translate: TFn;
 }
-export function Thread({ c, t }: ThreadProps) {
+export function Thread({ c, translate }: ThreadProps) {
   return (
     <div class="chat-thread" aria-live="polite" {...inspectAttrs('design-thread:log', { role: 'group' })}>
       {(c.thread ?? []).map((m: Ctx, i: number) => {
@@ -81,7 +81,7 @@ export function Thread({ c, t }: ThreadProps) {
               {m.link && <Fragment>{' '}<a class="bt-link" href={m.link.href} {...inspectAttrs('design-thread:link', { role: 'action' })}>{m.link.label}</a></Fragment>}
             </Txt>
             {(m.cps ?? []).map((e: Ctx, j: number) => (
-              <CheckpointCard key={j} e={e} t={t} />
+              <CheckpointCard key={j} e={e} translate={translate} />
             ))}
           </Fragment>
         );
@@ -93,30 +93,30 @@ export function Thread({ c, t }: ThreadProps) {
 // ---- composerPanel — thread + composer inside the shared frame ----
 interface ComposerPanelProps {
   c: Ctx;
-  t: TFn;
+  translate: TFn;
 }
-export function ComposerPanel({ c, t }: ComposerPanelProps) {
+export function ComposerPanel({ c, translate }: ComposerPanelProps) {
   const spec = { eyebrow: c.stageEyebrow ?? '', chips: c.chips };
   return (
-    <ComposerOpen spec={spec} t={t}>
-      <Thread c={c} t={t} />
-      <Field {...c} t={t} />
+    <ComposerOpen spec={spec} translate={translate}>
+      <Thread c={c} translate={translate} />
+      <Field {...c} translate={translate} />
     </ComposerOpen>
   );
 }
 
 // ---- mainEmpty — the empty read state (nothing open yet) ----
-export function MainEmpty({ t }: { t: TFn }) {
-  return <Empty t={t} />;
+export function MainEmpty({ translate }: { translate: TFn }) {
+  return <Empty translate={translate} />;
 }
 
 // ---- fileView — the open file rendered by the main panel's automatic mode ----
 interface FileViewProps {
   c: Ctx;
-  t: TFn;
+  translate: TFn;
 }
-export function FileView({ c, t }: FileViewProps) {
-  return <MainView f={c.fileView} t={t} />;
+export function FileView({ c, translate }: FileViewProps) {
+  return <MainView f={c.fileView} translate={translate} />;
 }
 
 // ---- panels — the three content panels, one swap unit ----
@@ -124,16 +124,16 @@ export function FileView({ c, t }: FileViewProps) {
 // main panel via children.
 interface PanelsProps {
   c: Ctx;
-  t: TFn;
+  translate: TFn;
   children?: Child;
 }
-export function Panels({ c, t, children }: PanelsProps) {
+export function Panels({ c, translate, children }: PanelsProps) {
   return (
     <div class="panels" id="panels" data-panel={c.panel}>
-      <PanelBar panel={c.panel} t={t} />
-      <ComposerPanel c={c} t={t} />
+      <PanelBar panel={c.panel} translate={translate} />
+      <ComposerPanel c={c} translate={translate} />
       <MainOpen>{children}</MainOpen>
-      <ActivityPanel c={c} t={t} />
+      <ActivityPanel c={c} translate={translate} />
     </div>
   );
 }
@@ -142,26 +142,26 @@ export function Panels({ c, t, children }: PanelsProps) {
 interface RunBarProps {
   c: Ctx;
   oob?: boolean;
-  t: TFn;
+  translate: TFn;
 }
-export function RunBar({ c, oob = false, t }: RunBarProps) {
+export function RunBar({ c, oob = false, translate }: RunBarProps) {
   const spec = {
-    eyebrow: t('design.runEyebrow', { number: c.run.number, brief: c.run.brief }) as string,
+    eyebrow: translate('design.runEyebrow', { number: c.run.number, brief: c.run.brief }) as string,
     state: c.run.stateLabel as string,
     facts: [
-      t('surfaces.count', { count: c.counts.screens }) as string,
-      t('design.shotsFact', { count: c.counts.shots }) as string,
+      translate('surfaces.count', { count: c.counts.screens }) as string,
+      translate('design.shotsFact', { count: c.counts.shots }) as string,
       c.run.rungsLabel as string,
     ],
     filter: {
-      summaryAria: t('design.filterAria') as string,
-      summaryTitle: t('design.filterTitle') as string,
-      summary: (c.filter !== 'all' ? c.filter : t('design.allEpics')) as string,
+      summaryAria: translate('design.filterAria') as string,
+      summaryTitle: translate('design.filterTitle') as string,
+      summary: (c.filter !== 'all' ? c.filter : translate('design.allEpics')) as string,
       target: '#av-list',
       swap: 'outerHTML',
       url: '/design/panel?epic=',
       active: c.filter as string,
-      options: [{ id: 'all', label: t('design.allEpics') as string }, ...(c.epics ?? [])],
+      options: [{ id: 'all', label: translate('design.allEpics') as string }, ...(c.epics ?? [])],
     },
   };
   return <FactsBar oob={oob} spec={spec} />;
@@ -170,19 +170,19 @@ export function RunBar({ c, oob = false, t }: RunBarProps) {
 // ---- screenCard — a screen card with the context pin as the only CTA ----
 interface ScreenCardProps {
   s: Ctx;
-  t: TFn;
+  translate: TFn;
 }
-export function ScreenCard({ s, t }: ScreenCardProps) {
+export function ScreenCard({ s, translate }: ScreenCardProps) {
   return (
     <div class={`msg msg-agent${s.inContext ? ` is-active msg-ctx ctx-${s.tone}` : ''}`}>
       <header class="msg-meta" {...inspectAttrs('design-screen:meta', { role: 'nav' })}>
         <TypeBadge type="screen" label={s.epic} />
         {s.card?.threadCount ? (
-          <span class="chip thread-badge" {...inspectAttrs('design-screen:thread-count', { role: 'status' })} title={t('design.checkpointsTitle', { count: s.card.threadCount }) as string}>
+          <span class="chip thread-badge" {...inspectAttrs('design-screen:thread-count', { role: 'status' })} title={translate('design.checkpointsTitle', { count: s.card.threadCount }) as string}>
             <Icon name="history" size={12} /> {s.card.threadCount}
           </span>
         ) : null}
-        <StatusPill state={s.card?.state} t={t} />
+        <StatusPill state={s.card?.state} translate={translate} />
       </header>
       <Label name="design-screen:summary" class="msg-text">{s.summary}</Label>
       <Label name="design-screen:detail" class="msg-detail">{s.card?.detail}</Label>
@@ -198,8 +198,8 @@ export function ScreenCard({ s, t }: ScreenCardProps) {
             {...inspectAttrs('design-screen:pin-toggle', { role: 'action' })}
           >
             {s.inContext
-              ? <Fragment>{t('design.inContext') as string} <Icon name="check" size={14} /></Fragment>
-              : <Fragment>{t('design.pinToContext') as string} <Icon name="pin" size={14} /></Fragment>}
+              ? <Fragment>{translate('design.inContext') as string} <Icon name="check" size={14} /></Fragment>
+              : <Fragment>{translate('design.pinToContext') as string} <Icon name="pin" size={14} /></Fragment>}
           </a>
         </span>
         <Label name="design-screen:label" class="msg-time">{s.label}</Label>
@@ -212,14 +212,14 @@ export function ScreenCard({ s, t }: ScreenCardProps) {
 interface ScreenListProps {
   c: Ctx;
   oob?: boolean;
-  t: TFn;
+  translate: TFn;
 }
-export function ScreenList({ c, oob = false, t }: ScreenListProps) {
+export function ScreenList({ c, oob = false, translate }: ScreenListProps) {
   return (
     <div class="av-list" id="av-list" hx-swap-oob={oob ? 'outerHTML' : undefined} {...inspectAttrs('design-screen:list', { role: 'group' })}>
       {c.screens?.length
-        ? c.screens.map((s: Ctx, i: number) => <ScreenCard key={s.id ?? i} s={s} t={t} />)
-        : <Txt name="design-screen:empty" class="muted">{t('design.noScreens') as string}</Txt>}
+        ? c.screens.map((s: Ctx, i: number) => <ScreenCard key={s.id ?? i} s={s} translate={translate} />)
+        : <Txt name="design-screen:empty" class="muted">{translate('design.noScreens') as string}</Txt>}
     </div>
   );
 }
@@ -228,9 +228,9 @@ export function ScreenList({ c, oob = false, t }: ScreenListProps) {
 // /design/panel/:view hx-swaps this into #panel-activity-body.
 interface ActivityBodyProps {
   c: Ctx;
-  t: TFn;
+  translate: TFn;
 }
-export function ActivityBody({ c, t }: ActivityBodyProps) {
+export function ActivityBody({ c, translate }: ActivityBodyProps) {
   if (c.activityView === 'artifacts') {
     return (
       <div class="av-list" id="av-list" {...inspectAttrs('design-artifact:list', { role: 'group' })}>
@@ -273,12 +273,12 @@ export function ActivityBody({ c, t }: ActivityBodyProps) {
     );
   }
   if (c.activityView === 'inspector') {
-    return <Pane c={c} t={t} />;
+    return <Pane c={c} translate={translate} />;
   }
   return (
     <Fragment>
-      <RunBar c={c} oob={false} t={t} />
-      <ScreenList c={c} oob={false} t={t} />
+      <RunBar c={c} oob={false} translate={translate} />
+      <ScreenList c={c} oob={false} translate={translate} />
     </Fragment>
   );
 }
@@ -286,9 +286,9 @@ export function ActivityBody({ c, t }: ActivityBodyProps) {
 // ---- activityPanel — the multi-view activity frame wrapping the body ----
 interface ActivityPanelProps {
   c: Ctx;
-  t: TFn;
+  translate: TFn;
 }
-export function ActivityPanel({ c, t }: ActivityPanelProps) {
+export function ActivityPanel({ c, translate }: ActivityPanelProps) {
   const spec = {
     label: c.activityLabel ?? '',
     views: c.activityViews ?? [],
@@ -297,8 +297,8 @@ export function ActivityPanel({ c, t }: ActivityPanelProps) {
     panelSizePx: c.panelSizePx,
   };
   return (
-    <ActivityOpen spec={spec} t={t}>
-      <ActivityBody c={c} t={t} />
+    <ActivityOpen spec={spec} translate={translate}>
+      <ActivityBody c={c} translate={translate} />
     </ActivityOpen>
   );
 }
@@ -306,9 +306,9 @@ export function ActivityPanel({ c, t }: ActivityPanelProps) {
 // ---- activitySwap — view-switch response (body + top + bottom OOB) ----
 interface ActivitySwapProps {
   c: Ctx;
-  t: TFn;
+  translate: TFn;
 }
-export function ActivitySwap({ c, t }: ActivitySwapProps) {
+export function ActivitySwap({ c, translate }: ActivitySwapProps) {
   const spec = {
     label: c.activityLabel ?? '',
     views: c.activityViews ?? [],
@@ -317,9 +317,9 @@ export function ActivitySwap({ c, t }: ActivitySwapProps) {
   };
   return (
     <Fragment>
-      <ActivityBody c={c} t={t} />
+      <ActivityBody c={c} translate={translate} />
       <ActivityTop spec={spec} oob={true} />
-      <ActivityBottom spec={spec} oob={true} t={t} />
+      <ActivityBottom spec={spec} oob={true} translate={translate} />
     </Fragment>
   );
 }

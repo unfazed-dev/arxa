@@ -22,15 +22,15 @@ interface AuthState {
 }
 
 interface AuthViewProps {
-  t: TFn;
+  translate: TFn;
   locale?: string;
   auth?: AuthState;
   account?: { email?: string; [key: string]: unknown };
   [key: string]: unknown;
 }
 
-const AuthView: FC<AuthViewProps> = ({ t, locale, auth = {}, account = {} }) => (
-  <Base title={t('auth.pageTitle') as string} locale={locale}>
+const AuthView: FC<AuthViewProps> = ({ translate, locale, auth = {}, account = {} }) => (
+  <Base title={translate('auth.pageTitle') as string} locale={locale}>
     <main class="centered-state">
       <section class="auth-card" aria-labelledby="auth-h" data-lens={auth.mode}>
         <Label name="app-auth:brand" class="auth-brand">appbox studio</Label>
@@ -41,7 +41,7 @@ const AuthView: FC<AuthViewProps> = ({ t, locale, auth = {}, account = {} }) => 
         )}
 
         <form class="auth-form" method="post" action="/auth/signin">
-          <label class="auth-label" for="auth-email" {...inspectAttrs('app-auth:email-label', { role: 'label' })}>{t('auth.email') as string}</label>
+          <label class="auth-label" for="auth-email" {...inspectAttrs('app-auth:email-label', { role: 'label' })}>{translate('auth.email') as string}</label>
           <input
             id="auth-email"
             type="email"
@@ -52,11 +52,11 @@ const AuthView: FC<AuthViewProps> = ({ t, locale, auth = {}, account = {} }) => 
             {...inspectAttrs('app-auth:email-input', { role: 'input' })}
           />
           <button type="submit" {...inspectAttrs('app-auth:submit', { role: 'action' })}>
-            {auth.mode === 'signup' ? t('auth.createAccount') as string : t('auth.continue') as string}
+            {auth.mode === 'signup' ? translate('auth.createAccount') as string : translate('auth.continue') as string}
           </button>
         </form>
 
-        <p class="auth-or"><span {...inspectAttrs('app-auth:or', { role: 'text' })}>{t('auth.or') as string}</span></p>
+        <p class="auth-or"><span {...inspectAttrs('app-auth:or', { role: 'text' })}>{translate('auth.or') as string}</span></p>
 
         {(auth.providers ?? []).map((p) => (
           <form key={p.id} method="post" action="/auth/signin">

@@ -24,7 +24,7 @@ interface Prefs {
 }
 
 interface WorkspaceShellViewProps {
-  t: TFn;
+  translate: TFn;
   title?: string;
   locale?: string;
   activeShell: string;
@@ -36,7 +36,7 @@ interface WorkspaceShellViewProps {
 }
 
 const WorkspaceShellView: FC<WorkspaceShellViewProps> = ({
-  t,
+  translate,
   title,
   locale,
   activeShell,
@@ -45,11 +45,11 @@ const WorkspaceShellView: FC<WorkspaceShellViewProps> = ({
   surface,
   headExtra,
 }) => (
-  <Base title={title ?? (t('settings.pageTitle') as string)} locale={locale} accent={prefs?.accent} theme={prefs?.theme} font={prefs?.font} headExtra={headExtra}>
+  <Base title={title ?? (translate('settings.pageTitle') as string)} locale={locale} accent={prefs?.accent} theme={prefs?.theme} font={prefs?.font} headExtra={headExtra}>
     <HeaderPanel>
-      <HeaderBody t={t} activeShell={activeShell} prefs={prefs} project={project} />
+      <HeaderBody translate={translate} activeShell={activeShell} prefs={prefs} project={project} />
     </HeaderPanel>
-    <OffCanvas t={t} activeShell={activeShell} prefs={prefs} project={project} />
+    <OffCanvas translate={translate} activeShell={activeShell} prefs={prefs} project={project} />
     <main class="shell-main shell-main-col">
       <MainPanel>
         <section class="mp-content" {...inspectAttrs('workspace-shell:content', { role: 'group' })}>{surface}</section>

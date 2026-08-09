@@ -33,7 +33,7 @@ interface Project {
 }
 
 interface ConfigViewProps {
-  t: TFn;
+  translate: TFn;
   locale?: string;
   activeShell: string;
   prefs?: Prefs;
@@ -49,7 +49,7 @@ interface ConfigViewProps {
 
 const ConfigView: FC<ConfigViewProps> = (props) => {
   const {
-    t,
+    translate,
     locale,
     activeShell,
     prefs,
@@ -64,17 +64,17 @@ const ConfigView: FC<ConfigViewProps> = (props) => {
 
   const surface = (
     <Fragment>
-      <Label name="workspace-config:eyebrow" class="eyebrow">{t('cfg.eyebrow') as string}</Label>
-      <Heading name="workspace-config:title" level={1} class="display">{t('cfg.title') as string}</Heading>
-      <Txt name="workspace-config:lede" class="muted">{t('cfg.lede') as string}</Txt>
+      <Label name="workspace-config:eyebrow" class="eyebrow">{translate('cfg.eyebrow') as string}</Label>
+      <Heading name="workspace-config:title" level={1} class="display">{translate('cfg.title') as string}</Heading>
+      <Txt name="workspace-config:lede" class="muted">{translate('cfg.lede') as string}</Txt>
 
       <section class="settings-section">
-        <Heading name="workspace-config:app-h" level={2}>{t('cfg.section.app') as string}</Heading>
-        <Txt name="workspace-config:app-note" class="settings-note">{t('cfg.appNote') as string}</Txt>
+        <Heading name="workspace-config:app-h" level={2}>{translate('cfg.section.app') as string}</Heading>
+        <Txt name="workspace-config:app-note" class="settings-note">{translate('cfg.appNote') as string}</Txt>
         <form method="post" action="/workspace/config/set">
           <div class="cred-row">
             <div class="cred-row-head">
-              <Label name="workspace-config:targets-label" class="cred-key">{t('cfg.targets') as string}</Label>
+              <Label name="workspace-config:targets-label" class="cred-key">{translate('cfg.targets') as string}</Label>
               {targets.map((tg) => (
                 <label class={`chip${tg.on ? ' is-set' : ''}`} key={tg.id} {...inspectAttrs('workspace-config:target', { role: 'label' })}>
                   <input type="checkbox" name={`target_${tg.id}`} checked={!!tg.on} {...inspectAttrs('workspace-config:target-input', { role: 'input' })} /> {tg.label}
@@ -84,27 +84,27 @@ const ConfigView: FC<ConfigViewProps> = (props) => {
           </div>
           <div class="cred-row">
             <div class="cred-row-head">
-              <Label name="workspace-config:locale-label" class="cred-key">{t('cfg.defaultLocale') as string}</Label>
+              <Label name="workspace-config:locale-label" class="cred-key">{translate('cfg.defaultLocale') as string}</Label>
               {locales.map((lc) => (
                 <label class={`chip${lc.on ? ' is-set' : ''}`} key={lc.id} {...inspectAttrs('workspace-config:locale', { role: 'label' })}>
                   <input type="radio" name="defaultLocale" value={lc.id} checked={!!lc.on} {...inspectAttrs('workspace-config:locale-input', { role: 'input' })} /> {lc.label}
                 </label>
               ))}
-              <button type="submit" {...inspectAttrs('workspace-config:save-app', { role: 'action' })}>{t('cfg.action.save') as string}</button>
+              <button type="submit" {...inspectAttrs('workspace-config:save-app', { role: 'action' })}>{translate('cfg.action.save') as string}</button>
             </div>
           </div>
         </form>
       </section>
 
       <section class="settings-section">
-        <Heading name="workspace-config:creds-h" level={2}>{t('cfg.section.creds') as string}</Heading>
+        <Heading name="workspace-config:creds-h" level={2}>{translate('cfg.section.creds') as string}</Heading>
         {credMissing > 0 ? (
           <p class="cred-missing">
-            <Label name="workspace-config:creds-missing" class="chip type-badge tb-findings">{t('creds.missing', { count: credMissing }) as string}</Label>
+            <Label name="workspace-config:creds-missing" class="chip type-badge tb-findings">{translate('creds.missing', { count: credMissing }) as string}</Label>
           </p>
         ) : (
           <p class="cred-missing">
-            <Label name="workspace-config:creds-allset" class="chip type-badge tb-evidence">{t('creds.allSet') as string}</Label>
+            <Label name="workspace-config:creds-allset" class="chip type-badge tb-evidence">{translate('creds.allSet') as string}</Label>
           </p>
         )}
         {credGroups.map((g) => (
@@ -112,31 +112,31 @@ const ConfigView: FC<ConfigViewProps> = (props) => {
             <div class="cred-row-head">
               <Label name="workspace-config:cred-group" class="cred-key">{g.label}</Label>
               <Label name="workspace-config:cred-set" class={`chip${g.missing === 0 ? ' is-set' : ''}`}>
-                {t('cfg.creds.setOf', { set: g.set, total: g.total }) as string}
+                {translate('cfg.creds.setOf', { set: g.set, total: g.total }) as string}
               </Label>
               {g.missing > 0 ? (
-                <Label name="workspace-config:cred-missing" class="chip type-badge tb-findings">{t('cfg.creds.missing', { count: g.missing }) as string}</Label>
+                <Label name="workspace-config:cred-missing" class="chip type-badge tb-findings">{translate('cfg.creds.missing', { count: g.missing }) as string}</Label>
               ) : null}
-              <a class="cred-where" href="/workspace/credentials" {...inspectAttrs('workspace-config:cred-manage', { role: 'action' })}>{t('cfg.creds.manage') as string}</a>
+              <a class="cred-where" href="/workspace/credentials" {...inspectAttrs('workspace-config:cred-manage', { role: 'action' })}>{translate('cfg.creds.manage') as string}</a>
             </div>
           </div>
         ))}
       </section>
 
       <section class="settings-section">
-        <Heading name="workspace-config:prefs-h" level={2}>{t('cfg.section.prefs') as string}</Heading>
+        <Heading name="workspace-config:prefs-h" level={2}>{translate('cfg.section.prefs') as string}</Heading>
         <div class="cred-row">
           <div class="cred-row-head">
-            <Label name="workspace-config:theme-label" class="cred-key">{t('cfg.prefs.theme') as string}</Label>
-            <Label name="workspace-config:theme-value" class="chip is-set">{t(`cfg.theme.${prefs?.theme}`) as string}</Label>
+            <Label name="workspace-config:theme-label" class="cred-key">{translate('cfg.prefs.theme') as string}</Label>
+            <Label name="workspace-config:theme-value" class="chip is-set">{translate(`cfg.theme.${prefs?.theme}`) as string}</Label>
             <form method="post" action="/prefs/theme">
-              <button type="submit" class="ghost" {...inspectAttrs('workspace-config:theme-toggle', { role: 'action' })}>{t('cfg.action.toggle') as string}</button>
+              <button type="submit" class="ghost" {...inspectAttrs('workspace-config:theme-toggle', { role: 'action' })}>{translate('cfg.action.toggle') as string}</button>
             </form>
           </div>
         </div>
         <div class="cred-row">
           <div class="cred-row-head">
-            <Label name="workspace-config:accent-label" class="cred-key">{t('cfg.prefs.accent') as string}</Label>
+            <Label name="workspace-config:accent-label" class="cred-key">{translate('cfg.prefs.accent') as string}</Label>
             {accents.map((a) => (
               <form method="post" action="/prefs/accent" key={a.id}>
                 <button type="submit" name="accent" value={a.id} class={`chip${a.on ? ' is-set' : ''}`} {...inspectAttrs('workspace-config:accent', { role: 'action' })}>{a.label}</button>
@@ -146,7 +146,7 @@ const ConfigView: FC<ConfigViewProps> = (props) => {
         </div>
         <div class="cred-row">
           <div class="cred-row-head">
-            <Label name="workspace-config:jargon-label" class="cred-key">{t('cfg.prefs.jargon') as string}</Label>
+            <Label name="workspace-config:jargon-label" class="cred-key">{translate('cfg.prefs.jargon') as string}</Label>
             {jargons.map((j) => (
               <form method="post" action="/prefs/jargon" key={j.id}>
                 <button type="submit" name="jargon" value={j.id} class={`chip${j.on ? ' is-set' : ''}`} {...inspectAttrs('workspace-config:jargon', { role: 'action' })}>{j.label}</button>
@@ -160,8 +160,8 @@ const ConfigView: FC<ConfigViewProps> = (props) => {
 
   return (
     <WorkspaceShellView
-      t={t}
-      title={t('cfg.pageTitle') as string}
+      translate={translate}
+      title={translate('cfg.pageTitle') as string}
       locale={locale}
       activeShell={activeShell}
       prefs={prefs}

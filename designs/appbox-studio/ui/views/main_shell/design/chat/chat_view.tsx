@@ -30,7 +30,7 @@ export function RevertSwap(c: ChatViewProps) {
     <Fragment>
       {ProtoPanelsSwap(c)}
       <div hx-swap-oob="beforeend:#toasts">
-        <div class="toast" id="toast-revert" {...inspectAttrs('design-chat:toast', { role: 'text' })}>{c.t('design.revertToast') as string}</div>
+        <div class="toast" id="toast-revert" {...inspectAttrs('design-chat:toast', { role: 'text' })}>{c.translate('design.revertToast') as string}</div>
       </div>
     </Fragment>
   );
@@ -39,7 +39,7 @@ export function RevertSwap(c: ChatViewProps) {
 // ---- Page ----
 const ChatView: FC<ChatViewProps> = (props) => (
   <MainShellView
-    title={props.t('design.chat.pageTitle') as string}
+    title={props.translate('design.chat.pageTitle') as string}
     locale={props.locale}
     activeShell={props.activeShell ?? 'design'}
     prefs={props.prefs as { accent?: string; [key: string]: unknown }}
@@ -48,12 +48,12 @@ const ChatView: FC<ChatViewProps> = (props) => (
     footer={
       <TimelineEl
         timeline={props.timeline as any}
-        label={props.t('design.timelineLabel') as string}
-        t={props.t}
+        label={props.translate('design.timelineLabel') as string}
+        translate={props.translate}
       />
     }
     surface={RenderPanels(props)}
-    t={props.t}
+    translate={props.translate}
   />
 );
 

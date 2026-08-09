@@ -17,13 +17,13 @@ type TFn = (key: string, vars?: Record<string, unknown>) => unknown;
 interface LangSwitcherProps {
   locales?: string[];
   locale?: string;
-  t: TFn;
+  translate: TFn;
 }
 
-const LangSwitcher: FC<LangSwitcherProps> = ({ locales, locale, t }) => {
+const LangSwitcher: FC<LangSwitcherProps> = ({ locales, locale, translate }) => {
   if (!locales || locales.length <= 1) return null;
   return (
-    <nav class="lang-switcher" aria-label={t('lang.label') as string} {...inspectAttrs('lang-switcher:nav', { role: 'nav' })}>
+    <nav class="lang-switcher" aria-label={translate('lang.label') as string} {...inspectAttrs('lang-switcher:nav', { role: 'nav' })}>
       {locales.map((l) => (
         <a
           class="lang-switcher__link"
@@ -31,7 +31,7 @@ const LangSwitcher: FC<LangSwitcherProps> = ({ locales, locale, t }) => {
           aria-current={l === locale ? 'true' : undefined}
           {...inspectAttrs('lang-switcher:locale', { role: 'action' })}
         >
-          {t(`lang.name.${l}`) as string}
+          {translate(`lang.name.${l}`) as string}
         </a>
       ))}
     </nav>

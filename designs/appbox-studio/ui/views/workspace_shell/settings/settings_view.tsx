@@ -40,7 +40,7 @@ interface Project {
 }
 
 interface SettingsViewProps {
-  t: TFn;
+  translate: TFn;
   locale?: string;
   locales?: string[];
   activeShell: string;
@@ -58,7 +58,7 @@ interface SettingsViewProps {
 
 const SettingsView: FC<SettingsViewProps> = (props) => {
   const {
-    t,
+    translate,
     locale,
     locales,
     activeShell,
@@ -75,24 +75,24 @@ const SettingsView: FC<SettingsViewProps> = (props) => {
 
   const surface = (
     <Fragment>
-      <Label name="workspace-settings:eyebrow" class="eyebrow">{t('settings.eyebrow') as string}</Label>
-      <Heading name="workspace-settings:title" level={1} class="display">{t('settings.title') as string}</Heading>
-      <Txt name="workspace-settings:lede" class="muted">{t('settings.lede') as string}</Txt>
+      <Label name="workspace-settings:eyebrow" class="eyebrow">{translate('settings.eyebrow') as string}</Label>
+      <Heading name="workspace-settings:title" level={1} class="display">{translate('settings.title') as string}</Heading>
+      <Txt name="workspace-settings:lede" class="muted">{translate('settings.lede') as string}</Txt>
 
       <section class="settings-section">
-        <Heading name="workspace-settings:appearance-h" level={2}>{t('settings.appearanceH') as string}</Heading>
-        <Txt name="workspace-settings:appearance-note" class="settings-note">{t('settings.appearanceNote') as string}</Txt>
+        <Heading name="workspace-settings:appearance-h" level={2}>{translate('settings.appearanceH') as string}</Heading>
+        <Txt name="workspace-settings:appearance-note" class="settings-note">{translate('settings.appearanceNote') as string}</Txt>
         <form method="post" action="/prefs/theme" hx-post="/prefs/theme" hx-swap="none">
           <button type="submit" {...inspectAttrs('workspace-settings:theme-toggle', { role: 'action' })}>
             <Icon name={theme === 'dark' ? 'sun' : 'moon'} size={15} />{' '}
-            {theme === 'dark' ? (t('settings.themeTo.light') as string) : (t('settings.themeTo.dark') as string)}
+            {theme === 'dark' ? (translate('settings.themeTo.light') as string) : (translate('settings.themeTo.dark') as string)}
           </button>
         </form>
       </section>
 
       <section class="settings-section">
-        <Heading name="workspace-settings:accent-h" level={2}>{t('settings.accentH') as string}</Heading>
-        <Txt name="workspace-settings:accent-note" class="settings-note">{t('settings.accentNote') as string}</Txt>
+        <Heading name="workspace-settings:accent-h" level={2}>{translate('settings.accentH') as string}</Heading>
+        <Txt name="workspace-settings:accent-note" class="settings-note">{translate('settings.accentNote') as string}</Txt>
         <form class="swatch-row" method="post" action="/prefs/accent" hx-post="/prefs/accent" hx-swap="none" {...inspectAttrs('workspace-settings:accent-form', { role: 'group' })}>
           {accents.map((s) => (
             <button
@@ -114,8 +114,8 @@ const SettingsView: FC<SettingsViewProps> = (props) => {
           pref renders as data-font on #app, outside every swap unit). Each
           button is set in the family it selects, so the row is its own specimen sheet. */}
       <section class="settings-section">
-        <Heading name="workspace-settings:font-h" level={2}>{t('settings.fontH') as string}</Heading>
-        <Txt name="workspace-settings:font-note" class="settings-note">{t('settings.fontNote') as string}</Txt>
+        <Heading name="workspace-settings:font-h" level={2}>{translate('settings.fontH') as string}</Heading>
+        <Txt name="workspace-settings:font-note" class="settings-note">{translate('settings.fontNote') as string}</Txt>
         <form class="swatch-row" method="post" action="/prefs/font" hx-post="/prefs/font" hx-swap="none" {...inspectAttrs('workspace-settings:font-form', { role: 'group' })}>
           {fonts.map((f) => (
             <button
@@ -135,14 +135,14 @@ const SettingsView: FC<SettingsViewProps> = (props) => {
       </section>
 
       <section class="settings-section">
-        <Heading name="workspace-settings:language-h" level={2}>{t('settings.languageH') as string}</Heading>
-        <Txt name="workspace-settings:language-note" class="settings-note">{t('settings.languageNote') as string}</Txt>
-        <LangSwitcher locales={locales} locale={locale} t={t} />
+        <Heading name="workspace-settings:language-h" level={2}>{translate('settings.languageH') as string}</Heading>
+        <Txt name="workspace-settings:language-note" class="settings-note">{translate('settings.languageNote') as string}</Txt>
+        <LangSwitcher locales={locales} locale={locale} translate={translate} />
       </section>
 
       <section class="settings-section">
-        <Heading name="workspace-settings:jargon-h" level={2}>{t('settings.jargonH') as string}</Heading>
-        <Txt name="workspace-settings:jargon-note" class="settings-note">{t('settings.jargonNote') as string}</Txt>
+        <Heading name="workspace-settings:jargon-h" level={2}>{translate('settings.jargonH') as string}</Heading>
+        <Txt name="workspace-settings:jargon-note" class="settings-note">{translate('settings.jargonNote') as string}</Txt>
         <div class="level-row" {...inspectAttrs('workspace-settings:level-row', { role: 'group' })}>
           {levels.map((l) => (
             <form method="post" action="/prefs/jargon" hx-post="/prefs/jargon" hx-swap="none" key={l.id}>
@@ -165,18 +165,18 @@ const SettingsView: FC<SettingsViewProps> = (props) => {
       </section>
 
       <section class="settings-section">
-        <Heading name="workspace-settings:credentials-h" level={2}>{t('settings.credentialsH') as string}</Heading>
-        <Txt name="workspace-settings:credentials-note" class="settings-note">{t('settings.credentialsNote') as string}</Txt>
+        <Heading name="workspace-settings:credentials-h" level={2}>{translate('settings.credentialsH') as string}</Heading>
+        <Txt name="workspace-settings:credentials-note" class="settings-note">{translate('settings.credentialsNote') as string}</Txt>
         <a class="ghost" href="/workspace/credentials" {...inspectAttrs('workspace-settings:credentials-link', { role: 'action' })}>
-          {t('settings.credentialsH') as string} <Icon name="arrow-right" size={14} />
+          {translate('settings.credentialsH') as string} <Icon name="arrow-right" size={14} />
         </a>
       </section>
 
       <section class="settings-section">
-        <Heading name="workspace-settings:config-h" level={2}>{t('settings.configH') as string}</Heading>
-        <Txt name="workspace-settings:config-note" class="settings-note">{t('settings.configNote') as string}</Txt>
+        <Heading name="workspace-settings:config-h" level={2}>{translate('settings.configH') as string}</Heading>
+        <Txt name="workspace-settings:config-note" class="settings-note">{translate('settings.configNote') as string}</Txt>
         <a class="ghost" href="/workspace/config" {...inspectAttrs('workspace-settings:config-link', { role: 'action' })}>
-          {t('settings.configH') as string} <Icon name="arrow-right" size={14} />
+          {translate('settings.configH') as string} <Icon name="arrow-right" size={14} />
         </a>
       </section>
     </Fragment>
@@ -184,8 +184,8 @@ const SettingsView: FC<SettingsViewProps> = (props) => {
 
   return (
     <WorkspaceShellView
-      t={t}
-      title={t('settings.pageTitle') as string}
+      translate={translate}
+      title={translate('settings.pageTitle') as string}
       locale={locale}
       activeShell={activeShell}
       prefs={prefs}
