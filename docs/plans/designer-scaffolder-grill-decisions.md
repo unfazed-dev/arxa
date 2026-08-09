@@ -283,3 +283,17 @@ binding"), designer SKILL.md (compose-time rule), scaffolder SKILL.md
 - **Inspect works on ALL surfaces including mobile** (user-ruled): interaction is hover on
   desktop, tap on touch; the Q12 emit-time triple is pointer-agnostic. On tablet/mobile the
   inspector presents as a drawer like composer/activity.
+
+## Q-v2-4 — recipe→web mapping for studio v2 (user-confirmed: A)
+
+- Studio v2 uses the Q8 manifest's folder/naming grammar verbatim under
+  `designs/appbox-studio-v2/lib/`, with a declared artifact-type → extension map for web:
+  view → `.tsx` (per-surface `*.desktop.tsx` / `*.tablet.tsx` / `*.mobile.tsx`),
+  viewmodel → `.js`, services/facades → `.js`.
+- **Barrels follow the showcase category-name convention, NOT `index.js`** (user-ruled):
+  barrel file named for the folder's artifact category exactly as showcase does
+  (`widgets.dart`/`enums.dart`/`models.dart`/`data.dart`) → studio `widgets.js`,
+  `enums.js`, `models.js`, `services.js`.
+- Q5 frontmatter/comment conventions apply verbatim; Q12 `inspectAttrs` stamped at emit.
+- The Q8 manifest itself stays Dart-only and untouched — the studio *follows* the recipe
+  as discipline; only apps are *generated* from it. Extension map lives here + studio README.
