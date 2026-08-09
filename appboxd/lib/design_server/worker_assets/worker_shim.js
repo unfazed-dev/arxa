@@ -19,7 +19,7 @@
     .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
   // hono/jsx raw(): marks a string as pre-escaped so JSX rendering does not
-  // double-escape it. The t() function pre-escapes via interpolate(), so its
+  // double-escape it. The translate() function pre-escapes via interpolate(), so its
   // return values must carry isEscaped = true.
   function raw(s) {
     const r = new String(s);
@@ -64,7 +64,7 @@
     }
     return interpolate(value, vars);
   }
-  function createT(locale, level) {
+  function createTranslator(locale, level) {
     const catalogs = globalThis.__arb || {};
     const cat = catalogs[locale] || {};
     const en = catalogs.en || {};
@@ -170,13 +170,13 @@
       render(c, viewRef, ctx, st) {
         ctx = ctx || {};
         const prefs = c._cookies.kdh_prefs ? safeJson(c._cookies.kdh_prefs) : {};
-        const t = createT(c.get('locale') || 'en', prefs.jargon);
+        const translate = createTranslator(c.get('locale') || 'en', prefs.jargon);
         // If ctx.partial is a string file path (e.g. 'ui/project/home.html'),
         // pre-render it through the TSX render module so the component receives
         // ready-made content instead of a raw path string. This replaces the
         // old nunjucks {% include partial %} dynamic-include pattern.
         if (typeof ctx.partial === 'string' && ctx.partial) {
-          const partialCtx = Object.assign({ prefs, locale: c.get('locale') || 'en', locales, t }, ctx);
+          const partialCtx = Object.assign({ prefs, locale: c.get('locale') || 'en', locales, translate }, ctx);
           partialCtx.c = partialCtx;
           try {
             let rendered = String(renderModule.render(ctx.partial, partialCtx));
@@ -207,7 +207,7 @@
             // to the generic placeholder in screen_stub_view.tsx).
           }
         }
-        const bag = Object.assign({ prefs, locale: c.get('locale') || 'en', locales, t, vendorRev: globalThis.__vendorRev || {} }, ctx);
+        const bag = Object.assign({ prefs, locale: c.get('locale') || 'en', locales, translate, vendorRev: globalThis.__vendorRev || {} }, ctx);
         bag.c = bag;
         if (st != null) c.status(st);
         return c.html(templatesRender(viewRef, bag));
@@ -216,7 +216,7 @@
       session: (c) => c.get('kdh_session'),
       prefs: (c) => c._cookies.kdh_prefs ? safeJson(c._cookies.kdh_prefs) : {},
       locale: (c) => c.get('locale') || 'en',
-      t: (c) => createT(c.get('locale') || 'en', (safeJson(c._cookies.kdh_prefs || '{}')).jargon),
+      translate: (c) => createTranslator(c.get('locale') || 'en', (safeJson(c._cookies.kdh_prefs || '{}')).jargon),
       setPrefs(c, patch) {
         const cur = c._cookies.kdh_prefs ? safeJson(c._cookies.kdh_prefs) : {};
         c.setCookie('kdh_prefs', JSON.stringify(Object.assign({}, cur, patch)), { path: '/', maxAge: 31536000, sameSite: 'Lax' });
