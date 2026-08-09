@@ -663,11 +663,21 @@ scope item 4 ("every emitted surface carries the triple"):
    `chat_view.tsx:33` stamps `inspectAttrs('design-chat:toast', {role:'text'})`
    on an *inner* `<div class="toast">`, not on the fragment root.
 
-**Ruling consequence:** the triple is carried by the same inner host elements
-that legacy already stamps via `inspectAttrs` — `data-inspect-screen` and
-`-surface` are what `inspectAttrs` already emits; the anatomy shell adds
-`data-inspect-node`. The anatomy shell therefore re-authors those elements
-(via `_shared_anatomy.tsx`) rather than delegating to legacy compositions.
+> **CORRECTION (supersedes the original wording of this point).** An earlier
+> revision of finding 9 claimed "`data-inspect-screen` and `-surface` are what
+> `inspectAttrs` already emits". **That is false.** Read the source:
+> `common/widgets/primitives.tsx:10` — `inspectAttrs(name, meta)` emits
+> `data-el`, `data-inspect-role`, and optionally `-style` / `-motion` / `-fn`.
+> It emits **none** of the triple. This corroborates finding 4 ("the DOM
+> spelling of the triple does not exist yet") and R1 ("sibling `anatomyAttrs`:
+> NOT built"). The anatomy shell must emit all three attributes itself; it
+> cannot lean on `inspectAttrs` for any of them. Walls 1 and 2 above and the
+> zero-delta recipe below are unaffected — they were verified in real paths.
+
+**Ruling consequence:** the triple is emitted by the anatomy shell itself, on
+the inner host elements it authors (via `_shared_anatomy.tsx`), rather than by
+delegating to legacy compositions. `inspectAttrs` continues to ride alongside
+it on those same elements, unchanged, so legacy attributes stay byte-identical.
 **Do not** add a wrapper `<span>`/`<div>` purely to carry attributes — that
 breaks R6 diff normalization (R6 strips *attributes*, not elements, so an
 added element is a real structural diff and a genuine regression signal).
@@ -683,9 +693,52 @@ children `PanelBar` / `ComposerPanel` / `<MainOpen>{…}</MainOpen>` /
 *Coupling note:* relying on `FileSwap` as the `MainContent` accessor is only
 defensible because the old shell dies at cutover; annotate it inline.
 
-**Open (next agent must decide before emitting):** for Fragment-rooted
-fragments (`DrawerSwap`, `RevertSwap`, `FilterSwap`) the triple can only land
-on their inner host elements. Confirm against the fragment-surface table
-whether each such fragment owns one node or several, then emit per inner
-element. Verify zero delta by **running** the dual-render diff against the
-live design server — not by reasoning about DOM equality.
+**RESOLVED — the Fragment wall dissolves.** The node vocabulary is closed and
+small (see finding 10), so a fragment does not "own" a node at all: the node
+belongs to the **view body**, which is the `panels` div. Therefore:
+- `PanelsSwap` renders the body → carries the triple (use the recipe above).
+- `RevertSwap` is `<Fragment>{ProtoPanelsSwap(c)}<div toast/></Fragment>` — its
+  **first child is the body**, so the anatomy twin swaps in the anatomy panels
+  and the Fragment root itself needs no attributes. No wrapper element.
+- `DrawerSwap` / `FilterSwap` do not render the body → they carry **no**
+  `data-inspect-node`. This is correct, not an omission: the registry lists
+  "defaulting to `anatomy:view.body` for a node that is not a view body" as an
+  explicit gate failure.
+
+Verify zero delta by **running** the dual-render diff against the live design
+server — not by reasoning about DOM equality.
+
+## Finding 10 — R4 is stale: the node set has TWO members, ratified at v1.3.0
+
+R4 above states the node vocabulary is "CLOSED at 1 member, registry v1.2.0".
+That was true when R4 was written and is **no longer accurate**. Source of
+truth: `.claude/skills/appbox-scaffolder/kind-resolution.registry.json` (byte
+-identical to the `.kimi-code/` copy, so the copy is not the divergence — R4
+is simply older than the ratification):
+
+| node id | meaning | carrier |
+|---|---|---|
+| `anatomy:view.body` | root body node of a view — the subtree a surface's `build()` returns | every emitted leaf view |
+| `anatomy:shell.surface` | the shell-level frame a shell contributes one level up | the seven `*_shell_view.dart` frame views |
+
+`anatomy:shell.surface` was **ratified by the user at v1.3.0** (Q11 spike
+follow-up) to resolve the frame/leaf `screenId` collision.
+
+**Consequence for the TSX emit (step A): none.** `shell.surface` is carried by
+Dart `*_shell_view.dart` frame views. The design shell's anatomy views are
+*leaf* views, so they carry `anatomy:view.body` and nothing else. There is no
+legal `shell.surface` home in TSX and none is required — note that the TSX
+shell root `<main>` lives in shared `MainShellView`, which scope item 5 makes
+untouchable anyway.
+
+**Consequence for the probe (step B / task #19): real.** Scope item 6 says the
+probe asserts the node slot "against the closed registry vocabulary". That
+vocabulary is **two** members. A probe hard-coded to accept only
+`anatomy:view.body` will reject the seven legitimately-stamped Dart shell frame
+views. Read the set from the registry rather than inlining it; the registry's
+own rule is that widening the set "is a deliberate registry change with a
+version bump", never an improvisation to make a failing run pass.
+
+*Also measured:* `appboxd/lib/probes/studio/probe_inspect.dart` exists (26,750
+bytes) but currently contains **no** reference to `registry`, `anatomy:`, or
+any node constant — the step-B extension is genuinely unstarted, not partial.
