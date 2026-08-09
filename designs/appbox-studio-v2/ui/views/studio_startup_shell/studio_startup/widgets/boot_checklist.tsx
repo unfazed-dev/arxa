@@ -32,7 +32,6 @@ export interface BootChecklistProps {
 
 const BootChecklist: FC<BootChecklistProps> = ({ steps, ready, proceedLabel, block }) => (
   <div
-    id="boot-progress"
     data-el="list-row"
     data-inspect-role="section"
     data-inspect-style="stacked step list over a single trigger"
