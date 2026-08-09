@@ -403,8 +403,32 @@ with `abxResolveShellView` in `design/anatomy_flag.ts` reading
 
 ### Open item this raises
 
-`VIEW` points at `.html`, but authoring is `.tsx` — there is a compile step
-between them that I have not yet traced. The new shell's `.tsx` must be wired
-into whatever produces those `.html` templates, or `h.render` will 404 at
-probe time. **This is the next thing that would fail late** and must be resolved
-before emitting `_shared_anatomy.tsx`.
+`VIEW` points at `.html`, but only `.tsx` exists on disk. I first inferred "the
+renderer just maps the extension, so no wiring is needed." **That inference was
+the same shape as the one that killed finding 5** — inferring a dispatch
+mechanism from a grep that had returned empty because the glob failed to expand.
+Silence was read as evidence. It is not.
+
+What the evidence actually shows:
+
+    // services/repositories/widget_repository.js:29,33
+    // .tsx is what the renderer renders; .html is the pre-TSX fallback for ...
+    return surfaceFiles().includes(`${base}.tsx`) ? `${base}.tsx` : `${base}.html`;
+
+    // services/repositories/project_repository.js:212
+    // .html is the pre-TSX fallback) in globalThis.__templates under the render
+    // registry's viewRef — ui/project/<kind>.html (generateRenderTsx).
+
+So `.html` is a **legacy viewRef key**, and resolution goes through a *render
+registry* (`globalThis.__templates`, keyed by viewRef) plus a `surfaceFiles()`
+enumeration that prefers `.tsx` when present. There is a resolver and there is a
+registry. Directionally my guess was right; the part that matters — whether a
+brand-new `design/anatomy/chat/` path is picked up automatically or must be
+registered — is **still untraced**.
+
+**OPEN / BLOCKING.** Before emitting `_shared_anatomy.tsx`, trace what
+`surfaceFiles()` enumerates and how `globalThis.__templates` is populated. If
+either is driven by `structure.json` / `_d_meta.json` (both are read by
+`scaffold_repository.js`, `files_repository.js`, `scaffold_facade.js`), then the
+new shell needs a registry entry and "no build wiring" is false. `h.render` would
+otherwise 404 at probe time — the late failure this note exists to prevent.
