@@ -1,0 +1,20 @@
+{
+  "app": "studio",
+  "generatedBy": "hand-authored (design medium; the Dart golden's copy is scaffolder-generated)",
+  "factors": [
+    "desktop",
+    "tablet",
+    "mobile"
+  ],
+  "factorSelection": "CSS media queries on the Material 3 window size classes; the design runtime has no <factor> resolver.",
+  "hub": "studio_application_hub",
+  "shells": [
+    "studio_startup_shell"
+  ],
+  "pending": [
+    "studio_unknown_shell",
+    "studio_auth_shell",
+    "studio_intake_shell",
+    "studio_design_shell"
+  ]
+}

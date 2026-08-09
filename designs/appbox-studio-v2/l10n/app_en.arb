@@ -1,0 +1,47 @@
+{
+  "@@locale": "en",
+  "appTitle": "appbox studio",
+  "@appTitle": {
+    "description": "Product name in the shell brand mark and the document title."
+  },
+  "startupTagline": "Design once. Ship every width.",
+  "@startupTagline": {
+    "description": "One-line tagline under the brand on the startup ceremony."
+  },
+  "buildIdentity": "studio v2 \u00b7 design medium",
+  "@buildIdentity": {
+    "description": "Build identity shown at the edge of the startup ceremony."
+  },
+  "bootConfig": "Reading project config",
+  "@bootConfig": {
+    "description": "Boot step: resolving appbox.config.json."
+  },
+  "bootKit": "Loading the kit mirror",
+  "@bootKit": {
+    "description": "Boot step: loading generated kit constants and strings."
+  },
+  "bootRegistry": "Resolving the screens registry",
+  "@bootRegistry": {
+    "description": "Boot step: reading the shell/stage registry."
+  },
+  "bootSession": "Starting the session",
+  "@bootSession": {
+    "description": "Boot step: final step before the hub opens."
+  },
+  "stageStartup": "Startup",
+  "@stageStartup": {
+    "description": "Hub stage card label for the startup shell."
+  },
+  "stageAuth": "Sign in",
+  "@stageAuth": {
+    "description": "Hub stage card label for the auth shell."
+  },
+  "stageIntake": "Intake",
+  "@stageIntake": {
+    "description": "Hub stage card label for the intake shell."
+  },
+  "stageDesign": "Design",
+  "@stageDesign": {
+    "description": "Hub stage card label for the design shell."
+  }
+}
