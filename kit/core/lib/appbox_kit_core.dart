@@ -30,6 +30,7 @@ export 'common/appbox_kit_glyphs.dart';
 export 'common/appbox_kit_glyphs_lucide.dart';
 export 'common/appbox_kit_colors.dart';
 export 'common/appbox_kit_fonts.dart';
+export 'common/appbox_kit_google_fonts.dart';
 export 'common/appbox_kit_ui_helpers.dart';
 
 // --- Inspect identity (Q12): the emit-time (screenId, surfaceId, anatomyNodeId) triple ---

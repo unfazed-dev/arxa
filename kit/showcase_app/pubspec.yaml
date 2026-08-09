@@ -74,6 +74,7 @@ dependencies:
     path: ../wifi
   # Attachment binaries live in the app documents dir (rows carry paths).
   path_provider: ^2.1.5
+  google_fonts: ^8.2.1
 
 # Mirrors the root pubspec.yaml dependency_overrides (paths rebased ../).
 # Pub overrides do NOT propagate to a standalone package, so without these the

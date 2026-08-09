@@ -41,6 +41,7 @@ dependencies:
   # source by tools/gen_lucide_glyphs.py — regenerate on a version bump.
   lucide_flutter: ^1.25.0
   m3e_collection: ^0.3.7
+  google_fonts: ^8.2.1
 
 dev_dependencies:
   flutter_lints: ^6.0.0

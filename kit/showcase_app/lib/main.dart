@@ -8,6 +8,7 @@ import 'package:appbox_kit_ui_library/appbox_kit_ui_library.dart'
         AppBoxKitErrorService,
         AppBoxKitThemeService,
         appBoxKitDarkTheme,
+        appBoxKitDefaultGoogleFontFamily,
         appBoxKitLightTheme,
         setupAppBoxKitUiServices;
 import 'package:appbox_kit_showcase_app/app/app.locator.dart';
@@ -93,8 +94,15 @@ class _ShowcaseAppState extends State<ShowcaseApp>
             // router. iOS edge-swipe-back is handled by the cupertino page type
             // AppBoxKitPlatformRouter emits, not by this dispatcher.
             backButtonDispatcher: RootBackButtonDispatcher(),
-            theme: appBoxKitLightTheme(),
-            darkTheme: appBoxKitDarkTheme(),
+            // Font law v2 demo: the kit catalogue's default `ui` face (Lexend)
+            // resolved at runtime through google_fonts — the same wiring the
+            // scaffolder emits from assets.manifest.json font roles.
+            theme: appBoxKitLightTheme(
+              fontFamily: appBoxKitDefaultGoogleFontFamily(),
+            ),
+            darkTheme: appBoxKitDarkTheme(
+              fontFamily: appBoxKitDefaultGoogleFontFamily(),
+            ),
             themeMode: snapshot.data ?? ThemeMode.system,
           ),
         ),
