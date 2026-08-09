@@ -234,19 +234,30 @@ new `*_colors.dart`, `*_spacing.dart` or `*_ui_helpers.dart` variants is a
 **FAIL**, not a style preference — duplicated vocabulary is how a design system
 silently forks. The copy is refreshed from kit, never edited in place.
 
-### Assets (ratified)
+### Assets (ratified v2)
 
-Apps are **type-first, images-only**: the scaffolder creates `assets/images/`
-beside `lib/` and registers it as a directory in `pubspec.yaml` (add sibling
-type folders like `assets/audio/` only when a feature actually ships such an
-asset — and register each new directory in the same change). It emits
-`appbox_kit_assets.dart` into `lib/ui/common/` (app-authored copy of the kit
-generic template, the `appbox_kit_app_strings.dart` pattern): every bundled
-path is an `abxImg*` const and emitted code references the NAME, never a
-loose path string. The scaffolder NEVER emits font or icon assets — fonts
-ship inside the kit package (`appbox_kit_fonts.dart`), icons resolve to kit
-code glyphs (`appbox_kit_glyphs.dart`); an app-level font/icon asset is a
-FAIL. Showcase demonstrates end-to-end: `abxImgShowcaseLogo` →
+The designer authors the app's `assets/` artifact (intake uploads merged over
+the passive SSOT `kit/assets_default/`); the scaffolder's job is a **pure
+copy-paste** of that folder into the scaffolded app, then wiring driven ONLY
+by `assets.manifest.json`:
+
+- **Fonts:** Google Fonts by name — emit the `google_fonts` package and call
+  families from the manifest's font roles (`primary`, `monospace`, …). No
+  font binaries, no pubspec `fonts:` block — UNLESS the manifest declares
+  `"source": "file"` (user uploaded a custom brand font at intake), in which
+  case emit a real `fonts:` block for `assets/fonts/` instead.
+- **Brand icons:** wire `flutter_launcher_icons` (dev-dependency + per-app
+  config yaml redirected to `assets/brand-icons/`, master from the manifest's
+  `brandIcon`) to derive ALL iOS/Android/web launcher icons. Brand only —
+  UI icons still resolve to kit code glyphs (`appbox_kit_glyphs.dart`); a
+  hand-authored per-platform icon set is a FAIL.
+- **Images:** register `assets/images/` (and any sibling type dirs present in
+  the copied folder) in `pubspec.yaml`; emit `appbox_kit_assets.dart` into
+  `lib/ui/common/` (app-authored copy of the kit generic template, the
+  `appbox_kit_app_strings.dart` pattern): every bundled path is an `abxImg*`
+  const and emitted code references the NAME, never a loose path string.
+
+Showcase demonstrates end-to-end: `abxImgShowcaseLogo` →
 `assets/images/showcase_logo.png`.
 
 **Layout tokens are names, never numbers.** Every layout value arriving in

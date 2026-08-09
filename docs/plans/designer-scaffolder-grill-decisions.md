@@ -177,11 +177,9 @@ binding"), designer SKILL.md (compose-time rule), scaffolder SKILL.md
 ## Assets ruling (user-confirmed)
 
 - **Apps = B, type-first, the way Flutter manages assets.** `assets/` beside
-  `lib/`; the only app-owned class is images/media (`assets/images/`, sibling
-  type dirs only on real need), registered as pubspec directories. The kit
-  already manages the rest: fonts ship inside the kit package
-  (`appbox_kit_fonts.dart` catalogue + vendored binaries), icons are kit code
-  glyphs (`appbox_kit_glyphs.dart`). An app declares NO font or icon assets.
+  `lib/`, sibling type dirs only on real need, registered as pubspec
+  directories. UI icons are kit code glyphs (`appbox_kit_glyphs.dart`) — never
+  asset files. (Font handling superseded below: Google Fonts, no binaries.)
 - **Named-asset vocabulary:** `appbox_kit_assets.dart` — generic kit template
   in `kit/core/lib/common/` + app-authored copy in `lib/ui/common/`
   (the `appbox_kit_app_strings.dart` pattern). Consts are `abxImg*`; code and
@@ -195,3 +193,34 @@ binding"), designer SKILL.md (compose-time rule), scaffolder SKILL.md
 - **Studio v2 root (ratified):** `designs/appbox-studio-v2/{lib,assets}` —
   everything code under `lib/` mirroring the showcase recipe
   (hub > shells > views > widgets), assets as above.
+
+
+## Assets ruling v2 (user-confirmed, supersedes font/ownership parts above)
+
+- **SSOT = kit, passive (option B).** `kit/assets_default/` holds inert raw
+  material + declarations that BOTH designer and scaffolder read — same rules,
+  no drift. "Consolidate the kit, don't clean it": management *code* lives in
+  the skills; the kit holds files + the manifest only.
+- **Taxonomy (ratified):** `assets/{brand-icons/, fonts/, images/}` +
+  `assets.manifest.json`. Defaults shipped: `brand-icons/appbox-icon.png` +
+  `appbox-icon.svg` (moved from repo root 2026-08-09).
+- **Fonts = Google Fonts by name, no binaries.** Designer resolves via
+  CDN/CSS; scaffolder emits the `google_fonts` package. `appbox_kit_fonts.dart`
+  is a pure catalogue: `abxFont*` → Google family name. Font *roles*
+  (`primary`, `monospace`, …) in the manifest, not raw family lists — swapping
+  a family at intake retouches nothing downstream. `assets/fonts/` holds files
+  only when a user uploads a custom brand font at intake (then scaffolder
+  emits a real pubspec `fonts:` block instead of a google_fonts call).
+- **Brand icons = brand identity ONLY** (launcher/app icons), distinct from UI
+  glyph management. Scaffolder wires `flutter_launcher_icons` (dev-dep +
+  per-app config yaml redirecting to `assets/brand-icons/`) covering
+  iOS/Android/web. One master image; platform variants always derived, never
+  hand-authored. Intake ALWAYS asks for brand png + svg (svg optional).
+- **Flow:** intake uploads (organized per taxonomy) → designer merges uploads
+  over `kit/assets_default/` (user-provided entries REPLACE defaults in the
+  emitted folder) → designer emits merged `assets/` + manifest with the design
+  → scaffolder pure copy-paste of the folder, reading ONLY the manifest to
+  wire google_fonts, flutter_launcher_icons config, pubspec registration, and
+  the app's `appbox_kit_assets.dart` (`abxImg*` consts).
+- No uploads → the appbox defaults ship as-is (appbox brand icon, Inter/
+  JetBrains Mono via Google Fonts).

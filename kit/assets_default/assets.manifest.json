@@ -1,0 +1,14 @@
+{
+  "_comment": "SSOT for appbox default assets (grill ruling, 2026-08-09). Designer merges intake uploads over these defaults and emits the merged folder + manifest with the design. Scaffolder reads ONLY this manifest to wire google_fonts, flutter_launcher_icons config, pubspec asset registration, and the app's appbox_kit_assets.dart. Intake always asks for a brand png + svg (svg optional); user-provided entries REPLACE defaults in the emitted folder.",
+  "fonts": {
+    "primary": { "family": "Inter", "source": "google" },
+    "monospace": { "family": "JetBrains Mono", "source": "google" }
+  },
+  "brandIcon": {
+    "master": "brand-icons/appbox-icon.png",
+    "vector": "brand-icons/appbox-icon.svg",
+    "background": "#0B0B0F",
+    "adaptive": true
+  },
+  "images": {}
+}

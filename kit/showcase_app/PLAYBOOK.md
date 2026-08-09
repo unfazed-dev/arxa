@@ -149,17 +149,20 @@ stacked create view showcase_startup showcase_shell showcase_<tab>_shell showcas
 - **NAMING CONVENTION — every showcase-app view is `showcase_`-prefixed** (`showcase_startup`, `showcase_unknown`, `showcase_notes_shell`, `showcase_notes`, `showcase_note_editor`, …), including the scaffold's startup/unknown views, the shared widgets in `lib/ui/widgets/common/` (`showcase_tabs_shared/`, `showcase_gallery_chrome/`), and the root widget in `main.dart` (`ShowcaseApp`, not `MainApp`). This makes every showcase artifact instantly distinguishable from any other app's views. Pass the prefixed name to `stacked create view` so classes, files, routes, and tests all come out prefixed. The scaffold's sheet/dialog boilerplate is prefixed too (`showcase_notice_sheet/`, `showcase_info_alert_dialog/` under `lib/ui/bottom_sheets`/`lib/ui/dialogs`, files ending `_sheet.dart`/`_dialog.dart` with matching `…Sheet`/`…Dialog` class names; barrels live one level up as `bottom_sheets.dart`/`dialogs.dart` since a folder-named barrel would collide with the artifact file); what stays canonical is the `main.dart` filename — Flutter requires it.
 - **No local `lib/ui/common/`** — the CLI-template `app_colors.dart`/`app_strings.dart`/`app_constants.dart`/`ui_helpers.dart` files are deleted. Colors, spacing helpers, app constants, glyphs, and fonts always come from the kit: `package:appbox_kit_core/common/appbox_kit_colors.dart`, `…/appbox_kit_ui_helpers.dart`, `…/appbox_kit_app_constants.dart`, `…/appbox_kit_glyphs.dart` (+ `appbox_kit_glyphs_lucide.dart`), `…/appbox_kit_fonts.dart`. App-specific shared *widgets* live in `lib/ui/widgets/common/`; app-specific strings live beside the feature that owns them.
 
-- **Assets are type-first and images-only** (grill ruling: apps manage assets
-  the way Flutter does). `assets/` sits beside `lib/`; the only app-owned type
-  folder is `assets/images/` (add siblings like `assets/audio/` only when a
-  real need lands), each registered as a directory in `pubspec.yaml`. Fonts
-  ship inside the kit package (`appbox_kit_fonts.dart` catalogue), icons are
-  kit code glyphs (`appbox_kit_glyphs.dart`) — an app declares NO font or icon
-  assets. Every bundled path is named as an `abxImg*` const in
-  `appbox_kit_assets.dart` (generic kit template + app-authored copy, same
-  pattern as `appbox_kit_app_strings.dart`); code and designs refer to the
-  name, never a loose path. Showcase demo: `abxImgShowcaseLogo` →
-  `assets/images/showcase_logo.png`.
+- **Assets follow the ratified v2 ruling** (SSOT: passive `kit/assets_default/`
+  — taxonomy `assets/{brand-icons/, fonts/, images/}` + `assets.manifest.json`).
+  The designer authors the app's `assets/` (intake uploads merged over kit
+  defaults); the scaffolder pure copy-pastes it and wires everything from the
+  manifest. Fonts are **Google Fonts by name** (`google_fonts` package, roles
+  from the manifest — `assets/fonts/` holds files only for user-uploaded brand
+  fonts, which then get a real pubspec `fonts:` block). `brand-icons/` is the
+  launcher/app-icon master (png + optional svg) consumed by
+  `flutter_launcher_icons`; UI icons remain kit code glyphs
+  (`appbox_kit_glyphs.dart`), never asset files. Every bundled image path is
+  an `abxImg*` const in `appbox_kit_assets.dart` (generic kit template +
+  app-authored copy, same pattern as `appbox_kit_app_strings.dart`); code and
+  designs refer to the name, never a loose path. Showcase demo:
+  `abxImgShowcaseLogo` → `assets/images/showcase_logo.png`.
 - Each **shell is a full CLI view folder** (`<name>_shell/` with view + mobile/tablet/desktop variants + viewmodel), never an inline `StatelessWidget` outlet class.
 - **Leaf views nest inside their shell's folder** after generation: `lib/ui/views/showcase_notes_shell/showcase_notes_folder/showcase_notes_folder_view.dart` (host example: `account_shell/account_home/`). The CLI generates flat; move the folder under its shell — sibling-relative imports survive the move, only `app.dart`/cross-view absolute imports change. Viewmodel tests stay FLAT in `test/viewmodels/` (host convention).
 - **`--exclude-route` for every view in the shell tree**, then hand-place the routes in `app.dart`: `CustomRoute(page: ShowcaseStartupView, initial: true)` + `CustomRoute(page: ShowcaseShellView, path: '/', children: [CustomRoute(page: <Tab>ShellView, children: [CustomRoute(page: <TabView>, path: '', initial: true), …])])`. Route-tree layout is hand-edited (normal development); file creation is not.
