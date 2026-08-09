@@ -1,8 +1,8 @@
 // header_panel.tsx — the shell's header panel (replaces header_panel.html).
-// A thin instantiation of _panel (role: header): a body-only <nav> strip with
+// A thin instantiation of panel (role: header): a body-only <nav> strip with
 // no leading/trailing sections. The body is the hub header widget (studio_dashboard_widgets/header.tsx).
 import type { Child } from 'hono/jsx';
-import { Open as PanelOpen } from './_panel.tsx';
+import { Open as PanelOpen } from './panel.tsx';
 
 const PID = 'panel-header';
 

@@ -1,8 +1,8 @@
 // footer_panel.tsx — the shell's footer panel (replaces footer_panel.html).
-// A thin instantiation of _panel (role: footer): a body-only strip. The body
+// A thin instantiation of panel (role: footer): a body-only strip. The body
 // (e.g. the timeline <ol>) is the caller's content, passed as children.
 import type { Child } from 'hono/jsx';
-import { Open as PanelOpen } from './_panel.tsx';
+import { Open as PanelOpen } from './panel.tsx';
 
 const PID = 'panel-footer';
 

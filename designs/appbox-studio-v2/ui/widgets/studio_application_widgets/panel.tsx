@@ -1,6 +1,6 @@
-// _panel.tsx — THE PANEL BASE — the skeleton, implemented once (replaces _panel.html).
-// Vocabulary is fixed in ui/common/_integration_panels.md; read it before
-// adding a name here. A shell is built from panels, a panel is built from
+// panel.tsx — THE PANEL BASE — the skeleton, implemented once (replaces the v1 panel template).
+// Vocabulary (Panel/Top/Bottom/SideStart/SideEnd/*Oob) is fixed by this file's
+// exports; read the section list below before adding a name here. A shell is built from panels, a panel is built from
 // sections. The five roles (header · main · activity · composer · footer) are
 // thin instantiations of this file and add no skeleton of their own.
 //
@@ -12,7 +12,7 @@
 // base never emitted is a silent no-op.
 //
 //   import { Panel, Top, Bottom, SideStart, SideEnd, BodyOob, TopOob,
-//            BottomOob, SideEndOob, Resize } from './_panel.tsx';
+//            BottomOob, SideEndOob, Resize } from './panel.tsx';
 //   <Panel role="composer" translate={translate} top={headMarkup} bottom={footMarkup}>
 //     …body content…
 //   </Panel>
@@ -353,5 +353,5 @@ export function Resize(props: ResizeProps) {
   );
 }
 
-// Alias: many files import { Open } from _panel — same as Panel.
+// Alias: many files import { Open } from panel — same as Panel.
 export { Panel as Open };
