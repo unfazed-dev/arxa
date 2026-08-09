@@ -609,3 +609,36 @@ should read "= viewmodel module".
 **Every handler in the module must be enumerated when a view is flipped.** A
 missed sibling is a silent hybrid, not a visible break — the most expensive
 kind of miss for a parallel run whose entire value is diff fidelity.
+
+### 8a — the anatomy view's export surface is PINNED, not free
+
+`render(c, '<view>#<frag>')` splits on `#` and indexes the generated registry,
+which is built from the view module's **named exports**. So `${VIEW}#panelsSwap`
+requires the target file to export `PanelsSwap`. A rewritten shell that renames
+or drops a fragment resolves `undefined` **at swap time, not at first paint** —
+invisible to a probe that captures only the initial render.
+
+Each `*_view_anatomy.tsx` must therefore export the **same fragment set,
+name-for-name**, as the shell it replaces. This is a hard constraint on the
+rewrite, and it is not implied by R-b/R-c.
+
+### 8b — enumerated surface (measured, not assumed)
+
+| view | handlers | fragments the anatomy view MUST export |
+|---|---|---|
+| `chat` | 10 — `page context elementContext elementContextRemove bulkContext select send model tray revert` | `PanelsSwap DrawerSwap RevertSwap` (3) |
+| `freeze` | 7 — `page file send recheck context model tray` | `PanelsSwap FileSwap DriftSwap` (3) |
+| `prototype` | 22 — `page file screen panel panelView panelSize viewer flowMove flowAdd flowRemove panelSizePx undo redo drawer inspector inspectorSelect inspectorUnlock widgetArm widgetSelect widgetAttr widgetText widgetClear` | `RenderPanels PanelsSwap ActivitySwap InspectorPane WidgetEditor InspectorSwap ActivityFrameSwap ViewerSwap DrawerSwap FileSwap FilterSwap` (11) |
+
+(`surfaceId` is a const, not a handler.)
+
+This is the missing input to step 2. The scale correction matters: the cutover
+unit was ruled to be "each view's `page` handler" — for `prototype` that is
+1 of 23 exports. Flipping it alone leaves 21 handlers rendering old-shell
+fragments into a new-shell DOM.
+
+**Recommended sequencing consequence:** cut over `chat` or `freeze` first
+(3 fragments, 7–10 handlers). `prototype` is not a first cutover — 11 pinned
+fragment exports and 22 handlers make it the highest-risk view, and its
+`inspectorPane`/`widgetEditor` fragments are precisely where `data-inspect-*`
+stamping and the inspector probe interact.
