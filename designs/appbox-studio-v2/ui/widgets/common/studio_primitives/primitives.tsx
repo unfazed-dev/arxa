@@ -47,7 +47,7 @@ export function Txt(props: TextProps) {
 }
 
 // chip — the base primitive every tone-hook badge below is built from.
-// See assets/css/widgets.css for the .chip base + modifier contract (D2).
+// See ui/styles/common/widgets.css for the .chip base + modifier contract (D2).
 interface ChipProps {
   className: string;
   label: string;

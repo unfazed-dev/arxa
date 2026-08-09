@@ -5,7 +5,7 @@
 //   markup lives once per section, not once per rung.
 //   Sections that own an aria-labelledby/label-for id pair (GatesSection,
 //   ProjectsSection, StatsSection, WizardSection) take a `rung` prop and
-//   suffix the id with it. The rung CSS (assets/css/app.css .rung rules)
+//   suffix the id with it. The rung CSS (ui/styles/common/app.css .rung rules)
 //   keeps all three rungs in the DOM at once — only display:none/block
 //   toggles which one is visible — so a bare id shared across the tripled
 //   copies would collide three times and the label/heading reference would
@@ -24,7 +24,7 @@
 //   root — see studio_dashboard_view.tsx History for the deviation note.
 import type { FC } from 'hono/jsx';
 import Icon from '../../../../runtime/icon.tsx';
-import { CtaLink, inspectAttributes, Label, Heading, Txt } from '../../../widgets/common/studio_primitives/primitives.tsx';
+import { CtaLink, inspectAttributes, Label, Heading, Txt } from '../../../widgets/common/studio_primitives/widgets.tsx';
 import { Wrap } from '../../../common/modal.tsx';
 
 type TranslateFn = (key: string, vars?: Record<string, unknown>) => unknown;

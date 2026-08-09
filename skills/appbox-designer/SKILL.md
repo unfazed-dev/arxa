@@ -202,6 +202,29 @@ artifact-root `tsconfig.json` produced at emit time (jsx via
 type-check clean (`npx tsc -p <artifact>`) before gates report. A missing or
 hand-authored tsconfig is an emit defect.
 
+**Styles law (locked).** Artifact CSS lives only in `ui/styles/<owner>/` —
+`common/` plus one folder per shell and one for the application hub, folder
+names matching their `ui/views/` entries. Each folder carries a `styles.css`
+barrel (`@import` by absolute `/ui/styles/…` URL, cascade order); `base.tsx`
+links one barrel per folder (common first) and no other stylesheet. No `.css`
+outside `ui/styles/`; rules consumed by two-plus owners promote to `common/`;
+dead selectors are deleted, not parked. Ruled 2026-08-09. See
+DESIGN-ARCHITECTURE "Styles (ui/styles)".
+
+**Widget barrel law (locked).** Every `ui/widgets/` leaf folder carries a
+`widgets.tsx` barrel; external consumers import through the barrel only.
+Folders are `<app>_<feature>_widgets/` named after the owning `ui/views/`
+entry; cross-shell groups live under `ui/widgets/common/<group>/`. Ruled
+2026-08-09.
+
+**Hub law (locked).** Two-plus shells, exactly **one** application hub per app —
+more only when the intake, design, or scaffold stage explicitly states so. The
+hub sits flat at `ui/views/<app>_application_hub/` (no `_shell` suffix, no
+nested surface directory) with the showcase five-file set (`<hub>_view.tsx`,
+`.desktop`/`.tablet`/`.mobile` variants, `<hub>_viewmodel.js`); hub widgets in
+`ui/widgets/<app>_application_hub_widgets/`. Ruled 2026-08-09. See
+DESIGN-ARCHITECTURE "One application hub".
+
 Every emitted surface carries the `inspectAttrs` triple
 `(screenId, surfaceId, anatomy-node id)` derived from registry ids — stamped at
 emit time, mechanically enforced, never inferred at runtime. Every emitted view

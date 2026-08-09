@@ -206,8 +206,34 @@ Widgets come first. Before any surface is composed, the design's repeated patter
   > `widgets/common/`.
 - Per-surface views keep only what is genuinely theirs: the card's domain content, the canvas artifact's body.
 - Parameters travel through the component's props (e.g. a `base` path prefix); session state stays namespaced per shell in the facade.
-- The same rule applies to CSS: shared widget styles live in the artifact's main stylesheet, not duplicated across per-surface CSS files. Scrollbars always blend (transparent track, theme-ink thumb) — see the starter's `app.css`.
+- The same rule applies to CSS: styles live only in `ui/styles/` (see "Styles (ui/styles)"), never colocated with a view or widget. Scrollbars always blend (transparent track, theme-ink thumb).
 - Icons are vocabulary, not pixels: `<Icon name="name" />` inlines a vendored Lucide glyph server-side (see the runtime contract) — emoji or hand-drawn stand-ins are never shipped as icons.
+- Every `ui/widgets/` leaf folder carries a `widgets.tsx` barrel named for its kind; external consumers import through the barrel only (folder-internal imports stay file-to-file). Folders are `<app>_<feature>_widgets/`, named after the `ui/views/` entry they serve; cross-shell widgets live in `ui/widgets/common/<group>/` — grouped, never flat — with the same barrel.
+
+## Styles (ui/styles)
+
+All artifact CSS lives in `ui/styles/`, one folder per owner: `common/` plus one
+folder per shell and one for the application hub, each named exactly after the
+`ui/views/` entry it serves. Each folder carries a `styles.css` barrel that
+`@import`s its part files by absolute `/ui/styles/<owner>/<file>` URL in cascade
+order; `base.tsx` links exactly one barrel per folder (common first) and no
+other stylesheet. No `.css` file exists outside `ui/styles/` — not in `assets/`,
+not colocated with a view or widget. A rule consumed by two or more owners
+promotes to `common/`, mirroring the widget promotion tier. Dead rules are
+deleted, not parked: a selector with no consumer in `ui/` is a defect. The
+scaffolder maps `ui/styles/<owner>/` to the app's `lib/ui/styles/<owner>/` with
+the same folder-per-owner and barrel discipline.
+
+## One application hub
+
+Every designed app has two-plus shells and **exactly one** application hub —
+more only when the intake, design, or scaffold stage explicitly states so (the
+showcase app demonstrates the canonical single-hub shape). The hub is flat at
+`ui/views/<app>_application_hub/` — no `_shell` suffix, no nested surface
+directory — and carries the showcase five-file set: `<hub>_view.tsx` +
+`.desktop`/`.tablet`/`.mobile` variants + `<hub>_viewmodel.js`. Shells stay
+canonical (`ui/views/<app>_<feature>_shell/<surface>/…`). Hub widgets live in
+`ui/widgets/<app>_application_hub_widgets/`.
 
 ### Compositions are recipes, and recipes are the designer's (Q7)
 
