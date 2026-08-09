@@ -1,4 +1,4 @@
-import * as hub from './ui/views/studio_application_hub/studio_application_hub_viewmodel.js';
+import * as hub from './ui/views/studio_application_hub/studio_stage_board/studio_stage_board_viewmodel.js';
 import * as startup from './ui/views/studio_startup_shell/studio_startup/studio_startup_viewmodel.js';
 import * as prefs from './ui/common/prefs_viewmodel.js';
 

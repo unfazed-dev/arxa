@@ -286,10 +286,15 @@ binding"), designer SKILL.md (compose-time rule), scaffolder SKILL.md
 
 ## Q-v2-4 — recipe→web mapping for studio v2 (user-confirmed: A)
 
-- Studio v2 uses the Q8 manifest's folder/naming grammar verbatim under
-  `designs/appbox-studio-v2/lib/`, with a declared artifact-type → extension map for web:
+- Studio v2 uses the Q8 manifest's folder/naming grammar verbatim at the **artifact
+  root** `designs/appbox-studio-v2/`, with a declared artifact-type → extension map for web:
   view → `.tsx` (per-surface `*.desktop.tsx` / `*.tablet.tsx` / `*.mobile.tsx`),
   viewmodel → `.js`, services/facades → `.js`.
+- *Amended 2026-08-08 (emit blocker B1):* the earlier "`under …/lib/`" wording quoted the
+  Dart manifest's path prefix, not a web placement. Anatomy §1 maps build medium
+  (`showcase_app/lib/…`) → design medium (artifact root), and all tooling agrees:
+  `design_server.dart` `resolveArtifact` requires `<candidate>/app.routes.js` at the
+  root; `gate_design_widgets.dart` scans `<artifactDir>/ui/views`. Root it is.
 - **Barrels follow the showcase category-name convention, NOT `index.js`** (user-ruled):
   barrel file named for the folder's artifact category exactly as showcase does
   (`widgets.dart`/`enums.dart`/`models.dart`/`data.dart`) → studio `widgets.js`,

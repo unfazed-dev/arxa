@@ -4,8 +4,9 @@
 // Requirements: Q-v2-1 (every stage names what it consumes and produces;
 //   advancement is user-triggered, so `enabled` is data, never inferred).
 // Relationships: studio_application_repository_service.js -> this ->
-//   studio_application_hub_viewmodel.js.
-// History: created for studio v2.
+//   studio_stage_board_viewmodel.js.
+// History: created for studio v2; consumer renamed when the hub's surface
+//   became studio_stage_board (shell view + one board surface).
 import { registry } from '../repositories/studio_application_repository_service.js';
 
 /** @param {(key: string) => string} t */

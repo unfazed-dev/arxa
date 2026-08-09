@@ -45,7 +45,11 @@
       "id": "studio_application_hub",
       "kind": "hub",
       "views": [
-        "studio_application_hub_view"
+        "studio_stage_board_view"
+      ],
+      "widgets": [
+        "stage_board",
+        "stage_card"
       ]
     },
     {
@@ -54,7 +58,10 @@
       "views": [
         "studio_startup_view"
       ],
-      "widgets": []
+      "widgets": [
+        "boot_checklist",
+        "proceed_trigger"
+      ]
     },
     {
       "id": "studio_unknown_shell",

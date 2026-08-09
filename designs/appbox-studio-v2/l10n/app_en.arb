@@ -43,5 +43,33 @@
   "stageDesign": "Design",
   "@stageDesign": {
     "description": "Hub stage card label for the design shell."
+  },
+  "hubTitle": "Studio stages",
+  "@hubTitle": {
+    "description": "Hub page heading naming the pipeline board."
+  },
+  "hubSubtitle": "Each card is a shell. Open the stage it fronts.",
+  "@hubSubtitle": {
+    "description": "Hub subtitle, expanded rung only."
+  },
+  "stageConsumes": "consumes",
+  "@stageConsumes": {
+    "description": "Label before a stage's input artifact on a stage card."
+  },
+  "stageProduces": "produces",
+  "@stageProduces": {
+    "description": "Label before a stage's output artifact on a stage card."
+  },
+  "startupTitle": "Starting the studio",
+  "@startupTitle": {
+    "description": "Startup ceremony heading."
+  },
+  "startupSubtitle": "Each step names the artifact it needs before the next one runs.",
+  "@startupSubtitle": {
+    "description": "Startup subtitle, expanded rung only."
+  },
+  "startupProceed": "Open the studio",
+  "@startupProceed": {
+    "description": "Label on the manual trigger that ends the startup ceremony."
   }
 }
