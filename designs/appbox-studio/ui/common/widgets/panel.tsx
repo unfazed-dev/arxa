@@ -1,5 +1,5 @@
-// _panel.tsx — THE PANEL BASE — the skeleton, implemented once (replaces _panel.html).
-// Vocabulary is fixed in ui/common/_integration_panels.md; read it before
+// panel.tsx — THE PANEL BASE — the skeleton, implemented once (replaces _panel.html).
+// Vocabulary is fixed in ui/common/integration_panels.md; read it before
 // adding a name here. A shell is built from panels, a panel is built from
 // sections. The five roles (header · main · activity · composer · footer) are
 // thin instantiations of this file and add no skeleton of their own.
@@ -12,7 +12,7 @@
 // base never emitted is a silent no-op.
 //
 //   import { Panel, Top, Bottom, SideStart, SideEnd, BodyOob, TopOob,
-//            BottomOob, SideEndOob, Resize } from './_panel.tsx';
+//            BottomOob, SideEndOob, Resize } from './panel.tsx';
 //   <Panel role="composer" t={t} top={headMarkup} bottom={footMarkup}>
 //     …body content…
 //   </Panel>
@@ -56,7 +56,7 @@ interface BodyOpts {
 interface SectionProps {
   pid: string;
   content?: Child;
-  o?: SectionOpts;
+  options?: SectionOpts;
   oob?: boolean;
   children?: Child;
 }
@@ -144,12 +144,12 @@ export function Panel(props: PanelProps) {
       <Top
         pid={pid}
         content={props.top}
-        o={{ className: props.topClass, attrs: props.topAttrs, id: props.topId }}
+        options={{ className: props.topClass, attrs: props.topAttrs, id: props.topId }}
       />
       <SideStart
         pid={pid}
         content={props.sideStart}
-        o={{
+        options={{
           className: props.sideStartClass,
           attrs: props.sideStartAttrs,
           id: props.sideStartId,
@@ -165,7 +165,7 @@ export function Panel(props: PanelProps) {
       <SideEnd
         pid={pid}
         content={props.sideEnd}
-        o={{
+        options={{
           className: props.sideEndClass,
           attrs: props.sideEndAttrs,
           id: props.sideEndId,
@@ -174,7 +174,7 @@ export function Panel(props: PanelProps) {
       <Bottom
         pid={pid}
         content={props.bottom}
-        o={{
+        options={{
           className: props.bottomClass,
           attrs: props.bottomAttrs,
           id: props.bottomId,
@@ -196,19 +196,19 @@ export function Panel(props: PanelProps) {
 // A JSX runtime hands sections an empty children array even when the caller
 // wrote a self-closing tag — [] is truthy, so a bare truthiness check would
 // render empty sections on every panel. Recurse: real content only.
-const hasChild = (k: unknown): boolean =>
-  Array.isArray(k) ? k.some(hasChild) : k != null && k !== false && k !== '';
+const hasChild = (node: unknown): boolean =>
+  Array.isArray(node) ? node.some(hasChild) : node != null && node !== false && node !== '';
 
 export function Top(props: SectionProps) {
-  const { pid, content, o } = props;
+  const { pid, content, options } = props;
   const body = content ? raw(String(content)) : hasChild(props.children) ? props.children : null;
   if (body == null) return null;
   return (
     <header
-      class={`panel-top${o?.className ? ` ${o.className}` : ''}`}
-      id={o?.id ?? `${pid}-top`}
-      hx-swap-oob={props.oob || o?.oob ? 'outerHTML' : undefined}
-      {...(o?.attrs ?? {})}
+      class={`panel-top${options?.className ? ` ${options.className}` : ''}`}
+      id={options?.id ?? `${pid}-top`}
+      hx-swap-oob={props.oob || options?.oob ? 'outerHTML' : undefined}
+      {...(options?.attrs ?? {})}
     >
       {body}
     </header>
@@ -216,15 +216,15 @@ export function Top(props: SectionProps) {
 }
 
 export function Bottom(props: SectionProps) {
-  const { pid, content, o } = props;
+  const { pid, content, options } = props;
   const body = content ? raw(String(content)) : hasChild(props.children) ? props.children : null;
   if (body == null) return null;
   return (
     <footer
-      class={`panel-bottom${o?.className ? ` ${o.className}` : ''}`}
-      id={o?.id ?? `${pid}-bottom`}
-      hx-swap-oob={props.oob || o?.oob ? 'outerHTML' : undefined}
-      {...(o?.attrs ?? {})}
+      class={`panel-bottom${options?.className ? ` ${options.className}` : ''}`}
+      id={options?.id ?? `${pid}-bottom`}
+      hx-swap-oob={props.oob || options?.oob ? 'outerHTML' : undefined}
+      {...(options?.attrs ?? {})}
     >
       {body}
     </footer>
@@ -234,15 +234,15 @@ export function Bottom(props: SectionProps) {
 // The sides flank the body inside the band between top and bottom.
 // `start`/`end` rather than `left`/`right` so the names survive an RTL locale.
 export function SideStart(props: SectionProps) {
-  const { pid, content, o } = props;
+  const { pid, content, options } = props;
   const body = content ? raw(String(content)) : hasChild(props.children) ? props.children : null;
   if (body == null) return null;
   return (
     <aside
-      class={`panel-side-start${o?.className ? ` ${o.className}` : ''}`}
-      id={o?.id ?? `${pid}-side-start`}
-      hx-swap-oob={props.oob || o?.oob ? 'outerHTML' : undefined}
-      {...(o?.attrs ?? {})}
+      class={`panel-side-start${options?.className ? ` ${options.className}` : ''}`}
+      id={options?.id ?? `${pid}-side-start`}
+      hx-swap-oob={props.oob || options?.oob ? 'outerHTML' : undefined}
+      {...(options?.attrs ?? {})}
     >
       {body}
     </aside>
@@ -250,15 +250,15 @@ export function SideStart(props: SectionProps) {
 }
 
 export function SideEnd(props: SectionProps) {
-  const { pid, content, o } = props;
+  const { pid, content, options } = props;
   const body = content ? raw(String(content)) : hasChild(props.children) ? props.children : null;
   if (body == null) return null;
   return (
     <aside
-      class={`panel-side-end${o?.className ? ` ${o.className}` : ''}`}
-      id={o?.id ?? `${pid}-side-end`}
-      hx-swap-oob={props.oob || o?.oob ? 'outerHTML' : undefined}
-      {...(o?.attrs ?? {})}
+      class={`panel-side-end${options?.className ? ` ${options.className}` : ''}`}
+      id={options?.id ?? `${pid}-side-end`}
+      hx-swap-oob={props.oob || options?.oob ? 'outerHTML' : undefined}
+      {...(options?.attrs ?? {})}
     >
       {body}
     </aside>
@@ -275,7 +275,7 @@ export function SideEnd(props: SectionProps) {
 interface BodyOobProps {
   pid: string;
   content?: string;
-  o?: BodyOpts;
+  options?: BodyOpts;
   children?: Child;
   // Top-level shortcuts (used when o is not provided — e.g. timeline.tsx)
   tag?: string;
@@ -285,11 +285,11 @@ interface BodyOobProps {
 }
 
 export function BodyOob(props: BodyOobProps) {
-  const { pid, content, o } = props;
-  const tag = o?.tag ?? props.tag;
-  const className = o?.className ?? props.className;
-  const id = o?.id ?? props.id;
-  const attrs = o?.attrs ?? props.attrs;
+  const { pid, content, options } = props;
+  const tag = options?.tag ?? props.tag;
+  const className = options?.className ?? props.className;
+  const id = options?.id ?? props.id;
+  const attrs = options?.attrs ?? props.attrs;
   const Tag = (tag ?? 'div') as any;
   return (
     <Tag
@@ -309,15 +309,15 @@ export function BodyOob(props: BodyOobProps) {
 // =============================================================================
 
 export function TopOob(props: SectionProps) {
-  return <Top {...props} o={{ ...(props.o ?? {}), oob: true }} />;
+  return <Top {...props} options={{ ...(props.options ?? {}), oob: true }} />;
 }
 
 export function BottomOob(props: SectionProps) {
-  return <Bottom {...props} o={{ ...(props.o ?? {}), oob: true }} />;
+  return <Bottom {...props} options={{ ...(props.options ?? {}), oob: true }} />;
 }
 
 export function SideEndOob(props: SectionProps) {
-  return <SideEnd {...props} o={{ ...(props.o ?? {}), oob: true }} />;
+  return <SideEnd {...props} options={{ ...(props.options ?? {}), oob: true }} />;
 }
 
 // =============================================================================

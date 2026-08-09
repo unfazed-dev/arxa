@@ -58,9 +58,9 @@ const AuthView: FC<AuthViewProps> = ({ translate, locale, auth = {}, account = {
 
         <p class="auth-or"><span {...inspectAttrs('app-auth:or', { role: 'text' })}>{translate('auth.or') as string}</span></p>
 
-        {(auth.providers ?? []).map((p) => (
-          <form key={p.id} method="post" action="/auth/signin">
-            <button type="submit" class="ghost auth-provider" name="provider" value={p.id} {...inspectAttrs('app-auth:provider', { role: 'action' })}>{p.label}</button>
+        {(auth.providers ?? []).map((provider) => (
+          <form key={provider.id} method="post" action="/auth/signin">
+            <button type="submit" class="ghost auth-provider" name="provider" value={provider.id} {...inspectAttrs('app-auth:provider', { role: 'action' })}>{provider.label}</button>
           </form>
         ))}
       </section>

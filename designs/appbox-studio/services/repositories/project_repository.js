@@ -16,7 +16,7 @@ export const flows = () => readProjectFixture('intake/flows.json');
 // The intake interview's recorded answers ({product, audience, direction, …},
 // each {value, provenance}) — the intake surfaces prefill from here.
 export const answers = () => readProjectFixture('intake/answers.json');
-export const registryEntry = (id) => registry().find((e) => e.id === id);
+export const registryEntry = (id) => registry().find((entry) => entry.id === id);
 
 // ---- the Slice B intake artifacts (personas / story map / moodboard / direction)
 //
@@ -78,18 +78,18 @@ export const direction = () => readOptionalProjectFixture('intake/direction.json
 // no flows group at all, which is emit's DERIVE branch (:660) — is skipped rather
 // than appended: inventing a declared flows group would flip emit out of
 // derivation behind the user's back. Returns how many flows it patched.
-export const patchAnswersFlows = (a, flows, ids, fields = ['edges']) => {
-  const declared = a?.flows;
+export const patchAnswersFlows = (answersDoc, flows, ids, fields = ['edges']) => {
+  const declared = answersDoc?.flows;
   if (!Array.isArray(declared)) return 0;
-  let n = 0;
+  let count = 0;
   for (const id of ids) {
-    const src = flows.find((f) => f.id === id);
-    const dst = declared.find((f) => f.id === id);
+    const src = flows.find((flow) => flow.id === id);
+    const dst = declared.find((flow) => flow.id === id);
     if (!src || !dst) continue;
-    for (const k of fields) if (k in src) dst[k] = src[k];
-    n += 1;
+    for (const field of fields) if (field in src) dst[field] = src[field];
+    count += 1;
   }
-  return n;
+  return count;
 };
 
 // flows.json FIRST. A failure between the two writes then leaves the drift that
@@ -101,9 +101,9 @@ export const writeFlowsDual = async (flows, ids, fields = ['edges']) => {
   // Patch a CLONE, not the cached object answers() hands back: if the write
   // below throws, a mutated cache would keep serving an answers that disagrees
   // with the file until something else busts it. Failing means nothing changed.
-  const a = structuredClone(answers());
-  if (patchAnswersFlows(a, flows, ids, fields)) {
-    await writeProjectFixture('intake/answers.json', a);
+  const answersDoc = structuredClone(answers());
+  if (patchAnswersFlows(answersDoc, flows, ids, fields)) {
+    await writeProjectFixture('intake/answers.json', answersDoc);
   }
 };
 
@@ -123,7 +123,7 @@ export const currentName = () => settings()?.name ?? null;
 // Empty when no project is overlaid (artifact-only serving).
 export const tabs = () => {
   try {
-    return registry().filter((e) => e.tab === true);
+    return registry().filter((entry) => entry.tab === true);
   } catch {
     return [];
   }
@@ -141,10 +141,10 @@ export const tabs = () => {
 // docs/plans/design-viewer-per-lens-hover-and-flow-mode.md.
 export const nextEdge = (screenId, flowId = null) => {
   try {
-    for (const f of flows()) {
-      if (flowId && f.id !== flowId) continue;
-      for (const e of f.edges ?? []) {
-        if (e.from === screenId) return { ...e, flow: f.id, flowName: f.name };
+    for (const flow of flows()) {
+      if (flowId && flow.id !== flowId) continue;
+      for (const edge of flow.edges ?? []) {
+        if (edge.from === screenId) return { ...edge, flow: flow.id, flowName: flow.name };
       }
     }
   } catch {
@@ -174,10 +174,10 @@ export const nextEdge = (screenId, flowId = null) => {
 export const handoffs = (screenId, fromFlowId = null) => {
   const out = [];
   try {
-    for (const f of flows()) {
-      if (f.id === fromFlowId) continue;
-      const e = (f.edges ?? []).find((x) => x.from === screenId);
-      if (e) out.push({ flow: f.id, flowName: f.name, to: e.to, trigger: e.trigger });
+    for (const flow of flows()) {
+      if (flow.id === fromFlowId) continue;
+      const edge = (flow.edges ?? []).find((candidate) => candidate.from === screenId);
+      if (edge) out.push({ flow: flow.id, flowName: flow.name, to: edge.to, trigger: edge.trigger });
     }
   } catch { /* no project overlaid — no hand-offs */ }
   return out;
@@ -191,15 +191,15 @@ export const handoffs = (screenId, fromFlowId = null) => {
 export const edgesFrom = (screenId) => {
   const out = [];
   try {
-    for (const f of flows()) {
-      for (const e of f.edges ?? []) {
-        if (e.from !== screenId) continue;
+    for (const flow of flows()) {
+      for (const edge of flow.edges ?? []) {
+        if (edge.from !== screenId) continue;
         out.push({
-          flow: f.id, flowName: f.name, to: e.to,
-          trigger: e.trigger ?? null, element: e.element ?? null,
+          flow: flow.id, flowName: flow.name, to: edge.to,
+          trigger: edge.trigger ?? null, element: edge.element ?? null,
           // The nav op (push/replace/…) — the Logic tab's technical edge
           // rendering names it; the explode join simply never reads it.
-          action: e.action ?? null,
+          action: edge.action ?? null,
         });
       }
     }

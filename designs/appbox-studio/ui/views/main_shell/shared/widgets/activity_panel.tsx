@@ -4,7 +4,7 @@
 // single wrapper component (Open) — see the conversion guide on open/close pairs.
 import type { Child } from 'hono/jsx';
 import Icon from '../../../../../runtime/icon.tsx';
-import { Open as PanelOpen, Top as PanelTop, Bottom as PanelBottom } from '../../../../common/widgets/_panel.tsx';
+import { Open as PanelOpen, Top as PanelTop, Bottom as PanelBottom } from '../../../../common/widgets/panel.tsx';
 import { inspectAttrs } from '../../../../common/widgets/primitives.tsx';
 
 type TFn = (key: string, vars?: Record<string, unknown>) => unknown;
@@ -43,19 +43,19 @@ interface ViewsProps {
 export function Views({ spec, translate }: ViewsProps) {
   return (
     <nav class="panel-views" aria-label={translate('panel.activity.views') as string} {...inspectAttrs('panel:activity:views', { role: 'nav' })}>
-      {spec.views.map((v) => (
+      {spec.views.map((view) => (
         <a
-          key={v.id}
-          class={`panel-views-icon${v.active ? ' is-active' : ''}`}
-          href={v.href}
-          hx-get={v.href}
+          key={view.id}
+          class={`panel-views-icon${view.active ? ' is-active' : ''}`}
+          href={view.href}
+          hx-get={view.href}
           hx-target={`#${PID}-body`}
           hx-swap="innerHTML"
           hx-push-url="false"
-          title={v.label}
-          aria-label={v.label}
+          title={view.label}
+          aria-label={view.label}
         >
-          <Icon name={v.icon} size={18} />
+          <Icon name={view.icon} size={18} />
         </a>
       ))}
     </nav>

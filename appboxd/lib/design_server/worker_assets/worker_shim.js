@@ -208,6 +208,11 @@
           }
         }
         const bag = Object.assign({ prefs, locale: c.get('locale') || 'en', locales, translate, vendorRev: globalThis.__vendorRev || {} }, ctx);
+        // Views destructure the bag out of their own props (`{ context }` or the
+        // older `{ c }`), so the bag has to carry a self-reference under both
+        // names. `context` is the name the naming law requires; `c` stays for
+        // designs that have not been swept yet.
+        bag.context = bag;
         bag.c = bag;
         if (st != null) c.status(st);
         return c.html(templatesRender(viewRef, bag));

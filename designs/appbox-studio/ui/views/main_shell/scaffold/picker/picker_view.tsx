@@ -5,7 +5,7 @@
 import type { FC } from 'hono/jsx';
 import { Fragment } from 'hono/jsx';
 import MainShellView from '../../main_shell_view.tsx';
-import { Panels, AccountChip, type ScaffoldCtx } from '../_shared.tsx';
+import { Panels, AccountChip, type ScaffoldCtx } from '../shared.tsx';
 import { CtaLink, inspectAttrs, Label, Heading, Txt } from '../../../../common/widgets/primitives.tsx';
 import Icon from '../../../../../runtime/icon.tsx';
 
@@ -71,105 +71,105 @@ interface PickerViewProps extends ScaffoldCtx {
 }
 
 // ---- axis 1: provenance (D4) ----
-function ProvChip({ k, translate }: { k: Kit; translate: TFn }) {
-  const title = k.provenance === 'inferred'
-    ? translate('scaffold.picker.prov.inferred.why', { screen: k.evidenceScreen }) as string
-    : k.provenance === 'declared'
+function ProvChip({ k: kit, translate }: { k: Kit; translate: TFn }) {
+  const title = kit.provenance === 'inferred'
+    ? translate('scaffold.picker.prov.inferred.why', { screen: kit.evidenceScreen }) as string
+    : kit.provenance === 'declared'
       ? translate('scaffold.picker.prov.declared.why') as string
       : translate('scaffold.picker.prov.requested.why') as string;
   return (
-    <span class={`chip prov-chip prov-${k.provenance}`} title={title} {...inspectAttrs('scaffold.picker:prov-chip', { role: 'label' })}>
-      <Icon name={k.provenance === 'inferred' ? 'sparkles' : k.provenance === 'declared' ? 'file-check' : 'hand'} size={13} />
-      {' '}{translate(`scaffold.picker.prov.${k.provenance}`) as string}
-      {k.confidence && <Fragment> <Label name="scaffold.picker:prov-conf" class="prov-conf">{translate(`scaffold.picker.prov.confidence.${k.confidence}`) as string}</Label></Fragment>}
+    <span class={`chip prov-chip prov-${kit.provenance}`} title={title} {...inspectAttrs('scaffold.picker:prov-chip', { role: 'label' })}>
+      <Icon name={kit.provenance === 'inferred' ? 'sparkles' : kit.provenance === 'declared' ? 'file-check' : 'hand'} size={13} />
+      {' '}{translate(`scaffold.picker.prov.${kit.provenance}`) as string}
+      {kit.confidence && <Fragment> <Label name="scaffold.picker:prov-conf" class="prov-conf">{translate(`scaffold.picker.prov.confidence.${kit.confidence}`) as string}</Label></Fragment>}
     </span>
   );
 }
 
 // ---- axis 2: maturity ----
-function MaturityChip({ k, translate }: { k: Kit; translate: TFn }) {
+function MaturityChip({ k: kit, translate }: { k: Kit; translate: TFn }) {
   return (
     <span
-      class={`chip chip--sm kit-maturity kit-maturity--${k.phase.replace('/', '-')}`}
-      title={k.maturityAxis?.native ? translate('scaffold.picker.maturity.note') as string : ''}
+      class={`chip chip--sm kit-maturity kit-maturity--${kit.phase.replace('/', '-')}`}
+      title={kit.maturityAxis?.native ? translate('scaffold.picker.maturity.note') as string : ''}
       {...inspectAttrs('scaffold.picker:maturity-chip', { role: 'label' })}
     >
-      <Icon name={k.maturityAxis?.native ? 'smartphone' : 'package'} size={13} />
-      {' '}{translate(`scaffold.picker.maturity.${k.phase === 'n/a' ? 'na' : k.phase}`) as string}
+      <Icon name={kit.maturityAxis?.native ? 'smartphone' : 'package'} size={13} />
+      {' '}{translate(`scaffold.picker.maturity.${kit.phase === 'n/a' ? 'na' : kit.phase}`) as string}
     </span>
   );
 }
 
 // ---- axis 3: readiness (D6 — inform only, never a gate) ----
-function ReadinessChip({ k, translate }: { k: Kit; translate: TFn }) {
-  if (k.readinessAxis?.ready) return null;
+function ReadinessChip({ k: kit, translate }: { k: Kit; translate: TFn }) {
+  if (kit.readinessAxis?.ready) return null;
   return (
     <span
-      class={`chip chip--sm kit-readiness kit-readiness--${k.readinessAxis?.state}`}
+      class={`chip chip--sm kit-readiness kit-readiness--${kit.readinessAxis?.state}`}
       title={translate('scaffold.picker.readiness.informOnly') as string}
       {...inspectAttrs('scaffold.picker:readiness-chip', { role: 'label' })}
     >
       <Icon name="key-round" size={13} />
-      {' '}{translate('scaffold.picker.readiness.missingCount', { count: k.readinessAxis?.count }) as string}
+      {' '}{translate('scaffold.picker.readiness.missingCount', { count: kit.readinessAxis?.count }) as string}
     </span>
   );
 }
 
 // ---- the kit card ----
-function KitCard({ c, k, translate }: { c: PickerViewProps; k: Kit; translate: TFn }) {
+function KitCard({ context, k: kit, translate }: { context: PickerViewProps; k: Kit; translate: TFn }) {
   return (
     <article
-      class={`artifact kit-card${k.selected ? ' is-on' : ''}${k.auto ? ' is-auto' : ''}${k.locked ? ' is-locked' : ''}`}
-      id={`kit-${k.id}`}
+      class={`artifact kit-card${kit.selected ? ' is-on' : ''}${kit.auto ? ' is-auto' : ''}${kit.locked ? ' is-locked' : ''}`}
+      id={`kit-${kit.id}`}
     >
       <header class="artifact-head kit-head">
-        <Heading name="scaffold.picker:kit-name" level={3} class="kit-name">{k.id}</Heading>
-        <code class="kit-pkg" {...inspectAttrs('scaffold.picker:kit-pkg', { role: 'text' })}>{k.package}</code>
+        <Heading name="scaffold.picker:kit-name" level={3} class="kit-name">{kit.id}</Heading>
+        <code class="kit-pkg" {...inspectAttrs('scaffold.picker:kit-pkg', { role: 'text' })}>{kit.package}</code>
       </header>
 
       <div class="kit-axes">
-        <ProvChip k={k} translate={translate} />
-        <MaturityChip k={k} translate={translate} />
-        <ReadinessChip k={k} translate={translate} />
+        <ProvChip k={kit} translate={translate} />
+        <MaturityChip k={kit} translate={translate} />
+        <ReadinessChip k={kit} translate={translate} />
       </div>
 
-      {k.provenance === 'declared' && k.declaredBy?.length ? (
+      {kit.provenance === 'declared' && kit.declaredBy?.length ? (
         <Txt name="scaffold.picker:kit-why-declared" class="kit-why">
-          <Icon name="link" size={13} /> {translate('scaffold.picker.confirm.declared', { screens: k.declaredBy.join(', ') }) as string}
+          <Icon name="link" size={13} /> {translate('scaffold.picker.confirm.declared', { screens: kit.declaredBy.join(', ') }) as string}
         </Txt>
-      ) : k.provenance === 'inferred' ? (
+      ) : kit.provenance === 'inferred' ? (
         <Txt name="scaffold.picker:kit-why-inferred" class="kit-why">
-          <Icon name="sparkles" size={13} /> {translate('scaffold.picker.prov.inferred.why', { screen: k.evidenceScreen }) as string}
+          <Icon name="sparkles" size={13} /> {translate('scaffold.picker.prov.inferred.why', { screen: kit.evidenceScreen }) as string}
         </Txt>
       ) : null}
 
-      {!k.readinessAxis?.ready && (
+      {!kit.readinessAxis?.ready && (
         <p class="kit-keys">
           <Label name="scaffold.picker:keys-note" class="muted">{translate('scaffold.picker.readiness.informOnly') as string}</Label>
           {' '}
-          <CtaLink href={k.credentialsHref ?? '#'} label={translate('scaffold.picker.readiness.add') as string} glyph="chevron-right" variant="" size={13} />
+          <CtaLink href={kit.credentialsHref ?? '#'} label={translate('scaffold.picker.readiness.add') as string} glyph="chevron-right" variant="" size={13} />
         </p>
       )}
 
       <footer class="kit-foot" {...inspectAttrs('scaffold.picker:kit-foot', { role: 'group' })}>
-        {k.essential ? (
+        {kit.essential ? (
           <span class="chip chip--muted" {...inspectAttrs('scaffold.picker:essential-badge', { role: 'label' })}><Icon name="lock" size={13} /> {translate('scaffold.picker.essential') as string}</span>
-        ) : k.auto ? (
-          <span class="chip chip--muted" title={translate('scaffold.picker.auto.why', { kits: (k.requiredBy ?? []).join(', ') }) as string} {...inspectAttrs('scaffold.picker:auto-badge', { role: 'label' })}>
+        ) : kit.auto ? (
+          <span class="chip chip--muted" title={translate('scaffold.picker.auto.why', { kits: (kit.requiredBy ?? []).join(', ') }) as string} {...inspectAttrs('scaffold.picker:auto-badge', { role: 'label' })}>
             <Icon name="git-merge" size={13} /> {translate('scaffold.picker.auto') as string}
           </span>
-        ) : c.gated ? (
+        ) : context.gated ? (
           <span class="chip chip--muted" {...inspectAttrs('scaffold.picker:gated-badge', { role: 'label' })}><Icon name="eye" size={13} /> {translate('scaffold.picker.gated.badge') as string}</span>
-        ) : k.selected ? (
-          <form method="post" action={`${c.base}/remove`} hx-post={`${c.base}/remove`} hx-target="#picker-grid" hx-swap="outerHTML">
-            <input type="hidden" name="kit" value={k.id} {...inspectAttrs('scaffold.picker:remove-input', { role: 'input' })} />
+        ) : kit.selected ? (
+          <form method="post" action={`${context.base}/remove`} hx-post={`${context.base}/remove`} hx-target="#picker-grid" hx-swap="outerHTML">
+            <input type="hidden" name="kit" value={kit.id} {...inspectAttrs('scaffold.picker:remove-input', { role: 'input' })} />
             <button type="submit" class="cta-ghost kit-toggle is-on" {...inspectAttrs('scaffold.picker:remove', { role: 'action' })}>
               <Icon name="check" size={14} /> {translate('scaffold.picker.added') as string}
             </button>
           </form>
         ) : (
-          <form method="post" action={`${c.base}/add`} hx-post={`${c.base}/add`} hx-target="#picker-grid" hx-swap="outerHTML">
-            <input type="hidden" name="kit" value={k.id} {...inspectAttrs('scaffold.picker:add-input', { role: 'input' })} />
+          <form method="post" action={`${context.base}/add`} hx-post={`${context.base}/add`} hx-target="#picker-grid" hx-swap="outerHTML">
+            <input type="hidden" name="kit" value={kit.id} {...inspectAttrs('scaffold.picker:add-input', { role: 'input' })} />
             <button type="submit" class="cta-ghost kit-toggle" {...inspectAttrs('scaffold.picker:add', { role: 'action' })}>
               <Icon name="plus" size={14} /> {translate('scaffold.picker.add') as string}
             </button>
@@ -181,23 +181,23 @@ function KitCard({ c, k, translate }: { c: PickerViewProps; k: Kit; translate: T
 }
 
 // ---- D5 notice: auto-pulled kits ----
-function AutoNotice({ c, translate }: { c: PickerViewProps; translate: TFn }) {
-  if (!c.autoNotice?.length) return null;
+function AutoNotice({ context, translate }: { context: PickerViewProps; translate: TFn }) {
+  if (!context.autoNotice?.length) return null;
   return (
     <aside class="picker-notice picker-notice--auto">
       <h4 class="fact-label" {...inspectAttrs('scaffold.picker:auto-notice-title', { role: 'heading' })}><Icon name="git-merge" size={14} /> {translate('scaffold.picker.autoNotice.title') as string}</h4>
       <Txt name="scaffold.picker:auto-notice-body">{translate('scaffold.picker.autoNotice.body') as string}</Txt>
       <Txt name="scaffold.picker:auto-notice-kits" class="notice-kits">
-        {c.autoNotice.map((k) => <a key={k.id} class="chip chip--accent" href={`#kit-${k.id}`} {...inspectAttrs('scaffold.picker:auto-notice-kit', { role: 'action' })}>{k.id}</a>)}
+        {context.autoNotice.map((kit) => <a key={kit.id} class="chip chip--accent" href={`#kit-${kit.id}`} {...inspectAttrs('scaffold.picker:auto-notice-kit', { role: 'action' })}>{kit.id}</a>)}
       </Txt>
     </aside>
   );
 }
 
 // ---- D2: remove-with-forced-fallback confirm ----
-function RemoveConfirm({ c, translate }: { c: PickerViewProps; translate: TFn }) {
-  if (!c.confirm) return null;
-  const cf = c.confirm;
+function RemoveConfirm({ context, translate }: { context: PickerViewProps; translate: TFn }) {
+  if (!context.confirm) return null;
+  const cf = context.confirm;
   return (
     <aside class="picker-confirm" role="alertdialog" aria-labelledby="confirm-title">
       <h3 class="display" id="confirm-title" {...inspectAttrs('scaffold.picker:confirm-title', { role: 'heading' })}>{translate('scaffold.picker.confirm.title', { kit: cf.kit.id }) as string}</h3>
@@ -237,19 +237,19 @@ function RemoveConfirm({ c, translate }: { c: PickerViewProps; translate: TFn })
 }
 
 // ---- signed-out / not-entitled ----
-function GatedNotice({ c, translate }: { c: PickerViewProps; translate: TFn }) {
-  const k = `scaffold.picker.gated.${c.gatedReason || 'notEntitled'}`;
+function GatedNotice({ context, translate }: { context: PickerViewProps; translate: TFn }) {
+  const messageKey = `scaffold.picker.gated.${context.gatedReason || 'notEntitled'}`;
   return (
-    <aside class="picker-notice picker-notice--gated" data-gated={c.gatedReason}>
-      <h4 class="fact-label" {...inspectAttrs('scaffold.picker:gated-title', { role: 'heading' })}><Icon name="lock" size={14} /> {translate(`${k}.title`) as string}</h4>
-      <Txt name="scaffold.picker:gated-body">{translate(`${k}.body`) as string}</Txt>
-      <CtaLink href={c.entitlement?.ctaHref ?? '#'} label={translate(`${k}.cta`) as string} glyph="chevron-right" variant="main" />
+    <aside class="picker-notice picker-notice--gated" data-gated={context.gatedReason}>
+      <h4 class="fact-label" {...inspectAttrs('scaffold.picker:gated-title', { role: 'heading' })}><Icon name="lock" size={14} /> {translate(`${messageKey}.title`) as string}</h4>
+      <Txt name="scaffold.picker:gated-body">{translate(`${messageKey}.body`) as string}</Txt>
+      <CtaLink href={context.entitlement?.ctaHref ?? '#'} label={translate(`${messageKey}.cta`) as string} glyph="chevron-right" variant="main" />
     </aside>
   );
 }
 
 // ---- D8: the kit-manifest.json receipt ----
-function ManifestPanel({ c, translate }: { c: PickerViewProps; translate: TFn }) {
+function ManifestPanel({ context, translate }: { context: PickerViewProps; translate: TFn }) {
   return (
     <section class="picker-manifest">
       <h4 class="fact-label" {...inspectAttrs('scaffold.picker:manifest-title', { role: 'heading' })}><Icon name="file-json" size={14} /> {translate('scaffold.picker.manifest.title') as string}</h4>
@@ -257,20 +257,20 @@ function ManifestPanel({ c, translate }: { c: PickerViewProps; translate: TFn })
       <dl class="manifest-facts">
         <dt {...inspectAttrs('scaffold.picker:manifest-resolved-label', { role: 'label' })}>{translate('scaffold.picker.manifest.resolved') as string}</dt>
         <dd {...inspectAttrs('scaffold.picker:manifest-resolved', { role: 'group' })}>
-          {(c.manifest?.resolved ?? []).map((r) => (
-            <Label name="scaffold.picker:resolved-kit" class={`chip chip--sm${r.auto ? ' chip--muted' : ''}`} key={r.id}>{r.id}</Label>
+          {(context.manifest?.resolved ?? []).map((resolvedKit) => (
+            <Label name="scaffold.picker:resolved-kit" class={`chip chip--sm${resolvedKit.auto ? ' chip--muted' : ''}`} key={resolvedKit.id}>{resolvedKit.id}</Label>
           ))}
         </dd>
-        {c.manifest?.wishlist?.length ? (
+        {context.manifest?.wishlist?.length ? (
           <Fragment>
             <dt {...inspectAttrs('scaffold.picker:manifest-wishlist-label', { role: 'label' })}>{translate('scaffold.picker.manifest.wishlist') as string}</dt>
-            <dd {...inspectAttrs('scaffold.picker:manifest-wishlist', { role: 'group' })}>{c.manifest.wishlist.map((w) => <Label name="scaffold.picker:wishlist-kit" class="chip chip--sm chip--muted" key={w}>{w}</Label>)}</dd>
+            <dd {...inspectAttrs('scaffold.picker:manifest-wishlist', { role: 'group' })}>{context.manifest.wishlist.map((wishlistItem) => <Label name="scaffold.picker:wishlist-kit" class="chip chip--sm chip--muted" key={wishlistItem}>{wishlistItem}</Label>)}</dd>
           </Fragment>
         ) : null}
-        {c.manifest?.todos?.length ? (
+        {context.manifest?.todos?.length ? (
           <Fragment>
             <dt {...inspectAttrs('scaffold.picker:manifest-todos-label', { role: 'label' })}>{translate('scaffold.picker.manifest.todos') as string}</dt>
-            <dd {...inspectAttrs('scaffold.picker:manifest-todos', { role: 'group' })}>{c.manifest.todos.map((td) => <Label name="scaffold.picker:todo-kit" class="chip chip--sm kit-readiness kit-readiness--missing-keys" key={td.id}>{td.id}</Label>)}</dd>
+            <dd {...inspectAttrs('scaffold.picker:manifest-todos', { role: 'group' })}>{context.manifest.todos.map((td) => <Label name="scaffold.picker:todo-kit" class="chip chip--sm kit-readiness kit-readiness--missing-keys" key={td.id}>{td.id}</Label>)}</dd>
           </Fragment>
         ) : null}
       </dl>
@@ -279,35 +279,35 @@ function ManifestPanel({ c, translate }: { c: PickerViewProps; translate: TFn })
 }
 
 // ---- the grid: one swappable fragment ----
-function PickerGrid({ c, translate }: { c: PickerViewProps; translate: TFn }) {
+function PickerGrid({ context, translate }: { context: PickerViewProps; translate: TFn }) {
   return (
     <div class="picker-grid" id="picker-grid" {...inspectAttrs('scaffold.picker:grid', { role: 'group' })}>
-      {c.loading ? (
+      {context.loading ? (
         <p class="picker-loading" aria-busy="true" {...inspectAttrs('scaffold.picker:loading', { role: 'text' })}><Icon name="loader" size={16} /> {translate('scaffold.picker.loading') as string}</p>
-      ) : c.error ? (
+      ) : context.error ? (
         <aside class="picker-notice picker-notice--error" role="alert">
           <h4 class="fact-label" {...inspectAttrs('scaffold.picker:error-title', { role: 'heading' })}><Icon name="circle-alert" size={14} /> {translate('scaffold.picker.error.title') as string}</h4>
           <Txt name="scaffold.picker:error-body">{translate('scaffold.picker.error.body') as string}</Txt>
-          <CtaLink href={c.error.retryHref ?? '#'} label={translate('scaffold.picker.error.retry') as string} glyph="refresh-cw" variant="main" />
+          <CtaLink href={context.error.retryHref ?? '#'} label={translate('scaffold.picker.error.retry') as string} glyph="refresh-cw" variant="main" />
         </aside>
       ) : (
         <Fragment>
-          {c.state === 'empty' && (
+          {context.state === 'empty' && (
             <aside class="picker-notice">
               <h4 class="fact-label" {...inspectAttrs('scaffold.picker:empty-title', { role: 'heading' })}>{translate('scaffold.picker.empty.title') as string}</h4>
               <Txt name="scaffold.picker:empty-body">{translate('scaffold.picker.empty.body') as string}</Txt>
             </aside>
           )}
-          <AutoNotice c={c} translate={translate} />
-          <RemoveConfirm c={c} translate={translate} />
-          {(c.groups ?? []).map((g) => (
-            <section class="kit-group" id={`group-${g.id}`} key={g.id}>
+          <AutoNotice context={context} translate={translate} />
+          <RemoveConfirm context={context} translate={translate} />
+          {(context.groups ?? []).map((group) => (
+            <section class="kit-group" id={`group-${group.id}`} key={group.id}>
               <h3 class="fact-label kit-group-head" {...inspectAttrs('scaffold.picker:group-head', { role: 'heading' })}>
-                {g.label}
-                <Label name="scaffold.picker:group-count" class="chip chip--sm chip--muted">{translate('scaffold.picker.groupCount', { selected: g.selectedCount, count: g.count }) as string}</Label>
+                {group.label}
+                <Label name="scaffold.picker:group-count" class="chip chip--sm chip--muted">{translate('scaffold.picker.groupCount', { selected: group.selectedCount, count: group.count }) as string}</Label>
               </h3>
               <div class="kit-cards" {...inspectAttrs('scaffold.picker:kit-cards', { role: 'group' })}>
-                {g.kits.map((k) => <KitCard key={k.id} c={c} k={k} translate={translate} />)}
+                {group.kits.map((kit) => <KitCard key={kit.id} context={context} k={kit} translate={translate} />)}
               </div>
             </section>
           ))}
@@ -318,7 +318,7 @@ function PickerGrid({ c, translate }: { c: PickerViewProps; translate: TFn }) {
 }
 
 // ---- the stage ----
-function MainContent({ c, translate }: { c: PickerViewProps; translate: TFn }) {
+function MainContent({ context, translate }: { context: PickerViewProps; translate: TFn }) {
   return (
     <section class="mp-content" id="mp-content" aria-live="polite">
       <div class="picker-stage">
@@ -326,20 +326,20 @@ function MainContent({ c, translate }: { c: PickerViewProps; translate: TFn }) {
           <Heading name="scaffold.picker:page-title" level={1} class="display">{translate('scaffold.picker.pageTitle') as string}</Heading>
           <Txt name="scaffold.picker:lede" class="artifact-lede">{translate('scaffold.picker.lede') as string}</Txt>
           <p class="picker-counts">
-            <Label name="scaffold.picker:selected-count" class="chip chip--accent">{translate('scaffold.picker.selectedCount', { selected: c.counts?.selected, total: c.counts?.total }) as string}</Label>
-            <Label name="scaffold.picker:summary" class="chip chip--muted">{translate('scaffold.picker.summary', { declared: c.counts?.declared, inferred: c.counts?.inferred, requested: c.counts?.requested }) as string}</Label>
-            {c.counts?.auto ? <Label name="scaffold.picker:auto-count" class="chip chip--muted">{translate('scaffold.picker.autoCount', { count: c.counts.auto }) as string}</Label> : null}
-            {c.counts?.unready ? <Label name="scaffold.picker:unready-count" class="chip chip--sm kit-readiness kit-readiness--missing-keys">{translate('scaffold.picker.unreadyCount', { count: c.counts.unready }) as string}</Label> : null}
+            <Label name="scaffold.picker:selected-count" class="chip chip--accent">{translate('scaffold.picker.selectedCount', { selected: context.counts?.selected, total: context.counts?.total }) as string}</Label>
+            <Label name="scaffold.picker:summary" class="chip chip--muted">{translate('scaffold.picker.summary', { declared: context.counts?.declared, inferred: context.counts?.inferred, requested: context.counts?.requested }) as string}</Label>
+            {context.counts?.auto ? <Label name="scaffold.picker:auto-count" class="chip chip--muted">{translate('scaffold.picker.autoCount', { count: context.counts.auto }) as string}</Label> : null}
+            {context.counts?.unready ? <Label name="scaffold.picker:unready-count" class="chip chip--sm kit-readiness kit-readiness--missing-keys">{translate('scaffold.picker.unreadyCount', { count: context.counts.unready }) as string}</Label> : null}
           </p>
         </header>
 
-        {c.gated && <GatedNotice c={c} translate={translate} />}
-        <PickerGrid c={c} translate={translate} />
-        <ManifestPanel c={c} translate={translate} />
+        {context.gated && <GatedNotice context={context} translate={translate} />}
+        <PickerGrid context={context} translate={translate} />
+        <ManifestPanel context={context} translate={translate} />
 
         <footer class="picker-foot" {...inspectAttrs('scaffold.picker:foot', { role: 'group' })}>
-          {c.canContinue ? (
-            <CtaLink href={c.continueHref ?? '#'} label={translate('scaffold.picker.continue') as string} glyph="chevron-right" variant="main" />
+          {context.canContinue ? (
+            <CtaLink href={context.continueHref ?? '#'} label={translate('scaffold.picker.continue') as string} glyph="chevron-right" variant="main" />
           ) : (
             <span class="cta-main is-disabled" aria-disabled="true" {...inspectAttrs('scaffold.picker:continue-blocked', { role: 'action' })}>{translate('scaffold.picker.continue.blocked') as string}</span>
           )}
@@ -350,17 +350,17 @@ function MainContent({ c, translate }: { c: PickerViewProps; translate: TFn }) {
 }
 
 // ---- panels (fills the shell's main panel via children) ----
-function renderPanels(c: PickerViewProps) {
-  return <Panels c={c} translate={c.translate}>{MainContent({ c, translate: c.translate })}</Panels>;
+function renderPanels(context: PickerViewProps) {
+  return <Panels context={context} translate={context.translate}>{MainContent({ context, translate: context.translate })}</Panels>;
 }
 
 // ---- Fragment responses ----
-export function PanelsSwap(c: PickerViewProps) {
-  return renderPanels(c);
+export function PanelsSwap(context: PickerViewProps) {
+  return renderPanels(context);
 }
 
-export function GridSwap(c: PickerViewProps) {
-  return PickerGrid({ c, translate: c.translate });
+export function GridSwap(context: PickerViewProps) {
+  return PickerGrid({ context, translate: context.translate });
 }
 
 // ---- Page ----
@@ -372,7 +372,7 @@ const PickerView: FC<PickerViewProps> = (props) => (
     prefs={props.prefs as { accent?: string; [key: string]: unknown }}
     project={props.project as { name?: string; savedLabel?: string }}
     mainClass="shell-main-loop shell-main-picker"
-    headerExtra={<AccountChip c={props} translate={props.translate} />}
+    headerExtra={<AccountChip context={props} translate={props.translate} />}
     surface={
       <Fragment>
         <link rel="stylesheet" href="/assets/css/scaffold-picker.css" />

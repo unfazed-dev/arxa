@@ -59,7 +59,7 @@ export function FactsBar(props: FactsBarProps) {
         <span class="eyebrow" {...inspectAttrs('facts-bar:eyebrow', { role: 'text' })}>{spec.eyebrow}</span>
         <strong class="facts-state" {...inspectAttrs('facts-bar:state', { role: 'text' })}>{spec.state}</strong>
         <span class="facts-list" {...inspectAttrs('facts-bar:facts-list', { role: 'group' })}>
-          {spec.facts?.map((f, i) => <span key={i} {...inspectAttrs('facts-bar:fact', { role: 'text' })}>{f}</span>)}
+          {spec.facts?.map((fact, index) => <span key={index} {...inspectAttrs('facts-bar:fact', { role: 'text' })}>{fact}</span>)}
         </span>
       </span>
       <span class="facts-acts" {...inspectAttrs('facts-bar:actions', { role: 'group' })}>
@@ -70,9 +70,9 @@ export function FactsBar(props: FactsBarProps) {
               <Icon name="chevron-down" size={14} className="caret" />
             </summary>
             <span class="filter-menu" {...inspectAttrs('facts-bar:filter-menu', { role: 'group' })}>
-              {filter.options.map((o) => {
-                const oid = typeof o === 'string' ? o : o.id;
-                const label = typeof o === 'string' ? oid : (o.label ?? oid);
+              {filter.options.map((option) => {
+                const oid = typeof option === 'string' ? option : option.id;
+                const label = typeof option === 'string' ? oid : (option.label ?? oid);
                 return (
                   <a
                     key={oid}

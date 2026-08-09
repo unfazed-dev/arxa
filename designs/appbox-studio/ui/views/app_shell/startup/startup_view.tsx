@@ -30,14 +30,14 @@ const StartupView: FC<StartupViewProps> = ({
     <main class="splash">
       <Label name="app-startup:brand" class="splash-brand">appbox studio</Label>
       <ol class="startup-steps" {...inspectAttrs('app-startup:steps', { role: 'group' })}>
-        {steps.map((step, i) => (
+        {steps.map((step, index) => (
           <li
-            key={i}
-            class={`startup-step${i < doneThrough ? ' is-done' : ''}${i === doneThrough ? ' is-current' : ''}`}
+            key={index}
+            class={`startup-step${index < doneThrough ? ' is-done' : ''}${index === doneThrough ? ' is-current' : ''}`}
             {...inspectAttrs('app-startup:step', { role: 'list row' })}
           >
-            {i < doneThrough ? <Icon name="check" size={14} /> : <span class="startup-dot"></span>}
-            <Label name={`app-startup:step-${i}`}>{step}</Label>
+            {index < doneThrough ? <Icon name="check" size={14} /> : <span class="startup-dot"></span>}
+            <Label name={`app-startup:step-${index}`}>{step}</Label>
           </li>
         ))}
       </ol>

@@ -48,7 +48,7 @@ interface HeaderBodyProps {
 export function HeaderBody(props: HeaderBodyProps) {
   const { activeShell, prefs, project, translate } = props;
   const dests = destinations(translate);
-  const activeLabel = dests.find((d) => d.id === activeShell)?.label ?? activeShell;
+  const activeLabel = dests.find((destination) => destination.id === activeShell)?.label ?? activeShell;
   const themeIsDark = (prefs?.theme ?? 'light') === 'dark';
 
   return (
@@ -58,15 +58,15 @@ export function HeaderBody(props: HeaderBodyProps) {
           <Icon name="menu" size={20} />
         </summary>
         <div class="drawer-panel" role="menu">
-          {dests.map((d) => (
+          {dests.map((destination) => (
             <a
-              key={d.id}
-              class={`drawer-link${activeShell === d.id ? ' is-active' : ''}`}
-              href={d.href}
-              aria-current={activeShell === d.id ? 'page' : undefined}
+              key={destination.id}
+              class={`drawer-link${activeShell === destination.id ? ' is-active' : ''}`}
+              href={destination.href}
+              aria-current={activeShell === destination.id ? 'page' : undefined}
             >
-              <Icon name={d.icon} size={18} className="drawer-icon" />
-              <span>{d.label}</span>
+              <Icon name={destination.icon} size={18} className="drawer-icon" />
+              <span>{destination.label}</span>
             </a>
           ))}
           <div class="drawer-row">
@@ -96,14 +96,14 @@ export function HeaderBody(props: HeaderBodyProps) {
       )}
 
       <span class="shell-links" {...inspectAttrs('chrome:links', { role: 'nav' })}>
-        {dests.map((d) => (
+        {dests.map((destination) => (
           <a
-            key={d.id}
-            class={`shell-link${activeShell === d.id ? ' is-active' : ''}`}
-            href={d.href}
-            aria-current={activeShell === d.id ? 'page' : undefined}
+            key={destination.id}
+            class={`shell-link${activeShell === destination.id ? ' is-active' : ''}`}
+            href={destination.href}
+            aria-current={activeShell === destination.id ? 'page' : undefined}
           >
-            {d.label}
+            {destination.label}
           </a>
         ))}
       </span>
@@ -152,15 +152,15 @@ export function OffCanvas(props: OffCanvasProps) {
     <Fragment>
       {/* compact: primary nav leaves the header panel and becomes the tabbar */}
       <nav class="tabbar" aria-label={translate('nav.primary') as string} {...inspectAttrs('chrome:tabbar', { role: 'nav' })}>
-        {dests.map((d) => (
+        {dests.map((destination) => (
           <a
-            key={d.id}
-            class={`tabbar__link${activeShell === d.id ? ' is-active' : ''}`}
-            href={d.href}
-            aria-current={activeShell === d.id ? 'page' : undefined}
+            key={destination.id}
+            class={`tabbar__link${activeShell === destination.id ? ' is-active' : ''}`}
+            href={destination.href}
+            aria-current={activeShell === destination.id ? 'page' : undefined}
           >
-            <Icon name={d.icon} size={22} className="tabbar__icon" />
-            <span class="tabbar__label">{d.label}</span>
+            <Icon name={destination.icon} size={22} className="tabbar__icon" />
+            <span class="tabbar__label">{destination.label}</span>
           </a>
         ))}
       </nav>
@@ -180,22 +180,22 @@ export function OffCanvas(props: OffCanvasProps) {
       {/* medium: the railbar — the drawer's docked form: slim icon strip */}
       <details class="railbar" {...inspectAttrs('chrome:railbar', { role: 'nav' })}>
         <summary class="railbar-strip" aria-label={translate('nav.openRailbar') as string}>
-          {dests.map((d) => (
-            <span key={d.id} class={`railbar-ico${activeShell === d.id ? ' is-active' : ''}`}>
-              <Icon name={d.icon} size={20} />
+          {dests.map((destination) => (
+            <span key={destination.id} class={`railbar-ico${activeShell === destination.id ? ' is-active' : ''}`}>
+              <Icon name={destination.icon} size={20} />
             </span>
           ))}
         </summary>
         <div class="railbar-panel" role="menu">
-          {dests.map((d) => (
+          {dests.map((destination) => (
             <a
-              key={d.id}
-              class={`drawer-link${activeShell === d.id ? ' is-active' : ''}`}
-              href={d.href}
-              aria-current={activeShell === d.id ? 'page' : undefined}
+              key={destination.id}
+              class={`drawer-link${activeShell === destination.id ? ' is-active' : ''}`}
+              href={destination.href}
+              aria-current={activeShell === destination.id ? 'page' : undefined}
             >
-              <Icon name={d.icon} size={18} className="drawer-icon" />
-              <span>{d.label}</span>
+              <Icon name={destination.icon} size={18} className="drawer-icon" />
+              <span>{destination.label}</span>
             </a>
           ))}
         </div>

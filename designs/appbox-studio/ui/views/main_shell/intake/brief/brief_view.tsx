@@ -6,8 +6,8 @@ import { Fragment, type FC } from 'hono/jsx';
 import { Heading, inspectAttrs, Label, Txt } from '../../../../common/widgets/primitives.tsx';
 import Icon from '../../../../../runtime/icon.tsx';
 import MainShellView from '../../main_shell_view.tsx';
-import * as SH from '../_shared.tsx';
-import type { Ctx, MissingArtifactA } from '../_shared.tsx';
+import * as SH from '../shared.tsx';
+import type { Ctx, MissingArtifactA } from '../shared.tsx';
 
 type TFn = (key: string, vars?: Record<string, unknown>) => unknown;
 
@@ -39,12 +39,12 @@ function Inventory({ surfaces, translate }: { surfaces: Surface[]; translate: TF
         <tr><th {...inspectAttrs('intake-brief:inv-id', { role: 'label' })}>{translate('inv.id') as string}</th><th {...inspectAttrs('intake-brief:inv-label', { role: 'label' })}>{translate('inv.label') as string}</th><th {...inspectAttrs('intake-brief:inv-priority', { role: 'label' })}>{translate('inv.priority') as string}</th><th {...inspectAttrs('intake-brief:inv-release', { role: 'label' })}>{translate('inv.release') as string}</th></tr>
       </thead>
       <tbody {...inspectAttrs('intake-brief:inv-body', { role: 'group' })}>
-        {surfaces.map((s) => (
-          <tr key={s.id}>
-            <td {...inspectAttrs('intake-brief:inv-cell-id', { role: 'text' })}><code class="surface-id" {...inspectAttrs('intake-brief:surface-id', { role: 'text' })}>{s.id}</code></td>
-            <td {...inspectAttrs('intake-brief:inv-cell-label', { role: 'text' })}>{s.label}</td>
-            <td {...inspectAttrs('intake-brief:inv-cell-priority', { role: 'text' })}>{s.priority ? <Label name="intake-brief:pri-chip" class={`chip pri-chip pri-${s.priority}`}>{translate(`pri.name.${s.priority}`) as string}</Label> : <Label name="intake-brief:pri-unset" class="muted">{translate('inv.unset') as string}</Label>}</td>
-            <td {...inspectAttrs('intake-brief:inv-cell-release', { role: 'text' })}>{s.release ? <Label name="intake-brief:rel-chip" class="chip chip--muted">{s.release}</Label> : <Label name="intake-brief:rel-unset" class="muted">{translate('inv.unset') as string}</Label>}</td>
+        {surfaces.map((surface) => (
+          <tr key={surface.id}>
+            <td {...inspectAttrs('intake-brief:inv-cell-id', { role: 'text' })}><code class="surface-id" {...inspectAttrs('intake-brief:surface-id', { role: 'text' })}>{surface.id}</code></td>
+            <td {...inspectAttrs('intake-brief:inv-cell-label', { role: 'text' })}>{surface.label}</td>
+            <td {...inspectAttrs('intake-brief:inv-cell-priority', { role: 'text' })}>{surface.priority ? <Label name="intake-brief:pri-chip" class={`chip pri-chip pri-${surface.priority}`}>{translate(`pri.name.${surface.priority}`) as string}</Label> : <Label name="intake-brief:pri-unset" class="muted">{translate('inv.unset') as string}</Label>}</td>
+            <td {...inspectAttrs('intake-brief:inv-cell-release', { role: 'text' })}>{surface.release ? <Label name="intake-brief:rel-chip" class="chip chip--muted">{surface.release}</Label> : <Label name="intake-brief:rel-unset" class="muted">{translate('inv.unset') as string}</Label>}</td>
           </tr>
         ))}
       </tbody>
@@ -53,45 +53,45 @@ function Inventory({ surfaces, translate }: { surfaces: Surface[]; translate: TF
 }
 
 // The whole brief, rendered as the generated document.
-function DocCanvas({ c, a, translate }: { c: Ctx; a: Artifact; translate: TFn }) {
+function DocCanvas({ context, a: artifact, translate }: { context: Ctx; a: Artifact; translate: TFn }) {
   return (
     <article class="artifact doc-artifact">
       <header class="artifact-head">
         <Label name="intake-brief:eyebrow" class="eyebrow">{translate('brief.eyebrow') as string}</Label>
-        {(c.approval as { stale?: boolean } | undefined)?.stale ? <Label name="intake-brief:stale-badge" class="rv-badge rv-warn">{translate('badge.stale') as string}</Label> : null}
-        <Label name="intake-brief:surfaces-traced" class="chip chip--muted">{translate('brief.surfacesTraced', { count: a.brief?.surfaces?.length ?? 0 }) as string}</Label>
+        {(context.approval as { stale?: boolean } | undefined)?.stale ? <Label name="intake-brief:stale-badge" class="rv-badge rv-warn">{translate('badge.stale') as string}</Label> : null}
+        <Label name="intake-brief:surfaces-traced" class="chip chip--muted">{translate('brief.surfacesTraced', { count: artifact.brief?.surfaces?.length ?? 0 }) as string}</Label>
       </header>
-      <Heading name="intake-brief:title" level={2} class="display">{a.brief?.title}</Heading>
-      <Txt name="intake-brief:lede" class="artifact-lede">{a.lede}</Txt>
-      {a.mapMissing ? (
-        <SH.MissingArtifact c={c} a={a.mapMissing} />
+      <Heading name="intake-brief:title" level={2} class="display">{artifact.brief?.title}</Heading>
+      <Txt name="intake-brief:lede" class="artifact-lede">{artifact.lede}</Txt>
+      {artifact.mapMissing ? (
+        <SH.MissingArtifact context={context} a={artifact.mapMissing} />
       ) : (
         <Fragment>
           <section class="doc-section">
             <Heading name="intake-brief:releases-h" level={3}>{translate('brief.releasesH') as string}</Heading>
-            {(a.releases ?? []).map((r, i) => (
-              <div key={i} class="doc-release">
-                <span class="doc-release-name" {...inspectAttrs('intake-brief:release-name', { role: 'label' })}>{r.name} <Label name="intake-brief:release-stories" class="chip chip--muted">{translate('map.storiesCount', { count: r.stories }) as string}</Label></span>
-                <Txt name="intake-brief:release-desc" class="muted">{r.description}</Txt>
+            {(artifact.releases ?? []).map((release, index) => (
+              <div key={index} class="doc-release">
+                <span class="doc-release-name" {...inspectAttrs('intake-brief:release-name', { role: 'label' })}>{release.name} <Label name="intake-brief:release-stories" class="chip chip--muted">{translate('map.storiesCount', { count: release.stories }) as string}</Label></span>
+                <Txt name="intake-brief:release-desc" class="muted">{release.description}</Txt>
               </div>
             ))}
           </section>
 
           <section class="doc-section">
             <Heading name="intake-brief:must-h" level={3}>{translate('brief.mustH') as string}</Heading>
-            {(a.epics ?? []).map((e, i) => (
-              <details key={i} class="doc-epic">
-                <summary {...inspectAttrs('intake-brief:epic-summary', { role: 'label' })}>{e.name} <span class="muted" {...inspectAttrs('intake-brief:epic-counts', { role: 'label' })}>· {translate('map.featuresCount', { count: e.features?.length ?? 0 }) as string} · {translate('map.storiesCount', { count: e.storyCount }) as string}</span></summary>
+            {(artifact.epics ?? []).map((epic, index) => (
+              <details key={index} class="doc-epic">
+                <summary {...inspectAttrs('intake-brief:epic-summary', { role: 'label' })}>{epic.name} <span class="muted" {...inspectAttrs('intake-brief:epic-counts', { role: 'label' })}>· {translate('map.featuresCount', { count: epic.features?.length ?? 0 }) as string} · {translate('map.storiesCount', { count: epic.storyCount }) as string}</span></summary>
                 <div class="doc-epic-body" {...inspectAttrs('intake-brief:epic-body', { role: 'group' })}>
-                  {(e.features ?? []).map((f, j) => (
-                    <div key={j} class="doc-feature">
-                      <Label name="intake-brief:feature-name" class="map-feature-name">{f.name}</Label>
+                  {(epic.features ?? []).map((feature, featureIndex) => (
+                    <div key={featureIndex} class="doc-feature">
+                      <Label name="intake-brief:feature-name" class="map-feature-name">{feature.name}</Label>
                       <ul class="doc-stories" {...inspectAttrs('intake-brief:stories-list', { role: 'list' })}>
-                        {(f.stories ?? []).map((s, k) => (
-                          <li key={k} {...inspectAttrs('intake-brief:story-item', { role: 'list row' })}>
-                            {s.priority ? <Label name="intake-brief:story-pri" class={`chip pri-chip pri-${s.priority}`}>{translate(`pri.name.${s.priority}`) as string}</Label> : null}
-                            <Label name="intake-brief:story-name" class="doc-story-text">{s.name}</Label>
-                            {s.release ? <Label name="intake-brief:story-rel" class="chip chip--muted">{s.release}</Label> : null}
+                        {(feature.stories ?? []).map((story, storyIndex) => (
+                          <li key={storyIndex} {...inspectAttrs('intake-brief:story-item', { role: 'list row' })}>
+                            {story.priority ? <Label name="intake-brief:story-pri" class={`chip pri-chip pri-${story.priority}`}>{translate(`pri.name.${story.priority}`) as string}</Label> : null}
+                            <Label name="intake-brief:story-name" class="doc-story-text">{story.name}</Label>
+                            {story.release ? <Label name="intake-brief:story-rel" class="chip chip--muted">{story.release}</Label> : null}
                           </li>
                         ))}
                       </ul>
@@ -106,83 +106,83 @@ function DocCanvas({ c, a, translate }: { c: Ctx; a: Artifact; translate: TFn })
 
       <section class="doc-section">
         <Heading name="intake-brief:surfaces-h" level={3}>{translate('brief.surfacesH') as string}</Heading>
-        <Txt name="intake-brief:surface-note" class="muted">{a.brief?.surfaceNote}</Txt>
-        <Inventory surfaces={a.brief?.surfaces ?? []} translate={translate} />
+        <Txt name="intake-brief:surface-note" class="muted">{artifact.brief?.surfaceNote}</Txt>
+        <Inventory surfaces={artifact.brief?.surfaces ?? []} translate={translate} />
       </section>
     </article>
   );
 }
 
 // The inventory on its own — the table the designer consumes.
-function SurfacesCanvas({ c, a, translate }: { c: Ctx; a: Artifact; translate: TFn }) {
+function SurfacesCanvas({ context, a: artifact, translate }: { context: Ctx; a: Artifact; translate: TFn }) {
   return (
     <article class="artifact surfaces-artifact">
       <header class="artifact-head">
         <Label name="intake-brief:surfaces-eyebrow" class="eyebrow">{translate('surfaces.eyebrow') as string}</Label>
-        <Label name="intake-brief:surfaces-count" class="chip chip--muted">{translate('surfaces.count', { count: a.surfaces?.length ?? 0 }) as string}</Label>
+        <Label name="intake-brief:surfaces-count" class="chip chip--muted">{translate('surfaces.count', { count: artifact.surfaces?.length ?? 0 }) as string}</Label>
       </header>
-      <Heading name="intake-brief:surfaces-title" level={2} class="display">{a.headline}</Heading>
-      <Txt name="intake-brief:surfaces-lede" class="artifact-lede">{a.lede}</Txt>
-      <Inventory surfaces={a.surfaces ?? []} translate={translate} />
+      <Heading name="intake-brief:surfaces-title" level={2} class="display">{artifact.headline}</Heading>
+      <Txt name="intake-brief:surfaces-lede" class="artifact-lede">{artifact.lede}</Txt>
+      <Inventory surfaces={artifact.surfaces ?? []} translate={translate} />
       <p class="artifact-foot">
-        <a href={`${c.base}/artifact/doc/full`}
-           hx-get={`${c.base}/artifact/doc/full`} hx-target="#panels" hx-swap="outerMorph" hx-push-url="false"
+        <artifact href={`${context.base}/artifact/doc/full`}
+           hx-get={`${context.base}/artifact/doc/full`} hx-target="#panels" hx-swap="outerMorph" hx-push-url="false"
            {...inspectAttrs('intake-brief:back-link', { role: 'action', fn: 'navigate' })}>
           <Icon name="chevron-left" size={14} /> {translate('brief.back') as string}
-        </a>
+        </artifact>
       </p>
     </article>
   );
 }
 
-function CanvasArtifact({ c, translate }: { c: Ctx; translate: TFn }) {
-  const a = c.artifact as Artifact | undefined;
-  if (!a) return null;
-  if (a.kind === 'missing') return <SH.MissingArtifact c={c} a={a as unknown as MissingArtifactA} />;
-  if (a.kind === 'surfaces') return <SurfacesCanvas c={c} a={a} translate={translate} />;
-  return <DocCanvas c={c} a={a} translate={translate} />;
+function CanvasArtifact({ context, translate }: { context: Ctx; translate: TFn }) {
+  const artifact = context.artifact as Artifact | undefined;
+  if (!artifact) return null;
+  if (artifact.kind === 'missing') return <SH.MissingArtifact context={context} a={artifact as unknown as MissingArtifactA} />;
+  if (artifact.kind === 'surfaces') return <SurfacesCanvas context={context} a={artifact} translate={translate} />;
+  return <DocCanvas context={context} a={artifact} translate={translate} />;
 }
 
 // The main panel's content: the open file, else the open artifact, else empty.
-function MainContent({ c, translate }: { c: Ctx; translate: TFn }) {
-  if (c.fileView) return <SH.FileView c={c} translate={translate} />;
-  if (c.artifact) {
+function MainContent({ context, translate }: { context: Ctx; translate: TFn }) {
+  if (context.fileView) return <SH.FileView context={context} translate={translate} />;
+  if (context.artifact) {
     return (
       <section class="mp-content" id="mp-content" aria-live="polite">
-        <CanvasArtifact c={c} translate={translate} />
+        <CanvasArtifact context={context} translate={translate} />
       </section>
     );
   }
   return <SH.MainEmpty translate={translate} />;
 }
 
-function Panels({ c, translate }: { c: Ctx; translate: TFn }) {
-  return <SH.Panels c={c} translate={translate}><MainContent c={c} translate={translate} /></SH.Panels>;
+function Panels({ context, translate }: { context: Ctx; translate: TFn }) {
+  return <SH.Panels context={context} translate={translate}><MainContent context={context} translate={translate} /></SH.Panels>;
 }
 
 // ---------- Fragment responses ----------
 
-export function PanelsSwap({ c, translate }: { c: Ctx; translate: TFn }) {
+export function PanelsSwap({ context, translate }: { context: Ctx; translate: TFn }) {
   return (
     <Fragment>
-      <Panels c={c} translate={translate} />
-      <SH.Timeline c={c} translate={translate} oob={true} />
+      <Panels context={context} translate={translate} />
+      <SH.Timeline context={context} translate={translate} oob={true} />
     </Fragment>
   );
 }
 
-export function ActivitySwap({ c, translate }: { c: Ctx; translate: TFn }) {
-  return <SH.ActivitySwap c={c} translate={translate} />;
+export function ActivitySwap({ context, translate }: { context: Ctx; translate: TFn }) {
+  return <SH.ActivitySwap context={context} translate={translate} />;
 }
 
 // A file row's response: the main panel renders the file in the server-chosen mode.
-export function FileSwap({ c, translate }: { c: Ctx; translate: TFn }) {
-  return <MainContent c={c} translate={translate} />;
+export function FileSwap({ context, translate }: { context: Ctx; translate: TFn }) {
+  return <MainContent context={context} translate={translate} />;
 }
 
 // The width grip's response: the whole activity panel re-rendered at its new persisted size.
-export function ActivityFrameSwap({ c, translate }: { c: Ctx; translate: TFn }) {
-  return <SH.ActivityPanel c={c} translate={translate} />;
+export function ActivityFrameSwap({ context, translate }: { context: Ctx; translate: TFn }) {
+  return <SH.ActivityPanel context={context} translate={translate} />;
 }
 
 // ---------- Page ----------
@@ -192,19 +192,19 @@ interface ViewProps {
   [key: string]: unknown;
 }
 
-const BriefView: FC<ViewProps> = (c) => {
-  const { translate } = c;
+const BriefView: FC<ViewProps> = (context) => {
+  const { translate } = context;
   return (
     <MainShellView
       title={translate('intake.brief.pageTitle') as string}
       mainClass="shell-main-loop"
-      activeShell={c.activeShell as string}
-      prefs={c.prefs as { accent?: string; [k: string]: unknown }}
-      project={c.project as { name?: string; savedLabel?: string }}
-      locale={c.locale as string}
+      activeShell={context.activeShell as string}
+      prefs={context.prefs as { accent?: string; [k: string]: unknown }}
+      project={context.project as { name?: string; savedLabel?: string }}
+      locale={context.locale as string}
       translate={translate}
-      footer={<SH.Timeline c={c as Ctx} translate={translate} oob={false} />}
-      surface={<Panels c={c as Ctx} translate={translate} />}
+      footer={<SH.Timeline context={context as Ctx} translate={translate} oob={false} />}
+      surface={<Panels context={context as Ctx} translate={translate} />}
     />
   );
 };

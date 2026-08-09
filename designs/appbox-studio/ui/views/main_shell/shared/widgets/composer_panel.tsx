@@ -4,7 +4,7 @@
 // The original open/close macro pair is merged into a single wrapper (Open).
 import { Fragment, type Child } from 'hono/jsx';
 import Icon from '../../../../../runtime/icon.tsx';
-import { Open as PanelOpen, Top as PanelTop } from '../../../../common/widgets/_panel.tsx';
+import { Open as PanelOpen, Top as PanelTop } from '../../../../common/widgets/panel.tsx';
 
 type TFn = (key: string, vars?: Record<string, unknown>) => unknown;
 

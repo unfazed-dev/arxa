@@ -2,7 +2,7 @@
 // A thin instantiation of _panel (role: footer): a body-only strip. The body
 // (e.g. the timeline <ol>) is the caller's content, passed as children.
 import type { Child } from 'hono/jsx';
-import { Open as PanelOpen } from '../../../../common/widgets/_panel.tsx';
+import { Open as PanelOpen } from '../../../../common/widgets/panel.tsx';
 
 const PID = 'panel-footer';
 

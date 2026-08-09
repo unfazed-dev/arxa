@@ -28,7 +28,7 @@ function envAnatomyViews() {
       ? process.env.APPBOX_ANATOMY_VIEWS
       : undefined;
   if (typeof env !== 'string' || env.length === 0) return null;
-  return env.split(',').map((s) => s.trim()).filter(Boolean);
+  return env.split(',').map((part) => part.trim()).filter(Boolean);
 }
 
 /// The effective default set. Env wins over source when present.
@@ -45,8 +45,8 @@ export const abxAnatomyViews = envAnatomyViews() ?? kDefaultAnatomyViews;
 /// this template. Siblings render `${resolved}#Fragment` for htmx swaps, and
 /// mixing a legacy fragment into an anatomy page is a silent hybrid that no
 /// first-paint probe will catch. See finding 8.
-export const abxResolveShellView = (c, viewName, base, anatomy) => {
-  const forced = c.req.query('abxShell');
+export const abxResolveShellView = (context, viewName, base, anatomy) => {
+  const forced = context.req.query('abxShell');
   if (forced === 'anatomy') return anatomy;
   if (forced === 'legacy') return base;
   return abxAnatomyViews.includes(viewName) ? anatomy : base;

@@ -122,30 +122,30 @@ const PlansView: FC<PlansViewProps> = (props) => {
       <section class="settings-section">
         <Heading name="workspace-plans:plans-h" level={2}>{translate('plans.plansH') as string}</Heading>
         <div class="plan-grid" {...inspectAttrs('workspace-plans:grid', { role: 'group' })}>
-          {plans.map((p) => (
-            <article class={`plan-card${p.current ? ' is-current' : ''}`} key={p.name}>
+          {plans.map((plan) => (
+            <article class={`plan-card${plan.current ? ' is-current' : ''}`} key={plan.name}>
               <header class="plan-head">
-                <Heading name="workspace-plans:plan-name" level={3} class="plan-name">{p.name}</Heading>
-                {p.current ? (
+                <Heading name="workspace-plans:plan-name" level={3} class="plan-name">{plan.name}</Heading>
+                {plan.current ? (
                   <span class="chip chip--accent" {...inspectAttrs('workspace-plans:current-chip', { role: 'label' })}>
                     <Icon name="badge-check" size={13} /> {translate('plans.current') as string}
                   </span>
                 ) : null}
               </header>
-              <Txt name="workspace-plans:plan-price" class="plan-price">{p.priceLabel}</Txt>
-              <Txt name="workspace-plans:plan-blurb" class="muted">{p.blurb}</Txt>
-              <p class="plan-seats" {...inspectAttrs('workspace-plans:plan-seats', { role: 'text' })}>
-                <Icon name="laptop" size={13} /> {p.seatsLabel}
-              </p>
+              <Txt name="workspace-plans:plan-price" class="plan-price">{plan.priceLabel}</Txt>
+              <Txt name="workspace-plans:plan-blurb" class="muted">{plan.blurb}</Txt>
+              <plan class="plan-seats" {...inspectAttrs('workspace-plans:plan-seats', { role: 'text' })}>
+                <Icon name="laptop" size={13} /> {plan.seatsLabel}
+              </plan>
               <ul class="plan-features" {...inspectAttrs('workspace-plans:features', { role: 'group' })}>
-                {p.features.map((f, i) => (
-                  <li key={i} {...inspectAttrs('workspace-plans:feature', { role: 'list row' })}>
-                    <Icon name="check" size={13} /> {f}
+                {plan.features.map((feature, index) => (
+                  <li key={index} {...inspectAttrs('workspace-plans:feature', { role: 'list row' })}>
+                    <Icon name="check" size={13} /> {feature}
                   </li>
                 ))}
               </ul>
-              {p.upgradeable ? (
-                <a class="cta-main plan-upgrade" href="#plans-checkout" {...inspectAttrs('workspace-plans:upgrade', { role: 'action' })}>{translate('plans.upgrade', { plan: p.name }) as string}</a>
+              {plan.upgradeable ? (
+                <a class="cta-main plan-upgrade" href="#plans-checkout" {...inspectAttrs('workspace-plans:upgrade', { role: 'action' })}>{translate('plans.upgrade', { plan: plan.name }) as string}</a>
               ) : null}
             </article>
           ))}
@@ -182,17 +182,17 @@ const PlansView: FC<PlansViewProps> = (props) => {
           </p>
 
           <div class="checkout-outcomes" role="group" aria-label={translate('plans.checkout.outcomesAria') as string} {...inspectAttrs('workspace-plans:outcomes', { role: 'group' })}>
-            {checkout.outcomes.map((o) => (
-              <form method="post" action="/workspace/plans/checkout/attempt" key={o.id}>
+            {checkout.outcomes.map((outcome) => (
+              <form method="post" action="/workspace/plans/checkout/attempt" key={outcome.id}>
                 <button
                   type="submit"
                   name="outcome"
-                  value={o.id}
-                  class={`chip${o.active ? ' chip--accent' : ' chip--muted'}`}
+                  value={outcome.id}
+                  class={`chip${outcome.active ? ' chip--accent' : ' chip--muted'}`}
                   {...inspectAttrs('workspace-plans:outcome', { role: 'action' })}
-                  title={o.profile ? `${o.profile} -> ${o.result}` : o.result}
+                  title={outcome.profile ? `${outcome.profile} -> ${outcome.result}` : outcome.result}
                 >
-                  {o.label}
+                  {outcome.label}
                 </button>
               </form>
             ))}

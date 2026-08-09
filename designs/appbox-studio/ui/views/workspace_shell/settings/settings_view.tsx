@@ -4,7 +4,7 @@
 import type { FC } from 'hono/jsx';
 import { Fragment } from 'hono/jsx';
 import WorkspaceShellView from '../workspace_shell_view.tsx';
-import LangSwitcher from '../../../common/_lang_switcher.tsx';
+import LangSwitcher from '../../../common/lang_switcher.tsx';
 import Icon from '../../../../runtime/icon.tsx';
 import { inspectAttrs, Label, Heading, Txt } from '../../../common/widgets/primitives.tsx';
 
@@ -94,17 +94,17 @@ const SettingsView: FC<SettingsViewProps> = (props) => {
         <Heading name="workspace-settings:accent-h" level={2}>{translate('settings.accentH') as string}</Heading>
         <Txt name="workspace-settings:accent-note" class="settings-note">{translate('settings.accentNote') as string}</Txt>
         <form class="swatch-row" method="post" action="/prefs/accent" hx-post="/prefs/accent" hx-swap="none" {...inspectAttrs('workspace-settings:accent-form', { role: 'group' })}>
-          {accents.map((s) => (
+          {accents.map((swatch) => (
             <button
               type="submit"
               name="accent"
-              value={s.id}
-              class={`swatch${s.id === accent ? ' is-active' : ''}`}
-              key={s.id}
+              value={swatch.id}
+              class={`swatch${swatch.id === accent ? ' is-active' : ''}`}
+              key={swatch.id}
               {...inspectAttrs('workspace-settings:accent', { role: 'action' })}
             >
-              <span class="swatch-dot" style={`--swatch: ${s.dot}`} />{s.label}
-              {s.id === accent ? (<Fragment>{' '}<Icon name="check" size={13} /></Fragment>) : null}
+              <span class="swatch-dot" style={`--swatch: ${swatch.dot}`} />{swatch.label}
+              {swatch.id === accent ? (<Fragment>{' '}<Icon name="check" size={13} /></Fragment>) : null}
             </button>
           ))}
         </form>
@@ -117,18 +117,18 @@ const SettingsView: FC<SettingsViewProps> = (props) => {
         <Heading name="workspace-settings:font-h" level={2}>{translate('settings.fontH') as string}</Heading>
         <Txt name="workspace-settings:font-note" class="settings-note">{translate('settings.fontNote') as string}</Txt>
         <form class="swatch-row" method="post" action="/prefs/font" hx-post="/prefs/font" hx-swap="none" {...inspectAttrs('workspace-settings:font-form', { role: 'group' })}>
-          {fonts.map((f) => (
+          {fonts.map((fontOption) => (
             <button
               type="submit"
               name="font"
-              value={f.id}
-              class={`swatch${f.id === font ? ' is-active' : ''}`}
-              style={`font-family: ${f.stack}`}
-              key={f.id}
+              value={fontOption.id}
+              class={`swatch${fontOption.id === font ? ' is-active' : ''}`}
+              style={`font-family: ${fontOption.stack}`}
+              key={fontOption.id}
               {...inspectAttrs('workspace-settings:font', { role: 'action' })}
             >
-              {f.label}
-              {f.id === font ? (<Fragment>{' '}<Icon name="check" size={13} /></Fragment>) : null}
+              {fontOption.label}
+              {fontOption.id === font ? (<Fragment>{' '}<Icon name="check" size={13} /></Fragment>) : null}
             </button>
           ))}
         </form>
@@ -144,20 +144,20 @@ const SettingsView: FC<SettingsViewProps> = (props) => {
         <Heading name="workspace-settings:jargon-h" level={2}>{translate('settings.jargonH') as string}</Heading>
         <Txt name="workspace-settings:jargon-note" class="settings-note">{translate('settings.jargonNote') as string}</Txt>
         <div class="level-row" {...inspectAttrs('workspace-settings:level-row', { role: 'group' })}>
-          {levels.map((l) => (
-            <form method="post" action="/prefs/jargon" hx-post="/prefs/jargon" hx-swap="none" key={l.id}>
+          {levels.map((level) => (
+            <form method="post" action="/prefs/jargon" hx-post="/prefs/jargon" hx-swap="none" key={level.id}>
               <button
                 type="submit"
                 name="jargon"
-                value={l.id}
-                class={`level-card${l.id === jargon ? ' is-active' : ''}`}
+                value={level.id}
+                class={`level-card${level.id === jargon ? ' is-active' : ''}`}
                 {...inspectAttrs('workspace-settings:jargon', { role: 'action' })}
               >
                 <span class="level-name" {...inspectAttrs('workspace-settings:level-name', { role: 'text' })}>
-                  {l.label}
-                  {l.id === jargon ? (<Fragment>{' '}<Icon name="check" size={14} /></Fragment>) : null}
+                  {level.label}
+                  {level.id === jargon ? (<Fragment>{' '}<Icon name="check" size={14} /></Fragment>) : null}
                 </span>
-                <Label name="workspace-settings:level-example" class="level-example">&ldquo;{l.example}&rdquo;</Label>
+                <Label name="workspace-settings:level-example" class="level-example">&ldquo;{level.example}&rdquo;</Label>
               </button>
             </form>
           ))}

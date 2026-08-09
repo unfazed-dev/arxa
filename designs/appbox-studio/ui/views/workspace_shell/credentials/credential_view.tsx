@@ -72,30 +72,30 @@ const CredentialView: FC<CredentialViewProps> = (props) => {
         </p>
       )}
 
-      {groups.map((g) => (
-        <section class="settings-section" key={g.label}>
-          <Heading name="workspace-credentials:group" level={2}>{g.label}</Heading>
-          {g.rows.map((r) => (
-            <div class="cred-row" key={r.key}>
+      {groups.map((group) => (
+        <section class="settings-section" key={group.label}>
+          <Heading name="workspace-credentials:group" level={2}>{group.label}</Heading>
+          {group.rows.map((row) => (
+            <div class="cred-row" key={row.key}>
               <div class="cred-row-head">
-                <Label name="workspace-credentials:key" class="cred-key">{r.key}</Label>
-                <Label name="workspace-credentials:kind" class={`chip type-badge${r.kind === 'secret' ? ' tb-findings' : ' tb-evidence'}`}>{r.kindLabel}</Label>
-                <Label name="workspace-credentials:required" class="chip chip--muted">{r.requiredLabel}</Label>
-                <Label name="workspace-credentials:status" class={`chip${r.set ? ' is-set' : ''}`}>{r.statusLabel}</Label>
-                {r.url ? (
-                  <a class="cred-where" href={r.url} target="_blank" rel="noopener" {...inspectAttrs('workspace-credentials:get-key', { role: 'action' })}>{translate('creds.getKey') as string}</a>
+                <Label name="workspace-credentials:key" class="cred-key">{row.key}</Label>
+                <Label name="workspace-credentials:kind" class={`chip type-badge${row.kind === 'secret' ? ' tb-findings' : ' tb-evidence'}`}>{row.kindLabel}</Label>
+                <Label name="workspace-credentials:required" class="chip chip--muted">{row.requiredLabel}</Label>
+                <Label name="workspace-credentials:status" class={`chip${row.set ? ' is-set' : ''}`}>{row.statusLabel}</Label>
+                {row.url ? (
+                  <a class="cred-where" href={row.url} target="_blank" rel="noopener" {...inspectAttrs('workspace-credentials:get-key', { role: 'action' })}>{translate('creds.getKey') as string}</a>
                 ) : null}
               </div>
-              {r.note ? <Txt name="workspace-credentials:note" class="settings-note">{r.note}</Txt> : null}
-              {r.set ? (
+              {row.note ? <Txt name="workspace-credentials:note" class="settings-note">{row.note}</Txt> : null}
+              {row.set ? (
                 <form method="post" action="/workspace/credentials/unset">
-                  <input type="hidden" name="key" value={r.key} {...inspectAttrs('workspace-credentials:unset-key', { role: 'input' })} />
+                  <input type="hidden" name="key" value={row.key} {...inspectAttrs('workspace-credentials:unset-key', { role: 'input' })} />
                   <button type="submit" class="ghost" {...inspectAttrs('workspace-credentials:unset', { role: 'action' })}>{translate('creds.action.remove') as string}</button>
                 </form>
               ) : (
                 <form class="cred-form" method="post" action="/workspace/credentials/set">
-                  <input type="hidden" name="key" value={r.key} {...inspectAttrs('workspace-credentials:set-key', { role: 'input' })} />
-                  <input type="password" name="value" required autocomplete="off" aria-label={translate('creds.inputAria', { key: r.key }) as string} {...inspectAttrs('workspace-credentials:set-value', { role: 'input' })} />
+                  <input type="hidden" name="key" value={row.key} {...inspectAttrs('workspace-credentials:set-key', { role: 'input' })} />
+                  <input type="password" name="value" required autocomplete="off" aria-label={translate('creds.inputAria', { key: row.key }) as string} {...inspectAttrs('workspace-credentials:set-value', { role: 'input' })} />
                   <button type="submit" {...inspectAttrs('workspace-credentials:save', { role: 'action' })}>{translate('creds.action.save') as string}</button>
                 </form>
               )}

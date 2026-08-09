@@ -34,20 +34,20 @@ interface ControllerPanelProps {
   controller: MiniController;
   translate: TFn;
 }
-export function ControllerPanel({ controller: c, translate }: ControllerPanelProps) {
+export function ControllerPanel({ controller: context, translate }: ControllerPanelProps) {
   return (
     <div class="mini-panel-body" id="mini-panel-controller" {...inspectAttrs('mini-panel:controller', { role: 'toolbar' })}>
       <span class="mini-panel-group" role="group" aria-label={translate('miniPanel.modeGroup') as string}>
-        {c.modes.map((m) => (
+        {context.modes.map((mode) => (
           <a
-            key={m.key}
-            class={`chip dv-chip${m.active ? ' on' : ''}`}
-            href={m.href}
-            hx-get={m.href}
+            key={mode.key}
+            class={`chip dv-chip${mode.active ? ' on' : ''}`}
+            href={mode.href}
+            hx-get={mode.href}
             hx-target="#design-viewer"
             hx-swap="outerMorph"
           >
-            {translate(`viewer.modeLabel.${m.key}`) as string}
+            {translate(`viewer.modeLabel.${mode.key}`) as string}
           </a>
         ))}
       </span>
@@ -57,10 +57,10 @@ export function ControllerPanel({ controller: c, translate }: ControllerPanelPro
         </button>
       </span>
       <span class="mini-panel-group" role="group" aria-label={translate('miniPanel.historyGroup') as string}>
-        {c.undo.can ? (
+        {context.undo.can ? (
           <button
             class="ico-btn undo-btn"
-            hx-post={c.undo.href}
+            hx-post={context.undo.href}
             hx-target="#panels"
             hx-swap="outerMorph"
             title={translate('miniPanel.undo') as string}
@@ -72,10 +72,10 @@ export function ControllerPanel({ controller: c, translate }: ControllerPanelPro
             <Icon name="undo-2" size={16} />
           </button>
         )}
-        {c.redo.can ? (
+        {context.redo.can ? (
           <button
             class="ico-btn redo-btn"
-            hx-post={c.redo.href}
+            hx-post={context.redo.href}
             hx-target="#panels"
             hx-swap="outerMorph"
             title={translate('miniPanel.redo') as string}
@@ -97,8 +97,8 @@ interface MiniPanelProps {
   v?: { miniPanel?: MiniPanelData | Record<string, unknown>; [key: string]: unknown };
   translate: TFn;
 }
-export function MiniPanel({ v, translate }: MiniPanelProps) {
-  const pnl = (v?.miniPanel ?? {}) as MiniPanelData;
+export function MiniPanel({ v: viewer, translate }: MiniPanelProps) {
+  const pnl = (viewer?.miniPanel ?? {}) as MiniPanelData;
   return (
     <nav class="mini-panel" aria-label={translate('miniPanel.aria') as string} {...inspectAttrs('mini-panel', { role: 'toolbar' })}>
       <div class="mini-panel-bar">
@@ -106,18 +106,18 @@ export function MiniPanel({ v, translate }: MiniPanelProps) {
         <span class="mini-panel-bar-right">
           {pnl.bar.devices && (
             <span class="mini-panel-group" role="group" aria-label={translate('viewer.viewportGroup') as string}>
-              {pnl.bar.devices.map((d) => (
+              {pnl.bar.devices.map((device) => (
                 <a
-                  key={d.key}
-                  class={`mini-panel-tab${d.active ? ' is-active' : ''}`}
-                  href={d.href}
-                  hx-get={d.href}
+                  key={device.key}
+                  class={`mini-panel-tab${device.active ? ' is-active' : ''}`}
+                  href={device.href}
+                  hx-get={device.href}
                   hx-target="#design-viewer"
                   hx-swap="outerMorph"
-                  aria-label={translate(`viewer.vp.${d.key}`) as string}
-                  title={translate(`viewer.vp.${d.key}`) as string}
+                  aria-label={translate(`viewer.vp.${device.key}`) as string}
+                  title={translate(`viewer.vp.${device.key}`) as string}
                 >
-                  <Icon name={d.icon} size={16} />
+                  <Icon name={device.icon} size={16} />
                 </a>
               ))}
             </span>

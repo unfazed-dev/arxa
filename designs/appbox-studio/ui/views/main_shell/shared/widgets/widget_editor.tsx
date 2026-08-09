@@ -54,17 +54,17 @@ export function Pane(props: PaneProps) {
       <div class="dv-wedit-row">
         <span class="dv-wedit-label">{translate('viewer.wedit.pad') as string}</span>
         <span class="dv-wedit-steps">
-          {pads.map((s) => (
+          {pads.map((step) => (
             <button
               type="button"
-              class={`chip dv-wedit-step${s.on ? ' on' : ''}`}
+              class={`chip dv-wedit-step${step.on ? ' on' : ''}`}
               hx-post={attrHref}
-              hx-vals={`{"attr": "data-pad", "value": "${s.val}"}`}
+              hx-vals={`{"attr": "data-pad", "value": "${step.val}"}`}
               hx-target="closest .dv-wedit"
               hx-swap="innerHTML"
-              key={s.val}
+              key={step.val}
             >
-              {s.v}
+              {step.v}
             </button>
           ))}
         </span>
@@ -72,17 +72,17 @@ export function Pane(props: PaneProps) {
       <div class="dv-wedit-row">
         <span class="dv-wedit-label">{translate('viewer.wedit.gap') as string}</span>
         <span class="dv-wedit-steps">
-          {gaps.map((s) => (
+          {gaps.map((step) => (
             <button
               type="button"
-              class={`chip dv-wedit-step${s.on ? ' on' : ''}`}
+              class={`chip dv-wedit-step${step.on ? ' on' : ''}`}
               hx-post={attrHref}
-              hx-vals={`{"attr": "data-gap", "value": "${s.val}"}`}
+              hx-vals={`{"attr": "data-gap", "value": "${step.val}"}`}
               hx-target="closest .dv-wedit"
               hx-swap="innerHTML"
-              key={s.val}
+              key={step.val}
             >
-              {s.v}
+              {step.v}
             </button>
           ))}
         </span>
@@ -93,17 +93,17 @@ export function Pane(props: PaneProps) {
       <div class="dv-wedit-row">
         <span class="dv-wedit-label">{translate('viewer.wedit.resizeX') as string}</span>
         <span class="dv-wedit-steps">
-          {resizeX.map((s) => (
+          {resizeX.map((step) => (
             <button
               type="button"
-              class={`chip dv-wedit-step dv-wedit-mode${s.on ? ' on' : ''}`}
+              class={`chip dv-wedit-step dv-wedit-mode${step.on ? ' on' : ''}`}
               hx-post={attrHref}
-              hx-vals={`{"attr": "data-resize-x", "value": "${s.val}"}`}
+              hx-vals={`{"attr": "data-resize-x", "value": "${step.val}"}`}
               hx-target="closest .dv-wedit"
               hx-swap="innerHTML"
-              key={s.val}
+              key={step.val}
             >
-              {translate(`viewer.wedit.mode.${s.m}`) as string}
+              {translate(`viewer.wedit.mode.${step.m}`) as string}
             </button>
           ))}
         </span>
@@ -111,17 +111,17 @@ export function Pane(props: PaneProps) {
       <div class="dv-wedit-row">
         <span class="dv-wedit-label">{translate('viewer.wedit.resizeY') as string}</span>
         <span class="dv-wedit-steps">
-          {resizeY.map((s) => (
+          {resizeY.map((step) => (
             <button
               type="button"
-              class={`chip dv-wedit-step dv-wedit-mode${s.on ? ' on' : ''}`}
+              class={`chip dv-wedit-step dv-wedit-mode${step.on ? ' on' : ''}`}
               hx-post={attrHref}
-              hx-vals={`{"attr": "data-resize-y", "value": "${s.val}"}`}
+              hx-vals={`{"attr": "data-resize-y", "value": "${step.val}"}`}
               hx-target="closest .dv-wedit"
               hx-swap="innerHTML"
-              key={s.val}
+              key={step.val}
             >
-              {translate(`viewer.wedit.mode.${s.m}`) as string}
+              {translate(`viewer.wedit.mode.${step.m}`) as string}
             </button>
           ))}
         </span>

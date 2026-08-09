@@ -256,7 +256,7 @@ export function ComposerPanel(props: LoopProps) {
 export function MainContent(props: LoopProps) {
   const { translate } = props;
   if (props.fileView) {
-    return <MainView f={props.fileView} translate={translate} />;
+    return <MainView file={props.fileView} translate={translate} />;
   }
   if (props.artifact) {
     return (
@@ -424,20 +424,20 @@ export function FilesView(props: LoopProps) {
     <div class="av-view files-view">
       <Txt name="loop:files-note" class="av-view-note muted">{translate('build.filesNote') as string}</Txt>
       <ul class="file-list" {...inspectAttrs('loop:file-list', { role: 'list' })}>
-        {(props.files ?? []).map((f, i) => (
+        {(props.files ?? []).map((file, i) => (
           <li class="file-row" key={i} {...inspectAttrs('loop:file-row', { role: 'list row' })}>
-            {f.mode ? (
-              <a class={`file-link${props.fileView && props.fileView.path === f.path ? ' is-active' : ''}`}
-                 href={f.href}
-                 hx-get={f.get} hx-target="#panel-main" hx-swap="innerHTML" hx-push-url={f.href}
+            {file.mode ? (
+              <a class={`file-link${props.fileView && props.fileView.path === file.path ? ' is-active' : ''}`}
+                 href={file.href}
+                 hx-get={file.get} hx-target="#panel-main" hx-swap="innerHTML" hx-push-url={file.href}
                  {...inspectAttrs('loop:file-link', { role: 'action' })}>
-                <code class="file-path" {...inspectAttrs('loop:file-path', { role: 'text' })}>{f.path}</code>
-                <span class={`chip chip--muted file-status-${f.status}`} {...inspectAttrs('loop:file-status', { role: 'label' })}>{translate(`build.fileStatus.${f.status}`) as string}</span>
+                <code class="file-path" {...inspectAttrs('loop:file-path', { role: 'text' })}>{file.path}</code>
+                <span class={`chip chip--muted file-status-${file.status}`} {...inspectAttrs('loop:file-status', { role: 'label' })}>{translate(`build.fileStatus.${file.status}`) as string}</span>
               </a>
             ) : (
               <Fragment>
-                <code class="file-path" {...inspectAttrs('loop:file-path', { role: 'text' })}>{f.path}</code>
-                <span class={`chip chip--muted file-status-${f.status}`} {...inspectAttrs('loop:file-status', { role: 'label' })}>{translate(`build.fileStatus.${f.status}`) as string}</span>
+                <code class="file-path" {...inspectAttrs('loop:file-path', { role: 'text' })}>{file.path}</code>
+                <span class={`chip chip--muted file-status-${file.status}`} {...inspectAttrs('loop:file-status', { role: 'label' })}>{translate(`build.fileStatus.${file.status}`) as string}</span>
               </Fragment>
             )}
           </li>
@@ -609,23 +609,23 @@ export function FindingsCanvas(props: { a: { list?: FindingItem[]; [key: string]
       <Heading name="loop:findings-title" level={2} class="display">{translate('findingsHeadline') as string}</Heading>
       <Txt name="loop:findings-lede" class="artifact-lede">{translate('findingsLede') as string}</Txt>
       <div class="finding-list" {...inspectAttrs('loop:finding-list', { role: 'group' })}>
-        {(a.list ?? []).map((f, i) => (
-          <article class={`finding finding-${f.severity}`} key={i}>
+        {(a.list ?? []).map((file, i) => (
+          <article class={`finding finding-${file.severity}`} key={i}>
             <header class="finding-head">
-              <span class={`sev sev-${f.severity}`} {...inspectAttrs('loop:finding-severity', { role: 'label' })}>{translate(`finding.severity.${f.severity}`) as string}</span>
-              <code class="finding-loc" {...inspectAttrs('loop:finding-loc', { role: 'text' })}>{f.file}:{f.line}</code>
-              <Label name="loop:finding-check" class="finding-check muted">{f.check}</Label>
+              <span class={`sev sev-${file.severity}`} {...inspectAttrs('loop:finding-severity', { role: 'label' })}>{translate(`finding.severity.${file.severity}`) as string}</span>
+              <code class="finding-loc" {...inspectAttrs('loop:finding-loc', { role: 'text' })}>{file.file}:{file.line}</code>
+              <Label name="loop:finding-check" class="finding-check muted">{file.check}</Label>
             </header>
             <dl class="finding-body">
-              <div><dt {...inspectAttrs('loop:finding-expected-label', { role: 'label' })}>{translate('finding.expected') as string}</dt><dd {...inspectAttrs('loop:finding-expected-value', { role: 'text' })}>{f.expected}</dd></div>
-              <div><dt {...inspectAttrs('loop:finding-actual-label', { role: 'label' })}>{translate('finding.actual') as string}</dt><dd {...inspectAttrs('loop:finding-actual-value', { role: 'text' })}>{f.actual}</dd></div>
+              <div><dt {...inspectAttrs('loop:finding-expected-label', { role: 'label' })}>{translate('finding.expected') as string}</dt><dd {...inspectAttrs('loop:finding-expected-value', { role: 'text' })}>{file.expected}</dd></div>
+              <div><dt {...inspectAttrs('loop:finding-actual-label', { role: 'label' })}>{translate('finding.actual') as string}</dt><dd {...inspectAttrs('loop:finding-actual-value', { role: 'text' })}>{file.actual}</dd></div>
             </dl>
-            <p class="reproduce"><Label name="loop:finding-reproduce-label" class="fact-label">{translate('finding.reproduce') as string}</Label><code {...inspectAttrs('loop:finding-reproduce-cmd', { role: 'text' })}>{f.reproduce}</code></p>
+            <p class="reproduce"><Label name="loop:finding-reproduce-label" class="fact-label">{translate('finding.reproduce') as string}</Label><code {...inspectAttrs('loop:finding-reproduce-cmd', { role: 'text' })}>{file.reproduce}</code></p>
             <footer class="finding-foot">
-              <span class="chip chip--muted" {...inspectAttrs('loop:finding-state', { role: 'label' })}>{f.state}</span>
-              <span class="muted" {...inspectAttrs('loop:finding-fingerprint', { role: 'text' })}>{translate('finding.fingerprint') as string} <code {...inspectAttrs('loop:finding-fingerprint-hash', { role: 'text' })}>{f.fingerprint}</code></span>
+              <span class="chip chip--muted" {...inspectAttrs('loop:finding-state', { role: 'label' })}>{file.state}</span>
+              <span class="muted" {...inspectAttrs('loop:finding-fingerprint', { role: 'text' })}>{translate('finding.fingerprint') as string} <code {...inspectAttrs('loop:finding-fingerprint-hash', { role: 'text' })}>{file.fingerprint}</code></span>
             </footer>
-            <Txt name="loop:finding-note" class="finding-note muted">{f.note}</Txt>
+            <Txt name="loop:finding-note" class="finding-note muted">{file.note}</Txt>
           </article>
         ))}
       </div>

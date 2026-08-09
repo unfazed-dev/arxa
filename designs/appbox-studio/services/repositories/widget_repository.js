@@ -41,14 +41,14 @@ export const includesOf = (rel) => {
   const src = readSource(rel);
   if (!src) return [];
   if (rel.endsWith('.tsx'))
-    return [...src.matchAll(IMPORT_RE)].map((m) => `design/surfaces/${m[1]}.tsx`);
-  return [...src.matchAll(INCLUDE_RE)].map((m) => `design/surfaces/${m[1]}`);
+    return [...src.matchAll(IMPORT_RE)].map((match) => `design/surfaces/${match[1]}.tsx`);
+  return [...src.matchAll(INCLUDE_RE)].map((match) => `design/surfaces/${match[1]}`);
 };
 
 // Every open tag carrying data-el, in source order. TSX is not parseable as
 // HTML, but an OPEN TAG is: attribute values are quoted strings or {…}
-// expression groups, and a bare `>` can only hide inside braces (an arrow
-// function's =>), so the brace alternative keeps the scan sound. Braces nest
+// expression groups, and a bare `>` can only hide inside braces (the arrow of
+// a callback), so the brace alternative keeps the scan sound. Braces nest
 // at most one level in these sources (an options/object literal).
 const TAG_RE = /<([a-zA-Z][\w-]*)((?:"[^"]*"|'[^']*'|\{(?:[^{}]|\{[^{}]*\})*\}|[^>"'])*)>/g;
 // data-el comes three ways: "static" (both formats), {`card:${…}`} and
@@ -57,14 +57,14 @@ const TAG_RE = /<([a-zA-Z][\w-]*)((?:"[^"]*"|'[^']*'|\{(?:[^{}]|\{[^{}]*\})*\}|[
 const EL_RE = /data-el=(?:"([^"]*)"|\{`([^`]*)`\}|\{\s*'([^']*)'\s*\})/;
 const elsIn = (src) => {
   const out = [];
-  for (const m of src.matchAll(TAG_RE)) {
-    const attrs = m[2];
+  for (const match of src.matchAll(TAG_RE)) {
+    const attrs = match[2];
     const el = attrs.match(EL_RE);
     const elVal = el ? (el[1] ?? el[2] ?? el[3]) : null;
     // `el` keeps the FULL data-el value (the Logic tab joins it against the
     // flows' authored `element`); `kind` stays the static prefix the widget
     // manager's identity rule has always used.
-    if (elVal) out.push({ tag: m[1], attrs, el: elVal, kind: elVal.split(':')[0], start: m.index, end: m.index + m[0].length });
+    if (elVal) out.push({ tag: match[1], attrs, el: elVal, kind: elVal.split(':')[0], start: match.index, end: match.index + match[0].length });
   }
   return out;
 };
@@ -76,9 +76,9 @@ const elsIn = (src) => {
 const INSPECT_ATTRS = ['data-inspect-role', 'data-inspect-fn'];
 const inspectOf = (attrString) => {
   const out = {};
-  for (const a of INSPECT_ATTRS) {
-    const m = attrString.match(new RegExp(`${a}="([^"]*)"`));
-    if (m) out[a.slice('data-inspect-'.length)] = m[1];
+  for (const attrName of INSPECT_ATTRS) {
+    const match = attrString.match(new RegExp(`${attrName}="([^"]*)"`));
+    if (match) out[attrName.slice('data-inspect-'.length)] = match[1];
   }
   return out;
 };
@@ -86,9 +86,9 @@ const inspectOf = (attrString) => {
 const LAYOUT_ATTRS = ['data-layout', 'data-flow', 'data-wrap', 'data-clip', 'data-gap', 'data-pad', 'data-resize-x', 'data-resize-y'];
 const attrsOf = (attrString) => {
   const out = {};
-  for (const a of LAYOUT_ATTRS) {
-    const m = attrString.match(new RegExp(`${a}(?:="([^"]*)")?(?=[\\s>/]|$)`));
-    if (m) out[a] = m[1] ?? '';
+  for (const attrName of LAYOUT_ATTRS) {
+    const match = attrString.match(new RegExp(`${attrName}(?:="([^"]*)")?(?=[\\s>/]|$)`));
+    if (match) out[attrName] = match[1] ?? '';
   }
   return out;
 };
@@ -103,16 +103,16 @@ export const resolveWidget = (screenId, kind, index = 0) => {
   for (const rel of [own, ...includesOf(own)]) {
     const src = readSource(rel);
     if (!src) continue;
-    const hits = elsIn(src).filter((e) => e.kind === kind);
+    const hits = elsIn(src).filter((element) => element.kind === kind);
     if (hits.length > index) {
-      const e = hits[index];
+      const element = hits[index];
       // start/end of the OPEN TAG ride along so no caller has to re-derive
       // element identity with a second, subtly different rule. elsIn() counts
       // occurrences of a kind across EVERY tag name and delimits the kind with
       // `:` or `"` — a re-find that scanned only `<${tag}` would disagree the
       // moment one kind appears on two different tags, and a prefix match
       // would let kind "tab" select a "tabbar:" element.
-      return { file: rel, kind, index, tag: e.tag, el: e.el, attrs: attrsOf(e.attrs), inspect: inspectOf(e.attrs), start: e.start, end: e.end };
+      return { file: rel, kind, index, tag: element.tag, el: element.el, attrs: attrsOf(element.attrs), inspect: inspectOf(element.attrs), start: element.start, end: element.end };
     }
   }
   return null;
@@ -131,14 +131,14 @@ export const widgetsOn = (screenId) => {
   for (const rel of [own, ...includesOf(own)]) {
     const src = readSource(rel);
     if (!src) continue;
-    for (const e of elsIn(src)) if (!kinds.includes(e.kind)) kinds.push(e.kind);
+    for (const element of elsIn(src)) if (!kinds.includes(element.kind)) kinds.push(element.kind);
   }
   const out = [];
   for (const kind of kinds) {
-    for (let i = 0; ; i++) {
-      const w = resolveWidget(screenId, kind, i);
-      if (!w) break;
-      out.push({ kind, index: i, tag: w.tag, file: w.file, el: w.el, inspect: w.inspect });
+    for (let index = 0; ; index++) {
+      const widget = resolveWidget(screenId, kind, index);
+      if (!widget) break;
+      out.push({ kind, index: index, tag: widget.tag, file: widget.file, el: widget.el, inspect: widget.inspect });
     }
   }
   return out;
@@ -148,29 +148,29 @@ export const widgetsOn = (screenId) => {
 // provenance the editor must state before an edit lands.
 export const screensUsing = (rel) =>
   (registry() ?? [])
-    .filter((s) => {
-      const own = screenFile(s.id);
+    .filter((screen) => {
+      const own = screenFile(screen.id);
       return own === rel || includesOf(own).includes(rel);
     })
-    .map((s) => s.id);
+    .map((screen) => screen.id);
 
 // Set/replace/remove one attribute on the widget's source element and write
 // the file back through the project channel. value '' removes the attribute.
 export const setWidgetAttr = async (screenId, kind, index, attr, value) => {
-  const w = resolveWidget(screenId, kind, index);
-  if (!w) throw new Error(`widget not found: ${screenId} ${kind}`);
-  const src = readSource(w.file);
-  const hits = elsIn(src).filter((e) => e.kind === kind);
-  const e = hits[index];
-  let open = src.slice(e.start, e.end);
+  const widget = resolveWidget(screenId, kind, index);
+  if (!widget) throw new Error(`widget not found: ${screenId} ${kind}`);
+  const src = readSource(widget.file);
+  const hits = elsIn(src).filter((element) => element.kind === kind);
+  const element = hits[index];
+  let open = src.slice(element.start, element.end);
   // Values may be quoted ("…") or braced TSX expressions ({…}); replacing
   // always writes the quoted form, which is valid TSX for the string-valued
   // layout attributes this editor touches.
   const re = new RegExp(`\\s*${attr}(?:="[^"]*"|=\\{(?:[^{}]|\\{[^{}]*\\})*\\})?(?=[\\s>/])`);
   if (re.test(open)) open = open.replace(re, value === '' ? '' : ` ${attr}="${value}"`);
   else if (value !== '') open = open.replace(/(\s*\/?>)$/, ` ${attr}="${value}"$1`);
-  const next = src.slice(0, e.start) + open + src.slice(e.end);
-  await writeProjectSource(w.file, next);
+  const next = src.slice(0, element.start) + open + src.slice(element.end);
+  await writeProjectSource(widget.file, next);
   return resolveWidget(screenId, kind, index);
 };
 

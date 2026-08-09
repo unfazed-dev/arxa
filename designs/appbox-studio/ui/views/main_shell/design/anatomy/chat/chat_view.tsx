@@ -19,7 +19,7 @@ import {
 } from '../../chat/chat_view.tsx';
 import { RenderPanels, type PrototypeViewProps } from '../../prototype/prototype_view.tsx';
 import { Timeline as TimelineEl } from '../../../shared/widgets/timeline.tsx';
-import { AnatomyShellView } from '../_shared_anatomy.tsx';
+import { AnatomyShellView } from '../shared_anatomy.tsx';
 
 type ChatViewProps = PrototypeViewProps;
 
@@ -27,16 +27,16 @@ const SCREEN_ID = 'design.chat';
 const SURFACE_ID = 'design.chat';
 
 // ---- Fragment responses (pinned set: panelsSwap, drawerSwap, revertSwap) ----
-export function PanelsSwap(c: ChatViewProps) {
-  return LegacyPanelsSwap(c);
+export function PanelsSwap(context: ChatViewProps) {
+  return LegacyPanelsSwap(context);
 }
 
-export function DrawerSwap(c: ChatViewProps) {
-  return LegacyDrawerSwap(c);
+export function DrawerSwap(context: ChatViewProps) {
+  return LegacyDrawerSwap(context);
 }
 
-export function RevertSwap(c: ChatViewProps) {
-  return LegacyRevertSwap(c);
+export function RevertSwap(context: ChatViewProps) {
+  return LegacyRevertSwap(context);
 }
 
 // ---- Page ----

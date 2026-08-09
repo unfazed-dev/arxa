@@ -6,8 +6,8 @@ import { Fragment, type FC } from 'hono/jsx';
 import Icon from '../../../../../runtime/icon.tsx';
 import { inspectAttrs, Label, Heading, Txt } from '../../../../common/widgets/primitives.tsx';
 import MainShellView from '../../main_shell_view.tsx';
-import * as SH from '../_shared.tsx';
-import type { Ctx, StepItem, FlowEdge } from '../_shared.tsx';
+import * as SH from '../shared.tsx';
+import type { Ctx, StepItem, FlowEdge } from '../shared.tsx';
 
 type TFn = (key: string, vars?: Record<string, unknown>) => unknown;
 
@@ -15,20 +15,20 @@ type TFn = (key: string, vars?: Record<string, unknown>) => unknown;
 function EdgeChain({ item }: { item: StepItem }) {
   return (
     <ol class="edge-chain" {...inspectAttrs('intake-flows:edge-chain', { role: 'list' })}>
-      {(item.edges ?? []).map((e: FlowEdge, i) => (
-        <li key={i} class="edge">
+      {(item.edges ?? []).map((edge: FlowEdge, index) => (
+        <li key={index} class="edge">
           <span class="edge-node" {...inspectAttrs('intake-flows:edge-node', { role: 'label' })}>
-            <Label name="intake-flows:edge-from-label" class="edge-label">{e.fromLabel}</Label>
-            <code class="edge-id" {...inspectAttrs('intake-flows:edge-from-id', { role: 'text' })}>{e.from}</code>
+            <Label name="intake-flows:edge-from-label" class="edge-label">{edge.fromLabel}</Label>
+            <code class="edge-id" {...inspectAttrs('intake-flows:edge-from-id', { role: 'text' })}>{edge.from}</code>
           </span>
           <span class="edge-link" {...inspectAttrs('intake-flows:edge-link', { role: 'label' })}>
             <Icon name="move-right" size={16} />
-            <Label name="intake-flows:edge-trigger" class="edge-trigger">{e.trigger}</Label>
-            {e.label ? <Label name="intake-flows:edge-chip" class="chip chip--muted">{e.label}</Label> : null}
+            <Label name="intake-flows:edge-trigger" class="edge-trigger">{edge.trigger}</Label>
+            {edge.label ? <Label name="intake-flows:edge-chip" class="chip chip--muted">{edge.label}</Label> : null}
           </span>
           <span class="edge-node" {...inspectAttrs('intake-flows:edge-node', { role: 'label' })}>
-            <Label name="intake-flows:edge-to-label" class="edge-label">{e.toLabel}</Label>
-            <code class="edge-id" {...inspectAttrs('intake-flows:edge-to-id', { role: 'text' })}>{e.to}</code>
+            <Label name="intake-flows:edge-to-label" class="edge-label">{edge.toLabel}</Label>
+            <code class="edge-id" {...inspectAttrs('intake-flows:edge-to-id', { role: 'text' })}>{edge.to}</code>
           </span>
         </li>
       ))}
@@ -37,7 +37,7 @@ function EdgeChain({ item }: { item: StepItem }) {
 }
 
 // The current (or editing) flow, large.
-function FlowCard({ c, item, translate }: { c: Ctx; item: StepItem; translate: TFn }) {
+function FlowCard({ context, item, translate }: { context: Ctx; item: StepItem; translate: TFn }) {
   return (
     <article class={`artifact flow-artifact is-${item.state ?? ''}`}>
       <header class="artifact-head" {...inspectAttrs('intake-flows:artifact-head', { role: 'group' })}>
@@ -48,21 +48,21 @@ function FlowCard({ c, item, translate }: { c: Ctx; item: StepItem; translate: T
       <Heading name="intake-flows:flow-name" level={2} class="display">{item.name}</Heading>
       <EdgeChain item={item} />
       {item.state === 'editing' ? (
-        <form class="q-form" method="post" action={`${c.base}/save`}
-              hx-post={`${c.base}/save`} hx-target="#panels" hx-swap="outerMorph">
+        <form class="q-form" method="post" action={`${context.base}/save`}
+              hx-post={`${context.base}/save`} hx-target="#panels" hx-swap="outerMorph">
           <input type="hidden" name="item" value={item.id} {...inspectAttrs('intake-flows:flow-id', { role: 'input' })} />
           <label class="fact-label" for={`flow-name-${item.id}`} {...inspectAttrs('intake-flows:flow-name-label', { role: 'label' })}>{translate('intake.form.name') as string}</label>
           <input type="text" id={`flow-name-${item.id}`} name="name" value={item.name} {...inspectAttrs('intake-flows:flow-name-input', { role: 'input' })} />
           <button type="submit" class="cta-main" {...inspectAttrs('intake-flows:save', { role: 'action', fn: 'submit' })}>{translate('intake.form.save') as string} <Icon name="check" size={14} /></button>
         </form>
       ) : null}
-      <SH.ItemActions c={c} item={item} translate={translate} />
+      <SH.ItemActions context={context} item={item} translate={translate} />
     </article>
   );
 }
 
 // A done flow in the complete summary: compact, re-openable.
-function FlowRow({ c, item, translate }: { c: Ctx; item: StepItem; translate: TFn }) {
+function FlowRow({ context, item, translate }: { context: Ctx; item: StepItem; translate: TFn }) {
   return (
     <div class={`q-card is-${item.state ?? ''}`}>
       <Txt name="intake-flows:row-name" class="q-text">{item.name}</Txt>
@@ -71,60 +71,60 @@ function FlowRow({ c, item, translate }: { c: Ctx; item: StepItem; translate: TF
         <Label name="intake-flows:edge-count" class="chip chip--muted">{translate('intake.flows.edgeCount', { count: item.edges?.length ?? 0 }) as string}</Label>
         {item.edited ? <Label name="intake-flows:edited" class="chip chip--muted">{translate('intake.item.edited') as string}</Label> : null}
       </span>
-      <SH.ItemActions c={c} item={item} translate={translate} />
+      <SH.ItemActions context={context} item={item} translate={translate} />
     </div>
   );
 }
 
-function FlowsStage({ c, translate }: { c: Ctx; translate: TFn }) {
-  const step = c.step;
+function FlowsStage({ context, translate }: { context: Ctx; translate: TFn }) {
+  const step = context.step;
   return (
-    <SH.StepStage c={c} translate={translate}>
+    <SH.StepStage context={context} translate={translate}>
       {step?.complete ? (
         <div class="step-summary">
           <Heading name="intake-flows:all-confirmed" level={2} class="display">{translate('intake.step.allConfirmed', { total: step.total }) as string}</Heading>
-          {(step.items ?? []).map((item) => <FlowRow key={item.id} c={c} item={item} translate={translate} />)}
+          {(step.items ?? []).map((item) => <FlowRow key={item.id} context={context} item={item} translate={translate} />)}
         </div>
       ) : (
         (step?.items ?? [])
           .filter((item) => item.state === 'current' || item.state === 'editing')
-          .map((item) => <FlowCard key={item.id} c={c} item={item} translate={translate} />)
+          .map((item) => <FlowCard key={item.id} context={context} item={item} translate={translate} />)
       )}
     </SH.StepStage>
   );
 }
 
 // The main panel's content: the open file, else the flows stage.
-function MainContent({ c, translate }: { c: Ctx; translate: TFn }) {
-  if (c.fileView) return <SH.FileView c={c} translate={translate} />;
-  return <FlowsStage c={c} translate={translate} />;
+function MainContent({ context, translate }: { context: Ctx; translate: TFn }) {
+  if (context.fileView) return <SH.FileView context={context} translate={translate} />;
+  return <FlowsStage context={context} translate={translate} />;
 }
 
-function Panels({ c, translate }: { c: Ctx; translate: TFn }) {
-  return <SH.Panels c={c} translate={translate}><MainContent c={c} translate={translate} /></SH.Panels>;
+function Panels({ context, translate }: { context: Ctx; translate: TFn }) {
+  return <SH.Panels context={context} translate={translate}><MainContent context={context} translate={translate} /></SH.Panels>;
 }
 
 // ---------- Fragment responses ----------
 
-export function PanelsSwap({ c, translate }: { c: Ctx; translate: TFn }) {
+export function PanelsSwap({ context, translate }: { context: Ctx; translate: TFn }) {
   return (
     <Fragment>
-      <Panels c={c} translate={translate} />
-      <SH.Timeline c={c} translate={translate} oob={true} />
+      <Panels context={context} translate={translate} />
+      <SH.Timeline context={context} translate={translate} oob={true} />
     </Fragment>
   );
 }
 
-export function ActivitySwap({ c, translate }: { c: Ctx; translate: TFn }) {
-  return <SH.ActivitySwap c={c} translate={translate} />;
+export function ActivitySwap({ context, translate }: { context: Ctx; translate: TFn }) {
+  return <SH.ActivitySwap context={context} translate={translate} />;
 }
 
-export function FileSwap({ c, translate }: { c: Ctx; translate: TFn }) {
-  return <MainContent c={c} translate={translate} />;
+export function FileSwap({ context, translate }: { context: Ctx; translate: TFn }) {
+  return <MainContent context={context} translate={translate} />;
 }
 
-export function ActivityFrameSwap({ c, translate }: { c: Ctx; translate: TFn }) {
-  return <SH.ActivityPanel c={c} translate={translate} />;
+export function ActivityFrameSwap({ context, translate }: { context: Ctx; translate: TFn }) {
+  return <SH.ActivityPanel context={context} translate={translate} />;
 }
 
 // ---------- Page ----------
@@ -134,19 +134,19 @@ interface ViewProps {
   [key: string]: unknown;
 }
 
-const FlowsView: FC<ViewProps> = (c) => {
-  const { translate } = c;
+const FlowsView: FC<ViewProps> = (context) => {
+  const { translate } = context;
   return (
     <MainShellView
       title={translate('intake.flows.pageTitle') as string}
       mainClass="shell-main-loop"
-      activeShell={c.activeShell as string}
-      prefs={c.prefs as { accent?: string; [k: string]: unknown }}
-      project={c.project as { name?: string; savedLabel?: string }}
-      locale={c.locale as string}
+      activeShell={context.activeShell as string}
+      prefs={context.prefs as { accent?: string; [k: string]: unknown }}
+      project={context.project as { name?: string; savedLabel?: string }}
+      locale={context.locale as string}
       translate={translate}
-      footer={<SH.Timeline c={c as Ctx} translate={translate} oob={false} />}
-      surface={<Panels c={c as Ctx} translate={translate} />}
+      footer={<SH.Timeline context={context as Ctx} translate={translate} oob={false} />}
+      surface={<Panels context={context as Ctx} translate={translate} />}
     />
   );
 };

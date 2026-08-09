@@ -1,8 +1,8 @@
-// scaffold/_shared.tsx — the scaffold shell's panel set (replaces _shared.html).
+// scaffold/shared.tsx — the scaffold shell's panel set (replaces _shared.html).
 // Composer LEFT, main CENTRE, activity RIGHT, laid out by the grid in
 // scaffold.css. Macro-only file — importing it from a fragment render emits
 // nothing. Chrome is reused, never forked: every panel comes from the shared
-// widget homes through the same open/close pair from _panel.tsx.
+// widget homes through the same open/close pair from panel.tsx.
 import { Fragment, type Child } from 'hono/jsx';
 import Icon from '../../../../runtime/icon.tsx';
 import { inspectAttrs, Label, Txt } from '../../../common/widgets/primitives.tsx';
@@ -17,22 +17,22 @@ export type ScaffoldCtx = Ctx;
 
 // thread — the scaffold's narrative thread (events + user/agent messages).
 interface ThreadProps {
-  c: Ctx;
+  context: Ctx;
 }
-export function Thread({ c }: ThreadProps) {
+export function Thread({ context }: ThreadProps) {
   return (
     <div class="chat-thread" aria-live="polite" {...inspectAttrs('scaffold:thread', { role: 'group' })}>
-      {(c.thread ?? []).map((m: Ctx, i: number) => {
-        if (m.kind === 'event') {
-          return <Txt key={i} name="scaffold:thread:event" class="bt-event">{m.text}</Txt>;
+      {(context.thread ?? []).map((message: Ctx, index: number) => {
+        if (message.kind === 'event') {
+          return <Txt key={index} name="scaffold:thread:event" class="bt-event">{message.text}</Txt>;
         }
-        if (m.from === 'user') {
-          return <Txt key={i} name="scaffold:thread:user" class="bt-msg bt-user">{m.text}</Txt>;
+        if (message.from === 'user') {
+          return <Txt key={index} name="scaffold:thread:user" class="bt-msg bt-user">{message.text}</Txt>;
         }
         return (
-          <Txt key={i} name="scaffold:thread:agent" class="bt-msg bt-agent">
-            {m.text}
-            {m.link && <Fragment>{' '}<a class="bt-link" href={m.link.href} {...inspectAttrs('scaffold:thread:link', { role: 'action' })}>{m.link.label}</a></Fragment>}
+          <Txt key={index} name="scaffold:thread:agent" class="bt-msg bt-agent">
+            {message.text}
+            {message.link && <Fragment>{' '}<a class="bt-link" href={message.link.href} {...inspectAttrs('scaffold:thread:link', { role: 'action' })}>{message.link.label}</a></Fragment>}
           </Txt>
         );
       })}
@@ -44,28 +44,28 @@ export function Thread({ c }: ThreadProps) {
 // cm.field is gated on c.composerAction: a surface with no mutation renders
 // no field rather than a field wired to an empty action.
 interface ComposerPanelProps {
-  c: Ctx;
+  context: Ctx;
   translate: TFn;
 }
-export function ComposerPanel({ c, translate }: ComposerPanelProps) {
-  const spec = { eyebrow: c.stageEyebrow ?? '', chips: c.chips };
+export function ComposerPanel({ context, translate }: ComposerPanelProps) {
+  const spec = { eyebrow: context.stageEyebrow ?? '', chips: context.chips };
   return (
     <ComposerOpen spec={spec} translate={translate}>
-      <Thread c={c} />
-      {c.composerAction && <Field {...c} translate={translate} />}
+      <Thread context={context} />
+      {context.composerAction && <Field {...context} translate={translate} />}
     </ComposerOpen>
   );
 }
 
 // activityBody — the activity panel's list body.
 interface ActivityBodyProps {
-  c: Ctx;
+  context: Ctx;
 }
-export function ActivityBody({ c }: ActivityBodyProps) {
+export function ActivityBody({ context }: ActivityBodyProps) {
   return (
     <ul class="panel-activity-body" id="panel-activity-body" {...inspectAttrs('scaffold:activity:list', { role: 'list' })}>
-      {(c.activity?.items ?? []).map((it: Ctx, i: number) => (
-        <li key={i} class={`act-row${it.active ? ' is-active' : ''}`}>
+      {(context.activity?.items ?? []).map((it: Ctx, index: number) => (
+        <li key={index} class={`act-row${it.active ? ' is-active' : ''}`}>
           <Label name="scaffold:activity:label" class="act-label">{it.label}</Label>
           {it.meta && <Label name="scaffold:activity:meta" class="act-meta">{it.meta}</Label>}
         </li>
@@ -76,19 +76,19 @@ export function ActivityBody({ c }: ActivityBodyProps) {
 
 // activityPanel — the multi-view activity frame wrapping the body.
 interface ActivityPanelProps {
-  c: Ctx;
+  context: Ctx;
   translate: TFn;
 }
-export function ActivityPanel({ c, translate }: ActivityPanelProps) {
+export function ActivityPanel({ context, translate }: ActivityPanelProps) {
   const spec = {
-    label: c.activity?.label ?? '',
-    views: c.activity?.views ?? [],
-    size: c.panelSize,
-    sizeHref: c.panelSizeHref,
+    label: context.activity?.label ?? '',
+    views: context.activity?.views ?? [],
+    size: context.panelSize,
+    sizeHref: context.panelSizeHref,
   };
   return (
     <ActivityOpen spec={spec} translate={translate}>
-      <ActivityBody c={c} />
+      <ActivityBody context={context} />
     </ActivityOpen>
   );
 }
@@ -97,17 +97,17 @@ export function ActivityPanel({ c, translate }: ActivityPanelProps) {
 // #panels outerHTML, so panel widths and the activity panel ride along without
 // an out-of-band re-feed. The caller fills the main panel.
 interface PanelsProps {
-  c: Ctx;
+  context: Ctx;
   translate: TFn;
   children?: Child;
 }
-export function Panels({ c, translate, children }: PanelsProps) {
+export function Panels({ context, translate, children }: PanelsProps) {
   return (
-    <div class="panels panels-scaffold" id="panels" data-panel={c.panel}>
-      <PanelBar panel={c.panel} translate={translate} />
-      <ComposerPanel c={c} translate={translate} />
+    <div class="panels panels-scaffold" id="panels" data-panel={context.panel}>
+      <PanelBar panel={context.panel} translate={translate} />
+      <ComposerPanel context={context} translate={translate} />
       <MainOpen>{children}</MainOpen>
-      <ActivityPanel c={c} translate={translate} />
+      <ActivityPanel context={context} translate={translate} />
     </div>
   );
 }
@@ -120,11 +120,11 @@ export function MainEmpty({ translate }: { translate: TFn }) {
 // accountChip — the header's entitlement/account element.
 // Three states: signed-out → Sign in; free → Upgrade; entitled → plan badge.
 interface AccountChipProps {
-  c: Ctx;
+  context: Ctx;
   translate: TFn;
 }
-export function AccountChip({ c, translate }: AccountChipProps) {
-  const ent = c.entitlement ?? {};
+export function AccountChip({ context, translate }: AccountChipProps) {
+  const ent = context.entitlement ?? {};
   const entState = !ent.signedIn ? 'signedOut' : ent.entitled ? 'entitled' : 'free';
   return (
     <span class="shell-account" data-entitlement={entState} {...inspectAttrs('scaffold:account', { role: 'group' })}>

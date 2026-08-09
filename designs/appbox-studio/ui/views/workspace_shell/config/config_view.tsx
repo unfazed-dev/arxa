@@ -107,15 +107,15 @@ const ConfigView: FC<ConfigViewProps> = (props) => {
             <Label name="workspace-config:creds-allset" class="chip type-badge tb-evidence">{translate('creds.allSet') as string}</Label>
           </p>
         )}
-        {credGroups.map((g) => (
-          <div class="cred-row" key={g.label}>
+        {credGroups.map((group) => (
+          <div class="cred-row" key={group.label}>
             <div class="cred-row-head">
-              <Label name="workspace-config:cred-group" class="cred-key">{g.label}</Label>
-              <Label name="workspace-config:cred-set" class={`chip${g.missing === 0 ? ' is-set' : ''}`}>
-                {translate('cfg.creds.setOf', { set: g.set, total: g.total }) as string}
+              <Label name="workspace-config:cred-group" class="cred-key">{group.label}</Label>
+              <Label name="workspace-config:cred-set" class={`chip${group.missing === 0 ? ' is-set' : ''}`}>
+                {translate('cfg.creds.setOf', { set: group.set, total: group.total }) as string}
               </Label>
-              {g.missing > 0 ? (
-                <Label name="workspace-config:cred-missing" class="chip type-badge tb-findings">{translate('cfg.creds.missing', { count: g.missing }) as string}</Label>
+              {group.missing > 0 ? (
+                <Label name="workspace-config:cred-missing" class="chip type-badge tb-findings">{translate('cfg.creds.missing', { count: group.missing }) as string}</Label>
               ) : null}
               <a class="cred-where" href="/workspace/credentials" {...inspectAttrs('workspace-config:cred-manage', { role: 'action' })}>{translate('cfg.creds.manage') as string}</a>
             </div>
@@ -137,9 +137,9 @@ const ConfigView: FC<ConfigViewProps> = (props) => {
         <div class="cred-row">
           <div class="cred-row-head">
             <Label name="workspace-config:accent-label" class="cred-key">{translate('cfg.prefs.accent') as string}</Label>
-            {accents.map((a) => (
-              <form method="post" action="/prefs/accent" key={a.id}>
-                <button type="submit" name="accent" value={a.id} class={`chip${a.on ? ' is-set' : ''}`} {...inspectAttrs('workspace-config:accent', { role: 'action' })}>{a.label}</button>
+            {accents.map((accent) => (
+              <form method="post" action="/prefs/accent" key={accent.id}>
+                <button type="submit" name="accent" value={accent.id} class={`chip${accent.on ? ' is-set' : ''}`} {...inspectAttrs('workspace-config:accent', { role: 'action' })}>{accent.label}</button>
               </form>
             ))}
           </div>
@@ -147,9 +147,9 @@ const ConfigView: FC<ConfigViewProps> = (props) => {
         <div class="cred-row">
           <div class="cred-row-head">
             <Label name="workspace-config:jargon-label" class="cred-key">{translate('cfg.prefs.jargon') as string}</Label>
-            {jargons.map((j) => (
-              <form method="post" action="/prefs/jargon" key={j.id}>
-                <button type="submit" name="jargon" value={j.id} class={`chip${j.on ? ' is-set' : ''}`} {...inspectAttrs('workspace-config:jargon', { role: 'action' })}>{j.label}</button>
+            {jargons.map((jargon) => (
+              <form method="post" action="/prefs/jargon" key={jargon.id}>
+                <button type="submit" name="jargon" value={jargon.id} class={`chip${jargon.on ? ' is-set' : ''}`} {...inspectAttrs('workspace-config:jargon', { role: 'action' })}>{jargon.label}</button>
               </form>
             ))}
           </div>

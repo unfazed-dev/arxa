@@ -132,7 +132,7 @@ export function ElementCard({ el, locked, unlockHref, translate }: ElementCardPr
   return (
     <div class={`msg msg-agent${locked ? ` is-active msg-ctx ctx-${el.tone}` : ''}`}>
       <header class="msg-meta" {...inspectAttrs('inspector:card-head', { role: 'group' })}>
-        {(() => { const b = kindToBadge(el.kind); return b && <TypeBadge type={b.type} label={b.label} />; })()}
+        {(() => { const badge = kindToBadge(el.kind); return badge && <TypeBadge type={badge.type} label={badge.label} />; })()}
         {el.inferred && (
           <span class="chip thread-badge" {...inspectAttrs('inspector:inferred', { role: 'status' })} title={translate('inspector.inferredTitle') as string}>
             {translate('inspector.inferred') as string}
@@ -144,27 +144,27 @@ export function ElementCard({ el, locked, unlockHref, translate }: ElementCardPr
           </span>
         )}
       </header>
-      <span class="msg-text" {...inspectAttrs('inspector:el-name-text', { role: 'text' })}><code {...inspectAttrs('inspector:el-name', { role: 'text' })}>{el.name}{el.instanceCount && Number(el.instanceCount) > 1 && (() => { const k = Number((el.instance ?? '0').split('/').pop()); return ` · ${k + 1}/${el.instanceCount}`; })()}</code></span>
+      <span class="msg-text" {...inspectAttrs('inspector:el-name-text', { role: 'text' })}><code {...inspectAttrs('inspector:el-name', { role: 'text' })}>{el.name}{el.instanceCount && Number(el.instanceCount) > 1 && (() => { const instanceIndex = Number((el.instance ?? '0').split('/').pop()); return ` · ${instanceIndex + 1}/${el.instanceCount}`; })()}</code></span>
       {/* Ancestor breadcrumb — outermost › … › current. Each ancestor is a
           button that POSTs back to /design/inspector/select (selectHref) to
           lock that element; the last entry is the current element (no link). */}
       {Array.isArray(el.chain) && el.chain.length > 1 && (
         <nav class="insp-crumbs" aria-label={translate('inspector.chainAria') as string} {...inspectAttrs('inspector:crumbs', { role: 'navigation' })}>
-          {el.chain.map((c, i) => (
-            <Fragment key={i}>
-              {i > 0 && <span class="insp-crumb-sep" {...inspectAttrs('inspector:crumb-sep', { role: 'separator' })} aria-hidden="true">›</span>}
-              {c.selectHref ? (
+          {el.chain.map((crumb, index) => (
+            <Fragment key={index}>
+              {index > 0 && <span class="insp-crumb-sep" {...inspectAttrs('inspector:crumb-sep', { role: 'separator' })} aria-hidden="true">›</span>}
+              {crumb.selectHref ? (
                 <button
-                  class={`insp-crumb${c.inferred ? ' is-inferred' : ''}`}
+                  class={`insp-crumb${crumb.inferred ? ' is-inferred' : ''}`}
                   {...inspectAttrs('inspector:crumb', { role: 'link' })}
                   type="button"
-                  hx-post={c.selectHref}
+                  hx-post={crumb.selectHref}
                   hx-target="#av-list"
                   hx-swap="outerHTML"
                   hx-push-url="false"
-                >{c.el}</button>
+                >{crumb.el}</button>
               ) : (
-                <span class={`insp-crumb is-current${c.inferred ? ' is-inferred' : ''}`} {...inspectAttrs('inspector:crumb-current', { role: 'text' })}>{c.el}</span>
+                <span class={`insp-crumb is-current${crumb.inferred ? ' is-inferred' : ''}`} {...inspectAttrs('inspector:crumb-current', { role: 'text' })}>{crumb.el}</span>
               )}
             </Fragment>
           ))}
@@ -237,9 +237,9 @@ export function ScreenCard({ sc, translate }: ScreenCardProps) {
       <span class="msg-detail" {...inspectAttrs('inspector:states-label', { role: 'group' })}><b {...inspectAttrs('inspector:states-text', { role: 'label' })}>{translate('inspector.states') as string}</b></span>
       <span class="msg-meta" {...inspectAttrs('inspector:states-badges', { role: 'group' })}>
         {sc.states && sc.states.length > 0 ? (
-          sc.states.map((st, i) => (
+          sc.states.map((st, index) => (
             <span
-              key={i}
+              key={index}
               class="chip thread-badge"
               {...inspectAttrs('inspector:state-badge', { role: 'label' })}
               title={translate(`inspector.source.${st.source ?? 'declared'}`) as string}
@@ -256,8 +256,8 @@ export function ScreenCard({ sc, translate }: ScreenCardProps) {
       {sc.missingStates && sc.missingStates.length > 0 && (
         <Fragment>
           <span class="msg-detail" {...inspectAttrs('inspector:missing-label', { role: 'group' })}><b {...inspectAttrs('inspector:missing-states-text', { role: 'label' })}>{translate('inspector.missingStates') as string}</b></span>
-          {sc.missingStates.map((ms, i) => (
-            <Label key={i} name="inspector:missing-state" class="msg-detail">{ms.name}{ms.why ? ` — ${ms.why}` : ''}</Label>
+          {sc.missingStates.map((ms, index) => (
+            <Label key={index} name="inspector:missing-state" class="msg-detail">{ms.name}{ms.why ? ` — ${ms.why}` : ''}</Label>
           ))}
         </Fragment>
       )}
@@ -265,7 +265,7 @@ export function ScreenCard({ sc, translate }: ScreenCardProps) {
       <span class="msg-detail" {...inspectAttrs('inspector:kits-label', { role: 'group' })}><b {...inspectAttrs('inspector:kits-text', { role: 'label' })}>{translate('inspector.kits') as string}</b></span>
       <span class="msg-meta" {...inspectAttrs('inspector:kits-badges', { role: 'group' })}>
         {sc.kits && sc.kits.length > 0 ? (
-          sc.kits.map((k, i) => <Label key={i} name="inspector:kit-badge" class="chip thread-badge">{k.label ?? k.id}</Label>)
+          sc.kits.map((kit, index) => <Label key={index} name="inspector:kit-badge" class="chip thread-badge">{kit.label ?? kit.id}</Label>)
         ) : (
           <Label name="inspector:no-kits" class="msg-detail muted">{translate('inspector.noKits') as string}</Label>
         )}
@@ -273,10 +273,10 @@ export function ScreenCard({ sc, translate }: ScreenCardProps) {
 
       <span class="msg-detail" {...inspectAttrs('inspector:edges-label', { role: 'group' })}><b {...inspectAttrs('inspector:edges-text', { role: 'label' })}>{translate('inspector.edges') as string}</b></span>
       {sc.edges && sc.edges.length > 0 ? (
-        sc.edges.map((e, i) => (
-          <span key={i} class="msg-detail" {...inspectAttrs('inspector:edge', { role: 'group' })}>
-            {e.flowLabel ?? e.flow} · {e.trigger} <Icon name="arrow-right" size={12} /> <code {...inspectAttrs('inspector:edge-to', { role: 'text' })}>{e.to}</code>
-            {e.element ? <Label name="inspector:edge-element" class="muted"> ({e.element})</Label> : null}
+        sc.edges.map((edge, index) => (
+          <span key={index} class="msg-detail" {...inspectAttrs('inspector:edge', { role: 'group' })}>
+            {edge.flowLabel ?? edge.flow} · {edge.trigger} <Icon name="arrow-right" size={12} /> <code {...inspectAttrs('inspector:edge-to', { role: 'text' })}>{edge.to}</code>
+            {edge.element ? <Label name="inspector:edge-element" class="muted"> ({edge.element})</Label> : null}
           </span>
         ))
       ) : (
@@ -293,7 +293,7 @@ export function ScreenCard({ sc, translate }: ScreenCardProps) {
           {sc.annotations.missing && sc.annotations.missing.length > 0 && (
             <Fragment>
               <span class="msg-detail" {...inspectAttrs('inspector:uncovered-label', { role: 'group' })}><b {...inspectAttrs('inspector:uncovered-text', { role: 'label' })}>{translate('inspector.uncovered') as string}</b></span>
-              {sc.annotations.missing.map((m, i) => <span key={i} class="msg-detail" {...inspectAttrs('inspector:missing-annotation', { role: 'group' })}><code {...inspectAttrs('inspector:missing-code', { role: 'text' })}>{m}</code></span>)}
+              {sc.annotations.missing.map((missingAnnotation, index) => <span key={index} class="msg-detail" {...inspectAttrs('inspector:missing-annotation', { role: 'group' })}><code {...inspectAttrs('inspector:missing-code', { role: 'text' })}>{missingAnnotation}</code></span>)}
             </Fragment>
           )}
         </Fragment>
@@ -306,11 +306,11 @@ export function ScreenCard({ sc, translate }: ScreenCardProps) {
 // POSTs; the route answers 204 when the inspector is not the active view, so a
 // hover can never overwrite the screens list.
 interface PaneProps {
-  c: PaneCtx;
+  context: PaneCtx;
   translate: TFn;
 }
-export function Pane({ c, translate }: PaneProps) {
-  const ins = c.inspector;
+export function Pane({ context, translate }: PaneProps) {
+  const ins = context.inspector;
   return (
     <div class="av-list" id="av-list" {...inspectAttrs('inspector:list', { role: 'group' })}>
       {ins && ins.mode === 'element' && ins.element ? (

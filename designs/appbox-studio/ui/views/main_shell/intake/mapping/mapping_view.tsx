@@ -4,8 +4,8 @@
 // the htmx fragment routes registered in mapping_viewmodel.js.
 import { Fragment, type FC } from 'hono/jsx';
 import MainShellView from '../../main_shell_view.tsx';
-import * as SH from '../_shared.tsx';
-import type { Ctx } from '../_shared.tsx';
+import * as SH from '../shared.tsx';
+import type { Ctx } from '../shared.tsx';
 import Icon from '../../../../../runtime/icon.tsx';
 import { inspectAttrs, Label, Heading, Txt } from '../../../../common/widgets/primitives.tsx';
 
@@ -30,39 +30,39 @@ interface StoryArtifact { kind?: string; story?: Story; epic?: string; feature?:
 interface Artifact { kind?: string; [k: string]: unknown }
 
 // Live status dot per story, fed by the seeded pipeline statuses.
-function StatusDot({ s, translate }: { s: Story; translate: TFn }) {
-  const label = translate(`status.name.${s.status}`) as string;
-  return <span class={`status-dot st-${s.status}`} title={label} aria-label={label} />;
+function StatusDot({ s: story, translate }: { s: Story; translate: TFn }) {
+  const label = translate(`status.name.${story.status}`) as string;
+  return <span class={`status-dot st-${story.status}`} title={label} aria-label={label} />;
 }
 
 // `priority` is optional on an emitted story — emitStoryMap writes null when the
 // story-mapper did not grade it. Guarded, not defaulted.
-function StoryCard({ c, s, translate }: { c: Ctx; s: Story; translate: TFn }) {
+function StoryCard({ context, s: story, translate }: { context: Ctx; s: Story; translate: TFn }) {
   return (
-    <a class={`story-card${s.priority ? ` pri-${s.priority}` : ''}`} href={`${c.base}/artifact/story/${s.id}`}
-       hx-get={`${c.base}/artifact/story/${s.id}`} hx-target="#panels" hx-swap="outerMorph" hx-push-url="false"
+    <a class={`story-card${story.priority ? ` pri-${story.priority}` : ''}`} href={`${context.base}/artifact/story/${story.id}`}
+       hx-get={`${context.base}/artifact/story/${story.id}`} hx-target="#panels" hx-swap="outerMorph" hx-push-url="false"
        {...inspectAttrs('intake-mapping:story-card', { role: 'action', fn: 'navigate' })}>
-      <StatusDot s={s} translate={translate} />
-      <Label name="intake-mapping:story-name" class="story-text">{s.name}</Label>
-      {s.priority && <Label name="intake-mapping:story-priority" class={`chip pri-chip pri-${s.priority}`}>{translate(`pri.name.${s.priority}`) as string}</Label>}
+      <StatusDot s={story} translate={translate} />
+      <Label name="intake-mapping:story-name" class="story-text">{story.name}</Label>
+      {story.priority && <Label name="intake-mapping:story-priority" class={`chip pri-chip pri-${story.priority}`}>{translate(`pri.name.${story.priority}`) as string}</Label>}
     </a>
   );
 }
 
-function RollupChip({ r, translate }: { r: Rollup; translate: TFn }) {
+function RollupChip({ r: rollup, translate }: { r: Rollup; translate: TFn }) {
   return (
     <span class="chip chip--muted" {...inspectAttrs('intake-mapping:rollup', { role: 'label' })}>
-      {translate('map.rollupDone', { done: r.done, total: r.total }) as string}
-      {r.active ? ` · ${translate('map.rollupActive', { count: r.active }) as string}` : ''}
-      {r.blocked ? ` · ${translate('map.rollupBlocked', { count: r.blocked }) as string}` : ''}
+      {translate('map.rollupDone', { done: rollup.done, total: rollup.total }) as string}
+      {rollup.active ? ` · ${translate('map.rollupActive', { count: rollup.active }) as string}` : ''}
+      {rollup.blocked ? ` · ${translate('map.rollupBlocked', { count: rollup.blocked }) as string}` : ''}
     </span>
   );
 }
 
 // Approval state on the map artifact: the gate chip, and the versioned
 // re-approval badge when answers moved after approval.
-function ApprovalBadge({ c, translate }: { c: Ctx; translate: TFn }) {
-  const approval = (c.approval as Approval) ?? {};
+function ApprovalBadge({ context, translate }: { context: Ctx; translate: TFn }) {
+  const approval = (context.approval as Approval) ?? {};
   if (approval.stale) return <Label name="intake-mapping:stale-badge" class="rv-badge rv-warn">{translate('map.staleBadge', { version: approval.currentVersion }) as string}</Label>;
   if (approval.approved) return <Label name="intake-mapping:approved-badge" class="rv-badge rv-ok">{translate('map.approvedBadge', { version: approval.approvedVersion }) as string}</Label>;
   return <Label name="intake-mapping:not-approved-badge" class="rv-badge">{translate('map.notApprovedBadge') as string}</Label>;
@@ -70,17 +70,17 @@ function ApprovalBadge({ c, translate }: { c: Ctx; translate: TFn }) {
 
 // The live map: release swimlanes, epics as horizontally scrolling columns,
 // stories as cards with live status dots; rollups per epic and per lane.
-function MapCanvas({ c, a, translate }: { c: Ctx; a: MapArtifact; translate: TFn }) {
-  const counts = a.counts ?? {};
+function MapCanvas({ context, a: artifact, translate }: { context: Ctx; a: MapArtifact; translate: TFn }) {
+  const counts = artifact.counts ?? {};
   return (
     <article class="artifact map-artifact">
       <header class="artifact-head">
         <Label name="intake-mapping:eyebrow" class="eyebrow">{translate('map.eyebrow') as string}</Label>
-        <ApprovalBadge c={c} translate={translate} />
+        <ApprovalBadge context={context} translate={translate} />
         <span class="chip chip--muted" {...inspectAttrs('intake-mapping:counts', { role: 'label' })}>{translate('map.storiesCount', { count: counts.stories }) as string} · {translate('map.epicsCount', { count: counts.epics }) as string} · {translate('map.featuresCount', { count: counts.features }) as string}</span>
       </header>
-      <Heading name="intake-mapping:headline" level={2} class="display">{a.headline}</Heading>
-      <Txt name="intake-mapping:lede" class="artifact-lede">{a.lede}</Txt>
+      <Heading name="intake-mapping:headline" level={2} class="display">{artifact.headline}</Heading>
+      <Txt name="intake-mapping:lede" class="artifact-lede">{artifact.lede}</Txt>
       <p class="map-legend">
         <Label name="intake-mapping:pri-must" class="chip pri-chip pri-must">{translate('pri.must', { count: counts.must }) as string}</Label>
         <Label name="intake-mapping:pri-should" class="chip pri-chip pri-should">{translate('pri.should', { count: counts.should }) as string}</Label>
@@ -92,22 +92,22 @@ function MapCanvas({ c, a, translate }: { c: Ctx; a: MapArtifact; translate: TFn
           <span class="status-dot st-pending"></span> {translate('status.name.pending') as string}
         </span>
       </p>
-      {(a.lanes ?? []).map((lane, i) => (
-        <section class="swimlane" key={i}>
+      {(artifact.lanes ?? []).map((lane, index) => (
+        <section class="swimlane" key={index}>
           <header class="swimlane-head">
             <Heading name="intake-mapping:swimlane-title" level={3} class="swimlane-title">{lane.release?.name}</Heading>
             {lane.release?.rollup && <RollupChip r={lane.release.rollup} translate={translate} />}
             <Label name="intake-mapping:swimlane-desc" class="swimlane-desc muted">{lane.release?.description}</Label>
           </header>
           <div class="map-grid" {...inspectAttrs('intake-mapping:map-grid', { role: 'group' })}>
-            {(lane.epics ?? []).map((epic, j) => (
-              <div class="map-epic" key={j}>
+            {(lane.epics ?? []).map((epic, epicIndex) => (
+              <div class="map-epic" key={epicIndex}>
                 <h4 class="map-epic-name" {...inspectAttrs('intake-mapping:epic-name', { role: 'heading' })}>{epic.name}</h4>
                 {epic.rollup && <RollupChip r={epic.rollup} translate={translate} />}
-                {(epic.features ?? []).map((f, k) => (
-                  <div class="map-feature" key={k}>
-                    <Label name="intake-mapping:feature-name" class="map-feature-name">{f.name}</Label>
-                    {(f.stories ?? []).map((s, l) => <StoryCard key={l} c={c} s={s} translate={translate} />)}
+                {(epic.features ?? []).map((feature, featureIndex) => (
+                  <div class="map-feature" key={featureIndex}>
+                    <Label name="intake-mapping:feature-name" class="map-feature-name">{feature.name}</Label>
+                    {(feature.stories ?? []).map((story, storyIndex) => <StoryCard key={storyIndex} context={context} s={story} translate={translate} />)}
                   </div>
                 ))}
               </div>
@@ -120,83 +120,83 @@ function MapCanvas({ c, a, translate }: { c: Ctx; a: MapArtifact; translate: TFn
 }
 
 // One story, large: status, priority, release, and its trace to surfaces.
-function StoryCanvas({ c, a, translate }: { c: Ctx; a: StoryArtifact; translate: TFn }) {
-  const s = a.story ?? {};
+function StoryCanvas({ context, a: artifact, translate }: { context: Ctx; a: StoryArtifact; translate: TFn }) {
+  const story = artifact.story ?? {};
   return (
     <article class="artifact story-artifact">
       <header class="artifact-head" {...inspectAttrs('intake-mapping:story-head', { role: 'group' })}>
-        {a.epic && <Label name="intake-mapping:story-eyebrow" class="eyebrow">{translate('story.eyebrow', { epic: a.epic, feature: a.feature }) as string}</Label>}
-        <span class="story-status" {...inspectAttrs('intake-mapping:story-status', { role: 'label' })}><StatusDot s={s} translate={translate} /> {translate(`status.name.${s.status}`) as string}</span>
-        {s.priority && <Label name="intake-mapping:story-priority" class={`chip pri-chip pri-${s.priority}`}>{translate(`pri.name.${s.priority}`) as string}</Label>}
+        {artifact.epic && <Label name="intake-mapping:story-eyebrow" class="eyebrow">{translate('story.eyebrow', { epic: artifact.epic, feature: artifact.feature }) as string}</Label>}
+        <span class="story-status" {...inspectAttrs('intake-mapping:story-status', { role: 'label' })}><StatusDot s={story} translate={translate} /> {translate(`status.name.${story.status}`) as string}</span>
+        {story.priority && <Label name="intake-mapping:story-priority" class={`chip pri-chip pri-${story.priority}`}>{translate(`pri.name.${story.priority}`) as string}</Label>}
       </header>
-      <Heading name="intake-mapping:story-title" level={2} class="display">{s.name}</Heading>
-      {s.release && <p class="artifact-lede"><Label name="intake-mapping:story-release" class="chip chip--muted">{s.release}</Label></p>}
-      {s.surfaces && s.surfaces.length > 0 && (
+      <Heading name="intake-mapping:story-title" level={2} class="display">{story.name}</Heading>
+      {story.release && <p class="artifact-lede"><Label name="intake-mapping:story-release" class="chip chip--muted">{story.release}</Label></p>}
+      {story.surfaces && story.surfaces.length > 0 && (
         <Fragment>
           <Txt name="intake-mapping:trace-label" class="fact-label">{translate('storyTrace') as string}</Txt>
           <ul class="trace-list" {...inspectAttrs('intake-mapping:trace-list', { role: 'list' })}>
-            {s.surfaces.map((sid, i) => <li key={i}><code class="surface-id" {...inspectAttrs('intake-mapping:surface-id', { role: 'text' })}>{sid}</code></li>)}
+            {story.surfaces.map((sid, index) => <li key={index}><code class="surface-id" {...inspectAttrs('intake-mapping:surface-id', { role: 'text' })}>{sid}</code></li>)}
           </ul>
         </Fragment>
       )}
       <p class="artifact-foot">
-        <a href={`${c.base}/artifact/map/full`} hx-get={`${c.base}/artifact/map/full`} hx-target="#panels" hx-swap="outerMorph" hx-push-url="false" {...inspectAttrs('intake-mapping:back', { role: 'action', fn: 'navigate' })}><Icon name="chevron-left" size={14} /> {translate('map.back') as string}</a>
+        <artifact href={`${context.base}/artifact/map/full`} hx-get={`${context.base}/artifact/map/full`} hx-target="#panels" hx-swap="outerMorph" hx-push-url="false" {...inspectAttrs('intake-mapping:back', { role: 'action', fn: 'navigate' })}><Icon name="chevron-left" size={14} /> {translate('map.back') as string}</artifact>
       </p>
     </article>
   );
 }
 
-function CanvasArtifact({ c, translate }: { c: Ctx; translate: TFn }) {
-  const a = (c.artifact as Artifact) ?? {};
-  if (a.kind === 'missing') return <SH.MissingArtifact c={c} a={a} />;
-  if (a.kind === 'story') return <StoryCanvas c={c} a={a as StoryArtifact} translate={translate} />;
-  return <MapCanvas c={c} a={a as MapArtifact} translate={translate} />;
+function CanvasArtifact({ context, translate }: { context: Ctx; translate: TFn }) {
+  const artifact = (context.artifact as Artifact) ?? {};
+  if (artifact.kind === 'missing') return <SH.MissingArtifact context={context} a={artifact} />;
+  if (artifact.kind === 'story') return <StoryCanvas context={context} a={artifact as StoryArtifact} translate={translate} />;
+  return <MapCanvas context={context} a={artifact as MapArtifact} translate={translate} />;
 }
 
 // The main panel's content: the open file, else the open artifact, else empty.
-function MainContent({ c, translate }: { c: Ctx; translate: TFn }) {
-  if (c.fileView) return <SH.FileView c={c} translate={translate} />;
-  if (c.artifact) {
+function MainContent({ context, translate }: { context: Ctx; translate: TFn }) {
+  if (context.fileView) return <SH.FileView context={context} translate={translate} />;
+  if (context.artifact) {
     return (
       <section class="mp-content" id="mp-content" aria-live="polite">
-        <CanvasArtifact c={c} translate={translate} />
+        <CanvasArtifact context={context} translate={translate} />
       </section>
     );
   }
   return <SH.MainEmpty translate={translate} />;
 }
 
-function Panels({ c, translate }: { c: Ctx; translate: TFn }) {
-  return <SH.Panels c={c} translate={translate}><MainContent c={c} translate={translate} /></SH.Panels>;
+function Panels({ context, translate }: { context: Ctx; translate: TFn }) {
+  return <SH.Panels context={context} translate={translate}><MainContent context={context} translate={translate} /></SH.Panels>;
 }
 
 // ---------- Fragment responses ----------
 
 // Every stage interaction re-renders the whole panels block; the timeline rides
 // along out-of-band since interview progress moves it too.
-export function PanelsSwap({ c, translate }: { c: Ctx; translate: TFn }) {
+export function PanelsSwap({ context, translate }: { context: Ctx; translate: TFn }) {
   return (
     <Fragment>
-      <Panels c={c} translate={translate} />
-      <SH.Timeline c={c} translate={translate} oob={true} />
+      <Panels context={context} translate={translate} />
+      <SH.Timeline context={context} translate={translate} oob={true} />
     </Fragment>
   );
 }
 
 // Activity view switching swaps the body and refreshes head + bar out-of-band.
-export function ActivitySwap({ c, translate }: { c: Ctx; translate: TFn }) {
-  return <SH.ActivitySwap c={c} translate={translate} />;
+export function ActivitySwap({ context, translate }: { context: Ctx; translate: TFn }) {
+  return <SH.ActivitySwap context={context} translate={translate} />;
 }
 
 // A file row's response: the main panel renders the file in the server-picked mode.
-export function FileSwap({ c, translate }: { c: Ctx; translate: TFn }) {
-  return <MainContent c={c} translate={translate} />;
+export function FileSwap({ context, translate }: { context: Ctx; translate: TFn }) {
+  return <MainContent context={context} translate={translate} />;
 }
 
 // The width grip's response: the whole activity panel re-rendered at its new
 // persisted size (the aside is server state now, replacing it loses nothing).
-export function ActivityFrameSwap({ c, translate }: { c: Ctx; translate: TFn }) {
-  return <SH.ActivityPanel c={c} translate={translate} />;
+export function ActivityFrameSwap({ context, translate }: { context: Ctx; translate: TFn }) {
+  return <SH.ActivityPanel context={context} translate={translate} />;
 }
 
 // ---------- Page ----------
@@ -206,19 +206,19 @@ interface ViewProps {
   [key: string]: unknown;
 }
 
-const MappingView: FC<ViewProps> = (c) => {
-  const { translate } = c;
+const MappingView: FC<ViewProps> = (context) => {
+  const { translate } = context;
   return (
     <MainShellView
       title={translate('intake.mapping.pageTitle') as string}
       mainClass="shell-main-loop"
-      activeShell={c.activeShell as string}
-      prefs={c.prefs as { accent?: string; [k: string]: unknown }}
-      project={c.project as { name?: string; savedLabel?: string }}
-      locale={c.locale as string}
+      activeShell={context.activeShell as string}
+      prefs={context.prefs as { accent?: string; [k: string]: unknown }}
+      project={context.project as { name?: string; savedLabel?: string }}
+      locale={context.locale as string}
       translate={translate}
-      footer={<SH.Timeline c={c as Ctx} translate={translate} oob={false} />}
-      surface={<Panels c={c as Ctx} translate={translate} />}
+      footer={<SH.Timeline context={context as Ctx} translate={translate} oob={false} />}
+      surface={<Panels context={context as Ctx} translate={translate} />}
     />
   );
 };

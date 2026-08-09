@@ -17,20 +17,20 @@ import { inspectAttrs } from '../../../../common/widgets/primitives.tsx';
 type ChatViewProps = PrototypeViewProps;
 
 // ---- Fragment responses ----
-export function PanelsSwap(c: ChatViewProps) {
-  return ProtoPanelsSwap(c);
+export function PanelsSwap(context: ChatViewProps) {
+  return ProtoPanelsSwap(context);
 }
 
-export function DrawerSwap(c: ChatViewProps) {
-  return ProtoDrawerSwap(c);
+export function DrawerSwap(context: ChatViewProps) {
+  return ProtoDrawerSwap(context);
 }
 
-export function RevertSwap(c: ChatViewProps) {
+export function RevertSwap(context: ChatViewProps) {
   return (
     <Fragment>
-      {ProtoPanelsSwap(c)}
+      {ProtoPanelsSwap(context)}
       <div hx-swap-oob="beforeend:#toasts">
-        <div class="toast" id="toast-revert" {...inspectAttrs('design-chat:toast', { role: 'text' })}>{c.translate('design.revertToast') as string}</div>
+        <div class="toast" id="toast-revert" {...inspectAttrs('design-chat:toast', { role: 'text' })}>{context.translate('design.revertToast') as string}</div>
       </div>
     </Fragment>
   );

@@ -2,7 +2,7 @@
 // Lives in the footer panel's body: the whole line at a glance, current item highlighted.
 // oob=false → items only (footer panel supplied the <ol>); oob=true → whole body element via BodyOob.
 import { Fragment } from 'hono/jsx';
-import { BodyOob } from '../../../../common/widgets/_panel.tsx';
+import { BodyOob } from '../../../../common/widgets/panel.tsx';
 import { inspectAttrs } from '../../../../common/widgets/primitives.tsx';
 
 type TFn = (key: string, vars?: Record<string, unknown>) => unknown;
@@ -29,38 +29,38 @@ interface ItemsProps {
 export function Items({ timeline, base, translate }: ItemsProps) {
   return (
     <Fragment>
-      {timeline.items.map((i) => {
-        const isCurrent = timeline.currentId === i.ref;
-        const title = i.state
-          ? `${i.label} · ${translate(`status.name.${i.state}`) as string}`
-          : i.label;
+      {timeline.items.map((item) => {
+        const isCurrent = timeline.currentId === item.ref;
+        const title = item.state
+          ? `${item.label} · ${translate(`status.name.${item.state}`) as string}`
+          : item.label;
         return (
           <li
-            key={i.ref}
-            class={`tl-item tl-${i.kind} tl-state-${i.state}${isCurrent ? ' is-current' : ''}`}
+            key={item.ref}
+            class={`tl-item tl-${item.kind} tl-state-${item.state}${isCurrent ? ' is-current' : ''}`}
           >
-            {i.href ? (
-              <a class="tl-link" href={i.href} title={title}>
+            {item.href ? (
+              <a class="tl-link" href={item.href} title={title}>
                 <span class="tl-mark" aria-hidden="true" />
-                <span class="tl-label">{i.label}</span>
+                <span class="tl-label">{item.label}</span>
               </a>
             ) : base ? (
               <a
                 class="tl-link"
-                href={`${base}/artifact/${i.ref}`}
-                hx-get={`${base}/artifact/${i.ref}`}
+                href={`${base}/artifact/${item.ref}`}
+                hx-get={`${base}/artifact/${item.ref}`}
                 hx-target="#mp-content"
                 hx-swap="innerHTML"
                 hx-push-url="false"
                 title={title}
               >
                 <span class="tl-mark" aria-hidden="true" />
-                <span class="tl-label">{i.label}</span>
+                <span class="tl-label">{item.label}</span>
               </a>
             ) : (
               <span class="tl-link" title={title}>
                 <span class="tl-mark" aria-hidden="true" />
-                <span class="tl-label">{i.label}</span>
+                <span class="tl-label">{item.label}</span>
               </span>
             )}
           </li>

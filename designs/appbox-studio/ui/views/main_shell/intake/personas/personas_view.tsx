@@ -4,8 +4,8 @@
 // the htmx fragment routes registered in personas_viewmodel.js.
 import { Fragment, type FC } from 'hono/jsx';
 import MainShellView from '../../main_shell_view.tsx';
-import * as SH from '../_shared.tsx';
-import type { Ctx, Step } from '../_shared.tsx';
+import * as SH from '../shared.tsx';
+import type { Ctx, Step } from '../shared.tsx';
 import Icon from '../../../../../runtime/icon.tsx';
 import { inspectAttrs, Label, Heading, Txt } from '../../../../common/widgets/primitives.tsx';
 
@@ -33,7 +33,7 @@ function PersonaList({ iconName, label, entries, translate }: { iconName: string
     <section class="persona-list">
       <h3 class="fact-label" {...inspectAttrs('intake-personas:list-label', { role: 'heading' })}><Icon name={iconName} size={14} /> {label}</h3>
       <ul class="trace-list" {...inspectAttrs('intake-personas:trace-list', { role: 'list' })}>
-        {entries.map((e, i) => <li key={i} {...inspectAttrs('intake-personas:trace-entry', { role: 'list row' })}>{e}</li>)}
+        {entries.map((entry, index) => <li key={index} {...inspectAttrs('intake-personas:trace-entry', { role: 'list row' })}>{entry}</li>)}
       </ul>
     </section>
   );
@@ -41,7 +41,7 @@ function PersonaList({ iconName, label, entries, translate }: { iconName: string
 
 // The current persona, large: provenance, name, role, proficiency, the three
 // lists — the prefill to confirm or correct.
-function PersonaCard({ c, item, translate }: { c: Ctx; item: PersonaItem; translate: TFn }) {
+function PersonaCard({ context, item, translate }: { context: Ctx; item: PersonaItem; translate: TFn }) {
   return (
     <article class={`artifact persona-card is-${item.state}`}>
       <header class="artifact-head">
@@ -63,9 +63,9 @@ function PersonaCard({ c, item, translate }: { c: Ctx; item: PersonaItem; transl
 
 // The correction form: same fields as the card, one-per-line textareas; saving
 // confirms the item with the corrected fields.
-function CorrectionForm({ c, item, translate }: { c: Ctx; item: PersonaItem; translate: TFn }) {
+function CorrectionForm({ context, item, translate }: { context: Ctx; item: PersonaItem; translate: TFn }) {
   return (
-    <form class="persona-form" method="post" action={`${c.base}/save`} hx-post={`${c.base}/save`} hx-target="#panels" hx-swap="outerMorph">
+    <form class="persona-form" method="post" action={`${context.base}/save`} hx-post={`${context.base}/save`} hx-target="#panels" hx-swap="outerMorph">
       <input type="hidden" name="item" value={item.id} {...inspectAttrs('intake-personas:item-id', { role: 'input' })} />
       <label class="fact-label" for="pf-name" {...inspectAttrs('intake-personas:field-name-label', { role: 'label' })}>{translate('intake.form.name') as string}</label>
       <input type="text" id="pf-name" name="name" value={item.name} {...inspectAttrs('intake-personas:field-name', { role: 'input' })} />
@@ -83,21 +83,21 @@ function CorrectionForm({ c, item, translate }: { c: Ctx; item: PersonaItem; tra
 }
 
 // The closed step: every persona compact, re-openable via itemActions.
-function PersonasSummary({ c, translate }: { c: Ctx; translate: TFn }) {
-  const step = (c.step as Step) ?? {};
+function PersonasSummary({ context, translate }: { context: Ctx; translate: TFn }) {
+  const step = (context.step as Step) ?? {};
   return (
     <div class="step-summary">
       <Heading name="intake-personas:summary-title" level={2} class="display">{translate('intake.step.allConfirmed', { total: step.total }) as string}</Heading>
-      {(step.items ?? []).map((item, i) => {
+      {(step.items ?? []).map((item, index) => {
         const persona = item as unknown as PersonaItem;
         return (
-          <div key={i} class={`q-card is-${persona.state}`}>
+          <div key={index} class={`q-card is-${persona.state}`}>
             <p class="q-text" {...inspectAttrs('intake-personas:summary-card-text', { role: 'text' })}>{persona.name} <Label name="intake-personas:summary-card-role" class="muted">— {persona.role}</Label> {persona.edited && <span class="chip chip--muted" {...inspectAttrs('intake-personas:summary-card-edited', { role: 'label' })}>{translate('intake.item.edited') as string}</span>}</p>
             <p class="q-answer">
               <SH.ProvChip p={persona.provenance} translate={translate} />
               <span class="chip chip--muted" {...inspectAttrs('intake-personas:summary-card-goals', { role: 'label' })}><Icon name="target" size={14} /> {(persona.goals ?? []).length} {translate('intake.personas.goals') as string}</span>
             </p>
-            <SH.ItemActions c={c} item={item} translate={translate} />
+            <SH.ItemActions context={context} item={item} translate={translate} />
           </div>
         );
       })}
@@ -106,22 +106,22 @@ function PersonasSummary({ c, translate }: { c: Ctx; translate: TFn }) {
 }
 
 // The main panel's content: the open file, else the step stage.
-function MainContent({ c, translate }: { c: Ctx; translate: TFn }) {
-  if (c.fileView) return <SH.FileView c={c} translate={translate} />;
-  const step = (c.step as Step) ?? {};
+function MainContent({ context, translate }: { context: Ctx; translate: TFn }) {
+  if (context.fileView) return <SH.FileView context={context} translate={translate} />;
+  const step = (context.step as Step) ?? {};
   return (
-    <SH.StepStage c={c} translate={translate}>
+    <SH.StepStage context={context} translate={translate}>
       {step.complete ? (
-        <PersonasSummary c={c} translate={translate} />
+        <PersonasSummary context={context} translate={translate} />
       ) : (
-        (step.items ?? []).map((item, i) => {
+        (step.items ?? []).map((item, index) => {
           const persona = item as unknown as PersonaItem;
           if (persona.state === 'current' || persona.state === 'editing') {
             return (
-              <Fragment key={String(i)}>
-                <PersonaCard c={c} item={persona} translate={translate} />
-                {persona.state === 'editing' && <CorrectionForm c={c} item={persona} translate={translate} />}
-                <SH.ItemActions c={c} item={item} translate={translate} />
+              <Fragment key={String(index)}>
+                <PersonaCard context={context} item={persona} translate={translate} />
+                {persona.state === 'editing' && <CorrectionForm context={context} item={persona} translate={translate} />}
+                <SH.ItemActions context={context} item={item} translate={translate} />
               </Fragment>
             );
           }
@@ -132,31 +132,31 @@ function MainContent({ c, translate }: { c: Ctx; translate: TFn }) {
   );
 }
 
-function Panels({ c, translate }: { c: Ctx; translate: TFn }) {
-  return <SH.Panels c={c} translate={translate}><MainContent c={c} translate={translate} /></SH.Panels>;
+function Panels({ context, translate }: { context: Ctx; translate: TFn }) {
+  return <SH.Panels context={context} translate={translate}><MainContent context={context} translate={translate} /></SH.Panels>;
 }
 
 // ---------- Fragment responses ----------
 
-export function PanelsSwap({ c, translate }: { c: Ctx; translate: TFn }) {
+export function PanelsSwap({ context, translate }: { context: Ctx; translate: TFn }) {
   return (
     <Fragment>
-      <Panels c={c} translate={translate} />
-      <SH.Timeline c={c} translate={translate} oob={true} />
+      <Panels context={context} translate={translate} />
+      <SH.Timeline context={context} translate={translate} oob={true} />
     </Fragment>
   );
 }
 
-export function ActivitySwap({ c, translate }: { c: Ctx; translate: TFn }) {
-  return <SH.ActivitySwap c={c} translate={translate} />;
+export function ActivitySwap({ context, translate }: { context: Ctx; translate: TFn }) {
+  return <SH.ActivitySwap context={context} translate={translate} />;
 }
 
-export function FileSwap({ c, translate }: { c: Ctx; translate: TFn }) {
-  return <MainContent c={c} translate={translate} />;
+export function FileSwap({ context, translate }: { context: Ctx; translate: TFn }) {
+  return <MainContent context={context} translate={translate} />;
 }
 
-export function ActivityFrameSwap({ c, translate }: { c: Ctx; translate: TFn }) {
-  return <SH.ActivityPanel c={c} translate={translate} />;
+export function ActivityFrameSwap({ context, translate }: { context: Ctx; translate: TFn }) {
+  return <SH.ActivityPanel context={context} translate={translate} />;
 }
 
 // ---------- Page ----------
@@ -166,19 +166,19 @@ interface ViewProps {
   [key: string]: unknown;
 }
 
-const PersonasView: FC<ViewProps> = (c) => {
-  const { translate } = c;
+const PersonasView: FC<ViewProps> = (context) => {
+  const { translate } = context;
   return (
     <MainShellView
       title={translate('intake.personas.pageTitle') as string}
       mainClass="shell-main-loop"
-      activeShell={c.activeShell as string}
-      prefs={c.prefs as { accent?: string; [k: string]: unknown }}
-      project={c.project as { name?: string; savedLabel?: string }}
-      locale={c.locale as string}
+      activeShell={context.activeShell as string}
+      prefs={context.prefs as { accent?: string; [k: string]: unknown }}
+      project={context.project as { name?: string; savedLabel?: string }}
+      locale={context.locale as string}
       translate={translate}
-      footer={<SH.Timeline c={c as Ctx} translate={translate} oob={false} />}
-      surface={<Panels c={c as Ctx} translate={translate} />}
+      footer={<SH.Timeline context={context as Ctx} translate={translate} oob={false} />}
+      surface={<Panels context={context as Ctx} translate={translate} />}
     />
   );
 };

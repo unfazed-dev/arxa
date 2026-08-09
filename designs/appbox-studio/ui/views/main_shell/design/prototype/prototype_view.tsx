@@ -13,7 +13,7 @@ import {
   ActivityPanel,
   ActivitySwap as SharedActivitySwap,
   type DesignCtx,
-} from '../_shared.tsx';
+} from '../shared.tsx';
 import { DesignViewer, RevealDrawer } from '../../shared/widgets/design_viewer.tsx';
 import { Pane as WidgetEditorPane } from '../../shared/widgets/widget_editor.tsx';
 import { Pane as InspectorPaneComp } from '../inspector_pane.tsx';
@@ -37,107 +37,107 @@ export interface PrototypeViewProps extends DesignCtx {
 }
 
 // ---- timeline ----
-function renderTimeline(c: PrototypeViewProps, oob: boolean, translate: TFn) {
-  return <TimelineEl timeline={c.timeline as any} oob={oob} label={translate('design.timelineLabel') as string} translate={translate} />;
+function renderTimeline(context: PrototypeViewProps, oob: boolean, translate: TFn) {
+  return <TimelineEl timeline={context.timeline as any} oob={oob} label={translate('design.timelineLabel') as string} translate={translate} />;
 }
 
 // ---- the viewer (chrome defined HERE — title + run state only) ----
-function StageViewer({ c, translate }: { c: PrototypeViewProps; translate: TFn }) {
+function StageViewer({ context, translate }: { context: PrototypeViewProps; translate: TFn }) {
   return (
     <DesignViewer
-      v={c.viewer as any}
+      v={context.viewer as any}
       chrome={{
-        title: translate('design.artboardsEyebrow', { count: c.counts?.screens }) as string,
-        state: c.run?.state,
+        title: translate('design.artboardsEyebrow', { count: context.counts?.screens }) as string,
+        state: context.run?.state,
       }}
       translate={translate}
     />
   );
 }
 
-function CanvasBoard({ c, translate }: { c: PrototypeViewProps; translate: TFn }) {
+function CanvasBoard({ context, translate }: { context: PrototypeViewProps; translate: TFn }) {
   return (
     <section class="mp-content" id="mp-content" aria-live="polite">
       <article class="artifact screen-artifact evidence-artifact" {...inspectAttrs('design-prototype:artboard', { role: 'group' })}>
-        {StageViewer({ c, translate })}
+        {StageViewer({ context, translate })}
       </article>
     </section>
   );
 }
 
 // ---- main content: open file, else the artboards ----
-function MainContent({ c, translate }: { c: PrototypeViewProps; translate: TFn }) {
-  if (c.fileView) return <FileView c={c} translate={translate} />;
-  return CanvasBoard({ c, translate });
+function MainContent({ context, translate }: { context: PrototypeViewProps; translate: TFn }) {
+  if (context.fileView) return <FileView context={context} translate={translate} />;
+  return CanvasBoard({ context, translate });
 }
 
 // ---- panels (the whole panels block, one swap unit) ----
-export function RenderPanels(c: PrototypeViewProps) {
-  return <Panels c={c} translate={c.translate}>{MainContent({ c, translate: c.translate })}</Panels>;
+export function RenderPanels(context: PrototypeViewProps) {
+  return <Panels context={context} translate={context.translate}>{MainContent({ context, translate: context.translate })}</Panels>;
 }
 
 // ---- Fragment responses ----
-export function PanelsSwap(c: PrototypeViewProps) {
-  return RenderPanels(c);
+export function PanelsSwap(context: PrototypeViewProps) {
+  return RenderPanels(context);
 }
 
-export function ActivitySwap(c: PrototypeViewProps) {
-  return <SharedActivitySwap c={c} translate={c.translate} />;
+export function ActivitySwap(context: PrototypeViewProps) {
+  return <SharedActivitySwap context={context} translate={context.translate} />;
 }
 
-export function InspectorPane(c: PrototypeViewProps) {
-  return <InspectorPaneComp c={c as any} translate={c.translate} />;
+export function InspectorPane(context: PrototypeViewProps) {
+  return <InspectorPaneComp context={context as any} translate={context.translate} />;
 }
 
-export function WidgetEditor(c: PrototypeViewProps) {
-  return <WidgetEditorPane {...(c as any)} translate={c.translate} />;
+export function WidgetEditor(context: PrototypeViewProps) {
+  return <WidgetEditorPane {...(context as any)} translate={context.translate} />;
 }
 
-export function InspectorSwap(c: PrototypeViewProps) {
+export function InspectorSwap(context: PrototypeViewProps) {
   const spec = {
-    label: c.activityLabel ?? '',
-    views: c.activityViews ?? [],
-    size: c.panelSize,
-    sizeHref: c.panelSizeHref,
+    label: context.activityLabel ?? '',
+    views: context.activityViews ?? [],
+    size: context.panelSize,
+    sizeHref: context.panelSizeHref,
   };
   return (
     <Fragment>
-      <InspectorPaneComp c={c as any} translate={c.translate} />
+      <InspectorPaneComp context={context as any} translate={context.translate} />
       <ActivityTop spec={spec} oob={true} />
-      <ActivityBottom spec={spec} oob={true} translate={c.translate} />
+      <ActivityBottom spec={spec} oob={true} translate={context.translate} />
     </Fragment>
   );
 }
 
-export function ActivityFrameSwap(c: PrototypeViewProps) {
-  return <ActivityPanel c={c} translate={c.translate} />;
+export function ActivityFrameSwap(context: PrototypeViewProps) {
+  return <ActivityPanel context={context} translate={context.translate} />;
 }
 
-export function ViewerSwap(c: PrototypeViewProps) {
-  return StageViewer({ c, translate: c.translate });
+export function ViewerSwap(context: PrototypeViewProps) {
+  return StageViewer({ context, translate: context.translate });
 }
 
-export function DrawerSwap(c: PrototypeViewProps) {
-  const v = c.viewer as any;
-  if (!v?.drawers) return null;
+export function DrawerSwap(context: PrototypeViewProps) {
+  const viewer = context.viewer as any;
+  if (!viewer?.drawers) return null;
   return (
     <Fragment>
-      {(v.screens ?? []).filter((s: any) => s.id === c.drawerScreen).map((s: any) => (
-        <RevealDrawer key={s.id} v={v} s={s} translate={c.translate} />
+      {(viewer.screens ?? []).filter((screen: any) => screen.id === context.drawerScreen).map((screen: any) => (
+        <RevealDrawer key={screen.id} v={viewer} s={screen} translate={context.translate} />
       ))}
     </Fragment>
   );
 }
 
-export function FileSwap(c: PrototypeViewProps) {
-  return MainContent({ c, translate: c.translate });
+export function FileSwap(context: PrototypeViewProps) {
+  return MainContent({ context, translate: context.translate });
 }
 
-export function FilterSwap(c: PrototypeViewProps) {
+export function FilterSwap(context: PrototypeViewProps) {
   return (
     <Fragment>
-      <ScreenList c={c} translate={c.translate} />
-      <RunBar c={c} oob={true} translate={c.translate} />
+      <ScreenList context={context} translate={context.translate} />
+      <RunBar context={context} oob={true} translate={context.translate} />
     </Fragment>
   );
 }

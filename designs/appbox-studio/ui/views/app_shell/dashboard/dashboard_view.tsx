@@ -151,19 +151,19 @@ const DashboardView: FC<DashboardViewProps> = (props) => {
               <Heading name="app-dashboard:needs-h" level={2} id="needs-h">{translate('dash.needsYouH') as string}</Heading>
               {gates.length ? (
                 <div class="gates-strip" role="list" {...inspectAttrs('app-dashboard:gates-strip', { role: 'group' })}>
-                  {gates.map((g) => (
-                    <article class="gate-card" role="listitem" key={g.id}>
+                  {gates.map((gate) => (
+                    <article class="gate-card" role="listitem" key={gate.id}>
                       <div class="gate-card-head">
-                        <Label name="app-dashboard:gate-stage" class={`chip gate-stage gate-stage-${g.stage}`}>
-                          {translate(`stage.name.${g.stage}`) as string}
+                        <Label name="app-dashboard:gate-stage" class={`chip gate-stage gate-stage-${gate.stage}`}>
+                          {translate(`stage.name.${gate.stage}`) as string}
                         </Label>
-                        <Label name="app-dashboard:gate-waiting" class="gate-waiting">{g.waiting}</Label>
+                        <Label name="app-dashboard:gate-waiting" class="gate-waiting">{gate.waiting}</Label>
                       </div>
-                      <Heading name="app-dashboard:gate-name" level={3}>{g.gate}</Heading>
-                      <Txt name="app-dashboard:gate-project" class="gate-project">{g.project}</Txt>
-                      <Txt name="app-dashboard:gate-summary" class="gate-summary muted">{g.summary}</Txt>
+                      <Heading name="app-dashboard:gate-name" level={3}>{gate.gate}</Heading>
+                      <Txt name="app-dashboard:gate-project" class="gate-project">{gate.project}</Txt>
+                      <Txt name="app-dashboard:gate-summary" class="gate-summary muted">{gate.summary}</Txt>
                       <form class="gate-actions" method="post" action="/dashboard/gates/decide">
-                        <input type="hidden" name="gate" value={g.id} {...inspectAttrs('app-dashboard:gate-input', { role: 'input' })} />
+                        <input type="hidden" name="gate" value={gate.id} {...inspectAttrs('app-dashboard:gate-input', { role: 'input' })} />
                         <button type="submit" name="decision" value="approve" {...inspectAttrs('app-dashboard:gate-approve', { role: 'action' })}>
                           <Icon name="check" size={16} />{translate('action.approve') as string}
                         </button>
@@ -184,25 +184,25 @@ const DashboardView: FC<DashboardViewProps> = (props) => {
               <Heading name="app-dashboard:proj-h" level={2} id="proj-h">{translate('dash.projectsH') as string}</Heading>
               {projects.length ? (
                 <div class="proj-grid" {...inspectAttrs('app-dashboard:proj-grid', { role: 'group' })}>
-                  {projects.map((p) => (
-                    <article class={`proj-card${p.current ? ' is-current' : ''}`} key={p.id}>
+                  {projects.map((projectCard) => (
+                    <article class={`proj-card${projectCard.current ? ' is-current' : ''}`} key={projectCard.id}>
                       <div class="proj-card-head">
-                        <Heading name="app-dashboard:proj-name" level={3}>{p.name}</Heading>
-                        <Label name="app-dashboard:proj-stage" class={`chip proj-stage proj-stage-${p.stage}`}>
-                          {translate(`dash.stage.${p.stage}`) as string}
+                        <Heading name="app-dashboard:proj-name" level={3}>{projectCard.name}</Heading>
+                        <Label name="app-dashboard:proj-stage" class={`chip proj-stage proj-stage-${projectCard.stage}`}>
+                          {translate(`dash.stage.${projectCard.stage}`) as string}
                         </Label>
                       </div>
                       <Txt name="app-dashboard:proj-targets" class="proj-targets">
-                        {(p.targets ?? []).map((tgt) => (
+                        {(projectCard.targets ?? []).map((tgt) => (
                           <Label name="app-dashboard:proj-target" class="chip chip--muted" key={tgt}>{tgt}</Label>
                         ))}
-                        {p.current && <Label name="app-dashboard:proj-current" class="chip proj-current">{translate('dash.current') as string}</Label>}
+                        {projectCard.current && <Label name="app-dashboard:proj-current" class="chip proj-current">{translate('dash.current') as string}</Label>}
                       </Txt>
                       <div class="proj-card-foot">
-                        <Label name="app-dashboard:proj-saved" class="proj-saved muted">{p.detail}</Label>
-                        {!p.current && (
+                        <Label name="app-dashboard:proj-saved" class="proj-saved muted">{projectCard.detail}</Label>
+                        {!projectCard.current && (
                           <form method="post" action="/dashboard/projects/use">
-                            <input type="hidden" name="project" value={p.id} {...inspectAttrs('app-dashboard:proj-use-input', { role: 'input' })} />
+                            <input type="hidden" name="project" value={projectCard.id} {...inspectAttrs('app-dashboard:proj-use-input', { role: 'input' })} />
                             <button type="submit" class="ghost" {...inspectAttrs('app-dashboard:proj-use', { role: 'action' })}>{translate('dash.useProject') as string}</button>
                           </form>
                         )}
@@ -221,20 +221,20 @@ const DashboardView: FC<DashboardViewProps> = (props) => {
               <Heading name="app-dashboard:stats-h" level={2} id="stats-h">{translate('dash.thisWeek') as string}</Heading>
               <div class="stat-trio" {...inspectAttrs('app-dashboard:stat-trio', { role: 'group' })}>
                 {STAT_KEYS.map((key) => {
-                  const s = stats[key];
-                  if (!s) return null;
-                  const barsAria = s.bars.map((b) => `${b.label} ${b.value}`).join(', ');
+                  const stat = stats[key];
+                  if (!stat) return null;
+                  const barsAria = stat.bars.map((bar) => `${bar.label} ${bar.value}`).join(', ');
                   return (
                     <article class="stat-card" key={key}>
-                      <Txt name="app-dashboard:stat-label" class="stat-label muted">{s.label}</Txt>
-                      <Txt name="app-dashboard:stat-total" class="stat-total">{s.total} <Label name="app-dashboard:stat-unit" class="stat-unit">{s.unit}</Label></Txt>
-                      <div class="bars" role="img" aria-label={`${s.label}: ${barsAria}`} {...inspectAttrs('app-dashboard:bars', { role: 'group' })}>
-                        {s.bars.map((b, bi) => (
+                      <Txt name="app-dashboard:stat-label" class="stat-label muted">{stat.label}</Txt>
+                      <Txt name="app-dashboard:stat-total" class="stat-total">{stat.total} <Label name="app-dashboard:stat-unit" class="stat-unit">{stat.unit}</Label></Txt>
+                      <div class="bars" role="img" aria-label={`${stat.label}: ${barsAria}`} {...inspectAttrs('app-dashboard:bars', { role: 'group' })}>
+                        {stat.bars.map((bar, bi) => (
                           <span
                             key={bi}
                             class="bar"
-                            style={`--h: ${b.height}%`}
-                            title={`${b.label}: ${b.value}`}
+                            style={`--h: ${bar.height}%`}
+                            title={`${bar.label}: ${bar.value}`}
                           ></span>
                         ))}
                       </div>

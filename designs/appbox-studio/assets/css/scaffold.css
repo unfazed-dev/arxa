@@ -1,6 +1,6 @@
 /* scaffold.css · THE SCAFFOLD SHELL'S LAYOUT CONTRACT.
 
-   The panel VOCABULARY is fixed in ui/common/_integration_panels.md and the
+   The panel VOCABULARY is fixed in ui/common/integration_panels.md and the
    panel's own 3×3 section skeleton lives in panels.css — neither is restated
    here. This file adds one thing: the scaffold shell's panel ROW is a named
    grid rather than the flex row `.panels` gives every other stage shell.

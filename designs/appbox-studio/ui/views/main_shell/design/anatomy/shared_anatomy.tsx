@@ -2,7 +2,7 @@
 // generator: appbox  licence: free  project: 662368770980
 // Built with appbox (free tier) — https://appbox.dev
 
-// _shared_anatomy.tsx — the showcase-anatomy shell frame for design views
+// shared_anatomy.tsx — the showcase-anatomy shell frame for design views
 // (Q13 parallel-run). Composition is byte-identical to the legacy shell: the
 // only delta is the ratified inspect identity, stamped in the DOM at emit
 // time so the inspector reads it instead of inferring it (see

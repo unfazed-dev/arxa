@@ -148,17 +148,17 @@ export function Field(props: ComposerProps) {
 
           {hasChips && (
             <div class="cs-ctx-strip" role="group" aria-label={translate('composer.screensInContext') as string}>
-              {props.contextChips!.map((s) => (
-                <span class={`cs-ctx-chip ctx-${s.tone}`} title={s.id} key={s.id}>
-                  <span class="cs-ctx-name">{s.label}</span>
+              {props.contextChips!.map((chip) => (
+                <span class={`cs-ctx-chip ctx-${chip.tone}`} title={chip.id} key={chip.id}>
+                  <span class="cs-ctx-name">{chip.label}</span>
                   <a
                     class="ctx-x"
-                    href={s.removeHref}
-                    hx-get={s.removeHref}
+                    href={chip.removeHref}
+                    hx-get={chip.removeHref}
                     hx-target={tgt}
                     hx-swap="outerMorph"
                     hx-push-url="false"
-                    aria-label={translate('chat.removeChip', { label: s.label }) as string}
+                    aria-label={translate('chat.removeChip', { label: chip.label }) as string}
                   >
                     <Icon name="x" size={12} />
                   </a>
@@ -172,21 +172,21 @@ export function Field(props: ComposerProps) {
               <div class="cm-tray-clip">
                 {hasStrip && (
                   <div class="cs-strip" aria-label={translate('composer.screensInContext') as string}>
-                    {props.filmstrip!.map((s) => (
+                    {props.filmstrip!.map((frame) => (
                       <a
-                        class={`dv-thumb cs-thumb${s.inContext ? ` in-ctx ctx-${s.tone}` : ''}${s.dim ? ' is-dim' : ''}${s.active ? ' on' : ''}`}
-                        href={s.protoHref || s.contextHref}
-                        hx-get={s.protoHref || s.contextHref}
-                        hx-target={s.protoHref ? '#design-viewer' : tgt}
+                        class={`dv-thumb cs-thumb${frame.inContext ? ` in-ctx ctx-${frame.tone}` : ''}${frame.dim ? ' is-dim' : ''}${frame.active ? ' on' : ''}`}
+                        href={frame.protoHref || frame.contextHref}
+                        hx-get={frame.protoHref || frame.contextHref}
+                        hx-target={frame.protoHref ? '#design-viewer' : tgt}
                         hx-swap="outerMorph"
                         hx-push-url="false"
-                        title={s.label || s.id}
-                        key={s.id}
+                        title={frame.label || frame.id}
+                        key={frame.id}
                       >
                         <span class="dv-thumb-clip">
-                          <iframe id={`dvf-thumb--${s.id}${sfx}`} src={s.src} scrolling="no" tabindex={-1} title=""></iframe>
+                          <iframe id={`dvf-thumb--${frame.id}${sfx}`} src={frame.src} scrolling="no" tabindex={-1} title=""></iframe>
                         </span>
-                        <span class="dv-thumb-label"><code>{s.id}</code></span>
+                        <span class="dv-thumb-label"><code>{frame.id}</code></span>
                       </a>
                     ))}
                   </div>
@@ -245,11 +245,11 @@ export function Field(props: ComposerProps) {
               <Icon name="plus" size={18} />
             </summary>
             <span class="composer-sugs">
-              {props.suggestions.map((s, i) => {
-                const val = typeof s === 'string' ? s : s.value;
-                const label = typeof s === 'string' ? s : s.label;
+              {props.suggestions.map((suggestion, index) => {
+                const val = typeof suggestion === 'string' ? suggestion : suggestion.value;
+                const label = typeof suggestion === 'string' ? suggestion : suggestion.label;
                 return (
-                  <button type="submit" name="preset" value={val} key={i}>
+                  <button type="submit" name="preset" value={val} key={index}>
                     {label}
                   </button>
                 );
@@ -291,19 +291,19 @@ export function Field(props: ComposerProps) {
               {props.modelMenu.label} <Icon name="chevron-down" size={14} className="composer-chev" />
             </summary>
             <span class="composer-menu composer-menu-right">
-              {props.modelMenu.options.map((o) => (
+              {props.modelMenu.options.map((option) => (
                 <a
-                  class={`composer-opt${o.active ? ' on' : ''}`}
-                  href={o.href}
-                  hx-get={o.href}
+                  class={`composer-opt${option.active ? ' on' : ''}`}
+                  href={option.href}
+                  hx-get={option.href}
                   hx-target={tgt}
                   hx-swap="outerMorph"
                   hx-push-url="false"
-                  key={o.href}
+                  key={option.href}
                 >
-                  <span class="composer-opt-label">{o.label}</span>
-                  <span class="composer-opt-blurb">{o.blurb}</span>
-                  {o.active && <Icon name="check" size={14} className="composer-opt-check" />}
+                  <span class="composer-opt-label">{option.label}</span>
+                  <span class="composer-opt-blurb">{option.blurb}</span>
+                  {option.active && <Icon name="check" size={14} className="composer-opt-check" />}
                 </a>
               ))}
             </span>

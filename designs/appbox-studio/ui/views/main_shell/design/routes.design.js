@@ -3,7 +3,7 @@
 // Built with appbox (free tier) — https://appbox.dev
 // Design-shell route table — same [method, path, handler] shape as
 // app.routes.js. Integration: spread into the default export of
-// app.routes.js (see _integration_design.md, next to this file).
+// app.routes.js (see integration_design.md, next to this file).
 import * as prototype from './prototype/prototype_viewmodel.js';
 import * as chat from './chat/chat_viewmodel.js';
 import * as freeze from './freeze/freeze_viewmodel.js';
@@ -43,7 +43,7 @@ export default [
   ['GET', '/design/chat/model/:id', chat.model],
   ['GET', '/design/chat/tray', chat.tray],
   ['GET', '/design/chat/screen/:id', chat.select],
-  ['POST', '/design/chat/screen/:id/revert/:cp', chat.revert], // posted-by: design/_shared.tsx checkpoint action (hx-post)
+  ['POST', '/design/chat/screen/:id/revert/:cp', chat.revert], // posted-by: design/shared.tsx checkpoint action (hx-post)
 
   // design.freeze — freeze & trace + the manifest approval gate
   ['GET', '/design/freeze', freeze.page],

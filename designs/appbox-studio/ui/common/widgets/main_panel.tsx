@@ -58,15 +58,15 @@ export function PanelBar(props: PanelBarProps) {
   const { panel, translate } = props;
   return (
     <nav class="panel-bar" aria-label={translate('panelBar.aria') as string} {...inspectAttrs('panel-bar', { role: 'toolbar' })}>
-      {PANEL_BAR_ITEMS.map(p => (
+      {PANEL_BAR_ITEMS.map(panelBarItem => (
         <a
-          key={p.id}
-          class={`panel-bar-item${panel === p.id ? ' is-active' : ''}`}
-          href={`?panel=${p.id}`}
-          {...(panel === p.id ? { 'aria-current': 'true' } : {})}
+          key={panelBarItem.id}
+          class={`panel-bar-item${panel === panelBarItem.id ? ' is-active' : ''}`}
+          href={`?panel=${panelBarItem.id}`}
+          {...(panel === panelBarItem.id ? { 'aria-current': 'true' } : {})}
         >
-          <Icon name={p.icon} size={16} />
-          <span class="panel-bar-label">{translate(p.labelKey) as string}</span>
+          <Icon name={panelBarItem.icon} size={16} />
+          <span class="panel-bar-label">{translate(panelBarItem.labelKey) as string}</span>
         </a>
       ))}
     </nav>
@@ -88,46 +88,46 @@ export function Empty(props: EmptyProps) {
 // One renderer per mode of the closed set. Shared props — each renderer takes
 // the same file payload and reads only the fields its mode needs.
 interface FileRendererProps {
-  f: FileView;
+  file: FileView;
 }
 export function RenderCode(props: FileRendererProps) {
-  const { f } = props;
-  return <pre class="mp-code"><code class={`lang-${f.lang}`}>{f.body}</code></pre>;
+  const { file } = props;
+  return <pre class="mp-code"><code class={`lang-${file.lang}`}>{file.body}</code></pre>;
 }
 
 export function RenderDoc(props: FileRendererProps) {
-  return <article class="mp-doc">{raw(props.f.html ?? '')}</article>;
+  return <article class="mp-doc">{raw(props.file.html ?? '')}</article>;
 }
 
 export function RenderImage(props: FileRendererProps) {
-  const { f } = props;
-  return <img class="mp-media" src={f.src} alt={f.path} />;
+  const { file } = props;
+  return <img class="mp-media" src={file.src} alt={file.path} />;
 }
 
 export function RenderSvg(props: FileRendererProps) {
-  const { f } = props;
-  return <img class="mp-media mp-svg" src={f.src} alt={f.path} />;
+  const { file } = props;
+  return <img class="mp-media mp-svg" src={file.src} alt={file.path} />;
 }
 
 export function RenderPdf(props: FileRendererProps) {
-  const { f } = props;
-  return <embed class="mp-media mp-pdf" src={f.src} type="application/pdf" />;
+  const { file } = props;
+  return <embed class="mp-media mp-pdf" src={file.src} type="application/pdf" />;
 }
 
 export function RenderVideo(props: FileRendererProps) {
-  const { f } = props;
-  return <video class="mp-media" src={f.src} controls={true} preload="metadata" />;
+  const { file } = props;
+  return <video class="mp-media" src={file.src} controls={true} preload="metadata" />;
 }
 
 // Picks the mode's body from the server-chosen f.mode.
-function fileBody(f: FileView) {
-  switch (f.mode) {
-    case 'render:code': return <RenderCode f={f} />;
-    case 'render:doc': return <RenderDoc f={f} />;
-    case 'render:image': return <RenderImage f={f} />;
-    case 'render:svg': return <RenderSvg f={f} />;
-    case 'render:pdf': return <RenderPdf f={f} />;
-    case 'render:video': return <RenderVideo f={f} />;
+function fileBody(file: FileView) {
+  switch (file.mode) {
+    case 'render:code': return <RenderCode file={file} />;
+    case 'render:doc': return <RenderDoc file={file} />;
+    case 'render:image': return <RenderImage file={file} />;
+    case 'render:svg': return <RenderSvg file={file} />;
+    case 'render:pdf': return <RenderPdf file={file} />;
+    case 'render:video': return <RenderVideo file={file} />;
     default: return null;
   }
 }
@@ -135,21 +135,21 @@ function fileBody(f: FileView) {
 // view — the open file: head (path, the mode the server picked, the back link
 // to the stage default) + the mode's body.
 interface ViewProps {
-  f: FileView;
+  file: FileView;
   translate: TFn;
 }
 export function View(props: ViewProps) {
-  const { f, translate } = props;
+  const { file, translate } = props;
   return (
     <section class="mp-content mp-file" id="mp-content" aria-live="polite" {...inspectAttrs('file-view', { role: 'panel' })}>
       <header class="mp-file-head">
-        <code class="mp-file-path">{f.path}</code>
-        <span class="chip chip--muted">{translate(`mainPanel.mode.${f.modeName}`) as string}</span>
-        <a class="mp-file-back" href={f.backHref}>
+        <code class="mp-file-path">{file.path}</code>
+        <span class="chip chip--muted">{translate(`mainPanel.mode.${file.modeName}`) as string}</span>
+        <a class="mp-file-back" href={file.backHref}>
           <Icon name="chevron-left" size={14} /> {translate('mainPanel.back') as string}
         </a>
       </header>
-      {fileBody(f)}
+      {fileBody(file)}
     </section>
   );
 }

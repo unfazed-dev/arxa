@@ -3,7 +3,7 @@
    rollups), the brief document, the moodboard gallery, and the intake
    activity-panel views. Builds on app.css tokens + composer.css/panels.css
    shared chrome; nothing here restyles them. Linked per-page via
-   head-support (see _integration_intake.md). */
+   head-support (see integration_intake.md). */
 
 /* ---------- the interview: question cards on the typeform stage ---------- */
 .q-card {

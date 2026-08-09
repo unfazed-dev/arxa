@@ -31,7 +31,7 @@ export const seedFiles = () => idx('seed-index.json');
 const LOCALE_OF_ARB = /app_([A-Za-z0-9-]+)\.arb$/;
 const LOCALE_OF_SEED = /_seed\.([A-Za-z0-9-]+)\.json$/;
 export const locales = () =>
-  [...new Set(arbFiles().map((f) => f.match(LOCALE_OF_ARB)?.[1]).filter(Boolean))];
+  [...new Set(arbFiles().map((arbFile) => arbFile.match(LOCALE_OF_ARB)?.[1]).filter(Boolean))];
 
 // ------------------------------------------------------------- inner text
 // elsIn() hands back the OPEN tag only. The close is found by counting nested
@@ -41,15 +41,15 @@ const innerRange = (src, tag, openEnd) => {
   // One left-to-right pass from the open tag's end, depth-counting same-name
   // opens against closes. Self-closing `<tag/>` does not open a level. The
   // brace alternative keeps the scan sound on TSX sources, where a `>` can
-  // hide inside an attribute's {…} expression (an arrow function's =>).
+  // hide inside an attribute's {…} expression (the arrow of a callback).
   const scan = new RegExp(`<${tag}(?:"[^"]*"|'[^']*'|\\{(?:[^{}]|\\{[^{}]*\\})*\\}|[^>"'])*>|</${tag}\\s*>`, 'g');
   scan.lastIndex = openEnd;
   let depth = 0;
-  for (let m; (m = scan.exec(src)); ) {
-    if (m[0].startsWith('</')) {
-      if (depth === 0) return { start: openEnd, end: m.index };
+  for (let match; (match = scan.exec(src)); ) {
+    if (match[0].startsWith('</')) {
+      if (depth === 0) return { start: openEnd, end: match.index };
       depth--;
-    } else if (!m[0].endsWith('/>')) depth++;
+    } else if (!match[0].endsWith('/>')) depth++;
   }
   return null; // unclosed — caller reports "no editable text" rather than guessing
 };
@@ -74,7 +74,7 @@ export const classify = (text) => {
   // key is unambiguously the element's copy and the ARB write is exact; the
   // surrounding markup is never touched. Two or more keys IS ambiguous (which
   // one did the user click?) and stays refused.
-  const keys = [...new Set([...text.matchAll(T_CALL_RE)].map((m) => m[1]))];
+  const keys = [...new Set([...text.matchAll(T_CALL_RE)].map((match) => match[1]))];
   if (keys.length === 1) return { source: 'arb', key: keys[0], partial: true };
   if (keys.length > 1) return { source: 'mixed', keys };
 
@@ -91,25 +91,25 @@ export const classify = (text) => {
 
 // ---------------------------------------------------------------- read side
 export const textProvenance = (screenId, kind, index = 0) => {
-  const w = resolveWidget(screenId, kind, index);
-  if (!w) return null;
-  const src = readSource(w.file);
+  const widget = resolveWidget(screenId, kind, index);
+  if (!widget) return null;
+  const src = readSource(widget.file);
   if (!src) return null;
   // The open tag's range comes FROM resolveWidget — one identity rule, so this
   // module can never select a different element than the layout editor does.
-  const r = innerRange(src, w.tag, w.end);
-  if (!r) return null;
-  const text = src.slice(r.start, r.end);
+  const range = innerRange(src, widget.tag, widget.end);
+  if (!range) return null;
+  const text = src.slice(range.start, range.end);
   return {
     ...classify(text.trim()),
-    file: w.file, kind, index, tag: w.tag,
+    file: widget.file, kind, index, tag: widget.tag,
     text: text.trim(),
-    range: r,
+    range: range,
     // Stated BEFORE the edit lands: one definition can feed many screens.
     // Degrades to [] rather than throwing — this is provenance COMMENTARY, and
     // a project without an intake registry (or one still being scaffolded) must
     // still be editable. The write targets above do not depend on it.
-    screens: (() => { try { return screensUsing(w.file); } catch { return []; } })(),
+    screens: (() => { try { return screensUsing(widget.file); } catch { return []; } })(),
     locales: locales(),
   };
 };
@@ -119,13 +119,13 @@ export const textProvenance = (screenId, kind, index = 0) => {
 // catalogue on merge — the override case, see addArbValue). A parse is fine on
 // the READ side; only writes must preserve raw key order / @-metadata.
 export const arbValue = (key, locale = 'en') => {
-  const rel = arbFiles().find((f) => f.match(LOCALE_OF_ARB)?.[1] === locale);
+  const rel = arbFiles().find((arbFile) => arbFile.match(LOCALE_OF_ARB)?.[1] === locale);
   if (!rel) return null;
   const raw = readSource(rel);
   if (raw == null) return null;
   try {
-    const o = JSON.parse(raw);
-    return typeof o[key] === 'string' ? o[key] : null;
+    const parsed = JSON.parse(raw);
+    return typeof parsed[key] === 'string' ? parsed[key] : null;
   } catch {
     return null;
   }
@@ -160,46 +160,46 @@ export const addArbValue = (raw, key, value) => {
 // the string you are looking at must not silently rewrite English while the
 // studio renders Polish.
 export const setWidgetText = async (screenId, kind, index, value, locale = 'en', opts = {}) => {
-  const p = textProvenance(screenId, kind, index);
-  if (!p) throw new Error(`widget not found: ${screenId} ${kind}`);
+  const provenance = textProvenance(screenId, kind, index);
+  if (!provenance) throw new Error(`widget not found: ${screenId} ${kind}`);
 
-  if (p.source === 'arb') {
-    const rel = arbFiles().find((f) => f.match(LOCALE_OF_ARB)?.[1] === locale);
+  if (provenance.source === 'arb') {
+    const rel = arbFiles().find((arbFile) => arbFile.match(LOCALE_OF_ARB)?.[1] === locale);
     if (!rel) throw new Error(`no catalogue for locale ${locale} (have: ${locales().join(', ') || 'none'})`);
     const raw = readSource(rel);
     if (raw == null) throw new Error(`catalogue unreadable: ${rel}`);
-    let next = setArbValue(raw, p.key, value);
+    let next = setArbValue(raw, provenance.key, value);
     let override = false;
     if (next == null) {
       if (!opts.allowOverride) {
-        const e = new Error(
-          `"${p.key}" is not declared in ${rel} — it resolves from the artifact's base catalogue. ` +
+        const error = new Error(
+          `"${provenance.key}" is not declared in ${rel} — it resolves from the artifact's base catalogue. ` +
           `Re-run with allowOverride to add a project override (the project wins on merge).`,
         );
-        e.provenance = { ...p, wouldOverride: rel };
-        throw e;
+        error.provenance = { ...provenance, wouldOverride: rel };
+        throw error;
       }
-      next = addArbValue(raw, p.key, value);
+      next = addArbValue(raw, provenance.key, value);
       override = true;
       if (next == null) throw new Error(`catalogue ${rel} is not a JSON object`);
     }
     await writeProjectSource(rel, next);
-    return { ...p, wrote: rel, locale, override };
+    return { ...provenance, wrote: rel, locale, override };
   }
 
-  if (p.source === 'literal') {
-    const src = readSource(p.file);
-    const next = src.slice(0, p.range.start) + value + src.slice(p.range.end);
-    await writeProjectSource(p.file, next);
-    return { ...p, wrote: p.file };
+  if (provenance.source === 'literal') {
+    const src = readSource(provenance.file);
+    const next = src.slice(0, provenance.range.start) + value + src.slice(provenance.range.end);
+    await writeProjectSource(provenance.file, next);
+    return { ...provenance, wrote: provenance.file };
   }
 
   // 'bound' and 'mixed' are deliberately not written: see classify().
   const err = new Error(
-    p.source === 'bound'
-      ? `"${p.text}" is data-bound (${p.expr}) — its copy lives in a design seed, not in the surface. Edit the seed: ${seedFiles().join(', ') || '(none in this project)'}`
-      : `"${p.text}" mixes template logic with copy — split it before editing.`,
+    provenance.source === 'bound'
+      ? `"${provenance.text}" is data-bound (${provenance.expr}) — its copy lives in a design seed, not in the surface. Edit the seed: ${seedFiles().join(', ') || '(none in this project)'}`
+      : `"${provenance.text}" mixes template logic with copy — split it before editing.`,
   );
-  err.provenance = p;
+  err.provenance = provenance;
   throw err;
 };

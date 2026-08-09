@@ -23,16 +23,16 @@ const JSON_URL = new URL('../models/theme.json', import.meta.url);
 // render's theme across every later theme.json write-through edit.
 export const theme = () => JSON.parse(readFileSync(JSON_URL, 'utf8'));
 export const swatches = () => theme().swatches;
-export const swatchNames = () => theme().swatches.map((s) => s.name);
+export const swatchNames = () => theme().swatches.map((swatch) => swatch.name);
 export const defaultSwatch = () => theme().default;
 
-const block = (sel, m) =>
-  `${sel} { --accent: ${m.accent}; --accent-soft: ${m.soft}; --on-accent: ${m.on}; }`;
+const block = (sel, roleMap) =>
+  `${sel} { --accent: ${roleMap.accent}; --accent-soft: ${roleMap.soft}; --on-accent: ${roleMap.on}; }`;
 
 export const themeCss = (th = theme()) => {
-  const light = th.swatches.map((s) => block(`#app[data-accent="${s.name}"]`, s.light));
-  const dark = th.swatches.map((s) => block(`#app[data-theme="dark"][data-accent="${s.name}"]`, s.dark));
-  const r = th.roles;
+  const light = th.swatches.map((swatch) => block(`#app[data-accent="${swatch.name}"]`, swatch.light));
+  const dark = th.swatches.map((swatch) => block(`#app[data-theme="dark"][data-accent="${swatch.name}"]`, swatch.dark));
+  const roles = th.roles;
   return `/* GENERATED from models/theme.json by services/theme_tokens.js — do not edit
    by hand. Edit theme.json, run \`node services/theme_tokens.js\`, commit both.
    A swatch is 5 semantic roles, not 5 loose colors: accent (+ --on-accent),
@@ -46,9 +46,9 @@ ${dark.join('\n')}
 /* derived roles — one rule serves all swatches in both modes, because
    --accent/--bg/--tx vary by cascade above. */
 #app {
-  --accent-surface: color-mix(in oklab, var(--accent) ${r.surfaceMix}%, var(--bg));
-  --accent-text: color-mix(in oklab, var(--accent) ${r.textMix}%, var(--tx));
-  --accent-muted: color-mix(in oklab, var(--accent) ${r.mutedMix}%, var(--tx-2));
+  --accent-surface: color-mix(in oklab, var(--accent) ${roles.surfaceMix}%, var(--bg));
+  --accent-text: color-mix(in oklab, var(--accent) ${roles.textMix}%, var(--tx));
+  --accent-muted: color-mix(in oklab, var(--accent) ${roles.mutedMix}%, var(--tx-2));
 }
 `;
 };

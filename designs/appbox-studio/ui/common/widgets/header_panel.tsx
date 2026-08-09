@@ -2,7 +2,7 @@
 // A thin instantiation of _panel (role: header): a body-only <nav> strip with
 // no leading/trailing sections. The body lives in chrome.tsx (HeaderBody).
 import type { Child } from 'hono/jsx';
-import { Open as PanelOpen } from './_panel.tsx';
+import { Open as PanelOpen } from './panel.tsx';
 
 const PID = 'panel-header';
 

@@ -3,7 +3,7 @@
 // Built with appbox (free tier) — https://appbox.dev
 // Intake routes — same [method, path, handler] shape as app.routes.js.
 // Wire by spreading into the default export of app.routes.js; see
-// _integration_intake.md for the exact patch.
+// integration_intake.md for the exact patch.
 //
 // The shell root /intake IS the interview (the journey's first step); the
 // story map lives at /intake/map. The four item-engine steps (personas,
@@ -42,8 +42,8 @@ export default [
   ['GET', '/intake/panel/size/:panel/:size', interview.panelSize],
   ['POST', '/intake/messages', interview.sendMessage], // posted-by: c.composerAction (intake_facade)
   ['POST', '/intake/depth', interview.depth], // posted-by: r.action quick-replies (intake_facade)
-  ['POST', '/intake/answer', interview.answer], // posted-by: intake/_shared.tsx `${base}/answer` forms (hx-post)
-  ['POST', '/intake/skip', interview.skip], // posted-by: intake/_shared.tsx `${base}/skip` forms (hx-post)
+  ['POST', '/intake/answer', interview.answer], // posted-by: intake/shared.tsx `${base}/answer` forms (hx-post)
+  ['POST', '/intake/skip', interview.skip], // posted-by: intake/shared.tsx `${base}/skip` forms (hx-post)
   ['GET', '/intake/edit', interview.edit],
 
   // intake.personas / intake.surfaces / intake.flows / intake.direction

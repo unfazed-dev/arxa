@@ -29,7 +29,7 @@ const JSON_URL = new URL('../models/fonts.json', import.meta.url);
 // font list across every later fonts.json edit.
 export const fonts = () => JSON.parse(readFileSync(JSON_URL, 'utf8'));
 export const families = () => fonts().families;
-export const fontIds = () => fonts().families.map((f) => f.id);
+export const fontIds = () => fonts().families.map((fontFamily) => fontFamily.id);
 export const defaultFont = () => fonts().default;
 
 // The menu rows the settings UI renders, in SSOT order. `stack` rides along so
